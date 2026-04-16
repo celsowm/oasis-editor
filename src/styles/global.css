@@ -1,7 +1,7 @@
 :root {
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: #111827;
-  background: #f3f4f6;
+  background: #f8f9fa;
 }
 
 * {
@@ -11,12 +11,12 @@
 html,
 body {
   margin: 0;
-  min-height: 100%;
+  padding: 0;
+  height: 100%;
 }
 
 body {
-  min-height: 100vh;
-  background: #f3f4f6;
+  overflow: hidden;
 }
 
 button,
@@ -24,116 +24,124 @@ select,
 input,
 textarea {
   font: inherit;
+  outline: none;
 }
 
 .oasis-editor-shell {
-  min-height: 100vh;
-  background: #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f8f9fa;
 }
 
-.oasis-editor-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
-  border-bottom: 1px solid #d1d5db;
+.oasis-editor-header {
+  padding: 8px 16px;
   background: #ffffff;
-  position: sticky;
-  top: 0;
-  z-index: 20;
 }
 
 .oasis-editor-brand {
   display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.oasis-editor-logo {
+  width: 32px;
+  height: 32px;
+  background: #2563eb;
+  border-radius: 4px;
+}
+
+.oasis-editor-title-container {
+  display: flex;
   flex-direction: column;
+}
+
+.oasis-editor-document-title {
+  border: none;
+  font-size: 18px;
+  font-weight: 500;
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin-left: -4px;
+  color: #3c4043;
+}
+
+.oasis-editor-document-title:hover {
+  background: #f1f3f4;
+}
+
+.oasis-editor-menu-bar {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.oasis-editor-menu-bar span {
+  font-size: 14px;
+  color: #3c4043;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.oasis-editor-menu-bar span:hover {
+  background: #f1f3f4;
+}
+
+.oasis-editor-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: #edf2fa;
+  border-radius: 24px;
+  margin: 0 16px 8px;
+  gap: 4px;
+}
+
+.oasis-editor-toolbar-group {
+  display: flex;
+  align-items: center;
   gap: 2px;
 }
 
-.oasis-editor-brand span {
-  color: #6b7280;
-  font-size: 13px;
+.oasis-editor-toolbar-separator {
+  width: 1px;
+  height: 24px;
+  background: #dadce0;
+  margin: 0 8px;
 }
 
-.oasis-editor-controls {
+.oasis-editor-toolbar button,
+.oasis-editor-toolbar select {
+  border: none;
+  background: transparent;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #3c4043;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
   align-items: center;
+  justify-content: center;
 }
 
-.oasis-editor-controls select,
-.oasis-editor-controls button {
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 12px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  color: #111827;
+.oasis-editor-toolbar button:hover {
+  background: #dadce0;
 }
 
-.oasis-editor-meta {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
-  padding: 16px 18px 0;
+.oasis-editor-toolbar button.active {
+  background: #c2e7ff;
 }
 
-.oasis-editor-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.oasis-editor-card span {
-  color: #6b7280;
-  font-size: 12px;
-}
-
-.oasis-editor-status {
-  padding: 10px 18px;
-  color: #4b5563;
-  font-size: 13px;
+.oasis-editor-toolbar select {
+  padding-right: 18px;
 }
 
 .oasis-editor-main {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 24px;
-  padding: 0 18px 32px;
-  align-items: start;
-}
-
-.oasis-editor-sidebar {
-  position: sticky;
-  top: 92px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
-}
-
-.oasis-editor-sidebar h2 {
-  margin: 0 0 12px;
-  font-size: 16px;
-}
-
-.oasis-editor-notes {
-  margin: 0;
-  padding-left: 18px;
-}
-
-.oasis-editor-notes li {
-  color: #4b5563;
-  font-size: 14px;
-  line-height: 1.5;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 0;
+  position: relative;
 }
 
 .oasis-editor-pages {
@@ -141,13 +149,14 @@ textarea {
   flex-direction: column;
   gap: 24px;
   align-items: center;
+  padding-bottom: 48px;
 }
 
 .oasis-page {
   position: relative;
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+  transition: box-shadow 0.3s ease;
 }
 
 .oasis-page-header,
@@ -155,33 +164,48 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
-  font-size: 12px;
+  color: #70757a;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .oasis-page-header {
   min-height: 48px;
-  border-bottom: 1px dashed #e5e7eb;
 }
 
 .oasis-page-footer {
   min-height: 48px;
-  border-top: 1px dashed #e5e7eb;
 }
 
 .oasis-page-content {
   display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
 }
 
 .oasis-fragment {
-  margin-bottom: 12px;
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.5;
+  color: #000;
+  margin: 0;
+  position: absolute;
+  pointer-events: auto;
 }
 
-.oasis-fragment--heading {
-  line-height: 1.35;
+.oasis-selection-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 10;
 }
 
 .oasis-selection-rect,
@@ -190,24 +214,26 @@ textarea {
 }
 
 .oasis-selection-rect {
-  background: rgba(59, 130, 246, 0.18);
+  background: rgba(194, 231, 255, 0.6);
 }
 
 .oasis-caret {
   width: 2px;
   background: #2563eb;
+  animation: oasis-caret-blink 1s step-end infinite;
 }
 
-@media (max-width: 1100px) {
-  .oasis-editor-meta {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+@keyframes oasis-caret-blink {
+  from, to { opacity: 1; }
+  50% { opacity: 0; }
+}
 
-  .oasis-editor-main {
-    grid-template-columns: 1fr;
-  }
-
-  .oasis-editor-sidebar {
-    position: static;
-  }
+.oasis-editor-footer-status {
+  padding: 4px 16px;
+  background: #ffffff;
+  border-top: 1px solid #dadce0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #70757a;
 }

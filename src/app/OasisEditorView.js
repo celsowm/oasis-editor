@@ -2,27 +2,26 @@ import { PageLayer } from '../ui/pages/PageLayer.js';
 import { PageViewport } from '../ui/pages/PageViewport.js';
 
 export class OasisEditorView {
-  constructor(dom) {
+  constructor(dom, presenter, measurer) {
     this.dom = dom;
+    this.presenter = presenter;
     this.elements = {
       root: dom.getRoot(),
       pagesContainer: dom.getPagesContainer(),
       templateSelect: dom.getTemplateSelect(),
-      addParagraphButton: dom.getAddParagraphButton(),
-      addBatchButton: dom.getAddBatchButton(),
-      repaginateButton: dom.getRepaginateButton(),
+      boldButton: dom.getBoldButton(),
+      italicButton: dom.getItalicButton(),
+      underlineButton: dom.getUnderlineButton(),
+      undoButton: dom.getUndoButton(),
+      redoButton: dom.getRedoButton(),
       exportButton: dom.getExportButton(),
       status: dom.getStatus(),
-      revision: dom.getRevision(),
-      pages: dom.getPagesCount(),
-      sections: dom.getSectionsCount(),
-      activeTemplate: dom.getTemplateName(),
-      backend: dom.getBackend(),
-      notesList: dom.getNotesList(),
+      metrics: dom.getMetrics(),
+      hiddenInput: dom.getHiddenInput(),
     };
 
     this.pageLayer = new PageLayer(this.elements.pagesContainer);
-    this.viewport = new PageViewport(this.elements.root, this.pageLayer);
+    this.viewport = new PageViewport(this.elements.root, this.pageLayer, measurer);
   }
 
   renderTemplateOptions(options) {
@@ -37,33 +36,54 @@ export class OasisEditorView {
   }
 
   bind(events) {
-    this.elements.addParagraphButton.addEventListener('click', events.onAddParagraph);
-    this.elements.addBatchButton.addEventListener('click', events.onAddBatch);
-    this.elements.repaginateButton.addEventListener('click', events.onRepaginate);
+    this.elements.boldButton.addEventListener('click', events.onBold);
+    this.elements.italicButton.addEventListener('click', events.onItalic);
+    this.elements.underlineButton.addEventListener('click', events.onUnderline);
+    this.elements.undoButton.addEventListener('click', events.onUndo);
+    this.elements.redoButton.addEventListener('click', events.onRedo);
     this.elements.exportButton.addEventListener('click', events.onExport);
     this.elements.templateSelect.addEventListener('change', (event) => events.onTemplateChange(event.target.value));
+
+    // Hidden input for keyboard handling
+    this.elements.hiddenInput.addEventListener('input', (e) => {
+      events.onTextInput(e.data || '');
+      this.elements.hiddenInput.value = '';
+    });
+
+    this.elements.hiddenInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace') {
+        events.onDelete();
+        e.preventDefault();
+      } else if (e.key === 'Enter') {
+        events.onEnter();
+        e.preventDefault();
+      } else if (e.key.startsWith('Arrow')) {
+        events.onArrowKey(e.key);
+        e.preventDefault();
+      }
+    });
+
+    // Re-focus hidden input on any click in the app
+    this.elements.root.addEventListener('mousedown', (e) => {
+      events.onMouseDown(e);
+      setTimeout(() => this.elements.hiddenInput.focus(), 0);
+    });
   }
 
   render(viewModel) {
-    this.viewport.render(viewModel.layout);
+    this.viewport.render(viewModel.layout, viewModel.selection);
     this.elements.templateSelect.value = viewModel.templateId;
     this.elements.status.textContent = viewModel.status;
-    this.elements.revision.textContent = viewModel.metrics.revision;
-    this.elements.pages.textContent = viewModel.metrics.pages;
-    this.elements.sections.textContent = viewModel.metrics.sections;
-    this.elements.activeTemplate.textContent = viewModel.metrics.template;
-    this.elements.backend.textContent = viewModel.metrics.backend;
-    this.renderNotes(viewModel.notes);
+    this.elements.metrics.textContent = `Rev: ${viewModel.metrics.revision} | Pages: ${viewModel.metrics.pages}`;
+
+    this.updateToolbar(viewModel.selectionState);
   }
 
-  renderNotes(notes) {
-    this.elements.notesList.innerHTML = '';
-
-    notes.forEach((note) => {
-      const item = document.createElement('li');
-      item.textContent = note;
-      this.elements.notesList.appendChild(item);
-    });
+  updateToolbar(selectionState) {
+    if (!selectionState) return;
+    this.elements.boldButton.classList.toggle('active', selectionState.bold);
+    this.elements.italicButton.classList.toggle('active', selectionState.italic);
+    this.elements.underlineButton.classList.toggle('active', selectionState.underline);
   }
 
   downloadJson(filename, content) {

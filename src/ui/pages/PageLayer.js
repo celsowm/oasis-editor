@@ -16,13 +16,18 @@ export class PageLayer {
       if (page.headerRect) {
         const header = document.createElement('div');
         header.className = 'oasis-page-header';
+        header.style.position = 'absolute';
+        header.style.left = `${page.headerRect.x}px`;
+        header.style.top = `${page.headerRect.y}px`;
+        header.style.width = `${page.headerRect.width}px`;
+        header.style.height = `${page.headerRect.height}px`;
         header.textContent = `Header • ${page.pageNumber}`;
         pageEl.appendChild(header);
       }
 
       const content = document.createElement('div');
       content.className = 'oasis-page-content';
-      content.style.padding = `${page.contentRect.y}px ${page.rect.width - page.contentRect.width - page.contentRect.x}px ${page.rect.height - page.contentRect.height - page.contentRect.y}px ${page.contentRect.x}px`;
+      // content Rect is used for layout but we position fragments absolutely
 
       for (const fragment of page.fragments) {
         const fragmentEl = document.createElement('article');
@@ -31,7 +36,26 @@ export class PageLayer {
         fragmentEl.textContent = fragment.text;
         fragmentEl.style.fontFamily = fragment.typography.fontFamily;
         fragmentEl.style.fontSize = `${fragment.typography.fontSize}px`;
-        fragmentEl.style.fontWeight = String(fragment.typography.fontWeight);
+
+        fragmentEl.style.left = `${fragment.rect.x}px`;
+        fragmentEl.style.top = `${fragment.rect.y}px`;
+        fragmentEl.style.width = `${fragment.rect.width}px`;
+        fragmentEl.style.height = `${fragment.rect.height}px`;
+
+        let fontWeight = fragment.typography.fontWeight;
+        if (fragment.marks?.bold) {
+          fontWeight = 700;
+        }
+        fragmentEl.style.fontWeight = String(fontWeight);
+
+        if (fragment.marks?.italic) {
+          fragmentEl.style.fontStyle = 'italic';
+        }
+
+        if (fragment.marks?.underline) {
+          fragmentEl.style.textDecoration = 'underline';
+        }
+
         content.appendChild(fragmentEl);
       }
 
@@ -40,6 +64,11 @@ export class PageLayer {
       if (page.footerRect) {
         const footer = document.createElement('div');
         footer.className = 'oasis-page-footer';
+        footer.style.position = 'absolute';
+        footer.style.left = `${page.footerRect.x}px`;
+        footer.style.top = `${page.footerRect.y}px`;
+        footer.style.width = `${page.footerRect.width}px`;
+        footer.style.height = `${page.footerRect.height}px`;
         footer.textContent = `Page ${page.pageNumber}`;
         pageEl.appendChild(footer);
       }

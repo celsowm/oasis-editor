@@ -82,6 +82,7 @@ export const paginateDocument = (documentModel, measure) => {
           height: composed.totalHeight,
         },
         typography: composed.typography,
+        marks: block.children[0]?.marks || {}, // Pass marks to fragment
       };
 
       currentPage.fragments.push(fragment);

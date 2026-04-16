@@ -7,38 +7,81 @@
   </head>
   <body>
     <div class="oasis-editor-shell">
-      <header class="oasis-editor-toolbar">
+      <header class="oasis-editor-header">
         <div class="oasis-editor-brand">
-          <strong>oasis-editor</strong>
-          <span>clean document model + composition + pagination</span>
-        </div>
-
-        <div class="oasis-editor-controls">
-          <select id="oasis-editor-template"></select>
-          <button id="oasis-editor-add-paragraph" type="button">Add paragraph</button>
-          <button id="oasis-editor-add-batch" type="button">Add batch</button>
-          <button id="oasis-editor-repaginate" type="button">Repaginate</button>
-          <button id="oasis-editor-export" type="button">Export JSON</button>
+          <div class="oasis-editor-logo"></div>
+          <div class="oasis-editor-title-container">
+            <input type="text" class="oasis-editor-document-title" value="Untitled document" />
+            <div class="oasis-editor-menu-bar">
+              <span>File</span>
+              <span>Edit</span>
+              <span>View</span>
+              <span>Insert</span>
+              <span>Format</span>
+              <span>Tools</span>
+              <span>Extensions</span>
+              <span>Help</span>
+            </div>
+          </div>
         </div>
       </header>
 
-      <section class="oasis-editor-meta">
-        <div class="oasis-editor-card"><span>Revision</span><strong id="oasis-editor-revision">0</strong></div>
-        <div class="oasis-editor-card"><span>Pages</span><strong id="oasis-editor-pages-count">0</strong></div>
-        <div class="oasis-editor-card"><span>Sections</span><strong id="oasis-editor-sections-count">0</strong></div>
-        <div class="oasis-editor-card"><span>Template</span><strong id="oasis-editor-template-name">-</strong></div>
-        <div class="oasis-editor-card"><span>Backend</span><strong id="oasis-editor-backend">-</strong></div>
-      </section>
+      <div class="oasis-editor-toolbar">
+        <div class="oasis-editor-toolbar-group">
+          <button id="oasis-editor-undo" title="Undo (Ctrl+Z)" type="button">↶</button>
+          <button id="oasis-editor-redo" title="Redo (Ctrl+Y)" type="button">↷</button>
+          <button id="oasis-editor-print" title="Print" type="button">⎙</button>
+        </div>
 
-      <div id="oasis-editor-status" class="oasis-editor-status">Ready</div>
+        <div class="oasis-editor-toolbar-separator"></div>
+
+        <div class="oasis-editor-toolbar-group">
+          <select id="oasis-editor-zoom">
+            <option value="100%">100%</option>
+            <option value="fit">Fit</option>
+          </select>
+        </div>
+
+        <div class="oasis-editor-toolbar-separator"></div>
+
+        <div class="oasis-editor-toolbar-group">
+          <select id="oasis-editor-template"></select>
+        </div>
+
+        <div class="oasis-editor-toolbar-separator"></div>
+
+        <div class="oasis-editor-toolbar-group">
+          <button id="oasis-editor-bold" title="Bold (Ctrl+B)" type="button"><strong>B</strong></button>
+          <button id="oasis-editor-italic" title="Italic (Ctrl+I)" type="button"><em>I</em></button>
+          <button id="oasis-editor-underline" title="Underline (Ctrl+U)" type="button"><u>U</u></button>
+          <button id="oasis-editor-text-color" title="Text color" type="button">A</button>
+        </div>
+
+        <div class="oasis-editor-toolbar-separator"></div>
+
+        <div class="oasis-editor-toolbar-group">
+          <button id="oasis-editor-align-left" title="Align left" type="button">≡</button>
+          <button id="oasis-editor-align-center" title="Align center" type="button">≣</button>
+          <button id="oasis-editor-align-right" title="Align right" type="button">≡</button>
+        </div>
+
+        <div class="oasis-editor-toolbar-group" style="margin-left: auto;">
+          <button id="oasis-editor-export" type="button">Export JSON</button>
+        </div>
+      </div>
 
       <main id="oasis-editor-app" class="oasis-editor-main">
-        <aside class="oasis-editor-sidebar">
-          <h2>Architecture notes</h2>
-          <ul id="oasis-editor-notes" class="oasis-editor-notes"></ul>
-        </aside>
         <section id="oasis-editor-pages" class="oasis-editor-pages"></section>
+
+        <div id="oasis-editor-input-container" style="position: absolute; left: -1000px; top: -1000px;">
+          <textarea id="oasis-editor-input"></textarea>
+        </div>
       </main>
+
+      <footer class="oasis-editor-footer-status">
+        <span id="oasis-editor-status">Ready</span>
+        <span id="oasis-editor-metrics"></span>
+      </footer>
     </div>
 
     <script type="module" src="/src/main.js"></script>

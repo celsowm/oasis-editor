@@ -1,11 +1,25 @@
-import { createDocument } from '../document/DocumentFactory.js';
+import { createDocument, createParagraph } from '../document/DocumentFactory.js';
 import { reduceDocumentState } from './DocumentReducer.js';
 
 export class DocumentRuntime {
   constructor() {
+    const doc = createDocument();
     this.state = {
-      document: createDocument(),
-      selection: null,
+      document: doc,
+      selection: {
+        anchor: {
+          sectionId: doc.sections[0].id,
+          blockId: doc.sections[0].children[0].id,
+          inlineId: doc.sections[0].children[0].children[0].id,
+          offset: 0,
+        },
+        focus: {
+          sectionId: doc.sections[0].id,
+          blockId: doc.sections[0].children[0].id,
+          inlineId: doc.sections[0].children[0].children[0].id,
+          offset: 0,
+        },
+      },
     };
     this.history = [];
     this.future = [];
@@ -65,4 +79,3 @@ export class DocumentRuntime {
     }
   }
 }
-
