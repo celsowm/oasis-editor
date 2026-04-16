@@ -13,7 +13,7 @@ export const createOasisEditorApp = () => {
   const layoutService = new DocumentLayoutService(textMeasurer);
   const presenter = new OasisEditorPresenter(Object.values(PAGE_TEMPLATES));
   const dom = new OasisEditorDom(document);
-  const view = new OasisEditorView(dom, presenter);
+  const view = new OasisEditorView(dom, presenter, textMeasurer);
 
   return new OasisEditorController({
     runtime,

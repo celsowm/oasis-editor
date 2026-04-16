@@ -15,16 +15,24 @@ export class OasisEditorDom {
     return this.requireElement('oasis-editor-template');
   }
 
-  getAddParagraphButton() {
-    return this.requireElement('oasis-editor-add-paragraph');
+  getBoldButton() {
+    return this.requireElement('oasis-editor-bold');
   }
 
-  getAddBatchButton() {
-    return this.requireElement('oasis-editor-add-batch');
+  getItalicButton() {
+    return this.requireElement('oasis-editor-italic');
   }
 
-  getRepaginateButton() {
-    return this.requireElement('oasis-editor-repaginate');
+  getUnderlineButton() {
+    return this.requireElement('oasis-editor-underline');
+  }
+
+  getUndoButton() {
+    return this.requireElement('oasis-editor-undo');
+  }
+
+  getRedoButton() {
+    return this.requireElement('oasis-editor-redo');
   }
 
   getExportButton() {
@@ -35,28 +43,12 @@ export class OasisEditorDom {
     return this.requireElement('oasis-editor-status');
   }
 
-  getRevision() {
-    return this.requireElement('oasis-editor-revision');
+  getMetrics() {
+    return this.requireElement('oasis-editor-metrics');
   }
 
-  getPagesCount() {
-    return this.requireElement('oasis-editor-pages-count');
-  }
-
-  getSectionsCount() {
-    return this.requireElement('oasis-editor-sections-count');
-  }
-
-  getTemplateName() {
-    return this.requireElement('oasis-editor-template-name');
-  }
-
-  getBackend() {
-    return this.requireElement('oasis-editor-backend');
-  }
-
-  getNotesList() {
-    return this.requireElement('oasis-editor-notes');
+  getHiddenInput() {
+    return this.requireElement('oasis-editor-input');
   }
 
   requireElement(id) {

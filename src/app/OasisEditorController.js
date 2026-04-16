@@ -1,14 +1,5 @@
 import { Operations } from '../core/operations/OperationFactory.js';
 
-const DEMO_PARAGRAPH = 'Novo parágrafo adicionado para testar crescimento do documento, reflow e paginação dentro da arquitetura limpa do oasis-editor.';
-const DEMO_BATCH = [
-  'Batch paragraph 1. O documento lógico permanece contínuo e a página continua sendo derivada.',
-  'Batch paragraph 2. O projeto foi reorganizado para reduzir acoplamento e deixar responsabilidades mais claras.',
-  'Batch paragraph 3. Controller, presenter, runtime, composição e renderização evoluem de forma isolada.',
-  'Batch paragraph 4. O nome e a identidade da aplicação permanecem oasis-editor em toda a base.',
-  'Batch paragraph 5. A próxima etapa natural é ligar a edição rica real ao document model definitivo.',
-];
-
 export class OasisEditorController {
   constructor({ runtime, layoutService, presenter, view }) {
     this.runtime = runtime;
@@ -20,11 +11,18 @@ export class OasisEditorController {
   start() {
     this.view.renderTemplateOptions(this.presenter.getTemplateOptions());
     this.view.bind({
-      onAddParagraph: () => this.addParagraph(),
-      onAddBatch: () => this.addBatch(),
-      onRepaginate: () => this.refresh(),
+      onBold: () => this.toggleBold(),
+      onItalic: () => this.toggleItalic(),
+      onUnderline: () => this.toggleUnderline(),
+      onUndo: () => this.undo(),
+      onRedo: () => this.redo(),
       onExport: () => this.exportDocument(),
       onTemplateChange: (templateId) => this.setTemplate(templateId),
+      onTextInput: (text) => this.insertText(text),
+      onDelete: () => this.deleteText(),
+      onEnter: () => this.insertParagraph(),
+      onArrowKey: (key) => this.moveCaret(key),
+      onMouseDown: (e) => this.handleMouseDown(e),
     });
 
     this.runtime.subscribe(() => {
@@ -32,17 +30,50 @@ export class OasisEditorController {
     });
   }
 
-  addParagraph() {
-    this.runtime.dispatch(Operations.appendParagraph(DEMO_PARAGRAPH));
+  toggleBold() {
+    this.runtime.dispatch(Operations.toggleMark('bold'));
   }
 
-  addBatch() {
-    DEMO_BATCH.forEach((text) => this.runtime.dispatch(Operations.appendParagraph(text)));
+  toggleItalic() {
+    this.runtime.dispatch(Operations.toggleMark('italic'));
+  }
+
+  toggleUnderline() {
+    this.runtime.dispatch(Operations.toggleMark('underline'));
+  }
+
+  undo() {
+    this.runtime.undo();
+  }
+
+  redo() {
+    this.runtime.redo();
+  }
+
+  insertText(text) {
+    if (!text) return;
+    this.runtime.dispatch(Operations.insertText(text));
+  }
+
+  deleteText() {
+    this.runtime.dispatch(Operations.deleteText());
+  }
+
+  insertParagraph() {
+    this.runtime.dispatch(Operations.insertParagraph());
+  }
+
+  moveCaret(key) {
+    this.runtime.dispatch(Operations.moveSelection(key));
   }
 
   setTemplate(templateId) {
     const firstSection = this.runtime.getState().document.sections[0];
     this.runtime.dispatch(Operations.setSectionTemplate(firstSection.id, templateId));
+  }
+
+  handleMouseDown(event) {
+    // Selection logic will go here
   }
 
   refresh() {
