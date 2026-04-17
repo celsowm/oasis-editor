@@ -27,6 +27,37 @@ export class OasisEditorController {
     this.measurer = measurer;
   }
 
+  measureWidthUpToOffset(fragment, lineStartOffset, endOffset) {
+     if (lineStartOffset === endOffset) return 0;
+     let totalWidth = 0;
+     let currentGlobalOffset = 0;
+     const runs = fragment.runs || [{ text: fragment.text, marks: fragment.marks || {} }];
+     for (const run of runs) {
+        const runStart = currentGlobalOffset;
+        const runEnd = currentGlobalOffset + run.text.length;
+        const measureStart = Math.max(lineStartOffset, runStart);
+        const measureEnd = Math.min(endOffset, runEnd);
+
+        if (measureStart < measureEnd) {
+           const textToMeasure = run.text.substring(measureStart - runStart, measureEnd - runStart);
+           let fontWeight = fragment.typography.fontWeight;
+           if (run.marks?.bold || fragment.kind === "heading") fontWeight = 700;
+           let fontStyle = run.marks?.italic ? "italic" : "normal";
+           const metrics = this.measurer.measureText({
+              text: textToMeasure,
+              fontFamily: run.marks?.fontFamily || fragment.typography.fontFamily,
+              fontSize: run.marks?.fontSize || fragment.typography.fontSize,
+              fontWeight,
+              fontStyle
+           });
+           totalWidth += metrics.width;
+        }
+        currentGlobalOffset += run.text.length;
+        if (currentGlobalOffset >= endOffset) break;
+     }
+     return totalWidth;
+  }
+
   start() {
     this.view.renderTemplateOptions(this.presenter.getTemplateOptions());
     this.view.bind({
@@ -164,11 +195,6 @@ export class OasisEditorController {
       }
     }
 
-    const computedStyle = getComputedStyle(fragmentEl);
-    const fontFamily = computedStyle.fontFamily;
-    const fontSize = parseFloat(computedStyle.fontSize);
-    const fontWeight = computedStyle.fontWeight;
-
     let closestOffset = 0;
     let minDistance = Infinity;
 
@@ -176,15 +202,8 @@ export class OasisEditorController {
       const lineStart = targetLine.offsetStart;
       const lineEnd = targetLine.offsetEnd;
       for (let i = lineStart; i <= lineEnd; i++) {
-        const textInLineUpToI = fragmentText.substring(lineStart, i);
-        const measured = this.measurer.measureText({
-          text: textInLineUpToI,
-          fontFamily,
-          fontSize,
-          fontWeight,
-        });
-
-        const distance = Math.abs(measured.width - clickXInFragment);
+        const measuredWidth = this.measureWidthUpToOffset(layoutFragment, lineStart, i);
+        const distance = Math.abs(measuredWidth - clickXInFragment);
         if (distance < minDistance) {
           minDistance = distance;
           closestOffset = i;
@@ -192,15 +211,8 @@ export class OasisEditorController {
       }
     } else {
       for (let i = 0; i <= fragmentText.length; i++) {
-        const textUpToI = fragmentText.substring(0, i);
-        const measured = this.measurer.measureText({
-          text: textUpToI,
-          fontFamily,
-          fontSize,
-          fontWeight,
-        });
-
-        const distance = Math.abs(measured.width - clickXInFragment);
+        const measuredWidth = this.measureWidthUpToOffset(layoutFragment, 0, i);
+        const distance = Math.abs(measuredWidth - clickXInFragment);
         if (distance < minDistance) {
           minDistance = distance;
           closestOffset = i;

@@ -53,17 +53,42 @@ export class PositionCalculator {
 
     const lineStartOffset = targetLine ? targetLine.offsetStart : 0;
     const offsetInLine = Math.max(0, relativeOffset - lineStartOffset);
-    const textBeforeInLine = fragment.text.substring(lineStartOffset, lineStartOffset + offsetInLine);
 
-    if (!textBeforeInLine) return 0;
+    if (offsetInLine === 0) return 0;
 
-    const measured = measurer.measureText({
-      text: textBeforeInLine,
-      fontFamily: fragment.typography.fontFamily,
-      fontSize: fragment.typography.fontSize,
-      fontWeight: fragment.typography.fontWeight,
-    });
+    let totalWidth = 0;
+    let currentGlobalOffset = 0;
 
-    return measured.width;
+    const runs = fragment.runs || [{ text: fragment.text, marks: fragment.marks || {} }];
+
+    for (const run of runs) {
+       const runStart = currentGlobalOffset;
+       const runEnd = currentGlobalOffset + run.text.length;
+
+       const measureStart = Math.max(lineStartOffset, runStart);
+       const measureEnd = Math.min(lineStartOffset + offsetInLine, runEnd);
+
+       if (measureStart < measureEnd) {
+          const textToMeasure = run.text.substring(measureStart - runStart, measureEnd - runStart);
+
+          let fontWeight = fragment.typography.fontWeight;
+          if (run.marks?.bold || fragment.kind === "heading") fontWeight = 700;
+          let fontStyle = run.marks?.italic ? "italic" : "normal";
+
+          const measured = measurer.measureText({
+             text: textToMeasure,
+             fontFamily: run.marks?.fontFamily || fragment.typography.fontFamily,
+             fontSize: run.marks?.fontSize || fragment.typography.fontSize,
+             fontWeight,
+             fontStyle
+          });
+          totalWidth += measured.width;
+       }
+
+       currentGlobalOffset += run.text.length;
+       if (currentGlobalOffset >= lineStartOffset + offsetInLine) break;
+    }
+
+    return totalWidth;
   }
 }
