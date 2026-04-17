@@ -70,11 +70,15 @@ export class OasisEditorView {
 
     // Hidden input for keyboard handling
     this.elements.hiddenInput.addEventListener("input", (e) => {
+      console.log('=== Hidden input event ===', e.data);
+      console.log('Hidden input focado?', document.activeElement === this.elements.hiddenInput);
       events.onTextInput(e.data || "");
       this.elements.hiddenInput.value = "";
     });
 
     this.elements.hiddenInput.addEventListener("keydown", (e) => {
+      console.log('=== Hidden input keydown ===', e.key);
+      console.log('Hidden input focado?', document.activeElement === this.elements.hiddenInput);
       if (e.key === "Backspace") {
         events.onDelete();
         e.preventDefault();

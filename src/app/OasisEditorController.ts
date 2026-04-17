@@ -71,18 +71,38 @@ export class OasisEditorController {
 
   insertText(text) {
     if (!text) return;
+    console.log('=== insertText chamado ===', text);
+    console.log('Estado atual selection:', this.runtime.getState().selection);
+    
+    // Log the state before
+    const stateBefore = this.runtime.getState();
+    const selectionBefore = stateBefore.selection?.anchor;
+    console.log('🔍 DEBUG: blockId:', selectionBefore?.blockId, 'inlineId:', selectionBefore?.inlineId);
+    
+    // Find the block and run
+    const blockBefore = stateBefore.document.sections
+      .flatMap(s => s.children)
+      .find(b => b.id === selectionBefore?.blockId);
+    console.log('🔍 DEBUG: Block encontrado?', blockBefore?.id, 'Runs:', blockBefore?.children?.map(r => ({id: r.id, text: r.text.substring(0, 20)})));
+    
+    const runBefore = blockBefore?.children.find(r => r.id === selectionBefore?.inlineId);
+    console.log('🔍 DEBUG: Run encontrado?', runBefore?.id, 'Text:', runBefore?.text);
+    
     this.runtime.dispatch(Operations.insertText(text));
   }
 
   deleteText() {
+    console.log('=== deleteText chamado ===');
     this.runtime.dispatch(Operations.deleteText());
   }
 
   insertParagraph() {
+    console.log('=== insertParagraph chamado ===');
     this.runtime.dispatch(Operations.insertParagraph());
   }
 
   moveCaret(key) {
+    console.log('=== moveCaret chamado ===', key);
     this.runtime.dispatch(Operations.moveSelection(key));
   }
 
@@ -96,173 +116,151 @@ export class OasisEditorController {
   handleMouseDown(event) {
     console.log('=== handleMouseDown chamado ===');
     console.log('Evento:', event.clientX, event.clientY);
+
+    // Usar elementFromPoint para encontrar o fragmento clicado diretamente
+    const target = document.elementFromPoint(event.clientX, event.clientY);
     
-    const state = this.runtime.getState();
-    const layout = this.layoutService.compose(state.document);
-    
-    console.log('Layout fragmentsByBlockId:', Object.keys(layout.fragmentsByBlockId).length, 'blocos');
-    
-    // Obter coordenadas do clique relativas ao container de páginas
-    const pagesContainer = this.view.elements.pagesContainer;
-    const containerRect = pagesContainer.getBoundingClientRect();
-    const clickX = event.clientX - containerRect.left;
-    const clickY = event.clientY - containerRect.top;
-
-    console.log('Click relativo ao container:', clickX, clickY);
-    console.log('Container rect:', containerRect);
-
-    // Encontrar qual página foi clicada para ajustar coordenadas
-    const pageElements = pagesContainer.querySelectorAll('.oasis-page');
-    let clickedPage = null;
-    let pageOffsetX = 0;
-    let pageOffsetY = 0;
-
-    for (const pageEl of pageElements) {
-      const pageRect = pageEl.getBoundingClientRect();
-      const pageX = pageRect.left - containerRect.left;
-      const pageY = pageRect.top - containerRect.top;
-
-      // Verificar se o clique está dentro desta página
-      if (
-        clickX >= pageX &&
-        clickX <= pageX + pageRect.width &&
-        clickY >= pageY &&
-        clickY <= pageY + pageRect.height
-      ) {
-        clickedPage = pageEl;
-        pageOffsetX = pageX;
-        pageOffsetY = pageY;
-        console.log('✅ Página clicada encontrada:', pageEl.dataset.pageId);
-        console.log('Page offset:', { pageOffsetX, pageOffsetY });
-        break;
-      }
+    if (!target || !target.classList.contains('oasis-fragment')) {
+      console.log('❌ Clique não foi em um fragmento. Target:', target?.className);
+      console.log('=== handleMouseDown finalizado ===');
+      return;
     }
 
-    // Ajustar coordenadas do clique para serem relativas ao conteúdo da página
-    const adjustedClickX = clickX - pageOffsetX;
-    const adjustedClickY = clickY - pageOffsetY;
+    const fragmentEl = target;
+    const fragmentId = fragmentEl.dataset.fragmentId || '';
+    const fragmentText = fragmentEl.textContent || '';
+    const rect = fragmentEl.getBoundingClientRect();
+    
+    console.log('✅ Fragmento clicado:', fragmentId);
+    console.log('Texto:', fragmentText);
+    console.log('Rect viewport:', { left: rect.left, top: rect.top, width: rect.width, height: rect.height });
 
-    console.log('Click ajustado (relativo à página):', adjustedClickX, adjustedClickY);
+    // Calcular offsets X e Y do clique dentro do fragmento
+    const clickXInFragment = event.clientX - rect.left;
+    const clickYInFragment = event.clientY - rect.top;
+    console.log('Click dentro do fragmento:', clickXInFragment.toFixed(1), clickYInFragment.toFixed(1));
 
-    // Iterar sobre todos os fragments para encontrar qual contém o ponto clicado
-    let foundFragment = null;
-    let foundBlockId = null;
-    let foundSectionId = null;
+    // Extrair IDs do fragment ID (formato: fragment:block:3:0)
+    const parts = fragmentId.split(':');
+    const blockId = parts[1] + ':' + parts[2]; // block:3
+    const sectionId = 'section:0'; // assumindo seção única
 
-    for (const [blockId, fragments] of Object.entries(layout.fragmentsByBlockId)) {
-      for (const fragment of fragments) {
-        const { x, y, width, height } = fragment.rect;
+    // Buscar fragmento no layout para descobrir as quebras de linha
+    const layoutFragments = this.latestLayout?.fragmentsByBlockId[blockId] || [];
+    const layoutFragment = layoutFragments.find(f => f.id === fragmentId) || layoutFragments[0];
 
-        console.log(`Verificando fragment ${fragment.id} [${blockId}]:`, { x, y, width, height });
-        console.log(`Texto: "${fragment.text.substring(0, 30)}..."`);
-        console.log(`Click está dentro? X: ${adjustedClickX} >= ${x} && <= ${x + width}, Y: ${adjustedClickY} >= ${y} && <= ${y + height}`);
-
-        // Verificar se o clique está dentro deste fragment
-        if (
-          adjustedClickX >= x &&
-          adjustedClickX <= x + width &&
-          adjustedClickY >= y &&
-          adjustedClickY <= y + height
-        ) {
-          console.log('✅ FRAGMENT ENCONRADO!', fragment.id);
-          foundFragment = fragment;
-          foundBlockId = blockId;
-          foundSectionId = fragment.sectionId;
+    // Encontrar a linha clicada baseada na posição Y
+    let targetLine = layoutFragment?.lines ? layoutFragment.lines[0] : null;
+    if (layoutFragment && layoutFragment.lines) {
+      let foundLine = null;
+      for (const line of layoutFragment.lines) {
+        const relativeLineY = line.y - layoutFragment.rect.y;
+        if (clickYInFragment >= relativeLineY && clickYInFragment < relativeLineY + line.height) {
+          foundLine = line;
           break;
         }
       }
-      if (foundFragment) break;
-    }
-
-    // Se não encontrou nenhum fragment, tentar encontrar o fragment mais próximo verticalmente
-    if (!foundFragment) {
-      console.log('❌ Nenhum fragment encontrado com hit exato, tentando fallback...');
-      let closestFragment = null;
-      let closestDistance = Infinity;
-      let closestBlockId = null;
-      let closestSectionId = null;
-
-      for (const [blockId, fragments] of Object.entries(layout.fragmentsByBlockId)) {
-        for (const fragment of fragments) {
-          const { y, height } = fragment.rect;
-          // Verificar se o clique está na mesma faixa vertical (com margem de erro)
-          if (clickY >= y - 10 && clickY <= y + height + 10) {
-            const distance = Math.abs(clickY - y);
-            if (distance < closestDistance) {
-              closestDistance = distance;
-              closestFragment = fragment;
-              closestBlockId = blockId;
-              closestSectionId = fragment.sectionId;
-            }
-          }
+      if (foundLine) {
+        targetLine = foundLine;
+      } else {
+        const lastLine = layoutFragment.lines[layoutFragment.lines.length - 1];
+        const unrelativeLastLineY = lastLine.y - layoutFragment.rect.y;
+        if (clickYInFragment >= unrelativeLastLineY) {
+          targetLine = lastLine;
+        } else {
+          targetLine = layoutFragment.lines[0];
         }
       }
-
-      if (closestFragment) {
-        console.log('✅ FRAGMENT ENCONRADO via fallback:', closestFragment.id);
-        foundFragment = closestFragment;
-        foundBlockId = closestBlockId;
-        foundSectionId = closestSectionId;
-      } else {
-        console.log('❌❌ NENHUM fragment encontrado mesmo com fallback');
-      }
     }
 
-    if (foundFragment) {
-      console.log('Processando fragment:', foundFragment.id);
-      console.log('Text:', foundFragment.text);
-      console.log('Rect:', foundFragment.rect);
-      console.log('Offsets:', foundFragment.startOffset, '-', foundFragment.endOffset);
+    // Medir texto caractere por caractere
+    const computedStyle = getComputedStyle(fragmentEl);
+    const fontFamily = computedStyle.fontFamily;
+    const fontSize = parseFloat(computedStyle.fontSize);
+    const fontWeight = computedStyle.fontWeight;
 
-      // Calcular o offset do caractere mais próximo dentro do fragment
-      const clickXInFragment = adjustedClickX - foundFragment.rect.x;
-      console.log('Click X dentro do fragment:', clickXInFragment);
-      
-      let closestOffset = foundFragment.startOffset;
-      let minDistance = Infinity;
+    let closestOffset = 0;
+    let minDistance = Infinity;
 
-      // Medir texto caractere por caractere para encontrar o offset mais próximo
-      for (let i = 0; i <= foundFragment.text.length; i++) {
-        const textUpToI = foundFragment.text.substring(0, i);
+    if (targetLine) {
+      const lineStart = targetLine.offsetStart;
+      const lineEnd = targetLine.offsetEnd;
+      for (let i = lineStart; i <= lineEnd; i++) {
+        const textInLineUpToI = fragmentText.substring(lineStart, i);
         const measured = this.measurer.measureText({
-          text: textUpToI,
-          fontFamily: foundFragment.typography.fontFamily,
-          fontSize: foundFragment.typography.fontSize,
-          fontWeight: foundFragment.typography.fontWeight,
+          text: textInLineUpToI,
+          fontFamily,
+          fontSize,
+          fontWeight,
         });
-        
+
         const distance = Math.abs(measured.width - clickXInFragment);
         if (distance < minDistance) {
           minDistance = distance;
-          closestOffset = foundFragment.startOffset + i;
+          closestOffset = i;
         }
       }
-
-      // Limitar o offset ao final do fragment
-      closestOffset = Math.min(closestOffset, foundFragment.endOffset);
-
-      console.log('Offset calculado:', closestOffset);
-
-      // Construir a posição lógica
-      const position = {
-        sectionId: foundSectionId,
-        blockId: foundBlockId,
-        inlineId: foundFragment.id,
-        offset: closestOffset,
-      };
-
-      console.log('Posição lógica:', position);
-      console.log('Despachando SET_SELECTION...');
-
-      // Despachar a operação de seleção
-      this.runtime.dispatch(
-        Operations.setSelection({ anchor: position, focus: position })
-      );
-      
-      console.log('=== handleMouseDown finalizado ===');
     } else {
-      console.log('⚠️ Nenhum fragment encontrado, seleção NÃO atualizada');
+      // Fallback
+      for (let i = 0; i <= fragmentText.length; i++) {
+        const textUpToI = fragmentText.substring(0, i);
+        const measured = this.measurer.measureText({
+          text: textUpToI,
+          fontFamily,
+          fontSize,
+          fontWeight,
+        });
+
+        const distance = Math.abs(measured.width - clickXInFragment);
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestOffset = i;
+        }
+      }
     }
+
+    console.log('Offset calculado:', closestOffset);
+    console.log('IDs extraídos:', { sectionId, blockId, fragmentId });
+
+    // Encontrar o run ID real no documento
+    const state = this.runtime.getState();
+    const block = state.document.sections
+      .flatMap(s => s.children)
+      .find(b => b.id === blockId);
+    
+    let actualRunId = fragmentId; // fallback
+    if (block && block.children && block.children.length > 0) {
+      if (block.children.length === 1) {
+        actualRunId = block.children[0].id;
+        console.log('🔍 Usando run ID real:', actualRunId);
+      } else {
+        let currentOffset = 0;
+        for (const run of block.children) {
+          const runLength = run.text.length;
+          if (closestOffset >= currentOffset && closestOffset <= currentOffset + runLength) {
+            actualRunId = run.id;
+            console.log('🔍 Usando run ID real (multi-run):', actualRunId);
+            break;
+          }
+          currentOffset += runLength;
+        }
+      }
+    }
+
+    const position = {
+      sectionId,
+      blockId,
+      inlineId: actualRunId,
+      offset: closestOffset,
+    };
+
+    console.log('Posição lógica:', position);
+    console.log('Despachando SET_SELECTION...');
+    this.runtime.dispatch(
+      Operations.setSelection({ anchor: position, focus: position })
+    );
+
+    console.log('=== handleMouseDown finalizado ===');
   }
 
   refresh() {
@@ -270,6 +268,7 @@ export class OasisEditorController {
     const state = this.runtime.getState();
     console.log('REFRESH: State selection:', state.selection);
     const layout = this.layoutService.compose(state.document);
+    this.latestLayout = layout;
     const viewModel = this.presenter.present({ state, layout });
     console.log('REFRESH: ViewModel selection:', viewModel.selection);
     this.view.render(viewModel);
