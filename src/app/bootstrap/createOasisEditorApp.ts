@@ -29,5 +29,6 @@ export const createOasisEditorApp = () => {
     layoutService,
     presenter,
     view,
+    measurer: textMeasurer,
   });
 };

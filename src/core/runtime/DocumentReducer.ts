@@ -15,6 +15,8 @@ export const reduceDocumentState = (state, operation) => {
 
   switch (operation.type) {
     case OPERATION_TYPES.SET_SELECTION:
+      console.log('REDUCER: SET_SELECTION recebido');
+      console.log('REDUCER: Nova selecao:', operation.payload.selection);
       return {
         ...state,
         selection: operation.payload.selection,

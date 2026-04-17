@@ -50,10 +50,13 @@ export class SelectionMapper {
       xOffset = measured.width;
     }
 
+    // Calcular altura da linha baseada no fontSize (aproximadamente 1.2x o tamanho da fonte)
+    const lineHeight = fragment.typography.fontSize * 1.2;
+
     return {
       x: fragment.rect.x + xOffset,
       y: fragment.rect.y,
-      height: fragment.rect.height,
+      height: lineHeight,
       pageId: fragment.pageId,
     };
   }

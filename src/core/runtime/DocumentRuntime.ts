@@ -54,9 +54,11 @@ export class DocumentRuntime {
   }
 
   dispatch(operation) {
+    console.log('RUNTIME: dispatch chamado com', operation.type);
     this.history.push(this.state);
     this.future = [];
     this.state = reduceDocumentState(this.state, operation);
+    console.log('RUNTIME: Estado atualizado, selection:', this.state.selection);
     this.emit();
   }
 

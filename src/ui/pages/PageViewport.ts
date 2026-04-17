@@ -45,9 +45,12 @@ export class PageViewport {
       (selection.anchor.offset === selection.focus.offset &&
         selection.anchor.blockId === selection.focus.blockId)
     ) {
+      console.log('VIEWPORT: Renderizando caret');
+      console.log('VIEWPORT: Posição do caret:', selection.anchor || selection.focus);
       const caretRect = this.mapper.getCaretRect(
         selection.anchor || selection.focus,
       );
+      console.log('VIEWPORT: Caret rect:', caretRect);
       if (caretRect) {
         this.getOrCreateCaretOverlay(caretRect.pageId).render(
           selection.anchor || selection.focus,
@@ -64,12 +67,34 @@ export class PageViewport {
   }
 
   getOrCreateCaretOverlay(pageId) {
+    console.log('VIEWPORT: getOrCreateCaretOverlay chamado com pageId:', pageId);
     if (!this.caretOverlays.has(pageId)) {
+      console.log('VIEWPORT: Criando novo caret overlay para pagina:', pageId);
+    } else {
+      // Verificar se o overlay ainda está no DOM
+      const existingOverlay = this.caretOverlays.get(pageId);
+      const isInDOM = document.body.contains(existingOverlay.container);
+      console.log('VIEWPORT: Overlay existente ainda está no DOM?', isInDOM);
+      if (!isInDOM) {
+        console.log('VIEWPORT: Container antigo foi removido, recriando overlay');
+        // Remover referência antiga para forçar recriação
+        this.caretOverlays.delete(pageId);
+      }
+    }
+    
+    if (!this.caretOverlays.has(pageId)) {
+      console.log('VIEWPORT: Criando novo caret overlay para pagina:', pageId);
       const pageEl = this.root.querySelector(`[data-page-id="${pageId}"]`);
-      if (!pageEl) return { render: () => {} };
+      console.log('VIEWPORT: Elemento da pagina encontrado?', !!pageEl);
+      if (!pageEl) {
+        console.log('VIEWPORT: ❌ Pagina nao encontrada, retornando stub');
+        return { render: () => {} };
+      }
 
       let overlayContainer = pageEl.querySelector(".oasis-selection-layer");
+      console.log('VIEWPORT: Container de selecao existe?', !!overlayContainer);
       if (!overlayContainer) {
+        console.log('VIEWPORT: Criando novo container de selecao');
         overlayContainer = document.createElement("div");
         overlayContainer.className = "oasis-selection-layer";
         pageEl.appendChild(overlayContainer);
@@ -79,11 +104,22 @@ export class PageViewport {
         pageId,
         new CaretOverlay(overlayContainer, this.mapper),
       );
+      console.log('VIEWPORT: CaretOverlay criado e armazenado');
     }
     return this.caretOverlays.get(pageId);
   }
 
   getOrCreateSelectionOverlay(pageId) {
+    if (this.selectionOverlays.has(pageId)) {
+      // Verificar se o overlay ainda está no DOM
+      const existingOverlay = this.selectionOverlays.get(pageId);
+      const isInDOM = document.body.contains(existingOverlay.container);
+      if (!isInDOM) {
+        // Remover referência antiga para forçar recriação
+        this.selectionOverlays.delete(pageId);
+      }
+    }
+    
     if (!this.selectionOverlays.has(pageId)) {
       const pageEl = this.root.querySelector(`[data-page-id="${pageId}"]`);
       if (!pageEl) return { render: () => {} };
