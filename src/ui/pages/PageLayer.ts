@@ -1,0 +1,96 @@
+// @ts-nocheck
+
+
+
+
+
+
+
+
+export class PageLayer {
+
+
+
+
+
+
+
+
+  constructor(container) {
+    this.container = container;
+  }
+
+  render(layout) {
+    this.container.innerHTML = "";
+
+    for (const page of layout.pages) {
+      const pageEl = document.createElement("section");
+      pageEl.className = "oasis-page";
+      pageEl.dataset.pageId = page.id;
+      pageEl.style.width = `${page.rect.width}px`;
+      pageEl.style.minHeight = `${page.rect.height}px`;
+
+      if (page.headerRect) {
+        const header = document.createElement("div");
+        header.className = "oasis-page-header";
+        header.style.position = "absolute";
+        header.style.left = `${page.headerRect.x}px`;
+        header.style.top = `${page.headerRect.y}px`;
+        header.style.width = `${page.headerRect.width}px`;
+        header.style.height = `${page.headerRect.height}px`;
+        header.textContent = `Header • ${page.pageNumber}`;
+        pageEl.appendChild(header);
+      }
+
+      const content = document.createElement("div");
+      content.className = "oasis-page-content";
+      // content Rect is used for layout but we position fragments absolutely
+
+      for (const fragment of page.fragments) {
+        const fragmentEl = document.createElement("article");
+        fragmentEl.className = `oasis-fragment oasis-fragment--${fragment.kind}`;
+        fragmentEl.dataset.fragmentId = fragment.id;
+        fragmentEl.textContent = fragment.text;
+        fragmentEl.style.fontFamily = fragment.typography.fontFamily;
+        fragmentEl.style.fontSize = `${fragment.typography.fontSize}px`;
+
+        fragmentEl.style.left = `${fragment.rect.x}px`;
+        fragmentEl.style.top = `${fragment.rect.y}px`;
+        fragmentEl.style.width = `${fragment.rect.width}px`;
+        fragmentEl.style.height = `${fragment.rect.height}px`;
+
+        let fontWeight = fragment.typography.fontWeight;
+        if (fragment.marks?.bold) {
+          fontWeight = 700;
+        }
+        fragmentEl.style.fontWeight = String(fontWeight);
+
+        if (fragment.marks?.italic) {
+          fragmentEl.style.fontStyle = "italic";
+        }
+
+        if (fragment.marks?.underline) {
+          fragmentEl.style.textDecoration = "underline";
+        }
+
+        content.appendChild(fragmentEl);
+      }
+
+      pageEl.appendChild(content);
+
+      if (page.footerRect) {
+        const footer = document.createElement("div");
+        footer.className = "oasis-page-footer";
+        footer.style.position = "absolute";
+        footer.style.left = `${page.footerRect.x}px`;
+        footer.style.top = `${page.footerRect.y}px`;
+        footer.style.width = `${page.footerRect.width}px`;
+        footer.style.height = `${page.footerRect.height}px`;
+        footer.textContent = `Page ${page.pageNumber}`;
+        pageEl.appendChild(footer);
+      }
+
+      this.container.appendChild(pageEl);
+    }
+  }
+}
