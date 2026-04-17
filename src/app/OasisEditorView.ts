@@ -97,6 +97,10 @@ export class OasisEditorView {
       setTimeout(() => this.elements.hiddenInput.focus(), 0);
     });
 
+    this.elements.root.addEventListener("dblclick", (e) => {
+      if (events.onDblClick) events.onDblClick(e);
+    });
+
     this.elements.root.addEventListener("mousemove", (e) => {
       if (events.onMouseMove) events.onMouseMove(e);
     });

@@ -75,6 +75,7 @@ export class OasisEditorController {
       onMouseDown: (e) => this.handleMouseDown(e),
       onMouseMove: (e) => this.handleMouseMove(e),
       onMouseUp: (e) => this.handleMouseUp(e),
+      onDblClick: (e) => this.handleDblClick(e),
     });
 
     this.isDragging = false;
@@ -278,6 +279,100 @@ export class OasisEditorController {
 
   handleMouseUp(event) {
     this.isDragging = false;
+  }
+
+  /**
+   * Selects the whole word under the click position, mirroring Word's double-click behaviour.
+   *
+   * Word boundary rules (same as most editors):
+   *   - A "word" is a maximal run of \w characters (letters, digits, underscores).
+   *   - A "punctuation group" is a maximal run of non-\w, non-whitespace characters.
+   *   - Trailing whitespace after the word is included (Word behaviour), but leading
+   *     whitespace is not.
+   */
+  handleDblClick(event) {
+    // Prevent the browser's own dblclick selection from interfering.
+    event.preventDefault();
+
+    const position = this.calculatePositionFromEvent(event);
+    if (!position) return;
+
+    // Resolve the full text of the block so we can walk word boundaries.
+    const state = this.runtime.getState();
+    const block = state.document.sections
+      .flatMap(s => s.children)
+      .find(b => b.id === position.blockId);
+
+    if (!block || !block.children || block.children.length === 0) return;
+
+    // Concatenate all runs to get the full block text.
+    const fullText = block.children.map(r => r.text).join('');
+    const clickOffset = position.offset;
+
+    // Helper: is this character a word character?
+    const isWord = (ch) => /\w/.test(ch);
+    const isWhitespace = (ch) => /\s/.test(ch);
+
+    let wordStart = clickOffset;
+    let wordEnd = clickOffset;
+
+    if (clickOffset < fullText.length) {
+      const ch = fullText[clickOffset];
+
+      if (isWord(ch)) {
+        // Expand left while same class.
+        while (wordStart > 0 && isWord(fullText[wordStart - 1])) wordStart--;
+        // Expand right while same class.
+        while (wordEnd < fullText.length && isWord(fullText[wordEnd])) wordEnd++;
+        // Include trailing whitespace (Word behaviour).
+        while (wordEnd < fullText.length && isWhitespace(fullText[wordEnd])) wordEnd++;
+      } else if (isWhitespace(ch)) {
+        // Clicked on whitespace: select the whitespace run.
+        while (wordStart > 0 && isWhitespace(fullText[wordStart - 1])) wordStart--;
+        while (wordEnd < fullText.length && isWhitespace(fullText[wordEnd])) wordEnd++;
+      } else {
+        // Punctuation: expand to the contiguous punctuation group.
+        const isPunct = (c) => !isWord(c) && !isWhitespace(c);
+        while (wordStart > 0 && isPunct(fullText[wordStart - 1])) wordStart--;
+        while (wordEnd < fullText.length && isPunct(fullText[wordEnd])) wordEnd++;
+      }
+    } else {
+      // Clicked past end of text — fall back to whole block.
+      wordStart = 0;
+      wordEnd = fullText.length;
+    }
+
+    // Build anchor (start) and focus (end) positions, resolving the correct run for each.
+    const resolveRunForOffset = (offset) => {
+      let currentOffset = 0;
+      for (const run of block.children) {
+        const runEnd = currentOffset + run.text.length;
+        if (offset >= currentOffset && offset <= runEnd) {
+          return run.id;
+        }
+        currentOffset = runEnd;
+      }
+      return block.children[block.children.length - 1].id;
+    };
+
+    const anchorPos = {
+      sectionId: position.sectionId,
+      blockId: position.blockId,
+      inlineId: resolveRunForOffset(wordStart),
+      offset: wordStart,
+    };
+
+    const focusPos = {
+      sectionId: position.sectionId,
+      blockId: position.blockId,
+      inlineId: resolveRunForOffset(wordEnd),
+      offset: wordEnd,
+    };
+
+    this.isDragging = false;
+    this.runtime.dispatch(
+      Operations.setSelection({ anchor: anchorPos, focus: focusPos })
+    );
   }
 
   refresh() {
