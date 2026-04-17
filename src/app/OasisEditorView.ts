@@ -91,15 +91,43 @@ export class OasisEditorView {
       }
     });
 
-    // Re-focus hidden input on any click in the app
+    // Detecção de cliques múltiplos (Word style)
+    let lastMouseDownTime = 0;
+    let lastMouseDownPos = { x: 0, y: 0 };
+    let clickCount = 0;
+
     this.elements.root.addEventListener("mousedown", (e) => {
+      const now = Date.now();
+      const dist = Math.sqrt(Math.pow(e.clientX - lastMouseDownPos.x, 2) + Math.pow(e.clientY - lastMouseDownPos.y, 2));
+      
+      if (now - lastMouseDownTime < 350 && dist < 15) {
+        clickCount++;
+      } else {
+        clickCount = 1;
+      }
+
+      lastMouseDownTime = now;
+      lastMouseDownPos = { x: e.clientX, y: e.clientY };
+
+      if (clickCount === 2) {
+        if (events.onDblClick) events.onDblClick(e);
+        e.preventDefault();
+        return;
+      }
+
+      if (clickCount === 3) {
+        if (events.onTripleClick) events.onTripleClick(e);
+        e.preventDefault();
+        return;
+      }
+
       events.onMouseDown(e);
       setTimeout(() => this.elements.hiddenInput.focus(), 0);
     });
 
     this.elements.root.addEventListener("dblclick", (e) => {
-      if (events.onDblClick) events.onDblClick(e);
-    });
+      e.preventDefault(); // Já lidado pelo mousedown manual
+    }, true);
 
     this.elements.root.addEventListener("mousemove", (e) => {
       if (events.onMouseMove) events.onMouseMove(e);

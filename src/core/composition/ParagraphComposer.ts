@@ -11,7 +11,7 @@ import { breakTextIntoLines } from "./LineBreaker.js";
 
 const getBlockTypography = (block) => {
   const firstRun = block.children[0];
-  const fontFamily = firstRun?.marks.fontFamily ?? "Arial";
+  const fontFamily = firstRun?.marks.fontFamily ?? "Inter";
   const fontSize =
     firstRun?.marks.fontSize ?? (block.kind === "heading" ? 24 : 15);
   const fontWeight =

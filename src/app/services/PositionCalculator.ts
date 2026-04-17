@@ -7,24 +7,44 @@ export class PositionCalculator {
     this.layout = layout;
   }
 
+  /**
+   * Converts a run-relative position to a block-relative offset.
+   */
+  getAbsoluteOffsetInBlock(position, fragment) {
+    if (!fragment || !fragment.runs) return position.offset;
+    
+    let absoluteOffset = 0;
+    for (const run of fragment.runs) {
+      if (run.id === position.inlineId) {
+        return absoluteOffset + position.offset;
+      }
+      absoluteOffset += run.text.length;
+    }
+    // Fallback if run not found
+    return position.offset;
+  }
+
   calculateYPosition(position) {
     const fragments = this.layout.fragmentsByBlockId[position.blockId];
     if (!fragments) return null;
 
+    // Use absolute offset for finding the fragment and line
+    const absoluteOffset = this.getAbsoluteOffsetInBlock(position, fragments[0]);
+
     const fragment = fragments.find(
       (f) =>
-        position.offset >= f.startOffset && position.offset <= f.endOffset,
+        absoluteOffset >= f.startOffset && absoluteOffset <= f.endOffset,
     );
 
     if (!fragment || !fragment.lines) {
       return fragment?.rect.y ?? null;
     }
 
-    const relativeOffset = position.offset - fragment.startOffset;
+    const fragmentRelativeOffset = absoluteOffset - fragment.startOffset;
 
     for (let i = 0; i < fragment.lines.length; i++) {
       const line = fragment.lines[i];
-      if (relativeOffset >= line.offsetStart && relativeOffset <= line.offsetEnd) {
+      if (fragmentRelativeOffset >= line.offsetStart && fragmentRelativeOffset <= line.offsetEnd) {
         return line.y;
       }
     }
@@ -35,13 +55,15 @@ export class PositionCalculator {
   calculateXOffset(position, fragment, measurer) {
     if (!fragment || !measurer) return 0;
 
-    const relativeOffset = position.offset - fragment.startOffset;
+    // Convert run-relative offset to block-relative offset
+    const absoluteOffset = this.getAbsoluteOffsetInBlock(position, fragment);
+    const fragmentRelativeOffset = absoluteOffset - fragment.startOffset;
     
     // Find the line that contains the offset
     let targetLine = fragment.lines ? fragment.lines[0] : null;
     if (fragment.lines) {
       for (const line of fragment.lines) {
-        if (relativeOffset >= line.offsetStart && relativeOffset <= line.offsetEnd) {
+        if (fragmentRelativeOffset >= line.offsetStart && fragmentRelativeOffset <= line.offsetEnd) {
           targetLine = line;
           break;
         }
@@ -52,7 +74,7 @@ export class PositionCalculator {
     }
 
     const lineStartOffset = targetLine ? targetLine.offsetStart : 0;
-    const offsetInLine = Math.max(0, relativeOffset - lineStartOffset);
+    const offsetInLine = Math.max(0, fragmentRelativeOffset - lineStartOffset);
 
     if (offsetInLine === 0) return 0;
 

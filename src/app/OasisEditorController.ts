@@ -76,6 +76,7 @@ export class OasisEditorController {
       onMouseMove: (e) => this.handleMouseMove(e),
       onMouseUp: (e) => this.handleMouseUp(e),
       onDblClick: (e) => this.handleDblClick(e),
+      onTripleClick: (e) => this.handleTripleClick(e),
     });
 
     this.isDragging = false;
@@ -225,21 +226,26 @@ export class OasisEditorController {
     const block = state.document.sections
       .flatMap(s => s.children)
       .find(b => b.id === blockId);
-    
+
     let actualRunId = fragmentId;
+    let relativeOffset = closestOffset;
+
     if (block && block.children && block.children.length > 0) {
-      if (block.children.length === 1) {
-        actualRunId = block.children[0].id;
-      } else {
-        let currentOffset = 0;
-        for (const run of block.children) {
-          const runLength = run.text.length;
-          if (closestOffset >= currentOffset && closestOffset <= currentOffset + runLength) {
-            actualRunId = run.id;
-            break;
-          }
-          currentOffset += runLength;
+      let currentOffset = 0;
+      for (const run of block.children) {
+        const runLength = run.text.length;
+        if (closestOffset >= currentOffset && closestOffset <= currentOffset + runLength) {
+          actualRunId = run.id;
+          relativeOffset = closestOffset - currentOffset;
+          break;
         }
+        currentOffset += runLength;
+      }
+      // If none found (clicking past end), use last run
+      if (!actualRunId && block.children.length > 0) {
+        const lastRun = block.children[block.children.length - 1];
+        actualRunId = lastRun.id;
+        relativeOffset = lastRun.text.length;
       }
     }
 
@@ -247,7 +253,7 @@ export class OasisEditorController {
       sectionId,
       blockId,
       inlineId: actualRunId,
-      offset: closestOffset,
+      offset: relativeOffset,
     };
   }
 
@@ -290,14 +296,15 @@ export class OasisEditorController {
    *   - Trailing whitespace after the word is included (Word behaviour), but leading
    *     whitespace is not.
    */
+  /**
+   * Selects the whole word under the click position, mirroring Word's double-click behaviour.
+   */
   handleDblClick(event) {
-    // Prevent the browser's own dblclick selection from interfering.
     event.preventDefault();
 
     const position = this.calculatePositionFromEvent(event);
     if (!position) return;
 
-    // Resolve the full text of the block so we can walk word boundaries.
     const state = this.runtime.getState();
     const block = state.document.sections
       .flatMap(s => s.children)
@@ -305,68 +312,100 @@ export class OasisEditorController {
 
     if (!block || !block.children || block.children.length === 0) return;
 
-    // Concatenate all runs to get the full block text.
     const fullText = block.children.map(r => r.text).join('');
-    const clickOffset = position.offset;
 
-    // Helper: is this character a word character?
-    const isWord = (ch) => /\w/.test(ch);
+    // position.offset is relative to the run – convert to absolute offset within the block
+    let absoluteClickOffset = position.offset;
+    for (const run of block.children) {
+      if (run.id === position.inlineId) break;
+      absoluteClickOffset += run.text.length;
+    }
+
+    const isWord = (ch) => /[a-zA-Z0-9À-ÿ_]/.test(ch);
     const isWhitespace = (ch) => /\s/.test(ch);
 
-    let wordStart = clickOffset;
-    let wordEnd = clickOffset;
+    let wordStart = absoluteClickOffset;
+    let wordEnd = absoluteClickOffset;
 
-    if (clickOffset < fullText.length) {
-      const ch = fullText[clickOffset];
+    if (absoluteClickOffset < fullText.length) {
+      const ch = fullText[absoluteClickOffset];
 
       if (isWord(ch)) {
-        // Expand left while same class.
         while (wordStart > 0 && isWord(fullText[wordStart - 1])) wordStart--;
-        // Expand right while same class.
         while (wordEnd < fullText.length && isWord(fullText[wordEnd])) wordEnd++;
-        // Include trailing whitespace (Word behaviour).
-        while (wordEnd < fullText.length && isWhitespace(fullText[wordEnd])) wordEnd++;
+        // Incluir UM espaço depois (Comportamento Word)
+        if (wordEnd < fullText.length && isWhitespace(fullText[wordEnd])) {
+          wordEnd++;
+        }
       } else if (isWhitespace(ch)) {
-        // Clicked on whitespace: select the whitespace run.
         while (wordStart > 0 && isWhitespace(fullText[wordStart - 1])) wordStart--;
         while (wordEnd < fullText.length && isWhitespace(fullText[wordEnd])) wordEnd++;
       } else {
-        // Punctuation: expand to the contiguous punctuation group.
         const isPunct = (c) => !isWord(c) && !isWhitespace(c);
         while (wordStart > 0 && isPunct(fullText[wordStart - 1])) wordStart--;
         while (wordEnd < fullText.length && isPunct(fullText[wordEnd])) wordEnd++;
       }
-    } else {
-      // Clicked past end of text — fall back to whole block.
-      wordStart = 0;
+    } else if (fullText.length > 0) {
       wordEnd = fullText.length;
+      wordStart = wordEnd;
+      while (wordStart > 0 && isWhitespace(fullText[wordStart-1])) wordStart--;
+      if (wordStart > 0) {
+         const type = isWord(fullText[wordStart-1]);
+         while (wordStart > 0 && isWord(fullText[wordStart-1]) === type && !isWhitespace(fullText[wordStart-1])) wordStart--;
+      }
     }
 
-    // Build anchor (start) and focus (end) positions, resolving the correct run for each.
-    const resolveRunForOffset = (offset) => {
+    const resolvePos = (absoluteOffset) => {
       let currentOffset = 0;
       for (const run of block.children) {
         const runEnd = currentOffset + run.text.length;
-        if (offset >= currentOffset && offset <= runEnd) {
-          return run.id;
+        if (absoluteOffset >= currentOffset && absoluteOffset <= runEnd) {
+          return { inlineId: run.id, offset: absoluteOffset - currentOffset };
         }
         currentOffset = runEnd;
       }
-      return block.children[block.children.length - 1].id;
+      const lastRun = block.children[block.children.length - 1];
+      return { inlineId: lastRun.id, offset: lastRun.text.length };
     };
 
+    const anchorInfo = resolvePos(wordStart);
+    const focusInfo = resolvePos(wordEnd);
+
+    this.isDragging = false;
+    this.runtime.dispatch(
+      Operations.setSelection({
+        anchor: { ...position, inlineId: anchorInfo.inlineId, offset: anchorInfo.offset },
+        focus: { ...position, inlineId: focusInfo.inlineId, offset: focusInfo.offset }
+      })
+    );
+  }
+
+  /**
+   * Selects the whole block (paragraph) on triple click.
+   */
+  handleTripleClick(event) {
+    const position = this.calculatePositionFromEvent(event);
+    if (!position) return;
+
+    const state = this.runtime.getState();
+    const block = state.document.sections
+      .flatMap(s => s.children)
+      .find(b => b.id === position.blockId);
+
+    if (!block || !block.children || block.children.length === 0) return;
+
+    const lastRun = block.children[block.children.length - 1];
+
     const anchorPos = {
-      sectionId: position.sectionId,
-      blockId: position.blockId,
-      inlineId: resolveRunForOffset(wordStart),
-      offset: wordStart,
+      ...position,
+      inlineId: block.children[0].id,
+      offset: 0
     };
 
     const focusPos = {
-      sectionId: position.sectionId,
-      blockId: position.blockId,
-      inlineId: resolveRunForOffset(wordEnd),
-      offset: wordEnd,
+      ...position,
+      inlineId: lastRun.id,
+      offset: lastRun.text.length
     };
 
     this.isDragging = false;
@@ -376,13 +415,10 @@ export class OasisEditorController {
   }
 
   refresh() {
-    console.log('REFRESH: Chamado');
     const state = this.runtime.getState();
-    console.log('REFRESH: State selection:', state.selection);
     const layout = this.layoutService.compose(state.document);
     this.latestLayout = layout;
     const viewModel = this.presenter.present({ state, layout });
-    console.log('REFRESH: ViewModel selection:', viewModel.selection);
     this.view.render(viewModel);
   }
 

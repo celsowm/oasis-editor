@@ -189,6 +189,7 @@ textarea {
 }
 
 .oasis-fragment {
+  font-family: 'Inter', -apple-system, sans-serif;
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.5;

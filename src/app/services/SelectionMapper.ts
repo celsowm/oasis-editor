@@ -25,10 +25,13 @@ export class SelectionMapper {
     const blockFragments = this.layout.fragmentsByBlockId[position.blockId];
     if (!blockFragments) return null;
 
+    // Convert run-relative offset to block-absolute for fragment lookup
+    const absOffset = this.positionCalculator.getAbsoluteOffsetInBlock(position, blockFragments[0]);
+
     const fragment =
       blockFragments.find(
         (f) =>
-          position.offset >= f.startOffset && position.offset <= f.endOffset,
+          absOffset >= f.startOffset && absOffset <= f.endOffset,
       ) || blockFragments[blockFragments.length - 1];
 
     if (!fragment) return null;
@@ -40,7 +43,7 @@ export class SelectionMapper {
       this.measurer,
     );
 
-    const lineHeight = fragment.typography.fontSize * 1.2;
+    const lineHeight = fragment.lines?.[0]?.height || fragment.typography.fontSize * 1.5;
 
     return {
       x: fragment.rect.x + xOffset,
@@ -59,25 +62,38 @@ export class SelectionMapper {
 
     if (!startRect || !endRect) return [];
 
+    // Convert run-relative offsets to block-absolute for correct comparisons
+    const startFragments = this.layout.fragmentsByBlockId[start.blockId];
+    const endFragments = this.layout.fragmentsByBlockId[end.blockId];
+    const absStartOffset = this.positionCalculator.getAbsoluteOffsetInBlock(start, startFragments?.[0]);
+    const absEndOffset = this.positionCalculator.getAbsoluteOffsetInBlock(end, endFragments?.[0]);
+
     let visualStart = null;
     let visualEnd = null;
+    let visualStartAbs = 0;
+    let visualEndAbs = 0;
     
     // Pre-determine visual start and end by traversing
     for (const page of this.layout.pages) {
       for (const fragment of page.fragments) {
          if (fragment.blockId === start.blockId && fragment.blockId === end.blockId) {
-             visualStart = start.offset <= end.offset ? start : end;
-             visualEnd = start.offset <= end.offset ? end : start;
+             if (absStartOffset <= absEndOffset) {
+               visualStart = start; visualEnd = end;
+               visualStartAbs = absStartOffset; visualEndAbs = absEndOffset;
+             } else {
+               visualStart = end; visualEnd = start;
+               visualStartAbs = absEndOffset; visualEndAbs = absStartOffset;
+             }
              break;
          }
          if (fragment.blockId === start.blockId && !visualStart) {
-             visualStart = start;
-             visualEnd = end;
+             visualStart = start; visualEnd = end;
+             visualStartAbs = absStartOffset; visualEndAbs = absEndOffset;
              break;
          }
          if (fragment.blockId === end.blockId && !visualStart) {
-             visualStart = end;
-             visualEnd = start;
+             visualStart = end; visualEnd = start;
+             visualStartAbs = absEndOffset; visualEndAbs = absStartOffset;
              break;
          }
       }
@@ -101,16 +117,16 @@ export class SelectionMapper {
           let lineMatchesStart = false;
           let lineMatchesEnd = false;
 
-          // Check if visualStart is in this line
+          // Check if visualStart is in this line (use absolute offsets)
           if (!inSelection && fragment.blockId === visualStart.blockId &&
-              visualStart.offset >= line.offsetStart && visualStart.offset <= line.offsetEnd) {
+              visualStartAbs >= line.offsetStart && visualStartAbs <= line.offsetEnd) {
              inSelection = true;
              lineMatchesStart = true;
           }
 
-          // Check if visualEnd is in this line
+          // Check if visualEnd is in this line (use absolute offsets)
           if (inSelection && fragment.blockId === visualEnd.blockId &&
-              visualEnd.offset >= line.offsetStart && visualEnd.offset <= line.offsetEnd) {
+              visualEndAbs >= line.offsetStart && visualEndAbs <= line.offsetEnd) {
              lineMatchesEnd = true;
              done = true;
           }
