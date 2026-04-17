@@ -186,36 +186,143 @@ export const reduceDocumentState = (state, operation) => {
       if (!selection) return state;
 
       const { blockId, inlineId, offset } = selection.anchor;
-      if (offset === 0) return state;
 
-      const nextSections = document.sections.map((section) => ({
-        ...section,
-        children: section.children.map((block) => {
-          if (block.id !== blockId) return block;
+      // Handle character deletion within a run (offset > 0)
+      if (offset > 0) {
+        const nextSections = document.sections.map((section) => ({
+          ...section,
+          children: section.children.map((block) => {
+            if (block.id !== blockId) return block;
 
-          const nextChildren = block.children.map((run) => {
-            if (run.id !== inlineId) return run;
-            const before = run.text.substring(0, offset - 1);
-            const after = run.text.substring(offset);
-            return { ...run, text: before + after };
+            const nextChildren = block.children.map((run) => {
+              if (run.id !== inlineId) return run;
+              const before = run.text.substring(0, offset - 1);
+              const after = run.text.substring(offset);
+              return { ...run, text: before + after };
+            });
+
+            return { ...block, children: nextChildren };
+          }),
+        }));
+
+        const nextOffset = offset - 1;
+        const nextPosition = { ...selection.anchor, offset: nextOffset };
+
+        return {
+          ...state,
+          document: {
+            ...document,
+            revision: document.revision + 1,
+            sections: nextSections,
+          },
+          selection: { anchor: nextPosition, focus: nextPosition },
+        };
+      } 
+      
+      // Handle backspace at the start of a run (offset === 0)
+      if (offset === 0) {
+        // Find the current block and its position
+        let sectionIdx = -1;
+        let blockIdx = -1;
+
+        for (let i = 0; i < document.sections.length; i++) {
+          const idx = document.sections[i].children.findIndex(b => b.id === blockId);
+          if (idx !== -1) {
+            sectionIdx = i;
+            blockIdx = idx;
+            break;
+          }
+        }
+
+        if (sectionIdx === -1) return state;
+
+        const section = document.sections[sectionIdx];
+        const block = section.children[blockIdx];
+        const runIdx = block.children.findIndex(r => r.id === inlineId);
+
+        // If we are not at the first run of the block
+        if (runIdx > 0) {
+          const prevRun = block.children[runIdx - 1];
+          const newPosition = {
+            ...selection.anchor,
+            inlineId: prevRun.id,
+            offset: prevRun.text.length
+          };
+          
+          // Re-dispatch or just return state with updated selection to let next backspace handle it?
+          // For better UX, let's actually perform the delete on the previous run if possible.
+          if (prevRun.text.length > 0) {
+             const nextSections = document.sections.map((s, sIdx) => {
+               if (sIdx !== sectionIdx) return s;
+               return {
+                 ...s,
+                 children: s.children.map(b => {
+                   if (b.id !== blockId) return b;
+                   return {
+                     ...b,
+                     children: b.children.map(r => {
+                       if (r.id !== prevRun.id) return r;
+                       return { ...r, text: r.text.slice(0, -1) };
+                     })
+                   };
+                 })
+               };
+             });
+             const finalPosition = { ...newPosition, offset: prevRun.text.length - 1 };
+             return {
+               ...state,
+               document: { ...document, revision: document.revision + 1, sections: nextSections },
+               selection: { anchor: finalPosition, focus: finalPosition }
+             };
+          } else {
+            // Just move the caret to the empty previous run
+            return {
+              ...state,
+              selection: { anchor: newPosition, focus: newPosition }
+            };
+          }
+        }
+
+        // If we are at the very beginning of the block (first run, offset 0)
+        if (runIdx === 0 && blockIdx > 0) {
+          const prevBlock = section.children[blockIdx - 1];
+          const lastRunOfPrevBlock = prevBlock.children[prevBlock.children.length - 1];
+          
+          const newPosition = {
+            sectionId: section.id,
+            blockId: prevBlock.id,
+            inlineId: lastRunOfPrevBlock.id,
+            offset: lastRunOfPrevBlock.text.length
+          };
+
+          const nextSections = document.sections.map((s, sIdx) => {
+            if (sIdx !== sectionIdx) return s;
+            
+            const newChildren = [...s.children];
+            // Merge runs of current block into previous block
+            newChildren[blockIdx - 1] = {
+              ...prevBlock,
+              children: [...prevBlock.children, ...block.children]
+            };
+            // Remove current block
+            newChildren.splice(blockIdx, 1);
+
+            return { ...s, children: newChildren };
           });
 
-          return { ...block, children: nextChildren };
-        }),
-      }));
+          return {
+            ...state,
+            document: {
+              ...document,
+              revision: document.revision + 1,
+              sections: nextSections,
+            },
+            selection: { anchor: newPosition, focus: newPosition },
+          };
+        }
+      }
 
-      const nextOffset = offset - 1;
-      const nextPosition = { ...selection.anchor, offset: nextOffset };
-
-      return {
-        ...state,
-        document: {
-          ...document,
-          revision: document.revision + 1,
-          sections: nextSections,
-        },
-        selection: { anchor: nextPosition, focus: nextPosition },
-      };
+      return state;
     }
 
     case OPERATION_TYPES.INSERT_PARAGRAPH: {
