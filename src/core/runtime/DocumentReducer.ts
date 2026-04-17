@@ -30,7 +30,34 @@ export const reduceDocumentState = (
 
       const mark = operation.payload.mark;
 
-      // Find chronological order of selection
+      // Helper: compute absolute offset within a block for a LogicalPosition
+      const getAbsoluteOffsetInBlock = (pos: LogicalPosition): number => {
+        const block = document.sections
+          .flatMap((s) => s.children)
+          .find((b) => b.id === pos.blockId);
+        if (!block) return 0;
+        let acc = 0;
+        for (const run of block.children) {
+          if (run.id === pos.inlineId) {
+            return acc + pos.offset;
+          }
+          acc += run.text.length;
+        }
+        return 0;
+      };
+
+      const anchorAbs = getAbsoluteOffsetInBlock(selection.anchor);
+      const focusAbs = getAbsoluteOffsetInBlock(selection.focus);
+
+      // If collapsed selection, nothing to do
+      if (
+        selection.anchor.blockId === selection.focus.blockId &&
+        anchorAbs === focusAbs
+      ) {
+        return state;
+      }
+
+      // Determine ordering across blocks and offsets
       const blocksFlat = document.sections.flatMap((s) => s.children);
       const anchorBlockIdx = blocksFlat.findIndex(
         (b) => b.id === selection.anchor.blockId,
@@ -41,26 +68,24 @@ export const reduceDocumentState = (
 
       if (anchorBlockIdx === -1 || focusBlockIdx === -1) return state;
 
-      let startPos: LogicalPosition;
-      let endPos: LogicalPosition;
-      if (
+      const startIsAnchor =
         anchorBlockIdx < focusBlockIdx ||
-        (anchorBlockIdx === focusBlockIdx &&
-          selection.anchor.offset <= selection.focus.offset)
-      ) {
-        startPos = selection.anchor;
-        endPos = selection.focus;
-      } else {
-        startPos = selection.focus;
-        endPos = selection.anchor;
-      }
+        (anchorBlockIdx === focusBlockIdx && anchorAbs <= focusAbs);
 
-      if (
-        startPos.offset === endPos.offset &&
-        startPos.blockId === endPos.blockId
-      ) {
-        return state;
-      }
+      const startBlockId = startIsAnchor
+        ? selection.anchor.blockId
+        : selection.focus.blockId;
+      const endBlockId = startIsAnchor
+        ? selection.focus.blockId
+        : selection.anchor.blockId;
+      const startAbs = startIsAnchor ? anchorAbs : focusAbs;
+      const endAbs = startIsAnchor ? focusAbs : anchorAbs;
+
+      // Preserve original positions for later remapping
+      const originalAnchor = selection.anchor;
+      const originalFocus = selection.focus;
+      const originalAnchorAbs = anchorAbs;
+      const originalFocusAbs = focusAbs;
 
       let inSelection = false;
       let selectionToggleTarget: boolean | undefined;
@@ -68,8 +93,8 @@ export const reduceDocumentState = (
       const nextSections = document.sections.map((section) => ({
         ...section,
         children: section.children.map((block) => {
-          const isStartBlock = block.id === startPos.blockId;
-          const isEndBlock = block.id === endPos.blockId;
+          const isStartBlock = block.id === startBlockId;
+          const isEndBlock = block.id === endBlockId;
 
           if (!inSelection && !isStartBlock) return block;
           if (isStartBlock) inSelection = true;
@@ -83,8 +108,8 @@ export const reduceDocumentState = (
             const runEnd = currentOffset + runLength;
             currentOffset += runLength;
 
-            const selStart = isStartBlock ? startPos.offset : 0;
-            const selEnd = isEndBlock ? endPos.offset : Infinity;
+            const selStart = isStartBlock ? startAbs : 0;
+            const selEnd = isEndBlock ? endAbs : Infinity;
 
             const overlapStart = Math.max(runStart, selStart);
             const overlapEnd = Math.min(runEnd, selEnd);
@@ -139,6 +164,48 @@ export const reduceDocumentState = (
         }),
       }));
 
+      // Remap selection anchor and focus to new run IDs
+      const mapToNewPos = (
+        oldPos: LogicalPosition,
+        oldAbsOffset: number,
+      ): LogicalPosition => {
+        for (const section of nextSections) {
+          const blk = section.children.find((b) => b.id === oldPos.blockId);
+          if (blk) {
+            let acc = 0;
+            for (const run of blk.children) {
+              const runLen = run.text.length;
+              if (oldAbsOffset >= acc && oldAbsOffset < acc + runLen) {
+                return {
+                  sectionId: oldPos.sectionId,
+                  blockId: oldPos.blockId,
+                  inlineId: run.id,
+                  offset: oldAbsOffset - acc,
+                };
+              }
+              acc += runLen;
+            }
+            // If offset is at the very end of the block, attach to last run
+            const lastRun = blk.children[blk.children.length - 1];
+            return {
+              sectionId: oldPos.sectionId,
+              blockId: oldPos.blockId,
+              inlineId: lastRun.id,
+              offset: Math.min(
+                oldAbsOffset - acc + lastRun.text.length,
+                lastRun.text.length,
+              ),
+            };
+          }
+        }
+        return oldPos;
+      };
+
+      const newSelection = {
+        anchor: mapToNewPos(originalAnchor, originalAnchorAbs),
+        focus: mapToNewPos(originalFocus, originalFocusAbs),
+      };
+
       return {
         ...state,
         document: {
@@ -146,6 +213,7 @@ export const reduceDocumentState = (
           revision: document.revision + 1,
           sections: nextSections,
         },
+        selection: newSelection,
       };
     }
 
