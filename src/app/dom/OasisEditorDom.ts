@@ -1,74 +1,59 @@
-// @ts-nocheck
-
-
-
-
-
-
-
-
 export class OasisEditorDom {
+  private document: Document;
 
-
-
-
-
-
-
-
-  constructor(documentRef) {
+  constructor(documentRef: Document) {
     this.document = documentRef;
   }
 
-  getRoot() {
+  getRoot(): HTMLElement {
     return this.requireElement("oasis-editor-app");
   }
 
-  getPagesContainer() {
+  getPagesContainer(): HTMLElement {
     return this.requireElement("oasis-editor-pages");
   }
 
-  getTemplateSelect() {
-    return this.requireElement("oasis-editor-template");
+  getTemplateSelect(): HTMLSelectElement {
+    return this.requireElement("oasis-editor-template") as HTMLSelectElement;
   }
 
-  getBoldButton() {
+  getBoldButton(): HTMLElement {
     return this.requireElement("oasis-editor-bold");
   }
 
-  getItalicButton() {
+  getItalicButton(): HTMLElement {
     return this.requireElement("oasis-editor-italic");
   }
 
-  getUnderlineButton() {
+  getUnderlineButton(): HTMLElement {
     return this.requireElement("oasis-editor-underline");
   }
 
-  getUndoButton() {
+  getUndoButton(): HTMLElement {
     return this.requireElement("oasis-editor-undo");
   }
 
-  getRedoButton() {
+  getRedoButton(): HTMLElement {
     return this.requireElement("oasis-editor-redo");
   }
 
-  getExportButton() {
+  getExportButton(): HTMLElement {
     return this.requireElement("oasis-editor-export");
   }
 
-  getStatus() {
+  getStatus(): HTMLElement {
     return this.requireElement("oasis-editor-status");
   }
 
-  getMetrics() {
+  getMetrics(): HTMLElement {
     return this.requireElement("oasis-editor-metrics");
   }
 
-  getHiddenInput() {
-    return this.requireElement("oasis-editor-input");
+  getHiddenInput(): HTMLInputElement {
+    return this.requireElement("oasis-editor-input") as HTMLInputElement;
   }
 
-  requireElement(id) {
+  requireElement(id: string): HTMLElement {
     const element = this.document.getElementById(id);
     if (!element) {
       throw new Error(`Missing required oasis-editor element: #${id}`);

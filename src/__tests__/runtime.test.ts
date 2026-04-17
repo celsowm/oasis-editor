@@ -1,12 +1,3 @@
-// @ts-nocheck
-
-
-
-
-
-
-
-
 import { describe, it, expect } from "vitest";
 import { DocumentRuntime } from "../core/runtime/DocumentRuntime.js";
 import { Operations } from "../core/operations/OperationFactory.js";

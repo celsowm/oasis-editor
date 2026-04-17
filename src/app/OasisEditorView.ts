@@ -1,26 +1,62 @@
-// @ts-nocheck
-
-
-
-
-
-
-
-
+import { EditorViewModel } from "./presenters/OasisEditorPresenter.js";
+import { OasisEditorDom } from "./dom/OasisEditorDom.js";
+import { OasisEditorPresenter } from "./presenters/OasisEditorPresenter.js";
+import { TextMeasurer } from "../bridge/measurement/TextMeasurementBridge.js";
 import { PageLayer } from "../ui/pages/PageLayer.js";
 import { PageViewport } from "../ui/pages/PageViewport.js";
 
+export interface ViewElements {
+  root: HTMLElement;
+  pagesContainer: HTMLElement;
+  templateSelect: HTMLSelectElement;
+  boldButton: HTMLElement;
+  italicButton: HTMLElement;
+  underlineButton: HTMLElement;
+  undoButton: HTMLElement;
+  redoButton: HTMLElement;
+  exportButton: HTMLElement;
+  status: HTMLElement;
+  metrics: HTMLElement;
+  hiddenInput: HTMLInputElement;
+}
+
+export interface SelectionState {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+}
+
+export interface ViewEventBindings {
+  onBold: () => void;
+  onItalic: () => void;
+  onUnderline: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  onExport: () => void;
+  onTemplateChange: (templateId: string) => void;
+  onTextInput: (text: string) => void;
+  onDelete: () => void;
+  onEnter: (isShift: boolean) => void;
+  onArrowKey: (key: string) => void;
+  onMouseDown: (e: MouseEvent) => void;
+  onMouseMove: (e: MouseEvent) => void;
+  onMouseUp: (e: MouseEvent) => void;
+  onDblClick?: (e: MouseEvent) => void;
+  onTripleClick?: (e: MouseEvent) => void;
+}
+
 export class OasisEditorView {
+  private dom: OasisEditorDom;
+  private presenter: OasisEditorPresenter;
+  readonly elements: ViewElements;
+  private pageLayer: PageLayer;
+  private viewport: PageViewport;
 
-
-
-
-
-
-
-
-
-  constructor(dom, presenter, measurer) {
+  constructor(
+    dom: OasisEditorDom,
+    presenter: OasisEditorPresenter,
+    measurer: TextMeasurer,
+  ) {
     this.dom = dom;
     this.presenter = presenter;
     this.elements = {
@@ -46,7 +82,7 @@ export class OasisEditorView {
     );
   }
 
-  renderTemplateOptions(options) {
+  renderTemplateOptions(options: { value: string; label: string }[]): void {
     this.elements.templateSelect.innerHTML = "";
 
     options.forEach((option) => {
@@ -57,7 +93,7 @@ export class OasisEditorView {
     });
   }
 
-  bind(events) {
+  bind(events: ViewEventBindings): void {
     this.elements.boldButton.addEventListener("click", events.onBold);
     this.elements.italicButton.addEventListener("click", events.onItalic);
     this.elements.underlineButton.addEventListener("click", events.onUnderline);
@@ -65,29 +101,37 @@ export class OasisEditorView {
     this.elements.redoButton.addEventListener("click", events.onRedo);
     this.elements.exportButton.addEventListener("click", events.onExport);
     this.elements.templateSelect.addEventListener("change", (event) =>
-      events.onTemplateChange(event.target.value),
+      events.onTemplateChange((event.target as HTMLSelectElement).value),
     );
 
     // Hidden input for keyboard handling
     this.elements.hiddenInput.addEventListener("input", (e) => {
-      console.log('=== Hidden input event ===', e.data);
-      console.log('Hidden input focado?', document.activeElement === this.elements.hiddenInput);
-      events.onTextInput(e.data || "");
+      const inputEvent = e as InputEvent;
+      console.log("=== Hidden input event ===", inputEvent.data);
+      console.log(
+        "Hidden input focado?",
+        document.activeElement === this.elements.hiddenInput,
+      );
+      events.onTextInput(inputEvent.data ?? "");
       this.elements.hiddenInput.value = "";
     });
 
     this.elements.hiddenInput.addEventListener("keydown", (e) => {
-      console.log('=== Hidden input keydown ===', e.key);
-      console.log('Hidden input focado?', document.activeElement === this.elements.hiddenInput);
-      if (e.key === "Backspace") {
+      const ke = e as KeyboardEvent;
+      console.log("=== Hidden input keydown ===", ke.key);
+      console.log(
+        "Hidden input focado?",
+        document.activeElement === this.elements.hiddenInput,
+      );
+      if (ke.key === "Backspace") {
         events.onDelete();
-        e.preventDefault();
-      } else if (e.key === "Enter") {
-        events.onEnter(e.shiftKey);
-        e.preventDefault();
-      } else if (e.key.startsWith("Arrow")) {
-        events.onArrowKey(e.key);
-        e.preventDefault();
+        ke.preventDefault();
+      } else if (ke.key === "Enter") {
+        events.onEnter(ke.shiftKey);
+        ke.preventDefault();
+      } else if (ke.key.startsWith("Arrow")) {
+        events.onArrowKey(ke.key);
+        ke.preventDefault();
       }
     });
 
@@ -97,9 +141,13 @@ export class OasisEditorView {
     let clickCount = 0;
 
     this.elements.root.addEventListener("mousedown", (e) => {
+      const me = e as MouseEvent;
       const now = Date.now();
-      const dist = Math.sqrt(Math.pow(e.clientX - lastMouseDownPos.x, 2) + Math.pow(e.clientY - lastMouseDownPos.y, 2));
-      
+      const dist = Math.sqrt(
+        Math.pow(me.clientX - lastMouseDownPos.x, 2) +
+          Math.pow(me.clientY - lastMouseDownPos.y, 2),
+      );
+
       if (now - lastMouseDownTime < 350 && dist < 15) {
         clickCount++;
       } else {
@@ -107,38 +155,42 @@ export class OasisEditorView {
       }
 
       lastMouseDownTime = now;
-      lastMouseDownPos = { x: e.clientX, y: e.clientY };
+      lastMouseDownPos = { x: me.clientX, y: me.clientY };
 
       if (clickCount === 2) {
-        if (events.onDblClick) events.onDblClick(e);
-        e.preventDefault();
+        if (events.onDblClick) events.onDblClick(me);
+        me.preventDefault();
         return;
       }
 
       if (clickCount === 3) {
-        if (events.onTripleClick) events.onTripleClick(e);
-        e.preventDefault();
+        if (events.onTripleClick) events.onTripleClick(me);
+        me.preventDefault();
         return;
       }
 
-      events.onMouseDown(e);
+      events.onMouseDown(me);
       setTimeout(() => this.elements.hiddenInput.focus(), 0);
     });
 
-    this.elements.root.addEventListener("dblclick", (e) => {
-      e.preventDefault(); // Já lidado pelo mousedown manual
-    }, true);
+    this.elements.root.addEventListener(
+      "dblclick",
+      (e) => {
+        e.preventDefault();
+      },
+      true,
+    );
 
     this.elements.root.addEventListener("mousemove", (e) => {
-      if (events.onMouseMove) events.onMouseMove(e);
+      if (events.onMouseMove) events.onMouseMove(e as MouseEvent);
     });
 
     this.elements.root.addEventListener("mouseup", (e) => {
-      if (events.onMouseUp) events.onMouseUp(e);
+      if (events.onMouseUp) events.onMouseUp(e as MouseEvent);
     });
   }
 
-  render(viewModel) {
+  render(viewModel: EditorViewModel): void {
     this.viewport.render(viewModel.layout, viewModel.selection);
     this.elements.templateSelect.value = viewModel.templateId;
     this.elements.status.textContent = viewModel.status;
@@ -147,7 +199,7 @@ export class OasisEditorView {
     this.updateToolbar(viewModel.selectionState);
   }
 
-  updateToolbar(selectionState) {
+  updateToolbar(selectionState: SelectionState | undefined): void {
     if (!selectionState) return;
     this.elements.boldButton.classList.toggle("active", selectionState.bold);
     this.elements.italicButton.classList.toggle(
@@ -160,7 +212,7 @@ export class OasisEditorView {
     );
   }
 
-  downloadJson(filename, content) {
+  downloadJson(filename: string, content: string): void {
     const blob = new Blob([content], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");

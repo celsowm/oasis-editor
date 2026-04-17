@@ -1,12 +1,3 @@
-// @ts-nocheck
-
-
-
-
-
-
-
-
 import { describe, it, expect } from "vitest";
 import { createDocument } from "../core/document/DocumentFactory.js";
 

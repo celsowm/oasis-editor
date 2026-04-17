@@ -1,15 +1,25 @@
-// @ts-nocheck
-
-
-
-
-
-
-
-
+import { BlockNode, TextRun } from "../document/BlockTypes.js";
+import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
+import { LineInfo } from "../layout/LayoutFragment.js";
 import { breakTextIntoLines } from "./LineBreaker.js";
 
-const getBlockTypography = (block) => {
+export interface BlockTypography {
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: number;
+}
+
+export interface ComposedParagraph {
+  blockId: string;
+  kind: string;
+  text: string;
+  runs: TextRun[];
+  typography: BlockTypography;
+  totalHeight: number;
+  lines: LineInfo[];
+}
+
+const getBlockTypography = (block: BlockNode): BlockTypography => {
   const firstRun = block.children[0];
   const fontFamily = firstRun?.marks.fontFamily ?? "Inter";
   const fontSize =
@@ -20,18 +30,21 @@ const getBlockTypography = (block) => {
   return { fontFamily, fontSize, fontWeight };
 };
 
-export const composeParagraph = (block, maxWidth, measure) => {
+export const composeParagraph = (
+  block: BlockNode,
+  maxWidth: number,
+  measure: TextMeasurer,
+): ComposedParagraph => {
   const plainText = block.children.map((child) => child.text).join("");
   const typography = getBlockTypography(block);
-  
-  // Forward runs inside block
+
   const broken = breakTextIntoLines(
     block.children,
     maxWidth,
     measure,
     typography.fontFamily,
     typography.fontSize,
-    block.kind === "heading"
+    block.kind === "heading",
   );
 
   if (broken.length === 0) {
@@ -42,8 +55,8 @@ export const composeParagraph = (block, maxWidth, measure) => {
     typography.fontSize * (block.kind === "heading" ? 1.35 : 1.5);
 
   let currentOffset = 0;
-  const lines = broken.map((line, index) => {
-    const lineInfo = {
+  const lines: LineInfo[] = broken.map((line, index) => {
+    const lineInfo: LineInfo = {
       id: `${block.id}:line:${index}`,
       text: line.text,
       width: line.width,
@@ -52,7 +65,7 @@ export const composeParagraph = (block, maxWidth, measure) => {
       offsetEnd: currentOffset + line.text.length,
       y: index * lineHeight,
     };
-    currentOffset += line.text.length; // Don't add +1 for break since we preserve exact spaces in runs now? We should stick to exactly line.text.length
+    currentOffset += line.text.length;
     return lineInfo;
   });
 

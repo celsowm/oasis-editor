@@ -1,32 +1,19 @@
-// @ts-nocheck
-
-
-
-
-
-
-
+import { LayoutState } from "../../core/layout/LayoutTypes.js";
 
 export class PageLayer {
+  private container: HTMLElement;
 
-
-
-
-
-
-
-
-  constructor(container) {
+  constructor(container: HTMLElement) {
     this.container = container;
   }
 
-  render(layout) {
+  render(layout: LayoutState): void {
     this.container.innerHTML = "";
 
     for (const page of layout.pages) {
       const pageEl = document.createElement("section");
       pageEl.className = "oasis-page";
-      pageEl.dataset.pageId = page.id;
+      pageEl.dataset["pageId"] = page.id;
       pageEl.style.width = `${page.rect.width}px`;
       pageEl.style.minHeight = `${page.rect.height}px`;
 
@@ -44,12 +31,11 @@ export class PageLayer {
 
       const content = document.createElement("div");
       content.className = "oasis-page-content";
-      // content Rect is used for layout but we position fragments absolutely
 
       for (const fragment of page.fragments) {
         const fragmentEl = document.createElement("article");
         fragmentEl.className = `oasis-fragment oasis-fragment--${fragment.kind}`;
-        fragmentEl.dataset.fragmentId = fragment.id;
+        fragmentEl.dataset["fragmentId"] = fragment.id;
         fragmentEl.style.fontFamily = fragment.typography.fontFamily;
         fragmentEl.style.fontSize = `${fragment.typography.fontSize}px`;
         fragmentEl.style.left = `${fragment.rect.x}px`;
@@ -59,27 +45,29 @@ export class PageLayer {
 
         // Render text using spans for rich text formatting
         fragmentEl.innerHTML = "";
-        
-        let displayRuns = fragment.runs || [{ text: fragment.text, marks: fragment.marks || {} }];
-        
+
+        const displayRuns = fragment.runs?.length
+          ? fragment.runs
+          : [{ text: fragment.text, marks: fragment.marks ?? {} }];
+
         for (const run of displayRuns) {
           const span = document.createElement("span");
           span.textContent = run.text;
-          
+
           let fontWeight = fragment.typography.fontWeight;
-          if (run.marks?.bold || fragment.kind === "heading") {
+          if (run.marks?.["bold"] || fragment.kind === "heading") {
             fontWeight = 700;
           }
           span.style.fontWeight = String(fontWeight);
 
-          if (run.marks?.italic) {
+          if (run.marks?.["italic"]) {
             span.style.fontStyle = "italic";
           }
 
-          if (run.marks?.underline) {
+          if (run.marks?.["underline"]) {
             span.style.textDecoration = "underline";
           }
-          
+
           fragmentEl.appendChild(span);
         }
 

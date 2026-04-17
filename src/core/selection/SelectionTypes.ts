@@ -1,14 +1,16 @@
-// @ts-nocheck
+export interface LogicalPosition {
+  sectionId: string;
+  blockId: string;
+  inlineId: string;
+  offset: number;
+}
 
+export interface LogicalRange {
+  start: LogicalPosition;
+  end: LogicalPosition;
+}
 
-
-
-
-
-
-
-/**
- * @typedef {{ sectionId: string, blockId: string, inlineId: string, offset: number }} LogicalPosition
- * @typedef {{ start: LogicalPosition, end: LogicalPosition }} LogicalRange
- * @typedef {{ anchor: LogicalPosition, focus: LogicalPosition }} EditorSelection
- */
+export interface EditorSelection {
+  anchor: LogicalPosition;
+  focus: LogicalPosition;
+}

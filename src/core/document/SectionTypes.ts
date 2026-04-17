@@ -1,4 +1,4 @@
-import { BlockNode } from './BlockTypes.js';
+import { BlockNode } from "./BlockTypes.js";
 
 export interface Margins {
   top: number;
@@ -16,7 +16,7 @@ export interface SectionNode {
   id: string;
   pageTemplateId: string;
   margins: Margins;
-  orientation: 'portrait' | 'landscape';
+  orientation: "portrait" | "landscape";
   children: BlockNode[];
   breakPolicy: SectionBreakPolicy;
 }

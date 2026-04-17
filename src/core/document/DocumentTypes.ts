@@ -1,4 +1,4 @@
-import { SectionNode } from './SectionTypes.js';
+import { SectionNode } from "./SectionTypes.js";
 
 export interface DocumentMetadata {
   title?: string;
@@ -13,7 +13,9 @@ export interface DocumentModel {
   metadata: DocumentMetadata;
 }
 
-export const createDocumentMetadata = (title = 'Untitled'): DocumentMetadata => ({
+export const createDocumentMetadata = (
+  title = "Untitled",
+): DocumentMetadata => ({
   title,
   createdAt: Date.now(),
   updatedAt: Date.now(),

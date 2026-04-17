@@ -1,12 +1,3 @@
-// @ts-nocheck
-
-
-
-
-
-
-
-
 import { BrowserTextMeasurer } from "../../bridge/measurement/BrowserTextMeasurer.js";
 import { DocumentRuntime } from "../../core/runtime/DocumentRuntime.js";
 import { PAGE_TEMPLATES } from "../../core/pages/PageTemplateFactory.js";
@@ -16,7 +7,7 @@ import { OasisEditorDom } from "../dom/OasisEditorDom.js";
 import { OasisEditorView } from "../OasisEditorView.js";
 import { OasisEditorController } from "../OasisEditorController.js";
 
-export const createOasisEditorApp = () => {
+export const createOasisEditorApp = (): OasisEditorController => {
   const runtime = new DocumentRuntime();
   const textMeasurer = new BrowserTextMeasurer();
   const layoutService = new DocumentLayoutService(textMeasurer);

@@ -1,23 +1,13 @@
-// @ts-nocheck
-
-
-
-
-
-
-
-
-import { createDocument, createParagraph } from "../document/DocumentFactory.js";
+import { createDocument } from "../document/DocumentFactory.js";
+import { EditorState } from "./EditorState.js";
+import { EditorOperation } from "../operations/OperationTypes.js";
 import { reduceDocumentState } from "./DocumentReducer.js";
 
 export class DocumentRuntime {
-
-
-
-
-
-
-
+  private state: EditorState;
+  private history: EditorState[];
+  private future: EditorState[];
+  private listeners: Set<(state: EditorState) => void>;
 
   constructor() {
     const doc = createDocument();
@@ -43,26 +33,26 @@ export class DocumentRuntime {
     this.listeners = new Set();
   }
 
-  getState() {
+  getState(): EditorState {
     return this.state;
   }
 
-  subscribe(listener) {
+  subscribe(listener: (state: EditorState) => void): () => void {
     this.listeners.add(listener);
     listener(this.state);
     return () => this.listeners.delete(listener);
   }
 
-  dispatch(operation) {
-    console.log('RUNTIME: dispatch chamado com', operation.type);
+  dispatch(operation: EditorOperation): void {
+    console.log("RUNTIME: dispatch chamado com", operation.type);
     this.history.push(this.state);
     this.future = [];
     this.state = reduceDocumentState(this.state, operation);
-    console.log('RUNTIME: Estado atualizado, selection:', this.state.selection);
+    console.log("RUNTIME: Estado atualizado, selection:", this.state.selection);
     this.emit();
   }
 
-  undo() {
+  undo(): void {
     const previous = this.history.pop();
     if (!previous) return;
     this.future.unshift(this.state);
@@ -70,7 +60,7 @@ export class DocumentRuntime {
     this.emit();
   }
 
-  redo() {
+  redo(): void {
     const next = this.future.shift();
     if (!next) return;
     this.history.push(this.state);
@@ -78,7 +68,7 @@ export class DocumentRuntime {
     this.emit();
   }
 
-  exportJson() {
+  exportJson(): string {
     return JSON.stringify(
       {
         version: "5.1.0-solid-clean",
@@ -91,7 +81,7 @@ export class DocumentRuntime {
     );
   }
 
-  emit() {
+  private emit(): void {
     for (const listener of this.listeners) {
       listener(this.state);
     }

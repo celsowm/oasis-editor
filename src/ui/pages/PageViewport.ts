@@ -1,35 +1,33 @@
-// @ts-nocheck
-
-
-
-
-
-
-
-
+import {
+  EditorSelection,
+  LogicalRange,
+  LogicalPosition,
+} from "../../core/selection/SelectionTypes.js";
+import { LayoutState } from "../../core/layout/LayoutTypes.js";
+import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { CaretOverlay } from "../selection/CaretOverlay.js";
 import { SelectionOverlay } from "../selection/SelectionOverlay.js";
 import { SelectionMapper } from "../../app/services/SelectionMapper.js";
+import { PageLayer } from "./PageLayer.js";
 
 export class PageViewport {
+  private root: HTMLElement;
+  private pageLayer: PageLayer;
+  private measurer: TextMeasurer;
+  private caretOverlays: Map<string, CaretOverlay>;
+  private selectionOverlays: Map<string, SelectionOverlay>;
+  private mapper: SelectionMapper | null;
 
-
-
-
-
-
-
-
-  constructor(root, pageLayer, measurer) {
+  constructor(root: HTMLElement, pageLayer: PageLayer, measurer: TextMeasurer) {
     this.root = root;
     this.pageLayer = pageLayer;
     this.measurer = measurer;
-    this.caretOverlays = new Map(); // pageId -> CaretOverlay
-    this.selectionOverlays = new Map(); // pageId -> SelectionOverlay
+    this.caretOverlays = new Map();
+    this.selectionOverlays = new Map();
     this.mapper = null;
   }
 
-  render(layout, selection) {
+  render(layout: LayoutState, selection: EditorSelection | null): void {
     this.pageLayer.render(layout);
     this.mapper = new SelectionMapper(layout, this.measurer);
 
@@ -45,12 +43,15 @@ export class PageViewport {
       (selection.anchor.offset === selection.focus.offset &&
         selection.anchor.blockId === selection.focus.blockId)
     ) {
-      console.log('VIEWPORT: Renderizando caret');
-      console.log('VIEWPORT: Posição do caret:', selection.anchor || selection.focus);
+      console.log("VIEWPORT: Renderizando caret");
+      console.log(
+        "VIEWPORT: Posição do caret:",
+        selection.anchor || selection.focus,
+      );
       const caretRect = this.mapper.getCaretRect(
         selection.anchor || selection.focus,
       );
-      console.log('VIEWPORT: Caret rect:', caretRect);
+      console.log("VIEWPORT: Caret rect:", caretRect);
       if (caretRect) {
         this.getOrCreateCaretOverlay(caretRect.pageId).render(
           selection.anchor || selection.focus,
@@ -66,35 +67,42 @@ export class PageViewport {
     }
   }
 
-  getOrCreateCaretOverlay(pageId) {
-    console.log('VIEWPORT: getOrCreateCaretOverlay chamado com pageId:', pageId);
-    if (!this.caretOverlays.has(pageId)) {
-      console.log('VIEWPORT: Criando novo caret overlay para pagina:', pageId);
-    } else {
-      // Verificar se o overlay ainda está no DOM
-      const existingOverlay = this.caretOverlays.get(pageId);
-      const isInDOM = document.body.contains(existingOverlay.container);
-      console.log('VIEWPORT: Overlay existente ainda está no DOM?', isInDOM);
+  getOrCreateCaretOverlay(
+    pageId: string,
+  ): CaretOverlay | { render: () => void } {
+    console.log(
+      "VIEWPORT: getOrCreateCaretOverlay chamado com pageId:",
+      pageId,
+    );
+    if (this.caretOverlays.has(pageId)) {
+      const existingOverlay = this.caretOverlays.get(pageId)!;
+      const isInDOM = document.body.contains(
+        existingOverlay.container as unknown as Node,
+      );
+      console.log("VIEWPORT: Overlay existente ainda está no DOM?", isInDOM);
       if (!isInDOM) {
-        console.log('VIEWPORT: Container antigo foi removido, recriando overlay');
-        // Remover referência antiga para forçar recriação
+        console.log(
+          "VIEWPORT: Container antigo foi removido, recriando overlay",
+        );
         this.caretOverlays.delete(pageId);
       }
     }
-    
+
     if (!this.caretOverlays.has(pageId)) {
-      console.log('VIEWPORT: Criando novo caret overlay para pagina:', pageId);
+      console.log("VIEWPORT: Criando novo caret overlay para pagina:", pageId);
       const pageEl = this.root.querySelector(`[data-page-id="${pageId}"]`);
-      console.log('VIEWPORT: Elemento da pagina encontrado?', !!pageEl);
+      console.log("VIEWPORT: Elemento da pagina encontrado?", !!pageEl);
       if (!pageEl) {
-        console.log('VIEWPORT: ❌ Pagina nao encontrada, retornando stub');
+        console.log("VIEWPORT: ❌ Pagina nao encontrada, retornando stub");
         return { render: () => {} };
       }
 
-      let overlayContainer = pageEl.querySelector(".oasis-selection-layer");
-      console.log('VIEWPORT: Container de selecao existe?', !!overlayContainer);
+      let overlayContainer = pageEl.querySelector(
+        ".oasis-selection-layer",
+      ) as HTMLElement | null;
+      console.log("VIEWPORT: Container de selecao existe?", !!overlayContainer);
       if (!overlayContainer) {
-        console.log('VIEWPORT: Criando novo container de selecao');
+        console.log("VIEWPORT: Criando novo container de selecao");
         overlayContainer = document.createElement("div");
         overlayContainer.className = "oasis-selection-layer";
         pageEl.appendChild(overlayContainer);
@@ -102,29 +110,33 @@ export class PageViewport {
 
       this.caretOverlays.set(
         pageId,
-        new CaretOverlay(overlayContainer, this.mapper),
+        new CaretOverlay(overlayContainer, this.mapper!),
       );
-      console.log('VIEWPORT: CaretOverlay criado e armazenado');
+      console.log("VIEWPORT: CaretOverlay criado e armazenado");
     }
-    return this.caretOverlays.get(pageId);
+    return this.caretOverlays.get(pageId)!;
   }
 
-  getOrCreateSelectionOverlay(pageId) {
+  getOrCreateSelectionOverlay(
+    pageId: string,
+  ): SelectionOverlay | { render: () => void } {
     if (this.selectionOverlays.has(pageId)) {
-      // Verificar se o overlay ainda está no DOM
-      const existingOverlay = this.selectionOverlays.get(pageId);
-      const isInDOM = document.body.contains(existingOverlay.container);
+      const existingOverlay = this.selectionOverlays.get(pageId)!;
+      const isInDOM = document.body.contains(
+        existingOverlay.container as unknown as Node,
+      );
       if (!isInDOM) {
-        // Remover referência antiga para forçar recriação
         this.selectionOverlays.delete(pageId);
       }
     }
-    
+
     if (!this.selectionOverlays.has(pageId)) {
       const pageEl = this.root.querySelector(`[data-page-id="${pageId}"]`);
       if (!pageEl) return { render: () => {} };
 
-      let overlayContainer = pageEl.querySelector(".oasis-selection-layer");
+      let overlayContainer = pageEl.querySelector(
+        ".oasis-selection-layer",
+      ) as HTMLElement | null;
       if (!overlayContainer) {
         overlayContainer = document.createElement("div");
         overlayContainer.className = "oasis-selection-layer";
@@ -133,19 +145,18 @@ export class PageViewport {
 
       this.selectionOverlays.set(
         pageId,
-        new SelectionOverlay(overlayContainer, this.mapper),
+        new SelectionOverlay(overlayContainer, this.mapper!),
       );
     }
-    return this.selectionOverlays.get(pageId);
+    return this.selectionOverlays.get(pageId)!;
   }
 
-  normalizeSelection(selection) {
-    const a = selection.anchor;
-    const b = selection.focus;
+  normalizeSelection(selection: EditorSelection): LogicalRange {
+    const a: LogicalPosition = selection.anchor;
+    const b: LogicalPosition = selection.focus;
     if (a.blockId === b.blockId) {
       return a.offset <= b.offset ? { start: a, end: b } : { start: b, end: a };
     }
-    // Very basic comparison for now
     return a.blockId < b.blockId ? { start: a, end: b } : { start: b, end: a };
   }
 }

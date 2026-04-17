@@ -1,29 +1,28 @@
-// @ts-nocheck
-
-
-
-
-
-
-
-
+import { DocumentModel } from "../document/DocumentTypes.js";
+import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
+import { PageTemplate } from "../pages/PageTemplateTypes.js";
+import { Rect, LayoutFragment, LineInfo } from "../layout/LayoutFragment.js";
+import { PageLayout, LayoutState } from "../layout/LayoutTypes.js";
 import { PAGE_TEMPLATES } from "../pages/PageTemplateFactory.js";
 import { composeParagraph } from "../composition/ParagraphComposer.js";
 
-export const paginateDocument = (documentModel, measure) => {
-  const pages = [];
-  const fragmentsByBlockId = {};
+export const paginateDocument = (
+  documentModel: DocumentModel,
+  measure: TextMeasurer,
+): LayoutState => {
+  const pages: PageLayout[] = [];
+  const fragmentsByBlockId: Record<string, LayoutFragment[]> = {};
   let pageCounter = 0;
 
   for (const section of documentModel.sections) {
-    const template =
+    const template: PageTemplate =
       PAGE_TEMPLATES[section.pageTemplateId] ??
       PAGE_TEMPLATES["template:a4:default"];
     const contentWidth =
       template.size.width - template.margins.left - template.margins.right;
     const contentHeight =
       template.size.height - template.margins.top - template.margins.bottom;
-    const headerRect = template.header.enabled
+    const headerRect: Rect | null = template.header.enabled
       ? {
           x: template.margins.left,
           y: 32,
@@ -31,7 +30,7 @@ export const paginateDocument = (documentModel, measure) => {
           height: template.header.height,
         }
       : null;
-    const footerRect = template.footer.enabled
+    const footerRect: Rect | null = template.footer.enabled
       ? {
           x: template.margins.left,
           y: template.size.height - 32 - template.footer.height,
@@ -40,7 +39,7 @@ export const paginateDocument = (documentModel, measure) => {
         }
       : null;
 
-    let currentPage = {
+    let currentPage: PageLayout = {
       id: `page:${pageCounter}`,
       sectionId: section.id,
       pageIndex: pageCounter,
@@ -103,7 +102,7 @@ export const paginateDocument = (documentModel, measure) => {
       const textLength = block.children
         .map((child) => child.text)
         .join("").length;
-      const fragment = {
+      const fragment: LayoutFragment = {
         id: `fragment:${block.id}:0`,
         blockId: block.id,
         sectionId: section.id,
@@ -121,10 +120,13 @@ export const paginateDocument = (documentModel, measure) => {
         },
         typography: composed.typography,
         runs: composed.runs,
-        lines: composed.lines.map((line) => ({
-          ...line,
-          y: line.y + currentY,
-        })),
+        marks: {},
+        lines: composed.lines.map(
+          (line): LineInfo => ({
+            ...line,
+            y: line.y + currentY,
+          }),
+        ),
       };
 
       currentPage.fragments.push(fragment);

@@ -15,16 +15,16 @@ export interface TextRun {
 
 export interface ParagraphNode {
   id: string;
-  kind: 'paragraph';
-  align: 'left' | 'center' | 'right' | 'justify';
+  kind: "paragraph";
+  align: "left" | "center" | "right" | "justify";
   children: TextRun[];
 }
 
 export interface HeadingNode {
   id: string;
-  kind: 'heading';
+  kind: "heading";
   level: 1 | 2 | 3 | 4 | 5 | 6;
-  align: 'left' | 'center' | 'right';
+  align: "left" | "center" | "right";
   children: TextRun[];
 }
 

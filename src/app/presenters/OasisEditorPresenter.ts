@@ -1,37 +1,60 @@
-// @ts-nocheck
+import { EditorState } from "../../core/runtime/EditorState.js";
+import { EditorSelection } from "../../core/selection/SelectionTypes.js";
+import { LayoutState } from "../../core/layout/LayoutTypes.js";
+import { PageTemplate } from "../../core/pages/PageTemplateTypes.js";
+import { MarkSet } from "../../core/document/BlockTypes.js";
 
+export interface TemplateOption {
+  value: string;
+  label: string;
+}
 
+export interface SelectionState {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+}
 
-
-
-
-
+export interface EditorViewModel {
+  templateId: string;
+  metrics: {
+    revision: string;
+    pages: string;
+    sections: string;
+    template: string;
+    backend: string;
+  };
+  status: string;
+  selectionState: SelectionState;
+  selection: EditorSelection | null;
+  layout: LayoutState;
+}
 
 export class OasisEditorPresenter {
+  private pageTemplates: PageTemplate[];
 
-
-
-
-
-
-
-
-  constructor(pageTemplates) {
+  constructor(pageTemplates: PageTemplate[]) {
     this.pageTemplates = pageTemplates;
   }
 
-  getTemplateOptions() {
+  getTemplateOptions(): TemplateOption[] {
     return this.pageTemplates.map((template) => ({
       value: template.id,
       label: template.name,
     }));
   }
 
-  present({ state, layout }) {
+  present({
+    state,
+    layout,
+  }: {
+    state: EditorState;
+    layout: LayoutState;
+  }): EditorViewModel {
     const firstSection = state.document.sections[0];
     const selection = state.selection;
 
-    let selectionState = {
+    let selectionState: SelectionState = {
       bold: false,
       italic: false,
       underline: false,
@@ -39,15 +62,14 @@ export class OasisEditorPresenter {
 
     if (selection) {
       const blockId = selection.anchor.blockId;
-      let targetBlock;
+      let targetBlock = undefined;
       for (const section of state.document.sections) {
         targetBlock = section.children.find((b) => b.id === blockId);
         if (targetBlock) break;
       }
 
       if (targetBlock && targetBlock.children.length > 0) {
-        // Just take marks from the first run for now
-        const marks = targetBlock.children[0].marks;
+        const marks: MarkSet = targetBlock.children[0].marks;
         selectionState = {
           bold: !!marks.bold,
           italic: !!marks.italic,

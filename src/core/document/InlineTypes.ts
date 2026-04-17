@@ -1,12 +1,7 @@
-// @ts-nocheck
+import { MarkSet } from "./BlockTypes.js";
 
-
-
-
-
-
-
-
-/**
- * @typedef {{ id: string, text: string, marks: import('./BlockTypes.js').MarkSet }} InlineNode
- */
+export interface InlineNode {
+  id: string;
+  text: string;
+  marks: MarkSet;
+}

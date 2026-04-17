@@ -1,45 +1,51 @@
-// @ts-nocheck
-
-
-
-
-
-
-
-
-import { OPERATION_TYPES } from "./OperationTypes.js";
+import {
+  OperationType,
+  AppendParagraphOp,
+  SetSectionTemplateOp,
+  SetSelectionOp,
+  InsertTextOp,
+  DeleteTextOp,
+  InsertParagraphOp,
+  MoveSelectionOp,
+  ToggleMarkOp,
+} from "./OperationTypes.js";
+import { EditorSelection } from "../selection/SelectionTypes.js";
+import { MarkSet } from "../document/BlockTypes.js";
 
 export const Operations = {
-  appendParagraph: (text) => ({
-    type: OPERATION_TYPES.APPEND_PARAGRAPH,
+  appendParagraph: (text: string): AppendParagraphOp => ({
+    type: OperationType.APPEND_PARAGRAPH,
     payload: { text },
   }),
-  setSectionTemplate: (sectionId, templateId) => ({
-    type: OPERATION_TYPES.SET_SECTION_TEMPLATE,
+  setSectionTemplate: (
+    sectionId: string,
+    templateId: string,
+  ): SetSectionTemplateOp => ({
+    type: OperationType.SET_SECTION_TEMPLATE,
     payload: { sectionId, templateId },
   }),
-  setSelection: (selection) => ({
-    type: OPERATION_TYPES.SET_SELECTION,
+  setSelection: (selection: EditorSelection): SetSelectionOp => ({
+    type: OperationType.SET_SELECTION,
     payload: { selection },
   }),
-  insertText: (text) => ({
-    type: OPERATION_TYPES.INSERT_TEXT,
+  insertText: (text: string): InsertTextOp => ({
+    type: OperationType.INSERT_TEXT,
     payload: { text },
   }),
-  deleteText: () => ({
-    type: OPERATION_TYPES.DELETE_TEXT,
+  deleteText: (): DeleteTextOp => ({
+    type: OperationType.DELETE_TEXT,
     payload: {},
   }),
-  insertParagraph: () => ({
-    type: OPERATION_TYPES.INSERT_PARAGRAPH,
+  insertParagraph: (): InsertParagraphOp => ({
+    type: OperationType.INSERT_PARAGRAPH,
     payload: {},
   }),
-  moveSelection: (key) => ({
-    type: OPERATION_TYPES.MOVE_SELECTION,
+  moveSelection: (key: string): MoveSelectionOp => ({
+    type: OperationType.MOVE_SELECTION,
     payload: { key },
   }),
-  toggleMark: (mark) => ({
-    type: OPERATION_TYPES.TOGGLE_MARK,
+  toggleMark: (mark: keyof MarkSet): ToggleMarkOp => ({
+    type: OperationType.TOGGLE_MARK,
     payload: { mark },
   }),
 };

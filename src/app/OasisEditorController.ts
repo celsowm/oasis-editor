@@ -1,64 +1,95 @@
-// @ts-nocheck
-
-
-
-
-
-
-
-
 import { Operations } from "../core/operations/OperationFactory.js";
+import { DocumentRuntime } from "../core/runtime/DocumentRuntime.js";
+import { DocumentLayoutService } from "./services/DocumentLayoutService.js";
+import { OasisEditorPresenter } from "./presenters/OasisEditorPresenter.js";
+import { OasisEditorView } from "./OasisEditorView.js";
+import { TextMeasurer } from "../bridge/measurement/TextMeasurementBridge.js";
+import { LayoutState } from "../core/layout/LayoutTypes.js";
+import { LayoutFragment } from "../core/layout/LayoutFragment.js";
+import { LogicalPosition } from "../core/selection/SelectionTypes.js";
+import { LineInfo } from "../core/layout/LayoutFragment.js";
+
+export interface ControllerDeps {
+  runtime: DocumentRuntime;
+  layoutService: DocumentLayoutService;
+  presenter: OasisEditorPresenter;
+  view: OasisEditorView;
+  measurer: TextMeasurer;
+}
 
 export class OasisEditorController {
+  private runtime: DocumentRuntime;
+  private layoutService: DocumentLayoutService;
+  private presenter: OasisEditorPresenter;
+  private view: OasisEditorView;
+  private measurer: TextMeasurer;
+  private latestLayout: LayoutState | null;
+  private isDragging: boolean;
+  private dragAnchor: LogicalPosition | null;
 
-
-
-
-
-
-
-
-
-  constructor({ runtime, layoutService, presenter, view, measurer }) {
+  constructor({
+    runtime,
+    layoutService,
+    presenter,
+    view,
+    measurer,
+  }: ControllerDeps) {
     this.runtime = runtime;
     this.layoutService = layoutService;
     this.presenter = presenter;
     this.view = view;
     this.measurer = measurer;
+    this.latestLayout = null;
+    this.isDragging = false;
+    this.dragAnchor = null;
   }
 
-  measureWidthUpToOffset(fragment, lineStartOffset, endOffset) {
-     if (lineStartOffset === endOffset) return 0;
-     let totalWidth = 0;
-     let currentGlobalOffset = 0;
-     const runs = fragment.runs || [{ text: fragment.text, marks: fragment.marks || {} }];
-     for (const run of runs) {
-        const runStart = currentGlobalOffset;
-        const runEnd = currentGlobalOffset + run.text.length;
-        const measureStart = Math.max(lineStartOffset, runStart);
-        const measureEnd = Math.min(endOffset, runEnd);
+  private measureWidthUpToOffset(
+    fragment: LayoutFragment,
+    lineStartOffset: number,
+    endOffset: number,
+  ): number {
+    if (lineStartOffset === endOffset) return 0;
+    let totalWidth = 0;
+    let currentGlobalOffset = 0;
+    const runs = fragment.runs?.length
+      ? fragment.runs
+      : [{ id: "", text: fragment.text, marks: fragment.marks ?? {} }];
 
-        if (measureStart < measureEnd) {
-           const textToMeasure = run.text.substring(measureStart - runStart, measureEnd - runStart);
-           let fontWeight = fragment.typography.fontWeight;
-           if (run.marks?.bold || fragment.kind === "heading") fontWeight = 700;
-           let fontStyle = run.marks?.italic ? "italic" : "normal";
-           const metrics = this.measurer.measureText({
-              text: textToMeasure,
-              fontFamily: run.marks?.fontFamily || fragment.typography.fontFamily,
-              fontSize: run.marks?.fontSize || fragment.typography.fontSize,
-              fontWeight,
-              fontStyle
-           });
-           totalWidth += metrics.width;
-        }
-        currentGlobalOffset += run.text.length;
-        if (currentGlobalOffset >= endOffset) break;
-     }
-     return totalWidth;
+    for (const run of runs) {
+      const runStart = currentGlobalOffset;
+      const runEnd = currentGlobalOffset + run.text.length;
+      const measureStart = Math.max(lineStartOffset, runStart);
+      const measureEnd = Math.min(endOffset, runEnd);
+
+      if (measureStart < measureEnd) {
+        const textToMeasure = run.text.substring(
+          measureStart - runStart,
+          measureEnd - runStart,
+        );
+        let fontWeight = fragment.typography.fontWeight;
+        if (run.marks?.["bold"] || fragment.kind === "heading")
+          fontWeight = 700;
+        const fontStyle = run.marks?.["italic"] ? "italic" : "normal";
+        const metrics = this.measurer.measureText({
+          text: textToMeasure,
+          fontFamily:
+            (run.marks?.["fontFamily"] as string) ||
+            fragment.typography.fontFamily,
+          fontSize:
+            (run.marks?.["fontSize"] as number) || fragment.typography.fontSize,
+          fontWeight,
+          fontStyle,
+        });
+        totalWidth += metrics.width;
+      }
+      currentGlobalOffset += run.text.length;
+      if (currentGlobalOffset >= endOffset) break;
+    }
+    return totalWidth;
   }
 
-  start() {
+  start(): void {
     this.view.renderTemplateOptions(this.presenter.getTemplateOptions());
     this.view.bind({
       onBold: () => this.toggleBold(),
@@ -70,7 +101,8 @@ export class OasisEditorController {
       onTemplateChange: (templateId) => this.setTemplate(templateId),
       onTextInput: (text) => this.insertText(text),
       onDelete: () => this.deleteText(),
-      onEnter: (isShift) => isShift ? this.insertText('\n') : this.insertParagraph(),
+      onEnter: (isShift) =>
+        isShift ? this.insertText("\n") : this.insertParagraph(),
       onArrowKey: (key) => this.moveCaret(key),
       onMouseDown: (e) => this.handleMouseDown(e),
       onMouseMove: (e) => this.handleMouseMove(e),
@@ -87,99 +119,123 @@ export class OasisEditorController {
     });
   }
 
-  toggleBold() {
+  toggleBold(): void {
     this.runtime.dispatch(Operations.toggleMark("bold"));
   }
 
-  toggleItalic() {
+  toggleItalic(): void {
     this.runtime.dispatch(Operations.toggleMark("italic"));
   }
 
-  toggleUnderline() {
+  toggleUnderline(): void {
     this.runtime.dispatch(Operations.toggleMark("underline"));
   }
 
-  undo() {
+  undo(): void {
     this.runtime.undo();
   }
 
-  redo() {
+  redo(): void {
     this.runtime.redo();
   }
 
-  insertText(text) {
+  insertText(text: string): void {
     if (!text) return;
-    console.log('=== insertText chamado ===', text);
-    console.log('Estado atual selection:', this.runtime.getState().selection);
-    
-    // Log the state before
+    console.log("=== insertText chamado ===", text);
+    console.log("Estado atual selection:", this.runtime.getState().selection);
+
     const stateBefore = this.runtime.getState();
     const selectionBefore = stateBefore.selection?.anchor;
-    console.log('🔍 DEBUG: blockId:', selectionBefore?.blockId, 'inlineId:', selectionBefore?.inlineId);
-    
-    // Find the block and run
+    console.log(
+      "🔍 DEBUG: blockId:",
+      selectionBefore?.blockId,
+      "inlineId:",
+      selectionBefore?.inlineId,
+    );
+
     const blockBefore = stateBefore.document.sections
-      .flatMap(s => s.children)
-      .find(b => b.id === selectionBefore?.blockId);
-    console.log('🔍 DEBUG: Block encontrado?', blockBefore?.id, 'Runs:', blockBefore?.children?.map(r => ({id: r.id, text: r.text.substring(0, 20)})));
-    
-    const runBefore = blockBefore?.children.find(r => r.id === selectionBefore?.inlineId);
-    console.log('🔍 DEBUG: Run encontrado?', runBefore?.id, 'Text:', runBefore?.text);
-    
+      .flatMap((s) => s.children)
+      .find((b) => b.id === selectionBefore?.blockId);
+    console.log(
+      "🔍 DEBUG: Block encontrado?",
+      blockBefore?.id,
+      "Runs:",
+      blockBefore?.children?.map((r) => ({
+        id: r.id,
+        text: r.text.substring(0, 20),
+      })),
+    );
+
+    const runBefore = blockBefore?.children.find(
+      (r) => r.id === selectionBefore?.inlineId,
+    );
+    console.log(
+      "🔍 DEBUG: Run encontrado?",
+      runBefore?.id,
+      "Text:",
+      runBefore?.text,
+    );
+
     this.runtime.dispatch(Operations.insertText(text));
   }
 
-  deleteText() {
-    console.log('=== deleteText chamado ===');
+  deleteText(): void {
+    console.log("=== deleteText chamado ===");
     this.runtime.dispatch(Operations.deleteText());
   }
 
-  insertParagraph() {
-    console.log('=== insertParagraph chamado ===');
+  insertParagraph(): void {
+    console.log("=== insertParagraph chamado ===");
     this.runtime.dispatch(Operations.insertParagraph());
   }
 
-  moveCaret(key) {
-    console.log('=== moveCaret chamado ===', key);
+  moveCaret(key: string): void {
+    console.log("=== moveCaret chamado ===", key);
     this.runtime.dispatch(Operations.moveSelection(key));
   }
 
-  setTemplate(templateId) {
+  setTemplate(templateId: string): void {
     const firstSection = this.runtime.getState().document.sections[0];
     this.runtime.dispatch(
       Operations.setSectionTemplate(firstSection.id, templateId),
     );
   }
 
-  calculatePositionFromEvent(event) {
+  calculatePositionFromEvent(event: MouseEvent): LogicalPosition | null {
     const element = document.elementFromPoint(event.clientX, event.clientY);
-    const target = element ? element.closest('.oasis-fragment') : null;
-    
-    if (!target) {
-      return null;
-    }
+    const target = element
+      ? (element.closest(".oasis-fragment") as HTMLElement | null)
+      : null;
 
-    const fragmentEl = target;
-    const fragmentId = fragmentEl.dataset.fragmentId || '';
-    const fragmentText = fragmentEl.textContent || '';
-    const rect = fragmentEl.getBoundingClientRect();
-    
+    if (!target) return null;
+
+    const fragmentId = target.dataset["fragmentId"] ?? "";
+    const fragmentText = target.textContent ?? "";
+    const rect = target.getBoundingClientRect();
+
     const clickXInFragment = event.clientX - rect.left;
     const clickYInFragment = event.clientY - rect.top;
 
-    const parts = fragmentId.split(':');
-    const blockId = parts[1] + ':' + parts[2];
-    const sectionId = 'section:0';
+    const parts = fragmentId.split(":");
+    const blockId = parts[1] + ":" + parts[2];
+    const sectionId = "section:0";
 
-    const layoutFragments = this.latestLayout?.fragmentsByBlockId[blockId] || [];
-    const layoutFragment = layoutFragments.find(f => f.id === fragmentId) || layoutFragments[0];
+    const layoutFragments =
+      this.latestLayout?.fragmentsByBlockId[blockId] ?? [];
+    const layoutFragment =
+      layoutFragments.find((f) => f.id === fragmentId) ?? layoutFragments[0];
 
-    let targetLine = layoutFragment?.lines ? layoutFragment.lines[0] : null;
-    if (layoutFragment && layoutFragment.lines) {
-      let foundLine = null;
+    let targetLine: LineInfo | null = layoutFragment?.lines
+      ? layoutFragment.lines[0]
+      : null;
+    if (layoutFragment?.lines) {
+      let foundLine: LineInfo | null = null;
       for (const line of layoutFragment.lines) {
         const relativeLineY = line.y - layoutFragment.rect.y;
-        if (clickYInFragment >= relativeLineY && clickYInFragment < relativeLineY + line.height) {
+        if (
+          clickYInFragment >= relativeLineY &&
+          clickYInFragment < relativeLineY + line.height
+        ) {
           foundLine = line;
           break;
         }
@@ -204,7 +260,11 @@ export class OasisEditorController {
       const lineStart = targetLine.offsetStart;
       const lineEnd = targetLine.offsetEnd;
       for (let i = lineStart; i <= lineEnd; i++) {
-        const measuredWidth = this.measureWidthUpToOffset(layoutFragment, lineStart, i);
+        const measuredWidth = this.measureWidthUpToOffset(
+          layoutFragment,
+          lineStart,
+          i,
+        );
         const distance = Math.abs(measuredWidth - clickXInFragment);
         if (distance < minDistance) {
           minDistance = distance;
@@ -224,28 +284,25 @@ export class OasisEditorController {
 
     const state = this.runtime.getState();
     const block = state.document.sections
-      .flatMap(s => s.children)
-      .find(b => b.id === blockId);
+      .flatMap((s) => s.children)
+      .find((b) => b.id === blockId);
 
     let actualRunId = fragmentId;
     let relativeOffset = closestOffset;
 
-    if (block && block.children && block.children.length > 0) {
+    if (block?.children?.length) {
       let currentOffset = 0;
       for (const run of block.children) {
         const runLength = run.text.length;
-        if (closestOffset >= currentOffset && closestOffset <= currentOffset + runLength) {
+        if (
+          closestOffset >= currentOffset &&
+          closestOffset <= currentOffset + runLength
+        ) {
           actualRunId = run.id;
           relativeOffset = closestOffset - currentOffset;
           break;
         }
         currentOffset += runLength;
-      }
-      // If none found (clicking past end), use last run
-      if (!actualRunId && block.children.length > 0) {
-        const lastRun = block.children[block.children.length - 1];
-        actualRunId = lastRun.id;
-        relativeOffset = lastRun.text.length;
       }
     }
 
@@ -257,49 +314,39 @@ export class OasisEditorController {
     };
   }
 
-  handleMouseDown(event) {
+  handleMouseDown(event: MouseEvent): void {
     const position = this.calculatePositionFromEvent(event);
     if (!position) return;
-    
+
     this.isDragging = true;
     this.dragAnchor = position;
     this.runtime.dispatch(
-      Operations.setSelection({ anchor: position, focus: position })
+      Operations.setSelection({ anchor: position, focus: position }),
     );
   }
 
-  handleMouseMove(event) {
-    // Left mouse button must be held down (buttons === 1)
+  handleMouseMove(event: MouseEvent): void {
     if (!this.isDragging || event.buttons !== 1) {
-       this.isDragging = false;
-       return;
+      this.isDragging = false;
+      return;
     }
-    
+
     const position = this.calculatePositionFromEvent(event);
     if (!position) return;
 
     this.runtime.dispatch(
-      Operations.setSelection({ anchor: this.dragAnchor, focus: position })
+      Operations.setSelection({ anchor: this.dragAnchor!, focus: position }),
     );
   }
 
-  handleMouseUp(event) {
+  handleMouseUp(): void {
     this.isDragging = false;
   }
 
   /**
    * Selects the whole word under the click position, mirroring Word's double-click behaviour.
-   *
-   * Word boundary rules (same as most editors):
-   *   - A "word" is a maximal run of \w characters (letters, digits, underscores).
-   *   - A "punctuation group" is a maximal run of non-\w, non-whitespace characters.
-   *   - Trailing whitespace after the word is included (Word behaviour), but leading
-   *     whitespace is not.
    */
-  /**
-   * Selects the whole word under the click position, mirroring Word's double-click behaviour.
-   */
-  handleDblClick(event) {
+  handleDblClick(event: MouseEvent): void {
     event.preventDefault();
 
     const position = this.calculatePositionFromEvent(event);
@@ -307,22 +354,21 @@ export class OasisEditorController {
 
     const state = this.runtime.getState();
     const block = state.document.sections
-      .flatMap(s => s.children)
-      .find(b => b.id === position.blockId);
+      .flatMap((s) => s.children)
+      .find((b) => b.id === position.blockId);
 
-    if (!block || !block.children || block.children.length === 0) return;
+    if (!block?.children?.length) return;
 
-    const fullText = block.children.map(r => r.text).join('');
+    const fullText = block.children.map((r) => r.text).join("");
 
-    // position.offset is relative to the run – convert to absolute offset within the block
     let absoluteClickOffset = position.offset;
     for (const run of block.children) {
       if (run.id === position.inlineId) break;
       absoluteClickOffset += run.text.length;
     }
 
-    const isWord = (ch) => /[a-zA-Z0-9À-ÿ_]/.test(ch);
-    const isWhitespace = (ch) => /\s/.test(ch);
+    const isWord = (ch: string): boolean => /[a-zA-Z0-9À-ÿ_]/.test(ch);
+    const isWhitespace = (ch: string): boolean => /\s/.test(ch);
 
     let wordStart = absoluteClickOffset;
     let wordEnd = absoluteClickOffset;
@@ -332,30 +378,40 @@ export class OasisEditorController {
 
       if (isWord(ch)) {
         while (wordStart > 0 && isWord(fullText[wordStart - 1])) wordStart--;
-        while (wordEnd < fullText.length && isWord(fullText[wordEnd])) wordEnd++;
-        // Incluir UM espaço depois (Comportamento Word)
-        if (wordEnd < fullText.length && isWhitespace(fullText[wordEnd])) {
+        while (wordEnd < fullText.length && isWord(fullText[wordEnd]))
           wordEnd++;
-        }
+        if (wordEnd < fullText.length && isWhitespace(fullText[wordEnd]))
+          wordEnd++;
       } else if (isWhitespace(ch)) {
-        while (wordStart > 0 && isWhitespace(fullText[wordStart - 1])) wordStart--;
-        while (wordEnd < fullText.length && isWhitespace(fullText[wordEnd])) wordEnd++;
+        while (wordStart > 0 && isWhitespace(fullText[wordStart - 1]))
+          wordStart--;
+        while (wordEnd < fullText.length && isWhitespace(fullText[wordEnd]))
+          wordEnd++;
       } else {
-        const isPunct = (c) => !isWord(c) && !isWhitespace(c);
+        const isPunct = (c: string): boolean => !isWord(c) && !isWhitespace(c);
         while (wordStart > 0 && isPunct(fullText[wordStart - 1])) wordStart--;
-        while (wordEnd < fullText.length && isPunct(fullText[wordEnd])) wordEnd++;
+        while (wordEnd < fullText.length && isPunct(fullText[wordEnd]))
+          wordEnd++;
       }
     } else if (fullText.length > 0) {
       wordEnd = fullText.length;
       wordStart = wordEnd;
-      while (wordStart > 0 && isWhitespace(fullText[wordStart-1])) wordStart--;
+      while (wordStart > 0 && isWhitespace(fullText[wordStart - 1]))
+        wordStart--;
       if (wordStart > 0) {
-         const type = isWord(fullText[wordStart-1]);
-         while (wordStart > 0 && isWord(fullText[wordStart-1]) === type && !isWhitespace(fullText[wordStart-1])) wordStart--;
+        const type = isWord(fullText[wordStart - 1]);
+        while (
+          wordStart > 0 &&
+          isWord(fullText[wordStart - 1]) === type &&
+          !isWhitespace(fullText[wordStart - 1])
+        )
+          wordStart--;
       }
     }
 
-    const resolvePos = (absoluteOffset) => {
+    const resolvePos = (
+      absoluteOffset: number,
+    ): { inlineId: string; offset: number } => {
       let currentOffset = 0;
       for (const run of block.children) {
         const runEnd = currentOffset + run.text.length;
@@ -374,47 +430,55 @@ export class OasisEditorController {
     this.isDragging = false;
     this.runtime.dispatch(
       Operations.setSelection({
-        anchor: { ...position, inlineId: anchorInfo.inlineId, offset: anchorInfo.offset },
-        focus: { ...position, inlineId: focusInfo.inlineId, offset: focusInfo.offset }
-      })
+        anchor: {
+          ...position,
+          inlineId: anchorInfo.inlineId,
+          offset: anchorInfo.offset,
+        },
+        focus: {
+          ...position,
+          inlineId: focusInfo.inlineId,
+          offset: focusInfo.offset,
+        },
+      }),
     );
   }
 
   /**
    * Selects the whole block (paragraph) on triple click.
    */
-  handleTripleClick(event) {
+  handleTripleClick(event: MouseEvent): void {
     const position = this.calculatePositionFromEvent(event);
     if (!position) return;
 
     const state = this.runtime.getState();
     const block = state.document.sections
-      .flatMap(s => s.children)
-      .find(b => b.id === position.blockId);
+      .flatMap((s) => s.children)
+      .find((b) => b.id === position.blockId);
 
-    if (!block || !block.children || block.children.length === 0) return;
+    if (!block?.children?.length) return;
 
     const lastRun = block.children[block.children.length - 1];
 
-    const anchorPos = {
+    const anchorPos: LogicalPosition = {
       ...position,
       inlineId: block.children[0].id,
-      offset: 0
+      offset: 0,
     };
 
-    const focusPos = {
+    const focusPos: LogicalPosition = {
       ...position,
       inlineId: lastRun.id,
-      offset: lastRun.text.length
+      offset: lastRun.text.length,
     };
 
     this.isDragging = false;
     this.runtime.dispatch(
-      Operations.setSelection({ anchor: anchorPos, focus: focusPos })
+      Operations.setSelection({ anchor: anchorPos, focus: focusPos }),
     );
   }
 
-  refresh() {
+  refresh(): void {
     const state = this.runtime.getState();
     const layout = this.layoutService.compose(state.document);
     this.latestLayout = layout;
@@ -422,7 +486,7 @@ export class OasisEditorController {
     this.view.render(viewModel);
   }
 
-  exportDocument() {
+  exportDocument(): void {
     this.view.downloadJson(
       "oasis-editor-document.json",
       this.runtime.exportJson(),

@@ -1,13 +1,6 @@
-// @ts-nocheck
+import { PageTemplate } from "./PageTemplateTypes.js";
 
-
-
-
-
-
-
-
-export const A4_DEFAULT_TEMPLATE = {
+export const A4_DEFAULT_TEMPLATE: PageTemplate = {
   id: "template:a4:default",
   name: "A4 Default",
   size: { width: 794, height: 1123 },
@@ -17,7 +10,7 @@ export const A4_DEFAULT_TEMPLATE = {
   firstPageDifferent: false,
 };
 
-export const LETTER_TEMPLATE = {
+export const LETTER_TEMPLATE: PageTemplate = {
   id: "template:letter:default",
   name: "Letter Default",
   size: { width: 816, height: 1056 },
@@ -27,7 +20,7 @@ export const LETTER_TEMPLATE = {
   firstPageDifferent: false,
 };
 
-export const PAGE_TEMPLATES = {
+export const PAGE_TEMPLATES: Record<string, PageTemplate> = {
   [A4_DEFAULT_TEMPLATE.id]: A4_DEFAULT_TEMPLATE,
   [LETTER_TEMPLATE.id]: LETTER_TEMPLATE,
 };
