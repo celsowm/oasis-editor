@@ -218,6 +218,93 @@ export const reduceDocumentState = (state, operation) => {
       };
     }
 
+    case OPERATION_TYPES.INSERT_PARAGRAPH: {
+      if (!selection) return state;
+
+      const { blockId, inlineId, offset } = selection.anchor;
+
+      let nextBlockIdStr = null;
+      let nextInlineId = null;
+      let nextSectionId = null;
+
+      const nextSections = document.sections.map((section) => {
+        const blockIndex = section.children.findIndex(b => b.id === blockId);
+        if (blockIndex === -1) return section;
+
+        const currentBlock = section.children[blockIndex];
+        const runIndex = currentBlock.children.findIndex(r => r.id === inlineId);
+        
+        if (runIndex === -1) return section;
+
+        const run = currentBlock.children[runIndex];
+        
+        const beforeText = run.text.substring(0, offset);
+        const afterText = run.text.substring(offset);
+
+        let currentBlockRuns = [
+          ...currentBlock.children.slice(0, runIndex),
+          { ...run, id: `run:${Date.now().toString(36)}:before`, text: beforeText }
+        ];
+        currentBlockRuns = currentBlockRuns.filter(r => r.text.length > 0 || currentBlockRuns.length === 1); 
+
+        if (currentBlockRuns.length === 0) {
+          currentBlockRuns.push({ id: `run:${Date.now().toString(36)}:empty`, text: "", marks: {...run.marks} });
+        }
+
+        let newBlockRuns = [
+          { ...run, id: `run:${Date.now().toString(36)}:after`, text: afterText },
+          ...currentBlock.children.slice(runIndex + 1).map(r => ({ ...r, id: `run:${Date.now().toString(36)}:${r.id}` }))
+        ];
+
+        if (newBlockRuns[0].text === "" && newBlockRuns.length > 1) {
+             newBlockRuns.shift();
+        }
+
+        nextBlockIdStr = `block:${Date.now().toString(36)}`;
+        nextInlineId = newBlockRuns[0].id;
+        nextSectionId = section.id;
+
+        const newBlock = {
+          ...currentBlock,
+          id: nextBlockIdStr,
+          children: newBlockRuns
+        };
+
+        const currentBlockUpdated = {
+          ...currentBlock,
+          children: currentBlockRuns
+        };
+
+        const newChildren = [
+          ...section.children.slice(0, blockIndex),
+          currentBlockUpdated,
+          newBlock,
+          ...section.children.slice(blockIndex + 1)
+        ];
+
+        return { ...section, children: newChildren };
+      });
+
+      if (!nextBlockIdStr) return state;
+
+      const nextPosition = {
+        sectionId: nextSectionId,
+        blockId: nextBlockIdStr,
+        inlineId: nextInlineId,
+        offset: 0
+      };
+
+      return {
+        ...state,
+        document: {
+          ...document,
+          revision: document.revision + 1,
+          sections: nextSections,
+        },
+        selection: { anchor: nextPosition, focus: nextPosition },
+      };
+    }
+
     case OPERATION_TYPES.MOVE_SELECTION: {
       if (!selection) return state;
       const { key } = operation.payload;

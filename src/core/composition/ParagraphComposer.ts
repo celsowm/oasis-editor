@@ -34,6 +34,10 @@ export const composeParagraph = (block, maxWidth, measure) => {
     block.kind === "heading"
   );
 
+  if (broken.length === 0) {
+    broken.push({ text: "", width: 0 });
+  }
+
   const lineHeight =
     typography.fontSize * (block.kind === "heading" ? 1.35 : 1.5);
 

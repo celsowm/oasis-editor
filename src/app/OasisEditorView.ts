@@ -83,7 +83,7 @@ export class OasisEditorView {
         events.onDelete();
         e.preventDefault();
       } else if (e.key === "Enter") {
-        events.onEnter();
+        events.onEnter(e.shiftKey);
         e.preventDefault();
       } else if (e.key.startsWith("Arrow")) {
         events.onArrowKey(e.key);

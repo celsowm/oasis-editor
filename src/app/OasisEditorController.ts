@@ -70,7 +70,7 @@ export class OasisEditorController {
       onTemplateChange: (templateId) => this.setTemplate(templateId),
       onTextInput: (text) => this.insertText(text),
       onDelete: () => this.deleteText(),
-      onEnter: () => this.insertParagraph(),
+      onEnter: (isShift) => isShift ? this.insertText('\n') : this.insertParagraph(),
       onArrowKey: (key) => this.moveCaret(key),
       onMouseDown: (e) => this.handleMouseDown(e),
       onMouseMove: (e) => this.handleMouseMove(e),

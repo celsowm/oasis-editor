@@ -26,10 +26,17 @@ export const breakTextIntoLines = (
     const family = run.marks?.fontFamily || defaultFontFamily;
     const size = run.marks?.fontSize || defaultFontSize;
 
-    const words = run.text.split(/(\s+)/); // Keep spaces as distinct segments
+    const words = run.text.split(/(\n|[ \t]+)/); // Keep newlines and spaces distinct
     
     for (const segment of words) {
       if (!segment) continue;
+
+      if (segment === "\n") {
+         lines.push({ text: currentLineText + "\n", width: currentLineWidth });
+         currentLineText = "";
+         currentLineWidth = 0;
+         continue;
+      }
 
       const metrics = measure.measureText({
          text: segment,
