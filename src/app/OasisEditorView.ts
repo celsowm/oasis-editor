@@ -96,6 +96,14 @@ export class OasisEditorView {
       events.onMouseDown(e);
       setTimeout(() => this.elements.hiddenInput.focus(), 0);
     });
+
+    this.elements.root.addEventListener("mousemove", (e) => {
+      if (events.onMouseMove) events.onMouseMove(e);
+    });
+
+    this.elements.root.addEventListener("mouseup", (e) => {
+      if (events.onMouseUp) events.onMouseUp(e);
+    });
   }
 
   render(viewModel) {

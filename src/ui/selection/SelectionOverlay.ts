@@ -25,7 +25,9 @@ export class SelectionOverlay {
     this.container.innerHTML = "";
     if (!range || !this.mapper?.getSelectionRects) return;
 
-    const rects = this.mapper.getSelectionRects(range);
+    const pageId = this.container.parentElement?.dataset.pageId;
+    const rects = this.mapper.getSelectionRects(range).filter(r => r.pageId === pageId);
+    
     for (const rect of rects) {
       const el = document.createElement("div");
       el.className = "oasis-selection-rect";

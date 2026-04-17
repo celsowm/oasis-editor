@@ -42,7 +42,12 @@ export class OasisEditorController {
       onEnter: () => this.insertParagraph(),
       onArrowKey: (key) => this.moveCaret(key),
       onMouseDown: (e) => this.handleMouseDown(e),
+      onMouseMove: (e) => this.handleMouseMove(e),
+      onMouseUp: (e) => this.handleMouseUp(e),
     });
+
+    this.isDragging = false;
+    this.dragAnchor = null;
 
     this.runtime.subscribe(() => {
       this.refresh();
@@ -113,17 +118,11 @@ export class OasisEditorController {
     );
   }
 
-  handleMouseDown(event) {
-    console.log('=== handleMouseDown chamado ===');
-    console.log('Evento:', event.clientX, event.clientY);
-
-    // Usar elementFromPoint para encontrar o fragmento clicado diretamente
+  calculatePositionFromEvent(event) {
     const target = document.elementFromPoint(event.clientX, event.clientY);
     
     if (!target || !target.classList.contains('oasis-fragment')) {
-      console.log('❌ Clique não foi em um fragmento. Target:', target?.className);
-      console.log('=== handleMouseDown finalizado ===');
-      return;
+      return null;
     }
 
     const fragmentEl = target;
@@ -131,25 +130,16 @@ export class OasisEditorController {
     const fragmentText = fragmentEl.textContent || '';
     const rect = fragmentEl.getBoundingClientRect();
     
-    console.log('✅ Fragmento clicado:', fragmentId);
-    console.log('Texto:', fragmentText);
-    console.log('Rect viewport:', { left: rect.left, top: rect.top, width: rect.width, height: rect.height });
-
-    // Calcular offsets X e Y do clique dentro do fragmento
     const clickXInFragment = event.clientX - rect.left;
     const clickYInFragment = event.clientY - rect.top;
-    console.log('Click dentro do fragmento:', clickXInFragment.toFixed(1), clickYInFragment.toFixed(1));
 
-    // Extrair IDs do fragment ID (formato: fragment:block:3:0)
     const parts = fragmentId.split(':');
-    const blockId = parts[1] + ':' + parts[2]; // block:3
-    const sectionId = 'section:0'; // assumindo seção única
+    const blockId = parts[1] + ':' + parts[2];
+    const sectionId = 'section:0';
 
-    // Buscar fragmento no layout para descobrir as quebras de linha
     const layoutFragments = this.latestLayout?.fragmentsByBlockId[blockId] || [];
     const layoutFragment = layoutFragments.find(f => f.id === fragmentId) || layoutFragments[0];
 
-    // Encontrar a linha clicada baseada na posição Y
     let targetLine = layoutFragment?.lines ? layoutFragment.lines[0] : null;
     if (layoutFragment && layoutFragment.lines) {
       let foundLine = null;
@@ -173,7 +163,6 @@ export class OasisEditorController {
       }
     }
 
-    // Medir texto caractere por caractere
     const computedStyle = getComputedStyle(fragmentEl);
     const fontFamily = computedStyle.fontFamily;
     const fontSize = parseFloat(computedStyle.fontSize);
@@ -201,7 +190,6 @@ export class OasisEditorController {
         }
       }
     } else {
-      // Fallback
       for (let i = 0; i <= fragmentText.length; i++) {
         const textUpToI = fragmentText.substring(0, i);
         const measured = this.measurer.measureText({
@@ -219,27 +207,21 @@ export class OasisEditorController {
       }
     }
 
-    console.log('Offset calculado:', closestOffset);
-    console.log('IDs extraídos:', { sectionId, blockId, fragmentId });
-
-    // Encontrar o run ID real no documento
     const state = this.runtime.getState();
     const block = state.document.sections
       .flatMap(s => s.children)
       .find(b => b.id === blockId);
     
-    let actualRunId = fragmentId; // fallback
+    let actualRunId = fragmentId;
     if (block && block.children && block.children.length > 0) {
       if (block.children.length === 1) {
         actualRunId = block.children[0].id;
-        console.log('🔍 Usando run ID real:', actualRunId);
       } else {
         let currentOffset = 0;
         for (const run of block.children) {
           const runLength = run.text.length;
           if (closestOffset >= currentOffset && closestOffset <= currentOffset + runLength) {
             actualRunId = run.id;
-            console.log('🔍 Usando run ID real (multi-run):', actualRunId);
             break;
           }
           currentOffset += runLength;
@@ -247,20 +229,42 @@ export class OasisEditorController {
       }
     }
 
-    const position = {
+    return {
       sectionId,
       blockId,
       inlineId: actualRunId,
       offset: closestOffset,
     };
+  }
 
-    console.log('Posição lógica:', position);
-    console.log('Despachando SET_SELECTION...');
+  handleMouseDown(event) {
+    const position = this.calculatePositionFromEvent(event);
+    if (!position) return;
+    
+    this.isDragging = true;
+    this.dragAnchor = position;
     this.runtime.dispatch(
       Operations.setSelection({ anchor: position, focus: position })
     );
+  }
 
-    console.log('=== handleMouseDown finalizado ===');
+  handleMouseMove(event) {
+    // Left mouse button must be held down (buttons === 1)
+    if (!this.isDragging || event.buttons !== 1) {
+       this.isDragging = false;
+       return;
+    }
+    
+    const position = this.calculatePositionFromEvent(event);
+    if (!position) return;
+
+    this.runtime.dispatch(
+      Operations.setSelection({ anchor: this.dragAnchor, focus: position })
+    );
+  }
+
+  handleMouseUp(event) {
+    this.isDragging = false;
   }
 
   refresh() {
