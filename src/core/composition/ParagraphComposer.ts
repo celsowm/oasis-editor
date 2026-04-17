@@ -23,12 +23,15 @@ const getBlockTypography = (block) => {
 export const composeParagraph = (block, maxWidth, measure) => {
   const plainText = block.children.map((child) => child.text).join("");
   const typography = getBlockTypography(block);
+  
+  // Forward runs inside block
   const broken = breakTextIntoLines(
-    plainText,
+    block.children,
     maxWidth,
     measure,
     typography.fontFamily,
     typography.fontSize,
+    block.kind === "heading"
   );
 
   const lineHeight =
@@ -45,7 +48,7 @@ export const composeParagraph = (block, maxWidth, measure) => {
       offsetEnd: currentOffset + line.text.length,
       y: index * lineHeight,
     };
-    currentOffset += line.text.length + 1;
+    currentOffset += line.text.length; // Don't add +1 for break since we preserve exact spaces in runs now? We should stick to exactly line.text.length
     return lineInfo;
   });
 
@@ -53,6 +56,7 @@ export const composeParagraph = (block, maxWidth, measure) => {
     blockId: block.id,
     kind: block.kind,
     text: plainText,
+    runs: block.children,
     typography,
     totalHeight: broken.length * lineHeight,
     lines,

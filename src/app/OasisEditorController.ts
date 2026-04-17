@@ -119,9 +119,10 @@ export class OasisEditorController {
   }
 
   calculatePositionFromEvent(event) {
-    const target = document.elementFromPoint(event.clientX, event.clientY);
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const target = element ? element.closest('.oasis-fragment') : null;
     
-    if (!target || !target.classList.contains('oasis-fragment')) {
+    if (!target) {
       return null;
     }
 

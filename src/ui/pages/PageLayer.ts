@@ -50,27 +50,37 @@ export class PageLayer {
         const fragmentEl = document.createElement("article");
         fragmentEl.className = `oasis-fragment oasis-fragment--${fragment.kind}`;
         fragmentEl.dataset.fragmentId = fragment.id;
-        fragmentEl.textContent = fragment.text;
         fragmentEl.style.fontFamily = fragment.typography.fontFamily;
         fragmentEl.style.fontSize = `${fragment.typography.fontSize}px`;
-
         fragmentEl.style.left = `${fragment.rect.x}px`;
         fragmentEl.style.top = `${fragment.rect.y}px`;
         fragmentEl.style.width = `${fragment.rect.width}px`;
         fragmentEl.style.height = `${fragment.rect.height}px`;
 
-        let fontWeight = fragment.typography.fontWeight;
-        if (fragment.marks?.bold) {
-          fontWeight = 700;
-        }
-        fragmentEl.style.fontWeight = String(fontWeight);
+        // Render text using spans for rich text formatting
+        fragmentEl.innerHTML = "";
+        
+        let displayRuns = fragment.runs || [{ text: fragment.text, marks: fragment.marks || {} }];
+        
+        for (const run of displayRuns) {
+          const span = document.createElement("span");
+          span.textContent = run.text;
+          
+          let fontWeight = fragment.typography.fontWeight;
+          if (run.marks?.bold || fragment.kind === "heading") {
+            fontWeight = 700;
+          }
+          span.style.fontWeight = String(fontWeight);
 
-        if (fragment.marks?.italic) {
-          fragmentEl.style.fontStyle = "italic";
-        }
+          if (run.marks?.italic) {
+            span.style.fontStyle = "italic";
+          }
 
-        if (fragment.marks?.underline) {
-          fragmentEl.style.textDecoration = "underline";
+          if (run.marks?.underline) {
+            span.style.textDecoration = "underline";
+          }
+          
+          fragmentEl.appendChild(span);
         }
 
         content.appendChild(fragmentEl);

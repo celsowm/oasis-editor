@@ -120,7 +120,7 @@ export const paginateDocument = (documentModel, measure) => {
           height: composed.totalHeight,
         },
         typography: composed.typography,
-        marks: block.children[0]?.marks || {},
+        runs: composed.runs,
         lines: composed.lines.map((line) => ({
           ...line,
           y: line.y + currentY,
