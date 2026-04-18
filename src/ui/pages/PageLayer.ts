@@ -69,6 +69,10 @@ export class PageLayer {
             span.style.textDecoration = "underline";
           }
 
+          if (run.marks?.["color"]) {
+            span.style.color = run.marks["color"];
+          }
+
           fragmentEl.appendChild(span);
         }
 

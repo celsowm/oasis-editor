@@ -118,6 +118,7 @@ export class OasisEditorController {
       onBold: () => this.toggleBold(),
       onItalic: () => this.toggleItalic(),
       onUnderline: () => this.toggleUnderline(),
+      onColorChange: (color) => this.setColor(color),
       onUndo: () => this.undo(),
       onRedo: () => this.redo(),
       onExport: () => this.exportDocument(),
@@ -153,6 +154,10 @@ export class OasisEditorController {
 
   toggleUnderline(): void {
     this.runtime.dispatch(Operations.toggleMark("underline"));
+  }
+
+  setColor(color: string): void {
+    this.runtime.dispatch(Operations.setMark("color", color));
   }
 
   undo(): void {

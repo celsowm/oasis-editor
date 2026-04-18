@@ -1,0 +1,142 @@
+.oasis-color-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 4px;
+}
+
+.oasis-color-picker:hover {
+  background: #dadce0;
+}
+
+.oasis-color-picker-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px 0 0 4px;
+  min-width: 32px;
+}
+
+.oasis-color-picker-main:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.oasis-color-picker-icon {
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
+  color: #3c4043;
+}
+
+.oasis-color-picker-indicator {
+  width: 16px;
+  height: 3px;
+  margin-top: 1px;
+  background-color: #000;
+  border-radius: 1px;
+}
+
+.oasis-color-picker-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 0 4px 4px 0;
+  font-size: 8px;
+  color: #5f6368;
+}
+
+.oasis-color-picker-arrow:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.oasis-color-picker-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  margin-top: 4px;
+  display: none;
+  width: max-content;
+  user-select: none;
+}
+
+.oasis-color-picker-dropdown.show {
+  display: block;
+}
+
+.oasis-color-picker-section {
+  margin-bottom: 12px;
+}
+
+.oasis-color-picker-section:last-child {
+  margin-bottom: 0;
+}
+
+.oasis-color-picker-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #70757a;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.oasis-color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 18px);
+  gap: 2px;
+}
+
+.oasis-color-picker-swatch {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: transform 0.1s ease;
+}
+
+.oasis-color-picker-swatch:hover {
+  transform: scale(1.2);
+  z-index: 1;
+  border-color: #999;
+}
+
+.oasis-color-picker-swatch.active {
+  border: 2px solid #2563eb;
+}
+
+.oasis-color-picker-automatic {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #3c4043;
+}
+
+.oasis-color-picker-automatic:hover {
+  background: #f1f3f4;
+}
+
+.oasis-color-picker-automatic-square {
+  width: 14px;
+  height: 14px;
+  background: #000;
+  border: 1px solid #ddd;
+}

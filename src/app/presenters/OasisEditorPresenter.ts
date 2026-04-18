@@ -13,6 +13,7 @@ export interface SelectionState {
   bold: boolean;
   italic: boolean;
   underline: boolean;
+  color: string;
   align: "left" | "center" | "right" | "justify";
 }
 
@@ -54,11 +55,11 @@ export class OasisEditorPresenter {
   }): EditorViewModel {
     const firstSection = state.document.sections[0];
     const selection = state.selection;
-
     let selectionState: SelectionState = {
       bold: false,
       italic: false,
       underline: false,
+      color: "#000000",
       align: "left",
     };
 
@@ -72,13 +73,28 @@ export class OasisEditorPresenter {
 
       if (targetBlock && targetBlock.children.length > 0) {
         const marks: MarkSet = targetBlock.children[0].marks;
+        const effectiveMarks = {
+          ...marks,
+          ...(state.pendingMarks || {}),
+        };
+        
         selectionState = {
-          bold: !!marks.bold,
-          italic: !!marks.italic,
-          underline: !!marks.underline,
+          bold: !!effectiveMarks.bold,
+          italic: !!effectiveMarks.italic,
+          underline: !!effectiveMarks.underline,
+          color: effectiveMarks.color || "#000000",
           align: (targetBlock as any).align || "left",
         };
       }
+    } else if (state.pendingMarks) {
+      // If no selection but we have pending marks, reflect them in the toolbar
+      selectionState = {
+        ...selectionState,
+        bold: !!state.pendingMarks.bold,
+        italic: !!state.pendingMarks.italic,
+        underline: !!state.pendingMarks.underline,
+        color: state.pendingMarks.color || "#000000",
+      };
     }
 
     return {

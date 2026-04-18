@@ -4,6 +4,7 @@ import { OasisEditorPresenter } from "./presenters/OasisEditorPresenter.js";
 import { TextMeasurer } from "../bridge/measurement/TextMeasurementBridge.js";
 import { PageLayer } from "../ui/pages/PageLayer.js";
 import { PageViewport } from "../ui/pages/PageViewport.js";
+import { ColorPicker } from "../ui/components/ColorPicker.js";
 
 export interface ViewElements {
   root: HTMLElement;
@@ -22,12 +23,14 @@ export interface ViewElements {
   alignCenter: HTMLElement;
   alignRight: HTMLElement;
   alignJustify: HTMLElement;
+  colorPickerContainer: HTMLElement;
 }
 
 export interface SelectionState {
   bold: boolean;
   italic: boolean;
   underline: boolean;
+  color: string;
   align: "left" | "center" | "right" | "justify";
 }
 
@@ -35,6 +38,7 @@ export interface ViewEventBindings {
   onBold: () => void;
   onItalic: () => void;
   onUnderline: () => void;
+  onColorChange: (color: string) => void;
   onUndo: () => void;
   onRedo: () => void;
   onExport: () => void;
@@ -57,6 +61,7 @@ export class OasisEditorView {
   readonly elements: ViewElements;
   private pageLayer: PageLayer;
   private viewport: PageViewport;
+  private colorPicker!: ColorPicker;
 
   constructor(
     dom: OasisEditorDom,
@@ -82,6 +87,7 @@ export class OasisEditorView {
       alignCenter: dom.getAlignCenterButton(),
       alignRight: dom.getAlignRightButton(),
       alignJustify: dom.getAlignJustifyButton(),
+      colorPickerContainer: dom.getColorPickerContainer(),
     };
 
     this.pageLayer = new PageLayer(this.elements.pagesContainer);
@@ -90,6 +96,12 @@ export class OasisEditorView {
       this.pageLayer,
       measurer,
     );
+
+    this.initColorPicker();
+  }
+
+  private initColorPicker(): void {
+    // Note: We'll bind the actual handler in the bind() method to maintain state consistency
   }
 
   renderTemplateOptions(options: { value: string; label: string }[]): void {
@@ -107,6 +119,11 @@ export class OasisEditorView {
     this.elements.boldButton.addEventListener("click", events.onBold);
     this.elements.italicButton.addEventListener("click", events.onItalic);
     this.elements.underlineButton.addEventListener("click", events.onUnderline);
+    
+    this.colorPicker = new ColorPicker("oasis-editor-color-picker-container", {
+      onColorSelected: (color) => events.onColorChange(color),
+    });
+
     this.elements.undoButton.addEventListener("click", events.onUndo);
     this.elements.redoButton.addEventListener("click", events.onRedo);
     this.elements.exportButton.addEventListener("click", events.onExport);
@@ -232,6 +249,10 @@ export class OasisEditorView {
     this.elements.alignCenter.classList.toggle("active", selectionState.align === "center");
     this.elements.alignRight.classList.toggle("active", selectionState.align === "right");
     this.elements.alignJustify.classList.toggle("active", selectionState.align === "justify");
+    
+    if (this.colorPicker) {
+      this.colorPicker.setCurrentColor(selectionState.color);
+    }
   }
 
   downloadJson(filename: string, content: string): void {

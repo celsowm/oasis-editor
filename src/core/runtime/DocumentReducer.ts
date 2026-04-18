@@ -50,12 +50,16 @@ export const reduceDocumentState = (
       return {
         ...state,
         selection: operation.payload.selection,
+        pendingMarks: undefined,
       };
 
-    case OperationType.TOGGLE_MARK: {
+    case OperationType.TOGGLE_MARK:
+    case OperationType.SET_MARK: {
       if (!selection) return state;
 
+      const isSet = operation.type === OperationType.SET_MARK;
       const mark = operation.payload.mark;
+      const setValue = isSet ? (operation.payload as any).value : undefined;
 
       // Helper: compute absolute offset within a block for a LogicalPosition
       const getAbsoluteOffsetInBlock = (pos: LogicalPosition): number => {
@@ -76,12 +80,26 @@ export const reduceDocumentState = (
       const anchorAbs = getAbsoluteOffsetInBlock(selection.anchor);
       const focusAbs = getAbsoluteOffsetInBlock(selection.focus);
 
-      // If collapsed selection, nothing to do
+      // If collapsed selection, update pending marks instead of return state
       if (
         selection.anchor.blockId === selection.focus.blockId &&
         anchorAbs === focusAbs
       ) {
-        return state;
+        const block = document.sections
+          .flatMap((s) => s.children)
+          .find((b) => b.id === selection.anchor.blockId);
+        const currentRun = block?.children.find((r) => r.id === selection.anchor.inlineId);
+        const baseMarks = state.pendingMarks || currentRun?.marks || {};
+        
+        const newValue = isSet ? setValue : !baseMarks[mark];
+        
+        return {
+          ...state,
+          pendingMarks: {
+            ...baseMarks,
+            [mark]: newValue,
+          },
+        };
       }
 
       // Determine ordering across blocks and offsets
@@ -115,7 +133,7 @@ export const reduceDocumentState = (
       const originalFocusAbs = focusAbs;
 
       let inSelection = false;
-      let selectionToggleTarget: boolean | undefined;
+      let selectionToggleTarget: any | undefined = isSet ? setValue : undefined;
 
       const nextSections = document.sections.map((section) => ({
         ...section,
@@ -149,7 +167,7 @@ export const reduceDocumentState = (
               );
               const afterText = run.text.substring(overlapEnd - runStart);
 
-              if (selectionToggleTarget === undefined) {
+              if (!isSet && selectionToggleTarget === undefined) {
                 selectionToggleTarget = !run.marks[mark];
               }
 
@@ -263,28 +281,80 @@ export const reduceDocumentState = (
 
       const { blockId, inlineId, offset } = selection.anchor;
       const text = operation.payload.text;
+      const pendingMarks = state.pendingMarks;
 
       const nextSections = document.sections.map((section) => ({
         ...section,
         children: section.children.map((block) => {
           if (block.id !== blockId) return block;
 
-          const nextChildren = block.children.map((run) => {
-            if (run.id !== inlineId) return run;
-            const before = run.text.substring(0, offset);
-            const after = run.text.substring(offset);
-            return { ...run, text: before + text + after };
-          });
+          const nextChildren: TextRun[] = [];
+          for (const run of block.children) {
+            if (run.id !== inlineId) {
+              nextChildren.push(run);
+              continue;
+            }
 
-          return { ...block, children: nextChildren };
+            const beforeText = run.text.substring(0, offset);
+            const afterText = run.text.substring(offset);
+
+            if (pendingMarks) {
+              if (beforeText) {
+                nextChildren.push({ ...run, id: genId("run"), text: beforeText });
+              }
+              nextChildren.push({
+                id: genId("run"),
+                text: text,
+                marks: { ...run.marks, ...pendingMarks },
+              });
+              if (afterText) {
+                nextChildren.push({ ...run, id: genId("run"), text: afterText });
+              }
+            } else {
+              nextChildren.push({ ...run, text: beforeText + text + afterText });
+            }
+          }
+
+          // Merge adjacent runs
+          const merged: TextRun[] = [];
+          for (const r of nextChildren) {
+            if (merged.length > 0) {
+              const last = merged[merged.length - 1];
+              if (JSON.stringify(last.marks) === JSON.stringify(r.marks)) {
+                last.text += r.text;
+                continue;
+              }
+            }
+            merged.push({ ...r });
+          }
+
+          return { ...block, children: merged };
         }),
       }));
 
-      const nextOffset = offset + text.length;
-      const nextPosition: LogicalPosition = {
-        ...selection.anchor,
-        offset: nextOffset,
-      };
+      // Find new position for selection
+      let nextPosition: LogicalPosition | null = null;
+      const block = nextSections.flatMap(s => s.children).find(b => b.id === blockId);
+      if (block) {
+        let acc = 0;
+        const targetOffset = offset + text.length;
+        for (const run of block.children) {
+          const runLen = run.text.length;
+          if (targetOffset >= acc && targetOffset <= acc + runLen) {
+            nextPosition = {
+              ...selection.anchor,
+              inlineId: run.id,
+              offset: targetOffset - acc
+            };
+            break;
+          }
+          acc += runLen;
+        }
+      }
+
+      if (!nextPosition) {
+        nextPosition = { ...selection.anchor, offset: offset + text.length };
+      }
 
       return {
         ...state,
@@ -294,6 +364,7 @@ export const reduceDocumentState = (
           sections: nextSections,
         },
         selection: { anchor: nextPosition, focus: nextPosition },
+        pendingMarks: undefined,
       };
     }
 
@@ -545,6 +616,8 @@ export const reduceDocumentState = (
       const { key } = operation.payload;
       const { blockId, inlineId, offset } = selection.anchor;
 
+      const baseState = { ...state, pendingMarks: undefined };
+      
       const blocksFlat = document.sections.flatMap((s) => s.children);
       const currentBlockIdx = blocksFlat.findIndex((b) => b.id === blockId);
       if (currentBlockIdx === -1) return state;
@@ -560,7 +633,6 @@ export const reduceDocumentState = (
       console.log("  runIdx:", runIdx, "inlineId:", inlineId);
       const currentRun = currentBlock.children[runIdx];
       console.log("  currentRun:", currentRun);
-
       if (key === "ArrowLeft") {
         console.log(
           "MOVE_SELECTION: ArrowLeft called, current offset:",
@@ -568,7 +640,7 @@ export const reduceDocumentState = (
         );
         if (offset > 0) {
           return {
-            ...state,
+            ...baseState,
             selection: {
               anchor: { ...selection.anchor, offset: offset - 1 },
               focus: { ...selection.focus, offset: offset - 1 },
@@ -577,7 +649,7 @@ export const reduceDocumentState = (
         } else if (runIdx > 0) {
           const prevRun = currentBlock.children[runIdx - 1];
           return {
-            ...state,
+            ...baseState,
             selection: {
               anchor: {
                 ...selection.anchor,
@@ -595,7 +667,7 @@ export const reduceDocumentState = (
           const prevBlock = blocksFlat[currentBlockIdx - 1];
           const lastRun = prevBlock.children[prevBlock.children.length - 1];
           return {
-            ...state,
+            ...baseState,
             selection: {
               anchor: {
                 ...selection.anchor,
@@ -612,7 +684,7 @@ export const reduceDocumentState = (
             },
           };
         }
-        return state;
+        return baseState;
       }
 
       if (key === "ArrowRight") {
@@ -621,7 +693,7 @@ export const reduceDocumentState = (
         console.log("  currentRun:", currentRun?.id, "textLength:", textLength);
         if (offset < textLength) {
           return {
-            ...state,
+            ...baseState,
             selection: {
               anchor: { ...selection.anchor, offset: offset + 1 },
               focus: { ...selection.focus, offset: offset + 1 },
@@ -630,7 +702,7 @@ export const reduceDocumentState = (
         } else if (runIdx < currentBlock.children.length - 1) {
           const nextRun = currentBlock.children[runIdx + 1];
           return {
-            ...state,
+            ...baseState,
             selection: {
               anchor: { ...selection.anchor, inlineId: nextRun.id, offset: 0 },
               focus: { ...selection.focus, inlineId: nextRun.id, offset: 0 },
@@ -640,7 +712,7 @@ export const reduceDocumentState = (
           const nextBlock = blocksFlat[currentBlockIdx + 1];
           const firstRun = nextBlock.children[0];
           return {
-            ...state,
+            ...baseState,
             selection: {
               anchor: {
                 ...selection.anchor,
@@ -657,7 +729,7 @@ export const reduceDocumentState = (
             },
           };
         }
-        return state;
+        return baseState;
       }
 
       if (key === "ArrowUp" || key === "ArrowDown") {

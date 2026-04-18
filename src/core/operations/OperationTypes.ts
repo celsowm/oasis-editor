@@ -10,6 +10,7 @@ export enum OperationType {
   INSERT_PARAGRAPH = "INSERT_PARAGRAPH",
   MOVE_SELECTION = "MOVE_SELECTION",
   TOGGLE_MARK = "TOGGLE_MARK",
+  SET_MARK = "SET_MARK",
   SET_ALIGNMENT = "SET_ALIGNMENT",
 }
 
@@ -33,6 +34,10 @@ export interface MoveSelectionPayload {
 }
 export interface ToggleMarkPayload {
   mark: keyof MarkSet;
+}
+export interface SetMarkPayload {
+  mark: keyof MarkSet;
+  value: any;
 }
 export interface SetAlignmentPayload {
   align: "left" | "center" | "right" | "justify";
@@ -75,6 +80,10 @@ export type ToggleMarkOp = Operation<
   OperationType.TOGGLE_MARK,
   ToggleMarkPayload
 >;
+export type SetMarkOp = Operation<
+  OperationType.SET_MARK,
+  SetMarkPayload
+>;
 export type SetAlignmentOp = Operation<
   OperationType.SET_ALIGNMENT,
   SetAlignmentPayload
@@ -89,6 +98,7 @@ export type EditorOperation =
   | InsertParagraphOp
   | MoveSelectionOp
   | ToggleMarkOp
+  | SetMarkOp
   | SetAlignmentOp;
 
 /** @deprecated Use OperationType enum directly */

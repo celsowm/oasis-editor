@@ -28,6 +28,10 @@ export class OasisEditorDom {
   getUnderlineButton(): HTMLElement {
     return this.requireElement("oasis-editor-underline");
   }
+
+  getColorPickerContainer(): HTMLElement {
+    return this.requireElement("oasis-editor-color-picker-container");
+  }
   
   getAlignLeftButton(): HTMLElement {
     return this.requireElement("oasis-editor-align-left");

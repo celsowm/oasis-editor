@@ -8,6 +8,8 @@ import {
   InsertParagraphOp,
   MoveSelectionOp,
   ToggleMarkOp,
+  SetMarkOp,
+  SetAlignmentOp,
 } from "./OperationTypes.js";
 import { EditorSelection } from "../selection/SelectionTypes.js";
 import { MarkSet } from "../document/BlockTypes.js";
@@ -47,6 +49,10 @@ export const Operations = {
   toggleMark: (mark: keyof MarkSet): ToggleMarkOp => ({
     type: OperationType.TOGGLE_MARK,
     payload: { mark },
+  }),
+  setMark: (mark: keyof MarkSet, value: any): SetMarkOp => ({
+    type: OperationType.SET_MARK,
+    payload: { mark, value },
   }),
   setAlignment: (
     align: "left" | "center" | "right" | "justify",
