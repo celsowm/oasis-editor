@@ -787,18 +787,25 @@ export const reduceDocumentState = (
           fragStartOffset,
         );
 
-        // Lines have offsetStart/offsetEnd relative to fragment's start
-        // We need to compute our X position within current line, then map to target line
+        // Line offsetStart/offsetEnd are block-relative (not fragment-relative)
+        // We need to compute our fractional X position within current line, then map to target line
         const currentLine = currentFragment.lines[currentLineIdx];
 
-        // Position relative to fragment start
-        const relPos = absOffset - fragStartOffset;
+        // Position is block-relative (same coordinate system as line offsets)
+        const currentLineLength =
+          currentLine.offsetEnd - currentLine.offsetStart;
 
-        // Our X position within current line (0 = line start, line.width = line end)
-        const xInCurrentLine = relPos - currentLine.offsetStart;
+        // xFraction needs position relative to line start, which means NOT subtracting fragStartOffset
+        // Use absOffset directly (block-relative) minus currentLine.offsetStart (block-relative)
+        const posInLine = absOffset - currentLine.offsetStart;
+        const xFraction =
+          currentLineLength > 0 ? posInLine / currentLineLength : 0;
+        const clampedFraction = Math.max(0, Math.min(1, xFraction));
 
-        // Target position within target line
-        let targetPos = targetLine.offsetStart + xInCurrentLine;
+        // Target position within target line using fractional position
+        const targetLineLength = targetLine.offsetEnd - targetLine.offsetStart;
+        let targetPos =
+          targetLine.offsetStart + clampedFraction * targetLineLength;
 
         // Clamp to target line's bounds (don't go past end)
         targetPos = Math.max(
@@ -807,17 +814,24 @@ export const reduceDocumentState = (
         );
 
         console.log(
-          "  xInCurrentLine:",
-          xInCurrentLine,
+          "  posInLine:",
+          posInLine,
+          "xFraction:",
+          clampedFraction,
+          "currentLineLength:",
+          currentLineLength,
           "targetPos:",
           targetPos,
         );
 
         // Find the run containing targetPos
+        // targetPos is block-relative, but run offsets in currentBlock are block-relative
+        // No need for conversion
+        const targetPosRel = targetPos;
         let targetInlineId = currentRun.id;
         let runStartOffset = 0;
         for (const run of currentBlock.children) {
-          if (runStartOffset + run.text.length >= targetPos) {
+          if (runStartOffset + run.text.length >= targetPosRel) {
             targetInlineId = run.id;
             console.log(
               "  Found target run:",
@@ -825,7 +839,7 @@ export const reduceDocumentState = (
               "runStartOffset:",
               runStartOffset,
             );
-            const targetOffset = targetPos - runStartOffset;
+            const targetOffset = targetPosRel - runStartOffset;
             return {
               ...state,
               selection: {

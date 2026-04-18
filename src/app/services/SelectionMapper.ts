@@ -37,19 +37,31 @@ export class SelectionMapper {
     if (!position) return null;
 
     const blockFragments = this.layout.fragmentsByBlockId[position.blockId];
-    if (!blockFragments) return null;
+    if (!blockFragments || blockFragments.length === 0) return null;
 
-    const absOffset = this.positionCalculator.getAbsoluteOffsetInBlock(
+    // First find which fragment contains the position
+    // Use block-relative offset from runs (not from fragment start, to avoid wrong fragment selection)
+    const firstFragment = blockFragments[0];
+    const candidateAbsOffset = this.positionCalculator.getAbsoluteOffsetInBlock(
       position,
-      blockFragments[0],
+      firstFragment,
     );
 
+    // Based on that offset, find the actual fragment containing it
     const fragment: LayoutFragment =
       blockFragments.find(
-        (f) => absOffset >= f.startOffset && absOffset <= f.endOffset,
-      ) ?? blockFragments[blockFragments.length - 1];
+        (f) =>
+          candidateAbsOffset >= f.startOffset &&
+          candidateAbsOffset <= f.endOffset,
+      ) ?? firstFragment;
 
     if (!fragment) return null;
+
+    // Now get the REAL absolute offset using the correct fragment
+    const absOffset = this.positionCalculator.getAbsoluteOffsetInBlock(
+      position,
+      fragment,
+    );
 
     const y = this.positionCalculator.calculateYPosition(position);
     const xOffset = this.positionCalculator.calculateXOffset(

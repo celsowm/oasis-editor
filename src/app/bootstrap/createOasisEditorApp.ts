@@ -15,6 +15,9 @@ export const createOasisEditorApp = (): OasisEditorController => {
   const dom = new OasisEditorDom(document);
   const view = new OasisEditorView(dom, presenter, textMeasurer);
 
+  // Focus hidden input on startup so arrow keys work immediately
+  view.elements.hiddenInput.focus();
+
   return new OasisEditorController({
     runtime,
     layoutService,
