@@ -36,32 +36,8 @@ export class SelectionMapper {
   getCaretRect(position: LogicalPosition): CaretRect | null {
     if (!position) return null;
 
-    const blockFragments = this.layout.fragmentsByBlockId[position.blockId];
-    if (!blockFragments || blockFragments.length === 0) return null;
-
-    // First find which fragment contains the position
-    // Use block-relative offset from runs (not from fragment start, to avoid wrong fragment selection)
-    const firstFragment = blockFragments[0];
-    const candidateAbsOffset = this.positionCalculator.getAbsoluteOffsetInBlock(
-      position,
-      firstFragment,
-    );
-
-    // Based on that offset, find the actual fragment containing it
-    const fragment: LayoutFragment =
-      blockFragments.find(
-        (f) =>
-          candidateAbsOffset >= f.startOffset &&
-          candidateAbsOffset <= f.endOffset,
-      ) ?? firstFragment;
-
+    const fragment = this.positionCalculator.getFragmentContainingPosition(position);
     if (!fragment) return null;
-
-    // Now get the REAL absolute offset using the correct fragment
-    const absOffset = this.positionCalculator.getAbsoluteOffsetInBlock(
-      position,
-      fragment,
-    );
 
     const y = this.positionCalculator.calculateYPosition(position);
     const xOffset = this.positionCalculator.calculateXOffset(
@@ -89,16 +65,8 @@ export class SelectionMapper {
 
     if (!startRect || !endRect) return [];
 
-    const startFragments = this.layout.fragmentsByBlockId[start.blockId];
-    const endFragments = this.layout.fragmentsByBlockId[end.blockId];
-    const absStartOffset = this.positionCalculator.getAbsoluteOffsetInBlock(
-      start,
-      startFragments?.[0],
-    );
-    const absEndOffset = this.positionCalculator.getAbsoluteOffsetInBlock(
-      end,
-      endFragments?.[0],
-    );
+    const absStartOffset = this.positionCalculator.getOffsetInBlock(start);
+    const absEndOffset = this.positionCalculator.getOffsetInBlock(end);
 
     let visualStart: LogicalPosition | null = null;
     let visualEnd: LogicalPosition | null = null;
@@ -188,12 +156,8 @@ export class SelectionMapper {
               width = Math.max(vEndRect.x - vStartRect.x, 2);
             } else if (lineMatchesStart) {
               x = vStartRect.x;
-              width = Math.max(
-                fragment.rect.x +
-                  (line.width ?? fragment.rect.width) -
-                  vStartRect.x,
-                2,
-              );
+              const lineEndX = fragment.rect.x + (line.width ?? fragment.rect.width);
+              width = Math.max(lineEndX - vStartRect.x, 2);
             } else if (lineMatchesEnd) {
               x = fragment.rect.x;
               width = Math.max(vEndRect.x - fragment.rect.x, 2);

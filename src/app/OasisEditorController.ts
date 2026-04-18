@@ -8,6 +8,7 @@ import { LayoutState } from "../core/layout/LayoutTypes.js";
 import { LayoutFragment } from "../core/layout/LayoutFragment.js";
 import { LogicalPosition } from "../core/selection/SelectionTypes.js";
 import { LineInfo } from "../core/layout/LayoutFragment.js";
+import { PositionCalculator } from "./services/PositionCalculator.js";
 
 export interface ControllerDeps {
   runtime: DocumentRuntime;
@@ -26,6 +27,7 @@ export class OasisEditorController {
   private latestLayout: LayoutState | null;
   private isDragging: boolean;
   private dragAnchor: LogicalPosition | null;
+  private positionCalculator: PositionCalculator | null;
 
   constructor({
     runtime,
@@ -42,6 +44,7 @@ export class OasisEditorController {
     this.latestLayout = null;
     this.isDragging = false;
     this.dragAnchor = null;
+    this.positionCalculator = null;
   }
 
   private measureWidthUpToOffset(
@@ -391,11 +394,7 @@ export class OasisEditorController {
 
     const fullText = block.children.map((r) => r.text).join("");
 
-    let absoluteClickOffset = position.offset;
-    for (const run of block.children) {
-      if (run.id === position.inlineId) break;
-      absoluteClickOffset += run.text.length;
-    }
+    const absoluteClickOffset = this.positionCalculator!.getOffsetInBlock(position);
 
     const isWord = (ch: string): boolean => /[a-zA-Z0-9À-ÿ_]/.test(ch);
     const isWhitespace = (ch: string): boolean => /\s/.test(ch);
@@ -410,7 +409,7 @@ export class OasisEditorController {
         while (wordStart > 0 && isWord(fullText[wordStart - 1])) wordStart--;
         while (wordEnd < fullText.length && isWord(fullText[wordEnd]))
           wordEnd++;
-        if (wordEnd < fullText.length && isWhitespace(fullText[wordEnd]))
+        if (wordEnd < fullText.length && isWhitespace(fullText[wordEnd]) && fullText[wordEnd] !== "\n")
           wordEnd++;
       } else if (isWhitespace(ch)) {
         while (wordStart > 0 && isWhitespace(fullText[wordStart - 1]))
@@ -512,6 +511,7 @@ export class OasisEditorController {
     const state = this.runtime.getState();
     const layout = this.layoutService.compose(state.document);
     this.latestLayout = layout;
+    this.positionCalculator = new PositionCalculator(layout);
     this.runtime.setLayout(layout);
     const viewModel = this.presenter.present({ state, layout });
     this.view.render(viewModel);

@@ -11,58 +11,55 @@ export class PositionCalculator {
   }
 
   /**
-   * Converts a run-relative position to a block-relative offset.
+   * Converts a logical position to a block-relative offset.
    */
-  getAbsoluteOffsetInBlock(
-    position: LogicalPosition,
-    fragment: LayoutFragment | undefined,
-  ): number {
-    if (!fragment || !fragment.runs) return position.offset;
+  getOffsetInBlock(position: LogicalPosition): number {
+    const fragments = this.layout.fragmentsByBlockId[position.blockId];
+    if (!fragments || fragments.length === 0) return position.offset;
 
-    let absoluteOffset = 0;
-    for (const run of fragment.runs) {
-      if (run.id === position.inlineId) {
-        return absoluteOffset + position.offset;
+    for (const fragment of fragments) {
+      let offsetInFragment = 0;
+      for (const run of fragment.runs) {
+        if (run.id === position.inlineId) {
+          return fragment.startOffset + offsetInFragment + position.offset;
+        }
+        offsetInFragment += run.text.length;
       }
-      absoluteOffset += run.text.length;
     }
+    
+    // If we didn't find the run ID, it might be an empty block or just at the end
     return position.offset;
   }
 
-  calculateYPosition(position: LogicalPosition): number | null {
+  getFragmentContainingPosition(position: LogicalPosition): LayoutFragment | null {
     const fragments = this.layout.fragmentsByBlockId[position.blockId];
     if (!fragments || fragments.length === 0) return null;
 
-    // First find which fragment contains the position
-    const firstFragment = fragments[0];
-    const candidateAbsOffset = this.getAbsoluteOffsetInBlock(
-      position,
-      firstFragment,
-    );
+    const absoluteOffset = this.getOffsetInBlock(position);
 
-    // Based on that offset, find the actual fragment
-    const fragment =
+    return (
       fragments.find(
         (f) =>
-          candidateAbsOffset >= f.startOffset &&
-          candidateAbsOffset <= f.endOffset,
-      ) ?? firstFragment;
+          absoluteOffset >= f.startOffset &&
+          absoluteOffset <= f.endOffset,
+      ) ?? fragments[0]
+    );
+  }
 
+  calculateYPosition(position: LogicalPosition): number | null {
+    const fragment = this.getFragmentContainingPosition(position);
     if (!fragment || !fragment.lines) {
       return fragment?.rect.y ?? null;
     }
 
-    // Get the REAL absolute offset using the correct fragment
-    const absoluteOffset = this.getAbsoluteOffsetInBlock(position, fragment);
-
-    // Line offsetStart/offsetEnd are block-relative (not fragment-relative)
-    // But if fragment.startOffset > 0, need to adjust
+    const absoluteOffset = this.getOffsetInBlock(position);
     const offsetInBlock = absoluteOffset - fragment.startOffset;
 
     for (let i = 0; i < fragment.lines.length; i++) {
       const line = fragment.lines[i];
-      // Use exclusive upper bound - position at exactly line.end goes to NEXT line
-      if (offsetInBlock >= line.offsetStart && offsetInBlock < line.offsetEnd) {
+      // Use inclusive/exclusive bounds: at exactly lineEnd, it might belong to NEXT line
+      // unless it's the last line of the fragment
+      if (offsetInBlock >= line.offsetStart && offsetInBlock <= line.offsetEnd) {
         return line.y;
       }
     }
@@ -77,11 +74,10 @@ export class PositionCalculator {
   ): number {
     if (!fragment || !measurer) return 0;
 
-    // Get the absolute offset using this fragment's runs
-    const absoluteOffset = this.getAbsoluteOffsetInBlock(position, fragment);
+    // Get the absolute offset in the whole block
+    const absoluteOffset = this.getOffsetInBlock(position);
 
-    // Line offsetStart/offsetEnd are block-relative (from ParagraphComposer)
-    // Calculate offset relative to block (account for fragment's start)
+    // Line offsetStart/offsetEnd are block-relative
     const offsetInBlock = absoluteOffset - fragment.startOffset;
 
     let targetLine = fragment.lines ? fragment.lines[0] : null;
@@ -90,7 +86,7 @@ export class PositionCalculator {
         // Use exclusive upper bound - position at exactly line.end goes to NEXT line
         if (
           offsetInBlock >= line.offsetStart &&
-          offsetInBlock < line.offsetEnd
+          offsetInBlock <= line.offsetEnd
         ) {
           targetLine = line;
           break;
