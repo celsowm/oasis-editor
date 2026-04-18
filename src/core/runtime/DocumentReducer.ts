@@ -24,6 +24,26 @@ export const reduceDocumentState = (
   const { document, selection } = state;
 
   switch (operation.type) {
+    case OperationType.SET_ALIGNMENT: {
+      if (!selection) return state;
+      const { blockId } = selection.anchor;
+      const { align } = operation.payload;
+
+      return {
+        ...state,
+        document: {
+          ...document,
+          revision: document.revision + 1,
+          sections: document.sections.map((section) => ({
+            ...section,
+            children: section.children.map((block) =>
+              block.id === blockId ? { ...block, align } : block,
+            ),
+          })),
+        },
+      };
+    }
+
     case OperationType.SET_SELECTION:
       console.log("REDUCER: SET_SELECTION recebido");
       console.log("REDUCER: Nova selecao:", operation.payload.selection);

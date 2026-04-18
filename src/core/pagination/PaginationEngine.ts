@@ -127,6 +127,7 @@ export const paginateDocument = (
             y: line.y + currentY,
           }),
         ),
+        align: composed.align,
       };
 
       currentPage.fragments.push(fragment);

@@ -17,6 +17,7 @@ export interface ComposedParagraph {
   typography: BlockTypography;
   totalHeight: number;
   lines: LineInfo[];
+  align: "left" | "center" | "right" | "justify";
 }
 
 const getBlockTypography = (block: BlockNode): BlockTypography => {
@@ -56,14 +57,22 @@ export const composeParagraph = (
 
   let currentOffset = 0;
   const lines: LineInfo[] = broken.map((line, index) => {
+    let x = 0;
+    if (block.align === "center") {
+      x = (maxWidth - line.width) / 2;
+    } else if (block.align === "right") {
+      x = maxWidth - line.width;
+    }
+
     const lineInfo: LineInfo = {
       id: `${block.id}:line:${index}`,
       text: line.text,
       width: line.width,
       height: lineHeight,
+      x,
+      y: index * lineHeight,
       offsetStart: currentOffset,
       offsetEnd: currentOffset + line.text.length,
-      y: index * lineHeight,
     };
     currentOffset += line.text.length;
     return lineInfo;
@@ -77,5 +86,6 @@ export const composeParagraph = (
     typography,
     totalHeight: broken.length * lineHeight,
     lines,
+    align: block.align,
   };
 };

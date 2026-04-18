@@ -46,11 +46,26 @@ export class OasisEditorController {
 
   private measureWidthUpToOffset(
     fragment: LayoutFragment,
-    lineStartOffset: number,
+    line: LineInfo,
     endOffset: number,
   ): number {
-    if (lineStartOffset === endOffset) return 0;
-    let totalWidth = 0;
+    const lineStartOffset = line.offsetStart;
+    if (lineStartOffset === endOffset) return line.x;
+    
+    let totalWidth = line.x;
+    
+    // Justification logic
+    let extraSpacePerGap = 0;
+    if (fragment.align === "justify" && line && fragment.lines) {
+      const isLastLine = line === fragment.lines[fragment.lines.length - 1];
+      if (!isLastLine) {
+        const lineText = line.text.trimEnd();
+        const spaces = lineText.match(/ /g) || [];
+        if (spaces.length > 0) {
+          extraSpacePerGap = (fragment.rect.width - line.width) / spaces.length;
+        }
+      }
+    }
     let currentGlobalOffset = 0;
     const runs = fragment.runs?.length
       ? fragment.runs
@@ -82,6 +97,11 @@ export class OasisEditorController {
           fontStyle,
         });
         totalWidth += metrics.width;
+
+        if (extraSpacePerGap > 0) {
+          const spacesInSegment = (textToMeasure.match(/ /g) || []).length;
+          totalWidth += spacesInSegment * extraSpacePerGap;
+        }
       }
       currentGlobalOffset += run.text.length;
       if (currentGlobalOffset >= endOffset) break;
@@ -109,6 +129,7 @@ export class OasisEditorController {
       onMouseUp: () => this.handleMouseUp(),
       onDblClick: (e) => this.handleDblClick(e),
       onTripleClick: (e) => this.handleTripleClick(e),
+      onAlign: (align) => this.setAlign(align),
     });
 
     this.isDragging = false;
@@ -201,6 +222,10 @@ export class OasisEditorController {
     );
   }
 
+  setAlign(align: "left" | "center" | "right" | "justify"): void {
+    this.runtime.dispatch(Operations.setAlignment(align));
+  }
+
   calculatePositionFromEvent(event: MouseEvent): LogicalPosition | null {
     const element = document.elementFromPoint(event.clientX, event.clientY);
     const target = element
@@ -262,7 +287,7 @@ export class OasisEditorController {
       for (let i = lineStart; i <= lineEnd; i++) {
         const measuredWidth = this.measureWidthUpToOffset(
           layoutFragment,
-          lineStart,
+          targetLine,
           i,
         );
         const distance = Math.abs(measuredWidth - clickXInFragment);
@@ -273,7 +298,12 @@ export class OasisEditorController {
       }
     } else {
       for (let i = 0; i <= fragmentText.length; i++) {
-        const measuredWidth = this.measureWidthUpToOffset(layoutFragment, 0, i);
+        // Fallback for missing targetLine (should not happen with updated engine)
+        const measuredWidth = this.measureWidthUpToOffset(
+          layoutFragment,
+          { offsetStart: 0, offsetEnd: fragmentText.length, x: 0, width: layoutFragment.rect.width } as any,
+          i,
+        );
         const distance = Math.abs(measuredWidth - clickXInFragment);
         if (distance < minDistance) {
           minDistance = distance;

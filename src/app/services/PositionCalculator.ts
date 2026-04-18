@@ -104,9 +104,24 @@ export class PositionCalculator {
     const lineStartOffset = targetLine ? targetLine.offsetStart : 0;
     const offsetInLine = Math.max(0, offsetInBlock - lineStartOffset);
 
-    if (offsetInLine === 0) return 0;
+    let totalWidth = (targetLine?.x ?? 0);
 
-    let totalWidth = 0;
+    if (offsetInLine === 0) return totalWidth;
+
+    // Justification logic
+    let extraSpacePerGap = 0;
+    if (fragment.align === "justify" && targetLine && fragment.lines) {
+      const isLastLine =
+        targetLine === fragment.lines[fragment.lines.length - 1];
+      if (!isLastLine) {
+        const lineText = targetLine.text.trimEnd();
+        const spaces = lineText.match(/ /g) || [];
+        if (spaces.length > 0) {
+          extraSpacePerGap = (fragment.rect.width - targetLine.width) / spaces.length;
+        }
+      }
+    }
+
     let currentGlobalOffset = 0;
 
     const runs = fragment.runs?.length
@@ -141,7 +156,14 @@ export class PositionCalculator {
           fontWeight,
           fontStyle,
         });
+
         totalWidth += measured.width;
+
+        // Add justification extra space
+        if (extraSpacePerGap > 0) {
+          const spacesInSegment = (textToMeasure.match(/ /g) || []).length;
+          totalWidth += spacesInSegment * extraSpacePerGap;
+        }
       }
 
       currentGlobalOffset += run.text.length;

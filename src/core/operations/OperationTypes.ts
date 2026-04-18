@@ -10,6 +10,7 @@ export enum OperationType {
   INSERT_PARAGRAPH = "INSERT_PARAGRAPH",
   MOVE_SELECTION = "MOVE_SELECTION",
   TOGGLE_MARK = "TOGGLE_MARK",
+  SET_ALIGNMENT = "SET_ALIGNMENT",
 }
 
 export interface AppendParagraphPayload {
@@ -32,6 +33,9 @@ export interface MoveSelectionPayload {
 }
 export interface ToggleMarkPayload {
   mark: keyof MarkSet;
+}
+export interface SetAlignmentPayload {
+  align: "left" | "center" | "right" | "justify";
 }
 
 interface Operation<T extends OperationType, P> {
@@ -71,6 +75,10 @@ export type ToggleMarkOp = Operation<
   OperationType.TOGGLE_MARK,
   ToggleMarkPayload
 >;
+export type SetAlignmentOp = Operation<
+  OperationType.SET_ALIGNMENT,
+  SetAlignmentPayload
+>;
 
 export type EditorOperation =
   | AppendParagraphOp
@@ -80,7 +88,8 @@ export type EditorOperation =
   | DeleteTextOp
   | InsertParagraphOp
   | MoveSelectionOp
-  | ToggleMarkOp;
+  | ToggleMarkOp
+  | SetAlignmentOp;
 
 /** @deprecated Use OperationType enum directly */
 export const OPERATION_TYPES = OperationType;

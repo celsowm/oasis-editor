@@ -28,6 +28,22 @@ export class OasisEditorDom {
   getUnderlineButton(): HTMLElement {
     return this.requireElement("oasis-editor-underline");
   }
+  
+  getAlignLeftButton(): HTMLElement {
+    return this.requireElement("oasis-editor-align-left");
+  }
+
+  getAlignCenterButton(): HTMLElement {
+    return this.requireElement("oasis-editor-align-center");
+  }
+
+  getAlignRightButton(): HTMLElement {
+    return this.requireElement("oasis-editor-align-right");
+  }
+
+  getAlignJustifyButton(): HTMLElement {
+    return this.requireElement("oasis-editor-align-justify");
+  }
 
   getUndoButton(): HTMLElement {
     return this.requireElement("oasis-editor-undo");

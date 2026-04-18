@@ -48,4 +48,10 @@ export const Operations = {
     type: OperationType.TOGGLE_MARK,
     payload: { mark },
   }),
+  setAlignment: (
+    align: "left" | "center" | "right" | "justify",
+  ): SetAlignmentOp => ({
+    type: OperationType.SET_ALIGNMENT,
+    payload: { align },
+  }),
 };

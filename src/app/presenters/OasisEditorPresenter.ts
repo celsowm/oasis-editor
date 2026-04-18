@@ -13,6 +13,7 @@ export interface SelectionState {
   bold: boolean;
   italic: boolean;
   underline: boolean;
+  align: "left" | "center" | "right" | "justify";
 }
 
 export interface EditorViewModel {
@@ -58,6 +59,7 @@ export class OasisEditorPresenter {
       bold: false,
       italic: false,
       underline: false,
+      align: "left",
     };
 
     if (selection) {
@@ -74,6 +76,7 @@ export class OasisEditorPresenter {
           bold: !!marks.bold,
           italic: !!marks.italic,
           underline: !!marks.underline,
+          align: (targetBlock as any).align || "left",
         };
       }
     }

@@ -42,6 +42,7 @@ export class PageLayer {
         fragmentEl.style.top = `${fragment.rect.y}px`;
         fragmentEl.style.width = `${fragment.rect.width}px`;
         fragmentEl.style.height = `${fragment.rect.height}px`;
+        fragmentEl.style.textAlign = fragment.align;
 
         // Render text using spans for rich text formatting
         fragmentEl.innerHTML = "";

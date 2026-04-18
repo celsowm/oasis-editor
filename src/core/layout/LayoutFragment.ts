@@ -12,9 +12,10 @@ export interface LineInfo {
   text: string;
   width: number;
   height: number;
+  x: number;
+  y: number;
   offsetStart: number;
   offsetEnd: number;
-  y: number;
 }
 
 export interface LayoutFragment {
@@ -32,4 +33,5 @@ export interface LayoutFragment {
   marks: MarkSet;
   runs: TextRun[];
   lines: LineInfo[];
+  align: "left" | "center" | "right" | "justify";
 }

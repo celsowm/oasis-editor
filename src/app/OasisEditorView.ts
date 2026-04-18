@@ -18,12 +18,17 @@ export interface ViewElements {
   status: HTMLElement;
   metrics: HTMLElement;
   hiddenInput: HTMLInputElement;
+  alignLeft: HTMLElement;
+  alignCenter: HTMLElement;
+  alignRight: HTMLElement;
+  alignJustify: HTMLElement;
 }
 
 export interface SelectionState {
   bold: boolean;
   italic: boolean;
   underline: boolean;
+  align: "left" | "center" | "right" | "justify";
 }
 
 export interface ViewEventBindings {
@@ -34,6 +39,7 @@ export interface ViewEventBindings {
   onRedo: () => void;
   onExport: () => void;
   onTemplateChange: (templateId: string) => void;
+  onAlign: (align: "left" | "center" | "right" | "justify") => void;
   onTextInput: (text: string) => void;
   onDelete: () => void;
   onEnter: (isShift: boolean) => void;
@@ -72,6 +78,10 @@ export class OasisEditorView {
       status: dom.getStatus(),
       metrics: dom.getMetrics(),
       hiddenInput: dom.getHiddenInput(),
+      alignLeft: dom.getAlignLeftButton(),
+      alignCenter: dom.getAlignCenterButton(),
+      alignRight: dom.getAlignRightButton(),
+      alignJustify: dom.getAlignJustifyButton(),
     };
 
     this.pageLayer = new PageLayer(this.elements.pagesContainer);
@@ -103,6 +113,10 @@ export class OasisEditorView {
     this.elements.templateSelect.addEventListener("change", (event) =>
       events.onTemplateChange((event.target as HTMLSelectElement).value),
     );
+    this.elements.alignLeft.addEventListener("click", () => events.onAlign("left"));
+    this.elements.alignCenter.addEventListener("click", () => events.onAlign("center"));
+    this.elements.alignRight.addEventListener("click", () => events.onAlign("right"));
+    this.elements.alignJustify.addEventListener("click", () => events.onAlign("justify"));
 
     // Hidden input for keyboard handling
     this.elements.hiddenInput.addEventListener("input", (e) => {
@@ -214,6 +228,10 @@ export class OasisEditorView {
       "active",
       selectionState.underline,
     );
+    this.elements.alignLeft.classList.toggle("active", selectionState.align === "left");
+    this.elements.alignCenter.classList.toggle("active", selectionState.align === "center");
+    this.elements.alignRight.classList.toggle("active", selectionState.align === "right");
+    this.elements.alignJustify.classList.toggle("active", selectionState.align === "justify");
   }
 
   downloadJson(filename: string, content: string): void {
