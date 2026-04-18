@@ -106,7 +106,7 @@ export class OasisEditorController {
       onArrowKey: (key) => this.moveCaret(key),
       onMouseDown: (e) => this.handleMouseDown(e),
       onMouseMove: (e) => this.handleMouseMove(e),
-      onMouseUp: (e) => this.handleMouseUp(e),
+      onMouseUp: () => this.handleMouseUp(),
       onDblClick: (e) => this.handleDblClick(e),
       onTripleClick: (e) => this.handleTripleClick(e),
     });
@@ -482,6 +482,7 @@ export class OasisEditorController {
     const state = this.runtime.getState();
     const layout = this.layoutService.compose(state.document);
     this.latestLayout = layout;
+    this.runtime.setLayout(layout);
     const viewModel = this.presenter.present({ state, layout });
     this.view.render(viewModel);
   }

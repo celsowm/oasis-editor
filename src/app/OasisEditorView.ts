@@ -129,7 +129,11 @@ export class OasisEditorView {
       } else if (ke.key === "Enter") {
         events.onEnter(ke.shiftKey);
         ke.preventDefault();
-      } else if (ke.key.startsWith("Arrow")) {
+      } else if (
+        ke.key.startsWith("Arrow") ||
+        ke.key === "Home" ||
+        ke.key === "End"
+      ) {
         events.onArrowKey(ke.key);
         ke.preventDefault();
       }

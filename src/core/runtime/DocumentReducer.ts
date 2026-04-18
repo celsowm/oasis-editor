@@ -6,6 +6,11 @@ import {
 import { createParagraph } from "../document/DocumentFactory.js";
 import { LogicalPosition } from "../selection/SelectionTypes.js";
 import { TextRun } from "../document/BlockTypes.js";
+import { LayoutState } from "../layout/LayoutTypes.js";
+
+export interface ReducerState extends EditorState {
+  _layout?: LayoutState;
+}
 
 const genId = (prefix: string): string =>
   `${prefix}:${Date.now().toString(36)}:${Math.random().toString(36).substring(2, 8)}`;
@@ -13,7 +18,9 @@ const genId = (prefix: string): string =>
 export const reduceDocumentState = (
   state: EditorState,
   operation: EditorOperation,
+  layout?: LayoutState,
 ): EditorState => {
+  const reducerState: ReducerState = { ...state, _layout: layout };
   const { document, selection } = state;
 
   switch (operation.type) {
@@ -518,31 +525,436 @@ export const reduceDocumentState = (
       const { key } = operation.payload;
       const { blockId, inlineId, offset } = selection.anchor;
 
-      let nextOffset = offset;
+      const blocksFlat = document.sections.flatMap((s) => s.children);
+      const currentBlockIdx = blocksFlat.findIndex((b) => b.id === blockId);
+      if (currentBlockIdx === -1) return state;
 
-      let currentBlock = undefined;
-      for (const section of document.sections) {
-        currentBlock = section.children.find((b) => b.id === blockId);
-        if (currentBlock) break;
-      }
-
-      const currentRun = currentBlock?.children.find((r) => r.id === inlineId);
-      const textLength = currentRun?.text.length ?? 0;
+      const currentBlock = blocksFlat[currentBlockIdx];
+      const runIdx = currentBlock.children.findIndex((r) => r.id === inlineId);
+      console.log(
+        "  blocksFlat length:",
+        blocksFlat.length,
+        "currentBlockIdx:",
+        currentBlockIdx,
+      );
+      console.log("  runIdx:", runIdx, "inlineId:", inlineId);
+      const currentRun = currentBlock.children[runIdx];
+      console.log("  currentRun:", currentRun);
 
       if (key === "ArrowLeft") {
-        nextOffset = Math.max(0, offset - 1);
-      } else if (key === "ArrowRight") {
-        nextOffset = Math.min(textLength, offset + 1);
+        console.log(
+          "MOVE_SELECTION: ArrowLeft called, current offset:",
+          offset,
+        );
+        if (offset > 0) {
+          return {
+            ...state,
+            selection: {
+              anchor: { ...selection.anchor, offset: offset - 1 },
+              focus: { ...selection.focus, offset: offset - 1 },
+            },
+          };
+        } else if (runIdx > 0) {
+          const prevRun = currentBlock.children[runIdx - 1];
+          return {
+            ...state,
+            selection: {
+              anchor: {
+                ...selection.anchor,
+                inlineId: prevRun.id,
+                offset: prevRun.text.length,
+              },
+              focus: {
+                ...selection.focus,
+                inlineId: prevRun.id,
+                offset: prevRun.text.length,
+              },
+            },
+          };
+        } else if (currentBlockIdx > 0) {
+          const prevBlock = blocksFlat[currentBlockIdx - 1];
+          const lastRun = prevBlock.children[prevBlock.children.length - 1];
+          return {
+            ...state,
+            selection: {
+              anchor: {
+                ...selection.anchor,
+                blockId: prevBlock.id,
+                inlineId: lastRun.id,
+                offset: lastRun.text.length,
+              },
+              focus: {
+                ...selection.focus,
+                blockId: prevBlock.id,
+                inlineId: lastRun.id,
+                offset: lastRun.text.length,
+              },
+            },
+          };
+        }
+        return state;
       }
 
-      const nextPosition: LogicalPosition = {
-        ...selection.anchor,
-        offset: nextOffset,
-      };
-      return {
-        ...state,
-        selection: { anchor: nextPosition, focus: nextPosition },
-      };
+      if (key === "ArrowRight") {
+        console.log("MOVE_SELECTION: ArrowRight called, offset:", offset);
+        const textLength = currentRun?.text.length ?? 0;
+        console.log("  currentRun:", currentRun?.id, "textLength:", textLength);
+        if (offset < textLength) {
+          return {
+            ...state,
+            selection: {
+              anchor: { ...selection.anchor, offset: offset + 1 },
+              focus: { ...selection.focus, offset: offset + 1 },
+            },
+          };
+        } else if (runIdx < currentBlock.children.length - 1) {
+          const nextRun = currentBlock.children[runIdx + 1];
+          return {
+            ...state,
+            selection: {
+              anchor: { ...selection.anchor, inlineId: nextRun.id, offset: 0 },
+              focus: { ...selection.focus, inlineId: nextRun.id, offset: 0 },
+            },
+          };
+        } else if (currentBlockIdx < blocksFlat.length - 1) {
+          const nextBlock = blocksFlat[currentBlockIdx + 1];
+          const firstRun = nextBlock.children[0];
+          return {
+            ...state,
+            selection: {
+              anchor: {
+                ...selection.anchor,
+                blockId: nextBlock.id,
+                inlineId: firstRun.id,
+                offset: 0,
+              },
+              focus: {
+                ...selection.focus,
+                blockId: nextBlock.id,
+                inlineId: firstRun.id,
+                offset: 0,
+              },
+            },
+          };
+        }
+        return state;
+      }
+
+      if (key === "ArrowUp" || key === "ArrowDown") {
+        console.log("MOVE_SELECTION: ArrowUp/ArrowDown called, key:", key);
+        console.log(
+          "  blockId:",
+          blockId,
+          "inlineId:",
+          inlineId,
+          "offset:",
+          offset,
+        );
+
+        if (!layout || !layout.pages || layout.pages.length === 0) return state;
+
+        const blockFragments = layout.fragmentsByBlockId[blockId];
+        if (!blockFragments || blockFragments.length === 0) return state;
+
+        let absOffset = 0;
+        for (const run of currentBlock.children) {
+          if (run.id === inlineId) break;
+          absOffset += run.text.length;
+        }
+        absOffset += offset;
+
+        const currentFragment =
+          blockFragments.find(
+            (f) => absOffset >= f.startOffset && absOffset <= f.endOffset,
+          ) ?? blockFragments[0];
+
+        console.log(
+          "  currentBlock:",
+          currentBlock?.id,
+          "lines:",
+          currentFragment?.lines?.length,
+        );
+
+        if (!currentFragment?.lines) return state;
+
+        const currentLineIdx = currentFragment.lines.findIndex(
+          (l) => absOffset >= l.offsetStart && absOffset <= l.offsetEnd,
+        );
+
+        console.log("  currentLineIdx:", currentLineIdx);
+
+        if (currentLineIdx === -1) return state;
+
+        const targetLineIdx =
+          key === "ArrowUp" ? currentLineIdx - 1 : currentLineIdx + 1;
+
+        if (targetLineIdx < 0) {
+          if (currentBlockIdx > 0) {
+            const prevBlock = blocksFlat[currentBlockIdx - 1];
+            const prevBlockFragments = layout.fragmentsByBlockId[prevBlock.id];
+            if (prevBlockFragments && prevBlockFragments.length > 0) {
+              const lastFrag =
+                prevBlockFragments[prevBlockFragments.length - 1];
+              if (lastFrag.lines && lastFrag.lines.length > 0) {
+                const lastLine = lastFrag.lines[lastFrag.lines.length - 1];
+                const targetOffset = Math.min(
+                  lastLine.offsetEnd,
+                  Math.max(lastLine.offsetStart, absOffset),
+                );
+                return {
+                  ...state,
+                  selection: {
+                    anchor: {
+                      ...selection.anchor,
+                      blockId: prevBlock.id,
+                      inlineId: prevBlock.children[0]?.id ?? "",
+                      offset: targetOffset - lastFrag.startOffset,
+                    },
+                    focus: {
+                      ...selection.focus,
+                      blockId: prevBlock.id,
+                      inlineId: prevBlock.children[0]?.id ?? "",
+                      offset: targetOffset - lastFrag.startOffset,
+                    },
+                  },
+                };
+              }
+            }
+          }
+          return state;
+        }
+
+        if (targetLineIdx >= currentFragment.lines.length) {
+          console.log("  At last line, trying to go to next block");
+          if (currentBlockIdx < blocksFlat.length - 1) {
+            const nextBlock = blocksFlat[currentBlockIdx + 1];
+            console.log(
+              "  nextBlock:",
+              nextBlock.id,
+              "total blocks:",
+              blocksFlat.length,
+            );
+            const nextBlockFragments = layout.fragmentsByBlockId[nextBlock.id];
+            console.log("  nextBlockFragments:", nextBlockFragments?.length);
+            if (nextBlockFragments && nextBlockFragments.length > 0) {
+              const firstFrag = nextBlockFragments[0];
+              if (firstFrag.lines && firstFrag.lines.length > 0) {
+                const firstLine = firstFrag.lines[0];
+                const targetOffset = Math.min(
+                  firstLine.offsetEnd,
+                  Math.max(firstLine.offsetStart, absOffset),
+                );
+                return {
+                  ...state,
+                  selection: {
+                    anchor: {
+                      ...selection.anchor,
+                      blockId: nextBlock.id,
+                      inlineId: nextBlock.children[0]?.id ?? "",
+                      offset: targetOffset - firstFrag.startOffset,
+                    },
+                    focus: {
+                      ...selection.focus,
+                      blockId: nextBlock.id,
+                      inlineId: nextBlock.children[0]?.id ?? "",
+                      offset: targetOffset - firstFrag.startOffset,
+                    },
+                  },
+                };
+              }
+            }
+          }
+          return state;
+        }
+
+        const targetLine = currentFragment.lines[targetLineIdx];
+        console.log(
+          "  targetLineIdx:",
+          targetLineIdx,
+          "targetLine:",
+          targetLine?.id,
+          "line start:",
+          targetLine?.offsetStart,
+          "line end:",
+          targetLine?.offsetEnd,
+        );
+
+        const fragStartOffset = currentFragment.startOffset;
+        console.log(
+          "  absOffset:",
+          absOffset,
+          "fragStartOffset:",
+          fragStartOffset,
+        );
+
+        // Lines have offsetStart/offsetEnd relative to fragment's start
+        // We need to compute our X position within current line, then map to target line
+        const currentLine = currentFragment.lines[currentLineIdx];
+
+        // Position relative to fragment start
+        const relPos = absOffset - fragStartOffset;
+
+        // Our X position within current line (0 = line start, line.width = line end)
+        const xInCurrentLine = relPos - currentLine.offsetStart;
+
+        // Target position within target line
+        let targetPos = targetLine.offsetStart + xInCurrentLine;
+
+        // Clamp to target line's bounds (don't go past end)
+        targetPos = Math.max(
+          targetLine.offsetStart,
+          Math.min(targetLine.offsetEnd - 1, targetPos),
+        );
+
+        console.log(
+          "  xInCurrentLine:",
+          xInCurrentLine,
+          "targetPos:",
+          targetPos,
+        );
+
+        // Find the run containing targetPos
+        let targetInlineId = currentRun.id;
+        let runStartOffset = 0;
+        for (const run of currentBlock.children) {
+          if (runStartOffset + run.text.length >= targetPos) {
+            targetInlineId = run.id;
+            console.log(
+              "  Found target run:",
+              run.id,
+              "runStartOffset:",
+              runStartOffset,
+            );
+            const targetOffset = targetPos - runStartOffset;
+            return {
+              ...state,
+              selection: {
+                anchor: {
+                  ...selection.anchor,
+                  blockId,
+                  inlineId: targetInlineId,
+                  offset: targetOffset,
+                },
+                focus: {
+                  ...selection.focus,
+                  blockId,
+                  inlineId: targetInlineId,
+                  offset: targetOffset,
+                },
+              },
+            };
+          }
+          runStartOffset += run.text.length;
+        }
+
+        const lastRun = currentBlock.children[currentBlock.children.length - 1];
+        return {
+          ...state,
+          selection: {
+            anchor: {
+              ...selection.anchor,
+              inlineId: lastRun.id,
+              offset: lastRun.text.length,
+            },
+            focus: {
+              ...selection.focus,
+              inlineId: lastRun.id,
+              offset: lastRun.text.length,
+            },
+          },
+        };
+      }
+
+      if (key === "Home" || key === "End") {
+        if (!layout || !layout.pages || layout.pages.length === 0) return state;
+
+        const blockFragments = layout.fragmentsByBlockId[blockId];
+        if (!blockFragments || blockFragments.length === 0) return state;
+
+        let absOffset = 0;
+        for (const run of currentBlock.children) {
+          if (run.id === inlineId) break;
+          absOffset += run.text.length;
+        }
+        absOffset += offset;
+
+        const currentFragment =
+          blockFragments.find(
+            (f: { startOffset: number; endOffset: number }) =>
+              absOffset >= f.startOffset && absOffset <= f.endOffset,
+          ) ?? blockFragments[0];
+
+        const currentLineIdx = currentFragment?.lines
+          ? currentFragment.lines.findIndex(
+              (l: { offsetStart: number; offsetEnd: number }) =>
+                absOffset >= l.offsetStart && absOffset <= l.offsetEnd,
+            )
+          : -1;
+
+        if (key === "Home") {
+          const currentLineStart =
+            currentFragment?.lines?.[currentLineIdx >= 0 ? currentLineIdx : 0]
+              ?.offsetStart ?? 0;
+          let runOffset = 0;
+          for (const run of currentBlock.children) {
+            if (runOffset + run.text.length > currentLineStart) {
+              return {
+                ...state,
+                selection: {
+                  anchor: {
+                    ...selection.anchor,
+                    inlineId: run.id,
+                    offset: currentLineStart - runOffset,
+                  },
+                  focus: {
+                    ...selection.focus,
+                    inlineId: run.id,
+                    offset: currentLineStart - runOffset,
+                  },
+                },
+              };
+            }
+            runOffset += run.text.length;
+          }
+          return state;
+        }
+
+        if (key === "End") {
+          const currentLineEnd =
+            currentFragment?.lines?.[currentLineIdx >= 0 ? currentLineIdx : 0]
+              ?.offsetEnd ?? 0;
+          let runOffset = 0;
+          for (const run of currentBlock.children) {
+            if (runOffset + run.text.length > currentLineEnd - 1) {
+              return {
+                ...state,
+                selection: {
+                  anchor: {
+                    ...selection.anchor,
+                    inlineId: run.id,
+                    offset: Math.min(
+                      currentLineEnd - runOffset,
+                      run.text.length,
+                    ),
+                  },
+                  focus: {
+                    ...selection.focus,
+                    inlineId: run.id,
+                    offset: Math.min(
+                      currentLineEnd - runOffset,
+                      run.text.length,
+                    ),
+                  },
+                },
+              };
+            }
+            runOffset += run.text.length;
+          }
+          return state;
+        }
+      }
+
+      return state;
     }
 
     case OperationType.APPEND_PARAGRAPH: {

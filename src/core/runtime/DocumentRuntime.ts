@@ -2,12 +2,14 @@ import { createDocument } from "../document/DocumentFactory.js";
 import { EditorState } from "./EditorState.js";
 import { EditorOperation } from "../operations/OperationTypes.js";
 import { reduceDocumentState } from "./DocumentReducer.js";
+import { LayoutState } from "../layout/LayoutTypes.js";
 
 export class DocumentRuntime {
   private state: EditorState;
   private history: EditorState[];
   private future: EditorState[];
   private listeners: Set<(state: EditorState) => void>;
+  private latestLayout: LayoutState | null;
 
   constructor() {
     const doc = createDocument();
@@ -31,10 +33,19 @@ export class DocumentRuntime {
     this.history = [];
     this.future = [];
     this.listeners = new Set();
+    this.latestLayout = null;
   }
 
   getState(): EditorState {
     return this.state;
+  }
+
+  setLayout(layout: LayoutState): void {
+    this.latestLayout = layout;
+  }
+
+  getLayout(): LayoutState | null {
+    return this.latestLayout;
   }
 
   subscribe(listener: (state: EditorState) => void): () => void {
@@ -47,7 +58,11 @@ export class DocumentRuntime {
     console.log("RUNTIME: dispatch chamado com", operation.type);
     this.history.push(this.state);
     this.future = [];
-    this.state = reduceDocumentState(this.state, operation);
+    this.state = reduceDocumentState(
+      this.state,
+      operation,
+      this.latestLayout ?? undefined,
+    );
     console.log("RUNTIME: Estado atualizado, selection:", this.state.selection);
     this.emit();
   }
