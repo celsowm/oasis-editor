@@ -80,7 +80,10 @@ export type ToggleMarkOp = Operation<
   OperationType.TOGGLE_MARK,
   ToggleMarkPayload
 >;
-export type SetMarkOp = Operation<OperationType.SET_MARK, SetMarkPayload>;
+export type SetMarkOp = Operation<
+  OperationType.SET_MARK,
+  SetMarkPayload
+>;
 export type SetAlignmentOp = Operation<
   OperationType.SET_ALIGNMENT,
   SetAlignmentPayload

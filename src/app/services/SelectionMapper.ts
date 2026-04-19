@@ -36,8 +36,7 @@ export class SelectionMapper {
   getCaretRect(position: LogicalPosition): CaretRect | null {
     if (!position) return null;
 
-    const fragment =
-      this.positionCalculator.getFragmentContainingPosition(position);
+    const fragment = this.positionCalculator.getFragmentContainingPosition(position);
     if (!fragment) return null;
 
     const y = this.positionCalculator.calculateYPosition(position);
@@ -157,8 +156,7 @@ export class SelectionMapper {
               width = Math.max(vEndRect.x - vStartRect.x, 2);
             } else if (lineMatchesStart) {
               x = vStartRect.x;
-              const lineEndX =
-                fragment.rect.x + (line.width ?? fragment.rect.width);
+              const lineEndX = fragment.rect.x + (line.width ?? fragment.rect.width);
               width = Math.max(lineEndX - vStartRect.x, 2);
             } else if (lineMatchesEnd) {
               x = fragment.rect.x;

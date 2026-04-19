@@ -309,12 +309,7 @@ export class OasisEditorController {
         // Fallback for missing targetLine (should not happen with updated engine)
         const measuredWidth = this.measureWidthUpToOffset(
           layoutFragment,
-          {
-            offsetStart: 0,
-            offsetEnd: fragmentText.length,
-            x: 0,
-            width: layoutFragment.rect.width,
-          } as any,
+          { offsetStart: 0, offsetEnd: fragmentText.length, x: 0, width: layoutFragment.rect.width } as any,
           i,
         );
         const distance = Math.abs(measuredWidth - clickXInFragment);
@@ -404,8 +399,7 @@ export class OasisEditorController {
 
     const fullText = block.children.reduce((acc, r) => acc + r.text, "");
 
-    const absoluteClickOffset =
-      this.positionCalculator!.getOffsetInBlock(position);
+    const absoluteClickOffset = this.positionCalculator!.getOffsetInBlock(position);
 
     const isWord = (ch: string): boolean => /[a-zA-Z0-9À-ÿ_]/.test(ch);
     const isWhitespace = (ch: string): boolean => /\s/.test(ch);
@@ -420,11 +414,7 @@ export class OasisEditorController {
         while (wordStart > 0 && isWord(fullText[wordStart - 1])) wordStart--;
         while (wordEnd < fullText.length && isWord(fullText[wordEnd]))
           wordEnd++;
-        if (
-          wordEnd < fullText.length &&
-          isWhitespace(fullText[wordEnd]) &&
-          fullText[wordEnd] !== "\n"
-        )
+        if (wordEnd < fullText.length && isWhitespace(fullText[wordEnd]) && fullText[wordEnd] !== "\n")
           wordEnd++;
       } else if (isWhitespace(ch)) {
         while (wordStart > 0 && isWhitespace(fullText[wordStart - 1]))
