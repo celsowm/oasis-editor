@@ -89,11 +89,13 @@ export const reduceDocumentState = (
         const block = document.sections
           .flatMap((s) => s.children)
           .find((b) => b.id === selection.anchor.blockId);
-        const currentRun = block?.children.find((r) => r.id === selection.anchor.inlineId);
+        const currentRun = block?.children.find(
+          (r) => r.id === selection.anchor.inlineId,
+        );
         const baseMarks = state.pendingMarks || currentRun?.marks || {};
-        
+
         const newValue = isSet ? setValue : !baseMarks[mark];
-        
+
         return {
           ...state,
           pendingMarks: {
@@ -301,7 +303,11 @@ export const reduceDocumentState = (
 
             if (pendingMarks) {
               if (beforeText) {
-                nextChildren.push({ ...run, id: genId("run"), text: beforeText });
+                nextChildren.push({
+                  ...run,
+                  id: genId("run"),
+                  text: beforeText,
+                });
               }
               nextChildren.push({
                 id: genId("run"),
@@ -309,10 +315,17 @@ export const reduceDocumentState = (
                 marks: { ...run.marks, ...pendingMarks },
               });
               if (afterText) {
-                nextChildren.push({ ...run, id: genId("run"), text: afterText });
+                nextChildren.push({
+                  ...run,
+                  id: genId("run"),
+                  text: afterText,
+                });
               }
             } else {
-              nextChildren.push({ ...run, text: beforeText + text + afterText });
+              nextChildren.push({
+                ...run,
+                text: beforeText + text + afterText,
+              });
             }
           }
 
@@ -335,7 +348,9 @@ export const reduceDocumentState = (
 
       // Find new position for selection
       let nextPosition: LogicalPosition | null = null;
-      const block = nextSections.flatMap(s => s.children).find(b => b.id === blockId);
+      const block = nextSections
+        .flatMap((s) => s.children)
+        .find((b) => b.id === blockId);
       if (block) {
         let acc = 0;
         const targetOffset = offset + text.length;
@@ -345,7 +360,7 @@ export const reduceDocumentState = (
             nextPosition = {
               ...selection.anchor,
               inlineId: run.id,
-              offset: targetOffset - acc
+              offset: targetOffset - acc,
             };
             break;
           }
@@ -618,7 +633,7 @@ export const reduceDocumentState = (
       const { blockId, inlineId, offset } = selection.anchor;
 
       const baseState = { ...state, pendingMarks: undefined };
-      
+
       const blocksFlat = document.sections.flatMap((s) => s.children);
       const currentBlockIdx = blocksFlat.findIndex((b) => b.id === blockId);
       if (currentBlockIdx === -1) return state;
