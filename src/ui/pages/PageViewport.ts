@@ -31,90 +31,64 @@ export class PageViewport {
     this.pageLayer.render(layout);
     this.mapper = new SelectionMapper(layout, this.measurer);
 
-    // Clear old overlays
-    this.caretOverlays.forEach((o) => o.render(null));
-    this.selectionOverlays.forEach((o) => o.render(null));
+    this.clearOverlays();
 
     if (!selection) return;
 
-    // Handle caret
-    if (
+    if (this.isCaretSelection(selection)) {
+      this.renderCaret(selection.anchor || selection.focus);
+    } else {
+      this.renderSelectionRange(selection);
+    }
+  }
+
+  private clearOverlays(): void {
+    this.caretOverlays.forEach((o) => o.render(null));
+    this.selectionOverlays.forEach((o) => o.render(null));
+  }
+
+  private isCaretSelection(selection: EditorSelection): boolean {
+    return (
       !selection.anchor ||
       (selection.anchor.offset === selection.focus.offset &&
         selection.anchor.blockId === selection.focus.blockId)
-    ) {
-      console.log("VIEWPORT: Renderizando caret");
-      console.log(
-        "VIEWPORT: Posição do caret:",
-        selection.anchor || selection.focus,
-      );
-      const caretRect = this.mapper.getCaretRect(
-        selection.anchor || selection.focus,
-      );
-      console.log("VIEWPORT: Caret rect:", caretRect);
-      if (caretRect) {
-        this.getOrCreateCaretOverlay(caretRect.pageId).render(
-          selection.anchor || selection.focus,
-        );
-      }
-    } else {
-      // Handle selection
-      const range = this.normalizeSelection(selection);
-      const rects = this.mapper.getSelectionRects(range);
-      rects.forEach((rect) => {
-        this.getOrCreateSelectionOverlay(rect.pageId).render(range);
-      });
+    );
+  }
+
+  private renderCaret(position: LogicalPosition): void {
+    const caretRect = this.mapper!.getCaretRect(position);
+    if (caretRect) {
+      this.getOrCreateCaretOverlay(caretRect.pageId).render(position);
     }
+  }
+
+  private renderSelectionRange(selection: EditorSelection): void {
+    const range = this.normalizeSelection(selection);
+    const rects = this.mapper!.getSelectionRects(range);
+    rects.forEach((rect) => {
+      this.getOrCreateSelectionOverlay(rect.pageId).render(range);
+    });
   }
 
   getOrCreateCaretOverlay(
     pageId: string,
   ): CaretOverlay | { render: () => void } {
-    console.log(
-      "VIEWPORT: getOrCreateCaretOverlay chamado com pageId:",
-      pageId,
-    );
     if (this.caretOverlays.has(pageId)) {
       const existingOverlay = this.caretOverlays.get(pageId)!;
-      const isInDOM = document.body.contains(
-        existingOverlay.container as unknown as Node,
-      );
-      console.log("VIEWPORT: Overlay existente ainda está no DOM?", isInDOM);
-      if (!isInDOM) {
-        console.log(
-          "VIEWPORT: Container antigo foi removido, recriando overlay",
-        );
-        this.caretOverlays.delete(pageId);
+      if (
+        document.body.contains(existingOverlay.container as unknown as Node)
+      ) {
+        return existingOverlay;
       }
+      this.caretOverlays.delete(pageId);
     }
 
-    if (!this.caretOverlays.has(pageId)) {
-      console.log("VIEWPORT: Criando novo caret overlay para pagina:", pageId);
-      const pageEl = this.root.querySelector(`[data-page-id="${pageId}"]`);
-      console.log("VIEWPORT: Elemento da pagina encontrado?", !!pageEl);
-      if (!pageEl) {
-        console.log("VIEWPORT: ❌ Pagina nao encontrada, retornando stub");
-        return { render: () => {} };
-      }
+    const container = this.getOverlayContainer(pageId);
+    if (!container) return { render: () => {} };
 
-      let overlayContainer = pageEl.querySelector(
-        ".oasis-selection-layer",
-      ) as HTMLElement | null;
-      console.log("VIEWPORT: Container de selecao existe?", !!overlayContainer);
-      if (!overlayContainer) {
-        console.log("VIEWPORT: Criando novo container de selecao");
-        overlayContainer = document.createElement("div");
-        overlayContainer.className = "oasis-selection-layer";
-        pageEl.appendChild(overlayContainer);
-      }
-
-      this.caretOverlays.set(
-        pageId,
-        new CaretOverlay(overlayContainer, this.mapper!),
-      );
-      console.log("VIEWPORT: CaretOverlay criado e armazenado");
-    }
-    return this.caretOverlays.get(pageId)!;
+    const overlay = new CaretOverlay(container, this.mapper!);
+    this.caretOverlays.set(pageId, overlay);
+    return overlay;
   }
 
   getOrCreateSelectionOverlay(
@@ -122,33 +96,37 @@ export class PageViewport {
   ): SelectionOverlay | { render: () => void } {
     if (this.selectionOverlays.has(pageId)) {
       const existingOverlay = this.selectionOverlays.get(pageId)!;
-      const isInDOM = document.body.contains(
-        existingOverlay.container as unknown as Node,
-      );
-      if (!isInDOM) {
-        this.selectionOverlays.delete(pageId);
+      if (
+        document.body.contains(existingOverlay.container as unknown as Node)
+      ) {
+        return existingOverlay;
       }
+      this.selectionOverlays.delete(pageId);
     }
 
-    if (!this.selectionOverlays.has(pageId)) {
-      const pageEl = this.root.querySelector(`[data-page-id="${pageId}"]`);
-      if (!pageEl) return { render: () => {} };
+    const container = this.getOverlayContainer(pageId);
+    if (!container) return { render: () => {} };
 
-      let overlayContainer = pageEl.querySelector(
-        ".oasis-selection-layer",
-      ) as HTMLElement | null;
-      if (!overlayContainer) {
-        overlayContainer = document.createElement("div");
-        overlayContainer.className = "oasis-selection-layer";
-        pageEl.appendChild(overlayContainer);
-      }
+    const overlay = new SelectionOverlay(container, this.mapper!);
+    this.selectionOverlays.set(pageId, overlay);
+    return overlay;
+  }
 
-      this.selectionOverlays.set(
-        pageId,
-        new SelectionOverlay(overlayContainer, this.mapper!),
-      );
+  private getOverlayContainer(pageId: string): HTMLElement | null {
+    const pageEl = this.root.querySelector(`[data-page-id="${pageId}"]`);
+    if (!pageEl) return null;
+
+    let overlayContainer = pageEl.querySelector(
+      ".oasis-selection-layer",
+    ) as HTMLElement | null;
+
+    if (!overlayContainer) {
+      overlayContainer = document.createElement("div");
+      overlayContainer.className = "oasis-selection-layer";
+      pageEl.appendChild(overlayContainer);
     }
-    return this.selectionOverlays.get(pageId)!;
+
+    return overlayContainer;
   }
 
   normalizeSelection(selection: EditorSelection): LogicalRange {
