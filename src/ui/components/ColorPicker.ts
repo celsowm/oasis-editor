@@ -60,7 +60,7 @@ export class ColorPicker {
     const arrowButton = document.createElement("button");
     arrowButton.className = "oasis-color-picker-arrow";
     arrowButton.type = "button";
-    arrowButton.innerHTML = "&#9660;"; // Down arrow
+    arrowButton.textContent = "▼"; // Down arrow
 
     arrowButton.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -84,17 +84,26 @@ export class ColorPicker {
     // Automatic (Black)
     const automatic = document.createElement("div");
     automatic.className = "oasis-color-picker-automatic";
-    automatic.innerHTML = `
-      <div class="oasis-color-picker-automatic-square"></div>
-      <span>Automatic</span>
-    `;
+
+    const automaticSquare = document.createElement("div");
+    automaticSquare.className = "oasis-color-picker-automatic-square";
+    automatic.appendChild(automaticSquare);
+
+    const automaticLabel = document.createElement("span");
+    automaticLabel.textContent = "Automatic";
+    automatic.appendChild(automaticLabel);
+
     automatic.addEventListener("click", () => this.selectColor("#000000"));
     this.dropdown.appendChild(automatic);
 
     // Theme Colors
     const themeSection = document.createElement("div");
     themeSection.className = "oasis-color-picker-section";
-    themeSection.innerHTML = `<div class="oasis-color-picker-section-title">Theme Colors</div>`;
+
+    const themeTitle = document.createElement("div");
+    themeTitle.className = "oasis-color-picker-section-title";
+    themeTitle.textContent = "Theme Colors";
+    themeSection.appendChild(themeTitle);
     
     const themeGrid = document.createElement("div");
     themeGrid.className = "oasis-color-picker-grid";
@@ -110,7 +119,11 @@ export class ColorPicker {
     // Standard Colors
     const standardSection = document.createElement("div");
     standardSection.className = "oasis-color-picker-section";
-    standardSection.innerHTML = `<div class="oasis-color-picker-section-title">Standard Colors</div>`;
+
+    const standardTitle = document.createElement("div");
+    standardTitle.className = "oasis-color-picker-section-title";
+    standardTitle.textContent = "Standard Colors";
+    standardSection.appendChild(standardTitle);
     
     const standardGrid = document.createElement("div");
     standardGrid.className = "oasis-color-picker-grid";
