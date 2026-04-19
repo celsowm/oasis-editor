@@ -36,7 +36,7 @@ export const composeParagraph = (
   maxWidth: number,
   measure: TextMeasurer,
 ): ComposedParagraph => {
-  const plainText = block.children.map((child) => child.text).join("");
+  const plainText = block.children.reduce((acc, child) => acc + child.text, "");
   const typography = getBlockTypography(block);
 
   const broken = breakTextIntoLines(

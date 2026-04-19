@@ -32,7 +32,7 @@ export class OasisEditorDom {
   getColorPickerContainer(): HTMLElement {
     return this.requireElement("oasis-editor-color-picker-container");
   }
-  
+
   getAlignLeftButton(): HTMLElement {
     return this.requireElement("oasis-editor-align-left");
   }

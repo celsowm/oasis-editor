@@ -99,9 +99,10 @@ export const paginateDocument = (
         currentY = currentPage.contentRect.y;
       }
 
-      const textLength = block.children
-        .map((child) => child.text)
-        .join("").length;
+      const textLength = block.children.reduce(
+        (sum, child) => sum + child.text.length,
+        0,
+      );
       const fragment: LayoutFragment = {
         id: `fragment:${block.id}:0`,
         blockId: block.id,

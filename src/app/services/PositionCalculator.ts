@@ -26,12 +26,14 @@ export class PositionCalculator {
         offsetInFragment += run.text.length;
       }
     }
-    
+
     // If we didn't find the run ID, it might be an empty block or just at the end
     return position.offset;
   }
 
-  getFragmentContainingPosition(position: LogicalPosition): LayoutFragment | null {
+  getFragmentContainingPosition(
+    position: LogicalPosition,
+  ): LayoutFragment | null {
     const fragments = this.layout.fragmentsByBlockId[position.blockId];
     if (!fragments || fragments.length === 0) return null;
 
@@ -39,9 +41,7 @@ export class PositionCalculator {
 
     return (
       fragments.find(
-        (f) =>
-          absoluteOffset >= f.startOffset &&
-          absoluteOffset <= f.endOffset,
+        (f) => absoluteOffset >= f.startOffset && absoluteOffset <= f.endOffset,
       ) ?? fragments[0]
     );
   }
@@ -59,7 +59,10 @@ export class PositionCalculator {
       const line = fragment.lines[i];
       // Use inclusive/exclusive bounds: at exactly lineEnd, it might belong to NEXT line
       // unless it's the last line of the fragment
-      if (offsetInBlock >= line.offsetStart && offsetInBlock <= line.offsetEnd) {
+      if (
+        offsetInBlock >= line.offsetStart &&
+        offsetInBlock <= line.offsetEnd
+      ) {
         return line.y;
       }
     }
@@ -100,7 +103,7 @@ export class PositionCalculator {
     const lineStartOffset = targetLine ? targetLine.offsetStart : 0;
     const offsetInLine = Math.max(0, offsetInBlock - lineStartOffset);
 
-    let totalWidth = (targetLine?.x ?? 0);
+    let totalWidth = targetLine?.x ?? 0;
 
     if (offsetInLine === 0) return totalWidth;
 
@@ -113,7 +116,8 @@ export class PositionCalculator {
         const lineText = targetLine.text.trimEnd();
         const spaces = lineText.match(/ /g) || [];
         if (spaces.length > 0) {
-          extraSpacePerGap = (fragment.rect.width - targetLine.width) / spaces.length;
+          extraSpacePerGap =
+            (fragment.rect.width - targetLine.width) / spaces.length;
         }
       }
     }

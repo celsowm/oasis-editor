@@ -95,12 +95,12 @@ export class ColorPicker {
     const themeSection = document.createElement("div");
     themeSection.className = "oasis-color-picker-section";
     themeSection.innerHTML = `<div class="oasis-color-picker-section-title">Theme Colors</div>`;
-    
+
     const themeGrid = document.createElement("div");
     themeGrid.className = "oasis-color-picker-grid";
-    
-    THEME_COLORS.forEach(row => {
-      row.forEach(swatch => {
+
+    THEME_COLORS.forEach((row) => {
+      row.forEach((swatch) => {
         themeGrid.appendChild(this.createSwatch(swatch.color, swatch.name));
       });
     });
@@ -111,11 +111,11 @@ export class ColorPicker {
     const standardSection = document.createElement("div");
     standardSection.className = "oasis-color-picker-section";
     standardSection.innerHTML = `<div class="oasis-color-picker-section-title">Standard Colors</div>`;
-    
+
     const standardGrid = document.createElement("div");
     standardGrid.className = "oasis-color-picker-grid";
-    
-    STANDARD_COLORS.forEach(swatch => {
+
+    STANDARD_COLORS.forEach((swatch) => {
       standardGrid.appendChild(this.createSwatch(swatch.color, swatch.name));
     });
     standardSection.appendChild(standardGrid);
