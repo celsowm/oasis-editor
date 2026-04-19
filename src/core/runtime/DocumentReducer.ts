@@ -7,6 +7,7 @@ import { createParagraph } from "../document/DocumentFactory.js";
 import { LogicalPosition } from "../selection/SelectionTypes.js";
 import { TextRun } from "../document/BlockTypes.js";
 import { LayoutState } from "../layout/LayoutTypes.js";
+import { areMarksEqual } from "../document/MarkUtils.js";
 
 export interface ReducerState extends EditorState {
   _layout?: LayoutState;
@@ -197,7 +198,7 @@ export const reduceDocumentState = (
           for (const run of nextRuns) {
             if (mergedRuns.length > 0) {
               const last = mergedRuns[mergedRuns.length - 1];
-              if (JSON.stringify(last.marks) === JSON.stringify(run.marks)) {
+              if (areMarksEqual(last.marks, run.marks)) {
                 last.text += run.text;
                 continue;
               }
@@ -320,7 +321,7 @@ export const reduceDocumentState = (
           for (const r of nextChildren) {
             if (merged.length > 0) {
               const last = merged[merged.length - 1];
-              if (JSON.stringify(last.marks) === JSON.stringify(r.marks)) {
+              if (areMarksEqual(last.marks, r.marks)) {
                 last.text += r.text;
                 continue;
               }
