@@ -3,7 +3,7 @@ import {
   LogicalRange,
 } from "../../core/selection/SelectionTypes.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
-import { LayoutFragment } from "../../core/layout/LayoutFragment.js";
+import { LayoutFragment, LineInfo } from "../../core/layout/LayoutFragment.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { PositionCalculator } from "./PositionCalculator.js";
 
@@ -57,14 +57,89 @@ export class SelectionMapper {
     };
   }
 
+  /**
+   * Calculates the set of rectangles that represent the selection for a given logical range.
+   * Selection can span multiple lines, fragments, and pages.
+   */
   getSelectionRects(range: LogicalRange): SelectionRect[] {
     const { start, end } = range;
 
-    const startRect = this.getCaretRect(start);
-    const endRect = this.getCaretRect(end);
+    // Get carets for both ends of the range to facilitate width calculations
+    const startCaret = this.getCaretRect(start);
+    const endCaret = this.getCaretRect(end);
 
-    if (!startRect || !endRect) return [];
+    if (!startCaret || !endCaret) return [];
 
+    // Ensure we process the range from top-to-bottom in the document flow
+    const normalized = this.normalizeRange(range);
+    if (!normalized) return [];
+
+    const { visualStart, visualEnd, visualStartAbs, visualEndAbs } = normalized;
+
+    const visualStartCaret = visualStart === start ? startCaret : endCaret;
+    const visualEndCaret = visualEnd === end ? endCaret : startCaret;
+
+    const rects: SelectionRect[] = [];
+    let isCurrentlyInSelection = false;
+    let isSelectionFinished = false;
+
+    for (const page of this.layout.pages) {
+      for (const fragment of page.fragments) {
+        if (!fragment.lines) continue;
+
+        for (const line of fragment.lines) {
+          const isLineWhereSelectionStarts =
+            !isCurrentlyInSelection &&
+            fragment.blockId === visualStart.blockId &&
+            visualStartAbs >= line.offsetStart &&
+            visualStartAbs <= line.offsetEnd;
+
+          if (isLineWhereSelectionStarts) {
+            isCurrentlyInSelection = true;
+          }
+
+          const isLineWhereSelectionEnds =
+            isCurrentlyInSelection &&
+            fragment.blockId === visualEnd.blockId &&
+            visualEndAbs >= line.offsetStart &&
+            visualEndAbs <= line.offsetEnd;
+
+          if (isLineWhereSelectionEnds) {
+            isSelectionFinished = true;
+          }
+
+          if (isCurrentlyInSelection) {
+            const rect = this.calculateRectForLine(
+              line,
+              fragment,
+              page.id,
+              isLineWhereSelectionStarts,
+              isLineWhereSelectionEnds,
+              visualStartCaret.x,
+              visualEndCaret.x,
+            );
+
+            if (rect) {
+              rects.push(rect);
+            }
+          }
+
+          if (isSelectionFinished) break;
+        }
+        if (isSelectionFinished) break;
+      }
+      if (isSelectionFinished) break;
+    }
+
+    return rects;
+  }
+
+  /**
+   * Normalizes a selection range so that visualStart always appears before visualEnd
+   * in the document flow. This handles cases where the user selects text backwards.
+   */
+  private normalizeRange(range: LogicalRange) {
+    const { start, end } = range;
     const absStartOffset = this.positionCalculator.getOffsetInBlock(start);
     const absEndOffset = this.positionCalculator.getOffsetInBlock(end);
 
@@ -73,12 +148,13 @@ export class SelectionMapper {
     let visualStartAbs = 0;
     let visualEndAbs = 0;
 
+    // Scan the layout to see which block (start or end) appears first.
     for (const page of this.layout.pages) {
       for (const fragment of page.fragments) {
-        if (
-          fragment.blockId === start.blockId &&
-          fragment.blockId === end.blockId
-        ) {
+        const isStartBlock = fragment.blockId === start.blockId;
+        const isEndBlock = fragment.blockId === end.blockId;
+
+        if (isStartBlock && isEndBlock) {
           if (absStartOffset <= absEndOffset) {
             visualStart = start;
             visualEnd = end;
@@ -92,14 +168,16 @@ export class SelectionMapper {
           }
           break;
         }
-        if (fragment.blockId === start.blockId && !visualStart) {
+
+        if (isStartBlock && !visualStart) {
           visualStart = start;
           visualEnd = end;
           visualStartAbs = absStartOffset;
           visualEndAbs = absEndOffset;
           break;
         }
-        if (fragment.blockId === end.blockId && !visualStart) {
+
+        if (isEndBlock && !visualStart) {
           visualStart = end;
           visualEnd = start;
           visualStartAbs = absEndOffset;
@@ -110,77 +188,46 @@ export class SelectionMapper {
       if (visualStart) break;
     }
 
-    if (!visualStart || !visualEnd) return [];
+    if (!visualStart || !visualEnd) return null;
 
-    const vStartRect = visualStart === start ? startRect : endRect;
-    const vEndRect = visualEnd === end ? endRect : startRect;
+    return { visualStart, visualEnd, visualStartAbs, visualEndAbs };
+  }
 
-    const rects: SelectionRect[] = [];
-    let inSelection = false;
-    let done = false;
+  /**
+   * Calculates the selection rectangle for a single line of text.
+   */
+  private calculateRectForLine(
+    line: LineInfo,
+    fragment: LayoutFragment,
+    pageId: string,
+    isLineStart: boolean,
+    isLineEnd: boolean,
+    visualStartX: number,
+    visualEndX: number,
+  ): SelectionRect | null {
+    let x = fragment.rect.x;
+    let width = line.width ?? fragment.rect.width;
 
-    for (const page of this.layout.pages) {
-      for (const fragment of page.fragments) {
-        if (!fragment.lines) continue;
-
-        for (const line of fragment.lines) {
-          let lineMatchesStart = false;
-          let lineMatchesEnd = false;
-
-          if (
-            !inSelection &&
-            fragment.blockId === visualStart.blockId &&
-            visualStartAbs >= line.offsetStart &&
-            visualStartAbs <= line.offsetEnd
-          ) {
-            inSelection = true;
-            lineMatchesStart = true;
-          }
-
-          if (
-            inSelection &&
-            fragment.blockId === visualEnd.blockId &&
-            visualEndAbs >= line.offsetStart &&
-            visualEndAbs <= line.offsetEnd
-          ) {
-            lineMatchesEnd = true;
-            done = true;
-          }
-
-          if (inSelection) {
-            let x = fragment.rect.x;
-            let width = line.width ?? fragment.rect.width;
-
-            if (lineMatchesStart && lineMatchesEnd) {
-              x = vStartRect.x;
-              width = Math.max(vEndRect.x - vStartRect.x, 2);
-            } else if (lineMatchesStart) {
-              x = vStartRect.x;
-              const lineEndX = fragment.rect.x + (line.width ?? fragment.rect.width);
-              width = Math.max(lineEndX - vStartRect.x, 2);
-            } else if (lineMatchesEnd) {
-              x = fragment.rect.x;
-              width = Math.max(vEndRect.x - fragment.rect.x, 2);
-            }
-
-            if (width > 0) {
-              rects.push({
-                x,
-                y: line.y,
-                width,
-                height: line.height,
-                pageId: page.id,
-              });
-            }
-          }
-
-          if (done) break;
-        }
-        if (done) break;
-      }
-      if (done) break;
+    if (isLineStart && isLineEnd) {
+      x = visualStartX;
+      width = Math.max(visualEndX - visualStartX, 2);
+    } else if (isLineStart) {
+      x = visualStartX;
+      const lineEndX = fragment.rect.x + (line.width ?? fragment.rect.width);
+      width = Math.max(lineEndX - visualStartX, 2);
+    } else if (isLineEnd) {
+      x = fragment.rect.x;
+      width = Math.max(visualEndX - fragment.rect.x, 2);
     }
 
-    return rects;
+    if (width <= 0) return null;
+
+    return {
+      x,
+      y: line.y,
+      width,
+      height: line.height,
+      pageId: pageId,
+    };
   }
 }
