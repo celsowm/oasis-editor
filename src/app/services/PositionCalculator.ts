@@ -111,9 +111,12 @@ export class PositionCalculator {
         targetLine === fragment.lines[fragment.lines.length - 1];
       if (!isLastLine) {
         const lineText = targetLine.text.trimEnd();
-        const spaces = lineText.match(/ /g) || [];
-        if (spaces.length > 0) {
-          extraSpacePerGap = (fragment.rect.width - targetLine.width) / spaces.length;
+        let spaceCount = 0;
+        for (let i = 0; i < lineText.length; i++) {
+          if (lineText[i] === " ") spaceCount++;
+        }
+        if (spaceCount > 0) {
+          extraSpacePerGap = (fragment.rect.width - targetLine.width) / spaceCount;
         }
       }
     }
@@ -157,7 +160,10 @@ export class PositionCalculator {
 
         // Add justification extra space
         if (extraSpacePerGap > 0) {
-          const spacesInSegment = (textToMeasure.match(/ /g) || []).length;
+          let spacesInSegment = 0;
+          for (let i = 0; i < textToMeasure.length; i++) {
+            if (textToMeasure[i] === " ") spacesInSegment++;
+          }
           totalWidth += spacesInSegment * extraSpacePerGap;
         }
       }
