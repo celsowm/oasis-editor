@@ -119,7 +119,7 @@ export class OasisEditorView {
     this.elements.boldButton.addEventListener("click", events.onBold);
     this.elements.italicButton.addEventListener("click", events.onItalic);
     this.elements.underlineButton.addEventListener("click", events.onUnderline);
-    
+
     this.colorPicker = new ColorPicker("oasis-editor-color-picker-container", {
       onColorSelected: (color) => events.onColorChange(color),
     });
@@ -130,10 +130,18 @@ export class OasisEditorView {
     this.elements.templateSelect.addEventListener("change", (event) =>
       events.onTemplateChange((event.target as HTMLSelectElement).value),
     );
-    this.elements.alignLeft.addEventListener("click", () => events.onAlign("left"));
-    this.elements.alignCenter.addEventListener("click", () => events.onAlign("center"));
-    this.elements.alignRight.addEventListener("click", () => events.onAlign("right"));
-    this.elements.alignJustify.addEventListener("click", () => events.onAlign("justify"));
+    this.elements.alignLeft.addEventListener("click", () =>
+      events.onAlign("left"),
+    );
+    this.elements.alignCenter.addEventListener("click", () =>
+      events.onAlign("center"),
+    );
+    this.elements.alignRight.addEventListener("click", () =>
+      events.onAlign("right"),
+    );
+    this.elements.alignJustify.addEventListener("click", () =>
+      events.onAlign("justify"),
+    );
 
     // Hidden input for keyboard handling
     this.elements.hiddenInput.addEventListener("input", (e) => {
@@ -245,11 +253,23 @@ export class OasisEditorView {
       "active",
       selectionState.underline,
     );
-    this.elements.alignLeft.classList.toggle("active", selectionState.align === "left");
-    this.elements.alignCenter.classList.toggle("active", selectionState.align === "center");
-    this.elements.alignRight.classList.toggle("active", selectionState.align === "right");
-    this.elements.alignJustify.classList.toggle("active", selectionState.align === "justify");
-    
+    this.elements.alignLeft.classList.toggle(
+      "active",
+      selectionState.align === "left",
+    );
+    this.elements.alignCenter.classList.toggle(
+      "active",
+      selectionState.align === "center",
+    );
+    this.elements.alignRight.classList.toggle(
+      "active",
+      selectionState.align === "right",
+    );
+    this.elements.alignJustify.classList.toggle(
+      "active",
+      selectionState.align === "justify",
+    );
+
     if (this.colorPicker) {
       this.colorPicker.setCurrentColor(selectionState.color);
     }
