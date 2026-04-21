@@ -5,25 +5,28 @@
   border-radius: 4px;
 }
 
-.oasis-color-picker:hover {
-  background: #dadce0;
-}
-
-.oasis-color-picker-main {
+.oasis-color-picker-button {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 4px 6px;
   border: none;
   background: transparent;
   cursor: pointer;
-  border-radius: 4px 0 0 4px;
-  min-width: 32px;
+  border-radius: 4px;
+  gap: 4px;
 }
 
-.oasis-color-picker-main:hover {
-  background: rgba(0, 0, 0, 0.05);
+.oasis-color-picker-button:hover {
+  background: #dadce0;
+}
+
+.oasis-color-picker-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
 }
 
 .oasis-color-picker-icon {
@@ -42,20 +45,10 @@
 }
 
 .oasis-color-picker-arrow {
+  font-size: 10px;
+  color: #5f6368;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  border-radius: 0 4px 4px 0;
-  font-size: 8px;
-  color: #5f6368;
-}
-
-.oasis-color-picker-arrow:hover {
-  background: rgba(0, 0, 0, 0.05);
 }
 
 .oasis-color-picker-dropdown {
