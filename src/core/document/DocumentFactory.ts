@@ -4,6 +4,9 @@ import {
   ParagraphNode,
   HeadingNode,
   ImageNode,
+  TableCellNode,
+  TableRowNode,
+  TableNode,
   BlockNode,
 } from "./BlockTypes.js";
 import { DocumentModel, createDocumentMetadata } from "./DocumentTypes.js";
@@ -17,11 +20,13 @@ let sectionCounter = 0;
 let blockCounter = 0;
 let runCounter = 0;
 let imageCounter = 0;
+let tableCounter = 0;
 
 const nextSectionId = (): string => `section:${sectionCounter++}`;
 const nextBlockId = (): string => `block:${blockCounter++}`;
 const nextRunId = (): string => `run:${runCounter++}`;
 const nextImageId = (): string => `image:${imageCounter++}`;
+const nextTableId = (): string => `table:${tableCounter++}`;
 
 export const createTextRun = (
   text: string,
@@ -54,6 +59,25 @@ export const createImage = (
     alt,
   };
 };
+
+export const createTableCell = (children: BlockNode[] = []): TableCellNode => ({
+  id: nextBlockId(),
+  kind: "table-cell",
+  children: children.length > 0 ? children : [createParagraph("")],
+});
+
+export const createTableRow = (cellCount: number): TableRowNode => ({
+  id: nextBlockId(),
+  kind: "table-row",
+  cells: Array.from({ length: cellCount }, () => createTableCell()),
+});
+
+export const createTable = (rows: number, cols: number, totalWidth = 600): TableNode => ({
+  id: nextBlockId(),
+  kind: "table",
+  rows: Array.from({ length: rows }, () => createTableRow(cols)),
+  columnWidths: Array(cols).fill(Math.floor(totalWidth / cols)),
+});
 
 export const createParagraph = (
   text: string,

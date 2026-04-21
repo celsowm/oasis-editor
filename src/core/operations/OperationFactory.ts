@@ -13,14 +13,18 @@ import {
   InsertImageOp,
   ResizeImageOp,
   SelectImageOp,
+  InsertTableOp,
+  MoveBlockOp,
+  EditorOperation,
 } from "./OperationTypes.js";
 import { EditorSelection } from "../selection/SelectionTypes.js";
 import { MarkSet } from "../document/BlockTypes.js";
+import { genId } from "../utils/IdGenerator.js";
 
 export const Operations = {
   appendParagraph: (text: string): AppendParagraphOp => ({
     type: OperationType.APPEND_PARAGRAPH,
-    payload: { text },
+    payload: { text, newBlockId: genId("block"), newRunId: genId("run") },
   }),
   setSectionTemplate: (
     sectionId: string,
@@ -35,7 +39,7 @@ export const Operations = {
   }),
   insertText: (text: string): InsertTextOp => ({
     type: OperationType.INSERT_TEXT,
-    payload: { text },
+    payload: { text, newRunIds: [genId("run"), genId("run"), genId("run")] },
   }),
   deleteText: (): DeleteTextOp => ({
     type: OperationType.DELETE_TEXT,
@@ -43,7 +47,7 @@ export const Operations = {
   }),
   insertParagraph: (): InsertParagraphOp => ({
     type: OperationType.INSERT_PARAGRAPH,
-    payload: {},
+    payload: { newBlockId: genId("block"), newRunId: genId("run") },
   }),
   moveSelection: (key: string): MoveSelectionOp => ({
     type: OperationType.MOVE_SELECTION,
@@ -72,7 +76,7 @@ export const Operations = {
     alt = "",
   ): InsertImageOp => ({
     type: OperationType.INSERT_IMAGE,
-    payload: { src, naturalWidth, naturalHeight, displayWidth, align, alt },
+    payload: { src, naturalWidth, naturalHeight, displayWidth, align, alt, newBlockId: genId("block") },
   }),
   resizeImage: (blockId: string, width: number, height: number): ResizeImageOp => ({
     type: OperationType.RESIZE_IMAGE,
@@ -81,5 +85,49 @@ export const Operations = {
   selectImage: (blockId: string): SelectImageOp => ({
     type: OperationType.SELECT_IMAGE,
     payload: { blockId },
+  }),
+  insertTable: (rows: number, cols: number): EditorOperation => {
+    const newTableId = genId("table");
+    const newRowIds = Array.from({ length: rows }, () => genId("row"));
+    const newCellIds = Array.from({ length: rows * cols }, () => genId("cell"));
+    const newParaIds = Array.from({ length: rows * cols }, () => genId("block"));
+    const newRunIds = Array.from({ length: rows * cols }, () => genId("run"));
+    return {
+        type: OperationType.INSERT_TABLE,
+        payload: { rows, cols, newTableId, newRowIds, newCellIds, newParaIds, newRunIds },
+    };
+  },
+
+  tableAddRowAbove: (tableId: string, referenceBlockId: string): EditorOperation => ({
+    type: OperationType.TABLE_ADD_ROW_ABOVE,
+    payload: { tableId, referenceBlockId },
+  }),
+  tableAddRowBelow: (tableId: string, referenceBlockId: string): EditorOperation => ({
+    type: OperationType.TABLE_ADD_ROW_BELOW,
+    payload: { tableId, referenceBlockId },
+  }),
+  tableAddColumnLeft: (tableId: string, referenceBlockId: string): EditorOperation => ({
+    type: OperationType.TABLE_ADD_COLUMN_LEFT,
+    payload: { tableId, referenceBlockId },
+  }),
+  tableAddColumnRight: (tableId: string, referenceBlockId: string): EditorOperation => ({
+    type: OperationType.TABLE_ADD_COLUMN_RIGHT,
+    payload: { tableId, referenceBlockId },
+  }),
+  tableDeleteRow: (tableId: string, referenceBlockId: string): EditorOperation => ({
+    type: OperationType.TABLE_DELETE_ROW,
+    payload: { tableId, referenceBlockId },
+  }),
+  tableDeleteColumn: (tableId: string, referenceBlockId: string): EditorOperation => ({
+    type: OperationType.TABLE_DELETE_COLUMN,
+    payload: { tableId, referenceBlockId },
+  }),
+  tableDelete: (tableId: string): EditorOperation => ({
+    type: OperationType.TABLE_DELETE,
+    payload: { tableId },
+  }),
+  moveBlock: (blockId: string, targetReferenceBlockId: string, isBefore = false): MoveBlockOp => ({
+    type: OperationType.MOVE_BLOCK,
+    payload: { blockId, targetReferenceBlockId, isBefore },
   }),
 };

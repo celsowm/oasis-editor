@@ -3,20 +3,20 @@ import { DocumentRuntime } from "../core/runtime/DocumentRuntime.js";
 import { DocumentLayoutService } from "./services/DocumentLayoutService.js";
 import { OasisEditorPresenter } from "./presenters/OasisEditorPresenter.js";
 import { OasisEditorView } from "./OasisEditorView.js";
-import { TextMeasurer } from "../bridge/measurement/TextMeasurementBridge.js";
 import { LayoutState } from "../core/layout/LayoutTypes.js";
 import { LayoutFragment } from "../core/layout/LayoutFragment.js";
 import { LogicalPosition } from "../core/selection/SelectionTypes.js";
 import { LineInfo } from "../core/layout/LayoutFragment.js";
 import { PositionCalculator } from "./services/PositionCalculator.js";
 import { isTextBlock } from "../core/document/BlockTypes.js";
+import { TextMeasurementService } from "./services/TextMeasurementService.js";
 
 export interface ControllerDeps {
   runtime: DocumentRuntime;
   layoutService: DocumentLayoutService;
   presenter: OasisEditorPresenter;
   view: OasisEditorView;
-  measurer: TextMeasurer;
+  measurementService: TextMeasurementService;
 }
 
 export class OasisEditorController {
@@ -24,93 +24,34 @@ export class OasisEditorController {
   private layoutService: DocumentLayoutService;
   private presenter: OasisEditorPresenter;
   private view: OasisEditorView;
-  private measurer: TextMeasurer;
+  private measurementService: TextMeasurementService;
   private latestLayout: LayoutState | null;
   private isDragging: boolean;
   private dragAnchor: LogicalPosition | null;
   private positionCalculator: PositionCalculator | null;
+
+  // Table dragging
+  private isTableDragging = false;
+  private draggingTableId: string | null = null;
+  private dropIndicator: HTMLElement | null = null;
+  private currentDropTarget: { blockId: string, isBefore: boolean } | null = null;
 
   constructor({
     runtime,
     layoutService,
     presenter,
     view,
-    measurer,
+    measurementService,
   }: ControllerDeps) {
     this.runtime = runtime;
     this.layoutService = layoutService;
     this.presenter = presenter;
     this.view = view;
-    this.measurer = measurer;
+    this.measurementService = measurementService;
     this.latestLayout = null;
     this.isDragging = false;
     this.dragAnchor = null;
     this.positionCalculator = null;
-  }
-
-  private measureWidthUpToOffset(
-    fragment: LayoutFragment,
-    line: LineInfo,
-    endOffset: number,
-  ): number {
-    const lineStartOffset = line.offsetStart;
-    if (lineStartOffset === endOffset) return line.x;
-
-    let totalWidth = line.x;
-
-    // Justification logic
-    let extraSpacePerGap = 0;
-    if (fragment.align === "justify" && line && fragment.lines) {
-      const isLastLine = line === fragment.lines[fragment.lines.length - 1];
-      if (!isLastLine) {
-        const lineText = line.text.trimEnd();
-        const spaces = lineText.match(/ /g) || [];
-        if (spaces.length > 0) {
-          extraSpacePerGap = (fragment.rect.width - line.width) / spaces.length;
-        }
-      }
-    }
-    let currentGlobalOffset = 0;
-    const runs = fragment.runs?.length
-      ? fragment.runs
-      : [{ id: "", text: fragment.text, marks: fragment.marks ?? {} }];
-
-    for (const run of runs) {
-      const runStart = currentGlobalOffset;
-      const runEnd = currentGlobalOffset + run.text.length;
-      const measureStart = Math.max(lineStartOffset, runStart);
-      const measureEnd = Math.min(endOffset, runEnd);
-
-      if (measureStart < measureEnd) {
-        const textToMeasure = run.text.substring(
-          measureStart - runStart,
-          measureEnd - runStart,
-        );
-        let fontWeight = fragment.typography.fontWeight;
-        if (run.marks?.["bold"] || fragment.kind === "heading")
-          fontWeight = 700;
-        const fontStyle = run.marks?.["italic"] ? "italic" : "normal";
-        const metrics = this.measurer.measureText({
-          text: textToMeasure,
-          fontFamily:
-            (run.marks?.["fontFamily"] as string) ||
-            fragment.typography.fontFamily,
-          fontSize:
-            (run.marks?.["fontSize"] as number) || fragment.typography.fontSize,
-          fontWeight,
-          fontStyle,
-        });
-        totalWidth += metrics.width;
-
-        if (extraSpacePerGap > 0) {
-          const spacesInSegment = (textToMeasure.match(/ /g) || []).length;
-          totalWidth += spacesInSegment * extraSpacePerGap;
-        }
-      }
-      currentGlobalOffset += run.text.length;
-      if (currentGlobalOffset >= endOffset) break;
-    }
-    return totalWidth;
   }
 
   start(): void {
@@ -137,6 +78,23 @@ export class OasisEditorController {
       onInsertImage: (src, nw, nh, dw) => this.insertImage(src, nw, nh, dw),
       onResizeImage: (blockId, w, h) => this.resizeImage(blockId, w, h),
       onSelectImage: (blockId) => this.selectImage(blockId),
+      onInsertTable: (rows, cols) => this.insertTable(rows, cols),
+      onTableAction: (action, tableId) => this.handleTableAction(action, tableId),
+      onTableMove: (tableId, targetBlockId, isBefore) => {
+        this.runtime.dispatch(Operations.moveBlock(tableId, targetBlockId, isBefore));
+      },
+    });
+
+    this.view.elements.root.addEventListener("table-drag-start", (e: any) => {
+      this.handleTableDragStart(e.detail.tableId, e.detail.originalEvent);
+    });
+
+    window.addEventListener("mousemove", (e) => {
+        if (this.isTableDragging) this.handleTableDragging(e);
+    });
+
+    window.addEventListener("mouseup", (e) => {
+        if (this.isTableDragging) this.handleTableMouseUp(e);
     });
 
     this.isDragging = false;
@@ -180,6 +138,39 @@ export class OasisEditorController {
 
   selectImage(blockId: string): void {
     this.runtime.dispatch(Operations.selectImage(blockId));
+  }
+
+  insertTable(rows: number, cols: number): void {
+    this.runtime.dispatch(Operations.insertTable(rows, cols));
+  }
+
+  handleTableAction(action: string, tableId: string): void {
+    const selection = this.runtime.getState().selection;
+    if (!selection) return;
+
+    switch (action) {
+      case "addRowAbove":
+        this.runtime.dispatch(Operations.tableAddRowAbove(tableId, selection.anchor.blockId));
+        break;
+      case "addRowBelow":
+        this.runtime.dispatch(Operations.tableAddRowBelow(tableId, selection.anchor.blockId));
+        break;
+      case "addColumnLeft":
+        this.runtime.dispatch(Operations.tableAddColumnLeft(tableId, selection.anchor.blockId));
+        break;
+      case "addColumnRight":
+        this.runtime.dispatch(Operations.tableAddColumnRight(tableId, selection.anchor.blockId));
+        break;
+      case "deleteRow":
+        this.runtime.dispatch(Operations.tableDeleteRow(tableId, selection.anchor.blockId));
+        break;
+      case "deleteColumn":
+        this.runtime.dispatch(Operations.tableDeleteColumn(tableId, selection.anchor.blockId));
+        break;
+      case "deleteTable":
+        this.runtime.dispatch(Operations.tableDelete(tableId));
+        break;
+    }
   }
 
   undo(): void {
@@ -317,7 +308,7 @@ export class OasisEditorController {
       const lineStart = targetLine.offsetStart;
       const lineEnd = targetLine.offsetEnd;
       for (let i = lineStart; i <= lineEnd; i++) {
-        const measuredWidth = this.measureWidthUpToOffset(
+        const measuredWidth = this.measurementService.measureWidthUpToOffset(
           layoutFragment,
           targetLine,
           i,
@@ -331,7 +322,7 @@ export class OasisEditorController {
     } else {
       for (let i = 0; i <= fragmentText.length; i++) {
         // Fallback for missing targetLine (should not happen with updated engine)
-        const measuredWidth = this.measureWidthUpToOffset(
+        const measuredWidth = this.measurementService.measureWidthUpToOffset(
           layoutFragment,
           {
             offsetStart: 0,
@@ -554,5 +545,94 @@ export class OasisEditorController {
     this.runtime.setLayout(layout);
     const viewModel = this.presenter.present({ state, layout });
     this.view.render(viewModel);
+  }
+
+  private handleTableDragStart(tableId: string, event: MouseEvent): void {
+      this.isTableDragging = true;
+      this.draggingTableId = tableId;
+      document.body.style.cursor = "grabbing";
+  }
+
+  private handleTableDragging(event: MouseEvent): void {
+      if (!this.isTableDragging || !this.latestLayout) return;
+
+      const dropTarget = this.findDropTarget(event);
+      if (dropTarget) {
+          this.currentDropTarget = dropTarget;
+          this.showDropIndicator(dropTarget);
+      } else {
+          this.hideDropIndicator();
+      }
+  }
+
+  private handleTableMouseUp(event: MouseEvent): void {
+      if (!this.isTableDragging) return;
+
+      if (this.currentDropTarget && this.draggingTableId) {
+          this.runtime.dispatch(Operations.moveBlock(
+              this.draggingTableId, 
+              this.currentDropTarget.blockId, 
+              this.currentDropTarget.isBefore
+          ));
+      }
+
+      this.isTableDragging = false;
+      this.draggingTableId = null;
+      this.currentDropTarget = null;
+      this.hideDropIndicator();
+      document.body.style.cursor = "";
+  }
+
+  private findDropTarget(event: MouseEvent): { blockId: string, isBefore: boolean, rect: any, pageId: string } | null {
+      // Find the fragment under or nearest to the mouse
+      const element = document.elementFromPoint(event.clientX, event.clientY);
+      const fragmentEl = element?.closest(".oasis-fragment") as HTMLElement | null;
+      
+      if (!fragmentEl) return null;
+
+      const fragmentId = fragmentEl.dataset.fragmentId;
+      const blockId = fragmentEl.dataset.blockId; // Need to ensure this is set in PageLayer
+      if (!blockId) return null;
+
+      const rect = fragmentEl.getBoundingClientRect();
+      const isBefore = event.clientY < rect.top + rect.height / 2;
+
+      return {
+          blockId,
+          isBefore,
+          rect: {
+            x: parseFloat(fragmentEl.style.left),
+            y: parseFloat(fragmentEl.style.top),
+            width: rect.width,
+            height: rect.height
+          },
+          pageId: fragmentEl.parentElement?.dataset.pageId || ""
+      };
+  }
+
+  private showDropIndicator(target: any): void {
+      if (!this.dropIndicator) {
+          this.dropIndicator = document.createElement("div");
+          this.dropIndicator.className = "oasis-drop-indicator";
+          document.body.appendChild(this.dropIndicator);
+      }
+
+      const pageEl = this.view.elements.root.querySelector(`[data-page-id="${target.pageId}"]`);
+      if (!pageEl) return;
+
+      if (this.dropIndicator.parentElement !== pageEl) {
+          pageEl.appendChild(this.dropIndicator);
+      }
+
+      this.dropIndicator.style.display = "block";
+      this.dropIndicator.style.left = `${target.rect.x}px`;
+      this.dropIndicator.style.width = `${target.rect.width}px`;
+      this.dropIndicator.style.top = `${target.isBefore ? target.rect.y - 2 : target.rect.y + target.rect.height - 1}px`;
+  }
+
+  private hideDropIndicator(): void {
+      if (this.dropIndicator) {
+          this.dropIndicator.style.display = "none";
+      }
   }
 }

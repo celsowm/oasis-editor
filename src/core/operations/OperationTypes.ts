@@ -15,10 +15,36 @@ export enum OperationType {
   INSERT_IMAGE = "INSERT_IMAGE",
   RESIZE_IMAGE = "RESIZE_IMAGE",
   SELECT_IMAGE = "SELECT_IMAGE",
+  INSERT_TABLE = "INSERT_TABLE",
+  TABLE_ADD_ROW_ABOVE = "TABLE_ADD_ROW_ABOVE",
+  TABLE_ADD_ROW_BELOW = "TABLE_ADD_ROW_BELOW",
+  TABLE_ADD_COLUMN_LEFT = "TABLE_ADD_COLUMN_LEFT",
+  TABLE_ADD_COLUMN_RIGHT = "TABLE_ADD_COLUMN_RIGHT",
+  TABLE_DELETE_ROW = "TABLE_DELETE_ROW",
+  TABLE_DELETE_COLUMN = "TABLE_DELETE_COLUMN",
+  TABLE_DELETE = "TABLE_DELETE",
+  MOVE_BLOCK = "MOVE_BLOCK",
+}
+
+export interface TableRowColPayload {
+  tableId: string;
+  referenceBlockId: string; // The block inside the cell we are using as reference
+}
+
+export interface TableDeletePayload {
+  tableId: string;
+}
+
+export interface MoveBlockPayload {
+  blockId: string;
+  targetReferenceBlockId: string; // The block after which the moved block should be placed
+  isBefore?: boolean;
 }
 
 export interface AppendParagraphPayload {
   text: string;
+  newBlockId?: string;
+  newRunId?: string;
 }
 export interface SetSectionTemplatePayload {
   sectionId: string;
@@ -29,9 +55,13 @@ export interface SetSelectionPayload {
 }
 export interface InsertTextPayload {
   text: string;
+  newRunIds?: string[]; // For cases where we split runs
 }
 export interface DeleteTextPayload {}
-export interface InsertParagraphPayload {}
+export interface InsertParagraphPayload {
+  newBlockId?: string;
+  newRunId?: string;
+}
 export interface MoveSelectionPayload {
   key: string;
 }
@@ -52,6 +82,7 @@ export interface InsertImagePayload {
   displayWidth: number;
   align: "left" | "center" | "right";
   alt?: string;
+  newBlockId?: string;
 }
 export interface ResizeImagePayload {
   blockId: string;
@@ -60,6 +91,15 @@ export interface ResizeImagePayload {
 }
 export interface SelectImagePayload {
   blockId: string;
+}
+export interface InsertTablePayload {
+  rows: number;
+  cols: number;
+  newTableId?: string;
+  newRowIds?: string[];
+  newCellIds?: string[];
+  newParaIds?: string[];
+  newRunIds?: string[];
 }
 
 interface Operation<T extends OperationType, P> {
@@ -116,6 +156,15 @@ export type SelectImageOp = Operation<
   OperationType.SELECT_IMAGE,
   SelectImagePayload
 >;
+export type InsertTableOp = Operation<
+  OperationType.INSERT_TABLE,
+  InsertTablePayload
+>;
+
+export type MoveBlockOp = Operation<
+    OperationType.MOVE_BLOCK,
+    MoveBlockPayload
+>;
 
 export type EditorOperation =
   | AppendParagraphOp
@@ -130,7 +179,16 @@ export type EditorOperation =
   | SetAlignmentOp
   | InsertImageOp
   | ResizeImageOp
-  | SelectImageOp;
+  | SelectImageOp
+  | InsertTableOp
+  | MoveBlockOp
+  | Operation<OperationType.TABLE_ADD_ROW_ABOVE, TableRowColPayload>
+  | Operation<OperationType.TABLE_ADD_ROW_BELOW, TableRowColPayload>
+  | Operation<OperationType.TABLE_ADD_COLUMN_LEFT, TableRowColPayload>
+  | Operation<OperationType.TABLE_ADD_COLUMN_RIGHT, TableRowColPayload>
+  | Operation<OperationType.TABLE_DELETE_ROW, TableRowColPayload>
+  | Operation<OperationType.TABLE_DELETE_COLUMN, TableRowColPayload>
+  | Operation<OperationType.TABLE_DELETE, TableDeletePayload>;
 
 /** @deprecated Use OperationType enum directly */
 export const OPERATION_TYPES = OperationType;

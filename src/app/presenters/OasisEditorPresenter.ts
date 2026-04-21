@@ -3,6 +3,7 @@ import { EditorSelection } from "../../core/selection/SelectionTypes.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { PageTemplate } from "../../core/pages/PageTemplateTypes.js";
 import { MarkSet, isTextBlock } from "../../core/document/BlockTypes.js";
+import { findParentTable } from "../../core/document/BlockUtils.js";
 
 export interface TemplateOption {
   value: string;
@@ -29,6 +30,9 @@ export interface EditorViewModel {
   status: string;
   selectionState: SelectionState;
   selection: EditorSelection | null;
+  selectedImageId: string | null;
+  activeTableId: string | null;
+  activeTableFirstCellId: string | null;
   layout: LayoutState;
 }
 
@@ -62,9 +66,17 @@ export class OasisEditorPresenter {
       color: "#000000",
       align: "left",
     };
+    let activeTableId: string | null = null;
+    let activeTableFirstCellId: string | null = null;
 
     if (selection) {
       const blockId = selection.anchor.blockId;
+      const tableInfo = findParentTable(state.document, blockId);
+      if (tableInfo) {
+          activeTableId = tableInfo.table.id;
+          activeTableFirstCellId = (tableInfo.table as any).rows[0].cells[0].id;
+      }
+
       let targetBlock = undefined;
       for (const section of state.document.sections) {
         targetBlock = section.children.find((b) => b.id === blockId);
@@ -114,6 +126,9 @@ export class OasisEditorPresenter {
       status: `Revision ${state.document.revision} • ${layout.pages.length} pages`,
       selectionState,
       selection,
+      selectedImageId: state.selectedImageId ?? null,
+      activeTableId,
+      activeTableFirstCellId,
       layout,
     };
   }

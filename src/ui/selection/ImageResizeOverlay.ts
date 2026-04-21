@@ -7,18 +7,72 @@ export interface ResizeResult {
 }
 
 /**
- * ImageResizeOverlay — renders 8 resize handles around the selected image
- * and wires drag behaviour that preserves the aspect ratio.
+ * Strategy interface for calculating new dimensions based on handle origin.
+ */
+interface ResizeStrategy {
+  calculate(
+    dx: number,
+    dy: number,
+    startW: number,
+    startH: number,
+    aspectRatio: number,
+  ): { x: number; y: number; w: number; h: number };
+}
+
+class CornerResizeStrategy implements ResizeStrategy {
+  constructor(private originX: number, private originY: number) {}
+  calculate(dx: number, dy: number, startW: number, startH: number, aspectRatio: number) {
+    const deltaX = dx * -this.originX;
+    const deltaY = dy * -this.originY;
+    
+    let newW = startW + deltaX;
+    let newH = startH + deltaY;
+
+    if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+      newH = newW * aspectRatio;
+    } else {
+      newW = newH / aspectRatio;
+    }
+
+    // Determine the offset for x and y to keep the opposite corner fixed
+    const x = this.originX === 1 ? startW - newW : 0;
+    const y = this.originY === 1 ? startH - newH : 0;
+
+    return { x, y, w: newW, h: newH };
+  }
+}
+
+class SideResizeStrategy implements ResizeStrategy {
+  constructor(private isHorizontal: boolean, private origin: number) {}
+  calculate(dx: number, dy: number, startW: number, startH: number, aspectRatio: number) {
+    let newW = startW;
+    let newH = startH;
+    let x = 0;
+    let y = 0;
+
+    if (this.isHorizontal) {
+      newW = startW + dx * -this.origin;
+      x = this.origin === 1 ? startW - newW : 0;
+      y = 0;
+    } else {
+      newH = startH + dy * -this.origin;
+      y = this.origin === 1 ? startH - newH : 0;
+      x = 0;
+    }
+    return { x, y, w: newW, h: newH };
+  }
+}
+
+/**
+ * ImageResizeOverlay — renders 8 resize handles and provides S.O.L.I.D resizing logic.
  */
 export class ImageResizeOverlay {
   private container: HTMLElement;
   private overlayEl: HTMLElement | null = null;
+  private badgeEl: HTMLElement | null = null;
   private onResize: (result: ResizeResult) => void;
 
-  constructor(
-    container: HTMLElement,
-    onResize: (result: ResizeResult) => void,
-  ) {
+  constructor(container: HTMLElement, onResize: (result: ResizeResult) => void) {
     this.container = container;
     this.onResize = onResize;
   }
@@ -28,92 +82,77 @@ export class ImageResizeOverlay {
 
     const overlay = document.createElement("div");
     overlay.className = "oasis-image-resize-overlay";
-    overlay.style.cssText = `
-      position: absolute;
-      left: ${fragment.rect.x}px;
-      top: ${fragment.rect.y}px;
-      width: ${fragment.rect.width}px;
-      height: ${fragment.rect.height}px;
-      pointer-events: none;
-      z-index: 10;
-    `;
+    Object.assign(overlay.style, {
+      position: "absolute",
+      left: `${fragment.rect.x}px`,
+      top: `${fragment.rect.y}px`,
+      width: `${fragment.rect.width}px`,
+      height: `${fragment.rect.height}px`,
+      pointerEvents: "none",
+      zIndex: "100",
+    });
 
-    // Border ring
     const ring = document.createElement("div");
     ring.className = "oasis-image-resize-ring";
-    ring.style.cssText = `
-      position: absolute;
-      inset: 0;
-      border: 2px solid #4285f4;
-      pointer-events: none;
-      border-radius: 2px;
-    `;
+    Object.assign(ring.style, {
+      position: "absolute",
+      inset: "0",
+      border: "2px solid #4285f4",
+      pointerEvents: "none",
+      borderRadius: "2px",
+      boxShadow: "0 0 4px rgba(66, 133, 244, 0.3)",
+    });
     overlay.appendChild(ring);
 
-    // 8 handles: corners + midpoints
-    const HANDLES = [
-      { cursor: "nw-resize", top: "0", left: "0", originX: 1, originY: 1 },
-      { cursor: "n-resize", top: "0", left: "50%", originX: 0, originY: 1 },
-      { cursor: "ne-resize", top: "0", right: "0", originX: -1, originY: 1 },
-      { cursor: "e-resize", top: "50%", right: "0", originX: -1, originY: 0 },
-      {
-        cursor: "se-resize",
-        bottom: "0",
-        right: "0",
-        originX: -1,
-        originY: -1,
-      },
-      {
-        cursor: "s-resize",
-        bottom: "0",
-        left: "50%",
-        originX: 0,
-        originY: -1,
-      },
-      {
-        cursor: "sw-resize",
-        bottom: "0",
-        left: "0",
-        originX: 1,
-        originY: -1,
-      },
-      { cursor: "w-resize", top: "50%", left: "0", originX: 1, originY: 0 },
-    ] as const;
+    // Dimensions badge
+    const badge = document.createElement("div");
+    badge.className = "oasis-image-resize-badge";
+    Object.assign(badge.style, {
+      position: "absolute",
+      bottom: "-25px",
+      left: "50%",
+      transform: "translateX(-50%)",
+      background: "#4285f4",
+      color: "white",
+      padding: "2px 6px",
+      borderRadius: "4px",
+      fontSize: "10px",
+      fontFamily: "sans-serif",
+      whiteSpace: "nowrap",
+      pointerEvents: "none",
+      display: "none",
+    });
+    this.badgeEl = badge;
+    overlay.appendChild(badge);
 
-    for (const handleDef of HANDLES) {
+    const HANDLES = [
+      { pos: { top: "0%", left: "0%" }, strategy: new CornerResizeStrategy(1, 1), cursor: "nw-resize" },
+      { pos: { top: "0%", left: "50%" }, strategy: new SideResizeStrategy(false, 1), cursor: "n-resize" },
+      { pos: { top: "0%", left: "100%" }, strategy: new CornerResizeStrategy(-1, 1), cursor: "ne-resize" },
+      { pos: { top: "50%", left: "100%" }, strategy: new SideResizeStrategy(true, -1), cursor: "e-resize" },
+      { pos: { top: "100%", left: "100%" }, strategy: new CornerResizeStrategy(-1, -1), cursor: "se-resize" },
+      { pos: { top: "100%", left: "50%" }, strategy: new SideResizeStrategy(false, -1), cursor: "s-resize" },
+      { pos: { top: "100%", left: "0%" }, strategy: new CornerResizeStrategy(1, -1), cursor: "sw-resize" },
+      { pos: { top: "50%", left: "0%" }, strategy: new SideResizeStrategy(true, 1), cursor: "w-resize" },
+    ];
+
+    const aspectRatio = fragment.rect.height / fragment.rect.width;
+
+    HANDLES.forEach((hDef) => {
       const handle = document.createElement("div");
       handle.className = "oasis-image-resize-handle";
-
-      const baseStyle: Partial<CSSStyleDeclaration> = {
+      Object.assign(handle.style, {
         position: "absolute",
-        width: "9px",
-        height: "9px",
-        background: "#ffffff",
-        border: "2px solid #4285f4",
-        borderRadius: "2px",
-        cursor: handleDef.cursor,
+        width: "10px",
+        height: "10px",
+        background: "white",
+        border: "1px solid #4285f4",
+        borderRadius: "50%",
+        cursor: hDef.cursor,
         pointerEvents: "auto",
         transform: "translate(-50%, -50%)",
-        zIndex: "11",
-      };
-
-      // Position the handle
-      if ("top" in handleDef) handle.style.top = handleDef.top;
-      if ("bottom" in handleDef) handle.style.bottom = handleDef.bottom;
-      if ("left" in handleDef) handle.style.left = handleDef.left;
-      if ("right" in handleDef) handle.style.right = handleDef.right;
-      if ("top" in handleDef && handleDef.top === "50%")
-        handle.style.transform = "translate(-50%, -50%)";
-      if ("left" in handleDef && handleDef.left === "50%")
-        handle.style.transform = "translate(-50%, -50%)";
-
-      Object.assign(handle.style, baseStyle);
-
-      const { originX, originY } = handleDef;
-      const aspectRatio =
-        fragment.rect.height > 0
-          ? fragment.rect.height / fragment.rect.width
-          : 1;
+        ...hDef.pos,
+      });
 
       handle.addEventListener("mousedown", (e) => {
         e.preventDefault();
@@ -123,47 +162,39 @@ export class ImageResizeOverlay {
         const startY = e.clientY;
         const startW = fragment.rect.width;
         const startH = fragment.rect.height;
+        const initialLeft = fragment.rect.x;
+        const initialTop = fragment.rect.y;
 
-        const onMouseMove = (ev: MouseEvent) => {
-          const dx = (ev.clientX - startX) * -originX;
-          const dy = (ev.clientY - startY) * -originY;
+        badge.style.display = "block";
+        badge.textContent = `${Math.round(startW)} × ${Math.round(startH)}`;
 
-          let newW = startW + dx;
-          let newH = startH + dy;
+        const onMouseMove = (moveEv: MouseEvent) => {
+          const dx = moveEv.clientX - startX;
+          const dy = moveEv.clientY - startY;
 
-          // Preserve aspect ratio unless it's a pure top/bottom or left/right handle
-          if (originX !== 0 && originY !== 0) {
-            // Corner — maintain aspect ratio based on dominant axis
-            const dxMag = Math.abs(dx);
-            const dyMag = Math.abs(dy);
-            if (dxMag >= dyMag) {
-              newH = newW * aspectRatio;
-            } else {
-              newW = newH / aspectRatio;
-            }
-          } else if (originY === 0) {
-            // Left / right only — maintain ratio
-            newH = newW * aspectRatio;
-          } else {
-            // Top / bottom only — maintain ratio
-            newW = newH / aspectRatio;
-          }
+          const { x, y, w, h } = hDef.strategy.calculate(dx, dy, startW, startH, aspectRatio);
+          
+          const finalW = Math.max(20, Math.round(w));
+          const finalH = Math.max(20, Math.round(h));
 
-          newW = Math.max(40, Math.round(newW));
-          newH = Math.max(40, Math.round(newH));
+          overlay.style.width = `${finalW}px`;
+          overlay.style.height = `${finalH}px`;
+          overlay.style.left = `${initialLeft + x}px`;
+          overlay.style.top = `${initialTop + y}px`;
 
-          // Live feedback — resize the overlay
-          overlay.style.width = `${newW}px`;
-          overlay.style.height = `${newH}px`;
+          badge.textContent = `${finalW} × ${finalH}`;
         };
 
-        const onMouseUp = (ev: MouseEvent) => {
+        const onMouseUp = () => {
           document.removeEventListener("mousemove", onMouseMove);
           document.removeEventListener("mouseup", onMouseUp);
+          badge.style.display = "none";
 
-          const finalW = parseInt(overlay.style.width, 10);
-          const finalH = parseInt(overlay.style.height, 10);
-          this.onResize({ blockId: fragment.blockId, width: finalW, height: finalH });
+          this.onResize({
+            blockId: fragment.blockId,
+            width: parseInt(overlay.style.width, 10),
+            height: parseInt(overlay.style.height, 10),
+          });
         };
 
         document.addEventListener("mousemove", onMouseMove);
@@ -171,16 +202,17 @@ export class ImageResizeOverlay {
       });
 
       overlay.appendChild(handle);
-    }
+    });
 
     this.container.appendChild(overlay);
     this.overlayEl = overlay;
   }
 
   detach(): void {
-    if (this.overlayEl && this.overlayEl.parentNode) {
+    if (this.overlayEl?.parentNode) {
       this.overlayEl.parentNode.removeChild(this.overlayEl);
     }
     this.overlayEl = null;
+    this.badgeEl = null;
   }
 }

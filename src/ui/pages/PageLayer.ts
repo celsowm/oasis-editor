@@ -51,7 +51,7 @@ export class PageLayer {
           img.draggable = false;
           img.style.width = "100%";
           img.style.height = "100%";
-          img.style.objectFit = "contain";
+          img.style.objectFit = "fill";
           img.style.display = "block";
           img.style.userSelect = "none";
           img.style.pointerEvents = "none";
@@ -67,7 +67,25 @@ export class PageLayer {
             );
           });
 
+          wrapper.appendChild(img);
           pageEl.appendChild(wrapper);
+          continue;
+        }
+
+        if (fragment.kind === "table-cell") {
+          const cellEl = document.createElement("div");
+          cellEl.className = "oasis-table-cell";
+          cellEl.dataset["blockId"] = fragment.blockId;
+          cellEl.style.position = "absolute";
+          cellEl.style.left = `${fragment.rect.x}px`;
+          cellEl.style.top = `${fragment.rect.y}px`;
+          cellEl.style.width = `${fragment.rect.width}px`;
+          cellEl.style.height = `${fragment.rect.height}px`;
+          cellEl.style.border = "1px solid #94a3b8"; // slate-400
+          cellEl.style.backgroundColor = "transparent";
+          cellEl.style.boxSizing = "border-box";
+          cellEl.style.pointerEvents = "none";
+          content.appendChild(cellEl);
           continue;
         }
 
@@ -75,6 +93,7 @@ export class PageLayer {
         const fragmentEl = document.createElement("article");
         fragmentEl.className = `oasis-fragment oasis-fragment--${fragment.kind}`;
         fragmentEl.dataset["fragmentId"] = fragment.id;
+        fragmentEl.dataset["blockId"] = fragment.blockId;
         fragmentEl.style.fontFamily = fragment.typography.fontFamily;
         fragmentEl.style.fontSize = `${fragment.typography.fontSize}px`;
         fragmentEl.style.left = `${fragment.rect.x}px`;

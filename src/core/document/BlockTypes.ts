@@ -40,10 +40,35 @@ export interface ImageNode {
   alt?: string;
 }
 
-export type BlockNode = ParagraphNode | HeadingNode | ImageNode;
+export interface TableCellNode {
+  id: string;
+  kind: "table-cell";
+  children: BlockNode[]; // Allows nested blocks like paragraphs
+  width?: number;
+  vAlign?: "top" | "middle" | "bottom";
+}
+
+export interface TableRowNode {
+  id: string;
+  kind: "table-row";
+  cells: TableCellNode[];
+}
+
+export interface TableNode {
+  id: string;
+  kind: "table";
+  rows: TableRowNode[];
+  columnWidths: number[]; // Widths in pixels
+}
+
+export type BlockNode = ParagraphNode | HeadingNode | ImageNode | TableNode;
 
 export type TextBlockNode = ParagraphNode | HeadingNode;
 
 export function isTextBlock(node: BlockNode): node is TextBlockNode {
   return node.kind === "paragraph" || node.kind === "heading";
+}
+
+export function isTableNode(node: BlockNode): node is TableNode {
+  return node.kind === "table";
 }

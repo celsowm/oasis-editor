@@ -58,11 +58,12 @@ export const composeParagraph = (
     typography.fontSize * (block.kind === "heading" ? 1.35 : 1.5);
 
   let currentOffset = 0;
+  const align = isTextBlock(block) ? block.align : "left";
   const lines: LineInfo[] = broken.map((line, index) => {
     let x = 0;
-    if (block.align === "center") {
+    if (align === "center") {
       x = (maxWidth - line.width) / 2;
-    } else if (block.align === "right") {
+    } else if (align === "right") {
       x = maxWidth - line.width;
     }
 
@@ -88,6 +89,6 @@ export const composeParagraph = (
     typography,
     totalHeight: broken.length * lineHeight,
     lines,
-    align: block.align,
+    align,
   };
 };

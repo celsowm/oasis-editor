@@ -69,6 +69,10 @@ export class OasisEditorDom {
     return this.requireElement("oasis-editor-image-input") as HTMLInputElement;
   }
 
+  getInsertTableButton(): HTMLElement {
+    return this.requireElement("oasis-editor-insert-table");
+  }
+
   getStatus(): HTMLElement {
     return this.requireElement("oasis-editor-status");
   }
