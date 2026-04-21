@@ -6,6 +6,7 @@ export default defineConfig(({ mode }) => {
   const isLib = mode === 'lib';
 
   return {
+    base: isLib ? './' : '/oasis-editor/',
     build: {
       outDir: isLib ? 'dist' : 'dist-app',
       lib: isLib ? {
