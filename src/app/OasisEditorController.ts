@@ -34,6 +34,7 @@ export class OasisEditorController {
   private isTableDragging = false;
   private draggingTableId: string | null = null;
   private dropIndicator: HTMLElement | null = null;
+  private tableGhost: HTMLElement | null = null;
   private currentDropTarget: { blockId: string, isBefore: boolean } | null = null;
 
   constructor({
@@ -551,10 +552,49 @@ export class OasisEditorController {
       this.isTableDragging = true;
       this.draggingTableId = tableId;
       document.body.style.cursor = "grabbing";
+
+      // Create Ghost element
+      if (this.latestLayout) {
+          // Find first fragment of the table to get dimensions
+          const fragments = Object.values(this.latestLayout.fragmentsByBlockId)
+            .flat()
+            .filter(f => f.blockId === tableId);
+          
+          if (fragments.length > 0) {
+              // Calculate total bounding box of the table on its first page
+              const firstPageId = fragments[0].pageId;
+              const tableFragmentsOnPage = fragments.filter(f => f.pageId === firstPageId);
+              
+              let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+              tableFragmentsOnPage.forEach(f => {
+                  minX = Math.min(minX, f.rect.x);
+                  minY = Math.min(minY, f.rect.y);
+                  maxX = Math.max(maxX, f.rect.x + f.rect.width);
+                  maxY = Math.max(maxY, f.rect.y + f.rect.height);
+              });
+
+              this.tableGhost = document.createElement("div");
+              this.tableGhost.className = "oasis-table-ghost";
+              this.tableGhost.style.width = `${maxX - minX}px`;
+              this.tableGhost.style.height = `${maxY - minY}px`;
+              this.tableGhost.style.left = `${event.clientX}px`;
+              this.tableGhost.style.top = `${event.clientY}px`;
+              // Offset to center the ghost under the mouse a bit
+              this.tableGhost.style.transform = "translate(-20px, -20px)";
+              
+              document.body.appendChild(this.tableGhost);
+          }
+      }
   }
 
   private handleTableDragging(event: MouseEvent): void {
       if (!this.isTableDragging || !this.latestLayout) return;
+
+      // Move ghost
+      if (this.tableGhost) {
+          this.tableGhost.style.left = `${event.clientX}px`;
+          this.tableGhost.style.top = `${event.clientY}px`;
+      }
 
       const dropTarget = this.findDropTarget(event);
       if (dropTarget) {
@@ -575,6 +615,12 @@ export class OasisEditorController {
               this.currentDropTarget.isBefore
           ));
       }
+
+      // Cleanup ghost
+      if (this.tableGhost && this.tableGhost.parentElement) {
+          this.tableGhost.parentElement.removeChild(this.tableGhost);
+      }
+      this.tableGhost = null;
 
       this.isTableDragging = false;
       this.draggingTableId = null;
