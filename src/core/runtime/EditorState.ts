@@ -6,4 +6,5 @@ export interface EditorState {
   document: DocumentModel;
   selection: EditorSelection | null;
   pendingMarks?: MarkSet;
+  selectedImageId?: string | null;
 }

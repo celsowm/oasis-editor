@@ -5,6 +5,8 @@ import { TextMeasurer } from "../bridge/measurement/TextMeasurementBridge.js";
 import { PageLayer } from "../ui/pages/PageLayer.js";
 import { PageViewport } from "../ui/pages/PageViewport.js";
 import { ColorPicker } from "../ui/components/ColorPicker.js";
+import { ImageResizeOverlay } from "../ui/selection/ImageResizeOverlay.js";
+import { LayoutFragment } from "../core/layout/LayoutFragment.js";
 
 export interface ViewElements {
   root: HTMLElement;
@@ -15,7 +17,6 @@ export interface ViewElements {
   underlineButton: HTMLElement;
   undoButton: HTMLElement;
   redoButton: HTMLElement;
-  exportButton: HTMLElement;
   status: HTMLElement;
   metrics: HTMLElement;
   hiddenInput: HTMLInputElement;
@@ -24,6 +25,8 @@ export interface ViewElements {
   alignRight: HTMLElement;
   alignJustify: HTMLElement;
   colorPickerContainer: HTMLElement;
+  insertImageButton: HTMLElement;
+  imageFileInput: HTMLInputElement;
 }
 
 export interface SelectionState {
@@ -41,7 +44,6 @@ export interface ViewEventBindings {
   onColorChange: (color: string) => void;
   onUndo: () => void;
   onRedo: () => void;
-  onExport: () => void;
   onTemplateChange: (templateId: string) => void;
   onAlign: (align: "left" | "center" | "right" | "justify") => void;
   onTextInput: (text: string) => void;
@@ -53,6 +55,14 @@ export interface ViewEventBindings {
   onMouseUp: (e: MouseEvent) => void;
   onDblClick?: (e: MouseEvent) => void;
   onTripleClick?: (e: MouseEvent) => void;
+  onInsertImage: (
+    src: string,
+    naturalWidth: number,
+    naturalHeight: number,
+    displayWidth: number,
+  ) => void;
+  onResizeImage: (blockId: string, width: number, height: number) => void;
+  onSelectImage: (blockId: string) => void;
 }
 
 export class OasisEditorView {
@@ -62,6 +72,8 @@ export class OasisEditorView {
   private pageLayer: PageLayer;
   private viewport: PageViewport;
   private colorPicker!: ColorPicker;
+  private imageResizeOverlay: ImageResizeOverlay | null = null;
+  private selectedImageFragment: LayoutFragment | null = null;
 
   constructor(
     dom: OasisEditorDom,
@@ -79,7 +91,6 @@ export class OasisEditorView {
       underlineButton: dom.getUnderlineButton(),
       undoButton: dom.getUndoButton(),
       redoButton: dom.getRedoButton(),
-      exportButton: dom.getExportButton(),
       status: dom.getStatus(),
       metrics: dom.getMetrics(),
       hiddenInput: dom.getHiddenInput(),
@@ -88,6 +99,8 @@ export class OasisEditorView {
       alignRight: dom.getAlignRightButton(),
       alignJustify: dom.getAlignJustifyButton(),
       colorPickerContainer: dom.getColorPickerContainer(),
+      insertImageButton: dom.getInsertImageButton(),
+      imageFileInput: dom.getImageFileInput(),
     };
 
     this.pageLayer = new PageLayer(this.elements.pagesContainer);
@@ -119,21 +132,28 @@ export class OasisEditorView {
     this.elements.boldButton.addEventListener("click", events.onBold);
     this.elements.italicButton.addEventListener("click", events.onItalic);
     this.elements.underlineButton.addEventListener("click", events.onUnderline);
-    
+
     this.colorPicker = new ColorPicker("oasis-editor-color-picker-container", {
       onColorSelected: (color) => events.onColorChange(color),
     });
 
     this.elements.undoButton.addEventListener("click", events.onUndo);
     this.elements.redoButton.addEventListener("click", events.onRedo);
-    this.elements.exportButton.addEventListener("click", events.onExport);
     this.elements.templateSelect.addEventListener("change", (event) =>
       events.onTemplateChange((event.target as HTMLSelectElement).value),
     );
-    this.elements.alignLeft.addEventListener("click", () => events.onAlign("left"));
-    this.elements.alignCenter.addEventListener("click", () => events.onAlign("center"));
-    this.elements.alignRight.addEventListener("click", () => events.onAlign("right"));
-    this.elements.alignJustify.addEventListener("click", () => events.onAlign("justify"));
+    this.elements.alignLeft.addEventListener("click", () =>
+      events.onAlign("left"),
+    );
+    this.elements.alignCenter.addEventListener("click", () =>
+      events.onAlign("center"),
+    );
+    this.elements.alignRight.addEventListener("click", () =>
+      events.onAlign("right"),
+    );
+    this.elements.alignJustify.addEventListener("click", () =>
+      events.onAlign("justify"),
+    );
 
     // Hidden input for keyboard handling
     this.elements.hiddenInput.addEventListener("input", (e) => {
@@ -223,6 +243,54 @@ export class OasisEditorView {
     this.elements.root.addEventListener("mouseup", (e) => {
       if (events.onMouseUp) events.onMouseUp(e as MouseEvent);
     });
+
+    // ── Image insertion via file picker ──
+    this.elements.insertImageButton.addEventListener("click", () => {
+      this.elements.imageFileInput.value = "";
+      this.elements.imageFileInput.click();
+    });
+
+    this.elements.imageFileInput.addEventListener("change", () => {
+      const file = this.elements.imageFileInput.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const img = new Image();
+        img.onload = () => {
+          const displayW = Math.min(img.naturalWidth, 500);
+          events.onInsertImage(dataUrl, img.naturalWidth, img.naturalHeight, displayW);
+        };
+        img.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // ── Image select + resize overlay ──
+    this.elements.root.addEventListener("image-select", (e) => {
+      const ce = e as CustomEvent;
+      const { blockId, fragment } = ce.detail as {
+        blockId: string;
+        fragment: LayoutFragment;
+      };
+      this.selectedImageFragment = fragment;
+
+      const pageEl = this.elements.root.querySelector(
+        `[data-page-id="${fragment.pageId}"]`,
+      ) as HTMLElement | null;
+
+      if (pageEl) {
+        if (this.imageResizeOverlay) this.imageResizeOverlay.detach();
+        this.imageResizeOverlay = new ImageResizeOverlay(
+          pageEl,
+          ({ blockId: bId, width, height }) =>
+            events.onResizeImage(bId, width, height),
+        );
+        this.imageResizeOverlay.attach(fragment);
+      }
+
+      events.onSelectImage(blockId);
+    });
   }
 
   render(viewModel: EditorViewModel): void {
@@ -245,23 +313,26 @@ export class OasisEditorView {
       "active",
       selectionState.underline,
     );
-    this.elements.alignLeft.classList.toggle("active", selectionState.align === "left");
-    this.elements.alignCenter.classList.toggle("active", selectionState.align === "center");
-    this.elements.alignRight.classList.toggle("active", selectionState.align === "right");
-    this.elements.alignJustify.classList.toggle("active", selectionState.align === "justify");
-    
+    this.elements.alignLeft.classList.toggle(
+      "active",
+      selectionState.align === "left",
+    );
+    this.elements.alignCenter.classList.toggle(
+      "active",
+      selectionState.align === "center",
+    );
+    this.elements.alignRight.classList.toggle(
+      "active",
+      selectionState.align === "right",
+    );
+    this.elements.alignJustify.classList.toggle(
+      "active",
+      selectionState.align === "justify",
+    );
+
     if (this.colorPicker) {
       this.colorPicker.setCurrentColor(selectionState.color);
     }
   }
 
-  downloadJson(filename: string, content: string): void {
-    const blob = new Blob([content], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  }
 }

@@ -77,7 +77,7 @@ export class OasisEditorPresenter {
           ...marks,
           ...(state.pendingMarks || {}),
         };
-        
+
         selectionState = {
           bold: !!effectiveMarks.bold,
           italic: !!effectiveMarks.italic,

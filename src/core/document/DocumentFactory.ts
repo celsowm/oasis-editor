@@ -3,6 +3,7 @@ import {
   TextRun,
   ParagraphNode,
   HeadingNode,
+  ImageNode,
   BlockNode,
 } from "./BlockTypes.js";
 import { DocumentModel, createDocumentMetadata } from "./DocumentTypes.js";
@@ -15,10 +16,12 @@ import {
 let sectionCounter = 0;
 let blockCounter = 0;
 let runCounter = 0;
+let imageCounter = 0;
 
 const nextSectionId = (): string => `section:${sectionCounter++}`;
 const nextBlockId = (): string => `block:${blockCounter++}`;
 const nextRunId = (): string => `run:${runCounter++}`;
+const nextImageId = (): string => `image:${imageCounter++}`;
 
 export const createTextRun = (
   text: string,
@@ -28,6 +31,29 @@ export const createTextRun = (
   text,
   marks,
 });
+
+export const createImage = (
+  src: string,
+  naturalWidth: number,
+  naturalHeight: number,
+  displayWidth: number,
+  align: ImageNode["align"] = "center",
+  alt = "",
+): ImageNode => {
+  const aspectRatio = naturalHeight / naturalWidth;
+  const displayHeight = Math.round(displayWidth * aspectRatio);
+  return {
+    id: nextImageId(),
+    kind: "image",
+    src,
+    naturalWidth,
+    naturalHeight,
+    width: displayWidth,
+    height: displayHeight,
+    align,
+    alt,
+  };
+};
 
 export const createParagraph = (
   text: string,

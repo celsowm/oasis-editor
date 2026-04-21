@@ -54,9 +54,9 @@ export class OasisEditorController {
   ): number {
     const lineStartOffset = line.offsetStart;
     if (lineStartOffset === endOffset) return line.x;
-    
+
     let totalWidth = line.x;
-    
+
     // Justification logic
     let extraSpacePerGap = 0;
     if (fragment.align === "justify" && line && fragment.lines) {
@@ -121,7 +121,6 @@ export class OasisEditorController {
       onColorChange: (color) => this.setColor(color),
       onUndo: () => this.undo(),
       onRedo: () => this.redo(),
-      onExport: () => this.exportDocument(),
       onTemplateChange: (templateId) => this.setTemplate(templateId),
       onTextInput: (text) => this.insertText(text),
       onDelete: () => this.deleteText(),
@@ -134,6 +133,9 @@ export class OasisEditorController {
       onDblClick: (e) => this.handleDblClick(e),
       onTripleClick: (e) => this.handleTripleClick(e),
       onAlign: (align) => this.setAlign(align),
+      onInsertImage: (src, nw, nh, dw) => this.insertImage(src, nw, nh, dw),
+      onResizeImage: (blockId, w, h) => this.resizeImage(blockId, w, h),
+      onSelectImage: (blockId) => this.selectImage(blockId),
     });
 
     this.isDragging = false;
@@ -158,6 +160,25 @@ export class OasisEditorController {
 
   setColor(color: string): void {
     this.runtime.dispatch(Operations.setMark("color", color));
+  }
+
+  insertImage(
+    src: string,
+    naturalWidth: number,
+    naturalHeight: number,
+    displayWidth: number,
+  ): void {
+    this.runtime.dispatch(
+      Operations.insertImage(src, naturalWidth, naturalHeight, displayWidth),
+    );
+  }
+
+  resizeImage(blockId: string, width: number, height: number): void {
+    this.runtime.dispatch(Operations.resizeImage(blockId, width, height));
+  }
+
+  selectImage(blockId: string): void {
+    this.runtime.dispatch(Operations.selectImage(blockId));
   }
 
   undo(): void {
@@ -309,7 +330,12 @@ export class OasisEditorController {
         // Fallback for missing targetLine (should not happen with updated engine)
         const measuredWidth = this.measureWidthUpToOffset(
           layoutFragment,
-          { offsetStart: 0, offsetEnd: fragmentText.length, x: 0, width: layoutFragment.rect.width } as any,
+          {
+            offsetStart: 0,
+            offsetEnd: fragmentText.length,
+            x: 0,
+            width: layoutFragment.rect.width,
+          } as any,
           i,
         );
         const distance = Math.abs(measuredWidth - clickXInFragment);
@@ -399,7 +425,8 @@ export class OasisEditorController {
 
     const fullText = block.children.map((r) => r.text).join("");
 
-    const absoluteClickOffset = this.positionCalculator!.getOffsetInBlock(position);
+    const absoluteClickOffset =
+      this.positionCalculator!.getOffsetInBlock(position);
 
     const isWord = (ch: string): boolean => /[a-zA-Z0-9À-ÿ_]/.test(ch);
     const isWhitespace = (ch: string): boolean => /\s/.test(ch);
@@ -414,7 +441,11 @@ export class OasisEditorController {
         while (wordStart > 0 && isWord(fullText[wordStart - 1])) wordStart--;
         while (wordEnd < fullText.length && isWord(fullText[wordEnd]))
           wordEnd++;
-        if (wordEnd < fullText.length && isWhitespace(fullText[wordEnd]) && fullText[wordEnd] !== "\n")
+        if (
+          wordEnd < fullText.length &&
+          isWhitespace(fullText[wordEnd]) &&
+          fullText[wordEnd] !== "\n"
+        )
           wordEnd++;
       } else if (isWhitespace(ch)) {
         while (wordStart > 0 && isWhitespace(fullText[wordStart - 1]))
@@ -520,12 +551,5 @@ export class OasisEditorController {
     this.runtime.setLayout(layout);
     const viewModel = this.presenter.present({ state, layout });
     this.view.render(viewModel);
-  }
-
-  exportDocument(): void {
-    this.view.downloadJson(
-      "oasis-editor-document.json",
-      this.runtime.exportJson(),
-    );
   }
 }

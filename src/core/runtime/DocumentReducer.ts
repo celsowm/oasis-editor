@@ -3,10 +3,11 @@ import {
   EditorOperation,
   OperationType,
 } from "../operations/OperationTypes.js";
-import { createParagraph } from "../document/DocumentFactory.js";
+import { createParagraph, createImage } from "../document/DocumentFactory.js";
 import { LogicalPosition } from "../selection/SelectionTypes.js";
 import { TextRun } from "../document/BlockTypes.js";
 import { LayoutState } from "../layout/LayoutTypes.js";
+import { areMarksEqual } from "../document/MarkUtils.js";
 
 export interface ReducerState extends EditorState {
   _layout?: LayoutState;
@@ -88,11 +89,13 @@ export const reduceDocumentState = (
         const block = document.sections
           .flatMap((s) => s.children)
           .find((b) => b.id === selection.anchor.blockId);
-        const currentRun = block?.children.find((r) => r.id === selection.anchor.inlineId);
+        const currentRun = block?.children.find(
+          (r) => r.id === selection.anchor.inlineId,
+        );
         const baseMarks = state.pendingMarks || currentRun?.marks || {};
-        
+
         const newValue = isSet ? setValue : !baseMarks[mark];
-        
+
         return {
           ...state,
           pendingMarks: {
@@ -197,7 +200,7 @@ export const reduceDocumentState = (
           for (const run of nextRuns) {
             if (mergedRuns.length > 0) {
               const last = mergedRuns[mergedRuns.length - 1];
-              if (JSON.stringify(last.marks) === JSON.stringify(run.marks)) {
+              if (areMarksEqual(last.marks, run.marks)) {
                 last.text += run.text;
                 continue;
               }
@@ -300,7 +303,11 @@ export const reduceDocumentState = (
 
             if (pendingMarks) {
               if (beforeText) {
-                nextChildren.push({ ...run, id: genId("run"), text: beforeText });
+                nextChildren.push({
+                  ...run,
+                  id: genId("run"),
+                  text: beforeText,
+                });
               }
               nextChildren.push({
                 id: genId("run"),
@@ -308,10 +315,17 @@ export const reduceDocumentState = (
                 marks: { ...run.marks, ...pendingMarks },
               });
               if (afterText) {
-                nextChildren.push({ ...run, id: genId("run"), text: afterText });
+                nextChildren.push({
+                  ...run,
+                  id: genId("run"),
+                  text: afterText,
+                });
               }
             } else {
-              nextChildren.push({ ...run, text: beforeText + text + afterText });
+              nextChildren.push({
+                ...run,
+                text: beforeText + text + afterText,
+              });
             }
           }
 
@@ -320,7 +334,7 @@ export const reduceDocumentState = (
           for (const r of nextChildren) {
             if (merged.length > 0) {
               const last = merged[merged.length - 1];
-              if (JSON.stringify(last.marks) === JSON.stringify(r.marks)) {
+              if (areMarksEqual(last.marks, r.marks)) {
                 last.text += r.text;
                 continue;
               }
@@ -334,7 +348,9 @@ export const reduceDocumentState = (
 
       // Find new position for selection
       let nextPosition: LogicalPosition | null = null;
-      const block = nextSections.flatMap(s => s.children).find(b => b.id === blockId);
+      const block = nextSections
+        .flatMap((s) => s.children)
+        .find((b) => b.id === blockId);
       if (block) {
         let acc = 0;
         const targetOffset = offset + text.length;
@@ -344,7 +360,7 @@ export const reduceDocumentState = (
             nextPosition = {
               ...selection.anchor,
               inlineId: run.id,
-              offset: targetOffset - acc
+              offset: targetOffset - acc,
             };
             break;
           }
@@ -617,7 +633,7 @@ export const reduceDocumentState = (
       const { blockId, inlineId, offset } = selection.anchor;
 
       const baseState = { ...state, pendingMarks: undefined };
-      
+
       const blocksFlat = document.sections.flatMap((s) => s.children);
       const currentBlockIdx = blocksFlat.findIndex((b) => b.id === blockId);
       if (currentBlockIdx === -1) return state;
@@ -1084,6 +1100,96 @@ export const reduceDocumentState = (
           ],
         },
       };
+    }
+
+    case OperationType.INSERT_IMAGE: {
+      const { src, naturalWidth, naturalHeight, displayWidth, align, alt } =
+        operation.payload;
+
+      // Find the section/block where the cursor is (or append to first section)
+      let insertSectionIdx = 0;
+      let insertBlockIdx = -1;
+
+      if (selection) {
+        for (let sIdx = 0; sIdx < document.sections.length; sIdx++) {
+          const idx = document.sections[sIdx].children.findIndex(
+            (b) => b.id === selection.anchor.blockId,
+          );
+          if (idx !== -1) {
+            insertSectionIdx = sIdx;
+            insertBlockIdx = idx;
+            break;
+          }
+        }
+      }
+
+      const imageNode = createImage(
+        src,
+        naturalWidth,
+        naturalHeight,
+        displayWidth,
+        align,
+        alt,
+      );
+
+      const nextSections = document.sections.map((section, sIdx) => {
+        if (sIdx !== insertSectionIdx) return section;
+        const children = [...section.children];
+        children.splice(insertBlockIdx + 1, 0, imageNode);
+        return { ...section, children };
+      });
+
+      // After insertion, move selection to empty paragraph after image
+      const emptyParagraph = createParagraph("");
+      const nextSections2 = nextSections.map((section, sIdx) => {
+        if (sIdx !== insertSectionIdx) return section;
+        const children = [...section.children];
+        const imageIdx = children.findIndex((b) => b.id === imageNode.id);
+        children.splice(imageIdx + 1, 0, emptyParagraph);
+        return { ...section, children };
+      });
+
+      const newPosition: LogicalPosition = {
+        sectionId: document.sections[insertSectionIdx].id,
+        blockId: emptyParagraph.id,
+        inlineId: emptyParagraph.children[0].id,
+        offset: 0,
+      };
+
+      return {
+        ...state,
+        selectedImageId: imageNode.id,
+        document: {
+          ...document,
+          revision: document.revision + 1,
+          sections: nextSections2,
+        },
+        selection: { anchor: newPosition, focus: newPosition },
+      };
+    }
+
+    case OperationType.RESIZE_IMAGE: {
+      const { blockId, width, height } = operation.payload;
+      return {
+        ...state,
+        document: {
+          ...document,
+          revision: document.revision + 1,
+          sections: document.sections.map((section) => ({
+            ...section,
+            children: section.children.map((block) =>
+              block.id === blockId && block.kind === "image"
+                ? { ...block, width, height }
+                : block,
+            ),
+          })),
+        },
+      };
+    }
+
+    case OperationType.SELECT_IMAGE: {
+      const { blockId } = operation.payload;
+      return { ...state, selectedImageId: blockId };
     }
 
     default:

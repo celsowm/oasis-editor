@@ -1,7 +1,8 @@
 import { LogicalPosition } from "../../core/selection/SelectionTypes.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
-import { LayoutFragment } from "../../core/layout/LayoutFragment.js";
+import { LayoutFragment, LineInfo } from "../../core/layout/LayoutFragment.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
+import { TextRun } from "../../core/document/BlockTypes.js";
 
 export class PositionCalculator {
   private layout: LayoutState;
@@ -26,12 +27,13 @@ export class PositionCalculator {
         offsetInFragment += run.text.length;
       }
     }
-    
-    // If we didn't find the run ID, it might be an empty block or just at the end
+
     return position.offset;
   }
 
-  getFragmentContainingPosition(position: LogicalPosition): LayoutFragment | null {
+  getFragmentContainingPosition(
+    position: LogicalPosition,
+  ): LayoutFragment | null {
     const fragments = this.layout.fragmentsByBlockId[position.blockId];
     if (!fragments || fragments.length === 0) return null;
 
@@ -39,32 +41,81 @@ export class PositionCalculator {
 
     return (
       fragments.find(
-        (f) =>
-          absoluteOffset >= f.startOffset &&
-          absoluteOffset <= f.endOffset,
+        (f) => absoluteOffset >= f.startOffset && absoluteOffset <= f.endOffset,
       ) ?? fragments[0]
     );
   }
 
+  private findTargetLine(
+    fragment: LayoutFragment,
+    offsetInBlock: number,
+  ): LineInfo | null {
+    if (!fragment.lines || fragment.lines.length === 0) return null;
+
+    for (const line of fragment.lines) {
+      if (
+        offsetInBlock >= line.offsetStart &&
+        offsetInBlock <= line.offsetEnd
+      ) {
+        return line;
+      }
+    }
+
+    return fragment.lines[fragment.lines.length - 1];
+  }
+
   calculateYPosition(position: LogicalPosition): number | null {
     const fragment = this.getFragmentContainingPosition(position);
-    if (!fragment || !fragment.lines) {
-      return fragment?.rect.y ?? null;
+    if (!fragment) return null;
+
+    if (!fragment.lines || fragment.lines.length === 0) {
+      return fragment.rect.y;
     }
 
     const absoluteOffset = this.getOffsetInBlock(position);
     const offsetInBlock = absoluteOffset - fragment.startOffset;
 
-    for (let i = 0; i < fragment.lines.length; i++) {
-      const line = fragment.lines[i];
-      // Use inclusive/exclusive bounds: at exactly lineEnd, it might belong to NEXT line
-      // unless it's the last line of the fragment
-      if (offsetInBlock >= line.offsetStart && offsetInBlock <= line.offsetEnd) {
-        return line.y;
-      }
-    }
+    const targetLine = this.findTargetLine(fragment, offsetInBlock);
+    return targetLine?.y ?? fragment.rect.y;
+  }
 
-    return fragment.lines[fragment.lines.length - 1].y;
+  private calculateJustificationExtraSpace(
+    fragment: LayoutFragment,
+    targetLine: LineInfo,
+  ): number {
+    if (fragment.align !== "justify" || !fragment.lines) return 0;
+
+    const isLastLine = targetLine === fragment.lines[fragment.lines.length - 1];
+    if (isLastLine) return 0;
+
+    const lineText = targetLine.text.trimEnd();
+    const spaces = (lineText.match(/ /g) || []).length;
+    if (spaces === 0) return 0;
+
+    return (fragment.rect.width - targetLine.width) / spaces;
+  }
+
+  private measureSegment(
+    text: string,
+    run: TextRun,
+    fragment: LayoutFragment,
+    measurer: TextMeasurer,
+  ): number {
+    let fontWeight = fragment.typography.fontWeight;
+    if (run.marks?.["bold"] || fragment.kind === "heading") fontWeight = 700;
+    const fontStyle = run.marks?.["italic"] ? "italic" : "normal";
+
+    const measured = measurer.measureText({
+      text,
+      fontFamily:
+        (run.marks?.["fontFamily"] as string) || fragment.typography.fontFamily,
+      fontSize:
+        (run.marks?.["fontSize"] as number) || fragment.typography.fontSize,
+      fontWeight,
+      fontStyle,
+    });
+
+    return measured.width;
   }
 
   calculateXOffset(
@@ -74,62 +125,34 @@ export class PositionCalculator {
   ): number {
     if (!fragment || !measurer) return 0;
 
-    // Get the absolute offset in the whole block
     const absoluteOffset = this.getOffsetInBlock(position);
-
-    // Line offsetStart/offsetEnd are block-relative
     const offsetInBlock = absoluteOffset - fragment.startOffset;
 
-    let targetLine = fragment.lines ? fragment.lines[0] : null;
-    if (fragment.lines) {
-      for (const line of fragment.lines) {
-        // Use exclusive upper bound - position at exactly line.end goes to NEXT line
-        if (
-          offsetInBlock >= line.offsetStart &&
-          offsetInBlock <= line.offsetEnd
-        ) {
-          targetLine = line;
-          break;
-        }
-      }
-      if (!targetLine) {
-        targetLine = fragment.lines[fragment.lines.length - 1];
-      }
-    }
-
+    const targetLine = this.findTargetLine(fragment, offsetInBlock);
     const lineStartOffset = targetLine ? targetLine.offsetStart : 0;
     const offsetInLine = Math.max(0, offsetInBlock - lineStartOffset);
 
-    let totalWidth = (targetLine?.x ?? 0);
-
+    let totalWidth = targetLine?.x ?? 0;
     if (offsetInLine === 0) return totalWidth;
 
-    // Justification logic
-    let extraSpacePerGap = 0;
-    if (fragment.align === "justify" && targetLine && fragment.lines) {
-      const isLastLine =
-        targetLine === fragment.lines[fragment.lines.length - 1];
-      if (!isLastLine) {
-        const lineText = targetLine.text.trimEnd();
-        const spaces = lineText.match(/ /g) || [];
-        if (spaces.length > 0) {
-          extraSpacePerGap = (fragment.rect.width - targetLine.width) / spaces.length;
-        }
-      }
-    }
+    const extraSpacePerGap = targetLine
+      ? this.calculateJustificationExtraSpace(fragment, targetLine)
+      : 0;
 
+    const targetOffset = lineStartOffset + offsetInLine;
     let currentGlobalOffset = 0;
-
     const runs = fragment.runs?.length
       ? fragment.runs
-      : [{ id: "", text: fragment.text, marks: fragment.marks ?? {} }];
+      : ([
+          { id: "", text: fragment.text, marks: fragment.marks ?? {} },
+        ] as TextRun[]);
 
     for (const run of runs) {
       const runStart = currentGlobalOffset;
       const runEnd = currentGlobalOffset + run.text.length;
 
       const measureStart = Math.max(lineStartOffset, runStart);
-      const measureEnd = Math.min(lineStartOffset + offsetInLine, runEnd);
+      const measureEnd = Math.min(targetOffset, runEnd);
 
       if (measureStart < measureEnd) {
         const textToMeasure = run.text.substring(
@@ -137,25 +160,13 @@ export class PositionCalculator {
           measureEnd - runStart,
         );
 
-        let fontWeight = fragment.typography.fontWeight;
-        if (run.marks?.["bold"] || fragment.kind === "heading")
-          fontWeight = 700;
-        const fontStyle = run.marks?.["italic"] ? "italic" : "normal";
+        totalWidth += this.measureSegment(
+          textToMeasure,
+          run,
+          fragment,
+          measurer,
+        );
 
-        const measured = measurer.measureText({
-          text: textToMeasure,
-          fontFamily:
-            (run.marks?.["fontFamily"] as string) ||
-            fragment.typography.fontFamily,
-          fontSize:
-            (run.marks?.["fontSize"] as number) || fragment.typography.fontSize,
-          fontWeight,
-          fontStyle,
-        });
-
-        totalWidth += measured.width;
-
-        // Add justification extra space
         if (extraSpacePerGap > 0) {
           const spacesInSegment = (textToMeasure.match(/ /g) || []).length;
           totalWidth += spacesInSegment * extraSpacePerGap;
@@ -163,7 +174,7 @@ export class PositionCalculator {
       }
 
       currentGlobalOffset += run.text.length;
-      if (currentGlobalOffset >= lineStartOffset + offsetInLine) break;
+      if (currentGlobalOffset >= targetOffset) break;
     }
 
     return totalWidth;

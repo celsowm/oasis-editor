@@ -55,17 +55,28 @@ export class ColorPicker {
 
     mainButton.appendChild(leftPart);
 
+    mainButton.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.listener.onColorSelected(this.currentColor);
+    });
+
+    // Arrow button (Right side)
+    const arrowButton = document.createElement("button");
+    arrowButton.className = "oasis-color-picker-button";
+    arrowButton.type = "button";
+
     const arrow = document.createElement("span");
     arrow.className = "oasis-color-picker-arrow";
     arrow.innerHTML = "&#9660;"; // Down arrow
-    mainButton.appendChild(arrow);
+    arrowButton.appendChild(arrow);
 
-    mainButton.addEventListener("click", (e) => {
+    arrowButton.addEventListener("click", (e) => {
       e.stopPropagation();
       this.toggleDropdown();
     });
 
     this.container.appendChild(mainButton);
+    this.container.appendChild(arrowButton);
 
     // Dropdown
     this.dropdown = document.createElement("div");
@@ -81,23 +92,32 @@ export class ColorPicker {
     // Automatic (Black)
     const automatic = document.createElement("div");
     automatic.className = "oasis-color-picker-automatic";
-    automatic.innerHTML = `
-      <div class="oasis-color-picker-automatic-square"></div>
-      <span>Automatic</span>
-    `;
+
+    const automaticSquare = document.createElement("div");
+    automaticSquare.className = "oasis-color-picker-automatic-square";
+    automatic.appendChild(automaticSquare);
+
+    const automaticLabel = document.createElement("span");
+    automaticLabel.textContent = "Automatic";
+    automatic.appendChild(automaticLabel);
+
     automatic.addEventListener("click", () => this.selectColor("#000000"));
     this.dropdown.appendChild(automatic);
 
     // Theme Colors
     const themeSection = document.createElement("div");
     themeSection.className = "oasis-color-picker-section";
-    themeSection.innerHTML = `<div class="oasis-color-picker-section-title">Theme Colors</div>`;
-    
+
+    const themeTitle = document.createElement("div");
+    themeTitle.className = "oasis-color-picker-section-title";
+    themeTitle.textContent = "Theme Colors";
+    themeSection.appendChild(themeTitle);
+
     const themeGrid = document.createElement("div");
     themeGrid.className = "oasis-color-picker-grid";
-    
-    THEME_COLORS.forEach(row => {
-      row.forEach(swatch => {
+
+    THEME_COLORS.forEach((row) => {
+      row.forEach((swatch) => {
         themeGrid.appendChild(this.createSwatch(swatch.color, swatch.name));
       });
     });
@@ -107,12 +127,16 @@ export class ColorPicker {
     // Standard Colors
     const standardSection = document.createElement("div");
     standardSection.className = "oasis-color-picker-section";
-    standardSection.innerHTML = `<div class="oasis-color-picker-section-title">Standard Colors</div>`;
-    
+
+    const standardTitle = document.createElement("div");
+    standardTitle.className = "oasis-color-picker-section-title";
+    standardTitle.textContent = "Standard Colors";
+    standardSection.appendChild(standardTitle);
+
     const standardGrid = document.createElement("div");
     standardGrid.className = "oasis-color-picker-grid";
-    
-    STANDARD_COLORS.forEach(swatch => {
+
+    STANDARD_COLORS.forEach((swatch) => {
       standardGrid.appendChild(this.createSwatch(swatch.color, swatch.name));
     });
     standardSection.appendChild(standardGrid);

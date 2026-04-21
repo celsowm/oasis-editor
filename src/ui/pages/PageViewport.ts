@@ -43,15 +43,9 @@ export class PageViewport {
       (selection.anchor.offset === selection.focus.offset &&
         selection.anchor.blockId === selection.focus.blockId)
     ) {
-      console.log("VIEWPORT: Renderizando caret");
-      console.log(
-        "VIEWPORT: Posição do caret:",
-        selection.anchor || selection.focus,
-      );
       const caretRect = this.mapper.getCaretRect(
         selection.anchor || selection.focus,
       );
-      console.log("VIEWPORT: Caret rect:", caretRect);
       if (caretRect) {
         this.getOrCreateCaretOverlay(caretRect.pageId).render(
           selection.anchor || selection.focus,
@@ -70,39 +64,26 @@ export class PageViewport {
   getOrCreateCaretOverlay(
     pageId: string,
   ): CaretOverlay | { render: () => void } {
-    console.log(
-      "VIEWPORT: getOrCreateCaretOverlay chamado com pageId:",
-      pageId,
-    );
     if (this.caretOverlays.has(pageId)) {
       const existingOverlay = this.caretOverlays.get(pageId)!;
       const isInDOM = document.body.contains(
         existingOverlay.container as unknown as Node,
       );
-      console.log("VIEWPORT: Overlay existente ainda está no DOM?", isInDOM);
       if (!isInDOM) {
-        console.log(
-          "VIEWPORT: Container antigo foi removido, recriando overlay",
-        );
         this.caretOverlays.delete(pageId);
       }
     }
 
     if (!this.caretOverlays.has(pageId)) {
-      console.log("VIEWPORT: Criando novo caret overlay para pagina:", pageId);
       const pageEl = this.root.querySelector(`[data-page-id="${pageId}"]`);
-      console.log("VIEWPORT: Elemento da pagina encontrado?", !!pageEl);
       if (!pageEl) {
-        console.log("VIEWPORT: ❌ Pagina nao encontrada, retornando stub");
         return { render: () => {} };
       }
 
       let overlayContainer = pageEl.querySelector(
         ".oasis-selection-layer",
       ) as HTMLElement | null;
-      console.log("VIEWPORT: Container de selecao existe?", !!overlayContainer);
       if (!overlayContainer) {
-        console.log("VIEWPORT: Criando novo container de selecao");
         overlayContainer = document.createElement("div");
         overlayContainer.className = "oasis-selection-layer";
         pageEl.appendChild(overlayContainer);
@@ -112,7 +93,6 @@ export class PageViewport {
         pageId,
         new CaretOverlay(overlayContainer, this.mapper!),
       );
-      console.log("VIEWPORT: CaretOverlay criado e armazenado");
     }
     return this.caretOverlays.get(pageId)!;
   }

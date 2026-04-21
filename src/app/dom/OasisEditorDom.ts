@@ -32,7 +32,7 @@ export class OasisEditorDom {
   getColorPickerContainer(): HTMLElement {
     return this.requireElement("oasis-editor-color-picker-container");
   }
-  
+
   getAlignLeftButton(): HTMLElement {
     return this.requireElement("oasis-editor-align-left");
   }
@@ -59,6 +59,14 @@ export class OasisEditorDom {
 
   getExportButton(): HTMLElement {
     return this.requireElement("oasis-editor-export");
+  }
+
+  getInsertImageButton(): HTMLElement {
+    return this.requireElement("oasis-editor-insert-image");
+  }
+
+  getImageFileInput(): HTMLInputElement {
+    return this.requireElement("oasis-editor-image-input") as HTMLInputElement;
   }
 
   getStatus(): HTMLElement {

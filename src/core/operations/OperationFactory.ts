@@ -10,6 +10,9 @@ import {
   ToggleMarkOp,
   SetMarkOp,
   SetAlignmentOp,
+  InsertImageOp,
+  ResizeImageOp,
+  SelectImageOp,
 } from "./OperationTypes.js";
 import { EditorSelection } from "../selection/SelectionTypes.js";
 import { MarkSet } from "../document/BlockTypes.js";
@@ -59,5 +62,24 @@ export const Operations = {
   ): SetAlignmentOp => ({
     type: OperationType.SET_ALIGNMENT,
     payload: { align },
+  }),
+  insertImage: (
+    src: string,
+    naturalWidth: number,
+    naturalHeight: number,
+    displayWidth: number,
+    align: "left" | "center" | "right" = "center",
+    alt = "",
+  ): InsertImageOp => ({
+    type: OperationType.INSERT_IMAGE,
+    payload: { src, naturalWidth, naturalHeight, displayWidth, align, alt },
+  }),
+  resizeImage: (blockId: string, width: number, height: number): ResizeImageOp => ({
+    type: OperationType.RESIZE_IMAGE,
+    payload: { blockId, width, height },
+  }),
+  selectImage: (blockId: string): SelectImageOp => ({
+    type: OperationType.SELECT_IMAGE,
+    payload: { blockId },
   }),
 };

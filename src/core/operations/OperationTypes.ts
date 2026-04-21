@@ -12,6 +12,9 @@ export enum OperationType {
   TOGGLE_MARK = "TOGGLE_MARK",
   SET_MARK = "SET_MARK",
   SET_ALIGNMENT = "SET_ALIGNMENT",
+  INSERT_IMAGE = "INSERT_IMAGE",
+  RESIZE_IMAGE = "RESIZE_IMAGE",
+  SELECT_IMAGE = "SELECT_IMAGE",
 }
 
 export interface AppendParagraphPayload {
@@ -41,6 +44,22 @@ export interface SetMarkPayload {
 }
 export interface SetAlignmentPayload {
   align: "left" | "center" | "right" | "justify";
+}
+export interface InsertImagePayload {
+  src: string;
+  naturalWidth: number;
+  naturalHeight: number;
+  displayWidth: number;
+  align: "left" | "center" | "right";
+  alt?: string;
+}
+export interface ResizeImagePayload {
+  blockId: string;
+  width: number;
+  height: number;
+}
+export interface SelectImagePayload {
+  blockId: string;
 }
 
 interface Operation<T extends OperationType, P> {
@@ -80,13 +99,22 @@ export type ToggleMarkOp = Operation<
   OperationType.TOGGLE_MARK,
   ToggleMarkPayload
 >;
-export type SetMarkOp = Operation<
-  OperationType.SET_MARK,
-  SetMarkPayload
->;
+export type SetMarkOp = Operation<OperationType.SET_MARK, SetMarkPayload>;
 export type SetAlignmentOp = Operation<
   OperationType.SET_ALIGNMENT,
   SetAlignmentPayload
+>;
+export type InsertImageOp = Operation<
+  OperationType.INSERT_IMAGE,
+  InsertImagePayload
+>;
+export type ResizeImageOp = Operation<
+  OperationType.RESIZE_IMAGE,
+  ResizeImagePayload
+>;
+export type SelectImageOp = Operation<
+  OperationType.SELECT_IMAGE,
+  SelectImagePayload
 >;
 
 export type EditorOperation =
@@ -99,7 +127,10 @@ export type EditorOperation =
   | MoveSelectionOp
   | ToggleMarkOp
   | SetMarkOp
-  | SetAlignmentOp;
+  | SetAlignmentOp
+  | InsertImageOp
+  | ResizeImageOp
+  | SelectImageOp;
 
 /** @deprecated Use OperationType enum directly */
 export const OPERATION_TYPES = OperationType;

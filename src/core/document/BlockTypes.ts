@@ -28,4 +28,16 @@ export interface HeadingNode {
   children: TextRun[];
 }
 
-export type BlockNode = ParagraphNode | HeadingNode;
+export interface ImageNode {
+  id: string;
+  kind: "image";
+  src: string; // Data URI (base64)
+  naturalWidth: number;
+  naturalHeight: number;
+  width: number;  // display width in px
+  height: number; // display height in px
+  align: "left" | "center" | "right";
+  alt?: string;
+}
+
+export type BlockNode = ParagraphNode | HeadingNode | ImageNode;

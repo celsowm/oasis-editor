@@ -34,4 +34,7 @@ export interface LayoutFragment {
   runs: TextRun[];
   lines: LineInfo[];
   align: "left" | "center" | "right" | "justify";
+  // Image-specific fields (only populated when kind === "image")
+  imageSrc?: string;
+  imageAlt?: string;
 }

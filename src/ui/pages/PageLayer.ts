@@ -33,6 +33,45 @@ export class PageLayer {
       content.className = "oasis-page-content";
 
       for (const fragment of page.fragments) {
+        // Render based on kind
+        if (fragment.kind === "image" && fragment.imageSrc) {
+          const wrapper = document.createElement("div");
+          wrapper.className = "oasis-image-wrapper";
+          wrapper.dataset["blockId"] = fragment.blockId;
+          wrapper.style.position = "absolute";
+          wrapper.style.left = `${fragment.rect.x}px`;
+          wrapper.style.top = `${fragment.rect.y}px`;
+          wrapper.style.width = `${fragment.rect.width}px`;
+          wrapper.style.height = `${fragment.rect.height}px`;
+          wrapper.style.cursor = "pointer";
+
+          const img = document.createElement("img");
+          img.src = fragment.imageSrc;
+          img.alt = fragment.imageAlt ?? "";
+          img.draggable = false;
+          img.style.width = "100%";
+          img.style.height = "100%";
+          img.style.objectFit = "contain";
+          img.style.display = "block";
+          img.style.userSelect = "none";
+          img.style.pointerEvents = "none";
+
+          wrapper.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            wrapper.dispatchEvent(
+              new CustomEvent("image-select", {
+                bubbles: true,
+                detail: { blockId: fragment.blockId, fragment },
+              }),
+            );
+          });
+
+          pageEl.appendChild(wrapper);
+          continue;
+        }
+
+        // Text fragment
         const fragmentEl = document.createElement("article");
         fragmentEl.className = `oasis-fragment oasis-fragment--${fragment.kind}`;
         fragmentEl.dataset["fragmentId"] = fragment.id;

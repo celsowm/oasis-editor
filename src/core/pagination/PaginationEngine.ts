@@ -65,6 +65,81 @@ export const paginateDocument = (
     let currentY = currentPage.contentRect.y;
 
     for (const block of section.children) {
+      if (block.kind === "image") {
+        // --- IMAGE BLOCK ---
+        const imgW = Math.min(block.width, contentWidth);
+        const aspectRatio = block.naturalHeight / block.naturalWidth;
+        const imgH = Math.round(imgW * aspectRatio);
+
+        if (
+          currentY + imgH >
+          currentPage.contentRect.y + currentPage.contentRect.height
+        ) {
+          pages.push(currentPage);
+          pageCounter += 1;
+          currentPage = {
+            id: `page:${pageCounter}`,
+            sectionId: section.id,
+            pageIndex: pageCounter,
+            pageNumber: String(pageCounter + 1),
+            templateId: template.id,
+            rect: {
+              x: 0,
+              y: 0,
+              width: template.size.width,
+              height: template.size.height,
+            },
+            contentRect: {
+              x: template.margins.left,
+              y: template.margins.top,
+              width: contentWidth,
+              height: contentHeight,
+            },
+            headerRect,
+            footerRect,
+            fragments: [],
+          };
+          currentY = currentPage.contentRect.y;
+        }
+
+        const alignOffsetX: number =
+          block.align === "center"
+            ? (contentWidth - imgW) / 2
+            : block.align === "right"
+              ? contentWidth - imgW
+              : 0;
+
+        const imageFragment: LayoutFragment = {
+          id: `fragment:${block.id}:0`,
+          blockId: block.id,
+          sectionId: section.id,
+          pageId: currentPage.id,
+          fragmentIndex: 0,
+          kind: "image",
+          startOffset: 0,
+          endOffset: 0,
+          text: "",
+          rect: {
+            x: currentPage.contentRect.x + alignOffsetX,
+            y: currentY,
+            width: imgW,
+            height: imgH,
+          },
+          typography: { fontFamily: "", fontSize: 0, fontWeight: 400 },
+          runs: [],
+          marks: {},
+          lines: [],
+          align: block.align,
+          imageSrc: block.src,
+          imageAlt: block.alt ?? "",
+        };
+
+        currentPage.fragments.push(imageFragment);
+        fragmentsByBlockId[block.id] = [imageFragment];
+        currentY += imgH + 12;
+        continue;
+      }
+
       if (!["paragraph", "heading"].includes(block.kind)) continue;
       const composed = composeParagraph(block, contentWidth, measure);
 
