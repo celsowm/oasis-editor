@@ -3,6 +3,7 @@ import { EditorState } from "./EditorState.js";
 import { EditorOperation } from "../operations/OperationTypes.js";
 import { reduceDocumentState } from "./DocumentReducer.js";
 import { LayoutState } from "../layout/LayoutTypes.js";
+import { isTextBlock } from "../document/BlockTypes.js";
 
 export class DocumentRuntime {
   private state: EditorState;
@@ -13,19 +14,25 @@ export class DocumentRuntime {
 
   constructor() {
     const doc = createDocument();
+    const firstSection = doc.sections[0];
+    const firstBlock = firstSection.children[0];
+    const firstInlineId = isTextBlock(firstBlock)
+      ? firstBlock.children[0].id
+      : "";
+
     this.state = {
       document: doc,
       selection: {
         anchor: {
-          sectionId: doc.sections[0].id,
-          blockId: doc.sections[0].children[0].id,
-          inlineId: doc.sections[0].children[0].children[0].id,
+          sectionId: firstSection.id,
+          blockId: firstBlock.id,
+          inlineId: firstInlineId,
           offset: 0,
         },
         focus: {
-          sectionId: doc.sections[0].id,
-          blockId: doc.sections[0].children[0].id,
-          inlineId: doc.sections[0].children[0].children[0].id,
+          sectionId: firstSection.id,
+          blockId: firstBlock.id,
+          inlineId: firstInlineId,
           offset: 0,
         },
       },

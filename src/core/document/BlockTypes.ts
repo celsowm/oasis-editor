@@ -41,3 +41,9 @@ export interface ImageNode {
 }
 
 export type BlockNode = ParagraphNode | HeadingNode | ImageNode;
+
+export type TextBlockNode = ParagraphNode | HeadingNode;
+
+export function isTextBlock(node: BlockNode): node is TextBlockNode {
+  return node.kind === "paragraph" || node.kind === "heading";
+}

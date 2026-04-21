@@ -5,7 +5,7 @@ import {
 } from "../operations/OperationTypes.js";
 import { createParagraph, createImage } from "../document/DocumentFactory.js";
 import { LogicalPosition } from "../selection/SelectionTypes.js";
-import { TextRun } from "../document/BlockTypes.js";
+import { TextRun, isTextBlock } from "../document/BlockTypes.js";
 import { LayoutState } from "../layout/LayoutTypes.js";
 import { areMarksEqual } from "../document/MarkUtils.js";
 
@@ -37,9 +37,13 @@ export const reduceDocumentState = (
           revision: document.revision + 1,
           sections: document.sections.map((section) => ({
             ...section,
-            children: section.children.map((block) =>
-              block.id === blockId ? { ...block, align } : block,
-            ),
+            children: section.children.map((block) => {
+              if (block.id !== blockId) return block;
+              if (block.kind === "heading" && align === "justify") {
+                return { ...block, align: "left" };
+              }
+              return { ...block, align } as any;
+            }),
           })),
         },
       };
@@ -67,7 +71,7 @@ export const reduceDocumentState = (
         const block = document.sections
           .flatMap((s) => s.children)
           .find((b) => b.id === pos.blockId);
-        if (!block) return 0;
+        if (!block || !isTextBlock(block)) return 0;
         let acc = 0;
         for (const run of block.children) {
           if (run.id === pos.inlineId) {
@@ -89,20 +93,23 @@ export const reduceDocumentState = (
         const block = document.sections
           .flatMap((s) => s.children)
           .find((b) => b.id === selection.anchor.blockId);
-        const currentRun = block?.children.find(
-          (r) => r.id === selection.anchor.inlineId,
-        );
-        const baseMarks = state.pendingMarks || currentRun?.marks || {};
+        
+        if (block && isTextBlock(block)) {
+          const currentRun = block.children.find(
+            (r) => r.id === selection.anchor.inlineId,
+          );
+          const baseMarks = state.pendingMarks || currentRun?.marks || {};
 
-        const newValue = isSet ? setValue : !baseMarks[mark];
+          const newValue = isSet ? setValue : !baseMarks[mark];
 
-        return {
-          ...state,
-          pendingMarks: {
-            ...baseMarks,
-            [mark]: newValue,
-          },
-        };
+          return {
+            ...state,
+            pendingMarks: {
+              ...baseMarks,
+              [mark]: newValue,
+            },
+          };
+        }
       }
 
       // Determine ordering across blocks and offsets
@@ -141,6 +148,8 @@ export const reduceDocumentState = (
       const nextSections = document.sections.map((section) => ({
         ...section,
         children: section.children.map((block) => {
+          if (!isTextBlock(block)) return block;
+
           const isStartBlock = block.id === startBlockId;
           const isEndBlock = block.id === endBlockId;
 
@@ -219,7 +228,7 @@ export const reduceDocumentState = (
       ): LogicalPosition => {
         for (const section of nextSections) {
           const blk = section.children.find((b) => b.id === oldPos.blockId);
-          if (blk) {
+          if (blk && isTextBlock(blk)) {
             let acc = 0;
             for (const run of blk.children) {
               const runLen = run.text.length;
@@ -289,7 +298,7 @@ export const reduceDocumentState = (
       const nextSections = document.sections.map((section) => ({
         ...section,
         children: section.children.map((block) => {
-          if (block.id !== blockId) return block;
+          if (block.id !== blockId || !isTextBlock(block)) return block;
 
           const nextChildren: TextRun[] = [];
           for (const run of block.children) {
@@ -351,7 +360,7 @@ export const reduceDocumentState = (
       const block = nextSections
         .flatMap((s) => s.children)
         .find((b) => b.id === blockId);
-      if (block) {
+      if (block && isTextBlock(block)) {
         let acc = 0;
         const targetOffset = offset + text.length;
         for (const run of block.children) {
@@ -393,7 +402,7 @@ export const reduceDocumentState = (
         const nextSections = document.sections.map((section) => ({
           ...section,
           children: section.children.map((block) => {
-            if (block.id !== blockId) return block;
+            if (block.id !== blockId || !isTextBlock(block)) return block;
 
             const nextChildren = block.children.map((run) => {
               if (run.id !== inlineId) return run;
@@ -442,6 +451,8 @@ export const reduceDocumentState = (
 
         const section = document.sections[sectionIdx];
         const block = section.children[blockIdx];
+        if (!isTextBlock(block)) return state;
+
         const runIdx = block.children.findIndex((r) => r.id === inlineId);
 
         if (runIdx > 0) {
@@ -458,7 +469,7 @@ export const reduceDocumentState = (
               return {
                 ...s,
                 children: s.children.map((b) => {
-                  if (b.id !== blockId) return b;
+                  if (b.id !== blockId || !isTextBlock(b)) return b;
                   return {
                     ...b,
                     children: b.children.map((r) => {
@@ -492,6 +503,8 @@ export const reduceDocumentState = (
 
         if (runIdx === 0 && blockIdx > 0) {
           const prevBlock = section.children[blockIdx - 1];
+          if (!isTextBlock(prevBlock)) return state;
+
           const lastRunOfPrevBlock =
             prevBlock.children[prevBlock.children.length - 1];
 
@@ -544,6 +557,7 @@ export const reduceDocumentState = (
         if (blockIndex === -1) return section;
 
         const currentBlock = section.children[blockIndex];
+        if (!isTextBlock(currentBlock)) return section;
         const runIndex = currentBlock.children.findIndex(
           (r) => r.id === inlineId,
         );
@@ -639,6 +653,8 @@ export const reduceDocumentState = (
       if (currentBlockIdx === -1) return state;
 
       const currentBlock = blocksFlat[currentBlockIdx];
+      if (!isTextBlock(currentBlock)) return state;
+
       const runIdx = currentBlock.children.findIndex((r) => r.id === inlineId);
       console.log(
         "  blocksFlat length:",
@@ -681,6 +697,7 @@ export const reduceDocumentState = (
           };
         } else if (currentBlockIdx > 0) {
           const prevBlock = blocksFlat[currentBlockIdx - 1];
+          if (!isTextBlock(prevBlock)) return baseState;
           const lastRun = prevBlock.children[prevBlock.children.length - 1];
           return {
             ...baseState,
@@ -726,6 +743,7 @@ export const reduceDocumentState = (
           };
         } else if (currentBlockIdx < blocksFlat.length - 1) {
           const nextBlock = blocksFlat[currentBlockIdx + 1];
+          if (!isTextBlock(nextBlock)) return baseState;
           const firstRun = nextBlock.children[0];
           return {
             ...baseState,
@@ -805,6 +823,7 @@ export const reduceDocumentState = (
                 prevBlockFragments[prevBlockFragments.length - 1];
               if (lastFrag.lines && lastFrag.lines.length > 0) {
                 const lastLine = lastFrag.lines[lastFrag.lines.length - 1];
+                if (!isTextBlock(prevBlock)) return state;
                 const targetOffset = Math.min(
                   lastLine.offsetEnd,
                   Math.max(lastLine.offsetStart, absOffset),
@@ -847,6 +866,7 @@ export const reduceDocumentState = (
             if (nextBlockFragments && nextBlockFragments.length > 0) {
               const firstFrag = nextBlockFragments[0];
               if (firstFrag.lines && firstFrag.lines.length > 0) {
+                if (!isTextBlock(nextBlock)) return state;
                 const firstLine = firstFrag.lines[0];
                 const targetOffset = Math.min(
                   firstLine.offsetEnd,

@@ -2,7 +2,7 @@ import { EditorState } from "../../core/runtime/EditorState.js";
 import { EditorSelection } from "../../core/selection/SelectionTypes.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { PageTemplate } from "../../core/pages/PageTemplateTypes.js";
-import { MarkSet } from "../../core/document/BlockTypes.js";
+import { MarkSet, isTextBlock } from "../../core/document/BlockTypes.js";
 
 export interface TemplateOption {
   value: string;
@@ -71,7 +71,7 @@ export class OasisEditorPresenter {
         if (targetBlock) break;
       }
 
-      if (targetBlock && targetBlock.children.length > 0) {
+      if (targetBlock && isTextBlock(targetBlock) && targetBlock.children.length > 0) {
         const marks: MarkSet = targetBlock.children[0].marks;
         const effectiveMarks = {
           ...marks,
@@ -83,7 +83,12 @@ export class OasisEditorPresenter {
           italic: !!effectiveMarks.italic,
           underline: !!effectiveMarks.underline,
           color: effectiveMarks.color || "#000000",
-          align: (targetBlock as any).align || "left",
+          align: targetBlock.align || "left",
+        };
+      } else if (targetBlock && targetBlock.kind === "image") {
+        selectionState = {
+          ...selectionState,
+          align: targetBlock.align || "left",
         };
       }
     } else if (state.pendingMarks) {

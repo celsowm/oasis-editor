@@ -1,4 +1,4 @@
-import { BlockNode, TextRun } from "../document/BlockTypes.js";
+import { BlockNode, TextRun, isTextBlock } from "../document/BlockTypes.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { LineInfo } from "../layout/LayoutFragment.js";
 import { breakTextIntoLines } from "./LineBreaker.js";
@@ -21,7 +21,8 @@ export interface ComposedParagraph {
 }
 
 const getBlockTypography = (block: BlockNode): BlockTypography => {
-  const firstRun = block.children[0];
+  const children = isTextBlock(block) ? block.children : [];
+  const firstRun = children[0];
   const fontFamily = firstRun?.marks.fontFamily ?? "Inter";
   const fontSize =
     firstRun?.marks.fontSize ?? (block.kind === "heading" ? 24 : 15);
@@ -36,11 +37,12 @@ export const composeParagraph = (
   maxWidth: number,
   measure: TextMeasurer,
 ): ComposedParagraph => {
-  const plainText = block.children.map((child) => child.text).join("");
+  const children = isTextBlock(block) ? block.children : [];
+  const plainText = children.map((child) => child.text).join("");
   const typography = getBlockTypography(block);
 
   const broken = breakTextIntoLines(
-    block.children,
+    children,
     maxWidth,
     measure,
     typography.fontFamily,
@@ -82,7 +84,7 @@ export const composeParagraph = (
     blockId: block.id,
     kind: block.kind,
     text: plainText,
-    runs: block.children,
+    runs: children,
     typography,
     totalHeight: broken.length * lineHeight,
     lines,

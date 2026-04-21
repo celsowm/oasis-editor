@@ -9,6 +9,7 @@ import { LayoutFragment } from "../core/layout/LayoutFragment.js";
 import { LogicalPosition } from "../core/selection/SelectionTypes.js";
 import { LineInfo } from "../core/layout/LayoutFragment.js";
 import { PositionCalculator } from "./services/PositionCalculator.js";
+import { isTextBlock } from "../core/document/BlockTypes.js";
 
 export interface ControllerDeps {
   runtime: DocumentRuntime;
@@ -206,17 +207,19 @@ export class OasisEditorController {
     const blockBefore = stateBefore.document.sections
       .flatMap((s) => s.children)
       .find((b) => b.id === selectionBefore?.blockId);
+
+    const runs = blockBefore && isTextBlock(blockBefore) ? blockBefore.children : [];
     console.log(
       "🔍 DEBUG: Block encontrado?",
       blockBefore?.id,
       "Runs:",
-      blockBefore?.children?.map((r) => ({
+      runs.map((r) => ({
         id: r.id,
         text: r.text.substring(0, 20),
       })),
     );
 
-    const runBefore = blockBefore?.children.find(
+    const runBefore = runs.find(
       (r) => r.id === selectionBefore?.inlineId,
     );
     console.log(
@@ -354,7 +357,7 @@ export class OasisEditorController {
     let actualRunId = fragmentId;
     let relativeOffset = closestOffset;
 
-    if (block?.children?.length) {
+    if (block && isTextBlock(block)) {
       let currentOffset = 0;
       for (const run of block.children) {
         const runLength = run.text.length;
@@ -421,7 +424,7 @@ export class OasisEditorController {
       .flatMap((s) => s.children)
       .find((b) => b.id === position.blockId);
 
-    if (!block?.children?.length) return;
+    if (!block || !isTextBlock(block)) return;
 
     const fullText = block.children.map((r) => r.text).join("");
 
@@ -521,7 +524,7 @@ export class OasisEditorController {
       .flatMap((s) => s.children)
       .find((b) => b.id === position.blockId);
 
-    if (!block?.children?.length) return;
+    if (!block || !isTextBlock(block)) return;
 
     const lastRun = block.children[block.children.length - 1];
 
