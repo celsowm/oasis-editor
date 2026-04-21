@@ -35,10 +35,10 @@ export class ColorPicker {
   private render(): void {
     this.container.innerHTML = "";
 
-    const mainButton = document.createElement("button");
-    mainButton.className = "oasis-color-picker-button";
-    mainButton.title = "Text Color";
-    mainButton.type = "button";
+    const combinedButton = document.createElement("button");
+    combinedButton.className = "oasis-color-picker-button";
+    combinedButton.title = "Text Color";
+    combinedButton.type = "button";
 
     const leftPart = document.createElement("div");
     leftPart.className = "oasis-color-picker-left";
@@ -53,30 +53,19 @@ export class ColorPicker {
     this.indicator.style.backgroundColor = this.currentColor;
     leftPart.appendChild(this.indicator);
 
-    mainButton.appendChild(leftPart);
-
-    mainButton.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.listener.onColorSelected(this.currentColor);
-    });
-
-    // Arrow button (Right side)
-    const arrowButton = document.createElement("button");
-    arrowButton.className = "oasis-color-picker-button";
-    arrowButton.type = "button";
+    combinedButton.appendChild(leftPart);
 
     const arrow = document.createElement("span");
     arrow.className = "oasis-color-picker-arrow";
     arrow.innerHTML = "&#9660;"; // Down arrow
-    arrowButton.appendChild(arrow);
+    combinedButton.appendChild(arrow);
 
-    arrowButton.addEventListener("click", (e) => {
+    combinedButton.addEventListener("click", (e) => {
       e.stopPropagation();
       this.toggleDropdown();
     });
 
-    this.container.appendChild(mainButton);
-    this.container.appendChild(arrowButton);
+    this.container.appendChild(combinedButton);
 
     // Dropdown
     this.dropdown = document.createElement("div");
