@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>oasis-editor</title>
+    <script type="module" crossorigin src="/assets/index-B01FVyKa.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C85cSkGE.css">
+  </head>
+  <body>
+    <div class="oasis-editor-shell">
+      <header class="oasis-editor-header">
+        <div class="oasis-editor-brand">
+          <div class="oasis-editor-logo"></div>
+          <div class="oasis-editor-title-container">
+            <input type="text" class="oasis-editor-document-title" value="Untitled document" />
+            <div class="oasis-editor-menu-bar">
+              <span>File</span>
+              <span>Edit</span>
+              <span>View</span>
+              <span>Insert</span>
+              <span>Format</span>
+              <span>Tools</span>
+              <span>Extensions</span>
+              <span>Help</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="oasis-editor-toolbar">
+        <div class="oasis-editor-toolbar-group">
+          <button id="oasis-editor-undo" title="Undo (Ctrl+Z)" type="button">↶</button>
+          <button id="oasis-editor-redo" title="Redo (Ctrl+Y)" type="button">↷</button>
+          <button id="oasis-editor-print" title="Print" type="button">⎙</button>
+        </div>
+
+        <div class="oasis-editor-toolbar-separator"></div>
+
+        <div class="oasis-editor-toolbar-group">
+          <select id="oasis-editor-zoom">
+            <option value="100%">100%</option>
+            <option value="fit">Fit</option>
+          </select>
+        </div>
+
+        <div class="oasis-editor-toolbar-separator"></div>
+
+        <div class="oasis-editor-toolbar-group">
+          <select id="oasis-editor-template"></select>
+        </div>
+
+        <div class="oasis-editor-toolbar-separator"></div>
+
+        <div class="oasis-editor-toolbar-group">
+          <button id="oasis-editor-bold" title="Bold (Ctrl+B)" type="button"><strong>B</strong></button>
+          <button id="oasis-editor-italic" title="Italic (Ctrl+I)" type="button"><em>I</em></button>
+          <button id="oasis-editor-underline" title="Underline (Ctrl+U)" type="button"><u>U</u></button>
+          <div id="oasis-editor-color-picker-container"></div>
+        </div>
+
+        <div class="oasis-editor-toolbar-separator"></div>
+
+        <div class="oasis-editor-toolbar-group">
+          <button id="oasis-editor-align-left" title="Align left" type="button">≡</button>
+          <button id="oasis-editor-align-center" title="Align center" type="button">≣</button>
+          <button id="oasis-editor-align-right" title="Align right" type="button">≡</button>
+          <button id="oasis-editor-align-justify" title="Justify" type="button">▤</button>
+        </div>
+
+        <div class="oasis-editor-toolbar-group">
+          <button id="oasis-editor-insert-image" title="Insert Image" type="button">🖼️</button>
+          <input type="file" id="oasis-editor-image-input" accept="image/*" style="display: none;" />
+          <button id="oasis-editor-insert-table" title="Insert Table" type="button">田</button>
+        </div>
+      </div>
+
+      <main id="oasis-editor-app" class="oasis-editor-main">
+        <section id="oasis-editor-pages" class="oasis-editor-pages"></section>
+
+        <div id="oasis-editor-input-container" style="position: absolute; left: -1000px; top: -1000px;">
+          <textarea id="oasis-editor-input"></textarea>
+        </div>
+      </main>
+
+      <footer class="oasis-editor-footer-status">
+        <span id="oasis-editor-status">Ready</span>
+        <span id="oasis-editor-metrics"></span>
+      </footer>
+    </div>
+
+  </body>
+</html>
