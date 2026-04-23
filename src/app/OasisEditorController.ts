@@ -35,7 +35,8 @@ export class OasisEditorController {
   private draggingTableId: string | null = null;
   private dropIndicator: HTMLElement | null = null;
   private tableGhost: HTMLElement | null = null;
-  private currentDropTarget: { blockId: string, isBefore: boolean } | null = null;
+  private currentDropTarget: { blockId: string; isBefore: boolean } | null =
+    null;
 
   // Format Painter state
   private formatPainterActive: boolean = false;
@@ -86,13 +87,18 @@ export class OasisEditorController {
       onAlign: (align) => this.setAlign(align),
       onToggleBullets: () => this.toggleBullets(),
       onToggleNumberedList: () => this.toggleNumberedList(),
+      onDecreaseIndent: () => this.decreaseIndent(),
+      onIncreaseIndent: () => this.increaseIndent(),
       onInsertImage: (src, nw, nh, dw) => this.insertImage(src, nw, nh, dw),
       onResizeImage: (blockId, w, h) => this.resizeImage(blockId, w, h),
       onSelectImage: (blockId) => this.selectImage(blockId),
       onInsertTable: (rows, cols) => this.insertTable(rows, cols),
-      onTableAction: (action, tableId) => this.handleTableAction(action, tableId),
+      onTableAction: (action, tableId) =>
+        this.handleTableAction(action, tableId),
       onTableMove: (tableId, targetBlockId, isBefore) => {
-        this.runtime.dispatch(Operations.moveBlock(tableId, targetBlockId, isBefore));
+        this.runtime.dispatch(
+          Operations.moveBlock(tableId, targetBlockId, isBefore),
+        );
       },
     });
 
@@ -101,11 +107,11 @@ export class OasisEditorController {
     });
 
     window.addEventListener("mousemove", (e) => {
-        if (this.isTableDragging) this.handleTableDragging(e);
+      if (this.isTableDragging) this.handleTableDragging(e);
     });
 
     window.addEventListener("mouseup", (e) => {
-        if (this.isTableDragging) this.handleTableMouseUp(e);
+      if (this.isTableDragging) this.handleTableMouseUp(e);
     });
 
     this.isDragging = false;
@@ -126,13 +132,16 @@ export class OasisEditorController {
     } else {
       // If already active and double-clicked, upgrade to sticky
       if (this.formatPainterActive && isDoubleClick) {
-          this.formatPainterSticky = true;
-          this.view.setFormatPainterActive(true, true);
-          return;
+        this.formatPainterSticky = true;
+        this.view.setFormatPainterActive(true, true);
+        return;
       }
 
       const state = this.runtime.getState();
-      const selectionState = this.presenter.present({ state, layout: this.latestLayout! }).selectionState;
+      const selectionState = this.presenter.present({
+        state,
+        layout: this.latestLayout!,
+      }).selectionState;
 
       const marks: any = {};
       if (selectionState.bold) marks.bold = true;
@@ -193,22 +202,34 @@ export class OasisEditorController {
 
     switch (action) {
       case "addRowAbove":
-        this.runtime.dispatch(Operations.tableAddRowAbove(tableId, selection.anchor.blockId));
+        this.runtime.dispatch(
+          Operations.tableAddRowAbove(tableId, selection.anchor.blockId),
+        );
         break;
       case "addRowBelow":
-        this.runtime.dispatch(Operations.tableAddRowBelow(tableId, selection.anchor.blockId));
+        this.runtime.dispatch(
+          Operations.tableAddRowBelow(tableId, selection.anchor.blockId),
+        );
         break;
       case "addColumnLeft":
-        this.runtime.dispatch(Operations.tableAddColumnLeft(tableId, selection.anchor.blockId));
+        this.runtime.dispatch(
+          Operations.tableAddColumnLeft(tableId, selection.anchor.blockId),
+        );
         break;
       case "addColumnRight":
-        this.runtime.dispatch(Operations.tableAddColumnRight(tableId, selection.anchor.blockId));
+        this.runtime.dispatch(
+          Operations.tableAddColumnRight(tableId, selection.anchor.blockId),
+        );
         break;
       case "deleteRow":
-        this.runtime.dispatch(Operations.tableDeleteRow(tableId, selection.anchor.blockId));
+        this.runtime.dispatch(
+          Operations.tableDeleteRow(tableId, selection.anchor.blockId),
+        );
         break;
       case "deleteColumn":
-        this.runtime.dispatch(Operations.tableDeleteColumn(tableId, selection.anchor.blockId));
+        this.runtime.dispatch(
+          Operations.tableDeleteColumn(tableId, selection.anchor.blockId),
+        );
         break;
       case "deleteTable":
         this.runtime.dispatch(Operations.tableDelete(tableId));
@@ -242,7 +263,8 @@ export class OasisEditorController {
       .flatMap((s) => s.children)
       .find((b) => b.id === selectionBefore?.blockId);
 
-    const runs = blockBefore && isTextBlock(blockBefore) ? blockBefore.children : [];
+    const runs =
+      blockBefore && isTextBlock(blockBefore) ? blockBefore.children : [];
     console.log(
       "🔍 DEBUG: Block encontrado?",
       blockBefore?.id,
@@ -253,9 +275,7 @@ export class OasisEditorController {
       })),
     );
 
-    const runBefore = runs.find(
-      (r) => r.id === selectionBefore?.inlineId,
-    );
+    const runBefore = runs.find((r) => r.id === selectionBefore?.inlineId);
     console.log(
       "🔍 DEBUG: Run encontrado?",
       runBefore?.id,
@@ -298,6 +318,14 @@ export class OasisEditorController {
 
   toggleNumberedList(): void {
     this.runtime.dispatch(Operations.toggleOrderedList());
+  }
+
+  decreaseIndent(): void {
+    this.runtime.dispatch(Operations.decreaseIndent());
+  }
+
+  increaseIndent(): void {
+    this.runtime.dispatch(Operations.increaseIndent());
   }
 
   calculatePositionFromEvent(event: MouseEvent): LogicalPosition | null {
@@ -455,9 +483,14 @@ export class OasisEditorController {
 
       // If format painter is active, apply formatting on mouse up
       if (this.formatPainterActive && this.formatPainterMarks) {
-        this.runtime.dispatch(Operations.applyFormat(this.formatPainterMarks, this.formatPainterAlign));
+        this.runtime.dispatch(
+          Operations.applyFormat(
+            this.formatPainterMarks,
+            this.formatPainterAlign,
+          ),
+        );
         if (!this.formatPainterSticky) {
-           this.toggleFormatPainter(); // Turn off after use
+          this.toggleFormatPainter(); // Turn off after use
         }
       }
     }
@@ -566,10 +599,15 @@ export class OasisEditorController {
 
     // If format painter is active, a double click should format the selected word
     if (this.formatPainterActive && this.formatPainterMarks) {
-        this.runtime.dispatch(Operations.applyFormat(this.formatPainterMarks, this.formatPainterAlign));
-        if (!this.formatPainterSticky) {
-            this.toggleFormatPainter();
-        }
+      this.runtime.dispatch(
+        Operations.applyFormat(
+          this.formatPainterMarks,
+          this.formatPainterAlign,
+        ),
+      );
+      if (!this.formatPainterSticky) {
+        this.toggleFormatPainter();
+      }
     }
   }
 
@@ -608,10 +646,15 @@ export class OasisEditorController {
 
     // If format painter is active, triple click should format the selected paragraph
     if (this.formatPainterActive && this.formatPainterMarks) {
-        this.runtime.dispatch(Operations.applyFormat(this.formatPainterMarks, this.formatPainterAlign));
-        if (!this.formatPainterSticky) {
-            this.toggleFormatPainter();
-        }
+      this.runtime.dispatch(
+        Operations.applyFormat(
+          this.formatPainterMarks,
+          this.formatPainterAlign,
+        ),
+      );
+      if (!this.formatPainterSticky) {
+        this.toggleFormatPainter();
+      }
     }
   }
 
@@ -626,153 +669,166 @@ export class OasisEditorController {
   }
 
   private handleTableDragStart(tableId: string, event: MouseEvent): void {
-      this.isTableDragging = true;
-      this.draggingTableId = tableId;
-      document.body.style.cursor = "grabbing";
+    this.isTableDragging = true;
+    this.draggingTableId = tableId;
+    document.body.style.cursor = "grabbing";
 
-      // Create Ghost element
-      if (this.latestLayout) {
-          // Find the table block to get its cells' IDs
-          const state = this.runtime.getState();
-          let tableBlock: any = null;
-          for (const section of state.document.sections) {
-              const found = section.children.find(b => b.id === tableId);
-              if (found) {
-                  tableBlock = found;
-                  break;
-              }
-          }
-
-          if (tableBlock && tableBlock.kind === "table") {
-              const cellIds = new Set<string>();
-              tableBlock.rows.forEach((row: any) => {
-                  row.cells.forEach((cell: any) => cellIds.add(cell.id));
-              });
-
-              // Find all fragments that belong to these cells
-              const fragments = Object.values(this.latestLayout.fragmentsByBlockId)
-                .flat()
-                .filter(f => cellIds.has(f.blockId));
-              
-              if (fragments.length > 0) {
-                  // Calculate total bounding box of the table on its first page
-                  const firstPageId = fragments[0].pageId;
-                  const tableFragmentsOnPage = fragments.filter(f => f.pageId === firstPageId);
-                  
-                  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                  tableFragmentsOnPage.forEach(f => {
-                      minX = Math.min(minX, f.rect.x);
-                      minY = Math.min(minY, f.rect.y);
-                      maxX = Math.max(maxX, f.rect.x + f.rect.width);
-                      maxY = Math.max(maxY, f.rect.y + f.rect.height);
-                  });
-
-                  this.tableGhost = document.createElement("div");
-                  this.tableGhost.className = "oasis-table-ghost";
-                  this.tableGhost.style.width = `${maxX - minX}px`;
-                  this.tableGhost.style.height = `${maxY - minY}px`;
-                  this.tableGhost.style.left = `${event.clientX}px`;
-                  this.tableGhost.style.top = `${event.clientY}px`;
-                  this.tableGhost.style.transform = "translate(-20px, -20px)";
-                  
-                  document.body.appendChild(this.tableGhost);
-              }
-          }
+    // Create Ghost element
+    if (this.latestLayout) {
+      // Find the table block to get its cells' IDs
+      const state = this.runtime.getState();
+      let tableBlock: any = null;
+      for (const section of state.document.sections) {
+        const found = section.children.find((b) => b.id === tableId);
+        if (found) {
+          tableBlock = found;
+          break;
+        }
       }
+
+      if (tableBlock && tableBlock.kind === "table") {
+        const cellIds = new Set<string>();
+        tableBlock.rows.forEach((row: any) => {
+          row.cells.forEach((cell: any) => cellIds.add(cell.id));
+        });
+
+        // Find all fragments that belong to these cells
+        const fragments = Object.values(this.latestLayout.fragmentsByBlockId)
+          .flat()
+          .filter((f) => cellIds.has(f.blockId));
+
+        if (fragments.length > 0) {
+          // Calculate total bounding box of the table on its first page
+          const firstPageId = fragments[0].pageId;
+          const tableFragmentsOnPage = fragments.filter(
+            (f) => f.pageId === firstPageId,
+          );
+
+          let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
+          tableFragmentsOnPage.forEach((f) => {
+            minX = Math.min(minX, f.rect.x);
+            minY = Math.min(minY, f.rect.y);
+            maxX = Math.max(maxX, f.rect.x + f.rect.width);
+            maxY = Math.max(maxY, f.rect.y + f.rect.height);
+          });
+
+          this.tableGhost = document.createElement("div");
+          this.tableGhost.className = "oasis-table-ghost";
+          this.tableGhost.style.width = `${maxX - minX}px`;
+          this.tableGhost.style.height = `${maxY - minY}px`;
+          this.tableGhost.style.left = `${event.clientX}px`;
+          this.tableGhost.style.top = `${event.clientY}px`;
+          this.tableGhost.style.transform = "translate(-20px, -20px)";
+
+          document.body.appendChild(this.tableGhost);
+        }
+      }
+    }
   }
 
   private handleTableDragging(event: MouseEvent): void {
-      if (!this.isTableDragging || !this.latestLayout) return;
+    if (!this.isTableDragging || !this.latestLayout) return;
 
-      // Move ghost
-      if (this.tableGhost) {
-          this.tableGhost.style.left = `${event.clientX}px`;
-          this.tableGhost.style.top = `${event.clientY}px`;
-      }
+    // Move ghost
+    if (this.tableGhost) {
+      this.tableGhost.style.left = `${event.clientX}px`;
+      this.tableGhost.style.top = `${event.clientY}px`;
+    }
 
-      const dropTarget = this.findDropTarget(event);
-      if (dropTarget) {
-          this.currentDropTarget = dropTarget;
-          this.showDropIndicator(dropTarget);
-      } else {
-          this.hideDropIndicator();
-      }
+    const dropTarget = this.findDropTarget(event);
+    if (dropTarget) {
+      this.currentDropTarget = dropTarget;
+      this.showDropIndicator(dropTarget);
+    } else {
+      this.hideDropIndicator();
+    }
   }
 
   private handleTableMouseUp(event: MouseEvent): void {
-      if (!this.isTableDragging) return;
+    if (!this.isTableDragging) return;
 
-      if (this.currentDropTarget && this.draggingTableId) {
-          this.runtime.dispatch(Operations.moveBlock(
-              this.draggingTableId, 
-              this.currentDropTarget.blockId, 
-              this.currentDropTarget.isBefore
-          ));
-      }
+    if (this.currentDropTarget && this.draggingTableId) {
+      this.runtime.dispatch(
+        Operations.moveBlock(
+          this.draggingTableId,
+          this.currentDropTarget.blockId,
+          this.currentDropTarget.isBefore,
+        ),
+      );
+    }
 
-      // Cleanup ghost
-      if (this.tableGhost && this.tableGhost.parentElement) {
-          this.tableGhost.parentElement.removeChild(this.tableGhost);
-      }
-      this.tableGhost = null;
+    // Cleanup ghost
+    if (this.tableGhost && this.tableGhost.parentElement) {
+      this.tableGhost.parentElement.removeChild(this.tableGhost);
+    }
+    this.tableGhost = null;
 
-      this.isTableDragging = false;
-      this.draggingTableId = null;
-      this.currentDropTarget = null;
-      this.hideDropIndicator();
-      document.body.style.cursor = "";
+    this.isTableDragging = false;
+    this.draggingTableId = null;
+    this.currentDropTarget = null;
+    this.hideDropIndicator();
+    document.body.style.cursor = "";
   }
 
-  private findDropTarget(event: MouseEvent): { blockId: string, isBefore: boolean, rect: any, pageId: string } | null {
-      // Find the fragment under or nearest to the mouse
-      const element = document.elementFromPoint(event.clientX, event.clientY);
-      const fragmentEl = element?.closest(".oasis-fragment") as HTMLElement | null;
-      
-      if (!fragmentEl) return null;
+  private findDropTarget(
+    event: MouseEvent,
+  ): { blockId: string; isBefore: boolean; rect: any; pageId: string } | null {
+    // Find the fragment under or nearest to the mouse
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const fragmentEl = element?.closest(
+      ".oasis-fragment",
+    ) as HTMLElement | null;
 
-      const fragmentId = fragmentEl.dataset.fragmentId;
-      const blockId = fragmentEl.dataset.blockId; // Need to ensure this is set in PageLayer
-      if (!blockId) return null;
+    if (!fragmentEl) return null;
 
-      const rect = fragmentEl.getBoundingClientRect();
-      const isBefore = event.clientY < rect.top + rect.height / 2;
+    const fragmentId = fragmentEl.dataset.fragmentId;
+    const blockId = fragmentEl.dataset.blockId; // Need to ensure this is set in PageLayer
+    if (!blockId) return null;
 
-      return {
-          blockId,
-          isBefore,
-          rect: {
-            x: parseFloat(fragmentEl.style.left),
-            y: parseFloat(fragmentEl.style.top),
-            width: rect.width,
-            height: rect.height
-          },
-          pageId: fragmentEl.parentElement?.dataset.pageId || ""
-      };
+    const rect = fragmentEl.getBoundingClientRect();
+    const isBefore = event.clientY < rect.top + rect.height / 2;
+
+    return {
+      blockId,
+      isBefore,
+      rect: {
+        x: parseFloat(fragmentEl.style.left),
+        y: parseFloat(fragmentEl.style.top),
+        width: rect.width,
+        height: rect.height,
+      },
+      pageId: fragmentEl.parentElement?.dataset.pageId || "",
+    };
   }
 
   private showDropIndicator(target: any): void {
-      if (!this.dropIndicator) {
-          this.dropIndicator = document.createElement("div");
-          this.dropIndicator.className = "oasis-drop-indicator";
-          document.body.appendChild(this.dropIndicator);
-      }
+    if (!this.dropIndicator) {
+      this.dropIndicator = document.createElement("div");
+      this.dropIndicator.className = "oasis-drop-indicator";
+      document.body.appendChild(this.dropIndicator);
+    }
 
-      const pageEl = this.view.elements.root.querySelector(`[data-page-id="${target.pageId}"]`);
-      if (!pageEl) return;
+    const pageEl = this.view.elements.root.querySelector(
+      `[data-page-id="${target.pageId}"]`,
+    );
+    if (!pageEl) return;
 
-      if (this.dropIndicator.parentElement !== pageEl) {
-          pageEl.appendChild(this.dropIndicator);
-      }
+    if (this.dropIndicator.parentElement !== pageEl) {
+      pageEl.appendChild(this.dropIndicator);
+    }
 
-      this.dropIndicator.style.display = "block";
-      this.dropIndicator.style.left = `${target.rect.x}px`;
-      this.dropIndicator.style.width = `${target.rect.width}px`;
-      this.dropIndicator.style.top = `${target.isBefore ? target.rect.y - 2 : target.rect.y + target.rect.height - 1}px`;
+    this.dropIndicator.style.display = "block";
+    this.dropIndicator.style.left = `${target.rect.x}px`;
+    this.dropIndicator.style.width = `${target.rect.width}px`;
+    this.dropIndicator.style.top = `${target.isBefore ? target.rect.y - 2 : target.rect.y + target.rect.height - 1}px`;
   }
 
   private hideDropIndicator(): void {
-      if (this.dropIndicator) {
-          this.dropIndicator.style.display = "none";
-      }
+    if (this.dropIndicator) {
+      this.dropIndicator.style.display = "none";
+    }
   }
 }

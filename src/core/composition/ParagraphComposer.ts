@@ -1,4 +1,10 @@
-import { BlockNode, TextRun, isTextBlock, ListItemNode, OrderedListItemNode } from "../document/BlockTypes.js";
+import {
+  BlockNode,
+  TextRun,
+  isTextBlock,
+  ListItemNode,
+  OrderedListItemNode,
+} from "../document/BlockTypes.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { LineInfo } from "../layout/LayoutFragment.js";
 import { breakTextIntoLines } from "./LineBreaker.js";
@@ -18,7 +24,7 @@ export interface ComposedParagraph {
   totalHeight: number;
   lines: LineInfo[];
   align: "left" | "center" | "right" | "justify";
-  listIndentation?: number;
+  indentation?: number;
   listNumber?: number;
 }
 
@@ -48,12 +54,17 @@ export const composeParagraph = (
 
   const isListItem = block.kind === "list-item";
   const isOrderedListItem = block.kind === "ordered-list-item";
-  
-  const listIndentation = isTextBlock(block)
-    ? (block.indentation ?? (isListItem ? DEFAULT_LIST_INDENTATION : isOrderedListItem ? DEFAULT_ORDERED_LIST_INDENTATION : 0))
+
+  const indentation = isTextBlock(block)
+    ? (block.indentation ??
+      (isListItem
+        ? DEFAULT_LIST_INDENTATION
+        : isOrderedListItem
+          ? DEFAULT_ORDERED_LIST_INDENTATION
+          : 0))
     : 0;
-    
-  const adjustedMaxWidth = maxWidth - listIndentation;
+
+  const adjustedMaxWidth = maxWidth - indentation;
 
   const broken = breakTextIntoLines(
     children,
@@ -104,7 +115,9 @@ export const composeParagraph = (
     totalHeight: broken.length * lineHeight,
     lines,
     align,
-    listIndentation: listIndentation > 0 ? listIndentation : undefined,
-    listNumber: isOrderedListItem ? (block as OrderedListItemNode).index : undefined,
+    indentation: indentation,
+    listNumber: isOrderedListItem
+      ? (block as OrderedListItemNode).index
+      : undefined,
   };
 };

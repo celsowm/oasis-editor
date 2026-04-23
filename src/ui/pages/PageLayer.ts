@@ -1,3 +1,7 @@
+import {
+  DEFAULT_LIST_INDENTATION,
+  DEFAULT_ORDERED_LIST_INDENTATION,
+} from "../../core/composition/ParagraphComposer.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 
 export class PageLayer {
@@ -102,8 +106,17 @@ export class PageLayer {
         fragmentEl.style.height = `${fragment.rect.height}px`;
         fragmentEl.style.textAlign = fragment.align;
 
-        if (fragment.kind === "list-item") {
-          const indent = fragment.listIndentation ?? 25;
+        const defaultIndent =
+          fragment.kind === "ordered-list-item"
+            ? DEFAULT_ORDERED_LIST_INDENTATION
+            : fragment.kind === "list-item"
+              ? DEFAULT_LIST_INDENTATION
+              : 0;
+        const indent =
+          fragment.indentation !== undefined
+            ? fragment.indentation
+            : defaultIndent;
+        if (indent > 0) {
           fragmentEl.style.paddingLeft = `${indent}px`;
         }
 
@@ -111,12 +124,17 @@ export class PageLayer {
         fragmentEl.innerHTML = "";
 
         // Render bullet or number for list items
-        if (fragment.kind === "list-item" || fragment.kind === "ordered-list-item") {
-          const indent = fragment.listIndentation ?? 25;
+        if (
+          fragment.kind === "list-item" ||
+          fragment.kind === "ordered-list-item"
+        ) {
           const bullet = document.createElement("div");
           bullet.className = "oasis-bullet";
-          
-          if (fragment.kind === "ordered-list-item" && fragment.listNumber !== undefined) {
+
+          if (
+            fragment.kind === "ordered-list-item" &&
+            fragment.listNumber !== undefined
+          ) {
             bullet.textContent = `${fragment.listNumber}.`;
           } else {
             bullet.textContent = "•"; // Standard bullet

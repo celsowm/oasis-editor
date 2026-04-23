@@ -36,7 +36,7 @@ export interface ImageNode {
   src: string; // Data URI (base64)
   naturalWidth: number;
   naturalHeight: number;
-  width: number;  // display width in px
+  width: number; // display width in px
   height: number; // display height in px
   align: "left" | "center" | "right";
   alt?: string;

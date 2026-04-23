@@ -19,10 +19,15 @@ describe("LineBreaker", () => {
   const defaultSize = 10;
 
   it("should keep short text on one line", () => {
-    const runs: TextRun[] = [
-      { id: "1", text: "Hello world", marks: {} },
-    ];
-    const result = breakTextIntoLines(runs, 200, mockMeasurer, defaultFont, defaultSize, false);
+    const runs: TextRun[] = [{ id: "1", text: "Hello world", marks: {} }];
+    const result = breakTextIntoLines(
+      runs,
+      200,
+      mockMeasurer,
+      defaultFont,
+      defaultSize,
+      false,
+    );
 
     expect(result).toHaveLength(1);
     expect(result[0].text).toBe("Hello world");
@@ -40,7 +45,14 @@ describe("LineBreaker", () => {
     // "should " = 70px
     // "break" = 50px
     // Max width 100
-    const result = breakTextIntoLines(runs, 100, mockMeasurer, defaultFont, defaultSize, false);
+    const result = breakTextIntoLines(
+      runs,
+      100,
+      mockMeasurer,
+      defaultFont,
+      defaultSize,
+      false,
+    );
 
     expect(result[0].text).toBe("This is a ");
     expect(result[1].text).toBe("long ");
@@ -48,10 +60,15 @@ describe("LineBreaker", () => {
   });
 
   it("should handle explicit newlines", () => {
-    const runs: TextRun[] = [
-      { id: "1", text: "Line 1\nLine 2", marks: {} },
-    ];
-    const result = breakTextIntoLines(runs, 200, mockMeasurer, defaultFont, defaultSize, false);
+    const runs: TextRun[] = [{ id: "1", text: "Line 1\nLine 2", marks: {} }];
+    const result = breakTextIntoLines(
+      runs,
+      200,
+      mockMeasurer,
+      defaultFont,
+      defaultSize,
+      false,
+    );
 
     expect(result).toHaveLength(2);
     expect(result[0].text).toBe("Line 1\n");
@@ -72,7 +89,14 @@ describe("LineBreaker", () => {
     // 1. "Part 1 " (70px)
     // 2. "Part 2 is " (100px)
     // 3. "longer" (60px)
-    const result = breakTextIntoLines(runs, 100, mockMeasurer, defaultFont, defaultSize, false);
+    const result = breakTextIntoLines(
+      runs,
+      100,
+      mockMeasurer,
+      defaultFont,
+      defaultSize,
+      false,
+    );
 
     expect(result[0].text).toBe("Part 1 ");
     expect(result[1].text).toBe("Part 2 is ");
@@ -80,11 +104,16 @@ describe("LineBreaker", () => {
   });
 
   it("should respect font size in measurements", () => {
-    const runs: TextRun[] = [
-      { id: "1", text: "Big", marks: { fontSize: 20 } },
-    ];
+    const runs: TextRun[] = [{ id: "1", text: "Big", marks: { fontSize: 20 } }];
     // "Big" is 3 chars. multiplier = 20/10 = 2. 3 * 10 * 2 = 60px.
-    const result = breakTextIntoLines(runs, 100, mockMeasurer, defaultFont, defaultSize, false);
+    const result = breakTextIntoLines(
+      runs,
+      100,
+      mockMeasurer,
+      defaultFont,
+      defaultSize,
+      false,
+    );
 
     expect(result[0].width).toBe(60);
   });
@@ -96,7 +125,14 @@ describe("LineBreaker", () => {
     // "A " = 20px
     // "superlongwordthatdoesnotfit" = 270px
     // Max width 100
-    const result = breakTextIntoLines(runs, 100, mockMeasurer, defaultFont, defaultSize, false);
+    const result = breakTextIntoLines(
+      runs,
+      100,
+      mockMeasurer,
+      defaultFont,
+      defaultSize,
+      false,
+    );
 
     expect(result).toHaveLength(2);
     expect(result[0].text).toBe("A ");
