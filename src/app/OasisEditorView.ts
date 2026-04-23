@@ -4,11 +4,23 @@ import { OasisEditorPresenter } from "./presenters/OasisEditorPresenter.js";
 import { TextMeasurer } from "../bridge/measurement/TextMeasurementBridge.js";
 import { PageLayer } from "../ui/pages/PageLayer.js";
 import { PageViewport } from "../ui/pages/PageViewport.js";
-import { ColorPicker, ColorPickerListener } from "../ui/components/ColorPicker.js";
-import { TablePicker, TablePickerListener } from "../ui/components/TablePicker.js";
+import {
+  ColorPicker,
+  ColorPickerListener,
+} from "../ui/components/ColorPicker.js";
+import {
+  TablePicker,
+  TablePickerListener,
+} from "../ui/components/TablePicker.js";
 import { ImageResizeOverlay } from "../ui/selection/ImageResizeOverlay.js";
-import { TableFloatingToolbar, TableToolbarEvents } from "../ui/selection/TableFloatingToolbar.js";
-import { TableMoveHandle, MoveHandleEvents } from "../ui/selection/TableMoveHandle.js";
+import {
+  TableFloatingToolbar,
+  TableToolbarEvents,
+} from "../ui/selection/TableFloatingToolbar.js";
+import {
+  TableMoveHandle,
+  MoveHandleEvents,
+} from "../ui/selection/TableMoveHandle.js";
 import { LayoutFragment } from "../core/layout/LayoutFragment.js";
 
 export interface ViewElements {
@@ -30,6 +42,8 @@ export interface ViewElements {
   alignJustify: HTMLElement;
   bulletsButton: HTMLElement;
   orderedListButton: HTMLElement;
+  decreaseIndentButton: HTMLElement;
+  increaseIndentButton: HTMLElement;
   colorPickerContainer: HTMLElement;
   insertImageButton: HTMLElement;
   imageFileInput: HTMLInputElement;
@@ -68,6 +82,8 @@ export interface ViewEventBindings {
   onMouseUp: (e: MouseEvent) => void;
   onDblClick?: (e: MouseEvent) => void;
   onTripleClick?: (e: MouseEvent) => void;
+  onDecreaseIndent: () => void;
+  onIncreaseIndent: () => void;
   onInsertImage: (
     src: string,
     naturalWidth: number,
@@ -78,18 +94,35 @@ export interface ViewEventBindings {
   onSelectImage: (blockId: string) => void;
   onInsertTable: (rows: number, cols: number) => void;
   onTableAction: (action: string, tableId: string) => void;
-  onTableMove: (tableId: string, targetBlockId: string, isBefore: boolean) => void;
+  onTableMove: (
+    tableId: string,
+    targetBlockId: string,
+    isBefore: boolean,
+  ) => void;
 }
 
 export interface ViewDeps {
   dom: OasisEditorDom;
   presenter: OasisEditorPresenter;
   measurer: TextMeasurer;
-  colorPickerFactory: (containerId: string, listener: ColorPickerListener) => ColorPicker;
-  tablePickerFactory: (containerId: string, options: TablePickerListener) => TablePicker;
+  colorPickerFactory: (
+    containerId: string,
+    listener: ColorPickerListener,
+  ) => ColorPicker;
+  tablePickerFactory: (
+    containerId: string,
+    options: TablePickerListener,
+  ) => TablePicker;
   tableToolbarFactory: (events: TableToolbarEvents) => TableFloatingToolbar;
   tableMoveHandleFactory: (events: MoveHandleEvents) => TableMoveHandle;
-  imageResizeOverlayFactory: (container: HTMLElement, onResize: (data: { blockId: string, width: number, height: number }) => void) => ImageResizeOverlay;
+  imageResizeOverlayFactory: (
+    container: HTMLElement,
+    onResize: (data: {
+      blockId: string;
+      width: number;
+      height: number;
+    }) => void,
+  ) => ImageResizeOverlay;
 }
 
 export class OasisEditorView {
@@ -129,6 +162,8 @@ export class OasisEditorView {
       alignJustify: this.dom.getAlignJustifyButton(),
       bulletsButton: this.dom.getBulletsButton(),
       orderedListButton: this.dom.getOrderedListButton(),
+      decreaseIndentButton: this.dom.getDecreaseIndentButton(),
+      increaseIndentButton: this.dom.getIncreaseIndentButton(),
       colorPickerContainer: this.dom.getColorPickerContainer(),
       insertImageButton: this.dom.getInsertImageButton(),
       imageFileInput: this.dom.getImageFileInput(),
@@ -156,19 +191,32 @@ export class OasisEditorView {
 
   bind(events: ViewEventBindings): void {
     this.events = events;
-    this.elements.formatPainterButton.addEventListener("click", events.onFormatPainterToggle);
-    this.elements.formatPainterButton.addEventListener("dblclick", events.onFormatPainterDoubleClick);
+    this.elements.formatPainterButton.addEventListener(
+      "click",
+      events.onFormatPainterToggle,
+    );
+    this.elements.formatPainterButton.addEventListener(
+      "dblclick",
+      events.onFormatPainterDoubleClick,
+    );
     this.elements.boldButton.addEventListener("click", events.onBold);
     this.elements.italicButton.addEventListener("click", events.onItalic);
     this.elements.underlineButton.addEventListener("click", events.onUnderline);
 
-    this.colorPicker = this.deps.colorPickerFactory("oasis-editor-color-picker-container", {
-      onColorSelected: (color) => events.onColorChange(color),
-    });
+    this.colorPicker = this.deps.colorPickerFactory(
+      "oasis-editor-color-picker-container",
+      {
+        onColorSelected: (color) => events.onColorChange(color),
+      },
+    );
 
-    this.tablePicker = this.deps.tablePickerFactory("oasis-editor-insert-table", {
-      onTableSelected: (rows: number, cols: number) => events.onInsertTable(rows, cols),
-    });
+    this.tablePicker = this.deps.tablePickerFactory(
+      "oasis-editor-insert-table",
+      {
+        onTableSelected: (rows: number, cols: number) =>
+          events.onInsertTable(rows, cols),
+      },
+    );
 
     this.tableToolbar = this.deps.tableToolbarFactory({
       onAddRowAbove: (id) => this.events.onTableAction("addRowAbove", id),
@@ -183,9 +231,11 @@ export class OasisEditorView {
     this.tableMoveHandle = this.deps.tableMoveHandleFactory({
       onDragStart: (id, e) => {
         // Create a custom event to notify controller
-        const ce = new CustomEvent("table-drag-start", { detail: { tableId: id, originalEvent: e } });
+        const ce = new CustomEvent("table-drag-start", {
+          detail: { tableId: id, originalEvent: e },
+        });
         this.elements.root.dispatchEvent(ce);
-      }
+      },
     });
 
     this.elements.undoButton.addEventListener("click", events.onUndo);
@@ -210,6 +260,12 @@ export class OasisEditorView {
     );
     this.elements.orderedListButton.addEventListener("click", () =>
       events.onToggleNumberedList(),
+    );
+    this.elements.decreaseIndentButton.addEventListener("click", () =>
+      events.onDecreaseIndent(),
+    );
+    this.elements.increaseIndentButton.addEventListener("click", () =>
+      events.onIncreaseIndent(),
     );
 
     // Hidden input for keyboard handling
@@ -236,6 +292,13 @@ export class OasisEditorView {
         ke.preventDefault();
       } else if (ke.key === "Enter") {
         events.onEnter(ke.shiftKey);
+        ke.preventDefault();
+      } else if (ke.key === "Tab") {
+        if (ke.shiftKey) {
+          events.onDecreaseIndent();
+        } else {
+          events.onIncreaseIndent();
+        }
         ke.preventDefault();
       } else if (
         ke.key.startsWith("Arrow") ||
@@ -316,7 +379,12 @@ export class OasisEditorView {
         const img = new Image();
         img.onload = () => {
           const displayW = Math.min(img.naturalWidth, 500);
-          events.onInsertImage(dataUrl, img.naturalWidth, img.naturalHeight, displayW);
+          events.onInsertImage(
+            dataUrl,
+            img.naturalWidth,
+            img.naturalHeight,
+            displayW,
+          );
         };
         img.src = dataUrl;
       };
@@ -337,9 +405,9 @@ export class OasisEditorView {
     if (active) {
       this.elements.formatPainterButton.classList.add("active");
       if (sticky) {
-          this.elements.formatPainterButton.classList.add("sticky");
+        this.elements.formatPainterButton.classList.add("sticky");
       } else {
-          this.elements.formatPainterButton.classList.remove("sticky");
+        this.elements.formatPainterButton.classList.remove("sticky");
       }
     } else {
       this.elements.formatPainterButton.classList.remove("active");
@@ -364,50 +432,68 @@ export class OasisEditorView {
   }
 
   private updateTableToolbar(viewModel: EditorViewModel): void {
-      if (!viewModel.activeTableId || !viewModel.selection) {
-          if (this.tableToolbar) this.tableToolbar.hide();
-          if (this.tableMoveHandle) this.tableMoveHandle.hide();
-          return;
+    if (!viewModel.activeTableId || !viewModel.selection) {
+      if (this.tableToolbar) this.tableToolbar.hide();
+      if (this.tableMoveHandle) this.tableMoveHandle.hide();
+      return;
+    }
+
+    let currentCellFragment: LayoutFragment | null = null;
+    let firstCellFragment: LayoutFragment | null = null;
+
+    for (const page of viewModel.layout.pages) {
+      if (!currentCellFragment) {
+        currentCellFragment =
+          page.fragments.find(
+            (f) => f.blockId === viewModel.selection!.anchor.blockId,
+          ) || null;
       }
-
-      let currentCellFragment: LayoutFragment | null = null;
-      let firstCellFragment: LayoutFragment | null = null;
-
-      for (const page of viewModel.layout.pages) {
-          if (!currentCellFragment) {
-              currentCellFragment = page.fragments.find(f => f.blockId === viewModel.selection!.anchor.blockId) || null;
-          }
-          if (!firstCellFragment && viewModel.activeTableFirstCellId) {
-              firstCellFragment = page.fragments.find(f => f.blockId === viewModel.activeTableFirstCellId) || null;
-          }
-          if (currentCellFragment && (firstCellFragment || !viewModel.activeTableFirstCellId)) break;
+      if (!firstCellFragment && viewModel.activeTableFirstCellId) {
+        firstCellFragment =
+          page.fragments.find(
+            (f) => f.blockId === viewModel.activeTableFirstCellId,
+          ) || null;
       }
+      if (
+        currentCellFragment &&
+        (firstCellFragment || !viewModel.activeTableFirstCellId)
+      )
+        break;
+    }
 
-      if (currentCellFragment) {
-          const pageEl = this.elements.root.querySelector(
-            `[data-page-id="${currentCellFragment.pageId}"]`,
-          ) as HTMLElement | null;
-          if (pageEl) {
-            this.tableToolbar.show(viewModel.activeTableId, currentCellFragment, pageEl);
-          } else {
-            this.tableToolbar.hide();
-          }
+    if (currentCellFragment) {
+      const pageEl = this.elements.root.querySelector(
+        `[data-page-id="${currentCellFragment.pageId}"]`,
+      ) as HTMLElement | null;
+      if (pageEl) {
+        this.tableToolbar.show(
+          viewModel.activeTableId,
+          currentCellFragment,
+          pageEl,
+        );
       } else {
-          this.tableToolbar.hide();
+        this.tableToolbar.hide();
       }
+    } else {
+      this.tableToolbar.hide();
+    }
 
-      if (firstCellFragment) {
-          const pageEl = this.elements.root.querySelector(
-            `[data-page-id="${firstCellFragment.pageId}"]`,
-          ) as HTMLElement | null;
-          if (pageEl) {
-            this.tableMoveHandle.show(viewModel.activeTableId, firstCellFragment, pageEl);
-          } else {
-            this.tableMoveHandle.hide();
-          }
+    if (firstCellFragment) {
+      const pageEl = this.elements.root.querySelector(
+        `[data-page-id="${firstCellFragment.pageId}"]`,
+      ) as HTMLElement | null;
+      if (pageEl) {
+        this.tableMoveHandle.show(
+          viewModel.activeTableId,
+          firstCellFragment,
+          pageEl,
+        );
       } else {
-          this.tableMoveHandle.hide();
+        this.tableMoveHandle.hide();
       }
+    } else {
+      this.tableMoveHandle.hide();
+    }
   }
 
   private updateImageOverlay(viewModel: EditorViewModel): void {
@@ -438,11 +524,19 @@ export class OasisEditorView {
         `[data-page-id="${imageFragment.pageId}"]`,
       ) as HTMLElement | null;
 
-      console.log("VIEW: Found image fragment on page", imageFragment.pageId, "pageEl exists?", !!pageEl);
+      console.log(
+        "VIEW: Found image fragment on page",
+        imageFragment.pageId,
+        "pageEl exists?",
+        !!pageEl,
+      );
 
       if (pageEl) {
         // Se o container mudou (ex: imagem mudou de página), precisamos recriar o overlay
-        if (this.imageResizeOverlay && (this.imageResizeOverlay as any).container !== pageEl) {
+        if (
+          this.imageResizeOverlay &&
+          (this.imageResizeOverlay as any).container !== pageEl
+        ) {
           console.log("VIEW: Recreating overlay due to container change");
           this.imageResizeOverlay.detach();
           this.imageResizeOverlay = null;
@@ -513,5 +607,3 @@ export class OasisEditorView {
     }
   }
 }
-
-

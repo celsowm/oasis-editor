@@ -3,7 +3,10 @@ import { EditorSelection } from "../../core/selection/SelectionTypes.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { PageTemplate } from "../../core/pages/PageTemplateTypes.js";
 import { MarkSet, isTextBlock } from "../../core/document/BlockTypes.js";
-import { findParentTable, findBlockById } from "../../core/document/BlockUtils.js";
+import {
+  findParentTable,
+  findBlockById,
+} from "../../core/document/BlockUtils.js";
 
 export interface TemplateOption {
   value: string;
@@ -77,14 +80,15 @@ export class OasisEditorPresenter {
       const blockId = selection.anchor.blockId;
       const tableInfo = findParentTable(state.document, blockId);
       if (tableInfo) {
-          activeTableId = tableInfo.table.id;
-          activeTableFirstCellId = (tableInfo.table as any).rows[0].cells[0].id;
+        activeTableId = tableInfo.table.id;
+        activeTableFirstCellId = (tableInfo.table as any).rows[0].cells[0].id;
       }
 
       const targetBlock = findBlockById(state.document, blockId);
 
       if (targetBlock && isTextBlock(targetBlock)) {
-        const marks: MarkSet = targetBlock.children.length > 0 ? targetBlock.children[0].marks : {};
+        const marks: MarkSet =
+          targetBlock.children.length > 0 ? targetBlock.children[0].marks : {};
         const effectiveMarks = {
           ...marks,
           ...(state.pendingMarks || {}),

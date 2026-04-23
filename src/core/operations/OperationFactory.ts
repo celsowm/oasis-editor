@@ -62,7 +62,10 @@ export const Operations = {
     type: OperationType.SET_MARK,
     payload: { mark, value },
   }),
-  applyFormat: (marks: MarkSet, align?: "left" | "center" | "right" | "justify"): ApplyFormatOp => ({
+  applyFormat: (
+    marks: MarkSet,
+    align?: "left" | "center" | "right" | "justify",
+  ): ApplyFormatOp => ({
     type: OperationType.APPLY_FORMAT,
     payload: { marks, align },
   }),
@@ -81,9 +84,21 @@ export const Operations = {
     alt = "",
   ): InsertImageOp => ({
     type: OperationType.INSERT_IMAGE,
-    payload: { src, naturalWidth, naturalHeight, displayWidth, align, alt, newBlockId: genId("block") },
+    payload: {
+      src,
+      naturalWidth,
+      naturalHeight,
+      displayWidth,
+      align,
+      alt,
+      newBlockId: genId("block"),
+    },
   }),
-  resizeImage: (blockId: string, width: number, height: number): ResizeImageOp => ({
+  resizeImage: (
+    blockId: string,
+    width: number,
+    height: number,
+  ): ResizeImageOp => ({
     type: OperationType.RESIZE_IMAGE,
     payload: { blockId, width, height },
   }),
@@ -95,35 +110,63 @@ export const Operations = {
     const newTableId = genId("table");
     const newRowIds = Array.from({ length: rows }, () => genId("row"));
     const newCellIds = Array.from({ length: rows * cols }, () => genId("cell"));
-    const newParaIds = Array.from({ length: rows * cols }, () => genId("block"));
+    const newParaIds = Array.from({ length: rows * cols }, () =>
+      genId("block"),
+    );
     const newRunIds = Array.from({ length: rows * cols }, () => genId("run"));
     return {
-        type: OperationType.INSERT_TABLE,
-        payload: { rows, cols, newTableId, newRowIds, newCellIds, newParaIds, newRunIds },
+      type: OperationType.INSERT_TABLE,
+      payload: {
+        rows,
+        cols,
+        newTableId,
+        newRowIds,
+        newCellIds,
+        newParaIds,
+        newRunIds,
+      },
     };
   },
 
-  tableAddRowAbove: (tableId: string, referenceBlockId: string): EditorOperation => ({
+  tableAddRowAbove: (
+    tableId: string,
+    referenceBlockId: string,
+  ): EditorOperation => ({
     type: OperationType.TABLE_ADD_ROW_ABOVE,
     payload: { tableId, referenceBlockId },
   }),
-  tableAddRowBelow: (tableId: string, referenceBlockId: string): EditorOperation => ({
+  tableAddRowBelow: (
+    tableId: string,
+    referenceBlockId: string,
+  ): EditorOperation => ({
     type: OperationType.TABLE_ADD_ROW_BELOW,
     payload: { tableId, referenceBlockId },
   }),
-  tableAddColumnLeft: (tableId: string, referenceBlockId: string): EditorOperation => ({
+  tableAddColumnLeft: (
+    tableId: string,
+    referenceBlockId: string,
+  ): EditorOperation => ({
     type: OperationType.TABLE_ADD_COLUMN_LEFT,
     payload: { tableId, referenceBlockId },
   }),
-  tableAddColumnRight: (tableId: string, referenceBlockId: string): EditorOperation => ({
+  tableAddColumnRight: (
+    tableId: string,
+    referenceBlockId: string,
+  ): EditorOperation => ({
     type: OperationType.TABLE_ADD_COLUMN_RIGHT,
     payload: { tableId, referenceBlockId },
   }),
-  tableDeleteRow: (tableId: string, referenceBlockId: string): EditorOperation => ({
+  tableDeleteRow: (
+    tableId: string,
+    referenceBlockId: string,
+  ): EditorOperation => ({
     type: OperationType.TABLE_DELETE_ROW,
     payload: { tableId, referenceBlockId },
   }),
-  tableDeleteColumn: (tableId: string, referenceBlockId: string): EditorOperation => ({
+  tableDeleteColumn: (
+    tableId: string,
+    referenceBlockId: string,
+  ): EditorOperation => ({
     type: OperationType.TABLE_DELETE_COLUMN,
     payload: { tableId, referenceBlockId },
   }),
@@ -131,12 +174,28 @@ export const Operations = {
     type: OperationType.TABLE_DELETE,
     payload: { tableId },
   }),
-  moveBlock: (blockId: string, targetReferenceBlockId: string, isBefore = false): MoveBlockOp => ({
+  moveBlock: (
+    blockId: string,
+    targetReferenceBlockId: string,
+    isBefore = false,
+  ): MoveBlockOp => ({
     type: OperationType.MOVE_BLOCK,
     payload: { blockId, targetReferenceBlockId, isBefore },
   }),
   toggleUnorderedList: (): EditorOperation => ({
     type: OperationType.TOGGLE_UNORDERED_LIST,
+    payload: {},
+  }),
+  toggleOrderedList: (): EditorOperation => ({
+    type: OperationType.TOGGLE_ORDERED_LIST,
+    payload: {},
+  }),
+  decreaseIndent: (): EditorOperation => ({
+    type: OperationType.DECREASE_INDENT,
+    payload: {},
+  }),
+  increaseIndent: (): EditorOperation => ({
+    type: OperationType.INCREASE_INDENT,
     payload: {},
   }),
 };

@@ -132,7 +132,7 @@ export class PositionCalculator {
     const lineStartOffset = targetLine ? targetLine.offsetStart : 0;
     const offsetInLine = Math.max(0, offsetInBlock - lineStartOffset);
 
-    const indent = fragment.listIndentation ?? 0;
+    const indent = fragment.indentation ?? 0;
     let totalWidth = (targetLine?.x ?? 0) + indent;
     if (offsetInLine === 0) return totalWidth;
 

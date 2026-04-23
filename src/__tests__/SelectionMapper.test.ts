@@ -3,7 +3,10 @@ import { SelectionMapper } from "../app/services/SelectionMapper.js";
 import { LayoutState } from "../core/layout/LayoutTypes.js";
 import { LayoutFragment } from "../core/layout/LayoutFragment.js";
 import { TextMeasurer } from "../bridge/measurement/TextMeasurementBridge.js";
-import { LogicalPosition, LogicalRange } from "../core/selection/SelectionTypes.js";
+import {
+  LogicalPosition,
+  LogicalRange,
+} from "../core/selection/SelectionTypes.js";
 
 describe("SelectionMapper", () => {
   let mockMeasurer: TextMeasurer;

@@ -27,6 +27,8 @@ export enum OperationType {
   MOVE_BLOCK = "MOVE_BLOCK",
   TOGGLE_UNORDERED_LIST = "TOGGLE_UNORDERED_LIST",
   TOGGLE_ORDERED_LIST = "TOGGLE_ORDERED_LIST",
+  DECREASE_INDENT = "DECREASE_INDENT",
+  INCREASE_INDENT = "INCREASE_INDENT",
 }
 
 export interface TableRowColPayload {
@@ -147,7 +149,10 @@ export type ToggleMarkOp = Operation<
   ToggleMarkPayload
 >;
 export type SetMarkOp = Operation<OperationType.SET_MARK, SetMarkPayload>;
-export type ApplyFormatOp = Operation<OperationType.APPLY_FORMAT, ApplyFormatPayload>;
+export type ApplyFormatOp = Operation<
+  OperationType.APPLY_FORMAT,
+  ApplyFormatPayload
+>;
 export type SetAlignmentOp = Operation<
   OperationType.SET_ALIGNMENT,
   SetAlignmentPayload
@@ -169,10 +174,7 @@ export type InsertTableOp = Operation<
   InsertTablePayload
 >;
 
-export type MoveBlockOp = Operation<
-    OperationType.MOVE_BLOCK,
-    MoveBlockPayload
->;
+export type MoveBlockOp = Operation<OperationType.MOVE_BLOCK, MoveBlockPayload>;
 
 export type EditorOperation =
   | AppendParagraphOp
@@ -199,7 +201,9 @@ export type EditorOperation =
   | Operation<OperationType.TABLE_DELETE_COLUMN, TableRowColPayload>
   | Operation<OperationType.TABLE_DELETE, TableDeletePayload>
   | Operation<OperationType.TOGGLE_UNORDERED_LIST, {}>
-  | Operation<OperationType.TOGGLE_ORDERED_LIST, {}>;
+  | Operation<OperationType.TOGGLE_ORDERED_LIST, {}>
+  | Operation<OperationType.DECREASE_INDENT, {}>
+  | Operation<OperationType.INCREASE_INDENT, {}>;
 
 /** @deprecated Use OperationType enum directly */
 export const OPERATION_TYPES = OperationType;

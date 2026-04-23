@@ -28,7 +28,8 @@ export const createOasisEditorApp = (): OasisEditorController => {
     tablePickerFactory: (id, options) => new TablePicker(id, options),
     tableToolbarFactory: (events) => new TableFloatingToolbar(events),
     tableMoveHandleFactory: (events) => new TableMoveHandle(events),
-    imageResizeOverlayFactory: (container, onResize) => new ImageResizeOverlay(container, onResize),
+    imageResizeOverlayFactory: (container, onResize) =>
+      new ImageResizeOverlay(container, onResize),
   });
 
   // Focus hidden input on startup so arrow keys work immediately

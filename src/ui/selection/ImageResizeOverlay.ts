@@ -20,11 +20,20 @@ interface ResizeStrategy {
 }
 
 class CornerResizeStrategy implements ResizeStrategy {
-  constructor(private originX: number, private originY: number) {}
-  calculate(dx: number, dy: number, startW: number, startH: number, aspectRatio: number) {
+  constructor(
+    private originX: number,
+    private originY: number,
+  ) {}
+  calculate(
+    dx: number,
+    dy: number,
+    startW: number,
+    startH: number,
+    aspectRatio: number,
+  ) {
     const deltaX = dx * -this.originX;
     const deltaY = dy * -this.originY;
-    
+
     let newW = startW + deltaX;
     let newH = startH + deltaY;
 
@@ -43,8 +52,17 @@ class CornerResizeStrategy implements ResizeStrategy {
 }
 
 class SideResizeStrategy implements ResizeStrategy {
-  constructor(private isHorizontal: boolean, private origin: number) {}
-  calculate(dx: number, dy: number, startW: number, startH: number, aspectRatio: number) {
+  constructor(
+    private isHorizontal: boolean,
+    private origin: number,
+  ) {}
+  calculate(
+    dx: number,
+    dy: number,
+    startW: number,
+    startH: number,
+    aspectRatio: number,
+  ) {
     let newW = startW;
     let newH = startH;
     let x = 0;
@@ -72,7 +90,10 @@ export class ImageResizeOverlay {
   private badgeEl: HTMLElement | null = null;
   private onResize: (result: ResizeResult) => void;
 
-  constructor(container: HTMLElement, onResize: (result: ResizeResult) => void) {
+  constructor(
+    container: HTMLElement,
+    onResize: (result: ResizeResult) => void,
+  ) {
     this.container = container;
     this.onResize = onResize;
   }
@@ -126,14 +147,46 @@ export class ImageResizeOverlay {
     overlay.appendChild(badge);
 
     const HANDLES = [
-      { pos: { top: "0%", left: "0%" }, strategy: new CornerResizeStrategy(1, 1), cursor: "nw-resize" },
-      { pos: { top: "0%", left: "50%" }, strategy: new SideResizeStrategy(false, 1), cursor: "n-resize" },
-      { pos: { top: "0%", left: "100%" }, strategy: new CornerResizeStrategy(-1, 1), cursor: "ne-resize" },
-      { pos: { top: "50%", left: "100%" }, strategy: new SideResizeStrategy(true, -1), cursor: "e-resize" },
-      { pos: { top: "100%", left: "100%" }, strategy: new CornerResizeStrategy(-1, -1), cursor: "se-resize" },
-      { pos: { top: "100%", left: "50%" }, strategy: new SideResizeStrategy(false, -1), cursor: "s-resize" },
-      { pos: { top: "100%", left: "0%" }, strategy: new CornerResizeStrategy(1, -1), cursor: "sw-resize" },
-      { pos: { top: "50%", left: "0%" }, strategy: new SideResizeStrategy(true, 1), cursor: "w-resize" },
+      {
+        pos: { top: "0%", left: "0%" },
+        strategy: new CornerResizeStrategy(1, 1),
+        cursor: "nw-resize",
+      },
+      {
+        pos: { top: "0%", left: "50%" },
+        strategy: new SideResizeStrategy(false, 1),
+        cursor: "n-resize",
+      },
+      {
+        pos: { top: "0%", left: "100%" },
+        strategy: new CornerResizeStrategy(-1, 1),
+        cursor: "ne-resize",
+      },
+      {
+        pos: { top: "50%", left: "100%" },
+        strategy: new SideResizeStrategy(true, -1),
+        cursor: "e-resize",
+      },
+      {
+        pos: { top: "100%", left: "100%" },
+        strategy: new CornerResizeStrategy(-1, -1),
+        cursor: "se-resize",
+      },
+      {
+        pos: { top: "100%", left: "50%" },
+        strategy: new SideResizeStrategy(false, -1),
+        cursor: "s-resize",
+      },
+      {
+        pos: { top: "100%", left: "0%" },
+        strategy: new CornerResizeStrategy(1, -1),
+        cursor: "sw-resize",
+      },
+      {
+        pos: { top: "50%", left: "0%" },
+        strategy: new SideResizeStrategy(true, 1),
+        cursor: "w-resize",
+      },
     ];
 
     const aspectRatio = fragment.rect.height / fragment.rect.width;
@@ -172,8 +225,14 @@ export class ImageResizeOverlay {
           const dx = moveEv.clientX - startX;
           const dy = moveEv.clientY - startY;
 
-          const { x, y, w, h } = hDef.strategy.calculate(dx, dy, startW, startH, aspectRatio);
-          
+          const { x, y, w, h } = hDef.strategy.calculate(
+            dx,
+            dy,
+            startW,
+            startH,
+            aspectRatio,
+          );
+
           const finalW = Math.max(20, Math.round(w));
           const finalH = Math.max(20, Math.round(h));
 

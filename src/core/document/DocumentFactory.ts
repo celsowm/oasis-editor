@@ -72,7 +72,11 @@ export const createTableRow = (cellCount: number): TableRowNode => ({
   cells: Array.from({ length: cellCount }, () => createTableCell()),
 });
 
-export const createTable = (rows: number, cols: number, totalWidth = 600): TableNode => ({
+export const createTable = (
+  rows: number,
+  cols: number,
+  totalWidth = 600,
+): TableNode => ({
   id: nextBlockId(),
   kind: "table",
   rows: Array.from({ length: rows }, () => createTableRow(cols)),

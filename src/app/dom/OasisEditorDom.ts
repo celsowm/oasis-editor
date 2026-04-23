@@ -61,6 +61,14 @@ export class OasisEditorDom {
     return this.requireElement("oasis-editor-ordered-list");
   }
 
+  getDecreaseIndentButton(): HTMLElement {
+    return this.requireElement("oasis-editor-decrease-indent");
+  }
+
+  getIncreaseIndentButton(): HTMLElement {
+    return this.requireElement("oasis-editor-increase-indent");
+  }
+
   getUndoButton(): HTMLElement {
     return this.requireElement("oasis-editor-undo");
   }

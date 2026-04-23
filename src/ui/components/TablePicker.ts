@@ -23,7 +23,7 @@ export class TablePicker {
     // Dropdown (absolute positioned relative to body or button)
     this.dropdown = document.createElement("div");
     this.dropdown.className = "oasis-table-picker-dropdown";
-    
+
     this.infoText = document.createElement("div");
     this.infoText.className = "oasis-table-picker-info";
     this.infoText.textContent = "0 x 0 Table";
@@ -31,7 +31,7 @@ export class TablePicker {
 
     this.gridContainer = document.createElement("div");
     this.gridContainer.className = "oasis-table-picker-grid";
-    
+
     for (let r = 1; r <= 10; r++) {
       for (let c = 1; c <= 10; c++) {
         const cell = document.createElement("div");
@@ -43,7 +43,7 @@ export class TablePicker {
           e.stopPropagation();
           this.highlightGrid(r, c);
         });
-        
+
         cell.addEventListener("click", (e) => {
           e.stopPropagation();
           this.listener.onTableSelected(r, c);
@@ -73,7 +73,9 @@ export class TablePicker {
     if (!this.gridContainer || !this.infoText) return;
     this.infoText.textContent = `${rows} x ${cols} Table`;
 
-    const cells = this.gridContainer.querySelectorAll(".oasis-table-picker-cell");
+    const cells = this.gridContainer.querySelectorAll(
+      ".oasis-table-picker-cell",
+    );
     cells.forEach((cell) => {
       const r = parseInt((cell as HTMLElement).dataset["row"] || "0");
       const c = parseInt((cell as HTMLElement).dataset["col"] || "0");
