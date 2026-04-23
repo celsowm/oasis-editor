@@ -37,6 +37,12 @@ export class OasisEditorController {
   private tableGhost: HTMLElement | null = null;
   private currentDropTarget: { blockId: string, isBefore: boolean } | null = null;
 
+  // Format Painter state
+  private formatPainterActive: boolean = false;
+  private formatPainterSticky: boolean = false;
+  private formatPainterMarks: any = null;
+  private formatPainterAlign: any = null;
+
   constructor({
     runtime,
     layoutService,
@@ -58,6 +64,8 @@ export class OasisEditorController {
   start(): void {
     this.view.renderTemplateOptions(this.presenter.getTemplateOptions());
     this.view.bind({
+      onFormatPainterToggle: () => this.toggleFormatPainter(),
+      onFormatPainterDoubleClick: () => this.toggleFormatPainter(true),
       onBold: () => this.toggleBold(),
       onItalic: () => this.toggleItalic(),
       onUnderline: () => this.toggleUnderline(),
@@ -106,6 +114,38 @@ export class OasisEditorController {
     this.runtime.subscribe(() => {
       this.refresh();
     });
+  }
+
+  toggleFormatPainter(isDoubleClick: boolean = false): void {
+    if (this.formatPainterActive && !isDoubleClick) {
+      this.formatPainterActive = false;
+      this.formatPainterSticky = false;
+      this.formatPainterMarks = null;
+      this.formatPainterAlign = null;
+      this.view.setFormatPainterActive(false);
+    } else {
+      // If already active and double-clicked, upgrade to sticky
+      if (this.formatPainterActive && isDoubleClick) {
+          this.formatPainterSticky = true;
+          this.view.setFormatPainterActive(true, true);
+          return;
+      }
+
+      const state = this.runtime.getState();
+      const selectionState = this.presenter.present({ state, layout: this.latestLayout! }).selectionState;
+
+      const marks: any = {};
+      if (selectionState.bold) marks.bold = true;
+      if (selectionState.italic) marks.italic = true;
+      if (selectionState.underline) marks.underline = true;
+      if (selectionState.color) marks.color = selectionState.color;
+
+      this.formatPainterMarks = marks;
+      this.formatPainterAlign = selectionState.align;
+      this.formatPainterActive = true;
+      this.formatPainterSticky = isDoubleClick;
+      this.view.setFormatPainterActive(true, isDoubleClick);
+    }
   }
 
   toggleBold(): void {
@@ -410,7 +450,17 @@ export class OasisEditorController {
   }
 
   handleMouseUp(): void {
-    this.isDragging = false;
+    if (this.isDragging) {
+      this.isDragging = false;
+
+      // If format painter is active, apply formatting on mouse up
+      if (this.formatPainterActive && this.formatPainterMarks) {
+        this.runtime.dispatch(Operations.applyFormat(this.formatPainterMarks, this.formatPainterAlign));
+        if (!this.formatPainterSticky) {
+           this.toggleFormatPainter(); // Turn off after use
+        }
+      }
+    }
   }
 
   /**
@@ -513,6 +563,14 @@ export class OasisEditorController {
         },
       }),
     );
+
+    // If format painter is active, a double click should format the selected word
+    if (this.formatPainterActive && this.formatPainterMarks) {
+        this.runtime.dispatch(Operations.applyFormat(this.formatPainterMarks, this.formatPainterAlign));
+        if (!this.formatPainterSticky) {
+            this.toggleFormatPainter();
+        }
+    }
   }
 
   /**
@@ -547,6 +605,14 @@ export class OasisEditorController {
     this.runtime.dispatch(
       Operations.setSelection({ anchor: anchorPos, focus: focusPos }),
     );
+
+    // If format painter is active, triple click should format the selected paragraph
+    if (this.formatPainterActive && this.formatPainterMarks) {
+        this.runtime.dispatch(Operations.applyFormat(this.formatPainterMarks, this.formatPainterAlign));
+        if (!this.formatPainterSticky) {
+            this.toggleFormatPainter();
+        }
+    }
   }
 
   refresh(): void {

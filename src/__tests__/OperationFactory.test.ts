@@ -7,10 +7,10 @@ describe("OperationFactory", () => {
     it("should create appendParagraph operation", () => {
       const text = "Hello World";
       const op = Operations.appendParagraph(text);
-      expect(op).toEqual({
-        type: OperationType.APPEND_PARAGRAPH,
-        payload: { text },
-      });
+      expect(op.type).toEqual(OperationType.APPEND_PARAGRAPH);
+      expect(op.payload.text).toEqual(text);
+      expect(op.payload.newBlockId).toBeDefined();
+      expect(op.payload.newRunId).toBeDefined();
     });
 
     it("should create setSectionTemplate operation", () => {
@@ -25,10 +25,9 @@ describe("OperationFactory", () => {
 
     it("should create insertParagraph operation", () => {
       const op = Operations.insertParagraph();
-      expect(op).toEqual({
-        type: OperationType.INSERT_PARAGRAPH,
-        payload: {},
-      });
+      expect(op.type).toEqual(OperationType.INSERT_PARAGRAPH);
+      expect(op.payload.newBlockId).toBeDefined();
+      expect(op.payload.newRunId).toBeDefined();
     });
   });
 
@@ -36,10 +35,9 @@ describe("OperationFactory", () => {
     it("should create insertText operation", () => {
       const text = "New text";
       const op = Operations.insertText(text);
-      expect(op).toEqual({
-        type: OperationType.INSERT_TEXT,
-        payload: { text },
-      });
+      expect(op.type).toEqual(OperationType.INSERT_TEXT);
+      expect(op.payload.text).toEqual(text);
+      expect(op.payload.newRunIds?.length).toBeGreaterThan(0);
     });
 
     it("should create deleteText operation", () => {

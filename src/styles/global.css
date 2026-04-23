@@ -133,6 +133,11 @@ textarea {
   background: #c2e7ff;
 }
 
+.oasis-editor-toolbar button.sticky {
+  background: #a8d5ff; /* slightly darker to indicate 'locked' mode */
+  border: 1px solid #7cbcf0;
+}
+
 .oasis-editor-toolbar select {
   padding-right: 18px;
 }

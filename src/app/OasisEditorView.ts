@@ -15,6 +15,7 @@ export interface ViewElements {
   root: HTMLElement;
   pagesContainer: HTMLElement;
   templateSelect: HTMLSelectElement;
+  formatPainterButton: HTMLElement;
   boldButton: HTMLElement;
   italicButton: HTMLElement;
   underlineButton: HTMLElement;
@@ -46,6 +47,8 @@ export interface SelectionState {
 }
 
 export interface ViewEventBindings {
+  onFormatPainterToggle: () => void;
+  onFormatPainterDoubleClick: () => void;
   onBold: () => void;
   onItalic: () => void;
   onUnderline: () => void;
@@ -111,6 +114,7 @@ export class OasisEditorView {
       root: this.dom.getRoot(),
       pagesContainer: this.dom.getPagesContainer(),
       templateSelect: this.dom.getTemplateSelect(),
+      formatPainterButton: this.dom.getFormatPainterButton(),
       boldButton: this.dom.getBoldButton(),
       italicButton: this.dom.getItalicButton(),
       underlineButton: this.dom.getUnderlineButton(),
@@ -152,6 +156,8 @@ export class OasisEditorView {
 
   bind(events: ViewEventBindings): void {
     this.events = events;
+    this.elements.formatPainterButton.addEventListener("click", events.onFormatPainterToggle);
+    this.elements.formatPainterButton.addEventListener("dblclick", events.onFormatPainterDoubleClick);
     this.elements.boldButton.addEventListener("click", events.onBold);
     this.elements.italicButton.addEventListener("click", events.onItalic);
     this.elements.underlineButton.addEventListener("click", events.onUnderline);
@@ -325,6 +331,20 @@ export class OasisEditorView {
       };
       events.onSelectImage(blockId);
     });
+  }
+
+  setFormatPainterActive(active: boolean, sticky: boolean = false): void {
+    if (active) {
+      this.elements.formatPainterButton.classList.add("active");
+      if (sticky) {
+          this.elements.formatPainterButton.classList.add("sticky");
+      } else {
+          this.elements.formatPainterButton.classList.remove("sticky");
+      }
+    } else {
+      this.elements.formatPainterButton.classList.remove("active");
+      this.elements.formatPainterButton.classList.remove("sticky");
+    }
   }
 
   render(viewModel: EditorViewModel): void {
