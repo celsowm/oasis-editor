@@ -11,6 +11,7 @@ export enum OperationType {
   MOVE_SELECTION = "MOVE_SELECTION",
   TOGGLE_MARK = "TOGGLE_MARK",
   SET_MARK = "SET_MARK",
+  APPLY_FORMAT = "APPLY_FORMAT",
   SET_ALIGNMENT = "SET_ALIGNMENT",
   INSERT_IMAGE = "INSERT_IMAGE",
   RESIZE_IMAGE = "RESIZE_IMAGE",
@@ -73,6 +74,10 @@ export interface ToggleMarkPayload {
 export interface SetMarkPayload {
   mark: keyof MarkSet;
   value: any;
+}
+export interface ApplyFormatPayload {
+  marks: MarkSet;
+  align?: "left" | "center" | "right" | "justify";
 }
 export interface SetAlignmentPayload {
   align: "left" | "center" | "right" | "justify";
@@ -142,6 +147,7 @@ export type ToggleMarkOp = Operation<
   ToggleMarkPayload
 >;
 export type SetMarkOp = Operation<OperationType.SET_MARK, SetMarkPayload>;
+export type ApplyFormatOp = Operation<OperationType.APPLY_FORMAT, ApplyFormatPayload>;
 export type SetAlignmentOp = Operation<
   OperationType.SET_ALIGNMENT,
   SetAlignmentPayload
@@ -178,6 +184,7 @@ export type EditorOperation =
   | MoveSelectionOp
   | ToggleMarkOp
   | SetMarkOp
+  | ApplyFormatOp
   | SetAlignmentOp
   | InsertImageOp
   | ResizeImageOp

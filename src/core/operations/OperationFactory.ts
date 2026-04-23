@@ -9,6 +9,7 @@ import {
   MoveSelectionOp,
   ToggleMarkOp,
   SetMarkOp,
+  ApplyFormatOp,
   SetAlignmentOp,
   InsertImageOp,
   ResizeImageOp,
@@ -60,6 +61,10 @@ export const Operations = {
   setMark: (mark: keyof MarkSet, value: any): SetMarkOp => ({
     type: OperationType.SET_MARK,
     payload: { mark, value },
+  }),
+  applyFormat: (marks: MarkSet, align?: "left" | "center" | "right" | "justify"): ApplyFormatOp => ({
+    type: OperationType.APPLY_FORMAT,
+    payload: { marks, align },
   }),
   setAlignment: (
     align: "left" | "center" | "right" | "justify",

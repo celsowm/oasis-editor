@@ -17,6 +17,10 @@ export class OasisEditorDom {
     return this.requireElement("oasis-editor-template") as HTMLSelectElement;
   }
 
+  getFormatPainterButton(): HTMLElement {
+    return this.requireElement("oasis-editor-format-painter");
+  }
+
   getBoldButton(): HTMLElement {
     return this.requireElement("oasis-editor-bold");
   }

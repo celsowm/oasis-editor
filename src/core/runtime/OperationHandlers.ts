@@ -614,6 +614,168 @@ registerHandler(OperationType.TOGGLE_MARK, (state, op) => {
     return state;
 });
 
+registerHandler(OperationType.APPLY_FORMAT, (state, op) => {
+    const { selection } = state;
+    if (!selection) return state;
+
+    const { marks, align } = op.payload;
+
+    // For now, if the selection is collapsed, just set pendingMarks
+    if (selection.anchor.blockId === selection.focus.blockId && selection.anchor.inlineId === selection.focus.inlineId && selection.anchor.offset === selection.focus.offset) {
+        let nextState = { ...state, pendingMarks: { ...marks } };
+
+        // If align is provided, apply to the block
+        if (align) {
+            nextState = updateDocumentSections(nextState, selection.anchor.blockId, (block) => {
+                if (isTextBlock(block)) {
+                    return { ...block, align };
+                }
+                return block;
+            });
+        }
+
+        return nextState;
+    }
+
+    let nextState = state;
+
+    // Multi-block formatting logic
+    const { document: doc } = state;
+
+    // We need to determine the order of anchor vs focus to iterate properly.
+    // In our simplified Document, blocks are stored within sections (and optionally tables).
+    // Let's flatten the tree to easily determine bounds.
+    const allBlocks = [];
+    const blockParents: Record<string, string> = {};
+    for (const section of doc.sections) {
+        // A simple visitor for our document structure
+        const traverse = (blocks: BlockNode[], parentId: string) => {
+             for (const b of blocks) {
+                  allBlocks.push(b);
+                  blockParents[b.id] = parentId;
+                  if (b.kind === "table") {
+                      for (const row of b.rows) {
+                           for (const cell of row.cells) {
+                               traverse(cell.children, b.id);
+                           }
+                      }
+                  }
+             }
+        };
+        traverse(section.children, section.id);
+    }
+
+    let startPos = selection.anchor;
+    let endPos = selection.focus;
+
+    const startBlockIdx = allBlocks.findIndex(b => b.id === startPos.blockId);
+    const endBlockIdx = allBlocks.findIndex(b => b.id === endPos.blockId);
+
+    if (startBlockIdx === -1 || endBlockIdx === -1) return nextState;
+
+    let isReversed = false;
+    if (startBlockIdx > endBlockIdx) {
+        isReversed = true;
+    } else if (startBlockIdx === endBlockIdx) {
+        const block = allBlocks[startBlockIdx];
+        if (isTextBlock(block)) {
+            let startAbs = 0, endAbs = 0, acc = 0;
+            for (const r of block.children) {
+                 if (r.id === startPos.inlineId) startAbs = acc + startPos.offset;
+                 if (r.id === endPos.inlineId) endAbs = acc + endPos.offset;
+                 acc += r.text.length;
+            }
+            if (startAbs > endAbs) {
+                isReversed = true;
+            }
+        }
+    }
+
+    if (isReversed) {
+        const temp = startPos;
+        startPos = endPos;
+        endPos = temp;
+    }
+
+    const firstBlockIdx = Math.min(startBlockIdx, endBlockIdx);
+    const lastBlockIdx = Math.max(startBlockIdx, endBlockIdx);
+
+    // Apply formatting to all blocks in range
+    for (let i = firstBlockIdx; i <= lastBlockIdx; i++) {
+        const targetBlock = allBlocks[i];
+        if (!isTextBlock(targetBlock)) continue;
+
+        let startAbs = 0;
+        let endAbs = Infinity;
+
+        // Calculate bounds for the current block
+        let acc = 0;
+        for (const r of targetBlock.children) {
+            if (i === firstBlockIdx && r.id === startPos.inlineId) startAbs = acc + startPos.offset;
+            if (i === lastBlockIdx && r.id === endPos.inlineId) endAbs = acc + endPos.offset;
+            acc += r.text.length;
+        }
+        if (i < lastBlockIdx) {
+            endAbs = acc; // Select to the end of this block
+        }
+
+        nextState = updateDocumentSections(nextState, targetBlock.id, (b) => {
+             if (!isTextBlock(b)) return b;
+
+             let currentAbs = 0;
+             const newChildren: TextRun[] = [];
+             let runIdx = 0;
+
+             for (const run of b.children) {
+                 const runStart = currentAbs;
+                 const runEnd = currentAbs + run.text.length;
+                 currentAbs = runEnd;
+
+                 if (runEnd <= startAbs || runStart >= endAbs) {
+                     // Outside selection
+                     newChildren.push(run);
+                 } else if (runStart >= startAbs && runEnd <= endAbs) {
+                     // Fully inside selection
+                     newChildren.push({ ...run, marks: { ...marks } });
+                 } else {
+                     // Partially inside selection
+                     const overlapStart = Math.max(0, startAbs - runStart);
+                     const overlapEnd = Math.min(run.text.length, endAbs - runStart);
+
+                     const beforeText = run.text.substring(0, overlapStart);
+                     const midText = run.text.substring(overlapStart, overlapEnd);
+                     const afterText = run.text.substring(overlapEnd);
+
+                     if (beforeText) {
+                         newChildren.push({ ...run, id: run.id + "_fmt_b" + (runIdx++), text: beforeText });
+                     }
+                     if (midText) {
+                         newChildren.push({ ...run, id: run.id + "_fmt_m" + (runIdx++), text: midText, marks: { ...marks } });
+                     }
+                     if (afterText) {
+                         newChildren.push({ ...run, id: run.id + "_fmt_a" + (runIdx++), text: afterText });
+                     }
+                 }
+             }
+
+             // Merge contiguous runs with same marks
+             const merged: TextRun[] = [];
+             for (const r of newChildren) {
+                 if (merged.length > 0 && r.text !== "" && areMarksEqual(merged[merged.length - 1].marks, r.marks)) {
+                     merged[merged.length - 1].text += r.text;
+                 } else if (r.text !== "") {
+                     merged.push({ ...r });
+                 }
+             }
+             if (merged.length === 0 && newChildren.length > 0) merged.push(newChildren[0]); // fallback
+
+             return { ...b, children: merged, align: align || b.align };
+        });
+    }
+
+    return nextState;
+});
+
 registerHandler(OperationType.MOVE_BLOCK, (state, op) => {
     const { blockId, targetReferenceBlockId, isBefore } = op.payload;
     if (blockId === targetReferenceBlockId) return state;
