@@ -3,7 +3,7 @@ import { EditorSelection } from "../../core/selection/SelectionTypes.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { PageTemplate } from "../../core/pages/PageTemplateTypes.js";
 import { MarkSet, isTextBlock } from "../../core/document/BlockTypes.js";
-import { findParentTable } from "../../core/document/BlockUtils.js";
+import { findParentTable, findBlockById } from "../../core/document/BlockUtils.js";
 
 export interface TemplateOption {
   value: string;
@@ -16,6 +16,8 @@ export interface SelectionState {
   underline: boolean;
   color: string;
   align: "left" | "center" | "right" | "justify";
+  isListItem: boolean;
+  isOrderedListItem: boolean;
 }
 
 export interface EditorViewModel {
@@ -65,6 +67,8 @@ export class OasisEditorPresenter {
       underline: false,
       color: "#000000",
       align: "left",
+      isListItem: false,
+      isOrderedListItem: false,
     };
     let activeTableId: string | null = null;
     let activeTableFirstCellId: string | null = null;
@@ -77,14 +81,10 @@ export class OasisEditorPresenter {
           activeTableFirstCellId = (tableInfo.table as any).rows[0].cells[0].id;
       }
 
-      let targetBlock = undefined;
-      for (const section of state.document.sections) {
-        targetBlock = section.children.find((b) => b.id === blockId);
-        if (targetBlock) break;
-      }
+      const targetBlock = findBlockById(state.document, blockId);
 
-      if (targetBlock && isTextBlock(targetBlock) && targetBlock.children.length > 0) {
-        const marks: MarkSet = targetBlock.children[0].marks;
+      if (targetBlock && isTextBlock(targetBlock)) {
+        const marks: MarkSet = targetBlock.children.length > 0 ? targetBlock.children[0].marks : {};
         const effectiveMarks = {
           ...marks,
           ...(state.pendingMarks || {}),
@@ -96,6 +96,8 @@ export class OasisEditorPresenter {
           underline: !!effectiveMarks.underline,
           color: effectiveMarks.color || "#000000",
           align: targetBlock.align || "left",
+          isListItem: targetBlock.kind === "list-item",
+          isOrderedListItem: targetBlock.kind === "ordered-list-item",
         };
       } else if (targetBlock && targetBlock.kind === "image") {
         selectionState = {

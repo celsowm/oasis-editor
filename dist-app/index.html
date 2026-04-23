@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>oasis-editor</title>
-    <script type="module" crossorigin src="/assets/index-DqpywFns.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-CiUKyNAA.css">
+    <title>oasis-editor</title>
+    <script type="module" crossorigin src="/oasis-editor/assets/index-Df4mSO2I.js"></script>
+    <link rel="stylesheet" crossorigin href="/oasis-editor/assets/index-D2c-9tIo.css">
   </head>
   <body>
     <div class="oasis-editor-shell">
@@ -56,7 +56,7 @@
           <button id="oasis-editor-bold" title="Bold (Ctrl+B)" type="button"><strong>B</strong></button>
           <button id="oasis-editor-italic" title="Italic (Ctrl+I)" type="button"><em>I</em></button>
           <button id="oasis-editor-underline" title="Underline (Ctrl+U)" type="button"><u>U</u></button>
-          <button id="oasis-editor-text-color" title="Text color" type="button">A</button>
+          <div id="oasis-editor-color-picker-container"></div>
         </div>
 
         <div class="oasis-editor-toolbar-separator"></div>
@@ -65,10 +65,14 @@
           <button id="oasis-editor-align-left" title="Align left" type="button">≡</button>
           <button id="oasis-editor-align-center" title="Align center" type="button">≣</button>
           <button id="oasis-editor-align-right" title="Align right" type="button">≡</button>
+          <button id="oasis-editor-align-justify" title="Justify" type="button">▤</button>
+          <button id="oasis-editor-bullets" title="Bulleted list" type="button">⁝≡</button>
         </div>
 
-        <div class="oasis-editor-toolbar-group" style="margin-left: auto;">
-          <button id="oasis-editor-export" type="button">Export JSON</button>
+        <div class="oasis-editor-toolbar-group">
+          <button id="oasis-editor-insert-image" title="Insert Image" type="button">🖼️</button>
+          <input type="file" id="oasis-editor-image-input" accept="image/*" style="display: none;" />
+          <button id="oasis-editor-insert-table" title="Insert Table" type="button">田</button>
         </div>
       </div>
 

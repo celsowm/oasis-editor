@@ -199,6 +199,13 @@ textarea {
   pointer-events: auto;
 }
 
+.oasis-bullet {
+  user-select: none;
+  pointer-events: none;
+  color: #3c4043;
+  font-weight: bold;
+}
+
 .oasis-selection-layer {
   position: absolute;
   top: 0;

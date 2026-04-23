@@ -12,7 +12,7 @@ export function findBlockById(doc: DocumentModel, blockId: string): BlockNode | 
   return null;
 }
 
-function findBlockInList(blocks: BlockNode[], blockId: string): BlockNode | null {
+export function findBlockInList(blocks: BlockNode[], blockId: string): BlockNode | null {
   for (const block of blocks) {
     if (block.id === blockId) return block;
     if (isTableNode(block)) {

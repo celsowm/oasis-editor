@@ -102,9 +102,37 @@ export class PageLayer {
         fragmentEl.style.height = `${fragment.rect.height}px`;
         fragmentEl.style.textAlign = fragment.align;
 
-        // Render text using spans for rich text formatting
+        if (fragment.kind === "list-item") {
+          const indent = fragment.listIndentation ?? 25;
+          fragmentEl.style.paddingLeft = `${indent}px`;
+        }
+
+        // Clear before rendering content
         fragmentEl.innerHTML = "";
 
+        // Render bullet or number for list items
+        if (fragment.kind === "list-item" || fragment.kind === "ordered-list-item") {
+          const indent = fragment.listIndentation ?? 25;
+          const bullet = document.createElement("div");
+          bullet.className = "oasis-bullet";
+          
+          if (fragment.kind === "ordered-list-item" && fragment.listNumber !== undefined) {
+            bullet.textContent = `${fragment.listNumber}.`;
+          } else {
+            bullet.textContent = "•"; // Standard bullet
+          }
+
+          bullet.style.position = "absolute";
+          bullet.style.left = "0";
+          bullet.style.width = `${indent}px`;
+          bullet.style.height = `${fragment.lines[0]?.height || 20}px`;
+          bullet.style.display = "flex";
+          bullet.style.alignItems = "center";
+          bullet.style.justifyContent = "center";
+          fragmentEl.appendChild(bullet);
+        }
+
+        // Render text using spans for rich text formatting
         const displayRuns = fragment.runs?.length
           ? fragment.runs
           : [{ text: fragment.text, marks: fragment.marks ?? {} }];

@@ -6,6 +6,7 @@ import { isTextBlock, TextRun, BlockNode } from "../document/BlockTypes.js";
 import { areMarksEqual } from "../document/MarkUtils.js";
 import { LogicalPosition } from "../selection/SelectionTypes.js";
 import { createParagraph, createTable, createImage, createTableRow, createTableCell } from "../document/DocumentFactory.js";
+import { DEFAULT_LIST_INDENTATION } from "../composition/ParagraphComposer.js";
 
 export type OperationHandler<T extends EditorOperation = any> = (
   state: EditorState,
@@ -24,16 +25,48 @@ export function getHandler(type: OperationType): OperationHandler | undefined {
 
 // --- Internal Helpers ---
 
+function recalculateListSequences(blocks: BlockNode[]): BlockNode[] {
+    let currentSequenceIndex = 1;
+    let inSequence = false;
+
+    return blocks.map(block => {
+        if (block.kind === "ordered-list-item") {
+            const updated = { ...block, index: currentSequenceIndex++ };
+            inSequence = true;
+            return updated;
+        } else {
+            currentSequenceIndex = 1;
+            inSequence = false;
+            // Recursively handle nested blocks in tables if needed
+            if (block.kind === "table") {
+                const nextRows = block.rows.map(row => ({
+                    ...row,
+                    cells: row.cells.map(cell => ({
+                        ...cell,
+                        children: recalculateListSequences(cell.children)
+                    }))
+                }));
+                return { ...block, rows: nextRows };
+            }
+            return block;
+        }
+    });
+}
+
 function updateDocumentSections(state: EditorState, blockId: string, updater: (block: BlockNode) => BlockNode | BlockNode[] | null): EditorState {
-    const nextSections = state.document.sections.map(section => ({
-        ...section,
-        children: transformBlocks(section.children, (block) => {
+    const nextSections = state.document.sections.map(section => {
+        const transformed = transformBlocks(section.children, (block) => {
             if (block.id === blockId) {
                 return updater(block);
             }
             return block;
-        })
-    }));
+        });
+        
+        return {
+            ...section,
+            children: recalculateListSequences(transformed)
+        };
+    });
 
     return {
         ...state,
@@ -302,6 +335,22 @@ registerHandler(OperationType.INSERT_PARAGRAPH, (state, op) => {
     const { newBlockId, newRunId } = op.payload;
 
     let targetInlineId = "";
+    let shouldEndList = false;
+
+    // Check if we are on an empty list item to end the list
+    const currentBlock = findBlockById(state.document, blockId);
+    if (currentBlock && (currentBlock.kind === "list-item" || currentBlock.kind === "ordered-list-item")) {
+        const plainText = isTextBlock(currentBlock) ? currentBlock.children.map(r => r.text).join("") : "";
+        if (plainText.length === 0) {
+            shouldEndList = true;
+        }
+    }
+
+    if (shouldEndList) {
+        return updateDocumentSections(state, blockId, (block) => {
+            return { ...block, kind: "paragraph" } as any;
+        });
+    }
 
     const nextState = updateDocumentSections(state, blockId, (block) => {
         if (!isTextBlock(block)) return block;
@@ -367,6 +416,23 @@ registerHandler(OperationType.DELETE_TEXT, (state, op) => {
     }
 
     if (absoluteOffset === 0) {
+        const currentBlock = findBlockById(document, blockId);
+        if (currentBlock && isTextBlock(currentBlock)) {
+            // Case 1: list-item or ordered-list-item -> paragraph (keep indentation)
+            if (currentBlock.kind === "list-item" || currentBlock.kind === "ordered-list-item") {
+                return updateDocumentSections(state, blockId, (block) => {
+                    const indent = (block as any).indentation ?? (block.kind === "list-item" ? DEFAULT_LIST_INDENTATION : 30);
+                    return { ...block, kind: "paragraph", indentation: indent } as any;
+                });
+            }
+            // Case 2: indented paragraph -> normal paragraph
+            if (currentBlock.kind === "paragraph" && (currentBlock.indentation ?? 0) > 0) {
+                return updateDocumentSections(state, blockId, (block) => {
+                    return { ...block, indentation: 0 } as any;
+                });
+            }
+        }
+
         let mergedSelection: LogicalPosition | null = null;
         const nextSections = document.sections.map(section => {
             const res = tryMergeSiblings(section.children, blockId);
@@ -674,6 +740,36 @@ registerHandler(OperationType.TABLE_DELETE, (state, op) => {
         ...updateDocumentSections(state, tableId, () => null),
         selection: null
     };
+});
+
+registerHandler(OperationType.TOGGLE_UNORDERED_LIST, (state) => {
+    const { selection } = state;
+    if (!selection) return state;
+    const { blockId } = selection.anchor;
+
+    return updateDocumentSections(state, blockId, (block) => {
+        if (block.kind === "paragraph" || block.kind === "ordered-list-item") {
+            return { ...block, kind: "list-item" } as any;
+        } else if (block.kind === "list-item") {
+            return { ...block, kind: "paragraph" } as any;
+        }
+        return block;
+    });
+});
+
+registerHandler(OperationType.TOGGLE_ORDERED_LIST, (state) => {
+    const { selection } = state;
+    if (!selection) return state;
+    const { blockId } = selection.anchor;
+
+    return updateDocumentSections(state, blockId, (block) => {
+        if (block.kind === "paragraph" || block.kind === "list-item") {
+            return { ...block, kind: "ordered-list-item", index: 1 } as any;
+        } else if (block.kind === "ordered-list-item") {
+            return { ...block, kind: "paragraph" } as any;
+        }
+        return block;
+    });
 });
 
 registerHandler(OperationType.SET_SECTION_TEMPLATE, (state, op) => {

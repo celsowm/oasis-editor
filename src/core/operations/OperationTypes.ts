@@ -24,6 +24,8 @@ export enum OperationType {
   TABLE_DELETE_COLUMN = "TABLE_DELETE_COLUMN",
   TABLE_DELETE = "TABLE_DELETE",
   MOVE_BLOCK = "MOVE_BLOCK",
+  TOGGLE_UNORDERED_LIST = "TOGGLE_UNORDERED_LIST",
+  TOGGLE_ORDERED_LIST = "TOGGLE_ORDERED_LIST",
 }
 
 export interface TableRowColPayload {
@@ -188,7 +190,9 @@ export type EditorOperation =
   | Operation<OperationType.TABLE_ADD_COLUMN_RIGHT, TableRowColPayload>
   | Operation<OperationType.TABLE_DELETE_ROW, TableRowColPayload>
   | Operation<OperationType.TABLE_DELETE_COLUMN, TableRowColPayload>
-  | Operation<OperationType.TABLE_DELETE, TableDeletePayload>;
+  | Operation<OperationType.TABLE_DELETE, TableDeletePayload>
+  | Operation<OperationType.TOGGLE_UNORDERED_LIST, {}>
+  | Operation<OperationType.TOGGLE_ORDERED_LIST, {}>;
 
 /** @deprecated Use OperationType enum directly */
 export const OPERATION_TYPES = OperationType;

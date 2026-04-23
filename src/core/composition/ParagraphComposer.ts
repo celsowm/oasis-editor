@@ -1,4 +1,4 @@
-import { BlockNode, TextRun, isTextBlock } from "../document/BlockTypes.js";
+import { BlockNode, TextRun, isTextBlock, ListItemNode, OrderedListItemNode } from "../document/BlockTypes.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { LineInfo } from "../layout/LayoutFragment.js";
 import { breakTextIntoLines } from "./LineBreaker.js";
@@ -18,6 +18,8 @@ export interface ComposedParagraph {
   totalHeight: number;
   lines: LineInfo[];
   align: "left" | "center" | "right" | "justify";
+  listIndentation?: number;
+  listNumber?: number;
 }
 
 const getBlockTypography = (block: BlockNode): BlockTypography => {
@@ -32,6 +34,9 @@ const getBlockTypography = (block: BlockNode): BlockTypography => {
   return { fontFamily, fontSize, fontWeight };
 };
 
+export const DEFAULT_LIST_INDENTATION = 25;
+export const DEFAULT_ORDERED_LIST_INDENTATION = 30;
+
 export const composeParagraph = (
   block: BlockNode,
   maxWidth: number,
@@ -41,9 +46,18 @@ export const composeParagraph = (
   const plainText = children.map((child) => child.text).join("");
   const typography = getBlockTypography(block);
 
+  const isListItem = block.kind === "list-item";
+  const isOrderedListItem = block.kind === "ordered-list-item";
+  
+  const listIndentation = isTextBlock(block)
+    ? (block.indentation ?? (isListItem ? DEFAULT_LIST_INDENTATION : isOrderedListItem ? DEFAULT_ORDERED_LIST_INDENTATION : 0))
+    : 0;
+    
+  const adjustedMaxWidth = maxWidth - listIndentation;
+
   const broken = breakTextIntoLines(
     children,
-    maxWidth,
+    adjustedMaxWidth,
     measure,
     typography.fontFamily,
     typography.fontSize,
@@ -62,9 +76,9 @@ export const composeParagraph = (
   const lines: LineInfo[] = broken.map((line, index) => {
     let x = 0;
     if (align === "center") {
-      x = (maxWidth - line.width) / 2;
+      x += (adjustedMaxWidth - line.width) / 2;
     } else if (align === "right") {
-      x = maxWidth - line.width;
+      x += adjustedMaxWidth - line.width;
     }
 
     const lineInfo: LineInfo = {
@@ -90,5 +104,7 @@ export const composeParagraph = (
     totalHeight: broken.length * lineHeight,
     lines,
     align,
+    listIndentation: listIndentation > 0 ? listIndentation : undefined,
+    listNumber: isOrderedListItem ? (block as OrderedListItemNode).index : undefined,
   };
 };

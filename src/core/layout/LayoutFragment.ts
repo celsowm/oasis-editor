@@ -34,6 +34,8 @@ export interface LayoutFragment {
   runs: TextRun[];
   lines: LineInfo[];
   align: "left" | "center" | "right" | "justify";
+  listIndentation?: number;
+  listNumber?: number;
   // Image-specific fields (only populated when kind === "image")
   imageSrc?: string;
   imageAlt?: string;

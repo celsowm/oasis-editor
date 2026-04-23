@@ -49,6 +49,14 @@ export class OasisEditorDom {
     return this.requireElement("oasis-editor-align-justify");
   }
 
+  getBulletsButton(): HTMLElement {
+    return this.requireElement("oasis-editor-bullets");
+  }
+
+  getOrderedListButton(): HTMLElement {
+    return this.requireElement("oasis-editor-ordered-list");
+  }
+
   getUndoButton(): HTMLElement {
     return this.requireElement("oasis-editor-undo");
   }

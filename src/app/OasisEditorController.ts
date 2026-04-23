@@ -76,6 +76,8 @@ export class OasisEditorController {
       onDblClick: (e) => this.handleDblClick(e),
       onTripleClick: (e) => this.handleTripleClick(e),
       onAlign: (align) => this.setAlign(align),
+      onToggleBullets: () => this.toggleBullets(),
+      onToggleNumberedList: () => this.toggleNumberedList(),
       onInsertImage: (src, nw, nh, dw) => this.insertImage(src, nw, nh, dw),
       onResizeImage: (blockId, w, h) => this.resizeImage(blockId, w, h),
       onSelectImage: (blockId) => this.selectImage(blockId),
@@ -250,6 +252,14 @@ export class OasisEditorController {
     this.runtime.dispatch(Operations.setAlignment(align));
   }
 
+  toggleBullets(): void {
+    this.runtime.dispatch(Operations.toggleUnorderedList());
+  }
+
+  toggleNumberedList(): void {
+    this.runtime.dispatch(Operations.toggleOrderedList());
+  }
+
   calculatePositionFromEvent(event: MouseEvent): LogicalPosition | null {
     const element = document.elementFromPoint(event.clientX, event.clientY);
     const target = element
@@ -259,14 +269,13 @@ export class OasisEditorController {
     if (!target) return null;
 
     const fragmentId = target.dataset["fragmentId"] ?? "";
+    const blockId = target.dataset["blockId"] ?? "";
     const fragmentText = target.textContent ?? "";
     const rect = target.getBoundingClientRect();
 
     const clickXInFragment = event.clientX - rect.left;
     const clickYInFragment = event.clientY - rect.top;
 
-    const parts = fragmentId.split(":");
-    const blockId = parts[1] + ":" + parts[2];
     const sectionId = "section:0";
 
     const layoutFragments =
@@ -274,7 +283,9 @@ export class OasisEditorController {
     const layoutFragment =
       layoutFragments.find((f) => f.id === fragmentId) ?? layoutFragments[0];
 
-    let targetLine: LineInfo | null = layoutFragment?.lines
+    if (!layoutFragment) return null;
+
+    let targetLine: LineInfo | null = layoutFragment.lines
       ? layoutFragment.lines[0]
       : null;
     if (layoutFragment?.lines) {
@@ -555,34 +566,51 @@ export class OasisEditorController {
 
       // Create Ghost element
       if (this.latestLayout) {
-          // Find first fragment of the table to get dimensions
-          const fragments = Object.values(this.latestLayout.fragmentsByBlockId)
-            .flat()
-            .filter(f => f.blockId === tableId);
-          
-          if (fragments.length > 0) {
-              // Calculate total bounding box of the table on its first page
-              const firstPageId = fragments[0].pageId;
-              const tableFragmentsOnPage = fragments.filter(f => f.pageId === firstPageId);
-              
-              let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-              tableFragmentsOnPage.forEach(f => {
-                  minX = Math.min(minX, f.rect.x);
-                  minY = Math.min(minY, f.rect.y);
-                  maxX = Math.max(maxX, f.rect.x + f.rect.width);
-                  maxY = Math.max(maxY, f.rect.y + f.rect.height);
+          // Find the table block to get its cells' IDs
+          const state = this.runtime.getState();
+          let tableBlock: any = null;
+          for (const section of state.document.sections) {
+              const found = section.children.find(b => b.id === tableId);
+              if (found) {
+                  tableBlock = found;
+                  break;
+              }
+          }
+
+          if (tableBlock && tableBlock.kind === "table") {
+              const cellIds = new Set<string>();
+              tableBlock.rows.forEach((row: any) => {
+                  row.cells.forEach((cell: any) => cellIds.add(cell.id));
               });
 
-              this.tableGhost = document.createElement("div");
-              this.tableGhost.className = "oasis-table-ghost";
-              this.tableGhost.style.width = `${maxX - minX}px`;
-              this.tableGhost.style.height = `${maxY - minY}px`;
-              this.tableGhost.style.left = `${event.clientX}px`;
-              this.tableGhost.style.top = `${event.clientY}px`;
-              // Offset to center the ghost under the mouse a bit
-              this.tableGhost.style.transform = "translate(-20px, -20px)";
+              // Find all fragments that belong to these cells
+              const fragments = Object.values(this.latestLayout.fragmentsByBlockId)
+                .flat()
+                .filter(f => cellIds.has(f.blockId));
               
-              document.body.appendChild(this.tableGhost);
+              if (fragments.length > 0) {
+                  // Calculate total bounding box of the table on its first page
+                  const firstPageId = fragments[0].pageId;
+                  const tableFragmentsOnPage = fragments.filter(f => f.pageId === firstPageId);
+                  
+                  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                  tableFragmentsOnPage.forEach(f => {
+                      minX = Math.min(minX, f.rect.x);
+                      minY = Math.min(minY, f.rect.y);
+                      maxX = Math.max(maxX, f.rect.x + f.rect.width);
+                      maxY = Math.max(maxY, f.rect.y + f.rect.height);
+                  });
+
+                  this.tableGhost = document.createElement("div");
+                  this.tableGhost.className = "oasis-table-ghost";
+                  this.tableGhost.style.width = `${maxX - minX}px`;
+                  this.tableGhost.style.height = `${maxY - minY}px`;
+                  this.tableGhost.style.left = `${event.clientX}px`;
+                  this.tableGhost.style.top = `${event.clientY}px`;
+                  this.tableGhost.style.transform = "translate(-20px, -20px)";
+                  
+                  document.body.appendChild(this.tableGhost);
+              }
           }
       }
   }

@@ -130,4 +130,8 @@ export const Operations = {
     type: OperationType.MOVE_BLOCK,
     payload: { blockId, targetReferenceBlockId, isBefore },
   }),
+  toggleUnorderedList: (): EditorOperation => ({
+    type: OperationType.TOGGLE_UNORDERED_LIST,
+    payload: {},
+  }),
 };

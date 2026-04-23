@@ -27,6 +27,8 @@ export interface ViewElements {
   alignCenter: HTMLElement;
   alignRight: HTMLElement;
   alignJustify: HTMLElement;
+  bulletsButton: HTMLElement;
+  orderedListButton: HTMLElement;
   colorPickerContainer: HTMLElement;
   insertImageButton: HTMLElement;
   imageFileInput: HTMLInputElement;
@@ -39,6 +41,8 @@ export interface SelectionState {
   underline: boolean;
   color: string;
   align: "left" | "center" | "right" | "justify";
+  isListItem: boolean;
+  isOrderedListItem: boolean;
 }
 
 export interface ViewEventBindings {
@@ -50,6 +54,8 @@ export interface ViewEventBindings {
   onRedo: () => void;
   onTemplateChange: (templateId: string) => void;
   onAlign: (align: "left" | "center" | "right" | "justify") => void;
+  onToggleBullets: () => void;
+  onToggleNumberedList: () => void;
   onTextInput: (text: string) => void;
   onDelete: () => void;
   onEnter: (isShift: boolean) => void;
@@ -117,6 +123,8 @@ export class OasisEditorView {
       alignCenter: this.dom.getAlignCenterButton(),
       alignRight: this.dom.getAlignRightButton(),
       alignJustify: this.dom.getAlignJustifyButton(),
+      bulletsButton: this.dom.getBulletsButton(),
+      orderedListButton: this.dom.getOrderedListButton(),
       colorPickerContainer: this.dom.getColorPickerContainer(),
       insertImageButton: this.dom.getInsertImageButton(),
       imageFileInput: this.dom.getImageFileInput(),
@@ -190,6 +198,12 @@ export class OasisEditorView {
     );
     this.elements.alignJustify.addEventListener("click", () =>
       events.onAlign("justify"),
+    );
+    this.elements.bulletsButton.addEventListener("click", () =>
+      events.onToggleBullets(),
+    );
+    this.elements.orderedListButton.addEventListener("click", () =>
+      events.onToggleNumberedList(),
     );
 
     // Hidden input for keyboard handling
@@ -322,6 +336,11 @@ export class OasisEditorView {
     this.updateToolbar(viewModel.selectionState);
     this.updateImageOverlay(viewModel);
     this.updateTableToolbar(viewModel);
+
+    // Ensure hiddenInput is always focused after render to maintain keyboard input
+    if (viewModel.selection) {
+      this.elements.hiddenInput.focus({ preventScroll: true });
+    }
   }
 
   private updateTableToolbar(viewModel: EditorViewModel): void {
@@ -459,6 +478,14 @@ export class OasisEditorView {
     this.elements.alignJustify.classList.toggle(
       "active",
       selectionState.align === "justify",
+    );
+    this.elements.bulletsButton.classList.toggle(
+      "active",
+      selectionState.isListItem,
+    );
+    this.elements.orderedListButton.classList.toggle(
+      "active",
+      selectionState.isOrderedListItem,
     );
 
     if (this.colorPicker) {
