@@ -98,7 +98,7 @@ export class TableFloatingToolbar {
       }
     });
 
-    createIcons({ icons, nameAttr: 'data-lucide', root: toolbar });
+    createIcons({ icons, nameAttr: "data-lucide", root: toolbar });
 
     return toolbar;
   }

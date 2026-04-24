@@ -61,6 +61,13 @@ export class DocumentRuntime {
     return () => this.listeners.delete(listener);
   }
 
+  setState(state: EditorState): void {
+    this.history.push(this.state);
+    this.future = [];
+    this.state = state;
+    this.emit();
+  }
+
   dispatch(operation: EditorOperation): void {
     console.log("RUNTIME: dispatch chamado com", operation.type);
     this.history.push(this.state);
