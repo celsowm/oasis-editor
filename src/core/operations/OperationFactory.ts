@@ -198,4 +198,8 @@ export const Operations = {
     type: OperationType.INCREASE_INDENT,
     payload: {},
   }),
+  setIndentation: (indentation: number): EditorOperation => ({
+    type: OperationType.SET_INDENTATION,
+    payload: { indentation },
+  }),
 };
