@@ -1,4 +1,5 @@
 import { LayoutFragment } from "../../core/layout/LayoutFragment.js";
+import { createIcons, icons } from "lucide";
 
 export interface TableToolbarEvents {
   onAddRowAbove: (tableId: string) => void;
@@ -31,43 +32,43 @@ export class TableFloatingToolbar {
     const groups = [
       [
         {
-          icon: "↑+",
+          icon: '<i data-lucide="arrow-up-to-line"></i>',
           label: "Add Row Above",
           action: () => this.events.onAddRowAbove(this.currentTableId!),
         },
         {
-          icon: "↓+",
+          icon: '<i data-lucide="arrow-down-to-line"></i>',
           label: "Add Row Below",
           action: () => this.events.onAddRowBelow(this.currentTableId!),
         },
       ],
       [
         {
-          icon: "←+",
+          icon: '<i data-lucide="arrow-left-to-line"></i>',
           label: "Add Column Left",
           action: () => this.events.onAddColumnLeft(this.currentTableId!),
         },
         {
-          icon: "+→",
+          icon: '<i data-lucide="arrow-right-to-line"></i>',
           label: "Add Column Right",
           action: () => this.events.onAddColumnRight(this.currentTableId!),
         },
       ],
       [
         {
-          icon: "Row-",
+          icon: '<i data-lucide="rows-3"></i>',
           label: "Delete Row",
           action: () => this.events.onDeleteRow(this.currentTableId!),
         },
         {
-          icon: "Col-",
+          icon: '<i data-lucide="columns-3"></i>',
           label: "Delete Column",
           action: () => this.events.onDeleteColumn(this.currentTableId!),
         },
       ],
       [
         {
-          icon: "🗑",
+          icon: '<i data-lucide="trash-2"></i>',
           label: "Delete Table",
           action: () => this.events.onDeleteTable(this.currentTableId!),
         },
@@ -81,7 +82,7 @@ export class TableFloatingToolbar {
         const btn = document.createElement("button");
         btn.className = "oasis-toolbar-button";
         btn.title = item.label;
-        btn.innerHTML = `<span>${item.icon}</span>`;
+        btn.innerHTML = item.icon;
         btn.onmousedown = (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -96,6 +97,8 @@ export class TableFloatingToolbar {
         toolbar.appendChild(sep);
       }
     });
+
+    createIcons({ icons, nameAttr: 'data-lucide', root: toolbar });
 
     return toolbar;
   }

@@ -1,4 +1,5 @@
 import { THEME_COLORS, STANDARD_COLORS } from "./ColorPalette.js";
+import { createIcons, icons } from "lucide";
 
 export interface ColorPickerListener {
   onColorSelected: (color: string) => void;
@@ -45,7 +46,7 @@ export class ColorPicker {
 
     const icon = document.createElement("span");
     icon.className = "oasis-color-picker-icon";
-    icon.textContent = "A";
+    icon.innerHTML = '<i data-lucide="baseline"></i>';
     leftPart.appendChild(icon);
 
     this.indicator = document.createElement("div");
@@ -72,6 +73,8 @@ export class ColorPicker {
     this.dropdown.className = "oasis-color-picker-dropdown";
     this.renderDropdownContent();
     this.container.appendChild(this.dropdown);
+
+    createIcons({ icons, nameAttr: 'data-lucide', root: this.container });
   }
 
   private renderDropdownContent(): void {
