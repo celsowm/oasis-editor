@@ -21,9 +21,11 @@ export interface SelectionState {
   align: "left" | "center" | "right" | "justify";
   isListItem: boolean;
   isOrderedListItem: boolean;
+  indentation: number;
 }
 
 export interface EditorViewModel {
+  pageTemplate: PageTemplate;
   templateId: string;
   metrics: {
     revision: string;
@@ -72,6 +74,7 @@ export class OasisEditorPresenter {
       align: "left",
       isListItem: false,
       isOrderedListItem: false,
+      indentation: 0,
     };
     let activeTableId: string | null = null;
     let activeTableFirstCellId: string | null = null;
@@ -102,6 +105,7 @@ export class OasisEditorPresenter {
           align: targetBlock.align || "left",
           isListItem: targetBlock.kind === "list-item",
           isOrderedListItem: targetBlock.kind === "ordered-list-item",
+          indentation: ("indentation" in targetBlock && targetBlock.indentation) ? (targetBlock.indentation as number) : 0,
         };
       } else if (targetBlock && targetBlock.kind === "image") {
         selectionState = {
@@ -121,6 +125,7 @@ export class OasisEditorPresenter {
     }
 
     return {
+      pageTemplate: this.pageTemplates.find(t => t.id === firstSection.pageTemplateId) || this.pageTemplates[0],
       templateId: firstSection.pageTemplateId,
       metrics: {
         revision: String(state.document.revision),

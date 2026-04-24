@@ -13,6 +13,10 @@ export class OasisEditorDom {
     return this.requireElement("oasis-editor-pages");
   }
 
+  getRulerContainer(): HTMLElement {
+    return this.requireElement("oasis-editor-ruler");
+  }
+
   getTemplateSelect(): HTMLSelectElement {
     return this.requireElement("oasis-editor-template") as HTMLSelectElement;
   }

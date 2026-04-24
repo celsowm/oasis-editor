@@ -29,6 +29,7 @@ export enum OperationType {
   TOGGLE_ORDERED_LIST = "TOGGLE_ORDERED_LIST",
   DECREASE_INDENT = "DECREASE_INDENT",
   INCREASE_INDENT = "INCREASE_INDENT",
+  SET_INDENTATION = "SET_INDENTATION",
 }
 
 export interface TableRowColPayload {
@@ -63,6 +64,9 @@ export interface InsertTextPayload {
   newRunIds?: string[]; // For cases where we split runs
 }
 export interface DeleteTextPayload {}
+export interface SetIndentationPayload {
+  indentation: number;
+}
 export interface InsertParagraphPayload {
   newBlockId?: string;
   newRunId?: string;
@@ -203,7 +207,8 @@ export type EditorOperation =
   | Operation<OperationType.TOGGLE_UNORDERED_LIST, {}>
   | Operation<OperationType.TOGGLE_ORDERED_LIST, {}>
   | Operation<OperationType.DECREASE_INDENT, {}>
-  | Operation<OperationType.INCREASE_INDENT, {}>;
+  | Operation<OperationType.INCREASE_INDENT, {}>
+  | Operation<OperationType.SET_INDENTATION, SetIndentationPayload>;
 
 /** @deprecated Use OperationType enum directly */
 export const OPERATION_TYPES = OperationType;

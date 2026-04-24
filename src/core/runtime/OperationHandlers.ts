@@ -1370,3 +1370,91 @@ registerHandler(OperationType.SET_SECTION_TEMPLATE, (state, op) => {
     },
   };
 });
+
+registerHandler(OperationType.SET_INDENTATION, (state, op) => {
+  const { selection } = state;
+  if (!selection) return state;
+
+  const payload = op.payload as { indentation: number };
+  const newIndent = payload.indentation;
+
+  const { document: doc } = state;
+  const allBlocks: import("../document/BlockTypes.js").BlockNode[] = [];
+  for (const section of doc.sections) {
+    const traverse = (blocks: import("../document/BlockTypes.js").BlockNode[]) => {
+      for (const b of blocks) {
+        allBlocks.push(b);
+        if (b.kind === "table") {
+          for (const row of b.rows) {
+            for (const cell of row.cells) {
+              traverse(cell.children);
+            }
+          }
+        }
+      }
+    };
+    traverse(section.children);
+  }
+
+  let startBlockIdx = allBlocks.findIndex(
+    (b) => b.id === selection.anchor.blockId,
+  );
+  let endBlockIdx = allBlocks.findIndex(
+    (b) => b.id === selection.focus.blockId,
+  );
+
+  if (startBlockIdx === -1 || endBlockIdx === -1) return state;
+
+  if (startBlockIdx > endBlockIdx) {
+    [startBlockIdx, endBlockIdx] = [endBlockIdx, startBlockIdx];
+  }
+
+  const targetBlockIds = new Set(
+    allBlocks.slice(startBlockIdx, endBlockIdx + 1).map((b) => b.id),
+  );
+
+  const updateBlocks = (
+    blocks: import("../document/BlockTypes.js").BlockNode[],
+  ): import("../document/BlockTypes.js").BlockNode[] => {
+    return blocks.map((block) => {
+      if (block.kind === "table") {
+        return {
+          ...block,
+          rows: block.rows.map((row) => ({
+            ...row,
+            cells: row.cells.map((cell) => ({
+              ...cell,
+              children: updateBlocks(cell.children),
+            })),
+          })),
+        };
+      }
+
+      if (targetBlockIds.has(block.id)) {
+        if (
+          !("indentation" in block) &&
+          block.kind !== "paragraph" &&
+          block.kind !== "heading" &&
+          block.kind !== "list-item" &&
+          block.kind !== "ordered-list-item"
+        ) {
+          return block; // Cannot indent this block type
+        }
+
+        return { ...block, indentation: newIndent } as any;
+      }
+      return block;
+    });
+  };
+
+  return {
+    ...state,
+    document: {
+      ...doc,
+      sections: doc.sections.map((sec) => ({
+        ...sec,
+        children: updateBlocks(sec.children),
+      })),
+    },
+  };
+});
