@@ -1381,7 +1381,9 @@ registerHandler(OperationType.SET_INDENTATION, (state, op) => {
   const { document: doc } = state;
   const allBlocks: import("../document/BlockTypes.js").BlockNode[] = [];
   for (const section of doc.sections) {
-    const traverse = (blocks: import("../document/BlockTypes.js").BlockNode[]) => {
+    const traverse = (
+      blocks: import("../document/BlockTypes.js").BlockNode[],
+    ) => {
       for (const b of blocks) {
         allBlocks.push(b);
         if (b.kind === "table") {

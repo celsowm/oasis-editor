@@ -48,6 +48,8 @@ export interface ViewElements {
   insertImageButton: HTMLElement;
   imageFileInput: HTMLInputElement;
   insertTableButton: HTMLElement;
+  menuFile: HTMLElement;
+  importDocxInput: HTMLInputElement;
 }
 
 export interface SelectionState {
@@ -90,6 +92,7 @@ export interface ViewEventBindings {
     naturalHeight: number,
     displayWidth: number,
   ) => void;
+  onImportDocx: (file: File) => void;
   onResizeImage: (blockId: string, width: number, height: number) => void;
   onSelectImage: (blockId: string) => void;
   onInsertTable: (rows: number, cols: number) => void;
@@ -168,6 +171,8 @@ export class OasisEditorView {
       insertImageButton: this.dom.getInsertImageButton(),
       imageFileInput: this.dom.getImageFileInput(),
       insertTableButton: this.dom.getInsertTableButton(),
+      menuFile: this.dom.getMenuFileElement(),
+      importDocxInput: this.dom.getImportDocxInput(),
     };
 
     this.pageLayer = new PageLayer(this.elements.pagesContainer);
@@ -389,6 +394,18 @@ export class OasisEditorView {
         img.src = dataUrl;
       };
       reader.readAsDataURL(file);
+    });
+
+    // ── Import DOCX ──
+    this.elements.menuFile.addEventListener("click", () => {
+      this.elements.importDocxInput.value = "";
+      this.elements.importDocxInput.click();
+    });
+
+    this.elements.importDocxInput.addEventListener("change", () => {
+      const file = this.elements.importDocxInput.files?.[0];
+      if (!file) return;
+      events.onImportDocx(file);
     });
 
     // ── Image select + resize overlay ──

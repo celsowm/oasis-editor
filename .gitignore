@@ -57,4 +57,5 @@ rust-core/pkg/
 # Misc
 *.pid
 *.seed
-*.rdb
+*.rdbvenv/
+venv/

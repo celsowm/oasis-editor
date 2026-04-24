@@ -105,7 +105,10 @@ export class OasisEditorPresenter {
           align: targetBlock.align || "left",
           isListItem: targetBlock.kind === "list-item",
           isOrderedListItem: targetBlock.kind === "ordered-list-item",
-          indentation: ("indentation" in targetBlock && targetBlock.indentation) ? (targetBlock.indentation as number) : 0,
+          indentation:
+            "indentation" in targetBlock && targetBlock.indentation
+              ? (targetBlock.indentation as number)
+              : 0,
         };
       } else if (targetBlock && targetBlock.kind === "image") {
         selectionState = {
@@ -125,7 +128,9 @@ export class OasisEditorPresenter {
     }
 
     return {
-      pageTemplate: this.pageTemplates.find(t => t.id === firstSection.pageTemplateId) || this.pageTemplates[0],
+      pageTemplate:
+        this.pageTemplates.find((t) => t.id === firstSection.pageTemplateId) ||
+        this.pageTemplates[0],
       templateId: firstSection.pageTemplateId,
       metrics: {
         revision: String(state.document.revision),

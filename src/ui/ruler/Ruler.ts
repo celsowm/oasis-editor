@@ -35,8 +35,8 @@ export class Ruler {
   update(template: PageTemplate, currentIndent: number = 0) {
     this.currentIndentation = currentIndent;
     if (this.template?.id === template.id) {
-       this.render(); // force render in case margins changed or something else
-       return;
+      this.render(); // force render in case margins changed or something else
+      return;
     }
     this.template = template;
     this.render();
@@ -71,7 +71,9 @@ export class Ruler {
 
     // 1 inch = 96 px
     const pxPerInch = 96;
-    const numTicks = Math.floor((pageWidth - margins.left - margins.right) / (pxPerInch / 8)); // 1/8 inch ticks
+    const numTicks = Math.floor(
+      (pageWidth - margins.left - margins.right) / (pxPerInch / 8),
+    ); // 1/8 inch ticks
 
     for (let i = 0; i <= numTicks; i++) {
       const tick = document.createElement("div");
@@ -100,71 +102,78 @@ export class Ruler {
     leftIndentMarker.className = "oasis-ruler-marker oasis-ruler-left-indent";
     leftIndentMarker.style.left = `${leftIndentBase}px`;
     // The visual rectangle of left indent
-    leftIndentMarker.innerHTML = '<svg width="11" height="5" viewBox="0 0 11 5"><rect x="0" y="0" width="11" height="5" fill="#f0f0f0" stroke="#888" stroke-width="1"/></svg>';
+    leftIndentMarker.innerHTML =
+      '<svg width="11" height="5" viewBox="0 0 11 5"><rect x="0" y="0" width="11" height="5" fill="#f0f0f0" stroke="#888" stroke-width="1"/></svg>';
     this.rulerEl.appendChild(leftIndentMarker);
 
     // Hanging Indent Marker (Upward-pointing triangle)
     const hangingIndentMarker = document.createElement("div");
-    hangingIndentMarker.className = "oasis-ruler-marker oasis-ruler-hanging-indent";
+    hangingIndentMarker.className =
+      "oasis-ruler-marker oasis-ruler-hanging-indent";
     hangingIndentMarker.style.left = `${leftIndentBase}px`;
-    hangingIndentMarker.innerHTML = '<svg width="11" height="9" viewBox="0 0 11 9"><path d="M5.5,0 L11,4 L11,9 L0,9 L0,4 Z" fill="#f0f0f0" stroke="#888" stroke-width="1"/></svg>';
+    hangingIndentMarker.innerHTML =
+      '<svg width="11" height="9" viewBox="0 0 11 9"><path d="M5.5,0 L11,4 L11,9 L0,9 L0,4 Z" fill="#f0f0f0" stroke="#888" stroke-width="1"/></svg>';
     this.rulerEl.appendChild(hangingIndentMarker);
 
     // First Line Indent Marker (Downward-pointing triangle)
     const firstLineMarker = document.createElement("div");
     firstLineMarker.className = "oasis-ruler-marker oasis-ruler-first-line";
     firstLineMarker.style.left = `${leftIndentBase}px`;
-    firstLineMarker.innerHTML = '<svg width="11" height="9" viewBox="0 0 11 9"><path d="M0,0 L11,0 L11,5 L5.5,9 L0,5 Z" fill="#f0f0f0" stroke="#888" stroke-width="1"/></svg>';
+    firstLineMarker.innerHTML =
+      '<svg width="11" height="9" viewBox="0 0 11 9"><path d="M0,0 L11,0 L11,5 L5.5,9 L0,5 Z" fill="#f0f0f0" stroke="#888" stroke-width="1"/></svg>';
     this.rulerEl.appendChild(firstLineMarker);
-
 
     // Right Indent Marker (Upward-pointing triangle on the right margin)
     const rightIndentMarker = document.createElement("div");
     rightIndentMarker.className = "oasis-ruler-marker oasis-ruler-right-indent";
     rightIndentMarker.style.left = `${pageWidth - margins.right}px`;
-    rightIndentMarker.innerHTML = '<svg width="11" height="9" viewBox="0 0 11 9"><path d="M5.5,0 L11,4 L11,9 L0,9 L0,4 Z" fill="#f0f0f0" stroke="#888" stroke-width="1"/></svg>';
+    rightIndentMarker.innerHTML =
+      '<svg width="11" height="9" viewBox="0 0 11 9"><path d="M5.5,0 L11,4 L11,9 L0,9 L0,4 Z" fill="#f0f0f0" stroke="#888" stroke-width="1"/></svg>';
     this.rulerEl.appendChild(rightIndentMarker);
 
     // Add interaction for left indent (moves all left markers)
     this.setupDraggable(leftIndentMarker, (newLeft) => {
-       const relativeIndent = newLeft - margins.left;
-       // Snap to 1/8 inch?
-       // Let's just do smooth for now but apply limits
-       const newIndent = Math.max(0, relativeIndent);
-       this.setIndentation(newIndent);
-       if (this.onIndentationChangeCallback) {
-           this.onIndentationChangeCallback(newIndent);
-       }
+      const relativeIndent = newLeft - margins.left;
+      // Snap to 1/8 inch?
+      // Let's just do smooth for now but apply limits
+      const newIndent = Math.max(0, relativeIndent);
+      this.setIndentation(newIndent);
+      if (this.onIndentationChangeCallback) {
+        this.onIndentationChangeCallback(newIndent);
+      }
     });
   }
 
-  private setupDraggable(element: HTMLElement, onDrag: (newLeft: number) => void) {
-      let isDragging = false;
-      let startX = 0;
-      let initialLeft = 0;
+  private setupDraggable(
+    element: HTMLElement,
+    onDrag: (newLeft: number) => void,
+  ) {
+    let isDragging = false;
+    let startX = 0;
+    let initialLeft = 0;
 
-      const onMouseDown = (e: MouseEvent) => {
-         isDragging = true;
-         startX = e.clientX;
-         initialLeft = parseFloat(element.style.left);
-         e.preventDefault(); // prevent text selection
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      startX = e.clientX;
+      initialLeft = parseFloat(element.style.left);
+      e.preventDefault(); // prevent text selection
 
-         document.addEventListener("mousemove", onMouseMove);
-         document.addEventListener("mouseup", onMouseUp);
-      };
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    };
 
-      const onMouseMove = (e: MouseEvent) => {
-         if (!isDragging) return;
-         const deltaX = e.clientX - startX;
-         onDrag(initialLeft + deltaX);
-      };
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const deltaX = e.clientX - startX;
+      onDrag(initialLeft + deltaX);
+    };
 
-      const onMouseUp = () => {
-         isDragging = false;
-         document.removeEventListener("mousemove", onMouseMove);
-         document.removeEventListener("mouseup", onMouseUp);
-      };
+    const onMouseUp = () => {
+      isDragging = false;
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
 
-      element.addEventListener("mousedown", onMouseDown);
+    element.addEventListener("mousedown", onMouseDown);
   }
 }

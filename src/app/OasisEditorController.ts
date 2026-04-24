@@ -10,6 +10,7 @@ import { LineInfo } from "../core/layout/LayoutFragment.js";
 import { PositionCalculator } from "./services/PositionCalculator.js";
 import { isTextBlock } from "../core/document/BlockTypes.js";
 import { TextMeasurementService } from "./services/TextMeasurementService.js";
+import { DocxImporter } from "../engine/import/DocxImporter.js";
 
 export interface ControllerDeps {
   runtime: DocumentRuntime;
@@ -90,6 +91,7 @@ export class OasisEditorController {
       onDecreaseIndent: () => this.decreaseIndent(),
       onIncreaseIndent: () => this.increaseIndent(),
       onInsertImage: (src, nw, nh, dw) => this.insertImage(src, nw, nh, dw),
+      onImportDocx: (file) => this.importDocx(file),
       onResizeImage: (blockId, w, h) => this.resizeImage(blockId, w, h),
       onSelectImage: (blockId) => this.selectImage(blockId),
       onInsertTable: (rows, cols) => this.insertTable(rows, cols),
@@ -171,6 +173,41 @@ export class OasisEditorController {
 
   setColor(color: string): void {
     this.runtime.dispatch(Operations.setMark("color", color));
+  }
+
+  async importDocx(file: File): Promise<void> {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const importer = new DocxImporter();
+      const docModel = await importer.importFromBuffer(arrayBuffer);
+
+      const firstSection = docModel.sections[0];
+      const firstBlock = firstSection?.children[0];
+      const firstInlineId =
+        firstBlock && isTextBlock(firstBlock) ? firstBlock.children[0]?.id : "";
+
+      this.runtime.setState({
+        document: docModel,
+        selection: firstBlock
+          ? {
+              anchor: {
+                sectionId: firstSection.id,
+                blockId: firstBlock.id,
+                inlineId: firstInlineId,
+                offset: 0,
+              },
+              focus: {
+                sectionId: firstSection.id,
+                blockId: firstBlock.id,
+                inlineId: firstInlineId,
+                offset: 0,
+              },
+            }
+          : null,
+      });
+    } catch (e) {
+      console.error("Failed to import DOCX:", e);
+    }
   }
 
   insertImage(

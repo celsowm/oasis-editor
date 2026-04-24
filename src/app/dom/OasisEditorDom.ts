@@ -93,6 +93,16 @@ export class OasisEditorDom {
     return this.requireElement("oasis-editor-image-input") as HTMLInputElement;
   }
 
+  getMenuFileElement(): HTMLElement {
+    return this.requireElement("oasis-editor-menu-file");
+  }
+
+  getImportDocxInput(): HTMLInputElement {
+    return this.requireElement(
+      "oasis-editor-import-docx-input",
+    ) as HTMLInputElement;
+  }
+
   getInsertTableButton(): HTMLElement {
     return this.requireElement("oasis-editor-insert-table");
   }

@@ -74,7 +74,7 @@ export class ColorPicker {
     this.renderDropdownContent();
     this.container.appendChild(this.dropdown);
 
-    createIcons({ icons, nameAttr: 'data-lucide', root: this.container });
+    createIcons({ icons, nameAttr: "data-lucide", root: this.container });
   }
 
   private renderDropdownContent(): void {
