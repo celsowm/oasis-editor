@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>oasis-editor</title>
-    <script type="module" crossorigin src="/oasis-editor/assets/index-DyHjULnI.js"></script>
-    <link rel="stylesheet" crossorigin href="/oasis-editor/assets/index-DalMdgNI.css">
+    <script type="module" crossorigin src="/oasis-editor/assets/index-D9zQPGIe.js"></script>
+    <link rel="stylesheet" crossorigin href="/oasis-editor/assets/index-CP28TIYN.css">
   </head>
   <body>
     <div class="oasis-editor-shell">
@@ -15,15 +15,15 @@
           <div class="oasis-editor-title-container">
             <input type="text" class="oasis-editor-document-title" value="Untitled document" />
             <div class="oasis-editor-menu-bar">
-              <span id="oasis-editor-menu-file" style="cursor: pointer;">File</span>
+              <span id="oasis-editor-menu-file">File</span>
               <input type="file" id="oasis-editor-import-docx-input" accept=".docx" style="display: none;" />
-              <span>Edit</span>
-              <span>View</span>
-              <span>Insert</span>
-              <span>Format</span>
-              <span>Tools</span>
-              <span>Extensions</span>
-              <span>Help</span>
+              <span id="oasis-editor-menu-edit">Edit</span>
+              <span id="oasis-editor-menu-view">View</span>
+              <span id="oasis-editor-menu-insert">Insert</span>
+              <span id="oasis-editor-menu-format">Format</span>
+              <span id="oasis-editor-menu-tools">Tools</span>
+              <span id="oasis-editor-menu-extensions">Extensions</span>
+              <span id="oasis-editor-menu-help">Help</span>
             </div>
           </div>
         </div>
@@ -89,11 +89,11 @@
       <main id="oasis-editor-app" class="oasis-editor-main">
         <div id="oasis-editor-ruler"></div>
         <section id="oasis-editor-pages" class="oasis-editor-pages"></section>
-
-        <div id="oasis-editor-input-container" style="position: absolute; left: -1000px; top: -1000px;">
-          <textarea id="oasis-editor-input"></textarea>
-        </div>
       </main>
+
+      <div id="oasis-editor-input-container" style="position: fixed; left: -1000px; top: -1000px; width: 1px; height: 1px; overflow: hidden;">
+        <textarea id="oasis-editor-input"></textarea>
+      </div>
 
       <footer class="oasis-editor-footer-status">
         <span id="oasis-editor-status">Ready</span>
