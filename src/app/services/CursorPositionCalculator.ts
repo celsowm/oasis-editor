@@ -4,18 +4,20 @@ import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { TextMeasurementService } from "./TextMeasurementService.js";
 import { isTextBlock, BlockNode } from "../../core/document/BlockTypes.js";
 import { getAllBlocks } from "../../core/document/BlockUtils.js";
+import { DomHitTester } from "./DomHitTester.js";
 
 export class CursorPositionCalculator {
   constructor(
     private measurementService: TextMeasurementService,
     private getLatestLayout: () => LayoutState | null,
     private getDocumentBlocks: () => BlockNode[],
+    private domHitTester: DomHitTester,
   ) {}
 
   calculateFromMouseEvent(event: MouseEvent): LogicalPosition | null {
-    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const element = this.domHitTester.elementFromPoint(event.clientX, event.clientY);
     const target = element
-      ? (element.closest(".oasis-fragment") as HTMLElement | null)
+      ? (this.domHitTester.closest(".oasis-fragment", element) as HTMLElement | null)
       : null;
 
     if (!target) return null;

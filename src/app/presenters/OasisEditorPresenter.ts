@@ -85,7 +85,7 @@ export class OasisEditorPresenter {
       const tableInfo = findParentTable(state.document, blockId);
       if (tableInfo) {
         activeTableId = tableInfo.table.id;
-        activeTableFirstCellId = (tableInfo.table as any).rows[0].cells[0].id;
+        activeTableFirstCellId = tableInfo.table.rows[0].cells[0].id;
       }
 
       const targetBlock = findBlockById(state.document, blockId);

@@ -3,6 +3,7 @@ import { Operations } from "../../core/operations/OperationFactory.js";
 import { OasisEditorView } from "../OasisEditorView.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { isTableNode, TableNode, TableRowNode } from "../../core/document/BlockTypes.js";
+import { DomHitTester } from "../services/DomHitTester.js";
 
 export class TableDragController {
   private isDragging = false;
@@ -15,6 +16,7 @@ export class TableDragController {
     private runtime: DocumentRuntime,
     private view: OasisEditorView,
     private getLatestLayout: () => LayoutState | null,
+    private domHitTester: DomHitTester,
   ) {}
 
   get isDraggingTable(): boolean { return this.isDragging; }
@@ -119,8 +121,10 @@ export class TableDragController {
   }
 
   private findDropTarget(event: MouseEvent): { blockId: string; isBefore: boolean; rect: { x: number; y: number; width: number; height: number }; pageId: string } | null {
-    const element = document.elementFromPoint(event.clientX, event.clientY);
-    const fragmentEl = element?.closest(".oasis-fragment") as HTMLElement | null;
+    const element = this.domHitTester.elementFromPoint(event.clientX, event.clientY);
+    const fragmentEl = element
+      ? (this.domHitTester.closest(".oasis-fragment", element) as HTMLElement | null)
+      : null;
     if (!fragmentEl) return null;
 
     const blockId = fragmentEl.dataset["blockId"];

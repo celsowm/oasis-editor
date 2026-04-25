@@ -1,6 +1,7 @@
 import { DocumentModel } from "./DocumentTypes.js";
 import {
   BlockNode,
+  TableNode,
   isTextBlock,
   isTableNode,
   TableCellNode,
@@ -90,19 +91,19 @@ export function getAllBlocksInSection(blocks: BlockNode[]): BlockNode[] {
 export function findParentTable(
   doc: DocumentModel,
   blockId: string,
-): { table: BlockNode; rowIdx: number; cellIdx: number } | null {
+): { table: TableNode; rowIdx: number; cellIdx: number } | null {
   for (const section of doc.sections) {
     const res = findTableInList(section.children, blockId);
     if (res) return res;
-    
+
     if (section.header) {
-        const resHeader = findTableInList(section.header, blockId);
-        if (resHeader) return resHeader;
+      const resHeader = findTableInList(section.header, blockId);
+      if (resHeader) return resHeader;
     }
-    
+
     if (section.footer) {
-        const resFooter = findTableInList(section.footer, blockId);
-        if (resFooter) return resFooter;
+      const resFooter = findTableInList(section.footer, blockId);
+      if (resFooter) return resFooter;
     }
   }
   return null;
@@ -111,7 +112,7 @@ export function findParentTable(
 function findTableInList(
   blocks: BlockNode[],
   blockId: string,
-): { table: BlockNode; rowIdx: number; cellIdx: number } | null {
+): { table: TableNode; rowIdx: number; cellIdx: number } | null {
   for (const block of blocks) {
     if (isTableNode(block)) {
       for (let r = 0; r < block.rows.length; r++) {

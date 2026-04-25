@@ -436,6 +436,8 @@ export class OasisEditorView {
         { label: "Open", action: () => console.log("Open document") },
         { separator: true, label: "" },
         { label: "Import DOCX...", action: () => this.elements.importDocxInput.click() },
+        { label: "Export DOCX...", action: () => events.onExportDocx?.() },
+        { label: "Export PDF...", action: () => events.onExportPdf?.() },
         { label: "Download", action: () => console.log("Download") },
         { separator: true, label: "" },
         { label: "Print", shortcut: "Ctrl+P", action: () => events.onPrint ? events.onPrint() : window.print() },
@@ -694,7 +696,7 @@ export class OasisEditorView {
         // Se o container mudou (ex: imagem mudou de página), precisamos recriar o overlay
         if (
           this.imageResizeOverlay &&
-          (this.imageResizeOverlay as any).container !== pageEl
+          this.imageResizeOverlay.getContainer() !== pageEl
         ) {
           console.log("VIEW: Recreating overlay due to container change");
           this.imageResizeOverlay.detach();

@@ -36,7 +36,7 @@ export function h<K extends keyof HTMLElementTagNameMap>(
       const eventName = key.toLowerCase().substring(2);
       element.addEventListener(eventName, value as EventListener);
     } else {
-      (element as any)[key] = value;
+      (element as Record<string, unknown>)[key] = value;
     }
   }
 

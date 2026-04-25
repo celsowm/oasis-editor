@@ -14,12 +14,8 @@ describe("DocxImporter", () => {
 
     const importer = new DocxImporter();
 
-    // Convert Buffer to ArrayBuffer
-    const arrayBuffer = buffer.buffer.slice(
-      buffer.byteOffset,
-      buffer.byteOffset + buffer.byteLength,
-    );
-    const docModel = await importer.importFromBuffer(arrayBuffer);
+    // Pass the Node Buffer directly - the importer handles Buffer vs ArrayBuffer
+    const docModel = await importer.importFromBuffer(buffer as unknown as ArrayBuffer);
 
     expect(docModel).toBeDefined();
     expect(docModel.sections.length).toBeGreaterThan(0);

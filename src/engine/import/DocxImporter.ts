@@ -32,11 +32,40 @@ export class DocxImporter implements DocumentImporter {
   public async importFromBuffer(
     arrayBuffer: ArrayBuffer,
   ): Promise<DocumentModel> {
-    // The types say input must be something like { buffer: Buffer } or { arrayBuffer: ArrayBuffer }
-    // but in mammoth 1.4+, we can just pass { buffer: ... } if it's a buffer or use { arrayBuffer }
-    // depending on the platform. Sometimes Node Buffer works better:
+    // mammoth supports different input formats depending on the platform:
+    // - In browser: { arrayBuffer: ArrayBuffer }
+    // - In Node.js: { buffer: Buffer }
+    // When running in Node.js/Vitest, the buffer from fs.readFileSync is a Buffer.
+    // Check if the input is actually backed by a Node Buffer by checking
+    // the constructor name, or handle ArrayBuffer specifically.
 
-    const result = await mammoth.convertToHtml({ arrayBuffer });
+    // Check if this is actually a Node Buffer (backed by a different buffer)
+    const isNodeBuffer =
+      (arrayBuffer as unknown as { constructor?: { name: string } })
+        ?.constructor?.name === "Buffer";
+
+    let result;
+
+    if (isNodeBuffer) {
+      // Convert ArrayBuffer back to Node Buffer
+      const nodeBuffer = Buffer.from(arrayBuffer);
+      result = await mammoth.convertToHtml({ buffer: nodeBuffer });
+    } else {
+      try {
+        // Try ArrayBuffer first (browser environment)
+        result = await mammoth.convertToHtml({ arrayBuffer });
+      } catch {
+        // Fallback: this might be a Node Buffer viewed as ArrayBuffer
+        // Slice the underlying buffer to get a proper copy
+        const source = arrayBuffer as unknown as { buffer?: Uint8Array };
+        if (source.buffer) {
+          const nodeBuffer = Buffer.from(source.buffer);
+          result = await mammoth.convertToHtml({ buffer: nodeBuffer });
+        } else {
+          throw new Error("Could not parse document");
+        }
+      }
+    }
 
     const html = result.value;
     return this.parseHtmlToDocument(html);

@@ -46,7 +46,7 @@ describe("PositionCalculator", () => {
             },
           ],
           align: "left",
-        } as any,
+        },
       ],
     },
   };
@@ -116,7 +116,7 @@ describe("PositionCalculator", () => {
                 offsetEnd: 14,
               },
             ],
-          } as any,
+          },
         ],
       },
     };

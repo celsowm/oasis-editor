@@ -32,6 +32,7 @@
   "devDependencies": {
     "@types/jszip": "^3.4.0",
     "@types/node": "^20.0.0",
+    "@types/pdfmake": "^0.3.2",
     "@types/web": "^0.0.115",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
@@ -50,6 +51,7 @@
     "@xmldom/xmldom": "^0.9.10",
     "jszip": "^3.10.1",
     "lucide": "^1.11.0",
-    "mammoth": "^1.12.0"
+    "mammoth": "^1.12.0",
+    "pdfmake": "^0.3.7"
   }
 }

@@ -98,7 +98,7 @@ export class TextFragmentRenderer implements FragmentRenderer {
         top: `${fragment.rect.y}px`,
         width: `${fragment.rect.width}px`,
         height: `${fragment.rect.height}px`,
-        textAlign: fragment.align as any,
+        textAlign: fragment.align as CSSStyleDeclaration["textAlign"],
         paddingLeft: indent > 0 ? `${indent}px` : "0",
         pointerEvents: isDimmed ? "none" : "auto",
         opacity: isDimmed ? "0.3" : "1"

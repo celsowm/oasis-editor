@@ -7,12 +7,15 @@ import { OasisEditorDom } from "../dom/OasisEditorDom.js";
 import { OasisEditorView } from "../OasisEditorView.js";
 import { OasisEditorController } from "../OasisEditorController.js";
 import { TextMeasurementService } from "../services/TextMeasurementService.js";
+import { BrowserDomHitTester } from "../services/DomHitTester.js";
 import { ColorPicker } from "../../ui/components/ColorPicker.js";
 import { TablePicker } from "../../ui/components/TablePicker.js";
 import { TableFloatingToolbar } from "../../ui/selection/TableFloatingToolbar.js";
 import { TableMoveHandle } from "../../ui/selection/TableMoveHandle.js";
 import { ImageResizeOverlay } from "../../ui/selection/ImageResizeOverlay.js";
 import { DocxImporter } from "../../engine/import/DocxImporter.js";
+import { DocxExporter } from "../../engine/export/DocxExporter.js";
+import { PdfExporter } from "../../engine/export/PdfExporter.js";
 
 export const createOasisEditorApp = (): OasisEditorController => {
   const runtime = new DocumentRuntime();
@@ -37,6 +40,9 @@ export const createOasisEditorApp = (): OasisEditorController => {
   view.elements.hiddenInput.focus();
 
   const importer = new DocxImporter();
+  const exporter = new DocxExporter();
+  const pdfExporter = new PdfExporter();
+  const domHitTester = new BrowserDomHitTester();
 
   return new OasisEditorController({
     runtime,
@@ -45,5 +51,8 @@ export const createOasisEditorApp = (): OasisEditorController => {
     view,
     measurementService,
     importer,
+    exporter,
+    pdfExporter,
+    domHitTester,
   });
 };

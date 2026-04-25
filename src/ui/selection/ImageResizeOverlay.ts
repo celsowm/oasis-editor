@@ -98,6 +98,10 @@ export class ImageResizeOverlay {
     this.onResize = onResize;
   }
 
+  getContainer(): HTMLElement {
+    return this.container;
+  }
+
   attach(fragment: LayoutFragment): void {
     this.detach();
 

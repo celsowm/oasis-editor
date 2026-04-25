@@ -29,6 +29,8 @@ export interface CommandEvents {
   onRedo: () => void;
   onTemplateChange: (templateId: string) => void;
   onPrint?: () => void;
+  onExportDocx?: () => void;
+  onExportPdf?: () => void;
 }
 
 export interface ListEvents {

@@ -3,6 +3,10 @@ import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { LayoutFragment, LineInfo } from "../../core/layout/LayoutFragment.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { TextRun } from "../../core/document/BlockTypes.js";
+import {
+  measureLineWidthUpToOffset,
+  calculateJustificationExtraSpace,
+} from "./JustifiedLineMeasurer.js";
 
 export class PositionCalculator {
   private layout: LayoutState;
@@ -79,45 +83,6 @@ export class PositionCalculator {
     return targetLine?.y ?? fragment.rect.y;
   }
 
-  private calculateJustificationExtraSpace(
-    fragment: LayoutFragment,
-    targetLine: LineInfo,
-  ): number {
-    if (fragment.align !== "justify" || !fragment.lines) return 0;
-
-    const isLastLine = targetLine === fragment.lines[fragment.lines.length - 1];
-    if (isLastLine) return 0;
-
-    const lineText = targetLine.text.trimEnd();
-    const spaces = (lineText.match(/ /g) || []).length;
-    if (spaces === 0) return 0;
-
-    return (fragment.rect.width - targetLine.width) / spaces;
-  }
-
-  private measureSegment(
-    text: string,
-    run: TextRun,
-    fragment: LayoutFragment,
-    measurer: TextMeasurer,
-  ): number {
-    let fontWeight = fragment.typography.fontWeight;
-    if (run.marks?.["bold"] || fragment.kind === "heading") fontWeight = 700;
-    const fontStyle = run.marks?.["italic"] ? "italic" : "normal";
-
-    const measured = measurer.measureText({
-      text,
-      fontFamily:
-        (run.marks?.["fontFamily"] as string) || fragment.typography.fontFamily,
-      fontSize:
-        (run.marks?.["fontSize"] as number) || fragment.typography.fontSize,
-      fontWeight,
-      fontStyle,
-    });
-
-    return measured.width;
-  }
-
   calculateXOffset(
     position: LogicalPosition,
     fragment: LayoutFragment | null,
@@ -136,47 +101,26 @@ export class PositionCalculator {
     let totalWidth = (targetLine?.x ?? 0) + indent;
     if (offsetInLine === 0) return totalWidth;
 
-    const extraSpacePerGap = targetLine
-      ? this.calculateJustificationExtraSpace(fragment, targetLine)
-      : 0;
-
     const targetOffset = lineStartOffset + offsetInLine;
-    let currentGlobalOffset = 0;
-    const runs = fragment.runs?.length
-      ? fragment.runs
-      : ([
-          { id: "", text: fragment.text, marks: fragment.marks ?? {} },
-        ] as TextRun[]);
+    totalWidth += measureLineWidthUpToOffset(
+      fragment,
+      targetLine ?? {
+        id: "",
+        text: fragment.text,
+        width: fragment.rect.width,
+        height: 0,
+        x: 0,
+        y: 0,
+        offsetStart: 0,
+        offsetEnd: fragment.text.length,
+      },
+      targetOffset,
+      measurer,
+    );
 
-    for (const run of runs) {
-      const runStart = currentGlobalOffset;
-      const runEnd = currentGlobalOffset + run.text.length;
-
-      const measureStart = Math.max(lineStartOffset, runStart);
-      const measureEnd = Math.min(targetOffset, runEnd);
-
-      if (measureStart < measureEnd) {
-        const textToMeasure = run.text.substring(
-          measureStart - runStart,
-          measureEnd - runStart,
-        );
-
-        totalWidth += this.measureSegment(
-          textToMeasure,
-          run,
-          fragment,
-          measurer,
-        );
-
-        if (extraSpacePerGap > 0) {
-          const spacesInSegment = (textToMeasure.match(/ /g) || []).length;
-          totalWidth += spacesInSegment * extraSpacePerGap;
-        }
-      }
-
-      currentGlobalOffset += run.text.length;
-      if (currentGlobalOffset >= targetOffset) break;
-    }
+    // measureLineWidthUpToOffset includes line.x in its calculation,
+    // but we already added it above (plus indent). Remove the double-count.
+    totalWidth -= targetLine?.x ?? 0;
 
     return totalWidth;
   }
