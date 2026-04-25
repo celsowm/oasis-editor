@@ -25,7 +25,7 @@ export interface HeadingNode {
   id: string;
   kind: "heading";
   level: 1 | 2 | 3 | 4 | 5 | 6;
-  align: "left" | "center" | "right";
+  align: "left" | "center" | "right" | "justify";
   indentation?: number;
   children: TextRun[];
 }
@@ -93,6 +93,27 @@ export type TextBlockNode =
   | HeadingNode
   | ListItemNode
   | OrderedListItemNode;
+
+/** Helper to create a typed text block with a new kind, preserving other fields. */
+export function withBlockKind<T extends TextBlockNode["kind"]>(
+  block: TextBlockNode,
+  kind: T,
+): Extract<TextBlockNode, { kind: T }> {
+  return { ...block, kind } as Extract<TextBlockNode, { kind: T }>;
+}
+
+/** Helper to set indentation on a text block without `as any`. */
+export function withIndentation(
+  block: TextBlockNode,
+  indentation: number,
+): TextBlockNode {
+  return { ...block, indentation } as TextBlockNode;
+}
+
+export function getBlockIndentation(block: TextBlockNode): number {
+  if (block.indentation !== undefined) return block.indentation;
+  return 0;
+}
 
 export function isTextBlock(node: BlockNode): node is TextBlockNode {
   return (

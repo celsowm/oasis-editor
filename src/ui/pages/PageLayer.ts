@@ -1,8 +1,6 @@
-import {
-  DEFAULT_LIST_INDENTATION,
-  DEFAULT_ORDERED_LIST_INDENTATION,
-} from "../../core/composition/ParagraphComposer.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
+import { renderFragment } from "./FragmentRenderer.js";
+import { h } from "../utils/dom.js";
 
 export class PageLayer {
   private container: HTMLElement;
@@ -11,193 +9,97 @@ export class PageLayer {
     this.container = container;
   }
 
-  render(layout: LayoutState): void {
+  render(layout: LayoutState, editingMode: "main" | "header" | "footer" = "main"): void {
+    // Preserve scroll position of the nearest scrollable ancestor so the page
+    // doesn't jump to the top when innerHTML is cleared and re-built.
+    const scrollEl = this.findScrollableAncestor(this.container);
+    const savedScrollTop = scrollEl?.scrollTop ?? 0;
+    const savedScrollLeft = scrollEl?.scrollLeft ?? 0;
+
     this.container.innerHTML = "";
 
     for (const page of layout.pages) {
-      const pageEl = document.createElement("section");
-      pageEl.className = "oasis-page";
-      pageEl.dataset["pageId"] = page.id;
-      pageEl.style.width = `${page.rect.width}px`;
-      pageEl.style.minHeight = `${page.rect.height}px`;
+      const pageEl = h("section", {
+        className: `oasis-page ${editingMode === "header" ? "editing-header" : ""} ${editingMode === "footer" ? "editing-footer" : ""}`,
+        dataset: { pageId: page.id },
+        style: {
+          width: `${page.rect.width}px`,
+          minHeight: `${page.rect.height}px`,
+        }
+      });
 
+      // Render Header UI (Line and Label)
       if (page.headerRect) {
-        const header = document.createElement("div");
-        header.className = "oasis-page-header";
-        header.style.position = "absolute";
-        header.style.left = `${page.headerRect.x}px`;
-        header.style.top = `${page.headerRect.y}px`;
-        header.style.width = `${page.headerRect.width}px`;
-        header.style.height = `${page.headerRect.height}px`;
-        header.textContent = `Header • ${page.pageNumber}`;
-        pageEl.appendChild(header);
+        const headerUI = h("div", {
+          className: `oasis-page-header-ui ${editingMode === "header" ? "active" : ""}`,
+          style: {
+            position: "absolute",
+            left: `${page.headerRect.x}px`,
+            top: `${page.headerRect.y}px`,
+            width: `${page.headerRect.width}px`,
+            height: `${page.headerRect.height}px`,
+            pointerEvents: "none",
+            zIndex: "5"
+          }
+        }, [
+            h('div', { className: 'oasis-header-line' }),
+            h('div', { className: 'oasis-header-label' }, 'Cabeçalho')
+        ]);
+        pageEl.appendChild(headerUI);
+
+        for (const frag of page.headerFragments) {
+          pageEl.appendChild(renderFragment(frag, editingMode !== "header"));
+        }
       }
 
-      const content = document.createElement("div");
-      content.className = "oasis-page-content";
-
-      for (const fragment of page.fragments) {
-        // Render based on kind
-        if (fragment.kind === "image" && fragment.imageSrc) {
-          const wrapper = document.createElement("div");
-          wrapper.className = "oasis-image-wrapper";
-          wrapper.dataset["blockId"] = fragment.blockId;
-          wrapper.style.position = "absolute";
-          wrapper.style.left = `${fragment.rect.x}px`;
-          wrapper.style.top = `${fragment.rect.y}px`;
-          wrapper.style.width = `${fragment.rect.width}px`;
-          wrapper.style.height = `${fragment.rect.height}px`;
-          wrapper.style.cursor = "pointer";
-
-          const img = document.createElement("img");
-          img.src = fragment.imageSrc;
-          img.alt = fragment.imageAlt ?? "";
-          img.draggable = false;
-          img.style.width = "100%";
-          img.style.height = "100%";
-          img.style.objectFit = "fill";
-          img.style.display = "block";
-          img.style.userSelect = "none";
-          img.style.pointerEvents = "none";
-
-          wrapper.addEventListener("mousedown", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            wrapper.dispatchEvent(
-              new CustomEvent("image-select", {
-                bubbles: true,
-                detail: { blockId: fragment.blockId, fragment },
-              }),
-            );
-          });
-
-          wrapper.appendChild(img);
-          pageEl.appendChild(wrapper);
-          continue;
-        }
-
-        if (fragment.kind === "table-cell") {
-          const cellEl = document.createElement("div");
-          cellEl.className = "oasis-table-cell";
-          cellEl.dataset["blockId"] = fragment.blockId;
-          cellEl.style.position = "absolute";
-          cellEl.style.left = `${fragment.rect.x}px`;
-          cellEl.style.top = `${fragment.rect.y}px`;
-          cellEl.style.width = `${fragment.rect.width}px`;
-          cellEl.style.height = `${fragment.rect.height}px`;
-          cellEl.style.border = "1px solid #94a3b8"; // slate-400
-          cellEl.style.backgroundColor = "transparent";
-          cellEl.style.boxSizing = "border-box";
-          cellEl.style.pointerEvents = "none";
-          content.appendChild(cellEl);
-          continue;
-        }
-
-        // Text fragment
-        const fragmentEl = document.createElement("article");
-        fragmentEl.className = `oasis-fragment oasis-fragment--${fragment.kind}`;
-        fragmentEl.dataset["fragmentId"] = fragment.id;
-        fragmentEl.dataset["blockId"] = fragment.blockId;
-        fragmentEl.style.fontFamily = fragment.typography.fontFamily;
-        fragmentEl.style.fontSize = `${fragment.typography.fontSize}px`;
-        fragmentEl.style.left = `${fragment.rect.x}px`;
-        fragmentEl.style.top = `${fragment.rect.y}px`;
-        fragmentEl.style.width = `${fragment.rect.width}px`;
-        fragmentEl.style.height = `${fragment.rect.height}px`;
-        fragmentEl.style.textAlign = fragment.align;
-
-        const defaultIndent =
-          fragment.kind === "ordered-list-item"
-            ? DEFAULT_ORDERED_LIST_INDENTATION
-            : fragment.kind === "list-item"
-              ? DEFAULT_LIST_INDENTATION
-              : 0;
-        const indent =
-          fragment.indentation !== undefined
-            ? fragment.indentation
-            : defaultIndent;
-        if (indent > 0) {
-          fragmentEl.style.paddingLeft = `${indent}px`;
-        }
-
-        // Clear before rendering content
-        fragmentEl.innerHTML = "";
-
-        // Render bullet or number for list items
-        if (
-          fragment.kind === "list-item" ||
-          fragment.kind === "ordered-list-item"
-        ) {
-          const bullet = document.createElement("div");
-          bullet.className = "oasis-bullet";
-
-          if (
-            fragment.kind === "ordered-list-item" &&
-            fragment.listNumber !== undefined
-          ) {
-            bullet.textContent = `${fragment.listNumber}.`;
-          } else {
-            bullet.textContent = "•"; // Standard bullet
-          }
-
-          bullet.style.position = "absolute";
-          bullet.style.left = "0";
-          bullet.style.width = `${indent}px`;
-          bullet.style.height = `${fragment.lines[0]?.height || 20}px`;
-          bullet.style.display = "flex";
-          bullet.style.alignItems = "center";
-          bullet.style.justifyContent = "center";
-          fragmentEl.appendChild(bullet);
-        }
-
-        // Render text using spans for rich text formatting
-        const displayRuns = fragment.runs?.length
-          ? fragment.runs
-          : [{ text: fragment.text, marks: fragment.marks ?? {} }];
-
-        for (const run of displayRuns) {
-          const span = document.createElement("span");
-          span.textContent = run.text;
-
-          let fontWeight = fragment.typography.fontWeight;
-          if (run.marks?.["bold"] || fragment.kind === "heading") {
-            fontWeight = 700;
-          }
-          span.style.fontWeight = String(fontWeight);
-
-          if (run.marks?.["italic"]) {
-            span.style.fontStyle = "italic";
-          }
-
-          if (run.marks?.["underline"]) {
-            span.style.textDecoration = "underline";
-          }
-
-          if (run.marks?.["color"]) {
-            span.style.color = run.marks["color"];
-          }
-
-          fragmentEl.appendChild(span);
-        }
-
-        content.appendChild(fragmentEl);
+      // Render Main Content
+      for (const frag of page.fragments) {
+        pageEl.appendChild(renderFragment(frag, editingMode !== "main"));
       }
 
-      pageEl.appendChild(content);
-
+      // Render Footer UI (Line and Label)
       if (page.footerRect) {
-        const footer = document.createElement("div");
-        footer.className = "oasis-page-footer";
-        footer.style.position = "absolute";
-        footer.style.left = `${page.footerRect.x}px`;
-        footer.style.top = `${page.footerRect.y}px`;
-        footer.style.width = `${page.footerRect.width}px`;
-        footer.style.height = `${page.footerRect.height}px`;
-        footer.textContent = `Page ${page.pageNumber}`;
-        pageEl.appendChild(footer);
+        const footerUI = h("div", {
+          className: `oasis-page-footer-ui ${editingMode === "footer" ? "active" : ""}`,
+          style: {
+            position: "absolute",
+            left: `${page.footerRect.x}px`,
+            top: `${page.footerRect.y}px`,
+            width: `${page.footerRect.width}px`,
+            height: `${page.footerRect.height}px`,
+            pointerEvents: "none",
+            zIndex: "5"
+          }
+        }, [
+            h('div', { className: 'oasis-footer-line' }),
+            h('div', { className: 'oasis-footer-label' }, 'Rodapé')
+        ]);
+        pageEl.appendChild(footerUI);
+
+        for (const frag of page.footerFragments) {
+          pageEl.appendChild(renderFragment(frag, editingMode !== "footer"));
+        }
       }
 
       this.container.appendChild(pageEl);
     }
+
+    if (scrollEl) {
+      scrollEl.scrollTop = savedScrollTop;
+      scrollEl.scrollLeft = savedScrollLeft;
+    }
+  }
+
+  private findScrollableAncestor(el: HTMLElement | null): HTMLElement | null {
+    let node: HTMLElement | null = el?.parentElement ?? null;
+    while (node && node !== document.body) {
+      const style = window.getComputedStyle(node);
+      const overflowY = style.overflowY;
+      if (overflowY === "auto" || overflowY === "scroll") {
+        return node;
+      }
+      node = node.parentElement;
+    }
+    return document.scrollingElement as HTMLElement | null;
   }
 }

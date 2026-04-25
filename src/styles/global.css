@@ -75,6 +75,7 @@ textarea {
   display: flex;
   gap: 12px;
   margin-top: 4px;
+  position: relative;
 }
 
 .oasis-editor-menu-bar span {
@@ -83,10 +84,57 @@ textarea {
   padding: 4px 8px;
   border-radius: 4px;
   cursor: pointer;
+  user-select: none;
 }
 
-.oasis-editor-menu-bar span:hover {
+.oasis-editor-menu-bar span:hover,
+.oasis-editor-menu-bar span.active {
   background: #f1f3f4;
+}
+
+/* Dropdown Menu */
+.oasis-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  z-index: 2000;
+  min-width: 200px;
+  padding: 6px 0;
+  display: none;
+}
+
+.oasis-dropdown-menu.show {
+  display: block;
+}
+
+.oasis-dropdown-item {
+  padding: 6px 12px;
+  font-size: 14px;
+  color: #3c4043;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.oasis-dropdown-item:hover {
+  background: #f1f3f4;
+}
+
+.oasis-dropdown-item .shortcut {
+  color: #70757a;
+  font-size: 12px;
+  margin-left: 20px;
+}
+
+.oasis-dropdown-separator {
+  height: 1px;
+  background: #e8eaed;
+  margin: 6px 0;
 }
 
 .oasis-editor-toolbar {
@@ -164,22 +212,80 @@ textarea {
   transition: box-shadow 0.3s ease;
 }
 
-.oasis-page-header,
-.oasis-page-footer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #70757a;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.oasis-page-header-ui,
+.oasis-page-footer-ui {
+  transition: opacity 0.2s ease;
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
 }
 
-.oasis-page-header {
+.oasis-header-line,
+.oasis-footer-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-bottom: 1px dashed #94a3b8;
+    display: none;
+    pointer-events: none;
+}
+
+.active .oasis-header-line,
+.active .oasis-footer-line {
+    display: block;
+    border-color: #3b82f6;
+    border-bottom-width: 1.5px;
+}
+
+.oasis-header-line {
+    bottom: 0;
+}
+
+.oasis-footer-line {
+    top: 0;
+}
+
+.oasis-header-label,
+.oasis-footer-label {
+    position: absolute;
+    left: 0;
+    padding: 2px 10px;
+    font-size: 11px;
+    background: #3b82f6;
+    color: white;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: none;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.active .oasis-header-label,
+.active .oasis-footer-label {
+    display: block;
+}
+
+.oasis-header-label { 
+    top: 100%;
+    margin-top: -1px;
+    border-radius: 0 0 4px 4px;
+}
+.oasis-footer-label { 
+    bottom: 100%;
+    margin-bottom: -1px;
+    border-radius: 4px 4px 0 0;
+}
+
+.oasis-dimmed {
+  opacity: 0.15 !important;
+}
+
+.oasis-page-header-ui {
   min-height: 48px;
 }
 
-.oasis-page-footer {
+.oasis-page-footer-ui {
   min-height: 48px;
 }
 
@@ -202,6 +308,7 @@ textarea {
   margin: 0;
   position: absolute;
   pointer-events: auto;
+  transition: opacity 0.2s ease;
 }
 
 .oasis-bullet {
@@ -218,16 +325,17 @@ textarea {
   right: 0;
   bottom: 0;
   pointer-events: none;
-  z-index: 10;
+  z-index: 1000 !important; /* Garantir que o caret fique por cima de tudo */
 }
 
 .oasis-selection-rect,
 .oasis-caret {
   position: absolute;
+  z-index: 1001;
 }
 
 .oasis-selection-rect {
-  background: rgba(194, 231, 255, 0.6);
+  background: rgba(37, 99, 235, 0.25);
 }
 
 .oasis-caret {
@@ -253,7 +361,7 @@ textarea {
 
 /* Image Support Styles */
 .oasis-image-wrapper {
-  transition: outline 0.2s ease;
+  transition: outline 0.2s ease, opacity 0.2s ease;
   outline: 2px solid transparent;
 }
 
@@ -299,6 +407,7 @@ textarea {
     align-items: center;
     pointer-events: all !important;
     user-select: none;
+    z-index: 1002;
 }
 
 .oasis-toolbar-group {
@@ -348,6 +457,7 @@ textarea {
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     transition: all 0.2s;
     user-select: none;
+    z-index: 1002;
 }
 
 .oasis-table-move-handle:hover {

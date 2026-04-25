@@ -4,13 +4,16 @@ import { DocumentLayoutService } from "./services/DocumentLayoutService.js";
 import { OasisEditorPresenter } from "./presenters/OasisEditorPresenter.js";
 import { OasisEditorView } from "./OasisEditorView.js";
 import { LayoutState } from "../core/layout/LayoutTypes.js";
-import { LayoutFragment } from "../core/layout/LayoutFragment.js";
 import { LogicalPosition } from "../core/selection/SelectionTypes.js";
-import { LineInfo } from "../core/layout/LayoutFragment.js";
 import { PositionCalculator } from "./services/PositionCalculator.js";
-import { isTextBlock } from "../core/document/BlockTypes.js";
+import { isTextBlock, BlockNode } from "../core/document/BlockTypes.js";
+import { getAllBlocks } from "../core/document/BlockUtils.js";
 import { TextMeasurementService } from "./services/TextMeasurementService.js";
-import { DocxImporter } from "../engine/import/DocxImporter.js";
+import { DocumentImporter } from "../core/import/DocumentImporter.js";
+import { PAGE_TEMPLATES } from "../core/pages/PageTemplateFactory.js";
+import { FormatPainterController } from "./controllers/FormatPainterController.js";
+import { CursorPositionCalculator } from "./services/CursorPositionCalculator.js";
+import { TableDragController } from "./controllers/TableDragController.js";
 
 export interface ControllerDeps {
   runtime: DocumentRuntime;
@@ -18,6 +21,7 @@ export interface ControllerDeps {
   presenter: OasisEditorPresenter;
   view: OasisEditorView;
   measurementService: TextMeasurementService;
+  importer: DocumentImporter;
 }
 
 export class OasisEditorController {
@@ -26,24 +30,16 @@ export class OasisEditorController {
   private presenter: OasisEditorPresenter;
   private view: OasisEditorView;
   private measurementService: TextMeasurementService;
+  private importer: DocumentImporter;
   private latestLayout: LayoutState | null;
   private isDragging: boolean;
   private dragAnchor: LogicalPosition | null;
   private positionCalculator: PositionCalculator | null;
+  private cursorCalc: CursorPositionCalculator;
+  private tableDrag: TableDragController;
 
-  // Table dragging
-  private isTableDragging = false;
-  private draggingTableId: string | null = null;
-  private dropIndicator: HTMLElement | null = null;
-  private tableGhost: HTMLElement | null = null;
-  private currentDropTarget: { blockId: string; isBefore: boolean } | null =
-    null;
-
-  // Format Painter state
-  private formatPainterActive: boolean = false;
-  private formatPainterSticky: boolean = false;
-  private formatPainterMarks: any = null;
-  private formatPainterAlign: any = null;
+  // Format Painter
+  private formatPainter: FormatPainterController;
 
   constructor({
     runtime,
@@ -51,16 +47,25 @@ export class OasisEditorController {
     presenter,
     view,
     measurementService,
+    importer,
   }: ControllerDeps) {
     this.runtime = runtime;
     this.layoutService = layoutService;
     this.presenter = presenter;
     this.view = view;
     this.measurementService = measurementService;
+    this.importer = importer;
     this.latestLayout = null;
     this.isDragging = false;
     this.dragAnchor = null;
     this.positionCalculator = null;
+    this.formatPainter = new FormatPainterController(this.runtime, this.presenter, this.view, () => this.latestLayout!);
+    this.cursorCalc = new CursorPositionCalculator(
+      this.measurementService,
+      () => this.latestLayout,
+      () => getAllBlocks(this.runtime.getState().document),
+    );
+    this.tableDrag = new TableDragController(this.runtime, this.view, () => this.latestLayout);
   }
 
   start(): void {
@@ -79,6 +84,12 @@ export class OasisEditorController {
       onDelete: () => this.deleteText(),
       onEnter: (isShift) =>
         isShift ? this.insertText("\n") : this.insertParagraph(),
+      onEscape: () => {
+        const state = this.runtime.getState();
+        if (state.editingMode !== "main") {
+          this.runtime.dispatch(Operations.setEditingMode("main"));
+        }
+      },
       onArrowKey: (key) => this.moveCaret(key),
       onMouseDown: (e) => this.handleMouseDown(e),
       onMouseMove: (e) => this.handleMouseMove(e),
@@ -102,18 +113,19 @@ export class OasisEditorController {
           Operations.moveBlock(tableId, targetBlockId, isBefore),
         );
       },
+      onPrint: () => window.print(),
     });
 
-    this.view.elements.root.addEventListener("table-drag-start", (e: any) => {
-      this.handleTableDragStart(e.detail.tableId, e.detail.originalEvent);
-    });
+    this.view.elements.root.addEventListener("table-drag-start", ((e: CustomEvent) => {
+      this.tableDrag.handleDragStart(e.detail.tableId, e.detail.originalEvent);
+    }) as EventListener);
 
     window.addEventListener("mousemove", (e) => {
-      if (this.isTableDragging) this.handleTableDragging(e);
+      if (this.tableDrag.isDraggingTable) this.tableDrag.handleDragging(e);
     });
 
     window.addEventListener("mouseup", (e) => {
-      if (this.isTableDragging) this.handleTableMouseUp(e);
+      if (this.tableDrag.isDraggingTable) this.tableDrag.handleMouseUp(e);
     });
 
     this.isDragging = false;
@@ -125,38 +137,7 @@ export class OasisEditorController {
   }
 
   toggleFormatPainter(isDoubleClick: boolean = false): void {
-    if (this.formatPainterActive && !isDoubleClick) {
-      this.formatPainterActive = false;
-      this.formatPainterSticky = false;
-      this.formatPainterMarks = null;
-      this.formatPainterAlign = null;
-      this.view.setFormatPainterActive(false);
-    } else {
-      // If already active and double-clicked, upgrade to sticky
-      if (this.formatPainterActive && isDoubleClick) {
-        this.formatPainterSticky = true;
-        this.view.setFormatPainterActive(true, true);
-        return;
-      }
-
-      const state = this.runtime.getState();
-      const selectionState = this.presenter.present({
-        state,
-        layout: this.latestLayout!,
-      }).selectionState;
-
-      const marks: any = {};
-      if (selectionState.bold) marks.bold = true;
-      if (selectionState.italic) marks.italic = true;
-      if (selectionState.underline) marks.underline = true;
-      if (selectionState.color) marks.color = selectionState.color;
-
-      this.formatPainterMarks = marks;
-      this.formatPainterAlign = selectionState.align;
-      this.formatPainterActive = true;
-      this.formatPainterSticky = isDoubleClick;
-      this.view.setFormatPainterActive(true, isDoubleClick);
-    }
+    this.formatPainter.toggle(isDoubleClick);
   }
 
   toggleBold(): void {
@@ -178,8 +159,7 @@ export class OasisEditorController {
   async importDocx(file: File): Promise<void> {
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const importer = new DocxImporter();
-      const docModel = await importer.importFromBuffer(arrayBuffer);
+      const docModel = await this.importer.importFromBuffer(arrayBuffer);
 
       const firstSection = docModel.sections[0];
       const firstBlock = firstSection?.children[0];
@@ -204,6 +184,7 @@ export class OasisEditorController {
               },
             }
           : null,
+        editingMode: "main",
       });
     } catch (e) {
       console.error("Failed to import DOCX:", e);
@@ -296,8 +277,7 @@ export class OasisEditorController {
       selectionBefore?.inlineId,
     );
 
-    const blockBefore = stateBefore.document.sections
-      .flatMap((s) => s.children)
+    const blockBefore = getAllBlocks(stateBefore.document)
       .find((b) => b.id === selectionBefore?.blockId);
 
     const runs =
@@ -365,132 +345,8 @@ export class OasisEditorController {
     this.runtime.dispatch(Operations.increaseIndent());
   }
 
-  calculatePositionFromEvent(event: MouseEvent): LogicalPosition | null {
-    const element = document.elementFromPoint(event.clientX, event.clientY);
-    const target = element
-      ? (element.closest(".oasis-fragment") as HTMLElement | null)
-      : null;
-
-    if (!target) return null;
-
-    const fragmentId = target.dataset["fragmentId"] ?? "";
-    const blockId = target.dataset["blockId"] ?? "";
-    const fragmentText = target.textContent ?? "";
-    const rect = target.getBoundingClientRect();
-
-    const clickXInFragment = event.clientX - rect.left;
-    const clickYInFragment = event.clientY - rect.top;
-
-    const sectionId = "section:0";
-
-    const layoutFragments =
-      this.latestLayout?.fragmentsByBlockId[blockId] ?? [];
-    const layoutFragment =
-      layoutFragments.find((f) => f.id === fragmentId) ?? layoutFragments[0];
-
-    if (!layoutFragment) return null;
-
-    let targetLine: LineInfo | null = layoutFragment.lines
-      ? layoutFragment.lines[0]
-      : null;
-    if (layoutFragment?.lines) {
-      let foundLine: LineInfo | null = null;
-      for (const line of layoutFragment.lines) {
-        const relativeLineY = line.y - layoutFragment.rect.y;
-        if (
-          clickYInFragment >= relativeLineY &&
-          clickYInFragment < relativeLineY + line.height
-        ) {
-          foundLine = line;
-          break;
-        }
-      }
-      if (foundLine) {
-        targetLine = foundLine;
-      } else {
-        const lastLine = layoutFragment.lines[layoutFragment.lines.length - 1];
-        const unrelativeLastLineY = lastLine.y - layoutFragment.rect.y;
-        if (clickYInFragment >= unrelativeLastLineY) {
-          targetLine = lastLine;
-        } else {
-          targetLine = layoutFragment.lines[0];
-        }
-      }
-    }
-
-    let closestOffset = 0;
-    let minDistance = Infinity;
-
-    if (targetLine) {
-      const lineStart = targetLine.offsetStart;
-      const lineEnd = targetLine.offsetEnd;
-      for (let i = lineStart; i <= lineEnd; i++) {
-        const measuredWidth = this.measurementService.measureWidthUpToOffset(
-          layoutFragment,
-          targetLine,
-          i,
-        );
-        const distance = Math.abs(measuredWidth - clickXInFragment);
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestOffset = i;
-        }
-      }
-    } else {
-      for (let i = 0; i <= fragmentText.length; i++) {
-        // Fallback for missing targetLine (should not happen with updated engine)
-        const measuredWidth = this.measurementService.measureWidthUpToOffset(
-          layoutFragment,
-          {
-            offsetStart: 0,
-            offsetEnd: fragmentText.length,
-            x: 0,
-            width: layoutFragment.rect.width,
-          } as any,
-          i,
-        );
-        const distance = Math.abs(measuredWidth - clickXInFragment);
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestOffset = i;
-        }
-      }
-    }
-
-    const state = this.runtime.getState();
-    const block = state.document.sections
-      .flatMap((s) => s.children)
-      .find((b) => b.id === blockId);
-
-    let actualRunId = fragmentId;
-    let relativeOffset = closestOffset;
-
-    if (block && isTextBlock(block)) {
-      let currentOffset = 0;
-      for (const run of block.children) {
-        const runLength = run.text.length;
-        if (
-          closestOffset >= currentOffset &&
-          closestOffset <= currentOffset + runLength
-        ) {
-          actualRunId = run.id;
-          relativeOffset = closestOffset - currentOffset;
-          break;
-        }
-        currentOffset += runLength;
-      }
-    }
-
-    return {
-      sectionId,
-      blockId,
-      inlineId: actualRunId,
-      offset: relativeOffset,
-    };
-  }
-
   handleMouseDown(event: MouseEvent): void {
-    const position = this.calculatePositionFromEvent(event);
+    const position = this.cursorCalc.calculateFromMouseEvent(event);
     if (!position) return;
 
     this.isDragging = true;
@@ -506,7 +362,7 @@ export class OasisEditorController {
       return;
     }
 
-    const position = this.calculatePositionFromEvent(event);
+    const position = this.cursorCalc.calculateFromMouseEvent(event);
     if (!position) return;
 
     this.runtime.dispatch(
@@ -519,18 +375,14 @@ export class OasisEditorController {
       this.isDragging = false;
 
       // If format painter is active, apply formatting on mouse up
-      if (this.formatPainterActive && this.formatPainterMarks) {
-        this.runtime.dispatch(
-          Operations.applyFormat(
-            this.formatPainterMarks,
-            this.formatPainterAlign,
-          ),
-        );
-        if (!this.formatPainterSticky) {
-          this.toggleFormatPainter(); // Turn off after use
-        }
+      if (this.formatPainter.shouldApplyOnMouseUp()) {
+        this.formatPainter.apply();
       }
     }
+  }
+
+  private isPointInRect(x: number, y: number, rect: { x: number; y: number; width: number; height: number }): boolean {
+    return x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
   }
 
   /**
@@ -539,12 +391,79 @@ export class OasisEditorController {
   handleDblClick(event: MouseEvent): void {
     event.preventDefault();
 
-    const position = this.calculatePositionFromEvent(event);
+    const state = this.runtime.getState();
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const pageEl = element?.closest(".oasis-page") as HTMLElement | null;
+
+    if (pageEl) {
+      const pageId = pageEl.dataset.pageId;
+      const page = this.latestLayout?.pages.find((p) => p.id === pageId);
+      const template = page ? PAGE_TEMPLATES[page.templateId] : null;
+
+      if (page && template) {
+        const rect = pageEl.getBoundingClientRect();
+        const scale = rect.height / page.rect.height;
+        const clickX = (event.clientX - rect.left) / scale;
+        const clickY = (event.clientY - rect.top) / scale;
+
+        const { margins } = template;
+        const pageHeight = page.rect.height;
+
+        // Find last main fragment Y to detect "below content" clicks as footer intent
+        const lastMainFragment = page.fragments[page.fragments.length - 1];
+        const lastContentY = lastMainFragment
+          ? lastMainFragment.rect.y + lastMainFragment.rect.height
+          : margins.top;
+        const firstMainFragment = page.fragments[0];
+        const firstContentY = firstMainFragment ? firstMainFragment.rect.y : pageHeight - margins.bottom;
+
+        let targetMode: "main" | "header" | "footer" = "main";
+
+        // Header zone: above header rect, above top margin, or above the first main fragment
+        const isHeaderZone =
+          clickY < margins.top ||
+          (page.headerRect && this.isPointInRect(clickX, clickY, page.headerRect)) ||
+          clickY < firstContentY - 8;
+
+        // Footer zone: in footer rect, below bottom margin, or below all main content
+        const isFooterZone =
+          clickY > pageHeight - margins.bottom ||
+          (page.footerRect && this.isPointInRect(clickX, clickY, page.footerRect)) ||
+          clickY > lastContentY + 8;
+
+        if (isHeaderZone) targetMode = "header";
+        else if (isFooterZone) targetMode = "footer";
+
+        if (targetMode !== state.editingMode) {
+          const section = state.document.sections.find(s => s.id === page.sectionId);
+          if (section) {
+            let targetBlock: BlockNode | null = null;
+            if (targetMode === "header") targetBlock = section.header?.[0] ?? null;
+            else if (targetMode === "footer") targetBlock = section.footer?.[0] ?? null;
+            else targetBlock = section.children[0] ?? null;
+
+            this.runtime.dispatch(Operations.setEditingMode(targetMode));
+            
+            if (targetBlock) {
+              const inlineId = isTextBlock(targetBlock) ? (targetBlock.children[0]?.id || "") : "";
+              const pos: LogicalPosition = {
+                sectionId: section.id,
+                blockId: targetBlock.id,
+                inlineId,
+                offset: 0
+              };
+              this.runtime.dispatch(Operations.setSelection({ anchor: pos, focus: pos }));
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    const position = this.cursorCalc.calculateFromMouseEvent(event);
     if (!position) return;
 
-    const state = this.runtime.getState();
-    const block = state.document.sections
-      .flatMap((s) => s.children)
+    const block = getAllBlocks(state.document)
       .find((b) => b.id === position.blockId);
 
     if (!block || !isTextBlock(block)) return;
@@ -635,16 +554,8 @@ export class OasisEditorController {
     );
 
     // If format painter is active, a double click should format the selected word
-    if (this.formatPainterActive && this.formatPainterMarks) {
-      this.runtime.dispatch(
-        Operations.applyFormat(
-          this.formatPainterMarks,
-          this.formatPainterAlign,
-        ),
-      );
-      if (!this.formatPainterSticky) {
-        this.toggleFormatPainter();
-      }
+    if (this.formatPainter.shouldApplyOnMouseUp()) {
+      this.formatPainter.apply();
     }
   }
 
@@ -652,12 +563,11 @@ export class OasisEditorController {
    * Selects the whole block (paragraph) on triple click.
    */
   handleTripleClick(event: MouseEvent): void {
-    const position = this.calculatePositionFromEvent(event);
+    const position = this.cursorCalc.calculateFromMouseEvent(event);
     if (!position) return;
 
     const state = this.runtime.getState();
-    const block = state.document.sections
-      .flatMap((s) => s.children)
+    const block = getAllBlocks(state.document)
       .find((b) => b.id === position.blockId);
 
     if (!block || !isTextBlock(block)) return;
@@ -682,16 +592,8 @@ export class OasisEditorController {
     );
 
     // If format painter is active, triple click should format the selected paragraph
-    if (this.formatPainterActive && this.formatPainterMarks) {
-      this.runtime.dispatch(
-        Operations.applyFormat(
-          this.formatPainterMarks,
-          this.formatPainterAlign,
-        ),
-      );
-      if (!this.formatPainterSticky) {
-        this.toggleFormatPainter();
-      }
+    if (this.formatPainter.shouldApplyOnMouseUp()) {
+      this.formatPainter.apply();
     }
   }
 
@@ -703,169 +605,5 @@ export class OasisEditorController {
     this.runtime.setLayout(layout);
     const viewModel = this.presenter.present({ state, layout });
     this.view.render(viewModel);
-  }
-
-  private handleTableDragStart(tableId: string, event: MouseEvent): void {
-    this.isTableDragging = true;
-    this.draggingTableId = tableId;
-    document.body.style.cursor = "grabbing";
-
-    // Create Ghost element
-    if (this.latestLayout) {
-      // Find the table block to get its cells' IDs
-      const state = this.runtime.getState();
-      let tableBlock: any = null;
-      for (const section of state.document.sections) {
-        const found = section.children.find((b) => b.id === tableId);
-        if (found) {
-          tableBlock = found;
-          break;
-        }
-      }
-
-      if (tableBlock && tableBlock.kind === "table") {
-        const cellIds = new Set<string>();
-        tableBlock.rows.forEach((row: any) => {
-          row.cells.forEach((cell: any) => cellIds.add(cell.id));
-        });
-
-        // Find all fragments that belong to these cells
-        const fragments = Object.values(this.latestLayout.fragmentsByBlockId)
-          .flat()
-          .filter((f) => cellIds.has(f.blockId));
-
-        if (fragments.length > 0) {
-          // Calculate total bounding box of the table on its first page
-          const firstPageId = fragments[0].pageId;
-          const tableFragmentsOnPage = fragments.filter(
-            (f) => f.pageId === firstPageId,
-          );
-
-          let minX = Infinity,
-            minY = Infinity,
-            maxX = -Infinity,
-            maxY = -Infinity;
-          tableFragmentsOnPage.forEach((f) => {
-            minX = Math.min(minX, f.rect.x);
-            minY = Math.min(minY, f.rect.y);
-            maxX = Math.max(maxX, f.rect.x + f.rect.width);
-            maxY = Math.max(maxY, f.rect.y + f.rect.height);
-          });
-
-          this.tableGhost = document.createElement("div");
-          this.tableGhost.className = "oasis-table-ghost";
-          this.tableGhost.style.width = `${maxX - minX}px`;
-          this.tableGhost.style.height = `${maxY - minY}px`;
-          this.tableGhost.style.left = `${event.clientX}px`;
-          this.tableGhost.style.top = `${event.clientY}px`;
-          this.tableGhost.style.transform = "translate(-20px, -20px)";
-
-          document.body.appendChild(this.tableGhost);
-        }
-      }
-    }
-  }
-
-  private handleTableDragging(event: MouseEvent): void {
-    if (!this.isTableDragging || !this.latestLayout) return;
-
-    // Move ghost
-    if (this.tableGhost) {
-      this.tableGhost.style.left = `${event.clientX}px`;
-      this.tableGhost.style.top = `${event.clientY}px`;
-    }
-
-    const dropTarget = this.findDropTarget(event);
-    if (dropTarget) {
-      this.currentDropTarget = dropTarget;
-      this.showDropIndicator(dropTarget);
-    } else {
-      this.hideDropIndicator();
-    }
-  }
-
-  private handleTableMouseUp(event: MouseEvent): void {
-    if (!this.isTableDragging) return;
-
-    if (this.currentDropTarget && this.draggingTableId) {
-      this.runtime.dispatch(
-        Operations.moveBlock(
-          this.draggingTableId,
-          this.currentDropTarget.blockId,
-          this.currentDropTarget.isBefore,
-        ),
-      );
-    }
-
-    // Cleanup ghost
-    if (this.tableGhost && this.tableGhost.parentElement) {
-      this.tableGhost.parentElement.removeChild(this.tableGhost);
-    }
-    this.tableGhost = null;
-
-    this.isTableDragging = false;
-    this.draggingTableId = null;
-    this.currentDropTarget = null;
-    this.hideDropIndicator();
-    document.body.style.cursor = "";
-  }
-
-  private findDropTarget(
-    event: MouseEvent,
-  ): { blockId: string; isBefore: boolean; rect: any; pageId: string } | null {
-    // Find the fragment under or nearest to the mouse
-    const element = document.elementFromPoint(event.clientX, event.clientY);
-    const fragmentEl = element?.closest(
-      ".oasis-fragment",
-    ) as HTMLElement | null;
-
-    if (!fragmentEl) return null;
-
-    const fragmentId = fragmentEl.dataset.fragmentId;
-    const blockId = fragmentEl.dataset.blockId; // Need to ensure this is set in PageLayer
-    if (!blockId) return null;
-
-    const rect = fragmentEl.getBoundingClientRect();
-    const isBefore = event.clientY < rect.top + rect.height / 2;
-
-    return {
-      blockId,
-      isBefore,
-      rect: {
-        x: parseFloat(fragmentEl.style.left),
-        y: parseFloat(fragmentEl.style.top),
-        width: rect.width,
-        height: rect.height,
-      },
-      pageId: fragmentEl.parentElement?.dataset.pageId || "",
-    };
-  }
-
-  private showDropIndicator(target: any): void {
-    if (!this.dropIndicator) {
-      this.dropIndicator = document.createElement("div");
-      this.dropIndicator.className = "oasis-drop-indicator";
-      document.body.appendChild(this.dropIndicator);
-    }
-
-    const pageEl = this.view.elements.root.querySelector(
-      `[data-page-id="${target.pageId}"]`,
-    );
-    if (!pageEl) return;
-
-    if (this.dropIndicator.parentElement !== pageEl) {
-      pageEl.appendChild(this.dropIndicator);
-    }
-
-    this.dropIndicator.style.display = "block";
-    this.dropIndicator.style.left = `${target.rect.x}px`;
-    this.dropIndicator.style.width = `${target.rect.width}px`;
-    this.dropIndicator.style.top = `${target.isBefore ? target.rect.y - 2 : target.rect.y + target.rect.height - 1}px`;
-  }
-
-  private hideDropIndicator(): void {
-    if (this.dropIndicator) {
-      this.dropIndicator.style.display = "none";
-    }
   }
 }

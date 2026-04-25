@@ -1,3 +1,5 @@
+import { h } from "../utils/dom.js";
+
 export interface TablePickerListener {
   onTableSelected: (rows: number, cols: number) => void;
 }
@@ -20,41 +22,32 @@ export class TablePicker {
   }
 
   private init(): void {
-    // Dropdown (absolute positioned relative to body or button)
-    this.dropdown = document.createElement("div");
-    this.dropdown.className = "oasis-table-picker-dropdown";
+    this.infoText = h('div', { className: 'oasis-table-picker-info' }, '0 x 0 Table');
+    this.gridContainer = h('div', { className: 'oasis-table-picker-grid' }, 
+        Array.from({ length: 100 }, (_, i) => {
+            const r = Math.floor(i / 10) + 1;
+            const c = (i % 10) + 1;
+            return h('div', {
+                className: 'oasis-table-picker-cell',
+                dataset: { row: r.toString(), col: c.toString() },
+                onMouseOver: (e: MouseEvent) => {
+                    e.stopPropagation();
+                    this.highlightGrid(r, c);
+                },
+                onClick: (e: MouseEvent) => {
+                    e.stopPropagation();
+                    this.listener.onTableSelected(r, c);
+                    this.toggleDropdown();
+                }
+            });
+        })
+    );
 
-    this.infoText = document.createElement("div");
-    this.infoText.className = "oasis-table-picker-info";
-    this.infoText.textContent = "0 x 0 Table";
-    this.dropdown.appendChild(this.infoText);
+    this.dropdown = h('div', { className: 'oasis-table-picker-dropdown' }, [
+        this.infoText,
+        this.gridContainer
+    ]);
 
-    this.gridContainer = document.createElement("div");
-    this.gridContainer.className = "oasis-table-picker-grid";
-
-    for (let r = 1; r <= 10; r++) {
-      for (let c = 1; c <= 10; c++) {
-        const cell = document.createElement("div");
-        cell.className = "oasis-table-picker-cell";
-        cell.dataset["row"] = r.toString();
-        cell.dataset["col"] = c.toString();
-
-        cell.addEventListener("mouseover", (e) => {
-          e.stopPropagation();
-          this.highlightGrid(r, c);
-        });
-
-        cell.addEventListener("click", (e) => {
-          e.stopPropagation();
-          this.listener.onTableSelected(r, c);
-          this.toggleDropdown();
-        });
-
-        this.gridContainer.appendChild(cell);
-      }
-    }
-
-    this.dropdown.appendChild(this.gridContainer);
     document.body.appendChild(this.dropdown);
 
     this.button.addEventListener("click", (e) => {

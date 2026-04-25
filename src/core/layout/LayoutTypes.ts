@@ -11,6 +11,8 @@ export interface PageLayout {
   headerRect: Rect | null;
   footerRect: Rect | null;
   fragments: LayoutFragment[];
+  headerFragments: LayoutFragment[];
+  footerFragments: LayoutFragment[];
 }
 
 export interface LayoutState {

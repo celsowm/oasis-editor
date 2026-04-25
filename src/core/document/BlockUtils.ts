@@ -14,8 +14,18 @@ export function findBlockById(
   blockId: string,
 ): BlockNode | null {
   for (const section of doc.sections) {
-    const found = findBlockInList(section.children, blockId);
-    if (found) return found;
+    const foundMain = findBlockInList(section.children, blockId);
+    if (foundMain) return foundMain;
+    
+    if (section.header) {
+      const foundHeader = findBlockInList(section.header, blockId);
+      if (foundHeader) return foundHeader;
+    }
+    
+    if (section.footer) {
+      const foundFooter = findBlockInList(section.footer, blockId);
+      if (foundFooter) return foundFooter;
+    }
   }
   return null;
 }
@@ -45,6 +55,8 @@ export function getAllBlocks(doc: DocumentModel): BlockNode[] {
   const blocks: BlockNode[] = [];
   for (const section of doc.sections) {
     collectBlocks(section.children, blocks);
+    if (section.header) collectBlocks(section.header, blocks);
+    if (section.footer) collectBlocks(section.footer, blocks);
   }
   return blocks;
 }
@@ -63,6 +75,16 @@ export function collectBlocks(list: BlockNode[], target: BlockNode[]) {
 }
 
 /**
+ * Returns a flat list of blocks from a single section's children list,
+ * recursively descending into tables. Useful for header/footer/main zones.
+ */
+export function getAllBlocksInSection(blocks: BlockNode[]): BlockNode[] {
+  const result: BlockNode[] = [];
+  collectBlocks(blocks, result);
+  return result;
+}
+
+/**
  * Finds the table that contains the given block ID.
  */
 export function findParentTable(
@@ -72,6 +94,16 @@ export function findParentTable(
   for (const section of doc.sections) {
     const res = findTableInList(section.children, blockId);
     if (res) return res;
+    
+    if (section.header) {
+        const resHeader = findTableInList(section.header, blockId);
+        if (resHeader) return resHeader;
+    }
+    
+    if (section.footer) {
+        const resFooter = findTableInList(section.footer, blockId);
+        if (resFooter) return resFooter;
+    }
   }
   return null;
 }

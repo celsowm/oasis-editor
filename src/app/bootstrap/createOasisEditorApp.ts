@@ -12,12 +12,13 @@ import { TablePicker } from "../../ui/components/TablePicker.js";
 import { TableFloatingToolbar } from "../../ui/selection/TableFloatingToolbar.js";
 import { TableMoveHandle } from "../../ui/selection/TableMoveHandle.js";
 import { ImageResizeOverlay } from "../../ui/selection/ImageResizeOverlay.js";
+import { DocxImporter } from "../../engine/import/DocxImporter.js";
 
 export const createOasisEditorApp = (): OasisEditorController => {
   const runtime = new DocumentRuntime();
   const textMeasurer = new BrowserTextMeasurer();
   const measurementService = new TextMeasurementService(textMeasurer);
-  const layoutService = new DocumentLayoutService(textMeasurer);
+  const layoutService = new DocumentLayoutService(textMeasurer, PAGE_TEMPLATES);
   const presenter = new OasisEditorPresenter(Object.values(PAGE_TEMPLATES));
   const dom = new OasisEditorDom(document);
   const view = new OasisEditorView({
@@ -35,11 +36,14 @@ export const createOasisEditorApp = (): OasisEditorController => {
   // Focus hidden input on startup so arrow keys work immediately
   view.elements.hiddenInput.focus();
 
+  const importer = new DocxImporter();
+
   return new OasisEditorController({
     runtime,
     layoutService,
     presenter,
     view,
     measurementService,
+    importer,
   });
 };

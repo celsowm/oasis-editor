@@ -7,4 +7,5 @@ export interface EditorState {
   selection: EditorSelection | null;
   pendingMarks?: MarkSet;
   selectedImageId?: string | null;
+  editingMode: "main" | "header" | "footer";
 }

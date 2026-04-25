@@ -15,40 +15,34 @@ import {
   createDefaultBreakPolicy,
   createDefaultMargins,
 } from "./SectionTypes.js";
+import { IdGenerator } from "../utils/IdGenerator.js";
 
-let sectionCounter = 0;
-let blockCounter = 0;
-let runCounter = 0;
-let imageCounter = 0;
-let tableCounter = 0;
+/** Default generator used by createDocument when none is provided. */
+const defaultIdGen = new IdGenerator();
 
-const nextSectionId = (): string => `section:${sectionCounter++}`;
-const nextBlockId = (): string => `block:${blockCounter++}`;
-const nextRunId = (): string => `run:${runCounter++}`;
-const nextImageId = (): string => `image:${imageCounter++}`;
-const nextTableId = (): string => `table:${tableCounter++}`;
-
-export const createTextRun = (
+const createTextRun = (
   text: string,
   marks: Partial<MarkSet> = {},
+  gen: IdGenerator = defaultIdGen,
 ): TextRun => ({
-  id: nextRunId(),
+  id: gen.nextRunId(),
   text,
   marks,
 });
 
-export const createImage = (
+const createImageNode = (
   src: string,
   naturalWidth: number,
   naturalHeight: number,
   displayWidth: number,
   align: ImageNode["align"] = "center",
   alt = "",
+  gen: IdGenerator = defaultIdGen,
 ): ImageNode => {
   const aspectRatio = naturalHeight / naturalWidth;
   const displayHeight = Math.round(displayWidth * aspectRatio);
   return {
-    id: nextImageId(),
+    id: gen.nextImageId(),
     kind: "image",
     src,
     naturalWidth,
@@ -60,105 +54,133 @@ export const createImage = (
   };
 };
 
-export const createTableCell = (children: BlockNode[] = []): TableCellNode => ({
-  id: nextBlockId(),
+const createTableCell = (
+  children: BlockNode[] = [],
+  gen: IdGenerator = defaultIdGen,
+): TableCellNode => ({
+  id: gen.nextBlockId(),
   kind: "table-cell",
-  children: children.length > 0 ? children : [createParagraph("")],
+  children: children.length > 0 ? children : [createParagraph("", "left", gen)],
 });
 
-export const createTableRow = (cellCount: number): TableRowNode => ({
-  id: nextBlockId(),
+const createTableRow = (
+  cellCount: number,
+  gen: IdGenerator = defaultIdGen,
+): TableRowNode => ({
+  id: gen.nextBlockId(),
   kind: "table-row",
-  cells: Array.from({ length: cellCount }, () => createTableCell()),
+  cells: Array.from({ length: cellCount }, () => createTableCell([], gen)),
 });
 
-export const createTable = (
+const createTable = (
   rows: number,
   cols: number,
   totalWidth = 600,
+  gen: IdGenerator = defaultIdGen,
 ): TableNode => ({
-  id: nextBlockId(),
+  id: gen.nextBlockId(),
   kind: "table",
-  rows: Array.from({ length: rows }, () => createTableRow(cols)),
+  rows: Array.from({ length: rows }, () => createTableRow(cols, gen)),
   columnWidths: Array(cols).fill(Math.floor(totalWidth / cols)),
 });
 
 export const createParagraph = (
   text: string,
   align: ParagraphNode["align"] = "left",
+  gen: IdGenerator = defaultIdGen,
 ): ParagraphNode => ({
-  id: nextBlockId(),
+  id: gen.nextBlockId(),
   kind: "paragraph",
   align,
-  children: [createTextRun(text)],
+  children: [createTextRun(text, {}, gen)],
 });
 
 export const createHeading = (
   text: string,
   level: HeadingNode["level"] = 1,
   align: HeadingNode["align"] = "left",
+  gen: IdGenerator = defaultIdGen,
 ): HeadingNode => ({
-  id: nextBlockId(),
+  id: gen.nextBlockId(),
   kind: "heading",
   level,
   align,
-  children: [createTextRun(text, { bold: true, fontSize: 24 })],
+  children: [createTextRun(text, { bold: true, fontSize: 24 }, gen)],
 });
 
-export const createSection = (children: BlockNode[] = []): SectionNode => ({
-  id: nextSectionId(),
+export const createSection = (
+  children: BlockNode[] = [],
+  gen: IdGenerator = defaultIdGen,
+): SectionNode => ({
+  id: gen.nextSectionId(),
   pageTemplateId: "template:a4:default",
   margins: createDefaultMargins(),
   orientation: "portrait",
   breakPolicy: createDefaultBreakPolicy(),
   children,
+  header: [createParagraph("", "left", gen)],
+  footer: [createParagraph("", "left", gen)],
 });
 
-export const createDocument = (): DocumentModel => ({
+export const createDocument = (
+  gen: IdGenerator = defaultIdGen,
+): DocumentModel => ({
   id: "doc:root",
   revision: 0,
   metadata: createDocumentMetadata("Lorem Ipsum Document"),
   sections: [
-    createSection([
-      createHeading("Lorem Ipsum Dolor Sit Amet", 1),
-      {
-        id: nextBlockId(),
-        kind: "paragraph" as const,
-        align: "left" as const,
-        children: [
-          createTextRun("Lorem ipsum dolor sit amet, ", { bold: true }),
-          createTextRun("consectetur adipiscing elit. "),
-          createTextRun("Integer nec odio. ", { italic: true }),
-          createTextRun("Praesent libero. Sed cursus ante dapibus diam."),
-        ],
-      },
-      createParagraph(
-        "Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa.",
-      ),
-      {
-        id: nextBlockId(),
-        kind: "heading" as const,
-        level: 2 as const,
-        align: "left" as const,
-        children: [
-          createTextRun("Vestibulum Lacinia", { bold: true, fontSize: 18 }),
-        ],
-      },
-      {
-        id: nextBlockId(),
-        kind: "paragraph" as const,
-        align: "left" as const,
-        children: [
-          createTextRun("Vestibulum lacinia arcu eget nulla. "),
-          createTextRun("Class aptent taciti sociosqu", { underline: true }),
-          createTextRun(
-            " ad litora torquent per conubia nostra, per inceptos himenaeos. ",
-          ),
-        ],
-      },
-      createParagraph(
-        "Curabitur sodales ligula in libero. Sed dignissim lacinia nunc. Curabitur tortor. Pellentesque nibh. Aenean quam. In scelerisque sem at dolor. Maecenas mattis. Sed convallis tristique sem. Proin ut ligula vel nunc egestas porttitor. Morbi lectus risus, iaculis vel, suscipit quis, luctus non, massa. Fusce ac turpis quis ligula lacinia aliquet.",
-      ),
-    ]),
+    createSection(
+      [
+        createHeading("Lorem Ipsum Dolor Sit Amet", 1, "left", gen),
+        {
+          id: gen.nextBlockId(),
+          kind: "paragraph" as const,
+          align: "left" as const,
+          children: [
+            createTextRun("Lorem ipsum dolor sit amet, ", { bold: true }, gen),
+            createTextRun("consectetur adipiscing elit. ", {}, gen),
+            createTextRun("Integer nec odio. ", { italic: true }, gen),
+            createTextRun("Praesent libero. Sed cursus ante dapibus diam.", {}, gen),
+          ],
+        },
+        createParagraph(
+          "Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa.",
+          "left",
+          gen,
+        ),
+        {
+          id: gen.nextBlockId(),
+          kind: "heading" as const,
+          level: 2 as const,
+          align: "left" as const,
+          children: [
+            createTextRun("Vestibulum Lacinia", { bold: true, fontSize: 18 }, gen),
+          ],
+        },
+        {
+          id: gen.nextBlockId(),
+          kind: "paragraph" as const,
+          align: "left" as const,
+          children: [
+            createTextRun("Vestibulum lacinia arcu eget nulla. ", {}, gen),
+            createTextRun("Class aptent taciti sociosqu", { underline: true }, gen),
+            createTextRun(
+              " ad litora torquent per conubia nostra, per inceptos himenaeos. ",
+              {},
+              gen,
+            ),
+          ],
+        },
+        createParagraph(
+          "Curabitur sodales ligula in libero. Sed dignissim lacinia nunc. Curabitur tortor. Pellentesque nibh. Aenean quam. In scelerisque sem at dolor. Maecenas mattis. Sed convallis tristique sem. Proin ut ligula vel nunc egestas porttitor. Morbi lectus risus, iaculis vel, suscipit quis, luctus non, massa. Fusce ac turpis quis ligula lacinia aliquet.",
+          "left",
+          gen,
+        ),
+      ],
+      gen,
+    ),
   ],
 });
+
+// Re-export factory functions for external use
+export { createTextRun, createImageNode as createImage, createTableCell, createTableRow, createTable };

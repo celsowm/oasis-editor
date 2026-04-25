@@ -18,6 +18,8 @@ export interface SectionNode {
   margins: Margins;
   orientation: "portrait" | "landscape";
   children: BlockNode[];
+  header?: BlockNode[];
+  footer?: BlockNode[];
   breakPolicy: SectionBreakPolicy;
 }
 

@@ -202,4 +202,8 @@ export const Operations = {
     type: OperationType.SET_INDENTATION,
     payload: { indentation },
   }),
+  setEditingMode: (mode: "main" | "header" | "footer"): EditorOperation => ({
+    type: OperationType.SET_EDITING_MODE,
+    payload: { mode },
+  }),
 };

@@ -40,6 +40,7 @@ export interface EditorViewModel {
   selectedImageId: string | null;
   activeTableId: string | null;
   activeTableFirstCellId: string | null;
+  editingMode: "main" | "header" | "footer";
   layout: LayoutState;
 }
 
@@ -145,6 +146,7 @@ export class OasisEditorPresenter {
       selectedImageId: state.selectedImageId ?? null,
       activeTableId,
       activeTableFirstCellId,
+      editingMode: state.editingMode,
       layout,
     };
   }

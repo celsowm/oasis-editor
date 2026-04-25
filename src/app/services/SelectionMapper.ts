@@ -75,7 +75,12 @@ export class SelectionMapper {
     let visualEndAbs = 0;
 
     for (const page of this.layout.pages) {
-      for (const fragment of page.fragments) {
+      const allPageFragments = [
+        ...page.headerFragments,
+        ...page.fragments,
+        ...page.footerFragments,
+      ];
+      for (const fragment of allPageFragments) {
         if (
           fragment.blockId === start.blockId &&
           fragment.blockId === end.blockId
@@ -121,7 +126,12 @@ export class SelectionMapper {
     let done = false;
 
     for (const page of this.layout.pages) {
-      for (const fragment of page.fragments) {
+      const allPageFragments = [
+        ...page.headerFragments,
+        ...page.fragments,
+        ...page.footerFragments,
+      ];
+      for (const fragment of allPageFragments) {
         if (!fragment.lines) continue;
 
         for (const line of fragment.lines) {

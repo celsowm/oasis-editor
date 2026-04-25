@@ -3,6 +3,7 @@ import {
   LogicalRange,
   LogicalPosition,
 } from "../../core/selection/SelectionTypes.js";
+import { normalizeSelection as normalizeSelectionRange } from "../../core/selection/SelectionService.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { CaretOverlay } from "../selection/CaretOverlay.js";
@@ -16,20 +17,31 @@ export class PageViewport {
   private measurer: TextMeasurer;
   private caretOverlays: Map<string, CaretOverlay>;
   private selectionOverlays: Map<string, SelectionOverlay>;
-  private mapper: SelectionMapper | null;
+  private injectedMapper: SelectionMapper | undefined;
 
-  constructor(root: HTMLElement, pageLayer: PageLayer, measurer: TextMeasurer) {
+  constructor(
+    root: HTMLElement,
+    pageLayer: PageLayer,
+    measurer: TextMeasurer,
+    mapper?: SelectionMapper,
+  ) {
     this.root = root;
     this.pageLayer = pageLayer;
     this.measurer = measurer;
     this.caretOverlays = new Map();
     this.selectionOverlays = new Map();
-    this.mapper = null;
+    this.injectedMapper = mapper;
   }
 
-  render(layout: LayoutState, selection: EditorSelection | null): void {
-    this.pageLayer.render(layout);
-    this.mapper = new SelectionMapper(layout, this.measurer);
+  render(
+    layout: LayoutState,
+    selection: EditorSelection | null,
+    editingMode: "main" | "header" | "footer" = "main",
+  ): void {
+    this.pageLayer.render(layout, editingMode);
+
+    // Use injected mapper or create a default for this layout
+    const mapper = this.injectedMapper ?? new SelectionMapper(layout, this.measurer);
 
     // Clear old overlays
     this.caretOverlays.forEach((o) => o.render(null));
@@ -43,26 +55,27 @@ export class PageViewport {
       (selection.anchor.offset === selection.focus.offset &&
         selection.anchor.blockId === selection.focus.blockId)
     ) {
-      const caretRect = this.mapper.getCaretRect(
+      const caretRect = mapper.getCaretRect(
         selection.anchor || selection.focus,
       );
       if (caretRect) {
-        this.getOrCreateCaretOverlay(caretRect.pageId).render(
+        this.getOrCreateCaretOverlay(caretRect.pageId, mapper).render(
           selection.anchor || selection.focus,
         );
       }
     } else {
       // Handle selection
-      const range = this.normalizeSelection(selection);
-      const rects = this.mapper.getSelectionRects(range);
+      const range = normalizeSelectionRange(selection)!;
+      const rects = mapper.getSelectionRects(range);
       rects.forEach((rect) => {
-        this.getOrCreateSelectionOverlay(rect.pageId).render(range);
+        this.getOrCreateSelectionOverlay(rect.pageId, mapper).render(range);
       });
     }
   }
 
   getOrCreateCaretOverlay(
     pageId: string,
+    mapper: SelectionMapper,
   ): CaretOverlay | { render: () => void } {
     if (this.caretOverlays.has(pageId)) {
       const existingOverlay = this.caretOverlays.get(pageId)!;
@@ -91,7 +104,7 @@ export class PageViewport {
 
       this.caretOverlays.set(
         pageId,
-        new CaretOverlay(overlayContainer, this.mapper!),
+        new CaretOverlay(overlayContainer, mapper),
       );
     }
     return this.caretOverlays.get(pageId)!;
@@ -99,6 +112,7 @@ export class PageViewport {
 
   getOrCreateSelectionOverlay(
     pageId: string,
+    mapper: SelectionMapper,
   ): SelectionOverlay | { render: () => void } {
     if (this.selectionOverlays.has(pageId)) {
       const existingOverlay = this.selectionOverlays.get(pageId)!;
@@ -125,18 +139,10 @@ export class PageViewport {
 
       this.selectionOverlays.set(
         pageId,
-        new SelectionOverlay(overlayContainer, this.mapper!),
+        new SelectionOverlay(overlayContainer, mapper),
       );
     }
     return this.selectionOverlays.get(pageId)!;
   }
 
-  normalizeSelection(selection: EditorSelection): LogicalRange {
-    const a: LogicalPosition = selection.anchor;
-    const b: LogicalPosition = selection.focus;
-    if (a.blockId === b.blockId) {
-      return a.offset <= b.offset ? { start: a, end: b } : { start: b, end: a };
-    }
-    return a.blockId < b.blockId ? { start: a, end: b } : { start: b, end: a };
-  }
 }

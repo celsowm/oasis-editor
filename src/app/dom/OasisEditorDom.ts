@@ -81,6 +81,10 @@ export class OasisEditorDom {
     return this.requireElement("oasis-editor-redo");
   }
 
+  getPrintButton(): HTMLElement {
+    return this.requireElement("oasis-editor-print");
+  }
+
   getExportButton(): HTMLElement {
     return this.requireElement("oasis-editor-export");
   }
@@ -95,6 +99,38 @@ export class OasisEditorDom {
 
   getMenuFileElement(): HTMLElement {
     return this.requireElement("oasis-editor-menu-file");
+  }
+
+  getMenuEditElement(): HTMLElement {
+    return this.requireElement("oasis-editor-menu-edit");
+  }
+
+  getMenuViewElement(): HTMLElement {
+    return this.requireElement("oasis-editor-menu-view");
+  }
+
+  getMenuInsertElement(): HTMLElement {
+    return this.requireElement("oasis-editor-menu-insert");
+  }
+
+  getMenuFormatElement(): HTMLElement {
+    return this.requireElement("oasis-editor-menu-format");
+  }
+
+  getMenuToolsElement(): HTMLElement {
+    return this.requireElement("oasis-editor-menu-tools");
+  }
+
+  getMenuExtensionsElement(): HTMLElement {
+    return this.requireElement("oasis-editor-menu-extensions");
+  }
+
+  getMenuHelpElement(): HTMLElement {
+    return this.requireElement("oasis-editor-menu-help");
+  }
+
+  getZoomSelect(): HTMLSelectElement {
+    return this.requireElement("oasis-editor-zoom") as HTMLSelectElement;
   }
 
   getImportDocxInput(): HTMLInputElement {

@@ -4,6 +4,7 @@ import {
   DocumentModel,
   createDocumentMetadata,
 } from "../../core/document/DocumentTypes.js";
+import { DocumentImporter } from "../../core/import/DocumentImporter.js";
 import {
   BlockNode,
   MarkSet,
@@ -27,22 +28,15 @@ import {
 let blockCounter = 1000;
 const nextBlockId = (): string => `block:import:${blockCounter++}`;
 
-export class DocxImporter {
+export class DocxImporter implements DocumentImporter {
   public async importFromBuffer(
-    arrayBuffer: ArrayBuffer | Buffer,
+    arrayBuffer: ArrayBuffer,
   ): Promise<DocumentModel> {
     // The types say input must be something like { buffer: Buffer } or { arrayBuffer: ArrayBuffer }
     // but in mammoth 1.4+, we can just pass { buffer: ... } if it's a buffer or use { arrayBuffer }
     // depending on the platform. Sometimes Node Buffer works better:
 
-    let result;
-    if (typeof Buffer !== "undefined" && Buffer.isBuffer(arrayBuffer)) {
-      result = await mammoth.convertToHtml({ buffer: arrayBuffer });
-    } else {
-      // Mammoth browser version uses { arrayBuffer: ... }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer } as any);
-    }
+    const result = await mammoth.convertToHtml({ arrayBuffer });
 
     const html = result.value;
     return this.parseHtmlToDocument(html);

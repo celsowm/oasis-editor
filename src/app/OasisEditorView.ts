@@ -22,6 +22,18 @@ import {
   MoveHandleEvents,
 } from "../ui/selection/TableMoveHandle.js";
 import { LayoutFragment } from "../core/layout/LayoutFragment.js";
+import { h, fragment } from "../ui/utils/dom.js";
+export type {
+  ViewEventBindings,
+  KeyboardEvents,
+  MouseEvents,
+  FormattingEvents,
+  CommandEvents,
+  ListEvents,
+  ImageEvents,
+  TableEvents,
+} from "./events/ViewEventBindings.js";
+import { ViewEventBindings } from "./events/ViewEventBindings.js";
 
 export interface ViewElements {
   root: HTMLElement;
@@ -33,6 +45,7 @@ export interface ViewElements {
   underlineButton: HTMLElement;
   undoButton: HTMLElement;
   redoButton: HTMLElement;
+  printButton: HTMLElement;
   status: HTMLElement;
   metrics: HTMLElement;
   hiddenInput: HTMLInputElement;
@@ -49,7 +62,15 @@ export interface ViewElements {
   imageFileInput: HTMLInputElement;
   insertTableButton: HTMLElement;
   menuFile: HTMLElement;
+  menuEdit: HTMLElement;
+  menuView: HTMLElement;
+  menuInsert: HTMLElement;
+  menuFormat: HTMLElement;
+  menuTools: HTMLElement;
+  menuExtensions: HTMLElement;
+  menuHelp: HTMLElement;
   importDocxInput: HTMLInputElement;
+  zoomSelect: HTMLSelectElement;
 }
 
 export interface SelectionState {
@@ -60,48 +81,6 @@ export interface SelectionState {
   align: "left" | "center" | "right" | "justify";
   isListItem: boolean;
   isOrderedListItem: boolean;
-}
-
-export interface ViewEventBindings {
-  onFormatPainterToggle: () => void;
-  onFormatPainterDoubleClick: () => void;
-  onBold: () => void;
-  onItalic: () => void;
-  onUnderline: () => void;
-  onColorChange: (color: string) => void;
-  onUndo: () => void;
-  onRedo: () => void;
-  onTemplateChange: (templateId: string) => void;
-  onAlign: (align: "left" | "center" | "right" | "justify") => void;
-  onToggleBullets: () => void;
-  onToggleNumberedList: () => void;
-  onTextInput: (text: string) => void;
-  onDelete: () => void;
-  onEnter: (isShift: boolean) => void;
-  onArrowKey: (key: string) => void;
-  onMouseDown: (e: MouseEvent) => void;
-  onMouseMove: (e: MouseEvent) => void;
-  onMouseUp: (e: MouseEvent) => void;
-  onDblClick?: (e: MouseEvent) => void;
-  onTripleClick?: (e: MouseEvent) => void;
-  onDecreaseIndent: () => void;
-  onIncreaseIndent: () => void;
-  onInsertImage: (
-    src: string,
-    naturalWidth: number,
-    naturalHeight: number,
-    displayWidth: number,
-  ) => void;
-  onImportDocx: (file: File) => void;
-  onResizeImage: (blockId: string, width: number, height: number) => void;
-  onSelectImage: (blockId: string) => void;
-  onInsertTable: (rows: number, cols: number) => void;
-  onTableAction: (action: string, tableId: string) => void;
-  onTableMove: (
-    tableId: string,
-    targetBlockId: string,
-    isBefore: boolean,
-  ) => void;
 }
 
 export interface ViewDeps {
@@ -128,6 +107,13 @@ export interface ViewDeps {
   ) => ImageResizeOverlay;
 }
 
+interface MenuItem {
+  label: string;
+  shortcut?: string;
+  action?: () => void;
+  separator?: boolean;
+}
+
 export class OasisEditorView {
   private dom: OasisEditorDom;
   private presenter: OasisEditorPresenter;
@@ -141,6 +127,7 @@ export class OasisEditorView {
   private tableMoveHandle!: TableMoveHandle;
   private events!: ViewEventBindings;
   private deps: ViewDeps;
+  private activeMenu: HTMLElement | null = null;
 
   constructor(deps: ViewDeps) {
     this.deps = deps;
@@ -156,6 +143,7 @@ export class OasisEditorView {
       underlineButton: this.dom.getUnderlineButton(),
       undoButton: this.dom.getUndoButton(),
       redoButton: this.dom.getRedoButton(),
+      printButton: this.dom.getPrintButton(),
       status: this.dom.getStatus(),
       metrics: this.dom.getMetrics(),
       hiddenInput: this.dom.getHiddenInput(),
@@ -172,7 +160,15 @@ export class OasisEditorView {
       imageFileInput: this.dom.getImageFileInput(),
       insertTableButton: this.dom.getInsertTableButton(),
       menuFile: this.dom.getMenuFileElement(),
+      menuEdit: this.dom.getMenuEditElement(),
+      menuView: this.dom.getMenuViewElement(),
+      menuInsert: this.dom.getMenuInsertElement(),
+      menuFormat: this.dom.getMenuFormatElement(),
+      menuTools: this.dom.getMenuToolsElement(),
+      menuExtensions: this.dom.getMenuExtensionsElement(),
+      menuHelp: this.dom.getMenuHelpElement(),
       importDocxInput: this.dom.getImportDocxInput(),
+      zoomSelect: this.dom.getZoomSelect(),
     };
 
     this.pageLayer = new PageLayer(this.elements.pagesContainer);
@@ -181,17 +177,18 @@ export class OasisEditorView {
       this.pageLayer,
       deps.measurer,
     );
+
+    // Global click listener to close menus
+    document.addEventListener("click", () => this.closeMenu());
   }
 
   renderTemplateOptions(options: { value: string; label: string }[]): void {
     this.elements.templateSelect.innerHTML = "";
 
-    options.forEach((option) => {
-      const optionElement = document.createElement("option");
-      optionElement.value = option.value;
-      optionElement.textContent = option.label;
-      this.elements.templateSelect.appendChild(optionElement);
-    });
+    const frags = fragment(
+        ...options.map(opt => h('option', { value: opt.value }, opt.label))
+    );
+    this.elements.templateSelect.appendChild(frags);
   }
 
   bind(events: ViewEventBindings): void {
@@ -245,6 +242,7 @@ export class OasisEditorView {
 
     this.elements.undoButton.addEventListener("click", events.onUndo);
     this.elements.redoButton.addEventListener("click", events.onRedo);
+    this.elements.printButton.addEventListener("click", () => events.onPrint ? events.onPrint() : window.print());
     this.elements.templateSelect.addEventListener("change", (event) =>
       events.onTemplateChange((event.target as HTMLSelectElement).value),
     );
@@ -273,25 +271,30 @@ export class OasisEditorView {
       events.onIncreaseIndent(),
     );
 
+    // Zoom select
+    this.elements.zoomSelect.addEventListener("change", (e) => {
+      const zoom = (e.target as HTMLSelectElement).value;
+      console.log("Zoom changed to:", zoom);
+      // For now we don't have a specific event for zoom in bindings, but we could add it.
+      // Or just apply CSS scale to pages container.
+      if (zoom === "fit") {
+        // Implement fit logic
+      } else {
+        const scale = parseInt(zoom) / 100;
+        this.elements.pagesContainer.style.transform = `scale(${scale})`;
+        this.elements.pagesContainer.style.transformOrigin = "top center";
+      }
+    });
+
     // Hidden input for keyboard handling
     this.elements.hiddenInput.addEventListener("input", (e) => {
       const inputEvent = e as InputEvent;
-      console.log("=== Hidden input event ===", inputEvent.data);
-      console.log(
-        "Hidden input focado?",
-        document.activeElement === this.elements.hiddenInput,
-      );
       events.onTextInput(inputEvent.data ?? "");
       this.elements.hiddenInput.value = "";
     });
 
     this.elements.hiddenInput.addEventListener("keydown", (e) => {
       const ke = e as KeyboardEvent;
-      console.log("=== Hidden input keydown ===", ke.key);
-      console.log(
-        "Hidden input focado?",
-        document.activeElement === this.elements.hiddenInput,
-      );
       if (ke.key === "Backspace") {
         events.onDelete();
         ke.preventDefault();
@@ -305,6 +308,9 @@ export class OasisEditorView {
           events.onIncreaseIndent();
         }
         ke.preventDefault();
+      } else if (ke.key === "Escape") {
+        events.onEscape();
+        ke.preventDefault();
       } else if (
         ke.key.startsWith("Arrow") ||
         ke.key === "Home" ||
@@ -312,6 +318,12 @@ export class OasisEditorView {
       ) {
         events.onArrowKey(ke.key);
         ke.preventDefault();
+      } else if (ke.ctrlKey || ke.metaKey) {
+          if (ke.key === 'b') { events.onBold(); ke.preventDefault(); }
+          else if (ke.key === 'i') { events.onItalic(); ke.preventDefault(); }
+          else if (ke.key === 'u') { events.onUnderline(); ke.preventDefault(); }
+          else if (ke.key === 'z') { events.onUndo(); ke.preventDefault(); }
+          else if (ke.key === 'y') { events.onRedo(); ke.preventDefault(); }
       }
     });
 
@@ -396,11 +408,8 @@ export class OasisEditorView {
       reader.readAsDataURL(file);
     });
 
-    // ── Import DOCX ──
-    this.elements.menuFile.addEventListener("click", () => {
-      this.elements.importDocxInput.value = "";
-      this.elements.importDocxInput.click();
-    });
+    // ── Menus ──
+    this.setupMenus(events);
 
     this.elements.importDocxInput.addEventListener("change", () => {
       const file = this.elements.importDocxInput.files?.[0];
@@ -418,6 +427,135 @@ export class OasisEditorView {
     });
   }
 
+  private setupMenus(events: ViewEventBindings): void {
+    // File Menu
+    this.elements.menuFile.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.toggleMenu(this.elements.menuFile, [
+        { label: "New", action: () => console.log("New document") },
+        { label: "Open", action: () => console.log("Open document") },
+        { separator: true, label: "" },
+        { label: "Import DOCX...", action: () => this.elements.importDocxInput.click() },
+        { label: "Download", action: () => console.log("Download") },
+        { separator: true, label: "" },
+        { label: "Print", shortcut: "Ctrl+P", action: () => events.onPrint ? events.onPrint() : window.print() },
+      ]);
+    });
+
+    // Edit Menu
+    this.elements.menuEdit.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.toggleMenu(this.elements.menuEdit, [
+        { label: "Undo", shortcut: "Ctrl+Z", action: () => events.onUndo() },
+        { label: "Redo", shortcut: "Ctrl+Y", action: () => events.onRedo() },
+        { separator: true, label: "" },
+        { label: "Cut", shortcut: "Ctrl+X", action: () => document.execCommand("cut") },
+        { label: "Copy", shortcut: "Ctrl+C", action: () => document.execCommand("copy") },
+        { label: "Paste", shortcut: "Ctrl+V", action: () => document.execCommand("paste") },
+      ]);
+    });
+
+    // Insert Menu
+    this.elements.menuInsert.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.toggleMenu(this.elements.menuInsert, [
+        { label: "Image", action: () => this.elements.insertImageButton.click() },
+        { label: "Table", action: () => console.log("Open table picker") },
+        { label: "Drawing", action: () => console.log("Insert drawing") },
+        { label: "Horizontal line", action: () => console.log("Insert HR") },
+      ]);
+    });
+
+    // Format Menu
+    this.elements.menuFormat.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.toggleMenu(this.elements.menuFormat, [
+        { label: "Bold", shortcut: "Ctrl+B", action: () => events.onBold() },
+        { label: "Italic", shortcut: "Ctrl+I", action: () => events.onItalic() },
+        { label: "Underline", shortcut: "Ctrl+U", action: () => events.onUnderline() },
+        { separator: true, label: "" },
+        { label: "Align Left", action: () => events.onAlign("left") },
+        { label: "Align Center", action: () => events.onAlign("center") },
+        { label: "Align Right", action: () => events.onAlign("right") },
+        { label: "Justify", action: () => events.onAlign("justify") },
+        { separator: true, label: "" },
+        { label: "Clear formatting", action: () => console.log("Clear formatting") },
+      ]);
+    });
+
+    // Help Menu
+    this.elements.menuHelp.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.toggleMenu(this.elements.menuHelp, [
+        { label: "Help Center", action: () => window.open("https://github.com", "_blank") },
+        { label: "Keyboard shortcuts", action: () => console.log("Show shortcuts") },
+        { separator: true, label: "" },
+        { label: "About Oasis Editor", action: () => alert("Oasis Editor v1.0.0") },
+      ]);
+    });
+
+    // Other menus just as placeholders
+    [this.elements.menuView, this.elements.menuTools, this.elements.menuExtensions].forEach(menu => {
+        menu.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.toggleMenu(menu, [
+                { label: "Placeholder Item", action: () => console.log("Placeholder") }
+            ]);
+        });
+    });
+  }
+
+  private toggleMenu(anchor: HTMLElement, items: MenuItem[]): void {
+    if (this.activeMenu) {
+      const wasThisAnchor = this.activeMenu.dataset.anchorId === anchor.id;
+      this.closeMenu();
+      if (wasThisAnchor) return;
+    }
+
+    const rect = anchor.getBoundingClientRect();
+    
+    const dropdown = h('div', {
+        className: 'oasis-dropdown-menu show',
+        dataset: { anchorId: anchor.id },
+        style: {
+            left: `${rect.left}px`,
+            top: `${rect.bottom}px`
+        }
+    }, items.map(item => {
+        if (item.separator) {
+            return h('div', { className: 'oasis-dropdown-separator' });
+        }
+
+        return h('div', {
+            className: 'oasis-dropdown-item',
+            onClick: (e: MouseEvent) => {
+                e.stopPropagation();
+                this.closeMenu();
+                if (item.action) item.action();
+            }
+        }, [
+            h('span', {}, item.label),
+            item.shortcut ? h('span', { className: 'shortcut' }, item.shortcut) : null
+        ]);
+    }));
+
+    document.body.appendChild(dropdown);
+    this.activeMenu = dropdown;
+    anchor.classList.add("active");
+  }
+
+  private closeMenu(): void {
+    if (this.activeMenu) {
+      const anchorId = this.activeMenu.dataset.anchorId;
+      if (anchorId) {
+        const anchor = document.getElementById(anchorId);
+        if (anchor) anchor.classList.remove("active");
+      }
+      this.activeMenu.remove();
+      this.activeMenu = null;
+    }
+  }
+
   setFormatPainterActive(active: boolean, sticky: boolean = false): void {
     if (active) {
       this.elements.formatPainterButton.classList.add("active");
@@ -433,7 +571,11 @@ export class OasisEditorView {
   }
 
   render(viewModel: EditorViewModel): void {
-    this.viewport.render(viewModel.layout, viewModel.selection);
+    this.viewport.render(
+      viewModel.layout,
+      viewModel.selection,
+      viewModel.editingMode,
+    );
     this.elements.templateSelect.value = viewModel.templateId;
     this.elements.status.textContent = viewModel.status;
     this.elements.metrics.textContent = `Rev: ${viewModel.metrics.revision} | Pages: ${viewModel.metrics.pages}`;

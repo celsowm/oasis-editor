@@ -8,6 +8,7 @@ import {
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { LineInfo } from "../layout/LayoutFragment.js";
 import { breakTextIntoLines } from "./LineBreaker.js";
+import { getTypographyForBlockKind } from "./TypographyConfig.js";
 
 export interface BlockTypography {
   fontFamily: string;
@@ -32,10 +33,9 @@ const getBlockTypography = (block: BlockNode): BlockTypography => {
   const children = isTextBlock(block) ? block.children : [];
   const firstRun = children[0];
   const fontFamily = firstRun?.marks.fontFamily ?? "Inter";
-  const fontSize =
-    firstRun?.marks.fontSize ?? (block.kind === "heading" ? 24 : 15);
-  const fontWeight =
-    firstRun?.marks.bold || block.kind === "heading" ? 700 : 400;
+  const typography = getTypographyForBlockKind(block.kind);
+  const fontSize = firstRun?.marks.fontSize ?? typography.fontSize;
+  const fontWeight = firstRun?.marks.bold ? 700 : typography.fontWeight;
 
   return { fontFamily, fontSize, fontWeight };
 };
@@ -79,8 +79,8 @@ export const composeParagraph = (
     broken.push({ text: "", width: 0 });
   }
 
-  const lineHeight =
-    typography.fontSize * (block.kind === "heading" ? 1.35 : 1.5);
+  const typographyConfig = getTypographyForBlockKind(block.kind);
+  const lineHeight = typography.fontSize * typographyConfig.lineHeight;
 
   let currentOffset = 0;
   const align = isTextBlock(block) ? block.align : "left";

@@ -1,5 +1,6 @@
 import { LayoutFragment } from "../../core/layout/LayoutFragment.js";
 import { createIcons, icons } from "lucide";
+import { h } from "../utils/dom.js";
 
 export interface TableToolbarEvents {
   onAddRowAbove: (tableId: string) => void;
@@ -23,80 +24,79 @@ export class TableFloatingToolbar {
   }
 
   private createToolbar(): HTMLElement {
-    const toolbar = document.createElement("div");
-    toolbar.className = "oasis-table-floating-toolbar";
-    toolbar.style.position = "absolute";
-    toolbar.style.display = "none";
-    toolbar.style.zIndex = "1000";
-
     const groups = [
       [
         {
-          icon: '<i data-lucide="arrow-up-to-line"></i>',
+          icon: "arrow-up-to-line",
           label: "Add Row Above",
           action: () => this.events.onAddRowAbove(this.currentTableId!),
         },
         {
-          icon: '<i data-lucide="arrow-down-to-line"></i>',
+          icon: "arrow-down-to-line",
           label: "Add Row Below",
           action: () => this.events.onAddRowBelow(this.currentTableId!),
         },
       ],
       [
         {
-          icon: '<i data-lucide="arrow-left-to-line"></i>',
+          icon: "arrow-left-to-line",
           label: "Add Column Left",
           action: () => this.events.onAddColumnLeft(this.currentTableId!),
         },
         {
-          icon: '<i data-lucide="arrow-right-to-line"></i>',
+          icon: "arrow-right-to-line",
           label: "Add Column Right",
           action: () => this.events.onAddColumnRight(this.currentTableId!),
         },
       ],
       [
         {
-          icon: '<i data-lucide="rows-3"></i>',
+          icon: "rows-3",
           label: "Delete Row",
           action: () => this.events.onDeleteRow(this.currentTableId!),
         },
         {
-          icon: '<i data-lucide="columns-3"></i>',
+          icon: "columns-3",
           label: "Delete Column",
           action: () => this.events.onDeleteColumn(this.currentTableId!),
         },
       ],
       [
         {
-          icon: '<i data-lucide="trash-2"></i>',
+          icon: "trash-2",
           label: "Delete Table",
           action: () => this.events.onDeleteTable(this.currentTableId!),
         },
       ],
     ];
 
-    groups.forEach((group, i) => {
-      const groupEl = document.createElement("div");
-      groupEl.className = "oasis-toolbar-group";
-      group.forEach((item) => {
-        const btn = document.createElement("button");
-        btn.className = "oasis-toolbar-button";
-        btn.title = item.label;
-        btn.innerHTML = item.icon;
-        btn.onmousedown = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          item.action();
-        };
-        groupEl.appendChild(btn);
-      });
-      toolbar.appendChild(groupEl);
-      if (i < groups.length - 1) {
-        const sep = document.createElement("div");
-        sep.className = "oasis-toolbar-separator";
-        toolbar.appendChild(sep);
-      }
-    });
+    const toolbar = h('div', {
+        className: 'oasis-table-floating-toolbar',
+        style: {
+            position: 'absolute',
+            display: 'none',
+            zIndex: '1000'
+        }
+    }, groups.map((group, i) => {
+        const groupEl = h('div', { className: 'oasis-toolbar-group' }, 
+            group.map(item => h('button', {
+                className: 'oasis-toolbar-button',
+                title: item.label,
+                onMouseDown: (e: MouseEvent) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    item.action();
+                }
+            }, [
+                h('i', { dataset: { lucide: item.icon } })
+            ]))
+        );
+
+        if (i < groups.length - 1) {
+            return [groupEl, h('div', { className: 'oasis-toolbar-separator' })];
+        }
+        return groupEl;
+    }).flat());
 
     createIcons({ icons, nameAttr: "data-lucide", root: toolbar });
 

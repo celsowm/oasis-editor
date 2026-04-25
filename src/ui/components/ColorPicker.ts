@@ -1,5 +1,6 @@
 import { THEME_COLORS, STANDARD_COLORS } from "./ColorPalette.js";
 import { createIcons, icons } from "lucide";
+import { h } from "../utils/dom.js";
 
 export interface ColorPickerListener {
   onColorSelected: (color: string) => void;
@@ -17,8 +18,7 @@ export class ColorPicker {
     const parent = document.getElementById(containerId);
     if (!parent) throw new Error(`Container #${containerId} not found`);
 
-    this.container = document.createElement("div");
-    this.container.className = "oasis-color-picker";
+    this.container = h('div', { className: 'oasis-color-picker' });
     parent.appendChild(this.container);
 
     this.listener = listener;
@@ -36,42 +36,33 @@ export class ColorPicker {
   private render(): void {
     this.container.innerHTML = "";
 
-    const combinedButton = document.createElement("button");
-    combinedButton.className = "oasis-color-picker-button";
-    combinedButton.title = "Text Color";
-    combinedButton.type = "button";
-
-    const leftPart = document.createElement("div");
-    leftPart.className = "oasis-color-picker-left";
-
-    const icon = document.createElement("span");
-    icon.className = "oasis-color-picker-icon";
-    icon.innerHTML = '<i data-lucide="baseline"></i>';
-    leftPart.appendChild(icon);
-
-    this.indicator = document.createElement("div");
-    this.indicator.className = "oasis-color-picker-indicator";
-    this.indicator.style.backgroundColor = this.currentColor;
-    leftPart.appendChild(this.indicator);
-
-    combinedButton.appendChild(leftPart);
-
-    const arrow = document.createElement("span");
-    arrow.className = "oasis-color-picker-arrow";
-    arrow.innerHTML = "&#9660;"; // Down arrow
-    combinedButton.appendChild(arrow);
-
-    combinedButton.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.toggleDropdown();
+    this.indicator = h('div', { 
+        className: 'oasis-color-picker-indicator',
+        style: { backgroundColor: this.currentColor }
     });
 
-    this.container.appendChild(combinedButton);
+    const combinedButton = h('button', {
+        className: 'oasis-color-picker-button',
+        title: 'Text Color',
+        type: 'button',
+        onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+            this.toggleDropdown();
+        }
+    }, [
+        h('div', { className: 'oasis-color-picker-left' }, [
+            h('span', { className: 'oasis-color-picker-icon' }, [
+                h('i', { dataset: { lucide: 'baseline' } })
+            ]),
+            this.indicator
+        ]),
+        h('span', { className: 'oasis-color-picker-arrow' }, '▼')
+    ]);
 
-    // Dropdown
-    this.dropdown = document.createElement("div");
-    this.dropdown.className = "oasis-color-picker-dropdown";
+    this.dropdown = h('div', { className: 'oasis-color-picker-dropdown' });
     this.renderDropdownContent();
+
+    this.container.appendChild(combinedButton);
     this.container.appendChild(this.dropdown);
 
     createIcons({ icons, nameAttr: "data-lucide", root: this.container });
@@ -81,67 +72,40 @@ export class ColorPicker {
     if (!this.dropdown) return;
     this.dropdown.innerHTML = "";
 
-    // Automatic (Black)
-    const automatic = document.createElement("div");
-    automatic.className = "oasis-color-picker-automatic";
-
-    const automaticSquare = document.createElement("div");
-    automaticSquare.className = "oasis-color-picker-automatic-square";
-    automatic.appendChild(automaticSquare);
-
-    const automaticLabel = document.createElement("span");
-    automaticLabel.textContent = "Automatic";
-    automatic.appendChild(automaticLabel);
-
-    automatic.addEventListener("click", () => this.selectColor("#000000"));
-    this.dropdown.appendChild(automatic);
+    this.dropdown.appendChild(h('div', {
+        className: 'oasis-color-picker-automatic',
+        onClick: () => this.selectColor('#000000')
+    }, [
+        h('div', { className: 'oasis-color-picker-automatic-square' }),
+        h('span', {}, 'Automatic')
+    ]));
 
     // Theme Colors
-    const themeSection = document.createElement("div");
-    themeSection.className = "oasis-color-picker-section";
-
-    const themeTitle = document.createElement("div");
-    themeTitle.className = "oasis-color-picker-section-title";
-    themeTitle.textContent = "Theme Colors";
-    themeSection.appendChild(themeTitle);
-
-    const themeGrid = document.createElement("div");
-    themeGrid.className = "oasis-color-picker-grid";
-
-    THEME_COLORS.forEach((row) => {
-      row.forEach((swatch) => {
-        themeGrid.appendChild(this.createSwatch(swatch.color, swatch.name));
-      });
-    });
-    themeSection.appendChild(themeGrid);
-    this.dropdown.appendChild(themeSection);
+    this.dropdown.appendChild(h('div', { className: 'oasis-color-picker-section' }, [
+        h('div', { className: 'oasis-color-picker-section-title' }, 'Theme Colors'),
+        h('div', { className: 'oasis-color-picker-grid' }, 
+            THEME_COLORS.flatMap(row => 
+                row.map(swatch => this.createSwatch(swatch.color, swatch.name))
+            )
+        )
+    ]));
 
     // Standard Colors
-    const standardSection = document.createElement("div");
-    standardSection.className = "oasis-color-picker-section";
-
-    const standardTitle = document.createElement("div");
-    standardTitle.className = "oasis-color-picker-section-title";
-    standardTitle.textContent = "Standard Colors";
-    standardSection.appendChild(standardTitle);
-
-    const standardGrid = document.createElement("div");
-    standardGrid.className = "oasis-color-picker-grid";
-
-    STANDARD_COLORS.forEach((swatch) => {
-      standardGrid.appendChild(this.createSwatch(swatch.color, swatch.name));
-    });
-    standardSection.appendChild(standardGrid);
-    this.dropdown.appendChild(standardSection);
+    this.dropdown.appendChild(h('div', { className: 'oasis-color-picker-section' }, [
+        h('div', { className: 'oasis-color-picker-section-title' }, 'Standard Colors'),
+        h('div', { className: 'oasis-color-picker-grid' }, 
+            STANDARD_COLORS.map(swatch => this.createSwatch(swatch.color, swatch.name))
+        )
+    ]));
   }
 
   private createSwatch(color: string, name: string): HTMLElement {
-    const swatch = document.createElement("div");
-    swatch.className = "oasis-color-picker-swatch";
-    swatch.style.backgroundColor = color;
-    swatch.title = name;
-    swatch.addEventListener("click", () => this.selectColor(color));
-    return swatch;
+    return h('div', {
+        className: 'oasis-color-picker-swatch',
+        title: name,
+        style: { backgroundColor: color },
+        onClick: () => this.selectColor(color)
+    });
   }
 
   private toggleDropdown(): void {

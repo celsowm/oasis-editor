@@ -105,6 +105,8 @@ describe("SelectionMapper", () => {
           headerRect: null,
           footerRect: null,
           fragments: [fragment1],
+          headerFragments: [],
+          footerFragments: [],
         },
         {
           id: "p2",
@@ -117,6 +119,8 @@ describe("SelectionMapper", () => {
           headerRect: null,
           footerRect: null,
           fragments: [fragment2],
+          headerFragments: [],
+          footerFragments: [],
         },
       ],
       fragmentsByBlockId: {

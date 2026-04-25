@@ -5,6 +5,34 @@ import { reduceDocumentState } from "./DocumentReducer.js";
 import { LayoutState } from "../layout/LayoutTypes.js";
 import { isTextBlock } from "../document/BlockTypes.js";
 
+function createDefaultState(): EditorState {
+  const doc = createDocument();
+  const firstSection = doc.sections[0];
+  const firstBlock = firstSection.children[0];
+  const firstInlineId = isTextBlock(firstBlock)
+    ? firstBlock.children[0].id
+    : "";
+
+  return {
+    document: doc,
+    selection: {
+      anchor: {
+        sectionId: firstSection.id,
+        blockId: firstBlock.id,
+        inlineId: firstInlineId,
+        offset: 0,
+      },
+      focus: {
+        sectionId: firstSection.id,
+        blockId: firstBlock.id,
+        inlineId: firstInlineId,
+        offset: 0,
+      },
+    },
+    editingMode: "main",
+  };
+}
+
 export class DocumentRuntime {
   private state: EditorState;
   private history: EditorState[];
@@ -12,31 +40,8 @@ export class DocumentRuntime {
   private listeners: Set<(state: EditorState) => void>;
   private latestLayout: LayoutState | null;
 
-  constructor() {
-    const doc = createDocument();
-    const firstSection = doc.sections[0];
-    const firstBlock = firstSection.children[0];
-    const firstInlineId = isTextBlock(firstBlock)
-      ? firstBlock.children[0].id
-      : "";
-
-    this.state = {
-      document: doc,
-      selection: {
-        anchor: {
-          sectionId: firstSection.id,
-          blockId: firstBlock.id,
-          inlineId: firstInlineId,
-          offset: 0,
-        },
-        focus: {
-          sectionId: firstSection.id,
-          blockId: firstBlock.id,
-          inlineId: firstInlineId,
-          offset: 0,
-        },
-      },
-    };
+  constructor(initialState?: EditorState) {
+    this.state = initialState ?? createDefaultState();
     this.history = [];
     this.future = [];
     this.listeners = new Set();

@@ -30,6 +30,11 @@ export enum OperationType {
   DECREASE_INDENT = "DECREASE_INDENT",
   INCREASE_INDENT = "INCREASE_INDENT",
   SET_INDENTATION = "SET_INDENTATION",
+  SET_EDITING_MODE = "SET_EDITING_MODE",
+}
+
+export interface SetEditingModePayload {
+  mode: "main" | "header" | "footer";
 }
 
 export interface TableRowColPayload {
@@ -208,7 +213,8 @@ export type EditorOperation =
   | Operation<OperationType.TOGGLE_ORDERED_LIST, {}>
   | Operation<OperationType.DECREASE_INDENT, {}>
   | Operation<OperationType.INCREASE_INDENT, {}>
-  | Operation<OperationType.SET_INDENTATION, SetIndentationPayload>;
+  | Operation<OperationType.SET_INDENTATION, SetIndentationPayload>
+  | Operation<OperationType.SET_EDITING_MODE, SetEditingModePayload>;
 
 /** @deprecated Use OperationType enum directly */
 export const OPERATION_TYPES = OperationType;

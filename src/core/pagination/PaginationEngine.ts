@@ -3,7 +3,6 @@ import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js"
 import { PageTemplate } from "../pages/PageTemplateTypes.js";
 import { Rect, LayoutFragment, LineInfo } from "../layout/LayoutFragment.js";
 import { PageLayout, LayoutState } from "../layout/LayoutTypes.js";
-import { PAGE_TEMPLATES } from "../pages/PageTemplateFactory.js";
 import { composeParagraph } from "../composition/ParagraphComposer.js";
 import { BlockNode, TableNode } from "../document/BlockTypes.js";
 
@@ -13,6 +12,7 @@ interface PaginationContext {
   currentY: number;
   contentWidth: number;
   contentHeight: number;
+  effectiveTopMargin: number;
   fragmentsByBlockId: Record<string, LayoutFragment[]>;
   pageCounter: number;
   section: any;
@@ -37,13 +37,15 @@ const createNewPage = (ctx: PaginationContext): void => {
     },
     contentRect: {
       x: ctx.template.margins.left,
-      y: ctx.template.margins.top,
+      y: ctx.effectiveTopMargin,
       width: ctx.contentWidth,
       height: ctx.contentHeight,
     },
     headerRect: ctx.currentPage.headerRect,
     footerRect: ctx.currentPage.footerRect,
     fragments: [],
+    headerFragments: [],
+    footerFragments: [],
   };
   ctx.currentY = ctx.currentPage.contentRect.y;
 };
@@ -273,9 +275,57 @@ const processBlocks = (
   }
 };
 
+const applyHeaderFooter = (
+  page: PageLayout,
+  section: any,
+  measure: TextMeasurer,
+  fragmentsByBlockId: Record<string, LayoutFragment[]>,
+): void => {
+  if (page.headerRect && section.header) {
+    const { fragments } = measureBlocks(
+      section.header,
+      page.headerRect.width,
+      measure,
+      section,
+    );
+    for (const f of fragments) {
+      f.rect.x += page.headerRect.x;
+      f.rect.y += page.headerRect.y;
+      f.pageId = page.id;
+      for (const l of f.lines) {
+        l.y += page.headerRect.y;
+      }
+      page.headerFragments.push(f);
+      if (!fragmentsByBlockId[f.blockId]) fragmentsByBlockId[f.blockId] = [];
+      fragmentsByBlockId[f.blockId].push(f);
+    }
+  }
+
+  if (page.footerRect && section.footer) {
+    const { fragments } = measureBlocks(
+      section.footer,
+      page.footerRect.width,
+      measure,
+      section,
+    );
+    for (const f of fragments) {
+      f.rect.x += page.footerRect.x;
+      f.rect.y += page.footerRect.y;
+      f.pageId = page.id;
+      for (const l of f.lines) {
+        l.y += page.footerRect.y;
+      }
+      page.footerFragments.push(f);
+      if (!fragmentsByBlockId[f.blockId]) fragmentsByBlockId[f.blockId] = [];
+      fragmentsByBlockId[f.blockId].push(f);
+    }
+  }
+};
+
 export const paginateDocument = (
   documentModel: DocumentModel,
   measure: TextMeasurer,
+  templates: Record<string, PageTemplate>,
 ): LayoutState => {
   const fragmentsByBlockId: Record<string, LayoutFragment[]> = {};
   const pages: PageLayout[] = [];
@@ -283,27 +333,49 @@ export const paginateDocument = (
 
   for (const section of documentModel.sections) {
     const template: PageTemplate =
-      PAGE_TEMPLATES[section.pageTemplateId] ??
-      PAGE_TEMPLATES["template:a4:default"];
+      templates[section.pageTemplateId] ??
+      templates["template:a4:default"];
+    
     const contentWidth =
       template.size.width - template.margins.left - template.margins.right;
-    const contentHeight =
-      template.size.height - template.margins.top - template.margins.bottom;
+
+    // 1. Measure Header/Footer to determine dynamic margins
+    let headerHeight = 0;
+    let footerHeight = 0;
+    
+    if (template.header.enabled && section.header) {
+        const res = measureBlocks(section.header, contentWidth, measure, section);
+        headerHeight = res.height;
+    }
+    
+    if (template.footer.enabled && section.footer) {
+        const res = measureBlocks(section.footer, contentWidth, measure, section);
+        footerHeight = res.height;
+    }
+
+    const headerTopOffset = 32;
+    const footerBottomOffset = 32;
+    
+    const effectiveTopMargin = Math.max(template.margins.top, headerTopOffset + headerHeight + 16);
+    const effectiveBottomMargin = Math.max(template.margins.bottom, footerBottomOffset + footerHeight + 16);
+    
+    const contentHeight = template.size.height - effectiveTopMargin - effectiveBottomMargin;
 
     const headerRect: Rect | null = template.header.enabled
       ? {
           x: template.margins.left,
-          y: 32,
+          y: headerTopOffset,
           width: contentWidth,
-          height: template.header.height,
+          height: headerHeight,
         }
       : null;
+      
     const footerRect: Rect | null = template.footer.enabled
       ? {
           x: template.margins.left,
-          y: template.size.height - 32 - template.footer.height,
+          y: template.size.height - footerBottomOffset - footerHeight,
           width: contentWidth,
-          height: template.footer.height,
+          height: footerHeight,
         }
       : null;
 
@@ -323,17 +395,20 @@ export const paginateDocument = (
         },
         contentRect: {
           x: template.margins.left,
-          y: template.margins.top,
+          y: effectiveTopMargin,
           width: contentWidth,
           height: contentHeight,
         },
         headerRect,
         footerRect,
         fragments: [],
+        headerFragments: [],
+        footerFragments: [],
       },
-      currentY: template.margins.top,
+      currentY: effectiveTopMargin,
       contentWidth,
       contentHeight,
+      effectiveTopMargin,
       fragmentsByBlockId,
       pageCounter,
       section,
@@ -343,6 +418,37 @@ export const paginateDocument = (
 
     processBlocks(section.children, ctx);
     pages.push(ctx.currentPage);
+
+    // 2. Apply measured header/footer fragments to all pages of this section
+    const sectionPages = pages.filter((p) => p.sectionId === section.id);
+    for (const page of sectionPages) {
+      if (page.headerRect && section.header) {
+        const { fragments } = measureBlocks(section.header, contentWidth, measure, section);
+        for (const f of fragments) {
+          f.rect.x += page.headerRect.x;
+          f.rect.y += page.headerRect.y;
+          f.pageId = page.id;
+          for (const l of f.lines) l.y += page.headerRect.y;
+          page.headerFragments.push(f);
+          if (!fragmentsByBlockId[f.blockId]) fragmentsByBlockId[f.blockId] = [];
+          fragmentsByBlockId[f.blockId].push(f);
+        }
+      }
+      
+      if (page.footerRect && section.footer) {
+        const { fragments } = measureBlocks(section.footer, contentWidth, measure, section);
+        for (const f of fragments) {
+          f.rect.x += page.footerRect.x;
+          f.rect.y += page.footerRect.y;
+          f.pageId = page.id;
+          for (const l of f.lines) l.y += page.footerRect.y;
+          page.footerFragments.push(f);
+          if (!fragmentsByBlockId[f.blockId]) fragmentsByBlockId[f.blockId] = [];
+          fragmentsByBlockId[f.blockId].push(f);
+        }
+      }
+    }
+
     pageCounter = ctx.pageCounter + 1;
   }
 
