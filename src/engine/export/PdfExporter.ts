@@ -207,6 +207,9 @@ export class PdfExporter implements DocumentExporter {
     if (run.marks.underline) {
       node.decoration = "underline";
     }
+    if (run.marks.strike) {
+      node.decoration = node.decoration ? `${node.decoration} lineThrough` : "lineThrough";
+    }
 
     // pdfmake font property is called `font`
     if (run.marks.fontFamily) {

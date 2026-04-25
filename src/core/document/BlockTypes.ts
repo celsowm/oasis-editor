@@ -2,9 +2,13 @@ export interface MarkSet {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
+  strike?: boolean;
   color?: string;
+  highlight?: string;
   fontFamily?: string;
   fontSize?: number;
+  vertAlign?: "superscript" | "subscript";
+  link?: string;
 }
 
 export interface TextRun {
@@ -46,6 +50,7 @@ export interface ListItemNode {
   id: string;
   kind: "list-item";
   align: "left" | "center" | "right" | "justify";
+  level?: number;
   indentation?: number;
   children: TextRun[];
 }
@@ -55,6 +60,7 @@ export interface OrderedListItemNode {
   kind: "ordered-list-item";
   align: "left" | "center" | "right" | "justify";
   index: number;
+  level?: number;
   indentation?: number;
   children: TextRun[];
 }
@@ -64,7 +70,10 @@ export interface TableCellNode {
   kind: "table-cell";
   children: BlockNode[]; // Allows nested blocks like paragraphs
   width?: number;
+  colSpan?: number;
+  rowSpan?: number;
   vAlign?: "top" | "middle" | "bottom";
+  shading?: string; // background color hex
 }
 
 export interface TableRowNode {

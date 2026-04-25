@@ -129,11 +129,15 @@ export class TextFragmentRenderer implements FragmentRenderer {
 
     for (const run of displayRuns) {
       const marks = run.marks || {};
+      const decorations: string[] = [];
+      if (marks.underline) decorations.push("underline");
+      if (marks.strike) decorations.push("line-through");
+
       fragmentEl.appendChild(h("span", {
         style: {
           fontWeight: (marks.bold || fragment.kind === "heading") ? "700" : String(fragment.typography.fontWeight),
           fontStyle: marks.italic ? "italic" : "normal",
-          textDecoration: marks.underline ? "underline" : "none",
+          textDecoration: decorations.length > 0 ? decorations.join(" ") : "none",
           color: marks.color || "inherit"
         }
       }, run.text));

@@ -17,6 +17,7 @@ export interface SelectionState {
   bold: boolean;
   italic: boolean;
   underline: boolean;
+  strike: boolean;
   color: string;
   align: "left" | "center" | "right" | "justify";
   isListItem: boolean;
@@ -102,6 +103,7 @@ export class OasisEditorPresenter {
           bold: !!effectiveMarks.bold,
           italic: !!effectiveMarks.italic,
           underline: !!effectiveMarks.underline,
+          strike: !!effectiveMarks.strike,
           color: effectiveMarks.color || "#000000",
           align: targetBlock.align || "left",
           isListItem: targetBlock.kind === "list-item",
@@ -124,6 +126,7 @@ export class OasisEditorPresenter {
         bold: !!state.pendingMarks.bold,
         italic: !!state.pendingMarks.italic,
         underline: !!state.pendingMarks.underline,
+        strike: !!state.pendingMarks.strike,
         color: state.pendingMarks.color || "#000000",
       };
     }

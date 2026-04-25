@@ -253,6 +253,7 @@ export class DocxExporter implements DocumentExporter {
       text: run.text,
       bold: run.marks.bold,
       italics: run.marks.italic,
+      strike: run.marks.strike,
       color: run.marks.color,
       font: run.marks.fontFamily,
       underline: run.marks.underline ? { type: "single" as const } : undefined,

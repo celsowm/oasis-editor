@@ -6,7 +6,7 @@ import { areMarksEqual } from "../../document/MarkUtils.js";
 import { registerHandler } from "../OperationHandlers.js";
 import { getAllBlocksInSection } from "../../document/BlockUtils.js";
 
-export type BooleanMarkKey = "bold" | "italic" | "underline";
+export type BooleanMarkKey = "bold" | "italic" | "underline" | "strike";
 
 function applyMarksInRange(
   state: EditorState,

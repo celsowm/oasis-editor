@@ -20,6 +20,7 @@ export interface FormattingEvents {
   onBold: () => void;
   onItalic: () => void;
   onUnderline: () => void;
+  onStrikethrough: () => void;
   onColorChange: (color: string) => void;
   onAlign: (align: "left" | "center" | "right" | "justify") => void;
 }

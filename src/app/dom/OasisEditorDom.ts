@@ -37,6 +37,10 @@ export class OasisEditorDom {
     return this.requireElement("oasis-editor-underline");
   }
 
+  getStrikethroughButton(): HTMLElement {
+    return this.requireElement("oasis-editor-strikethrough");
+  }
+
   getColorPickerContainer(): HTMLElement {
     return this.requireElement("oasis-editor-color-picker-container");
   }

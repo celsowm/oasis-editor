@@ -43,6 +43,7 @@ export interface ViewElements {
   boldButton: HTMLElement;
   italicButton: HTMLElement;
   underlineButton: HTMLElement;
+  strikethroughButton: HTMLElement;
   undoButton: HTMLElement;
   redoButton: HTMLElement;
   printButton: HTMLElement;
@@ -141,6 +142,7 @@ export class OasisEditorView {
       boldButton: this.dom.getBoldButton(),
       italicButton: this.dom.getItalicButton(),
       underlineButton: this.dom.getUnderlineButton(),
+      strikethroughButton: this.dom.getStrikethroughButton(),
       undoButton: this.dom.getUndoButton(),
       redoButton: this.dom.getRedoButton(),
       printButton: this.dom.getPrintButton(),
@@ -204,6 +206,7 @@ export class OasisEditorView {
     this.elements.boldButton.addEventListener("click", events.onBold);
     this.elements.italicButton.addEventListener("click", events.onItalic);
     this.elements.underlineButton.addEventListener("click", events.onUnderline);
+    this.elements.strikethroughButton.addEventListener("click", events.onStrikethrough);
 
     this.colorPicker = this.deps.colorPickerFactory(
       "oasis-editor-color-picker-container",
@@ -737,6 +740,10 @@ export class OasisEditorView {
     this.elements.underlineButton.classList.toggle(
       "active",
       selectionState.underline,
+    );
+    this.elements.strikethroughButton.classList.toggle(
+      "active",
+      selectionState.strike,
     );
     this.elements.alignLeft.classList.toggle(
       "active",

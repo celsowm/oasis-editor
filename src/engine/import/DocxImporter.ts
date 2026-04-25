@@ -280,6 +280,8 @@ export class DocxImporter implements DocumentImporter {
           newMarks.italic = true;
         } else if (tagName === "u") {
           newMarks.underline = true;
+        } else if (tagName === "s" || tagName === "del" || tagName === "strike") {
+          newMarks.strike = true;
         }
 
         runs.push(...this.parseRuns(child, newMarks));
