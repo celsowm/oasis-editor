@@ -3,6 +3,7 @@ import {
   Packer,
   Paragraph,
   TextRun,
+  ExternalHyperlink,
   Table,
   TableRow,
   TableCell,
@@ -163,6 +164,54 @@ export class DocxExporter implements DocumentExporter {
       return sectionOptions;
     });
 
+    const bulletLevels = Array.from({ length: 9 }, (_, i) => ({
+      level: i,
+      format: LevelFormat.BULLET,
+      text: ["\u2022", "\u25CB", "\u25AA", "\u2192", "\u2013", "\u203A", "\u2022", "\u25CB", "\u25AA"][i],
+      alignment: AlignmentType.LEFT,
+      style: {
+        paragraph: {
+          indent: { left: convertMillimetersToTwip(10 + i * 5), hanging: convertMillimetersToTwip(5) },
+        },
+      },
+    }));
+
+    const numberLevels = Array.from({ length: 9 }, (_, i) => {
+      const formats = [
+        LevelFormat.DECIMAL,
+        LevelFormat.LOWER_LETTER,
+        LevelFormat.LOWER_ROMAN,
+        LevelFormat.UPPER_LETTER,
+        LevelFormat.UPPER_ROMAN,
+        LevelFormat.DECIMAL,
+        LevelFormat.LOWER_LETTER,
+        LevelFormat.LOWER_ROMAN,
+        LevelFormat.UPPER_LETTER,
+      ];
+      const texts = [
+        "%1.",
+        "%2.",
+        "%3.",
+        "%4.",
+        "%5.",
+        "%6.",
+        "%7.",
+        "%8.",
+        "%9.",
+      ];
+      return {
+        level: i,
+        format: formats[i],
+        text: texts[i],
+        alignment: AlignmentType.LEFT,
+        style: {
+          paragraph: {
+            indent: { left: convertMillimetersToTwip(10 + i * 5), hanging: convertMillimetersToTwip(5) },
+          },
+        },
+      };
+    });
+
     return new Document({
       title: document.metadata.title,
       sections,
@@ -170,35 +219,11 @@ export class DocxExporter implements DocumentExporter {
         config: [
           {
             reference: "bullet-ref",
-            levels: [
-              {
-                level: 0,
-                format: LevelFormat.BULLET,
-                text: "\u2022",
-                alignment: AlignmentType.LEFT,
-                style: {
-                  paragraph: {
-                    indent: { left: convertMillimetersToTwip(10), hanging: convertMillimetersToTwip(5) },
-                  },
-                },
-              },
-            ],
+            levels: bulletLevels,
           },
           {
             reference: "number-ref",
-            levels: [
-              {
-                level: 0,
-                format: LevelFormat.DECIMAL,
-                text: "%1.",
-                alignment: AlignmentType.LEFT,
-                style: {
-                  paragraph: {
-                    indent: { left: convertMillimetersToTwip(10), hanging: convertMillimetersToTwip(5) },
-                  },
-                },
-              },
-            ],
+            levels: numberLevels,
           },
         ],
       },
@@ -218,6 +243,10 @@ export class DocxExporter implements DocumentExporter {
       return [this.convertImage(block)];
     }
 
+    if (block.kind === "page-break") {
+      return [new Paragraph({ pageBreakBefore: true })];
+    }
+
     return [];
   }
 
@@ -227,7 +256,7 @@ export class DocxExporter implements DocumentExporter {
     const children = block.children.map((run) => this.convertTextRun(run));
 
     const baseOptions = {
-      children,
+      children: children as (TextRun | ExternalHyperlink)[],
       alignment: ALIGN_MAP[block.align] ?? AlignmentType.LEFT,
     };
 
@@ -240,15 +269,17 @@ export class DocxExporter implements DocumentExporter {
     if (block.kind === "heading") {
       return new Paragraph({ ...baseOptions, heading: HEADING_MAP[block.level], indent });
     } else if (block.kind === "list-item") {
-      return new Paragraph({ ...baseOptions, numbering: { reference: "bullet-ref", level: 0 }, indent });
+      const level = (block as ListItemNode).level ?? 0;
+      return new Paragraph({ ...baseOptions, numbering: { reference: "bullet-ref", level }, indent });
     } else if (block.kind === "ordered-list-item") {
-      return new Paragraph({ ...baseOptions, numbering: { reference: "number-ref", level: 0 }, indent });
+      const level = (block as OrderedListItemNode).level ?? 0;
+      return new Paragraph({ ...baseOptions, numbering: { reference: "number-ref", level }, indent });
     }
 
     return new Paragraph({ ...baseOptions, indent });
   }
 
-  private convertTextRun(run: OasisTextRun): TextRun {
+  private convertTextRun(run: OasisTextRun): TextRun | ExternalHyperlink {
     const options = {
       text: run.text,
       bold: run.marks.bold,
@@ -259,6 +290,13 @@ export class DocxExporter implements DocumentExporter {
       underline: run.marks.underline ? { type: "single" as const } : undefined,
       size: run.marks.fontSize !== undefined ? run.marks.fontSize * 2 : undefined,
     };
+
+    if (run.marks.link) {
+      return new ExternalHyperlink({
+        children: [new TextRun(options)],
+        link: run.marks.link,
+      });
+    }
 
     return new TextRun(options);
   }
@@ -323,6 +361,33 @@ export class DocxExporter implements DocumentExporter {
       children.push(new Paragraph({ text: "" }));
     }
 
-    return new TableCell({ children });
+    // Handle merged cells
+    const options: {
+      children: (Paragraph | Table)[];
+      columnSpan?: number;
+      rowSpan?: number;
+      shading?: { fill: string };
+      verticalAlign?: "top" | "center" | "bottom";
+    } = { children };
+
+    if (cell.colSpan && cell.colSpan > 1) {
+      options.columnSpan = cell.colSpan;
+    }
+    if (cell.rowSpan && cell.rowSpan > 1) {
+      options.rowSpan = cell.rowSpan;
+    }
+    if (cell.shading) {
+      options.shading = { fill: cell.shading };
+    }
+    if (cell.vAlign) {
+      const vaMap: Record<string, "top" | "center" | "bottom"> = {
+        top: "top",
+        middle: "center",
+        bottom: "bottom",
+      };
+      options.verticalAlign = vaMap[cell.vAlign];
+    }
+
+    return new TableCell(options);
   }
 }

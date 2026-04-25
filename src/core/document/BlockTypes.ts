@@ -46,11 +46,20 @@ export interface ImageNode {
   alt?: string;
 }
 
+export type ListFormat =
+  | "bullet"
+  | "decimal"
+  | "lowerLetter"
+  | "upperLetter"
+  | "lowerRoman"
+  | "upperRoman";
+
 export interface ListItemNode {
   id: string;
   kind: "list-item";
   align: "left" | "center" | "right" | "justify";
   level?: number;
+  listFormat?: ListFormat;
   indentation?: number;
   children: TextRun[];
 }
@@ -61,6 +70,7 @@ export interface OrderedListItemNode {
   align: "left" | "center" | "right" | "justify";
   index: number;
   level?: number;
+  listFormat?: ListFormat;
   indentation?: number;
   children: TextRun[];
 }
@@ -89,13 +99,19 @@ export interface TableNode {
   columnWidths: number[]; // Widths in pixels
 }
 
+export interface PageBreakNode {
+  id: string;
+  kind: "page-break";
+}
+
 export type BlockNode =
   | ParagraphNode
   | HeadingNode
   | ImageNode
   | TableNode
   | ListItemNode
-  | OrderedListItemNode;
+  | OrderedListItemNode
+  | PageBreakNode;
 
 export type TextBlockNode =
   | ParagraphNode

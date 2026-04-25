@@ -41,6 +41,10 @@ export class OasisEditorDom {
     return this.requireElement("oasis-editor-strikethrough");
   }
 
+  getLinkButton(): HTMLElement {
+    return this.requireElement("oasis-editor-link");
+  }
+
   getColorPickerContainer(): HTMLElement {
     return this.requireElement("oasis-editor-color-picker-container");
   }

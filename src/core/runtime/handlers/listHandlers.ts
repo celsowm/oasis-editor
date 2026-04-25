@@ -18,7 +18,7 @@ export function registerListHandlers(): void {
     return updateDocumentSections(state, blockId, (block) => {
       if (!isTextBlock(block)) return block;
       if (block.kind === "paragraph" || block.kind === "ordered-list-item") {
-        return withBlockKind(block, "list-item");
+        return { ...withBlockKind(block, "list-item"), level: 0, listFormat: "bullet" as const };
       } else if (block.kind === "list-item") {
         return withBlockKind(block, "paragraph");
       }
@@ -34,7 +34,7 @@ export function registerListHandlers(): void {
     return updateDocumentSections(state, blockId, (block) => {
       if (!isTextBlock(block)) return block;
       if (block.kind === "paragraph" || block.kind === "list-item") {
-        return { ...withBlockKind(block, "ordered-list-item"), index: 1 };
+        return { ...withBlockKind(block, "ordered-list-item"), index: 1, level: 0, listFormat: "decimal" as const };
       } else if (block.kind === "ordered-list-item") {
         return withBlockKind(block, "paragraph");
       }
@@ -102,15 +102,23 @@ export function registerListHandlers(): void {
 
       nextState = updateDocumentSections(nextState, targetBlock.id, (block) => {
         if (!isTextBlock(block)) return block;
+
+        // For list items, decrease level instead of generic indentation
+        if (block.kind === "list-item" || block.kind === "ordered-list-item") {
+          const currentLevel = (block as any).level ?? 0;
+          const newLevel = Math.max(0, currentLevel - 1);
+          return { ...block, level: newLevel };
+        }
+
         const currentIndent =
           getBlockIndentation(block) ??
-          (block.kind === "list-item"
+          ((block as any).kind === "list-item"
             ? DEFAULT_LIST_INDENTATION
-            : block.kind === "ordered-list-item"
+            : (block as any).kind === "ordered-list-item"
               ? DEFAULT_ORDERED_LIST_INDENTATION
               : 0);
         const step =
-          block.kind === "ordered-list-item"
+          (block as any).kind === "ordered-list-item"
             ? DEFAULT_ORDERED_LIST_INDENTATION
             : DEFAULT_LIST_INDENTATION;
         const newIndent = Math.max(0, currentIndent - step);
@@ -181,15 +189,23 @@ export function registerListHandlers(): void {
 
       nextState = updateDocumentSections(nextState, targetBlock.id, (block) => {
         if (!isTextBlock(block)) return block;
+
+        // For list items, increase level instead of generic indentation
+        if ((block as any).kind === "list-item" || (block as any).kind === "ordered-list-item") {
+          const currentLevel = (block as any).level ?? 0;
+          const newLevel = currentLevel + 1;
+          return { ...block, level: newLevel };
+        }
+
         const currentIndent =
           getBlockIndentation(block) ??
-          (block.kind === "list-item"
+          ((block as any).kind === "list-item"
             ? DEFAULT_LIST_INDENTATION
-            : block.kind === "ordered-list-item"
+            : (block as any).kind === "ordered-list-item"
               ? DEFAULT_ORDERED_LIST_INDENTATION
               : 0);
         const step =
-          block.kind === "ordered-list-item"
+          (block as any).kind === "ordered-list-item"
             ? DEFAULT_ORDERED_LIST_INDENTATION
             : DEFAULT_LIST_INDENTATION;
         const newIndent = currentIndent + step;

@@ -18,6 +18,7 @@ import { WordSelectionController } from "./controllers/WordSelectionController.j
 import { ImportExportController } from "./controllers/ImportExportController.js";
 import { DomHitTester } from "./services/DomHitTester.js";
 import { getAllBlocks } from "../core/document/BlockUtils.js";
+import { isTextBlock } from "../core/document/BlockTypes.js";
 
 export interface ControllerDeps {
   runtime: DocumentRuntime;
@@ -113,6 +114,8 @@ export class OasisEditorController {
       onItalic: () => this.toggleItalic(),
       onUnderline: () => this.toggleUnderline(),
       onStrikethrough: () => this.toggleStrikethrough(),
+      onInsertLink: (url) => this.insertLink(url),
+      onRemoveLink: () => this.removeLink(),
       onColorChange: (color) => this.setColor(color),
       onUndo: () => this.undo(),
       onRedo: () => this.redo(),
@@ -125,6 +128,18 @@ export class OasisEditorController {
         const state = this.runtime.getState();
         if (state.editingMode !== "main") {
           this.runtime.dispatch(Operations.setEditingMode("main"));
+          // Move selection back to first main content block
+          const section = state.document.sections[0];
+          const firstBlock = section?.children[0];
+          if (firstBlock && isTextBlock(firstBlock)) {
+            const pos = {
+              sectionId: section.id,
+              blockId: firstBlock.id,
+              inlineId: firstBlock.children[0]?.id || "",
+              offset: 0,
+            };
+            this.runtime.dispatch(Operations.setSelection({ anchor: pos, focus: pos }));
+          }
         }
       },
       onArrowKey: (key) => this.moveCaret(key),
@@ -142,8 +157,10 @@ export class OasisEditorController {
       onImportDocx: (file) => this.importExport.importDocx(file),
       onExportDocx: () => this.importExport.exportDocx(),
       onExportPdf: () => this.importExport.exportPdf(),
+      onInsertPageBreak: () => this.insertPageBreak(),
       onResizeImage: (blockId, w, h) => this.resizeImage(blockId, w, h),
       onSelectImage: (blockId) => this.selectImage(blockId),
+      onUpdateImageAlt: (blockId, alt) => this.updateImageAlt(blockId, alt),
       onInsertTable: (rows, cols) => this.insertTable(rows, cols),
       onTableAction: (action, tableId) =>
         this.handleTableAction(action, tableId),
@@ -172,6 +189,14 @@ export class OasisEditorController {
     window.addEventListener("mouseup", (e) => {
       if (this.tableDrag.isDraggingTable) this.tableDrag.handleMouseUp(e);
     });
+
+    this.view.elements.root.addEventListener(
+      "image-resize-request",
+      ((e: CustomEvent) => {
+        const { blockId, width, height } = e.detail;
+        this.resizeImage(blockId, width, height);
+      }) as EventListener,
+    );
 
     this.runtime.subscribe(() => {
       this.refresh();
@@ -203,6 +228,18 @@ export class OasisEditorController {
 
   toggleStrikethrough(): void {
     this.runtime.dispatch(Operations.toggleMark("strike"));
+  }
+
+  insertLink(url: string): void {
+    this.runtime.dispatch(Operations.setMark("link", url));
+  }
+
+  removeLink(): void {
+    this.runtime.dispatch(Operations.setMark("link", undefined));
+  }
+
+  insertPageBreak(): void {
+    this.runtime.dispatch(Operations.insertPageBreak());
   }
 
   setColor(color: string): void {
@@ -280,6 +317,10 @@ export class OasisEditorController {
     this.runtime.dispatch(Operations.selectImage(blockId));
   }
 
+  updateImageAlt(blockId: string, alt: string): void {
+    this.runtime.dispatch(Operations.updateImage(blockId, alt));
+  }
+
   insertTable(rows: number, cols: number): void {
     this.runtime.dispatch(Operations.insertTable(rows, cols));
   }
@@ -321,6 +362,12 @@ export class OasisEditorController {
         break;
       case "deleteTable":
         this.runtime.dispatch(Operations.tableDelete(tableId));
+        break;
+      case "mergeCells":
+        this.runtime.dispatch(Operations.tableMergeCells(tableId, selection.anchor.blockId, selection.focus.blockId));
+        break;
+      case "splitCell":
+        this.runtime.dispatch(Operations.tableSplitCell(tableId, selection.anchor.blockId));
         break;
     }
   }

@@ -32,6 +32,7 @@ export interface CommandEvents {
   onPrint?: () => void;
   onExportDocx?: () => void;
   onExportPdf?: () => void;
+  onInsertPageBreak?: () => void;
 }
 
 export interface ListEvents {
@@ -46,6 +47,12 @@ export interface ImageEvents {
   onImportDocx: (file: File) => void;
   onResizeImage: (blockId: string, width: number, height: number) => void;
   onSelectImage: (blockId: string) => void;
+  onUpdateImageAlt: (blockId: string, alt: string) => void;
+}
+
+export interface LinkEvents {
+  onInsertLink: (url: string) => void;
+  onRemoveLink: () => void;
 }
 
 export interface TableEvents {
@@ -55,4 +62,4 @@ export interface TableEvents {
 }
 
 // Combined type for backward compatibility
-export type ViewEventBindings = KeyboardEvents & MouseEvents & FormattingEvents & CommandEvents & ListEvents & ImageEvents & TableEvents;
+export type ViewEventBindings = KeyboardEvents & MouseEvents & FormattingEvents & CommandEvents & ListEvents & ImageEvents & LinkEvents & TableEvents;

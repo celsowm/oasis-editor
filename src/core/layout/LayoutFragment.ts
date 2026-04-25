@@ -36,6 +36,8 @@ export interface LayoutFragment {
   align: "left" | "center" | "right" | "justify";
   indentation?: number;
   listNumber?: number;
+  listFormat?: import("../document/BlockTypes.js").ListFormat;
+  listLevel?: number;
   // Image-specific fields (only populated when kind === "image")
   imageSrc?: string;
   imageAlt?: string;

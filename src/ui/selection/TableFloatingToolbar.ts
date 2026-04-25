@@ -10,6 +10,8 @@ export interface TableToolbarEvents {
   onDeleteRow: (tableId: string) => void;
   onDeleteColumn: (tableId: string) => void;
   onDeleteTable: (tableId: string) => void;
+  onMergeCells?: (tableId: string) => void;
+  onSplitCell?: (tableId: string) => void;
 }
 
 export class TableFloatingToolbar {
@@ -59,6 +61,18 @@ export class TableFloatingToolbar {
           icon: "columns-3",
           label: "Delete Column",
           action: () => this.events.onDeleteColumn(this.currentTableId!),
+        },
+      ],
+      [
+        {
+          icon: "combine",
+          label: "Merge Cells",
+          action: () => { if (this.events.onMergeCells) this.events.onMergeCells(this.currentTableId!); },
+        },
+        {
+          icon: "split",
+          label: "Split Cell",
+          action: () => { if (this.events.onSplitCell) this.events.onSplitCell(this.currentTableId!); },
         },
       ],
       [

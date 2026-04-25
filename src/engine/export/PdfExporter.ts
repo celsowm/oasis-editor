@@ -204,11 +204,16 @@ export class PdfExporter implements DocumentExporter {
       fontSize: run.marks.fontSize,
     };
 
-    if (run.marks.underline) {
-      node.decoration = "underline";
+    const decorations: ("underline" | "lineThrough")[] = [];
+    if (run.marks.underline) decorations.push("underline");
+    if (run.marks.strike) decorations.push("lineThrough");
+    if (run.marks.link) {
+      (node as { link?: string }).link = run.marks.link;
+      node.color = run.marks.color || "#2563eb";
+      if (!decorations.includes("underline")) decorations.push("underline");
     }
-    if (run.marks.strike) {
-      node.decoration = node.decoration ? `${node.decoration} lineThrough` : "lineThrough";
+    if (decorations.length > 0) {
+      node.decoration = decorations.length === 1 ? decorations[0] : decorations;
     }
 
     // pdfmake font property is called `font`

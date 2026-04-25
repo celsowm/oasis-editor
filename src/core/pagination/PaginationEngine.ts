@@ -23,6 +23,35 @@ const processBlocks = (
   const width = containerWidth ?? ctx.contentWidth;
 
   for (const block of blocks) {
+    if (block.kind === "page-break") {
+      createNewPage(ctx);
+      const pbFragment: LayoutFragment = {
+        id: `fragment:${block.id}:0`,
+        blockId: block.id,
+        sectionId: ctx.section.id,
+        pageId: ctx.currentPage.id,
+        fragmentIndex: 0,
+        kind: "page-break",
+        startOffset: 0,
+        endOffset: 0,
+        text: "",
+        rect: {
+          x: ctx.currentPage.contentRect.x + containerX,
+          y: ctx.currentY,
+          width: 0,
+          height: 0,
+        },
+        typography: { fontFamily: "Inter", fontSize: 0, fontWeight: 0 },
+        runs: [],
+        marks: {},
+        lines: [],
+        align: "left",
+      };
+      ctx.currentPage.fragments.push(pbFragment);
+      ctx.fragmentsByBlockId[block.id] = [pbFragment];
+      continue;
+    }
+
     if (block.kind === "image") {
       const { fragment, height } = measureImageBlock(block, width, ctx.section);
       fragment.rect.x = ctx.currentPage.contentRect.x + containerX;
@@ -79,6 +108,8 @@ const processBlocks = (
         align: composed.align,
         indentation: composed.indentation,
         listNumber: composed.listNumber,
+        listFormat: composed.listFormat,
+        listLevel: composed.listLevel,
       };
 
       ctx.currentPage.fragments.push(fragment);

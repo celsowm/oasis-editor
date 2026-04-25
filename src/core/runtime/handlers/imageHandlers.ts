@@ -54,4 +54,20 @@ export function registerImageHandlers(): void {
     selectedImageId: op.payload.blockId,
     selection: null,
   }));
+
+  registerHandler(OperationType.UPDATE_IMAGE, (state, op) => {
+    const { blockId, alt, width, height } = op.payload;
+    return {
+      ...updateDocumentSections(state, blockId, (block) => {
+        if (block.kind !== "image") return block;
+        const updated: typeof block = { ...block };
+        if (alt !== undefined) updated.alt = alt;
+        if (width !== undefined) updated.width = width;
+        if (height !== undefined) updated.height = height;
+        return updated;
+      }),
+      selectedImageId: blockId,
+      selection: null,
+    };
+  });
 }

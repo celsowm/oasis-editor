@@ -5,7 +5,7 @@ import { findBlockById } from "../../document/BlockUtils.js";
 import { isTextBlock, TextRun, BlockNode, TextBlockNode, withBlockKind, withIndentation, getBlockIndentation } from "../../document/BlockTypes.js";
 import { areMarksEqual } from "../../document/MarkUtils.js";
 import { LogicalPosition } from "../../selection/SelectionTypes.js";
-import { createParagraph } from "../../document/DocumentFactory.js";
+import { createParagraph, createPageBreak } from "../../document/DocumentFactory.js";
 import { registerHandler } from "../OperationHandlers.js";
 import {
   DEFAULT_LIST_INDENTATION,
@@ -50,17 +50,46 @@ function updateDocumentSections(
 }
 
 function recalculateListSequences(blocks: BlockNode[]): BlockNode[] {
-  let currentSequenceIndex = 1;
-  let inSequence = false;
+  // Stack of counters per list level
+  const counters: number[] = [];
+  let lastLevel = -1;
+  let lastListKind: "list-item" | "ordered-list-item" | null = null;
 
   return blocks.map((block) => {
-    if (block.kind === "ordered-list-item") {
-      const updated = { ...block, index: currentSequenceIndex++ };
-      inSequence = true;
+    if (block.kind === "ordered-list-item" || block.kind === "list-item") {
+      const level = block.level ?? 0;
+
+      // Reset counters when list type changes or we leave a list context
+      if (lastListKind !== block.kind) {
+        counters.length = 0;
+        lastListKind = block.kind;
+      }
+
+      if (level > lastLevel) {
+        // Going deeper: add new counter levels
+        while (counters.length <= level) {
+          counters.push(0);
+        }
+      } else if (level < lastLevel) {
+        // Going shallower: reset deeper counters
+        for (let i = level + 1; i < counters.length; i++) {
+          counters[i] = 0;
+        }
+      }
+
+      counters[level]++;
+      lastLevel = level;
+
+      const updated =
+        block.kind === "ordered-list-item"
+          ? { ...block, index: counters[level] }
+          : block;
       return updated;
     } else {
-      currentSequenceIndex = 1;
-      inSequence = false;
+      // Non-list block: reset everything
+      counters.length = 0;
+      lastLevel = -1;
+      lastListKind = null;
       // Recursively handle nested blocks in tables if needed
       if (block.kind === "table") {
         const nextRows = block.rows.map((row) => ({
@@ -504,6 +533,46 @@ function handleAppendParagraph(state: EditorState, op: any): EditorState {
   };
 }
 
+function handleInsertPageBreak(state: EditorState, op: any): EditorState {
+  const { selection, document } = state;
+  const { newBlockId } = op.payload;
+  const pageBreak = createPageBreak();
+  if (newBlockId) pageBreak.id = newBlockId;
+
+  let insertSectionIdx = 0;
+  let insertBlockIdx = -1;
+  if (selection) {
+    for (let sIdx = 0; sIdx < document.sections.length; sIdx++) {
+      const idx = document.sections[sIdx].children.findIndex(
+        (b) => b.id === selection.anchor.blockId,
+      );
+      if (idx !== -1) {
+        insertSectionIdx = sIdx;
+        insertBlockIdx = idx;
+        break;
+      }
+    }
+  }
+
+  const nextSections = document.sections.map((section, sIdx) => {
+    if (sIdx !== insertSectionIdx) return section;
+    const children = [...section.children];
+    children.splice(insertBlockIdx + 1, 0, pageBreak);
+    return { ...section, children };
+  });
+
+  return {
+    ...state,
+    document: {
+      ...document,
+      revision: document.revision + 1,
+      sections: nextSections,
+    },
+    selection: null,
+    selectedImageId: null,
+  };
+}
+
 // --- Registration ---
 
 export function registerTextHandlers(): void {
@@ -512,4 +581,5 @@ export function registerTextHandlers(): void {
   registerHandler(OperationType.INSERT_PARAGRAPH, handleInsertParagraph);
   registerHandler(OperationType.DELETE_TEXT, handleDeleteText);
   registerHandler(OperationType.APPEND_PARAGRAPH, handleAppendParagraph);
+  registerHandler(OperationType.INSERT_PAGE_BREAK, handleInsertPageBreak);
 }

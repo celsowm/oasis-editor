@@ -3,17 +3,41 @@ import { transformBlocks } from "../../document/BlockVisitor.js";
 import { BlockNode } from "../../document/BlockTypes.js";
 
 export function recalculateListSequences(blocks: BlockNode[]): BlockNode[] {
-  let currentSequenceIndex = 1;
-  let inSequence = false;
+  const counters: number[] = [];
+  let lastLevel = -1;
+  let lastListKind: "list-item" | "ordered-list-item" | null = null;
 
   return blocks.map((block) => {
-    if (block.kind === "ordered-list-item") {
-      const updated = { ...block, index: currentSequenceIndex++ };
-      inSequence = true;
+    if (block.kind === "ordered-list-item" || block.kind === "list-item") {
+      const level = (block as any).level ?? 0;
+
+      if (lastListKind !== block.kind) {
+        counters.length = 0;
+        lastListKind = block.kind;
+      }
+
+      if (level > lastLevel) {
+        while (counters.length <= level) {
+          counters.push(0);
+        }
+      } else if (level < lastLevel) {
+        for (let i = level + 1; i < counters.length; i++) {
+          counters[i] = 0;
+        }
+      }
+
+      counters[level]++;
+      lastLevel = level;
+
+      const updated =
+        block.kind === "ordered-list-item"
+          ? { ...block, index: counters[level] }
+          : block;
       return updated;
     } else {
-      currentSequenceIndex = 1;
-      inSequence = false;
+      counters.length = 0;
+      lastLevel = -1;
+      lastListKind = null;
       // Recursively handle nested blocks in tables if needed
       if (block.kind === "table") {
         const nextRows = block.rows.map((row) => ({

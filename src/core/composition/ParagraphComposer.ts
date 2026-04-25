@@ -27,6 +27,8 @@ export interface ComposedParagraph {
   align: "left" | "center" | "right" | "justify";
   indentation?: number;
   listNumber?: number;
+  listFormat?: import("../document/BlockTypes.js").ListFormat;
+  listLevel?: number;
 }
 
 const getBlockTypography = (block: BlockNode): BlockTypography => {
@@ -106,6 +108,17 @@ export const composeParagraph = (
     return lineInfo;
   });
 
+  const listFormat =
+    isListItem || isOrderedListItem
+      ? (block as ListItemNode | OrderedListItemNode).listFormat ??
+        (isOrderedListItem ? "decimal" : "bullet")
+      : undefined;
+
+  const listLevel =
+    isListItem || isOrderedListItem
+      ? (block as ListItemNode | OrderedListItemNode).level ?? 0
+      : undefined;
+
   return {
     blockId: block.id,
     kind: block.kind,
@@ -119,5 +132,7 @@ export const composeParagraph = (
     listNumber: isOrderedListItem
       ? (block as OrderedListItemNode).index
       : undefined,
+    listFormat,
+    listLevel,
   };
 };

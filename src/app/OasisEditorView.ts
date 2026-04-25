@@ -1,4 +1,4 @@
-import { EditorViewModel } from "./presenters/OasisEditorPresenter.js";
+import { EditorViewModel, SelectionState } from "./presenters/OasisEditorPresenter.js";
 import { OasisEditorDom } from "./dom/OasisEditorDom.js";
 import { OasisEditorPresenter } from "./presenters/OasisEditorPresenter.js";
 import { TextMeasurer } from "../bridge/measurement/TextMeasurementBridge.js";
@@ -44,6 +44,7 @@ export interface ViewElements {
   italicButton: HTMLElement;
   underlineButton: HTMLElement;
   strikethroughButton: HTMLElement;
+  linkButton: HTMLElement;
   undoButton: HTMLElement;
   redoButton: HTMLElement;
   printButton: HTMLElement;
@@ -72,16 +73,6 @@ export interface ViewElements {
   menuHelp: HTMLElement;
   importDocxInput: HTMLInputElement;
   zoomSelect: HTMLSelectElement;
-}
-
-export interface SelectionState {
-  bold: boolean;
-  italic: boolean;
-  underline: boolean;
-  color: string;
-  align: "left" | "center" | "right" | "justify";
-  isListItem: boolean;
-  isOrderedListItem: boolean;
 }
 
 export interface ViewDeps {
@@ -124,6 +115,7 @@ export class OasisEditorView {
   private colorPicker!: ColorPicker;
   private tablePicker!: TablePicker;
   private imageResizeOverlay: ImageResizeOverlay | null = null;
+  private imageAltInput: HTMLElement | null = null;
   private tableToolbar!: TableFloatingToolbar;
   private tableMoveHandle!: TableMoveHandle;
   private events!: ViewEventBindings;
@@ -143,6 +135,7 @@ export class OasisEditorView {
       italicButton: this.dom.getItalicButton(),
       underlineButton: this.dom.getUnderlineButton(),
       strikethroughButton: this.dom.getStrikethroughButton(),
+      linkButton: this.dom.getLinkButton(),
       undoButton: this.dom.getUndoButton(),
       redoButton: this.dom.getRedoButton(),
       printButton: this.dom.getPrintButton(),
@@ -207,6 +200,15 @@ export class OasisEditorView {
     this.elements.italicButton.addEventListener("click", events.onItalic);
     this.elements.underlineButton.addEventListener("click", events.onUnderline);
     this.elements.strikethroughButton.addEventListener("click", events.onStrikethrough);
+    this.elements.linkButton.addEventListener("click", () => {
+      const url = window.prompt("Enter URL:", "https://");
+      if (url === null) return;
+      if (url.trim() === "") {
+        events.onRemoveLink();
+      } else {
+        events.onInsertLink(url.trim());
+      }
+    });
 
     this.colorPicker = this.deps.colorPickerFactory(
       "oasis-editor-color-picker-container",
@@ -231,6 +233,8 @@ export class OasisEditorView {
       onDeleteRow: (id) => this.events.onTableAction("deleteRow", id),
       onDeleteColumn: (id) => this.events.onTableAction("deleteColumn", id),
       onDeleteTable: (id) => this.events.onTableAction("deleteTable", id),
+      onMergeCells: (id) => this.events.onTableAction("mergeCells", id),
+      onSplitCell: (id) => this.events.onTableAction("splitCell", id),
     });
 
     this.tableMoveHandle = this.deps.tableMoveHandleFactory({
@@ -466,6 +470,7 @@ export class OasisEditorView {
       this.toggleMenu(this.elements.menuInsert, [
         { label: "Image", action: () => this.elements.insertImageButton.click() },
         { label: "Table", action: () => console.log("Open table picker") },
+        { label: "Page break", action: () => { if (this.events.onInsertPageBreak) this.events.onInsertPageBreak(); } },
         { label: "Drawing", action: () => console.log("Insert drawing") },
         { label: "Horizontal line", action: () => console.log("Insert HR") },
       ]);
@@ -588,11 +593,59 @@ export class OasisEditorView {
     this.updateToolbar(viewModel.selectionState);
     this.updateImageOverlay(viewModel);
     this.updateTableToolbar(viewModel);
+    this.updateEditingModeBanner(viewModel.editingMode);
 
     // Ensure hiddenInput is always focused after render to maintain keyboard input
     if (viewModel.selection) {
       this.elements.hiddenInput.focus({ preventScroll: true });
     }
+  }
+
+  private updateEditingModeBanner(mode: "main" | "header" | "footer"): void {
+    const existing = document.getElementById("oasis-editing-mode-banner");
+    if (existing) existing.remove();
+
+    if (mode === "main") return;
+
+    const label = mode === "header" ? "Editing Header" : "Editing Footer";
+    const banner = h("div", {
+      id: "oasis-editing-mode-banner",
+      style: {
+        position: "fixed",
+        top: "8px",
+        left: "50%",
+        transform: "translateX(-50%)",
+        background: "#2563eb",
+        color: "white",
+        padding: "6px 16px",
+        borderRadius: "20px",
+        fontSize: "13px",
+        fontWeight: "500",
+        zIndex: "3000",
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+      },
+    }, [
+      label,
+      h("button", {
+        style: {
+          background: "rgba(255,255,255,0.2)",
+          border: "none",
+          color: "white",
+          padding: "2px 10px",
+          borderRadius: "12px",
+          cursor: "pointer",
+          fontSize: "12px",
+        },
+        onClick: () => {
+          if (this.events.onEscape) this.events.onEscape();
+        },
+      }, "Back to Document"),
+    ]);
+
+    document.body.appendChild(banner);
   }
 
   private updateTableToolbar(viewModel: EditorViewModel): void {
@@ -668,6 +721,10 @@ export class OasisEditorView {
         this.imageResizeOverlay.detach();
         this.imageResizeOverlay = null;
       }
+      if (this.imageAltInput) {
+        this.imageAltInput.remove();
+        this.imageAltInput = null;
+      }
       return;
     }
 
@@ -720,6 +777,9 @@ export class OasisEditorView {
         }
         console.log("VIEW: Attaching overlay to fragment");
         this.imageResizeOverlay.attach(imageFragment);
+
+        // Add alt text input
+        this.renderImageAltInput(imageFragment, pageEl, viewModel);
       }
     } else {
       console.log("VIEW: Image fragment not found in layout!");
@@ -727,7 +787,63 @@ export class OasisEditorView {
         this.imageResizeOverlay.detach();
         this.imageResizeOverlay = null;
       }
+      if (this.imageAltInput) {
+        this.imageAltInput.remove();
+        this.imageAltInput = null;
+      }
     }
+  }
+
+  private renderImageAltInput(
+    fragment: LayoutFragment,
+    pageEl: HTMLElement,
+    viewModel: EditorViewModel,
+  ): void {
+    if (this.imageAltInput) {
+      this.imageAltInput.remove();
+    }
+
+    const input = h("input", {
+      type: "text",
+      placeholder: "Alt text...",
+      value: fragment.imageAlt || "",
+      style: {
+        position: "absolute",
+        left: `${fragment.rect.x}px`,
+        top: `${fragment.rect.y + fragment.rect.height + 4}px`,
+        width: `${Math.max(120, fragment.rect.width)}px`,
+        padding: "4px 8px",
+        fontSize: "12px",
+        border: "1px solid #cbd5e1",
+        borderRadius: "4px",
+        background: "white",
+        zIndex: "1001",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+      },
+      onKeyDown: (e: KeyboardEvent) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const val = (e.target as HTMLInputElement).value;
+          if (this.events.onUpdateImageAlt && viewModel.selectedImageId) {
+            this.events.onUpdateImageAlt(viewModel.selectedImageId, val);
+          }
+          input.blur();
+        }
+      },
+      onBlur: () => {
+        // Remove input on blur after a short delay to allow Enter to process
+        setTimeout(() => {
+          if (this.imageAltInput === input) {
+            this.imageAltInput.remove();
+            this.imageAltInput = null;
+          }
+        }, 200);
+      },
+    });
+
+    pageEl.appendChild(input);
+    input.focus();
+    this.imageAltInput = input;
   }
 
   updateToolbar(selectionState: SelectionState | undefined): void {
@@ -744,6 +860,10 @@ export class OasisEditorView {
     this.elements.strikethroughButton.classList.toggle(
       "active",
       selectionState.strike,
+    );
+    this.elements.linkButton.classList.toggle(
+      "active",
+      !!selectionState.link,
     );
     this.elements.alignLeft.classList.toggle(
       "active",

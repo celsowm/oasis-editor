@@ -23,6 +23,7 @@ import {
   createTable,
   createTableRow,
   createTableCell,
+  createPageBreak,
 } from "../../core/document/DocumentFactory.js";
 
 let blockCounter = 1000;
@@ -103,13 +104,22 @@ export class DocxImporter implements DocumentImporter {
 
   private parseBlockNodes(
     node: Node,
-    listContext?: { type: "ul" | "ol"; index: number },
+    listContext?: { type: "ul" | "ol"; index: number; level: number },
   ): BlockNode[] {
     if (node.nodeType !== 1) return []; // Only Element nodes
     const el = node as Element;
     const tagName = el.tagName.toLowerCase();
 
+    if (tagName === "hr" && el.classList.contains("page-break")) {
+      return [createPageBreak()];
+    }
+
     if (tagName === "p") {
+      const style = el.getAttribute("style") || "";
+      if (style.includes("page-break-before: always") || style.includes("page-break-after: always")) {
+        return [createPageBreak()];
+      }
+
       const runs = this.parseRuns(el);
       const align = this.parseAlignment(el) || "left";
 
@@ -119,6 +129,8 @@ export class DocxImporter implements DocumentImporter {
             id: nextBlockId(),
             kind: "list-item",
             align: align as "left" | "center" | "right" | "justify",
+            level: listContext.level,
+            listFormat: "bullet" as const,
             children: runs.length > 0 ? runs : [createTextRun("")],
           };
           return [li];
@@ -127,6 +139,8 @@ export class DocxImporter implements DocumentImporter {
             id: nextBlockId(),
             kind: "ordered-list-item",
             index: listContext.index,
+            level: listContext.level,
+            listFormat: "decimal" as const,
             align: align as "left" | "center" | "right" | "justify",
             children: runs.length > 0 ? runs : [createTextRun("")],
           };
@@ -149,26 +163,40 @@ export class DocxImporter implements DocumentImporter {
     } else if (tagName === "table") {
       const table = this.parseTableNode(el);
       return table ? [table] : [];
-    } else if (tagName === "ul" || tagName === "ol") {
+    } else     if (tagName === "ul" || tagName === "ol") {
       const isOrdered = tagName === "ol";
       const listBlocks: BlockNode[] = [];
       let itemIndex = 1;
+      const currentLevel = listContext?.level ?? 0;
 
       for (let i = 0; i < el.childNodes.length; i++) {
         const liNode = el.childNodes[i] as unknown as Element;
         if (liNode.nodeType === 1 && liNode.tagName.toLowerCase() === "li") {
-          // A mammoth <li> usually contains a <p>
+          // A mammoth <li> usually contains a <p> and possibly nested <ul>/<ol>
           let foundP = false;
           for (let j = 0; j < liNode.childNodes.length; j++) {
             const childNode = liNode.childNodes[j] as unknown as Node;
             if (childNode.nodeType === 1) {
-              const pBlocks = this.parseBlockNodes(childNode, {
-                type: isOrdered ? "ol" : "ul",
-                index: itemIndex,
-              });
-              if (pBlocks.length > 0) {
-                listBlocks.push(...pBlocks);
-                foundP = true;
+              const childEl = childNode as unknown as Element;
+              const childTag = childEl.tagName.toLowerCase();
+              if (childTag === "ul" || childTag === "ol") {
+                // Nested list: parse with incremented level
+                const nestedBlocks = this.parseBlockNodes(childNode, {
+                  type: childTag === "ol" ? "ol" : "ul",
+                  index: 1,
+                  level: currentLevel + 1,
+                });
+                listBlocks.push(...nestedBlocks);
+              } else {
+                const pBlocks = this.parseBlockNodes(childNode, {
+                  type: isOrdered ? "ol" : "ul",
+                  index: itemIndex,
+                  level: currentLevel,
+                });
+                if (pBlocks.length > 0) {
+                  listBlocks.push(...pBlocks);
+                  foundP = true;
+                }
               }
             }
           }
@@ -180,6 +208,8 @@ export class DocxImporter implements DocumentImporter {
                 id: nextBlockId(),
                 kind: "ordered-list-item",
                 index: itemIndex,
+                level: currentLevel,
+                listFormat: "decimal" as const,
                 align: "left",
                 children: runs.length > 0 ? runs : [createTextRun("")],
               } as OrderedListItemNode);
@@ -187,6 +217,8 @@ export class DocxImporter implements DocumentImporter {
               listBlocks.push({
                 id: nextBlockId(),
                 kind: "list-item",
+                level: currentLevel,
+                listFormat: "bullet" as const,
                 align: "left",
                 children: runs.length > 0 ? runs : [createTextRun("")],
               } as ListItemNode);
@@ -238,6 +270,10 @@ export class DocxImporter implements DocumentImporter {
             if (cellBlocks.length === 0) cellBlocks.push(createParagraph(""));
 
             const tc = createTableCell(cellBlocks);
+            const colSpanAttr = tdEl.getAttribute("colspan");
+            const rowSpanAttr = tdEl.getAttribute("rowspan");
+            if (colSpanAttr) tc.colSpan = parseInt(colSpanAttr, 10);
+            if (rowSpanAttr) tc.rowSpan = parseInt(rowSpanAttr, 10);
             cells.push(tc);
           }
         }
@@ -282,6 +318,9 @@ export class DocxImporter implements DocumentImporter {
           newMarks.underline = true;
         } else if (tagName === "s" || tagName === "del" || tagName === "strike") {
           newMarks.strike = true;
+        } else if (tagName === "a") {
+          const href = el.getAttribute("href") || "";
+          if (href) newMarks.link = href;
         }
 
         runs.push(...this.parseRuns(child, newMarks));

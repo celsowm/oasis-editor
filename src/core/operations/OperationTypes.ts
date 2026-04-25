@@ -16,6 +16,7 @@ export enum OperationType {
   INSERT_IMAGE = "INSERT_IMAGE",
   RESIZE_IMAGE = "RESIZE_IMAGE",
   SELECT_IMAGE = "SELECT_IMAGE",
+  UPDATE_IMAGE = "UPDATE_IMAGE",
   INSERT_TABLE = "INSERT_TABLE",
   TABLE_ADD_ROW_ABOVE = "TABLE_ADD_ROW_ABOVE",
   TABLE_ADD_ROW_BELOW = "TABLE_ADD_ROW_BELOW",
@@ -24,6 +25,8 @@ export enum OperationType {
   TABLE_DELETE_ROW = "TABLE_DELETE_ROW",
   TABLE_DELETE_COLUMN = "TABLE_DELETE_COLUMN",
   TABLE_DELETE = "TABLE_DELETE",
+  TABLE_MERGE_CELLS = "TABLE_MERGE_CELLS",
+  TABLE_SPLIT_CELL = "TABLE_SPLIT_CELL",
   MOVE_BLOCK = "MOVE_BLOCK",
   TOGGLE_UNORDERED_LIST = "TOGGLE_UNORDERED_LIST",
   TOGGLE_ORDERED_LIST = "TOGGLE_ORDERED_LIST",
@@ -31,6 +34,7 @@ export enum OperationType {
   INCREASE_INDENT = "INCREASE_INDENT",
   SET_INDENTATION = "SET_INDENTATION",
   SET_EDITING_MODE = "SET_EDITING_MODE",
+  INSERT_PAGE_BREAK = "INSERT_PAGE_BREAK",
 }
 
 export interface SetEditingModePayload {
@@ -44,6 +48,15 @@ export interface TableRowColPayload {
 
 export interface TableDeletePayload {
   tableId: string;
+}
+export interface TableMergeCellsPayload {
+  tableId: string;
+  anchorBlockId: string; // block inside the top-left cell of the selection
+  targetBlockId: string; // block inside the bottom-right cell of the selection
+}
+export interface TableSplitCellPayload {
+  tableId: string;
+  referenceBlockId: string; // block inside the cell to split
 }
 
 export interface MoveBlockPayload {
@@ -110,6 +123,12 @@ export interface ResizeImagePayload {
 export interface SelectImagePayload {
   blockId: string;
 }
+export interface UpdateImagePayload {
+  blockId: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+}
 export interface InsertTablePayload {
   rows: number;
   cols: number;
@@ -118,6 +137,9 @@ export interface InsertTablePayload {
   newCellIds?: string[];
   newParaIds?: string[];
   newRunIds?: string[];
+}
+export interface InsertPageBreakPayload {
+  newBlockId?: string;
 }
 
 interface Operation<T extends OperationType, P> {
@@ -178,12 +200,22 @@ export type SelectImageOp = Operation<
   OperationType.SELECT_IMAGE,
   SelectImagePayload
 >;
+export type UpdateImageOp = Operation<
+  OperationType.UPDATE_IMAGE,
+  UpdateImagePayload
+>;
 export type InsertTableOp = Operation<
   OperationType.INSERT_TABLE,
   InsertTablePayload
 >;
+export type InsertPageBreakOp = Operation<
+  OperationType.INSERT_PAGE_BREAK,
+  InsertPageBreakPayload
+>;
 
 export type MoveBlockOp = Operation<OperationType.MOVE_BLOCK, MoveBlockPayload>;
+export type TableMergeCellsOp = Operation<OperationType.TABLE_MERGE_CELLS, TableMergeCellsPayload>;
+export type TableSplitCellOp = Operation<OperationType.TABLE_SPLIT_CELL, TableSplitCellPayload>;
 
 export type EditorOperation =
   | AppendParagraphOp
@@ -200,7 +232,9 @@ export type EditorOperation =
   | InsertImageOp
   | ResizeImageOp
   | SelectImageOp
+  | UpdateImageOp
   | InsertTableOp
+  | InsertPageBreakOp
   | MoveBlockOp
   | Operation<OperationType.TABLE_ADD_ROW_ABOVE, TableRowColPayload>
   | Operation<OperationType.TABLE_ADD_ROW_BELOW, TableRowColPayload>
@@ -209,6 +243,8 @@ export type EditorOperation =
   | Operation<OperationType.TABLE_DELETE_ROW, TableRowColPayload>
   | Operation<OperationType.TABLE_DELETE_COLUMN, TableRowColPayload>
   | Operation<OperationType.TABLE_DELETE, TableDeletePayload>
+  | Operation<OperationType.TABLE_MERGE_CELLS, TableMergeCellsPayload>
+  | Operation<OperationType.TABLE_SPLIT_CELL, TableSplitCellPayload>
   | Operation<OperationType.TOGGLE_UNORDERED_LIST, {}>
   | Operation<OperationType.TOGGLE_ORDERED_LIST, {}>
   | Operation<OperationType.DECREASE_INDENT, {}>

@@ -3,6 +3,7 @@ import {
   DEFAULT_ORDERED_LIST_INDENTATION,
 } from "../../core/composition/ParagraphComposer.js";
 import { LayoutFragment } from "../../core/layout/LayoutFragment.js";
+import { getListMarker, getDefaultListFormat } from "../../core/document/ListUtils.js";
 import { h } from "../utils/dom.js";
 
 export interface FragmentRenderer {
@@ -74,6 +75,28 @@ export class TableCellFragmentRenderer implements FragmentRenderer {
   }
 }
 
+export class PageBreakFragmentRenderer implements FragmentRenderer {
+  canRender(fragment: LayoutFragment): boolean {
+    return fragment.kind === "page-break";
+  }
+
+  render(fragment: LayoutFragment, isDimmed: boolean): HTMLElement {
+    return h("div", {
+      className: `oasis-page-break ${isDimmed ? "oasis-dimmed" : ""}`,
+      dataset: { fragmentId: fragment.id, blockId: fragment.blockId },
+      style: {
+        position: "absolute",
+        left: `${fragment.rect.x}px`,
+        top: `${fragment.rect.y}px`,
+        width: `${fragment.rect.width}px`,
+        height: "1px",
+        borderTop: "1px dashed #cbd5e1",
+        pointerEvents: "none",
+      },
+    });
+  }
+}
+
 export class TextFragmentRenderer implements FragmentRenderer {
   canRender(_fragment: LayoutFragment): boolean {
     return true; // Default fallback
@@ -107,6 +130,12 @@ export class TextFragmentRenderer implements FragmentRenderer {
 
     // Render bullet or number for list items
     if (fragment.kind === "list-item" || fragment.kind === "ordered-list-item") {
+      const format = fragment.listFormat ?? getDefaultListFormat(fragment.kind, fragment.listLevel ?? 0);
+      const marker = getListMarker(
+        format,
+        fragment.listNumber ?? 1,
+        fragment.listLevel ?? 0,
+      );
       fragmentEl.appendChild(h("div", {
         className: "oasis-bullet",
         style: {
@@ -118,9 +147,7 @@ export class TextFragmentRenderer implements FragmentRenderer {
           alignItems: "center",
           justifyContent: "center"
         }
-      }, fragment.kind === "ordered-list-item" && fragment.listNumber !== undefined
-         ? `${fragment.listNumber}.`
-         : "•"));
+      }, marker));
     }
 
     const displayRuns = fragment.runs?.length
@@ -133,14 +160,22 @@ export class TextFragmentRenderer implements FragmentRenderer {
       if (marks.underline) decorations.push("underline");
       if (marks.strike) decorations.push("line-through");
 
-      fragmentEl.appendChild(h("span", {
-        style: {
-          fontWeight: (marks.bold || fragment.kind === "heading") ? "700" : String(fragment.typography.fontWeight),
-          fontStyle: marks.italic ? "italic" : "normal",
-          textDecoration: decorations.length > 0 ? decorations.join(" ") : "none",
-          color: marks.color || "inherit"
-        }
-      }, run.text));
+      const style: Record<string, string> = {
+        fontWeight: (marks.bold || fragment.kind === "heading") ? "700" : String(fragment.typography.fontWeight),
+        fontStyle: marks.italic ? "italic" : "normal",
+        textDecoration: decorations.length > 0 ? decorations.join(" ") : "none",
+        color: marks.color || "inherit"
+      };
+
+      if (marks.link) {
+        fragmentEl.appendChild(h("a", {
+          href: marks.link,
+          target: "_blank",
+          style: { ...style, color: marks.color || "#2563eb", textDecoration: "underline", cursor: "pointer" }
+        }, run.text));
+      } else {
+        fragmentEl.appendChild(h("span", { style }, run.text));
+      }
     }
 
     return fragmentEl;
@@ -151,6 +186,7 @@ export class TextFragmentRenderer implements FragmentRenderer {
 const rendererRegistry: FragmentRenderer[] = [
   new ImageFragmentRenderer(),
   new TableCellFragmentRenderer(),
+  new PageBreakFragmentRenderer(),
   new TextFragmentRenderer(),
 ];
 

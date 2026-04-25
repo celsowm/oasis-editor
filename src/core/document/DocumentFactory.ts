@@ -108,6 +108,13 @@ export const createHeading = (
   children: [createTextRun(text, { bold: true, fontSize: 24 }, gen)],
 });
 
+export const createPageBreak = (
+  gen: IdGenerator = defaultIdGen,
+): import("./BlockTypes.js").PageBreakNode => ({
+  id: gen.nextBlockId(),
+  kind: "page-break",
+});
+
 export const createSection = (
   children: BlockNode[] = [],
   gen: IdGenerator = defaultIdGen,

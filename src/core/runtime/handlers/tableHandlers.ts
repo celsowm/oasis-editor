@@ -251,4 +251,72 @@ export function registerTableHandlers(): void {
       selection: null,
     };
   });
+
+  registerHandler(OperationType.TABLE_MERGE_CELLS, (state, op) => {
+    const { tableId, anchorBlockId, targetBlockId } = op.payload;
+    const tableInfoAnchor = findParentTable(state.document, anchorBlockId);
+    const tableInfoTarget = findParentTable(state.document, targetBlockId);
+    if (!tableInfoAnchor || !tableInfoTarget || tableInfoAnchor.table.id !== tableId) return state;
+
+    const startRow = Math.min(tableInfoAnchor.rowIdx, tableInfoTarget.rowIdx);
+    const endRow = Math.max(tableInfoAnchor.rowIdx, tableInfoTarget.rowIdx);
+    const startCol = Math.min(tableInfoAnchor.cellIdx, tableInfoTarget.cellIdx);
+    const endCol = Math.max(tableInfoAnchor.cellIdx, tableInfoTarget.cellIdx);
+
+    const rowSpan = endRow - startRow + 1;
+    const colSpan = endCol - startCol + 1;
+    if (rowSpan === 1 && colSpan === 1) return state;
+
+    return updateDocumentSections(state, tableId, (block) => {
+      if (block.kind !== "table") return block;
+      const rows = block.rows.map((row, rIdx) => {
+        const cells = row.cells.map((cell, cIdx) => {
+          if (rIdx === startRow && cIdx === startCol) {
+            return { ...cell, colSpan, rowSpan };
+          }
+          if (rIdx >= startRow && rIdx <= endRow && cIdx >= startCol && cIdx <= endCol) {
+            // Mark continuation cells with colSpan=0, rowSpan=0 to indicate they're merged
+            return { ...cell, colSpan: 0, rowSpan: 0 };
+          }
+          return cell;
+        });
+        return { ...row, cells };
+      });
+      return { ...block, rows };
+    });
+  });
+
+  registerHandler(OperationType.TABLE_SPLIT_CELL, (state, op) => {
+    const { tableId, referenceBlockId } = op.payload;
+    const tableInfo = findParentTable(state.document, referenceBlockId);
+    if (!tableInfo) return state;
+
+    return updateDocumentSections(state, tableId, (block) => {
+      if (block.kind !== "table") return block;
+      const rows = block.rows.map((row, rIdx) => {
+        const cells = row.cells.map((cell, cIdx) => {
+          if (cell.colSpan && cell.colSpan > 1 && cell.rowSpan && cell.rowSpan > 1) {
+            if (rIdx === tableInfo.rowIdx && cIdx === tableInfo.cellIdx) {
+              return { ...cell, colSpan: 1, rowSpan: 1 };
+            }
+          } else if (cell.colSpan && cell.colSpan > 1) {
+            if (rIdx === tableInfo.rowIdx && cIdx === tableInfo.cellIdx) {
+              return { ...cell, colSpan: 1 };
+            }
+          } else if (cell.rowSpan && cell.rowSpan > 1) {
+            if (rIdx === tableInfo.rowIdx && cIdx === tableInfo.cellIdx) {
+              return { ...cell, rowSpan: 1 };
+            }
+          }
+          // Restore continuation cells that were marked with 0
+          if (cell.colSpan === 0 || cell.rowSpan === 0) {
+            return { ...cell, colSpan: 1, rowSpan: 1 };
+          }
+          return cell;
+        });
+        return { ...row, cells };
+      });
+      return { ...block, rows };
+    });
+  });
 }

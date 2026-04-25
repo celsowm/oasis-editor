@@ -14,6 +14,7 @@ import {
   InsertImageOp,
   ResizeImageOp,
   SelectImageOp,
+  UpdateImageOp,
   InsertTableOp,
   MoveBlockOp,
   EditorOperation,
@@ -106,6 +107,15 @@ export const Operations = {
     type: OperationType.SELECT_IMAGE,
     payload: { blockId },
   }),
+  updateImage: (
+    blockId: string,
+    alt?: string,
+    width?: number,
+    height?: number,
+  ): UpdateImageOp => ({
+    type: OperationType.UPDATE_IMAGE,
+    payload: { blockId, alt, width, height },
+  }),
   insertTable: (rows: number, cols: number): EditorOperation => {
     const newTableId = genId("table");
     const newRowIds = Array.from({ length: rows }, () => genId("row"));
@@ -174,6 +184,21 @@ export const Operations = {
     type: OperationType.TABLE_DELETE,
     payload: { tableId },
   }),
+  tableMergeCells: (
+    tableId: string,
+    anchorBlockId: string,
+    targetBlockId: string,
+  ): EditorOperation => ({
+    type: OperationType.TABLE_MERGE_CELLS,
+    payload: { tableId, anchorBlockId, targetBlockId },
+  }),
+  tableSplitCell: (
+    tableId: string,
+    referenceBlockId: string,
+  ): EditorOperation => ({
+    type: OperationType.TABLE_SPLIT_CELL,
+    payload: { tableId, referenceBlockId },
+  }),
   moveBlock: (
     blockId: string,
     targetReferenceBlockId: string,
@@ -205,5 +230,9 @@ export const Operations = {
   setEditingMode: (mode: "main" | "header" | "footer"): EditorOperation => ({
     type: OperationType.SET_EDITING_MODE,
     payload: { mode },
+  }),
+  insertPageBreak: (): EditorOperation => ({
+    type: OperationType.INSERT_PAGE_BREAK,
+    payload: { newBlockId: genId("block") },
   }),
 };
