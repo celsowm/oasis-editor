@@ -20,7 +20,7 @@ import {
   EditorOperation,
 } from "./OperationTypes.js";
 import { EditorSelection } from "../selection/SelectionTypes.js";
-import { MarkSet } from "../document/BlockTypes.js";
+import { MarkSet, FieldInfo } from "../document/BlockTypes.js";
 import { genId } from "../utils/IdGenerator.js";
 
 export const Operations = {
@@ -234,5 +234,48 @@ export const Operations = {
   insertPageBreak: (): EditorOperation => ({
     type: OperationType.INSERT_PAGE_BREAK,
     payload: { newBlockId: genId("block") },
+  }),
+  insertField: (field: FieldInfo): EditorOperation => ({
+    type: OperationType.INSERT_FIELD,
+    payload: { field, newRunId: genId("run") },
+  }),
+  setStyle: (styleId: string): EditorOperation => ({
+    type: OperationType.SET_STYLE,
+    payload: { styleId },
+  }),
+  toggleTrackChanges: (): EditorOperation => ({
+    type: OperationType.TOGGLE_TRACK_CHANGES,
+    payload: {},
+  }),
+  acceptRevision: (runId: string): EditorOperation => ({
+    type: OperationType.ACCEPT_REVISION,
+    payload: { runId },
+  }),
+  rejectRevision: (runId: string): EditorOperation => ({
+    type: OperationType.REJECT_REVISION,
+    payload: { runId },
+  }),
+  insertEquation: (
+    latex: string,
+    display = false,
+  ): EditorOperation => ({
+    type: OperationType.INSERT_EQUATION,
+    payload: { latex, display, newBlockId: genId("block") },
+  }),
+  insertBookmark: (name: string): EditorOperation => ({
+    type: OperationType.INSERT_BOOKMARK,
+    payload: { name, newRunId: genId("run") },
+  }),
+  insertFootnote: (text: string): EditorOperation => ({
+    type: OperationType.INSERT_FOOTNOTE,
+    payload: { text, newRunId: genId("run"), newBlockId: genId("block") },
+  }),
+  insertEndnote: (text: string): EditorOperation => ({
+    type: OperationType.INSERT_ENDNOTE,
+    payload: { text, newRunId: genId("run"), newBlockId: genId("block") },
+  }),
+  insertComment: (text: string): EditorOperation => ({
+    type: OperationType.INSERT_COMMENT,
+    payload: { text, newRunId: genId("run"), newBlockId: genId("block") },
   }),
 };

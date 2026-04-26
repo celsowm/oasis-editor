@@ -41,8 +41,24 @@ export class OasisEditorDom {
     return this.requireElement("oasis-editor-strikethrough");
   }
 
+  getSuperscriptButton(): HTMLElement {
+    return this.requireElement("oasis-editor-superscript");
+  }
+
+  getSubscriptButton(): HTMLElement {
+    return this.requireElement("oasis-editor-subscript");
+  }
+
   getLinkButton(): HTMLElement {
     return this.requireElement("oasis-editor-link");
+  }
+
+  getTrackChangesButton(): HTMLElement {
+    return this.requireElement("oasis-editor-track-changes");
+  }
+
+  getStyleSelect(): HTMLSelectElement {
+    return this.requireElement("oasis-editor-style-select") as HTMLSelectElement;
   }
 
   getColorPickerContainer(): HTMLElement {

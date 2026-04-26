@@ -38,6 +38,7 @@ import { registerMoveHandlers } from "./handlers/moveHandlers.js";
 import { registerFormatHandlers } from "./handlers/formatHandlers.js";
 import { registerImageHandlers } from "./handlers/imageHandlers.js";
 import { registerMetaHandlers } from "./handlers/metaHandlers.js";
+import { registerRevisionHandlers } from "./handlers/revisionHandlers.js";
 
 registerTextHandlers();
 registerMarkHandlers();
@@ -47,3 +48,4 @@ registerMoveHandlers();
 registerFormatHandlers();
 registerImageHandlers();
 registerMetaHandlers();
+registerRevisionHandlers();

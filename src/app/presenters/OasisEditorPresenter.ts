@@ -20,10 +20,12 @@ export interface SelectionState {
   strike: boolean;
   link: string | null;
   color: string;
+  vertAlign: "superscript" | "subscript" | null;
   align: "left" | "center" | "right" | "justify";
   isListItem: boolean;
   isOrderedListItem: boolean;
   indentation: number;
+  trackChangesEnabled: boolean;
 }
 
 export interface EditorViewModel {
@@ -76,10 +78,12 @@ export class OasisEditorPresenter {
       strike: false,
       link: null,
       color: "#000000",
+      vertAlign: null,
       align: "left",
       isListItem: false,
       isOrderedListItem: false,
       indentation: 0,
+      trackChangesEnabled: !!state.trackChangesEnabled,
     };
     let activeTableId: string | null = null;
     let activeTableFirstCellId: string | null = null;
@@ -109,6 +113,7 @@ export class OasisEditorPresenter {
           strike: !!effectiveMarks.strike,
           link: effectiveMarks.link || null,
           color: effectiveMarks.color || "#000000",
+          vertAlign: effectiveMarks.vertAlign || null,
           align: targetBlock.align || "left",
           isListItem: targetBlock.kind === "list-item",
           isOrderedListItem: targetBlock.kind === "ordered-list-item",
@@ -116,11 +121,13 @@ export class OasisEditorPresenter {
             "indentation" in targetBlock && targetBlock.indentation
               ? (targetBlock.indentation as number)
               : 0,
+          trackChangesEnabled: !!state.trackChangesEnabled,
         };
       } else if (targetBlock && targetBlock.kind === "image") {
         selectionState = {
           ...selectionState,
           align: targetBlock.align || "left",
+          trackChangesEnabled: !!state.trackChangesEnabled,
         };
       }
     } else if (state.pendingMarks) {
@@ -133,6 +140,8 @@ export class OasisEditorPresenter {
         strike: !!state.pendingMarks.strike,
         link: state.pendingMarks.link || null,
         color: state.pendingMarks.color || "#000000",
+        vertAlign: state.pendingMarks.vertAlign || null,
+        trackChangesEnabled: !!state.trackChangesEnabled,
       };
     }
 

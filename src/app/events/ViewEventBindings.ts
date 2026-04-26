@@ -21,8 +21,11 @@ export interface FormattingEvents {
   onItalic: () => void;
   onUnderline: () => void;
   onStrikethrough: () => void;
+  onSuperscript: () => void;
+  onSubscript: () => void;
   onColorChange: (color: string) => void;
   onAlign: (align: "left" | "center" | "right" | "justify") => void;
+  onStyleChange: (styleId: string) => void;
 }
 
 export interface CommandEvents {
@@ -33,6 +36,7 @@ export interface CommandEvents {
   onExportDocx?: () => void;
   onExportPdf?: () => void;
   onInsertPageBreak?: () => void;
+  onToggleTrackChanges: () => void;
 }
 
 export interface ListEvents {
@@ -61,5 +65,17 @@ export interface TableEvents {
   onTableMove: (tableId: string, targetBlockId: string, isBefore: boolean) => void;
 }
 
+export interface FieldEvents {
+  onInsertPageNumber: () => void;
+  onInsertNumPages: () => void;
+  onInsertDate: () => void;
+  onInsertTime: () => void;
+  onInsertEquation?: (latex: string, display: boolean) => void;
+  onInsertBookmark?: (name: string) => void;
+  onInsertFootnote?: (text: string) => void;
+  onInsertEndnote?: (text: string) => void;
+  onInsertComment?: (text: string) => void;
+}
+
 // Combined type for backward compatibility
-export type ViewEventBindings = KeyboardEvents & MouseEvents & FormattingEvents & CommandEvents & ListEvents & ImageEvents & LinkEvents & TableEvents;
+export type ViewEventBindings = KeyboardEvents & MouseEvents & FormattingEvents & CommandEvents & ListEvents & ImageEvents & LinkEvents & TableEvents & FieldEvents;

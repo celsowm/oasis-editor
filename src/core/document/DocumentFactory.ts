@@ -24,10 +24,22 @@ const createTextRun = (
   text: string,
   marks: Partial<MarkSet> = {},
   gen: IdGenerator = defaultIdGen,
+  field?: import("./BlockTypes.js").FieldInfo,
+  bookmarkStart?: string,
+  bookmarkEnd?: string,
+  footnoteId?: string,
+  endnoteId?: string,
+  commentId?: string,
 ): TextRun => ({
   id: gen.nextRunId(),
   text,
   marks,
+  field,
+  bookmarkStart,
+  bookmarkEnd,
+  footnoteId,
+  endnoteId,
+  commentId,
 });
 
 const createImageNode = (
@@ -113,6 +125,32 @@ export const createPageBreak = (
 ): import("./BlockTypes.js").PageBreakNode => ({
   id: gen.nextBlockId(),
   kind: "page-break",
+});
+
+export const createEquation = (
+  latex: string,
+  display = false,
+  gen: IdGenerator = defaultIdGen,
+  omml?: string,
+): import("./BlockTypes.js").EquationNode => ({
+  id: gen.nextBlockId(),
+  kind: "equation",
+  latex,
+  display,
+  omml,
+});
+
+export const createChart = (
+  chartType: string,
+  title?: string,
+  gen: IdGenerator = defaultIdGen,
+): import("./BlockTypes.js").ChartNode => ({
+  id: gen.nextBlockId(),
+  kind: "chart",
+  chartType,
+  title,
+  width: 400,
+  height: 250,
 });
 
 export const createSection = (

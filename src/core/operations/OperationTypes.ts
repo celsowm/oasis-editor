@@ -1,5 +1,5 @@
 import { EditorSelection } from "../selection/SelectionTypes.js";
-import { MarkSet } from "../document/BlockTypes.js";
+import { MarkSet, FieldInfo } from "../document/BlockTypes.js";
 
 export enum OperationType {
   APPEND_PARAGRAPH = "APPEND_PARAGRAPH",
@@ -35,6 +35,16 @@ export enum OperationType {
   SET_INDENTATION = "SET_INDENTATION",
   SET_EDITING_MODE = "SET_EDITING_MODE",
   INSERT_PAGE_BREAK = "INSERT_PAGE_BREAK",
+  INSERT_FIELD = "INSERT_FIELD",
+  SET_STYLE = "SET_STYLE",
+  TOGGLE_TRACK_CHANGES = "TOGGLE_TRACK_CHANGES",
+  ACCEPT_REVISION = "ACCEPT_REVISION",
+  REJECT_REVISION = "REJECT_REVISION",
+  INSERT_EQUATION = "INSERT_EQUATION",
+  INSERT_BOOKMARK = "INSERT_BOOKMARK",
+  INSERT_FOOTNOTE = "INSERT_FOOTNOTE",
+  INSERT_ENDNOTE = "INSERT_ENDNOTE",
+  INSERT_COMMENT = "INSERT_COMMENT",
 }
 
 export interface SetEditingModePayload {
@@ -141,6 +151,43 @@ export interface InsertTablePayload {
 export interface InsertPageBreakPayload {
   newBlockId?: string;
 }
+export interface InsertFieldPayload {
+  field: FieldInfo;
+  newRunId?: string;
+}
+export interface SetStylePayload {
+  styleId: string;
+}
+export interface AcceptRevisionPayload {
+  runId: string;
+}
+export interface RejectRevisionPayload {
+  runId: string;
+}
+export interface InsertEquationPayload {
+  latex: string;
+  display?: boolean;
+  newBlockId?: string;
+}
+export interface InsertBookmarkPayload {
+  name: string;
+  newRunId?: string;
+}
+export interface InsertFootnotePayload {
+  text: string;
+  newRunId?: string;
+  newBlockId?: string;
+}
+export interface InsertEndnotePayload {
+  text: string;
+  newRunId?: string;
+  newBlockId?: string;
+}
+export interface InsertCommentPayload {
+  text: string;
+  newRunId?: string;
+  newBlockId?: string;
+}
 
 interface Operation<T extends OperationType, P> {
   type: T;
@@ -212,6 +259,46 @@ export type InsertPageBreakOp = Operation<
   OperationType.INSERT_PAGE_BREAK,
   InsertPageBreakPayload
 >;
+export type InsertFieldOp = Operation<
+  OperationType.INSERT_FIELD,
+  InsertFieldPayload
+>;
+export type SetStyleOp = Operation<
+  OperationType.SET_STYLE,
+  SetStylePayload
+>;
+export type AcceptRevisionOp = Operation<
+  OperationType.ACCEPT_REVISION,
+  AcceptRevisionPayload
+>;
+export type RejectRevisionOp = Operation<
+  OperationType.REJECT_REVISION,
+  RejectRevisionPayload
+>;
+export type ToggleTrackChangesOp = Operation<
+  OperationType.TOGGLE_TRACK_CHANGES,
+  {}
+>;
+export type InsertEquationOp = Operation<
+  OperationType.INSERT_EQUATION,
+  InsertEquationPayload
+>;
+export type InsertBookmarkOp = Operation<
+  OperationType.INSERT_BOOKMARK,
+  InsertBookmarkPayload
+>;
+export type InsertFootnoteOp = Operation<
+  OperationType.INSERT_FOOTNOTE,
+  InsertFootnotePayload
+>;
+export type InsertEndnoteOp = Operation<
+  OperationType.INSERT_ENDNOTE,
+  InsertEndnotePayload
+>;
+export type InsertCommentOp = Operation<
+  OperationType.INSERT_COMMENT,
+  InsertCommentPayload
+>;
 
 export type MoveBlockOp = Operation<OperationType.MOVE_BLOCK, MoveBlockPayload>;
 export type TableMergeCellsOp = Operation<OperationType.TABLE_MERGE_CELLS, TableMergeCellsPayload>;
@@ -235,6 +322,16 @@ export type EditorOperation =
   | UpdateImageOp
   | InsertTableOp
   | InsertPageBreakOp
+  | InsertFieldOp
+  | SetStyleOp
+  | AcceptRevisionOp
+  | RejectRevisionOp
+  | ToggleTrackChangesOp
+  | InsertEquationOp
+  | InsertBookmarkOp
+  | InsertFootnoteOp
+  | InsertEndnoteOp
+  | InsertCommentOp
   | MoveBlockOp
   | Operation<OperationType.TABLE_ADD_ROW_ABOVE, TableRowColPayload>
   | Operation<OperationType.TABLE_ADD_ROW_BELOW, TableRowColPayload>

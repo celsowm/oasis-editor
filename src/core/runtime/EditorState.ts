@@ -8,4 +8,5 @@ export interface EditorState {
   pendingMarks?: MarkSet;
   selectedImageId?: string | null;
   editingMode: "main" | "header" | "footer";
+  trackChangesEnabled?: boolean;
 }

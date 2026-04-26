@@ -44,7 +44,10 @@ export interface ViewElements {
   italicButton: HTMLElement;
   underlineButton: HTMLElement;
   strikethroughButton: HTMLElement;
+  superscriptButton: HTMLElement;
+  subscriptButton: HTMLElement;
   linkButton: HTMLElement;
+  trackChangesButton: HTMLElement;
   undoButton: HTMLElement;
   redoButton: HTMLElement;
   printButton: HTMLElement;
@@ -60,6 +63,7 @@ export interface ViewElements {
   decreaseIndentButton: HTMLElement;
   increaseIndentButton: HTMLElement;
   colorPickerContainer: HTMLElement;
+  styleSelect: HTMLSelectElement;
   insertImageButton: HTMLElement;
   imageFileInput: HTMLInputElement;
   insertTableButton: HTMLElement;
@@ -135,7 +139,10 @@ export class OasisEditorView {
       italicButton: this.dom.getItalicButton(),
       underlineButton: this.dom.getUnderlineButton(),
       strikethroughButton: this.dom.getStrikethroughButton(),
+      superscriptButton: this.dom.getSuperscriptButton(),
+      subscriptButton: this.dom.getSubscriptButton(),
       linkButton: this.dom.getLinkButton(),
+      trackChangesButton: this.dom.getTrackChangesButton(),
       undoButton: this.dom.getUndoButton(),
       redoButton: this.dom.getRedoButton(),
       printButton: this.dom.getPrintButton(),
@@ -151,6 +158,7 @@ export class OasisEditorView {
       decreaseIndentButton: this.dom.getDecreaseIndentButton(),
       increaseIndentButton: this.dom.getIncreaseIndentButton(),
       colorPickerContainer: this.dom.getColorPickerContainer(),
+      styleSelect: this.dom.getStyleSelect(),
       insertImageButton: this.dom.getInsertImageButton(),
       imageFileInput: this.dom.getImageFileInput(),
       insertTableButton: this.dom.getInsertTableButton(),
@@ -200,6 +208,8 @@ export class OasisEditorView {
     this.elements.italicButton.addEventListener("click", events.onItalic);
     this.elements.underlineButton.addEventListener("click", events.onUnderline);
     this.elements.strikethroughButton.addEventListener("click", events.onStrikethrough);
+    this.elements.superscriptButton.addEventListener("click", events.onSuperscript);
+    this.elements.subscriptButton.addEventListener("click", events.onSubscript);
     this.elements.linkButton.addEventListener("click", () => {
       const url = window.prompt("Enter URL:", "https://");
       if (url === null) return;
@@ -209,6 +219,7 @@ export class OasisEditorView {
         events.onInsertLink(url.trim());
       }
     });
+    this.elements.trackChangesButton.addEventListener("click", events.onToggleTrackChanges);
 
     this.colorPicker = this.deps.colorPickerFactory(
       "oasis-editor-color-picker-container",
@@ -216,6 +227,14 @@ export class OasisEditorView {
         onColorSelected: (color) => events.onColorChange(color),
       },
     );
+
+    this.elements.styleSelect.addEventListener("change", (e) => {
+      const styleId = (e.target as HTMLSelectElement).value;
+      if (styleId) {
+        events.onStyleChange(styleId);
+        (e.target as HTMLSelectElement).value = "";
+      }
+    });
 
     this.tablePicker = this.deps.tablePickerFactory(
       "oasis-editor-insert-table",
@@ -471,6 +490,43 @@ export class OasisEditorView {
         { label: "Image", action: () => this.elements.insertImageButton.click() },
         { label: "Table", action: () => console.log("Open table picker") },
         { label: "Page break", action: () => { if (this.events.onInsertPageBreak) this.events.onInsertPageBreak(); } },
+        { separator: true, label: "" },
+        { label: "Equation", action: () => {
+          if (!this.events.onInsertEquation) return;
+          const latex = window.prompt("Enter LaTeX equation:", "E = mc^2");
+          if (latex === null) return;
+          const display = window.confirm("Display equation (block)? (Cancel for inline)");
+          this.events.onInsertEquation(latex, display);
+        } },
+        { label: "Bookmark", action: () => {
+          if (!this.events.onInsertBookmark) return;
+          const name = window.prompt("Bookmark name:", "Bookmark1");
+          if (name === null || !name.trim()) return;
+          this.events.onInsertBookmark(name.trim());
+        } },
+        { label: "Footnote", action: () => {
+          if (!this.events.onInsertFootnote) return;
+          const text = window.prompt("Footnote text:", "");
+          if (text === null) return;
+          this.events.onInsertFootnote(text);
+        } },
+        { label: "Endnote", action: () => {
+          if (!this.events.onInsertEndnote) return;
+          const text = window.prompt("Endnote text:", "");
+          if (text === null) return;
+          this.events.onInsertEndnote(text);
+        } },
+        { label: "Comment", action: () => {
+          if (!this.events.onInsertComment) return;
+          const text = window.prompt("Comment text:", "");
+          if (text === null) return;
+          this.events.onInsertComment(text);
+        } },
+        { label: "Page number", action: () => { if (this.events.onInsertPageNumber) this.events.onInsertPageNumber(); } },
+        { label: "Number of pages", action: () => { if (this.events.onInsertNumPages) this.events.onInsertNumPages(); } },
+        { label: "Date", action: () => { if (this.events.onInsertDate) this.events.onInsertDate(); } },
+        { label: "Time", action: () => { if (this.events.onInsertTime) this.events.onInsertTime(); } },
+        { separator: true, label: "" },
         { label: "Drawing", action: () => console.log("Insert drawing") },
         { label: "Horizontal line", action: () => console.log("Insert HR") },
       ]);
@@ -861,6 +917,14 @@ export class OasisEditorView {
       "active",
       selectionState.strike,
     );
+    this.elements.superscriptButton.classList.toggle(
+      "active",
+      selectionState.vertAlign === "superscript",
+    );
+    this.elements.subscriptButton.classList.toggle(
+      "active",
+      selectionState.vertAlign === "subscript",
+    );
     this.elements.linkButton.classList.toggle(
       "active",
       !!selectionState.link,
@@ -893,5 +957,9 @@ export class OasisEditorView {
     if (this.colorPicker) {
       this.colorPicker.setCurrentColor(selectionState.color);
     }
+    this.elements.trackChangesButton.classList.toggle(
+      "active",
+      selectionState.trackChangesEnabled,
+    );
   }
 }

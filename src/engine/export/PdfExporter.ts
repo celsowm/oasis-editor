@@ -146,7 +146,35 @@ export class PdfExporter implements DocumentExporter {
       return [this.convertImage(block)];
     }
 
+    if (block.kind === "equation") {
+      return [this.convertEquation(block)];
+    }
+
+    if (block.kind === "chart") {
+      return [this.convertChart(block)];
+    }
+
     return [];
+  }
+
+  private convertChart(block: import("../../core/document/BlockTypes.js").ChartNode): Content {
+    return {
+      text: block.title || `[${block.chartType} chart]`,
+      alignment: "center",
+      color: "#6b7280",
+      italics: true,
+      fontSize: 12,
+      margin: [0, 12, 0, 12],
+    };
+  }
+
+  private convertEquation(block: import("../../core/document/BlockTypes.js").EquationNode): Content {
+    return {
+      text: block.latex || "[Equation]",
+      alignment: block.display ? "center" : "left",
+      italics: true,
+      fontSize: 14,
+    };
   }
 
   private convertTextBlock(
@@ -196,6 +224,13 @@ export class PdfExporter implements DocumentExporter {
   }
 
   private convertTextRun(run: OasisTextRun): ContentText {
+    if (run.footnoteId) {
+      return { text: run.footnoteId, sup: true, color: "#2563eb", fontSize: 8 };
+    }
+    if (run.endnoteId) {
+      return { text: run.endnoteId, sup: true, color: "#7c3aed", fontSize: 8 };
+    }
+
     const node: ContentText = {
       text: run.text,
       bold: run.marks.bold,

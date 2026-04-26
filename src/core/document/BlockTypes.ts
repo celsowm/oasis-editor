@@ -11,10 +11,29 @@ export interface MarkSet {
   link?: string;
 }
 
+export interface FieldInfo {
+  type: "page" | "numpages" | "date" | "time" | "toc" | "hyperlink";
+  instruction: string;
+}
+
+export interface RevisionInfo {
+  type: "insert" | "delete";
+  author: string;
+  date: number;
+  id: string;
+}
+
 export interface TextRun {
   id: string;
   text: string;
   marks: MarkSet;
+  field?: FieldInfo;
+  revision?: RevisionInfo;
+  bookmarkStart?: string; // bookmark name
+  bookmarkEnd?: string;   // bookmark name
+  footnoteId?: string;
+  endnoteId?: string;
+  commentId?: string;
 }
 
 export interface ParagraphNode {
@@ -22,6 +41,7 @@ export interface ParagraphNode {
   kind: "paragraph";
   align: "left" | "center" | "right" | "justify";
   indentation?: number;
+  styleId?: string;
   children: TextRun[];
 }
 
@@ -31,6 +51,7 @@ export interface HeadingNode {
   level: 1 | 2 | 3 | 4 | 5 | 6;
   align: "left" | "center" | "right" | "justify";
   indentation?: number;
+  styleId?: string;
   children: TextRun[];
 }
 
@@ -61,6 +82,7 @@ export interface ListItemNode {
   level?: number;
   listFormat?: ListFormat;
   indentation?: number;
+  styleId?: string;
   children: TextRun[];
 }
 
@@ -72,6 +94,7 @@ export interface OrderedListItemNode {
   level?: number;
   listFormat?: ListFormat;
   indentation?: number;
+  styleId?: string;
   children: TextRun[];
 }
 
@@ -104,6 +127,23 @@ export interface PageBreakNode {
   kind: "page-break";
 }
 
+export interface EquationNode {
+  id: string;
+  kind: "equation";
+  latex: string;
+  omml?: string;
+  display?: boolean; // true = block equation, false = inline
+}
+
+export interface ChartNode {
+  id: string;
+  kind: "chart";
+  chartType: string; // e.g. "bar", "line", "pie", "smartArt", "unknown"
+  title?: string;
+  width?: number;
+  height?: number;
+}
+
 export type BlockNode =
   | ParagraphNode
   | HeadingNode
@@ -111,7 +151,9 @@ export type BlockNode =
   | TableNode
   | ListItemNode
   | OrderedListItemNode
-  | PageBreakNode;
+  | PageBreakNode
+  | EquationNode
+  | ChartNode;
 
 export type TextBlockNode =
   | ParagraphNode

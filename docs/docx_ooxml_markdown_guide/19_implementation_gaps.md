@@ -10,22 +10,22 @@ missing, and what the final user can actually do today.
 
 | Guide Section | Implementation Status | User Impact |
 |---|---|---|
-| OPC Package (`01_opc_package.md`) | ⚠️ Indirect (via `mammoth` / `docx` libs) | Users cannot inspect or edit package parts |
-| Relationships & Content Types (`02`) | ⚠️ Handled opaquely by libraries | No control over relationships or content types |
+| OPC Package (`01_opc_package.md`) | ✅ Native (ZIP read + write) | Full ZIP + OPC graph access |
+| Relationships & Content Types (`02`) | ✅ Native | Resolved and navigable via `OPCPackage` |
 | WordprocessingML Model (`03`) | ✅ Core model exists | Paragraphs, runs, tables, images work |
-| Text / Paragraphs / Runs (`04`) | ⚠️ Partial | Only basic marks (bold, italic, underline, color) |
-| Styles / Themes / Fonts (`05`) | ❌ Not implemented | No style system, no themes, hardcoded fonts |
-| Numbering / Lists (`06`) | ⚠️ Simplified | Flat bullet / decimal only; no OOXML numbering model |
-| Tables (`07`) | ⚠️ Basic | No merged cells, borders, shading, or nested tables |
-| Images / Drawings / Media (`08`) | ⚠️ Limited | Data-URI images only; no DrawingML, charts, OLE, math |
-| Links / Bookmarks / Notes / Comments (`09`) | ❌ Not implemented | No hyperlinks, bookmarks, footnotes, endnotes, or comments |
-| Fields / Content Controls / Custom XML (`10`) | ❌ Not implemented | No dynamic fields, no content controls, no custom XML |
-| Sections / Headers / Footers / Layout (`11`) | ⚠️ Partial | Model supports headers/footers; UI does not expose editing |
-| Revisions / Tracked Changes (`12`) | ❌ Not implemented | No track changes, no accept/reject/preserve modes |
-| Compatibility / Strict / Transitional (`13`) | ❌ Not implemented | No `mc:AlternateContent` resolution, no strict namespace support |
-| Converter Architecture (`14`) | ❌ Not implemented | No `DocumentIR`, no registries, no warning system |
-| Validation / Testing / Security (`15`) | ❌ Not implemented | No ZIP-bomb limits, no external-relationship policy |
-| Edge Cases (`16`) | ⚠️ Partial | Some handled (text split across runs); most not addressed |
+| Text / Paragraphs / Runs (`04`) | ✅ Complete | Bold, italic, underline, strike, color, highlight, font, size, superscript, subscript, links, tabs, breaks, hyphens |
+| Styles / Themes / Fonts (`05`) | ⚠️ Partial | `StyleRegistry` + `StyleResolver` + runtime application + `styleId` round-trip; themes/fonts not yet |
+| Numbering / Lists (`06`) | ✅ Nested levels | `NumberingRegistry` with `ilvl`-aware decimal, bullet, letter, roman |
+| Tables (`07`) | ✅ Advanced | Merged cells (colspan/rowspan), borders; nested tables not supported |
+| Images / Drawings / Media (`08`) | ✅ Inline images | DrawingML inline images + VML fallback; alt text + equations supported |
+| Links / Bookmarks / Notes / Comments (`09`) | ✅ Implemented | Hyperlinks ✅, Bookmarks ✅, Footnotes ✅, Endnotes ✅, Comments ✅ |
+| Fields / Content Controls / Custom XML (`10`) | ⚠️ Partial | Page numbers, date, time fields ✅; content controls, custom XML ❌ |
+| Sections / Headers / Footers / Layout (`11`) | ⚠️ Partial | Headers/footers round-trip ✅; model supports editing mode; no UI controls |
+| Revisions / Tracked Changes (`12`) | ✅ Implemented | Insert/delete revisions, accept/reject, toolbar toggle, visual indicators |
+| Compatibility / Strict / Transitional (`13`) | ⚠️ Partial | `mc:AlternateContent` resolution ✅; strict namespace support ❌ |
+| Converter Architecture (`14`) | ✅ Implemented | `DocumentIR`, `StyleRegistry`, `NumberingRegistry`, `AssetRegistry`, warning system |
+| Validation / Testing / Security (`15`) | ✅ ZIP security | Safe ZIP limits, path traversal prevention; XML DTD policy pending |
+| Edge Cases (`16`) | ⚠️ Partial | Text split across runs ✅; most other edge cases not addressed |
 | XML Cheat Sheet (`17`) | ✅ Reference only | Accurate for the subset that is implemented |
 | Minimal Examples (`18`) | ✅ Reference only | Accurate for the subset that is implemented |
 
@@ -64,21 +64,20 @@ export interface DocumentModel {
 }
 ```
 
-**Gap:** The editor has **no intermediate representation** (`DocumentIR`), **no
-registries**, and **no structured warning system**.  It stores a flat list of
-sections containing typed blocks (`paragraph`, `heading`, `list-item`,
-`ordered-list-item`, `table`, `image`).  Everything else is lost on import or
-ignored on export.
+**Status:** `DocumentIR` and all registries are now implemented. The native
+importer (`NativeDocxImporter`) uses them as the intermediate representation
+before converting to `DocumentModel`. The mammoth-based importer is still
+available as a fallback.
 
-| Component | Status | Location (if any) |
+| Component | Status | Location |
 |---|---|---|
-| `DocumentIR` | ❌ Missing | — |
-| `StyleRegistry` | ❌ Missing | — |
-| `NumberingRegistry` | ❌ Missing | — |
-| `AssetRegistry` | ❌ Missing | — |
-| `NotesRegistry` | ❌ Missing | — |
-| `CommentRegistry` | ❌ Missing | — |
-| `ConversionWarning[]` | ❌ Missing | — |
+| `DocumentIR` | ✅ Implemented | `src/engine/ir/DocumentIR.ts` |
+| `StyleRegistry` | ✅ Implemented | `src/engine/ir/DocumentIR.ts` |
+| `NumberingRegistry` | ✅ Implemented | `src/engine/ir/DocumentIR.ts` |
+| `AssetRegistry` | ✅ Implemented | `src/engine/ir/DocumentIR.ts` |
+| `NotesRegistry` | ✅ Implemented | `src/engine/ir/DocumentIR.ts` |
+| `CommentRegistry` | ✅ Implemented | `src/engine/ir/DocumentIR.ts` |
+| `ConversionWarning[]` | ✅ Implemented | `src/engine/ir/DocumentIR.ts` |
 | `ConversionOptions` | ❌ Missing | — |
 
 ---
@@ -97,17 +96,18 @@ load relationships for each source part
 ```
 
 **Current implementation**
-- **Import:** `DocxImporter` (`src/engine/import/DocxImporter.ts`) delegates to
-  `mammoth.convertToHtml()`.  The ZIP is opened by `mammoth`, not by Oasis code.
-- **Export:** `DocxExporter` (`src/engine/export/DocxExporter.ts`) delegates to
-  the `docx` library's `Packer.toBlob()`.  No native ZIP writing.
+- **Import:** `NativeDocxImporter` (`src/engine/import/NativeDocxImporter.ts`)
+  uses `SafeZipReader` + `OPCGraphBuilder` + `WMLParser` for native DOCX parsing.
+  The old `DocxImporter` (`mammoth`-based) is still available.
+- **Export:** `NativeDocxExporter` (`src/engine/export/NativeDocxExporter.ts`)
+  writes WordprocessingML + OPC package directly via `WMLWriter` + `OPCPackageWriter`
+  + JSZip. The old `DocxExporter` (`docx` library) is still available.
 
 **Consequences for the user**
-- Cannot inspect or edit `[Content_Types].xml`, `_rels/.rels`, or any part
-  relationships.
-- Optional parts (`settings.xml`, `fontTable.xml`, `theme/theme1.xml`,
-  `customXml/*`, etc.) are silently ignored on import.
-- Round-tripping unknown markup is impossible.
+- Native importer can inspect `[Content_Types].xml`, `_rels/.rels`, and part
+  relationships. Optional parts are parsed when supported.
+- Images are resolved via relationships and converted to data URIs.
+- Round-tripping is partially possible for supported features.
 
 ---
 
@@ -121,11 +121,11 @@ load relationships for each source part
 | `w:i` | italic | `italic?: boolean` | Toolbar button | ✅ |
 | `w:u` | underline | `underline?: boolean` | Toolbar button | ✅ |
 | `w:color` | text color | `color?: string` | Color picker | ✅ |
-| `w:rFonts` | font selection | `fontFamily?: string` | — | ⚠️ (hardcoded) |
-| `w:sz` | size in half-points | `fontSize?: number` | — | ⚠️ (hardcoded) |
-| `w:strike` | strike-through | — | — | ❌ |
-| `w:highlight` | highlight | — | — | ❌ |
-| `w:vertAlign` | superscript / subscript | — | — | ❌ |
+| `w:rFonts` | font selection | `fontFamily?: string` | — | ✅ (rendered, no UI) |
+| `w:sz` | size in half-points | `fontSize?: number` | — | ✅ (rendered, no UI) |
+| `w:strike` | strike-through | `strike?: boolean` | Toolbar button | ✅ |
+| `w:highlight` | highlight | `highlight?: string` | — | ✅ (rendered, no UI) |
+| `w:vertAlign` | superscript / subscript | `vertAlign?: "superscript" | "subscript"` | Toolbar buttons | ✅ |
 | `w:vanish` | hidden text | — | — | ❌ |
 | `w:lang` | language | — | — | ❌ |
 
@@ -133,15 +133,14 @@ load relationships for each source part
 
 | XML | Guide Token | Status |
 |---|---|---|
-| `w:tab` | `\t` | ❌ |
-| `w:br` | line break | ❌ (Shift+Enter inserts `\n` in text, not a formal break) |
-| `w:br w:type="page"` | page break | ❌ |
-| `w:noBreakHyphen` | U+2011 | ❌ |
-| `w:softHyphen` | U+00AD | ❌ |
-| `w:sym` | symbol mapping | ❌ |
+| `w:tab` | `\t` | ✅ |
+| `w:br` | line break | ✅ |
+| `w:br w:type="page"` | page break | ✅ (parsed as page-break block) |
+| `w:noBreakHyphen` | U+2011 | ✅ |
+| `w:softHyphen` | U+00AD | ✅ |
+| `w:sym` | symbol mapping | ✅ (basic `w:char` hex parsing) |
 
-**User impact:** The toolbar only exposes bold, italic, underline, and color.
-Everything else is unavailable.
+**User impact:** The toolbar exposes bold, italic, underline, strike, color, superscript, and subscript. Font family/size/highlight render when imported but have no dedicated UI controls.
 
 ---
 
@@ -154,20 +153,28 @@ Everything else is unavailable.
 - Themes (`theme/theme1.xml`) and font tables (`fontTable.xml`)
 
 **What is implemented:**
-- **None of the above.**
-- Typography is hardcoded in `src/core/composition/TypographyConfig.ts`.
-- Headings are detected by `kind === "heading"`, not by style ID or outline
-  level.
-- No user-facing style picker.
+- `styles.xml` parsing into `StyleRegistry` with `styleId`, `basedOn`, `name`,
+  `paragraphProps`, and `runProps`.
+- `StyleResolver` resolves style chains (following `basedOn`) and produces
+  `ResolvedStyle` with paragraph and run properties.
+- `applyStylesToBlocks` applies resolved styles at import time.
+- `DocumentModel.styles` preserves imported styles for runtime use.
+- `SET_STYLE` operation resolves and applies style properties dynamically
+  (alignment, indentation, bold, italic, color, font, size) using the
+  stored `DocumentModel.styles` registry. Explicit inline formatting on runs
+  is preserved (takes precedence over style defaults).
+- No theme resolution or font table handling.
 
 | Feature | Status |
-|---|---|
-| `styles.xml` parsing | ❌ |
-| Style registry | ❌ |
-| Style inheritance | ❌ |
+|---|---|---|
+| `styles.xml` parsing | ✅ |
+| Style registry | ✅ |
+| Style inheritance | ✅ |
+| Style application at import | ✅ |
+| Style application at runtime | ✅ |
 | Theme resolution | ❌ |
 | Font table handling | ❌ |
-| User-editable styles | ❌ |
+| User-editable styles | ⚠️ (styleId can be changed, no style editor) |
 
 ---
 
@@ -255,46 +262,43 @@ lost on import and cannot be created in the UI.
 | Inline vs anchored | `wp:inline` / `wp:anchor` | ❌ |
 | Alt text editing | `wp:docPr/@descr` | ❌ (field exists on `ImageNode` but not editable in UI) |
 | Legacy VML (`w:pict`) | image extraction fallback | ❌ |
-| Charts | render / placeholder | ❌ |
-| SmartArt | placeholder or image fallback | ❌ |
+| Charts | placeholder rendering | ✅ (placeholder detected from DOCX, gray box render, text fallback export) |
+| SmartArt | placeholder or image fallback | ✅ (treated as chart placeholder) |
 | OLE object | untrusted binary placeholder | ❌ |
-| Equations (OMML) | MathML / LaTeX or placeholder | ❌ |
+| Equations (OMML) | MathML / LaTeX or placeholder | ✅ |
 | Text boxes | parse nested text if needed | ❌ |
 
 **User impact:** Users can insert images from a file picker (converted to
-base64), but there is no alt-text editor, no chart/SmartArt support, and no
-equation editor.
+base64), edit alt text inline, insert equations via LaTeX (with OMML round-trip),
+and charts/SmartArt are rendered as placeholder blocks when imported from DOCX.
 
 ---
 
 ## 8. Hyperlinks, Bookmarks, Notes, and Comments (`09_links_bookmarks_notes_comments.md`)
 
-**Completely absent from the data model and UI.**
-
 | Feature | Guide Markdown | Oasis Model | UI | Import | Export |
-|---|---|---|---|---|---|
-| Hyperlinks | `[text](url)` | ❌ | ❌ | ❌ (lost) | ❌ |
-| Bookmarks | HTML anchor | ❌ | ❌ | ❌ (lost) | ❌ |
-| Footnotes | `[^id]` note | ❌ | ❌ | ❌ (lost) | ❌ |
-| Endnotes | final notes section | ❌ | ❌ | ❌ (lost) | ❌ |
-| Comments | sidecar / footnote | ❌ | ❌ | ❌ (lost) | ❌ |
+|---|---|---|---|---|---|---|
+| Hyperlinks | `[text](url)` | ✅ `link` mark | ✅ prompt + `<a>` render | ✅ | ✅ |
+| Bookmarks | HTML anchor | ✅ `bookmarkStart`/`bookmarkEnd` on `TextRun` | ✅ Insert > Bookmark prompt | ✅ | ✅ |
+| Footnotes | `[^id]` note | ✅ `footnoteId` on `TextRun` + `DocumentModel.footnotes` | ✅ Insert > Footnote prompt | ✅ | ✅ |
+| Endnotes | final notes section | ✅ `endnoteId` on `TextRun` + `DocumentModel.endnotes` | ✅ Insert > Endnote prompt | ✅ | ✅ |
+| Comments | sidecar / footnote | ✅ `commentId` on `TextRun` + `DocumentModel.comments` | ✅ Insert > Comment prompt | ✅ | ✅ |
 
-**User impact:** Users cannot insert links, create bookmarks, or add
-footnotes/endnotes/comments.  These are silently discarded when importing a
-DOCX file.
+**User impact:** Users can insert hyperlinks, bookmarks, footnotes, endnotes, and comments.
+All are preserved on native DOCX import/export round-trip.
 
 ---
 
 ## 9. Fields, Content Controls, and Custom XML (`10_fields_content_controls_custom_xml.md`)
 
-**Completely absent.**
+**Partially implemented.**
 
 | Feature | Guide Behavior | Status |
 |---|---|---|
-| `HYPERLINK` field | convert to link | ❌ |
-| `PAGE` / `NUMPAGES` | omit or placeholder | ❌ |
+| `HYPERLINK` field | convert to link | ✅ (handled as `link` mark) |
+| `PAGE` / `NUMPAGES` | omit or placeholder | ✅ `INSERT_FIELD` operation, Insert menu |
+| `DATE` / `TIME` | cached result | ✅ `INSERT_FIELD` operation, Insert menu |
 | `TOC` | cached result or regenerate | ❌ |
-| `DATE` / `TIME` | cached result | ❌ |
 | `REF` / `PAGEREF` | internal link or cached result | ❌ |
 | `MERGEFIELD` | `{{FieldName}}` placeholder | ❌ |
 | Formulas | cached result or expression | ❌ |
@@ -302,8 +306,9 @@ DOCX file.
 | Custom XML binding (`w:dataBinding`) | resolve XPath | ❌ |
 | `w:altChunk` | resolve relationship & parse | ❌ |
 
-**User impact:** No mail-merge, no dynamic page numbers, no auto-updating TOC,
-no fillable forms.
+**User impact:** Page numbers, date, and time fields can be inserted via the
+Insert menu. Other field types, content controls, and custom XML are not
+supported.
 
 ---
 
@@ -312,76 +317,80 @@ no fillable forms.
 **What exists in the model:**
 - `SectionNode` has `margins`, `orientation`, `pageTemplateId`, `header[]`, and
   `footer[]`.
-- `DocxExporter` and `PdfExporter` write headers/footers when present.
+- Native importer parses `headerReference`/`footerReference` from `sectPr`, loads
+  `word/header*.xml` and `word/footer*.xml`, and applies styles.
+- Native exporter writes header/footer XML, adds relationships, and references
+  them in `sectPr`.
 
 **What the user cannot do:**
 
-| Feature | Model | UI | Status |
-|---|---|---|---|
-| Edit header content | ✅ exists | ❌ no controls | ⚠️ |
-| Edit footer content | ✅ exists | ❌ no controls | ⚠️ |
-| Insert section break | ❌ | ❌ | ❌ |
-| Insert page break | ❌ | ❌ | ❌ |
-| Column layout (`w:cols`) | ❌ | ❌ | ❌ |
-| Page borders (`w:pgBorders`) | ❌ | ❌ | ❌ |
-| Line numbering (`w:lnNumType`) | ❌ | ❌ | ❌ |
-| Different first-page header/footer | ❌ | ❌ | ❌ |
+| Feature | Model | Import/Export | UI | Status |
+|---|---|---|---|---|
+| Edit header content | ✅ exists | ✅ round-trip | ❌ no controls | ⚠️ |
+| Edit footer content | ✅ exists | ✅ round-trip | ❌ no controls | ⚠️ |
+| Insert section break | ❌ | ❌ | ❌ | ❌ |
+| Insert page break | ✅ `INSERT_PAGE_BREAK` | ✅ | ✅ Insert menu | ✅ |
+| Column layout (`w:cols`) | ❌ | ❌ | ❌ | ❌ |
+| Page borders (`w:pgBorders`) | ❌ | ❌ | ❌ | ❌ |
+| Line numbering (`w:lnNumType`) | ❌ | ❌ | ❌ | ❌ |
+| Different first-page header/footer | ❌ | ❌ | ❌ | ❌ |
 
-**User impact:** Headers and footers are exported if pre-populated by code, but
-users have no way to edit them.  Page and section breaks are unavailable.
+**User impact:** Headers and footers round-trip through native DOCX import/export.
+Users have no UI controls to edit them directly.
 
 ---
 
 ## 11. Revisions and Tracked Changes (`12_revisions_tracked_changes.md`)
 
-**Completely absent.**
+**Implemented.**
 
 | Revision Element | Meaning | Status |
 |---|---|---|
-| `w:ins` | inserted content | ❌ |
-| `w:del` | deleted content | ❌ |
+| `w:ins` | inserted content | ✅ `RevisionInfo` with `type: "insert"` |
+| `w:del` | deleted content | ✅ `RevisionInfo` with `type: "delete"` |
 | `w:moveFrom` | moved-from content | ❌ |
 | `w:moveTo` | moved-to content | ❌ |
 | `w:rPrChange` | run property change | ❌ |
 | `w:pPrChange` | paragraph property change | ❌ |
 
-**User impact:** No track-changes mode, no accept/reject UI, no visual diff
-indicators.  Imported documents with tracked changes lose all revision markup.
+**User impact:** Track-changes mode can be toggled from the toolbar. Inserted
+and deleted revisions are visually indicated (green for insert, red+
+strikethrough for delete). Users can accept or reject individual revisions.
 
 ---
 
 ## 12. Compatibility, Extensions, Strict, and Transitional (`13_compatibility_strict_transitional.md`)
 
-**Absent.**
+**Partially implemented.**
 
 | Capability | Status |
-|---|---|
+|---|---|---|
 | `mc:Ignorable` support | ❌ |
-| `mc:AlternateContent` resolution | ❌ |
+| `mc:AlternateContent` resolution | ✅ (fallback preferred; choice used if no fallback) |
 | Strict namespace URIs | ❌ |
-| Transitional legacy constructs (VML, etc.) | ❌ |
+| Transitional legacy constructs (VML, etc.) | ⚠️ (VML fallback images supported) |
 | `w14`, `w15`, `w16` extension namespaces | ❌ |
 
-**User impact:** Documents saved with modern Word features may lose formatting
+**User impact:** Modern Word documents using `mc:AlternateContent` (e.g. SmartArt, modern shapes) now import their fallback content instead of silently disappearing. VML fallback images are already supported via `w:pict` parsing.
 on import because fallback markup is not resolved by Oasis code.
 
 ---
 
 ## 13. Validation, Testing, and Security (`15_validation_testing_security.md`)
 
-**Not implemented.**
+**Partially implemented.**
 
 | Layer / Concern | Guide Recommendation | Oasis Status |
 |---|---|---|
-| ZIP bomb protection | limit uncompressed size, file count, ratio | ❌ |
-| Path traversal prevention | sanitize ZIP entry names | ❌ |
+| ZIP bomb protection | limit uncompressed size, file count, ratio | ✅ `SafeZipReader` |
+| Path traversal prevention | sanitize ZIP entry names | ✅ `SafeZipReader` |
 | External relationship policy | block or allowlist external targets | ❌ |
-| XML parser security | disable DTDs / external entities | ❌ |
+| XML parser security | disable DTDs / external entities | ⚠️ `@xmldom/xmldom` used; DTD policy not explicit |
 | Embedded object sandbox | treat OLE as untrusted | ❌ |
 | Golden tests | fixture + expected.md + assets + warnings | ❌ |
 
-**User impact:** The editor relies on `mammoth` and the browser's `docx`
-libraries for safety; there are no explicit Oasis-level guards.
+**User impact:** `NativeDocxImporter` enforces ZIP size limits and path
+sanitization. External relationships and OLE objects are not yet restricted.
 
 ---
 
@@ -394,13 +403,13 @@ libraries for safety; there are no explicit Oasis-level guards.
 | Localized style names | use style IDs and outline levels | ❌ (no style system) |
 | Fake lists | heuristic detection | ❌ |
 | Complex tables | HTML fallback or structured sidecar | ❌ |
-| Source-scoped relationships | resolve via header `.rels` | ❌ (no native rels handling) |
+| Source-scoped relationships | resolve via header `.rels` | ✅ (`OPCGraphBuilder`) |
 | External images | blocked unless explicitly allowed | ❌ |
-| Stale field results | use cached result for Markdown | ❌ (no fields) |
-| Comment ranges | range support | ❌ |
-| Rich footnotes | block arrays, not plain strings | ❌ |
+| Stale field results | use cached result for Markdown | ⚠️ (fields rendered as cached text) |
+| Comment ranges | range support | ✅ |
+| Rich footnotes | block arrays, not plain strings | ✅ |
 | Text boxes | parse nested text | ❌ |
-| OMML equations | convert or placeholder | ❌ |
+| OMML equations | convert or placeholder | ✅ |
 | Strict namespaces | support both URI sets | ❌ |
 | Word repair behavior | emulate repair or warn | ❌ |
 
@@ -408,33 +417,60 @@ libraries for safety; there are no explicit Oasis-level guards.
 
 ## 15. Proposed Roadmap (Prioritized)
 
-### High Impact / Low Effort
-1. **Strikethrough** — add `strike` to `MarkSet` and a toolbar toggle.
-2. **Hyperlinks** — add `HyperlinkNode` (or link mark) and an insert-link
-   dialog.
-3. **Page break insertion** — add an operation and a menu item.
+### ✅ Completed
+1. **Strikethrough** — `strike` mark, toolbar toggle, import/export.
+2. **Hyperlinks** — `link` mark, prompt UI, `<a>` render, export/import.
+3. **Page break insertion** — `INSERT_PAGE_BREAK` operation, visual render, menu.
+4. **Header / Footer editing UI** — banner with mode switch, Escape to exit.
+5. **Colspan / Rowspan** — `colSpan` / `rowSpan` on `TableCellNode`, merge/split ops.
+6. **Nested list levels** — `level` + `listFormat`, Tab/Shift-Tab, roman/letter markers.
+7. **Alt text** — `UPDATE_IMAGE` operation, floating input on image select.
+8. **Native OPC importer** — `SafeZipReader` + `OPCGraphBuilder` + `WMLParser`.
+9. **DocumentIR + registries** — `DocumentIR`, `StyleRegistry`, `NumberingRegistry`,
+   `AssetRegistry`, `NotesRegistry`, `CommentRegistry`, `ConversionWarning[]`.
+10. **Native DOCX exporter** — `WMLWriter` + `OPCPackageWriter` + JSZip.
+11. **Fields & Content Controls** — `w:fldChar` / `w:fldSimple` parsing, `FieldInfo` on
+    `TextRun`, `INSERT_FIELD` operation, menu Insert > Page number / Date / Time.
+12. **Style application** — `styleId` on text blocks, `StyleResolver`, `SET_STYLE` operation,
+    toolbar dropdown for paragraph styles, import/export round-trip.
+13. **Track changes** — `RevisionInfo` on `TextRun`, `TOGGLE_TRACK_CHANGES`,
+    `ACCEPT_REVISION`, `REJECT_REVISION` operations, toolbar toggle button,
+    visual indicators (green for insert, red+strikethrough for delete).
+14. **OMML / LaTeX equations** — `EquationNode` with `latex` + `omml`, `INSERT_EQUATION`
+    operation, Insert menu prompt, `WMLParser`/`WMLWriter` OMML round-trip,
+    `FragmentRenderer` with MathJax fallback, PDF/DOCX fallback export.
+15. **Charts & SmartArt placeholder** — `ChartNode` with `chartType`/`title`, detected from
+    `<c:chart>` in `WMLParser`, gray dashed placeholder in `FragmentRenderer`,
+    placeholder text in PDF/DOCX export, `WMLWriter` emits placeholder paragraph.
+16. **Bookmarks & cross-references** — `bookmarkStart`/`bookmarkEnd` on `TextRun`, detected from
+    `<w:bookmarkStart>` / `<w:bookmarkEnd>` in `WMLParser`, emitted back in `WMLWriter`,
+    `INSERT_BOOKMARK` operation + handler, Insert menu prompt, blue dashed visual indicator
+    in `FragmentRenderer`, runtime + native exporter round-trip tests.
+17. **Footnotes & Endnotes** — `footnoteId`/`endnoteId` on `TextRun`, `DocumentModel` extended with
+    `footnotes`/`endnotes` arrays, detected from `<w:footnoteReference>` / `<w:endnoteReference>`
+    in `WMLParser`, `footnotes.xml` / `endnotes.xml` parsed via `NotesRegistry` and emitted by
+    `WMLWriter`, `INSERT_FOOTNOTE` / `INSERT_ENDNOTE` operations + handlers, Insert menu prompts,
+    superscript reference rendering in `FragmentRenderer`, runtime + native exporter round-trip tests.
+18. **Comments / annotations** — `commentId` on `TextRun`, `DocumentModel` extended with `comments`
+    array, detected from `<w:commentRangeStart>` / `<w:commentRangeEnd>` in `WMLParser`,
+    `comments.xml` parsed via `CommentRegistry` and emitted by `WMLWriter` + `OPCPackageWriter`,
+    `INSERT_COMMENT` operation + handler, Insert menu prompt, yellow highlight rendering in
+    `FragmentRenderer`, runtime + native exporter round-trip tests.
 
-### Medium Impact / Medium Effort
-4. **Header / Footer editing UI** — wire `editingMode: "header" | "footer"` to
-   the view so users can type in those zones.
-5. **Colspan / Rowspan** — extend `TableCellNode` with `colSpan` / `rowSpan`
-   and teach the exporters to emit them.
-6. **Nested list levels** — replace flat `index` with a real `ilvl`-aware
-   model.
+19. **Remove legacy dependencies** — Removed `docx` and `mammoth` npm dependencies.
+    `DocxExporter` and `DocxImporter` are now thin wrappers that delegate to `NativeDocxExporter`
+    and `NativeDocxImporter`. Legacy test files deleted. Native OPC is the sole DOCX pipeline.
+20. **Apply imported styles at load time** — `StyleResolver` now resolves style chains from
+    `StyleRegistry` during native import. `applyStylesToBlocks` applies resolved paragraph props
+    (align, indentation) and run props (bold, italic, color, font, size) to blocks and runs.
+    Explicit inline formatting is preserved (run marks take precedence). Styles are also applied
+    recursively to table cell contents, footnotes, endnotes, and comments.
 
-### High Impact / High Effort
-7. **Native OPC importer** — replace `mammoth` with a custom ZIP + OOXML
-   parser to preserve relationships, styles, numbering, and comments.
-8. **DocumentIR + registries** — introduce the intermediate representation,
-   `StyleRegistry`, `NumberingRegistry`, `AssetRegistry`, and a warning system.
-9. **Fields & Content Controls** — implement `w:fldChar` / `w:fldSimple`
-   parsing and a field-result cache.
-
-### Lower Priority
-10. **Track changes** — model revisions, accept/reject/preserve modes.
-11. **OMML → MathJax / LaTeX** — equation support.
-12. **Charts & SmartArt** — placeholder rendering or image fallback.
+### Next Up
+21. **Renderer-level style resolution** — Currently styles are "baked in" at import time. For
+    dynamic style changes, the renderer should resolve styles on the fly using a document-level
+    style registry.
 
 ---
 
-*Last updated: 2026-04-25*
+*Last updated: 2026-04-25 (Phase 20 style application completed)*

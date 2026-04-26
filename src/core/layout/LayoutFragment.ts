@@ -41,4 +41,10 @@ export interface LayoutFragment {
   // Image-specific fields (only populated when kind === "image")
   imageSrc?: string;
   imageAlt?: string;
+  // Equation-specific fields (only populated when kind === "equation")
+  equationLatex?: string;
+  equationDisplay?: boolean;
+  // Chart-specific fields (only populated when kind === "chart")
+  chartType?: string;
+  chartTitle?: string;
 }

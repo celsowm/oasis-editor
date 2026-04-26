@@ -114,6 +114,8 @@ export class OasisEditorController {
       onItalic: () => this.toggleItalic(),
       onUnderline: () => this.toggleUnderline(),
       onStrikethrough: () => this.toggleStrikethrough(),
+      onSuperscript: () => this.toggleSuperscript(),
+      onSubscript: () => this.toggleSubscript(),
       onInsertLink: (url) => this.insertLink(url),
       onRemoveLink: () => this.removeLink(),
       onColorChange: (color) => this.setColor(color),
@@ -149,6 +151,7 @@ export class OasisEditorController {
       onDblClick: (e) => this.handleDblClick(e),
       onTripleClick: (e) => this.wordSelection.handleTripleClick(e),
       onAlign: (align) => this.setAlign(align),
+      onStyleChange: (styleId) => this.setStyle(styleId),
       onToggleBullets: () => this.toggleBullets(),
       onToggleNumberedList: () => this.toggleNumberedList(),
       onDecreaseIndent: () => this.decreaseIndent(),
@@ -158,10 +161,20 @@ export class OasisEditorController {
       onExportDocx: () => this.importExport.exportDocx(),
       onExportPdf: () => this.importExport.exportPdf(),
       onInsertPageBreak: () => this.insertPageBreak(),
+      onToggleTrackChanges: () => this.toggleTrackChanges(),
       onResizeImage: (blockId, w, h) => this.resizeImage(blockId, w, h),
       onSelectImage: (blockId) => this.selectImage(blockId),
       onUpdateImageAlt: (blockId, alt) => this.updateImageAlt(blockId, alt),
       onInsertTable: (rows, cols) => this.insertTable(rows, cols),
+      onInsertPageNumber: () => this.insertField("page", "PAGE \\* MERGEFORMAT"),
+      onInsertNumPages: () => this.insertField("numpages", "NUMPAGES \\* MERGEFORMAT"),
+      onInsertDate: () => this.insertField("date", "DATE \\@ \"dd/MM/yyyy\""),
+      onInsertTime: () => this.insertField("time", "TIME \\@ \"HH:mm\""),
+      onInsertEquation: (latex, display) => this.insertEquation(latex, display),
+      onInsertBookmark: (name) => this.insertBookmark(name),
+      onInsertFootnote: (text) => this.insertFootnote(text),
+      onInsertEndnote: (text) => this.insertEndnote(text),
+      onInsertComment: (text) => this.insertComment(text),
       onTableAction: (action, tableId) =>
         this.handleTableAction(action, tableId),
       onTableMove: (tableId, targetBlockId, isBefore) => {
@@ -230,6 +243,20 @@ export class OasisEditorController {
     this.runtime.dispatch(Operations.toggleMark("strike"));
   }
 
+  toggleSuperscript(): void {
+    const state = this.runtime.getState();
+    const current = state.pendingMarks?.vertAlign;
+    const next = current === "superscript" ? undefined : "superscript";
+    this.runtime.dispatch(Operations.setMark("vertAlign", next));
+  }
+
+  toggleSubscript(): void {
+    const state = this.runtime.getState();
+    const current = state.pendingMarks?.vertAlign;
+    const next = current === "subscript" ? undefined : "subscript";
+    this.runtime.dispatch(Operations.setMark("vertAlign", next));
+  }
+
   insertLink(url: string): void {
     this.runtime.dispatch(Operations.setMark("link", url));
   }
@@ -282,6 +309,10 @@ export class OasisEditorController {
     this.runtime.dispatch(Operations.setAlignment(align));
   }
 
+  setStyle(styleId: string): void {
+    this.runtime.dispatch(Operations.setStyle(styleId));
+  }
+
   toggleBullets(): void {
     this.runtime.dispatch(Operations.toggleUnorderedList());
   }
@@ -323,6 +354,36 @@ export class OasisEditorController {
 
   insertTable(rows: number, cols: number): void {
     this.runtime.dispatch(Operations.insertTable(rows, cols));
+  }
+
+  insertField(type: "page" | "numpages" | "date" | "time", instruction: string): void {
+    this.runtime.dispatch(
+      Operations.insertField({ type, instruction }),
+    );
+  }
+
+  insertEquation(latex: string, display: boolean): void {
+    this.runtime.dispatch(Operations.insertEquation(latex, display));
+  }
+
+  insertBookmark(name: string): void {
+    this.runtime.dispatch(Operations.insertBookmark(name));
+  }
+
+  insertFootnote(text: string): void {
+    this.runtime.dispatch(Operations.insertFootnote(text));
+  }
+
+  insertEndnote(text: string): void {
+    this.runtime.dispatch(Operations.insertEndnote(text));
+  }
+
+  insertComment(text: string): void {
+    this.runtime.dispatch(Operations.insertComment(text));
+  }
+
+  toggleTrackChanges(): void {
+    this.runtime.dispatch(Operations.toggleTrackChanges());
   }
 
   handleTableAction(action: string, tableId: string): void {
