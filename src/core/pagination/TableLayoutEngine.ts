@@ -2,6 +2,7 @@ import { LayoutFragment } from "../layout/LayoutFragment.js";
 import { PaginationContext, createNewPage } from "./PaginationContext.js";
 import { TableNode } from "../document/BlockTypes.js";
 import { measureTextBlocks } from "./BlockLayoutEngine.js";
+import { BLOCK_SPACING } from "../pages/PageTemplateTypes.js";
 
 export function layoutTableBlock(
   block: TableNode,
@@ -149,5 +150,5 @@ export function layoutTableBlock(
 
     ctx.currentY += rowHeight;
   }
-  ctx.currentY += 12; // Bottom margin for table
+  ctx.currentY += BLOCK_SPACING;
 }

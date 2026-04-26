@@ -17,3 +17,5 @@ export interface PageTemplate {
   footer: HeaderFooterTemplate;
   firstPageDifferent: boolean;
 }
+
+export const BLOCK_SPACING = 12;

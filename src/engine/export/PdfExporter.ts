@@ -10,6 +10,8 @@ import type {
 } from "pdfmake/interfaces";
 import { DocumentExporter } from "../../core/export/DocumentExporter.js";
 import { DocumentModel } from "../../core/document/DocumentTypes.js";
+import { LayoutState } from "../../core/layout/LayoutTypes.js";
+import { BLOCK_SPACING } from "../../core/pages/PageTemplateTypes.js";
 import {
   BlockNode,
   isTextBlock,
@@ -45,19 +47,19 @@ function pxToPt(px: number): number {
 }
 
 export class PdfExporter implements DocumentExporter {
-  async exportToBlob(document: DocumentModel): Promise<Blob> {
-    const docDef = this.buildDocDefinition(document);
+  async exportToBlob(document: DocumentModel, layout?: LayoutState): Promise<Blob> {
+    const docDef = this.buildDocDefinition(document, layout);
     // @ts-ignore
     const pdfDocGenerator = pdfMake.createPdf(docDef);
     return pdfDocGenerator.getBlob();
   }
 
-  async exportToBuffer(document: DocumentModel): Promise<ArrayBuffer> {
-    const blob = await this.exportToBlob(document);
+  async exportToBuffer(document: DocumentModel, layout?: LayoutState): Promise<ArrayBuffer> {
+    const blob = await this.exportToBlob(document, layout);
     return blob.arrayBuffer();
   }
 
-  private buildDocDefinition(document: DocumentModel): TDocumentDefinitions {
+  private buildDocDefinition(document: DocumentModel, layout?: LayoutState): TDocumentDefinitions {
     const section = document.sections[0]; // pdfmake supports one section config per doc
 
     const margins: [number, number, number, number] = [
@@ -67,7 +69,8 @@ export class PdfExporter implements DocumentExporter {
       pxToPt(section.margins.bottom),
     ];
 
-    const content = this.convertBlocks(section.children);
+    const pageBreakMap = this.buildPageBreakMap(layout);
+    const content = this.convertBlocks(section.children, pageBreakMap);
 
     const docDef: TDocumentDefinitions = {
       info: { title: document.metadata.title || "Untitled" },
@@ -90,11 +93,24 @@ export class PdfExporter implements DocumentExporter {
     return docDef;
   }
 
+  private buildPageBreakMap(layout?: LayoutState): Set<string> {
+    const pageBreakBlocks = new Set<string>();
+    if (!layout || layout.pages.length <= 1) return pageBreakBlocks;
+
+    for (let i = 1; i < layout.pages.length; i++) {
+      const page = layout.pages[i];
+      for (const frag of page.fragments) {
+        pageBreakBlocks.add(frag.blockId);
+      }
+    }
+    return pageBreakBlocks;
+  }
+
   /**
    * Convert a list of blocks, grouping consecutive list items into single
    * `ul`/`ol` elements as required by pdfmake.
    */
-  private convertBlocks(blocks: BlockNode[]): Content[] {
+  private convertBlocks(blocks: BlockNode[], pageBreakMap?: Set<string>): Content[] {
     const result: Content[] = [];
 
     type ListAccumulator = { kind: "ul" | "ol"; items: Content[] } | null;
@@ -125,7 +141,7 @@ export class PdfExporter implements DocumentExporter {
         currentList.items.push(this.convertTextBlockToListItem(block));
       } else {
         flushList();
-        result.push(...this.convertBlock(block));
+        result.push(...this.convertBlock(block, pageBreakMap));
       }
     }
 
@@ -133,9 +149,9 @@ export class PdfExporter implements DocumentExporter {
     return result;
   }
 
-  private convertBlock(block: BlockNode): Content[] {
+  private convertBlock(block: BlockNode, pageBreakMap?: Set<string>): Content[] {
     if (isTextBlock(block)) {
-      return [this.convertTextBlock(block)];
+      return [this.convertTextBlock(block, pageBreakMap?.has(block.id))];
     }
 
     if (isTableNode(block)) {
@@ -164,7 +180,7 @@ export class PdfExporter implements DocumentExporter {
       color: "#6b7280",
       italics: true,
       fontSize: 12,
-      margin: [0, 12, 0, 12],
+      margin: [0, 0, 0, pxToPt(BLOCK_SPACING)],
     };
   }
 
@@ -174,11 +190,13 @@ export class PdfExporter implements DocumentExporter {
       alignment: block.display ? "center" : "left",
       italics: true,
       fontSize: 14,
+      margin: [0, 0, 0, pxToPt(BLOCK_SPACING)],
     };
   }
 
   private convertTextBlock(
     block: ParagraphNode | HeadingNode | ListItemNode | OrderedListItemNode,
+    forcePageBreak: boolean = false,
   ): Content {
     const textRuns = block.children.map((run) => this.convertTextRun(run));
 
@@ -186,6 +204,10 @@ export class PdfExporter implements DocumentExporter {
       text: textRuns,
       alignment: ALIGN_MAP[block.align] ?? "left",
     };
+
+    if (forcePageBreak) {
+      (node as { pageBreak?: string }).pageBreak = "before";
+    }
 
     if (block.indentation !== undefined && block.indentation > 0) {
       // pdfmake does not have a direct "indent" on text nodes, but we can use marginLeft
@@ -195,9 +217,11 @@ export class PdfExporter implements DocumentExporter {
         0,
         0,
       ];
+    } else {
+      (node as { margin?: [number, number, number, number] }).margin = [0, 0, 0, pxToPt(BLOCK_SPACING)];
     }
 
-    if (block.kind === "heading") {
+if (block.kind === "heading") {
       // Apply heading styles via fontSize and bold
       const headingSizes: Record<number, number> = {
         1: 24,
@@ -220,6 +244,7 @@ export class PdfExporter implements DocumentExporter {
     const textRuns = block.children.map((run) => this.convertTextRun(run));
     return {
       text: textRuns,
+      margin: [0, 0, 0, pxToPt(BLOCK_SPACING)],
     };
   }
 
@@ -265,6 +290,7 @@ export class PdfExporter implements DocumentExporter {
       width: image.width,
       height: image.height,
       alignment: ALIGN_MAP[image.align] ?? "center",
+      margin: [0, 0, 0, pxToPt(BLOCK_SPACING)],
     };
   }
 
@@ -278,6 +304,7 @@ export class PdfExporter implements DocumentExporter {
         body,
         widths: table.columnWidths.map((w) => w),
       },
+      margin: [0, 0, 0, pxToPt(BLOCK_SPACING)],
     };
   }
 

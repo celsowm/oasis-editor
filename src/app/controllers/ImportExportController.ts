@@ -1,6 +1,7 @@
 import { DocumentRuntime } from "../../core/runtime/DocumentRuntime.js";
 import { DocumentImporter } from "../../core/import/DocumentImporter.js";
 import { DocumentExporter } from "../../core/export/DocumentExporter.js";
+import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { isTextBlock } from "../../core/document/BlockTypes.js";
 
 export class ImportExportController {
@@ -63,10 +64,10 @@ export class ImportExportController {
     }
   }
 
-  async exportPdf(): Promise<void> {
+  async exportPdf(layout: LayoutState | null): Promise<void> {
     try {
       const doc = this.runtime.getState().document;
-      const blob = await this.pdfExporter.exportToBlob(doc);
+      const blob = await this.pdfExporter.exportToBlob(doc, layout ?? undefined);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

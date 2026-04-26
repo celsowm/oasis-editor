@@ -1,6 +1,6 @@
 import { DocumentModel } from "../document/DocumentTypes.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
-import { PageTemplate } from "../pages/PageTemplateTypes.js";
+import { PageTemplate, BLOCK_SPACING } from "../pages/PageTemplateTypes.js";
 import { Rect, LayoutFragment } from "../layout/LayoutFragment.js";
 import { PageLayout, LayoutState } from "../layout/LayoutTypes.js";
 import { composeParagraph } from "../composition/ParagraphComposer.js";
@@ -63,7 +63,7 @@ const processBlocks = (
 
       ctx.currentPage.fragments.push(fragment);
       ctx.fragmentsByBlockId[block.id] = [fragment];
-      ctx.currentY += height + 12;
+      ctx.currentY += height + BLOCK_SPACING;
       continue;
     }
 

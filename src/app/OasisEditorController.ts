@@ -184,7 +184,7 @@ export class OasisEditorController {
       onInsertImage: (src, nw, nh, dw) => this.insertImage(src, nw, nh, dw),
       onImportDocx: (file) => this.importExport.importDocx(file),
       onExportDocx: () => this.importExport.exportDocx(),
-      onExportPdf: () => this.importExport.exportPdf(),
+      onExportPdf: () => this.importExport.exportPdf(this.latestLayout),
       onInsertPageBreak: () => this.insertPageBreak(),
       onToggleTrackChanges: () => this.toggleTrackChanges(),
       onResizeImage: (blockId, w, h) => this.resizeImage(blockId, w, h),
