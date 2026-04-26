@@ -56,6 +56,7 @@ export class OasisEditorController {
   private cursorCalc: CursorPositionCalculator;
   private draggingBlockId: string | null = null;
   private commandBus: CommandBus;
+  private domHitTester: DomHitTester;
 
   constructor(deps: ControllerDeps) {
     this.runtime = deps.runtime;
@@ -63,6 +64,7 @@ export class OasisEditorController {
     this.presenter = deps.presenter;
     this.view = deps.view;
     this.fontManager = deps.fontManager;
+    this.domHitTester = deps.domHitTester;
     this.latestLayout = null;
     this.positionCalculator = null;
 
@@ -209,21 +211,39 @@ export class OasisEditorController {
       },
       onDrop: (e) => {
         e.preventDefault();
-        const pos = this.cursorCalc.calculateFromMouseEvent(e as any);
-        console.log("CONTROLLER: onDrop", { 
-          clientX: e.clientX, 
-          clientY: e.clientY,
-          pos 
-        });
-        
-        if (this.draggingBlockId && pos) {
-          this.runtime.dispatch(Operations.moveBlock(this.draggingBlockId, pos.blockId, true));
+
+        if (this.draggingBlockId) {
+          const dropTarget = this.findBlockDropTarget(e as MouseEvent);
+          console.log("CONTROLLER: onDrop", {
+            clientX: e.clientX,
+            clientY: e.clientY,
+            dropTarget,
+          });
+          if (dropTarget && dropTarget.blockId !== this.draggingBlockId) {
+            this.runtime.dispatch(
+              Operations.moveBlock(
+                this.draggingBlockId,
+                dropTarget.blockId,
+                dropTarget.isBefore,
+              ),
+            );
+          }
           this.draggingBlockId = null;
-        } else if (pos) {
+          return;
+        }
+
+        const pos = this.cursorCalc.calculateFromMouseEvent(e as any);
+        console.log("CONTROLLER: onDrop", {
+          clientX: e.clientX,
+          clientY: e.clientY,
+          pos,
+        });
+        if (pos) {
           this.runtime.dispatch(Operations.setSelection({ anchor: pos, focus: pos }));
         }
       },
       onImageDragStart: (blockId, e) => {
+        console.log("CONTROLLER: onImageDragStart", { blockId });
         this.draggingBlockId = blockId;
         if (e.dataTransfer) {
           e.dataTransfer.setData("text/oasis-block-id", blockId);
@@ -559,6 +579,79 @@ export class OasisEditorController {
         this.runtime.dispatch(Operations.tableSplitCell(tableId, selection.anchor.blockId));
         break;
     }
+  }
+
+  private findBlockDropTarget(
+    event: MouseEvent,
+  ): { blockId: string; isBefore: boolean } | null {
+    const element = this.domHitTester.elementFromPoint(event.clientX, event.clientY);
+
+    // 1. Direct hit on a fragment.
+    const directFragment = element
+      ? (this.domHitTester.closest(".oasis-fragment", element) as HTMLElement | null)
+      : null;
+    if (directFragment) {
+      const blockId = directFragment.getAttribute("data-block-id");
+      if (blockId) {
+        const rect = directFragment.getBoundingClientRect();
+        const isBefore = event.clientY < rect.top + rect.height / 2;
+        return { blockId, isBefore };
+      }
+    }
+
+    // 2. No fragment under the pointer — find the page under the pointer
+    //    (or fall back to the closest page) and pick the nearest fragment by Y.
+    const root = this.view.elements.root;
+    const pageEl =
+      (element && (this.domHitTester.closest("[data-page-id]", element) as HTMLElement | null)) ||
+      this.findClosestPage(event.clientX, event.clientY, root);
+    if (!pageEl) return null;
+
+    const fragments = Array.from(
+      pageEl.querySelectorAll<HTMLElement>(".oasis-fragment[data-block-id]"),
+    );
+    if (fragments.length === 0) return null;
+
+    let bestFragment: HTMLElement | null = null;
+    let bestDistance = Infinity;
+    let bestIsBefore = false;
+
+    for (const frag of fragments) {
+      const rect = frag.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      const distance = Math.abs(event.clientY - midY);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestFragment = frag;
+        bestIsBefore = event.clientY < midY;
+      }
+    }
+
+    if (!bestFragment) return null;
+    const blockId = bestFragment.getAttribute("data-block-id");
+    if (!blockId) return null;
+    return { blockId, isBefore: bestIsBefore };
+  }
+
+  private findClosestPage(
+    clientX: number,
+    clientY: number,
+    root: HTMLElement,
+  ): HTMLElement | null {
+    const pages = Array.from(root.querySelectorAll<HTMLElement>("[data-page-id]"));
+    let closest: HTMLElement | null = null;
+    let bestDistance = Infinity;
+    for (const page of pages) {
+      const rect = page.getBoundingClientRect();
+      const dx = Math.max(rect.left - clientX, 0, clientX - rect.right);
+      const dy = Math.max(rect.top - clientY, 0, clientY - rect.bottom);
+      const distance = Math.hypot(dx, dy);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        closest = page;
+      }
+    }
+    return closest;
   }
 
   refresh(): void {
