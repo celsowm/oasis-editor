@@ -211,7 +211,7 @@ export const paginateDocument = (
     );
 
     processBlocks(section.children, ctx);
-    pages.push(ctx.currentPage);
+    pages.push(...ctx.pages, ctx.currentPage);
 
     // 2. Apply measured header/footer fragments to all pages of this section
     const sectionPages = pages.filter((p) => p.sectionId === section.id);

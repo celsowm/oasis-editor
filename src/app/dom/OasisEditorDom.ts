@@ -1,8 +1,8 @@
 export class OasisEditorDom {
-  private document: Document;
+  private root: HTMLElement;
 
-  constructor(documentRef: Document) {
-    this.document = documentRef;
+  constructor(root: HTMLElement) {
+    this.root = root;
   }
 
   getRoot(): HTMLElement {
@@ -58,7 +58,9 @@ export class OasisEditorDom {
   }
 
   getStyleSelect(): HTMLSelectElement {
-    return this.requireElement("oasis-editor-style-select") as HTMLSelectElement;
+    return this.requireElement(
+      "oasis-editor-style-select",
+    ) as HTMLSelectElement;
   }
 
   getColorPickerContainer(): HTMLElement {
@@ -180,7 +182,7 @@ export class OasisEditorDom {
   }
 
   requireElement(id: string): HTMLElement {
-    const element = this.document.getElementById(id);
+    const element = this.root.querySelector<HTMLElement>(`#${id}`);
     if (!element) {
       throw new Error(`Missing required oasis-editor element: #${id}`);
     }

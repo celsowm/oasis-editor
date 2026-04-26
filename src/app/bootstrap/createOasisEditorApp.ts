@@ -4,6 +4,7 @@ import { PAGE_TEMPLATES } from "../../core/pages/PageTemplateFactory.js";
 import { DocumentLayoutService } from "../services/DocumentLayoutService.js";
 import { OasisEditorPresenter } from "../presenters/OasisEditorPresenter.js";
 import { OasisEditorDom } from "../dom/OasisEditorDom.js";
+import { mountEditor } from "../dom/editorTemplate.js";
 import { OasisEditorView } from "../OasisEditorView.js";
 import { OasisEditorController } from "../OasisEditorController.js";
 import { TextMeasurementService } from "../services/TextMeasurementService.js";
@@ -17,13 +18,21 @@ import { DocxImporter } from "../../engine/import/DocxImporter.js";
 import { DocxExporter } from "../../engine/export/DocxExporter.js";
 import { PdfExporter } from "../../engine/export/PdfExporter.js";
 
-export const createOasisEditorApp = (): OasisEditorController => {
+export interface OasisEditorInstance {
+  controller: OasisEditorController;
+  shell: HTMLElement;
+  dispose: () => void;
+}
+
+export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
+  const shell = mountEditor(container);
+
   const runtime = new DocumentRuntime();
   const textMeasurer = new BrowserTextMeasurer();
   const measurementService = new TextMeasurementService(textMeasurer);
   const layoutService = new DocumentLayoutService(textMeasurer, PAGE_TEMPLATES);
   const presenter = new OasisEditorPresenter(Object.values(PAGE_TEMPLATES));
-  const dom = new OasisEditorDom(document);
+  const dom = new OasisEditorDom(shell);
   const view = new OasisEditorView({
     dom,
     presenter,
@@ -44,7 +53,7 @@ export const createOasisEditorApp = (): OasisEditorController => {
   const pdfExporter = new PdfExporter();
   const domHitTester = new BrowserDomHitTester();
 
-  return new OasisEditorController({
+  const controller = new OasisEditorController({
     runtime,
     layoutService,
     presenter,
@@ -55,4 +64,10 @@ export const createOasisEditorApp = (): OasisEditorController => {
     pdfExporter,
     domHitTester,
   });
-};
+
+  function dispose(): void {
+    shell.remove();
+  }
+
+  return { controller, shell, dispose };
+}
