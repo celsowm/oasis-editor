@@ -79,6 +79,7 @@ export class SelectionMapper {
         ...page.headerFragments,
         ...page.fragments,
         ...page.footerFragments,
+        ...page.footnoteFragments,
       ];
       for (const fragment of allPageFragments) {
         if (
@@ -130,6 +131,7 @@ export class SelectionMapper {
         ...page.headerFragments,
         ...page.fragments,
         ...page.footerFragments,
+        ...page.footnoteFragments,
       ];
       for (const fragment of allPageFragments) {
         if (!fragment.lines) continue;

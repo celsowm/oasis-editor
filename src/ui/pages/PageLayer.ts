@@ -9,7 +9,7 @@ export class PageLayer {
     this.container = container;
   }
 
-  render(layout: LayoutState, editingMode: "main" | "header" | "footer" = "main"): void {
+  render(layout: LayoutState, editingMode: "main" | "header" | "footer" | "footnote" = "main"): void {
     // Preserve scroll position of the nearest scrollable ancestor so the page
     // doesn't jump to the top when innerHTML is cleared and re-built.
     const scrollEl = this.findScrollableAncestor(this.container);
@@ -19,8 +19,13 @@ export class PageLayer {
     this.container.innerHTML = "";
 
     for (const page of layout.pages) {
+      const editingClass = editingMode === "header" ? "editing-header"
+        : editingMode === "footer" ? "editing-footer"
+        : editingMode === "footnote" ? "editing-footnote"
+        : "";
+
       const pageEl = h("section", {
-        className: `oasis-page ${editingMode === "header" ? "editing-header" : ""} ${editingMode === "footer" ? "editing-footer" : ""}`,
+        className: `oasis-page ${editingClass}`.trim(),
         dataset: { pageId: page.id },
         style: {
           width: `${page.rect.width}px`,
@@ -78,6 +83,34 @@ export class PageLayer {
 
         for (const frag of page.footerFragments) {
           pageEl.appendChild(renderFragment(frag, editingMode !== "footer"));
+        }
+      }
+
+      // Render Footnote Area
+      if (page.footnoteFragments.length > 0 && page.footnoteAreaRect) {
+        // Footnote separator line (short horizontal rule)
+        const separatorEl = h("div", {
+          className: "oasis-footnote-separator",
+          style: {
+            position: "absolute",
+            left: `${page.footnoteAreaRect.x}px`,
+            top: `${page.footnoteAreaRect.y + 4}px`,
+            width: "120px",
+            height: "1px",
+            borderTop: "0.5pt solid #94a3b8",
+            pointerEvents: "none",
+          }
+        });
+        pageEl.appendChild(separatorEl);
+
+        // Footnote text entries
+        for (const frag of page.footnoteFragments) {
+          const fnEl = renderFragment(frag, editingMode !== "footnote");
+          fnEl.classList.add("oasis-footnote-entry");
+          if (frag.footnoteId) {
+            (fnEl as any).dataset.footnoteId = frag.footnoteId;
+          }
+          pageEl.appendChild(fnEl);
         }
       }
 

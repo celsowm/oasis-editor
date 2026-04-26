@@ -235,10 +235,17 @@ export class TextFragmentRenderer implements FragmentRenderer {
           title: `Comment ${(run as any).commentId}`,
         }, run.text));
       } else if ((run as any).footnoteId) {
+        const sup = h("sup", {
+          style: { ...style, fontSize: "10px", color: "#2563eb", cursor: "pointer" },
+          title: `Footnote ${(run as any).footnoteId}`,
+          className: "oasis-footnote-ref",
+          dataset: { footnoteId: (run as any).footnoteId },
+        }, (run as any).footnoteId);
+        fragmentEl.appendChild(sup);
+      } else if ((run as any).footnoteRefId) {
         fragmentEl.appendChild(h("sup", {
           style: { ...style, fontSize: "10px", color: "#2563eb" },
-          title: `Footnote ${(run as any).footnoteId}`,
-        }, (run as any).footnoteId));
+        }, (run as any).text));
       } else if ((run as any).endnoteId) {
         fragmentEl.appendChild(h("sup", {
           style: { ...style, fontSize: "10px", color: "#7c3aed" },

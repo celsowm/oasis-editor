@@ -44,6 +44,8 @@ export function createNewPage(ctx: PaginationContext): void {
     fragments: [],
     headerFragments: [],
     footerFragments: [],
+    footnoteFragments: [],
+    footnoteAreaRect: null,
   };
   ctx.currentY = ctx.currentPage.contentRect.y;
 }
@@ -85,6 +87,8 @@ export function createPaginationContext(
       fragments: [],
       headerFragments: [],
       footerFragments: [],
+      footnoteFragments: [],
+      footnoteAreaRect: null,
     },
     currentY: effectiveTopMargin,
     contentWidth,

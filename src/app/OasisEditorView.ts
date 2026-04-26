@@ -657,13 +657,18 @@ export class OasisEditorView {
     }
   }
 
-  private updateEditingModeBanner(mode: "main" | "header" | "footer"): void {
+  private updateEditingModeBanner(mode: "main" | "header" | "footer" | "footnote"): void {
     const existing = document.getElementById("oasis-editing-mode-banner");
     if (existing) existing.remove();
 
     if (mode === "main") return;
 
-    const label = mode === "header" ? "Editing Header" : "Editing Footer";
+    const labelMap: Record<string, string> = {
+      header: "Editing Header",
+      footer: "Editing Footer",
+      footnote: "Editing Footnote",
+    };
+    const label = labelMap[mode] ?? `Editing ${mode}`;
     const banner = h("div", {
       id: "oasis-editing-mode-banner",
       style: {

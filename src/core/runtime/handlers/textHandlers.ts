@@ -503,29 +503,80 @@ function handleDeleteText(state: EditorState, op: any): EditorState {
   }
 
   const targetAbsoluteOffset = absoluteOffset - 1;
-  const nextState = updateDocumentSections(state, blockId, (block) => {
+  let removedFootnoteId: string | null = null;
+
+  const afterDeleteState = updateDocumentSections(state, blockId, (block) => {
     if (!isTextBlock(block)) return block;
     let currentAbs = 0;
-    const nextChildren = block.children.map((run) => {
+    const nextChildren: TextRun[] = [];
+
+    for (const run of block.children) {
       const runStart = currentAbs;
       const runEnd = currentAbs + run.text.length;
       currentAbs = runEnd;
       if (targetAbsoluteOffset >= runStart && targetAbsoluteOffset < runEnd) {
-        const relativeDeleteIdx = targetAbsoluteOffset - runStart;
-        return {
+        // If the character before this delete point is a footnote marker run,
+        // remove the entire footnote marker run
+        if (run.footnoteId && run.text.length === 0) {
+          removedFootnoteId = run.footnoteId;
+          continue;
+        }
+        nextChildren.push({
           ...run,
           text:
-            run.text.substring(0, relativeDeleteIdx) +
-            run.text.substring(relativeDeleteIdx + 1),
-        };
+            run.text.substring(0, targetAbsoluteOffset - runStart) +
+            run.text.substring(targetAbsoluteOffset - runStart + 1),
+        });
+      } else {
+        nextChildren.push(run);
       }
-      return run;
-    });
+    }
+
     return { ...block, children: nextChildren };
   });
 
+  // If we removed a footnote marker, also remove its footnote entry and renumber
+  if (removedFootnoteId && afterDeleteState.document.footnotes) {
+    const remainingFootnotes = afterDeleteState.document.footnotes
+      .filter((fn) => fn.id !== removedFootnoteId)
+      .map((fn, i) => ({ ...fn, id: String(i + 1) }));
+
+    // Renumber footnoteId references in all sections
+    const nextSections = afterDeleteState.document.sections.map((section) => {
+      const renumberBlocks = (blocks: BlockNode[]): BlockNode[] =>
+        blocks.map((block) => {
+          if (isTextBlock(block)) {
+            const newRuns = block.children.map((run) => {
+              if (!run.footnoteId) return run;
+              const oldIdx = state.document.footnotes!.findIndex((f) => f.id === run.footnoteId);
+              const removedIdx = state.document.footnotes!.findIndex((f) => f.id === removedFootnoteId);
+              if (oldIdx === -1 || oldIdx === removedIdx) return { ...run, footnoteId: undefined } as any;
+              return { ...run, footnoteId: oldIdx > removedIdx ? String(oldIdx) : run.footnoteId };
+            });
+            return { ...block, children: newRuns };
+          }
+          return block;
+        });
+      return {
+        ...section,
+        children: renumberBlocks(section.children),
+        header: section.header ? renumberBlocks(section.header) : undefined,
+        footer: section.footer ? renumberBlocks(section.footer) : undefined,
+      };
+    });
+
+    return {
+      ...afterDeleteState,
+      document: {
+        ...afterDeleteState.document,
+        footnotes: remainingFootnotes,
+        sections: nextSections,
+      },
+    };
+  }
+
   let nextPosition = { ...selection.anchor };
-  const block = findBlockById(nextState.document, blockId);
+  const block = findBlockById(afterDeleteState.document, blockId);
   if (block && isTextBlock(block)) {
     let acc = 0;
     for (const run of block.children) {
@@ -545,7 +596,7 @@ function handleDeleteText(state: EditorState, op: any): EditorState {
   }
 
   return {
-    ...nextState,
+    ...afterDeleteState,
     selection: { anchor: nextPosition, focus: nextPosition },
   };
 }

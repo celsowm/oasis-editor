@@ -36,7 +36,7 @@ export class PageViewport {
   render(
     layout: LayoutState,
     selection: EditorSelection | null,
-    editingMode: "main" | "header" | "footer" = "main",
+    editingMode: "main" | "header" | "footer" | "footnote" = "main",
   ): void {
     this.pageLayer.render(layout, editingMode);
 

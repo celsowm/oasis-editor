@@ -48,7 +48,8 @@ export enum OperationType {
 }
 
 export interface SetEditingModePayload {
-  mode: "main" | "header" | "footer";
+  mode: "main" | "header" | "footer" | "footnote";
+  footnoteId?: string;
 }
 
 export interface TableRowColPayload {

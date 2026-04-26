@@ -44,7 +44,7 @@ export interface EditorViewModel {
   selectedImageId: string | null;
   activeTableId: string | null;
   activeTableFirstCellId: string | null;
-  editingMode: "main" | "header" | "footer";
+  editingMode: "main" | "header" | "footer" | "footnote";
   layout: LayoutState;
 }
 

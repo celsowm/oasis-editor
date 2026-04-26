@@ -107,6 +107,8 @@ describe("SelectionMapper", () => {
           fragments: [fragment1],
           headerFragments: [],
           footerFragments: [],
+          footnoteFragments: [],
+          footnoteAreaRect: null,
         },
         {
           id: "p2",
@@ -121,12 +123,16 @@ describe("SelectionMapper", () => {
           fragments: [fragment2],
           headerFragments: [],
           footerFragments: [],
+          footnoteFragments: [],
+          footnoteAreaRect: null,
         },
       ],
       fragmentsByBlockId: {
         b1: [fragment1],
         b2: [fragment2],
       },
+      footnotesByPage: {},
+      editingFootnoteId: null,
     };
 
     selectionMapper = new SelectionMapper(mockLayout, mockMeasurer);

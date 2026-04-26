@@ -49,6 +49,8 @@ describe("PositionCalculator", () => {
         },
       ],
     },
+    footnotesByPage: {},
+    editingFootnoteId: null,
   };
 
   it("should calculate offset in block correctly", () => {

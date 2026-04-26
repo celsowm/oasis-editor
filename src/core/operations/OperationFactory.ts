@@ -227,9 +227,9 @@ export const Operations = {
     type: OperationType.SET_INDENTATION,
     payload: { indentation },
   }),
-  setEditingMode: (mode: "main" | "header" | "footer"): EditorOperation => ({
+  setEditingMode: (mode: "main" | "header" | "footer" | "footnote", footnoteId?: string): EditorOperation => ({
     type: OperationType.SET_EDITING_MODE,
-    payload: { mode },
+    payload: { mode, footnoteId },
   }),
   insertPageBreak: (): EditorOperation => ({
     type: OperationType.INSERT_PAGE_BREAK,

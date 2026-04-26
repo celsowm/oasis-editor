@@ -21,6 +21,9 @@ export function registerMetaHandlers(): void {
     return {
       ...state,
       editingMode: op.payload.mode,
+      editingFootnoteId: op.payload.mode === "footnote"
+        ? (op.payload.footnoteId ?? state.editingFootnoteId ?? null)
+        : null,
     };
   });
 }

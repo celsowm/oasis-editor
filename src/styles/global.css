@@ -289,6 +289,43 @@ textarea {
   min-height: 48px;
 }
 
+/* Footnote styles */
+.oasis-footnote-separator {
+  pointer-events: none;
+}
+
+.oasis-footnote-ref {
+  cursor: pointer;
+  vertical-align: super;
+  font-size: 10px;
+  color: #2563eb;
+  line-height: 1;
+}
+
+.oasis-footnote-ref:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.oasis-footnote-entry {
+  font-size: 10px;
+  line-height: 1.4;
+  color: #374151;
+}
+
+.oasis-footnote-entry.oasis-dimmed {
+  opacity: 0.6 !important;
+}
+
+.editing-footnote .oasis-fragment:not(.oasis-footnote-entry) {
+  opacity: 0.4;
+}
+
+/* Continuation separator for footnotes spanning pages */
+.oasis-footnote-continuation-separator {
+  pointer-events: none;
+}
+
 .oasis-page-content {
   display: block;
   position: absolute;

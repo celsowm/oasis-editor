@@ -47,4 +47,6 @@ export interface LayoutFragment {
   // Chart-specific fields (only populated when kind === "chart")
   chartType?: string;
   chartTitle?: string;
+  // Footnote-specific fields (only populated when kind === "footnote-entry")
+  footnoteId?: string;
 }

@@ -28,6 +28,15 @@ export function findBlockById(
       if (foundFooter) return foundFooter;
     }
   }
+
+  // Search footnote blocks
+  if (doc.footnotes) {
+    for (const fn of doc.footnotes) {
+      const foundFn = findBlockInList(fn.blocks, blockId);
+      if (foundFn) return foundFn;
+    }
+  }
+
   return null;
 }
 
@@ -58,6 +67,11 @@ export function getAllBlocks(doc: DocumentModel): BlockNode[] {
     collectBlocks(section.children, blocks);
     if (section.header) collectBlocks(section.header, blocks);
     if (section.footer) collectBlocks(section.footer, blocks);
+  }
+  if (doc.footnotes) {
+    for (const fn of doc.footnotes) {
+      collectBlocks(fn.blocks, blocks);
+    }
   }
   return blocks;
 }

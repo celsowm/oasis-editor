@@ -128,6 +128,31 @@ export class OasisEditorController {
         isShift ? this.insertText("\n") : this.insertParagraph(),
       onEscape: () => {
         const state = this.runtime.getState();
+        if (state.editingMode === "footnote") {
+          // Exit footnote mode, return cursor to the footnote reference in body
+          this.runtime.dispatch(Operations.setEditingMode("main"));
+          // Try to find the footnote reference in body text
+          const fnId = state.editingFootnoteId;
+          if (fnId) {
+            for (const section of state.document.sections) {
+              for (const block of section.children) {
+                if (!isTextBlock(block)) continue;
+                for (const run of block.children) {
+                  if (run.footnoteId === fnId) {
+                    const pos = {
+                      sectionId: section.id,
+                      blockId: block.id,
+                      inlineId: run.id,
+                      offset: 0,
+                    };
+                    this.runtime.dispatch(Operations.setSelection({ anchor: pos, focus: pos }));
+                    return;
+                  }
+                }
+              }
+            }
+          }
+        }
         if (state.editingMode !== "main") {
           this.runtime.dispatch(Operations.setEditingMode("main"));
           // Move selection back to first main content block
@@ -210,6 +235,34 @@ export class OasisEditorController {
         this.resizeImage(blockId, width, height);
       }) as EventListener,
     );
+
+    // Handle clicks on inline footnote markers
+    this.view.elements.root.addEventListener("click", ((e: MouseEvent) => {
+      const target = (e.target as HTMLElement)?.closest?.(".oasis-footnote-ref") as HTMLElement | null;
+      if (target) {
+        const fnId = target.dataset.footnoteId;
+        if (fnId) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.enterFootnote(fnId);
+        }
+        return;
+      }
+
+      // Handle clicks on footnote entry text (stay in footnote mode)
+      const fnEntry = (e.target as HTMLElement)?.closest?.(".oasis-footnote-entry") as HTMLElement | null;
+      if (fnEntry) {
+        const fnId = fnEntry.dataset.footnoteId;
+        if (fnId) {
+          const state = this.runtime.getState();
+          if (state.editingMode !== "footnote" || state.editingFootnoteId !== fnId) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.enterFootnote(fnId);
+          }
+        }
+      }
+    }) as EventListener);
 
     this.runtime.subscribe(() => {
       this.refresh();
@@ -372,6 +425,23 @@ export class OasisEditorController {
 
   insertFootnote(text: string): void {
     this.runtime.dispatch(Operations.insertFootnote(text));
+  }
+
+  enterFootnote(footnoteId: string): void {
+    const state = this.runtime.getState();
+    const fn = state.document.footnotes?.find((f) => f.id === footnoteId);
+    if (!fn) return;
+    const firstBlock = fn.blocks[0];
+    if (!firstBlock || !isTextBlock(firstBlock)) return;
+
+    this.runtime.dispatch(Operations.setEditingMode("footnote", footnoteId));
+    const pos = {
+      sectionId: "footnote",
+      blockId: firstBlock.id,
+      inlineId: firstBlock.children[0]?.id || "",
+      offset: 0,
+    };
+    this.runtime.dispatch(Operations.setSelection({ anchor: pos, focus: pos }));
   }
 
   insertEndnote(text: string): void {

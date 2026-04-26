@@ -7,6 +7,7 @@ export interface EditorState {
   selection: EditorSelection | null;
   pendingMarks?: MarkSet;
   selectedImageId?: string | null;
-  editingMode: "main" | "header" | "footer";
+  editingMode: "main" | "header" | "footer" | "footnote";
+  editingFootnoteId?: string | null;
   trackChangesEnabled?: boolean;
 }

@@ -60,6 +60,31 @@ export function updateDocumentSections(
   updater: (block: BlockNode) => BlockNode | BlockNode[] | null,
 ): EditorState {
   const zone = state.editingMode;
+
+  // Handle footnote editing mode
+  if (zone === "footnote" && state.editingFootnoteId) {
+    const footnotes = state.document.footnotes;
+    if (!footnotes) return state;
+
+    const nextFootnotes = footnotes.map((fn) => {
+      if (fn.id !== state.editingFootnoteId) return fn;
+      const transformed = transformBlocks(fn.blocks, (block) => {
+        if (block.id === blockId) return updater(block);
+        return block;
+      });
+      return { ...fn, blocks: recalculateListSequences(transformed) };
+    });
+
+    return {
+      ...state,
+      document: {
+        ...state.document,
+        revision: state.document.revision + 1,
+        footnotes: nextFootnotes,
+      },
+    };
+  }
+
   const nextSections = state.document.sections.map((section) => {
     let childrenToTransform: BlockNode[] = section.children;
     if (zone === "header") childrenToTransform = section.header || [];

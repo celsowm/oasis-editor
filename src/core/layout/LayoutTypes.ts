@@ -13,9 +13,13 @@ export interface PageLayout {
   fragments: LayoutFragment[];
   headerFragments: LayoutFragment[];
   footerFragments: LayoutFragment[];
+  footnoteFragments: LayoutFragment[];
+  footnoteAreaRect: Rect | null;
 }
 
 export interface LayoutState {
   pages: PageLayout[];
   fragmentsByBlockId: Record<string, LayoutFragment[]>;
+  footnotesByPage: Record<string, string[]>;
+  editingFootnoteId: string | null;
 }
