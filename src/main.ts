@@ -1,4 +1,4 @@
-import { createOasisEditor } from "./app/bootstrap/createOasisEditorApp.js";
+import { createOasisEditor } from "./app/bootstrap/createOasisEditorApp.tsx";
 import "./styles/global.css";
 import "./styles/components/ColorPicker.css";
 import "./styles/components/TablePicker.css";

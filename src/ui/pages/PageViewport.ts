@@ -6,10 +6,10 @@ import {
 import { normalizeSelection as normalizeSelectionRange } from "../../core/selection/SelectionService.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
-import { CaretOverlay } from "../selection/CaretOverlay.js";
-import { SelectionOverlay } from "../selection/SelectionOverlay.js";
+import { CaretOverlay } from "../selection/CaretOverlay.tsx";
+import { SelectionOverlay } from "../selection/SelectionOverlay.tsx";
 import { SelectionMapper } from "../../app/services/SelectionMapper.js";
-import { PageLayer } from "./PageLayer.js";
+import { PageLayer } from "./PageLayer.tsx";
 
 export class PageViewport {
   private root: HTMLElement;

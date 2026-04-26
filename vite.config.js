@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import dts from 'vite-plugin-dts';
+import solidPlugin from 'vite-plugin-solid';
 
 export default defineConfig(({ mode }) => {
   const isLib = mode === 'lib';
@@ -31,6 +32,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [
+      solidPlugin(),
       isLib && dts({
         outDir: 'dist',
       }),

@@ -1,17 +1,18 @@
+import { render } from "solid-js/web";
+import OasisEditor from "../../ui/OasisEditor.tsx";
 import { BrowserTextMeasurer } from "../../bridge/measurement/BrowserTextMeasurer.js";
 import { DocumentRuntime } from "../../core/runtime/DocumentRuntime.js";
 import { PAGE_TEMPLATES } from "../../core/pages/PageTemplateFactory.js";
 import { DocumentLayoutService } from "../services/DocumentLayoutService.js";
 import { OasisEditorPresenter } from "../presenters/OasisEditorPresenter.js";
 import { OasisEditorDom } from "../dom/OasisEditorDom.js";
-import { mountEditor } from "../dom/editorTemplate.js";
 import { OasisEditorView } from "../OasisEditorView.js";
 import { OasisEditorController } from "../OasisEditorController.js";
 import { TextMeasurementService } from "../services/TextMeasurementService.js";
 import { BrowserDomHitTester } from "../services/DomHitTester.js";
-import { ColorPicker } from "../../ui/components/ColorPicker.js";
-import { TablePicker } from "../../ui/components/TablePicker.js";
-import { TableFloatingToolbar } from "../../ui/selection/TableFloatingToolbar.js";
+import { ColorPicker } from "../../ui/components/ColorPicker.tsx";
+import { TablePicker } from "../../ui/components/TablePicker.tsx";
+import { TableFloatingToolbar } from "../../ui/selection/TableFloatingToolbar.tsx";
 import { TableMoveHandle } from "../../ui/selection/TableMoveHandle.js";
 import { ImageResizeOverlay } from "../../ui/selection/ImageResizeOverlay.js";
 import { DocxImporter } from "../../engine/import/DocxImporter.js";
@@ -26,7 +27,11 @@ export interface OasisEditorInstance {
 }
 
 export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
-  const shell = mountEditor(container);
+  const disposeSolid = render(() => <OasisEditor />, container);
+  const shell = container.querySelector<HTMLElement>(".oasis-editor-shell");
+  if (!shell) {
+    throw new Error("OasisEditor: failed to find mounted editor shell");
+  }
 
   const runtime = new DocumentRuntime();
   const textMeasurer = new BrowserTextMeasurer();
@@ -73,6 +78,7 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
   });
 
   function dispose(): void {
+    disposeSolid();
     shell.remove();
   }
 

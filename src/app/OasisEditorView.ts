@@ -2,21 +2,21 @@ import { EditorViewModel, SelectionState } from "./presenters/OasisEditorPresent
 import { OasisEditorDom } from "./dom/OasisEditorDom.js";
 import { OasisEditorPresenter } from "./presenters/OasisEditorPresenter.js";
 import { TextMeasurer } from "../bridge/measurement/TextMeasurementBridge.js";
-import { PageLayer } from "../ui/pages/PageLayer.js";
+import { PageLayer } from "../ui/pages/PageLayer.tsx";
 import { PageViewport } from "../ui/pages/PageViewport.js";
 import {
   ColorPicker,
   ColorPickerListener,
-} from "../ui/components/ColorPicker.js";
+} from "../ui/components/ColorPicker.tsx";
 import {
   TablePicker,
   TablePickerListener,
-} from "../ui/components/TablePicker.js";
+} from "../ui/components/TablePicker.tsx";
 import { ImageResizeOverlay } from "../ui/selection/ImageResizeOverlay.js";
 import {
   TableFloatingToolbar,
   TableToolbarEvents,
-} from "../ui/selection/TableFloatingToolbar.js";
+} from "../ui/selection/TableFloatingToolbar.tsx";
 import {
   TableMoveHandle,
   MoveHandleEvents,
