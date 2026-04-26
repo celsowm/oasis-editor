@@ -13,6 +13,7 @@ import {
 import { measureTextBlocks, measureImageBlock } from "./BlockLayoutEngine.js";
 import { layoutTableBlock } from "./TableLayoutEngine.js";
 import { applyHeaderFooterToPage } from "./HeaderFooterLayoutEngine.js";
+import { IFontManager } from "../typography/FontManager.js";
 
 const FOOTNOTE_SEPARATOR_HEIGHT = 16;
 const FOOTNOTE_ENTRY_GAP = 4;
@@ -20,6 +21,7 @@ const FOOTNOTE_ENTRY_GAP = 4;
 const processBlocks = (
   blocks: BlockNode[],
   ctx: PaginationContext,
+  fontManager: IFontManager,
   containerX: number = 0,
   containerWidth?: number,
 ): void => {
@@ -44,7 +46,7 @@ const processBlocks = (
           width: 0,
           height: 0,
         },
-        typography: { fontFamily: "Inter", fontSize: 0, fontWeight: 0 },
+        typography: fontManager.getTypographyForBlock("page-break"),
         runs: [],
         marks: {},
         lines: [],
@@ -56,7 +58,7 @@ const processBlocks = (
     }
 
     if (block.kind === "image") {
-      const { fragment, height } = measureImageBlock(block, width, ctx.section);
+      const { fragment, height } = measureImageBlock(block, width, ctx.section, fontManager);
       fragment.rect.x = ctx.currentPage.contentRect.x + containerX;
       fragment.rect.y = ctx.currentY;
       fragment.pageId = ctx.currentPage.id;
@@ -73,7 +75,7 @@ const processBlocks = (
       block.kind === "list-item" ||
       block.kind === "ordered-list-item"
     ) {
-      const composed = composeParagraph(block, width, ctx.measure);
+      const composed = composeParagraph(block, width, ctx.measure, fontManager);
 
       if (
         ctx.currentY + composed.totalHeight >
@@ -156,13 +158,15 @@ function composeFootnoteArea(
   footnotes: { id: string; blocks: BlockNode[] }[],
   measure: TextMeasurer,
   fragmentsByBlockId: Record<string, LayoutFragment[]>,
+  fontManager: IFontManager,
 ): void {
   if (footnoteIds.length === 0) return;
 
   const contentBottom = page.contentRect.y + page.contentRect.height;
   const contentEndY = getPageContentBottom(page);
-  const footnoteFontSize = 10;
-  const footnoteLineHeight = footnoteFontSize * 1.5;
+  const typography = fontManager.getTypographyForBlock("footnote");
+  const footnoteFontSize = typography.fontSize;
+  const footnoteLineHeight = footnoteFontSize * typography.lineHeight;
 
   let fnY = contentEndY + FOOTNOTE_SEPARATOR_HEIGHT;
   const fnFragments: LayoutFragment[] = [];
@@ -174,7 +178,7 @@ function composeFootnoteArea(
     for (const block of footnote.blocks) {
       if (!isTextBlock(block)) continue;
 
-      const composed = composeParagraph(block, page.contentRect.width, measure);
+      const composed = composeParagraph(block, page.contentRect.width, measure, fontManager);
 
       const numberRun = {
         id: `fn-marker:${fnId}`,
@@ -201,7 +205,7 @@ function composeFootnoteArea(
           width: page.contentRect.width,
           height: Math.max(composed.totalHeight, footnoteLineHeight),
         },
-        typography: { fontFamily: "Inter", fontSize: footnoteFontSize, fontWeight: 400 },
+        typography,
         runs: allRuns,
         marks: {},
         lines: composed.lines.map((line) => ({
@@ -236,6 +240,7 @@ export const paginateDocument = (
   documentModel: DocumentModel,
   measure: TextMeasurer,
   templates: Record<string, PageTemplate>,
+  fontManager: IFontManager,
 ): LayoutState => {
   const fragmentsByBlockId: Record<string, LayoutFragment[]> = {};
   const pages: PageLayout[] = [];
@@ -259,6 +264,7 @@ export const paginateDocument = (
         contentWidth,
         measure,
         section,
+        fontManager,
       );
       headerHeight = res.height;
     }
@@ -269,6 +275,7 @@ export const paginateDocument = (
         contentWidth,
         measure,
         section,
+        fontManager,
       );
       footerHeight = res.height;
     }
@@ -317,15 +324,16 @@ export const paginateDocument = (
       pageCounter,
       fragmentsByBlockId,
       measure,
+      fontManager,
     );
 
-    processBlocks(section.children, ctx);
+    processBlocks(section.children, ctx, fontManager);
     pages.push(...ctx.pages, ctx.currentPage);
 
     // 2. Apply measured header/footer fragments to all pages of this section
     const sectionPages = pages.filter((p) => p.sectionId === section.id);
     for (const page of sectionPages) {
-      applyHeaderFooterToPage(page, section, measure, fragmentsByBlockId);
+      applyHeaderFooterToPage(page, section, measure, fragmentsByBlockId, fontManager);
     }
 
     // 3. Compose footnote fragments for each page
@@ -342,7 +350,7 @@ export const paginateDocument = (
           }
         }
         if (pageFnIds.length > 0) {
-          composeFootnoteArea(page, pageFnIds, documentModel.footnotes, measure, fragmentsByBlockId);
+          composeFootnoteArea(page, pageFnIds, documentModel.footnotes, measure, fragmentsByBlockId, fontManager);
           footnotesByPage[page.id] = pageFnIds;
         }
       }

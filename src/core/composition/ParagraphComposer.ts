@@ -8,13 +8,9 @@ import {
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { LineInfo } from "../layout/LayoutFragment.js";
 import { breakTextIntoLines } from "./LineBreaker.js";
-import { getTypographyForBlockKind } from "./TypographyConfig.js";
+import type { IFontManager, BlockTypography } from "../typography/FontManager.js";
 
-export interface BlockTypography {
-  fontFamily: string;
-  fontSize: number;
-  fontWeight: number;
-}
+export type { BlockTypography };
 
 export interface ComposedParagraph {
   blockId: string;
@@ -31,15 +27,16 @@ export interface ComposedParagraph {
   listLevel?: number;
 }
 
-const getBlockTypography = (block: BlockNode): BlockTypography => {
+const getBlockTypography = (block: BlockNode, fontManager: IFontManager): BlockTypography => {
   const children = isTextBlock(block) ? block.children : [];
   const firstRun = children[0];
-  const fontFamily = firstRun?.marks.fontFamily ?? "Inter";
-  const typography = getTypographyForBlockKind(block.kind);
-  const fontSize = firstRun?.marks.fontSize ?? typography.fontSize;
-  const fontWeight = firstRun?.marks.bold ? 700 : typography.fontWeight;
+  const defaults = fontManager.getTypographyForBlock(block.kind);
+  
+  const fontFamily = fontManager.resolveFontFamily(firstRun?.marks.fontFamily ?? defaults.fontFamily);
+  const fontSize = firstRun?.marks.fontSize ?? defaults.fontSize;
+  const fontWeight = firstRun?.marks.bold ? 700 : defaults.fontWeight;
 
-  return { fontFamily, fontSize, fontWeight };
+  return { fontFamily, fontSize, fontWeight, lineHeight: defaults.lineHeight };
 };
 
 export const DEFAULT_LIST_INDENTATION = 25;
@@ -49,10 +46,11 @@ export const composeParagraph = (
   block: BlockNode,
   maxWidth: number,
   measure: TextMeasurer,
+  fontManager: IFontManager,
 ): ComposedParagraph => {
   const children = isTextBlock(block) ? block.children : [];
   const plainText = children.map((child) => child.text).join("");
-  const typography = getBlockTypography(block);
+  const typography = getBlockTypography(block, fontManager);
 
   const isListItem = block.kind === "list-item";
   const isOrderedListItem = block.kind === "ordered-list-item";
@@ -81,8 +79,7 @@ export const composeParagraph = (
     broken.push({ text: "", width: 0 });
   }
 
-  const typographyConfig = getTypographyForBlockKind(block.kind);
-  const lineHeight = typography.fontSize * typographyConfig.lineHeight;
+  const lineHeight = typography.fontSize * typography.lineHeight;
 
   let currentOffset = 0;
   const align = isTextBlock(block) ? block.align : "left";

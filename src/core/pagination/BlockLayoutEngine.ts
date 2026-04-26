@@ -3,6 +3,7 @@ import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js"
 import { BlockNode, ImageNode, EquationNode, ChartNode } from "../document/BlockTypes.js";
 import { composeParagraph } from "../composition/ParagraphComposer.js";
 import { SectionNode } from "../document/SectionTypes.js";
+import { IFontManager } from "../typography/FontManager.js";
 
 export interface MeasuredBlockResult {
   height: number;
@@ -14,21 +15,22 @@ export function measureTextBlocks(
   width: number,
   measure: TextMeasurer,
   section: SectionNode,
+  fontManager: IFontManager,
 ): MeasuredBlockResult {
   let localY = 0;
   const fragments: LayoutFragment[] = [];
 
   for (const block of blocks) {
     if (block.kind === "image") {
-      const imgResult = measureImageBlock(block, width, section);
+      const imgResult = measureImageBlock(block, width, section, fontManager);
       fragments.push(imgResult.fragment);
       localY += imgResult.height + 12;
     } else if (block.kind === "equation") {
-      const eqResult = measureEquationBlock(block, width, section);
+      const eqResult = measureEquationBlock(block, width, section, fontManager);
       fragments.push(eqResult.fragment);
       localY += eqResult.height + 12;
     } else if (block.kind === "chart") {
-      const chartResult = measureChartBlock(block, width, section);
+      const chartResult = measureChartBlock(block, width, section, fontManager);
       fragments.push(chartResult.fragment);
       localY += chartResult.height + 12;
     } else if (
@@ -37,7 +39,7 @@ export function measureTextBlocks(
       block.kind === "list-item" ||
       block.kind === "ordered-list-item"
     ) {
-      const composed = composeParagraph(block, width, measure);
+      const composed = composeParagraph(block, width, measure, fontManager);
       const textLength = block.children
         .map((child) => child.text)
         .join("").length;
@@ -71,6 +73,7 @@ export function measureImageBlock(
   block: ImageNode,
   width: number,
   section: SectionNode,
+  fontManager: IFontManager,
 ): { fragment: LayoutFragment; height: number } {
   const imgW = Math.min(block.width, width);
   const scale = imgW / block.width;
@@ -87,7 +90,7 @@ export function measureImageBlock(
     endOffset: 0,
     text: "",
     rect: { x: 0, y: 0, width: imgW, height: imgH },
-    typography: { fontFamily: "", fontSize: 0, fontWeight: 400 },
+    typography: { ...fontManager.getTypographyForBlock("image"), fontFamily: "" }, // image usually doesn't need font, but we keep the structure
     runs: [],
     marks: {},
     lines: [],
@@ -103,9 +106,10 @@ export function measureEquationBlock(
   block: EquationNode,
   width: number,
   section: SectionNode,
+  fontManager: IFontManager,
 ): { fragment: LayoutFragment; height: number } {
-  const fontSize = 18;
-  const lineHeight = Math.round(fontSize * 1.4);
+  const typography = fontManager.getTypographyForBlock("math");
+  const lineHeight = Math.round(typography.fontSize * typography.lineHeight);
   const display = block.display ?? false;
   const height = display ? lineHeight * 2 : lineHeight;
 
@@ -120,7 +124,7 @@ export function measureEquationBlock(
     endOffset: block.latex.length,
     text: block.latex,
     rect: { x: 0, y: 0, width, height },
-    typography: { fontFamily: "Cambria Math, Latin Modern Math, serif", fontSize, fontWeight: 400 },
+    typography,
     runs: [],
     marks: {},
     lines: [],
@@ -136,9 +140,11 @@ export function measureChartBlock(
   block: ChartNode,
   width: number,
   section: SectionNode,
+  fontManager: IFontManager,
 ): { fragment: LayoutFragment; height: number } {
   const chartW = Math.min(block.width ?? 400, width);
   const chartH = block.height ?? 250;
+  const typography = fontManager.getTypographyForBlock("chart");
 
   const fragment: LayoutFragment = {
     id: `fragment:${block.id}:0`,
@@ -151,7 +157,7 @@ export function measureChartBlock(
     endOffset: 0,
     text: block.title || `[${block.chartType} chart]`,
     rect: { x: 0, y: 0, width: chartW, height: chartH },
-    typography: { fontFamily: "sans-serif", fontSize: 14, fontWeight: 400 },
+    typography,
     runs: [],
     marks: {},
     lines: [],

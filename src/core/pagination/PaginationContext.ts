@@ -3,6 +3,7 @@ import { Rect, LayoutFragment } from "../layout/LayoutFragment.js";
 import { PageLayout } from "../layout/LayoutTypes.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { SectionNode } from "../document/SectionTypes.js";
+import { IFontManager } from "../typography/FontManager.js";
 
 export interface PaginationContext {
   pages: PageLayout[];
@@ -16,6 +17,7 @@ export interface PaginationContext {
   section: SectionNode;
   template: PageTemplate;
   measure: TextMeasurer;
+  fontManager: IFontManager;
 }
 
 export function createNewPage(ctx: PaginationContext): void {
@@ -61,6 +63,7 @@ export function createPaginationContext(
   pageCounter: number,
   fragmentsByBlockId: Record<string, LayoutFragment[]>,
   measure: TextMeasurer,
+  fontManager: IFontManager,
 ): PaginationContext {
   return {
     pages: [],
@@ -99,5 +102,6 @@ export function createPaginationContext(
     section,
     template,
     measure,
+    fontManager,
   };
 }

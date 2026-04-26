@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { DocumentModel } from "../../core/document/DocumentTypes.js";
 import { NativeDocxImporter } from "../../engine/import/NativeDocxImporter.js";
 import { NativeDocxExporter } from "../../engine/export/NativeDocxExporter.js";
+import { DefaultFontManager } from "../../core/typography/FontManager.js";
 import {
   createParagraph,
   createHeading,
@@ -14,8 +15,9 @@ import {
 import { createSection } from "../../core/document/DocumentFactory.js";
 
 describe("NativeDocxImporter", () => {
+  const fontManager = new DefaultFontManager();
   const roundTrip = async (doc: DocumentModel): Promise<DocumentModel> => {
-    const exporter = new NativeDocxExporter();
+    const exporter = new NativeDocxExporter(fontManager);
     const buffer = await exporter.exportToBuffer(doc);
     const importer = new NativeDocxImporter();
     return importer.importFromBuffer(buffer);

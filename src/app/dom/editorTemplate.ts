@@ -50,6 +50,13 @@ const EDITOR_SHELL_HTML = `
     <div class="oasis-editor-toolbar-separator"></div>
 
     <div class="oasis-editor-toolbar-group">
+      <select id="oasis-editor-font-family" title="Font family" style="padding: 4px 8px; font-size: 13px; border-radius: 4px; border: 1px solid #d1d5db; background: white; min-width: 120px;">
+      </select>
+    </div>
+
+    <div class="oasis-editor-toolbar-separator"></div>
+
+    <div class="oasis-editor-toolbar-group">
       <select id="oasis-editor-template"></select>
     </div>
 

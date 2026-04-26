@@ -20,6 +20,7 @@ export interface SelectionState {
   strike: boolean;
   link: string | null;
   color: string;
+  fontFamily: string;
   vertAlign: "superscript" | "subscript" | null;
   align: "left" | "center" | "right" | "justify";
   isListItem: boolean;
@@ -78,6 +79,7 @@ export class OasisEditorPresenter {
       strike: false,
       link: null,
       color: "#000000",
+      fontFamily: "Inter",
       vertAlign: null,
       align: "left",
       isListItem: false,
@@ -113,6 +115,7 @@ export class OasisEditorPresenter {
           strike: !!effectiveMarks.strike,
           link: effectiveMarks.link || null,
           color: effectiveMarks.color || "#000000",
+          fontFamily: effectiveMarks.fontFamily || "Inter",
           vertAlign: effectiveMarks.vertAlign || null,
           align: targetBlock.align || "left",
           isListItem: targetBlock.kind === "list-item",
@@ -140,6 +143,7 @@ export class OasisEditorPresenter {
         strike: !!state.pendingMarks.strike,
         link: state.pendingMarks.link || null,
         color: state.pendingMarks.color || "#000000",
+        fontFamily: state.pendingMarks.fontFamily || "Inter",
         vertAlign: state.pendingMarks.vertAlign || null,
         trackChangesEnabled: !!state.trackChangesEnabled,
       };

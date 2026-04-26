@@ -77,6 +77,7 @@ export interface ViewElements {
   menuHelp: HTMLElement;
   importDocxInput: HTMLInputElement;
   zoomSelect: HTMLSelectElement;
+  fontFamilySelect: HTMLSelectElement;
 }
 
 export interface ViewDeps {
@@ -172,6 +173,7 @@ export class OasisEditorView {
       menuHelp: this.dom.getMenuHelpElement(),
       importDocxInput: this.dom.getImportDocxInput(),
       zoomSelect: this.dom.getZoomSelect(),
+      fontFamilySelect: this.dom.getFontFamilySelect(),
     };
 
     this.pageLayer = new PageLayer(this.elements.pagesContainer);
@@ -192,6 +194,14 @@ export class OasisEditorView {
         ...options.map(opt => h('option', { value: opt.value }, opt.label))
     );
     this.elements.templateSelect.appendChild(frags);
+  }
+
+  renderFontFamilyOptions(fonts: string[]): void {
+    this.elements.fontFamilySelect.innerHTML = "";
+    const frags = fragment(
+      ...fonts.map(font => h('option', { value: font }, font))
+    );
+    this.elements.fontFamilySelect.appendChild(frags);
   }
 
   bind(events: ViewEventBindings): void {
@@ -220,6 +230,11 @@ export class OasisEditorView {
       }
     });
     this.elements.trackChangesButton.addEventListener("click", events.onToggleTrackChanges);
+
+    this.elements.fontFamilySelect.addEventListener("change", (e) => {
+      const fontFamily = (e.target as HTMLSelectElement).value;
+      events.onFontFamilyChange(fontFamily);
+    });
 
     this.colorPicker = this.deps.colorPickerFactory(
       "oasis-editor-color-picker-container",
@@ -954,6 +969,8 @@ export class OasisEditorView {
       "active",
       selectionState.isOrderedListItem,
     );
+
+    this.elements.fontFamilySelect.value = selectionState.fontFamily;
 
     if (this.colorPicker) {
       this.colorPicker.setCurrentColor(selectionState.color);

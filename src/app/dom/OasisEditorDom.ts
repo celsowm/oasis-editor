@@ -21,6 +21,10 @@ export class OasisEditorDom {
     return this.requireElement("oasis-editor-template") as HTMLSelectElement;
   }
 
+  getFontFamilySelect(): HTMLSelectElement {
+    return this.requireElement("oasis-editor-font-family") as HTMLSelectElement;
+  }
+
   getFormatPainterButton(): HTMLElement {
     return this.requireElement("oasis-editor-format-painter");
   }

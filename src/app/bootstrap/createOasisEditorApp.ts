@@ -17,6 +17,7 @@ import { ImageResizeOverlay } from "../../ui/selection/ImageResizeOverlay.js";
 import { DocxImporter } from "../../engine/import/DocxImporter.js";
 import { DocxExporter } from "../../engine/export/DocxExporter.js";
 import { PdfExporter } from "../../engine/export/PdfExporter.js";
+import { DefaultFontManager } from "../../core/typography/FontManager.js";
 
 export interface OasisEditorInstance {
   controller: OasisEditorController;
@@ -29,8 +30,13 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
 
   const runtime = new DocumentRuntime();
   const textMeasurer = new BrowserTextMeasurer();
+  const fontManager = new DefaultFontManager();
   const measurementService = new TextMeasurementService(textMeasurer);
-  const layoutService = new DocumentLayoutService(textMeasurer, PAGE_TEMPLATES);
+  const layoutService = new DocumentLayoutService(
+    textMeasurer,
+    PAGE_TEMPLATES,
+    fontManager,
+  );
   const presenter = new OasisEditorPresenter(Object.values(PAGE_TEMPLATES));
   const dom = new OasisEditorDom(shell);
   const view = new OasisEditorView({
@@ -49,8 +55,8 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
   view.elements.hiddenInput.focus();
 
   const importer = new DocxImporter();
-  const exporter = new DocxExporter();
-  const pdfExporter = new PdfExporter();
+  const exporter = new DocxExporter(fontManager);
+  const pdfExporter = new PdfExporter(fontManager);
   const domHitTester = new BrowserDomHitTester();
 
   const controller = new OasisEditorController({
@@ -63,6 +69,7 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
     exporter,
     pdfExporter,
     domHitTester,
+    fontManager,
   });
 
   function dispose(): void {

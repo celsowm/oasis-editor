@@ -3,14 +3,15 @@ import { DocumentExporter } from "../../core/export/DocumentExporter.js";
 import { DocumentModel } from "../../core/document/DocumentTypes.js";
 import { WMLWriter } from "../opc/WMLWriter.js";
 import { OPCPackageWriter } from "../opc/OPCPackageWriter.js";
+import { IFontManager } from "../../core/typography/FontManager.js";
 
 export class NativeDocxExporter implements DocumentExporter {
   private wmlWriter: WMLWriter;
   private opcWriter: OPCPackageWriter;
 
-  constructor() {
+  constructor(fontManager: IFontManager) {
     this.wmlWriter = new WMLWriter();
-    this.opcWriter = new OPCPackageWriter();
+    this.opcWriter = new OPCPackageWriter(fontManager);
   }
 
   async exportToBlob(document: DocumentModel): Promise<Blob> {

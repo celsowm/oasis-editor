@@ -1,7 +1,7 @@
 import { XMLBuilder } from "./XMLBuilder.js";
 import { Relationship } from "./OPCGraphBuilder.js";
-import { HEADING_SIZES_PX } from "../../core/composition/TypographyConfig.js";
 import { pxToHalfPoint } from "../../core/utils/Units.js";
+import { IFontManager } from "../../core/typography/FontManager.js";
 
 const CT_NS = "http://schemas.openxmlformats.org/package/2006/content-types";
 const RELS_NS = "http://schemas.openxmlformats.org/package/2006/relationships";
@@ -25,6 +25,12 @@ export interface OPCPartEntry {
 }
 
 export class OPCPackageWriter {
+  private fontManager: IFontManager;
+
+  constructor(fontManager: IFontManager) {
+    this.fontManager = fontManager;
+  }
+
   build(
     documentXml: Uint8Array,
     docRelationships: Relationship[],
@@ -291,6 +297,13 @@ export class OPCPackageWriter {
     b.open("w", "style", { "w:type": "paragraph", "w:default": "1", "w:styleId": "Normal" });
     b.open("w", "name", { "w:val": "Normal" });
     b.close("w", "name");
+    const normalTypography = this.fontManager.getTypographyForBlock("paragraph");
+    b.open("w", "rPr");
+    b.selfClose("w", "rFonts", { "w:ascii": normalTypography.fontFamily, "w:hAnsi": normalTypography.fontFamily });
+    const normalHalfPoints = pxToHalfPoint(normalTypography.fontSize);
+    b.selfClose("w", "sz", { "w:val": normalHalfPoints });
+    b.selfClose("w", "szCs", { "w:val": normalHalfPoints });
+    b.close("w", "rPr");
     b.close("w", "style");
 
     // Heading styles
@@ -306,9 +319,11 @@ export class OPCPackageWriter {
       b.close("w", "pPr");
       b.open("w", "rPr");
       b.selfClose("w", "b");
-      const halfPoints = pxToHalfPoint(HEADING_SIZES_PX[i] ?? HEADING_SIZES_PX[6]);
+      const headingTypography = this.fontManager.getTypographyForBlock("heading");
+      const halfPoints = pxToHalfPoint(headingTypography.fontSize);
       b.selfClose("w", "sz", { "w:val": halfPoints });
       b.selfClose("w", "szCs", { "w:val": halfPoints });
+      b.selfClose("w", "rFonts", { "w:ascii": headingTypography.fontFamily, "w:hAnsi": headingTypography.fontFamily });
       b.close("w", "rPr");
       b.close("w", "style");
     }

@@ -13,7 +13,7 @@ import { DocumentModel } from "../../core/document/DocumentTypes.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { BLOCK_SPACING } from "../../core/pages/PageTemplateTypes.js";
 import { pxToPt } from "../../core/utils/Units.js";
-import { HEADING_SIZES_PX } from "../../core/composition/TypographyConfig.js";
+import { IFontManager } from "../../core/typography/FontManager.js";
 import {
   BlockNode,
   isTextBlock,
@@ -44,6 +44,12 @@ const PAGE_SIZE_MAP: Record<string, PredefinedPageSize> = {
 };
 
 export class PdfExporter implements DocumentExporter {
+  private fontManager: IFontManager;
+
+  constructor(fontManager: IFontManager) {
+    this.fontManager = fontManager;
+  }
+
   async exportToBlob(document: DocumentModel, layout?: LayoutState): Promise<Blob> {
     const docDef = this.buildDocDefinition(document, layout);
     // @ts-ignore
@@ -68,6 +74,7 @@ export class PdfExporter implements DocumentExporter {
 
     const pageBreakMap = this.buildPageBreakMap(layout);
     const content = this.convertBlocks(section.children, pageBreakMap);
+    const normalTypography = this.fontManager.getTypographyForBlock("paragraph");
 
     const docDef: TDocumentDefinitions = {
       info: { title: document.metadata.title || "Untitled" },
@@ -75,6 +82,10 @@ export class PdfExporter implements DocumentExporter {
       pageOrientation: section.orientation,
       pageMargins: margins,
       content,
+      defaultStyle: {
+        fontSize: pxToPt(normalTypography.fontSize),
+        lineHeight: normalTypography.lineHeight,
+      }
     };
 
     // Header
@@ -171,24 +182,36 @@ export class PdfExporter implements DocumentExporter {
   }
 
   private convertChart(block: import("../../core/document/BlockTypes.js").ChartNode): Content {
-    return {
+    const typography = this.fontManager.getTypographyForBlock("chart");
+    const node: Content = {
       text: block.title || `[${block.chartType} chart]`,
       alignment: "center",
       color: "#6b7280",
       italics: true,
-      fontSize: pxToPt(12),
+      fontSize: pxToPt(typography.fontSize),
+      lineHeight: typography.lineHeight,
       margin: [0, 0, 0, pxToPt(BLOCK_SPACING)],
     };
+    if (typography.fontFamily !== "Inter") {
+      (node as any).font = typography.fontFamily;
+    }
+    return node;
   }
 
   private convertEquation(block: import("../../core/document/BlockTypes.js").EquationNode): Content {
-    return {
+    const typography = this.fontManager.getTypographyForBlock("math");
+    const node: Content = {
       text: block.latex || "[Equation]",
       alignment: block.display ? "center" : "left",
       italics: true,
-      fontSize: pxToPt(14),
+      fontSize: pxToPt(typography.fontSize),
+      lineHeight: typography.lineHeight,
       margin: [0, 0, 0, pxToPt(BLOCK_SPACING)],
     };
+    if (typography.fontFamily !== "Inter") {
+      (node as any).font = typography.fontFamily;
+    }
+    return node;
   }
 
   private convertTextBlock(
@@ -196,11 +219,18 @@ export class PdfExporter implements DocumentExporter {
     forcePageBreak: boolean = false,
   ): Content {
     const textRuns = block.children.map((run) => this.convertTextRun(run));
+    const typography = this.fontManager.getTypographyForBlock(block.kind);
 
     const node: ContentText = {
       text: textRuns,
       alignment: ALIGN_MAP[block.align] ?? "left",
+      fontSize: pxToPt(typography.fontSize),
+      lineHeight: typography.lineHeight,
     };
+
+    if (typography.fontFamily !== "Inter") {
+      node.font = typography.fontFamily;
+    }
 
     if (forcePageBreak) {
       (node as { pageBreak?: string }).pageBreak = "before";
@@ -219,8 +249,6 @@ export class PdfExporter implements DocumentExporter {
     }
 
     if (block.kind === "heading") {
-      // Heading defaults are in px; pdfmake expects pt.
-      node.fontSize = pxToPt(HEADING_SIZES_PX[block.level] ?? HEADING_SIZES_PX[6]);
       node.bold = true;
     }
 
@@ -266,7 +294,7 @@ export class PdfExporter implements DocumentExporter {
     }
 
     // pdfmake font property is called `font`
-    if (run.marks.fontFamily) {
+    if (run.marks.fontFamily && run.marks.fontFamily !== "Inter") {
       (node as { font?: string }).font = run.marks.fontFamily;
     }
 

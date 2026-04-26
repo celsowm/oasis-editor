@@ -37,6 +37,7 @@ export function layoutTableBlock(
         cellWidth - 10,
         ctx.measure,
         ctx.section,
+        ctx.fontManager,
       );
       rowCellResults.push(result);
       maxHeight = Math.max(maxHeight, result.height + 10);
@@ -120,7 +121,7 @@ export function layoutTableBlock(
           width: cellWidth,
           height: cellHeight,
         },
-        typography: { fontFamily: "", fontSize: 0, fontWeight: 400 },
+        typography: { fontFamily: "", fontSize: 0, fontWeight: 400, lineHeight: 0 },
         runs: [],
         marks: {},
         lines: [],

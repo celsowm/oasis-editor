@@ -19,6 +19,7 @@ import { ImportExportController } from "./controllers/ImportExportController.js"
 import { DomHitTester } from "./services/DomHitTester.js";
 import { getAllBlocks } from "../core/document/BlockUtils.js";
 import { isTextBlock } from "../core/document/BlockTypes.js";
+import { IFontManager } from "../core/typography/FontManager.js";
 
 export interface ControllerDeps {
   runtime: DocumentRuntime;
@@ -30,6 +31,7 @@ export interface ControllerDeps {
   exporter: DocumentExporter;
   pdfExporter: DocumentExporter;
   domHitTester: DomHitTester;
+  fontManager: IFontManager;
 }
 
 export class OasisEditorController {
@@ -37,6 +39,7 @@ export class OasisEditorController {
   private layoutService: DocumentLayoutService;
   private presenter: OasisEditorPresenter;
   private view: OasisEditorView;
+  private fontManager: IFontManager;
   private latestLayout: LayoutState | null;
   private positionCalculator: PositionCalculator | null;
 
@@ -53,6 +56,7 @@ export class OasisEditorController {
     this.layoutService = deps.layoutService;
     this.presenter = deps.presenter;
     this.view = deps.view;
+    this.fontManager = deps.fontManager;
     this.latestLayout = null;
     this.positionCalculator = null;
 
@@ -107,6 +111,7 @@ export class OasisEditorController {
 
   start(): void {
     this.view.renderTemplateOptions(this.presenter.getTemplateOptions());
+    this.view.renderFontFamilyOptions(this.fontManager.getAvailableFonts());
     this.view.bind({
       onFormatPainterToggle: () => this.toggleFormatPainter(),
       onFormatPainterDoubleClick: () => this.toggleFormatPainter(true),
@@ -119,6 +124,7 @@ export class OasisEditorController {
       onInsertLink: (url) => this.insertLink(url),
       onRemoveLink: () => this.removeLink(),
       onColorChange: (color) => this.setColor(color),
+      onFontFamilyChange: (fontFamily) => this.setFontFamily(fontFamily),
       onUndo: () => this.undo(),
       onRedo: () => this.redo(),
       onTemplateChange: (templateId) => this.setTemplate(templateId),
@@ -324,6 +330,10 @@ export class OasisEditorController {
 
   setColor(color: string): void {
     this.runtime.dispatch(Operations.setMark("color", color));
+  }
+
+  setFontFamily(fontFamily: string): void {
+    this.runtime.dispatch(Operations.setMark("fontFamily", fontFamily));
   }
 
   undo(): void {

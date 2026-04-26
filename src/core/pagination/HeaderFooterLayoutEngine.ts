@@ -3,12 +3,14 @@ import { PageLayout } from "../layout/LayoutTypes.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { SectionNode } from "../document/SectionTypes.js";
 import { measureTextBlocks } from "./BlockLayoutEngine.js";
+import { IFontManager } from "../typography/FontManager.js";
 
 export function applyHeaderFooterToPage(
   page: PageLayout,
   section: SectionNode,
   measure: TextMeasurer,
   fragmentsByBlockId: Record<string, LayoutFragment[]>,
+  fontManager: IFontManager,
 ): void {
   if (page.headerRect && section.header) {
     const { fragments } = measureTextBlocks(
@@ -16,6 +18,7 @@ export function applyHeaderFooterToPage(
       page.headerRect.width,
       measure,
       section,
+      fontManager,
     );
     for (const f of fragments) {
       f.rect.x += page.headerRect.x;
@@ -36,6 +39,7 @@ export function applyHeaderFooterToPage(
       page.footerRect.width,
       measure,
       section,
+      fontManager,
     );
     for (const f of fragments) {
       f.rect.x += page.footerRect.x;

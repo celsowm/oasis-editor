@@ -27,7 +27,7 @@ describe("PositionCalculator", () => {
           endOffset: 11,
           text: "Hello World",
           rect: { x: 50, y: 100, width: 200, height: 30 },
-          typography: { fontFamily: "Arial", fontSize: 12, fontWeight: 400 },
+          typography: { fontFamily: "Arial", fontSize: 12, fontWeight: 400, lineHeight: 1.5 },
           marks: {},
           runs: [
             { id: "run-1", text: "Hello ", marks: {} },

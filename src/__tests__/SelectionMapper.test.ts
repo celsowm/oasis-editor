@@ -32,7 +32,7 @@ describe("SelectionMapper", () => {
       endOffset: 20,
       text: "01234567890123456789",
       rect: { x: 50, y: 50, width: 200, height: 100 },
-      typography: { fontFamily: "Arial", fontSize: 12, fontWeight: 400 },
+      typography: { fontFamily: "Arial", fontSize: 12, fontWeight: 400, lineHeight: 1.5 },
       marks: {},
       runs: [
         { id: "r1", text: "0123456789", marks: {} },
@@ -74,7 +74,7 @@ describe("SelectionMapper", () => {
       endOffset: 10,
       text: "fragment 2",
       rect: { x: 50, y: 50, width: 200, height: 100 },
-      typography: { fontFamily: "Arial", fontSize: 12, fontWeight: 400 },
+      typography: { fontFamily: "Arial", fontSize: 12, fontWeight: 400, lineHeight: 1.5 },
       marks: {},
       runs: [{ id: "r3", text: "fragment 2", marks: {} }],
       lines: [

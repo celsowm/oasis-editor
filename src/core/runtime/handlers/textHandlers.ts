@@ -31,7 +31,7 @@ function updateDocumentSections(
         }
         return block;
       });
-      const nextFootnotes = state.document.footnotes.map(f =>
+      const nextFootnotes = (state.document.footnotes || []).map(f =>
         f.id === state.editingFootnoteId ? { ...f, blocks: transformed } : f
       );
       return {

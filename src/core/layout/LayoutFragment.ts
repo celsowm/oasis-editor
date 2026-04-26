@@ -29,7 +29,12 @@ export interface LayoutFragment {
   endOffset: number;
   text: string;
   rect: Rect;
-  typography: { fontFamily: string; fontSize: number; fontWeight: number };
+  typography: {
+    fontFamily: string;
+    fontSize: number;
+    fontWeight: number;
+    lineHeight: number;
+  };
   marks: MarkSet;
   runs: TextRun[];
   lines: LineInfo[];

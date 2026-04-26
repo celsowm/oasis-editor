@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { PdfExporter } from "../../engine/export/PdfExporter.js";
+import { DefaultFontManager } from "../../core/typography/FontManager.js";
 import { createDocument, createParagraph, createHeading, createTextRun } from "../../core/document/DocumentFactory.js";
 import { DocumentModel } from "../../core/document/DocumentTypes.js";
 
 describe("PdfExporter", () => {
-  const exporter = new PdfExporter();
+  const fontManager = new DefaultFontManager();
+  const exporter = new PdfExporter(fontManager);
 
   it("should export a simple document to a Blob", async () => {
     const doc = createDocument();
