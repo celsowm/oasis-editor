@@ -12,6 +12,8 @@ import { DocumentExporter } from "../../core/export/DocumentExporter.js";
 import { DocumentModel } from "../../core/document/DocumentTypes.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { BLOCK_SPACING } from "../../core/pages/PageTemplateTypes.js";
+import { pxToPt } from "../../core/utils/Units.js";
+import { HEADING_SIZES_PX } from "../../core/composition/TypographyConfig.js";
 import {
   BlockNode,
   isTextBlock,
@@ -40,11 +42,6 @@ const ALIGN_MAP: Record<string, "left" | "center" | "right" | "justify"> = {
 const PAGE_SIZE_MAP: Record<string, PredefinedPageSize> = {
   "template:a4:default": "A4",
 };
-
-/** Convert Oasis pixels (96 DPI) to PDF points (72 DPI). */
-function pxToPt(px: number): number {
-  return px * 0.75;
-}
 
 export class PdfExporter implements DocumentExporter {
   async exportToBlob(document: DocumentModel, layout?: LayoutState): Promise<Blob> {
@@ -179,7 +176,7 @@ export class PdfExporter implements DocumentExporter {
       alignment: "center",
       color: "#6b7280",
       italics: true,
-      fontSize: 12,
+      fontSize: pxToPt(12),
       margin: [0, 0, 0, pxToPt(BLOCK_SPACING)],
     };
   }
@@ -189,7 +186,7 @@ export class PdfExporter implements DocumentExporter {
       text: block.latex || "[Equation]",
       alignment: block.display ? "center" : "left",
       italics: true,
-      fontSize: 14,
+      fontSize: pxToPt(14),
       margin: [0, 0, 0, pxToPt(BLOCK_SPACING)],
     };
   }
@@ -221,17 +218,9 @@ export class PdfExporter implements DocumentExporter {
       (node as { margin?: [number, number, number, number] }).margin = [0, 0, 0, pxToPt(BLOCK_SPACING)];
     }
 
-if (block.kind === "heading") {
-      // Apply heading styles via fontSize and bold
-      const headingSizes: Record<number, number> = {
-        1: 24,
-        2: 20,
-        3: 18,
-        4: 16,
-        5: 14,
-        6: 12,
-      };
-      node.fontSize = headingSizes[block.level] ?? 12;
+    if (block.kind === "heading") {
+      // Heading defaults are in px; pdfmake expects pt.
+      node.fontSize = pxToPt(HEADING_SIZES_PX[block.level] ?? HEADING_SIZES_PX[6]);
       node.bold = true;
     }
 
@@ -250,10 +239,10 @@ if (block.kind === "heading") {
 
   private convertTextRun(run: OasisTextRun): ContentText {
     if (run.footnoteId) {
-      return { text: run.footnoteId, sup: true, color: "#2563eb", fontSize: 8 };
+      return { text: run.footnoteId, sup: true, color: "#2563eb", fontSize: pxToPt(10) };
     }
     if (run.endnoteId) {
-      return { text: run.endnoteId, sup: true, color: "#7c3aed", fontSize: 8 };
+      return { text: run.endnoteId, sup: true, color: "#7c3aed", fontSize: pxToPt(10) };
     }
 
     const node: ContentText = {
@@ -261,7 +250,7 @@ if (block.kind === "heading") {
       bold: run.marks.bold,
       italics: run.marks.italic,
       color: run.marks.color,
-      fontSize: run.marks.fontSize,
+      fontSize: run.marks.fontSize !== undefined ? pxToPt(run.marks.fontSize) : undefined,
     };
 
     const decorations: ("underline" | "lineThrough")[] = [];

@@ -16,6 +16,19 @@ export const DEFAULT_TYPOGRAPHY: TypographyDefaults = {
   orderedListItem: { fontSize: 15, fontWeight: 400, lineHeight: 1.5 },
 };
 
+/**
+ * Canonical heading font sizes in **CSS pixels** (96 DPI), indexed by level (1..6).
+ * Used by both the on-screen renderer and exporters (which convert to pt as needed).
+ */
+export const HEADING_SIZES_PX: Record<number, number> = {
+  1: 24,
+  2: 20,
+  3: 18,
+  4: 16,
+  5: 14,
+  6: 12,
+};
+
 export function getTypographyForBlockKind(kind: string): { fontSize: number; fontWeight: number; lineHeight: number } {
   const d = DEFAULT_TYPOGRAPHY;
   switch (kind) {

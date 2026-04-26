@@ -9,6 +9,7 @@ import {
 import { createEquation, createChart } from "../../../core/document/DocumentFactory.js";
 import { genId } from "../../../core/utils/IdGenerator.js";
 import { parseXml, getAttr, firstChild, findDeep, arrayBufferToBase64 } from "./XmlUtils.js";
+import { emuToPx } from "../../../core/utils/Units.js";
 import { ParseContext } from "./ParseContext.js";
 import { RelationshipResolver } from "./RelationshipResolver.js";
 
@@ -49,8 +50,8 @@ export class DrawingParser {
     if (extent) {
       const cx = parseInt(getAttr(extent, "cx") ?? "0", 10);
       const cy = parseInt(getAttr(extent, "cy") ?? "0", 10);
-      if (cx) width = cx / 914400 * 96;
-      if (cy) height = cy / 914400 * 96;
+      if (cx) width = emuToPx(cx);
+      if (cy) height = emuToPx(cy);
     }
 
     const docPr = findDeep(el, "docPr");
@@ -149,8 +150,8 @@ export class DrawingParser {
     if (extent) {
       const cx = parseInt(getAttr(extent, "cx") ?? "0", 10);
       const cy = parseInt(getAttr(extent, "cy") ?? "0", 10);
-      if (cx) width = cx / 914400 * 96;
-      if (cy) height = cy / 914400 * 96;
+      if (cx) width = emuToPx(cx);
+      if (cy) height = emuToPx(cy);
     }
 
     return {

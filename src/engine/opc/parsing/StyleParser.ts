@@ -1,5 +1,6 @@
 import { StyleRegistry } from "../../ir/DocumentIR.js";
 import { parseXml, childElements, firstChild, getAttr, hasChild } from "./XmlUtils.js";
+import { halfPointToPx } from "../../../core/utils/Units.js";
 import { OPCPackage } from "../OPCGraphBuilder.js";
 
 export class StyleParser {
@@ -90,7 +91,7 @@ export class StyleParser {
     if (highlight && highlight !== "none") marks.highlight = highlight;
 
     const sz = getAttr(firstChild(rPr, "sz"), "val");
-    if (sz) marks.fontSize = parseInt(sz, 10) / 2;
+    if (sz) marks.fontSize = halfPointToPx(parseInt(sz, 10));
 
     const vertAlign = getAttr(firstChild(rPr, "vertAlign"), "val");
     if (vertAlign) marks.vertAlign = vertAlign;

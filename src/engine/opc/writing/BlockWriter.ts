@@ -213,7 +213,7 @@ export class BlockWriter {
     b.open(W_NS, "tblGrid");
     for (let i = 0; i < table.columnWidths.length; i++) {
       const w = table.columnWidths[i] ?? 100;
-      b.selfClose(W_NS, "gridCol", { "w:w": Math.round(w * 1440 / 96) });
+      b.selfClose(W_NS, "gridCol", { "w:w": pxToTwip(w) });
     }
     b.close(W_NS, "tblGrid");
 

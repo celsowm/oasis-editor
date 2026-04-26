@@ -19,14 +19,13 @@ export class SectPrWriter {
     b.selfClose(W_NS, "pgSz", { "w:w": width, "w:h": height, "w:orient": isLandscape ? "landscape" : "portrait" });
 
     // Margins
-    const pxToTwipVal = (px: number) => Math.round((px / 96) * 1440);
     b.selfClose(W_NS, "pgMar", {
-      "w:top": pxToTwipVal(section.margins.top),
-      "w:right": pxToTwipVal(section.margins.right),
-      "w:bottom": pxToTwipVal(section.margins.bottom),
-      "w:left": pxToTwipVal(section.margins.left),
-      "w:header": pxToTwipVal(section.margins.top * 0.5),
-      "w:footer": pxToTwipVal(section.margins.bottom * 0.5),
+      "w:top": pxToTwip(section.margins.top),
+      "w:right": pxToTwip(section.margins.right),
+      "w:bottom": pxToTwip(section.margins.bottom),
+      "w:left": pxToTwip(section.margins.left),
+      "w:header": pxToTwip(section.margins.top * 0.5),
+      "w:footer": pxToTwip(section.margins.bottom * 0.5),
       "w:gutter": 0,
     });
 

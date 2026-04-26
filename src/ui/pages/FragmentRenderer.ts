@@ -180,7 +180,7 @@ export class TextFragmentRenderer implements FragmentRenderer {
       };
 
       if (marks.fontSize) {
-        style.fontSize = `${Math.round(marks.fontSize * 0.6667)}px`;
+        style.fontSize = `${marks.fontSize}px`;
       }
       if (marks.highlight) {
         style.backgroundColor = highlightToColor[marks.highlight] || marks.highlight;

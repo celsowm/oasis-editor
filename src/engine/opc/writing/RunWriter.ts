@@ -4,6 +4,7 @@ import {
   MarkSet,
 } from "../../../core/document/BlockTypes.js";
 import { W_NS, nextRelId, getBookmarkId } from "./WmlConstants.js";
+import { pxToHalfPoint } from "../../../core/utils/Units.js";
 
 export class RunWriter {
   writeRuns(b: XMLBuilder, runs: OasisTextRun[]): void {
@@ -214,8 +215,9 @@ export class RunWriter {
     if (marks.color) b.selfClose(W_NS, "color", { "w:val": marks.color });
     if (marks.highlight) b.selfClose(W_NS, "highlight", { "w:val": marks.highlight });
     if (marks.fontSize !== undefined) {
-      b.selfClose(W_NS, "sz", { "w:val": Math.round(marks.fontSize * 2) });
-      b.selfClose(W_NS, "szCs", { "w:val": Math.round(marks.fontSize * 2) });
+      const halfPoints = pxToHalfPoint(marks.fontSize);
+      b.selfClose(W_NS, "sz", { "w:val": halfPoints });
+      b.selfClose(W_NS, "szCs", { "w:val": halfPoints });
     }
     if (marks.fontFamily) {
       b.selfClose(W_NS, "rFonts", { "w:ascii": marks.fontFamily, "w:hAnsi": marks.fontFamily });

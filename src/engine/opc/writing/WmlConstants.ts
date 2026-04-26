@@ -41,13 +41,8 @@ export const resetBookmarkCounter = (): void => {
   bookmarkNameToId.clear();
 };
 
-export function pxToEmu(px: number): number {
-  return Math.round(px * 914400 / 96);
-}
-
-export function pxToTwip(px: number): number {
-  return Math.round((px / 96) * 1440);
-}
+// Re-export unit helpers so existing imports keep working.
+export { pxToEmu, pxToTwip } from "../../../core/utils/Units.js";
 
 export function parseDataUri(dataUri: string): { mime: string; ext: string; data: Uint8Array } | null {
   const match = dataUri.match(/^data:([^;]+);base64,(.+)$/);

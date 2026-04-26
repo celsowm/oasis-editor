@@ -1,5 +1,7 @@
 import { XMLBuilder } from "./XMLBuilder.js";
 import { Relationship } from "./OPCGraphBuilder.js";
+import { HEADING_SIZES_PX } from "../../core/composition/TypographyConfig.js";
+import { pxToHalfPoint } from "../../core/utils/Units.js";
 
 const CT_NS = "http://schemas.openxmlformats.org/package/2006/content-types";
 const RELS_NS = "http://schemas.openxmlformats.org/package/2006/relationships";
@@ -304,8 +306,9 @@ export class OPCPackageWriter {
       b.close("w", "pPr");
       b.open("w", "rPr");
       b.selfClose("w", "b");
-      b.selfClose("w", "sz", { "w:val": Math.max(28, 48 - i * 4) });
-      b.selfClose("w", "szCs", { "w:val": Math.max(28, 48 - i * 4) });
+      const halfPoints = pxToHalfPoint(HEADING_SIZES_PX[i] ?? HEADING_SIZES_PX[6]);
+      b.selfClose("w", "sz", { "w:val": halfPoints });
+      b.selfClose("w", "szCs", { "w:val": halfPoints });
       b.close("w", "rPr");
       b.close("w", "style");
     }

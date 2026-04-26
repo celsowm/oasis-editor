@@ -10,6 +10,7 @@ import { createTextRun } from "../../../core/document/DocumentFactory.js";
 import { genId } from "../../../core/utils/IdGenerator.js";
 import { parseFieldInstruction } from "../../../core/document/FieldUtils.js";
 import { childElements, firstChild, getAttr } from "./XmlUtils.js";
+import { halfPointToPx } from "../../../core/utils/Units.js";
 import { ParseContext } from "./ParseContext.js";
 import { DrawingParser } from "./DrawingParser.js";
 import { RelationshipResolver } from "./RelationshipResolver.js";
@@ -343,7 +344,7 @@ export class RunParser {
     if (highlight && highlight !== "none") marks.highlight = highlight;
 
     const sz = getAttr(firstChild(rPr, "sz"), "val");
-    if (sz) marks.fontSize = parseInt(sz, 10) / 2;
+    if (sz) marks.fontSize = halfPointToPx(parseInt(sz, 10));
 
     const vertAlign = getAttr(firstChild(rPr, "vertAlign"), "val");
     if (vertAlign) marks.vertAlign = vertAlign as any;
