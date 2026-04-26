@@ -33,14 +33,16 @@ export const CaretOverlayComponent: Component<CaretOverlayProps> = (props) => {
 export class CaretOverlay {
   private dispose: () => void;
   private setPosition: (p: LogicalPosition | null) => void;
+  readonly container: HTMLElement;
 
   constructor(container: HTMLElement, mapper: SelectionMapper) {
+    this.container = container;
     const [position, setPosition] = createSignal<LogicalPosition | null>(null);
     this.setPosition = setPosition;
 
     this.dispose = render(() => (
       <CaretOverlayComponent position={position()} mapper={mapper} />
-    ), container);
+    ), this.container);
   }
 
   render(position: LogicalPosition | null): void {

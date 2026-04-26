@@ -127,7 +127,7 @@ export class TableDragController {
       : null;
     if (!fragmentEl) return null;
 
-    const blockId = fragmentEl.dataset["blockId"];
+    const blockId = fragmentEl.getAttribute("data-block-id");
     if (!blockId) return null;
 
     const rect = fragmentEl.getBoundingClientRect();
@@ -142,7 +142,7 @@ export class TableDragController {
         width: rect.width,
         height: rect.height,
       },
-      pageId: fragmentEl.parentElement?.dataset.pageId || "",
+      pageId: fragmentEl.parentElement?.getAttribute("data-page-id") || "",
     };
   }
 

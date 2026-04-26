@@ -24,8 +24,8 @@ export class DocumentLayoutService {
     return paginateDocument(
       documentModel,
       this.textMeasurementBridge,
-      this.templates,
       this.fontManager,
+      this.templates,
     );
   }
 }

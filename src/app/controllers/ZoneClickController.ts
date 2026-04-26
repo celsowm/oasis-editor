@@ -24,7 +24,7 @@ export class ZoneClickController {
 
     if (!pageEl) return false;
 
-    const pageId = pageEl.dataset.pageId;
+    const pageId = pageEl.getAttribute("data-page-id");
     const page = this.getLatestLayout()?.pages.find((p) => p.id === pageId);
     const template = page ? this.getTemplates()[page.templateId] : null;
 

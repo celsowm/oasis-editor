@@ -1,4 +1,5 @@
 import { EditorViewModel, SelectionState } from "./presenters/OasisEditorPresenter.js";
+import { setStore } from "../ui/EditorStore.js";
 import { OasisEditorDom } from "./dom/OasisEditorDom.js";
 import { OasisEditorPresenter } from "./presenters/OasisEditorPresenter.js";
 import { TextMeasurer } from "../bridge/measurement/TextMeasurementBridge.js";
@@ -22,62 +23,16 @@ import {
   MoveHandleEvents,
 } from "../ui/selection/TableMoveHandle.js";
 import { LayoutFragment } from "../core/layout/LayoutFragment.js";
-import { h, fragment } from "../ui/utils/dom.js";
-export type {
-  ViewEventBindings,
-  KeyboardEvents,
-  MouseEvents,
-  FormattingEvents,
-  CommandEvents,
-  ListEvents,
-  ImageEvents,
-  TableEvents,
-} from "./events/ViewEventBindings.js";
+import { h } from "../ui/utils/dom.js";
 import { ViewEventBindings } from "./events/ViewEventBindings.js";
 
 export interface ViewElements {
   root: HTMLElement;
   pagesContainer: HTMLElement;
   templateSelect: HTMLSelectElement;
-  formatPainterButton: HTMLElement;
-  boldButton: HTMLElement;
-  italicButton: HTMLElement;
-  underlineButton: HTMLElement;
-  strikethroughButton: HTMLElement;
-  superscriptButton: HTMLElement;
-  subscriptButton: HTMLElement;
-  linkButton: HTMLElement;
-  trackChangesButton: HTMLElement;
-  undoButton: HTMLElement;
-  redoButton: HTMLElement;
-  printButton: HTMLElement;
-  status: HTMLElement;
-  metrics: HTMLElement;
   hiddenInput: HTMLInputElement;
-  alignLeft: HTMLElement;
-  alignCenter: HTMLElement;
-  alignRight: HTMLElement;
-  alignJustify: HTMLElement;
-  bulletsButton: HTMLElement;
-  orderedListButton: HTMLElement;
-  decreaseIndentButton: HTMLElement;
-  increaseIndentButton: HTMLElement;
-  colorPickerContainer: HTMLElement;
-  styleSelect: HTMLSelectElement;
-  insertImageButton: HTMLElement;
   imageFileInput: HTMLInputElement;
-  insertTableButton: HTMLElement;
-  menuFile: HTMLElement;
-  menuEdit: HTMLElement;
-  menuView: HTMLElement;
-  menuInsert: HTMLElement;
-  menuFormat: HTMLElement;
-  menuTools: HTMLElement;
-  menuExtensions: HTMLElement;
-  menuHelp: HTMLElement;
   importDocxInput: HTMLInputElement;
-  zoomSelect: HTMLSelectElement;
-  fontFamilySelect: HTMLSelectElement;
 }
 
 export interface ViewDeps {
@@ -104,13 +59,6 @@ export interface ViewDeps {
   ) => ImageResizeOverlay;
 }
 
-interface MenuItem {
-  label: string;
-  shortcut?: string;
-  action?: () => void;
-  separator?: boolean;
-}
-
 export class OasisEditorView {
   private dom: OasisEditorDom;
   private presenter: OasisEditorPresenter;
@@ -125,7 +73,6 @@ export class OasisEditorView {
   private tableMoveHandle!: TableMoveHandle;
   private events!: ViewEventBindings;
   private deps: ViewDeps;
-  private activeMenu: HTMLElement | null = null;
 
   constructor(deps: ViewDeps) {
     this.deps = deps;
@@ -135,196 +82,46 @@ export class OasisEditorView {
       root: this.dom.getRoot(),
       pagesContainer: this.dom.getPagesContainer(),
       templateSelect: this.dom.getTemplateSelect(),
-      formatPainterButton: this.dom.getFormatPainterButton(),
-      boldButton: this.dom.getBoldButton(),
-      italicButton: this.dom.getItalicButton(),
-      underlineButton: this.dom.getUnderlineButton(),
-      strikethroughButton: this.dom.getStrikethroughButton(),
-      superscriptButton: this.dom.getSuperscriptButton(),
-      subscriptButton: this.dom.getSubscriptButton(),
-      linkButton: this.dom.getLinkButton(),
-      trackChangesButton: this.dom.getTrackChangesButton(),
-      undoButton: this.dom.getUndoButton(),
-      redoButton: this.dom.getRedoButton(),
-      printButton: this.dom.getPrintButton(),
-      status: this.dom.getStatus(),
-      metrics: this.dom.getMetrics(),
       hiddenInput: this.dom.getHiddenInput(),
-      alignLeft: this.dom.getAlignLeftButton(),
-      alignCenter: this.dom.getAlignCenterButton(),
-      alignRight: this.dom.getAlignRightButton(),
-      alignJustify: this.dom.getAlignJustifyButton(),
-      bulletsButton: this.dom.getBulletsButton(),
-      orderedListButton: this.dom.getOrderedListButton(),
-      decreaseIndentButton: this.dom.getDecreaseIndentButton(),
-      increaseIndentButton: this.dom.getIncreaseIndentButton(),
-      colorPickerContainer: this.dom.getColorPickerContainer(),
-      styleSelect: this.dom.getStyleSelect(),
-      insertImageButton: this.dom.getInsertImageButton(),
       imageFileInput: this.dom.getImageFileInput(),
-      insertTableButton: this.dom.getInsertTableButton(),
-      menuFile: this.dom.getMenuFileElement(),
-      menuEdit: this.dom.getMenuEditElement(),
-      menuView: this.dom.getMenuViewElement(),
-      menuInsert: this.dom.getMenuInsertElement(),
-      menuFormat: this.dom.getMenuFormatElement(),
-      menuTools: this.dom.getMenuToolsElement(),
-      menuExtensions: this.dom.getMenuExtensionsElement(),
-      menuHelp: this.dom.getMenuHelpElement(),
       importDocxInput: this.dom.getImportDocxInput(),
-      zoomSelect: this.dom.getZoomSelect(),
-      fontFamilySelect: this.dom.getFontFamilySelect(),
     };
 
-    this.pageLayer = new PageLayer(this.elements.pagesContainer);
+    this.pageLayer = new PageLayer(
+      this.elements.pagesContainer,
+      this.deps.measurer,
+    );
     this.viewport = new PageViewport(
-      this.elements.root,
+      this.elements.pagesContainer,
       this.pageLayer,
-      deps.measurer,
+      this.deps.measurer,
     );
 
-    // Global click listener to close menus
-    document.addEventListener("click", () => this.closeMenu());
-  }
+    this.tableToolbar = this.deps.tableToolbarFactory({
+      onInsertRowAbove: () => this.events.onInsertRowAbove(),
+      onInsertRowBelow: () => this.events.onInsertRowBelow(),
+      onInsertColumnLeft: () => this.events.onInsertColumnLeft(),
+      onInsertColumnRight: () => this.events.onInsertColumnRight(),
+      onDeleteRow: () => this.events.onDeleteRow(),
+      onDeleteColumn: () => this.events.onDeleteColumn(),
+      onDeleteTable: () => this.events.onDeleteTable(),
+      onToggleHeaderRow: () => this.events.onToggleTableHeaderRow(),
+      onToggleFirstColumn: () => this.events.onToggleTableFirstColumn(),
+    });
 
-  renderTemplateOptions(options: { value: string; label: string }[]): void {
-    this.elements.templateSelect.innerHTML = "";
-
-    const frags = fragment(
-        ...options.map(opt => h('option', { value: opt.value }, opt.label))
-    );
-    this.elements.templateSelect.appendChild(frags);
-  }
-
-  renderFontFamilyOptions(fonts: string[]): void {
-    this.elements.fontFamilySelect.innerHTML = "";
-    const frags = fragment(
-      ...fonts.map(font => h('option', { value: font }, font))
-    );
-    this.elements.fontFamilySelect.appendChild(frags);
+    this.tableMoveHandle = this.deps.tableMoveHandleFactory({
+      onMoveStart: (e) => this.events.onTableMoveStart(e),
+      onMove: (e) => this.events.onTableMove(e),
+      onMoveEnd: (e) => this.events.onTableMoveEnd(e),
+    });
   }
 
   bind(events: ViewEventBindings): void {
     this.events = events;
-    this.elements.formatPainterButton.addEventListener(
-      "click",
-      events.onFormatPainterToggle,
-    );
-    this.elements.formatPainterButton.addEventListener(
-      "dblclick",
-      events.onFormatPainterDoubleClick,
-    );
-    this.elements.boldButton.addEventListener("click", events.onBold);
-    this.elements.italicButton.addEventListener("click", events.onItalic);
-    this.elements.underlineButton.addEventListener("click", events.onUnderline);
-    this.elements.strikethroughButton.addEventListener("click", events.onStrikethrough);
-    this.elements.superscriptButton.addEventListener("click", events.onSuperscript);
-    this.elements.subscriptButton.addEventListener("click", events.onSubscript);
-    this.elements.linkButton.addEventListener("click", () => {
-      const url = window.prompt("Enter URL:", "https://");
-      if (url === null) return;
-      if (url.trim() === "") {
-        events.onRemoveLink();
-      } else {
-        events.onInsertLink(url.trim());
-      }
-    });
-    this.elements.trackChangesButton.addEventListener("click", events.onToggleTrackChanges);
+    setStore("events", events);
 
-    this.elements.fontFamilySelect.addEventListener("change", (e) => {
-      const fontFamily = (e.target as HTMLSelectElement).value;
-      events.onFontFamilyChange(fontFamily);
-    });
-
-    this.colorPicker = this.deps.colorPickerFactory(
-      "oasis-editor-color-picker-container",
-      {
-        onColorSelected: (color) => events.onColorChange(color),
-      },
-    );
-
-    this.elements.styleSelect.addEventListener("change", (e) => {
-      const styleId = (e.target as HTMLSelectElement).value;
-      if (styleId) {
-        events.onStyleChange(styleId);
-        (e.target as HTMLSelectElement).value = "";
-      }
-    });
-
-    this.tablePicker = this.deps.tablePickerFactory(
-      "oasis-editor-insert-table",
-      {
-        onTableSelected: (rows: number, cols: number) =>
-          events.onInsertTable(rows, cols),
-      },
-    );
-
-    this.tableToolbar = this.deps.tableToolbarFactory({
-      onAddRowAbove: (id) => this.events.onTableAction("addRowAbove", id),
-      onAddRowBelow: (id) => this.events.onTableAction("addRowBelow", id),
-      onAddColumnLeft: (id) => this.events.onTableAction("addColumnLeft", id),
-      onAddColumnRight: (id) => this.events.onTableAction("addColumnRight", id),
-      onDeleteRow: (id) => this.events.onTableAction("deleteRow", id),
-      onDeleteColumn: (id) => this.events.onTableAction("deleteColumn", id),
-      onDeleteTable: (id) => this.events.onTableAction("deleteTable", id),
-      onMergeCells: (id) => this.events.onTableAction("mergeCells", id),
-      onSplitCell: (id) => this.events.onTableAction("splitCell", id),
-    });
-
-    this.tableMoveHandle = this.deps.tableMoveHandleFactory({
-      onDragStart: (id, e) => {
-        // Create a custom event to notify controller
-        const ce = new CustomEvent("table-drag-start", {
-          detail: { tableId: id, originalEvent: e },
-        });
-        this.elements.root.dispatchEvent(ce);
-      },
-    });
-
-    this.elements.undoButton.addEventListener("click", events.onUndo);
-    this.elements.redoButton.addEventListener("click", events.onRedo);
-    this.elements.printButton.addEventListener("click", () => events.onPrint ? events.onPrint() : window.print());
-    this.elements.templateSelect.addEventListener("change", (event) =>
-      events.onTemplateChange((event.target as HTMLSelectElement).value),
-    );
-    this.elements.alignLeft.addEventListener("click", () =>
-      events.onAlign("left"),
-    );
-    this.elements.alignCenter.addEventListener("click", () =>
-      events.onAlign("center"),
-    );
-    this.elements.alignRight.addEventListener("click", () =>
-      events.onAlign("right"),
-    );
-    this.elements.alignJustify.addEventListener("click", () =>
-      events.onAlign("justify"),
-    );
-    this.elements.bulletsButton.addEventListener("click", () =>
-      events.onToggleBullets(),
-    );
-    this.elements.orderedListButton.addEventListener("click", () =>
-      events.onToggleNumberedList(),
-    );
-    this.elements.decreaseIndentButton.addEventListener("click", () =>
-      events.onDecreaseIndent(),
-    );
-    this.elements.increaseIndentButton.addEventListener("click", () =>
-      events.onIncreaseIndent(),
-    );
-
-    // Zoom select
-    this.elements.zoomSelect.addEventListener("change", (e) => {
-      const zoom = (e.target as HTMLSelectElement).value;
-      console.log("Zoom changed to:", zoom);
-      // For now we don't have a specific event for zoom in bindings, but we could add it.
-      // Or just apply CSS scale to pages container.
-      if (zoom === "fit") {
-        // Implement fit logic
-      } else {
-        const scale = parseInt(zoom) / 100;
-        this.elements.pagesContainer.style.transform = `scale(${scale})`;
-        this.elements.pagesContainer.style.transformOrigin = "top center";
-      }
+    this.elements.templateSelect.addEventListener("change", (e) => {
+      events.onTemplateChange((e.target as HTMLSelectElement).value);
     });
 
     // Hidden input for keyboard handling
@@ -360,15 +157,26 @@ export class OasisEditorView {
         events.onArrowKey(ke.key);
         ke.preventDefault();
       } else if (ke.ctrlKey || ke.metaKey) {
-          if (ke.key === 'b') { events.onBold(); ke.preventDefault(); }
-          else if (ke.key === 'i') { events.onItalic(); ke.preventDefault(); }
-          else if (ke.key === 'u') { events.onUnderline(); ke.preventDefault(); }
-          else if (ke.key === 'z') { events.onUndo(); ke.preventDefault(); }
-          else if (ke.key === 'y') { events.onRedo(); ke.preventDefault(); }
+        if (ke.key === "b") {
+          events.onBold();
+          ke.preventDefault();
+        } else if (ke.key === "i") {
+          events.onItalic();
+          ke.preventDefault();
+        } else if (ke.key === "u") {
+          events.onUnderline();
+          ke.preventDefault();
+        } else if (ke.key === "z") {
+          events.onUndo();
+          ke.preventDefault();
+        } else if (ke.key === "y") {
+          events.onRedo();
+          ke.preventDefault();
+        }
       }
     });
 
-    // Detecção de cliques múltiplos (Word style)
+    // Detecção de cliques múltiplos
     let lastMouseDownTime = 0;
     let lastMouseDownPos = { x: 0, y: 0 };
     let clickCount = 0;
@@ -406,14 +214,6 @@ export class OasisEditorView {
       setTimeout(() => this.elements.hiddenInput.focus(), 0);
     });
 
-    this.elements.root.addEventListener(
-      "dblclick",
-      (e) => {
-        e.preventDefault();
-      },
-      true,
-    );
-
     this.elements.root.addEventListener("mousemove", (e) => {
       if (events.onMouseMove) events.onMouseMove(e as MouseEvent);
     });
@@ -422,12 +222,7 @@ export class OasisEditorView {
       if (events.onMouseUp) events.onMouseUp(e as MouseEvent);
     });
 
-    // ── Image insertion via file picker ──
-    this.elements.insertImageButton.addEventListener("click", () => {
-      this.elements.imageFileInput.value = "";
-      this.elements.imageFileInput.click();
-    });
-
+    // Image insertion via file picker
     this.elements.imageFileInput.addEventListener("change", () => {
       const file = this.elements.imageFileInput.files?.[0];
       if (!file) return;
@@ -449,226 +244,55 @@ export class OasisEditorView {
       reader.readAsDataURL(file);
     });
 
-    // ── Menus ──
-    this.setupMenus(events);
-
     this.elements.importDocxInput.addEventListener("change", () => {
       const file = this.elements.importDocxInput.files?.[0];
       if (!file) return;
       events.onImportDocx(file);
     });
 
-    // ── Image select + resize overlay ──
     this.elements.root.addEventListener("image-select", (e) => {
       const ce = e as CustomEvent;
-      const { blockId } = ce.detail as {
-        blockId: string;
-      };
+      const { blockId } = ce.detail as { blockId: string };
       events.onSelectImage(blockId);
     });
-  }
 
-  private setupMenus(events: ViewEventBindings): void {
-    // File Menu
-    this.elements.menuFile.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.toggleMenu(this.elements.menuFile, [
-        { label: "New", action: () => console.log("New document") },
-        { label: "Open", action: () => console.log("Open document") },
-        { separator: true, label: "" },
-        { label: "Import DOCX...", action: () => this.elements.importDocxInput.click() },
-        { label: "Export DOCX...", action: () => events.onExportDocx?.() },
-        { label: "Export PDF...", action: () => events.onExportPdf?.() },
-        { label: "Download", action: () => console.log("Download") },
-        { separator: true, label: "" },
-        { label: "Print", shortcut: "Ctrl+P", action: () => events.onPrint ? events.onPrint() : window.print() },
-      ]);
-    });
+    this.colorPicker = this.deps.colorPickerFactory(
+      "oasis-editor-color-picker-container",
+      {
+        onColorSelect: (color) => events.onColorChange(color),
+      },
+    );
 
-    // Edit Menu
-    this.elements.menuEdit.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.toggleMenu(this.elements.menuEdit, [
-        { label: "Undo", shortcut: "Ctrl+Z", action: () => events.onUndo() },
-        { label: "Redo", shortcut: "Ctrl+Y", action: () => events.onRedo() },
-        { separator: true, label: "" },
-        { label: "Cut", shortcut: "Ctrl+X", action: () => document.execCommand("cut") },
-        { label: "Copy", shortcut: "Ctrl+C", action: () => document.execCommand("copy") },
-        { label: "Paste", shortcut: "Ctrl+V", action: () => document.execCommand("paste") },
-      ]);
-    });
-
-    // Insert Menu
-    this.elements.menuInsert.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.toggleMenu(this.elements.menuInsert, [
-        { label: "Image", action: () => this.elements.insertImageButton.click() },
-        { label: "Table", action: () => console.log("Open table picker") },
-        { label: "Page break", action: () => { if (this.events.onInsertPageBreak) this.events.onInsertPageBreak(); } },
-        { separator: true, label: "" },
-        { label: "Equation", action: () => {
-          if (!this.events.onInsertEquation) return;
-          const latex = window.prompt("Enter LaTeX equation:", "E = mc^2");
-          if (latex === null) return;
-          const display = window.confirm("Display equation (block)? (Cancel for inline)");
-          this.events.onInsertEquation(latex, display);
-        } },
-        { label: "Bookmark", action: () => {
-          if (!this.events.onInsertBookmark) return;
-          const name = window.prompt("Bookmark name:", "Bookmark1");
-          if (name === null || !name.trim()) return;
-          this.events.onInsertBookmark(name.trim());
-        } },
-        { label: "Footnote", action: () => {
-          if (!this.events.onInsertFootnote) return;
-          this.events.onInsertFootnote();
-        } },
-        { label: "Endnote", action: () => {
-          if (!this.events.onInsertEndnote) return;
-          this.events.onInsertEndnote();
-        } },
-        { label: "Comment", action: () => {
-          if (!this.events.onInsertComment) return;
-          const text = window.prompt("Comment text:", "");
-          if (text === null) return;
-          this.events.onInsertComment(text);
-        } },
-        { label: "Page number", action: () => { if (this.events.onInsertPageNumber) this.events.onInsertPageNumber(); } },
-        { label: "Number of pages", action: () => { if (this.events.onInsertNumPages) this.events.onInsertNumPages(); } },
-        { label: "Date", action: () => { if (this.events.onInsertDate) this.events.onInsertDate(); } },
-        { label: "Time", action: () => { if (this.events.onInsertTime) this.events.onInsertTime(); } },
-        { separator: true, label: "" },
-        { label: "Drawing", action: () => console.log("Insert drawing") },
-        { label: "Horizontal line", action: () => console.log("Insert HR") },
-      ]);
-    });
-
-    // Format Menu
-    this.elements.menuFormat.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.toggleMenu(this.elements.menuFormat, [
-        { label: "Bold", shortcut: "Ctrl+B", action: () => events.onBold() },
-        { label: "Italic", shortcut: "Ctrl+I", action: () => events.onItalic() },
-        { label: "Underline", shortcut: "Ctrl+U", action: () => events.onUnderline() },
-        { separator: true, label: "" },
-        { label: "Align Left", action: () => events.onAlign("left") },
-        { label: "Align Center", action: () => events.onAlign("center") },
-        { label: "Align Right", action: () => events.onAlign("right") },
-        { label: "Justify", action: () => events.onAlign("justify") },
-        { separator: true, label: "" },
-        { label: "Clear formatting", action: () => console.log("Clear formatting") },
-      ]);
-    });
-
-    // Help Menu
-    this.elements.menuHelp.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.toggleMenu(this.elements.menuHelp, [
-        { label: "Help Center", action: () => window.open("https://github.com", "_blank") },
-        { label: "Keyboard shortcuts", action: () => console.log("Show shortcuts") },
-        { separator: true, label: "" },
-        { label: "About Oasis Editor", action: () => alert("Oasis Editor v1.0.0") },
-      ]);
-    });
-
-    // Other menus just as placeholders
-    [this.elements.menuView, this.elements.menuTools, this.elements.menuExtensions].forEach(menu => {
-        menu.addEventListener("click", (e) => {
-            e.stopPropagation();
-            this.toggleMenu(menu, [
-                { label: "Placeholder Item", action: () => console.log("Placeholder") }
-            ]);
-        });
-    });
-  }
-
-  private toggleMenu(anchor: HTMLElement, items: MenuItem[]): void {
-    if (this.activeMenu) {
-      const wasThisAnchor = this.activeMenu.dataset.anchorId === anchor.id;
-      this.closeMenu();
-      if (wasThisAnchor) return;
-    }
-
-    const rect = anchor.getBoundingClientRect();
-    
-    const dropdown = h('div', {
-        className: 'oasis-dropdown-menu show',
-        dataset: { anchorId: anchor.id },
-        style: {
-            left: `${rect.left}px`,
-            top: `${rect.bottom}px`
-        }
-    }, items.map(item => {
-        if (item.separator) {
-            return h('div', { className: 'oasis-dropdown-separator' });
-        }
-
-        return h('div', {
-            className: 'oasis-dropdown-item',
-            onClick: (e: MouseEvent) => {
-                e.stopPropagation();
-                this.closeMenu();
-                if (item.action) item.action();
-            }
-        }, [
-            h('span', {}, item.label),
-            item.shortcut ? h('span', { className: 'shortcut' }, item.shortcut) : null
-        ]);
-    }));
-
-    document.body.appendChild(dropdown);
-    this.activeMenu = dropdown;
-    anchor.classList.add("active");
-  }
-
-  private closeMenu(): void {
-    if (this.activeMenu) {
-      const anchorId = this.activeMenu.dataset.anchorId;
-      if (anchorId) {
-        const anchor = document.getElementById(anchorId);
-        if (anchor) anchor.classList.remove("active");
-      }
-      this.activeMenu.remove();
-      this.activeMenu = null;
-    }
-  }
-
-  setFormatPainterActive(active: boolean, sticky: boolean = false): void {
-    if (active) {
-      this.elements.formatPainterButton.classList.add("active");
-      if (sticky) {
-        this.elements.formatPainterButton.classList.add("sticky");
-      } else {
-        this.elements.formatPainterButton.classList.remove("sticky");
-      }
-    } else {
-      this.elements.formatPainterButton.classList.remove("active");
-      this.elements.formatPainterButton.classList.remove("sticky");
-    }
+    this.tablePicker = this.deps.tablePickerFactory(
+      "oasis-editor-insert-table",
+      {
+        onTableSelect: (rows, cols) => events.onInsertTable(rows, cols),
+      },
+    );
   }
 
   render(viewModel: EditorViewModel): void {
+    // Update SolidJS store for reactive UI (Toolbar, Status bar)
+    setStore("view", viewModel);
+
     this.viewport.render(
       viewModel.layout,
       viewModel.selection,
       viewModel.editingMode,
     );
-    this.elements.templateSelect.value = viewModel.templateId;
-    this.elements.status.textContent = viewModel.status;
-    this.elements.metrics.textContent = `Rev: ${viewModel.metrics.revision} | Pages: ${viewModel.metrics.pages}`;
 
-    this.updateToolbar(viewModel.selectionState);
     this.updateImageOverlay(viewModel);
     this.updateTableToolbar(viewModel);
     this.updateEditingModeBanner(viewModel.editingMode);
 
-    // Ensure hiddenInput is always focused after render to maintain keyboard input
     if (viewModel.selection) {
       this.elements.hiddenInput.focus({ preventScroll: true });
     }
   }
 
-  private updateEditingModeBanner(mode: "main" | "header" | "footer" | "footnote"): void {
+  private updateEditingModeBanner(
+    mode: "main" | "header" | "footer" | "footnote",
+  ): void {
     const existing = document.getElementById("oasis-editing-mode-banner");
     if (existing) existing.remove();
 
@@ -680,50 +304,58 @@ export class OasisEditorView {
       footnote: "Editing Footnote",
     };
     const label = labelMap[mode] ?? `Editing ${mode}`;
-    const banner = h("div", {
-      id: "oasis-editing-mode-banner",
-      style: {
-        position: "fixed",
-        top: "8px",
-        left: "50%",
-        transform: "translateX(-50%)",
-        background: "#2563eb",
-        color: "white",
-        padding: "6px 16px",
-        borderRadius: "20px",
-        fontSize: "13px",
-        fontWeight: "500",
-        zIndex: "3000",
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-      },
-    }, [
-      label,
-      h("button", {
+    const banner = h(
+      "div",
+      {
+        id: "oasis-editing-mode-banner",
         style: {
-          background: "rgba(255,255,255,0.2)",
-          border: "none",
+          position: "fixed",
+          top: "8px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "#2563eb",
           color: "white",
-          padding: "2px 10px",
-          borderRadius: "12px",
-          cursor: "pointer",
-          fontSize: "12px",
+          padding: "6px 16px",
+          borderRadius: "20px",
+          fontSize: "13px",
+          fontWeight: "500",
+          zIndex: "3000",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
         },
-        onClick: () => {
-          if (this.events.onEscape) this.events.onEscape();
-        },
-      }, "Back to Document"),
-    ]);
+      },
+      [
+        label,
+        h(
+          "button",
+          {
+            style: {
+              background: "rgba(255,255,255,0.2)",
+              border: "none",
+              color: "white",
+              padding: "2px 10px",
+              borderRadius: "12px",
+              cursor: "pointer",
+              fontSize: "12px",
+            },
+            onClick: () => {
+              if (this.events.onEscape) this.events.onEscape();
+            },
+          },
+          "Back to Document",
+        ),
+      ],
+    );
 
     document.body.appendChild(banner);
   }
 
   private updateTableToolbar(viewModel: EditorViewModel): void {
     if (!viewModel.activeTableId || !viewModel.selection) {
-      if (this.tableToolbar) this.tableToolbar.hide();
-      if (this.tableMoveHandle) this.tableMoveHandle.hide();
+      this.tableToolbar.hide();
+      this.tableMoveHandle.hide();
       return;
     }
 
@@ -786,10 +418,8 @@ export class OasisEditorView {
   }
 
   private updateImageOverlay(viewModel: EditorViewModel): void {
-    console.log("VIEW: updateImageOverlay", viewModel.selectedImageId);
     if (!viewModel.selectedImageId) {
       if (this.imageResizeOverlay) {
-        console.log("VIEW: Detaching overlay (no selection)");
         this.imageResizeOverlay.detach();
         this.imageResizeOverlay = null;
       }
@@ -800,7 +430,6 @@ export class OasisEditorView {
       return;
     }
 
-    // Find the fragment for this image
     let imageFragment: LayoutFragment | null = null;
     for (const page of viewModel.layout.pages) {
       const found = page.fragments.find(
@@ -817,26 +446,16 @@ export class OasisEditorView {
         `[data-page-id="${imageFragment.pageId}"]`,
       ) as HTMLElement | null;
 
-      console.log(
-        "VIEW: Found image fragment on page",
-        imageFragment.pageId,
-        "pageEl exists?",
-        !!pageEl,
-      );
-
       if (pageEl) {
-        // Se o container mudou (ex: imagem mudou de página), precisamos recriar o overlay
         if (
           this.imageResizeOverlay &&
           this.imageResizeOverlay.getContainer() !== pageEl
         ) {
-          console.log("VIEW: Recreating overlay due to container change");
           this.imageResizeOverlay.detach();
           this.imageResizeOverlay = null;
         }
 
         if (!this.imageResizeOverlay) {
-          console.log("VIEW: Creating new ImageResizeOverlay");
           this.imageResizeOverlay = this.deps.imageResizeOverlayFactory(
             pageEl,
             ({ blockId, width, height }) => {
@@ -847,14 +466,10 @@ export class OasisEditorView {
             },
           );
         }
-        console.log("VIEW: Attaching overlay to fragment");
         this.imageResizeOverlay.attach(imageFragment);
-
-        // Add alt text input
         this.renderImageAltInput(imageFragment, pageEl, viewModel);
       }
     } else {
-      console.log("VIEW: Image fragment not found in layout!");
       if (this.imageResizeOverlay) {
         this.imageResizeOverlay.detach();
         this.imageResizeOverlay = null;
@@ -871,9 +486,7 @@ export class OasisEditorView {
     pageEl: HTMLElement,
     viewModel: EditorViewModel,
   ): void {
-    if (this.imageAltInput) {
-      this.imageAltInput.remove();
-    }
+    if (this.imageAltInput) this.imageAltInput.remove();
 
     const input = h("input", {
       type: "text",
@@ -903,7 +516,6 @@ export class OasisEditorView {
         }
       },
       onBlur: () => {
-        // Remove input on blur after a short delay to allow Enter to process
         setTimeout(() => {
           if (this.imageAltInput === input) {
             this.imageAltInput.remove();
@@ -918,66 +530,7 @@ export class OasisEditorView {
     this.imageAltInput = input;
   }
 
-  updateToolbar(selectionState: SelectionState | undefined): void {
-    if (!selectionState) return;
-    this.elements.boldButton.classList.toggle("active", selectionState.bold);
-    this.elements.italicButton.classList.toggle(
-      "active",
-      selectionState.italic,
-    );
-    this.elements.underlineButton.classList.toggle(
-      "active",
-      selectionState.underline,
-    );
-    this.elements.strikethroughButton.classList.toggle(
-      "active",
-      selectionState.strike,
-    );
-    this.elements.superscriptButton.classList.toggle(
-      "active",
-      selectionState.vertAlign === "superscript",
-    );
-    this.elements.subscriptButton.classList.toggle(
-      "active",
-      selectionState.vertAlign === "subscript",
-    );
-    this.elements.linkButton.classList.toggle(
-      "active",
-      !!selectionState.link,
-    );
-    this.elements.alignLeft.classList.toggle(
-      "active",
-      selectionState.align === "left",
-    );
-    this.elements.alignCenter.classList.toggle(
-      "active",
-      selectionState.align === "center",
-    );
-    this.elements.alignRight.classList.toggle(
-      "active",
-      selectionState.align === "right",
-    );
-    this.elements.alignJustify.classList.toggle(
-      "active",
-      selectionState.align === "justify",
-    );
-    this.elements.bulletsButton.classList.toggle(
-      "active",
-      selectionState.isListItem,
-    );
-    this.elements.orderedListButton.classList.toggle(
-      "active",
-      selectionState.isOrderedListItem,
-    );
-
-    this.elements.fontFamilySelect.value = selectionState.fontFamily;
-
-    if (this.colorPicker) {
-      this.colorPicker.setCurrentColor(selectionState.color);
-    }
-    this.elements.trackChangesButton.classList.toggle(
-      "active",
-      selectionState.trackChangesEnabled,
-    );
+  setFormatPainterActive(active: boolean, sticky: boolean = false): void {
+      // Delegated to DOM directly for now
   }
 }

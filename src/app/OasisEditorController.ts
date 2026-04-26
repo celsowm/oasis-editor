@@ -20,6 +20,10 @@ import { DomHitTester } from "./services/DomHitTester.js";
 import { getAllBlocks } from "../core/document/BlockUtils.js";
 import { isTextBlock } from "../core/document/BlockTypes.js";
 import { IFontManager } from "../core/typography/FontManager.js";
+import { CommandBus } from "./commands/CommandBus.js";
+import * as Formatting from "./commands/FormattingCommands.js";
+import * as Annotations from "./commands/AnnotationCommands.js";
+import * as Navigation from "./commands/NavigationCommands.js";
 
 export interface ControllerDeps {
   runtime: DocumentRuntime;
@@ -50,6 +54,7 @@ export class OasisEditorController {
   private importExport: ImportExportController;
   private tableDrag: TableDragController;
   private cursorCalc: CursorPositionCalculator;
+  private commandBus: CommandBus;
 
   constructor(deps: ControllerDeps) {
     this.runtime = deps.runtime;
@@ -107,111 +112,96 @@ export class OasisEditorController {
       () => this.latestLayout,
       deps.domHitTester,
     );
+
+    this.commandBus = new CommandBus({
+      runtime: this.runtime,
+      presenter: this.presenter,
+      view: this.view,
+    });
+    this.registerCommands();
+  }
+
+  private registerCommands(): void {
+    this.commandBus.register("bold", new Formatting.ToggleBoldCommand());
+    this.commandBus.register("italic", new Formatting.ToggleItalicCommand());
+    this.commandBus.register("underline", new Formatting.ToggleUnderlineCommand());
+    this.commandBus.register("undo", new Formatting.UndoCommand());
+    this.commandBus.register("redo", new Formatting.RedoCommand());
+    this.commandBus.register("insertText", new Formatting.InsertTextCommand());
+    this.commandBus.register("align", new Formatting.SetAlignmentCommand());
+    this.commandBus.register("style", new Formatting.SetStyleCommand());
+    this.commandBus.register("bullets", new Formatting.ToggleBulletsCommand());
+    this.commandBus.register("numberedList", new Formatting.ToggleNumberedListCommand());
+    this.commandBus.register("indent", new Formatting.IndentCommand());
+    
+    this.commandBus.register("footnote", new Annotations.InsertFootnoteCommand());
+    this.commandBus.register("endnote", new Annotations.InsertEndnoteCommand());
+    this.commandBus.register("comment", new Annotations.InsertCommentCommand());
+    this.commandBus.register("equation", new Annotations.InsertEquationCommand());
+    this.commandBus.register("bookmark", new Annotations.InsertBookmarkCommand());
+    this.commandBus.register("field", new Annotations.InsertFieldCommand());
+
+    this.commandBus.register("escape", new Navigation.EscapeCommand());
+    this.commandBus.register("moveCaret", new Navigation.MoveCaretCommand());
   }
 
   start(): void {
-    this.view.renderTemplateOptions(this.presenter.getTemplateOptions());
-    this.view.renderFontFamilyOptions(this.fontManager.getAvailableFonts());
+    this.refresh();
     this.view.bind({
       onFormatPainterToggle: () => this.toggleFormatPainter(),
       onFormatPainterDoubleClick: () => this.toggleFormatPainter(true),
-      onBold: () => this.toggleBold(),
-      onItalic: () => this.toggleItalic(),
-      onUnderline: () => this.toggleUnderline(),
-      onStrikethrough: () => this.toggleStrikethrough(),
+      onBold: () => this.commandBus.execute("bold"),
+      onItalic: () => this.commandBus.execute("italic"),
+      onUnderline: () => this.commandBus.execute("underline"),
+      onStrikethrough: () => this.runtime.dispatch(Operations.toggleMark("strike")),
       onSuperscript: () => this.toggleSuperscript(),
       onSubscript: () => this.toggleSubscript(),
-      onInsertLink: (url) => this.insertLink(url),
-      onRemoveLink: () => this.removeLink(),
-      onColorChange: (color) => this.setColor(color),
-      onFontFamilyChange: (fontFamily) => this.setFontFamily(fontFamily),
-      onUndo: () => this.undo(),
-      onRedo: () => this.redo(),
+      onInsertLink: (url) => this.runtime.dispatch(Operations.setMark("link", url)),
+      onRemoveLink: () => this.runtime.dispatch(Operations.setMark("link", undefined)),
+      onColorChange: (color) => this.runtime.dispatch(Operations.setMark("color", color)),
+      onFontFamilyChange: (fontFamily) => this.runtime.dispatch(Operations.setMark("fontFamily", fontFamily)),
+      onUndo: () => this.commandBus.execute("undo"),
+      onRedo: () => this.commandBus.execute("redo"),
       onTemplateChange: (templateId) => this.setTemplate(templateId),
-      onTextInput: (text) => this.insertText(text),
-      onDelete: () => this.deleteText(),
+      onTextInput: (text) => this.commandBus.execute("insertText", text),
+      onDelete: () => this.runtime.dispatch(Operations.deleteText()),
       onEnter: (isShift) =>
-        isShift ? this.insertText("\n") : this.insertParagraph(),
-      onEscape: () => {
-        const state = this.runtime.getState();
-        if (state.editingMode === "footnote") {
-          // Exit footnote mode, return cursor to the footnote reference in body
-          this.runtime.dispatch(Operations.setEditingMode("main"));
-          // Try to find the footnote reference in body text
-          const fnId = state.editingFootnoteId;
-          if (fnId) {
-            for (const section of state.document.sections) {
-              for (const block of section.children) {
-                if (!isTextBlock(block)) continue;
-                for (const run of block.children) {
-                  if (run.footnoteId === fnId) {
-                    const pos = {
-                      sectionId: section.id,
-                      blockId: block.id,
-                      inlineId: run.id,
-                      offset: 0,
-                    };
-                    this.runtime.dispatch(Operations.setSelection({ anchor: pos, focus: pos }));
-                    return;
-                  }
-                }
-              }
-            }
-          }
-        }
-        if (state.editingMode !== "main") {
-          this.runtime.dispatch(Operations.setEditingMode("main"));
-          // Move selection back to first main content block
-          const section = state.document.sections[0];
-          const firstBlock = section?.children[0];
-          if (firstBlock && isTextBlock(firstBlock)) {
-            const pos = {
-              sectionId: section.id,
-              blockId: firstBlock.id,
-              inlineId: firstBlock.children[0]?.id || "",
-              offset: 0,
-            };
-            this.runtime.dispatch(Operations.setSelection({ anchor: pos, focus: pos }));
-          }
-        }
-      },
-      onArrowKey: (key) => this.moveCaret(key),
+        isShift ? this.commandBus.execute("insertText", "\n") : this.runtime.dispatch(Operations.insertParagraph()),
+      onEscape: () => this.commandBus.execute("escape"),
+      onArrowKey: (key) => this.commandBus.execute("moveCaret", key),
       onMouseDown: (e) => this.mouseController.handleMouseDown(e),
       onMouseMove: (e) => this.mouseController.handleMouseMove(e),
       onMouseUp: () => this.mouseController.handleMouseUp(),
       onDblClick: (e) => this.handleDblClick(e),
       onTripleClick: (e) => this.wordSelection.handleTripleClick(e),
-      onAlign: (align) => this.setAlign(align),
-      onStyleChange: (styleId) => this.setStyle(styleId),
-      onToggleBullets: () => this.toggleBullets(),
-      onToggleNumberedList: () => this.toggleNumberedList(),
-      onDecreaseIndent: () => this.decreaseIndent(),
-      onIncreaseIndent: () => this.increaseIndent(),
+      onAlign: (align) => this.commandBus.execute("align", align),
+      onStyleChange: (styleId) => this.commandBus.execute("style", styleId),
+      onToggleBullets: () => this.commandBus.execute("bullets"),
+      onToggleNumberedList: () => this.commandBus.execute("numberedList"),
+      onDecreaseIndent: () => this.commandBus.execute("indent", "decrease"),
+      onIncreaseIndent: () => this.commandBus.execute("indent", "increase"),
       onInsertImage: (src, nw, nh, dw) => this.insertImage(src, nw, nh, dw),
       onImportDocx: (file) => this.importExport.importDocx(file),
       onExportDocx: () => this.importExport.exportDocx(),
       onExportPdf: () => this.importExport.exportPdf(this.latestLayout),
-      onInsertPageBreak: () => this.insertPageBreak(),
-      onToggleTrackChanges: () => this.toggleTrackChanges(),
+      onInsertPageBreak: () => this.runtime.dispatch(Operations.insertPageBreak()),
+      onToggleTrackChanges: () => this.runtime.dispatch(Operations.toggleTrackChanges()),
       onResizeImage: (blockId, w, h) => this.resizeImage(blockId, w, h),
-      onSelectImage: (blockId) => this.selectImage(blockId),
-      onUpdateImageAlt: (blockId, alt) => this.updateImageAlt(blockId, alt),
-      onInsertTable: (rows, cols) => this.insertTable(rows, cols),
-      onInsertPageNumber: () => this.insertField("page", "PAGE \\* MERGEFORMAT"),
-      onInsertNumPages: () => this.insertField("numpages", "NUMPAGES \\* MERGEFORMAT"),
-      onInsertDate: () => this.insertField("date", "DATE \\@ \"dd/MM/yyyy\""),
-      onInsertTime: () => this.insertField("time", "TIME \\@ \"HH:mm\""),
-      onInsertEquation: (latex, display) => this.insertEquation(latex, display),
-      onInsertBookmark: (name) => this.insertBookmark(name),
-      onInsertFootnote: () => this.insertFootnote(),
-      onInsertEndnote: () => this.insertEndnote(),
-      onInsertComment: (text) => this.insertComment(text),
-      onTableAction: (action, tableId) =>
-        this.handleTableAction(action, tableId),
+      onSelectImage: (blockId) => this.runtime.dispatch(Operations.setSelection({ selectedImageId: blockId } as any)),
+      onUpdateImageAlt: (blockId, alt) => this.runtime.dispatch(Operations.updateImageBlock(blockId, { alt })),
+      onInsertTable: (rows, cols) => this.runtime.dispatch(Operations.insertTable(rows, cols)),
+      onInsertPageNumber: () => this.commandBus.execute("field", "page", "PAGE \\* MERGEFORMAT"),
+      onInsertNumPages: () => this.commandBus.execute("field", "numpages", "NUMPAGES \\* MERGEFORMAT"),
+      onInsertDate: () => this.commandBus.execute("field", "date", "DATE \\@ \"dd/MM/yyyy\""),
+      onInsertTime: () => this.commandBus.execute("field", "time", "TIME \\@ \"HH:mm\""),
+      onInsertEquation: (latex, display) => this.commandBus.execute("equation", latex, display),
+      onInsertBookmark: (name) => this.commandBus.execute("bookmark", name),
+      onInsertFootnote: () => this.commandBus.execute("footnote"),
+      onInsertEndnote: () => this.commandBus.execute("endnote"),
+      onInsertComment: (text) => this.commandBus.execute("comment", text),
+      onTableAction: (action, tableId) => this.handleTableAction(action, tableId),
       onTableMove: (tableId, targetBlockId, isBefore) => {
-        this.runtime.dispatch(
-          Operations.moveBlock(tableId, targetBlockId, isBefore),
-        );
+        this.runtime.dispatch(Operations.moveBlock(tableId, targetBlockId, isBefore));
       },
       onPrint: () => window.print(),
     });
@@ -246,7 +236,7 @@ export class OasisEditorController {
     this.view.elements.root.addEventListener("click", ((e: MouseEvent) => {
       const target = (e.target as HTMLElement)?.closest?.(".oasis-footnote-ref") as HTMLElement | null;
       if (target) {
-        const fnId = target.dataset.footnoteId;
+        const fnId = target.getAttribute("data-footnote-id");
         if (fnId) {
           e.preventDefault();
           e.stopPropagation();
@@ -258,7 +248,7 @@ export class OasisEditorController {
       // Handle clicks on footnote entry text (stay in footnote mode)
       const fnEntry = (e.target as HTMLElement)?.closest?.(".oasis-footnote-entry") as HTMLElement | null;
       if (fnEntry) {
-        const fnId = fnEntry.dataset.footnoteId;
+        const fnId = fnEntry.getAttribute("data-footnote-id");
         if (fnId) {
           const state = this.runtime.getState();
           if (state.editingMode !== "footnote" || state.editingFootnoteId !== fnId) {

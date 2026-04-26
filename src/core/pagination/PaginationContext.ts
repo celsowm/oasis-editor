@@ -1,5 +1,5 @@
 import { PageTemplate } from "../pages/PageTemplateTypes.js";
-import { Rect, LayoutFragment } from "../layout/LayoutFragment.js";
+import { LayoutFragment } from "../layout/LayoutFragment.js";
 import { PageLayout } from "../layout/LayoutTypes.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { SectionNode } from "../document/SectionTypes.js";
@@ -21,28 +21,57 @@ export interface PaginationContext {
 }
 
 export function createNewPage(ctx: PaginationContext): void {
-  ctx.pages.push(ctx.currentPage);
+  if (!ctx.template || !ctx.section) return;
+
+  if (ctx.currentPage) {
+    ctx.pages.push(ctx.currentPage);
+  }
   ctx.pageCounter += 1;
+
+  // Blindagem absoluta contra propriedades faltantes no template
+  const margins = ctx.template.margins || { top: 0, right: 0, bottom: 0, left: 0 };
+  const header = ctx.template.header || { enabled: false, height: 0 };
+  const footer = ctx.template.footer || { enabled: false, height: 0 };
+  const size = ctx.template.size || { width: 0, height: 0 };
+
+  const headerRect = header.enabled
+    ? {
+        x: margins.left || 0,
+        y: (margins.top || 0) - (header.height || 0),
+        width: ctx.contentWidth || 0,
+        height: header.height || 0,
+      }
+    : null;
+
+  const footerRect = footer.enabled
+    ? {
+        x: margins.left || 0,
+        y: (size.height || 0) - (margins.bottom || 0),
+        width: ctx.contentWidth || 0,
+        height: footer.height || 0,
+      }
+    : null;
+
   ctx.currentPage = {
     id: `page:${ctx.pageCounter}`,
-    sectionId: ctx.section.id,
-    pageIndex: ctx.pageCounter,
-    pageNumber: String(ctx.pageCounter + 1),
+    sectionId: ctx.section.id || "default",
+    pageIndex: ctx.pageCounter - 1,
+    pageNumber: String(ctx.pageCounter),
     templateId: ctx.template.id,
     rect: {
       x: 0,
       y: 0,
-      width: ctx.template.size.width,
-      height: ctx.template.size.height,
+      width: size.width || 0,
+      height: size.height || 0,
     },
     contentRect: {
-      x: ctx.template.margins.left,
-      y: ctx.effectiveTopMargin,
-      width: ctx.contentWidth,
-      height: ctx.contentHeight,
+      x: margins.left || 0,
+      y: ctx.effectiveTopMargin || margins.top || 0,
+      width: ctx.contentWidth || 0,
+      height: ctx.contentHeight || 0,
     },
-    headerRect: ctx.currentPage.headerRect,
-    footerRect: ctx.currentPage.footerRect,
+    headerRect,
+    footerRect,
     fragments: [],
     headerFragments: [],
     footerFragments: [],
@@ -53,54 +82,20 @@ export function createNewPage(ctx: PaginationContext): void {
 }
 
 export function createPaginationContext(
-  section: SectionNode,
-  template: PageTemplate,
-  contentWidth: number,
-  contentHeight: number,
-  effectiveTopMargin: number,
-  headerRect: Rect | null,
-  footerRect: Rect | null,
-  pageCounter: number,
-  fragmentsByBlockId: Record<string, LayoutFragment[]>,
   measure: TextMeasurer,
   fontManager: IFontManager,
 ): PaginationContext {
   return {
     pages: [],
-    currentPage: {
-      id: `page:${pageCounter}`,
-      sectionId: section.id,
-      pageIndex: pageCounter,
-      pageNumber: String(pageCounter + 1),
-      templateId: template.id,
-      rect: {
-        x: 0,
-        y: 0,
-        width: template.size.width,
-        height: template.size.height,
-      },
-      contentRect: {
-        x: template.margins.left,
-        y: effectiveTopMargin,
-        width: contentWidth,
-        height: contentHeight,
-      },
-      headerRect,
-      footerRect,
-      fragments: [],
-      headerFragments: [],
-      footerFragments: [],
-      footnoteFragments: [],
-      footnoteAreaRect: null,
-    },
-    currentY: effectiveTopMargin,
-    contentWidth,
-    contentHeight,
-    effectiveTopMargin,
-    fragmentsByBlockId,
-    pageCounter,
-    section,
-    template,
+    currentPage: null as any,
+    currentY: 0,
+    contentWidth: 0,
+    contentHeight: 0,
+    effectiveTopMargin: 0,
+    fragmentsByBlockId: {},
+    pageCounter: 0,
+    section: null as any,
+    template: null as any,
     measure,
     fontManager,
   };

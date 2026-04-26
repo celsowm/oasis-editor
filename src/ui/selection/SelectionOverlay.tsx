@@ -37,16 +37,18 @@ export const SelectionOverlayComponent: Component<SelectionOverlayProps> = (prop
 export class SelectionOverlay {
   private dispose: () => void;
   private setRange: (r: LogicalRange | null) => void;
+  readonly container: HTMLElement;
 
   constructor(container: HTMLElement, mapper: SelectionMapper) {
+    this.container = container;
     const [range, setRange] = createSignal<LogicalRange | null>(null);
     this.setRange = setRange;
 
-    const pageId = container.parentElement?.dataset["pageId"];
+    const pageId = container.parentElement?.getAttribute("data-page-id") || undefined;
 
     this.dispose = render(() => (
       <SelectionOverlayComponent range={range()} mapper={mapper} pageId={pageId} />
-    ), container);
+    ), this.container);
   }
 
   render(range: LogicalRange | null): void {

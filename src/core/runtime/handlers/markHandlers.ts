@@ -240,8 +240,24 @@ function registerMarkHandlers(): void {
 
     if (isCollapsedAtPoint(selection)) {
       const nextMarks: MarkSet = { ...(pendingMarks || {}) };
-      if (nextMarks[mark]) delete nextMarks[mark];
-      else nextMarks[mark] = true;
+      
+      // We need to know the effective mark state at this position 
+      // to know if we should toggle to 'false' or 'true'.
+      const targetBlock = getAllBlocksInSection(state.document.sections.flatMap(s => s.children)).find(b => b.id === selection.anchor.blockId);
+      let runMarkActive = false;
+      if (targetBlock && isTextBlock(targetBlock)) {
+          const run = targetBlock.children.find(r => r.id === selection.anchor.inlineId);
+          if (run && run.marks[mark]) runMarkActive = true;
+      }
+
+      const isCurrentlyActive = nextMarks[mark] !== undefined ? !!nextMarks[mark] : runMarkActive;
+
+      if (isCurrentlyActive) {
+          (nextMarks as any)[mark] = false;
+      } else {
+          (nextMarks as any)[mark] = true;
+      }
+      
       return { ...state, pendingMarks: nextMarks };
     }
 

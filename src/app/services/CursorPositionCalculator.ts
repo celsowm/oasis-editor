@@ -22,8 +22,8 @@ export class CursorPositionCalculator {
 
     if (!target) return null;
 
-    const fragmentId = target.dataset["fragmentId"] ?? "";
-    const blockId = target.dataset["blockId"] ?? "";
+    const fragmentId = target.getAttribute("data-fragment-id") ?? "";
+    const blockId = target.getAttribute("data-block-id") ?? "";
     const fragmentText = target.textContent ?? "";
     const rect = target.getBoundingClientRect();
 

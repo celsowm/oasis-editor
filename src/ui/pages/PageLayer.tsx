@@ -20,7 +20,7 @@ export const PageLayerComponent: Component<PageLayerProps> = (props) => {
         return (
           <section
             class={`oasis-page ${editingClass()}`.trim()}
-            dataset={{ pageId: page.id }}
+            data-page-id={page.id}
             style={{
               width: `${page.rect.width}px`,
               "min-height": `${page.rect.height}px`,

@@ -32,6 +32,7 @@ export interface SelectionState {
 export interface EditorViewModel {
   pageTemplate: PageTemplate;
   templateId: string;
+  templateOptions: TemplateOption[];
   metrics: {
     revision: string;
     pages: string;
@@ -101,12 +102,30 @@ export class OasisEditorPresenter {
       const targetBlock = findBlockById(state.document, blockId);
 
       if (targetBlock && isTextBlock(targetBlock)) {
-        const marks: MarkSet =
-          targetBlock.children.length > 0 ? targetBlock.children[0].marks : {};
+        // Find marks at the specific inlineId from selection
+        const targetRun = targetBlock.children.find(r => r.id === selection.anchor.inlineId);
+        
+        // If we are at the very end of a run, the "active" marks for typing 
+        // usually follow that run UNLESS we have pendingMarks.
+        let marks: MarkSet = {};
+        if (targetRun) {
+            marks = { ...targetRun.marks };
+        } else if (targetBlock.children.length > 0) {
+            marks = { ...targetBlock.children[0].marks };
+        }
+        
         const effectiveMarks = {
           ...marks,
           ...(state.pendingMarks || {}),
         };
+
+        if (state.pendingMarks) {
+            for (const key in state.pendingMarks) {
+                if ((state.pendingMarks as any)[key] === undefined) {
+                    delete (effectiveMarks as any)[key];
+                }
+            }
+        }
 
         selectionState = {
           bold: !!effectiveMarks.bold,
@@ -154,6 +173,7 @@ export class OasisEditorPresenter {
         this.pageTemplates.find((t) => t.id === firstSection.pageTemplateId) ||
         this.pageTemplates[0],
       templateId: firstSection.pageTemplateId,
+      templateOptions: this.getTemplateOptions(),
       metrics: {
         revision: String(state.document.revision),
         pages: String(layout.pages.length),

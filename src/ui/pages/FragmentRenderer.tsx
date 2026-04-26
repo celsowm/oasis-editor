@@ -31,7 +31,8 @@ export const TextFragment: Component<{ fragment: LayoutFragment; isDimmed: boole
   return (
     <article
       class={`oasis-fragment oasis-fragment--${props.fragment.kind} ${props.isDimmed ? "oasis-dimmed" : ""}`}
-      dataset={{ fragmentId: props.fragment.id, blockId: props.fragment.blockId }}
+      data-fragment-id={props.fragment.id}
+      data-block-id={props.fragment.blockId}
       style={{
         "font-family": props.fragment.typography.fontFamily,
         "font-size": `${props.fragment.typography.fontSize}px`,
@@ -122,7 +123,7 @@ export const TextFragment: Component<{ fragment: LayoutFragment; isDimmed: boole
               <Match when={(run as any).footnoteId}>
                 <sup 
                   class="oasis-footnote-ref"
-                  dataset={{ footnoteId: (run as any).footnoteId }}
+                  data-footnote-id={(run as any).footnoteId}
                   style={{ ...style, "font-size": "10px", color: "#2563eb", cursor: "pointer" }}
                   title={`Footnote ${(run as any).footnoteId}`}
                 >
@@ -140,7 +141,7 @@ export const TextFragment: Component<{ fragment: LayoutFragment; isDimmed: boole
 export const ImageFragment: Component<{ fragment: LayoutFragment; isDimmed: boolean }> = (props) => (
   <div
     class={`oasis-image-wrapper ${props.isDimmed ? "oasis-dimmed" : ""}`}
-    dataset={{ blockId: props.fragment.blockId }}
+    data-block-id={props.fragment.blockId}
     style={{
       position: "absolute",
       left: `${props.fragment.rect.x}px`,
@@ -163,7 +164,7 @@ export const ImageFragment: Component<{ fragment: LayoutFragment; isDimmed: bool
 export const TableCellFragment: Component<{ fragment: LayoutFragment; isDimmed: boolean }> = (props) => (
   <div
     class={`oasis-table-cell ${props.isDimmed ? "oasis-dimmed" : ""}`}
-    dataset={{ blockId: props.fragment.blockId }}
+    data-block-id={props.fragment.blockId}
     style={{
       position: "absolute",
       left: `${props.fragment.rect.x}px`,
@@ -190,7 +191,8 @@ export const FragmentRenderer: Component<{ fragment: LayoutFragment; isDimmed: b
       <Match when={props.fragment.kind === "page-break"}>
         <div
           class={`oasis-page-break ${props.isDimmed ? "oasis-dimmed" : ""}`}
-          dataset={{ fragmentId: props.fragment.id, blockId: props.fragment.blockId }}
+          data-fragment-id={props.fragment.id}
+          data-block-id={props.fragment.blockId}
           style={{
             position: "absolute",
             left: `${props.fragment.rect.x}px`,
