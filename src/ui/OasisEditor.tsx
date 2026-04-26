@@ -162,7 +162,7 @@ const OasisEditor: Component = () => {
         <ToolbarSeparator />
 
         <ToolbarGroup>
-          <ToolbarButton id="oasis-editor-insert-image" icon="image" title="Insert Image" />
+          <ToolbarButton id="oasis-editor-insert-image" icon="image" title="Insert Image" onClick={() => document.getElementById("oasis-editor-image-input")?.click()} />
           <input type="file" id="oasis-editor-image-input" accept="image/*" style={{ display: 'none' }} />
           <ToolbarButton id="oasis-editor-insert-table" icon="table" title="Insert Table" />
           <div id="oasis-editor-table-picker-container"></div>

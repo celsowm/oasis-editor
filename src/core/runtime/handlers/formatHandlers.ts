@@ -59,10 +59,19 @@ function applyResolvedStyleToBlock(block: import("../../document/BlockTypes.js")
 
 export function registerFormatHandlers(): void {
   registerHandler(OperationType.SET_ALIGNMENT, (state, op) => {
-    const { selection } = state;
-    if (!selection) return state;
-    const { blockId } = selection.anchor;
+    const { selection, selectedImageId } = state;
     const { align } = op.payload;
+
+    if (selectedImageId) {
+      return updateDocumentSections(state, selectedImageId, (block) => {
+        if (block.kind === "image") return { ...block, align };
+        return block;
+      });
+    }
+
+    if (!selection) return state;
+
+    const { blockId } = selection.anchor;
     return updateDocumentSections(state, blockId, (block) => {
       if (!isTextBlock(block)) return block;
       if (block.kind === "heading" && align === "justify")

@@ -54,6 +54,7 @@ export class OasisEditorController {
   private importExport: ImportExportController;
   private tableDrag: TableDragController;
   private cursorCalc: CursorPositionCalculator;
+  private draggingBlockId: string | null = null;
   private commandBus: CommandBus;
 
   constructor(deps: ControllerDeps) {
@@ -163,10 +164,16 @@ export class OasisEditorController {
       onUndo: () => this.commandBus.execute("undo"),
       onRedo: () => this.commandBus.execute("redo"),
       onTemplateChange: (templateId) => this.setTemplate(templateId),
-      onTextInput: (text) => this.commandBus.execute("insertText", text),
+      onTextInput: (text) => {
+        console.log("CONTROLLER: onTextInput", { text });
+        return this.commandBus.execute("insertText", text);
+      },
       onDelete: () => this.runtime.dispatch(Operations.deleteText()),
-      onEnter: (isShift) =>
-        isShift ? this.commandBus.execute("insertText", "\n") : this.runtime.dispatch(Operations.insertParagraph()),
+      onEnter: (isShift) => {
+        console.log("CONTROLLER: onEnter", { isShift });
+        console.trace("onEnter stack trace");
+        return isShift ? this.commandBus.execute("insertText", "\n") : this.runtime.dispatch(Operations.insertParagraph());
+      },
       onEscape: () => this.commandBus.execute("escape"),
       onArrowKey: (key) => this.commandBus.execute("moveCaret", key),
       onMouseDown: (e) => this.mouseController.handleMouseDown(e),
@@ -187,8 +194,42 @@ export class OasisEditorController {
       onInsertPageBreak: () => this.runtime.dispatch(Operations.insertPageBreak()),
       onToggleTrackChanges: () => this.runtime.dispatch(Operations.toggleTrackChanges()),
       onResizeImage: (blockId, w, h) => this.resizeImage(blockId, w, h),
-      onSelectImage: (blockId) => this.runtime.dispatch(Operations.setSelection({ selectedImageId: blockId } as any)),
-      onUpdateImageAlt: (blockId, alt) => this.runtime.dispatch(Operations.updateImageBlock(blockId, { alt })),
+      onSelectImage: (blockId) => this.runtime.dispatch(Operations.selectImage(blockId)),
+      onUpdateImageAlt: (blockId, alt) => this.updateImageAlt(blockId, alt),
+      onDragOver: (e) => {
+        e.preventDefault();
+        const now = Date.now();
+        if (now - ((window as any)._oasisLastDragOverTime || 0) < 50) return;
+        (window as any)._oasisLastDragOverTime = now;
+
+        const pos = this.cursorCalc.calculateFromMouseEvent(e as any);
+        if (pos) {
+          this.runtime.dispatch(Operations.setSelection({ anchor: pos, focus: pos }));
+        }
+      },
+      onDrop: (e) => {
+        e.preventDefault();
+        const pos = this.cursorCalc.calculateFromMouseEvent(e as any);
+        console.log("CONTROLLER: onDrop", { 
+          clientX: e.clientX, 
+          clientY: e.clientY,
+          pos 
+        });
+        
+        if (this.draggingBlockId && pos) {
+          this.runtime.dispatch(Operations.moveBlock(this.draggingBlockId, pos.blockId, true));
+          this.draggingBlockId = null;
+        } else if (pos) {
+          this.runtime.dispatch(Operations.setSelection({ anchor: pos, focus: pos }));
+        }
+      },
+      onImageDragStart: (blockId, e) => {
+        this.draggingBlockId = blockId;
+        if (e.dataTransfer) {
+          e.dataTransfer.setData("text/oasis-block-id", blockId);
+          e.dataTransfer.effectAllowed = "move";
+        }
+      },
       onInsertTable: (rows, cols) => this.runtime.dispatch(Operations.insertTable(rows, cols)),
       onInsertPageNumber: () => this.commandBus.execute("field", "page", "PAGE \\* MERGEFORMAT"),
       onInsertNumPages: () => this.commandBus.execute("field", "numpages", "NUMPAGES \\* MERGEFORMAT"),
@@ -388,6 +429,7 @@ export class OasisEditorController {
     naturalHeight: number,
     displayWidth: number,
   ): void {
+    console.log("CONTROLLER: insertImage", { src: src.substring(0, 50) + "..." });
     this.runtime.dispatch(
       Operations.insertImage(src, naturalWidth, naturalHeight, displayWidth),
     );

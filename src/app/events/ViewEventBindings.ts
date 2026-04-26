@@ -53,6 +53,9 @@ export interface ImageEvents {
   onResizeImage: (blockId: string, width: number, height: number) => void;
   onSelectImage: (blockId: string) => void;
   onUpdateImageAlt: (blockId: string, alt: string) => void;
+  onDragOver?: (event: DragEvent) => void;
+  onDrop?: (event: DragEvent) => void;
+  onImageDragStart?: (blockId: string, event: DragEvent) => void;
 }
 
 export interface LinkEvents {

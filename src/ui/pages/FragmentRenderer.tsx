@@ -138,28 +138,48 @@ export const TextFragment: Component<{ fragment: LayoutFragment; isDimmed: boole
   );
 };
 
-export const ImageFragment: Component<{ fragment: LayoutFragment; isDimmed: boolean }> = (props) => (
-  <div
-    class={`oasis-image-wrapper ${props.isDimmed ? "oasis-dimmed" : ""}`}
-    data-block-id={props.fragment.blockId}
-    style={{
-      position: "absolute",
-      left: `${props.fragment.rect.x}px`,
-      top: `${props.fragment.rect.y}px`,
-      width: `${props.fragment.rect.width}px`,
-      height: `${props.fragment.rect.height}px`,
-      cursor: props.isDimmed ? "default" : "pointer",
-      "pointer-events": props.isDimmed ? "none" : "auto",
-    }}
-  >
-    <img
-      src={props.fragment.imageSrc}
-      alt={props.fragment.imageAlt ?? ""}
-      draggable={false}
-      style={{ width: "100%", height: "100%", "object-fit": "fill", display: "block", "user-select": "none", "pointer-events": "none" }}
-    />
-  </div>
-);
+export const ImageFragment: Component<{ fragment: LayoutFragment; isDimmed: boolean }> = (props) => {
+  const handleClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    const event = new CustomEvent("image-select", {
+      bubbles: true,
+      detail: { blockId: props.fragment.blockId },
+    });
+    (e.currentTarget as HTMLElement).dispatchEvent(event);
+  };
+
+  return (
+    <div
+      class={`oasis-image-wrapper ${props.isDimmed ? "oasis-dimmed" : ""}`}
+      data-block-id={props.fragment.blockId}
+      onClick={handleClick}
+      draggable={!props.isDimmed}
+      style={{
+        position: "absolute",
+        left: `${props.fragment.rect.x}px`,
+        top: `${props.fragment.rect.y}px`,
+        width: `${props.fragment.rect.width}px`,
+        height: `${props.fragment.rect.height}px`,
+        cursor: props.isDimmed ? "default" : "move",
+        "pointer-events": props.isDimmed ? "none" : "auto",
+      }}
+    >
+      <img
+        src={props.fragment.imageSrc}
+        alt={props.fragment.imageAlt ?? ""}
+        draggable={false}
+        style={{
+          width: "100%",
+          height: "100%",
+          "object-fit": "fill",
+          display: "block",
+          "user-select": "none",
+          "pointer-events": "none",
+        }}
+      />
+    </div>
+  );
+};
 
 export const TableCellFragment: Component<{ fragment: LayoutFragment; isDimmed: boolean }> = (props) => (
   <div

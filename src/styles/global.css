@@ -172,22 +172,38 @@ textarea {
     transition: all 0.3s ease;
 }
 
-/* When expanded in overflow mode, we show everything horizontally */
+/* When expanded in overflow mode, reveal hidden buttons in a floating popover */
 .oasis-editor-toolbar.mode-overflow.is-expanded {
     overflow: visible;
 }
 
-.oasis-editor-toolbar.mode-overflow.is-expanded .oasis-editor-toolbar-content {
-    overflow-x: auto;
-    flex-wrap: nowrap; /* Force horizontal for "expande de forma horizontal" */
-    background: #f8f9fa;
+/* Floating popover anchored near the "..." button (Google Docs style) */
+.oasis-toolbar-overflow-popover {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 48px; /* Leave space for the toggle button */
-    height: 100%;
-    z-index: 100;
-    padding-right: 20px;
+    top: calc(100% + 4px);
+    right: 8px;
+    background: #ffffff;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    padding: 6px 10px;
+    z-index: 1000;
+    max-width: calc(100vw - 32px);
+    animation: oasis-toolbar-popover-fade 120ms ease-out;
+}
+
+.oasis-toolbar-overflow-content {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    row-gap: 4px;
+    flex: 0 1 auto !important;
+}
+
+@keyframes oasis-toolbar-popover-fade {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Custom scrollbar for horizontal expansion if many buttons */
@@ -222,6 +238,16 @@ textarea {
 .oasis-editor-toolbar.is-expanded .oasis-toolbar-more-btn {
     background: #c2e7ff;
     color: #001d35;
+}
+
+/* Hide "..." button when there is no overflow */
+.oasis-editor-toolbar.mode-overflow:not(.has-overflow) .oasis-toolbar-more-btn {
+    visibility: hidden;
+    pointer-events: none;
+    width: 0;
+    margin-left: 0;
+    border: none;
+    padding: 0;
 }
 
 .oasis-editor-toolbar-group {

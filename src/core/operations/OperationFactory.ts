@@ -35,9 +35,12 @@ export const Operations = {
     type: OperationType.SET_SECTION_TEMPLATE,
     payload: { sectionId, templateId },
   }),
-  setSelection: (selection: EditorSelection): SetSelectionOp => ({
+  setSelection: (
+    selection: EditorSelection | null,
+    selectedImageId: string | null = null,
+  ): SetSelectionOp => ({
     type: OperationType.SET_SELECTION,
-    payload: { selection },
+    payload: { selection, selectedImageId },
   }),
   insertText: (text: string): InsertTextOp => ({
     type: OperationType.INSERT_TEXT,

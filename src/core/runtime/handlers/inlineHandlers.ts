@@ -24,7 +24,7 @@ function handleSetSelection(state: EditorState, op: any): EditorState {
   return {
     ...state,
     selection: newSelection,
-    selectedImageId: op.payload.selectedImageId || null,
+    selectedImageId: op.payload.selectedImageId !== undefined ? op.payload.selectedImageId : state.selectedImageId,
     pendingMarks: shouldClearPending ? undefined : state.pendingMarks,
   };
 }

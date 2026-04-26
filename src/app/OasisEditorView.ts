@@ -133,6 +133,22 @@ export class OasisEditorView {
 
     this.elements.hiddenInput.addEventListener("keydown", (e) => {
       const ke = e as KeyboardEvent;
+      
+      // Strict check for ghost Enter keys after drop or during drag
+      const isDragging = (window as any)._oasisDragging;
+      const lastDropTime = (window as any)._oasisLastDropTime || 0;
+      const timeSinceDrop = Date.now() - lastDropTime;
+      const justDropped = timeSinceDrop < 500;
+
+      if (ke.key === "Enter") {
+        if (isDragging || justDropped) {
+          console.log("VIEW: Suppressed ghost Enter", { isDragging, justDropped, timeSinceDrop });
+          ke.preventDefault();
+          ke.stopImmediatePropagation();
+          return;
+        }
+      }
+
       if (ke.key === "Backspace") {
         events.onDelete();
         ke.preventDefault();
@@ -226,22 +242,63 @@ export class OasisEditorView {
     this.elements.imageFileInput.addEventListener("change", () => {
       const file = this.elements.imageFileInput.files?.[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
-        const img = new Image();
-        img.onload = () => {
-          const displayW = Math.min(img.naturalWidth, 500);
-          events.onInsertImage(
-            dataUrl,
-            img.naturalWidth,
-            img.naturalHeight,
-            displayW,
-          );
-        };
-        img.src = dataUrl;
-      };
-      reader.readAsDataURL(file);
+      this.handleImageFile(file, events);
+    });
+
+    // Drag and Drop support
+    window.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      (window as any)._oasisDragging = true;
+    });
+
+    window.addEventListener("dragleave", (e) => {
+      // Only unset if we actually leave the window
+      if (e.relatedTarget === null) {
+        (window as any)._oasisDragging = false;
+      }
+    });
+
+    window.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      (window as any)._oasisDragging = true;
+      if (events.onDragOver) events.onDragOver(e as DragEvent);
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = "move";
+      }
+    });
+
+    window.addEventListener("dragend", (e) => {
+      (window as any)._oasisDragging = false;
+    });
+
+    window.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      (window as any)._oasisLastDropTime = Date.now();
+      (window as any)._oasisDragging = false;
+
+      if (events.onDrop) events.onDrop(e as DragEvent);
+      
+      const dt = (e as DragEvent).dataTransfer;
+      if (!dt) return;
+
+      const file = Array.from(dt.files).find((f) => f.type.startsWith("image/"));
+      if (file) {
+        this.handleImageFile(file, events);
+      }
+    });
+
+    this.elements.root.addEventListener("dragstart", (e) => {
+        (window as any)._oasisDragging = true;
+        const target = e.target as HTMLElement;
+        const wrapper = target.closest(".oasis-image-wrapper");
+        if (wrapper) {
+            const blockId = wrapper.getAttribute("data-block-id");
+            if (blockId && events.onImageDragStart) {
+                events.onImageDragStart(blockId, e as DragEvent);
+            }
+        }
     });
 
     this.elements.importDocxInput.addEventListener("change", () => {
@@ -528,6 +585,25 @@ export class OasisEditorView {
     pageEl.appendChild(input);
     input.focus();
     this.imageAltInput = input;
+  }
+
+  private handleImageFile(file: File, events: ViewEventBindings): void {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const displayW = Math.min(img.naturalWidth, 500);
+        events.onInsertImage(
+          dataUrl,
+          img.naturalWidth,
+          img.naturalHeight,
+          displayW,
+        );
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
   }
 
   setFormatPainterActive(active: boolean, sticky: boolean = false): void {

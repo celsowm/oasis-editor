@@ -23,6 +23,18 @@ export class MouseController {
   }
 
   handleMouseDown(event: MouseEvent): void {
+    console.log("MOUSE: handleMouseDown", event.type);
+    const path = event.composedPath() as HTMLElement[];
+    const isImageRelated = path.some(el => 
+        el.classList?.contains("oasis-image-wrapper") || 
+        el.classList?.contains("oasis-image-resize-overlay")
+    );
+
+    if (isImageRelated) {
+      console.log("MOUSE: Click on image related element, ignoring for text selection");
+      return;
+    }
+
     const position = this.cursorCalc.calculateFromMouseEvent(event);
     if (!position) return;
 

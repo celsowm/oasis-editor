@@ -2,12 +2,13 @@ import { registerHandler } from "../OperationHandlers.js";
 import { OperationType } from "../../operations/OperationTypes.js";
 import { createImage } from "../../document/DocumentFactory.js";
 import { updateDocumentSections } from "./sharedHelpers.js";
+import { isTextBlock, TextRun } from "../../document/BlockTypes.js";
 
 export function registerImageHandlers(): void {
   registerHandler(OperationType.INSERT_IMAGE, (state, op) => {
     const { selection } = state;
     if (!selection) return state;
-    const { blockId } = selection.anchor;
+    const { blockId, inlineId, offset } = selection.anchor;
     const {
       src,
       naturalWidth,
@@ -27,10 +28,50 @@ export function registerImageHandlers(): void {
     );
     if (newBlockId) imageNode.id = newBlockId;
 
-    const nextState = updateDocumentSections(state, blockId, (block) => [
-      block,
-      imageNode,
-    ]);
+    const nextState = updateDocumentSections(state, blockId, (block) => {
+      if (!isTextBlock(block)) return [block, imageNode];
+
+      const beforeChildren: TextRun[] = [];
+      const afterChildren: TextRun[] = [];
+      let found = false;
+
+      for (const run of block.children) {
+        if (run.id === inlineId) {
+          const beforeText = run.text.substring(0, offset);
+          const afterText = run.text.substring(offset);
+          
+          if (beforeText || !found) {
+            beforeChildren.push({ ...run, text: beforeText });
+          }
+          
+          afterChildren.push({ ...run, id: run.id + "_after", text: afterText });
+          found = true;
+        } else if (!found) {
+          beforeChildren.push(run);
+        } else {
+          afterChildren.push(run);
+        }
+      }
+
+      const pBefore = { ...block, children: beforeChildren };
+      const pAfter = { ...block, id: block.id + "_after", children: afterChildren };
+
+      const result: any[] = [];
+      // Always include pBefore if it has content, or if we're at the very start of a block
+      if (beforeChildren.length > 0 || offset === 0) {
+          result.push(pBefore);
+      }
+      
+      result.push(imageNode);
+      
+      // Only include pAfter if it has remaining content
+      if (afterChildren.length > 0 && afterChildren.some(r => r.text.length > 0)) {
+          result.push(pAfter);
+      }
+      
+      return result;
+    });
+
     return {
       ...nextState,
       selectedImageId: imageNode.id,

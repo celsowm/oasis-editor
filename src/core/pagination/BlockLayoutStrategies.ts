@@ -81,7 +81,18 @@ export class ImageLayoutStrategy implements LayoutStrategy {
         createNewPage(ctx);
     }
 
-    fragment.rect.x = ctx.currentPage.contentRect.x + containerX;
+    // Apply alignment
+    let xOffset = 0;
+    const imgW = fragment.rect.width;
+    const align = (block as any).align || "left";
+
+    if (align === "center") {
+      xOffset = (width - imgW) / 2;
+    } else if (align === "right") {
+      xOffset = width - imgW;
+    }
+
+    fragment.rect.x = ctx.currentPage.contentRect.x + containerX + xOffset;
     fragment.rect.y = ctx.currentY;
     fragment.pageId = ctx.currentPage.id;
 
