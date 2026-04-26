@@ -197,8 +197,8 @@ export class OasisEditorController {
       onInsertTime: () => this.insertField("time", "TIME \\@ \"HH:mm\""),
       onInsertEquation: (latex, display) => this.insertEquation(latex, display),
       onInsertBookmark: (name) => this.insertBookmark(name),
-      onInsertFootnote: (text) => this.insertFootnote(text),
-      onInsertEndnote: (text) => this.insertEndnote(text),
+      onInsertFootnote: () => this.insertFootnote(),
+      onInsertEndnote: () => this.insertEndnote(),
       onInsertComment: (text) => this.insertComment(text),
       onTableAction: (action, tableId) =>
         this.handleTableAction(action, tableId),
@@ -423,8 +423,24 @@ export class OasisEditorController {
     this.runtime.dispatch(Operations.insertBookmark(name));
   }
 
-  insertFootnote(text: string): void {
-    this.runtime.dispatch(Operations.insertFootnote(text));
+  insertFootnote(): void {
+    this.runtime.dispatch(Operations.insertFootnote());
+    // Auto-switch to footnote editing mode and place cursor
+    const state = this.runtime.getState();
+    const fnId = state.editingFootnoteId;
+    if (fnId) {
+      const fn = state.document.footnotes?.find((f) => f.id === fnId);
+      const firstBlock = fn?.blocks[0];
+      if (firstBlock && isTextBlock(firstBlock)) {
+        const pos = {
+          sectionId: "footnote",
+          blockId: firstBlock.id,
+          inlineId: firstBlock.children[0]?.id || "",
+          offset: 0,
+        };
+        this.runtime.dispatch(Operations.setSelection({ anchor: pos, focus: pos }));
+      }
+    }
   }
 
   enterFootnote(footnoteId: string): void {
@@ -444,8 +460,8 @@ export class OasisEditorController {
     this.runtime.dispatch(Operations.setSelection({ anchor: pos, focus: pos }));
   }
 
-  insertEndnote(text: string): void {
-    this.runtime.dispatch(Operations.insertEndnote(text));
+  insertEndnote(): void {
+    this.runtime.dispatch(Operations.insertEndnote());
   }
 
   insertComment(text: string): void {

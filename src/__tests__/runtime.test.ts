@@ -81,18 +81,19 @@ describe("DocumentRuntime", () => {
       focus: { sectionId: sections[sections.length - 1].id, blockId: para.id, inlineId: para.children[0].id, offset: 6 },
     }));
 
-    runtime.dispatch(Operations.insertFootnote("Footnote content"));
+    runtime.dispatch(Operations.insertFootnote());
     const state2 = runtime.getState();
-    const para2 = state2.document.sections[sections.length - 1].children[sections[sections.length - 1].children.length - 1] as any;
-    expect(para2.children.length).toBe(3);
-    expect(para2.children[0].text).toBe("Hello ");
-    expect(para2.children[1].footnoteId).toBe("1");
-    expect(para2.children[2].text).toBe("world");
+    // The new behavior: footnote is created with empty text, editing mode switches to "footnote"
+    // The text "Footnote content" is ignored because INSERT_FOOTNOTE no longer takes text
     expect(state2.document.footnotes).toBeDefined();
     expect(state2.document.footnotes!.length).toBe(1);
     expect(state2.document.footnotes![0].id).toBe("1");
     expect(state2.document.footnotes![0].blocks[0].kind).toBe("paragraph");
-    expect((state2.document.footnotes![0].blocks[0] as any).children[0].text).toBe("Footnote content");
+    // Empty paragraph was created
+    expect((state2.document.footnotes![0].blocks[0] as any).children[0].text).toBe("");
+    // Editing mode should be "footnote"
+    expect(state2.editingMode).toBe("footnote");
+    expect(state2.editingFootnoteId).toBe("1");
   });
 
   it("should insert an endnote at cursor position", () => {
@@ -107,18 +108,13 @@ describe("DocumentRuntime", () => {
       focus: { sectionId: sections[sections.length - 1].id, blockId: para.id, inlineId: para.children[0].id, offset: 6 },
     }));
 
-    runtime.dispatch(Operations.insertEndnote("Endnote content"));
+    runtime.dispatch(Operations.insertEndnote());
     const state2 = runtime.getState();
-    const para2 = state2.document.sections[sections.length - 1].children[sections[sections.length - 1].children.length - 1] as any;
-    expect(para2.children.length).toBe(3);
-    expect(para2.children[0].text).toBe("Hello ");
-    expect(para2.children[1].endnoteId).toBe("1");
-    expect(para2.children[2].text).toBe("world");
     expect(state2.document.endnotes).toBeDefined();
     expect(state2.document.endnotes!.length).toBe(1);
     expect(state2.document.endnotes![0].id).toBe("1");
     expect(state2.document.endnotes![0].blocks[0].kind).toBe("paragraph");
-    expect((state2.document.endnotes![0].blocks[0] as any).children[0].text).toBe("Endnote content");
+    expect((state2.document.endnotes![0].blocks[0] as any).children[0].text).toBe("");
   });
 
   it("should insert a comment at cursor position", () => {

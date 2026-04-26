@@ -216,6 +216,7 @@ function composeFootnoteArea(
       if (!fragmentsByBlockId[block.id]) {
         fragmentsByBlockId[block.id] = [];
       }
+      fragmentsByBlockId[block.id].push(fragment);
       fnY += fragment.rect.height + FOOTNOTE_ENTRY_GAP;
     }
   }

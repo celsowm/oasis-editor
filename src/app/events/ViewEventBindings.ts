@@ -72,8 +72,8 @@ export interface FieldEvents {
   onInsertTime: () => void;
   onInsertEquation?: (latex: string, display: boolean) => void;
   onInsertBookmark?: (name: string) => void;
-  onInsertFootnote?: (text: string) => void;
-  onInsertEndnote?: (text: string) => void;
+  onInsertFootnote?: () => void;
+  onInsertEndnote?: () => void;
   onInsertComment?: (text: string) => void;
 }
 

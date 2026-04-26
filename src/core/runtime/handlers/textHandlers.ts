@@ -21,12 +21,62 @@ function updateDocumentSections(
   updater: (block: BlockNode) => BlockNode | BlockNode[] | null,
 ): EditorState {
   const zone = state.editingMode;
-  const nextSections = state.document.sections.map((section) => {
-    let childrenToTransform: BlockNode[] = section.children;
-    if (zone === "header") childrenToTransform = section.header || [];
-    else if (zone === "footer") childrenToTransform = section.footer || [];
 
-    const transformed = transformBlocks(childrenToTransform, (block) => {
+  if (zone === "footnote" && state.editingFootnoteId) {
+    const footnote = state.document.footnotes?.find(f => f.id === state.editingFootnoteId);
+    if (footnote) {
+      const transformed = transformBlocks(footnote.blocks, (block) => {
+        if (block.id === blockId) {
+          return updater(block);
+        }
+        return block;
+      });
+      const nextFootnotes = state.document.footnotes.map(f =>
+        f.id === state.editingFootnoteId ? { ...f, blocks: transformed } : f
+      );
+      return {
+        ...state,
+        document: {
+          ...state.document,
+          revision: state.document.revision + 1,
+          footnotes: nextFootnotes,
+        },
+      };
+    }
+  }
+
+  if (zone === "header" || zone === "footer") {
+    const nextSections = state.document.sections.map((section) => {
+      let childrenToTransform: BlockNode[] = section.children;
+      if (zone === "header") childrenToTransform = section.header || [];
+      else if (zone === "footer") childrenToTransform = section.footer || [];
+
+      const transformed = transformBlocks(childrenToTransform, (block) => {
+        if (block.id === blockId) {
+          return updater(block);
+        }
+        return block;
+      });
+
+      const updatedChildren = recalculateListSequences(transformed);
+
+      if (zone === "header") return { ...section, header: updatedChildren };
+      if (zone === "footer") return { ...section, footer: updatedChildren };
+      return { ...section, children: updatedChildren };
+    });
+
+    return {
+      ...state,
+      document: {
+        ...state.document,
+        revision: state.document.revision + 1,
+        sections: nextSections,
+      },
+    };
+  }
+
+  const nextSections = state.document.sections.map((section) => {
+    const transformed = transformBlocks(section.children, (block) => {
       if (block.id === blockId) {
         return updater(block);
       }
@@ -35,8 +85,6 @@ function updateDocumentSections(
 
     const updatedChildren = recalculateListSequences(transformed);
 
-    if (zone === "header") return { ...section, header: updatedChildren };
-    if (zone === "footer") return { ...section, footer: updatedChildren };
     return { ...section, children: updatedChildren };
   });
 
@@ -844,26 +892,13 @@ function handleInsertFootnote(state: EditorState, op: any): EditorState {
   const footnotes = [...(nextState.document.footnotes || [])];
   footnotes.push({ id: nextFootnoteId, blocks: [footnoteBlock] });
 
-  // Place cursor after the footnote reference: prefer the next run, else stay in footnote run
-  let nextPosition = { ...selection.anchor, offset: 0 };
-  const block = findBlockById(nextState.document, blockId);
-  if (block && isTextBlock(block)) {
-    let foundFn = false;
-    for (const run of block.children) {
-      if (run.footnoteId === nextFootnoteId) {
-        foundFn = true;
-        continue;
-      }
-      if (foundFn) {
-        nextPosition = {
-          ...selection.anchor,
-          inlineId: run.id,
-          offset: 0,
-        };
-        break;
-      }
-    }
-  }
+  // Place cursor at the start of the new footnote block (Word/Docs behavior)
+  const fnPos: LogicalPosition = {
+    sectionId: "footnote",
+    blockId: footnoteBlock.id,
+    inlineId: footnoteBlock.children[0]?.id || "",
+    offset: 0,
+  };
 
   return {
     ...nextState,
@@ -871,7 +906,9 @@ function handleInsertFootnote(state: EditorState, op: any): EditorState {
       ...nextState.document,
       footnotes,
     },
-    selection: { anchor: nextPosition, focus: nextPosition },
+    editingMode: "footnote" as const,
+    editingFootnoteId: nextFootnoteId,
+    selection: { anchor: fnPos, focus: fnPos },
   };
 }
 

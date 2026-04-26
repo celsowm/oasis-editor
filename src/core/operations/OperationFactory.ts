@@ -266,13 +266,13 @@ export const Operations = {
     type: OperationType.INSERT_BOOKMARK,
     payload: { name, newRunId: genId("run") },
   }),
-  insertFootnote: (text: string): EditorOperation => ({
+  insertFootnote: (): EditorOperation => ({
     type: OperationType.INSERT_FOOTNOTE,
-    payload: { text, newRunId: genId("run"), newBlockId: genId("block") },
+    payload: { text: "", newRunId: genId("run"), newBlockId: genId("block") },
   }),
-  insertEndnote: (text: string): EditorOperation => ({
+  insertEndnote: (): EditorOperation => ({
     type: OperationType.INSERT_ENDNOTE,
-    payload: { text, newRunId: genId("run"), newBlockId: genId("block") },
+    payload: { text: "", newRunId: genId("run"), newBlockId: genId("block") },
   }),
   insertComment: (text: string): EditorOperation => ({
     type: OperationType.INSERT_COMMENT,

@@ -506,15 +506,11 @@ export class OasisEditorView {
         } },
         { label: "Footnote", action: () => {
           if (!this.events.onInsertFootnote) return;
-          const text = window.prompt("Footnote text:", "");
-          if (text === null) return;
-          this.events.onInsertFootnote(text);
+          this.events.onInsertFootnote();
         } },
         { label: "Endnote", action: () => {
           if (!this.events.onInsertEndnote) return;
-          const text = window.prompt("Endnote text:", "");
-          if (text === null) return;
-          this.events.onInsertEndnote(text);
+          this.events.onInsertEndnote();
         } },
         { label: "Comment", action: () => {
           if (!this.events.onInsertComment) return;
