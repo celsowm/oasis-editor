@@ -27,7 +27,6 @@ function hideLoading(): void {
 function initEditor(): void {
   const { controller } = createOasisEditor(container!);
   startIconObserver(container!);
-  controller.start();
   hideLoading();
 }
 

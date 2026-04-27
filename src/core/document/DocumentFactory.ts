@@ -121,9 +121,10 @@ export const createHeading = (
 });
 
 export const createPageBreak = (
+  id?: string,
   gen: IdGenerator = defaultIdGen,
 ): import("./BlockTypes.js").PageBreakNode => ({
-  id: gen.nextBlockId(),
+  id: id || gen.nextBlockId(),
   kind: "page-break",
 });
 

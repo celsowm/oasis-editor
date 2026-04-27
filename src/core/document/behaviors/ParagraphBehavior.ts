@@ -4,6 +4,7 @@ import { ParagraphComposer } from "../../composition/ParagraphComposer.js";
 import { TextMeasurer } from "../../../bridge/measurement/TextMeasurementBridge.js";
 import { IFontManager } from "../../typography/FontManager.js";
 import { SectionNode } from "../SectionTypes.js";
+import { LineInfo } from "../../layout/LayoutFragment.js";
 
 export class ParagraphBehavior implements BlockBehavior {
   measure(
@@ -22,7 +23,7 @@ export class ParagraphBehavior implements BlockBehavior {
     const result = composer.compose(block, width, section);
 
     // Map composer lines to layout fragments
-    const fragments = result.lines.map((line, index) => ({
+    const fragments = result.lines.map((line: LineInfo, index: number) => ({
       id: `${block.id}_L${index}`,
       blockId: block.id,
       kind: block.kind,
@@ -33,14 +34,14 @@ export class ParagraphBehavior implements BlockBehavior {
         width: line.width,
         height: line.height,
       },
-      typography: line.typography,
+      typography: line.typography || result.typography,
       align: block.align || "left",
       lines: result.lines,
-      runs: line.runs,
+      runs: [], // No mapping yet
     }));
 
     return {
-      height: result.height,
+      height: result.totalHeight,
       fragments: fragments as any,
     };
   }

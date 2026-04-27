@@ -1,361 +1,264 @@
+import { OperationType, InsertFieldOp, InsertEquationOp, InsertBookmarkOp, InsertFootnoteOp, InsertEndnoteOp, InsertCommentOp } from "../../operations/OperationTypes.js";
 import { EditorState } from "../EditorState.js";
-import { findBlockById } from "../../document/BlockUtils.js";
-import { isTextBlock, TextRun } from "../../document/BlockTypes.js";
-import { updateDocumentSections } from "../../document/DocumentMutationUtils.js";
 import { registerHandler } from "../OperationHandlers.js";
-import { OperationType } from "../../operations/OperationTypes.js";
-import { createTextRun, createEquation, createParagraph } from "../../document/DocumentFactory.js";
-import { genId } from "../../utils/IdGenerator.js";
+import { isTextBlock } from "../../document/BlockTypes.js";
+import { createId } from "../../utils/IdGenerator.js";
+import { FieldUtils } from "../../document/FieldUtils.js";
 
-function handleInsertField(state: EditorState, op: any): EditorState {
-  const { selection } = state;
+function handleInsertField(state: EditorState, op: InsertFieldOp): EditorState {
+  const { field } = op.payload;
+  const { document, selection } = state;
   if (!selection) return state;
-  const { blockId, inlineId, offset } = selection.anchor;
-  const { field, newRunId } = op.payload;
+  const { anchor } = selection;
 
-  const nextState = updateDocumentSections(state, blockId, (block) => {
-    if (!isTextBlock(block)) return block;
-    const nextChildren: TextRun[] = [];
-    for (const run of block.children) {
-      if (run.id !== inlineId) {
-        nextChildren.push(run);
-        continue;
-      }
-      const beforeText = run.text.substring(0, offset);
-      const afterText = run.text.substring(offset);
+  const section = document.sections.find(s => s.id === anchor.sectionId);
+  if (!section) return state;
 
-      if (beforeText) {
-        nextChildren.push({ ...run, text: beforeText });
-      }
-      nextChildren.push(
-        createTextRun(
-          field.type === "page" ? "1" : field.type,
-          { ...run.marks },
-          undefined,
-          field,
-        ),
-      );
-      if (afterText) {
-        nextChildren.push({ ...run, text: afterText });
-      }
+  const block = section.children.find(b => b.id === anchor.blockId);
+  if (!block || !isTextBlock(block)) return state;
+
+  const inline = block.children.find(i => i.id === anchor.inlineId);
+  if (!inline) return state;
+
+  const newInline = {
+    ...inline,
+    id: createId(),
+    text: FieldUtils.getPlaceholder(field.type),
+    field: {
+      type: field.type,
+      instruction: field.instruction
     }
-    return { ...block, children: nextChildren };
-  });
-
-  return {
-    ...nextState,
-    selection: {
-      anchor: { ...selection.anchor, offset: offset + 1 },
-      focus: { ...selection.focus, offset: offset + 1 },
-    },
-    pendingMarks: undefined,
   };
-}
 
-function handleInsertEquation(state: EditorState, op: any): EditorState {
-  const { selection, document } = state;
-  const { latex, display, newBlockId } = op.payload;
-  const equation = createEquation(latex, display);
-  if (newBlockId) equation.id = newBlockId;
+  const newBlock = {
+    ...block,
+    children: block.children.map(i => i.id === inline.id ? newInline : i)
+  };
 
-  let insertSectionIdx = 0;
-  let insertBlockIdx = -1;
-  if (selection) {
-    for (let sIdx = 0; sIdx < document.sections.length; sIdx++) {
-      const idx = document.sections[sIdx].children.findIndex(
-        (b) => b.id === selection.anchor.blockId,
-      );
-      if (idx !== -1) {
-        insertSectionIdx = sIdx;
-        insertBlockIdx = idx;
-        break;
-      }
-    }
-  }
-
-  const nextSections = document.sections.map((section, sIdx) => {
-    if (sIdx !== insertSectionIdx) return section;
-    const children = [...section.children];
-    children.splice(insertBlockIdx + 1, 0, equation);
-    return { ...section, children };
-  });
+  const newSection = {
+    ...section,
+    children: section.children.map(b => b.id === block.id ? newBlock : b)
+  };
 
   return {
     ...state,
     document: {
       ...document,
-      revision: document.revision + 1,
-      sections: nextSections,
-    },
-    selection: null,
-    selectedImageId: null,
+      sections: document.sections.map(s => s.id === section.id ? newSection : s)
+    }
   };
 }
 
-function handleInsertBookmark(state: EditorState, op: any): EditorState {
-  const { selection } = state;
+function handleInsertEquation(state: EditorState, op: InsertEquationOp): EditorState {
+  const { latex, display } = op.payload;
+  const { document, selection } = state;
   if (!selection) return state;
-  const { blockId, inlineId, offset } = selection.anchor;
-  const { name, newRunId } = op.payload;
+  const { anchor } = selection;
 
-  const nextState = updateDocumentSections(state, blockId, (block) => {
-    if (!isTextBlock(block)) return block;
-    const nextChildren: TextRun[] = [];
-    let inserted = false;
+  const section = document.sections.find(s => s.id === anchor.sectionId);
+  if (!section) return state;
 
-    for (const run of block.children) {
-      if (run.id === inlineId) {
-        const before = run.text.slice(0, offset);
-        const after = run.text.slice(offset);
-        if (before) {
-          nextChildren.push({ ...run, text: before });
-        }
-        const bookmarkRun = createTextRun("", {}, undefined, undefined, name, name);
-        if (newRunId) bookmarkRun.id = newRunId;
-        nextChildren.push(bookmarkRun);
-        inserted = true;
-        if (after) {
-          nextChildren.push({ ...run, text: after });
-        }
-      } else {
-        nextChildren.push(run);
-      }
-    }
+  const block = section.children.find(b => b.id === anchor.blockId);
+  if (!block || !isTextBlock(block)) return state;
 
-    if (!inserted) {
-      const bookmarkRun = createTextRun("", {}, undefined, undefined, name, name);
-      if (newRunId) bookmarkRun.id = newRunId;
-      nextChildren.push(bookmarkRun);
-    }
-
-    return { ...block, children: nextChildren };
-  });
-
-  return {
-    ...nextState,
-    selection: {
-      anchor: { ...selection.anchor, offset: 0 },
-      focus: { ...selection.focus, offset: 0 },
-    },
+  const newBlock = {
+    id: createId(),
+    kind: "equation" as const,
+    latex,
+    display,
+    align: display ? "center" as const : "left" as const
   };
-}
 
-function handleInsertFootnote(state: EditorState, op: any): EditorState {
-  const { selection } = state;
-  if (!selection) return state;
-  const { blockId, inlineId, offset } = selection.anchor;
-  const { text, newRunId, newBlockId } = op.payload;
-
-  const nextFootnoteId = String((state.document.footnotes?.length || 0) + 1);
-
-  const nextState = updateDocumentSections(state, blockId, (block) => {
-    if (!isTextBlock(block)) return block;
-    const nextChildren: TextRun[] = [];
-    let inserted = false;
-
-    for (const run of block.children) {
-      if (run.id === inlineId) {
-        const before = run.text.slice(0, offset);
-        const after = run.text.slice(offset);
-        if (before) {
-          nextChildren.push({ ...run, text: before, id: genId("run") });
-        }
-        const fnRun: TextRun = {
-          id: newRunId || genId("run"),
-          text: "",
-          marks: { ...run.marks },
-          footnoteId: nextFootnoteId,
-        };
-        nextChildren.push(fnRun);
-        inserted = true;
-        if (after) {
-          nextChildren.push({ ...run, text: after, id: genId("run") });
-        }
-      } else {
-        nextChildren.push(run);
-      }
-    }
-
-    if (!inserted) {
-      const fnRun: TextRun = {
-        id: newRunId || genId("run"),
-        text: "",
-        marks: {},
-        footnoteId: nextFootnoteId,
-      };
-      nextChildren.push(fnRun);
-    }
-
-    return { ...block, children: nextChildren };
-  });
-
-  const footnoteBlock = createParagraph(text);
-  if (newBlockId) footnoteBlock.id = newBlockId;
-  const footnotes = [...(nextState.document.footnotes || [])];
-  footnotes.push({
-    id: nextFootnoteId,
-    blocks: [footnoteBlock],
-  });
+  const blockIndex = section.children.findIndex(b => b.id === block.id);
+  const newSection = {
+    ...section,
+    children: [
+      ...section.children.slice(0, blockIndex + 1),
+      newBlock,
+      ...section.children.slice(blockIndex + 1)
+    ]
+  };
 
   return {
-    ...nextState,
+    ...state,
     document: {
-      ...nextState.document,
-      footnotes,
-    },
-    editingMode: "footnote",
-    editingFootnoteId: nextFootnoteId,
+      ...document,
+      sections: document.sections.map(s => s.id === section.id ? newSection : s)
+    }
   };
 }
 
-function handleInsertEndnote(state: EditorState, op: any): EditorState {
-  const { selection } = state;
+function handleInsertBookmark(state: EditorState, op: InsertBookmarkOp): EditorState {
+  const { name } = op.payload;
+  const { document, selection } = state;
   if (!selection) return state;
-  const { blockId, inlineId, offset } = selection.anchor;
-  const { text, newRunId, newBlockId } = op.payload;
+  const { anchor } = selection;
 
-  const nextEndnoteId = String((state.document.endnotes?.length || 0) + 1);
+  const section = document.sections.find(s => s.id === anchor.sectionId);
+  if (!section) return state;
 
-  const nextState = updateDocumentSections(state, blockId, (block) => {
-    if (!isTextBlock(block)) return block;
-    const nextChildren: TextRun[] = [];
-    let inserted = false;
+  const block = section.children.find(b => b.id === anchor.blockId);
+  if (!block || !isTextBlock(block)) return state;
 
-    for (const run of block.children) {
-      if (run.id === inlineId) {
-        const before = run.text.slice(0, offset);
-        const after = run.text.slice(offset);
-        if (before) {
-          nextChildren.push({ ...run, text: before, id: genId("run") });
-        }
-        const enRun: TextRun = {
-          id: newRunId || genId("run"),
-          text: "",
-          marks: { ...run.marks },
-          endnoteId: nextEndnoteId,
-        };
-        nextChildren.push(enRun);
-        inserted = true;
-        if (after) {
-          nextChildren.push({ ...run, text: after, id: genId("run") });
-        }
-      } else {
-        nextChildren.push(run);
-      }
+  const inline = block.children.find(i => i.id === anchor.inlineId);
+  if (!inline) return state;
+
+  const newInline = {
+    ...inline,
+    id: createId(),
+    marks: {
+      ...inline.marks,
+      bookmark: name
     }
+  };
 
-    if (!inserted) {
-      const enRun: TextRun = {
-        id: newRunId || genId("run"),
-        text: "",
-        marks: {},
-        endnoteId: nextEndnoteId,
-      };
-      nextChildren.push(enRun);
-    }
+  const newBlock = {
+    ...block,
+    children: block.children.map(i => i.id === inline.id ? newInline : i)
+  };
 
-    return { ...block, children: nextChildren };
-  });
-
-  const endnoteBlock = createParagraph(text);
-  if (newBlockId) endnoteBlock.id = newBlockId;
-  const endnotes = [...(nextState.document.endnotes || [])];
-  endnotes.push({
-    id: nextEndnoteId,
-    blocks: [endnoteBlock],
-  });
+  const newSection = {
+    ...section,
+    children: section.children.map(b => b.id === block.id ? newBlock : b)
+  };
 
   return {
-    ...nextState,
+    ...state,
     document: {
-      ...nextState.document,
-      endnotes,
+      ...document,
+      sections: document.sections.map(s => s.id === section.id ? newSection : s)
+    }
+  };
+}
+
+function handleInsertFootnote(state: EditorState, _op: InsertFootnoteOp): EditorState {
+  const { document, selection } = state;
+  if (!selection) return state;
+  const { anchor } = selection;
+
+  const section = document.sections.find(s => s.id === anchor.sectionId);
+  if (!section) return state;
+
+  const block = section.children.find(b => b.id === anchor.blockId);
+  if (!block || !isTextBlock(block)) return state;
+
+  const inline = block.children.find(i => i.id === anchor.inlineId);
+  if (!inline) return state;
+
+  const footnoteId = createId();
+  const newInline = {
+    ...inline,
+    id: createId(),
+    footnoteId
+  };
+
+  const newFootnote = {
+    id: footnoteId,
+    blocks: [{
+      id: createId(),
+      kind: "paragraph" as const,
+      align: "left" as const,
+      children: [{ id: createId(), text: "", marks: {} }]
+    }]
+  };
+
+  const newBlock = {
+    ...block,
+    children: block.children.map(i => i.id === inline.id ? newInline : i)
+  };
+
+  const newSection = {
+    ...section,
+    children: section.children.map(b => b.id === block.id ? newBlock : b)
+  };
+
+  return {
+    ...state,
+    document: {
+      ...document,
+      sections: document.sections.map(s => s.id === section.id ? newSection : s),
+      footnotes: [...(document.footnotes || []), newFootnote]
     },
+    editingFootnoteId: footnoteId
+  };
+}
+
+function handleInsertEndnote(state: EditorState, _op: InsertEndnoteOp): EditorState {
+  const { document, selection } = state;
+  if (!selection) return state;
+  const { anchor } = selection;
+
+  const section = document.sections.find(s => s.id === anchor.sectionId);
+  if (!section) return state;
+
+  const block = section.children.find(b => b.id === anchor.blockId);
+  if (!block || !isTextBlock(block)) return state;
+
+  const inline = block.children.find(i => i.id === anchor.inlineId);
+  if (!inline) return state;
+
+  const endnoteId = createId();
+  const newInline = {
+    ...inline,
+    id: createId(),
+    endnoteId
+  };
+
+  const newEndnote = {
+    id: endnoteId,
+    blocks: [{
+      id: createId(),
+      kind: "paragraph" as const,
+      align: "left" as const,
+      children: [{ id: createId(), text: "", marks: {} }]
+    }]
+  };
+
+  const newBlock = {
+    ...block,
+    children: block.children.map(i => i.id === inline.id ? newInline : i)
+  };
+
+  const newSection = {
+    ...section,
+    children: section.children.map(b => b.id === block.id ? newBlock : b)
+  };
+
+  return {
+    ...state,
+    document: {
+      ...document,
+      sections: document.sections.map(s => s.id === section.id ? newSection : s),
+      endnotes: [...(document.endnotes || []), newEndnote]
+    }
   };
 }
 
 function handleInsertComment(state: EditorState, op: InsertCommentOp): EditorState {
-  const { selection } = state;
+  const { text } = op.payload;
+  const { document, selection } = state;
   if (!selection) return state;
-  const { blockId, inlineId, offset } = selection.anchor;
-  const { text, newRunId, newBlockId } = op.payload;
+  const { anchor, focus } = selection;
 
-  const nextCommentId = String((state.document.comments?.length || 0) + 1);
-
-  const nextState = updateDocumentSections(state, blockId, (block) => {
-    if (!isTextBlock(block)) return block;
-    const nextChildren: TextRun[] = [];
-    let inserted = false;
-
-    for (const run of block.children) {
-      if (run.id === inlineId) {
-        const before = run.text.slice(0, offset);
-        const after = run.text.slice(offset);
-        if (before) {
-          nextChildren.push({ ...run, text: before, id: genId("run") });
-        }
-        const commentRun: TextRun = {
-          id: newRunId || genId("run"),
-          text: "",
-          marks: { ...run.marks },
-          commentId: nextCommentId,
-        };
-        nextChildren.push(commentRun);
-        inserted = true;
-        if (after) {
-          nextChildren.push({ ...run, text: after, id: genId("run") });
-        }
-      } else {
-        nextChildren.push(run);
-      }
-    }
-
-    if (!inserted) {
-      const commentRun: TextRun = {
-        id: newRunId || genId("run"),
-        text: "",
-        marks: {},
-        commentId: nextCommentId,
-      };
-      nextChildren.push(commentRun);
-    }
-
-    return { ...block, children: nextChildren };
-  });
-
-  const commentBlock = createParagraph(text);
-  if (newBlockId) commentBlock.id = newBlockId;
-  const comments = [...(nextState.document.comments || [])];
-  comments.push({ id: nextCommentId, author: "Author", date: Date.now(), blocks: [commentBlock] });
-
-  // Place cursor after the comment reference: prefer the next run, else stay in comment run
-  let nextPosition = { ...selection.anchor, offset: 0 };
-  const block = findBlockById(nextState.document, blockId);
-  if (block && isTextBlock(block)) {
-    let foundComment = false;
-    for (const run of block.children) {
-      if (run.commentId === nextCommentId) {
-        foundComment = true;
-        continue;
-      }
-      if (foundComment) {
-        nextPosition = {
-          ...selection.anchor,
-          inlineId: run.id,
-          offset: 0,
-        };
-        break;
-      }
-    }
-  }
+  const commentId = createId();
+  const newComment = {
+    id: commentId,
+    author: "Current User",
+    date: Date.now(),
+    blocks: [{
+      id: createId(),
+      kind: "paragraph" as const,
+      align: "left" as const,
+      children: [{ id: createId(), text, marks: {} }]
+    }]
+  };
 
   return {
-    ...nextState,
+    ...state,
     document: {
-      ...nextState.document,
-      comments,
-    },
-    selection: { anchor: nextPosition, focus: nextPosition },
+      ...document,
+      comments: [...(document.comments || []), newComment]
+    }
   };
 }
 
@@ -365,9 +268,5 @@ export function registerAnnotationHandlers() {
   registerHandler(OperationType.INSERT_BOOKMARK, handleInsertBookmark);
   registerHandler(OperationType.INSERT_FOOTNOTE, handleInsertFootnote);
   registerHandler(OperationType.INSERT_ENDNOTE, handleInsertEndnote);
-  registerHandler(OperationType.INSERT_COMMENT, handleInsertComment);
-}
-
-leInsertEndnote);
   registerHandler(OperationType.INSERT_COMMENT, handleInsertComment);
 }

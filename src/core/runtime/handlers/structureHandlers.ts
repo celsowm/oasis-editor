@@ -4,7 +4,7 @@ import { isTextBlock, withBlockKind, TextRun, BlockNode } from "../../document/B
 import { LogicalPosition } from "../../selection/SelectionTypes.js";
 import { updateDocumentSections } from "../../document/DocumentMutationUtils.js";
 import { registerHandler } from "../OperationHandlers.js";
-import { OperationType } from "../../operations/OperationTypes.js";
+import { OperationType, InsertPageBreakOp } from "../../operations/OperationTypes.js";
 import { createPageBreak } from "../../document/DocumentFactory.js";
 
 function handleInsertParagraph(state: EditorState, op: any): EditorState {
@@ -124,6 +124,4 @@ export function registerStructureHandlers() {
   registerHandler(OperationType.INSERT_PARAGRAPH, handleInsertParagraph);
   registerHandler(OperationType.APPEND_PARAGRAPH, handleAppendParagraph);
   registerHandler(OperationType.INSERT_PAGE_BREAK, handleInsertPageBreak);
-}
-SERT_PAGE_BREAK, handleInsertPageBreak);
 }

@@ -39,6 +39,10 @@ export class DocumentRuntime implements IDocumentRuntime {
     return this.store.getState();
   }
 
+  setState(state: EditorState): void {
+    this.store.setState(state);
+  }
+
   setLayout(layout: LayoutState): void {
     this.latestLayout = layout;
   }

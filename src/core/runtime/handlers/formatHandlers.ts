@@ -55,7 +55,10 @@ export function registerFormatHandlers(): void {
 
     if (selectedImageId) {
       return updateDocumentSections(state, selectedImageId, (block) => {
-        if (block.kind === "image") return { ...block, align };
+        if (block.kind === "image") {
+          const safeAlign = align === "justify" ? "left" : align;
+          return { ...block, align: safeAlign as any };
+        }
         return block;
       });
     }

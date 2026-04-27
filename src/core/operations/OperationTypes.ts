@@ -155,6 +155,7 @@ export interface InsertTablePayload {
 }
 export interface InsertPageBreakPayload {
   newBlockId?: string;
+  pageBreakId?: string;
 }
 export interface InsertFieldPayload {
   field: FieldInfo;
@@ -179,12 +180,12 @@ export interface InsertBookmarkPayload {
   newRunId?: string;
 }
 export interface InsertFootnotePayload {
-  text: string;
+  text?: string;
   newRunId?: string;
   newBlockId?: string;
 }
 export interface InsertEndnotePayload {
-  text: string;
+  text?: string;
   newRunId?: string;
   newBlockId?: string;
 }
@@ -303,6 +304,16 @@ export type InsertEndnoteOp = Operation<
 export type InsertCommentOp = Operation<
   OperationType.INSERT_COMMENT,
   InsertCommentPayload
+>;
+
+export type SetIndentationOp = Operation<
+  OperationType.SET_INDENTATION,
+  SetIndentationPayload
+>;
+
+export type SetEditingModeOp = Operation<
+  OperationType.SET_EDITING_MODE,
+  SetEditingModePayload
 >;
 
 export type MoveBlockOp = Operation<OperationType.MOVE_BLOCK, MoveBlockPayload>;

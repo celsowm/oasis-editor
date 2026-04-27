@@ -25,6 +25,18 @@ export class InsertTextCommand implements EditorCommand<string> {
   }
 }
 
+export class DeleteTextCommand implements EditorCommand<void> {
+  execute(context: CommandContext, _args: void): void {
+    context.runtime.dispatch(Operations.deleteText());
+  }
+}
+
+export class InsertParagraphCommand implements EditorCommand<void> {
+  execute(context: CommandContext, _args: void): void {
+    context.runtime.dispatch(Operations.insertParagraph());
+  }
+}
+
 export class UndoCommand implements EditorCommand<void> {
   execute(context: CommandContext, _args: void): void {
     context.runtime.undo();

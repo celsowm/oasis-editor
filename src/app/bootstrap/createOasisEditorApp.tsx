@@ -82,12 +82,12 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
     runtime,
     presenter,
     view,
-    () => runtime.getLayout(),
+    () => runtime.getLayout()!,
   );
 
   const cursorCalc = new CursorPositionCalculator(
     measurementService,
-    () => runtime.getLayout(),
+    () => runtime.getLayout()!,
     () => getAllBlocks(runtime.getState().document),
     domHitTester,
   );
@@ -100,7 +100,7 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
 
   const zoneClick = new ZoneClickController(
     runtime,
-    () => runtime.getLayout(),
+    () => runtime.getLayout()!,
     () => PAGE_TEMPLATES,
     domHitTester,
   );
@@ -122,7 +122,7 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
   const tableDrag = new TableDragController(
     runtime,
     view,
-    () => runtime.getLayout(),
+    () => runtime.getLayout()!,
     domHitTester,
   );
 

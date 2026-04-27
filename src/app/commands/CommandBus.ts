@@ -13,12 +13,12 @@ export class CommandBus {
     this.commands.set(name, command);
   }
 
-  execute<T>(name: string, args: T): void {
+  execute<T>(name: string, args?: T): void {
     const command = this.commands.get(name);
     if (command) {
-      command.execute(this.context, args);
+      command.execute(this.context, args as T);
     } else {
-      Logger.warn(`Command not found: ${name}`);
+      console.warn(`Command not found: ${name}`);
     }
   }
 }

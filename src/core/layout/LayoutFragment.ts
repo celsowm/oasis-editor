@@ -16,6 +16,13 @@ export interface LineInfo {
   y: number;
   offsetStart: number;
   offsetEnd: number;
+  runs?: TextRun[];
+  typography?: {
+    fontFamily: string;
+    fontSize: number;
+    fontWeight: number;
+    lineHeight: number;
+  };
 }
 
 export interface LayoutFragment {

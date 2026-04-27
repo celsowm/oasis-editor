@@ -8,7 +8,7 @@ import {
 } from "../../../core/document/BlockTypes.js";
 import { createTextRun } from "../../../core/document/DocumentFactory.js";
 import { genId } from "../../../core/utils/IdGenerator.js";
-import { parseFieldInstruction } from "../../../core/document/FieldUtils.js";
+import { FieldUtils } from "../../../core/document/FieldUtils.js";
 import { childElements, firstChild, getAttr } from "./XmlUtils.js";
 import { halfPointToPx } from "../../../core/utils/Units.js";
 import { ParseContext } from "./ParseContext.js";
@@ -302,7 +302,7 @@ export class RunParser {
       }
     }
 
-    const field = parseFieldInstruction(instruction);
+    const field = FieldUtils.parseFieldInstruction(instruction);
     if (!field) return null;
 
     return createTextRun(resultText || field.type, baseMarks, undefined, field);
@@ -310,7 +310,7 @@ export class RunParser {
 
   private parseSimpleField(el: Element, ctx: ParseContext, baseMarks: MarkSet): TextRun | null {
     const instruction = getAttr(el, "instr") ?? "";
-    const field = parseFieldInstruction(instruction);
+    const field = FieldUtils.parseFieldInstruction(instruction);
     if (!field) return null;
 
     let resultText = "";

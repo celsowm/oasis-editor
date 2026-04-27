@@ -9,6 +9,7 @@ import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js"
 import { LineInfo } from "../layout/LayoutFragment.js";
 import { breakTextIntoLines } from "./LineBreaker.js";
 import type { IFontManager, BlockTypography } from "../typography/FontManager.js";
+import { SectionNode } from "../document/SectionTypes.js";
 
 export type { BlockTypography };
 
@@ -41,6 +42,19 @@ const getBlockTypography = (block: BlockNode, fontManager: IFontManager): BlockT
 
 export const DEFAULT_LIST_INDENTATION = 25;
 export const DEFAULT_ORDERED_LIST_INDENTATION = 30;
+
+export class ParagraphComposer {
+  constructor(
+    private measure: TextMeasurer,
+    private fontManager: IFontManager
+  ) {}
+
+  compose(block: BlockNode, maxWidth: number, _section: SectionNode): ComposedParagraph {
+    return composeParagraph(block, maxWidth, this.measure, this.fontManager);
+  }
+
+  get height(): number { return 0; } // Legacy compatibility if needed
+}
 
 export const composeParagraph = (
   block: BlockNode,

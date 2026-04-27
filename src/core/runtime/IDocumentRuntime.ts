@@ -4,10 +4,11 @@ import { LayoutState } from "../layout/LayoutTypes.js";
 
 export interface IDocumentRuntime {
   getState(): EditorState;
-  dispatch(operation: EditorOperation): void;
-  subscribe(listener: (state: EditorState) => void): () => void;
-  undo(): void;
-  redo(): void;
+  setState(state: EditorState): void; // Added for controllers that need to set raw state
   setLayout(layout: LayoutState): void;
   getLayout(): LayoutState | null;
+  subscribe(listener: (state: EditorState) => void): () => void;
+  dispatch(operation: EditorOperation): void;
+  undo(): void;
+  redo(): void;
 }

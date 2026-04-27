@@ -99,15 +99,18 @@ export class OasisEditorController {
 
   private setupViewBindings(): void {
     this.view.bind({
-      onKeyDown: (e) => this.commandBus.execute("keydown", e),
-      onInput: (text) => this.commandBus.execute("insertText", text),
+      onArrowKey: (key: string) => this.commandBus.execute("moveCaret", key),
+      onTextInput: (text: string) => this.commandBus.execute("insertText", text),
+      onDelete: () => this.commandBus.execute("deleteText"),
+      onEnter: () => this.commandBus.execute("enter"),
+      onEscape: () => {},
       onUndo: () => this.undo(),
       onRedo: () => this.redo(),
       onBold: () => this.execute("bold"),
       onItalic: () => this.execute("italic"),
       onUnderline: () => this.execute("underline"),
       // ... more bindings delegated to commandBus
-    });
+    } as any);
 
     this.runtime.subscribe(() => this.refresh());
   }
