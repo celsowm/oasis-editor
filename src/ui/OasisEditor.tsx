@@ -100,6 +100,11 @@ const OasisEditorContent: Component = () => {
         <ToolbarSeparator />
 
         <ToolbarGroup>
+          <ToolbarSelect id="oasis-editor-template" title={t("toolbar", "pageTemplate")} value={store.view?.pageTemplate?.name || 'A4'} onChange={(e: any) => store.events?.onTemplateChange(e.target.value)}>
+            <option value="A4">A4</option>
+            <option value="Letter">Letter</option>
+            <option value="Legal">Legal</option>
+          </ToolbarSelect>
           <ToolbarSelect id="oasis-editor-font-family" title={t("toolbar", "fontFamily")} value={ss()?.fontFamily || 'Inter'} onChange={(e: any) => store.events?.onFontFamilyChange(e.target.value)}>
             <option value="Inter">Inter</option>
             <option value="Roboto">Roboto</option>
@@ -162,6 +167,10 @@ const OasisEditorContent: Component = () => {
           />
         </ToolbarGroup>
       </Toolbar>
+
+      {/* Hidden inputs for legacy View compatibility */}
+      <input type="text" id="oasis-editor-input" style={{ position: 'fixed', top: '-100px', left: '-100px', opacity: 0 }} />
+      <input type="file" id="oasis-editor-import-docx-input" accept=".docx" style={{ display: 'none' }} />
 
       <main id="oasis-editor-app" class="oasis-editor-main">
         <RulerComponent
