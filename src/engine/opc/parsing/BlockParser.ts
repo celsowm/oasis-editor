@@ -16,7 +16,6 @@ import {
   createTableCell,
   createTextRun,
 } from "../../../core/document/DocumentFactory.js";
-import { genId } from "../../../core/utils/IdGenerator.js";
 import { childElements, firstChild, getAttr } from "./XmlUtils.js";
 import { ParseContext } from "./ParseContext.js";
 import { RunParser } from "./RunParser.js";
@@ -143,7 +142,7 @@ export class BlockParser {
 
     if (isOrdered) {
       return this.splitMixedContent(items, (runs) => ({
-        id: nextBlockId(),
+        id: ctx.idGenerator.nextBlockId(),
         kind: "ordered-list-item" as const,
         index: 1,
         level: ilvl,
@@ -154,7 +153,7 @@ export class BlockParser {
       }));
     } else {
       return this.splitMixedContent(items, (runs) => ({
-        id: nextBlockId(),
+        id: ctx.idGenerator.nextBlockId(),
         kind: "list-item" as const,
         align: align as any,
         level: ilvl,

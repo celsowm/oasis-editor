@@ -1,7 +1,10 @@
+import JSZip from "jszip";
 import { XMLBuilder } from "./XMLBuilder.js";
 import { Relationship } from "./OPCGraphBuilder.js";
 import { pxToHalfPoint } from "../../core/utils/Units.js";
 import { IFontManager } from "../../core/typography/FontManager.js";
+import { DocumentModel } from "../../core/document/DocumentTypes.js";
+import { WMLResult } from "./writing/WmlWriter.js";
 
 const CT_NS = "http://schemas.openxmlformats.org/package/2006/content-types";
 const RELS_NS = "http://schemas.openxmlformats.org/package/2006/relationships";
@@ -29,6 +32,25 @@ export class OPCPackageWriter {
 
   constructor(fontManager: IFontManager) {
     this.fontManager = fontManager;
+  }
+
+  async write(doc: DocumentModel, result: WMLResult): Promise<Uint8Array> {
+    const parts = this.build(
+        result.xml,
+        result.relationships,
+        result.imageParts,
+        result.footnotesXml,
+        result.endnotesXml,
+        result.commentsXml,
+        result.headerXml,
+        result.footerXml
+    );
+
+    const zip = new JSZip();
+    for (const [path, entry] of parts) {
+      zip.file(path, entry.content);
+    }
+    return zip.generateAsync({ type: "uint8array" });
   }
 
   build(
@@ -63,12 +85,12 @@ export class OPCPackageWriter {
     const docRels: Relationship[] = [
       ...docRelationships,
       {
-        id: `rId${docRelationships.length + 1}`,
+        id: `rIdN${docRelationships.length + 1}`,
         type: NUMBERING_REL,
         target: "numbering.xml",
       },
       {
-        id: `rId${docRelationships.length + 2}`,
+        id: `rIdS${docRelationships.length + 2}`,
         type: STYLES_REL,
         target: "styles.xml",
       },
@@ -83,7 +105,7 @@ export class OPCPackageWriter {
         content: footnotesXml,
       });
       docRels.push({
-        id: `rId${nextRelId++}`,
+        id: `rIdF${nextRelId++}`,
         type: FOOTNOTES_REL,
         target: "footnotes.xml",
       });
@@ -96,7 +118,7 @@ export class OPCPackageWriter {
         content: endnotesXml,
       });
       docRels.push({
-        id: `rId${nextRelId++}`,
+        id: `rIdE${nextRelId++}`,
         type: ENDNOTES_REL,
         target: "endnotes.xml",
       });
@@ -109,7 +131,7 @@ export class OPCPackageWriter {
         content: commentsXml,
       });
       docRels.push({
-        id: `rId${nextRelId++}`,
+        id: `rIdC${nextRelId++}`,
         type: COMMENTS_REL,
         target: "comments.xml",
       });

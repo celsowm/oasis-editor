@@ -49,6 +49,7 @@ export class ImportExportController {
               },
             }
           : null,
+        idGenerator: this.runtime.getState().idGenerator,
         editingMode: "main",
       });
     } catch (e) {

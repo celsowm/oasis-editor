@@ -7,7 +7,6 @@ import {
   ChartNode,
 } from "../../../core/document/BlockTypes.js";
 import { createTextRun } from "../../../core/document/DocumentFactory.js";
-import { genId } from "../../../core/utils/IdGenerator.js";
 import { FieldUtils } from "../../../core/document/FieldUtils.js";
 import { childElements, firstChild, getAttr } from "./XmlUtils.js";
 import { halfPointToPx } from "../../../core/utils/Units.js";
@@ -88,7 +87,7 @@ export class RunParser {
       }
 
       if (tag === "ins" || tag === "del") {
-        const revId = getAttr(child, "id") || genId("rev");
+        const revId = getAttr(child, "id") || ctx.idGenerator.nextBlockId();
         const author = getAttr(child, "author") || "Author";
         const dateStr = getAttr(child, "date");
         const date = dateStr ? new Date(dateStr).getTime() : Date.now();
@@ -172,7 +171,7 @@ export class RunParser {
           runs.push(fieldRun);
         }
       } else if (tag === "oMath" || tag === "oMathPara") {
-        const eq = this.drawingParser.parseEquation(child, tag === "oMathPara");
+        const eq = this.drawingParser.parseEquation(child, tag === "oMathPara", ctx);
         if (eq) {
           applyPendingStart(eq);
           applyCommentIds(eq);
@@ -202,22 +201,22 @@ export class RunParser {
 
       if (tag === "t" || tag === "delText") {
         const text = child.textContent ?? "";
-        if (text) result.push(createTextRun(text, { ...marks }));
+        if (text) result.push(createTextRun(text, { ...marks }, ctx.idGenerator));
       } else if (tag === "tab") {
-        result.push(createTextRun("\t", { ...marks }));
+        result.push(createTextRun("\t", { ...marks }, ctx.idGenerator));
       } else if (tag === "br") {
         const breakType = getAttr(child as Element, "type");
         if (breakType === "page") continue;
-        result.push(createTextRun("\n", { ...marks }));
+        result.push(createTextRun("\n", { ...marks }, ctx.idGenerator));
       } else if (tag === "noBreakHyphen") {
-        result.push(createTextRun("\u2011", { ...marks }));
+        result.push(createTextRun("\u2011", { ...marks }, ctx.idGenerator));
       } else if (tag === "softHyphen") {
-        result.push(createTextRun("\u00AD", { ...marks }));
+        result.push(createTextRun("\u00AD", { ...marks }, ctx.idGenerator));
       } else if (tag === "sym") {
         const char = getAttr(child as Element, "char");
         if (char) {
           const code = parseInt(char, 16);
-          if (!isNaN(code)) result.push(createTextRun(String.fromCharCode(code), { ...marks }));
+          if (!isNaN(code)) result.push(createTextRun(String.fromCharCode(code), { ...marks }, ctx.idGenerator));
         }
       } else if (tag === "AlternateContent") {
         const altRuns = this.parseAlternateContentRuns(child as Element, ctx, marks);
@@ -229,14 +228,14 @@ export class RunParser {
         const img = this.drawingParser.parseVmlPicture(child as Element, ctx);
         if (img) result.push(img);
       } else if (tag === "oMath" || tag === "oMathPara") {
-        const eq = this.drawingParser.parseEquation(child as Element, tag === "oMathPara");
+        const eq = this.drawingParser.parseEquation(child as Element, tag === "oMathPara", ctx);
         if (eq) result.push(eq);
       } else if (tag === "footnoteReference") {
         const id = getAttr(child as Element, "id");
-        if (id) result.push(createTextRun("", { ...marks }, undefined, undefined, undefined, undefined, id, undefined));
+        if (id) result.push(createTextRun("", { ...marks }, ctx.idGenerator, undefined, undefined, undefined, id, undefined));
       } else if (tag === "endnoteReference") {
         const id = getAttr(child as Element, "id");
-        if (id) result.push(createTextRun("", { ...marks }, undefined, undefined, undefined, undefined, undefined, id));
+        if (id) result.push(createTextRun("", { ...marks }, ctx.idGenerator, undefined, undefined, undefined, undefined, id));
       } else if (tag === "commentReference") {
         continue;
       }
@@ -267,7 +266,7 @@ export class RunParser {
         const img = this.drawingParser.parseVmlPicture(child as Element, ctx);
         if (img) result.push(img);
       } else if (tag === "oMath" || tag === "oMathPara") {
-        const eq = this.drawingParser.parseEquation(child as Element, tag === "oMathPara");
+        const eq = this.drawingParser.parseEquation(child as Element, tag === "oMathPara", ctx);
         if (eq) result.push(eq);
       }
     }
@@ -305,7 +304,7 @@ export class RunParser {
     const field = FieldUtils.parseFieldInstruction(instruction);
     if (!field) return null;
 
-    return createTextRun(resultText || field.type, baseMarks, undefined, field);
+    return createTextRun(resultText || field.type, baseMarks, ctx.idGenerator, field);
   }
 
   private parseSimpleField(el: Element, ctx: ParseContext, baseMarks: MarkSet): TextRun | null {
@@ -319,7 +318,7 @@ export class RunParser {
       if (t) resultText += t.textContent ?? "";
     }
 
-    return createTextRun(resultText || field.type, baseMarks, undefined, field);
+    return createTextRun(resultText || field.type, baseMarks, ctx.idGenerator, field);
   }
 
   buildMarks(rPr: Element | null, base: MarkSet = {}): MarkSet {

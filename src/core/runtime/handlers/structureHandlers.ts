@@ -8,7 +8,7 @@ import { OperationType, InsertPageBreakOp } from "../../operations/OperationType
 import { createPageBreak } from "../../document/DocumentFactory.js";
 
 function handleInsertParagraph(state: EditorState, op: any): EditorState {
-  const { selection } = state;
+  const { selection, idGenerator } = state;
   if (!selection) return state;
   const { blockId, inlineId, offset } = selection.anchor;
   const { newBlockId, newRunId } = op.payload;
@@ -53,7 +53,7 @@ function handleInsertParagraph(state: EditorState, op: any): EditorState {
 
         const newRun = {
           ...run,
-          id: newRunId || run.id + "_n",
+          id: newRunId || idGenerator.nextRunId(),
           text: afterText,
         };
         afterChildren.push(newRun);
@@ -69,7 +69,7 @@ function handleInsertParagraph(state: EditorState, op: any): EditorState {
     const p1 = { ...block, children: beforeChildren };
     const p2 = {
       ...block,
-      id: newBlockId || block.id + "_n",
+      id: newBlockId || idGenerator.nextBlockId(),
       children: afterChildren,
     };
     return [p1, p2];
@@ -77,7 +77,7 @@ function handleInsertParagraph(state: EditorState, op: any): EditorState {
 
   const newPos: LogicalPosition = {
     ...selection.anchor,
-    blockId: newBlockId || blockId,
+    blockId: (nextState.selection?.anchor.blockId) || blockId, // Fallback to original if layout didn't update it
     inlineId: targetInlineId,
     offset: 0,
   };
@@ -90,12 +90,14 @@ function handleInsertParagraph(state: EditorState, op: any): EditorState {
 
 function handleAppendParagraph(state: EditorState, op: any): EditorState {
   const { text, newBlockId, newRunId } = op.payload;
+  const { idGenerator } = state;
   const sections = state.document.sections;
   if (sections.length === 0) return state;
   const newPara: BlockNode = {
-    id: newBlockId,
+    id: newBlockId || idGenerator.nextBlockId(),
     kind: "paragraph",
-    children: [{ id: newRunId, text: text ?? "", marks: {} }],
+    align: "left",
+    children: [{ id: newRunId || idGenerator.nextRunId(), text: text ?? "", marks: {} }],
   } as BlockNode;
   const nextSections = sections.map((s, i) =>
     i === sections.length - 1
@@ -109,13 +111,13 @@ function handleAppendParagraph(state: EditorState, op: any): EditorState {
 }
 
 function handleInsertPageBreak(state: EditorState, op: InsertPageBreakOp): EditorState {
-  const { selection } = state;
+  const { selection, idGenerator } = state;
   if (!selection) return state;
   const { blockId } = selection.anchor;
   const { pageBreakId } = op.payload;
 
   return updateDocumentSections(state, blockId, (block) => {
-    const pb = createPageBreak(pageBreakId);
+    const pb = createPageBreak(pageBreakId, idGenerator);
     return [block, pb];
   });
 }

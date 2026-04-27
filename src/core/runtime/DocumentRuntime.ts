@@ -9,8 +9,11 @@ import { HistoryManager } from "./HistoryManager.js";
 import { createDocument } from "../document/DocumentFactory.js";
 import { isTextBlock } from "../document/BlockTypes.js";
 
+import { IdGenerator } from "../utils/IdGenerator.js";
+
 function createDefaultState(): EditorState {
-  const doc = createDocument();
+  const gen = new IdGenerator();
+  const doc = createDocument(gen);
   const firstSection = doc.sections[0];
   const firstBlock = firstSection.children[0];
   const firstInlineId = isTextBlock(firstBlock) ? firstBlock.children[0].id : "";
@@ -21,6 +24,7 @@ function createDefaultState(): EditorState {
       anchor: { sectionId: firstSection.id, blockId: firstBlock.id, inlineId: firstInlineId, offset: 0 },
       focus: { sectionId: firstSection.id, blockId: firstBlock.id, inlineId: firstInlineId, offset: 0 },
     },
+    idGenerator: gen,
     editingMode: "main",
   };
 }

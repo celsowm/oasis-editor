@@ -102,5 +102,4 @@ export interface FieldEvents {
   onInsertComment?: (text: string) => void;
 }
 
-// Combined type for backward compatibility
 export type ViewEventBindings = KeyboardEvents & MouseEvents & FormattingEvents & CommandEvents & ListEvents & ImageEvents & LinkEvents & TableEvents & FieldEvents;

@@ -3,18 +3,18 @@ import { DocumentImporter } from "../../core/import/DocumentImporter.js";
 import { createSection } from "../../core/document/DocumentFactory.js";
 import { SafeZipReader } from "../zip/SafeZipReader.js";
 import { OPCGraphBuilder } from "../opc/OPCGraphBuilder.js";
-import { WMLParser } from "../opc/WMLParser.js";
+import { WmlParser } from "../opc/parsing/WmlParser.js";
 import { StyleResolver, applyStylesToBlocks } from "../../core/document/StyleResolver.js";
 
 export class NativeDocxImporter implements DocumentImporter {
   private zipReader: SafeZipReader;
   private opcBuilder: OPCGraphBuilder;
-  private wmlParser: WMLParser;
+  private wmlParser: WmlParser;
 
   constructor() {
     this.zipReader = new SafeZipReader();
     this.opcBuilder = new OPCGraphBuilder();
-    this.wmlParser = new WMLParser();
+    this.wmlParser = new WmlParser();
   }
 
   public async importFromBuffer(arrayBuffer: ArrayBuffer): Promise<DocumentModel> {
@@ -55,15 +55,15 @@ export class NativeDocxImporter implements DocumentImporter {
           : Date.now(),
       },
       sections: [section],
-      footnotes: documentIR.notes.getByType("footnote").map((n) => ({ id: n.id, blocks: applyStylesToBlocks(n.blocks, resolver) })),
-      endnotes: documentIR.notes.getByType("endnote").map((n) => ({ id: n.id, blocks: applyStylesToBlocks(n.blocks, resolver) })),
-      comments: Array.from(documentIR.comments.values()).map((c) => ({
+      footnotes: documentIR.notes.getByType("footnote").map((n: any) => ({ id: n.id, blocks: applyStylesToBlocks(n.blocks, resolver) })),
+      endnotes: documentIR.notes.getByType("endnote").map((n: any) => ({ id: n.id, blocks: applyStylesToBlocks(n.blocks, resolver) })),
+      comments: Array.from(documentIR.comments.values()).map((c: any) => ({
         id: c.id,
         author: c.author,
         date: c.date ? c.date.getTime() : undefined,
         blocks: applyStylesToBlocks(c.blocks, resolver),
       })),
-      styles: Array.from(documentIR.styles.values()).map((s) => ({
+      styles: Array.from(documentIR.styles.values()).map((s: any) => ({
         styleId: s.styleId,
         type: s.type,
         name: s.name,

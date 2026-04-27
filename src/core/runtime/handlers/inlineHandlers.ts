@@ -4,7 +4,6 @@ import { isTextBlock, TextRun } from "../../document/BlockTypes.js";
 import { areMarksEqual } from "../../document/MarkUtils.js";
 import { LogicalPosition } from "../../selection/SelectionTypes.js";
 import { updateDocumentSections } from "../../document/DocumentMutationUtils.js";
-import { genId } from "../../utils/IdGenerator.js";
 import { registerHandler } from "../OperationHandlers.js";
 import { OperationType, SetSelectionOp, InsertTextOp, DeleteTextOp } from "../../operations/OperationTypes.js";
 
@@ -30,10 +29,10 @@ function handleSetSelection(state: EditorState, op: SetSelectionOp): EditorState
 }
 
 function handleInsertText(state: EditorState, op: InsertTextOp): EditorState {
-  const { selection, document, pendingMarks } = state;
+  const { selection, document, pendingMarks, idGenerator } = state;
   if (!selection) return state;
   const { blockId, inlineId, offset } = selection.anchor;
-  const { text, newRunIds } = op.payload;
+  const { text } = op.payload;
 
   const oldBlock = findBlockById(document, blockId);
   let absoluteOffset = 0;
@@ -50,7 +49,6 @@ function handleInsertText(state: EditorState, op: InsertTextOp): EditorState {
   const nextState = updateDocumentSections(state, blockId, (block) => {
     if (!isTextBlock(block)) return block;
     const nextChildren: TextRun[] = [];
-    let runIdx = 0;
     for (const run of block.children) {
       if (run.id !== inlineId) {
         nextChildren.push(run);
@@ -63,7 +61,7 @@ function handleInsertText(state: EditorState, op: InsertTextOp): EditorState {
         if (beforeText)
           nextChildren.push({
             ...run,
-            id: newRunIds?.[runIdx++] || run.id + "_b",
+            id: idGenerator.nextRunId(),
             text: beforeText,
           });
         const combinedMarks = { ...run.marks, ...pendingMarks };
@@ -75,7 +73,7 @@ function handleInsertText(state: EditorState, op: InsertTextOp): EditorState {
         Object.assign(combinedMarks, cleaned);
 
         nextChildren.push({
-          id: newRunIds?.[runIdx++] || run.id + "_t",
+          id: idGenerator.nextRunId(),
           text,
           marks: combinedMarks,
           ...(state.trackChangesEnabled ? {
@@ -83,14 +81,14 @@ function handleInsertText(state: EditorState, op: InsertTextOp): EditorState {
               type: "insert" as const,
               author: "Author",
               date: Date.now(),
-              id: genId("rev"),
+              id: idGenerator.nextBlockId(), // use blockId generator for revision id for now
             },
           } : {}),
         });
         if (afterText)
           nextChildren.push({
             ...run,
-            id: newRunIds?.[runIdx++] || run.id + "_a",
+            id: idGenerator.nextRunId(),
             text: afterText,
           });
       } else {
@@ -98,24 +96,24 @@ function handleInsertText(state: EditorState, op: InsertTextOp): EditorState {
           if (beforeText)
             nextChildren.push({
               ...run,
-              id: newRunIds?.[runIdx++] || run.id + "_b",
+              id: idGenerator.nextRunId(),
               text: beforeText,
             });
           nextChildren.push({
-            id: newRunIds?.[runIdx++] || run.id + "_t",
+            id: idGenerator.nextRunId(),
             text,
             marks: { ...run.marks },
             revision: {
               type: "insert" as const,
               author: "Author",
               date: Date.now(),
-              id: genId("rev"),
+              id: idGenerator.nextBlockId(),
             },
           });
           if (afterText)
             nextChildren.push({
               ...run,
-              id: newRunIds?.[runIdx++] || run.id + "_a",
+              id: idGenerator.nextRunId(),
               text: afterText,
             });
         } else {
@@ -200,8 +198,7 @@ function handleDeleteText(state: EditorState, op: DeleteTextOp): EditorState {
   }
 
   if (absoluteOffset === 0) {
-      // Merge with previous block if possible (not implemented here for brevity,
-      // but logic would call tryMergeSiblings)
+      // Merge with previous block if possible
       return state;
   }
 
@@ -247,23 +244,15 @@ function handleDeleteText(state: EditorState, op: DeleteTextOp): EditorState {
   };
 }
 
-/**
- * Delete text between anchor and focus positions (range delete).
- * Only supports single-block ranges for now; cross-block deletion would
- * need mergeBlock logic.
- */
 function deleteTextRange(state: EditorState): EditorState {
   const { selection } = state;
   if (!selection) return state;
 
   const { blockId } = selection.anchor;
-  // Ensure both anchor and focus are in the same block
   if (selection.anchor.blockId !== selection.focus.blockId) {
-    // Cross-block deletion not supported — fallback to no-op
     return state;
   }
 
-  // Calculate absolute offsets for both positions
   const block = findBlockById(state.document, blockId);
   if (!block || !isTextBlock(block)) return state;
 
@@ -293,7 +282,6 @@ function deleteTextRange(state: EditorState): EditorState {
   const startAbs = Math.min(anchorAbs, focusAbs);
   const endAbs = Math.max(anchorAbs, focusAbs);
 
-  // Rebuild runs, slicing text in the range [startAbs, endAbs)
   const nextChildren: TextRun[] = [];
   let acc = 0;
   for (const run of block.children) {
@@ -302,10 +290,8 @@ function deleteTextRange(state: EditorState): EditorState {
     const runEnd = acc + runLen;
 
     if (endAbs <= runStart || startAbs >= runEnd) {
-      // Range doesn't overlap this run — keep as-is
       nextChildren.push(run);
     } else {
-      // Range overlaps — slice out the deleted portion
       const sliceStart = Math.max(0, startAbs - runStart);
       const sliceEnd = Math.min(runLen, endAbs - runStart);
       const before = run.text.substring(0, sliceStart);
@@ -322,7 +308,6 @@ function deleteTextRange(state: EditorState): EditorState {
     isTextBlock(b) ? { ...b, children: nextChildren } : b,
   );
 
-  // Place cursor at the start of the deleted range
   let newPos: LogicalPosition = { ...selection.anchor };
   acc = 0;
   for (const run of nextChildren) {

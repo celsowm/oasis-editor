@@ -2,12 +2,11 @@ import { OperationType, InsertFieldOp, InsertEquationOp, InsertBookmarkOp, Inser
 import { EditorState } from "../EditorState.js";
 import { registerHandler } from "../OperationHandlers.js";
 import { isTextBlock } from "../../document/BlockTypes.js";
-import { createId } from "../../utils/IdGenerator.js";
 import { FieldUtils } from "../../document/FieldUtils.js";
 
 function handleInsertField(state: EditorState, op: InsertFieldOp): EditorState {
   const { field } = op.payload;
-  const { document, selection } = state;
+  const { document, selection, idGenerator } = state;
   if (!selection) return state;
   const { anchor } = selection;
 
@@ -22,7 +21,7 @@ function handleInsertField(state: EditorState, op: InsertFieldOp): EditorState {
 
   const newInline = {
     ...inline,
-    id: createId(),
+    id: idGenerator.nextRunId(),
     text: FieldUtils.getPlaceholder(field.type),
     field: {
       type: field.type,
@@ -51,7 +50,7 @@ function handleInsertField(state: EditorState, op: InsertFieldOp): EditorState {
 
 function handleInsertEquation(state: EditorState, op: InsertEquationOp): EditorState {
   const { latex, display } = op.payload;
-  const { document, selection } = state;
+  const { document, selection, idGenerator } = state;
   if (!selection) return state;
   const { anchor } = selection;
 
@@ -62,7 +61,7 @@ function handleInsertEquation(state: EditorState, op: InsertEquationOp): EditorS
   if (!block || !isTextBlock(block)) return state;
 
   const newBlock = {
-    id: createId(),
+    id: idGenerator.nextBlockId(),
     kind: "equation" as const,
     latex,
     display,
@@ -90,7 +89,7 @@ function handleInsertEquation(state: EditorState, op: InsertEquationOp): EditorS
 
 function handleInsertBookmark(state: EditorState, op: InsertBookmarkOp): EditorState {
   const { name } = op.payload;
-  const { document, selection } = state;
+  const { document, selection, idGenerator } = state;
   if (!selection) return state;
   const { anchor } = selection;
 
@@ -105,7 +104,7 @@ function handleInsertBookmark(state: EditorState, op: InsertBookmarkOp): EditorS
 
   const newInline = {
     ...inline,
-    id: createId(),
+    id: idGenerator.nextRunId(),
     marks: {
       ...inline.marks,
       bookmark: name
@@ -132,7 +131,7 @@ function handleInsertBookmark(state: EditorState, op: InsertBookmarkOp): EditorS
 }
 
 function handleInsertFootnote(state: EditorState, _op: InsertFootnoteOp): EditorState {
-  const { document, selection } = state;
+  const { document, selection, idGenerator } = state;
   if (!selection) return state;
   const { anchor } = selection;
 
@@ -145,20 +144,20 @@ function handleInsertFootnote(state: EditorState, _op: InsertFootnoteOp): Editor
   const inline = block.children.find(i => i.id === anchor.inlineId);
   if (!inline) return state;
 
-  const footnoteId = createId();
+  const footnoteId = idGenerator.nextBlockId();
   const newInline = {
     ...inline,
-    id: createId(),
+    id: idGenerator.nextRunId(),
     footnoteId
   };
 
   const newFootnote = {
     id: footnoteId,
     blocks: [{
-      id: createId(),
+      id: idGenerator.nextBlockId(),
       kind: "paragraph" as const,
       align: "left" as const,
-      children: [{ id: createId(), text: "", marks: {} }]
+      children: [{ id: idGenerator.nextRunId(), text: "", marks: {} }]
     }]
   };
 
@@ -184,7 +183,7 @@ function handleInsertFootnote(state: EditorState, _op: InsertFootnoteOp): Editor
 }
 
 function handleInsertEndnote(state: EditorState, _op: InsertEndnoteOp): EditorState {
-  const { document, selection } = state;
+  const { document, selection, idGenerator } = state;
   if (!selection) return state;
   const { anchor } = selection;
 
@@ -197,20 +196,20 @@ function handleInsertEndnote(state: EditorState, _op: InsertEndnoteOp): EditorSt
   const inline = block.children.find(i => i.id === anchor.inlineId);
   if (!inline) return state;
 
-  const endnoteId = createId();
+  const endnoteId = idGenerator.nextBlockId();
   const newInline = {
     ...inline,
-    id: createId(),
+    id: idGenerator.nextRunId(),
     endnoteId
   };
 
   const newEndnote = {
     id: endnoteId,
     blocks: [{
-      id: createId(),
+      id: idGenerator.nextBlockId(),
       kind: "paragraph" as const,
       align: "left" as const,
-      children: [{ id: createId(), text: "", marks: {} }]
+      children: [{ id: idGenerator.nextRunId(), text: "", marks: {} }]
     }]
   };
 
@@ -236,20 +235,19 @@ function handleInsertEndnote(state: EditorState, _op: InsertEndnoteOp): EditorSt
 
 function handleInsertComment(state: EditorState, op: InsertCommentOp): EditorState {
   const { text } = op.payload;
-  const { document, selection } = state;
+  const { document, selection, idGenerator } = state;
   if (!selection) return state;
-  const { anchor, focus } = selection;
 
-  const commentId = createId();
+  const commentId = idGenerator.nextBlockId();
   const newComment = {
     id: commentId,
     author: "Current User",
     date: Date.now(),
     blocks: [{
-      id: createId(),
+      id: idGenerator.nextBlockId(),
       kind: "paragraph" as const,
       align: "left" as const,
-      children: [{ id: createId(), text, marks: {} }]
+      children: [{ id: idGenerator.nextRunId(), text, marks: {} }]
     }]
   };
 

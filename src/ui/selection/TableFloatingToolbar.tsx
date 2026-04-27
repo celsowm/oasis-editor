@@ -103,8 +103,6 @@ export class TableFloatingToolbar {
       rect: null,
     });
     this.setState = setState;
-
-    // We still need a dummy element because the legacy View expects one to be managed
     this.element = document.createElement("div");
 
     this.dispose = render(() => (

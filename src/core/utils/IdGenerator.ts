@@ -38,9 +38,3 @@ export class IdGenerator {
     this.tableCounter = 0;
   }
 }
-
-/** Legacy random-ID helper (kept for backward compat). */
-export const genId = (prefix: string): string =>
-  `${prefix}:${Date.now().toString(36)}:${Math.random().toString(36).substring(2, 8)}`;
-
-export const createId = (): string => Math.random().toString(36).substring(2, 11);

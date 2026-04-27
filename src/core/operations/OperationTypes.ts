@@ -378,6 +378,3 @@ export type EditorOperation =
   | Operation<OperationType.INCREASE_INDENT, {}>
   | Operation<OperationType.SET_INDENTATION, SetIndentationPayload>
   | Operation<OperationType.SET_EDITING_MODE, SetEditingModePayload>;
-
-/** @deprecated Use OperationType enum directly */
-export const OPERATION_TYPES = OperationType;

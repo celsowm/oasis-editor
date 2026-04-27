@@ -1,16 +1,16 @@
-import JSZip from "jszip";
 import { DocumentExporter } from "../../core/export/DocumentExporter.js";
 import { DocumentModel } from "../../core/document/DocumentTypes.js";
-import { WMLWriter } from "../opc/WMLWriter.js";
+import { WmlWriter } from "../opc/writing/WmlWriter.js";
 import { OPCPackageWriter } from "../opc/OPCPackageWriter.js";
 import { IFontManager } from "../../core/typography/FontManager.js";
+import { LayoutState } from "../../core/layout/LayoutTypes.js";
 
 export class NativeDocxExporter implements DocumentExporter {
-  private wmlWriter: WMLWriter;
+  private wmlWriter: WmlWriter;
   private opcWriter: OPCPackageWriter;
 
   constructor(fontManager: IFontManager) {
-    this.wmlWriter = new WMLWriter();
+    this.wmlWriter = new WmlWriter();
     this.opcWriter = new OPCPackageWriter(fontManager);
   }
 
@@ -21,24 +21,9 @@ export class NativeDocxExporter implements DocumentExporter {
     });
   }
 
-  async exportToBuffer(document: DocumentModel): Promise<ArrayBuffer> {
+  async exportToBuffer(document: DocumentModel, _layout?: LayoutState): Promise<ArrayBuffer> {
     const wmlResult = this.wmlWriter.write(document);
-    const parts = this.opcWriter.build(
-      wmlResult.xml,
-      wmlResult.relationships,
-      wmlResult.imageParts,
-      wmlResult.footnotesXml,
-      wmlResult.endnotesXml,
-      wmlResult.commentsXml,
-      wmlResult.headerXml,
-      wmlResult.footerXml,
-    );
-
-    const zip = new JSZip();
-    for (const part of parts.values()) {
-      zip.file(part.name, part.content);
-    }
-
-    return zip.generateAsync({ type: "arraybuffer" });
+    const uint8 = await this.opcWriter.write(document, wmlResult);
+    return uint8.buffer as ArrayBuffer;
   }
 }

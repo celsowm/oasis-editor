@@ -3,7 +3,6 @@ import { OperationType, AcceptRevisionOp, RejectRevisionOp } from "../../operati
 import { EditorState } from "../EditorState.js";
 import { updateDocumentSections } from "./sharedHelpers.js";
 import { isTextBlock, TextRun } from "../../document/BlockTypes.js";
-import { genId } from "../../utils/IdGenerator.js";
 
 export function registerRevisionHandlers(): void {
   registerHandler(OperationType.TOGGLE_TRACK_CHANGES, (state) => {

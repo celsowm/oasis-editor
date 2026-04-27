@@ -21,12 +21,11 @@ import {
 } from "./OperationTypes.js";
 import { EditorSelection } from "../selection/SelectionTypes.js";
 import { MarkSet, FieldInfo } from "../document/BlockTypes.js";
-import { genId } from "../utils/IdGenerator.js";
 
 export const Operations = {
   appendParagraph: (text: string): AppendParagraphOp => ({
     type: OperationType.APPEND_PARAGRAPH,
-    payload: { text, newBlockId: genId("block"), newRunId: genId("run") },
+    payload: { text },
   }),
   setSectionTemplate: (
     sectionId: string,
@@ -44,7 +43,7 @@ export const Operations = {
   }),
   insertText: (text: string): InsertTextOp => ({
     type: OperationType.INSERT_TEXT,
-    payload: { text, newRunIds: [genId("run"), genId("run"), genId("run")] },
+    payload: { text },
   }),
   deleteText: (): DeleteTextOp => ({
     type: OperationType.DELETE_TEXT,
@@ -52,7 +51,7 @@ export const Operations = {
   }),
   insertParagraph: (): InsertParagraphOp => ({
     type: OperationType.INSERT_PARAGRAPH,
-    payload: { newBlockId: genId("block"), newRunId: genId("run") },
+    payload: {},
   }),
   moveSelection: (key: string): MoveSelectionOp => ({
     type: OperationType.MOVE_SELECTION,
@@ -95,7 +94,6 @@ export const Operations = {
       displayWidth,
       align,
       alt,
-      newBlockId: genId("block"),
     },
   }),
   resizeImage: (
@@ -119,24 +117,12 @@ export const Operations = {
     type: OperationType.UPDATE_IMAGE,
     payload: { blockId, alt, width, height },
   }),
-  insertTable: (rows: number, cols: number): EditorOperation => {
-    const newTableId = genId("table");
-    const newRowIds = Array.from({ length: rows }, () => genId("row"));
-    const newCellIds = Array.from({ length: rows * cols }, () => genId("cell"));
-    const newParaIds = Array.from({ length: rows * cols }, () =>
-      genId("block"),
-    );
-    const newRunIds = Array.from({ length: rows * cols }, () => genId("run"));
+  insertTable: (rows: number, cols: number): InsertTableOp => {
     return {
       type: OperationType.INSERT_TABLE,
       payload: {
         rows,
         cols,
-        newTableId,
-        newRowIds,
-        newCellIds,
-        newParaIds,
-        newRunIds,
       },
     };
   },
@@ -244,11 +230,11 @@ export const Operations = {
   }),
   insertPageBreak: (): EditorOperation => ({
     type: OperationType.INSERT_PAGE_BREAK,
-    payload: { newBlockId: genId("block") },
+    payload: {},
   }),
   insertField: (field: FieldInfo): EditorOperation => ({
     type: OperationType.INSERT_FIELD,
-    payload: { field, newRunId: genId("run") },
+    payload: { field },
   }),
   setStyle: (styleId: string): EditorOperation => ({
     type: OperationType.SET_STYLE,
@@ -271,22 +257,22 @@ export const Operations = {
     display = false,
   ): EditorOperation => ({
     type: OperationType.INSERT_EQUATION,
-    payload: { latex, display, newBlockId: genId("block") },
+    payload: { latex, display },
   }),
   insertBookmark: (name: string): EditorOperation => ({
     type: OperationType.INSERT_BOOKMARK,
-    payload: { name, newRunId: genId("run") },
+    payload: { name },
   }),
   insertFootnote: (): EditorOperation => ({
     type: OperationType.INSERT_FOOTNOTE,
-    payload: { text: "", newRunId: genId("run"), newBlockId: genId("block") },
+    payload: { text: "" },
   }),
   insertEndnote: (): EditorOperation => ({
     type: OperationType.INSERT_ENDNOTE,
-    payload: { text: "", newRunId: genId("run"), newBlockId: genId("block") },
+    payload: { text: "" },
   }),
   insertComment: (text: string): EditorOperation => ({
     type: OperationType.INSERT_COMMENT,
-    payload: { text, newRunId: genId("run"), newBlockId: genId("block") },
+    payload: { text },
   }),
 };

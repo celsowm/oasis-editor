@@ -52,8 +52,6 @@ export class ParagraphComposer {
   compose(block: BlockNode, maxWidth: number, _section: SectionNode): ComposedParagraph {
     return composeParagraph(block, maxWidth, this.measure, this.fontManager);
   }
-
-  get height(): number { return 0; } // Legacy compatibility if needed
 }
 
 export const composeParagraph = (
