@@ -6,9 +6,9 @@ import { LogicalPosition } from "../../selection/SelectionTypes.js";
 import { updateDocumentSections } from "../../document/DocumentMutationUtils.js";
 import { genId } from "../../utils/IdGenerator.js";
 import { registerHandler } from "../OperationHandlers.js";
-import { OperationType } from "../../operations/OperationTypes.js";
+import { OperationType, SetSelectionOp, InsertTextOp, DeleteTextOp } from "../../operations/OperationTypes.js";
 
-function handleSetSelection(state: EditorState, op: any): EditorState {
+function handleSetSelection(state: EditorState, op: SetSelectionOp): EditorState {
   const newSelection = op.payload.selection;
   
   // Clear pending marks if selection actually moves to a different position
@@ -29,7 +29,7 @@ function handleSetSelection(state: EditorState, op: any): EditorState {
   };
 }
 
-function handleInsertText(state: EditorState, op: any): EditorState {
+function handleInsertText(state: EditorState, op: InsertTextOp): EditorState {
   const { selection, document, pendingMarks } = state;
   if (!selection) return state;
   const { blockId, inlineId, offset } = selection.anchor;
@@ -43,7 +43,7 @@ function handleInsertText(state: EditorState, op: any): EditorState {
         absoluteOffset += offset;
         break;
       }
-      accRun: absoluteOffset += run.text.length;
+      absoluteOffset += run.text.length;
     }
   }
 
@@ -67,14 +67,12 @@ function handleInsertText(state: EditorState, op: any): EditorState {
             text: beforeText,
           });
         const combinedMarks = { ...run.marks, ...pendingMarks };
-        if (pendingMarks) {
-          const cleaned = Object.fromEntries(
-            Object.entries(pendingMarks).filter(
-              ([, v]) => v !== undefined && v !== false,
-            ),
-          );
-          Object.assign(combinedMarks, cleaned);
-        }
+        const cleaned = Object.fromEntries(
+          Object.entries(pendingMarks).filter(
+            ([, v]) => v !== undefined && v !== false,
+          ),
+        );
+        Object.assign(combinedMarks, cleaned);
 
         nextChildren.push({
           id: newRunIds?.[runIdx++] || run.id + "_t",
@@ -175,7 +173,7 @@ function handleInsertText(state: EditorState, op: any): EditorState {
   };
 }
 
-function handleDeleteText(state: EditorState, op: any): EditorState {
+function handleDeleteText(state: EditorState, op: DeleteTextOp): EditorState {
   const { selection, document } = state;
   if (!selection) return state;
 

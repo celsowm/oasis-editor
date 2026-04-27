@@ -1,4 +1,4 @@
-import { DocumentRuntime } from "../../core/runtime/DocumentRuntime.js";
+import { IDocumentRuntime } from "../../core/runtime/IDocumentRuntime.js";
 import { Operations } from "../../core/operations/OperationFactory.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { PageTemplate } from "../../core/pages/PageTemplateTypes.js";
@@ -8,7 +8,7 @@ import { DomHitTester } from "../services/DomHitTester.js";
 
 export class ZoneClickController {
   constructor(
-    private runtime: DocumentRuntime,
+    private runtime: IDocumentRuntime,
     private getLatestLayout: () => LayoutState | null,
     private getTemplates: () => Record<string, PageTemplate>,
     private domHitTester: DomHitTester,

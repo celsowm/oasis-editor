@@ -1,15 +1,19 @@
 import { LayoutFragment } from "../layout/LayoutFragment.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
-import { BlockNode, ImageNode, EquationNode, ChartNode } from "../document/BlockTypes.js";
-import { composeParagraph } from "../composition/ParagraphComposer.js";
+import { BlockNode } from "../document/BlockTypes.js";
 import { SectionNode } from "../document/SectionTypes.js";
 import { IFontManager } from "../typography/FontManager.js";
+import { getBlockBehavior } from "../document/BlockBehavior.js";
 
 export interface MeasuredBlockResult {
   height: number;
   fragments: LayoutFragment[];
 }
 
+/**
+ * Measures a list of blocks using the strategy pattern (BlockBehavior).
+ * Open for extension, closed for modification.
+ */
 export function measureTextBlocks(
   blocks: BlockNode[],
   width: number,
@@ -21,150 +25,23 @@ export function measureTextBlocks(
   const fragments: LayoutFragment[] = [];
 
   for (const block of blocks) {
-    if (block.kind === "image") {
-      const imgResult = measureImageBlock(block, width, section, fontManager);
-      fragments.push(imgResult.fragment);
-      localY += imgResult.height + 12;
-    } else if (block.kind === "equation") {
-      const eqResult = measureEquationBlock(block, width, section, fontManager);
-      fragments.push(eqResult.fragment);
-      localY += eqResult.height + 12;
-    } else if (block.kind === "chart") {
-      const chartResult = measureChartBlock(block, width, section, fontManager);
-      fragments.push(chartResult.fragment);
-      localY += chartResult.height + 12;
-    } else if (
-      block.kind === "paragraph" ||
-      block.kind === "heading" ||
-      block.kind === "list-item" ||
-      block.kind === "ordered-list-item"
-    ) {
-      const composed = composeParagraph(block, width, measure, fontManager);
-      const textLength = block.children
-        .map((child) => child.text)
-        .join("").length;
-      fragments.push({
-        id: `fragment:${block.id}:0`,
-        blockId: block.id,
-        sectionId: section.id,
-        pageId: "",
-        fragmentIndex: 0,
-        kind: block.kind,
-        startOffset: 0,
-        endOffset: textLength,
-        text: composed.text,
-        rect: { x: 0, y: localY, width: width, height: composed.totalHeight },
-        typography: composed.typography,
-        runs: composed.runs,
-        marks: {},
-        lines: composed.lines.map((l) => ({ ...l, y: l.y + localY })),
-        align: composed.align,
-        indentation: composed.indentation,
-        listNumber: composed.listNumber,
-      });
-      localY += composed.totalHeight + 12;
+    const behavior = getBlockBehavior(block.kind);
+    
+    if (behavior) {
+      const result = behavior.measure(block, width, measure, section, fontManager, localY);
+      
+      // Update fragment metadata that behavior might not know about
+      for (const fragment of result.fragments) {
+        fragment.sectionId = section.id;
+        fragments.push(fragment);
+      }
+      
+      localY += result.height + 12; // 12px spacing between blocks
+    } else {
+      // Fallback for unknown block types
+      console.warn(`[LayoutEngine] No behavior registered for block kind: ${block.kind}`);
     }
   }
 
   return { height: localY, fragments };
-}
-
-export function measureImageBlock(
-  block: ImageNode,
-  width: number,
-  section: SectionNode,
-  fontManager: IFontManager,
-): { fragment: LayoutFragment; height: number } {
-  const imgW = Math.min(block.width, width);
-  const scale = imgW / block.width;
-  const imgH = Math.round(block.height * scale);
-
-  const fragment: LayoutFragment = {
-    id: `fragment:${block.id}:0`,
-    blockId: block.id,
-    sectionId: section.id,
-    pageId: "",
-    fragmentIndex: 0,
-    kind: "image",
-    startOffset: 0,
-    endOffset: 0,
-    text: "",
-    rect: { x: 0, y: 0, width: imgW, height: imgH },
-    typography: { ...fontManager.getTypographyForBlock("image"), fontFamily: "" }, // image usually doesn't need font, but we keep the structure
-    runs: [],
-    marks: {},
-    lines: [],
-    align: block.align,
-    imageSrc: block.src,
-    imageAlt: block.alt ?? "",
-  };
-
-  return { fragment, height: imgH };
-}
-
-export function measureEquationBlock(
-  block: EquationNode,
-  width: number,
-  section: SectionNode,
-  fontManager: IFontManager,
-): { fragment: LayoutFragment; height: number } {
-  const typography = fontManager.getTypographyForBlock("math");
-  const lineHeight = Math.round(typography.fontSize * typography.lineHeight);
-  const display = block.display ?? false;
-  const height = display ? lineHeight * 2 : lineHeight;
-
-  const fragment: LayoutFragment = {
-    id: `fragment:${block.id}:0`,
-    blockId: block.id,
-    sectionId: section.id,
-    pageId: "",
-    fragmentIndex: 0,
-    kind: "equation",
-    startOffset: 0,
-    endOffset: block.latex.length,
-    text: block.latex,
-    rect: { x: 0, y: 0, width, height },
-    typography,
-    runs: [],
-    marks: {},
-    lines: [],
-    align: display ? "center" : "left",
-    equationLatex: block.latex,
-    equationDisplay: display,
-  };
-
-  return { fragment, height };
-}
-
-export function measureChartBlock(
-  block: ChartNode,
-  width: number,
-  section: SectionNode,
-  fontManager: IFontManager,
-): { fragment: LayoutFragment; height: number } {
-  const chartW = Math.min(block.width ?? 400, width);
-  const chartH = block.height ?? 250;
-  const typography = fontManager.getTypographyForBlock("chart");
-
-  const fragment: LayoutFragment = {
-    id: `fragment:${block.id}:0`,
-    blockId: block.id,
-    sectionId: section.id,
-    pageId: "",
-    fragmentIndex: 0,
-    kind: "chart",
-    startOffset: 0,
-    endOffset: 0,
-    text: block.title || `[${block.chartType} chart]`,
-    rect: { x: 0, y: 0, width: chartW, height: chartH },
-    typography,
-    runs: [],
-    marks: {},
-    lines: [],
-    align: "center",
-    chartType: block.chartType,
-    chartTitle: block.title,
-  };
-
-  return { fragment, height: chartH };
 }

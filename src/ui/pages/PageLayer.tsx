@@ -1,6 +1,7 @@
 import { Component, For, Show } from "solid-js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { FragmentRenderer } from "./FragmentRenderer.tsx";
+import { useI18n } from "../I18nContext.tsx";
 
 export interface PageLayerProps {
   layout: LayoutState | null;
@@ -8,6 +9,8 @@ export interface PageLayerProps {
 }
 
 export const PageLayerComponent: Component<PageLayerProps> = (props) => {
+  const { t } = useI18n();
+
   return (
     <For each={props.layout?.pages}>
       {(page) => {
@@ -41,7 +44,7 @@ export const PageLayerComponent: Component<PageLayerProps> = (props) => {
                 }}
               >
                 <div class="oasis-header-line"></div>
-                <div class="oasis-header-label">Cabeçalho</div>
+                <div class="oasis-header-label">{t("editor", "header")}</div>
               </div>
               <For each={page.headerFragments}>
                 {(frag) => <FragmentRenderer fragment={frag} isDimmed={props.editingMode !== "header"} />}
@@ -68,7 +71,7 @@ export const PageLayerComponent: Component<PageLayerProps> = (props) => {
                 }}
               >
                 <div class="oasis-footer-line"></div>
-                <div class="oasis-footer-label">Rodapé</div>
+                <div class="oasis-footer-label">{t("editor", "footer")}</div>
               </div>
               <For each={page.footerFragments}>
                 {(frag) => <FragmentRenderer fragment={frag} isDimmed={props.editingMode !== "footer"} />}

@@ -2,6 +2,7 @@ import { Component, createSignal, onMount, onCleanup, For, Show } from "solid-js
 import { render, Portal } from "solid-js/web";
 import { TablePickerListener } from "../../app/events/ViewEventBindings.js";
 import { dropdownManager } from "./DropdownManager.js";
+import { useI18n } from "../I18nContext.tsx";
 
 export interface TablePickerProps {
   onTableSelected: (rows: number, cols: number) => void;
@@ -9,6 +10,7 @@ export interface TablePickerProps {
 }
 
 export const TablePickerComponent: Component<TablePickerProps> = (props) => {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = createSignal(false);
   const [highlighted, setHighlighted] = createSignal({ rows: 0, cols: 0 });
   const [dropdownPos, setDropdownPos] = createSignal({ top: 0, left: 0 });
@@ -66,7 +68,7 @@ export const TablePickerComponent: Component<TablePickerProps> = (props) => {
           onClick={(e) => e.stopPropagation()}
         >
           <div class="oasis-table-picker-info">
-            {highlighted().rows} x {highlighted().cols} Table
+            {t("messages", "tableInfo", highlighted().rows, highlighted().cols)}
           </div>
           <div class="oasis-table-picker-grid">
             <For each={Array.from({ length: 100 })}>
@@ -92,8 +94,8 @@ export const TablePickerComponent: Component<TablePickerProps> = (props) => {
   );
 };
 
-/** Self-contained version that attaches to a button ref instead of requiring an external anchor element. */
 export const TablePickerInline: Component<{ onTableSelected: (rows: number, cols: number) => void }> = (props) => {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = createSignal(false);
   const [highlighted, setHighlighted] = createSignal({ rows: 0, cols: 0 });
   const [dropdownPos, setDropdownPos] = createSignal({ top: 0, left: 0 });
@@ -138,7 +140,7 @@ export const TablePickerInline: Component<{ onTableSelected: (rows: number, cols
         ref={buttonRef}
         type="button"
         class="oasis-toolbar-btn"
-        title="Insert Table"
+        title={t("toolbar", "insertTable")}
         onClick={toggle}
         style={{ padding: 0, width: "28px", height: "28px", display: "flex", "align-items": "center", "justify-content": "center" }}
       >
@@ -155,7 +157,7 @@ export const TablePickerInline: Component<{ onTableSelected: (rows: number, cols
             onClick={(e) => e.stopPropagation()}
           >
             <div class="oasis-table-picker-info">
-              {highlighted().rows} x {highlighted().cols} Table
+               {t("messages", "tableInfo", highlighted().rows, highlighted().cols)}
             </div>
             <div class="oasis-table-picker-grid">
               <For each={Array.from({ length: 100 })}>
@@ -181,23 +183,3 @@ export const TablePickerInline: Component<{ onTableSelected: (rows: number, cols
     </>
   );
 };
-
-export class TablePicker {
-  private dispose: () => void;
-
-  constructor(buttonId: string, listener: TablePickerListener) {
-    const btn = document.getElementById(buttonId);
-    if (!btn) throw new Error(`Button #${buttonId} not found`);
-
-    this.dispose = render(() => (
-      <TablePickerComponent
-        anchor={btn}
-        onTableSelected={listener.onTableSelected}
-      />
-    ), document.body);
-  }
-
-  destroy(): void {
-    this.dispose();
-  }
-}

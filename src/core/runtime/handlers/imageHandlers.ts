@@ -1,11 +1,11 @@
 import { registerHandler } from "../OperationHandlers.js";
-import { OperationType } from "../../operations/OperationTypes.js";
+import { OperationType, InsertImageOp, ResizeImageOp, SelectImageOp, UpdateImageOp } from "../../operations/OperationTypes.js";
 import { createImage } from "../../document/DocumentFactory.js";
 import { updateDocumentSections } from "./sharedHelpers.js";
 import { isTextBlock, TextRun } from "../../document/BlockTypes.js";
 
 export function registerImageHandlers(): void {
-  registerHandler(OperationType.INSERT_IMAGE, (state, op) => {
+  registerHandler(OperationType.INSERT_IMAGE, (state, op: InsertImageOp) => {
     const { selection } = state;
     if (!selection) return state;
     const { blockId, inlineId, offset } = selection.anchor;
@@ -79,7 +79,7 @@ export function registerImageHandlers(): void {
     };
   });
 
-  registerHandler(OperationType.RESIZE_IMAGE, (state, op) => {
+  registerHandler(OperationType.RESIZE_IMAGE, (state, op: ResizeImageOp) => {
     const { blockId, width, height } = op.payload;
     return {
       ...updateDocumentSections(state, blockId, (block) =>
@@ -90,13 +90,13 @@ export function registerImageHandlers(): void {
     };
   });
 
-  registerHandler(OperationType.SELECT_IMAGE, (state, op) => ({
+  registerHandler(OperationType.SELECT_IMAGE, (state, op: SelectImageOp) => ({
     ...state,
     selectedImageId: op.payload.blockId,
     selection: null,
   }));
 
-  registerHandler(OperationType.UPDATE_IMAGE, (state, op) => {
+  registerHandler(OperationType.UPDATE_IMAGE, (state, op: UpdateImageOp) => {
     const { blockId, alt, width, height } = op.payload;
     return {
       ...updateDocumentSections(state, blockId, (block) => {

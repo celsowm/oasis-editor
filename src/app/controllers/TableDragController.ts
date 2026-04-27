@@ -1,4 +1,4 @@
-import { DocumentRuntime } from "../../core/runtime/DocumentRuntime.js";
+import { IDocumentRuntime } from "../../core/runtime/IDocumentRuntime.js";
 import { Operations } from "../../core/operations/OperationFactory.js";
 import { OasisEditorView } from "../OasisEditorView.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
@@ -14,7 +14,7 @@ export class TableDragController {
   private dropTargetService: DropTargetService;
 
   constructor(
-    private runtime: DocumentRuntime,
+    private runtime: IDocumentRuntime,
     private view: OasisEditorView,
     private getLatestLayout: () => LayoutState | null,
     private domHitTester: DomHitTester,

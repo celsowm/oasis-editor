@@ -306,8 +306,26 @@ export type InsertCommentOp = Operation<
 >;
 
 export type MoveBlockOp = Operation<OperationType.MOVE_BLOCK, MoveBlockPayload>;
+
+export type TableRowColOp = Operation<
+  | OperationType.TABLE_INSERT_ROW_ABOVE
+  | OperationType.TABLE_INSERT_ROW_BELOW
+  | OperationType.TABLE_INSERT_COLUMN_LEFT
+  | OperationType.TABLE_INSERT_COLUMN_RIGHT
+  | OperationType.TABLE_DELETE_ROW
+  | OperationType.TABLE_DELETE_COLUMN,
+  TableRowColPayload
+>;
+
+export type TableDeleteOp = Operation<OperationType.TABLE_DELETE, TableDeletePayload>;
+
 export type TableMergeCellsOp = Operation<OperationType.TABLE_MERGE_CELLS, TableMergeCellsPayload>;
 export type TableSplitCellOp = Operation<OperationType.TABLE_SPLIT_CELL, TableSplitCellPayload>;
+
+export type TableToggleOp = Operation<
+  OperationType.TABLE_TOGGLE_HEADER_ROW | OperationType.TABLE_TOGGLE_FIRST_COLUMN,
+  { tableId: string }
+>;
 
 export type EditorOperation =
   | AppendParagraphOp
@@ -338,17 +356,11 @@ export type EditorOperation =
   | InsertEndnoteOp
   | InsertCommentOp
   | MoveBlockOp
-  | Operation<OperationType.TABLE_INSERT_ROW_ABOVE, TableRowColPayload>
-  | Operation<OperationType.TABLE_INSERT_ROW_BELOW, TableRowColPayload>
-  | Operation<OperationType.TABLE_INSERT_COLUMN_LEFT, TableRowColPayload>
-  | Operation<OperationType.TABLE_INSERT_COLUMN_RIGHT, TableRowColPayload>
-  | Operation<OperationType.TABLE_DELETE_ROW, TableRowColPayload>
-  | Operation<OperationType.TABLE_DELETE_COLUMN, TableRowColPayload>
-  | Operation<OperationType.TABLE_DELETE, TableDeletePayload>
-  | Operation<OperationType.TABLE_MERGE_CELLS, TableMergeCellsPayload>
-  | Operation<OperationType.TABLE_SPLIT_CELL, TableSplitCellPayload>
-  | Operation<OperationType.TABLE_TOGGLE_HEADER_ROW, { tableId: string }>
-  | Operation<OperationType.TABLE_TOGGLE_FIRST_COLUMN, { tableId: string }>
+  | TableRowColOp
+  | TableDeleteOp
+  | TableMergeCellsOp
+  | TableSplitCellOp
+  | TableToggleOp
   | Operation<OperationType.TOGGLE_UNORDERED_LIST, {}>
   | Operation<OperationType.TOGGLE_ORDERED_LIST, {}>
   | Operation<OperationType.DECREASE_INDENT, {}>

@@ -13,10 +13,10 @@ export class CommandBus {
     this.commands.set(name, command);
   }
 
-  execute(name: string, ...args: any[]): void {
+  execute<T>(name: string, args: T): void {
     const command = this.commands.get(name);
     if (command) {
-      command.execute(this.context, ...args);
+      command.execute(this.context, args);
     } else {
       Logger.warn(`Command not found: ${name}`);
     }

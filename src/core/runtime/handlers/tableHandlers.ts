@@ -1,5 +1,5 @@
 import { EditorState } from "../EditorState.js";
-import { OperationType, EditorOperation } from "../../operations/OperationTypes.js";
+import { OperationType, InsertTableOp, TableRowColOp, TableDeleteOp, TableMergeCellsOp, TableSplitCellOp } from "../../operations/OperationTypes.js";
 import { findParentTable } from "../../document/BlockUtils.js";
 import { isTextBlock, BlockNode } from "../../document/BlockTypes.js";
 import { LogicalPosition } from "../../selection/SelectionTypes.js";
@@ -58,10 +58,10 @@ function transformBlocks(
 
 export function tableAddRow(
   state: EditorState,
-  op: EditorOperation,
+  op: TableRowColOp,
   isAbove: boolean,
 ): EditorState {
-  const { tableId, referenceBlockId } = op.payload as { tableId: string; referenceBlockId: string };
+  const { tableId, referenceBlockId } = op.payload;
   const tableInfo = findParentTable(state.document, referenceBlockId);
   if (!tableInfo) return state;
 
@@ -77,10 +77,10 @@ export function tableAddRow(
 
 export function tableAddColumn(
   state: EditorState,
-  op: EditorOperation,
+  op: TableRowColOp,
   isLeft: boolean,
 ): EditorState {
-  const { tableId, referenceBlockId } = op.payload as { tableId: string; referenceBlockId: string };
+  const { tableId, referenceBlockId } = op.payload;
   const tableInfo = findParentTable(state.document, referenceBlockId);
   if (!tableInfo) return state;
 
@@ -107,7 +107,7 @@ export function tableAddColumn(
 }
 
 export function registerTableHandlers(): void {
-  registerHandler(OperationType.INSERT_TABLE, (state, op) => {
+  registerHandler(OperationType.INSERT_TABLE, (state, op: InsertTableOp) => {
     const { document, selection } = state;
     const {
       rows,
@@ -183,23 +183,23 @@ export function registerTableHandlers(): void {
     };
   });
 
-  registerHandler(OperationType.TABLE_INSERT_ROW_ABOVE, (state, op) =>
+  registerHandler(OperationType.TABLE_INSERT_ROW_ABOVE, (state, op: TableRowColOp) =>
     tableAddRow(state, op, true),
   );
 
-  registerHandler(OperationType.TABLE_INSERT_ROW_BELOW, (state, op) =>
+  registerHandler(OperationType.TABLE_INSERT_ROW_BELOW, (state, op: TableRowColOp) =>
     tableAddRow(state, op, false),
   );
 
-  registerHandler(OperationType.TABLE_INSERT_COLUMN_LEFT, (state, op) =>
+  registerHandler(OperationType.TABLE_INSERT_COLUMN_LEFT, (state, op: TableRowColOp) =>
     tableAddColumn(state, op, true),
   );
 
-  registerHandler(OperationType.TABLE_INSERT_COLUMN_RIGHT, (state, op) =>
+  registerHandler(OperationType.TABLE_INSERT_COLUMN_RIGHT, (state, op: TableRowColOp) =>
     tableAddColumn(state, op, false),
   );
 
-  registerHandler(OperationType.TABLE_DELETE_ROW, (state, op) => {
+  registerHandler(OperationType.TABLE_DELETE_ROW, (state, op: TableRowColOp) => {
     const { tableId, referenceBlockId } = op.payload;
     const tableInfo = findParentTable(state.document, referenceBlockId);
     if (!tableInfo) return state;
@@ -216,7 +216,7 @@ export function registerTableHandlers(): void {
     };
   });
 
-  registerHandler(OperationType.TABLE_DELETE_COLUMN, (state, op) => {
+  registerHandler(OperationType.TABLE_DELETE_COLUMN, (state, op: TableRowColOp) => {
     const { tableId, referenceBlockId } = op.payload;
     const tableInfo = findParentTable(state.document, referenceBlockId);
     if (!tableInfo) return state;
@@ -244,7 +244,7 @@ export function registerTableHandlers(): void {
     };
   });
 
-  registerHandler(OperationType.TABLE_DELETE, (state, op) => {
+  registerHandler(OperationType.TABLE_DELETE, (state, op: TableDeleteOp) => {
     const { tableId } = op.payload;
     return {
       ...updateDocumentSections(state, tableId, () => null),
@@ -252,7 +252,7 @@ export function registerTableHandlers(): void {
     };
   });
 
-  registerHandler(OperationType.TABLE_MERGE_CELLS, (state, op) => {
+  registerHandler(OperationType.TABLE_MERGE_CELLS, (state, op: TableMergeCellsOp) => {
     const { tableId, anchorBlockId, targetBlockId } = op.payload;
     const tableInfoAnchor = findParentTable(state.document, anchorBlockId);
     const tableInfoTarget = findParentTable(state.document, targetBlockId);
@@ -286,7 +286,7 @@ export function registerTableHandlers(): void {
     });
   });
 
-  registerHandler(OperationType.TABLE_SPLIT_CELL, (state, op) => {
+  registerHandler(OperationType.TABLE_SPLIT_CELL, (state, op: TableSplitCellOp) => {
     const { tableId, referenceBlockId } = op.payload;
     const tableInfo = findParentTable(state.document, referenceBlockId);
     if (!tableInfo) return state;

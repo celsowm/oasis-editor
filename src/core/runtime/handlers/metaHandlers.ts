@@ -1,8 +1,8 @@
 import { registerHandler } from "../OperationHandlers.js";
-import { OperationType } from "../../operations/OperationTypes.js";
+import { OperationType, SetSectionTemplateOp, SetEditingModeOp } from "../../operations/OperationTypes.js";
 
 export function registerMetaHandlers(): void {
-  registerHandler(OperationType.SET_SECTION_TEMPLATE, (state, op) => {
+  registerHandler(OperationType.SET_SECTION_TEMPLATE, (state, op: SetSectionTemplateOp) => {
     const { sectionId, templateId } = op.payload;
     const nextSections = state.document.sections.map((s) =>
       s.id === sectionId ? { ...s, pageTemplateId: templateId } : s,
@@ -17,7 +17,7 @@ export function registerMetaHandlers(): void {
     };
   });
 
-  registerHandler(OperationType.SET_EDITING_MODE, (state, op) => {
+  registerHandler(OperationType.SET_EDITING_MODE, (state, op: SetEditingModeOp) => {
     return {
       ...state,
       editingMode: op.payload.mode,

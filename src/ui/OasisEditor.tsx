@@ -10,8 +10,15 @@ import { RulerComponent } from './ruler/Ruler.tsx';
 import { SelectionLayer } from './selection/SelectionLayer.tsx';
 import { PageLayerComponent } from './pages/PageLayer.tsx';
 import { TableToolbar } from './selection/TableToolbar.tsx';
+import { II18nService } from '../core/utils/I18nService.js';
+import { I18nProvider, useI18n } from './I18nContext.tsx';
 
-const OasisEditor: Component = () => {
+interface Props {
+  i18n: II18nService;
+}
+
+const OasisEditorContent: Component = () => {
+  const { t, locale, setLocale } = useI18n();
   const ss = () => store.view?.selectionState;
 
   const handleToolbarClick = (e: MouseEvent) => {
@@ -41,7 +48,7 @@ const OasisEditor: Component = () => {
         case "increase-indent": events.onIncreaseIndent(); break;
         case "track-changes": events.onToggleTrackChanges(); break;
         case "link":
-            const url = prompt("Enter link URL:");
+            const url = prompt(t("messages", "enterLink"));
             if (url) {
               const sanitized = sanitizeUrl(url);
               if (sanitized) events.onInsertLink(sanitized);
@@ -61,81 +68,56 @@ const OasisEditor: Component = () => {
         <div class="oasis-editor-brand">
           <div class="oasis-editor-logo"></div>
           <div class="oasis-editor-title-container">
-            <input type="text" class="oasis-editor-document-title" value="Untitled document" />
+            <input type="text" class="oasis-editor-document-title" value={t("messages", "untitled")} />
             <MenuBar />
-            <input type="file" id="oasis-editor-import-docx-input" accept=".docx" style={{ display: 'none' }} />
+            <div class="oasis-editor-i18n-switch" style={{ display: 'flex', gap: '4px', "margin-left": 'auto', "font-size": '10px' }}>
+                <button 
+                  onClick={() => setLocale("en-US")}
+                  style={{ "font-weight": locale() === "en-US" ? "bold" : "normal" }}
+                >EN</button>
+                <button 
+                  onClick={() => setLocale("pt-BR")}
+                  style={{ "font-weight": locale() === "pt-BR" ? "bold" : "normal" }}
+                >PT</button>
+            </div>
           </div>
         </div>
       </header>
 
       <Toolbar mode="overflow" onClick={handleToolbarClick} onMouseDown={handleToolbarMouseDown}>
         <ToolbarGroup>
-          <ToolbarButton id="oasis-editor-undo" icon="undo" command="undo" title="Undo (Ctrl+Z)" />
-          <ToolbarButton id="oasis-editor-redo" icon="redo" command="redo" title="Redo (Ctrl+Y)" />
-          <ToolbarButton id="oasis-editor-print" icon="printer" command="print" title="Print" />
+          <ToolbarButton id="oasis-editor-undo" icon="undo" command="undo" title={t("toolbar", "undo")} />
+          <ToolbarButton id="oasis-editor-redo" icon="redo" command="redo" title={t("toolbar", "redo")} />
+          <ToolbarButton id="oasis-editor-print" icon="printer" command="print" title={t("toolbar", "print")} />
         </ToolbarGroup>
 
         <ToolbarSeparator />
 
         <ToolbarGroup>
-          <ToolbarButton id="oasis-editor-format-painter" icon="paintbrush" command="format-painter" title="Format Painter" class="oasis-editor-toolbar-btn" />
+          <ToolbarButton id="oasis-editor-format-painter" icon="paintbrush" command="format-painter" title={t("toolbar", "formatPainter")} class="oasis-editor-toolbar-btn" />
         </ToolbarGroup>
 
         <ToolbarSeparator />
 
         <ToolbarGroup>
-          <ToolbarSelect id="oasis-editor-zoom" onChange={(e: any) => {
-            const val = e.target.value;
-            if (val !== "fit") {
-              const scale = parseInt(val) / 100;
-              const pagesContainer = document.querySelector(".oasis-editor-pages") as HTMLElement;
-              if (pagesContainer) {
-                pagesContainer.style.transform = `scale(${scale})`;
-                pagesContainer.style.transformOrigin = "top center";
-              }
-            }
-          }}>
-            <option value="100%">100%</option>
-            <option value="fit">Fit</option>
-          </ToolbarSelect>
-        </ToolbarGroup>
-
-        <ToolbarSeparator />
-
-        <ToolbarGroup>
-          <ToolbarSelect id="oasis-editor-font-family" title="Font family" value={ss()?.fontFamily || 'Inter'} onChange={(e: any) => store.events?.onFontFamilyChange(e.target.value)}>
+          <ToolbarSelect id="oasis-editor-font-family" title={t("toolbar", "fontFamily")} value={ss()?.fontFamily || 'Inter'} onChange={(e: any) => store.events?.onFontFamilyChange(e.target.value)}>
             <option value="Inter">Inter</option>
             <option value="Roboto">Roboto</option>
             <option value="Arial">Arial</option>
             <option value="Times New Roman">Times New Roman</option>
-            <option value="Courier New">Courier New</option>
-            <option value="Georgia">Georgia</option>
-            <option value="Verdana">Verdana</option>
           </ToolbarSelect>
         </ToolbarGroup>
 
         <ToolbarSeparator />
 
         <ToolbarGroup>
-          <ToolbarSelect id="oasis-editor-template" title="Page Template" value={store.view?.templateId || 'a4'} onChange={(e: any) => store.events?.onTemplateChange(e.target.value)}>
-            <For each={store.view?.templateOptions}>
-              {(option) => (
-                <option value={option.value}>{option.label}</option>
-              )}
-            </For>
-          </ToolbarSelect>
-        </ToolbarGroup>
-
-        <ToolbarSeparator />
-
-        <ToolbarGroup>
-          <ToolbarButton id="oasis-editor-bold" icon="bold" command="bold" active={ss()?.bold} title="Bold (Ctrl+B)" />
-          <ToolbarButton id="oasis-editor-italic" icon="italic" command="italic" active={ss()?.italic} title="Italic (Ctrl+I)" />
-          <ToolbarButton id="oasis-editor-underline" icon="underline" command="underline" active={ss()?.underline} title="Underline (Ctrl+U)" />
-          <ToolbarButton id="oasis-editor-strikethrough" icon="strikethrough" command="strikethrough" active={ss()?.strike} title="Strikethrough" />
-          <ToolbarButton id="oasis-editor-superscript" icon="superscript" command="superscript" active={ss()?.vertAlign === 'superscript'} title="Superscript" />
-          <ToolbarButton id="oasis-editor-subscript" icon="subscript" command="subscript" active={ss()?.vertAlign === 'subscript'} title="Subscript" />
-          <ToolbarButton id="oasis-editor-link" icon="link" command="link" active={!!ss()?.link} title="Insert Link" />
+          <ToolbarButton id="oasis-editor-bold" icon="bold" command="bold" active={ss()?.bold} title={t("toolbar", "bold")} />
+          <ToolbarButton id="oasis-editor-italic" icon="italic" command="italic" active={ss()?.italic} title={t("toolbar", "italic")} />
+          <ToolbarButton id="oasis-editor-underline" icon="underline" command="underline" active={ss()?.underline} title={t("toolbar", "underline")} />
+          <ToolbarButton id="oasis-editor-strikethrough" icon="strikethrough" command="strikethrough" active={ss()?.strike} title={t("toolbar", "strike")} />
+          <ToolbarButton id="oasis-editor-superscript" icon="superscript" command="superscript" active={ss()?.vertAlign === 'superscript'} title={t("toolbar", "superscript")} />
+          <ToolbarButton id="oasis-editor-subscript" icon="subscript" command="subscript" active={ss()?.vertAlign === 'subscript'} title={t("toolbar", "subscript")} />
+          <ToolbarButton id="oasis-editor-link" icon="link" command="link" active={!!ss()?.link} title={t("toolbar", "link")} />
           <ColorPickerComponent
             onColorSelected={(color) => {
               setStore('pickerColor', color);
@@ -150,38 +132,26 @@ const OasisEditor: Component = () => {
             }}
             initialColor={store.pickerHighlightColor}
           />
-          <ToolbarButton id="oasis-editor-track-changes" icon="eye" command="track-changes" active={ss()?.trackChangesEnabled} title="Track Changes" />
+          <ToolbarButton id="oasis-editor-track-changes" icon="eye" command="track-changes" active={ss()?.trackChangesEnabled} title={t("toolbar", "trackChanges")} />
         </ToolbarGroup>
 
         <ToolbarSeparator />
 
         <ToolbarGroup>
-          <ToolbarSelect id="oasis-editor-style-select" title="Paragraph style" onChange={(e: any) => store.events?.onStyleChange?.(e.target.value)}>
-            <option value="">Normal</option>
-            <option value="Heading1">Heading 1</option>
-            <option value="Heading2">Heading 2</option>
-            <option value="Heading3">Heading 3</option>
-            <option value="Heading4">Heading 4</option>
-            <option value="Heading5">Heading 5</option>
-            <option value="Heading6">Heading 6</option>
-          </ToolbarSelect>
-        </ToolbarGroup>
-
-        <ToolbarGroup>
-          <ToolbarButton id="oasis-editor-align-left" icon="align-left" command="align:left" active={ss()?.align === 'left'} title="Align left" />
-          <ToolbarButton id="oasis-editor-align-center" icon="align-center" command="align:center" active={ss()?.align === 'center'} title="Align center" />
-          <ToolbarButton id="oasis-editor-align-right" icon="align-right" command="align:right" active={ss()?.align === 'right'} title="Align right" />
-          <ToolbarButton id="oasis-editor-align-justify" icon="align-justify" command="align:justify" active={ss()?.align === 'justify'} title="Justify" />
-          <ToolbarButton id="oasis-editor-bullets" icon="list" command="bullets" active={ss()?.isListItem} title="Bulleted list" />
-          <ToolbarButton id="oasis-editor-ordered-list" icon="list-ordered" command="ordered-list" active={ss()?.isOrderedListItem} title="Numbered list" />
-          <ToolbarButton id="oasis-editor-decrease-indent" icon="outdent" command="decrease-indent" title="Decrease indent" />
-          <ToolbarButton id="oasis-editor-increase-indent" icon="indent" command="increase-indent" title="Increase indent" />
+          <ToolbarButton id="oasis-editor-align-left" icon="align-left" command="align:left" active={ss()?.align === 'left'} title={t("toolbar", "alignLeft")} />
+          <ToolbarButton id="oasis-editor-align-center" icon="align-center" command="align:center" active={ss()?.align === 'center'} title={t("toolbar", "alignCenter")} />
+          <ToolbarButton id="oasis-editor-align-right" icon="align-right" command="align:right" active={ss()?.align === 'right'} title={t("toolbar", "alignRight")} />
+          <ToolbarButton id="oasis-editor-align-justify" icon="align-justify" command="align:justify" active={ss()?.align === 'justify'} title={t("toolbar", "alignJustify")} />
+          <ToolbarButton id="oasis-editor-bullets" icon="list" command="bullets" active={ss()?.isListItem} title={t("toolbar", "bullets")} />
+          <ToolbarButton id="oasis-editor-ordered-list" icon="list-ordered" command="ordered-list" active={ss()?.isOrderedListItem} title={t("toolbar", "orderedList")} />
+          <ToolbarButton id="oasis-editor-decrease-indent" icon="outdent" command="decrease-indent" title={t("toolbar", "decreaseIndent")} />
+          <ToolbarButton id="oasis-editor-increase-indent" icon="indent" command="increase-indent" title={t("toolbar", "increaseIndent")} />
         </ToolbarGroup>
 
         <ToolbarSeparator />
 
         <ToolbarGroup>
-          <ToolbarButton id="oasis-editor-insert-image" icon="image" title="Insert Image" onClick={() => document.getElementById("oasis-editor-image-input")?.click()} />
+          <ToolbarButton id="oasis-editor-insert-image" icon="image" title={t("toolbar", "insertImage")} onClick={() => document.getElementById("oasis-editor-image-input")?.click()} />
           <input type="file" id="oasis-editor-image-input" accept="image/*" style={{ display: 'none' }} />
           <TablePickerInline
             onTableSelected={(rows, cols) => {
@@ -202,7 +172,6 @@ const OasisEditor: Component = () => {
         <section id="oasis-editor-pages" class="oasis-editor-pages">
           <PageLayerComponent layout={store.pageLayout} editingMode={store.editingMode} />
         </section>
-        {/* Selection layer: rendered as Portals into each page */}
         <SelectionLayer />
         <TableToolbar
           onInsertRowAbove={() => store.events?.onInsertRowAbove?.()}
@@ -215,19 +184,23 @@ const OasisEditor: Component = () => {
         />
       </main>
 
-      <div id="oasis-editor-input-container" style={{ position: 'fixed', left: '0', top: '0', width: '1px', height: '1px', overflow: 'hidden', opacity: '0' }}>
-        <textarea id="oasis-editor-input" tabindex="0"></textarea>
-      </div>
-
       <footer class="oasis-editor-footer-status">
         <span id="oasis-editor-status">{store.view?.status}</span>
         <span id="oasis-editor-metrics">
             <Show when={store.view?.metrics}>
-                {m => `Revision ${m().revision} • ${m().pages} pages`}
+                {m => t("messages", "pageInfo", 1, m().pages)}
             </Show>
         </span>
       </footer>
     </div>
+  );
+};
+
+const OasisEditor: Component<Props> = (props) => {
+  return (
+    <I18nProvider service={props.i18n}>
+      <OasisEditorContent />
+    </I18nProvider>
   );
 };
 

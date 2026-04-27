@@ -1,5 +1,5 @@
 import { registerHandler } from "../OperationHandlers.js";
-import { OperationType } from "../../operations/OperationTypes.js";
+import { OperationType, AcceptRevisionOp, RejectRevisionOp } from "../../operations/OperationTypes.js";
 import { EditorState } from "../EditorState.js";
 import { updateDocumentSections } from "./sharedHelpers.js";
 import { isTextBlock, TextRun } from "../../document/BlockTypes.js";
@@ -13,7 +13,7 @@ export function registerRevisionHandlers(): void {
     };
   });
 
-  registerHandler(OperationType.ACCEPT_REVISION, (state, op) => {
+  registerHandler(OperationType.ACCEPT_REVISION, (state, op: AcceptRevisionOp) => {
     const { runId } = op.payload;
     return applyToAllRuns(state, (run) => {
       if (run.id !== runId || !run.revision) return run;
@@ -28,7 +28,7 @@ export function registerRevisionHandlers(): void {
     });
   });
 
-  registerHandler(OperationType.REJECT_REVISION, (state, op) => {
+  registerHandler(OperationType.REJECT_REVISION, (state, op: RejectRevisionOp) => {
     const { runId } = op.payload;
     return applyToAllRuns(state, (run) => {
       if (run.id !== runId || !run.revision) return run;

@@ -1,7 +1,7 @@
 import { Component, createSignal, For, Show, onMount, onCleanup } from 'solid-js';
-import { Logger } from '../../core/utils/Logger.js';
 import { store } from '../EditorStore.tsx';
 import { dropdownManager } from './DropdownManager.js';
+import { useI18n } from '../I18nContext.tsx';
 
 interface MenuItem {
   label: string;
@@ -17,6 +17,7 @@ interface MenuDef {
 }
 
 export const MenuBar: Component = () => {
+  const { t } = useI18n();
   const [activeMenu, setActiveMenu] = createSignal<string | null>(null);
   let menuBarRef: HTMLDivElement | undefined;
 
@@ -56,74 +57,74 @@ export const MenuBar: Component = () => {
 
   const menus: MenuDef[] = [
     {
-      id: 'file', label: 'File', getItems: () => {
+      id: 'file', label: t('menu', 'file'), getItems: () => {
         const events = store.events;
         return [
-          { label: "New", action: () => events?.onNew?.() },
-          { label: "Open", action: () => events?.onOpen?.() },
+          { label: t('menu', 'new'), action: () => events?.onNew?.() },
+          { label: t('menu', 'open'), action: () => events?.onOpen?.() },
           { separator: true, label: "" },
-          { label: "Import DOCX...", action: () => document.getElementById("oasis-editor-import-docx-input")?.click() },
-          { label: "Export DOCX...", action: () => events?.onExportDocx?.() },
-          { label: "Export PDF...", action: () => events?.onExportPdf?.() },
-          { label: "Download", action: () => events?.onDownload?.() },
+          { label: t('menu', 'importDocx'), action: () => document.getElementById("oasis-editor-import-docx-input")?.click() },
+          { label: t('menu', 'exportDocx'), action: () => events?.onExportDocx?.() },
+          { label: t('menu', 'exportPdf'), action: () => events?.onExportPdf?.() },
+          { label: t('menu', 'download'), action: () => events?.onDownload?.() },
           { separator: true, label: "" },
-          { label: "Print", shortcut: "Ctrl+P", action: () => (events?.onPrint ? events.onPrint() : window.print()) },
+          { label: t('toolbar', 'print'), shortcut: "Ctrl+P", action: () => (events?.onPrint ? events.onPrint() : window.print()) },
         ];
       }
     },
     {
-      id: 'edit', label: 'Edit', getItems: () => {
+      id: 'edit', label: t('menu', 'edit'), getItems: () => {
         const events = store.events;
         return [
-          { label: "Undo", shortcut: "Ctrl+Z", action: () => events?.onUndo() },
-          { label: "Redo", shortcut: "Ctrl+Y", action: () => events?.onRedo() },
+          { label: t('toolbar', 'undo'), shortcut: "Ctrl+Z", action: () => events?.onUndo() },
+          { label: t('toolbar', 'redo'), shortcut: "Ctrl+Y", action: () => events?.onRedo() },
           { separator: true, label: "" },
-          { label: "Cut", shortcut: "Ctrl+X", action: async () => {
+          { label: t('menu', 'cut'), shortcut: "Ctrl+X", action: async () => {
             try { await navigator.clipboard.writeText(window.getSelection()?.toString() ?? ""); }
             catch { document.execCommand("cut"); }
           }},
-          { label: "Copy", shortcut: "Ctrl+C", action: async () => {
+          { label: t('menu', 'copy'), shortcut: "Ctrl+C", action: async () => {
             try { await navigator.clipboard.writeText(window.getSelection()?.toString() ?? ""); }
             catch { document.execCommand("copy"); }
           }},
-          { label: "Paste", shortcut: "Ctrl+V", action: async () => {
+          { label: t('menu', 'paste'), shortcut: "Ctrl+V", action: async () => {
             try {
               const text = await navigator.clipboard.readText();
               events?.onPaste?.(text);
             } catch {
-              // Fallback: browser's native paste via Ctrl+V still works
+              // Fallback
             }
           }},
         ];
       }
     },
     {
-      id: 'insert', label: 'Insert', getItems: () => {
+      id: 'insert', label: t('menu', 'insert'), getItems: () => {
         const events = store.events;
         return [
-          { label: "Image", action: () => document.getElementById("oasis-editor-image-input")?.click() },
-          { label: "Page break", action: () => events?.onInsertPageBreak?.() },
+          { label: t('menu', 'image'), action: () => document.getElementById("oasis-editor-image-input")?.click() },
+          { label: t('menu', 'pageBreak'), action: () => events?.onInsertPageBreak?.() },
           { separator: true, label: "" },
-          { label: "Footnote", action: () => events?.onInsertFootnote?.() },
-          { label: "Endnote", action: () => events?.onInsertEndnote?.() },
-          { label: "Page number", action: () => events?.onInsertPageNumber?.() },
+          { label: t('menu', 'footnote'), action: () => events?.onInsertFootnote?.() },
+          { label: t('menu', 'endnote'), action: () => events?.onInsertEndnote?.() },
+          { label: t('menu', 'pageNumber'), action: () => events?.onInsertPageNumber?.() },
           { separator: true, label: "" },
-          { label: "Horizontal line", action: () => events?.onInsertHr?.() },
+          { label: t('menu', 'horizontalLine'), action: () => events?.onInsertHr?.() },
         ];
       }
     },
     {
-      id: 'format', label: 'Format', getItems: () => {
+      id: 'format', label: t('menu', 'format'), getItems: () => {
         const events = store.events;
         return [
-          { label: "Bold", shortcut: "Ctrl+B", action: () => events?.onBold() },
-          { label: "Italic", shortcut: "Ctrl+I", action: () => events?.onItalic() },
-          { label: "Underline", shortcut: "Ctrl+U", action: () => events?.onUnderline() },
+          { label: t('toolbar', 'bold'), shortcut: "Ctrl+B", action: () => events?.onBold() },
+          { label: t('toolbar', 'italic'), shortcut: "Ctrl+I", action: () => events?.onItalic() },
+          { label: t('toolbar', 'underline'), shortcut: "Ctrl+U", action: () => events?.onUnderline() },
           { separator: true, label: "" },
-          { label: "Align Left", action: () => events?.onAlign("left") },
-          { label: "Align Center", action: () => events?.onAlign("center") },
-          { label: "Align Right", action: () => events?.onAlign("right") },
-          { label: "Justify", action: () => events?.onAlign("justify") },
+          { label: t('toolbar', 'alignLeft'), action: () => events?.onAlign("left") },
+          { label: t('toolbar', 'alignCenter'), action: () => events?.onAlign("center") },
+          { label: t('toolbar', 'alignRight'), action: () => events?.onAlign("right") },
+          { label: t('toolbar', 'alignJustify'), action: () => events?.onAlign("justify") },
         ];
       }
     }

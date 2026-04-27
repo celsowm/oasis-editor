@@ -274,7 +274,7 @@ function handleInsertEndnote(state: EditorState, op: any): EditorState {
   };
 }
 
-function handleInsertComment(state: EditorState, op: any): EditorState {
+function handleInsertComment(state: EditorState, op: InsertCommentOp): EditorState {
   const { selection } = state;
   if (!selection) return state;
   const { blockId, inlineId, offset } = selection.anchor;
@@ -365,5 +365,9 @@ export function registerAnnotationHandlers() {
   registerHandler(OperationType.INSERT_BOOKMARK, handleInsertBookmark);
   registerHandler(OperationType.INSERT_FOOTNOTE, handleInsertFootnote);
   registerHandler(OperationType.INSERT_ENDNOTE, handleInsertEndnote);
+  registerHandler(OperationType.INSERT_COMMENT, handleInsertComment);
+}
+
+leInsertEndnote);
   registerHandler(OperationType.INSERT_COMMENT, handleInsertComment);
 }

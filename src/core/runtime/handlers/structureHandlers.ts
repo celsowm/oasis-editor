@@ -108,7 +108,7 @@ function handleAppendParagraph(state: EditorState, op: any): EditorState {
   };
 }
 
-function handleInsertPageBreak(state: EditorState, op: any): EditorState {
+function handleInsertPageBreak(state: EditorState, op: InsertPageBreakOp): EditorState {
   const { selection } = state;
   if (!selection) return state;
   const { blockId } = selection.anchor;
@@ -124,4 +124,6 @@ export function registerStructureHandlers() {
   registerHandler(OperationType.INSERT_PARAGRAPH, handleInsertParagraph);
   registerHandler(OperationType.APPEND_PARAGRAPH, handleAppendParagraph);
   registerHandler(OperationType.INSERT_PAGE_BREAK, handleInsertPageBreak);
+}
+SERT_PAGE_BREAK, handleInsertPageBreak);
 }

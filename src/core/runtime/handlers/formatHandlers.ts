@@ -1,5 +1,5 @@
 import { registerHandler } from "../OperationHandlers.js";
-import { OperationType } from "../../operations/OperationTypes.js";
+import { OperationType, SetAlignmentOp, SetStyleOp } from "../../operations/OperationTypes.js";
 import { isTextBlock, TextRun, MarkSet } from "../../document/BlockTypes.js";
 import { updateDocumentSections } from "./sharedHelpers.js";
 import { StyleResolver, ResolvedStyle } from "../../document/StyleResolver.js";
@@ -49,7 +49,7 @@ function applyResolvedStyleToBlock(block: import("../../document/BlockTypes.js")
 }
 
 export function registerFormatHandlers(): void {
-  registerHandler(OperationType.SET_ALIGNMENT, (state, op) => {
+  registerHandler(OperationType.SET_ALIGNMENT, (state, op: SetAlignmentOp) => {
     const { selection, selectedImageId } = state;
     const { align } = op.payload;
 
@@ -71,7 +71,7 @@ export function registerFormatHandlers(): void {
     });
   });
 
-  registerHandler(OperationType.SET_STYLE, (state, op) => {
+  registerHandler(OperationType.SET_STYLE, (state, op: SetStyleOp) => {
     const { selection } = state;
     if (!selection) return state;
     const { blockId } = selection.anchor;

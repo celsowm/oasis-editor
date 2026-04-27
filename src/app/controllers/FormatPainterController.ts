@@ -1,4 +1,4 @@
-import { DocumentRuntime } from "../../core/runtime/DocumentRuntime.js";
+import { IDocumentRuntime } from "../../core/runtime/IDocumentRuntime.js";
 import { Operations } from "../../core/operations/OperationFactory.js";
 import { OasisEditorPresenter } from "../presenters/OasisEditorPresenter.js";
 import { OasisEditorView } from "../OasisEditorView.js";
@@ -12,7 +12,7 @@ export class FormatPainterController {
   private align: "left" | "center" | "right" | "justify" | null = null;
 
   constructor(
-    private runtime: DocumentRuntime,
+    private runtime: IDocumentRuntime,
     private presenter: OasisEditorPresenter,
     private view: OasisEditorView,
     private getLatestLayout: () => LayoutState,

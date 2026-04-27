@@ -1,5 +1,5 @@
 import { EditorState } from "../EditorState.js";
-import { OperationType } from "../../operations/OperationTypes.js";
+import { OperationType, ToggleMarkOp, SetMarkOp, ApplyFormatOp } from "../../operations/OperationTypes.js";
 import { transformBlocks } from "../../document/BlockVisitor.js";
 import { isTextBlock, TextRun, BlockNode, MarkSet } from "../../document/BlockTypes.js";
 import { areMarksEqual } from "../../document/MarkUtils.js";
@@ -233,10 +233,10 @@ function isCollapsedAtPoint(selection: NonNullable<EditorState["selection"]>): b
 }
 
 function registerMarkHandlers(): void {
-  registerHandler(OperationType.TOGGLE_MARK, (state, op) => {
+  registerHandler(OperationType.TOGGLE_MARK, (state, op: ToggleMarkOp) => {
     const { selection, pendingMarks } = state;
     if (!selection) return state;
-    const { mark, value } = op.payload as { mark: keyof MarkSet; value?: MarkSet[keyof MarkSet] | boolean };
+    const { mark, value } = op.payload;
 
     // For boolean marks (bold, italic, etc.), default toggle value is true
     const toggleValue: MarkSet[keyof MarkSet] | boolean = value !== undefined ? value : true;
@@ -280,10 +280,10 @@ function registerMarkHandlers(): void {
     });
   });
 
-  registerHandler(OperationType.SET_MARK, (state, op) => {
+  registerHandler(OperationType.SET_MARK, (state, op: SetMarkOp) => {
     const { selection, pendingMarks } = state;
     if (!selection) return state;
-    const { mark, value } = op.payload as { mark: keyof MarkSet, value: any };
+    const { mark, value } = op.payload;
 
     if (isCollapsedAtPoint(selection)) {
       const nextMarks = { ...(pendingMarks || {}), [mark]: value } as MarkSet;
@@ -305,7 +305,7 @@ function registerMarkHandlers(): void {
     });
   });
 
-  registerHandler(OperationType.APPLY_FORMAT, (state, op) => {
+  registerHandler(OperationType.APPLY_FORMAT, (state, op: ApplyFormatOp) => {
     const { selection, pendingMarks } = state;
     if (!selection) return state;
 

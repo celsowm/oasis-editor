@@ -2,8 +2,8 @@ import { EditorCommand, CommandContext } from "./EditorCommand.js";
 import { Operations } from "../../core/operations/OperationFactory.js";
 import { isTextBlock } from "../../core/document/BlockTypes.js";
 
-export class EscapeCommand implements EditorCommand {
-  execute(context: CommandContext): void {
+export class EscapeCommand implements EditorCommand<void> {
+  execute(context: CommandContext, _args: void): void {
     const state = context.runtime.getState();
     
     if (state.editingMode === "footnote" && state.editingFootnoteId) {
@@ -47,7 +47,7 @@ export class EscapeCommand implements EditorCommand {
   }
 }
 
-export class MoveCaretCommand implements EditorCommand {
+export class MoveCaretCommand implements EditorCommand<string> {
   execute(context: CommandContext, key: string): void {
     context.runtime.dispatch(Operations.moveSelection(key));
   }

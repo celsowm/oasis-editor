@@ -1,13 +1,13 @@
-import { DocumentRuntime } from "../../core/runtime/DocumentRuntime.js";
+import { IDocumentRuntime } from "../../core/runtime/IDocumentRuntime.js";
 import { OasisEditorPresenter } from "../presenters/OasisEditorPresenter.js";
 import { OasisEditorView } from "../OasisEditorView.js";
 
 export interface CommandContext {
-  runtime: DocumentRuntime;
+  runtime: IDocumentRuntime;
   presenter: OasisEditorPresenter;
   view: OasisEditorView;
 }
 
-export interface EditorCommand {
-  execute(context: CommandContext, ...args: any[]): void;
+export interface EditorCommand<T = any> {
+  execute(context: CommandContext, args: T): void;
 }

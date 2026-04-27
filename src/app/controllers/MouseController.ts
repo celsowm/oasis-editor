@@ -1,4 +1,4 @@
-import { DocumentRuntime } from "../../core/runtime/DocumentRuntime.js";
+import { IDocumentRuntime } from "../../core/runtime/IDocumentRuntime.js";
 import { Logger } from "../../core/utils/Logger.js";
 import { Operations } from "../../core/operations/OperationFactory.js";
 import { CursorPositionCalculator } from "../services/CursorPositionCalculator.js";
@@ -10,7 +10,7 @@ export class MouseController {
   private dragAnchor: LogicalPosition | null = null;
 
   constructor(
-    private runtime: DocumentRuntime,
+    private runtime: IDocumentRuntime,
     private cursorCalc: CursorPositionCalculator,
     private formatPainter: FormatPainterController,
   ) {}

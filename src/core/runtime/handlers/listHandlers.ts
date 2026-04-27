@@ -1,6 +1,6 @@
 import { EditorState } from "../EditorState.js";
 import { registerHandler } from "../OperationHandlers.js";
-import { OperationType } from "../../operations/OperationTypes.js";
+import { OperationType, SetIndentationOp } from "../../operations/OperationTypes.js";
 import { getAllBlocksInSection } from "../../document/BlockUtils.js";
 import { isTextBlock, BlockNode, withBlockKind, withIndentation, getBlockIndentation, isListItemBlock } from "../../document/BlockTypes.js";
 import {
@@ -200,12 +200,11 @@ export function registerListHandlers(): void {
     return nextState;
   });
 
-  registerHandler(OperationType.SET_INDENTATION, (state, op) => {
+  registerHandler(OperationType.SET_INDENTATION, (state, op: SetIndentationOp) => {
     const { selection, editingMode: zone } = state;
     if (!selection) return state;
 
-    const payload = op.payload as { indentation: number };
-    const newIndent = payload.indentation;
+    const newIndent = op.payload.indentation;
 
     const { document: doc } = state;
     const allBlocks: BlockNode[] = [];

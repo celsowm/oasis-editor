@@ -8,18 +8,18 @@ import {
 // Core registry (the only public API for adding handlers at runtime)
 // ---------------------------------------------------------------------------
 
-export type OperationHandler<T extends EditorOperation = any> = (
+export type OperationHandler<T extends EditorOperation = EditorOperation> = (
   state: EditorState,
   operation: T,
 ) => EditorState;
 
 const registry: Partial<Record<OperationType, OperationHandler>> = {};
 
-export function registerHandler(
-  type: OperationType,
-  handler: OperationHandler,
+export function registerHandler<T extends EditorOperation>(
+  type: T["type"],
+  handler: OperationHandler<T>,
 ) {
-  registry[type] = handler;
+  registry[type] = handler as unknown as OperationHandler;
 }
 
 export function getHandler(type: OperationType): OperationHandler | undefined {

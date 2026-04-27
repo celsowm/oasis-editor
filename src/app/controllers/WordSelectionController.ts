@@ -1,4 +1,4 @@
-import { DocumentRuntime } from "../../core/runtime/DocumentRuntime.js";
+import { IDocumentRuntime } from "../../core/runtime/IDocumentRuntime.js";
 import { Operations } from "../../core/operations/OperationFactory.js";
 import { CursorPositionCalculator } from "../services/CursorPositionCalculator.js";
 import { PositionCalculator } from "../services/PositionCalculator.js";
@@ -8,7 +8,7 @@ import { FormatPainterController } from "./FormatPainterController.js";
 
 export class WordSelectionController {
   constructor(
-    private runtime: DocumentRuntime,
+    private runtime: IDocumentRuntime,
     private cursorCalc: CursorPositionCalculator,
     private getPositionCalculator: () => PositionCalculator | null,
     private formatPainter: FormatPainterController,

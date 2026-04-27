@@ -1,4 +1,4 @@
-import { DocumentRuntime } from "../../core/runtime/DocumentRuntime.js";
+import { IDocumentRuntime } from "../../core/runtime/IDocumentRuntime.js";
 import { DocumentImporter } from "../../core/import/DocumentImporter.js";
 import { DocumentExporter } from "../../core/export/DocumentExporter.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
@@ -7,7 +7,7 @@ import { Logger } from "../../core/utils/Logger.js";
 
 export class ImportExportController {
   constructor(
-    private runtime: DocumentRuntime,
+    private runtime: IDocumentRuntime,
     private importer: DocumentImporter,
     private exporter: DocumentExporter,
     private pdfExporter: DocumentExporter,

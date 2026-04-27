@@ -1,6 +1,6 @@
 import { EditorState } from "../EditorState.js";
 import { registerHandler } from "../OperationHandlers.js";
-import { OperationType } from "../../operations/OperationTypes.js";
+import { OperationType, MoveBlockOp } from "../../operations/OperationTypes.js";
 import { BlockNode, TextBlockNode, TextRun } from "../../document/BlockTypes.js";
 import { areMarksEqual } from "../../document/MarkUtils.js";
 import { LogicalPosition } from "../../selection/SelectionTypes.js";
@@ -78,7 +78,7 @@ function insertBlock(
 }
 
 export function registerMoveHandlers(): void {
-  registerHandler(OperationType.MOVE_BLOCK, (state, op) => {
+  registerHandler(OperationType.MOVE_BLOCK, (state, op: MoveBlockOp) => {
     const { blockId, targetReferenceBlockId, isBefore } = op.payload;
     if (blockId === targetReferenceBlockId) return state;
 
