@@ -47,6 +47,8 @@ export enum OperationType {
   INSERT_FOOTNOTE = "INSERT_FOOTNOTE",
   INSERT_ENDNOTE = "INSERT_ENDNOTE",
   INSERT_COMMENT = "INSERT_COMMENT",
+  INSERT_LINK = "INSERT_LINK",
+  REMOVE_LINK = "REMOVE_LINK",
 }
 
 export interface SetEditingModePayload {
@@ -194,6 +196,11 @@ export interface InsertCommentPayload {
   newRunId?: string;
   newBlockId?: string;
 }
+export interface InsertLinkPayload {
+  url: string;
+  newRunId?: string;
+}
+export interface RemoveLinkPayload {}
 
 interface Operation<T extends OperationType, P> {
   type: T;
@@ -305,6 +312,14 @@ export type InsertCommentOp = Operation<
   OperationType.INSERT_COMMENT,
   InsertCommentPayload
 >;
+export type InsertLinkOp = Operation<
+  OperationType.INSERT_LINK,
+  InsertLinkPayload
+>;
+export type RemoveLinkOp = Operation<
+  OperationType.REMOVE_LINK,
+  RemoveLinkPayload
+>;
 
 export type SetIndentationOp = Operation<
   OperationType.SET_INDENTATION,
@@ -334,7 +349,8 @@ export type TableMergeCellsOp = Operation<OperationType.TABLE_MERGE_CELLS, Table
 export type TableSplitCellOp = Operation<OperationType.TABLE_SPLIT_CELL, TableSplitCellPayload>;
 
 export type TableToggleOp = Operation<
-  OperationType.TABLE_TOGGLE_HEADER_ROW | OperationType.TABLE_TOGGLE_FIRST_COLUMN,
+  | OperationType.TABLE_TOGGLE_HEADER_ROW
+  | OperationType.TABLE_TOGGLE_FIRST_COLUMN,
   { tableId: string }
 >;
 
@@ -366,6 +382,8 @@ export type EditorOperation =
   | InsertFootnoteOp
   | InsertEndnoteOp
   | InsertCommentOp
+  | InsertLinkOp
+  | RemoveLinkOp
   | MoveBlockOp
   | TableRowColOp
   | TableDeleteOp

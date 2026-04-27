@@ -67,19 +67,23 @@ const OasisEditorContent: Component = () => {
       <header class="oasis-editor-header">
         <div class="oasis-editor-brand">
           <div class="oasis-editor-logo"></div>
-          <div class="oasis-editor-title-container">
-            <input type="text" class="oasis-editor-document-title" value={t("messages", "untitled")} />
-            <MenuBar />
-            <div class="oasis-editor-i18n-switch" style={{ display: 'flex', gap: '4px', "margin-left": 'auto', "font-size": '10px' }}>
-                <button 
-                  onClick={() => setLocale("en-US")}
-                  style={{ "font-weight": locale() === "en-US" ? "bold" : "normal" }}
-                >EN</button>
-                <button 
-                  onClick={() => setLocale("pt-BR")}
-                  style={{ "font-weight": locale() === "pt-BR" ? "bold" : "normal" }}
-                >PT</button>
+          <div class="oasis-editor-title-container" style={{ flex: 1 }}>
+            <div style={{ display: 'flex', 'align-items': 'center', gap: '8px' }}>
+              <input type="text" class="oasis-editor-document-title" value={t("messages", "untitled")} />
+              <div class="oasis-editor-i18n-switch" style={{ display: 'flex', gap: '4px', "margin-left": 'auto' }}>
+                  <button 
+                    onClick={() => setLocale("en-US")}
+                    class={locale() === "en-US" ? "active" : ""}
+                    style={{ "font-size": '10px', padding: '2px 6px', border: '1px solid #dadce0', 'border-radius': '4px', cursor: 'pointer', background: locale() === "en-US" ? '#e8f0fe' : 'white' }}
+                  >EN</button>
+                  <button 
+                    onClick={() => setLocale("pt-BR")}
+                    class={locale() === "pt-BR" ? "active" : ""}
+                    style={{ "font-size": '10px', padding: '2px 6px', border: '1px solid #dadce0', 'border-radius': '4px', cursor: 'pointer', background: locale() === "pt-BR" ? '#e8f0fe' : 'white' }}
+                  >PT</button>
+              </div>
             </div>
+            <MenuBar />
           </div>
         </div>
       </header>

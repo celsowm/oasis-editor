@@ -275,4 +275,28 @@ export const Operations = {
     type: OperationType.INSERT_COMMENT,
     payload: { text },
   }),
+  insertLink: (url: string): EditorOperation => ({
+    type: OperationType.INSERT_LINK,
+    payload: { url },
+  }),
+  removeLink: (): EditorOperation => ({
+    type: OperationType.REMOVE_LINK,
+    payload: {},
+  }),
+
+  // Helper for generic table actions
+  handleTableAction: (action: string, tableId?: string, referenceBlockId?: string): EditorOperation => {
+    switch (action) {
+      case "insertRowAbove": return Operations.tableInsertRowAbove(tableId!, referenceBlockId!);
+      case "insertRowBelow": return Operations.tableInsertRowBelow(tableId!, referenceBlockId!);
+      case "insertColumnLeft": return Operations.tableInsertColumnLeft(tableId!, referenceBlockId!);
+      case "insertColumnRight": return Operations.tableInsertColumnRight(tableId!, referenceBlockId!);
+      case "deleteRow": return Operations.tableDeleteRow(tableId!, referenceBlockId!);
+      case "deleteColumn": return Operations.tableDeleteColumn(tableId!, referenceBlockId!);
+      case "deleteTable": return Operations.tableDelete(tableId!);
+      case "toggleHeaderRow": return Operations.tableToggleHeaderRow(tableId!);
+      case "toggleFirstColumn": return Operations.tableToggleFirstColumn(tableId!);
+      default: throw new Error(`Unknown table action: ${action}`);
+    }
+  }
 };
