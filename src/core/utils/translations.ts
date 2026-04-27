@@ -7,6 +7,7 @@ export interface TranslationKeys {
     print: string;
     formatPainter: string;
     fontFamily: string;
+    pageTemplate: string;
     bold: string;
     italic: string;
     underline: string;
@@ -78,6 +79,7 @@ export const enUS: TranslationKeys = {
     print: "Print",
     formatPainter: "Format Painter",
     fontFamily: "Font Family",
+    pageTemplate: "Page Template",
     bold: "Bold (Ctrl+B)",
     italic: "Italic (Ctrl+I)",
     underline: "Underline (Ctrl+U)",
@@ -149,6 +151,7 @@ export const ptBR: TranslationKeys = {
     print: "Imprimir",
     formatPainter: "Pincel de Formatação",
     fontFamily: "Fonte",
+    pageTemplate: "Modelo de Página",
     bold: "Negrito (Ctrl+B)",
     italic: "Itálico (Ctrl+I)",
     underline: "Sublinhado (Ctrl+U)",
