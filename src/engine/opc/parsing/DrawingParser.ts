@@ -78,13 +78,26 @@ export class DrawingParser {
   }
 
   parseEquation(el: Element, display: boolean, ctx?: ParseContext): EquationNode | null {
-    const latex = el.textContent ?? "";
-    return {
+    const annotation = findDeep(el, "annotation");
+    let latex = "";
+    if (annotation && getAttr(annotation, "encoding") === "application/x-tex") {
+      latex = annotation.textContent ?? "";
+    } else {
+      const tTags = Array.from(el.getElementsByTagNameNS("*", "t"));
+      if (tTags.length > 0) {
+        latex = tTags.map(t => t.textContent).join("");
+      } else {
+        latex = el.textContent ?? "";
+      }
+    }
+
+    const eq: EquationNode = {
       id: ctx ? ctx.idGenerator.nextBlockId() : `eq:${Math.random().toString(36).substr(2, 9)}`,
       kind: "equation",
-      latex,
+      latex: latex.trim(),
       display,
-      omml: el.outerHTML,
+      omml: el.outerHTML || el.innerHTML || "<m:oMath></m:oMath>", 
     };
+    return eq;
   }
 }

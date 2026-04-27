@@ -8,6 +8,7 @@ export class IdGenerator {
   private runCounter = 0;
   private imageCounter = 0;
   private tableCounter = 0;
+  private otherCounters: Record<string, number> = {};
 
   nextSectionId(): string {
     return `section:${this.sectionCounter++}`;
@@ -29,6 +30,16 @@ export class IdGenerator {
     return `table:${this.tableCounter++}`;
   }
 
+  /**
+   * Generates a unique ID with a custom prefix.
+   */
+  nextId(prefix: string): string {
+    if (this.otherCounters[prefix] === undefined) {
+      this.otherCounters[prefix] = 0;
+    }
+    return `${prefix}:${this.otherCounters[prefix]++}`;
+  }
+
   /** Reset all counters (useful for testing). */
   reset(): void {
     this.sectionCounter = 0;
@@ -36,5 +47,6 @@ export class IdGenerator {
     this.runCounter = 0;
     this.imageCounter = 0;
     this.tableCounter = 0;
+    this.otherCounters = {};
   }
 }

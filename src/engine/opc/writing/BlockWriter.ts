@@ -168,7 +168,7 @@ export class BlockWriter {
       b.selfClose(W_NS, "jc", { "w:val": "center" });
       b.close(W_NS, "pPr");
     }
-    b.open(W_NS, "r");
+    
     if (eq.omml) {
       let omml = eq.omml;
       if (eq.display && !omml.trim().startsWith("<m:oMathPara")) {
@@ -176,11 +176,13 @@ export class BlockWriter {
       }
       b.raw(omml);
     } else if (eq.latex) {
+      b.open(W_NS, "r");
       b.open(W_NS, "t");
       b.text(eq.latex);
       b.close(W_NS, "t");
+      b.close(W_NS, "r");
     }
-    b.close(W_NS, "r");
+    
     b.close(W_NS, "p");
   }
 

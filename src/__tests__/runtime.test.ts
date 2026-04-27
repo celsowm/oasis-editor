@@ -83,17 +83,15 @@ describe("DocumentRuntime", () => {
 
     runtime.dispatch(Operations.insertFootnote());
     const state2 = runtime.getState();
-    // The new behavior: footnote is created with empty text, editing mode switches to "footnote"
-    // The text "Footnote content" is ignored because INSERT_FOOTNOTE no longer takes text
     expect(state2.document.footnotes).toBeDefined();
     expect(state2.document.footnotes!.length).toBe(1);
-    expect(state2.document.footnotes![0].id).toBe("1");
-    expect(state2.document.footnotes![0].blocks[0].kind).toBe("paragraph");
-    // Empty paragraph was created
-    expect((state2.document.footnotes![0].blocks[0] as any).children[0].text).toBe("");
-    // Editing mode should be "footnote"
+    
+    const footnote = state2.document.footnotes![0];
+    expect(footnote.id).toContain("footnote");
+    expect(footnote.blocks[0].kind).toBe("paragraph");
+    expect((footnote.blocks[0] as any).children[0].text).toBe("");
     expect(state2.editingMode).toBe("footnote");
-    expect(state2.editingFootnoteId).toBe("1");
+    expect(state2.editingFootnoteId).toBe(footnote.id);
   });
 
   it("should insert an endnote at cursor position", () => {
@@ -112,7 +110,7 @@ describe("DocumentRuntime", () => {
     const state2 = runtime.getState();
     expect(state2.document.endnotes).toBeDefined();
     expect(state2.document.endnotes!.length).toBe(1);
-    expect(state2.document.endnotes![0].id).toBe("1");
+    expect(state2.document.endnotes![0].id).toContain("endnote");
     expect(state2.document.endnotes![0].blocks[0].kind).toBe("paragraph");
     expect((state2.document.endnotes![0].blocks[0] as any).children[0].text).toBe("");
   });
@@ -134,13 +132,17 @@ describe("DocumentRuntime", () => {
     const para2 = state2.document.sections[sections.length - 1].children[sections[sections.length - 1].children.length - 1] as any;
     expect(para2.children.length).toBe(3);
     expect(para2.children[0].text).toBe("Hello ");
-    expect(para2.children[1].commentId).toBe("1");
+    
+    const commentRun = para2.children[1];
+    expect(commentRun.commentId).toBeDefined();
     expect(para2.children[2].text).toBe("world");
+    
     expect(state2.document.comments).toBeDefined();
     expect(state2.document.comments!.length).toBe(1);
-    expect(state2.document.comments![0].id).toBe("1");
-    expect(state2.document.comments![0].author).toBe("Author");
-    expect(state2.document.comments![0].blocks[0].kind).toBe("paragraph");
-    expect((state2.document.comments![0].blocks[0] as any).children[0].text).toBe("Comment content");
+    const comment = state2.document.comments![0];
+    expect(comment.id).toBe(commentRun.commentId);
+    expect(comment.author).toBe("Author");
+    expect(comment.blocks[0].kind).toBe("paragraph");
+    expect((comment.blocks[0] as any).children[0].text).toBe("Comment content");
   });
 });
