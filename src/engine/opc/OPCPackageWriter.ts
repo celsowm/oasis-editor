@@ -4,7 +4,7 @@ import { Relationship } from "./OPCGraphBuilder.js";
 import { pxToHalfPoint } from "../../core/utils/Units.js";
 import { IFontManager } from "../../core/typography/FontManager.js";
 import { DocumentModel } from "../../core/document/DocumentTypes.js";
-import { WMLResult } from "./writing/WmlWriter.js";
+import { WMLResult } from "./writing/WordprocessingMLWriter.js";
 
 const CT_NS = "http://schemas.openxmlformats.org/package/2006/content-types";
 const RELS_NS = "http://schemas.openxmlformats.org/package/2006/relationships";

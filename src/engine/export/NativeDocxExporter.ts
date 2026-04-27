@@ -1,6 +1,6 @@
 import { DocumentExporter } from "../../core/export/DocumentExporter.js";
 import { DocumentModel } from "../../core/document/DocumentTypes.js";
-import { WmlWriter } from "../opc/writing/WmlWriter.js";
+import { WmlWriter } from "../opc/writing/WordprocessingMLWriter.js";
 import { OPCPackageWriter } from "../opc/OPCPackageWriter.js";
 import { IFontManager } from "../../core/typography/FontManager.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";

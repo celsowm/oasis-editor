@@ -3,7 +3,7 @@ import { DocumentImporter } from "../../core/import/DocumentImporter.js";
 import { createSection } from "../../core/document/DocumentFactory.js";
 import { SafeZipReader } from "../zip/SafeZipReader.js";
 import { OPCGraphBuilder } from "../opc/OPCGraphBuilder.js";
-import { WmlParser } from "../opc/parsing/WmlParser.js";
+import { WmlParser } from "../opc/parsing/WordprocessingMLParser.js";
 import { StyleResolver, applyStylesToBlocks } from "../../core/document/StyleResolver.js";
 
 export class NativeDocxImporter implements DocumentImporter {
