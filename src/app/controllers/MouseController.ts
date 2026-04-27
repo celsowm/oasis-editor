@@ -24,7 +24,7 @@ export class MouseController {
   }
 
   handleMouseDown(event: MouseEvent): void {
-    Logger.log("MOUSE: handleMouseDown", event.type);
+    Logger.debug("MOUSE: handleMouseDown", event.type);
     const path = event.composedPath() as HTMLElement[];
     const isImageRelated = path.some(el =>
         el.classList?.contains("oasis-image-wrapper") ||
@@ -32,7 +32,7 @@ export class MouseController {
     );
 
     if (isImageRelated) {
-      Logger.log("MOUSE: Click on image related element, ignoring for text selection");
+      Logger.debug("MOUSE: Click on image related element, ignoring for text selection");
       return;
     }
 

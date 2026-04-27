@@ -32,6 +32,7 @@ export interface FormattingEvents {
   onSuperscript: () => void;
   onSubscript: () => void;
   onColorChange: (color: string) => void;
+  onHighlightColorChange: (color: string) => void;
   onFontFamilyChange: (fontFamily: string) => void;
   onAlign: (align: "left" | "center" | "right" | "justify") => void;
   onStyleChange: (styleId: string) => void;

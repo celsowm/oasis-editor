@@ -1,6 +1,7 @@
 import { Component, createSignal, For, Show, onMount, onCleanup } from 'solid-js';
 import { Logger } from '../../core/utils/Logger.js';
 import { store } from '../EditorStore.tsx';
+import { dropdownManager } from './DropdownManager.js';
 
 interface MenuItem {
   label: string;
@@ -19,27 +20,37 @@ export const MenuBar: Component = () => {
   const [activeMenu, setActiveMenu] = createSignal<string | null>(null);
   let menuBarRef: HTMLDivElement | undefined;
 
+  const closeSelf = () => {
+    setActiveMenu(null);
+  };
+
   const handleDocumentClick = (e: MouseEvent) => {
     if (menuBarRef && !menuBarRef.contains(e.target as Node)) {
-      setActiveMenu(null);
+      closeSelf();
     }
   };
 
   onMount(() => {
     document.addEventListener('click', handleDocumentClick);
-  });
-
-  onCleanup(() => {
-    document.removeEventListener('click', handleDocumentClick);
+    dropdownManager.register(closeSelf);
+    onCleanup(() => {
+      document.removeEventListener('click', handleDocumentClick);
+      dropdownManager.unregister(closeSelf);
+    });
   });
 
   const toggleMenu = (id: string, e: MouseEvent) => {
     e.stopPropagation();
-    setActiveMenu(activeMenu() === id ? null : id);
+    if (activeMenu() === id) {
+      closeSelf();
+    } else {
+      dropdownManager.closeAll(closeSelf);
+      setActiveMenu(id);
+    }
   };
 
   const executeAction = (action?: () => void) => {
-    setActiveMenu(null);
+    closeSelf();
     if (action) action();
   };
 
@@ -48,13 +59,13 @@ export const MenuBar: Component = () => {
       id: 'file', label: 'File', getItems: () => {
         const events = store.events;
         return [
-          { label: "New", action: () => console.log("New document") },
-          { label: "Open", action: () => console.log("Open document") },
+          { label: "New", action: () => events?.onNew?.() },
+          { label: "Open", action: () => events?.onOpen?.() },
           { separator: true, label: "" },
           { label: "Import DOCX...", action: () => document.getElementById("oasis-editor-import-docx-input")?.click() },
           { label: "Export DOCX...", action: () => events?.onExportDocx?.() },
           { label: "Export PDF...", action: () => events?.onExportPdf?.() },
-          { label: "Download", action: () => console.log("Download") },
+          { label: "Download", action: () => events?.onDownload?.() },
           { separator: true, label: "" },
           { label: "Print", shortcut: "Ctrl+P", action: () => (events?.onPrint ? events.onPrint() : window.print()) },
         ];
@@ -67,9 +78,22 @@ export const MenuBar: Component = () => {
           { label: "Undo", shortcut: "Ctrl+Z", action: () => events?.onUndo() },
           { label: "Redo", shortcut: "Ctrl+Y", action: () => events?.onRedo() },
           { separator: true, label: "" },
-          { label: "Cut", shortcut: "Ctrl+X", action: () => document.execCommand("cut") },
-          { label: "Copy", shortcut: "Ctrl+C", action: () => document.execCommand("copy") },
-          { label: "Paste", shortcut: "Ctrl+V", action: () => document.execCommand("paste") },
+          { label: "Cut", shortcut: "Ctrl+X", action: async () => {
+            try { await navigator.clipboard.writeText(window.getSelection()?.toString() ?? ""); }
+            catch { document.execCommand("cut"); }
+          }},
+          { label: "Copy", shortcut: "Ctrl+C", action: async () => {
+            try { await navigator.clipboard.writeText(window.getSelection()?.toString() ?? ""); }
+            catch { document.execCommand("copy"); }
+          }},
+          { label: "Paste", shortcut: "Ctrl+V", action: async () => {
+            try {
+              const text = await navigator.clipboard.readText();
+              events?.onPaste?.(text);
+            } catch {
+              // Fallback: browser's native paste via Ctrl+V still works
+            }
+          }},
         ];
       }
     },
@@ -84,7 +108,7 @@ export const MenuBar: Component = () => {
           { label: "Endnote", action: () => events?.onInsertEndnote?.() },
           { label: "Page number", action: () => events?.onInsertPageNumber?.() },
           { separator: true, label: "" },
-          { label: "Horizontal line", action: () => console.log("Insert HR") },
+          { label: "Horizontal line", action: () => events?.onInsertHr?.() },
         ];
       }
     },

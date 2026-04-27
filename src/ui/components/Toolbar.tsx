@@ -1,5 +1,5 @@
 import { Component, JSX, splitProps, createSignal, Show, createEffect, onMount, onCleanup } from 'solid-js';
-import { createIcons, icons } from 'lucide';
+import { throttle } from '../../core/utils/throttle.js';
 
 export type ToolbarResponseMode = 'wrap' | 'overflow';
 
@@ -58,7 +58,7 @@ export const Toolbar: Component<ToolbarProps> = (props) => {
 
   createEffect(() => {
     isExpanded();
-    queueMicrotask(() => createIcons({ icons, nameAttr: "data-lucide" }));
+    // Icons are auto-scanned by IconManager
   });
 
   // After popover renders, hide non-overflow items inside it
@@ -66,7 +66,7 @@ export const Toolbar: Component<ToolbarProps> = (props) => {
     if (isExpanded()) {
       queueMicrotask(() => {
         applyPopoverVisibility(overflowIndex());
-        createIcons({ icons, nameAttr: "data-lucide" });
+        // Icons are auto-scanned by IconManager
       });
     }
   });
@@ -82,13 +82,14 @@ export const Toolbar: Component<ToolbarProps> = (props) => {
   onMount(() => {
     document.addEventListener('mousedown', handleDocumentClick);
     if (props.mode === 'overflow' && toolbarRef) {
-      // Initial measure (delay so icons & fonts are mounted)
-      setTimeout(measureOverflow, 50);
+      // Initial measure after paint
+      requestAnimationFrame(measureOverflow);
       // Re-measure when fonts load
       if ((document as any).fonts?.ready) {
         (document as any).fonts.ready.then(() => measureOverflow());
       }
-      resizeObserver = new ResizeObserver(() => measureOverflow());
+      // Throttle ResizeObserver to avoid excessive calls during resize
+      resizeObserver = new ResizeObserver(throttle(() => measureOverflow(), 100));
       resizeObserver.observe(toolbarRef);
     }
   });

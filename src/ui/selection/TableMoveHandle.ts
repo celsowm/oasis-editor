@@ -18,7 +18,7 @@ export class TableMoveHandle {
   private createHandle(): HTMLElement {
     const handle = document.createElement("div");
     handle.className = "oasis-table-move-handle";
-    handle.innerHTML = "⠿";
+    handle.textContent = "⠿";
     handle.title = "Drag to move table";
     handle.style.position = "absolute";
     handle.style.display = "none";

@@ -1,8 +1,8 @@
-import { Component, createSignal, onMount, For, Show } from "solid-js";
+import { Component, createSignal, onMount, createEffect, onCleanup, For, Show } from "solid-js";
 import { THEME_COLORS, STANDARD_COLORS } from "./ColorPalette.js";
-import { createIcons, icons } from "lucide";
-import { render } from "solid-js/web";
+import { render, Portal } from "solid-js/web";
 import { ColorPickerListener } from "../../app/events/ViewEventBindings.js";
+import { dropdownManager } from "./DropdownManager.js";
 
 export interface ColorPickerProps {
   onColorSelected: (color: string) => void;
@@ -12,32 +12,68 @@ export interface ColorPickerProps {
 export const ColorPickerComponent: Component<ColorPickerProps> = (props) => {
   const [isOpen, setIsOpen] = createSignal(false);
   const [currentColor, setCurrentColor] = createSignal(props.initialColor || "#000000");
-  let containerRef: HTMLDivElement | undefined;
+  let buttonRef: HTMLButtonElement | undefined;
+  let dropdownRef: HTMLDivElement | undefined;
+
+  const closeSelf = () => {
+    setIsOpen(false);
+  };
+
+  const openSelf = () => {
+    dropdownManager.closeAll(closeSelf);
+    setIsOpen(true);
+  };
+
+  const positionDropdown = () => {
+    if (!dropdownRef || !buttonRef) return;
+    const rect = buttonRef.getBoundingClientRect();
+    dropdownRef.style.position = "fixed";
+    dropdownRef.style.top = `${rect.bottom + 4}px`;
+    dropdownRef.style.left = `${rect.left}px`;
+  };
 
   onMount(() => {
-    if (containerRef) {
-      createIcons({ icons, nameAttr: "data-lucide", root: containerRef });
-    }
+    // Icons are auto-scanned by IconManager
+    dropdownManager.register(closeSelf);
+    onCleanup(() => dropdownManager.unregister(closeSelf));
+  });
 
-    const closeDropdown = () => setIsOpen(false);
-    window.addEventListener("click", closeDropdown);
-    return () => window.removeEventListener("click", closeDropdown);
+  createEffect(() => {
+    if (isOpen()) {
+      requestAnimationFrame(() => positionDropdown());
+    }
   });
 
   const toggleDropdown = (e: MouseEvent) => {
     e.stopPropagation();
-    setIsOpen(!isOpen());
+    if (isOpen()) {
+      closeSelf();
+    } else {
+      openSelf();
+    }
   };
 
   const selectColor = (color: string) => {
     setCurrentColor(color);
     props.onColorSelected(color);
-    setIsOpen(false);
+    closeSelf();
   };
 
+  const handleClickOutside = (e: MouseEvent) => {
+    if (isOpen() && buttonRef && !buttonRef.contains(e.target as Node)) {
+      closeSelf();
+    }
+  };
+
+  onMount(() => {
+    window.addEventListener("click", handleClickOutside);
+    onCleanup(() => window.removeEventListener("click", handleClickOutside));
+  });
+
   return (
-    <div class="oasis-color-picker" ref={containerRef}>
+    <div class="oasis-color-picker">
       <button
+        ref={buttonRef}
         class="oasis-color-picker-button"
         title="Text Color"
         type="button"
@@ -56,53 +92,58 @@ export const ColorPickerComponent: Component<ColorPickerProps> = (props) => {
       </button>
 
       <Show when={isOpen()}>
-        <div class="oasis-color-picker-dropdown show">
+        <Portal>
           <div
-            class="oasis-color-picker-automatic"
-            onClick={() => selectColor("#000000")}
+            ref={dropdownRef}
+            class="oasis-color-picker-dropdown show"
+            style={{ position: "fixed", "z-index": "10000" }}
           >
-            <div class="oasis-color-picker-automatic-square"></div>
-            <span>Automatic</span>
-          </div>
+            <div
+              class="oasis-color-picker-automatic"
+              onClick={() => selectColor("#000000")}
+            >
+              <div class="oasis-color-picker-automatic-square"></div>
+              <span>Automatic</span>
+            </div>
 
-          <div class="oasis-color-picker-section">
-            <div class="oasis-color-picker-section-title">Theme Colors</div>
-            <div class="oasis-color-picker-grid">
-              <For each={THEME_COLORS.flat()}>
-                {(swatch) => (
-                  <div
-                    class="oasis-color-picker-swatch"
-                    title={swatch.name}
-                    style={{ "background-color": swatch.color }}
-                    onClick={() => selectColor(swatch.color)}
-                  ></div>
-                )}
-              </For>
+            <div class="oasis-color-picker-section">
+              <div class="oasis-color-picker-section-title">Theme Colors</div>
+              <div class="oasis-color-picker-grid">
+                <For each={THEME_COLORS.flat()}>
+                  {(swatch) => (
+                    <div
+                      class="oasis-color-picker-swatch"
+                      title={swatch.name}
+                      style={{ "background-color": swatch.color }}
+                      onClick={() => selectColor(swatch.color)}
+                    ></div>
+                  )}
+                </For>
+              </div>
+            </div>
+
+            <div class="oasis-color-picker-section">
+              <div class="oasis-color-picker-section-title">Standard Colors</div>
+              <div class="oasis-color-picker-grid">
+                <For each={STANDARD_COLORS}>
+                  {(swatch) => (
+                    <div
+                      class="oasis-color-picker-swatch"
+                      title={swatch.name}
+                      style={{ "background-color": swatch.color }}
+                      onClick={() => selectColor(swatch.color)}
+                    ></div>
+                  )}
+                </For>
+              </div>
             </div>
           </div>
-
-          <div class="oasis-color-picker-section">
-            <div class="oasis-color-picker-section-title">Standard Colors</div>
-            <div class="oasis-color-picker-grid">
-              <For each={STANDARD_COLORS}>
-                {(swatch) => (
-                  <div
-                    class="oasis-color-picker-swatch"
-                    title={swatch.name}
-                    style={{ "background-color": swatch.color }}
-                    onClick={() => selectColor(swatch.color)}
-                  ></div>
-                )}
-              </For>
-            </div>
-          </div>
-        </div>
+        </Portal>
       </Show>
     </div>
   );
 };
 
-// Legacy wrapper to maintain compatibility with existing controllers/view
 export class ColorPicker {
   private dispose: () => void;
   private setColorSignal: (color: string) => void;
@@ -115,9 +156,9 @@ export class ColorPicker {
     this.setColorSignal = setColor;
 
     this.dispose = render(() => (
-      <ColorPickerComponent 
-        onColorSelected={listener.onColorSelected} 
-        initialColor={color()} 
+      <ColorPickerComponent
+        onColorSelected={listener.onColorSelected}
+        initialColor={color()}
       />
     ), parent);
   }

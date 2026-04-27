@@ -56,12 +56,3 @@ function appendChildren(parent: Node, children: Child[]) {
     }
   }
 }
-
-/**
- * Creates a DocumentFragment containing the given children.
- */
-export function fragment(...children: Child[]): DocumentFragment {
-  const f = document.createDocumentFragment();
-  appendChildren(f, children);
-  return f;
-}

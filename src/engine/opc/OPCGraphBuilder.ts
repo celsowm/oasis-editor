@@ -1,4 +1,4 @@
-import { DOMParser } from "@xmldom/xmldom";
+import { parseXml } from "./parsing/XmlUtils.js";
 
 export interface ContentTypeEntry {
   extension?: string;
@@ -28,15 +28,10 @@ export interface OPCPackage {
 }
 
 const CT_NS = "http://schemas.openxmlformats.org/package/2006/content-types";
+
 const RELS_NS = "http://schemas.openxmlformats.org/package/2006/relationships";
 const OFFICE_DOC_REL =
   "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
-
-function parseXml(buffer: Uint8Array): any {
-  const parser = new DOMParser();
-  const text = new TextDecoder().decode(buffer);
-  return parser.parseFromString(text, "application/xml");
-}
 
 function getChildren(parent: Element, ns: string, localName: string): Element[] {
   const result: Element[] = [];

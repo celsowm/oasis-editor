@@ -1,6 +1,6 @@
 import { EditorState } from "../EditorState.js";
 import { transformBlocks } from "../../document/BlockVisitor.js";
-import { BlockNode } from "../../document/BlockTypes.js";
+import { BlockNode, isListItemBlock } from "../../document/BlockTypes.js";
 
 export function recalculateListSequences(blocks: BlockNode[]): BlockNode[] {
   const counters: number[] = [];
@@ -9,7 +9,7 @@ export function recalculateListSequences(blocks: BlockNode[]): BlockNode[] {
 
   return blocks.map((block) => {
     if (block.kind === "ordered-list-item" || block.kind === "list-item") {
-      const level = (block as any).level ?? 0;
+      const level = isListItemBlock(block) ? (block.level ?? 0) : 0;
 
       if (lastListKind !== block.kind) {
         counters.length = 0;

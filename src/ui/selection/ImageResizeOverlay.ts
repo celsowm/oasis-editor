@@ -278,4 +278,8 @@ export class ImageResizeOverlay {
     this.overlayEl = null;
     this.badgeEl = null;
   }
+
+  destroy(): void {
+    this.detach();
+  }
 }

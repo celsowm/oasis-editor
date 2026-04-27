@@ -1,0 +1,149 @@
+/**
+ * Shared base styles for ColorPicker and HighlightColorPicker.
+ * Both pickers share ~95% of their CSS — only grid columns,
+ * swatch size, and the "automatic" swatch pattern differ.
+ */
+
+.oasis-color-picker,
+.oasis-highlight-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 4px;
+}
+
+.oasis-color-picker-button,
+.oasis-highlight-picker-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  gap: 4px;
+}
+
+.oasis-color-picker-button:hover,
+.oasis-highlight-picker-button:hover {
+  background: #dadce0;
+}
+
+.oasis-color-picker-left,
+.oasis-highlight-picker-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+}
+
+.oasis-color-picker-icon,
+.oasis-highlight-picker-icon {
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
+  color: #3c4043;
+}
+
+.oasis-color-picker-indicator,
+.oasis-highlight-picker-indicator {
+  width: 16px;
+  height: 3px;
+  margin-top: 1px;
+  border-radius: 1px;
+}
+
+.oasis-color-picker-arrow,
+.oasis-highlight-picker-arrow {
+  font-size: 10px;
+  color: #5f6368;
+  display: flex;
+  align-items: center;
+}
+
+.oasis-color-picker-dropdown,
+.oasis-highlight-picker-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  margin-top: 4px;
+  display: none;
+  width: max-content;
+  user-select: none;
+}
+
+.oasis-color-picker-dropdown.show,
+.oasis-highlight-picker-dropdown.show {
+  display: block;
+}
+
+.oasis-color-picker-section,
+.oasis-highlight-picker-section {
+  margin-bottom: 12px;
+}
+
+.oasis-color-picker-section:last-child,
+.oasis-highlight-picker-section:last-child {
+  margin-bottom: 0;
+}
+
+.oasis-color-picker-section-title,
+.oasis-highlight-picker-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #70757a;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.oasis-color-picker-swatch,
+.oasis-highlight-picker-swatch {
+  border: 1px solid #ddd;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: transform 0.1s ease;
+}
+
+.oasis-color-picker-swatch:hover,
+.oasis-highlight-picker-swatch:hover {
+  transform: scale(1.2);
+  z-index: 1;
+  border-color: #999;
+}
+
+.oasis-color-picker-swatch.active,
+.oasis-highlight-picker-swatch.active {
+  border: 2px solid #2563eb;
+}
+
+.oasis-color-picker-automatic,
+.oasis-highlight-picker-automatic {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #3c4043;
+}
+
+.oasis-color-picker-automatic:hover,
+.oasis-highlight-picker-automatic:hover {
+  background: #f1f3f4;
+}
+
+.oasis-color-picker-automatic-square,
+.oasis-highlight-picker-automatic-square {
+  width: 14px;
+  height: 14px;
+  border: 1px solid #ddd;
+}

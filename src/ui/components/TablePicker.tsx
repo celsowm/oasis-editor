@@ -1,6 +1,7 @@
-import { Component, createSignal, onMount, For, Show } from "solid-js";
-import { render } from "solid-js/web";
+import { Component, createSignal, onMount, onCleanup, For, Show } from "solid-js";
+import { render, Portal } from "solid-js/web";
 import { TablePickerListener } from "../../app/events/ViewEventBindings.js";
+import { dropdownManager } from "./DropdownManager.js";
 
 export interface TablePickerProps {
   onTableSelected: (rows: number, cols: number) => void;
@@ -12,15 +13,25 @@ export const TablePickerComponent: Component<TablePickerProps> = (props) => {
   const [highlighted, setHighlighted] = createSignal({ rows: 0, cols: 0 });
   const [dropdownPos, setDropdownPos] = createSignal({ top: 0, left: 0 });
 
+  const closeSelf = () => {
+    setIsOpen(false);
+  };
+
+  const openSelf = () => {
+    dropdownManager.closeAll(closeSelf);
+    setIsOpen(true);
+  };
+
   onMount(() => {
-    const closeDropdown = () => setIsOpen(false);
-    window.addEventListener("click", closeDropdown);
+    dropdownManager.register(closeSelf);
+    onCleanup(() => dropdownManager.unregister(closeSelf));
 
     const toggle = (e: MouseEvent) => {
       e.stopPropagation();
-      const open = !isOpen();
-      setIsOpen(open);
-      if (open) {
+      if (isOpen()) {
+        closeSelf();
+      } else {
+        openSelf();
         const rect = props.anchor.getBoundingClientRect();
         setDropdownPos({
           top: rect.bottom + window.scrollY + 5,
@@ -33,50 +44,141 @@ export const TablePickerComponent: Component<TablePickerProps> = (props) => {
     props.anchor.addEventListener("click", toggle);
 
     return () => {
-      window.removeEventListener("click", closeDropdown);
       props.anchor.removeEventListener("click", toggle);
     };
   });
 
-  const selectColor = (rows: number, cols: number, e: MouseEvent) => {
+  const selectTable = (rows: number, cols: number, e: MouseEvent) => {
     e.stopPropagation();
     props.onTableSelected(rows, cols);
-    setIsOpen(false);
+    closeSelf();
   };
 
   return (
     <Show when={isOpen()}>
-      <div
-        class="oasis-table-picker-dropdown show"
-        style={{
-          top: `${dropdownPos().top}px`,
-          left: `${dropdownPos().left}px`,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div class="oasis-table-picker-info">
-          {highlighted().rows} x {highlighted().cols} Table
+      <Portal>
+        <div
+          class="oasis-table-picker-dropdown show"
+          style={{
+            top: `${dropdownPos().top}px`,
+            left: `${dropdownPos().left}px`,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div class="oasis-table-picker-info">
+            {highlighted().rows} x {highlighted().cols} Table
+          </div>
+          <div class="oasis-table-picker-grid">
+            <For each={Array.from({ length: 100 })}>
+              {(_, i) => {
+                const r = Math.floor(i() / 10) + 1;
+                const c = (i() % 10) + 1;
+                return (
+                  <div
+                    class="oasis-table-picker-cell"
+                    classList={{
+                      highlight: r <= highlighted().rows && c <= highlighted().cols,
+                    }}
+                    onMouseOver={() => setHighlighted({ rows: r, cols: c })}
+                    onClick={(e) => selectTable(r, c, e)}
+                  ></div>
+                );
+              }}
+            </For>
+          </div>
         </div>
-        <div class="oasis-table-picker-grid">
-          <For each={Array.from({ length: 100 })}>
-            {(_, i) => {
-              const r = Math.floor(i() / 10) + 1;
-              const c = (i() % 10) + 1;
-              return (
-                <div
-                  class="oasis-table-picker-cell"
-                  classList={{
-                    highlight: r <= highlighted().rows && c <= highlighted().cols,
-                  }}
-                  onMouseOver={() => setHighlighted({ rows: r, cols: c })}
-                  onClick={(e) => selectColor(r, c, e)}
-                ></div>
-              );
-            }}
-          </For>
-        </div>
-      </div>
+      </Portal>
     </Show>
+  );
+};
+
+/** Self-contained version that attaches to a button ref instead of requiring an external anchor element. */
+export const TablePickerInline: Component<{ onTableSelected: (rows: number, cols: number) => void }> = (props) => {
+  const [isOpen, setIsOpen] = createSignal(false);
+  const [highlighted, setHighlighted] = createSignal({ rows: 0, cols: 0 });
+  const [dropdownPos, setDropdownPos] = createSignal({ top: 0, left: 0 });
+  let buttonRef: HTMLButtonElement | undefined;
+
+  const closeSelf = () => setIsOpen(false);
+
+  const openSelf = () => {
+    dropdownManager.closeAll(closeSelf);
+    setIsOpen(true);
+  };
+
+  const toggle = (e: MouseEvent) => {
+    e.stopPropagation();
+    if (isOpen()) {
+      closeSelf();
+    } else {
+      openSelf();
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + window.scrollY + 5,
+        left: rect.left + window.scrollX,
+      });
+      setHighlighted({ rows: 0, cols: 0 });
+    }
+  };
+
+  onMount(() => {
+    dropdownManager.register(closeSelf);
+    onCleanup(() => dropdownManager.unregister(closeSelf));
+  });
+
+  const selectTable = (rows: number, cols: number, e: MouseEvent) => {
+    e.stopPropagation();
+    props.onTableSelected(rows, cols);
+    closeSelf();
+  };
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        class="oasis-toolbar-btn"
+        title="Insert Table"
+        onClick={toggle}
+        style={{ padding: 0, width: "28px", height: "28px", display: "flex", "align-items": "center", "justify-content": "center" }}
+      >
+        <i data-lucide="table" style={{ width: "16px", height: "16px" }}></i>
+      </button>
+      <Show when={isOpen()}>
+        <Portal>
+          <div
+            class="oasis-table-picker-dropdown show"
+            style={{
+              top: `${dropdownPos().top}px`,
+              left: `${dropdownPos().left}px`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div class="oasis-table-picker-info">
+              {highlighted().rows} x {highlighted().cols} Table
+            </div>
+            <div class="oasis-table-picker-grid">
+              <For each={Array.from({ length: 100 })}>
+                {(_, i) => {
+                  const r = Math.floor(i() / 10) + 1;
+                  const c = (i() % 10) + 1;
+                  return (
+                    <div
+                      class="oasis-table-picker-cell"
+                      classList={{
+                        highlight: r <= highlighted().rows && c <= highlighted().cols,
+                      }}
+                      onMouseOver={() => setHighlighted({ rows: r, cols: c })}
+                      onClick={(e) => selectTable(r, c, e)}
+                    ></div>
+                  );
+                }}
+              </For>
+            </div>
+          </div>
+        </Portal>
+      </Show>
+    </>
   );
 };
 
@@ -88,9 +190,9 @@ export class TablePicker {
     if (!btn) throw new Error(`Button #${buttonId} not found`);
 
     this.dispose = render(() => (
-      <TablePickerComponent 
+      <TablePickerComponent
         anchor={btn}
-        onTableSelected={listener.onTableSelected} 
+        onTableSelected={listener.onTableSelected}
       />
     ), document.body);
   }

@@ -2,30 +2,21 @@ import { registerHandler } from "../OperationHandlers.js";
 import { OperationType } from "../../operations/OperationTypes.js";
 import { isTextBlock, TextRun, MarkSet } from "../../document/BlockTypes.js";
 import { updateDocumentSections } from "./sharedHelpers.js";
-import { StyleResolver } from "../../document/StyleResolver.js";
+import { StyleResolver, ResolvedStyle } from "../../document/StyleResolver.js";
+import { StyleRegistry, StyleEntry } from "../../../engine/ir/DocumentIR.js";
 
 function applyResolvedStyleToBlock(block: import("../../document/BlockTypes.js").BlockNode, styleId: string, styles: import("../../document/DocumentTypes.js").DocumentModel["styles"]): import("../../document/BlockTypes.js").BlockNode {
   if (!styles || styles.length === 0) return block;
   if (!isTextBlock(block)) return block;
 
-  const registry = new StyleResolver({
-    get: (id: string) => styles.find((s) => s.styleId === id),
-    values: () => styles.values(),
-    getDefault: (type: string) => styles.find((s) => s.type === type && s.isDefault),
-    resolveChain: (id: string) => {
-      const chain: any[] = [];
-      const visited = new Set<string>();
-      let current = styles.find((s) => s.styleId === id);
-      while (current && !visited.has(current.styleId)) {
-        visited.add(current.styleId);
-        chain.push(current);
-        current = current.basedOn ? styles.find((s) => s.styleId === current!.basedOn) : undefined;
-      }
-      return chain;
-    },
-  } as any);
+  // Build a proper StyleRegistry from the document styles
+  const registry = new StyleRegistry();
+  for (const style of styles) {
+    registry.add(style as StyleEntry);
+  }
 
-  const resolved = registry.resolve(styleId);
+  const resolver = new StyleResolver(registry);
+  const resolved = resolver.resolve(styleId);
   if (!resolved) return block;
 
   const nextBlock = { ...block };
@@ -43,14 +34,14 @@ function applyResolvedStyleToBlock(block: import("../../document/BlockTypes.js")
     nextBlock.children = nextBlock.children.map((run: TextRun) => {
       const nextMarks: MarkSet = { ...resolved.marks, ...run.marks };
       // Explicit run marks take precedence over style defaults
-      for (const key of Object.keys(run.marks)) {
-        const markKey = key as keyof MarkSet;
-        const value = run.marks[markKey];
+      const nextMarksRecord = nextMarks as Record<keyof MarkSet, unknown>;
+      for (const key of Object.keys(run.marks) as Array<keyof MarkSet>) {
+        const value = run.marks[key];
         if (value !== undefined) {
-          (nextMarks as any)[markKey] = value;
+          nextMarksRecord[key] = value;
         }
       }
-      return { ...run, marks: nextMarks };
+      return { ...run, marks: nextMarksRecord as MarkSet };
     });
   }
 

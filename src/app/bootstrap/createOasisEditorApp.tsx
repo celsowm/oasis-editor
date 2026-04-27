@@ -11,8 +11,6 @@ import { OasisEditorController } from "../OasisEditorController.js";
 import { TextMeasurementService } from "../services/TextMeasurementService.js";
 import { BrowserDomHitTester } from "../services/DomHitTester.js";
 import { DragStateService } from "../services/DragStateService.js";
-import { ColorPicker } from "../../ui/components/ColorPicker.tsx";
-import { TablePicker } from "../../ui/components/TablePicker.tsx";
 import { TableFloatingToolbar } from "../../ui/selection/TableFloatingToolbar.tsx";
 import { TableMoveHandle } from "../../ui/selection/TableMoveHandle.js";
 import { ImageResizeOverlay } from "../../ui/selection/ImageResizeOverlay.js";
@@ -49,8 +47,6 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
     dom,
     presenter,
     measurer: textMeasurer,
-    colorPickerFactory: (id, listener) => new ColorPicker(id, listener),
-    tablePickerFactory: (id, options) => new TablePicker(id, options),
     tableToolbarFactory: (events) => new TableFloatingToolbar(events),
     tableMoveHandleFactory: (events) => new TableMoveHandle(events),
     imageResizeOverlayFactory: (container, onResize) =>

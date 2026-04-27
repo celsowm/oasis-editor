@@ -62,3 +62,7 @@ venv/
 debug_artifacts/
 dist-app/
 *.err
+
+# Playwright debug screenshots
+*-debug-*.png
+vite.log

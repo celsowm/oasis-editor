@@ -194,3 +194,8 @@ export function isTextBlock(node: BlockNode): node is TextBlockNode {
 export function isTableNode(node: BlockNode): node is TableNode {
   return node.kind === "table";
 }
+
+/** Type guard for list items that have `level` and `listFormat` properties. */
+export function isListItemBlock(node: BlockNode): node is ListItemNode | OrderedListItemNode {
+  return node.kind === "list-item" || node.kind === "ordered-list-item";
+}

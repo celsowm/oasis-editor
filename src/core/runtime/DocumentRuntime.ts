@@ -75,7 +75,7 @@ export class DocumentRuntime {
   }
 
   dispatch(operation: EditorOperation): void {
-    Logger.log("RUNTIME: dispatch chamado com", operation.type);
+    Logger.debug("RUNTIME: dispatch", operation.type);
     this.history.push(this.state);
     this.future = [];
     this.state = reduceDocumentState(
@@ -83,7 +83,7 @@ export class DocumentRuntime {
       operation,
       this.latestLayout ?? undefined,
     );
-    Logger.log("RUNTIME: Estado atualizado, selection:", this.state.selection);
+    Logger.debug("RUNTIME: Estado atualizado, selection:", this.state.selection);
     this.emit();
   }
 

@@ -1,14 +1,17 @@
-import { onMount, Component, Show, For } from 'solid-js';
-import { createIcons, icons } from 'lucide';
+import { Component, Show, For, createSignal } from 'solid-js';
 import { Toolbar, ToolbarButton, ToolbarGroup, ToolbarSeparator, ToolbarSelect } from './components/Toolbar.tsx';
 import { MenuBar } from './components/MenuBar.tsx';
-import { store } from './EditorStore.tsx';
+import { store, setStore } from './EditorStore.tsx';
+import { sanitizeUrl } from '../core/utils/sanitizeUrl.js';
+import { ColorPickerComponent } from './components/ColorPicker.tsx';
+import { HighlightColorPickerComponent } from './components/HighlightColorPicker.js';
+import { TablePickerInline } from './components/TablePicker.tsx';
+import { RulerComponent } from './ruler/Ruler.tsx';
+import { SelectionLayer } from './selection/SelectionLayer.tsx';
+import { PageLayerComponent } from './pages/PageLayer.tsx';
+import { TableToolbar } from './selection/TableToolbar.tsx';
 
 const OasisEditor: Component = () => {
-  onMount(() => {
-    createIcons({ icons, nameAttr: "data-lucide" });
-  });
-
   const ss = () => store.view?.selectionState;
 
   const handleToolbarClick = (e: MouseEvent) => {
@@ -39,7 +42,10 @@ const OasisEditor: Component = () => {
         case "track-changes": events.onToggleTrackChanges(); break;
         case "link":
             const url = prompt("Enter link URL:");
-            if (url) events.onInsertLink(url);
+            if (url) {
+              const sanitized = sanitizeUrl(url);
+              if (sanitized) events.onInsertLink(sanitized);
+            }
             break;
     }
   };
@@ -130,7 +136,20 @@ const OasisEditor: Component = () => {
           <ToolbarButton id="oasis-editor-superscript" icon="superscript" command="superscript" active={ss()?.vertAlign === 'superscript'} title="Superscript" />
           <ToolbarButton id="oasis-editor-subscript" icon="subscript" command="subscript" active={ss()?.vertAlign === 'subscript'} title="Subscript" />
           <ToolbarButton id="oasis-editor-link" icon="link" command="link" active={!!ss()?.link} title="Insert Link" />
-          <div id="oasis-editor-color-picker-container"></div>
+          <ColorPickerComponent
+            onColorSelected={(color) => {
+              setStore('pickerColor', color);
+              store.events?.onColorChange?.(color);
+            }}
+            initialColor={store.pickerColor}
+          />
+          <HighlightColorPickerComponent
+            onHighlightSelected={(color) => {
+              setStore('pickerHighlightColor', color);
+              store.events?.onHighlightChange?.(color);
+            }}
+            initialColor={store.pickerHighlightColor}
+          />
           <ToolbarButton id="oasis-editor-track-changes" icon="eye" command="track-changes" active={ss()?.trackChangesEnabled} title="Track Changes" />
         </ToolbarGroup>
 
@@ -164,17 +183,39 @@ const OasisEditor: Component = () => {
         <ToolbarGroup>
           <ToolbarButton id="oasis-editor-insert-image" icon="image" title="Insert Image" onClick={() => document.getElementById("oasis-editor-image-input")?.click()} />
           <input type="file" id="oasis-editor-image-input" accept="image/*" style={{ display: 'none' }} />
-          <ToolbarButton id="oasis-editor-insert-table" icon="table" title="Insert Table" />
-          <div id="oasis-editor-table-picker-container"></div>
+          <TablePickerInline
+            onTableSelected={(rows, cols) => {
+              setStore('pickerTableRows', rows);
+              setStore('pickerTableCols', cols);
+              store.events?.onTableInsert?.(rows, cols);
+            }}
+          />
         </ToolbarGroup>
       </Toolbar>
 
       <main id="oasis-editor-app" class="oasis-editor-main">
-        <div id="oasis-editor-ruler"></div>
-        <section id="oasis-editor-pages" class="oasis-editor-pages"></section>
+        <RulerComponent
+          template={store.view?.pageTemplate ?? null}
+          initialIndentation={store.view?.selectionState?.indentation ?? 0}
+          onIndentationChange={(val) => store.events?.onIndentationChange?.(val)}
+        />
+        <section id="oasis-editor-pages" class="oasis-editor-pages">
+          <PageLayerComponent layout={store.pageLayout} editingMode={store.editingMode} />
+        </section>
+        {/* Selection layer: rendered as Portals into each page */}
+        <SelectionLayer />
+        <TableToolbar
+          onInsertRowAbove={() => store.events?.onInsertRowAbove?.()}
+          onInsertRowBelow={() => store.events?.onInsertRowBelow?.()}
+          onInsertColumnLeft={() => store.events?.onInsertColumnLeft?.()}
+          onInsertColumnRight={() => store.events?.onInsertColumnRight?.()}
+          onDeleteRow={() => store.events?.onDeleteRow?.()}
+          onDeleteColumn={() => store.events?.onDeleteColumn?.()}
+          onDeleteTable={() => store.events?.onDeleteTable?.()}
+        />
       </main>
 
-      <div id="oasis-editor-input-container" style={{ position: 'fixed', left: '0', top: '0', width: '1px', height: '1px', overflow: 'hidden', opacity: '0', pointerEvents: 'none' }}>
+      <div id="oasis-editor-input-container" style={{ position: 'fixed', left: '0', top: '0', width: '1px', height: '1px', overflow: 'hidden', opacity: '0' }}>
         <textarea id="oasis-editor-input" tabindex="0"></textarea>
       </div>
 

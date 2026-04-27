@@ -141,32 +141,32 @@ export const Operations = {
     };
   },
 
-  tableAddRowAbove: (
+  tableInsertRowAbove: (
     tableId: string,
     referenceBlockId: string,
   ): EditorOperation => ({
-    type: OperationType.TABLE_ADD_ROW_ABOVE,
+    type: OperationType.TABLE_INSERT_ROW_ABOVE,
     payload: { tableId, referenceBlockId },
   }),
-  tableAddRowBelow: (
+  tableInsertRowBelow: (
     tableId: string,
     referenceBlockId: string,
   ): EditorOperation => ({
-    type: OperationType.TABLE_ADD_ROW_BELOW,
+    type: OperationType.TABLE_INSERT_ROW_BELOW,
     payload: { tableId, referenceBlockId },
   }),
-  tableAddColumnLeft: (
+  tableInsertColumnLeft: (
     tableId: string,
     referenceBlockId: string,
   ): EditorOperation => ({
-    type: OperationType.TABLE_ADD_COLUMN_LEFT,
+    type: OperationType.TABLE_INSERT_COLUMN_LEFT,
     payload: { tableId, referenceBlockId },
   }),
-  tableAddColumnRight: (
+  tableInsertColumnRight: (
     tableId: string,
     referenceBlockId: string,
   ): EditorOperation => ({
-    type: OperationType.TABLE_ADD_COLUMN_RIGHT,
+    type: OperationType.TABLE_INSERT_COLUMN_RIGHT,
     payload: { tableId, referenceBlockId },
   }),
   tableDeleteRow: (

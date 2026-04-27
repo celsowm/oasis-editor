@@ -11,7 +11,13 @@ export class ImportExportController {
     private importer: DocumentImporter,
     private exporter: DocumentExporter,
     private pdfExporter: DocumentExporter,
-  ) {}
+    private onError?: (message: string, error: unknown) => void,
+  ) {
+    this.onError ??= (message, error) => {
+      Logger.error(message, error);
+      alert(`Error: ${message}\n\n${error instanceof Error ? error.message : String(error)}`);
+    };
+  }
 
   async importDocx(file: File): Promise<void> {
     try {
@@ -46,8 +52,7 @@ export class ImportExportController {
         editingMode: "main",
       });
     } catch (e) {
-      Logger.error(
-"Failed to import DOCX:", e);
+      this.onError?.("Failed to import DOCX", e);
     }
   }
 
@@ -62,8 +67,7 @@ export class ImportExportController {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      Logger.error(
-"Failed to export DOCX:", e);
+      this.onError?.("Failed to export DOCX", e);
     }
   }
 
@@ -78,8 +82,7 @@ export class ImportExportController {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      Logger.error(
-"Failed to export PDF:", e);
+      this.onError?.("Failed to export PDF", e);
     }
   }
 }

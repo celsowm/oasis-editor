@@ -82,9 +82,12 @@ Call log:
         - button "▼" [ref=e77] [cursor=pointer]:
           - img [ref=e80]
           - generic [ref=e83]: ▼
-        - button "Track Changes" [ref=e84] [cursor=pointer]:
-          - img [ref=e85]
-      - combobox "Paragraph style" [ref=e90] [cursor=pointer]:
+        - button "▼" [ref=e86] [cursor=pointer]:
+          - img [ref=e89]
+          - generic [ref=e93]: ▼
+        - button "Track Changes" [ref=e94] [cursor=pointer]:
+          - img [ref=e95]
+      - combobox "Paragraph style" [ref=e100] [cursor=pointer]:
         - option "Normal" [selected]
         - option "Heading 1"
         - option "Heading 2"
@@ -92,23 +95,23 @@ Call log:
         - option "Heading 4"
         - option "Heading 5"
         - option "Heading 6"
-    - button "More options" [ref=e91] [cursor=pointer]:
-      - img [ref=e92]
-  - main [ref=e96]:
-    - generic [ref=e97]:
+    - button "More options" [ref=e101] [cursor=pointer]:
+      - img [ref=e102]
+  - main [ref=e106]:
+    - generic [ref=e107]:
       - generic:
         - article
-        - article [ref=e98]: UNDERLINED_TEXT NORMAL_TEXTLorem Ipsum Dolor Sit Amet
-        - article [ref=e99]: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam.
-        - article [ref=e100]: Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa.
-        - article [ref=e101]: Vestibulum Lacinia
-        - article [ref=e102]: Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
-        - article [ref=e103]: Curabitur sodales ligula in libero. Sed dignissim lacinia nunc. Curabitur tortor. Pellentesque nibh. Aenean quam. In scelerisque sem at dolor. Maecenas mattis. Sed convallis tristique sem. Proin ut ligula vel nunc egestas porttitor. Morbi lectus risus, iaculis vel, suscipit quis, luctus non, massa. Fusce ac turpis quis ligula lacinia aliquet.
+        - article [ref=e108]: UNDERLINED_TEXT NORMAL_TEXTLorem Ipsum Dolor Sit Amet
+        - article [ref=e109]: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam.
+        - article [ref=e110]: Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa.
+        - article [ref=e111]: Vestibulum Lacinia
+        - article [ref=e112]: Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.
+        - article [ref=e113]: Curabitur sodales ligula in libero. Sed dignissim lacinia nunc. Curabitur tortor. Pellentesque nibh. Aenean quam. In scelerisque sem at dolor. Maecenas mattis. Sed convallis tristique sem. Proin ut ligula vel nunc egestas porttitor. Morbi lectus risus, iaculis vel, suscipit quis, luctus non, massa. Fusce ac turpis quis ligula lacinia aliquet.
         - article
-  - textbox [active] [ref=e105]
-  - contentinfo [ref=e106]:
-    - generic [ref=e107]: Revision 27 • 1 pages
-    - generic [ref=e108]: Revision 0 • 0 pages
+  - textbox [active] [ref=e115]
+  - contentinfo [ref=e116]:
+    - generic [ref=e117]: Revision 27 • 1 pages
+    - generic [ref=e118]: Revision 0 • 0 pages
 ```
 
 # Test source

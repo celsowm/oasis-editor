@@ -1,13 +1,12 @@
 import { Component, createSignal, For, Show, onMount } from "solid-js";
 import { LayoutFragment } from "../../core/layout/LayoutFragment.js";
-import { createIcons, icons } from "lucide";
 import { render } from "solid-js/web";
 
 export interface TableToolbarEvents {
-  onAddRowAbove: (tableId: string) => void;
-  onAddRowBelow: (tableId: string) => void;
-  onAddColumnLeft: (tableId: string) => void;
-  onAddColumnRight: (tableId: string) => void;
+  onInsertRowAbove: (tableId: string) => void;
+  onInsertRowBelow: (tableId: string) => void;
+  onInsertColumnLeft: (tableId: string) => void;
+  onInsertColumnRight: (tableId: string) => void;
   onDeleteRow: (tableId: string) => void;
   onDeleteColumn: (tableId: string) => void;
   onDeleteTable: (tableId: string) => void;
@@ -25,19 +24,17 @@ export const TableFloatingToolbarComponent: Component<TableFloatingToolbarProps>
   let toolbarRef: HTMLDivElement | undefined;
 
   onMount(() => {
-    if (toolbarRef) {
-      createIcons({ icons, nameAttr: "data-lucide", root: toolbarRef });
-    }
+    // Icons are auto-scanned by IconManager
   });
 
   const groups = [
     [
-      { icon: "arrow-up-to-line", label: "Add Row Above", action: () => props.events.onAddRowAbove(props.tableId!) },
-      { icon: "arrow-down-to-line", label: "Add Row Below", action: () => props.events.onAddRowBelow(props.tableId!) },
+      { icon: "arrow-up-to-line", label: "Insert Row Above", action: () => props.events.onInsertRowAbove(props.tableId!) },
+      { icon: "arrow-down-to-line", label: "Insert Row Below", action: () => props.events.onInsertRowBelow(props.tableId!) },
     ],
     [
-      { icon: "arrow-left-to-line", label: "Add Column Left", action: () => props.events.onAddColumnLeft(props.tableId!) },
-      { icon: "arrow-right-to-line", label: "Add Column Right", action: () => props.events.onAddColumnRight(props.tableId!) },
+      { icon: "arrow-left-to-line", label: "Insert Column Left", action: () => props.events.onInsertColumnLeft(props.tableId!) },
+      { icon: "arrow-right-to-line", label: "Insert Column Right", action: () => props.events.onInsertColumnRight(props.tableId!) },
     ],
     [
       { icon: "rows-3", label: "Delete Row", action: () => props.events.onDeleteRow(props.tableId!) },

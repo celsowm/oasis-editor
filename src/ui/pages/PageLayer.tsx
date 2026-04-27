@@ -101,33 +101,3 @@ export const PageLayerComponent: Component<PageLayerProps> = (props) => {
     </For>
   );
 };
-
-// Legacy wrapper
-import { render } from "solid-js/web";
-import { createSignal } from "solid-js";
-
-export class PageLayer {
-  private dispose: () => void;
-  private setLayout: (l: LayoutState | null) => void;
-  private setMode: (m: "main" | "header" | "footer" | "footnote") => void;
-
-  constructor(container: HTMLElement) {
-    const [layout, setLayout] = createSignal<LayoutState | null>(null);
-    const [mode, setMode] = createSignal<"main" | "header" | "footer" | "footnote">("main");
-    this.setLayout = setLayout;
-    this.setMode = setMode;
-
-    this.dispose = render(() => (
-      <PageLayerComponent layout={layout()} editingMode={mode()} />
-    ), container);
-  }
-
-  render(layout: LayoutState, editingMode: "main" | "header" | "footer" | "footnote" = "main"): void {
-    this.setLayout(layout);
-    this.setMode(editingMode);
-  }
-
-  destroy(): void {
-    this.dispose();
-  }
-}

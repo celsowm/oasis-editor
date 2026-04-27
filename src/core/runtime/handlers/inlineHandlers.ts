@@ -66,13 +66,14 @@ function handleInsertText(state: EditorState, op: any): EditorState {
             id: newRunIds?.[runIdx++] || run.id + "_b",
             text: beforeText,
           });
-        const combinedMarks = { ...run.marks, ...(pendingMarks || {}) };
+        const combinedMarks = { ...run.marks, ...pendingMarks };
         if (pendingMarks) {
-          for (const key in pendingMarks) {
-            if ((pendingMarks as any)[key] === undefined || (pendingMarks as any)[key] === false) {
-              delete (combinedMarks as any)[key];
-            }
-          }
+          const cleaned = Object.fromEntries(
+            Object.entries(pendingMarks).filter(
+              ([, v]) => v !== undefined && v !== false,
+            ),
+          );
+          Object.assign(combinedMarks, cleaned);
         }
 
         nextChildren.push({
@@ -177,14 +178,16 @@ function handleInsertText(state: EditorState, op: any): EditorState {
 function handleDeleteText(state: EditorState, op: any): EditorState {
   const { selection, document } = state;
   if (!selection) return state;
-  const { blockId, inlineId, offset } = selection.anchor;
 
+  // Range delete: anchor and focus are different — delete text between them
   if (
     selection.anchor.offset !== selection.focus.offset ||
     selection.anchor.blockId !== selection.focus.blockId
   ) {
-    return state; // Range delete TODO
+    return deleteTextRange(state);
   }
+
+  const { blockId, inlineId, offset } = selection.anchor;
 
   const oldBlock = findBlockById(document, blockId);
   let absoluteOffset = 0;
@@ -199,7 +202,7 @@ function handleDeleteText(state: EditorState, op: any): EditorState {
   }
 
   if (absoluteOffset === 0) {
-      // Merge with previous block if possible (not implemented here for brevity, 
+      // Merge with previous block if possible (not implemented here for brevity,
       // but logic would call tryMergeSiblings)
       return state;
   }
@@ -243,6 +246,102 @@ function handleDeleteText(state: EditorState, op: any): EditorState {
   return {
     ...nextState,
     selection: { anchor: nextPosition, focus: nextPosition },
+  };
+}
+
+/**
+ * Delete text between anchor and focus positions (range delete).
+ * Only supports single-block ranges for now; cross-block deletion would
+ * need mergeBlock logic.
+ */
+function deleteTextRange(state: EditorState): EditorState {
+  const { selection } = state;
+  if (!selection) return state;
+
+  const { blockId } = selection.anchor;
+  // Ensure both anchor and focus are in the same block
+  if (selection.anchor.blockId !== selection.focus.blockId) {
+    // Cross-block deletion not supported — fallback to no-op
+    return state;
+  }
+
+  // Calculate absolute offsets for both positions
+  const block = findBlockById(state.document, blockId);
+  if (!block || !isTextBlock(block)) return state;
+
+  let anchorAbs = 0;
+  let focusAbs = 0;
+  let anchorRun: TextRun | null = null;
+  let focusRun: TextRun | null = null;
+
+  for (const run of block.children) {
+    const runLen = run.text.length;
+    if (!anchorRun && selection.anchor.inlineId === run.id) {
+      anchorAbs += selection.anchor.offset;
+      anchorRun = run;
+    } else if (!anchorRun) {
+      anchorAbs += runLen;
+    }
+    if (!focusRun && selection.focus.inlineId === run.id) {
+      focusAbs += selection.focus.offset;
+      focusRun = run;
+    } else if (!focusRun) {
+      focusAbs += runLen;
+    }
+  }
+
+  if (anchorRun === null || focusRun === null) return state;
+
+  const startAbs = Math.min(anchorAbs, focusAbs);
+  const endAbs = Math.max(anchorAbs, focusAbs);
+
+  // Rebuild runs, slicing text in the range [startAbs, endAbs)
+  const nextChildren: TextRun[] = [];
+  let acc = 0;
+  for (const run of block.children) {
+    const runLen = run.text.length;
+    const runStart = acc;
+    const runEnd = acc + runLen;
+
+    if (endAbs <= runStart || startAbs >= runEnd) {
+      // Range doesn't overlap this run — keep as-is
+      nextChildren.push(run);
+    } else {
+      // Range overlaps — slice out the deleted portion
+      const sliceStart = Math.max(0, startAbs - runStart);
+      const sliceEnd = Math.min(runLen, endAbs - runStart);
+      const before = run.text.substring(0, sliceStart);
+      const after = run.text.substring(sliceEnd);
+      const newText = before + after;
+      if (newText.length > 0 || nextChildren.length === 0) {
+        nextChildren.push({ ...run, text: newText });
+      }
+    }
+    acc += runLen;
+  }
+
+  const nextState = updateDocumentSections(state, blockId, (b) =>
+    isTextBlock(b) ? { ...b, children: nextChildren } : b,
+  );
+
+  // Place cursor at the start of the deleted range
+  let newPos: LogicalPosition = { ...selection.anchor };
+  acc = 0;
+  for (const run of nextChildren) {
+    if (startAbs >= acc && startAbs <= acc + run.text.length) {
+      newPos = {
+        ...selection.anchor,
+        inlineId: run.id,
+        offset: startAbs - acc,
+      };
+      break;
+    }
+    acc += run.text.length;
+  }
+
+  return {
+    ...nextState,
+    selection: { anchor: newPos, focus: newPos },
   };
 }
 

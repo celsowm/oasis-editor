@@ -2,7 +2,7 @@ import { EditorState } from "../EditorState.js";
 import { registerHandler } from "../OperationHandlers.js";
 import { OperationType } from "../../operations/OperationTypes.js";
 import { getAllBlocksInSection } from "../../document/BlockUtils.js";
-import { isTextBlock, BlockNode, withBlockKind, withIndentation, getBlockIndentation } from "../../document/BlockTypes.js";
+import { isTextBlock, BlockNode, withBlockKind, withIndentation, getBlockIndentation, isListItemBlock } from "../../document/BlockTypes.js";
 import {
   DEFAULT_LIST_INDENTATION,
   DEFAULT_ORDERED_LIST_INDENTATION,
@@ -104,23 +104,15 @@ export function registerListHandlers(): void {
         if (!isTextBlock(block)) return block;
 
         // For list items, decrease level instead of generic indentation
-        if (block.kind === "list-item" || block.kind === "ordered-list-item") {
-          const currentLevel = (block as any).level ?? 0;
+        if (isListItemBlock(block)) {
+          const currentLevel = block.level ?? 0;
           const newLevel = Math.max(0, currentLevel - 1);
           return { ...block, level: newLevel };
         }
 
-        const currentIndent =
-          getBlockIndentation(block) ??
-          ((block as any).kind === "list-item"
-            ? DEFAULT_LIST_INDENTATION
-            : (block as any).kind === "ordered-list-item"
-              ? DEFAULT_ORDERED_LIST_INDENTATION
-              : 0);
-        const step =
-          (block as any).kind === "ordered-list-item"
-            ? DEFAULT_ORDERED_LIST_INDENTATION
-            : DEFAULT_LIST_INDENTATION;
+        // Non-list text blocks use indentation
+        const currentIndent = getBlockIndentation(block);
+        const step = DEFAULT_LIST_INDENTATION;
         const newIndent = Math.max(0, currentIndent - step);
         return withIndentation(block, newIndent);
       });
@@ -191,23 +183,15 @@ export function registerListHandlers(): void {
         if (!isTextBlock(block)) return block;
 
         // For list items, increase level instead of generic indentation
-        if ((block as any).kind === "list-item" || (block as any).kind === "ordered-list-item") {
-          const currentLevel = (block as any).level ?? 0;
+        if (isListItemBlock(block)) {
+          const currentLevel = block.level ?? 0;
           const newLevel = currentLevel + 1;
           return { ...block, level: newLevel };
         }
 
-        const currentIndent =
-          getBlockIndentation(block) ??
-          ((block as any).kind === "list-item"
-            ? DEFAULT_LIST_INDENTATION
-            : (block as any).kind === "ordered-list-item"
-              ? DEFAULT_ORDERED_LIST_INDENTATION
-              : 0);
-        const step =
-          (block as any).kind === "ordered-list-item"
-            ? DEFAULT_ORDERED_LIST_INDENTATION
-            : DEFAULT_LIST_INDENTATION;
+        // Non-list text blocks use indentation
+        const currentIndent = getBlockIndentation(block);
+        const step = DEFAULT_LIST_INDENTATION;
         const newIndent = currentIndent + step;
         return withIndentation(block, newIndent);
       });

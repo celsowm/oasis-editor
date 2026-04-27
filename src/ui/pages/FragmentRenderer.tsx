@@ -1,10 +1,11 @@
 import { Component, For, Show, Switch, Match } from "solid-js";
 import { LayoutFragment } from "../../core/layout/LayoutFragment.js";
 import { getListMarker, getDefaultListFormat } from "../../core/document/ListUtils.js";
-import { 
-  DEFAULT_LIST_INDENTATION, 
-  DEFAULT_ORDERED_LIST_INDENTATION 
+import {
+  DEFAULT_LIST_INDENTATION,
+  DEFAULT_ORDERED_LIST_INDENTATION
 } from "../../core/composition/ParagraphComposer.js";
+import { sanitizeUrl } from "../../core/utils/sanitizeUrl.js";
 
 const HIGHLIGHT_COLORS: Record<string, string> = {
   yellow: "#fef08a", green: "#bbf7d0", cyan: "#a5f3fc", magenta: "#f0abfc",
@@ -112,13 +113,21 @@ export const TextFragment: Component<{ fragment: LayoutFragment; isDimmed: boole
                 </span>
               </Match>
               <Match when={marks.link}>
-                <a 
-                  href={marks.link} 
-                  target="_blank"
-                  style={{ ...style, color: marks.color || "#2563eb", "text-decoration": "underline", cursor: "pointer" }}
-                >
-                  {run.text}
-                </a>
+                {(() => {
+                  const safeHref = sanitizeUrl(marks.link as string);
+                  return safeHref ? (
+                    <a
+                      href={safeHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ ...style, color: marks.color || "#2563eb", "text-decoration": "underline", cursor: "pointer" }}
+                    >
+                      {run.text}
+                    </a>
+                  ) : (
+                    <span style={style}>{run.text}</span>
+                  );
+                })()}
               </Match>
               <Match when={(run as any).footnoteId}>
                 <sup 

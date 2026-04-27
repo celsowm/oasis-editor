@@ -20,6 +20,7 @@ export interface SelectionState {
   strike: boolean;
   link: string | null;
   color: string;
+  highlightColor: string;
   fontFamily: string;
   vertAlign: "superscript" | "subscript" | null;
   align: "left" | "center" | "right" | "justify";
@@ -80,6 +81,7 @@ export class OasisEditorPresenter {
       strike: false,
       link: null,
       color: "#000000",
+      highlightColor: "",
       fontFamily: "Inter",
       vertAlign: null,
       align: "left",
@@ -120,11 +122,13 @@ export class OasisEditorPresenter {
         };
 
         if (state.pendingMarks) {
+            const cleaned: Record<string, unknown> = {};
             for (const key in state.pendingMarks) {
-                if ((state.pendingMarks as any)[key] === undefined) {
-                    delete (effectiveMarks as any)[key];
+                if ((state.pendingMarks as any)[key] !== undefined) {
+                    cleaned[key] = (state.pendingMarks as any)[key];
                 }
             }
+            Object.assign(effectiveMarks, cleaned);
         }
 
         selectionState = {
@@ -134,6 +138,7 @@ export class OasisEditorPresenter {
           strike: !!effectiveMarks.strike,
           link: effectiveMarks.link || null,
           color: effectiveMarks.color || "#000000",
+          highlightColor: effectiveMarks.highlight || "",
           fontFamily: effectiveMarks.fontFamily || "Inter",
           vertAlign: effectiveMarks.vertAlign || null,
           align: targetBlock.align || "left",
@@ -162,6 +167,7 @@ export class OasisEditorPresenter {
         strike: !!state.pendingMarks.strike,
         link: state.pendingMarks.link || null,
         color: state.pendingMarks.color || "#000000",
+        highlightColor: state.pendingMarks.highlight || "",
         fontFamily: state.pendingMarks.fontFamily || "Inter",
         vertAlign: state.pendingMarks.vertAlign || null,
         trackChangesEnabled: !!state.trackChangesEnabled,

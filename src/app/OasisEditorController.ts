@@ -64,6 +64,7 @@ export class OasisEditorController {
   private draggingBlockId: string | null = null;
   private commandBus: CommandBus;
   private domHitTester: DomHitTester;
+  private windowListeners: Array<{ type: string; handler: EventListener }> = [];
 
   constructor(deps: ControllerDeps) {
     this.runtime = deps.runtime;
@@ -171,18 +172,18 @@ export class OasisEditorController {
       onInsertLink: (url) => this.runtime.dispatch(Operations.setMark("link", url)),
       onRemoveLink: () => this.runtime.dispatch(Operations.setMark("link", undefined)),
       onColorChange: (color) => this.runtime.dispatch(Operations.setMark("color", color)),
+      onHighlightColorChange: (color) => this.runtime.dispatch(Operations.setMark("highlight", color || undefined)),
       onFontFamilyChange: (fontFamily) => this.runtime.dispatch(Operations.setMark("fontFamily", fontFamily)),
       onUndo: () => this.commandBus.execute("undo"),
       onRedo: () => this.commandBus.execute("redo"),
       onTemplateChange: (templateId) => this.setTemplate(templateId),
       onTextInput: (text) => {
-        Logger.log("CONTROLLER: onTextInput", { text });
+        Logger.debug("CONTROLLER: onTextInput", { text });
         return this.commandBus.execute("insertText", text);
       },
       onDelete: () => this.runtime.dispatch(Operations.deleteText()),
       onEnter: (isShift) => {
-        Logger.log("CONTROLLER: onEnter", { isShift });
-        Logger.trace("onEnter stack trace");
+        Logger.debug("CONTROLLER: onEnter", { isShift });
         return isShift ? this.commandBus.execute("insertText", "\n") : this.runtime.dispatch(Operations.insertParagraph());
       },
       onEscape: () => this.commandBus.execute("escape"),
@@ -236,7 +237,7 @@ export class OasisEditorController {
 
         if (this.draggingBlockId) {
           const dropTarget = this.dropTargetService.findDropTarget(e, this.view.elements.pagesContainer);
-          Logger.log("CONTROLLER: onDrop", {
+          Logger.debug("CONTROLLER: onDrop", {
             clientX: e.clientX,
             clientY: e.clientY,
             dropTarget,
@@ -255,7 +256,7 @@ export class OasisEditorController {
         }
 
         const pos = this.cursorCalc.calculateFromMouseEvent(e);
-        Logger.log("CONTROLLER: onDrop", {
+        Logger.debug("CONTROLLER: onDrop", {
           clientX: e.clientX,
           clientY: e.clientY,
           pos,
@@ -266,7 +267,7 @@ export class OasisEditorController {
       },
 
       onImageDragStart: (blockId, e) => {
-        Logger.log("CONTROLLER: onImageDragStart", { blockId });
+        Logger.debug("CONTROLLER: onImageDragStart", { blockId });
         this.draggingBlockId = blockId;
         if (e.dataTransfer) {
           e.dataTransfer.setData("text/oasis-block-id", blockId);
@@ -311,12 +312,12 @@ export class OasisEditorController {
       }) as EventListener,
     );
 
-    window.addEventListener("mousemove", (e) => {
-      if (this.tableDrag.isDraggingTable) this.tableDrag.handleDragging(e);
+    this.addWindowListener("mousemove", (e) => {
+      if (this.tableDrag.isDraggingTable) this.tableDrag.handleDragging(e as MouseEvent);
     });
 
-    window.addEventListener("mouseup", (e) => {
-      if (this.tableDrag.isDraggingTable) this.tableDrag.handleMouseUp(e);
+    this.addWindowListener("mouseup", (e) => {
+      if (this.tableDrag.isDraggingTable) this.tableDrag.handleMouseUp(e as MouseEvent);
     });
 
     this.view.elements.root.addEventListener(
@@ -477,7 +478,7 @@ export class OasisEditorController {
     naturalHeight: number,
     displayWidth: number,
   ): void {
-    Logger.log("CONTROLLER: insertImage", { src: src.substring(0, 50) + "..." });
+    Logger.debug("CONTROLLER: insertImage", { src: src.substring(0, 50) + "..." });
     this.runtime.dispatch(
       Operations.insertImage(src, naturalWidth, naturalHeight, displayWidth),
     );
@@ -567,24 +568,24 @@ export class OasisEditorController {
     if (!selection) return;
 
     switch (action) {
-      case "addRowAbove":
+      case "insertRowAbove":
         this.runtime.dispatch(
-          Operations.tableAddRowAbove(tableId, selection.anchor.blockId),
+          Operations.tableInsertRowAbove(tableId, selection.anchor.blockId),
         );
         break;
-      case "addRowBelow":
+      case "insertRowBelow":
         this.runtime.dispatch(
-          Operations.tableAddRowBelow(tableId, selection.anchor.blockId),
+          Operations.tableInsertRowBelow(tableId, selection.anchor.blockId),
         );
         break;
-      case "addColumnLeft":
+      case "insertColumnLeft":
         this.runtime.dispatch(
-          Operations.tableAddColumnLeft(tableId, selection.anchor.blockId),
+          Operations.tableInsertColumnLeft(tableId, selection.anchor.blockId),
         );
         break;
-      case "addColumnRight":
+      case "insertColumnRight":
         this.runtime.dispatch(
-          Operations.tableAddColumnRight(tableId, selection.anchor.blockId),
+          Operations.tableInsertColumnRight(tableId, selection.anchor.blockId),
         );
         break;
       case "deleteRow":
@@ -620,6 +621,25 @@ export class OasisEditorController {
       state: this.runtime.getState(),
       layout: this.latestLayout!,
     }).activeTableId || null;
+  }
+
+  /**
+   * Register a window event listener for automatic cleanup on destroy.
+   */
+  private addWindowListener(type: string, handler: EventListener): void {
+    window.addEventListener(type, handler);
+    this.windowListeners.push({ type, handler });
+  }
+
+  /**
+   * Clean up all tracked listeners and destroy sub-components.
+   */
+  destroy(): void {
+    for (const { type, handler } of this.windowListeners) {
+      window.removeEventListener(type, handler);
+    }
+    this.windowListeners = [];
+    this.view.destroy();
   }
 
   refresh(): void {

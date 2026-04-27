@@ -3,7 +3,6 @@ import { setStore } from "../ui/EditorStore.js";
 import { OasisEditorDom } from "./dom/OasisEditorDom.js";
 import { OasisEditorPresenter } from "./presenters/OasisEditorPresenter.js";
 import { TextMeasurer } from "../bridge/measurement/TextMeasurementBridge.js";
-import { PageLayer } from "../ui/pages/PageLayer.tsx";
 import { PageViewport } from "../ui/pages/PageViewport.js";
 import { ImageResizeOverlay } from "../ui/selection/ImageResizeOverlay.js";
 import {
@@ -17,12 +16,8 @@ import {
 import { LayoutFragment } from "../core/layout/LayoutFragment.js";
 import { h } from "../ui/utils/dom.js";
 import {
-  ColorPickerListener,
-  TablePickerListener,
   ViewEventBindings,
 } from "./events/ViewEventBindings.js";
-import { ColorPicker } from "../ui/components/ColorPicker.tsx";
-import { TablePicker } from "../ui/components/TablePicker.tsx";
 
 import { DragStateService } from "./services/DragStateService.js";
 import { Logger } from "../core/utils/Logger.js";
@@ -40,14 +35,6 @@ export interface ViewDeps {
   dom: OasisEditorDom;
   presenter: OasisEditorPresenter;
   measurer: TextMeasurer;
-  colorPickerFactory: (
-    containerId: string,
-    listener: ColorPickerListener,
-  ) => ColorPicker;
-  tablePickerFactory: (
-    containerId: string,
-    options: TablePickerListener,
-  ) => TablePicker;
   tableToolbarFactory: (events: TableToolbarEvents) => TableFloatingToolbar;
   tableMoveHandleFactory: (events: MoveHandleEvents) => TableMoveHandle;
   imageResizeOverlayFactory: (
@@ -64,10 +51,7 @@ export class OasisEditorView {
   private dom: OasisEditorDom;
   private presenter: OasisEditorPresenter;
   readonly elements: ViewElements;
-  private pageLayer: PageLayer;
   private viewport: PageViewport;
-  private colorPicker!: ColorPicker;
-  private tablePicker!: TablePicker;
   private imageResizeOverlay: ImageResizeOverlay | null = null;
   private imageAltInput: HTMLElement | null = null;
   private tableToolbar!: TableFloatingToolbar;
@@ -77,6 +61,8 @@ export class OasisEditorView {
   private dragState?: DragStateService;
   private isBound = false;
   private dropIndicator: HTMLElement | null = null;
+  private rafIds: number[] = [];
+  private windowListeners: Array<{ el: Window; type: string; handler: EventListener }> = [];
 
   constructor(deps: ViewDeps) {
     this.deps = deps;
@@ -91,18 +77,13 @@ export class OasisEditorView {
       importDocxInput: this.dom.getImportDocxInput(),
     };
 
-    this.pageLayer = new PageLayer(this.elements.pagesContainer);
-    this.viewport = new PageViewport(
-      this.elements.pagesContainer,
-      this.pageLayer,
-      this.deps.measurer,
-    );
+    this.viewport = new PageViewport(this.deps.measurer);
 
     this.tableToolbar = this.deps.tableToolbarFactory({
-      onAddRowAbove: () => this.events.onInsertRowAbove(),
-      onAddRowBelow: () => this.events.onInsertRowBelow(),
-      onAddColumnLeft: () => this.events.onInsertColumnLeft(),
-      onAddColumnRight: () => this.events.onInsertColumnRight(),
+      onInsertRowAbove: () => this.events.onInsertRowAbove(),
+      onInsertRowBelow: () => this.events.onInsertRowBelow(),
+      onInsertColumnLeft: () => this.events.onInsertColumnLeft(),
+      onInsertColumnRight: () => this.events.onInsertColumnRight(),
       onDeleteRow: () => this.events.onDeleteRow(),
       onDeleteColumn: () => this.events.onDeleteColumn(),
       onDeleteTable: () => this.events.onDeleteTable(),
@@ -184,7 +165,7 @@ export class OasisEditorView {
 
       if (ke.key === "Enter") {
         if (isDragging || justDropped) {
-          Logger.log("VIEW: Suppressed ghost Enter", { isDragging, justDropped, timeSinceDrop });
+          Logger.debug("VIEW: Suppressed ghost Enter", { isDragging, justDropped, timeSinceDrop });
           ke.preventDefault();
           ke.stopImmediatePropagation();
           return;
@@ -287,31 +268,32 @@ export class OasisEditorView {
     });
 
     // Drag and Drop support
-    window.addEventListener("dragenter", (e) => {
+    this.addWindowListener("dragenter", (e) => {
       e.preventDefault();
       this.dragState?.enter();
     });
 
-    window.addEventListener("dragleave", (e) => {
+    this.addWindowListener("dragleave", (e) => {
       this.dragState?.leave();
       if (events.onDragLeave) events.onDragLeave(e as DragEvent);
     });
 
-    window.addEventListener("dragover", (e) => {
+    this.addWindowListener("dragover", (e) => {
       e.preventDefault();
       e.stopPropagation();
+      const de = e as DragEvent;
       if (this.dragState) this.dragState.isDragging = true;
-      if (events.onDragOver) events.onDragOver(e as DragEvent);
-      if (e.dataTransfer) {
-        e.dataTransfer.dropEffect = "move";
+      if (events.onDragOver) events.onDragOver(de);
+      if (de.dataTransfer) {
+        de.dataTransfer.dropEffect = "move";
       }
     });
 
-    window.addEventListener("dragend", (e) => {
+    this.addWindowListener("dragend", (e) => {
       this.dragState?.reset();
     });
 
-    window.addEventListener("drop", (e) => {
+    this.addWindowListener("drop", (e) => {
       e.preventDefault();
       e.stopPropagation();
       this.dragState?.recordDrop();
@@ -350,21 +332,6 @@ export class OasisEditorView {
       const { blockId } = ce.detail as { blockId: string };
       events.onSelectImage(blockId);
     });
-
-    this.colorPicker = this.deps.colorPickerFactory(
-      "oasis-editor-color-picker-container",
-      {
-        onColorSelected: (color: string) => events.onColorChange(color),
-      },
-    );
-
-    this.tablePicker = this.deps.tablePickerFactory(
-      "oasis-editor-insert-table",
-      {
-        onTableSelected: (rows: number, cols: number) =>
-          events.onInsertTable(rows, cols),
-      },
-    );
   }
 
   render(viewModel: EditorViewModel): void {
@@ -386,11 +353,11 @@ export class OasisEditorView {
       // finishes processing mouse events. In headless contexts, synchronous
       // focus during mousedown handling gets immediately canceled by the
       // browser's native focus management.
-      requestAnimationFrame(() => {
+      this.scheduleRaf(() => {
         this.elements.hiddenInput.focus({ preventScroll: true });
         // Double-check: if focus was stolen again, try once more
         if (document.activeElement !== this.elements.hiddenInput) {
-          requestAnimationFrame(() => {
+          this.scheduleRaf(() => {
             this.elements.hiddenInput.focus({ preventScroll: true });
           });
         }
@@ -659,5 +626,58 @@ export class OasisEditorView {
 
   setFormatPainterActive(active: boolean, sticky: boolean = false): void {
       // Delegated to DOM directly for now
+  }
+
+  /**
+   * Schedule a RAF callback with automatic cleanup tracking.
+   */
+  private scheduleRaf(callback: () => void): void {
+    const id = requestAnimationFrame(() => {
+      this.rafIds = this.rafIds.filter((rid) => rid !== id);
+      callback();
+    });
+    this.rafIds.push(id);
+  }
+
+  /**
+   * Register a window event listener for automatic cleanup on destroy.
+   */
+  private addWindowListener(type: string, handler: EventListener): void {
+    window.addEventListener(type, handler);
+    this.windowListeners.push({ el: window, type, handler });
+  }
+
+  /**
+   * Clean up all tracked listeners and pending RAFs.
+   */
+  destroy(): void {
+    // Cancel pending RAFs
+    for (const id of this.rafIds) {
+      cancelAnimationFrame(id);
+    }
+    this.rafIds = [];
+
+    // Remove window listeners
+    for (const { el, type, handler } of this.windowListeners) {
+      el.removeEventListener(type, handler);
+    }
+    this.windowListeners = [];
+
+    // Clean up overlays and toolbars
+    this.imageResizeOverlay?.destroy();
+    this.tableToolbar?.hide();
+    this.tableMoveHandle?.hide();
+
+    // Remove drop indicator
+    this.dropIndicator?.remove();
+    this.dropIndicator = null;
+
+    // Remove image alt input
+    if (this.imageAltInput) {
+      this.imageAltInput.remove();
+      this.imageAltInput = null;
+    }
+
+    this.isBound = false;
   }
 }

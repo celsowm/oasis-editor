@@ -236,9 +236,10 @@ function registerMarkHandlers(): void {
   registerHandler(OperationType.TOGGLE_MARK, (state, op) => {
     const { selection, pendingMarks } = state;
     if (!selection) return state;
-    const { mark, value } = op.payload as { mark: keyof MarkSet; value?: any };
+    const { mark, value } = op.payload as { mark: keyof MarkSet; value?: MarkSet[keyof MarkSet] | boolean };
 
-    const toggleValue = value !== undefined ? value : true;
+    // For boolean marks (bold, italic, etc.), default toggle value is true
+    const toggleValue: MarkSet[keyof MarkSet] | boolean = value !== undefined ? value : true;
 
     if (isCollapsedAtPoint(selection)) {
       const nextMarks: MarkSet = { ...(pendingMarks || {}) };
@@ -253,12 +254,12 @@ function registerMarkHandlers(): void {
       const isCurrentlyActive = nextMarks[mark] !== undefined ? nextMarks[mark] === toggleValue : runMarkActive;
 
       if (isCurrentlyActive) {
-          delete (nextMarks as any)[mark];
+          const { [mark]: _, ...rest } = nextMarks;
+          return { ...state, pendingMarks: rest as MarkSet };
       } else {
-          (nextMarks as any)[mark] = toggleValue;
+          (nextMarks as Record<keyof MarkSet, unknown>)[mark] = toggleValue;
+          return { ...state, pendingMarks: nextMarks };
       }
-      
-      return { ...state, pendingMarks: nextMarks };
     }
 
     let shouldAdd = false;
@@ -269,8 +270,12 @@ function registerMarkHandlers(): void {
 
     return applyMarksInRange(state, (m) => {
       const next: MarkSet = { ...m };
-      if (shouldAdd) next[mark] = toggleValue;
-      else delete next[mark];
+      if (shouldAdd) {
+        (next as Record<keyof MarkSet, unknown>)[mark] = toggleValue;
+      } else {
+        const { [mark]: _, ...rest } = next;
+        return rest as MarkSet;
+      }
       return next;
     });
   });
@@ -282,14 +287,20 @@ function registerMarkHandlers(): void {
 
     if (isCollapsedAtPoint(selection)) {
       const nextMarks = { ...(pendingMarks || {}), [mark]: value } as MarkSet;
-      if (value === undefined || value === null) delete nextMarks[mark];
+      if (value === undefined || value === null) {
+        const { [mark]: _, ...rest } = nextMarks;
+        return { ...state, pendingMarks: rest as MarkSet };
+      }
       return { ...state, pendingMarks: nextMarks };
     }
 
     return applyMarksInRange(state, (m) => {
       const next: MarkSet = { ...m };
-      if (value === undefined || value === null) delete next[mark];
-      else next[mark] = value;
+      if (value === undefined || value === null) {
+        const { [mark]: _, ...rest } = next;
+        return rest as MarkSet;
+      }
+      next[mark] = value;
       return next;
     });
   });

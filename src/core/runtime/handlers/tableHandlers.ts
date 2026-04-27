@@ -183,19 +183,19 @@ export function registerTableHandlers(): void {
     };
   });
 
-  registerHandler(OperationType.TABLE_ADD_ROW_ABOVE, (state, op) =>
+  registerHandler(OperationType.TABLE_INSERT_ROW_ABOVE, (state, op) =>
     tableAddRow(state, op, true),
   );
 
-  registerHandler(OperationType.TABLE_ADD_ROW_BELOW, (state, op) =>
+  registerHandler(OperationType.TABLE_INSERT_ROW_BELOW, (state, op) =>
     tableAddRow(state, op, false),
   );
 
-  registerHandler(OperationType.TABLE_ADD_COLUMN_LEFT, (state, op) =>
+  registerHandler(OperationType.TABLE_INSERT_COLUMN_LEFT, (state, op) =>
     tableAddColumn(state, op, true),
   );
 
-  registerHandler(OperationType.TABLE_ADD_COLUMN_RIGHT, (state, op) =>
+  registerHandler(OperationType.TABLE_INSERT_COLUMN_RIGHT, (state, op) =>
     tableAddColumn(state, op, false),
   );
 

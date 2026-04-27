@@ -18,10 +18,10 @@ export enum OperationType {
   SELECT_IMAGE = "SELECT_IMAGE",
   UPDATE_IMAGE = "UPDATE_IMAGE",
   INSERT_TABLE = "INSERT_TABLE",
-  TABLE_ADD_ROW_ABOVE = "TABLE_ADD_ROW_ABOVE",
-  TABLE_ADD_ROW_BELOW = "TABLE_ADD_ROW_BELOW",
-  TABLE_ADD_COLUMN_LEFT = "TABLE_ADD_COLUMN_LEFT",
-  TABLE_ADD_COLUMN_RIGHT = "TABLE_ADD_COLUMN_RIGHT",
+  TABLE_INSERT_ROW_ABOVE = "TABLE_INSERT_ROW_ABOVE",
+  TABLE_INSERT_ROW_BELOW = "TABLE_INSERT_ROW_BELOW",
+  TABLE_INSERT_COLUMN_LEFT = "TABLE_INSERT_COLUMN_LEFT",
+  TABLE_INSERT_COLUMN_RIGHT = "TABLE_INSERT_COLUMN_RIGHT",
   TABLE_DELETE_ROW = "TABLE_DELETE_ROW",
   TABLE_DELETE_COLUMN = "TABLE_DELETE_COLUMN",
   TABLE_DELETE = "TABLE_DELETE",
@@ -338,10 +338,10 @@ export type EditorOperation =
   | InsertEndnoteOp
   | InsertCommentOp
   | MoveBlockOp
-  | Operation<OperationType.TABLE_ADD_ROW_ABOVE, TableRowColPayload>
-  | Operation<OperationType.TABLE_ADD_ROW_BELOW, TableRowColPayload>
-  | Operation<OperationType.TABLE_ADD_COLUMN_LEFT, TableRowColPayload>
-  | Operation<OperationType.TABLE_ADD_COLUMN_RIGHT, TableRowColPayload>
+  | Operation<OperationType.TABLE_INSERT_ROW_ABOVE, TableRowColPayload>
+  | Operation<OperationType.TABLE_INSERT_ROW_BELOW, TableRowColPayload>
+  | Operation<OperationType.TABLE_INSERT_COLUMN_LEFT, TableRowColPayload>
+  | Operation<OperationType.TABLE_INSERT_COLUMN_RIGHT, TableRowColPayload>
   | Operation<OperationType.TABLE_DELETE_ROW, TableRowColPayload>
   | Operation<OperationType.TABLE_DELETE_COLUMN, TableRowColPayload>
   | Operation<OperationType.TABLE_DELETE, TableDeletePayload>

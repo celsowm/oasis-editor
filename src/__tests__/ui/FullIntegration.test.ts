@@ -87,8 +87,6 @@ describe("OasisEditor Full Integration", () => {
       dom,
       presenter,
       measurer,
-      colorPickerFactory: () => ({ setCurrentColor: () => {} }) as any,
-      tablePickerFactory: () => ({}) as any,
       tableToolbarFactory: () => ({ hide: () => {} }) as any,
       tableMoveHandleFactory: () => ({ hide: () => {} }) as any,
       imageResizeOverlayFactory: () => ({}) as any,
