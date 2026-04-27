@@ -1,4 +1,5 @@
 import { Component, createSignal, For, Show, onMount, onCleanup } from 'solid-js';
+import { Logger } from '../../core/utils/Logger.js';
 import { store } from '../EditorStore.tsx';
 
 interface MenuItem {

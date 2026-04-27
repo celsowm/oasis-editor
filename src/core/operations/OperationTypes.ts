@@ -27,6 +27,8 @@ export enum OperationType {
   TABLE_DELETE = "TABLE_DELETE",
   TABLE_MERGE_CELLS = "TABLE_MERGE_CELLS",
   TABLE_SPLIT_CELL = "TABLE_SPLIT_CELL",
+  TABLE_TOGGLE_HEADER_ROW = "TABLE_TOGGLE_HEADER_ROW",
+  TABLE_TOGGLE_FIRST_COLUMN = "TABLE_TOGGLE_FIRST_COLUMN",
   MOVE_BLOCK = "MOVE_BLOCK",
   TOGGLE_UNORDERED_LIST = "TOGGLE_UNORDERED_LIST",
   TOGGLE_ORDERED_LIST = "TOGGLE_ORDERED_LIST",
@@ -86,7 +88,8 @@ export interface SetSectionTemplatePayload {
   templateId: string;
 }
 export interface SetSelectionPayload {
-  selection: EditorSelection;
+  selection: EditorSelection | null;
+  selectedImageId?: string | null;
 }
 export interface InsertTextPayload {
   text: string;
@@ -105,6 +108,7 @@ export interface MoveSelectionPayload {
 }
 export interface ToggleMarkPayload {
   mark: keyof MarkSet;
+  value?: any;
 }
 export interface SetMarkPayload {
   mark: keyof MarkSet;
@@ -343,6 +347,8 @@ export type EditorOperation =
   | Operation<OperationType.TABLE_DELETE, TableDeletePayload>
   | Operation<OperationType.TABLE_MERGE_CELLS, TableMergeCellsPayload>
   | Operation<OperationType.TABLE_SPLIT_CELL, TableSplitCellPayload>
+  | Operation<OperationType.TABLE_TOGGLE_HEADER_ROW, { tableId: string }>
+  | Operation<OperationType.TABLE_TOGGLE_FIRST_COLUMN, { tableId: string }>
   | Operation<OperationType.TOGGLE_UNORDERED_LIST, {}>
   | Operation<OperationType.TOGGLE_ORDERED_LIST, {}>
   | Operation<OperationType.DECREASE_INDENT, {}>

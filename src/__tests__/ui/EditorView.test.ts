@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { OasisEditorDom } from "../../app/dom/OasisEditorDom.js";
 import { OasisEditorView } from "../../app/OasisEditorView.js";
 import { OasisEditorController } from "../../app/OasisEditorController.js";
+import { DragStateService } from "../../app/services/DragStateService.js";
 import { DocumentRuntime } from "../../core/runtime/DocumentRuntime.js";
 
 describe("OasisEditor Integration", () => {
@@ -104,6 +105,7 @@ describe("OasisEditor Integration", () => {
       pdfExporter: {} as any,
       domHitTester: {} as any,
       fontManager: { getAvailableFonts: () => [] } as any,
+      dragState: new DragStateService(),
     });
 
     expect(() => {

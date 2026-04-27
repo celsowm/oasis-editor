@@ -37,5 +37,13 @@ export default defineConfig(({ mode }) => {
         outDir: 'dist',
       }),
     ].filter(Boolean),
+    test: {
+      include: ['src/**/*.{test,spec}.{ts,tsx}'],
+      exclude: ['node_modules', 'dist', 'dist-app', 'e2e/**'],
+      environment: 'node',
+      environmentMatchGlobs: [
+        ['src/__tests__/ui/**', 'jsdom'],
+      ],
+    },
   };
 });

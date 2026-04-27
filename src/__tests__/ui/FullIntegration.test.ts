@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { OasisEditorDom } from "../../app/dom/OasisEditorDom.js";
 import { OasisEditorView } from "../../app/OasisEditorView.js";
 import { OasisEditorController } from "../../app/OasisEditorController.js";
+import { DragStateService } from "../../app/services/DragStateService.js";
 import { DocumentRuntime } from "../../core/runtime/DocumentRuntime.js";
 import { DocumentLayoutService } from "../../app/services/DocumentLayoutService.js";
 import { PAGE_TEMPLATES } from "../../core/pages/PageTemplateFactory.js";
@@ -104,6 +105,7 @@ describe("OasisEditor Full Integration", () => {
       pdfExporter: {} as any,
       domHitTester: {} as any,
       fontManager,
+      dragState: new DragStateService(),
     });
 
     // Isso agora vai disparar o motor de paginação real (via layoutService.updateLayout)

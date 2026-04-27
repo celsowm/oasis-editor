@@ -96,7 +96,7 @@ describe("OperationFactory", () => {
       const op = Operations.setSelection(selection);
       expect(op).toEqual({
         type: OperationType.SET_SELECTION,
-        payload: { selection },
+        payload: { selection, selectedImageId: null },
       });
     });
 

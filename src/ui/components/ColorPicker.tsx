@@ -2,6 +2,7 @@ import { Component, createSignal, onMount, For, Show } from "solid-js";
 import { THEME_COLORS, STANDARD_COLORS } from "./ColorPalette.js";
 import { createIcons, icons } from "lucide";
 import { render } from "solid-js/web";
+import { ColorPickerListener } from "../../app/events/ViewEventBindings.js";
 
 export interface ColorPickerProps {
   onColorSelected: (color: string) => void;
@@ -106,7 +107,7 @@ export class ColorPicker {
   private dispose: () => void;
   private setColorSignal: (color: string) => void;
 
-  constructor(containerId: string, listener: { onColorSelected: (color: string) => void }) {
+  constructor(containerId: string, listener: ColorPickerListener) {
     const parent = document.getElementById(containerId);
     if (!parent) throw new Error(`Container #${containerId} not found`);
 

@@ -4,6 +4,7 @@ import { EditorOperation } from "../operations/OperationTypes.js";
 import { reduceDocumentState } from "./DocumentReducer.js";
 import { LayoutState } from "../layout/LayoutTypes.js";
 import { isTextBlock } from "../document/BlockTypes.js";
+import { Logger } from "../utils/Logger.js";
 
 function createDefaultState(): EditorState {
   const doc = createDocument();
@@ -74,7 +75,7 @@ export class DocumentRuntime {
   }
 
   dispatch(operation: EditorOperation): void {
-    console.log("RUNTIME: dispatch chamado com", operation.type);
+    Logger.log("RUNTIME: dispatch chamado com", operation.type);
     this.history.push(this.state);
     this.future = [];
     this.state = reduceDocumentState(
@@ -82,7 +83,7 @@ export class DocumentRuntime {
       operation,
       this.latestLayout ?? undefined,
     );
-    console.log("RUNTIME: Estado atualizado, selection:", this.state.selection);
+    Logger.log("RUNTIME: Estado atualizado, selection:", this.state.selection);
     this.emit();
   }
 

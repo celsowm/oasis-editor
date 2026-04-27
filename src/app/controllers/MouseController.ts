@@ -1,4 +1,5 @@
 import { DocumentRuntime } from "../../core/runtime/DocumentRuntime.js";
+import { Logger } from "../../core/utils/Logger.js";
 import { Operations } from "../../core/operations/OperationFactory.js";
 import { CursorPositionCalculator } from "../services/CursorPositionCalculator.js";
 import { FormatPainterController } from "./FormatPainterController.js";
@@ -23,15 +24,15 @@ export class MouseController {
   }
 
   handleMouseDown(event: MouseEvent): void {
-    console.log("MOUSE: handleMouseDown", event.type);
+    Logger.log("MOUSE: handleMouseDown", event.type);
     const path = event.composedPath() as HTMLElement[];
-    const isImageRelated = path.some(el => 
-        el.classList?.contains("oasis-image-wrapper") || 
+    const isImageRelated = path.some(el =>
+        el.classList?.contains("oasis-image-wrapper") ||
         el.classList?.contains("oasis-image-resize-overlay")
     );
 
     if (isImageRelated) {
-      console.log("MOUSE: Click on image related element, ignoring for text selection");
+      Logger.log("MOUSE: Click on image related element, ignoring for text selection");
       return;
     }
 

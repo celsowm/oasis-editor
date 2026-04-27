@@ -1,5 +1,6 @@
 import { Component, createSignal, onMount, For, Show } from "solid-js";
 import { render } from "solid-js/web";
+import { TablePickerListener } from "../../app/events/ViewEventBindings.js";
 
 export interface TablePickerProps {
   onTableSelected: (rows: number, cols: number) => void;
@@ -82,7 +83,7 @@ export const TablePickerComponent: Component<TablePickerProps> = (props) => {
 export class TablePicker {
   private dispose: () => void;
 
-  constructor(buttonId: string, listener: { onTableSelected: (rows: number, cols: number) => void }) {
+  constructor(buttonId: string, listener: TablePickerListener) {
     const btn = document.getElementById(buttonId);
     if (!btn) throw new Error(`Button #${buttonId} not found`);
 

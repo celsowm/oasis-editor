@@ -9,54 +9,31 @@ function stripBlock(
   blocks: BlockNode[],
   blockId: string,
 ): { nextBlocks: BlockNode[]; stripped: BlockNode | null } {
-  const idx = blocks.findIndex((b) => b.id === blockId);
-  if (idx !== -1) {
-    const stripped = blocks[idx];
-    const nextBlocks = [...blocks];
-    nextBlocks.splice(idx, 1);
-    return { nextBlocks, stripped };
-  }
-
   let stripped: BlockNode | null = null;
-  const nextBlocks = blocks.map((block) => {
-    const res = transformContainerDeepForStrip(block, blockId);
-    if (res.stripped) stripped = res.stripped;
-    return res.block;
-  });
+  const nextBlocks: BlockNode[] = [];
 
-  return { nextBlocks, stripped };
-}
+  for (const block of blocks) {
+    if (block.id === blockId) {
+      stripped = block;
+      continue;
+    }
 
-function transformContainerDeepForStrip(
-  container: any,
-  blockId: string,
-): { block: any; stripped: BlockNode | null } {
-  if (!container || typeof container !== "object")
-    return { block: container, stripped: null };
-
-  let stripped: BlockNode | null = null;
-  const result = { ...container };
-  let hasChanges = false;
-
-  for (const key in result) {
-    const value = result[key];
-    if (Array.isArray(value)) {
-      if (value.length > 0 && "kind" in value[0] && "id" in value[0]) {
-        const res = stripBlock(value, blockId);
-        if (res.stripped) stripped = res.stripped;
-        result[key] = res.nextBlocks;
-        hasChanges = true;
-      } else {
-        result[key] = value.map((item) => {
-          const res = transformContainerDeepForStrip(item, blockId);
+    if (block.kind === "table") {
+      const nextRows = block.rows.map((row) => {
+        const nextCells = row.cells.map((cell) => {
+          const res = stripBlock(cell.children, blockId);
           if (res.stripped) stripped = res.stripped;
-          return res.block;
+          return { ...cell, children: res.nextBlocks };
         });
-        hasChanges = true;
-      }
+        return { ...row, cells: nextCells };
+      });
+      nextBlocks.push({ ...block, rows: nextRows });
+    } else {
+      nextBlocks.push(block);
     }
   }
-  return { block: hasChanges ? result : container, stripped };
+
+  return { nextBlocks, stripped };
 }
 
 function insertBlock(
@@ -65,65 +42,39 @@ function insertBlock(
   blockToInsert: BlockNode,
   isBefore: boolean,
 ): { nextBlocks: BlockNode[]; inserted: boolean } {
-  const idx = blocks.findIndex((b) => b.id === targetId);
-  if (idx !== -1) {
-    const nextBlocks = [...blocks];
-    nextBlocks.splice(isBefore ? idx : idx + 1, 0, blockToInsert);
-    return { nextBlocks, inserted: true };
-  }
-
   let inserted = false;
-  const nextBlocks = blocks.map((block) => {
-    const res = transformContainerDeepForInsert(
-      block,
-      targetId,
-      blockToInsert,
-      isBefore,
-    );
-    if (res.inserted) inserted = true;
-    return res.block;
-  });
+  const nextBlocks: BlockNode[] = [];
 
-  return { nextBlocks, inserted };
-}
-
-function transformContainerDeepForInsert(
-  container: any,
-  targetId: string,
-  blockToInsert: BlockNode,
-  isBefore: boolean,
-): { block: any; inserted: boolean } {
-  if (!container || typeof container !== "object")
-    return { block: container, inserted: false };
-
-  let inserted = false;
-  const result = { ...container };
-  let hasChanges = false;
-
-  for (const key in result) {
-    const value = result[key];
-    if (Array.isArray(value)) {
-      if (value.length > 0 && "kind" in value[0] && "id" in value[0]) {
-        const res = insertBlock(value, targetId, blockToInsert, isBefore);
-        if (res.inserted) inserted = true;
-        result[key] = res.nextBlocks;
-        hasChanges = true;
+  for (const block of blocks) {
+    if (block.id === targetId) {
+      if (isBefore) {
+        nextBlocks.push(blockToInsert);
+        nextBlocks.push(block);
       } else {
-        result[key] = value.map((item) => {
-          const res = transformContainerDeepForInsert(
-            item,
-            targetId,
-            blockToInsert,
-            isBefore,
-          );
-          if (res.inserted) inserted = true;
-          return res.block;
-        });
-        hasChanges = true;
+        nextBlocks.push(block);
+        nextBlocks.push(blockToInsert);
       }
+      inserted = true;
+      continue;
+    }
+
+    if (block.kind === "table") {
+      const nextRows = block.rows.map((row) => {
+        const nextCells = row.cells.map((cell) => {
+          if (inserted) return cell;
+          const res = insertBlock(cell.children, targetId, blockToInsert, isBefore);
+          if (res.inserted) inserted = true;
+          return { ...cell, children: res.nextBlocks };
+        });
+        return { ...row, cells: nextCells };
+      });
+      nextBlocks.push({ ...block, rows: nextRows });
+    } else {
+      nextBlocks.push(block);
     }
   }
-  return { block: hasChanges ? result : container, inserted };
+
+  return { nextBlocks, inserted };
 }
 
 export function registerMoveHandlers(): void {

@@ -33,6 +33,6 @@ export class InsertBookmarkCommand implements EditorCommand {
 
 export class InsertFieldCommand implements EditorCommand {
   execute(context: CommandContext, type: string, instruction: string): void {
-    context.runtime.dispatch(Operations.insertField({ type, instruction }));
+    context.runtime.dispatch(Operations.insertField({ type: type as any, instruction }));
   }
 }

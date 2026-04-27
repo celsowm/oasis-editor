@@ -60,7 +60,7 @@ export const TextFragment: Component<{ fragment: LayoutFragment; isDimmed: boole
           }}
         >
           {getListMarker(
-            props.fragment.listFormat ?? getDefaultListFormat(props.fragment.kind, props.fragment.listLevel ?? 0),
+            props.fragment.listFormat ?? getDefaultListFormat(props.fragment.kind as any, props.fragment.listLevel ?? 0),
             props.fragment.listNumber ?? 1,
             props.fragment.listLevel ?? 0,
           )}

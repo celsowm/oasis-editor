@@ -1,6 +1,6 @@
 import { EditorState } from "../EditorState.js";
 import { findBlockById } from "../../document/BlockUtils.js";
-import { isTextBlock, withBlockKind, TextRun } from "../../document/BlockTypes.js";
+import { isTextBlock, withBlockKind, TextRun, BlockNode } from "../../document/BlockTypes.js";
 import { LogicalPosition } from "../../selection/SelectionTypes.js";
 import { updateDocumentSections } from "../../document/DocumentMutationUtils.js";
 import { registerHandler } from "../OperationHandlers.js";
@@ -89,15 +89,23 @@ function handleInsertParagraph(state: EditorState, op: any): EditorState {
 }
 
 function handleAppendParagraph(state: EditorState, op: any): EditorState {
-  const { blockId, newBlockId, newRunId } = op.payload;
-  return updateDocumentSections(state, blockId, (block) => {
-    const newPara = {
-      ...block,
-      id: newBlockId,
-      children: [{ id: newRunId, text: "", marks: {} }],
-    };
-    return [block, newPara];
-  });
+  const { text, newBlockId, newRunId } = op.payload;
+  const sections = state.document.sections;
+  if (sections.length === 0) return state;
+  const newPara: BlockNode = {
+    id: newBlockId,
+    kind: "paragraph",
+    children: [{ id: newRunId, text: text ?? "", marks: {} }],
+  } as BlockNode;
+  const nextSections = sections.map((s, i) =>
+    i === sections.length - 1
+      ? { ...s, children: [...s.children, newPara] }
+      : s,
+  );
+  return {
+    ...state,
+    document: { ...state.document, sections: nextSections, revision: state.document.revision + 1 },
+  };
 }
 
 function handleInsertPageBreak(state: EditorState, op: any): EditorState {

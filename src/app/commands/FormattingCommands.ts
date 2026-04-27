@@ -27,13 +27,13 @@ export class InsertTextCommand implements EditorCommand {
 
 export class UndoCommand implements EditorCommand {
   execute(context: CommandContext): void {
-    context.runtime.dispatch(Operations.undo());
+    context.runtime.undo();
   }
 }
 
 export class RedoCommand implements EditorCommand {
   execute(context: CommandContext): void {
-    context.runtime.dispatch(Operations.redo());
+    context.runtime.redo();
   }
 }
 

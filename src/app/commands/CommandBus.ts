@@ -1,4 +1,5 @@
 import { CommandContext, EditorCommand } from "./EditorCommand.js";
+import { Logger } from "../../core/utils/Logger.js";
 
 export class CommandBus {
   private commands = new Map<string, EditorCommand>();
@@ -17,7 +18,7 @@ export class CommandBus {
     if (command) {
       command.execute(this.context, ...args);
     } else {
-      console.warn(`Command not found: ${name}`);
+      Logger.warn(`Command not found: ${name}`);
     }
   }
 }

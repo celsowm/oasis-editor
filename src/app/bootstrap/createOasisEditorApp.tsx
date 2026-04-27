@@ -10,6 +10,7 @@ import { OasisEditorView } from "../OasisEditorView.js";
 import { OasisEditorController } from "../OasisEditorController.js";
 import { TextMeasurementService } from "../services/TextMeasurementService.js";
 import { BrowserDomHitTester } from "../services/DomHitTester.js";
+import { DragStateService } from "../services/DragStateService.js";
 import { ColorPicker } from "../../ui/components/ColorPicker.tsx";
 import { TablePicker } from "../../ui/components/TablePicker.tsx";
 import { TableFloatingToolbar } from "../../ui/selection/TableFloatingToolbar.tsx";
@@ -63,6 +64,7 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
   const exporter = new DocxExporter(fontManager);
   const pdfExporter = new PdfExporter(fontManager);
   const domHitTester = new BrowserDomHitTester();
+  const dragState = new DragStateService();
 
   const controller = new OasisEditorController({
     runtime,
@@ -75,11 +77,14 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
     pdfExporter,
     domHitTester,
     fontManager,
+    dragState,
   });
+
+  view.setDragState(dragState);
 
   function dispose(): void {
     disposeSolid();
-    shell.remove();
+    shell?.remove();
   }
 
   return { controller, shell, dispose };

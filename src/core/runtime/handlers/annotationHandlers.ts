@@ -203,6 +203,8 @@ function handleInsertFootnote(state: EditorState, op: any): EditorState {
       ...nextState.document,
       footnotes,
     },
+    editingMode: "footnote",
+    editingFootnoteId: nextFootnoteId,
   };
 }
 

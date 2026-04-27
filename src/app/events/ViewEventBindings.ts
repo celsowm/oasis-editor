@@ -1,3 +1,11 @@
+export interface ColorPickerListener {
+  onColorSelected: (color: string) => void;
+}
+
+export interface TablePickerListener {
+  onTableSelected: (rows: number, cols: number) => void;
+}
+
 export interface KeyboardEvents {
   onTextInput: (text: string) => void;
   onDelete: () => void;
@@ -54,6 +62,7 @@ export interface ImageEvents {
   onSelectImage: (blockId: string) => void;
   onUpdateImageAlt: (blockId: string, alt: string) => void;
   onDragOver?: (event: DragEvent) => void;
+  onDragLeave?: (event: DragEvent) => void;
   onDrop?: (event: DragEvent) => void;
   onImageDragStart?: (blockId: string, event: DragEvent) => void;
 }
@@ -67,6 +76,17 @@ export interface TableEvents {
   onInsertTable: (rows: number, cols: number) => void;
   onTableAction: (action: string, tableId: string) => void;
   onTableMove: (tableId: string, targetBlockId: string, isBefore: boolean) => void;
+  onInsertRowAbove: () => void;
+  onInsertRowBelow: () => void;
+  onInsertColumnLeft: () => void;
+  onInsertColumnRight: () => void;
+  onDeleteRow: () => void;
+  onDeleteColumn: () => void;
+  onDeleteTable: () => void;
+  onToggleTableHeaderRow: () => void;
+  onToggleTableFirstColumn: () => void;
+  onTableMoveStart: (event: MouseEvent) => void;
+  onTableMoveEnd: (event: MouseEvent) => void;
 }
 
 export interface FieldEvents {

@@ -236,26 +236,26 @@ function registerMarkHandlers(): void {
   registerHandler(OperationType.TOGGLE_MARK, (state, op) => {
     const { selection, pendingMarks } = state;
     if (!selection) return state;
-    const { mark } = op.payload as { mark: BooleanMarkKey };
+    const { mark, value } = op.payload as { mark: keyof MarkSet; value?: any };
+
+    const toggleValue = value !== undefined ? value : true;
 
     if (isCollapsedAtPoint(selection)) {
       const nextMarks: MarkSet = { ...(pendingMarks || {}) };
       
-      // We need to know the effective mark state at this position 
-      // to know if we should toggle to 'false' or 'true'.
       const targetBlock = getAllBlocksInSection(state.document.sections.flatMap(s => s.children)).find(b => b.id === selection.anchor.blockId);
       let runMarkActive = false;
       if (targetBlock && isTextBlock(targetBlock)) {
           const run = targetBlock.children.find(r => r.id === selection.anchor.inlineId);
-          if (run && run.marks[mark]) runMarkActive = true;
+          if (run && run.marks[mark] === toggleValue) runMarkActive = true;
       }
 
-      const isCurrentlyActive = nextMarks[mark] !== undefined ? !!nextMarks[mark] : runMarkActive;
+      const isCurrentlyActive = nextMarks[mark] !== undefined ? nextMarks[mark] === toggleValue : runMarkActive;
 
       if (isCurrentlyActive) {
-          (nextMarks as any)[mark] = false;
+          delete (nextMarks as any)[mark];
       } else {
-          (nextMarks as any)[mark] = true;
+          (nextMarks as any)[mark] = toggleValue;
       }
       
       return { ...state, pendingMarks: nextMarks };
@@ -263,13 +263,13 @@ function registerMarkHandlers(): void {
 
     let shouldAdd = false;
     applyMarksInRange(state, (m) => {
-      if (!m[mark]) shouldAdd = true;
+      if (m[mark] !== toggleValue) shouldAdd = true;
       return m;
     });
 
     return applyMarksInRange(state, (m) => {
       const next: MarkSet = { ...m };
-      if (shouldAdd) next[mark] = true;
+      if (shouldAdd) next[mark] = toggleValue;
       else delete next[mark];
       return next;
     });

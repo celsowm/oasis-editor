@@ -2,6 +2,7 @@ import { EditorState } from "./EditorState.js";
 import { EditorOperation } from "../operations/OperationTypes.js";
 import { LayoutState } from "../layout/LayoutTypes.js";
 import { getHandler } from "./OperationHandlers.js";
+import { Logger } from "../utils/Logger.js";
 
 export interface ReducerState extends EditorState {
   _layout?: LayoutState;
@@ -17,6 +18,6 @@ export const reduceDocumentState = (
     return handler(state, operation);
   }
 
-  console.warn(`No handler registered for operation type: ${operation.type}`);
+  Logger.warn(`No handler registered for operation type: ${operation.type}`);
   return state;
 };

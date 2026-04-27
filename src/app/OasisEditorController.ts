@@ -1,4 +1,5 @@
 import { Operations } from "../core/operations/OperationFactory.js";
+import { Logger } from "../core/utils/Logger.js";
 import { DocumentRuntime } from "../core/runtime/DocumentRuntime.js";
 import { DocumentLayoutService } from "./services/DocumentLayoutService.js";
 import { OasisEditorPresenter } from "./presenters/OasisEditorPresenter.js";
@@ -17,9 +18,12 @@ import { ZoneClickController } from "./controllers/ZoneClickController.js";
 import { WordSelectionController } from "./controllers/WordSelectionController.js";
 import { ImportExportController } from "./controllers/ImportExportController.js";
 import { DomHitTester } from "./services/DomHitTester.js";
+import { DragStateService } from "./services/DragStateService.js";
+import { DropTargetService } from "./services/DropTargetService.js";
 import { getAllBlocks } from "../core/document/BlockUtils.js";
 import { isTextBlock } from "../core/document/BlockTypes.js";
 import { IFontManager } from "../core/typography/FontManager.js";
+import { FieldInstructions } from "../core/document/FieldUtils.js";
 import { CommandBus } from "./commands/CommandBus.js";
 import * as Formatting from "./commands/FormattingCommands.js";
 import * as Annotations from "./commands/AnnotationCommands.js";
@@ -36,6 +40,7 @@ export interface ControllerDeps {
   pdfExporter: DocumentExporter;
   domHitTester: DomHitTester;
   fontManager: IFontManager;
+  dragState: DragStateService;
 }
 
 export class OasisEditorController {
@@ -46,6 +51,8 @@ export class OasisEditorController {
   private fontManager: IFontManager;
   private latestLayout: LayoutState | null;
   private positionCalculator: PositionCalculator | null;
+  private dragState: DragStateService;
+  private dropTargetService: DropTargetService;
 
   private formatPainter: FormatPainterController;
   private mouseController: MouseController;
@@ -65,6 +72,8 @@ export class OasisEditorController {
     this.view = deps.view;
     this.fontManager = deps.fontManager;
     this.domHitTester = deps.domHitTester;
+    this.dragState = deps.dragState;
+    this.dropTargetService = new DropTargetService(deps.domHitTester);
     this.latestLayout = null;
     this.positionCalculator = null;
 
@@ -167,13 +176,13 @@ export class OasisEditorController {
       onRedo: () => this.commandBus.execute("redo"),
       onTemplateChange: (templateId) => this.setTemplate(templateId),
       onTextInput: (text) => {
-        console.log("CONTROLLER: onTextInput", { text });
+        Logger.log("CONTROLLER: onTextInput", { text });
         return this.commandBus.execute("insertText", text);
       },
       onDelete: () => this.runtime.dispatch(Operations.deleteText()),
       onEnter: (isShift) => {
-        console.log("CONTROLLER: onEnter", { isShift });
-        console.trace("onEnter stack trace");
+        Logger.log("CONTROLLER: onEnter", { isShift });
+        Logger.trace("onEnter stack trace");
         return isShift ? this.commandBus.execute("insertText", "\n") : this.runtime.dispatch(Operations.insertParagraph());
       },
       onEscape: () => this.commandBus.execute("escape"),
@@ -200,21 +209,34 @@ export class OasisEditorController {
       onUpdateImageAlt: (blockId, alt) => this.updateImageAlt(blockId, alt),
       onDragOver: (e) => {
         e.preventDefault();
-        const now = Date.now();
-        if (now - ((window as any)._oasisLastDragOverTime || 0) < 50) return;
-        (window as any)._oasisLastDragOverTime = now;
+        if (this.dragState.shouldThrottleDragOver(Date.now())) return;
 
-        const pos = this.cursorCalc.calculateFromMouseEvent(e as any);
-        if (pos) {
-          this.runtime.dispatch(Operations.setSelection({ anchor: pos, focus: pos }));
+        const dropTarget = this.dropTargetService.findDropTarget(e, this.view.elements.pagesContainer);
+        if (dropTarget) {
+          this.view.showDropIndicator({
+            pageId: dropTarget.pageId,
+            pageX: dropTarget.pageX,
+            pageY: dropTarget.pageY,
+            width: dropTarget.rect.width,
+            height: dropTarget.rect.height,
+            isBefore: dropTarget.isBefore,
+          });
+        } else {
+          this.view.hideDropIndicator();
         }
       },
+      onDragLeave: () => {
+        this.view.hideDropIndicator();
+      },
+
       onDrop: (e) => {
         e.preventDefault();
+        this.dragState.recordDrop();
+        this.view.hideDropIndicator();
 
         if (this.draggingBlockId) {
-          const dropTarget = this.findBlockDropTarget(e as MouseEvent);
-          console.log("CONTROLLER: onDrop", {
+          const dropTarget = this.dropTargetService.findDropTarget(e, this.view.elements.pagesContainer);
+          Logger.log("CONTROLLER: onDrop", {
             clientX: e.clientX,
             clientY: e.clientY,
             dropTarget,
@@ -232,8 +254,8 @@ export class OasisEditorController {
           return;
         }
 
-        const pos = this.cursorCalc.calculateFromMouseEvent(e as any);
-        console.log("CONTROLLER: onDrop", {
+        const pos = this.cursorCalc.calculateFromMouseEvent(e);
+        Logger.log("CONTROLLER: onDrop", {
           clientX: e.clientX,
           clientY: e.clientY,
           pos,
@@ -242,8 +264,9 @@ export class OasisEditorController {
           this.runtime.dispatch(Operations.setSelection({ anchor: pos, focus: pos }));
         }
       },
+
       onImageDragStart: (blockId, e) => {
-        console.log("CONTROLLER: onImageDragStart", { blockId });
+        Logger.log("CONTROLLER: onImageDragStart", { blockId });
         this.draggingBlockId = blockId;
         if (e.dataTransfer) {
           e.dataTransfer.setData("text/oasis-block-id", blockId);
@@ -251,10 +274,21 @@ export class OasisEditorController {
         }
       },
       onInsertTable: (rows, cols) => this.runtime.dispatch(Operations.insertTable(rows, cols)),
-      onInsertPageNumber: () => this.commandBus.execute("field", "page", "PAGE \\* MERGEFORMAT"),
-      onInsertNumPages: () => this.commandBus.execute("field", "numpages", "NUMPAGES \\* MERGEFORMAT"),
-      onInsertDate: () => this.commandBus.execute("field", "date", "DATE \\@ \"dd/MM/yyyy\""),
-      onInsertTime: () => this.commandBus.execute("field", "time", "TIME \\@ \"HH:mm\""),
+      onInsertRowAbove: () => this.handleTableAction("addRowAbove", this.getActiveTableId() || ""),
+      onInsertRowBelow: () => this.handleTableAction("addRowBelow", this.getActiveTableId() || ""),
+      onInsertColumnLeft: () => this.handleTableAction("addColumnLeft", this.getActiveTableId() || ""),
+      onInsertColumnRight: () => this.handleTableAction("addColumnRight", this.getActiveTableId() || ""),
+      onDeleteRow: () => this.handleTableAction("deleteRow", this.getActiveTableId() || ""),
+      onDeleteColumn: () => this.handleTableAction("deleteColumn", this.getActiveTableId() || ""),
+      onDeleteTable: () => this.handleTableAction("deleteTable", this.getActiveTableId() || ""),
+      onToggleTableHeaderRow: () => this.handleTableAction("toggleHeaderRow", this.getActiveTableId() || ""),
+      onToggleTableFirstColumn: () => this.handleTableAction("toggleFirstColumn", this.getActiveTableId() || ""),
+      onTableMoveStart: (e) => this.tableDrag.handleDragStart(this.getActiveTableId() || "", e),
+      onTableMoveEnd: (e) => this.tableDrag.handleMouseUp(e),
+      onInsertPageNumber: () => this.commandBus.execute("field", "page", FieldInstructions.PAGE),
+      onInsertNumPages: () => this.commandBus.execute("field", "numpages", FieldInstructions.NUMPAGES),
+      onInsertDate: () => this.commandBus.execute("field", "date", FieldInstructions.DATE),
+      onInsertTime: () => this.commandBus.execute("field", "time", FieldInstructions.TIME),
       onInsertEquation: (latex, display) => this.commandBus.execute("equation", latex, display),
       onInsertBookmark: (name) => this.commandBus.execute("bookmark", name),
       onInsertFootnote: () => this.commandBus.execute("footnote"),
@@ -354,17 +388,11 @@ export class OasisEditorController {
   }
 
   toggleSuperscript(): void {
-    const state = this.runtime.getState();
-    const current = state.pendingMarks?.vertAlign;
-    const next = current === "superscript" ? undefined : "superscript";
-    this.runtime.dispatch(Operations.setMark("vertAlign", next));
+    this.runtime.dispatch(Operations.toggleMark("vertAlign", "superscript"));
   }
 
   toggleSubscript(): void {
-    const state = this.runtime.getState();
-    const current = state.pendingMarks?.vertAlign;
-    const next = current === "subscript" ? undefined : "subscript";
-    this.runtime.dispatch(Operations.setMark("vertAlign", next));
+    this.runtime.dispatch(Operations.toggleMark("vertAlign", "subscript"));
   }
 
   insertLink(url: string): void {
@@ -449,7 +477,7 @@ export class OasisEditorController {
     naturalHeight: number,
     displayWidth: number,
   ): void {
-    console.log("CONTROLLER: insertImage", { src: src.substring(0, 50) + "..." });
+    Logger.log("CONTROLLER: insertImage", { src: src.substring(0, 50) + "..." });
     this.runtime.dispatch(
       Operations.insertImage(src, naturalWidth, naturalHeight, displayWidth),
     );
@@ -578,80 +606,20 @@ export class OasisEditorController {
       case "splitCell":
         this.runtime.dispatch(Operations.tableSplitCell(tableId, selection.anchor.blockId));
         break;
+      case "toggleHeaderRow":
+        this.runtime.dispatch(Operations.tableToggleHeaderRow(tableId));
+        break;
+      case "toggleFirstColumn":
+        this.runtime.dispatch(Operations.tableToggleFirstColumn(tableId));
+        break;
     }
   }
 
-  private findBlockDropTarget(
-    event: MouseEvent,
-  ): { blockId: string; isBefore: boolean } | null {
-    const element = this.domHitTester.elementFromPoint(event.clientX, event.clientY);
-
-    // 1. Direct hit on a fragment.
-    const directFragment = element
-      ? (this.domHitTester.closest(".oasis-fragment", element) as HTMLElement | null)
-      : null;
-    if (directFragment) {
-      const blockId = directFragment.getAttribute("data-block-id");
-      if (blockId) {
-        const rect = directFragment.getBoundingClientRect();
-        const isBefore = event.clientY < rect.top + rect.height / 2;
-        return { blockId, isBefore };
-      }
-    }
-
-    // 2. No fragment under the pointer — find the page under the pointer
-    //    (or fall back to the closest page) and pick the nearest fragment by Y.
-    const root = this.view.elements.root;
-    const pageEl =
-      (element && (this.domHitTester.closest("[data-page-id]", element) as HTMLElement | null)) ||
-      this.findClosestPage(event.clientX, event.clientY, root);
-    if (!pageEl) return null;
-
-    const fragments = Array.from(
-      pageEl.querySelectorAll<HTMLElement>(".oasis-fragment[data-block-id]"),
-    );
-    if (fragments.length === 0) return null;
-
-    let bestFragment: HTMLElement | null = null;
-    let bestDistance = Infinity;
-    let bestIsBefore = false;
-
-    for (const frag of fragments) {
-      const rect = frag.getBoundingClientRect();
-      const midY = rect.top + rect.height / 2;
-      const distance = Math.abs(event.clientY - midY);
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        bestFragment = frag;
-        bestIsBefore = event.clientY < midY;
-      }
-    }
-
-    if (!bestFragment) return null;
-    const blockId = bestFragment.getAttribute("data-block-id");
-    if (!blockId) return null;
-    return { blockId, isBefore: bestIsBefore };
-  }
-
-  private findClosestPage(
-    clientX: number,
-    clientY: number,
-    root: HTMLElement,
-  ): HTMLElement | null {
-    const pages = Array.from(root.querySelectorAll<HTMLElement>("[data-page-id]"));
-    let closest: HTMLElement | null = null;
-    let bestDistance = Infinity;
-    for (const page of pages) {
-      const rect = page.getBoundingClientRect();
-      const dx = Math.max(rect.left - clientX, 0, clientX - rect.right);
-      const dy = Math.max(rect.top - clientY, 0, clientY - rect.bottom);
-      const distance = Math.hypot(dx, dy);
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        closest = page;
-      }
-    }
-    return closest;
+  private getActiveTableId(): string | null {
+    return this.presenter.present({
+      state: this.runtime.getState(),
+      layout: this.latestLayout!,
+    }).activeTableId || null;
   }
 
   refresh(): void {

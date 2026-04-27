@@ -1,5 +1,12 @@
 import { FieldInfo } from "../document/BlockTypes.js";
 
+export const FieldInstructions = {
+  PAGE: "PAGE \\* MERGEFORMAT",
+  NUMPAGES: "NUMPAGES \\* MERGEFORMAT",
+  DATE: "DATE \\@ \"dd/MM/yyyy\"",
+  TIME: "TIME \\@ \"HH:mm\"",
+};
+
 export function resolveField(field: FieldInfo): string {
   switch (field.type) {
     case "page":

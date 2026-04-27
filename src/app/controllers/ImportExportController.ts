@@ -3,6 +3,7 @@ import { DocumentImporter } from "../../core/import/DocumentImporter.js";
 import { DocumentExporter } from "../../core/export/DocumentExporter.js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { isTextBlock } from "../../core/document/BlockTypes.js";
+import { Logger } from "../../core/utils/Logger.js";
 
 export class ImportExportController {
   constructor(
@@ -45,7 +46,8 @@ export class ImportExportController {
         editingMode: "main",
       });
     } catch (e) {
-      console.error("Failed to import DOCX:", e);
+      Logger.error(
+"Failed to import DOCX:", e);
     }
   }
 
@@ -60,7 +62,8 @@ export class ImportExportController {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      console.error("Failed to export DOCX:", e);
+      Logger.error(
+"Failed to export DOCX:", e);
     }
   }
 
@@ -75,7 +78,8 @@ export class ImportExportController {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      console.error("Failed to export PDF:", e);
+      Logger.error(
+"Failed to export PDF:", e);
     }
   }
 }

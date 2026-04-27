@@ -58,9 +58,9 @@ export const Operations = {
     type: OperationType.MOVE_SELECTION,
     payload: { key },
   }),
-  toggleMark: (mark: keyof MarkSet): ToggleMarkOp => ({
+  toggleMark: (mark: keyof MarkSet, value?: any): ToggleMarkOp => ({
     type: OperationType.TOGGLE_MARK,
-    payload: { mark },
+    payload: { mark, value },
   }),
   setMark: (mark: keyof MarkSet, value: any): SetMarkOp => ({
     type: OperationType.SET_MARK,
@@ -201,6 +201,14 @@ export const Operations = {
   ): EditorOperation => ({
     type: OperationType.TABLE_SPLIT_CELL,
     payload: { tableId, referenceBlockId },
+  }),
+  tableToggleHeaderRow: (tableId: string): EditorOperation => ({
+    type: OperationType.TABLE_TOGGLE_HEADER_ROW,
+    payload: { tableId },
+  }),
+  tableToggleFirstColumn: (tableId: string): EditorOperation => ({
+    type: OperationType.TABLE_TOGGLE_FIRST_COLUMN,
+    payload: { tableId },
   }),
   moveBlock: (
     blockId: string,

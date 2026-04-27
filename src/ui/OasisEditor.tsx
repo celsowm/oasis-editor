@@ -174,8 +174,8 @@ const OasisEditor: Component = () => {
         <section id="oasis-editor-pages" class="oasis-editor-pages"></section>
       </main>
 
-      <div id="oasis-editor-input-container" style={{ position: 'fixed', left: '-1000px', top: '-1000px', width: '1px', height: '1px', overflow: 'hidden' }}>
-        <textarea id="oasis-editor-input"></textarea>
+      <div id="oasis-editor-input-container" style={{ position: 'fixed', left: '0', top: '0', width: '1px', height: '1px', overflow: 'hidden', opacity: '0', pointerEvents: 'none' }}>
+        <textarea id="oasis-editor-input" tabindex="0"></textarea>
       </div>
 
       <footer class="oasis-editor-footer-status">

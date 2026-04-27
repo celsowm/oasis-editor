@@ -5,14 +5,6 @@ import { OasisEditorPresenter } from "./presenters/OasisEditorPresenter.js";
 import { TextMeasurer } from "../bridge/measurement/TextMeasurementBridge.js";
 import { PageLayer } from "../ui/pages/PageLayer.tsx";
 import { PageViewport } from "../ui/pages/PageViewport.js";
-import {
-  ColorPicker,
-  ColorPickerListener,
-} from "../ui/components/ColorPicker.tsx";
-import {
-  TablePicker,
-  TablePickerListener,
-} from "../ui/components/TablePicker.tsx";
 import { ImageResizeOverlay } from "../ui/selection/ImageResizeOverlay.js";
 import {
   TableFloatingToolbar,
@@ -24,7 +16,16 @@ import {
 } from "../ui/selection/TableMoveHandle.js";
 import { LayoutFragment } from "../core/layout/LayoutFragment.js";
 import { h } from "../ui/utils/dom.js";
-import { ViewEventBindings } from "./events/ViewEventBindings.js";
+import {
+  ColorPickerListener,
+  TablePickerListener,
+  ViewEventBindings,
+} from "./events/ViewEventBindings.js";
+import { ColorPicker } from "../ui/components/ColorPicker.tsx";
+import { TablePicker } from "../ui/components/TablePicker.tsx";
+
+import { DragStateService } from "./services/DragStateService.js";
+import { Logger } from "../core/utils/Logger.js";
 
 export interface ViewElements {
   root: HTMLElement;
@@ -73,6 +74,9 @@ export class OasisEditorView {
   private tableMoveHandle!: TableMoveHandle;
   private events!: ViewEventBindings;
   private deps: ViewDeps;
+  private dragState?: DragStateService;
+  private isBound = false;
+  private dropIndicator: HTMLElement | null = null;
 
   constructor(deps: ViewDeps) {
     this.deps = deps;
@@ -87,10 +91,7 @@ export class OasisEditorView {
       importDocxInput: this.dom.getImportDocxInput(),
     };
 
-    this.pageLayer = new PageLayer(
-      this.elements.pagesContainer,
-      this.deps.measurer,
-    );
+    this.pageLayer = new PageLayer(this.elements.pagesContainer);
     this.viewport = new PageViewport(
       this.elements.pagesContainer,
       this.pageLayer,
@@ -98,25 +99,66 @@ export class OasisEditorView {
     );
 
     this.tableToolbar = this.deps.tableToolbarFactory({
-      onInsertRowAbove: () => this.events.onInsertRowAbove(),
-      onInsertRowBelow: () => this.events.onInsertRowBelow(),
-      onInsertColumnLeft: () => this.events.onInsertColumnLeft(),
-      onInsertColumnRight: () => this.events.onInsertColumnRight(),
+      onAddRowAbove: () => this.events.onInsertRowAbove(),
+      onAddRowBelow: () => this.events.onInsertRowBelow(),
+      onAddColumnLeft: () => this.events.onInsertColumnLeft(),
+      onAddColumnRight: () => this.events.onInsertColumnRight(),
       onDeleteRow: () => this.events.onDeleteRow(),
       onDeleteColumn: () => this.events.onDeleteColumn(),
       onDeleteTable: () => this.events.onDeleteTable(),
-      onToggleHeaderRow: () => this.events.onToggleTableHeaderRow(),
-      onToggleFirstColumn: () => this.events.onToggleTableFirstColumn(),
     });
 
     this.tableMoveHandle = this.deps.tableMoveHandleFactory({
-      onMoveStart: (e) => this.events.onTableMoveStart(e),
-      onMove: (e) => this.events.onTableMove(e),
-      onMoveEnd: (e) => this.events.onTableMoveEnd(e),
+      onDragStart: (_blockId: string, e: MouseEvent) =>
+        this.events.onTableMoveStart(e),
     });
   }
 
+  setDragState(dragState: DragStateService): void {
+    this.dragState = dragState;
+  }
+
+  showDropIndicator(target: {
+    pageId: string;
+    pageX: number;
+    pageY: number;
+    width: number;
+    height: number;
+    isBefore: boolean;
+  }): void {
+    if (!this.dropIndicator) {
+      this.dropIndicator = document.createElement("div");
+      this.dropIndicator.className = "oasis-drop-indicator";
+    }
+
+    const pageEl = this.elements.root.querySelector(
+      `[data-page-id="${target.pageId}"]`,
+    );
+    if (!pageEl) return;
+
+    if (this.dropIndicator.parentElement !== pageEl) {
+      pageEl.appendChild(this.dropIndicator);
+    }
+
+    this.dropIndicator.style.display = "block";
+    this.dropIndicator.style.left = `${target.pageX}px`;
+    this.dropIndicator.style.width = `${target.width}px`;
+    this.dropIndicator.style.top = `${target.isBefore ? target.pageY - 2 : target.pageY + target.height - 1}px`;
+  }
+
+  hideDropIndicator(): void {
+    if (this.dropIndicator) {
+      this.dropIndicator.style.display = "none";
+    }
+  }
+
   bind(events: ViewEventBindings): void {
+    if (this.isBound) {
+      this.events = events; // Allow updating handlers, but don't re-bind DOM
+      setStore("events", events);
+      return;
+    }
+    this.isBound = true;
     this.events = events;
     setStore("events", events);
 
@@ -135,14 +177,14 @@ export class OasisEditorView {
       const ke = e as KeyboardEvent;
       
       // Strict check for ghost Enter keys after drop or during drag
-      const isDragging = (window as any)._oasisDragging;
-      const lastDropTime = (window as any)._oasisLastDropTime || 0;
+      const isDragging = this.dragState?.isDragging;
+      const lastDropTime = this.dragState?.lastDropTime || 0;
       const timeSinceDrop = Date.now() - lastDropTime;
       const justDropped = timeSinceDrop < 500;
 
       if (ke.key === "Enter") {
         if (isDragging || justDropped) {
-          console.log("VIEW: Suppressed ghost Enter", { isDragging, justDropped, timeSinceDrop });
+          Logger.log("VIEW: Suppressed ghost Enter", { isDragging, justDropped, timeSinceDrop });
           ke.preventDefault();
           ke.stopImmediatePropagation();
           return;
@@ -227,7 +269,6 @@ export class OasisEditorView {
       }
 
       events.onMouseDown(me);
-      setTimeout(() => this.elements.hiddenInput.focus(), 0);
     });
 
     this.elements.root.addEventListener("mousemove", (e) => {
@@ -248,20 +289,18 @@ export class OasisEditorView {
     // Drag and Drop support
     window.addEventListener("dragenter", (e) => {
       e.preventDefault();
-      (window as any)._oasisDragging = true;
+      this.dragState?.enter();
     });
 
     window.addEventListener("dragleave", (e) => {
-      // Only unset if we actually leave the window
-      if (e.relatedTarget === null) {
-        (window as any)._oasisDragging = false;
-      }
+      this.dragState?.leave();
+      if (events.onDragLeave) events.onDragLeave(e as DragEvent);
     });
 
     window.addEventListener("dragover", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      (window as any)._oasisDragging = true;
+      if (this.dragState) this.dragState.isDragging = true;
       if (events.onDragOver) events.onDragOver(e as DragEvent);
       if (e.dataTransfer) {
         e.dataTransfer.dropEffect = "move";
@@ -269,14 +308,13 @@ export class OasisEditorView {
     });
 
     window.addEventListener("dragend", (e) => {
-      (window as any)._oasisDragging = false;
+      this.dragState?.reset();
     });
 
     window.addEventListener("drop", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      (window as any)._oasisLastDropTime = Date.now();
-      (window as any)._oasisDragging = false;
+      this.dragState?.recordDrop();
 
       if (events.onDrop) events.onDrop(e as DragEvent);
       
@@ -290,7 +328,7 @@ export class OasisEditorView {
     });
 
     this.elements.root.addEventListener("dragstart", (e) => {
-        (window as any)._oasisDragging = true;
+        if (this.dragState) this.dragState.isDragging = true;
         const target = e.target as HTMLElement;
         const wrapper = target.closest(".oasis-image-wrapper");
         if (wrapper) {
@@ -316,14 +354,15 @@ export class OasisEditorView {
     this.colorPicker = this.deps.colorPickerFactory(
       "oasis-editor-color-picker-container",
       {
-        onColorSelect: (color) => events.onColorChange(color),
+        onColorSelected: (color: string) => events.onColorChange(color),
       },
     );
 
     this.tablePicker = this.deps.tablePickerFactory(
       "oasis-editor-insert-table",
       {
-        onTableSelect: (rows, cols) => events.onInsertTable(rows, cols),
+        onTableSelected: (rows: number, cols: number) =>
+          events.onInsertTable(rows, cols),
       },
     );
   }
@@ -343,7 +382,19 @@ export class OasisEditorView {
     this.updateEditingModeBanner(viewModel.editingMode);
 
     if (viewModel.selection) {
-      this.elements.hiddenInput.focus({ preventScroll: true });
+      // Use requestAnimationFrame to ensure focus happens after browser
+      // finishes processing mouse events. In headless contexts, synchronous
+      // focus during mousedown handling gets immediately canceled by the
+      // browser's native focus management.
+      requestAnimationFrame(() => {
+        this.elements.hiddenInput.focus({ preventScroll: true });
+        // Double-check: if focus was stolen again, try once more
+        if (document.activeElement !== this.elements.hiddenInput) {
+          requestAnimationFrame(() => {
+            this.elements.hiddenInput.focus({ preventScroll: true });
+          });
+        }
+      });
     }
   }
 
