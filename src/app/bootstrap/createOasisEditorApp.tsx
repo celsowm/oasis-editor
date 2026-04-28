@@ -158,7 +158,6 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
   });
 
   view.setDragState(dragState);
-  view.elements.hiddenInput.focus();
 
   function dispose(): void {
     disposeSolid();

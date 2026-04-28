@@ -26,7 +26,7 @@ export interface ViewElements {
   root: HTMLElement;
   pagesContainer: HTMLElement;
   templateSelect: HTMLSelectElement;
-  hiddenInput: HTMLInputElement;
+  hiddenInput: HTMLTextAreaElement;
   imageFileInput: HTMLInputElement;
   importDocxInput: HTMLInputElement;
 }
@@ -65,6 +65,8 @@ export class OasisEditorView {
   private windowListeners: Array<{ el: Window; type: string; handler: EventListener }> = [];
   private documentListeners: Array<{ type: string; handler: EventListener; capture: boolean }> = [];
   private handledKeyboardEvents = new WeakSet<Event>();
+  private readonly tempDisableHiddenInput = false;
+  private readonly tempDisableAutoFocus = true;
 
   constructor(deps: ViewDeps) {
     this.deps = deps;
@@ -149,51 +151,53 @@ export class OasisEditorView {
       events.onTemplateChange((e.target as HTMLSelectElement).value);
     });
 
-    // Hidden input for keyboard handling
-    this.elements.hiddenInput.addEventListener("input", (e) => {
-      const inputEvent = e as InputEvent;
-      Logger.debug("VIEW: hiddenInput input", {
-        data: inputEvent.data,
-        value: this.elements.hiddenInput.value,
-        activeElement: document.activeElement
-          ? {
-              tag: document.activeElement.tagName,
-              id: (document.activeElement as HTMLElement).id ?? null,
-              className: (document.activeElement as HTMLElement).className ?? null,
-            }
-          : null,
+    if (!this.tempDisableHiddenInput) {
+      // Hidden input for legacy keyboard handling.
+      this.elements.hiddenInput.addEventListener("input", (e) => {
+        const inputEvent = e as InputEvent;
+        Logger.debug("VIEW: hiddenInput input", {
+          data: inputEvent.data,
+          value: this.elements.hiddenInput.value,
+          activeElement: document.activeElement
+            ? {
+                tag: document.activeElement.tagName,
+                id: (document.activeElement as HTMLElement).id ?? null,
+                className: (document.activeElement as HTMLElement).className ?? null,
+              }
+            : null,
+        });
+        events.onTextInput(inputEvent.data ?? "");
+        this.elements.hiddenInput.value = "";
       });
-      events.onTextInput(inputEvent.data ?? "");
-      this.elements.hiddenInput.value = "";
-    });
 
-    this.elements.hiddenInput.addEventListener("keydown", (e) => {
-      this.handleKeyboardEvent(e as KeyboardEvent, events, "hiddenInput");
-    });
-
-    this.elements.hiddenInput.addEventListener("focus", () => {
-      Logger.debug("VIEW: hiddenInput focus", {
-        activeElement: document.activeElement
-          ? {
-              tag: document.activeElement.tagName,
-              id: (document.activeElement as HTMLElement).id ?? null,
-              className: (document.activeElement as HTMLElement).className ?? null,
-            }
-          : null,
+      this.elements.hiddenInput.addEventListener("keydown", (e) => {
+        this.handleKeyboardEvent(e as KeyboardEvent, events, "hiddenInput");
       });
-    });
 
-    this.elements.hiddenInput.addEventListener("blur", () => {
-      Logger.debug("VIEW: hiddenInput blur", {
-        activeElement: document.activeElement
-          ? {
-              tag: document.activeElement.tagName,
-              id: (document.activeElement as HTMLElement).id ?? null,
-              className: (document.activeElement as HTMLElement).className ?? null,
-            }
-          : null,
+      this.elements.hiddenInput.addEventListener("focus", () => {
+        Logger.debug("VIEW: hiddenInput focus", {
+          activeElement: document.activeElement
+            ? {
+                tag: document.activeElement.tagName,
+                id: (document.activeElement as HTMLElement).id ?? null,
+                className: (document.activeElement as HTMLElement).className ?? null,
+              }
+            : null,
+        });
       });
-    });
+
+      this.elements.hiddenInput.addEventListener("blur", () => {
+        Logger.debug("VIEW: hiddenInput blur", {
+          activeElement: document.activeElement
+            ? {
+                tag: document.activeElement.tagName,
+                id: (document.activeElement as HTMLElement).id ?? null,
+                className: (document.activeElement as HTMLElement).className ?? null,
+              }
+            : null,
+        });
+      });
+    }
 
     // Detecção de cliques múltiplos
     let lastMouseDownTime = 0;
@@ -212,6 +216,7 @@ export class OasisEditorView {
             }
           : null,
       });
+      this.elements.hiddenInput.focus({ preventScroll: true });
       const now = Date.now();
       const dist = Math.sqrt(
         Math.pow(me.clientX - lastMouseDownPos.x, 2) +
@@ -411,7 +416,7 @@ export class OasisEditorView {
     this.updateTableToolbar(viewModel);
     this.updateEditingModeBanner(viewModel.editingMode);
 
-    if (viewModel.selection) {
+    if (viewModel.selection && !this.tempDisableAutoFocus) {
       // Use requestAnimationFrame to ensure focus happens after browser
       // finishes processing mouse events. In headless contexts, synchronous
       // focus during mousedown handling gets immediately canceled by the

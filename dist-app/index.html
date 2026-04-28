@@ -3,57 +3,193 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>oasis-editor</title>
+    <title>oasis editor launcher</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Roboto:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
-      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-      #oasis-editor-root {
-        width: 100%;
-        height: 100%;
+      :root {
+        color-scheme: light;
+        --bg: #f4f7fb;
+        --bg-accent: #e7eefb;
+        --ink: #0f172a;
+        --muted: #475569;
+        --line: rgba(148, 163, 184, 0.28);
+        --card: rgba(255, 255, 255, 0.82);
+        --blue: #2563eb;
+        --blue-ink: #dbeafe;
+        --amber: #d97706;
+        --amber-ink: #fef3c7;
       }
-      #oasis-editor-loading {
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html, body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        min-height: 100vh;
+        font-family: "Inter", "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 32%),
+          radial-gradient(circle at bottom right, rgba(217, 119, 6, 0.12), transparent 28%),
+          linear-gradient(180deg, var(--bg) 0%, var(--bg-accent) 100%);
+      }
+
+      main {
+        width: min(1040px, 100%);
+        margin: 0 auto;
+        padding: 56px 24px 72px;
+      }
+
+      .eyebrow {
+        margin: 0 0 14px;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--blue);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(44px, 9vw, 88px);
+        line-height: 0.92;
+        letter-spacing: -0.06em;
+        max-width: 11ch;
+      }
+
+      .lead {
+        margin: 20px 0 0;
+        max-width: 58ch;
+        font-size: 18px;
+        line-height: 1.65;
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 18px;
+        margin-top: 44px;
+      }
+
+      .card {
+        display: block;
+        padding: 28px;
+        border-radius: 24px;
+        text-decoration: none;
+        color: inherit;
+        background: var(--card);
+        border: 1px solid var(--line);
+        box-shadow:
+          0 24px 80px rgba(15, 23, 42, 0.12),
+          0 2px 8px rgba(15, 23, 42, 0.06);
+        backdrop-filter: blur(14px);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-3px);
+      }
+
+      .card.primary:hover {
+        border-color: rgba(37, 99, 235, 0.42);
+        box-shadow:
+          0 28px 90px rgba(37, 99, 235, 0.18),
+          0 2px 8px rgba(15, 23, 42, 0.06);
+      }
+
+      .card.secondary:hover {
+        border-color: rgba(217, 119, 6, 0.38);
+        box-shadow:
+          0 28px 90px rgba(217, 119, 6, 0.14),
+          0 2px 8px rgba(15, 23, 42, 0.06);
+      }
+
+      .tag {
+        display: inline-flex;
         align-items: center;
-        justify-content: center;
-        background: #f8f9fa;
-        transition: opacity 0.3s ease;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
       }
-      #oasis-editor-loading.oasis-editor-loading-hidden {
-        opacity: 0;
-        pointer-events: none;
+
+      .primary .tag {
+        background: var(--blue-ink);
+        color: var(--blue);
       }
-      .oasis-editor-spinner {
-        width: 36px;
-        height: 36px;
-        border: 3px solid #e2e8f0;
-        border-top-color: #2563eb;
-        border-radius: 50%;
-        animation: oasis-spin 0.8s linear infinite;
+
+      .secondary .tag {
+        background: var(--amber-ink);
+        color: var(--amber);
       }
-      .oasis-editor-loading-text {
-        margin-top: 12px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: 14px;
-        color: #64748b;
+
+      .card h2 {
+        margin: 18px 0 10px;
+        font-size: 32px;
+        line-height: 1;
+        letter-spacing: -0.04em;
       }
-      @keyframes oasis-spin {
-        to { transform: rotate(360deg); }
+
+      .card p {
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      .path {
+        margin-top: 18px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 13px;
+        color: #1e293b;
+      }
+
+      @media (max-width: 640px) {
+        main {
+          padding-top: 36px;
+        }
+
+        .card {
+          padding: 22px;
+          border-radius: 20px;
+        }
       }
     </style>
-    <script type="module" crossorigin src="/oasis-editor/assets/index-E_wF5fdt.js"></script>
-    <link rel="stylesheet" crossorigin href="/oasis-editor/assets/index-Dul9y64N.css">
   </head>
   <body>
-    <div id="oasis-editor-root"></div>
-    <div id="oasis-editor-loading">
-      <div class="oasis-editor-spinner"></div>
-      <div class="oasis-editor-loading-text">Loading editor...</div>
-    </div>
+    <main>
+      <p class="eyebrow">Oasis Workspace</p>
+      <h1>Choose which editor to enter.</h1>
+      <p class="lead">
+        The legacy editor stays available for reference. The rebuilt path is isolated in
+        <code>src2/</code> so it can be reconstructed from zero without dragging the old stack along.
+      </p>
+
+      <section class="grid">
+        <a class="card primary" href="/oasis-editor/">
+          <span class="tag">Legacy</span>
+          <h2>oasis-editor</h2>
+          <p>Current editor stack, preserved as the original implementation.</p>
+          <div class="path">/oasis-editor/</div>
+        </a>
+
+        <a class="card secondary" href="/oasis-editor-2/">
+          <span class="tag">Rebuild</span>
+          <h2>oasis-editor-2</h2>
+          <p>Clean-room path backed by <code>src2/</code>, starting from a minimal shell.</p>
+          <div class="path">/oasis-editor-2/</div>
+        </a>
+      </section>
+    </main>
   </body>
 </html>

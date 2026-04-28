@@ -48,6 +48,17 @@ function handleInsertText(state: EditorState, op: InsertTextOp): EditorState {
     }
   }
 
+  Logger.debug("INLINE: insertText:start", {
+    blockId,
+    inlineId,
+    offset,
+    text,
+    hasPendingMarks: !!pendingMarks,
+    oldBlockText: oldBlock && isTextBlock(oldBlock)
+      ? oldBlock.children.map((run) => run.text).join("")
+      : null,
+  });
+
   const nextState = updateDocumentSections(state, blockId, (block) => {
     if (!isTextBlock(block)) return block;
     const nextChildren: TextRun[] = [];
@@ -166,6 +177,19 @@ function handleInsertText(state: EditorState, op: InsertTextOp): EditorState {
       }
       acc += run.text.length;
     }
+    Logger.debug("INLINE: insertText:end", {
+      blockId,
+      nextBlockText: block.children.map((run) => run.text).join(""),
+      nextRunCount: block.children.length,
+      nextSelection: nextPosition,
+    });
+  } else {
+    Logger.debug("INLINE: insertText:end", {
+      blockId,
+      nextBlockText: null,
+      nextRunCount: 0,
+      nextSelection: nextPosition,
+    });
   }
 
   return {

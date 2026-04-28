@@ -1,4 +1,4 @@
-import { Component, Show, For, createSignal } from 'solid-js';
+import { Component, Show, For, createSignal, createEffect, onMount, onCleanup } from 'solid-js';
 import { Toolbar, ToolbarButton, ToolbarGroup, ToolbarSeparator, ToolbarSelect } from './components/Toolbar.tsx';
 import { MenuBar } from './components/MenuBar.tsx';
 import { store, setStore } from './EditorStore.tsx';
@@ -7,11 +7,11 @@ import { ColorPickerComponent } from './components/ColorPicker.tsx';
 import { HighlightColorPickerComponent } from './components/HighlightColorPicker.js';
 import { TablePickerInline } from './components/TablePicker.tsx';
 import { RulerComponent } from './ruler/Ruler.tsx';
-import { SelectionLayer } from './selection/SelectionLayer.tsx';
 import { PageLayerComponent } from './pages/PageLayer.tsx';
 import { TableToolbar } from './selection/TableToolbar.tsx';
 import { II18nService } from '../core/utils/I18nService.js';
 import { I18nProvider, useI18n } from './I18nContext.tsx';
+import { Logger } from '../core/utils/Logger.js';
 
 interface Props {
   i18n: II18nService;
@@ -20,6 +20,67 @@ interface Props {
 const OasisEditorContent: Component = () => {
   const { t, locale, setLocale } = useI18n();
   const ss = () => store.view?.selectionState;
+  const TEMP_DISABLE_FORMATTING = true;
+
+  createEffect(() => {
+    Logger.debug("OASIS: reactive snapshot", {
+      hasPageLayout: !!store.pageLayout,
+      pageCount: store.pageLayout?.pages.length ?? 0,
+      editingMode: store.editingMode,
+      revision: store.view?.metrics?.revision ?? null,
+    });
+  });
+
+  onMount(() => {
+    const logKey = (label: string) => (e: KeyboardEvent) => {
+      Logger.debug(`OASIS: ${label}`, {
+        key: e.key,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        shiftKey: e.shiftKey,
+        altKey: e.altKey,
+        hasFocus: document.hasFocus(),
+        activeElement: document.activeElement
+          ? {
+              tag: document.activeElement.tagName,
+              id: (document.activeElement as HTMLElement).id ?? null,
+              className: (document.activeElement as HTMLElement).className ?? null,
+            }
+          : null,
+      });
+    };
+
+    const windowKeydown = logKey("window keydown");
+    const windowKeyup = logKey("window keyup");
+    window.addEventListener("keydown", windowKeydown, true);
+    window.addEventListener("keyup", windowKeyup, true);
+    onCleanup(() => {
+      window.removeEventListener("keydown", windowKeydown, true);
+      window.removeEventListener("keyup", windowKeyup, true);
+    });
+  });
+
+  const isFormattingCommand = (cmd: string) =>
+    [
+      "bold",
+      "italic",
+      "underline",
+      "strikethrough",
+      "superscript",
+      "subscript",
+      "format-painter",
+      "align",
+      "bullets",
+      "ordered-list",
+      "decrease-indent",
+      "increase-indent",
+      "link",
+      "font-family",
+      "color",
+      "highlight",
+      "style",
+      "track-changes",
+    ].includes(cmd);
 
   const handleToolbarClick = (e: MouseEvent) => {
     const btn = (e.target as HTMLElement).closest("button[data-command]") as HTMLElement;
@@ -29,6 +90,10 @@ const OasisEditorContent: Component = () => {
     const [cmd, arg] = commandStr.split(":");
     const events = store.events;
     if (!events) return;
+
+    if (TEMP_DISABLE_FORMATTING && isFormattingCommand(cmd)) {
+      return;
+    }
 
     switch (cmd) {
         case "bold": events.onBold(); break;
@@ -70,13 +135,39 @@ const OasisEditorContent: Component = () => {
 
   const handleEditorMouseDown = (e: MouseEvent) => {
     if (isEditableTarget(e.target)) return;
-    (e.currentTarget as HTMLElement).focus({ preventScroll: true });
+    Logger.debug("OASIS: editor mousedown", {
+      hasFocus: document.hasFocus(),
+      activeElement: document.activeElement
+        ? {
+            tag: document.activeElement.tagName,
+            id: (document.activeElement as HTMLElement).id ?? null,
+            className: (document.activeElement as HTMLElement).className ?? null,
+          }
+        : null,
+    });
+    document.getElementById("oasis-editor-input")?.focus();
   };
 
   const handleEditorKeyDown = (e: KeyboardEvent) => {
     if (isEditableTarget(e.target)) return;
     const events = store.events;
     if (!events) return;
+
+    Logger.debug("OASIS: editor keydown", {
+      key: e.key,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      shiftKey: e.shiftKey,
+      altKey: e.altKey,
+      hasFocus: document.hasFocus(),
+      activeElement: document.activeElement
+        ? {
+            tag: document.activeElement.tagName,
+            id: (document.activeElement as HTMLElement).id ?? null,
+            className: (document.activeElement as HTMLElement).className ?? null,
+          }
+        : null,
+    });
 
     if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !e.isComposing) {
       events.onTextInput(e.key);
@@ -102,6 +193,10 @@ const OasisEditorContent: Component = () => {
       e.preventDefault();
     } else if (e.ctrlKey || e.metaKey) {
       const key = e.key.toLowerCase();
+      if (TEMP_DISABLE_FORMATTING && (key === "b" || key === "i" || key === "u")) {
+        e.preventDefault();
+        return;
+      }
       if (key === "b") {
         events.onBold();
         e.preventDefault();
@@ -188,6 +283,7 @@ const OasisEditorContent: Component = () => {
           <ToolbarButton id="oasis-editor-link" icon="link" command="link" active={!!ss()?.link} title={t("toolbar", "link")} />
           <ColorPickerComponent
             onColorSelected={(color) => {
+              if (TEMP_DISABLE_FORMATTING) return;
               setStore('pickerColor', color);
               store.events?.onColorChange?.(color);
             }}
@@ -195,6 +291,7 @@ const OasisEditorContent: Component = () => {
           />
           <HighlightColorPickerComponent
             onHighlightSelected={(color) => {
+              if (TEMP_DISABLE_FORMATTING) return;
               setStore('pickerHighlightColor', color);
               store.events?.onHighlightChange?.(color);
             }}
@@ -232,7 +329,12 @@ const OasisEditorContent: Component = () => {
       </Toolbar>
 
       {/* Hidden inputs for legacy View compatibility */}
-      <input type="text" id="oasis-editor-input" style={{ position: 'fixed', top: '-100px', left: '-100px', opacity: 0 }} />
+      <textarea
+        id="oasis-editor-input"
+        aria-hidden="true"
+        tabIndex={-1}
+        style={{ position: 'fixed', top: '-100px', left: '-100px', opacity: 0, width: '1px', height: '1px' }}
+      ></textarea>
       <input type="file" id="oasis-editor-import-docx-input" accept=".docx" style={{ display: 'none' }} />
 
       <main
@@ -240,7 +342,38 @@ const OasisEditorContent: Component = () => {
         class="oasis-editor-main"
         tabIndex={0}
         onMouseDown={handleEditorMouseDown}
+        onFocus={() => Logger.debug("OASIS: editor focus", {
+          hasFocus: document.hasFocus(),
+          activeElement: document.activeElement
+            ? {
+                tag: document.activeElement.tagName,
+                id: (document.activeElement as HTMLElement).id ?? null,
+                className: (document.activeElement as HTMLElement).className ?? null,
+              }
+            : null,
+        })}
+        onBlur={() => Logger.debug("OASIS: editor blur", {
+          hasFocus: document.hasFocus(),
+          activeElement: document.activeElement
+            ? {
+                tag: document.activeElement.tagName,
+                id: (document.activeElement as HTMLElement).id ?? null,
+                className: (document.activeElement as HTMLElement).className ?? null,
+              }
+            : null,
+        })}
         onKeyDown={handleEditorKeyDown}
+        onKeyUp={(e) => Logger.debug("OASIS: editor keyup", {
+          key: e.key,
+          hasFocus: document.hasFocus(),
+          activeElement: document.activeElement
+            ? {
+                tag: document.activeElement.tagName,
+                id: (document.activeElement as HTMLElement).id ?? null,
+                className: (document.activeElement as HTMLElement).className ?? null,
+              }
+            : null,
+        })}
       >
         <RulerComponent
           template={store.view?.pageTemplate ?? null}
@@ -250,7 +383,6 @@ const OasisEditorContent: Component = () => {
         <section id="oasis-editor-pages" class="oasis-editor-pages">
           <PageLayerComponent layout={store.pageLayout} editingMode={store.editingMode} />
         </section>
-        <SelectionLayer />
         <TableToolbar
           onInsertRowAbove={() => store.events?.onInsertRowAbove?.()}
           onInsertRowBelow={() => store.events?.onInsertRowBelow?.()}

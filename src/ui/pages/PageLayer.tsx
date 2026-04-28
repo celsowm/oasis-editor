@@ -1,4 +1,4 @@
-import { Component, For, Show } from "solid-js";
+import { Component, For, Show, createEffect } from "solid-js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { FragmentRenderer } from "./FragmentRenderer.tsx";
 import { useI18n } from "../I18nContext.tsx";
@@ -14,6 +14,28 @@ export const PageLayerComponent: Component<PageLayerProps> = (props) => {
   Logger.debug("PAGE_LAYER: render", {
     editingMode: props.editingMode,
     pageCount: props.layout?.pages.length ?? 0,
+  });
+
+  createEffect(() => {
+    const firstPage = props.layout?.pages[0];
+    const firstFragment = firstPage?.fragments[0];
+    Logger.debug("PAGE_LAYER: reactive snapshot", {
+      editingMode: props.editingMode,
+      pageCount: props.layout?.pages.length ?? 0,
+      firstPageId: firstPage?.id ?? null,
+      firstBlockId: firstFragment?.blockId ?? null,
+      firstFragmentText: firstFragment?.text ?? null,
+    });
+    requestAnimationFrame(() => {
+      const fragmentEl = document.querySelector<HTMLElement>(
+        ".oasis-page .oasis-fragment",
+      );
+      const pageEl = document.querySelector<HTMLElement>(".oasis-page");
+      const styles = fragmentEl ? window.getComputedStyle(fragmentEl) : null;
+      Logger.debug(
+        `PAGE_LAYER: dom snapshot text="${fragmentEl?.textContent ?? ""}" id=${fragmentEl?.getAttribute("data-fragment-id") ?? "null"} class="${fragmentEl?.className ?? ""}" opacity=${styles?.opacity ?? "null"} display=${styles?.display ?? "null"} visibility=${styles?.visibility ?? "null"} color=${styles?.color ?? "null"} pageDisplay=${pageEl ? window.getComputedStyle(pageEl).display : "null"}`,
+      );
+    });
   });
 
   return (

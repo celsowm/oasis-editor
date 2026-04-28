@@ -12,6 +12,7 @@ import { Logger } from "../../core/utils/Logger.js";
 
 export class PageViewport {
   private measurer: TextMeasurer;
+  private readonly tempDisableSelectionVisuals = true;
 
   constructor(measurer: TextMeasurer) {
     this.measurer = measurer;
@@ -30,6 +31,17 @@ export class PageViewport {
     // Update the store — PageLayerComponent in the root reads from it
     setStore("pageLayout", layout);
     setStore("editingMode", editingMode);
+
+    if (this.tempDisableSelectionVisuals) {
+      setStore("caretRect", null);
+      setStore("selectionRects", []);
+      Logger.debug("VIEWPORT: visuals disabled", {
+        editingMode,
+        selection,
+        pages: layout.pages.length,
+      });
+      return;
+    }
 
     // Use a default SelectionMapper for this layout
     const mapper = new SelectionMapper(layout, this.measurer);

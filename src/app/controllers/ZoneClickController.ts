@@ -7,6 +7,8 @@ import { LogicalPosition } from "../../core/selection/SelectionTypes.js";
 import { DomHitTester } from "../services/DomHitTester.js";
 
 export class ZoneClickController {
+  private readonly tempDisableZoneClicks = true;
+
   constructor(
     private runtime: IDocumentRuntime,
     private getLatestLayout: () => LayoutState | null,
@@ -15,6 +17,9 @@ export class ZoneClickController {
   ) {}
 
   handleDblClick(event: MouseEvent): boolean {
+    if (this.tempDisableZoneClicks) {
+      return false;
+    }
     event.preventDefault();
 
     const element = this.domHitTester.elementFromPoint(event.clientX, event.clientY);

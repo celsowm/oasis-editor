@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const isLib = mode === 'lib';
 
   return {
-    base: isLib ? './' : '/oasis-editor/',
+    base: isLib ? './' : '/',
     build: {
       outDir: isLib ? 'dist' : 'dist-app',
       lib: isLib ? {
@@ -17,7 +17,11 @@ export default defineConfig(({ mode }) => {
         formats: ['es', 'umd'],
       } : undefined,
       rollupOptions: {
-        input: isLib ? undefined : resolve(__dirname, 'index.html'),
+        input: isLib ? undefined : {
+          root: resolve(__dirname, 'index.html'),
+          oasisEditor: resolve(__dirname, 'oasis-editor/index.html'),
+          oasisEditor2: resolve(__dirname, 'oasis-editor-2/index.html'),
+        },
         output: isLib ? {
           assetFileNames: (assetInfo) => {
             if (assetInfo.name === 'style.css') return 'oasis-editor.css';
@@ -38,11 +42,12 @@ export default defineConfig(({ mode }) => {
       }),
     ].filter(Boolean),
     test: {
-      include: ['src/**/*.{test,spec}.{ts,tsx}'],
+      include: ['src/**/*.{test,spec}.{ts,tsx}', 'src2/**/*.{test,spec}.{ts,tsx}'],
       exclude: ['node_modules', 'dist', 'dist-app', 'e2e/**'],
       environment: 'node',
       environmentMatchGlobs: [
         ['src/__tests__/ui/**', 'jsdom'],
+        ['src2/__tests__/ui/**', 'jsdom'],
       ],
     },
   };

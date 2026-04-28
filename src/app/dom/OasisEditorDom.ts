@@ -21,8 +21,8 @@ export class OasisEditorDom {
     return this.requireElement("oasis-editor-template") as HTMLSelectElement;
   }
 
-  getHiddenInput(): HTMLInputElement {
-    return this.requireElement("oasis-editor-input") as HTMLInputElement;
+  getHiddenInput(): HTMLTextAreaElement {
+    return this.requireElement("oasis-editor-input") as HTMLTextAreaElement;
   }
 
   getImageFileInput(): HTMLInputElement {

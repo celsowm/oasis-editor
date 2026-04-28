@@ -7,6 +7,8 @@ import { isTextBlock } from "../../core/document/BlockTypes.js";
 import { FormatPainterController } from "./FormatPainterController.js";
 
 export class WordSelectionController {
+  private readonly tempDisableWordSelection = true;
+
   constructor(
     private runtime: IDocumentRuntime,
     private cursorCalc: CursorPositionCalculator,
@@ -15,6 +17,9 @@ export class WordSelectionController {
   ) {}
 
   handleDblClick(event: MouseEvent): void {
+    if (this.tempDisableWordSelection) {
+      return;
+    }
     const position = this.cursorCalc.calculateFromMouseEvent(event);
     if (!position) return;
 
@@ -116,6 +121,9 @@ export class WordSelectionController {
   }
 
   handleTripleClick(event: MouseEvent): void {
+    if (this.tempDisableWordSelection) {
+      return;
+    }
     const position = this.cursorCalc.calculateFromMouseEvent(event);
     if (!position) return;
 

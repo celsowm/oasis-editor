@@ -8,6 +8,7 @@ import { LogicalPosition } from "../../core/selection/SelectionTypes.js";
 export class MouseController {
   private isDragging = false;
   private dragAnchor: LogicalPosition | null = null;
+  private readonly tempDisableMouseSelection = true;
 
   constructor(
     private runtime: IDocumentRuntime,
@@ -31,6 +32,10 @@ export class MouseController {
       buttons: event.buttons,
       target: (event.target as HTMLElement | null)?.className ?? null,
     });
+    if (this.tempDisableMouseSelection) {
+      Logger.debug("MOUSE: selection disabled");
+      return;
+    }
     const path = event.composedPath() as HTMLElement[];
     const isImageRelated = path.some(el =>
         el.classList?.contains("oasis-image-wrapper") ||
@@ -61,6 +66,9 @@ export class MouseController {
   }
 
   handleMouseMove(event: MouseEvent): void {
+    if (this.tempDisableMouseSelection) {
+      return;
+    }
     if (!this.isDragging || event.buttons !== 1) {
       this.isDragging = false;
       return;
@@ -81,6 +89,10 @@ export class MouseController {
   }
 
   handleMouseUp(): void {
+    if (this.tempDisableMouseSelection) {
+      this.isDragging = false;
+      return;
+    }
     if (this.isDragging) {
       this.isDragging = false;
 
