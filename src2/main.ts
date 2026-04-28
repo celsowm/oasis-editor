@@ -20,7 +20,7 @@ function hideLoading(): void {
 }
 
 function init(): void {
-  createOasisEditor2(container);
+  createOasisEditor2(container as HTMLElement);
   hideLoading();
 }
 

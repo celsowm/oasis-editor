@@ -9,9 +9,10 @@ body {
 body {
   overflow: hidden;
   background:
-    radial-gradient(circle at top, rgba(37, 99, 235, 0.14), transparent 35%),
-    linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
-  font-family: Inter, Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    radial-gradient(circle at top left, rgba(217, 119, 6, 0.12), transparent 24%),
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 28%),
+    linear-gradient(180deg, #f8fafc 0%, #e7eef7 100%);
+  font-family: "Inter", "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: #0f172a;
 }
 
@@ -20,49 +21,125 @@ body {
   height: 100%;
 }
 
-.oasis-editor-2-shell {
+.oasis-editor-2-app {
   display: grid;
-  place-items: center;
+  grid-template-rows: auto 1fr;
   width: 100%;
   height: 100%;
-  padding: 32px;
+  padding: 28px 24px 32px;
   box-sizing: border-box;
+  gap: 20px;
 }
 
-.oasis-editor-2-card {
-  width: min(720px, 100%);
-  padding: 36px 40px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  box-shadow:
-    0 24px 80px rgba(15, 23, 42, 0.12),
-    0 2px 8px rgba(15, 23, 42, 0.06);
-  backdrop-filter: blur(14px);
+.oasis-editor-2-header {
+  width: min(860px, 100%);
+  margin: 0 auto;
 }
 
 .oasis-editor-2-eyebrow {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #2563eb;
+  color: #b45309;
 }
 
-.oasis-editor-2-card h1 {
+.oasis-editor-2-title {
   margin: 0;
-  font-size: clamp(40px, 7vw, 72px);
+  font-size: clamp(34px, 5vw, 54px);
   line-height: 0.95;
   letter-spacing: -0.05em;
 }
 
 .oasis-editor-2-copy {
-  margin: 16px 0 0;
-  max-width: 52ch;
-  font-size: 18px;
+  margin: 14px 0 0;
+  max-width: 68ch;
+  font-size: 16px;
   line-height: 1.6;
-  color: #334155;
+  color: #475569;
+}
+
+.oasis-editor-2-stage {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+
+.oasis-editor-2-editor {
+  position: relative;
+  width: min(860px, 100%);
+  min-height: min(72vh, 920px);
+  padding: 34px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  box-shadow:
+    0 26px 80px rgba(15, 23, 42, 0.12),
+    0 4px 14px rgba(15, 23, 42, 0.05);
+  backdrop-filter: blur(16px);
+}
+
+.oasis-editor-2-paper {
+  min-height: 100%;
+  border-radius: 20px;
+  background: #fffdf8;
+  box-shadow:
+    inset 0 0 0 1px rgba(148, 163, 184, 0.16),
+    0 10px 30px rgba(148, 163, 184, 0.1);
+}
+
+.oasis-editor-2-surface {
+  position: relative;
+  min-height: 100%;
+  padding: 72px 88px;
+  box-sizing: border-box;
+  cursor: text;
+}
+
+.oasis-editor-2-block {
+  margin: 0 0 10px;
+  min-height: 1.6em;
+  font-size: 20px;
+  line-height: 1.6;
+  letter-spacing: 0.002em;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.oasis-editor-2-caret {
+  position: absolute;
+  width: 0;
+  height: 1em;
+  border-left: 2px solid transparent;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.oasis-editor-2-caret-active {
+  border-left-color: #2563eb;
+  animation: oasis-editor-2-blink 1.05s steps(1) infinite;
+}
+
+.oasis-editor-2-char-selected,
+.oasis-editor-2-empty-char-selected {
+  background: rgba(37, 99, 235, 0.22);
+}
+
+.oasis-editor-2-input {
+  position: absolute;
+  width: 1.4ch;
+  min-width: 14px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  opacity: 0;
 }
 
 #oasis-editor-2-loading {
@@ -83,4 +160,36 @@ body {
 .oasis-editor-2-loading-text {
   font-size: 14px;
   color: #64748b;
+}
+
+@keyframes oasis-editor-2-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .oasis-editor-2-app {
+    padding: 20px 14px 20px;
+  }
+
+  .oasis-editor-2-editor {
+    min-height: 78vh;
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .oasis-editor-2-surface {
+    padding: 38px 28px;
+  }
+
+  .oasis-editor-2-block {
+    font-size: 18px;
+  }
 }

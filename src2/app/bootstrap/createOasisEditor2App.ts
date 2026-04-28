@@ -1,23 +1,14 @@
+import { render } from "solid-js/web";
+import { OasisEditor2App } from "../../ui/OasisEditor2App.js";
+
 export interface OasisEditor2Instance {
   dispose: () => void;
 }
 
 export function createOasisEditor2(container: HTMLElement): OasisEditor2Instance {
-  container.innerHTML = `
-    <div class="oasis-editor-2-shell">
-      <div class="oasis-editor-2-card">
-        <p class="oasis-editor-2-eyebrow">oasis-editor-2</p>
-        <h1>Hello world</h1>
-        <p class="oasis-editor-2-copy">
-          Minimal shell loaded. No document runtime, selection, or formatting yet.
-        </p>
-      </div>
-    </div>
-  `;
+  const dispose = render(OasisEditor2App, container);
 
   return {
-    dispose: () => {
-      container.innerHTML = "";
-    },
+    dispose,
   };
 }
