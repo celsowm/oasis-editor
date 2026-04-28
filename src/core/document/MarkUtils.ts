@@ -19,3 +19,21 @@ export function areMarksEqual(a: MarkSet, b: MarkSet): boolean {
 
   return true;
 }
+
+export function applyPendingMarks(base: MarkSet, pending?: MarkSet | null): MarkSet {
+  const next: MarkSet = { ...base };
+  if (!pending) return next;
+
+  for (const key of Object.keys(pending) as Array<keyof MarkSet>) {
+    const value = pending[key];
+    if (value === undefined) continue;
+
+    if (value === false) {
+      delete next[key];
+    } else {
+      (next as Record<keyof MarkSet, unknown>)[key] = value;
+    }
+  }
+
+  return next;
+}

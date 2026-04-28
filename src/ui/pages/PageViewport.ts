@@ -8,6 +8,7 @@ import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { SelectionMapper } from "../../app/services/SelectionMapper.js";
 import { setStore } from "../EditorStore.tsx";
+import { Logger } from "../../core/utils/Logger.js";
 
 export class PageViewport {
   private measurer: TextMeasurer;
@@ -21,6 +22,11 @@ export class PageViewport {
     selection: EditorSelection | null,
     editingMode: "main" | "header" | "footer" | "footnote" = "main",
   ): void {
+    Logger.debug("VIEWPORT: render:start", {
+      editingMode,
+      selection,
+      pages: layout.pages.length,
+    });
     // Update the store — PageLayerComponent in the root reads from it
     setStore("pageLayout", layout);
     setStore("editingMode", editingMode);
@@ -31,6 +37,10 @@ export class PageViewport {
     if (!selection) {
       setStore("caretRect", null);
       setStore("selectionRects", []);
+      Logger.debug("VIEWPORT: render:end", {
+        caretRect: null,
+        selectionRects: 0,
+      });
       return;
     }
 
@@ -51,6 +61,10 @@ export class PageViewport {
           pageId: caretRect.pageId,
         });
         setStore("selectionRects", []);
+        Logger.debug("VIEWPORT: caret", {
+          caretRect,
+          selectionRects: 0,
+        });
       }
     } else {
       // Handle selection range
@@ -67,6 +81,10 @@ export class PageViewport {
           pageId: r.pageId,
         })),
       );
+      Logger.debug("VIEWPORT: selection", {
+        rectCount: rects.length,
+        range,
+      });
     }
   }
 }

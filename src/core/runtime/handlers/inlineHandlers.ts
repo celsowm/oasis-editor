@@ -2,10 +2,12 @@ import { EditorState } from "../EditorState.js";
 import { findBlockById } from "../../document/BlockUtils.js";
 import { isTextBlock, TextRun } from "../../document/BlockTypes.js";
 import { areMarksEqual } from "../../document/MarkUtils.js";
+import { applyPendingMarks } from "../../document/MarkUtils.js";
 import { LogicalPosition } from "../../selection/SelectionTypes.js";
 import { updateDocumentSections } from "../../document/DocumentMutationUtils.js";
 import { registerHandler } from "../OperationHandlers.js";
 import { OperationType, SetSelectionOp, InsertTextOp, DeleteTextOp } from "../../operations/OperationTypes.js";
+import { Logger } from "../../utils/Logger.js";
 
 function handleSetSelection(state: EditorState, op: SetSelectionOp): EditorState {
   const newSelection = op.payload.selection;
@@ -58,24 +60,27 @@ function handleInsertText(state: EditorState, op: InsertTextOp): EditorState {
       const afterText = run.text.substring(offset);
 
       if (pendingMarks) {
+        const effectiveMarks = applyPendingMarks(run.marks, pendingMarks);
+        Logger.debug("INLINE: insertText with pendingMarks", {
+          blockId,
+          inlineId,
+          offset,
+          text,
+          runId: run.id,
+          pendingMarks,
+          effectiveMarks,
+        });
         if (beforeText)
           nextChildren.push({
             ...run,
             id: idGenerator.nextRunId(),
             text: beforeText,
           });
-        const combinedMarks = { ...run.marks, ...pendingMarks };
-        const cleaned = Object.fromEntries(
-          Object.entries(pendingMarks).filter(
-            ([, v]) => v !== undefined && v !== false,
-          ),
-        );
-        Object.assign(combinedMarks, cleaned);
 
         nextChildren.push({
           id: idGenerator.nextRunId(),
           text,
-          marks: combinedMarks,
+          marks: effectiveMarks,
           ...(state.trackChangesEnabled ? {
             revision: {
               type: "insert" as const,

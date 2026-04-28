@@ -5,6 +5,7 @@ import { isTextBlock, TextRun, BlockNode, MarkSet } from "../../document/BlockTy
 import { areMarksEqual } from "../../document/MarkUtils.js";
 import { registerHandler } from "../OperationHandlers.js";
 import { getAllBlocksInSection } from "../../document/BlockUtils.js";
+import { Logger } from "../../utils/Logger.js";
 
 export type BooleanMarkKey = "bold" | "italic" | "underline" | "strike";
 
@@ -232,6 +233,14 @@ function isCollapsedAtPoint(selection: NonNullable<EditorState["selection"]>): b
   );
 }
 
+function describeSelection(selection: NonNullable<EditorState["selection"]>): Record<string, unknown> {
+  return {
+    anchor: selection.anchor,
+    focus: selection.focus,
+    collapsed: isCollapsedAtPoint(selection),
+  };
+}
+
 function registerMarkHandlers(): void {
   registerHandler(OperationType.TOGGLE_MARK, (state, op: ToggleMarkOp) => {
     const { selection, pendingMarks } = state;
@@ -243,8 +252,15 @@ function registerMarkHandlers(): void {
 
     if (isCollapsedAtPoint(selection)) {
       const nextMarks: MarkSet = { ...(pendingMarks || {}) };
-      
-      const targetBlock = getAllBlocksInSection(state.document.sections.flatMap(s => s.children)).find(b => b.id === selection.anchor.blockId);
+
+      const targetBlocks = state.document.sections.flatMap((section) => {
+        if (state.editingMode === "header") return section.header || [];
+        if (state.editingMode === "footer") return section.footer || [];
+        return section.children;
+      });
+      const targetBlock = getAllBlocksInSection(targetBlocks).find(
+        (b) => b.id === selection.anchor.blockId,
+      );
       let runMarkActive = false;
       if (targetBlock && isTextBlock(targetBlock)) {
           const run = targetBlock.children.find(r => r.id === selection.anchor.inlineId);
@@ -254,10 +270,25 @@ function registerMarkHandlers(): void {
       const isCurrentlyActive = nextMarks[mark] !== undefined ? nextMarks[mark] === toggleValue : runMarkActive;
 
       if (isCurrentlyActive) {
-          const { [mark]: _, ...rest } = nextMarks;
-          return { ...state, pendingMarks: rest as MarkSet };
+          const nextPendingMarks = {
+            ...nextMarks,
+            [mark]: false,
+          } as MarkSet;
+          Logger.debug("MARK: toggle off collapsed", {
+            mark,
+            selection: describeSelection(selection),
+            pendingBefore: pendingMarks ?? null,
+            pendingAfter: nextPendingMarks,
+          });
+          return { ...state, pendingMarks: nextPendingMarks };
       } else {
           (nextMarks as Record<keyof MarkSet, unknown>)[mark] = toggleValue;
+          Logger.debug("MARK: toggle on collapsed", {
+            mark,
+            selection: describeSelection(selection),
+            pendingBefore: pendingMarks ?? null,
+            pendingAfter: nextMarks,
+          });
           return { ...state, pendingMarks: nextMarks };
       }
     }

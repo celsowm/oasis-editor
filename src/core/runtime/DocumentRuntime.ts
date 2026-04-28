@@ -60,7 +60,14 @@ export class DocumentRuntime implements IDocumentRuntime {
   }
 
   dispatch(operation: EditorOperation): void {
-    Logger.debug("RUNTIME: dispatch", operation.type);
+    const before = this.store.getState();
+    Logger.debug("RUNTIME: dispatch:start", {
+      type: operation.type,
+      selection: before.selection,
+      editingMode: before.editingMode,
+      pendingMarks: before.pendingMarks ?? null,
+      revision: before.document.revision,
+    });
     const currentState = this.store.getState();
     
     // Save to history before mutation
@@ -73,6 +80,15 @@ export class DocumentRuntime implements IDocumentRuntime {
     );
     
     this.store.setState(nextState);
+
+    Logger.debug("RUNTIME: dispatch:end", {
+      type: operation.type,
+      selection: nextState.selection,
+      editingMode: nextState.editingMode,
+      pendingMarks: nextState.pendingMarks ?? null,
+      revision: nextState.document.revision,
+      selectedImageId: nextState.selectedImageId ?? null,
+    });
   }
 
   undo(): void {

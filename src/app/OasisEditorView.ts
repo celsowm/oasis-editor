@@ -63,6 +63,8 @@ export class OasisEditorView {
   private dropIndicator: HTMLElement | null = null;
   private rafIds: number[] = [];
   private windowListeners: Array<{ el: Window; type: string; handler: EventListener }> = [];
+  private documentListeners: Array<{ type: string; handler: EventListener; capture: boolean }> = [];
+  private handledKeyboardEvents = new WeakSet<Event>();
 
   constructor(deps: ViewDeps) {
     this.deps = deps;
@@ -150,69 +152,47 @@ export class OasisEditorView {
     // Hidden input for keyboard handling
     this.elements.hiddenInput.addEventListener("input", (e) => {
       const inputEvent = e as InputEvent;
+      Logger.debug("VIEW: hiddenInput input", {
+        data: inputEvent.data,
+        value: this.elements.hiddenInput.value,
+        activeElement: document.activeElement
+          ? {
+              tag: document.activeElement.tagName,
+              id: (document.activeElement as HTMLElement).id ?? null,
+              className: (document.activeElement as HTMLElement).className ?? null,
+            }
+          : null,
+      });
       events.onTextInput(inputEvent.data ?? "");
       this.elements.hiddenInput.value = "";
     });
 
     this.elements.hiddenInput.addEventListener("keydown", (e) => {
-      const ke = e as KeyboardEvent;
-      
-      // Strict check for ghost Enter keys after drop or during drag
-      const isDragging = this.dragState?.isDragging;
-      const lastDropTime = this.dragState?.lastDropTime || 0;
-      const timeSinceDrop = Date.now() - lastDropTime;
-      const justDropped = timeSinceDrop < 500;
+      this.handleKeyboardEvent(e as KeyboardEvent, events, "hiddenInput");
+    });
 
-      if (ke.key === "Enter") {
-        if (isDragging || justDropped) {
-          Logger.debug("VIEW: Suppressed ghost Enter", { isDragging, justDropped, timeSinceDrop });
-          ke.preventDefault();
-          ke.stopImmediatePropagation();
-          return;
-        }
-      }
+    this.elements.hiddenInput.addEventListener("focus", () => {
+      Logger.debug("VIEW: hiddenInput focus", {
+        activeElement: document.activeElement
+          ? {
+              tag: document.activeElement.tagName,
+              id: (document.activeElement as HTMLElement).id ?? null,
+              className: (document.activeElement as HTMLElement).className ?? null,
+            }
+          : null,
+      });
+    });
 
-      if (ke.key === "Backspace") {
-        events.onDelete();
-        ke.preventDefault();
-      } else if (ke.key === "Enter") {
-        events.onEnter(ke.shiftKey);
-        ke.preventDefault();
-      } else if (ke.key === "Tab") {
-        if (ke.shiftKey) {
-          events.onDecreaseIndent();
-        } else {
-          events.onIncreaseIndent();
-        }
-        ke.preventDefault();
-      } else if (ke.key === "Escape") {
-        events.onEscape();
-        ke.preventDefault();
-      } else if (
-        ke.key.startsWith("Arrow") ||
-        ke.key === "Home" ||
-        ke.key === "End"
-      ) {
-        events.onArrowKey(ke.key);
-        ke.preventDefault();
-      } else if (ke.ctrlKey || ke.metaKey) {
-        if (ke.key === "b") {
-          events.onBold();
-          ke.preventDefault();
-        } else if (ke.key === "i") {
-          events.onItalic();
-          ke.preventDefault();
-        } else if (ke.key === "u") {
-          events.onUnderline();
-          ke.preventDefault();
-        } else if (ke.key === "z") {
-          events.onUndo();
-          ke.preventDefault();
-        } else if (ke.key === "y") {
-          events.onRedo();
-          ke.preventDefault();
-        }
-      }
+    this.elements.hiddenInput.addEventListener("blur", () => {
+      Logger.debug("VIEW: hiddenInput blur", {
+        activeElement: document.activeElement
+          ? {
+              tag: document.activeElement.tagName,
+              id: (document.activeElement as HTMLElement).id ?? null,
+              className: (document.activeElement as HTMLElement).className ?? null,
+            }
+          : null,
+      });
     });
 
     // Detecção de cliques múltiplos
@@ -293,6 +273,21 @@ export class OasisEditorView {
       this.dragState?.reset();
     });
 
+    this.addWindowListener("keydown", (e) => {
+      this.handleKeyboardEvent(e as KeyboardEvent, events, "window");
+    });
+
+    this.addDocumentListener(
+      "keydown",
+      (e) => this.handleKeyboardEvent(e as KeyboardEvent, events, "document"),
+      true,
+    );
+    this.addDocumentListener(
+      "beforeinput",
+      (e) => this.handleBeforeInput(e as InputEvent, events),
+      true,
+    );
+
     this.addWindowListener("drop", (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -337,6 +332,20 @@ export class OasisEditorView {
   render(viewModel: EditorViewModel): void {
     // Update SolidJS store for reactive UI (Toolbar, Status bar)
     setStore("view", viewModel);
+    Logger.debug("VIEW: render", {
+      editingMode: viewModel.editingMode,
+      hasSelection: !!viewModel.selection,
+      selection: viewModel.selection,
+      selectedImageId: viewModel.selectedImageId,
+      activeTableId: viewModel.activeTableId,
+      activeElement: document.activeElement
+        ? {
+            tag: document.activeElement.tagName,
+            id: (document.activeElement as HTMLElement).id ?? null,
+            className: (document.activeElement as HTMLElement).className ?? null,
+          }
+        : null,
+    });
 
     this.viewport.render(
       viewModel.layout,
@@ -354,10 +363,28 @@ export class OasisEditorView {
       // focus during mousedown handling gets immediately canceled by the
       // browser's native focus management.
       this.scheduleRaf(() => {
+        Logger.debug("VIEW: focus hiddenInput request", {
+          activeElement: document.activeElement
+            ? {
+                tag: document.activeElement.tagName,
+                id: (document.activeElement as HTMLElement).id ?? null,
+                className: (document.activeElement as HTMLElement).className ?? null,
+              }
+            : null,
+        });
         this.elements.hiddenInput.focus({ preventScroll: true });
         // Double-check: if focus was stolen again, try once more
         if (document.activeElement !== this.elements.hiddenInput) {
           this.scheduleRaf(() => {
+            Logger.debug("VIEW: focus hiddenInput retry", {
+              activeElement: document.activeElement
+                ? {
+                    tag: document.activeElement.tagName,
+                    id: (document.activeElement as HTMLElement).id ?? null,
+                    className: (document.activeElement as HTMLElement).className ?? null,
+                  }
+                : null,
+            });
             this.elements.hiddenInput.focus({ preventScroll: true });
           });
         }
@@ -647,6 +674,142 @@ export class OasisEditorView {
     this.windowListeners.push({ el: window, type, handler });
   }
 
+  private addDocumentListener(type: string, handler: EventListener, capture = false): void {
+    document.addEventListener(type, handler, capture);
+    this.documentListeners.push({ type, handler, capture });
+  }
+
+  private handleKeyboardEvent(
+    event: KeyboardEvent,
+    events: ViewEventBindings,
+    source: "hiddenInput" | "window" | "document",
+  ): void {
+    const ke = event;
+    if (this.handledKeyboardEvents.has(ke)) return;
+
+    const activeElement = document.activeElement as HTMLElement | null;
+    if (
+      source === "window" &&
+      activeElement &&
+      activeElement !== this.elements.hiddenInput &&
+      (activeElement.tagName === "INPUT" ||
+        activeElement.tagName === "TEXTAREA" ||
+        activeElement.tagName === "SELECT")
+    ) {
+      return;
+    }
+
+    Logger.debug(`VIEW: ${source} keydown`, {
+      key: ke.key,
+      ctrlKey: ke.ctrlKey,
+      metaKey: ke.metaKey,
+      shiftKey: ke.shiftKey,
+      altKey: ke.altKey,
+      activeElement: activeElement
+        ? {
+            tag: activeElement.tagName,
+            id: activeElement.id ?? null,
+            className: activeElement.className ?? null,
+          }
+        : null,
+    });
+
+    const isPrintableKey =
+      ke.key.length === 1 && !ke.ctrlKey && !ke.metaKey && !ke.altKey;
+    if (isPrintableKey && !ke.isComposing) {
+      this.handledKeyboardEvents.add(ke);
+      Logger.debug("VIEW: printable key -> insertText", {
+        source,
+        key: ke.key,
+      });
+      events.onTextInput(ke.key);
+      ke.preventDefault();
+      return;
+    }
+
+    const isDragging = this.dragState?.isDragging;
+    const lastDropTime = this.dragState?.lastDropTime || 0;
+    const timeSinceDrop = Date.now() - lastDropTime;
+    const justDropped = timeSinceDrop < 500;
+
+    if (ke.key === "Enter" && (isDragging || justDropped)) {
+      Logger.debug("VIEW: Suppressed ghost Enter", { isDragging, justDropped, timeSinceDrop });
+      this.handledKeyboardEvents.add(ke);
+      ke.preventDefault();
+      ke.stopImmediatePropagation();
+      return;
+    }
+
+    if (ke.key === "Backspace") {
+      this.handledKeyboardEvents.add(ke);
+      events.onDelete();
+      ke.preventDefault();
+    } else if (ke.key === "Enter") {
+      this.handledKeyboardEvents.add(ke);
+      events.onEnter(ke.shiftKey);
+      ke.preventDefault();
+    } else if (ke.key === "Tab") {
+      this.handledKeyboardEvents.add(ke);
+      if (ke.shiftKey) {
+        events.onDecreaseIndent();
+      } else {
+        events.onIncreaseIndent();
+      }
+      ke.preventDefault();
+    } else if (ke.key === "Escape") {
+      this.handledKeyboardEvents.add(ke);
+      events.onEscape();
+      ke.preventDefault();
+    } else if (
+      ke.key.startsWith("Arrow") ||
+      ke.key === "Home" ||
+      ke.key === "End"
+    ) {
+      this.handledKeyboardEvents.add(ke);
+      events.onArrowKey(ke.key);
+      ke.preventDefault();
+    } else if (ke.ctrlKey || ke.metaKey) {
+      this.handledKeyboardEvents.add(ke);
+      if (ke.key === "b") {
+        events.onBold();
+        ke.preventDefault();
+      } else if (ke.key === "i") {
+        events.onItalic();
+        ke.preventDefault();
+      } else if (ke.key === "u") {
+        events.onUnderline();
+        ke.preventDefault();
+      } else if (ke.key === "z") {
+        events.onUndo();
+        ke.preventDefault();
+      } else if (ke.key === "y") {
+        events.onRedo();
+        ke.preventDefault();
+      }
+    }
+  }
+
+  private handleBeforeInput(
+    event: InputEvent,
+    events: ViewEventBindings,
+  ): void {
+    Logger.debug("VIEW: beforeinput", {
+      inputType: event.inputType,
+      data: event.data,
+      activeElement: document.activeElement
+        ? {
+            tag: document.activeElement.tagName,
+            id: (document.activeElement as HTMLElement).id ?? null,
+            className: (document.activeElement as HTMLElement).className ?? null,
+          }
+        : null,
+    });
+    if (event.inputType === "insertText" && event.data) {
+      events.onTextInput(event.data);
+      event.preventDefault();
+    }
+  }
+
   /**
    * Clean up all tracked listeners and pending RAFs.
    */
@@ -662,6 +825,11 @@ export class OasisEditorView {
       el.removeEventListener(type, handler);
     }
     this.windowListeners = [];
+
+    for (const { type, handler, capture } of this.documentListeners) {
+      document.removeEventListener(type, handler, capture);
+    }
+    this.documentListeners = [];
 
     // Clean up overlays and toolbars
     this.imageResizeOverlay?.destroy();

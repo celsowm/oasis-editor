@@ -7,6 +7,8 @@ import {
   findParentTable,
   findBlockById,
 } from "../../core/document/BlockUtils.js";
+import { applyPendingMarks } from "../../core/document/MarkUtils.js";
+import { Logger } from "../../core/utils/Logger.js";
 
 export interface TemplateOption {
   value: string;
@@ -72,6 +74,13 @@ export class OasisEditorPresenter {
     state: EditorState;
     layout: LayoutState;
   }): EditorViewModel {
+    Logger.debug("PRESENTER: present:start", {
+      revision: state.document.revision,
+      editingMode: state.editingMode,
+      selection: state.selection,
+      pendingMarks: state.pendingMarks ?? null,
+      layoutPages: layout.pages.length,
+    });
     const firstSection = state.document.sections[0];
     const selection = state.selection;
     let selectionState: SelectionState = {
@@ -115,20 +124,19 @@ export class OasisEditorPresenter {
         } else if (targetBlock.children.length > 0) {
             marks = { ...targetBlock.children[0].marks };
         }
-        
-        const effectiveMarks = {
-          ...marks,
-          ...(state.pendingMarks || {}),
-        };
 
-        if (state.pendingMarks) {
-            const cleaned: Record<string, unknown> = {};
-            for (const key in state.pendingMarks) {
-                if ((state.pendingMarks as any)[key] !== undefined) {
-                    cleaned[key] = (state.pendingMarks as any)[key];
-                }
-            }
-            Object.assign(effectiveMarks, cleaned);
+        const hasPendingMarks = !!state.pendingMarks && Object.keys(state.pendingMarks).length > 0;
+        const effectiveMarks = hasPendingMarks
+          ? applyPendingMarks(marks, state.pendingMarks)
+          : marks;
+
+        if (hasPendingMarks) {
+          Logger.debug("PRESENTER: toolbar from pendingMarks", {
+            blockId,
+            inlineId: selection.anchor.inlineId,
+            pendingMarks: state.pendingMarks,
+            effectiveMarks,
+          });
         }
 
         selectionState = {
@@ -157,14 +165,14 @@ export class OasisEditorPresenter {
           trackChangesEnabled: !!state.trackChangesEnabled,
         };
       }
-    } else if (state.pendingMarks) {
+    } else if (state.pendingMarks && Object.keys(state.pendingMarks).length > 0) {
       // If no selection but we have pending marks, reflect them in the toolbar
       selectionState = {
         ...selectionState,
-        bold: !!state.pendingMarks.bold,
-        italic: !!state.pendingMarks.italic,
-        underline: !!state.pendingMarks.underline,
-        strike: !!state.pendingMarks.strike,
+        bold: state.pendingMarks.bold !== false && !!state.pendingMarks.bold,
+        italic: state.pendingMarks.italic !== false && !!state.pendingMarks.italic,
+        underline: state.pendingMarks.underline !== false && !!state.pendingMarks.underline,
+        strike: state.pendingMarks.strike !== false && !!state.pendingMarks.strike,
         link: state.pendingMarks.link || null,
         color: state.pendingMarks.color || "#000000",
         highlightColor: state.pendingMarks.highlight || "",
@@ -174,7 +182,7 @@ export class OasisEditorPresenter {
       };
     }
 
-    return {
+    const viewModel = {
       pageTemplate:
         this.pageTemplates.find((t) => t.id === firstSection.pageTemplateId) ||
         this.pageTemplates[0],
@@ -196,5 +204,13 @@ export class OasisEditorPresenter {
       editingMode: state.editingMode,
       layout,
     };
+
+    Logger.debug("PRESENTER: present:end", {
+      editingMode: viewModel.editingMode,
+      selectionState: viewModel.selectionState,
+      selection: viewModel.selection,
+    });
+
+    return viewModel;
   }
 }

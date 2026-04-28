@@ -24,7 +24,13 @@ export class MouseController {
   }
 
   handleMouseDown(event: MouseEvent): void {
-    Logger.debug("MOUSE: handleMouseDown", event.type);
+    Logger.debug("MOUSE: handleMouseDown", {
+      type: event.type,
+      x: event.clientX,
+      y: event.clientY,
+      buttons: event.buttons,
+      target: (event.target as HTMLElement | null)?.className ?? null,
+    });
     const path = event.composedPath() as HTMLElement[];
     const isImageRelated = path.some(el =>
         el.classList?.contains("oasis-image-wrapper") ||
@@ -37,10 +43,18 @@ export class MouseController {
     }
 
     const position = this.cursorCalc.calculateFromMouseEvent(event);
-    if (!position) return;
+    Logger.debug("MOUSE: cursor position", position);
+    if (!position) {
+      Logger.debug("MOUSE: no position, aborting selection");
+      return;
+    }
 
     this.isDragging = true;
     this.dragAnchor = position;
+    Logger.debug("MOUSE: dispatch collapsed selection", {
+      anchor: position,
+      dragging: this.isDragging,
+    });
     this.runtime.dispatch(
       Operations.setSelection({ anchor: position, focus: position }),
     );
@@ -53,6 +67,12 @@ export class MouseController {
     }
 
     const position = this.cursorCalc.calculateFromMouseEvent(event);
+    Logger.debug("MOUSE: handleMouseMove", {
+      x: event.clientX,
+      y: event.clientY,
+      position,
+      dragging: this.isDragging,
+    });
     if (!position) return;
 
     this.runtime.dispatch(

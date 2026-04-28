@@ -22,6 +22,7 @@ import * as Formatting from "./commands/FormattingCommands.js";
 import * as Annotations from "./commands/AnnotationCommands.js";
 import * as Navigation from "./commands/NavigationCommands.js";
 import { ViewEventBindings } from "./events/ViewEventBindings.js";
+import { Logger } from "../core/utils/Logger.js";
 
 export interface ControllerDeps {
   runtime: IDocumentRuntime;
@@ -87,11 +88,24 @@ export class OasisEditorController {
 
   refresh(): void {
     const state = this.runtime.getState();
+    Logger.debug("CTRL: refresh:start", {
+      revision: state.document.revision,
+      editingMode: state.editingMode,
+      selection: state.selection,
+      pendingMarks: state.pendingMarks ?? null,
+    });
     const layout = this.layoutService.compose(state.document);
     this.latestLayout = layout;
     this.runtime.setLayout(layout);
     const viewModel = this.presenter.present({ state, layout });
     this.view.render(viewModel);
+    Logger.debug("CTRL: refresh:end", {
+      pages: layout.pages.length,
+      editingMode: viewModel.editingMode,
+      selection: viewModel.selection,
+      selectedImageId: viewModel.selectedImageId,
+      activeTableId: viewModel.activeTableId,
+    });
   }
 
   private setupViewBindings(): void {

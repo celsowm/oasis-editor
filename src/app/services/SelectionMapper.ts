@@ -6,6 +6,7 @@ import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { LayoutFragment } from "../../core/layout/LayoutFragment.js";
 import { TextMeasurer } from "../../bridge/measurement/TextMeasurementBridge.js";
 import { PositionCalculator } from "./PositionCalculator.js";
+import { Logger } from "../../core/utils/Logger.js";
 
 export interface CaretRect {
   x: number;
@@ -35,10 +36,14 @@ export class SelectionMapper {
 
   getCaretRect(position: LogicalPosition): CaretRect | null {
     if (!position) return null;
+    Logger.debug("SELECTION: getCaretRect:start", { position });
 
     const fragment =
       this.positionCalculator.getFragmentContainingPosition(position);
-    if (!fragment) return null;
+    if (!fragment) {
+      Logger.debug("SELECTION: getCaretRect:no-fragment", { position });
+      return null;
+    }
 
     const y = this.positionCalculator.calculateYPosition(position);
     const xOffset = this.positionCalculator.calculateXOffset(
@@ -59,12 +64,19 @@ export class SelectionMapper {
   }
 
   getSelectionRects(range: LogicalRange): SelectionRect[] {
+    Logger.debug("SELECTION: getSelectionRects:start", { range });
     const { start, end } = range;
 
     const startRect = this.getCaretRect(start);
     const endRect = this.getCaretRect(end);
 
-    if (!startRect || !endRect) return [];
+    if (!startRect || !endRect) {
+      Logger.debug("SELECTION: getSelectionRects:no-rects", {
+        startRect,
+        endRect,
+      });
+      return [];
+    }
 
     const absStartOffset = this.positionCalculator.getOffsetInBlock(start);
     const absEndOffset = this.positionCalculator.getOffsetInBlock(end);
@@ -117,7 +129,13 @@ export class SelectionMapper {
       if (visualStart) break;
     }
 
-    if (!visualStart || !visualEnd) return [];
+    if (!visualStart || !visualEnd) {
+      Logger.debug("SELECTION: getSelectionRects:no-visual-range", {
+        absStartOffset,
+        absEndOffset,
+      });
+      return [];
+    }
 
     const vStartRect = visualStart === start ? startRect : endRect;
     const vEndRect = visualEnd === end ? endRect : startRect;
@@ -195,6 +213,10 @@ export class SelectionMapper {
       if (done) break;
     }
 
+    Logger.debug("SELECTION: getSelectionRects:end", {
+      rectCount: rects.length,
+      rects,
+    });
     return rects;
   }
 }

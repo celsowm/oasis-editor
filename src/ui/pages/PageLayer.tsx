@@ -2,6 +2,7 @@ import { Component, For, Show } from "solid-js";
 import { LayoutState } from "../../core/layout/LayoutTypes.js";
 import { FragmentRenderer } from "./FragmentRenderer.tsx";
 import { useI18n } from "../I18nContext.tsx";
+import { Logger } from "../../core/utils/Logger.js";
 
 export interface PageLayerProps {
   layout: LayoutState | null;
@@ -10,6 +11,10 @@ export interface PageLayerProps {
 
 export const PageLayerComponent: Component<PageLayerProps> = (props) => {
   const { t } = useI18n();
+  Logger.debug("PAGE_LAYER: render", {
+    editingMode: props.editingMode,
+    pageCount: props.layout?.pages.length ?? 0,
+  });
 
   return (
     <For each={props.layout?.pages}>
