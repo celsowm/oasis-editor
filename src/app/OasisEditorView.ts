@@ -202,6 +202,16 @@ export class OasisEditorView {
 
     this.elements.root.addEventListener("mousedown", (e) => {
       const me = e as MouseEvent;
+      Logger.debug("VIEW: root mousedown", {
+        hasFocus: document.hasFocus(),
+        activeElement: document.activeElement
+          ? {
+              tag: document.activeElement.tagName,
+              id: (document.activeElement as HTMLElement).id ?? null,
+              className: (document.activeElement as HTMLElement).className ?? null,
+            }
+          : null,
+      });
       const now = Date.now();
       const dist = Math.sqrt(
         Math.pow(me.clientX - lastMouseDownPos.x, 2) +
@@ -273,18 +283,62 @@ export class OasisEditorView {
       this.dragState?.reset();
     });
 
-    this.addWindowListener("keydown", (e) => {
-      this.handleKeyboardEvent(e as KeyboardEvent, events, "window");
+    this.addWindowListener("focus", () => {
+      Logger.debug("VIEW: window focus", {
+        hasFocus: document.hasFocus(),
+        activeElement: document.activeElement
+          ? {
+              tag: document.activeElement.tagName,
+              id: (document.activeElement as HTMLElement).id ?? null,
+              className: (document.activeElement as HTMLElement).className ?? null,
+            }
+          : null,
+      });
+    });
+
+    this.addWindowListener("blur", () => {
+      Logger.debug("VIEW: window blur", {
+        hasFocus: document.hasFocus(),
+        activeElement: document.activeElement
+          ? {
+              tag: document.activeElement.tagName,
+              id: (document.activeElement as HTMLElement).id ?? null,
+              className: (document.activeElement as HTMLElement).className ?? null,
+            }
+          : null,
+      });
     });
 
     this.addDocumentListener(
-      "keydown",
-      (e) => this.handleKeyboardEvent(e as KeyboardEvent, events, "document"),
+      "focusin",
+      () => {
+        Logger.debug("VIEW: focusin", {
+          hasFocus: document.hasFocus(),
+          activeElement: document.activeElement
+            ? {
+                tag: document.activeElement.tagName,
+                id: (document.activeElement as HTMLElement).id ?? null,
+                className: (document.activeElement as HTMLElement).className ?? null,
+              }
+            : null,
+        });
+      },
       true,
     );
     this.addDocumentListener(
-      "beforeinput",
-      (e) => this.handleBeforeInput(e as InputEvent, events),
+      "focusout",
+      () => {
+        Logger.debug("VIEW: focusout", {
+          hasFocus: document.hasFocus(),
+          activeElement: document.activeElement
+            ? {
+                tag: document.activeElement.tagName,
+                id: (document.activeElement as HTMLElement).id ?? null,
+                className: (document.activeElement as HTMLElement).className ?? null,
+              }
+            : null,
+        });
+      },
       true,
     );
 
@@ -363,7 +417,7 @@ export class OasisEditorView {
       // focus during mousedown handling gets immediately canceled by the
       // browser's native focus management.
       this.scheduleRaf(() => {
-        Logger.debug("VIEW: focus hiddenInput request", {
+        Logger.debug("VIEW: focus root request", {
           activeElement: document.activeElement
             ? {
                 tag: document.activeElement.tagName,
@@ -372,11 +426,11 @@ export class OasisEditorView {
               }
             : null,
         });
-        this.elements.hiddenInput.focus({ preventScroll: true });
+        this.elements.root.focus({ preventScroll: true });
         // Double-check: if focus was stolen again, try once more
-        if (document.activeElement !== this.elements.hiddenInput) {
+        if (document.activeElement !== this.elements.root) {
           this.scheduleRaf(() => {
-            Logger.debug("VIEW: focus hiddenInput retry", {
+            Logger.debug("VIEW: focus root retry", {
               activeElement: document.activeElement
                 ? {
                     tag: document.activeElement.tagName,
@@ -385,7 +439,7 @@ export class OasisEditorView {
                   }
                 : null,
             });
-            this.elements.hiddenInput.focus({ preventScroll: true });
+            this.elements.root.focus({ preventScroll: true });
           });
         }
       });

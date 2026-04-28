@@ -62,6 +62,65 @@ const OasisEditorContent: Component = () => {
     if (btn) e.preventDefault(); // Prevent focus loss
   };
 
+  const isEditableTarget = (target: EventTarget | null) => {
+    const el = target as HTMLElement | null;
+    if (!el) return false;
+    return !!el.closest("input, textarea, select, [contenteditable='true']");
+  };
+
+  const handleEditorMouseDown = (e: MouseEvent) => {
+    if (isEditableTarget(e.target)) return;
+    (e.currentTarget as HTMLElement).focus({ preventScroll: true });
+  };
+
+  const handleEditorKeyDown = (e: KeyboardEvent) => {
+    if (isEditableTarget(e.target)) return;
+    const events = store.events;
+    if (!events) return;
+
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && !e.isComposing) {
+      events.onTextInput(e.key);
+      e.preventDefault();
+      return;
+    }
+
+    if (e.key === "Backspace") {
+      events.onDelete();
+      e.preventDefault();
+    } else if (e.key === "Enter") {
+      events.onEnter(e.shiftKey);
+      e.preventDefault();
+    } else if (e.key === "Tab") {
+      if (e.shiftKey) events.onDecreaseIndent();
+      else events.onIncreaseIndent();
+      e.preventDefault();
+    } else if (e.key === "Escape") {
+      events.onEscape();
+      e.preventDefault();
+    } else if (e.key.startsWith("Arrow") || e.key === "Home" || e.key === "End") {
+      events.onArrowKey(e.key);
+      e.preventDefault();
+    } else if (e.ctrlKey || e.metaKey) {
+      const key = e.key.toLowerCase();
+      if (key === "b") {
+        events.onBold();
+        e.preventDefault();
+      } else if (key === "i") {
+        events.onItalic();
+        e.preventDefault();
+      } else if (key === "u") {
+        events.onUnderline();
+        e.preventDefault();
+      } else if (key === "z") {
+        events.onUndo();
+        e.preventDefault();
+      } else if (key === "y") {
+        events.onRedo();
+        e.preventDefault();
+      }
+    }
+  };
+
   return (
     <div class="oasis-editor-shell">
       <header class="oasis-editor-header">
@@ -176,7 +235,13 @@ const OasisEditorContent: Component = () => {
       <input type="text" id="oasis-editor-input" style={{ position: 'fixed', top: '-100px', left: '-100px', opacity: 0 }} />
       <input type="file" id="oasis-editor-import-docx-input" accept=".docx" style={{ display: 'none' }} />
 
-      <main id="oasis-editor-app" class="oasis-editor-main">
+      <main
+        id="oasis-editor-app"
+        class="oasis-editor-main"
+        tabIndex={0}
+        onMouseDown={handleEditorMouseDown}
+        onKeyDown={handleEditorKeyDown}
+      >
         <RulerComponent
           template={store.view?.pageTemplate ?? null}
           initialIndentation={store.view?.selectionState?.indentation ?? 0}
