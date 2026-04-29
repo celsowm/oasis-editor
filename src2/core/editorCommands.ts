@@ -1,4 +1,5 @@
 import type {
+  Editor2BlockNode,
   Editor2ParagraphListStyle,
   Editor2ParagraphStyle,
   Editor2ParagraphNode,
@@ -171,11 +172,43 @@ function createParagraphFromRuns(
   return createEditor2ParagraphFromRuns(textRuns);
 }
 
+function replaceParagraphsInBlocks(blocks: Editor2BlockNode[], newParagraphs: Editor2ParagraphNode[]): Editor2BlockNode[] {
+  let index = 0;
+  const processBlocks = (nodes: Editor2BlockNode[]): Editor2BlockNode[] => {
+    return nodes.map(node => {
+      if (node.type === "paragraph") {
+        return newParagraphs[index++];
+      }
+      return {
+        ...node,
+        rows: node.rows.map(row => ({
+          ...row,
+          cells: row.cells.map(cell => ({
+            ...cell,
+            blocks: processBlocks(cell.blocks) as Editor2ParagraphNode[]
+          }))
+        }))
+      };
+    });
+  };
+  return processBlocks(blocks);
+}
+
 function cloneStateWithParagraphs(
   state: Editor2State,
   paragraphs: Editor2ParagraphNode[],
   selection: Editor2Selection,
 ): Editor2State {
+  if (getParagraphs(state).length === paragraphs.length && state.document.blocks.some(b => b.type === "table")) {
+    return {
+      document: {
+        ...state.document,
+        blocks: replaceParagraphsInBlocks(state.document.blocks, paragraphs),
+      },
+      selection,
+    };
+  }
+
   return {
     document: createEditor2Document(paragraphs),
     selection,
@@ -345,12 +378,10 @@ function collapseToBoundary(state: Editor2State, direction: "start" | "end"): Ed
     return state;
   }
 
-  const paragraphs = cloneParagraphs(getParagraphs(state));
-  return cloneStateWithParagraphs(
-    state,
-    paragraphs,
-    withSelection(direction === "start" ? normalized.start : normalized.end),
-  );
+  return {
+    document: state.document,
+    selection: withSelection(direction === "start" ? normalized.start : normalized.end),
+  };
 }
 
 export function getSelectedText(state: Editor2State): string {
@@ -381,10 +412,7 @@ export function getSelectedText(state: Editor2State): string {
 
 export function setSelection(state: Editor2State, selection: Editor2Selection): Editor2State {
   return {
-    document: {
-      ...state.document,
-      blocks: cloneParagraphs(getParagraphs(state)),
-    },
+    document: state.document,
     selection: {
       anchor: clampPosition(state, selection.anchor),
       focus: clampPosition(state, selection.focus),
@@ -589,10 +617,7 @@ export function moveSelectionLeft(state: Editor2State): Editor2State {
   const paragraphs = getParagraphs(state);
   if (offset > 0) {
     return {
-      document: {
-        ...state.document,
-        blocks: cloneParagraphs(paragraphs),
-      },
+      document: state.document,
       selection: withSelection(paragraphOffsetToPosition(paragraph, offset - 1)),
     };
   }
@@ -603,10 +628,7 @@ export function moveSelectionLeft(state: Editor2State): Editor2State {
 
   const previousParagraph = paragraphs[index - 1];
   return {
-    document: {
-      ...state.document,
-      blocks: cloneParagraphs(paragraphs),
-    },
+    document: state.document,
     selection: withSelection(paragraphOffsetToPosition(previousParagraph, getParagraphLength(previousParagraph))),
   };
 }
@@ -621,10 +643,7 @@ export function moveSelectionRight(state: Editor2State): Editor2State {
   const paragraphLength = getParagraphLength(paragraph);
   if (offset < paragraphLength) {
     return {
-      document: {
-        ...state.document,
-        blocks: cloneParagraphs(paragraphs),
-      },
+      document: state.document,
       selection: withSelection(paragraphOffsetToPosition(paragraph, offset + 1)),
     };
   }
@@ -635,10 +654,7 @@ export function moveSelectionRight(state: Editor2State): Editor2State {
 
   const nextParagraph = paragraphs[index + 1];
   return {
-    document: {
-      ...state.document,
-      blocks: cloneParagraphs(paragraphs),
-    },
+    document: state.document,
     selection: withSelection(paragraphOffsetToPosition(nextParagraph, 0)),
   };
 }
@@ -658,10 +674,7 @@ function moveVertical(state: Editor2State, delta: -1 | 1): Editor2State {
 
   const nextParagraph = paragraphs[nextIndex];
   return {
-    document: {
-      ...state.document,
-      blocks: cloneParagraphs(paragraphs),
-    },
+    document: state.document,
     selection: withSelection(
       paragraphOffsetToPosition(nextParagraph, Math.min(offset, getParagraphLength(nextParagraph))),
     ),

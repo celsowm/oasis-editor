@@ -865,7 +865,39 @@ export function OasisEditor2App() {
       return false;
     }
 
-    const targetIndex = currentIndex + direction;
+    let targetIndex = currentIndex + direction;
+    const tableLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId);
+    if (tableLocation) {
+      const block = state.document.blocks[tableLocation.blockIndex];
+      if (block && block.type === "table") {
+        const nextRowIndex = tableLocation.rowIndex + direction;
+        if (nextRowIndex >= 0 && nextRowIndex < block.rows.length) {
+          const nextRow = block.rows[nextRowIndex];
+          const nextCell = nextRow?.cells[Math.min(tableLocation.cellIndex, (nextRow?.cells.length ?? 1) - 1)];
+          if (nextCell && nextCell.blocks.length > 0) {
+            const targetId = direction < 0
+              ? nextCell.blocks[nextCell.blocks.length - 1]!.id
+              : nextCell.blocks[0]!.id;
+            targetIndex = paragraphs.findIndex((p) => p.id === targetId);
+          }
+        } else {
+          if (direction < 0) {
+            const firstParaId = block.rows[0]?.cells[0]?.blocks[0]?.id;
+            if (firstParaId) {
+              targetIndex = paragraphs.findIndex((p) => p.id === firstParaId) - 1;
+            }
+          } else {
+            const lastRow = block.rows[block.rows.length - 1];
+            const lastCell = lastRow?.cells[lastRow.cells.length - 1];
+            const lastParaId = lastCell?.blocks[lastCell.blocks.length - 1]?.id;
+            if (lastParaId) {
+              targetIndex = paragraphs.findIndex((p) => p.id === lastParaId) + 1;
+            }
+          }
+        }
+      }
+    }
+
     if (targetIndex < 0 || targetIndex >= paragraphs.length) {
       return false;
     }

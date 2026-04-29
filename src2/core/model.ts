@@ -28,10 +28,17 @@ export interface Editor2ParagraphListStyle {
   level?: number;
 }
 
+export interface Editor2ImageRunData {
+  src: string;
+  width: number;
+  height: number;
+}
+
 export interface Editor2TextRun {
   id: string;
   text: string;
   styles?: Editor2TextStyle;
+  image?: Editor2ImageRunData;
 }
 
 export interface Editor2ParagraphNode {
