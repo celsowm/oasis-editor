@@ -1,11 +1,12 @@
 import type {
   Editor2Document,
   Editor2ParagraphNode,
+  Editor2Position,
   Editor2State,
   Editor2TextRun,
   Editor2TextStyle,
 } from "./model.js";
-import { paragraphOffsetToPosition } from "./model.js";
+import { getParagraphLength, paragraphOffsetToPosition } from "./model.js";
 import { createCollapsedSelection } from "./selection.js";
 
 let nextDocumentId = 1;
@@ -64,6 +65,31 @@ export function createEditor2Document(paragraphs: Editor2ParagraphNode[]): Edito
   };
   nextDocumentId += 1;
   return document;
+}
+
+export function createEditor2StateFromDocument(
+  document: Editor2Document,
+  selection?: { paragraphIndex?: number; offset?: number },
+): Editor2State {
+  const paragraphs =
+    document.blocks.length > 0 ? document.blocks : [createEditor2Paragraph("")];
+  const paragraphIndex = Math.max(
+    0,
+    Math.min(selection?.paragraphIndex ?? 0, paragraphs.length - 1),
+  );
+  const paragraph = paragraphs[paragraphIndex]!;
+  const position: Editor2Position = paragraphOffsetToPosition(
+    paragraph,
+    Math.max(0, Math.min(selection?.offset ?? 0, getParagraphLength(paragraph))),
+  );
+
+  return {
+    document: {
+      ...document,
+      blocks: paragraphs,
+    },
+    selection: createCollapsedSelection(position),
+  };
 }
 
 export function createInitialEditor2State(): Editor2State {

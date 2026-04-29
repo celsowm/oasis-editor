@@ -1,5 +1,31 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import JSZip from "jszip";
 import { createOasisEditor2 } from "../../app/bootstrap/createOasisEditor2App.js";
+
+async function buildDocx(documentXml: string): Promise<File> {
+  const zip = new JSZip();
+  zip.file(
+    "[Content_Types].xml",
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+        <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+        <Default Extension="xml" ContentType="application/xml"/>
+        <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+      </Types>`,
+  );
+  zip.file(
+    "_rels/.rels",
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+      </Relationships>`,
+  );
+  zip.file("word/document.xml", documentXml);
+  const buffer = await zip.generateAsync({ type: "arraybuffer" });
+  return new File([buffer], "import.docx", {
+    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  });
+}
 
 describe("OasisEditor2", () => {
   beforeEach(() => {
@@ -23,6 +49,8 @@ describe("OasisEditor2", () => {
     expect(root.querySelector('[data-testid="editor-2-toolbar-align-center"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-list-bullet"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-page-break-before"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="editor-2-toolbar-export-docx"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="editor-2-toolbar-import-docx"]')).not.toBeNull();
     expect(root.querySelectorAll('[data-testid="editor-2-block"]').length).toBe(1);
     expect(root.textContent).toContain("Minimal editor");
     expect(root.textContent).toContain("oasis-editor-2");
@@ -598,6 +626,103 @@ describe("OasisEditor2", () => {
 
     expect(pageBreakButton.classList.contains("oasis-editor-2-tool-button-active")).toBe(true);
     expect(keepWithNextButton.classList.contains("oasis-editor-2-tool-button-active")).toBe(true);
+
+    instance.dispose();
+  });
+
+  it("imports a docx file into the editor state through the hidden file input", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const importInput = root.querySelector(
+      '[data-testid="editor-2-import-docx-input"]',
+    ) as HTMLInputElement;
+    const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:p>
+            <w:r><w:t>Hello import</w:t></w:r>
+          </w:p>
+        </w:body>
+      </w:document>`);
+
+    Object.defineProperty(importInput, "files", {
+      configurable: true,
+      value: [file],
+    });
+
+    importInput.dispatchEvent(new Event("change", { bubbles: true }));
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      if (root.querySelector('[data-testid="editor-2-block"]')?.textContent?.includes("Hello import")) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("Hello import");
+
+    instance.dispose();
+  });
+
+  it("exports the current document through a download link", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const exportButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-export-docx"]',
+    ) as HTMLButtonElement;
+
+    input.value = "export me";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "export me", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const createObjectURL = vi.fn(() => "blob:test-export");
+    const revokeObjectURL = vi.fn();
+    const anchorClick = vi.fn();
+    const previousCreateObjectURL = URL.createObjectURL;
+    const previousRevokeObjectURL = URL.revokeObjectURL;
+    const previousClick = HTMLAnchorElement.prototype.click;
+
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: createObjectURL,
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: revokeObjectURL,
+    });
+    Object.defineProperty(HTMLAnchorElement.prototype, "click", {
+      configurable: true,
+      value: anchorClick,
+    });
+
+    try {
+      exportButton.click();
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (createObjectURL.mock.calls.length > 0) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      expect(createObjectURL).toHaveBeenCalledTimes(1);
+      const blob = (createObjectURL.mock.calls as unknown[][]).at(0)?.[0];
+      expect(blob).toBeInstanceOf(Blob);
+      expect(anchorClick).toHaveBeenCalledTimes(1);
+      expect(revokeObjectURL).toHaveBeenCalledWith("blob:test-export");
+    } finally {
+      Object.defineProperty(URL, "createObjectURL", {
+        configurable: true,
+        value: previousCreateObjectURL,
+      });
+      Object.defineProperty(URL, "revokeObjectURL", {
+        configurable: true,
+        value: previousRevokeObjectURL,
+      });
+      Object.defineProperty(HTMLAnchorElement.prototype, "click", {
+        configurable: true,
+        value: previousClick,
+      });
+    }
 
     instance.dispose();
   });

@@ -29,7 +29,7 @@ import {
   toggleParagraphList,
   toggleTextStyle,
 } from "../core/editorCommands.js";
-import { createInitialEditor2State } from "../core/editorState.js";
+import { createInitialEditor2State, createEditor2StateFromDocument } from "../core/editorState.js";
 import {
   type Editor2ParagraphListStyle,
   getParagraphs,
@@ -42,6 +42,8 @@ import {
   type Editor2TextStyle,
 } from "../core/model.js";
 import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
+import { exportEditor2DocumentToDocxBlob } from "../export/docx/exportEditor2DocumentToDocx.js";
+import { importDocxToEditor2Document } from "../import/docx/importDocxToEditor2Document.js";
 
 interface InputBox {
   left: number;
@@ -104,6 +106,26 @@ interface ToolbarStyleState {
   listKind: string;
   pageBreakBefore: boolean;
   keepWithNext: boolean;
+}
+
+async function readFileBuffer(file: File): Promise<ArrayBuffer> {
+  if (typeof file.arrayBuffer === "function") {
+    return file.arrayBuffer();
+  }
+
+  return new Promise<ArrayBuffer>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error ?? new Error("Failed to read file."));
+    reader.onload = () => {
+      const result = reader.result;
+      if (result instanceof ArrayBuffer) {
+        resolve(result);
+        return;
+      }
+      reject(new Error("Failed to read file as ArrayBuffer."));
+    };
+    reader.readAsArrayBuffer(file);
+  });
 }
 
 function collectCharRects(blockElement: HTMLElement): Array<{
@@ -311,6 +333,7 @@ export function OasisEditor2App() {
   });
   let surfaceRef: HTMLDivElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
+  let importInputRef: HTMLInputElement | undefined;
   let syncRequestId = 0;
   let dragAnchor: Editor2Position | null = null;
   let lastTransactionMeta: { mergeKey: string; timestamp: number } | null = null;
@@ -433,6 +456,14 @@ export function OasisEditor2App() {
     });
   };
 
+  const resetEditorChromeState = () => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    setMeasuredBlockHeights({});
+    setUndoStack([]);
+    setRedoStack([]);
+  };
+
   const syncMeasuredBlockHeights = (): boolean => {
     if (!surfaceRef) {
       return false;
@@ -507,6 +538,32 @@ export function OasisEditor2App() {
     clearPreferredColumn();
     resetTransactionGrouping();
     applyTransactionalState((current) => toggleParagraphList(current, kind));
+    focusInput();
+  };
+
+  const handleImportDocx = async (file: File | null) => {
+    if (!file) {
+      return;
+    }
+
+    const arrayBuffer = await readFileBuffer(file);
+    const document = await importDocxToEditor2Document(arrayBuffer);
+    resetEditorChromeState();
+    applyState(createEditor2StateFromDocument(document));
+    if (importInputRef) {
+      importInputRef.value = "";
+    }
+    focusInput();
+  };
+
+  const handleExportDocx = async () => {
+    const blob = await exportEditor2DocumentToDocxBlob(state.document);
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "oasis-editor-2.docx";
+    anchor.click();
+    URL.revokeObjectURL(url);
     focusInput();
   };
 
@@ -1051,6 +1108,22 @@ export function OasisEditor2App() {
 
       <section class="oasis-editor-2-toolbar" onMouseDown={(event) => event.preventDefault()}>
         <div class="oasis-editor-2-toolbar-group">
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-export-docx"
+            onClick={() => void handleExportDocx()}
+          >
+            Export DOCX
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-import-docx"
+            onClick={() => importInputRef?.click()}
+          >
+            Import DOCX
+          </button>
           {booleanButtons.map((button) => (
             <button
               type="button"
@@ -1399,6 +1472,17 @@ export function OasisEditor2App() {
             onInput={handleTextInput}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
+          />
+          <input
+            ref={importInputRef}
+            accept=".docx"
+            data-testid="editor-2-import-docx-input"
+            style={{ display: "none" }}
+            type="file"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0] ?? null;
+              void handleImportDocx(file);
+            }}
           />
         </div>
       </section>
