@@ -40,6 +40,7 @@ describe("EditorSurface", () => {
           onSurfaceMouseDown={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
         />
       ),
       container,
@@ -99,6 +100,7 @@ describe("EditorSurface", () => {
           onSurfaceMouseDown={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
         />
       ),
       container,
@@ -155,6 +157,7 @@ describe("EditorSurface", () => {
           onSurfaceMouseDown={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
         />
       ),
       container,
@@ -209,6 +212,7 @@ describe("EditorSurface", () => {
           onSurfaceMouseDown={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
         />
       ),
       container,
@@ -255,6 +259,7 @@ describe("EditorSurface", () => {
           onSurfaceMouseDown={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
         />
       ),
       container,
@@ -301,6 +306,7 @@ describe("EditorSurface", () => {
           onSurfaceMouseDown={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
         />
       ),
       container,
@@ -343,6 +349,7 @@ describe("EditorSurface", () => {
           onSurfaceMouseDown={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
         />
       ),
       container,

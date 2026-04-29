@@ -266,6 +266,20 @@ body {
   display: inline;
 }
 
+.oasis-editor-2-image-char {
+  display: inline-block;
+}
+
+.oasis-editor-2-image-inline {
+  position: relative;
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+.oasis-editor-2-image-inline-selected {
+  z-index: 2;
+}
+
 .oasis-editor-2-image {
   display: inline-block;
   max-width: 100%;
@@ -307,6 +321,21 @@ body {
   z-index: 1;
   background: rgba(37, 99, 235, 0.22);
   border-radius: 3px;
+}
+
+.oasis-editor-2-image-resize-handle {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #2563eb;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+  cursor: nwse-resize;
+  pointer-events: auto;
 }
 
 .oasis-editor-2-input {

@@ -21,6 +21,7 @@ import {
   insertImageAtSelection,
   insertTableAtSelection,
   moveSelectionDown,
+  resizeSelectedImage,
   moveSelectionLeft,
   moveSelectionRight,
   moveSelectionUp,
@@ -49,6 +50,7 @@ import {
 import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
 import { exportEditor2DocumentToDocxBlob } from "../export/docx/exportEditor2DocumentToDocx.js";
 import { importDocxToEditor2Document } from "../import/docx/importDocxToEditor2Document.js";
+import { createEditor2Logger } from "../utils/logger.js";
 
 interface InputBox {
   left: number;
@@ -65,6 +67,38 @@ interface SelectionBox {
   top: number;
   width: number;
   height: number;
+}
+
+interface ActiveImageResize {
+  paragraphId: string;
+  paragraphOffset: number;
+  startClientX: number;
+  startWidth: number;
+  startHeight: number;
+  aspectRatio: number;
+  initialState: Editor2State;
+}
+
+const DEFAULT_MAX_INSERTED_IMAGE_WIDTH = 684;
+
+function getMaxInlineImageWidth(surface: HTMLDivElement | undefined): number {
+  if (!surface) {
+    return DEFAULT_MAX_INSERTED_IMAGE_WIDTH;
+  }
+
+  const contentSurface =
+    surface.querySelector<HTMLDivElement>('[data-testid="editor-2-surface"]') ?? surface;
+  const rect = contentSurface.getBoundingClientRect();
+  const computed = window.getComputedStyle(contentSurface);
+  const paddingLeft = Number.parseFloat(computed.paddingLeft || "0") || 0;
+  const paddingRight = Number.parseFloat(computed.paddingRight || "0") || 0;
+  const contentWidth = rect.width - paddingLeft - paddingRight;
+
+  if (!Number.isFinite(contentWidth) || contentWidth <= 0) {
+    return DEFAULT_MAX_INSERTED_IMAGE_WIDTH;
+  }
+
+  return Math.max(24, Math.floor(contentWidth));
 }
 
 interface TransactionOptions {
@@ -325,6 +359,7 @@ function resolveUniformListKind(paragraphs: ReturnType<typeof getParagraphs>): s
 }
 
 export function OasisEditor2App() {
+  const logger = createEditor2Logger("app");
   const [state, setState] = createStore<Editor2State>(createInitialEditor2State());
   const [focused, setFocused] = createSignal(false);
   const [composing, setComposing] = createSignal(false);
@@ -346,6 +381,7 @@ export function OasisEditor2App() {
   let imageInputRef: HTMLInputElement | undefined;
   let syncRequestId = 0;
   let dragAnchor: Editor2Position | null = null;
+  let activeImageResize: ActiveImageResize | null = null;
   let lastTransactionMeta: { mergeKey: string; timestamp: number } | null = null;
   let suppressedInputText: string | null = null;
   const booleanButtons: Array<{ key: BooleanStyleKey; label: string; testId: string }> = [
@@ -516,6 +552,43 @@ export function OasisEditor2App() {
     applyTransactionalState((current) => command(withExpandedTableCellSelection(current)));
   };
 
+  const getSelectedImageInfo = (current: Editor2State) => {
+    const normalized = normalizeSelection(current);
+    if (
+      normalized.isCollapsed ||
+      normalized.startIndex !== normalized.endIndex ||
+      normalized.endParagraphOffset - normalized.startParagraphOffset !== 1
+    ) {
+      return null;
+    }
+
+    const paragraph = getParagraphs(current)[normalized.startIndex];
+    if (!paragraph) {
+      return null;
+    }
+
+    let offset = 0;
+    for (const run of paragraph.runs) {
+      const startOffset = offset;
+      offset += run.text.length;
+      if (
+        run.image &&
+        run.text.length === 1 &&
+        startOffset === normalized.startParagraphOffset
+      ) {
+        return {
+          paragraph,
+          run,
+          startOffset,
+          width: run.image.width,
+          height: run.image.height,
+        };
+      }
+    }
+
+    return null;
+  };
+
   const resetTransactionGrouping = () => {
     lastTransactionMeta = null;
   };
@@ -679,10 +752,12 @@ export function OasisEditor2App() {
       return;
     }
 
+    logger.info("import docx:start", { name: file.name, size: file.size });
     const arrayBuffer = await readFileBuffer(file);
     const document = await importDocxToEditor2Document(arrayBuffer);
     resetEditorChromeState();
     applyState(createEditor2StateFromDocument(document));
+    logger.info("import docx:done", { blocks: document.blocks.length });
     if (importInputRef) {
       importInputRef.value = "";
     }
@@ -692,6 +767,7 @@ export function OasisEditor2App() {
   const handleInsertImage = async (file: File | null) => {
     if (!file) return;
 
+    logger.info("image insert:start", { name: file.name, type: file.type, size: file.size });
     const arrayBuffer = await readFileBuffer(file);
     const base64 = btoa(
       new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
@@ -705,13 +781,25 @@ export function OasisEditor2App() {
       img.onerror = resolve;
     });
 
-    const width = img.naturalWidth || 300;
-    const height = img.naturalHeight || 300;
+    const naturalWidth = img.naturalWidth || 300;
+    const naturalHeight = img.naturalHeight || 300;
+    const maxWidth = getMaxInlineImageWidth(surfaceRef);
+    const scale = naturalWidth > maxWidth ? maxWidth / naturalWidth : 1;
+    const width = Math.max(24, Math.round(naturalWidth * scale));
+    const height = Math.max(24, Math.round(naturalHeight * scale));
+    logger.info("image insert:decoded", {
+      width: naturalWidth,
+      height: naturalHeight,
+      fittedWidth: width,
+      fittedHeight: height,
+      maxWidth,
+    });
 
     applyTransactionalState(
       (current) => insertImageAtSelection(current, { src, width, height }),
       { mergeKey: "insertImage" }
     );
+    logger.debug("image insert:selection", state.selection);
 
     if (imageInputRef) {
       imageInputRef.value = "";
@@ -919,12 +1007,25 @@ export function OasisEditor2App() {
     getParagraphs(state)
       .map((paragraph) => paragraph.runs.map((run) => run.text).join(""))
       .join("\n");
+    logger.debug("selection changed", {
+      anchor: state.selection.anchor,
+      focus: state.selection.focus,
+      selectedImage: getSelectedImageInfo(state)
+        ? {
+            paragraphId: getSelectedImageInfo(state)?.paragraph.id,
+            runId: getSelectedImageInfo(state)?.run.id,
+            width: getSelectedImageInfo(state)?.width,
+            height: getSelectedImageInfo(state)?.height,
+          }
+        : null,
+    });
     requestInputBoxSync();
   });
 
   onCleanup(() => {
     syncRequestId += 1;
     stopDragging();
+    stopImageResize();
   });
 
   const handleTextInput = (event: InputEvent & { currentTarget: HTMLTextAreaElement }) => {
@@ -1156,6 +1257,12 @@ export function OasisEditor2App() {
     window.removeEventListener("mouseup", handleWindowMouseUp);
   };
 
+  const stopImageResize = () => {
+    activeImageResize = null;
+    window.removeEventListener("mousemove", handleImageResizeMouseMove);
+    window.removeEventListener("mouseup", handleImageResizeMouseUp);
+  };
+
   const handleWindowMouseMove = (event: MouseEvent) => {
     if (!dragAnchor) {
       return;
@@ -1176,6 +1283,61 @@ export function OasisEditor2App() {
 
   const handleWindowMouseUp = () => {
     stopDragging();
+    focusInput();
+  };
+
+  const handleImageResizeMouseMove = (event: MouseEvent) => {
+    const resizeState = activeImageResize;
+    if (!resizeState) {
+      return;
+    }
+
+    const deltaX = event.clientX - resizeState.startClientX;
+    const nextWidth = Math.max(24, resizeState.startWidth + deltaX);
+    const nextHeight = Math.max(24, nextWidth / resizeState.aspectRatio);
+    const paragraph = getParagraphs(state).find((candidate) => candidate.id === resizeState.paragraphId);
+    if (!paragraph) {
+      logger.warn("image resize:missing paragraph", resizeState);
+      return;
+    }
+    logger.debug("image resize:move", {
+      paragraphId: resizeState.paragraphId,
+      paragraphOffset: resizeState.paragraphOffset,
+      deltaX,
+      nextWidth,
+      nextHeight,
+    });
+    applyState(
+      resizeSelectedImage(
+        applySelectionToStatePreservingStructure(state, {
+          anchor: paragraphOffsetToPosition(paragraph, resizeState.paragraphOffset),
+          focus: paragraphOffsetToPosition(paragraph, resizeState.paragraphOffset + 1),
+        }),
+        nextWidth,
+        nextHeight,
+      ),
+    );
+  };
+
+  const handleImageResizeMouseUp = () => {
+    const resizeState = activeImageResize;
+    if (resizeState) {
+      logger.info("image resize:done", {
+        paragraphId: resizeState.paragraphId,
+        startWidth: resizeState.startWidth,
+        startHeight: resizeState.startHeight,
+        current: getSelectedImageInfo(state)
+          ? {
+              width: getSelectedImageInfo(state)?.width,
+              height: getSelectedImageInfo(state)?.height,
+            }
+          : null,
+      });
+      setUndoStack((stack) => [...stack, cloneState(resizeState.initialState)]);
+      setRedoStack([]);
+      lastTransactionMeta = null;
+    }
+    stopImageResize();
     focusInput();
   };
 
@@ -1846,6 +2008,7 @@ export function OasisEditor2App() {
               event.stopPropagation();
               const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
               if (!paragraph) {
+                logger.warn("image select:missing paragraph", { paragraphId, paragraphOffset });
                 return;
               }
 
@@ -1855,6 +2018,12 @@ export function OasisEditor2App() {
 
               const start = paragraphOffsetToPosition(paragraph, paragraphOffset);
               const end = paragraphOffsetToPosition(paragraph, paragraphOffset + 1);
+              logger.info("image select", {
+                paragraphId,
+                paragraphOffset,
+                start,
+                end,
+              });
 
               if (event.shiftKey) {
                 applyState(
@@ -1875,6 +2044,50 @@ export function OasisEditor2App() {
               );
               stopDragging();
               focusInput();
+            }}
+            onImageResizeHandleMouseDown={(paragraphId, paragraphOffset, event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
+              if (!paragraph) {
+                logger.warn("image resize:start missing paragraph", { paragraphId, paragraphOffset });
+                return;
+              }
+
+              const selectedImage = getSelectedImageInfo(
+                applySelectionToStatePreservingStructure(state, {
+                  anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),
+                  focus: paragraphOffsetToPosition(paragraph, paragraphOffset + 1),
+                }),
+              );
+              if (!selectedImage) {
+                logger.warn("image resize:start missing selection", {
+                  paragraphId,
+                  paragraphOffset,
+                  selection: state.selection,
+                });
+                return;
+              }
+
+              logger.info("image resize:start", {
+                paragraphId,
+                paragraphOffset,
+                width: selectedImage.width,
+                height: selectedImage.height,
+                clientX: event.clientX,
+                clientY: event.clientY,
+              });
+              activeImageResize = {
+                paragraphId,
+                paragraphOffset,
+                startClientX: event.clientX,
+                startWidth: selectedImage.width,
+                startHeight: selectedImage.height,
+                aspectRatio: selectedImage.width / selectedImage.height,
+                initialState: cloneState(state),
+              };
+              window.addEventListener("mousemove", handleImageResizeMouseMove);
+              window.addEventListener("mouseup", handleImageResizeMouseUp);
             }}
           />
 

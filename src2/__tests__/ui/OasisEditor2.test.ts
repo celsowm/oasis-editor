@@ -819,6 +819,104 @@ describe("OasisEditor2", () => {
     instance.dispose();
   });
 
+  it("fits a large inserted image to the page width", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const surface = root.querySelector('[data-testid="editor-2-surface"]') as HTMLDivElement;
+    const imageInput = root.querySelector(
+      '[data-testid="editor-2-insert-image-input"]',
+    ) as HTMLInputElement;
+    const file = new File(
+      [
+        Uint8Array.from([
+          137, 80, 78, 71, 13, 10, 26, 10,
+          0, 0, 0, 13, 73, 72, 68, 82,
+          0, 0, 0, 1, 0, 0, 0, 1,
+          8, 6, 0, 0, 0, 31, 21, 196, 137,
+          0, 0, 0, 13, 73, 68, 65, 84,
+          120, 218, 99, 252, 255, 159, 161, 30,
+          0, 7, 130, 2, 127, 63, 201, 164, 116,
+          0, 0, 0, 0, 73, 69, 78, 68,
+          174, 66, 96, 130,
+        ]),
+      ],
+      "large-inline.png",
+      { type: "image/png" },
+    );
+
+    Object.defineProperty(surface, "getBoundingClientRect", {
+      configurable: true,
+      value: () => ({
+        left: 0,
+        top: 0,
+        right: 860,
+        bottom: 600,
+        width: 860,
+        height: 600,
+        x: 0,
+        y: 0,
+      }),
+    });
+
+    const originalGetComputedStyle = window.getComputedStyle.bind(window);
+    vi.spyOn(window, "getComputedStyle").mockImplementation((element) => {
+      const style = originalGetComputedStyle(element);
+      if (element === surface) {
+        return {
+          ...style,
+          paddingLeft: "88px",
+          paddingRight: "88px",
+        } as CSSStyleDeclaration;
+      }
+      return style;
+    });
+
+    const OriginalImage = globalThis.Image;
+    class MockImage {
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+      naturalWidth = 1913;
+      naturalHeight = 717;
+
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
+    }
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      value: MockImage,
+    });
+
+    try {
+      Object.defineProperty(imageInput, "files", {
+        configurable: true,
+        value: [file],
+      });
+
+      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const image = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
+        if (image?.getAttribute("width") === "684") {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const image = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
+      expect(image).not.toBeNull();
+      expect(image?.getAttribute("width")).toBe("684");
+      expect(image?.getAttribute("height")).toBe("256");
+    } finally {
+      vi.restoreAllMocks();
+      Object.defineProperty(globalThis, "Image", {
+        configurable: true,
+        value: OriginalImage,
+      });
+    }
+
+    instance.dispose();
+  });
+
   it("selects an inline image as a single object and deletes it", async () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
@@ -879,14 +977,122 @@ describe("OasisEditor2", () => {
 
       image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
       await Promise.resolve();
+      const selectedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
 
-      expect(image.classList.contains("oasis-editor-2-image-selected")).toBe(true);
+      expect(selectedImage.classList.contains("oasis-editor-2-image-selected")).toBe(true);
       expect(root.querySelector('[data-testid="editor-2-selection-box"]')).not.toBeNull();
 
       input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Delete" }));
       await Promise.resolve();
 
       expect(root.querySelector('[data-testid="editor-2-image"]')).toBeNull();
+    } finally {
+      Object.defineProperty(globalThis, "Image", {
+        configurable: true,
+        value: OriginalImage,
+      });
+    }
+
+    instance.dispose();
+  });
+
+  it("resizes a selected inline image through the resize handle", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const imageInput = root.querySelector(
+      '[data-testid="editor-2-insert-image-input"]',
+    ) as HTMLInputElement;
+    const file = new File(
+      [
+        Uint8Array.from([
+          137, 80, 78, 71, 13, 10, 26, 10,
+          0, 0, 0, 13, 73, 72, 68, 82,
+          0, 0, 0, 1, 0, 0, 0, 1,
+          8, 6, 0, 0, 0, 31, 21, 196, 137,
+          0, 0, 0, 13, 73, 68, 65, 84,
+          120, 218, 99, 252, 255, 159, 161, 30,
+          0, 7, 130, 2, 127, 63, 201, 164, 116,
+          0, 0, 0, 0, 73, 69, 78, 68,
+          174, 66, 96, 130,
+        ]),
+      ],
+      "inline.png",
+      { type: "image/png" },
+    );
+
+    const OriginalImage = globalThis.Image;
+    class MockImage {
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+      naturalWidth = 64;
+      naturalHeight = 32;
+
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
+    }
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      value: MockImage,
+    });
+
+    try {
+      Object.defineProperty(imageInput, "files", {
+        configurable: true,
+        value: [file],
+      });
+
+      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (root.querySelector('[data-testid="editor-2-image"]')) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
+      expect(image).not.toBeNull();
+
+      Object.defineProperty(image, "getBoundingClientRect", {
+        configurable: true,
+        value: () => ({
+          left: 120,
+          top: 80,
+          right: 184,
+          bottom: 112,
+          width: 64,
+          height: 32,
+          x: 120,
+          y: 80,
+        }),
+      });
+
+      image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 125, clientY: 85 }));
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const selectedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
+        if (selectedImage?.classList.contains("oasis-editor-2-image-selected")) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (root.querySelector('[data-testid="editor-2-image-resize-handle"]')) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const handle = root.querySelector('[data-testid="editor-2-image-resize-handle"]') as HTMLButtonElement;
+      expect(handle).not.toBeNull();
+
+      handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 184, clientY: 112 }));
+      window.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 216, clientY: 112 }));
+      window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 216, clientY: 112 }));
+      await Promise.resolve();
+
+      const resizedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
+      expect(resizedImage.getAttribute("width")).toBe("96");
+      expect(resizedImage.getAttribute("height")).toBe("48");
     } finally {
       Object.defineProperty(globalThis, "Image", {
         configurable: true,

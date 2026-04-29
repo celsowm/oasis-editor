@@ -26,6 +26,11 @@ interface EditorSurfaceProps {
     paragraphOffset: number,
     event: MouseEvent & { currentTarget: HTMLImageElement },
   ) => void;
+  onImageResizeHandleMouseDown: (
+    paragraphId: string,
+    paragraphOffset: number,
+    event: MouseEvent & { currentTarget: HTMLButtonElement },
+  ) => void;
 }
 
 function paragraphStyleToCss(style?: Editor2ParagraphStyle): Record<string, string> | undefined {
@@ -127,6 +132,7 @@ function renderParagraph(
   state: Editor2State,
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
   onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
+  onImageResizeHandleMouseDown: EditorSurfaceProps["onImageResizeHandleMouseDown"],
 ) {
   const layout = projectParagraphLayout(paragraph);
   const chars = layout.fragments.flatMap((fragment) => fragment.chars);
@@ -205,10 +211,15 @@ function renderParagraph(
             >
               <For each={fragment.chars}>
                 {(char) => (
+                  (() => {
+                    const imageSelected = () =>
+                      Boolean(fragment.image) && isCharSelected(char.paragraphOffset);
+                    return (
                   <span
                     classList={{
                       "oasis-editor-2-char": true,
                       "oasis-editor-2-char-selected": isCharSelected(char.paragraphOffset),
+                      "oasis-editor-2-image-char": Boolean(fragment.image),
                     }}
                     data-char-index={char.paragraphOffset}
                     data-run-id={fragment.runId}
@@ -216,23 +227,48 @@ function renderParagraph(
                     data-testid="editor-2-char"
                   >
                     {fragment.image ? (
-                      <img
-                        src={fragment.image.src}
-                        width={fragment.image.width}
-                        height={fragment.image.height}
-                        class="oasis-editor-2-image"
+                      <span
                         classList={{
-                          "oasis-editor-2-image-selected": isCharSelected(char.paragraphOffset),
+                          "oasis-editor-2-image-inline": true,
+                          "oasis-editor-2-image-inline-selected": imageSelected(),
                         }}
-                        data-testid="editor-2-image"
-                        onMouseDown={(event) =>
-                          onImageMouseDown(paragraph.id, char.paragraphOffset, event)
-                        }
-                      />
+                      >
+                        <img
+                          src={fragment.image.src}
+                          width={fragment.image.width}
+                          height={fragment.image.height}
+                          class="oasis-editor-2-image"
+                          style={{
+                            width: `${fragment.image.width}px`,
+                            height: `${fragment.image.height}px`,
+                            "max-width": "none",
+                          }}
+                          classList={{
+                            "oasis-editor-2-image-selected": imageSelected(),
+                          }}
+                          data-testid="editor-2-image"
+                          onMouseDown={(event) =>
+                            onImageMouseDown(paragraph.id, char.paragraphOffset, event)
+                          }
+                        />
+                        <Show when={imageSelected()}>
+                          <button
+                            type="button"
+                            aria-label="Resize image"
+                            class="oasis-editor-2-image-resize-handle"
+                            data-testid="editor-2-image-resize-handle"
+                            onMouseDown={(event) =>
+                              onImageResizeHandleMouseDown(paragraph.id, char.paragraphOffset, event)
+                            }
+                          />
+                        </Show>
+                      </span>
                     ) : (
                       char.char
                     )}
                   </span>
+                    );
+                  })()
                 )}
               </For>
             </span>
@@ -249,6 +285,7 @@ function renderTable(
   state: Editor2State,
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
   onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
+  onImageResizeHandleMouseDown: EditorSurfaceProps["onImageResizeHandleMouseDown"],
 ) {
   return (
     <div class="oasis-editor-2-table-block" data-block-id={table.id} data-testid="editor-2-table">
@@ -268,6 +305,7 @@ function renderTable(
                             state,
                             onParagraphMouseDown,
                             onImageMouseDown,
+                            onImageResizeHandleMouseDown,
                           )}
                       </For>
                     </td>
@@ -308,6 +346,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                         props.state(),
                         props.onParagraphMouseDown,
                         props.onImageMouseDown,
+                        props.onImageResizeHandleMouseDown,
                       )
                     : renderTable(
                         block.sourceBlock,
@@ -315,6 +354,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                         props.state(),
                         props.onParagraphMouseDown,
                         props.onImageMouseDown,
+                        props.onImageResizeHandleMouseDown,
                       );
                 }}
               </For>

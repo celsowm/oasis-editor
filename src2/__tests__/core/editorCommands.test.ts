@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { getParagraphText, getParagraphs, positionToParagraphOffset } from "../../core/model.js";
+import { getParagraphText, getParagraphs, paragraphOffsetToPosition, positionToParagraphOffset } from "../../core/model.js";
 import {
   deleteBackward,
   deleteForward,
@@ -14,6 +14,7 @@ import {
   moveSelectionLeft,
   moveSelectionRight,
   moveSelectionUp,
+  resizeSelectedImage,
   setParagraphStyle,
   setTextStyleValue,
   splitBlockAtSelection,
@@ -442,6 +443,35 @@ describe("editor-2 commands", () => {
     const next = insertImageAtSelection(state, image);
 
     expect(getParagraphText(getParagraphs(next)[0])).toBe("\uFFFC");
+  });
+
+  it("resizes the currently selected image object", () => {
+    const inserted = insertImageAtSelection(
+      createEditor2StateFromTexts([""], { blockIndex: 0, offset: 0 }),
+      { src: "data:image/png;base64,abc", width: 100, height: 50 },
+    );
+    const paragraph = getParagraphs(inserted)[0]!;
+    const selected = {
+      ...inserted,
+      selection: {
+        anchor: paragraphOffsetToPosition(paragraph, 0),
+        focus: paragraphOffsetToPosition(paragraph, 1),
+      },
+    };
+    const resized = resizeSelectedImage(selected, 180, 90);
+    const imageRun = getParagraphs(resized)[0]!.runs.find((run) => run.image);
+
+    expect(imageRun?.image?.width).toBe(180);
+    expect(imageRun?.image?.height).toBe(90);
+  });
+
+  it("ignores resizeSelectedImage when the selection is not exactly one image object", () => {
+    const state = createEditor2StateFromTexts(["abc"], {
+      anchor: { blockIndex: 0, offset: 0 },
+      focus: { blockIndex: 0, offset: 2 },
+    });
+
+    expect(resizeSelectedImage(state, 180, 90)).toBe(state);
   });
 
   // ── insertTableAtSelection ─────────────────────────────────────────────────

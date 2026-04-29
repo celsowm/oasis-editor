@@ -485,14 +485,19 @@ export function resizeSelectedImage(
   }
 
   let runStart = 0;
-  const targetRun = paragraph.runs.find((run) => {
-    const matches =
-      Boolean(run.image) &&
-      runStart === normalized.startParagraphOffset &&
-      run.text.length === 1;
+  let targetRun: Editor2TextRun | undefined;
+  for (const run of paragraph.runs) {
+    const startOffset = runStart;
     runStart += run.text.length;
-    return matches;
-  });
+    if (
+      run.image &&
+      run.text.length === 1 &&
+      startOffset === normalized.startParagraphOffset
+    ) {
+      targetRun = run;
+      break;
+    }
+  }
 
   if (!targetRun?.image) {
     return state;
