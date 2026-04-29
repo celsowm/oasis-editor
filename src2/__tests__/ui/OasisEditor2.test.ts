@@ -12,14 +12,17 @@ describe("OasisEditor2", () => {
   it("renders the isolated editor shell and input overlay", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
 
     expect(root.querySelector('[data-testid="editor-2-editor"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-surface"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-input"]')).not.toBeNull();
+    expect(input).not.toBeNull();
+    expect(input.style.pointerEvents).toBe("none");
     expect(root.querySelector('[data-testid="editor-2-toolbar-bold"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-font-family"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-align-center"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-list-bullet"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="editor-2-toolbar-page-break-before"]')).not.toBeNull();
     expect(root.querySelectorAll('[data-testid="editor-2-block"]').length).toBe(1);
     expect(root.textContent).toContain("Minimal editor");
     expect(root.textContent).toContain("oasis-editor-2");
@@ -570,6 +573,31 @@ describe("OasisEditor2", () => {
     marker = root.querySelector('[data-testid="editor-2-list-marker"]') as HTMLSpanElement;
     expect(marker.textContent).toBe("1.");
     expect(orderedButton.classList.contains("oasis-editor-2-tool-button-active")).toBe(true);
+
+    instance.dispose();
+  });
+
+  it("toggles page break before and keep with next from the toolbar", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const pageBreakButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-page-break-before"]',
+    ) as HTMLButtonElement;
+    const keepWithNextButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-keep-with-next"]',
+    ) as HTMLButtonElement;
+
+    input.value = "alpha";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "alpha", inputType: "insertText" }));
+    await Promise.resolve();
+
+    pageBreakButton.click();
+    keepWithNextButton.click();
+    await Promise.resolve();
+
+    expect(pageBreakButton.classList.contains("oasis-editor-2-tool-button-active")).toBe(true);
+    expect(keepWithNextButton.classList.contains("oasis-editor-2-tool-button-active")).toBe(true);
 
     instance.dispose();
   });

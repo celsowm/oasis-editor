@@ -45,7 +45,9 @@ type ValueParagraphStyleKey =
   | "lineHeight"
   | "indentLeft"
   | "indentRight"
-  | "indentFirstLine";
+  | "indentFirstLine"
+  | "pageBreakBefore"
+  | "keepWithNext";
 type ParagraphListKind = Editor2ParagraphListStyle["kind"];
 
 function cloneStyle(style?: Editor2TextStyle): Editor2TextStyle | undefined {

@@ -161,4 +161,41 @@ describe("EditorSurface", () => {
 
     dispose();
   });
+
+  it("renders paginated page containers for the projected document layout", () => {
+    const container = document.createElement("div");
+    const paragraphs = Array.from({ length: 3 }, (_, index) =>
+      createEditor2ParagraphFromRuns([{ text: `${index}`.repeat(520) }]),
+    );
+    const state: Editor2State = {
+      document: createEditor2Document(paragraphs),
+      selection: {
+        anchor: {
+          paragraphId: paragraphs[0]!.id,
+          runId: paragraphs[0]!.runs[0]!.id,
+          offset: 0,
+        },
+        focus: {
+          paragraphId: paragraphs[0]!.id,
+          runId: paragraphs[0]!.runs[0]!.id,
+          offset: 0,
+        },
+      },
+    };
+
+    const dispose = render(
+      () => (
+        <EditorSurface
+          state={() => state}
+          onSurfaceMouseDown={() => undefined}
+          onParagraphMouseDown={() => undefined}
+        />
+      ),
+      container,
+    );
+
+    expect(container.querySelectorAll('[data-testid="editor-2-page"]').length).toBeGreaterThan(1);
+
+    dispose();
+  });
 });

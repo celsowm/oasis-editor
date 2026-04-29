@@ -1,5 +1,7 @@
 import type {
   Editor2CaretSlot,
+  Editor2LayoutBlock,
+  Editor2LayoutDocument,
   Editor2LayoutFragment,
   Editor2LayoutFragmentChar,
   Editor2LayoutLine,
@@ -8,6 +10,11 @@ import type {
 } from "../core/model.js";
 import { getParagraphText } from "../core/model.js";
 import { measureLinesFromRects, type CharRect } from "./caretGeometry.js";
+
+const DEFAULT_FONT_SIZE = 20;
+const DEFAULT_LINE_HEIGHT = 1.6;
+const DEFAULT_PAGE_HEIGHT = 920;
+const DEFAULT_PARAGRAPH_GAP = 10;
 
 function sliceFragmentToRange(
   fragment: Editor2LayoutFragment,
@@ -145,4 +152,109 @@ export function resolveClosestOffsetInMeasuredLayout(
   }
 
   return bestOffset;
+}
+
+function estimateParagraphFontSize(paragraph: Editor2ParagraphNode): number {
+  const runFontSizes = paragraph.runs
+    .map((run) => run.styles?.fontSize)
+    .filter((fontSize): fontSize is number => typeof fontSize === "number" && Number.isFinite(fontSize));
+
+  return runFontSizes.length > 0 ? Math.max(...runFontSizes) : DEFAULT_FONT_SIZE;
+}
+
+function estimateParagraphLineHeight(paragraph: Editor2ParagraphNode, fontSize: number): number {
+  return (paragraph.style?.lineHeight ?? DEFAULT_LINE_HEIGHT) * fontSize;
+}
+
+function estimateCharsPerLine(paragraph: Editor2ParagraphNode): number {
+  const indentPenalty = Math.floor((paragraph.style?.indentLeft ?? 0) / 16);
+  const firstLinePenalty = Math.floor(Math.abs(paragraph.style?.indentFirstLine ?? 0) / 16);
+  const listPenalty = paragraph.list ? 4 : 0;
+  return Math.max(12, 48 - indentPenalty - firstLinePenalty - listPenalty);
+}
+
+export function estimateParagraphBlockHeight(paragraph: Editor2ParagraphNode): number {
+  const textLength = Math.max(1, getParagraphText(paragraph).length);
+  const fontSize = estimateParagraphFontSize(paragraph);
+  const lineHeightPx = estimateParagraphLineHeight(paragraph, fontSize);
+  const charsPerLine = estimateCharsPerLine(paragraph);
+  const lineCount = Math.max(1, Math.ceil(textLength / charsPerLine));
+  const spacingBefore = paragraph.style?.spacingBefore ?? 0;
+  const spacingAfter = paragraph.style?.spacingAfter ?? 0;
+
+  return spacingBefore + spacingAfter + lineCount * lineHeightPx + DEFAULT_PARAGRAPH_GAP;
+}
+
+export function projectDocumentLayout(
+  paragraphs: Editor2ParagraphNode[],
+  maxPageHeight = DEFAULT_PAGE_HEIGHT,
+  measuredHeights?: Record<string, number>,
+): Editor2LayoutDocument {
+  const blocks: Editor2LayoutBlock[] = paragraphs.map((paragraph, globalIndex) => ({
+    blockId: paragraph.id,
+    paragraphId: paragraph.id,
+    globalIndex,
+    estimatedHeight: measuredHeights?.[paragraph.id] ?? estimateParagraphBlockHeight(paragraph),
+    layout: projectParagraphLayout(paragraph),
+  }));
+
+  const pages: Editor2LayoutDocument["pages"] = [];
+  let currentBlocks: Editor2LayoutBlock[] = [];
+  let currentHeight = 0;
+
+  const flushPage = () => {
+    if (currentBlocks.length === 0) {
+      return;
+    }
+
+    pages.push({
+      id: `page:${pages.length + 1}`,
+      index: pages.length,
+      height: currentHeight,
+      maxHeight: maxPageHeight,
+      blocks: currentBlocks,
+    });
+    currentBlocks = [];
+    currentHeight = 0;
+  };
+
+  for (let index = 0; index < blocks.length; index += 1) {
+    const block = blocks[index]!;
+    const paragraph = paragraphs[index]!;
+    const nextBlock = blocks[index + 1];
+    const keepWithNext =
+      paragraph.style?.keepWithNext === true &&
+      nextBlock !== undefined;
+    const keepPairHeight = keepWithNext
+      ? block.estimatedHeight + nextBlock.estimatedHeight
+      : block.estimatedHeight;
+
+    if (paragraph.style?.pageBreakBefore && currentBlocks.length > 0) {
+      flushPage();
+    }
+
+    if (currentBlocks.length > 0 && currentHeight + keepPairHeight > maxPageHeight) {
+      flushPage();
+    }
+
+    currentBlocks.push(block);
+    currentHeight += block.estimatedHeight;
+  }
+
+  flushPage();
+
+  if (pages.length === 0) {
+    pages.push({
+      id: "page:1",
+      index: 0,
+      height: 0,
+      maxHeight: maxPageHeight,
+      blocks: [],
+    });
+  }
+
+  return {
+    maxPageHeight,
+    pages,
+  };
 }

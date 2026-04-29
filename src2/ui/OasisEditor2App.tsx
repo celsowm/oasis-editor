@@ -80,7 +80,9 @@ type ParagraphStyleKey =
   | "lineHeight"
   | "indentLeft"
   | "indentRight"
-  | "indentFirstLine";
+  | "indentFirstLine"
+  | "pageBreakBefore"
+  | "keepWithNext";
 
 interface ToolbarStyleState {
   bold: boolean;
@@ -100,6 +102,8 @@ interface ToolbarStyleState {
   indentLeft: string;
   indentFirstLine: string;
   listKind: string;
+  pageBreakBefore: boolean;
+  keepWithNext: boolean;
 }
 
 function collectCharRects(blockElement: HTMLElement): Array<{
@@ -269,6 +273,13 @@ function resolveUniformParagraphStyleValue<K extends ParagraphStyleKey>(
   return styles.every((style) => String(style[key] ?? "") === serialized) ? serialized : "";
 }
 
+function resolveUniformParagraphFlag(
+  styles: Editor2ParagraphStyle[],
+  key: "pageBreakBefore" | "keepWithNext",
+): boolean {
+  return styles.length > 0 && styles.every((style) => style[key] === true);
+}
+
 function resolveUniformListKind(paragraphs: ReturnType<typeof getParagraphs>): string {
   if (paragraphs.length === 0) {
     return "";
@@ -286,6 +297,7 @@ export function OasisEditor2App() {
   const [state, setState] = createStore<Editor2State>(createInitialEditor2State());
   const [focused, setFocused] = createSignal(false);
   const [composing, setComposing] = createSignal(false);
+  const [measuredBlockHeights, setMeasuredBlockHeights] = createSignal<Record<string, number>>({});
   const [inputBox, setInputBox] = createSignal<InputBox>({ left: 0, top: 0, height: 28 });
   const [preferredColumnX, setPreferredColumnX] = createSignal<number | null>(null);
   const [undoStack, setUndoStack] = createSignal<Editor2State[]>([]);
@@ -405,6 +417,8 @@ export function OasisEditor2App() {
       indentLeft: resolveUniformParagraphStyleValue(paragraphStyles, "indentLeft"),
       indentFirstLine: resolveUniformParagraphStyleValue(paragraphStyles, "indentFirstLine"),
       listKind: resolveUniformListKind(getParagraphs(state).slice(normalizeSelection(state).startIndex, normalizeSelection(state).endIndex + 1)),
+      pageBreakBefore: resolveUniformParagraphFlag(paragraphStyles, "pageBreakBefore"),
+      keepWithNext: resolveUniformParagraphFlag(paragraphStyles, "keepWithNext"),
     };
   };
 
@@ -417,6 +431,36 @@ export function OasisEditor2App() {
         textareaRef.selectionEnd = textareaRef.value.length;
       }
     });
+  };
+
+  const syncMeasuredBlockHeights = (): boolean => {
+    if (!surfaceRef) {
+      return false;
+    }
+
+    const nextHeights: Record<string, number> = {};
+    const paragraphElements =
+      surfaceRef.querySelectorAll<HTMLElement>("[data-paragraph-id]");
+
+    for (const element of paragraphElements) {
+      const paragraphId = element.dataset.paragraphId;
+      if (!paragraphId) {
+        continue;
+      }
+      nextHeights[paragraphId] = element.getBoundingClientRect().height;
+    }
+
+    const currentHeights = measuredBlockHeights();
+    const currentKeys = Object.keys(currentHeights);
+    const nextKeys = Object.keys(nextHeights);
+    const changed =
+      currentKeys.length !== nextKeys.length ||
+      nextKeys.some((key) => Math.abs((currentHeights[key] ?? 0) - nextHeights[key]!) > 0.5);
+
+    if (changed) {
+      setMeasuredBlockHeights(nextHeights);
+    }
+    return changed;
   };
 
   const applyBooleanStyleCommand = (key: BooleanStyleKey) => {
@@ -452,6 +496,11 @@ export function OasisEditor2App() {
     resetTransactionGrouping();
     applyTransactionalState((current) => setParagraphStyle(current, key, value));
     focusInput();
+  };
+
+  const toggleParagraphFlagCommand = (key: "pageBreakBefore" | "keepWithNext") => {
+    const nextValue = !toolbarStyleState()[key];
+    applyParagraphStyleCommand(key, nextValue ? true : null);
   };
 
   const applyParagraphListCommand = (kind: NonNullable<Editor2ParagraphListStyle["kind"]>) => {
@@ -589,6 +638,16 @@ export function OasisEditor2App() {
     const requestId = ++syncRequestId;
     queueMicrotask(() => {
       if (requestId !== syncRequestId) {
+        return;
+      }
+      const heightsChanged = syncMeasuredBlockHeights();
+      if (heightsChanged) {
+        queueMicrotask(() => {
+          if (requestId !== syncRequestId) {
+            return;
+          }
+          syncInputBox();
+        });
         return;
       }
       syncInputBox();
@@ -1041,6 +1100,31 @@ export function OasisEditor2App() {
         </div>
 
         <div class="oasis-editor-2-toolbar-group">
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            classList={{
+              "oasis-editor-2-tool-button-active": toolbarStyleState().pageBreakBefore,
+            }}
+            data-testid="editor-2-toolbar-page-break-before"
+            onClick={() => toggleParagraphFlagCommand("pageBreakBefore")}
+          >
+            Page Break
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            classList={{
+              "oasis-editor-2-tool-button-active": toolbarStyleState().keepWithNext,
+            }}
+            data-testid="editor-2-toolbar-keep-with-next"
+            onClick={() => toggleParagraphFlagCommand("keepWithNext")}
+          >
+            Keep Next
+          </button>
+        </div>
+
+        <div class="oasis-editor-2-toolbar-group">
           <select
             class="oasis-editor-2-tool-select"
             data-testid="editor-2-toolbar-font-family"
@@ -1207,6 +1291,7 @@ export function OasisEditor2App() {
         >
           <EditorSurface
             state={() => state}
+            measuredBlockHeights={() => measuredBlockHeights()}
             onSurfaceMouseDown={(event) => {
               event.preventDefault();
               focusInput();
@@ -1303,6 +1388,7 @@ export function OasisEditor2App() {
               left: `${inputBox().left}px`,
               top: `${inputBox().top}px`,
               height: `${inputBox().height}px`,
+              "pointer-events": "none",
             }}
             onBlur={() => setFocused(false)}
             onCompositionEnd={handleCompositionEnd}

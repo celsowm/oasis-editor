@@ -9,10 +9,11 @@ import {
   type Editor2TextStyle,
 } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
-import { projectParagraphLayout } from "../layoutProjection.js";
+import { projectDocumentLayout } from "../layoutProjection.js";
 
 interface EditorSurfaceProps {
   state: Accessor<Editor2State>;
+  measuredBlockHeights?: Accessor<Record<string, number>>;
   onSurfaceMouseDown: (event: MouseEvent) => void;
   onParagraphMouseDown: (
     paragraphId: string,
@@ -114,123 +115,131 @@ function runStyleToCss(style?: Editor2TextStyle): Record<string, string> | undef
 }
 
 export function EditorSurface(props: EditorSurfaceProps) {
+  const documentLayout = () =>
+    projectDocumentLayout(getParagraphs(props.state()), undefined, props.measuredBlockHeights?.());
+
   return (
-    <div class="oasis-editor-2-paper">
-      <div
-        class="oasis-editor-2-surface"
-        data-testid="editor-2-surface"
-        onMouseDown={props.onSurfaceMouseDown}
-      >
-        <For each={getParagraphs(props.state())}>
-          {(paragraph, paragraphIndexAccessor) => {
-            const layout = () => projectParagraphLayout(paragraph);
-            const chars = () => layout().fragments.flatMap((fragment) => fragment.chars);
-            const isEmptyBlockSelected = () => {
-              const state = props.state();
-              const normalized = normalizeSelection(state);
-              if (normalized.isCollapsed) {
-                return false;
-              }
+    <div class="oasis-editor-2-paper-stack">
+      <For each={documentLayout().pages}>
+        {(page) => (
+          <div class="oasis-editor-2-paper" data-testid="editor-2-page">
+            <div
+              class="oasis-editor-2-surface"
+              data-testid="editor-2-surface"
+              onMouseDown={props.onSurfaceMouseDown}
+            >
+              <For each={page.blocks}>
+                {(block) => {
+                  const paragraph = getParagraphs(props.state())[block.globalIndex]!;
+                  const layout = () => block.layout;
+                  const chars = () => layout().fragments.flatMap((fragment) => fragment.chars);
+                  const isEmptyBlockSelected = () => {
+                    const state = props.state();
+                    const normalized = normalizeSelection(state);
+                    if (normalized.isCollapsed) {
+                      return false;
+                    }
 
-              const paragraphIndex = paragraphIndexAccessor();
-              if (getParagraphText(paragraph).length > 0) {
-                return false;
-              }
+                    if (getParagraphText(paragraph).length > 0) {
+                      return false;
+                    }
 
-              return paragraphIndex >= normalized.startIndex && paragraphIndex <= normalized.endIndex;
-            };
-            const isCharSelected = (charIndex: number) => {
-              const state = props.state();
-              const normalized = normalizeSelection(state);
-              if (normalized.isCollapsed) {
-                return false;
-              }
+                    return block.globalIndex >= normalized.startIndex && block.globalIndex <= normalized.endIndex;
+                  };
+                  const isCharSelected = (charIndex: number) => {
+                    const state = props.state();
+                    const normalized = normalizeSelection(state);
+                    if (normalized.isCollapsed) {
+                      return false;
+                    }
 
-              const paragraphIndex = paragraphIndexAccessor();
-              if (paragraphIndex < normalized.startIndex || paragraphIndex > normalized.endIndex) {
-                return false;
-              }
+                    if (block.globalIndex < normalized.startIndex || block.globalIndex > normalized.endIndex) {
+                      return false;
+                    }
 
-              if (normalized.startIndex === normalized.endIndex) {
-                return (
-                  charIndex >= normalized.startParagraphOffset &&
-                  charIndex < normalized.endParagraphOffset
-                );
-              }
+                    if (normalized.startIndex === normalized.endIndex) {
+                      return (
+                        charIndex >= normalized.startParagraphOffset &&
+                        charIndex < normalized.endParagraphOffset
+                      );
+                    }
 
-              if (paragraphIndex === normalized.startIndex) {
-                return charIndex >= normalized.startParagraphOffset;
-              }
+                    if (block.globalIndex === normalized.startIndex) {
+                      return charIndex >= normalized.startParagraphOffset;
+                    }
 
-              if (paragraphIndex === normalized.endIndex) {
-                return charIndex < normalized.endParagraphOffset;
-              }
+                    if (block.globalIndex === normalized.endIndex) {
+                      return charIndex < normalized.endParagraphOffset;
+                    }
 
-              return true;
-            };
+                    return true;
+                  };
 
-            return (
-              <p
-                class="oasis-editor-2-block"
-                classList={{ "oasis-editor-2-block-list": Boolean(paragraph.list) }}
-                data-paragraph-id={paragraph.id}
-                data-testid="editor-2-block"
-                style={paragraphStyleToCss(paragraph.style)}
-                onMouseDown={(event) => props.onParagraphMouseDown(paragraph.id, event)}
-              >
-                <Show when={paragraph.list}>
-                  <span class="oasis-editor-2-list-marker" data-testid="editor-2-list-marker">
-                    {getParagraphListMarker(paragraph.list, paragraphIndexAccessor())}
-                  </span>
-                </Show>
-                <Show
-                  when={chars().length > 0}
-                  fallback={
-                    <span
-                      classList={{
-                        "oasis-editor-2-empty-char": true,
-                        "oasis-editor-2-empty-char-selected": isEmptyBlockSelected(),
-                      }}
-                      data-empty-block="true"
-                      data-testid="editor-2-empty-char"
+                  return (
+                    <p
+                      class="oasis-editor-2-block"
+                      classList={{ "oasis-editor-2-block-list": Boolean(paragraph.list) }}
+                      data-paragraph-id={paragraph.id}
+                      data-testid="editor-2-block"
+                      style={paragraphStyleToCss(paragraph.style)}
+                      onMouseDown={(event) => props.onParagraphMouseDown(paragraph.id, event)}
                     >
-                      {"\u00A0"}
-                    </span>
-                  }
-                >
-                  <For each={layout().fragments}>
-                    {(fragment) => (
-                      <span
-                        class="oasis-editor-2-run"
-                        data-run-id={fragment.runId}
-                        data-testid="editor-2-run"
-                        style={runStyleToCss(fragment.styles)}
+                      <Show when={paragraph.list}>
+                        <span class="oasis-editor-2-list-marker" data-testid="editor-2-list-marker">
+                          {getParagraphListMarker(paragraph.list, block.globalIndex)}
+                        </span>
+                      </Show>
+                      <Show
+                        when={chars().length > 0}
+                        fallback={
+                          <span
+                            classList={{
+                              "oasis-editor-2-empty-char": true,
+                              "oasis-editor-2-empty-char-selected": isEmptyBlockSelected(),
+                            }}
+                            data-empty-block="true"
+                            data-testid="editor-2-empty-char"
+                          >
+                            {"\u00A0"}
+                          </span>
+                        }
                       >
-                        <For each={fragment.chars}>
-                          {(char) => (
+                        <For each={layout().fragments}>
+                          {(fragment) => (
                             <span
-                              classList={{
-                                "oasis-editor-2-char": true,
-                                "oasis-editor-2-char-selected": isCharSelected(char.paragraphOffset),
-                              }}
-                              data-char-index={char.paragraphOffset}
+                              class="oasis-editor-2-run"
                               data-run-id={fragment.runId}
-                              data-run-offset={char.runOffset}
-                              data-testid="editor-2-char"
+                              data-testid="editor-2-run"
+                              style={runStyleToCss(fragment.styles)}
                             >
-                              {char.char}
+                              <For each={fragment.chars}>
+                                {(char) => (
+                                  <span
+                                    classList={{
+                                      "oasis-editor-2-char": true,
+                                      "oasis-editor-2-char-selected": isCharSelected(char.paragraphOffset),
+                                    }}
+                                    data-char-index={char.paragraphOffset}
+                                    data-run-id={fragment.runId}
+                                    data-run-offset={char.runOffset}
+                                    data-testid="editor-2-char"
+                                  >
+                                    {char.char}
+                                  </span>
+                                )}
+                              </For>
                             </span>
                           )}
                         </For>
-                      </span>
-                    )}
-                  </For>
-                </Show>
-              </p>
-            );
-          }}
-        </For>
-      </div>
+                      </Show>
+                    </p>
+                  );
+                }}
+              </For>
+            </div>
+          </div>
+        )}
+      </For>
     </div>
   );
 }

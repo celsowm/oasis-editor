@@ -19,6 +19,8 @@ export interface Editor2ParagraphStyle {
   indentLeft?: number | null;
   indentRight?: number | null;
   indentFirstLine?: number | null;
+  pageBreakBefore?: boolean;
+  keepWithNext?: boolean;
 }
 
 export interface Editor2ParagraphListStyle {
@@ -103,6 +105,27 @@ export interface Editor2LayoutParagraph {
   text: string;
   fragments: Editor2LayoutFragment[];
   lines: Editor2LayoutLine[];
+}
+
+export interface Editor2LayoutBlock {
+  blockId: string;
+  paragraphId: string;
+  globalIndex: number;
+  estimatedHeight: number;
+  layout: Editor2LayoutParagraph;
+}
+
+export interface Editor2LayoutPage {
+  id: string;
+  index: number;
+  height: number;
+  maxHeight: number;
+  blocks: Editor2LayoutBlock[];
+}
+
+export interface Editor2LayoutDocument {
+  maxPageHeight: number;
+  pages: Editor2LayoutPage[];
 }
 
 export function getParagraphs(state: Editor2State): Editor2ParagraphNode[] {
