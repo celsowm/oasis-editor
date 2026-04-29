@@ -29,9 +29,11 @@ import {
   toggleParagraphList,
   toggleTextStyle,
 } from "../core/editorCommands.js";
-import { createInitialEditor2State, createEditor2StateFromDocument } from "../core/editorState.js";
+import { createEditor2Document, createInitialEditor2State, createEditor2StateFromDocument } from "../core/editorState.js";
 import {
+  type Editor2Document,
   type Editor2BlockNode,
+  type Editor2ParagraphNode,
   type Editor2ParagraphListStyle,
   getParagraphs,
   getParagraphText,
@@ -405,6 +407,21 @@ export function OasisEditor2App() {
     setState(cloneState(nextState));
   };
 
+  const applySelectionPreservingStructure = (
+    nextSelection: Editor2State["selection"],
+  ) => {
+    applyState({
+      document: {
+        ...state.document,
+        blocks: state.document.blocks.map(cloneDocumentBlock),
+      },
+      selection: {
+        anchor: { ...nextSelection.anchor },
+        focus: { ...nextSelection.focus },
+      },
+    });
+  };
+
   const resetTransactionGrouping = () => {
     lastTransactionMeta = null;
   };
@@ -768,7 +785,7 @@ export function OasisEditor2App() {
     }
 
     clearPreferredColumn();
-    applyTransactionalState((current) => insertTextAtSelection(current, text), {
+    applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, text)), {
       mergeKey: "insertText",
     });
     event.currentTarget.value = "";
@@ -790,7 +807,7 @@ export function OasisEditor2App() {
 
     suppressedInputText = text;
     clearPreferredColumn();
-    applyTransactionalState((current) => insertTextAtSelection(current, text), {
+    applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, text)), {
       mergeKey: "insertText",
     });
     event.currentTarget.value = "";
@@ -817,7 +834,7 @@ export function OasisEditor2App() {
     event.clipboardData?.setData("text/plain", text);
     clearPreferredColumn();
     resetTransactionGrouping();
-    applyTransactionalState((current) => deleteBackward(current));
+    applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)));
     focusInput();
   };
 
@@ -830,7 +847,7 @@ export function OasisEditor2App() {
     event.preventDefault();
     clearPreferredColumn();
     resetTransactionGrouping();
-    applyTransactionalState((current) => insertPlainTextAtSelection(current, text));
+    applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => insertPlainTextAtSelection(temp, text)));
     event.currentTarget.value = "";
     focusInput();
   };
@@ -953,6 +970,110 @@ export function OasisEditor2App() {
     focusInput();
   };
 
+  const resolveAdjacentTableCellPosition = (
+    document: Editor2Document,
+    paragraphId: string,
+    delta: -1 | 1,
+  ): Editor2Position | null => {
+    for (const block of document.blocks) {
+      if (block.type !== "table") {
+        continue;
+      }
+
+      const cells = block.rows.flatMap((row) => row.cells);
+      const currentCellIndex = cells.findIndex((cell) =>
+        cell.blocks.some((paragraph) => paragraph.id === paragraphId),
+      );
+      if (currentCellIndex === -1) {
+        continue;
+      }
+
+      const nextCell = cells[currentCellIndex + delta];
+      if (!nextCell) {
+        return null;
+      }
+
+      const targetParagraph = nextCell.blocks[0];
+      if (!targetParagraph) {
+        return null;
+      }
+
+      return paragraphOffsetToPosition(targetParagraph, 0);
+    }
+
+    return null;
+  };
+
+  const findParagraphTableLocation = (document: Editor2Document, paragraphId: string) => {
+    for (let blockIndex = 0; blockIndex < document.blocks.length; blockIndex += 1) {
+      const block = document.blocks[blockIndex]!;
+      if (block.type !== "table") {
+        continue;
+      }
+
+      for (let rowIndex = 0; rowIndex < block.rows.length; rowIndex += 1) {
+        const row = block.rows[rowIndex]!;
+        for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+          const cell = row.cells[cellIndex]!;
+          const paragraphIndex = cell.blocks.findIndex((paragraph) => paragraph.id === paragraphId);
+          if (paragraphIndex !== -1) {
+            return { blockIndex, rowIndex, cellIndex, paragraphIndex };
+          }
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const applyTableAwareParagraphEdit = (
+    current: Editor2State,
+    edit: (tempState: Editor2State) => Editor2State,
+  ): Editor2State => {
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (!location || current.selection.anchor.paragraphId !== current.selection.focus.paragraphId) {
+      return edit(current);
+    }
+
+    const nextBlocks = current.document.blocks.map(cloneDocumentBlock);
+    const tableBlock = nextBlocks[location.blockIndex];
+    if (!tableBlock || tableBlock.type !== "table") {
+      return edit(current);
+    }
+
+    const targetParagraph =
+      tableBlock.rows[location.rowIndex]?.cells[location.cellIndex]?.blocks[location.paragraphIndex];
+    if (!targetParagraph) {
+      return edit(current);
+    }
+
+    const tempState: Editor2State = {
+      document: createEditor2Document([targetParagraph]),
+      selection: {
+        anchor: { ...current.selection.anchor },
+        focus: { ...current.selection.focus },
+      },
+    };
+    const tempResult = edit(tempState);
+    const replacementParagraphs = tempResult.document.blocks.filter(
+      (block): block is Editor2ParagraphNode => block.type === "paragraph",
+    );
+
+    tableBlock.rows[location.rowIndex]!.cells[location.cellIndex]!.blocks.splice(
+      location.paragraphIndex,
+      1,
+      ...replacementParagraphs,
+    );
+
+    return {
+      document: {
+        ...current.document,
+        blocks: nextBlocks,
+      },
+      selection: tempResult.selection,
+    };
+  };
+
   const handleKeyDown = (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a" && !event.altKey) {
       event.preventDefault();
@@ -1043,14 +1164,14 @@ export function OasisEditor2App() {
         event.preventDefault();
         clearPreferredColumn();
         resetTransactionGrouping();
-        applyTransactionalState((current) => splitBlockAtSelection(current));
+        applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => splitBlockAtSelection(temp)));
         focusInput();
         return;
       case "Backspace":
         event.preventDefault();
         clearPreferredColumn();
         resetTransactionGrouping();
-        applyTransactionalState((current) => deleteBackward(current));
+        applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)));
         event.currentTarget.value = "";
         focusInput();
         return;
@@ -1058,10 +1179,29 @@ export function OasisEditor2App() {
         event.preventDefault();
         clearPreferredColumn();
         resetTransactionGrouping();
-        applyTransactionalState((current) => deleteForward(current));
+        applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => deleteForward(temp)));
         event.currentTarget.value = "";
         focusInput();
         return;
+      case "Tab": {
+        const nextPosition = resolveAdjacentTableCellPosition(
+          state.document,
+          state.selection.focus.paragraphId,
+          event.shiftKey ? -1 : 1,
+        );
+        if (nextPosition) {
+          event.preventDefault();
+          clearPreferredColumn();
+          resetTransactionGrouping();
+          applySelectionPreservingStructure({
+            anchor: nextPosition,
+            focus: nextPosition,
+          });
+          focusInput();
+          return;
+        }
+        break;
+      }
       case "ArrowLeft":
         event.preventDefault();
         resetTransactionGrouping();

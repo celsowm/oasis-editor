@@ -663,6 +663,84 @@ describe("OasisEditor2", () => {
     instance.dispose();
   });
 
+  it("moves between imported table cells with tab and shift plus tab", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const importInput = root.querySelector(
+      '[data-testid="editor-2-import-docx-input"]',
+    ) as HTMLInputElement;
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:tbl>
+            <w:tr>
+              <w:tc><w:p><w:r><w:t>A1</w:t></w:r></w:p></w:tc>
+              <w:tc><w:p><w:r><w:t>B1</w:t></w:r></w:p></w:tc>
+            </w:tr>
+          </w:tbl>
+        </w:body>
+      </w:document>`);
+
+    Object.defineProperty(importInput, "files", {
+      configurable: true,
+      value: [file],
+    });
+
+    importInput.dispatchEvent(new Event("change", { bubbles: true }));
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 2) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    expect(root.querySelectorAll('[data-testid="editor-2-table-cell"]').length).toBe(2);
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Tab" }));
+    await Promise.resolve();
+    input.value = "X";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "X", inputType: "insertText" }));
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 2) {
+        const cellTexts = Array.from(root.querySelectorAll('[data-testid="editor-2-table-cell"]')).map(
+          (cell) => cell.textContent?.replace(/\u00A0/g, "") ?? "",
+        );
+        if (cellTexts[1] === "XB1") {
+          break;
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    let cells = Array.from(root.querySelectorAll('[data-testid="editor-2-table-cell"]')).map(
+      (cell) => cell.textContent?.replace(/\u00A0/g, "") ?? "",
+    );
+    expect(cells).toEqual(["A1", "XB1"]);
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Tab", shiftKey: true }));
+    await Promise.resolve();
+    input.value = "Y";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "Y", inputType: "insertText" }));
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 2) {
+        const cellTexts = Array.from(root.querySelectorAll('[data-testid="editor-2-table-cell"]')).map(
+          (cell) => cell.textContent?.replace(/\u00A0/g, "") ?? "",
+        );
+        if (cellTexts[0] === "YA1") {
+          break;
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    cells = Array.from(root.querySelectorAll('[data-testid="editor-2-table-cell"]')).map(
+      (cell) => cell.textContent?.replace(/\u00A0/g, "") ?? "",
+    );
+    expect(cells).toEqual(["YA1", "XB1"]);
+
+    instance.dispose();
+  });
+
   it("exports the current document through a download link", async () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
