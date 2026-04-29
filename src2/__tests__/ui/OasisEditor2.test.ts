@@ -605,6 +605,91 @@ describe("OasisEditor2", () => {
     instance.dispose();
   });
 
+  it("positions the caret after the list marker for an empty list paragraph", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const bulletButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-list-bullet"]',
+    ) as HTMLButtonElement;
+    const marker = root.querySelector('[data-testid="editor-2-list-marker"]') as HTMLElement | null;
+
+    expect(marker).toBeNull();
+
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const previousGetBoundingClientRect = HTMLElement.prototype.getBoundingClientRect;
+
+    Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", {
+      configurable: true,
+      value: function () {
+        const testId = this.getAttribute("data-testid");
+        if (testId === "editor-2-editor") {
+          return {
+            left: 0,
+            top: 0,
+            right: 860,
+            bottom: 600,
+            width: 860,
+            height: 600,
+            x: 0,
+            y: 0,
+          };
+        }
+        if (testId === "editor-2-block") {
+          return {
+            left: 100,
+            top: 80,
+            right: 320,
+            bottom: 112,
+            width: 220,
+            height: 32,
+            x: 100,
+            y: 80,
+          };
+        }
+        if (testId === "editor-2-list-marker") {
+          return {
+            left: 100,
+            top: 80,
+            right: 126,
+            bottom: 112,
+            width: 26,
+            height: 32,
+            x: 100,
+            y: 80,
+          };
+        }
+        if (testId === "editor-2-empty-char") {
+          return {
+            left: 140,
+            top: 80,
+            right: 152,
+            bottom: 112,
+            width: 12,
+            height: 32,
+            x: 140,
+            y: 80,
+          };
+        }
+        return previousGetBoundingClientRect.call(this);
+      },
+    });
+
+    try {
+      bulletButton.click();
+      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(input.style.left).toBe("140px");
+    } finally {
+      Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", {
+        configurable: true,
+        value: previousGetBoundingClientRect,
+      });
+    }
+
+    instance.dispose();
+  });
+
   it("toggles page break before and keep with next from the toolbar", async () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
@@ -724,6 +809,84 @@ describe("OasisEditor2", () => {
       expect(image?.getAttribute("width")).toBe("64");
       expect(image?.getAttribute("height")).toBe("32");
       expect(imageInput.value).toBe("");
+    } finally {
+      Object.defineProperty(globalThis, "Image", {
+        configurable: true,
+        value: OriginalImage,
+      });
+    }
+
+    instance.dispose();
+  });
+
+  it("selects an inline image as a single object and deletes it", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const imageInput = root.querySelector(
+      '[data-testid="editor-2-insert-image-input"]',
+    ) as HTMLInputElement;
+    const file = new File(
+      [
+        Uint8Array.from([
+          137, 80, 78, 71, 13, 10, 26, 10,
+          0, 0, 0, 13, 73, 72, 68, 82,
+          0, 0, 0, 1, 0, 0, 0, 1,
+          8, 6, 0, 0, 0, 31, 21, 196, 137,
+          0, 0, 0, 13, 73, 68, 65, 84,
+          120, 218, 99, 252, 255, 159, 161, 30,
+          0, 7, 130, 2, 127, 63, 201, 164, 116,
+          0, 0, 0, 0, 73, 69, 78, 68,
+          174, 66, 96, 130,
+        ]),
+      ],
+      "inline.png",
+      { type: "image/png" },
+    );
+
+    const OriginalImage = globalThis.Image;
+    class MockImage {
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+      naturalWidth = 64;
+      naturalHeight = 32;
+
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
+    }
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      value: MockImage,
+    });
+
+    try {
+      Object.defineProperty(imageInput, "files", {
+        configurable: true,
+        value: [file],
+      });
+
+      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (root.querySelector('[data-testid="editor-2-image"]')) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
+      expect(image).not.toBeNull();
+
+      image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
+      await Promise.resolve();
+
+      expect(image.classList.contains("oasis-editor-2-image-selected")).toBe(true);
+      expect(root.querySelector('[data-testid="editor-2-selection-box"]')).not.toBeNull();
+
+      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Delete" }));
+      await Promise.resolve();
+
+      expect(root.querySelector('[data-testid="editor-2-image"]')).toBeNull();
     } finally {
       Object.defineProperty(globalThis, "Image", {
         configurable: true,

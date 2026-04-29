@@ -464,6 +464,69 @@ export function insertImageAtSelection(state: Editor2State, image: Editor2ImageR
   );
 }
 
+export function resizeSelectedImage(
+  state: Editor2State,
+  width: number,
+  height: number,
+): Editor2State {
+  const normalized = normalizeSelection(state);
+  if (
+    normalized.isCollapsed ||
+    normalized.startIndex !== normalized.endIndex ||
+    normalized.endParagraphOffset - normalized.startParagraphOffset !== 1
+  ) {
+    return state;
+  }
+
+  const paragraphs = getParagraphs(state);
+  const paragraph = paragraphs[normalized.startIndex];
+  if (!paragraph) {
+    return state;
+  }
+
+  let runStart = 0;
+  const targetRun = paragraph.runs.find((run) => {
+    const matches =
+      Boolean(run.image) &&
+      runStart === normalized.startParagraphOffset &&
+      run.text.length === 1;
+    runStart += run.text.length;
+    return matches;
+  });
+
+  if (!targetRun?.image) {
+    return state;
+  }
+
+  const nextParagraphs = paragraphs.map((candidate, candidateIndex) => {
+    if (candidateIndex !== normalized.startIndex) {
+      return cloneParagraph(candidate);
+    }
+
+    return {
+      ...cloneParagraph(candidate),
+      runs: candidate.runs.map((run) =>
+        run.id === targetRun.id && run.image
+          ? {
+              ...run,
+              image: {
+                ...run.image,
+                width: Math.max(24, Math.round(width)),
+                height: Math.max(24, Math.round(height)),
+              },
+            }
+          : cloneRun(run),
+      ),
+    };
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+  );
+}
+
 export function insertTableAtSelection(state: Editor2State, rows: number, cols: number): Editor2State {
   const tableRows = [];
   for (let r = 0; r < rows; r += 1) {

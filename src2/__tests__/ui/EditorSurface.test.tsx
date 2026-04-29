@@ -39,6 +39,7 @@ describe("EditorSurface", () => {
           state={() => state}
           onSurfaceMouseDown={() => undefined}
           onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
         />
       ),
       container,
@@ -97,6 +98,7 @@ describe("EditorSurface", () => {
           state={() => state}
           onSurfaceMouseDown={() => undefined}
           onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
         />
       ),
       container,
@@ -152,6 +154,7 @@ describe("EditorSurface", () => {
           state={() => state}
           onSurfaceMouseDown={() => undefined}
           onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
         />
       ),
       container,
@@ -165,6 +168,54 @@ describe("EditorSurface", () => {
     expect(image.getAttribute("width")).toBe("48");
     expect(image.getAttribute("height")).toBe("24");
     expect(chars.length).toBe(3);
+
+    dispose();
+  });
+
+  it("marks an inline image as selected when its object slot is selected", () => {
+    const container = document.createElement("div");
+    const paragraph = createEditor2ParagraphFromRuns([
+      { text: "A" },
+      {
+        text: "\uFFFC",
+        image: {
+          src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+          width: 48,
+          height: 24,
+        },
+      },
+      { text: "B" },
+    ]);
+    const state: Editor2State = {
+      document: createEditor2Document([paragraph]),
+      selection: {
+        anchor: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[1]!.id,
+          offset: 0,
+        },
+        focus: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[1]!.id,
+          offset: 1,
+        },
+      },
+    };
+
+    const dispose = render(
+      () => (
+        <EditorSurface
+          state={() => state}
+          onSurfaceMouseDown={() => undefined}
+          onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
+        />
+      ),
+      container,
+    );
+
+    const image = container.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
+    expect(image.classList.contains("oasis-editor-2-image-selected")).toBe(true);
 
     dispose();
   });
@@ -203,6 +254,7 @@ describe("EditorSurface", () => {
           state={() => state}
           onSurfaceMouseDown={() => undefined}
           onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
         />
       ),
       container,
@@ -248,6 +300,7 @@ describe("EditorSurface", () => {
           state={() => state}
           onSurfaceMouseDown={() => undefined}
           onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
         />
       ),
       container,
@@ -289,6 +342,7 @@ describe("EditorSurface", () => {
           state={() => state}
           onSurfaceMouseDown={() => undefined}
           onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
         />
       ),
       container,

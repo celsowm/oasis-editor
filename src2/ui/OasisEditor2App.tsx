@@ -152,6 +152,10 @@ function collectCharRects(blockElement: HTMLElement): Array<{
   });
 }
 
+function getEmptyBlockRect(blockElement: HTMLElement): DOMRect | null {
+  return blockElement.querySelector<HTMLElement>('[data-testid="editor-2-empty-char"]')?.getBoundingClientRect() ?? null;
+}
+
 function resolveClickOffset(
   event: MouseEvent & { currentTarget: HTMLParagraphElement },
   layoutParagraph: ReturnType<typeof measureParagraphLayoutFromRects>,
@@ -845,10 +849,11 @@ export function OasisEditor2App() {
     let height = 28;
 
     if (charRects.length === 0) {
-      const paragraphRect = selectedParagraph.getBoundingClientRect();
-      left = paragraphRect.left - surfaceRect.left;
-      top = paragraphRect.top - surfaceRect.top;
-      height = paragraphRect.height || 28;
+      const fallbackRect =
+        getEmptyBlockRect(selectedParagraph) ?? selectedParagraph.getBoundingClientRect();
+      left = fallbackRect.left - surfaceRect.left;
+      top = fallbackRect.top - surfaceRect.top;
+      height = fallbackRect.height || 28;
     } else {
       const layout = measureParagraphLayoutFromRects(selectedParagraphNode, charRects);
       const slots =
@@ -1834,6 +1839,41 @@ export function OasisEditor2App() {
               );
               window.addEventListener("mousemove", handleWindowMouseMove);
               window.addEventListener("mouseup", handleWindowMouseUp);
+              focusInput();
+            }}
+            onImageMouseDown={(paragraphId, paragraphOffset, event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
+              if (!paragraph) {
+                return;
+              }
+
+              clearPreferredColumn();
+              resetTransactionGrouping();
+              dragAnchor = null;
+
+              const start = paragraphOffsetToPosition(paragraph, paragraphOffset);
+              const end = paragraphOffsetToPosition(paragraph, paragraphOffset + 1);
+
+              if (event.shiftKey) {
+                applyState(
+                  setSelection(state, {
+                    anchor: state.selection.anchor,
+                    focus: end,
+                  }),
+                );
+                focusInput();
+                return;
+              }
+
+              applyState(
+                setSelection(state, {
+                  anchor: start,
+                  focus: end,
+                }),
+              );
+              stopDragging();
               focusInput();
             }}
           />

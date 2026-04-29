@@ -21,6 +21,11 @@ interface EditorSurfaceProps {
     paragraphId: string,
     event: MouseEvent & { currentTarget: HTMLParagraphElement },
   ) => void;
+  onImageMouseDown: (
+    paragraphId: string,
+    paragraphOffset: number,
+    event: MouseEvent & { currentTarget: HTMLImageElement },
+  ) => void;
 }
 
 function paragraphStyleToCss(style?: Editor2ParagraphStyle): Record<string, string> | undefined {
@@ -121,6 +126,7 @@ function renderParagraph(
   paragraphIndex: number,
   state: Editor2State,
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
+  onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
 ) {
   const layout = projectParagraphLayout(paragraph);
   const chars = layout.fragments.flatMap((fragment) => fragment.chars);
@@ -210,11 +216,18 @@ function renderParagraph(
                     data-testid="editor-2-char"
                   >
                     {fragment.image ? (
-                      <img 
-                        src={fragment.image.src} 
-                        width={fragment.image.width} 
-                        height={fragment.image.height} 
-                        class="oasis-editor-2-image" 
+                      <img
+                        src={fragment.image.src}
+                        width={fragment.image.width}
+                        height={fragment.image.height}
+                        class="oasis-editor-2-image"
+                        classList={{
+                          "oasis-editor-2-image-selected": isCharSelected(char.paragraphOffset),
+                        }}
+                        data-testid="editor-2-image"
+                        onMouseDown={(event) =>
+                          onImageMouseDown(paragraph.id, char.paragraphOffset, event)
+                        }
                       />
                     ) : (
                       char.char
@@ -235,6 +248,7 @@ function renderTable(
   paragraphIndexById: Map<string, number>,
   state: Editor2State,
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
+  onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
 ) {
   return (
     <div class="oasis-editor-2-table-block" data-block-id={table.id} data-testid="editor-2-table">
@@ -253,6 +267,7 @@ function renderTable(
                             paragraphIndexById.get(paragraph.id) ?? 0,
                             state,
                             onParagraphMouseDown,
+                            onImageMouseDown,
                           )}
                       </For>
                     </td>
@@ -292,12 +307,14 @@ export function EditorSurface(props: EditorSurfaceProps) {
                         paragraphIndexById().get(block.sourceBlock.id) ?? 0,
                         props.state(),
                         props.onParagraphMouseDown,
+                        props.onImageMouseDown,
                       )
                     : renderTable(
                         block.sourceBlock,
                         paragraphIndexById(),
                         props.state(),
                         props.onParagraphMouseDown,
+                        props.onImageMouseDown,
                       );
                 }}
               </For>
