@@ -141,7 +141,7 @@ function normalizeRuns(runs: Editor2TextRun[], fallbackStyles?: Editor2TextStyle
     }
 
     const previous = merged[merged.length - 1];
-    if (previous && stylesEqual(previous.styles, run.styles)) {
+    if (previous && !run.image && !previous.image && stylesEqual(previous.styles, run.styles)) {
       previous.text += run.text;
       continue;
     }

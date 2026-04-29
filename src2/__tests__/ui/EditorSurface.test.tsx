@@ -116,6 +116,59 @@ describe("EditorSurface", () => {
     dispose();
   });
 
+  it("renders inline image runs as img elements with preserved dimensions", () => {
+    const container = document.createElement("div");
+    const paragraph = createEditor2ParagraphFromRuns([
+      { text: "A" },
+      {
+        text: "\uFFFC",
+        image: {
+          src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+          width: 48,
+          height: 24,
+        },
+      },
+      { text: "B" },
+    ]);
+    const state: Editor2State = {
+      document: createEditor2Document([paragraph]),
+      selection: {
+        anchor: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+        focus: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+      },
+    };
+
+    const dispose = render(
+      () => (
+        <EditorSurface
+          state={() => state}
+          onSurfaceMouseDown={() => undefined}
+          onParagraphMouseDown={() => undefined}
+        />
+      ),
+      container,
+    );
+
+    const image = container.querySelector(".oasis-editor-2-image") as HTMLImageElement;
+    const chars = container.querySelectorAll('[data-testid="editor-2-char"]');
+
+    expect(image).not.toBeNull();
+    expect(image.getAttribute("src")).toContain("data:image/png;base64,");
+    expect(image.getAttribute("width")).toBe("48");
+    expect(image.getAttribute("height")).toBe("24");
+    expect(chars.length).toBe(3);
+
+    dispose();
+  });
+
   it("applies paragraph layout styles from the semantic AST", () => {
     const container = document.createElement("div");
     const paragraph = createEditor2ParagraphFromRuns([{ text: "ab" }]);

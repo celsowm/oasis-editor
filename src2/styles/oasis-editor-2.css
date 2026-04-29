@@ -273,6 +273,12 @@ body {
   border-radius: 4px;
 }
 
+/* Table cell selection overlay fills the whole cell (Word-style) */
+.oasis-editor-2-selection-box:has(+ .oasis-editor-2-table-cell),
+.oasis-editor-2-selection-box {
+  border-radius: 2px;
+}
+
 .oasis-editor-2-caret {
   position: absolute;
   width: 0;

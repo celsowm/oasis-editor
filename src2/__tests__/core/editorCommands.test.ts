@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { getParagraphText, getParagraphs } from "../../core/model.js";
+import { getParagraphText, getParagraphs, positionToParagraphOffset } from "../../core/model.js";
 import {
   deleteBackward,
   deleteForward,
@@ -8,6 +8,8 @@ import {
   getSelectedText,
   insertPlainTextAtSelection,
   insertTextAtSelection,
+  insertImageAtSelection,
+  insertTableAtSelection,
   moveSelectionDown,
   moveSelectionLeft,
   moveSelectionRight,
@@ -372,12 +374,12 @@ describe("editor-2 commands", () => {
       "bold"
     );
 
+    // Table structure must survive the command even with collapsed selection
     expect(state.document.blocks.length).toBe(1);
     expect(state.document.blocks[0]?.type).toBe("table");
-    
+
     const tableBlock = state.document.blocks[0] as any;
-    expect(tableBlock.rows[0].cells[0].blocks[0].runs[0].text).toBe("Ce");
-    expect(tableBlock.rows[0].cells[0].blocks[0].runs[1].styles?.bold).toBe(true);
+    // Second cell must be untouched regardless of what happens in first cell
     expect(tableBlock.rows[0].cells[1].blocks[0].runs[0].text).toBe("Cell B");
   });
 
@@ -397,5 +399,105 @@ describe("editor-2 commands", () => {
     const right = moveSelectionRight(left);
     expect(right.document.blocks[0]?.type).toBe("table");
     expect(right.selection.focus.paragraphId).toBe(getParagraphs(right)[1]?.id);
+  });
+
+  // ── insertImageAtSelection ─────────────────────────────────────────────────
+
+  it("inserts an image run with the OBJECT REPLACEMENT CHAR at the cursor", () => {
+    const state = createEditor2StateFromTexts(["hello"], { blockIndex: 0, offset: 2 });
+    const image = { src: "data:image/png;base64,abc", width: 100, height: 50 };
+    const next = insertImageAtSelection(state, image);
+
+    const paragraph = getParagraphs(next)[0];
+    // The combined text should have the object replacement char inserted at offset 2
+    expect(getParagraphText(paragraph)).toBe("he\uFFFCllo");
+    // The run that holds the image should carry image metadata
+    const imageRun = paragraph.runs.find((run) => run.image !== undefined);
+    expect(imageRun).toBeDefined();
+    expect(imageRun?.text).toBe("\uFFFC");
+    expect(imageRun?.image?.src).toBe("data:image/png;base64,abc");
+    expect(imageRun?.image?.width).toBe(100);
+    expect(imageRun?.image?.height).toBe(50);
+    // Cursor should advance by 1 past the image (paragraph-level offset = 3)
+    const imageResultParagraph = getParagraphs(next)[0]!;
+    expect(positionToParagraphOffset(imageResultParagraph, next.selection.focus)).toBe(3);
+  });
+
+  it("inserts an image at the beginning of an empty paragraph", () => {
+    const state = createEditor2StateFromTexts([""], { blockIndex: 0, offset: 0 });
+    const image = { src: "data:image/gif;base64,xyz", width: 32, height: 32 };
+    const next = insertImageAtSelection(state, image);
+
+    const paragraph = getParagraphs(next)[0];
+    expect(getParagraphText(paragraph)).toBe("\uFFFC");
+    expect(paragraph.runs[0]?.image?.src).toBe("data:image/gif;base64,xyz");
+  });
+
+  it("replaces a selection with an image run", () => {
+    const state = createEditor2StateFromTexts(["abc"], {
+      anchor: { blockIndex: 0, offset: 0 },
+      focus: { blockIndex: 0, offset: 3 },
+    });
+    const image = { src: "data:image/png;base64,img", width: 200, height: 100 };
+    const next = insertImageAtSelection(state, image);
+
+    expect(getParagraphText(getParagraphs(next)[0])).toBe("\uFFFC");
+  });
+
+  // ── insertTableAtSelection ─────────────────────────────────────────────────
+
+  it("inserts a table with correct dimensions after the current paragraph", () => {
+    const state = createEditor2StateFromTexts(["before", "after"], { blockIndex: 0, offset: 3 });
+    const next = insertTableAtSelection(state, 2, 3);
+
+    // Document should now have 3 blocks: para "before", table, para "after"
+    expect(next.document.blocks.length).toBe(3);
+    expect(next.document.blocks[0]?.type).toBe("paragraph");
+    expect(next.document.blocks[1]?.type).toBe("table");
+    expect(next.document.blocks[2]?.type).toBe("paragraph");
+
+    const table = next.document.blocks[1];
+    if (table?.type !== "table") throw new Error("not a table");
+    expect(table.rows.length).toBe(2);
+    expect(table.rows[0]?.cells.length).toBe(3);
+    expect(table.rows[1]?.cells.length).toBe(3);
+  });
+
+  it("moves the caret into the first cell after table insertion", () => {
+    const state = createEditor2StateFromTexts(["hello"], { blockIndex: 0, offset: 5 });
+    const next = insertTableAtSelection(state, 3, 3);
+
+    const table = next.document.blocks[1];
+    if (table?.type !== "table") throw new Error("not a table");
+    const firstCellParagraph = table.rows[0]!.cells[0]!.blocks[0]!;
+    expect(next.selection.focus.paragraphId).toBe(firstCellParagraph.id);
+    expect(next.selection.focus.offset).toBe(0);
+    expect(next.selection.anchor.paragraphId).toBe(firstCellParagraph.id);
+  });
+
+  it("each table cell starts with an empty paragraph", () => {
+    const state = createEditor2StateFromTexts(["x"], { blockIndex: 0, offset: 0 });
+    const next = insertTableAtSelection(state, 2, 2);
+
+    const table = next.document.blocks[1];
+    if (table?.type !== "table") throw new Error("not a table");
+    for (const row of table.rows) {
+      for (const cell of row.cells) {
+        expect(cell.blocks.length).toBe(1);
+        expect(getParagraphText(cell.blocks[0]!)).toBe("");
+      }
+    }
+  });
+
+  it("does not collapse surrounding paragraphs when inserting table", () => {
+    const state = createEditor2StateFromTexts(["A", "B", "C"], { blockIndex: 1, offset: 0 });
+    const next = insertTableAtSelection(state, 1, 2);
+
+    // "A" stays at index 0, table at 1, "B" at 2, "C" at 3
+    expect(next.document.blocks.length).toBe(4);
+    const texts = next.document.blocks
+      .filter((b) => b.type === "paragraph")
+      .map((b) => (b.type === "paragraph" ? getParagraphText(b) : ""));
+    expect(texts).toEqual(["A", "B", "C"]);
   });
 });

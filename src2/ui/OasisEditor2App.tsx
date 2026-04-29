@@ -425,6 +425,93 @@ export function OasisEditor2App() {
     });
   };
 
+  const applySelectionToStatePreservingStructure = (
+    current: Editor2State,
+    nextSelection: Editor2State["selection"],
+  ): Editor2State => ({
+    document: {
+      ...current.document,
+      blocks: current.document.blocks.map(cloneDocumentBlock),
+    },
+    selection: {
+      anchor: { ...nextSelection.anchor },
+      focus: { ...nextSelection.focus },
+    },
+  });
+
+  const resolveTableCellRangeSelection = (
+    current: Editor2State,
+  ): Editor2State["selection"] | null => {
+    const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId);
+    const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (
+      !anchorLocation ||
+      !focusLocation ||
+      anchorLocation.blockIndex !== focusLocation.blockIndex ||
+      (anchorLocation.rowIndex === focusLocation.rowIndex &&
+        anchorLocation.cellIndex === focusLocation.cellIndex)
+    ) {
+      return null;
+    }
+
+    const tableBlock = current.document.blocks[anchorLocation.blockIndex];
+    if (!tableBlock || tableBlock.type !== "table") {
+      return null;
+    }
+
+    const compareCellLocations = (
+      left: NonNullable<typeof anchorLocation>,
+      right: NonNullable<typeof focusLocation>,
+    ) => {
+      if (left.rowIndex !== right.rowIndex) {
+        return left.rowIndex - right.rowIndex;
+      }
+      if (left.cellIndex !== right.cellIndex) {
+        return left.cellIndex - right.cellIndex;
+      }
+      return left.paragraphIndex - right.paragraphIndex;
+    };
+
+    const startLocation =
+      compareCellLocations(anchorLocation, focusLocation) <= 0 ? anchorLocation : focusLocation;
+    const endLocation =
+      compareCellLocations(anchorLocation, focusLocation) <= 0 ? focusLocation : anchorLocation;
+
+    const startParagraph =
+      tableBlock.rows[startLocation.rowIndex]?.cells[startLocation.cellIndex]?.blocks[0];
+    const endCell = tableBlock.rows[endLocation.rowIndex]?.cells[endLocation.cellIndex];
+    const endParagraph = endCell?.blocks[endCell.blocks.length - 1];
+    if (!startParagraph || !endParagraph) {
+      return null;
+    }
+
+    return {
+      anchor: paragraphOffsetToPosition(startParagraph, 0),
+      focus: paragraphOffsetToPosition(endParagraph, getParagraphText(endParagraph).length),
+    };
+  };
+
+  const withExpandedTableCellSelection = (current: Editor2State): Editor2State => {
+    const expandedSelection = resolveTableCellRangeSelection(current);
+    if (!expandedSelection) {
+      return current;
+    }
+
+    return applySelectionToStatePreservingStructure(current, expandedSelection);
+  };
+
+  const applySelectionAwareTextCommand = (
+    command: (current: Editor2State) => Editor2State,
+  ) => {
+    applyTransactionalState((current) => command(withExpandedTableCellSelection(current)));
+  };
+
+  const applySelectionAwareParagraphCommand = (
+    command: (current: Editor2State) => Editor2State,
+  ) => {
+    applyTransactionalState((current) => command(withExpandedTableCellSelection(current)));
+  };
+
   const resetTransactionGrouping = () => {
     lastTransactionMeta = null;
   };
@@ -543,7 +630,7 @@ export function OasisEditor2App() {
 
     clearPreferredColumn();
     resetTransactionGrouping();
-    applyTransactionalState((current) => toggleTextStyle(current, key));
+    applySelectionAwareTextCommand((current) => toggleTextStyle(current, key));
     focusInput();
   };
 
@@ -557,7 +644,7 @@ export function OasisEditor2App() {
 
     clearPreferredColumn();
     resetTransactionGrouping();
-    applyTransactionalState((current) => setTextStyleValue(current, key, value));
+    applySelectionAwareTextCommand((current) => setTextStyleValue(current, key, value));
     focusInput();
   };
 
@@ -567,7 +654,7 @@ export function OasisEditor2App() {
   ) => {
     clearPreferredColumn();
     resetTransactionGrouping();
-    applyTransactionalState((current) => setParagraphStyle(current, key, value));
+    applySelectionAwareParagraphCommand((current) => setParagraphStyle(current, key, value));
     focusInput();
   };
 
@@ -579,7 +666,7 @@ export function OasisEditor2App() {
   const applyParagraphListCommand = (kind: NonNullable<Editor2ParagraphListStyle["kind"]>) => {
     clearPreferredColumn();
     resetTransactionGrouping();
-    applyTransactionalState((current) => toggleParagraphList(current, kind));
+    applySelectionAwareParagraphCommand((current) => toggleParagraphList(current, kind));
     focusInput();
   };
 
@@ -651,7 +738,41 @@ export function OasisEditor2App() {
     const normalized = normalizeSelection(state);
     const nextSelectionBoxes: SelectionBox[] = [];
 
-    if (!normalized.isCollapsed) {
+    const anchorLocation = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId);
+    const focusLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId);
+
+    const isTableSelection = anchorLocation && focusLocation && 
+      anchorLocation.blockIndex === focusLocation.blockIndex &&
+      (anchorLocation.rowIndex !== focusLocation.rowIndex || anchorLocation.cellIndex !== focusLocation.cellIndex);
+
+    if (isTableSelection) {
+      const minRow = Math.min(anchorLocation.rowIndex, focusLocation.rowIndex);
+      const maxRow = Math.max(anchorLocation.rowIndex, focusLocation.rowIndex);
+      const minCol = Math.min(anchorLocation.cellIndex, focusLocation.cellIndex);
+      const maxCol = Math.max(anchorLocation.cellIndex, focusLocation.cellIndex);
+
+      const tableBlock = state.document.blocks[anchorLocation.blockIndex];
+      const tableId = tableBlock?.id;
+      if (tableId) {
+        const tableElement = surfaceRef.querySelector<HTMLElement>(`[data-block-id="${tableId}"]`);
+        if (tableElement) {
+          for (let r = minRow; r <= maxRow; r++) {
+            for (let c = minCol; c <= maxCol; c++) {
+              const cellElement = tableElement.querySelector<HTMLElement>(`[data-row-index="${r}"][data-cell-index="${c}"]`);
+              if (cellElement) {
+                const cellRect = cellElement.getBoundingClientRect();
+                nextSelectionBoxes.push({
+                  left: cellRect.left - surfaceRect.left,
+                  top: cellRect.top - surfaceRect.top,
+                  width: cellRect.width,
+                  height: cellRect.height,
+                });
+              }
+            }
+          }
+        }
+      }
+    } else if (!normalized.isCollapsed) {
       for (let paragraphIndex = normalized.startIndex; paragraphIndex <= normalized.endIndex; paragraphIndex += 1) {
         const paragraph = paragraphs[paragraphIndex];
         if (!paragraph) {
@@ -981,6 +1102,24 @@ export function OasisEditor2App() {
       return null;
     }
 
+    // If hovering over a table cell, return first char position of that cell
+    const cellElement = target.closest<HTMLElement>("td[data-cell-index]");
+    if (cellElement) {
+      const rowIndex = Number(cellElement.dataset.rowIndex ?? -1);
+      const cellIndex = Number(cellElement.dataset.cellIndex ?? -1);
+      if (rowIndex >= 0 && cellIndex >= 0) {
+        for (const block of state.document.blocks) {
+          if (block.type !== "table") continue;
+          const row = block.rows[rowIndex];
+          const cell = row?.cells[cellIndex];
+          const paragraph = cell?.blocks[0];
+          if (paragraph) {
+            return paragraphOffsetToPosition(paragraph, 0);
+          }
+        }
+      }
+    }
+
     const paragraphElement = target.closest<HTMLElement>("[data-paragraph-id]");
     if (!paragraphElement) {
       return null;
@@ -1166,7 +1305,7 @@ export function OasisEditor2App() {
         event.preventDefault();
         clearPreferredColumn();
         resetTransactionGrouping();
-        applyTransactionalState((current) =>
+        applySelectionAwareTextCommand((current) =>
           toggleTextStyle(
             current,
             lowerKey === "b" ? "bold" : lowerKey === "i" ? "italic" : "underline",
@@ -1632,6 +1771,19 @@ export function OasisEditor2App() {
               );
               const position = paragraphOffsetToPosition(paragraph, offset);
 
+              // For table cells, anchor to the cell's first char position so
+              // dragging produces a proper cell-level selection
+              const cellLocation = findParagraphTableLocation(state.document, paragraphId);
+              const anchorPosition = cellLocation
+                ? (() => {
+                    const block = state.document.blocks[cellLocation.blockIndex];
+                    const cellParagraph = block?.type === "table"
+                      ? block.rows[cellLocation.rowIndex]?.cells[cellLocation.cellIndex]?.blocks[0]
+                      : undefined;
+                    return cellParagraph ? paragraphOffsetToPosition(cellParagraph, 0) : position;
+                  })()
+                : position;
+
               if (event.shiftKey) {
                 dragAnchor = state.selection.anchor;
                 applyState(
@@ -1673,7 +1825,7 @@ export function OasisEditor2App() {
                 return;
               }
 
-              dragAnchor = position;
+              dragAnchor = cellLocation ? anchorPosition : position;
               applyState(
                 setSelection(state, {
                   anchor: position,
@@ -1688,7 +1840,14 @@ export function OasisEditor2App() {
 
           {!isSelectionCollapsed(state.selection) ? <SelectionOverlay boxes={selectionBoxes()} /> : null}
 
-          {caretBox().visible && isSelectionCollapsed(state.selection) ? (
+          {caretBox().visible && isSelectionCollapsed(state.selection) && (() => {
+            const anchorLoc = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId);
+            const focusLoc = findParagraphTableLocation(state.document, state.selection.focus.paragraphId);
+            const inTableSelection = anchorLoc && focusLoc &&
+              anchorLoc.blockIndex === focusLoc.blockIndex &&
+              (anchorLoc.rowIndex !== focusLoc.rowIndex || anchorLoc.cellIndex !== focusLoc.cellIndex);
+            return !inTableSelection;
+          })() ? (
             <CaretOverlay
               active={focused()}
               left={caretBox().left}

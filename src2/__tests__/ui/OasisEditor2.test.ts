@@ -663,6 +663,77 @@ describe("OasisEditor2", () => {
     instance.dispose();
   });
 
+  it("inserts an inline image through the hidden image input", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const imageInput = root.querySelector(
+      '[data-testid="editor-2-insert-image-input"]',
+    ) as HTMLInputElement;
+    const file = new File(
+      [
+        Uint8Array.from([
+          137, 80, 78, 71, 13, 10, 26, 10,
+          0, 0, 0, 13, 73, 72, 68, 82,
+          0, 0, 0, 1, 0, 0, 0, 1,
+          8, 6, 0, 0, 0, 31, 21, 196, 137,
+          0, 0, 0, 13, 73, 68, 65, 84,
+          120, 218, 99, 252, 255, 159, 161, 30,
+          0, 7, 130, 2, 127, 63, 201, 164, 116,
+          0, 0, 0, 0, 73, 69, 78, 68,
+          174, 66, 96, 130,
+        ]),
+      ],
+      "inline.png",
+      { type: "image/png" },
+    );
+
+    const OriginalImage = globalThis.Image;
+    class MockImage {
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+      naturalWidth = 64;
+      naturalHeight = 32;
+
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
+    }
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      value: MockImage,
+    });
+
+    try {
+      Object.defineProperty(imageInput, "files", {
+        configurable: true,
+        value: [file],
+      });
+
+      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const image = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
+        if (image?.getAttribute("width") === "64") {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const image = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
+      expect(image).not.toBeNull();
+      expect(image?.getAttribute("src")).toContain("data:image/png;base64,");
+      expect(image?.getAttribute("width")).toBe("64");
+      expect(image?.getAttribute("height")).toBe("32");
+      expect(imageInput.value).toBe("");
+    } finally {
+      Object.defineProperty(globalThis, "Image", {
+        configurable: true,
+        value: OriginalImage,
+      });
+    }
+
+    instance.dispose();
+  });
+
   it("moves between imported table cells with tab and shift plus tab", async () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
@@ -741,6 +812,64 @@ describe("OasisEditor2", () => {
     instance.dispose();
   });
 
+  it("applies bold to the full visual table-cell range including the last cell", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const importInput = root.querySelector(
+      '[data-testid="editor-2-import-docx-input"]',
+    ) as HTMLInputElement;
+    const boldButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-bold"]',
+    ) as HTMLButtonElement;
+    const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:tbl>
+            <w:tr>
+              <w:tc><w:p><w:r><w:t>asd</w:t></w:r></w:p></w:tc>
+              <w:tc><w:p><w:r><w:t>asd</w:t></w:r></w:p></w:tc>
+              <w:tc><w:p><w:r><w:t>asd</w:t></w:r></w:p></w:tc>
+            </w:tr>
+          </w:tbl>
+        </w:body>
+      </w:document>`);
+
+    Object.defineProperty(importInput, "files", {
+      configurable: true,
+      value: [file],
+    });
+
+    importInput.dispatchEvent(new Event("change", { bubbles: true }));
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 3) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    const paragraphs = root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"] [data-paragraph-id]');
+    expect(paragraphs.length).toBe(3);
+
+    paragraphs[2]!.dispatchEvent(
+      new MouseEvent("mousedown", {
+        bubbles: true,
+        shiftKey: true,
+        clientX: 5,
+        clientY: 5,
+      }),
+    );
+    await Promise.resolve();
+
+    boldButton.click();
+    await Promise.resolve();
+
+    const runs = root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"] [data-testid="editor-2-run"]');
+    expect(runs.length).toBe(3);
+    expect(Array.from(runs).map((run) => run.style.fontWeight)).toEqual(["700", "700", "700"]);
+
+    instance.dispose();
+  });
+
   it("exports the current document through a download link", async () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
@@ -801,6 +930,94 @@ describe("OasisEditor2", () => {
         value: previousClick,
       });
     }
+
+    instance.dispose();
+  });
+
+  it("renders the Insert Table toolbar button", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+
+    const insertTableButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-insert-table"]',
+    ) as HTMLButtonElement;
+    expect(insertTableButton).not.toBeNull();
+
+    instance.dispose();
+  });
+
+  it("inserts a 3x3 table into the document on Insert Table click", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const insertTableButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-insert-table"]',
+    ) as HTMLButtonElement;
+
+    insertTableButton.click();
+    await Promise.resolve();
+
+    const tableGrid = root.querySelector('[data-testid="editor-2-table-grid"]');
+    expect(tableGrid).not.toBeNull();
+
+    const rows = root.querySelectorAll('[data-testid="editor-2-table-row"]');
+    expect(rows.length).toBe(3);
+
+    const cells = root.querySelectorAll('[data-testid="editor-2-table-cell"]');
+    expect(cells.length).toBe(9);
+
+    instance.dispose();
+  });
+
+  it("moves the caret into the first cell after Insert Table", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const insertTableButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-insert-table"]',
+    ) as HTMLButtonElement;
+
+    input.value = "before";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "before", inputType: "insertText" }));
+    await Promise.resolve();
+
+    insertTableButton.click();
+    await Promise.resolve();
+
+    // After inserting, the first cell should be in the DOM and text typed goes there
+    input.value = "cell";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "cell", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const firstCell = root.querySelector('[data-testid="editor-2-table-cell"]') as HTMLElement;
+    expect(firstCell?.textContent?.replace(/\u00A0/g, "")).toBe("cell");
+
+    instance.dispose();
+  });
+
+  it("renders cell data-row-index and data-cell-index attributes for selection", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const insertTableButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-insert-table"]',
+    ) as HTMLButtonElement;
+
+    insertTableButton.click();
+    await Promise.resolve();
+
+    const cells = root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]');
+    expect(cells.length).toBe(9);
+
+    // First row cells
+    expect(cells[0]?.dataset.rowIndex).toBe("0");
+    expect(cells[0]?.dataset.cellIndex).toBe("0");
+    expect(cells[1]?.dataset.rowIndex).toBe("0");
+    expect(cells[1]?.dataset.cellIndex).toBe("1");
+    expect(cells[2]?.dataset.rowIndex).toBe("0");
+    expect(cells[2]?.dataset.cellIndex).toBe("2");
+
+    // Second row first cell
+    expect(cells[3]?.dataset.rowIndex).toBe("1");
+    expect(cells[3]?.dataset.cellIndex).toBe("0");
 
     instance.dispose();
   });

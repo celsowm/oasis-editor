@@ -124,31 +124,36 @@ function renderParagraph(
 ) {
   const layout = projectParagraphLayout(paragraph);
   const chars = layout.fragments.flatMap((fragment) => fragment.chars);
-  const normalized = normalizeSelection(state);
-  const isEmptyBlockSelected =
-    !normalized.isCollapsed &&
-    getParagraphText(paragraph).length === 0 &&
-    paragraphIndex >= normalized.startIndex &&
-    paragraphIndex <= normalized.endIndex;
+  const normalized = () => normalizeSelection(state);
+  const isEmptyBlockSelected = () => {
+    const current = normalized();
+    return (
+      !current.isCollapsed &&
+      getParagraphText(paragraph).length === 0 &&
+      paragraphIndex >= current.startIndex &&
+      paragraphIndex <= current.endIndex
+    );
+  };
   const isCharSelected = (charIndex: number) => {
-    if (normalized.isCollapsed) {
+    const current = normalized();
+    if (current.isCollapsed) {
       return false;
     }
 
-    if (paragraphIndex < normalized.startIndex || paragraphIndex > normalized.endIndex) {
+    if (paragraphIndex < current.startIndex || paragraphIndex > current.endIndex) {
       return false;
     }
 
-    if (normalized.startIndex === normalized.endIndex) {
-      return charIndex >= normalized.startParagraphOffset && charIndex < normalized.endParagraphOffset;
+    if (current.startIndex === current.endIndex) {
+      return charIndex >= current.startParagraphOffset && charIndex < current.endParagraphOffset;
     }
 
-    if (paragraphIndex === normalized.startIndex) {
-      return charIndex >= normalized.startParagraphOffset;
+    if (paragraphIndex === current.startIndex) {
+      return charIndex >= current.startParagraphOffset;
     }
 
-    if (paragraphIndex === normalized.endIndex) {
-      return charIndex < normalized.endParagraphOffset;
+    if (paragraphIndex === current.endIndex) {
+      return charIndex < current.endParagraphOffset;
     }
 
     return true;
@@ -175,7 +180,7 @@ function renderParagraph(
           <span
             classList={{
               "oasis-editor-2-empty-char": true,
-              "oasis-editor-2-empty-char-selected": isEmptyBlockSelected,
+              "oasis-editor-2-empty-char-selected": isEmptyBlockSelected(),
             }}
             data-empty-block="true"
             data-testid="editor-2-empty-char"
@@ -236,11 +241,11 @@ function renderTable(
       <table class="oasis-editor-2-table-grid" data-testid="editor-2-table-grid">
         <tbody>
           <For each={table.rows}>
-            {(row) => (
-              <tr class="oasis-editor-2-table-row" data-testid="editor-2-table-row">
+            {(row, rowIndex) => (
+              <tr class="oasis-editor-2-table-row" data-testid="editor-2-table-row" data-row-index={rowIndex()}>
                 <For each={row.cells}>
-                  {(cell) => (
-                    <td class="oasis-editor-2-table-cell" data-testid="editor-2-table-cell">
+                  {(cell, cellIndex) => (
+                    <td class="oasis-editor-2-table-cell" data-testid="editor-2-table-cell" data-row-index={rowIndex()} data-cell-index={cellIndex()}>
                       <For each={cell.blocks}>
                         {(paragraph) =>
                           renderParagraph(
