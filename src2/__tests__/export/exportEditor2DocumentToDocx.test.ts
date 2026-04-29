@@ -6,12 +6,17 @@ import {
   createEditor2Table,
   createEditor2TableCell,
   createEditor2TableRow,
+  createEditor2StateFromDocument,
   resetEditor2Ids,
 } from "../../core/editorState.js";
+import { moveSelectedImageToPosition } from "../../core/editorCommands.js";
 import { exportEditor2DocumentToDocx } from "../../export/docx/exportEditor2DocumentToDocx.js";
 import { importDocxToEditor2Document } from "../../import/docx/importDocxToEditor2Document.js";
-import { getParagraphText } from "../../core/model.js";
-import { createDocxRoundTripFixtures } from "../fixtures/docxRoundTripFixtures.js";
+import { getParagraphText, getParagraphs, paragraphOffsetToPosition } from "../../core/model.js";
+import {
+  createDocxRoundTripFixtures,
+  createMixedTableAndImageFixture,
+} from "../fixtures/docxRoundTripFixtures.js";
 import { normalizeEditor2Document } from "../shared/normalizeEditor2Document.js";
 
 describe("exportEditor2DocumentToDocx", () => {
@@ -249,6 +254,44 @@ describe("exportEditor2DocumentToDocx", () => {
     expect(importedTable.rows[1]!.cells[0]!.vMerge).toBe("continue");
   });
 
+  it("exports and reimports mixed table spans", async () => {
+    const mergedTopCell = createEditor2TableCell(
+      [createEditor2ParagraphFromRuns([{ text: "Merged" }])],
+      2,
+      {
+        rowSpan: 2,
+        vMerge: "restart",
+      },
+    );
+    const row1Tail = createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "Row1Tail" }])]);
+    const continuedCell = createEditor2TableCell(
+      [createEditor2ParagraphFromRuns([{ text: "Hidden" }])],
+      2,
+      {
+        vMerge: "continue",
+      },
+    );
+    continuedCell.blocks = [];
+    const row2Tail = createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "Row2Tail" }])]);
+    const table = createEditor2Table([
+      createEditor2TableRow([mergedTopCell, row1Tail]),
+      createEditor2TableRow([continuedCell, row2Tail]),
+    ]);
+
+    const document = createEditor2Document([table]);
+    const buffer = await exportEditor2DocumentToDocx(document);
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+
+    expect(documentXml).toContain('<w:gridSpan w:val="2"/>');
+    expect(documentXml).toContain('<w:vMerge w:val="restart"/>');
+    expect(documentXml).toContain("<w:vMerge/>");
+
+    resetEditor2Ids();
+    const imported = await importDocxToEditor2Document(buffer);
+    expect(normalizeEditor2Document(imported)).toEqual(normalizeEditor2Document(document));
+  });
+
   it("exports and reimports inline images via DOCX relationships", async () => {
     const paragraph = createEditor2ParagraphFromRuns([
       { text: "Look: " },
@@ -315,5 +358,111 @@ describe("exportEditor2DocumentToDocx", () => {
     expect(importedCellParagraph.runs[1]?.image).toBeDefined();
     expect(importedCellParagraph.runs[1]?.image?.width).toBe(272);
     expect(importedCellParagraph.runs[1]?.image?.height).toBe(102);
+  });
+
+  it("exports and reimports inline images inside mixed-span table cells", async () => {
+    const imageRun = {
+      text: "\uFFFC",
+      image: {
+        src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+        width: 272,
+        height: 102,
+      },
+    };
+    const table = createEditor2Table([
+      createEditor2TableRow([
+        createEditor2TableCell(
+          [createEditor2ParagraphFromRuns([{ text: "Merged " }, imageRun])],
+          2,
+          { rowSpan: 2, vMerge: "restart" },
+        ),
+        createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "TopRight" }])]),
+      ]),
+      createEditor2TableRow([
+        (() => {
+          const cell = createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "" }])], 2, {
+            vMerge: "continue",
+          });
+          cell.blocks = [];
+          return cell;
+        })(),
+        createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "BottomRight" }])]),
+      ]),
+    ]);
+    const document = createEditor2Document([table]);
+
+    const buffer = await exportEditor2DocumentToDocx(document);
+    const zip = await JSZip.loadAsync(buffer);
+    const docXml = await zip.file("word/document.xml")?.async("string");
+    const relsXml = await zip.file("word/_rels/document.xml.rels")?.async("string");
+
+    expect(docXml).toContain('<w:gridSpan w:val="2"/>');
+    expect(docXml).toContain('<w:vMerge w:val="restart"/>');
+    expect(docXml).toContain("<w:drawing>");
+    expect(relsXml).toContain("/image");
+
+    resetEditor2Ids();
+    const imported = await importDocxToEditor2Document(buffer);
+    const importedTable = imported.blocks[0];
+    if (importedTable?.type !== "table") {
+      throw new Error("Expected imported table block");
+    }
+
+    const importedMergedCellParagraph = importedTable.rows[0]!.cells[0]!.blocks[0]!;
+    expect(getParagraphText(importedMergedCellParagraph)).toBe("Merged \uFFFC");
+    expect(importedMergedCellParagraph.runs[1]?.image).toBeDefined();
+    expect(importedMergedCellParagraph.runs[1]?.image?.width).toBe(272);
+    expect(importedMergedCellParagraph.runs[1]?.image?.height).toBe(102);
+    expect(importedTable.rows[0]!.cells[0]!.colSpan).toBe(2);
+    expect(importedTable.rows[0]!.cells[0]!.rowSpan).toBe(2);
+    expect(importedTable.rows[1]!.cells[0]!.colSpan).toBe(2);
+    expect(importedTable.rows[1]!.cells[0]!.vMerge).toBe("continue");
+  });
+
+  it("round-trips mixed table spans with an inline image after a core move", async () => {
+    const original = createMixedTableAndImageFixture();
+    const state = createEditor2StateFromDocument(original, { paragraphIndex: 1, offset: 7 });
+    const paragraphs = getParagraphs(state);
+    const sourceParagraph = paragraphs[1];
+    const targetParagraph = paragraphs[2];
+    if (!sourceParagraph || !targetParagraph) {
+      throw new Error("Expected source and target paragraphs");
+    }
+
+    const moved = moveSelectedImageToPosition(
+      {
+        ...state,
+        selection: {
+          anchor: paragraphOffsetToPosition(sourceParagraph, 7),
+          focus: paragraphOffsetToPosition(sourceParagraph, 8),
+        },
+      },
+      paragraphOffsetToPosition(targetParagraph, 0),
+    );
+
+    const buffer = await exportEditor2DocumentToDocx(moved.document);
+    resetEditor2Ids();
+    const imported = await importDocxToEditor2Document(buffer);
+
+    const expected = createMixedTableAndImageFixture();
+    const expectedTable = expected.blocks[1];
+    if (expectedTable?.type !== "table") {
+      throw new Error("Expected table block");
+    }
+    const expectedSourceCellParagraph = expectedTable.rows[0]!.cells[0]!.blocks[0]!;
+    expectedSourceCellParagraph.runs = createEditor2ParagraphFromRuns([{ text: "Merged " }]).runs;
+    expectedTable.rows[0]!.cells[1]!.blocks[0]!.runs = createEditor2ParagraphFromRuns([
+      {
+        text: "\uFFFC",
+        image: {
+          src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+          width: 64,
+          height: 32,
+        },
+      },
+      { text: "TopRight" },
+    ]).runs;
+
+    expect(normalizeEditor2Document(imported)).toEqual(normalizeEditor2Document(expected));
   });
 });

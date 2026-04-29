@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup } from "solid-js";
+import { createEffect, createSignal, onCleanup, Show } from "solid-js";
 import { createStore } from "solid-js/store";
 import { EditorSurface } from "./components/EditorSurface.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
@@ -21,6 +21,7 @@ import {
   insertImageAtSelection,
   insertTableAtSelection,
   moveSelectionDown,
+  moveSelectedImageToPosition,
   resizeSelectedImage,
   moveSelectionLeft,
   moveSelectionRight,
@@ -36,6 +37,7 @@ import {
   createEditor2Document,
   createEditor2Paragraph,
   createEditor2TableCell,
+  createEditor2TableRow,
   createInitialEditor2State,
   createEditor2StateFromDocument,
 } from "../core/editorState.js";
@@ -44,6 +46,10 @@ import {
   type Editor2BlockNode,
   type Editor2ParagraphNode,
   type Editor2ParagraphListStyle,
+  type Editor2TableCellNode,
+  type Editor2TableNode,
+  type Editor2TableRowNode,
+  getParagraphLength,
   getParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
@@ -75,6 +81,16 @@ interface SelectionBox {
   height: number;
 }
 
+interface TableCellLayoutEntry {
+  rowIndex: number;
+  cellIndex: number;
+  visualRowIndex: number;
+  visualColumnIndex: number;
+  rowSpan: number;
+  colSpan: number;
+  cell: Editor2TableCellNode;
+}
+
 interface ActiveImageResize {
   paragraphId: string;
   paragraphOffset: number;
@@ -83,6 +99,14 @@ interface ActiveImageResize {
   startHeight: number;
   aspectRatio: number;
   initialState: Editor2State;
+}
+
+interface ActiveImageDrag {
+  paragraphId: string;
+  paragraphOffset: number;
+  startClientX: number;
+  startClientY: number;
+  dragging: boolean;
 }
 
 const DEFAULT_MAX_INSERTED_IMAGE_WIDTH = 684;
@@ -191,6 +215,33 @@ async function readFileBuffer(file: File): Promise<ArrayBuffer> {
   });
 }
 
+function findImageFileFromTransfer(
+  transfer: Pick<DataTransfer, "files" | "items"> | null | undefined,
+): File | null {
+  if (!transfer) {
+    return null;
+  }
+
+  for (const item of Array.from(transfer.items ?? [])) {
+    if (item.kind !== "file") {
+      continue;
+    }
+
+    const file = item.getAsFile();
+    if (file && file.type.startsWith("image/")) {
+      return file;
+    }
+  }
+
+  for (const file of Array.from(transfer.files ?? [])) {
+    if (file.type.startsWith("image/")) {
+      return file;
+    }
+  }
+
+  return null;
+}
+
 function collectCharRects(blockElement: HTMLElement): Array<{
   left: number;
   right: number;
@@ -212,6 +263,56 @@ function collectCharRects(blockElement: HTMLElement): Array<{
 
 function getEmptyBlockRect(blockElement: HTMLElement): DOMRect | null {
   return blockElement.querySelector<HTMLElement>('[data-testid="editor-2-empty-char"]')?.getBoundingClientRect() ?? null;
+}
+
+function buildTableCellLayout(table: Editor2TableNode): TableCellLayoutEntry[] {
+  const occupiedColumns: number[] = [];
+  const entries: TableCellLayoutEntry[] = [];
+
+  for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
+    const row = table.rows[rowIndex];
+    let visualColumnIndex = 0;
+
+    for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+      while (occupiedColumns[visualColumnIndex] > 0) {
+        visualColumnIndex += 1;
+      }
+
+      const cell = row.cells[cellIndex];
+      if (cell.vMerge === "continue") {
+        continue;
+      }
+
+      const colSpan = Math.max(1, cell.colSpan ?? 1);
+      const rowSpan = Math.max(1, cell.rowSpan ?? 1);
+      entries.push({
+        rowIndex,
+        cellIndex,
+        visualRowIndex: rowIndex,
+        visualColumnIndex,
+        rowSpan,
+        colSpan,
+        cell,
+      });
+
+      for (let colOffset = 0; colOffset < colSpan; colOffset += 1) {
+        occupiedColumns[visualColumnIndex + colOffset] = Math.max(
+          occupiedColumns[visualColumnIndex + colOffset] ?? 0,
+          rowSpan,
+        );
+      }
+
+      visualColumnIndex += colSpan;
+    }
+
+    for (let columnIndex = 0; columnIndex < occupiedColumns.length; columnIndex += 1) {
+      if (occupiedColumns[columnIndex] > 0) {
+        occupiedColumns[columnIndex] -= 1;
+      }
+    }
+  }
+
+  return entries;
 }
 
 function resolveClickOffset(
@@ -405,6 +506,7 @@ export function OasisEditor2App() {
   let imageInputRef: HTMLInputElement | undefined;
   let syncRequestId = 0;
   let dragAnchor: Editor2Position | null = null;
+  let activeImageDrag: ActiveImageDrag | null = null;
   let activeImageResize: ActiveImageResize | null = null;
   let lastTransactionMeta: { mergeKey: string; timestamp: number } | null = null;
   let suppressedInputText: string | null = null;
@@ -526,23 +628,34 @@ export function OasisEditor2App() {
       return null;
     }
 
+    const tableLayout = buildTableCellLayout(tableBlock);
+    const anchorCell = tableLayout.find(
+      (entry) =>
+        entry.rowIndex === anchorLocation.rowIndex && entry.cellIndex === anchorLocation.cellIndex,
+    );
+    const focusCell = tableLayout.find(
+      (entry) =>
+        entry.rowIndex === focusLocation.rowIndex && entry.cellIndex === focusLocation.cellIndex,
+    );
+    if (!anchorCell || !focusCell) {
+      return null;
+    }
+
     const compareCellLocations = (
-      left: NonNullable<typeof anchorLocation>,
-      right: NonNullable<typeof focusLocation>,
+      left: TableCellLayoutEntry,
+      right: TableCellLayoutEntry,
     ) => {
-      if (left.rowIndex !== right.rowIndex) {
-        return left.rowIndex - right.rowIndex;
+      if (left.visualRowIndex !== right.visualRowIndex) {
+        return left.visualRowIndex - right.visualRowIndex;
       }
-      if (left.cellIndex !== right.cellIndex) {
-        return left.cellIndex - right.cellIndex;
+      if (left.visualColumnIndex !== right.visualColumnIndex) {
+        return left.visualColumnIndex - right.visualColumnIndex;
       }
-      return left.paragraphIndex - right.paragraphIndex;
+      return 0;
     };
 
-    const startLocation =
-      compareCellLocations(anchorLocation, focusLocation) <= 0 ? anchorLocation : focusLocation;
-    const endLocation =
-      compareCellLocations(anchorLocation, focusLocation) <= 0 ? focusLocation : anchorLocation;
+    const startLocation = compareCellLocations(anchorCell, focusCell) <= 0 ? anchorLocation : focusLocation;
+    const endLocation = compareCellLocations(anchorCell, focusCell) <= 0 ? focusLocation : anchorLocation;
 
     const startParagraph =
       tableBlock.rows[startLocation.rowIndex]?.cells[startLocation.cellIndex]?.blocks[0];
@@ -581,29 +694,40 @@ export function OasisEditor2App() {
       return null;
     }
 
-    const compareCellLocations = (
-      left: NonNullable<typeof anchorLocation>,
-      right: NonNullable<typeof focusLocation>,
-    ) => {
-      if (left.rowIndex !== right.rowIndex) {
-        return left.rowIndex - right.rowIndex;
-      }
-      if (left.cellIndex !== right.cellIndex) {
-        return left.cellIndex - right.cellIndex;
-      }
-      return left.paragraphIndex - right.paragraphIndex;
-    };
-
-    const startLocation =
-      compareCellLocations(anchorLocation, focusLocation) <= 0 ? anchorLocation : focusLocation;
-    const endLocation =
-      compareCellLocations(anchorLocation, focusLocation) <= 0 ? focusLocation : anchorLocation;
-
-    if (startLocation.rowIndex !== endLocation.rowIndex) {
+    const tableLayout = buildTableCellLayout(tableBlock);
+    const anchorCell = tableLayout.find(
+      (entry) =>
+        entry.rowIndex === anchorLocation.rowIndex && entry.cellIndex === anchorLocation.cellIndex,
+    );
+    const focusCell = tableLayout.find(
+      (entry) =>
+        entry.rowIndex === focusLocation.rowIndex && entry.cellIndex === focusLocation.cellIndex,
+    );
+    if (!anchorCell || !focusCell) {
       return null;
     }
 
-    if (endLocation.cellIndex <= startLocation.cellIndex) {
+    const compareCellLocations = (
+      left: TableCellLayoutEntry,
+      right: TableCellLayoutEntry,
+    ) => {
+      if (left.visualRowIndex !== right.visualRowIndex) {
+        return left.visualRowIndex - right.visualRowIndex;
+      }
+      if (left.visualColumnIndex !== right.visualColumnIndex) {
+        return left.visualColumnIndex - right.visualColumnIndex;
+      }
+      return 0;
+    };
+
+    const startLocation = compareCellLocations(anchorCell, focusCell) <= 0 ? anchorLocation : focusLocation;
+    const endLocation = compareCellLocations(anchorCell, focusCell) <= 0 ? focusLocation : anchorLocation;
+
+    if (anchorCell.visualRowIndex !== focusCell.visualRowIndex) {
+      return null;
+    }
+
+    if (compareCellLocations(anchorCell, focusCell) === 0) {
       return null;
     }
 
@@ -659,8 +783,21 @@ export function OasisEditor2App() {
       return null;
     }
 
-    const startRowIndex = Math.min(anchorLocation.rowIndex, focusLocation.rowIndex);
-    const endRowIndex = Math.max(anchorLocation.rowIndex, focusLocation.rowIndex);
+    const tableLayout = buildTableCellLayout(tableBlock);
+    const anchorCell = tableLayout.find(
+      (entry) =>
+        entry.rowIndex === anchorLocation.rowIndex && entry.cellIndex === anchorLocation.cellIndex,
+    );
+    const focusCell = tableLayout.find(
+      (entry) =>
+        entry.rowIndex === focusLocation.rowIndex && entry.cellIndex === focusLocation.cellIndex,
+    );
+    if (!anchorCell || !focusCell) {
+      return null;
+    }
+
+    const startRowIndex = Math.min(anchorCell.visualRowIndex, focusCell.visualRowIndex);
+    const endRowIndex = Math.max(anchorCell.visualRowIndex, focusCell.visualRowIndex);
     if (startRowIndex === endRowIndex) {
       return null;
     }
@@ -675,7 +812,27 @@ export function OasisEditor2App() {
 
   const canMergeSelectedTableRows = (current: Editor2State): boolean => {
     const range = resolveVerticalTableCellRange(current);
-    return Boolean(range);
+    if (!range) {
+      return false;
+    }
+
+    const tableBlock = current.document.blocks[range.blockIndex];
+    if (!tableBlock || tableBlock.type !== "table") {
+      return false;
+    }
+
+    for (let rowIndex = range.startRowIndex; rowIndex <= range.endRowIndex; rowIndex += 1) {
+      const cell = tableBlock.rows[rowIndex]?.cells[range.cellIndex];
+      if (!cell || cell.vMerge === "continue" || cell.blocks.length !== 1) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const canMergeSelectedTable = (current: Editor2State): boolean => {
+    return canMergeSelectedTableCells(current) || canMergeSelectedTableRows(current);
   };
 
   const canSplitSelectedTableCellVertically = (current: Editor2State): boolean => {
@@ -691,6 +848,10 @@ export function OasisEditor2App() {
 
     const cell = block.rows[location.rowIndex]?.cells[location.cellIndex];
     return Boolean((cell?.rowSpan ?? 1) > 1 && cell?.vMerge === "restart");
+  };
+
+  const canSplitSelectedTable = (current: Editor2State): boolean => {
+    return canSplitSelectedTableCell(current) || canSplitSelectedTableCellVertically(current);
   };
 
   const mergeSelectedTableCells = (current: Editor2State): Editor2State => {
@@ -756,13 +917,18 @@ export function OasisEditor2App() {
     for (let rowIndex = range.startRowIndex; rowIndex <= range.endRowIndex; rowIndex += 1) {
       const row = tableBlock.rows[rowIndex];
       const cell = row?.cells[range.cellIndex];
-      if (!row || !cell || cell.vMerge === "continue") {
+      if (!row || !cell || cell.vMerge === "continue" || cell.blocks.length !== 1) {
         return current;
       }
       selectedCells.push(cell);
     }
 
     if (selectedCells.length < 2) {
+      return current;
+    }
+
+    const mergedColSpan = Math.max(1, selectedCells[0]!.colSpan ?? 1);
+    if (!selectedCells.every((cell) => Math.max(1, cell.colSpan ?? 1) === mergedColSpan)) {
       return current;
     }
 
@@ -777,7 +943,7 @@ export function OasisEditor2App() {
     tableBlock.rows[range.startRowIndex]!.cells[range.cellIndex] = mergedCell;
 
     for (let rowIndex = range.startRowIndex + 1; rowIndex <= range.endRowIndex; rowIndex += 1) {
-      const placeholder = createEditor2TableCell([createEditor2Paragraph("")]);
+      const placeholder = createEditor2TableCell([createEditor2Paragraph("")], mergedColSpan);
       placeholder.blocks = [];
       placeholder.vMerge = "continue";
       tableBlock.rows[rowIndex]!.cells[range.cellIndex] = placeholder;
@@ -798,6 +964,18 @@ export function OasisEditor2App() {
         focus: paragraphOffsetToPosition(nextParagraph, 0),
       },
     };
+  };
+
+  const mergeSelectedTable = (current: Editor2State): Editor2State => {
+    if (canMergeSelectedTableCells(current)) {
+      return mergeSelectedTableCells(current);
+    }
+
+    if (canMergeSelectedTableRows(current)) {
+      return mergeSelectedTableRows(current);
+    }
+
+    return current;
   };
 
   const splitSelectedTableCellVertically = (current: Editor2State): Editor2State => {
@@ -821,18 +999,554 @@ export function OasisEditor2App() {
     cell.rowSpan = undefined;
     cell.vMerge = undefined;
 
+    const preservedColSpan = Math.max(1, cell.colSpan ?? 1);
+
     for (let offset = 1; offset < span; offset += 1) {
       const row = tableBlock.rows[location.rowIndex + offset];
       if (!row) {
         break;
       }
-      const replacement = createEditor2TableCell([createEditor2Paragraph("")]);
+      const replacement = createEditor2TableCell([createEditor2Paragraph("")], preservedColSpan);
       row.cells[location.cellIndex] = replacement;
     }
 
     const nextParagraph = cell.blocks[0];
     if (!nextParagraph) {
       return current;
+    }
+
+    return {
+      document: {
+        ...current.document,
+        blocks,
+      },
+      selection: {
+        anchor: paragraphOffsetToPosition(nextParagraph, 0),
+        focus: paragraphOffsetToPosition(nextParagraph, 0),
+      },
+    };
+  };
+
+  const splitSelectedTable = (current: Editor2State): Editor2State => {
+    if (canSplitSelectedTableCell(current)) {
+      return splitSelectedTableCell(current);
+    }
+
+    if (canSplitSelectedTableCellVertically(current)) {
+      return splitSelectedTableCellVertically(current);
+    }
+
+    return current;
+  };
+
+  const hasHorizontalSpans = (table: Editor2TableNode): boolean =>
+    table.rows.some((row) => row.cells.some((cell) => Math.max(1, cell.colSpan ?? 1) > 1));
+
+  const hasVerticalSpans = (table: Editor2TableNode): boolean =>
+    table.rows.some((row) =>
+      row.cells.some((cell) => Math.max(1, cell.rowSpan ?? 1) > 1 || cell.vMerge !== undefined),
+    );
+
+  const hasMixedSpans = (table: Editor2TableNode): boolean =>
+    hasHorizontalSpans(table) && hasVerticalSpans(table);
+
+  const getRowVisualWidth = (row: Editor2TableRowNode): number =>
+    row.cells.reduce((sum, cell) => sum + Math.max(1, cell.colSpan ?? 1), 0);
+
+  const getTableVisualWidth = (table: Editor2TableNode): number =>
+    table.rows.reduce((max, row) => Math.max(max, getRowVisualWidth(row)), 0);
+
+  const findCellAtVisualColumn = (
+    row: Editor2TableRowNode,
+    visualColumn: number,
+  ): Editor2TableCellNode | null => {
+    let visualCursor = 0;
+    for (const cell of row.cells) {
+      const span = Math.max(1, cell.colSpan ?? 1);
+      if (visualColumn >= visualCursor && visualColumn < visualCursor + span) {
+        return cell;
+      }
+      visualCursor += span;
+    }
+
+    return null;
+  };
+
+  const findFirstNavigableParagraphInTable = (table: Editor2TableNode): Editor2ParagraphNode | null => {
+    for (const row of table.rows) {
+      for (const cell of row.cells) {
+        if (cell.vMerge === "continue") {
+          continue;
+        }
+        const paragraph = cell.blocks[0];
+        if (paragraph) {
+          return paragraph;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const isSimpleTable = (table: Editor2TableNode): boolean =>
+    table.rows.every((row) =>
+      row.cells.every(
+        (cell) =>
+          Math.max(1, cell.colSpan ?? 1) === 1 &&
+          Math.max(1, cell.rowSpan ?? 1) === 1 &&
+          cell.vMerge === undefined,
+      ),
+    );
+
+  const canEditSelectedTableRow = (current: Editor2State): boolean => {
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (!location) {
+      return false;
+    }
+
+    const block = current.document.blocks[location.blockIndex];
+    return Boolean(block && block.type === "table");
+  };
+
+  const canEditSelectedTableColumn = (current: Editor2State): boolean => {
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (!location) {
+      return false;
+    }
+
+    const block = current.document.blocks[location.blockIndex];
+    if (!block || block.type !== "table") {
+      return false;
+    }
+
+    return getTableVisualWidth(block) > 1;
+  };
+
+  const insertSelectedTableRow = (current: Editor2State, direction: -1 | 1): Editor2State => {
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (!location) {
+      return current;
+    }
+
+    const blocks = current.document.blocks.map(cloneDocumentBlock);
+    const tableBlock = blocks[location.blockIndex];
+    if (!tableBlock || tableBlock.type !== "table") {
+      return current;
+    }
+
+    const sourceRow = tableBlock.rows[location.rowIndex];
+    if (!sourceRow) {
+      return current;
+    }
+
+    const insertIndex = Math.max(
+      0,
+      Math.min(tableBlock.rows.length, location.rowIndex + (direction > 0 ? 1 : 0)),
+    );
+    let blankRow: Editor2TableRowNode;
+    if (hasVerticalSpans(tableBlock)) {
+      const tableLayout = buildTableCellLayout(tableBlock);
+      const selectedEntry = tableLayout.find(
+        (layoutEntry) =>
+          layoutEntry.rowIndex === location.rowIndex && layoutEntry.cellIndex === location.cellIndex,
+      );
+      const sourceEntries = tableLayout.filter((layoutEntry) => layoutEntry.rowIndex === location.rowIndex);
+      const templateEntries =
+        sourceEntries.length > 0
+          ? sourceEntries
+          : tableLayout.filter((layoutEntry) => layoutEntry.rowIndex === Math.max(0, location.rowIndex - 1));
+      blankRow = createEditor2TableRow(
+        templateEntries.map((layoutEntry) => {
+          const spanningEntry = tableLayout.find(
+            (candidate) =>
+              candidate.visualColumnIndex === layoutEntry.visualColumnIndex &&
+              candidate.visualRowIndex < insertIndex &&
+              candidate.visualRowIndex + candidate.rowSpan > insertIndex,
+          );
+          if (spanningEntry) {
+            spanningEntry.cell.rowSpan = Math.max(1, spanningEntry.cell.rowSpan ?? 1) + 1;
+            spanningEntry.cell.vMerge = "restart";
+            const placeholder = createEditor2TableCell(
+              [createEditor2Paragraph("")],
+              layoutEntry.colSpan,
+            );
+            placeholder.blocks = [];
+            placeholder.vMerge = "continue";
+            return placeholder;
+          }
+
+          return createEditor2TableCell([createEditor2Paragraph("")], layoutEntry.colSpan);
+        }),
+      );
+      tableBlock.rows.splice(insertIndex, 0, blankRow);
+
+      const targetVisualColumn = selectedEntry?.visualColumnIndex ?? location.cellIndex;
+      const targetCell = findCellAtVisualColumn(blankRow, targetVisualColumn);
+      const nextParagraph =
+        targetCell?.blocks[0] ??
+        blankRow.cells.find((cell) => cell.vMerge !== "continue" && cell.blocks[0])?.blocks[0] ??
+        findFirstNavigableParagraphInTable(tableBlock);
+      if (!nextParagraph) {
+        return {
+          document: {
+            ...current.document,
+            blocks,
+          },
+          selection: current.selection,
+        };
+      }
+
+      return {
+        document: {
+          ...current.document,
+          blocks,
+        },
+        selection: {
+          anchor: paragraphOffsetToPosition(nextParagraph, 0),
+          focus: paragraphOffsetToPosition(nextParagraph, 0),
+        },
+      };
+    } else {
+      blankRow = createEditor2TableRow(
+        sourceRow.cells.map((cell) =>
+          createEditor2TableCell(
+            [createEditor2Paragraph("")],
+            Math.max(1, cell.colSpan ?? 1),
+          ),
+        ),
+      );
+      tableBlock.rows.splice(insertIndex, 0, blankRow);
+
+      const targetCell = blankRow.cells[Math.min(location.cellIndex, blankRow.cells.length - 1)];
+      const nextParagraph =
+        targetCell?.blocks[0] ??
+        blankRow.cells.find((cell) => cell.vMerge !== "continue" && cell.blocks[0])?.blocks[0] ??
+        findFirstNavigableParagraphInTable(tableBlock);
+      if (!nextParagraph) {
+        return {
+          document: {
+            ...current.document,
+            blocks,
+          },
+          selection: current.selection,
+        };
+      }
+
+      return {
+        document: {
+          ...current.document,
+          blocks,
+        },
+        selection: {
+          anchor: paragraphOffsetToPosition(nextParagraph, 0),
+          focus: paragraphOffsetToPosition(nextParagraph, 0),
+        },
+      };
+    }
+  };
+
+  const deleteSelectedTableRow = (current: Editor2State): Editor2State => {
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (!location) {
+      return current;
+    }
+
+    const blocks = current.document.blocks.map(cloneDocumentBlock);
+    const tableBlock = blocks[location.blockIndex];
+    if (!tableBlock || tableBlock.type !== "table") {
+      return current;
+    }
+
+    if (tableBlock.rows.length <= 1) {
+      return current;
+    }
+
+    const rowToDelete = tableBlock.rows[location.rowIndex];
+    if (!rowToDelete) {
+      return current;
+    }
+
+    const blockedByRestartCell = rowToDelete.cells.some(
+      (cell) => cell.vMerge !== "continue" && Math.max(1, cell.rowSpan ?? 1) > 1,
+    );
+    if (blockedByRestartCell) {
+      return current;
+    }
+
+    const selectedEntry = hasVerticalSpans(tableBlock)
+      ? buildTableCellLayout(tableBlock).find(
+          (layoutEntry) =>
+            layoutEntry.rowIndex === location.rowIndex &&
+            layoutEntry.cellIndex === location.cellIndex,
+        )
+      : null;
+
+    if (hasVerticalSpans(tableBlock)) {
+      const tableLayout = buildTableCellLayout(tableBlock);
+      for (const entry of tableLayout) {
+        if (
+          entry.visualRowIndex < location.rowIndex &&
+          entry.visualRowIndex + entry.rowSpan > location.rowIndex
+        ) {
+          entry.cell.rowSpan = Math.max(1, entry.cell.rowSpan ?? 1) - 1;
+          if (entry.cell.rowSpan <= 1) {
+            entry.cell.rowSpan = undefined;
+            entry.cell.vMerge = undefined;
+          } else {
+            entry.cell.vMerge = "restart";
+          }
+        }
+      }
+    }
+
+    tableBlock.rows.splice(location.rowIndex, 1);
+
+    const nextRow = tableBlock.rows[Math.min(location.rowIndex, tableBlock.rows.length - 1)];
+    const targetCell = nextRow
+      ? findCellAtVisualColumn(
+          nextRow,
+          Math.min(
+            selectedEntry?.visualColumnIndex ?? location.cellIndex,
+            Math.max(0, getRowVisualWidth(nextRow) - 1),
+          ),
+        )
+      : null;
+    const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+    if (!nextParagraph) {
+      return {
+        document: {
+          ...current.document,
+          blocks,
+        },
+        selection: current.selection,
+      };
+    }
+
+    return {
+      document: {
+        ...current.document,
+        blocks,
+      },
+      selection: {
+        anchor: paragraphOffsetToPosition(nextParagraph, 0),
+        focus: paragraphOffsetToPosition(nextParagraph, 0),
+      },
+    };
+  };
+
+  const insertSelectedTableColumn = (current: Editor2State, direction: -1 | 1): Editor2State => {
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (!location) {
+      return current;
+    }
+
+    const blocks = current.document.blocks.map(cloneDocumentBlock);
+    const tableBlock = blocks[location.blockIndex];
+    if (!tableBlock || tableBlock.type !== "table") {
+      return current;
+    }
+
+    if (hasHorizontalSpans(tableBlock)) {
+      const tableLayout = buildTableCellLayout(tableBlock);
+      const selectedEntry = tableLayout.find(
+        (entry) =>
+          entry.rowIndex === location.rowIndex && entry.cellIndex === location.cellIndex,
+      );
+      const insertVisualColumn =
+        (selectedEntry?.visualColumnIndex ?? location.cellIndex) +
+        (direction > 0 ? Math.max(1, selectedEntry?.colSpan ?? 1) : 0);
+
+      for (const row of tableBlock.rows) {
+        const nextCells: Editor2TableCellNode[] = [];
+        let visualCursor = 0;
+        let inserted = false;
+
+        for (const cell of row.cells) {
+          const span = Math.max(1, cell.colSpan ?? 1);
+          if (!inserted && insertVisualColumn <= visualCursor) {
+            nextCells.push(createEditor2TableCell([createEditor2Paragraph("")]));
+            inserted = true;
+          }
+
+          if (!inserted && visualCursor < insertVisualColumn && insertVisualColumn < visualCursor + span) {
+            nextCells.push({
+              ...cell,
+              colSpan: span + 1,
+            });
+            inserted = true;
+          } else {
+            nextCells.push(cell);
+          }
+
+          visualCursor += span;
+        }
+
+        if (!inserted) {
+          nextCells.push(createEditor2TableCell([createEditor2Paragraph("")]));
+        }
+
+        row.cells = nextCells;
+      }
+
+      const targetRow = tableBlock.rows[location.rowIndex];
+      const targetCell = targetRow ? findCellAtVisualColumn(targetRow, insertVisualColumn) : null;
+      const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+      if (!nextParagraph) {
+        return {
+          document: {
+            ...current.document,
+            blocks,
+          },
+          selection: current.selection,
+        };
+      }
+
+      return {
+        document: {
+          ...current.document,
+          blocks,
+        },
+        selection: {
+          anchor: paragraphOffsetToPosition(nextParagraph, 0),
+          focus: paragraphOffsetToPosition(nextParagraph, 0),
+        },
+      };
+    }
+
+    const insertIndex = Math.max(
+      0,
+      Math.min(tableBlock.rows[0]?.cells.length ?? 0, location.cellIndex + (direction > 0 ? 1 : 0)),
+    );
+
+    for (const row of tableBlock.rows) {
+      row.cells.splice(
+        insertIndex,
+        0,
+        createEditor2TableCell([createEditor2Paragraph("")]),
+      );
+    }
+
+    const targetRow = tableBlock.rows[location.rowIndex];
+    const targetCell = targetRow?.cells[insertIndex];
+    const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+    if (!nextParagraph) {
+      return {
+        document: {
+          ...current.document,
+          blocks,
+        },
+        selection: current.selection,
+      };
+    }
+
+    return {
+      document: {
+        ...current.document,
+        blocks,
+      },
+      selection: {
+        anchor: paragraphOffsetToPosition(nextParagraph, 0),
+        focus: paragraphOffsetToPosition(nextParagraph, 0),
+      },
+    };
+  };
+
+  const deleteSelectedTableColumn = (current: Editor2State): Editor2State => {
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (!location) {
+      return current;
+    }
+
+    const blocks = current.document.blocks.map(cloneDocumentBlock);
+    const tableBlock = blocks[location.blockIndex];
+    if (!tableBlock || tableBlock.type !== "table") {
+      return current;
+    }
+
+    if (getTableVisualWidth(tableBlock) <= 1) {
+      return current;
+    }
+
+    if (hasHorizontalSpans(tableBlock)) {
+      const tableLayout = buildTableCellLayout(tableBlock);
+      const selectedEntry = tableLayout.find(
+        (entry) =>
+          entry.rowIndex === location.rowIndex && entry.cellIndex === location.cellIndex,
+      );
+      const deleteVisualColumn = selectedEntry?.visualColumnIndex ?? location.cellIndex;
+
+      for (const row of tableBlock.rows) {
+        const nextCells: Editor2TableCellNode[] = [];
+        let visualCursor = 0;
+
+        for (const cell of row.cells) {
+          const span = Math.max(1, cell.colSpan ?? 1);
+          if (deleteVisualColumn >= visualCursor && deleteVisualColumn < visualCursor + span) {
+            if (span > 1) {
+              nextCells.push({
+                ...cell,
+                colSpan: span - 1 > 1 ? span - 1 : undefined,
+              });
+            }
+          } else {
+            nextCells.push(cell);
+          }
+
+          visualCursor += span;
+        }
+
+        row.cells = nextCells;
+      }
+
+      const targetRow = tableBlock.rows[location.rowIndex];
+      const targetCell =
+        targetRow &&
+        findCellAtVisualColumn(
+          targetRow,
+          Math.min(deleteVisualColumn, Math.max(0, getRowVisualWidth(targetRow) - 1)),
+        );
+      const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+      if (!nextParagraph) {
+        return {
+          document: {
+            ...current.document,
+            blocks,
+          },
+          selection: current.selection,
+        };
+      }
+
+      return {
+        document: {
+          ...current.document,
+          blocks,
+        },
+        selection: {
+          anchor: paragraphOffsetToPosition(nextParagraph, 0),
+          focus: paragraphOffsetToPosition(nextParagraph, 0),
+        },
+      };
+    }
+
+    if (tableBlock.rows[0]?.cells.length <= 1) {
+      return current;
+    }
+
+    for (const row of tableBlock.rows) {
+      row.cells.splice(location.cellIndex, 1);
+    }
+
+    const targetRow = tableBlock.rows[location.rowIndex];
+    const targetCell = targetRow?.cells[Math.min(location.cellIndex, targetRow.cells.length - 1)];
+    const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+    if (!nextParagraph) {
+      return {
+        document: {
+          ...current.document,
+          blocks,
+        },
+        selection: current.selection,
+      };
     }
 
     return {
@@ -985,6 +1699,90 @@ export function OasisEditor2App() {
     setPreferredColumnX(null);
   };
 
+  const performUndo = () => {
+    const nextUndoStack = undoStack();
+    if (nextUndoStack.length === 0) {
+      return;
+    }
+
+    const next = nextUndoStack[nextUndoStack.length - 1];
+    setUndoStack((stack) => stack.slice(0, -1));
+    setRedoStack((stack) => [...stack, cloneState(state)]);
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyHistoryState(next);
+    focusInput();
+  };
+
+  const performRedo = () => {
+    const nextRedoStack = redoStack();
+    if (nextRedoStack.length === 0) {
+      return;
+    }
+
+    const next = nextRedoStack[nextRedoStack.length - 1];
+    setRedoStack((stack) => stack.slice(0, -1));
+    setUndoStack((stack) => [...stack, cloneState(state)]);
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyHistoryState(next);
+    focusInput();
+  };
+
+  const moveSelectedImageByParagraph = (direction: -1 | 1) => {
+    const selectedImage = getSelectedImageInfo(state);
+    if (!selectedImage) {
+      return false;
+    }
+
+    const paragraphs = getParagraphs(state);
+    const sourceIndex = paragraphs.findIndex((paragraph) => paragraph.id === selectedImage.paragraph.id);
+    if (sourceIndex < 0) {
+      return false;
+    }
+
+    const targetIndex = sourceIndex + direction;
+    if (targetIndex < 0 || targetIndex >= paragraphs.length) {
+      const insertedParagraph = createEditor2Paragraph("");
+      const nextState: Editor2State = {
+        document: {
+          ...state.document,
+          blocks:
+            direction < 0
+              ? [insertedParagraph, ...state.document.blocks]
+              : [...state.document.blocks, insertedParagraph],
+        },
+        selection: {
+          anchor: { ...state.selection.anchor },
+          focus: { ...state.selection.focus },
+        },
+      };
+      const targetPosition = paragraphOffsetToPosition(
+        insertedParagraph,
+        direction < 0 ? getParagraphLength(insertedParagraph) : 0,
+      );
+      applyTransactionalState(() => moveSelectedImageToPosition(nextState, targetPosition), {
+        mergeKey: "moveImage",
+      });
+      focusInput();
+      return true;
+    }
+
+    const targetParagraph = paragraphs[targetIndex];
+    const targetOffset = direction < 0 ? getParagraphLength(targetParagraph) : 0;
+
+    applyTransactionalState(
+      (current) =>
+        moveSelectedImageToPosition(
+          current,
+          paragraphOffsetToPosition(targetParagraph, targetOffset),
+        ),
+      { mergeKey: "moveImage" },
+    );
+    focusInput();
+    return true;
+  };
+
   const selectionCollapsed = () => isSelectionCollapsed(state.selection);
 
   const toolbarStyleState = (): ToolbarStyleState => {
@@ -1012,6 +1810,36 @@ export function OasisEditor2App() {
       pageBreakBefore: resolveUniformParagraphFlag(paragraphStyles, "pageBreakBefore"),
       keepWithNext: resolveUniformParagraphFlag(paragraphStyles, "keepWithNext"),
     };
+  };
+
+  const tableSelectionLabel = (): string | null => {
+    const normalized = normalizeSelection(state);
+    if (normalized.isCollapsed) {
+      return null;
+    }
+
+    const anchorLocation = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId);
+    const focusLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId);
+    if (
+      !anchorLocation ||
+      !focusLocation ||
+      anchorLocation.blockIndex !== focusLocation.blockIndex ||
+      (anchorLocation.rowIndex === focusLocation.rowIndex &&
+        anchorLocation.cellIndex === focusLocation.cellIndex)
+    ) {
+      return null;
+    }
+
+    const count = selectionBoxes().length;
+    if (count === 0) {
+      return null;
+    }
+
+    return `Table selection: ${count} cell${count === 1 ? "" : "s"}`;
+  };
+
+  const tableActionRestrictionLabel = (): string | null => {
+    return null;
   };
 
   const focusInput = () => {
@@ -1127,9 +1955,7 @@ export function OasisEditor2App() {
     focusInput();
   };
 
-  const handleInsertImage = async (file: File | null) => {
-    if (!file) return;
-
+  const insertImageFromFile = async (file: File, position?: Editor2Position | null) => {
     logger.info("image insert:start", { name: file.name, type: file.type, size: file.size });
     const arrayBuffer = await readFileBuffer(file);
     const base64 = btoa(
@@ -1159,10 +1985,21 @@ export function OasisEditor2App() {
     });
 
     applyTransactionalState(
-      (current) => insertImageAtSelection(current, { src, width, height }),
+      (current) => {
+        const targetState = position
+          ? setSelection(current, { anchor: position, focus: position })
+          : current;
+        return insertImageAtSelection(targetState, { src, width, height });
+      },
       { mergeKey: "insertImage" }
     );
     logger.debug("image insert:selection", state.selection);
+  };
+
+  const handleInsertImage = async (file: File | null) => {
+    if (!file) return;
+
+    await insertImageFromFile(file);
 
     if (imageInputRef) {
       imageInputRef.value = "";
@@ -1201,28 +2038,67 @@ export function OasisEditor2App() {
       (anchorLocation.rowIndex !== focusLocation.rowIndex || anchorLocation.cellIndex !== focusLocation.cellIndex);
 
     if (isTableSelection) {
-      const minRow = Math.min(anchorLocation.rowIndex, focusLocation.rowIndex);
-      const maxRow = Math.max(anchorLocation.rowIndex, focusLocation.rowIndex);
-      const minCol = Math.min(anchorLocation.cellIndex, focusLocation.cellIndex);
-      const maxCol = Math.max(anchorLocation.cellIndex, focusLocation.cellIndex);
-
       const tableBlock = state.document.blocks[anchorLocation.blockIndex];
       const tableId = tableBlock?.id;
       if (tableId) {
         const tableElement = surfaceRef.querySelector<HTMLElement>(`[data-block-id="${tableId}"]`);
-        if (tableElement) {
-          for (let r = minRow; r <= maxRow; r++) {
-            for (let c = minCol; c <= maxCol; c++) {
-              const cellElement = tableElement.querySelector<HTMLElement>(`[data-row-index="${r}"][data-cell-index="${c}"]`);
-              if (cellElement) {
-                const cellRect = cellElement.getBoundingClientRect();
-                nextSelectionBoxes.push({
-                  left: cellRect.left - surfaceRect.left,
-                  top: cellRect.top - surfaceRect.top,
-                  width: cellRect.width,
-                  height: cellRect.height,
-                });
+        if (tableElement && tableBlock?.type === "table") {
+          const tableLayout = buildTableCellLayout(tableBlock);
+          const anchorCell = tableLayout.find(
+            (entry) =>
+              entry.rowIndex === anchorLocation.rowIndex && entry.cellIndex === anchorLocation.cellIndex,
+          );
+          const focusCell = tableLayout.find(
+            (entry) =>
+              entry.rowIndex === focusLocation.rowIndex && entry.cellIndex === focusLocation.cellIndex,
+          );
+
+          if (anchorCell && focusCell) {
+            const minRow = Math.min(
+              anchorCell.visualRowIndex,
+              focusCell.visualRowIndex,
+            );
+            const maxRow = Math.max(
+              anchorCell.visualRowIndex + anchorCell.rowSpan - 1,
+              focusCell.visualRowIndex + focusCell.rowSpan - 1,
+            );
+            const minCol = Math.min(
+              anchorCell.visualColumnIndex,
+              focusCell.visualColumnIndex,
+            );
+            const maxCol = Math.max(
+              anchorCell.visualColumnIndex + anchorCell.colSpan - 1,
+              focusCell.visualColumnIndex + focusCell.colSpan - 1,
+            );
+
+            for (const entry of tableLayout) {
+              const cellRowStart = entry.visualRowIndex;
+              const cellRowEnd = entry.visualRowIndex + entry.rowSpan - 1;
+              const cellColStart = entry.visualColumnIndex;
+              const cellColEnd = entry.visualColumnIndex + entry.colSpan - 1;
+              const intersects =
+                cellRowStart <= maxRow &&
+                cellRowEnd >= minRow &&
+                cellColStart <= maxCol &&
+                cellColEnd >= minCol;
+              if (!intersects) {
+                continue;
               }
+
+              const cellElement = tableElement.querySelector<HTMLElement>(
+                `[data-row-index="${entry.rowIndex}"][data-cell-index="${entry.cellIndex}"]`,
+              );
+              if (!cellElement) {
+                continue;
+              }
+
+              const cellRect = cellElement.getBoundingClientRect();
+              nextSelectionBoxes.push({
+                left: cellRect.left - surfaceRect.left,
+                top: cellRect.top - surfaceRect.top,
+                width: cellRect.width,
+                height: cellRect.height,
+              });
             }
           }
         }
@@ -1462,6 +2338,17 @@ export function OasisEditor2App() {
   };
 
   const handlePaste = (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => {
+    const imageFile = findImageFileFromTransfer(event.clipboardData);
+    if (imageFile) {
+      event.preventDefault();
+      clearPreferredColumn();
+      resetTransactionGrouping();
+      void insertImageFromFile(imageFile);
+      event.currentTarget.value = "";
+      focusInput();
+      return;
+    }
+
     const text = event.clipboardData?.getData("text/plain") ?? "";
     if (text.length === 0) {
       return;
@@ -1472,6 +2359,20 @@ export function OasisEditor2App() {
     resetTransactionGrouping();
     applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => insertPlainTextAtSelection(temp, text)));
     event.currentTarget.value = "";
+    focusInput();
+  };
+
+  const handleDrop = (event: DragEvent) => {
+    const imageFile = findImageFileFromTransfer(event.dataTransfer);
+    if (!imageFile) {
+      return;
+    }
+
+    event.preventDefault();
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    const position = resolvePositionAtPoint(event.clientX, event.clientY) ?? state.selection.focus;
+    void insertImageFromFile(imageFile, position);
     focusInput();
   };
 
@@ -1493,15 +2394,60 @@ export function OasisEditor2App() {
     if (tableLocation) {
       const block = state.document.blocks[tableLocation.blockIndex];
       if (block && block.type === "table") {
-        const nextRowIndex = tableLocation.rowIndex + direction;
-        if (nextRowIndex >= 0 && nextRowIndex < block.rows.length) {
-          const nextRow = block.rows[nextRowIndex];
-          const nextCell = nextRow?.cells[Math.min(tableLocation.cellIndex, (nextRow?.cells.length ?? 1) - 1)];
-          if (nextCell && nextCell.blocks.length > 0) {
-            const targetId = direction < 0
-              ? nextCell.blocks[nextCell.blocks.length - 1]!.id
-              : nextCell.blocks[0]!.id;
+        const tableLayout = buildTableCellLayout(block);
+        const currentCell = tableLayout.find(
+          (entry) =>
+            entry.rowIndex === tableLocation.rowIndex && entry.cellIndex === tableLocation.cellIndex,
+        );
+        if (currentCell) {
+          const surfaceElement = surfaceRef?.querySelector<HTMLElement>(`[data-block-id="${block.id}"]`);
+          const currentElement = surfaceElement?.querySelector<HTMLElement>(
+            `[data-row-index="${tableLocation.rowIndex}"][data-cell-index="${tableLocation.cellIndex}"]`,
+          );
+          const desiredX =
+            preferredColumnX() ??
+            (currentElement ? currentElement.getBoundingClientRect().left : caretBox().left);
+          const candidateRows: number[] = [];
+          for (
+            let rowIndex = currentCell.visualRowIndex + direction;
+            rowIndex >= 0 && rowIndex < block.rows.length;
+            rowIndex += direction
+          ) {
+            candidateRows.push(rowIndex);
+          }
+
+          for (const rowIndex of candidateRows) {
+            const rowCandidates = tableLayout.filter(
+              (entry) => entry.visualRowIndex === rowIndex && entry.cell.blocks.length > 0 && entry.cell.vMerge !== "continue",
+            );
+            if (rowCandidates.length === 0) {
+              continue;
+            }
+
+            const scoredCandidates = rowCandidates
+              .map((entry) => {
+                const cellElement = surfaceElement?.querySelector<HTMLElement>(
+                  `[data-row-index="${entry.rowIndex}"][data-cell-index="${entry.cellIndex}"]`,
+                );
+                const rect = cellElement?.getBoundingClientRect();
+                const left = rect?.left ?? desiredX;
+                const right = rect?.right ?? desiredX;
+                const distance = desiredX < left ? left - desiredX : desiredX > right ? desiredX - right : 0;
+                return { entry, distance };
+              })
+              .sort((left, right) => left.distance - right.distance);
+
+            const candidate = scoredCandidates[0]?.entry;
+            if (!candidate) {
+              continue;
+            }
+
+            const targetId =
+              direction < 0
+                ? candidate.cell.blocks[candidate.cell.blocks.length - 1]!.id
+                : candidate.cell.blocks[0]!.id;
             targetIndex = paragraphs.findIndex((p) => p.id === targetId);
+            break;
           }
         } else {
           if (direction < 0) {
@@ -1620,10 +2566,68 @@ export function OasisEditor2App() {
     window.removeEventListener("mouseup", handleWindowMouseUp);
   };
 
+  const stopImageDrag = () => {
+    activeImageDrag = null;
+    window.removeEventListener("mousemove", handleImageDragMouseMove);
+    window.removeEventListener("mouseup", handleImageDragMouseUp);
+  };
+
   const stopImageResize = () => {
     activeImageResize = null;
     window.removeEventListener("mousemove", handleImageResizeMouseMove);
     window.removeEventListener("mouseup", handleImageResizeMouseUp);
+  };
+
+  const handleImageDragMouseMove = (event: MouseEvent) => {
+    const dragState = activeImageDrag;
+    if (!dragState) {
+      return;
+    }
+
+    const deltaX = Math.abs(event.clientX - dragState.startClientX);
+    const deltaY = Math.abs(event.clientY - dragState.startClientY);
+    if (!dragState.dragging && deltaX + deltaY >= 4) {
+      dragState.dragging = true;
+      logger.info("image drag:start", {
+        paragraphId: dragState.paragraphId,
+        paragraphOffset: dragState.paragraphOffset,
+        clientX: dragState.startClientX,
+        clientY: dragState.startClientY,
+      });
+    }
+  };
+
+  const handleImageDragMouseUp = (event: MouseEvent) => {
+    const dragState = activeImageDrag;
+    if (!dragState) {
+      focusInput();
+      return;
+    }
+
+    if (dragState.dragging) {
+      const position = resolvePositionAtPoint(event.clientX, event.clientY);
+      if (position) {
+        logger.info("image drag:done", {
+          paragraphId: dragState.paragraphId,
+          paragraphOffset: dragState.paragraphOffset,
+          target: position,
+        });
+        applyTransactionalState(
+          (current) => moveSelectedImageToPosition(current, position),
+          { mergeKey: "moveImage" },
+        );
+      } else {
+        logger.warn("image drag:cancel", {
+          paragraphId: dragState.paragraphId,
+          paragraphOffset: dragState.paragraphOffset,
+          clientX: event.clientX,
+          clientY: event.clientY,
+        });
+      }
+    }
+
+    stopImageDrag();
+    focusInput();
   };
 
   const handleWindowMouseMove = (event: MouseEvent) => {
@@ -1716,7 +2720,9 @@ export function OasisEditor2App() {
         continue;
       }
 
-      const cells = block.rows.flatMap((row) => row.cells);
+      const cells = block.rows.flatMap((row) =>
+        row.cells.filter((cell) => cell.vMerge !== "continue" && cell.blocks.length > 0),
+      );
       const currentCellIndex = cells.findIndex((cell) =>
         cell.blocks.some((paragraph) => paragraph.id === paragraphId),
       );
@@ -1777,14 +2783,13 @@ export function OasisEditor2App() {
       return edit(current);
     }
 
-    const targetParagraph =
-      tableBlock.rows[location.rowIndex]?.cells[location.cellIndex]?.blocks[location.paragraphIndex];
-    if (!targetParagraph) {
+    const targetCell = tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
+    if (!targetCell) {
       return edit(current);
     }
 
     const tempState: Editor2State = {
-      document: createEditor2Document([targetParagraph]),
+      document: createEditor2Document(targetCell.blocks),
       selection: {
         anchor: { ...current.selection.anchor },
         focus: { ...current.selection.focus },
@@ -1795,11 +2800,7 @@ export function OasisEditor2App() {
       (block): block is Editor2ParagraphNode => block.type === "paragraph",
     );
 
-    tableBlock.rows[location.rowIndex]!.cells[location.cellIndex]!.blocks.splice(
-      location.paragraphIndex,
-      1,
-      ...replacementParagraphs,
-    );
+    targetCell.blocks.splice(0, targetCell.blocks.length, ...replacementParagraphs);
 
     return {
       document: {
@@ -1851,48 +2852,29 @@ export function OasisEditor2App() {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z" && !event.altKey) {
       event.preventDefault();
       if (event.shiftKey) {
-        const nextRedoStack = redoStack();
-        if (nextRedoStack.length === 0) {
-          return;
-        }
-        const next = nextRedoStack[nextRedoStack.length - 1];
-        setRedoStack((stack) => stack.slice(0, -1));
-        setUndoStack((stack) => [...stack, cloneState(state)]);
-        clearPreferredColumn();
-        resetTransactionGrouping();
-        applyHistoryState(next);
-        focusInput();
+        performRedo();
         return;
       }
 
-      const nextUndoStack = undoStack();
-      if (nextUndoStack.length === 0) {
-        return;
-      }
-      const next = nextUndoStack[nextUndoStack.length - 1];
-      setUndoStack((stack) => stack.slice(0, -1));
-      setRedoStack((stack) => [...stack, cloneState(state)]);
-      clearPreferredColumn();
-      resetTransactionGrouping();
-      applyHistoryState(next);
-      focusInput();
+      performUndo();
       return;
     }
 
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y" && !event.altKey) {
       event.preventDefault();
-      const nextRedoStack = redoStack();
-      if (nextRedoStack.length === 0) {
-        return;
-      }
-      const next = nextRedoStack[nextRedoStack.length - 1];
-      setRedoStack((stack) => stack.slice(0, -1));
-      setUndoStack((stack) => [...stack, cloneState(state)]);
-      clearPreferredColumn();
-      resetTransactionGrouping();
-      applyHistoryState(next);
-      focusInput();
+      performRedo();
       return;
+    }
+
+    if (event.altKey && !event.ctrlKey && !event.metaKey) {
+      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+        event.preventDefault();
+        resetTransactionGrouping();
+        clearPreferredColumn();
+        if (moveSelectedImageByParagraph(event.key === "ArrowUp" ? -1 : 1)) {
+          return;
+        }
+      }
     }
 
     switch (event.key) {
@@ -2024,6 +3006,26 @@ export function OasisEditor2App() {
           </button>
           <button
             type="button"
+            class="oasis-editor-2-tool-button"
+            data-testid="editor-2-toolbar-undo"
+            disabled={undoStack().length === 0}
+            onClick={performUndo}
+            title="Undo last change"
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button"
+            data-testid="editor-2-toolbar-redo"
+            disabled={redoStack().length === 0}
+            onClick={performRedo}
+            title="Redo last undone change"
+          >
+            Redo
+          </button>
+          <button
+            type="button"
             class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
             data-testid="editor-2-toolbar-insert-image"
             onClick={() => imageInputRef?.click()}
@@ -2047,6 +3049,22 @@ export function OasisEditor2App() {
           <button
             type="button"
             class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-merge-table"
+            disabled={!canMergeSelectedTable(state)}
+            onClick={() => {
+              applyTransactionalState(
+                (current) => mergeSelectedTable(current),
+                { mergeKey: "mergeTable" },
+              );
+              focusInput();
+            }}
+            title="Merge selected cells horizontally or vertically"
+          >
+            Merge Selection
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
             data-testid="editor-2-toolbar-merge-table-cells"
             disabled={!canMergeSelectedTableCells(state)}
             onClick={() => {
@@ -2056,54 +3074,189 @@ export function OasisEditor2App() {
               );
               focusInput();
             }}
+            title="Merge selected cells horizontally"
           >
-            Merge Cells
+            Merge Horizontally
           </button>
           <button
             type="button"
             class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-split-table-cell"
-            disabled={!canSplitSelectedTableCell(state)}
+            data-testid="editor-2-toolbar-split-table"
+            disabled={!canSplitSelectedTable(state)}
             onClick={() => {
               applyTransactionalState(
-                (current) => splitSelectedTableCell(current),
-                { mergeKey: "splitTableCell" },
+                (current) => splitSelectedTable(current),
+                { mergeKey: "splitTable" },
               );
               focusInput();
             }}
+            title="Split selected cells horizontally or vertically"
           >
-            Split Cell
+            Split Selection
           </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-merge-table-rows"
-            disabled={!canMergeSelectedTableRows(state)}
-            onClick={() => {
-              applyTransactionalState(
-                (current) => mergeSelectedTableRows(current),
-                { mergeKey: "mergeTableRows" },
-              );
-              focusInput();
-            }}
-          >
-            Merge Rows
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-split-table-row"
-            disabled={!canSplitSelectedTableCellVertically(state)}
-            onClick={() => {
-              applyTransactionalState(
-                (current) => splitSelectedTableCellVertically(current),
-                { mergeKey: "splitTableRow" },
-              );
-              focusInput();
-            }}
-          >
-            Split Row
-          </button>
+          <details class="oasis-editor-2-table-actions-advanced">
+            <summary class="oasis-editor-2-table-actions-summary">Advanced table actions</summary>
+            <div class="oasis-editor-2-toolbar-group oasis-editor-2-table-actions-group">
+              <button
+                type="button"
+                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+                data-testid="editor-2-toolbar-insert-table-column-before"
+                disabled={!canEditSelectedTableColumn(state)}
+                onClick={() => {
+                  applyTransactionalState(
+                    (current) => insertSelectedTableColumn(current, -1),
+                    { mergeKey: "insertTableColumn" },
+                  );
+                  focusInput();
+                }}
+                title="Insert a column to the left"
+              >
+                Insert Column Before
+              </button>
+              <button
+                type="button"
+                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+                data-testid="editor-2-toolbar-insert-table-column-after"
+                disabled={!canEditSelectedTableColumn(state)}
+                onClick={() => {
+                  applyTransactionalState(
+                    (current) => insertSelectedTableColumn(current, 1),
+                    { mergeKey: "insertTableColumn" },
+                  );
+                  focusInput();
+                }}
+                title="Insert a column to the right"
+              >
+                Insert Column After
+              </button>
+              <button
+                type="button"
+                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+                data-testid="editor-2-toolbar-delete-table-column"
+                disabled={!canEditSelectedTableColumn(state)}
+                onClick={() => {
+                  applyTransactionalState(
+                    (current) => deleteSelectedTableColumn(current),
+                    { mergeKey: "deleteTableColumn" },
+                  );
+                  focusInput();
+                }}
+                title="Delete the current column"
+              >
+                Delete Column
+              </button>
+              <button
+                type="button"
+                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+                data-testid="editor-2-toolbar-insert-table-row-before"
+                disabled={!canEditSelectedTableRow(state)}
+                onClick={() => {
+                  applyTransactionalState(
+                    (current) => insertSelectedTableRow(current, -1),
+                    { mergeKey: "insertTableRow" },
+                  );
+                  focusInput();
+                }}
+                title="Insert a row above the current one"
+              >
+                Insert Row Before
+              </button>
+              <button
+                type="button"
+                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+                data-testid="editor-2-toolbar-insert-table-row-after"
+                disabled={!canEditSelectedTableRow(state)}
+                onClick={() => {
+                  applyTransactionalState(
+                    (current) => insertSelectedTableRow(current, 1),
+                    { mergeKey: "insertTableRow" },
+                  );
+                  focusInput();
+                }}
+                title="Insert a row below the current one"
+              >
+                Insert Row After
+              </button>
+              <button
+                type="button"
+                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+                data-testid="editor-2-toolbar-delete-table-row"
+                disabled={!canEditSelectedTableRow(state)}
+                onClick={() => {
+                  applyTransactionalState(
+                    (current) => deleteSelectedTableRow(current),
+                    { mergeKey: "deleteTableRow" },
+                  );
+                  focusInput();
+                }}
+                title="Delete the current row"
+              >
+                Delete Row
+              </button>
+              <button
+                type="button"
+                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+                data-testid="editor-2-toolbar-split-table-cell"
+                disabled={!canSplitSelectedTableCell(state)}
+                onClick={() => {
+                  applyTransactionalState(
+                    (current) => splitSelectedTableCell(current),
+                    { mergeKey: "splitTableCell" },
+                  );
+                  focusInput();
+                }}
+                title="Split selected cell horizontally"
+              >
+                Split Horizontally
+              </button>
+              <button
+                type="button"
+                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+                data-testid="editor-2-toolbar-merge-table-rows"
+                disabled={!canMergeSelectedTableRows(state)}
+                onClick={() => {
+                  applyTransactionalState(
+                    (current) => mergeSelectedTableRows(current),
+                    { mergeKey: "mergeTableRows" },
+                  );
+                  focusInput();
+                }}
+                title="Merge selected cells vertically"
+              >
+                Merge Vertically
+              </button>
+              <button
+                type="button"
+                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+                data-testid="editor-2-toolbar-split-table-row"
+                disabled={!canSplitSelectedTableCellVertically(state)}
+                onClick={() => {
+                  applyTransactionalState(
+                    (current) => splitSelectedTableCellVertically(current),
+                    { mergeKey: "splitTableRow" },
+                  );
+                  focusInput();
+                }}
+                title="Split selected cell vertically"
+              >
+                Split Vertically
+              </button>
+            </div>
+          </details>
+          <Show when={tableSelectionLabel()}>
+            {(label) => (
+              <div class="oasis-editor-2-toolbar-badge" data-testid="editor-2-table-selection-label">
+                {label()}
+              </div>
+            )}
+          </Show>
+          <Show when={tableActionRestrictionLabel()}>
+            {(label) => (
+              <div class="oasis-editor-2-toolbar-note" data-testid="editor-2-table-actions-note">
+                {label()}
+              </div>
+            )}
+          </Show>
           {booleanButtons.map((button) => (
             <button
               type="button"
@@ -2337,6 +3490,8 @@ export function OasisEditor2App() {
           ref={surfaceRef}
           class="oasis-editor-2-editor"
           data-testid="editor-2-editor"
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={handleDrop}
           onMouseDown={(event) => {
             event.preventDefault();
             focusInput();
@@ -2440,6 +3595,9 @@ export function OasisEditor2App() {
               clearPreferredColumn();
               resetTransactionGrouping();
               dragAnchor = null;
+              stopDragging();
+              stopImageDrag();
+              stopImageResize();
 
               const start = paragraphOffsetToPosition(paragraph, paragraphOffset);
               const end = paragraphOffsetToPosition(paragraph, paragraphOffset + 1);
@@ -2467,7 +3625,15 @@ export function OasisEditor2App() {
                   focus: end,
                 }),
               );
-              stopDragging();
+              activeImageDrag = {
+                paragraphId,
+                paragraphOffset,
+                startClientX: event.clientX,
+                startClientY: event.clientY,
+                dragging: false,
+              };
+              window.addEventListener("mousemove", handleImageDragMouseMove);
+              window.addEventListener("mouseup", handleImageDragMouseUp);
               focusInput();
             }}
             onImageResizeHandleMouseDown={(paragraphId, paragraphOffset, event) => {
@@ -2479,6 +3645,7 @@ export function OasisEditor2App() {
                 return;
               }
 
+              stopImageDrag();
               const selectedImage = getSelectedImageInfo(
                 applySelectionToStatePreservingStructure(state, {
                   anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),

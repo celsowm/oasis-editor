@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { getParagraphText, getParagraphs, paragraphOffsetToPosition, positionToParagraphOffset } from "../../core/model.js";
+import { getParagraphLength, getParagraphText, getParagraphs, paragraphOffsetToPosition, positionToParagraphOffset } from "../../core/model.js";
 import {
   deleteBackward,
   deleteForward,
@@ -14,6 +14,7 @@ import {
   moveSelectionLeft,
   moveSelectionRight,
   moveSelectionUp,
+  moveSelectedImageToPosition,
   resizeSelectedImage,
   setParagraphStyle,
   setTextStyleValue,
@@ -463,6 +464,62 @@ describe("editor-2 commands", () => {
 
     expect(imageRun?.image?.width).toBe(180);
     expect(imageRun?.image?.height).toBe(90);
+  });
+
+  it("moves a selected image to another paragraph position", () => {
+    const source = createEditor2StateFromTexts(["a", "b"], { blockIndex: 0, offset: 1 });
+    const withImage = insertImageAtSelection(source, {
+      src: "data:image/png;base64,abc",
+      width: 100,
+      height: 50,
+    });
+    const paragraphs = getParagraphs(withImage);
+    const imageParagraph = paragraphs[0]!;
+    const targetParagraph = paragraphs[1]!;
+    const selected = {
+      ...withImage,
+      selection: {
+        anchor: paragraphOffsetToPosition(imageParagraph, 1),
+        focus: paragraphOffsetToPosition(imageParagraph, 2),
+      },
+    };
+
+    const moved = moveSelectedImageToPosition(
+      selected,
+      paragraphOffsetToPosition(targetParagraph, 0),
+    );
+
+    expect(getParagraphText(getParagraphs(moved)[0]!)).toBe("a");
+    expect(getParagraphText(getParagraphs(moved)[1]!)).toBe("\uFFFCb");
+    expect(positionToParagraphOffset(getParagraphs(moved)[1]!, moved.selection.focus)).toBe(1);
+  });
+
+  it("moves a selected image to the previous paragraph position", () => {
+    const source = createEditor2StateFromTexts(["a", ""], { blockIndex: 1, offset: 0 });
+    const withImage = insertImageAtSelection(source, {
+      src: "data:image/png;base64,abc",
+      width: 100,
+      height: 50,
+    });
+    const paragraphs = getParagraphs(withImage);
+    const imageParagraph = paragraphs[1]!;
+    const targetParagraph = paragraphs[0]!;
+    const selected = {
+      ...withImage,
+      selection: {
+        anchor: paragraphOffsetToPosition(imageParagraph, 0),
+        focus: paragraphOffsetToPosition(imageParagraph, 1),
+      },
+    };
+
+    const moved = moveSelectedImageToPosition(
+      selected,
+      paragraphOffsetToPosition(targetParagraph, getParagraphLength(targetParagraph)),
+    );
+
+    expect(getParagraphText(getParagraphs(moved)[0]!)).toBe("a\uFFFC");
+    expect(getParagraphText(getParagraphs(moved)[1]!)).toBe("");
+    expect(positionToParagraphOffset(getParagraphs(moved)[0]!, moved.selection.focus)).toBe(2);
   });
 
   it("ignores resizeSelectedImage when the selection is not exactly one image object", () => {

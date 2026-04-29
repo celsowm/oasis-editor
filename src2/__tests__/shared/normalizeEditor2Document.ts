@@ -10,6 +10,7 @@ function normalizeRun(run: Editor2TextRun) {
   return {
     text: run.text,
     styles: run.styles ?? undefined,
+    image: run.image ? { ...run.image } : undefined,
   };
 }
 

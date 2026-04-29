@@ -82,6 +82,37 @@ body {
   gap: 8px;
 }
 
+.oasis-editor-2-table-actions-advanced {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.oasis-editor-2-table-actions-summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.86);
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.oasis-editor-2-table-actions-advanced[open] .oasis-editor-2-table-actions-summary {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.oasis-editor-2-table-actions-group {
+  padding-top: 2px;
+}
+
 .oasis-editor-2-tool-button,
 .oasis-editor-2-tool-select,
 .oasis-editor-2-tool-color {
@@ -152,6 +183,34 @@ body {
   background: rgba(255, 255, 255, 0.86);
   font-size: 13px;
   font-weight: 600;
+}
+
+.oasis-editor-2-toolbar-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  background: rgba(219, 234, 254, 0.8);
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.oasis-editor-2-toolbar-note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 58, 237, 0.18);
+  background: rgba(124, 58, 237, 0.06);
+  color: #6b21a8;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .oasis-editor-2-tool-number {
