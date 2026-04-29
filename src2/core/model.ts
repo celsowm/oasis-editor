@@ -109,6 +109,7 @@ export interface Editor2LayoutFragment {
   endOffset: number;
   text: string;
   styles?: Editor2TextStyle;
+  image?: Editor2ImageRunData;
   chars: Editor2LayoutFragmentChar[];
 }
 

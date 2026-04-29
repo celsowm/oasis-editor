@@ -40,6 +40,7 @@ function sliceFragmentToRange(
     endOffset: end,
     text: chars.map((char) => char.char).join(""),
     styles: fragment.styles ? { ...fragment.styles } : undefined,
+    image: fragment.image ? { ...fragment.image } : undefined,
     chars,
   };
 }
@@ -60,6 +61,7 @@ export function projectParagraphLayout(paragraph: Editor2ParagraphNode): Editor2
       endOffset: paragraphOffset + run.text.length,
       text: run.text,
       styles: run.styles ? { ...run.styles } : undefined,
+      image: run.image ? { ...run.image } : undefined,
       chars,
     };
 

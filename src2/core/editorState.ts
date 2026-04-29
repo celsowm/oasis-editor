@@ -9,6 +9,7 @@ import type {
   Editor2TableRowNode,
   Editor2TextRun,
   Editor2TextStyle,
+  Editor2ImageRunData,
 } from "./model.js";
 import { getDocumentParagraphs, getParagraphLength, paragraphOffsetToPosition } from "./model.js";
 import { createCollapsedSelection } from "./selection.js";
@@ -38,10 +39,13 @@ export function createEditor2Run(text = ""): Editor2TextRun {
   return run;
 }
 
-export function createEditor2StyledRun(text = "", styles?: Editor2TextStyle): Editor2TextRun {
+export function createEditor2StyledRun(text = "", styles?: Editor2TextStyle, image?: Editor2ImageRunData): Editor2TextRun {
   const run = createEditor2Run(text);
   if (styles) {
     run.styles = { ...styles };
+  }
+  if (image) {
+    run.image = { ...image };
   }
   return run;
 }
@@ -57,12 +61,12 @@ export function createEditor2Paragraph(text = ""): Editor2ParagraphNode {
 }
 
 export function createEditor2ParagraphFromRuns(
-  runs: Array<{ text: string; styles?: Editor2TextStyle }>,
+  runs: Array<{ text: string; styles?: Editor2TextStyle; image?: Editor2ImageRunData }>,
 ): Editor2ParagraphNode {
   const paragraph: Editor2ParagraphNode = {
     id: `paragraph:${nextParagraphId}`,
     type: "paragraph",
-    runs: runs.length > 0 ? runs.map((run) => createEditor2StyledRun(run.text, run.styles)) : [createEditor2Run("")],
+    runs: runs.length > 0 ? runs.map((run) => createEditor2StyledRun(run.text, run.styles, run.image)) : [createEditor2Run("")],
   };
   nextParagraphId += 1;
   return paragraph;

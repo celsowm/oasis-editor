@@ -44,6 +44,19 @@ function parseBooleanProperty(parent: XmlElement, localName: string): boolean {
   return getFirstChildByTagNameNS(parent, WORD_NS, localName) !== null;
 }
 
+function findElementDeep(element: XmlElement, localName: string): XmlElement | null {
+  for (let index = 0; index < element.childNodes.length; index += 1) {
+    const node = element.childNodes[index];
+    if (node?.nodeType === 1) {
+      const el = node as XmlElement;
+      if (el.localName === localName) return el;
+      const found = findElementDeep(el, localName);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 function parseRunStyle(runProperties: XmlElement | null): Editor2TextStyle | undefined {
   if (!runProperties) {
     return undefined;
@@ -237,8 +250,9 @@ function parseParagraphList(
   };
 }
 
-function parseRunText(runElement: XmlElement): string {
+async function parseRunElement(runElement: XmlElement, zip: JSZip, relsMap: Map<string, string>): Promise<{ text: string; image?: { src: string; width: number; height: number; } }> {
   const textParts: string[] = [];
+  let image: { src: string; width: number; height: number; } | undefined;
 
   const children = runElement.childNodes;
   for (let index = 0; index < children.length; index += 1) {
@@ -248,33 +262,76 @@ function parseRunText(runElement: XmlElement): string {
     }
 
     const element = node as XmlElement;
-    if (element.namespaceURI !== WORD_NS) {
-      continue;
-    }
-
-    if (element.localName === "t") {
-      textParts.push(element.textContent ?? "");
-    } else if (element.localName === "tab") {
-      textParts.push("\t");
-    } else if (element.localName === "br" || element.localName === "cr") {
-      textParts.push("\n");
+    if (element.namespaceURI === WORD_NS) {
+      if (element.localName === "t") {
+        textParts.push(element.textContent ?? "");
+      } else if (element.localName === "tab") {
+        textParts.push("\t");
+      } else if (element.localName === "br" || element.localName === "cr") {
+        textParts.push("\n");
+      } else if (element.localName === "drawing") {
+        const blip = findElementDeep(element, "blip");
+        if (blip) {
+          let embed = null;
+          for (let i = 0; i < blip.attributes.length; i++) {
+             const attr = blip.attributes[i];
+             if (attr && (attr.localName === "embed" || attr.name === "r:embed" || attr.name === "embed")) {
+                embed = attr.value;
+                break;
+             }
+          }
+          if (embed) {
+            const target = relsMap.get(embed);
+            if (target) {
+              let zipPath = target;
+              if (zipPath.startsWith("/")) zipPath = zipPath.slice(1);
+              if (!zipPath.startsWith("word/")) zipPath = "word/" + target;
+              const file = zip.file(zipPath);
+              const ext = target.split('.').pop()?.toLowerCase();
+              const mime = ext === 'png' ? 'image/png' : ext === 'jpeg' || ext === 'jpg' ? 'image/jpeg' : 'image/png';
+              const base64 = await file?.async("base64");
+              if (base64) {
+                textParts.push("\uFFFC");
+                const extent = findElementDeep(element, "extent");
+                let width = 300;
+                let height = 300;
+                if (extent) {
+                  const cx = extent.getAttribute("cx");
+                  const cy = extent.getAttribute("cy");
+                  if (cx) width = Math.round(parseInt(cx, 10) / 9525);
+                  if (cy) height = Math.round(parseInt(cy, 10) / 9525);
+                }
+                image = { src: `data:${mime};base64,${base64}`, width, height };
+              }
+            }
+          }
+        }
+      }
     }
   }
 
-  return textParts.join("");
+  return { text: textParts.join(""), image };
 }
 
-function parseParagraphNode(
+async function parseParagraphNode(
   paragraphNode: XmlElement,
   numberingMaps: NumberingMaps,
+  zip: JSZip,
+  relsMap: Map<string, string>,
 ) {
   const paragraphProperties = getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr");
-  const runs = getChildrenByTagNameNS(paragraphNode, WORD_NS, "r")
-    .map((runElement) => ({
-      text: parseRunText(runElement),
-      styles: parseRunStyle(getFirstChildByTagNameNS(runElement, WORD_NS, "rPr")),
-    }))
-    .filter((run) => run.text.length > 0);
+  const runElements = getChildrenByTagNameNS(paragraphNode, WORD_NS, "r");
+  const runs = [];
+  for (const runElement of runElements) {
+    const { text, image } = await parseRunElement(runElement, zip, relsMap);
+    if (text.length > 0) {
+      runs.push({
+        text,
+        image,
+        styles: parseRunStyle(getFirstChildByTagNameNS(runElement, WORD_NS, "rPr")),
+      });
+    }
+  }
 
   const paragraph = createEditor2ParagraphFromRuns(
     runs.length > 0 ? runs : [{ text: "" }],
@@ -284,22 +341,26 @@ function parseParagraphNode(
   return paragraph;
 }
 
-function parseTableNode(
+async function parseTableNode(
   tableNode: XmlElement,
   numberingMaps: NumberingMaps,
-): Editor2TableNode {
-  const rows = getChildrenByTagNameNS(tableNode, WORD_NS, "tr").map((rowNode) => {
-    const cells = getChildrenByTagNameNS(rowNode, WORD_NS, "tc").map((cellNode) => {
-      const paragraphs = getChildrenByTagNameNS(cellNode, WORD_NS, "p").map((paragraphNode) =>
-        parseParagraphNode(paragraphNode, numberingMaps),
-      );
-      return createEditor2TableCell(
+  zip: JSZip,
+  relsMap: Map<string, string>,
+): Promise<Editor2TableNode> {
+  const rows = [];
+  for (const rowNode of getChildrenByTagNameNS(tableNode, WORD_NS, "tr")) {
+    const cells = [];
+    for (const cellNode of getChildrenByTagNameNS(rowNode, WORD_NS, "tc")) {
+      const paragraphs = [];
+      for (const paragraphNode of getChildrenByTagNameNS(cellNode, WORD_NS, "p")) {
+        paragraphs.push(await parseParagraphNode(paragraphNode, numberingMaps, zip, relsMap));
+      }
+      cells.push(createEditor2TableCell(
         paragraphs.length > 0 ? paragraphs : [createEditor2ParagraphFromRuns([{ text: "" }])],
-      );
-    });
-
-    return createEditor2TableRow(cells);
-  });
+      ));
+    }
+    rows.push(createEditor2TableRow(cells));
+  }
 
   return createEditor2Table(rows);
 }
@@ -309,6 +370,28 @@ export async function importDocxToEditor2Document(buffer: ArrayBuffer): Promise<
   const documentXml = await zip.file("word/document.xml")?.async("string");
   if (!documentXml) {
     throw new Error("Missing word/document.xml");
+  }
+
+  const relsXml = await zip.file("word/_rels/document.xml.rels")?.async("string");
+  const relsMap = new Map<string, string>();
+  if (relsXml) {
+    const relsDoc = new DOMParser().parseFromString(relsXml, "application/xml");
+    const relNodes = relsDoc.documentElement?.childNodes;
+    if (relNodes) {
+      for (let index = 0; index < relNodes.length; index += 1) {
+        const node = relNodes[index];
+        if (node?.nodeType === 1) {
+          const rel = node as XmlElement;
+          if (rel.localName === "Relationship") {
+            const id = rel.getAttribute("Id");
+            const target = rel.getAttribute("Target");
+            if (id && target) {
+              relsMap.set(id, target);
+            }
+          }
+        }
+      }
+    }
   }
 
   const numberingXml = (await zip.file("word/numbering.xml")?.async("string")) ?? null;
@@ -330,9 +413,9 @@ export async function importDocxToEditor2Document(buffer: ArrayBuffer): Promise<
       }
 
       if (element.localName === "p") {
-        blocks.push(parseParagraphNode(element, numberingMaps));
+        blocks.push(await parseParagraphNode(element, numberingMaps, zip, relsMap));
       } else if (element.localName === "tbl") {
-        blocks.push(parseTableNode(element, numberingMaps));
+        blocks.push(await parseTableNode(element, numberingMaps, zip, relsMap));
       }
     }
   }

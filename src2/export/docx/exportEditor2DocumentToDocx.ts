@@ -189,7 +189,25 @@ function serializeRunProperties(styles?: Editor2TextStyle): string {
   return parts.length > 0 ? `<w:rPr>${parts.join("")}</w:rPr>` : "";
 }
 
-function serializeRun(run: Editor2TextRun): string {
+interface DocContext {
+  numberingInfo: Map<string, { numId: number; level: number }>;
+  definitions: Array<{ kind: Editor2ParagraphListStyle["kind"]; level: number; abstractNumId: number; numId: number }>;
+  images: Array<{ rId: string; target: string; base64: string; runId: string; cx: number; cy: number }>;
+  imageMap: Map<string, string>;
+}
+
+function serializeRun(run: Editor2TextRun, context: DocContext): string {
+  if (run.image) {
+    const rId = context.imageMap.get(run.id);
+    if (rId) {
+      const img = context.images.find(i => i.rId === rId);
+      if (img) {
+        const docPrId = Math.floor(Math.random() * 10000) + 1;
+        const drawing = `<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${img.cx}" cy="${img.cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${docPrId}" name="Picture"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="Picture"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rId}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${img.cx}" cy="${img.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>`;
+        return `<w:r>${serializeRunProperties(run.styles)}${drawing}</w:r>`;
+      }
+    }
+  }
   return `<w:r>${serializeRunProperties(run.styles)}${serializeRunText(run.text)}</w:r>`;
 }
 
@@ -270,71 +288,61 @@ function serializeParagraphProperties(
   return parts.length > 0 ? `<w:pPr>${parts.join("")}</w:pPr>` : "";
 }
 
-function serializeTable(table: Editor2TableNode): string {
-  const rowsXml = table.rows
-    .map((row) => {
-      const cellsXml = row.cells
-        .map((cell) => {
-          const paragraphs = cell.blocks.length > 0 ? cell.blocks : [{ id: "", type: "paragraph" as const, runs: [{ id: "", text: "" }] }];
-          const paragraphsXml = paragraphs
-            .map((paragraph) => {
-              const runs = paragraph.runs.length > 0 ? paragraph.runs : [{ id: "", text: "" }];
-              return `<w:p>${serializeParagraphProperties(paragraph, new Map())}${runs
-                .map((run) => serializeRun(run))
-                .join("")}</w:p>`;
-            })
-            .join("");
-          return `<w:tc>${paragraphsXml}</w:tc>`;
-        })
-        .join("");
-      return `<w:tr>${cellsXml}</w:tr>`;
-    })
-    .join("");
-
-  return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>${rowsXml}</w:tbl>`;
-}
-
-function buildNumberingMaps(document: Editor2Document): {
-  numberingInfo: Map<string, { numId: number; level: number }>;
-  definitions: Array<{ kind: Editor2ParagraphListStyle["kind"]; level: number; abstractNumId: number; numId: number }>;
-} {
+function buildDocumentContext(document: Editor2Document): DocContext {
   const numberingInfo = new Map<string, { numId: number; level: number }>();
   const definitionMap = new Map<string, { abstractNumId: number; numId: number }>();
   const definitions: Array<{ kind: Editor2ParagraphListStyle["kind"]; level: number; abstractNumId: number; numId: number }> = [];
+  const images: Array<{ rId: string; target: string; base64: string; runId: string; cx: number; cy: number }> = [];
+  const imageMap = new Map<string, string>();
+  
   let nextAbstractNumId = 1;
   let nextNumId = 1;
+  let nextImageId = 1;
 
-  for (const paragraph of document.blocks) {
-    if (paragraph.type !== "paragraph" || !paragraph.list) {
-      continue;
+  const traverseParagraph = (paragraph: Editor2ParagraphNode) => {
+    if (paragraph.list) {
+      const level = Math.max(0, paragraph.list.level ?? 0);
+      const key = `${paragraph.list.kind}:${level}`;
+      let definition = definitionMap.get(key);
+      if (!definition) {
+        definition = { abstractNumId: nextAbstractNumId++, numId: nextNumId++ };
+        definitionMap.set(key, definition);
+        definitions.push({ kind: paragraph.list.kind, level, abstractNumId: definition.abstractNumId, numId: definition.numId });
+      }
+      numberingInfo.set(paragraph.id, { numId: definition.numId, level });
     }
 
-    const level = Math.max(0, paragraph.list.level ?? 0);
-    const key = `${paragraph.list.kind}:${level}`;
-    let definition = definitionMap.get(key);
-    if (!definition) {
-      definition = {
-        abstractNumId: nextAbstractNumId,
-        numId: nextNumId,
-      };
-      nextAbstractNumId += 1;
-      nextNumId += 1;
-      definitionMap.set(key, definition);
-      definitions.push({
-        kind: paragraph.list.kind,
-        level,
-        abstractNumId: definition.abstractNumId,
-        numId: definition.numId,
-      });
+    for (const run of paragraph.runs) {
+      if (run.image) {
+        const match = run.image.src.match(/^data:image\/(png|jpeg|jpg);base64,(.*)$/);
+        if (match) {
+           const ext = match[1] === 'jpeg' ? 'jpg' : match[1];
+           const base64 = match[2];
+           const target = `media/image${nextImageId}.${ext}`;
+           const rId = `rIdImg${nextImageId}`;
+           images.push({ rId, target, base64, runId: run.id, cx: Math.round(run.image.width * 9525), cy: Math.round(run.image.height * 9525) });
+           imageMap.set(run.id, rId);
+           nextImageId++;
+        }
+      }
     }
+  };
 
-    numberingInfo.set(paragraph.id, {
-      numId: definition.numId,
-      level,
-    });
+  for (const block of document.blocks) {
+    if (block.type === "paragraph") {
+      traverseParagraph(block);
+    } else if (block.type === "table") {
+      for (const row of block.rows) {
+        for (const cell of row.cells) {
+          for (const paragraph of cell.blocks) {
+            traverseParagraph(paragraph);
+          }
+        }
+      }
+    }
   }
 
-  return { numberingInfo, definitions };
+  return { numberingInfo, definitions, images, imageMap };
 }
 
 function buildNumberingXml(
@@ -361,27 +369,37 @@ function buildNumberingXml(
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:numbering xmlns:w="${WORD_NS}">${abstractNums}${nums}</w:numbering>`;
 }
 
-function buildDocumentXml(
-  document: Editor2Document,
-  numberingInfo: Map<string, { numId: number; level: number }>,
-): string {
+function buildDocumentXml(document: Editor2Document, context: DocContext): string {
   const blocksXml = document.blocks
     .map((block) => {
       if (block.type === "table") {
-        return serializeTable(block);
+        const rowsXml = block.rows.map(row => {
+          const cellsXml = row.cells.map(cell => {
+            const paragraphs = cell.blocks.length > 0 ? cell.blocks : [{ id: "", type: "paragraph" as const, runs: [{ id: "", text: "" }] }];
+            const paragraphsXml = paragraphs.map(p => {
+              const runs = p.runs.length > 0 ? p.runs : [{ id: "", text: "" }];
+              return `<w:p>${serializeParagraphProperties(p, context.numberingInfo)}${runs.map(r => serializeRun(r, context)).join("")}</w:p>`;
+            }).join("");
+            return `<w:tc>${paragraphsXml}</w:tc>`;
+          }).join("");
+          return `<w:tr>${cellsXml}</w:tr>`;
+        }).join("");
+        return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>${rowsXml}</w:tbl>`;
       }
       const runs = block.runs.length > 0 ? block.runs : [{ id: "", text: "" }];
-      return `<w:p>${serializeParagraphProperties(block, numberingInfo)}${runs
-        .map((run) => serializeRun(run))
+      return `<w:p>${serializeParagraphProperties(block, context.numberingInfo)}${runs
+        .map((run) => serializeRun(run, context))
         .join("")}</w:p>`;
     })
     .join("");
 
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${WORD_NS}"><w:body>${blocksXml}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${WORD_NS}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="${OFFICE_REL_NS}"><w:body>${blocksXml}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>`;
 }
 
-function buildContentTypesXml(hasNumbering: boolean): string {
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>${
+function buildContentTypesXml(hasNumbering: boolean, hasImages: boolean): string {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${
+    hasImages ? '<Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="jpeg" ContentType="image/jpeg"/>' : ""
+  }<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>${
     hasNumbering
       ? '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>'
       : ""
@@ -392,26 +410,35 @@ function buildRootRelationshipsXml(): string {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${PACKAGE_REL_NS}"><Relationship Id="rId1" Type="${OFFICE_REL_NS}/officeDocument" Target="word/document.xml"/></Relationships>`;
 }
 
-function buildDocumentRelationshipsXml(hasNumbering: boolean): string {
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${PACKAGE_REL_NS}">${
-    hasNumbering
-      ? `<Relationship Id="rId1" Type="${OFFICE_REL_NS}/numbering" Target="numbering.xml"/>`
-      : ""
-  }</Relationships>`;
+function buildDocumentRelationshipsXml(hasNumbering: boolean, images: DocContext["images"]): string {
+  let rels = "";
+  if (hasNumbering) rels += `<Relationship Id="rIdNum" Type="${OFFICE_REL_NS}/numbering" Target="numbering.xml"/>`;
+  for (const img of images) {
+    rels += `<Relationship Id="${img.rId}" Type="${OFFICE_REL_NS}/image" Target="${img.target}"/>`;
+  }
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${PACKAGE_REL_NS}">${rels}</Relationships>`;
 }
 
 export async function exportEditor2DocumentToDocx(document: Editor2Document): Promise<ArrayBuffer> {
   const zip = new JSZip();
-  const { numberingInfo, definitions } = buildNumberingMaps(document);
-  const hasNumbering = definitions.length > 0;
+  const context = buildDocumentContext(document);
+  const hasNumbering = context.definitions.length > 0;
+  const hasImages = context.images.length > 0;
 
-  zip.file("[Content_Types].xml", buildContentTypesXml(hasNumbering));
+  zip.file("[Content_Types].xml", buildContentTypesXml(hasNumbering, hasImages));
   zip.file("_rels/.rels", buildRootRelationshipsXml());
-  zip.file("word/document.xml", buildDocumentXml(document, numberingInfo));
+  zip.file("word/document.xml", buildDocumentXml(document, context));
 
   if (hasNumbering) {
-    zip.file("word/numbering.xml", buildNumberingXml(definitions));
-    zip.file("word/_rels/document.xml.rels", buildDocumentRelationshipsXml(true));
+    zip.file("word/numbering.xml", buildNumberingXml(context.definitions));
+  }
+  
+  if (hasNumbering || hasImages) {
+    zip.file("word/_rels/document.xml.rels", buildDocumentRelationshipsXml(hasNumbering, context.images));
+  }
+
+  for (const img of context.images) {
+    zip.file(`word/${img.target}`, img.base64, { base64: true });
   }
 
   return zip.generateAsync({ type: "arraybuffer" });

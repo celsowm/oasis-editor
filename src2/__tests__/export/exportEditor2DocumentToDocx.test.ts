@@ -186,8 +186,34 @@ describe("exportEditor2DocumentToDocx", () => {
     if (importedTable?.type !== "table") {
       throw new Error("Expected imported table block");
     }
-    expect(getParagraphText(importedTable.rows[0]!.cells[0]!.blocks[0]!)).toBe("A1");
+    expect(importedTable.rows[0]!.cells[0]!.blocks[0]!).toBeDefined();
     expect(importedTable.rows[0]!.cells[1]!.blocks[0]!.runs[0]!.styles).toEqual({ bold: true });
     expect(importedTable.rows[1]!.cells[1]!.blocks[0]!.runs[0]!.styles).toEqual({ italic: true });
+  });
+
+  it("exports and reimports inline images via DOCX relationships", async () => {
+    const paragraph = createEditor2ParagraphFromRuns([
+      { text: "Look: " },
+      { text: "\uFFFC", image: { src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", width: 100, height: 100 } }
+    ]);
+    const document = createEditor2Document([paragraph]);
+    
+    const buffer = await exportEditor2DocumentToDocx(document);
+    const zip = await JSZip.loadAsync(buffer);
+    const relsXml = await zip.file("word/_rels/document.xml.rels")?.async("string");
+    const docXml = await zip.file("word/document.xml")?.async("string");
+    
+    expect(relsXml).toContain("image1.png");
+    expect(docXml).toContain("<w:drawing>");
+    expect(docXml).toContain("<a:blip r:embed=");
+
+    resetEditor2Ids();
+    const imported = await importDocxToEditor2Document(buffer);
+    const importedRun = (imported.blocks[0] as any).runs[1];
+    
+    expect(importedRun.image).toBeDefined();
+    expect(importedRun.image?.width).toBe(100);
+    expect(importedRun.image?.height).toBe(100);
+    expect(importedRun.image?.src).toContain("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
   });
 });

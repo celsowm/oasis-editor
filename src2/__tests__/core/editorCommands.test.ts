@@ -22,6 +22,12 @@ import {
   createEditor2StateFromParagraphRuns,
   createEditor2StateFromTexts,
   resetEditor2Ids,
+  createEditor2Document,
+  createEditor2Paragraph,
+  createEditor2Table,
+  createEditor2TableCell,
+  createEditor2TableRow,
+  createEditor2StateFromDocument,
 } from "../../core/editorState.js";
 
 describe("editor-2 commands", () => {
@@ -351,5 +357,45 @@ describe("editor-2 commands", () => {
     const next = toggleParagraphList(state, "ordered");
 
     expect(getParagraphs(next).map((paragraph) => paragraph.list)).toEqual([undefined, undefined]);
+  });
+
+  it("preserves table structure when applying text styles", () => {
+    const table = createEditor2Table([
+      createEditor2TableRow([
+        createEditor2TableCell([createEditor2Paragraph("Cell A")]),
+        createEditor2TableCell([createEditor2Paragraph("Cell B")]),
+      ]),
+    ]);
+    const document = createEditor2Document([table]);
+    const state = toggleTextStyle(
+      createEditor2StateFromDocument(document, { paragraphIndex: 0, offset: 2 }),
+      "bold"
+    );
+
+    expect(state.document.blocks.length).toBe(1);
+    expect(state.document.blocks[0]?.type).toBe("table");
+    
+    const tableBlock = state.document.blocks[0] as any;
+    expect(tableBlock.rows[0].cells[0].blocks[0].runs[0].text).toBe("Ce");
+    expect(tableBlock.rows[0].cells[0].blocks[0].runs[1].styles?.bold).toBe(true);
+    expect(tableBlock.rows[0].cells[1].blocks[0].runs[0].text).toBe("Cell B");
+  });
+
+  it("preserves table structure when moving selection left and right", () => {
+    const table = createEditor2Table([
+      createEditor2TableRow([
+        createEditor2TableCell([createEditor2Paragraph("A")]),
+        createEditor2TableCell([createEditor2Paragraph("B")]),
+      ]),
+    ]);
+    const state = createEditor2StateFromDocument(createEditor2Document([table]), { paragraphIndex: 1, offset: 0 });
+    const left = moveSelectionLeft(state);
+    
+    expect(left.document.blocks[0]?.type).toBe("table");
+    expect(left.selection.focus.paragraphId).toBe(getParagraphs(left)[0]?.id);
+    
+    const right = moveSelectionRight(left);
+    expect(right.document.blocks[0]?.type).toBe("table");
+    expect(right.selection.focus.paragraphId).toBe(getParagraphs(right)[1]?.id);
   });
 });

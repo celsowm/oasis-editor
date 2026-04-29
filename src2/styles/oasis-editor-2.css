@@ -266,6 +266,13 @@ body {
   display: inline;
 }
 
+.oasis-editor-2-image {
+  max-width: 100%;
+  height: auto;
+  vertical-align: bottom;
+  border-radius: 4px;
+}
+
 .oasis-editor-2-caret {
   position: absolute;
   width: 0;

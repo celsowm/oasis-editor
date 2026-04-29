@@ -18,6 +18,7 @@ import {
   getSelectedText,
   insertPlainTextAtSelection,
   insertTextAtSelection,
+  insertImageAtSelection,
   moveSelectionDown,
   moveSelectionLeft,
   moveSelectionRight,
@@ -337,6 +338,7 @@ export function OasisEditor2App() {
   let surfaceRef: HTMLDivElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
   let importInputRef: HTMLInputElement | undefined;
+  let imageInputRef: HTMLInputElement | undefined;
   let syncRequestId = 0;
   let dragAnchor: Editor2Position | null = null;
   let lastTransactionMeta: { mergeKey: string; timestamp: number } | null = null;
@@ -591,6 +593,36 @@ export function OasisEditor2App() {
     applyState(createEditor2StateFromDocument(document));
     if (importInputRef) {
       importInputRef.value = "";
+    }
+    focusInput();
+  };
+
+  const handleInsertImage = async (file: File | null) => {
+    if (!file) return;
+
+    const arrayBuffer = await readFileBuffer(file);
+    const base64 = btoa(
+      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
+    );
+    const src = `data:${file.type};base64,${base64}`;
+
+    const img = new Image();
+    img.src = src;
+    await new Promise((resolve) => {
+      img.onload = resolve;
+      img.onerror = resolve;
+    });
+
+    const width = img.naturalWidth || 300;
+    const height = img.naturalHeight || 300;
+
+    applyTransactionalState(
+      (current) => insertImageAtSelection(current, { src, width, height }),
+      { mergeKey: "insertImage" }
+    );
+
+    if (imageInputRef) {
+      imageInputRef.value = "";
     }
     focusInput();
   };
@@ -1318,6 +1350,14 @@ export function OasisEditor2App() {
           >
             Import DOCX
           </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-insert-image"
+            onClick={() => imageInputRef?.click()}
+          >
+            Insert Image
+          </button>
           {booleanButtons.map((button) => (
             <button
               type="button"
@@ -1676,6 +1716,17 @@ export function OasisEditor2App() {
             onChange={(event) => {
               const file = event.currentTarget.files?.[0] ?? null;
               void handleImportDocx(file);
+            }}
+          />
+          <input
+            ref={imageInputRef}
+            accept="image/png, image/jpeg, image/gif"
+            data-testid="editor-2-insert-image-input"
+            style={{ display: "none" }}
+            type="file"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0] ?? null;
+              void handleInsertImage(file);
             }}
           />
         </div>

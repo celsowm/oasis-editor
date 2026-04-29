@@ -8,6 +8,7 @@ import type {
   Editor2State,
   Editor2TextRun,
   Editor2TextStyle,
+  Editor2ImageRunData,
 } from "./model.js";
 import {
   getParagraphLength,
@@ -438,6 +439,24 @@ export function insertTextAtSelection(state: Editor2State, text: string): Editor
     collapsedState,
     nextParagraphs,
     withSelection(paragraphOffsetToPosition(nextParagraph, offset + text.length)),
+  );
+}
+
+export function insertImageAtSelection(state: Editor2State, image: Editor2ImageRunData): Editor2State {
+  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+  const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  
+  const insertedRun = createEditor2StyledRun("\uFFFC", getStyleAtOffset(paragraph, offset), image);
+  const nextParagraph = insertRunsAtOffset(paragraph, offset, [insertedRun]);
+  const paragraphs = getParagraphs(collapsedState);
+  const nextParagraphs = paragraphs.map((candidate, candidateIndex) =>
+    candidateIndex === index ? nextParagraph : cloneParagraph(candidate),
+  );
+
+  return cloneStateWithParagraphs(
+    collapsedState,
+    nextParagraphs,
+    withSelection(paragraphOffsetToPosition(nextParagraph, offset + 1)),
   );
 }
 

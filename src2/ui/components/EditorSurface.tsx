@@ -204,7 +204,16 @@ function renderParagraph(
                     data-run-offset={char.runOffset}
                     data-testid="editor-2-char"
                   >
-                    {char.char}
+                    {fragment.image ? (
+                      <img 
+                        src={fragment.image.src} 
+                        width={fragment.image.width} 
+                        height={fragment.image.height} 
+                        class="oasis-editor-2-image" 
+                      />
+                    ) : (
+                      char.char
+                    )}
                   </span>
                 )}
               </For>
