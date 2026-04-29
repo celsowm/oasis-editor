@@ -19,6 +19,7 @@ import {
   insertPlainTextAtSelection,
   insertTextAtSelection,
   insertImageAtSelection,
+  insertTableAtSelection,
   moveSelectionDown,
   moveSelectionLeft,
   moveSelectionRight,
@@ -1357,6 +1358,20 @@ export function OasisEditor2App() {
             onClick={() => imageInputRef?.click()}
           >
             Insert Image
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-insert-table"
+            onClick={() => {
+              applyTransactionalState(
+                (current) => insertTableAtSelection(current, 3, 3),
+                { mergeKey: "insertTable" }
+              );
+              focusInput();
+            }}
+          >
+            Insert Table
           </button>
           {booleanButtons.map((button) => (
             <button

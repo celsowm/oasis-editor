@@ -11,6 +11,7 @@ import type {
   Editor2ImageRunData,
 } from "./model.js";
 import {
+  getBlockParagraphs,
   getParagraphLength,
   getParagraphs,
   getParagraphText,
@@ -22,6 +23,9 @@ import {
   createEditor2Paragraph,
   createEditor2ParagraphFromRuns,
   createEditor2StyledRun,
+  createEditor2Table,
+  createEditor2TableCell,
+  createEditor2TableRow,
 } from "./editorState.js";
 import {
   clampPosition,
@@ -458,6 +462,44 @@ export function insertImageAtSelection(state: Editor2State, image: Editor2ImageR
     nextParagraphs,
     withSelection(paragraphOffsetToPosition(nextParagraph, offset + 1)),
   );
+}
+
+export function insertTableAtSelection(state: Editor2State, rows: number, cols: number): Editor2State {
+  const tableRows = [];
+  for (let r = 0; r < rows; r += 1) {
+    const cells = [];
+    for (let c = 0; c < cols; c += 1) {
+      cells.push(createEditor2TableCell([createEditor2Paragraph("")]));
+    }
+    tableRows.push(createEditor2TableRow(cells));
+  }
+  const table = createEditor2Table(tableRows);
+
+  const focus = clampPosition(state, state.selection.focus);
+  const blocks = state.document.blocks;
+  const blockIndex = blocks.findIndex(b => {
+     if (b.id === focus.paragraphId) return true;
+     if (b.type === "paragraph") return false;
+     return getBlockParagraphs(b).some(p => p.id === focus.paragraphId);
+  });
+  
+  if (blockIndex === -1) {
+    return state;
+  }
+  
+  const nextBlocks = [
+    ...blocks.slice(0, blockIndex + 1),
+    table,
+    ...blocks.slice(blockIndex + 1)
+  ];
+  
+  return {
+    document: {
+      ...state.document,
+      blocks: nextBlocks
+    },
+    selection: withSelection(paragraphOffsetToPosition(table.rows[0]!.cells[0]!.blocks[0]!, 0))
+  };
 }
 
 export function insertPlainTextAtSelection(state: Editor2State, text: string): Editor2State {
