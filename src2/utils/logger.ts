@@ -52,12 +52,18 @@ export function isEditor2DebugEnabled(): boolean {
     return false;
   }
 
+  // Always auto-enable on localhost so a stale localStorage "0" from a
+  // previous session never silences the console.
+  if (isLocalhostLike()) {
+    return true;
+  }
+
   const storageOverride = readStorageOverride();
   if (storageOverride !== null) {
     return storageOverride;
   }
 
-  return isLocalhostLike() || readStorageFlag();
+  return readStorageFlag();
 }
 
 export function setEditor2DebugEnabled(enabled: boolean): void {

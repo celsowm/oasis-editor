@@ -2511,31 +2511,75 @@ export function OasisEditor2App() {
     return true;
   };
 
-  const resolvePositionAtPoint = (clientX: number, clientY: number): Editor2Position | null => {
-    const target = document.elementFromPoint(clientX, clientY);
-    if (!(target instanceof HTMLElement)) {
+  const findNearestParagraphElement = (
+    clientX: number,
+    clientY: number,
+  ): HTMLElement | null => {
+    if (!surfaceRef) {
+      return null;
+    }
+    const candidates = Array.from(
+      surfaceRef.querySelectorAll<HTMLElement>("[data-paragraph-id]"),
+    );
+    if (candidates.length === 0) {
       return null;
     }
 
+    let best: HTMLElement | null = null;
+    let bestScore = Number.POSITIVE_INFINITY;
+    for (const candidate of candidates) {
+      const rect = candidate.getBoundingClientRect();
+      const verticalDelta =
+        clientY < rect.top
+          ? rect.top - clientY
+          : clientY > rect.bottom
+            ? clientY - rect.bottom
+            : 0;
+      const horizontalDelta =
+        clientX < rect.left
+          ? rect.left - clientX
+          : clientX > rect.right
+            ? clientX - rect.right
+            : 0;
+      const score = verticalDelta * 1000 + horizontalDelta;
+      if (score < bestScore) {
+        bestScore = score;
+        best = candidate;
+      }
+    }
+    return best;
+  };
+
+  const resolvePositionAtPoint = (clientX: number, clientY: number): Editor2Position | null => {
+    const target = document.elementFromPoint(clientX, clientY);
+
     // If hovering over a table cell, return first char position of that cell
-    const cellElement = target.closest<HTMLElement>("td[data-cell-index]");
-    if (cellElement) {
-      const rowIndex = Number(cellElement.dataset.rowIndex ?? -1);
-      const cellIndex = Number(cellElement.dataset.cellIndex ?? -1);
-      if (rowIndex >= 0 && cellIndex >= 0) {
-        for (const block of state.document.blocks) {
-          if (block.type !== "table") continue;
-          const row = block.rows[rowIndex];
-          const cell = row?.cells[cellIndex];
-          const paragraph = cell?.blocks[0];
-          if (paragraph) {
-            return paragraphOffsetToPosition(paragraph, 0);
+    if (target instanceof HTMLElement) {
+      const cellElement = target.closest<HTMLElement>("td[data-cell-index]");
+      if (cellElement) {
+        const rowIndex = Number(cellElement.dataset.rowIndex ?? -1);
+        const cellIndex = Number(cellElement.dataset.cellIndex ?? -1);
+        if (rowIndex >= 0 && cellIndex >= 0) {
+          for (const block of state.document.blocks) {
+            if (block.type !== "table") continue;
+            const row = block.rows[rowIndex];
+            const cell = row?.cells[cellIndex];
+            const paragraph = cell?.blocks[0];
+            if (paragraph) {
+              return paragraphOffsetToPosition(paragraph, 0);
+            }
           }
         }
       }
     }
 
-    const paragraphElement = target.closest<HTMLElement>("[data-paragraph-id]");
+    let paragraphElement: HTMLElement | null = null;
+    if (target instanceof HTMLElement) {
+      paragraphElement = target.closest<HTMLElement>("[data-paragraph-id]");
+    }
+    if (!paragraphElement) {
+      paragraphElement = findNearestParagraphElement(clientX, clientY);
+    }
     if (!paragraphElement) {
       return null;
     }
@@ -3502,6 +3546,79 @@ export function OasisEditor2App() {
             measuredBlockHeights={() => measuredBlockHeights()}
             onSurfaceMouseDown={(event) => {
               event.preventDefault();
+
+              // If the click happened on a paragraph (or a child of one), the
+              // paragraph mousedown handler already started a selection - do
+              // not clobber it.
+              if (
+                event.target instanceof Element &&
+                event.target.closest("[data-paragraph-id]")
+              ) {
+                focusInput();
+                return;
+              }
+
+              // Clicking on the empty area around the chars (e.g., the
+              // surface padding to the left of the text) should still start a
+              // drag selection on the nearest paragraph - otherwise the user
+              // can't begin a selection unless they hit a character precisely.
+              const paragraphElement = findNearestParagraphElement(
+                event.clientX,
+                event.clientY,
+              );
+              if (!paragraphElement) {
+                focusInput();
+                return;
+              }
+              const paragraphId = paragraphElement.dataset.paragraphId;
+              const paragraph = paragraphId
+                ? getParagraphs(state).find((candidate) => candidate.id === paragraphId)
+                : undefined;
+              if (!paragraphId || !paragraph) {
+                focusInput();
+                return;
+              }
+
+              clearPreferredColumn();
+              resetTransactionGrouping();
+              const layout = measureParagraphLayoutFromRects(
+                paragraph,
+                collectCharRects(paragraphElement),
+              );
+              const offset = layout.text.length === 0
+                ? 0
+                : Math.max(
+                    0,
+                    Math.min(
+                      layout.text.length,
+                      resolveClosestOffsetInMeasuredLayout(
+                        layout,
+                        event.clientX,
+                        event.clientY,
+                      ),
+                    ),
+                  );
+              const position = paragraphOffsetToPosition(paragraph, offset);
+
+              if (event.shiftKey) {
+                dragAnchor = state.selection.anchor;
+                applyState(
+                  setSelection(state, {
+                    anchor: state.selection.anchor,
+                    focus: position,
+                  }),
+                );
+              } else {
+                dragAnchor = position;
+                applyState(
+                  setSelection(state, {
+                    anchor: position,
+                    focus: position,
+                  }),
+                );
+              }
+              window.addEventListener("mousemove", handleWindowMouseMove);
+              window.addEventListener("mouseup", handleWindowMouseUp);
               focusInput();
             }}
             onParagraphMouseDown={(paragraphId, event) => {
