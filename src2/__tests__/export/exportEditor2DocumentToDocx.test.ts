@@ -1,9 +1,18 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import JSZip from "jszip";
-import { createEditor2Document, createEditor2ParagraphFromRuns, resetEditor2Ids } from "../../core/editorState.js";
+import {
+  createEditor2Document,
+  createEditor2ParagraphFromRuns,
+  createEditor2Table,
+  createEditor2TableCell,
+  createEditor2TableRow,
+  resetEditor2Ids,
+} from "../../core/editorState.js";
 import { exportEditor2DocumentToDocx } from "../../export/docx/exportEditor2DocumentToDocx.js";
 import { importDocxToEditor2Document } from "../../import/docx/importDocxToEditor2Document.js";
 import { getParagraphText } from "../../core/model.js";
+import { createDocxRoundTripFixtures } from "../fixtures/docxRoundTripFixtures.js";
+import { normalizeEditor2Document } from "../shared/normalizeEditor2Document.js";
 
 describe("exportEditor2DocumentToDocx", () => {
   beforeEach(() => {
@@ -86,16 +95,19 @@ describe("exportEditor2DocumentToDocx", () => {
     resetEditor2Ids();
     const imported = await importDocxToEditor2Document(buffer);
     const [importedFirst, importedSecond] = imported.blocks;
+    if (importedFirst?.type !== "paragraph" || importedSecond?.type !== "paragraph") {
+      throw new Error("Expected paragraph blocks");
+    }
 
     expect(getParagraphText(importedFirst!)).toBe("Alpha beta");
-    expect(importedFirst?.runs.map((run) => ({ text: run.text, styles: run.styles }))).toEqual([
+    expect(importedFirst.runs.map((run) => ({ text: run.text, styles: run.styles }))).toEqual([
       { text: "Alpha", styles: { bold: true, color: "#112233", superscript: true } },
       {
         text: " beta",
         styles: { italic: true, underline: true, fontFamily: "Times New Roman", fontSize: 16 },
       },
     ]);
-    expect(importedFirst?.style).toEqual({
+    expect(importedFirst.style).toEqual({
       align: "justify",
       spacingBefore: 10,
       spacingAfter: 4,
@@ -106,13 +118,76 @@ describe("exportEditor2DocumentToDocx", () => {
       pageBreakBefore: true,
       keepWithNext: true,
     });
-    expect(importedFirst?.list).toEqual({ kind: "ordered", level: 2 });
+    expect(importedFirst.list).toEqual({ kind: "ordered", level: 2 });
 
     expect(getParagraphText(importedSecond!)).toBe("Gamma");
-    expect(importedSecond?.runs[0]?.styles).toEqual({
+    expect(importedSecond.runs[0]?.styles).toEqual({
       strike: true,
       highlight: "yellow",
       subscript: true,
     });
+  });
+
+  for (const fixture of createDocxRoundTripFixtures()) {
+    it(`round-trips fixture: ${fixture.name}`, async () => {
+      const buffer = await exportEditor2DocumentToDocx(fixture.document);
+
+      resetEditor2Ids();
+      const imported = await importDocxToEditor2Document(buffer);
+
+      expect(normalizeEditor2Document(imported)).toEqual(
+        normalizeEditor2Document(fixture.document),
+      );
+    });
+  }
+
+  it("maps hex highlight colors to valid docx highlight keywords", async () => {
+    const paragraph = createEditor2ParagraphFromRuns([
+      { text: "Marked", styles: { highlight: "#fef08a" } },
+    ]);
+    const document = createEditor2Document([paragraph]);
+    const buffer = await exportEditor2DocumentToDocx(document);
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+
+    expect(documentXml).toContain('<w:highlight w:val="yellow"/>');
+  });
+
+  it("exports and reimports simple tables while preserving block order", async () => {
+    const intro = createEditor2ParagraphFromRuns([{ text: "Intro" }]);
+    const table = createEditor2Table([
+      createEditor2TableRow([
+        createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "A1" }])]),
+        createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "B1", styles: { bold: true } }])]),
+      ]),
+      createEditor2TableRow([
+        createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "A2" }])]),
+        createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "B2", styles: { italic: true } }])]),
+      ]),
+    ]);
+    const outro = createEditor2ParagraphFromRuns([{ text: "Outro" }]);
+    const document = createEditor2Document([intro, table, outro]);
+
+    const buffer = await exportEditor2DocumentToDocx(document);
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+
+    expect(documentXml).toContain("<w:tbl>");
+    expect(documentXml).toContain("A1");
+    expect(documentXml).toContain("B2");
+
+    resetEditor2Ids();
+    const imported = await importDocxToEditor2Document(buffer);
+    const importedTable = imported.blocks[1];
+
+    expect(imported.blocks[0]?.type).toBe("paragraph");
+    expect(importedTable?.type).toBe("table");
+    expect(imported.blocks[2]?.type).toBe("paragraph");
+    if (importedTable?.type !== "table") {
+      throw new Error("Expected imported table block");
+    }
+    expect(getParagraphText(importedTable.rows[0]!.cells[0]!.blocks[0]!)).toBe("A1");
+    expect(importedTable.rows[0]!.cells[1]!.blocks[0]!.runs[0]!.styles).toEqual({ bold: true });
+    expect(importedTable.rows[1]!.cells[1]!.blocks[0]!.runs[0]!.styles).toEqual({ italic: true });
   });
 });

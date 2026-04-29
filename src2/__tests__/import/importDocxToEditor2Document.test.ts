@@ -89,6 +89,9 @@ describe("importDocxToEditor2Document", () => {
 
     const document = await importDocxToEditor2Document(buffer);
     const paragraph = document.blocks[0]!;
+    if (paragraph.type !== "paragraph") {
+      throw new Error("Expected paragraph block");
+    }
 
     expect(getParagraphText(paragraph)).toBe("Hello world");
     expect(paragraph.runs.map((run) => run.text)).toEqual(["Hello", " world"]);
@@ -145,6 +148,46 @@ describe("importDocxToEditor2Document", () => {
     );
 
     const document = await importDocxToEditor2Document(buffer);
-    expect(document.blocks[0]?.list).toEqual({ kind: "ordered", level: 1 });
+    const paragraph = document.blocks[0];
+    if (paragraph?.type !== "paragraph") {
+      throw new Error("Expected paragraph block");
+    }
+    expect(paragraph.list).toEqual({ kind: "ordered", level: 1 });
+  });
+
+  it("imports tables in body order with cell paragraphs", async () => {
+    const buffer = await buildDocx(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:p>
+            <w:r><w:t>Before</w:t></w:r>
+          </w:p>
+          <w:tbl>
+            <w:tr>
+              <w:tc><w:p><w:r><w:t>A1</w:t></w:r></w:p></w:tc>
+              <w:tc><w:p><w:r><w:t>B1</w:t></w:r></w:p></w:tc>
+            </w:tr>
+            <w:tr>
+              <w:tc><w:p><w:r><w:t>A2</w:t></w:r></w:p></w:tc>
+              <w:tc><w:p><w:r><w:t>B2</w:t></w:r></w:p></w:tc>
+            </w:tr>
+          </w:tbl>
+        </w:body>
+      </w:document>`,
+    );
+
+    const document = await importDocxToEditor2Document(buffer);
+    const table = document.blocks[1];
+
+    expect(document.blocks[0]?.type).toBe("paragraph");
+    expect(table?.type).toBe("table");
+    if (table?.type !== "table") {
+      throw new Error("Expected table block");
+    }
+    expect(table.rows).toHaveLength(2);
+    expect(table.rows[0]?.cells).toHaveLength(2);
+    expect(getParagraphText(table.rows[0]!.cells[0]!.blocks[0]!)).toBe("A1");
+    expect(getParagraphText(table.rows[1]!.cells[1]!.blocks[0]!)).toBe("B2");
   });
 });

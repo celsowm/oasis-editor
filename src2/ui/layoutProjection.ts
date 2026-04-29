@@ -1,4 +1,5 @@
 import type {
+  Editor2BlockNode,
   Editor2CaretSlot,
   Editor2LayoutBlock,
   Editor2LayoutDocument,
@@ -7,6 +8,7 @@ import type {
   Editor2LayoutLine,
   Editor2LayoutParagraph,
   Editor2ParagraphNode,
+  Editor2TableNode,
 } from "../core/model.js";
 import { getParagraphText } from "../core/model.js";
 import { measureLinesFromRects, type CharRect } from "./caretGeometry.js";
@@ -185,18 +187,41 @@ export function estimateParagraphBlockHeight(paragraph: Editor2ParagraphNode): n
   return spacingBefore + spacingAfter + lineCount * lineHeightPx + DEFAULT_PARAGRAPH_GAP;
 }
 
+export function estimateTableBlockHeight(table: Editor2TableNode): number {
+  const rowHeights = table.rows.map((row) => {
+    const cellHeights = row.cells.map((cell) =>
+      cell.blocks.reduce((sum, paragraph) => sum + estimateParagraphBlockHeight(paragraph), 0),
+    );
+    return Math.max(...cellHeights, DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT) + 12;
+  });
+
+  return rowHeights.reduce((sum, height) => sum + height, 0) + 16;
+}
+
 export function projectDocumentLayout(
-  paragraphs: Editor2ParagraphNode[],
+  blocks: Editor2BlockNode[],
   maxPageHeight = DEFAULT_PAGE_HEIGHT,
   measuredHeights?: Record<string, number>,
 ): Editor2LayoutDocument {
-  const blocks: Editor2LayoutBlock[] = paragraphs.map((paragraph, globalIndex) => ({
-    blockId: paragraph.id,
-    paragraphId: paragraph.id,
-    globalIndex,
-    estimatedHeight: measuredHeights?.[paragraph.id] ?? estimateParagraphBlockHeight(paragraph),
-    layout: projectParagraphLayout(paragraph),
-  }));
+  const projectedBlocks: Editor2LayoutBlock[] = blocks.map((block, globalIndex) =>
+    block.type === "paragraph"
+      ? {
+          blockId: block.id,
+          blockType: block.type,
+          paragraphId: block.id,
+          globalIndex,
+          estimatedHeight: measuredHeights?.[block.id] ?? estimateParagraphBlockHeight(block),
+          layout: projectParagraphLayout(block),
+          sourceBlock: block,
+        }
+      : {
+          blockId: block.id,
+          blockType: block.type,
+          globalIndex,
+          estimatedHeight: measuredHeights?.[block.id] ?? estimateTableBlockHeight(block),
+          sourceBlock: block,
+        },
+  );
 
   const pages: Editor2LayoutDocument["pages"] = [];
   let currentBlocks: Editor2LayoutBlock[] = [];
@@ -218,18 +243,19 @@ export function projectDocumentLayout(
     currentHeight = 0;
   };
 
-  for (let index = 0; index < blocks.length; index += 1) {
-    const block = blocks[index]!;
-    const paragraph = paragraphs[index]!;
-    const nextBlock = blocks[index + 1];
+  for (let index = 0; index < projectedBlocks.length; index += 1) {
+    const block = projectedBlocks[index]!;
+    const nextBlock = projectedBlocks[index + 1];
+    const sourceBlock = blocks[index]!;
     const keepWithNext =
-      paragraph.style?.keepWithNext === true &&
+      sourceBlock.type === "paragraph" &&
+      sourceBlock.style?.keepWithNext === true &&
       nextBlock !== undefined;
     const keepPairHeight = keepWithNext
       ? block.estimatedHeight + nextBlock.estimatedHeight
       : block.estimatedHeight;
 
-    if (paragraph.style?.pageBreakBefore && currentBlocks.length > 0) {
+    if (sourceBlock.type === "paragraph" && sourceBlock.style?.pageBreakBefore && currentBlocks.length > 0) {
       flushPage();
     }
 

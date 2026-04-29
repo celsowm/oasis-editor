@@ -31,6 +31,7 @@ import {
 } from "../core/editorCommands.js";
 import { createInitialEditor2State, createEditor2StateFromDocument } from "../core/editorState.js";
 import {
+  type Editor2BlockNode,
   type Editor2ParagraphListStyle,
   getParagraphs,
   getParagraphText,
@@ -361,13 +362,34 @@ export function OasisEditor2App() {
     { kind: "ordered", label: "1. List", testId: "editor-2-toolbar-list-ordered" },
   ];
 
+  const cloneDocumentBlock = (block: Editor2BlockNode): Editor2BlockNode =>
+    block.type === "paragraph"
+      ? {
+          ...block,
+          runs: block.runs.map((run) => ({ ...run })),
+          style: block.style ? { ...block.style } : undefined,
+          list: block.list ? { ...block.list } : undefined,
+        }
+      : {
+          ...block,
+          rows: block.rows.map((row) => ({
+            ...row,
+            cells: row.cells.map((cell) => ({
+              ...cell,
+              blocks: cell.blocks.map((paragraph) => ({
+                ...paragraph,
+                runs: paragraph.runs.map((run) => ({ ...run })),
+                style: paragraph.style ? { ...paragraph.style } : undefined,
+                list: paragraph.list ? { ...paragraph.list } : undefined,
+              })),
+            })),
+          })),
+        };
+
   const cloneState = (source: Editor2State): Editor2State => ({
     document: {
       ...source.document,
-      blocks: source.document.blocks.map((paragraph) => ({
-        ...paragraph,
-        runs: paragraph.runs.map((run) => ({ ...run })),
-      })),
+      blocks: source.document.blocks.map(cloneDocumentBlock),
     },
     selection: {
       anchor: { ...source.selection.anchor },
@@ -470,15 +492,15 @@ export function OasisEditor2App() {
     }
 
     const nextHeights: Record<string, number> = {};
-    const paragraphElements =
-      surfaceRef.querySelectorAll<HTMLElement>("[data-paragraph-id]");
+    const blockElements =
+      surfaceRef.querySelectorAll<HTMLElement>("[data-block-id]");
 
-    for (const element of paragraphElements) {
-      const paragraphId = element.dataset.paragraphId;
-      if (!paragraphId) {
+    for (const element of blockElements) {
+      const blockId = element.dataset.blockId;
+      if (!blockId) {
         continue;
       }
-      nextHeights[paragraphId] = element.getBoundingClientRect().height;
+      nextHeights[blockId] = element.getBoundingClientRect().height;
     }
 
     const currentHeights = measuredBlockHeights();

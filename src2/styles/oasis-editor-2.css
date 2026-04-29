@@ -231,6 +231,27 @@ body {
   gap: 14px;
 }
 
+.oasis-editor-2-table-block {
+  margin: 0 0 18px;
+}
+
+.oasis-editor-2-table-grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.oasis-editor-2-table-cell {
+  vertical-align: top;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.oasis-editor-2-table-cell .oasis-editor-2-block:last-child {
+  margin-bottom: 0;
+}
+
 .oasis-editor-2-list-marker {
   flex: 0 0 26px;
   padding-top: 0.1em;

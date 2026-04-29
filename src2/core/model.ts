@@ -42,7 +42,23 @@ export interface Editor2ParagraphNode {
   list?: Editor2ParagraphListStyle;
 }
 
-export type Editor2BlockNode = Editor2ParagraphNode;
+export interface Editor2TableCellNode {
+  id: string;
+  blocks: Editor2ParagraphNode[];
+}
+
+export interface Editor2TableRowNode {
+  id: string;
+  cells: Editor2TableCellNode[];
+}
+
+export interface Editor2TableNode {
+  id: string;
+  type: "table";
+  rows: Editor2TableRowNode[];
+}
+
+export type Editor2BlockNode = Editor2ParagraphNode | Editor2TableNode;
 
 export interface Editor2Document {
   id: string;
@@ -109,10 +125,12 @@ export interface Editor2LayoutParagraph {
 
 export interface Editor2LayoutBlock {
   blockId: string;
-  paragraphId: string;
+  blockType: Editor2BlockNode["type"];
+  paragraphId?: string;
   globalIndex: number;
   estimatedHeight: number;
-  layout: Editor2LayoutParagraph;
+  layout?: Editor2LayoutParagraph;
+  sourceBlock: Editor2BlockNode;
 }
 
 export interface Editor2LayoutPage {
@@ -128,8 +146,20 @@ export interface Editor2LayoutDocument {
   pages: Editor2LayoutPage[];
 }
 
+export function getBlockParagraphs(block: Editor2BlockNode): Editor2ParagraphNode[] {
+  if (block.type === "paragraph") {
+    return [block];
+  }
+
+  return block.rows.flatMap((row) => row.cells.flatMap((cell) => cell.blocks));
+}
+
+export function getDocumentParagraphs(document: Editor2Document): Editor2ParagraphNode[] {
+  return document.blocks.flatMap((block) => getBlockParagraphs(block));
+}
+
 export function getParagraphs(state: Editor2State): Editor2ParagraphNode[] {
-  return state.document.blocks;
+  return getDocumentParagraphs(state.document);
 }
 
 export function getParagraphText(paragraph: Editor2ParagraphNode): string {

@@ -1,7 +1,7 @@
 import JSZip from "jszip";
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
-import type { Editor2Document, Editor2ParagraphListStyle, Editor2ParagraphStyle, Editor2TextStyle } from "../../core/model.js";
-import { createEditor2Document, createEditor2ParagraphFromRuns } from "../../core/editorState.js";
+import type { Editor2BlockNode, Editor2Document, Editor2ParagraphListStyle, Editor2ParagraphStyle, Editor2TableNode, Editor2TextStyle } from "../../core/model.js";
+import { createEditor2Document, createEditor2ParagraphFromRuns, createEditor2Table, createEditor2TableCell, createEditor2TableRow } from "../../core/editorState.js";
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
@@ -264,6 +264,46 @@ function parseRunText(runElement: XmlElement): string {
   return textParts.join("");
 }
 
+function parseParagraphNode(
+  paragraphNode: XmlElement,
+  numberingMaps: NumberingMaps,
+) {
+  const paragraphProperties = getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr");
+  const runs = getChildrenByTagNameNS(paragraphNode, WORD_NS, "r")
+    .map((runElement) => ({
+      text: parseRunText(runElement),
+      styles: parseRunStyle(getFirstChildByTagNameNS(runElement, WORD_NS, "rPr")),
+    }))
+    .filter((run) => run.text.length > 0);
+
+  const paragraph = createEditor2ParagraphFromRuns(
+    runs.length > 0 ? runs : [{ text: "" }],
+  );
+  paragraph.style = parseParagraphStyle(paragraphProperties);
+  paragraph.list = parseParagraphList(paragraphProperties, numberingMaps);
+  return paragraph;
+}
+
+function parseTableNode(
+  tableNode: XmlElement,
+  numberingMaps: NumberingMaps,
+): Editor2TableNode {
+  const rows = getChildrenByTagNameNS(tableNode, WORD_NS, "tr").map((rowNode) => {
+    const cells = getChildrenByTagNameNS(rowNode, WORD_NS, "tc").map((cellNode) => {
+      const paragraphs = getChildrenByTagNameNS(cellNode, WORD_NS, "p").map((paragraphNode) =>
+        parseParagraphNode(paragraphNode, numberingMaps),
+      );
+      return createEditor2TableCell(
+        paragraphs.length > 0 ? paragraphs : [createEditor2ParagraphFromRuns([{ text: "" }])],
+      );
+    });
+
+    return createEditor2TableRow(cells);
+  });
+
+  return createEditor2Table(rows);
+}
+
 export async function importDocxToEditor2Document(buffer: ArrayBuffer): Promise<Editor2Document> {
   const zip = await JSZip.loadAsync(buffer);
   const documentXml = await zip.file("word/document.xml")?.async("string");
@@ -276,29 +316,28 @@ export async function importDocxToEditor2Document(buffer: ArrayBuffer): Promise<
   const document = new DOMParser().parseFromString(documentXml, "application/xml");
   const body = document.getElementsByTagNameNS(WORD_NS, "body")[0];
 
-  const paragraphs = [];
+  const blocks: Editor2BlockNode[] = [];
   if (body) {
-    const paragraphNodes = body.getElementsByTagNameNS(WORD_NS, "p");
-    for (let index = 0; index < paragraphNodes.length; index += 1) {
-      const paragraphNode = paragraphNodes[index]!;
-      const paragraphProperties = getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr");
-      const runs = getChildrenByTagNameNS(paragraphNode, WORD_NS, "r")
-        .map((runElement) => ({
-          text: parseRunText(runElement),
-          styles: parseRunStyle(getFirstChildByTagNameNS(runElement, WORD_NS, "rPr")),
-        }))
-        .filter((run) => run.text.length > 0);
+    for (let index = 0; index < body.childNodes.length; index += 1) {
+      const node = body.childNodes[index];
+      if (node?.nodeType !== node.ELEMENT_NODE) {
+        continue;
+      }
 
-      const paragraph = createEditor2ParagraphFromRuns(
-        runs.length > 0 ? runs : [{ text: "" }],
-      );
-      paragraph.style = parseParagraphStyle(paragraphProperties);
-      paragraph.list = parseParagraphList(paragraphProperties, numberingMaps);
-      paragraphs.push(paragraph);
+      const element = node as XmlElement;
+      if (element.namespaceURI !== WORD_NS) {
+        continue;
+      }
+
+      if (element.localName === "p") {
+        blocks.push(parseParagraphNode(element, numberingMaps));
+      } else if (element.localName === "tbl") {
+        blocks.push(parseTableNode(element, numberingMaps));
+      }
     }
   }
 
   return createEditor2Document(
-    paragraphs.length > 0 ? paragraphs : [createEditor2ParagraphFromRuns([{ text: "" }])],
+    blocks.length > 0 ? blocks : [createEditor2ParagraphFromRuns([{ text: "" }])],
   );
 }

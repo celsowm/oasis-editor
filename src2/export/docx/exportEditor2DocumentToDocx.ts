@@ -1,8 +1,10 @@
 import JSZip from "jszip";
 import type {
+  Editor2BlockNode,
   Editor2Document,
   Editor2ParagraphListStyle,
   Editor2ParagraphNode,
+  Editor2TableNode,
   Editor2TextRun,
   Editor2TextStyle,
 } from "../../core/model.js";
@@ -27,6 +29,17 @@ const DOCX_HIGHLIGHT_COLORS: Record<string, [number, number, number]> = {
   darkYellow: [184, 134, 11],
   darkGray: [169, 169, 169],
   lightGray: [211, 211, 211],
+};
+const DOCX_HIGHLIGHT_HEX_ALIASES: Record<string, string> = {
+  "ffff00": "yellow",
+  "fef08a": "yellow",
+  "ff0000": "red",
+  "00ff00": "green",
+  "0000ff": "blue",
+  "00ffff": "cyan",
+  "ff00ff": "magenta",
+  "000000": "black",
+  "ffffff": "white",
 };
 
 function escapeXml(text: string): string {
@@ -67,6 +80,12 @@ function parseHexColor(color: string): [number, number, number] | null {
 function normalizeHighlightForDocx(highlight: string): string {
   if (highlight in DOCX_HIGHLIGHT_COLORS) {
     return highlight;
+  }
+
+  const normalizedHex = highlight.trim().replace(/^#/, "").toLowerCase();
+  const directAlias = DOCX_HIGHLIGHT_HEX_ALIASES[normalizedHex];
+  if (directAlias) {
+    return directAlias;
   }
 
   const rgb = parseHexColor(highlight);
@@ -251,6 +270,30 @@ function serializeParagraphProperties(
   return parts.length > 0 ? `<w:pPr>${parts.join("")}</w:pPr>` : "";
 }
 
+function serializeTable(table: Editor2TableNode): string {
+  const rowsXml = table.rows
+    .map((row) => {
+      const cellsXml = row.cells
+        .map((cell) => {
+          const paragraphs = cell.blocks.length > 0 ? cell.blocks : [{ id: "", type: "paragraph" as const, runs: [{ id: "", text: "" }] }];
+          const paragraphsXml = paragraphs
+            .map((paragraph) => {
+              const runs = paragraph.runs.length > 0 ? paragraph.runs : [{ id: "", text: "" }];
+              return `<w:p>${serializeParagraphProperties(paragraph, new Map())}${runs
+                .map((run) => serializeRun(run))
+                .join("")}</w:p>`;
+            })
+            .join("");
+          return `<w:tc>${paragraphsXml}</w:tc>`;
+        })
+        .join("");
+      return `<w:tr>${cellsXml}</w:tr>`;
+    })
+    .join("");
+
+  return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>${rowsXml}</w:tbl>`;
+}
+
 function buildNumberingMaps(document: Editor2Document): {
   numberingInfo: Map<string, { numId: number; level: number }>;
   definitions: Array<{ kind: Editor2ParagraphListStyle["kind"]; level: number; abstractNumId: number; numId: number }>;
@@ -262,7 +305,7 @@ function buildNumberingMaps(document: Editor2Document): {
   let nextNumId = 1;
 
   for (const paragraph of document.blocks) {
-    if (!paragraph.list) {
+    if (paragraph.type !== "paragraph" || !paragraph.list) {
       continue;
     }
 
@@ -322,16 +365,19 @@ function buildDocumentXml(
   document: Editor2Document,
   numberingInfo: Map<string, { numId: number; level: number }>,
 ): string {
-  const paragraphsXml = document.blocks
-    .map((paragraph) => {
-      const runs = paragraph.runs.length > 0 ? paragraph.runs : [{ id: "", text: "" }];
-      return `<w:p>${serializeParagraphProperties(paragraph, numberingInfo)}${runs
+  const blocksXml = document.blocks
+    .map((block) => {
+      if (block.type === "table") {
+        return serializeTable(block);
+      }
+      const runs = block.runs.length > 0 ? block.runs : [{ id: "", text: "" }];
+      return `<w:p>${serializeParagraphProperties(block, numberingInfo)}${runs
         .map((run) => serializeRun(run))
         .join("")}</w:p>`;
     })
     .join("");
 
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${WORD_NS}"><w:body>${paragraphsXml}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${WORD_NS}"><w:body>${blocksXml}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>`;
 }
 
 function buildContentTypesXml(hasNumbering: boolean): string {

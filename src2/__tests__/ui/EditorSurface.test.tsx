@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { render } from "solid-js/web";
 import { EditorSurface } from "../../ui/components/EditorSurface.js";
-import { createEditor2Document, createEditor2ParagraphFromRuns } from "../../core/editorState.js";
+import {
+  createEditor2Document,
+  createEditor2ParagraphFromRuns,
+  createEditor2Table,
+  createEditor2TableCell,
+  createEditor2TableRow,
+} from "../../core/editorState.js";
 import type { Editor2State } from "../../core/model.js";
 
 describe("EditorSurface", () => {
@@ -195,6 +201,51 @@ describe("EditorSurface", () => {
     );
 
     expect(container.querySelectorAll('[data-testid="editor-2-page"]').length).toBeGreaterThan(1);
+
+    dispose();
+  });
+
+  it("renders semantic tables as a real grid with paragraph content in cells", () => {
+    const container = document.createElement("div");
+    const intro = createEditor2ParagraphFromRuns([{ text: "Intro" }]);
+    const table = createEditor2Table([
+      createEditor2TableRow([
+        createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "A1" }])]),
+        createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "B1", styles: { bold: true } }])]),
+      ]),
+    ]);
+    const state: Editor2State = {
+      document: createEditor2Document([intro, table]),
+      selection: {
+        anchor: {
+          paragraphId: intro.id,
+          runId: intro.runs[0]!.id,
+          offset: 0,
+        },
+        focus: {
+          paragraphId: intro.id,
+          runId: intro.runs[0]!.id,
+          offset: 0,
+        },
+      },
+    };
+
+    const dispose = render(
+      () => (
+        <EditorSurface
+          state={() => state}
+          onSurfaceMouseDown={() => undefined}
+          onParagraphMouseDown={() => undefined}
+        />
+      ),
+      container,
+    );
+
+    expect(container.querySelector('[data-testid="editor-2-table"]')).not.toBeNull();
+    expect(container.querySelectorAll('[data-testid="editor-2-table-row"]').length).toBe(1);
+    expect(container.querySelectorAll('[data-testid="editor-2-table-cell"]').length).toBe(2);
+    expect(container.textContent).toContain("A1");
+    expect(container.textContent).toContain("B1");
 
     dispose();
   });

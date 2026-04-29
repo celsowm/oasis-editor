@@ -1,22 +1,32 @@
 import type {
+  Editor2BlockNode,
   Editor2Document,
   Editor2ParagraphNode,
   Editor2Position,
   Editor2State,
+  Editor2TableCellNode,
+  Editor2TableNode,
+  Editor2TableRowNode,
   Editor2TextRun,
   Editor2TextStyle,
 } from "./model.js";
-import { getParagraphLength, paragraphOffsetToPosition } from "./model.js";
+import { getDocumentParagraphs, getParagraphLength, paragraphOffsetToPosition } from "./model.js";
 import { createCollapsedSelection } from "./selection.js";
 
 let nextDocumentId = 1;
 let nextParagraphId = 1;
 let nextRunId = 1;
+let nextTableId = 1;
+let nextTableRowId = 1;
+let nextTableCellId = 1;
 
 export function resetEditor2Ids(): void {
   nextDocumentId = 1;
   nextParagraphId = 1;
   nextRunId = 1;
+  nextTableId = 1;
+  nextTableRowId = 1;
+  nextTableCellId = 1;
 }
 
 export function createEditor2Run(text = ""): Editor2TextRun {
@@ -58,10 +68,40 @@ export function createEditor2ParagraphFromRuns(
   return paragraph;
 }
 
-export function createEditor2Document(paragraphs: Editor2ParagraphNode[]): Editor2Document {
+export function createEditor2TableCell(
+  paragraphs: Editor2ParagraphNode[],
+): Editor2TableCellNode {
+  const cell: Editor2TableCellNode = {
+    id: `table-cell:${nextTableCellId}`,
+    blocks: paragraphs.length > 0 ? paragraphs : [createEditor2Paragraph("")],
+  };
+  nextTableCellId += 1;
+  return cell;
+}
+
+export function createEditor2TableRow(cells: Editor2TableCellNode[]): Editor2TableRowNode {
+  const row: Editor2TableRowNode = {
+    id: `table-row:${nextTableRowId}`,
+    cells,
+  };
+  nextTableRowId += 1;
+  return row;
+}
+
+export function createEditor2Table(rows: Editor2TableRowNode[]): Editor2TableNode {
+  const table: Editor2TableNode = {
+    id: `table:${nextTableId}`,
+    type: "table",
+    rows,
+  };
+  nextTableId += 1;
+  return table;
+}
+
+export function createEditor2Document(blocks: Editor2BlockNode[]): Editor2Document {
   const document: Editor2Document = {
     id: `document:${nextDocumentId}`,
-    blocks: paragraphs,
+    blocks,
   };
   nextDocumentId += 1;
   return document;
@@ -71,8 +111,12 @@ export function createEditor2StateFromDocument(
   document: Editor2Document,
   selection?: { paragraphIndex?: number; offset?: number },
 ): Editor2State {
-  const paragraphs =
+  const blocks =
     document.blocks.length > 0 ? document.blocks : [createEditor2Paragraph("")];
+  const paragraphs = getDocumentParagraphs({
+    ...document,
+    blocks,
+  });
   const paragraphIndex = Math.max(
     0,
     Math.min(selection?.paragraphIndex ?? 0, paragraphs.length - 1),
@@ -86,7 +130,7 @@ export function createEditor2StateFromDocument(
   return {
     document: {
       ...document,
-      blocks: paragraphs,
+      blocks,
     },
     selection: createCollapsedSelection(position),
   };
