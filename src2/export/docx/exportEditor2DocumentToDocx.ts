@@ -288,6 +288,15 @@ function serializeParagraphProperties(
   return parts.length > 0 ? `<w:pPr>${parts.join("")}</w:pPr>` : "";
 }
 
+function serializeTableCellProperties(cell: Editor2TableNode["rows"][number]["cells"][number]): string {
+  const colSpan = Math.max(1, Math.floor(cell.colSpan ?? 1));
+  if (colSpan <= 1) {
+    return "";
+  }
+
+  return `<w:tcPr><w:gridSpan w:val="${colSpan}"/></w:tcPr>`;
+}
+
 function buildDocumentContext(document: Editor2Document): DocContext {
   const numberingInfo = new Map<string, { numId: number; level: number }>();
   const definitionMap = new Map<string, { abstractNumId: number; numId: number }>();
@@ -380,7 +389,7 @@ function buildDocumentXml(document: Editor2Document, context: DocContext): strin
               const runs = p.runs.length > 0 ? p.runs : [{ id: "", text: "" }];
               return `<w:p>${serializeParagraphProperties(p, context.numberingInfo)}${runs.map(r => serializeRun(r, context)).join("")}</w:p>`;
             }).join("");
-            return `<w:tc>${paragraphsXml}</w:tc>`;
+            return `<w:tc>${serializeTableCellProperties(cell)}${paragraphsXml}</w:tc>`;
           }).join("");
           return `<w:tr>${cellsXml}</w:tr>`;
         }).join("");

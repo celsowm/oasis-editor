@@ -27,6 +27,7 @@ function normalizeTable(table: Editor2TableNode) {
     type: table.type,
     rows: table.rows.map((row) => ({
       cells: row.cells.map((cell) => ({
+        colSpan: cell.colSpan ?? undefined,
         blocks: cell.blocks.map(normalizeParagraph),
       })),
     })),

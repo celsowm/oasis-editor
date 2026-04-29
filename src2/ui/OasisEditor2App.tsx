@@ -32,7 +32,13 @@ import {
   toggleParagraphList,
   toggleTextStyle,
 } from "../core/editorCommands.js";
-import { createEditor2Document, createInitialEditor2State, createEditor2StateFromDocument } from "../core/editorState.js";
+import {
+  createEditor2Document,
+  createEditor2Paragraph,
+  createEditor2TableCell,
+  createInitialEditor2State,
+  createEditor2StateFromDocument,
+} from "../core/editorState.js";
 import {
   type Editor2Document,
   type Editor2BlockNode,
@@ -81,15 +87,13 @@ interface ActiveImageResize {
 
 const DEFAULT_MAX_INSERTED_IMAGE_WIDTH = 684;
 
-function getMaxInlineImageWidth(surface: HTMLDivElement | undefined): number {
-  if (!surface) {
+function getElementContentWidth(element: HTMLElement | null | undefined): number {
+  if (!element) {
     return DEFAULT_MAX_INSERTED_IMAGE_WIDTH;
   }
 
-  const contentSurface =
-    surface.querySelector<HTMLDivElement>('[data-testid="editor-2-surface"]') ?? surface;
-  const rect = contentSurface.getBoundingClientRect();
-  const computed = window.getComputedStyle(contentSurface);
+  const rect = element.getBoundingClientRect();
+  const computed = window.getComputedStyle(element);
   const paddingLeft = Number.parseFloat(computed.paddingLeft || "0") || 0;
   const paddingRight = Number.parseFloat(computed.paddingRight || "0") || 0;
   const contentWidth = rect.width - paddingLeft - paddingRight;
@@ -99,6 +103,26 @@ function getMaxInlineImageWidth(surface: HTMLDivElement | undefined): number {
   }
 
   return Math.max(24, Math.floor(contentWidth));
+}
+
+function getMaxInlineImageWidth(surface: HTMLDivElement | undefined, paragraphId?: string): number {
+  if (!surface) {
+    return DEFAULT_MAX_INSERTED_IMAGE_WIDTH;
+  }
+
+  const contentSurface =
+    surface.querySelector<HTMLDivElement>('[data-testid="editor-2-surface"]') ?? surface;
+  if (paragraphId) {
+    const paragraphElement = contentSurface.querySelector<HTMLElement>(
+      `[data-paragraph-id="${paragraphId}"]`,
+    );
+    const cellElement = paragraphElement?.closest<HTMLElement>("td.oasis-editor-2-table-cell");
+    if (cellElement) {
+      return getElementContentWidth(cellElement);
+    }
+  }
+
+  return getElementContentWidth(contentSurface);
 }
 
 interface TransactionOptions {
@@ -531,6 +555,177 @@ export function OasisEditor2App() {
     };
   };
 
+  const resolveHorizontalTableCellRange = (
+    current: Editor2State,
+  ): {
+    blockIndex: number;
+    rowIndex: number;
+    startCellIndex: number;
+    endCellIndex: number;
+  } | null => {
+    const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId);
+    const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (
+      !anchorLocation ||
+      !focusLocation ||
+      anchorLocation.blockIndex !== focusLocation.blockIndex
+    ) {
+      return null;
+    }
+
+    const tableBlock = current.document.blocks[anchorLocation.blockIndex];
+    if (!tableBlock || tableBlock.type !== "table") {
+      return null;
+    }
+
+    const compareCellLocations = (
+      left: NonNullable<typeof anchorLocation>,
+      right: NonNullable<typeof focusLocation>,
+    ) => {
+      if (left.rowIndex !== right.rowIndex) {
+        return left.rowIndex - right.rowIndex;
+      }
+      if (left.cellIndex !== right.cellIndex) {
+        return left.cellIndex - right.cellIndex;
+      }
+      return left.paragraphIndex - right.paragraphIndex;
+    };
+
+    const startLocation =
+      compareCellLocations(anchorLocation, focusLocation) <= 0 ? anchorLocation : focusLocation;
+    const endLocation =
+      compareCellLocations(anchorLocation, focusLocation) <= 0 ? focusLocation : anchorLocation;
+
+    if (startLocation.rowIndex !== endLocation.rowIndex) {
+      return null;
+    }
+
+    if (endLocation.cellIndex <= startLocation.cellIndex) {
+      return null;
+    }
+
+    return {
+      blockIndex: anchorLocation.blockIndex,
+      rowIndex: startLocation.rowIndex,
+      startCellIndex: startLocation.cellIndex,
+      endCellIndex: endLocation.cellIndex,
+    };
+  };
+
+  const canMergeSelectedTableCells = (current: Editor2State): boolean => {
+    const range = resolveHorizontalTableCellRange(current);
+    return Boolean(range && range.endCellIndex > range.startCellIndex);
+  };
+
+  const canSplitSelectedTableCell = (current: Editor2State): boolean => {
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (!location) {
+      return false;
+    }
+
+    const block = current.document.blocks[location.blockIndex];
+    if (!block || block.type !== "table") {
+      return false;
+    }
+
+    const cell = block.rows[location.rowIndex]?.cells[location.cellIndex];
+    return Boolean((cell?.colSpan ?? 1) > 1);
+  };
+
+  const mergeSelectedTableCells = (current: Editor2State): Editor2State => {
+    const range = resolveHorizontalTableCellRange(current);
+    if (!range) {
+      return current;
+    }
+
+    const blocks = current.document.blocks.map(cloneDocumentBlock);
+    const tableBlock = blocks[range.blockIndex];
+    if (!tableBlock || tableBlock.type !== "table") {
+      return current;
+    }
+
+    const row = tableBlock.rows[range.rowIndex];
+    if (!row) {
+      return current;
+    }
+
+    const selectedCells = row.cells.slice(range.startCellIndex, range.endCellIndex + 1);
+    if (selectedCells.length < 2) {
+      return current;
+    }
+
+    const mergedCell = {
+      ...selectedCells[0]!,
+      colSpan: selectedCells.reduce((sum, cell) => sum + Math.max(1, cell.colSpan ?? 1), 0),
+      blocks: selectedCells.flatMap((cell) => cell.blocks.map((paragraph) => cloneDocumentBlock(paragraph))) as Editor2ParagraphNode[],
+    };
+
+    row.cells.splice(range.startCellIndex, selectedCells.length, mergedCell);
+
+    const nextParagraph = mergedCell.blocks[0];
+    if (!nextParagraph) {
+      return current;
+    }
+
+    return {
+      document: {
+        ...current.document,
+        blocks,
+      },
+      selection: {
+        anchor: paragraphOffsetToPosition(nextParagraph, 0),
+        focus: paragraphOffsetToPosition(nextParagraph, 0),
+      },
+    };
+  };
+
+  const splitSelectedTableCell = (current: Editor2State): Editor2State => {
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (!location) {
+      return current;
+    }
+
+    const blocks = current.document.blocks.map(cloneDocumentBlock);
+    const tableBlock = blocks[location.blockIndex];
+    if (!tableBlock || tableBlock.type !== "table") {
+      return current;
+    }
+
+    const row = tableBlock.rows[location.rowIndex];
+    const cell = row?.cells[location.cellIndex];
+    const span = Math.max(1, cell?.colSpan ?? 1);
+    if (!row || !cell || span <= 1) {
+      return current;
+    }
+
+    const nextCells = [
+      {
+        ...cell,
+        colSpan: 1,
+        blocks: cell.blocks.map((paragraph) => cloneDocumentBlock(paragraph)) as Editor2ParagraphNode[],
+      },
+      ...Array.from({ length: span - 1 }, () => createEditor2TableCell([createEditor2Paragraph("")])),
+    ];
+
+    row.cells.splice(location.cellIndex, 1, ...nextCells);
+
+    const nextParagraph = nextCells[0]?.blocks[0];
+    if (!nextParagraph) {
+      return current;
+    }
+
+    return {
+      document: {
+        ...current.document,
+        blocks,
+      },
+      selection: {
+        anchor: paragraphOffsetToPosition(nextParagraph, 0),
+        focus: paragraphOffsetToPosition(nextParagraph, 0),
+      },
+    };
+  };
+
   const withExpandedTableCellSelection = (current: Editor2State): Editor2State => {
     const expandedSelection = resolveTableCellRangeSelection(current);
     if (!expandedSelection) {
@@ -783,7 +978,7 @@ export function OasisEditor2App() {
 
     const naturalWidth = img.naturalWidth || 300;
     const naturalHeight = img.naturalHeight || 300;
-    const maxWidth = getMaxInlineImageWidth(surfaceRef);
+    const maxWidth = getMaxInlineImageWidth(surfaceRef, state.selection.focus.paragraphId);
     const scale = naturalWidth > maxWidth ? maxWidth / naturalWidth : 1;
     const width = Math.max(24, Math.round(naturalWidth * scale));
     const height = Math.max(24, Math.round(naturalHeight * scale));
@@ -1293,7 +1488,8 @@ export function OasisEditor2App() {
     }
 
     const deltaX = event.clientX - resizeState.startClientX;
-    const nextWidth = Math.max(24, resizeState.startWidth + deltaX);
+    const maxWidth = getMaxInlineImageWidth(surfaceRef, resizeState.paragraphId);
+    const nextWidth = Math.max(24, Math.min(maxWidth, resizeState.startWidth + deltaX));
     const nextHeight = Math.max(24, nextWidth / resizeState.aspectRatio);
     const paragraph = getParagraphs(state).find((candidate) => candidate.id === resizeState.paragraphId);
     if (!paragraph) {
@@ -1306,6 +1502,7 @@ export function OasisEditor2App() {
       deltaX,
       nextWidth,
       nextHeight,
+      maxWidth,
     });
     applyState(
       resizeSelectedImage(
@@ -1678,6 +1875,36 @@ export function OasisEditor2App() {
             }}
           >
             Insert Table
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-merge-table-cells"
+            disabled={!canMergeSelectedTableCells(state)}
+            onClick={() => {
+              applyTransactionalState(
+                (current) => mergeSelectedTableCells(current),
+                { mergeKey: "mergeTableCells" },
+              );
+              focusInput();
+            }}
+          >
+            Merge Cells
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-split-table-cell"
+            disabled={!canSplitSelectedTableCell(state)}
+            onClick={() => {
+              applyTransactionalState(
+                (current) => splitSelectedTableCell(current),
+                { mergeKey: "splitTableCell" },
+              );
+              focusInput();
+            }}
+          >
+            Split Cell
           </button>
           {booleanButtons.map((button) => (
             <button

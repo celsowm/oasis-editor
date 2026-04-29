@@ -52,6 +52,7 @@ export interface Editor2ParagraphNode {
 export interface Editor2TableCellNode {
   id: string;
   blocks: Editor2ParagraphNode[];
+  colSpan?: number;
 }
 
 export interface Editor2TableRowNode {

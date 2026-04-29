@@ -241,7 +241,6 @@ function renderParagraph(
                           style={{
                             width: `${fragment.image.width}px`,
                             height: `${fragment.image.height}px`,
-                            "max-width": "none",
                           }}
                           classList={{
                             "oasis-editor-2-image-selected": imageSelected(),
@@ -296,7 +295,13 @@ function renderTable(
               <tr class="oasis-editor-2-table-row" data-testid="editor-2-table-row" data-row-index={rowIndex()}>
                 <For each={row.cells}>
                   {(cell, cellIndex) => (
-                    <td class="oasis-editor-2-table-cell" data-testid="editor-2-table-cell" data-row-index={rowIndex()} data-cell-index={cellIndex()}>
+                    <td
+                      class="oasis-editor-2-table-cell"
+                      colSpan={cell.colSpan ?? 1}
+                      data-testid="editor-2-table-cell"
+                      data-row-index={rowIndex()}
+                      data-cell-index={cellIndex()}
+                    >
                       <For each={cell.blocks}>
                         {(paragraph) =>
                           renderParagraph(

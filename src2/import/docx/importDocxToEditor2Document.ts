@@ -40,6 +40,17 @@ function getAttributeValue(element: XmlElement | null, localName: string): strin
   return element.getAttributeNS(WORD_NS, localName) ?? element.getAttribute(`w:${localName}`) ?? element.getAttribute(localName);
 }
 
+function getTableCellColSpan(cellProperties: XmlElement | null): number {
+  if (!cellProperties) {
+    return 1;
+  }
+
+  const gridSpan = getFirstChildByTagNameNS(cellProperties, WORD_NS, "gridSpan");
+  const value = getAttributeValue(gridSpan, "val");
+  const parsed = value ? Number(value) : 1;
+  return Number.isFinite(parsed) && parsed > 1 ? Math.floor(parsed) : 1;
+}
+
 function parseBooleanProperty(parent: XmlElement, localName: string): boolean {
   return getFirstChildByTagNameNS(parent, WORD_NS, localName) !== null;
 }
@@ -352,11 +363,13 @@ async function parseTableNode(
     const cells = [];
     for (const cellNode of getChildrenByTagNameNS(rowNode, WORD_NS, "tc")) {
       const paragraphs = [];
+      const cellProperties = getFirstChildByTagNameNS(cellNode, WORD_NS, "tcPr");
       for (const paragraphNode of getChildrenByTagNameNS(cellNode, WORD_NS, "p")) {
         paragraphs.push(await parseParagraphNode(paragraphNode, numberingMaps, zip, relsMap));
       }
       cells.push(createEditor2TableCell(
         paragraphs.length > 0 ? paragraphs : [createEditor2ParagraphFromRuns([{ text: "" }])],
+        getTableCellColSpan(cellProperties),
       ));
     }
     rows.push(createEditor2TableRow(cells));

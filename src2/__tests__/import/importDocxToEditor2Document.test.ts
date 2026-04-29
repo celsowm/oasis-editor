@@ -190,4 +190,35 @@ describe("importDocxToEditor2Document", () => {
     expect(getParagraphText(table.rows[0]!.cells[0]!.blocks[0]!)).toBe("A1");
     expect(getParagraphText(table.rows[1]!.cells[1]!.blocks[0]!)).toBe("B2");
   });
+
+  it("imports table cell grid spans from wordprocessingml", async () => {
+    const buffer = await buildDocx(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:tbl>
+            <w:tr>
+              <w:tc>
+                <w:tcPr><w:gridSpan w:val="2"/></w:tcPr>
+                <w:p><w:r><w:t>Merged</w:t></w:r></w:p>
+              </w:tc>
+              <w:tc>
+                <w:p><w:r><w:t>Tail</w:t></w:r></w:p>
+              </w:tc>
+            </w:tr>
+          </w:tbl>
+        </w:body>
+      </w:document>`,
+    );
+
+    const document = await importDocxToEditor2Document(buffer);
+    const table = document.blocks[0];
+    if (table?.type !== "table") {
+      throw new Error("Expected table block");
+    }
+
+    expect(table.rows[0]?.cells[0]?.colSpan).toBe(2);
+    expect(getParagraphText(table.rows[0]!.cells[0]!.blocks[0]!)).toBe("Merged");
+    expect(getParagraphText(table.rows[0]!.cells[1]!.blocks[0]!)).toBe("Tail");
+  });
 });

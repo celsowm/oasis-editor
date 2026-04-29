@@ -74,11 +74,15 @@ export function createEditor2ParagraphFromRuns(
 
 export function createEditor2TableCell(
   paragraphs: Editor2ParagraphNode[],
+  colSpan = 1,
 ): Editor2TableCellNode {
   const cell: Editor2TableCellNode = {
     id: `table-cell:${nextTableCellId}`,
     blocks: paragraphs.length > 0 ? paragraphs : [createEditor2Paragraph("")],
   };
+  if (colSpan > 1) {
+    cell.colSpan = colSpan;
+  }
   nextTableCellId += 1;
   return cell;
 }
