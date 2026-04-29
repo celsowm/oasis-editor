@@ -1,4 +1,6 @@
 import type {
+  Editor2ParagraphListStyle,
+  Editor2ParagraphStyle,
   Editor2ParagraphNode,
   Editor2Position,
   Editor2Selection,
@@ -35,6 +37,17 @@ type ToggleableTextStyleKey =
   | "superscript"
   | "subscript";
 
+type ValueTextStyleKey = "fontFamily" | "fontSize" | "color" | "highlight";
+type ValueParagraphStyleKey =
+  | "align"
+  | "spacingBefore"
+  | "spacingAfter"
+  | "lineHeight"
+  | "indentLeft"
+  | "indentRight"
+  | "indentFirstLine";
+type ParagraphListKind = Editor2ParagraphListStyle["kind"];
+
 function cloneStyle(style?: Editor2TextStyle): Editor2TextStyle | undefined {
   return style ? { ...style } : undefined;
 }
@@ -59,6 +72,22 @@ function setBooleanStyle(
   return Object.keys(next).length > 0 ? next : undefined;
 }
 
+function setValueStyle<K extends ValueTextStyleKey>(
+  style: Editor2TextStyle | undefined,
+  key: K,
+  value: Editor2TextStyle[K] | null,
+): Editor2TextStyle | undefined {
+  const next = { ...(style ?? {}) } as Record<string, unknown>;
+
+  if (value === null || value === undefined || value === "") {
+    delete next[key];
+  } else {
+    next[key] = value;
+  }
+
+  return Object.keys(next).length > 0 ? (next as Editor2TextStyle) : undefined;
+}
+
 function cloneRun(run: Editor2TextRun): Editor2TextRun {
   return {
     ...run,
@@ -71,7 +100,24 @@ function cloneParagraph(paragraph: Editor2ParagraphNode): Editor2ParagraphNode {
     ...paragraph,
     runs: paragraph.runs.map(cloneRun),
     style: paragraph.style ? { ...paragraph.style } : undefined,
+    list: paragraph.list ? { ...paragraph.list } : undefined,
   };
+}
+
+function setParagraphStyleValue<K extends ValueParagraphStyleKey>(
+  style: Editor2ParagraphStyle | undefined,
+  key: K,
+  value: Editor2ParagraphStyle[K] | null,
+): Editor2ParagraphStyle | undefined {
+  const next = { ...(style ?? {}) } as Record<string, unknown>;
+
+  if (value === null || value === undefined) {
+    delete next[key];
+  } else {
+    next[key] = value;
+  }
+
+  return Object.keys(next).length > 0 ? (next as Editor2ParagraphStyle) : undefined;
 }
 
 function cloneParagraphs(paragraphs: Editor2ParagraphNode[]): Editor2ParagraphNode[] {
@@ -276,6 +322,19 @@ function mapRunsInRange(
     ...sliceRuns(paragraph, startOffset, endOffset).map(mapper),
     ...sliceRuns(paragraph, endOffset, getParagraphLength(paragraph)),
   ]);
+}
+
+function preserveSelectionByParagraphOffsets(
+  paragraphs: Editor2ParagraphNode[],
+  normalized: ReturnType<typeof normalizeSelection>,
+): Editor2Selection {
+  const startParagraph = paragraphs[normalized.startIndex]!;
+  const endParagraph = paragraphs[normalized.endIndex]!;
+
+  return {
+    anchor: paragraphOffsetToPosition(startParagraph, normalized.startParagraphOffset),
+    focus: paragraphOffsetToPosition(endParagraph, normalized.endParagraphOffset),
+  };
 }
 
 function collapseToBoundary(state: Editor2State, direction: "start" | "end"): Editor2State {
@@ -736,8 +795,110 @@ export function toggleTextStyle(
     }));
   });
 
-  return cloneStateWithParagraphs(state, nextParagraphs, {
-    anchor: normalized.start,
-    focus: normalized.end,
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+  );
+}
+
+export function setTextStyleValue<K extends ValueTextStyleKey>(
+  state: Editor2State,
+  key: K,
+  value: Editor2TextStyle[K] | null,
+): Editor2State {
+  const normalized = normalizeSelection(state);
+  if (normalized.isCollapsed) {
+    return state;
+  }
+
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+    if (paragraphIndex < normalized.startIndex || paragraphIndex > normalized.endIndex) {
+      return cloneParagraph(paragraph);
+    }
+
+    const startOffset = paragraphIndex === normalized.startIndex ? normalized.startParagraphOffset : 0;
+    const endOffset =
+      paragraphIndex === normalized.endIndex
+        ? normalized.endParagraphOffset
+        : getParagraphLength(paragraph);
+
+    return mapRunsInRange(paragraph, startOffset, endOffset, (run) => ({
+      ...run,
+      styles: setValueStyle(run.styles, key, value),
+    }));
   });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+  );
+}
+
+export function setParagraphStyle<K extends ValueParagraphStyleKey>(
+  state: Editor2State,
+  key: K,
+  value: Editor2ParagraphStyle[K] | null,
+): Editor2State {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  const startIndex = normalized.startIndex;
+  const endIndex = normalized.endIndex;
+
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+    if (paragraphIndex < startIndex || paragraphIndex > endIndex) {
+      return cloneParagraph(paragraph);
+    }
+
+    return {
+      ...cloneParagraph(paragraph),
+      style: setParagraphStyleValue(paragraph.style, key, value),
+    };
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+  );
+}
+
+export function toggleParagraphList(
+  state: Editor2State,
+  kind: ParagraphListKind,
+): Editor2State {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  const startIndex = normalized.startIndex;
+  const endIndex = normalized.endIndex;
+  const targetedParagraphs = paragraphs.slice(startIndex, endIndex + 1);
+  const shouldClear =
+    targetedParagraphs.length > 0 &&
+    targetedParagraphs.every((paragraph) => paragraph.list?.kind === kind);
+
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+    if (paragraphIndex < startIndex || paragraphIndex > endIndex) {
+      return cloneParagraph(paragraph);
+    }
+
+    const nextParagraph = cloneParagraph(paragraph);
+    if (shouldClear) {
+      delete nextParagraph.list;
+      return nextParagraph;
+    }
+
+    nextParagraph.list = {
+      kind,
+      level: paragraph.list?.kind === kind ? paragraph.list.level ?? 0 : paragraph.list?.level ?? 0,
+    };
+    return nextParagraph;
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+  );
 }

@@ -3,6 +3,7 @@ import type { Accessor } from "solid-js";
 import {
   getParagraphText,
   getParagraphs,
+  type Editor2ParagraphListStyle,
   type Editor2ParagraphStyle,
   type Editor2State,
   type Editor2TextStyle,
@@ -49,6 +50,21 @@ function paragraphStyleToCss(style?: Editor2ParagraphStyle): Record<string, stri
   }
 
   return Object.keys(css).length > 0 ? css : undefined;
+}
+
+function getParagraphListMarker(
+  list: Editor2ParagraphListStyle | undefined,
+  paragraphIndex: number,
+): string | null {
+  if (!list) {
+    return null;
+  }
+
+  if (list.kind === "bullet") {
+    return "\u2022";
+  }
+
+  return `${paragraphIndex + 1}.`;
 }
 
 function runStyleToCss(style?: Editor2TextStyle): Record<string, string> | undefined {
@@ -156,11 +172,17 @@ export function EditorSurface(props: EditorSurfaceProps) {
             return (
               <p
                 class="oasis-editor-2-block"
+                classList={{ "oasis-editor-2-block-list": Boolean(paragraph.list) }}
                 data-paragraph-id={paragraph.id}
                 data-testid="editor-2-block"
                 style={paragraphStyleToCss(paragraph.style)}
                 onMouseDown={(event) => props.onParagraphMouseDown(paragraph.id, event)}
               >
+                <Show when={paragraph.list}>
+                  <span class="oasis-editor-2-list-marker" data-testid="editor-2-list-marker">
+                    {getParagraphListMarker(paragraph.list, paragraphIndexAccessor())}
+                  </span>
+                </Show>
                 <Show
                   when={chars().length > 0}
                   fallback={

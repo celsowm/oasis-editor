@@ -22,18 +22,24 @@ import {
   moveSelectionLeft,
   moveSelectionRight,
   moveSelectionUp,
+  setParagraphStyle,
   setSelection,
+  setTextStyleValue,
   splitBlockAtSelection,
+  toggleParagraphList,
   toggleTextStyle,
 } from "../core/editorCommands.js";
 import { createInitialEditor2State } from "../core/editorState.js";
 import {
+  type Editor2ParagraphListStyle,
   getParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
   positionToParagraphOffset,
+  type Editor2ParagraphStyle,
   type Editor2Position,
   type Editor2State,
+  type Editor2TextStyle,
 } from "../core/model.js";
 import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
 
@@ -56,6 +62,44 @@ interface SelectionBox {
 
 interface TransactionOptions {
   mergeKey?: string;
+}
+
+type BooleanStyleKey =
+  | "bold"
+  | "italic"
+  | "underline"
+  | "strike"
+  | "superscript"
+  | "subscript";
+
+type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight";
+type ParagraphStyleKey =
+  | "align"
+  | "spacingBefore"
+  | "spacingAfter"
+  | "lineHeight"
+  | "indentLeft"
+  | "indentRight"
+  | "indentFirstLine";
+
+interface ToolbarStyleState {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  strike: boolean;
+  superscript: boolean;
+  subscript: boolean;
+  fontFamily: string;
+  fontSize: string;
+  color: string;
+  highlight: string;
+  align: string;
+  lineHeight: string;
+  spacingBefore: string;
+  spacingAfter: string;
+  indentLeft: string;
+  indentFirstLine: string;
+  listKind: string;
 }
 
 function collectCharRects(blockElement: HTMLElement): Array<{
@@ -128,6 +172,116 @@ function resolveWordSelection(text: string, offset: number): { start: number; en
   return { start, end };
 }
 
+function selectionOverlapsRun(
+  runStart: number,
+  runEnd: number,
+  selectionStart: number,
+  selectionEnd: number,
+): boolean {
+  return Math.max(runStart, selectionStart) < Math.min(runEnd, selectionEnd);
+}
+
+function getSelectedRunStyles(state: Editor2State): Editor2TextStyle[] {
+  const normalized = normalizeSelection(state);
+  if (normalized.isCollapsed) {
+    return [];
+  }
+
+  const styles: Editor2TextStyle[] = [];
+  const paragraphs = getParagraphs(state);
+
+  for (let paragraphIndex = normalized.startIndex; paragraphIndex <= normalized.endIndex; paragraphIndex += 1) {
+    const paragraph = paragraphs[paragraphIndex];
+    if (!paragraph) {
+      continue;
+    }
+
+    const selectionStart = paragraphIndex === normalized.startIndex ? normalized.startParagraphOffset : 0;
+    const selectionEnd =
+      paragraphIndex === normalized.endIndex ? normalized.endParagraphOffset : getParagraphText(paragraph).length;
+
+    let runStart = 0;
+    for (const run of paragraph.runs) {
+      const runEnd = runStart + run.text.length;
+      if (selectionOverlapsRun(runStart, runEnd, selectionStart, selectionEnd)) {
+        styles.push(run.styles ?? {});
+      }
+      runStart = runEnd;
+    }
+  }
+
+  return styles;
+}
+
+function areAllBooleanStylesEnabled(styles: Editor2TextStyle[], key: BooleanStyleKey): boolean {
+  return styles.length > 0 && styles.every((style) => Boolean(style[key]));
+}
+
+function resolveUniformStyleValue<K extends ValueStyleKey>(
+  styles: Editor2TextStyle[],
+  key: K,
+): string {
+  if (styles.length === 0) {
+    return "";
+  }
+
+  const first = styles[0]?.[key];
+  if (first === undefined || first === null || first === "") {
+    return styles.every((style) => {
+      const current = style[key];
+      return current === undefined || current === null || current === "";
+    })
+      ? ""
+      : "";
+  }
+
+  const serialized = String(first);
+  return styles.every((style) => String(style[key] ?? "") === serialized) ? serialized : "";
+}
+
+function getSelectedParagraphStyles(state: Editor2State): Editor2ParagraphStyle[] {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  return paragraphs
+    .slice(normalized.startIndex, normalized.endIndex + 1)
+    .map((paragraph) => paragraph.style ?? {});
+}
+
+function resolveUniformParagraphStyleValue<K extends ParagraphStyleKey>(
+  styles: Editor2ParagraphStyle[],
+  key: K,
+): string {
+  if (styles.length === 0) {
+    return "";
+  }
+
+  const first = styles[0]?.[key];
+  if (first === undefined || first === null) {
+    return styles.every((style) => {
+      const current = style[key];
+      return current === undefined || current === null;
+    })
+      ? ""
+      : "";
+  }
+
+  const serialized = String(first);
+  return styles.every((style) => String(style[key] ?? "") === serialized) ? serialized : "";
+}
+
+function resolveUniformListKind(paragraphs: ReturnType<typeof getParagraphs>): string {
+  if (paragraphs.length === 0) {
+    return "";
+  }
+
+  const firstKind = paragraphs[0]?.list?.kind;
+  if (!firstKind) {
+    return paragraphs.every((paragraph) => paragraph.list?.kind === undefined) ? "" : "";
+  }
+
+  return paragraphs.every((paragraph) => paragraph.list?.kind === firstKind) ? firstKind : "";
+}
+
 export function OasisEditor2App() {
   const [state, setState] = createStore<Editor2State>(createInitialEditor2State());
   const [focused, setFocused] = createSignal(false);
@@ -149,6 +303,28 @@ export function OasisEditor2App() {
   let dragAnchor: Editor2Position | null = null;
   let lastTransactionMeta: { mergeKey: string; timestamp: number } | null = null;
   let suppressedInputText: string | null = null;
+  const booleanButtons: Array<{ key: BooleanStyleKey; label: string; testId: string }> = [
+    { key: "bold", label: "B", testId: "editor-2-toolbar-bold" },
+    { key: "italic", label: "I", testId: "editor-2-toolbar-italic" },
+    { key: "underline", label: "U", testId: "editor-2-toolbar-underline" },
+    { key: "strike", label: "S", testId: "editor-2-toolbar-strike" },
+    { key: "superscript", label: "Sup", testId: "editor-2-toolbar-superscript" },
+    { key: "subscript", label: "Sub", testId: "editor-2-toolbar-subscript" },
+  ];
+  const alignButtons: Array<{
+    value: NonNullable<Editor2ParagraphStyle["align"]>;
+    label: string;
+    testId: string;
+  }> = [
+    { value: "left", label: "L", testId: "editor-2-toolbar-align-left" },
+    { value: "center", label: "C", testId: "editor-2-toolbar-align-center" },
+    { value: "right", label: "R", testId: "editor-2-toolbar-align-right" },
+    { value: "justify", label: "J", testId: "editor-2-toolbar-align-justify" },
+  ];
+  const listButtons: Array<{ kind: NonNullable<Editor2ParagraphListStyle["kind"]>; label: string; testId: string }> = [
+    { kind: "bullet", label: "• List", testId: "editor-2-toolbar-list-bullet" },
+    { kind: "ordered", label: "1. List", testId: "editor-2-toolbar-list-ordered" },
+  ];
 
   const cloneState = (source: Editor2State): Editor2State => ({
     document: {
@@ -205,6 +381,33 @@ export function OasisEditor2App() {
     setPreferredColumnX(null);
   };
 
+  const selectionCollapsed = () => isSelectionCollapsed(state.selection);
+
+  const toolbarStyleState = (): ToolbarStyleState => {
+    const styles = getSelectedRunStyles(state);
+    const paragraphStyles = getSelectedParagraphStyles(state);
+
+    return {
+      bold: areAllBooleanStylesEnabled(styles, "bold"),
+      italic: areAllBooleanStylesEnabled(styles, "italic"),
+      underline: areAllBooleanStylesEnabled(styles, "underline"),
+      strike: areAllBooleanStylesEnabled(styles, "strike"),
+      superscript: areAllBooleanStylesEnabled(styles, "superscript"),
+      subscript: areAllBooleanStylesEnabled(styles, "subscript"),
+      fontFamily: resolveUniformStyleValue(styles, "fontFamily"),
+      fontSize: resolveUniformStyleValue(styles, "fontSize"),
+      color: resolveUniformStyleValue(styles, "color"),
+      highlight: resolveUniformStyleValue(styles, "highlight"),
+      align: resolveUniformParagraphStyleValue(paragraphStyles, "align"),
+      lineHeight: resolveUniformParagraphStyleValue(paragraphStyles, "lineHeight"),
+      spacingBefore: resolveUniformParagraphStyleValue(paragraphStyles, "spacingBefore"),
+      spacingAfter: resolveUniformParagraphStyleValue(paragraphStyles, "spacingAfter"),
+      indentLeft: resolveUniformParagraphStyleValue(paragraphStyles, "indentLeft"),
+      indentFirstLine: resolveUniformParagraphStyleValue(paragraphStyles, "indentFirstLine"),
+      listKind: resolveUniformListKind(getParagraphs(state).slice(normalizeSelection(state).startIndex, normalizeSelection(state).endIndex + 1)),
+    };
+  };
+
   const focusInput = () => {
     setFocused(true);
     queueMicrotask(() => {
@@ -214,6 +417,48 @@ export function OasisEditor2App() {
         textareaRef.selectionEnd = textareaRef.value.length;
       }
     });
+  };
+
+  const applyBooleanStyleCommand = (key: BooleanStyleKey) => {
+    if (selectionCollapsed()) {
+      return;
+    }
+
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyTransactionalState((current) => toggleTextStyle(current, key));
+    focusInput();
+  };
+
+  const applyValueStyleCommand = <K extends ValueStyleKey>(
+    key: K,
+    value: Editor2TextStyle[K] | null,
+  ) => {
+    if (selectionCollapsed()) {
+      return;
+    }
+
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyTransactionalState((current) => setTextStyleValue(current, key, value));
+    focusInput();
+  };
+
+  const applyParagraphStyleCommand = <K extends ParagraphStyleKey>(
+    key: K,
+    value: Editor2ParagraphStyle[K] | null,
+  ) => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyTransactionalState((current) => setParagraphStyle(current, key, value));
+    focusInput();
+  };
+
+  const applyParagraphListCommand = (kind: NonNullable<Editor2ParagraphListStyle["kind"]>) => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyTransactionalState((current) => toggleParagraphList(current, kind));
+    focusInput();
   };
 
   const syncInputBox = () => {
@@ -744,6 +989,211 @@ export function OasisEditor2App() {
           keyboard transport.
         </p>
       </header>
+
+      <section class="oasis-editor-2-toolbar" onMouseDown={(event) => event.preventDefault()}>
+        <div class="oasis-editor-2-toolbar-group">
+          {booleanButtons.map((button) => (
+            <button
+              type="button"
+              class="oasis-editor-2-tool-button"
+              classList={{
+                "oasis-editor-2-tool-button-active": toolbarStyleState()[button.key],
+              }}
+              data-testid={button.testId}
+              disabled={selectionCollapsed()}
+              onClick={() => applyBooleanStyleCommand(button.key)}
+            >
+              {button.label}
+            </button>
+          ))}
+        </div>
+
+        <div class="oasis-editor-2-toolbar-group">
+          {alignButtons.map((button) => (
+            <button
+              type="button"
+              class="oasis-editor-2-tool-button"
+              classList={{
+                "oasis-editor-2-tool-button-active": toolbarStyleState().align === button.value,
+              }}
+              data-testid={button.testId}
+              onClick={() => applyParagraphStyleCommand("align", button.value)}
+            >
+              {button.label}
+            </button>
+          ))}
+        </div>
+
+        <div class="oasis-editor-2-toolbar-group">
+          {listButtons.map((button) => (
+            <button
+              type="button"
+              class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+              classList={{
+                "oasis-editor-2-tool-button-active": toolbarStyleState().listKind === button.kind,
+              }}
+              data-testid={button.testId}
+              onClick={() => applyParagraphListCommand(button.kind)}
+            >
+              {button.label}
+            </button>
+          ))}
+        </div>
+
+        <div class="oasis-editor-2-toolbar-group">
+          <select
+            class="oasis-editor-2-tool-select"
+            data-testid="editor-2-toolbar-font-family"
+            disabled={selectionCollapsed()}
+            value={toolbarStyleState().fontFamily}
+            onChange={(event) =>
+              applyValueStyleCommand("fontFamily", event.currentTarget.value || null)
+            }
+          >
+            <option value="">Font</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Inter">Inter</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Courier New">Courier New</option>
+          </select>
+
+          <select
+            class="oasis-editor-2-tool-select oasis-editor-2-tool-select-small"
+            data-testid="editor-2-toolbar-font-size"
+            disabled={selectionCollapsed()}
+            value={toolbarStyleState().fontSize}
+            onChange={(event) =>
+              applyValueStyleCommand(
+                "fontSize",
+                event.currentTarget.value ? Number(event.currentTarget.value) : null,
+              )
+            }
+          >
+            <option value="">Size</option>
+            <option value="14">14</option>
+            <option value="16">16</option>
+            <option value="18">18</option>
+            <option value="20">20</option>
+            <option value="24">24</option>
+            <option value="28">28</option>
+          </select>
+
+          <label class="oasis-editor-2-tool-color">
+            <span>Text</span>
+            <input
+              type="color"
+              class="oasis-editor-2-tool-color-input"
+              data-testid="editor-2-toolbar-color"
+              disabled={selectionCollapsed()}
+              value={toolbarStyleState().color || "#111827"}
+              onInput={(event) => applyValueStyleCommand("color", event.currentTarget.value)}
+            />
+          </label>
+
+          <label class="oasis-editor-2-tool-color">
+            <span>Mark</span>
+            <input
+              type="color"
+              class="oasis-editor-2-tool-color-input"
+              data-testid="editor-2-toolbar-highlight"
+              disabled={selectionCollapsed()}
+              value={toolbarStyleState().highlight || "#fef08a"}
+              onInput={(event) => applyValueStyleCommand("highlight", event.currentTarget.value)}
+            />
+          </label>
+        </div>
+
+        <div class="oasis-editor-2-toolbar-group">
+          <label class="oasis-editor-2-tool-metric">
+            <span>Line</span>
+            <input
+              type="number"
+              class="oasis-editor-2-tool-number"
+              data-testid="editor-2-toolbar-line-height"
+              min="1"
+              step="0.1"
+              value={toolbarStyleState().lineHeight}
+              onChange={(event) =>
+                applyParagraphStyleCommand(
+                  "lineHeight",
+                  event.currentTarget.value ? Number(event.currentTarget.value) : null,
+                )
+              }
+            />
+          </label>
+
+          <label class="oasis-editor-2-tool-metric">
+            <span>Before</span>
+            <input
+              type="number"
+              class="oasis-editor-2-tool-number"
+              data-testid="editor-2-toolbar-spacing-before"
+              min="0"
+              step="1"
+              value={toolbarStyleState().spacingBefore}
+              onChange={(event) =>
+                applyParagraphStyleCommand(
+                  "spacingBefore",
+                  event.currentTarget.value ? Number(event.currentTarget.value) : null,
+                )
+              }
+            />
+          </label>
+
+          <label class="oasis-editor-2-tool-metric">
+            <span>After</span>
+            <input
+              type="number"
+              class="oasis-editor-2-tool-number"
+              data-testid="editor-2-toolbar-spacing-after"
+              min="0"
+              step="1"
+              value={toolbarStyleState().spacingAfter}
+              onChange={(event) =>
+                applyParagraphStyleCommand(
+                  "spacingAfter",
+                  event.currentTarget.value ? Number(event.currentTarget.value) : null,
+                )
+              }
+            />
+          </label>
+
+          <label class="oasis-editor-2-tool-metric">
+            <span>Indent</span>
+            <input
+              type="number"
+              class="oasis-editor-2-tool-number"
+              data-testid="editor-2-toolbar-indent-left"
+              min="0"
+              step="1"
+              value={toolbarStyleState().indentLeft}
+              onChange={(event) =>
+                applyParagraphStyleCommand(
+                  "indentLeft",
+                  event.currentTarget.value ? Number(event.currentTarget.value) : null,
+                )
+              }
+            />
+          </label>
+
+          <label class="oasis-editor-2-tool-metric">
+            <span>First</span>
+            <input
+              type="number"
+              class="oasis-editor-2-tool-number"
+              data-testid="editor-2-toolbar-indent-first-line"
+              step="1"
+              value={toolbarStyleState().indentFirstLine}
+              onChange={(event) =>
+                applyParagraphStyleCommand(
+                  "indentFirstLine",
+                  event.currentTarget.value ? Number(event.currentTarget.value) : null,
+                )
+              }
+            />
+          </label>
+        </div>
+      </section>
 
       <section class="oasis-editor-2-stage">
         <div

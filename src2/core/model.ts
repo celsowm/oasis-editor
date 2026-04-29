@@ -21,6 +21,11 @@ export interface Editor2ParagraphStyle {
   indentFirstLine?: number | null;
 }
 
+export interface Editor2ParagraphListStyle {
+  kind: "bullet" | "ordered";
+  level?: number;
+}
+
 export interface Editor2TextRun {
   id: string;
   text: string;
@@ -32,6 +37,7 @@ export interface Editor2ParagraphNode {
   type: "paragraph";
   runs: Editor2TextRun[];
   style?: Editor2ParagraphStyle;
+  list?: Editor2ParagraphListStyle;
 }
 
 export type Editor2BlockNode = Editor2ParagraphNode;

@@ -12,7 +12,10 @@ import {
   moveSelectionLeft,
   moveSelectionRight,
   moveSelectionUp,
+  setParagraphStyle,
+  setTextStyleValue,
   splitBlockAtSelection,
+  toggleParagraphList,
   toggleTextStyle,
 } from "../../core/editorCommands.js";
 import {
@@ -240,5 +243,113 @@ describe("editor-2 commands", () => {
 
     expect(paragraph.runs.map((run) => run.text)).toEqual(["h", "ell", "o"]);
     expect(paragraph.runs.map((run) => run.styles)).toEqual([{ underline: true }, undefined, { underline: true }]);
+  });
+
+  it("applies font family to the selected range without flattening neighbors", () => {
+    const state = createEditor2StateFromTexts(["hello"], {
+      anchor: { blockIndex: 0, offset: 1 },
+      focus: { blockIndex: 0, offset: 4 },
+    });
+    const next = setTextStyleValue(state, "fontFamily", "Georgia");
+    const paragraph = getParagraphs(next)[0];
+
+    expect(paragraph.runs.map((run) => run.text)).toEqual(["h", "ell", "o"]);
+    expect(paragraph.runs.map((run) => run.styles)).toEqual([undefined, { fontFamily: "Georgia" }, undefined]);
+  });
+
+  it("applies font size and color across existing styled runs", () => {
+    const state = createEditor2StateFromParagraphRuns(
+      [
+        [
+          { text: "ab", styles: { bold: true } },
+          { text: "cd", styles: { italic: true } },
+        ],
+      ],
+      {
+        anchor: { blockIndex: 0, offset: 1 },
+        focus: { blockIndex: 0, offset: 3 },
+      },
+    );
+    const withFontSize = setTextStyleValue(state, "fontSize", 22);
+    const next = setTextStyleValue(withFontSize, "color", "#224466");
+    const paragraph = getParagraphs(next)[0];
+
+    expect(paragraph.runs.map((run) => run.text)).toEqual(["a", "b", "c", "d"]);
+    expect(paragraph.runs.map((run) => run.styles)).toEqual([
+      { bold: true },
+      { bold: true, fontSize: 22, color: "#224466" },
+      { italic: true, fontSize: 22, color: "#224466" },
+      { italic: true },
+    ]);
+  });
+
+  it("removes highlight from the selected range when value is null", () => {
+    const state = createEditor2StateFromParagraphRuns(
+      [[{ text: "hello", styles: { highlight: "#ffee00" } }]],
+      {
+        anchor: { blockIndex: 0, offset: 1 },
+        focus: { blockIndex: 0, offset: 4 },
+      },
+    );
+    const next = setTextStyleValue(state, "highlight", null);
+    const paragraph = getParagraphs(next)[0];
+
+    expect(paragraph.runs.map((run) => run.text)).toEqual(["h", "ell", "o"]);
+    expect(paragraph.runs.map((run) => run.styles)).toEqual([{ highlight: "#ffee00" }, undefined, { highlight: "#ffee00" }]);
+  });
+
+  it("applies paragraph alignment across the selected paragraph range", () => {
+    const state = createEditor2StateFromTexts(["abc", "def"], {
+      anchor: { blockIndex: 0, offset: 1 },
+      focus: { blockIndex: 1, offset: 2 },
+    });
+    const next = setParagraphStyle(state, "align", "center");
+
+    expect(getParagraphs(next).map((paragraph) => paragraph.style)).toEqual([
+      { align: "center" },
+      { align: "center" },
+    ]);
+  });
+
+  it("applies paragraph indentation on a collapsed selection to the focused paragraph", () => {
+    const state = createEditor2StateFromTexts(["abc", "def"], { blockIndex: 1, offset: 1 });
+    const next = setParagraphStyle(state, "indentLeft", 36);
+
+    expect(getParagraphs(next)[0]?.style).toBeUndefined();
+    expect(getParagraphs(next)[1]?.style).toEqual({ indentLeft: 36 });
+  });
+
+  it("removes paragraph spacing when the style value is null", () => {
+    const state = createEditor2StateFromTexts(["abc"], { blockIndex: 0, offset: 1 });
+    const withSpacing = setParagraphStyle(state, "spacingAfter", 18);
+    const next = setParagraphStyle(withSpacing, "spacingAfter", null);
+
+    expect(getParagraphs(next)[0]?.style).toBeUndefined();
+  });
+
+  it("toggles bullet list on the selected paragraph range", () => {
+    const state = createEditor2StateFromTexts(["abc", "def"], {
+      anchor: { blockIndex: 0, offset: 0 },
+      focus: { blockIndex: 1, offset: 1 },
+    });
+    const next = toggleParagraphList(state, "bullet");
+
+    expect(getParagraphs(next).map((paragraph) => paragraph.list)).toEqual([
+      { kind: "bullet", level: 0 },
+      { kind: "bullet", level: 0 },
+    ]);
+  });
+
+  it("clears ordered list when the whole targeted range is already ordered", () => {
+    const state = toggleParagraphList(
+      createEditor2StateFromTexts(["abc", "def"], {
+        anchor: { blockIndex: 0, offset: 0 },
+        focus: { blockIndex: 1, offset: 1 },
+      }),
+      "ordered",
+    );
+    const next = toggleParagraphList(state, "ordered");
+
+    expect(getParagraphs(next).map((paragraph) => paragraph.list)).toEqual([undefined, undefined]);
   });
 });

@@ -23,7 +23,7 @@ body {
 
 .oasis-editor-2-app {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   width: 100%;
   height: 100%;
   padding: 28px 24px 32px;
@@ -58,6 +58,118 @@ body {
   font-size: 16px;
   line-height: 1.6;
   color: #475569;
+}
+
+.oasis-editor-2-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  width: min(860px, 100%);
+  margin: 0 auto;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(16px);
+}
+
+.oasis-editor-2-toolbar-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.oasis-editor-2-tool-button,
+.oasis-editor-2-tool-select,
+.oasis-editor-2-tool-color {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.86);
+  color: #0f172a;
+}
+
+.oasis-editor-2-tool-button {
+  min-width: 40px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.oasis-editor-2-tool-button-wide {
+  min-width: 74px;
+}
+
+.oasis-editor-2-tool-button-active {
+  background: #dbeafe;
+  border-color: rgba(37, 99, 235, 0.34);
+  color: #1d4ed8;
+}
+
+.oasis-editor-2-tool-button:disabled,
+.oasis-editor-2-tool-select:disabled,
+.oasis-editor-2-tool-color:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.oasis-editor-2-tool-select {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.oasis-editor-2-tool-select-small {
+  min-width: 74px;
+}
+
+.oasis-editor-2-tool-color {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.oasis-editor-2-tool-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.86);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.oasis-editor-2-tool-number {
+  width: 64px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #0f172a;
+  font: inherit;
+}
+
+.oasis-editor-2-tool-color-input {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .oasis-editor-2-stage {
@@ -105,6 +217,22 @@ body {
   letter-spacing: 0.002em;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.oasis-editor-2-block-list {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.oasis-editor-2-list-marker {
+  flex: 0 0 26px;
+  padding-top: 0.1em;
+  font-size: 0.95em;
+  line-height: inherit;
+  text-align: right;
+  color: #475569;
+  user-select: none;
 }
 
 .oasis-editor-2-run {
@@ -184,6 +312,10 @@ body {
 @media (max-width: 900px) {
   .oasis-editor-2-app {
     padding: 20px 14px 20px;
+  }
+
+  .oasis-editor-2-toolbar {
+    padding: 10px;
   }
 
   .oasis-editor-2-editor {

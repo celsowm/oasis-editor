@@ -16,6 +16,10 @@ describe("OasisEditor2", () => {
     expect(root.querySelector('[data-testid="editor-2-editor"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-surface"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-input"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="editor-2-toolbar-bold"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="editor-2-toolbar-font-family"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="editor-2-toolbar-align-center"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="editor-2-toolbar-list-bullet"]')).not.toBeNull();
     expect(root.querySelectorAll('[data-testid="editor-2-block"]').length).toBe(1);
     expect(root.textContent).toContain("Minimal editor");
     expect(root.textContent).toContain("oasis-editor-2");
@@ -425,6 +429,147 @@ describe("OasisEditor2", () => {
     const runNodes = root.querySelectorAll('[data-testid="editor-2-run"]');
     expect(runNodes.length).toBeGreaterThan(1);
     expect((runNodes[runNodes.length - 1] as HTMLSpanElement).style.fontWeight).toBe("700");
+
+    instance.dispose();
+  });
+
+  it("toggles bold from the toolbar", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const boldButton = root.querySelector('[data-testid="editor-2-toolbar-bold"]') as HTMLButtonElement;
+
+    input.value = "ab";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "ab", inputType: "insertText" }));
+    await Promise.resolve();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", shiftKey: true }));
+    await Promise.resolve();
+
+    boldButton.click();
+    await Promise.resolve();
+
+    const runNodes = root.querySelectorAll('[data-testid="editor-2-run"]');
+    expect((runNodes[runNodes.length - 1] as HTMLSpanElement).style.fontWeight).toBe("700");
+    expect(boldButton.classList.contains("oasis-editor-2-tool-button-active")).toBe(true);
+
+    instance.dispose();
+  });
+
+  it("applies non-boolean text styles from the toolbar", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const fontFamilySelect = root.querySelector(
+      '[data-testid="editor-2-toolbar-font-family"]',
+    ) as HTMLSelectElement;
+    const fontSizeSelect = root.querySelector(
+      '[data-testid="editor-2-toolbar-font-size"]',
+    ) as HTMLSelectElement;
+    const colorInput = root.querySelector('[data-testid="editor-2-toolbar-color"]') as HTMLInputElement;
+    const highlightInput = root.querySelector(
+      '[data-testid="editor-2-toolbar-highlight"]',
+    ) as HTMLInputElement;
+
+    input.value = "ab";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "ab", inputType: "insertText" }));
+    await Promise.resolve();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", shiftKey: true }));
+    await Promise.resolve();
+
+    fontFamilySelect.value = "Georgia";
+    fontFamilySelect.dispatchEvent(new Event("change", { bubbles: true }));
+    await Promise.resolve();
+
+    fontSizeSelect.value = "24";
+    fontSizeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    await Promise.resolve();
+
+    colorInput.value = "#ff0000";
+    colorInput.dispatchEvent(new Event("input", { bubbles: true }));
+    await Promise.resolve();
+
+    highlightInput.value = "#ffff00";
+    highlightInput.dispatchEvent(new Event("input", { bubbles: true }));
+    await Promise.resolve();
+
+    const runNodes = root.querySelectorAll('[data-testid="editor-2-run"]');
+    const selectedRun = runNodes[runNodes.length - 1] as HTMLSpanElement;
+    expect(selectedRun.style.fontFamily).toContain("Georgia");
+    expect(selectedRun.style.fontSize).toBe("24px");
+    expect(selectedRun.style.color).toBe("rgb(255, 0, 0)");
+    expect(selectedRun.style.backgroundColor).toBe("rgb(255, 255, 0)");
+
+    instance.dispose();
+  });
+
+  it("applies paragraph alignment and spacing from the toolbar", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const alignCenterButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-align-center"]',
+    ) as HTMLButtonElement;
+    const spacingAfterInput = root.querySelector(
+      '[data-testid="editor-2-toolbar-spacing-after"]',
+    ) as HTMLInputElement;
+    const indentLeftInput = root.querySelector(
+      '[data-testid="editor-2-toolbar-indent-left"]',
+    ) as HTMLInputElement;
+
+    input.value = "para";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "para", inputType: "insertText" }));
+    await Promise.resolve();
+
+    alignCenterButton.click();
+    await Promise.resolve();
+
+    spacingAfterInput.value = "24";
+    spacingAfterInput.dispatchEvent(new Event("change", { bubbles: true }));
+    await Promise.resolve();
+
+    indentLeftInput.value = "32";
+    indentLeftInput.dispatchEvent(new Event("change", { bubbles: true }));
+    await Promise.resolve();
+
+    const paragraph = root.querySelector('[data-testid="editor-2-block"]') as HTMLParagraphElement;
+    expect(paragraph.style.textAlign).toBe("center");
+    expect(paragraph.style.paddingBottom).toBe("24px");
+    expect(paragraph.style.paddingLeft).toBe("32px");
+    expect(alignCenterButton.classList.contains("oasis-editor-2-tool-button-active")).toBe(true);
+
+    instance.dispose();
+  });
+
+  it("toggles bullet and ordered lists from the toolbar", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const bulletButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-list-bullet"]',
+    ) as HTMLButtonElement;
+    const orderedButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-list-ordered"]',
+    ) as HTMLButtonElement;
+
+    input.value = "item";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "item", inputType: "insertText" }));
+    await Promise.resolve();
+
+    bulletButton.click();
+    await Promise.resolve();
+
+    let marker = root.querySelector('[data-testid="editor-2-list-marker"]') as HTMLSpanElement;
+    expect(marker.textContent).toBe("•");
+    expect(bulletButton.classList.contains("oasis-editor-2-tool-button-active")).toBe(true);
+
+    orderedButton.click();
+    await Promise.resolve();
+
+    marker = root.querySelector('[data-testid="editor-2-list-marker"]') as HTMLSpanElement;
+    expect(marker.textContent).toBe("1.");
+    expect(orderedButton.classList.contains("oasis-editor-2-tool-button-active")).toBe(true);
 
     instance.dispose();
   });
