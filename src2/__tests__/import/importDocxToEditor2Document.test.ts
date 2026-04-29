@@ -221,4 +221,40 @@ describe("importDocxToEditor2Document", () => {
     expect(getParagraphText(table.rows[0]!.cells[0]!.blocks[0]!)).toBe("Merged");
     expect(getParagraphText(table.rows[0]!.cells[1]!.blocks[0]!)).toBe("Tail");
   });
+
+  it("imports vertical cell merges from wordprocessingml", async () => {
+    const buffer = await buildDocx(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:tbl>
+            <w:tr>
+              <w:tc>
+                <w:tcPr><w:vMerge w:val="restart"/></w:tcPr>
+                <w:p><w:r><w:t>A</w:t></w:r></w:p>
+              </w:tc>
+            </w:tr>
+            <w:tr>
+              <w:tc>
+                <w:tcPr><w:vMerge/></w:tcPr>
+                <w:p><w:r><w:t>B</w:t></w:r></w:p>
+              </w:tc>
+            </w:tr>
+          </w:tbl>
+        </w:body>
+      </w:document>`,
+    );
+
+    const document = await importDocxToEditor2Document(buffer);
+    const table = document.blocks[0];
+    if (table?.type !== "table") {
+      throw new Error("Expected table block");
+    }
+
+    expect(table.rows[0]?.cells[0]?.vMerge).toBe("restart");
+    expect(table.rows[0]?.cells[0]?.rowSpan).toBe(2);
+    expect(table.rows[1]?.cells[0]?.vMerge).toBe("continue");
+    expect(getParagraphText(table.rows[0]!.cells[0]!.blocks[0]!)).toBe("A");
+    expect(table.rows[1]!.cells[0]!.blocks.length).toBe(0);
+  });
 });

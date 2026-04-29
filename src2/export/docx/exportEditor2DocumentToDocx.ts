@@ -290,11 +290,18 @@ function serializeParagraphProperties(
 
 function serializeTableCellProperties(cell: Editor2TableNode["rows"][number]["cells"][number]): string {
   const colSpan = Math.max(1, Math.floor(cell.colSpan ?? 1));
-  if (colSpan <= 1) {
-    return "";
+  const parts: string[] = [];
+
+  if (colSpan > 1) {
+    parts.push(`<w:gridSpan w:val="${colSpan}"/>`);
+  }
+  if (cell.vMerge === "restart") {
+    parts.push('<w:vMerge w:val="restart"/>');
+  } else if (cell.vMerge === "continue") {
+    parts.push("<w:vMerge/>");
   }
 
-  return `<w:tcPr><w:gridSpan w:val="${colSpan}"/></w:tcPr>`;
+  return parts.length > 0 ? `<w:tcPr>${parts.join("")}</w:tcPr>` : "";
 }
 
 function buildDocumentContext(document: Editor2Document): DocContext {
@@ -389,7 +396,8 @@ function buildDocumentXml(document: Editor2Document, context: DocContext): strin
               const runs = p.runs.length > 0 ? p.runs : [{ id: "", text: "" }];
               return `<w:p>${serializeParagraphProperties(p, context.numberingInfo)}${runs.map(r => serializeRun(r, context)).join("")}</w:p>`;
             }).join("");
-            return `<w:tc>${serializeTableCellProperties(cell)}${paragraphsXml}</w:tc>`;
+            const contentXml = cell.vMerge === "continue" ? "<w:p/>" : paragraphsXml;
+            return `<w:tc>${serializeTableCellProperties(cell)}${contentXml}</w:tc>`;
           }).join("");
           return `<w:tr>${cellsXml}</w:tr>`;
         }).join("");

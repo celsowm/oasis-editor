@@ -53,6 +53,8 @@ export interface Editor2TableCellNode {
   id: string;
   blocks: Editor2ParagraphNode[];
   colSpan?: number;
+  rowSpan?: number;
+  vMerge?: "restart" | "continue";
 }
 
 export interface Editor2TableRowNode {

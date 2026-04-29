@@ -51,6 +51,20 @@ function getTableCellColSpan(cellProperties: XmlElement | null): number {
   return Number.isFinite(parsed) && parsed > 1 ? Math.floor(parsed) : 1;
 }
 
+function getTableCellVMerge(cellProperties: XmlElement | null): "restart" | "continue" | undefined {
+  if (!cellProperties) {
+    return undefined;
+  }
+
+  const vMerge = getFirstChildByTagNameNS(cellProperties, WORD_NS, "vMerge");
+  if (!vMerge) {
+    return undefined;
+  }
+
+  const value = getAttributeValue(vMerge, "val");
+  return value === "restart" ? "restart" : "continue";
+}
+
 function parseBooleanProperty(parent: XmlElement, localName: string): boolean {
   return getFirstChildByTagNameNS(parent, WORD_NS, localName) !== null;
 }
@@ -367,12 +381,42 @@ async function parseTableNode(
       for (const paragraphNode of getChildrenByTagNameNS(cellNode, WORD_NS, "p")) {
         paragraphs.push(await parseParagraphNode(paragraphNode, numberingMaps, zip, relsMap));
       }
-      cells.push(createEditor2TableCell(
+      const colSpan = getTableCellColSpan(cellProperties);
+      const vMerge = getTableCellVMerge(cellProperties);
+      const cell = createEditor2TableCell(
         paragraphs.length > 0 ? paragraphs : [createEditor2ParagraphFromRuns([{ text: "" }])],
-        getTableCellColSpan(cellProperties),
-      ));
+        colSpan,
+        vMerge === "restart" ? { rowSpan: 1, vMerge } : vMerge ? { vMerge } : undefined,
+      );
+      if (vMerge === "continue") {
+        cell.blocks = [];
+      }
+      cells.push(cell);
     }
     rows.push(createEditor2TableRow(cells));
+  }
+
+  // Infer rowSpan from restart/continue sequences.
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+    const row = rows[rowIndex]!;
+    for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+      const cell = row.cells[cellIndex];
+      if (cell.vMerge !== "restart") {
+        continue;
+      }
+
+      let span = 1;
+      for (let nextRowIndex = rowIndex + 1; nextRowIndex < rows.length; nextRowIndex += 1) {
+        const nextCell = rows[nextRowIndex]!.cells[cellIndex];
+        if (!nextCell || nextCell.vMerge !== "continue") {
+          break;
+        }
+        span += 1;
+      }
+      if (span > 1) {
+        cell.rowSpan = span;
+      }
+    }
   }
 
   return createEditor2Table(rows);

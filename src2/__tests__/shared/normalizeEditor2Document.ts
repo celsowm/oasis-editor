@@ -28,6 +28,8 @@ function normalizeTable(table: Editor2TableNode) {
     rows: table.rows.map((row) => ({
       cells: row.cells.map((cell) => ({
         colSpan: cell.colSpan ?? undefined,
+        rowSpan: cell.rowSpan ?? undefined,
+        vMerge: cell.vMerge ?? undefined,
         blocks: cell.blocks.map(normalizeParagraph),
       })),
     })),

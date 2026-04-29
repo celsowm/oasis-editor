@@ -295,25 +295,28 @@ function renderTable(
               <tr class="oasis-editor-2-table-row" data-testid="editor-2-table-row" data-row-index={rowIndex()}>
                 <For each={row.cells}>
                   {(cell, cellIndex) => (
-                    <td
-                      class="oasis-editor-2-table-cell"
-                      colSpan={cell.colSpan ?? 1}
-                      data-testid="editor-2-table-cell"
-                      data-row-index={rowIndex()}
-                      data-cell-index={cellIndex()}
-                    >
-                      <For each={cell.blocks}>
-                        {(paragraph) =>
-                          renderParagraph(
-                            paragraph,
-                            paragraphIndexById.get(paragraph.id) ?? 0,
-                            state,
-                            onParagraphMouseDown,
-                            onImageMouseDown,
-                            onImageResizeHandleMouseDown,
-                          )}
-                      </For>
-                    </td>
+                    cell.vMerge === "continue" ? null : (
+                      <td
+                        class="oasis-editor-2-table-cell"
+                        colSpan={cell.colSpan ?? 1}
+                        rowSpan={cell.rowSpan ?? 1}
+                        data-testid="editor-2-table-cell"
+                        data-row-index={rowIndex()}
+                        data-cell-index={cellIndex()}
+                      >
+                        <For each={cell.blocks}>
+                          {(paragraph) =>
+                            renderParagraph(
+                              paragraph,
+                              paragraphIndexById.get(paragraph.id) ?? 0,
+                              state,
+                              onParagraphMouseDown,
+                              onImageMouseDown,
+                              onImageResizeHandleMouseDown,
+                            )}
+                        </For>
+                      </td>
+                    )
                   )}
                 </For>
               </tr>

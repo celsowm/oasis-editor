@@ -217,6 +217,38 @@ describe("exportEditor2DocumentToDocx", () => {
     expect(getParagraphText(importedTable.rows[0]!.cells[1]!.blocks[0]!)).toBe("Tail");
   });
 
+  it("exports and reimports vertical table cell spans", async () => {
+    const topCell = createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "A" }])], 1, {
+      rowSpan: 2,
+      vMerge: "restart",
+    });
+    const bottomCell = createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "B" }])]);
+    bottomCell.blocks = [];
+    bottomCell.vMerge = "continue";
+    const table = createEditor2Table([
+      createEditor2TableRow([topCell]),
+      createEditor2TableRow([bottomCell]),
+    ]);
+
+    const buffer = await exportEditor2DocumentToDocx(createEditor2Document([table]));
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+
+    expect(documentXml).toContain('<w:vMerge w:val="restart"/>');
+    expect(documentXml).toContain("<w:vMerge/>");
+
+    resetEditor2Ids();
+    const imported = await importDocxToEditor2Document(buffer);
+    const importedTable = imported.blocks[0];
+    if (importedTable?.type !== "table") {
+      throw new Error("Expected imported table block");
+    }
+
+    expect(importedTable.rows[0]!.cells[0]!.rowSpan).toBe(2);
+    expect(importedTable.rows[0]!.cells[0]!.vMerge).toBe("restart");
+    expect(importedTable.rows[1]!.cells[0]!.vMerge).toBe("continue");
+  });
+
   it("exports and reimports inline images via DOCX relationships", async () => {
     const paragraph = createEditor2ParagraphFromRuns([
       { text: "Look: " },

@@ -51,6 +51,8 @@ describe("OasisEditor2", () => {
     expect(root.querySelector('[data-testid="editor-2-toolbar-page-break-before"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-merge-table-cells"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-split-table-cell"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="editor-2-toolbar-merge-table-rows"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="editor-2-toolbar-split-table-row"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-export-docx"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-import-docx"]')).not.toBeNull();
     expect(root.querySelectorAll('[data-testid="editor-2-block"]').length).toBe(1);
@@ -1870,6 +1872,76 @@ describe("OasisEditor2", () => {
     expect(cells.length).toBe(2);
     expect(cells[0]?.getAttribute("colspan") ?? "1").toBe("1");
     expect(cells[1]?.getAttribute("colspan") ?? "1").toBe("1");
+
+    instance.dispose();
+  });
+
+  it("merges and splits table rows vertically through the toolbar", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const importInput = root.querySelector(
+      '[data-testid="editor-2-import-docx-input"]',
+    ) as HTMLInputElement;
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const mergeButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-merge-table-rows"]',
+    ) as HTMLButtonElement;
+    const splitButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-split-table-row"]',
+    ) as HTMLButtonElement;
+    const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:tbl>
+            <w:tr>
+              <w:tc><w:p><w:r><w:t>A</w:t></w:r></w:p></w:tc>
+            </w:tr>
+            <w:tr>
+              <w:tc><w:p><w:r><w:t>B</w:t></w:r></w:p></w:tc>
+            </w:tr>
+          </w:tbl>
+        </w:body>
+      </w:document>`);
+
+    Object.defineProperty(importInput, "files", {
+      configurable: true,
+      value: [file],
+    });
+
+    importInput.dispatchEvent(new Event("change", { bubbles: true }));
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 2) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    const firstParagraph = root.querySelector('[data-testid="editor-2-table-cell"] [data-paragraph-id]') as HTMLElement;
+    firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
+    await Promise.resolve();
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown", shiftKey: true }));
+    await Promise.resolve();
+
+    expect(mergeButton.disabled).toBe(false);
+    mergeButton.click();
+    await Promise.resolve();
+
+    let cells = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
+    expect(cells.length).toBe(1);
+    expect(cells[0]?.getAttribute("rowspan")).toBe("2");
+    expect(cells[0]?.textContent?.replace(/\u00A0/g, "")).toContain("A");
+    expect(cells[0]?.textContent?.replace(/\u00A0/g, "")).toContain("B");
+
+    expect(splitButton.disabled).toBe(false);
+    splitButton.click();
+    await Promise.resolve();
+
+    cells = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
+    expect(cells.length).toBe(2);
+    expect(cells[0]?.getAttribute("rowspan") ?? "1").toBe("1");
+    expect(cells[1]?.getAttribute("rowspan") ?? "1").toBe("1");
+    expect(cells[0]?.textContent?.replace(/\u00A0/g, "")).toContain("A");
+    expect(cells[1]?.textContent?.replace(/\u00A0/g, "")).toContain("");
 
     instance.dispose();
   });

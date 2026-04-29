@@ -75,6 +75,10 @@ export function createEditor2ParagraphFromRuns(
 export function createEditor2TableCell(
   paragraphs: Editor2ParagraphNode[],
   colSpan = 1,
+  options?: {
+    rowSpan?: number;
+    vMerge?: "restart" | "continue";
+  },
 ): Editor2TableCellNode {
   const cell: Editor2TableCellNode = {
     id: `table-cell:${nextTableCellId}`,
@@ -82,6 +86,12 @@ export function createEditor2TableCell(
   };
   if (colSpan > 1) {
     cell.colSpan = colSpan;
+  }
+  if (options?.rowSpan && options.rowSpan > 1) {
+    cell.rowSpan = options.rowSpan;
+  }
+  if (options?.vMerge) {
+    cell.vMerge = options.vMerge;
   }
   nextTableCellId += 1;
   return cell;

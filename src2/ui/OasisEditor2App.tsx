@@ -445,6 +445,9 @@ export function OasisEditor2App() {
             ...row,
             cells: row.cells.map((cell) => ({
               ...cell,
+              colSpan: cell.colSpan ?? undefined,
+              rowSpan: cell.rowSpan ?? undefined,
+              vMerge: cell.vMerge ?? undefined,
               blocks: cell.blocks.map((paragraph) => ({
                 ...paragraph,
                 runs: paragraph.runs.map((run) => ({ ...run })),
@@ -632,6 +635,64 @@ export function OasisEditor2App() {
     return Boolean((cell?.colSpan ?? 1) > 1);
   };
 
+  const resolveVerticalTableCellRange = (
+    current: Editor2State,
+  ): {
+    blockIndex: number;
+    startRowIndex: number;
+    endRowIndex: number;
+    cellIndex: number;
+  } | null => {
+    const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId);
+    const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (
+      !anchorLocation ||
+      !focusLocation ||
+      anchorLocation.blockIndex !== focusLocation.blockIndex ||
+      anchorLocation.cellIndex !== focusLocation.cellIndex
+    ) {
+      return null;
+    }
+
+    const tableBlock = current.document.blocks[anchorLocation.blockIndex];
+    if (!tableBlock || tableBlock.type !== "table") {
+      return null;
+    }
+
+    const startRowIndex = Math.min(anchorLocation.rowIndex, focusLocation.rowIndex);
+    const endRowIndex = Math.max(anchorLocation.rowIndex, focusLocation.rowIndex);
+    if (startRowIndex === endRowIndex) {
+      return null;
+    }
+
+    return {
+      blockIndex: anchorLocation.blockIndex,
+      startRowIndex,
+      endRowIndex,
+      cellIndex: anchorLocation.cellIndex,
+    };
+  };
+
+  const canMergeSelectedTableRows = (current: Editor2State): boolean => {
+    const range = resolveVerticalTableCellRange(current);
+    return Boolean(range);
+  };
+
+  const canSplitSelectedTableCellVertically = (current: Editor2State): boolean => {
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (!location) {
+      return false;
+    }
+
+    const block = current.document.blocks[location.blockIndex];
+    if (!block || block.type !== "table") {
+      return false;
+    }
+
+    const cell = block.rows[location.rowIndex]?.cells[location.cellIndex];
+    return Boolean((cell?.rowSpan ?? 1) > 1 && cell?.vMerge === "restart");
+  };
+
   const mergeSelectedTableCells = (current: Editor2State): Editor2State => {
     const range = resolveHorizontalTableCellRange(current);
     if (!range) {
@@ -663,6 +724,113 @@ export function OasisEditor2App() {
     row.cells.splice(range.startCellIndex, selectedCells.length, mergedCell);
 
     const nextParagraph = mergedCell.blocks[0];
+    if (!nextParagraph) {
+      return current;
+    }
+
+    return {
+      document: {
+        ...current.document,
+        blocks,
+      },
+      selection: {
+        anchor: paragraphOffsetToPosition(nextParagraph, 0),
+        focus: paragraphOffsetToPosition(nextParagraph, 0),
+      },
+    };
+  };
+
+  const mergeSelectedTableRows = (current: Editor2State): Editor2State => {
+    const range = resolveVerticalTableCellRange(current);
+    if (!range) {
+      return current;
+    }
+
+    const blocks = current.document.blocks.map(cloneDocumentBlock);
+    const tableBlock = blocks[range.blockIndex];
+    if (!tableBlock || tableBlock.type !== "table") {
+      return current;
+    }
+
+    const selectedCells: Array<NonNullable<typeof tableBlock.rows[number]["cells"][number]>> = [];
+    for (let rowIndex = range.startRowIndex; rowIndex <= range.endRowIndex; rowIndex += 1) {
+      const row = tableBlock.rows[rowIndex];
+      const cell = row?.cells[range.cellIndex];
+      if (!row || !cell || cell.vMerge === "continue") {
+        return current;
+      }
+      selectedCells.push(cell);
+    }
+
+    if (selectedCells.length < 2) {
+      return current;
+    }
+
+    const mergedCell = {
+      ...selectedCells[0]!,
+      rowSpan: selectedCells.length,
+      vMerge: "restart" as const,
+      blocks: selectedCells.flatMap((cell) =>
+        cell.blocks.map((paragraph) => cloneDocumentBlock(paragraph)),
+      ) as Editor2ParagraphNode[],
+    };
+    tableBlock.rows[range.startRowIndex]!.cells[range.cellIndex] = mergedCell;
+
+    for (let rowIndex = range.startRowIndex + 1; rowIndex <= range.endRowIndex; rowIndex += 1) {
+      const placeholder = createEditor2TableCell([createEditor2Paragraph("")]);
+      placeholder.blocks = [];
+      placeholder.vMerge = "continue";
+      tableBlock.rows[rowIndex]!.cells[range.cellIndex] = placeholder;
+    }
+
+    const nextParagraph = mergedCell.blocks[0];
+    if (!nextParagraph) {
+      return current;
+    }
+
+    return {
+      document: {
+        ...current.document,
+        blocks,
+      },
+      selection: {
+        anchor: paragraphOffsetToPosition(nextParagraph, 0),
+        focus: paragraphOffsetToPosition(nextParagraph, 0),
+      },
+    };
+  };
+
+  const splitSelectedTableCellVertically = (current: Editor2State): Editor2State => {
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    if (!location) {
+      return current;
+    }
+
+    const blocks = current.document.blocks.map(cloneDocumentBlock);
+    const tableBlock = blocks[location.blockIndex];
+    if (!tableBlock || tableBlock.type !== "table") {
+      return current;
+    }
+
+    const cell = tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
+    const span = Math.max(1, cell?.rowSpan ?? 1);
+    if (!cell || span <= 1 || cell.vMerge !== "restart") {
+      return current;
+    }
+
+    cell.rowSpan = undefined;
+    cell.vMerge = undefined;
+
+    for (let offset = 1; offset < span; offset += 1) {
+      const row = tableBlock.rows[location.rowIndex + offset];
+      if (!row) {
+        break;
+      }
+      const replacement = createEditor2TableCell([createEditor2Paragraph("")]);
+      row.cells[location.cellIndex] = replacement;
+    }
+
+    const nextParagraph = cell.blocks[0];
     if (!nextParagraph) {
       return current;
     }
@@ -1905,6 +2073,36 @@ export function OasisEditor2App() {
             }}
           >
             Split Cell
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-merge-table-rows"
+            disabled={!canMergeSelectedTableRows(state)}
+            onClick={() => {
+              applyTransactionalState(
+                (current) => mergeSelectedTableRows(current),
+                { mergeKey: "mergeTableRows" },
+              );
+              focusInput();
+            }}
+          >
+            Merge Rows
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-split-table-row"
+            disabled={!canSplitSelectedTableCellVertically(state)}
+            onClick={() => {
+              applyTransactionalState(
+                (current) => splitSelectedTableCellVertically(current),
+                { mergeKey: "splitTableRow" },
+              );
+              focusInput();
+            }}
+          >
+            Split Row
           </button>
           {booleanButtons.map((button) => (
             <button
