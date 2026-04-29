@@ -2,11 +2,12 @@ import { createEffect, createSignal, onCleanup } from "solid-js";
 import { createStore } from "solid-js/store";
 import { EditorSurface } from "./components/EditorSurface.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
+import { SelectionOverlay } from "./components/SelectionOverlay.js";
+import { getCaretSlotRects } from "./caretGeometry.js";
 import {
-  getCaretSlotRects,
-  resolveClosestOffsetForBoundaryLine,
-  resolveClosestOffsetFromRects,
-} from "./caretGeometry.js";
+  measureParagraphLayoutFromRects,
+  resolveClosestOffsetInMeasuredLayout,
+} from "./layoutProjection.js";
 import {
   deleteBackward,
   deleteForward,
@@ -23,10 +24,18 @@ import {
   moveSelectionUp,
   setSelection,
   splitBlockAtSelection,
+  toggleTextStyle,
 } from "../core/editorCommands.js";
 import { createInitialEditor2State } from "../core/editorState.js";
-import type { Editor2Position, Editor2State } from "../core/model.js";
-import { isSelectionCollapsed } from "../core/selection.js";
+import {
+  getParagraphs,
+  getParagraphText,
+  paragraphOffsetToPosition,
+  positionToParagraphOffset,
+  type Editor2Position,
+  type Editor2State,
+} from "../core/model.js";
+import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
 
 interface InputBox {
   left: number;
@@ -36,6 +45,17 @@ interface InputBox {
 
 interface CaretBox extends InputBox {
   visible: boolean;
+}
+
+interface SelectionBox {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+interface TransactionOptions {
+  mergeKey?: string;
 }
 
 function collectCharRects(blockElement: HTMLElement): Array<{
@@ -59,20 +79,17 @@ function collectCharRects(blockElement: HTMLElement): Array<{
 
 function resolveClickOffset(
   event: MouseEvent & { currentTarget: HTMLParagraphElement },
-  blockTextLength: number,
+  layoutParagraph: ReturnType<typeof measureParagraphLayoutFromRects>,
 ): number {
-  if (blockTextLength === 0) {
+  if (layoutParagraph.text.length === 0) {
     return 0;
   }
-
-  const charRects = collectCharRects(event.currentTarget);
-  if (charRects.length === 0) {
-    return blockTextLength;
-  }
-
   return Math.max(
     0,
-    Math.min(blockTextLength, resolveClosestOffsetFromRects(charRects, event.clientX, event.clientY)),
+    Math.min(
+      layoutParagraph.text.length,
+      resolveClosestOffsetInMeasuredLayout(layoutParagraph, event.clientX, event.clientY),
+    ),
   );
 }
 
@@ -114,10 +131,12 @@ function resolveWordSelection(text: string, offset: number): { start: number; en
 export function OasisEditor2App() {
   const [state, setState] = createStore<Editor2State>(createInitialEditor2State());
   const [focused, setFocused] = createSignal(false);
+  const [composing, setComposing] = createSignal(false);
   const [inputBox, setInputBox] = createSignal<InputBox>({ left: 0, top: 0, height: 28 });
   const [preferredColumnX, setPreferredColumnX] = createSignal<number | null>(null);
   const [undoStack, setUndoStack] = createSignal<Editor2State[]>([]);
   const [redoStack, setRedoStack] = createSignal<Editor2State[]>([]);
+  const [selectionBoxes, setSelectionBoxes] = createSignal<SelectionBox[]>([]);
   const [caretBox, setCaretBox] = createSignal<CaretBox>({
     left: 0,
     top: 0,
@@ -126,11 +145,19 @@ export function OasisEditor2App() {
   });
   let surfaceRef: HTMLDivElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
-  let rafId: number | undefined;
+  let syncRequestId = 0;
   let dragAnchor: Editor2Position | null = null;
+  let lastTransactionMeta: { mergeKey: string; timestamp: number } | null = null;
+  let suppressedInputText: string | null = null;
 
   const cloneState = (source: Editor2State): Editor2State => ({
-    blocks: source.blocks.map((block) => ({ ...block })),
+    document: {
+      ...source.document,
+      blocks: source.document.blocks.map((paragraph) => ({
+        ...paragraph,
+        runs: paragraph.runs.map((run) => ({ ...run })),
+      })),
+    },
     selection: {
       anchor: { ...source.selection.anchor },
       focus: { ...source.selection.focus },
@@ -145,15 +172,32 @@ export function OasisEditor2App() {
     setState(cloneState(nextState));
   };
 
-  const applyTransactionalState = (producer: (current: Editor2State) => Editor2State) => {
+  const resetTransactionGrouping = () => {
+    lastTransactionMeta = null;
+  };
+
+  const applyTransactionalState = (
+    producer: (current: Editor2State) => Editor2State,
+    options?: TransactionOptions,
+  ) => {
     const previous = cloneState(state);
     const next = producer(state);
     if (JSON.stringify(previous) === JSON.stringify(next)) {
       return;
     }
 
-    setUndoStack((stack) => [...stack, previous]);
+    const now = Date.now();
+    const canMerge =
+      options?.mergeKey !== undefined &&
+      lastTransactionMeta?.mergeKey === options.mergeKey &&
+      now - lastTransactionMeta.timestamp < 1000;
+
+    if (!canMerge) {
+      setUndoStack((stack) => [...stack, previous]);
+    }
+
     setRedoStack([]);
+    lastTransactionMeta = options?.mergeKey ? { mergeKey: options.mergeKey, timestamp: now } : null;
     applyState(next);
   };
 
@@ -174,32 +218,109 @@ export function OasisEditor2App() {
 
   const syncInputBox = () => {
     if (!surfaceRef) {
-      setCaretBox((current) => ({ ...current, visible: false }));
-      return;
-    }
-
-    const selectedBlock = surfaceRef.querySelector<HTMLElement>(
-      `[data-block-id="${state.selection.focus.blockId}"]`,
-    );
-    if (!selectedBlock) {
+      setSelectionBoxes([]);
       setCaretBox((current) => ({ ...current, visible: false }));
       return;
     }
 
     const surfaceRect = surfaceRef.getBoundingClientRect();
-    const charRects = collectCharRects(selectedBlock);
+    const paragraphs = getParagraphs(state);
+    const normalized = normalizeSelection(state);
+    const nextSelectionBoxes: SelectionBox[] = [];
+
+    if (!normalized.isCollapsed) {
+      for (let paragraphIndex = normalized.startIndex; paragraphIndex <= normalized.endIndex; paragraphIndex += 1) {
+        const paragraph = paragraphs[paragraphIndex];
+        if (!paragraph) {
+          continue;
+        }
+
+        const paragraphElement = surfaceRef.querySelector<HTMLElement>(
+          `[data-paragraph-id="${paragraph.id}"]`,
+        );
+        if (!paragraphElement) {
+          continue;
+        }
+
+        const paragraphText = getParagraphText(paragraph);
+        const charRects = collectCharRects(paragraphElement);
+        const startOffset = paragraphIndex === normalized.startIndex ? normalized.startParagraphOffset : 0;
+        const endOffset =
+          paragraphIndex === normalized.endIndex ? normalized.endParagraphOffset : paragraphText.length;
+
+        if (charRects.length === 0) {
+          const paragraphRect = paragraphElement.getBoundingClientRect();
+          nextSelectionBoxes.push({
+            left: paragraphRect.left - surfaceRect.left,
+            top: paragraphRect.top - surfaceRect.top,
+            width: Math.max(12, paragraphRect.width || 12),
+            height: paragraphRect.height || 28,
+          });
+          continue;
+        }
+
+        const layout = measureParagraphLayoutFromRects(paragraph, charRects);
+        for (const line of layout.lines) {
+          const lineStart = Math.max(startOffset, line.startOffset);
+          const lineEnd = Math.min(endOffset, line.endOffset);
+          if (lineStart >= lineEnd) {
+            continue;
+          }
+
+          const startSlot = line.slots.find((slot) => slot.offset === lineStart);
+          const endSlot = line.slots.find((slot) => slot.offset === lineEnd);
+          if (!startSlot || !endSlot) {
+            continue;
+          }
+
+          nextSelectionBoxes.push({
+            left: startSlot.left - surfaceRect.left,
+            top: line.top - surfaceRect.top,
+            width: Math.max(1, endSlot.left - startSlot.left),
+            height: line.height,
+          });
+        }
+      }
+    }
+
+    setSelectionBoxes(nextSelectionBoxes);
+
+    const selectedParagraph = surfaceRef.querySelector<HTMLElement>(
+      `[data-paragraph-id="${state.selection.focus.paragraphId}"]`,
+    );
+    if (!selectedParagraph) {
+      setCaretBox((current) => ({ ...current, visible: false }));
+      return;
+    }
+
+    const charRects = collectCharRects(selectedParagraph);
+    const selectedParagraphNode =
+      paragraphs.find((paragraph) => paragraph.id === state.selection.focus.paragraphId) ?? paragraphs[0];
     let left = 0;
     let top = 0;
     let height = 28;
 
     if (charRects.length === 0) {
-      const blockRect = selectedBlock.getBoundingClientRect();
-      left = blockRect.left - surfaceRect.left;
-      top = blockRect.top - surfaceRect.top;
-      height = blockRect.height || 28;
+      const paragraphRect = selectedParagraph.getBoundingClientRect();
+      left = paragraphRect.left - surfaceRect.left;
+      top = paragraphRect.top - surfaceRect.top;
+      height = paragraphRect.height || 28;
     } else {
-      const slots = getCaretSlotRects(charRects);
-      const slotIndex = Math.max(0, Math.min(state.selection.focus.offset, slots.length - 1));
+      const layout = measureParagraphLayoutFromRects(selectedParagraphNode, charRects);
+      const slots =
+        layout.lines.length > 0
+          ? layout.lines.flatMap((line, lineIndex) =>
+              lineIndex === layout.lines.length - 1 ? line.slots : line.slots.slice(0, -1),
+            )
+          : getCaretSlotRects(charRects).map((slot, offset) => ({
+              paragraphId: selectedParagraphNode.id,
+              offset,
+              left: slot.left,
+              top: slot.top,
+              height: slot.height,
+            }));
+      const focusOffset = positionToParagraphOffset(selectedParagraphNode, state.selection.focus);
+      const slotIndex = Math.max(0, Math.min(focusOffset, slots.length - 1));
       const slot = slots[slotIndex];
       left = slot.left - surfaceRect.left;
       top = slot.top - surfaceRect.top;
@@ -220,28 +341,30 @@ export function OasisEditor2App() {
   };
 
   const requestInputBoxSync = () => {
-    if (rafId !== undefined) {
-      cancelAnimationFrame(rafId);
-    }
-    rafId = requestAnimationFrame(() => {
+    const requestId = ++syncRequestId;
+    queueMicrotask(() => {
+      if (requestId !== syncRequestId) {
+        return;
+      }
       syncInputBox();
-      rafId = undefined;
     });
   };
 
   createEffect(() => {
-    state.selection.anchor.blockId;
+    state.selection.anchor.paragraphId;
+    state.selection.anchor.runId;
     state.selection.anchor.offset;
-    state.selection.focus.blockId;
+    state.selection.focus.paragraphId;
+    state.selection.focus.runId;
     state.selection.focus.offset;
-    state.blocks.map((block) => block.text).join("\n");
+    getParagraphs(state)
+      .map((paragraph) => paragraph.runs.map((run) => run.text).join(""))
+      .join("\n");
     requestInputBoxSync();
   });
 
   onCleanup(() => {
-    if (rafId !== undefined) {
-      cancelAnimationFrame(rafId);
-    }
+    syncRequestId += 1;
     stopDragging();
   });
 
@@ -251,8 +374,42 @@ export function OasisEditor2App() {
       return;
     }
 
+    if (composing()) {
+      return;
+    }
+
+    if (suppressedInputText !== null && text === suppressedInputText) {
+      suppressedInputText = null;
+      event.currentTarget.value = "";
+      return;
+    }
+
     clearPreferredColumn();
-    applyTransactionalState((current) => insertTextAtSelection(current, text));
+    applyTransactionalState((current) => insertTextAtSelection(current, text), {
+      mergeKey: "insertText",
+    });
+    event.currentTarget.value = "";
+    focusInput();
+  };
+
+  const handleCompositionStart = () => {
+    setComposing(true);
+  };
+
+  const handleCompositionEnd = (event: CompositionEvent & { currentTarget: HTMLTextAreaElement }) => {
+    const text = event.data ?? event.currentTarget.value;
+    setComposing(false);
+
+    if (text.length === 0) {
+      event.currentTarget.value = "";
+      return;
+    }
+
+    suppressedInputText = text;
+    clearPreferredColumn();
+    applyTransactionalState((current) => insertTextAtSelection(current, text), {
+      mergeKey: "insertText",
+    });
     event.currentTarget.value = "";
     focusInput();
   };
@@ -276,6 +433,7 @@ export function OasisEditor2App() {
     event.preventDefault();
     event.clipboardData?.setData("text/plain", text);
     clearPreferredColumn();
+    resetTransactionGrouping();
     applyTransactionalState((current) => deleteBackward(current));
     focusInput();
   };
@@ -288,6 +446,7 @@ export function OasisEditor2App() {
 
     event.preventDefault();
     clearPreferredColumn();
+    resetTransactionGrouping();
     applyTransactionalState((current) => insertPlainTextAtSelection(current, text));
     event.currentTarget.value = "";
     focusInput();
@@ -298,48 +457,53 @@ export function OasisEditor2App() {
   };
 
   const moveVerticalSelection = (direction: -1 | 1, extend: boolean) => {
-    const currentIndex = state.blocks.findIndex((block) => block.id === state.selection.focus.blockId);
+    const paragraphs = getParagraphs(state);
+    const currentIndex = paragraphs.findIndex(
+      (paragraph) => paragraph.id === state.selection.focus.paragraphId,
+    );
     if (currentIndex === -1) {
       return false;
     }
 
     const targetIndex = currentIndex + direction;
-    if (targetIndex < 0 || targetIndex >= state.blocks.length) {
+    if (targetIndex < 0 || targetIndex >= paragraphs.length) {
       return false;
     }
 
-    const targetBlock = state.blocks[targetIndex];
-    const targetElement = surfaceRef?.querySelector<HTMLElement>(`[data-block-id="${targetBlock.id}"]`);
+    const targetParagraph = paragraphs[targetIndex];
+    const targetElement = surfaceRef?.querySelector<HTMLElement>(
+      `[data-paragraph-id="${targetParagraph.id}"]`,
+    );
     const desiredX = preferredColumnX() ?? caretBox().left;
 
     let offset = 0;
     if (targetElement) {
-      const charRects = collectCharRects(targetElement);
+      const layout = measureParagraphLayoutFromRects(targetParagraph, collectCharRects(targetElement));
+      const lines = layout.lines;
+      const boundaryLine = direction < 0 ? lines[lines.length - 1] : lines[0];
       offset =
-        charRects.length === 0
-          ? 0
-          : resolveClosestOffsetForBoundaryLine(
-              charRects,
-              desiredX + (surfaceRef?.getBoundingClientRect().left ?? 0),
-              direction < 0 ? "last" : "first",
-            );
+        boundaryLine?.slots.length
+          ? boundaryLine.slots.reduce(
+              (best, slot) =>
+                Math.abs(desiredX + (surfaceRef?.getBoundingClientRect().left ?? 0) - slot.left) <
+                Math.abs(desiredX + (surfaceRef?.getBoundingClientRect().left ?? 0) - best.left)
+                  ? slot
+                  : best,
+              boundaryLine.slots[0]!,
+            ).offset
+          : 0;
     } else {
-      offset = Math.min(state.selection.focus.offset, targetBlock.text.length);
+      offset = Math.min(positionToParagraphOffset(targetParagraph, state.selection.focus), getParagraphText(targetParagraph).length);
     }
 
     setPreferredColumnX(desiredX);
+    resetTransactionGrouping();
     applyTransactionalState((current) =>
       setSelection(current, {
         anchor: extend
           ? current.selection.anchor
-          : {
-              blockId: targetBlock.id,
-              offset,
-            },
-        focus: {
-          blockId: targetBlock.id,
-          offset,
-        },
+          : paragraphOffsetToPosition(targetParagraph, offset),
+        focus: paragraphOffsetToPosition(targetParagraph, offset),
       }),
     );
     focusInput();
@@ -352,25 +516,29 @@ export function OasisEditor2App() {
       return null;
     }
 
-    const blockElement = target.closest<HTMLElement>("[data-block-id]");
-    if (!blockElement) {
+    const paragraphElement = target.closest<HTMLElement>("[data-paragraph-id]");
+    if (!paragraphElement) {
       return null;
     }
 
-    const blockId = blockElement.dataset.blockId;
-    if (!blockId) {
+    const paragraphId = paragraphElement.dataset.paragraphId;
+    if (!paragraphId) {
       return null;
     }
 
-    const block = state.blocks.find((candidate) => candidate.id === blockId);
-    if (!block) {
+    const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
+    if (!paragraph) {
       return null;
     }
 
-    return {
-      blockId,
-      offset: resolveClosestOffsetFromRects(collectCharRects(blockElement), clientX, clientY),
-    };
+    return paragraphOffsetToPosition(
+      paragraph,
+      resolveClosestOffsetInMeasuredLayout(
+        measureParagraphLayoutFromRects(paragraph, collectCharRects(paragraphElement)),
+        clientX,
+        clientY,
+      ),
+    );
   };
 
   const stopDragging = () => {
@@ -405,27 +573,39 @@ export function OasisEditor2App() {
   const handleKeyDown = (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a" && !event.altKey) {
       event.preventDefault();
-      if (state.blocks.length === 0) {
+      const paragraphs = getParagraphs(state);
+      if (paragraphs.length === 0) {
         return;
       }
 
-      const firstBlock = state.blocks[0];
-      const lastBlock = state.blocks[state.blocks.length - 1];
+      const firstParagraph = paragraphs[0];
+      const lastParagraph = paragraphs[paragraphs.length - 1];
       clearPreferredColumn();
       applyState(
         setSelection(state, {
-          anchor: {
-            blockId: firstBlock.id,
-            offset: 0,
-          },
-          focus: {
-            blockId: lastBlock.id,
-            offset: lastBlock.text.length,
-          },
+          anchor: paragraphOffsetToPosition(firstParagraph, 0),
+          focus: paragraphOffsetToPosition(lastParagraph, getParagraphText(lastParagraph).length),
         }),
       );
       focusInput();
       return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+      const lowerKey = event.key.toLowerCase();
+      if (lowerKey === "b" || lowerKey === "i" || lowerKey === "u") {
+        event.preventDefault();
+        clearPreferredColumn();
+        resetTransactionGrouping();
+        applyTransactionalState((current) =>
+          toggleTextStyle(
+            current,
+            lowerKey === "b" ? "bold" : lowerKey === "i" ? "italic" : "underline",
+          ),
+        );
+        focusInput();
+        return;
+      }
     }
 
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z" && !event.altKey) {
@@ -439,6 +619,7 @@ export function OasisEditor2App() {
         setRedoStack((stack) => stack.slice(0, -1));
         setUndoStack((stack) => [...stack, cloneState(state)]);
         clearPreferredColumn();
+        resetTransactionGrouping();
         applyHistoryState(next);
         focusInput();
         return;
@@ -452,6 +633,7 @@ export function OasisEditor2App() {
       setUndoStack((stack) => stack.slice(0, -1));
       setRedoStack((stack) => [...stack, cloneState(state)]);
       clearPreferredColumn();
+      resetTransactionGrouping();
       applyHistoryState(next);
       focusInput();
       return;
@@ -467,6 +649,7 @@ export function OasisEditor2App() {
       setRedoStack((stack) => stack.slice(0, -1));
       setUndoStack((stack) => [...stack, cloneState(state)]);
       clearPreferredColumn();
+      resetTransactionGrouping();
       applyHistoryState(next);
       focusInput();
       return;
@@ -476,12 +659,14 @@ export function OasisEditor2App() {
       case "Enter":
         event.preventDefault();
         clearPreferredColumn();
+        resetTransactionGrouping();
         applyTransactionalState((current) => splitBlockAtSelection(current));
         focusInput();
         return;
       case "Backspace":
         event.preventDefault();
         clearPreferredColumn();
+        resetTransactionGrouping();
         applyTransactionalState((current) => deleteBackward(current));
         event.currentTarget.value = "";
         focusInput();
@@ -489,12 +674,14 @@ export function OasisEditor2App() {
       case "Delete":
         event.preventDefault();
         clearPreferredColumn();
+        resetTransactionGrouping();
         applyTransactionalState((current) => deleteForward(current));
         event.currentTarget.value = "";
         focusInput();
         return;
       case "ArrowLeft":
         event.preventDefault();
+        resetTransactionGrouping();
         if (event.shiftKey) {
           clearPreferredColumn();
           applyState(extendSelectionLeft(state));
@@ -506,6 +693,7 @@ export function OasisEditor2App() {
         return;
       case "ArrowRight":
         event.preventDefault();
+        resetTransactionGrouping();
         if (event.shiftKey) {
           clearPreferredColumn();
           applyState(extendSelectionRight(state));
@@ -517,6 +705,7 @@ export function OasisEditor2App() {
         return;
       case "ArrowUp":
         event.preventDefault();
+        resetTransactionGrouping();
         if (event.shiftKey) {
           if (!moveVerticalSelection(-1, true)) {
             applyState(extendSelectionUp(state));
@@ -529,6 +718,7 @@ export function OasisEditor2App() {
         return;
       case "ArrowDown":
         event.preventDefault();
+        resetTransactionGrouping();
         if (event.shiftKey) {
           if (!moveVerticalSelection(1, true)) {
             applyState(extendSelectionDown(state));
@@ -571,18 +761,19 @@ export function OasisEditor2App() {
               event.preventDefault();
               focusInput();
             }}
-            onBlockMouseDown={(blockId, event) => {
+            onParagraphMouseDown={(paragraphId, event) => {
               event.preventDefault();
-              const block = state.blocks.find((candidate) => candidate.id === blockId);
-              if (!block) {
+              const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
+              if (!paragraph) {
                 return;
               }
               clearPreferredColumn();
-              const offset = resolveClickOffset(event, block.text.length);
-              const position = {
-                blockId,
-                offset,
-              };
+              resetTransactionGrouping();
+              const offset = resolveClickOffset(
+                event,
+                measureParagraphLayoutFromRects(paragraph, collectCharRects(event.currentTarget)),
+              );
+              const position = paragraphOffsetToPosition(paragraph, offset);
 
               if (event.shiftKey) {
                 dragAnchor = state.selection.anchor;
@@ -602,14 +793,8 @@ export function OasisEditor2App() {
                 dragAnchor = null;
                 applyState(
                   setSelection(state, {
-                    anchor: {
-                      blockId,
-                      offset: 0,
-                    },
-                    focus: {
-                      blockId,
-                      offset: block.text.length,
-                    },
+                    anchor: paragraphOffsetToPosition(paragraph, 0),
+                    focus: paragraphOffsetToPosition(paragraph, getParagraphText(paragraph).length),
                   }),
                 );
                 stopDragging();
@@ -618,18 +803,12 @@ export function OasisEditor2App() {
               }
 
               if (event.detail === 2) {
-                const word = resolveWordSelection(block.text, offset);
+                const word = resolveWordSelection(getParagraphText(paragraph), offset);
                 dragAnchor = null;
                 applyState(
                   setSelection(state, {
-                    anchor: {
-                      blockId,
-                      offset: word.start,
-                    },
-                    focus: {
-                      blockId,
-                      offset: word.end,
-                    },
+                    anchor: paragraphOffsetToPosition(paragraph, word.start),
+                    focus: paragraphOffsetToPosition(paragraph, word.end),
                   }),
                 );
                 stopDragging();
@@ -649,6 +828,8 @@ export function OasisEditor2App() {
               focusInput();
             }}
           />
+
+          {!isSelectionCollapsed(state.selection) ? <SelectionOverlay boxes={selectionBoxes()} /> : null}
 
           {caretBox().visible && isSelectionCollapsed(state.selection) ? (
             <CaretOverlay
@@ -674,6 +855,8 @@ export function OasisEditor2App() {
               height: `${inputBox().height}px`,
             }}
             onBlur={() => setFocused(false)}
+            onCompositionEnd={handleCompositionEnd}
+            onCompositionStart={handleCompositionStart}
             onCopy={handleCopy}
             onCut={handleCut}
             onFocus={() => setFocused(true)}

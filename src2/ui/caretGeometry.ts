@@ -4,7 +4,7 @@ export interface CaretSlotRect {
   height: number;
 }
 
-interface CaretSlotCandidate extends CaretSlotRect {
+export interface CaretSlotCandidate extends CaretSlotRect {
   offset: number;
 }
 
@@ -18,6 +18,16 @@ export interface CharRect {
   height: number;
 }
 
+export interface MeasuredLine {
+  index: number;
+  startOffset: number;
+  endOffset: number;
+  top: number;
+  height: number;
+  charRects: CharRect[];
+  slots: CaretSlotCandidate[];
+}
+
 function normalizeHeight(height: number): number {
   return height > 0 ? height : 28;
 }
@@ -26,51 +36,14 @@ function isWrappedBoundary(previousRect: CharRect, nextRect: CharRect): boolean 
   return nextRect.top > previousRect.top + 1 || nextRect.left < previousRect.left - 1;
 }
 
-export function getCaretSlotRects(charRects: CharRect[]): CaretSlotRect[] {
+function getCaretSlotCandidates(charRects: CharRect[], startOffset = 0): CaretSlotCandidate[] {
   if (charRects.length === 0) {
-    return [{ left: 0, top: 0, height: 28 }];
-  }
-
-  const slots: CaretSlotRect[] = [];
-  for (let offset = 0; offset <= charRects.length; offset += 1) {
-    if (offset === 0) {
-      slots.push({
-        left: charRects[0].left,
-        top: charRects[0].top,
-        height: normalizeHeight(charRects[0].height),
-      });
-      continue;
-    }
-
-    if (offset === charRects.length) {
-      const lastRect = charRects[charRects.length - 1];
-      slots.push({
-        left: lastRect.right,
-        top: lastRect.top,
-        height: normalizeHeight(lastRect.height),
-      });
-      continue;
-    }
-
-    const rect = charRects[offset];
-    slots.push({
-      left: rect.left,
-      top: rect.top,
-      height: normalizeHeight(rect.height),
-    });
-  }
-
-  return slots;
-}
-
-function getCaretSlotCandidates(charRects: CharRect[]): CaretSlotCandidate[] {
-  if (charRects.length === 0) {
-    return [{ offset: 0, left: 0, top: 0, height: 28 }];
+    return [{ offset: startOffset, left: 0, top: 0, height: 28 }];
   }
 
   const candidates: CaretSlotCandidate[] = [];
   candidates.push({
-    offset: 0,
+    offset: startOffset,
     left: charRects[0].left,
     top: charRects[0].top,
     height: normalizeHeight(charRects[0].height),
@@ -82,7 +55,7 @@ function getCaretSlotCandidates(charRects: CharRect[]): CaretSlotCandidate[] {
 
     if (isWrappedBoundary(previousRect, currentRect)) {
       candidates.push({
-        offset,
+        offset: startOffset + offset,
         left: previousRect.right,
         top: previousRect.top,
         height: normalizeHeight(previousRect.height),
@@ -90,7 +63,7 @@ function getCaretSlotCandidates(charRects: CharRect[]): CaretSlotCandidate[] {
     }
 
     candidates.push({
-      offset,
+      offset: startOffset + offset,
       left: currentRect.left,
       top: currentRect.top,
       height: normalizeHeight(currentRect.height),
@@ -99,13 +72,66 @@ function getCaretSlotCandidates(charRects: CharRect[]): CaretSlotCandidate[] {
 
   const lastRect = charRects[charRects.length - 1];
   candidates.push({
-    offset: charRects.length,
+    offset: startOffset + charRects.length,
     left: lastRect.right,
     top: lastRect.top,
     height: normalizeHeight(lastRect.height),
   });
 
   return candidates;
+}
+
+export function measureLinesFromRects(charRects: CharRect[]): MeasuredLine[] {
+  if (charRects.length === 0) {
+    return [
+      {
+        index: 0,
+        startOffset: 0,
+        endOffset: 0,
+        top: 0,
+        height: 28,
+        charRects: [],
+        slots: [{ offset: 0, left: 0, top: 0, height: 28 }],
+      },
+    ];
+  }
+
+  const lines: MeasuredLine[] = [];
+  let lineStart = 0;
+
+  for (let index = 1; index <= charRects.length; index += 1) {
+    const atEnd = index === charRects.length;
+    const wrapped = !atEnd && isWrappedBoundary(charRects[index - 1]!, charRects[index]!);
+
+    if (!atEnd && !wrapped) {
+      continue;
+    }
+
+    const lineRects = charRects.slice(lineStart, index);
+    const firstRect = lineRects[0]!;
+    const height = lineRects.reduce((maxHeight, rect) => Math.max(maxHeight, normalizeHeight(rect.height)), 0);
+    lines.push({
+      index: lines.length,
+      startOffset: lineStart,
+      endOffset: index,
+      top: firstRect.top,
+      height,
+      charRects: lineRects,
+      slots: getCaretSlotCandidates(lineRects, lineStart),
+    });
+    lineStart = index;
+  }
+
+  return lines;
+}
+
+export function getCaretSlotRects(charRects: CharRect[]): CaretSlotRect[] {
+  return measureLinesFromRects(charRects).flatMap((line, lineIndex, lines) => {
+    if (lineIndex === lines.length - 1) {
+      return line.slots.map(({ left, top, height }) => ({ left, top, height }));
+    }
+    return line.slots.slice(0, -1).map(({ left, top, height }) => ({ left, top, height }));
+  });
 }
 
 export function resolveClosestOffsetForBoundaryLine(
@@ -117,14 +143,9 @@ export function resolveClosestOffsetForBoundaryLine(
     return 0;
   }
 
-  const candidates = getCaretSlotCandidates(charRects);
-  const boundaryTop =
-    boundary === "first"
-      ? Math.min(...candidates.map((candidate) => candidate.top))
-      : Math.max(...candidates.map((candidate) => candidate.top));
-  const boundaryCandidates = candidates.filter(
-    (candidate) => Math.abs(candidate.top - boundaryTop) <= 1,
-  );
+  const lines = measureLinesFromRects(charRects);
+  const boundaryLine = boundary === "first" ? lines[0] : lines[lines.length - 1];
+  const boundaryCandidates = boundaryLine?.slots ?? [];
 
   let bestOffset = boundaryCandidates[0]?.offset ?? 0;
   let bestDistance = Number.POSITIVE_INFINITY;
@@ -149,7 +170,7 @@ export function resolveClosestOffsetFromRects(
     return 0;
   }
 
-  const candidates = getCaretSlotCandidates(charRects);
+  const candidates = measureLinesFromRects(charRects).flatMap((line) => line.slots);
   let bestOffset = 0;
   let bestScore = Number.POSITIVE_INFINITY;
 

@@ -71,10 +71,12 @@ describe("OasisEditor2", () => {
 
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", shiftKey: true }));
     await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     const selectedChars = root.querySelectorAll(".oasis-editor-2-char-selected");
     expect(selectedChars.length).toBe(1);
     expect(selectedChars[0]?.textContent).toBe("b");
+    expect(root.querySelectorAll('[data-testid="editor-2-selection-box"]').length).toBeGreaterThan(0);
 
     instance.dispose();
   });
@@ -95,6 +97,53 @@ describe("OasisEditor2", () => {
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "y", ctrlKey: true }));
     await Promise.resolve();
     expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("ab");
+
+    instance.dispose();
+  });
+
+  it("groups continuous typing into a single undo step", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    input.value = "a";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "a", inputType: "insertText" }));
+    await Promise.resolve();
+
+    input.value = "b";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "b", inputType: "insertText" }));
+    await Promise.resolve();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "z", ctrlKey: true }));
+    await Promise.resolve();
+
+    expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toBe("\u00A0");
+
+    instance.dispose();
+  });
+
+  it("commits IME composition once and ignores the duplicate input event", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    input.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true, data: "" }));
+    await Promise.resolve();
+
+    input.value = "á";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "á", inputType: "insertCompositionText" }));
+    await Promise.resolve();
+    expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toBe("\u00A0");
+
+    input.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "á" }));
+    await Promise.resolve();
+    expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("á");
+
+    input.value = "á";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "á", inputType: "insertText" }));
+    await Promise.resolve();
+    expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("á");
+    expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).not.toContain("áá");
 
     instance.dispose();
   });
@@ -355,6 +404,27 @@ describe("OasisEditor2", () => {
       (node) => node.textContent,
     );
     expect(selectedChars.join("")).toBe("el");
+
+    instance.dispose();
+  });
+
+  it("toggles bold on the selected range with ctrl+b", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    input.value = "ab";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "ab", inputType: "insertText" }));
+    await Promise.resolve();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", shiftKey: true }));
+    await Promise.resolve();
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "b", ctrlKey: true }));
+    await Promise.resolve();
+
+    const runNodes = root.querySelectorAll('[data-testid="editor-2-run"]');
+    expect(runNodes.length).toBeGreaterThan(1);
+    expect((runNodes[runNodes.length - 1] as HTMLSpanElement).style.fontWeight).toBe("700");
 
     instance.dispose();
   });

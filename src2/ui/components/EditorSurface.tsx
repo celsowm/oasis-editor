@@ -1,15 +1,100 @@
 import { For, Show } from "solid-js";
 import type { Accessor } from "solid-js";
-import type { Editor2State } from "../../core/model.js";
+import {
+  getParagraphText,
+  getParagraphs,
+  type Editor2ParagraphStyle,
+  type Editor2State,
+  type Editor2TextStyle,
+} from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
+import { projectParagraphLayout } from "../layoutProjection.js";
 
 interface EditorSurfaceProps {
   state: Accessor<Editor2State>;
   onSurfaceMouseDown: (event: MouseEvent) => void;
-  onBlockMouseDown: (
-    blockId: string,
+  onParagraphMouseDown: (
+    paragraphId: string,
     event: MouseEvent & { currentTarget: HTMLParagraphElement },
   ) => void;
+}
+
+function paragraphStyleToCss(style?: Editor2ParagraphStyle): Record<string, string> | undefined {
+  if (!style) {
+    return undefined;
+  }
+
+  const css: Record<string, string> = {};
+
+  if (style.align) {
+    css["text-align"] = style.align;
+  }
+  if (style.lineHeight !== undefined && style.lineHeight !== null) {
+    css["line-height"] = `${style.lineHeight}`;
+  }
+  if (style.spacingBefore !== undefined && style.spacingBefore !== null) {
+    css["padding-top"] = `${style.spacingBefore}px`;
+  }
+  if (style.spacingAfter !== undefined && style.spacingAfter !== null) {
+    css["padding-bottom"] = `${style.spacingAfter}px`;
+  }
+  if (style.indentLeft !== undefined && style.indentLeft !== null) {
+    css["padding-left"] = `${style.indentLeft}px`;
+  }
+  if (style.indentRight !== undefined && style.indentRight !== null) {
+    css["padding-right"] = `${style.indentRight}px`;
+  }
+  if (style.indentFirstLine !== undefined && style.indentFirstLine !== null) {
+    css["text-indent"] = `${style.indentFirstLine}px`;
+  }
+
+  return Object.keys(css).length > 0 ? css : undefined;
+}
+
+function runStyleToCss(style?: Editor2TextStyle): Record<string, string> | undefined {
+  if (!style) {
+    return undefined;
+  }
+
+  const css: Record<string, string> = {};
+  const textDecorations: string[] = [];
+
+  if (style.bold) {
+    css["font-weight"] = "700";
+  }
+  if (style.italic) {
+    css["font-style"] = "italic";
+  }
+  if (style.underline) {
+    textDecorations.push("underline");
+  }
+  if (style.strike) {
+    textDecorations.push("line-through");
+  }
+  if (textDecorations.length > 0) {
+    css["text-decoration"] = textDecorations.join(" ");
+  }
+  if (style.superscript) {
+    css["vertical-align"] = "super";
+    css["font-size"] = "0.75em";
+  } else if (style.subscript) {
+    css["vertical-align"] = "sub";
+    css["font-size"] = "0.75em";
+  }
+  if (style.fontFamily) {
+    css["font-family"] = style.fontFamily;
+  }
+  if (style.fontSize !== undefined && style.fontSize !== null) {
+    css["font-size"] = `${style.fontSize}px`;
+  }
+  if (style.color) {
+    css.color = style.color;
+  }
+  if (style.highlight) {
+    css["background-color"] = style.highlight;
+  }
+
+  return Object.keys(css).length > 0 ? css : undefined;
 }
 
 export function EditorSurface(props: EditorSurfaceProps) {
@@ -20,9 +105,10 @@ export function EditorSurface(props: EditorSurfaceProps) {
         data-testid="editor-2-surface"
         onMouseDown={props.onSurfaceMouseDown}
       >
-        <For each={props.state().blocks}>
-          {(block, blockIndexAccessor) => {
-            const chars = () => Array.from(block.text);
+        <For each={getParagraphs(props.state())}>
+          {(paragraph, paragraphIndexAccessor) => {
+            const layout = () => projectParagraphLayout(paragraph);
+            const chars = () => layout().fragments.flatMap((fragment) => fragment.chars);
             const isEmptyBlockSelected = () => {
               const state = props.state();
               const normalized = normalizeSelection(state);
@@ -30,12 +116,12 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 return false;
               }
 
-              const blockIndex = blockIndexAccessor();
-              if (block.text.length > 0) {
+              const paragraphIndex = paragraphIndexAccessor();
+              if (getParagraphText(paragraph).length > 0) {
                 return false;
               }
 
-              return blockIndex >= normalized.startIndex && blockIndex <= normalized.endIndex;
+              return paragraphIndex >= normalized.startIndex && paragraphIndex <= normalized.endIndex;
             };
             const isCharSelected = (charIndex: number) => {
               const state = props.state();
@@ -44,21 +130,24 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 return false;
               }
 
-              const blockIndex = blockIndexAccessor();
-              if (blockIndex < normalized.startIndex || blockIndex > normalized.endIndex) {
+              const paragraphIndex = paragraphIndexAccessor();
+              if (paragraphIndex < normalized.startIndex || paragraphIndex > normalized.endIndex) {
                 return false;
               }
 
               if (normalized.startIndex === normalized.endIndex) {
-                return charIndex >= normalized.start.offset && charIndex < normalized.end.offset;
+                return (
+                  charIndex >= normalized.startParagraphOffset &&
+                  charIndex < normalized.endParagraphOffset
+                );
               }
 
-              if (blockIndex === normalized.startIndex) {
-                return charIndex >= normalized.start.offset;
+              if (paragraphIndex === normalized.startIndex) {
+                return charIndex >= normalized.startParagraphOffset;
               }
 
-              if (blockIndex === normalized.endIndex) {
-                return charIndex < normalized.end.offset;
+              if (paragraphIndex === normalized.endIndex) {
+                return charIndex < normalized.endParagraphOffset;
               }
 
               return true;
@@ -67,9 +156,10 @@ export function EditorSurface(props: EditorSurfaceProps) {
             return (
               <p
                 class="oasis-editor-2-block"
-                data-block-id={block.id}
+                data-paragraph-id={paragraph.id}
                 data-testid="editor-2-block"
-                onMouseDown={(event) => props.onBlockMouseDown(block.id, event)}
+                style={paragraphStyleToCss(paragraph.style)}
+                onMouseDown={(event) => props.onParagraphMouseDown(paragraph.id, event)}
               >
                 <Show
                   when={chars().length > 0}
@@ -86,17 +176,30 @@ export function EditorSurface(props: EditorSurfaceProps) {
                     </span>
                   }
                 >
-                  <For each={chars()}>
-                    {(char, index) => (
+                  <For each={layout().fragments}>
+                    {(fragment) => (
                       <span
-                        classList={{
-                          "oasis-editor-2-char": true,
-                          "oasis-editor-2-char-selected": isCharSelected(index()),
-                        }}
-                        data-char-index={index()}
-                        data-testid="editor-2-char"
+                        class="oasis-editor-2-run"
+                        data-run-id={fragment.runId}
+                        data-testid="editor-2-run"
+                        style={runStyleToCss(fragment.styles)}
                       >
-                        {char}
+                        <For each={fragment.chars}>
+                          {(char) => (
+                            <span
+                              classList={{
+                                "oasis-editor-2-char": true,
+                                "oasis-editor-2-char-selected": isCharSelected(char.paragraphOffset),
+                              }}
+                              data-char-index={char.paragraphOffset}
+                              data-run-id={fragment.runId}
+                              data-run-offset={char.runOffset}
+                              data-testid="editor-2-char"
+                            >
+                              {char.char}
+                            </span>
+                          )}
+                        </For>
                       </span>
                     )}
                   </For>

@@ -107,13 +107,17 @@ body {
   word-break: break-word;
 }
 
+.oasis-editor-2-run {
+  display: inline;
+}
+
 .oasis-editor-2-caret {
   position: absolute;
   width: 0;
   height: 1em;
   border-left: 2px solid transparent;
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
 }
 
 .oasis-editor-2-caret-active {
@@ -121,9 +125,12 @@ body {
   animation: oasis-editor-2-blink 1.05s steps(1) infinite;
 }
 
-.oasis-editor-2-char-selected,
-.oasis-editor-2-empty-char-selected {
+.oasis-editor-2-selection-box {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
   background: rgba(37, 99, 235, 0.22);
+  border-radius: 3px;
 }
 
 .oasis-editor-2-input {

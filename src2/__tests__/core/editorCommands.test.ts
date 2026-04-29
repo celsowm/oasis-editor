@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
+import { getParagraphText, getParagraphs } from "../../core/model.js";
 import {
   deleteBackward,
   deleteForward,
@@ -12,19 +13,27 @@ import {
   moveSelectionRight,
   moveSelectionUp,
   splitBlockAtSelection,
+  toggleTextStyle,
 } from "../../core/editorCommands.js";
-import { createEditor2StateFromTexts, resetEditor2Ids } from "../../core/editorState.js";
+import {
+  createEditor2StateFromParagraphRuns,
+  createEditor2StateFromTexts,
+  resetEditor2Ids,
+} from "../../core/editorState.js";
 
 describe("editor-2 commands", () => {
   beforeEach(() => {
     resetEditor2Ids();
   });
 
+  const paragraphTexts = (state: Parameters<typeof getParagraphs>[0]) =>
+    getParagraphs(state).map((paragraph) => getParagraphText(paragraph));
+
   it("inserts text into the current block", () => {
     const state = createEditor2StateFromTexts(["hello"], { blockIndex: 0, offset: 2 });
     const next = insertTextAtSelection(state, "X");
 
-    expect(next.blocks.map((block) => block.text)).toEqual(["heXllo"]);
+    expect(paragraphTexts(next)).toEqual(["heXllo"]);
     expect(next.selection.focus.offset).toBe(3);
   });
 
@@ -32,8 +41,8 @@ describe("editor-2 commands", () => {
     const state = createEditor2StateFromTexts(["hello"], { blockIndex: 0, offset: 2 });
     const next = splitBlockAtSelection(state);
 
-    expect(next.blocks.map((block) => block.text)).toEqual(["he", "llo"]);
-    expect(next.selection.focus.blockId).toBe(next.blocks[1].id);
+    expect(paragraphTexts(next)).toEqual(["he", "llo"]);
+    expect(next.selection.focus.paragraphId).toBe(getParagraphs(next)[1].id);
     expect(next.selection.focus.offset).toBe(0);
   });
 
@@ -41,7 +50,7 @@ describe("editor-2 commands", () => {
     const state = createEditor2StateFromTexts(["hello"], { blockIndex: 0, offset: 3 });
     const next = deleteBackward(state);
 
-    expect(next.blocks.map((block) => block.text)).toEqual(["helo"]);
+    expect(paragraphTexts(next)).toEqual(["helo"]);
     expect(next.selection.focus.offset).toBe(2);
   });
 
@@ -49,8 +58,8 @@ describe("editor-2 commands", () => {
     const state = createEditor2StateFromTexts(["abc", "def"], { blockIndex: 1, offset: 0 });
     const next = deleteBackward(state);
 
-    expect(next.blocks.map((block) => block.text)).toEqual(["abcdef"]);
-    expect(next.selection.focus.blockId).toBe(next.blocks[0].id);
+    expect(paragraphTexts(next)).toEqual(["abcdef"]);
+    expect(next.selection.focus.paragraphId).toBe(getParagraphs(next)[0].id);
     expect(next.selection.focus.offset).toBe(3);
   });
 
@@ -59,9 +68,9 @@ describe("editor-2 commands", () => {
     const left = moveSelectionLeft(start);
     const right = moveSelectionRight(left);
 
-    expect(left.selection.focus.blockId).toBe(left.blocks[0].id);
+    expect(left.selection.focus.paragraphId).toBe(getParagraphs(left)[0].id);
     expect(left.selection.focus.offset).toBe(2);
-    expect(right.selection.focus.blockId).toBe(right.blocks[1].id);
+    expect(right.selection.focus.paragraphId).toBe(getParagraphs(right)[1].id);
     expect(right.selection.focus.offset).toBe(0);
   });
 
@@ -70,9 +79,9 @@ describe("editor-2 commands", () => {
     const down = moveSelectionDown(start);
     const up = moveSelectionUp(down);
 
-    expect(down.selection.focus.blockId).toBe(down.blocks[1].id);
+    expect(down.selection.focus.paragraphId).toBe(getParagraphs(down)[1].id);
     expect(down.selection.focus.offset).toBe(2);
-    expect(up.selection.focus.blockId).toBe(up.blocks[0].id);
+    expect(up.selection.focus.paragraphId).toBe(getParagraphs(up)[0].id);
     expect(up.selection.focus.offset).toBe(2);
   });
 
@@ -83,7 +92,7 @@ describe("editor-2 commands", () => {
     });
     const next = insertTextAtSelection(state, "X");
 
-    expect(next.blocks.map((block) => block.text)).toEqual(["hXo"]);
+    expect(paragraphTexts(next)).toEqual(["hXo"]);
     expect(next.selection.focus.offset).toBe(2);
   });
 
@@ -94,8 +103,8 @@ describe("editor-2 commands", () => {
     });
     const next = deleteBackward(state);
 
-    expect(next.blocks.map((block) => block.text)).toEqual(["abhi"]);
-    expect(next.selection.focus.blockId).toBe(next.blocks[0].id);
+    expect(paragraphTexts(next)).toEqual(["abhi"]);
+    expect(next.selection.focus.paragraphId).toBe(getParagraphs(next)[0].id);
     expect(next.selection.focus.offset).toBe(2);
   });
 
@@ -114,7 +123,7 @@ describe("editor-2 commands", () => {
     const state = createEditor2StateFromTexts(["hello"], { blockIndex: 0, offset: 1 });
     const next = deleteForward(state);
 
-    expect(next.blocks.map((block) => block.text)).toEqual(["hllo"]);
+    expect(paragraphTexts(next)).toEqual(["hllo"]);
     expect(next.selection.focus.offset).toBe(1);
   });
 
@@ -125,7 +134,7 @@ describe("editor-2 commands", () => {
     });
     const next = deleteForward(state);
 
-    expect(next.blocks.map((block) => block.text)).toEqual(["af"]);
+    expect(paragraphTexts(next)).toEqual(["af"]);
     expect(next.selection.focus.offset).toBe(1);
   });
 
@@ -142,8 +151,94 @@ describe("editor-2 commands", () => {
     const state = createEditor2StateFromTexts(["hello"], { blockIndex: 0, offset: 2 });
     const next = insertPlainTextAtSelection(state, "A\nB");
 
-    expect(next.blocks.map((block) => block.text)).toEqual(["heA", "Bllo"]);
-    expect(next.selection.focus.blockId).toBe(next.blocks[1].id);
+    expect(paragraphTexts(next)).toEqual(["heA", "Bllo"]);
+    expect(next.selection.focus.paragraphId).toBe(getParagraphs(next)[1].id);
     expect(next.selection.focus.offset).toBe(1);
+  });
+
+  it("preserves surrounding runs when inserting inside a multi-run paragraph", () => {
+    const state = createEditor2StateFromParagraphRuns(
+      [
+        [
+          { text: "he", styles: { bold: true } },
+          { text: "llo", styles: { italic: true } },
+        ],
+      ],
+      { blockIndex: 0, offset: 2 },
+    );
+    const next = insertTextAtSelection(state, "X");
+    const paragraph = getParagraphs(next)[0];
+
+    expect(paragraph.runs.map((run) => run.text)).toEqual(["heX", "llo"]);
+    expect(paragraph.runs[0]?.styles).toEqual({ bold: true });
+    expect(paragraph.runs[1]?.styles).toEqual({ italic: true });
+  });
+
+  it("preserves multi-run fragments when deleting across run boundaries", () => {
+    const state = createEditor2StateFromParagraphRuns(
+      [
+        [
+          { text: "ab", styles: { bold: true } },
+          { text: "cd", styles: { italic: true } },
+          { text: "ef", styles: { underline: true } },
+        ],
+      ],
+      {
+        anchor: { blockIndex: 0, offset: 1 },
+        focus: { blockIndex: 0, offset: 5 },
+      },
+    );
+    const next = deleteBackward(state);
+    const paragraph = getParagraphs(next)[0];
+
+    expect(paragraph.runs.map((run) => run.text)).toEqual(["a", "f"]);
+    expect(paragraph.runs[0]?.styles).toEqual({ bold: true });
+    expect(paragraph.runs[1]?.styles).toEqual({ underline: true });
+  });
+
+  it("splits a multi-run paragraph without flattening the tail runs", () => {
+    const state = createEditor2StateFromParagraphRuns(
+      [
+        [
+          { text: "ab", styles: { bold: true } },
+          { text: "cd", styles: { italic: true } },
+        ],
+      ],
+      { blockIndex: 0, offset: 3 },
+    );
+    const next = splitBlockAtSelection(state);
+    const [firstParagraph, secondParagraph] = getParagraphs(next);
+
+    expect(firstParagraph.runs.map((run) => run.text)).toEqual(["ab", "c"]);
+    expect(firstParagraph.runs.map((run) => run.styles)).toEqual([{ bold: true }, { italic: true }]);
+    expect(secondParagraph.runs.map((run) => run.text)).toEqual(["d"]);
+    expect(secondParagraph.runs[0]?.styles).toEqual({ italic: true });
+  });
+
+  it("toggles bold on an expanded selection by splitting runs", () => {
+    const state = createEditor2StateFromTexts(["hello"], {
+      anchor: { blockIndex: 0, offset: 1 },
+      focus: { blockIndex: 0, offset: 4 },
+    });
+    const next = toggleTextStyle(state, "bold");
+    const paragraph = getParagraphs(next)[0];
+
+    expect(paragraph.runs.map((run) => run.text)).toEqual(["h", "ell", "o"]);
+    expect(paragraph.runs.map((run) => run.styles)).toEqual([undefined, { bold: true }, undefined]);
+  });
+
+  it("removes underline when the full selected range is already underlined", () => {
+    const state = createEditor2StateFromParagraphRuns(
+      [[{ text: "hello", styles: { underline: true } }]],
+      {
+        anchor: { blockIndex: 0, offset: 1 },
+        focus: { blockIndex: 0, offset: 4 },
+      },
+    );
+    const next = toggleTextStyle(state, "underline");
+    const paragraph = getParagraphs(next)[0];
+
+    expect(paragraph.runs.map((run) => run.text)).toEqual(["h", "ell", "o"]);
+    expect(paragraph.runs.map((run) => run.styles)).toEqual([{ underline: true }, undefined, { underline: true }]);
   });
 });
