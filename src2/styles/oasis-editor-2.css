@@ -288,6 +288,7 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 14px;
+  --list-level: 0;
 }
 
 .oasis-editor-2-table-block {
@@ -312,7 +313,8 @@ body {
 }
 
 .oasis-editor-2-list-marker {
-  flex: 0 0 26px;
+  flex: 0 0 34px;
+  min-width: 34px;
   padding-top: 0.1em;
   font-size: 0.95em;
   line-height: inherit;

@@ -86,6 +86,69 @@ describe("OasisEditor2", () => {
     instance.dispose();
   });
 
+  it("keeps tab navigation in tables even when the active cell paragraph is a list item", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const importInput = root.querySelector(
+      '[data-testid="editor-2-import-docx-input"]',
+    ) as HTMLInputElement;
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:tbl>
+            <w:tr>
+              <w:tc>
+                <w:p>
+                  <w:pPr>
+                    <w:numPr>
+                      <w:ilvl w:val="0"/>
+                      <w:numId w:val="1"/>
+                    </w:numPr>
+                  </w:pPr>
+                  <w:r><w:t>A1</w:t></w:r>
+                </w:p>
+              </w:tc>
+              <w:tc><w:p><w:r><w:t>B1</w:t></w:r></w:p></w:tc>
+            </w:tr>
+          </w:tbl>
+        </w:body>
+      </w:document>`, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:abstractNum w:abstractNumId="1">
+          <w:lvl w:ilvl="0"><w:numFmt w:val="bullet"/></w:lvl>
+        </w:abstractNum>
+        <w:num w:numId="1"><w:abstractNumId w:val="1"/></w:num>
+      </w:numbering>`);
+
+    Object.defineProperty(importInput, "files", {
+      configurable: true,
+      value: [file],
+    });
+
+    importInput.dispatchEvent(new Event("change", { bubbles: true }));
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 2) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Tab" }));
+    await Promise.resolve();
+    input.value = "X";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "X", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const cells = Array.from(root.querySelectorAll('[data-testid="editor-2-table-cell"]')).map(
+      (cell) => cell.textContent?.replace(/\u00A0/g, "") ?? "",
+    );
+    expect(cells[0]).toContain("A1");
+    expect(cells[1]).toBe("XB1");
+
+    instance.dispose();
+  });
+
   it("splits a table cell with enter and keeps the table structure", async () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);

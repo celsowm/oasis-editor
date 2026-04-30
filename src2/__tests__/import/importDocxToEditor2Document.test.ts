@@ -158,6 +158,36 @@ describe("importDocxToEditor2Document", () => {
     expect(paragraph.list).toEqual({ kind: "ordered", level: 1 });
   });
 
+  it("imports contiguous multilevel ordered list paragraphs", async () => {
+    const buffer = await buildDocx(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="9"/></w:numPr></w:pPr><w:r><w:t>Top</w:t></w:r></w:p>
+          <w:p><w:pPr><w:numPr><w:ilvl w:val="1"/><w:numId w:val="9"/></w:numPr></w:pPr><w:r><w:t>Nested A</w:t></w:r></w:p>
+          <w:p><w:pPr><w:numPr><w:ilvl w:val="1"/><w:numId w:val="9"/></w:numPr></w:pPr><w:r><w:t>Nested B</w:t></w:r></w:p>
+          <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="9"/></w:numPr></w:pPr><w:r><w:t>Top 2</w:t></w:r></w:p>
+        </w:body>
+      </w:document>`,
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:abstractNum w:abstractNumId="5">
+          <w:lvl w:ilvl="0"><w:numFmt w:val="decimal"/></w:lvl>
+          <w:lvl w:ilvl="1"><w:numFmt w:val="decimal"/></w:lvl>
+        </w:abstractNum>
+        <w:num w:numId="9"><w:abstractNumId w:val="5"/></w:num>
+      </w:numbering>`,
+    );
+
+    const document = await importDocxToEditor2Document(buffer);
+    expect(document.blocks.map((block) => block.type === "paragraph" ? block.list : undefined)).toEqual([
+      { kind: "ordered", level: 0 },
+      { kind: "ordered", level: 1 },
+      { kind: "ordered", level: 1 },
+      { kind: "ordered", level: 0 },
+    ]);
+  });
+
   it("imports inline hyperlinks into run styles", async () => {
     const buffer = await buildDocx(
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

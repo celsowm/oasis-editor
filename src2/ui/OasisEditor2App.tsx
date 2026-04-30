@@ -27,6 +27,7 @@ import {
   type ToolbarStyleState,
 } from "./toolbarStyleState.js";
 import {
+  clearParagraphListAtSelection,
   deleteBackward,
   deleteForward,
   extendSelectionDown,
@@ -41,17 +42,20 @@ import {
   insertTextAtSelection,
   insertImageAtSelection,
   insertTableAtSelection,
+  indentParagraphList,
   moveSelectionDown,
   moveSelectedImageToPosition,
   resizeSelectedImage,
   moveSelectionLeft,
   moveSelectionRight,
   moveSelectionUp,
+  outdentParagraphList,
   parseEditor2ClipboardHtml,
   setParagraphStyle,
   setLinkAtSelection,
   setSelectedImageAlt,
   setSelection,
+  splitListItemAtSelection,
   setTextStyleValue,
   serializeEditor2SelectionToHtml,
   splitBlockAtSelection,
@@ -1808,6 +1812,76 @@ export function OasisEditor2App() {
     focusInput();
   };
 
+  const getSelectedParagraphRange = () => {
+    const normalized = normalizeSelection(state);
+    return getParagraphs(state).slice(normalized.startIndex, normalized.endIndex + 1);
+  };
+
+  const selectionTouchesList = () => getSelectedParagraphRange().some((paragraph) => Boolean(paragraph.list));
+
+  const focusedParagraph = () => {
+    const focusParagraphId = state.selection.focus.paragraphId;
+    return getParagraphs(state).find((paragraph) => paragraph.id === focusParagraphId) ?? null;
+  };
+
+  const handleListTab = (direction: "indent" | "outdent") => {
+    if (findParagraphTableLocation(state.document, state.selection.focus.paragraphId)) {
+      return false;
+    }
+
+    if (!selectionTouchesList()) {
+      return false;
+    }
+
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applySelectionAwareParagraphCommand((current) =>
+      direction === "indent" ? indentParagraphList(current) : outdentParagraphList(current),
+    );
+    focusInput();
+    return true;
+  };
+
+  const handleListEnter = () => {
+    const paragraph = focusedParagraph();
+    if (!paragraph?.list) {
+      return false;
+    }
+
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    if (selectionCollapsed() && getParagraphText(paragraph).length === 0) {
+      applySelectionAwareParagraphCommand((current) => clearParagraphListAtSelection(current));
+    } else {
+      applyTransactionalState((current) =>
+        applyTableAwareParagraphEdit(current, (temp) => splitListItemAtSelection(temp)),
+      );
+    }
+    focusInput();
+    return true;
+  };
+
+  const handleListBoundaryBackspace = (
+    event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
+  ) => {
+    const paragraph = focusedParagraph();
+    if (!paragraph?.list || !selectionCollapsed()) {
+      return false;
+    }
+
+    const paragraphOffset = positionToParagraphOffset(paragraph, state.selection.focus);
+    if (paragraphOffset !== 0) {
+      return false;
+    }
+
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applySelectionAwareParagraphCommand((current) => outdentParagraphList(current));
+    event.currentTarget.value = "";
+    focusInput();
+    return true;
+  };
+
   const applyLinkCommand = (href: string | null) => {
     const activeLink = getLinkAtSelection(state);
     if (selectionCollapsed() && !activeLink) {
@@ -2901,6 +2975,16 @@ export function OasisEditor2App() {
           return;
         }
 
+        if (event.key === "Backspace" && focusParagraph.list) {
+          const focusParagraphOffset = positionToParagraphOffset(focusParagraph, state.selection.focus);
+          if (focusParagraphOffset === 0) {
+            applySelectionAwareParagraphCommand((current) => outdentParagraphList(current));
+            event.currentTarget.value = "";
+            focusInput();
+            return;
+          }
+        }
+
         const focusOffset = state.selection.focus.offset;
         const paragraphText = getParagraphText(focusParagraph);
         const word = resolveWordSelection(paragraphText, focusOffset);
@@ -3034,6 +3118,10 @@ export function OasisEditor2App() {
           focusInput();
           return;
         }
+        if (handleListEnter()) {
+          event.preventDefault();
+          return;
+        }
         event.preventDefault();
         clearPreferredColumn();
         resetTransactionGrouping();
@@ -3041,6 +3129,10 @@ export function OasisEditor2App() {
         focusInput();
         return;
       case "Backspace":
+        if (handleListBoundaryBackspace(event)) {
+          event.preventDefault();
+          return;
+        }
         event.preventDefault();
         clearPreferredColumn();
         resetTransactionGrouping();
@@ -3057,6 +3149,10 @@ export function OasisEditor2App() {
         focusInput();
         return;
       case "Tab": {
+        if (handleListTab(event.shiftKey ? "outdent" : "indent")) {
+          event.preventDefault();
+          return;
+        }
         const nextPosition = resolveAdjacentTableCellPosition(
           state.document,
           state.selection.focus.paragraphId,

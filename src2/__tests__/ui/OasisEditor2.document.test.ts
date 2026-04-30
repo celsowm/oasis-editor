@@ -942,6 +942,128 @@ describe("OasisEditor2", () => {
     instance.dispose();
   });
 
+  it("indents and outdents list items with tab and shift plus tab outside tables", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const bulletButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-list-bullet"]',
+    ) as HTMLButtonElement;
+
+    input.value = "item";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "item", inputType: "insertText" }));
+    await Promise.resolve();
+    bulletButton.click();
+    await Promise.resolve();
+
+    let block = root.querySelector('[data-testid="editor-2-block"]') as HTMLElement;
+    expect(block.style.marginLeft).toBe("0px");
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Tab" }));
+    await Promise.resolve();
+
+    block = root.querySelector('[data-testid="editor-2-block"]') as HTMLElement;
+    expect(block.style.marginLeft).toBe("28px");
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Tab", shiftKey: true }));
+    await Promise.resolve();
+
+    block = root.querySelector('[data-testid="editor-2-block"]') as HTMLElement;
+    expect(block.style.marginLeft).toBe("0px");
+
+    instance.dispose();
+  });
+
+  it("numbers ordered lists by contiguous sequence at the same level", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const orderedButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-list-ordered"]',
+    ) as HTMLButtonElement;
+
+    input.value = "one";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "one", inputType: "insertText" }));
+    await Promise.resolve();
+    orderedButton.click();
+    await Promise.resolve();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+    await Promise.resolve();
+    input.value = "two";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "two", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const markers = Array.from(root.querySelectorAll('[data-testid="editor-2-list-marker"]')).map(
+      (element) => element.textContent,
+    );
+    expect(markers).toEqual(["1.", "2."]);
+
+    instance.dispose();
+  });
+
+  it("creates a new list item on enter and exits the list on empty enter", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const bulletButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-list-bullet"]',
+    ) as HTMLButtonElement;
+
+    input.value = "item";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "item", inputType: "insertText" }));
+    await Promise.resolve();
+    bulletButton.click();
+    await Promise.resolve();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+    await Promise.resolve();
+
+    let markers = root.querySelectorAll('[data-testid="editor-2-list-marker"]');
+    expect(markers.length).toBe(2);
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+    await Promise.resolve();
+
+    markers = root.querySelectorAll('[data-testid="editor-2-list-marker"]');
+    expect(markers.length).toBe(1);
+
+    instance.dispose();
+  });
+
+  it("outdents and then removes the list with backspace at item start", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const orderedButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-list-ordered"]',
+    ) as HTMLButtonElement;
+
+    input.value = "item";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "item", inputType: "insertText" }));
+    await Promise.resolve();
+    orderedButton.click();
+    await Promise.resolve();
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Tab" }));
+    await Promise.resolve();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Home" }));
+    await Promise.resolve();
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Backspace" }));
+    await Promise.resolve();
+
+    let block = root.querySelector('[data-testid="editor-2-block"]') as HTMLElement;
+    expect(block.style.marginLeft).toBe("0px");
+    expect(root.querySelector('[data-testid="editor-2-list-marker"]')?.textContent).toBe("1.");
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Backspace" }));
+    await Promise.resolve();
+
+    expect(root.querySelector('[data-testid="editor-2-list-marker"]')).toBeNull();
+
+    instance.dispose();
+  });
+
   it("positions the caret after the list marker for an empty list paragraph", async () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);

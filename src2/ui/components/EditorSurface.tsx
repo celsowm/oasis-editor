@@ -65,19 +65,49 @@ function paragraphStyleToCss(style?: Editor2ParagraphStyle): Record<string, stri
   return Object.keys(css).length > 0 ? css : undefined;
 }
 
-function getParagraphListMarker(
-  list: Editor2ParagraphListStyle | undefined,
-  paragraphIndex: number,
-): string | null {
-  if (!list) {
-    return null;
+function getParagraphRenderStyle(
+  paragraph: Editor2ParagraphNode,
+): Record<string, string> | undefined {
+  const css = paragraphStyleToCss(paragraph.style) ?? {};
+  if (paragraph.list) {
+    css["--list-level"] = String(Math.max(0, paragraph.list.level ?? 0));
+    css["margin-left"] = `${Math.max(0, paragraph.list.level ?? 0) * 28}px`;
   }
 
-  if (list.kind === "bullet") {
-    return "\u2022";
+  return Object.keys(css).length > 0 ? css : undefined;
+}
+
+function buildParagraphListMarkers(paragraphs: Editor2ParagraphNode[]): Map<string, string> {
+  const markers = new Map<string, string>();
+  let orderedCounters: number[] = [];
+  let previousList: Editor2ParagraphListStyle | undefined;
+
+  for (const paragraph of paragraphs) {
+    const list = paragraph.list;
+    if (!list) {
+      orderedCounters = [];
+      previousList = undefined;
+      continue;
+    }
+
+    if (list.kind === "bullet") {
+      orderedCounters = [];
+      previousList = list;
+      markers.set(paragraph.id, "\u2022");
+      continue;
+    }
+
+    const level = Math.max(0, list.level ?? 0);
+    if (previousList?.kind !== "ordered") {
+      orderedCounters = [];
+    }
+    orderedCounters = orderedCounters.slice(0, level + 1);
+    orderedCounters[level] = (orderedCounters[level] ?? 0) + 1;
+    markers.set(paragraph.id, `${orderedCounters[level]}.`);
+    previousList = list;
   }
 
-  return `${paragraphIndex + 1}.`;
+  return markers;
 }
 
 function runStyleToCss(style?: Editor2TextStyle): Record<string, string> | undefined {
@@ -135,6 +165,7 @@ function runStyleToCss(style?: Editor2TextStyle): Record<string, string> | undef
 function renderParagraph(
   paragraph: Editor2ParagraphNode,
   paragraphIndex: number,
+  listMarker: string | null,
   state: Editor2State,
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
   onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
@@ -184,12 +215,12 @@ function renderParagraph(
       data-block-id={paragraph.id}
       data-paragraph-id={paragraph.id}
       data-testid="editor-2-block"
-      style={paragraphStyleToCss(paragraph.style)}
+      style={getParagraphRenderStyle(paragraph)}
       onMouseDown={(event) => onParagraphMouseDown(paragraph.id, event)}
     >
       <Show when={paragraph.list}>
         <span class="oasis-editor-2-list-marker" data-testid="editor-2-list-marker">
-          {getParagraphListMarker(paragraph.list, paragraphIndex)}
+          {listMarker}
         </span>
       </Show>
       <Show
@@ -304,6 +335,7 @@ function renderParagraph(
 function renderTable(
   table: Editor2TableNode,
   paragraphIndexById: Map<string, number>,
+  listMarkers: Map<string, string>,
   state: Editor2State,
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
   onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
@@ -332,6 +364,7 @@ function renderTable(
                             renderParagraph(
                               paragraph,
                               paragraphIndexById.get(paragraph.id) ?? 0,
+                              listMarkers.get(paragraph.id) ?? null,
                               state,
                               onParagraphMouseDown,
                               onImageMouseDown,
@@ -355,6 +388,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
   const paragraphs = () => getParagraphs(props.state());
   const paragraphIndexById = () =>
     new Map(paragraphs().map((paragraph, index) => [paragraph.id, index] as const));
+  const listMarkers = () => buildParagraphListMarkers(paragraphs());
   const documentLayout = () =>
     projectDocumentLayout(props.state().document.blocks, undefined, props.measuredBlockHeights?.());
 
@@ -374,6 +408,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                     ? renderParagraph(
                         block.sourceBlock,
                         paragraphIndexById().get(block.sourceBlock.id) ?? 0,
+                        listMarkers().get(block.sourceBlock.id) ?? null,
                         props.state(),
                         props.onParagraphMouseDown,
                         props.onImageMouseDown,
@@ -382,6 +417,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                     : renderTable(
                         block.sourceBlock,
                         paragraphIndexById(),
+                        listMarkers(),
                         props.state(),
                         props.onParagraphMouseDown,
                         props.onImageMouseDown,

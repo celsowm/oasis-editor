@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { getParagraphLength, getParagraphText, getParagraphs, paragraphOffsetToPosition, positionToParagraphOffset } from "../../core/model.js";
 import {
+  clearParagraphListAtSelection,
   deleteBackward,
   deleteForward,
   extendSelectionLeft,
@@ -12,11 +13,13 @@ import {
   insertTextAtSelection,
   insertImageAtSelection,
   insertTableAtSelection,
+  indentParagraphList,
   moveSelectionDown,
   moveSelectionLeft,
   moveSelectionRight,
   moveSelectionUp,
   moveSelectedImageToPosition,
+  outdentParagraphList,
   resizeSelectedImage,
   serializeEditor2SelectionToHtml,
   setLinkAtSelection,
@@ -24,6 +27,7 @@ import {
   setParagraphStyle,
   setTextStyleValue,
   splitBlockAtSelection,
+  splitListItemAtSelection,
   toggleParagraphList,
   toggleTextStyle,
 } from "../../core/editorCommands.js";
@@ -438,6 +442,71 @@ describe("editor-2 commands", () => {
     const next = toggleParagraphList(state, "ordered");
 
     expect(getParagraphs(next).map((paragraph) => paragraph.list)).toEqual([undefined, undefined]);
+  });
+
+  it("indents a list item by increasing its level", () => {
+    const state = toggleParagraphList(
+      createEditor2StateFromTexts(["abc"], { blockIndex: 0, offset: 0 }),
+      "bullet",
+    );
+
+    const next = indentParagraphList(state);
+
+    expect(getParagraphs(next)[0]?.list).toEqual({ kind: "bullet", level: 1 });
+  });
+
+  it("outdents list items across a selected paragraph range", () => {
+    const state = createEditor2StateFromTexts(["abc", "def"], {
+      anchor: { blockIndex: 0, offset: 0 },
+      focus: { blockIndex: 1, offset: 1 },
+    });
+    const listed = toggleParagraphList(state, "ordered");
+    const indented = indentParagraphList(indentParagraphList(listed));
+
+    const next = outdentParagraphList(indented);
+
+    expect(getParagraphs(next).map((paragraph) => paragraph.list)).toEqual([
+      { kind: "ordered", level: 1 },
+      { kind: "ordered", level: 1 },
+    ]);
+  });
+
+  it("clears the list when outdenting a level zero item", () => {
+    const state = toggleParagraphList(
+      createEditor2StateFromTexts(["abc"], { blockIndex: 0, offset: 0 }),
+      "bullet",
+    );
+
+    const next = outdentParagraphList(state);
+
+    expect(getParagraphs(next)[0]?.list).toBeUndefined();
+  });
+
+  it("splits a list item and preserves kind and level", () => {
+    const state = toggleParagraphList(
+      createEditor2StateFromTexts(["hello"], { blockIndex: 0, offset: 2 }),
+      "ordered",
+    );
+    const indented = indentParagraphList(state);
+
+    const next = splitListItemAtSelection(indented);
+
+    expect(paragraphTexts(next)).toEqual(["he", "llo"]);
+    expect(getParagraphs(next).map((paragraph) => paragraph.list)).toEqual([
+      { kind: "ordered", level: 1 },
+      { kind: "ordered", level: 1 },
+    ]);
+  });
+
+  it("clears list formatting on the selected empty list item", () => {
+    const state = toggleParagraphList(
+      createEditor2StateFromTexts([""], { blockIndex: 0, offset: 0 }),
+      "bullet",
+    );
+
+    const next = clearParagraphListAtSelection(state);
+
+    expect(getParagraphs(next)[0]?.list).toBeUndefined();
   });
 
   it("preserves table structure when applying text styles", () => {

@@ -133,6 +133,36 @@ describe("exportEditor2DocumentToDocx", () => {
     });
   });
 
+  it("round-trips contiguous multilevel ordered lists", async () => {
+    const firstParagraph = createEditor2ParagraphFromRuns([{ text: "Top" }]);
+    firstParagraph.list = { kind: "ordered", level: 0 };
+    const secondParagraph = createEditor2ParagraphFromRuns([{ text: "Nested A" }]);
+    secondParagraph.list = { kind: "ordered", level: 1 };
+    const thirdParagraph = createEditor2ParagraphFromRuns([{ text: "Nested B" }]);
+    thirdParagraph.list = { kind: "ordered", level: 1 };
+    const fourthParagraph = createEditor2ParagraphFromRuns([{ text: "Top 2" }]);
+    fourthParagraph.list = { kind: "ordered", level: 0 };
+
+    const exported = createEditor2Document([
+      firstParagraph,
+      secondParagraph,
+      thirdParagraph,
+      fourthParagraph,
+    ]);
+    const buffer = await exportEditor2DocumentToDocx(exported);
+
+    resetEditor2Ids();
+    const imported = await importDocxToEditor2Document(buffer);
+    const paragraphs = getParagraphs(createEditor2StateFromDocument(imported));
+
+    expect(paragraphs.map((paragraph) => paragraph.list)).toEqual([
+      { kind: "ordered", level: 0 },
+      { kind: "ordered", level: 1 },
+      { kind: "ordered", level: 1 },
+      { kind: "ordered", level: 0 },
+    ]);
+  });
+
   for (const fixture of createDocxRoundTripFixtures()) {
     it(`round-trips fixture: ${fixture.name}`, async () => {
       const buffer = await exportEditor2DocumentToDocx(fixture.document);

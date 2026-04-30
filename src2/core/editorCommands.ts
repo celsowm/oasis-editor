@@ -112,6 +112,12 @@ function cloneParagraph(paragraph: Editor2ParagraphNode): Editor2ParagraphNode {
   };
 }
 
+function cloneParagraphList(
+  list?: Editor2ParagraphListStyle,
+): Editor2ParagraphListStyle | undefined {
+  return list ? { ...list } : undefined;
+}
+
 function setParagraphStyleValue<K extends ValueParagraphStyleKey>(
   style: Editor2ParagraphStyle | undefined,
   key: K,
@@ -175,6 +181,38 @@ function createParagraphFromRuns(
   textRuns: Array<{ text: string; styles?: Editor2TextStyle }>,
 ): Editor2ParagraphNode {
   return createEditor2ParagraphFromRuns(textRuns);
+}
+
+function createParagraphFromRunsLike(
+  paragraph: Editor2ParagraphNode,
+  textRuns: Array<{ text: string; styles?: Editor2TextStyle }>,
+): Editor2ParagraphNode {
+  const nextParagraph = createParagraphFromRuns(textRuns);
+  nextParagraph.style = paragraph.style ? { ...paragraph.style } : undefined;
+  nextParagraph.list = cloneParagraphList(paragraph.list);
+  return nextParagraph;
+}
+
+function cloneParagraphWithListLevel(
+  paragraph: Editor2ParagraphNode,
+  level: number,
+): Editor2ParagraphNode {
+  const nextParagraph = cloneParagraph(paragraph);
+  if (!nextParagraph.list) {
+    return nextParagraph;
+  }
+
+  nextParagraph.list = {
+    ...nextParagraph.list,
+    level: Math.max(0, level),
+  };
+  return nextParagraph;
+}
+
+function clearParagraphList(paragraph: Editor2ParagraphNode): Editor2ParagraphNode {
+  const nextParagraph = cloneParagraph(paragraph);
+  delete nextParagraph.list;
+  return nextParagraph;
 }
 
 function replaceParagraphsInBlocks(blocks: Editor2BlockNode[], newParagraphs: Editor2ParagraphNode[]): Editor2BlockNode[] {
@@ -1413,6 +1451,109 @@ export function splitBlockAtSelection(state: Editor2State): Editor2State {
   );
 }
 
+export function splitListItemAtSelection(state: Editor2State): Editor2State {
+  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+  const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  const firstParagraph = buildParagraphFromRuns(
+    paragraph,
+    sliceRuns(paragraph, 0, offset),
+    getStyleAtOffset(paragraph, offset),
+  );
+  const secondRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
+  const nextParagraph =
+    secondRuns.length > 0
+      ? createParagraphFromRunsLike(
+          paragraph,
+          secondRuns.map((run) => ({ text: run.text, styles: run.styles })),
+        )
+      : (() => {
+          const emptyParagraph = createEditor2Paragraph("");
+          emptyParagraph.style = paragraph.style ? { ...paragraph.style } : undefined;
+          emptyParagraph.list = cloneParagraphList(paragraph.list);
+          return emptyParagraph;
+        })();
+  const paragraphs = getParagraphs(collapsedState);
+  const nextParagraphs = [
+    ...cloneParagraphs(paragraphs.slice(0, index)),
+    firstParagraph,
+    nextParagraph,
+    ...cloneParagraphs(paragraphs.slice(index + 1)),
+  ];
+
+  return cloneStateWithParagraphs(
+    collapsedState,
+    nextParagraphs,
+    withSelection(paragraphOffsetToPosition(nextParagraph, 0)),
+  );
+}
+
+export function clearParagraphListAtSelection(state: Editor2State): Editor2State {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+    if (paragraphIndex < normalized.startIndex || paragraphIndex > normalized.endIndex) {
+      return cloneParagraph(paragraph);
+    }
+
+    return clearParagraphList(paragraph);
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+  );
+}
+
+export function indentParagraphList(state: Editor2State): Editor2State {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+    if (paragraphIndex < normalized.startIndex || paragraphIndex > normalized.endIndex) {
+      return cloneParagraph(paragraph);
+    }
+
+    if (!paragraph.list) {
+      return cloneParagraph(paragraph);
+    }
+
+    return cloneParagraphWithListLevel(paragraph, (paragraph.list.level ?? 0) + 1);
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+  );
+}
+
+export function outdentParagraphList(state: Editor2State): Editor2State {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+    if (paragraphIndex < normalized.startIndex || paragraphIndex > normalized.endIndex) {
+      return cloneParagraph(paragraph);
+    }
+
+    if (!paragraph.list) {
+      return cloneParagraph(paragraph);
+    }
+
+    const currentLevel = paragraph.list.level ?? 0;
+    if (currentLevel <= 0) {
+      return clearParagraphList(paragraph);
+    }
+
+    return cloneParagraphWithListLevel(paragraph, currentLevel - 1);
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+  );
+}
+
 export function deleteBackward(state: Editor2State): Editor2State {
   if (!isSelectionCollapsed(state.selection)) {
     return deleteSelectionRange(state);
@@ -1889,7 +2030,7 @@ export function toggleParagraphList(
 
     nextParagraph.list = {
       kind,
-      level: paragraph.list?.kind === kind ? paragraph.list.level ?? 0 : paragraph.list?.level ?? 0,
+      level: paragraph.list?.level ?? 0,
     };
     return nextParagraph;
   });
