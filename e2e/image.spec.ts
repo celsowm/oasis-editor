@@ -4,7 +4,7 @@ import fs from 'fs';
 
 test.describe('Oasis Editor Image Insertion', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/oasis-editor/');
     await page.waitForSelector('#oasis-editor-loading', { state: 'detached' });
   });
 
@@ -15,7 +15,7 @@ test.describe('Oasis Editor Image Insertion', () => {
 
     try {
       const fileChooserPromise = page.waitForEvent('filechooser');
-      await page.click('#oasis-editor-insert-image');
+      await page.locator('#oasis-editor-insert-image').click({ force: true });
       const fileChooser = await fileChooserPromise;
       await fileChooser.setFiles(imagePath);
 
@@ -42,14 +42,14 @@ test.describe('Oasis Editor Image Insertion', () => {
 
       const altInput = page.locator('input[placeholder="Alt text..."]');
       await expect(altInput).toBeVisible();
-      
+
       await altInput.fill('Updated Alt Text');
       await altInput.press('Enter');
 
       await expect(image).toHaveAttribute('alt', 'Updated Alt Text');
       await page.locator('.oasis-fragment--paragraph').first().click({ force: true });
       await expect(altInput).not.toBeVisible();
-      
+
       await image.click({ force: true });
       await expect(altInput).toBeVisible();
       expect(await altInput.inputValue()).toBe('Updated Alt Text');

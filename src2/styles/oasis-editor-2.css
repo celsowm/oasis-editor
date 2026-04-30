@@ -325,6 +325,11 @@ body {
   display: inline;
 }
 
+.oasis-editor-2-link {
+  color: inherit;
+  text-decoration: inherit;
+}
+
 .oasis-editor-2-image-char {
   display: inline-block;
 }

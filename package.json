@@ -22,6 +22,8 @@
     "build:app": "vite build",
     "build": "npm run build:lib && npm run build:app",
     "preview": "vite preview",
+    "test:e2e": "playwright test",
+    "test:e2e:legacy": "playwright test -c playwright.legacy.config.ts",
     "wasm:build": "wasm-pack build ./rust-core --target web --out-dir ../public/wasm",
     "dev:rust": "npm run wasm:build && vite",
     "build:all": "npm run wasm:build && npm run build",

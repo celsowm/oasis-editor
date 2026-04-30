@@ -43,7 +43,7 @@ type ToggleableTextStyleKey =
   | "superscript"
   | "subscript";
 
-type ValueTextStyleKey = "fontFamily" | "fontSize" | "color" | "highlight";
+type ValueTextStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
 type ValueParagraphStyleKey =
   | "align"
   | "spacingBefore"
@@ -266,6 +266,86 @@ function getStyleAtOffset(paragraph: Editor2ParagraphNode, offset: number): Edit
   }
 
   return cloneStyle(paragraph.runs[paragraph.runs.length - 1]?.styles);
+}
+
+function getRunAtOffset(
+  paragraph: Editor2ParagraphNode,
+  offset: number,
+): { run: Editor2TextRun; startOffset: number; endOffset: number } | null {
+  let consumed = 0;
+  for (let index = 0; index < paragraph.runs.length; index += 1) {
+    const run = paragraph.runs[index]!;
+    const startOffset = consumed;
+    const endOffset = consumed + run.text.length;
+
+    if (offset < endOffset) {
+      return { run, startOffset, endOffset };
+    }
+
+    if (offset === endOffset) {
+      if (run.text.length > 0) {
+        return { run, startOffset, endOffset };
+      }
+      const nextRun = paragraph.runs[index + 1];
+      if (nextRun) {
+        return {
+          run: nextRun,
+          startOffset: endOffset,
+          endOffset: endOffset + nextRun.text.length,
+        };
+      }
+      return { run, startOffset, endOffset };
+    }
+
+    consumed = endOffset;
+  }
+
+  return null;
+}
+
+function expandLinkRangeInParagraph(
+  paragraph: Editor2ParagraphNode,
+  offset: number,
+): { href: string; startOffset: number; endOffset: number } | null {
+  const resolved = getRunAtOffset(paragraph, offset);
+  const href = resolved?.run.styles?.link;
+  if (!resolved || !href || resolved.run.image) {
+    return null;
+  }
+
+  let startOffset = resolved.startOffset;
+  let endOffset = resolved.endOffset;
+  let consumed = 0;
+  const runs = paragraph.runs;
+  const runIndex = runs.findIndex((run) => run.id === resolved.run.id);
+  if (runIndex === -1) {
+    return null;
+  }
+
+  for (let index = 0; index < runIndex; index += 1) {
+    consumed += runs[index]!.text.length;
+  }
+
+  startOffset = consumed;
+  endOffset = consumed + resolved.run.text.length;
+
+  for (let index = runIndex - 1; index >= 0; index -= 1) {
+    const run = runs[index]!;
+    if (run.image || run.styles?.link !== href) {
+      break;
+    }
+    startOffset -= run.text.length;
+  }
+
+  for (let index = runIndex + 1; index < runs.length; index += 1) {
+    const run = runs[index]!;
+    if (run.image || run.styles?.link !== href) {
+      break;
+    }
+    endOffset += run.text.length;
+  }
+
+  return { href, startOffset, endOffset };
 }
 
 function sliceRuns(
@@ -1072,6 +1152,84 @@ export function setTextStyleValue<K extends ValueTextStyleKey>(
     nextParagraphs,
     preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
   );
+}
+
+export function getLinkAtSelection(state: Editor2State): string | null {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+
+  if (normalized.isCollapsed) {
+    const paragraph = paragraphs[normalized.startIndex];
+    if (!paragraph) {
+      return null;
+    }
+    return expandLinkRangeInParagraph(paragraph, normalized.startParagraphOffset)?.href ?? null;
+  }
+
+  const touchedRuns = paragraphs
+    .slice(normalized.startIndex, normalized.endIndex + 1)
+    .flatMap((paragraph, relativeIndex) => {
+      const paragraphIndex = normalized.startIndex + relativeIndex;
+      const startOffset = paragraphIndex === normalized.startIndex ? normalized.startParagraphOffset : 0;
+      const endOffset =
+        paragraphIndex === normalized.endIndex
+          ? normalized.endParagraphOffset
+          : getParagraphLength(paragraph);
+      return sliceRuns(paragraph, startOffset, endOffset);
+    })
+    .filter((run) => run.text.length > 0 && !run.image);
+
+  if (touchedRuns.length === 0) {
+    return null;
+  }
+
+  const href = touchedRuns[0]?.styles?.link;
+  if (!href) {
+    return null;
+  }
+
+  return touchedRuns.every((run) => run.styles?.link === href) ? href : null;
+}
+
+export function setLinkAtSelection(
+  state: Editor2State,
+  href: string | null,
+): Editor2State {
+  const normalized = normalizeSelection(state);
+  if (!normalized.isCollapsed) {
+    return setTextStyleValue(state, "link", href);
+  }
+
+  const paragraphs = getParagraphs(state);
+  const paragraph = paragraphs[normalized.startIndex];
+  if (!paragraph) {
+    return state;
+  }
+
+  const linkRange = expandLinkRangeInParagraph(paragraph, normalized.startParagraphOffset);
+  if (!linkRange) {
+    return state;
+  }
+
+  const expandedSelection = {
+    anchor: paragraphOffsetToPosition(paragraph, linkRange.startOffset),
+    focus: paragraphOffsetToPosition(paragraph, linkRange.endOffset),
+  };
+
+  const expandedState = setSelection(state, expandedSelection);
+  const next = setTextStyleValue(expandedState, "link", href);
+  const nextParagraph = getParagraphs(next)[normalized.startIndex];
+  if (!nextParagraph) {
+    return next;
+  }
+
+  return {
+    document: next.document,
+    selection: {
+      anchor: paragraphOffsetToPosition(nextParagraph, linkRange.startOffset),
+      focus: paragraphOffsetToPosition(nextParagraph, linkRange.endOffset),
+    },
+  };
 }
 
 export function setParagraphStyle<K extends ValueParagraphStyleKey>(

@@ -5,9 +5,27 @@ import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { getCaretSlotRects } from "./caretGeometry.js";
 import {
+  applyEditor2HistoryTransaction,
+  createEmptyEditor2HistoryState,
+  resetEditor2HistoryGrouping,
+  takeEditor2RedoStep,
+  takeEditor2UndoStep,
+  type Editor2TransactionOptions,
+} from "./editor2History.js";
+import {
   measureParagraphLayoutFromRects,
   resolveClosestOffsetInMeasuredLayout,
 } from "./layoutProjection.js";
+import {
+  collectCharRects,
+  findNearestParagraphElement,
+  resolvePositionAtPoint,
+} from "./positionAtPoint.js";
+import {
+  getToolbarStyleState,
+  type BooleanStyleKey,
+  type ToolbarStyleState,
+} from "./toolbarStyleState.js";
 import {
   deleteBackward,
   deleteForward,
@@ -15,6 +33,7 @@ import {
   extendSelectionLeft,
   extendSelectionRight,
   extendSelectionUp,
+  getLinkAtSelection,
   getSelectedText,
   insertPlainTextAtSelection,
   insertTextAtSelection,
@@ -27,6 +46,7 @@ import {
   moveSelectionRight,
   moveSelectionUp,
   setParagraphStyle,
+  setLinkAtSelection,
   setSelection,
   setTextStyleValue,
   splitBlockAtSelection,
@@ -149,51 +169,7 @@ function getMaxInlineImageWidth(surface: HTMLDivElement | undefined, paragraphId
   return getElementContentWidth(contentSurface);
 }
 
-interface TransactionOptions {
-  mergeKey?: string;
-}
-
-type BooleanStyleKey =
-  | "bold"
-  | "italic"
-  | "underline"
-  | "strike"
-  | "superscript"
-  | "subscript";
-
-type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight";
-type ParagraphStyleKey =
-  | "align"
-  | "spacingBefore"
-  | "spacingAfter"
-  | "lineHeight"
-  | "indentLeft"
-  | "indentRight"
-  | "indentFirstLine"
-  | "pageBreakBefore"
-  | "keepWithNext";
-
-interface ToolbarStyleState {
-  bold: boolean;
-  italic: boolean;
-  underline: boolean;
-  strike: boolean;
-  superscript: boolean;
-  subscript: boolean;
-  fontFamily: string;
-  fontSize: string;
-  color: string;
-  highlight: string;
-  align: string;
-  lineHeight: string;
-  spacingBefore: string;
-  spacingAfter: string;
-  indentLeft: string;
-  indentFirstLine: string;
-  listKind: string;
-  pageBreakBefore: boolean;
-  keepWithNext: boolean;
-}
+type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
 
 async function readFileBuffer(file: File): Promise<ArrayBuffer> {
   if (typeof file.arrayBuffer === "function") {
@@ -240,25 +216,6 @@ function findImageFileFromTransfer(
   }
 
   return null;
-}
-
-function collectCharRects(blockElement: HTMLElement): Array<{
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
-  height: number;
-}> {
-  return Array.from(blockElement.querySelectorAll<HTMLElement>("[data-char-index]")).map((element) => {
-    const rect = element.getBoundingClientRect();
-    return {
-      left: rect.left,
-      right: rect.right,
-      top: rect.top,
-      bottom: rect.bottom,
-      height: rect.height,
-    };
-  });
 }
 
 function getEmptyBlockRect(blockElement: HTMLElement): DOMRect | null {
@@ -366,123 +323,6 @@ function resolveWordSelection(text: string, offset: number): { start: number; en
   return { start, end };
 }
 
-function selectionOverlapsRun(
-  runStart: number,
-  runEnd: number,
-  selectionStart: number,
-  selectionEnd: number,
-): boolean {
-  return Math.max(runStart, selectionStart) < Math.min(runEnd, selectionEnd);
-}
-
-function getSelectedRunStyles(state: Editor2State): Editor2TextStyle[] {
-  const normalized = normalizeSelection(state);
-  if (normalized.isCollapsed) {
-    return [];
-  }
-
-  const styles: Editor2TextStyle[] = [];
-  const paragraphs = getParagraphs(state);
-
-  for (let paragraphIndex = normalized.startIndex; paragraphIndex <= normalized.endIndex; paragraphIndex += 1) {
-    const paragraph = paragraphs[paragraphIndex];
-    if (!paragraph) {
-      continue;
-    }
-
-    const selectionStart = paragraphIndex === normalized.startIndex ? normalized.startParagraphOffset : 0;
-    const selectionEnd =
-      paragraphIndex === normalized.endIndex ? normalized.endParagraphOffset : getParagraphText(paragraph).length;
-
-    let runStart = 0;
-    for (const run of paragraph.runs) {
-      const runEnd = runStart + run.text.length;
-      if (selectionOverlapsRun(runStart, runEnd, selectionStart, selectionEnd)) {
-        styles.push(run.styles ?? {});
-      }
-      runStart = runEnd;
-    }
-  }
-
-  return styles;
-}
-
-function areAllBooleanStylesEnabled(styles: Editor2TextStyle[], key: BooleanStyleKey): boolean {
-  return styles.length > 0 && styles.every((style) => Boolean(style[key]));
-}
-
-function resolveUniformStyleValue<K extends ValueStyleKey>(
-  styles: Editor2TextStyle[],
-  key: K,
-): string {
-  if (styles.length === 0) {
-    return "";
-  }
-
-  const first = styles[0]?.[key];
-  if (first === undefined || first === null || first === "") {
-    return styles.every((style) => {
-      const current = style[key];
-      return current === undefined || current === null || current === "";
-    })
-      ? ""
-      : "";
-  }
-
-  const serialized = String(first);
-  return styles.every((style) => String(style[key] ?? "") === serialized) ? serialized : "";
-}
-
-function getSelectedParagraphStyles(state: Editor2State): Editor2ParagraphStyle[] {
-  const normalized = normalizeSelection(state);
-  const paragraphs = getParagraphs(state);
-  return paragraphs
-    .slice(normalized.startIndex, normalized.endIndex + 1)
-    .map((paragraph) => paragraph.style ?? {});
-}
-
-function resolveUniformParagraphStyleValue<K extends ParagraphStyleKey>(
-  styles: Editor2ParagraphStyle[],
-  key: K,
-): string {
-  if (styles.length === 0) {
-    return "";
-  }
-
-  const first = styles[0]?.[key];
-  if (first === undefined || first === null) {
-    return styles.every((style) => {
-      const current = style[key];
-      return current === undefined || current === null;
-    })
-      ? ""
-      : "";
-  }
-
-  const serialized = String(first);
-  return styles.every((style) => String(style[key] ?? "") === serialized) ? serialized : "";
-}
-
-function resolveUniformParagraphFlag(
-  styles: Editor2ParagraphStyle[],
-  key: "pageBreakBefore" | "keepWithNext",
-): boolean {
-  return styles.length > 0 && styles.every((style) => style[key] === true);
-}
-
-function resolveUniformListKind(paragraphs: ReturnType<typeof getParagraphs>): string {
-  if (paragraphs.length === 0) {
-    return "";
-  }
-
-  const firstKind = paragraphs[0]?.list?.kind;
-  if (!firstKind) {
-    return paragraphs.every((paragraph) => paragraph.list?.kind === undefined) ? "" : "";
-  }
-
-  return paragraphs.every((paragraph) => paragraph.list?.kind === firstKind) ? firstKind : "";
-}
-
 export function OasisEditor2App() {
   const logger = createEditor2Logger("app");
   const [state, setState] = createStore<Editor2State>(createInitialEditor2State());
@@ -508,7 +348,7 @@ export function OasisEditor2App() {
   let dragAnchor: Editor2Position | null = null;
   let activeImageDrag: ActiveImageDrag | null = null;
   let activeImageResize: ActiveImageResize | null = null;
-  let lastTransactionMeta: { mergeKey: string; timestamp: number } | null = null;
+  let historyState = createEmptyEditor2HistoryState();
   let suppressedInputText: string | null = null;
   const booleanButtons: Array<{ key: BooleanStyleKey; label: string; testId: string }> = [
     { key: "bold", label: "B", testId: "editor-2-toolbar-bold" },
@@ -1667,12 +1507,12 @@ export function OasisEditor2App() {
   };
 
   const resetTransactionGrouping = () => {
-    lastTransactionMeta = null;
+    historyState = resetEditor2HistoryGrouping(historyState);
   };
 
   const applyTransactionalState = (
     producer: (current: Editor2State) => Editor2State,
-    options?: TransactionOptions,
+    options?: Editor2TransactionOptions,
   ) => {
     const previous = cloneState(state);
     const next = producer(state);
@@ -1680,18 +1520,9 @@ export function OasisEditor2App() {
       return;
     }
 
-    const now = Date.now();
-    const canMerge =
-      options?.mergeKey !== undefined &&
-      lastTransactionMeta?.mergeKey === options.mergeKey &&
-      now - lastTransactionMeta.timestamp < 1000;
-
-    if (!canMerge) {
-      setUndoStack((stack) => [...stack, previous]);
-    }
-
-    setRedoStack([]);
-    lastTransactionMeta = options?.mergeKey ? { mergeKey: options.mergeKey, timestamp: now } : null;
+    historyState = applyEditor2HistoryTransaction(historyState, previous, next, options);
+    setUndoStack(historyState.undoStack);
+    setRedoStack(historyState.redoStack);
     applyState(next);
   };
 
@@ -1700,32 +1531,30 @@ export function OasisEditor2App() {
   };
 
   const performUndo = () => {
-    const nextUndoStack = undoStack();
-    if (nextUndoStack.length === 0) {
+    const step = takeEditor2UndoStep(historyState, cloneState(state));
+    if (!step) {
       return;
     }
 
-    const next = nextUndoStack[nextUndoStack.length - 1];
-    setUndoStack((stack) => stack.slice(0, -1));
-    setRedoStack((stack) => [...stack, cloneState(state)]);
+    historyState = step.history;
+    setUndoStack(historyState.undoStack);
+    setRedoStack(historyState.redoStack);
     clearPreferredColumn();
-    resetTransactionGrouping();
-    applyHistoryState(next);
+    applyHistoryState(step.nextState);
     focusInput();
   };
 
   const performRedo = () => {
-    const nextRedoStack = redoStack();
-    if (nextRedoStack.length === 0) {
+    const step = takeEditor2RedoStep(historyState, cloneState(state));
+    if (!step) {
       return;
     }
 
-    const next = nextRedoStack[nextRedoStack.length - 1];
-    setRedoStack((stack) => stack.slice(0, -1));
-    setUndoStack((stack) => [...stack, cloneState(state)]);
+    historyState = step.history;
+    setUndoStack(historyState.undoStack);
+    setRedoStack(historyState.redoStack);
     clearPreferredColumn();
-    resetTransactionGrouping();
-    applyHistoryState(next);
+    applyHistoryState(step.nextState);
     focusInput();
   };
 
@@ -1786,30 +1615,7 @@ export function OasisEditor2App() {
   const selectionCollapsed = () => isSelectionCollapsed(state.selection);
 
   const toolbarStyleState = (): ToolbarStyleState => {
-    const styles = getSelectedRunStyles(state);
-    const paragraphStyles = getSelectedParagraphStyles(state);
-
-    return {
-      bold: areAllBooleanStylesEnabled(styles, "bold"),
-      italic: areAllBooleanStylesEnabled(styles, "italic"),
-      underline: areAllBooleanStylesEnabled(styles, "underline"),
-      strike: areAllBooleanStylesEnabled(styles, "strike"),
-      superscript: areAllBooleanStylesEnabled(styles, "superscript"),
-      subscript: areAllBooleanStylesEnabled(styles, "subscript"),
-      fontFamily: resolveUniformStyleValue(styles, "fontFamily"),
-      fontSize: resolveUniformStyleValue(styles, "fontSize"),
-      color: resolveUniformStyleValue(styles, "color"),
-      highlight: resolveUniformStyleValue(styles, "highlight"),
-      align: resolveUniformParagraphStyleValue(paragraphStyles, "align"),
-      lineHeight: resolveUniformParagraphStyleValue(paragraphStyles, "lineHeight"),
-      spacingBefore: resolveUniformParagraphStyleValue(paragraphStyles, "spacingBefore"),
-      spacingAfter: resolveUniformParagraphStyleValue(paragraphStyles, "spacingAfter"),
-      indentLeft: resolveUniformParagraphStyleValue(paragraphStyles, "indentLeft"),
-      indentFirstLine: resolveUniformParagraphStyleValue(paragraphStyles, "indentFirstLine"),
-      listKind: resolveUniformListKind(getParagraphs(state).slice(normalizeSelection(state).startIndex, normalizeSelection(state).endIndex + 1)),
-      pageBreakBefore: resolveUniformParagraphFlag(paragraphStyles, "pageBreakBefore"),
-      keepWithNext: resolveUniformParagraphFlag(paragraphStyles, "keepWithNext"),
-    };
+    return getToolbarStyleState(state);
   };
 
   const tableSelectionLabel = (): string | null => {
@@ -1936,6 +1742,38 @@ export function OasisEditor2App() {
     resetTransactionGrouping();
     applySelectionAwareParagraphCommand((current) => toggleParagraphList(current, kind));
     focusInput();
+  };
+
+  const applyLinkCommand = (href: string | null) => {
+    const activeLink = getLinkAtSelection(state);
+    if (selectionCollapsed() && !activeLink) {
+      return;
+    }
+
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyTransactionalState((current) => setLinkAtSelection(current, href), { mergeKey: "link" });
+    focusInput();
+  };
+
+  const promptForLink = () => {
+    const activeLink = getLinkAtSelection(state) ?? "";
+    if (selectionCollapsed() && !activeLink) {
+      return;
+    }
+
+    const nextHref = window.prompt("Enter link URL", activeLink);
+    if (nextHref === null) {
+      focusInput();
+      return;
+    }
+
+    const normalizedHref = nextHref.trim();
+    applyLinkCommand(normalizedHref.length > 0 ? normalizedHref : null);
+  };
+
+  const removeLinkCommand = () => {
+    applyLinkCommand(null);
   };
 
   const handleImportDocx = async (file: File | null) => {
@@ -2371,7 +2209,7 @@ export function OasisEditor2App() {
     event.preventDefault();
     clearPreferredColumn();
     resetTransactionGrouping();
-    const position = resolvePositionAtPoint(event.clientX, event.clientY) ?? state.selection.focus;
+    const position = resolvePositionAtSurfacePoint(event.clientX, event.clientY) ?? state.selection.focus;
     void insertImageFromFile(imageFile, position);
     focusInput();
   };
@@ -2511,98 +2349,16 @@ export function OasisEditor2App() {
     return true;
   };
 
-  const findNearestParagraphElement = (
-    clientX: number,
-    clientY: number,
-  ): HTMLElement | null => {
-    if (!surfaceRef) {
-      return null;
-    }
-    const candidates = Array.from(
-      surfaceRef.querySelectorAll<HTMLElement>("[data-paragraph-id]"),
-    );
-    if (candidates.length === 0) {
-      return null;
-    }
-
-    let best: HTMLElement | null = null;
-    let bestScore = Number.POSITIVE_INFINITY;
-    for (const candidate of candidates) {
-      const rect = candidate.getBoundingClientRect();
-      const verticalDelta =
-        clientY < rect.top
-          ? rect.top - clientY
-          : clientY > rect.bottom
-            ? clientY - rect.bottom
-            : 0;
-      const horizontalDelta =
-        clientX < rect.left
-          ? rect.left - clientX
-          : clientX > rect.right
-            ? clientX - rect.right
-            : 0;
-      const score = verticalDelta * 1000 + horizontalDelta;
-      if (score < bestScore) {
-        bestScore = score;
-        best = candidate;
-      }
-    }
-    return best;
-  };
-
-  const resolvePositionAtPoint = (clientX: number, clientY: number): Editor2Position | null => {
-    const target = document.elementFromPoint(clientX, clientY);
-
-    // If hovering over a table cell, return first char position of that cell
-    if (target instanceof HTMLElement) {
-      const cellElement = target.closest<HTMLElement>("td[data-cell-index]");
-      if (cellElement) {
-        const rowIndex = Number(cellElement.dataset.rowIndex ?? -1);
-        const cellIndex = Number(cellElement.dataset.cellIndex ?? -1);
-        if (rowIndex >= 0 && cellIndex >= 0) {
-          for (const block of state.document.blocks) {
-            if (block.type !== "table") continue;
-            const row = block.rows[rowIndex];
-            const cell = row?.cells[cellIndex];
-            const paragraph = cell?.blocks[0];
-            if (paragraph) {
-              return paragraphOffsetToPosition(paragraph, 0);
-            }
-          }
-        }
-      }
-    }
-
-    let paragraphElement: HTMLElement | null = null;
-    if (target instanceof HTMLElement) {
-      paragraphElement = target.closest<HTMLElement>("[data-paragraph-id]");
-    }
-    if (!paragraphElement) {
-      paragraphElement = findNearestParagraphElement(clientX, clientY);
-    }
-    if (!paragraphElement) {
-      return null;
-    }
-
-    const paragraphId = paragraphElement.dataset.paragraphId;
-    if (!paragraphId) {
-      return null;
-    }
-
-    const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
-    if (!paragraph) {
-      return null;
-    }
-
-    return paragraphOffsetToPosition(
-      paragraph,
-      resolveClosestOffsetInMeasuredLayout(
-        measureParagraphLayoutFromRects(paragraph, collectCharRects(paragraphElement)),
-        clientX,
-        clientY,
-      ),
-    );
-  };
+  const resolvePositionAtSurfacePoint = (clientX: number, clientY: number): Editor2Position | null =>
+    surfaceRef
+      ? resolvePositionAtPoint({
+          clientX,
+          clientY,
+          surface: surfaceRef,
+          state,
+          documentLike: document,
+        })
+      : null;
 
   const stopDragging = () => {
     dragAnchor = null;
@@ -2649,7 +2405,7 @@ export function OasisEditor2App() {
     }
 
     if (dragState.dragging) {
-      const position = resolvePositionAtPoint(event.clientX, event.clientY);
+      const position = resolvePositionAtSurfacePoint(event.clientX, event.clientY);
       if (position) {
         logger.info("image drag:done", {
           paragraphId: dragState.paragraphId,
@@ -2679,7 +2435,7 @@ export function OasisEditor2App() {
       return;
     }
 
-    const position = resolvePositionAtPoint(event.clientX, event.clientY);
+    const position = resolvePositionAtSurfacePoint(event.clientX, event.clientY);
     if (!position) {
       return;
     }
@@ -2746,9 +2502,13 @@ export function OasisEditor2App() {
             }
           : null,
       });
-      setUndoStack((stack) => [...stack, cloneState(resizeState.initialState)]);
-      setRedoStack([]);
-      lastTransactionMeta = null;
+      historyState = {
+        undoStack: [...historyState.undoStack, cloneState(resizeState.initialState)],
+        redoStack: [],
+        lastTransactionMeta: null,
+      };
+      setUndoStack(historyState.undoStack);
+      setRedoStack(historyState.redoStack);
     }
     stopImageResize();
     focusInput();
@@ -2889,6 +2649,12 @@ export function OasisEditor2App() {
           ),
         );
         focusInput();
+        return;
+      }
+
+      if (lowerKey === "k") {
+        event.preventDefault();
+        promptForLink();
         return;
       }
     }
@@ -3301,6 +3067,27 @@ export function OasisEditor2App() {
               </div>
             )}
           </Show>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            classList={{
+              "oasis-editor-2-tool-button-active": Boolean(toolbarStyleState().link),
+            }}
+            data-testid="editor-2-toolbar-link"
+            disabled={selectionCollapsed() && !toolbarStyleState().link}
+            onClick={promptForLink}
+          >
+            Link
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-unlink"
+            disabled={!toolbarStyleState().link}
+            onClick={removeLinkCommand}
+          >
+            Unlink
+          </button>
           {booleanButtons.map((button) => (
             <button
               type="button"
@@ -3562,10 +3349,9 @@ export function OasisEditor2App() {
               // surface padding to the left of the text) should still start a
               // drag selection on the nearest paragraph - otherwise the user
               // can't begin a selection unless they hit a character precisely.
-              const paragraphElement = findNearestParagraphElement(
-                event.clientX,
-                event.clientY,
-              );
+              const paragraphElement = surfaceRef
+                ? findNearestParagraphElement(surfaceRef, event.clientX, event.clientY)
+                : null;
               if (!paragraphElement) {
                 focusInput();
                 return;

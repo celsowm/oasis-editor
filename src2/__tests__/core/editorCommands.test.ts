@@ -5,6 +5,7 @@ import {
   deleteForward,
   extendSelectionLeft,
   extendSelectionRight,
+  getLinkAtSelection,
   getSelectedText,
   insertPlainTextAtSelection,
   insertTextAtSelection,
@@ -16,6 +17,7 @@ import {
   moveSelectionUp,
   moveSelectedImageToPosition,
   resizeSelectedImage,
+  setLinkAtSelection,
   setParagraphStyle,
   setTextStyleValue,
   splitBlockAtSelection,
@@ -306,6 +308,49 @@ describe("editor-2 commands", () => {
 
     expect(paragraph.runs.map((run) => run.text)).toEqual(["h", "ell", "o"]);
     expect(paragraph.runs.map((run) => run.styles)).toEqual([{ highlight: "#ffee00" }, undefined, { highlight: "#ffee00" }]);
+  });
+
+  it("applies a link to the selected text range", () => {
+    const state = createEditor2StateFromTexts(["hello"], {
+      anchor: { blockIndex: 0, offset: 1 },
+      focus: { blockIndex: 0, offset: 4 },
+    });
+
+    const next = setTextStyleValue(state, "link", "https://example.com");
+    const paragraph = getParagraphs(next)[0];
+
+    expect(paragraph.runs.map((run) => run.text)).toEqual(["h", "ell", "o"]);
+    expect(paragraph.runs.map((run) => run.styles)).toEqual([
+      undefined,
+      { link: "https://example.com" },
+      undefined,
+    ]);
+  });
+
+  it("removes a link from a collapsed caret inside an existing linked range", () => {
+    const state = createEditor2StateFromParagraphRuns(
+      [[{ text: "hello", styles: { link: "https://example.com" } }]],
+      { blockIndex: 0, offset: 2 },
+    );
+
+    const next = setLinkAtSelection(state, null);
+    const paragraph = getParagraphs(next)[0];
+
+    expect(paragraph.runs.map((run) => run.text)).toEqual(["hello"]);
+    expect(paragraph.runs[0]?.styles).toBeUndefined();
+  });
+
+  it("edits the current link when the caret is collapsed inside a linked run", () => {
+    const state = createEditor2StateFromParagraphRuns(
+      [[{ text: "hello", styles: { link: "https://old.example" } }]],
+      { blockIndex: 0, offset: 3 },
+    );
+
+    const next = setLinkAtSelection(state, "https://new.example");
+    const paragraph = getParagraphs(next)[0];
+
+    expect(paragraph.runs[0]?.styles).toEqual({ link: "https://new.example" });
+    expect(getLinkAtSelection(next)).toBe("https://new.example");
   });
 
   it("applies paragraph alignment across the selected paragraph range", () => {

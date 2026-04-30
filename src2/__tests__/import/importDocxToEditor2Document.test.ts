@@ -4,7 +4,7 @@ import { importDocxToEditor2Document } from "../../import/docx/importDocxToEdito
 import { getParagraphText } from "../../core/model.js";
 import { resetEditor2Ids } from "../../core/editorState.js";
 
-async function buildDocx(documentXml: string, numberingXml?: string): Promise<ArrayBuffer> {
+async function buildDocx(documentXml: string, numberingXml?: string, relsXml?: string): Promise<ArrayBuffer> {
   const zip = new JSZip();
   zip.file(
     "[Content_Types].xml",
@@ -26,6 +26,9 @@ async function buildDocx(documentXml: string, numberingXml?: string): Promise<Ar
   zip.file("word/document.xml", documentXml);
   if (numberingXml) {
     zip.file("word/numbering.xml", numberingXml);
+  }
+  if (relsXml) {
+    zip.file("word/_rels/document.xml.rels", relsXml);
   }
   return zip.generateAsync({ type: "arraybuffer" });
 }
@@ -153,6 +156,42 @@ describe("importDocxToEditor2Document", () => {
       throw new Error("Expected paragraph block");
     }
     expect(paragraph.list).toEqual({ kind: "ordered", level: 1 });
+  });
+
+  it("imports inline hyperlinks into run styles", async () => {
+    const buffer = await buildDocx(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+        <w:body>
+          <w:p>
+            <w:r><w:t>Go </w:t></w:r>
+            <w:hyperlink r:id="rIdLink1">
+              <w:r>
+                <w:rPr><w:u w:val="single"/></w:rPr>
+                <w:t>there</w:t>
+              </w:r>
+            </w:hyperlink>
+          </w:p>
+        </w:body>
+      </w:document>`,
+      undefined,
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship Id="rIdLink1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com" TargetMode="External"/>
+      </Relationships>`,
+    );
+
+    const document = await importDocxToEditor2Document(buffer);
+    const paragraph = document.blocks[0];
+    if (paragraph?.type !== "paragraph") {
+      throw new Error("Expected paragraph block");
+    }
+
+    expect(getParagraphText(paragraph)).toBe("Go there");
+    expect(paragraph.runs[1]?.styles).toEqual({
+      underline: true,
+      link: "https://example.com",
+    });
   });
 
   it("imports tables in body order with cell paragraphs", async () => {

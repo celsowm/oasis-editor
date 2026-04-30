@@ -9,6 +9,7 @@ export interface Editor2TextStyle {
   fontSize?: number | null;
   color?: string | null;
   highlight?: string | null;
+  link?: string | null;
 }
 
 export interface Editor2ParagraphStyle {

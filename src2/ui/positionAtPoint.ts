@@ -1,0 +1,154 @@
+import type { Editor2Document, Editor2ParagraphNode, Editor2Position, Editor2State } from "../core/model.js";
+import { getParagraphs, getParagraphText, paragraphOffsetToPosition } from "../core/model.js";
+import {
+  measureParagraphLayoutFromRects,
+  resolveClosestOffsetInMeasuredLayout,
+} from "./layoutProjection.js";
+
+function scoreElementDistance(element: HTMLElement, clientX: number, clientY: number): number {
+  const rect = element.getBoundingClientRect();
+  const verticalDelta =
+    clientY < rect.top
+      ? rect.top - clientY
+      : clientY > rect.bottom
+        ? clientY - rect.bottom
+        : 0;
+  const horizontalDelta =
+    clientX < rect.left
+      ? rect.left - clientX
+      : clientX > rect.right
+        ? clientX - rect.right
+        : 0;
+  return verticalDelta * 1000 + horizontalDelta;
+}
+
+function findNearestElement(
+  surface: HTMLElement,
+  selector: string,
+  clientX: number,
+  clientY: number,
+): HTMLElement | null {
+  const candidates = Array.from(surface.querySelectorAll<HTMLElement>(selector));
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  let best: HTMLElement | null = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (const candidate of candidates) {
+    const score = scoreElementDistance(candidate, clientX, clientY);
+    if (score < bestScore) {
+      bestScore = score;
+      best = candidate;
+    }
+  }
+
+  return best;
+}
+
+export function findNearestParagraphElement(
+  surface: HTMLElement,
+  clientX: number,
+  clientY: number,
+): HTMLElement | null {
+  return findNearestElement(surface, "[data-paragraph-id]", clientX, clientY);
+}
+
+export function collectCharRects(blockElement: HTMLElement): Array<{
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  height: number;
+}> {
+  return Array.from(blockElement.querySelectorAll<HTMLElement>("[data-char-index]")).map((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      left: rect.left,
+      right: rect.right,
+      top: rect.top,
+      bottom: rect.bottom,
+      height: rect.height,
+    };
+  });
+}
+
+function resolveTableCellStartPosition(
+  document: Editor2Document,
+  cellElement: HTMLElement,
+): Editor2Position | null {
+  const rowIndex = Number(cellElement.dataset.rowIndex ?? -1);
+  const cellIndex = Number(cellElement.dataset.cellIndex ?? -1);
+  if (rowIndex < 0 || cellIndex < 0) {
+    return null;
+  }
+
+  const tableContainer = cellElement.closest<HTMLElement>('[data-testid="editor-2-table"]');
+  const tableId = tableContainer?.getAttribute("data-block-id");
+  const tableBlock = document.blocks.find(
+    (block) => block.type === "table" && (tableId ? block.id === tableId : true),
+  );
+  if (!tableBlock || tableBlock.type !== "table") {
+    return null;
+  }
+
+  const paragraph = tableBlock.rows[rowIndex]?.cells[cellIndex]?.blocks[0];
+  return paragraph ? paragraphOffsetToPosition(paragraph, 0) : null;
+}
+
+function resolveParagraphFromElement(
+  state: Editor2State,
+  paragraphElement: HTMLElement,
+): Editor2ParagraphNode | null {
+  const paragraphId = paragraphElement.dataset.paragraphId;
+  if (!paragraphId) {
+    return null;
+  }
+
+  return getParagraphs(state).find((candidate) => candidate.id === paragraphId) ?? null;
+}
+
+export function resolvePositionAtPoint(options: {
+  clientX: number;
+  clientY: number;
+  surface: HTMLElement;
+  state: Editor2State;
+  documentLike?: Pick<Document, "elementFromPoint"> | { elementFromPoint?: ((x: number, y: number) => Element | null) | undefined };
+}): Editor2Position | null {
+  const { clientX, clientY, surface, state, documentLike } = options;
+  const target = documentLike?.elementFromPoint?.(clientX, clientY) ?? null;
+
+  const targetElement = target instanceof HTMLElement ? target : null;
+  const tableCell =
+    targetElement?.closest<HTMLElement>("td[data-cell-index]") ??
+    findNearestElement(surface, "td[data-cell-index]", clientX, clientY);
+  if (tableCell) {
+    const tableCellPosition = resolveTableCellStartPosition(state.document, tableCell);
+    if (tableCellPosition) {
+      return tableCellPosition;
+    }
+  }
+
+  const paragraphElement =
+    targetElement?.closest<HTMLElement>("[data-paragraph-id]") ??
+    findNearestParagraphElement(surface, clientX, clientY);
+  if (!paragraphElement) {
+    return null;
+  }
+
+  const paragraph = resolveParagraphFromElement(state, paragraphElement);
+  if (!paragraph) {
+    return null;
+  }
+
+  const layout = measureParagraphLayoutFromRects(paragraph, collectCharRects(paragraphElement));
+  const offset =
+    layout.text.length === 0
+      ? 0
+      : resolveClosestOffsetInMeasuredLayout(layout, clientX, clientY);
+
+  return paragraphOffsetToPosition(
+    paragraph,
+    Math.max(0, Math.min(offset, getParagraphText(paragraph).length)),
+  );
+}

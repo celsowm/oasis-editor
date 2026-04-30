@@ -4,13 +4,14 @@ const PORT = process.env.PORT || 5173;
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: ['**/editor.spec.ts', '**/image.spec.ts'],
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: `http://localhost:${PORT}/oasis-editor/`,
+    baseURL: `http://localhost:${PORT}/oasis-editor-2/`,
     trace: 'on-first-retry',
   },
   projects: [
@@ -21,7 +22,7 @@ export default defineConfig({
   ],
   webServer: {
     command: `npm run dev -- --port ${PORT} --strictPort`,
-    url: `http://localhost:${PORT}/oasis-editor/`,
+    url: `http://localhost:${PORT}/oasis-editor-2/`,
     reuseExistingServer: !process.env.CI,
     stdout: 'ignore',
     stderr: 'pipe',

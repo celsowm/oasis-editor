@@ -158,6 +158,35 @@ describe("exportEditor2DocumentToDocx", () => {
     expect(documentXml).toContain('<w:highlight w:val="yellow"/>');
   });
 
+  it("exports and reimports inline hyperlinks", async () => {
+    const paragraph = createEditor2ParagraphFromRuns([
+      { text: "Go " },
+      { text: "there", styles: { link: "https://example.com", underline: true } },
+    ]);
+    const document = createEditor2Document([paragraph]);
+
+    const buffer = await exportEditor2DocumentToDocx(document);
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+    const relsXml = await zip.file("word/_rels/document.xml.rels")?.async("string");
+
+    expect(documentXml).toContain("<w:hyperlink");
+    expect(relsXml).toContain('/hyperlink');
+    expect(relsXml).toContain('Target="https://example.com"');
+
+    resetEditor2Ids();
+    const imported = await importDocxToEditor2Document(buffer);
+    const importedParagraph = imported.blocks[0];
+    if (importedParagraph?.type !== "paragraph") {
+      throw new Error("Expected paragraph block");
+    }
+
+    expect(importedParagraph.runs[1]?.styles).toEqual({
+      underline: true,
+      link: "https://example.com",
+    });
+  });
+
   it("exports and reimports simple tables while preserving block order", async () => {
     const intro = createEditor2ParagraphFromRuns([{ text: "Intro" }]);
     const table = createEditor2Table([

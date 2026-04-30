@@ -194,6 +194,8 @@ interface DocContext {
   definitions: Array<{ kind: Editor2ParagraphListStyle["kind"]; level: number; abstractNumId: number; numId: number }>;
   images: Array<{ rId: string; target: string; base64: string; runId: string; cx: number; cy: number }>;
   imageMap: Map<string, string>;
+  hyperlinks: Array<{ rId: string; href: string }>;
+  hyperlinkMap: Map<string, string>;
 }
 
 function serializeRun(run: Editor2TextRun, context: DocContext): string {
@@ -209,6 +211,21 @@ function serializeRun(run: Editor2TextRun, context: DocContext): string {
     }
   }
   return `<w:r>${serializeRunProperties(run.styles)}${serializeRunText(run.text)}</w:r>`;
+}
+
+function serializeRunWithRelationships(run: Editor2TextRun, context: DocContext): string {
+  const runXml = serializeRun(run, context);
+  const href = run.styles?.link;
+  if (!href) {
+    return runXml;
+  }
+
+  const rId = context.hyperlinkMap.get(href);
+  if (!rId) {
+    return runXml;
+  }
+
+  return `<w:hyperlink r:id="${rId}">${runXml}</w:hyperlink>`;
 }
 
 function serializeParagraphProperties(
@@ -310,6 +327,8 @@ function buildDocumentContext(document: Editor2Document): DocContext {
   const definitions: Array<{ kind: Editor2ParagraphListStyle["kind"]; level: number; abstractNumId: number; numId: number }> = [];
   const images: Array<{ rId: string; target: string; base64: string; runId: string; cx: number; cy: number }> = [];
   const imageMap = new Map<string, string>();
+  const hyperlinks: Array<{ rId: string; href: string }> = [];
+  const hyperlinkMap = new Map<string, string>();
   
   let nextAbstractNumId = 1;
   let nextNumId = 1;
@@ -329,6 +348,12 @@ function buildDocumentContext(document: Editor2Document): DocContext {
     }
 
     for (const run of paragraph.runs) {
+      if (run.styles?.link && !hyperlinkMap.has(run.styles.link)) {
+        const rId = `rIdLink${hyperlinks.length + 1}`;
+        hyperlinkMap.set(run.styles.link, rId);
+        hyperlinks.push({ rId, href: run.styles.link });
+      }
+
       if (run.image) {
         const match = run.image.src.match(/^data:image\/(png|jpeg|jpg);base64,(.*)$/);
         if (match) {
@@ -358,7 +383,7 @@ function buildDocumentContext(document: Editor2Document): DocContext {
     }
   }
 
-  return { numberingInfo, definitions, images, imageMap };
+  return { numberingInfo, definitions, images, imageMap, hyperlinks, hyperlinkMap };
 }
 
 function buildNumberingXml(
@@ -394,7 +419,7 @@ function buildDocumentXml(document: Editor2Document, context: DocContext): strin
             const paragraphs = cell.blocks.length > 0 ? cell.blocks : [{ id: "", type: "paragraph" as const, runs: [{ id: "", text: "" }] }];
             const paragraphsXml = paragraphs.map(p => {
               const runs = p.runs.length > 0 ? p.runs : [{ id: "", text: "" }];
-              return `<w:p>${serializeParagraphProperties(p, context.numberingInfo)}${runs.map(r => serializeRun(r, context)).join("")}</w:p>`;
+              return `<w:p>${serializeParagraphProperties(p, context.numberingInfo)}${runs.map(r => serializeRunWithRelationships(r, context)).join("")}</w:p>`;
             }).join("");
             const contentXml = cell.vMerge === "continue" ? "<w:p/>" : paragraphsXml;
             return `<w:tc>${serializeTableCellProperties(cell)}${contentXml}</w:tc>`;
@@ -405,7 +430,7 @@ function buildDocumentXml(document: Editor2Document, context: DocContext): strin
       }
       const runs = block.runs.length > 0 ? block.runs : [{ id: "", text: "" }];
       return `<w:p>${serializeParagraphProperties(block, context.numberingInfo)}${runs
-        .map((run) => serializeRun(run, context))
+        .map((run) => serializeRunWithRelationships(run, context))
         .join("")}</w:p>`;
     })
     .join("");
@@ -427,9 +452,16 @@ function buildRootRelationshipsXml(): string {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${PACKAGE_REL_NS}"><Relationship Id="rId1" Type="${OFFICE_REL_NS}/officeDocument" Target="word/document.xml"/></Relationships>`;
 }
 
-function buildDocumentRelationshipsXml(hasNumbering: boolean, images: DocContext["images"]): string {
+function buildDocumentRelationshipsXml(
+  hasNumbering: boolean,
+  images: DocContext["images"],
+  hyperlinks: DocContext["hyperlinks"],
+): string {
   let rels = "";
   if (hasNumbering) rels += `<Relationship Id="rIdNum" Type="${OFFICE_REL_NS}/numbering" Target="numbering.xml"/>`;
+  for (const hyperlink of hyperlinks) {
+    rels += `<Relationship Id="${hyperlink.rId}" Type="${OFFICE_REL_NS}/hyperlink" Target="${escapeXml(hyperlink.href)}" TargetMode="External"/>`;
+  }
   for (const img of images) {
     rels += `<Relationship Id="${img.rId}" Type="${OFFICE_REL_NS}/image" Target="${img.target}"/>`;
   }
@@ -441,6 +473,7 @@ export async function exportEditor2DocumentToDocx(document: Editor2Document): Pr
   const context = buildDocumentContext(document);
   const hasNumbering = context.definitions.length > 0;
   const hasImages = context.images.length > 0;
+  const hasHyperlinks = context.hyperlinks.length > 0;
 
   zip.file("[Content_Types].xml", buildContentTypesXml(hasNumbering, hasImages));
   zip.file("_rels/.rels", buildRootRelationshipsXml());
@@ -450,8 +483,11 @@ export async function exportEditor2DocumentToDocx(document: Editor2Document): Pr
     zip.file("word/numbering.xml", buildNumberingXml(context.definitions));
   }
   
-  if (hasNumbering || hasImages) {
-    zip.file("word/_rels/document.xml.rels", buildDocumentRelationshipsXml(hasNumbering, context.images));
+  if (hasNumbering || hasImages || hasHyperlinks) {
+    zip.file(
+      "word/_rels/document.xml.rels",
+      buildDocumentRelationshipsXml(hasNumbering, context.images, context.hyperlinks),
+    );
   }
 
   for (const img of context.images) {

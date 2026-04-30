@@ -275,7 +275,11 @@ function parseParagraphList(
   };
 }
 
-async function parseRunElement(runElement: XmlElement, zip: JSZip, relsMap: Map<string, string>): Promise<{ text: string; image?: { src: string; width: number; height: number; } }> {
+async function parseRunElement(
+  runElement: XmlElement,
+  zip: JSZip,
+  relsMap: Map<string, string>,
+): Promise<{ text: string; image?: { src: string; width: number; height: number } }> {
   const textParts: string[] = [];
   let image: { src: string; width: number; height: number; } | undefined;
 
@@ -338,6 +342,64 @@ async function parseRunElement(runElement: XmlElement, zip: JSZip, relsMap: Map<
   return { text: textParts.join(""), image };
 }
 
+async function parseRunsContainer(
+  container: XmlElement,
+  numberingMaps: NumberingMaps,
+  zip: JSZip,
+  relsMap: Map<string, string>,
+  inheritedLink?: string | null,
+) {
+  const runs: Array<{ text: string; image?: { src: string; width: number; height: number }; styles?: Editor2TextStyle }> = [];
+
+  for (let index = 0; index < container.childNodes.length; index += 1) {
+    const node = container.childNodes[index];
+    if (node?.nodeType !== node.ELEMENT_NODE) {
+      continue;
+    }
+
+    const element = node as XmlElement;
+    if (element.namespaceURI !== WORD_NS) {
+      continue;
+    }
+
+    if (element.localName === "r") {
+      const { text, image } = await parseRunElement(element, zip, relsMap);
+      if (text.length === 0) {
+        continue;
+      }
+
+      const styles = parseRunStyle(getFirstChildByTagNameNS(element, WORD_NS, "rPr"));
+      if (inheritedLink) {
+        (styles ??= {}).link = inheritedLink;
+      }
+      runs.push({ text, image, styles });
+      continue;
+    }
+
+    if (element.localName === "hyperlink") {
+      let href =
+        relsMap.get(
+          element.getAttribute("r:id") ??
+            element.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id") ??
+            "",
+        ) ?? null;
+
+      href ??= element.getAttribute("w:anchor");
+      runs.push(
+        ...(await parseRunsContainer(
+          element,
+          numberingMaps,
+          zip,
+          relsMap,
+          href,
+        )),
+      );
+    }
+  }
+
+  return runs;
+}
+
 async function parseParagraphNode(
   paragraphNode: XmlElement,
   numberingMaps: NumberingMaps,
@@ -345,18 +407,7 @@ async function parseParagraphNode(
   relsMap: Map<string, string>,
 ) {
   const paragraphProperties = getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr");
-  const runElements = getChildrenByTagNameNS(paragraphNode, WORD_NS, "r");
-  const runs = [];
-  for (const runElement of runElements) {
-    const { text, image } = await parseRunElement(runElement, zip, relsMap);
-    if (text.length > 0) {
-      runs.push({
-        text,
-        image,
-        styles: parseRunStyle(getFirstChildByTagNameNS(runElement, WORD_NS, "rPr")),
-      });
-    }
-  }
+  const runs = await parseRunsContainer(paragraphNode, numberingMaps, zip, relsMap);
 
   const paragraph = createEditor2ParagraphFromRuns(
     runs.length > 0 ? runs : [{ text: "" }],

@@ -8,7 +8,7 @@ test.describe("Oasis Editor Smoke Tests", () => {
       }
     });
 
-    await page.goto("/");
+    await page.goto("/oasis-editor/");
     await page.waitForSelector("#oasis-editor-loading", { state: "detached" });
   });
 
