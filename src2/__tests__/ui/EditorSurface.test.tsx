@@ -412,4 +412,118 @@ describe("EditorSurface", () => {
 
     dispose();
   });
+
+  it("renders paginated table segments with repeated header rows on continued pages", () => {
+    const container = document.createElement("div");
+    const table = createEditor2Table([
+      createEditor2TableRow(
+        [createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "Header".repeat(18) }])])],
+        { isHeader: true },
+      ),
+      ...Array.from({ length: 20 }, (_, index) =>
+        createEditor2TableRow([
+          createEditor2TableCell([
+            createEditor2ParagraphFromRuns([{ text: `Body${index}`.repeat(28) }]),
+          ]),
+        ]),
+      ),
+    ]);
+    const state: Editor2State = {
+      document: createEditor2Document([table]),
+      selection: {
+        anchor: {
+          paragraphId: table.rows[0]!.cells[0]!.blocks[0]!.id,
+          runId: table.rows[0]!.cells[0]!.blocks[0]!.runs[0]!.id,
+          offset: 0,
+        },
+        focus: {
+          paragraphId: table.rows[0]!.cells[0]!.blocks[0]!.id,
+          runId: table.rows[0]!.cells[0]!.blocks[0]!.runs[0]!.id,
+          offset: 0,
+        },
+      },
+    };
+
+    const dispose = render(
+      () => (
+        <EditorSurface
+          state={() => state}
+          onSurfaceMouseDown={() => undefined}
+          onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
+        />
+      ),
+      container,
+    );
+
+    const pages = container.querySelectorAll('[data-testid="editor-2-page"]');
+    const tables = container.querySelectorAll('[data-testid="editor-2-table"]');
+    const repeatedRows = container.querySelectorAll('[data-repeated-header="true"]');
+
+    expect(pages.length).toBeGreaterThan(1);
+    expect(tables.length).toBeGreaterThan(1);
+    expect(repeatedRows.length).toBeGreaterThan(0);
+    expect(repeatedRows[0]?.textContent).toContain("Header");
+    expect(repeatedRows[1]?.textContent).toContain("Header");
+
+    dispose();
+  });
+
+  it("renders page and surface dimensions from document page settings", () => {
+    const container = document.createElement("div");
+    const paragraph = createEditor2ParagraphFromRuns([{ text: "Page" }]);
+    const state: Editor2State = {
+      document: createEditor2Document([paragraph], {
+        width: 1056,
+        height: 816,
+        margins: {
+          top: 48,
+          right: 96,
+          bottom: 144,
+          left: 120,
+          header: 24,
+          footer: 36,
+          gutter: 10,
+        },
+      }),
+      selection: {
+        anchor: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+        focus: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+      },
+    };
+
+    const dispose = render(
+      () => (
+        <EditorSurface
+          state={() => state}
+          onSurfaceMouseDown={() => undefined}
+          onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
+        />
+      ),
+      container,
+    );
+
+    const page = container.querySelector('[data-testid="editor-2-page"]') as HTMLDivElement;
+    const surface = container.querySelector('[data-testid="editor-2-surface"]') as HTMLDivElement;
+
+    expect(page.style.width).toBe("1056px");
+    expect(page.style.minHeight).toBe("816px");
+    expect(surface.style.paddingTop).toBe("48px");
+    expect(surface.style.paddingRight).toBe("96px");
+    expect(surface.style.paddingBottom).toBe("144px");
+    expect(surface.style.paddingLeft).toBe("130px");
+
+    dispose();
+  });
 });

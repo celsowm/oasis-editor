@@ -72,8 +72,11 @@ import {
   createEditor2StateFromDocument,
 } from "../core/editorState.js";
 import {
+  getDocumentPageSettings,
+  getPageContentWidth,
   type Editor2Document,
   type Editor2BlockNode,
+  type Editor2LayoutParagraph,
   type Editor2ParagraphNode,
   type Editor2ParagraphListStyle,
   type Editor2TableCellNode,
@@ -139,7 +142,7 @@ interface ActiveImageDrag {
   dragging: boolean;
 }
 
-const DEFAULT_MAX_INSERTED_IMAGE_WIDTH = 684;
+const DEFAULT_MAX_INSERTED_IMAGE_WIDTH = 624;
 
 function getElementContentWidth(element: HTMLElement | null | undefined): number {
   if (!element) {
@@ -159,9 +162,13 @@ function getElementContentWidth(element: HTMLElement | null | undefined): number
   return Math.max(24, Math.floor(contentWidth));
 }
 
-function getMaxInlineImageWidth(surface: HTMLDivElement | undefined, paragraphId?: string): number {
+function getMaxInlineImageWidth(
+  surface: HTMLDivElement | undefined,
+  document: Editor2Document,
+  paragraphId?: string,
+): number {
   if (!surface) {
-    return DEFAULT_MAX_INSERTED_IMAGE_WIDTH;
+    return getPageContentWidth(getDocumentPageSettings(document));
   }
 
   const contentSurface =
@@ -242,6 +249,18 @@ function getParagraphBoundaryElement(
     return null;
   }
   return boundary === "start" ? elements[0]! : elements[elements.length - 1]!;
+}
+
+function hasUsableCharGeometry(
+  charRects: Array<{
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+    height: number;
+  }>,
+): boolean {
+  return charRects.some((rect) => rect.right > rect.left || rect.height > 0 || rect.bottom > rect.top);
 }
 
 function buildTableCellLayout(table: Editor2TableNode): TableCellLayoutEntry[] {
@@ -403,9 +422,11 @@ function findNextWordBoundary(text: string, offset: number): number {
 export function OasisEditor2App() {
   const logger = createEditor2Logger("app");
   const [state, setState] = createStore<Editor2State>(createInitialEditor2State());
+  const pageSettings = () => getDocumentPageSettings(state.document);
   const [focused, setFocused] = createSignal(false);
   const [composing, setComposing] = createSignal(false);
   const [measuredBlockHeights, setMeasuredBlockHeights] = createSignal<Record<string, number>>({});
+  const [measuredParagraphLayouts, setMeasuredParagraphLayouts] = createSignal<Record<string, Editor2LayoutParagraph>>({});
   const [inputBox, setInputBox] = createSignal<InputBox>({ left: 0, top: 0, height: 28 });
   const [preferredColumnX, setPreferredColumnX] = createSignal<number | null>(null);
   const [undoStack, setUndoStack] = createSignal<Editor2State[]>([]);
@@ -1744,18 +1765,21 @@ export function OasisEditor2App() {
     clearPreferredColumn();
     resetTransactionGrouping();
     setMeasuredBlockHeights({});
+    setMeasuredParagraphLayouts({});
     setUndoStack([]);
     setRedoStack([]);
   };
 
-  const syncMeasuredBlockHeights = (): boolean => {
+  const syncMeasuredLayoutMetrics = (): boolean => {
     if (!surfaceRef) {
       return false;
     }
 
     const nextHeights: Record<string, number> = {};
+    const nextParagraphLayouts: Record<string, Editor2LayoutParagraph> = {};
     const blockElements =
       surfaceRef.querySelectorAll<HTMLElement>("[data-block-id]");
+    const paragraphsById = new Map(getParagraphs(state).map((paragraph) => [paragraph.id, paragraph] as const));
 
     for (const element of blockElements) {
       const blockId = element.dataset.blockId;
@@ -1765,17 +1789,62 @@ export function OasisEditor2App() {
       nextHeights[blockId] = element.getBoundingClientRect().height;
     }
 
+    for (const [paragraphId, paragraph] of paragraphsById) {
+      const charRects = collectParagraphCharRects(surfaceRef, paragraphId);
+      if (charRects.length === 0 || !hasUsableCharGeometry(charRects)) {
+        continue;
+      }
+      nextParagraphLayouts[paragraphId] = measureParagraphLayoutFromRects(paragraph, charRects);
+    }
+
     const currentHeights = measuredBlockHeights();
     const currentKeys = Object.keys(currentHeights);
     const nextKeys = Object.keys(nextHeights);
-    const changed =
+    const heightsChanged =
       currentKeys.length !== nextKeys.length ||
       nextKeys.some((key) => Math.abs((currentHeights[key] ?? 0) - nextHeights[key]!) > 0.5);
 
-    if (changed) {
+    if (heightsChanged) {
       setMeasuredBlockHeights(nextHeights);
     }
-    return changed;
+
+    const currentParagraphLayouts = measuredParagraphLayouts();
+    const currentParagraphIds = Object.keys(currentParagraphLayouts);
+    const nextParagraphIds = Object.keys(nextParagraphLayouts);
+    const paragraphLayoutsChanged =
+      currentParagraphIds.length !== nextParagraphIds.length ||
+      nextParagraphIds.some((paragraphId) => {
+        const previous = currentParagraphLayouts[paragraphId];
+        const next = nextParagraphLayouts[paragraphId]!;
+        if (!previous) {
+          return true;
+        }
+        if (previous.lines.length !== next.lines.length) {
+          return true;
+        }
+        if ((previous.endOffset ?? previous.text.length) !== (next.endOffset ?? next.text.length)) {
+          return true;
+        }
+        return next.lines.some((line, index) => {
+          const previousLine = previous.lines[index];
+          if (!previousLine) {
+            return true;
+          }
+          return (
+            previousLine.startOffset !== line.startOffset ||
+            previousLine.endOffset !== line.endOffset ||
+            Math.abs(previousLine.top - line.top) > 0.5 ||
+            Math.abs(previousLine.height - line.height) > 0.5 ||
+            previousLine.slots.length !== line.slots.length
+          );
+        });
+      });
+
+    if (paragraphLayoutsChanged) {
+      setMeasuredParagraphLayouts(nextParagraphLayouts);
+    }
+
+    return heightsChanged || paragraphLayoutsChanged;
   };
 
   const applyBooleanStyleCommand = (key: BooleanStyleKey) => {
@@ -1988,7 +2057,7 @@ export function OasisEditor2App() {
 
     const naturalWidth = img.naturalWidth || 300;
     const naturalHeight = img.naturalHeight || 300;
-    const maxWidth = getMaxInlineImageWidth(surfaceRef, state.selection.focus.paragraphId);
+    const maxWidth = getMaxInlineImageWidth(surfaceRef, state.document, state.selection.focus.paragraphId);
     const scale = naturalWidth > maxWidth ? maxWidth / naturalWidth : 1;
     const width = Math.max(24, Math.round(naturalWidth * scale));
     const height = Math.max(24, Math.round(naturalHeight * scale));
@@ -2057,7 +2126,9 @@ export function OasisEditor2App() {
       const tableBlock = state.document.blocks[anchorLocation.blockIndex];
       const tableId = tableBlock?.id;
       if (tableId) {
-        const tableElement = surfaceRef.querySelector<HTMLElement>(`[data-block-id="${tableId}"]`);
+        const tableElement =
+          surfaceRef.querySelector<HTMLElement>(`[data-source-block-id="${tableId}"]`) ??
+          surfaceRef.querySelector<HTMLElement>(`[data-block-id="${tableId}"]`);
         if (tableElement && tableBlock?.type === "table") {
           const tableLayout = buildTableCellLayout(tableBlock);
           const anchorCell = tableLayout.find(
@@ -2238,8 +2309,8 @@ export function OasisEditor2App() {
       if (requestId !== syncRequestId) {
         return;
       }
-      const heightsChanged = syncMeasuredBlockHeights();
-      if (heightsChanged) {
+      const metricsChanged = syncMeasuredLayoutMetrics();
+      if (metricsChanged) {
         queueMicrotask(() => {
           if (requestId !== syncRequestId) {
             return;
@@ -2450,10 +2521,18 @@ export function OasisEditor2App() {
             entry.rowIndex === tableLocation.rowIndex && entry.cellIndex === tableLocation.cellIndex,
         );
         if (currentCell) {
-          const surfaceElement = surfaceRef?.querySelector<HTMLElement>(`[data-block-id="${block.id}"]`);
-          const currentElement = surfaceElement?.querySelector<HTMLElement>(
-            `[data-row-index="${tableLocation.rowIndex}"][data-cell-index="${tableLocation.cellIndex}"]`,
-          );
+          const currentElementCandidates = surfaceRef
+            ? Array.from(
+                surfaceRef.querySelectorAll<HTMLElement>(
+                  `[data-source-block-id="${block.id}"] [data-row-index="${tableLocation.rowIndex}"][data-cell-index="${tableLocation.cellIndex}"], ` +
+                    `[data-block-id="${block.id}"] [data-row-index="${tableLocation.rowIndex}"][data-cell-index="${tableLocation.cellIndex}"]`,
+                ),
+              )
+            : [];
+          const currentElement =
+            currentElementCandidates.find(
+              (element) => element.closest('[data-repeated-header="true"]') === null,
+            ) ?? currentElementCandidates[0];
           const desiredX =
             preferredColumnX() ??
             (currentElement ? currentElement.getBoundingClientRect().left : caretBox().left);
@@ -2476,9 +2555,18 @@ export function OasisEditor2App() {
 
             const scoredCandidates = rowCandidates
               .map((entry) => {
-                const cellElement = surfaceElement?.querySelector<HTMLElement>(
-                  `[data-row-index="${entry.rowIndex}"][data-cell-index="${entry.cellIndex}"]`,
-                );
+                const cellElementCandidates = surfaceRef
+                  ? Array.from(
+                      surfaceRef.querySelectorAll<HTMLElement>(
+                        `[data-source-block-id="${block.id}"] [data-row-index="${entry.rowIndex}"][data-cell-index="${entry.cellIndex}"], ` +
+                          `[data-block-id="${block.id}"] [data-row-index="${entry.rowIndex}"][data-cell-index="${entry.cellIndex}"]`,
+                      ),
+                    )
+                  : [];
+                const cellElement =
+                  cellElementCandidates.find(
+                    (element) => element.closest('[data-repeated-header="true"]') === null,
+                  ) ?? cellElementCandidates[0];
                 const rect = cellElement?.getBoundingClientRect();
                 const left = rect?.left ?? desiredX;
                 const right = rect?.right ?? desiredX;
@@ -2675,7 +2763,7 @@ export function OasisEditor2App() {
     }
 
     const deltaX = event.clientX - resizeState.startClientX;
-    const maxWidth = getMaxInlineImageWidth(surfaceRef, resizeState.paragraphId);
+    const maxWidth = getMaxInlineImageWidth(surfaceRef, state.document, resizeState.paragraphId);
     const nextWidth = Math.max(24, Math.min(maxWidth, resizeState.startWidth + deltaX));
     const nextHeight = Math.max(24, nextWidth / resizeState.aspectRatio);
     const paragraph = getParagraphs(state).find((candidate) => candidate.id === resizeState.paragraphId);
@@ -3791,6 +3879,9 @@ export function OasisEditor2App() {
           ref={surfaceRef}
           class="oasis-editor-2-editor"
           data-testid="editor-2-editor"
+          style={{
+            width: `min(${pageSettings().width + 68}px, 100%)`,
+          }}
           onDragOver={(event) => event.preventDefault()}
           onDrop={handleDrop}
           onMouseDown={(event) => {
@@ -3801,6 +3892,7 @@ export function OasisEditor2App() {
           <EditorSurface
             state={() => state}
             measuredBlockHeights={() => measuredBlockHeights()}
+            measuredParagraphLayouts={() => measuredParagraphLayouts()}
             onSurfaceMouseDown={(event) => {
               event.preventDefault();
 

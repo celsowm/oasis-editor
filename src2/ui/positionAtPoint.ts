@@ -107,7 +107,8 @@ function resolveTableCellStartPosition(
   }
 
   const tableContainer = cellElement.closest<HTMLElement>('[data-testid="editor-2-table"]');
-  const tableId = tableContainer?.getAttribute("data-block-id");
+  const tableId =
+    tableContainer?.getAttribute("data-source-block-id") ?? tableContainer?.getAttribute("data-block-id");
   const tableBlock = document.blocks.find(
     (block) => block.type === "table" && (tableId ? block.id === tableId : true),
   );

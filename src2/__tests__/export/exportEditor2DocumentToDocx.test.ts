@@ -313,6 +313,62 @@ describe("exportEditor2DocumentToDocx", () => {
     expect(importedTable.rows[1]!.cells[0]!.vMerge).toBe("continue");
   });
 
+  it("exports and reimports table header rows", async () => {
+    const table = createEditor2Table([
+      createEditor2TableRow(
+        [createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "Header" }])])],
+        { isHeader: true },
+      ),
+      createEditor2TableRow([createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "Body" }])])]),
+    ]);
+
+    const buffer = await exportEditor2DocumentToDocx(createEditor2Document([table]));
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+
+    expect(documentXml).toContain("<w:trPr><w:tblHeader/></w:trPr>");
+
+    resetEditor2Ids();
+    const imported = await importDocxToEditor2Document(buffer);
+    const importedTable = imported.blocks[0];
+    if (importedTable?.type !== "table") {
+      throw new Error("Expected imported table block");
+    }
+
+    expect(importedTable.rows[0]!.isHeader).toBe(true);
+    expect(importedTable.rows[1]!.isHeader).toBeUndefined();
+  });
+
+  it("exports and reimports custom page settings", async () => {
+    const paragraph = createEditor2ParagraphFromRuns([{ text: "Page" }]);
+    const document = createEditor2Document([paragraph], {
+      width: 1056,
+      height: 816,
+      margins: {
+        top: 48,
+        right: 96,
+        bottom: 144,
+        left: 120,
+        header: 24,
+        footer: 36,
+        gutter: 10,
+      },
+    });
+
+    const buffer = await exportEditor2DocumentToDocx(document);
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+
+    expect(documentXml).toContain('<w:pgSz w:w="15840" w:h="12240"/>');
+    expect(documentXml).toContain(
+      '<w:pgMar w:top="720" w:right="1440" w:bottom="2160" w:left="1800" w:header="360" w:footer="540" w:gutter="150"/>',
+    );
+
+    resetEditor2Ids();
+    const imported = await importDocxToEditor2Document(buffer);
+    expect(normalizeEditor2Document(imported)).toEqual(normalizeEditor2Document(document));
+  });
+
   it("exports and reimports mixed table spans", async () => {
     const mergedTopCell = createEditor2TableCell(
       [createEditor2ParagraphFromRuns([{ text: "Merged" }])],

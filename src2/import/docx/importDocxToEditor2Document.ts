@@ -1,9 +1,19 @@
 import JSZip from "jszip";
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
-import type { Editor2BlockNode, Editor2Document, Editor2ParagraphListStyle, Editor2ParagraphStyle, Editor2TableNode, Editor2TextStyle } from "../../core/model.js";
+import type {
+  Editor2BlockNode,
+  Editor2Document,
+  Editor2PageSettings,
+  Editor2ParagraphListStyle,
+  Editor2ParagraphStyle,
+  Editor2TableNode,
+  Editor2TextStyle,
+} from "../../core/model.js";
 import { createEditor2Document, createEditor2ParagraphFromRuns, createEditor2Table, createEditor2TableCell, createEditor2TableRow } from "../../core/editorState.js";
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const TWIPS_PER_INCH = 1440;
+const PX_PER_INCH = 96;
 
 interface NumberingMaps {
   abstractKinds: Map<string, Editor2ParagraphListStyle["kind"]>;
@@ -67,6 +77,51 @@ function getTableCellVMerge(cellProperties: XmlElement | null): "restart" | "con
 
 function parseBooleanProperty(parent: XmlElement, localName: string): boolean {
   return getFirstChildByTagNameNS(parent, WORD_NS, localName) !== null;
+}
+
+function twipsToPx(value: string | null | undefined, fallback: number): number {
+  const parsed = value ? Number(value) : Number.NaN;
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.round((parsed / TWIPS_PER_INCH) * PX_PER_INCH);
+}
+
+function parsePageSettings(body: XmlElement | undefined): Editor2PageSettings | undefined {
+  if (!body) {
+    return undefined;
+  }
+
+  const sectionProperties = getFirstChildByTagNameNS(body, WORD_NS, "sectPr");
+  if (!sectionProperties) {
+    return undefined;
+  }
+
+  const pageSize = getFirstChildByTagNameNS(sectionProperties, WORD_NS, "pgSz");
+  const pageMargins = getFirstChildByTagNameNS(sectionProperties, WORD_NS, "pgMar");
+  if (!pageSize && !pageMargins) {
+    return undefined;
+  }
+
+  return {
+    width: twipsToPx(getAttributeValue(pageSize, "w"), 816),
+    height: twipsToPx(getAttributeValue(pageSize, "h"), 1056),
+    margins: {
+      top: twipsToPx(getAttributeValue(pageMargins, "top"), 96),
+      right: twipsToPx(getAttributeValue(pageMargins, "right"), 96),
+      bottom: twipsToPx(getAttributeValue(pageMargins, "bottom"), 96),
+      left: twipsToPx(getAttributeValue(pageMargins, "left"), 96),
+      header: twipsToPx(getAttributeValue(pageMargins, "header"), 48),
+      footer: twipsToPx(getAttributeValue(pageMargins, "footer"), 48),
+      gutter: twipsToPx(getAttributeValue(pageMargins, "gutter"), 0),
+    },
+  };
+}
+
+function isTableHeaderRow(rowNode: XmlElement): boolean {
+  const rowProperties = getFirstChildByTagNameNS(rowNode, WORD_NS, "trPr");
+  return rowProperties ? parseBooleanProperty(rowProperties, "tblHeader") : false;
 }
 
 function findElementDeep(element: XmlElement, localName: string): XmlElement | null {
@@ -453,7 +508,7 @@ async function parseTableNode(
       }
       cells.push(cell);
     }
-    rows.push(createEditor2TableRow(cells));
+    rows.push(createEditor2TableRow(cells, isTableHeaderRow(rowNode) ? { isHeader: true } : undefined));
   }
 
   // Infer rowSpan from restart/continue sequences.
@@ -515,6 +570,7 @@ export async function importDocxToEditor2Document(buffer: ArrayBuffer): Promise<
   const numberingMaps = parseNumbering(numberingXml);
   const document = new DOMParser().parseFromString(documentXml, "application/xml");
   const body = document.getElementsByTagNameNS(WORD_NS, "body")[0];
+  const pageSettings = parsePageSettings(body);
 
   const blocks: Editor2BlockNode[] = [];
   if (body) {
@@ -539,5 +595,6 @@ export async function importDocxToEditor2Document(buffer: ArrayBuffer): Promise<
 
   return createEditor2Document(
     blocks.length > 0 ? blocks : [createEditor2ParagraphFromRuns([{ text: "" }])],
+    pageSettings,
   );
 }

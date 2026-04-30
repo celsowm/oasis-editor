@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createEditor2ParagraphFromRuns, resetEditor2Ids } from "../../core/editorState.js";
+import {
+  createEditor2ParagraphFromRuns,
+  createEditor2Table,
+  createEditor2TableCell,
+  createEditor2TableRow,
+  resetEditor2Ids,
+} from "../../core/editorState.js";
 import {
   projectDocumentLayout,
   measureParagraphLayoutFromRects,
@@ -146,6 +152,264 @@ describe("layoutProjection", () => {
     expect(layout.pages).toHaveLength(2);
     expect(layout.pages[0]?.blocks.map((block) => block.blockType)).toEqual(["paragraph"]);
     expect(layout.pages[1]?.blocks.map((block) => block.blockType)).toEqual(["table"]);
+  });
+
+  it("splits a tall simple table across pages by row boundaries", () => {
+    resetEditor2Ids();
+    const table = createEditor2Table([
+      createEditor2TableRow([createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "A".repeat(220) }])])]),
+      createEditor2TableRow([createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "B".repeat(220) }])])]),
+      createEditor2TableRow([createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "C".repeat(220) }])])]),
+    ]);
+
+    const layout = projectDocumentLayout([table], 220);
+
+    expect(layout.pages).toHaveLength(3);
+    expect(layout.pages.map((page) => page.blocks[0]?.blockType)).toEqual([
+      "table",
+      "table",
+      "table",
+    ]);
+    expect(layout.pages[0]?.blocks[0]?.tableSegment).toEqual({
+      startRowIndex: 0,
+      endRowIndex: 1,
+      repeatedHeaderRowCount: 0,
+    });
+    expect(layout.pages[1]?.blocks[0]?.tableSegment).toEqual({
+      startRowIndex: 1,
+      endRowIndex: 2,
+      repeatedHeaderRowCount: 0,
+    });
+    expect(layout.pages[2]?.blocks[0]?.tableSegment).toEqual({
+      startRowIndex: 2,
+      endRowIndex: 3,
+      repeatedHeaderRowCount: 0,
+    });
+  });
+
+  it("repeats header rows on continued table pages", () => {
+    resetEditor2Ids();
+    const table = createEditor2Table([
+      createEditor2TableRow(
+        [createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "Header".repeat(20) }])])],
+        { isHeader: true },
+      ),
+      createEditor2TableRow([createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "Body1".repeat(20) }])])]),
+      createEditor2TableRow([createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "Body2".repeat(20) }])])]),
+    ]);
+
+    const layout = projectDocumentLayout([table], 220);
+
+    expect(layout.pages).toHaveLength(3);
+    expect(layout.pages[0]?.blocks[0]?.tableSegment).toEqual({
+      startRowIndex: 0,
+      endRowIndex: 1,
+      repeatedHeaderRowCount: 0,
+    });
+    expect(layout.pages[1]?.blocks[0]?.tableSegment).toEqual({
+      startRowIndex: 1,
+      endRowIndex: 2,
+      repeatedHeaderRowCount: 1,
+    });
+    expect(layout.pages[2]?.blocks[0]?.tableSegment).toEqual({
+      startRowIndex: 2,
+      endRowIndex: 3,
+      repeatedHeaderRowCount: 1,
+    });
+  });
+
+  it("splits a vertically merged table only at safe row-group boundaries", () => {
+    resetEditor2Ids();
+    const mergedTop = createEditor2TableCell(
+      [createEditor2ParagraphFromRuns([{ text: "Merged".repeat(20) }])],
+      1,
+      { rowSpan: 2, vMerge: "restart" },
+    );
+    const mergedBottom = createEditor2TableCell([], 1, { vMerge: "continue" });
+    mergedBottom.blocks = [];
+    const table = createEditor2Table([
+      createEditor2TableRow([mergedTop, createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "Top".repeat(20) }])])]),
+      createEditor2TableRow([mergedBottom, createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "Bottom".repeat(20) }])])]),
+      createEditor2TableRow([createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "Tail".repeat(20) }])])]),
+    ]);
+
+    const layout = projectDocumentLayout([table], 220);
+
+    expect(layout.pages).toHaveLength(2);
+    expect(layout.pages[0]?.blocks[0]?.tableSegment).toEqual({
+      startRowIndex: 0,
+      endRowIndex: 2,
+      repeatedHeaderRowCount: 0,
+    });
+    expect(layout.pages[1]?.blocks[0]?.tableSegment).toEqual({
+      startRowIndex: 2,
+      endRowIndex: 3,
+      repeatedHeaderRowCount: 0,
+    });
+  });
+
+  it("repeats a multi-row merged header only when the header span is self-contained", () => {
+    resetEditor2Ids();
+    const mergedHeaderTop = createEditor2TableCell(
+      [createEditor2ParagraphFromRuns([{ text: "Header".repeat(18) }])],
+      1,
+      { rowSpan: 2, vMerge: "restart" },
+    );
+    const mergedHeaderBottom = createEditor2TableCell([], 1, { vMerge: "continue" });
+    mergedHeaderBottom.blocks = [];
+    const table = createEditor2Table([
+      createEditor2TableRow([mergedHeaderTop], { isHeader: true }),
+      createEditor2TableRow([mergedHeaderBottom], { isHeader: true }),
+      createEditor2TableRow([createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "Body1".repeat(18) }])])]),
+      createEditor2TableRow([createEditor2TableCell([createEditor2ParagraphFromRuns([{ text: "Body2".repeat(18) }])])]),
+    ]);
+
+    const layout = projectDocumentLayout([table], 220);
+
+    expect(layout.pages).toHaveLength(3);
+    expect(layout.pages[1]?.blocks[0]?.tableSegment?.repeatedHeaderRowCount).toBe(2);
+    expect(layout.pages[2]?.blocks[0]?.tableSegment?.repeatedHeaderRowCount).toBe(2);
+  });
+
+  it("prefers measured paragraph lines when paginating a paragraph", () => {
+    resetEditor2Ids();
+    const paragraph = createEditor2ParagraphFromRuns([{ text: "abcdef" }]);
+    const projected = projectParagraphLayout(paragraph);
+
+    const layout = projectDocumentLayout(
+      [paragraph],
+      55,
+      undefined,
+      {
+        [paragraph.id]: {
+          paragraphId: paragraph.id,
+          text: projected.text,
+          fragments: projected.fragments,
+          startOffset: 0,
+          endOffset: 6,
+          lines: [
+            {
+              paragraphId: paragraph.id,
+              index: 0,
+              startOffset: 0,
+              endOffset: 2,
+              top: 0,
+              height: 20,
+              slots: [
+                { paragraphId: paragraph.id, offset: 0, left: 0, top: 0, height: 20 },
+                { paragraphId: paragraph.id, offset: 1, left: 10, top: 0, height: 20 },
+                { paragraphId: paragraph.id, offset: 2, left: 20, top: 0, height: 20 },
+              ],
+              fragments: projected.fragments
+                .map((fragment) => ({
+                  ...fragment,
+                  chars: fragment.chars.filter((char) => char.paragraphOffset < 2),
+                  text: fragment.chars
+                    .filter((char) => char.paragraphOffset < 2)
+                    .map((char) => char.char)
+                    .join(""),
+                  endOffset: Math.min(fragment.endOffset, 2),
+                }))
+                .filter((fragment) => fragment.startOffset < fragment.endOffset),
+            },
+            {
+              paragraphId: paragraph.id,
+              index: 1,
+              startOffset: 2,
+              endOffset: 4,
+              top: 20,
+              height: 20,
+              slots: [
+                { paragraphId: paragraph.id, offset: 2, left: 0, top: 20, height: 20 },
+                { paragraphId: paragraph.id, offset: 3, left: 10, top: 20, height: 20 },
+                { paragraphId: paragraph.id, offset: 4, left: 20, top: 20, height: 20 },
+              ],
+              fragments: projected.fragments
+                .map((fragment) => ({
+                  ...fragment,
+                  chars: fragment.chars.filter(
+                    (char) => char.paragraphOffset >= 2 && char.paragraphOffset < 4,
+                  ),
+                  text: fragment.chars
+                    .filter((char) => char.paragraphOffset >= 2 && char.paragraphOffset < 4)
+                    .map((char) => char.char)
+                    .join(""),
+                  startOffset: Math.max(fragment.startOffset, 2),
+                  endOffset: Math.min(fragment.endOffset, 4),
+                }))
+                .filter((fragment) => fragment.startOffset < fragment.endOffset),
+            },
+            {
+              paragraphId: paragraph.id,
+              index: 2,
+              startOffset: 4,
+              endOffset: 6,
+              top: 40,
+              height: 20,
+              slots: [
+                { paragraphId: paragraph.id, offset: 4, left: 0, top: 40, height: 20 },
+                { paragraphId: paragraph.id, offset: 5, left: 10, top: 40, height: 20 },
+                { paragraphId: paragraph.id, offset: 6, left: 20, top: 40, height: 20 },
+              ],
+              fragments: projected.fragments
+                .map((fragment) => ({
+                  ...fragment,
+                  chars: fragment.chars.filter((char) => char.paragraphOffset >= 4),
+                  text: fragment.chars
+                    .filter((char) => char.paragraphOffset >= 4)
+                    .map((char) => char.char)
+                    .join(""),
+                  startOffset: Math.max(fragment.startOffset, 4),
+                }))
+                .filter((fragment) => fragment.startOffset < fragment.endOffset),
+            },
+          ],
+        },
+      },
+    );
+
+    expect(layout.pages).toHaveLength(2);
+    expect(layout.pages[0]?.blocks[0]?.layout?.endOffset).toBe(4);
+    expect(layout.pages[1]?.blocks[0]?.layout?.startOffset).toBe(4);
+  });
+
+  it("ignores stale measured paragraph geometry when the paragraph text has changed", () => {
+    resetEditor2Ids();
+    const paragraph = createEditor2ParagraphFromRuns([{ text: "hello" }]);
+
+    const layout = projectDocumentLayout(
+      [paragraph],
+      200,
+      undefined,
+      {
+        [paragraph.id]: {
+          paragraphId: paragraph.id,
+          text: "h",
+          fragments: [],
+          startOffset: 0,
+          endOffset: 1,
+          lines: [
+            {
+              paragraphId: paragraph.id,
+              index: 0,
+              startOffset: 0,
+              endOffset: 1,
+              top: 0,
+              height: 20,
+              slots: [
+                { paragraphId: paragraph.id, offset: 0, left: 0, top: 0, height: 20 },
+                { paragraphId: paragraph.id, offset: 1, left: 10, top: 0, height: 20 },
+              ],
+              fragments: [],
+            },
+          ],
+        },
+      },
+    );
+
+    expect(layout.pages).toHaveLength(1);
+    expect(layout.pages[0]?.blocks[0]?.layout?.text).toBe("hello");
+    expect(layout.pages[0]?.blocks[0]?.layout?.endOffset).toBe(5);
   });
 
   it("forces a new page when a paragraph has pageBreakBefore", () => {

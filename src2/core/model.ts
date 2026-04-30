@@ -62,6 +62,7 @@ export interface Editor2TableCellNode {
 export interface Editor2TableRowNode {
   id: string;
   cells: Editor2TableCellNode[];
+  isHeader?: boolean;
 }
 
 export interface Editor2TableNode {
@@ -72,9 +73,26 @@ export interface Editor2TableNode {
 
 export type Editor2BlockNode = Editor2ParagraphNode | Editor2TableNode;
 
+export interface Editor2PageMargins {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  header: number;
+  footer: number;
+  gutter: number;
+}
+
+export interface Editor2PageSettings {
+  width: number;
+  height: number;
+  margins: Editor2PageMargins;
+}
+
 export interface Editor2Document {
   id: string;
   blocks: Editor2BlockNode[];
+  pageSettings?: Editor2PageSettings;
 }
 
 export interface Editor2Position {
@@ -145,6 +163,11 @@ export interface Editor2LayoutBlock {
   globalIndex: number;
   estimatedHeight: number;
   layout?: Editor2LayoutParagraph;
+  tableSegment?: {
+    startRowIndex: number;
+    endRowIndex: number;
+    repeatedHeaderRowCount: number;
+  };
   sourceBlockId?: string;
   sourceBlock: Editor2BlockNode;
 }
@@ -160,6 +183,51 @@ export interface Editor2LayoutPage {
 export interface Editor2LayoutDocument {
   maxPageHeight: number;
   pages: Editor2LayoutPage[];
+}
+
+export const DEFAULT_EDITOR2_PAGE_SETTINGS: Editor2PageSettings = {
+  width: 816,
+  height: 1056,
+  margins: {
+    top: 96,
+    right: 96,
+    bottom: 96,
+    left: 96,
+    header: 48,
+    footer: 48,
+    gutter: 0,
+  },
+};
+
+export function getDocumentPageSettings(document: Editor2Document): Editor2PageSettings {
+  const pageSettings = document.pageSettings;
+  return {
+    width: pageSettings?.width ?? DEFAULT_EDITOR2_PAGE_SETTINGS.width,
+    height: pageSettings?.height ?? DEFAULT_EDITOR2_PAGE_SETTINGS.height,
+    margins: {
+      top: pageSettings?.margins.top ?? DEFAULT_EDITOR2_PAGE_SETTINGS.margins.top,
+      right: pageSettings?.margins.right ?? DEFAULT_EDITOR2_PAGE_SETTINGS.margins.right,
+      bottom: pageSettings?.margins.bottom ?? DEFAULT_EDITOR2_PAGE_SETTINGS.margins.bottom,
+      left: pageSettings?.margins.left ?? DEFAULT_EDITOR2_PAGE_SETTINGS.margins.left,
+      header: pageSettings?.margins.header ?? DEFAULT_EDITOR2_PAGE_SETTINGS.margins.header,
+      footer: pageSettings?.margins.footer ?? DEFAULT_EDITOR2_PAGE_SETTINGS.margins.footer,
+      gutter: pageSettings?.margins.gutter ?? DEFAULT_EDITOR2_PAGE_SETTINGS.margins.gutter,
+    },
+  };
+}
+
+export function getPageContentWidth(pageSettings: Editor2PageSettings): number {
+  return Math.max(
+    24,
+    Math.floor(pageSettings.width - pageSettings.margins.left - pageSettings.margins.right - pageSettings.margins.gutter),
+  );
+}
+
+export function getPageContentHeight(pageSettings: Editor2PageSettings): number {
+  return Math.max(
+    24,
+    Math.floor(pageSettings.height - pageSettings.margins.top - pageSettings.margins.bottom),
+  );
 }
 
 export function getBlockParagraphs(block: Editor2BlockNode): Editor2ParagraphNode[] {

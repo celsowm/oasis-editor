@@ -2,16 +2,20 @@ import JSZip from "jszip";
 import type {
   Editor2BlockNode,
   Editor2Document,
+  Editor2PageSettings,
   Editor2ParagraphListStyle,
   Editor2ParagraphNode,
   Editor2TableNode,
   Editor2TextRun,
   Editor2TextStyle,
 } from "../../core/model.js";
+import { getDocumentPageSettings } from "../../core/model.js";
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const PACKAGE_REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships";
 const OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+const TWIPS_PER_INCH = 1440;
+const PX_PER_INCH = 96;
 const DOCX_HIGHLIGHT_COLORS: Record<string, [number, number, number]> = {
   black: [0, 0, 0],
   blue: [0, 0, 255],
@@ -322,6 +326,26 @@ function serializeTableCellProperties(cell: Editor2TableNode["rows"][number]["ce
   return parts.length > 0 ? `<w:tcPr>${parts.join("")}</w:tcPr>` : "";
 }
 
+function serializeTableRowProperties(row: Editor2TableNode["rows"][number]): string {
+  return row.isHeader ? "<w:trPr><w:tblHeader/></w:trPr>" : "";
+}
+
+function pxToTwips(value: number, fallback: number): number {
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.max(0, Math.round((value / PX_PER_INCH) * TWIPS_PER_INCH));
+}
+
+function serializeSectionProperties(pageSettings: Editor2PageSettings): string {
+  const width = pxToTwips(pageSettings.width, 12240);
+  const height = pxToTwips(pageSettings.height, 15840);
+  const margins = pageSettings.margins;
+
+  return `<w:sectPr><w:pgSz w:w="${width}" w:h="${height}"/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/></w:sectPr>`;
+}
+
 function buildDocumentContext(document: Editor2Document): DocContext {
   const numberingInfo = new Map<string, { numId: number; level: number }>();
   const definitionMap = new Map<string, { abstractNumId: number; numId: number }>();
@@ -412,6 +436,7 @@ function buildNumberingXml(
 }
 
 function buildDocumentXml(document: Editor2Document, context: DocContext): string {
+  const pageSettings = getDocumentPageSettings(document);
   const blocksXml = document.blocks
     .map((block) => {
       if (block.type === "table") {
@@ -425,7 +450,7 @@ function buildDocumentXml(document: Editor2Document, context: DocContext): strin
             const contentXml = cell.vMerge === "continue" ? "<w:p/>" : paragraphsXml;
             return `<w:tc>${serializeTableCellProperties(cell)}${contentXml}</w:tc>`;
           }).join("");
-          return `<w:tr>${cellsXml}</w:tr>`;
+          return `<w:tr>${serializeTableRowProperties(row)}${cellsXml}</w:tr>`;
         }).join("");
         return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>${rowsXml}</w:tbl>`;
       }
@@ -436,7 +461,7 @@ function buildDocumentXml(document: Editor2Document, context: DocContext): strin
     })
     .join("");
 
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${WORD_NS}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="${OFFICE_REL_NS}"><w:body>${blocksXml}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${WORD_NS}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="${OFFICE_REL_NS}"><w:body>${blocksXml}${serializeSectionProperties(pageSettings)}</w:body></w:document>`;
 }
 
 function buildContentTypesXml(hasNumbering: boolean, hasImages: boolean): string {

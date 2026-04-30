@@ -1,6 +1,7 @@
 import type {
   Editor2BlockNode,
   Editor2Document,
+  Editor2PageSettings,
   Editor2ParagraphNode,
   Editor2Position,
   Editor2State,
@@ -11,7 +12,12 @@ import type {
   Editor2TextStyle,
   Editor2ImageRunData,
 } from "./model.js";
-import { getDocumentParagraphs, getParagraphLength, paragraphOffsetToPosition } from "./model.js";
+import {
+  DEFAULT_EDITOR2_PAGE_SETTINGS,
+  getDocumentParagraphs,
+  getParagraphLength,
+  paragraphOffsetToPosition,
+} from "./model.js";
 import { createCollapsedSelection } from "./selection.js";
 
 let nextDocumentId = 1;
@@ -97,11 +103,17 @@ export function createEditor2TableCell(
   return cell;
 }
 
-export function createEditor2TableRow(cells: Editor2TableCellNode[]): Editor2TableRowNode {
+export function createEditor2TableRow(
+  cells: Editor2TableCellNode[],
+  options?: { isHeader?: boolean },
+): Editor2TableRowNode {
   const row: Editor2TableRowNode = {
     id: `table-row:${nextTableRowId}`,
     cells,
   };
+  if (options?.isHeader) {
+    row.isHeader = true;
+  }
   nextTableRowId += 1;
   return row;
 }
@@ -116,10 +128,24 @@ export function createEditor2Table(rows: Editor2TableRowNode[]): Editor2TableNod
   return table;
 }
 
-export function createEditor2Document(blocks: Editor2BlockNode[]): Editor2Document {
+export function createEditor2Document(
+  blocks: Editor2BlockNode[],
+  pageSettings?: Editor2PageSettings,
+): Editor2Document {
   const document: Editor2Document = {
     id: `document:${nextDocumentId}`,
     blocks,
+    pageSettings: pageSettings
+      ? {
+          width: pageSettings.width,
+          height: pageSettings.height,
+          margins: { ...pageSettings.margins },
+        }
+      : {
+          width: DEFAULT_EDITOR2_PAGE_SETTINGS.width,
+          height: DEFAULT_EDITOR2_PAGE_SETTINGS.height,
+          margins: { ...DEFAULT_EDITOR2_PAGE_SETTINGS.margins },
+        },
   };
   nextDocumentId += 1;
   return document;

@@ -27,6 +27,7 @@ function normalizeTable(table: Editor2TableNode) {
   return {
     type: table.type,
     rows: table.rows.map((row) => ({
+      isHeader: row.isHeader ?? undefined,
       cells: row.cells.map((cell) => ({
         colSpan: cell.colSpan ?? undefined,
         rowSpan: cell.rowSpan ?? undefined,
@@ -43,6 +44,13 @@ function normalizeBlock(block: Editor2BlockNode) {
 
 export function normalizeEditor2Document(document: Editor2Document) {
   return {
+    pageSettings: document.pageSettings
+      ? {
+          width: document.pageSettings.width,
+          height: document.pageSettings.height,
+          margins: { ...document.pageSettings.margins },
+        }
+      : undefined,
     blocks: document.blocks.map(normalizeBlock),
   };
 }

@@ -1,6 +1,8 @@
 import { For, Show } from "solid-js";
 import type { Accessor } from "solid-js";
 import {
+  getDocumentPageSettings,
+  getPageContentHeight,
   type Editor2LayoutParagraph,
   type Editor2ParagraphNode,
   getParagraphText,
@@ -17,6 +19,7 @@ import { projectDocumentLayout, projectParagraphLayout } from "../layoutProjecti
 interface EditorSurfaceProps {
   state: Accessor<Editor2State>;
   measuredBlockHeights?: Accessor<Record<string, number>>;
+  measuredParagraphLayouts?: Accessor<Record<string, Editor2LayoutParagraph>>;
   onSurfaceMouseDown: (event: MouseEvent) => void;
   onParagraphMouseDown: (
     paragraphId: string,
@@ -173,11 +176,17 @@ function renderParagraph(
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
   onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
   onImageResizeHandleMouseDown: EditorSurfaceProps["onImageResizeHandleMouseDown"],
+  options?: {
+    domParagraphId?: string;
+    interactive?: boolean;
+  },
 ) {
   const paragraphLayout = layout ?? projectParagraphLayout(paragraph);
   const chars = paragraphLayout.fragments.flatMap((fragment) => fragment.chars);
   const normalized = () => normalizeSelection(state);
   const isContinuation = (paragraphLayout.startOffset ?? 0) > 0;
+  const domParagraphId = options?.domParagraphId ?? paragraph.id;
+  const interactive = options?.interactive ?? true;
   const isEmptyBlockSelected = () => {
     const current = normalized();
     return (
@@ -217,12 +226,13 @@ function renderParagraph(
       class="oasis-editor-2-block"
       classList={{ "oasis-editor-2-block-list": Boolean(paragraph.list) }}
       data-block-id={blockId}
-      data-paragraph-id={paragraph.id}
+      data-paragraph-id={domParagraphId}
+      data-source-paragraph-id={paragraph.id}
       data-start-offset={paragraphLayout.startOffset ?? 0}
       data-end-offset={paragraphLayout.endOffset ?? chars.length}
       data-testid="editor-2-block"
       style={getParagraphRenderStyle(paragraph)}
-      onMouseDown={(event) => onParagraphMouseDown(paragraph.id, event)}
+      onMouseDown={interactive ? (event) => onParagraphMouseDown(paragraph.id, event) : undefined}
     >
       <Show when={paragraph.list}>
         <span class="oasis-editor-2-list-marker" data-testid="editor-2-list-marker">
@@ -294,8 +304,10 @@ function renderParagraph(
                                         "oasis-editor-2-image-selected": imageSelected(),
                                       }}
                                       data-testid="editor-2-image"
-                                      onMouseDown={(event) =>
-                                        onImageMouseDown(paragraph.id, char.paragraphOffset, event)
+                                      onMouseDown={
+                                        interactive
+                                          ? (event) => onImageMouseDown(paragraph.id, char.paragraphOffset, event)
+                                          : undefined
                                       }
                                     />
                                     <Show when={imageSelected()}>
@@ -304,8 +316,11 @@ function renderParagraph(
                                         aria-label="Resize image"
                                         class="oasis-editor-2-image-resize-handle"
                                         data-testid="editor-2-image-resize-handle"
-                                        onMouseDown={(event) =>
-                                          onImageResizeHandleMouseDown(paragraph.id, char.paragraphOffset, event)
+                                        onMouseDown={
+                                          interactive
+                                            ? (event) =>
+                                                onImageResizeHandleMouseDown(paragraph.id, char.paragraphOffset, event)
+                                            : undefined
                                         }
                                       />
                                     </Show>
@@ -346,21 +361,59 @@ function renderParagraph(
 
 function renderTable(
   table: Editor2TableNode,
+  blockId: string,
   paragraphIndexById: Map<string, number>,
   listMarkers: Map<string, string>,
   state: Editor2State,
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
   onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
   onImageResizeHandleMouseDown: EditorSurfaceProps["onImageResizeHandleMouseDown"],
+  segment?: {
+    startRowIndex: number;
+    endRowIndex: number;
+    repeatedHeaderRowCount: number;
+  },
 ) {
+  const repeatedHeaderRows =
+    segment && segment.repeatedHeaderRowCount > 0 ? table.rows.slice(0, segment.repeatedHeaderRowCount) : [];
+  const bodyRows = segment
+    ? table.rows.slice(segment.startRowIndex, segment.endRowIndex)
+    : table.rows;
+  const renderedRows = [
+    ...repeatedHeaderRows.map((row, repeatedIndex) => ({
+      row,
+      sourceRowIndex: repeatedIndex,
+      repeated: true,
+      repeatedIndex,
+    })),
+    ...bodyRows.map((row, rowOffset) => ({
+      row,
+      sourceRowIndex: (segment?.startRowIndex ?? 0) + rowOffset,
+      repeated: false,
+      repeatedIndex: -1,
+    })),
+  ];
+
   return (
-    <div class="oasis-editor-2-table-block" data-block-id={table.id} data-testid="editor-2-table">
+    <div
+      class="oasis-editor-2-table-block"
+      classList={{ "oasis-editor-2-table-block-segment": Boolean(segment) }}
+      data-block-id={blockId}
+      data-source-block-id={table.id}
+      data-testid="editor-2-table"
+    >
       <table class="oasis-editor-2-table-grid" data-testid="editor-2-table-grid">
         <tbody>
-          <For each={table.rows}>
-            {(row, rowIndex) => (
-              <tr class="oasis-editor-2-table-row" data-testid="editor-2-table-row" data-row-index={rowIndex()}>
-                <For each={row.cells}>
+          <For each={renderedRows}>
+            {(renderedRow) => (
+              <tr
+                class="oasis-editor-2-table-row"
+                classList={{ "oasis-editor-2-table-row-repeated-header": renderedRow.repeated }}
+                data-testid="editor-2-table-row"
+                data-row-index={renderedRow.sourceRowIndex}
+                data-repeated-header={renderedRow.repeated ? "true" : undefined}
+              >
+                <For each={renderedRow.row.cells}>
                   {(cell, cellIndex) => (
                     cell.vMerge === "continue" ? null : (
                       <td
@@ -368,21 +421,29 @@ function renderTable(
                         colSpan={cell.colSpan ?? 1}
                         rowSpan={cell.rowSpan ?? 1}
                         data-testid="editor-2-table-cell"
-                        data-row-index={rowIndex()}
+                        data-row-index={renderedRow.sourceRowIndex}
                         data-cell-index={cellIndex()}
                       >
                         <For each={cell.blocks}>
-                          {(paragraph) =>
+                          {(paragraph, paragraphIndex) =>
                             renderParagraph(
                               paragraph,
                               paragraphIndexById.get(paragraph.id) ?? 0,
                               listMarkers.get(paragraph.id) ?? null,
                               undefined,
-                              paragraph.id,
+                              renderedRow.repeated
+                                ? `${blockId}:repeat:${renderedRow.repeatedIndex}:${cell.id}:${paragraphIndex()}`
+                                : paragraph.id,
                               state,
                               onParagraphMouseDown,
                               onImageMouseDown,
                               onImageResizeHandleMouseDown,
+                              renderedRow.repeated
+                                ? {
+                                    domParagraphId: `${paragraph.id}:repeat:${blockId}:${renderedRow.repeatedIndex}:${paragraphIndex()}`,
+                                    interactive: false,
+                                  }
+                                : undefined,
                             )}
                         </For>
                       </td>
@@ -400,20 +461,39 @@ function renderTable(
 
 export function EditorSurface(props: EditorSurfaceProps) {
   const paragraphs = () => getParagraphs(props.state());
+  const pageSettings = () => getDocumentPageSettings(props.state().document);
   const paragraphIndexById = () =>
     new Map(paragraphs().map((paragraph, index) => [paragraph.id, index] as const));
   const listMarkers = () => buildParagraphListMarkers(paragraphs());
   const documentLayout = () =>
-    projectDocumentLayout(props.state().document.blocks, undefined, props.measuredBlockHeights?.());
+    projectDocumentLayout(
+      props.state().document.blocks,
+      getPageContentHeight(pageSettings()),
+      props.measuredBlockHeights?.(),
+      props.measuredParagraphLayouts?.(),
+    );
 
   return (
     <div class="oasis-editor-2-paper-stack">
       <For each={documentLayout().pages}>
         {(page) => (
-          <div class="oasis-editor-2-paper" data-testid="editor-2-page">
+          <div
+            class="oasis-editor-2-paper"
+            data-testid="editor-2-page"
+            style={{
+              width: `${pageSettings().width}px`,
+              "min-height": `${pageSettings().height}px`,
+            }}
+          >
             <div
               class="oasis-editor-2-surface"
               data-testid="editor-2-surface"
+              style={{
+                "padding-top": `${pageSettings().margins.top}px`,
+                "padding-right": `${pageSettings().margins.right}px`,
+                "padding-bottom": `${pageSettings().margins.bottom}px`,
+                "padding-left": `${pageSettings().margins.left + pageSettings().margins.gutter}px`,
+              }}
               onMouseDown={props.onSurfaceMouseDown}
             >
               <For each={page.blocks}>
@@ -432,12 +512,14 @@ export function EditorSurface(props: EditorSurfaceProps) {
                       )
                     : renderTable(
                         block.sourceBlock,
+                        block.blockId,
                         paragraphIndexById(),
                         listMarkers(),
                         props.state(),
                         props.onParagraphMouseDown,
                         props.onImageMouseDown,
                         props.onImageResizeHandleMouseDown,
+                        block.tableSegment,
                       );
                 }}
               </For>

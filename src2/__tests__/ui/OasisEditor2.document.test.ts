@@ -2842,7 +2842,7 @@ describe("OasisEditor2", () => {
       imageInput.dispatchEvent(new Event("change", { bubbles: true }));
       for (let attempt = 0; attempt < 20; attempt += 1) {
         const image = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
-        if (image?.getAttribute("width") === "684") {
+        if (image?.getAttribute("width") === "624") {
           break;
         }
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -2850,8 +2850,8 @@ describe("OasisEditor2", () => {
 
       const image = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
       expect(image).not.toBeNull();
-      expect(image?.getAttribute("width")).toBe("684");
-      expect(image?.getAttribute("height")).toBe("256");
+      expect(image?.getAttribute("width")).toBe("624");
+      expect(image?.getAttribute("height")).toBe("234");
     } finally {
       vi.restoreAllMocks();
       Object.defineProperty(globalThis, "Image", {
@@ -4054,8 +4054,8 @@ describe("OasisEditor2", () => {
       await Promise.resolve();
 
       const resizedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-      expect(resizedImage.getAttribute("width")).toBe("684");
-      expect(resizedImage.getAttribute("height")).toBe("342");
+      expect(resizedImage.getAttribute("width")).toBe("624");
+      expect(resizedImage.getAttribute("height")).toBe("312");
     } finally {
       Object.defineProperty(globalThis, "Image", {
         configurable: true,

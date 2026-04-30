@@ -316,6 +316,16 @@ body {
   margin-bottom: 0;
 }
 
+.oasis-editor-2-table-row-repeated-header {
+  background: rgba(241, 245, 249, 0.7);
+}
+
+.oasis-editor-2-table-row-repeated-header .oasis-editor-2-block,
+.oasis-editor-2-table-row-repeated-header .oasis-editor-2-image,
+.oasis-editor-2-table-row-repeated-header .oasis-editor-2-image-resize-handle {
+  pointer-events: none;
+}
+
 .oasis-editor-2-list-marker {
   flex: 0 0 34px;
   min-width: 34px;

@@ -326,4 +326,63 @@ describe("importDocxToEditor2Document", () => {
     expect(getParagraphText(table.rows[0]!.cells[0]!.blocks[0]!)).toBe("A");
     expect(table.rows[1]!.cells[0]!.blocks.length).toBe(0);
   });
+
+  it("imports table header rows from wordprocessingml", async () => {
+    const buffer = await buildDocx(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:tbl>
+            <w:tr>
+              <w:trPr><w:tblHeader/></w:trPr>
+              <w:tc><w:p><w:r><w:t>Header</w:t></w:r></w:p></w:tc>
+            </w:tr>
+            <w:tr>
+              <w:tc><w:p><w:r><w:t>Body</w:t></w:r></w:p></w:tc>
+            </w:tr>
+          </w:tbl>
+        </w:body>
+      </w:document>`,
+    );
+
+    const document = await importDocxToEditor2Document(buffer);
+    const table = document.blocks[0];
+    if (table?.type !== "table") {
+      throw new Error("Expected table block");
+    }
+
+    expect(table.rows[0]?.isHeader).toBe(true);
+    expect(table.rows[1]?.isHeader).toBeUndefined();
+  });
+
+  it("imports page size and margins from section properties", async () => {
+    const buffer = await buildDocx(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:p><w:r><w:t>Page</w:t></w:r></w:p>
+          <w:sectPr>
+            <w:pgSz w:w="15840" w:h="12240"/>
+            <w:pgMar w:top="720" w:right="1440" w:bottom="2160" w:left="1800" w:header="360" w:footer="540" w:gutter="144"/>
+          </w:sectPr>
+        </w:body>
+      </w:document>`,
+    );
+
+    const document = await importDocxToEditor2Document(buffer);
+
+    expect(document.pageSettings).toEqual({
+      width: 1056,
+      height: 816,
+      margins: {
+        top: 48,
+        right: 96,
+        bottom: 144,
+        left: 120,
+        header: 24,
+        footer: 36,
+        gutter: 10,
+      },
+    });
+  });
 });

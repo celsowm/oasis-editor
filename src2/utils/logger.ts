@@ -44,18 +44,17 @@ function isLocalhostLike(): boolean {
 }
 
 export function isEditor2DebugEnabled(): boolean {
+  // Local development must always keep debug logs on.
+  if (isLocalhostLike()) {
+    return true;
+  }
+
   if (globalThis.window?.__OASIS_EDITOR2_DEBUG__ === true) {
     return true;
   }
 
   if (globalThis.window?.__OASIS_EDITOR2_DEBUG__ === false) {
     return false;
-  }
-
-  // Always auto-enable on localhost so a stale localStorage "0" from a
-  // previous session never silences the console.
-  if (isLocalhostLike()) {
-    return true;
   }
 
   const storageOverride = readStorageOverride();
@@ -101,6 +100,7 @@ export function createEditor2Logger(scope: string) {
     }
 
     const prefix = `[oasis-editor-2:${scope}] ${message}`;
+    const debugSink = isLocalhostLike() ? console.info : console.debug;
     const sink =
       level === "error"
         ? console.error
@@ -108,7 +108,7 @@ export function createEditor2Logger(scope: string) {
           ? console.warn
           : level === "info"
             ? console.info
-            : console.debug;
+            : debugSink;
 
     if (payload === undefined) {
       sink(prefix);

@@ -151,6 +151,59 @@ export function measureParagraphLayoutFromRects(
   };
 }
 
+function applyMeasuredLineGeometry(
+  projected: Editor2LayoutParagraph,
+  measured: Editor2LayoutParagraph,
+): Editor2LayoutParagraph {
+  return {
+    ...projected,
+    startOffset: measured.startOffset ?? projected.startOffset,
+    endOffset: measured.endOffset ?? projected.endOffset,
+    lines: measured.lines.map((line) => ({
+      paragraphId: projected.paragraphId,
+      index: line.index,
+      startOffset: line.startOffset,
+      endOffset: line.endOffset,
+      top: line.top,
+      height: line.height,
+      slots: line.slots.map((slot) => ({
+        paragraphId: projected.paragraphId,
+        offset: slot.offset,
+        left: slot.left,
+        top: slot.top,
+        height: slot.height,
+      })),
+      fragments: projected.fragments
+        .map((fragment) => sliceFragmentToRange(fragment, line.startOffset, line.endOffset))
+        .filter((fragment): fragment is Editor2LayoutFragment => fragment !== null),
+    })),
+  };
+}
+
+function isMeasuredLayoutCurrent(
+  projected: Editor2LayoutParagraph,
+  measured: Editor2LayoutParagraph,
+): boolean {
+  if (projected.paragraphId !== measured.paragraphId) {
+    return false;
+  }
+
+  if (projected.text !== measured.text) {
+    return false;
+  }
+
+  const projectedStart = projected.startOffset ?? 0;
+  const measuredStart = measured.startOffset ?? 0;
+  const projectedEnd = projected.endOffset ?? projected.text.length;
+  const measuredEnd = measured.endOffset ?? measured.text.length;
+
+  if (projectedStart !== measuredStart || projectedEnd !== measuredEnd) {
+    return false;
+  }
+
+  return true;
+}
+
 export function resolveClosestOffsetInMeasuredLayout(
   layout: Editor2LayoutParagraph,
   clientX: number,
@@ -224,6 +277,100 @@ function getParagraphMeasuredHeight(
   );
 }
 
+function estimateTableRowHeight(row: Editor2TableNode["rows"][number]): number {
+  const cellHeights = row.cells
+    .filter((cell) => cell.vMerge !== "continue")
+    .map((cell) =>
+      cell.blocks.reduce((sum, paragraph) => sum + estimateParagraphBlockHeight(paragraph), 0),
+    );
+
+  return Math.max(...cellHeights, DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT) + 12;
+}
+
+function getTableHeaderRowCount(table: Editor2TableNode): number {
+  let count = 0;
+  for (const row of table.rows) {
+    if (!row.isHeader) {
+      break;
+    }
+    count += 1;
+  }
+  return count;
+}
+
+function getTableRowGroupEndExclusive(table: Editor2TableNode, rowIndex: number): number {
+  const row = table.rows[rowIndex];
+  if (!row) {
+    return rowIndex + 1;
+  }
+
+  let endExclusive = rowIndex + 1;
+  for (const cell of row.cells) {
+    const rowSpan = Math.max(1, cell.rowSpan ?? (cell.vMerge === "restart" ? 1 : 1));
+    endExclusive = Math.max(endExclusive, rowIndex + rowSpan);
+  }
+
+  return Math.min(table.rows.length, endExclusive);
+}
+
+function getTableRowGroups(table: Editor2TableNode): Array<{ startRowIndex: number; endRowIndexExclusive: number }> {
+  const groups: Array<{ startRowIndex: number; endRowIndexExclusive: number }> = [];
+  let groupStart = 0;
+  let groupEndExclusive = 0;
+
+  for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
+    if (rowIndex >= groupEndExclusive) {
+      groupStart = rowIndex;
+      groupEndExclusive = rowIndex + 1;
+    }
+
+    groupEndExclusive = Math.max(groupEndExclusive, getTableRowGroupEndExclusive(table, rowIndex));
+    if (rowIndex === groupEndExclusive - 1) {
+      groups.push({
+        startRowIndex: groupStart,
+        endRowIndexExclusive: groupEndExclusive,
+      });
+    }
+  }
+
+  return groups;
+}
+
+function getRepeatableHeaderRowCount(
+  table: Editor2TableNode,
+  headerRowCount: number,
+  rowGroups: Array<{ startRowIndex: number; endRowIndexExclusive: number }>,
+): number {
+  for (const group of rowGroups) {
+    if (group.startRowIndex >= headerRowCount) {
+      break;
+    }
+    if (group.endRowIndexExclusive > headerRowCount) {
+      return 0;
+    }
+  }
+
+  return headerRowCount;
+}
+
+function getTableSegmentHeight(
+  table: Editor2TableNode,
+  rowStartIndex: number,
+  rowEndIndexExclusive: number,
+  repeatedHeaderRowCount: number,
+): number {
+  const headerHeight =
+    repeatedHeaderRowCount > 0
+      ? table.rows
+          .slice(0, repeatedHeaderRowCount)
+          .reduce((sum, row) => sum + estimateTableRowHeight(row), 0)
+      : 0;
+  const bodyHeight = table.rows
+    .slice(rowStartIndex, rowEndIndexExclusive)
+    .reduce((sum, row) => sum + estimateTableRowHeight(row), 0);
+  return headerHeight + bodyHeight + 16;
+}
+
 function createParagraphSegmentLayout(
   layout: Editor2LayoutParagraph,
   startLineIndex: number,
@@ -267,20 +414,14 @@ export function estimateParagraphBlockHeight(paragraph: Editor2ParagraphNode): n
 }
 
 export function estimateTableBlockHeight(table: Editor2TableNode): number {
-  const rowHeights = table.rows.map((row) => {
-    const cellHeights = row.cells.map((cell) =>
-      cell.blocks.reduce((sum, paragraph) => sum + estimateParagraphBlockHeight(paragraph), 0),
-    );
-    return Math.max(...cellHeights, DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT) + 12;
-  });
-
-  return rowHeights.reduce((sum, height) => sum + height, 0) + 16;
+  return getTableSegmentHeight(table, 0, table.rows.length, 0);
 }
 
 export function projectDocumentLayout(
   blocks: Editor2BlockNode[],
   maxPageHeight = DEFAULT_PAGE_HEIGHT,
   measuredHeights?: Record<string, number>,
+  measuredParagraphLayouts?: Record<string, Editor2LayoutParagraph>,
 ): Editor2LayoutDocument {
   const pages: Editor2LayoutDocument["pages"] = [];
   let currentBlocks: Editor2LayoutBlock[] = [];
@@ -311,7 +452,12 @@ export function projectDocumentLayout(
     }
 
     if (sourceBlock.type === "paragraph") {
-      const paragraphLayout = projectParagraphLayout(sourceBlock);
+      const projectedParagraphLayout = projectParagraphLayout(sourceBlock);
+      const measuredParagraphLayout = measuredParagraphLayouts?.[sourceBlock.id];
+      const paragraphLayout =
+        measuredParagraphLayout && isMeasuredLayoutCurrent(projectedParagraphLayout, measuredParagraphLayout)
+          ? applyMeasuredLineGeometry(projectedParagraphLayout, measuredParagraphLayout)
+          : projectedParagraphLayout;
       const paragraphTotalHeight =
         measuredHeights?.[sourceBlock.id] ?? estimateParagraphBlockHeight(sourceBlock);
       const nextBlockHeight =
@@ -402,19 +548,101 @@ export function projectDocumentLayout(
     }
 
     const tableHeight = measuredHeights?.[sourceBlock.id] ?? estimateTableBlockHeight(sourceBlock);
-    if (currentBlocks.length > 0 && currentHeight + tableHeight > maxPageHeight) {
-      flushPage();
+    if (sourceBlock.rows.length <= 1 || tableHeight <= maxPageHeight) {
+      if (currentBlocks.length > 0 && currentHeight + tableHeight > maxPageHeight) {
+        flushPage();
+      }
+
+      currentBlocks.push({
+        blockId: sourceBlock.id,
+        sourceBlockId: sourceBlock.id,
+        blockType: sourceBlock.type,
+        globalIndex: index,
+        estimatedHeight: tableHeight,
+        sourceBlock,
+      });
+      currentHeight += tableHeight;
+      continue;
     }
 
-    currentBlocks.push({
-      blockId: sourceBlock.id,
-      sourceBlockId: sourceBlock.id,
-      blockType: sourceBlock.type,
-      globalIndex: index,
-      estimatedHeight: tableHeight,
+    const rowGroups = getTableRowGroups(sourceBlock);
+    const headerRowCount = getRepeatableHeaderRowCount(
       sourceBlock,
-    });
-    currentHeight += tableHeight;
+      getTableHeaderRowCount(sourceBlock),
+      rowGroups,
+    );
+    let groupStartIndex = 0;
+    let segmentIndex = 0;
+
+    while (groupStartIndex < rowGroups.length) {
+      const startRowIndex = rowGroups[groupStartIndex]!.startRowIndex;
+      const repeatedHeaderRowCount = startRowIndex > 0 ? headerRowCount : 0;
+      const remainingHeight = maxPageHeight - currentHeight;
+      let groupEndIndex = groupStartIndex;
+      let endRowIndex = startRowIndex;
+      let segmentHeight = 0;
+
+      while (groupEndIndex < rowGroups.length) {
+        const candidateEnd = rowGroups[groupEndIndex]!.endRowIndexExclusive;
+        const candidateHeight = getTableSegmentHeight(
+          sourceBlock,
+          startRowIndex,
+          candidateEnd,
+          repeatedHeaderRowCount,
+        );
+        if (
+          candidateHeight > remainingHeight &&
+          groupEndIndex === groupStartIndex &&
+          currentBlocks.length > 0
+        ) {
+          break;
+        }
+        if (candidateHeight > remainingHeight && groupEndIndex > groupStartIndex) {
+          break;
+        }
+        segmentHeight = candidateHeight;
+        endRowIndex = candidateEnd;
+        groupEndIndex += 1;
+      }
+
+      if (groupEndIndex === groupStartIndex && currentBlocks.length > 0) {
+        flushPage();
+        continue;
+      }
+
+      if (groupEndIndex === groupStartIndex) {
+        endRowIndex = rowGroups[groupStartIndex]!.endRowIndexExclusive;
+        segmentHeight = getTableSegmentHeight(
+          sourceBlock,
+          startRowIndex,
+          endRowIndex,
+          repeatedHeaderRowCount,
+        );
+      }
+
+      currentBlocks.push({
+        blockId: `${sourceBlock.id}:segment:${segmentIndex}`,
+        sourceBlockId: sourceBlock.id,
+        blockType: sourceBlock.type,
+        globalIndex: index,
+        estimatedHeight: segmentHeight,
+        tableSegment: {
+          startRowIndex,
+          endRowIndex: endRowIndex,
+          repeatedHeaderRowCount,
+        },
+        sourceBlock,
+      });
+      currentHeight += segmentHeight;
+      groupStartIndex = Math.max(groupStartIndex + 1, groupEndIndex);
+      segmentIndex += 1;
+
+      if (groupStartIndex < rowGroups.length) {
+        flushPage();
+      }
+    }
+
+    continue;
   }
 
   flushPage();
