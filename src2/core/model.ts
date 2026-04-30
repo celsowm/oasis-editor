@@ -134,6 +134,8 @@ export interface Editor2LayoutParagraph {
   text: string;
   fragments: Editor2LayoutFragment[];
   lines: Editor2LayoutLine[];
+  startOffset?: number;
+  endOffset?: number;
 }
 
 export interface Editor2LayoutBlock {
@@ -143,6 +145,7 @@ export interface Editor2LayoutBlock {
   globalIndex: number;
   estimatedHeight: number;
   layout?: Editor2LayoutParagraph;
+  sourceBlockId?: string;
   sourceBlock: Editor2BlockNode;
 }
 

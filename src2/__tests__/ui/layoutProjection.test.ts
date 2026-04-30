@@ -78,9 +78,9 @@ describe("layoutProjection", () => {
     const layout = projectDocumentLayout(paragraphs, 220);
 
     expect(layout.pages.length).toBeGreaterThan(1);
-    expect(layout.pages.flatMap((page) => page.blocks.map((block) => block.paragraphId))).toEqual(
-      paragraphs.map((paragraph) => paragraph.id),
-    );
+    const paragraphIds = layout.pages.flatMap((page) => page.blocks.map((block) => block.paragraphId));
+    expect(new Set(paragraphIds)).toEqual(new Set(paragraphs.map((paragraph) => paragraph.id)));
+    expect(paragraphIds.length).toBeGreaterThanOrEqual(paragraphs.length);
   });
 
   it("prefers measured block heights over estimated ones for page projection", () => {
@@ -102,6 +102,50 @@ describe("layoutProjection", () => {
     expect(layout.pages).toHaveLength(2);
     expect(layout.pages[0]?.blocks[0]?.estimatedHeight).toBe(80);
     expect(layout.pages[1]?.blocks[0]?.estimatedHeight).toBe(80);
+  });
+
+  it("splits a long paragraph into multiple paginated segments", () => {
+    resetEditor2Ids();
+    const paragraph = createEditor2ParagraphFromRuns([{ text: "x".repeat(520) }]);
+
+    const layout = projectDocumentLayout([paragraph], 180);
+    const blocks = layout.pages.flatMap((page) => page.blocks);
+
+    expect(layout.pages.length).toBeGreaterThan(1);
+    expect(blocks.length).toBeGreaterThan(1);
+    expect(blocks.every((block) => block.paragraphId === paragraph.id)).toBe(true);
+    expect(blocks.every((block) => block.layout?.lines.length)).toBe(true);
+    expect(blocks[0]?.layout?.startOffset).toBe(0);
+    expect(blocks[blocks.length - 1]?.layout?.endOffset).toBe(paragraph.runs[0]?.text.length);
+  });
+
+  it("moves a table to the next page when it does not fit the remaining space", () => {
+    resetEditor2Ids();
+    const paragraph = createEditor2ParagraphFromRuns([{ text: "lead" }]);
+    const table = {
+      id: "table:1",
+      type: "table" as const,
+      rows: [
+        {
+          id: "row:1",
+          cells: [
+            {
+              id: "cell:1",
+              blocks: [createEditor2ParagraphFromRuns([{ text: "cell" }])],
+            },
+          ],
+        },
+      ],
+    };
+
+    const layout = projectDocumentLayout([paragraph, table], 220, {
+      [paragraph.id]: 160,
+      [table.id]: 90,
+    });
+
+    expect(layout.pages).toHaveLength(2);
+    expect(layout.pages[0]?.blocks.map((block) => block.blockType)).toEqual(["paragraph"]);
+    expect(layout.pages[1]?.blocks.map((block) => block.blockType)).toEqual(["table"]);
   });
 
   it("forces a new page when a paragraph has pageBreakBefore", () => {

@@ -103,4 +103,54 @@ describe("resolvePositionAtPoint", () => {
     expect(position?.paragraphId).toBe(secondCellParagraph.id);
     expect(position?.offset).toBe(0);
   });
+
+  it("resolves offsets across multiple DOM segments for the same paragraph", () => {
+    resetEditor2Ids();
+    const paragraph = createEditor2Paragraph("ABCD");
+    const state = createEditor2StateFromDocument(createEditor2Document([paragraph]));
+
+    const surface = document.createElement("div");
+    const firstSegment = document.createElement("p");
+    firstSegment.dataset.paragraphId = paragraph.id;
+    firstSegment.dataset.startOffset = "0";
+    firstSegment.getBoundingClientRect = () => createRect(100, 10, 20, 20);
+
+    const secondSegment = document.createElement("p");
+    secondSegment.dataset.paragraphId = paragraph.id;
+    secondSegment.dataset.startOffset = "2";
+    secondSegment.getBoundingClientRect = () => createRect(100, 40, 20, 20);
+
+    [
+      createRect(100, 10, 10, 20),
+      createRect(110, 10, 10, 20),
+    ].forEach((rect, index) => {
+      const char = document.createElement("span");
+      char.dataset.charIndex = String(index);
+      char.getBoundingClientRect = () => rect;
+      firstSegment.append(char);
+    });
+
+    [
+      createRect(100, 40, 10, 20),
+      createRect(110, 40, 10, 20),
+    ].forEach((rect, index) => {
+      const char = document.createElement("span");
+      char.dataset.charIndex = String(index + 2);
+      char.getBoundingClientRect = () => rect;
+      secondSegment.append(char);
+    });
+
+    surface.append(firstSegment, secondSegment);
+
+    const position = resolvePositionAtPoint({
+      clientX: 119,
+      clientY: 45,
+      surface,
+      state,
+      documentLike: {},
+    });
+
+    expect(position?.paragraphId).toBe(paragraph.id);
+    expect(position?.offset).toBe(4);
+  });
 });

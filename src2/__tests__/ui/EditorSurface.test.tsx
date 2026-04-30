@@ -177,6 +177,53 @@ describe("EditorSurface", () => {
     dispose();
   });
 
+  it("renders the same paragraph across multiple paginated blocks", () => {
+    const container = document.createElement("div");
+    const paragraph = createEditor2ParagraphFromRuns([{ text: "x".repeat(1800) }]);
+    const state: Editor2State = {
+      document: createEditor2Document([paragraph]),
+      selection: {
+        anchor: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+        focus: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+      },
+    };
+
+    const dispose = render(
+      () => (
+        <EditorSurface
+          state={() => state}
+          measuredBlockHeights={() => ({})}
+          onSurfaceMouseDown={() => undefined}
+          onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
+        />
+      ),
+      container,
+    );
+
+    const pages = container.querySelectorAll('[data-testid="editor-2-page"]');
+    const blocks = Array.from(container.querySelectorAll('[data-testid="editor-2-block"]'))
+      .filter((node) => node.getAttribute("data-paragraph-id") === paragraph.id);
+
+    expect(pages.length).toBeGreaterThan(1);
+    expect(blocks.length).toBeGreaterThan(1);
+    expect(blocks[0]?.getAttribute("data-start-offset")).toBe("0");
+    expect(Number(blocks[blocks.length - 1]?.getAttribute("data-end-offset"))).toBe(
+      paragraph.runs[0]!.text.length,
+    );
+
+    dispose();
+  });
+
   it("marks an inline image as selected when its object slot is selected", () => {
     const container = document.createElement("div");
     const paragraph = createEditor2ParagraphFromRuns([

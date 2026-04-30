@@ -1,6 +1,7 @@
 import { For, Show } from "solid-js";
 import type { Accessor } from "solid-js";
 import {
+  type Editor2LayoutParagraph,
   type Editor2ParagraphNode,
   getParagraphText,
   getParagraphs,
@@ -166,14 +167,17 @@ function renderParagraph(
   paragraph: Editor2ParagraphNode,
   paragraphIndex: number,
   listMarker: string | null,
+  layout: Editor2LayoutParagraph | undefined,
+  blockId: string,
   state: Editor2State,
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
   onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
   onImageResizeHandleMouseDown: EditorSurfaceProps["onImageResizeHandleMouseDown"],
 ) {
-  const layout = projectParagraphLayout(paragraph);
-  const chars = layout.fragments.flatMap((fragment) => fragment.chars);
+  const paragraphLayout = layout ?? projectParagraphLayout(paragraph);
+  const chars = paragraphLayout.fragments.flatMap((fragment) => fragment.chars);
   const normalized = () => normalizeSelection(state);
+  const isContinuation = (paragraphLayout.startOffset ?? 0) > 0;
   const isEmptyBlockSelected = () => {
     const current = normalized();
     return (
@@ -212,15 +216,17 @@ function renderParagraph(
     <p
       class="oasis-editor-2-block"
       classList={{ "oasis-editor-2-block-list": Boolean(paragraph.list) }}
-      data-block-id={paragraph.id}
+      data-block-id={blockId}
       data-paragraph-id={paragraph.id}
+      data-start-offset={paragraphLayout.startOffset ?? 0}
+      data-end-offset={paragraphLayout.endOffset ?? chars.length}
       data-testid="editor-2-block"
       style={getParagraphRenderStyle(paragraph)}
       onMouseDown={(event) => onParagraphMouseDown(paragraph.id, event)}
     >
       <Show when={paragraph.list}>
         <span class="oasis-editor-2-list-marker" data-testid="editor-2-list-marker">
-          {listMarker}
+          {isContinuation ? "" : listMarker}
         </span>
       </Show>
       <Show
@@ -238,94 +244,100 @@ function renderParagraph(
           </span>
         }
       >
-        <For each={layout.fragments}>
-          {(fragment) => {
-            const runContent = (
-              <span
-                class="oasis-editor-2-run"
-                data-run-id={fragment.runId}
-                data-testid="editor-2-run"
-                style={runStyleToCss(fragment.styles)}
-              >
-                <For each={fragment.chars}>
-                  {(char) => (
-                    (() => {
-                      const imageSelected = () =>
-                        Boolean(fragment.image) && isCharSelected(char.paragraphOffset);
-                      return (
-                        <span
-                          classList={{
-                            "oasis-editor-2-char": true,
-                            "oasis-editor-2-char-selected": isCharSelected(char.paragraphOffset),
-                            "oasis-editor-2-image-char": Boolean(fragment.image),
-                          }}
-                          data-char-index={char.paragraphOffset}
-                          data-run-id={fragment.runId}
-                          data-run-offset={char.runOffset}
-                          data-testid="editor-2-char"
-                        >
-                          {fragment.image ? (
-                            <span
-                              classList={{
-                                "oasis-editor-2-image-inline": true,
-                                "oasis-editor-2-image-inline-selected": imageSelected(),
-                              }}
-                            >
-                              <img
-                                src={fragment.image.src}
-                                width={fragment.image.width}
-                                height={fragment.image.height}
-                                alt={fragment.image.alt ?? ""}
-                                class="oasis-editor-2-image"
-                                style={{
-                                  width: `${fragment.image.width}px`,
-                                  height: `${fragment.image.height}px`,
-                                }}
+        <For each={paragraphLayout.lines}>
+          {(line) => (
+            <div class="oasis-editor-2-line" data-testid="editor-2-line">
+              <For each={line.fragments}>
+                {(fragment) => {
+                  const runContent = (
+                    <span
+                      class="oasis-editor-2-run"
+                      data-run-id={fragment.runId}
+                      data-testid="editor-2-run"
+                      style={runStyleToCss(fragment.styles)}
+                    >
+                      <For each={fragment.chars}>
+                        {(char) => (
+                          (() => {
+                            const imageSelected = () =>
+                              Boolean(fragment.image) && isCharSelected(char.paragraphOffset);
+                            return (
+                              <span
                                 classList={{
-                                  "oasis-editor-2-image-selected": imageSelected(),
+                                  "oasis-editor-2-char": true,
+                                  "oasis-editor-2-char-selected": isCharSelected(char.paragraphOffset),
+                                  "oasis-editor-2-image-char": Boolean(fragment.image),
                                 }}
-                                data-testid="editor-2-image"
-                                onMouseDown={(event) =>
-                                  onImageMouseDown(paragraph.id, char.paragraphOffset, event)
-                                }
-                              />
-                              <Show when={imageSelected()}>
-                                <button
-                                  type="button"
-                                  aria-label="Resize image"
-                                  class="oasis-editor-2-image-resize-handle"
-                                  data-testid="editor-2-image-resize-handle"
-                                  onMouseDown={(event) =>
-                                    onImageResizeHandleMouseDown(paragraph.id, char.paragraphOffset, event)
-                                  }
-                                />
-                              </Show>
-                            </span>
-                          ) : (
-                            char.char
-                          )}
-                        </span>
-                      );
-                    })()
-                  )}
-                </For>
-              </span>
-            );
+                                data-char-index={char.paragraphOffset}
+                                data-run-id={fragment.runId}
+                                data-run-offset={char.runOffset}
+                                data-testid="editor-2-char"
+                              >
+                                {fragment.image ? (
+                                  <span
+                                    classList={{
+                                      "oasis-editor-2-image-inline": true,
+                                      "oasis-editor-2-image-inline-selected": imageSelected(),
+                                    }}
+                                  >
+                                    <img
+                                      src={fragment.image.src}
+                                      width={fragment.image.width}
+                                      height={fragment.image.height}
+                                      alt={fragment.image.alt ?? ""}
+                                      class="oasis-editor-2-image"
+                                      style={{
+                                        width: `${fragment.image.width}px`,
+                                        height: `${fragment.image.height}px`,
+                                      }}
+                                      classList={{
+                                        "oasis-editor-2-image-selected": imageSelected(),
+                                      }}
+                                      data-testid="editor-2-image"
+                                      onMouseDown={(event) =>
+                                        onImageMouseDown(paragraph.id, char.paragraphOffset, event)
+                                      }
+                                    />
+                                    <Show when={imageSelected()}>
+                                      <button
+                                        type="button"
+                                        aria-label="Resize image"
+                                        class="oasis-editor-2-image-resize-handle"
+                                        data-testid="editor-2-image-resize-handle"
+                                        onMouseDown={(event) =>
+                                          onImageResizeHandleMouseDown(paragraph.id, char.paragraphOffset, event)
+                                        }
+                                      />
+                                    </Show>
+                                  </span>
+                                ) : (
+                                  char.char
+                                )}
+                              </span>
+                            );
+                          })()
+                        )}
+                      </For>
+                    </span>
+                  );
 
-            return fragment.styles?.link ? (
-              <a
-                class="oasis-editor-2-link"
-                data-testid="editor-2-link"
-                href={fragment.styles.link}
-                rel="noreferrer"
-                target="_blank"
-              >
-                {runContent}
-              </a>
-            ) : (
-              runContent
-            );
-          }}
+                  return fragment.styles?.link ? (
+                    <a
+                      class="oasis-editor-2-link"
+                      data-testid="editor-2-link"
+                      href={fragment.styles.link}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {runContent}
+                    </a>
+                  ) : (
+                    runContent
+                  );
+                }}
+              </For>
+            </div>
+          )}
         </For>
       </Show>
     </p>
@@ -365,6 +377,8 @@ function renderTable(
                               paragraph,
                               paragraphIndexById.get(paragraph.id) ?? 0,
                               listMarkers.get(paragraph.id) ?? null,
+                              undefined,
+                              paragraph.id,
                               state,
                               onParagraphMouseDown,
                               onImageMouseDown,
@@ -409,6 +423,8 @@ export function EditorSurface(props: EditorSurfaceProps) {
                         block.sourceBlock,
                         paragraphIndexById().get(block.sourceBlock.id) ?? 0,
                         listMarkers().get(block.sourceBlock.id) ?? null,
+                        block.layout,
+                        block.blockId,
                         props.state(),
                         props.onParagraphMouseDown,
                         props.onImageMouseDown,

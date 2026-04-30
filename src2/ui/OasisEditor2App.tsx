@@ -17,8 +17,9 @@ import {
   resolveClosestOffsetInMeasuredLayout,
 } from "./layoutProjection.js";
 import {
-  collectCharRects,
+  collectParagraphCharRects,
   findNearestParagraphElement,
+  getParagraphElements,
   resolvePositionAtPoint,
 } from "./positionAtPoint.js";
 import {
@@ -229,6 +230,18 @@ function findImageFileFromTransfer(
 
 function getEmptyBlockRect(blockElement: HTMLElement): DOMRect | null {
   return blockElement.querySelector<HTMLElement>('[data-testid="editor-2-empty-char"]')?.getBoundingClientRect() ?? null;
+}
+
+function getParagraphBoundaryElement(
+  surface: HTMLElement,
+  paragraphId: string,
+  boundary: "start" | "end",
+): HTMLElement | null {
+  const elements = getParagraphElements(surface, paragraphId);
+  if (elements.length === 0) {
+    return null;
+  }
+  return boundary === "start" ? elements[0]! : elements[elements.length - 1]!;
 }
 
 function buildTableCellLayout(table: Editor2TableNode): TableCellLayoutEntry[] {
@@ -2113,15 +2126,13 @@ export function OasisEditor2App() {
           continue;
         }
 
-        const paragraphElement = surfaceRef.querySelector<HTMLElement>(
-          `[data-paragraph-id="${paragraph.id}"]`,
-        );
+        const paragraphElement = getParagraphBoundaryElement(surfaceRef, paragraph.id, "start");
         if (!paragraphElement) {
           continue;
         }
 
         const paragraphText = getParagraphText(paragraph);
-        const charRects = collectCharRects(paragraphElement);
+        const charRects = collectParagraphCharRects(surfaceRef, paragraph.id);
         const startOffset = paragraphIndex === normalized.startIndex ? normalized.startParagraphOffset : 0;
         const endOffset =
           paragraphIndex === normalized.endIndex ? normalized.endParagraphOffset : paragraphText.length;
@@ -2163,15 +2174,17 @@ export function OasisEditor2App() {
 
     setSelectionBoxes(nextSelectionBoxes);
 
-    const selectedParagraph = surfaceRef.querySelector<HTMLElement>(
-      `[data-paragraph-id="${state.selection.focus.paragraphId}"]`,
+    const selectedParagraph = getParagraphBoundaryElement(
+      surfaceRef,
+      state.selection.focus.paragraphId,
+      "end",
     );
     if (!selectedParagraph) {
       setCaretBox((current) => ({ ...current, visible: false }));
       return;
     }
 
-    const charRects = collectCharRects(selectedParagraph);
+    const charRects = collectParagraphCharRects(surfaceRef, state.selection.focus.paragraphId);
     const selectedParagraphNode =
       paragraphs.find((paragraph) => paragraph.id === state.selection.focus.paragraphId) ?? paragraphs[0];
     let left = 0;
@@ -2509,14 +2522,17 @@ export function OasisEditor2App() {
     }
 
     const targetParagraph = paragraphs[targetIndex];
-    const targetElement = surfaceRef?.querySelector<HTMLElement>(
-      `[data-paragraph-id="${targetParagraph.id}"]`,
-    );
+    const targetElement = surfaceRef
+      ? getParagraphBoundaryElement(surfaceRef, targetParagraph.id, direction < 0 ? "end" : "start")
+      : null;
     const desiredX = preferredColumnX() ?? caretBox().left;
 
     let offset = 0;
-    if (targetElement) {
-      const layout = measureParagraphLayoutFromRects(targetParagraph, collectCharRects(targetElement));
+    if (targetElement && surfaceRef) {
+      const layout = measureParagraphLayoutFromRects(
+        targetParagraph,
+        collectParagraphCharRects(surfaceRef, targetParagraph.id),
+      );
       const lines = layout.lines;
       const boundaryLine = direction < 0 ? lines[lines.length - 1] : lines[0];
       offset =
@@ -3823,7 +3839,7 @@ export function OasisEditor2App() {
               resetTransactionGrouping();
               const layout = measureParagraphLayoutFromRects(
                 paragraph,
-                collectCharRects(paragraphElement),
+                collectParagraphCharRects(surfaceRef!, paragraph.id),
               );
               const offset = layout.text.length === 0
                 ? 0
@@ -3871,7 +3887,10 @@ export function OasisEditor2App() {
               resetTransactionGrouping();
               const offset = resolveClickOffset(
                 event,
-                measureParagraphLayoutFromRects(paragraph, collectCharRects(event.currentTarget)),
+                measureParagraphLayoutFromRects(
+                  paragraph,
+                  collectParagraphCharRects(surfaceRef!, paragraph.id),
+                ),
               );
               const position = paragraphOffsetToPosition(paragraph, offset);
 

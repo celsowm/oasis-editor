@@ -291,6 +291,10 @@ body {
   --list-level: 0;
 }
 
+.oasis-editor-2-line {
+  display: block;
+}
+
 .oasis-editor-2-table-block {
   margin: 0 0 18px;
 }

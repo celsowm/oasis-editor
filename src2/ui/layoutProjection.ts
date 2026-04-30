@@ -45,6 +45,21 @@ function sliceFragmentToRange(
   };
 }
 
+function buildEstimatedLineRanges(textLength: number, charsPerLine: number): Array<{ start: number; end: number }> {
+  if (textLength <= 0) {
+    return [{ start: 0, end: 0 }];
+  }
+
+  const ranges: Array<{ start: number; end: number }> = [];
+  let start = 0;
+  while (start < textLength) {
+    const end = Math.min(textLength, start + charsPerLine);
+    ranges.push({ start, end });
+    start = end;
+  }
+  return ranges;
+}
+
 export function projectParagraphLayout(paragraph: Editor2ParagraphNode): Editor2LayoutParagraph {
   let paragraphOffset = 0;
   const fragments: Editor2LayoutFragment[] = paragraph.runs.map((run) => {
@@ -69,30 +84,36 @@ export function projectParagraphLayout(paragraph: Editor2ParagraphNode): Editor2
     return fragment;
   });
 
-  const lines: Editor2LayoutLine[] = [
-    {
+  const fontSize = estimateParagraphFontSize(paragraph);
+  const lineHeight = estimateParagraphLineHeight(paragraph, fontSize);
+  const charsPerLine = estimateCharsPerLine(paragraph);
+  const lineRanges = buildEstimatedLineRanges(paragraphOffset, charsPerLine);
+  const lines: Editor2LayoutLine[] = lineRanges.map((range, index) => ({
+    paragraphId: paragraph.id,
+    index,
+    startOffset: range.start,
+    endOffset: range.end,
+    top: index * lineHeight,
+    height: lineHeight,
+    slots: Array.from({ length: range.end - range.start + 1 }, (_, slotIndex) => ({
       paragraphId: paragraph.id,
-      index: 0,
-      startOffset: 0,
-      endOffset: paragraphOffset,
-      top: 0,
-      height: 28,
-      slots: Array.from({ length: paragraphOffset + 1 }, (_, offset) => ({
-        paragraphId: paragraph.id,
-        offset,
-        left: 0,
-        top: 0,
-        height: 28,
-      })),
-      fragments,
-    },
-  ];
+      offset: range.start + slotIndex,
+      left: 0,
+      top: index * lineHeight,
+      height: lineHeight,
+    })),
+    fragments: fragments
+      .map((fragment) => sliceFragmentToRange(fragment, range.start, range.end))
+      .filter((fragment): fragment is Editor2LayoutFragment => fragment !== null),
+  }));
 
   return {
     paragraphId: paragraph.id,
     text: getParagraphText(paragraph),
     fragments,
     lines,
+    startOffset: 0,
+    endOffset: paragraphOffset,
   };
 }
 
@@ -177,6 +198,62 @@ function estimateCharsPerLine(paragraph: Editor2ParagraphNode): number {
   return Math.max(12, 48 - indentPenalty - firstLinePenalty - listPenalty);
 }
 
+function getParagraphSegmentHeight(
+  paragraph: Editor2ParagraphNode,
+  lines: Editor2LayoutLine[],
+  isFirstSegment: boolean,
+  isLastSegment: boolean,
+): number {
+  const lineHeights = lines.reduce((sum, line) => sum + line.height, 0);
+  const spacingBefore = isFirstSegment ? paragraph.style?.spacingBefore ?? 0 : 0;
+  const spacingAfter = isLastSegment ? paragraph.style?.spacingAfter ?? 0 : 0;
+  return spacingBefore + spacingAfter + lineHeights + DEFAULT_PARAGRAPH_GAP;
+}
+
+function getParagraphMeasuredHeight(
+  measuredHeights: Record<string, number> | undefined,
+  paragraphId: string,
+  segmentId: string,
+  isWholeParagraphSegment: boolean,
+  fallbackHeight: number,
+): number {
+  return (
+    measuredHeights?.[segmentId] ??
+    (isWholeParagraphSegment ? measuredHeights?.[paragraphId] : undefined) ??
+    fallbackHeight
+  );
+}
+
+function createParagraphSegmentLayout(
+  layout: Editor2LayoutParagraph,
+  startLineIndex: number,
+  endLineIndexExclusive: number,
+): Editor2LayoutParagraph {
+  const segmentLines = layout.lines.slice(startLineIndex, endLineIndexExclusive);
+  const startOffset = segmentLines[0]?.startOffset ?? 0;
+  const endOffset = segmentLines[segmentLines.length - 1]?.endOffset ?? startOffset;
+  const topOffset = segmentLines[0]?.top ?? 0;
+
+  return {
+    paragraphId: layout.paragraphId,
+    text: layout.text.slice(startOffset, endOffset),
+    fragments: layout.fragments
+      .map((fragment) => sliceFragmentToRange(fragment, startOffset, endOffset))
+      .filter((fragment): fragment is Editor2LayoutFragment => fragment !== null),
+    lines: segmentLines.map((line, index) => ({
+      ...line,
+      index,
+      top: line.top - topOffset,
+      slots: line.slots.map((slot) => ({
+        ...slot,
+        top: slot.top - topOffset,
+      })),
+    })),
+    startOffset,
+    endOffset,
+  };
+}
+
 export function estimateParagraphBlockHeight(paragraph: Editor2ParagraphNode): number {
   const textLength = Math.max(1, getParagraphText(paragraph).length);
   const fontSize = estimateParagraphFontSize(paragraph);
@@ -205,26 +282,6 @@ export function projectDocumentLayout(
   maxPageHeight = DEFAULT_PAGE_HEIGHT,
   measuredHeights?: Record<string, number>,
 ): Editor2LayoutDocument {
-  const projectedBlocks: Editor2LayoutBlock[] = blocks.map((block, globalIndex) =>
-    block.type === "paragraph"
-      ? {
-          blockId: block.id,
-          blockType: block.type,
-          paragraphId: block.id,
-          globalIndex,
-          estimatedHeight: measuredHeights?.[block.id] ?? estimateParagraphBlockHeight(block),
-          layout: projectParagraphLayout(block),
-          sourceBlock: block,
-        }
-      : {
-          blockId: block.id,
-          blockType: block.type,
-          globalIndex,
-          estimatedHeight: measuredHeights?.[block.id] ?? estimateTableBlockHeight(block),
-          sourceBlock: block,
-        },
-  );
-
   const pages: Editor2LayoutDocument["pages"] = [];
   let currentBlocks: Editor2LayoutBlock[] = [];
   let currentHeight = 0;
@@ -245,28 +302,119 @@ export function projectDocumentLayout(
     currentHeight = 0;
   };
 
-  for (let index = 0; index < projectedBlocks.length; index += 1) {
-    const block = projectedBlocks[index]!;
-    const nextBlock = projectedBlocks[index + 1];
+  for (let index = 0; index < blocks.length; index += 1) {
     const sourceBlock = blocks[index]!;
-    const keepWithNext =
-      sourceBlock.type === "paragraph" &&
-      sourceBlock.style?.keepWithNext === true &&
-      nextBlock !== undefined;
-    const keepPairHeight = keepWithNext
-      ? block.estimatedHeight + nextBlock.estimatedHeight
-      : block.estimatedHeight;
+    const nextBlock = blocks[index + 1];
 
     if (sourceBlock.type === "paragraph" && sourceBlock.style?.pageBreakBefore && currentBlocks.length > 0) {
       flushPage();
     }
 
-    if (currentBlocks.length > 0 && currentHeight + keepPairHeight > maxPageHeight) {
+    if (sourceBlock.type === "paragraph") {
+      const paragraphLayout = projectParagraphLayout(sourceBlock);
+      const paragraphTotalHeight =
+        measuredHeights?.[sourceBlock.id] ?? estimateParagraphBlockHeight(sourceBlock);
+      const nextBlockHeight =
+        nextBlock?.type === "paragraph"
+          ? measuredHeights?.[nextBlock.id] ?? estimateParagraphBlockHeight(nextBlock)
+          : nextBlock
+            ? measuredHeights?.[nextBlock.id] ?? estimateTableBlockHeight(nextBlock)
+            : 0;
+      if (
+        sourceBlock.style?.keepWithNext &&
+        currentBlocks.length > 0 &&
+        currentHeight + paragraphTotalHeight + nextBlockHeight > maxPageHeight &&
+        paragraphTotalHeight + nextBlockHeight <= maxPageHeight
+      ) {
+        flushPage();
+      }
+
+      let startLineIndex = 0;
+      let segmentIndex = 0;
+      while (startLineIndex < paragraphLayout.lines.length) {
+        const remainingHeight = maxPageHeight - currentHeight;
+        let lineEndIndex = startLineIndex;
+        let segmentHeight = 0;
+
+        while (lineEndIndex < paragraphLayout.lines.length) {
+          const candidateLines = paragraphLayout.lines.slice(startLineIndex, lineEndIndex + 1);
+          const candidateHeight = getParagraphSegmentHeight(
+            sourceBlock,
+            candidateLines,
+            startLineIndex === 0,
+            lineEndIndex === paragraphLayout.lines.length - 1,
+          );
+          if (candidateHeight > remainingHeight && lineEndIndex === startLineIndex && currentBlocks.length > 0) {
+            break;
+          }
+          if (candidateHeight > remainingHeight && lineEndIndex > startLineIndex) {
+            break;
+          }
+          segmentHeight = candidateHeight;
+          lineEndIndex += 1;
+        }
+
+        if (lineEndIndex === startLineIndex && currentBlocks.length > 0) {
+          flushPage();
+          continue;
+        }
+
+        if (lineEndIndex === startLineIndex) {
+          lineEndIndex = Math.min(paragraphLayout.lines.length, startLineIndex + 1);
+          segmentHeight = getParagraphSegmentHeight(
+            sourceBlock,
+            paragraphLayout.lines.slice(startLineIndex, lineEndIndex),
+            startLineIndex === 0,
+            lineEndIndex === paragraphLayout.lines.length,
+          );
+        }
+
+        const segmentLayout = createParagraphSegmentLayout(paragraphLayout, startLineIndex, lineEndIndex);
+        const segmentId = `${sourceBlock.id}:segment:${segmentIndex}`;
+        const isWholeParagraphSegment =
+          startLineIndex === 0 && lineEndIndex === paragraphLayout.lines.length;
+        const measuredHeight = getParagraphMeasuredHeight(
+          measuredHeights,
+          sourceBlock.id,
+          segmentId,
+          isWholeParagraphSegment,
+          segmentHeight,
+        );
+        currentBlocks.push({
+          blockId: segmentId,
+          sourceBlockId: sourceBlock.id,
+          blockType: sourceBlock.type,
+          paragraphId: sourceBlock.id,
+          globalIndex: index,
+          estimatedHeight: measuredHeight,
+          layout: segmentLayout,
+          sourceBlock,
+        });
+        currentHeight += measuredHeight;
+        startLineIndex = lineEndIndex;
+        segmentIndex += 1;
+
+        if (startLineIndex < paragraphLayout.lines.length) {
+          flushPage();
+        }
+      }
+      continue;
+    }
+
+    const tableHeight = measuredHeights?.[sourceBlock.id] ?? estimateTableBlockHeight(sourceBlock);
+    if (currentBlocks.length > 0 && currentHeight + tableHeight > maxPageHeight) {
       flushPage();
     }
 
-    currentBlocks.push(block);
-    currentHeight += block.estimatedHeight;
+    currentBlocks.push({
+      blockId: sourceBlock.id,
+      sourceBlockId: sourceBlock.id,
+      blockType: sourceBlock.type,
+      globalIndex: index,
+      estimatedHeight: tableHeight,
+      sourceBlock,
+    });
+    currentHeight += tableHeight;
   }
 
   flushPage();

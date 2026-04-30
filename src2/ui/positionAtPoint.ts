@@ -73,6 +73,29 @@ export function collectCharRects(blockElement: HTMLElement): Array<{
   });
 }
 
+export function getParagraphElements(surface: HTMLElement, paragraphId: string): HTMLElement[] {
+  return Array.from(
+    surface.querySelectorAll<HTMLElement>(`[data-paragraph-id="${paragraphId}"]`),
+  ).sort((left, right) => {
+    const leftOffset = Number(left.dataset.startOffset ?? "0");
+    const rightOffset = Number(right.dataset.startOffset ?? "0");
+    return leftOffset - rightOffset;
+  });
+}
+
+export function collectParagraphCharRects(
+  surface: HTMLElement,
+  paragraphId: string,
+): Array<{
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  height: number;
+}> {
+  return getParagraphElements(surface, paragraphId).flatMap((element) => collectCharRects(element));
+}
+
 function resolveTableCellStartPosition(
   document: Editor2Document,
   cellElement: HTMLElement,
@@ -141,7 +164,10 @@ export function resolvePositionAtPoint(options: {
     return null;
   }
 
-  const layout = measureParagraphLayoutFromRects(paragraph, collectCharRects(paragraphElement));
+  const layout = measureParagraphLayoutFromRects(
+    paragraph,
+    collectParagraphCharRects(surface, paragraph.id),
+  );
   const offset =
     layout.text.length === 0
       ? 0
