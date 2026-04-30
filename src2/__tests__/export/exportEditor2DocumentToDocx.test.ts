@@ -324,7 +324,7 @@ describe("exportEditor2DocumentToDocx", () => {
   it("exports and reimports inline images via DOCX relationships", async () => {
     const paragraph = createEditor2ParagraphFromRuns([
       { text: "Look: " },
-      { text: "\uFFFC", image: { src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", width: 100, height: 100 } }
+      { text: "\uFFFC", image: { src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", width: 100, height: 100, alt: "Chart" } }
     ]);
     const document = createEditor2Document([paragraph]);
     
@@ -336,6 +336,7 @@ describe("exportEditor2DocumentToDocx", () => {
     expect(relsXml).toContain("image1.png");
     expect(docXml).toContain("<w:drawing>");
     expect(docXml).toContain("<a:blip r:embed=");
+    expect(docXml).toContain('descr="Chart"');
 
     resetEditor2Ids();
     const imported = await importDocxToEditor2Document(buffer);
@@ -345,6 +346,7 @@ describe("exportEditor2DocumentToDocx", () => {
     expect(importedRun.image?.width).toBe(100);
     expect(importedRun.image?.height).toBe(100);
     expect(importedRun.image?.src).toContain("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
+    expect(importedRun.image?.alt).toBe("Chart");
   });
 
   it("exports and reimports inline images inside table cells", async () => {

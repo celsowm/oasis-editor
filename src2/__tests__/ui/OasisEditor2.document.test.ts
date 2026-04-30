@@ -68,6 +68,296 @@ describe("OasisEditor2", () => {
     instance.dispose();
   });
 
+  it("pastes inline image alt text from rich clipboard html", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    const OriginalImage = globalThis.Image;
+    class MockImage {
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+      naturalWidth = 64;
+      naturalHeight = 32;
+
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
+    }
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      value: MockImage,
+    });
+
+    try {
+      const pasteEvent = new Event("paste", { bubbles: true, cancelable: true }) as ClipboardEvent;
+      Object.defineProperty(pasteEvent, "clipboardData", {
+        configurable: true,
+        value: {
+          items: [],
+          files: [],
+          getData: (type: string) =>
+            type === "text/html"
+              ? '<p>Before <img src="data:image/png;base64,abc" alt="Chart alt" width="20" height="10"></p>'
+              : "",
+        },
+      });
+
+      input.dispatchEvent(pasteEvent);
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
+        if (image?.getAttribute("alt") === "Chart alt") {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
+      expect(image).not.toBeNull();
+      expect(image?.getAttribute("alt")).toBe("Chart alt");
+    } finally {
+      Object.defineProperty(globalThis, "Image", {
+        configurable: true,
+        value: OriginalImage,
+      });
+      instance.dispose();
+    }
+  });
+
+  it("pastes plain text when ctrl plus shift plus v is used", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    try {
+      const shortcutEvent = new KeyboardEvent("keydown", {
+        bubbles: true,
+        cancelable: true,
+        key: "v",
+        ctrlKey: true,
+        shiftKey: true,
+      });
+      input.dispatchEvent(shortcutEvent);
+
+      const pasteEvent = new Event("paste", { bubbles: true, cancelable: true }) as ClipboardEvent;
+      Object.defineProperty(pasteEvent, "clipboardData", {
+        configurable: true,
+        value: {
+          items: [],
+          files: [],
+          getData: (type: string) =>
+            type === "text/plain"
+              ? "Plain text"
+              : type === "text/html"
+                ? "<p><strong>Rich</strong> <a href=\"https://example.com\">link</a></p>"
+                : "",
+        },
+      });
+
+      input.dispatchEvent(pasteEvent);
+
+      const runs = Array.from(root.querySelectorAll('[data-testid="editor-2-run"]')) as HTMLElement[];
+      const text = runs.map((run) => run.textContent ?? "").join("");
+      expect(text).toContain("Plain text");
+      expect(runs.some((run) => run.innerHTML.includes("<strong>"))).toBe(false);
+      expect(runs.some((run) => run.innerHTML.includes("<a "))).toBe(false);
+    } finally {
+      instance.dispose();
+    }
+  });
+
+  it("inserts a soft line break with shift plus enter", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    try {
+      input.value = "Line 1";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter", shiftKey: true }));
+      input.value = "Line 2";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+
+      const run = root.querySelector('[data-testid="editor-2-run"]') as HTMLElement | null;
+      expect(run?.textContent).toContain("Line 1");
+      expect(run?.textContent).toContain("Line 2");
+    } finally {
+      instance.dispose();
+    }
+  });
+
+  it("deletes the previous word with ctrl plus backspace", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    try {
+      input.value = "Hello brave world";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Backspace", ctrlKey: true }));
+
+      const run = root.querySelector('[data-testid="editor-2-run"]') as HTMLElement | null;
+      expect(run?.textContent).toContain("Hello brave ");
+      expect(run?.textContent).not.toContain("world");
+    } finally {
+      instance.dispose();
+    }
+  });
+
+  it("deletes the next word with ctrl plus delete", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    try {
+      input.value = "Hello brave world";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Home" }));
+      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Delete", ctrlKey: true }));
+
+      const run = root.querySelector('[data-testid="editor-2-run"]') as HTMLElement | null;
+      expect(run?.textContent).not.toContain("Hello");
+      expect(run?.textContent).toContain(" brave world");
+    } finally {
+      instance.dispose();
+    }
+  });
+
+  it("edits alt text for the selected inline image through the toolbar", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const imageInput = root.querySelector('[data-testid="editor-2-insert-image-input"]') as HTMLInputElement;
+    const file = createTinyPngFile("alt.png");
+    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("Chart alt");
+    const OriginalImage = globalThis.Image;
+    class MockImage {
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+      naturalWidth = 64;
+      naturalHeight = 32;
+
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
+    }
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      value: MockImage,
+    });
+
+    try {
+      Object.defineProperty(imageInput, "files", {
+        configurable: true,
+        value: [file],
+      });
+      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
+
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (root.querySelector('[data-testid="editor-2-image"]')) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
+      expect(image).not.toBeNull();
+      image?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 8, clientY: 8 }));
+
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (!root.querySelector('[data-testid="editor-2-toolbar-image-alt"]')?.hasAttribute("disabled")) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      (root.querySelector('[data-testid="editor-2-toolbar-image-alt"]') as HTMLButtonElement | null)?.click();
+
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (root.querySelector('[data-testid="editor-2-image"]')?.getAttribute("alt") === "Chart alt") {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const updatedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
+      expect(updatedImage?.getAttribute("alt")).toBe("Chart alt");
+      expect(updatedImage?.getAttribute("width")).toBe("64");
+      expect(updatedImage?.getAttribute("height")).toBe("32");
+      expect(promptSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      promptSpy.mockRestore();
+      Object.defineProperty(globalThis, "Image", {
+        configurable: true,
+        value: OriginalImage,
+      });
+      instance.dispose();
+    }
+  });
+
+  it("edits alt text for the selected inline image with ctrl plus alt plus a", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const imageInput = root.querySelector('[data-testid="editor-2-insert-image-input"]') as HTMLInputElement;
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const file = createTinyPngFile("alt-shortcut.png");
+    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("Shortcut alt");
+    const OriginalImage = globalThis.Image;
+    class MockImage {
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+      naturalWidth = 64;
+      naturalHeight = 32;
+
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
+    }
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      value: MockImage,
+    });
+
+    try {
+      Object.defineProperty(imageInput, "files", {
+        configurable: true,
+        value: [file],
+      });
+      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
+
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (root.querySelector('[data-testid="editor-2-image"]')) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
+      expect(image).not.toBeNull();
+      image?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 8, clientY: 8 }));
+
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { bubbles: true, key: "a", ctrlKey: true, altKey: true }),
+      );
+
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (root.querySelector('[data-testid="editor-2-image"]')?.getAttribute("alt") === "Shortcut alt") {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      expect(root.querySelector('[data-testid="editor-2-image"]')?.getAttribute("alt")).toBe("Shortcut alt");
+      expect(promptSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      promptSpy.mockRestore();
+      Object.defineProperty(globalThis, "Image", {
+        configurable: true,
+        value: OriginalImage,
+      });
+      instance.dispose();
+    }
+  });
+
   it("supports undo and redo after pasting an inline image", async () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
@@ -620,6 +910,34 @@ describe("OasisEditor2", () => {
     marker = root.querySelector('[data-testid="editor-2-list-marker"]') as HTMLSpanElement;
     expect(marker.textContent).toBe("1.");
     expect(orderedButton.classList.contains("oasis-editor-2-tool-button-active")).toBe(true);
+
+    instance.dispose();
+  });
+
+  it("toggles bullet and ordered lists with ctrl shift 8 and 7", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    input.value = "item";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "item", inputType: "insertText" }));
+    await Promise.resolve();
+
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { bubbles: true, key: "8", ctrlKey: true, shiftKey: true }),
+    );
+    await Promise.resolve();
+
+    let marker = root.querySelector('[data-testid="editor-2-list-marker"]') as HTMLSpanElement;
+    expect(marker.textContent).toBe("•");
+
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { bubbles: true, key: "7", ctrlKey: true, shiftKey: true }),
+    );
+    await Promise.resolve();
+
+    marker = root.querySelector('[data-testid="editor-2-list-marker"]') as HTMLSpanElement;
+    expect(marker.textContent).toBe("1.");
 
     instance.dispose();
   });
@@ -3117,7 +3435,8 @@ describe("OasisEditor2", () => {
       input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "x", inputType: "insertText" }));
       await Promise.resolve();
 
-      expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("x\uFFFCTopLeft");
+      expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("xTopLeft");
+      expect(root.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
     } finally {
       Object.defineProperty(globalThis, "Image", {
         configurable: true,
@@ -3241,7 +3560,8 @@ describe("OasisEditor2", () => {
       input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "x", inputType: "insertText" }));
       await Promise.resolve();
 
-      expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("\uFFFCxTopLeft");
+      expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("xTopLeft");
+      expect(root.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
     } finally {
       Object.defineProperty(globalThis, "Image", {
         configurable: true,
@@ -3324,7 +3644,8 @@ describe("OasisEditor2", () => {
       input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "x", inputType: "insertText" }));
       await Promise.resolve();
 
-      expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("ax\uFFFCb");
+      expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("axb");
+      expect(root.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
     } finally {
       Object.defineProperty(globalThis, "Image", {
         configurable: true,
@@ -3404,7 +3725,8 @@ describe("OasisEditor2", () => {
       input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "x", inputType: "insertText" }));
       await Promise.resolve();
 
-      expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("ab\uFFFCx");
+      expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("abx");
+      expect(root.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
     } finally {
       Object.defineProperty(globalThis, "Image", {
         configurable: true,

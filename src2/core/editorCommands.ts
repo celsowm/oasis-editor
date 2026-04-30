@@ -240,6 +240,49 @@ function getFocusParagraph(state: Editor2State): {
   };
 }
 
+export function getSelectedImageRun(
+  state: Editor2State,
+): {
+  paragraph: Editor2ParagraphNode;
+  paragraphIndex: number;
+  run: Editor2TextRun;
+  runIndex: number;
+  offset: number;
+} | null {
+  const normalized = normalizeSelection(state);
+  if (
+    normalized.isCollapsed ||
+    normalized.startIndex !== normalized.endIndex ||
+    normalized.endParagraphOffset - normalized.startParagraphOffset !== 1
+  ) {
+    return null;
+  }
+
+  const paragraphs = getParagraphs(state);
+  const paragraph = paragraphs[normalized.startIndex];
+  if (!paragraph) {
+    return null;
+  }
+
+  let consumed = 0;
+  for (let index = 0; index < paragraph.runs.length; index += 1) {
+    const run = paragraph.runs[index]!;
+    const startOffset = consumed;
+    consumed += run.text.length;
+    if (run.image && run.text.length === 1 && startOffset === normalized.startParagraphOffset) {
+      return {
+        paragraph,
+        paragraphIndex: normalized.startIndex,
+        run,
+        runIndex: index,
+        offset: startOffset,
+      };
+    }
+  }
+
+  return null;
+}
+
 function getStyleAtOffset(paragraph: Editor2ParagraphNode, offset: number): Editor2TextStyle | undefined {
   if (paragraph.runs.length === 0) {
     return undefined;
@@ -367,8 +410,9 @@ function sliceRuns(
     if (overlapStart < overlapEnd) {
       pieces.push(
         createEditor2StyledRun(
-          run.text.slice(overlapStart - runStart, overlapEnd - runStart),
+          run.image ? "\uFFFC" : run.text.slice(overlapStart - runStart, overlapEnd - runStart),
           run.styles,
+          run.image ? { ...run.image } : undefined,
         ),
       );
     }
@@ -495,6 +539,570 @@ export function getSelectedText(state: Editor2State): string {
   return parts.join("\n");
 }
 
+export interface Editor2ClipboardParagraphSpec {
+  runs: Array<{ text: string; styles?: Editor2TextStyle; image?: Editor2ImageRunData }>;
+  style?: Editor2ParagraphStyle;
+  list?: Editor2ParagraphListStyle;
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function textRunStylesToCss(style?: Editor2TextStyle): string {
+  if (!style) {
+    return "";
+  }
+
+  const parts: string[] = [];
+  if (style.fontFamily) {
+    parts.push(`font-family:${style.fontFamily}`);
+  }
+  if (style.fontSize !== undefined && style.fontSize !== null) {
+    parts.push(`font-size:${style.fontSize}px`);
+  }
+  if (style.color) {
+    parts.push(`color:${style.color}`);
+  }
+  if (style.highlight) {
+    parts.push(`background-color:${style.highlight}`);
+  }
+  if (style.superscript) {
+    parts.push("vertical-align:super");
+    parts.push("font-size:0.75em");
+  } else if (style.subscript) {
+    parts.push("vertical-align:sub");
+    parts.push("font-size:0.75em");
+  }
+  if (style.bold) {
+    parts.push("font-weight:700");
+  }
+  if (style.italic) {
+    parts.push("font-style:italic");
+  }
+  const decorations: string[] = [];
+  if (style.underline || style.link) {
+    decorations.push("underline");
+  }
+  if (style.strike) {
+    decorations.push("line-through");
+  }
+  if (decorations.length > 0) {
+    parts.push(`text-decoration:${decorations.join(" ")}`);
+  }
+
+  return parts.join(";");
+}
+
+function paragraphStyleToCssText(style?: Editor2ParagraphStyle): string {
+  if (!style) {
+    return "";
+  }
+
+  const parts: string[] = [];
+  if (style.align) {
+    parts.push(`text-align:${style.align}`);
+  }
+  if (style.lineHeight !== undefined && style.lineHeight !== null) {
+    parts.push(`line-height:${style.lineHeight}`);
+  }
+  if (style.spacingBefore !== undefined && style.spacingBefore !== null) {
+    parts.push(`padding-top:${style.spacingBefore}px`);
+  }
+  if (style.spacingAfter !== undefined && style.spacingAfter !== null) {
+    parts.push(`padding-bottom:${style.spacingAfter}px`);
+  }
+  if (style.indentLeft !== undefined && style.indentLeft !== null) {
+    parts.push(`padding-left:${style.indentLeft}px`);
+  }
+  if (style.indentRight !== undefined && style.indentRight !== null) {
+    parts.push(`padding-right:${style.indentRight}px`);
+  }
+  if (style.indentFirstLine !== undefined && style.indentFirstLine !== null) {
+    parts.push(`text-indent:${style.indentFirstLine}px`);
+  }
+  return parts.join(";");
+}
+
+function serializeImageRunToHtml(run: Editor2TextRun): string {
+  if (!run.image) {
+    return "";
+  }
+
+  const altAttr = run.image.alt !== undefined ? ` alt="${escapeHtml(run.image.alt)}"` : "";
+  const img = `<img src="${escapeHtml(run.image.src)}" width="${Math.max(1, Math.round(run.image.width))}" height="${Math.max(1, Math.round(run.image.height))}"${altAttr}>`;
+  if (run.styles?.link) {
+    return `<a href="${escapeHtml(run.styles.link)}">${img}</a>`;
+  }
+
+  return img;
+}
+
+function serializeTextRunToHtml(run: Editor2TextRun): string {
+  if (run.image) {
+    return serializeImageRunToHtml(run);
+  }
+
+  const text = escapeHtml(run.text).replace(/\n/g, "<br>");
+  let html = text;
+  const style = run.styles ?? undefined;
+  if (style?.strike) {
+    html = `<s>${html}</s>`;
+  }
+  if (style?.underline) {
+    html = `<u>${html}</u>`;
+  }
+  if (style?.italic) {
+    html = `<em>${html}</em>`;
+  }
+  if (style?.bold) {
+    html = `<strong>${html}</strong>`;
+  }
+  if (style?.superscript) {
+    html = `<sup>${html}</sup>`;
+  } else if (style?.subscript) {
+    html = `<sub>${html}</sub>`;
+  }
+
+  const css = textRunStylesToCss(style);
+  if (css.length > 0) {
+    html = `<span style="${css}">${html}</span>`;
+  }
+  if (style?.link) {
+    html = `<a href="${escapeHtml(style.link)}">${html}</a>`;
+  }
+  return html;
+}
+
+function serializeParagraphRunsToHtml(runs: Editor2TextRun[]): string {
+  return runs.map((run) => serializeTextRunToHtml(run)).join("") || "<br>";
+}
+
+export function serializeEditor2SelectionToHtml(state: Editor2State): string {
+  const normalized = normalizeSelection(state);
+  if (normalized.isCollapsed) {
+    return "";
+  }
+
+  const paragraphs = getParagraphs(state);
+  const htmlParts: string[] = [];
+  let activeListKind: Editor2ParagraphListStyle["kind"] | null = null;
+
+  const closeList = () => {
+    if (activeListKind) {
+      htmlParts.push(activeListKind === "bullet" ? "</ul>" : "</ol>");
+      activeListKind = null;
+    }
+  };
+
+  for (let index = normalized.startIndex; index <= normalized.endIndex; index += 1) {
+    const paragraph = paragraphs[index];
+    if (!paragraph) {
+      continue;
+    }
+
+    const startOffset = index === normalized.startIndex ? normalized.startParagraphOffset : 0;
+    const endOffset = index === normalized.endIndex ? normalized.endParagraphOffset : getParagraphLength(paragraph);
+    const runs = sliceRuns(paragraph, startOffset, endOffset);
+    const css = paragraphStyleToCssText(paragraph.style);
+    const attrs = css.length > 0 ? ` style="${css}"` : "";
+    const paragraphHtml = serializeParagraphRunsToHtml(runs);
+
+    if (paragraph.list?.kind) {
+      const wrapperTag = paragraph.list.kind === "bullet" ? "ul" : "ol";
+      if (activeListKind !== paragraph.list.kind) {
+        closeList();
+        htmlParts.push(`<${wrapperTag}>`);
+        activeListKind = paragraph.list.kind;
+      }
+      htmlParts.push(`<li${attrs}>${paragraphHtml}</li>`);
+      continue;
+    }
+
+    closeList();
+    htmlParts.push(`<p${attrs}>${paragraphHtml}</p>`);
+  }
+
+  closeList();
+  return htmlParts.join("");
+}
+
+function parseInlineStyles(element: Element): Editor2TextStyle | undefined {
+  const style = (element as HTMLElement).style;
+  const result: Editor2TextStyle = {};
+
+  const fontFamily = style.fontFamily.trim();
+  if (fontFamily) {
+    result.fontFamily = fontFamily;
+  }
+
+  const fontSize = style.fontSize.trim();
+  if (fontSize.endsWith("px")) {
+    const parsed = Number.parseFloat(fontSize);
+    if (Number.isFinite(parsed)) {
+      result.fontSize = parsed;
+    }
+  }
+
+  const color = style.color.trim();
+  if (color) {
+    result.color = color;
+  }
+
+  const backgroundColor = style.backgroundColor.trim();
+  if (backgroundColor) {
+    result.highlight = backgroundColor;
+  }
+
+  const textDecoration = style.textDecoration.toLowerCase();
+  if (textDecoration.includes("underline")) {
+    result.underline = true;
+  }
+  if (textDecoration.includes("line-through")) {
+    result.strike = true;
+  }
+
+  const fontWeight = style.fontWeight.trim();
+  if (fontWeight === "bold" || Number.parseInt(fontWeight, 10) >= 600) {
+    result.bold = true;
+  }
+
+  const fontStyle = style.fontStyle.trim();
+  if (fontStyle === "italic") {
+    result.italic = true;
+  }
+
+  if (element.tagName === "SUP") {
+    result.superscript = true;
+  }
+  if (element.tagName === "SUB") {
+    result.subscript = true;
+  }
+
+  const link = element.tagName === "A" ? (element as HTMLAnchorElement).getAttribute("href")?.trim() ?? "" : "";
+  if (link) {
+    result.link = link;
+    result.underline = true;
+  }
+
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
+function parseInlineImage(element: Element): Editor2ImageRunData | undefined {
+  if (element.tagName !== "IMG") {
+    return undefined;
+  }
+
+  const img = element as HTMLImageElement;
+  const src = img.getAttribute("src")?.trim() ?? "";
+  if (!src) {
+    return undefined;
+  }
+
+  const widthAttr = img.getAttribute("width")?.trim() ?? "";
+  const heightAttr = img.getAttribute("height")?.trim() ?? "";
+  const widthStyle = img.style.width.trim();
+  const heightStyle = img.style.height.trim();
+  const widthFromStyle = widthStyle.endsWith("px") ? Number.parseFloat(widthStyle) : Number.NaN;
+  const heightFromStyle = heightStyle.endsWith("px") ? Number.parseFloat(heightStyle) : Number.NaN;
+  const widthFromAttr = Number.parseFloat(widthAttr);
+  const heightFromAttr = Number.parseFloat(heightAttr);
+
+  const width = Number.isFinite(widthFromStyle)
+    ? widthFromStyle
+    : Number.isFinite(widthFromAttr)
+      ? widthFromAttr
+      : 100;
+  const height = Number.isFinite(heightFromStyle)
+    ? heightFromStyle
+    : Number.isFinite(heightFromAttr)
+      ? heightFromAttr
+      : 100;
+  const altAttr = img.getAttribute("alt");
+
+  const image: Editor2ImageRunData = {
+    src,
+    width: Math.max(1, Math.round(width)),
+    height: Math.max(1, Math.round(height)),
+  };
+
+  if (altAttr !== null) {
+    image.alt = altAttr;
+  }
+
+  return image;
+}
+
+function parseParagraphStyle(element: Element): Editor2ParagraphStyle | undefined {
+  const style = (element as HTMLElement).style;
+  const result: Editor2ParagraphStyle = {};
+
+  const align = style.textAlign.trim();
+  if (align === "left" || align === "center" || align === "right" || align === "justify") {
+    result.align = align;
+  }
+
+  const lineHeight = style.lineHeight.trim();
+  if (lineHeight) {
+    const parsed = Number.parseFloat(lineHeight);
+    if (Number.isFinite(parsed)) {
+      result.lineHeight = parsed;
+    }
+  }
+
+  const paddingTop = style.paddingTop.trim();
+  if (paddingTop.endsWith("px")) {
+    const parsed = Number.parseFloat(paddingTop);
+    if (Number.isFinite(parsed)) {
+      result.spacingBefore = parsed;
+    }
+  }
+
+  const paddingBottom = style.paddingBottom.trim();
+  if (paddingBottom.endsWith("px")) {
+    const parsed = Number.parseFloat(paddingBottom);
+    if (Number.isFinite(parsed)) {
+      result.spacingAfter = parsed;
+    }
+  }
+
+  const paddingLeft = style.paddingLeft.trim();
+  if (paddingLeft.endsWith("px")) {
+    const parsed = Number.parseFloat(paddingLeft);
+    if (Number.isFinite(parsed)) {
+      result.indentLeft = parsed;
+    }
+  }
+
+  const paddingRight = style.paddingRight.trim();
+  if (paddingRight.endsWith("px")) {
+    const parsed = Number.parseFloat(paddingRight);
+    if (Number.isFinite(parsed)) {
+      result.indentRight = parsed;
+    }
+  }
+
+  const textIndent = style.textIndent.trim();
+  if (textIndent.endsWith("px")) {
+    const parsed = Number.parseFloat(textIndent);
+    if (Number.isFinite(parsed)) {
+      result.indentFirstLine = parsed;
+    }
+  }
+
+  if (style.breakBefore === "page" || (element as HTMLElement).dataset.oasisPageBreakBefore === "true") {
+    result.pageBreakBefore = true;
+  }
+
+  if ((element as HTMLElement).dataset.oasisKeepWithNext === "true") {
+    result.keepWithNext = true;
+  }
+
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
+export function parseEditor2ClipboardHtml(html: string): Editor2ClipboardParagraphSpec[] {
+  if (typeof document === "undefined" || html.trim().length === 0) {
+    return [];
+  }
+
+  const template = document.createElement("template");
+  template.innerHTML = html;
+
+  const paragraphs: Editor2ClipboardParagraphSpec[] = [];
+  const rootNodes = Array.from(template.content.childNodes);
+
+  const appendParagraph = (element: Element | null, runs: Editor2TextRun[], list?: Editor2ParagraphListStyle) => {
+    const fallbackRuns = runs.length > 0 ? runs : [createEditor2StyledRun("")];
+    paragraphs.push({
+      runs: fallbackRuns.map((run) => ({
+        text: run.text,
+        styles: cloneStyle(run.styles),
+        image: run.image ? { ...run.image } : undefined,
+      })),
+      style: element ? parseParagraphStyle(element) : undefined,
+      list,
+    });
+  };
+
+  const collectInlineRuns = (node: Node, inheritedStyle: Editor2TextStyle | undefined): Editor2TextRun[] => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent ?? "";
+      return text.length > 0 ? [createEditor2StyledRun(text, inheritedStyle)] : [];
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return [];
+    }
+
+    const element = node as Element;
+    if (element.tagName === "BR") {
+      return [createEditor2StyledRun("\n", inheritedStyle)];
+    }
+
+    const image = parseInlineImage(element);
+    if (image) {
+      return [createEditor2StyledRun("\uFFFC", inheritedStyle, image)];
+    }
+
+    const nextStyle = {
+      ...(inheritedStyle ?? {}),
+      ...(parseInlineStyles(element) ?? {}),
+    } as Editor2TextStyle;
+    const childRuns: Editor2TextRun[] = [];
+    for (const child of Array.from(element.childNodes)) {
+      childRuns.push(...collectInlineRuns(child, nextStyle));
+    }
+    return childRuns;
+  };
+
+  const processList = (element: Element, kind: Editor2ParagraphListStyle["kind"]) => {
+    for (const child of Array.from(element.children)) {
+      if (child.tagName !== "LI") {
+        continue;
+      }
+      appendParagraph(child, collectInlineRuns(child, undefined), { kind, level: 0 });
+    }
+  };
+
+  for (const node of rootNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent ?? "";
+      if (text.trim().length > 0) {
+        appendParagraph(null, [createEditor2StyledRun(text)]);
+      }
+      continue;
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      continue;
+    }
+
+    const element = node as Element;
+    if (element.tagName === "UL") {
+      processList(element, "bullet");
+      continue;
+    }
+
+    if (element.tagName === "OL") {
+      processList(element, "ordered");
+      continue;
+    }
+
+    if (element.tagName === "P" || element.tagName === "DIV" || element.tagName === "LI" || /^H[1-6]$/.test(element.tagName)) {
+      appendParagraph(element, collectInlineRuns(element, undefined), element.tagName === "LI" ? { kind: "bullet", level: 0 } : undefined);
+      continue;
+    }
+
+    const inlineRuns = collectInlineRuns(element, undefined);
+    if (inlineRuns.length > 0) {
+      appendParagraph(null, inlineRuns);
+    }
+  }
+
+  return paragraphs;
+}
+
+export function insertClipboardParagraphsAtSelection(
+  state: Editor2State,
+  paragraphsSpec: Editor2ClipboardParagraphSpec[],
+): Editor2State {
+  if (paragraphsSpec.length === 0) {
+    return state;
+  }
+
+  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+  const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  const paragraphs = getParagraphs(collapsedState);
+  const beforeRuns = sliceRuns(paragraph, 0, offset);
+  const afterRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
+  const pastedParagraphs = paragraphsSpec.map((spec) => {
+    const nextParagraph = createEditor2ParagraphFromRuns(
+      spec.runs.map((run) => ({
+        text: run.text,
+        styles: cloneStyle(run.styles),
+        image: run.image ? { ...run.image } : undefined,
+      })),
+    );
+    nextParagraph.style = spec.style ? { ...spec.style } : undefined;
+    nextParagraph.list = spec.list ? { ...spec.list } : undefined;
+    return nextParagraph;
+  });
+
+  let nextParagraphs: Editor2ParagraphNode[];
+  let nextSelection = withSelection(paragraphOffsetToPosition(paragraph, offset));
+
+  if (pastedParagraphs.length === 1) {
+    const source = pastedParagraphs[0]!;
+    const sourceLength = source.runs.reduce((total, run) => total + run.text.length, 0);
+    const mergedParagraph = buildParagraphFromRuns(
+      paragraph,
+      [
+        ...beforeRuns,
+        ...source.runs.map(cloneRun),
+        ...afterRuns,
+      ],
+      getStyleAtOffset(paragraph, offset),
+    );
+    mergedParagraph.style = paragraph.style ? { ...paragraph.style } : source.style ? { ...source.style } : undefined;
+    mergedParagraph.list = paragraph.list ? { ...paragraph.list } : source.list ? { ...source.list } : undefined;
+    nextParagraphs = [
+      ...cloneParagraphs(paragraphs.slice(0, index)),
+      mergedParagraph,
+      ...cloneParagraphs(paragraphs.slice(index + 1)),
+    ];
+    nextSelection = withSelection(
+      paragraphOffsetToPosition(mergedParagraph, beforeRuns.reduce((total, run) => total + run.text.length, 0) + sourceLength),
+    );
+  } else {
+    const firstSource = pastedParagraphs[0]!;
+    const lastSource = pastedParagraphs[pastedParagraphs.length - 1]!;
+    const lastSourceLength = lastSource.runs.reduce((total, run) => total + run.text.length, 0);
+    const firstParagraph = buildParagraphFromRuns(
+      paragraph,
+      [
+        ...beforeRuns,
+        ...firstSource.runs.map(cloneRun),
+      ],
+      getStyleAtOffset(paragraph, offset),
+    );
+    firstParagraph.style = paragraph.style ? { ...paragraph.style } : firstSource.style ? { ...firstSource.style } : undefined;
+    firstParagraph.list = paragraph.list ? { ...paragraph.list } : firstSource.list ? { ...firstSource.list } : undefined;
+
+    const middleParagraphs = pastedParagraphs.slice(1, -1).map(cloneParagraph);
+
+    const lastParagraph = buildParagraphFromRuns(
+      lastSource,
+      [
+        ...lastSource.runs.map(cloneRun),
+        ...afterRuns,
+      ],
+      lastSource.style ? { ...lastSource.style } : undefined,
+    );
+    lastParagraph.list = lastSource.list ? { ...lastSource.list } : undefined;
+
+    nextParagraphs = [
+      ...cloneParagraphs(paragraphs.slice(0, index)),
+      firstParagraph,
+      ...middleParagraphs,
+      lastParagraph,
+      ...cloneParagraphs(paragraphs.slice(index + 1)),
+    ];
+    nextSelection = withSelection(paragraphOffsetToPosition(lastParagraph, lastSourceLength));
+  }
+
+  return cloneStateWithParagraphs(collapsedState, nextParagraphs, nextSelection);
+}
+
+export function insertClipboardHtmlAtSelection(state: Editor2State, html: string): Editor2State {
+  return insertClipboardParagraphsAtSelection(state, parseEditor2ClipboardHtml(html));
+}
+
 export function setSelection(state: Editor2State, selection: Editor2Selection): Editor2State {
   return {
     document: state.document,
@@ -549,42 +1157,16 @@ export function resizeSelectedImage(
   width: number,
   height: number,
 ): Editor2State {
-  const normalized = normalizeSelection(state);
-  if (
-    normalized.isCollapsed ||
-    normalized.startIndex !== normalized.endIndex ||
-    normalized.endParagraphOffset - normalized.startParagraphOffset !== 1
-  ) {
+  const selectedImage = getSelectedImageRun(state);
+  if (!selectedImage) {
     return state;
   }
 
   const paragraphs = getParagraphs(state);
-  const paragraph = paragraphs[normalized.startIndex];
-  if (!paragraph) {
-    return state;
-  }
-
-  let runStart = 0;
-  let targetRun: Editor2TextRun | undefined;
-  for (const run of paragraph.runs) {
-    const startOffset = runStart;
-    runStart += run.text.length;
-    if (
-      run.image &&
-      run.text.length === 1 &&
-      startOffset === normalized.startParagraphOffset
-    ) {
-      targetRun = run;
-      break;
-    }
-  }
-
-  if (!targetRun?.image) {
-    return state;
-  }
+  const { paragraphIndex, run: targetRun } = selectedImage;
 
   const nextParagraphs = paragraphs.map((candidate, candidateIndex) => {
-    if (candidateIndex !== normalized.startIndex) {
+    if (candidateIndex !== paragraphIndex) {
       return cloneParagraph(candidate);
     }
 
@@ -608,7 +1190,51 @@ export function resizeSelectedImage(
   return cloneStateWithParagraphs(
     state,
     nextParagraphs,
-    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalizeSelection(state)),
+  );
+}
+
+export function getSelectedImageAlt(state: Editor2State): string | null {
+  const selectedImage = getSelectedImageRun(state);
+  if (!selectedImage?.run.image) {
+    return null;
+  }
+
+  return selectedImage.run.image.alt ?? null;
+}
+
+export function setSelectedImageAlt(state: Editor2State, alt: string | null): Editor2State {
+  const selectedImage = getSelectedImageRun(state);
+  if (!selectedImage?.run.image) {
+    return state;
+  }
+
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map((candidate, candidateIndex) => {
+    if (candidateIndex !== selectedImage.paragraphIndex) {
+      return cloneParagraph(candidate);
+    }
+
+    return {
+      ...cloneParagraph(candidate),
+      runs: candidate.runs.map((run) =>
+        run.id === selectedImage.run.id && run.image
+          ? {
+              ...run,
+              image: {
+                ...run.image,
+                alt: alt ?? undefined,
+              },
+            }
+          : cloneRun(run),
+      ),
+    };
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalizeSelection(state)),
   );
 }
 
@@ -616,36 +1242,13 @@ export function moveSelectedImageToPosition(
   state: Editor2State,
   targetPosition: Editor2Position,
 ): Editor2State {
-  const normalized = normalizeSelection(state);
-  if (
-    normalized.isCollapsed ||
-    normalized.startIndex !== normalized.endIndex ||
-    normalized.endParagraphOffset - normalized.startParagraphOffset !== 1
-  ) {
+  const selectedImage = getSelectedImageRun(state);
+  if (!selectedImage) {
     return state;
   }
 
   const paragraphs = getParagraphs(state);
-  const sourceParagraph = paragraphs[normalized.startIndex];
-  if (!sourceParagraph) {
-    return state;
-  }
-
-  const sourceOffset = normalized.startParagraphOffset;
-  let imageRun: Editor2TextRun | undefined;
-  let consumed = 0;
-  for (const run of sourceParagraph.runs) {
-    const runStart = consumed;
-    consumed += run.text.length;
-    if (run.image && run.text.length === 1 && runStart === sourceOffset) {
-      imageRun = run;
-      break;
-    }
-  }
-
-  if (!imageRun?.image) {
-    return state;
-  }
+  const { paragraphIndex: sourceIndex, offset: sourceOffset, run: imageRun } = selectedImage;
 
   const targetIndex = findParagraphIndex(paragraphs, targetPosition.paragraphId);
   if (targetIndex < 0) {
@@ -655,11 +1258,11 @@ export function moveSelectedImageToPosition(
   const targetParagraph = paragraphs[targetIndex];
   const targetOffsetRaw = positionToParagraphOffset(targetParagraph, targetPosition);
   const adjustedTargetOffset =
-    targetIndex === normalized.startIndex && targetOffsetRaw > sourceOffset
+    targetIndex === sourceIndex && targetOffsetRaw > sourceOffset
       ? targetOffsetRaw - 1
       : targetOffsetRaw;
 
-  if (targetIndex === normalized.startIndex && adjustedTargetOffset === sourceOffset) {
+  if (targetIndex === sourceIndex && adjustedTargetOffset === sourceOffset) {
     return state;
   }
 
@@ -680,11 +1283,11 @@ export function moveSelectedImageToPosition(
     );
 
   const nextParagraphs = paragraphs.map((paragraph, index) => {
-    if (index === normalized.startIndex && index === targetIndex) {
+    if (index === sourceIndex && index === targetIndex) {
       return insertImageIntoParagraph(removeImageFromParagraph(paragraph), adjustedTargetOffset);
     }
 
-    if (index === normalized.startIndex) {
+    if (index === sourceIndex) {
       return removeImageFromParagraph(paragraph);
     }
 

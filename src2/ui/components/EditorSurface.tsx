@@ -244,6 +244,7 @@ function renderParagraph(
                                 src={fragment.image.src}
                                 width={fragment.image.width}
                                 height={fragment.image.height}
+                                alt={fragment.image.alt ?? ""}
                                 class="oasis-editor-2-image"
                                 style={{
                                   width: `${fragment.image.width}px`,

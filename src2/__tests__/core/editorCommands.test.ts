@@ -6,6 +6,7 @@ import {
   extendSelectionLeft,
   extendSelectionRight,
   getLinkAtSelection,
+  getSelectedImageAlt,
   getSelectedText,
   insertPlainTextAtSelection,
   insertTextAtSelection,
@@ -17,7 +18,9 @@ import {
   moveSelectionUp,
   moveSelectedImageToPosition,
   resizeSelectedImage,
+  serializeEditor2SelectionToHtml,
   setLinkAtSelection,
+  setSelectedImageAlt,
   setParagraphStyle,
   setTextStyleValue,
   splitBlockAtSelection,
@@ -169,6 +172,35 @@ describe("editor-2 commands", () => {
     expect(paragraphTexts(next)).toEqual(["heA", "Bllo"]);
     expect(next.selection.focus.paragraphId).toBe(getParagraphs(next)[1].id);
     expect(next.selection.focus.offset).toBe(1);
+  });
+
+  it("serializes selected content to html with inline formatting and links", () => {
+    const state = createEditor2StateFromParagraphRuns(
+      [[
+        { text: "Hi ", styles: { bold: true } },
+        {
+          text: "\uFFFC",
+          image: {
+            src: "data:image/png;base64,abc",
+            width: 24,
+            height: 18,
+            alt: "Diagram",
+          },
+        },
+        { text: "there", styles: { link: "https://example.com" } },
+      ]],
+      {
+        anchor: { blockIndex: 0, offset: 0 },
+        focus: { blockIndex: 0, offset: 9 },
+      },
+    );
+
+    const html = serializeEditor2SelectionToHtml(state);
+
+    expect(html).toContain("<strong>Hi </strong>");
+    expect(html).toContain("<img src=\"data:image/png;base64,abc\"");
+    expect(html).toContain('<a href="https://example.com">');
+    expect(html).toContain('alt="Diagram"');
   });
 
   it("preserves surrounding runs when inserting inside a multi-run paragraph", () => {
@@ -494,7 +526,7 @@ describe("editor-2 commands", () => {
   it("resizes the currently selected image object", () => {
     const inserted = insertImageAtSelection(
       createEditor2StateFromTexts([""], { blockIndex: 0, offset: 0 }),
-      { src: "data:image/png;base64,abc", width: 100, height: 50 },
+      { src: "data:image/png;base64,abc", width: 100, height: 50, alt: "Diagram" },
     );
     const paragraph = getParagraphs(inserted)[0]!;
     const selected = {
@@ -509,6 +541,30 @@ describe("editor-2 commands", () => {
 
     expect(imageRun?.image?.width).toBe(180);
     expect(imageRun?.image?.height).toBe(90);
+    expect(imageRun?.image?.alt).toBe("Diagram");
+  });
+
+  it("edits the selected image alt text without changing image geometry", () => {
+    const inserted = insertImageAtSelection(
+      createEditor2StateFromTexts([""], { blockIndex: 0, offset: 0 }),
+      { src: "data:image/png;base64,abc", width: 100, height: 50 },
+    );
+    const paragraph = getParagraphs(inserted)[0]!;
+    const selected = {
+      ...inserted,
+      selection: {
+        anchor: paragraphOffsetToPosition(paragraph, 0),
+        focus: paragraphOffsetToPosition(paragraph, 1),
+      },
+    };
+
+    const next = setSelectedImageAlt(selected, "Chart");
+    const imageRun = getParagraphs(next)[0]!.runs.find((run) => run.image);
+
+    expect(imageRun?.image?.alt).toBe("Chart");
+    expect(imageRun?.image?.width).toBe(100);
+    expect(imageRun?.image?.height).toBe(50);
+    expect(getSelectedImageAlt(next)).toBe("Chart");
   });
 
   it("moves a selected image to another paragraph position", () => {

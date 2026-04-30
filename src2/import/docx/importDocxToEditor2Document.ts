@@ -279,9 +279,9 @@ async function parseRunElement(
   runElement: XmlElement,
   zip: JSZip,
   relsMap: Map<string, string>,
-): Promise<{ text: string; image?: { src: string; width: number; height: number } }> {
+): Promise<{ text: string; image?: { src: string; width: number; height: number; alt?: string } }> {
   const textParts: string[] = [];
-  let image: { src: string; width: number; height: number; } | undefined;
+  let image: { src: string; width: number; height: number; alt?: string } | undefined;
 
   const children = runElement.childNodes;
   for (let index = 0; index < children.length; index += 1) {
@@ -322,6 +322,7 @@ async function parseRunElement(
               if (base64) {
                 textParts.push("\uFFFC");
                 const extent = findElementDeep(element, "extent");
+                const docPr = findElementDeep(element, "docPr");
                 let width = 300;
                 let height = 300;
                 if (extent) {
@@ -330,7 +331,15 @@ async function parseRunElement(
                   if (cx) width = Math.round(parseInt(cx, 10) / 9525);
                   if (cy) height = Math.round(parseInt(cy, 10) / 9525);
                 }
-                image = { src: `data:${mime};base64,${base64}`, width, height };
+                const alt = docPr
+                  ? getAttributeValue(docPr, "descr") ?? getAttributeValue(docPr, "title")
+                  : null;
+                image = {
+                  src: `data:${mime};base64,${base64}`,
+                  width,
+                  height,
+                  ...(alt !== null ? { alt } : {}),
+                };
               }
             }
           }
@@ -349,7 +358,7 @@ async function parseRunsContainer(
   relsMap: Map<string, string>,
   inheritedLink?: string | null,
 ) {
-  const runs: Array<{ text: string; image?: { src: string; width: number; height: number }; styles?: Editor2TextStyle }> = [];
+  const runs: Array<{ text: string; image?: { src: string; width: number; height: number; alt?: string }; styles?: Editor2TextStyle }> = [];
 
   for (let index = 0; index < container.childNodes.length; index += 1) {
     const node = container.childNodes[index];

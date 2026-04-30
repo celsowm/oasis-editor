@@ -192,7 +192,7 @@ function serializeRunProperties(styles?: Editor2TextStyle): string {
 interface DocContext {
   numberingInfo: Map<string, { numId: number; level: number }>;
   definitions: Array<{ kind: Editor2ParagraphListStyle["kind"]; level: number; abstractNumId: number; numId: number }>;
-  images: Array<{ rId: string; target: string; base64: string; runId: string; cx: number; cy: number }>;
+  images: Array<{ rId: string; target: string; base64: string; runId: string; cx: number; cy: number; alt?: string }>;
   imageMap: Map<string, string>;
   hyperlinks: Array<{ rId: string; href: string }>;
   hyperlinkMap: Map<string, string>;
@@ -205,7 +205,8 @@ function serializeRun(run: Editor2TextRun, context: DocContext): string {
       const img = context.images.find(i => i.rId === rId);
       if (img) {
         const docPrId = Math.floor(Math.random() * 10000) + 1;
-        const drawing = `<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${img.cx}" cy="${img.cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${docPrId}" name="Picture"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="Picture"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rId}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${img.cx}" cy="${img.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>`;
+        const altAttr = img.alt !== undefined ? ` descr="${escapeXml(img.alt)}" title="${escapeXml(img.alt)}"` : "";
+        const drawing = `<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${img.cx}" cy="${img.cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${docPrId}" name="Picture"${altAttr}/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="Picture"${altAttr}/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rId}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${img.cx}" cy="${img.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>`;
         return `<w:r>${serializeRunProperties(run.styles)}${drawing}</w:r>`;
       }
     }
@@ -361,7 +362,7 @@ function buildDocumentContext(document: Editor2Document): DocContext {
            const base64 = match[2];
            const target = `media/image${nextImageId}.${ext}`;
            const rId = `rIdImg${nextImageId}`;
-           images.push({ rId, target, base64, runId: run.id, cx: Math.round(run.image.width * 9525), cy: Math.round(run.image.height * 9525) });
+           images.push({ rId, target, base64, runId: run.id, cx: Math.round(run.image.width * 9525), cy: Math.round(run.image.height * 9525), alt: run.image.alt });
            imageMap.set(run.id, rId);
            nextImageId++;
         }

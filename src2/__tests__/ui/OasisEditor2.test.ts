@@ -163,6 +163,130 @@ describe("OasisEditor2", () => {
     instance.dispose();
   });
 
+  it("moves to the start and end of the current paragraph with home and end", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    input.value = "hello";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "hello", inputType: "insertText" }));
+    await Promise.resolve();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "End" }));
+    await Promise.resolve();
+    input.value = "!";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "!", inputType: "insertText" }));
+    await Promise.resolve();
+    expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("hello!");
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Home" }));
+    await Promise.resolve();
+    input.value = "^";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "^", inputType: "insertText" }));
+    await Promise.resolve();
+    expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("^hello!");
+
+    instance.dispose();
+  });
+
+  it("moves to the start and end of the document with ctrl plus home and end", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    input.value = "first";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "first", inputType: "insertText" }));
+    await Promise.resolve();
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+    await Promise.resolve();
+    input.value = "second";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "second", inputType: "insertText" }));
+    await Promise.resolve();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Home", ctrlKey: true }));
+    await Promise.resolve();
+    input.value = ">";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: ">", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const paragraphsAfterStart = Array.from(root.querySelectorAll("[data-paragraph-id]"));
+    expect(paragraphsAfterStart[0]?.textContent).toContain(">first");
+    expect(paragraphsAfterStart[1]?.textContent).toContain("second");
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "End", ctrlKey: true }));
+    await Promise.resolve();
+    input.value = "<";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "<", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const paragraphsAfterEnd = Array.from(root.querySelectorAll("[data-paragraph-id]"));
+    expect(paragraphsAfterEnd[0]?.textContent).toContain(">first");
+    expect(paragraphsAfterEnd[1]?.textContent).toContain("second<");
+
+    instance.dispose();
+  });
+
+  it("moves by word with ctrl plus arrow left and right", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    input.value = "hello brave world";
+    input.dispatchEvent(
+      new InputEvent("input", { bubbles: true, data: "hello brave world", inputType: "insertText" }),
+    );
+    await Promise.resolve();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", ctrlKey: true }));
+    await Promise.resolve();
+    input.value = "^";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "^", inputType: "insertText" }));
+    await Promise.resolve();
+
+    expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain(
+      "hello brave ^world",
+    );
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Home" }));
+    await Promise.resolve();
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight", ctrlKey: true }));
+    await Promise.resolve();
+    input.value = "*";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "*", inputType: "insertText" }));
+    await Promise.resolve();
+
+    expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain(
+      "hello *brave ^world",
+    );
+
+    instance.dispose();
+  });
+
+  it("extends selection by word with ctrl plus shift plus arrow left", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    input.value = "hello brave world";
+    input.dispatchEvent(
+      new InputEvent("input", { bubbles: true, data: "hello brave world", inputType: "insertText" }),
+    );
+    await Promise.resolve();
+
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", ctrlKey: true, shiftKey: true }),
+    );
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const selectedChars = Array.from(root.querySelectorAll(".oasis-editor-2-char-selected")).map(
+      (node) => node.textContent,
+    );
+    expect(selectedChars.join("")).toBe("world");
+
+    instance.dispose();
+  });
+
   it("moves a selected inline image to the next paragraph with alt plus arrow down", async () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
@@ -238,7 +362,8 @@ describe("OasisEditor2", () => {
 
       const paragraphs = Array.from(root.querySelectorAll("[data-paragraph-id]")) as HTMLElement[];
       expect(paragraphs[0]?.textContent).toBe("a");
-      expect(paragraphs[1]?.textContent).toBe("\uFFFCb");
+      expect(paragraphs[1]?.textContent).toBe("b");
+      expect(paragraphs[1]?.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
     } finally {
       Object.defineProperty(globalThis, "Image", {
         configurable: true,
@@ -639,12 +764,18 @@ describe("OasisEditor2", () => {
     await Promise.resolve();
 
     let clipboardText = "";
+    let clipboardHtml = "";
     const cutEvent = new Event("cut", { bubbles: true, cancelable: true }) as ClipboardEvent;
     Object.defineProperty(cutEvent, "clipboardData", {
       configurable: true,
       value: {
         setData: (_type: string, value: string) => {
-          clipboardText = value;
+          if (_type === "text/plain") {
+            clipboardText = value;
+          }
+          if (_type === "text/html") {
+            clipboardHtml = value;
+          }
         },
       },
     });
@@ -652,19 +783,127 @@ describe("OasisEditor2", () => {
     await Promise.resolve();
 
     expect(clipboardText).toBe("o");
+    expect(clipboardHtml).toContain("<p>");
     expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("hell");
 
     const pasteEvent = new Event("paste", { bubbles: true, cancelable: true }) as ClipboardEvent;
     Object.defineProperty(pasteEvent, "clipboardData", {
       configurable: true,
       value: {
-        getData: () => clipboardText,
+        getData: (type: string) => (type === "text/html" ? clipboardHtml : clipboardText),
       },
     });
     input.dispatchEvent(pasteEvent);
     await Promise.resolve();
 
     expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("hello");
+
+    instance.dispose();
+  });
+
+  it("pastes rich html content with inline styles and links", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    const pasteEvent = new Event("paste", { bubbles: true, cancelable: true }) as ClipboardEvent;
+    Object.defineProperty(pasteEvent, "clipboardData", {
+      configurable: true,
+      value: {
+        getData: (type: string) =>
+          type === "text/html"
+            ? `<p style="text-align:center"><strong>He</strong><img src="data:image/png;base64,abc" width="12" height="8"><a href="https://example.com">llo</a></p><p><em>world</em></p>`
+            : "",
+      },
+    });
+
+    input.dispatchEvent(pasteEvent);
+    await Promise.resolve();
+
+    const paragraphs = root.querySelectorAll('[data-testid="editor-2-block"]');
+    expect(paragraphs).toHaveLength(2);
+    expect(paragraphs[0]?.textContent).toContain("Hello");
+    expect((paragraphs[0] as HTMLParagraphElement).style.textAlign).toBe("center");
+    expect(root.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="editor-2-link"]')).not.toBeNull();
+    expect(paragraphs[1]?.textContent).toContain("world");
+
+    instance.dispose();
+  });
+
+  it("pastes image files from the clipboard and keeps undo and redo coherent", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const instance = createOasisEditor2(root);
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+    const undoButton = root.querySelector('[data-testid="editor-2-toolbar-undo"]') as HTMLButtonElement;
+    const redoButton = root.querySelector('[data-testid="editor-2-toolbar-redo"]') as HTMLButtonElement;
+    const file = createTinyPngFile("clipboard-image.png");
+
+    const OriginalImage = globalThis.Image;
+    class MockImage {
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+      naturalWidth = 80;
+      naturalHeight = 40;
+
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
+    }
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      value: MockImage,
+    });
+
+    try {
+      const pasteEvent = new Event("paste", { bubbles: true, cancelable: true }) as ClipboardEvent;
+      Object.defineProperty(pasteEvent, "clipboardData", {
+        configurable: true,
+        value: {
+          items: [
+            {
+              kind: "file",
+              getAsFile: () => file,
+            },
+          ],
+          files: [file],
+          getData: () => "",
+        },
+      });
+
+      input.dispatchEvent(pasteEvent);
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (root.querySelector('[data-testid="editor-2-image"]')) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
+      expect(image).not.toBeNull();
+      expect(image.width).toBe(80);
+      expect(image.height).toBe(40);
+      expect(undoButton.disabled).toBe(false);
+
+      undoButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+      expect(root.querySelector('[data-testid="editor-2-image"]')).toBeNull();
+      expect(redoButton.disabled).toBe(false);
+
+      redoButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (root.querySelector('[data-testid="editor-2-image"]')) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      expect(root.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
+    } finally {
+      Object.defineProperty(globalThis, "Image", {
+        configurable: true,
+        value: OriginalImage,
+      });
+    }
 
     instance.dispose();
   });

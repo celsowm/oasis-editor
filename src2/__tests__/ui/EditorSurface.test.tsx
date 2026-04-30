@@ -130,6 +130,7 @@ describe("EditorSurface", () => {
           src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
           width: 48,
           height: 24,
+          alt: "Decorative chart",
         },
       },
       { text: "B" },
@@ -170,6 +171,7 @@ describe("EditorSurface", () => {
     expect(image.getAttribute("src")).toContain("data:image/png;base64,");
     expect(image.getAttribute("width")).toBe("48");
     expect(image.getAttribute("height")).toBe("24");
+    expect(image.getAttribute("alt")).toBe("Decorative chart");
     expect(chars.length).toBe(3);
 
     dispose();

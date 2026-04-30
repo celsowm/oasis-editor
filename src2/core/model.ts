@@ -33,6 +33,7 @@ export interface Editor2ImageRunData {
   src: string;
   width: number;
   height: number;
+  alt?: string;
 }
 
 export interface Editor2TextRun {

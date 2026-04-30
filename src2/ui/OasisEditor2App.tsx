@@ -34,7 +34,9 @@ import {
   extendSelectionRight,
   extendSelectionUp,
   getLinkAtSelection,
+  getSelectedImageRun,
   getSelectedText,
+  insertClipboardHtmlAtSelection,
   insertPlainTextAtSelection,
   insertTextAtSelection,
   insertImageAtSelection,
@@ -45,10 +47,13 @@ import {
   moveSelectionLeft,
   moveSelectionRight,
   moveSelectionUp,
+  parseEditor2ClipboardHtml,
   setParagraphStyle,
   setLinkAtSelection,
+  setSelectedImageAlt,
   setSelection,
   setTextStyleValue,
+  serializeEditor2SelectionToHtml,
   splitBlockAtSelection,
   toggleParagraphList,
   toggleTextStyle,
@@ -323,6 +328,61 @@ function resolveWordSelection(text: string, offset: number): { start: number; en
   return { start, end };
 }
 
+function findPreviousWordBoundary(text: string, offset: number): number {
+  if (text.length === 0) {
+    return 0;
+  }
+
+  let index = Math.max(0, Math.min(offset, text.length));
+  if (index === 0) {
+    return 0;
+  }
+
+  if (isWordCharacter(text[index - 1] ?? "")) {
+    while (index > 0 && isWordCharacter(text[index - 1] ?? "")) {
+      index -= 1;
+    }
+    return index;
+  }
+
+  while (index > 0 && !isWordCharacter(text[index - 1] ?? "")) {
+    index -= 1;
+  }
+
+  while (index > 0 && isWordCharacter(text[index - 1] ?? "")) {
+    index -= 1;
+  }
+
+  return index;
+}
+
+function findNextWordBoundary(text: string, offset: number): number {
+  if (text.length === 0) {
+    return 0;
+  }
+
+  let index = Math.max(0, Math.min(offset, text.length));
+  if (index >= text.length) {
+    return text.length;
+  }
+
+  if (isWordCharacter(text[index] ?? "")) {
+    while (index < text.length && isWordCharacter(text[index] ?? "")) {
+      index += 1;
+    }
+    while (index < text.length && !isWordCharacter(text[index] ?? "")) {
+      index += 1;
+    }
+    return index;
+  }
+
+  while (index < text.length && !isWordCharacter(text[index] ?? "")) {
+    index += 1;
+  }
+
+  return index;
+}
+
 export function OasisEditor2App() {
   const logger = createEditor2Logger("app");
   const [state, setState] = createStore<Editor2State>(createInitialEditor2State());
@@ -350,6 +410,7 @@ export function OasisEditor2App() {
   let activeImageResize: ActiveImageResize | null = null;
   let historyState = createEmptyEditor2HistoryState();
   let suppressedInputText: string | null = null;
+  let forcePlainTextPaste = false;
   const booleanButtons: Array<{ key: BooleanStyleKey; label: string; testId: string }> = [
     { key: "bold", label: "B", testId: "editor-2-toolbar-bold" },
     { key: "italic", label: "I", testId: "editor-2-toolbar-italic" },
@@ -1618,6 +1679,9 @@ export function OasisEditor2App() {
     return getToolbarStyleState(state);
   };
 
+  const selectedImageRun = () => getSelectedImageRun(state);
+  const selectedImageAlt = () => selectedImageRun()?.run.image?.alt ?? null;
+
   const tableSelectionLabel = (): string | null => {
     const normalized = normalizeSelection(state);
     if (normalized.isCollapsed) {
@@ -1774,6 +1838,33 @@ export function OasisEditor2App() {
 
   const removeLinkCommand = () => {
     applyLinkCommand(null);
+  };
+
+  const applyImageAltCommand = (alt: string) => {
+    const selectedImage = selectedImageRun();
+    if (!selectedImage) {
+      return;
+    }
+
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyTransactionalState((current) => setSelectedImageAlt(current, alt), { mergeKey: "imageAlt" });
+    focusInput();
+  };
+
+  const promptForImageAlt = () => {
+    const selectedImage = selectedImageRun();
+    if (!selectedImage) {
+      return;
+    }
+
+    const nextAlt = window.prompt("Enter image alt text", selectedImageAlt() ?? "");
+    if (nextAlt === null) {
+      focusInput();
+      return;
+    }
+
+    applyImageAltCommand(nextAlt.trim());
   };
 
   const handleImportDocx = async (file: File | null) => {
@@ -2159,6 +2250,7 @@ export function OasisEditor2App() {
 
     event.preventDefault();
     event.clipboardData?.setData("text/plain", text);
+    event.clipboardData?.setData("text/html", serializeEditor2SelectionToHtml(state));
   };
 
   const handleCut = (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => {
@@ -2169,6 +2261,7 @@ export function OasisEditor2App() {
 
     event.preventDefault();
     event.clipboardData?.setData("text/plain", text);
+    event.clipboardData?.setData("text/html", serializeEditor2SelectionToHtml(state));
     clearPreferredColumn();
     resetTransactionGrouping();
     applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)));
@@ -2176,12 +2269,44 @@ export function OasisEditor2App() {
   };
 
   const handlePaste = (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => {
+    if (forcePlainTextPaste) {
+      forcePlainTextPaste = false;
+      const text = event.clipboardData?.getData("text/plain") ?? "";
+      if (text.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      event.preventDefault();
+      clearPreferredColumn();
+      resetTransactionGrouping();
+      applyTransactionalState((current) =>
+        applyTableAwareParagraphEdit(current, (temp) => insertPlainTextAtSelection(temp, text)),
+      );
+      event.currentTarget.value = "";
+      focusInput();
+      return;
+    }
+
     const imageFile = findImageFileFromTransfer(event.clipboardData);
     if (imageFile) {
       event.preventDefault();
       clearPreferredColumn();
       resetTransactionGrouping();
       void insertImageFromFile(imageFile);
+      event.currentTarget.value = "";
+      focusInput();
+      return;
+    }
+
+    const html = event.clipboardData?.getData("text/html") ?? "";
+    if (html.trim().length > 0 && parseEditor2ClipboardHtml(html).length > 0) {
+      event.preventDefault();
+      clearPreferredColumn();
+      resetTransactionGrouping();
+      applyTransactionalState((current) =>
+        applyTableAwareParagraphEdit(current, (temp) => insertClipboardHtmlAtSelection(temp, html)),
+      );
       event.currentTarget.value = "";
       focusInput();
       return;
@@ -2615,6 +2740,95 @@ export function OasisEditor2App() {
     };
   };
 
+  const moveSelectionToParagraphBoundary = (boundary: "start" | "end", extend: boolean) => {
+    const targetParagraph = getParagraphs(state).find(
+      (paragraph) => paragraph.id === state.selection.focus.paragraphId,
+    );
+    if (!targetParagraph) {
+      return false;
+    }
+
+    const targetOffset = boundary === "start" ? 0 : getParagraphText(targetParagraph).length;
+    const targetPosition = paragraphOffsetToPosition(targetParagraph, targetOffset);
+    clearPreferredColumn();
+    applyState(
+      setSelection(state, {
+        anchor: extend ? state.selection.anchor : targetPosition,
+        focus: targetPosition,
+      }),
+    );
+    return true;
+  };
+
+  const moveSelectionToDocumentBoundary = (boundary: "start" | "end", extend: boolean) => {
+    const paragraphs = getParagraphs(state);
+    if (paragraphs.length === 0) {
+      return false;
+    }
+
+    const targetParagraph = boundary === "start" ? paragraphs[0] : paragraphs[paragraphs.length - 1];
+    const targetOffset = boundary === "start" ? 0 : getParagraphText(targetParagraph).length;
+    const targetPosition = paragraphOffsetToPosition(targetParagraph, targetOffset);
+    clearPreferredColumn();
+    applyState(
+      setSelection(state, {
+        anchor: extend ? state.selection.anchor : targetPosition,
+        focus: targetPosition,
+      }),
+    );
+    return true;
+  };
+
+  const moveSelectionByWord = (direction: "left" | "right", extend: boolean) => {
+    const paragraphs = getParagraphs(state);
+    const focusParagraphIndex = paragraphs.findIndex(
+      (paragraph) => paragraph.id === state.selection.focus.paragraphId,
+    );
+    const focusParagraph = paragraphs[focusParagraphIndex];
+    if (!focusParagraph) {
+      return false;
+    }
+
+    const paragraphText = getParagraphText(focusParagraph);
+    const focusOffset = state.selection.focus.offset;
+    const paragraphLength = paragraphText.length;
+
+    if (!extend && !isSelectionCollapsed(state.selection)) {
+      clearPreferredColumn();
+      applyState(direction === "left" ? moveSelectionLeft(state) : moveSelectionRight(state));
+      return true;
+    }
+
+    let targetParagraph = focusParagraph;
+    let targetOffset = focusOffset;
+
+    if (direction === "left") {
+      if (focusOffset === 0 && focusParagraphIndex > 0) {
+        targetParagraph = paragraphs[focusParagraphIndex - 1]!;
+        targetOffset = getParagraphText(targetParagraph).length;
+      } else {
+        targetOffset = findPreviousWordBoundary(paragraphText, focusOffset);
+      }
+    } else {
+      if (focusOffset === paragraphLength && focusParagraphIndex < paragraphs.length - 1) {
+        targetParagraph = paragraphs[focusParagraphIndex + 1]!;
+        targetOffset = 0;
+      } else {
+        targetOffset = findNextWordBoundary(paragraphText, focusOffset);
+      }
+    }
+
+    const targetPosition = paragraphOffsetToPosition(targetParagraph, targetOffset);
+    clearPreferredColumn();
+    applyState(
+      setSelection(state, {
+        anchor: extend ? state.selection.anchor : targetPosition,
+        focus: targetPosition,
+      }),
+    );
+    return true;
+  };
+
   const handleKeyDown = (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a" && !event.altKey) {
       event.preventDefault();
@@ -2632,6 +2846,116 @@ export function OasisEditor2App() {
           focus: paragraphOffsetToPosition(lastParagraph, getParagraphText(lastParagraph).length),
         }),
       );
+      focusInput();
+      return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.altKey && event.key.toLowerCase() === "a") {
+      const selectedImage = selectedImageRun();
+      if (selectedImage) {
+        event.preventDefault();
+        promptForImageAlt();
+        return;
+      }
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "v" && !event.altKey) {
+      event.preventDefault();
+      forcePlainTextPaste = true;
+      focusInput();
+      return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        resetTransactionGrouping();
+        if (moveSelectionByWord(event.key === "ArrowLeft" ? "left" : "right", event.shiftKey)) {
+          focusInput();
+          return;
+        }
+      }
+
+      if (event.key === "Backspace" || event.key === "Delete") {
+        event.preventDefault();
+        clearPreferredColumn();
+        resetTransactionGrouping();
+
+        if (!isSelectionCollapsed(state.selection)) {
+          applyTransactionalState((current) =>
+            applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)),
+          );
+          event.currentTarget.value = "";
+          focusInput();
+          return;
+        }
+
+        const paragraphs = getParagraphs(state);
+        const focusParagraphIndex = paragraphs.findIndex(
+          (paragraph) => paragraph.id === state.selection.focus.paragraphId,
+        );
+        const focusParagraph = paragraphs[focusParagraphIndex];
+        if (!focusParagraph) {
+          event.currentTarget.value = "";
+          focusInput();
+          return;
+        }
+
+        const focusOffset = state.selection.focus.offset;
+        const paragraphText = getParagraphText(focusParagraph);
+        const word = resolveWordSelection(paragraphText, focusOffset);
+
+        if (event.key === "Backspace") {
+          if (focusOffset === 0 || word.start === focusOffset) {
+            applyTransactionalState((current) =>
+              applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)),
+            );
+          } else {
+            applyTransactionalState((current) =>
+              applyTableAwareParagraphEdit(
+                setSelection(current, {
+                  anchor: paragraphOffsetToPosition(focusParagraph, word.start),
+                  focus: paragraphOffsetToPosition(focusParagraph, focusOffset),
+                }),
+                (temp) => deleteBackward(temp),
+              ),
+            );
+          }
+        } else if (focusOffset >= paragraphText.length) {
+          applyTransactionalState((current) =>
+            applyTableAwareParagraphEdit(current, (temp) => deleteForward(temp)),
+          );
+        } else if (word.end > focusOffset) {
+          applyTransactionalState((current) =>
+            applyTableAwareParagraphEdit(
+              setSelection(current, {
+                anchor: paragraphOffsetToPosition(focusParagraph, focusOffset),
+                focus: paragraphOffsetToPosition(focusParagraph, word.end),
+              }),
+              (temp) => deleteBackward(temp),
+            ),
+          );
+        } else {
+          applyTransactionalState((current) =>
+            applyTableAwareParagraphEdit(current, (temp) => deleteForward(temp)),
+          );
+        }
+
+        event.currentTarget.value = "";
+        focusInput();
+        return;
+      }
+    }
+
+    if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      resetTransactionGrouping();
+      const boundary = event.key === "Home" ? "start" : "end";
+      if (event.ctrlKey || event.metaKey) {
+        moveSelectionToDocumentBoundary(boundary, event.shiftKey);
+      } else {
+        moveSelectionToParagraphBoundary(boundary, event.shiftKey);
+      }
       focusInput();
       return;
     }
@@ -2655,6 +2979,17 @@ export function OasisEditor2App() {
       if (lowerKey === "k") {
         event.preventDefault();
         promptForLink();
+        return;
+      }
+
+      if (event.shiftKey && (lowerKey === "7" || lowerKey === "8")) {
+        event.preventDefault();
+        clearPreferredColumn();
+        resetTransactionGrouping();
+        applySelectionAwareParagraphCommand((current) =>
+          toggleParagraphList(current, lowerKey === "7" ? "ordered" : "bullet"),
+        );
+        focusInput();
         return;
       }
     }
@@ -2689,6 +3024,16 @@ export function OasisEditor2App() {
 
     switch (event.key) {
       case "Enter":
+        if (event.shiftKey) {
+          event.preventDefault();
+          clearPreferredColumn();
+          resetTransactionGrouping();
+          applyTransactionalState((current) =>
+            applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, "\n")),
+          );
+          focusInput();
+          return;
+        }
         event.preventDefault();
         clearPreferredColumn();
         resetTransactionGrouping();
@@ -2841,6 +3186,19 @@ export function OasisEditor2App() {
             onClick={() => imageInputRef?.click()}
           >
             Insert Image
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            classList={{
+              "oasis-editor-2-tool-button-active": Boolean(selectedImageRun()),
+            }}
+            data-testid="editor-2-toolbar-image-alt"
+            disabled={!selectedImageRun()}
+            onClick={promptForImageAlt}
+            title="Edit the selected image alt text"
+          >
+            Image Alt
           </button>
           <button
             type="button"
