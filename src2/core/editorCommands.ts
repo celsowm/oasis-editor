@@ -1566,6 +1566,35 @@ export function insertPageBreakAtSelection(state: Editor2State): Editor2State {
   );
 }
 
+export function insertFieldAtSelection(state: Editor2State, fieldType: "PAGE" | "NUMPAGES"): Editor2State {
+  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+  const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  
+  const beforeRuns = sliceRuns(paragraph, 0, offset);
+  const afterRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
+  
+  const fieldRun: Editor2TextRun = {
+    id: `run:field:${Math.random().toString(36).slice(2, 9)}`,
+    text: fieldType === "PAGE" ? "1" : "1", // Placeholder, resolved during projection
+    field: { type: fieldType },
+    styles: getStyleAtOffset(paragraph, offset)
+  };
+
+  const nextParagraph = buildParagraphFromRuns(paragraph, [...beforeRuns, fieldRun, ...afterRuns]);
+  const paragraphs = getParagraphs(collapsedState);
+  const nextParagraphs = [
+    ...cloneParagraphs(paragraphs.slice(0, index)),
+    nextParagraph,
+    ...cloneParagraphs(paragraphs.slice(index + 1)),
+  ];
+
+  return cloneStateWithParagraphs(
+    collapsedState,
+    nextParagraphs,
+    withSelection(paragraphOffsetToPosition(nextParagraph, offset + fieldRun.text.length)),
+  );
+}
+
 export function splitListItemAtSelection(state: Editor2State): Editor2State {
   const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);

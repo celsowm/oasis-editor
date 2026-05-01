@@ -36,11 +36,16 @@ export interface Editor2ImageRunData {
   alt?: string;
 }
 
+export interface Editor2FieldData {
+  type: "PAGE" | "NUMPAGES";
+}
+
 export interface Editor2TextRun {
   id: string;
   text: string;
   styles?: Editor2TextStyle;
   image?: Editor2ImageRunData;
+  field?: Editor2FieldData;
 }
 
 export interface Editor2ParagraphNode {
@@ -96,6 +101,7 @@ export interface Editor2Section {
   pageSettings: Editor2PageSettings;
   header?: Editor2ParagraphNode[];
   footer?: Editor2ParagraphNode[];
+  breakType?: "nextPage" | "continuous";
 }
 
 export interface Editor2Document {

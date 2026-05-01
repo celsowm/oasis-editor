@@ -67,10 +67,23 @@ function buildEstimatedLineRanges(textLength: number, charsPerLine: number): Arr
   return ranges;
 }
 
-export function projectParagraphLayout(paragraph: Editor2ParagraphNode): Editor2LayoutParagraph {
+export function projectParagraphLayout(
+  paragraph: Editor2ParagraphNode,
+  pageIndex?: number,
+  totalPages?: number,
+): Editor2LayoutParagraph {
   let paragraphOffset = 0;
   const fragments: Editor2LayoutFragment[] = paragraph.runs.map((run) => {
-    const chars: Editor2LayoutFragmentChar[] = Array.from(run.text).map((char, index) => ({
+    let resolvedText = run.text;
+    if (run.field) {
+      if (run.field.type === "PAGE") {
+        resolvedText = typeof pageIndex === "number" ? String(pageIndex + 1) : "1";
+      } else if (run.field.type === "NUMPAGES") {
+        resolvedText = typeof totalPages === "number" ? String(totalPages) : "1";
+      }
+    }
+
+    const chars: Editor2LayoutFragmentChar[] = Array.from(resolvedText).map((char, index) => ({
       char,
       paragraphOffset: paragraphOffset + index,
       runOffset: index,
@@ -80,14 +93,14 @@ export function projectParagraphLayout(paragraph: Editor2ParagraphNode): Editor2
       paragraphId: paragraph.id,
       runId: run.id,
       startOffset: paragraphOffset,
-      endOffset: paragraphOffset + run.text.length,
-      text: run.text,
+      endOffset: paragraphOffset + resolvedText.length,
+      text: resolvedText,
       styles: run.styles ? { ...run.styles } : undefined,
       image: run.image ? { ...run.image } : undefined,
       chars,
     };
 
-    paragraphOffset += run.text.length;
+    paragraphOffset += resolvedText.length;
     return fragment;
   });
 
@@ -116,7 +129,7 @@ export function projectParagraphLayout(paragraph: Editor2ParagraphNode): Editor2
 
   return {
     paragraphId: paragraph.id,
-    text: getParagraphText(paragraph),
+    text: fragments.map((f) => f.text).join(""),
     fragments,
     lines,
     startOffset: 0,
@@ -426,13 +439,15 @@ export function estimateTableBlockHeight(table: Editor2TableNode): number {
 
 function projectHeaderFooterBlocks(
   blocks: Editor2BlockNode[],
+  pageIndex?: number,
+  totalPages?: number,
   measuredHeights?: Record<string, number>,
   measuredParagraphLayouts?: Record<string, Editor2LayoutParagraph>,
 ): Editor2LayoutBlock[] {
   // Headers/Footers are projected as a single sequence of blocks, no pagination for now
   return blocks.map((block, index) => {
     if (block.type === "paragraph") {
-      const layout = projectParagraphLayout(block);
+      const layout = projectParagraphLayout(block, pageIndex, totalPages);
       // We ignore measured layouts for headers/footers in the first pass for simplicity
       return {
         blockId: block.id,
@@ -462,19 +477,28 @@ function projectBlocksLayout(
   maxPageHeight: number,
   measuredHeights?: Record<string, number>,
   measuredParagraphLayouts?: Record<string, Editor2LayoutParagraph>,
+  pageOffset = 0,
+  totalPages?: number,
+  existingPages: Editor2LayoutPage[] = [],
 ): Editor2LayoutPage[] {
-  const pages: Editor2LayoutPage[] = [];
-  let currentBlocks: Editor2LayoutBlock[] = [];
-  let currentHeight = 0;
+  const pages: Editor2LayoutPage[] = [...existingPages];
+  let currentPage = pages[pages.length - 1];
+  let currentBlocks: Editor2LayoutBlock[] = currentPage ? [...currentPage.blocks] : [];
+  let currentHeight = currentPage ? currentPage.height : 0;
+
+  if (currentPage) {
+    pages.pop(); // We will re-push it updated
+  }
 
   const flushPage = () => {
-    if (currentBlocks.length === 0) {
+    if (currentBlocks.length === 0 && pages.length > 0) {
       return;
     }
 
+    const pageIndex = pageOffset + pages.length;
     pages.push({
-      id: `page:${pages.length + 1}`,
-      index: pages.length,
+      id: `page:${pageIndex + 1}`,
+      index: pageIndex,
       height: currentHeight,
       maxHeight: maxPageHeight,
       blocks: currentBlocks,
@@ -493,7 +517,8 @@ function projectBlocksLayout(
     }
 
     if (sourceBlock.type === "paragraph") {
-      const projectedParagraphLayout = projectParagraphLayout(sourceBlock);
+      const pageIndex = pageOffset + pages.length;
+      const projectedParagraphLayout = projectParagraphLayout(sourceBlock, pageIndex, totalPages);
       const measuredParagraphLayout = measuredParagraphLayouts?.[sourceBlock.id];
       const paragraphLayout =
         measuredParagraphLayout && isMeasuredLayoutCurrent(projectedParagraphLayout, measuredParagraphLayout)
@@ -689,9 +714,10 @@ function projectBlocksLayout(
   flushPage();
 
   if (pages.length === 0) {
+    const pageIndex = pageOffset;
     pages.push({
-      id: `page:${pages.length + 1}`,
-      index: 0,
+      id: `page:${pageIndex + 1}`,
+      index: pageIndex,
       height: 0,
       maxHeight: maxPageHeight,
       blocks: [],
@@ -727,30 +753,69 @@ export function projectDocumentLayout(
 
   const document = blocksOrDocument;
   const sections = getDocumentSections(document);
+  
+  const calculateTotalPages = () => {
+    let currentTotal = 0;
+    let activePages: Editor2LayoutPage[] = [];
+    for (const section of sections) {
+      const pageHeight = maxPageHeightOverride ?? getPageContentHeight(section.pageSettings);
+      const isContinuous = section.breakType === "continuous" && activePages.length > 0;
+      
+      const sectionPages = projectBlocksLayout(
+        section.blocks,
+        section.pageSettings,
+        pageHeight,
+        measuredHeights,
+        measuredParagraphLayouts,
+        isContinuous ? currentTotal - 1 : currentTotal,
+        undefined,
+        isContinuous ? [activePages[activePages.length - 1]] : []
+      );
+
+      if (isContinuous) {
+        activePages.pop();
+        activePages.push(...sectionPages);
+        currentTotal = activePages.length;
+      } else {
+        activePages.push(...sectionPages);
+        currentTotal = activePages.length;
+      }
+    }
+    return currentTotal;
+  };
+
+  const totalPages = calculateTotalPages();
   const allPages: Editor2LayoutPage[] = [];
 
   for (const section of sections) {
     const pageHeight = maxPageHeightOverride ?? getPageContentHeight(section.pageSettings);
+    const isContinuous = section.breakType === "continuous" && allPages.length > 0;
+    
     const sectionPages = projectBlocksLayout(
       section.blocks,
       section.pageSettings,
       pageHeight,
       measuredHeights,
       measuredParagraphLayouts,
+      isContinuous ? allPages.length - 1 : allPages.length,
+      totalPages,
+      isContinuous ? [allPages[allPages.length - 1]] : []
     );
 
-    const headerBlocks = section.header
-      ? projectHeaderFooterBlocks(section.header, measuredHeights, measuredParagraphLayouts)
-      : undefined;
-    const footerBlocks = section.footer
-      ? projectHeaderFooterBlocks(section.footer, measuredHeights, measuredParagraphLayouts)
-      : undefined;
+    if (isContinuous) {
+      allPages.pop();
+    }
 
     for (const page of sectionPages) {
+      const headerBlocks = section.header
+        ? projectHeaderFooterBlocks(section.header, page.index, totalPages, measuredHeights, measuredParagraphLayouts)
+        : page.headerBlocks;
+      const footerBlocks = section.footer
+        ? projectHeaderFooterBlocks(section.footer, page.index, totalPages, measuredHeights, measuredParagraphLayouts)
+        : page.footerBlocks;
+
       page.headerBlocks = headerBlocks;
       page.footerBlocks = footerBlocks;
-      page.id = `page:${allPages.length + 1}`;
-      page.index = allPages.length;
       allPages.push(page);
     }
   }

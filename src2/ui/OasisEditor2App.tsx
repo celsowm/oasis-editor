@@ -41,6 +41,7 @@ import {
   insertPlainTextAtSelection,
   insertTextAtSelection,
   insertImageAtSelection,
+  insertFieldAtSelection,
   insertPageBreakAtSelection,
   insertTableAtSelection,
   indentParagraphList,
@@ -3478,7 +3479,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
   };
 
-  const handleSurfaceMouseDown = (event: MouseEvent) => {
+  const handleSurfaceMouseDown = (event: MouseEvent, forceTransition = false) => {
     event.preventDefault();
 
     stopImageDrag();
@@ -3488,6 +3489,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     const footerZone = (event.target as HTMLElement).closest(".oasis-editor-2-page-footer-zone");
     const targetZone = headerZone ? "header" : footerZone ? "footer" : "main";
     const isZoneTransition = targetZone !== state.activeZone;
+
+    if (isZoneTransition && !forceTransition) {
+      return;
+    }
 
     const paragraphElement = surfaceRef
       ? findNearestParagraphElement(
@@ -3645,7 +3650,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     const targetZone = headerZone ? "header" : footerZone ? "footer" : "main";
 
     if (targetZone !== state.activeZone) {
-      handleSurfaceMouseDown(event);
+      handleSurfaceMouseDown(event, true);
     }
   };
 
@@ -3667,6 +3672,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     const isFooterClick =
       (event.target as HTMLElement).closest(".oasis-editor-2-page-footer-zone") !== null;
     const targetZone = isHeaderClick ? "header" : isFooterClick ? "footer" : "main";
+
+    if (targetZone !== state.activeZone) {
+      return;
+    }
+
     const isZoneTransition = targetZone !== state.activeZone;
 
     clearPreferredColumn();
@@ -4049,6 +4059,38 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             onClick={() => imageInputRef?.click()}
           >
             Insert Image
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button"
+            data-testid="editor-2-toolbar-insert-page-number"
+            onClick={() => {
+              clearPreferredColumn();
+              resetTransactionGrouping();
+              applyTransactionalState((current) =>
+                applyTableAwareParagraphEdit(current, (temp) => insertFieldAtSelection(temp, "PAGE")),
+              );
+              focusInput();
+            }}
+            title="Insert Page Number"
+          >
+            Page #
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button"
+            data-testid="editor-2-toolbar-insert-total-pages"
+            onClick={() => {
+              clearPreferredColumn();
+              resetTransactionGrouping();
+              applyTransactionalState((current) =>
+                applyTableAwareParagraphEdit(current, (temp) => insertFieldAtSelection(temp, "NUMPAGES")),
+              );
+              focusInput();
+            }}
+            title="Insert Total Pages"
+          >
+            Total Pages
           </button>
           <button
             type="button"
