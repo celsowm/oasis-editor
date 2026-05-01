@@ -342,8 +342,9 @@ function serializeSectionProperties(pageSettings: Editor2PageSettings): string {
   const width = pxToTwips(pageSettings.width, 12240);
   const height = pxToTwips(pageSettings.height, 15840);
   const margins = pageSettings.margins;
+  const orientationAttr = pageSettings.orientation === "landscape" ? ' w:orient="landscape"' : "";
 
-  return `<w:sectPr><w:pgSz w:w="${width}" w:h="${height}"/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/></w:sectPr>`;
+  return `<w:sectPr><w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/></w:sectPr>`;
 }
 
 function buildDocumentContext(document: Editor2Document): DocContext {

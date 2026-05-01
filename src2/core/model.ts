@@ -86,6 +86,7 @@ export interface Editor2PageMargins {
 export interface Editor2PageSettings {
   width: number;
   height: number;
+  orientation?: "portrait" | "landscape";
   margins: Editor2PageMargins;
 }
 
@@ -188,6 +189,7 @@ export interface Editor2LayoutDocument {
 export const DEFAULT_EDITOR2_PAGE_SETTINGS: Editor2PageSettings = {
   width: 816,
   height: 1056,
+  orientation: "portrait",
   margins: {
     top: 96,
     right: 96,
@@ -199,11 +201,40 @@ export const DEFAULT_EDITOR2_PAGE_SETTINGS: Editor2PageSettings = {
   },
 };
 
+function inferPageOrientation(width: number, height: number): "portrait" | "landscape" {
+  return width > height ? "landscape" : "portrait";
+}
+
+export function normalizePageSettings(pageSettings: Editor2PageSettings): Editor2PageSettings {
+  const orientation = pageSettings.orientation ?? inferPageOrientation(pageSettings.width, pageSettings.height);
+  const shouldSwap =
+    (orientation === "landscape" && pageSettings.width < pageSettings.height) ||
+    (orientation === "portrait" && pageSettings.width > pageSettings.height);
+  const width = shouldSwap ? pageSettings.height : pageSettings.width;
+  const height = shouldSwap ? pageSettings.width : pageSettings.height;
+
+  return {
+    width,
+    height,
+    orientation,
+    margins: {
+      top: pageSettings.margins.top,
+      right: pageSettings.margins.right,
+      bottom: pageSettings.margins.bottom,
+      left: pageSettings.margins.left,
+      header: pageSettings.margins.header,
+      footer: pageSettings.margins.footer,
+      gutter: pageSettings.margins.gutter,
+    },
+  };
+}
+
 export function getDocumentPageSettings(document: Editor2Document): Editor2PageSettings {
   const pageSettings = document.pageSettings;
-  return {
+  return normalizePageSettings({
     width: pageSettings?.width ?? DEFAULT_EDITOR2_PAGE_SETTINGS.width,
     height: pageSettings?.height ?? DEFAULT_EDITOR2_PAGE_SETTINGS.height,
+    orientation: pageSettings?.orientation ?? DEFAULT_EDITOR2_PAGE_SETTINGS.orientation,
     margins: {
       top: pageSettings?.margins.top ?? DEFAULT_EDITOR2_PAGE_SETTINGS.margins.top,
       right: pageSettings?.margins.right ?? DEFAULT_EDITOR2_PAGE_SETTINGS.margins.right,
@@ -213,7 +244,7 @@ export function getDocumentPageSettings(document: Editor2Document): Editor2PageS
       footer: pageSettings?.margins.footer ?? DEFAULT_EDITOR2_PAGE_SETTINGS.margins.footer,
       gutter: pageSettings?.margins.gutter ?? DEFAULT_EDITOR2_PAGE_SETTINGS.margins.gutter,
     },
-  };
+  });
 }
 
 export function getPageContentWidth(pageSettings: Editor2PageSettings): number {

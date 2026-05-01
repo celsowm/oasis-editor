@@ -2,6 +2,7 @@ import { For, Show } from "solid-js";
 import type { Accessor } from "solid-js";
 import {
   getDocumentPageSettings,
+  getPageContentWidth,
   getPageContentHeight,
   type Editor2LayoutParagraph,
   type Editor2ParagraphNode,
@@ -462,13 +463,15 @@ function renderTable(
 export function EditorSurface(props: EditorSurfaceProps) {
   const paragraphs = () => getParagraphs(props.state());
   const pageSettings = () => getDocumentPageSettings(props.state().document);
+  const contentWidth = () => getPageContentWidth(pageSettings());
+  const contentHeight = () => getPageContentHeight(pageSettings());
   const paragraphIndexById = () =>
     new Map(paragraphs().map((paragraph, index) => [paragraph.id, index] as const));
   const listMarkers = () => buildParagraphListMarkers(paragraphs());
   const documentLayout = () =>
     projectDocumentLayout(
       props.state().document.blocks,
-      getPageContentHeight(pageSettings()),
+      contentHeight(),
       props.measuredBlockHeights?.(),
       props.measuredParagraphLayouts?.(),
     );
@@ -479,6 +482,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
         {(page) => (
           <div
             class="oasis-editor-2-paper"
+            classList={{ "oasis-editor-2-paper-landscape": pageSettings().orientation === "landscape" }}
             data-testid="editor-2-page"
             style={{
               width: `${pageSettings().width}px`,
@@ -486,13 +490,32 @@ export function EditorSurface(props: EditorSurfaceProps) {
             }}
           >
             <div
+              class="oasis-editor-2-page-header-zone"
+              data-testid="editor-2-page-header-zone"
+              style={{
+                left: `${pageSettings().margins.left + pageSettings().margins.gutter}px`,
+                top: "0px",
+                width: `${contentWidth()}px`,
+                height: `${pageSettings().margins.top}px`,
+              }}
+            >
+              <div
+                class="oasis-editor-2-page-header-guide"
+                style={{
+                  top: `${pageSettings().margins.header}px`,
+                }}
+              />
+            </div>
+            <div
               class="oasis-editor-2-surface"
               data-testid="editor-2-surface"
               style={{
-                "padding-top": `${pageSettings().margins.top}px`,
-                "padding-right": `${pageSettings().margins.right}px`,
-                "padding-bottom": `${pageSettings().margins.bottom}px`,
-                "padding-left": `${pageSettings().margins.left + pageSettings().margins.gutter}px`,
+                width: `${contentWidth()}px`,
+                "min-height": `${contentHeight()}px`,
+                "margin-top": `${pageSettings().margins.top}px`,
+                "margin-right": `${pageSettings().margins.right}px`,
+                "margin-bottom": `${pageSettings().margins.bottom}px`,
+                "margin-left": `${pageSettings().margins.left + pageSettings().margins.gutter}px`,
               }}
               onMouseDown={props.onSurfaceMouseDown}
             >
@@ -523,6 +546,23 @@ export function EditorSurface(props: EditorSurfaceProps) {
                       );
                 }}
               </For>
+            </div>
+            <div
+              class="oasis-editor-2-page-footer-zone"
+              data-testid="editor-2-page-footer-zone"
+              style={{
+                left: `${pageSettings().margins.left + pageSettings().margins.gutter}px`,
+                bottom: "0px",
+                width: `${contentWidth()}px`,
+                height: `${pageSettings().margins.bottom}px`,
+              }}
+            >
+              <div
+                class="oasis-editor-2-page-footer-guide"
+                style={{
+                  bottom: `${pageSettings().margins.footer}px`,
+                }}
+              />
             </div>
           </div>
         )}

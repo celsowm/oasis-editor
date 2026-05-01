@@ -104,9 +104,21 @@ function parsePageSettings(body: XmlElement | undefined): Editor2PageSettings | 
     return undefined;
   }
 
+  const width = twipsToPx(getAttributeValue(pageSize, "w"), 816);
+  const height = twipsToPx(getAttributeValue(pageSize, "h"), 1056);
+  const orientationValue = getAttributeValue(pageSize, "orient");
+
   return {
-    width: twipsToPx(getAttributeValue(pageSize, "w"), 816),
-    height: twipsToPx(getAttributeValue(pageSize, "h"), 1056),
+    width,
+    height,
+    orientation:
+      orientationValue === "landscape"
+        ? "landscape"
+        : orientationValue === "portrait"
+          ? "portrait"
+          : width > height
+            ? "landscape"
+            : "portrait",
     margins: {
       top: twipsToPx(getAttributeValue(pageMargins, "top"), 96),
       right: twipsToPx(getAttributeValue(pageMargins, "right"), 96),
@@ -432,7 +444,7 @@ async function parseRunsContainer(
         continue;
       }
 
-      const styles = parseRunStyle(getFirstChildByTagNameNS(element, WORD_NS, "rPr"));
+      let styles = parseRunStyle(getFirstChildByTagNameNS(element, WORD_NS, "rPr"));
       if (inheritedLink) {
         (styles ??= {}).link = inheritedLink;
       }

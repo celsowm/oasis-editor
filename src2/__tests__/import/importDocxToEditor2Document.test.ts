@@ -374,6 +374,39 @@ describe("importDocxToEditor2Document", () => {
     expect(document.pageSettings).toEqual({
       width: 1056,
       height: 816,
+      orientation: "landscape",
+      margins: {
+        top: 48,
+        right: 96,
+        bottom: 144,
+        left: 120,
+        header: 24,
+        footer: 36,
+        gutter: 10,
+      },
+    });
+  });
+
+  it("imports explicit landscape orientation from section properties", async () => {
+    const buffer = await buildDocx(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:p><w:r><w:t>Landscape</w:t></w:r></w:p>
+          <w:sectPr>
+            <w:pgSz w:w="12240" w:h="15840" w:orient="landscape"/>
+            <w:pgMar w:top="720" w:right="1440" w:bottom="2160" w:left="1800" w:header="360" w:footer="540" w:gutter="144"/>
+          </w:sectPr>
+        </w:body>
+      </w:document>`,
+    );
+
+    const document = await importDocxToEditor2Document(buffer);
+
+    expect(document.pageSettings).toEqual({
+      width: 1056,
+      height: 816,
+      orientation: "landscape",
       margins: {
         top: 48,
         right: 96,

@@ -344,6 +344,7 @@ describe("exportEditor2DocumentToDocx", () => {
     const document = createEditor2Document([paragraph], {
       width: 1056,
       height: 816,
+      orientation: "landscape",
       margins: {
         top: 48,
         right: 96,
@@ -359,7 +360,7 @@ describe("exportEditor2DocumentToDocx", () => {
     const zip = await JSZip.loadAsync(buffer);
     const documentXml = await zip.file("word/document.xml")?.async("string");
 
-    expect(documentXml).toContain('<w:pgSz w:w="15840" w:h="12240"/>');
+    expect(documentXml).toContain('<w:pgSz w:w="15840" w:h="12240" w:orient="landscape"/>');
     expect(documentXml).toContain(
       '<w:pgMar w:top="720" w:right="1440" w:bottom="2160" w:left="1800" w:header="360" w:footer="540" w:gutter="150"/>',
     );

@@ -45,12 +45,13 @@ function normalizeBlock(block: Editor2BlockNode) {
 export function normalizeEditor2Document(document: Editor2Document) {
   return {
     pageSettings: document.pageSettings
-      ? {
-          width: document.pageSettings.width,
-          height: document.pageSettings.height,
-          margins: { ...document.pageSettings.margins },
-        }
-      : undefined,
+        ? {
+            width: document.pageSettings.width,
+            height: document.pageSettings.height,
+            orientation: document.pageSettings.orientation,
+            margins: { ...document.pageSettings.margins },
+          }
+        : undefined,
     blocks: document.blocks.map(normalizeBlock),
   };
 }

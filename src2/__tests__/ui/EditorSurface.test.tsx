@@ -477,6 +477,7 @@ describe("EditorSurface", () => {
       document: createEditor2Document([paragraph], {
         width: 1056,
         height: 816,
+        orientation: "landscape",
         margins: {
           top: 48,
           right: 96,
@@ -515,14 +516,25 @@ describe("EditorSurface", () => {
     );
 
     const page = container.querySelector('[data-testid="editor-2-page"]') as HTMLDivElement;
+    const headerZone = container.querySelector('[data-testid="editor-2-page-header-zone"]') as HTMLDivElement;
+    const footerZone = container.querySelector('[data-testid="editor-2-page-footer-zone"]') as HTMLDivElement;
     const surface = container.querySelector('[data-testid="editor-2-surface"]') as HTMLDivElement;
 
     expect(page.style.width).toBe("1056px");
     expect(page.style.minHeight).toBe("816px");
-    expect(surface.style.paddingTop).toBe("48px");
-    expect(surface.style.paddingRight).toBe("96px");
-    expect(surface.style.paddingBottom).toBe("144px");
-    expect(surface.style.paddingLeft).toBe("130px");
+    expect(page.classList.contains("oasis-editor-2-paper-landscape")).toBe(true);
+    expect(surface.style.width).toBe("830px");
+    expect(surface.style.minHeight).toBe("624px");
+    expect(surface.style.marginTop).toBe("48px");
+    expect(surface.style.marginRight).toBe("96px");
+    expect(surface.style.marginBottom).toBe("144px");
+    expect(surface.style.marginLeft).toBe("130px");
+    expect(headerZone.style.width).toBe("830px");
+    expect(headerZone.style.height).toBe("48px");
+    expect(headerZone.style.left).toBe("130px");
+    expect(footerZone.style.width).toBe("830px");
+    expect(footerZone.style.height).toBe("144px");
+    expect(footerZone.style.left).toBe("130px");
 
     dispose();
   });

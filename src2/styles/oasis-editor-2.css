@@ -252,6 +252,7 @@ body {
 }
 
 .oasis-editor-2-paper {
+  position: relative;
   width: 100%;
   min-height: 100%;
   border-radius: 20px;
@@ -269,9 +270,30 @@ body {
 .oasis-editor-2-surface {
   position: relative;
   min-height: 100%;
-  padding: 72px 88px;
   box-sizing: border-box;
   cursor: text;
+  z-index: 1;
+}
+
+.oasis-editor-2-page-header-zone,
+.oasis-editor-2-page-footer-zone {
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+  z-index: 0;
+}
+
+.oasis-editor-2-page-header-guide,
+.oasis-editor-2-page-footer-guide {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed rgba(148, 163, 184, 0.35);
+}
+
+.oasis-editor-2-page-footer-guide {
+  border-top: 0;
+  border-bottom: 1px dashed rgba(148, 163, 184, 0.35);
 }
 
 .oasis-editor-2-block {
@@ -483,7 +505,7 @@ body {
   }
 
   .oasis-editor-2-surface {
-    padding: 38px 28px;
+    min-height: 0;
   }
 
   .oasis-editor-2-block {

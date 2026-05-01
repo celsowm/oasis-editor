@@ -16,6 +16,7 @@ import {
   DEFAULT_EDITOR2_PAGE_SETTINGS,
   getDocumentParagraphs,
   getParagraphLength,
+  normalizePageSettings,
   paragraphOffsetToPosition,
 } from "./model.js";
 import { createCollapsedSelection } from "./selection.js";
@@ -132,20 +133,25 @@ export function createEditor2Document(
   blocks: Editor2BlockNode[],
   pageSettings?: Editor2PageSettings,
 ): Editor2Document {
-  const document: Editor2Document = {
-    id: `document:${nextDocumentId}`,
-    blocks,
-    pageSettings: pageSettings
+  const normalizedPageSettings = normalizePageSettings(
+    pageSettings
       ? {
           width: pageSettings.width,
           height: pageSettings.height,
+          orientation: pageSettings.orientation,
           margins: { ...pageSettings.margins },
         }
       : {
           width: DEFAULT_EDITOR2_PAGE_SETTINGS.width,
           height: DEFAULT_EDITOR2_PAGE_SETTINGS.height,
+          orientation: DEFAULT_EDITOR2_PAGE_SETTINGS.orientation,
           margins: { ...DEFAULT_EDITOR2_PAGE_SETTINGS.margins },
         },
+  );
+  const document: Editor2Document = {
+    id: `document:${nextDocumentId}`,
+    blocks,
+    pageSettings: normalizedPageSettings,
   };
   nextDocumentId += 1;
   return document;
