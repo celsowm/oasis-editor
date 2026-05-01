@@ -9,6 +9,7 @@ import type {
   Editor2TextRun,
   Editor2TextStyle,
   Editor2ImageRunData,
+  Editor2Section,
 } from "./model.js";
 import {
   getBlockParagraphs,
@@ -17,6 +18,8 @@ import {
   getParagraphText,
   paragraphOffsetToPosition,
   positionToParagraphOffset,
+  getActiveSectionIndex,
+  getActiveZone,
 } from "./model.js";
 import {
   createEditor2Document,
@@ -237,11 +240,50 @@ function replaceParagraphsInBlocks(blocks: Editor2BlockNode[], newParagraphs: Ed
   return processBlocks(blocks);
 }
 
+function replaceParagraphsInSection(
+  section: Editor2Section,
+  paragraphs: Editor2ParagraphNode[],
+  zone: "main" | "header" | "footer",
+): Editor2Section {
+  if (zone === "header") {
+    return { ...section, header: paragraphs as Editor2ParagraphNode[] };
+  }
+  if (zone === "footer") {
+    return { ...section, footer: paragraphs as Editor2ParagraphNode[] };
+  }
+  // main zone: replace blocks
+  return { ...section, blocks: paragraphs as Editor2BlockNode[] };
+}
+
 function cloneStateWithParagraphs(
   state: Editor2State,
   paragraphs: Editor2ParagraphNode[],
   selection: Editor2Selection,
 ): Editor2State {
+  const hasSections = state.document.sections && state.document.sections.length > 0;
+
+  if (hasSections) {
+    const sectionIndex = getActiveSectionIndex(state);
+    const zone = getActiveZone(state);
+    const section = state.document.sections[sectionIndex];
+
+    if (section) {
+      const updatedSection = replaceParagraphsInSection(section, paragraphs, zone);
+      const updatedSections = [...state.document.sections];
+      updatedSections[sectionIndex] = updatedSection;
+
+      return {
+        ...state,
+        document: {
+          ...state.document,
+          sections: updatedSections,
+        },
+        selection,
+      };
+    }
+  }
+
+  // Legacy fallback: no sections or invalid section index
   if (getParagraphs(state).length === paragraphs.length && state.document.blocks.some(b => b.type === "table")) {
     return {
       document: {

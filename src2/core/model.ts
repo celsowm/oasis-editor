@@ -116,9 +116,13 @@ export interface Editor2Selection {
   focus: Editor2Position;
 }
 
+export type Editor2EditingZone = "main" | "header" | "footer";
+
 export interface Editor2State {
   document: Editor2Document;
   selection: Editor2Selection;
+  activeSectionIndex?: number;
+  activeZone?: Editor2EditingZone;
 }
 
 export interface Editor2CaretSlot {
@@ -307,7 +311,84 @@ export function getDocumentParagraphs(document: Editor2Document): Editor2Paragra
 }
 
 export function getParagraphs(state: Editor2State): Editor2ParagraphNode[] {
+  // When document has sections, return paragraphs from the active zone only
+  if (state.document.sections && state.document.sections.length > 0) {
+    const sectionIndex = getActiveSectionIndex(state);
+    const zone = getActiveZone(state);
+    const section = state.document.sections[sectionIndex];
+    if (!section) {
+      // Fallback to all paragraphs if section index is invalid
+      return getDocumentParagraphs(state.document);
+    }
+
+    const headerParagraphs = zone === "header" ? (section.header ?? []) : [];
+    const footerParagraphs = zone === "footer" ? (section.footer ?? []) : [];
+    const mainParagraphs = zone === "main"
+      ? section.blocks.flatMap(getBlockParagraphs)
+      : [];
+
+    return [...headerParagraphs, ...mainParagraphs, ...footerParagraphs];
+  }
+
+  // Legacy: no sections, return flat from document.blocks
   return getDocumentParagraphs(state.document);
+}
+
+export function getActiveSectionIndex(state: Editor2State): number {
+  return state.activeSectionIndex ?? 0;
+}
+
+export function getActiveZone(state: Editor2State): Editor2EditingZone {
+  return state.activeZone ?? "main";
+}
+
+export interface Editor2ParagraphLocation {
+  sectionIndex: number;
+  zone: Editor2EditingZone;
+  paragraphIndexInSection: number;
+}
+
+export function findParagraphLocation(
+  document: Editor2Document,
+  paragraphId: string,
+): Editor2ParagraphLocation | null {
+  const sections = getDocumentSections(document);
+
+  for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex += 1) {
+    const section = sections[sectionIndex];
+
+    // Check header
+    if (section.header) {
+      for (let i = 0; i < section.header.length; i += 1) {
+        if (section.header[i].id === paragraphId) {
+          return { sectionIndex, zone: "header", paragraphIndexInSection: i };
+        }
+      }
+    }
+
+    // Check main blocks
+    let mainIndex = 0;
+    for (const block of section.blocks) {
+      const paragraphs = getBlockParagraphs(block);
+      for (const p of paragraphs) {
+        if (p.id === paragraphId) {
+          return { sectionIndex, zone: "main", paragraphIndexInSection: mainIndex };
+        }
+        mainIndex += 1;
+      }
+    }
+
+    // Check footer
+    if (section.footer) {
+      for (let i = 0; i < section.footer.length; i += 1) {
+        if (section.footer[i].id === paragraphId) {
+          return { sectionIndex, zone: "footer", paragraphIndexInSection: i };
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 export function getParagraphText(paragraph: Editor2ParagraphNode): string {

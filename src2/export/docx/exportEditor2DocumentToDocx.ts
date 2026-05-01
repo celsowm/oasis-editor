@@ -8,8 +8,9 @@ import type {
   Editor2TableNode,
   Editor2TextRun,
   Editor2TextStyle,
+  Editor2Section,
 } from "../../core/model.js";
-import { getDocumentPageSettings } from "../../core/model.js";
+import { getDocumentPageSettings, getDocumentSections } from "../../core/model.js";
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const PACKAGE_REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships";
@@ -437,32 +438,38 @@ function buildNumberingXml(
 }
 
 function buildDocumentXml(document: Editor2Document, context: DocContext): string {
-  const pageSettings = getDocumentPageSettings(document);
-  const blocksXml = document.blocks
-    .map((block) => {
-      if (block.type === "table") {
-        const rowsXml = block.rows.map(row => {
-          const cellsXml = row.cells.map(cell => {
-            const paragraphs = cell.blocks.length > 0 ? cell.blocks : [{ id: "", type: "paragraph" as const, runs: [{ id: "", text: "" }] }];
-            const paragraphsXml = paragraphs.map(p => {
-              const runs = p.runs.length > 0 ? p.runs : [{ id: "", text: "" }];
-              return `<w:p>${serializeParagraphProperties(p, context.numberingInfo)}${runs.map(r => serializeRunWithRelationships(r, context)).join("")}</w:p>`;
-            }).join("");
-            const contentXml = cell.vMerge === "continue" ? "<w:p/>" : paragraphsXml;
-            return `<w:tc>${serializeTableCellProperties(cell)}${contentXml}</w:tc>`;
-          }).join("");
-          return `<w:tr>${serializeTableRowProperties(row)}${cellsXml}</w:tr>`;
-        }).join("");
-        return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>${rowsXml}</w:tbl>`;
-      }
-      const runs = block.runs.length > 0 ? block.runs : [{ id: "", text: "" }];
-      return `<w:p>${serializeParagraphProperties(block, context.numberingInfo)}${runs
-        .map((run) => serializeRunWithRelationships(run, context))
-        .join("")}</w:p>`;
-    })
-    .join("");
+  const sections = getDocumentSections(document);
 
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${WORD_NS}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="${OFFICE_REL_NS}"><w:body>${blocksXml}${serializeSectionProperties(pageSettings)}</w:body></w:document>`;
+  const sectionsXml = sections.map((section) => {
+    const blocksXml = section.blocks
+      .map((block) => {
+        if (block.type === "table") {
+          const rowsXml = block.rows.map(row => {
+            const cellsXml = row.cells.map(cell => {
+              const paragraphs = cell.blocks.length > 0 ? cell.blocks : [{ id: "", type: "paragraph" as const, runs: [{ id: "", text: "" }] }];
+              const paragraphsXml = paragraphs.map(p => {
+                const runs = p.runs.length > 0 ? p.runs : [{ id: "", text: "" }];
+                return `<w:p>${serializeParagraphProperties(p, context.numberingInfo)}${runs.map(r => serializeRunWithRelationships(r, context)).join("")}</w:p>`;
+              }).join("");
+              const contentXml = cell.vMerge === "continue" ? "<w:p/>" : paragraphsXml;
+              return `<w:tc>${serializeTableCellProperties(cell)}${contentXml}</w:tc>`;
+            }).join("");
+            return `<w:tr>${serializeTableRowProperties(row)}${cellsXml}</w:tr>`;
+          }).join("");
+          return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>${rowsXml}</w:tbl>`;
+        }
+        const runs = block.runs.length > 0 ? block.runs : [{ id: "", text: "" }];
+        return `<w:p>${serializeParagraphProperties(block, context.numberingInfo)}${runs
+          .map((run) => serializeRunWithRelationships(run, context))
+          .join("")}</w:p>`;
+      })
+      .join("");
+
+    const sectionPr = serializeSectionProperties(section.pageSettings);
+    return blocksXml + sectionPr;
+  }).join("");
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${WORD_NS}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="${OFFICE_REL_NS}"><w:body>${sectionsXml}</w:body></w:document>`;
 }
 
 function buildContentTypesXml(hasNumbering: boolean, hasImages: boolean): string {

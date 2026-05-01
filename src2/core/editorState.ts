@@ -1,6 +1,7 @@
 import type {
   Editor2BlockNode,
   Editor2Document,
+  Editor2EditingZone,
   Editor2PageSettings,
   Editor2ParagraphNode,
   Editor2Position,
@@ -183,6 +184,8 @@ export function createEditor2StateFromDocument(
       blocks,
     },
     selection: createCollapsedSelection(position),
+    activeSectionIndex: 0,
+    activeZone: "main" as Editor2EditingZone,
   };
 }
 
@@ -196,6 +199,8 @@ export function createInitialEditor2State(): Editor2State {
       runId: run.id,
       offset: 0,
     }),
+    activeSectionIndex: 0,
+    activeZone: "main" as Editor2EditingZone,
   };
 }
 
@@ -240,6 +245,8 @@ export function createEditor2StateFromTexts(
         offset: Math.max(0, Math.min(focusOffset, focusRun.text.length)),
       },
     },
+    activeSectionIndex: 0,
+    activeZone: "main" as Editor2EditingZone,
   };
 }
 
@@ -285,5 +292,7 @@ export function createEditor2StateFromParagraphRuns(
       anchor: anchorPosition,
       focus: focusPosition,
     },
+    activeSectionIndex: 0,
+    activeZone: "main" as Editor2EditingZone,
   };
 }
