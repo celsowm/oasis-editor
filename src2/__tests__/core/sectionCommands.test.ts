@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import type { Editor2State, Editor2Section, Editor2BlockNode, Editor2PageMargins } from "../../core/model.js";
+import type { Editor2State, Editor2Section, Editor2BlockNode, Editor2PageMargins, Editor2ParagraphNode } from "../../core/model.js";
 import { getParagraphs, getActiveSectionIndex, getActiveZone, findParagraphLocation } from "../../core/model.js";
 import {
   insertTextAtSelection,
@@ -11,9 +11,10 @@ import { createEditor2Paragraph, createEditor2StateFromDocument } from "../../co
 const defaultMargins: Editor2PageMargins = { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 };
 
 function makeSectionedState(
-  sections: Array<{ id: string; blocks: Editor2BlockNode[]; header?: Editor2State["document"]["sections"][number]["header"]; footer?: Editor2State["document"]["sections"][number]["footer"] }>,
+  sections: Array<{ id: string; blocks: Editor2BlockNode[]; header?: Editor2ParagraphNode[]; footer?: Editor2ParagraphNode[] }>,
   options?: { activeSectionIndex?: number; activeZone?: "main" | "header" | "footer" },
-): Editor2State {
+) {
+
   return {
     document: {
       id: "doc:1",
@@ -117,7 +118,7 @@ describe("editor-2 commands with sections", () => {
     const newSection = newState.document.sections![0];
     expect(newSection.header![0].runs[0].text).toBe("Header Edited");
     // Body section remains unchanged
-    expect(newSection.blocks[0].runs[0].text).toBe("Body");
+    expect((newSection.blocks[0] as Editor2ParagraphNode).runs[0].text).toBe("Body");
   });
 
   it("splitBlockAtSelection splits within the active zone", () => {
@@ -151,7 +152,7 @@ describe("editor-2 commands with sections", () => {
     expect(newSection.header![0].runs[0].text).toBe("Heade");
     expect(newSection.header![1].runs[0].text).toBe("rLine1");
     // Body unchanged
-    expect(newSection.blocks[0].runs[0].text).toBe("Body");
+    expect((newSection.blocks[0] as Editor2ParagraphNode).runs[0].text).toBe("Body");
   });
 
   it("deleteBackward at zone boundary stays within zone", () => {
@@ -185,7 +186,7 @@ describe("editor-2 commands with sections", () => {
     expect(newSection.header).toHaveLength(1);
     expect(newSection.header![0].runs[0].text).toBe("H1H2");
     // Body unchanged
-    expect(newSection.blocks[0].runs[0].text).toBe("Body");
+    expect((newSection.blocks[0] as Editor2ParagraphNode).runs[0].text).toBe("Body");
   });
 
   it("multi-section: activeSectionIndex selects the right section", () => {

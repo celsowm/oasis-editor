@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import JSZip from "jszip";
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
-import type { Editor2Section, Editor2PageMargins, Editor2BlockNode } from "../../core/model.js";
+import type { Editor2Section, Editor2PageMargins, Editor2BlockNode, Editor2ParagraphNode } from "../../core/model.js";
 import { createEditor2Document, createEditor2Paragraph, resetEditor2Ids } from "../../core/editorState.js";
 import { exportEditor2DocumentToDocx } from "../../export/docx/exportEditor2DocumentToDocx.js";
 import { importDocxToEditor2Document } from "../../import/docx/importDocxToEditor2Document.js";
@@ -80,8 +80,8 @@ describe("exportMultiSection", () => {
 
     // Should have same number of blocks
     expect(imported.blocks.length).toBe(2);
-    expect(imported.blocks[0].runs[0].text).toBe("Hello");
-    expect(imported.blocks[1].runs[0].text).toBe("World");
+    expect((imported.blocks[0] as Editor2ParagraphNode).runs[0].text).toBe("Hello");
+    expect((imported.blocks[1] as Editor2ParagraphNode).runs[0].text).toBe("World");
   });
 
   it("round-trips a document with sections", async () => {

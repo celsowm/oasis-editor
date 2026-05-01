@@ -41,6 +41,7 @@ import {
   insertPlainTextAtSelection,
   insertTextAtSelection,
   insertImageAtSelection,
+  insertPageBreakAtSelection,
   insertTableAtSelection,
   indentParagraphList,
   moveSelectionDown,
@@ -3349,6 +3350,16 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
 
     switch (event.key) {
       case "Enter":
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          clearPreferredColumn();
+          resetTransactionGrouping();
+          applyTransactionalState((current) =>
+            applyTableAwareParagraphEdit(current, (temp) => insertPageBreakAtSelection(temp)),
+          );
+          focusInput();
+          return;
+        }
         if (event.shiftKey) {
           event.preventDefault();
           clearPreferredColumn();

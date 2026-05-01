@@ -1201,7 +1201,7 @@ export function insertClipboardParagraphsAtSelection(
         ...lastSource.runs.map(cloneRun),
         ...afterRuns,
       ],
-      lastSource.style ? { ...lastSource.style } : undefined,
+      undefined,
     );
     lastParagraph.list = lastSource.list ? { ...lastSource.list } : undefined;
 
@@ -1517,6 +1517,40 @@ export function splitBlockAtSelection(state: Editor2State): Editor2State {
     secondRuns.length > 0
       ? createParagraphFromRuns(secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
       : createEditor2Paragraph("");
+  const paragraphs = getParagraphs(collapsedState);
+  const nextParagraphs = [
+    ...cloneParagraphs(paragraphs.slice(0, index)),
+    firstParagraph,
+    nextParagraph,
+    ...cloneParagraphs(paragraphs.slice(index + 1)),
+  ];
+
+  return cloneStateWithParagraphs(
+    collapsedState,
+    nextParagraphs,
+    withSelection(paragraphOffsetToPosition(nextParagraph, 0)),
+  );
+}
+
+export function insertPageBreakAtSelection(state: Editor2State): Editor2State {
+  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+  const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  const firstParagraph = buildParagraphFromRuns(
+    paragraph,
+    sliceRuns(paragraph, 0, offset),
+    getStyleAtOffset(paragraph, offset),
+  );
+  const secondRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
+  const nextParagraph =
+    secondRuns.length > 0
+      ? createParagraphFromRuns(secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
+      : createEditor2Paragraph("");
+
+  nextParagraph.style = {
+    ...(paragraph.style ?? {}),
+    pageBreakBefore: true,
+  };
+
   const paragraphs = getParagraphs(collapsedState);
   const nextParagraphs = [
     ...cloneParagraphs(paragraphs.slice(0, index)),

@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 
-export async function buildDocx(documentXml: string): Promise<File> {
+export async function buildDocx(documentXml: string, numberingXml?: string): Promise<File> {
   const zip = new JSZip();
   zip.file(
     "[Content_Types].xml",
@@ -9,6 +9,7 @@ export async function buildDocx(documentXml: string): Promise<File> {
         <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
         <Default Extension="xml" ContentType="application/xml"/>
         <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+        ${numberingXml ? '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>' : ""}
       </Types>`,
   );
   zip.file(
@@ -19,6 +20,16 @@ export async function buildDocx(documentXml: string): Promise<File> {
       </Relationships>`,
   );
   zip.file("word/document.xml", documentXml);
+  if (numberingXml) {
+    zip.file("word/numbering.xml", numberingXml);
+    zip.file(
+      "word/_rels/document.xml.rels",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+          <Relationship Id="rIdNum" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>
+        </Relationships>`,
+    );
+  }
   const buffer = await zip.generateAsync({ type: "arraybuffer" });
   return new File([buffer], "import.docx", {
     type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

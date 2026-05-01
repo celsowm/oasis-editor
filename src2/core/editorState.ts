@@ -259,7 +259,7 @@ export function createEditor2StateFromTexts(
 }
 
 export function createEditor2StateFromParagraphRuns(
-  paragraphsSpec: Array<Array<{ text: string; styles?: Editor2TextStyle }>>,
+  paragraphsSpec: Array<Array<{ text: string; styles?: Editor2TextStyle; image?: Editor2ImageRunData }>>,
   selection?: {
     anchor?: { blockIndex: number; offset: number };
     focus?: { blockIndex: number; offset: number };

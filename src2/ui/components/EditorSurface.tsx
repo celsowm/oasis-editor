@@ -358,6 +358,15 @@ function renderParagraph(
             </div>
           )}
         </For>
+        <Show when={getParagraphText(paragraph).endsWith("\n")}>
+          <span
+            class="oasis-editor-2-char oasis-editor-2-char-phantom"
+            data-char-index={getParagraphText(paragraph).length}
+            data-testid="editor-2-char-phantom"
+          >
+            {"\u200B"}
+          </span>
+        </Show>
       </Show>
     </p>
   );

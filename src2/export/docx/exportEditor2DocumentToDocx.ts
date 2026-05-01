@@ -352,7 +352,7 @@ function buildDocumentContext(document: Editor2Document): DocContext {
   const numberingInfo = new Map<string, { numId: number; level: number }>();
   const definitionMap = new Map<string, { abstractNumId: number; numId: number }>();
   const definitions: Array<{ kind: Editor2ParagraphListStyle["kind"]; level: number; abstractNumId: number; numId: number }> = [];
-  const images: Array<{ rId: string; target: string; base64: string; runId: string; cx: number; cy: number }> = [];
+  const images: Array<{ rId: string; target: string; base64: string; runId: string; cx: number; cy: number; alt?: string }> = [];
   const imageMap = new Map<string, string>();
   const hyperlinks: Array<{ rId: string; href: string }> = [];
   const hyperlinkMap = new Map<string, string>();
