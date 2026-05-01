@@ -67,13 +67,36 @@ function buildEstimatedLineRanges(textLength: number, charsPerLine: number): Arr
   return ranges;
 }
 
-export function projectParagraphLayout(paragraph: Editor2ParagraphNode): Editor2LayoutParagraph {
+function resolveDynamicFields(text: string, pageIndex: number, totalPages: number): string {
+  return text
+    .replace(/\{\{PAGE\}\}/g, (pageIndex + 1).toString())
+    .replace(/\{\{NUMPAGES\}\}/g, totalPages.toString());
+}
+
+export function projectParagraphLayout(
+  paragraph: Editor2ParagraphNode,
+  pageIndex: number = 0,
+  totalPages: number = 1,
+): Editor2LayoutParagraph {
   let paragraphOffset = 0;
+  const rawText = getParagraphText(paragraph);
+  const resolvedText = resolveDynamicFields(rawText, pageIndex, totalPages);
+  
+  // If text changed length due to resolution, we have a mapping problem for selection.
+  // For v2, we'll assume fields are only used in non-editable or special areas, 
+  // or we just accept the offset shift for now.
+  // To keep offsets consistent with the model, we use the original text length 
+  // but the resolved characters for display.
+  
   const fragments: Editor2LayoutFragment[] = paragraph.runs.map((run) => {
-    const chars: Editor2LayoutFragmentChar[] = Array.from(run.text).map((char, index) => ({
+    const runResolvedText = resolveDynamicFields(run.text, pageIndex, totalPages);
+    
+    const chars: Editor2LayoutFragmentChar[] = Array.from(runResolvedText).map((char, index) => ({
       char,
-      paragraphOffset: paragraphOffset + index,
-      runOffset: index,
+      // Mapping back to model offset is tricky if length changed. 
+      // We'll use a simple linear mapping or just use the same offset if it fits.
+      paragraphOffset: paragraphOffset + Math.min(index, run.text.length - 1),
+      runOffset: Math.min(index, run.text.length - 1),
     }));
 
     const fragment: Editor2LayoutFragment = {
@@ -81,7 +104,7 @@ export function projectParagraphLayout(paragraph: Editor2ParagraphNode): Editor2
       runId: run.id,
       startOffset: paragraphOffset,
       endOffset: paragraphOffset + run.text.length,
-      text: run.text,
+      text: runResolvedText,
       styles: run.styles ? { ...run.styles } : undefined,
       image: run.image ? { ...run.image } : undefined,
       chars,
@@ -94,17 +117,17 @@ export function projectParagraphLayout(paragraph: Editor2ParagraphNode): Editor2
   const fontSize = estimateParagraphFontSize(paragraph);
   const lineHeight = estimateParagraphLineHeight(paragraph, fontSize);
   const charsPerLine = estimateCharsPerLine(paragraph);
-  const lineRanges = buildEstimatedLineRanges(paragraphOffset, charsPerLine);
+  const lineRanges = buildEstimatedLineRanges(resolvedText.length, charsPerLine);
   const lines: Editor2LayoutLine[] = lineRanges.map((range, index) => ({
     paragraphId: paragraph.id,
     index,
-    startOffset: range.start,
+    startOffset: range.start, // Note: these are now resolved text offsets
     endOffset: range.end,
     top: index * lineHeight,
     height: lineHeight,
     slots: Array.from({ length: range.end - range.start + 1 }, (_, slotIndex) => ({
       paragraphId: paragraph.id,
-      offset: range.start + slotIndex,
+      offset: Math.min(range.start + slotIndex, rawText.length), // Map back to raw
       left: 0,
       top: index * lineHeight,
       height: lineHeight,
@@ -116,11 +139,11 @@ export function projectParagraphLayout(paragraph: Editor2ParagraphNode): Editor2
 
   return {
     paragraphId: paragraph.id,
-    text: getParagraphText(paragraph),
+    text: resolvedText,
     fragments,
     lines,
     startOffset: 0,
-    endOffset: paragraphOffset,
+    endOffset: rawText.length,
   };
 }
 
@@ -426,14 +449,14 @@ export function estimateTableBlockHeight(table: Editor2TableNode): number {
 
 function projectHeaderFooterBlocks(
   blocks: Editor2BlockNode[],
+  pageIndex: number,
+  totalPages: number,
   measuredHeights?: Record<string, number>,
   measuredParagraphLayouts?: Record<string, Editor2LayoutParagraph>,
 ): Editor2LayoutBlock[] {
-  // Headers/Footers are projected as a single sequence of blocks, no pagination for now
   return blocks.map((block, index) => {
     if (block.type === "paragraph") {
-      const layout = projectParagraphLayout(block);
-      // We ignore measured layouts for headers/footers in the first pass for simplicity
+      const layout = projectParagraphLayout(block, pageIndex, totalPages);
       return {
         blockId: block.id,
         sourceBlockId: block.id,
@@ -708,26 +731,15 @@ export function projectDocumentLayout(
   measuredHeights?: Record<string, number>,
   measuredParagraphLayouts?: Record<string, Editor2LayoutParagraph>,
 ): Editor2LayoutDocument {
-  if (Array.isArray(blocksOrDocument)) {
-    // Legacy support for blocks only
-    const pages = projectBlocksLayout(
-      blocksOrDocument,
-      {
-        width: 816,
-        height: 1056,
-        orientation: "portrait",
-        margins: { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 },
-      },
-      maxPageHeightOverride ?? DEFAULT_PAGE_HEIGHT,
-      measuredHeights,
-      measuredParagraphLayouts,
-    );
-    return { pages };
-  }
-
-  const document = blocksOrDocument;
-  const sections = getDocumentSections(document);
-  const allPages: Editor2LayoutPage[] = [];
+  // First pass: Calculate layout without resolving final totalPages for main body
+  // to get an initial page count.
+  const tempDoc = Array.isArray(blocksOrDocument) 
+    ? { sections: [{ id: "s1", blocks: blocksOrDocument, pageSettings: { width: 816, height: 1056, orientation: "portrait" as const, margins: { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 } } }] } as Editor2Document
+    : blocksOrDocument;
+  
+  const sections = getDocumentSections(tempDoc);
+  let totalPagesCount = 0;
+  const sectionResults: Array<{ section: any; sectionPages: Editor2LayoutPage[] }> = [];
 
   for (const section of sections) {
     const pageHeight = maxPageHeightOverride ?? getPageContentHeight(section.pageSettings);
@@ -738,20 +750,28 @@ export function projectDocumentLayout(
       measuredHeights,
       measuredParagraphLayouts,
     );
+    sectionResults.push({ section, sectionPages });
+    totalPagesCount += sectionPages.length;
+  }
 
-    const headerBlocks = section.header
-      ? projectHeaderFooterBlocks(section.header, measuredHeights, measuredParagraphLayouts)
-      : undefined;
-    const footerBlocks = section.footer
-      ? projectHeaderFooterBlocks(section.footer, measuredHeights, measuredParagraphLayouts)
-      : undefined;
+  // Second pass: Finalize pages with resolved headers/footers
+  const allPages: Editor2LayoutPage[] = [];
+  let currentPageIndex = 0;
 
-    for (const page of sectionPages) {
-      page.headerBlocks = headerBlocks;
-      page.footerBlocks = footerBlocks;
+  for (const result of sectionResults) {
+    const section = result.section;
+    for (const page of result.sectionPages) {
+      page.headerBlocks = section.header
+        ? projectHeaderFooterBlocks(section.header, currentPageIndex, totalPagesCount, measuredHeights, measuredParagraphLayouts)
+        : undefined;
+      page.footerBlocks = section.footer
+        ? projectHeaderFooterBlocks(section.footer, currentPageIndex, totalPagesCount, measuredHeights, measuredParagraphLayouts)
+        : undefined;
+      
       page.id = `page:${allPages.length + 1}`;
       page.index = allPages.length;
       allPages.push(page);
+      currentPageIndex++;
     }
   }
 

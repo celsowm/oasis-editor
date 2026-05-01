@@ -1,0 +1,22 @@
+  const applySelectionPreservingStructure = (
+    nextSelection: Editor2State["selection"],
+  ) => {
+    applyState({
+      ...state,
+      selection: {
+        anchor: { ...nextSelection.anchor },
+        focus: { ...nextSelection.focus },
+      },
+    });
+  };
+
+  const applySelectionToStatePreservingStructure = (
+    current: Editor2State,
+    nextSelection: Editor2State["selection"],
+  ): Editor2State => ({
+    ...current,
+    selection: {
+      anchor: { ...nextSelection.anchor },
+      focus: { ...nextSelection.focus },
+    },
+  });

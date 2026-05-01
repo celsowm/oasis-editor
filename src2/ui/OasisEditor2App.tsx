@@ -69,6 +69,7 @@ import {
   createEditor2TableRow,
   createInitialEditor2State,
   createEditor2StateFromDocument,
+  cloneEditor2State,
 } from "../core/editorState.js";
 import {
   getDocumentPageSettings,
@@ -84,12 +85,15 @@ import {
   getParagraphLength,
   getParagraphs,
   getParagraphText,
+  findParagraphLocation,
+  getDocumentParagraphs,
   paragraphOffsetToPosition,
   positionToParagraphOffset,
   type Editor2ParagraphStyle,
   type Editor2Position,
   type Editor2State,
   type Editor2TextStyle,
+  type Editor2EditingZone,
 } from "../core/model.js";
 import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
 import { exportEditor2DocumentToDocxBlob } from "../export/docx/exportEditor2DocumentToDocx.js";
@@ -137,45 +141,6 @@ export interface OasisEditor2AppProps {
 }
 
 const DEFAULT_MAX_INSERTED_IMAGE_WIDTH = 624;
-
-function cloneEditor2State(source: Editor2State): Editor2State {
-  return {
-    document: {
-      ...source.document,
-      blocks: source.document.blocks.map((block) =>
-        block.type === "paragraph"
-          ? {
-              ...block,
-              runs: block.runs.map((run) => ({ ...run })),
-              style: block.style ? { ...block.style } : undefined,
-              list: block.list ? { ...block.list } : undefined,
-            }
-          : {
-              ...block,
-              rows: block.rows.map((row) => ({
-                ...row,
-                cells: row.cells.map((cell) => ({
-                  ...cell,
-                  colSpan: cell.colSpan ?? undefined,
-                  rowSpan: cell.rowSpan ?? undefined,
-                  vMerge: cell.vMerge ?? undefined,
-                  blocks: cell.blocks.map((paragraph) => ({
-                    ...paragraph,
-                    runs: paragraph.runs.map((run) => ({ ...run })),
-                    style: paragraph.style ? { ...paragraph.style } : undefined,
-                    list: paragraph.list ? { ...paragraph.list } : undefined,
-                  })),
-                })),
-              })),
-            },
-      ),
-    },
-    selection: {
-      anchor: { ...source.selection.anchor },
-      focus: { ...source.selection.focus },
-    },
-  };
-}
 
 function getElementContentWidth(element: HTMLElement | null | undefined): number {
   if (!element) {
@@ -562,10 +527,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     nextSelection: Editor2State["selection"],
   ) => {
     applyState({
-      document: {
-        ...state.document,
-        blocks: state.document.blocks.map(cloneDocumentBlock),
-      },
+      ...state,
       selection: {
         anchor: { ...nextSelection.anchor },
         focus: { ...nextSelection.focus },
@@ -577,16 +539,12 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     current: Editor2State,
     nextSelection: Editor2State["selection"],
   ): Editor2State => ({
-    document: {
-      ...current.document,
-      blocks: current.document.blocks.map(cloneDocumentBlock),
-    },
+    ...current,
     selection: {
       anchor: { ...nextSelection.anchor },
       focus: { ...nextSelection.focus },
     },
   });
-
   createEffect(() => {
     props.onStateChange?.(cloneState(state));
   });
@@ -873,6 +831,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     return {
+      ...current,
       document: {
         ...current.document,
         blocks,
@@ -938,6 +897,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     return {
+      ...current,
       document: {
         ...current.document,
         blocks,
@@ -999,6 +959,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     return {
+      ...current,
       document: {
         ...current.document,
         blocks,
@@ -1171,6 +1132,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         findFirstNavigableParagraphInTable(tableBlock);
       if (!nextParagraph) {
         return {
+          ...current,
           document: {
             ...current.document,
             blocks,
@@ -1180,6 +1142,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       }
 
       return {
+        ...current,
         document: {
           ...current.document,
           blocks,
@@ -1188,8 +1151,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           anchor: paragraphOffsetToPosition(nextParagraph, 0),
           focus: paragraphOffsetToPosition(nextParagraph, 0),
         },
-      };
-    } else {
+      };    } else {
       blankRow = createEditor2TableRow(
         sourceRow.cells.map((cell) =>
           createEditor2TableCell(
@@ -1207,6 +1169,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         findFirstNavigableParagraphInTable(tableBlock);
       if (!nextParagraph) {
         return {
+          ...current,
           document: {
             ...current.document,
             blocks,
@@ -1216,6 +1179,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       }
 
       return {
+        ...current,
         document: {
           ...current.document,
           blocks,
@@ -1224,8 +1188,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           anchor: paragraphOffsetToPosition(nextParagraph, 0),
           focus: paragraphOffsetToPosition(nextParagraph, 0),
         },
-      };
-    }
+      };    }
   };
 
   const deleteSelectedTableRow = (current: Editor2State): Editor2State => {
@@ -1297,6 +1260,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
     if (!nextParagraph) {
       return {
+        ...current,
         document: {
           ...current.document,
           blocks,
@@ -1304,8 +1268,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         selection: current.selection,
       };
     }
-
     return {
+      ...current,
       document: {
         ...current.document,
         blocks,
@@ -1376,6 +1340,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
       if (!nextParagraph) {
         return {
+          ...current,
           document: {
             ...current.document,
             blocks,
@@ -1385,6 +1350,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       }
 
       return {
+        ...current,
         document: {
           ...current.document,
           blocks,
@@ -1393,8 +1359,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           anchor: paragraphOffsetToPosition(nextParagraph, 0),
           focus: paragraphOffsetToPosition(nextParagraph, 0),
         },
-      };
-    }
+      };    }
 
     const insertIndex = Math.max(
       0,
@@ -1414,6 +1379,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
     if (!nextParagraph) {
       return {
+        ...current,
         document: {
           ...current.document,
           blocks,
@@ -1421,8 +1387,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         selection: current.selection,
       };
     }
-
     return {
+      ...current,
       document: {
         ...current.document,
         blocks,
@@ -1491,6 +1457,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
       if (!nextParagraph) {
         return {
+          ...current,
           document: {
             ...current.document,
             blocks,
@@ -1500,6 +1467,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       }
 
       return {
+        ...current,
         document: {
           ...current.document,
           blocks,
@@ -1508,8 +1476,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           anchor: paragraphOffsetToPosition(nextParagraph, 0),
           focus: paragraphOffsetToPosition(nextParagraph, 0),
         },
-      };
-    }
+      };    }
 
     if (tableBlock.rows[0]?.cells.length <= 1) {
       return current;
@@ -1524,6 +1491,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
     if (!nextParagraph) {
       return {
+        ...current,
         document: {
           ...current.document,
           blocks,
@@ -1531,8 +1499,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         selection: current.selection,
       };
     }
-
     return {
+      ...current,
       document: {
         ...current.document,
         blocks,
@@ -1580,6 +1548,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     return {
+      ...current,
       document: {
         ...current.document,
         blocks,
@@ -1717,6 +1686,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     if (targetIndex < 0 || targetIndex >= paragraphs.length) {
       const insertedParagraph = createEditor2Paragraph("");
       const nextState: Editor2State = {
+        ...state,
         document: {
           ...state.document,
           blocks:
@@ -2984,6 +2954,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     const tempState: Editor2State = {
+      ...current,
       document: createEditor2Document(targetCell.blocks),
       selection: {
         anchor: { ...current.selection.anchor },
@@ -2998,6 +2969,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     targetCell.blocks.splice(0, targetCell.blocks.length, ...replacementParagraphs);
 
     return {
+      ...current,
       document: {
         ...current.document,
         blocks: nextBlocks,
@@ -4359,12 +4331,28 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
               return;
             }
             const paragraphId = paragraphElement.dataset.paragraphId;
-            const paragraph = paragraphId
-              ? getParagraphs(state).find((candidate) => candidate.id === paragraphId)
-              : undefined;
+            const location = paragraphId ? findParagraphLocation(state.document, paragraphId) : null;
+            if (!location) {
+              focusInput();
+              return;
+            }
+
+            const paragraphs = getDocumentParagraphs(state.document);
+            const paragraph = paragraphs.find((candidate) => candidate.id === paragraphId);
+            
             if (!paragraphId || !paragraph || !surfaceRef) {
               focusInput();
               return;
+            }
+
+            // Switch zone if needed
+            let nextState = state;
+            if (location.sectionIndex !== state.activeSectionIndex || location.zone !== state.activeZone) {
+               nextState = {
+                 ...state,
+                 activeSectionIndex: location.sectionIndex,
+                 activeZone: location.zone,
+               };
             }
 
             clearPreferredColumn();
@@ -4385,17 +4373,17 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             const position = paragraphOffsetToPosition(paragraph, offset);
 
             if (event.shiftKey) {
-              dragAnchor = state.selection.anchor;
+              dragAnchor = nextState.selection.anchor;
               applyState(
-                setSelection(state, {
-                  anchor: state.selection.anchor,
+                setSelection(nextState, {
+                  anchor: nextState.selection.anchor,
                   focus: position,
                 }),
               );
             } else {
               dragAnchor = position;
               applyState(
-                setSelection(state, {
+                setSelection(nextState, {
                   anchor: position,
                   focus: position,
                 }),
@@ -4407,10 +4395,25 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           }}
           onParagraphMouseDown={(paragraphId, event) => {
             event.preventDefault();
-            const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
+            const location = findParagraphLocation(state.document, paragraphId);
+            if (!location) return;
+
+            const paragraphs = getDocumentParagraphs(state.document);
+            const paragraph = paragraphs.find((candidate) => candidate.id === paragraphId);
             if (!paragraph || !surfaceRef) {
               return;
             }
+
+            // Switch zone if needed
+            let nextState = state;
+            if (location.sectionIndex !== state.activeSectionIndex || location.zone !== state.activeZone) {
+               nextState = {
+                 ...state,
+                 activeSectionIndex: location.sectionIndex,
+                 activeZone: location.zone,
+               };
+            }
+
             clearPreferredColumn();
             resetTransactionGrouping();
             const offset = resolveClickOffset(
@@ -4421,10 +4424,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
               ),
             );
             const position = paragraphOffsetToPosition(paragraph, offset);
-            const cellLocation = findParagraphTableLocation(state.document, paragraphId);
+            const cellLocation = findParagraphTableLocation(nextState.document, paragraphId);
             const anchorPosition = cellLocation
               ? (() => {
-                  const block = state.document.blocks[cellLocation.blockIndex];
+                  const block = nextState.document.blocks[cellLocation.blockIndex];
                   const cellParagraph = block?.type === "table"
                     ? block.rows[cellLocation.rowIndex]?.cells[cellLocation.cellIndex]?.blocks[0]
                     : undefined;
@@ -4433,10 +4436,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
               : position;
 
             if (event.shiftKey) {
-              dragAnchor = state.selection.anchor;
+              dragAnchor = nextState.selection.anchor;
               applyState(
-                setSelection(state, {
-                  anchor: state.selection.anchor,
+                setSelection(nextState, {
+                  anchor: nextState.selection.anchor,
                   focus: position,
                 }),
               );

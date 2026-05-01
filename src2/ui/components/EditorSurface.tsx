@@ -16,11 +16,15 @@ import {
 } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
 import { projectDocumentLayout, projectParagraphLayout } from "../layoutProjection.js";
+import type { CaretBox, SelectionBox } from "../editorUiTypes.js";
 
 interface EditorSurfaceProps {
   state: Accessor<Editor2State>;
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, Editor2LayoutParagraph>>;
+  selectionBoxes?: Accessor<SelectionBox[]>;
+  caretBox?: Accessor<CaretBox>;
+  showCaret?: Accessor<boolean>;
   onSurfaceMouseDown: (event: MouseEvent) => void;
   onParagraphMouseDown: (
     paragraphId: string,
