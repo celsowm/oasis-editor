@@ -1,16 +1,23 @@
 import type {
   Editor2BlockNode,
   Editor2CaretSlot,
+  Editor2Document,
   Editor2LayoutBlock,
   Editor2LayoutDocument,
   Editor2LayoutFragment,
   Editor2LayoutFragmentChar,
   Editor2LayoutLine,
+  Editor2LayoutPage,
   Editor2LayoutParagraph,
+  Editor2PageSettings,
   Editor2ParagraphNode,
   Editor2TableNode,
 } from "../core/model.js";
-import { getParagraphText } from "../core/model.js";
+import {
+  getDocumentSections,
+  getPageContentHeight,
+  getParagraphText,
+} from "../core/model.js";
 import { measureLinesFromRects, type CharRect } from "./caretGeometry.js";
 
 const DEFAULT_FONT_SIZE = 20;
@@ -417,13 +424,46 @@ export function estimateTableBlockHeight(table: Editor2TableNode): number {
   return getTableSegmentHeight(table, 0, table.rows.length, 0);
 }
 
-export function projectDocumentLayout(
+function projectHeaderFooterBlocks(
   blocks: Editor2BlockNode[],
-  maxPageHeight = DEFAULT_PAGE_HEIGHT,
   measuredHeights?: Record<string, number>,
   measuredParagraphLayouts?: Record<string, Editor2LayoutParagraph>,
-): Editor2LayoutDocument {
-  const pages: Editor2LayoutDocument["pages"] = [];
+): Editor2LayoutBlock[] {
+  // Headers/Footers are projected as a single sequence of blocks, no pagination for now
+  return blocks.map((block, index) => {
+    if (block.type === "paragraph") {
+      const layout = projectParagraphLayout(block);
+      // We ignore measured layouts for headers/footers in the first pass for simplicity
+      return {
+        blockId: block.id,
+        sourceBlockId: block.id,
+        blockType: block.type,
+        paragraphId: block.id,
+        globalIndex: index,
+        estimatedHeight: estimateParagraphBlockHeight(block),
+        layout,
+        sourceBlock: block,
+      };
+    }
+    return {
+      blockId: block.id,
+      sourceBlockId: block.id,
+      blockType: block.type,
+      globalIndex: index,
+      estimatedHeight: estimateTableBlockHeight(block),
+      sourceBlock: block,
+    };
+  });
+}
+
+function projectBlocksLayout(
+  blocks: Editor2BlockNode[],
+  pageSettings: Editor2PageSettings,
+  maxPageHeight: number,
+  measuredHeights?: Record<string, number>,
+  measuredParagraphLayouts?: Record<string, Editor2LayoutParagraph>,
+): Editor2LayoutPage[] {
+  const pages: Editor2LayoutPage[] = [];
   let currentBlocks: Editor2LayoutBlock[] = [];
   let currentHeight = 0;
 
@@ -438,6 +478,7 @@ export function projectDocumentLayout(
       height: currentHeight,
       maxHeight: maxPageHeight,
       blocks: currentBlocks,
+      pageSettings,
     });
     currentBlocks = [];
     currentHeight = 0;
@@ -649,16 +690,70 @@ export function projectDocumentLayout(
 
   if (pages.length === 0) {
     pages.push({
-      id: "page:1",
+      id: `page:${pages.length + 1}`,
       index: 0,
       height: 0,
       maxHeight: maxPageHeight,
       blocks: [],
+      pageSettings,
     });
   }
 
-  return {
-    maxPageHeight,
-    pages,
-  };
+  return pages;
+}
+
+export function projectDocumentLayout(
+  blocksOrDocument: Editor2BlockNode[] | Editor2Document,
+  maxPageHeightOverride?: number,
+  measuredHeights?: Record<string, number>,
+  measuredParagraphLayouts?: Record<string, Editor2LayoutParagraph>,
+): Editor2LayoutDocument {
+  if (Array.isArray(blocksOrDocument)) {
+    // Legacy support for blocks only
+    const pages = projectBlocksLayout(
+      blocksOrDocument,
+      {
+        width: 816,
+        height: 1056,
+        orientation: "portrait",
+        margins: { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 },
+      },
+      maxPageHeightOverride ?? DEFAULT_PAGE_HEIGHT,
+      measuredHeights,
+      measuredParagraphLayouts,
+    );
+    return { pages };
+  }
+
+  const document = blocksOrDocument;
+  const sections = getDocumentSections(document);
+  const allPages: Editor2LayoutPage[] = [];
+
+  for (const section of sections) {
+    const pageHeight = maxPageHeightOverride ?? getPageContentHeight(section.pageSettings);
+    const sectionPages = projectBlocksLayout(
+      section.blocks,
+      section.pageSettings,
+      pageHeight,
+      measuredHeights,
+      measuredParagraphLayouts,
+    );
+
+    const headerBlocks = section.header
+      ? projectHeaderFooterBlocks(section.header, measuredHeights, measuredParagraphLayouts)
+      : undefined;
+    const footerBlocks = section.footer
+      ? projectHeaderFooterBlocks(section.footer, measuredHeights, measuredParagraphLayouts)
+      : undefined;
+
+    for (const page of sectionPages) {
+      page.headerBlocks = headerBlocks;
+      page.footerBlocks = footerBlocks;
+      page.id = `page:${allPages.length + 1}`;
+      page.index = allPages.length;
+      allPages.push(page);
+    }
+  }
+
+  return { pages: allPages };
 }

@@ -462,16 +462,13 @@ function renderTable(
 
 export function EditorSurface(props: EditorSurfaceProps) {
   const paragraphs = () => getParagraphs(props.state());
-  const pageSettings = () => getDocumentPageSettings(props.state().document);
-  const contentWidth = () => getPageContentWidth(pageSettings());
-  const contentHeight = () => getPageContentHeight(pageSettings());
   const paragraphIndexById = () =>
     new Map(paragraphs().map((paragraph, index) => [paragraph.id, index] as const));
   const listMarkers = () => buildParagraphListMarkers(paragraphs());
   const documentLayout = () =>
     projectDocumentLayout(
-      props.state().document.blocks,
-      contentHeight(),
+      props.state().document,
+      undefined,
       props.measuredBlockHeights?.(),
       props.measuredParagraphLayouts?.(),
     );
@@ -479,93 +476,153 @@ export function EditorSurface(props: EditorSurfaceProps) {
   return (
     <div class="oasis-editor-2-paper-stack">
       <For each={documentLayout().pages}>
-        {(page) => (
-          <div
-            class="oasis-editor-2-paper"
-            classList={{ "oasis-editor-2-paper-landscape": pageSettings().orientation === "landscape" }}
-            data-testid="editor-2-page"
-            style={{
-              width: `${pageSettings().width}px`,
-              "min-height": `${pageSettings().height}px`,
-            }}
-          >
+        {(page) => {
+          const pageSettings = page.pageSettings;
+          const contentWidth = getPageContentWidth(pageSettings);
+          const contentHeight = getPageContentHeight(pageSettings);
+
+          return (
             <div
-              class="oasis-editor-2-page-header-zone"
-              data-testid="editor-2-page-header-zone"
+              class="oasis-editor-2-paper"
+              classList={{ "oasis-editor-2-paper-landscape": pageSettings.orientation === "landscape" }}
+              data-testid="editor-2-page"
               style={{
-                left: `${pageSettings().margins.left + pageSettings().margins.gutter}px`,
-                top: "0px",
-                width: `${contentWidth()}px`,
-                height: `${pageSettings().margins.top}px`,
+                width: `${pageSettings.width}px`,
+                "min-height": `${pageSettings.height}px`,
               }}
             >
               <div
-                class="oasis-editor-2-page-header-guide"
+                class="oasis-editor-2-page-header-zone"
+                data-testid="editor-2-page-header-zone"
                 style={{
-                  top: `${pageSettings().margins.header}px`,
+                  left: `${pageSettings.margins.left + pageSettings.margins.gutter}px`,
+                  top: "0px",
+                  width: `${contentWidth}px`,
+                  height: `${pageSettings.margins.top}px`,
                 }}
-              />
-            </div>
-            <div
-              class="oasis-editor-2-surface"
-              data-testid="editor-2-surface"
-              style={{
-                width: `${contentWidth()}px`,
-                "min-height": `${contentHeight()}px`,
-                "margin-top": `${pageSettings().margins.top}px`,
-                "margin-right": `${pageSettings().margins.right}px`,
-                "margin-bottom": `${pageSettings().margins.bottom}px`,
-                "margin-left": `${pageSettings().margins.left + pageSettings().margins.gutter}px`,
-              }}
-              onMouseDown={props.onSurfaceMouseDown}
-            >
-              <For each={page.blocks}>
-                {(block) => {
-                  return block.sourceBlock.type === "paragraph"
-                    ? renderParagraph(
-                        block.sourceBlock,
-                        paragraphIndexById().get(block.sourceBlock.id) ?? 0,
-                        listMarkers().get(block.sourceBlock.id) ?? null,
-                        block.layout,
-                        block.blockId,
-                        props.state(),
-                        props.onParagraphMouseDown,
-                        props.onImageMouseDown,
-                        props.onImageResizeHandleMouseDown,
-                      )
-                    : renderTable(
-                        block.sourceBlock,
-                        block.blockId,
-                        paragraphIndexById(),
-                        listMarkers(),
-                        props.state(),
-                        props.onParagraphMouseDown,
-                        props.onImageMouseDown,
-                        props.onImageResizeHandleMouseDown,
-                        block.tableSegment,
-                      );
-                }}
-              </For>
-            </div>
-            <div
-              class="oasis-editor-2-page-footer-zone"
-              data-testid="editor-2-page-footer-zone"
-              style={{
-                left: `${pageSettings().margins.left + pageSettings().margins.gutter}px`,
-                bottom: "0px",
-                width: `${contentWidth()}px`,
-                height: `${pageSettings().margins.bottom}px`,
-              }}
-            >
+              >
+                <div
+                  class="oasis-editor-2-page-header-guide"
+                  style={{
+                    top: `${pageSettings.margins.header}px`,
+                  }}
+                />
+                <For each={page.headerBlocks}>
+                  {(block) => {
+                    return block.sourceBlock.type === "paragraph"
+                      ? renderParagraph(
+                          block.sourceBlock,
+                          paragraphIndexById().get(block.sourceBlock.id) ?? 0,
+                          listMarkers().get(block.sourceBlock.id) ?? null,
+                          block.layout,
+                          block.blockId,
+                          props.state(),
+                          props.onParagraphMouseDown,
+                          props.onImageMouseDown,
+                          props.onImageResizeHandleMouseDown,
+                        )
+                      : renderTable(
+                          block.sourceBlock,
+                          block.blockId,
+                          paragraphIndexById(),
+                          listMarkers(),
+                          props.state(),
+                          props.onParagraphMouseDown,
+                          props.onImageMouseDown,
+                          props.onImageResizeHandleMouseDown,
+                          block.tableSegment,
+                        );
+                  }}
+                </For>
+              </div>
               <div
-                class="oasis-editor-2-page-footer-guide"
+                class="oasis-editor-2-surface"
+                data-testid="editor-2-surface"
                 style={{
-                  bottom: `${pageSettings().margins.footer}px`,
+                  width: `${contentWidth}px`,
+                  "min-height": `${contentHeight}px`,
+                  "margin-top": `${pageSettings.margins.top}px`,
+                  "margin-right": `${pageSettings.margins.right}px`,
+                  "margin-bottom": `${pageSettings.margins.bottom}px`,
+                  "margin-left": `${pageSettings.margins.left + pageSettings.margins.gutter}px`,
                 }}
-              />
+                onMouseDown={props.onSurfaceMouseDown}
+              >
+                <For each={page.blocks}>
+                  {(block) => {
+                    return block.sourceBlock.type === "paragraph"
+                      ? renderParagraph(
+                          block.sourceBlock,
+                          paragraphIndexById().get(block.sourceBlock.id) ?? 0,
+                          listMarkers().get(block.sourceBlock.id) ?? null,
+                          block.layout,
+                          block.blockId,
+                          props.state(),
+                          props.onParagraphMouseDown,
+                          props.onImageMouseDown,
+                          props.onImageResizeHandleMouseDown,
+                        )
+                      : renderTable(
+                          block.sourceBlock,
+                          block.blockId,
+                          paragraphIndexById(),
+                          listMarkers(),
+                          props.state(),
+                          props.onParagraphMouseDown,
+                          props.onImageMouseDown,
+                          props.onImageResizeHandleMouseDown,
+                          block.tableSegment,
+                        );
+                  }}
+                </For>
+              </div>
+              <div
+                class="oasis-editor-2-page-footer-zone"
+                data-testid="editor-2-page-footer-zone"
+                style={{
+                  left: `${pageSettings.margins.left + pageSettings.margins.gutter}px`,
+                  bottom: "0px",
+                  width: `${contentWidth}px`,
+                  height: `${pageSettings.margins.bottom}px`,
+                }}
+              >
+                <div
+                  class="oasis-editor-2-page-footer-guide"
+                  style={{
+                    bottom: `${pageSettings.margins.footer}px`,
+                  }}
+                />
+                <For each={page.footerBlocks}>
+                  {(block) => {
+                    return block.sourceBlock.type === "paragraph"
+                      ? renderParagraph(
+                          block.sourceBlock,
+                          paragraphIndexById().get(block.sourceBlock.id) ?? 0,
+                          listMarkers().get(block.sourceBlock.id) ?? null,
+                          block.layout,
+                          block.blockId,
+                          props.state(),
+                          props.onParagraphMouseDown,
+                          props.onImageMouseDown,
+                          props.onImageResizeHandleMouseDown,
+                        )
+                      : renderTable(
+                          block.sourceBlock,
+                          block.blockId,
+                          paragraphIndexById(),
+                          listMarkers(),
+                          props.state(),
+                          props.onParagraphMouseDown,
+                          props.onImageMouseDown,
+                          props.onImageResizeHandleMouseDown,
+                          block.tableSegment,
+                        );
+                  }}
+                </For>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        }}
       </For>
     </div>
   );

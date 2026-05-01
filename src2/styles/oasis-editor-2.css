@@ -41,48 +41,62 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 6px 8px;
   width: min(860px, 100%);
   margin: 0 auto;
-  padding: 12px 14px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.64);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-  backdrop-filter: blur(16px);
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow:
+    0 6px 18px rgba(15, 23, 42, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  backdrop-filter: blur(18px);
 }
 
 .oasis-editor-2-toolbar-group {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(241, 245, 249, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
 .oasis-editor-2-table-actions-advanced {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
 
 .oasis-editor-2-table-actions-summary {
   list-style: none;
   cursor: pointer;
   user-select: none;
-  height: 38px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
-  padding: 0 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background: rgba(255, 255, 255, 0.86);
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
   color: #475569;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.oasis-editor-2-table-actions-summary:hover {
+  background: rgba(226, 232, 240, 0.8);
+  color: #0f172a;
 }
 
 .oasis-editor-2-table-actions-advanced[open] .oasis-editor-2-table-actions-summary {
-  background: #f1f5f9;
+  background: #e2e8f0;
+  border-color: rgba(148, 163, 184, 0.32);
   color: #0f172a;
 }
 
@@ -93,85 +107,123 @@
 .oasis-editor-2-tool-button,
 .oasis-editor-2-tool-select,
 .oasis-editor-2-tool-color {
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background: rgba(255, 255, 255, 0.86);
-  color: #0f172a;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #1f2937;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .oasis-editor-2-tool-button {
-  min-width: 40px;
-  height: 38px;
-  padding: 0 12px;
-  border-radius: 12px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
   font: inherit;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+  letter-spacing: 0.01em;
+}
+
+.oasis-editor-2-tool-button:hover,
+.oasis-editor-2-tool-select:hover,
+.oasis-editor-2-tool-color:hover {
+  background: rgba(226, 232, 240, 0.85);
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.oasis-editor-2-tool-button:focus-visible,
+.oasis-editor-2-tool-select:focus-visible,
+.oasis-editor-2-tool-color:focus-visible {
+  outline: none;
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
 }
 
 .oasis-editor-2-tool-button-wide {
-  min-width: 74px;
+  min-width: 64px;
 }
 
 .oasis-editor-2-tool-button-active {
   background: #dbeafe;
-  border-color: rgba(37, 99, 235, 0.34);
+  border-color: rgba(37, 99, 235, 0.4);
   color: #1d4ed8;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.oasis-editor-2-tool-button-active:hover {
+  background: #bfdbfe;
+  border-color: rgba(37, 99, 235, 0.55);
 }
 
 .oasis-editor-2-tool-button:disabled,
 .oasis-editor-2-tool-select:disabled,
 .oasis-editor-2-tool-color:has(input:disabled) {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .oasis-editor-2-tool-select {
-  height: 38px;
-  padding: 0 12px;
-  border-radius: 12px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(255, 255, 255, 0.7);
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
+  color: #1f2937;
 }
 
 .oasis-editor-2-tool-select-small {
-  min-width: 74px;
+  min-width: 64px;
 }
 
 .oasis-editor-2-tool-color {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  height: 38px;
-  padding: 0 12px;
-  border-radius: 12px;
-  font-size: 13px;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
   font-weight: 600;
 }
 
 .oasis-editor-2-tool-metric {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  height: 38px;
-  padding: 0 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background: rgba(255, 255, 255, 0.86);
-  font-size: 13px;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
   font-weight: 600;
+  color: #475569;
+}
+
+.oasis-editor-2-tool-metric:focus-within {
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
 }
 
 .oasis-editor-2-toolbar-badge {
   display: inline-flex;
   align-items: center;
-  height: 38px;
-  padding: 0 12px;
+  height: 30px;
+  padding: 0 10px;
   border-radius: 999px;
   border: 1px solid rgba(37, 99, 235, 0.22);
-  background: rgba(219, 234, 254, 0.8);
+  background: rgba(219, 234, 254, 0.85);
   color: #1d4ed8;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -179,45 +231,53 @@
 .oasis-editor-2-toolbar-note {
   display: inline-flex;
   align-items: center;
-  min-height: 38px;
-  padding: 0 12px;
+  min-height: 30px;
+  padding: 0 10px;
   border-radius: 999px;
   border: 1px solid rgba(124, 58, 237, 0.18);
   background: rgba(124, 58, 237, 0.06);
   color: #6b21a8;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .oasis-editor-2-tool-number {
-  width: 64px;
+  width: 48px;
   padding: 0;
   border: 0;
   outline: none;
   background: transparent;
   color: #0f172a;
   font: inherit;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .oasis-editor-2-tool-color-input {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   border: 0;
+  border-radius: 4px;
   background: transparent;
+  cursor: pointer;
 }
 
 .oasis-editor-2-stage {
   min-height: 0;
   display: grid;
-  place-items: center;
+  align-items: stretch;
+  justify-items: center;
 }
 
-.oasis-editor-2-editor {
+.oasis-editor-2-editor-shell {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(860px, 100%);
-  min-height: 320px;
+  min-height: 0;
+  max-height: 100%;
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(148, 163, 184, 0.26);
@@ -225,7 +285,32 @@
     0 26px 80px rgba(15, 23, 42, 0.12),
     0 4px 14px rgba(15, 23, 42, 0.05);
   backdrop-filter: blur(16px);
+  overflow: hidden;
+}
+
+.oasis-editor-2-editor {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
+}
+
+.oasis-editor-2-statusbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 6px 16px;
+  font-size: 12px;
+  color: rgba(15, 23, 42, 0.65);
+  background: rgba(248, 250, 252, 0.85);
+  border-top: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.oasis-editor-2-statusbar-item {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .oasis-editor-2-editor-scroll-content {
@@ -482,8 +567,7 @@
     padding: 10px;
   }
 
-  .oasis-editor-2-editor {
-    min-height: 78vh;
+  .oasis-editor-2-editor-shell {
     border-radius: 22px;
   }
 

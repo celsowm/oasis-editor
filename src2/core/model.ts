@@ -90,10 +90,19 @@ export interface Editor2PageSettings {
   margins: Editor2PageMargins;
 }
 
+export interface Editor2Section {
+  id: string;
+  blocks: Editor2BlockNode[];
+  pageSettings: Editor2PageSettings;
+  header?: Editor2ParagraphNode[];
+  footer?: Editor2ParagraphNode[];
+}
+
 export interface Editor2Document {
   id: string;
   blocks: Editor2BlockNode[];
   pageSettings?: Editor2PageSettings;
+  sections?: Editor2Section[];
 }
 
 export interface Editor2Position {
@@ -179,10 +188,12 @@ export interface Editor2LayoutPage {
   height: number;
   maxHeight: number;
   blocks: Editor2LayoutBlock[];
+  pageSettings: Editor2PageSettings;
+  headerBlocks?: Editor2LayoutBlock[];
+  footerBlocks?: Editor2LayoutBlock[];
 }
 
 export interface Editor2LayoutDocument {
-  maxPageHeight: number;
   pages: Editor2LayoutPage[];
 }
 
@@ -261,6 +272,23 @@ export function getPageContentHeight(pageSettings: Editor2PageSettings): number 
   );
 }
 
+export function getDocumentSections(document: Editor2Document): Editor2Section[] {
+  if (document.sections && document.sections.length > 0) {
+    return document.sections.map((section) => ({
+      ...section,
+      pageSettings: normalizePageSettings(section.pageSettings),
+    }));
+  }
+
+  return [
+    {
+      id: "section:default",
+      blocks: document.blocks,
+      pageSettings: getDocumentPageSettings(document),
+    },
+  ];
+}
+
 export function getBlockParagraphs(block: Editor2BlockNode): Editor2ParagraphNode[] {
   if (block.type === "paragraph") {
     return [block];
@@ -270,7 +298,12 @@ export function getBlockParagraphs(block: Editor2BlockNode): Editor2ParagraphNod
 }
 
 export function getDocumentParagraphs(document: Editor2Document): Editor2ParagraphNode[] {
-  return document.blocks.flatMap((block) => getBlockParagraphs(block));
+  const sections = getDocumentSections(document);
+  return sections.flatMap((section) => [
+    ...(section.header?.flatMap(getBlockParagraphs) ?? []),
+    ...section.blocks.flatMap(getBlockParagraphs),
+    ...(section.footer?.flatMap(getBlockParagraphs) ?? []),
+  ]);
 }
 
 export function getParagraphs(state: Editor2State): Editor2ParagraphNode[] {

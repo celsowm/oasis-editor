@@ -2,7 +2,13 @@ import { Show, type Accessor, type JSX } from "solid-js";
 import { EditorSurface } from "./components/EditorSurface.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
-import { getDocumentPageSettings, type Editor2LayoutParagraph, type Editor2State } from "../core/model.js";
+import {
+  getDocumentParagraphs,
+  getDocumentPageSettings,
+  getParagraphLength,
+  type Editor2LayoutParagraph,
+  type Editor2State,
+} from "../core/model.js";
 import type { CaretBox, InputBox, SelectionBox } from "./editorUiTypes.js";
 
 export interface OasisEditor2EditorProps {
@@ -58,17 +64,27 @@ export function OasisEditor2Editor(props: OasisEditor2EditorProps) {
   const pageSettings = () => getDocumentPageSettings(props.state().document);
   const viewportHeight = () =>
     typeof props.viewportHeight === "number" ? `${props.viewportHeight}px` : props.viewportHeight ?? "min(72vh, 920px)";
+  const characterCount = () =>
+    getDocumentParagraphs(props.state().document).reduce(
+      (total, paragraph) => total + getParagraphLength(paragraph),
+      0,
+    );
 
   return (
     <div
-      ref={props.onViewportRef}
-      class={`oasis-editor-2-editor${props.class ? ` ${props.class}` : ""}`}
-      data-testid="editor-2-editor"
+      class={`oasis-editor-2-editor-shell${props.class ? ` ${props.class}` : ""}`}
+      data-testid="editor-2-editor-shell"
       style={{
         width: `min(${pageSettings().width + 68}px, 100%)`,
-        height: viewportHeight(),
+        height: "100%",
+        "max-height": viewportHeight(),
         ...(props.style ?? {}),
       }}
+    >
+    <div
+      ref={props.onViewportRef}
+      class="oasis-editor-2-editor"
+      data-testid="editor-2-editor"
       onDragOver={props.onDragOver}
       onDrop={props.onDrop}
       onMouseDown={props.onEditorMouseDown}
@@ -143,6 +159,18 @@ export function OasisEditor2Editor(props: OasisEditor2EditorProps) {
           type="file"
           onChange={props.onImageInputChange}
         />
+      </div>
+    </div>
+      <div
+        class="oasis-editor-2-statusbar"
+        data-testid="editor-2-statusbar"
+      >
+        <span
+          class="oasis-editor-2-statusbar-item"
+          data-testid="editor-2-statusbar-character-count"
+        >
+          {characterCount()} {characterCount() === 1 ? "caractere" : "caracteres"}
+        </span>
       </div>
     </div>
   );
