@@ -66,12 +66,14 @@ describe("OasisEditor2", () => {
       class: "test-public-container",
       onStateChange,
     });
+    const shell = root.querySelector('[data-testid="editor-2-editor-shell"]') as HTMLDivElement;
     const editor = root.querySelector('[data-testid="editor-2-editor"]') as HTMLDivElement;
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
 
+    expect(shell).not.toBeNull();
     expect(editor).not.toBeNull();
-    expect(editor.classList.contains("test-public-container")).toBe(true);
-    expect(editor.style.height).toBe("480px");
+    expect(shell.classList.contains("test-public-container")).toBe(true);
+    expect(shell.style.maxHeight).toBe("480px");
     expect(root.querySelector(".oasis-editor-2-header")).toBeNull();
     expect(root.querySelector(".oasis-editor-2-toolbar")).toBeNull();
 
