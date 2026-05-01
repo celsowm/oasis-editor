@@ -93,6 +93,62 @@ export function installEditor2DebugControl(): void {
   };
 }
 
+function unwrapForLogging(value: unknown, seen: WeakSet<object> = new WeakSet()): unknown {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  if (typeof value !== "object") {
+    if (typeof value === "function") {
+      return `[Function ${(value as { name?: string }).name ?? "anonymous"}]`;
+    }
+    return value;
+  }
+  if (seen.has(value as object)) {
+    return "[Circular]";
+  }
+  seen.add(value as object);
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => unwrapForLogging(entry, seen));
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (value instanceof Error) {
+    return { name: value.name, message: value.message, stack: value.stack };
+  }
+  if (value instanceof Map) {
+    return Array.from(value.entries()).map(([k, v]) => [
+      unwrapForLogging(k, seen),
+      unwrapForLogging(v, seen),
+    ]);
+  }
+  if (value instanceof Set) {
+    return Array.from(value.values()).map((entry) => unwrapForLogging(entry, seen));
+  }
+
+  // Plain object or Solid proxy - copy own keys to a fresh object so the
+  // browser console renders the values inline instead of "Proxy(Object)".
+  const plain: Record<string, unknown> = {};
+  for (const key of Object.keys(value as object)) {
+    plain[key] = unwrapForLogging((value as Record<string, unknown>)[key], seen);
+  }
+  return plain;
+}
+
+function formatInlineSummary(payload: unknown): string | null {
+  try {
+    const json = JSON.stringify(payload);
+    if (!json) {
+      return null;
+    }
+    return json.length > 240 ? `${json.slice(0, 237)}...` : json;
+  } catch {
+    return null;
+  }
+}
+
 export function createEditor2Logger(scope: string) {
   const write = (level: LogLevel, message: string, payload?: unknown) => {
     if (!isEditor2DebugEnabled() && level === "debug") {
@@ -115,7 +171,13 @@ export function createEditor2Logger(scope: string) {
       return;
     }
 
-    sink(prefix, payload);
+    const unwrapped = unwrapForLogging(payload);
+    const summary = formatInlineSummary(unwrapped);
+    if (summary !== null) {
+      sink(`${prefix} ${summary}`, unwrapped);
+      return;
+    }
+    sink(prefix, unwrapped);
   };
 
   return {

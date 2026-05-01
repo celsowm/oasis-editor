@@ -22,6 +22,7 @@ interface EditorSurfaceProps {
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, Editor2LayoutParagraph>>;
   onSurfaceMouseDown: (event: MouseEvent) => void;
+  onSurfaceDblClick: (event: MouseEvent) => void;
   onParagraphMouseDown: (
     paragraphId: string,
     event: MouseEvent & { currentTarget: HTMLParagraphElement },
@@ -180,6 +181,7 @@ function renderParagraph(
   options?: {
     domParagraphId?: string;
     interactive?: boolean;
+    testId?: string;
   },
 ) {
   const paragraphLayout = layout ?? projectParagraphLayout(paragraph);
@@ -188,6 +190,7 @@ function renderParagraph(
   const isContinuation = (paragraphLayout.startOffset ?? 0) > 0;
   const domParagraphId = options?.domParagraphId ?? paragraph.id;
   const interactive = options?.interactive ?? true;
+  const testId = options?.testId ?? "editor-2-block";
   const isEmptyBlockSelected = () => {
     const current = normalized();
     return (
@@ -231,7 +234,7 @@ function renderParagraph(
       data-source-paragraph-id={paragraph.id}
       data-start-offset={paragraphLayout.startOffset ?? 0}
       data-end-offset={paragraphLayout.endOffset ?? chars.length}
-      data-testid="editor-2-block"
+      data-testid={testId}
       style={getParagraphRenderStyle(paragraph)}
       onMouseDown={interactive ? (event) => onParagraphMouseDown(paragraph.id, event) : undefined}
     >
@@ -462,6 +465,7 @@ function renderTable(
 
 export function EditorSurface(props: EditorSurfaceProps) {
   const paragraphs = () => getParagraphs(props.state());
+  const activeZone = () => props.state().activeZone ?? "main";
   const paragraphIndexById = () =>
     new Map(paragraphs().map((paragraph, index) => [paragraph.id, index] as const));
   const listMarkers = () => buildParagraphListMarkers(paragraphs());
@@ -493,6 +497,10 @@ export function EditorSurface(props: EditorSurfaceProps) {
             >
               <div
                 class="oasis-editor-2-page-header-zone"
+                classList={{
+                  "oasis-editor-2-zone-active": activeZone() === "header",
+                  "oasis-editor-2-zone-dimmed": activeZone() !== "header",
+                }}
                 data-testid="editor-2-page-header-zone"
                 style={{
                   left: `${pageSettings.margins.left + pageSettings.margins.gutter}px`,
@@ -500,6 +508,8 @@ export function EditorSurface(props: EditorSurfaceProps) {
                   width: `${contentWidth}px`,
                   height: `${pageSettings.margins.top}px`,
                 }}
+                onMouseDown={props.onSurfaceMouseDown}
+                onDblClick={props.onSurfaceDblClick}
               >
                 <div
                   class="oasis-editor-2-page-header-guide"
@@ -520,6 +530,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          { testId: "editor-2-header-block" },
                         )
                       : renderTable(
                           block.sourceBlock,
@@ -547,6 +558,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                   "margin-left": `${pageSettings.margins.left + pageSettings.margins.gutter}px`,
                 }}
                 onMouseDown={props.onSurfaceMouseDown}
+                onDblClick={props.onSurfaceDblClick}
               >
                 <For each={page.blocks}>
                   {(block) => {
@@ -578,6 +590,10 @@ export function EditorSurface(props: EditorSurfaceProps) {
               </div>
               <div
                 class="oasis-editor-2-page-footer-zone"
+                classList={{
+                  "oasis-editor-2-zone-active": activeZone() === "footer",
+                  "oasis-editor-2-zone-dimmed": activeZone() !== "footer",
+                }}
                 data-testid="editor-2-page-footer-zone"
                 style={{
                   left: `${pageSettings.margins.left + pageSettings.margins.gutter}px`,
@@ -585,6 +601,8 @@ export function EditorSurface(props: EditorSurfaceProps) {
                   width: `${contentWidth}px`,
                   height: `${pageSettings.margins.bottom}px`,
                 }}
+                onMouseDown={props.onSurfaceMouseDown}
+                onDblClick={props.onSurfaceDblClick}
               >
                 <div
                   class="oasis-editor-2-page-footer-guide"
@@ -605,6 +623,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          { testId: "editor-2-footer-block" },
                         )
                       : renderTable(
                           block.sourceBlock,

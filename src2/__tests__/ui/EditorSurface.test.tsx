@@ -38,6 +38,7 @@ describe("EditorSurface", () => {
         <EditorSurface
           state={() => state}
           onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
@@ -98,6 +99,7 @@ describe("EditorSurface", () => {
         <EditorSurface
           state={() => state}
           onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
@@ -156,6 +158,7 @@ describe("EditorSurface", () => {
         <EditorSurface
           state={() => state}
           onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
@@ -202,6 +205,7 @@ describe("EditorSurface", () => {
           state={() => state}
           measuredBlockHeights={() => ({})}
           onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
@@ -259,6 +263,7 @@ describe("EditorSurface", () => {
         <EditorSurface
           state={() => state}
           onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
@@ -306,6 +311,7 @@ describe("EditorSurface", () => {
         <EditorSurface
           state={() => state}
           onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
@@ -353,6 +359,7 @@ describe("EditorSurface", () => {
         <EditorSurface
           state={() => state}
           onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
@@ -396,6 +403,7 @@ describe("EditorSurface", () => {
         <EditorSurface
           state={() => state}
           onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
@@ -449,6 +457,7 @@ describe("EditorSurface", () => {
         <EditorSurface
           state={() => state}
           onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
@@ -507,6 +516,7 @@ describe("EditorSurface", () => {
         <EditorSurface
           state={() => state}
           onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}

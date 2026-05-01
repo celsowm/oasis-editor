@@ -13,6 +13,7 @@ import type {
 } from "./model.js";
 import {
   getBlockParagraphs,
+  getDocumentSections,
   getParagraphLength,
   getParagraphs,
   getParagraphText,
@@ -246,13 +247,24 @@ function replaceParagraphsInSection(
   zone: "main" | "header" | "footer",
 ): Editor2Section {
   if (zone === "header") {
-    return { ...section, header: paragraphs as Editor2ParagraphNode[] };
+    return { ...section, header: paragraphs };
   }
   if (zone === "footer") {
-    return { ...section, footer: paragraphs as Editor2ParagraphNode[] };
+    return { ...section, footer: paragraphs };
   }
-  // main zone: replace blocks
-  return { ...section, blocks: paragraphs as Editor2BlockNode[] };
+
+  // main zone: preserve table structure by replacing paragraphs within existing blocks
+  const existingBlocks = section.blocks;
+  const hasTable = existingBlocks.some(b => b.type === "table");
+
+  if (hasTable) {
+    // Use replaceParagraphsInBlocks to preserve table structure
+    const newBlocks = replaceParagraphsInBlocks(existingBlocks, paragraphs);
+    return { ...section, blocks: newBlocks };
+  }
+
+  // No tables: simple replacement
+  return { ...section, blocks: paragraphs };
 }
 
 function cloneStateWithParagraphs(
@@ -260,16 +272,17 @@ function cloneStateWithParagraphs(
   paragraphs: Editor2ParagraphNode[],
   selection: Editor2Selection,
 ): Editor2State {
+  // Use getDocumentSections which works with or without Solid proxy
   const hasSections = state.document.sections && state.document.sections.length > 0;
 
   if (hasSections) {
     const sectionIndex = getActiveSectionIndex(state);
     const zone = getActiveZone(state);
-    const section = state.document.sections[sectionIndex];
+    const section = state.document.sections?.[sectionIndex];
 
     if (section) {
       const updatedSection = replaceParagraphsInSection(section, paragraphs, zone);
-      const updatedSections = [...state.document.sections];
+      const updatedSections = [...state.document.sections!];
       updatedSections[sectionIndex] = updatedSection;
 
       return {
@@ -283,8 +296,34 @@ function cloneStateWithParagraphs(
     }
   }
 
-  // Legacy fallback: no sections or invalid section index
-  if (getParagraphs(state).length === paragraphs.length && state.document.blocks.some(b => b.type === "table")) {
+  // Legacy fallback: use replaceParagraphsInBlocks to preserve table structure
+  // Check if document has tables (either in blocks or sections)
+  const hasTableInBlocks = state.document.blocks.some(b => b.type === "table");
+  const hasTableInSections = state.document.sections?.some(s => s.blocks.some(b => b.type === "table")) ?? false;
+
+  if (hasTableInBlocks || hasTableInSections) {
+    // For documents with tables, always use replaceParagraphsInBlocks
+    if (hasTableInSections && state.document.sections) {
+      // Rebuild sections from paragraphs
+      const sectionIndex = getActiveSectionIndex(state);
+      const zone = getActiveZone(state);
+      const sections = getDocumentSections(state.document);
+      const section = sections[sectionIndex];
+
+      if (section && zone === "main") {
+        const updatedSection = replaceParagraphsInSection(section, paragraphs, zone);
+        const updatedSections = state.document.sections.map((s, i) => i === sectionIndex ? updatedSection : s);
+        return {
+          ...state,
+          document: {
+            ...state.document,
+            sections: updatedSections,
+          },
+          selection,
+        };
+      }
+    }
+
     return {
       document: {
         ...state.document,

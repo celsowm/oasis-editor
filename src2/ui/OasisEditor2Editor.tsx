@@ -33,6 +33,7 @@ export interface OasisEditor2EditorProps {
   onDrop: (event: DragEvent) => void;
   onEditorMouseDown: (event: MouseEvent) => void;
   onSurfaceMouseDown: (event: MouseEvent) => void;
+  onSurfaceDblClick: (event: MouseEvent) => void;
   onParagraphMouseDown: (
     paragraphId: string,
     event: MouseEvent & { currentTarget: HTMLParagraphElement },
@@ -99,6 +100,7 @@ export function OasisEditor2Editor(props: OasisEditor2EditorProps) {
           measuredBlockHeights={props.measuredBlockHeights}
           measuredParagraphLayouts={props.measuredParagraphLayouts}
           onSurfaceMouseDown={props.onSurfaceMouseDown}
+          onSurfaceDblClick={props.onSurfaceDblClick}
           onParagraphMouseDown={props.onParagraphMouseDown}
           onImageMouseDown={props.onImageMouseDown}
           onImageResizeHandleMouseDown={props.onImageResizeHandleMouseDown}

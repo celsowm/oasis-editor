@@ -5,11 +5,14 @@ import type {
   Editor2Document,
   Editor2PageSettings,
   Editor2ParagraphListStyle,
+  Editor2ParagraphNode,
   Editor2ParagraphStyle,
+  Editor2Section,
   Editor2TableNode,
   Editor2TextStyle,
 } from "../../core/model.js";
 import { createEditor2Document, createEditor2ParagraphFromRuns, createEditor2Table, createEditor2TableCell, createEditor2TableRow } from "../../core/editorState.js";
+import { normalizePageSettings } from "../../core/model.js";
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const TWIPS_PER_INCH = 1440;
@@ -86,6 +89,92 @@ function twipsToPx(value: string | null | undefined, fallback: number): number {
   }
 
   return Math.round((parsed / TWIPS_PER_INCH) * PX_PER_INCH);
+}
+
+interface SectionProperties {
+  pageSettings?: Editor2PageSettings;
+  headerRId: string | null;
+  footerRId: string | null;
+}
+
+interface ParsedSection {
+  blocks: Editor2BlockNode[];
+  pageSettings: Editor2PageSettings;
+  header: Editor2ParagraphNode[];
+  footer: Editor2ParagraphNode[];
+}
+
+function parseSectionProperties(sectPr: XmlElement): SectionProperties {
+  const pageSize = getFirstChildByTagNameNS(sectPr, WORD_NS, "pgSz");
+  const pageMargins = getFirstChildByTagNameNS(sectPr, WORD_NS, "pgMar");
+
+  let pageSettings: Editor2PageSettings | undefined;
+  if (pageSize || pageMargins) {
+    const width = twipsToPx(getAttributeValue(pageSize, "w"), 816);
+    const height = twipsToPx(getAttributeValue(pageSize, "h"), 1056);
+    const orientationValue = getAttributeValue(pageSize, "orient");
+
+    pageSettings = {
+      width,
+      height,
+      orientation:
+        orientationValue === "landscape"
+          ? "landscape"
+          : orientationValue === "portrait"
+            ? "portrait"
+            : width > height
+              ? "landscape"
+              : "portrait",
+      margins: {
+        top: twipsToPx(getAttributeValue(pageMargins, "top"), 96),
+        right: twipsToPx(getAttributeValue(pageMargins, "right"), 96),
+        bottom: twipsToPx(getAttributeValue(pageMargins, "bottom"), 96),
+        left: twipsToPx(getAttributeValue(pageMargins, "left"), 96),
+        header: twipsToPx(getAttributeValue(pageMargins, "header"), 48),
+        footer: twipsToPx(getAttributeValue(pageMargins, "footer"), 48),
+        gutter: twipsToPx(getAttributeValue(pageMargins, "gutter"), 0),
+      },
+    };
+  }
+
+  const headerRef = getFirstChildByTagNameNS(sectPr, WORD_NS, "headerReference");
+  const footerRef = getFirstChildByTagNameNS(sectPr, WORD_NS, "footerReference");
+
+  return {
+    pageSettings,
+    headerRId: headerRef ? getAttributeValue(headerRef, "id") : null,
+    footerRId: footerRef ? getAttributeValue(footerRef, "id") : null,
+  };
+}
+
+async function parseHeaderFooterXml(
+  xmlContent: string | null,
+  numberingMaps: NumberingMaps,
+  zip: JSZip,
+  relsMap: Map<string, string>,
+): Promise<Editor2ParagraphNode[]> {
+  if (!xmlContent) {
+    return [];
+  }
+
+  const doc = new DOMParser().parseFromString(xmlContent, "application/xml");
+  const root = doc.documentElement;
+  if (!root) {
+    return [];
+  }
+
+  const paragraphs: Editor2ParagraphNode[] = [];
+  for (let index = 0; index < root.childNodes.length; index += 1) {
+    const node = root.childNodes[index];
+    if (node?.nodeType !== node.ELEMENT_NODE) {
+      continue;
+    }
+    const element = node as XmlElement;
+    if (element.localName === "p" && element.namespaceURI === WORD_NS) {
+      paragraphs.push(await parseParagraphNode(element, numberingMaps, zip, relsMap));
+    }
+  }
+  return paragraphs;
 }
 
 function parsePageSettings(body: XmlElement | undefined): Editor2PageSettings | undefined {
@@ -582,31 +671,111 @@ export async function importDocxToEditor2Document(buffer: ArrayBuffer): Promise<
   const numberingMaps = parseNumbering(numberingXml);
   const document = new DOMParser().parseFromString(documentXml, "application/xml");
   const body = document.getElementsByTagNameNS(WORD_NS, "body")[0];
-  const pageSettings = parsePageSettings(body);
 
-  const blocks: Editor2BlockNode[] = [];
-  if (body) {
-    for (let index = 0; index < body.childNodes.length; index += 1) {
-      const node = body.childNodes[index];
-      if (node?.nodeType !== node.ELEMENT_NODE) {
-        continue;
-      }
+  if (!body) {
+    return createEditor2Document([createEditor2ParagraphFromRuns([{ text: "" }])]);
+  }
 
-      const element = node as XmlElement;
-      if (element.namespaceURI !== WORD_NS) {
-        continue;
-      }
+  // Parse body into sections separated by sectPr elements
+  const sectionProps: SectionProperties[] = [];
+  const sectionBlocks: Editor2BlockNode[][] = [[]];
 
-      if (element.localName === "p") {
-        blocks.push(await parseParagraphNode(element, numberingMaps, zip, relsMap));
-      } else if (element.localName === "tbl") {
-        blocks.push(await parseTableNode(element, numberingMaps, zip, relsMap));
-      }
+  for (let index = 0; index < body.childNodes.length; index += 1) {
+    const node = body.childNodes[index];
+    if (node?.nodeType !== node.ELEMENT_NODE) {
+      continue;
+    }
+
+    const element = node as XmlElement;
+    if (element.namespaceURI !== WORD_NS) {
+      continue;
+    }
+
+    if (element.localName === "sectPr") {
+      // sectPr marks the end of a section
+      sectionProps.push(parseSectionProperties(element));
+      sectionBlocks.push([]);
+    } else if (element.localName === "p") {
+      sectionBlocks[sectionBlocks.length - 1]!.push(
+        await parseParagraphNode(element, numberingMaps, zip, relsMap),
+      );
+    } else if (element.localName === "tbl") {
+      sectionBlocks[sectionBlocks.length - 1]!.push(
+        await parseTableNode(element, numberingMaps, zip, relsMap),
+      );
     }
   }
 
+  // Ensure at least one section
+  if (sectionProps.length === 0) {
+    const defaultPageSettings = parsePageSettings(body);
+    sectionProps.push({
+      pageSettings: defaultPageSettings,
+      headerRId: null,
+      footerRId: null,
+    });
+  }
+
+  // Build sections with headers/footers
+  const sections: Editor2Section[] = [];
+  for (let i = 0; i < sectionProps.length; i += 1) {
+    const props = sectionProps[i]!;
+    const blocks = sectionBlocks[i] ?? [];
+
+    // Load header and footer if referenced
+    let header: Editor2ParagraphNode[] = [];
+    let footer: Editor2ParagraphNode[] = [];
+
+    if (props.headerRId) {
+      const headerTarget = relsMap.get(props.headerRId);
+      if (headerTarget) {
+        let zipPath = headerTarget.startsWith("/") ? headerTarget.slice(1) : headerTarget;
+        if (!zipPath.startsWith("word/")) zipPath = "word/" + headerTarget;
+        const headerXml = await zip.file(zipPath)?.async("string");
+        header = await parseHeaderFooterXml(headerXml ?? null, numberingMaps, zip, relsMap);
+      }
+    }
+
+    if (props.footerRId) {
+      const footerTarget = relsMap.get(props.footerRId);
+      if (footerTarget) {
+        let zipPath = footerTarget.startsWith("/") ? footerTarget.slice(1) : footerTarget;
+        if (!zipPath.startsWith("word/")) zipPath = "word/" + footerTarget;
+        const footerXml = await zip.file(zipPath)?.async("string");
+        footer = await parseHeaderFooterXml(footerXml ?? null, numberingMaps, zip, relsMap);
+      }
+    }
+
+    const rawPageSettings = props.pageSettings ?? {
+      width: 816,
+      height: 1056,
+      orientation: "portrait" as const,
+      margins: { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 },
+    };
+    const pageSettings = normalizePageSettings(rawPageSettings);
+
+    sections.push({
+      id: `section:${i + 1}`,
+      blocks: blocks.length > 0 ? blocks : [createEditor2ParagraphFromRuns([{ text: "" }])],
+      pageSettings,
+      header: header.length > 0 ? header : undefined,
+      footer: footer.length > 0 ? footer : undefined,
+    });
+  }
+
+  // Create document with sections only if there are multiple sections
+  // For single-section documents, use flat blocks for Solid.js compatibility
+  if (sections.length > 1) {
+    const doc = createEditor2Document([]);
+    (doc as any).sections = sections;
+    doc.blocks = [];
+    return doc;
+  }
+
+  // Single section: use flat blocks for compatibility
+  const singleSection = sections[0];
   return createEditor2Document(
-    blocks.length > 0 ? blocks : [createEditor2ParagraphFromRuns([{ text: "" }])],
-    pageSettings,
+    singleSection?.blocks.length > 0 ? singleSection.blocks : [createEditor2ParagraphFromRuns([{ text: "" }])],
+    singleSection?.pageSettings,
   );
 }

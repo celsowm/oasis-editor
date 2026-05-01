@@ -5,6 +5,7 @@ import type {
   Editor2PageSettings,
   Editor2ParagraphNode,
   Editor2Position,
+  Editor2Section,
   Editor2State,
   Editor2TableCellNode,
   Editor2TableNode,
@@ -133,6 +134,7 @@ export function createEditor2Table(rows: Editor2TableRowNode[]): Editor2TableNod
 export function createEditor2Document(
   blocks: Editor2BlockNode[],
   pageSettings?: Editor2PageSettings,
+  sections?: Editor2Section[],
 ): Editor2Document {
   const normalizedPageSettings = normalizePageSettings(
     pageSettings
@@ -153,6 +155,7 @@ export function createEditor2Document(
     id: `document:${nextDocumentId}`,
     blocks,
     pageSettings: normalizedPageSettings,
+    sections: sections ?? undefined,
   };
   nextDocumentId += 1;
   return document;
@@ -162,8 +165,10 @@ export function createEditor2StateFromDocument(
   document: Editor2Document,
   selection?: { paragraphIndex?: number; offset?: number },
 ): Editor2State {
-  const blocks =
-    document.blocks.length > 0 ? document.blocks : [createEditor2Paragraph("")];
+  const hasSections = document.sections && document.sections.length > 0;
+  const blocks = hasSections
+    ? document.blocks
+    : (document.blocks.length > 0 ? document.blocks : [createEditor2Paragraph("")]);
   const paragraphs = getDocumentParagraphs({
     ...document,
     blocks,
@@ -178,22 +183,25 @@ export function createEditor2StateFromDocument(
     Math.max(0, Math.min(selection?.offset ?? 0, getParagraphLength(paragraph))),
   );
 
-  return {
+  const result = {
     document: {
       ...document,
       blocks,
+      sections: hasSections ? document.sections : undefined,
     },
     selection: createCollapsedSelection(position),
     activeSectionIndex: 0,
     activeZone: "main" as Editor2EditingZone,
   };
+
+  return result;
 }
 
 export function createInitialEditor2State(): Editor2State {
   const paragraph = createEditor2Paragraph("");
-  const run = paragraph.runs[0];
+  const run = paragraph.runs[0]!;
   return {
-    document: createEditor2Document([paragraph]),
+    document: createEditor2Document([paragraph], undefined, []),
     selection: createCollapsedSelection({
       paragraphId: paragraph.id,
       runId: run.id,

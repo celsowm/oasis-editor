@@ -336,6 +336,10 @@
   gap: 24px;
 }
 
+.oasis-editor-2-paper-dimmed-main .oasis-editor-2-surface {
+  opacity: 0.3;
+}
+
 .oasis-editor-2-surface {
   position: relative;
   min-height: 100%;
@@ -347,9 +351,18 @@
 .oasis-editor-2-page-header-zone,
 .oasis-editor-2-page-footer-zone {
   position: absolute;
-  pointer-events: none;
   box-sizing: border-box;
-  z-index: 0;
+  z-index: 2;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.oasis-editor-2-zone-dimmed {
+  opacity: 0.3;
+}
+
+.oasis-editor-2-zone-active {
+  opacity: 1;
+  z-index: 3;
 }
 
 .oasis-editor-2-page-header-guide,
