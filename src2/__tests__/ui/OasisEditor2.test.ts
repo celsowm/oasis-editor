@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createOasisEditor2 } from "../../app/bootstrap/createOasisEditor2App.js";
+import { createOasisEditor2Container } from "../../app/bootstrap/createOasisEditor2Container.js";
 import { importDocxToEditor2Document } from "../../import/docx/importDocxToEditor2Document.js";
 import { buildDocx, createTinyPngFile, setupOasisEditor2Dom } from "./oasisEditor2TestHarness.js";
 
@@ -55,6 +56,33 @@ describe("OasisEditor2", () => {
 
     instance.dispose();
     expect(root.textContent).toBe("");
+  });
+
+  it("renders the public container without demo chrome and emits state changes", async () => {
+    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
+    const onStateChange = vi.fn();
+    const instance = createOasisEditor2Container(root, {
+      viewportHeight: 480,
+      class: "test-public-container",
+      onStateChange,
+    });
+    const editor = root.querySelector('[data-testid="editor-2-editor"]') as HTMLDivElement;
+    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    expect(editor).not.toBeNull();
+    expect(editor.classList.contains("test-public-container")).toBe(true);
+    expect(editor.style.height).toBe("480px");
+    expect(root.querySelector(".oasis-editor-2-header")).toBeNull();
+    expect(root.querySelector(".oasis-editor-2-toolbar")).toBeNull();
+
+    input.value = "ab";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "ab", inputType: "insertText" }));
+    await Promise.resolve();
+
+    expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("ab");
+    expect(onStateChange).toHaveBeenCalled();
+
+    instance.dispose();
   });
 
   it("repositions the caret from a click and inserts at the clicked offset", async () => {

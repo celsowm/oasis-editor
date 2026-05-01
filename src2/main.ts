@@ -1,5 +1,6 @@
 import { createOasisEditor2 } from "./app/bootstrap/createOasisEditor2App.js";
 import "./styles/oasis-editor-2.css";
+import "./styles/oasis-editor-2-demo.css";
 import { installEditor2DebugControl } from "./utils/logger.js";
 
 const container = document.getElementById("oasis-editor-2-root");

@@ -5,6 +5,24 @@ const SAMPLE_PNG = Buffer.from(
   "base64",
 );
 
+async function pastePlainText(page: import("@playwright/test").Page, text: string) {
+  await page.evaluate((value) => {
+    const input = document.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement | null;
+    if (!input) {
+      throw new Error("Editor input not found");
+    }
+
+    const clipboardData = new DataTransfer();
+    clipboardData.setData("text/plain", value);
+    const event = new ClipboardEvent("paste", {
+      bubbles: true,
+      cancelable: true,
+      clipboardData,
+    });
+    input.dispatchEvent(event);
+  }, text);
+}
+
 test.describe("Oasis Editor 2 smoke tests", () => {
   test.beforeEach(async ({ page }) => {
     page.on("console", (msg) => {
@@ -141,5 +159,53 @@ test.describe("Oasis Editor 2 smoke tests", () => {
     await expect.poll(async () => paragraph.evaluate((node) => (node as HTMLElement).style.lineHeight)).toBe("1.8");
     await expect(paragraph).toHaveCSS("padding-bottom", "24px");
     await expect(paragraph).toHaveCSS("padding-left", "32px");
+  });
+
+  test("keeps typing after repagination and internal scroll", async ({ page }) => {
+    const input = page.locator('[data-testid="editor-2-input"]');
+    await input.focus();
+
+    const lines = Array.from({ length: 60 }, (_, index) => `Line ${String(index + 1).padStart(2, "0")}`).join("\n");
+    await pastePlainText(page, lines);
+
+    await expect
+      .poll(async () => page.locator('[data-testid="editor-2-page"]').count())
+      .toBeGreaterThan(1);
+
+    const editor = page.locator('[data-testid="editor-2-editor"]');
+    await editor.evaluate((node) => {
+      node.scrollTop = node.scrollHeight;
+    });
+
+    await input.focus();
+    await page.keyboard.type("abc");
+
+    await expect(page.locator('[data-testid="editor-2-block"]').last()).toContainText("abc");
+  });
+
+  test("clicks into a lower page after scroll and inserts into the clicked paragraph", async ({ page }) => {
+    const input = page.locator('[data-testid="editor-2-input"]');
+    await input.focus();
+
+    const lines = Array.from({ length: 60 }, (_, index) => `Paragraph ${String(index + 1).padStart(2, "0")}`).join("\n");
+    await pastePlainText(page, lines);
+
+    const editor = page.locator('[data-testid="editor-2-editor"]');
+    await editor.evaluate((node) => {
+      node.scrollTop = node.scrollHeight;
+    });
+
+    const lastParagraph = page.locator('[data-testid="editor-2-block"]').last();
+    await expect(lastParagraph).toBeVisible();
+    const firstChar = lastParagraph.locator('[data-testid="editor-2-char"]').first();
+    const box = await firstChar.boundingBox();
+    if (!box) {
+      throw new Error("Could not measure the first character on the lower page");
+    }
+
+    await page.mouse.click(box.x + box.width - 1, box.y + box.height / 2);
+    await page.keyboard.type("X");
+
+    await expect(lastParagraph).toContainText("Paragraph 60X");
   });
 });

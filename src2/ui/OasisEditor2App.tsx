@@ -1,8 +1,6 @@
-import { createEffect, createSignal, onCleanup, Show } from "solid-js";
+import { createEffect, createSignal, onCleanup, Show, type JSX } from "solid-js";
 import { createStore } from "solid-js/store";
-import { EditorSurface } from "./components/EditorSurface.js";
-import { CaretOverlay } from "./components/CaretOverlay.js";
-import { SelectionOverlay } from "./components/SelectionOverlay.js";
+import { OasisEditor2Editor } from "./OasisEditor2Editor.js";
 import { getCaretSlotRects } from "./caretGeometry.js";
 import {
   applyEditor2HistoryTransaction,
@@ -25,6 +23,7 @@ import {
 import {
   getToolbarStyleState,
   type BooleanStyleKey,
+  type ParagraphStyleKey,
   type ToolbarStyleState,
 } from "./toolbarStyleState.js";
 import {
@@ -96,23 +95,7 @@ import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
 import { exportEditor2DocumentToDocxBlob } from "../export/docx/exportEditor2DocumentToDocx.js";
 import { importDocxToEditor2Document } from "../import/docx/importDocxToEditor2Document.js";
 import { createEditor2Logger } from "../utils/logger.js";
-
-interface InputBox {
-  left: number;
-  top: number;
-  height: number;
-}
-
-interface CaretBox extends InputBox {
-  visible: boolean;
-}
-
-interface SelectionBox {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
+import type { CaretBox, InputBox, SelectionBox } from "./editorUiTypes.js";
 
 interface TableCellLayoutEntry {
   rowIndex: number;
@@ -142,7 +125,57 @@ interface ActiveImageDrag {
   dragging: boolean;
 }
 
+export interface OasisEditor2AppProps {
+  showChrome?: boolean;
+  viewportHeight?: number | string;
+  class?: string;
+  style?: JSX.CSSProperties;
+  initialDocument?: Editor2Document;
+  initialState?: Editor2State;
+  onStateChange?: (state: Editor2State) => void;
+  readOnly?: boolean;
+}
+
 const DEFAULT_MAX_INSERTED_IMAGE_WIDTH = 624;
+
+function cloneEditor2State(source: Editor2State): Editor2State {
+  return {
+    document: {
+      ...source.document,
+      blocks: source.document.blocks.map((block) =>
+        block.type === "paragraph"
+          ? {
+              ...block,
+              runs: block.runs.map((run) => ({ ...run })),
+              style: block.style ? { ...block.style } : undefined,
+              list: block.list ? { ...block.list } : undefined,
+            }
+          : {
+              ...block,
+              rows: block.rows.map((row) => ({
+                ...row,
+                cells: row.cells.map((cell) => ({
+                  ...cell,
+                  colSpan: cell.colSpan ?? undefined,
+                  rowSpan: cell.rowSpan ?? undefined,
+                  vMerge: cell.vMerge ?? undefined,
+                  blocks: cell.blocks.map((paragraph) => ({
+                    ...paragraph,
+                    runs: paragraph.runs.map((run) => ({ ...run })),
+                    style: paragraph.style ? { ...paragraph.style } : undefined,
+                    list: paragraph.list ? { ...paragraph.list } : undefined,
+                  })),
+                })),
+              })),
+            },
+      ),
+    },
+    selection: {
+      anchor: { ...source.selection.anchor },
+      focus: { ...source.selection.focus },
+    },
+  };
+}
 
 function getElementContentWidth(element: HTMLElement | null | undefined): number {
   if (!element) {
@@ -419,10 +452,18 @@ function findNextWordBoundary(text: string, offset: number): number {
   return index;
 }
 
-export function OasisEditor2App() {
+export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   const logger = createEditor2Logger("app");
-  const [state, setState] = createStore<Editor2State>(createInitialEditor2State());
+  const [state, setState] = createStore<Editor2State>(
+    props.initialState
+      ? cloneEditor2State(props.initialState)
+      : props.initialDocument
+        ? createEditor2StateFromDocument(props.initialDocument)
+        : createInitialEditor2State(),
+  );
   const pageSettings = () => getDocumentPageSettings(state.document);
+  const showChrome = () => props.showChrome ?? true;
+  const isReadOnly = () => props.readOnly ?? false;
   const [focused, setFocused] = createSignal(false);
   const [composing, setComposing] = createSignal(false);
   const [measuredBlockHeights, setMeasuredBlockHeights] = createSignal<Record<string, number>>({});
@@ -438,6 +479,7 @@ export function OasisEditor2App() {
     height: 28,
     visible: false,
   });
+  let viewportRef: HTMLDivElement | undefined;
   let surfaceRef: HTMLDivElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
   let importInputRef: HTMLInputElement | undefined;
@@ -499,16 +541,14 @@ export function OasisEditor2App() {
           })),
         };
 
-  const cloneState = (source: Editor2State): Editor2State => ({
-    document: {
-      ...source.document,
-      blocks: source.document.blocks.map(cloneDocumentBlock),
-    },
-    selection: {
-      anchor: { ...source.selection.anchor },
-      focus: { ...source.selection.focus },
-    },
-  });
+  const cloneState = (source: Editor2State): Editor2State =>
+    cloneEditor2State({
+      ...source,
+      document: {
+        ...source.document,
+        blocks: source.document.blocks.map(cloneDocumentBlock),
+      },
+    });
 
   const applyState = (nextState: Editor2State) => {
     setState(nextState);
@@ -545,6 +585,10 @@ export function OasisEditor2App() {
       anchor: { ...nextSelection.anchor },
       focus: { ...nextSelection.focus },
     },
+  });
+
+  createEffect(() => {
+    props.onStateChange?.(cloneState(state));
   });
 
   const resolveTableCellRangeSelection = (
@@ -2024,6 +2068,9 @@ export function OasisEditor2App() {
   };
 
   const handleImportDocx = async (file: File | null) => {
+    if (isReadOnly()) {
+      return;
+    }
     if (!file) {
       return;
     }
@@ -2082,6 +2129,9 @@ export function OasisEditor2App() {
   };
 
   const handleInsertImage = async (file: File | null) => {
+    if (isReadOnly()) {
+      return;
+    }
     if (!file) return;
 
     await insertImageFromFile(file);
@@ -2348,6 +2398,23 @@ export function OasisEditor2App() {
     requestInputBoxSync();
   });
 
+  createEffect(() => {
+    const viewport = viewportRef;
+    if (!viewport) {
+      return;
+    }
+
+    const handleViewportScroll = () => requestInputBoxSync();
+    const handleWindowResize = () => requestInputBoxSync();
+    viewport.addEventListener("scroll", handleViewportScroll, { passive: true });
+    window.addEventListener("resize", handleWindowResize);
+
+    onCleanup(() => {
+      viewport.removeEventListener("scroll", handleViewportScroll);
+      window.removeEventListener("resize", handleWindowResize);
+    });
+  });
+
   onCleanup(() => {
     syncRequestId += 1;
     stopDragging();
@@ -2355,6 +2422,10 @@ export function OasisEditor2App() {
   });
 
   const handleTextInput = (event: InputEvent & { currentTarget: HTMLTextAreaElement }) => {
+    if (isReadOnly()) {
+      event.currentTarget.value = "";
+      return;
+    }
     const text = event.currentTarget.value;
     if (text.length === 0) {
       return;
@@ -2383,6 +2454,11 @@ export function OasisEditor2App() {
   };
 
   const handleCompositionEnd = (event: CompositionEvent & { currentTarget: HTMLTextAreaElement }) => {
+    if (isReadOnly()) {
+      event.currentTarget.value = "";
+      setComposing(false);
+      return;
+    }
     const text = event.data ?? event.currentTarget.value;
     setComposing(false);
 
@@ -2412,6 +2488,10 @@ export function OasisEditor2App() {
   };
 
   const handleCut = (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => {
+    if (isReadOnly()) {
+      event.preventDefault();
+      return;
+    }
     const text = getSelectedText(state);
     if (text.length === 0) {
       return;
@@ -2427,6 +2507,10 @@ export function OasisEditor2App() {
   };
 
   const handlePaste = (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => {
+    if (isReadOnly()) {
+      event.preventDefault();
+      return;
+    }
     if (forcePlainTextPaste) {
       forcePlainTextPaste = false;
       const text = event.clipboardData?.getData("text/plain") ?? "";
@@ -2484,6 +2568,10 @@ export function OasisEditor2App() {
   };
 
   const handleDrop = (event: DragEvent) => {
+    if (isReadOnly()) {
+      event.preventDefault();
+      return;
+    }
     const imageFile = findImageFileFromTransfer(event.dataTransfer);
     if (!imageFile) {
       return;
@@ -3008,6 +3096,27 @@ export function OasisEditor2App() {
   };
 
   const handleKeyDown = (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => {
+    if (isReadOnly()) {
+      const key = event.key;
+      const lowerKey = key.toLowerCase();
+      const isNavigationKey =
+        key === "ArrowLeft" ||
+        key === "ArrowRight" ||
+        key === "ArrowUp" ||
+        key === "ArrowDown" ||
+        key === "Home" ||
+        key === "End" ||
+        key === "PageUp" ||
+        key === "PageDown";
+      const isModifierOnly =
+        key === "Shift" || key === "Control" || key === "Meta" || key === "Alt";
+      const isCopyOrSelectAll =
+        (event.ctrlKey || event.metaKey) && (lowerKey === "a" || lowerKey === "c");
+      if (!isNavigationKey && !isModifierOnly && !isCopyOrSelectAll) {
+        event.preventDefault();
+      }
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a" && !event.altKey) {
       event.preventDefault();
       const paragraphs = getParagraphs(state);
@@ -3329,6 +3438,318 @@ export function OasisEditor2App() {
         return;
     }
   };
+
+  if (!showChrome()) {
+    return (
+      <OasisEditor2Editor
+        state={() => state}
+        measuredBlockHeights={() => measuredBlockHeights()}
+        measuredParagraphLayouts={() => measuredParagraphLayouts()}
+        selectionBoxes={() => selectionBoxes()}
+        caretBox={() => caretBox()}
+        inputBox={() => inputBox()}
+        focused={() => focused()}
+        viewportHeight={props.viewportHeight}
+        class={props.class}
+        style={props.style}
+        readOnly={isReadOnly()}
+        showCaret={() => {
+          if (!caretBox().visible || !isSelectionCollapsed(state.selection)) {
+            return false;
+          }
+          const anchorLoc = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId);
+          const focusLoc = findParagraphTableLocation(state.document, state.selection.focus.paragraphId);
+          const inTableSelection = anchorLoc && focusLoc &&
+            anchorLoc.blockIndex === focusLoc.blockIndex &&
+            (anchorLoc.rowIndex !== focusLoc.rowIndex || anchorLoc.cellIndex !== focusLoc.cellIndex);
+          return !inTableSelection;
+        }}
+        onViewportRef={(element) => {
+          viewportRef = element;
+        }}
+        onSurfaceRef={(element) => {
+          surfaceRef = element;
+        }}
+        onTextareaRef={(element) => {
+          textareaRef = element;
+        }}
+        onImportInputRef={(element) => {
+          importInputRef = element;
+        }}
+        onImageInputRef={(element) => {
+          imageInputRef = element;
+        }}
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={handleDrop}
+        onEditorMouseDown={(event) => {
+          event.preventDefault();
+          focusInput();
+        }}
+        onSurfaceMouseDown={(event) => {
+          event.preventDefault();
+
+          stopImageDrag();
+          stopImageResize();
+
+          if (
+            event.target instanceof Element &&
+            event.target.closest("[data-paragraph-id]")
+          ) {
+            focusInput();
+            return;
+          }
+
+          const paragraphElement = surfaceRef
+            ? findNearestParagraphElement(surfaceRef, event.clientX, event.clientY)
+            : null;
+          if (!paragraphElement) {
+            focusInput();
+            return;
+          }
+          const paragraphId = paragraphElement.dataset.paragraphId;
+          const paragraph = paragraphId
+            ? getParagraphs(state).find((candidate) => candidate.id === paragraphId)
+            : undefined;
+          if (!paragraphId || !paragraph || !surfaceRef) {
+            focusInput();
+            return;
+          }
+
+          clearPreferredColumn();
+          resetTransactionGrouping();
+          const layout = measureParagraphLayoutFromRects(
+            paragraph,
+            collectParagraphCharRects(surfaceRef, paragraph.id),
+          );
+          const offset = layout.text.length === 0
+            ? 0
+            : Math.max(
+                0,
+                Math.min(
+                  layout.text.length,
+                  resolveClosestOffsetInMeasuredLayout(layout, event.clientX, event.clientY),
+                ),
+              );
+          const position = paragraphOffsetToPosition(paragraph, offset);
+
+          if (event.shiftKey) {
+            dragAnchor = state.selection.anchor;
+            applyState(
+              setSelection(state, {
+                anchor: state.selection.anchor,
+                focus: position,
+              }),
+            );
+          } else {
+            dragAnchor = position;
+            applyState(
+              setSelection(state, {
+                anchor: position,
+                focus: position,
+              }),
+            );
+          }
+          window.addEventListener("mousemove", handleWindowMouseMove);
+          window.addEventListener("mouseup", handleWindowMouseUp);
+          focusInput();
+        }}
+        onParagraphMouseDown={(paragraphId, event) => {
+          event.preventDefault();
+          const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
+          if (!paragraph || !surfaceRef) {
+            return;
+          }
+          clearPreferredColumn();
+          resetTransactionGrouping();
+          const offset = resolveClickOffset(
+            event,
+            measureParagraphLayoutFromRects(
+              paragraph,
+              collectParagraphCharRects(surfaceRef, paragraph.id),
+            ),
+          );
+          const position = paragraphOffsetToPosition(paragraph, offset);
+          const cellLocation = findParagraphTableLocation(state.document, paragraphId);
+          const anchorPosition = cellLocation
+            ? (() => {
+                const block = state.document.blocks[cellLocation.blockIndex];
+                const cellParagraph = block?.type === "table"
+                  ? block.rows[cellLocation.rowIndex]?.cells[cellLocation.cellIndex]?.blocks[0]
+                  : undefined;
+                return cellParagraph ? paragraphOffsetToPosition(cellParagraph, 0) : position;
+              })()
+            : position;
+
+          if (event.shiftKey) {
+            dragAnchor = state.selection.anchor;
+            applyState(
+              setSelection(state, {
+                anchor: state.selection.anchor,
+                focus: position,
+              }),
+            );
+            window.addEventListener("mousemove", handleWindowMouseMove);
+            window.addEventListener("mouseup", handleWindowMouseUp);
+            focusInput();
+            return;
+          }
+
+          if (event.detail >= 3) {
+            dragAnchor = null;
+            applyState(
+              setSelection(state, {
+                anchor: paragraphOffsetToPosition(paragraph, 0),
+                focus: paragraphOffsetToPosition(paragraph, getParagraphText(paragraph).length),
+              }),
+            );
+            stopDragging();
+            focusInput();
+            return;
+          }
+
+          if (event.detail === 2) {
+            const word = resolveWordSelection(getParagraphText(paragraph), offset);
+            dragAnchor = null;
+            applyState(
+              setSelection(state, {
+                anchor: paragraphOffsetToPosition(paragraph, word.start),
+                focus: paragraphOffsetToPosition(paragraph, word.end),
+              }),
+            );
+            stopDragging();
+            focusInput();
+            return;
+          }
+
+          dragAnchor = cellLocation ? anchorPosition : position;
+          applyState(
+            setSelection(state, {
+              anchor: position,
+              focus: position,
+            }),
+          );
+          window.addEventListener("mousemove", handleWindowMouseMove);
+          window.addEventListener("mouseup", handleWindowMouseUp);
+          focusInput();
+        }}
+        onImageMouseDown={(paragraphId, paragraphOffset, event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
+          if (!paragraph) {
+            logger.warn("image select:missing paragraph", { paragraphId, paragraphOffset });
+            return;
+          }
+
+          clearPreferredColumn();
+          resetTransactionGrouping();
+          dragAnchor = null;
+          stopDragging();
+          stopImageDrag();
+          stopImageResize();
+
+          const start = paragraphOffsetToPosition(paragraph, paragraphOffset);
+          const end = paragraphOffsetToPosition(paragraph, paragraphOffset + 1);
+          logger.info("image select", {
+            paragraphId,
+            paragraphOffset,
+            start,
+            end,
+          });
+
+          if (event.shiftKey) {
+            applyState(
+              setSelection(state, {
+                anchor: state.selection.anchor,
+                focus: end,
+              }),
+            );
+            focusInput();
+            return;
+          }
+
+          applyState(
+            setSelection(state, {
+              anchor: start,
+              focus: end,
+            }),
+          );
+          activeImageDrag = {
+            paragraphId,
+            paragraphOffset,
+            startClientX: event.clientX,
+            startClientY: event.clientY,
+            dragging: false,
+          };
+          window.addEventListener("mousemove", handleImageDragMouseMove);
+          window.addEventListener("mouseup", handleImageDragMouseUp);
+          focusInput();
+        }}
+        onImageResizeHandleMouseDown={(paragraphId, paragraphOffset, event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
+          if (!paragraph) {
+            logger.warn("image resize:start missing paragraph", { paragraphId, paragraphOffset });
+            return;
+          }
+
+          stopImageDrag();
+          const selectedImage = getSelectedImageInfo(
+            applySelectionToStatePreservingStructure(state, {
+              anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),
+              focus: paragraphOffsetToPosition(paragraph, paragraphOffset + 1),
+            }),
+          );
+          if (!selectedImage) {
+            logger.warn("image resize:start missing selection", {
+              paragraphId,
+              paragraphOffset,
+              selection: state.selection,
+            });
+            return;
+          }
+
+          logger.info("image resize:start", {
+            paragraphId,
+            paragraphOffset,
+            width: selectedImage.width,
+            height: selectedImage.height,
+            clientX: event.clientX,
+            clientY: event.clientY,
+          });
+          activeImageResize = {
+            paragraphId,
+            paragraphOffset,
+            startClientX: event.clientX,
+            startWidth: selectedImage.width,
+            startHeight: selectedImage.height,
+            aspectRatio: selectedImage.width / selectedImage.height,
+            initialState: cloneState(state),
+          };
+          window.addEventListener("mousemove", handleImageResizeMouseMove);
+          window.addEventListener("mouseup", handleImageResizeMouseUp);
+        }}
+        onInputBlur={() => setFocused(false)}
+        onInputFocus={() => setFocused(true)}
+        onCompositionEnd={handleCompositionEnd}
+        onCompositionStart={handleCompositionStart}
+        onCopy={handleCopy}
+        onCut={handleCut}
+        onInput={handleTextInput}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        onImportInputChange={(event) => {
+          const file = event.currentTarget.files?.[0] ?? null;
+          void handleImportDocx(file);
+        }}
+        onImageInputChange={(event) => {
+          const file = event.currentTarget.files?.[0] ?? null;
+          void handleInsertImage(file);
+        }}
+      />
+    );
+  }
 
   return (
     <div class="oasis-editor-2-app">
@@ -3875,348 +4296,310 @@ export function OasisEditor2App() {
       </section>
 
       <section class="oasis-editor-2-stage">
-        <div
-          ref={surfaceRef}
-          class="oasis-editor-2-editor"
-          data-testid="editor-2-editor"
-          style={{
-            width: `min(${pageSettings().width + 68}px, 100%)`,
-          }}
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={handleDrop}
-          onMouseDown={(event) => {
-            event.preventDefault();
-            focusInput();
-          }}
-        >
-          <EditorSurface
-            state={() => state}
-            measuredBlockHeights={() => measuredBlockHeights()}
-            measuredParagraphLayouts={() => measuredParagraphLayouts()}
-            onSurfaceMouseDown={(event) => {
-              event.preventDefault();
-
-              // If the click happened on a paragraph (or a child of one), the
-              // paragraph mousedown handler already started a selection - do
-              // not clobber it.
-              if (
-                event.target instanceof Element &&
-                event.target.closest("[data-paragraph-id]")
-              ) {
-                focusInput();
-                return;
-              }
-
-              // Clicking on the empty area around the chars (e.g., the
-              // surface padding to the left of the text) should still start a
-              // drag selection on the nearest paragraph - otherwise the user
-              // can't begin a selection unless they hit a character precisely.
-              const paragraphElement = surfaceRef
-                ? findNearestParagraphElement(surfaceRef, event.clientX, event.clientY)
-                : null;
-              if (!paragraphElement) {
-                focusInput();
-                return;
-              }
-              const paragraphId = paragraphElement.dataset.paragraphId;
-              const paragraph = paragraphId
-                ? getParagraphs(state).find((candidate) => candidate.id === paragraphId)
-                : undefined;
-              if (!paragraphId || !paragraph) {
-                focusInput();
-                return;
-              }
-
-              clearPreferredColumn();
-              resetTransactionGrouping();
-              const layout = measureParagraphLayoutFromRects(
-                paragraph,
-                collectParagraphCharRects(surfaceRef!, paragraph.id),
-              );
-              const offset = layout.text.length === 0
-                ? 0
-                : Math.max(
-                    0,
-                    Math.min(
-                      layout.text.length,
-                      resolveClosestOffsetInMeasuredLayout(
-                        layout,
-                        event.clientX,
-                        event.clientY,
-                      ),
-                    ),
-                  );
-              const position = paragraphOffsetToPosition(paragraph, offset);
-
-              if (event.shiftKey) {
-                dragAnchor = state.selection.anchor;
-                applyState(
-                  setSelection(state, {
-                    anchor: state.selection.anchor,
-                    focus: position,
-                  }),
-                );
-              } else {
-                dragAnchor = position;
-                applyState(
-                  setSelection(state, {
-                    anchor: position,
-                    focus: position,
-                  }),
-                );
-              }
-              window.addEventListener("mousemove", handleWindowMouseMove);
-              window.addEventListener("mouseup", handleWindowMouseUp);
-              focusInput();
-            }}
-            onParagraphMouseDown={(paragraphId, event) => {
-              event.preventDefault();
-              const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
-              if (!paragraph) {
-                return;
-              }
-              clearPreferredColumn();
-              resetTransactionGrouping();
-              const offset = resolveClickOffset(
-                event,
-                measureParagraphLayoutFromRects(
-                  paragraph,
-                  collectParagraphCharRects(surfaceRef!, paragraph.id),
-                ),
-              );
-              const position = paragraphOffsetToPosition(paragraph, offset);
-
-              // For table cells, anchor to the cell's first char position so
-              // dragging produces a proper cell-level selection
-              const cellLocation = findParagraphTableLocation(state.document, paragraphId);
-              const anchorPosition = cellLocation
-                ? (() => {
-                    const block = state.document.blocks[cellLocation.blockIndex];
-                    const cellParagraph = block?.type === "table"
-                      ? block.rows[cellLocation.rowIndex]?.cells[cellLocation.cellIndex]?.blocks[0]
-                      : undefined;
-                    return cellParagraph ? paragraphOffsetToPosition(cellParagraph, 0) : position;
-                  })()
-                : position;
-
-              if (event.shiftKey) {
-                dragAnchor = state.selection.anchor;
-                applyState(
-                  setSelection(state, {
-                    anchor: state.selection.anchor,
-                    focus: position,
-                  }),
-                );
-                window.addEventListener("mousemove", handleWindowMouseMove);
-                window.addEventListener("mouseup", handleWindowMouseUp);
-                focusInput();
-                return;
-              }
-
-              if (event.detail >= 3) {
-                dragAnchor = null;
-                applyState(
-                  setSelection(state, {
-                    anchor: paragraphOffsetToPosition(paragraph, 0),
-                    focus: paragraphOffsetToPosition(paragraph, getParagraphText(paragraph).length),
-                  }),
-                );
-                stopDragging();
-                focusInput();
-                return;
-              }
-
-              if (event.detail === 2) {
-                const word = resolveWordSelection(getParagraphText(paragraph), offset);
-                dragAnchor = null;
-                applyState(
-                  setSelection(state, {
-                    anchor: paragraphOffsetToPosition(paragraph, word.start),
-                    focus: paragraphOffsetToPosition(paragraph, word.end),
-                  }),
-                );
-                stopDragging();
-                focusInput();
-                return;
-              }
-
-              dragAnchor = cellLocation ? anchorPosition : position;
-              applyState(
-                setSelection(state, {
-                  anchor: position,
-                  focus: position,
-                }),
-              );
-              window.addEventListener("mousemove", handleWindowMouseMove);
-              window.addEventListener("mouseup", handleWindowMouseUp);
-              focusInput();
-            }}
-            onImageMouseDown={(paragraphId, paragraphOffset, event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
-              if (!paragraph) {
-                logger.warn("image select:missing paragraph", { paragraphId, paragraphOffset });
-                return;
-              }
-
-              clearPreferredColumn();
-              resetTransactionGrouping();
-              dragAnchor = null;
-              stopDragging();
-              stopImageDrag();
-              stopImageResize();
-
-              const start = paragraphOffsetToPosition(paragraph, paragraphOffset);
-              const end = paragraphOffsetToPosition(paragraph, paragraphOffset + 1);
-              logger.info("image select", {
-                paragraphId,
-                paragraphOffset,
-                start,
-                end,
-              });
-
-              if (event.shiftKey) {
-                applyState(
-                  setSelection(state, {
-                    anchor: state.selection.anchor,
-                    focus: end,
-                  }),
-                );
-                focusInput();
-                return;
-              }
-
-              applyState(
-                setSelection(state, {
-                  anchor: start,
-                  focus: end,
-                }),
-              );
-              activeImageDrag = {
-                paragraphId,
-                paragraphOffset,
-                startClientX: event.clientX,
-                startClientY: event.clientY,
-                dragging: false,
-              };
-              window.addEventListener("mousemove", handleImageDragMouseMove);
-              window.addEventListener("mouseup", handleImageDragMouseUp);
-              focusInput();
-            }}
-            onImageResizeHandleMouseDown={(paragraphId, paragraphOffset, event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
-              if (!paragraph) {
-                logger.warn("image resize:start missing paragraph", { paragraphId, paragraphOffset });
-                return;
-              }
-
-              stopImageDrag();
-              const selectedImage = getSelectedImageInfo(
-                applySelectionToStatePreservingStructure(state, {
-                  anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),
-                  focus: paragraphOffsetToPosition(paragraph, paragraphOffset + 1),
-                }),
-              );
-              if (!selectedImage) {
-                logger.warn("image resize:start missing selection", {
-                  paragraphId,
-                  paragraphOffset,
-                  selection: state.selection,
-                });
-                return;
-              }
-
-              logger.info("image resize:start", {
-                paragraphId,
-                paragraphOffset,
-                width: selectedImage.width,
-                height: selectedImage.height,
-                clientX: event.clientX,
-                clientY: event.clientY,
-              });
-              activeImageResize = {
-                paragraphId,
-                paragraphOffset,
-                startClientX: event.clientX,
-                startWidth: selectedImage.width,
-                startHeight: selectedImage.height,
-                aspectRatio: selectedImage.width / selectedImage.height,
-                initialState: cloneState(state),
-              };
-              window.addEventListener("mousemove", handleImageResizeMouseMove);
-              window.addEventListener("mouseup", handleImageResizeMouseUp);
-            }}
-          />
-
-          {!isSelectionCollapsed(state.selection) ? <SelectionOverlay boxes={selectionBoxes()} /> : null}
-
-          {caretBox().visible && isSelectionCollapsed(state.selection) && (() => {
+        <OasisEditor2Editor
+          state={() => state}
+          measuredBlockHeights={() => measuredBlockHeights()}
+          measuredParagraphLayouts={() => measuredParagraphLayouts()}
+          selectionBoxes={() => selectionBoxes()}
+          caretBox={() => caretBox()}
+          inputBox={() => inputBox()}
+          focused={() => focused()}
+          viewportHeight={props.viewportHeight}
+          class={props.class}
+          style={props.style}
+          readOnly={isReadOnly()}
+          showCaret={() => {
+            if (!caretBox().visible || !isSelectionCollapsed(state.selection)) {
+              return false;
+            }
             const anchorLoc = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId);
             const focusLoc = findParagraphTableLocation(state.document, state.selection.focus.paragraphId);
             const inTableSelection = anchorLoc && focusLoc &&
               anchorLoc.blockIndex === focusLoc.blockIndex &&
               (anchorLoc.rowIndex !== focusLoc.rowIndex || anchorLoc.cellIndex !== focusLoc.cellIndex);
             return !inTableSelection;
-          })() ? (
-            <CaretOverlay
-              active={focused()}
-              left={caretBox().left}
-              top={caretBox().top}
-              height={caretBox().height}
-            />
-          ) : null}
+          }}
+          onViewportRef={(element) => {
+            viewportRef = element;
+          }}
+          onSurfaceRef={(element) => {
+            surfaceRef = element;
+          }}
+          onTextareaRef={(element) => {
+            textareaRef = element;
+          }}
+          onImportInputRef={(element) => {
+            importInputRef = element;
+          }}
+          onImageInputRef={(element) => {
+            imageInputRef = element;
+          }}
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={handleDrop}
+          onEditorMouseDown={(event) => {
+            event.preventDefault();
+            focusInput();
+          }}
+          onSurfaceMouseDown={(event) => {
+            event.preventDefault();
 
-          <textarea
-            ref={textareaRef}
-            aria-label="Editor input"
-            autocomplete="off"
-            autocapitalize="off"
-            class="oasis-editor-2-input"
-            data-testid="editor-2-input"
-            spellcheck={false}
-            value=""
-            style={{
-              left: `${inputBox().left}px`,
-              top: `${inputBox().top}px`,
-              height: `${inputBox().height}px`,
-              "pointer-events": "none",
-            }}
-            onBlur={() => setFocused(false)}
-            onCompositionEnd={handleCompositionEnd}
-            onCompositionStart={handleCompositionStart}
-            onCopy={handleCopy}
-            onCut={handleCut}
-            onFocus={() => setFocused(true)}
-            onInput={handleTextInput}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-          />
-          <input
-            ref={importInputRef}
-            accept=".docx"
-            data-testid="editor-2-import-docx-input"
-            style={{ display: "none" }}
-            type="file"
-            onChange={(event) => {
-              const file = event.currentTarget.files?.[0] ?? null;
-              void handleImportDocx(file);
-            }}
-          />
-          <input
-            ref={imageInputRef}
-            accept="image/png, image/jpeg, image/gif"
-            data-testid="editor-2-insert-image-input"
-            style={{ display: "none" }}
-            type="file"
-            onChange={(event) => {
-              const file = event.currentTarget.files?.[0] ?? null;
-              void handleInsertImage(file);
-            }}
-          />
-        </div>
+            if (
+              event.target instanceof Element &&
+              event.target.closest("[data-paragraph-id]")
+            ) {
+              focusInput();
+              return;
+            }
+
+            const paragraphElement = surfaceRef
+              ? findNearestParagraphElement(surfaceRef, event.clientX, event.clientY)
+              : null;
+            if (!paragraphElement) {
+              focusInput();
+              return;
+            }
+            const paragraphId = paragraphElement.dataset.paragraphId;
+            const paragraph = paragraphId
+              ? getParagraphs(state).find((candidate) => candidate.id === paragraphId)
+              : undefined;
+            if (!paragraphId || !paragraph || !surfaceRef) {
+              focusInput();
+              return;
+            }
+
+            clearPreferredColumn();
+            resetTransactionGrouping();
+            const layout = measureParagraphLayoutFromRects(
+              paragraph,
+              collectParagraphCharRects(surfaceRef, paragraph.id),
+            );
+            const offset = layout.text.length === 0
+              ? 0
+              : Math.max(
+                  0,
+                  Math.min(
+                    layout.text.length,
+                    resolveClosestOffsetInMeasuredLayout(layout, event.clientX, event.clientY),
+                  ),
+                );
+            const position = paragraphOffsetToPosition(paragraph, offset);
+
+            if (event.shiftKey) {
+              dragAnchor = state.selection.anchor;
+              applyState(
+                setSelection(state, {
+                  anchor: state.selection.anchor,
+                  focus: position,
+                }),
+              );
+            } else {
+              dragAnchor = position;
+              applyState(
+                setSelection(state, {
+                  anchor: position,
+                  focus: position,
+                }),
+              );
+            }
+            window.addEventListener("mousemove", handleWindowMouseMove);
+            window.addEventListener("mouseup", handleWindowMouseUp);
+            focusInput();
+          }}
+          onParagraphMouseDown={(paragraphId, event) => {
+            event.preventDefault();
+            const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
+            if (!paragraph || !surfaceRef) {
+              return;
+            }
+            clearPreferredColumn();
+            resetTransactionGrouping();
+            const offset = resolveClickOffset(
+              event,
+              measureParagraphLayoutFromRects(
+                paragraph,
+                collectParagraphCharRects(surfaceRef, paragraph.id),
+              ),
+            );
+            const position = paragraphOffsetToPosition(paragraph, offset);
+            const cellLocation = findParagraphTableLocation(state.document, paragraphId);
+            const anchorPosition = cellLocation
+              ? (() => {
+                  const block = state.document.blocks[cellLocation.blockIndex];
+                  const cellParagraph = block?.type === "table"
+                    ? block.rows[cellLocation.rowIndex]?.cells[cellLocation.cellIndex]?.blocks[0]
+                    : undefined;
+                  return cellParagraph ? paragraphOffsetToPosition(cellParagraph, 0) : position;
+                })()
+              : position;
+
+            if (event.shiftKey) {
+              dragAnchor = state.selection.anchor;
+              applyState(
+                setSelection(state, {
+                  anchor: state.selection.anchor,
+                  focus: position,
+                }),
+              );
+              window.addEventListener("mousemove", handleWindowMouseMove);
+              window.addEventListener("mouseup", handleWindowMouseUp);
+              focusInput();
+              return;
+            }
+
+            if (event.detail >= 3) {
+              dragAnchor = null;
+              applyState(
+                setSelection(state, {
+                  anchor: paragraphOffsetToPosition(paragraph, 0),
+                  focus: paragraphOffsetToPosition(paragraph, getParagraphText(paragraph).length),
+                }),
+              );
+              stopDragging();
+              focusInput();
+              return;
+            }
+
+            if (event.detail === 2) {
+              const word = resolveWordSelection(getParagraphText(paragraph), offset);
+              dragAnchor = null;
+              applyState(
+                setSelection(state, {
+                  anchor: paragraphOffsetToPosition(paragraph, word.start),
+                  focus: paragraphOffsetToPosition(paragraph, word.end),
+                }),
+              );
+              stopDragging();
+              focusInput();
+              return;
+            }
+
+            dragAnchor = cellLocation ? anchorPosition : position;
+            applyState(
+              setSelection(state, {
+                anchor: position,
+                focus: position,
+              }),
+            );
+            window.addEventListener("mousemove", handleWindowMouseMove);
+            window.addEventListener("mouseup", handleWindowMouseUp);
+            focusInput();
+          }}
+          onImageMouseDown={(paragraphId, paragraphOffset, event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
+            if (!paragraph) {
+              logger.warn("image select:missing paragraph", { paragraphId, paragraphOffset });
+              return;
+            }
+
+            clearPreferredColumn();
+            resetTransactionGrouping();
+            dragAnchor = null;
+            stopDragging();
+            stopImageDrag();
+            stopImageResize();
+
+            const start = paragraphOffsetToPosition(paragraph, paragraphOffset);
+            const end = paragraphOffsetToPosition(paragraph, paragraphOffset + 1);
+            logger.info("image select", {
+              paragraphId,
+              paragraphOffset,
+              start,
+              end,
+            });
+
+            if (event.shiftKey) {
+              applyState(
+                setSelection(state, {
+                  anchor: state.selection.anchor,
+                  focus: end,
+                }),
+              );
+              focusInput();
+              return;
+            }
+
+            applyState(
+              setSelection(state, {
+                anchor: start,
+                focus: end,
+              }),
+            );
+            activeImageDrag = {
+              paragraphId,
+              paragraphOffset,
+              startClientX: event.clientX,
+              startClientY: event.clientY,
+              dragging: false,
+            };
+            window.addEventListener("mousemove", handleImageDragMouseMove);
+            window.addEventListener("mouseup", handleImageDragMouseUp);
+            focusInput();
+          }}
+          onImageResizeHandleMouseDown={(paragraphId, paragraphOffset, event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
+            if (!paragraph) {
+              logger.warn("image resize:start missing paragraph", { paragraphId, paragraphOffset });
+              return;
+            }
+
+            stopImageDrag();
+            const selectedImage = getSelectedImageInfo(
+              applySelectionToStatePreservingStructure(state, {
+                anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),
+                focus: paragraphOffsetToPosition(paragraph, paragraphOffset + 1),
+              }),
+            );
+            if (!selectedImage) {
+              logger.warn("image resize:start missing selection", {
+                paragraphId,
+                paragraphOffset,
+                selection: state.selection,
+              });
+              return;
+            }
+
+            logger.info("image resize:start", {
+              paragraphId,
+              paragraphOffset,
+              width: selectedImage.width,
+              height: selectedImage.height,
+              clientX: event.clientX,
+              clientY: event.clientY,
+            });
+            activeImageResize = {
+              paragraphId,
+              paragraphOffset,
+              startClientX: event.clientX,
+              startWidth: selectedImage.width,
+              startHeight: selectedImage.height,
+              aspectRatio: selectedImage.width / selectedImage.height,
+              initialState: cloneState(state),
+            };
+            window.addEventListener("mousemove", handleImageResizeMouseMove);
+            window.addEventListener("mouseup", handleImageResizeMouseUp);
+          }}
+          onInputBlur={() => setFocused(false)}
+          onInputFocus={() => setFocused(true)}
+          onCompositionEnd={handleCompositionEnd}
+          onCompositionStart={handleCompositionStart}
+          onCopy={handleCopy}
+          onCut={handleCut}
+          onInput={handleTextInput}
+          onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
+          onImportInputChange={(event) => {
+            const file = event.currentTarget.files?.[0] ?? null;
+            void handleImportDocx(file);
+          }}
+          onImageInputChange={(event) => {
+            const file = event.currentTarget.files?.[0] ?? null;
+            void handleInsertImage(file);
+          }}
+        />
       </section>
     </div>
   );

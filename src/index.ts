@@ -1,4 +1,11 @@
 import "./styles/global.css";
+import "../src2/styles/oasis-editor-2.css";
 export { createOasisEditor } from "./app/bootstrap/createOasisEditorApp.tsx";
 export type { OasisEditorInstance } from "./app/bootstrap/createOasisEditorApp.tsx";
 export type { OasisEditorController } from "./app/OasisEditorController.js";
+export { createOasisEditor2 } from "../src2/app/bootstrap/createOasisEditor2App.js";
+export type { OasisEditor2Instance } from "../src2/app/bootstrap/createOasisEditor2App.js";
+export { createOasisEditor2Container } from "../src2/app/bootstrap/createOasisEditor2Container.js";
+export type { OasisEditor2ContainerInstance } from "../src2/app/bootstrap/createOasisEditor2Container.js";
+export { OasisEditor2Container } from "../src2/ui/OasisEditor2Container.js";
+export type { OasisEditor2ContainerProps } from "../src2/ui/OasisEditor2Container.js";
