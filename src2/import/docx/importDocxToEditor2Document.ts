@@ -4,14 +4,12 @@ import type {
   Editor2BlockNode,
   Editor2Document,
   Editor2PageSettings,
-  Editor2ParagraphNode,
   Editor2ParagraphListStyle,
-  Editor2Section,
   Editor2ParagraphStyle,
   Editor2TableNode,
   Editor2TextStyle,
 } from "../../core/model.js";
-import { createEditor2Document, createEditor2Paragraph, createEditor2ParagraphFromRuns, createEditor2Table, createEditor2TableCell, createEditor2TableRow } from "../../core/editorState.js";
+import { createEditor2Document, createEditor2ParagraphFromRuns, createEditor2Table, createEditor2TableCell, createEditor2TableRow } from "../../core/editorState.js";
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const TWIPS_PER_INCH = 1440;
@@ -22,32 +20,26 @@ interface NumberingMaps {
   numKinds: Map<string, Editor2ParagraphListStyle["kind"]>;
 }
 
-function getChildrenByTagNameNS(element: XmlElement | null, namespace: string, localName: string): XmlElement[] {
+function getChildrenByTagNameNS(element: XmlElement, namespace: string, localName: string): XmlElement[] {
   const result: XmlElement[] = [];
-  if (!element || !element.childNodes) {
-    return result;
-  }
   for (let index = 0; index < element.childNodes.length; index += 1) {
     const node = element.childNodes[index];
     if (
       node?.nodeType === node.ELEMENT_NODE &&
-      (node as unknown as XmlElement).namespaceURI === namespace &&
-      (node as unknown as XmlElement).localName === localName
+      (node as XmlElement).namespaceURI === namespace &&
+      (node as XmlElement).localName === localName
     ) {
-      result.push(node as unknown as XmlElement);
+      result.push(node as XmlElement);
     }
   }
   return result;
 }
 
 function getFirstChildByTagNameNS(
-  element: XmlElement | null,
+  element: XmlElement,
   namespace: string,
   localName: string,
 ): XmlElement | null {
-  if (!element) {
-    return null;
-  }
   return getChildrenByTagNameNS(element, namespace, localName)[0] ?? null;
 }
 
@@ -365,7 +357,7 @@ async function parseRunElement(
       continue;
     }
 
-    const element = node as unknown as XmlElement;
+    const element = node as XmlElement;
     if (element.namespaceURI === WORD_NS) {
       if (element.localName === "t") {
         textParts.push(element.textContent ?? "");
@@ -441,7 +433,7 @@ async function parseRunsContainer(
       continue;
     }
 
-    const element = node as unknown as XmlElement;
+    const element = node as XmlElement;
     if (element.namespaceURI !== WORD_NS) {
       continue;
     }
@@ -557,150 +549,6 @@ async function parseTableNode(
   return createEditor2Table(rows);
 }
 
-async function parseBlocks(
-  nodes: any,
-  numberingMaps: NumberingMaps,
-  zip: JSZip,
-  relsMap: Map<string, string>,
-): Promise<Editor2BlockNode[]> {
-  const blocks: Editor2BlockNode[] = [];
-  for (let index = 0; index < nodes.length; index += 1) {
-    const node = nodes[index];
-    if (node?.nodeType !== 1) {
-      continue;
-    }
-
-    const element = node as unknown as XmlElement;
-    if (element.namespaceURI !== WORD_NS) {
-      continue;
-    }
-
-    if (element.localName === "p") {
-      blocks.push(await parseParagraphNode(element, numberingMaps, zip, relsMap));
-    } else if (element.localName === "tbl") {
-      blocks.push(await parseTableNode(element, numberingMaps, zip, relsMap));
-    }
-  }
-  return blocks;
-}
-
-function parseSectPr(sectPr: XmlElement | null): Editor2PageSettings {
-  if (!sectPr) {
-    return {
-      width: 816,
-      height: 1056,
-      orientation: "portrait",
-      margins: {
-        top: 96,
-        right: 96,
-        bottom: 96,
-        left: 96,
-        header: 48,
-        footer: 48,
-        gutter: 0,
-      },
-    };
-  }
-  const pageSize = getFirstChildByTagNameNS(sectPr, WORD_NS, "pgSz");
-  const pageMargins = getFirstChildByTagNameNS(sectPr, WORD_NS, "pgMar");
-
-  const width = twipsToPx(getAttributeValue(pageSize, "w"), 816);
-  const height = twipsToPx(getAttributeValue(pageSize, "h"), 1056);
-  const orientationValue = getAttributeValue(pageSize, "orient");
-
-  return {
-    width,
-    height,
-    orientation:
-      orientationValue === "landscape"
-        ? "landscape"
-        : orientationValue === "portrait"
-          ? "portrait"
-          : width > height
-            ? "landscape"
-            : "portrait",
-    margins: {
-      top: twipsToPx(getAttributeValue(pageMargins, "top"), 96),
-      right: twipsToPx(getAttributeValue(pageMargins, "right"), 96),
-      bottom: twipsToPx(getAttributeValue(pageMargins, "bottom"), 96),
-      left: twipsToPx(getAttributeValue(pageMargins, "left"), 96),
-      header: twipsToPx(getAttributeValue(pageMargins, "header"), 48),
-      footer: twipsToPx(getAttributeValue(pageMargins, "footer"), 48),
-      gutter: twipsToPx(getAttributeValue(pageMargins, "gutter"), 0),
-    },
-  };
-}
-
-async function loadHeaderFooter(
-  sectPr: XmlElement,
-  type: "headerReference" | "footerReference",
-  zip: JSZip,
-  relsMap: Map<string, string>,
-  numberingMaps: NumberingMaps,
-): Promise<Editor2ParagraphNode[] | undefined> {
-  const references = getChildrenByTagNameNS(sectPr, WORD_NS, type);
-  // For now, we only support 'default' type (ignore first/even for simplicity)
-  const defaultRef =
-    references.find((ref) => getAttributeValue(ref, "type") === "default") ?? references[0];
-  if (!defaultRef) {
-    return undefined;
-  }
-
-  const rId =
-    defaultRef.getAttribute("r:id") ??
-    defaultRef.getAttributeNS(
-      "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-      "id",
-    );
-  if (!rId) {
-    return undefined;
-  }
-
-  const target = relsMap.get(rId);
-  if (!target) {
-    return undefined;
-  }
-
-  let zipPath = target;
-  if (zipPath.startsWith("/")) zipPath = zipPath.slice(1);
-  if (!zipPath.startsWith("word/")) zipPath = "word/" + target;
-
-  const content = await zip.file(zipPath)?.async("string");
-  if (!content) {
-    return undefined;
-  }
-
-  const doc = new DOMParser().parseFromString(content, "application/xml");
-  const root = doc.documentElement;
-  if (!root) {
-    return undefined;
-  }
-
-  // Header/Footer rels are usually in word/_rels/header1.xml.rels
-  const fileName = zipPath.split("/").pop();
-  const relsZipPath = `word/_rels/${fileName}.rels`;
-  const relsContent = await zip.file(relsZipPath)?.async("string");
-  const zoneRelsMap = new Map<string, string>();
-  if (relsContent) {
-    const relsDoc = new DOMParser().parseFromString(relsContent, "application/xml");
-    const relNodes = relsDoc.documentElement?.childNodes;
-    if (relNodes) {
-      for (let i = 0; i < relNodes.length; i++) {
-        const node = relNodes[i];
-        if (node?.nodeType === 1) {
-          const rel = node as XmlElement;
-          const id = rel.getAttribute("Id");
-          const t = rel.getAttribute("Target");
-          if (id && t) zoneRelsMap.set(id, t);
-        }
-      }
-    }
-  }
-
-  const blocks = await parseBlocks(root.childNodes, numberingMaps, zip, zoneRelsMap);
-  return blocks.filter((b): b is Editor2ParagraphNode => b.type === "paragraph");
-}
-
 export async function importDocxToEditor2Document(buffer: ArrayBuffer): Promise<Editor2Document> {
   const zip = await JSZip.loadAsync(buffer);
   const documentXml = await zip.file("word/document.xml")?.async("string");
@@ -734,62 +582,31 @@ export async function importDocxToEditor2Document(buffer: ArrayBuffer): Promise<
   const numberingMaps = parseNumbering(numberingXml);
   const document = new DOMParser().parseFromString(documentXml, "application/xml");
   const body = document.getElementsByTagNameNS(WORD_NS, "body")[0];
-  if (!body) {
-    throw new Error("Missing body in document.xml");
-  }
+  const pageSettings = parsePageSettings(body);
 
-  const sections: Editor2Section[] = [];
-  let currentBlocks: Editor2BlockNode[] = [];
-
-  for (let index = 0; index < body.childNodes.length; index += 1) {
-    const node = body.childNodes[index];
-    if (node?.nodeType !== 1) {
-      continue;
-    }
-
-    const element = node as unknown as XmlElement;
-    if (element.namespaceURI !== WORD_NS) {
-      continue;
-    }
-
-    if (element.localName === "p") {
-      const paragraph = await parseParagraphNode(element, numberingMaps, zip, relsMap);
-      currentBlocks.push(paragraph);
-
-      const pPr = getFirstChildByTagNameNS(element, WORD_NS, "pPr");
-      const sectPr = getFirstChildByTagNameNS(pPr!, WORD_NS, "sectPr");
-      if (sectPr) {
-        sections.push({
-          id: `section:${sections.length + 1}`,
-          blocks: currentBlocks,
-          pageSettings: parseSectPr(sectPr),
-          header: await loadHeaderFooter(sectPr, "headerReference", zip, relsMap, numberingMaps),
-          footer: await loadHeaderFooter(sectPr, "footerReference", zip, relsMap, numberingMaps),
-        });
-        currentBlocks = [];
+  const blocks: Editor2BlockNode[] = [];
+  if (body) {
+    for (let index = 0; index < body.childNodes.length; index += 1) {
+      const node = body.childNodes[index];
+      if (node?.nodeType !== node.ELEMENT_NODE) {
+        continue;
       }
-    } else if (element.localName === "tbl") {
-      currentBlocks.push(await parseTableNode(element, numberingMaps, zip, relsMap));
+
+      const element = node as XmlElement;
+      if (element.namespaceURI !== WORD_NS) {
+        continue;
+      }
+
+      if (element.localName === "p") {
+        blocks.push(await parseParagraphNode(element, numberingMaps, zip, relsMap));
+      } else if (element.localName === "tbl") {
+        blocks.push(await parseTableNode(element, numberingMaps, zip, relsMap));
+      }
     }
   }
 
-  const bodySectPr = getFirstChildByTagNameNS(body, WORD_NS, "sectPr");
-  sections.push({
-    id: `section:${sections.length + 1}`,
-    blocks: currentBlocks.length > 0 ? currentBlocks : [createEditor2Paragraph("")],
-    pageSettings: parseSectPr(bodySectPr),
-    header: bodySectPr
-      ? await loadHeaderFooter(bodySectPr, "headerReference", zip, relsMap, numberingMaps)
-      : undefined,
-    footer: bodySectPr
-      ? await loadHeaderFooter(bodySectPr, "footerReference", zip, relsMap, numberingMaps)
-      : undefined,
-  });
-
-  return {
-    id: `document:${Date.now()}`,
-    sections,
-    blocks: sections[0].blocks, // Legacy compatibility
-    pageSettings: sections[0].pageSettings, // Legacy compatibility
-  };
+  return createEditor2Document(
+    blocks.length > 0 ? blocks : [createEditor2ParagraphFromRuns([{ text: "" }])],
+    pageSettings,
+  );
 }

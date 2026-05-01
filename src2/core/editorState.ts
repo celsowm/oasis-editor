@@ -11,22 +11,123 @@ import type {
   Editor2TextRun,
   Editor2TextStyle,
   Editor2ImageRunData,
-  Editor2EditingZone,
 } from "./model.js";
 import {
   DEFAULT_EDITOR2_PAGE_SETTINGS,
   getDocumentParagraphs,
-  getDocumentSections,
   getParagraphLength,
   normalizePageSettings,
   paragraphOffsetToPosition,
-  type Editor2Section,
 } from "./model.js";
 import { createCollapsedSelection } from "./selection.js";
 
 let nextDocumentId = 1;
 let nextParagraphId = 1;
 let nextRunId = 1;
+let nextTableId = 1;
+let nextTableRowId = 1;
+let nextTableCellId = 1;
+
+export function resetEditor2Ids(): void {
+  nextDocumentId = 1;
+  nextParagraphId = 1;
+  nextRunId = 1;
+  nextTableId = 1;
+  nextTableRowId = 1;
+  nextTableCellId = 1;
+}
+
+export function createEditor2Run(text = ""): Editor2TextRun {
+  const run: Editor2TextRun = {
+    id: `run:${nextRunId}`,
+    text,
+  };
+  nextRunId += 1;
+  return run;
+}
+
+export function createEditor2StyledRun(text = "", styles?: Editor2TextStyle, image?: Editor2ImageRunData): Editor2TextRun {
+  const run = createEditor2Run(text);
+  if (styles) {
+    run.styles = { ...styles };
+  }
+  if (image) {
+    run.image = { ...image };
+  }
+  return run;
+}
+
+export function createEditor2Paragraph(text = ""): Editor2ParagraphNode {
+  const paragraph: Editor2ParagraphNode = {
+    id: `paragraph:${nextParagraphId}`,
+    type: "paragraph",
+    runs: [createEditor2Run(text)],
+  };
+  nextParagraphId += 1;
+  return paragraph;
+}
+
+export function createEditor2ParagraphFromRuns(
+  runs: Array<{ text: string; styles?: Editor2TextStyle; image?: Editor2ImageRunData }>,
+): Editor2ParagraphNode {
+  const paragraph: Editor2ParagraphNode = {
+    id: `paragraph:${nextParagraphId}`,
+    type: "paragraph",
+    runs: runs.length > 0 ? runs.map((run) => createEditor2StyledRun(run.text, run.styles, run.image)) : [createEditor2Run("")],
+  };
+  nextParagraphId += 1;
+  return paragraph;
+}
+
+export function createEditor2TableCell(
+  paragraphs: Editor2ParagraphNode[],
+  colSpan = 1,
+  options?: {
+    rowSpan?: number;
+    vMerge?: "restart" | "continue";
+  },
+): Editor2TableCellNode {
+  const cell: Editor2TableCellNode = {
+    id: `table-cell:${nextTableCellId}`,
+    blocks: paragraphs.length > 0 ? paragraphs : [createEditor2Paragraph("")],
+  };
+  if (colSpan > 1) {
+    cell.colSpan = colSpan;
+  }
+  if (options?.rowSpan && options.rowSpan > 1) {
+    cell.rowSpan = options.rowSpan;
+  }
+  if (options?.vMerge) {
+    cell.vMerge = options.vMerge;
+  }
+  nextTableCellId += 1;
+  return cell;
+}
+
+export function createEditor2TableRow(
+  cells: Editor2TableCellNode[],
+  options?: { isHeader?: boolean },
+): Editor2TableRowNode {
+  const row: Editor2TableRowNode = {
+    id: `table-row:${nextTableRowId}`,
+    cells,
+  };
+  if (options?.isHeader) {
+    row.isHeader = true;
+  }
+  nextTableRowId += 1;
+  return row;
+}
+
+export function createEditor2Table(rows: Editor2TableRowNode[]): Editor2TableNode {
+  const table: Editor2TableNode = {
+    id: `table:${nextTableId}`,
+    type: "table",
+    rows,
+  };
+  nextTableId += 1;
+  return table;
+}
 
 export function createEditor2Document(
   blocks: Editor2BlockNode[],
@@ -49,121 +150,23 @@ export function createEditor2Document(
   );
   const document: Editor2Document = {
     id: `document:${nextDocumentId}`,
-    sections: [
-      {
-        id: "section:1",
-        blocks,
-        pageSettings: normalizedPageSettings,
-      },
-    ],
-    // Keep blocks for legacy compatibility during transition if needed, 
-    // but we should ideally move to sections-only.
-    blocks, 
+    blocks,
     pageSettings: normalizedPageSettings,
   };
   nextDocumentId += 1;
   return document;
 }
 
-export function createEditor2Paragraph(text: string): Editor2ParagraphNode {
-  const run = createEditor2StyledRun(text);
-  const paragraph: Editor2ParagraphNode = {
-    id: `paragraph:${nextParagraphId}`,
-    type: "paragraph",
-    runs: [run],
-  };
-  nextParagraphId += 1;
-  return paragraph;
-}
-
-export function createEditor2ParagraphFromRuns(
-  runs: Array<{ text: string; styles?: Editor2TextStyle; image?: Editor2ImageRunData }>,
-): Editor2ParagraphNode {
-  const paragraph: Editor2ParagraphNode = {
-    id: `paragraph:${nextParagraphId}`,
-    type: "paragraph",
-    runs: runs.map((run) => createEditor2StyledRun(run.text, run.styles, run.image)),
-  };
-  nextParagraphId += 1;
-  return paragraph;
-}
-
-export function createEditor2StyledRun(
-  text: string,
-  styles?: Editor2TextStyle,
-  image?: Editor2ImageRunData,
-): Editor2TextRun {
-  const run: Editor2TextRun = {
-    id: `run:${nextRunId}`,
-    text,
-    styles: styles ? { ...styles } : undefined,
-    image: image ? { ...image } : undefined,
-  };
-  nextRunId += 1;
-  return run;
-}
-
-export function createEditor2Table(rows: Editor2TableRowNode[]): Editor2TableNode {
-  const table: Editor2TableNode = {
-    id: `table:${nextParagraphId}`,
-    type: "table",
-    rows,
-  };
-  nextParagraphId += 1;
-  return table;
-}
-
-export function resetEditor2Ids(): void {
-  nextDocumentId = 1;
-  nextParagraphId = 1;
-  nextRunId = 1;
-}
-
-export function createEditor2TableRow(
-  cells: Editor2TableCellNode[],
-  options?: { isHeader?: boolean },
-): Editor2TableRowNode {
-  const row: Editor2TableRowNode = {
-    id: `row:${nextParagraphId}`,
-    cells,
-    isHeader: options?.isHeader,
-  };
-  nextParagraphId += 1;
-  return row;
-}
-
-export function createEditor2TableCell(
-  blocks: Editor2ParagraphNode[],
-  colSpan?: number,
-  vMerge?: { rowSpan?: number; vMerge: "restart" | "continue" } | "continue",
-): Editor2TableCellNode {
-  const cell: Editor2TableCellNode = {
-    id: `cell:${nextParagraphId}`,
-    blocks,
-    colSpan,
-    rowSpan: typeof vMerge === "object" ? vMerge.rowSpan : undefined,
-    vMerge: typeof vMerge === "object" ? vMerge.vMerge : vMerge,
-  };
-  nextParagraphId += 1;
-  return cell;
-}
-
 export function createEditor2StateFromDocument(
   document: Editor2Document,
   selection?: { paragraphIndex?: number; offset?: number },
 ): Editor2State {
-  const sections = getDocumentSections(document);
-  const activeSectionIndex = 0;
-  const activeZone: Editor2EditingZone = "main";
-  
-  const section = sections[activeSectionIndex]!;
-  const blocks = section.blocks.length > 0 ? section.blocks : [createEditor2Paragraph("")];
-  
+  const blocks =
+    document.blocks.length > 0 ? document.blocks : [createEditor2Paragraph("")];
   const paragraphs = getDocumentParagraphs({
     ...document,
-    sections: sections.map((s, i) => i === activeSectionIndex ? { ...s, blocks } : s),
+    blocks,
   });
-  
   const paragraphIndex = Math.max(
     0,
     Math.min(selection?.paragraphIndex ?? 0, paragraphs.length - 1),
@@ -177,12 +180,9 @@ export function createEditor2StateFromDocument(
   return {
     document: {
       ...document,
-      sections: sections.map((s, i) => i === activeSectionIndex ? { ...s, blocks } : s),
-      blocks, // Sync legacy blocks
+      blocks,
     },
     selection: createCollapsedSelection(position),
-    activeSectionIndex,
-    activeZone,
   };
 }
 
@@ -196,8 +196,6 @@ export function createInitialEditor2State(): Editor2State {
       runId: run.id,
       offset: 0,
     }),
-    activeSectionIndex: 0,
-    activeZone: "main",
   };
 }
 
@@ -242,13 +240,11 @@ export function createEditor2StateFromTexts(
         offset: Math.max(0, Math.min(focusOffset, focusRun.text.length)),
       },
     },
-    activeSectionIndex: 0,
-    activeZone: "main",
   };
 }
 
 export function createEditor2StateFromParagraphRuns(
-  paragraphsSpec: Array<Array<{ text: string; styles?: Editor2TextStyle; image?: Editor2ImageRunData }>>,
+  paragraphsSpec: Array<Array<{ text: string; styles?: Editor2TextStyle }>>,
   selection?: {
     anchor?: { blockIndex: number; offset: number };
     focus?: { blockIndex: number; offset: number };
@@ -289,19 +285,5 @@ export function createEditor2StateFromParagraphRuns(
       anchor: anchorPosition,
       focus: focusPosition,
     },
-    activeSectionIndex: 0,
-    activeZone: "main",
-  };
-}
-
-export function cloneEditor2State(source: Editor2State): Editor2State {
-  return {
-    document: { ...source.document },
-    selection: {
-      anchor: { ...source.selection.anchor },
-      focus: { ...source.selection.focus },
-    },
-    activeSectionIndex: source.activeSectionIndex,
-    activeZone: source.activeZone,
   };
 }

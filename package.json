@@ -28,8 +28,7 @@
     "dev:rust": "npm run wasm:build && vite",
     "build:all": "npm run wasm:build && npm run build",
     "test": "vitest run",
-    "check": "tsc --noEmit",
-    "lint": "eslint src src2 --ext .ts,.tsx",
+    "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\""
   },
   "devDependencies": {

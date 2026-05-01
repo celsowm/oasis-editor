@@ -6,20 +6,15 @@ import type {
   Editor2Position,
   Editor2Selection,
   Editor2State,
-  Editor2Document,
   Editor2TextRun,
   Editor2TextStyle,
   Editor2ImageRunData,
-  Editor2EditingZone,
-  Editor2Section,
-  Editor2TableNode,
 } from "./model.js";
 import {
   getBlockParagraphs,
   getParagraphLength,
   getParagraphs,
   getParagraphText,
-  getDocumentSections,
   paragraphOffsetToPosition,
   positionToParagraphOffset,
 } from "./model.js";
@@ -220,100 +215,26 @@ function clearParagraphList(paragraph: Editor2ParagraphNode): Editor2ParagraphNo
   return nextParagraph;
 }
 
-function replaceParagraphsInBlocks(
-  blocks: Editor2BlockNode[],
-  newParagraphs: Editor2ParagraphNode[],
-): Editor2BlockNode[] {
-  // Map every original table-cell paragraph id to its location so that we can
-  // place it back into the correct cell during reconstruction.  Top-level
-  // paragraphs are NOT registered here because they may have been split,
-  // merged, inserted or removed (which changes the flat paragraph count).
-  type CellLocation = {
-    table: Editor2TableNode;
-    rowIndex: number;
-    cellIndex: number;
-    pIndex: number;
-  };
-  const cellLocationById = new Map<string, CellLocation>();
-  for (const block of blocks) {
-    if (block.type !== "table") continue;
-    block.rows.forEach((row, rowIndex) => {
-      row.cells.forEach((cell, cellIndex) => {
-        cell.blocks.forEach((paragraph, pIndex) => {
-          cellLocationById.set(paragraph.id, { table: block, rowIndex, cellIndex, pIndex });
-        });
-      });
-    });
-  }
-
-  const tableClones = new Map<Editor2TableNode, Editor2TableNode>();
-  const cloneTable = (table: Editor2TableNode): Editor2TableNode => {
-    let clone = tableClones.get(table);
-    if (!clone) {
-      clone = {
-        ...table,
-        rows: table.rows.map((row) => ({
-          ...row,
-          cells: row.cells.map((cell) => ({
-            ...cell,
-            blocks: [...cell.blocks],
-          })),
-        })),
-      };
-      tableClones.set(table, clone);
-    }
-    return clone;
-  };
-
-  const result: Editor2BlockNode[] = [];
-  let pendingTable: Editor2TableNode | null = null;
-  const flushPendingTable = () => {
-    if (pendingTable) {
-      result.push(cloneTable(pendingTable));
-      pendingTable = null;
-    }
-  };
-
-  for (const paragraph of newParagraphs) {
-    const location = cellLocationById.get(paragraph.id);
-    if (location) {
-      if (pendingTable !== location.table) {
-        flushPendingTable();
-        pendingTable = location.table;
+function replaceParagraphsInBlocks(blocks: Editor2BlockNode[], newParagraphs: Editor2ParagraphNode[]): Editor2BlockNode[] {
+  let index = 0;
+  const processBlocks = (nodes: Editor2BlockNode[]): Editor2BlockNode[] => {
+    return nodes.map(node => {
+      if (node.type === "paragraph") {
+        return newParagraphs[index++];
       }
-      const clone = cloneTable(location.table);
-      clone.rows[location.rowIndex].cells[location.cellIndex].blocks[location.pIndex] = paragraph;
-    } else {
-      flushPendingTable();
-      result.push(paragraph);
-    }
-  }
-  flushPendingTable();
-
-  return result;
-}
-
-function replaceParagraphsInZone(
-  section: Editor2Section,
-  zone: Editor2EditingZone,
-  newParagraphs: Editor2ParagraphNode[],
-): Editor2Section {
-  if (zone === "main") {
-    return {
-      ...section,
-      blocks: replaceParagraphsInBlocks(section.blocks, newParagraphs),
-    };
-  }
-  if (zone === "header") {
-    return {
-      ...section,
-      header: replaceParagraphsInBlocks(section.header ?? [], newParagraphs) as Editor2ParagraphNode[],
-    };
-  }
-  return {
-    ...section,
-    footer: replaceParagraphsInBlocks(section.footer ?? [], newParagraphs) as Editor2ParagraphNode[],
+      return {
+        ...node,
+        rows: node.rows.map(row => ({
+          ...row,
+          cells: row.cells.map(cell => ({
+            ...cell,
+            blocks: processBlocks(cell.blocks) as Editor2ParagraphNode[]
+          }))
+        }))
+      };
+    });
   };
+  return processBlocks(blocks);
 }
 
 function cloneStateWithParagraphs(
@@ -321,35 +242,18 @@ function cloneStateWithParagraphs(
   paragraphs: Editor2ParagraphNode[],
   selection: Editor2Selection,
 ): Editor2State {
-  const sections = getDocumentSections(state.document);
-  const activeSection = sections[state.activeSectionIndex];
-  
-  if (!activeSection) {
-    // Fallback for safety
+  if (getParagraphs(state).length === paragraphs.length && state.document.blocks.some(b => b.type === "table")) {
     return {
-      ...state,
-      document: createEditor2Document(paragraphs),
+      document: {
+        ...state.document,
+        blocks: replaceParagraphsInBlocks(state.document.blocks, paragraphs),
+      },
       selection,
     };
   }
 
-  const nextSections = sections.map((section, index) => {
-    if (index !== state.activeSectionIndex) {
-      return section;
-    }
-    return replaceParagraphsInZone(section, state.activeZone, paragraphs);
-  });
-
-  const nextDocument: Editor2Document = {
-    ...state.document,
-    sections: nextSections,
-    // Sync legacy blocks if in main zone
-    blocks: state.activeZone === "main" ? nextSections[state.activeSectionIndex].blocks : state.document.blocks,
-  };
-
   return {
-    ...state,
-    document: nextDocument,
+    document: createEditor2Document(paragraphs),
     selection,
   };
 }
@@ -642,7 +546,7 @@ function collapseToBoundary(state: Editor2State, direction: "start" | "end"): Ed
   }
 
   return {
-    ...state,
+    document: state.document,
     selection: withSelection(direction === "start" ? normalized.start : normalized.end),
   };
 }
@@ -1216,7 +1120,7 @@ export function insertClipboardParagraphsAtSelection(
         ...lastSource.runs.map(cloneRun),
         ...afterRuns,
       ],
-      undefined,
+      lastSource.style ? { ...lastSource.style } : undefined,
     );
     lastParagraph.list = lastSource.list ? { ...lastSource.list } : undefined;
 
@@ -1239,7 +1143,7 @@ export function insertClipboardHtmlAtSelection(state: Editor2State, html: string
 
 export function setSelection(state: Editor2State, selection: Editor2Selection): Editor2State {
   return {
-    ...state,
+    document: state.document,
     selection: {
       anchor: clampPosition(state, selection.anchor),
       focus: clampPosition(state, selection.focus),
@@ -1442,64 +1346,6 @@ export function moveSelectedImageToPosition(
   );
 }
 
-export function insertSectionBreakAtSelection(state: Editor2State): Editor2State {
-  if (state.activeZone !== "main") {
-    return state; // Section breaks are only allowed in the main zone
-  }
-
-  const focus = clampPosition(state, state.selection.focus);
-  const sections = getDocumentSections(state.document);
-  const activeSection = sections[state.activeSectionIndex];
-  if (!activeSection) {
-    return state;
-  }
-
-  const blockIndex = activeSection.blocks.findIndex((b) => {
-    if (b.id === focus.paragraphId) return true;
-    if (b.type === "paragraph") return false;
-    return getBlockParagraphs(b).some((p) => p.id === focus.paragraphId);
-  });
-
-  if (blockIndex === -1) {
-    return state;
-  }
-
-  // Split blocks
-  const firstSectionBlocks = activeSection.blocks.slice(0, blockIndex + 1);
-  const secondSectionBlocks = activeSection.blocks.slice(blockIndex + 1);
-
-  // If we split in the middle of a paragraph, we should ideally split the paragraph.
-  // For now, we split after the current block.
-
-  const newSection: Editor2Section = {
-    id: `section:${Date.now()}`,
-    blocks: secondSectionBlocks.length > 0 ? secondSectionBlocks : [createEditor2Paragraph("")],
-    pageSettings: { ...activeSection.pageSettings },
-    header: activeSection.header ? [...activeSection.header] : undefined,
-    footer: activeSection.footer ? [...activeSection.footer] : undefined,
-  };
-
-  const nextSections = [
-    ...sections.slice(0, state.activeSectionIndex),
-    { ...activeSection, blocks: firstSectionBlocks },
-    newSection,
-    ...sections.slice(state.activeSectionIndex + 1),
-  ];
-
-  const nextParagraph = newSection.blocks[0] as Editor2ParagraphNode;
-
-  return {
-    ...state,
-    document: {
-      ...state.document,
-      sections: nextSections,
-      blocks: state.activeSectionIndex === 0 ? firstSectionBlocks : state.document.blocks,
-    },
-    activeSectionIndex: state.activeSectionIndex + 1,
-    selection: withSelection(paragraphOffsetToPosition(nextParagraph, 0)),
-  };
-}
-
 export function insertTableAtSelection(state: Editor2State, rows: number, cols: number): Editor2State {
   const tableRows = [];
   for (let r = 0; r < rows; r += 1) {
@@ -1512,57 +1358,29 @@ export function insertTableAtSelection(state: Editor2State, rows: number, cols: 
   const table = createEditor2Table(tableRows);
 
   const focus = clampPosition(state, state.selection.focus);
-  const sections = getDocumentSections(state.document);
-  const activeSection = sections[state.activeSectionIndex];
-  if (!activeSection) {
-    return state;
-  }
-
-  const zoneBlocks =
-    state.activeZone === "main"
-      ? activeSection.blocks
-      : state.activeZone === "header"
-        ? (activeSection.header ?? [])
-        : (activeSection.footer ?? []);
-
-  const blockIndex = zoneBlocks.findIndex((b) => {
-    if (b.id === focus.paragraphId) return true;
-    if (b.type === "paragraph") return false;
-    return getBlockParagraphs(b).some((p) => p.id === focus.paragraphId);
+  const blocks = state.document.blocks;
+  const blockIndex = blocks.findIndex(b => {
+     if (b.id === focus.paragraphId) return true;
+     if (b.type === "paragraph") return false;
+     return getBlockParagraphs(b).some(p => p.id === focus.paragraphId);
   });
-
+  
   if (blockIndex === -1) {
     return state;
   }
-
+  
   const nextBlocks = [
-    ...zoneBlocks.slice(0, blockIndex + 1),
+    ...blocks.slice(0, blockIndex + 1),
     table,
-    ...zoneBlocks.slice(blockIndex + 1),
+    ...blocks.slice(blockIndex + 1)
   ];
-
-  const nextSections = sections.map((section, index) => {
-    if (index !== state.activeSectionIndex) {
-      return section;
-    }
-
-    if (state.activeZone === "main") {
-      return { ...section, blocks: nextBlocks };
-    }
-    if (state.activeZone === "header") {
-      return { ...section, header: nextBlocks as Editor2ParagraphNode[] };
-    }
-    return { ...section, footer: nextBlocks as Editor2ParagraphNode[] };
-  });
-
+  
   return {
-    ...state,
     document: {
       ...state.document,
-      sections: nextSections,
-      blocks: state.activeZone === "main" ? nextBlocks : state.document.blocks,
+      blocks: nextBlocks
     },
-    selection: withSelection(paragraphOffsetToPosition(table.rows[0]!.cells[0]!.blocks[0]!, 0)),
+    selection: withSelection(paragraphOffsetToPosition(table.rows[0]!.cells[0]!.blocks[0]!, 0))
   };
 }
 
@@ -1847,8 +1665,6 @@ export function moveSelectionLeft(state: Editor2State): Editor2State {
     return {
       document: state.document,
       selection: withSelection(paragraphOffsetToPosition(paragraph, offset - 1)),
-      activeSectionIndex: state.activeSectionIndex,
-      activeZone: state.activeZone,
     };
   }
 
@@ -1858,7 +1674,7 @@ export function moveSelectionLeft(state: Editor2State): Editor2State {
 
   const previousParagraph = paragraphs[index - 1];
   return {
-    ...state,
+    document: state.document,
     selection: withSelection(paragraphOffsetToPosition(previousParagraph, getParagraphLength(previousParagraph))),
   };
 }
@@ -1873,7 +1689,7 @@ export function moveSelectionRight(state: Editor2State): Editor2State {
   const paragraphLength = getParagraphLength(paragraph);
   if (offset < paragraphLength) {
     return {
-      ...state,
+      document: state.document,
       selection: withSelection(paragraphOffsetToPosition(paragraph, offset + 1)),
     };
   }
@@ -1884,7 +1700,7 @@ export function moveSelectionRight(state: Editor2State): Editor2State {
 
   const nextParagraph = paragraphs[index + 1];
   return {
-    ...state,
+    document: state.document,
     selection: withSelection(paragraphOffsetToPosition(nextParagraph, 0)),
   };
 }
@@ -1904,7 +1720,7 @@ function moveVertical(state: Editor2State, delta: -1 | 1): Editor2State {
 
   const nextParagraph = paragraphs[nextIndex];
   return {
-    ...state,
+    document: state.document,
     selection: withSelection(
       paragraphOffsetToPosition(nextParagraph, Math.min(offset, getParagraphLength(nextParagraph))),
     ),
@@ -2152,7 +1968,7 @@ export function setLinkAtSelection(
   }
 
   return {
-    ...next,
+    document: next.document,
     selection: {
       anchor: paragraphOffsetToPosition(nextParagraph, linkRange.startOffset),
       focus: paragraphOffsetToPosition(nextParagraph, linkRange.endOffset),

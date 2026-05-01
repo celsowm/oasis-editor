@@ -116,13 +116,9 @@ export interface Editor2Selection {
   focus: Editor2Position;
 }
 
-export type Editor2EditingZone = "main" | "header" | "footer";
-
 export interface Editor2State {
   document: Editor2Document;
   selection: Editor2Selection;
-  activeSectionIndex: number;
-  activeZone: Editor2EditingZone;
 }
 
 export interface Editor2CaretSlot {
@@ -311,41 +307,7 @@ export function getDocumentParagraphs(document: Editor2Document): Editor2Paragra
 }
 
 export function getParagraphs(state: Editor2State): Editor2ParagraphNode[] {
-  const sections = getDocumentSections(state.document);
-  const section = sections[state.activeSectionIndex];
-  if (!section) {
-    return [];
-  }
-
-  const blocks =
-    state.activeZone === "main"
-      ? section.blocks
-      : state.activeZone === "header"
-        ? (section.header ?? [])
-        : (section.footer ?? []);
-
-  return blocks.flatMap(getBlockParagraphs);
-}
-
-export function findParagraphLocation(
-  document: Editor2Document,
-  paragraphId: string,
-): { sectionIndex: number; zone: Editor2EditingZone } | null {
-  const sections = getDocumentSections(document);
-  for (let s = 0; s < sections.length; s += 1) {
-    const section = sections[s]!;
-
-    if (section.header?.flatMap(getBlockParagraphs).some((p) => p.id === paragraphId)) {
-      return { sectionIndex: s, zone: "header" };
-    }
-    if (section.blocks.flatMap(getBlockParagraphs).some((p) => p.id === paragraphId)) {
-      return { sectionIndex: s, zone: "main" };
-    }
-    if (section.footer?.flatMap(getBlockParagraphs).some((p) => p.id === paragraphId)) {
-      return { sectionIndex: s, zone: "footer" };
-    }
-  }
-  return null;
+  return getDocumentParagraphs(state.document);
 }
 
 export function getParagraphText(paragraph: Editor2ParagraphNode): string {

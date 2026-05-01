@@ -460,32 +460,4 @@ describe("layoutProjection", () => {
     ]);
     expect(layout.pages[1]?.blocks.map((block) => block.paragraphId)).toEqual([paragraphs[2]!.id]);
   });
-
-  it("resolves dynamic fields {{PAGE}} and {{NUMPAGES}} in headers and footers", () => {
-    resetEditor2Ids();
-    const doc: Editor2Document = {
-      id: "doc1",
-      sections: [
-        {
-          id: "s1",
-          blocks: [createEditor2ParagraphFromRuns([{ text: "x".repeat(1000) }])], // Multi-page
-          pageSettings: { width: 816, height: 1056, orientation: "portrait", margins: { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 } },
-          header: [createEditor2ParagraphFromRuns([{ text: "Page {{PAGE}} of {{NUMPAGES}}" }])],
-        }
-      ],
-      blocks: [], // Legacy
-    };
-
-    const layout = projectDocumentLayout(doc, 200); // Small height to force multiple pages
-
-    expect(layout.pages.length).toBeGreaterThan(1);
-    
-    // Check first page header
-    const page1Header = layout.pages[0]?.headerBlocks?.[0]?.layout?.text;
-    expect(page1Header).toBe(`Page 1 of ${layout.pages.length}`);
-    
-    // Check second page header
-    const page2Header = layout.pages[1]?.headerBlocks?.[0]?.layout?.text;
-    expect(page2Header).toBe(`Page 2 of ${layout.pages.length}`);
-  });
 });
