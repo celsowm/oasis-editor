@@ -155,6 +155,7 @@ import {
 } from "./clipboardImage.js";
 import { EditorToolbar } from "./components/Toolbar/EditorToolbar.js";
 import { createEditor2CommandsController } from "../app/controllers/Editor2CommandsController.js";
+import { createEditor2ClipboardController } from "../app/controllers/useEditor2Clipboard.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
@@ -2045,114 +2046,13 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     focusInput();
   };
 
-  const handleCopy = (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => {
-    const text = getSelectedText(state);
-    if (text.length === 0) {
-      return;
-    }
 
-    event.preventDefault();
-    event.clipboardData?.setData("text/plain", text);
-    event.clipboardData?.setData("text/html", serializeEditor2SelectionToHtml(state));
-  };
 
-  const handleCut = (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => {
-    if (isReadOnly()) {
-      event.preventDefault();
-      return;
-    }
-    const text = getSelectedText(state);
-    if (text.length === 0) {
-      return;
-    }
 
-    event.preventDefault();
-    event.clipboardData?.setData("text/plain", text);
-    event.clipboardData?.setData("text/html", serializeEditor2SelectionToHtml(state));
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)));
-    focusInput();
-  };
 
-  const handlePaste = (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => {
-    if (isReadOnly()) {
-      event.preventDefault();
-      return;
-    }
-    if (forcePlainTextPaste) {
-      forcePlainTextPaste = false;
-      const text = event.clipboardData?.getData("text/plain") ?? "";
-      if (text.length === 0) {
-        event.preventDefault();
-        return;
-      }
 
-      event.preventDefault();
-      clearPreferredColumn();
-      resetTransactionGrouping();
-      applyTransactionalState((current) =>
-        applyTableAwareParagraphEdit(current, (temp) => insertPlainTextAtSelection(temp, text)),
-      );
-      event.currentTarget.value = "";
-      focusInput();
-      return;
-    }
 
-    const imageFile = findImageFileFromTransfer(event.clipboardData);
-    if (imageFile) {
-      event.preventDefault();
-      clearPreferredColumn();
-      resetTransactionGrouping();
-      void insertImageFromFile(imageFile);
-      event.currentTarget.value = "";
-      focusInput();
-      return;
-    }
 
-    const html = event.clipboardData?.getData("text/html") ?? "";
-    if (html.trim().length > 0 && parseEditor2ClipboardHtml(html).length > 0) {
-      event.preventDefault();
-      clearPreferredColumn();
-      resetTransactionGrouping();
-      applyTransactionalState((current) =>
-        applyTableAwareParagraphEdit(current, (temp) => insertClipboardHtmlAtSelection(temp, html)),
-      );
-      event.currentTarget.value = "";
-      focusInput();
-      return;
-    }
-
-    const text = event.clipboardData?.getData("text/plain") ?? "";
-    if (text.length === 0) {
-      return;
-    }
-
-    event.preventDefault();
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => insertPlainTextAtSelection(temp, text)));
-    event.currentTarget.value = "";
-    focusInput();
-  };
-
-  const handleDrop = (event: DragEvent) => {
-    if (isReadOnly()) {
-      event.preventDefault();
-      return;
-    }
-    const imageFile = findImageFileFromTransfer(event.dataTransfer);
-    if (!imageFile) {
-      return;
-    }
-
-    event.preventDefault();
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    const position = resolvePositionAtSurfacePoint(event.clientX, event.clientY) ?? state.selection.focus;
-    void insertImageFromFile(imageFile, position);
-    focusInput();
-  };
 
   const moveVerticalByBlock = (direction: -1 | 1) => {
     return moveVerticalSelection(direction, false);
@@ -3404,6 +3304,22 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     });
     focusInput();
   };
+
+  const { handleCopy, handleCut, handlePaste, handleDrop } = createEditor2ClipboardController({
+    state: () => state,
+    isReadOnly,
+    forcePlainTextPaste: () => forcePlainTextPaste,
+    setForcePlainTextPaste: (value) => {
+      forcePlainTextPaste = value;
+    },
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    applyTransactionalState,
+    applyTableAwareParagraphEdit,
+    focusInput,
+    insertImageFromFile,
+    resolvePositionAtSurfacePoint,
+  });
 
   const commandsController = createEditor2CommandsController({
     state,
