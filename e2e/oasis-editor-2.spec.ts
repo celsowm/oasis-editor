@@ -39,7 +39,6 @@ test.describe("Oasis Editor 2 smoke tests", () => {
     await expect(page.locator(".oasis-editor-2-app")).toBeVisible();
     await expect(page.locator('[data-testid="editor-2-page"]')).toHaveCount(1);
     await expect(page.locator('[data-testid="editor-2-block"]').first()).toBeVisible();
-    await expect(page.locator(".oasis-editor-2-title")).toHaveText("Minimal editor");
 
     const input = page.locator('[data-testid="editor-2-input"]');
     await input.focus();

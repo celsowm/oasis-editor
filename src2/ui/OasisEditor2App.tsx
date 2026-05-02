@@ -2316,7 +2316,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           clientY,
           surface: surfaceRef,
           state: state as Editor2State,
-          documentLike: state.document as any,
+          documentLike: document,
         })
       : null;
 

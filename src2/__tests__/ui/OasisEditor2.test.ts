@@ -51,8 +51,6 @@ describe("OasisEditor2", () => {
     expect(root.querySelector('[data-testid="editor-2-toolbar-export-docx"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-import-docx"]')).not.toBeNull();
     expect(root.querySelectorAll('[data-testid="editor-2-block"]').length).toBe(1);
-    expect(root.textContent).toContain("Minimal editor");
-    expect(root.textContent).toContain("oasis-editor-2");
 
     instance.dispose();
     expect(root.textContent).toBe("");

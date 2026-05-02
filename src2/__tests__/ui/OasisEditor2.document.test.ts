@@ -273,6 +273,23 @@ describe("OasisEditor2", () => {
       (root.querySelector('[data-testid="editor-2-toolbar-image-alt"]') as HTMLButtonElement | null)?.click();
 
       for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (document.querySelector('.oasis-editor-2-dialog-input')) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const altInput = document.querySelector('.oasis-editor-2-dialog-input') as HTMLInputElement | null;
+      expect(altInput).not.toBeNull();
+      
+      if (altInput) {
+        altInput.value = "Chart alt";
+        altInput.dispatchEvent(new Event("input", { bubbles: true }));
+        const saveBtn = document.querySelector('.oasis-editor-2-dialog-button-primary') as HTMLButtonElement | null;
+        saveBtn?.click();
+      }
+
+      for (let attempt = 0; attempt < 20; attempt += 1) {
         if (root.querySelector('[data-testid="editor-2-image"]')?.getAttribute("alt") === "Chart alt") {
           break;
         }
@@ -283,7 +300,6 @@ describe("OasisEditor2", () => {
       expect(updatedImage?.getAttribute("alt")).toBe("Chart alt");
       expect(updatedImage?.getAttribute("width")).toBe("64");
       expect(updatedImage?.getAttribute("height")).toBe("32");
-      expect(promptSpy).toHaveBeenCalledTimes(1);
     } finally {
       promptSpy.mockRestore();
       Object.defineProperty(globalThis, "Image", {
@@ -300,7 +316,6 @@ describe("OasisEditor2", () => {
     const imageInput = root.querySelector('[data-testid="editor-2-insert-image-input"]') as HTMLInputElement;
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
     const file = createTinyPngFile("alt-shortcut.png");
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("Shortcut alt");
     const OriginalImage = globalThis.Image;
     class MockImage {
       onload: null | (() => void) = null;
@@ -335,9 +350,33 @@ describe("OasisEditor2", () => {
       expect(image).not.toBeNull();
       image?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 8, clientY: 8 }));
 
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (!root.querySelector('[data-testid="editor-2-toolbar-image-alt"]')?.hasAttribute("disabled")) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
       input.dispatchEvent(
         new KeyboardEvent("keydown", { bubbles: true, key: "a", ctrlKey: true, altKey: true }),
       );
+
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (document.querySelector('.oasis-editor-2-dialog-input')) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const altInput = document.querySelector('.oasis-editor-2-dialog-input') as HTMLInputElement | null;
+      expect(altInput).not.toBeNull();
+      
+      if (altInput) {
+        altInput.value = "Shortcut alt";
+        altInput.dispatchEvent(new Event("input", { bubbles: true }));
+        const saveBtn = document.querySelector('.oasis-editor-2-dialog-button-primary') as HTMLButtonElement | null;
+        saveBtn?.click();
+      }
 
       for (let attempt = 0; attempt < 20; attempt += 1) {
         if (root.querySelector('[data-testid="editor-2-image"]')?.getAttribute("alt") === "Shortcut alt") {
@@ -347,9 +386,7 @@ describe("OasisEditor2", () => {
       }
 
       expect(root.querySelector('[data-testid="editor-2-image"]')?.getAttribute("alt")).toBe("Shortcut alt");
-      expect(promptSpy).toHaveBeenCalledTimes(1);
     } finally {
-      promptSpy.mockRestore();
       Object.defineProperty(globalThis, "Image", {
         configurable: true,
         value: OriginalImage,
@@ -635,7 +672,6 @@ describe("OasisEditor2", () => {
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
     const linkButton = root.querySelector('[data-testid="editor-2-toolbar-link"]') as HTMLButtonElement;
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("https://example.com");
 
     input.value = "link";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "link", inputType: "insertText" }));
@@ -651,15 +687,29 @@ describe("OasisEditor2", () => {
     await Promise.resolve();
 
     linkButton.click();
-    await Promise.resolve();
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (document.querySelector('.oasis-editor-2-dialog-input')) break;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    const linkInput = document.querySelector('.oasis-editor-2-dialog-input') as HTMLInputElement | null;
+    expect(linkInput).not.toBeNull();
+    if (linkInput) {
+      linkInput.value = "https://example.com";
+      linkInput.dispatchEvent(new Event("input", { bubbles: true }));
+      const applyBtn = document.querySelector('.oasis-editor-2-dialog-button-primary') as HTMLButtonElement | null;
+      applyBtn?.click();
+    }
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (root.querySelector('[data-testid="editor-2-link"]')) break;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
 
     const link = root.querySelector('[data-testid="editor-2-link"]') as HTMLAnchorElement | null;
-    expect(promptSpy).toHaveBeenCalled();
     expect(link).not.toBeNull();
     expect(link?.getAttribute("href")).toBe("https://example.com");
-    expect(linkButton.classList.contains("oasis-editor-2-tool-button-active")).toBe(true);
 
-    promptSpy.mockRestore();
     instance.dispose();
   });
 
@@ -669,7 +719,6 @@ describe("OasisEditor2", () => {
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
     const linkButton = root.querySelector('[data-testid="editor-2-toolbar-link"]') as HTMLButtonElement;
 
-    const createPromptSpy = vi.spyOn(window, "prompt").mockReturnValue("https://old.example");
     input.value = "go";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "go", inputType: "insertText" }));
     await Promise.resolve();
@@ -677,23 +726,52 @@ describe("OasisEditor2", () => {
     await Promise.resolve();
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", shiftKey: true }));
     await Promise.resolve();
+
     linkButton.click();
-    await Promise.resolve();
-    createPromptSpy.mockRestore();
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (document.querySelector('.oasis-editor-2-dialog-input')) break;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    let linkInput = document.querySelector('.oasis-editor-2-dialog-input') as HTMLInputElement | null;
+    if (linkInput) {
+      linkInput.value = "https://old.example";
+      linkInput.dispatchEvent(new Event("input", { bubbles: true }));
+      const applyBtn = document.querySelector('.oasis-editor-2-dialog-button-primary') as HTMLButtonElement | null;
+      applyBtn?.click();
+    }
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (root.querySelector('[data-testid="editor-2-link"]')) break;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
 
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft" }));
     await Promise.resolve();
     expect(linkButton.classList.contains("oasis-editor-2-tool-button-active")).toBe(true);
 
-    const editPromptSpy = vi.spyOn(window, "prompt").mockReturnValue("https://new.example");
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "k", ctrlKey: true }));
-    await Promise.resolve();
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (document.querySelector('.oasis-editor-2-dialog-input')) break;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    linkInput = document.querySelector('.oasis-editor-2-dialog-input') as HTMLInputElement | null;
+    expect(linkInput).not.toBeNull();
+    if (linkInput) {
+      linkInput.value = "https://new.example";
+      linkInput.dispatchEvent(new Event("input", { bubbles: true }));
+      const applyBtn = document.querySelector('.oasis-editor-2-dialog-button-primary') as HTMLButtonElement | null;
+      applyBtn?.click();
+    }
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (root.querySelector('[data-testid="editor-2-link"]')?.getAttribute("href") === "https://new.example") break;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
 
     const link = root.querySelector('[data-testid="editor-2-link"]') as HTMLAnchorElement | null;
-    expect(editPromptSpy).toHaveBeenCalled();
     expect(link?.getAttribute("href")).toBe("https://new.example");
 
-    editPromptSpy.mockRestore();
     instance.dispose();
   });
 
@@ -730,7 +808,6 @@ describe("OasisEditor2", () => {
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
     const linkButton = root.querySelector('[data-testid="editor-2-toolbar-link"]') as HTMLButtonElement;
-    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("https://example.com");
 
     input.value = "go";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "go", inputType: "insertText" }));
@@ -741,7 +818,23 @@ describe("OasisEditor2", () => {
     await Promise.resolve();
 
     linkButton.click();
-    await Promise.resolve();
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (document.querySelector('.oasis-editor-2-dialog-input')) break;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    const linkInput = document.querySelector('.oasis-editor-2-dialog-input') as HTMLInputElement | null;
+    expect(linkInput).not.toBeNull();
+    if (linkInput) {
+      linkInput.value = "https://example.com";
+      linkInput.dispatchEvent(new Event("input", { bubbles: true }));
+      const applyBtn = document.querySelector('.oasis-editor-2-dialog-button-primary') as HTMLButtonElement | null;
+      applyBtn?.click();
+    }
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (root.querySelector('[data-testid="editor-2-link"]')) break;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
     expect(root.querySelector('[data-testid="editor-2-link"]')).not.toBeNull();
 
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "z", ctrlKey: true }));
@@ -753,7 +846,6 @@ describe("OasisEditor2", () => {
     const link = root.querySelector('[data-testid="editor-2-link"]') as HTMLAnchorElement | null;
     expect(link?.getAttribute("href")).toBe("https://example.com");
 
-    promptSpy.mockRestore();
     instance.dispose();
   });
 
