@@ -2,7 +2,7 @@ import { For } from "solid-js";
 import type { Editor2ParagraphListStyle } from "../../../../core/model.js";
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
-import { ToolbarGroup } from "../ToolbarGroup.js";
+import { ToolbarGroup, ToolbarSeparator } from "../ToolbarGroup.js";
 import { ToolbarSelect } from "../ToolbarSelect.js";
 import { alignButtons, listButtons } from "../toolbarConfig.js";
 
@@ -11,7 +11,7 @@ export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
   const t = () => ctx().toolbarStyleState();
 
   return (
-    <>
+    <div style={{ display: "flex", "align-items": "center", gap: "8px" }}>
       <ToolbarGroup>
         <For each={alignButtons}>
           {(button) => (
@@ -25,6 +25,8 @@ export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
           )}
         </For>
       </ToolbarGroup>
+
+      <ToolbarSeparator />
 
       <ToolbarGroup>
         <For each={listButtons}>
@@ -74,6 +76,6 @@ export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
           />
         </label>
       </ToolbarGroup>
-    </>
+    </div>
   );
 }

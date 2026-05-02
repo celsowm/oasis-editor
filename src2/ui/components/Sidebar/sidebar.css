@@ -1,0 +1,73 @@
+.oasis-editor-2-sidebar {
+  width: 260px;
+  background-color: #f8fafc;
+  border-left: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.oasis-editor-2-sidebar-section {
+  margin-bottom: 24px;
+}
+
+.oasis-editor-2-sidebar-section h3 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+}
+
+.oasis-editor-2-sidebar-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.oasis-editor-2-sidebar-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.oasis-editor-2-sidebar-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.oasis-editor-2-sidebar-metric label {
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.oasis-editor-2-sidebar-metric input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.oasis-editor-2-sidebar-color {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.oasis-editor-2-sidebar-color input {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+}

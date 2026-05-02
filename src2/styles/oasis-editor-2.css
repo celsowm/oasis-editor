@@ -37,21 +37,40 @@
   color: #475569;
 }
 
+.oasis-editor-2-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 16px;
+}
+
 .oasis-editor-2-toolbar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 6px 8px;
-  width: min(860px, 100%);
+  gap: 8px;
+  width: min(1160px, 100%);
   margin: 0 auto;
   padding: 8px 10px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(148, 163, 184, 0.22);
   box-shadow:
-    0 6px 18px rgba(15, 23, 42, 0.06),
+    0 4px 12px rgba(15, 23, 42, 0.04),
     0 1px 0 rgba(255, 255, 255, 0.6) inset;
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(12px);
+  min-height: 48px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.oasis-editor-2-main-container {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 16px;
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  align-items: stretch;
 }
 
 .oasis-editor-2-toolbar-group {
@@ -265,10 +284,10 @@
 }
 
 .oasis-editor-2-stage {
-  min-height: 0;
-  display: grid;
-  align-items: stretch;
-  justify-items: center;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .oasis-editor-2-editor-shell {

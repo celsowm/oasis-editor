@@ -24,6 +24,7 @@ export interface EditorToolbarCtx {
   selectedImageRun: () => unknown;
   tableSelectionLabel: () => string | null;
   tableActionRestrictionLabel: () => string | null;
+  isInsideTable: () => boolean;
 
   handleExportDocx: () => void;
   performUndo: () => void;
