@@ -10,6 +10,9 @@ import type {
   Editor2TextStyle,
   Editor2ImageRunData,
   Editor2Section,
+  Editor2TableCellStyle,
+  Editor2BorderStyle,
+  Editor2TableCellNode,
 } from "./model.js";
 import {
   getBlockParagraphs,
@@ -142,6 +145,24 @@ function cloneParagraphs(paragraphs: Editor2ParagraphNode[]): Editor2ParagraphNo
   return paragraphs.map(cloneParagraph);
 }
 
+function cloneBlocks(blocks: Editor2BlockNode[]): Editor2BlockNode[] {
+  return blocks.map((block) => {
+    if (block.type === "paragraph") {
+      return cloneParagraph(block);
+    }
+    return {
+      ...block,
+      rows: block.rows.map((row) => ({
+        ...row,
+        cells: row.cells.map((cell) => ({
+          ...cell,
+          blocks: cloneParagraphs(cell.blocks),
+        })),
+      })),
+    };
+  });
+}
+
 function normalizeRuns(runs: Editor2TextRun[], fallbackStyles?: Editor2TextStyle): Editor2TextRun[] {
   const merged: Editor2TextRun[] = [];
 
@@ -224,7 +245,7 @@ function replaceParagraphsInBlocks(blocks: Editor2BlockNode[], newParagraphs: Ed
   const processBlocks = (nodes: Editor2BlockNode[]): Editor2BlockNode[] => {
     return nodes.map(node => {
       if (node.type === "paragraph") {
-        return newParagraphs[index++];
+        return newParagraphs[index++] ?? node;
       }
       return {
         ...node,
@@ -246,25 +267,15 @@ function replaceParagraphsInSection(
   paragraphs: Editor2ParagraphNode[],
   zone: "main" | "header" | "footer",
 ): Editor2Section {
-  if (zone === "header") {
-    return { ...section, header: paragraphs };
+  if (zone === "header" && section.header) {
+    return { ...section, header: replaceParagraphsInBlocks(section.header, paragraphs) };
   }
-  if (zone === "footer") {
-    return { ...section, footer: paragraphs };
-  }
-
-  // main zone: preserve table structure by replacing paragraphs within existing blocks
-  const existingBlocks = section.blocks;
-  const hasTable = existingBlocks.some(b => b.type === "table");
-
-  if (hasTable) {
-    // Use replaceParagraphsInBlocks to preserve table structure
-    const newBlocks = replaceParagraphsInBlocks(existingBlocks, paragraphs);
-    return { ...section, blocks: newBlocks };
+  if (zone === "footer" && section.footer) {
+    return { ...section, footer: replaceParagraphsInBlocks(section.footer, paragraphs) };
   }
 
-  // No tables: simple replacement
-  return { ...section, blocks: paragraphs };
+  // main zone or fallback: preserve table structure
+  return { ...section, blocks: replaceParagraphsInBlocks(section.blocks, paragraphs) };
 }
 
 function cloneStateWithParagraphs(
@@ -527,13 +538,23 @@ function sliceRuns(
     const overlapEnd = Math.min(end, runEnd);
 
     if (overlapStart < overlapEnd) {
-      pieces.push(
-        createEditor2StyledRun(
-          run.image ? "\uFFFC" : run.text.slice(overlapStart - runStart, overlapEnd - runStart),
-          run.styles,
-          run.image ? { ...run.image } : undefined,
-        ),
-      );
+      const piece: Editor2TextRun = {
+        id: `run:${Math.random().toString(36).slice(2, 9)}`,
+        text: run.image ? "\uFFFC" : run.text.slice(overlapStart - runStart, overlapEnd - runStart),
+      };
+      if (run.styles) {
+        piece.styles = { ...run.styles };
+      }
+      if (run.image) {
+        piece.image = { ...run.image };
+      }
+      if (run.revision) {
+        piece.revision = { ...run.revision };
+      }
+      if (run.field) {
+        piece.field = { ...run.field };
+      }
+      pieces.push(piece);
     }
 
     consumed = runEnd;
@@ -572,6 +593,43 @@ function deleteSelectionRange(state: Editor2State): Editor2State {
   }
 
   const paragraphs = getParagraphs(state);
+
+  if (state.trackChangesEnabled) {
+    const revisionId = `rev:${Math.random().toString(36).slice(2, 9)}`;
+    const author = "User";
+    const date = Date.now();
+
+    const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+      if (paragraphIndex < normalized.startIndex || paragraphIndex > normalized.endIndex) {
+        return cloneParagraph(paragraph);
+      }
+
+      const startOffset = paragraphIndex === normalized.startIndex ? normalized.startParagraphOffset : 0;
+      const endOffset =
+        paragraphIndex === normalized.endIndex
+          ? normalized.endParagraphOffset
+          : getParagraphLength(paragraph);
+
+      return mapRunsInRange(paragraph, startOffset, endOffset, (run) => {
+        // If already an insert, remove it
+        if (run.revision?.type === "insert") {
+          return { ...run, text: "" }; // normalizeRuns will remove this
+        }
+        // Otherwise mark as delete
+        return {
+          ...run,
+          revision: { id: revisionId, type: "delete", author, date },
+        };
+      });
+    });
+
+    return cloneStateWithParagraphs(
+      state,
+      nextParagraphs,
+      withSelection(normalized.start),
+    );
+  }
+
   const startParagraph = paragraphs[normalized.startIndex];
   const endParagraph = paragraphs[normalized.endIndex];
   const startOffset = positionToParagraphOffset(startParagraph, normalized.start);
@@ -1232,6 +1290,69 @@ export function setSelection(state: Editor2State, selection: Editor2Selection): 
   };
 }
 
+export function toggleTrackChanges(state: Editor2State): Editor2State {
+  return {
+    ...state,
+    trackChangesEnabled: !state.trackChangesEnabled,
+  };
+}
+
+export function acceptRevision(state: Editor2State, revisionId: string): Editor2State {
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map((paragraph) => {
+    const nextRuns = paragraph.runs
+      .filter((run) => !(run.revision?.id === revisionId && run.revision.type === "delete"))
+      .map((run) => {
+        if (run.revision?.id === revisionId && run.revision.type === "insert") {
+          const nextRun = { ...run };
+          delete nextRun.revision;
+          return nextRun;
+        }
+        return run;
+      });
+
+    if (nextRuns.length === paragraph.runs.length && nextRuns.every((run, i) => run === paragraph.runs[i])) {
+      return paragraph;
+    }
+
+    return buildParagraphFromRuns(paragraph, nextRuns);
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalizeSelection(state)),
+  );
+}
+
+export function rejectRevision(state: Editor2State, revisionId: string): Editor2State {
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map((paragraph) => {
+    const nextRuns = paragraph.runs
+      .filter((run) => !(run.revision?.id === revisionId && run.revision.type === "insert"))
+      .map((run) => {
+        if (run.revision?.id === revisionId && run.revision.type === "delete") {
+          const nextRun = { ...run };
+          delete nextRun.revision;
+          return nextRun;
+        }
+        return run;
+      });
+
+    if (nextRuns.length === paragraph.runs.length && nextRuns.every((run, i) => run === paragraph.runs[i])) {
+      return paragraph;
+    }
+
+    return buildParagraphFromRuns(paragraph, nextRuns);
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalizeSelection(state)),
+  );
+}
+
 export function insertTextAtSelection(state: Editor2State, text: string): Editor2State {
   if (text.length === 0) {
     return state;
@@ -1239,7 +1360,23 @@ export function insertTextAtSelection(state: Editor2State, text: string): Editor
 
   const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
-  const insertedRun = createEditor2StyledRun(text, getStyleAtOffset(paragraph, offset));
+  const styles = getStyleAtOffset(paragraph, offset);
+  
+  const insertedRun: Editor2TextRun = {
+    id: `run:${Math.random().toString(36).slice(2, 9)}`,
+    text,
+    styles,
+  };
+
+  if (collapsedState.trackChangesEnabled) {
+    insertedRun.revision = {
+      id: `rev:${Math.random().toString(36).slice(2, 9)}`,
+      type: "insert",
+      author: "User", // TODO: Get from context
+      date: Date.now(),
+    };
+  }
+
   const nextParagraph = insertRunsAtOffset(paragraph, offset, [insertedRun]);
   const paragraphs = getParagraphs(collapsedState);
   const nextParagraphs = paragraphs.map((candidate, candidateIndex) =>
@@ -1427,6 +1564,142 @@ export function moveSelectedImageToPosition(
   );
 }
 
+export function acceptRevisionsInSelection(state: Editor2State): Editor2State {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  const revisionIds = new Set<string>();
+
+  for (let i = normalized.startIndex; i <= normalized.endIndex; i += 1) {
+    const paragraph = paragraphs[i];
+    const startOffset = i === normalized.startIndex ? normalized.startParagraphOffset : 0;
+    const endOffset = i === normalized.endIndex ? normalized.endParagraphOffset : getParagraphLength(paragraph);
+    const runs = sliceRuns(paragraph, startOffset, endOffset);
+    for (const run of runs) {
+      if (run.revision?.id) {
+        revisionIds.add(run.revision.id);
+      }
+    }
+  }
+
+  let nextState = state;
+  for (const revisionId of revisionIds) {
+    nextState = acceptRevision(nextState, revisionId);
+  }
+
+  return nextState;
+}
+
+export function rejectRevisionsInSelection(state: Editor2State): Editor2State {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  const revisionIds = new Set<string>();
+
+  for (let i = normalized.startIndex; i <= normalized.endIndex; i += 1) {
+    const paragraph = paragraphs[i];
+    const startOffset = i === normalized.startIndex ? normalized.startParagraphOffset : 0;
+    const endOffset = i === normalized.endIndex ? normalized.endParagraphOffset : getParagraphLength(paragraph);
+    const runs = sliceRuns(paragraph, startOffset, endOffset);
+    for (const run of runs) {
+      if (run.revision?.id) {
+        revisionIds.add(run.revision.id);
+      }
+    }
+  }
+
+  let nextState = state;
+  for (const revisionId of revisionIds) {
+    nextState = rejectRevision(nextState, revisionId);
+  }
+
+  return nextState;
+}
+
+function updateTableCellsInBlocks(
+  blocks: Editor2BlockNode[],
+  selectedParagraphIds: Set<string>,
+  updateCell: (cell: Editor2TableCellNode) => Editor2TableCellNode
+): Editor2BlockNode[] {
+  return blocks.map(block => {
+    if (block.type === "paragraph") return block;
+    
+    return {
+      ...block,
+      rows: block.rows.map(row => ({
+        ...row,
+        cells: row.cells.map(cell => {
+          // Check if this cell contains any of the selected paragraphs
+          const isSelected = cell.blocks.some(p => selectedParagraphIds.has(p.id));
+          return isSelected ? updateCell(cell) : cell;
+        })
+      }))
+    };
+  });
+}
+
+export function setTableCellStyleValue<K extends keyof Editor2TableCellStyle>(
+  state: Editor2State,
+  key: K,
+  value: Editor2TableCellStyle[K] | null,
+): Editor2State {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  const selectedParagraphIds = new Set<string>();
+
+  for (let i = normalized.startIndex; i <= normalized.endIndex; i += 1) {
+    selectedParagraphIds.add(paragraphs[i].id);
+  }
+
+  const updateCell = (cell: Editor2TableCellNode): Editor2TableCellNode => {
+    const nextStyle = { ...(cell.style ?? {}) } as Record<string, unknown>;
+    if (value === null) {
+      delete nextStyle[key];
+    } else {
+      nextStyle[key] = value;
+    }
+    return {
+      ...cell,
+      style: Object.keys(nextStyle).length > 0 ? (nextStyle as Editor2TableCellStyle) : undefined
+    };
+  };
+
+  const sections = getDocumentSections(state.document);
+  const hasSections = state.document.sections && state.document.sections.length > 0;
+
+  if (hasSections) {
+    const nextSections = sections.map(section => ({
+      ...section,
+      blocks: updateTableCellsInBlocks(section.blocks, selectedParagraphIds, updateCell)
+    }));
+
+    return {
+      ...state,
+      document: {
+        ...state.document,
+        sections: nextSections
+      }
+    };
+  }
+
+  return {
+    ...state,
+    document: {
+      ...state.document,
+      blocks: updateTableCellsInBlocks(state.document.blocks, selectedParagraphIds, updateCell)
+    }
+  };
+}
+
+export function setTableCellBorders(
+  state: Editor2State,
+  border: Editor2BorderStyle | null
+): Editor2State {
+  let nextState = setTableCellStyleValue(state, "borderTop", border);
+  nextState = setTableCellStyleValue(nextState, "borderRight", border);
+  nextState = setTableCellStyleValue(nextState, "borderBottom", border);
+  nextState = setTableCellStyleValue(nextState, "borderLeft", border);
+  return nextState;
+}
+
 export function insertTableAtSelection(state: Editor2State, rows: number, cols: number): Editor2State {
   const tableRows = [];
   for (let r = 0; r < rows; r += 1) {
@@ -1439,29 +1712,74 @@ export function insertTableAtSelection(state: Editor2State, rows: number, cols: 
   const table = createEditor2Table(tableRows);
 
   const focus = clampPosition(state, state.selection.focus);
-  const blocks = state.document.blocks;
-  const blockIndex = blocks.findIndex(b => {
-     if (b.id === focus.paragraphId) return true;
-     if (b.type === "paragraph") return false;
-     return getBlockParagraphs(b).some(p => p.id === focus.paragraphId);
-  });
-  
-  if (blockIndex === -1) {
-    return state;
+  const sections = getDocumentSections(state.document);
+  const activeSectionIndex = getActiveSectionIndex(state);
+  const zone = getActiveZone(state);
+
+  const insertIntoBlocks = (blocks: Editor2BlockNode[]): { nextBlocks: Editor2BlockNode[]; found: boolean } => {
+    const blockIndex = blocks.findIndex((b) => {
+      if (b.id === focus.paragraphId) return true;
+      if (b.type === "paragraph") return false;
+      return getBlockParagraphs(b).some((p) => p.id === focus.paragraphId);
+    });
+
+    if (blockIndex === -1) {
+      return { nextBlocks: blocks, found: false };
+    }
+
+    return {
+      nextBlocks: [...blocks.slice(0, blockIndex + 1), table, ...blocks.slice(blockIndex + 1)],
+      found: true,
+    };
+  };
+
+  if (state.document.sections && state.document.sections.length > 0) {
+    const section = sections[activeSectionIndex];
+    if (!section) return state;
+
+    const nextSection = { ...section };
+    let found = false;
+
+    if (zone === "header") {
+      const result = insertIntoBlocks(section.header ?? []);
+      nextSection.header = result.nextBlocks;
+      found = result.found;
+    } else if (zone === "footer") {
+      const result = insertIntoBlocks(section.footer ?? []);
+      nextSection.footer = result.nextBlocks;
+      found = result.found;
+    } else {
+      const result = insertIntoBlocks(section.blocks);
+      nextSection.blocks = result.nextBlocks;
+      found = result.found;
+    }
+
+    if (!found) return state;
+
+    const nextSections = [...state.document.sections];
+    nextSections[activeSectionIndex] = nextSection;
+
+    return {
+      ...state,
+      document: {
+        ...state.document,
+        sections: nextSections,
+      },
+      selection: withSelection(paragraphOffsetToPosition(table.rows[0]!.cells[0]!.blocks[0]!, 0)),
+    };
   }
-  
-  const nextBlocks = [
-    ...blocks.slice(0, blockIndex + 1),
-    table,
-    ...blocks.slice(blockIndex + 1)
-  ];
-  
+
+  // Fallback for document.blocks
+  const result = insertIntoBlocks(state.document.blocks);
+  if (!result.found) return state;
+
   return {
+    ...state,
     document: {
       ...state.document,
-      blocks: nextBlocks
+      blocks: result.nextBlocks,
     },
-    selection: withSelection(paragraphOffsetToPosition(table.rows[0]!.cells[0]!.blocks[0]!, 0))
+    selection: withSelection(paragraphOffsetToPosition(table.rows[0]!.cells[0]!.blocks[0]!, 0)),
   };
 }
 
@@ -1564,6 +1882,118 @@ export function insertPageBreakAtSelection(state: Editor2State): Editor2State {
     nextParagraphs,
     withSelection(paragraphOffsetToPosition(nextParagraph, 0)),
   );
+}
+
+export function insertSectionBreakAtSelection(
+  state: Editor2State,
+  breakType: "nextPage" | "continuous",
+): Editor2State {
+  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+  const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  const sections = getDocumentSections(collapsedState.document);
+  const activeSectionIndex = getActiveSectionIndex(collapsedState);
+  const zone = getActiveZone(collapsedState);
+
+  if (zone !== "main") {
+    return state;
+  }
+
+  const section = sections[activeSectionIndex];
+  if (!section) {
+    return state;
+  }
+
+  // Split the current section blocks at the current paragraph
+  const blockIndex = section.blocks.findIndex((block) => {
+    if (block.type === "paragraph") {
+      return block.id === paragraph.id;
+    }
+    return false; // For now, we only support splitting at paragraph level
+  });
+
+  if (blockIndex === -1) {
+    return state;
+  }
+
+  const beforeBlocks = section.blocks.slice(0, blockIndex);
+  const afterBlocks = section.blocks.slice(blockIndex + 1);
+
+  // Split the paragraph itself
+  const firstParagraph = buildParagraphFromRuns(
+    paragraph,
+    sliceRuns(paragraph, 0, offset),
+    getStyleAtOffset(paragraph, offset),
+  );
+  const secondRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
+  const secondParagraph =
+    secondRuns.length > 0
+      ? createParagraphFromRuns(secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
+      : createEditor2Paragraph("");
+
+  const newSectionId = `section:${Math.random().toString(36).slice(2, 9)}`;
+  const newSection: Editor2Section = {
+    id: newSectionId,
+    blocks: [secondParagraph, ...afterBlocks],
+    pageSettings: { ...section.pageSettings },
+    header: section.header ? cloneBlocks(section.header) : undefined,
+    footer: section.footer ? cloneBlocks(section.footer) : undefined,
+    breakType: breakType,
+  };
+
+  const updatedSection: Editor2Section = {
+    ...section,
+    blocks: [...beforeBlocks, firstParagraph],
+  };
+
+  const nextSections = [
+    ...sections.slice(0, activeSectionIndex),
+    updatedSection,
+    newSection,
+    ...sections.slice(activeSectionIndex + 1),
+  ];
+
+  return {
+    ...collapsedState,
+    document: {
+      ...collapsedState.document,
+      sections: nextSections,
+    },
+    activeSectionIndex: activeSectionIndex + 1,
+    selection: withSelection(paragraphOffsetToPosition(secondParagraph, 0)),
+  };
+}
+
+export function updateSectionSettings(
+  state: Editor2State,
+  sectionIndex: number,
+  settings: Partial<Editor2Section>,
+): Editor2State {
+  const sections = getDocumentSections(state.document);
+  if (sectionIndex < 0 || sectionIndex >= sections.length) {
+    return state;
+  }
+
+  const nextSections = [...sections];
+  nextSections[sectionIndex] = {
+    ...nextSections[sectionIndex],
+    ...settings,
+    pageSettings: {
+      ...nextSections[sectionIndex].pageSettings,
+      ...(settings.pageSettings ?? {}),
+      margins: {
+        ...nextSections[sectionIndex].pageSettings.margins,
+        ...(settings.pageSettings?.margins ?? {}),
+      },
+    },
+  };
+
+  return {
+    ...state,
+    document: {
+      ...state.document,
+      sections: nextSections,
+    },
+  };
 }
 
 export function insertFieldAtSelection(state: Editor2State, fieldType: "PAGE" | "NUMPAGES"): Editor2State {
@@ -1707,6 +2137,71 @@ export function deleteBackward(state: Editor2State): Editor2State {
   const paragraphs = getParagraphs(state);
 
   if (offset > 0) {
+    if (state.trackChangesEnabled) {
+      const runs = paragraph.runs;
+      let consumed = 0;
+      let targetRunIndex = -1;
+      let runOffset = -1;
+      for (let i = 0; i < runs.length; i += 1) {
+        const nextConsumed = consumed + runs[i].text.length;
+        if (offset <= nextConsumed) {
+          targetRunIndex = i;
+          runOffset = offset - consumed;
+          break;
+        }
+        consumed = nextConsumed;
+      }
+
+      if (targetRunIndex !== -1) {
+        const targetRun = runs[targetRunIndex];
+        // If we are deleting an "insert" revision, just remove the character
+        if (targetRun.revision?.type === "insert") {
+          const nextRuns = [
+            ...sliceRuns(paragraph, 0, offset - 1),
+            ...sliceRuns(paragraph, offset, getParagraphLength(paragraph)),
+          ];
+          const nextParagraph = buildParagraphFromRuns(paragraph, nextRuns);
+          const nextParagraphs = paragraphs.map((candidate, candidateIndex) =>
+            candidateIndex === index ? nextParagraph : cloneParagraph(candidate),
+          );
+          return cloneStateWithParagraphs(
+            state,
+            nextParagraphs,
+            withSelection(paragraphOffsetToPosition(nextParagraph, offset - 1)),
+          );
+        }
+
+        // Otherwise, split and mark as "delete"
+        const charToDelete = targetRun.text[runOffset - 1];
+        const deletionRun: Editor2TextRun = {
+          id: `run:${Math.random().toString(36).slice(2, 9)}`,
+          text: charToDelete,
+          styles: { ...targetRun.styles },
+          revision: {
+            id: `rev:${Math.random().toString(36).slice(2, 9)}`,
+            type: "delete",
+            author: "User",
+            date: Date.now(),
+          },
+        };
+
+        const nextRuns = [
+          ...sliceRuns(paragraph, 0, offset - 1),
+          deletionRun,
+          ...sliceRuns(paragraph, offset, getParagraphLength(paragraph)),
+        ];
+        const nextParagraph = buildParagraphFromRuns(paragraph, nextRuns);
+        const nextParagraphs = paragraphs.map((candidate, candidateIndex) =>
+          candidateIndex === index ? nextParagraph : cloneParagraph(candidate),
+        );
+        return cloneStateWithParagraphs(
+          state,
+          nextParagraphs,
+          withSelection(paragraphOffsetToPosition(nextParagraph, offset - 1)),
+        );
+      }
+    }
+
     const nextParagraph = buildParagraphFromRuns(
       paragraph,
       [
@@ -1757,6 +2252,71 @@ export function deleteForward(state: Editor2State): Editor2State {
   const paragraphs = getParagraphs(state);
 
   if (offset < getParagraphLength(paragraph)) {
+    if (state.trackChangesEnabled) {
+      const runs = paragraph.runs;
+      let consumed = 0;
+      let targetRunIndex = -1;
+      let runOffset = -1;
+      for (let i = 0; i < runs.length; i += 1) {
+        const nextConsumed = consumed + runs[i].text.length;
+        if (offset < nextConsumed) {
+          targetRunIndex = i;
+          runOffset = offset - consumed;
+          break;
+        }
+        consumed = nextConsumed;
+      }
+
+      if (targetRunIndex !== -1) {
+        const targetRun = runs[targetRunIndex];
+        // If we are deleting an "insert" revision, just remove the character
+        if (targetRun.revision?.type === "insert") {
+          const nextRuns = [
+            ...sliceRuns(paragraph, 0, offset),
+            ...sliceRuns(paragraph, offset + 1, getParagraphLength(paragraph)),
+          ];
+          const nextParagraph = buildParagraphFromRuns(paragraph, nextRuns);
+          const nextParagraphs = paragraphs.map((candidate, candidateIndex) =>
+            candidateIndex === index ? nextParagraph : cloneParagraph(candidate),
+          );
+          return cloneStateWithParagraphs(
+            state,
+            nextParagraphs,
+            withSelection(paragraphOffsetToPosition(nextParagraph, offset)),
+          );
+        }
+
+        // Otherwise, split and mark as "delete"
+        const charToDelete = targetRun.text[runOffset];
+        const deletionRun: Editor2TextRun = {
+          id: `run:${Math.random().toString(36).slice(2, 9)}`,
+          text: charToDelete,
+          styles: { ...targetRun.styles },
+          revision: {
+            id: `rev:${Math.random().toString(36).slice(2, 9)}`,
+            type: "delete",
+            author: "User",
+            date: Date.now(),
+          },
+        };
+
+        const nextRuns = [
+          ...sliceRuns(paragraph, 0, offset),
+          deletionRun,
+          ...sliceRuns(paragraph, offset + 1, getParagraphLength(paragraph)),
+        ];
+        const nextParagraph = buildParagraphFromRuns(paragraph, nextRuns);
+        const nextParagraphs = paragraphs.map((candidate, candidateIndex) =>
+          candidateIndex === index ? nextParagraph : cloneParagraph(candidate),
+        );
+        return cloneStateWithParagraphs(
+          state,
+          nextParagraphs,
+          withSelection(paragraphOffsetToPosition(nextParagraph, offset)),
+        );
+      }
+    }
+
     const nextParagraph = buildParagraphFromRuns(
       paragraph,
       [

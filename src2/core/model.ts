@@ -40,12 +40,20 @@ export interface Editor2FieldData {
   type: "PAGE" | "NUMPAGES";
 }
 
+export interface Editor2Revision {
+  id: string;
+  type: "insert" | "delete";
+  author: string;
+  date: number;
+}
+
 export interface Editor2TextRun {
   id: string;
   text: string;
   styles?: Editor2TextStyle;
   image?: Editor2ImageRunData;
   field?: Editor2FieldData;
+  revision?: Editor2Revision;
 }
 
 export interface Editor2ParagraphNode {
@@ -56,12 +64,29 @@ export interface Editor2ParagraphNode {
   list?: Editor2ParagraphListStyle;
 }
 
+export interface Editor2BorderStyle {
+  width: number; // in pt
+  type: "solid" | "dashed" | "dotted" | "none";
+  color: string;
+}
+
+export interface Editor2TableCellStyle {
+  shading?: string; // background color (e.g., #f0f0f0)
+  borderTop?: Editor2BorderStyle;
+  borderRight?: Editor2BorderStyle;
+  borderBottom?: Editor2BorderStyle;
+  borderLeft?: Editor2BorderStyle;
+  padding?: number; // uniform padding in pt
+  verticalAlign?: "top" | "middle" | "bottom";
+}
+
 export interface Editor2TableCellNode {
   id: string;
   blocks: Editor2ParagraphNode[];
   colSpan?: number;
   rowSpan?: number;
   vMerge?: "restart" | "continue";
+  style?: Editor2TableCellStyle;
 }
 
 export interface Editor2TableRowNode {
@@ -99,8 +124,8 @@ export interface Editor2Section {
   id: string;
   blocks: Editor2BlockNode[];
   pageSettings: Editor2PageSettings;
-  header?: Editor2ParagraphNode[];
-  footer?: Editor2ParagraphNode[];
+  header?: Editor2BlockNode[];
+  footer?: Editor2BlockNode[];
   breakType?: "nextPage" | "continuous";
 }
 
@@ -129,6 +154,7 @@ export interface Editor2State {
   selection: Editor2Selection;
   activeSectionIndex?: number;
   activeZone?: Editor2EditingZone;
+  trackChangesEnabled?: boolean;
 }
 
 export interface Editor2CaretSlot {
@@ -153,6 +179,7 @@ export interface Editor2LayoutFragment {
   text: string;
   styles?: Editor2TextStyle;
   image?: Editor2ImageRunData;
+  revision?: Editor2Revision;
   chars: Editor2LayoutFragmentChar[];
 }
 
@@ -327,8 +354,8 @@ export function getParagraphs(state: Editor2State): Editor2ParagraphNode[] {
       return getDocumentParagraphs(state.document);
     }
 
-    const headerParagraphs = zone === "header" ? (section.header ?? []) : [];
-    const footerParagraphs = zone === "footer" ? (section.footer ?? []) : [];
+    const headerParagraphs = zone === "header" ? (section.header?.flatMap(getBlockParagraphs) ?? []) : [];
+    const footerParagraphs = zone === "footer" ? (section.footer?.flatMap(getBlockParagraphs) ?? []) : [];
     const mainParagraphs = zone === "main"
       ? section.blocks.flatMap(getBlockParagraphs)
       : [];

@@ -13,6 +13,7 @@ import {
   type Editor2State,
   type Editor2TableNode,
   type Editor2TextStyle,
+  type Editor2BorderStyle,
 } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
 import { projectDocumentLayout, projectParagraphLayout } from "../layoutProjection.js";
@@ -37,6 +38,8 @@ interface EditorSurfaceProps {
     paragraphOffset: number,
     event: MouseEvent & { currentTarget: HTMLButtonElement },
   ) => void;
+  onRevisionMouseEnter?: (revisionId: string, event: MouseEvent) => void;
+  onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
 }
 
 function paragraphStyleToCss(style?: Editor2ParagraphStyle): Record<string, string> | undefined {
@@ -178,6 +181,8 @@ function renderParagraph(
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
   onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
   onImageResizeHandleMouseDown: EditorSurfaceProps["onImageResizeHandleMouseDown"],
+  onRevisionMouseEnter: EditorSurfaceProps["onRevisionMouseEnter"],
+  onRevisionMouseLeave: EditorSurfaceProps["onRevisionMouseLeave"],
   options?: {
     domParagraphId?: string;
     interactive?: boolean;
@@ -266,10 +271,25 @@ function renderParagraph(
                   const runContent = (
                     <span
                       class="oasis-editor-2-run"
+                      classList={{
+                        "oasis-editor-2-revision-insert": fragment.revision?.type === "insert",
+                        "oasis-editor-2-revision-delete": fragment.revision?.type === "delete",
+                      }}
                       data-run-id={fragment.runId}
                       data-testid="editor-2-run"
                       style={runStyleToCss(fragment.styles)}
+                      onMouseEnter={
+                        interactive && fragment.revision
+                          ? (event) => onRevisionMouseEnter?.(fragment.revision!.id, event)
+                          : undefined
+                      }
+                      onMouseLeave={
+                        interactive && fragment.revision
+                          ? (event) => onRevisionMouseLeave?.(fragment.revision!.id, event)
+                          : undefined
+                      }
                     >
+
                       <For each={fragment.chars}>
                         {(char) => (
                           (() => {
@@ -372,6 +392,12 @@ function renderParagraph(
   );
 }
 
+function getBorderStyle(border?: Editor2BorderStyle): string | undefined {
+  if (!border) return undefined;
+  if (border.type === "none") return "none";
+  return `${border.width}pt ${border.type} ${border.color}`;
+}
+
 function renderTable(
   table: Editor2TableNode,
   blockId: string,
@@ -381,6 +407,8 @@ function renderTable(
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
   onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
   onImageResizeHandleMouseDown: EditorSurfaceProps["onImageResizeHandleMouseDown"],
+  onRevisionMouseEnter: EditorSurfaceProps["onRevisionMouseEnter"],
+  onRevisionMouseLeave: EditorSurfaceProps["onRevisionMouseLeave"],
   segment?: {
     startRowIndex: number;
     endRowIndex: number;
@@ -436,6 +464,15 @@ function renderTable(
                         data-testid="editor-2-table-cell"
                         data-row-index={renderedRow.sourceRowIndex}
                         data-cell-index={cellIndex()}
+                        style={{
+                          "background-color": cell.style?.shading,
+                          "vertical-align": cell.style?.verticalAlign,
+                          "padding": cell.style?.padding !== undefined ? `${cell.style.padding}pt` : undefined,
+                          "border-top": getBorderStyle(cell.style?.borderTop),
+                          "border-right": getBorderStyle(cell.style?.borderRight),
+                          "border-bottom": getBorderStyle(cell.style?.borderBottom),
+                          "border-left": getBorderStyle(cell.style?.borderLeft),
+                        }}
                       >
                         <For each={cell.blocks}>
                           {(paragraph, paragraphIndex) =>
@@ -451,6 +488,8 @@ function renderTable(
                               onParagraphMouseDown,
                               onImageMouseDown,
                               onImageResizeHandleMouseDown,
+                              onRevisionMouseEnter,
+                              onRevisionMouseLeave,
                               renderedRow.repeated
                                 ? {
                                     domParagraphId: `${paragraph.id}:repeat:${blockId}:${renderedRow.repeatedIndex}:${paragraphIndex()}`,
@@ -539,6 +578,8 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          props.onRevisionMouseEnter,
+                          props.onRevisionMouseLeave,
                           { testId: "editor-2-header-block" },
                         )
                       : renderTable(
@@ -550,6 +591,8 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          props.onRevisionMouseEnter,
+                          props.onRevisionMouseLeave,
                           block.tableSegment,
                         );
                   }}
@@ -582,6 +625,8 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          props.onRevisionMouseEnter,
+                          props.onRevisionMouseLeave,
                         )
                       : renderTable(
                           block.sourceBlock,
@@ -592,6 +637,8 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          props.onRevisionMouseEnter,
+                          props.onRevisionMouseLeave,
                           block.tableSegment,
                         );
                   }}
@@ -632,6 +679,8 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          props.onRevisionMouseEnter,
+                          props.onRevisionMouseLeave,
                           { testId: "editor-2-footer-block" },
                         )
                       : renderTable(
@@ -643,6 +692,8 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          props.onRevisionMouseEnter,
+                          props.onRevisionMouseLeave,
                           block.tableSegment,
                         );
                   }}

@@ -43,6 +43,8 @@ import {
   insertImageAtSelection,
   insertFieldAtSelection,
   insertPageBreakAtSelection,
+  insertSectionBreakAtSelection,
+  updateSectionSettings,
   insertTableAtSelection,
   indentParagraphList,
   moveSelectionDown,
@@ -55,6 +57,13 @@ import {
   parseEditor2ClipboardHtml,
   setParagraphStyle,
   setLinkAtSelection,
+  setTableCellStyleValue,
+  setTableCellBorders,
+  toggleTrackChanges,
+  acceptRevision,
+  rejectRevision,
+  acceptRevisionsInSelection,
+  rejectRevisionsInSelection,
   setSelectedImageAlt,
   setSelection,
   splitListItemAtSelection,
@@ -89,12 +98,16 @@ import {
   getParagraphLength,
   getParagraphs,
   getDocumentParagraphs,
+  getBlockParagraphs,
   getParagraphText,
   findParagraphLocation,
+  getActiveSectionIndex,
+  getActiveZone,
   paragraphOffsetToPosition,
   positionToParagraphOffset,
   type Editor2ParagraphStyle,
   type Editor2Position,
+  type Editor2Revision,
   type Editor2Section,
   type Editor2State,
   type Editor2TextStyle,
@@ -103,7 +116,7 @@ import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
 import { exportEditor2DocumentToDocxBlob } from "../export/docx/exportEditor2DocumentToDocx.js";
 import { importDocxToEditor2Document } from "../import/docx/importDocxToEditor2Document.js";
 import { createEditor2Logger } from "../utils/logger.js";
-import type { CaretBox, InputBox, SelectionBox } from "./editorUiTypes.js";
+import type { CaretBox, InputBox, RevisionBox, SelectionBox } from "./editorUiTypes.js";
 
 interface TableCellLayoutEntry {
   rowIndex: number;
@@ -146,52 +159,48 @@ export interface OasisEditor2AppProps {
 
 const DEFAULT_MAX_INSERTED_IMAGE_WIDTH = 624;
 
-function cloneEditor2State(source: Editor2State): Editor2State {
-  const cloneBlock = (block: typeof source.document.blocks[number]) =>
-    block.type === "paragraph"
-      ? {
-          ...block,
-          runs: block.runs.map((run) => ({ ...run })),
-          style: block.style ? { ...block.style } : undefined,
-          list: block.list ? { ...block.list } : undefined,
-        }
-      : {
-          ...block,
-          rows: block.rows.map((row) => ({
-            ...row,
-            cells: row.cells.map((cell) => ({
-              ...cell,
-              colSpan: cell.colSpan ?? undefined,
-              rowSpan: cell.rowSpan ?? undefined,
-              vMerge: cell.vMerge ?? undefined,
-              blocks: cell.blocks.map((paragraph) => ({
-                ...paragraph,
-                runs: paragraph.runs.map((run) => ({ ...run })),
-                style: paragraph.style ? { ...paragraph.style } : undefined,
-                list: paragraph.list ? { ...paragraph.list } : undefined,
-              })),
+function cloneBlock(block: Editor2BlockNode): Editor2BlockNode {
+  return block.type === "paragraph"
+    ? {
+        ...block,
+        runs: block.runs.map((run) => ({ ...run })),
+        style: block.style ? { ...block.style } : undefined,
+        list: block.list ? { ...block.list } : undefined,
+      }
+    : {
+        ...block,
+        rows: block.rows.map((row) => ({
+          ...row,
+          cells: row.cells.map((cell) => ({
+            ...cell,
+            colSpan: cell.colSpan ?? undefined,
+            rowSpan: cell.rowSpan ?? undefined,
+            vMerge: cell.vMerge ?? undefined,
+            blocks: cell.blocks.map((paragraph) => ({
+              ...paragraph,
+              runs: paragraph.runs.map((run) => ({ ...run })),
+              style: paragraph.style ? { ...paragraph.style } : undefined,
+              list: paragraph.list ? { ...paragraph.list } : undefined,
             })),
           })),
-        };
+        })),
+      };
+}
 
-  const cloneSection = (section: Editor2Section): Editor2Section => ({
+const cloneDocumentBlock = cloneBlock;
+
+function cloneSection(section: Editor2Section): Editor2Section {
+  return {
     ...section,
     blocks: section.blocks.map(cloneBlock),
-    header: section.header?.map((p: Editor2ParagraphNode) => ({
-      ...p,
-      runs: p.runs.map((run: Editor2TextRun) => ({ ...run })),
-      style: p.style ? { ...p.style } : undefined,
-      list: p.list ? { ...p.list } : undefined,
-    })),
-    footer: section.footer?.map((p: Editor2ParagraphNode) => ({
-      ...p,
-      runs: p.runs.map((run: Editor2TextRun) => ({ ...run })),
-      style: p.style ? { ...p.style } : undefined,
-      list: p.list ? { ...p.list } : undefined,
-    })),
-  });
+    header: section.header?.map(cloneBlock),
+    footer: section.footer?.map(cloneBlock),
+  };
+}
 
+function cloneEditor2State(source: Editor2State): Editor2State {
   return {
+    ...source,
     document: {
       ...source.document,
       blocks: source.document.blocks.map(cloneBlock),
@@ -502,6 +511,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   const [undoStack, setUndoStack] = createSignal<Editor2State[]>([]);
   const [redoStack, setRedoStack] = createSignal<Editor2State[]>([]);
   const [selectionBoxes, setSelectionBoxes] = createSignal<SelectionBox[]>([]);
+  const [hoveredRevision, setHoveredRevision] = createSignal<RevisionBox | null>(null);
   const [caretBox, setCaretBox] = createSignal<CaretBox>({
     left: 0,
     top: 0,
@@ -543,40 +553,13 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     { kind: "ordered", label: "1. List", testId: "editor-2-toolbar-list-ordered" },
   ];
 
-  const cloneDocumentBlock = (block: Editor2BlockNode): Editor2BlockNode =>
-    block.type === "paragraph"
-      ? {
-          ...block,
-          runs: block.runs.map((run) => ({ ...run })),
-          style: block.style ? { ...block.style } : undefined,
-          list: block.list ? { ...block.list } : undefined,
-        }
-      : {
-          ...block,
-          rows: block.rows.map((row) => ({
-            ...row,
-            cells: row.cells.map((cell) => ({
-              ...cell,
-              colSpan: cell.colSpan ?? undefined,
-              rowSpan: cell.rowSpan ?? undefined,
-              vMerge: cell.vMerge ?? undefined,
-              blocks: cell.blocks.map((paragraph) => ({
-                ...paragraph,
-                runs: paragraph.runs.map((run) => ({ ...run })),
-                style: paragraph.style ? { ...paragraph.style } : undefined,
-                list: paragraph.list ? { ...paragraph.list } : undefined,
-              })),
-            })),
-          })),
-        };
-
   const cloneState = (source: Editor2State): Editor2State =>
     cloneEditor2State({
       ...source,
       document: {
         ...source.document,
-        blocks: source.document.blocks.map(cloneDocumentBlock),
-        sections: source.document.sections,
+        blocks: source.document.blocks.map(cloneBlock),
+        sections: source.document.sections?.map(cloneSection),
       },
     });
 
@@ -592,9 +575,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     nextSelection: Editor2State["selection"],
   ) => {
     applyState({
+      ...state,
       document: {
         ...state.document,
-        blocks: state.document.blocks.map(cloneDocumentBlock),
+        blocks: state.document.blocks.map(cloneBlock),
+        sections: state.document.sections?.map(cloneSection),
       },
       selection: {
         anchor: { ...nextSelection.anchor },
@@ -607,9 +592,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     current: Editor2State,
     nextSelection: Editor2State["selection"],
   ): Editor2State => ({
+    ...current,
     document: {
       ...current.document,
-      blocks: current.document.blocks.map(cloneDocumentBlock),
+      blocks: current.document.blocks.map(cloneBlock),
+      sections: current.document.sections?.map(cloneSection),
     },
     selection: {
       anchor: { ...nextSelection.anchor },
@@ -867,14 +854,45 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     return canSplitSelectedTableCell(current) || canSplitSelectedTableCellVertically(current);
   };
 
+  const updateBlocksInCurrentSection = (current: Editor2State, blocks: Editor2BlockNode[]): Editor2State => {
+    const activeSectionIndex = getActiveSectionIndex(current);
+    const hasSections = current.document.sections && current.document.sections.length > 0;
+
+    if (hasSections) {
+      const nextSections = [...current.document.sections!];
+      nextSections[activeSectionIndex] = {
+        ...nextSections[activeSectionIndex],
+        blocks,
+      };
+      return {
+        ...current,
+        document: {
+          ...current.document,
+          sections: nextSections,
+        },
+      };
+    }
+
+    return {
+      ...current,
+      document: {
+        ...current.document,
+        blocks,
+      },
+    };
+  };
+
   const mergeSelectedTableCells = (current: Editor2State): Editor2State => {
     const range = resolveHorizontalTableCellRange(current);
     if (!range) {
       return current;
     }
 
-    const blocks = current.document.blocks.map(cloneDocumentBlock);
-    const tableBlock = blocks[range.blockIndex];
+    const activeSectionIndex = getActiveSectionIndex(current);
+    const hasSections = current.document.sections && current.document.sections.length > 0;
+    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
+    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
+    const tableBlock = blocks[range.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -892,7 +910,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     const mergedCell = {
       ...selectedCells[0]!,
       colSpan: selectedCells.reduce((sum, cell) => sum + Math.max(1, cell.colSpan ?? 1), 0),
-      blocks: selectedCells.flatMap((cell) => cell.blocks.map((paragraph) => cloneDocumentBlock(paragraph))) as Editor2ParagraphNode[],
+      blocks: selectedCells.flatMap((cell: any) => cell.blocks.map((paragraph: any) => cloneBlock(paragraph))) as Editor2ParagraphNode[],
     };
 
     row.cells.splice(range.startCellIndex, selectedCells.length, mergedCell);
@@ -902,11 +920,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
+    const nextState = updateBlocksInCurrentSection(current, blocks);
     return {
-      document: {
-        ...current.document,
-        blocks,
-      },
+      ...nextState,
       selection: {
         anchor: paragraphOffsetToPosition(nextParagraph, 0),
         focus: paragraphOffsetToPosition(nextParagraph, 0),
@@ -920,8 +936,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
-    const blocks = current.document.blocks.map(cloneDocumentBlock);
-    const tableBlock = blocks[range.blockIndex];
+    const activeSectionIndex = getActiveSectionIndex(current);
+    const hasSections = current.document.sections && current.document.sections.length > 0;
+    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
+    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
+    const tableBlock = blocks[range.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -949,8 +968,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       ...selectedCells[0]!,
       rowSpan: selectedCells.length,
       vMerge: "restart" as const,
-      blocks: selectedCells.flatMap((cell) =>
-        cell.blocks.map((paragraph) => cloneDocumentBlock(paragraph)),
+      blocks: selectedCells.flatMap((cell: any) =>
+        cell.blocks.map((paragraph: any) => cloneBlock(paragraph)),
       ) as Editor2ParagraphNode[],
     };
     tableBlock.rows[range.startRowIndex]!.cells[range.cellIndex] = mergedCell;
@@ -967,11 +986,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
+    const nextState = updateBlocksInCurrentSection(current, blocks);
     return {
-      document: {
-        ...current.document,
-        blocks,
-      },
+      ...nextState,
       selection: {
         anchor: paragraphOffsetToPosition(nextParagraph, 0),
         focus: paragraphOffsetToPosition(nextParagraph, 0),
@@ -997,8 +1014,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
-    const blocks = current.document.blocks.map(cloneDocumentBlock);
-    const tableBlock = blocks[location.blockIndex];
+    const activeSectionIndex = getActiveSectionIndex(current);
+    const hasSections = current.document.sections && current.document.sections.length > 0;
+    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
+    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
+    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -1028,11 +1048,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
+    const nextState = updateBlocksInCurrentSection(current, blocks);
     return {
-      document: {
-        ...current.document,
-        blocks,
-      },
+      ...nextState,
       selection: {
         anchor: paragraphOffsetToPosition(nextParagraph, 0),
         focus: paragraphOffsetToPosition(nextParagraph, 0),
@@ -1117,7 +1135,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return false;
     }
 
-    const block = current.document.blocks[location.blockIndex];
+    const activeSectionIndex = getActiveSectionIndex(current);
+    const hasSections = current.document.sections && current.document.sections.length > 0;
+    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
+    const block = (section ? section.blocks : current.document.blocks)[location.blockIndex];
     return Boolean(block && block.type === "table");
   };
 
@@ -1127,7 +1148,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return false;
     }
 
-    const block = current.document.blocks[location.blockIndex];
+    const activeSectionIndex = getActiveSectionIndex(current);
+    const hasSections = current.document.sections && current.document.sections.length > 0;
+    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
+    const block = (section ? section.blocks : current.document.blocks)[location.blockIndex];
     if (!block || block.type !== "table") {
       return false;
     }
@@ -1141,8 +1165,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
-    const blocks = current.document.blocks.map(cloneDocumentBlock);
-    const tableBlock = blocks[location.blockIndex];
+    const activeSectionIndex = getActiveSectionIndex(current);
+    const hasSections = current.document.sections && current.document.sections.length > 0;
+    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
+    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
+    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -1264,8 +1291,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
-    const blocks = current.document.blocks.map(cloneDocumentBlock);
-    const tableBlock = blocks[location.blockIndex];
+    const activeSectionIndex = getActiveSectionIndex(current);
+    const hasSections = current.document.sections && current.document.sections.length > 0;
+    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
+    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
+    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -1335,11 +1365,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       };
     }
 
+    const nextState = updateBlocksInCurrentSection(current, blocks);
     return {
-      document: {
-        ...current.document,
-        blocks,
-      },
+      ...nextState,
       selection: {
         anchor: paragraphOffsetToPosition(nextParagraph, 0),
         focus: paragraphOffsetToPosition(nextParagraph, 0),
@@ -1353,8 +1381,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
-    const blocks = current.document.blocks.map(cloneDocumentBlock);
-    const tableBlock = blocks[location.blockIndex];
+    const activeSectionIndex = getActiveSectionIndex(current);
+    const hasSections = current.document.sections && current.document.sections.length > 0;
+    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
+    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
+    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -1452,11 +1483,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       };
     }
 
+    const nextState = updateBlocksInCurrentSection(current, blocks);
     return {
-      document: {
-        ...current.document,
-        blocks,
-      },
+      ...nextState,
       selection: {
         anchor: paragraphOffsetToPosition(nextParagraph, 0),
         focus: paragraphOffsetToPosition(nextParagraph, 0),
@@ -1470,8 +1499,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
-    const blocks = current.document.blocks.map(cloneDocumentBlock);
-    const tableBlock = blocks[location.blockIndex];
+    const activeSectionIndex = getActiveSectionIndex(current);
+    const hasSections = current.document.sections && current.document.sections.length > 0;
+    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
+    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
+    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -1562,11 +1594,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       };
     }
 
+    const nextState = updateBlocksInCurrentSection(current, blocks);
     return {
-      document: {
-        ...current.document,
-        blocks,
-      },
+      ...nextState,
       selection: {
         anchor: paragraphOffsetToPosition(nextParagraph, 0),
         focus: paragraphOffsetToPosition(nextParagraph, 0),
@@ -1580,8 +1610,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
-    const blocks = current.document.blocks.map(cloneDocumentBlock);
-    const tableBlock = blocks[location.blockIndex];
+    const activeSectionIndex = getActiveSectionIndex(current);
+    const hasSections = current.document.sections && current.document.sections.length > 0;
+    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
+    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
+    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -1597,7 +1630,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       {
         ...cell,
         colSpan: 1,
-        blocks: cell.blocks.map((paragraph) => cloneDocumentBlock(paragraph)) as Editor2ParagraphNode[],
+        blocks: cell.blocks.map((paragraph: any) => cloneBlock(paragraph)) as Editor2ParagraphNode[],
       },
       ...Array.from({ length: span - 1 }, () => createEditor2TableCell([createEditor2Paragraph("")])),
     ];
@@ -1609,11 +1642,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
+    const nextState = updateBlocksInCurrentSection(current, blocks);
     return {
-      document: {
-        ...current.document,
-        blocks,
-      },
+      ...nextState,
       selection: {
         anchor: paragraphOffsetToPosition(nextParagraph, 0),
         focus: paragraphOffsetToPosition(nextParagraph, 0),
@@ -1965,6 +1996,44 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     clearPreferredColumn();
     resetTransactionGrouping();
     applySelectionAwareParagraphCommand((current) => toggleParagraphList(current, kind));
+    focusInput();
+  };
+
+  const applyInsertSectionBreakCommand = (breakType: "nextPage" | "continuous") => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyState(insertSectionBreakAtSelection(state, breakType));
+    focusInput();
+  };
+
+  const applyUpdateSectionSettingsCommand = (
+    sectionIndex: number,
+    settings: Partial<Editor2Section>,
+  ) => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyState(updateSectionSettings(state, sectionIndex, settings));
+    focusInput();
+  };
+
+  const applyToggleTrackChangesCommand = () => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyState(toggleTrackChanges(state));
+    focusInput();
+  };
+
+  const applyAcceptRevisionsCommand = () => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyState(acceptRevisionsInSelection(state));
+    focusInput();
+  };
+
+  const applyRejectRevisionsCommand = () => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyState(rejectRevisionsInSelection(state));
     focusInput();
   };
 
@@ -2972,8 +3041,13 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const findParagraphTableLocation = (document: Editor2Document, paragraphId: string) => {
-    for (let blockIndex = 0; blockIndex < document.blocks.length; blockIndex += 1) {
-      const block = document.blocks[blockIndex]!;
+    const activeSectionIndex = getActiveSectionIndex(state);
+    const hasSections = document.sections && document.sections.length > 0;
+    const section = hasSections ? document.sections![activeSectionIndex] : null;
+    const blocks = section ? section.blocks : document.blocks;
+
+    for (let blockIndex = 0; blockIndex < blocks.length; blockIndex += 1) {
+      const block = blocks[blockIndex]!;
       if (block.type !== "table") {
         continue;
       }
@@ -3002,8 +3076,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return edit(current);
     }
 
-    const nextBlocks = current.document.blocks.map(cloneDocumentBlock);
-    const tableBlock = nextBlocks[location.blockIndex];
+    const activeSectionIndex = getActiveSectionIndex(current);
+    const hasSections = current.document.sections && current.document.sections.length > 0;
+    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
+    const nextBlocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
+    const tableBlock = nextBlocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return edit(current);
     }
@@ -3014,6 +3091,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     const tempState: Editor2State = {
+      ...current,
       document: createEditor2Document(targetCell.blocks),
       selection: {
         anchor: { ...current.selection.anchor },
@@ -3027,11 +3105,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
 
     targetCell.blocks.splice(0, targetCell.blocks.length, ...replacementParagraphs);
 
+    const nextState = updateBlocksInCurrentSection(current, nextBlocks);
     return {
-      document: {
-        ...current.document,
-        blocks: nextBlocks,
-      },
+      ...nextState,
       selection: tempResult.selection,
     };
   };
@@ -3520,7 +3596,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     clearPreferredColumn();
     resetTransactionGrouping();
 
-    const applyWithZone = (newState: Editor2State) => {
+    const applyWithZone = (newState: Editor2State, targetPosition?: Editor2Position) => {
       if (isZoneTransition) {
         let updatedDocument = newState.document;
         let activeSectionIndex = state.activeSectionIndex ?? 0;
@@ -3559,14 +3635,16 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             zoneParagraph = createEditor2Paragraph("");
             newHeader = [zoneParagraph];
           } else {
-            zoneParagraph = newHeader[0] ?? null;
+            const firstBlock = newHeader[0];
+            zoneParagraph = firstBlock.type === "paragraph" ? firstBlock : getBlockParagraphs(firstBlock)[0] ?? null;
           }
         } else if (targetZone === "footer") {
           if (!newFooter || newFooter.length === 0) {
             zoneParagraph = createEditor2Paragraph("");
             newFooter = [zoneParagraph];
           } else {
-            zoneParagraph = newFooter[0] ?? null;
+            const firstBlock = newFooter[0];
+            zoneParagraph = firstBlock.type === "paragraph" ? firstBlock : getBlockParagraphs(firstBlock)[0] ?? null;
           }
         }
 
@@ -3583,9 +3661,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           };
         }
 
-        const zonePosition = zoneParagraph
-          ? paragraphOffsetToPosition(zoneParagraph, 0)
-          : newState.selection.anchor;
+        const zonePosition = targetPosition
+          ? targetPosition
+          : zoneParagraph
+            ? paragraphOffsetToPosition(zoneParagraph, 0)
+            : newState.selection.anchor;
 
         applyState({
           ...newState,
@@ -3618,22 +3698,30 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
 
       if (event.shiftKey) {
         dragAnchor = state.selection.anchor;
-        applyWithZone(
-          setSelection(state, {
-            anchor: state.selection.anchor,
-            focus: position,
-          }),
-        );
+        if (isZoneTransition) {
+          applyWithZone(state, position);
+        } else {
+          applyWithZone(
+            setSelection(state, {
+              anchor: state.selection.anchor,
+              focus: position,
+            }),
+          );
+        }
       } else {
         dragAnchor = position;
-        applyWithZone(
-          setSelection(state, {
-            anchor: position,
-            focus: position,
-          }),
-        );
+        if (isZoneTransition) {
+          applyWithZone(state, position);
+        } else {
+          applyWithZone(
+            setSelection(state, {
+              anchor: position,
+              focus: position,
+            }),
+          );
+        }
       }
-    } else {
+    } else if (isZoneTransition) {
       // Zone transition without a paragraph target
       applyWithZone(state);
     }
@@ -3740,14 +3828,16 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             zoneParagraph = createEditor2Paragraph("");
             newHeader = [zoneParagraph];
           } else {
-            zoneParagraph = newHeader[0] ?? null;
+            const firstBlock = newHeader[0];
+            zoneParagraph = firstBlock.type === "paragraph" ? firstBlock : getBlockParagraphs(firstBlock)[0] ?? null;
           }
         } else if (targetZone === "footer") {
           if (!newFooter || newFooter.length === 0) {
             zoneParagraph = createEditor2Paragraph("");
             newFooter = [zoneParagraph];
           } else {
-            zoneParagraph = newFooter[0] ?? null;
+            const firstBlock = newFooter[0];
+            zoneParagraph = firstBlock.type === "paragraph" ? firstBlock : getBlockParagraphs(firstBlock)[0] ?? null;
           }
         }
 
@@ -3833,6 +3923,40 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     focusInput();
   };
 
+  const handleRevisionMouseEnter = (revisionId: string, event: MouseEvent) => {
+    const paragraphs = getParagraphs(state);
+    let foundRevision: Editor2Revision | undefined;
+    for (const p of paragraphs) {
+      for (const run of p.runs) {
+        if (run.revision?.id === revisionId) {
+          foundRevision = run.revision;
+          break;
+        }
+      }
+      if (foundRevision) break;
+    }
+
+    if (!foundRevision) return;
+
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const surfaceRect = surfaceRef?.getBoundingClientRect();
+
+    if (!surfaceRect) return;
+
+    setHoveredRevision({
+      revisionId: foundRevision.id,
+      author: foundRevision.author,
+      date: foundRevision.date,
+      type: foundRevision.type,
+      left: rect.left - surfaceRect.left,
+      top: rect.top - surfaceRect.top,
+    });
+  };
+
+  const handleRevisionMouseLeave = () => {
+    setHoveredRevision(null);
+  };
+
   const onEditorMouseDown = (event: MouseEvent) => {
     event.preventDefault();
     focusInput();
@@ -3847,7 +3971,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         selectionBoxes={() => selectionBoxes()}
         caretBox={() => caretBox()}
         inputBox={() => inputBox()}
+        hoveredRevision={() => hoveredRevision()}
         focused={() => focused()}
+
         viewportHeight={props.viewportHeight}
         class={props.class}
         style={props.style}
@@ -4167,6 +4293,55 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           >
             Split Selection
           </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-table-shading"
+            onClick={() => {
+              const color = prompt("Cell Background Color (e.g. #f1f5f9):", "#f1f5f9");
+              if (color !== null) {
+                applyTransactionalState(
+                  (current) => setTableCellStyleValue(current, "shading", color || null),
+                  { mergeKey: "tableShading" },
+                );
+                focusInput();
+              }
+            }}
+          >
+            Cell Color
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button"
+            data-testid="editor-2-toolbar-table-borders"
+            onClick={() => {
+              applyTransactionalState(
+                (current) =>
+                  setTableCellBorders(current, { width: 1, type: "solid", color: "#64748b" }),
+                { mergeKey: "tableBorders" },
+              );
+              focusInput();
+            }}
+            title="Apply 1pt solid border to selected cells"
+          >
+            Borders
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button"
+            data-testid="editor-2-toolbar-table-no-borders"
+            onClick={() => {
+              applyTransactionalState(
+                (current) =>
+                  setTableCellBorders(current, { width: 0, type: "none", color: "transparent" }),
+                { mergeKey: "tableBorders" },
+              );
+              focusInput();
+            }}
+            title="Remove borders from selected cells"
+          >
+            No Borders
+          </button>
           <details class="oasis-editor-2-table-actions-advanced">
             <summary class="oasis-editor-2-table-actions-summary">Advanced table actions</summary>
             <div class="oasis-editor-2-toolbar-group oasis-editor-2-table-actions-group">
@@ -4404,6 +4579,89 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             type="button"
             class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
             classList={{
+              "oasis-editor-2-tool-button-active":
+                (state.document.sections?.[getActiveSectionIndex(state)] ?? state.document)
+                  .pageSettings?.orientation === "landscape",
+            }}
+            data-testid="editor-2-toolbar-orientation"
+            onClick={() => {
+              const currentSectionIndex = getActiveSectionIndex(state);
+              const section =
+                state.document.sections?.[currentSectionIndex] || state.document;
+              const currentOrientation = section.pageSettings?.orientation || "portrait";
+              const nextOrientation = currentOrientation === "portrait" ? "landscape" : "portrait";
+              applyUpdateSectionSettingsCommand(currentSectionIndex, {
+                pageSettings: {
+                  ...section.pageSettings!,
+                  orientation: nextOrientation,
+                },
+              });
+            }}
+          >
+            Orient
+          </button>
+          <select
+            class="oasis-editor-2-tool-select"
+            data-testid="editor-2-toolbar-margins"
+            onChange={(event) => {
+              const currentSectionIndex = getActiveSectionIndex(state);
+              const section =
+                state.document.sections?.[currentSectionIndex] || state.document;
+              const value = event.currentTarget.value;
+              const margins =
+                value === "narrow"
+                  ? { top: 48, right: 48, bottom: 48, left: 48, header: 24, footer: 24, gutter: 0 }
+                  : { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 };
+              applyUpdateSectionSettingsCommand(currentSectionIndex, {
+                pageSettings: {
+                  ...section.pageSettings!,
+                  margins,
+                },
+              });
+            }}
+          >
+            <option value="normal">Normal Margins</option>
+            <option value="narrow">Narrow Margins</option>
+          </select>
+        </div>
+
+        <div class="oasis-editor-2-toolbar-group">
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            classList={{
+              "oasis-editor-2-tool-button-active": state.trackChangesEnabled,
+            }}
+            data-testid="editor-2-toolbar-track-changes"
+            onClick={() => applyToggleTrackChangesCommand()}
+          >
+            Track
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button"
+            data-testid="editor-2-toolbar-accept-revisions"
+            disabled={selectionCollapsed()}
+            onClick={() => applyAcceptRevisionsCommand()}
+          >
+            Accept
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button"
+            data-testid="editor-2-toolbar-reject-revisions"
+            disabled={selectionCollapsed()}
+            onClick={() => applyRejectRevisionsCommand()}
+          >
+            Reject
+          </button>
+        </div>
+
+        <div class="oasis-editor-2-toolbar-group">
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            classList={{
               "oasis-editor-2-tool-button-active": toolbarStyleState().pageBreakBefore,
             }}
             data-testid="editor-2-toolbar-page-break-before"
@@ -4421,6 +4679,25 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             onClick={() => toggleParagraphFlagCommand("keepWithNext")}
           >
             Keep Next
+          </button>
+        </div>
+
+        <div class="oasis-editor-2-toolbar-group">
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-section-break-next"
+            onClick={() => applyInsertSectionBreakCommand("nextPage")}
+          >
+            Sec Next
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-section-break-continuous"
+            onClick={() => applyInsertSectionBreakCommand("continuous")}
+          >
+            Sec Cont
           </button>
         </div>
 
@@ -4587,6 +4864,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           selectionBoxes={() => selectionBoxes()}
           caretBox={() => caretBox()}
           inputBox={() => inputBox()}
+          hoveredRevision={() => hoveredRevision()}
           focused={() => focused()}
           viewportHeight={props.viewportHeight}
           class={props.class}
@@ -4624,6 +4902,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           onSurfaceMouseDown={handleSurfaceMouseDown}
           onSurfaceDblClick={handleSurfaceDblClick}
           onParagraphMouseDown={handleParagraphMouseDown}
+          onRevisionMouseEnter={handleRevisionMouseEnter}
+          onRevisionMouseLeave={handleRevisionMouseLeave}
           onImageMouseDown={(paragraphId, paragraphOffset, event) => {
             event.preventDefault();
             event.stopPropagation();

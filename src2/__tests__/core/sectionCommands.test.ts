@@ -116,7 +116,7 @@ describe("editor-2 commands with sections", () => {
 
     // Header section was modified
     const newSection = newState.document.sections![0];
-    expect(newSection.header![0].runs[0].text).toBe("Header Edited");
+    expect((newSection.header![0] as Editor2ParagraphNode).runs[0].text).toBe("Header Edited");
     // Body section remains unchanged
     expect((newSection.blocks[0] as Editor2ParagraphNode).runs[0].text).toBe("Body");
   });
@@ -149,8 +149,8 @@ describe("editor-2 commands with sections", () => {
     // Header should now have 2 paragraphs
     const newSection = newState.document.sections![0];
     expect(newSection.header).toHaveLength(2);
-    expect(newSection.header![0].runs[0].text).toBe("Heade");
-    expect(newSection.header![1].runs[0].text).toBe("rLine1");
+    expect((newSection.header![0] as Editor2ParagraphNode).runs[0].text).toBe("Heade");
+    expect((newSection.header![1] as Editor2ParagraphNode).runs[0].text).toBe("rLine1");
     // Body unchanged
     expect((newSection.blocks[0] as Editor2ParagraphNode).runs[0].text).toBe("Body");
   });
@@ -184,7 +184,7 @@ describe("editor-2 commands with sections", () => {
     // headerP2 merged with headerP1 within the header zone
     const newSection = newState.document.sections![0];
     expect(newSection.header).toHaveLength(1);
-    expect(newSection.header![0].runs[0].text).toBe("H1H2");
+    expect((newSection.header![0] as Editor2ParagraphNode).runs[0].text).toBe("H1H2");
     // Body unchanged
     expect((newSection.blocks[0] as Editor2ParagraphNode).runs[0].text).toBe("Body");
   });

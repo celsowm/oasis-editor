@@ -2,6 +2,7 @@ import { Show, type Accessor, type JSX } from "solid-js";
 import { EditorSurface } from "./components/EditorSurface.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
+import { RevisionOverlay } from "./components/RevisionOverlay.js";
 import {
   getDocumentParagraphs,
   getDocumentPageSettings,
@@ -9,7 +10,7 @@ import {
   type Editor2LayoutParagraph,
   type Editor2State,
 } from "../core/model.js";
-import type { CaretBox, InputBox, SelectionBox } from "./editorUiTypes.js";
+import type { CaretBox, InputBox, RevisionBox, SelectionBox } from "./editorUiTypes.js";
 
 export interface OasisEditor2EditorProps {
   state: Accessor<Editor2State>;
@@ -18,6 +19,7 @@ export interface OasisEditor2EditorProps {
   selectionBoxes: Accessor<SelectionBox[]>;
   caretBox: Accessor<CaretBox>;
   inputBox: Accessor<InputBox>;
+  hoveredRevision: Accessor<RevisionBox | null>;
   focused: Accessor<boolean>;
   showCaret: Accessor<boolean>;
   viewportHeight?: number | string;
@@ -48,6 +50,8 @@ export interface OasisEditor2EditorProps {
     paragraphOffset: number,
     event: MouseEvent & { currentTarget: HTMLButtonElement },
   ) => void;
+  onRevisionMouseEnter?: (revisionId: string, event: MouseEvent) => void;
+  onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
   onInputBlur: () => void;
   onInputFocus: () => void;
   onCompositionEnd: (event: CompositionEvent & { currentTarget: HTMLTextAreaElement }) => void;
@@ -104,7 +108,13 @@ export function OasisEditor2Editor(props: OasisEditor2EditorProps) {
           onParagraphMouseDown={props.onParagraphMouseDown}
           onImageMouseDown={props.onImageMouseDown}
           onImageResizeHandleMouseDown={props.onImageResizeHandleMouseDown}
+          onRevisionMouseEnter={props.onRevisionMouseEnter}
+          onRevisionMouseLeave={props.onRevisionMouseLeave}
         />
+
+        <Show when={props.hoveredRevision()}>
+          {(revision) => <RevisionOverlay box={revision()} />}
+        </Show>
 
         <Show when={props.selectionBoxes().length > 0}>
           <SelectionOverlay boxes={props.selectionBoxes()} />

@@ -14,3 +14,12 @@ export interface SelectionBox {
   width: number;
   height: number;
 }
+
+export interface RevisionBox {
+  revisionId: string;
+  author: string;
+  date: number;
+  type: "insert" | "delete";
+  left: number;
+  top: number;
+}
