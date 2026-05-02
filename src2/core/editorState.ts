@@ -13,6 +13,7 @@ import type {
   Editor2TextRun,
   Editor2TextStyle,
   Editor2ImageRunData,
+  Editor2NamedStyle,
 } from "./model.js";
 import {
   DEFAULT_EDITOR2_PAGE_SETTINGS,
@@ -131,10 +132,75 @@ export function createEditor2Table(rows: Editor2TableRowNode[]): Editor2TableNod
   return table;
 }
 
+export const DEFAULT_EDITOR2_STYLES: Record<string, Editor2NamedStyle> = {
+  normal: {
+    id: "normal",
+    name: "Normal",
+    type: "paragraph",
+    paragraphStyle: {
+      spacingAfter: 8,
+      lineHeight: 1.15,
+    },
+    textStyle: {
+      fontFamily: "Calibri, sans-serif",
+      fontSize: 15,
+    },
+  },
+  heading1: {
+    id: "heading1",
+    name: "Heading 1",
+    type: "paragraph",
+    basedOn: "normal",
+    nextStyle: "normal",
+    paragraphStyle: {
+      spacingBefore: 24,
+      spacingAfter: 0,
+    },
+    textStyle: {
+      fontFamily: "Calibri Light, sans-serif",
+      fontSize: 27,
+      color: "#2e74b5",
+    },
+  },
+  heading2: {
+    id: "heading2",
+    name: "Heading 2",
+    type: "paragraph",
+    basedOn: "normal",
+    nextStyle: "normal",
+    paragraphStyle: {
+      spacingBefore: 13,
+      spacingAfter: 0,
+    },
+    textStyle: {
+      fontFamily: "Calibri Light, sans-serif",
+      fontSize: 17,
+      color: "#2e74b5",
+    },
+  },
+  heading3: {
+    id: "heading3",
+    name: "Heading 3",
+    type: "paragraph",
+    basedOn: "normal",
+    nextStyle: "normal",
+    paragraphStyle: {
+      spacingBefore: 13,
+      spacingAfter: 0,
+    },
+    textStyle: {
+      fontFamily: "Calibri Light, sans-serif",
+      fontSize: 16,
+      color: "#1f4d78",
+    },
+  },
+};
+
 export function createEditor2Document(
   blocks: Editor2BlockNode[],
   pageSettings?: Editor2PageSettings,
   sections?: Editor2Section[],
+  styles?: Record<string, Editor2NamedStyle>,
 ): Editor2Document {
   const normalizedPageSettings = normalizePageSettings(
     pageSettings
@@ -156,6 +222,7 @@ export function createEditor2Document(
     blocks,
     pageSettings: normalizedPageSettings,
     sections: sections ?? undefined,
+    styles: styles ?? { ...DEFAULT_EDITOR2_STYLES },
   };
   nextDocumentId += 1;
   return document;

@@ -419,9 +419,9 @@ function buildNumberingXml(
   const abstractNums = definitions
     .map(({ kind, level, abstractNumId }) => {
       const format = kind === "bullet" ? "bullet" : "decimal";
-      const levelText = kind === "bullet" ? "•" : `%${level + 1}.`;
+      const levelText = kind === "bullet" ? "\uF0B7" : `%${level + 1}.`;
       const runFonts =
-        kind === "bullet" ? '<w:rPr><w:rFonts w:ascii="Symbol" w:hAnsi="Symbol"/></w:rPr>' : "";
+        kind === "bullet" ? '<w:rPr><w:rFonts w:ascii="Symbol" w:hAnsi="Symbol" w:hint="default"/></w:rPr>' : "";
 
       return `<w:abstractNum w:abstractNumId="${abstractNumId}"><w:lvl w:ilvl="${level}"><w:start w:val="1"/><w:numFmt w:val="${format}"/><w:lvlText w:val="${escapeXml(levelText)}"/><w:lvlJc w:val="left"/>${runFonts}</w:lvl></w:abstractNum>`;
     })

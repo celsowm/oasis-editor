@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, Show, type JSX } from "solid-js";
+import { createEffect, createSignal, onCleanup, Show, For, type JSX } from "solid-js";
 import { createStore } from "solid-js/store";
 import { OasisEditor2Editor } from "./OasisEditor2Editor.js";
 import { getCaretSlotRects } from "./caretGeometry.js";
@@ -56,8 +56,11 @@ import {
   outdentParagraphList,
   parseEditor2ClipboardHtml,
   setParagraphStyle,
+  setParagraphNamedStyle,
   setLinkAtSelection,
   setTableCellStyleValue,
+  setTableStyleValue,
+  setTableCellWidth,
   setTableCellBorders,
   toggleTrackChanges,
   acceptRevision,
@@ -67,6 +70,8 @@ import {
   setSelectedImageAlt,
   setSelection,
   splitListItemAtSelection,
+  setParagraphListFormat,
+  setParagraphListStartAt,
   setTextStyleValue,
   serializeEditor2SelectionToHtml,
   splitBlockAtSelection,
@@ -95,6 +100,8 @@ import {
   type Editor2TableNode,
   type Editor2TableRowNode,
   type Editor2TextRun,
+  type Editor2BorderStyle,
+  type Editor2NamedStyle,
   getParagraphLength,
   getParagraphs,
   getDocumentParagraphs,
@@ -1999,10 +2006,33 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     focusInput();
   };
 
+  const handleListFormatChange = (format: Editor2ParagraphListStyle["format"]) => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applySelectionAwareParagraphCommand((current) => setParagraphListFormat(current, format));
+    focusInput();
+  };
+
+  const handleListStartAtChange = (startAt: number | null) => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applySelectionAwareParagraphCommand((current) => setParagraphListStartAt(current, startAt));
+    focusInput();
+  };
+
   const applyInsertSectionBreakCommand = (breakType: "nextPage" | "continuous") => {
     clearPreferredColumn();
     resetTransactionGrouping();
     applyState(insertSectionBreakAtSelection(state, breakType));
+    focusInput();
+  };
+
+  const handleStyleChange = (styleId: string) => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applySelectionAwareParagraphCommand((current) =>
+      setParagraphNamedStyle(current, styleId || null),
+    );
     focusInput();
   };
 
@@ -4342,6 +4372,82 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           >
             No Borders
           </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-table-width-100"
+            onClick={() => {
+              applyTransactionalState(
+                (current) => setTableStyleValue(current, "width", "100%"),
+                { mergeKey: "tableWidth" },
+              );
+              focusInput();
+            }}
+          >
+            Table 100%
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button"
+            data-testid="editor-2-toolbar-table-align-left"
+            onClick={() => {
+              applyTransactionalState(
+                (current) => setTableStyleValue(current, "align", "left"),
+                { mergeKey: "tableAlign" },
+              );
+              focusInput();
+            }}
+            title="Align table to the left"
+          >
+            T-Left
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button"
+            data-testid="editor-2-toolbar-table-align-center"
+            onClick={() => {
+              applyTransactionalState(
+                (current) => setTableStyleValue(current, "align", "center"),
+                { mergeKey: "tableAlign" },
+              );
+              focusInput();
+            }}
+            title="Align table to the center"
+          >
+            T-Center
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button"
+            data-testid="editor-2-toolbar-table-align-right"
+            onClick={() => {
+              applyTransactionalState(
+                (current) => setTableStyleValue(current, "align", "right"),
+                { mergeKey: "tableAlign" },
+              );
+              focusInput();
+            }}
+            title="Align table to the right"
+          >
+            T-Right
+          </button>
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
+            data-testid="editor-2-toolbar-table-cell-width"
+            onClick={() => {
+              const width = prompt("Cell Width (e.g. 100pt or 33%):", "");
+              if (width !== null) {
+                applyTransactionalState(
+                  (current) => setTableCellWidth(current, width || null),
+                  { mergeKey: "tableCellWidth" },
+                );
+                focusInput();
+              }
+            }}
+          >
+            Cell Width
+          </button>
           <details class="oasis-editor-2-table-actions-advanced">
             <summary class="oasis-editor-2-table-actions-summary">Advanced table actions</summary>
             <div class="oasis-editor-2-toolbar-group oasis-editor-2-table-actions-group">
@@ -4526,6 +4632,19 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           >
             Unlink
           </button>
+          
+          <select
+            class="oasis-editor-2-tool-select oasis-editor-2-tool-select-wide"
+            data-testid="editor-2-toolbar-style"
+            value={toolbarStyleState().styleId || "normal"}
+            onChange={(e) => handleStyleChange(e.currentTarget.value)}
+            title="Paragraph Style"
+          >
+            <For each={Object.values(state.document.styles ?? {})}>
+              {(style) => <option value={style.id}>{style.name}</option>}
+            </For>
+          </select>
+
           {booleanButtons.map((button) => (
             <button
               type="button"
@@ -4572,6 +4691,34 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
               {button.label}
             </button>
           ))}
+          
+          <select
+            class="oasis-editor-2-tool-select"
+            data-testid="editor-2-toolbar-list-format"
+            onChange={(e) => handleListFormatChange(e.currentTarget.value as any)}
+            title="Change list numbering format"
+          >
+            <option value="decimal">1, 2, 3</option>
+            <option value="lowerLetter">a, b, c</option>
+            <option value="upperLetter">A, B, C</option>
+            <option value="lowerRoman">i, ii, iii</option>
+            <option value="upperRoman">I, II, III</option>
+            <option value="bullet">Bullet</option>
+          </select>
+
+          <label class="oasis-editor-2-tool-metric">
+            <span>Start</span>
+            <input
+              type="number"
+              class="oasis-editor-2-tool-number"
+              data-testid="editor-2-toolbar-list-start-at"
+              min="1"
+              step="1"
+              placeholder="1"
+              onChange={(e) => handleListStartAtChange(e.currentTarget.value ? Number(e.currentTarget.value) : null)}
+              title="Start numbering at"
+            />
+          </label>
         </div>
 
         <div class="oasis-editor-2-toolbar-group">
@@ -4853,6 +5000,59 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
               }
             />
           </label>
+
+          <label class="oasis-editor-2-tool-metric">
+            <span>Hang</span>
+            <input
+              type="number"
+              class="oasis-editor-2-tool-number"
+              data-testid="editor-2-toolbar-indent-hanging"
+              min="0"
+              step="1"
+              value={toolbarStyleState().indentHanging}
+              onChange={(event) =>
+                applyParagraphStyleCommand(
+                  "indentHanging",
+                  event.currentTarget.value ? Number(event.currentTarget.value) : null,
+                )
+              }
+            />
+          </label>
+
+          <label class="oasis-editor-2-tool-color">
+            <span>Para BG</span>
+            <input
+              type="color"
+              class="oasis-editor-2-tool-color-input"
+              data-testid="editor-2-toolbar-paragraph-shading"
+              value={toolbarStyleState().shading || "#ffffff"}
+              onInput={(event) =>
+                applyParagraphStyleCommand("shading", event.currentTarget.value)
+              }
+            />
+          </label>
+
+          <button
+            type="button"
+            class="oasis-editor-2-tool-button"
+            data-testid="editor-2-toolbar-paragraph-borders"
+            onClick={() => {
+              const border: Editor2BorderStyle = { width: 1, type: "solid", color: "#000000" };
+              applyTransactionalState(
+                (current) => {
+                  let next = setParagraphStyle(current, "borderTop", border);
+                  next = setParagraphStyle(next, "borderRight", border);
+                  next = setParagraphStyle(next, "borderBottom", border);
+                  next = setParagraphStyle(next, "borderLeft", border);
+                  return next;
+                },
+                { mergeKey: "paraBorders" },
+              );
+              focusInput();
+            }}
+          >
+            Para Borders
+          </button>
         </div>
       </section>
 

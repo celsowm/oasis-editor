@@ -14,6 +14,10 @@ import {
   type Editor2TableNode,
   type Editor2TextStyle,
   type Editor2BorderStyle,
+  type Editor2NamedStyle,
+  type Editor2TabStop,
+  resolveNamedParagraphStyle,
+  resolveNamedTextStyle,
 } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
 import { projectDocumentLayout, projectParagraphLayout } from "../layoutProjection.js";
@@ -42,33 +46,53 @@ interface EditorSurfaceProps {
   onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
 }
 
-function paragraphStyleToCss(style?: Editor2ParagraphStyle): Record<string, string> | undefined {
-  if (!style) {
-    return undefined;
-  }
+function getBorderStyle(border?: Editor2BorderStyle): string | undefined {
+  if (!border) return undefined;
+  if (border.type === "none") return "none";
+  return `${border.width}pt ${border.type} ${border.color}`;
+}
+
+function paragraphStyleToCss(
+  style: Editor2ParagraphStyle | undefined,
+  styles: Record<string, Editor2NamedStyle> | undefined,
+): Record<string, string> | undefined {
+  const resolved = resolveNamedParagraphStyle(style?.styleId, styles);
+  const merged = { ...resolved, ...(style ?? {}) };
 
   const css: Record<string, string> = {};
 
-  if (style.align) {
-    css["text-align"] = style.align;
+  if (merged.align) {
+    css["text-align"] = merged.align;
   }
-  if (style.lineHeight !== undefined && style.lineHeight !== null) {
-    css["line-height"] = `${style.lineHeight}`;
+  if (merged.lineHeight !== undefined && merged.lineHeight !== null) {
+    css["line-height"] = `${merged.lineHeight}`;
   }
-  if (style.spacingBefore !== undefined && style.spacingBefore !== null) {
-    css["padding-top"] = `${style.spacingBefore}px`;
+  if (merged.spacingBefore !== undefined && merged.spacingBefore !== null) {
+    css["padding-top"] = `${merged.spacingBefore}px`;
   }
-  if (style.spacingAfter !== undefined && style.spacingAfter !== null) {
-    css["padding-bottom"] = `${style.spacingAfter}px`;
+  if (merged.spacingAfter !== undefined && merged.spacingAfter !== null) {
+    css["padding-bottom"] = `${merged.spacingAfter}px`;
   }
-  if (style.indentLeft !== undefined && style.indentLeft !== null) {
-    css["padding-left"] = `${style.indentLeft}px`;
+
+  if (merged.shading) {
+    css["background-color"] = merged.shading;
   }
-  if (style.indentRight !== undefined && style.indentRight !== null) {
-    css["padding-right"] = `${style.indentRight}px`;
+  if (merged.borderTop) css["border-top"] = getBorderStyle(merged.borderTop)!;
+  if (merged.borderRight) css["border-right"] = getBorderStyle(merged.borderRight)!;
+  if (merged.borderBottom) css["border-bottom"] = getBorderStyle(merged.borderBottom)!;
+  if (merged.borderLeft) css["border-left"] = getBorderStyle(merged.borderLeft)!;
+  
+  const indentLeft = (merged.indentLeft ?? 0) + (merged.indentHanging ?? 0);
+  const textIndent = (merged.indentFirstLine ?? 0) - (merged.indentHanging ?? 0);
+
+  if (indentLeft !== 0) {
+    css["padding-left"] = `${indentLeft}px`;
   }
-  if (style.indentFirstLine !== undefined && style.indentFirstLine !== null) {
-    css["text-indent"] = `${style.indentFirstLine}px`;
+  if (textIndent !== 0) {
+    css["text-indent"] = `${textIndent}px`;
+  }
+  if (merged.indentRight !== undefined && merged.indentRight !== null) {
+    css["padding-right"] = `${merged.indentRight}px`;
   }
 
   return Object.keys(css).length > 0 ? css : undefined;
@@ -76,14 +100,50 @@ function paragraphStyleToCss(style?: Editor2ParagraphStyle): Record<string, stri
 
 function getParagraphRenderStyle(
   paragraph: Editor2ParagraphNode,
+  state: Editor2State,
 ): Record<string, string> | undefined {
-  const css = paragraphStyleToCss(paragraph.style) ?? {};
+  const css = paragraphStyleToCss(paragraph.style, state.document.styles) ?? {};
   if (paragraph.list) {
     css["--list-level"] = String(Math.max(0, paragraph.list.level ?? 0));
     css["margin-left"] = `${Math.max(0, paragraph.list.level ?? 0) * 28}px`;
   }
 
   return Object.keys(css).length > 0 ? css : undefined;
+}
+
+function numberToLowerLetter(n: number): string {
+  let result = "";
+  while (n > 0) {
+    const remainder = (n - 1) % 26;
+    result = String.fromCharCode(97 + remainder) + result;
+    n = Math.floor((n - 1) / 26);
+  }
+  return result;
+}
+
+function numberToUpperLetter(n: number): string {
+  return numberToLowerLetter(n).toUpperCase();
+}
+
+function numberToLowerRoman(n: number): string {
+  const roman: Record<string, number> = {
+    m: 1000, cm: 900, d: 500, cd: 400,
+    c: 100, xc: 90, l: 50, xl: 40,
+    x: 10, ix: 9, v: 5, iv: 4,
+    i: 1
+  };
+  let result = "";
+  for (const key in roman) {
+    while (n >= roman[key]) {
+      result += key;
+      n -= roman[key];
+    }
+  }
+  return result;
+}
+
+function numberToUpperRoman(n: number): string {
+  return numberToLowerRoman(n).toUpperCase();
 }
 
 function buildParagraphListMarkers(paragraphs: Editor2ParagraphNode[]): Map<string, string> {
@@ -99,76 +159,111 @@ function buildParagraphListMarkers(paragraphs: Editor2ParagraphNode[]): Map<stri
       continue;
     }
 
-    if (list.kind === "bullet") {
+    const level = Math.max(0, list.level ?? 0);
+
+    if (list.kind === "bullet" || list.format === "bullet") {
       orderedCounters = [];
       previousList = list;
       markers.set(paragraph.id, "\u2022");
       continue;
     }
 
-    const level = Math.max(0, list.level ?? 0);
     if (previousList?.kind !== "ordered") {
       orderedCounters = [];
     }
+    
+    // Handle startAt
+    if (list.startAt !== undefined && (orderedCounters[level] === undefined || previousList?.level !== level)) {
+      orderedCounters[level] = list.startAt - 1;
+    }
+
     orderedCounters = orderedCounters.slice(0, level + 1);
     orderedCounters[level] = (orderedCounters[level] ?? 0) + 1;
-    markers.set(paragraph.id, `${orderedCounters[level]}.`);
+    
+    const count = orderedCounters[level];
+    const format = list.format ?? "decimal";
+    let marker = `${count}.`;
+
+    if (format === "lowerLetter") marker = `${numberToLowerLetter(count)}.`;
+    else if (format === "upperLetter") marker = `${numberToUpperLetter(count)}.`;
+    else if (format === "lowerRoman") marker = `${numberToLowerRoman(count)}.`;
+    else if (format === "upperRoman") marker = `${numberToUpperRoman(count)}.`;
+
+    markers.set(paragraph.id, marker);
     previousList = list;
   }
 
   return markers;
 }
 
-function runStyleToCss(style?: Editor2TextStyle): Record<string, string> | undefined {
-  if (!style) {
-    return undefined;
-  }
+function runStyleToCss(
+  style: Editor2TextStyle | undefined,
+  styles: Record<string, Editor2NamedStyle> | undefined,
+): Record<string, string> | undefined {
+  const resolved = resolveNamedTextStyle(style?.styleId, styles);
+  const merged = { ...resolved, ...(style ?? {}) };
 
   const css: Record<string, string> = {};
   const textDecorations: string[] = [];
 
-  if (style.bold) {
+  if (merged.bold) {
     css["font-weight"] = "700";
   }
-  if (style.italic) {
+  if (merged.italic) {
     css["font-style"] = "italic";
   }
-  if (style.underline) {
+  if (merged.underline) {
     textDecorations.push("underline");
   }
-  if (style.strike) {
+  if (merged.strike) {
     textDecorations.push("line-through");
   }
   if (textDecorations.length > 0) {
     css["text-decoration"] = textDecorations.join(" ");
   }
-  if (style.superscript) {
+  if (merged.superscript) {
     css["vertical-align"] = "super";
     css["font-size"] = "0.75em";
-  } else if (style.subscript) {
+  } else if (merged.subscript) {
     css["vertical-align"] = "sub";
     css["font-size"] = "0.75em";
   }
-  if (style.fontFamily) {
-    css["font-family"] = style.fontFamily;
+  if (merged.fontFamily) {
+    css["font-family"] = merged.fontFamily;
   }
-  if (style.fontSize !== undefined && style.fontSize !== null) {
-    css["font-size"] = `${style.fontSize}px`;
+  if (merged.fontSize !== undefined && merged.fontSize !== null) {
+    css["font-size"] = `${merged.fontSize}px`;
   }
-  if (style.color) {
-    css.color = style.color;
-  } else if (style.link) {
+  if (merged.color) {
+    css.color = merged.color;
+  } else if (merged.link) {
     css.color = "#1d4ed8";
   }
-  if (style.highlight) {
-    css["background-color"] = style.highlight;
+  if (merged.highlight) {
+    css["background-color"] = merged.highlight;
   }
-  if (style.link && !style.underline) {
+  if (merged.link && !merged.underline) {
     textDecorations.unshift("underline");
     css["text-decoration"] = textDecorations.join(" ");
   }
 
   return Object.keys(css).length > 0 ? css : undefined;
+}
+
+function resolveNextTabStop(currentX: number, tabs: Editor2TabStop[] | undefined | null): number {
+  const defaultTabInterval = 36; // 0.5 inch in pt
+  
+  if (tabs && tabs.length > 0) {
+    const sortedTabs = [...tabs].sort((a, b) => a.position - b.position);
+    for (const tab of sortedTabs) {
+      if (tab.position > currentX) {
+        return tab.position;
+      }
+    }
+  }
+
+  // Fallback to default tab stops
+  return Math.ceil((currentX + 1) / defaultTabInterval) * defaultTabInterval;
 }
 
 function renderParagraph(
@@ -230,6 +325,9 @@ function renderParagraph(
     return true;
   };
 
+  const resolvedParagraphStyle = () => resolveNamedParagraphStyle(paragraph.style?.styleId, state.document.styles);
+  const effectiveTabs = () => paragraph.style?.tabs ?? resolvedParagraphStyle()?.tabs;
+
   return (
     <p
       class="oasis-editor-2-block"
@@ -240,7 +338,7 @@ function renderParagraph(
       data-start-offset={paragraphLayout.startOffset ?? 0}
       data-end-offset={paragraphLayout.endOffset ?? chars.length}
       data-testid={testId}
-      style={getParagraphRenderStyle(paragraph)}
+      style={getParagraphRenderStyle(paragraph, state)}
       onMouseDown={interactive ? (event) => onParagraphMouseDown(paragraph.id, event) : undefined}
     >
       <Show when={paragraph.list}>
@@ -277,7 +375,7 @@ function renderParagraph(
                       }}
                       data-run-id={fragment.runId}
                       data-testid="editor-2-run"
-                      style={runStyleToCss(fragment.styles)}
+                      style={runStyleToCss(fragment.styles, state.document.styles)}
                       onMouseEnter={
                         interactive && fragment.revision
                           ? (event) => onRevisionMouseEnter?.(fragment.revision!.id, event)
@@ -295,17 +393,32 @@ function renderParagraph(
                           (() => {
                             const imageSelected = () =>
                               Boolean(fragment.image) && isCharSelected(char.paragraphOffset);
+                            const slot = () => line.slots.find(s => s.offset === char.paragraphOffset);
+                            const tabWidth = () => {
+                              if (char.char !== "\t") return 0;
+                              const currentX = slot()?.left ?? 0;
+                              const nextTabPos = resolveNextTabStop(currentX, effectiveTabs());
+                              return Math.max(0, nextTabPos - currentX);
+                            };
+
                             return (
                               <span
                                 classList={{
                                   "oasis-editor-2-char": true,
                                   "oasis-editor-2-char-selected": isCharSelected(char.paragraphOffset),
                                   "oasis-editor-2-image-char": Boolean(fragment.image),
+                                  "oasis-editor-2-tab-char": char.char === "\t",
                                 }}
                                 data-char-index={char.paragraphOffset}
                                 data-run-id={fragment.runId}
                                 data-run-offset={char.runOffset}
                                 data-testid="editor-2-char"
+                                style={char.char === "\t" ? {
+                                  display: "inline-block",
+                                  width: `${tabWidth()}pt`,
+                                  overflow: "hidden",
+                                  "white-space": "pre",
+                                } : undefined}
                               >
                                 {fragment.image ? (
                                   <span
@@ -350,7 +463,7 @@ function renderParagraph(
                                     </Show>
                                   </span>
                                 ) : (
-                                  char.char
+                                  char.char === "\t" ? "\u00A0" : char.char
                                 )}
                               </span>
                             );
@@ -392,10 +505,10 @@ function renderParagraph(
   );
 }
 
-function getBorderStyle(border?: Editor2BorderStyle): string | undefined {
-  if (!border) return undefined;
-  if (border.type === "none") return "none";
-  return `${border.width}pt ${border.type} ${border.color}`;
+function formatDimension(dim?: number | string): string | undefined {
+  if (dim === undefined) return undefined;
+  if (typeof dim === "number") return `${dim}pt`;
+  return dim;
 }
 
 function renderTable(
@@ -435,6 +548,28 @@ function renderTable(
     })),
   ];
 
+  const getTableStyle = () => {
+    const s: Record<string, string> = {};
+    if (table.style?.width) {
+      s.width = formatDimension(table.style.width)!;
+    }
+    if (table.style?.align) {
+      if (table.style.align === "center") {
+        s["margin-left"] = "auto";
+        s["margin-right"] = "auto";
+      } else if (table.style.align === "right") {
+        s["margin-left"] = "auto";
+        s["margin-right"] = "0";
+      } else {
+        s["margin-left"] = table.style.indentLeft !== undefined ? `${table.style.indentLeft}pt` : "0";
+        s["margin-right"] = "auto";
+      }
+    } else if (table.style?.indentLeft !== undefined) {
+      s["margin-left"] = `${table.style.indentLeft}pt`;
+    }
+    return s;
+  };
+
   return (
     <div
       class="oasis-editor-2-table-block"
@@ -443,7 +578,11 @@ function renderTable(
       data-source-block-id={table.id}
       data-testid="editor-2-table"
     >
-      <table class="oasis-editor-2-table-grid" data-testid="editor-2-table-grid">
+      <table
+        class="oasis-editor-2-table-grid"
+        data-testid="editor-2-table-grid"
+        style={getTableStyle()}
+      >
         <tbody>
           <For each={renderedRows}>
             {(renderedRow) => (
@@ -467,6 +606,7 @@ function renderTable(
                         style={{
                           "background-color": cell.style?.shading,
                           "vertical-align": cell.style?.verticalAlign,
+                          "width": formatDimension(cell.style?.width),
                           "padding": cell.style?.padding !== undefined ? `${cell.style.padding}pt` : undefined,
                           "border-top": getBorderStyle(cell.style?.borderTop),
                           "border-right": getBorderStyle(cell.style?.borderRight),

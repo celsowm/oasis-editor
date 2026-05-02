@@ -507,6 +507,11 @@
   display: inline-block;
 }
 
+.oasis-editor-2-tab-char {
+  display: inline-block;
+  user-select: none;
+}
+
 .oasis-editor-2-image-inline {
   position: relative;
   display: inline-block;

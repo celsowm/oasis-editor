@@ -1,4 +1,5 @@
 export interface Editor2TextStyle {
+  styleId?: string; // ID of the named character style
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
@@ -12,7 +13,14 @@ export interface Editor2TextStyle {
   link?: string | null;
 }
 
+export interface Editor2TabStop {
+  position: number; // in pt
+  type: "left" | "center" | "right" | "decimal" | "bar" | "clear";
+  leader?: "none" | "dot" | "hyphen" | "underscore" | "heavy" | "middleDot";
+}
+
 export interface Editor2ParagraphStyle {
+  styleId?: string; // ID of the named paragraph style (e.g., "Heading1")
   align?: "left" | "center" | "right" | "justify";
   spacingBefore?: number | null;
   spacingAfter?: number | null;
@@ -20,13 +28,32 @@ export interface Editor2ParagraphStyle {
   indentLeft?: number | null;
   indentRight?: number | null;
   indentFirstLine?: number | null;
+  indentHanging?: number | null;
+  shading?: string | null; // background color
+  borderTop?: Editor2BorderStyle | null;
+  borderRight?: Editor2BorderStyle | null;
+  borderBottom?: Editor2BorderStyle | null;
+  borderLeft?: Editor2BorderStyle | null;
+  tabs?: Editor2TabStop[] | null;
   pageBreakBefore?: boolean;
   keepWithNext?: boolean;
+}
+
+export interface Editor2NamedStyle {
+  id: string;
+  name: string;
+  type: "paragraph" | "character";
+  basedOn?: string; // ID of the parent style
+  nextStyle?: string; // ID of the style for the next paragraph
+  paragraphStyle?: Editor2ParagraphStyle;
+  textStyle?: Editor2TextStyle;
 }
 
 export interface Editor2ParagraphListStyle {
   kind: "bullet" | "ordered";
   level?: number;
+  format?: "decimal" | "lowerLetter" | "upperLetter" | "lowerRoman" | "upperRoman" | "bullet";
+  startAt?: number;
 }
 
 export interface Editor2ImageRunData {
@@ -72,6 +99,7 @@ export interface Editor2BorderStyle {
 
 export interface Editor2TableCellStyle {
   shading?: string; // background color (e.g., #f0f0f0)
+  width?: number | string; // width in pt or percentage
   borderTop?: Editor2BorderStyle;
   borderRight?: Editor2BorderStyle;
   borderBottom?: Editor2BorderStyle;
@@ -95,10 +123,17 @@ export interface Editor2TableRowNode {
   isHeader?: boolean;
 }
 
+export interface Editor2TableStyle {
+  width?: number | string; // table width in pt or percentage
+  align?: "left" | "center" | "right";
+  indentLeft?: number; // pt (tblInd)
+}
+
 export interface Editor2TableNode {
   id: string;
   type: "table";
   rows: Editor2TableRowNode[];
+  style?: Editor2TableStyle;
 }
 
 export type Editor2BlockNode = Editor2ParagraphNode | Editor2TableNode;
@@ -134,6 +169,41 @@ export interface Editor2Document {
   blocks: Editor2BlockNode[];
   pageSettings?: Editor2PageSettings;
   sections?: Editor2Section[];
+  styles?: Record<string, Editor2NamedStyle>;
+}
+
+export function resolveNamedTextStyle(
+  styleId: string | undefined,
+  styles: Record<string, Editor2NamedStyle> | undefined,
+): Editor2TextStyle {
+  if (!styleId || !styles || !styles[styleId]) {
+    return {};
+  }
+
+  const namedStyle = styles[styleId];
+  const baseStyle = namedStyle.basedOn ? resolveNamedTextStyle(namedStyle.basedOn, styles) : {};
+  
+  return {
+    ...baseStyle,
+    ...(namedStyle.textStyle ?? {}),
+  };
+}
+
+export function resolveNamedParagraphStyle(
+  styleId: string | undefined,
+  styles: Record<string, Editor2NamedStyle> | undefined,
+): Editor2ParagraphStyle {
+  if (!styleId || !styles || !styles[styleId]) {
+    return {};
+  }
+
+  const namedStyle = styles[styleId];
+  const baseStyle = namedStyle.basedOn ? resolveNamedParagraphStyle(namedStyle.basedOn, styles) : {};
+
+  return {
+    ...baseStyle,
+    ...(namedStyle.paragraphStyle ?? {}),
+  };
 }
 
 export interface Editor2Position {

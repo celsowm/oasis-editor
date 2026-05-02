@@ -19,6 +19,7 @@ export type BooleanStyleKey =
 
 export type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
 export type ParagraphStyleKey =
+  | "styleId"
   | "align"
   | "spacingBefore"
   | "spacingAfter"
@@ -26,6 +27,13 @@ export type ParagraphStyleKey =
   | "indentLeft"
   | "indentRight"
   | "indentFirstLine"
+  | "indentHanging"
+  | "shading"
+  | "tabs"
+  | "borderTop"
+  | "borderRight"
+  | "borderBottom"
+  | "borderLeft"
   | "pageBreakBefore"
   | "keepWithNext";
 
@@ -41,12 +49,15 @@ export interface ToolbarStyleState {
   color: string;
   highlight: string;
   link: string;
+  styleId: string;
   align: string;
   lineHeight: string;
   spacingBefore: string;
   spacingAfter: string;
   indentLeft: string;
   indentFirstLine: string;
+  indentHanging: string;
+  shading: string;
   listKind: string;
   pageBreakBefore: boolean;
   keepWithNext: boolean;
@@ -214,12 +225,15 @@ export function getToolbarStyleState(state: Editor2State): ToolbarStyleState {
     color: resolveUniformStyleValue(styles, "color"),
     highlight: resolveUniformStyleValue(styles, "highlight"),
     link: resolveUniformStyleValue(styles, "link"),
+    styleId: resolveUniformParagraphStyleValue(paragraphStyles, "styleId"),
     align: resolveUniformParagraphStyleValue(paragraphStyles, "align"),
     lineHeight: resolveUniformParagraphStyleValue(paragraphStyles, "lineHeight"),
     spacingBefore: resolveUniformParagraphStyleValue(paragraphStyles, "spacingBefore"),
     spacingAfter: resolveUniformParagraphStyleValue(paragraphStyles, "spacingAfter"),
     indentLeft: resolveUniformParagraphStyleValue(paragraphStyles, "indentLeft"),
     indentFirstLine: resolveUniformParagraphStyleValue(paragraphStyles, "indentFirstLine"),
+    indentHanging: resolveUniformParagraphStyleValue(paragraphStyles, "indentHanging"),
+    shading: resolveUniformParagraphStyleValue(paragraphStyles, "shading"),
     listKind: resolveUniformListKind(selectedParagraphs),
     pageBreakBefore: resolveUniformParagraphFlag(paragraphStyles, "pageBreakBefore"),
     keepWithNext: resolveUniformParagraphFlag(paragraphStyles, "keepWithNext"),

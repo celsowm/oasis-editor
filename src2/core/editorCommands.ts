@@ -13,6 +13,9 @@ import type {
   Editor2TableCellStyle,
   Editor2BorderStyle,
   Editor2TableCellNode,
+  Editor2TableNode,
+  Editor2TableStyle,
+  Editor2TabStop,
 } from "./model.js";
 import {
   getBlockParagraphs,
@@ -52,6 +55,7 @@ type ToggleableTextStyleKey =
 
 type ValueTextStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
 type ValueParagraphStyleKey =
+  | "styleId"
   | "align"
   | "spacingBefore"
   | "spacingAfter"
@@ -59,6 +63,13 @@ type ValueParagraphStyleKey =
   | "indentLeft"
   | "indentRight"
   | "indentFirstLine"
+  | "indentHanging"
+  | "shading"
+  | "borderTop"
+  | "borderRight"
+  | "borderBottom"
+  | "borderLeft"
+  | "tabs"
   | "pageBreakBefore"
   | "keepWithNext";
 type ParagraphListKind = Editor2ParagraphListStyle["kind"];
@@ -1668,7 +1679,9 @@ export function setTableCellStyleValue<K extends keyof Editor2TableCellStyle>(
   if (hasSections) {
     const nextSections = sections.map(section => ({
       ...section,
-      blocks: updateTableCellsInBlocks(section.blocks, selectedParagraphIds, updateCell)
+      blocks: updateTableCellsInBlocks(section.blocks, selectedParagraphIds, updateCell),
+      header: section.header ? updateTableCellsInBlocks(section.header, selectedParagraphIds, updateCell) : undefined,
+      footer: section.footer ? updateTableCellsInBlocks(section.footer, selectedParagraphIds, updateCell) : undefined,
     }));
 
     return {
@@ -1687,6 +1700,85 @@ export function setTableCellStyleValue<K extends keyof Editor2TableCellStyle>(
       blocks: updateTableCellsInBlocks(state.document.blocks, selectedParagraphIds, updateCell)
     }
   };
+}
+
+export function setTableStyleValue<K extends keyof Editor2TableStyle>(
+  state: Editor2State,
+  key: K,
+  value: Editor2TableStyle[K] | null,
+): Editor2State {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  const selectedParagraphIds = new Set<string>();
+
+  for (let i = normalized.startIndex; i <= normalized.endIndex; i += 1) {
+    selectedParagraphIds.add(paragraphs[i].id);
+  }
+
+  const updateTable = (table: Editor2TableNode): Editor2TableNode => {
+    const nextStyle = { ...(table.style ?? {}) } as Record<string, unknown>;
+    if (value === null) {
+      delete nextStyle[key];
+    } else {
+      nextStyle[key] = value;
+    }
+    return {
+      ...table,
+      style: Object.keys(nextStyle).length > 0 ? (nextStyle as Editor2TableStyle) : undefined
+    };
+  };
+
+  const updateBlocks = (blocks: Editor2BlockNode[]): Editor2BlockNode[] => {
+    return blocks.map(block => {
+      if (block.type === "paragraph") return block;
+      
+      const paragraphsInTable = getBlockParagraphs(block);
+      const isSelected = paragraphsInTable.some(p => selectedParagraphIds.has(p.id));
+
+      const updatedRows = block.rows.map(row => ({
+        ...row,
+        cells: row.cells.map(cell => ({
+          ...cell,
+          blocks: updateBlocks(cell.blocks) as Editor2ParagraphNode[]
+        }))
+      }));
+
+      const nextTable = { ...block, rows: updatedRows };
+      return isSelected ? updateTable(nextTable) : nextTable;
+    });
+  };
+
+  const sections = getDocumentSections(state.document);
+  const hasSections = state.document.sections && state.document.sections.length > 0;
+
+  if (hasSections) {
+    const nextSections = sections.map(section => ({
+      ...section,
+      blocks: updateBlocks(section.blocks),
+      header: section.header ? updateBlocks(section.header) : undefined,
+      footer: section.footer ? updateBlocks(section.footer) : undefined,
+    }));
+
+    return {
+      ...state,
+      document: {
+        ...state.document,
+        sections: nextSections
+      }
+    };
+  }
+
+  return {
+    ...state,
+    document: {
+      ...state.document,
+      blocks: updateBlocks(state.document.blocks)
+    }
+  };
+}
+
+export function setTableCellWidth(state: Editor2State, width: number | string | null): Editor2State {
+  return setTableCellStyleValue(state, "width", width);
 }
 
 export function setTableCellBorders(
@@ -2680,6 +2772,10 @@ export function setLinkAtSelection(
   };
 }
 
+export function setParagraphNamedStyle(state: Editor2State, styleId: string | null): Editor2State {
+  return setParagraphStyle(state, "styleId", styleId);
+}
+
 export function setParagraphStyle<K extends ValueParagraphStyleKey>(
   state: Editor2State,
   key: K,
@@ -2735,6 +2831,8 @@ export function toggleParagraphList(
     nextParagraph.list = {
       kind,
       level: paragraph.list?.level ?? 0,
+      format: paragraph.list?.format,
+      startAt: paragraph.list?.startAt,
     };
     return nextParagraph;
   });
@@ -2744,4 +2842,75 @@ export function toggleParagraphList(
     nextParagraphs,
     preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
   );
+}
+
+export function setParagraphListFormat(
+  state: Editor2State,
+  format: Editor2ParagraphListStyle["format"] | null,
+): Editor2State {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+    if (paragraphIndex < normalized.startIndex || paragraphIndex > normalized.endIndex) {
+      return cloneParagraph(paragraph);
+    }
+
+    if (!paragraph.list) {
+      return cloneParagraph(paragraph);
+    }
+
+    return {
+      ...cloneParagraph(paragraph),
+      list: {
+        ...paragraph.list,
+        format: format || undefined,
+      },
+    };
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+  );
+}
+
+export function setParagraphListStartAt(
+  state: Editor2State,
+  startAt: number | null,
+): Editor2State {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+    if (paragraphIndex < normalized.startIndex || paragraphIndex > normalized.endIndex) {
+      return cloneParagraph(paragraph);
+    }
+
+    if (!paragraph.list) {
+      return cloneParagraph(paragraph);
+    }
+
+    return {
+      ...cloneParagraph(paragraph),
+      list: {
+        ...paragraph.list,
+        startAt: startAt !== null ? startAt : undefined,
+      },
+    };
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+  );
+}
+
+export function setParagraphTabStops(
+  state: Editor2State,
+  tabs: Editor2TabStop[] | null,
+): Editor2State {
+  return setParagraphStyle(state, "tabs", tabs);
 }
