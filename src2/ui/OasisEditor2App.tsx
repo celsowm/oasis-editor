@@ -153,11 +153,12 @@ import {
   findImageFileFromTransfer,
   readFileBuffer,
 } from "./clipboardImage.js";
-import { EditorToolbar, type EditorToolbarCtx } from "./components/Toolbar/EditorToolbar.js";
+import { EditorToolbar } from "./components/Toolbar/EditorToolbar.js";
 import { createEditor2CommandsController } from "../app/controllers/Editor2CommandsController.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
+import type { EditorToolbarCtx } from "./components/Toolbar/types.js";
 
 interface ActiveImageResize {
   paragraphId: string;
@@ -2314,8 +2315,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           clientX,
           clientY,
           surface: surfaceRef,
-          state,
-          documentLike: state.document,
+          state: state as Editor2State,
+          documentLike: state.document as any,
         })
       : null;
 
@@ -3422,7 +3423,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     openImageAltDialog: (initialAlt) => setImageAltDialog({ isOpen: true, initialAlt }),
   });
 
-  const toolbarCtx: EditorToolbarCtx = {
+  const toolbarCtx = {
     state,
     undoStack,
     redoStack,
@@ -3461,176 +3462,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     deleteSelectedTableColumn,
     deleteSelectedTableRow,
     insertTableCommand,
-  };
-
-  if (!showChrome()) {
-    return (
-      <OasisEditor2Editor
-        state={() => state}
-        measuredBlockHeights={() => measuredBlockHeights()}
-        measuredParagraphLayouts={() => measuredParagraphLayouts()}
-        selectionBoxes={() => selectionBoxes()}
-        caretBox={() => caretBox()}
-        inputBox={() => inputBox()}
-        hoveredRevision={() => hoveredRevision()}
-        focused={() => focused()}
-
-        viewportHeight={props.viewportHeight}
-        class={props.class}
-        style={props.style}
-        readOnly={isReadOnly()}
-        showCaret={() => {
-          if (!caretBox().visible || !isSelectionCollapsed(state.selection)) {
-            return false;
-          }
-          const anchorLoc = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, getActiveSectionIndex(state));
-          const focusLoc = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
-          const inTableSelection = anchorLoc && focusLoc &&
-            anchorLoc.blockIndex === focusLoc.blockIndex &&
-            (anchorLoc.rowIndex !== focusLoc.rowIndex || anchorLoc.cellIndex !== focusLoc.cellIndex);
-          return !inTableSelection;
-        }}
-        onViewportRef={(element) => {
-          viewportRef = element;
-        }}
-        onSurfaceRef={(element) => {
-          surfaceRef = element;
-        }}
-        onTextareaRef={(element) => {
-          textareaRef = element;
-        }}
-        onImportInputRef={(element) => {
-          importInputRef = element;
-        }}
-        onImageInputRef={(element) => {
-          imageInputRef = element;
-        }}
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={handleDrop}
-        onEditorMouseDown={onEditorMouseDown}
-        onSurfaceMouseDown={handleSurfaceMouseDown}
-        onSurfaceDblClick={handleSurfaceDblClick}
-        onParagraphMouseDown={handleParagraphMouseDown}
-        onRevisionMouseEnter={handleRevisionMouseEnter}
-        onRevisionMouseLeave={handleRevisionMouseLeave}
-        onImageMouseDown={(paragraphId, paragraphOffset, event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
-          if (!paragraph) {
-            logger.warn("image select:missing paragraph", { paragraphId, paragraphOffset });
-            return;
-          }
-
-          clearPreferredColumn();
-          resetTransactionGrouping();
-          dragAnchor = null;
-          stopDragging();
-          stopImageDrag();
-          stopImageResize();
-
-          const start = paragraphOffsetToPosition(paragraph, paragraphOffset);
-          const end = paragraphOffsetToPosition(paragraph, paragraphOffset + 1);
-          logger.info("image select", {
-            paragraphId,
-            paragraphOffset,
-            start,
-            end,
-          });
-
-          if (event.shiftKey) {
-            applyState(
-              setSelection(state, {
-                anchor: state.selection.anchor,
-                focus: end,
-              }),
-            );
-            focusInput();
-            return;
-          }
-
-          applyState(
-            setSelection(state, {
-              anchor: start,
-              focus: end,
-            }),
-          );
-          activeImageDrag = {
-            paragraphId,
-            paragraphOffset,
-            startClientX: event.clientX,
-            startClientY: event.clientY,
-            dragging: false,
-          };
-          window.addEventListener("mousemove", handleImageDragMouseMove);
-          window.addEventListener("mouseup", handleImageDragMouseUp);
-          focusInput();
-        }}
-        onImageResizeHandleMouseDown={(paragraphId, paragraphOffset, event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
-          if (!paragraph) {
-            logger.warn("image resize:start missing paragraph", { paragraphId, paragraphOffset });
-            return;
-          }
-
-          stopImageDrag();
-          const selectedImage = getSelectedImageInfo(
-            applySelectionToStatePreservingStructure(state, {
-              anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),
-              focus: paragraphOffsetToPosition(paragraph, paragraphOffset + 1),
-            }),
-          );
-          if (!selectedImage) {
-            logger.warn("image resize:start missing selection", {
-              paragraphId,
-              paragraphOffset,
-              selection: state.selection,
-            });
-            return;
-          }
-
-          logger.info("image resize:start", {
-            paragraphId,
-            paragraphOffset,
-            width: selectedImage.width,
-            height: selectedImage.height,
-            clientX: event.clientX,
-            clientY: event.clientY,
-          });
-          activeImageResize = {
-            paragraphId,
-            paragraphOffset,
-            startClientX: event.clientX,
-            startWidth: selectedImage.width,
-            startHeight: selectedImage.height,
-            aspectRatio: selectedImage.width / selectedImage.height,
-            initialState: cloneState(state),
-          };
-          window.addEventListener("mousemove", handleImageResizeMouseMove);
-          window.addEventListener("mouseup", handleImageResizeMouseUp);
-        }}
-        onInputBlur={() => setFocused(false)}
-        onInputFocus={() => setFocused(true)}
-        onCompositionEnd={handleCompositionEnd}
-        onCompositionStart={handleCompositionStart}
-        onCopy={handleCopy}
-        onCut={handleCut}
-        onInput={handleTextInput}
-        onKeyDown={handleKeyDown}
-        onPaste={handlePaste}
-        onImportInputChange={(event) => {
-          const file = event.currentTarget.files?.[0] ?? null;
-          void handleImportDocx(file);
-        }}
-        onImageInputChange={(event) => {
-          const file = event.currentTarget.files?.[0] ?? null;
-          void handleInsertImage(file);
-        }}
-      />
-    );
-  }
+  } as unknown as EditorToolbarCtx;
 
   return (
     <div

@@ -15,8 +15,10 @@ export function startIconObserver(root: HTMLElement = document.body): void {
         break;
       }
     }
-    if (needsScan) {
+    if (needsScan && observer) {
+      observer.disconnect();
       createIcons({ icons, nameAttr: "data-lucide", root });
+      observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-lucide"] });
     }
   });
 

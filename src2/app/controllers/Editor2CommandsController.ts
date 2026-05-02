@@ -21,6 +21,7 @@ import {
   updateSectionSettings,
 } from "../../core/editorCommands.js";
 import {
+  getActiveSectionIndex,
   findParagraphTableLocation,
   getParagraphs,
   getParagraphText,
@@ -281,7 +282,7 @@ export function createEditor2CommandsController(deps: Editor2CommandsControllerD
     if (selectionCollapsed() && !activeLink) {
       return;
     }
-    openLinkDialog(activeLink);
+    deps.openLinkDialog(activeLink);
   };
 
   const removeLinkCommand = () => {
@@ -305,7 +306,7 @@ export function createEditor2CommandsController(deps: Editor2CommandsControllerD
       return;
     }
     const currentAlt = run.run.image?.alt ?? "";
-    openImageAltDialog(currentAlt);
+    deps.openImageAltDialog(currentAlt);
   };
 
   return {

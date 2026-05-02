@@ -1,5 +1,5 @@
 import { For } from "solid-js";
-import type { EditorToolbarCtx } from "../EditorToolbar.js";
+import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup } from "../ToolbarGroup.js";
 import { booleanButtons } from "../toolbarConfig.js";

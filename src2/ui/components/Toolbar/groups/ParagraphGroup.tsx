@@ -1,6 +1,6 @@
 import { For } from "solid-js";
 import type { Editor2ParagraphListStyle } from "../../../../core/model.js";
-import type { EditorToolbarCtx } from "../EditorToolbar.js";
+import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup } from "../ToolbarGroup.js";
 import { ToolbarSelect } from "../ToolbarSelect.js";

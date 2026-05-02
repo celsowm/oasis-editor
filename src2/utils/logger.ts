@@ -149,6 +149,8 @@ function formatInlineSummary(payload: unknown): string | null {
   }
 }
 
+export type Editor2Logger = ReturnType<typeof createEditor2Logger>;
+
 export function createEditor2Logger(scope: string) {
   const write = (level: LogLevel, message: string, payload?: unknown) => {
     if (!isEditor2DebugEnabled() && level === "debug") {

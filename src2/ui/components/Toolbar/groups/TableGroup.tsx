@@ -5,13 +5,14 @@ import {
   setTableCellWidth,
   setTableStyleValue,
 } from "../../../../core/editorCommands.js";
-import type { EditorToolbarCtx } from "../EditorToolbar.js";
+import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup } from "../ToolbarGroup.js";
 
 export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
   const state = () => ctx().state;
+  const focusInput = () => ctx().focusInput();
 
   return (
     <>

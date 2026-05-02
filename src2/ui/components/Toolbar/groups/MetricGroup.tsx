@@ -1,6 +1,6 @@
 import { setParagraphStyle } from "../../../../core/editorCommands.js";
 import type { Editor2BorderStyle } from "../../../../core/model.js";
-import type { EditorToolbarCtx } from "../EditorToolbar.js";
+import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup } from "../ToolbarGroup.js";
 
