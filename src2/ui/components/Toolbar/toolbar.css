@@ -1,0 +1,179 @@
+.oasis-editor-2-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dadce0;
+  gap: 4px;
+  position: relative;
+  min-height: 40px;
+  flex-wrap: wrap;
+}
+
+.oasis-editor-2-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.oasis-editor-2-toolbar-separator {
+  width: 1px;
+  height: 20px;
+  background: #dadce0;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.oasis-editor-2-tool-button {
+  background: transparent;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #444746;
+  font-size: 13px;
+  gap: 4px;
+  min-width: 32px;
+  min-height: 32px;
+  transition: background 0.2s;
+}
+
+.oasis-editor-2-tool-button:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.oasis-editor-2-tool-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.oasis-editor-2-tool-button-active {
+  background: #c2e7ff !important;
+  color: #001d35 !important;
+}
+
+.oasis-editor-2-tool-button-wide {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.oasis-editor-2-tool-button i {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.oasis-editor-2-tool-select {
+  padding: 4px 8px;
+  font-size: 13px;
+  border-radius: 4px;
+  border: 1px solid #dadce0;
+  background: white;
+  color: #444746;
+  cursor: pointer;
+  outline: none;
+  height: 32px;
+}
+
+.oasis-editor-2-tool-select:hover {
+  background: #f8f9fa;
+  border-color: #c0c4c9;
+}
+
+.oasis-editor-2-tool-select-wide {
+  min-width: 120px;
+}
+
+.oasis-editor-2-tool-select-small {
+  min-width: 60px;
+}
+
+.oasis-editor-2-tool-metric {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #70757a;
+  padding: 0 4px;
+}
+
+.oasis-editor-2-tool-number {
+  width: 50px;
+  height: 28px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 12px;
+}
+
+.oasis-editor-2-tool-color {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #70757a;
+  padding: 0 4px;
+}
+
+.oasis-editor-2-tool-color-input {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #dadce0;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.oasis-editor-2-toolbar-badge {
+  background: #e8f0fe;
+  color: #1967d2;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.oasis-editor-2-toolbar-note {
+  font-size: 11px;
+  color: #70757a;
+  font-style: italic;
+  margin-left: 8px;
+}
+
+.oasis-editor-2-table-actions-advanced {
+  display: inline-block;
+}
+
+.oasis-editor-2-table-actions-summary {
+  font-size: 12px;
+  color: #1a73e8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  list-style: none;
+}
+
+.oasis-editor-2-table-actions-summary:hover {
+  background: #f1f3f4;
+}
+
+.oasis-editor-2-table-actions-group {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  z-index: 1000;
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 400px;
+  gap: 4px;
+}

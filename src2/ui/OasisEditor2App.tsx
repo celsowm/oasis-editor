@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, Show, For, type JSX } from "solid-js";
+import { createEffect, createSignal, onCleanup, onMount, Show, For, type JSX } from "solid-js";
 import { createStore } from "solid-js/store";
 import { OasisEditor2Editor } from "./OasisEditor2Editor.js";
 import { getCaretSlotRects } from "./caretGeometry.js";
@@ -108,6 +108,7 @@ import {
   getBlockParagraphs,
   getParagraphText,
   findParagraphLocation,
+  findParagraphTableLocation,
   getActiveSectionIndex,
   getActiveZone,
   paragraphOffsetToPosition,
@@ -124,16 +125,39 @@ import { exportEditor2DocumentToDocxBlob } from "../export/docx/exportEditor2Doc
 import { importDocxToEditor2Document } from "../import/docx/importDocxToEditor2Document.js";
 import { createEditor2Logger } from "../utils/logger.js";
 import type { CaretBox, InputBox, RevisionBox, SelectionBox } from "./editorUiTypes.js";
-
-interface TableCellLayoutEntry {
-  rowIndex: number;
-  cellIndex: number;
-  visualRowIndex: number;
-  visualColumnIndex: number;
-  rowSpan: number;
-  colSpan: number;
-  cell: Editor2TableCellNode;
-}
+import {
+  cloneBlock,
+  cloneDocumentBlock,
+  cloneSection,
+  cloneEditor2State,
+} from "../core/cloneState.js";
+import {
+  findNextWordBoundary,
+  findPreviousWordBoundary,
+  isWordCharacter,
+  resolveWordSelection,
+} from "../core/wordBoundaries.js";
+import {
+  getElementContentWidth,
+  getEmptyBlockRect,
+  getMaxInlineImageWidth,
+  getParagraphBoundaryElement,
+  hasUsableCharGeometry,
+} from "./domGeometry.js";
+import {
+  buildTableCellLayout,
+  resolveClickOffset,
+  type TableCellLayoutEntry,
+} from "./tableLayout.js";
+import {
+  findImageFileFromTransfer,
+  readFileBuffer,
+} from "./clipboardImage.js";
+import { EditorToolbar, type EditorToolbarCtx } from "./components/Toolbar/EditorToolbar.js";
+import { createEditor2CommandsController } from "../app/controllers/Editor2CommandsController.js";
+import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
+import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
+import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 
 interface ActiveImageResize {
   paragraphId: string;
@@ -164,338 +188,7 @@ export interface OasisEditor2AppProps {
   readOnly?: boolean;
 }
 
-const DEFAULT_MAX_INSERTED_IMAGE_WIDTH = 624;
-
-function cloneBlock(block: Editor2BlockNode): Editor2BlockNode {
-  return block.type === "paragraph"
-    ? {
-        ...block,
-        runs: block.runs.map((run) => ({ ...run })),
-        style: block.style ? { ...block.style } : undefined,
-        list: block.list ? { ...block.list } : undefined,
-      }
-    : {
-        ...block,
-        rows: block.rows.map((row) => ({
-          ...row,
-          cells: row.cells.map((cell) => ({
-            ...cell,
-            colSpan: cell.colSpan ?? undefined,
-            rowSpan: cell.rowSpan ?? undefined,
-            vMerge: cell.vMerge ?? undefined,
-            blocks: cell.blocks.map((paragraph) => ({
-              ...paragraph,
-              runs: paragraph.runs.map((run) => ({ ...run })),
-              style: paragraph.style ? { ...paragraph.style } : undefined,
-              list: paragraph.list ? { ...paragraph.list } : undefined,
-            })),
-          })),
-        })),
-      };
-}
-
-const cloneDocumentBlock = cloneBlock;
-
-function cloneSection(section: Editor2Section): Editor2Section {
-  return {
-    ...section,
-    blocks: section.blocks.map(cloneBlock),
-    header: section.header?.map(cloneBlock),
-    footer: section.footer?.map(cloneBlock),
-  };
-}
-
-function cloneEditor2State(source: Editor2State): Editor2State {
-  return {
-    ...source,
-    document: {
-      ...source.document,
-      blocks: source.document.blocks.map(cloneBlock),
-      sections: source.document.sections?.map(cloneSection),
-    },
-    selection: {
-      anchor: { ...source.selection.anchor },
-      focus: { ...source.selection.focus },
-    },
-    activeSectionIndex: source.activeSectionIndex ?? 0,
-    activeZone: source.activeZone ?? "main",
-  };
-}
-
-function getElementContentWidth(element: HTMLElement | null | undefined): number {
-  if (!element) {
-    return DEFAULT_MAX_INSERTED_IMAGE_WIDTH;
-  }
-
-  const rect = element.getBoundingClientRect();
-  const computed = window.getComputedStyle(element);
-  const paddingLeft = Number.parseFloat(computed.paddingLeft || "0") || 0;
-  const paddingRight = Number.parseFloat(computed.paddingRight || "0") || 0;
-  const contentWidth = rect.width - paddingLeft - paddingRight;
-
-  if (!Number.isFinite(contentWidth) || contentWidth <= 0) {
-    return DEFAULT_MAX_INSERTED_IMAGE_WIDTH;
-  }
-
-  return Math.max(24, Math.floor(contentWidth));
-}
-
-function getMaxInlineImageWidth(
-  surface: HTMLDivElement | undefined,
-  document: Editor2Document,
-  paragraphId?: string,
-): number {
-  if (!surface) {
-    return getPageContentWidth(getDocumentPageSettings(document));
-  }
-
-  const contentSurface =
-    surface.querySelector<HTMLDivElement>('[data-testid="editor-2-surface"]') ?? surface;
-  if (paragraphId) {
-    const paragraphElement = contentSurface.querySelector<HTMLElement>(
-      `[data-paragraph-id="${paragraphId}"]`,
-    );
-    const cellElement = paragraphElement?.closest<HTMLElement>("td.oasis-editor-2-table-cell");
-    if (cellElement) {
-      return getElementContentWidth(cellElement);
-    }
-  }
-
-  return getElementContentWidth(contentSurface);
-}
-
 type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
-
-async function readFileBuffer(file: File): Promise<ArrayBuffer> {
-  if (typeof file.arrayBuffer === "function") {
-    return file.arrayBuffer();
-  }
-
-  return new Promise<ArrayBuffer>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(reader.error ?? new Error("Failed to read file."));
-    reader.onload = () => {
-      const result = reader.result;
-      if (result instanceof ArrayBuffer) {
-        resolve(result);
-        return;
-      }
-      reject(new Error("Failed to read file as ArrayBuffer."));
-    };
-    reader.readAsArrayBuffer(file);
-  });
-}
-
-function findImageFileFromTransfer(
-  transfer: Pick<DataTransfer, "files" | "items"> | null | undefined,
-): File | null {
-  if (!transfer) {
-    return null;
-  }
-
-  for (const item of Array.from(transfer.items ?? [])) {
-    if (item.kind !== "file") {
-      continue;
-    }
-
-    const file = item.getAsFile();
-    if (file && file.type.startsWith("image/")) {
-      return file;
-    }
-  }
-
-  for (const file of Array.from(transfer.files ?? [])) {
-    if (file.type.startsWith("image/")) {
-      return file;
-    }
-  }
-
-  return null;
-}
-
-function getEmptyBlockRect(blockElement: HTMLElement): DOMRect | null {
-  return blockElement.querySelector<HTMLElement>('[data-testid="editor-2-empty-char"]')?.getBoundingClientRect() ?? null;
-}
-
-function getParagraphBoundaryElement(
-  surface: HTMLElement,
-  paragraphId: string,
-  boundary: "start" | "end",
-): HTMLElement | null {
-  const elements = getParagraphElements(surface, paragraphId);
-  if (elements.length === 0) {
-    return null;
-  }
-  return boundary === "start" ? elements[0]! : elements[elements.length - 1]!;
-}
-
-function hasUsableCharGeometry(
-  charRects: Array<{
-    left: number;
-    right: number;
-    top: number;
-    bottom: number;
-    height: number;
-  }>,
-): boolean {
-  return charRects.some((rect) => rect.right > rect.left || rect.height > 0 || rect.bottom > rect.top);
-}
-
-function buildTableCellLayout(table: Editor2TableNode): TableCellLayoutEntry[] {
-  const occupiedColumns: number[] = [];
-  const entries: TableCellLayoutEntry[] = [];
-
-  for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
-    const row = table.rows[rowIndex];
-    let visualColumnIndex = 0;
-
-    for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
-      while (occupiedColumns[visualColumnIndex] > 0) {
-        visualColumnIndex += 1;
-      }
-
-      const cell = row.cells[cellIndex];
-      if (cell.vMerge === "continue") {
-        continue;
-      }
-
-      const colSpan = Math.max(1, cell.colSpan ?? 1);
-      const rowSpan = Math.max(1, cell.rowSpan ?? 1);
-      entries.push({
-        rowIndex,
-        cellIndex,
-        visualRowIndex: rowIndex,
-        visualColumnIndex,
-        rowSpan,
-        colSpan,
-        cell,
-      });
-
-      for (let colOffset = 0; colOffset < colSpan; colOffset += 1) {
-        occupiedColumns[visualColumnIndex + colOffset] = Math.max(
-          occupiedColumns[visualColumnIndex + colOffset] ?? 0,
-          rowSpan,
-        );
-      }
-
-      visualColumnIndex += colSpan;
-    }
-
-    for (let columnIndex = 0; columnIndex < occupiedColumns.length; columnIndex += 1) {
-      if (occupiedColumns[columnIndex] > 0) {
-        occupiedColumns[columnIndex] -= 1;
-      }
-    }
-  }
-
-  return entries;
-}
-
-function resolveClickOffset(
-  event: MouseEvent & { currentTarget: HTMLParagraphElement },
-  layoutParagraph: ReturnType<typeof measureParagraphLayoutFromRects>,
-): number {
-  if (layoutParagraph.text.length === 0) {
-    return 0;
-  }
-  return Math.max(
-    0,
-    Math.min(
-      layoutParagraph.text.length,
-      resolveClosestOffsetInMeasuredLayout(layoutParagraph, event.clientX, event.clientY),
-    ),
-  );
-}
-
-function isWordCharacter(char: string): boolean {
-  return /[\p{L}\p{N}_]/u.test(char);
-}
-
-function resolveWordSelection(text: string, offset: number): { start: number; end: number } {
-  if (text.length === 0) {
-    return { start: 0, end: 0 };
-  }
-
-  const clampedOffset = Math.max(0, Math.min(offset, text.length));
-  const index =
-    clampedOffset === text.length ? Math.max(0, clampedOffset - 1) : clampedOffset;
-  const charAtIndex = text[index];
-
-  if (!charAtIndex || !isWordCharacter(charAtIndex)) {
-    return {
-      start: clampedOffset,
-      end: Math.min(text.length, clampedOffset + 1),
-    };
-  }
-
-  let start = index;
-  let end = index + 1;
-
-  while (start > 0 && isWordCharacter(text[start - 1])) {
-    start -= 1;
-  }
-
-  while (end < text.length && isWordCharacter(text[end])) {
-    end += 1;
-  }
-
-  return { start, end };
-}
-
-function findPreviousWordBoundary(text: string, offset: number): number {
-  if (text.length === 0) {
-    return 0;
-  }
-
-  let index = Math.max(0, Math.min(offset, text.length));
-  if (index === 0) {
-    return 0;
-  }
-
-  if (isWordCharacter(text[index - 1] ?? "")) {
-    while (index > 0 && isWordCharacter(text[index - 1] ?? "")) {
-      index -= 1;
-    }
-    return index;
-  }
-
-  while (index > 0 && !isWordCharacter(text[index - 1] ?? "")) {
-    index -= 1;
-  }
-
-  while (index > 0 && isWordCharacter(text[index - 1] ?? "")) {
-    index -= 1;
-  }
-
-  return index;
-}
-
-function findNextWordBoundary(text: string, offset: number): number {
-  if (text.length === 0) {
-    return 0;
-  }
-
-  let index = Math.max(0, Math.min(offset, text.length));
-  if (index >= text.length) {
-    return text.length;
-  }
-
-  if (isWordCharacter(text[index] ?? "")) {
-    while (index < text.length && isWordCharacter(text[index] ?? "")) {
-      index += 1;
-    }
-    while (index < text.length && !isWordCharacter(text[index] ?? "")) {
-      index += 1;
-    }
-    return index;
-  }
-
-  while (index < text.length && !isWordCharacter(text[index] ?? "")) {
-    index += 1;
-  }
-
-  return index;
-}
 
 export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   const logger = createEditor2Logger("app");
@@ -525,6 +218,14 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     height: 28,
     visible: false,
   });
+  const [linkDialog, setLinkDialog] = createSignal<{ isOpen: boolean; initialHref: string }>({
+    isOpen: false,
+    initialHref: "",
+  });
+  const [imageAltDialog, setImageAltDialog] = createSignal<{ isOpen: boolean; initialAlt: string }>({
+    isOpen: false,
+    initialAlt: "",
+  });
   let viewportRef: HTMLDivElement | undefined;
   let surfaceRef: HTMLDivElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
@@ -537,29 +238,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   let historyState = createEmptyEditor2HistoryState();
   let suppressedInputText: string | null = null;
   let forcePlainTextPaste = false;
-  const booleanButtons: Array<{ key: BooleanStyleKey; label: string; testId: string }> = [
-    { key: "bold", label: "B", testId: "editor-2-toolbar-bold" },
-    { key: "italic", label: "I", testId: "editor-2-toolbar-italic" },
-    { key: "underline", label: "U", testId: "editor-2-toolbar-underline" },
-    { key: "strike", label: "S", testId: "editor-2-toolbar-strike" },
-    { key: "superscript", label: "Sup", testId: "editor-2-toolbar-superscript" },
-    { key: "subscript", label: "Sub", testId: "editor-2-toolbar-subscript" },
-  ];
-  const alignButtons: Array<{
-    value: NonNullable<Editor2ParagraphStyle["align"]>;
-    label: string;
-    testId: string;
-  }> = [
-    { value: "left", label: "L", testId: "editor-2-toolbar-align-left" },
-    { value: "center", label: "C", testId: "editor-2-toolbar-align-center" },
-    { value: "right", label: "R", testId: "editor-2-toolbar-align-right" },
-    { value: "justify", label: "J", testId: "editor-2-toolbar-align-justify" },
-  ];
-  const listButtons: Array<{ kind: NonNullable<Editor2ParagraphListStyle["kind"]>; label: string; testId: string }> = [
-    { kind: "bullet", label: "• List", testId: "editor-2-toolbar-list-bullet" },
-    { kind: "ordered", label: "1. List", testId: "editor-2-toolbar-list-ordered" },
-  ];
-
   const cloneState = (source: Editor2State): Editor2State =>
     cloneEditor2State({
       ...source,
@@ -618,8 +296,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   const resolveTableCellRangeSelection = (
     current: Editor2State,
   ): Editor2State["selection"] | null => {
-    const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId);
-    const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId, getActiveSectionIndex(current));
+    const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (
       !anchorLocation ||
       !focusLocation ||
@@ -686,8 +364,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     startCellIndex: number;
     endCellIndex: number;
   } | null => {
-    const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId);
-    const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId, getActiveSectionIndex(current));
+    const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (
       !anchorLocation ||
       !focusLocation ||
@@ -752,7 +430,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const canSplitSelectedTableCell = (current: Editor2State): boolean => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (!location) {
       return false;
     }
@@ -774,8 +452,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     endRowIndex: number;
     cellIndex: number;
   } | null => {
-    const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId);
-    const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId, getActiveSectionIndex(current));
+    const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (
       !anchorLocation ||
       !focusLocation ||
@@ -843,7 +521,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const canSplitSelectedTableCellVertically = (current: Editor2State): boolean => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (!location) {
       return false;
     }
@@ -1016,7 +694,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const splitSelectedTableCellVertically = (current: Editor2State): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (!location) {
       return current;
     }
@@ -1077,17 +755,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     return current;
   };
 
-  const hasHorizontalSpans = (table: Editor2TableNode): boolean =>
-    table.rows.some((row) => row.cells.some((cell) => Math.max(1, cell.colSpan ?? 1) > 1));
-
-  const hasVerticalSpans = (table: Editor2TableNode): boolean =>
-    table.rows.some((row) =>
-      row.cells.some((cell) => Math.max(1, cell.rowSpan ?? 1) > 1 || cell.vMerge !== undefined),
-    );
-
-  const hasMixedSpans = (table: Editor2TableNode): boolean =>
-    hasHorizontalSpans(table) && hasVerticalSpans(table);
-
   const getRowVisualWidth = (row: Editor2TableRowNode): number =>
     row.cells.reduce((sum, cell) => sum + Math.max(1, cell.colSpan ?? 1), 0);
 
@@ -1126,18 +793,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     return null;
   };
 
-  const isSimpleTable = (table: Editor2TableNode): boolean =>
-    table.rows.every((row) =>
-      row.cells.every(
-        (cell) =>
-          Math.max(1, cell.colSpan ?? 1) === 1 &&
-          Math.max(1, cell.rowSpan ?? 1) === 1 &&
-          cell.vMerge === undefined,
-      ),
-    );
-
   const canEditSelectedTableRow = (current: Editor2State): boolean => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (!location) {
       return false;
     }
@@ -1150,7 +807,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const canEditSelectedTableColumn = (current: Editor2State): boolean => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (!location) {
       return false;
     }
@@ -1167,7 +824,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const insertSelectedTableRow = (current: Editor2State, direction: -1 | 1): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (!location) {
       return current;
     }
@@ -1190,8 +847,13 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       0,
       Math.min(tableBlock.rows.length, location.rowIndex + (direction > 0 ? 1 : 0)),
     );
+
+    const hasVerticalSpansInTable = tableBlock.rows.some((row) =>
+      row.cells.some((cell) => Math.max(1, cell.rowSpan ?? 1) > 1 || cell.vMerge !== undefined),
+    );
+
     let blankRow: Editor2TableRowNode;
-    if (hasVerticalSpans(tableBlock)) {
+    if (hasVerticalSpansInTable) {
       const tableLayout = buildTableCellLayout(tableBlock);
       const selectedEntry = tableLayout.find(
         (layoutEntry) =>
@@ -1293,7 +955,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const deleteSelectedTableRow = (current: Editor2State): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (!location) {
       return current;
     }
@@ -1323,7 +985,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
-    const selectedEntry = hasVerticalSpans(tableBlock)
+    const hasVerticalSpansInTable = tableBlock.rows.some((row) =>
+      row.cells.some((cell) => Math.max(1, cell.rowSpan ?? 1) > 1 || cell.vMerge !== undefined),
+    );
+
+    const selectedEntry = hasVerticalSpansInTable
       ? buildTableCellLayout(tableBlock).find(
           (layoutEntry) =>
             layoutEntry.rowIndex === location.rowIndex &&
@@ -1331,7 +997,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         )
       : null;
 
-    if (hasVerticalSpans(tableBlock)) {
+    if (hasVerticalSpansInTable) {
       const tableLayout = buildTableCellLayout(tableBlock);
       for (const entry of tableLayout) {
         if (
@@ -1383,7 +1049,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const insertSelectedTableColumn = (current: Editor2State, direction: -1 | 1): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (!location) {
       return current;
     }
@@ -1397,7 +1063,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
-    if (hasHorizontalSpans(tableBlock)) {
+    const hasHorizontalSpansInTable = tableBlock.rows.some((row) => row.cells.some((cell) => Math.max(1, cell.colSpan ?? 1) > 1));
+
+    if (hasHorizontalSpansInTable) {
       const tableLayout = buildTableCellLayout(tableBlock);
       const selectedEntry = tableLayout.find(
         (entry) =>
@@ -1501,7 +1169,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const deleteSelectedTableColumn = (current: Editor2State): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (!location) {
       return current;
     }
@@ -1519,7 +1187,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return current;
     }
 
-    if (hasHorizontalSpans(tableBlock)) {
+    const hasHorizontalSpansInTable = tableBlock.rows.some((row) => row.cells.some((cell) => Math.max(1, cell.colSpan ?? 1) > 1));
+
+    if (hasHorizontalSpansInTable) {
       const tableLayout = buildTableCellLayout(tableBlock);
       const selectedEntry = tableLayout.find(
         (entry) =>
@@ -1612,7 +1282,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const splitSelectedTableCell = (current: Editor2State): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (!location) {
       return current;
     }
@@ -1838,8 +1508,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return null;
     }
 
-    const anchorLocation = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId);
-    const focusLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId);
+    const anchorLocation = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, getActiveSectionIndex(state));
+    const focusLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
     if (
       !anchorLocation ||
       !focusLocation ||
@@ -1959,243 +1629,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     return heightsChanged || paragraphLayoutsChanged;
   };
 
-  const applyBooleanStyleCommand = (key: BooleanStyleKey) => {
-    if (selectionCollapsed()) {
-      return;
-    }
-
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareTextCommand((current) => toggleTextStyle(current, key));
-    focusInput();
-  };
-
-  const applyValueStyleCommand = <K extends ValueStyleKey>(
-    key: K,
-    value: Editor2TextStyle[K] | null,
-  ) => {
-    if (selectionCollapsed()) {
-      return;
-    }
-
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareTextCommand((current) => setTextStyleValue(current, key, value));
-    focusInput();
-  };
-
-  const applyParagraphStyleCommand = <K extends ParagraphStyleKey>(
-    key: K,
-    value: Editor2ParagraphStyle[K] | null,
-  ) => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) => setParagraphStyle(current, key, value));
-    focusInput();
-  };
-
-  const toggleParagraphFlagCommand = (key: "pageBreakBefore" | "keepWithNext") => {
-    const nextValue = !toolbarStyleState()[key];
-    applyParagraphStyleCommand(key, nextValue ? true : null);
-  };
-
-  const applyParagraphListCommand = (kind: NonNullable<Editor2ParagraphListStyle["kind"]>) => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) => toggleParagraphList(current, kind));
-    focusInput();
-  };
-
-  const handleListFormatChange = (format: Editor2ParagraphListStyle["format"]) => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) => setParagraphListFormat(current, format));
-    focusInput();
-  };
-
-  const handleListStartAtChange = (startAt: number | null) => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) => setParagraphListStartAt(current, startAt));
-    focusInput();
-  };
-
-  const applyInsertSectionBreakCommand = (breakType: "nextPage" | "continuous") => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyState(insertSectionBreakAtSelection(state, breakType));
-    focusInput();
-  };
-
-  const handleStyleChange = (styleId: string) => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) =>
-      setParagraphNamedStyle(current, styleId || null),
-    );
-    focusInput();
-  };
-
-  const applyUpdateSectionSettingsCommand = (
-    sectionIndex: number,
-    settings: Partial<Editor2Section>,
-  ) => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyState(updateSectionSettings(state, sectionIndex, settings));
-    focusInput();
-  };
-
-  const applyToggleTrackChangesCommand = () => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyState(toggleTrackChanges(state));
-    focusInput();
-  };
-
-  const applyAcceptRevisionsCommand = () => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyState(acceptRevisionsInSelection(state));
-    focusInput();
-  };
-
-  const applyRejectRevisionsCommand = () => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyState(rejectRevisionsInSelection(state));
-    focusInput();
-  };
-
-  const getSelectedParagraphRange = () => {
-    const normalized = normalizeSelection(state);
-    return getParagraphs(state).slice(normalized.startIndex, normalized.endIndex + 1);
-  };
-
-  const selectionTouchesList = () => getSelectedParagraphRange().some((paragraph) => Boolean(paragraph.list));
-
-  const focusedParagraph = () => {
-    const focusParagraphId = state.selection.focus.paragraphId;
-    return getParagraphs(state).find((paragraph) => paragraph.id === focusParagraphId) ?? null;
-  };
-
-  const handleListTab = (direction: "indent" | "outdent") => {
-    if (findParagraphTableLocation(state.document, state.selection.focus.paragraphId)) {
-      return false;
-    }
-
-    if (!selectionTouchesList()) {
-      return false;
-    }
-
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) =>
-      direction === "indent" ? indentParagraphList(current) : outdentParagraphList(current),
-    );
-    focusInput();
-    return true;
-  };
-
-  const handleListEnter = () => {
-    const paragraph = focusedParagraph();
-    if (!paragraph?.list) {
-      return false;
-    }
-
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    if (selectionCollapsed() && getParagraphText(paragraph).length === 0) {
-      applySelectionAwareParagraphCommand((current) => clearParagraphListAtSelection(current));
-    } else {
-      applyTransactionalState((current) =>
-        applyTableAwareParagraphEdit(current, (temp) => splitListItemAtSelection(temp)),
-      );
-    }
-    focusInput();
-    return true;
-  };
-
-  const handleListBoundaryBackspace = (
-    event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
-  ) => {
-    const paragraph = focusedParagraph();
-    if (!paragraph?.list || !selectionCollapsed()) {
-      return false;
-    }
-
-    const paragraphOffset = positionToParagraphOffset(paragraph, state.selection.focus);
-    if (paragraphOffset !== 0) {
-      return false;
-    }
-
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) => outdentParagraphList(current));
-    event.currentTarget.value = "";
-    focusInput();
-    return true;
-  };
-
-  const applyLinkCommand = (href: string | null) => {
-    const activeLink = getLinkAtSelection(state);
-    if (selectionCollapsed() && !activeLink) {
-      return;
-    }
-
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyTransactionalState((current) => setLinkAtSelection(current, href), { mergeKey: "link" });
-    focusInput();
-  };
-
-  const promptForLink = () => {
-    const activeLink = getLinkAtSelection(state) ?? "";
-    if (selectionCollapsed() && !activeLink) {
-      return;
-    }
-
-    const nextHref = window.prompt("Enter link URL", activeLink);
-    if (nextHref === null) {
-      focusInput();
-      return;
-    }
-
-    const normalizedHref = nextHref.trim();
-    applyLinkCommand(normalizedHref.length > 0 ? normalizedHref : null);
-  };
-
-  const removeLinkCommand = () => {
-    applyLinkCommand(null);
-  };
-
-  const applyImageAltCommand = (alt: string) => {
-    const selectedImage = selectedImageRun();
-    if (!selectedImage) {
-      return;
-    }
-
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyTransactionalState((current) => setSelectedImageAlt(current, alt), { mergeKey: "imageAlt" });
-    focusInput();
-  };
-
-  const promptForImageAlt = () => {
-    const selectedImage = selectedImageRun();
-    if (!selectedImage) {
-      return;
-    }
-
-    const nextAlt = window.prompt("Enter image alt text", selectedImageAlt() ?? "");
-    if (nextAlt === null) {
-      focusInput();
-      return;
-    }
-
-    applyImageAltCommand(nextAlt.trim());
-  };
-
   const handleImportDocx = async (file: File | null) => {
     if (isReadOnly()) {
       return;
@@ -2294,8 +1727,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     const normalized = normalizeSelection(state);
     const nextSelectionBoxes: SelectionBox[] = [];
 
-    const anchorLocation = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId);
-    const focusLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId);
+    const anchorLocation = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, getActiveSectionIndex(state));
+    const focusLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
 
     const isTableSelection = anchorLocation && focusLocation && 
       anchorLocation.blockIndex === focusLocation.blockIndex &&
@@ -2328,6 +1761,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
               anchorCell.visualRowIndex + anchorCell.rowSpan - 1,
               focusCell.visualRowIndex + focusCell.rowSpan - 1,
             );
+
             const minCol = Math.min(
               anchorCell.visualColumnIndex,
               focusCell.visualColumnIndex,
@@ -2544,10 +1978,15 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     });
   });
 
+  onMount(() => {
+    startIconObserver();
+  });
+
   onCleanup(() => {
     syncRequestId += 1;
     stopDragging();
     stopImageResize();
+    stopIconObserver();
   });
 
   const handleTextInput = (event: InputEvent & { currentTarget: HTMLTextAreaElement }) => {
@@ -2728,7 +2167,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     let targetIndex = currentIndex + direction;
-    const tableLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId);
+    const tableLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
     if (tableLocation) {
       const block = state.document.blocks[tableLocation.blockIndex];
       if (block && block.type === "table") {
@@ -2876,7 +2315,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           clientY,
           surface: surfaceRef,
           state,
-          documentLike: document,
+          documentLike: state.document,
         })
       : null;
 
@@ -3070,38 +2509,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     return null;
   };
 
-  const findParagraphTableLocation = (document: Editor2Document, paragraphId: string) => {
-    const activeSectionIndex = getActiveSectionIndex(state);
-    const hasSections = document.sections && document.sections.length > 0;
-    const section = hasSections ? document.sections![activeSectionIndex] : null;
-    const blocks = section ? section.blocks : document.blocks;
-
-    for (let blockIndex = 0; blockIndex < blocks.length; blockIndex += 1) {
-      const block = blocks[blockIndex]!;
-      if (block.type !== "table") {
-        continue;
-      }
-
-      for (let rowIndex = 0; rowIndex < block.rows.length; rowIndex += 1) {
-        const row = block.rows[rowIndex]!;
-        for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
-          const cell = row.cells[cellIndex]!;
-          const paragraphIndex = cell.blocks.findIndex((paragraph) => paragraph.id === paragraphId);
-          if (paragraphIndex !== -1) {
-            return { blockIndex, rowIndex, cellIndex, paragraphIndex };
-          }
-        }
-      }
-    }
-
-    return null;
-  };
-
   const applyTableAwareParagraphEdit = (
     current: Editor2State,
     edit: (tempState: Editor2State) => Editor2State,
   ): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId);
+    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (!location || current.selection.anchor.paragraphId !== current.selection.focus.paragraphId) {
       return edit(current);
     }
@@ -3277,7 +2689,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       const selectedImage = selectedImageRun();
       if (selectedImage) {
         event.preventDefault();
-        promptForImageAlt();
+        commandsController.promptForImageAlt();
         return;
       }
     }
@@ -3397,32 +2809,21 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       const lowerKey = event.key.toLowerCase();
       if (lowerKey === "b" || lowerKey === "i" || lowerKey === "u") {
         event.preventDefault();
-        clearPreferredColumn();
-        resetTransactionGrouping();
-        applySelectionAwareTextCommand((current) =>
-          toggleTextStyle(
-            current,
-            lowerKey === "b" ? "bold" : lowerKey === "i" ? "italic" : "underline",
-          ),
+        commandsController.applyBooleanStyleCommand(
+          (lowerKey === "b" ? "bold" : lowerKey === "i" ? "italic" : "underline") as any,
         );
-        focusInput();
         return;
       }
 
       if (lowerKey === "k") {
         event.preventDefault();
-        promptForLink();
+        commandsController.promptForLink();
         return;
       }
 
       if (event.shiftKey && (lowerKey === "7" || lowerKey === "8")) {
         event.preventDefault();
-        clearPreferredColumn();
-        resetTransactionGrouping();
-        applySelectionAwareParagraphCommand((current) =>
-          toggleParagraphList(current, lowerKey === "7" ? "ordered" : "bullet"),
-        );
-        focusInput();
+        commandsController.applyParagraphListCommand(lowerKey === "7" ? "ordered" : "bullet");
         return;
       }
     }
@@ -3477,25 +2878,29 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           focusInput();
           return;
         }
-        if (handleListEnter()) {
+        if (commandsController.handleListEnter()) {
           event.preventDefault();
           return;
         }
         event.preventDefault();
         clearPreferredColumn();
         resetTransactionGrouping();
-        applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => splitBlockAtSelection(temp)));
+        applyTransactionalState((current) =>
+          applyTableAwareParagraphEdit(current, (temp) => splitBlockAtSelection(temp)),
+        );
         focusInput();
         return;
       case "Backspace":
-        if (handleListBoundaryBackspace(event)) {
+        if (commandsController.handleListBoundaryBackspace(event)) {
           event.preventDefault();
           return;
         }
         event.preventDefault();
         clearPreferredColumn();
         resetTransactionGrouping();
-        applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)));
+        applyTransactionalState((current) =>
+          applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)),
+        );
         event.currentTarget.value = "";
         focusInput();
         return;
@@ -3508,7 +2913,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         focusInput();
         return;
       case "Tab": {
-        if (handleListTab(event.shiftKey ? "outdent" : "indent")) {
+        if (commandsController.handleListTab(event.shiftKey ? "outdent" : "indent")) {
           event.preventDefault();
           return;
         }
@@ -3807,7 +3212,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       ),
     );
     const position = paragraphOffsetToPosition(paragraph, offset);
-    const cellLocation = findParagraphTableLocation(state.document, paragraphId);
+    const cellLocation = findParagraphTableLocation(state.document, paragraphId, getActiveSectionIndex(state));
     const anchorPosition = cellLocation
       ? (() => {
           const block = state.document.blocks[cellLocation.blockIndex];
@@ -3992,6 +3397,72 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     focusInput();
   };
 
+  const insertTableCommand = (rows: number, cols: number) => {
+    applyTransactionalState((current) => insertTableAtSelection(current, rows, cols), {
+      mergeKey: "insertTable",
+    });
+    focusInput();
+  };
+
+  const commandsController = createEditor2CommandsController({
+    state,
+    logger,
+    applyState,
+    applyTransactionalState,
+    applySelectionAwareTextCommand,
+    applySelectionAwareParagraphCommand,
+    applyTableAwareParagraphEdit,
+    focusInput,
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    toolbarStyleState,
+    selectionCollapsed,
+    selectedImageRun,
+    openLinkDialog: (initialHref) => setLinkDialog({ isOpen: true, initialHref }),
+    openImageAltDialog: (initialAlt) => setImageAltDialog({ isOpen: true, initialAlt }),
+  });
+
+  const toolbarCtx: EditorToolbarCtx = {
+    state,
+    undoStack,
+    redoStack,
+    importInputRef: () => importInputRef,
+    imageInputRef: () => imageInputRef,
+    toolbarStyleState,
+    selectionCollapsed,
+    selectedImageRun,
+    tableSelectionLabel,
+    tableActionRestrictionLabel,
+    handleExportDocx,
+    performUndo,
+    performRedo,
+    focusInput,
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    applyTransactionalState,
+    applyTableAwareParagraphEdit,
+    ...commandsController,
+    canMergeSelectedTable,
+    canMergeSelectedTableCells,
+    canMergeSelectedTableRows,
+    canSplitSelectedTable,
+    canSplitSelectedTableCell,
+    canSplitSelectedTableCellVertically,
+    canEditSelectedTableColumn,
+    canEditSelectedTableRow,
+    mergeSelectedTable,
+    mergeSelectedTableCells,
+    mergeSelectedTableRows,
+    splitSelectedTable,
+    splitSelectedTableCell,
+    splitSelectedTableCellVertically,
+    insertSelectedTableColumn,
+    insertSelectedTableRow,
+    deleteSelectedTableColumn,
+    deleteSelectedTableRow,
+    insertTableCommand,
+  };
+
   if (!showChrome()) {
     return (
       <OasisEditor2Editor
@@ -4012,8 +3483,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           if (!caretBox().visible || !isSelectionCollapsed(state.selection)) {
             return false;
           }
-          const anchorLoc = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId);
-          const focusLoc = findParagraphTableLocation(state.document, state.selection.focus.paragraphId);
+          const anchorLoc = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, getActiveSectionIndex(state));
+          const focusLoc = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
           const inTableSelection = anchorLoc && focusLoc &&
             anchorLoc.blockIndex === focusLoc.blockIndex &&
             (anchorLoc.rowIndex !== focusLoc.rowIndex || anchorLoc.cellIndex !== focusLoc.cellIndex);
@@ -4040,6 +3511,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         onSurfaceMouseDown={handleSurfaceMouseDown}
         onSurfaceDblClick={handleSurfaceDblClick}
         onParagraphMouseDown={handleParagraphMouseDown}
+        onRevisionMouseEnter={handleRevisionMouseEnter}
+        onRevisionMouseLeave={handleRevisionMouseLeave}
         onImageMouseDown={(paragraphId, paragraphOffset, event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -4160,901 +3633,50 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   }
 
   return (
-    <div class="oasis-editor-2-app">
-      <header class="oasis-editor-2-header">
-        <p class="oasis-editor-2-eyebrow">oasis-editor-2</p>
-        <h1 class="oasis-editor-2-title">Minimal editor</h1>
-        <p class="oasis-editor-2-copy">
-          Block model, collapsed caret, Solid render tree, and a transparent textarea as the only
-          keyboard transport.
-        </p>
-      </header>
+    <div
+      classList={{
+        "oasis-editor-2-shell": true,
+        "oasis-editor-2-read-only": isReadOnly(),
+      }}
+    >
+      <input
+        type="file"
+        ref={importInputRef}
+        accept=".docx"
+        style={{ display: "none" }}
+        onChange={(e) => handleImportDocx(e.currentTarget.files?.[0] ?? null)}
+      />
+      <input
+        type="file"
+        ref={imageInputRef}
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={(e) => handleInsertImage(e.currentTarget.files?.[0] ?? null)}
+      />
 
-      <section class="oasis-editor-2-toolbar" onMouseDown={(event) => event.preventDefault()}>
-        <div class="oasis-editor-2-toolbar-group">
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-export-docx"
-            onClick={() => void handleExportDocx()}
-          >
-            Export DOCX
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-import-docx"
-            onClick={() => importInputRef?.click()}
-          >
-            Import DOCX
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button"
-            data-testid="editor-2-toolbar-undo"
-            disabled={undoStack().length === 0}
-            onClick={performUndo}
-            title="Undo last change"
-          >
-            Undo
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button"
-            data-testid="editor-2-toolbar-redo"
-            disabled={redoStack().length === 0}
-            onClick={performRedo}
-            title="Redo last undone change"
-          >
-            Redo
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-insert-image"
-            onClick={() => imageInputRef?.click()}
-          >
-            Insert Image
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button"
-            data-testid="editor-2-toolbar-insert-page-number"
-            onClick={() => {
-              clearPreferredColumn();
-              resetTransactionGrouping();
-              applyTransactionalState((current) =>
-                applyTableAwareParagraphEdit(current, (temp) => insertFieldAtSelection(temp, "PAGE")),
-              );
-              focusInput();
-            }}
-            title="Insert Page Number"
-          >
-            Page #
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button"
-            data-testid="editor-2-toolbar-insert-total-pages"
-            onClick={() => {
-              clearPreferredColumn();
-              resetTransactionGrouping();
-              applyTransactionalState((current) =>
-                applyTableAwareParagraphEdit(current, (temp) => insertFieldAtSelection(temp, "NUMPAGES")),
-              );
-              focusInput();
-            }}
-            title="Insert Total Pages"
-          >
-            Total Pages
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            classList={{
-              "oasis-editor-2-tool-button-active": Boolean(selectedImageRun()),
-            }}
-            data-testid="editor-2-toolbar-image-alt"
-            disabled={!selectedImageRun()}
-            onClick={promptForImageAlt}
-            title="Edit the selected image alt text"
-          >
-            Image Alt
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-insert-table"
-            onClick={() => {
-              applyTransactionalState(
-                (current) => insertTableAtSelection(current, 3, 3),
-                { mergeKey: "insertTable" }
-              );
-              focusInput();
-            }}
-          >
-            Insert Table
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-merge-table"
-            disabled={!canMergeSelectedTable(state)}
-            onClick={() => {
-              applyTransactionalState(
-                (current) => mergeSelectedTable(current),
-                { mergeKey: "mergeTable" },
-              );
-              focusInput();
-            }}
-            title="Merge selected cells horizontally or vertically"
-          >
-            Merge Selection
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-merge-table-cells"
-            disabled={!canMergeSelectedTableCells(state)}
-            onClick={() => {
-              applyTransactionalState(
-                (current) => mergeSelectedTableCells(current),
-                { mergeKey: "mergeTableCells" },
-              );
-              focusInput();
-            }}
-            title="Merge selected cells horizontally"
-          >
-            Merge Horizontally
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-split-table"
-            disabled={!canSplitSelectedTable(state)}
-            onClick={() => {
-              applyTransactionalState(
-                (current) => splitSelectedTable(current),
-                { mergeKey: "splitTable" },
-              );
-              focusInput();
-            }}
-            title="Split selected cells horizontally or vertically"
-          >
-            Split Selection
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-table-shading"
-            onClick={() => {
-              const color = prompt("Cell Background Color (e.g. #f1f5f9):", "#f1f5f9");
-              if (color !== null) {
-                applyTransactionalState(
-                  (current) => setTableCellStyleValue(current, "shading", color || null),
-                  { mergeKey: "tableShading" },
-                );
-                focusInput();
-              }
-            }}
-          >
-            Cell Color
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button"
-            data-testid="editor-2-toolbar-table-borders"
-            onClick={() => {
-              applyTransactionalState(
-                (current) =>
-                  setTableCellBorders(current, { width: 1, type: "solid", color: "#64748b" }),
-                { mergeKey: "tableBorders" },
-              );
-              focusInput();
-            }}
-            title="Apply 1pt solid border to selected cells"
-          >
-            Borders
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button"
-            data-testid="editor-2-toolbar-table-no-borders"
-            onClick={() => {
-              applyTransactionalState(
-                (current) =>
-                  setTableCellBorders(current, { width: 0, type: "none", color: "transparent" }),
-                { mergeKey: "tableBorders" },
-              );
-              focusInput();
-            }}
-            title="Remove borders from selected cells"
-          >
-            No Borders
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-table-width-100"
-            onClick={() => {
-              applyTransactionalState(
-                (current) => setTableStyleValue(current, "width", "100%"),
-                { mergeKey: "tableWidth" },
-              );
-              focusInput();
-            }}
-          >
-            Table 100%
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button"
-            data-testid="editor-2-toolbar-table-align-left"
-            onClick={() => {
-              applyTransactionalState(
-                (current) => setTableStyleValue(current, "align", "left"),
-                { mergeKey: "tableAlign" },
-              );
-              focusInput();
-            }}
-            title="Align table to the left"
-          >
-            T-Left
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button"
-            data-testid="editor-2-toolbar-table-align-center"
-            onClick={() => {
-              applyTransactionalState(
-                (current) => setTableStyleValue(current, "align", "center"),
-                { mergeKey: "tableAlign" },
-              );
-              focusInput();
-            }}
-            title="Align table to the center"
-          >
-            T-Center
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button"
-            data-testid="editor-2-toolbar-table-align-right"
-            onClick={() => {
-              applyTransactionalState(
-                (current) => setTableStyleValue(current, "align", "right"),
-                { mergeKey: "tableAlign" },
-              );
-              focusInput();
-            }}
-            title="Align table to the right"
-          >
-            T-Right
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-table-cell-width"
-            onClick={() => {
-              const width = prompt("Cell Width (e.g. 100pt or 33%):", "");
-              if (width !== null) {
-                applyTransactionalState(
-                  (current) => setTableCellWidth(current, width || null),
-                  { mergeKey: "tableCellWidth" },
-                );
-                focusInput();
-              }
-            }}
-          >
-            Cell Width
-          </button>
-          <details class="oasis-editor-2-table-actions-advanced">
-            <summary class="oasis-editor-2-table-actions-summary">Advanced table actions</summary>
-            <div class="oasis-editor-2-toolbar-group oasis-editor-2-table-actions-group">
-              <button
-                type="button"
-                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-                data-testid="editor-2-toolbar-insert-table-column-before"
-                disabled={!canEditSelectedTableColumn(state)}
-                onClick={() => {
-                  applyTransactionalState(
-                    (current) => insertSelectedTableColumn(current, -1),
-                    { mergeKey: "insertTableColumn" },
-                  );
-                  focusInput();
-                }}
-                title="Insert a column to the left"
-              >
-                Insert Column Before
-              </button>
-              <button
-                type="button"
-                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-                data-testid="editor-2-toolbar-insert-table-column-after"
-                disabled={!canEditSelectedTableColumn(state)}
-                onClick={() => {
-                  applyTransactionalState(
-                    (current) => insertSelectedTableColumn(current, 1),
-                    { mergeKey: "insertTableColumn" },
-                  );
-                  focusInput();
-                }}
-                title="Insert a column to the right"
-              >
-                Insert Column After
-              </button>
-              <button
-                type="button"
-                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-                data-testid="editor-2-toolbar-delete-table-column"
-                disabled={!canEditSelectedTableColumn(state)}
-                onClick={() => {
-                  applyTransactionalState(
-                    (current) => deleteSelectedTableColumn(current),
-                    { mergeKey: "deleteTableColumn" },
-                  );
-                  focusInput();
-                }}
-                title="Delete the current column"
-              >
-                Delete Column
-              </button>
-              <button
-                type="button"
-                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-                data-testid="editor-2-toolbar-insert-table-row-before"
-                disabled={!canEditSelectedTableRow(state)}
-                onClick={() => {
-                  applyTransactionalState(
-                    (current) => insertSelectedTableRow(current, -1),
-                    { mergeKey: "insertTableRow" },
-                  );
-                  focusInput();
-                }}
-                title="Insert a row above the current one"
-              >
-                Insert Row Before
-              </button>
-              <button
-                type="button"
-                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-                data-testid="editor-2-toolbar-insert-table-row-after"
-                disabled={!canEditSelectedTableRow(state)}
-                onClick={() => {
-                  applyTransactionalState(
-                    (current) => insertSelectedTableRow(current, 1),
-                    { mergeKey: "insertTableRow" },
-                  );
-                  focusInput();
-                }}
-                title="Insert a row below the current one"
-              >
-                Insert Row After
-              </button>
-              <button
-                type="button"
-                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-                data-testid="editor-2-toolbar-delete-table-row"
-                disabled={!canEditSelectedTableRow(state)}
-                onClick={() => {
-                  applyTransactionalState(
-                    (current) => deleteSelectedTableRow(current),
-                    { mergeKey: "deleteTableRow" },
-                  );
-                  focusInput();
-                }}
-                title="Delete the current row"
-              >
-                Delete Row
-              </button>
-              <button
-                type="button"
-                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-                data-testid="editor-2-toolbar-split-table-cell"
-                disabled={!canSplitSelectedTableCell(state)}
-                onClick={() => {
-                  applyTransactionalState(
-                    (current) => splitSelectedTableCell(current),
-                    { mergeKey: "splitTableCell" },
-                  );
-                  focusInput();
-                }}
-                title="Split selected cell horizontally"
-              >
-                Split Horizontally
-              </button>
-              <button
-                type="button"
-                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-                data-testid="editor-2-toolbar-merge-table-rows"
-                disabled={!canMergeSelectedTableRows(state)}
-                onClick={() => {
-                  applyTransactionalState(
-                    (current) => mergeSelectedTableRows(current),
-                    { mergeKey: "mergeTableRows" },
-                  );
-                  focusInput();
-                }}
-                title="Merge selected cells vertically"
-              >
-                Merge Vertically
-              </button>
-              <button
-                type="button"
-                class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-                data-testid="editor-2-toolbar-split-table-row"
-                disabled={!canSplitSelectedTableCellVertically(state)}
-                onClick={() => {
-                  applyTransactionalState(
-                    (current) => splitSelectedTableCellVertically(current),
-                    { mergeKey: "splitTableRow" },
-                  );
-                  focusInput();
-                }}
-                title="Split selected cell vertically"
-              >
-                Split Vertically
-              </button>
-            </div>
-          </details>
-          <Show when={tableSelectionLabel()}>
-            {(label) => (
-              <div class="oasis-editor-2-toolbar-badge" data-testid="editor-2-table-selection-label">
-                {label()}
-              </div>
-            )}
-          </Show>
-          <Show when={tableActionRestrictionLabel()}>
-            {(label) => (
-              <div class="oasis-editor-2-toolbar-note" data-testid="editor-2-table-actions-note">
-                {label()}
-              </div>
-            )}
-          </Show>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            classList={{
-              "oasis-editor-2-tool-button-active": Boolean(toolbarStyleState().link),
-            }}
-            data-testid="editor-2-toolbar-link"
-            disabled={selectionCollapsed() && !toolbarStyleState().link}
-            onClick={promptForLink}
-          >
-            Link
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-unlink"
-            disabled={!toolbarStyleState().link}
-            onClick={removeLinkCommand}
-          >
-            Unlink
-          </button>
-          
-          <select
-            class="oasis-editor-2-tool-select oasis-editor-2-tool-select-wide"
-            data-testid="editor-2-toolbar-style"
-            value={toolbarStyleState().styleId || "normal"}
-            onChange={(e) => handleStyleChange(e.currentTarget.value)}
-            title="Paragraph Style"
-          >
-            <For each={Object.values(state.document.styles ?? {})}>
-              {(style) => <option value={style.id}>{style.name}</option>}
-            </For>
-          </select>
+      <Show when={showChrome()}>
+        <EditorToolbar ctx={toolbarCtx} />
+      </Show>
 
-          {booleanButtons.map((button) => (
-            <button
-              type="button"
-              class="oasis-editor-2-tool-button"
-              classList={{
-                "oasis-editor-2-tool-button-active": toolbarStyleState()[button.key],
-              }}
-              data-testid={button.testId}
-              disabled={selectionCollapsed()}
-              onClick={() => applyBooleanStyleCommand(button.key)}
-            >
-              {button.label}
-            </button>
-          ))}
-        </div>
+      <LinkDialog
+        isOpen={linkDialog().isOpen}
+        initialHref={linkDialog().initialHref}
+        onClose={() => {
+          setLinkDialog({ ...linkDialog(), isOpen: false });
+          focusInput();
+        }}
+        onConfirm={(href) => commandsController.applyLinkCommand(href.trim() || null)}
+      />
 
-        <div class="oasis-editor-2-toolbar-group">
-          {alignButtons.map((button) => (
-            <button
-              type="button"
-              class="oasis-editor-2-tool-button"
-              classList={{
-                "oasis-editor-2-tool-button-active": toolbarStyleState().align === button.value,
-              }}
-              data-testid={button.testId}
-              onClick={() => applyParagraphStyleCommand("align", button.value)}
-            >
-              {button.label}
-            </button>
-          ))}
-        </div>
-
-        <div class="oasis-editor-2-toolbar-group">
-          {listButtons.map((button) => (
-            <button
-              type="button"
-              class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-              classList={{
-                "oasis-editor-2-tool-button-active": toolbarStyleState().listKind === button.kind,
-              }}
-              data-testid={button.testId}
-              onClick={() => applyParagraphListCommand(button.kind)}
-            >
-              {button.label}
-            </button>
-          ))}
-          
-          <select
-            class="oasis-editor-2-tool-select"
-            data-testid="editor-2-toolbar-list-format"
-            onChange={(e) => handleListFormatChange(e.currentTarget.value as any)}
-            title="Change list numbering format"
-          >
-            <option value="decimal">1, 2, 3</option>
-            <option value="lowerLetter">a, b, c</option>
-            <option value="upperLetter">A, B, C</option>
-            <option value="lowerRoman">i, ii, iii</option>
-            <option value="upperRoman">I, II, III</option>
-            <option value="bullet">Bullet</option>
-          </select>
-
-          <label class="oasis-editor-2-tool-metric">
-            <span>Start</span>
-            <input
-              type="number"
-              class="oasis-editor-2-tool-number"
-              data-testid="editor-2-toolbar-list-start-at"
-              min="1"
-              step="1"
-              placeholder="1"
-              onChange={(e) => handleListStartAtChange(e.currentTarget.value ? Number(e.currentTarget.value) : null)}
-              title="Start numbering at"
-            />
-          </label>
-        </div>
-
-        <div class="oasis-editor-2-toolbar-group">
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            classList={{
-              "oasis-editor-2-tool-button-active":
-                (state.document.sections?.[getActiveSectionIndex(state)] ?? state.document)
-                  .pageSettings?.orientation === "landscape",
-            }}
-            data-testid="editor-2-toolbar-orientation"
-            onClick={() => {
-              const currentSectionIndex = getActiveSectionIndex(state);
-              const section =
-                state.document.sections?.[currentSectionIndex] || state.document;
-              const currentOrientation = section.pageSettings?.orientation || "portrait";
-              const nextOrientation = currentOrientation === "portrait" ? "landscape" : "portrait";
-              applyUpdateSectionSettingsCommand(currentSectionIndex, {
-                pageSettings: {
-                  ...section.pageSettings!,
-                  orientation: nextOrientation,
-                },
-              });
-            }}
-          >
-            Orient
-          </button>
-          <select
-            class="oasis-editor-2-tool-select"
-            data-testid="editor-2-toolbar-margins"
-            onChange={(event) => {
-              const currentSectionIndex = getActiveSectionIndex(state);
-              const section =
-                state.document.sections?.[currentSectionIndex] || state.document;
-              const value = event.currentTarget.value;
-              const margins =
-                value === "narrow"
-                  ? { top: 48, right: 48, bottom: 48, left: 48, header: 24, footer: 24, gutter: 0 }
-                  : { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 };
-              applyUpdateSectionSettingsCommand(currentSectionIndex, {
-                pageSettings: {
-                  ...section.pageSettings!,
-                  margins,
-                },
-              });
-            }}
-          >
-            <option value="normal">Normal Margins</option>
-            <option value="narrow">Narrow Margins</option>
-          </select>
-        </div>
-
-        <div class="oasis-editor-2-toolbar-group">
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            classList={{
-              "oasis-editor-2-tool-button-active": state.trackChangesEnabled,
-            }}
-            data-testid="editor-2-toolbar-track-changes"
-            onClick={() => applyToggleTrackChangesCommand()}
-          >
-            Track
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button"
-            data-testid="editor-2-toolbar-accept-revisions"
-            disabled={selectionCollapsed()}
-            onClick={() => applyAcceptRevisionsCommand()}
-          >
-            Accept
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button"
-            data-testid="editor-2-toolbar-reject-revisions"
-            disabled={selectionCollapsed()}
-            onClick={() => applyRejectRevisionsCommand()}
-          >
-            Reject
-          </button>
-        </div>
-
-        <div class="oasis-editor-2-toolbar-group">
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            classList={{
-              "oasis-editor-2-tool-button-active": toolbarStyleState().pageBreakBefore,
-            }}
-            data-testid="editor-2-toolbar-page-break-before"
-            onClick={() => toggleParagraphFlagCommand("pageBreakBefore")}
-          >
-            Page Break
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            classList={{
-              "oasis-editor-2-tool-button-active": toolbarStyleState().keepWithNext,
-            }}
-            data-testid="editor-2-toolbar-keep-with-next"
-            onClick={() => toggleParagraphFlagCommand("keepWithNext")}
-          >
-            Keep Next
-          </button>
-        </div>
-
-        <div class="oasis-editor-2-toolbar-group">
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-section-break-next"
-            onClick={() => applyInsertSectionBreakCommand("nextPage")}
-          >
-            Sec Next
-          </button>
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button oasis-editor-2-tool-button-wide"
-            data-testid="editor-2-toolbar-section-break-continuous"
-            onClick={() => applyInsertSectionBreakCommand("continuous")}
-          >
-            Sec Cont
-          </button>
-        </div>
-
-        <div class="oasis-editor-2-toolbar-group">
-          <select
-            class="oasis-editor-2-tool-select"
-            data-testid="editor-2-toolbar-font-family"
-            disabled={selectionCollapsed()}
-            value={toolbarStyleState().fontFamily}
-            onChange={(event) =>
-              applyValueStyleCommand("fontFamily", event.currentTarget.value || null)
-            }
-          >
-            <option value="">Font</option>
-            <option value="Georgia">Georgia</option>
-            <option value="Inter">Inter</option>
-            <option value="Times New Roman">Times New Roman</option>
-            <option value="Courier New">Courier New</option>
-          </select>
-
-          <select
-            class="oasis-editor-2-tool-select oasis-editor-2-tool-select-small"
-            data-testid="editor-2-toolbar-font-size"
-            disabled={selectionCollapsed()}
-            value={toolbarStyleState().fontSize}
-            onChange={(event) =>
-              applyValueStyleCommand(
-                "fontSize",
-                event.currentTarget.value ? Number(event.currentTarget.value) : null,
-              )
-            }
-          >
-            <option value="">Size</option>
-            <option value="14">14</option>
-            <option value="16">16</option>
-            <option value="18">18</option>
-            <option value="20">20</option>
-            <option value="24">24</option>
-            <option value="28">28</option>
-          </select>
-
-          <label class="oasis-editor-2-tool-color">
-            <span>Text</span>
-            <input
-              type="color"
-              class="oasis-editor-2-tool-color-input"
-              data-testid="editor-2-toolbar-color"
-              disabled={selectionCollapsed()}
-              value={toolbarStyleState().color || "#111827"}
-              onInput={(event) => applyValueStyleCommand("color", event.currentTarget.value)}
-            />
-          </label>
-
-          <label class="oasis-editor-2-tool-color">
-            <span>Mark</span>
-            <input
-              type="color"
-              class="oasis-editor-2-tool-color-input"
-              data-testid="editor-2-toolbar-highlight"
-              disabled={selectionCollapsed()}
-              value={toolbarStyleState().highlight || "#fef08a"}
-              onInput={(event) => applyValueStyleCommand("highlight", event.currentTarget.value)}
-            />
-          </label>
-        </div>
-
-        <div class="oasis-editor-2-toolbar-group">
-          <label class="oasis-editor-2-tool-metric">
-            <span>Line</span>
-            <input
-              type="number"
-              class="oasis-editor-2-tool-number"
-              data-testid="editor-2-toolbar-line-height"
-              min="1"
-              step="0.1"
-              value={toolbarStyleState().lineHeight}
-              onChange={(event) =>
-                applyParagraphStyleCommand(
-                  "lineHeight",
-                  event.currentTarget.value ? Number(event.currentTarget.value) : null,
-                )
-              }
-            />
-          </label>
-
-          <label class="oasis-editor-2-tool-metric">
-            <span>Before</span>
-            <input
-              type="number"
-              class="oasis-editor-2-tool-number"
-              data-testid="editor-2-toolbar-spacing-before"
-              min="0"
-              step="1"
-              value={toolbarStyleState().spacingBefore}
-              onChange={(event) =>
-                applyParagraphStyleCommand(
-                  "spacingBefore",
-                  event.currentTarget.value ? Number(event.currentTarget.value) : null,
-                )
-              }
-            />
-          </label>
-
-          <label class="oasis-editor-2-tool-metric">
-            <span>After</span>
-            <input
-              type="number"
-              class="oasis-editor-2-tool-number"
-              data-testid="editor-2-toolbar-spacing-after"
-              min="0"
-              step="1"
-              value={toolbarStyleState().spacingAfter}
-              onChange={(event) =>
-                applyParagraphStyleCommand(
-                  "spacingAfter",
-                  event.currentTarget.value ? Number(event.currentTarget.value) : null,
-                )
-              }
-            />
-          </label>
-
-          <label class="oasis-editor-2-tool-metric">
-            <span>Indent</span>
-            <input
-              type="number"
-              class="oasis-editor-2-tool-number"
-              data-testid="editor-2-toolbar-indent-left"
-              min="0"
-              step="1"
-              value={toolbarStyleState().indentLeft}
-              onChange={(event) =>
-                applyParagraphStyleCommand(
-                  "indentLeft",
-                  event.currentTarget.value ? Number(event.currentTarget.value) : null,
-                )
-              }
-            />
-          </label>
-
-          <label class="oasis-editor-2-tool-metric">
-            <span>First</span>
-            <input
-              type="number"
-              class="oasis-editor-2-tool-number"
-              data-testid="editor-2-toolbar-indent-first-line"
-              step="1"
-              value={toolbarStyleState().indentFirstLine}
-              onChange={(event) =>
-                applyParagraphStyleCommand(
-                  "indentFirstLine",
-                  event.currentTarget.value ? Number(event.currentTarget.value) : null,
-                )
-              }
-            />
-          </label>
-
-          <label class="oasis-editor-2-tool-metric">
-            <span>Hang</span>
-            <input
-              type="number"
-              class="oasis-editor-2-tool-number"
-              data-testid="editor-2-toolbar-indent-hanging"
-              min="0"
-              step="1"
-              value={toolbarStyleState().indentHanging}
-              onChange={(event) =>
-                applyParagraphStyleCommand(
-                  "indentHanging",
-                  event.currentTarget.value ? Number(event.currentTarget.value) : null,
-                )
-              }
-            />
-          </label>
-
-          <label class="oasis-editor-2-tool-color">
-            <span>Para BG</span>
-            <input
-              type="color"
-              class="oasis-editor-2-tool-color-input"
-              data-testid="editor-2-toolbar-paragraph-shading"
-              value={toolbarStyleState().shading || "#ffffff"}
-              onInput={(event) =>
-                applyParagraphStyleCommand("shading", event.currentTarget.value)
-              }
-            />
-          </label>
-
-          <button
-            type="button"
-            class="oasis-editor-2-tool-button"
-            data-testid="editor-2-toolbar-paragraph-borders"
-            onClick={() => {
-              const border: Editor2BorderStyle = { width: 1, type: "solid", color: "#000000" };
-              applyTransactionalState(
-                (current) => {
-                  let next = setParagraphStyle(current, "borderTop", border);
-                  next = setParagraphStyle(next, "borderRight", border);
-                  next = setParagraphStyle(next, "borderBottom", border);
-                  next = setParagraphStyle(next, "borderLeft", border);
-                  return next;
-                },
-                { mergeKey: "paraBorders" },
-              );
-              focusInput();
-            }}
-          >
-            Para Borders
-          </button>
-        </div>
-      </section>
+      <ImageAltDialog
+        isOpen={imageAltDialog().isOpen}
+        initialAlt={imageAltDialog().initialAlt}
+        onClose={() => {
+          setImageAltDialog({ ...imageAltDialog(), isOpen: false });
+          focusInput();
+        }}
+        onConfirm={(alt) => commandsController.applyImageAltCommand(alt.trim())}
+      />
 
       <section class="oasis-editor-2-stage">
         <OasisEditor2Editor
@@ -5074,8 +3696,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             if (!caretBox().visible || !isSelectionCollapsed(state.selection)) {
               return false;
             }
-            const anchorLoc = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId);
-            const focusLoc = findParagraphTableLocation(state.document, state.selection.focus.paragraphId);
+            const anchorLoc = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, getActiveSectionIndex(state));
+            const focusLoc = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
             const inTableSelection = anchorLoc && focusLoc &&
               anchorLoc.blockIndex === focusLoc.blockIndex &&
               (anchorLoc.rowIndex !== focusLoc.rowIndex || anchorLoc.cellIndex !== focusLoc.cellIndex);

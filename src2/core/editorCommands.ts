@@ -251,7 +251,25 @@ function clearParagraphList(paragraph: Editor2ParagraphNode): Editor2ParagraphNo
   return nextParagraph;
 }
 
+function blocksContainTables(nodes: Editor2BlockNode[]): boolean {
+  for (const node of nodes) {
+    if (node.type === "table") {
+      return true;
+    }
+  }
+  return false;
+}
+
 function replaceParagraphsInBlocks(blocks: Editor2BlockNode[], newParagraphs: Editor2ParagraphNode[]): Editor2BlockNode[] {
+  // Fast path: when the zone contains no tables, the flat paragraph list from
+  // `getParagraphs(state)` IS the canonical block list. Replace wholesale so
+  // that paragraph-count changes (split, merge via deleteBackward, etc.) are
+  // reflected. The structure-preserving walk below assumes a 1:1 mapping and
+  // would silently drop split halves or leave merged paragraphs behind.
+  if (!blocksContainTables(blocks)) {
+    return newParagraphs;
+  }
+
   let index = 0;
   const processBlocks = (nodes: Editor2BlockNode[]): Editor2BlockNode[] => {
     return nodes.map(node => {

@@ -1,0 +1,79 @@
+import { For } from "solid-js";
+import type { Editor2ParagraphListStyle } from "../../../../core/model.js";
+import type { EditorToolbarCtx } from "../EditorToolbar.js";
+import { ToolbarButton } from "../ToolbarButton.js";
+import { ToolbarGroup } from "../ToolbarGroup.js";
+import { ToolbarSelect } from "../ToolbarSelect.js";
+import { alignButtons, listButtons } from "../toolbarConfig.js";
+
+export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
+  const ctx = props.ctx;
+  const t = () => ctx().toolbarStyleState();
+
+  return (
+    <>
+      <ToolbarGroup>
+        <For each={alignButtons}>
+          {(button) => (
+            <ToolbarButton
+              icon={button.icon}
+              active={t().align === button.value}
+              data-testid={button.testId}
+              onClick={() => ctx().applyParagraphStyleCommand("align", button.value)}
+              tooltip={button.label}
+            />
+          )}
+        </For>
+      </ToolbarGroup>
+
+      <ToolbarGroup>
+        <For each={listButtons}>
+          {(button) => (
+            <ToolbarButton
+              icon={button.icon}
+              active={t().listKind === button.kind}
+              data-testid={button.testId}
+              onClick={() => ctx().applyParagraphListCommand(button.kind)}
+              tooltip={button.label}
+            />
+          )}
+        </For>
+
+        <ToolbarSelect
+          data-testid="editor-2-toolbar-list-format"
+          onChange={(e) =>
+            ctx().handleListFormatChange(
+              e.currentTarget.value as Editor2ParagraphListStyle["format"],
+            )
+          }
+          tooltip="Change list numbering format"
+        >
+          <option value="decimal">1, 2, 3</option>
+          <option value="lowerLetter">a, b, c</option>
+          <option value="upperLetter">A, B, C</option>
+          <option value="lowerRoman">i, ii, iii</option>
+          <option value="upperRoman">I, II, III</option>
+          <option value="bullet">Bullet</option>
+        </ToolbarSelect>
+
+        <label class="oasis-editor-2-tool-metric">
+          <span>Start</span>
+          <input
+            type="number"
+            class="oasis-editor-2-tool-number"
+            data-testid="editor-2-toolbar-list-start-at"
+            min="1"
+            step="1"
+            placeholder="1"
+            onChange={(e) =>
+              ctx().handleListStartAtChange(
+                e.currentTarget.value ? Number(e.currentTarget.value) : null,
+              )
+            }
+            title="Start numbering at"
+          />
+        </label>
+      </ToolbarGroup>
+    </>
+  );
+}

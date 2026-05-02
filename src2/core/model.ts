@@ -494,6 +494,36 @@ export function findParagraphLocation(
   return null;
 }
 
+export function findParagraphTableLocation(
+  document: Editor2Document,
+  paragraphId: string,
+  activeSectionIndex: number = 0,
+): { blockIndex: number; rowIndex: number; cellIndex: number; paragraphIndex: number } | null {
+  const hasSections = document.sections && document.sections.length > 0;
+  const section = hasSections ? document.sections![activeSectionIndex] : null;
+  const blocks = section ? section.blocks : document.blocks;
+
+  for (let blockIndex = 0; blockIndex < blocks.length; blockIndex += 1) {
+    const block = blocks[blockIndex]!;
+    if (block.type !== "table") {
+      continue;
+    }
+
+    for (let rowIndex = 0; rowIndex < block.rows.length; rowIndex += 1) {
+      const row = block.rows[rowIndex]!;
+      for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+        const cell = row.cells[cellIndex]!;
+        const paragraphIndex = cell.blocks.findIndex((paragraph) => paragraph.id === paragraphId);
+        if (paragraphIndex !== -1) {
+          return { blockIndex, rowIndex, cellIndex, paragraphIndex };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 export function getParagraphText(paragraph: Editor2ParagraphNode): string {
   return paragraph.runs.map((run) => run.text).join("");
 }
