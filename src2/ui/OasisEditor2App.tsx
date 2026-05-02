@@ -156,6 +156,7 @@ import {
 import { EditorToolbar } from "./components/Toolbar/EditorToolbar.js";
 import { createEditor2CommandsController } from "../app/controllers/Editor2CommandsController.js";
 import { createEditor2ClipboardController } from "../app/controllers/useEditor2Clipboard.js";
+import { createEditor2KeyboardController } from "../app/controllers/useEditor2Keyboard.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
@@ -2544,352 +2545,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     return true;
   };
 
-  const handleKeyDown = (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => {
-    if (isReadOnly()) {
-      const key = event.key;
-      const lowerKey = key.toLowerCase();
-      const isNavigationKey =
-        key === "ArrowLeft" ||
-        key === "ArrowRight" ||
-        key === "ArrowUp" ||
-        key === "ArrowDown" ||
-        key === "Home" ||
-        key === "End" ||
-        key === "PageUp" ||
-        key === "PageDown";
-      const isModifierOnly =
-        key === "Shift" || key === "Control" || key === "Meta" || key === "Alt";
-      const isCopyOrSelectAll =
-        (event.ctrlKey || event.metaKey) && (lowerKey === "a" || lowerKey === "c");
-      if (!isNavigationKey && !isModifierOnly && !isCopyOrSelectAll) {
-        event.preventDefault();
-      }
-      return;
-    }
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a" && !event.altKey) {
-      event.preventDefault();
-      const paragraphs = getParagraphs(state);
-      if (paragraphs.length === 0) {
-        return;
-      }
 
-      const firstParagraph = paragraphs[0];
-      const lastParagraph = paragraphs[paragraphs.length - 1];
-      clearPreferredColumn();
-      applyState(
-        setSelection(state, {
-          anchor: paragraphOffsetToPosition(firstParagraph, 0),
-          focus: paragraphOffsetToPosition(lastParagraph, getParagraphText(lastParagraph).length),
-        }),
-      );
-      focusInput();
-      return;
-    }
-
-    if ((event.ctrlKey || event.metaKey) && event.altKey && event.key.toLowerCase() === "a") {
-      const selectedImage = selectedImageRun();
-      if (selectedImage) {
-        event.preventDefault();
-        commandsController.promptForImageAlt();
-        return;
-      }
-    }
-
-    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "v" && !event.altKey) {
-      event.preventDefault();
-      forcePlainTextPaste = true;
-      focusInput();
-      return;
-    }
-
-    if ((event.ctrlKey || event.metaKey) && !event.altKey) {
-      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-        event.preventDefault();
-        resetTransactionGrouping();
-        if (moveSelectionByWord(event.key === "ArrowLeft" ? "left" : "right", event.shiftKey)) {
-          focusInput();
-          return;
-        }
-      }
-
-      if (event.key === "Backspace" || event.key === "Delete") {
-        event.preventDefault();
-        clearPreferredColumn();
-        resetTransactionGrouping();
-
-        if (!isSelectionCollapsed(state.selection)) {
-          applyTransactionalState((current) =>
-            applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)),
-          );
-          event.currentTarget.value = "";
-          focusInput();
-          return;
-        }
-
-        const paragraphs = getParagraphs(state);
-        const focusParagraphIndex = paragraphs.findIndex(
-          (paragraph) => paragraph.id === state.selection.focus.paragraphId,
-        );
-        const focusParagraph = paragraphs[focusParagraphIndex];
-        if (!focusParagraph) {
-          event.currentTarget.value = "";
-          focusInput();
-          return;
-        }
-
-        if (event.key === "Backspace" && focusParagraph.list) {
-          const focusParagraphOffset = positionToParagraphOffset(focusParagraph, state.selection.focus);
-          if (focusParagraphOffset === 0) {
-            applySelectionAwareParagraphCommand((current) => outdentParagraphList(current));
-            event.currentTarget.value = "";
-            focusInput();
-            return;
-          }
-        }
-
-        const focusOffset = state.selection.focus.offset;
-        const paragraphText = getParagraphText(focusParagraph);
-        const word = resolveWordSelection(paragraphText, focusOffset);
-
-        if (event.key === "Backspace") {
-          if (focusOffset === 0 || word.start === focusOffset) {
-            applyTransactionalState((current) =>
-              applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)),
-            );
-          } else {
-            applyTransactionalState((current) =>
-              applyTableAwareParagraphEdit(
-                setSelection(current, {
-                  anchor: paragraphOffsetToPosition(focusParagraph, word.start),
-                  focus: paragraphOffsetToPosition(focusParagraph, focusOffset),
-                }),
-                (temp) => deleteBackward(temp),
-              ),
-            );
-          }
-        } else if (focusOffset >= paragraphText.length) {
-          applyTransactionalState((current) =>
-            applyTableAwareParagraphEdit(current, (temp) => deleteForward(temp)),
-          );
-        } else if (word.end > focusOffset) {
-          applyTransactionalState((current) =>
-            applyTableAwareParagraphEdit(
-              setSelection(current, {
-                anchor: paragraphOffsetToPosition(focusParagraph, focusOffset),
-                focus: paragraphOffsetToPosition(focusParagraph, word.end),
-              }),
-              (temp) => deleteBackward(temp),
-            ),
-          );
-        } else {
-          applyTransactionalState((current) =>
-            applyTableAwareParagraphEdit(current, (temp) => deleteForward(temp)),
-          );
-        }
-
-        event.currentTarget.value = "";
-        focusInput();
-        return;
-      }
-    }
-
-    if (event.key === "Home" || event.key === "End") {
-      event.preventDefault();
-      resetTransactionGrouping();
-      const boundary = event.key === "Home" ? "start" : "end";
-      if (event.ctrlKey || event.metaKey) {
-        moveSelectionToDocumentBoundary(boundary, event.shiftKey);
-      } else {
-        moveSelectionToParagraphBoundary(boundary, event.shiftKey);
-      }
-      focusInput();
-      return;
-    }
-
-    if ((event.ctrlKey || event.metaKey) && !event.altKey) {
-      const lowerKey = event.key.toLowerCase();
-      if (lowerKey === "b" || lowerKey === "i" || lowerKey === "u") {
-        event.preventDefault();
-        commandsController.applyBooleanStyleCommand(
-          (lowerKey === "b" ? "bold" : lowerKey === "i" ? "italic" : "underline") as any,
-        );
-        return;
-      }
-
-      if (lowerKey === "k") {
-        event.preventDefault();
-        commandsController.promptForLink();
-        return;
-      }
-
-      if (event.shiftKey && (lowerKey === "7" || lowerKey === "8")) {
-        event.preventDefault();
-        commandsController.applyParagraphListCommand(lowerKey === "7" ? "ordered" : "bullet");
-        return;
-      }
-    }
-
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z" && !event.altKey) {
-      event.preventDefault();
-      if (event.shiftKey) {
-        performRedo();
-        return;
-      }
-
-      performUndo();
-      return;
-    }
-
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y" && !event.altKey) {
-      event.preventDefault();
-      performRedo();
-      return;
-    }
-
-    if (event.altKey && !event.ctrlKey && !event.metaKey) {
-      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-        event.preventDefault();
-        resetTransactionGrouping();
-        clearPreferredColumn();
-        if (moveSelectedImageByParagraph(event.key === "ArrowUp" ? -1 : 1)) {
-          return;
-        }
-      }
-    }
-
-    switch (event.key) {
-      case "Enter":
-        if (event.ctrlKey || event.metaKey) {
-          event.preventDefault();
-          clearPreferredColumn();
-          resetTransactionGrouping();
-          applyTransactionalState((current) =>
-            applyTableAwareParagraphEdit(current, (temp) => insertPageBreakAtSelection(temp)),
-          );
-          focusInput();
-          return;
-        }
-        if (event.shiftKey) {
-          event.preventDefault();
-          clearPreferredColumn();
-          resetTransactionGrouping();
-          applyTransactionalState((current) =>
-            applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, "\n")),
-          );
-          focusInput();
-          return;
-        }
-        if (commandsController.handleListEnter()) {
-          event.preventDefault();
-          return;
-        }
-        event.preventDefault();
-        clearPreferredColumn();
-        resetTransactionGrouping();
-        applyTransactionalState((current) =>
-          applyTableAwareParagraphEdit(current, (temp) => splitBlockAtSelection(temp)),
-        );
-        focusInput();
-        return;
-      case "Backspace":
-        if (commandsController.handleListBoundaryBackspace(event)) {
-          event.preventDefault();
-          return;
-        }
-        event.preventDefault();
-        clearPreferredColumn();
-        resetTransactionGrouping();
-        applyTransactionalState((current) =>
-          applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)),
-        );
-        event.currentTarget.value = "";
-        focusInput();
-        return;
-      case "Delete":
-        event.preventDefault();
-        clearPreferredColumn();
-        resetTransactionGrouping();
-        applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => deleteForward(temp)));
-        event.currentTarget.value = "";
-        focusInput();
-        return;
-      case "Tab": {
-        if (commandsController.handleListTab(event.shiftKey ? "outdent" : "indent")) {
-          event.preventDefault();
-          return;
-        }
-        const nextPosition = resolveAdjacentTableCellPosition(
-          state.document,
-          state.selection.focus.paragraphId,
-          event.shiftKey ? -1 : 1,
-        );
-        if (nextPosition) {
-          event.preventDefault();
-          clearPreferredColumn();
-          resetTransactionGrouping();
-          applySelectionPreservingStructure({
-            anchor: nextPosition,
-            focus: nextPosition,
-          });
-          focusInput();
-          return;
-        }
-        break;
-      }
-      case "ArrowLeft":
-        event.preventDefault();
-        resetTransactionGrouping();
-        if (event.shiftKey) {
-          clearPreferredColumn();
-          applyState(extendSelectionLeft(state));
-        } else {
-          clearPreferredColumn();
-          applyState(moveSelectionLeft(state));
-        }
-        focusInput();
-        return;
-      case "ArrowRight":
-        event.preventDefault();
-        resetTransactionGrouping();
-        if (event.shiftKey) {
-          clearPreferredColumn();
-          applyState(extendSelectionRight(state));
-        } else {
-          clearPreferredColumn();
-          applyState(moveSelectionRight(state));
-        }
-        focusInput();
-        return;
-      case "ArrowUp":
-        event.preventDefault();
-        resetTransactionGrouping();
-        if (event.shiftKey) {
-          if (!moveVerticalSelection(-1, true)) {
-            applyState(extendSelectionUp(state));
-            focusInput();
-          }
-        } else if (!moveVerticalByBlock(-1)) {
-          applyState(moveSelectionUp(state));
-          focusInput();
-        }
-        return;
-      case "ArrowDown":
-        event.preventDefault();
-        resetTransactionGrouping();
-        if (event.shiftKey) {
-          if (!moveVerticalSelection(1, true)) {
-            applyState(extendSelectionDown(state));
-            focusInput();
-          }
-        } else if (!moveVerticalByBlock(1)) {
-          applyState(moveSelectionDown(state));
-          focusInput();
-        }
-        return;
-      default:
-        return;
-    }
-  };
 
   const handleSurfaceMouseDown = (event: MouseEvent, forceTransition = false) => {
     event.preventDefault();
@@ -3337,6 +2993,33 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     selectedImageRun,
     openLinkDialog: (initialHref) => setLinkDialog({ isOpen: true, initialHref }),
     openImageAltDialog: (initialAlt) => setImageAltDialog({ isOpen: true, initialAlt }),
+  });
+
+  const { handleKeyDown } = createEditor2KeyboardController({
+    state: () => state,
+    isReadOnly,
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    applyState,
+    applyTransactionalState,
+    applyTableAwareParagraphEdit,
+    applySelectionAwareParagraphCommand,
+    focusInput,
+    commandsController,
+    selectedImageRun,
+    setForcePlainTextPaste: (value) => {
+      forcePlainTextPaste = value;
+    },
+    moveSelectionByWord,
+    moveSelectionToDocumentBoundary,
+    moveSelectionToParagraphBoundary,
+    moveSelectedImageByParagraph,
+    performUndo,
+    performRedo,
+    moveVerticalSelection,
+    moveVerticalByBlock,
+    resolveAdjacentTableCellPosition,
+    applySelectionPreservingStructure,
   });
 
   const toolbarCtx = {
