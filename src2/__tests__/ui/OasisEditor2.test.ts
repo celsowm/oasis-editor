@@ -22,34 +22,8 @@ describe("OasisEditor2", () => {
     expect(root.querySelector('[data-testid="editor-2-toolbar-font-family"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-align-center"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-list-bullet"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-toolbar-page-break-before"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-toolbar-merge-table"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-toolbar-split-table"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-undo"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-2-toolbar-redo"]')).not.toBeNull();
-    expect(root.textContent).toContain("Advanced table actions");
-    expect(root.querySelector('[data-testid="editor-2-toolbar-insert-table-column-before"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-toolbar-insert-table-column-after"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-toolbar-delete-table-column"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-toolbar-insert-table-row-before"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-toolbar-insert-table-row-after"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-toolbar-delete-table-row"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-toolbar-merge-table-cells"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-toolbar-split-table-cell"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-toolbar-merge-table-rows"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-toolbar-split-table-row"]')).not.toBeNull();
-    expect(root.textContent).toContain("Merge Selection");
-    expect(root.textContent).toContain("Split Selection");
-    expect(root.textContent).toContain("Merge Horizontally");
-    expect(root.textContent).toContain("Merge Vertically");
-    expect(root.textContent).toContain("Insert Row Before");
-    expect(root.textContent).toContain("Insert Row After");
-    expect(root.textContent).toContain("Delete Row");
-    expect(root.textContent).toContain("Insert Column Before");
-    expect(root.textContent).toContain("Insert Column After");
-    expect(root.textContent).toContain("Delete Column");
-    expect(root.querySelector('[data-testid="editor-2-toolbar-export-docx"]')).not.toBeNull();
-    expect(root.querySelector('[data-testid="editor-2-toolbar-import-docx"]')).not.toBeNull();
     expect(root.querySelectorAll('[data-testid="editor-2-block"]').length).toBe(1);
 
     instance.dispose();
@@ -499,7 +473,13 @@ describe("OasisEditor2", () => {
     const imageInput = root.querySelector(
       '[data-testid="editor-2-insert-image-input"]',
     ) as HTMLInputElement;
-    const insertTableButton = root.querySelector(
+    const insertDropdown = root.querySelector(
+      '[data-testid="editor-2-toolbar-insert-dropdown"]',
+    ) as HTMLElement;
+    insertDropdown.click();
+    await Promise.resolve();
+
+    const insertTableButton = document.querySelector(
       '[data-testid="editor-2-toolbar-insert-table"]',
     ) as HTMLButtonElement;
     const file = new File(

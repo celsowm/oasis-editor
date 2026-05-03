@@ -194,6 +194,60 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
         />
       </ToolbarGroup>
 
+      <ToolbarGroup>
+        <ToolbarButton
+          icon="align-left"
+          data-testid="editor-2-toolbar-table-align-left"
+          onClick={() => {
+            ctx().applyTransactionalState(
+              (current) => setTableCellStyleValue(current, "horizontalAlign", "left"),
+              { mergeKey: "tableAlign" },
+            );
+            ctx().focusInput();
+          }}
+          tooltip="Align Left"
+        />
+        <ToolbarButton
+          icon="align-center"
+          data-testid="editor-2-toolbar-table-align-center"
+          onClick={() => {
+            ctx().applyTransactionalState(
+              (current) => setTableCellStyleValue(current, "horizontalAlign", "center"),
+              { mergeKey: "tableAlign" },
+            );
+            ctx().focusInput();
+          }}
+          tooltip="Align Center"
+        />
+        <ToolbarButton
+          icon="align-right"
+          data-testid="editor-2-toolbar-table-align-right"
+          onClick={() => {
+            ctx().applyTransactionalState(
+              (current) => setTableCellStyleValue(current, "horizontalAlign", "right"),
+              { mergeKey: "tableAlign" },
+            );
+            ctx().focusInput();
+          }}
+          tooltip="Align Right"
+        />
+        <ToolbarButton
+          icon="move-horizontal"
+          data-testid="editor-2-toolbar-table-cell-width"
+          onClick={() => {
+            const width = prompt("Cell Width (e.g. 50% or 200pt):");
+            if (width) {
+              ctx().applyTransactionalState(
+                (current) => setTableCellWidth(current, width),
+                { mergeKey: "tableCellWidth" },
+              );
+              ctx().focusInput();
+            }
+          }}
+          tooltip="Cell Width"
+        />
+      </ToolbarGroup>
+
       <Show when={ctx().tableSelectionLabel()}>
         {(label) => (
           <div class="oasis-editor-2-toolbar-badge" data-testid="editor-2-table-selection-label">

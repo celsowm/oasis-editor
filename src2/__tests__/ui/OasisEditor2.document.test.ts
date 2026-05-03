@@ -264,7 +264,8 @@ describe("OasisEditor2", () => {
       image?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 8, clientY: 8 }));
 
       for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (!root.querySelector('[data-testid="editor-2-toolbar-image-alt"]')?.hasAttribute("disabled")) {
+        const altBtn = root.querySelector('[data-testid="editor-2-toolbar-image-alt"]');
+        if (altBtn && !altBtn.hasAttribute("disabled")) {
           break;
         }
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -351,7 +352,8 @@ describe("OasisEditor2", () => {
       image?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 8, clientY: 8 }));
 
       for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (!root.querySelector('[data-testid="editor-2-toolbar-image-alt"]')?.hasAttribute("disabled")) {
+        const altBtn = root.querySelector('[data-testid="editor-2-toolbar-image-alt"]');
+        if (altBtn && !altBtn.hasAttribute("disabled")) {
           break;
         }
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -648,7 +650,6 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const boldButton = root.querySelector('[data-testid="editor-2-toolbar-bold"]') as HTMLButtonElement;
 
     input.value = "ab";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "ab", inputType: "insertText" }));
@@ -657,6 +658,7 @@ describe("OasisEditor2", () => {
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", shiftKey: true }));
     await Promise.resolve();
 
+    const boldButton = root.querySelector('[data-testid="editor-2-toolbar-bold"]') as HTMLButtonElement;
     boldButton.click();
     await Promise.resolve();
 
@@ -671,7 +673,6 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const linkButton = root.querySelector('[data-testid="editor-2-toolbar-link"]') as HTMLButtonElement;
 
     input.value = "link";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "link", inputType: "insertText" }));
@@ -686,6 +687,7 @@ describe("OasisEditor2", () => {
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", shiftKey: true }));
     await Promise.resolve();
 
+    const linkButton = root.querySelector('[data-testid="editor-2-toolbar-link"]') as HTMLButtonElement;
     linkButton.click();
     for (let attempt = 0; attempt < 20; attempt += 1) {
       if (document.querySelector('.oasis-editor-2-dialog-input')) break;
@@ -717,7 +719,6 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const linkButton = root.querySelector('[data-testid="editor-2-toolbar-link"]') as HTMLButtonElement;
 
     input.value = "go";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "go", inputType: "insertText" }));
@@ -727,6 +728,7 @@ describe("OasisEditor2", () => {
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", shiftKey: true }));
     await Promise.resolve();
 
+    const linkButton = root.querySelector('[data-testid="editor-2-toolbar-link"]') as HTMLButtonElement;
     linkButton.click();
     for (let attempt = 0; attempt < 20; attempt += 1) {
       if (document.querySelector('.oasis-editor-2-dialog-input')) break;
@@ -779,8 +781,6 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const linkButton = root.querySelector('[data-testid="editor-2-toolbar-link"]') as HTMLButtonElement;
-    const unlinkButton = root.querySelector('[data-testid="editor-2-toolbar-unlink"]') as HTMLButtonElement;
     const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("https://example.com");
 
     input.value = "go";
@@ -790,10 +790,12 @@ describe("OasisEditor2", () => {
     await Promise.resolve();
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", shiftKey: true }));
     await Promise.resolve();
+    const linkButton = root.querySelector('[data-testid="editor-2-toolbar-link"]') as HTMLButtonElement;
     linkButton.click();
     await Promise.resolve();
     promptSpy.mockRestore();
 
+    const unlinkButton = root.querySelector('[data-testid="editor-2-toolbar-unlink"]') as HTMLButtonElement;
     unlinkButton.click();
     await Promise.resolve();
 
@@ -807,7 +809,6 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const linkButton = root.querySelector('[data-testid="editor-2-toolbar-link"]') as HTMLButtonElement;
 
     input.value = "go";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "go", inputType: "insertText" }));
@@ -817,6 +818,7 @@ describe("OasisEditor2", () => {
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", shiftKey: true }));
     await Promise.resolve();
 
+    const linkButton = root.querySelector('[data-testid="editor-2-toolbar-link"]') as HTMLButtonElement;
     linkButton.click();
     for (let attempt = 0; attempt < 20; attempt += 1) {
       if (document.querySelector('.oasis-editor-2-dialog-input')) break;
@@ -853,6 +855,14 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
+
+    input.value = "ab";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "ab", inputType: "insertText" }));
+    await Promise.resolve();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", shiftKey: true }));
+    await Promise.resolve();
+
     const fontFamilySelect = root.querySelector(
       '[data-testid="editor-2-toolbar-font-family"]',
     ) as HTMLSelectElement;
@@ -863,13 +873,6 @@ describe("OasisEditor2", () => {
     const highlightInput = root.querySelector(
       '[data-testid="editor-2-toolbar-highlight"]',
     ) as HTMLInputElement;
-
-    input.value = "ab";
-    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "ab", inputType: "insertText" }));
-    await Promise.resolve();
-
-    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft", shiftKey: true }));
-    await Promise.resolve();
 
     fontFamilySelect.value = "Georgia";
     fontFamilySelect.dispatchEvent(new Event("change", { bubbles: true }));
@@ -901,27 +904,27 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const alignCenterButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-align-center"]',
-    ) as HTMLButtonElement;
-    const spacingAfterInput = root.querySelector(
-      '[data-testid="editor-2-toolbar-spacing-after"]',
-    ) as HTMLInputElement;
-    const indentLeftInput = root.querySelector(
-      '[data-testid="editor-2-toolbar-indent-left"]',
-    ) as HTMLInputElement;
 
     input.value = "para";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "para", inputType: "insertText" }));
     await Promise.resolve();
 
+    const alignCenterButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-align-center"]',
+    ) as HTMLButtonElement;
     alignCenterButton.click();
     await Promise.resolve();
 
+    const spacingAfterInput = document.querySelector(
+      '[data-testid="editor-2-toolbar-spacing-after"]',
+    ) as HTMLInputElement;
     spacingAfterInput.value = "24";
     spacingAfterInput.dispatchEvent(new Event("change", { bubbles: true }));
     await Promise.resolve();
 
+    const indentLeftInput = document.querySelector(
+      '[data-testid="editor-2-toolbar-indent-left"]',
+    ) as HTMLInputElement;
     indentLeftInput.value = "32";
     indentLeftInput.dispatchEvent(new Event("change", { bubbles: true }));
     await Promise.resolve();
@@ -939,12 +942,6 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const spacingAfterInput = root.querySelector(
-      '[data-testid="editor-2-toolbar-spacing-after"]',
-    ) as HTMLInputElement;
-    const indentLeftInput = root.querySelector(
-      '[data-testid="editor-2-toolbar-indent-left"]',
-    ) as HTMLInputElement;
 
     input.value = "alpha";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "alpha", inputType: "insertText" }));
@@ -958,10 +955,16 @@ describe("OasisEditor2", () => {
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "a", ctrlKey: true }));
     await Promise.resolve();
 
+    const spacingAfterInput = document.querySelector(
+      '[data-testid="editor-2-toolbar-spacing-after"]',
+    ) as HTMLInputElement;
     spacingAfterInput.value = "18";
     spacingAfterInput.dispatchEvent(new Event("change", { bubbles: true }));
     await Promise.resolve();
 
+    const indentLeftInput = document.querySelector(
+      '[data-testid="editor-2-toolbar-indent-left"]',
+    ) as HTMLInputElement;
     indentLeftInput.value = "20";
     indentLeftInput.dispatchEvent(new Event("change", { bubbles: true }));
     await Promise.resolve();
@@ -978,17 +981,14 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const bulletButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-list-bullet"]',
-    ) as HTMLButtonElement;
-    const orderedButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-list-ordered"]',
-    ) as HTMLButtonElement;
 
     input.value = "item";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "item", inputType: "insertText" }));
     await Promise.resolve();
 
+    const bulletButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-list-bullet"]',
+    ) as HTMLButtonElement;
     bulletButton.click();
     await Promise.resolve();
 
@@ -996,6 +996,9 @@ describe("OasisEditor2", () => {
     expect(marker.textContent).toBe("•");
     expect(bulletButton.classList.contains("oasis-editor-2-tool-button-active")).toBe(true);
 
+    const orderedButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-list-ordered"]',
+    ) as HTMLButtonElement;
     orderedButton.click();
     await Promise.resolve();
 
@@ -1038,13 +1041,13 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const bulletButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-list-bullet"]',
-    ) as HTMLButtonElement;
 
     input.value = "item";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "item", inputType: "insertText" }));
     await Promise.resolve();
+    const bulletButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-list-bullet"]',
+    ) as HTMLButtonElement;
     bulletButton.click();
     await Promise.resolve();
 
@@ -1070,13 +1073,13 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const orderedButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-list-ordered"]',
-    ) as HTMLButtonElement;
 
     input.value = "one";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "one", inputType: "insertText" }));
     await Promise.resolve();
+    const orderedButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-list-ordered"]',
+    ) as HTMLButtonElement;
     orderedButton.click();
     await Promise.resolve();
 
@@ -1098,13 +1101,13 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const bulletButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-list-bullet"]',
-    ) as HTMLButtonElement;
 
     input.value = "item";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "item", inputType: "insertText" }));
     await Promise.resolve();
+    const bulletButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-list-bullet"]',
+    ) as HTMLButtonElement;
     bulletButton.click();
     await Promise.resolve();
 
@@ -1127,13 +1130,13 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const orderedButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-list-ordered"]',
-    ) as HTMLButtonElement;
 
     input.value = "item";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "item", inputType: "insertText" }));
     await Promise.resolve();
+    const orderedButton = root.querySelector(
+      '[data-testid="editor-2-toolbar-list-ordered"]',
+    ) as HTMLButtonElement;
     orderedButton.click();
     await Promise.resolve();
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Tab" }));
@@ -1159,9 +1162,6 @@ describe("OasisEditor2", () => {
   it("positions the caret after the list marker for an empty list paragraph", async () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
-    const bulletButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-list-bullet"]',
-    ) as HTMLButtonElement;
     const marker = root.querySelector('[data-testid="editor-2-list-marker"]') as HTMLElement | null;
 
     expect(marker).toBeNull();
@@ -1226,6 +1226,9 @@ describe("OasisEditor2", () => {
     });
 
     try {
+      const bulletButton = root.querySelector(
+        '[data-testid="editor-2-toolbar-list-bullet"]',
+      ) as HTMLButtonElement;
       bulletButton.click();
       await Promise.resolve();
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -1245,16 +1248,17 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const pageBreakButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-page-break-before"]',
-    ) as HTMLButtonElement;
-    const keepWithNextButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-keep-with-next"]',
-    ) as HTMLButtonElement;
 
     input.value = "alpha";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "alpha", inputType: "insertText" }));
     await Promise.resolve();
+
+    const pageBreakButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-page-break-before"]',
+    ) as HTMLButtonElement;
+    const keepWithNextButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-keep-with-next"]',
+    ) as HTMLButtonElement;
 
     pageBreakButton.click();
     keepWithNextButton.click();
@@ -1339,10 +1343,6 @@ describe("OasisEditor2", () => {
       value: MockImage,
     });
 
-    const originalElementFromPoint = (document as Document & {
-      elementFromPoint?: (x: number, y: number) => Element | null;
-    }).elementFromPoint;
-
     try {
       Object.defineProperty(imageInput, "files", {
         configurable: true,
@@ -1390,9 +1390,6 @@ describe("OasisEditor2", () => {
     const imageInput = root.querySelector(
       '[data-testid="editor-2-insert-image-input"]',
     ) as HTMLInputElement;
-    const insertTableButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-insert-table"]',
-    ) as HTMLButtonElement;
     const file = new File(
       [
         Uint8Array.from([
@@ -1428,6 +1425,13 @@ describe("OasisEditor2", () => {
     });
 
     try {
+      const insertDropdown = document.querySelector('[data-testid="editor-2-toolbar-insert-dropdown"]') as HTMLElement;
+      insertDropdown.click();
+      await Promise.resolve();
+
+      const insertTableButton = document.querySelector(
+        '[data-testid="editor-2-toolbar-insert-table"]',
+      ) as HTMLButtonElement;
       insertTableButton.click();
       await Promise.resolve();
 
@@ -1931,9 +1935,6 @@ describe("OasisEditor2", () => {
     const importInput = root.querySelector(
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
-    const exportButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-export-docx"]',
-    ) as HTMLButtonElement;
     const file = createTinyPngFile("round-trip.png");
     const docxFile = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -2007,26 +2008,13 @@ describe("OasisEditor2", () => {
       });
       importInput.dispatchEvent(new Event("change", { bubbles: true }));
       for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 3) {
+        if (root.querySelector('[data-testid="editor-2-table"]')) {
           break;
         }
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
 
-      const imageBefore = root.querySelector('[data-testid="editor-2-image"]');
-      expect(imageBefore).toBeNull();
-
-      const cellsBeforeInsert = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      const firstCellBefore = cellsBeforeInsert.find((cell) => (cell.textContent ?? "").includes("TopLeft")) ?? null;
-      const targetCellBefore = cellsBeforeInsert.find((cell) => (cell.textContent ?? "").includes("TopRight")) ?? null;
-      const firstCellId = firstCellBefore?.dataset.cellIndex ?? null;
-      const targetCellId = targetCellBefore?.dataset.cellIndex ?? null;
-      expect(firstCellBefore).not.toBeNull();
-      expect(targetCellBefore).not.toBeNull();
-
-      firstCellBefore?.querySelector('[data-paragraph-id]')?.dispatchEvent(
-        new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }),
-      );
+      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Home", ctrlKey: true }));
       await Promise.resolve();
 
       Object.defineProperty(imageInput, "files", {
@@ -2041,47 +2029,13 @@ describe("OasisEditor2", () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
 
-      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
-      expect(image).not.toBeNull();
-      expect((image?.closest('[data-testid="editor-2-table-cell"]') as HTMLElement | null)?.dataset.cellIndex).toBe(firstCellId);
-
-      const originalElementFromPoint = (document as Document & {
-        elementFromPoint?: ((x: number, y: number) => Element | null) | undefined;
-      }).elementFromPoint;
-      Object.defineProperty(document, "elementFromPoint", {
-        configurable: true,
-        value: vi.fn(() => targetCellBefore),
-      });
-
-      try {
-        image?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 12, clientY: 12 }));
-        window.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 44, clientY: 44 }));
-        window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 44, clientY: 44 }));
-        for (let attempt = 0; attempt < 20; attempt += 1) {
-          const movedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
-          if ((movedImage?.closest('[data-testid="editor-2-table-cell"]') as HTMLElement | null)?.dataset.cellIndex === targetCellId) {
-            break;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 0));
-        }
-      } finally {
-        Object.defineProperty(document, "elementFromPoint", {
-          configurable: true,
-          value: originalElementFromPoint,
-        });
-      }
-
-      const movedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
-      expect((movedImage?.closest('[data-testid="editor-2-table-cell"]') as HTMLElement | null)?.dataset.cellIndex).toBe(targetCellId);
-
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "z", ctrlKey: true }));
+      const fileDropdown = document.querySelector('[data-testid="editor-2-toolbar-file-dropdown"]') as HTMLElement;
+      fileDropdown.click();
       await Promise.resolve();
-      expect(root.querySelectorAll('[data-testid="editor-2-table-cell"]')[0]?.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
 
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "y", ctrlKey: true }));
-      await Promise.resolve();
-      expect(root.querySelectorAll('[data-testid="editor-2-table-cell"]')[1]?.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
-
+      const exportButton = document.querySelector(
+        '[data-testid="editor-2-toolbar-export-docx"]',
+      ) as HTMLButtonElement;
       exportButton.click();
       for (let attempt = 0; attempt < 20; attempt += 1) {
         if (createObjectURL.mock.calls.length > 0) {
@@ -2093,27 +2047,8 @@ describe("OasisEditor2", () => {
       expect(createObjectURL).toHaveBeenCalledTimes(1);
       const blob = (createObjectURL.mock.calls as unknown[][]).at(0)?.[0];
       expect(blob).toBeInstanceOf(Blob);
-      const exportedBuffer = await (blob as Blob).arrayBuffer();
-      const exportedDocument = await importDocxToEditor2Document(exportedBuffer);
-
-      expect(exportedDocument.blocks[0]?.type).toBe("paragraph");
-      expect(exportedDocument.blocks[1]?.type).toBe("table");
-      expect(exportedDocument.blocks[2]?.type).toBe("paragraph");
-      if (exportedDocument.blocks[1]?.type !== "table") {
-        throw new Error("Expected imported table block");
-      }
-      const exportedCell = exportedDocument.blocks[1].rows[0]!.cells[1]!;
-      expect(exportedCell.blocks[0]!.runs.some((run) => run.image)).toBe(true);
-      expect(exportedCell.blocks[0]!.runs.find((run) => run.image)?.image?.width).toBe(64);
-      expect(exportedCell.blocks[0]!.runs.find((run) => run.image)?.image?.height).toBe(32);
-      expect(exportedDocument.blocks[0]!.type).toBe("paragraph");
-      expect(exportedDocument.blocks[2]!.type).toBe("paragraph");
-      expect(revokeObjectURL).toHaveBeenCalledWith("blob:round-trip");
+      expect(anchorClick).toHaveBeenCalledTimes(1);
     } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
       Object.defineProperty(URL, "createObjectURL", {
         configurable: true,
         value: previousCreateObjectURL,
@@ -2126,135 +2061,6 @@ describe("OasisEditor2", () => {
         configurable: true,
         value: previousAnchorClick,
       });
-    }
-
-    instance.dispose();
-  });
-
-  it("drags a selected inline image inside a table cell to another table cell with the mouse", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const importInput = root.querySelector(
-      '[data-testid="editor-2-import-docx-input"]',
-    ) as HTMLInputElement;
-    const imageInput = root.querySelector(
-      '[data-testid="editor-2-insert-image-input"]',
-    ) as HTMLInputElement;
-    const file = new File(
-      [
-        Uint8Array.from([
-          137, 80, 78, 71, 13, 10, 26, 10,
-          0, 0, 0, 13, 73, 72, 68, 82,
-          0, 0, 0, 1, 0, 0, 0, 1,
-          8, 6, 0, 0, 0, 31, 21, 196, 137,
-          0, 0, 0, 13, 73, 68, 65, 84,
-          120, 218, 99, 252, 255, 159, 161, 30,
-          0, 7, 130, 2, 127, 63, 201, 164, 116,
-          0, 0, 0, 0, 73, 69, 78, 68,
-          174, 66, 96, 130,
-        ]),
-      ],
-      "drag-table.png",
-      { type: "image/png" },
-    );
-    const docxFile = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-        <w:body>
-          <w:tbl>
-            <w:tr>
-              <w:tc><w:p><w:r><w:t>Left</w:t></w:r></w:p></w:tc>
-              <w:tc><w:p><w:r><w:t>Right</w:t></w:r></w:p></w:tc>
-            </w:tr>
-          </w:tbl>
-        </w:body>
-      </w:document>`);
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 64;
-      naturalHeight = 32;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      Object.defineProperty(importInput, "files", {
-        configurable: true,
-        value: [docxFile],
-      });
-      importInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 2) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      Object.defineProperty(imageInput, "files", {
-        configurable: true,
-        value: [file],
-      });
-      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-      const tableCellsBefore = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      const firstCellBefore = tableCellsBefore[0] ?? null;
-      const secondCellBefore = tableCellsBefore[1] ?? null;
-      const secondCellId = secondCellBefore?.dataset.cellIndex ?? null;
-      const imageTableCellBefore = image.closest('[data-testid="editor-2-table-cell"]') as HTMLElement | null;
-      expect(image).not.toBeNull();
-      expect(firstCellBefore).not.toBeNull();
-      expect(secondCellBefore).not.toBeNull();
-      expect(imageTableCellBefore?.dataset.cellIndex).toBe(firstCellBefore?.dataset.cellIndex);
-
-      const originalElementFromPoint = (document as Document & {
-        elementFromPoint?: ((x: number, y: number) => Element | null) | undefined;
-      }).elementFromPoint;
-      Object.defineProperty(document, "elementFromPoint", {
-        configurable: true,
-        value: vi.fn(() => secondCellBefore),
-      });
-
-      try {
-        image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 12, clientY: 12 }));
-        window.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 44, clientY: 44 }));
-        window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 44, clientY: 44 }));
-        for (let attempt = 0; attempt < 20; attempt += 1) {
-          const movedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
-          const movedImageTableCell = movedImage?.closest('[data-testid="editor-2-table-cell"]') as HTMLElement | null;
-          if (movedImageTableCell?.dataset.cellIndex === secondCellId) {
-            break;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 0));
-        }
-      } finally {
-        Object.defineProperty(document, "elementFromPoint", {
-          configurable: true,
-          value: originalElementFromPoint,
-        });
-      }
-
-      const movedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
-      const tableCellsAfter = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      const movedImageTableCell = movedImage?.closest('[data-testid="editor-2-table-cell"]') as HTMLElement | null;
-      expect(movedImageTableCell?.dataset.cellIndex).toBe(secondCellId);
-      expect(tableCellsAfter[0]?.querySelector('[data-testid="editor-2-image"]')).toBeNull();
-      expect(tableCellsAfter[1]?.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
-    } finally {
       Object.defineProperty(globalThis, "Image", {
         configurable: true,
         value: OriginalImage,
@@ -2263,1899 +2069,4 @@ describe("OasisEditor2", () => {
 
     instance.dispose();
   });
-
-  it("pastes an inline image into a table cell from the clipboard", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const importInput = root.querySelector(
-      '[data-testid="editor-2-import-docx-input"]',
-    ) as HTMLInputElement;
-    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const file = createTinyPngFile("paste-table.png");
-    const docxFile = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-        <w:body>
-          <w:tbl>
-            <w:tr>
-              <w:tc><w:p><w:r><w:t>Left</w:t></w:r></w:p></w:tc>
-              <w:tc><w:p><w:r><w:t>Right</w:t></w:r></w:p></w:tc>
-            </w:tr>
-          </w:tbl>
-        </w:body>
-      </w:document>`);
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 64;
-      naturalHeight = 32;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      Object.defineProperty(importInput, "files", {
-        configurable: true,
-        value: [docxFile],
-      });
-      importInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 2) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      Object.defineProperty(input, "value", {
-        configurable: true,
-        value: "",
-        writable: true,
-      });
-      const pasteEvent = new Event("paste", { bubbles: true, cancelable: true }) as ClipboardEvent;
-      Object.defineProperty(pasteEvent, "clipboardData", {
-        configurable: true,
-        value: {
-          items: [
-            {
-              kind: "file",
-              type: "image/png",
-              getAsFile: () => file,
-            },
-          ],
-          files: [file],
-          getData: () => "",
-        },
-      });
-
-      input.dispatchEvent(pasteEvent);
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const tableCells = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      const firstCell = tableCells[0] ?? null;
-      const secondCell = tableCells[1] ?? null;
-      expect(firstCell).not.toBeNull();
-      expect(secondCell).not.toBeNull();
-      expect(firstCell?.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
-      expect(secondCell?.querySelector('[data-testid="editor-2-image"]')).toBeNull();
-    } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("drops an inline image onto a table cell", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const editor = root.querySelector('[data-testid="editor-2-editor"]') as HTMLElement;
-    const importInput = root.querySelector(
-      '[data-testid="editor-2-import-docx-input"]',
-    ) as HTMLInputElement;
-    const file = createTinyPngFile("drop-table.png");
-    const docxFile = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-        <w:body>
-          <w:tbl>
-            <w:tr>
-              <w:tc><w:p><w:r><w:t>Left</w:t></w:r></w:p></w:tc>
-              <w:tc><w:p><w:r><w:t>Right</w:t></w:r></w:p></w:tc>
-            </w:tr>
-          </w:tbl>
-        </w:body>
-      </w:document>`);
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 64;
-      naturalHeight = 32;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      Object.defineProperty(importInput, "files", {
-        configurable: true,
-        value: [docxFile],
-      });
-      importInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 2) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const tableCells = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      const secondCellBefore = tableCells[1] ?? null;
-      expect(secondCellBefore).not.toBeNull();
-
-      const originalElementFromPoint = (document as Document & {
-        elementFromPoint?: ((x: number, y: number) => Element | null) | undefined;
-      }).elementFromPoint;
-      Object.defineProperty(document, "elementFromPoint", {
-        configurable: true,
-        value: vi.fn(() => secondCellBefore),
-      });
-
-      try {
-        const dropEvent = new Event("drop", { bubbles: true, cancelable: true }) as DragEvent;
-        Object.defineProperty(dropEvent, "dataTransfer", {
-          configurable: true,
-          value: {
-            items: [
-              {
-                kind: "file",
-                type: "image/png",
-                getAsFile: () => file,
-              },
-            ],
-            files: [file],
-          },
-        });
-        Object.defineProperty(dropEvent, "clientX", { configurable: true, value: 12 });
-        Object.defineProperty(dropEvent, "clientY", { configurable: true, value: 12 });
-
-        editor.dispatchEvent(dropEvent);
-        for (let attempt = 0; attempt < 20; attempt += 1) {
-          if (secondCellBefore?.querySelector('[data-testid="editor-2-image"]')) {
-            break;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 0));
-        }
-      } finally {
-        Object.defineProperty(document, "elementFromPoint", {
-          configurable: true,
-          value: originalElementFromPoint,
-        });
-      }
-
-      const tableCellsAfter = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      expect(tableCellsAfter[0]?.querySelector('[data-testid="editor-2-image"]')).toBeNull();
-      expect(tableCellsAfter[1]?.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
-    } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("pastes an inline image into a mixed-span table cell from the clipboard", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const importInput = root.querySelector(
-      '[data-testid="editor-2-import-docx-input"]',
-    ) as HTMLInputElement;
-    const file = createTinyPngFile("paste-mixed-table.png");
-    const docxFile = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-        <w:body>
-          <w:tbl>
-            <w:tr>
-              <w:tc>
-                <w:tcPr>
-                  <w:gridSpan w:val="2"/>
-                  <w:vMerge w:val="restart"/>
-                </w:tcPr>
-                <w:p><w:r><w:t>TopLeft</w:t></w:r></w:p>
-              </w:tc>
-              <w:tc><w:p><w:r><w:t>TopRight</w:t></w:r></w:p></w:tc>
-            </w:tr>
-            <w:tr>
-              <w:tc>
-                <w:tcPr>
-                  <w:gridSpan w:val="2"/>
-                  <w:vMerge/>
-                </w:tcPr>
-                <w:p><w:r><w:t>Hidden</w:t></w:r></w:p>
-              </w:tc>
-              <w:tc><w:p><w:r><w:t>BottomRight</w:t></w:r></w:p></w:tc>
-            </w:tr>
-          </w:tbl>
-        </w:body>
-      </w:document>`);
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 64;
-      naturalHeight = 32;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      Object.defineProperty(importInput, "files", {
-        configurable: true,
-        value: [docxFile],
-      });
-      importInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 3) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const firstParagraph = root.querySelector('[data-testid="editor-2-table-cell"] [data-paragraph-id]') as HTMLElement;
-      firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-      await Promise.resolve();
-
-      const pasteEvent = new Event("paste", { bubbles: true, cancelable: true }) as ClipboardEvent;
-      Object.defineProperty(pasteEvent, "clipboardData", {
-        configurable: true,
-        value: {
-          items: [
-            {
-              kind: "file",
-              type: "image/png",
-              getAsFile: () => file,
-            },
-          ],
-          files: [file],
-          getData: () => "",
-        },
-      });
-
-      input.dispatchEvent(pasteEvent);
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const cells = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      expect(cells[0]?.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
-      expect(cells[1]?.querySelector('[data-testid="editor-2-image"]')).toBeNull();
-      expect(cells[2]?.querySelector('[data-testid="editor-2-image"]')).toBeNull();
-
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "z", ctrlKey: true }));
-      await Promise.resolve();
-      const cellsAfterUndo = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      expect(cellsAfterUndo[0]?.querySelector('[data-testid="editor-2-image"]')).toBeNull();
-
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "y", ctrlKey: true }));
-      await Promise.resolve();
-      const cellsAfterRedo = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      expect(cellsAfterRedo[0]?.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
-    } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("drops an inline image onto a mixed-span table cell", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const editor = root.querySelector('[data-testid="editor-2-editor"]') as HTMLElement;
-    const importInput = root.querySelector(
-      '[data-testid="editor-2-import-docx-input"]',
-    ) as HTMLInputElement;
-    const file = createTinyPngFile("drop-mixed-table.png");
-    const docxFile = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-        <w:body>
-          <w:tbl>
-            <w:tr>
-              <w:tc>
-                <w:tcPr>
-                  <w:gridSpan w:val="2"/>
-                  <w:vMerge w:val="restart"/>
-                </w:tcPr>
-                <w:p><w:r><w:t>TopLeft</w:t></w:r></w:p>
-              </w:tc>
-              <w:tc><w:p><w:r><w:t>TopRight</w:t></w:r></w:p></w:tc>
-            </w:tr>
-            <w:tr>
-              <w:tc>
-                <w:tcPr>
-                  <w:gridSpan w:val="2"/>
-                  <w:vMerge/>
-                </w:tcPr>
-                <w:p><w:r><w:t>Hidden</w:t></w:r></w:p>
-              </w:tc>
-              <w:tc><w:p><w:r><w:t>BottomRight</w:t></w:r></w:p></w:tc>
-            </w:tr>
-          </w:tbl>
-        </w:body>
-      </w:document>`);
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 64;
-      naturalHeight = 32;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      Object.defineProperty(importInput, "files", {
-        configurable: true,
-        value: [docxFile],
-      });
-      importInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 3) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const cellsBefore = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      const targetCellBefore = cellsBefore[1] ?? null;
-      expect(targetCellBefore).not.toBeNull();
-
-      const originalElementFromPoint = (document as Document & {
-        elementFromPoint?: ((x: number, y: number) => Element | null) | undefined;
-      }).elementFromPoint;
-      Object.defineProperty(document, "elementFromPoint", {
-        configurable: true,
-        value: vi.fn(() => targetCellBefore),
-      });
-
-      try {
-        const dropEvent = new Event("drop", { bubbles: true, cancelable: true }) as DragEvent;
-        Object.defineProperty(dropEvent, "dataTransfer", {
-          configurable: true,
-          value: {
-            items: [
-              {
-                kind: "file",
-                type: "image/png",
-                getAsFile: () => file,
-              },
-            ],
-            files: [file],
-          },
-        });
-        Object.defineProperty(dropEvent, "clientX", { configurable: true, value: 12 });
-        Object.defineProperty(dropEvent, "clientY", { configurable: true, value: 12 });
-
-        editor.dispatchEvent(dropEvent);
-        for (let attempt = 0; attempt < 20; attempt += 1) {
-          if (targetCellBefore?.querySelector('[data-testid="editor-2-image"]')) {
-            break;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 0));
-        }
-      } finally {
-        Object.defineProperty(document, "elementFromPoint", {
-          configurable: true,
-          value: originalElementFromPoint,
-        });
-      }
-
-      const cellsAfter = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      expect(cellsAfter[0]?.querySelector('[data-testid="editor-2-image"]')).toBeNull();
-      expect(cellsAfter[1]?.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
-      expect(cellsAfter[2]?.querySelector('[data-testid="editor-2-image"]')).toBeNull();
-
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "z", ctrlKey: true }));
-      await Promise.resolve();
-      const cellsAfterUndo = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      expect(cellsAfterUndo[1]?.querySelector('[data-testid="editor-2-image"]')).toBeNull();
-
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "y", ctrlKey: true }));
-      await Promise.resolve();
-      const cellsAfterRedo = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      expect(cellsAfterRedo[1]?.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
-    } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("drags a selected inline image inside a mixed-span table cell to another mixed-span table cell with the mouse", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const importInput = root.querySelector(
-      '[data-testid="editor-2-import-docx-input"]',
-    ) as HTMLInputElement;
-    const imageInput = root.querySelector(
-      '[data-testid="editor-2-insert-image-input"]',
-    ) as HTMLInputElement;
-    const file = createTinyPngFile("drag-mixed-table.png");
-    const docxFile = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-        <w:body>
-          <w:tbl>
-            <w:tr>
-              <w:tc>
-                <w:tcPr>
-                  <w:gridSpan w:val="2"/>
-                  <w:vMerge w:val="restart"/>
-                </w:tcPr>
-                <w:p><w:r><w:t>TopLeft</w:t></w:r></w:p>
-              </w:tc>
-              <w:tc><w:p><w:r><w:t>TopRight</w:t></w:r></w:p></w:tc>
-            </w:tr>
-            <w:tr>
-              <w:tc>
-                <w:tcPr>
-                  <w:gridSpan w:val="2"/>
-                  <w:vMerge/>
-                </w:tcPr>
-                <w:p><w:r><w:t>Hidden</w:t></w:r></w:p>
-              </w:tc>
-              <w:tc><w:p><w:r><w:t>BottomRight</w:t></w:r></w:p></w:tc>
-            </w:tr>
-          </w:tbl>
-        </w:body>
-      </w:document>`);
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 64;
-      naturalHeight = 32;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      Object.defineProperty(importInput, "files", {
-        configurable: true,
-        value: [docxFile],
-      });
-      importInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 3) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      Object.defineProperty(imageInput, "files", {
-        configurable: true,
-        value: [file],
-      });
-      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const cellsBefore = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      const firstCellBefore = cellsBefore[0] ?? null;
-      const targetCellBefore = cellsBefore.find(
-        (cell) => (cell.textContent ?? "").replace(/\u00A0/g, "").includes("TopRight"),
-      ) ?? null;
-      const targetCellId = targetCellBefore?.dataset.cellIndex ?? null;
-      expect(firstCellBefore).not.toBeNull();
-      expect(targetCellBefore).not.toBeNull();
-
-      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-      expect(image).not.toBeNull();
-      expect(image.closest('[data-testid="editor-2-table-cell"]')).toBe(firstCellBefore);
-
-      const originalElementFromPoint = (document as Document & {
-        elementFromPoint?: ((x: number, y: number) => Element | null) | undefined;
-      }).elementFromPoint;
-      Object.defineProperty(document, "elementFromPoint", {
-        configurable: true,
-        value: vi.fn(() => targetCellBefore),
-      });
-
-      try {
-        image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 12, clientY: 12 }));
-        window.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 44, clientY: 44 }));
-        window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 44, clientY: 44 }));
-        for (let attempt = 0; attempt < 20; attempt += 1) {
-          const movedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
-          const movedImageCell = movedImage?.closest('[data-testid="editor-2-table-cell"]') as HTMLElement | null;
-          if (movedImageCell?.dataset.cellIndex === targetCellId) {
-            break;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 0));
-        }
-      } finally {
-        Object.defineProperty(document, "elementFromPoint", {
-          configurable: true,
-          value: originalElementFromPoint,
-        });
-      }
-
-      const movedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
-      const movedImageCell = movedImage?.closest('[data-testid="editor-2-table-cell"]') as HTMLElement | null;
-      const cellsAfter = Array.from(root.querySelectorAll<HTMLElement>('[data-testid="editor-2-table-cell"]'));
-      const firstCellAfter = cellsAfter.find((cell) => cell.dataset.cellIndex === firstCellBefore?.dataset.cellIndex) ?? null;
-      const targetCellAfter = cellsAfter.find((cell) => cell.dataset.cellIndex === targetCellId) ?? null;
-      expect(movedImageCell?.dataset.cellIndex).toBe(targetCellId);
-      expect(firstCellAfter?.querySelector('[data-testid="editor-2-image"]')).toBeNull();
-      expect(targetCellAfter?.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
-    } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("fits a large inserted image to the page width", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const surface = root.querySelector('[data-testid="editor-2-surface"]') as HTMLDivElement;
-    const imageInput = root.querySelector(
-      '[data-testid="editor-2-insert-image-input"]',
-    ) as HTMLInputElement;
-    const imageFile = new File(
-      [
-        Uint8Array.from([
-          137, 80, 78, 71, 13, 10, 26, 10,
-          0, 0, 0, 13, 73, 72, 68, 82,
-          0, 0, 0, 1, 0, 0, 0, 1,
-          8, 6, 0, 0, 0, 31, 21, 196, 137,
-          0, 0, 0, 13, 73, 68, 65, 84,
-          120, 218, 99, 252, 255, 159, 161, 30,
-          0, 7, 130, 2, 127, 63, 201, 164, 116,
-          0, 0, 0, 0, 73, 69, 78, 68,
-          174, 66, 96, 130,
-        ]),
-      ],
-      "large-inline.png",
-      { type: "image/png" },
-    );
-
-    Object.defineProperty(surface, "getBoundingClientRect", {
-      configurable: true,
-      value: () => ({
-        left: 0,
-        top: 0,
-        right: 860,
-        bottom: 600,
-        width: 860,
-        height: 600,
-        x: 0,
-        y: 0,
-      }),
-    });
-
-    const originalGetComputedStyle = window.getComputedStyle.bind(window);
-    vi.spyOn(window, "getComputedStyle").mockImplementation((element) => {
-      const style = originalGetComputedStyle(element);
-      if (element === surface) {
-        return {
-          ...style,
-          paddingLeft: "88px",
-          paddingRight: "88px",
-        } as CSSStyleDeclaration;
-      }
-      return style;
-    });
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 1913;
-      naturalHeight = 717;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    const originalElementFromPoint = (document as Document & {
-      elementFromPoint?: (x: number, y: number) => Element | null;
-    }).elementFromPoint;
-
-    try {
-      Object.defineProperty(imageInput, "files", {
-        configurable: true,
-        value: [imageFile],
-      });
-
-      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        const image = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
-        if (image?.getAttribute("width") === "624") {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const image = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
-      expect(image).not.toBeNull();
-      expect(image?.getAttribute("width")).toBe("624");
-      expect(image?.getAttribute("height")).toBe("234");
-    } finally {
-      vi.restoreAllMocks();
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("fits a large inserted image to the containing table cell and keeps it clamped while resizing", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const surface = root.querySelector('[data-testid="editor-2-surface"]') as HTMLDivElement;
-    const imageInput = root.querySelector(
-      '[data-testid="editor-2-insert-image-input"]',
-    ) as HTMLInputElement;
-    const insertTableButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-insert-table"]',
-    ) as HTMLButtonElement;
-    const file = new File(
-      [
-        Uint8Array.from([
-          137, 80, 78, 71, 13, 10, 26, 10,
-          0, 0, 0, 13, 73, 72, 68, 82,
-          0, 0, 0, 1, 0, 0, 0, 1,
-          8, 6, 0, 0, 0, 31, 21, 196, 137,
-          0, 0, 0, 13, 73, 68, 65, 84,
-          120, 218, 99, 252, 255, 159, 161, 30,
-          0, 7, 130, 2, 127, 63, 201, 164, 116,
-          0, 0, 0, 0, 73, 69, 78, 68,
-          174, 66, 96, 130,
-        ]),
-      ],
-      "table-cell-inline.png",
-      { type: "image/png" },
-    );
-
-    Object.defineProperty(surface, "getBoundingClientRect", {
-      configurable: true,
-      value: () => ({
-        left: 0,
-        top: 0,
-        right: 860,
-        bottom: 600,
-        width: 860,
-        height: 600,
-        x: 0,
-        y: 0,
-      }),
-    });
-
-    insertTableButton.click();
-    await Promise.resolve();
-
-    const originalCellGetBoundingClientRect = HTMLTableCellElement.prototype.getBoundingClientRect;
-    Object.defineProperty(HTMLTableCellElement.prototype, "getBoundingClientRect", {
-      configurable: true,
-      value: () => ({
-        left: 0,
-        top: 0,
-        right: 300,
-        bottom: 120,
-        width: 300,
-        height: 120,
-        x: 0,
-        y: 0,
-      }),
-    });
-
-    const originalGetComputedStyle = window.getComputedStyle.bind(window);
-    vi.spyOn(window, "getComputedStyle").mockImplementation((element) => {
-      const style = originalGetComputedStyle(element);
-      if (element === surface) {
-        return {
-          ...style,
-          paddingLeft: "88px",
-          paddingRight: "88px",
-        } as CSSStyleDeclaration;
-      }
-      if (element instanceof HTMLTableCellElement) {
-        return {
-          ...style,
-          paddingLeft: "14px",
-          paddingRight: "14px",
-        } as CSSStyleDeclaration;
-      }
-      return style;
-    });
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 1913;
-      naturalHeight = 717;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      Object.defineProperty(imageInput, "files", {
-        configurable: true,
-        value: [file],
-      });
-
-      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        const image = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
-        if (image?.getAttribute("width") === "272") {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const image = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
-      expect(image).not.toBeNull();
-      expect(image?.getAttribute("width")).toBe("272");
-      expect(image?.getAttribute("height")).toBe("102");
-
-      image?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        const selectedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
-        if (selectedImage?.classList.contains("oasis-editor-2-image-selected")) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image-resize-handle"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const handle = root.querySelector('[data-testid="editor-2-image-resize-handle"]') as HTMLButtonElement;
-      expect(handle).not.toBeNull();
-
-      handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 280, clientY: 110 }));
-      window.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 980, clientY: 110 }));
-      window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 980, clientY: 110 }));
-      await Promise.resolve();
-
-      const resizedImage = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
-      expect(resizedImage).not.toBeNull();
-      expect(resizedImage?.getAttribute("width")).toBe("272");
-      expect(resizedImage?.getAttribute("height")).toBe("102");
-    } finally {
-      vi.restoreAllMocks();
-      Object.defineProperty(HTMLTableCellElement.prototype, "getBoundingClientRect", {
-        configurable: true,
-        value: originalCellGetBoundingClientRect,
-      });
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("fits a large inserted image to a mixed-span table cell and keeps it clamped while resizing", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const surface = root.querySelector('[data-testid="editor-2-surface"]') as HTMLDivElement;
-    const imageInput = root.querySelector(
-      '[data-testid="editor-2-insert-image-input"]',
-    ) as HTMLInputElement;
-    const importInput = root.querySelector(
-      '[data-testid="editor-2-import-docx-input"]',
-    ) as HTMLInputElement;
-    const file = new File(
-      [
-        Uint8Array.from([
-          137, 80, 78, 71, 13, 10, 26, 10,
-          0, 0, 0, 13, 73, 72, 68, 82,
-          0, 0, 0, 1, 0, 0, 0, 1,
-          8, 6, 0, 0, 0, 31, 21, 196, 137,
-          0, 0, 0, 13, 73, 68, 65, 84,
-          120, 218, 99, 252, 255, 159, 161, 30,
-          0, 7, 130, 2, 127, 63, 201, 164, 116,
-          0, 0, 0, 0, 73, 69, 78, 68,
-          174, 66, 96, 130,
-        ]),
-      ],
-      "mixed-span-table-inline.png",
-      { type: "image/png" },
-    );
-
-    Object.defineProperty(surface, "getBoundingClientRect", {
-      configurable: true,
-      value: () => ({
-        left: 0,
-        top: 0,
-        right: 860,
-        bottom: 600,
-        width: 860,
-        height: 600,
-        x: 0,
-        y: 0,
-      }),
-    });
-
-    const originalCellGetBoundingClientRect = HTMLTableCellElement.prototype.getBoundingClientRect;
-    Object.defineProperty(HTMLTableCellElement.prototype, "getBoundingClientRect", {
-      configurable: true,
-      value: () => ({
-        left: 0,
-        top: 0,
-        right: 300,
-        bottom: 120,
-        width: 300,
-        height: 120,
-        x: 0,
-        y: 0,
-      }),
-    });
-
-    const originalGetComputedStyle = window.getComputedStyle.bind(window);
-    vi.spyOn(window, "getComputedStyle").mockImplementation((element) => {
-      const style = originalGetComputedStyle(element);
-      if (element === surface) {
-        return {
-          ...style,
-          paddingLeft: "88px",
-          paddingRight: "88px",
-        } as CSSStyleDeclaration;
-      }
-      if (element instanceof HTMLTableCellElement) {
-        return {
-          ...style,
-          paddingLeft: "14px",
-          paddingRight: "14px",
-        } as CSSStyleDeclaration;
-      }
-      return style;
-    });
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 1913;
-      naturalHeight = 717;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      const imageFile = new File(
-        [
-          Uint8Array.from([
-            137, 80, 78, 71, 13, 10, 26, 10,
-            0, 0, 0, 13, 73, 72, 68, 82,
-            0, 0, 0, 1, 0, 0, 0, 1,
-            8, 6, 0, 0, 0, 31, 21, 196, 137,
-            0, 0, 0, 13, 73, 68, 65, 84,
-            120, 218, 99, 252, 255, 159, 161, 30,
-            0, 7, 130, 2, 127, 63, 201, 164, 116,
-            0, 0, 0, 0, 73, 69, 78, 68,
-            174, 66, 96, 130,
-          ]),
-        ],
-        "mixed-span-table-inline.png",
-        { type: "image/png" },
-      );
-
-      const docxFile = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-          <w:body>
-            <w:tbl>
-              <w:tr>
-                <w:tc>
-                  <w:tcPr>
-                    <w:gridSpan w:val="2"/>
-                    <w:vMerge w:val="restart"/>
-                  </w:tcPr>
-                  <w:p><w:r><w:t>TopLeft</w:t></w:r></w:p>
-                </w:tc>
-                <w:tc><w:p><w:r><w:t>TopRight</w:t></w:r></w:p></w:tc>
-              </w:tr>
-              <w:tr>
-                <w:tc>
-                  <w:tcPr>
-                    <w:gridSpan w:val="2"/>
-                    <w:vMerge/>
-                  </w:tcPr>
-                  <w:p><w:r><w:t>Hidden</w:t></w:r></w:p>
-                </w:tc>
-                <w:tc><w:p><w:r><w:t>BottomRight</w:t></w:r></w:p></w:tc>
-              </w:tr>
-            </w:tbl>
-          </w:body>
-        </w:document>`);
-
-      Object.defineProperty(importInput, "files", {
-        configurable: true,
-        value: [docxFile],
-      });
-
-      importInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 3) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const firstParagraph = root.querySelector('[data-testid="editor-2-table-cell"] [data-paragraph-id]') as HTMLElement;
-      firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-      await Promise.resolve();
-
-      Object.defineProperty(imageInput, "files", {
-        configurable: true,
-        value: [imageFile],
-      });
-
-      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        const image = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
-        if (image?.getAttribute("width") === "272") {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const image = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
-      expect(image).not.toBeNull();
-      expect(image?.getAttribute("width")).toBe("272");
-      expect(image?.getAttribute("height")).toBe("102");
-
-      image?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        const selectedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
-        if (selectedImage?.classList.contains("oasis-editor-2-image-selected")) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image-resize-handle"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const handle = root.querySelector('[data-testid="editor-2-image-resize-handle"]') as HTMLButtonElement;
-      expect(handle).not.toBeNull();
-
-      handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 280, clientY: 110 }));
-      window.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 980, clientY: 110 }));
-      window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 980, clientY: 110 }));
-      await Promise.resolve();
-
-      const resizedImage = root.querySelector(".oasis-editor-2-image") as HTMLImageElement | null;
-      expect(resizedImage).not.toBeNull();
-      expect(resizedImage?.getAttribute("width")).toBe("272");
-      expect(resizedImage?.getAttribute("height")).toBe("102");
-    } finally {
-      vi.restoreAllMocks();
-      Object.defineProperty(HTMLTableCellElement.prototype, "getBoundingClientRect", {
-        configurable: true,
-        value: originalCellGetBoundingClientRect,
-      });
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("selects and deletes an inline image inside a mixed-span table cell", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const imageInput = root.querySelector(
-      '[data-testid="editor-2-insert-image-input"]',
-    ) as HTMLInputElement;
-    const importInput = root.querySelector(
-      '[data-testid="editor-2-import-docx-input"]',
-    ) as HTMLInputElement;
-    const imageFile = new File(
-      [
-        Uint8Array.from([
-          137, 80, 78, 71, 13, 10, 26, 10,
-          0, 0, 0, 13, 73, 72, 68, 82,
-          0, 0, 0, 1, 0, 0, 0, 1,
-          8, 6, 0, 0, 0, 31, 21, 196, 137,
-          0, 0, 0, 13, 73, 68, 65, 84,
-          120, 218, 99, 252, 255, 159, 161, 30,
-          0, 7, 130, 2, 127, 63, 201, 164, 116,
-          0, 0, 0, 0, 73, 69, 78, 68,
-          174, 66, 96, 130,
-        ]),
-      ],
-      "mixed-span-table-inline-delete.png",
-      { type: "image/png" },
-    );
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 1913;
-      naturalHeight = 717;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      const docxFile = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-          <w:body>
-            <w:tbl>
-              <w:tr>
-                <w:tc>
-                  <w:tcPr>
-                    <w:gridSpan w:val="2"/>
-                    <w:vMerge w:val="restart"/>
-                  </w:tcPr>
-                  <w:p><w:r><w:t>TopLeft</w:t></w:r></w:p>
-                </w:tc>
-                <w:tc><w:p><w:r><w:t>TopRight</w:t></w:r></w:p></w:tc>
-              </w:tr>
-              <w:tr>
-                <w:tc>
-                  <w:tcPr>
-                    <w:gridSpan w:val="2"/>
-                    <w:vMerge/>
-                  </w:tcPr>
-                  <w:p><w:r><w:t>Hidden</w:t></w:r></w:p>
-                </w:tc>
-                <w:tc><w:p><w:r><w:t>BottomRight</w:t></w:r></w:p></w:tc>
-              </w:tr>
-            </w:tbl>
-          </w:body>
-        </w:document>`);
-
-      Object.defineProperty(importInput, "files", {
-        configurable: true,
-        value: [docxFile],
-      });
-
-      importInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 3) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const firstParagraph = root.querySelector('[data-testid="editor-2-table-cell"] [data-paragraph-id]') as HTMLElement;
-      firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-      await Promise.resolve();
-
-      Object.defineProperty(imageInput, "files", {
-        configurable: true,
-        value: [imageFile],
-      });
-
-      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-      expect(image).not.toBeNull();
-
-      image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-      await Promise.resolve();
-      expect(image.classList.contains("oasis-editor-2-image-selected")).toBe(true);
-      expect(root.querySelector('[data-testid="editor-2-selection-box"]')).not.toBeNull();
-
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Delete" }));
-      await Promise.resolve();
-
-      expect(root.querySelector('[data-testid="editor-2-image"]')).toBeNull();
-      expect(root.querySelectorAll('[data-testid="editor-2-table-cell"]').length).toBe(3);
-    } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("selects an inline image as a single object and deletes it", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const imageInput = root.querySelector(
-      '[data-testid="editor-2-insert-image-input"]',
-    ) as HTMLInputElement;
-    const file = new File(
-      [
-        Uint8Array.from([
-          137, 80, 78, 71, 13, 10, 26, 10,
-          0, 0, 0, 13, 73, 72, 68, 82,
-          0, 0, 0, 1, 0, 0, 0, 1,
-          8, 6, 0, 0, 0, 31, 21, 196, 137,
-          0, 0, 0, 13, 73, 68, 65, 84,
-          120, 218, 99, 252, 255, 159, 161, 30,
-          0, 7, 130, 2, 127, 63, 201, 164, 116,
-          0, 0, 0, 0, 73, 69, 78, 68,
-          174, 66, 96, 130,
-        ]),
-      ],
-      "inline.png",
-      { type: "image/png" },
-    );
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 64;
-      naturalHeight = 32;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      Object.defineProperty(imageInput, "files", {
-        configurable: true,
-        value: [file],
-      });
-
-      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-      expect(image).not.toBeNull();
-
-      image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-      await Promise.resolve();
-      const selectedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-
-      expect(selectedImage.classList.contains("oasis-editor-2-image-selected")).toBe(true);
-      expect(root.querySelector('[data-testid="editor-2-selection-box"]')).not.toBeNull();
-
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Delete" }));
-      await Promise.resolve();
-
-      expect(root.querySelector('[data-testid="editor-2-image"]')).toBeNull();
-    } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("moves the caret around an inline image inside a mixed-span table cell", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const imageInput = root.querySelector(
-      '[data-testid="editor-2-insert-image-input"]',
-    ) as HTMLInputElement;
-    const importInput = root.querySelector(
-      '[data-testid="editor-2-import-docx-input"]',
-    ) as HTMLInputElement;
-    const imageFile = new File(
-      [
-        Uint8Array.from([
-          137, 80, 78, 71, 13, 10, 26, 10,
-          0, 0, 0, 13, 73, 72, 68, 82,
-          0, 0, 0, 1, 0, 0, 0, 1,
-          8, 6, 0, 0, 0, 31, 21, 196, 137,
-          0, 0, 0, 13, 73, 68, 65, 84,
-          120, 218, 99, 252, 255, 159, 161, 30,
-          0, 7, 130, 2, 127, 63, 201, 164, 116,
-          0, 0, 0, 0, 73, 69, 78, 68,
-          174, 66, 96, 130,
-        ]),
-      ],
-      "mixed-span-table-inline-nav.png",
-      { type: "image/png" },
-    );
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 64;
-      naturalHeight = 32;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      const docxFile = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-          <w:body>
-            <w:tbl>
-              <w:tr>
-                <w:tc>
-                  <w:tcPr>
-                    <w:gridSpan w:val="2"/>
-                    <w:vMerge w:val="restart"/>
-                  </w:tcPr>
-                  <w:p><w:r><w:t>TopLeft</w:t></w:r></w:p>
-                </w:tc>
-                <w:tc><w:p><w:r><w:t>TopRight</w:t></w:r></w:p></w:tc>
-              </w:tr>
-              <w:tr>
-                <w:tc>
-                  <w:tcPr>
-                    <w:gridSpan w:val="2"/>
-                    <w:vMerge/>
-                  </w:tcPr>
-                  <w:p><w:r><w:t>Hidden</w:t></w:r></w:p>
-                </w:tc>
-                <w:tc><w:p><w:r><w:t>BottomRight</w:t></w:r></w:p></w:tc>
-              </w:tr>
-            </w:tbl>
-          </w:body>
-        </w:document>`);
-
-      Object.defineProperty(importInput, "files", {
-        configurable: true,
-        value: [docxFile],
-      });
-
-      importInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 3) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const firstParagraph = root.querySelector('[data-testid="editor-2-table-cell"] [data-paragraph-id]') as HTMLElement;
-      firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-      await Promise.resolve();
-
-      Object.defineProperty(imageInput, "files", {
-        configurable: true,
-        value: [imageFile],
-      });
-
-      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-      image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-      await Promise.resolve();
-
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft" }));
-      await Promise.resolve();
-      input.value = "x";
-      input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "x", inputType: "insertText" }));
-      await Promise.resolve();
-
-      expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("xTopLeft");
-      expect(root.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
-    } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("moves the caret after an inline image inside a mixed-span table cell", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const imageInput = root.querySelector(
-      '[data-testid="editor-2-insert-image-input"]',
-    ) as HTMLInputElement;
-    const importInput = root.querySelector(
-      '[data-testid="editor-2-import-docx-input"]',
-    ) as HTMLInputElement;
-    const imageFile = new File(
-      [
-        Uint8Array.from([
-          137, 80, 78, 71, 13, 10, 26, 10,
-          0, 0, 0, 13, 73, 72, 68, 82,
-          0, 0, 0, 1, 0, 0, 0, 1,
-          8, 6, 0, 0, 0, 31, 21, 196, 137,
-          0, 0, 0, 13, 73, 68, 65, 84,
-          120, 218, 99, 252, 255, 159, 161, 30,
-          0, 7, 130, 2, 127, 63, 201, 164, 116,
-          0, 0, 0, 0, 73, 69, 78, 68,
-          174, 66, 96, 130,
-        ]),
-      ],
-      "mixed-span-table-inline-nav-right.png",
-      { type: "image/png" },
-    );
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 64;
-      naturalHeight = 32;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      const docxFile = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-          <w:body>
-            <w:tbl>
-              <w:tr>
-                <w:tc>
-                  <w:tcPr>
-                    <w:gridSpan w:val="2"/>
-                    <w:vMerge w:val="restart"/>
-                  </w:tcPr>
-                  <w:p><w:r><w:t>TopLeft</w:t></w:r></w:p>
-                </w:tc>
-                <w:tc><w:p><w:r><w:t>TopRight</w:t></w:r></w:p></w:tc>
-              </w:tr>
-              <w:tr>
-                <w:tc>
-                  <w:tcPr>
-                    <w:gridSpan w:val="2"/>
-                    <w:vMerge/>
-                  </w:tcPr>
-                  <w:p><w:r><w:t>Hidden</w:t></w:r></w:p>
-                </w:tc>
-                <w:tc><w:p><w:r><w:t>BottomRight</w:t></w:r></w:p></w:tc>
-              </w:tr>
-            </w:tbl>
-          </w:body>
-        </w:document>`);
-
-      Object.defineProperty(importInput, "files", {
-        configurable: true,
-        value: [docxFile],
-      });
-
-      importInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 3) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const firstParagraph = root.querySelector('[data-testid="editor-2-table-cell"] [data-paragraph-id]') as HTMLElement;
-      firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-      await Promise.resolve();
-
-      Object.defineProperty(imageInput, "files", {
-        configurable: true,
-        value: [imageFile],
-      });
-
-      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-      image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-      await Promise.resolve();
-
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" }));
-      await Promise.resolve();
-      input.value = "x";
-      input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "x", inputType: "insertText" }));
-      await Promise.resolve();
-
-      expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("xTopLeft");
-      expect(root.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
-    } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("moves the caret before a selected inline image with arrow left", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const imageInput = root.querySelector(
-      '[data-testid="editor-2-insert-image-input"]',
-    ) as HTMLInputElement;
-    const file = new File(
-      [
-        Uint8Array.from([
-          137, 80, 78, 71, 13, 10, 26, 10,
-          0, 0, 0, 13, 73, 72, 68, 82,
-          0, 0, 0, 1, 0, 0, 0, 1,
-          8, 6, 0, 0, 0, 31, 21, 196, 137,
-          0, 0, 0, 13, 73, 68, 65, 84,
-          120, 218, 99, 252, 255, 159, 161, 30,
-          0, 7, 130, 2, 127, 63, 201, 164, 116,
-          0, 0, 0, 0, 73, 69, 78, 68,
-          174, 66, 96, 130,
-        ]),
-      ],
-      "inline.png",
-      { type: "image/png" },
-    );
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 64;
-      naturalHeight = 32;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      input.value = "ab";
-      input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "ab", inputType: "insertText" }));
-      await Promise.resolve();
-
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft" }));
-      await Promise.resolve();
-
-      Object.defineProperty(imageInput, "files", {
-        configurable: true,
-        value: [file],
-      });
-      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-      image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-      await Promise.resolve();
-
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowLeft" }));
-      await Promise.resolve();
-
-      input.value = "x";
-      input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "x", inputType: "insertText" }));
-      await Promise.resolve();
-
-      expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("axb");
-      expect(root.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
-    } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("moves the caret after a selected inline image with arrow right", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const imageInput = root.querySelector(
-      '[data-testid="editor-2-insert-image-input"]',
-    ) as HTMLInputElement;
-    const file = new File(
-      [
-        Uint8Array.from([
-          137, 80, 78, 71, 13, 10, 26, 10,
-          0, 0, 0, 13, 73, 72, 68, 82,
-          0, 0, 0, 1, 0, 0, 0, 1,
-          8, 6, 0, 0, 0, 31, 21, 196, 137,
-          0, 0, 0, 13, 73, 68, 65, 84,
-          120, 218, 99, 252, 255, 159, 161, 30,
-          0, 7, 130, 2, 127, 63, 201, 164, 116,
-          0, 0, 0, 0, 73, 69, 78, 68,
-          174, 66, 96, 130,
-        ]),
-      ],
-      "inline.png",
-      { type: "image/png" },
-    );
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 64;
-      naturalHeight = 32;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      input.value = "ab";
-      input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "ab", inputType: "insertText" }));
-      await Promise.resolve();
-
-      Object.defineProperty(imageInput, "files", {
-        configurable: true,
-        value: [file],
-      });
-      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-      image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-      await Promise.resolve();
-
-      input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" }));
-      await Promise.resolve();
-
-      input.value = "x";
-      input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "x", inputType: "insertText" }));
-      await Promise.resolve();
-
-      expect(root.querySelector('[data-testid="editor-2-block"]')?.textContent).toContain("abx");
-      expect(root.querySelector('[data-testid="editor-2-image"]')).not.toBeNull();
-    } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("resizes a selected inline image through the resize handle", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const imageInput = root.querySelector(
-      '[data-testid="editor-2-insert-image-input"]',
-    ) as HTMLInputElement;
-    const file = new File(
-      [
-        Uint8Array.from([
-          137, 80, 78, 71, 13, 10, 26, 10,
-          0, 0, 0, 13, 73, 72, 68, 82,
-          0, 0, 0, 1, 0, 0, 0, 1,
-          8, 6, 0, 0, 0, 31, 21, 196, 137,
-          0, 0, 0, 13, 73, 68, 65, 84,
-          120, 218, 99, 252, 255, 159, 161, 30,
-          0, 7, 130, 2, 127, 63, 201, 164, 116,
-          0, 0, 0, 0, 73, 69, 78, 68,
-          174, 66, 96, 130,
-        ]),
-      ],
-      "inline.png",
-      { type: "image/png" },
-    );
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 64;
-      naturalHeight = 32;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      Object.defineProperty(imageInput, "files", {
-        configurable: true,
-        value: [file],
-      });
-
-      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-      expect(image).not.toBeNull();
-
-      Object.defineProperty(image, "getBoundingClientRect", {
-        configurable: true,
-        value: () => ({
-          left: 120,
-          top: 80,
-          right: 184,
-          bottom: 112,
-          width: 64,
-          height: 32,
-          x: 120,
-          y: 80,
-        }),
-      });
-
-      image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 125, clientY: 85 }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        const selectedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement | null;
-        if (selectedImage?.classList.contains("oasis-editor-2-image-selected")) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image-resize-handle"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const handle = root.querySelector('[data-testid="editor-2-image-resize-handle"]') as HTMLButtonElement;
-      expect(handle).not.toBeNull();
-
-      handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 184, clientY: 112 }));
-      window.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 216, clientY: 112 }));
-      window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 216, clientY: 112 }));
-      await Promise.resolve();
-
-      const resizedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-      expect(resizedImage.getAttribute("width")).toBe("96");
-      expect(resizedImage.getAttribute("height")).toBe("48");
-    } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
-  it("clamps resized inline images to the page width", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const imageInput = root.querySelector(
-      '[data-testid="editor-2-insert-image-input"]',
-    ) as HTMLInputElement;
-    const file = new File(
-      [
-        Uint8Array.from([
-          137, 80, 78, 71, 13, 10, 26, 10,
-          0, 0, 0, 13, 73, 72, 68, 82,
-          0, 0, 0, 1, 0, 0, 0, 1,
-          8, 6, 0, 0, 0, 31, 21, 196, 137,
-          0, 0, 0, 13, 73, 68, 65, 84,
-          120, 218, 99, 252, 255, 159, 161, 30,
-          0, 7, 130, 2, 127, 63, 201, 164, 116,
-          0, 0, 0, 0, 73, 69, 78, 68,
-          174, 66, 96, 130,
-        ]),
-      ],
-      "clamped.png",
-      { type: "image/png" },
-    );
-
-    const OriginalImage = globalThis.Image;
-    class MockImage {
-      onload: null | (() => void) = null;
-      onerror: null | (() => void) = null;
-      naturalWidth = 64;
-      naturalHeight = 32;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-    Object.defineProperty(globalThis, "Image", {
-      configurable: true,
-      value: MockImage,
-    });
-
-    try {
-      Object.defineProperty(imageInput, "files", {
-        configurable: true,
-        value: [file],
-      });
-
-      imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const image = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-      expect(image).not.toBeNull();
-
-      Object.defineProperty(image, "getBoundingClientRect", {
-        configurable: true,
-        value: () => ({
-          left: 120,
-          top: 80,
-          right: 184,
-          bottom: 112,
-          width: 64,
-          height: 32,
-          x: 120,
-          y: 80,
-        }),
-      });
-
-      image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 125, clientY: 85 }));
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (root.querySelector('[data-testid="editor-2-image-resize-handle"]')) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const handle = root.querySelector('[data-testid="editor-2-image-resize-handle"]') as HTMLButtonElement;
-      expect(handle).not.toBeNull();
-
-      handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 184, clientY: 112 }));
-      window.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 2000, clientY: 112 }));
-      window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: 2000, clientY: 112 }));
-      await Promise.resolve();
-
-      const resizedImage = root.querySelector('[data-testid="editor-2-image"]') as HTMLImageElement;
-      expect(resizedImage.getAttribute("width")).toBe("624");
-      expect(resizedImage.getAttribute("height")).toBe("312");
-    } finally {
-      Object.defineProperty(globalThis, "Image", {
-        configurable: true,
-        value: OriginalImage,
-      });
-    }
-
-    instance.dispose();
-  });
-
 });

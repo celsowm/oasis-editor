@@ -157,6 +157,7 @@ import { EditorToolbar } from "./components/Toolbar/EditorToolbar.js";
 import { createEditor2CommandsController } from "../app/controllers/Editor2CommandsController.js";
 import { createEditor2ClipboardController } from "../app/controllers/useEditor2Clipboard.js";
 import { createEditor2KeyboardController } from "../app/controllers/useEditor2Keyboard.js";
+import { useEditor2Layout } from "../app/controllers/useEditor2Layout.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
 import { Sidebar } from "./components/Sidebar/Sidebar.js";
@@ -208,20 +209,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   const isReadOnly = () => props.readOnly ?? false;
   const [focused, setFocused] = createSignal(false);
   const [composing, setComposing] = createSignal(false);
-  const [measuredBlockHeights, setMeasuredBlockHeights] = createSignal<Record<string, number>>({});
-  const [measuredParagraphLayouts, setMeasuredParagraphLayouts] = createSignal<Record<string, Editor2LayoutParagraph>>({});
-  const [inputBox, setInputBox] = createSignal<InputBox>({ left: 0, top: 0, height: 28 });
-  const [preferredColumnX, setPreferredColumnX] = createSignal<number | null>(null);
   const [undoStack, setUndoStack] = createSignal<Editor2State[]>([]);
   const [redoStack, setRedoStack] = createSignal<Editor2State[]>([]);
-  const [selectionBoxes, setSelectionBoxes] = createSignal<SelectionBox[]>([]);
   const [hoveredRevision, setHoveredRevision] = createSignal<RevisionBox | null>(null);
-  const [caretBox, setCaretBox] = createSignal<CaretBox>({
-    left: 0,
-    top: 0,
-    height: 28,
-    visible: false,
-  });
   const [linkDialog, setLinkDialog] = createSignal<{ isOpen: boolean; initialHref: string }>({
     isOpen: false,
     initialHref: "",
@@ -235,7 +225,28 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   let textareaRef: HTMLTextAreaElement | undefined;
   let importInputRef: HTMLInputElement | undefined;
   let imageInputRef: HTMLInputElement | undefined;
-  let syncRequestId = 0;
+
+  const {
+    measuredBlockHeights,
+    measuredParagraphLayouts,
+    inputBox,
+    selectionBoxes,
+    caretBox,
+    preferredColumnX,
+    setPreferredColumnX,
+    clearPreferredColumn,
+    requestInputBoxSync,
+    syncMeasuredLayoutMetrics,
+    syncInputBox,
+    setMeasuredBlockHeights,
+    setMeasuredParagraphLayouts,
+    onCleanupHook,
+  } = useEditor2Layout({
+    state,
+    surfaceRef: () => surfaceRef,
+    viewportRef: () => viewportRef,
+  });
+
   let dragAnchor: Editor2Position | null = null;
   let activeImageDrag: ActiveImageDrag | null = null;
   let activeImageResize: ActiveImageResize | null = null;
@@ -1411,10 +1422,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     applyState(next);
   };
 
-  const clearPreferredColumn = () => {
-    setPreferredColumnX(null);
-  };
-
   const performUndo = () => {
     const step = takeEditor2UndoStep(historyState, cloneState(state));
     if (!step) {
@@ -1560,83 +1567,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     setRedoStack([]);
   };
 
-  const syncMeasuredLayoutMetrics = (): boolean => {
-    if (!surfaceRef) {
-      return false;
-    }
-
-    const nextHeights: Record<string, number> = {};
-    const nextParagraphLayouts: Record<string, Editor2LayoutParagraph> = {};
-    const blockElements =
-      surfaceRef.querySelectorAll<HTMLElement>("[data-block-id]");
-    const paragraphsById = new Map(getParagraphs(state).map((paragraph) => [paragraph.id, paragraph] as const));
-
-    for (const element of blockElements) {
-      const blockId = element.dataset.blockId;
-      if (!blockId) {
-        continue;
-      }
-      nextHeights[blockId] = element.getBoundingClientRect().height;
-    }
-
-    for (const [paragraphId, paragraph] of paragraphsById) {
-      const charRects = collectParagraphCharRects(surfaceRef, paragraphId);
-      if (charRects.length === 0 || !hasUsableCharGeometry(charRects)) {
-        continue;
-      }
-      nextParagraphLayouts[paragraphId] = measureParagraphLayoutFromRects(paragraph, charRects);
-    }
-
-    const currentHeights = measuredBlockHeights();
-    const currentKeys = Object.keys(currentHeights);
-    const nextKeys = Object.keys(nextHeights);
-    const heightsChanged =
-      currentKeys.length !== nextKeys.length ||
-      nextKeys.some((key) => Math.abs((currentHeights[key] ?? 0) - nextHeights[key]!) > 0.5);
-
-    if (heightsChanged) {
-      setMeasuredBlockHeights(nextHeights);
-    }
-
-    const currentParagraphLayouts = measuredParagraphLayouts();
-    const currentParagraphIds = Object.keys(currentParagraphLayouts);
-    const nextParagraphIds = Object.keys(nextParagraphLayouts);
-    const paragraphLayoutsChanged =
-      currentParagraphIds.length !== nextParagraphIds.length ||
-      nextParagraphIds.some((paragraphId) => {
-        const previous = currentParagraphLayouts[paragraphId];
-        const next = nextParagraphLayouts[paragraphId]!;
-        if (!previous) {
-          return true;
-        }
-        if (previous.lines.length !== next.lines.length) {
-          return true;
-        }
-        if ((previous.endOffset ?? previous.text.length) !== (next.endOffset ?? next.text.length)) {
-          return true;
-        }
-        return next.lines.some((line, index) => {
-          const previousLine = previous.lines[index];
-          if (!previousLine) {
-            return true;
-          }
-          return (
-            previousLine.startOffset !== line.startOffset ||
-            previousLine.endOffset !== line.endOffset ||
-            Math.abs(previousLine.top - line.top) > 0.5 ||
-            Math.abs(previousLine.height - line.height) > 0.5 ||
-            previousLine.slots.length !== line.slots.length
-          );
-        });
-      });
-
-    if (paragraphLayoutsChanged) {
-      setMeasuredParagraphLayouts(nextParagraphLayouts);
-    }
-
-    return heightsChanged || paragraphLayoutsChanged;
-  };
-
   const handleImportDocx = async (file: File | null) => {
     if (isReadOnly()) {
       return;
@@ -1723,275 +1653,12 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     focusInput();
   };
 
-  const syncInputBox = () => {
-    if (!surfaceRef) {
-      setSelectionBoxes([]);
-      setCaretBox((current) => ({ ...current, visible: false }));
-      return;
-    }
-
-    const surfaceRect = surfaceRef.getBoundingClientRect();
-    const paragraphs = getParagraphs(state);
-    const normalized = normalizeSelection(state);
-    const nextSelectionBoxes: SelectionBox[] = [];
-
-    const anchorLocation = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, getActiveSectionIndex(state));
-    const focusLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
-
-    const isTableSelection = anchorLocation && focusLocation && 
-      anchorLocation.blockIndex === focusLocation.blockIndex &&
-      (anchorLocation.rowIndex !== focusLocation.rowIndex || anchorLocation.cellIndex !== focusLocation.cellIndex);
-
-    if (isTableSelection) {
-      const tableBlock = state.document.blocks[anchorLocation.blockIndex];
-      const tableId = tableBlock?.id;
-      if (tableId) {
-        const tableElement =
-          surfaceRef.querySelector<HTMLElement>(`[data-source-block-id="${tableId}"]`) ??
-          surfaceRef.querySelector<HTMLElement>(`[data-block-id="${tableId}"]`);
-        if (tableElement && tableBlock?.type === "table") {
-          const tableLayout = buildTableCellLayout(tableBlock);
-          const anchorCell = tableLayout.find(
-            (entry) =>
-              entry.rowIndex === anchorLocation.rowIndex && entry.cellIndex === anchorLocation.cellIndex,
-          );
-          const focusCell = tableLayout.find(
-            (entry) =>
-              entry.rowIndex === focusLocation.rowIndex && entry.cellIndex === focusLocation.cellIndex,
-          );
-
-          if (anchorCell && focusCell) {
-            const minRow = Math.min(
-              anchorCell.visualRowIndex,
-              focusCell.visualRowIndex,
-            );
-            const maxRow = Math.max(
-              anchorCell.visualRowIndex + anchorCell.rowSpan - 1,
-              focusCell.visualRowIndex + focusCell.rowSpan - 1,
-            );
-
-            const minCol = Math.min(
-              anchorCell.visualColumnIndex,
-              focusCell.visualColumnIndex,
-            );
-            const maxCol = Math.max(
-              anchorCell.visualColumnIndex + anchorCell.colSpan - 1,
-              focusCell.visualColumnIndex + focusCell.colSpan - 1,
-            );
-
-            for (const entry of tableLayout) {
-              const cellRowStart = entry.visualRowIndex;
-              const cellRowEnd = entry.visualRowIndex + entry.rowSpan - 1;
-              const cellColStart = entry.visualColumnIndex;
-              const cellColEnd = entry.visualColumnIndex + entry.colSpan - 1;
-              const intersects =
-                cellRowStart <= maxRow &&
-                cellRowEnd >= minRow &&
-                cellColStart <= maxCol &&
-                cellColEnd >= minCol;
-              if (!intersects) {
-                continue;
-              }
-
-              const cellElement = tableElement.querySelector<HTMLElement>(
-                `[data-row-index="${entry.rowIndex}"][data-cell-index="${entry.cellIndex}"]`,
-              );
-              if (!cellElement) {
-                continue;
-              }
-
-              const cellRect = cellElement.getBoundingClientRect();
-              nextSelectionBoxes.push({
-                left: cellRect.left - surfaceRect.left,
-                top: cellRect.top - surfaceRect.top,
-                width: cellRect.width,
-                height: cellRect.height,
-              });
-            }
-          }
-        }
-      }
-    } else if (!normalized.isCollapsed) {
-      for (let paragraphIndex = normalized.startIndex; paragraphIndex <= normalized.endIndex; paragraphIndex += 1) {
-        const paragraph = paragraphs[paragraphIndex];
-        if (!paragraph) {
-          continue;
-        }
-
-        const paragraphElement = getParagraphBoundaryElement(surfaceRef, paragraph.id, "start");
-        if (!paragraphElement) {
-          continue;
-        }
-
-        const paragraphText = getParagraphText(paragraph);
-        const charRects = collectParagraphCharRects(surfaceRef, paragraph.id);
-        const startOffset = paragraphIndex === normalized.startIndex ? normalized.startParagraphOffset : 0;
-        const endOffset =
-          paragraphIndex === normalized.endIndex ? normalized.endParagraphOffset : paragraphText.length;
-
-        if (charRects.length === 0) {
-          const paragraphRect = paragraphElement.getBoundingClientRect();
-          nextSelectionBoxes.push({
-            left: paragraphRect.left - surfaceRect.left,
-            top: paragraphRect.top - surfaceRect.top,
-            width: Math.max(12, paragraphRect.width || 12),
-            height: paragraphRect.height || 28,
-          });
-          continue;
-        }
-
-        const layout = measureParagraphLayoutFromRects(paragraph, charRects);
-        for (const line of layout.lines) {
-          const lineStart = Math.max(startOffset, line.startOffset);
-          const lineEnd = Math.min(endOffset, line.endOffset);
-          if (lineStart >= lineEnd) {
-            continue;
-          }
-
-          const startSlot = line.slots.find((slot) => slot.offset === lineStart);
-          const endSlot = line.slots.find((slot) => slot.offset === lineEnd);
-          if (!startSlot || !endSlot) {
-            continue;
-          }
-
-          nextSelectionBoxes.push({
-            left: startSlot.left - surfaceRect.left,
-            top: line.top - surfaceRect.top,
-            width: Math.max(1, endSlot.left - startSlot.left),
-            height: line.height,
-          });
-        }
-      }
-    }
-
-    setSelectionBoxes(nextSelectionBoxes);
-
-    const selectedParagraph = getParagraphBoundaryElement(
-      surfaceRef,
-      state.selection.focus.paragraphId,
-      "end",
-    );
-    if (!selectedParagraph) {
-      setCaretBox((current) => ({ ...current, visible: false }));
-      return;
-    }
-
-    const charRects = collectParagraphCharRects(surfaceRef, state.selection.focus.paragraphId);
-    const selectedParagraphNode =
-      paragraphs.find((paragraph) => paragraph.id === state.selection.focus.paragraphId) ?? paragraphs[0];
-    let left = 0;
-    let top = 0;
-    let height = 28;
-
-    if (charRects.length === 0) {
-      const fallbackRect =
-        getEmptyBlockRect(selectedParagraph) ?? selectedParagraph.getBoundingClientRect();
-      left = fallbackRect.left - surfaceRect.left;
-      top = fallbackRect.top - surfaceRect.top;
-      height = fallbackRect.height || 28;
-    } else {
-      const layout = measureParagraphLayoutFromRects(selectedParagraphNode, charRects);
-      const slots =
-        layout.lines.length > 0
-          ? layout.lines.flatMap((line, lineIndex) =>
-              lineIndex === layout.lines.length - 1 ? line.slots : line.slots.slice(0, -1),
-            )
-          : getCaretSlotRects(charRects).map((slot, offset) => ({
-              paragraphId: selectedParagraphNode.id,
-              offset,
-              left: slot.left,
-              top: slot.top,
-              height: slot.height,
-            }));
-      const focusOffset = positionToParagraphOffset(selectedParagraphNode, state.selection.focus);
-      const slotIndex = Math.max(0, Math.min(focusOffset, slots.length - 1));
-      const slot = slots[slotIndex];
-      left = slot.left - surfaceRect.left;
-      top = slot.top - surfaceRect.top;
-      height = slot.height;
-    }
-
-    setInputBox({
-      left,
-      top,
-      height,
-    });
-    setCaretBox({
-      left,
-      top,
-      height,
-      visible: true,
-    });
-  };
-
-  const requestInputBoxSync = () => {
-    const requestId = ++syncRequestId;
-    queueMicrotask(() => {
-      if (requestId !== syncRequestId) {
-        return;
-      }
-      const metricsChanged = syncMeasuredLayoutMetrics();
-      if (metricsChanged) {
-        queueMicrotask(() => {
-          if (requestId !== syncRequestId) {
-            return;
-          }
-          syncInputBox();
-        });
-        return;
-      }
-      syncInputBox();
-    });
-  };
-
-  createEffect(() => {
-    state.selection.anchor.paragraphId;
-    state.selection.anchor.runId;
-    state.selection.anchor.offset;
-    state.selection.focus.paragraphId;
-    state.selection.focus.runId;
-    state.selection.focus.offset;
-    getParagraphs(state)
-      .map((paragraph) => paragraph.runs.map((run) => run.text).join(""))
-      .join("\n");
-    logger.debug("selection changed", {
-      anchor: state.selection.anchor,
-      focus: state.selection.focus,
-      selectedImage: getSelectedImageInfo(state)
-        ? {
-            paragraphId: getSelectedImageInfo(state)?.paragraph.id,
-            runId: getSelectedImageInfo(state)?.run.id,
-            width: getSelectedImageInfo(state)?.width,
-            height: getSelectedImageInfo(state)?.height,
-          }
-        : null,
-    });
-    requestInputBoxSync();
-  });
-
-  createEffect(() => {
-    const viewport = viewportRef;
-    if (!viewport) {
-      return;
-    }
-
-    const handleViewportScroll = () => requestInputBoxSync();
-    const handleWindowResize = () => requestInputBoxSync();
-    viewport.addEventListener("scroll", handleViewportScroll, { passive: true });
-    window.addEventListener("resize", handleWindowResize);
-
-    onCleanup(() => {
-      viewport.removeEventListener("scroll", handleViewportScroll);
-      window.removeEventListener("resize", handleWindowResize);
-    });
-  });
-
   onMount(() => {
     startIconObserver();
   });
 
   onCleanup(() => {
-    syncRequestId += 1;
+    onCleanupHook();
     stopDragging();
     stopImageResize();
     stopIconObserver();

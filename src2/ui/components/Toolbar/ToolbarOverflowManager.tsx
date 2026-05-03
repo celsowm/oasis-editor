@@ -86,7 +86,7 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
         style={{
           position: 'absolute',
           visibility: 'hidden',
-          pointerEvents: 'none',
+          "pointer-events": 'none',
           display: 'flex',
           "white-space": 'nowrap',
           top: 0,

@@ -145,4 +145,90 @@ describe("DocumentRuntime", () => {
     expect(comment.blocks[0].kind).toBe("paragraph");
     expect((comment.blocks[0] as any).children[0].text).toBe("Comment content");
   });
+
+  it("should successfully delete text across two paragraphs", () => {
+    const runtime = new DocumentRuntime();
+
+    // Create two paragraphs
+    runtime.dispatch(Operations.insertText("Para 1"));
+    runtime.dispatch(Operations.appendParagraph("Para 2"));
+
+    const state = runtime.getState();
+    const section = state.document.sections[0];
+    const p1 = section.children[0] as any;
+    const p2 = section.children[section.children.length - 1] as any;
+
+    // Select from middle of P1 to middle of P2
+    runtime.dispatch(Operations.setSelection({
+      anchor: {
+        sectionId: section.id,
+        blockId: p1.id,
+        inlineId: p1.children[0].id,
+        offset: 2
+      },
+      focus: {
+        sectionId: section.id,
+        blockId: p2.id,
+        inlineId: p2.children[0].id,
+        offset: 2
+      },
+    }));
+
+    runtime.dispatch(Operations.deleteText());
+    const stateAfterDelete = runtime.getState();
+
+    const finalSection = stateAfterDelete.document.sections[0];
+    expect(finalSection.children.length).toBe(1);
+    const mergedP = finalSection.children[0] as any;
+    // P1 was heading, P2 was paragraph. Merged block keeps P1 kind (heading)
+    expect(mergedP.kind).toBe("heading");
+
+    // Trace text:
+    // P1 (heading) started with "Lorem Ipsum..."
+    // After insertText("Para 1"), it starts with "Para 1Lorem Ipsum..."
+    // Prefix (offset 2) is "Pa"
+    // P2 (appended) was "Para 2"
+    // Suffix (offset 2) is "ra 2"
+    // Merged: "Para 2"
+    const fullText = mergedP.children.map((r: any) => r.text).join("");
+    expect(fullText).toBe("Para 2");
+
+    // Selection should be at the merge point
+    expect(stateAfterDelete.selection?.anchor.blockId).toBe(p1.id);
+    expect(stateAfterDelete.selection?.anchor.offset).toBe(2);
+  });
+
+  it("should delete multiple blocks in between", () => {
+    const runtime = new DocumentRuntime();
+
+    const state = runtime.getState();
+    const section = state.document.sections[0];
+    const first = section.children[0] as any;
+    const last = section.children[section.children.length - 1] as any;
+
+    // Select from start of first to end of last
+    runtime.dispatch(Operations.setSelection({
+      anchor: {
+        sectionId: section.id,
+        blockId: first.id,
+        inlineId: first.children[0].id,
+        offset: 0
+      },
+      focus: {
+        sectionId: section.id,
+        blockId: last.id,
+        inlineId: last.children[last.children.length - 1].id,
+        offset: (last.children[last.children.length - 1] as any).text.length
+      },
+    }));
+
+    runtime.dispatch(Operations.deleteText());
+    const stateAfterDelete = runtime.getState();
+
+    const finalSection = stateAfterDelete.document.sections[0];
+    expect(finalSection.children.length).toBe(1);
+    const mergedP = finalSection.children[0] as any;
+    const fullText = mergedP.children.map((r: any) => r.text).join("");
+    expect(fullText).toBe("");
+  });
 });

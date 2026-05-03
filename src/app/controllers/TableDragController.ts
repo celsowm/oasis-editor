@@ -17,10 +17,8 @@ export class TableDragController {
     private runtime: IDocumentRuntime,
     private view: OasisEditorView,
     private getLatestLayout: () => LayoutState | null,
-    private domHitTester: DomHitTester,
-  ) {
-    this.dropTargetService = new DropTargetService(domHitTester);
-  }
+    private dropTargetService: DropTargetService,
+  ) {}
 
   get isDraggingTable(): boolean { return this.isDragging; }
 

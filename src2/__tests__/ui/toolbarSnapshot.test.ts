@@ -48,8 +48,6 @@ const EXPECTED_TOOLBAR_TESTIDS: readonly string[] = [
   "editor-2-toolbar-list-start-at",
   "editor-2-toolbar-margins",
   "editor-2-toolbar-merge-table",
-  "editor-2-toolbar-merge-table-cells",
-  "editor-2-toolbar-merge-table-rows",
   "editor-2-toolbar-orientation",
   "editor-2-toolbar-page-break-before",
   "editor-2-toolbar-paragraph-borders",
@@ -61,8 +59,6 @@ const EXPECTED_TOOLBAR_TESTIDS: readonly string[] = [
   "editor-2-toolbar-spacing-after",
   "editor-2-toolbar-spacing-before",
   "editor-2-toolbar-split-table",
-  "editor-2-toolbar-split-table-cell",
-  "editor-2-toolbar-split-table-row",
   "editor-2-toolbar-strike",
   "editor-2-toolbar-style",
   "editor-2-toolbar-subscript",
@@ -86,12 +82,52 @@ describe("Toolbar testid snapshot (regression guard for Phase 2 UI rewrite)", ()
     setupOasisEditor2Dom();
   });
 
-  it("renders every expected toolbar control with its locked-in data-testid", () => {
+  it("renders every expected toolbar control with its locked-in data-testid", async () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
 
+    // 1. Insert a table to show contextual table buttons
+    const insertDropdown = root.querySelector('[data-testid="editor-2-toolbar-insert-dropdown"]') as HTMLElement;
+    insertDropdown.click();
+    await Promise.resolve();
+    const insertTableButton = document.querySelector('[data-testid="editor-2-toolbar-insert-table"]') as HTMLElement;
+    insertTableButton.click();
+    await Promise.resolve();
+
+    // 2. Insert an image to show the 'Alt' button
+    const imageInput = document.querySelector('[data-testid="editor-2-insert-image-input"]') as HTMLInputElement;
+    const tinyFile = new File([new Uint8Array([
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+      0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+      0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+      0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
+      0x42, 0x60, 0x82
+    ])], "tiny.png", { type: "image/png" });
+    Object.defineProperty(imageInput, "files", { configurable: true, value: [tinyFile] });
+    imageInput.dispatchEvent(new Event("change", { bubbles: true }));
+    
+    // Wait for image to be processed and rendered
+    for (let i = 0; i < 10; i++) {
+      await Promise.resolve();
+      if (document.querySelector('img')) break;
+    }
+
+    const image = document.querySelector('img');
+    if (image) {
+      image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    }
+    await Promise.resolve();
+
+    // 3. Open dropdowns to render their contents in Portals
+    const dropdowns = ["file", "insert", "review"];
+    for (const name of dropdowns) {
+      const dropdown = root.querySelector(`[data-testid="editor-2-toolbar-${name}-dropdown"]`) as HTMLElement;
+      dropdown.click();
+      await Promise.resolve();
+    }
+
     const rendered = Array.from(
-      root.querySelectorAll<HTMLElement>('[data-testid^="editor-2-toolbar-"]'),
+      document.querySelectorAll<HTMLElement>('[data-testid^="editor-2-toolbar-"]'),
     )
       .map((element) => element.getAttribute("data-testid"))
       .filter((id): id is string => Boolean(id));

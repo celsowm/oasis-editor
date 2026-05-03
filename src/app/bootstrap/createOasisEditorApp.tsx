@@ -25,6 +25,7 @@ import { ZoneClickController } from "../controllers/ZoneClickController.js";
 import { WordSelectionController } from "../controllers/WordSelectionController.js";
 import { ImportExportController } from "../controllers/ImportExportController.js";
 import { TableDragController } from "../controllers/TableDragController.js";
+import { ImageDragController } from "../controllers/ImageDragController.js";
 import { DropTargetService } from "../services/DropTargetService.js";
 import { CommandBus } from "../commands/CommandBus.js";
 import { getAllBlocks } from "../../core/document/BlockUtils.js";
@@ -119,14 +120,20 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
     pdfExporter,
   );
 
+  const dropTargetService = new DropTargetService(domHitTester);
+
   const tableDrag = new TableDragController(
     runtime,
     view,
     () => runtime.getLayout()!,
-    domHitTester,
+    dropTargetService,
   );
 
-  const dropTargetService = new DropTargetService(domHitTester);
+  const imageDrag = new ImageDragController(
+    runtime,
+    view,
+    dropTargetService,
+  );
 
   const commandBus = new CommandBus({
     runtime,
@@ -153,6 +160,7 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
     wordSelection,
     importExport,
     tableDrag,
+    imageDrag,
     dropTargetService,
     commandBus,
   });
@@ -160,6 +168,7 @@ export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
   view.setDragState(dragState);
 
   function dispose(): void {
+    controller.destroy();
     disposeSolid();
     shell?.remove();
   }

@@ -361,12 +361,6 @@ describe("OasisEditor2", () => {
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const mergeButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-merge-table-cells"]',
-    ) as HTMLButtonElement;
-    const splitButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-split-table-cell"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -397,6 +391,9 @@ describe("OasisEditor2", () => {
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight", shiftKey: true }));
     await Promise.resolve();
 
+    const mergeButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-merge-table"]',
+    ) as HTMLButtonElement;
     expect(mergeButton.disabled).toBe(false);
     mergeButton.click();
     await Promise.resolve();
@@ -407,6 +404,9 @@ describe("OasisEditor2", () => {
     expect(cells[0]?.textContent?.replace(/\u00A0/g, "")).toContain("A");
     expect(cells[0]?.textContent?.replace(/\u00A0/g, "")).toContain("B");
 
+    const splitButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-split-table"]',
+    ) as HTMLButtonElement;
     expect(splitButton.disabled).toBe(false);
     splitButton.click();
     await Promise.resolve();
@@ -426,12 +426,6 @@ describe("OasisEditor2", () => {
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const mergeButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-merge-table"]',
-    ) as HTMLButtonElement;
-    const splitButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-split-table"]',
-    ) as HTMLButtonElement;
 
     const horizontalFile = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -471,6 +465,9 @@ describe("OasisEditor2", () => {
     }
     expect(root.querySelector('[data-testid="editor-2-table-selection-label"]')?.textContent).toContain("Table selection: 2 cells");
 
+    const mergeButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-merge-table"]',
+    ) as HTMLButtonElement;
     mergeButton.click();
     await Promise.resolve();
 
@@ -478,6 +475,9 @@ describe("OasisEditor2", () => {
     expect(cells.length).toBe(1);
     expect(cells[0]?.getAttribute("colspan")).toBe("2");
 
+    const splitButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-split-table"]',
+    ) as HTMLButtonElement;
     expect(splitButton.disabled).toBe(false);
     splitButton.click();
     await Promise.resolve();
@@ -497,9 +497,6 @@ describe("OasisEditor2", () => {
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const splitButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-split-table"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -537,6 +534,9 @@ describe("OasisEditor2", () => {
     firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
     await Promise.resolve();
 
+    const splitButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-split-table"]',
+    ) as HTMLButtonElement;
     expect(splitButton.disabled).toBe(false);
     splitButton.click();
     await Promise.resolve();
@@ -555,12 +555,6 @@ describe("OasisEditor2", () => {
     const importInput = root.querySelector(
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
-    const insertRowAfterButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-insert-table-row-after"]',
-    ) as HTMLButtonElement;
-    const deleteRowButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-delete-table-row"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -594,6 +588,9 @@ describe("OasisEditor2", () => {
     firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
     await Promise.resolve();
 
+    const insertRowAfterButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-insert-table-row-after"]',
+    ) as HTMLButtonElement;
     insertRowAfterButton.click();
     await Promise.resolve();
 
@@ -605,6 +602,9 @@ describe("OasisEditor2", () => {
     );
     expect(cells).toEqual(["A1", "A2", "", "", "B1", "B2"]);
 
+    const deleteRowButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-delete-table-row"]',
+    ) as HTMLButtonElement;
     deleteRowButton.click();
     await Promise.resolve();
 
@@ -624,12 +624,6 @@ describe("OasisEditor2", () => {
     const importInput = root.querySelector(
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
-    const insertColumnAfterButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-insert-table-column-after"]',
-    ) as HTMLButtonElement;
-    const deleteColumnButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-delete-table-column"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -663,6 +657,9 @@ describe("OasisEditor2", () => {
     firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
     await Promise.resolve();
 
+    const insertColumnAfterButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-insert-table-column-after"]',
+    ) as HTMLButtonElement;
     insertColumnAfterButton.click();
     await Promise.resolve();
 
@@ -673,6 +670,9 @@ describe("OasisEditor2", () => {
     );
     expect(cells).toEqual(["A1", "", "A2", "B1", "", "B2"]);
 
+    const deleteColumnButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-delete-table-column"]',
+    ) as HTMLButtonElement;
     deleteColumnButton.click();
     await Promise.resolve();
 
@@ -692,12 +692,6 @@ describe("OasisEditor2", () => {
     const importInput = root.querySelector(
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
-    const insertColumnAfterButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-insert-table-column-after"]',
-    ) as HTMLButtonElement;
-    const deleteColumnButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-delete-table-column"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -737,6 +731,9 @@ describe("OasisEditor2", () => {
     firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
     await Promise.resolve();
 
+    const insertColumnAfterButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-insert-table-column-after"]',
+    ) as HTMLButtonElement;
     expect(insertColumnAfterButton.disabled).toBe(false);
     insertColumnAfterButton.click();
     await Promise.resolve();
@@ -750,6 +747,9 @@ describe("OasisEditor2", () => {
     );
     expect(rowTexts).toEqual([["A1", "", "A2"], ["", "B2"]]);
 
+    const deleteColumnButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-delete-table-column"]',
+    ) as HTMLButtonElement;
     deleteColumnButton.click();
     await Promise.resolve();
 
@@ -771,12 +771,6 @@ describe("OasisEditor2", () => {
     const importInput = root.querySelector(
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
-    const insertRowAfterButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-insert-table-row-after"]',
-    ) as HTMLButtonElement;
-    const deleteRowButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-delete-table-row"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -813,6 +807,9 @@ describe("OasisEditor2", () => {
     firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
     await Promise.resolve();
 
+    const insertRowAfterButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-insert-table-row-after"]',
+    ) as HTMLButtonElement;
     expect(insertRowAfterButton.disabled).toBe(false);
     insertRowAfterButton.click();
     await Promise.resolve();
@@ -826,6 +823,9 @@ describe("OasisEditor2", () => {
     );
     expect(rowTexts).toEqual([["Merged", "Tail"], ["", ""], ["Bottom", "Right"]]);
 
+    const deleteRowButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-delete-table-row"]',
+    ) as HTMLButtonElement;
     deleteRowButton.click();
     await Promise.resolve();
 
@@ -847,18 +847,6 @@ describe("OasisEditor2", () => {
     const importInput = root.querySelector(
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
-    const insertRowAfterButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-insert-table-row-after"]',
-    ) as HTMLButtonElement;
-    const deleteRowButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-delete-table-row"]',
-    ) as HTMLButtonElement;
-    const insertColumnAfterButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-insert-table-column-after"]',
-    ) as HTMLButtonElement;
-    const deleteColumnButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-delete-table-column"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -903,6 +891,19 @@ describe("OasisEditor2", () => {
     const firstParagraph = root.querySelector('[data-testid="editor-2-table-cell"] [data-paragraph-id]') as HTMLElement;
     firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
     await Promise.resolve();
+
+    const insertRowAfterButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-insert-table-row-after"]',
+    ) as HTMLButtonElement;
+    const deleteRowButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-delete-table-row"]',
+    ) as HTMLButtonElement;
+    const insertColumnAfterButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-insert-table-column-after"]',
+    ) as HTMLButtonElement;
+    const deleteColumnButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-delete-table-column"]',
+    ) as HTMLButtonElement;
 
     expect(insertRowAfterButton.disabled).toBe(false);
     expect(deleteRowButton.disabled).toBe(false);
@@ -952,12 +953,6 @@ describe("OasisEditor2", () => {
     const importInput = root.querySelector(
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
-    const insertColumnAfterButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-insert-table-column-after"]',
-    ) as HTMLButtonElement;
-    const deleteColumnButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-delete-table-column"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -994,6 +989,9 @@ describe("OasisEditor2", () => {
     firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
     await Promise.resolve();
 
+    const insertColumnAfterButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-insert-table-column-after"]',
+    ) as HTMLButtonElement;
     expect(insertColumnAfterButton.disabled).toBe(false);
     insertColumnAfterButton.click();
     await Promise.resolve();
@@ -1007,6 +1005,9 @@ describe("OasisEditor2", () => {
     );
     expect(rowTexts).toEqual([["Merged", "", "Tail"], ["Bottom", "Right", ""]]);
 
+    const deleteColumnButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-delete-table-column"]',
+    ) as HTMLButtonElement;
     deleteColumnButton.click();
     await Promise.resolve();
 
@@ -1028,12 +1029,6 @@ describe("OasisEditor2", () => {
     const importInput = root.querySelector(
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
-    const insertRowAfterButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-insert-table-row-after"]',
-    ) as HTMLButtonElement;
-    const deleteRowButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-delete-table-row"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -1073,6 +1068,9 @@ describe("OasisEditor2", () => {
     firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
     await Promise.resolve();
 
+    const insertRowAfterButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-insert-table-row-after"]',
+    ) as HTMLButtonElement;
     expect(insertRowAfterButton.disabled).toBe(false);
     insertRowAfterButton.click();
     await Promise.resolve();
@@ -1082,6 +1080,9 @@ describe("OasisEditor2", () => {
     let firstCell = root.querySelector('[data-testid="editor-2-table-cell"]') as HTMLElement;
     expect(firstCell.getAttribute("rowspan")).toBe("3");
 
+    const deleteRowButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-delete-table-row"]',
+    ) as HTMLButtonElement;
     deleteRowButton.click();
     await Promise.resolve();
 
@@ -1100,12 +1101,6 @@ describe("OasisEditor2", () => {
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const mergeButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-merge-table-rows"]',
-    ) as HTMLButtonElement;
-    const splitButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-split-table-row"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -1139,6 +1134,9 @@ describe("OasisEditor2", () => {
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown", shiftKey: true }));
     await Promise.resolve();
 
+    const mergeButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-merge-table"]',
+    ) as HTMLButtonElement;
     expect(mergeButton.disabled).toBe(false);
     mergeButton.click();
     await Promise.resolve();
@@ -1149,6 +1147,9 @@ describe("OasisEditor2", () => {
     expect(cells[0]?.textContent?.replace(/\u00A0/g, "")).toContain("A");
     expect(cells[0]?.textContent?.replace(/\u00A0/g, "")).toContain("B");
 
+    const splitButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-split-table"]',
+    ) as HTMLButtonElement;
     expect(splitButton.disabled).toBe(false);
     splitButton.click();
     await Promise.resolve();
@@ -1170,9 +1171,6 @@ describe("OasisEditor2", () => {
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const mergeButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-merge-table-rows"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -1209,6 +1207,9 @@ describe("OasisEditor2", () => {
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown", shiftKey: true }));
     await Promise.resolve();
 
+    const mergeButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-merge-table"]',
+    ) as HTMLButtonElement;
     mergeButton.click();
     await Promise.resolve();
 
@@ -1456,9 +1457,6 @@ describe("OasisEditor2", () => {
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const mergeButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-merge-table-rows"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -1498,60 +1496,9 @@ describe("OasisEditor2", () => {
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown", shiftKey: true }));
     await Promise.resolve();
 
-    expect(mergeButton.disabled).toBe(true);
-
-    instance.dispose();
-  });
-
-  it("disables vertical merge when a selected cell already has multiple blocks", async () => {
-    const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
-    const instance = createOasisEditor2(root);
-    const importInput = root.querySelector(
-      '[data-testid="editor-2-import-docx-input"]',
-    ) as HTMLInputElement;
-    const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const mergeButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-merge-table-rows"]',
+    const mergeButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-merge-table"]',
     ) as HTMLButtonElement;
-    const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-        <w:body>
-          <w:tbl>
-            <w:tr>
-              <w:tc><w:p><w:r><w:t>A1</w:t></w:r></w:p></w:tc>
-            </w:tr>
-            <w:tr>
-              <w:tc><w:p><w:r><w:t>B1</w:t></w:r></w:p></w:tc>
-            </w:tr>
-          </w:tbl>
-        </w:body>
-      </w:document>`);
-
-    Object.defineProperty(importInput, "files", {
-      configurable: true,
-      value: [file],
-    });
-
-    importInput.dispatchEvent(new Event("change", { bubbles: true }));
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-      if (root.querySelectorAll('[data-testid="editor-2-table-cell"]').length === 2) {
-        break;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
-
-    input.value = "x";
-    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "x", inputType: "insertText" }));
-    await Promise.resolve();
-    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
-    await Promise.resolve();
-
-    const firstParagraph = root.querySelector('[data-testid="editor-2-table-cell"] [data-paragraph-id]') as HTMLElement;
-    firstParagraph.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 5, clientY: 5 }));
-    await Promise.resolve();
-    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown", shiftKey: true }));
-    await Promise.resolve();
-
     expect(mergeButton.disabled).toBe(true);
 
     instance.dispose();
@@ -1745,12 +1692,6 @@ describe("OasisEditor2", () => {
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const mergeButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-merge-table-rows"]',
-    ) as HTMLButtonElement;
-    const splitButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-split-table-row"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -1792,6 +1733,9 @@ describe("OasisEditor2", () => {
     input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowDown", shiftKey: true }));
     await Promise.resolve();
 
+    const mergeButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-merge-table"]',
+    ) as HTMLButtonElement;
     mergeButton.click();
     await Promise.resolve();
 
@@ -1800,6 +1744,9 @@ describe("OasisEditor2", () => {
     expect(cells[0]?.getAttribute("colspan")).toBe("2");
     expect(cells[0]?.getAttribute("rowspan")).toBe("2");
 
+    const splitButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-split-table"]',
+    ) as HTMLButtonElement;
     splitButton.click();
     await Promise.resolve();
 
@@ -1819,9 +1766,6 @@ describe("OasisEditor2", () => {
     const importInput = root.querySelector(
       '[data-testid="editor-2-import-docx-input"]',
     ) as HTMLInputElement;
-    const boldButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-bold"]',
-    ) as HTMLButtonElement;
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
         <w:body>
@@ -1861,6 +1805,9 @@ describe("OasisEditor2", () => {
     );
     await Promise.resolve();
 
+    const boldButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-bold"]',
+    ) as HTMLButtonElement;
     boldButton.click();
     await Promise.resolve();
 
@@ -1875,13 +1822,18 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const exportButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-export-docx"]',
-    ) as HTMLButtonElement;
 
     input.value = "export me";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "export me", inputType: "insertText" }));
     await Promise.resolve();
+
+    const fileDropdown = document.querySelector('[data-testid="editor-2-toolbar-file-dropdown"]') as HTMLElement;
+    fileDropdown.click();
+    await Promise.resolve();
+
+    const exportButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-export-docx"]',
+    ) as HTMLButtonElement;
 
     const createObjectURL = vi.fn(() => "blob:test-export");
     const revokeObjectURL = vi.fn();
@@ -1939,7 +1891,11 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
 
-    const insertTableButton = root.querySelector(
+    const insertDropdown = document.querySelector('[data-testid="editor-2-toolbar-insert-dropdown"]') as HTMLElement;
+    insertDropdown.click();
+    await Promise.resolve();
+
+    const insertTableButton = document.querySelector(
       '[data-testid="editor-2-toolbar-insert-table"]',
     ) as HTMLButtonElement;
     expect(insertTableButton).not.toBeNull();
@@ -1950,7 +1906,12 @@ describe("OasisEditor2", () => {
   it("inserts a 3x3 table into the document on Insert Table click", async () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
-    const insertTableButton = root.querySelector(
+
+    const insertDropdown = document.querySelector('[data-testid="editor-2-toolbar-insert-dropdown"]') as HTMLElement;
+    insertDropdown.click();
+    await Promise.resolve();
+
+    const insertTableButton = document.querySelector(
       '[data-testid="editor-2-toolbar-insert-table"]',
     ) as HTMLButtonElement;
 
@@ -1973,13 +1934,18 @@ describe("OasisEditor2", () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
     const input = root.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement;
-    const insertTableButton = root.querySelector(
-      '[data-testid="editor-2-toolbar-insert-table"]',
-    ) as HTMLButtonElement;
 
     input.value = "before";
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "before", inputType: "insertText" }));
     await Promise.resolve();
+
+    const insertDropdown = document.querySelector('[data-testid="editor-2-toolbar-insert-dropdown"]') as HTMLElement;
+    insertDropdown.click();
+    await Promise.resolve();
+
+    const insertTableButton = document.querySelector(
+      '[data-testid="editor-2-toolbar-insert-table"]',
+    ) as HTMLButtonElement;
 
     insertTableButton.click();
     await Promise.resolve();
@@ -1998,7 +1964,12 @@ describe("OasisEditor2", () => {
   it("renders cell data-row-index and data-cell-index attributes for selection", async () => {
     const root = document.getElementById("oasis-editor-2-root") as HTMLElement;
     const instance = createOasisEditor2(root);
-    const insertTableButton = root.querySelector(
+
+    const insertDropdown = document.querySelector('[data-testid="editor-2-toolbar-insert-dropdown"]') as HTMLElement;
+    insertDropdown.click();
+    await Promise.resolve();
+
+    const insertTableButton = document.querySelector(
       '[data-testid="editor-2-toolbar-insert-table"]',
     ) as HTMLButtonElement;
 

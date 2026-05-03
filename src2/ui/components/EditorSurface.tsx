@@ -606,6 +606,7 @@ function renderTable(
                         style={{
                           "background-color": cell.style?.shading,
                           "vertical-align": cell.style?.verticalAlign,
+                          "text-align": cell.style?.horizontalAlign,
                           "width": formatDimension(cell.style?.width),
                           "padding": cell.style?.padding !== undefined ? `${cell.style.padding}pt` : undefined,
                           "border-top": getBorderStyle(cell.style?.borderTop),

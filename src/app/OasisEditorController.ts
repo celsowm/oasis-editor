@@ -9,6 +9,7 @@ import { DocumentExporter } from "../core/export/DocumentExporter.js";
 import { FormatPainterController } from "./controllers/FormatPainterController.js";
 import { CursorPositionCalculator } from "./services/CursorPositionCalculator.js";
 import { TableDragController } from "./controllers/TableDragController.js";
+import { ImageDragController } from "./controllers/ImageDragController.js";
 import { MouseController } from "./controllers/MouseController.js";
 import { ZoneClickController } from "./controllers/ZoneClickController.js";
 import { WordSelectionController } from "./controllers/WordSelectionController.js";
@@ -43,6 +44,7 @@ export interface ControllerDeps {
   wordSelection: WordSelectionController;
   importExport: ImportExportController;
   tableDrag: TableDragController;
+  imageDrag: ImageDragController;
   dropTargetService: DropTargetService;
   commandBus: CommandBus;
 }
@@ -158,6 +160,16 @@ export class OasisEditorController {
       onResizeImage: (id, w, h) => this.execute("resizeImage", { id, w, h }),
       onSelectImage: (id) => this.execute("selectImage", id),
       onUpdateImageAlt: (id, alt) => this.execute("updateImageAlt", { id, alt }),
+      onImageDragStart: (id, e) => this.deps.imageDrag.handleDragStart(id, e),
+      onDragOver: (e) => {
+        if (this.deps.imageDrag) this.deps.imageDrag.handleDragOver(e);
+      },
+      onDrop: (e) => {
+        if (this.deps.imageDrag) this.deps.imageDrag.handleDrop(e);
+      },
+      onDragLeave: () => {
+        // Handled by view's dragState for now
+      },
 
       // Table
       onInsertTable: (r, c) => this.execute("insertTable", { r, c }),

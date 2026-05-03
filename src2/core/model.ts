@@ -106,6 +106,7 @@ export interface Editor2TableCellStyle {
   borderLeft?: Editor2BorderStyle;
   padding?: number; // uniform padding in pt
   verticalAlign?: "top" | "middle" | "bottom";
+  horizontalAlign?: "left" | "center" | "right" | "justify";
 }
 
 export interface Editor2TableCellNode {
