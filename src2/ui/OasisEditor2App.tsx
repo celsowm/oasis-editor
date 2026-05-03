@@ -1661,6 +1661,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
 
   const handleTextInput = (event: InputEvent & { currentTarget: HTMLTextAreaElement }) => {
     if (isReadOnly()) {
+      logger.debug(`input:readonly ignored value=${JSON.stringify(event.currentTarget.value)}`);
       event.currentTarget.value = "";
       return;
     }
@@ -1670,15 +1671,19 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     if (composing()) {
+      logger.debug(`input:composing buffer=${JSON.stringify(text)}`);
       return;
     }
 
     if (suppressedInputText !== null && text === suppressedInputText) {
+      logger.debug(`input:suppressed text=${JSON.stringify(text)}`);
       suppressedInputText = null;
       event.currentTarget.value = "";
       return;
     }
 
+    const sel = state.selection;
+    logger.info(`input:text ${JSON.stringify(text)} (len=${text.length}) at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`);
     clearPreferredColumn();
     applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, text)), {
       mergeKey: "insertText",
@@ -1688,6 +1693,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const handleCompositionStart = () => {
+    logger.debug("input:composition start");
     setComposing(true);
   };
 
@@ -1705,6 +1711,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return;
     }
 
+    const sel = state.selection;
+    logger.info(`input:composition end ${JSON.stringify(text)} (len=${text.length}) at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`);
     suppressedInputText = text;
     clearPreferredColumn();
     applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, text)), {
@@ -2668,7 +2676,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     openImageAltDialog: (initialAlt) => setImageAltDialog({ isOpen: true, initialAlt }),
   });
 
-  const { handleKeyDown } = createEditor2KeyboardController({
+  const { handleKeyDown: rawHandleKeyDown } = createEditor2KeyboardController({
     state: () => state,
     isReadOnly,
     clearPreferredColumn,
@@ -2694,6 +2702,19 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     resolveAdjacentTableCellPosition,
     applySelectionPreservingStructure,
   });
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    const mods = [
+      event.ctrlKey ? "Ctrl" : null,
+      event.metaKey ? "Meta" : null,
+      event.altKey ? "Alt" : null,
+      event.shiftKey ? "Shift" : null,
+    ].filter(Boolean).join("+");
+    const combo = mods ? `${mods}+${event.key}` : event.key;
+    const sel = state.selection;
+    logger.debug(`key:down ${combo} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`);
+    rawHandleKeyDown(event);
+  };
 
   const toolbarCtx = {
     state,
@@ -2878,7 +2899,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
                 startClientX: event.clientX,
                 startClientY: event.clientY,
                 dragging: false,
-                target: event.target as HTMLElement,
               };
               window.addEventListener("mousemove", handleImageDragMouseMove);
               window.addEventListener("mouseup", handleImageDragMouseUp);
