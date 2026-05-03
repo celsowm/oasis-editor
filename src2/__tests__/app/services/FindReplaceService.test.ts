@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { findMatchesInDocument } from "../../app/services/FindReplaceService.js";
-import { createEditor2Document, createEditor2Paragraph } from "../../core/editorState.js";
+import { findMatchesInDocument } from "../../../app/services/FindReplaceService.js";
+import { createEditor2Document, createEditor2Paragraph } from "../../../core/editorState.js";
+import { positionToParagraphOffset } from "../../../core/model.js";
 
 describe("FindReplaceService", () => {
   it("should find simple text matches", () => {
@@ -12,11 +13,14 @@ describe("FindReplaceService", () => {
     const matches = findMatchesInDocument(doc, "world");
     expect(matches).toHaveLength(2);
     expect(matches[0].paragraphIndex).toBe(0);
-    expect(matches[0].anchor.offset).toBe(6);
-    expect(matches[0].focus.offset).toBe(11);
-    expect(matches[1].paragraphIndex).toBe(1);
-    expect(matches[1].anchor.offset).toBe(8);
-    expect(matches[1].focus.offset).toBe(13);
+    
+    const p1 = doc.blocks[0] as any;
+    expect(positionToParagraphOffset(p1, matches[0].anchor)).toBe(6);
+    expect(positionToParagraphOffset(p1, matches[0].focus)).toBe(11);
+
+    const p2 = doc.blocks[1] as any;
+    expect(positionToParagraphOffset(p2, matches[1].anchor)).toBe(8);
+    expect(positionToParagraphOffset(p2, matches[1].focus)).toBe(13);
   });
 
   it("should handle case-insensitivity by default", () => {
@@ -41,14 +45,16 @@ describe("FindReplaceService", () => {
 
     const matchesWhole = findMatchesInDocument(doc, "World", { wholeWord: true });
     expect(matchesWhole).toHaveLength(1);
-    expect(matchesWhole[0].anchor.offset).toBe(11);
+    const p = doc.blocks[0] as any;
+    expect(positionToParagraphOffset(p, matchesWhole[0].anchor)).toBe(11);
   });
 
   it("should escape special regex characters in search term", () => {
     const doc = createEditor2Document([createEditor2Paragraph("Search for [brackets]?")]);
     const matches = findMatchesInDocument(doc, "[brackets]?");
     expect(matches).toHaveLength(1);
-    expect(matches[0].anchor.offset).toBe(11);
+    const p = doc.blocks[0] as any;
+    expect(positionToParagraphOffset(p, matches[0].anchor)).toBe(11);
   });
 
   it("should return empty array for empty search term", () => {
@@ -57,21 +63,26 @@ describe("FindReplaceService", () => {
   });
 
   it("should find matches across multiple runs", () => {
-    // Note: getParagraphText aggregates runs, so this should work naturally
-    const doc = createEditor2Document([
-      {
-        id: "p1",
-        type: "paragraph",
-        runs: [
-          { id: "r1", text: "Hello " },
-          { id: "r2", text: "world" },
-        ],
-      },
-    ]);
+    const p1 = {
+      id: "p1",
+      type: "paragraph" as const,
+      runs: [
+        { id: "r1", text: "Hello " },
+        { id: "r2", text: "world" },
+      ],
+    };
+    const doc = createEditor2Document([p1]);
 
     const matches = findMatchesInDocument(doc, "world");
     expect(matches).toHaveLength(1);
+    
+    expect(positionToParagraphOffset(p1, matches[0].anchor)).toBe(6);
+    expect(positionToParagraphOffset(p1, matches[0].focus)).toBe(11);
+    
+    // Also verify the positions themselves are correct relative to runs
+    expect(matches[0].anchor.runId).toBe("r1"); // Because offset 6 is the end of r1
     expect(matches[0].anchor.offset).toBe(6);
-    expect(matches[0].focus.offset).toBe(11);
+    expect(matches[0].focus.runId).toBe("r2");
+    expect(matches[0].focus.offset).toBe(5);
   });
 });

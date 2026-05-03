@@ -69,6 +69,8 @@ export interface Editor2KeyboardDeps {
     delta: -1 | 1,
   ) => Editor2Position | null;
   applySelectionPreservingStructure: (selection: Editor2State["selection"]) => void;
+  toggleFindReplace: (open?: boolean) => void;
+  toggleReplace: (open?: boolean) => void;
 }
 
 export function createEditor2KeyboardController(deps: Editor2KeyboardDeps) {
@@ -252,9 +254,23 @@ export function createEditor2KeyboardController(deps: Editor2KeyboardDeps) {
         return;
       }
 
-      if (event.shiftKey && (lowerKey === "7" || lowerKey === "8")) {
+      if (lowerKey === "7" || lowerKey === "8") {
+        if (event.shiftKey) {
+          event.preventDefault();
+          deps.commandsController.applyParagraphListCommand(lowerKey === "7" ? "ordered" : "bullet");
+          return;
+        }
+      }
+
+      if (lowerKey === "f") {
         event.preventDefault();
-        deps.commandsController.applyParagraphListCommand(lowerKey === "7" ? "ordered" : "bullet");
+        deps.toggleFindReplace(true);
+        return;
+      }
+
+      if (lowerKey === "h") {
+        event.preventDefault();
+        deps.toggleReplace(true);
         return;
       }
     }

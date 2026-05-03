@@ -163,11 +163,14 @@ import { createEditor2ClipboardController } from "../app/controllers/useEditor2C
 import { createEditor2KeyboardController } from "../app/controllers/useEditor2Keyboard.js";
 import { useEditor2Layout } from "../app/controllers/useEditor2Layout.js";
 import { useEditor2Persistence } from "../app/controllers/useEditor2Persistence.js";
+import { useEditor2FindReplace } from "../app/controllers/useEditor2FindReplace.js";
 import { createEditor2TableOperations } from "../app/controllers/useEditor2TableOperations.js";
 import { createEditor2ImageOperations } from "../app/controllers/useEditor2ImageOperations.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
 import { Sidebar } from "./components/Sidebar/Sidebar.js";
+import { FindReplaceDialog } from "./components/FindReplace/FindReplaceDialog.js";
+import "./components/FindReplace/findReplace.css";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import type { EditorToolbarCtx } from "./components/Toolbar/types.js";
 
@@ -462,6 +465,13 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       }
     });
   };
+
+  const fr = useEditor2FindReplace({
+    state,
+    applyState,
+    applyTransactionalState,
+    focusInput,
+  });
 
   const resetEditorChromeState = () => {
     clearPreferredColumn();
@@ -1643,6 +1653,12 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     moveVerticalByBlock,
     resolveAdjacentTableCellPosition: tableOps.resolveAdjacentTableCellPosition,
     applySelectionPreservingStructure,
+    toggleFindReplace: (open) => {
+      fr.setIsOpen(open ?? !fr.isOpen());
+    },
+    toggleReplace: (open) => {
+      fr.setIsOpen(open ?? !fr.isOpen());
+    },
   });
 
   const handleKeyDown = (
@@ -1961,6 +1977,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         <Show when={showChrome()}>
           <Sidebar ctx={() => toolbarCtx} />
         </Show>
+
+        <FindReplaceDialog fr={fr} />
       </div>
     </div>
   );
