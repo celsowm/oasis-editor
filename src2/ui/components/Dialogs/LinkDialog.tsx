@@ -34,12 +34,14 @@ export function LinkDialog(props: LinkDialogProps) {
           <button
             class="oasis-editor-2-dialog-button oasis-editor-2-dialog-button-secondary"
             onClick={props.onClose}
+            data-testid="editor-2-link-dialog-cancel"
           >
             Cancel
           </button>
           <button
             class="oasis-editor-2-dialog-button oasis-editor-2-dialog-button-primary"
             onClick={handleConfirm}
+            data-testid="editor-2-link-dialog-apply"
           >
             Apply
           </button>
@@ -56,6 +58,7 @@ export function LinkDialog(props: LinkDialogProps) {
           onInput={(e) => setHref(e.currentTarget.value)}
           onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
           placeholder="https://example.com"
+          data-testid="editor-2-link-dialog-input"
         />
       </div>
     </Dialog>

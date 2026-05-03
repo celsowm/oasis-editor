@@ -35,18 +35,24 @@ export function Dialog(props: DialogProps) {
           onClick={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
+          data-testid="editor-2-dialog"
         >
           <div class="oasis-editor-2-dialog-header">
             <h3 class="oasis-editor-2-dialog-title">{props.title}</h3>
-            <button class="oasis-editor-2-dialog-close" onClick={props.onClose} title="Close">
+            <button
+              class="oasis-editor-2-dialog-close"
+              onClick={props.onClose}
+              title="Close"
+              data-testid="editor-2-dialog-close"
+            >
               <i data-lucide="x" />
             </button>
           </div>
-          <div class="oasis-editor-2-dialog-body">
+          <div class="oasis-editor-2-dialog-body" data-testid="editor-2-dialog-body">
             {props.children}
           </div>
           <Show when={props.footer}>
-            <div class="oasis-editor-2-dialog-footer">
+            <div class="oasis-editor-2-dialog-footer" data-testid="editor-2-dialog-footer">
               {props.footer}
             </div>
           </Show>

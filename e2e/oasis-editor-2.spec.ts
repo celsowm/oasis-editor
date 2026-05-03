@@ -5,6 +5,27 @@ const SAMPLE_PNG = Buffer.from(
   "base64",
 );
 
+async function ensureToolbarVisible(page: import("@playwright/test").Page, testId: string) {
+  const target = page.locator(`[data-testid="${testId}"]`);
+  if (!(await target.isVisible().catch(() => false))) {
+    const overflow = page.locator('[data-testid="editor-2-toolbar-overflow-dropdown"]');
+    if (await overflow.isVisible().catch(() => false)) {
+      await overflow.click();
+    }
+  }
+  return target;
+}
+
+async function openInsertDropdown(page: import("@playwright/test").Page) {
+  const dropdown = await ensureToolbarVisible(page, "editor-2-toolbar-insert-dropdown");
+  await dropdown.click();
+}
+
+async function clickToolbarLink(page: import("@playwright/test").Page) {
+  const link = await ensureToolbarVisible(page, "editor-2-toolbar-link");
+  await link.click();
+}
+
 async function pastePlainText(page: import("@playwright/test").Page, text: string) {
   await page.evaluate((value) => {
     const input = document.querySelector('[data-testid="editor-2-input"]') as HTMLTextAreaElement | null;
@@ -66,6 +87,7 @@ test.describe("Oasis Editor 2 smoke tests", () => {
   });
 
   test("inserts and selects an inline image from the toolbar", async ({ page }) => {
+    await openInsertDropdown(page);
     await page.locator('[data-testid="editor-2-toolbar-insert-image"]').click();
     await page.locator('[data-testid="editor-2-insert-image-input"]').setInputFiles({
       name: "inline.png",
@@ -81,6 +103,7 @@ test.describe("Oasis Editor 2 smoke tests", () => {
   });
 
   test("inserts a table and moves between cells with tab", async ({ page }) => {
+    await openInsertDropdown(page);
     await page.locator('[data-testid="editor-2-toolbar-insert-table"]').click();
     await expect(page.locator('[data-testid="editor-2-table-cell"]')).toHaveCount(9);
 
@@ -94,7 +117,6 @@ test.describe("Oasis Editor 2 smoke tests", () => {
     await expect(cells.nth(0)).toContainText("A1");
     await expect(cells.nth(1)).toContainText("B1");
   });
-
   test("creates and edits a link through the prompt flow", async ({ page }) => {
     await page.locator('[data-testid="editor-2-input"]').focus();
     await page.keyboard.type("link");
@@ -105,18 +127,21 @@ test.describe("Oasis Editor 2 smoke tests", () => {
     await page.keyboard.press("ArrowLeft");
     await page.keyboard.up("Shift");
 
-    page.once("dialog", (dialog) => dialog.accept("https://example.com"));
-    await page.locator('[data-testid="editor-2-toolbar-link"]').click();
+    await clickToolbarLink(page);
+    await page.locator('[data-testid="editor-2-link-dialog-input"]').fill("https://example.com");
+    await page.locator('[data-testid="editor-2-link-dialog-apply"]').click();
 
     const link = page.locator('[data-testid="editor-2-link"]');
     await expect(link).toHaveAttribute("href", "https://example.com");
 
     await page.keyboard.press("ArrowLeft");
-    page.once("dialog", (dialog) => dialog.accept("https://edited.example.com"));
-    await page.keyboard.press(`${process.platform === "darwin" ? "Meta" : "Control"}+K`);
+    await clickToolbarLink(page);
+    await page.locator('[data-testid="editor-2-link-dialog-input"]').fill("https://edited.example.com");
+    await page.locator('[data-testid="editor-2-link-dialog-apply"]').click();
 
     await expect(link).toHaveAttribute("href", "https://edited.example.com");
-    await expect(page.locator('[data-testid="editor-2-toolbar-unlink"]')).toBeEnabled();
+    const unlink = await ensureToolbarVisible(page, "editor-2-toolbar-unlink");
+    await expect(unlink).toBeEnabled();
   });
 
   test("applies inline formatting shortcuts and paragraph metrics", async ({ page }) => {

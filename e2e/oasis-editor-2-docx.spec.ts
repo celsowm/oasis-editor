@@ -84,6 +84,7 @@ test.describe("Oasis Editor 2 DOCX", () => {
     });
 
     const downloadPromise = page.waitForEvent("download");
+    await page.locator('[data-testid="editor-2-toolbar-file-dropdown"]').click();
     await page.locator('[data-testid="editor-2-toolbar-export-docx"]').click();
     const download = await downloadPromise;
 
@@ -134,6 +135,7 @@ test.describe("Oasis Editor 2 DOCX", () => {
     await expect(page.locator('[data-testid="editor-2-link"]')).toHaveAttribute("href", "https://example.com");
 
     const downloadPromise = page.waitForEvent("download");
+    await page.locator('[data-testid="editor-2-toolbar-file-dropdown"]').click();
     await page.locator('[data-testid="editor-2-toolbar-export-docx"]').click();
     const download = await downloadPromise;
     const exported = await download.createReadStream();
