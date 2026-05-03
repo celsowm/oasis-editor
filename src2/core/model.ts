@@ -173,6 +173,84 @@ export interface Editor2Document {
   styles?: Record<string, Editor2NamedStyle>;
 }
 
+/**
+ * Merge local overrides on top of resolved named styles, applying the policy:
+ * - `undefined` in `local` → inherit from `resolved` (key is skipped)
+ * - `null` in `local` → reset to system default (key is included as `null` for the caller to handle)
+ * - any other value in `local` → override `resolved`
+ */
+function mergeTextStyles(resolved: Editor2TextStyle, local: Editor2TextStyle | undefined): Editor2TextStyle {
+  if (!local) {
+    return { ...resolved };
+  }
+  const result = { ...resolved };
+  for (const [key, value] of Object.entries(local) as [keyof Editor2TextStyle, unknown][]) {
+    if (value !== undefined) {
+      (result as Record<string, unknown>)[key] = value;
+    }
+  }
+  return result;
+}
+
+function mergeParagraphStyles(
+  resolved: Editor2ParagraphStyle,
+  local: Editor2ParagraphStyle | undefined,
+): Editor2ParagraphStyle {
+  if (!local) {
+    return { ...resolved };
+  }
+  const result = { ...resolved };
+  for (const [key, value] of Object.entries(local) as [keyof Editor2ParagraphStyle, unknown][]) {
+    if (value !== undefined) {
+      (result as Record<string, unknown>)[key] = value;
+    }
+  }
+  return result;
+}
+
+/**
+ * Default values for every field of Editor2TextStyle.
+ * Used when resolving "effective" styles (named + local + defaults).
+ */
+const DEFAULT_TEXT_STYLE: Required<Editor2TextStyle> = {
+  styleId: undefined as unknown as string,
+  bold: false,
+  italic: false,
+  underline: false,
+  strike: false,
+  superscript: false,
+  subscript: false,
+  fontFamily: "Arial",
+  fontSize: 20,
+  color: "#000000",
+  highlight: null as unknown as string | null,
+  link: null as unknown as string | null,
+};
+
+export const EFFECTIVE_TEXT_STYLE_DEFAULTS: Required<Editor2TextStyle> = DEFAULT_TEXT_STYLE;
+
+const DEFAULT_PARAGRAPH_STYLE: Required<Editor2ParagraphStyle> = {
+  styleId: undefined as unknown as string,
+  align: "left",
+  spacingBefore: 0,
+  spacingAfter: 0,
+  lineHeight: 1.6,
+  indentLeft: 0,
+  indentRight: 0,
+  indentFirstLine: 0,
+  indentHanging: 0,
+  shading: null as unknown as string | null,
+  borderTop: null as unknown as Editor2BorderStyle | null,
+  borderRight: null as unknown as Editor2BorderStyle | null,
+  borderBottom: null as unknown as Editor2BorderStyle | null,
+  borderLeft: null as unknown as Editor2BorderStyle | null,
+  tabs: null as unknown as Editor2TabStop[] | null,
+  pageBreakBefore: false,
+  keepWithNext: false,
+};
+
+export const EFFECTIVE_PARAGRAPH_STYLE_DEFAULTS: Required<Editor2ParagraphStyle> = DEFAULT_PARAGRAPH_STYLE;
+
 export function resolveNamedTextStyle(
   styleId: string | undefined,
   styles: Record<string, Editor2NamedStyle> | undefined,
@@ -205,6 +283,36 @@ export function resolveNamedParagraphStyle(
     ...baseStyle,
     ...(namedStyle.paragraphStyle ?? {}),
   };
+}
+
+/**
+ * Resolve the effective text style for a run:
+ * 1. Resolve named style via styleId + basedOn chain
+ * 2. Apply local overrides (undefined → inherit, null → keep as null for reset)
+ * 3. Fill in system defaults for any remaining undefined values
+ */
+export function resolveEffectiveTextStyle(
+  style: Editor2TextStyle | undefined,
+  styles: Record<string, Editor2NamedStyle> | undefined,
+): Required<Editor2TextStyle> {
+  const named = resolveNamedTextStyle(style?.styleId, styles);
+  const merged = mergeTextStyles(named, style);
+  return { ...DEFAULT_TEXT_STYLE, ...merged };
+}
+
+/**
+ * Resolve the effective paragraph style:
+ * 1. Resolve named style via styleId + basedOn chain
+ * 2. Apply local overrides (undefined → inherit, null → keep as null for reset)
+ * 3. Fill in system defaults for any remaining undefined values
+ */
+export function resolveEffectiveParagraphStyle(
+  style: Editor2ParagraphStyle | undefined,
+  styles: Record<string, Editor2NamedStyle> | undefined,
+): Required<Editor2ParagraphStyle> {
+  const named = resolveNamedParagraphStyle(style?.styleId, styles);
+  const merged = mergeParagraphStyles(named, style);
+  return { ...DEFAULT_PARAGRAPH_STYLE, ...merged };
 }
 
 export interface Editor2Position {

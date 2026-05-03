@@ -759,12 +759,12 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const splitSelectedTable = (current: Editor2State): Editor2State => {
-    if (canSplitSelectedTableCell(current)) {
-      return splitSelectedTableCell(current);
-    }
-
     if (canSplitSelectedTableCellVertically(current)) {
       return splitSelectedTableCellVertically(current);
+    }
+
+    if (canSplitSelectedTableCell(current)) {
+      return splitSelectedTableCell(current);
     }
 
     return current;
@@ -1588,7 +1588,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const insertImageFromFile = async (file: File, position?: Editor2Position | null) => {
-    logger.info("image insert:start", { name: file.name, type: file.type, size: file.size });
+    logger.info(`image insert:start name="${file.name}" type=${file.type} size=${file.size}`);
     const arrayBuffer = await readFileBuffer(file);
     const base64 = btoa(
       new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
@@ -1608,13 +1608,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     const scale = naturalWidth > maxWidth ? maxWidth / naturalWidth : 1;
     const width = Math.max(24, Math.round(naturalWidth * scale));
     const height = Math.max(24, Math.round(naturalHeight * scale));
-    logger.info("image insert:decoded", {
-      width: naturalWidth,
-      height: naturalHeight,
-      fittedWidth: width,
-      fittedHeight: height,
-      maxWidth,
-    });
+    logger.info(`image insert:decoded natural=${naturalWidth}x${naturalHeight} fitted=${width}x${height} maxWidth=${maxWidth}`);
 
     applyTransactionalState(
       (current) => {
@@ -1625,7 +1619,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       },
       { mergeKey: "insertImage" }
     );
-    logger.debug("image insert:selection", state.selection);
+    const sel = state.selection;
+    logger.debug(`image insert:selection anchor=${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`);
   };
 
   const handleInsertImage = async (file: File | null) => {
@@ -1899,7 +1894,26 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     window.removeEventListener("mouseup", handleWindowMouseUp);
   };
 
+  let imageDragCursorStyle: HTMLStyleElement | null = null;
+
+  const showImageDragCursor = () => {
+    if (imageDragCursorStyle) return;
+    imageDragCursorStyle = document.createElement("style");
+    imageDragCursorStyle.setAttribute("data-oasis-image-drag-cursor", "");
+    imageDragCursorStyle.textContent = "*, *::before, *::after { cursor: grabbing !important; }";
+    document.head.appendChild(imageDragCursorStyle);
+  };
+
+  const hideImageDragCursor = () => {
+    if (imageDragCursorStyle) {
+      imageDragCursorStyle.remove();
+      imageDragCursorStyle = null;
+    }
+    document.body.style.cursor = "";
+  };
+
   const stopImageDrag = () => {
+    hideImageDragCursor();
     activeImageDrag = null;
     window.removeEventListener("mousemove", handleImageDragMouseMove);
     window.removeEventListener("mouseup", handleImageDragMouseUp);
@@ -1921,12 +1935,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     const deltaY = Math.abs(event.clientY - dragState.startClientY);
     if (!dragState.dragging && deltaX + deltaY >= 4) {
       dragState.dragging = true;
-      logger.info("image drag:start", {
-        paragraphId: dragState.paragraphId,
-        paragraphOffset: dragState.paragraphOffset,
-        clientX: dragState.startClientX,
-        clientY: dragState.startClientY,
-      });
+      showImageDragCursor();
+      logger.info(`image drag:start ${dragState.paragraphId}@${dragState.paragraphOffset} client=(${dragState.startClientX},${dragState.startClientY})`);
     }
   };
 
@@ -1940,22 +1950,13 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     if (dragState.dragging) {
       const position = resolvePositionAtSurfacePoint(event.clientX, event.clientY);
       if (position) {
-        logger.info("image drag:done", {
-          paragraphId: dragState.paragraphId,
-          paragraphOffset: dragState.paragraphOffset,
-          target: position,
-        });
+        logger.info(`image drag:done ${dragState.paragraphId} -> ${position.paragraphId}:${position.runId}[${position.offset}]`);
         applyTransactionalState(
           (current) => moveSelectedImageToPosition(current, position),
           { mergeKey: "moveImage" },
         );
       } else {
-        logger.warn("image drag:cancel", {
-          paragraphId: dragState.paragraphId,
-          paragraphOffset: dragState.paragraphOffset,
-          clientX: event.clientX,
-          clientY: event.clientY,
-        });
+        logger.warn(`image drag:cancel ${dragState.paragraphId} no target at (${event.clientX},${event.clientY})`);
       }
     }
 
@@ -2834,9 +2835,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             onImageMouseDown={(paragraphId, paragraphOffset, event) => {
               event.preventDefault();
               event.stopPropagation();
+              showImageDragCursor();
               const paragraph = getParagraphs(state).find((candidate) => candidate.id === paragraphId);
               if (!paragraph) {
-                logger.warn("image select:missing paragraph", { paragraphId, paragraphOffset });
+                hideImageDragCursor();
+                logger.warn(`image select:missing paragraph id=${paragraphId} offset=${paragraphOffset}`);
                 return;
               }
 
@@ -2849,14 +2852,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
 
               const start = paragraphOffsetToPosition(paragraph, paragraphOffset);
               const end = paragraphOffsetToPosition(paragraph, paragraphOffset + 1);
-              logger.info("image select", {
-                paragraphId,
-                paragraphOffset,
-                start,
-                end,
-              });
+              logger.info(`image select:${paragraphId} offset=${paragraphOffset} range=${start.paragraphId}:${start.runId}[${start.offset}]..${end.runId}[${end.offset}]`);
 
               if (event.shiftKey) {
+                hideImageDragCursor();
                 applyState(
                   setSelection(state, {
                     anchor: state.selection.anchor,
@@ -2879,6 +2878,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
                 startClientX: event.clientX,
                 startClientY: event.clientY,
                 dragging: false,
+                target: event.target as HTMLElement,
               };
               window.addEventListener("mousemove", handleImageDragMouseMove);
               window.addEventListener("mouseup", handleImageDragMouseUp);

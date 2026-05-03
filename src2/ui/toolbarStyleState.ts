@@ -1,12 +1,16 @@
 import type {
-  Editor2ParagraphListStyle,
   Editor2ParagraphNode,
-  Editor2ParagraphStyle,
   Editor2Position,
   Editor2State,
   Editor2TextStyle,
 } from "../core/model.js";
-import { getParagraphText, getParagraphs, positionToParagraphOffset } from "../core/model.js";
+import {
+  getParagraphText,
+  getParagraphs,
+  positionToParagraphOffset,
+  resolveEffectiveParagraphStyle,
+  resolveEffectiveTextStyle,
+} from "../core/model.js";
 import { clampPosition, normalizeSelection } from "../core/selection.js";
 
 export type BooleanStyleKey =
@@ -75,13 +79,14 @@ function selectionOverlapsRun(
 function getSelectedRunStyles(state: Editor2State): Editor2TextStyle[] {
   const normalized = normalizeSelection(state);
   const paragraphs = getParagraphs(state);
+  const { styles: docStyles } = state.document;
   if (normalized.isCollapsed) {
     const paragraph = paragraphs[normalized.startIndex];
     if (!paragraph) {
       return [];
     }
     const style = getCollapsedRunStyle(paragraph, clampPosition(state, state.selection.focus));
-    return style ? [style] : [];
+    return style ? [resolveEffectiveTextStyle(style, docStyles)] : [];
   }
 
   const styles: Editor2TextStyle[] = [];
@@ -100,7 +105,7 @@ function getSelectedRunStyles(state: Editor2State): Editor2TextStyle[] {
     for (const run of paragraph.runs) {
       const runEnd = runStart + run.text.length;
       if (selectionOverlapsRun(runStart, runEnd, selectionStart, selectionEnd)) {
-        styles.push(run.styles ?? {});
+        styles.push(resolveEffectiveTextStyle(run.styles, docStyles));
       }
       runStart = runEnd;
     }
@@ -162,9 +167,10 @@ function resolveUniformStyleValue<K extends ValueStyleKey>(
 
 function getSelectedParagraphStyles(state: Editor2State): Editor2ParagraphStyle[] {
   const normalized = normalizeSelection(state);
+  const { styles: docStyles } = state.document;
   return getParagraphs(state)
     .slice(normalized.startIndex, normalized.endIndex + 1)
-    .map((paragraph) => paragraph.style ?? {});
+    .map((paragraph) => resolveEffectiveParagraphStyle(paragraph.style, docStyles));
 }
 
 function resolveUniformParagraphStyleValue<K extends ParagraphStyleKey>(

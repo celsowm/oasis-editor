@@ -22,6 +22,7 @@ const EXPECTED_TOOLBAR_TESTIDS: readonly string[] = [
   "editor-2-toolbar-delete-table-column",
   "editor-2-toolbar-delete-table-row",
   "editor-2-toolbar-export-docx",
+  "editor-2-toolbar-file-dropdown",
   "editor-2-toolbar-font-family",
   "editor-2-toolbar-font-size",
   "editor-2-toolbar-highlight",
@@ -30,6 +31,7 @@ const EXPECTED_TOOLBAR_TESTIDS: readonly string[] = [
   "editor-2-toolbar-indent-first-line",
   "editor-2-toolbar-indent-hanging",
   "editor-2-toolbar-indent-left",
+  "editor-2-toolbar-insert-dropdown",
   "editor-2-toolbar-insert-image",
   "editor-2-toolbar-insert-page-number",
   "editor-2-toolbar-insert-table",
@@ -54,6 +56,7 @@ const EXPECTED_TOOLBAR_TESTIDS: readonly string[] = [
   "editor-2-toolbar-paragraph-shading",
   "editor-2-toolbar-redo",
   "editor-2-toolbar-reject-revisions",
+  "editor-2-toolbar-review-dropdown",
   "editor-2-toolbar-section-break-continuous",
   "editor-2-toolbar-section-break-next",
   "editor-2-toolbar-spacing-after",
@@ -95,7 +98,7 @@ describe("Toolbar testid snapshot (regression guard for Phase 2 UI rewrite)", ()
     await Promise.resolve();
 
     // 2. Insert an image to show the 'Alt' button
-    const imageInput = document.querySelector('[data-testid="editor-2-insert-image-input"]') as HTMLInputElement;
+    const imageInput = root.querySelector('[data-testid="editor-2-insert-image-input"]') as HTMLInputElement;
     const tinyFile = new File([new Uint8Array([
       0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
       0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
@@ -103,20 +106,48 @@ describe("Toolbar testid snapshot (regression guard for Phase 2 UI rewrite)", ()
       0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
       0x42, 0x60, 0x82
     ])], "tiny.png", { type: "image/png" });
+
+    const OriginalImage = globalThis.Image;
+    class MockImage {
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+      naturalWidth = 64;
+      naturalHeight = 32;
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
+    }
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      value: MockImage,
+    });
+
     Object.defineProperty(imageInput, "files", { configurable: true, value: [tinyFile] });
     imageInput.dispatchEvent(new Event("change", { bubbles: true }));
-    
+
     // Wait for image to be processed and rendered
     for (let i = 0; i < 10; i++) {
       await Promise.resolve();
       if (document.querySelector('img')) break;
     }
 
+    // Select the image to show the 'Alt' button
     const image = document.querySelector('img');
     if (image) {
-      image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      image.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 4, clientY: 4 }));
     }
-    await Promise.resolve();
+
+    // Wait for selectedImageRun to become active
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const altBtn = document.querySelector('[data-testid="editor-2-toolbar-image-alt"]');
+      if (altBtn) break;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      value: OriginalImage,
+    });
 
     // 3. Open dropdowns to render their contents in Portals
     const dropdowns = ["file", "insert", "review"];

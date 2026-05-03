@@ -18,6 +18,8 @@ import {
   type Editor2TabStop,
   resolveNamedParagraphStyle,
   resolveNamedTextStyle,
+  resolveEffectiveTextStyle,
+  resolveEffectiveParagraphStyle,
 } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
 import { projectDocumentLayout, projectParagraphLayout } from "../layoutProjection.js";
@@ -56,8 +58,7 @@ function paragraphStyleToCss(
   style: Editor2ParagraphStyle | undefined,
   styles: Record<string, Editor2NamedStyle> | undefined,
 ): Record<string, string> | undefined {
-  const resolved = resolveNamedParagraphStyle(style?.styleId, styles);
-  const merged = { ...resolved, ...(style ?? {}) };
+  const merged = resolveEffectiveParagraphStyle(style, styles);
 
   const css: Record<string, string> = {};
 
@@ -200,8 +201,7 @@ function runStyleToCss(
   style: Editor2TextStyle | undefined,
   styles: Record<string, Editor2NamedStyle> | undefined,
 ): Record<string, string> | undefined {
-  const resolved = resolveNamedTextStyle(style?.styleId, styles);
-  const merged = { ...resolved, ...(style ?? {}) };
+  const merged = resolveEffectiveTextStyle(style, styles);
 
   const css: Record<string, string> = {};
   const textDecorations: string[] = [];
