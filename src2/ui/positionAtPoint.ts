@@ -143,24 +143,58 @@ export function resolvePositionAtPoint(options: {
   const target = documentLike?.elementFromPoint?.(clientX, clientY) ?? null;
 
   const targetElement = target instanceof HTMLElement ? target : null;
-  const tableCell =
-    targetElement?.closest<HTMLElement>("td[data-cell-index]") ??
-    findNearestElement(surface, "td[data-cell-index]", clientX, clientY);
-  if (tableCell) {
-    const tableCellPosition = resolveTableCellStartPosition(state.document, tableCell);
+
+  // 1. Direct hit: prefer the deepest match the cursor is actually over.
+  const directParagraph = targetElement?.closest<HTMLElement>("[data-paragraph-id]") ?? null;
+  const directCell = targetElement?.closest<HTMLElement>("td[data-cell-index]") ?? null;
+
+  // If the cursor is over a paragraph, use it (works for both table-cell
+  // paragraphs and outside-the-table paragraphs).
+  if (directParagraph) {
+    const paragraph = resolveParagraphFromElement(state, directParagraph);
+    if (paragraph) {
+      const layout = measureParagraphLayoutFromRects(
+        paragraph,
+        collectParagraphCharRects(surface, paragraph.id),
+      );
+      const offset =
+        layout.text.length === 0
+          ? 0
+          : resolveClosestOffsetInMeasuredLayout(layout, clientX, clientY);
+      return paragraphOffsetToPosition(
+        paragraph,
+        Math.max(0, Math.min(offset, getParagraphText(paragraph).length)),
+      );
+    }
+  }
+
+  // If the cursor is over a table cell but not over any paragraph (e.g.
+  // empty cell padding), drop at the start of that cell.
+  if (directCell) {
+    const tableCellPosition = resolveTableCellStartPosition(state.document, directCell);
     if (tableCellPosition) {
       return tableCellPosition;
     }
   }
 
-  const paragraphElement =
-    targetElement?.closest<HTMLElement>("[data-paragraph-id]") ??
-    findNearestParagraphElement(surface, clientX, clientY);
-  if (!paragraphElement) {
+  // 2. Fallback: cursor is over an empty area. Prefer the nearest paragraph
+  // (which may be inside or outside a table). Falling back to nearest cell
+  // first would force every drop into a table, even when the user is clearly
+  // dropping into a paragraph above/below the table.
+  const nearestParagraph = findNearestParagraphElement(surface, clientX, clientY);
+  if (!nearestParagraph) {
+    // Last resort: nearest table cell (used when paragraphs aren't rendered).
+    const nearestCell = findNearestElement(surface, "td[data-cell-index]", clientX, clientY);
+    if (nearestCell) {
+      const tableCellPosition = resolveTableCellStartPosition(state.document, nearestCell);
+      if (tableCellPosition) {
+        return tableCellPosition;
+      }
+    }
     return null;
   }
 
-  const paragraph = resolveParagraphFromElement(state, paragraphElement);
+  const paragraph = resolveParagraphFromElement(state, nearestParagraph);
   if (!paragraph) {
     return null;
   }
