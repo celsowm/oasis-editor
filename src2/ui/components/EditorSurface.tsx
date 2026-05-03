@@ -22,7 +22,10 @@ import {
   resolveEffectiveParagraphStyle,
 } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
-import { projectDocumentLayout, projectParagraphLayout } from "../layoutProjection.js";
+import {
+  projectDocumentLayout,
+  projectParagraphLayout,
+} from "../layoutProjection.js";
 
 interface EditorSurfaceProps {
   state: Accessor<Editor2State>;
@@ -79,12 +82,16 @@ function paragraphStyleToCss(
     css["background-color"] = merged.shading;
   }
   if (merged.borderTop) css["border-top"] = getBorderStyle(merged.borderTop)!;
-  if (merged.borderRight) css["border-right"] = getBorderStyle(merged.borderRight)!;
-  if (merged.borderBottom) css["border-bottom"] = getBorderStyle(merged.borderBottom)!;
-  if (merged.borderLeft) css["border-left"] = getBorderStyle(merged.borderLeft)!;
-  
+  if (merged.borderRight)
+    css["border-right"] = getBorderStyle(merged.borderRight)!;
+  if (merged.borderBottom)
+    css["border-bottom"] = getBorderStyle(merged.borderBottom)!;
+  if (merged.borderLeft)
+    css["border-left"] = getBorderStyle(merged.borderLeft)!;
+
   const indentLeft = (merged.indentLeft ?? 0) + (merged.indentHanging ?? 0);
-  const textIndent = (merged.indentFirstLine ?? 0) - (merged.indentHanging ?? 0);
+  const textIndent =
+    (merged.indentFirstLine ?? 0) - (merged.indentHanging ?? 0);
 
   if (indentLeft !== 0) {
     css["padding-left"] = `${indentLeft}px`;
@@ -128,10 +135,19 @@ function numberToUpperLetter(n: number): string {
 
 function numberToLowerRoman(n: number): string {
   const roman: Record<string, number> = {
-    m: 1000, cm: 900, d: 500, cd: 400,
-    c: 100, xc: 90, l: 50, xl: 40,
-    x: 10, ix: 9, v: 5, iv: 4,
-    i: 1
+    m: 1000,
+    cm: 900,
+    d: 500,
+    cd: 400,
+    c: 100,
+    xc: 90,
+    l: 50,
+    xl: 40,
+    x: 10,
+    ix: 9,
+    v: 5,
+    iv: 4,
+    i: 1,
   };
   let result = "";
   for (const key in roman) {
@@ -147,7 +163,9 @@ function numberToUpperRoman(n: number): string {
   return numberToLowerRoman(n).toUpperCase();
 }
 
-function buildParagraphListMarkers(paragraphs: Editor2ParagraphNode[]): Map<string, string> {
+function buildParagraphListMarkers(
+  paragraphs: Editor2ParagraphNode[],
+): Map<string, string> {
   const markers = new Map<string, string>();
   let orderedCounters: number[] = [];
   let previousList: Editor2ParagraphListStyle | undefined;
@@ -172,21 +190,25 @@ function buildParagraphListMarkers(paragraphs: Editor2ParagraphNode[]): Map<stri
     if (previousList?.kind !== "ordered") {
       orderedCounters = [];
     }
-    
+
     // Handle startAt
-    if (list.startAt !== undefined && (orderedCounters[level] === undefined || previousList?.level !== level)) {
+    if (
+      list.startAt !== undefined &&
+      (orderedCounters[level] === undefined || previousList?.level !== level)
+    ) {
       orderedCounters[level] = list.startAt - 1;
     }
 
     orderedCounters = orderedCounters.slice(0, level + 1);
     orderedCounters[level] = (orderedCounters[level] ?? 0) + 1;
-    
+
     const count = orderedCounters[level];
     const format = list.format ?? "decimal";
     let marker = `${count}.`;
 
     if (format === "lowerLetter") marker = `${numberToLowerLetter(count)}.`;
-    else if (format === "upperLetter") marker = `${numberToUpperLetter(count)}.`;
+    else if (format === "upperLetter")
+      marker = `${numberToUpperLetter(count)}.`;
     else if (format === "lowerRoman") marker = `${numberToLowerRoman(count)}.`;
     else if (format === "upperRoman") marker = `${numberToUpperRoman(count)}.`;
 
@@ -250,9 +272,12 @@ function runStyleToCss(
   return Object.keys(css).length > 0 ? css : undefined;
 }
 
-function resolveNextTabStop(currentX: number, tabs: Editor2TabStop[] | undefined | null): number {
+function resolveNextTabStop(
+  currentX: number,
+  tabs: Editor2TabStop[] | undefined | null,
+): number {
   const defaultTabInterval = 36; // 0.5 inch in pt
-  
+
   if (tabs && tabs.length > 0) {
     const sortedTabs = [...tabs].sort((a, b) => a.position - b.position);
     for (const tab of sortedTabs) {
@@ -306,12 +331,18 @@ function renderParagraph(
       return false;
     }
 
-    if (paragraphIndex < current.startIndex || paragraphIndex > current.endIndex) {
+    if (
+      paragraphIndex < current.startIndex ||
+      paragraphIndex > current.endIndex
+    ) {
       return false;
     }
 
     if (current.startIndex === current.endIndex) {
-      return charIndex >= current.startParagraphOffset && charIndex < current.endParagraphOffset;
+      return (
+        charIndex >= current.startParagraphOffset &&
+        charIndex < current.endParagraphOffset
+      );
     }
 
     if (paragraphIndex === current.startIndex) {
@@ -325,8 +356,10 @@ function renderParagraph(
     return true;
   };
 
-  const resolvedParagraphStyle = () => resolveNamedParagraphStyle(paragraph.style?.styleId, state.document.styles);
-  const effectiveTabs = () => paragraph.style?.tabs ?? resolvedParagraphStyle()?.tabs;
+  const resolvedParagraphStyle = () =>
+    resolveNamedParagraphStyle(paragraph.style?.styleId, state.document.styles);
+  const effectiveTabs = () =>
+    paragraph.style?.tabs ?? resolvedParagraphStyle()?.tabs;
 
   return (
     <p
@@ -339,10 +372,17 @@ function renderParagraph(
       data-end-offset={paragraphLayout.endOffset ?? chars.length}
       data-testid={testId}
       style={getParagraphRenderStyle(paragraph, state)}
-      onMouseDown={interactive ? (event) => onParagraphMouseDown(paragraph.id, event) : undefined}
+      onMouseDown={
+        interactive
+          ? (event) => onParagraphMouseDown(paragraph.id, event)
+          : undefined
+      }
     >
       <Show when={paragraph.list}>
-        <span class="oasis-editor-2-list-marker" data-testid="editor-2-list-marker">
+        <span
+          class="oasis-editor-2-list-marker"
+          data-testid="editor-2-list-marker"
+        >
           {isContinuation ? "" : listMarker}
         </span>
       </Show>
@@ -370,34 +410,53 @@ function renderParagraph(
                     <span
                       class="oasis-editor-2-run"
                       classList={{
-                        "oasis-editor-2-revision-insert": fragment.revision?.type === "insert",
-                        "oasis-editor-2-revision-delete": fragment.revision?.type === "delete",
+                        "oasis-editor-2-revision-insert":
+                          fragment.revision?.type === "insert",
+                        "oasis-editor-2-revision-delete":
+                          fragment.revision?.type === "delete",
                       }}
                       data-run-id={fragment.runId}
                       data-testid="editor-2-run"
-                      style={runStyleToCss(fragment.styles, state.document.styles)}
+                      style={runStyleToCss(
+                        fragment.styles,
+                        state.document.styles,
+                      )}
                       onMouseEnter={
                         interactive && fragment.revision
-                          ? (event) => onRevisionMouseEnter?.(fragment.revision!.id, event)
+                          ? (event) =>
+                              onRevisionMouseEnter?.(
+                                fragment.revision!.id,
+                                event,
+                              )
                           : undefined
                       }
                       onMouseLeave={
                         interactive && fragment.revision
-                          ? (event) => onRevisionMouseLeave?.(fragment.revision!.id, event)
+                          ? (event) =>
+                              onRevisionMouseLeave?.(
+                                fragment.revision!.id,
+                                event,
+                              )
                           : undefined
                       }
                     >
-
                       <For each={fragment.chars}>
-                        {(char) => (
+                        {(char) =>
                           (() => {
                             const imageSelected = () =>
-                              Boolean(fragment.image) && isCharSelected(char.paragraphOffset);
-                            const slot = () => line.slots.find(s => s.offset === char.paragraphOffset);
+                              Boolean(fragment.image) &&
+                              isCharSelected(char.paragraphOffset);
+                            const slot = () =>
+                              line.slots.find(
+                                (s) => s.offset === char.paragraphOffset,
+                              );
                             const tabWidth = () => {
                               if (char.char !== "\t") return 0;
                               const currentX = slot()?.left ?? 0;
-                              const nextTabPos = resolveNextTabStop(currentX, effectiveTabs());
+                              const nextTabPos = resolveNextTabStop(
+                                currentX,
+                                effectiveTabs(),
+                              );
                               return Math.max(0, nextTabPos - currentX);
                             };
 
@@ -405,33 +464,50 @@ function renderParagraph(
                               <span
                                 classList={{
                                   "oasis-editor-2-char": true,
-                                  "oasis-editor-2-char-selected": isCharSelected(char.paragraphOffset),
-                                  "oasis-editor-2-image-char": Boolean(fragment.image),
+                                  "oasis-editor-2-char-selected":
+                                    isCharSelected(char.paragraphOffset),
+                                  "oasis-editor-2-image-char": Boolean(
+                                    fragment.image,
+                                  ),
                                   "oasis-editor-2-tab-char": char.char === "\t",
                                 }}
                                 data-char-index={char.paragraphOffset}
                                 data-run-id={fragment.runId}
                                 data-run-offset={char.runOffset}
                                 data-testid="editor-2-char"
-                                style={char.char === "\t" ? {
-                                  display: "inline-block",
-                                  width: `${tabWidth()}pt`,
-                                  overflow: "hidden",
-                                  "white-space": "pre",
-                                } : undefined}
+                                style={
+                                  char.char === "\t"
+                                    ? {
+                                        display: "inline-block",
+                                        width: `${tabWidth()}pt`,
+                                        overflow: "hidden",
+                                        "white-space": "pre",
+                                      }
+                                    : undefined
+                                }
                               >
                                 {fragment.image ? (
                                   <span
                                     classList={{
                                       "oasis-editor-2-image-inline": true,
-                                      "oasis-editor-2-image-inline-selected": imageSelected(),
+                                      "oasis-editor-2-image-inline-selected":
+                                        imageSelected(),
                                     }}
                                     onMouseDown={
                                       interactive
-                                        ? (event) => onImageMouseDown(paragraph.id, char.paragraphOffset, event)
+                                        ? (event) =>
+                                            onImageMouseDown(
+                                              paragraph.id,
+                                              char.paragraphOffset,
+                                              event,
+                                            )
                                         : undefined
                                     }
-                                    title={interactive ? "Click and drag to move image" : undefined}
+                                    title={
+                                      interactive
+                                        ? "Click and drag to move image"
+                                        : undefined
+                                    }
                                   >
                                     <img
                                       src={fragment.image.src}
@@ -444,7 +520,8 @@ function renderParagraph(
                                         height: `${fragment.image.height}px`,
                                       }}
                                       classList={{
-                                        "oasis-editor-2-image-selected": imageSelected(),
+                                        "oasis-editor-2-image-selected":
+                                          imageSelected(),
                                       }}
                                       data-testid="editor-2-image"
                                     />
@@ -457,19 +534,25 @@ function renderParagraph(
                                         onMouseDown={
                                           interactive
                                             ? (event) =>
-                                                onImageResizeHandleMouseDown(paragraph.id, char.paragraphOffset, event)
+                                                onImageResizeHandleMouseDown(
+                                                  paragraph.id,
+                                                  char.paragraphOffset,
+                                                  event,
+                                                )
                                             : undefined
                                         }
                                       />
                                     </Show>
                                   </span>
+                                ) : char.char === "\t" ? (
+                                  "\u00A0"
                                 ) : (
-                                  char.char === "\t" ? "\u00A0" : char.char
+                                  char.char
                                 )}
                               </span>
                             );
                           })()
-                        )}
+                        }
                       </For>
                     </span>
                   );
@@ -530,7 +613,9 @@ function renderTable(
   },
 ) {
   const repeatedHeaderRows =
-    segment && segment.repeatedHeaderRowCount > 0 ? table.rows.slice(0, segment.repeatedHeaderRowCount) : [];
+    segment && segment.repeatedHeaderRowCount > 0
+      ? table.rows.slice(0, segment.repeatedHeaderRowCount)
+      : [];
   const bodyRows = segment
     ? table.rows.slice(segment.startRowIndex, segment.endRowIndex)
     : table.rows;
@@ -562,7 +647,10 @@ function renderTable(
         s["margin-left"] = "auto";
         s["margin-right"] = "0";
       } else {
-        s["margin-left"] = table.style.indentLeft !== undefined ? `${table.style.indentLeft}pt` : "0";
+        s["margin-left"] =
+          table.style.indentLeft !== undefined
+            ? `${table.style.indentLeft}pt`
+            : "0";
         s["margin-right"] = "auto";
       }
     } else if (table.style?.indentLeft !== undefined) {
@@ -589,13 +677,16 @@ function renderTable(
             {(renderedRow) => (
               <tr
                 class="oasis-editor-2-table-row"
-                classList={{ "oasis-editor-2-table-row-repeated-header": renderedRow.repeated }}
+                classList={{
+                  "oasis-editor-2-table-row-repeated-header":
+                    renderedRow.repeated,
+                }}
                 data-testid="editor-2-table-row"
                 data-row-index={renderedRow.sourceRowIndex}
                 data-repeated-header={renderedRow.repeated ? "true" : undefined}
               >
                 <For each={renderedRow.row.cells}>
-                  {(cell, cellIndex) => (
+                  {(cell, cellIndex) =>
                     cell.vMerge === "continue" ? null : (
                       <td
                         class="oasis-editor-2-table-cell"
@@ -608,11 +699,18 @@ function renderTable(
                           "background-color": cell.style?.shading,
                           "vertical-align": cell.style?.verticalAlign,
                           "text-align": cell.style?.horizontalAlign,
-                          "width": formatDimension(cell.style?.width),
-                          "padding": cell.style?.padding !== undefined ? `${cell.style.padding}pt` : undefined,
+                          width: formatDimension(cell.style?.width),
+                          padding:
+                            cell.style?.padding !== undefined
+                              ? `${cell.style.padding}pt`
+                              : undefined,
                           "border-top": getBorderStyle(cell.style?.borderTop),
-                          "border-right": getBorderStyle(cell.style?.borderRight),
-                          "border-bottom": getBorderStyle(cell.style?.borderBottom),
+                          "border-right": getBorderStyle(
+                            cell.style?.borderRight,
+                          ),
+                          "border-bottom": getBorderStyle(
+                            cell.style?.borderBottom,
+                          ),
                           "border-left": getBorderStyle(cell.style?.borderLeft),
                         }}
                       >
@@ -638,11 +736,12 @@ function renderTable(
                                     interactive: false,
                                   }
                                 : undefined,
-                            )}
+                            )
+                          }
                         </For>
                       </td>
                     )
-                  )}
+                  }
                 </For>
               </tr>
             )}
@@ -657,7 +756,9 @@ export function EditorSurface(props: EditorSurfaceProps) {
   const paragraphs = () => getParagraphs(props.state());
   const activeZone = () => props.state().activeZone ?? "main";
   const paragraphIndexById = () =>
-    new Map(paragraphs().map((paragraph, index) => [paragraph.id, index] as const));
+    new Map(
+      paragraphs().map((paragraph, index) => [paragraph.id, index] as const),
+    );
   const listMarkers = () => buildParagraphListMarkers(paragraphs());
   const documentLayout = () =>
     projectDocumentLayout(
@@ -678,7 +779,10 @@ export function EditorSurface(props: EditorSurfaceProps) {
           return (
             <div
               class="oasis-editor-2-paper"
-              classList={{ "oasis-editor-2-paper-landscape": pageSettings.orientation === "landscape" }}
+              classList={{
+                "oasis-editor-2-paper-landscape":
+                  pageSettings.orientation === "landscape",
+              }}
               data-testid="editor-2-page"
               style={{
                 width: `${pageSettings.width}px`,

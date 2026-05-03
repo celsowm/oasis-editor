@@ -1,4 +1,12 @@
-import { createEffect, createSignal, onCleanup, onMount, Show, For, type JSX } from "solid-js";
+import {
+  createEffect,
+  createSignal,
+  onCleanup,
+  onMount,
+  Show,
+  For,
+  type JSX,
+} from "solid-js";
 import { createStore } from "solid-js/store";
 import { OasisEditor2Editor } from "./OasisEditor2Editor.js";
 import { getCaretSlotRects } from "./caretGeometry.js";
@@ -118,7 +126,12 @@ import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
 import { exportEditor2DocumentToDocxBlob } from "../export/docx/exportEditor2DocumentToDocx.js";
 import { importDocxToEditor2Document } from "../import/docx/importDocxToEditor2Document.js";
 import { createEditor2Logger } from "../utils/logger.js";
-import type { CaretBox, InputBox, RevisionBox, SelectionBox } from "./editorUiTypes.js";
+import type {
+  CaretBox,
+  InputBox,
+  RevisionBox,
+  SelectionBox,
+} from "./editorUiTypes.js";
 import {
   cloneBlock,
   cloneDocumentBlock,
@@ -143,10 +156,7 @@ import {
   resolveClickOffset,
   type TableCellLayoutEntry,
 } from "./tableLayout.js";
-import {
-  findImageFileFromTransfer,
-  readFileBuffer,
-} from "./clipboardImage.js";
+import { findImageFileFromTransfer, readFileBuffer } from "./clipboardImage.js";
 import { EditorToolbar } from "./components/Toolbar/EditorToolbar.js";
 import { createEditor2CommandsController } from "../app/controllers/Editor2CommandsController.js";
 import { createEditor2ClipboardController } from "../app/controllers/useEditor2Clipboard.js";
@@ -208,12 +218,19 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   const [composing, setComposing] = createSignal(false);
   const [undoStack, setUndoStack] = createSignal<Editor2State[]>([]);
   const [redoStack, setRedoStack] = createSignal<Editor2State[]>([]);
-  const [hoveredRevision, setHoveredRevision] = createSignal<RevisionBox | null>(null);
-  const [linkDialog, setLinkDialog] = createSignal<{ isOpen: boolean; initialHref: string }>({
+  const [hoveredRevision, setHoveredRevision] =
+    createSignal<RevisionBox | null>(null);
+  const [linkDialog, setLinkDialog] = createSignal<{
+    isOpen: boolean;
+    initialHref: string;
+  }>({
     isOpen: false,
     initialHref: "",
   });
-  const [imageAltDialog, setImageAltDialog] = createSignal<{ isOpen: boolean; initialAlt: string }>({
+  const [imageAltDialog, setImageAltDialog] = createSignal<{
+    isOpen: boolean;
+    initialAlt: string;
+  }>({
     isOpen: false,
     initialAlt: "",
   });
@@ -244,12 +261,15 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     viewportRef: () => viewportRef,
   });
 
-  const { status: persistenceStatus } = useEditor2Persistence(state, (loadedDoc) => {
-    logger.info("persistence:loaded", { docId: loadedDoc.id });
-    const nextState = createEditor2StateFromDocument(loadedDoc);
-    setState(nextState);
-    resetEditorChromeState();
-  });
+  const { status: persistenceStatus } = useEditor2Persistence(
+    state,
+    (loadedDoc) => {
+      logger.info("persistence:loaded", { docId: loadedDoc.id });
+      const nextState = createEditor2StateFromDocument(loadedDoc);
+      setState(nextState);
+      resetEditorChromeState();
+    },
+  );
 
   let dragAnchor: Editor2Position | null = null;
   let activeImageDrag: ActiveImageDrag | null = null;
@@ -326,7 +346,12 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return;
     }
 
-    historyState = applyEditor2HistoryTransaction(historyState, previous, next, options);
+    historyState = applyEditor2HistoryTransaction(
+      historyState,
+      previous,
+      next,
+      options,
+    );
     setUndoStack(historyState.undoStack);
     setRedoStack(historyState.redoStack);
     applyState(next);
@@ -367,7 +392,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     const paragraphs = getParagraphs(state);
-    const sourceIndex = paragraphs.findIndex((paragraph) => paragraph.id === selectedImage.paragraph.id);
+    const sourceIndex = paragraphs.findIndex(
+      (paragraph) => paragraph.id === selectedImage.paragraph.id,
+    );
     if (sourceIndex < 0) {
       return false;
     }
@@ -392,15 +419,19 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         insertedParagraph,
         direction < 0 ? getParagraphLength(insertedParagraph) : 0,
       );
-      applyTransactionalState(() => moveSelectedImageToPosition(nextState, targetPosition), {
-        mergeKey: "moveImage",
-      });
+      applyTransactionalState(
+        () => moveSelectedImageToPosition(nextState, targetPosition),
+        {
+          mergeKey: "moveImage",
+        },
+      );
       focusInput();
       return true;
     }
 
     const targetParagraph = paragraphs[targetIndex];
-    const targetOffset = direction < 0 ? getParagraphLength(targetParagraph) : 0;
+    const targetOffset =
+      direction < 0 ? getParagraphLength(targetParagraph) : 0;
 
     applyTransactionalState(
       (current) =>
@@ -461,11 +492,19 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     focusInput();
   };
 
-  const insertImageFromFile = async (file: File, position?: Editor2Position | null) => {
-    logger.info(`image insert:start name="${file.name}" type=${file.type} size=${file.size}`);
+  const insertImageFromFile = async (
+    file: File,
+    position?: Editor2Position | null,
+  ) => {
+    logger.info(
+      `image insert:start name="${file.name}" type=${file.type} size=${file.size}`,
+    );
     const arrayBuffer = await readFileBuffer(file);
     const base64 = btoa(
-      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
+      new Uint8Array(arrayBuffer).reduce(
+        (data, byte) => data + String.fromCharCode(byte),
+        "",
+      ),
     );
     const src = `data:${file.type};base64,${base64}`;
 
@@ -478,11 +517,17 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
 
     const naturalWidth = img.naturalWidth || 300;
     const naturalHeight = img.naturalHeight || 300;
-    const maxWidth = getMaxInlineImageWidth(surfaceRef, state.document, state.selection.focus.paragraphId);
+    const maxWidth = getMaxInlineImageWidth(
+      surfaceRef,
+      state.document,
+      state.selection.focus.paragraphId,
+    );
     const scale = naturalWidth > maxWidth ? maxWidth / naturalWidth : 1;
     const width = Math.max(24, Math.round(naturalWidth * scale));
     const height = Math.max(24, Math.round(naturalHeight * scale));
-    logger.info(`image insert:decoded natural=${naturalWidth}x${naturalHeight} fitted=${width}x${height} maxWidth=${maxWidth}`);
+    logger.info(
+      `image insert:decoded natural=${naturalWidth}x${naturalHeight} fitted=${width}x${height} maxWidth=${maxWidth}`,
+    );
 
     applyTransactionalState(
       (current) => {
@@ -491,10 +536,12 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           : current;
         return insertImageAtSelection(targetState, { src, width, height });
       },
-      { mergeKey: "insertImage" }
+      { mergeKey: "insertImage" },
     );
     const sel = state.selection;
-    logger.debug(`image insert:selection anchor=${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`);
+    logger.debug(
+      `image insert:selection anchor=${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`,
+    );
   };
 
   const handleInsertImage = async (file: File | null) => {
@@ -556,9 +603,13 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     stopIconObserver();
   });
 
-  const handleTextInput = (event: InputEvent & { currentTarget: HTMLTextAreaElement }) => {
+  const handleTextInput = (
+    event: InputEvent & { currentTarget: HTMLTextAreaElement },
+  ) => {
     if (isReadOnly()) {
-      logger.debug(`input:readonly ignored value=${JSON.stringify(event.currentTarget.value)}`);
+      logger.debug(
+        `input:readonly ignored value=${JSON.stringify(event.currentTarget.value)}`,
+      );
       event.currentTarget.value = "";
       return;
     }
@@ -580,13 +631,29 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     const sel = state.selection;
-    const currentRun = getParagraphs(state).find(p => p.id === sel.anchor.paragraphId)?.runs.find(r => r.id === sel.anchor.runId);
-    const runStyle = currentRun ? { bold: currentRun.styles?.bold, italic: currentRun.styles?.italic, underline: currentRun.styles?.underline } : null;
-    logger.info(`input:text ${JSON.stringify(text)} (len=${text.length}) at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}] run:${JSON.stringify(runStyle)}`);
+    const currentRun = getParagraphs(state)
+      .find((p) => p.id === sel.anchor.paragraphId)
+      ?.runs.find((r) => r.id === sel.anchor.runId);
+    const runStyle = currentRun
+      ? {
+          bold: currentRun.styles?.bold,
+          italic: currentRun.styles?.italic,
+          underline: currentRun.styles?.underline,
+        }
+      : null;
+    logger.info(
+      `input:text ${JSON.stringify(text)} (len=${text.length}) at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}] run:${JSON.stringify(runStyle)}`,
+    );
     clearPreferredColumn();
-    applyTransactionalState((current) => tableOps.applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, text)), {
-      mergeKey: "insertText",
-    });
+    applyTransactionalState(
+      (current) =>
+        tableOps.applyTableAwareParagraphEdit(current, (temp) =>
+          insertTextAtSelection(temp, text),
+        ),
+      {
+        mergeKey: "insertText",
+      },
+    );
     event.currentTarget.value = "";
     focusInput();
   };
@@ -596,7 +663,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     setComposing(true);
   };
 
-  const handleCompositionEnd = (event: CompositionEvent & { currentTarget: HTMLTextAreaElement }) => {
+  const handleCompositionEnd = (
+    event: CompositionEvent & { currentTarget: HTMLTextAreaElement },
+  ) => {
     if (isReadOnly()) {
       event.currentTarget.value = "";
       setComposing(false);
@@ -611,23 +680,23 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     const sel = state.selection;
-    logger.info(`input:composition end ${JSON.stringify(text)} (len=${text.length}) at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`);
+    logger.info(
+      `input:composition end ${JSON.stringify(text)} (len=${text.length}) at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`,
+    );
     suppressedInputText = text;
     clearPreferredColumn();
-    applyTransactionalState((current) => tableOps.applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, text)), {
-      mergeKey: "insertText",
-    });
+    applyTransactionalState(
+      (current) =>
+        tableOps.applyTableAwareParagraphEdit(current, (temp) =>
+          insertTextAtSelection(temp, text),
+        ),
+      {
+        mergeKey: "insertText",
+      },
+    );
     event.currentTarget.value = "";
     focusInput();
   };
-
-
-
-
-
-
-
-
 
   const moveVerticalByBlock = (direction: -1 | 1) => {
     return moveVerticalSelection(direction, false);
@@ -643,14 +712,19 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     let targetIndex = currentIndex + direction;
-    const tableLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
+    const tableLocation = findParagraphTableLocation(
+      state.document,
+      state.selection.focus.paragraphId,
+      getActiveSectionIndex(state),
+    );
     if (tableLocation) {
       const block = state.document.blocks[tableLocation.blockIndex];
       if (block && block.type === "table") {
         const tableLayout = buildTableCellLayout(block);
         const currentCell = tableLayout.find(
           (entry) =>
-            entry.rowIndex === tableLocation.rowIndex && entry.cellIndex === tableLocation.cellIndex,
+            entry.rowIndex === tableLocation.rowIndex &&
+            entry.cellIndex === tableLocation.cellIndex,
         );
         if (currentCell) {
           const currentElementCandidates = surfaceRef
@@ -663,11 +737,14 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             : [];
           const currentElement =
             currentElementCandidates.find(
-              (element) => element.closest('[data-repeated-header="true"]') === null,
+              (element) =>
+                element.closest('[data-repeated-header="true"]') === null,
             ) ?? currentElementCandidates[0];
           const desiredX =
             preferredColumnX() ??
-            (currentElement ? currentElement.getBoundingClientRect().left : caretBox().left);
+            (currentElement
+              ? currentElement.getBoundingClientRect().left
+              : caretBox().left);
           const candidateRows: number[] = [];
           for (
             let rowIndex = currentCell.visualRowIndex + direction;
@@ -679,7 +756,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
 
           for (const rowIndex of candidateRows) {
             const rowCandidates = tableLayout.filter(
-              (entry) => entry.visualRowIndex === rowIndex && entry.cell.blocks.length > 0 && entry.cell.vMerge !== "continue",
+              (entry) =>
+                entry.visualRowIndex === rowIndex &&
+                entry.cell.blocks.length > 0 &&
+                entry.cell.vMerge !== "continue",
             );
             if (rowCandidates.length === 0) {
               continue;
@@ -697,12 +777,18 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
                   : [];
                 const cellElement =
                   cellElementCandidates.find(
-                    (element) => element.closest('[data-repeated-header="true"]') === null,
+                    (element) =>
+                      element.closest('[data-repeated-header="true"]') === null,
                   ) ?? cellElementCandidates[0];
                 const rect = cellElement?.getBoundingClientRect();
                 const left = rect?.left ?? desiredX;
                 const right = rect?.right ?? desiredX;
-                const distance = desiredX < left ? left - desiredX : desiredX > right ? desiredX - right : 0;
+                const distance =
+                  desiredX < left
+                    ? left - desiredX
+                    : desiredX > right
+                      ? desiredX - right
+                      : 0;
                 return { entry, distance };
               })
               .sort((left, right) => left.distance - right.distance);
@@ -723,14 +809,16 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           if (direction < 0) {
             const firstParaId = block.rows[0]?.cells[0]?.blocks[0]?.id;
             if (firstParaId) {
-              targetIndex = paragraphs.findIndex((p) => p.id === firstParaId) - 1;
+              targetIndex =
+                paragraphs.findIndex((p) => p.id === firstParaId) - 1;
             }
           } else {
             const lastRow = block.rows[block.rows.length - 1];
             const lastCell = lastRow?.cells[lastRow.cells.length - 1];
             const lastParaId = lastCell?.blocks[lastCell.blocks.length - 1]?.id;
             if (lastParaId) {
-              targetIndex = paragraphs.findIndex((p) => p.id === lastParaId) + 1;
+              targetIndex =
+                paragraphs.findIndex((p) => p.id === lastParaId) + 1;
             }
           }
         }
@@ -743,7 +831,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
 
     const targetParagraph = paragraphs[targetIndex];
     const targetElement = surfaceRef
-      ? getParagraphBoundaryElement(surfaceRef, targetParagraph.id, direction < 0 ? "end" : "start")
+      ? getParagraphBoundaryElement(
+          surfaceRef,
+          targetParagraph.id,
+          direction < 0 ? "end" : "start",
+        )
       : null;
     const desiredX = preferredColumnX() ?? caretBox().left;
 
@@ -755,19 +847,29 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       );
       const lines = layout.lines;
       const boundaryLine = direction < 0 ? lines[lines.length - 1] : lines[0];
-      offset =
-        boundaryLine?.slots.length
-          ? boundaryLine.slots.reduce(
-              (best, slot) =>
-                Math.abs(desiredX + (surfaceRef?.getBoundingClientRect().left ?? 0) - slot.left) <
-                Math.abs(desiredX + (surfaceRef?.getBoundingClientRect().left ?? 0) - best.left)
-                  ? slot
-                  : best,
-              boundaryLine.slots[0]!,
-            ).offset
-          : 0;
+      offset = boundaryLine?.slots.length
+        ? boundaryLine.slots.reduce(
+            (best, slot) =>
+              Math.abs(
+                desiredX +
+                  (surfaceRef?.getBoundingClientRect().left ?? 0) -
+                  slot.left,
+              ) <
+              Math.abs(
+                desiredX +
+                  (surfaceRef?.getBoundingClientRect().left ?? 0) -
+                  best.left,
+              )
+                ? slot
+                : best,
+            boundaryLine.slots[0]!,
+          ).offset
+        : 0;
     } else {
-      offset = Math.min(positionToParagraphOffset(targetParagraph, state.selection.focus), getParagraphText(targetParagraph).length);
+      offset = Math.min(
+        positionToParagraphOffset(targetParagraph, state.selection.focus),
+        getParagraphText(targetParagraph).length,
+      );
     }
 
     setPreferredColumnX(desiredX);
@@ -784,7 +886,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     return true;
   };
 
-  const resolvePositionAtSurfacePoint = (clientX: number, clientY: number): Editor2Position | null =>
+  const resolvePositionAtSurfacePoint = (
+    clientX: number,
+    clientY: number,
+  ): Editor2Position | null =>
     surfaceRef
       ? resolvePositionAtPoint({
           clientX,
@@ -807,7 +912,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     if (imageDragCursorStyle) return;
     imageDragCursorStyle = document.createElement("style");
     imageDragCursorStyle.setAttribute("data-oasis-image-drag-cursor", "");
-    imageDragCursorStyle.textContent = "*, *::before, *::after { cursor: grabbing !important; }";
+    imageDragCursorStyle.textContent =
+      "*, *::before, *::after { cursor: grabbing !important; }";
     document.head.appendChild(imageDragCursorStyle);
   };
 
@@ -824,7 +930,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return;
     }
 
-    const position = resolvePositionAtSurfacePoint(event.clientX, event.clientY);
+    const position = resolvePositionAtSurfacePoint(
+      event.clientX,
+      event.clientY,
+    );
     if (!position) {
       return;
     }
@@ -838,35 +947,58 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     const sel = state.selection;
     const anchorLoc = (() => {
       const secIdx = getActiveSectionIndex(state);
-      const loc = findParagraphTableLocation(state.document, dragAnchor!.paragraphId, secIdx);
+      const loc = findParagraphTableLocation(
+        state.document,
+        dragAnchor!.paragraphId,
+        secIdx,
+      );
       return loc ? `b${loc.blockIndex}r${loc.rowIndex}c${loc.cellIndex}` : "";
     })();
     const focusLoc = (() => {
       const secIdx = getActiveSectionIndex(state);
-      const loc = findParagraphTableLocation(state.document, sel.focus.paragraphId, secIdx);
+      const loc = findParagraphTableLocation(
+        state.document,
+        sel.focus.paragraphId,
+        secIdx,
+      );
       return loc ? `b${loc.blockIndex}r${loc.rowIndex}c${loc.cellIndex}` : "";
     })();
-    logger.debug(`selection:drag ${dragAnchor!.paragraphId}[${dragAnchor!.offset}]→${sel.focus.paragraphId}[${sel.focus.offset}] [${anchorLoc}→${focusLoc}]`);
+    logger.debug(
+      `selection:drag ${dragAnchor!.paragraphId}[${dragAnchor!.offset}]→${sel.focus.paragraphId}[${sel.focus.offset}] [${anchorLoc}→${focusLoc}]`,
+    );
   };
 
   const handleWindowMouseUp = () => {
     const sel = state.selection;
     const anchorLoc = (() => {
       const secIdx = getActiveSectionIndex(state);
-      const loc = findParagraphTableLocation(state.document, sel.anchor.paragraphId, secIdx);
+      const loc = findParagraphTableLocation(
+        state.document,
+        sel.anchor.paragraphId,
+        secIdx,
+      );
       return loc ? `b${loc.blockIndex}r${loc.rowIndex}c${loc.cellIndex}` : "";
     })();
     const focusLoc = (() => {
       const secIdx = getActiveSectionIndex(state);
-      const loc = findParagraphTableLocation(state.document, sel.focus.paragraphId, secIdx);
+      const loc = findParagraphTableLocation(
+        state.document,
+        sel.focus.paragraphId,
+        secIdx,
+      );
       return loc ? `b${loc.blockIndex}r${loc.rowIndex}c${loc.cellIndex}` : "";
     })();
-    logger.info(`selection:end ${sel.anchor.paragraphId}[${sel.anchor.offset}]→${sel.focus.paragraphId}[${sel.focus.offset}] [${anchorLoc}→${focusLoc}]`);
+    logger.info(
+      `selection:end ${sel.anchor.paragraphId}[${sel.anchor.offset}]→${sel.focus.paragraphId}[${sel.focus.offset}] [${anchorLoc}→${focusLoc}]`,
+    );
     stopDragging();
     focusInput();
   };
 
-  const moveSelectionToParagraphBoundary = (boundary: "start" | "end", extend: boolean) => {
+  const moveSelectionToParagraphBoundary = (
+    boundary: "start" | "end",
+    extend: boolean,
+  ) => {
     const targetParagraph = getParagraphs(state).find(
       (paragraph) => paragraph.id === state.selection.focus.paragraphId,
     );
@@ -874,8 +1006,12 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return false;
     }
 
-    const targetOffset = boundary === "start" ? 0 : getParagraphText(targetParagraph).length;
-    const targetPosition = paragraphOffsetToPosition(targetParagraph, targetOffset);
+    const targetOffset =
+      boundary === "start" ? 0 : getParagraphText(targetParagraph).length;
+    const targetPosition = paragraphOffsetToPosition(
+      targetParagraph,
+      targetOffset,
+    );
     clearPreferredColumn();
     applyState(
       setSelection(state, {
@@ -886,15 +1022,23 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     return true;
   };
 
-  const moveSelectionToDocumentBoundary = (boundary: "start" | "end", extend: boolean) => {
+  const moveSelectionToDocumentBoundary = (
+    boundary: "start" | "end",
+    extend: boolean,
+  ) => {
     const paragraphs = getParagraphs(state);
     if (paragraphs.length === 0) {
       return false;
     }
 
-    const targetParagraph = boundary === "start" ? paragraphs[0] : paragraphs[paragraphs.length - 1];
-    const targetOffset = boundary === "start" ? 0 : getParagraphText(targetParagraph).length;
-    const targetPosition = paragraphOffsetToPosition(targetParagraph, targetOffset);
+    const targetParagraph =
+      boundary === "start" ? paragraphs[0] : paragraphs[paragraphs.length - 1];
+    const targetOffset =
+      boundary === "start" ? 0 : getParagraphText(targetParagraph).length;
+    const targetPosition = paragraphOffsetToPosition(
+      targetParagraph,
+      targetOffset,
+    );
     clearPreferredColumn();
     applyState(
       setSelection(state, {
@@ -905,7 +1049,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     return true;
   };
 
-  const moveSelectionByWord = (direction: "left" | "right", extend: boolean) => {
+  const moveSelectionByWord = (
+    direction: "left" | "right",
+    extend: boolean,
+  ) => {
     const paragraphs = getParagraphs(state);
     const focusParagraphIndex = paragraphs.findIndex(
       (paragraph) => paragraph.id === state.selection.focus.paragraphId,
@@ -921,7 +1068,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
 
     if (!extend && !isSelectionCollapsed(state.selection)) {
       clearPreferredColumn();
-      applyState(direction === "left" ? moveSelectionLeft(state) : moveSelectionRight(state));
+      applyState(
+        direction === "left"
+          ? moveSelectionLeft(state)
+          : moveSelectionRight(state),
+      );
       return true;
     }
 
@@ -936,7 +1087,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         targetOffset = findPreviousWordBoundary(paragraphText, focusOffset);
       }
     } else {
-      if (focusOffset === paragraphLength && focusParagraphIndex < paragraphs.length - 1) {
+      if (
+        focusOffset === paragraphLength &&
+        focusParagraphIndex < paragraphs.length - 1
+      ) {
         targetParagraph = paragraphs[focusParagraphIndex + 1]!;
         targetOffset = 0;
       } else {
@@ -944,7 +1098,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       }
     }
 
-    const targetPosition = paragraphOffsetToPosition(targetParagraph, targetOffset);
+    const targetPosition = paragraphOffsetToPosition(
+      targetParagraph,
+      targetOffset,
+    );
     clearPreferredColumn();
     applyState(
       setSelection(state, {
@@ -955,16 +1112,21 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     return true;
   };
 
-
-
-  const handleSurfaceMouseDown = (event: MouseEvent, forceTransition = false) => {
+  const handleSurfaceMouseDown = (
+    event: MouseEvent,
+    forceTransition = false,
+  ) => {
     event.preventDefault();
 
     imageOps.stopImageDrag();
     imageOps.stopImageResize();
 
-    const headerZone = (event.target as HTMLElement).closest(".oasis-editor-2-page-header-zone");
-    const footerZone = (event.target as HTMLElement).closest(".oasis-editor-2-page-footer-zone");
+    const headerZone = (event.target as HTMLElement).closest(
+      ".oasis-editor-2-page-header-zone",
+    );
+    const footerZone = (event.target as HTMLElement).closest(
+      ".oasis-editor-2-page-footer-zone",
+    );
     const targetZone = headerZone ? "header" : footerZone ? "footer" : "main";
     const isZoneTransition = targetZone !== state.activeZone;
 
@@ -987,7 +1149,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
 
     const paragraphId = paragraphElement?.dataset.paragraphId;
     const paragraph = paragraphId
-      ? getDocumentParagraphs(state.document).find((candidate) => candidate.id === paragraphId)
+      ? getDocumentParagraphs(state.document).find(
+          (candidate) => candidate.id === paragraphId,
+        )
       : undefined;
 
     if (!isZoneTransition && (!paragraphId || !paragraph || !surfaceRef)) {
@@ -998,13 +1162,19 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     clearPreferredColumn();
     resetTransactionGrouping();
 
-    const applyWithZone = (newState: Editor2State, targetPosition?: Editor2Position) => {
+    const applyWithZone = (
+      newState: Editor2State,
+      targetPosition?: Editor2Position,
+    ) => {
       if (isZoneTransition) {
         let updatedDocument = newState.document;
         let activeSectionIndex = state.activeSectionIndex ?? 0;
 
         // Upgrade to sections if missing
-        if (!updatedDocument.sections || updatedDocument.sections.length === 0) {
+        if (
+          !updatedDocument.sections ||
+          updatedDocument.sections.length === 0
+        ) {
           const headerParagraph = createEditor2Paragraph("");
           const footerParagraph = createEditor2Paragraph("");
           updatedDocument = {
@@ -1038,7 +1208,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             newHeader = [zoneParagraph];
           } else {
             const firstBlock = newHeader[0];
-            zoneParagraph = firstBlock.type === "paragraph" ? firstBlock : getBlockParagraphs(firstBlock)[0] ?? null;
+            zoneParagraph =
+              firstBlock.type === "paragraph"
+                ? firstBlock
+                : (getBlockParagraphs(firstBlock)[0] ?? null);
           }
         } else if (targetZone === "footer") {
           if (!newFooter || newFooter.length === 0) {
@@ -1046,7 +1219,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             newFooter = [zoneParagraph];
           } else {
             const firstBlock = newFooter[0];
-            zoneParagraph = firstBlock.type === "paragraph" ? firstBlock : getBlockParagraphs(firstBlock)[0] ?? null;
+            zoneParagraph =
+              firstBlock.type === "paragraph"
+                ? firstBlock
+                : (getBlockParagraphs(firstBlock)[0] ?? null);
           }
         }
 
@@ -1093,7 +1269,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
               0,
               Math.min(
                 layout.text.length,
-                resolveClosestOffsetInMeasuredLayout(layout, event.clientX, event.clientY),
+                resolveClosestOffsetInMeasuredLayout(
+                  layout,
+                  event.clientX,
+                  event.clientY,
+                ),
               ),
             );
       const position = paragraphOffsetToPosition(paragraph, offset);
@@ -1135,8 +1315,12 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
 
   const handleSurfaceDblClick = (event: MouseEvent) => {
     event.preventDefault();
-    const headerZone = (event.target as HTMLElement).closest(".oasis-editor-2-page-header-zone");
-    const footerZone = (event.target as HTMLElement).closest(".oasis-editor-2-page-footer-zone");
+    const headerZone = (event.target as HTMLElement).closest(
+      ".oasis-editor-2-page-header-zone",
+    );
+    const footerZone = (event.target as HTMLElement).closest(
+      ".oasis-editor-2-page-footer-zone",
+    );
     const targetZone = headerZone ? "header" : footerZone ? "footer" : "main";
 
     if (targetZone !== state.activeZone) {
@@ -1158,10 +1342,18 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     const isHeaderClick =
-      (event.target as HTMLElement).closest(".oasis-editor-2-page-header-zone") !== null;
+      (event.target as HTMLElement).closest(
+        ".oasis-editor-2-page-header-zone",
+      ) !== null;
     const isFooterClick =
-      (event.target as HTMLElement).closest(".oasis-editor-2-page-footer-zone") !== null;
-    const targetZone = isHeaderClick ? "header" : isFooterClick ? "footer" : "main";
+      (event.target as HTMLElement).closest(
+        ".oasis-editor-2-page-footer-zone",
+      ) !== null;
+    const targetZone = isHeaderClick
+      ? "header"
+      : isFooterClick
+        ? "footer"
+        : "main";
 
     if (targetZone !== state.activeZone) {
       return;
@@ -1183,15 +1375,22 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     imageOps.stopImageDrag();
     imageOps.stopImageResize();
 
-    const cellLocation = findParagraphTableLocation(state.document, paragraphId, getActiveSectionIndex(state));
+    const cellLocation = findParagraphTableLocation(
+      state.document,
+      paragraphId,
+      getActiveSectionIndex(state),
+    );
     const anchorPosition = cellLocation
       ? (() => {
           const block = state.document.blocks[cellLocation.blockIndex];
           const cellParagraph =
             block?.type === "table"
-              ? block.rows[cellLocation.rowIndex]?.cells[cellLocation.cellIndex]?.blocks[0]
+              ? block.rows[cellLocation.rowIndex]?.cells[cellLocation.cellIndex]
+                  ?.blocks[0]
               : undefined;
-          return cellParagraph ? paragraphOffsetToPosition(cellParagraph, 0) : position;
+          return cellParagraph
+            ? paragraphOffsetToPosition(cellParagraph, 0)
+            : position;
         })()
       : position;
 
@@ -1201,7 +1400,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         let activeSectionIndex = state.activeSectionIndex ?? 0;
 
         // Upgrade to sections if missing
-        if (!updatedDocument.sections || updatedDocument.sections.length === 0) {
+        if (
+          !updatedDocument.sections ||
+          updatedDocument.sections.length === 0
+        ) {
           const headerParagraph = createEditor2Paragraph("");
           const footerParagraph = createEditor2Paragraph("");
           updatedDocument = {
@@ -1235,7 +1437,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             newHeader = [zoneParagraph];
           } else {
             const firstBlock = newHeader[0];
-            zoneParagraph = firstBlock.type === "paragraph" ? firstBlock : getBlockParagraphs(firstBlock)[0] ?? null;
+            zoneParagraph =
+              firstBlock.type === "paragraph"
+                ? firstBlock
+                : (getBlockParagraphs(firstBlock)[0] ?? null);
           }
         } else if (targetZone === "footer") {
           if (!newFooter || newFooter.length === 0) {
@@ -1243,7 +1448,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             newFooter = [zoneParagraph];
           } else {
             const firstBlock = newFooter[0];
-            zoneParagraph = firstBlock.type === "paragraph" ? firstBlock : getBlockParagraphs(firstBlock)[0] ?? null;
+            zoneParagraph =
+              firstBlock.type === "paragraph"
+                ? firstBlock
+                : (getBlockParagraphs(firstBlock)[0] ?? null);
           }
         }
 
@@ -1295,7 +1503,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       applyWithZone(
         setSelection(state, {
           anchor: paragraphOffsetToPosition(paragraph, 0),
-          focus: paragraphOffsetToPosition(paragraph, getParagraphText(paragraph).length),
+          focus: paragraphOffsetToPosition(
+            paragraph,
+            getParagraphText(paragraph).length,
+          ),
         }),
       );
       stopDragging();
@@ -1368,21 +1579,22 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     focusInput();
   };
 
-  const { handleCopy, handleCut, handlePaste, handleDrop } = createEditor2ClipboardController({
-    state: () => state,
-    isReadOnly,
-    forcePlainTextPaste: () => forcePlainTextPaste,
-    setForcePlainTextPaste: (value) => {
-      forcePlainTextPaste = value;
-    },
-    clearPreferredColumn,
-    resetTransactionGrouping,
-    applyTransactionalState,
-    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
-    focusInput,
-    insertImageFromFile,
-    resolvePositionAtSurfacePoint,
-  });
+  const { handleCopy, handleCut, handlePaste, handleDrop } =
+    createEditor2ClipboardController({
+      state: () => state,
+      isReadOnly,
+      forcePlainTextPaste: () => forcePlainTextPaste,
+      setForcePlainTextPaste: (value) => {
+        forcePlainTextPaste = value;
+      },
+      clearPreferredColumn,
+      resetTransactionGrouping,
+      applyTransactionalState,
+      applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
+      focusInput,
+      insertImageFromFile,
+      resolvePositionAtSurfacePoint,
+    });
 
   const commandsController = createEditor2CommandsController({
     state,
@@ -1390,7 +1602,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     applyState,
     applyTransactionalState,
     applySelectionAwareTextCommand: tableOps.applySelectionAwareTextCommand,
-    applySelectionAwareParagraphCommand: tableOps.applySelectionAwareParagraphCommand,
+    applySelectionAwareParagraphCommand:
+      tableOps.applySelectionAwareParagraphCommand,
     applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
     focusInput,
     clearPreferredColumn,
@@ -1398,8 +1611,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     toolbarStyleState,
     selectionCollapsed: () => isSelectionCollapsed(state.selection),
     selectedImageRun,
-    openLinkDialog: (initialHref) => setLinkDialog({ isOpen: true, initialHref }),
-    openImageAltDialog: (initialAlt) => setImageAltDialog({ isOpen: true, initialAlt }),
+    openLinkDialog: (initialHref) =>
+      setLinkDialog({ isOpen: true, initialHref }),
+    openImageAltDialog: (initialAlt) =>
+      setImageAltDialog({ isOpen: true, initialAlt }),
   });
 
   const { handleKeyDown: rawHandleKeyDown } = createEditor2KeyboardController({
@@ -1410,7 +1625,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     applyState,
     applyTransactionalState,
     applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
-    applySelectionAwareParagraphCommand: tableOps.applySelectionAwareParagraphCommand,
+    applySelectionAwareParagraphCommand:
+      tableOps.applySelectionAwareParagraphCommand,
     focusInput,
     commandsController,
     selectedImageRun,
@@ -1429,16 +1645,22 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     applySelectionPreservingStructure,
   });
 
-  const handleKeyDown = (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => {
+  const handleKeyDown = (
+    event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
+  ) => {
     const mods = [
       event.ctrlKey ? "Ctrl" : null,
       event.metaKey ? "Meta" : null,
       event.altKey ? "Alt" : null,
       event.shiftKey ? "Shift" : null,
-    ].filter(Boolean).join("+");
+    ]
+      .filter(Boolean)
+      .join("+");
     const combo = mods ? `${mods}+${event.key}` : event.key;
     const sel = state.selection;
-    logger.debug(`key:down ${combo} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`);
+    logger.debug(
+      `key:down ${combo} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`,
+    );
     rawHandleKeyDown(event);
   };
 
@@ -1448,8 +1670,16 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       return null;
     }
 
-    const anchorLocation = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, getActiveSectionIndex(state));
-    const focusLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
+    const anchorLocation = findParagraphTableLocation(
+      state.document,
+      state.selection.anchor.paragraphId,
+      getActiveSectionIndex(state),
+    );
+    const focusLocation = findParagraphTableLocation(
+      state.document,
+      state.selection.focus.paragraphId,
+      getActiveSectionIndex(state),
+    );
     if (
       !anchorLocation ||
       !focusLocation ||
@@ -1469,10 +1699,15 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   };
 
   const isInsideTable = (): boolean => {
-    return !!findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
+    return !!findParagraphTableLocation(
+      state.document,
+      state.selection.focus.paragraphId,
+      getActiveSectionIndex(state),
+    );
   };
 
-  const selectionCollapsed = (): boolean => isSelectionCollapsed(state.selection);
+  const selectionCollapsed = (): boolean =>
+    isSelectionCollapsed(state.selection);
 
   const toolbarCtx = {
     state,
@@ -1501,7 +1736,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     canMergeSelectedTableRows: tableOps.canMergeSelectedTableRows,
     canSplitSelectedTable: tableOps.canSplitSelectedTable,
     canSplitSelectedTableCell: tableOps.canSplitSelectedTableCell,
-    canSplitSelectedTableCellVertically: tableOps.canSplitSelectedTableCellVertically,
+    canSplitSelectedTableCellVertically:
+      tableOps.canSplitSelectedTableCellVertically,
     canEditSelectedTableColumn: tableOps.canEditSelectedTableColumn,
     canEditSelectedTableRow: tableOps.canEditSelectedTableRow,
     mergeSelectedTable: (current: Editor2State) => {
@@ -1531,17 +1767,20 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     },
     splitSelectedTableCellVertically: (current: Editor2State) => {
       const result = tableOps.splitSelectedTableCellVertically(current);
-      if (result !== current) logger.info("tableOp:splitSelectedTableCellVertically");
+      if (result !== current)
+        logger.info("tableOp:splitSelectedTableCellVertically");
       return result;
     },
     insertSelectedTableColumn: (current: Editor2State, direction: -1 | 1) => {
       const result = tableOps.insertSelectedTableColumn(current, direction);
-      if (result !== current) logger.info(`tableOp:insertSelectedTableColumn dir=${direction}`);
+      if (result !== current)
+        logger.info(`tableOp:insertSelectedTableColumn dir=${direction}`);
       return result;
     },
     insertSelectedTableRow: (current: Editor2State, direction: -1 | 1) => {
       const result = tableOps.insertSelectedTableRow(current, direction);
-      if (result !== current) logger.info(`tableOp:insertSelectedTableRow dir=${direction}`);
+      if (result !== current)
+        logger.info(`tableOp:insertSelectedTableRow dir=${direction}`);
       return result;
     },
     deleteSelectedTableColumn: (current: Editor2State) => {
@@ -1576,7 +1815,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           setLinkDialog({ ...linkDialog(), isOpen: false });
           focusInput();
         }}
-        onConfirm={(href) => commandsController.applyLinkCommand(href.trim() || null)}
+        onConfirm={(href) =>
+          commandsController.applyLinkCommand(href.trim() || null)
+        }
       />
 
       <ImageAltDialog
@@ -1605,14 +1846,28 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             style={props.style}
             readOnly={isReadOnly()}
             showCaret={() => {
-              if (!caretBox().visible || !isSelectionCollapsed(state.selection)) {
+              if (
+                !caretBox().visible ||
+                !isSelectionCollapsed(state.selection)
+              ) {
                 return false;
               }
-              const anchorLoc = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, getActiveSectionIndex(state));
-              const focusLoc = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
-              const inTableSelection = anchorLoc && focusLoc &&
+              const anchorLoc = findParagraphTableLocation(
+                state.document,
+                state.selection.anchor.paragraphId,
+                getActiveSectionIndex(state),
+              );
+              const focusLoc = findParagraphTableLocation(
+                state.document,
+                state.selection.focus.paragraphId,
+                getActiveSectionIndex(state),
+              );
+              const inTableSelection =
+                anchorLoc &&
+                focusLoc &&
                 anchorLoc.blockIndex === focusLoc.blockIndex &&
-                (anchorLoc.rowIndex !== focusLoc.rowIndex || anchorLoc.cellIndex !== focusLoc.cellIndex);
+                (anchorLoc.rowIndex !== focusLoc.rowIndex ||
+                  anchorLoc.cellIndex !== focusLoc.cellIndex);
               return !inTableSelection;
             }}
             onViewportRef={(element) => {
@@ -1630,8 +1885,12 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             onImageInputRef={(element) => {
               imageInputRef = element;
             }}
-            onImportInputChange={(e) => handleImportDocx(e.currentTarget.files?.[0] ?? null)}
-            onImageInputChange={(e) => handleInsertImage(e.currentTarget.files?.[0] ?? null)}
+            onImportInputChange={(e) =>
+              handleImportDocx(e.currentTarget.files?.[0] ?? null)
+            }
+            onImageInputChange={(e) =>
+              handleInsertImage(e.currentTarget.files?.[0] ?? null)
+            }
             onDragOver={(event) => event.preventDefault()}
             onDrop={handleDrop}
             onEditorMouseDown={onEditorMouseDown}
@@ -1643,24 +1902,41 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             onImageMouseDown={(paragraphId, paragraphOffset, event) => {
               event.preventDefault();
               event.stopPropagation();
-              
-              const paragraph = getDocumentParagraphs(state.document).find(p => p.id === paragraphId);
+
+              const paragraph = getDocumentParagraphs(state.document).find(
+                (p) => p.id === paragraphId,
+              );
               if (paragraph) {
                 applyState(
                   setSelection(state, {
-                    anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),
-                    focus: paragraphOffsetToPosition(paragraph, paragraphOffset + 1),
-                  })
+                    anchor: paragraphOffsetToPosition(
+                      paragraph,
+                      paragraphOffset,
+                    ),
+                    focus: paragraphOffsetToPosition(
+                      paragraph,
+                      paragraphOffset + 1,
+                    ),
+                  }),
                 );
               }
-              
+
               imageOps.startImageDrag(paragraphId, paragraphOffset, event);
               focusInput();
             }}
-            onImageResizeHandleMouseDown={(paragraphId, paragraphOffset, event) => {
+            onImageResizeHandleMouseDown={(
+              paragraphId,
+              paragraphOffset,
+              event,
+            ) => {
               event.preventDefault();
               event.stopPropagation();
-              imageOps.startImageResize(paragraphId, paragraphOffset, event, state);
+              imageOps.startImageResize(
+                paragraphId,
+                paragraphOffset,
+                event,
+                state,
+              );
             }}
             onInputBlur={() => setFocused(false)}
             onInputFocus={() => setFocused(true)}

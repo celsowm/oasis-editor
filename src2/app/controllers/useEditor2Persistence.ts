@@ -12,18 +12,18 @@ export interface UseEditor2PersistenceResult {
 
 export function useEditor2Persistence(
   state: Editor2State,
-  onLoaded: (doc: Editor2Document) => void
+  onLoaded: (doc: Editor2Document) => void,
 ): UseEditor2PersistenceResult {
   const [status, setStatus] = createSignal<PersistenceStatus>("Initial");
   const [isInitialized, setIsInitialized] = createSignal(false);
 
   const debouncedSave = debounce(async (doc: Editor2Document) => {
     if (!isInitialized()) return;
-    
+
     setStatus("Saving...");
     try {
       // unwrap is essential to convert Solid Proxies to plain objects for IndexedDB
-      // We also use a deep clone via JSON to be absolutely sure no reactive artifacts or non-serializable 
+      // We also use a deep clone via JSON to be absolutely sure no reactive artifacts or non-serializable
       // properties remain in the object tree.
       const rawDoc = JSON.parse(JSON.stringify(unwrap(doc)));
       await persistenceService.saveDocument(rawDoc);
@@ -36,11 +36,17 @@ export function useEditor2Persistence(
 
   // Watch for document changes. We place this at the top level to ensure proper Solid ownership.
   // The check for isInitialized() ensures we don't save during the initial load phase.
-  createEffect(on(() => state.document, (doc) => {
-    if (isInitialized()) {
-      debouncedSave(doc);
-    }
-  }, { defer: true }));
+  createEffect(
+    on(
+      () => state.document,
+      (doc) => {
+        if (isInitialized()) {
+          debouncedSave(doc);
+        }
+      },
+      { defer: true },
+    ),
+  );
 
   onMount(async () => {
     try {
