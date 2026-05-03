@@ -2635,8 +2635,13 @@ export function toggleTextStyle(
   }
 
   const paragraphs = getParagraphs(state);
-  const touchedRuns = paragraphs
-    .slice(normalized.startIndex, normalized.endIndex + 1)
+  const touchedParagraphs = paragraphs
+    .slice(normalized.startIndex, normalized.endIndex + 1);
+    const touchedParagraphIds = touchedParagraphs.map(p => p.id).join(",");
+  // eslint-disable-next-line no-console
+  console.log(`[toggleTextStyle:${key}] paragraphs[${normalized.startIndex}..${normalized.endIndex}]: ${touchedParagraphIds}`);
+
+  const touchedRuns = touchedParagraphs
     .flatMap((paragraph, relativeIndex) => {
       const paragraphIndex = normalized.startIndex + relativeIndex;
       const startOffset = paragraphIndex === normalized.startIndex ? normalized.startParagraphOffset : 0;

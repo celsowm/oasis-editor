@@ -30,6 +30,7 @@ import {
   type Editor2ParagraphStyle,
   type Editor2Section,
   type Editor2State,
+  type Editor2Position,
   type Editor2TextStyle,
 } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
@@ -160,10 +161,23 @@ export function createEditor2CommandsController(deps: Editor2CommandsControllerD
     return true;
   };
 
+  const selectionTableLocation = () => {
+    const sel = state.selection;
+    const secIdx = getActiveSectionIndex(state);
+    const anchorLoc = findParagraphTableLocation(state.document, sel.anchor.paragraphId, secIdx);
+    const focusLoc = findParagraphTableLocation(state.document, sel.focus.paragraphId, secIdx);
+    if (anchorLoc && focusLoc && anchorLoc.blockIndex === focusLoc.blockIndex) {
+      return ` [table b${anchorLoc.blockIndex} r${anchorLoc.rowIndex}:c${anchorLoc.cellIndex}→r${focusLoc.rowIndex}:c${focusLoc.cellIndex}]`;
+    }
+    return "";
+  };
+
   const applyBooleanStyleCommand = (key: BooleanStyleKey) => {
     if (selectionCollapsed()) {
       return;
     }
+    const sel = state.selection;
+    logger.info(`toggleStyle:${key} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}..${sel.focus.offset}]${selectionTableLocation()}`);
     clearPreferredColumn();
     resetTransactionGrouping();
     applySelectionAwareTextCommand((current) => toggleTextStyle(current, key));
@@ -177,6 +191,8 @@ export function createEditor2CommandsController(deps: Editor2CommandsControllerD
     if (selectionCollapsed()) {
       return;
     }
+    const sel = state.selection;
+    logger.info(`setStyle:${key}=${JSON.stringify(value)} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}..${sel.focus.offset}]${selectionTableLocation()}`);
     clearPreferredColumn();
     resetTransactionGrouping();
     applySelectionAwareTextCommand((current) => setTextStyleValue(current, key, value));

@@ -45,7 +45,6 @@ import {
   insertPageBreakAtSelection,
   insertSectionBreakAtSelection,
   updateSectionSettings,
-  insertTableAtSelection,
   indentParagraphList,
   moveSelectionDown,
   moveSelectedImageToPosition,
@@ -81,8 +80,6 @@ import {
 import {
   createEditor2Document,
   createEditor2Paragraph,
-  createEditor2TableCell,
-  createEditor2TableRow,
   createInitialEditor2State,
   createEditor2StateFromDocument,
 } from "../core/editorState.js";
@@ -96,9 +93,6 @@ import {
   type Editor2LayoutParagraph,
   type Editor2ParagraphNode,
   type Editor2ParagraphListStyle,
-  type Editor2TableCellNode,
-  type Editor2TableNode,
-  type Editor2TableRowNode,
   type Editor2TextRun,
   type Editor2BorderStyle,
   type Editor2NamedStyle,
@@ -158,6 +152,7 @@ import { createEditor2CommandsController } from "../app/controllers/Editor2Comma
 import { createEditor2ClipboardController } from "../app/controllers/useEditor2Clipboard.js";
 import { createEditor2KeyboardController } from "../app/controllers/useEditor2Keyboard.js";
 import { useEditor2Layout } from "../app/controllers/useEditor2Layout.js";
+import { createEditor2TableOperations } from "../app/controllers/useEditor2TableOperations.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
 import { Sidebar } from "./components/Sidebar/Sidebar.js";
@@ -308,1063 +303,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     props.onStateChange?.(cloneState(state));
   });
 
-  const resolveTableCellRangeSelection = (
-    current: Editor2State,
-  ): Editor2State["selection"] | null => {
-    const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId, getActiveSectionIndex(current));
-    const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (
-      !anchorLocation ||
-      !focusLocation ||
-      anchorLocation.blockIndex !== focusLocation.blockIndex ||
-      (anchorLocation.rowIndex === focusLocation.rowIndex &&
-        anchorLocation.cellIndex === focusLocation.cellIndex)
-    ) {
-      return null;
-    }
-
-    const tableBlock = current.document.blocks[anchorLocation.blockIndex];
-    if (!tableBlock || tableBlock.type !== "table") {
-      return null;
-    }
-
-    const tableLayout = buildTableCellLayout(tableBlock);
-    const anchorCell = tableLayout.find(
-      (entry) =>
-        entry.rowIndex === anchorLocation.rowIndex && entry.cellIndex === anchorLocation.cellIndex,
-    );
-    const focusCell = tableLayout.find(
-      (entry) =>
-        entry.rowIndex === focusLocation.rowIndex && entry.cellIndex === focusLocation.cellIndex,
-    );
-    if (!anchorCell || !focusCell) {
-      return null;
-    }
-
-    const compareCellLocations = (
-      left: TableCellLayoutEntry,
-      right: TableCellLayoutEntry,
-    ) => {
-      if (left.visualRowIndex !== right.visualRowIndex) {
-        return left.visualRowIndex - right.visualRowIndex;
-      }
-      if (left.visualColumnIndex !== right.visualColumnIndex) {
-        return left.visualColumnIndex - right.visualColumnIndex;
-      }
-      return 0;
-    };
-
-    const startLocation = compareCellLocations(anchorCell, focusCell) <= 0 ? anchorLocation : focusLocation;
-    const endLocation = compareCellLocations(anchorCell, focusCell) <= 0 ? focusLocation : anchorLocation;
-
-    const startParagraph =
-      tableBlock.rows[startLocation.rowIndex]?.cells[startLocation.cellIndex]?.blocks[0];
-    const endCell = tableBlock.rows[endLocation.rowIndex]?.cells[endLocation.cellIndex];
-    const endParagraph = endCell?.blocks[endCell.blocks.length - 1];
-    if (!startParagraph || !endParagraph) {
-      return null;
-    }
-
-    return {
-      anchor: paragraphOffsetToPosition(startParagraph, 0),
-      focus: paragraphOffsetToPosition(endParagraph, getParagraphText(endParagraph).length),
-    };
-  };
-
-  const resolveHorizontalTableCellRange = (
-    current: Editor2State,
-  ): {
-    blockIndex: number;
-    rowIndex: number;
-    startCellIndex: number;
-    endCellIndex: number;
-  } | null => {
-    const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId, getActiveSectionIndex(current));
-    const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (
-      !anchorLocation ||
-      !focusLocation ||
-      anchorLocation.blockIndex !== focusLocation.blockIndex
-    ) {
-      return null;
-    }
-
-    const tableBlock = current.document.blocks[anchorLocation.blockIndex];
-    if (!tableBlock || tableBlock.type !== "table") {
-      return null;
-    }
-
-    const tableLayout = buildTableCellLayout(tableBlock);
-    const anchorCell = tableLayout.find(
-      (entry) =>
-        entry.rowIndex === anchorLocation.rowIndex && entry.cellIndex === anchorLocation.cellIndex,
-    );
-    const focusCell = tableLayout.find(
-      (entry) =>
-        entry.rowIndex === focusLocation.rowIndex && entry.cellIndex === focusLocation.cellIndex,
-    );
-    if (!anchorCell || !focusCell) {
-      return null;
-    }
-
-    const compareCellLocations = (
-      left: TableCellLayoutEntry,
-      right: TableCellLayoutEntry,
-    ) => {
-      if (left.visualRowIndex !== right.visualRowIndex) {
-        return left.visualRowIndex - right.visualRowIndex;
-      }
-      if (left.visualColumnIndex !== right.visualColumnIndex) {
-        return left.visualColumnIndex - right.visualColumnIndex;
-      }
-      return 0;
-    };
-
-    const startLocation = compareCellLocations(anchorCell, focusCell) <= 0 ? anchorLocation : focusLocation;
-    const endLocation = compareCellLocations(anchorCell, focusCell) <= 0 ? focusLocation : anchorLocation;
-
-    if (anchorCell.visualRowIndex !== focusCell.visualRowIndex) {
-      return null;
-    }
-
-    if (compareCellLocations(anchorCell, focusCell) === 0) {
-      return null;
-    }
-
-    return {
-      blockIndex: anchorLocation.blockIndex,
-      rowIndex: startLocation.rowIndex,
-      startCellIndex: startLocation.cellIndex,
-      endCellIndex: endLocation.cellIndex,
-    };
-  };
-
-  const canMergeSelectedTableCells = (current: Editor2State): boolean => {
-    const range = resolveHorizontalTableCellRange(current);
-    return Boolean(range && range.endCellIndex > range.startCellIndex);
-  };
-
-  const canSplitSelectedTableCell = (current: Editor2State): boolean => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return false;
-    }
-
-    const block = current.document.blocks[location.blockIndex];
-    if (!block || block.type !== "table") {
-      return false;
-    }
-
-    const cell = block.rows[location.rowIndex]?.cells[location.cellIndex];
-    return Boolean((cell?.colSpan ?? 1) > 1);
-  };
-
-  const resolveVerticalTableCellRange = (
-    current: Editor2State,
-  ): {
-    blockIndex: number;
-    startRowIndex: number;
-    endRowIndex: number;
-    cellIndex: number;
-  } | null => {
-    const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId, getActiveSectionIndex(current));
-    const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (
-      !anchorLocation ||
-      !focusLocation ||
-      anchorLocation.blockIndex !== focusLocation.blockIndex ||
-      anchorLocation.cellIndex !== focusLocation.cellIndex
-    ) {
-      return null;
-    }
-
-    const tableBlock = current.document.blocks[anchorLocation.blockIndex];
-    if (!tableBlock || tableBlock.type !== "table") {
-      return null;
-    }
-
-    const tableLayout = buildTableCellLayout(tableBlock);
-    const anchorCell = tableLayout.find(
-      (entry) =>
-        entry.rowIndex === anchorLocation.rowIndex && entry.cellIndex === anchorLocation.cellIndex,
-    );
-    const focusCell = tableLayout.find(
-      (entry) =>
-        entry.rowIndex === focusLocation.rowIndex && entry.cellIndex === focusLocation.cellIndex,
-    );
-    if (!anchorCell || !focusCell) {
-      return null;
-    }
-
-    const startRowIndex = Math.min(anchorCell.visualRowIndex, focusCell.visualRowIndex);
-    const endRowIndex = Math.max(anchorCell.visualRowIndex, focusCell.visualRowIndex);
-    if (startRowIndex === endRowIndex) {
-      return null;
-    }
-
-    return {
-      blockIndex: anchorLocation.blockIndex,
-      startRowIndex,
-      endRowIndex,
-      cellIndex: anchorLocation.cellIndex,
-    };
-  };
-
-  const canMergeSelectedTableRows = (current: Editor2State): boolean => {
-    const range = resolveVerticalTableCellRange(current);
-    if (!range) {
-      return false;
-    }
-
-    const tableBlock = current.document.blocks[range.blockIndex];
-    if (!tableBlock || tableBlock.type !== "table") {
-      return false;
-    }
-
-    for (let rowIndex = range.startRowIndex; rowIndex <= range.endRowIndex; rowIndex += 1) {
-      const cell = tableBlock.rows[rowIndex]?.cells[range.cellIndex];
-      if (!cell || cell.vMerge === "continue" || cell.blocks.length !== 1) {
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  const canMergeSelectedTable = (current: Editor2State): boolean => {
-    return canMergeSelectedTableCells(current) || canMergeSelectedTableRows(current);
-  };
-
-  const canSplitSelectedTableCellVertically = (current: Editor2State): boolean => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return false;
-    }
-
-    const block = current.document.blocks[location.blockIndex];
-    if (!block || block.type !== "table") {
-      return false;
-    }
-
-    const cell = block.rows[location.rowIndex]?.cells[location.cellIndex];
-    return Boolean((cell?.rowSpan ?? 1) > 1 && cell?.vMerge === "restart");
-  };
-
-  const canSplitSelectedTable = (current: Editor2State): boolean => {
-    return canSplitSelectedTableCell(current) || canSplitSelectedTableCellVertically(current);
-  };
-
-  const updateBlocksInCurrentSection = (current: Editor2State, blocks: Editor2BlockNode[]): Editor2State => {
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-
-    if (hasSections) {
-      const nextSections = [...current.document.sections!];
-      nextSections[activeSectionIndex] = {
-        ...nextSections[activeSectionIndex],
-        blocks,
-      };
-      return {
-        ...current,
-        document: {
-          ...current.document,
-          sections: nextSections,
-        },
-      };
-    }
-
-    return {
-      ...current,
-      document: {
-        ...current.document,
-        blocks,
-      },
-    };
-  };
-
-  const mergeSelectedTableCells = (current: Editor2State): Editor2State => {
-    const range = resolveHorizontalTableCellRange(current);
-    if (!range) {
-      return current;
-    }
-
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[range.blockIndex] as Editor2TableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
-
-    const row = tableBlock.rows[range.rowIndex];
-    if (!row) {
-      return current;
-    }
-
-    const selectedCells = row.cells.slice(range.startCellIndex, range.endCellIndex + 1);
-    if (selectedCells.length < 2) {
-      return current;
-    }
-
-    const mergedCell = {
-      ...selectedCells[0]!,
-      colSpan: selectedCells.reduce((sum, cell) => sum + Math.max(1, cell.colSpan ?? 1), 0),
-      blocks: selectedCells.flatMap((cell: any) => cell.blocks.map((paragraph: any) => cloneBlock(paragraph))) as Editor2ParagraphNode[],
-    };
-
-    row.cells.splice(range.startCellIndex, selectedCells.length, mergedCell);
-
-    const nextParagraph = mergedCell.blocks[0];
-    if (!nextParagraph) {
-      return current;
-    }
-
-    const nextState = updateBlocksInCurrentSection(current, blocks);
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
-  };
-
-  const mergeSelectedTableRows = (current: Editor2State): Editor2State => {
-    const range = resolveVerticalTableCellRange(current);
-    if (!range) {
-      return current;
-    }
-
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[range.blockIndex] as Editor2TableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
-
-    const selectedCells: Array<NonNullable<typeof tableBlock.rows[number]["cells"][number]>> = [];
-    for (let rowIndex = range.startRowIndex; rowIndex <= range.endRowIndex; rowIndex += 1) {
-      const row = tableBlock.rows[rowIndex];
-      const cell = row?.cells[range.cellIndex];
-      if (!row || !cell || cell.vMerge === "continue" || cell.blocks.length !== 1) {
-        return current;
-      }
-      selectedCells.push(cell);
-    }
-
-    if (selectedCells.length < 2) {
-      return current;
-    }
-
-    const mergedColSpan = Math.max(1, selectedCells[0]!.colSpan ?? 1);
-    if (!selectedCells.every((cell) => Math.max(1, cell.colSpan ?? 1) === mergedColSpan)) {
-      return current;
-    }
-
-    const mergedCell = {
-      ...selectedCells[0]!,
-      rowSpan: selectedCells.length,
-      vMerge: "restart" as const,
-      blocks: selectedCells.flatMap((cell: any) =>
-        cell.blocks.map((paragraph: any) => cloneBlock(paragraph)),
-      ) as Editor2ParagraphNode[],
-    };
-    tableBlock.rows[range.startRowIndex]!.cells[range.cellIndex] = mergedCell;
-
-    for (let rowIndex = range.startRowIndex + 1; rowIndex <= range.endRowIndex; rowIndex += 1) {
-      const placeholder = createEditor2TableCell([createEditor2Paragraph("")], mergedColSpan);
-      placeholder.blocks = [];
-      placeholder.vMerge = "continue";
-      tableBlock.rows[rowIndex]!.cells[range.cellIndex] = placeholder;
-    }
-
-    const nextParagraph = mergedCell.blocks[0];
-    if (!nextParagraph) {
-      return current;
-    }
-
-    const nextState = updateBlocksInCurrentSection(current, blocks);
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
-  };
-
-  const mergeSelectedTable = (current: Editor2State): Editor2State => {
-    if (canMergeSelectedTableCells(current)) {
-      return mergeSelectedTableCells(current);
-    }
-
-    if (canMergeSelectedTableRows(current)) {
-      return mergeSelectedTableRows(current);
-    }
-
-    return current;
-  };
-
-  const splitSelectedTableCellVertically = (current: Editor2State): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return current;
-    }
-
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
-
-    const cell = tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
-    const span = Math.max(1, cell?.rowSpan ?? 1);
-    if (!cell || span <= 1 || cell.vMerge !== "restart") {
-      return current;
-    }
-
-    cell.rowSpan = undefined;
-    cell.vMerge = undefined;
-
-    const preservedColSpan = Math.max(1, cell.colSpan ?? 1);
-
-    for (let offset = 1; offset < span; offset += 1) {
-      const row = tableBlock.rows[location.rowIndex + offset];
-      if (!row) {
-        break;
-      }
-      const replacement = createEditor2TableCell([createEditor2Paragraph("")], preservedColSpan);
-      row.cells[location.cellIndex] = replacement;
-    }
-
-    const nextParagraph = cell.blocks[0];
-    if (!nextParagraph) {
-      return current;
-    }
-
-    const nextState = updateBlocksInCurrentSection(current, blocks);
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
-  };
-
-  const splitSelectedTable = (current: Editor2State): Editor2State => {
-    if (canSplitSelectedTableCellVertically(current)) {
-      return splitSelectedTableCellVertically(current);
-    }
-
-    if (canSplitSelectedTableCell(current)) {
-      return splitSelectedTableCell(current);
-    }
-
-    return current;
-  };
-
-  const getRowVisualWidth = (row: Editor2TableRowNode): number =>
-    row.cells.reduce((sum, cell) => sum + Math.max(1, cell.colSpan ?? 1), 0);
-
-  const getTableVisualWidth = (table: Editor2TableNode): number =>
-    table.rows.reduce((max, row) => Math.max(max, getRowVisualWidth(row)), 0);
-
-  const findCellAtVisualColumn = (
-    row: Editor2TableRowNode,
-    visualColumn: number,
-  ): Editor2TableCellNode | null => {
-    let visualCursor = 0;
-    for (const cell of row.cells) {
-      const span = Math.max(1, cell.colSpan ?? 1);
-      if (visualColumn >= visualCursor && visualColumn < visualCursor + span) {
-        return cell;
-      }
-      visualCursor += span;
-    }
-
-    return null;
-  };
-
-  const findFirstNavigableParagraphInTable = (table: Editor2TableNode): Editor2ParagraphNode | null => {
-    for (const row of table.rows) {
-      for (const cell of row.cells) {
-        if (cell.vMerge === "continue") {
-          continue;
-        }
-        const paragraph = cell.blocks[0];
-        if (paragraph) {
-          return paragraph;
-        }
-      }
-    }
-
-    return null;
-  };
-
-  const canEditSelectedTableRow = (current: Editor2State): boolean => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return false;
-    }
-
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const block = (section ? section.blocks : current.document.blocks)[location.blockIndex];
-    return Boolean(block && block.type === "table");
-  };
-
-  const canEditSelectedTableColumn = (current: Editor2State): boolean => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return false;
-    }
-
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const block = (section ? section.blocks : current.document.blocks)[location.blockIndex];
-    if (!block || block.type !== "table") {
-      return false;
-    }
-
-    return getTableVisualWidth(block) > 1;
-  };
-
-  const insertSelectedTableRow = (current: Editor2State, direction: -1 | 1): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return current;
-    }
-
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
-
-    const sourceRow = tableBlock.rows[location.rowIndex];
-    if (!sourceRow) {
-      return current;
-    }
-
-    const insertIndex = Math.max(
-      0,
-      Math.min(tableBlock.rows.length, location.rowIndex + (direction > 0 ? 1 : 0)),
-    );
-
-    const hasVerticalSpansInTable = tableBlock.rows.some((row) =>
-      row.cells.some((cell) => Math.max(1, cell.rowSpan ?? 1) > 1 || cell.vMerge !== undefined),
-    );
-
-    let blankRow: Editor2TableRowNode;
-    if (hasVerticalSpansInTable) {
-      const tableLayout = buildTableCellLayout(tableBlock);
-      const selectedEntry = tableLayout.find(
-        (layoutEntry) =>
-          layoutEntry.rowIndex === location.rowIndex && layoutEntry.cellIndex === location.cellIndex,
-      );
-      const sourceEntries = tableLayout.filter((layoutEntry) => layoutEntry.rowIndex === location.rowIndex);
-      const templateEntries =
-        sourceEntries.length > 0
-          ? sourceEntries
-          : tableLayout.filter((layoutEntry) => layoutEntry.rowIndex === Math.max(0, location.rowIndex - 1));
-      blankRow = createEditor2TableRow(
-        templateEntries.map((layoutEntry) => {
-          const spanningEntry = tableLayout.find(
-            (candidate) =>
-              candidate.visualColumnIndex === layoutEntry.visualColumnIndex &&
-              candidate.visualRowIndex < insertIndex &&
-              candidate.visualRowIndex + candidate.rowSpan > insertIndex,
-          );
-          if (spanningEntry) {
-            spanningEntry.cell.rowSpan = Math.max(1, spanningEntry.cell.rowSpan ?? 1) + 1;
-            spanningEntry.cell.vMerge = "restart";
-            const placeholder = createEditor2TableCell(
-              [createEditor2Paragraph("")],
-              layoutEntry.colSpan,
-            );
-            placeholder.blocks = [];
-            placeholder.vMerge = "continue";
-            return placeholder;
-          }
-
-          return createEditor2TableCell([createEditor2Paragraph("")], layoutEntry.colSpan);
-        }),
-      );
-      tableBlock.rows.splice(insertIndex, 0, blankRow);
-
-      const targetVisualColumn = selectedEntry?.visualColumnIndex ?? location.cellIndex;
-      const targetCell = findCellAtVisualColumn(blankRow, targetVisualColumn);
-      const nextParagraph =
-        targetCell?.blocks[0] ??
-        blankRow.cells.find((cell) => cell.vMerge !== "continue" && cell.blocks[0])?.blocks[0] ??
-        findFirstNavigableParagraphInTable(tableBlock);
-      if (!nextParagraph) {
-        return {
-          document: {
-            ...current.document,
-            blocks,
-          },
-          selection: current.selection,
-        };
-      }
-
-      return {
-        document: {
-          ...current.document,
-          blocks,
-        },
-        selection: {
-          anchor: paragraphOffsetToPosition(nextParagraph, 0),
-          focus: paragraphOffsetToPosition(nextParagraph, 0),
-        },
-      };
-    } else {
-      blankRow = createEditor2TableRow(
-        sourceRow.cells.map((cell) =>
-          createEditor2TableCell(
-            [createEditor2Paragraph("")],
-            Math.max(1, cell.colSpan ?? 1),
-          ),
-        ),
-      );
-      tableBlock.rows.splice(insertIndex, 0, blankRow);
-
-      const targetCell = blankRow.cells[Math.min(location.cellIndex, blankRow.cells.length - 1)];
-      const nextParagraph =
-        targetCell?.blocks[0] ??
-        blankRow.cells.find((cell) => cell.vMerge !== "continue" && cell.blocks[0])?.blocks[0] ??
-        findFirstNavigableParagraphInTable(tableBlock);
-      if (!nextParagraph) {
-        return {
-          document: {
-            ...current.document,
-            blocks,
-          },
-          selection: current.selection,
-        };
-      }
-
-      return {
-        document: {
-          ...current.document,
-          blocks,
-        },
-        selection: {
-          anchor: paragraphOffsetToPosition(nextParagraph, 0),
-          focus: paragraphOffsetToPosition(nextParagraph, 0),
-        },
-      };
-    }
-  };
-
-  const deleteSelectedTableRow = (current: Editor2State): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return current;
-    }
-
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
-
-    if (tableBlock.rows.length <= 1) {
-      return current;
-    }
-
-    const rowToDelete = tableBlock.rows[location.rowIndex];
-    if (!rowToDelete) {
-      return current;
-    }
-
-    const blockedByRestartCell = rowToDelete.cells.some(
-      (cell) => cell.vMerge !== "continue" && Math.max(1, cell.rowSpan ?? 1) > 1,
-    );
-    if (blockedByRestartCell) {
-      return current;
-    }
-
-    const hasVerticalSpansInTable = tableBlock.rows.some((row) =>
-      row.cells.some((cell) => Math.max(1, cell.rowSpan ?? 1) > 1 || cell.vMerge !== undefined),
-    );
-
-    const selectedEntry = hasVerticalSpansInTable
-      ? buildTableCellLayout(tableBlock).find(
-          (layoutEntry) =>
-            layoutEntry.rowIndex === location.rowIndex &&
-            layoutEntry.cellIndex === location.cellIndex,
-        )
-      : null;
-
-    if (hasVerticalSpansInTable) {
-      const tableLayout = buildTableCellLayout(tableBlock);
-      for (const entry of tableLayout) {
-        if (
-          entry.visualRowIndex < location.rowIndex &&
-          entry.visualRowIndex + entry.rowSpan > location.rowIndex
-        ) {
-          entry.cell.rowSpan = Math.max(1, entry.cell.rowSpan ?? 1) - 1;
-          if (entry.cell.rowSpan <= 1) {
-            entry.cell.rowSpan = undefined;
-            entry.cell.vMerge = undefined;
-          } else {
-            entry.cell.vMerge = "restart";
-          }
-        }
-      }
-    }
-
-    tableBlock.rows.splice(location.rowIndex, 1);
-
-    const nextRow = tableBlock.rows[Math.min(location.rowIndex, tableBlock.rows.length - 1)];
-    const targetCell = nextRow
-      ? findCellAtVisualColumn(
-          nextRow,
-          Math.min(
-            selectedEntry?.visualColumnIndex ?? location.cellIndex,
-            Math.max(0, getRowVisualWidth(nextRow) - 1),
-          ),
-        )
-      : null;
-    const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-    if (!nextParagraph) {
-      return {
-        document: {
-          ...current.document,
-          blocks,
-        },
-        selection: current.selection,
-      };
-    }
-
-    const nextState = updateBlocksInCurrentSection(current, blocks);
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
-  };
-
-  const insertSelectedTableColumn = (current: Editor2State, direction: -1 | 1): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return current;
-    }
-
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
-
-    const hasHorizontalSpansInTable = tableBlock.rows.some((row) => row.cells.some((cell) => Math.max(1, cell.colSpan ?? 1) > 1));
-
-    if (hasHorizontalSpansInTable) {
-      const tableLayout = buildTableCellLayout(tableBlock);
-      const selectedEntry = tableLayout.find(
-        (entry) =>
-          entry.rowIndex === location.rowIndex && entry.cellIndex === location.cellIndex,
-      );
-      const insertVisualColumn =
-        (selectedEntry?.visualColumnIndex ?? location.cellIndex) +
-        (direction > 0 ? Math.max(1, selectedEntry?.colSpan ?? 1) : 0);
-
-      for (const row of tableBlock.rows) {
-        const nextCells: Editor2TableCellNode[] = [];
-        let visualCursor = 0;
-        let inserted = false;
-
-        for (const cell of row.cells) {
-          const span = Math.max(1, cell.colSpan ?? 1);
-          if (!inserted && insertVisualColumn <= visualCursor) {
-            nextCells.push(createEditor2TableCell([createEditor2Paragraph("")]));
-            inserted = true;
-          }
-
-          if (!inserted && visualCursor < insertVisualColumn && insertVisualColumn < visualCursor + span) {
-            nextCells.push({
-              ...cell,
-              colSpan: span + 1,
-            });
-            inserted = true;
-          } else {
-            nextCells.push(cell);
-          }
-
-          visualCursor += span;
-        }
-
-        if (!inserted) {
-          nextCells.push(createEditor2TableCell([createEditor2Paragraph("")]));
-        }
-
-        row.cells = nextCells;
-      }
-
-      const targetRow = tableBlock.rows[location.rowIndex];
-      const targetCell = targetRow ? findCellAtVisualColumn(targetRow, insertVisualColumn) : null;
-      const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-      if (!nextParagraph) {
-        return {
-          document: {
-            ...current.document,
-            blocks,
-          },
-          selection: current.selection,
-        };
-      }
-
-      return {
-        document: {
-          ...current.document,
-          blocks,
-        },
-        selection: {
-          anchor: paragraphOffsetToPosition(nextParagraph, 0),
-          focus: paragraphOffsetToPosition(nextParagraph, 0),
-        },
-      };
-    }
-
-    const insertIndex = Math.max(
-      0,
-      Math.min(tableBlock.rows[0]?.cells.length ?? 0, location.cellIndex + (direction > 0 ? 1 : 0)),
-    );
-
-    for (const row of tableBlock.rows) {
-      row.cells.splice(
-        insertIndex,
-        0,
-        createEditor2TableCell([createEditor2Paragraph("")]),
-      );
-    }
-
-    const targetRow = tableBlock.rows[location.rowIndex];
-    const targetCell = targetRow?.cells[insertIndex];
-    const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-    if (!nextParagraph) {
-      return {
-        document: {
-          ...current.document,
-          blocks,
-        },
-        selection: current.selection,
-      };
-    }
-
-    const nextState = updateBlocksInCurrentSection(current, blocks);
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
-  };
-
-  const deleteSelectedTableColumn = (current: Editor2State): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return current;
-    }
-
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
-
-    if (getTableVisualWidth(tableBlock) <= 1) {
-      return current;
-    }
-
-    const hasHorizontalSpansInTable = tableBlock.rows.some((row) => row.cells.some((cell) => Math.max(1, cell.colSpan ?? 1) > 1));
-
-    if (hasHorizontalSpansInTable) {
-      const tableLayout = buildTableCellLayout(tableBlock);
-      const selectedEntry = tableLayout.find(
-        (entry) =>
-          entry.rowIndex === location.rowIndex && entry.cellIndex === location.cellIndex,
-      );
-      const deleteVisualColumn = selectedEntry?.visualColumnIndex ?? location.cellIndex;
-
-      for (const row of tableBlock.rows) {
-        const nextCells: Editor2TableCellNode[] = [];
-        let visualCursor = 0;
-
-        for (const cell of row.cells) {
-          const span = Math.max(1, cell.colSpan ?? 1);
-          if (deleteVisualColumn >= visualCursor && deleteVisualColumn < visualCursor + span) {
-            if (span > 1) {
-              nextCells.push({
-                ...cell,
-                colSpan: span - 1 > 1 ? span - 1 : undefined,
-              });
-            }
-          } else {
-            nextCells.push(cell);
-          }
-
-          visualCursor += span;
-        }
-
-        row.cells = nextCells;
-      }
-
-      const targetRow = tableBlock.rows[location.rowIndex];
-      const targetCell =
-        targetRow &&
-        findCellAtVisualColumn(
-          targetRow,
-          Math.min(deleteVisualColumn, Math.max(0, getRowVisualWidth(targetRow) - 1)),
-        );
-      const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-      if (!nextParagraph) {
-        return {
-          document: {
-            ...current.document,
-            blocks,
-          },
-          selection: current.selection,
-        };
-      }
-
-      return {
-        document: {
-          ...current.document,
-          blocks,
-        },
-        selection: {
-          anchor: paragraphOffsetToPosition(nextParagraph, 0),
-          focus: paragraphOffsetToPosition(nextParagraph, 0),
-        },
-      };
-    }
-
-    if (tableBlock.rows[0]?.cells.length <= 1) {
-      return current;
-    }
-
-    for (const row of tableBlock.rows) {
-      row.cells.splice(location.cellIndex, 1);
-    }
-
-    const targetRow = tableBlock.rows[location.rowIndex];
-    const targetCell = targetRow?.cells[Math.min(location.cellIndex, targetRow.cells.length - 1)];
-    const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-    if (!nextParagraph) {
-      return {
-        document: {
-          ...current.document,
-          blocks,
-        },
-        selection: current.selection,
-      };
-    }
-
-    const nextState = updateBlocksInCurrentSection(current, blocks);
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
-  };
-
-  const splitSelectedTableCell = (current: Editor2State): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return current;
-    }
-
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
-
-    const row = tableBlock.rows[location.rowIndex];
-    const cell = row?.cells[location.cellIndex];
-    const span = Math.max(1, cell?.colSpan ?? 1);
-    if (!row || !cell || span <= 1) {
-      return current;
-    }
-
-    const nextCells = [
-      {
-        ...cell,
-        colSpan: 1,
-        blocks: cell.blocks.map((paragraph: any) => cloneBlock(paragraph)) as Editor2ParagraphNode[],
-      },
-      ...Array.from({ length: span - 1 }, () => createEditor2TableCell([createEditor2Paragraph("")])),
-    ];
-
-    row.cells.splice(location.cellIndex, 1, ...nextCells);
-
-    const nextParagraph = nextCells[0]?.blocks[0];
-    if (!nextParagraph) {
-      return current;
-    }
-
-    const nextState = updateBlocksInCurrentSection(current, blocks);
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
-  };
-
-  const withExpandedTableCellSelection = (current: Editor2State): Editor2State => {
-    const expandedSelection = resolveTableCellRangeSelection(current);
-    if (!expandedSelection) {
-      return current;
-    }
-
-    return applySelectionToStatePreservingStructure(current, expandedSelection);
-  };
-
-  const applySelectionAwareTextCommand = (
-    command: (current: Editor2State) => Editor2State,
-  ) => {
-    applyTransactionalState((current) => command(withExpandedTableCellSelection(current)));
-  };
-
-  const applySelectionAwareParagraphCommand = (
-    command: (current: Editor2State) => Editor2State,
-  ) => {
-    applyTransactionalState((current) => command(withExpandedTableCellSelection(current)));
-  };
-
   const getSelectedImageInfo = (current: Editor2State) => {
     const normalized = normalizeSelection(current);
     if (
@@ -1513,40 +451,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
   const selectedImageRun = () => getSelectedImageRun(state);
   const selectedImageAlt = () => selectedImageRun()?.run.image?.alt ?? null;
 
-  const tableSelectionLabel = (): string | null => {
-    const normalized = normalizeSelection(state);
-    if (normalized.isCollapsed) {
-      return null;
-    }
-
-    const anchorLocation = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, getActiveSectionIndex(state));
-    const focusLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
-    if (
-      !anchorLocation ||
-      !focusLocation ||
-      anchorLocation.blockIndex !== focusLocation.blockIndex ||
-      (anchorLocation.rowIndex === focusLocation.rowIndex &&
-        anchorLocation.cellIndex === focusLocation.cellIndex)
-    ) {
-      return null;
-    }
-
-    const count = selectionBoxes().length;
-    if (count === 0) {
-      return null;
-    }
-
-    return `Table selection: ${count} cell${count === 1 ? "" : "s"}`;
-  };
-
-  const isInsideTable = (): boolean => {
-    return !!findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
-  };
-
-  const tableActionRestrictionLabel = (): string | null => {
-    return null;
-  };
-
   const focusInput = () => {
     setFocused(true);
     queueMicrotask(() => {
@@ -1648,6 +552,13 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     focusInput();
   };
 
+  const tableOps = createEditor2TableOperations({
+    applyTransactionalState,
+    applySelectionToStatePreservingStructure,
+    focusInput,
+    logger,
+  });
+
   onMount(() => {
     startIconObserver();
   });
@@ -1683,9 +594,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
 
     const sel = state.selection;
-    logger.info(`input:text ${JSON.stringify(text)} (len=${text.length}) at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`);
+    const currentRun = getParagraphs(state).find(p => p.id === sel.anchor.paragraphId)?.runs.find(r => r.id === sel.anchor.runId);
+    const runStyle = currentRun ? { bold: currentRun.bold, italic: currentRun.italic, underline: currentRun.underline } : null;
+    logger.info(`input:text ${JSON.stringify(text)} (len=${text.length}) at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}] run:${JSON.stringify(runStyle)}`);
     clearPreferredColumn();
-    applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, text)), {
+    applyTransactionalState((current) => tableOps.applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, text)), {
       mergeKey: "insertText",
     });
     event.currentTarget.value = "";
@@ -1715,7 +628,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     logger.info(`input:composition end ${JSON.stringify(text)} (len=${text.length}) at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`);
     suppressedInputText = text;
     clearPreferredColumn();
-    applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, text)), {
+    applyTransactionalState((current) => tableOps.applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, text)), {
       mergeKey: "insertText",
     });
     event.currentTarget.value = "";
@@ -1988,9 +901,33 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         focus: position,
       }),
     );
+    const sel = state.selection;
+    const anchorLoc = (() => {
+      const secIdx = getActiveSectionIndex(state);
+      const loc = findParagraphTableLocation(state.document, dragAnchor!.paragraphId, secIdx);
+      return loc ? `b${loc.blockIndex}r${loc.rowIndex}c${loc.cellIndex}` : "";
+    })();
+    const focusLoc = (() => {
+      const secIdx = getActiveSectionIndex(state);
+      const loc = findParagraphTableLocation(state.document, sel.focus.paragraphId, secIdx);
+      return loc ? `b${loc.blockIndex}r${loc.rowIndex}c${loc.cellIndex}` : "";
+    })();
+    logger.debug(`selection:drag ${dragAnchor!.paragraphId}[${dragAnchor!.offset}]→${sel.focus.paragraphId}[${sel.focus.offset}] [${anchorLoc}→${focusLoc}]`);
   };
 
   const handleWindowMouseUp = () => {
+    const sel = state.selection;
+    const anchorLoc = (() => {
+      const secIdx = getActiveSectionIndex(state);
+      const loc = findParagraphTableLocation(state.document, sel.anchor.paragraphId, secIdx);
+      return loc ? `b${loc.blockIndex}r${loc.rowIndex}c${loc.cellIndex}` : "";
+    })();
+    const focusLoc = (() => {
+      const secIdx = getActiveSectionIndex(state);
+      const loc = findParagraphTableLocation(state.document, sel.focus.paragraphId, secIdx);
+      return loc ? `b${loc.blockIndex}r${loc.rowIndex}c${loc.cellIndex}` : "";
+    })();
+    logger.info(`selection:end ${sel.anchor.paragraphId}[${sel.anchor.offset}]→${sel.focus.paragraphId}[${sel.focus.offset}] [${anchorLoc}→${focusLoc}]`);
     stopDragging();
     focusInput();
   };
@@ -2054,87 +991,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     }
     stopImageResize();
     focusInput();
-  };
-
-  const resolveAdjacentTableCellPosition = (
-    document: Editor2Document,
-    paragraphId: string,
-    delta: -1 | 1,
-  ): Editor2Position | null => {
-    for (const block of document.blocks) {
-      if (block.type !== "table") {
-        continue;
-      }
-
-      const cells = block.rows.flatMap((row) =>
-        row.cells.filter((cell) => cell.vMerge !== "continue" && cell.blocks.length > 0),
-      );
-      const currentCellIndex = cells.findIndex((cell) =>
-        cell.blocks.some((paragraph) => paragraph.id === paragraphId),
-      );
-      if (currentCellIndex === -1) {
-        continue;
-      }
-
-      const nextCell = cells[currentCellIndex + delta];
-      if (!nextCell) {
-        return null;
-      }
-
-      const targetParagraph = nextCell.blocks[0];
-      if (!targetParagraph) {
-        return null;
-      }
-
-      return paragraphOffsetToPosition(targetParagraph, 0);
-    }
-
-    return null;
-  };
-
-  const applyTableAwareParagraphEdit = (
-    current: Editor2State,
-    edit: (tempState: Editor2State) => Editor2State,
-  ): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location || current.selection.anchor.paragraphId !== current.selection.focus.paragraphId) {
-      return edit(current);
-    }
-
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const nextBlocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = nextBlocks[location.blockIndex] as Editor2TableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return edit(current);
-    }
-
-    const targetCell = tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
-    if (!targetCell) {
-      return edit(current);
-    }
-
-    const tempState: Editor2State = {
-      ...current,
-      document: createEditor2Document(targetCell.blocks),
-      selection: {
-        anchor: { ...current.selection.anchor },
-        focus: { ...current.selection.focus },
-      },
-    };
-    const tempResult = edit(tempState);
-    const replacementParagraphs = tempResult.document.blocks.filter(
-      (block): block is Editor2ParagraphNode => block.type === "paragraph",
-    );
-
-    targetCell.blocks.splice(0, targetCell.blocks.length, ...replacementParagraphs);
-
-    const nextState = updateBlocksInCurrentSection(current, nextBlocks);
-    return {
-      ...nextState,
-      selection: tempResult.selection,
-    };
   };
 
   const moveSelectionToParagraphBoundary = (boundary: "start" | "end", extend: boolean) => {
@@ -2635,13 +1491,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     focusInput();
   };
 
-  const insertTableCommand = (rows: number, cols: number) => {
-    applyTransactionalState((current) => insertTableAtSelection(current, rows, cols), {
-      mergeKey: "insertTable",
-    });
-    focusInput();
-  };
-
   const { handleCopy, handleCut, handlePaste, handleDrop } = createEditor2ClipboardController({
     state: () => state,
     isReadOnly,
@@ -2652,7 +1501,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     clearPreferredColumn,
     resetTransactionGrouping,
     applyTransactionalState,
-    applyTableAwareParagraphEdit,
+    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
     focusInput,
     insertImageFromFile,
     resolvePositionAtSurfacePoint,
@@ -2663,9 +1512,9 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     logger,
     applyState,
     applyTransactionalState,
-    applySelectionAwareTextCommand,
-    applySelectionAwareParagraphCommand,
-    applyTableAwareParagraphEdit,
+    applySelectionAwareTextCommand: tableOps.applySelectionAwareTextCommand,
+    applySelectionAwareParagraphCommand: tableOps.applySelectionAwareParagraphCommand,
+    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
     focusInput,
     clearPreferredColumn,
     resetTransactionGrouping,
@@ -2683,8 +1532,8 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     resetTransactionGrouping,
     applyState,
     applyTransactionalState,
-    applyTableAwareParagraphEdit,
-    applySelectionAwareParagraphCommand,
+    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
+    applySelectionAwareParagraphCommand: tableOps.applySelectionAwareParagraphCommand,
     focusInput,
     commandsController,
     selectedImageRun,
@@ -2699,11 +1548,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     performRedo,
     moveVerticalSelection,
     moveVerticalByBlock,
-    resolveAdjacentTableCellPosition,
+    resolveAdjacentTableCellPosition: tableOps.resolveAdjacentTableCellPosition,
     applySelectionPreservingStructure,
   });
 
-  const handleKeyDown = (event: KeyboardEvent) => {
+  const handleKeyDown = (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => {
     const mods = [
       event.ctrlKey ? "Ctrl" : null,
       event.metaKey ? "Meta" : null,
@@ -2716,6 +1565,36 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     rawHandleKeyDown(event);
   };
 
+  const tableSelectionLabel = (): string | null => {
+    const normalized = normalizeSelection(state);
+    if (normalized.isCollapsed) {
+      return null;
+    }
+
+    const anchorLocation = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, getActiveSectionIndex(state));
+    const focusLocation = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
+    if (
+      !anchorLocation ||
+      !focusLocation ||
+      anchorLocation.blockIndex !== focusLocation.blockIndex ||
+      (anchorLocation.rowIndex === focusLocation.rowIndex &&
+        anchorLocation.cellIndex === focusLocation.cellIndex)
+    ) {
+      return null;
+    }
+
+    const count = selectionBoxes().length;
+    if (count === 0) {
+      return null;
+    }
+
+    return `Table selection: ${count} cell${count === 1 ? "" : "s"}`;
+  };
+
+  const isInsideTable = (): boolean => {
+    return !!findParagraphTableLocation(state.document, state.selection.focus.paragraphId, getActiveSectionIndex(state));
+  };
+
   const toolbarCtx = {
     state,
     undoStack,
@@ -2726,7 +1605,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     selectionCollapsed,
     selectedImageRun,
     tableSelectionLabel,
-    tableActionRestrictionLabel,
+    tableActionRestrictionLabel: tableOps.tableActionRestrictionLabel,
     isInsideTable,
     handleExportDocx,
     performUndo,
@@ -2735,27 +1614,67 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     clearPreferredColumn,
     resetTransactionGrouping,
     applyTransactionalState,
-    applyTableAwareParagraphEdit,
+    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
     ...commandsController,
-    canMergeSelectedTable,
-    canMergeSelectedTableCells,
-    canMergeSelectedTableRows,
-    canSplitSelectedTable,
-    canSplitSelectedTableCell,
-    canSplitSelectedTableCellVertically,
-    canEditSelectedTableColumn,
-    canEditSelectedTableRow,
-    mergeSelectedTable,
-    mergeSelectedTableCells,
-    mergeSelectedTableRows,
-    splitSelectedTable,
-    splitSelectedTableCell,
-    splitSelectedTableCellVertically,
-    insertSelectedTableColumn,
-    insertSelectedTableRow,
-    deleteSelectedTableColumn,
-    deleteSelectedTableRow,
-    insertTableCommand,
+    canMergeSelectedTable: tableOps.canMergeSelectedTable,
+    canMergeSelectedTableCells: tableOps.canMergeSelectedTableCells,
+    canMergeSelectedTableRows: tableOps.canMergeSelectedTableRows,
+    canSplitSelectedTable: tableOps.canSplitSelectedTable,
+    canSplitSelectedTableCell: tableOps.canSplitSelectedTableCell,
+    canSplitSelectedTableCellVertically: tableOps.canSplitSelectedTableCellVertically,
+    canEditSelectedTableColumn: tableOps.canEditSelectedTableColumn,
+    canEditSelectedTableRow: tableOps.canEditSelectedTableRow,
+    mergeSelectedTable: (current: Editor2State) => {
+      const result = tableOps.mergeSelectedTable(current);
+      if (result !== current) logger.info("tableOp:mergeSelectedTable");
+      return result;
+    },
+    mergeSelectedTableCells: (current: Editor2State) => {
+      const result = tableOps.mergeSelectedTableCells(current);
+      if (result !== current) logger.info("tableOp:mergeSelectedTableCells");
+      return result;
+    },
+    mergeSelectedTableRows: (current: Editor2State) => {
+      const result = tableOps.mergeSelectedTableRows(current);
+      if (result !== current) logger.info("tableOp:mergeSelectedTableRows");
+      return result;
+    },
+    splitSelectedTable: (current: Editor2State) => {
+      const result = tableOps.splitSelectedTable(current);
+      if (result !== current) logger.info("tableOp:splitSelectedTable");
+      return result;
+    },
+    splitSelectedTableCell: (current: Editor2State) => {
+      const result = tableOps.splitSelectedTableCell(current);
+      if (result !== current) logger.info("tableOp:splitSelectedTableCell");
+      return result;
+    },
+    splitSelectedTableCellVertically: (current: Editor2State) => {
+      const result = tableOps.splitSelectedTableCellVertically(current);
+      if (result !== current) logger.info("tableOp:splitSelectedTableCellVertically");
+      return result;
+    },
+    insertSelectedTableColumn: (current: Editor2State, direction: -1 | 1) => {
+      const result = tableOps.insertSelectedTableColumn(current, direction);
+      if (result !== current) logger.info(`tableOp:insertSelectedTableColumn dir=${direction}`);
+      return result;
+    },
+    insertSelectedTableRow: (current: Editor2State, direction: -1 | 1) => {
+      const result = tableOps.insertSelectedTableRow(current, direction);
+      if (result !== current) logger.info(`tableOp:insertSelectedTableRow dir=${direction}`);
+      return result;
+    },
+    deleteSelectedTableColumn: (current: Editor2State) => {
+      const result = tableOps.deleteSelectedTableColumn(current);
+      if (result !== current) logger.info("tableOp:deleteSelectedTableColumn");
+      return result;
+    },
+    deleteSelectedTableRow: (current: Editor2State) => {
+      const result = tableOps.deleteSelectedTableRow(current);
+      if (result !== current) logger.info("tableOp:deleteSelectedTableRow");
+      return result;
+    },
+    insertTableCommand: tableOps.insertTableCommand,
   } as unknown as EditorToolbarCtx;
 
   return (

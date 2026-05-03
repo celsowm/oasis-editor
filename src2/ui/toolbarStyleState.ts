@@ -1,5 +1,6 @@
 import type {
   Editor2ParagraphNode,
+  Editor2ParagraphStyle,
   Editor2Position,
   Editor2State,
   Editor2TextStyle,
