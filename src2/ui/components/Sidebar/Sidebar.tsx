@@ -179,6 +179,14 @@ export function Sidebar(props: { ctx: () => EditorToolbarCtx }) {
           />
         </div>
       </div>
+
+      <div class="oasis-editor-2-sidebar-footer">
+        <div class="oasis-editor-2-sidebar-persistence">
+          <span class={`oasis-editor-2-persistence-status oasis-editor-2-status-${ctx().persistenceStatus().toLowerCase().replace("...", "ing").replace(".", "")}`}>
+            {ctx().persistenceStatus()}
+          </span>
+        </div>
+      </div>
     </aside>
   );
 }

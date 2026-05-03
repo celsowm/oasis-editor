@@ -152,6 +152,7 @@ import { createEditor2CommandsController } from "../app/controllers/Editor2Comma
 import { createEditor2ClipboardController } from "../app/controllers/useEditor2Clipboard.js";
 import { createEditor2KeyboardController } from "../app/controllers/useEditor2Keyboard.js";
 import { useEditor2Layout } from "../app/controllers/useEditor2Layout.js";
+import { useEditor2Persistence } from "../app/controllers/useEditor2Persistence.js";
 import { createEditor2TableOperations } from "../app/controllers/useEditor2TableOperations.js";
 import { createEditor2ImageOperations } from "../app/controllers/useEditor2ImageOperations.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
@@ -241,6 +242,13 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     state,
     surfaceRef: () => surfaceRef,
     viewportRef: () => viewportRef,
+  });
+
+  const { status: persistenceStatus } = useEditor2Persistence(state, (loadedDoc) => {
+    logger.info("persistence:loaded", { docId: loadedDoc.id });
+    const nextState = createEditor2StateFromDocument(loadedDoc);
+    setState(nextState);
+    resetEditorChromeState();
   });
 
   let dragAnchor: Editor2Position | null = null;
@@ -811,58 +819,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     document.body.style.cursor = "";
   };
 
-  const stopImageDrag = () => {
-    hideImageDragCursor();
-    activeImageDrag = null;
-    window.removeEventListener("mousemove", handleImageDragMouseMove);
-    window.removeEventListener("mouseup", handleImageDragMouseUp);
-  };
-
-  const stopImageResize = () => {
-    activeImageResize = null;
-    window.removeEventListener("mousemove", handleImageResizeMouseMove);
-    window.removeEventListener("mouseup", handleImageResizeMouseUp);
-  };
-
-  const handleImageDragMouseMove = (event: MouseEvent) => {
-    const dragState = activeImageDrag;
-    if (!dragState) {
-      return;
-    }
-
-    const deltaX = Math.abs(event.clientX - dragState.startClientX);
-    const deltaY = Math.abs(event.clientY - dragState.startClientY);
-    if (!dragState.dragging && deltaX + deltaY >= 4) {
-      dragState.dragging = true;
-      showImageDragCursor();
-      logger.info(`image drag:start ${dragState.paragraphId}@${dragState.paragraphOffset} client=(${dragState.startClientX},${dragState.startClientY})`);
-    }
-  };
-
-  const handleImageDragMouseUp = (event: MouseEvent) => {
-    const dragState = activeImageDrag;
-    if (!dragState) {
-      focusInput();
-      return;
-    }
-
-    if (dragState.dragging) {
-      const position = resolvePositionAtSurfacePoint(event.clientX, event.clientY);
-      if (position) {
-        logger.info(`image drag:done ${dragState.paragraphId} -> ${position.paragraphId}:${position.runId}[${position.offset}]`);
-        applyTransactionalState(
-          (current) => moveSelectedImageToPosition(current, position),
-          { mergeKey: "moveImage" },
-        );
-      } else {
-        logger.warn(`image drag:cancel ${dragState.paragraphId} no target at (${event.clientX},${event.clientY})`);
-      }
-    }
-
-    stopImageDrag();
-    focusInput();
-  };
-
   const handleWindowMouseMove = (event: MouseEvent) => {
     if (!dragAnchor) {
       return;
@@ -907,67 +863,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     })();
     logger.info(`selection:end ${sel.anchor.paragraphId}[${sel.anchor.offset}]→${sel.focus.paragraphId}[${sel.focus.offset}] [${anchorLoc}→${focusLoc}]`);
     stopDragging();
-    focusInput();
-  };
-
-  const handleImageResizeMouseMove = (event: MouseEvent) => {
-    const resizeState = activeImageResize;
-    if (!resizeState) {
-      return;
-    }
-
-    const deltaX = event.clientX - resizeState.startClientX;
-    const maxWidth = getMaxInlineImageWidth(surfaceRef, state.document, resizeState.paragraphId);
-    const nextWidth = Math.max(24, Math.min(maxWidth, resizeState.startWidth + deltaX));
-    const nextHeight = Math.max(24, nextWidth / resizeState.aspectRatio);
-    const paragraph = getParagraphs(state).find((candidate) => candidate.id === resizeState.paragraphId);
-    if (!paragraph) {
-      logger.warn("image resize:missing paragraph", resizeState);
-      return;
-    }
-    logger.debug("image resize:move", {
-      paragraphId: resizeState.paragraphId,
-      paragraphOffset: resizeState.paragraphOffset,
-      deltaX,
-      nextWidth,
-      nextHeight,
-      maxWidth,
-    });
-    applyState(
-      resizeSelectedImage(
-        applySelectionToStatePreservingStructure(state, {
-          anchor: paragraphOffsetToPosition(paragraph, resizeState.paragraphOffset),
-          focus: paragraphOffsetToPosition(paragraph, resizeState.paragraphOffset + 1),
-        }),
-        nextWidth,
-        nextHeight,
-      ),
-    );
-  };
-
-  const handleImageResizeMouseUp = () => {
-    const resizeState = activeImageResize;
-    if (resizeState) {
-      logger.info("image resize:done", {
-        paragraphId: resizeState.paragraphId,
-        startWidth: resizeState.startWidth,
-        startHeight: resizeState.startHeight,
-        current: getSelectedImageInfo(state)
-          ? {
-              width: getSelectedImageInfo(state)?.width,
-              height: getSelectedImageInfo(state)?.height,
-            }
-          : null,
-      });
-      historyState = {
-        undoStack: [...historyState.undoStack, cloneState(resizeState.initialState)],
-        redoStack: [],
-        lastTransactionMeta: null,
-      };
-      setUndoStack(historyState.undoStack);
-      setRedoStack(historyState.redoStack);
-    }
-    stopImageResize();
     focusInput();
   };
 
@@ -1583,6 +1478,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     state,
     undoStack,
     redoStack,
+    persistenceStatus,
     importInputRef: () => importInputRef,
     imageInputRef: () => imageInputRef,
     toolbarStyleState,
@@ -1745,10 +1641,25 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             onRevisionMouseEnter={handleRevisionMouseEnter}
             onRevisionMouseLeave={handleRevisionMouseLeave}
             onImageMouseDown={(paragraphId, paragraphOffset, event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              
+              const paragraph = getDocumentParagraphs(state.document).find(p => p.id === paragraphId);
+              if (paragraph) {
+                applyState(
+                  setSelection(state, {
+                    anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),
+                    focus: paragraphOffsetToPosition(paragraph, paragraphOffset + 1),
+                  })
+                );
+              }
+              
               imageOps.startImageDrag(paragraphId, paragraphOffset, event);
               focusInput();
             }}
             onImageResizeHandleMouseDown={(paragraphId, paragraphOffset, event) => {
+              event.preventDefault();
+              event.stopPropagation();
               imageOps.startImageResize(paragraphId, paragraphOffset, event, state);
             }}
             onInputBlur={() => setFocused(false)}

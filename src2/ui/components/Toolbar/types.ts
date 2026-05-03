@@ -9,6 +9,7 @@ import type {
   ParagraphStyleKey,
   ToolbarStyleState,
 } from "../../toolbarStyleState.js";
+import type { PersistenceStatus } from "../../app/controllers/useEditor2Persistence.js";
 
 export type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
 
@@ -16,6 +17,7 @@ export interface EditorToolbarCtx {
   state: Editor2State;
   undoStack: () => unknown[];
   redoStack: () => unknown[];
+  persistenceStatus: () => PersistenceStatus;
   importInputRef: () => HTMLInputElement | undefined;
   imageInputRef: () => HTMLInputElement | undefined;
 

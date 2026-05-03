@@ -426,6 +426,12 @@ function renderParagraph(
                                       "oasis-editor-2-image-inline": true,
                                       "oasis-editor-2-image-inline-selected": imageSelected(),
                                     }}
+                                    onMouseDown={
+                                      interactive
+                                        ? (event) => onImageMouseDown(paragraph.id, char.paragraphOffset, event)
+                                        : undefined
+                                    }
+                                    title={interactive ? "Click and drag to move image" : undefined}
                                   >
                                     <img
                                       src={fragment.image.src}
@@ -441,11 +447,6 @@ function renderParagraph(
                                         "oasis-editor-2-image-selected": imageSelected(),
                                       }}
                                       data-testid="editor-2-image"
-                                      onMouseDown={
-                                        interactive
-                                          ? (event) => onImageMouseDown(paragraph.id, char.paragraphOffset, event)
-                                          : undefined
-                                      }
                                     />
                                     <Show when={imageSelected()}>
                                       <button

@@ -71,3 +71,33 @@
   border-radius: 4px;
   cursor: pointer;
 }
+
+.oasis-editor-2-sidebar-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.oasis-editor-2-sidebar-persistence {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.oasis-editor-2-persistence-status {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.oasis-editor-2-status-saving {
+  color: #3b82f6;
+}
+
+.oasis-editor-2-status-error {
+  color: #ef4444;
+}
+
+.oasis-editor-2-status-saved {
+  color: #10b981;
+}
+
