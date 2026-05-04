@@ -502,6 +502,17 @@
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
+.oasis-editor-2-image-ghost {
+  position: fixed;
+  pointer-events: none;
+  opacity: 0.5;
+  z-index: 10001;
+  transform: scale(0.95);
+  transform-origin: top left;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #94a3b8;
+}
+
 .oasis-editor-2-table-grid {
   width: 100%;
   border-collapse: collapse;

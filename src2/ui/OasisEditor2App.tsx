@@ -2040,6 +2040,21 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           )}
         </Show>
 
+        <Show when={imageOps.dragging() && imageOps.draggedImageInfo()}>
+          {(info) => (
+            <img
+              src={info().src}
+              class="oasis-editor-2-image-ghost"
+              style={{
+                width: `${info().width}px`,
+                height: `${info().height}px`,
+                left: `${imageOps.mousePos().x - info().offsetX}px`,
+                top: `${imageOps.mousePos().y - info().offsetY}px`,
+              }}
+            />
+          )}
+        </Show>
+
         <Show when={tableDrag.dragging() && tableDrag.draggedTableInfo()}>
           {(info) => (
             <div

@@ -1,4 +1,5 @@
 
+import { createSignal } from "solid-js";
 import { getParagraphs, paragraphOffsetToPosition, type Editor2Position, type Editor2State } from "../../core/model.js";
 import { normalizeSelection, isSelectionCollapsed } from "../../core/selection.js";
 import { moveSelectedImageToPosition, setSelection, resizeSelectedImage } from "../../core/editorCommands.js";
@@ -23,6 +24,11 @@ export interface ActiveImageDrag {
   startClientX: number;
   startClientY: number;
   dragging: boolean;
+  src: string;
+  width: number;
+  height: number;
+  offsetX: number;
+  offsetY: number;
 }
 
 export interface Editor2ImageOperationsDeps {
@@ -40,6 +46,10 @@ export interface Editor2ImageOperationsDeps {
 }
 
 export function createEditor2ImageOperations(deps: Editor2ImageOperationsDeps) {
+  const [dragging, setDragging] = createSignal(false);
+  const [draggedImageInfo, setDraggedImageInfo] = createSignal<ActiveImageDrag | null>(null);
+  const [mousePos, setMousePos] = createSignal({ x: 0, y: 0 });
+
   let activeImageDrag: ActiveImageDrag | null = null;
   let activeImageResize: ActiveImageResize | null = null;
   let imageDragCursorStyle: HTMLStyleElement | null = null;
@@ -74,6 +84,7 @@ export function createEditor2ImageOperations(deps: Editor2ImageOperationsDeps) {
           startOffset,
           width: run.image.width,
           height: run.image.height,
+          src: run.image.src,
         };
       }
     }
@@ -113,6 +124,8 @@ export function createEditor2ImageOperations(deps: Editor2ImageOperationsDeps) {
   const stopImageDrag = () => {
     hideImageDragCursor();
     activeImageDrag = null;
+    setDragging(false);
+    setDraggedImageInfo(null);
     window.removeEventListener("mousemove", handleImageDragMouseMove);
     window.removeEventListener("mouseup", handleImageDragMouseUp);
   };
@@ -129,12 +142,19 @@ export function createEditor2ImageOperations(deps: Editor2ImageOperationsDeps) {
       return;
     }
 
+    setMousePos({ x: event.clientX, y: event.clientY });
+
     const deltaX = Math.abs(event.clientX - dragState.startClientX);
     const deltaY = Math.abs(event.clientY - dragState.startClientY);
     if (!dragState.dragging && deltaX + deltaY >= 4) {
       dragState.dragging = true;
+      setDragging(true);
       showImageDragCursor();
       deps.logger.info(`image drag:start ${dragState.paragraphId}@${dragState.paragraphOffset} client=(${dragState.startClientX},${dragState.startClientY})`);
+    }
+
+    if (dragState.dragging) {
+        setDraggedImageInfo({ ...dragState });
     }
   };
 
@@ -237,13 +257,24 @@ export function createEditor2ImageOperations(deps: Editor2ImageOperationsDeps) {
   };
 
   const startImageDrag = (paragraphId: string, paragraphOffset: number, event: MouseEvent) => {
+    const imageElement = event.currentTarget as HTMLElement;
+    const rect = imageElement.getBoundingClientRect();
+
+    const selectedImage = getSelectedImageInfo(deps.state);
+
     activeImageDrag = {
       paragraphId,
       paragraphOffset,
       startClientX: event.clientX,
       startClientY: event.clientY,
       dragging: false,
+      src: selectedImage?.src ?? "",
+      width: selectedImage?.width ?? rect.width,
+      height: selectedImage?.height ?? rect.height,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
     };
+    setMousePos({ x: event.clientX, y: event.clientY });
     window.addEventListener("mousemove", handleImageDragMouseMove);
     window.addEventListener("mouseup", handleImageDragMouseUp);
   };
@@ -285,6 +316,9 @@ export function createEditor2ImageOperations(deps: Editor2ImageOperationsDeps) {
   };
 
   return {
+    dragging,
+    draggedImageInfo,
+    mousePos,
     getSelectedImageInfo,
     startImageDrag,
     startImageResize,
