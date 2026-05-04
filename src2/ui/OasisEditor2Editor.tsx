@@ -72,6 +72,7 @@ export interface OasisEditor2EditorProps {
 }
 
 export function OasisEditor2Editor(props: OasisEditor2EditorProps) {
+  let scrollContentRef: HTMLDivElement | undefined;
   const pageSettings = () => getDocumentPageSettings(props.state().document);
   const viewportHeight = () =>
     typeof props.viewportHeight === "number" ? `${props.viewportHeight}px` : props.viewportHeight ?? "min(72vh, 920px)";
@@ -101,7 +102,10 @@ export function OasisEditor2Editor(props: OasisEditor2EditorProps) {
       onMouseDown={props.onEditorMouseDown}
     >
       <div
-        ref={props.onSurfaceRef}
+        ref={(el) => {
+          scrollContentRef = el;
+          props.onSurfaceRef?.(el);
+        }}
         class="oasis-editor-2-editor-scroll-content"
         data-testid="editor-2-editor-scroll-content"
       >
@@ -133,6 +137,7 @@ export function OasisEditor2Editor(props: OasisEditor2EditorProps) {
             ctx={props.toolbarCtx!}
             selectionBoxes={props.selectionBoxes}
             visible={props.showFloatingTableToolbar!}
+            surfaceRef={() => scrollContentRef}
           />
         </Show>
 
