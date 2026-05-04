@@ -1906,6 +1906,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             measuredBlockHeights={() => measuredBlockHeights()}
             measuredParagraphLayouts={() => measuredParagraphLayouts()}
             selectionBoxes={() => selectionBoxes()}
+            toolbarCtx={() => toolbarCtx}
+            showFloatingTableToolbar={() =>
+              !isReadOnly() && tableSelectionLabel() !== null
+            }
             caretBox={() => caretBox()}
             inputBox={() => inputBox()}
             hoveredRevision={() => hoveredRevision()}

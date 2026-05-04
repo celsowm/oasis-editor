@@ -3,6 +3,8 @@ import { EditorSurface } from "./components/EditorSurface.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { RevisionOverlay } from "./components/RevisionOverlay.js";
+import { FloatingTableToolbar } from "./components/FloatingToolbar/FloatingTableToolbar.js";
+import type { EditorToolbarCtx } from "./components/Toolbar/types.js";
 import {
   getDocumentParagraphs,
   getDocumentPageSettings,
@@ -22,6 +24,8 @@ export interface OasisEditor2EditorProps {
   hoveredRevision: Accessor<RevisionBox | null>;
   focused: Accessor<boolean>;
   showCaret: Accessor<boolean>;
+  toolbarCtx?: () => EditorToolbarCtx;
+  showFloatingTableToolbar?: Accessor<boolean>;
   viewportHeight?: number | string;
   class?: string;
   style?: JSX.CSSProperties;
@@ -122,6 +126,14 @@ export function OasisEditor2Editor(props: OasisEditor2EditorProps) {
 
         <Show when={props.selectionBoxes().length > 0}>
           <SelectionOverlay boxes={props.selectionBoxes()} />
+        </Show>
+
+        <Show when={props.toolbarCtx && props.showFloatingTableToolbar}>
+          <FloatingTableToolbar
+            ctx={props.toolbarCtx!}
+            selectionBoxes={props.selectionBoxes}
+            visible={props.showFloatingTableToolbar!}
+          />
         </Show>
 
         <Show when={props.showCaret()}>
