@@ -13,12 +13,15 @@ export interface UseEditor2PersistenceResult {
 export function useEditor2Persistence(
   state: Editor2State,
   onLoaded: (doc: Editor2Document) => void,
+  options: { enabled?: boolean } = { enabled: false },
 ): UseEditor2PersistenceResult {
   const [status, setStatus] = createSignal<PersistenceStatus>("Initial");
   const [isInitialized, setIsInitialized] = createSignal(false);
 
+  const isEnabled = () => options.enabled ?? false;
+
   const debouncedSave = debounce(async (doc: Editor2Document) => {
-    if (!isInitialized()) return;
+    if (!isEnabled() || !isInitialized()) return;
 
     setStatus("Saving...");
     try {
@@ -40,7 +43,7 @@ export function useEditor2Persistence(
     on(
       () => state.document,
       (doc) => {
-        if (isInitialized()) {
+        if (isEnabled() && isInitialized()) {
           debouncedSave(doc);
         }
       },
@@ -49,6 +52,12 @@ export function useEditor2Persistence(
   );
 
   onMount(async () => {
+    if (!isEnabled()) {
+      setIsInitialized(true);
+      setStatus("Saved");
+      return;
+    }
+
     try {
       const loadedDoc = await persistenceService.loadDocument();
       if (loadedDoc) {

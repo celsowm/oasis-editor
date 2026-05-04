@@ -25,7 +25,7 @@ describe("useEditor2Persistence", () => {
     const onLoaded = vi.fn();
     
     await createRoot(async (dispose) => {
-      useEditor2Persistence({ document: {} } as any, onLoaded);
+      useEditor2Persistence({ document: {} } as any, onLoaded, { enabled: true });
       
       // Wait for onMount async logic
       await new Promise(resolve => setTimeout(resolve, 50));
@@ -42,7 +42,7 @@ describe("useEditor2Persistence", () => {
     const saveSpy = vi.spyOn(persistenceService, "saveDocument").mockResolvedValue(undefined);
     
     await createRoot(async (dispose) => {
-      useEditor2Persistence(state as any, vi.fn());
+      useEditor2Persistence(state as any, vi.fn(), { enabled: true });
       
       // Wait for initialization
       await new Promise(resolve => setTimeout(resolve, 50));
@@ -65,11 +65,32 @@ describe("useEditor2Persistence", () => {
     const saveSpy = vi.spyOn(persistenceService, "saveDocument");
     
     await createRoot(async (dispose) => {
-      useEditor2Persistence({ document: { id: "initial" } } as any, vi.fn());
+      useEditor2Persistence({ document: { id: "initial" } } as any, vi.fn(), { enabled: true });
       
       await new Promise(resolve => setTimeout(resolve, 50));
       
       expect(saveSpy).not.toHaveBeenCalled();
+      dispose();
+    });
+  });
+
+  it("should not load or save when disabled", async () => {
+    const loadSpy = vi.spyOn(persistenceService, "loadDocument");
+    const saveSpy = vi.spyOn(persistenceService, "saveDocument");
+    const [doc, setDoc] = createSignal({ id: "doc1" });
+    const state = { get document() { return doc(); } };
+    
+    await createRoot(async (dispose) => {
+      useEditor2Persistence(state as any, vi.fn(), { enabled: false });
+      
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(loadSpy).not.toHaveBeenCalled();
+
+      vi.useFakeTimers();
+      setDoc({ id: "doc2" } as any);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(saveSpy).not.toHaveBeenCalled();
+
       dispose();
     });
   });

@@ -204,6 +204,7 @@ export interface OasisEditor2AppProps {
   initialState?: Editor2State;
   onStateChange?: (state: Editor2State) => void;
   readOnly?: boolean;
+  persistenceEnabled?: boolean;
 }
 
 type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
@@ -275,6 +276,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       setState(nextState);
       resetEditorChromeState();
     },
+    { enabled: props.persistenceEnabled ?? false },
   );
 
   let dragAnchor: Editor2Position | null = null;
