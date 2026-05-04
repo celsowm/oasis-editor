@@ -370,6 +370,27 @@
   font-variant-numeric: tabular-nums;
 }
 
+.oasis-editor-persistence-status {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.oasis-editor-status-saved {
+  color: #15803d;
+}
+
+.oasis-editor-status-saving {
+  color: #a16207;
+}
+
+.oasis-editor-status-error {
+  color: #b91c1c;
+}
+
 .oasis-editor-editor-scroll-content {
   position: relative;
   min-height: 100%;
