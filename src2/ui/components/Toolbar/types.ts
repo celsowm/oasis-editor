@@ -9,7 +9,7 @@ import type {
   ParagraphStyleKey,
   ToolbarStyleState,
 } from "../../toolbarStyleState.js";
-import type { PersistenceStatus } from "../../app/controllers/useEditor2Persistence.js";
+import type { PersistenceStatus } from "../../../app/controllers/useEditor2Persistence.js";
 
 export type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
 

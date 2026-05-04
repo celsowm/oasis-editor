@@ -118,10 +118,15 @@ export interface Editor2TableCellNode {
   style?: Editor2TableCellStyle;
 }
 
+export interface Editor2TableRowStyle {
+  height?: number | string; // row height in pt
+}
+
 export interface Editor2TableRowNode {
   id: string;
   cells: Editor2TableCellNode[];
   isHeader?: boolean;
+  style?: Editor2TableRowStyle;
 }
 
 export interface Editor2TableStyle {

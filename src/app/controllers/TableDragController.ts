@@ -11,7 +11,6 @@ export class TableDragController {
   private draggingTableId: string | null = null;
   private tableGhost: HTMLElement | null = null;
   private currentDropTarget: DropTargetInfo | null = null;
-  private dropTargetService: DropTargetService;
 
   constructor(
     private runtime: IDocumentRuntime,

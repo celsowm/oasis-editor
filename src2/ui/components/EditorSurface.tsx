@@ -32,6 +32,7 @@ interface EditorSurfaceProps {
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, Editor2LayoutParagraph>>;
   onSurfaceMouseDown: (event: MouseEvent) => void;
+  onSurfaceMouseMove?: (event: MouseEvent) => void;
   onSurfaceDblClick: (event: MouseEvent) => void;
   onParagraphMouseDown: (
     paragraphId: string,
@@ -40,14 +41,15 @@ interface EditorSurfaceProps {
   onImageMouseDown: (
     paragraphId: string,
     paragraphOffset: number,
-    event: MouseEvent & { currentTarget: HTMLImageElement },
+    event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
   onImageResizeHandleMouseDown: (
     paragraphId: string,
     paragraphOffset: number,
-    event: MouseEvent & { currentTarget: HTMLButtonElement },
+    event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
-  onRevisionMouseEnter?: (revisionId: string, event: MouseEvent) => void;
+  onTableDragHandleMouseDown: (tableId: string, event: MouseEvent) => void;
+  onRevisionMouseEnter: (revisionId: string, event: MouseEvent) => void;
   onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
 }
 
@@ -301,8 +303,9 @@ function renderParagraph(
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
   onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
   onImageResizeHandleMouseDown: EditorSurfaceProps["onImageResizeHandleMouseDown"],
+  onTableDragHandleMouseDown: EditorSurfaceProps["onTableDragHandleMouseDown"],
   onRevisionMouseEnter: EditorSurfaceProps["onRevisionMouseEnter"],
-  onRevisionMouseLeave: EditorSurfaceProps["onRevisionMouseLeave"],
+  onRevisionMouseLeave?: EditorSurfaceProps["onRevisionMouseLeave"],
   options?: {
     domParagraphId?: string;
     interactive?: boolean;
@@ -604,8 +607,9 @@ function renderTable(
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
   onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
   onImageResizeHandleMouseDown: EditorSurfaceProps["onImageResizeHandleMouseDown"],
+  onTableDragHandleMouseDown: EditorSurfaceProps["onTableDragHandleMouseDown"],
   onRevisionMouseEnter: EditorSurfaceProps["onRevisionMouseEnter"],
-  onRevisionMouseLeave: EditorSurfaceProps["onRevisionMouseLeave"],
+  onRevisionMouseLeave?: EditorSurfaceProps["onRevisionMouseLeave"],
   segment?: {
     startRowIndex: number;
     endRowIndex: number;
@@ -666,7 +670,17 @@ function renderTable(
       data-block-id={blockId}
       data-source-block-id={table.id}
       data-testid="editor-2-table"
+      style={{ position: "relative" }}
     >
+      <div
+        class="oasis-editor-2-table-drag-handle"
+        data-table-id={table.id}
+        onMouseDown={(e) => {
+          onTableDragHandleMouseDown(table.id, e);
+        }}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m9 5 3-3 3 3"/><path d="m5 9-3 3 3 3"/></svg>
+      </div>
       <table
         class="oasis-editor-2-table-grid"
         data-testid="editor-2-table-grid"
@@ -684,6 +698,9 @@ function renderTable(
                 data-testid="editor-2-table-row"
                 data-row-index={renderedRow.sourceRowIndex}
                 data-repeated-header={renderedRow.repeated ? "true" : undefined}
+                style={{
+                  height: formatDimension(renderedRow.row.style?.height),
+                }}
               >
                 <For each={renderedRow.row.cells}>
                   {(cell, cellIndex) =>
@@ -700,6 +717,8 @@ function renderTable(
                           "vertical-align": cell.style?.verticalAlign,
                           "text-align": cell.style?.horizontalAlign,
                           width: formatDimension(cell.style?.width),
+                          "max-width": formatDimension(cell.style?.width),
+                          "min-width": formatDimension(cell.style?.width),
                           padding:
                             cell.style?.padding !== undefined
                               ? `${cell.style.padding}pt`
@@ -728,6 +747,7 @@ function renderTable(
                               onParagraphMouseDown,
                               onImageMouseDown,
                               onImageResizeHandleMouseDown,
+                              onTableDragHandleMouseDown,
                               onRevisionMouseEnter,
                               onRevisionMouseLeave,
                               renderedRow.repeated
@@ -803,8 +823,8 @@ export function EditorSurface(props: EditorSurfaceProps) {
                   height: `${pageSettings.margins.top}px`,
                 }}
                 onMouseDown={props.onSurfaceMouseDown}
-                onDblClick={props.onSurfaceDblClick}
-              >
+                onMouseMove={props.onSurfaceMouseMove}
+                onDblClick={props.onSurfaceDblClick}              >
                 <div
                   class="oasis-editor-2-page-header-guide"
                   style={{
@@ -824,6 +844,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          props.onTableDragHandleMouseDown,
                           props.onRevisionMouseEnter,
                           props.onRevisionMouseLeave,
                           { testId: "editor-2-header-block" },
@@ -837,6 +858,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          props.onTableDragHandleMouseDown,
                           props.onRevisionMouseEnter,
                           props.onRevisionMouseLeave,
                           block.tableSegment,
@@ -856,8 +878,8 @@ export function EditorSurface(props: EditorSurfaceProps) {
                   "margin-left": `${pageSettings.margins.left + pageSettings.margins.gutter}px`,
                 }}
                 onMouseDown={props.onSurfaceMouseDown}
-                onDblClick={props.onSurfaceDblClick}
-              >
+                onMouseMove={props.onSurfaceMouseMove}
+                onDblClick={props.onSurfaceDblClick}              >
                 <For each={page.blocks}>
                   {(block) => {
                     return block.sourceBlock.type === "paragraph"
@@ -871,6 +893,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          props.onTableDragHandleMouseDown,
                           props.onRevisionMouseEnter,
                           props.onRevisionMouseLeave,
                         )
@@ -883,6 +906,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          props.onTableDragHandleMouseDown,
                           props.onRevisionMouseEnter,
                           props.onRevisionMouseLeave,
                           block.tableSegment,
@@ -904,8 +928,8 @@ export function EditorSurface(props: EditorSurfaceProps) {
                   height: `${pageSettings.margins.bottom}px`,
                 }}
                 onMouseDown={props.onSurfaceMouseDown}
-                onDblClick={props.onSurfaceDblClick}
-              >
+                onMouseMove={props.onSurfaceMouseMove}
+                onDblClick={props.onSurfaceDblClick}              >
                 <div
                   class="oasis-editor-2-page-footer-guide"
                   style={{
@@ -925,6 +949,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          props.onTableDragHandleMouseDown,
                           props.onRevisionMouseEnter,
                           props.onRevisionMouseLeave,
                           { testId: "editor-2-footer-block" },
@@ -938,6 +963,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
+                          props.onTableDragHandleMouseDown,
                           props.onRevisionMouseEnter,
                           props.onRevisionMouseLeave,
                           block.tableSegment,

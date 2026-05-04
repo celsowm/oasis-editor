@@ -42,6 +42,8 @@ describe("EditorSurface", () => {
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
         />
       ),
       container,
@@ -103,6 +105,8 @@ describe("EditorSurface", () => {
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
         />
       ),
       container,
@@ -162,6 +166,8 @@ describe("EditorSurface", () => {
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
         />
       ),
       container,
@@ -209,6 +215,8 @@ describe("EditorSurface", () => {
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
         />
       ),
       container,
@@ -267,6 +275,8 @@ describe("EditorSurface", () => {
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
         />
       ),
       container,
@@ -315,6 +325,8 @@ describe("EditorSurface", () => {
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
         />
       ),
       container,
@@ -363,6 +375,8 @@ describe("EditorSurface", () => {
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
         />
       ),
       container,
@@ -407,6 +421,8 @@ describe("EditorSurface", () => {
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
         />
       ),
       container,
@@ -461,6 +477,8 @@ describe("EditorSurface", () => {
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
         />
       ),
       container,
@@ -520,6 +538,8 @@ describe("EditorSurface", () => {
           onParagraphMouseDown={() => undefined}
           onImageMouseDown={() => undefined}
           onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
         />
       ),
       container,

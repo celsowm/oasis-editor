@@ -8,6 +8,44 @@
   gap: 20px;
 }
 
+.oasis-editor-2-hover-col-resize,
+.oasis-editor-2-hover-col-resize * {
+  cursor: col-resize !important;
+}
+
+.oasis-editor-2-hover-row-resize,
+.oasis-editor-2-hover-row-resize * {
+  cursor: row-resize !important;
+}
+
+.oasis-editor-2-table-resize-guide {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  background-color: transparent;
+  border: 1px dashed rgba(0, 0, 0, 0.5);
+}
+
+.oasis-editor-2-table-resize-guide-column {
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left-width: 1px;
+  border-right-width: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
+}
+
+.oasis-editor-2-table-resize-guide-row {
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top-width: 1px;
+  border-bottom-width: 0;
+  border-left-width: 0;
+  border-right-width: 0;
+}
+
 .oasis-editor-2-header {
   width: min(860px, 100%);
   margin: 0 auto;
@@ -420,6 +458,48 @@
 
 .oasis-editor-2-table-block {
   margin: 0 0 18px;
+  position: relative;
+}
+
+.oasis-editor-2-table-drag-handle {
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  width: 24px;
+  height: 24px;
+  background-color: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: move;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 100;
+  color: #64748b;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.oasis-editor-2-table-block:hover .oasis-editor-2-table-drag-handle {
+  opacity: 1;
+}
+
+.oasis-editor-2-table-drag-handle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.oasis-editor-2-table-ghost {
+  position: fixed;
+  pointer-events: none;
+  background-color: rgba(226, 232, 240, 0.4);
+  border: 2px dashed #94a3b8;
+  border-radius: 4px;
+  z-index: 10001;
+  transform: scale(0.95);
+  transform-origin: top left;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 .oasis-editor-2-table-grid {
@@ -433,6 +513,8 @@
   vertical-align: top;
   padding: 12px 14px;
   border: 1px solid rgba(148, 163, 184, 0.35);
+  box-sizing: border-box;
+  word-break: break-word;
 }
 
 .oasis-editor-2-table-cell .oasis-editor-2-block:last-child {

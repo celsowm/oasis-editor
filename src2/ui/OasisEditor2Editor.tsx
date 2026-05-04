@@ -35,6 +35,7 @@ export interface OasisEditor2EditorProps {
   onDrop: (event: DragEvent) => void;
   onEditorMouseDown: (event: MouseEvent) => void;
   onSurfaceMouseDown: (event: MouseEvent) => void;
+  onSurfaceMouseMove?: (event: MouseEvent) => void;
   onSurfaceDblClick: (event: MouseEvent) => void;
   onParagraphMouseDown: (
     paragraphId: string,
@@ -43,14 +44,15 @@ export interface OasisEditor2EditorProps {
   onImageMouseDown: (
     paragraphId: string,
     paragraphOffset: number,
-    event: MouseEvent & { currentTarget: HTMLImageElement },
+    event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
   onImageResizeHandleMouseDown: (
     paragraphId: string,
     paragraphOffset: number,
-    event: MouseEvent & { currentTarget: HTMLButtonElement },
+    event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
-  onRevisionMouseEnter?: (revisionId: string, event: MouseEvent) => void;
+  onTableDragHandleMouseDown: (tableId: string, event: MouseEvent) => void;
+  onRevisionMouseEnter: (revisionId: string, event: MouseEvent) => void;
   onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
   onInputBlur: () => void;
   onInputFocus: () => void;
@@ -104,10 +106,12 @@ export function OasisEditor2Editor(props: OasisEditor2EditorProps) {
           measuredBlockHeights={props.measuredBlockHeights}
           measuredParagraphLayouts={props.measuredParagraphLayouts}
           onSurfaceMouseDown={props.onSurfaceMouseDown}
+          onSurfaceMouseMove={props.onSurfaceMouseMove}
           onSurfaceDblClick={props.onSurfaceDblClick}
           onParagraphMouseDown={props.onParagraphMouseDown}
           onImageMouseDown={props.onImageMouseDown}
           onImageResizeHandleMouseDown={props.onImageResizeHandleMouseDown}
+          onTableDragHandleMouseDown={props.onTableDragHandleMouseDown}
           onRevisionMouseEnter={props.onRevisionMouseEnter}
           onRevisionMouseLeave={props.onRevisionMouseLeave}
         />

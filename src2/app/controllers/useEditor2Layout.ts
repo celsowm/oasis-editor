@@ -14,7 +14,7 @@ import {
   collectParagraphCharRects, 
 } from "../../ui/positionAtPoint.js";
 import { measureParagraphLayoutFromRects } from "../../ui/layoutProjection.js";
-import { buildTableCellLayout } from "../../ui/tableLayout.js";
+import { buildTableCellLayout } from "../../core/tableLayout.js";
 import { 
   getEmptyBlockRect, 
   hasUsableCharGeometry,

@@ -9,6 +9,7 @@ import {
 } from "solid-js";
 import { createStore } from "solid-js/store";
 import { OasisEditor2Editor } from "./OasisEditor2Editor.js";
+import { CaretOverlay } from "./components/CaretOverlay.js";
 import { getCaretSlotRects } from "./caretGeometry.js";
 import {
   applyEditor2HistoryTransaction,
@@ -153,9 +154,9 @@ import {
 } from "./domGeometry.js";
 import {
   buildTableCellLayout,
-  resolveClickOffset,
   type TableCellLayoutEntry,
-} from "./tableLayout.js";
+} from "../core/tableLayout.js";
+import { resolveClickOffset } from "./tableUiUtils.js";
 import { findImageFileFromTransfer, readFileBuffer } from "./clipboardImage.js";
 import { EditorToolbar } from "./components/Toolbar/EditorToolbar.js";
 import { createEditor2CommandsController } from "../app/controllers/Editor2CommandsController.js";
@@ -166,6 +167,8 @@ import { useEditor2Persistence } from "../app/controllers/useEditor2Persistence.
 import { useEditor2FindReplace } from "../app/controllers/useEditor2FindReplace.js";
 import { createEditor2TableOperations } from "../app/controllers/useEditor2TableOperations.js";
 import { createEditor2ImageOperations } from "../app/controllers/useEditor2ImageOperations.js";
+import { createEditor2TableResize } from "../app/controllers/useEditor2TableResize.js";
+import { createEditor2TableDrag } from "../app/controllers/useEditor2TableDrag.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
 import { Sidebar } from "./components/Sidebar/Sidebar.js";
@@ -601,6 +604,33 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     logger,
   });
 
+  const tableResize = createEditor2TableResize({
+    state: () => state,
+    applyTransactionalState,
+    surfaceRef: () => surfaceRef,
+  });
+
+  const resolvePositionAtSurfacePoint = (
+    clientX: number,
+    clientY: number,
+  ): Editor2Position | null =>
+    surfaceRef
+      ? resolvePositionAtPoint({
+          clientX,
+          clientY,
+          surface: surfaceRef,
+          state: state as Editor2State,
+          documentLike: document,
+        })
+      : null;
+
+  const tableDrag = createEditor2TableDrag({
+    state: () => state,
+    applyTransactionalState,
+    resolvePositionAtSurfacePoint,
+    focusInput,
+  });
+
   onMount(() => {
     startIconObserver();
   });
@@ -909,20 +939,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     return true;
   };
 
-  const resolvePositionAtSurfacePoint = (
-    clientX: number,
-    clientY: number,
-  ): Editor2Position | null =>
-    surfaceRef
-      ? resolvePositionAtPoint({
-          clientX,
-          clientY,
-          surface: surfaceRef,
-          state: state as Editor2State,
-          documentLike: document,
-        })
-      : null;
-
   const stopDragging = () => {
     dragAnchor = null;
     window.removeEventListener("mousemove", handleWindowMouseMove);
@@ -1139,6 +1155,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     event: MouseEvent,
     forceTransition = false,
   ) => {
+    if (tableResize.handleMouseDown(event)) {
+      return;
+    }
+
     event.preventDefault();
 
     imageOps.stopImageDrag();
@@ -1942,6 +1962,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             onDrop={handleDrop}
             onEditorMouseDown={onEditorMouseDown}
             onSurfaceMouseDown={handleSurfaceMouseDown}
+            onSurfaceMouseMove={tableResize.handleMouseMove}
             onSurfaceDblClick={handleSurfaceDblClick}
             onParagraphMouseDown={handleParagraphMouseDown}
             onRevisionMouseEnter={handleRevisionMouseEnter}
@@ -1985,6 +2006,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
                 state,
               );
             }}
+            onTableDragHandleMouseDown={tableDrag.handleMouseDown}
             onInputBlur={() => setFocused(false)}
             onInputFocus={() => setFocused(true)}
             onCompositionEnd={handleCompositionEnd}
@@ -1994,14 +2016,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
             onInput={handleTextInput}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            onImportInputChange={(event) => {
-              const file = event.currentTarget.files?.[0] ?? null;
-              void handleImportDocx(file);
-            }}
-            onImageInputChange={(event) => {
-              const file = event.currentTarget.files?.[0] ?? null;
-              void handleInsertImage(file);
-            }}
           />
         </section>
 
@@ -2010,6 +2024,51 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         </Show>
 
         <FindReplaceDialog fr={fr} />
+
+        <Show when={tableResize.resizing()}>
+          {(resizing) => (
+            <div
+              class="oasis-editor-2-table-resize-guide"
+              classList={{
+                "oasis-editor-2-table-resize-guide-column": resizing().type === "column",
+                "oasis-editor-2-table-resize-guide-row": resizing().type === "row",
+              }}
+              style={{
+                [resizing().type === "column" ? "left" : "top"]: `${resizing().currentPos}px`,
+              }}
+            />
+          )}
+        </Show>
+
+        <Show when={tableDrag.dragging() && tableDrag.draggedTableInfo()}>
+          {(info) => (
+            <div
+              class="oasis-editor-2-table-ghost"
+              style={{
+                width: `${info().width}px`,
+                height: `${info().height}px`,
+                left: `${tableDrag.mousePos().x - info().offsetX}px`,
+                top: `${tableDrag.mousePos().y - info().offsetY}px`,
+              }}
+            />
+          )}
+        </Show>
+
+        <Show when={tableDrag.dragging() && tableDrag.dropTargetPos()}>
+          {(pos) => {
+            const charRects = surfaceRef ? collectParagraphCharRects(surfaceRef, pos().paragraphId) : [];
+            const rects = getCaretSlotRects(charRects);
+            const rect = rects[pos().offset] || rects[rects.length - 1];
+            return (
+              <CaretOverlay
+                active={true}
+                left={rect?.left ?? 0}
+                top={rect?.top ?? 0}
+                height={rect?.height ?? 28}
+              />
+            );
+          }}
+        </Show>
       </div>
     </div>
   );

@@ -33,7 +33,7 @@ import { normalizeSelection } from "../../core/selection.js";
 import {
   buildTableCellLayout,
   type TableCellLayoutEntry,
-} from "../../ui/tableLayout.js";
+} from "../../core/tableLayout.js";
 import { insertTableAtSelection } from "../../core/editorCommands.js";
 import type { Editor2Logger } from "../../utils/logger.js";
 

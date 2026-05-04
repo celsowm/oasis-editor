@@ -15,6 +15,7 @@ import type {
   Editor2TableCellNode,
   Editor2TableNode,
   Editor2TableStyle,
+  Editor2TableRowStyle,
   Editor2TabStop,
 } from "./model.js";
 import {
@@ -44,6 +45,7 @@ import {
   isSelectionCollapsed,
   normalizeSelection,
 } from "./selection.js";
+import { buildTableCellLayout } from "./tableLayout.js";
 
 type ToggleableTextStyleKey =
   | "bold"
@@ -1500,6 +1502,116 @@ export function setSelectedImageAlt(state: Editor2State, alt: string | null): Ed
   );
 }
 
+export function moveBlockToPosition(
+  state: Editor2State,
+  blockId: string,
+  targetPosition: Editor2Position,
+): Editor2State {
+  let foundBlock: Editor2BlockNode | undefined;
+  let sourceArray: Editor2BlockNode[] | undefined;
+  let sourceIndex = -1;
+
+  const findAndRemove = (blocks: Editor2BlockNode[]): Editor2BlockNode[] => {
+    const index = blocks.findIndex(b => b.id === blockId);
+    if (index >= 0) {
+      foundBlock = blocks[index];
+      sourceArray = blocks;
+      sourceIndex = index;
+      return [...blocks.slice(0, index), ...blocks.slice(index + 1)];
+    }
+    return blocks.map(block => {
+        if (block.type === "table") {
+            // we don't support nested table moves right now
+        }
+        return block;
+    });
+  };
+
+  let nextSections = state.document.sections ? [...state.document.sections] : undefined;
+  let nextBlocks = [...state.document.blocks];
+
+  if (nextSections) {
+    nextSections = nextSections.map(section => {
+      const sec = { ...section };
+      sec.blocks = findAndRemove(sec.blocks);
+      if (sec.header) sec.header = findAndRemove(sec.header);
+      if (sec.footer) sec.footer = findAndRemove(sec.footer);
+      return sec;
+    });
+  } else {
+    nextBlocks = findAndRemove(nextBlocks);
+  }
+
+  if (!foundBlock) return state;
+
+  const focus = clampPosition(state, targetPosition);
+
+  const insertIntoBlocks = (blocks: Editor2BlockNode[]): { nextBlocks: Editor2BlockNode[]; found: boolean } => {
+    const blockIndex = blocks.findIndex((b) => {
+      if (b.id === focus.paragraphId) return true;
+      if (b.type === "paragraph") return false;
+      return getBlockParagraphs(b).some((p) => p.id === focus.paragraphId);
+    });
+
+    if (blockIndex === -1) {
+      return { nextBlocks: blocks, found: false };
+    }
+
+    return {
+      nextBlocks: [...blocks.slice(0, blockIndex), foundBlock!, ...blocks.slice(blockIndex)],
+      found: true,
+    };
+  };
+
+  if (nextSections && nextSections.length > 0) {
+    const activeSectionIndex = getActiveSectionIndex(state);
+    const section = nextSections[activeSectionIndex];
+    if (!section) return state;
+
+    const zone = getActiveZone(state);
+    let found = false;
+
+    if (zone === "header") {
+      const result = insertIntoBlocks(section.header ?? []);
+      section.header = result.nextBlocks;
+      found = result.found;
+    } else if (zone === "footer") {
+      const result = insertIntoBlocks(section.footer ?? []);
+      section.footer = result.nextBlocks;
+      found = result.found;
+    } else {
+      const result = insertIntoBlocks(section.blocks);
+      section.blocks = result.nextBlocks;
+      found = result.found;
+    }
+
+    if (!found) {
+        // If not found, append to end of blocks
+        section.blocks.push(foundBlock);
+    }
+
+    return {
+      ...state,
+      document: {
+        ...state.document,
+        sections: nextSections,
+      },
+    };
+  }
+
+  const result = insertIntoBlocks(nextBlocks);
+  if (!result.found) {
+      nextBlocks.push(foundBlock);
+  }
+
+  return {
+    ...state,
+    document: {
+      ...state.document,
+      blocks: result.found ? result.nextBlocks : nextBlocks,
+    },
+  };
+}
 export function moveSelectedImageToPosition(
   state: Editor2State,
   targetPosition: Editor2Position,
@@ -1774,6 +1886,146 @@ export function setTableStyleValue<K extends keyof Editor2TableStyle>(
 
 export function setTableCellWidth(state: Editor2State, width: number | string | null): Editor2State {
   return setTableCellStyleValue(state, "width", width);
+}
+
+export function setTableRowHeight(
+  state: Editor2State,
+  tableId: string,
+  rowIndex: number,
+  height: number | string | null,
+): Editor2State {
+  console.log("[EditorCommands] setTableRowHeight:", tableId, "Row:", rowIndex, "Height:", height);
+  const updateTable = (table: Editor2TableNode): Editor2TableNode => {
+    if (table.id !== tableId) return table;
+    const nextRows = [...table.rows];
+    const row = nextRows[rowIndex];
+    if (row) {
+      const nextStyle = { ...(row.style ?? {}) } as Record<string, unknown>;
+      if (height === null) {
+        delete nextStyle.height;
+      } else {
+        nextStyle.height = height;
+      }
+      nextRows[rowIndex] = {
+        ...row,
+        style: Object.keys(nextStyle).length > 0 ? (nextStyle as Editor2TableRowStyle) : undefined,
+      };
+      console.log("[EditorCommands] Updated row style:", nextRows[rowIndex].style);
+    }
+    return { ...table, rows: nextRows };
+  };
+
+  const updateBlocks = (blocks: Editor2BlockNode[]): Editor2BlockNode[] => {
+    return blocks.map((block) => {
+      if (block.type === "table") {
+        return updateTable(block);
+      }
+      return block;
+    });
+  };
+
+  if (state.document.sections && state.document.sections.length > 0) {
+    const nextSections = state.document.sections.map((section) => ({
+      ...section,
+      blocks: updateBlocks(section.blocks),
+      header: section.header ? updateBlocks(section.header) : undefined,
+      footer: section.footer ? updateBlocks(section.footer) : undefined,
+    }));
+    return {
+      ...state,
+      document: { ...state.document, sections: nextSections },
+    };
+  }
+
+  return {
+    ...state,
+    document: {
+      ...state.document,
+      blocks: updateBlocks(state.document.blocks),
+    },
+  };
+}
+
+export function setTableColumnWidths(
+  state: Editor2State,
+  tableId: string,
+  columnWidths: Record<number, number | string>, // visualColumnIndex -> width
+  tableWidth?: number | string
+): Editor2State {
+  console.log("[EditorCommands] setTableColumnWidths. Table:", tableId, "Widths:", columnWidths, "TableWidth:", tableWidth);
+  const updateTable = (table: Editor2TableNode): Editor2TableNode => {
+    if (table.id !== tableId) return table;
+
+    const tableLayout = buildTableCellLayout(table);
+    const nextRows = table.rows.map((row, rowIndex) => {
+      const nextCells = row.cells.map((cell, cellIndex) => {
+        const entry = tableLayout.find(
+          (e) => e.rowIndex === rowIndex && e.cellIndex === cellIndex,
+        );
+        if (!entry) return cell;
+
+        const rightVisualColumnIndex = entry.visualColumnIndex + entry.colSpan - 1;
+        const newWidth = columnWidths[rightVisualColumnIndex];
+
+        if (newWidth !== undefined) {
+          if (entry.colSpan === 1) {
+             console.log(`[EditorCommands] Updating cell at row ${rowIndex} col ${cellIndex} to ${newWidth}pt`);
+             return {
+                ...cell,
+                style: {
+                  ...(cell.style ?? {}),
+                  width: typeof newWidth === "number" ? newWidth : newWidth,
+                },
+              };
+          }
+        }
+
+        return cell;
+      });
+      return { ...row, cells: nextCells };
+    });
+
+    const nextStyle = { ...(table.style ?? {}) } as any;
+    if (tableWidth !== undefined) {
+      nextStyle.width = tableWidth;
+      console.log(`[EditorCommands] Updating table total width to ${tableWidth}pt`);
+    }
+
+    return { 
+      ...table, 
+      rows: nextRows,
+      style: Object.keys(nextStyle).length > 0 ? nextStyle : undefined
+    };
+  };
+  const updateBlocks = (blocks: Editor2BlockNode[]): Editor2BlockNode[] => {
+    return blocks.map((block) => {
+      if (block.type === "table") {
+        return updateTable(block);
+      }
+      return block;
+    });
+  };
+
+  if (state.document.sections && state.document.sections.length > 0) {
+    const nextSections = state.document.sections.map((section) => ({
+      ...section,
+      blocks: updateBlocks(section.blocks),
+      header: section.header ? updateBlocks(section.header) : undefined,
+      footer: section.footer ? updateBlocks(section.footer) : undefined,
+    }));
+    return {
+      ...state,
+      document: { ...state.document, sections: nextSections },
+    };
+  }
+
+  return {
+    ...state,
+    document: {
+      ...state.document,
+      blocks: updateBlocks(state.document.blocks),
+    },
+  };
 }
 
 export function setTableCellBorders(
@@ -2914,3 +3166,4 @@ export function setParagraphTabStops(
 ): Editor2State {
   return setParagraphStyle(state, "tabs", tabs);
 }
+
