@@ -28,6 +28,7 @@ import {
   positionToParagraphOffset,
   getActiveSectionIndex,
   getActiveZone,
+  findParagraphTableLocation,
 } from "./model.js";
 import {
   createEditor2Document,
@@ -1761,12 +1762,55 @@ export function setTableCellStyleValue<K extends keyof Editor2TableCellStyle>(
   key: K,
   value: Editor2TableCellStyle[K] | null,
 ): Editor2State {
-  const normalized = normalizeSelection(state);
-  const paragraphs = getParagraphs(state);
   const selectedParagraphIds = new Set<string>();
+  const activeSectionIndex = getActiveSectionIndex(state);
+  const anchorLoc = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, activeSectionIndex);
+  const focusLoc = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, activeSectionIndex);
 
-  for (let i = normalized.startIndex; i <= normalized.endIndex; i += 1) {
-    selectedParagraphIds.add(paragraphs[i].id);
+  if (anchorLoc && focusLoc && anchorLoc.blockIndex === focusLoc.blockIndex && anchorLoc.zone === focusLoc.zone) {
+    // Table-aware selection: identify all cells in the rectangular range
+    const sections = getDocumentSections(state.document);
+    const section = sections[activeSectionIndex];
+    if (section) {
+      const blocks = anchorLoc.zone === "header" ? section.header : anchorLoc.zone === "footer" ? section.footer : section.blocks;
+      const tableBlock = blocks?.[anchorLoc.blockIndex];
+      if (tableBlock && tableBlock.type === "table") {
+        const tableLayout = buildTableCellLayout(tableBlock);
+        const anchorCell = tableLayout.find(e => e.rowIndex === anchorLoc.rowIndex && e.cellIndex === anchorLoc.cellIndex);
+        const focusCell = tableLayout.find(e => e.rowIndex === focusLoc.rowIndex && e.cellIndex === focusLoc.cellIndex);
+
+        if (anchorCell && focusCell) {
+          const startRow = Math.min(anchorCell.visualRowIndex, focusCell.visualRowIndex);
+          const endRow = Math.max(anchorCell.visualRowIndex + anchorCell.rowSpan - 1, focusCell.visualRowIndex + focusCell.rowSpan - 1);
+          const startCol = Math.min(anchorCell.visualColumnIndex, focusCell.visualColumnIndex);
+          const endCol = Math.max(anchorCell.visualColumnIndex + anchorCell.colSpan - 1, focusCell.visualColumnIndex + focusCell.colSpan - 1);
+
+          const cells = tableLayout.filter(entry => {
+            return (
+              entry.visualRowIndex <= endRow &&
+              entry.visualRowIndex + entry.rowSpan - 1 >= startRow &&
+              entry.visualColumnIndex <= endCol &&
+              entry.visualColumnIndex + entry.colSpan - 1 >= startCol
+            );
+          });
+
+          for (const entry of cells) {
+            for (const p of entry.cell.blocks) {
+              selectedParagraphIds.add(p.id);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Fallback to linear selection if not a table-specific selection or if table lookup failed
+  if (selectedParagraphIds.size === 0) {
+    const normalized = normalizeSelection(state);
+    const paragraphs = getParagraphs(state);
+    for (let i = normalized.startIndex; i <= normalized.endIndex; i += 1) {
+      selectedParagraphIds.add(paragraphs[i].id);
+    }
   }
 
   const updateCell = (cell: Editor2TableCellNode): Editor2TableCellNode => {

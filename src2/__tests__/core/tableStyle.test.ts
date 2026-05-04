@@ -4,6 +4,7 @@ import { getParagraphs, paragraphOffsetToPosition, findParagraphTableLocation, t
 import {
   insertTableAtSelection,
   toggleTextStyle,
+  setTableCellStyleValue,
 } from "../../core/editorCommands.js";
 import {
   createEditor2StateFromTexts,
@@ -79,5 +80,35 @@ describe("table style commands", () => {
     // These SHOULD NOT be bold
     expect(nextParagraphs[4].runs[0].styles?.bold).not.toBe(true);
     expect(nextParagraphs[6].runs[0].styles?.bold).not.toBe(true);
+  });
+
+  it("applies shading only to selected column when called directly", () => {
+    resetEditor2Ids();
+    // 1. Create a 3x3 table
+    let state = createEditor2StateFromTexts(["start"], { blockIndex: 0, offset: 5 });
+    state = insertTableAtSelection(state, 3, 3);
+    
+    const paragraphs = getParagraphs(state);
+    // Row 0: p1, p2, p3
+    // Row 1: p4, p5, p6
+    // Row 2: p7, p8, p9
+    
+    // Select column 1 (p2, p5, p8)
+    state.selection = {
+      anchor: paragraphOffsetToPosition(paragraphs[2], 0),
+      focus: paragraphOffsetToPosition(paragraphs[8], 0)
+    };
+
+    const resultState = setTableCellStyleValue(state, "shading", "#ff0000");
+    const table = resultState.document.blocks[1] as any;
+    
+    // Column 1 should be colored
+    expect(table.rows[0].cells[1].style?.shading).toBe("#ff0000");
+    expect(table.rows[1].cells[1].style?.shading).toBe("#ff0000");
+    expect(table.rows[2].cells[1].style?.shading).toBe("#ff0000");
+    
+    // Column 0 and 2 in other rows should NOT be colored
+    expect(table.rows[1].cells[0].style?.shading).toBeUndefined();
+    expect(table.rows[1].cells[2].style?.shading).toBeUndefined();
   });
 });
