@@ -11,7 +11,7 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: `http://localhost:${PORT}/oasis-editor-2/`,
+    baseURL: `http://localhost:${PORT}/oasis-editor/`,
     trace: 'on-first-retry',
   },
   projects: [
@@ -22,7 +22,7 @@ export default defineConfig({
   ],
   webServer: {
     command: `npm run dev -- --port ${PORT} --strictPort`,
-    url: `http://localhost:${PORT}/oasis-editor-2/`,
+    url: `http://localhost:${PORT}/oasis-editor/`,
     reuseExistingServer: !process.env.CI,
     stdout: 'ignore',
     stderr: 'pipe',

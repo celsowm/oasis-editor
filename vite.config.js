@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
         input: isLib ? undefined : {
           root: resolve(__dirname, 'index.html'),
           oasisEditor: resolve(__dirname, 'oasis-editor/index.html'),
-          oasisEditor2: resolve(__dirname, 'oasis-editor-2/index.html'),
+          oasisEditorLegacy: resolve(__dirname, 'oasis-editor-legacy/index.html'),
         },
         output: isLib ? {
           assetFileNames: (assetInfo) => {
@@ -42,12 +42,11 @@ export default defineConfig(({ mode }) => {
       }),
     ].filter(Boolean),
     test: {
-      include: ['src/**/*.{test,spec}.{ts,tsx}', 'src2/**/*.{test,spec}.{ts,tsx}'],
+      include: ['src/**/*.{test,spec}.{ts,tsx}'],
       exclude: ['node_modules', 'dist', 'dist-app', 'e2e/**'],
       environment: 'node',
       environmentMatchGlobs: [
         ['src/__tests__/ui/**', 'jsdom'],
-        ['src2/__tests__/ui/**', 'jsdom'],
       ],
     },
   };

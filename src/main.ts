@@ -1,12 +1,7 @@
-import { createOasisEditor } from "./app/bootstrap/createOasisEditorApp.tsx";
-import { Logger } from "./core/utils/Logger.js";
-import "./styles/global.css";
-import "./styles/components/PickerBase.css";
-import "./styles/components/ColorPicker.css";
-import "./styles/components/HighlightColorPicker.css";
-import "./styles/components/TablePicker.css";
-import "./styles/components/Ruler.css";
-import { startIconObserver } from "./ui/utils/IconManager.js";
+import { createOasisEditor } from "./app/bootstrap/createOasisEditorApp.js";
+import "./styles/oasis-editor.css";
+import "./styles/oasis-editor-demo.css";
+import { installEditorDebugControl } from "./utils/logger.js";
 
 const container = document.getElementById("oasis-editor-root");
 if (!container) {
@@ -14,23 +9,24 @@ if (!container) {
 }
 
 const loading = document.getElementById("oasis-editor-loading");
+installEditorDebugControl();
 
 function hideLoading(): void {
   if (loading) {
     loading.classList.add("oasis-editor-loading-hidden");
-    loading.addEventListener("transitionend", () => loading.remove(), {
-      once: true,
-    });
+    loading.addEventListener(
+      "transitionend",
+      () => loading.remove(),
+      { once: true },
+    );
   }
 }
 
-function initEditor(): void {
-  const { controller } = createOasisEditor(container!);
-  startIconObserver(container!);
+function init(): void {
+  createOasisEditor(container as HTMLElement);
   hideLoading();
 }
 
-document.fonts.ready.then(initEditor).catch((err) => {
-  Logger.error("Font loading failed, initializing anyway:", err);
-  initEditor();
+document.fonts.ready.then(init).catch(() => {
+  init();
 });

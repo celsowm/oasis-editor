@@ -4,54 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>oasis-editor</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <style>
-      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-      #oasis-editor-root {
-        width: 100%;
-        height: 100%;
-      }
-      #oasis-editor-loading {
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: #f8f9fa;
-        transition: opacity 0.3s ease;
-      }
-      #oasis-editor-loading.oasis-editor-loading-hidden {
-        opacity: 0;
-        pointer-events: none;
-      }
-      .oasis-editor-spinner {
-        width: 36px;
-        height: 36px;
-        border: 3px solid #e2e8f0;
-        border-top-color: #2563eb;
-        border-radius: 50%;
-        animation: oasis-spin 0.8s linear infinite;
-      }
-      .oasis-editor-loading-text {
-        margin-top: 12px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: 14px;
-        color: #64748b;
-      }
-      @keyframes oasis-spin {
-        to { transform: rotate(360deg); }
-      }
-    </style>
   </head>
   <body>
     <div id="oasis-editor-root"></div>
     <div id="oasis-editor-loading">
-      <div class="oasis-editor-spinner"></div>
-      <div class="oasis-editor-loading-text">Loading editor...</div>
+      <div class="oasis-editor-loading-text">Loading oasis-editor...</div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
