@@ -2,6 +2,7 @@ import { createSignal, createEffect, onCleanup, onMount } from "solid-js";
 import { 
   type Editor2State, 
   type Editor2LayoutParagraph,
+  type Editor2BlockNode,
   getParagraphs,
   getActiveSectionIndex,
   getParagraphText,
@@ -142,7 +143,24 @@ export function useEditor2Layout(props: UseEditor2LayoutProps) {
       (anchorLocation.rowIndex !== focusLocation.rowIndex || anchorLocation.cellIndex !== focusLocation.cellIndex);
 
     if (isTableSelection) {
-      const tableBlock = props.state.document.blocks[anchorLocation.blockIndex];
+      const hasSections =
+        props.state.document.sections &&
+        props.state.document.sections.length > 0;
+      const section = hasSections
+        ? props.state.document.sections![activeSectionIndex]
+        : null;
+
+      let targetBlocks: Editor2BlockNode[] = [];
+      if (section) {
+        if (anchorLocation.zone === "header") targetBlocks = section.header || [];
+        else if (anchorLocation.zone === "footer")
+          targetBlocks = section.footer || [];
+        else targetBlocks = section.blocks;
+      } else {
+        targetBlocks = props.state.document.blocks;
+      }
+
+      const tableBlock = targetBlocks[anchorLocation.blockIndex];
       const tableId = tableBlock?.id;
       if (tableId) {
         const tableElement =

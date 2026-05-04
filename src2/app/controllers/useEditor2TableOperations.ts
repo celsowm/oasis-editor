@@ -11,6 +11,7 @@ import {
   findParagraphTableLocation,
   getActiveSectionIndex,
   getParagraphs,
+  getDocumentSections,
   getDocumentParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
@@ -26,6 +27,7 @@ import {
   type Editor2TableCellNode,
   type Editor2TableRowNode,
   type Editor2TextRun,
+  type Editor2EditingZone,
 } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
 import {
@@ -49,6 +51,19 @@ export interface Editor2TableOperationsDeps {
 }
 
 export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
+  const getTargetBlocks = (state: Editor2State, zone: Editor2EditingZone): Editor2BlockNode[] => {
+    const activeSectionIndex = getActiveSectionIndex(state);
+    const hasSections = state.document.sections && state.document.sections.length > 0;
+    const section = hasSections ? state.document.sections![activeSectionIndex] : null;
+
+    if (section) {
+      if (zone === "header") return section.header || [];
+      if (zone === "footer") return section.footer || [];
+      return section.blocks;
+    }
+    return state.document.blocks;
+  };
+
   const resolveTableCellRangeSelection = (
     current: Editor2State,
   ): Editor2State["selection"] | null => {
@@ -59,6 +74,7 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       !anchorLocation ||
       !focusLocation ||
       anchorLocation.blockIndex !== focusLocation.blockIndex ||
+      anchorLocation.zone !== focusLocation.zone ||
       (anchorLocation.rowIndex === focusLocation.rowIndex &&
         anchorLocation.cellIndex === focusLocation.cellIndex)
     ) {
@@ -72,7 +88,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
     const rangeEndCell = Math.max(anchorLocation.cellIndex, focusLocation.cellIndex);
     deps.logger?.info(`resolveTableCellRangeSelection: expanding r${anchorLocation.rowIndex}:c${anchorLocation.cellIndex}→r${focusLocation.rowIndex}:c${focusLocation.cellIndex} (anchor=${sel.anchor.paragraphId} focus=${sel.focus.paragraphId}) range=[rows ${rangeStartRow}..${rangeEndRow}, cells ${rangeStartCell}..${rangeEndCell}]`);
 
-    const tableBlock = current.document.blocks[anchorLocation.blockIndex];
+    const blocks = getTargetBlocks(current, anchorLocation.zone);
+    const tableBlock = blocks[anchorLocation.blockIndex];
     if (!tableBlock || tableBlock.type !== "table") {
       return null;
     }
@@ -122,7 +139,7 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
 
   const resolveSelectedTableCells = (
     current: Editor2State,
-  ): { blockIndex: number; cells: TableCellLayoutEntry[] } | null => {
+  ): { blockIndex: number; cells: TableCellLayoutEntry[]; zone: Editor2EditingZone } | null => {
     const sel = current.selection;
     const anchorLocation = findParagraphTableLocation(
       current.document,
@@ -137,12 +154,14 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
     if (
       !anchorLocation ||
       !focusLocation ||
-      anchorLocation.blockIndex !== focusLocation.blockIndex
+      anchorLocation.blockIndex !== focusLocation.blockIndex ||
+      anchorLocation.zone !== focusLocation.zone
     ) {
       return null;
     }
 
-    const tableBlock = current.document.blocks[anchorLocation.blockIndex];
+    const blocks = getTargetBlocks(current, anchorLocation.zone);
+    const tableBlock = blocks[anchorLocation.blockIndex];
     if (!tableBlock || tableBlock.type !== "table") {
       return null;
     }
@@ -180,7 +199,7 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       );
     });
 
-    return { blockIndex: anchorLocation.blockIndex, cells };
+    return { blockIndex: anchorLocation.blockIndex, cells, zone: anchorLocation.zone };
   };
 
   const resolveHorizontalTableCellRange = (
@@ -190,18 +209,21 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
     rowIndex: number;
     startCellIndex: number;
     endCellIndex: number;
+    zone: Editor2EditingZone;
   } | null => {
     const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId, getActiveSectionIndex(current));
     const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (
       !anchorLocation ||
       !focusLocation ||
-      anchorLocation.blockIndex !== focusLocation.blockIndex
+      anchorLocation.blockIndex !== focusLocation.blockIndex ||
+      anchorLocation.zone !== focusLocation.zone
     ) {
       return null;
     }
 
-    const tableBlock = current.document.blocks[anchorLocation.blockIndex];
+    const blocks = getTargetBlocks(current, anchorLocation.zone);
+    const tableBlock = blocks[anchorLocation.blockIndex];
     if (!tableBlock || tableBlock.type !== "table") {
       return null;
     }
@@ -248,6 +270,7 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       rowIndex: startLocation.rowIndex,
       startCellIndex: startLocation.cellIndex,
       endCellIndex: endLocation.cellIndex,
+      zone: anchorLocation.zone,
     };
   };
 
@@ -262,7 +285,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return false;
     }
 
-    const block = current.document.blocks[location.blockIndex];
+    const blocks = getTargetBlocks(current, location.zone);
+    const block = blocks[location.blockIndex];
     if (!block || block.type !== "table") {
       return false;
     }
@@ -278,6 +302,7 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
     startRowIndex: number;
     endRowIndex: number;
     cellIndex: number;
+    zone: Editor2EditingZone;
   } | null => {
     const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId, getActiveSectionIndex(current));
     const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
@@ -285,12 +310,14 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       !anchorLocation ||
       !focusLocation ||
       anchorLocation.blockIndex !== focusLocation.blockIndex ||
-      anchorLocation.cellIndex !== focusLocation.cellIndex
+      anchorLocation.cellIndex !== focusLocation.cellIndex ||
+      anchorLocation.zone !== focusLocation.zone
     ) {
       return null;
     }
 
-    const tableBlock = current.document.blocks[anchorLocation.blockIndex];
+    const blocks = getTargetBlocks(current, anchorLocation.zone);
+    const tableBlock = blocks[anchorLocation.blockIndex];
     if (!tableBlock || tableBlock.type !== "table") {
       return null;
     }
@@ -319,6 +346,7 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       startRowIndex,
       endRowIndex,
       cellIndex: anchorLocation.cellIndex,
+      zone: anchorLocation.zone,
     };
   };
 
@@ -328,7 +356,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return false;
     }
 
-    const tableBlock = current.document.blocks[range.blockIndex];
+    const blocks = getTargetBlocks(current, range.zone);
+    const tableBlock = blocks[range.blockIndex];
     if (!tableBlock || tableBlock.type !== "table") {
       return false;
     }
@@ -353,7 +382,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return false;
     }
 
-    const block = current.document.blocks[location.blockIndex];
+    const blocks = getTargetBlocks(current, location.zone);
+    const block = blocks[location.blockIndex];
     if (!block || block.type !== "table") {
       return false;
     }
@@ -366,16 +396,24 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
     return canSplitSelectedTableCell(current) || canSplitSelectedTableCellVertically(current);
   };
 
-  const updateBlocksInCurrentSection = (current: Editor2State, blocks: Editor2BlockNode[]): Editor2State => {
+  const updateBlocksInCurrentSection = (
+    current: Editor2State,
+    blocks: Editor2BlockNode[],
+    zone: Editor2EditingZone = "main",
+  ): Editor2State => {
     const activeSectionIndex = getActiveSectionIndex(current);
     const hasSections = current.document.sections && current.document.sections.length > 0;
 
     if (hasSections) {
       const nextSections = [...current.document.sections!];
-      nextSections[activeSectionIndex] = {
-        ...nextSections[activeSectionIndex],
-        blocks,
-      };
+      const section = nextSections[activeSectionIndex];
+      if (zone === "header") {
+        nextSections[activeSectionIndex] = { ...section, header: blocks };
+      } else if (zone === "footer") {
+        nextSections[activeSectionIndex] = { ...section, footer: blocks };
+      } else {
+        nextSections[activeSectionIndex] = { ...section, blocks: blocks };
+      }
       return {
         ...current,
         document: {
@@ -400,11 +438,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return current;
     }
 
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[range.blockIndex] as Editor2TableNode;
+    const targetBlocks = getTargetBlocks(current, range.zone).map(cloneBlock);
+    const tableBlock = targetBlocks[range.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -432,7 +467,7 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return current;
     }
 
-    const nextState = updateBlocksInCurrentSection(current, blocks);
+    const nextState = updateBlocksInCurrentSection(current, targetBlocks, range.zone);
     return {
       ...nextState,
       selection: {
@@ -448,11 +483,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return current;
     }
 
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[range.blockIndex] as Editor2TableNode;
+    const targetBlocks = getTargetBlocks(current, range.zone).map(cloneBlock);
+    const tableBlock = targetBlocks[range.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -498,7 +530,7 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return current;
     }
 
-    const nextState = updateBlocksInCurrentSection(current, blocks);
+    const nextState = updateBlocksInCurrentSection(current, targetBlocks, range.zone);
     return {
       ...nextState,
       selection: {
@@ -526,11 +558,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return current;
     }
 
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
+    const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+    const tableBlock = targetBlocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -560,7 +589,7 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return current;
     }
 
-    const nextState = updateBlocksInCurrentSection(current, blocks);
+    const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     return {
       ...nextState,
       selection: {
@@ -576,11 +605,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return current;
     }
 
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
+    const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+    const tableBlock = targetBlocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -608,7 +634,7 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return current;
     }
 
-    const nextState = updateBlocksInCurrentSection(current, blocks);
+    const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     return {
       ...nextState,
       selection: {
@@ -674,10 +700,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return false;
     }
 
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const block = (section ? section.blocks : current.document.blocks)[location.blockIndex];
+    const blocks = getTargetBlocks(current, location.zone);
+    const block = blocks[location.blockIndex];
     return Boolean(block && block.type === "table");
   };
 
@@ -687,10 +711,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return false;
     }
 
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const block = (section ? section.blocks : current.document.blocks)[location.blockIndex];
+    const blocks = getTargetBlocks(current, location.zone);
+    const block = blocks[location.blockIndex];
     if (!block || block.type !== "table") {
       return false;
     }
@@ -704,11 +726,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return current;
     }
 
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
+    const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+    const tableBlock = targetBlocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -771,20 +790,12 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
         blankRow.cells.find((cell) => cell.vMerge !== "continue" && cell.blocks[0])?.blocks[0] ??
         findFirstNavigableParagraphInTable(tableBlock);
       if (!nextParagraph) {
-        return {
-          document: {
-            ...current.document,
-            blocks,
-          },
-          selection: current.selection,
-        };
+        return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
       }
 
+      const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
       return {
-        document: {
-          ...current.document,
-          blocks,
-        },
+        ...nextState,
         selection: {
           anchor: paragraphOffsetToPosition(nextParagraph, 0),
           focus: paragraphOffsetToPosition(nextParagraph, 0),
@@ -807,20 +818,12 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
         blankRow.cells.find((cell) => cell.vMerge !== "continue" && cell.blocks[0])?.blocks[0] ??
         findFirstNavigableParagraphInTable(tableBlock);
       if (!nextParagraph) {
-        return {
-          document: {
-            ...current.document,
-            blocks,
-          },
-          selection: current.selection,
-        };
+        return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
       }
 
+      const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
       return {
-        document: {
-          ...current.document,
-          blocks,
-        },
+        ...nextState,
         selection: {
           anchor: paragraphOffsetToPosition(nextParagraph, 0),
           focus: paragraphOffsetToPosition(nextParagraph, 0),
@@ -835,11 +838,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return current;
     }
 
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
+    const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+    const tableBlock = targetBlocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -904,16 +904,10 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       : null;
     const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
     if (!nextParagraph) {
-      return {
-        document: {
-          ...current.document,
-          blocks,
-        },
-        selection: current.selection,
-      };
+      return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     }
 
-    const nextState = updateBlocksInCurrentSection(current, blocks);
+    const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     return {
       ...nextState,
       selection: {
@@ -929,11 +923,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return current;
     }
 
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
+    const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+    const tableBlock = targetBlocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -986,20 +977,12 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       const targetCell = targetRow ? findCellAtVisualColumn(targetRow, insertVisualColumn) : null;
       const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
       if (!nextParagraph) {
-        return {
-          document: {
-            ...current.document,
-            blocks,
-          },
-          selection: current.selection,
-        };
+        return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
       }
 
+      const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
       return {
-        document: {
-          ...current.document,
-          blocks,
-        },
+        ...nextState,
         selection: {
           anchor: paragraphOffsetToPosition(nextParagraph, 0),
           focus: paragraphOffsetToPosition(nextParagraph, 0),
@@ -1024,16 +1007,10 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
     const targetCell = targetRow?.cells[insertIndex];
     const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
     if (!nextParagraph) {
-      return {
-        document: {
-          ...current.document,
-          blocks,
-        },
-        selection: current.selection,
-      };
+      return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     }
 
-    const nextState = updateBlocksInCurrentSection(current, blocks);
+    const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     return {
       ...nextState,
       selection: {
@@ -1049,11 +1026,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       return current;
     }
 
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const blocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-    const tableBlock = blocks[location.blockIndex] as Editor2TableNode;
+    const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+    const tableBlock = targetBlocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -1104,20 +1078,12 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
         );
       const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
       if (!nextParagraph) {
-        return {
-          document: {
-            ...current.document,
-            blocks,
-          },
-          selection: current.selection,
-        };
+        return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
       }
 
+      const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
       return {
-        document: {
-          ...current.document,
-          blocks,
-        },
+        ...nextState,
         selection: {
           anchor: paragraphOffsetToPosition(nextParagraph, 0),
           focus: paragraphOffsetToPosition(nextParagraph, 0),
@@ -1137,16 +1103,10 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
     const targetCell = targetRow?.cells[Math.min(location.cellIndex, targetRow.cells.length - 1)];
     const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
     if (!nextParagraph) {
-      return {
-        document: {
-          ...current.document,
-          blocks,
-        },
-        selection: current.selection,
-      };
+      return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     }
 
-    const nextState = updateBlocksInCurrentSection(current, blocks);
+    const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     return {
       ...nextState,
       selection: {
@@ -1161,32 +1121,42 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
     paragraphId: string,
     delta: -1 | 1,
   ): Editor2Position | null => {
-    for (const block of document.blocks) {
-      if (block.type !== "table") {
-        continue;
-      }
+    // Search all potential blocks
+    const sections = getDocumentSections(document);
+    for (const section of sections) {
+      const allBlocks = [
+        ...(section.header || []),
+        ...section.blocks,
+        ...(section.footer || []),
+      ];
 
-      const cells = block.rows.flatMap((row) =>
-        row.cells.filter((cell) => cell.vMerge !== "continue" && cell.blocks.length > 0),
-      );
-      const currentCellIndex = cells.findIndex((cell) =>
-        cell.blocks.some((paragraph) => paragraph.id === paragraphId),
-      );
-      if (currentCellIndex === -1) {
-        continue;
-      }
+      for (const block of allBlocks) {
+        if (block.type !== "table") {
+          continue;
+        }
 
-      const nextCell = cells[currentCellIndex + delta];
-      if (!nextCell) {
-        return null;
-      }
+        const cells = block.rows.flatMap((row) =>
+          row.cells.filter((cell) => cell.vMerge !== "continue" && cell.blocks.length > 0),
+        );
+        const currentCellIndex = cells.findIndex((cell) =>
+          cell.blocks.some((paragraph) => paragraph.id === paragraphId),
+        );
+        if (currentCellIndex === -1) {
+          continue;
+        }
 
-      const targetParagraph = nextCell.blocks[0];
-      if (!targetParagraph) {
-        return null;
-      }
+        const nextCell = cells[currentCellIndex + delta];
+        if (!nextCell) {
+          return null;
+        }
 
-      return paragraphOffsetToPosition(targetParagraph, 0);
+        const targetParagraph = nextCell.blocks[0];
+        if (!targetParagraph) {
+          return null;
+        }
+
+        return paragraphOffsetToPosition(targetParagraph, 0);
+      }
     }
 
     return null;
@@ -1196,7 +1166,11 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
     current: Editor2State,
     edit: (tempState: Editor2State) => Editor2State,
   ): Editor2State => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
+    const location = findParagraphTableLocation(
+      current.document,
+      current.selection.focus.paragraphId,
+      getActiveSectionIndex(current),
+    );
     if (!location || current.selection.anchor.paragraphId !== current.selection.focus.paragraphId) {
       return edit(current);
     }
@@ -1204,7 +1178,18 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
     const activeSectionIndex = getActiveSectionIndex(current);
     const hasSections = current.document.sections && current.document.sections.length > 0;
     const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-    const nextBlocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
+
+    const zone = location.zone;
+    let targetBlocks: Editor2BlockNode[] = [];
+    if (section) {
+      if (zone === "header") targetBlocks = section.header || [];
+      else if (zone === "footer") targetBlocks = section.footer || [];
+      else targetBlocks = section.blocks;
+    } else {
+      targetBlocks = current.document.blocks;
+    }
+
+    const nextBlocks = targetBlocks.map(cloneBlock);
     const tableBlock = nextBlocks[location.blockIndex] as Editor2TableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return edit(current);
@@ -1230,7 +1215,7 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
 
     targetCell.blocks.splice(0, targetCell.blocks.length, ...replacementParagraphs);
 
-    const nextState = updateBlocksInCurrentSection(current, nextBlocks);
+    const nextState = updateBlocksInCurrentSection(current, nextBlocks, zone);
     return {
       ...nextState,
       selection: tempResult.selection,
@@ -1262,10 +1247,10 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
         return command(expanded);
       }
 
-      const { blockIndex, cells } = selection;
+      const { blockIndex, cells, zone } = selection;
 
       deps.logger?.info(
-        `${logPrefix}: multi-cell selection in table block ${blockIndex} (${cells.length} cells)`,
+        `${logPrefix}: multi-cell selection in table block ${blockIndex} (${cells.length} cells) in zone ${zone}`,
       );
 
       // 1. Collect all paragraphs from all selected cells
@@ -1298,11 +1283,8 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
       const resultParagraphs = getParagraphs(tempResult);
 
       // 4. Distribute paragraphs back to cells
-      const activeSectionIndex = getActiveSectionIndex(current);
-      const hasSections = current.document.sections && current.document.sections.length > 0;
-      const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-      const nextBlocks = (section ? section.blocks : current.document.blocks).map(cloneBlock);
-      const tableBlock = nextBlocks[blockIndex] as Editor2TableNode;
+      const targetBlocks = getTargetBlocks(current, zone).map(cloneBlock);
+      const tableBlock = targetBlocks[blockIndex] as Editor2TableNode;
       if (!tableBlock) {
         return current;
       }
@@ -1320,7 +1302,7 @@ export function createEditor2TableOperations(deps: Editor2TableOperationsDeps) {
         }
       }
 
-      return updateBlocksInCurrentSection(current, nextBlocks);
+      return updateBlocksInCurrentSection(current, targetBlocks, zone);
     });
   };
 

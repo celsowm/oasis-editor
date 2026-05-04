@@ -183,7 +183,10 @@ function buildParagraphListMarkers(
     if (list.kind === "bullet" || list.format === "bullet") {
       orderedCounters = [];
       previousList = list;
-      markers.set(paragraph.id, "\u2022");
+      
+      const bulletMarkers = ["\u2022", "\u25E6", "\u25AA", "\u2023", "\u2043"];
+      const marker = bulletMarkers[level % bulletMarkers.length];
+      markers.set(paragraph.id, marker!);
       continue;
     }
 
@@ -191,11 +194,8 @@ function buildParagraphListMarkers(
       orderedCounters = [];
     }
 
-    // Handle startAt
-    if (
-      list.startAt !== undefined &&
-      (orderedCounters[level] === undefined || previousList?.level !== level)
-    ) {
+    // Handle startAt - if defined, it always resets the counter for this level
+    if (list.startAt !== undefined) {
       orderedCounters[level] = list.startAt - 1;
     }
 

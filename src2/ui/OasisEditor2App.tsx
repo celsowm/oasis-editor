@@ -728,7 +728,20 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
       getActiveSectionIndex(state),
     );
     if (tableLocation) {
-      const block = state.document.blocks[tableLocation.blockIndex];
+      const activeSectionIndex = getActiveSectionIndex(state);
+      const hasSections = state.document.sections && state.document.sections.length > 0;
+      const section = hasSections ? state.document.sections![activeSectionIndex] : null;
+
+      let targetBlocks: Editor2BlockNode[] = [];
+      if (section) {
+        if (tableLocation.zone === "header") targetBlocks = section.header || [];
+        else if (tableLocation.zone === "footer") targetBlocks = section.footer || [];
+        else targetBlocks = section.blocks;
+      } else {
+        targetBlocks = state.document.blocks;
+      }
+
+      const block = targetBlocks[tableLocation.blockIndex];
       if (block && block.type === "table") {
         const tableLayout = buildTableCellLayout(block);
         const currentCell = tableLayout.find(
@@ -1140,10 +1153,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     const targetZone = headerZone ? "header" : footerZone ? "footer" : "main";
     const isZoneTransition = targetZone !== state.activeZone;
 
-    if (isZoneTransition && !forceTransition) {
-      return;
-    }
-
     const paragraphElement = surfaceRef
       ? findNearestParagraphElement(
           (headerZone || footerZone || surfaceRef) as HTMLElement,
@@ -1365,10 +1374,6 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         ? "footer"
         : "main";
 
-    if (targetZone !== state.activeZone) {
-      return;
-    }
-
     const isZoneTransition = targetZone !== state.activeZone;
 
     clearPreferredColumn();
@@ -1392,7 +1397,23 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     );
     const anchorPosition = cellLocation
       ? (() => {
-          const block = state.document.blocks[cellLocation.blockIndex];
+          const hasSections =
+            state.document.sections && state.document.sections.length > 0;
+          const section = hasSections
+            ? state.document.sections![getActiveSectionIndex(state)]
+            : null;
+
+          let targetBlocks: Editor2BlockNode[] = [];
+          if (section) {
+            if (cellLocation.zone === "header") targetBlocks = section.header || [];
+            else if (cellLocation.zone === "footer")
+              targetBlocks = section.footer || [];
+            else targetBlocks = section.blocks;
+          } else {
+            targetBlocks = state.document.blocks;
+          }
+
+          const block = targetBlocks[cellLocation.blockIndex];
           const cellParagraph =
             block?.type === "table"
               ? block.rows[cellLocation.rowIndex]?.cells[cellLocation.cellIndex]
@@ -1404,7 +1425,10 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         })()
       : position;
 
-    const applyWithZone = (newState: Editor2State) => {
+    const applyWithZone = (
+      newState: Editor2State,
+      targetPosition?: Editor2Position,
+    ) => {
       if (isZoneTransition) {
         let updatedDocument = newState.document;
         let activeSectionIndex = state.activeSectionIndex ?? 0;
@@ -1478,9 +1502,11 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
           };
         }
 
-        const zonePosition = zoneParagraph
-          ? paragraphOffsetToPosition(zoneParagraph, 0)
-          : newState.selection.anchor;
+        const zonePosition = targetPosition
+          ? targetPosition
+          : zoneParagraph
+            ? paragraphOffsetToPosition(zoneParagraph, 0)
+            : newState.selection.anchor;
 
         applyState({
           ...newState,
@@ -1510,14 +1536,16 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
 
     if (event.detail >= 3) {
       dragAnchor = null;
+      const targetPos = paragraphOffsetToPosition(paragraph, 0);
       applyWithZone(
         setSelection(state, {
-          anchor: paragraphOffsetToPosition(paragraph, 0),
+          anchor: targetPos,
           focus: paragraphOffsetToPosition(
             paragraph,
             getParagraphText(paragraph).length,
           ),
         }),
+        targetPos,
       );
       stopDragging();
       focusInput();
@@ -1527,11 +1555,13 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
     if (event.detail === 2) {
       const word = resolveWordSelection(getParagraphText(paragraph), offset);
       dragAnchor = null;
+      const targetPos = paragraphOffsetToPosition(paragraph, word.start);
       applyWithZone(
         setSelection(state, {
-          anchor: paragraphOffsetToPosition(paragraph, word.start),
+          anchor: targetPos,
           focus: paragraphOffsetToPosition(paragraph, word.end),
         }),
+        targetPos,
       );
       stopDragging();
       focusInput();
@@ -1544,6 +1574,7 @@ export function OasisEditor2App(props: OasisEditor2AppProps = {}) {
         anchor: position,
         focus: position,
       }),
+      position,
     );
     window.addEventListener("mousemove", handleWindowMouseMove);
     window.addEventListener("mouseup", handleWindowMouseUp);

@@ -296,14 +296,14 @@ function replaceParagraphsInSection(
   paragraphs: Editor2ParagraphNode[],
   zone: "main" | "header" | "footer",
 ): Editor2Section {
-  if (zone === "header" && section.header) {
-    return { ...section, header: replaceParagraphsInBlocks(section.header, paragraphs) };
+  if (zone === "header") {
+    return { ...section, header: replaceParagraphsInBlocks(section.header ?? [], paragraphs) };
   }
-  if (zone === "footer" && section.footer) {
-    return { ...section, footer: replaceParagraphsInBlocks(section.footer, paragraphs) };
+  if (zone === "footer") {
+    return { ...section, footer: replaceParagraphsInBlocks(section.footer ?? [], paragraphs) };
   }
 
-  // main zone or fallback: preserve table structure
+  // main zone: preserve table structure
   return { ...section, blocks: replaceParagraphsInBlocks(section.blocks, paragraphs) };
 }
 
@@ -312,13 +312,12 @@ function cloneStateWithParagraphs(
   paragraphs: Editor2ParagraphNode[],
   selection: Editor2Selection,
 ): Editor2State {
-  // Use getDocumentSections which works with or without Solid proxy
   const hasSections = state.document.sections && state.document.sections.length > 0;
 
   if (hasSections) {
     const sectionIndex = getActiveSectionIndex(state);
     const zone = getActiveZone(state);
-    const section = state.document.sections?.[sectionIndex];
+    const section = state.document.sections![sectionIndex];
 
     if (section) {
       const updatedSection = replaceParagraphsInSection(section, paragraphs, zone);
@@ -336,35 +335,12 @@ function cloneStateWithParagraphs(
     }
   }
 
-  // Legacy fallback: use replaceParagraphsInBlocks to preserve table structure
-  // Check if document has tables (either in blocks or sections)
+  // Legacy fallback: for documents with tables, use replaceParagraphsInBlocks to preserve table structure
   const hasTableInBlocks = state.document.blocks.some(b => b.type === "table");
-  const hasTableInSections = state.document.sections?.some(s => s.blocks.some(b => b.type === "table")) ?? false;
 
-  if (hasTableInBlocks || hasTableInSections) {
-    // For documents with tables, always use replaceParagraphsInBlocks
-    if (hasTableInSections && state.document.sections) {
-      // Rebuild sections from paragraphs
-      const sectionIndex = getActiveSectionIndex(state);
-      const zone = getActiveZone(state);
-      const sections = getDocumentSections(state.document);
-      const section = sections[sectionIndex];
-
-      if (section && zone === "main") {
-        const updatedSection = replaceParagraphsInSection(section, paragraphs, zone);
-        const updatedSections = state.document.sections.map((s, i) => i === sectionIndex ? updatedSection : s);
-        return {
-          ...state,
-          document: {
-            ...state.document,
-            sections: updatedSections,
-          },
-          selection,
-        };
-      }
-    }
-
+  if (hasTableInBlocks) {
     return {
+      ...state,
       document: {
         ...state.document,
         blocks: replaceParagraphsInBlocks(state.document.blocks, paragraphs),
@@ -374,7 +350,8 @@ function cloneStateWithParagraphs(
   }
 
   return {
-    document: createEditor2Document(paragraphs),
+    ...state,
+    document: createEditor2Document(paragraphs, state.document.pageSettings, state.document.sections),
     selection,
   };
 }
@@ -1311,7 +1288,7 @@ export function insertClipboardHtmlAtSelection(state: Editor2State, html: string
 
 export function setSelection(state: Editor2State, selection: Editor2Selection): Editor2State {
   return {
-    document: state.document,
+    ...state,
     selection: {
       anchor: clampPosition(state, selection.anchor),
       focus: clampPosition(state, selection.focus),
@@ -2787,7 +2764,7 @@ export function setLinkAtSelection(
   }
 
   return {
-    document: next.document,
+    ...next,
     selection: {
       anchor: paragraphOffsetToPosition(nextParagraph, linkRange.startOffset),
       focus: paragraphOffsetToPosition(nextParagraph, linkRange.endOffset),

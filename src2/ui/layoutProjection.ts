@@ -688,12 +688,15 @@ function projectBlocksLayout(
         );
       }
 
+      const segmentId = `${sourceBlock.id}:segment:${segmentIndex}`;
+      const measuredSegmentHeight = measuredHeights?.[segmentId] ?? segmentHeight;
+
       currentBlocks.push({
-        blockId: `${sourceBlock.id}:segment:${segmentIndex}`,
+        blockId: segmentId,
         sourceBlockId: sourceBlock.id,
         blockType: sourceBlock.type,
         globalIndex: index,
-        estimatedHeight: segmentHeight,
+        estimatedHeight: measuredSegmentHeight,
         tableSegment: {
           startRowIndex,
           endRowIndex: endRowIndex,
@@ -701,7 +704,7 @@ function projectBlocksLayout(
         },
         sourceBlock,
       });
-      currentHeight += segmentHeight;
+      currentHeight += measuredSegmentHeight;
       groupStartIndex = Math.max(groupStartIndex + 1, groupEndIndex);
       segmentIndex += 1;
 

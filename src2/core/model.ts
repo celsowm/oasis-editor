@@ -603,15 +603,10 @@ export function findParagraphLocation(
   return null;
 }
 
-export function findParagraphTableLocation(
-  document: Editor2Document,
+function findInBlocks(
+  blocks: Editor2BlockNode[],
   paragraphId: string,
-  activeSectionIndex: number = 0,
 ): { blockIndex: number; rowIndex: number; cellIndex: number; paragraphIndex: number } | null {
-  const hasSections = document.sections && document.sections.length > 0;
-  const section = hasSections ? document.sections![activeSectionIndex] : null;
-  const blocks = section ? section.blocks : document.blocks;
-
   for (let blockIndex = 0; blockIndex < blocks.length; blockIndex += 1) {
     const block = blocks[blockIndex]!;
     if (block.type !== "table") {
@@ -628,6 +623,35 @@ export function findParagraphTableLocation(
         }
       }
     }
+  }
+
+  return null;
+}
+
+export function findParagraphTableLocation(
+  document: Editor2Document,
+  paragraphId: string,
+  activeSectionIndex: number = 0,
+): { blockIndex: number; rowIndex: number; cellIndex: number; paragraphIndex: number; zone: Editor2EditingZone } | null {
+  const hasSections = document.sections && document.sections.length > 0;
+  const section = hasSections ? document.sections![activeSectionIndex] : null;
+
+  if (section) {
+    // Search in header
+    const headerLoc = findInBlocks(section.header ?? [], paragraphId);
+    if (headerLoc) return { ...headerLoc, zone: "header" };
+
+    // Search in main blocks
+    const mainLoc = findInBlocks(section.blocks, paragraphId);
+    if (mainLoc) return { ...mainLoc, zone: "main" };
+
+    // Search in footer
+    const footerLoc = findInBlocks(section.footer ?? [], paragraphId);
+    if (footerLoc) return { ...footerLoc, zone: "footer" };
+  } else {
+    // No sections, search in top-level blocks
+    const mainLoc = findInBlocks(document.blocks, paragraphId);
+    if (mainLoc) return { ...mainLoc, zone: "main" };
   }
 
   return null;

@@ -26,6 +26,7 @@ import {
 } from "../../core/model.js";
 import { isSelectionCollapsed } from "../../core/selection.js";
 import { resolveWordSelection } from "../../core/wordBoundaries.js";
+import { defaultEditor2KeyBindings, Editor2CommandRegistry } from "./Editor2CommandRegistry.js";
 
 export interface Editor2KeyboardDeps {
   state: () => Editor2State;
@@ -74,6 +75,9 @@ export interface Editor2KeyboardDeps {
 }
 
 export function createEditor2KeyboardController(deps: Editor2KeyboardDeps) {
+  const registry = new Editor2CommandRegistry();
+  defaultEditor2KeyBindings.forEach((binding) => registry.register(binding));
+
   const handleKeyDown = (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => {
     const currentState = deps.state();
 
@@ -98,39 +102,8 @@ export function createEditor2KeyboardController(deps: Editor2KeyboardDeps) {
       }
       return;
     }
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a" && !event.altKey) {
-      event.preventDefault();
-      const paragraphs = getParagraphs(currentState);
-      if (paragraphs.length === 0) {
-        return;
-      }
 
-      const firstParagraph = paragraphs[0]!;
-      const lastParagraph = paragraphs[paragraphs.length - 1]!;
-      deps.clearPreferredColumn();
-      deps.applyState(
-        setSelection(currentState, {
-          anchor: paragraphOffsetToPosition(firstParagraph, 0),
-          focus: paragraphOffsetToPosition(lastParagraph, getParagraphText(lastParagraph).length),
-        }),
-      );
-      deps.focusInput();
-      return;
-    }
-
-    if ((event.ctrlKey || event.metaKey) && event.altKey && event.key.toLowerCase() === "a") {
-      const selectedImage = deps.selectedImageRun();
-      if (selectedImage) {
-        event.preventDefault();
-        deps.commandsController.promptForImageAlt();
-        return;
-      }
-    }
-
-    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "v" && !event.altKey) {
-      event.preventDefault();
-      deps.setForcePlainTextPaste(true);
-      deps.focusInput();
+    if (registry.execute(event, deps)) {
       return;
     }
 
@@ -238,60 +211,6 @@ export function createEditor2KeyboardController(deps: Editor2KeyboardDeps) {
       return;
     }
 
-    if ((event.ctrlKey || event.metaKey) && !event.altKey) {
-      const lowerKey = event.key.toLowerCase();
-      if (lowerKey === "b" || lowerKey === "i" || lowerKey === "u") {
-        event.preventDefault();
-        deps.commandsController.applyBooleanStyleCommand(
-          (lowerKey === "b" ? "bold" : lowerKey === "i" ? "italic" : "underline"),
-        );
-        return;
-      }
-
-      if (lowerKey === "k") {
-        event.preventDefault();
-        deps.commandsController.promptForLink();
-        return;
-      }
-
-      if (lowerKey === "7" || lowerKey === "8") {
-        if (event.shiftKey) {
-          event.preventDefault();
-          deps.commandsController.applyParagraphListCommand(lowerKey === "7" ? "ordered" : "bullet");
-          return;
-        }
-      }
-
-      if (lowerKey === "f") {
-        event.preventDefault();
-        deps.toggleFindReplace(true);
-        return;
-      }
-
-      if (lowerKey === "h") {
-        event.preventDefault();
-        deps.toggleReplace(true);
-        return;
-      }
-    }
-
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z" && !event.altKey) {
-      event.preventDefault();
-      if (event.shiftKey) {
-        deps.performRedo();
-        return;
-      }
-
-      deps.performUndo();
-      return;
-    }
-
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y" && !event.altKey) {
-      event.preventDefault();
-      deps.performRedo();
-      return;
-    }
-
     if (event.altKey && !event.ctrlKey && !event.metaKey) {
       if (event.key === "ArrowUp" || event.key === "ArrowDown") {
         event.preventDefault();
@@ -304,39 +223,6 @@ export function createEditor2KeyboardController(deps: Editor2KeyboardDeps) {
     }
 
     switch (event.key) {
-      case "Enter":
-        if (event.ctrlKey || event.metaKey) {
-          event.preventDefault();
-          deps.clearPreferredColumn();
-          deps.resetTransactionGrouping();
-          deps.applyTransactionalState((current) =>
-            deps.applyTableAwareParagraphEdit(current, (temp) => insertPageBreakAtSelection(temp)),
-          );
-          deps.focusInput();
-          return;
-        }
-        if (event.shiftKey) {
-          event.preventDefault();
-          deps.clearPreferredColumn();
-          deps.resetTransactionGrouping();
-          deps.applyTransactionalState((current) =>
-            deps.applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, "\n")),
-          );
-          deps.focusInput();
-          return;
-        }
-        if (deps.commandsController.handleListEnter()) {
-          event.preventDefault();
-          return;
-        }
-        event.preventDefault();
-        deps.clearPreferredColumn();
-        deps.resetTransactionGrouping();
-        deps.applyTransactionalState((current) =>
-          deps.applyTableAwareParagraphEdit(current, (temp) => splitBlockAtSelection(temp)),
-        );
-        deps.focusInput();
-        return;
       case "Backspace":
         if (deps.commandsController.handleListBoundaryBackspace(event)) {
           event.preventDefault();
@@ -439,5 +325,6 @@ export function createEditor2KeyboardController(deps: Editor2KeyboardDeps) {
 
   return {
     handleKeyDown,
+    registry, // Expose for configurability later
   };
 }

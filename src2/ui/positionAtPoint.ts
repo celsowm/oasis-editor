@@ -1,5 +1,12 @@
 import type { Editor2Document, Editor2ParagraphNode, Editor2Position, Editor2State } from "../core/model.js";
-import { getParagraphs, getParagraphText, paragraphOffsetToPosition } from "../core/model.js";
+import { 
+  getParagraphs, 
+  getParagraphText, 
+  paragraphOffsetToPosition,
+  getDocumentParagraphs,
+  getDocumentSections,
+  type Editor2BlockNode,
+} from "../core/model.js";
 import {
   measureParagraphLayoutFromRects,
   resolveClosestOffsetInMeasuredLayout,
@@ -106,12 +113,29 @@ function resolveTableCellStartPosition(
     return null;
   }
 
-  const tableContainer = cellElement.closest<HTMLElement>('[data-testid="editor-2-table"]');
-  const tableId =
-    tableContainer?.getAttribute("data-source-block-id") ?? tableContainer?.getAttribute("data-block-id");
-  const tableBlock = document.blocks.find(
-    (block) => block.type === "table" && (tableId ? block.id === tableId : true),
+  const tableContainer = cellElement.closest<HTMLElement>(
+    '[data-testid="editor-2-table"]',
   );
+  const tableId =
+    tableContainer?.getAttribute("data-source-block-id") ??
+    tableContainer?.getAttribute("data-block-id");
+
+  const sections = getDocumentSections(document);
+  let tableBlock: Editor2BlockNode | undefined;
+
+  for (const section of sections) {
+    const allBlocks = [
+      ...(section.header || []),
+      ...section.blocks,
+      ...(section.footer || []),
+    ];
+    tableBlock = allBlocks.find(
+      (block) =>
+        block.type === "table" && (tableId ? block.id === tableId : true),
+    );
+    if (tableBlock) break;
+  }
+
   if (!tableBlock || tableBlock.type !== "table") {
     return null;
   }
@@ -129,7 +153,11 @@ function resolveParagraphFromElement(
     return null;
   }
 
-  return getParagraphs(state).find((candidate) => candidate.id === paragraphId) ?? null;
+  return (
+    getDocumentParagraphs(state.document).find(
+      (candidate) => candidate.id === paragraphId,
+    ) ?? null
+  );
 }
 
 export function resolvePositionAtPoint(options: {
