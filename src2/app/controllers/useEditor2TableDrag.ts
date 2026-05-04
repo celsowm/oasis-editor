@@ -60,6 +60,18 @@ export function createEditor2TableDrag(deps: {
     
     document.body.style.cursor = "grabbing";
     const pos = deps.resolvePositionAtSurfacePoint(event.clientX, event.clientY);
+    
+    // Check if target is inside the dragged table
+    const tableId = draggedTableInfo()?.tableId;
+    if (pos && tableId) {
+        const tableBlock = document.querySelector(`[data-source-block-id="${tableId}"]`);
+        const targetElement = document.querySelector(`[data-paragraph-id="${pos.paragraphId}"]`);
+        if (tableBlock && targetElement && tableBlock.contains(targetElement)) {
+            setDropTargetPos(null);
+            return;
+        }
+    }
+
     setDropTargetPos(pos);
   };
 

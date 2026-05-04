@@ -1507,109 +1507,111 @@ export function moveBlockToPosition(
   blockId: string,
   targetPosition: Editor2Position,
 ): Editor2State {
-  let foundBlock: Editor2BlockNode | undefined;
-  let sourceArray: Editor2BlockNode[] | undefined;
-  let sourceIndex = -1;
-
-  const findAndRemove = (blocks: Editor2BlockNode[]): Editor2BlockNode[] => {
-    const index = blocks.findIndex(b => b.id === blockId);
-    if (index >= 0) {
-      foundBlock = blocks[index];
-      sourceArray = blocks;
-      sourceIndex = index;
-      return [...blocks.slice(0, index), ...blocks.slice(index + 1)];
+  console.log("[moveBlockToPosition] Start move. BlockId:", blockId, "Target:", targetPosition.paragraphId);
+  
+  // 1. Find and remove the block from its current location
+  let movedBlock: Editor2BlockNode | undefined;
+  
+  const removeFromBlocks = (blocks: Editor2BlockNode[]): Editor2BlockNode[] => {
+    const idx = blocks.findIndex(b => b.id === blockId);
+    if (idx >= 0) {
+      movedBlock = blocks[idx];
+      return [...blocks.slice(0, idx), ...blocks.slice(idx + 1)];
     }
-    return blocks.map(block => {
-        if (block.type === "table") {
-            // we don't support nested table moves right now
-        }
-        return block;
-    });
+    return blocks;
   };
 
-  let nextSections = state.document.sections ? [...state.document.sections] : undefined;
-  let nextBlocks = [...state.document.blocks];
+  const removeFromSections = (sections: Editor2Section[]): Editor2Section[] => {
+    return sections.map(s => ({
+      ...s,
+      blocks: removeFromBlocks(s.blocks),
+      header: s.header ? removeFromBlocks(s.header) : undefined,
+      footer: s.footer ? removeFromBlocks(s.footer) : undefined,
+    }));
+  };
 
-  if (nextSections) {
-    nextSections = nextSections.map(section => {
-      const sec = { ...section };
-      sec.blocks = findAndRemove(sec.blocks);
-      if (sec.header) sec.header = findAndRemove(sec.header);
-      if (sec.footer) sec.footer = findAndRemove(sec.footer);
-      return sec;
-    });
+  let nextDocument = { ...state.document };
+  if (nextDocument.sections && nextDocument.sections.length > 0) {
+    nextDocument.sections = removeFromSections(nextDocument.sections);
   } else {
-    nextBlocks = findAndRemove(nextBlocks);
+    nextDocument.blocks = removeFromBlocks(nextDocument.blocks);
   }
 
-  if (!foundBlock) return state;
+  if (!movedBlock) {
+    console.error("[moveBlockToPosition] Failed to find block to move:", blockId);
+    return state;
+  }
 
-  const focus = clampPosition(state, targetPosition);
+  // 2. Identify the target block and zone
+  const targetId = targetPosition.paragraphId;
+  
+  // Check if target is inside the moved block itself
+  if (movedBlock.type === "table") {
+      const internalParagraphs = getBlockParagraphs(movedBlock);
+      if (internalParagraphs.some(p => p.id === targetId)) {
+          console.warn("[moveBlockToPosition] Target is inside the moved block. Aborting move to avoid self-nesting.");
+          return state;
+      }
+  }
 
   const insertIntoBlocks = (blocks: Editor2BlockNode[]): { nextBlocks: Editor2BlockNode[]; found: boolean } => {
-    const blockIndex = blocks.findIndex((b) => {
-      if (b.id === focus.paragraphId) return true;
-      if (b.type === "paragraph") return false;
-      return getBlockParagraphs(b).some((p) => p.id === focus.paragraphId);
+    const idx = blocks.findIndex(b => {
+        if (b.id === targetId) return true;
+        if (b.type === "table") {
+            return getBlockParagraphs(b).some(p => p.id === targetId);
+        }
+        return false;
     });
 
-    if (blockIndex === -1) {
-      return { nextBlocks: blocks, found: false };
-    }
+    if (idx < 0) return { nextBlocks: blocks, found: false };
 
-    return {
-      nextBlocks: [...blocks.slice(0, blockIndex), foundBlock!, ...blocks.slice(blockIndex)],
-      found: true,
-    };
+    // Insert BEFORE the block containing the target paragraph
+    console.log("[moveBlockToPosition] Found target at block index:", idx);
+    const nextBlocks = [...blocks.slice(0, idx), movedBlock!, ...blocks.slice(idx)];
+    return { nextBlocks, found: true };
   };
 
-  if (nextSections && nextSections.length > 0) {
-    const activeSectionIndex = getActiveSectionIndex(state);
-    const section = nextSections[activeSectionIndex];
-    if (!section) return state;
-
+  if (nextDocument.sections && nextDocument.sections.length > 0) {
+    const activeIdx = getActiveSectionIndex(state);
     const zone = getActiveZone(state);
+    const section = { ...nextDocument.sections[activeIdx]! };
     let found = false;
 
     if (zone === "header") {
-      const result = insertIntoBlocks(section.header ?? []);
-      section.header = result.nextBlocks;
-      found = result.found;
+      const res = insertIntoBlocks(section.header ?? []);
+      section.header = res.nextBlocks;
+      found = res.found;
     } else if (zone === "footer") {
-      const result = insertIntoBlocks(section.footer ?? []);
-      section.footer = result.nextBlocks;
-      found = result.found;
+      const res = insertIntoBlocks(section.footer ?? []);
+      section.footer = res.nextBlocks;
+      found = res.found;
     } else {
-      const result = insertIntoBlocks(section.blocks);
-      section.blocks = result.nextBlocks;
-      found = result.found;
+      const res = insertIntoBlocks(section.blocks);
+      section.blocks = res.nextBlocks;
+      found = res.found;
     }
 
     if (!found) {
-        // If not found, append to end of blocks
-        section.blocks.push(foundBlock);
+        console.log("[moveBlockToPosition] Target not found in active zone, appending to main blocks");
+        section.blocks = [...section.blocks, movedBlock];
     }
 
-    return {
-      ...state,
-      document: {
-        ...state.document,
-        sections: nextSections,
-      },
-    };
+    nextDocument.sections = [...nextDocument.sections];
+    nextDocument.sections[activeIdx] = section;
+  } else {
+    const res = insertIntoBlocks(nextDocument.blocks);
+    if (res.found) {
+        nextDocument.blocks = res.nextBlocks;
+    } else {
+        console.log("[moveBlockToPosition] Target not found in blocks, appending");
+        nextDocument.blocks = [...nextDocument.blocks, movedBlock];
+    }
   }
 
-  const result = insertIntoBlocks(nextBlocks);
-  if (!result.found) {
-      nextBlocks.push(foundBlock);
-  }
-
+  console.log("[moveBlockToPosition] Move complete.");
   return {
     ...state,
-    document: {
-      ...state.document,
-      blocks: result.found ? result.nextBlocks : nextBlocks,
-    },
+    document: nextDocument,
   };
 }
 export function moveSelectedImageToPosition(
