@@ -1,14 +1,16 @@
 import type { TranslationKey } from "../../../i18n/index.js";
+import type { EditorToolbarCtx } from "../Toolbar/types.js";
 
 export interface MenuItem {
   id: string;
   path: string; // e.g., "File/New"
   labelKey?: TranslationKey; // e.g., "menu.file.new"
-  command?: string; // ID in EditorCommandRegistry or general identifier
-  action?: (ctx: any) => void; // Direct action to run with context
+  icon?: string;
+  action?: (ctx: EditorToolbarCtx) => void | Promise<void>;
   shortcut?: string;
   when?: () => boolean;
   separator?: boolean;
+  hidden?: boolean;
 }
 
 export class MenuRegistry {

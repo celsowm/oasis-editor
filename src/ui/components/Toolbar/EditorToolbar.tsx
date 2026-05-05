@@ -29,9 +29,13 @@ import { t } from "../../../i18n/index.js";
 
 const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 
-export function EditorToolbar(props: { ctx: EditorToolbarCtx }): JSX.Element {
+export function EditorToolbar(props: {
+  ctx: EditorToolbarCtx;
+  showFileGroup?: boolean;
+}): JSX.Element {
   let toolbarRef: HTMLElement | undefined;
   const ctx = () => props.ctx;
+  const showFileGroup = () => props.showFileGroup ?? true;
 
   return (
     <section
@@ -40,28 +44,30 @@ export function EditorToolbar(props: { ctx: EditorToolbarCtx }): JSX.Element {
       onMouseDown={(event) => event.preventDefault()}
     >
       <ToolbarOverflowManager>
-        <ToolbarGroup>
-          <ToolbarDropdown label={t("toolbar.file")} icon="file" testId="editor-toolbar-file-dropdown">
-            <ToolbarButton
-              icon="download"
-              label={t("toolbar.export")}
-              wide
-              data-testid="editor-toolbar-export-docx"
-              onClick={() => void ctx().handleExportDocx()}
-              tooltip={t("toolbar.export")}
-            />
-            <ToolbarButton
-              icon="upload"
-              label={t("toolbar.import")}
-              wide
-              data-testid="editor-toolbar-import-docx"
-              onClick={() => ctx().importInputRef()?.click()}
-              tooltip={t("toolbar.import")}
-            />
-          </ToolbarDropdown>
-        </ToolbarGroup>
+        <Show when={showFileGroup()}>
+          <ToolbarGroup>
+            <ToolbarDropdown label={t("toolbar.file")} icon="file" testId="editor-toolbar-file-dropdown">
+              <ToolbarButton
+                icon="download"
+                label={t("toolbar.export")}
+                wide
+                data-testid="editor-toolbar-export-docx"
+                onClick={() => void ctx().handleExportDocx()}
+                tooltip={t("toolbar.export")}
+              />
+              <ToolbarButton
+                icon="upload"
+                label={t("toolbar.import")}
+                wide
+                data-testid="editor-toolbar-import-docx"
+                onClick={() => ctx().importInputRef()?.click()}
+                tooltip={t("toolbar.import")}
+              />
+            </ToolbarDropdown>
+          </ToolbarGroup>
 
-        <ToolbarSeparator />
+          <ToolbarSeparator />
+        </Show>
 
         <ToolbarGroup>
           <ToolbarButton

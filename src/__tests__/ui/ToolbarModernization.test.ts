@@ -36,7 +36,6 @@ describe("ToolbarModernization Safety Net", () => {
   ];
 
   const staticTestIds = [
-    "editor-toolbar-file-dropdown",
     "editor-toolbar-undo",
     "editor-toolbar-redo",
     "editor-toolbar-style",
@@ -119,6 +118,37 @@ describe("ToolbarModernization Safety Net", () => {
       const element = root.querySelector(`[data-testid="${testId}"]`);
       expect(element, `Table element with testId "${testId}" should exist after inserting table`).not.toBeNull();
     }
+
+    dispose();
+  });
+
+  it("hides the file dropdown when the menubar is visible in docs layout", async () => {
+    const root = document.getElementById("oasis-editor-root") as HTMLElement;
+    const dispose = render(() => OasisEditorApp({
+      onStateChange: (s) => currentState = s,
+      uiVariant: "docs",
+    }), root);
+
+    expect(root.querySelector('[data-testid="editor-toolbar-file-dropdown"]')).toBeNull();
+
+    dispose();
+  });
+
+  it("keeps the file dropdown in layouts without menubar", async () => {
+    const root = document.getElementById("oasis-editor-root") as HTMLElement;
+    const dispose = render(() => OasisEditorApp({
+      onStateChange: (s) => currentState = s,
+      uiVariant: "docs",
+      showMenubar: false,
+    }), root);
+
+    const fileDropdown = root.querySelector('[data-testid="editor-toolbar-file-dropdown"]') as HTMLElement;
+    expect(fileDropdown).not.toBeNull();
+
+    fileDropdown.click();
+    await Promise.resolve();
+    await new Promise(r => setTimeout(r, 0));
+    expect(document.querySelector('[data-testid="editor-toolbar-export-docx"]')).not.toBeNull();
 
     dispose();
   });

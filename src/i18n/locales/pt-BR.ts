@@ -150,6 +150,7 @@ export const ptBR = {
 
   // Menu
   "menu.file": "Arquivo",
+  "menu.file.export": "Exportar",
   "menu.file.new": "Novo",
   "menu.file.print": "Imprimir",
   "menu.edit": "Editar",
@@ -163,6 +164,8 @@ export const ptBR = {
   "menu.insert": "Inserir",
   "menu.format": "Formatar",
   "menu.format.align": "Alinhar",
+  "menu.format.text": "Texto",
+  "menu.format.lists": "Listas",
   "menu.tools": "Ferramentas",
   "menu.tools.wordcount": "Contagem de palavras",
   "menu.help": "Ajuda",

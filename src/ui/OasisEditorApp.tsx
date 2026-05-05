@@ -1819,6 +1819,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     tableActionRestrictionLabel: tableOps.tableActionRestrictionLabel,
     isInsideTable,
     handleExportDocx,
+    toggleFindReplace: (open) => {
+      fr.setIsOpen(open ?? !fr.isOpen());
+    },
     performUndo,
     performRedo,
     focusInput,
@@ -2045,6 +2048,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         onConfirm={(alt) => commandsController.applyImageAltCommand(alt.trim())}
       />
 
+      <FindReplaceDialog fr={fr} />
+
       <Show when={useComposedShell()}>
         {renderComposedShell()}
       </Show>
@@ -2151,9 +2156,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             onPaste={handlePaste}
           />
         </section>
-
-        <FindReplaceDialog fr={fr} />
-
         <Show when={tableResize.resizing()}>
           {(resizing) => (
             <div

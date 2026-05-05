@@ -18,6 +18,7 @@ export interface MenubarProps {
 
 interface MenuTreeItem {
   id: string;
+  path: string;
   label: string;
   children: MenuTreeItem[];
   item?: MenuItem;
@@ -27,30 +28,46 @@ export function Menubar(props: MenubarProps) {
   const [activeMenu, setActiveMenu] = createSignal<string | null>(null);
 
   const menuItems = defaultMenuRegistry.getItems();
+  const visibleMenuItems = menuItems.filter((item) => !item.hidden);
+  const itemByPath = new Map(visibleMenuItems.map((item) => [item.path, item]));
 
   // Build tree from paths (e.g. "File/New")
   const menuTree: MenuTreeItem[] = [];
 
-  for (const item of menuItems) {
+  for (const item of visibleMenuItems) {
     const parts = item.path.split("/");
     let currentLevel = menuTree;
+    let currentPath = "";
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
+      currentPath = currentPath ? `${currentPath}/${part}` : part;
       let existingNode = currentLevel.find((n) => n.label === part);
       if (!existingNode) {
         existingNode = {
           id: part,
+          path: currentPath,
           label: part,
           children: [],
         };
         currentLevel.push(existingNode);
       }
-      if (i === parts.length - 1) {
-        existingNode.item = item;
+      const matchingItem = itemByPath.get(currentPath);
+      if (matchingItem) {
+        existingNode.item = matchingItem;
       }
       currentLevel = existingNode.children;
     }
   }
+
+  const pruneTree = (nodes: MenuTreeItem[]): MenuTreeItem[] =>
+    nodes.flatMap((node) => {
+      const children = pruneTree(node.children);
+      const isExecutable = Boolean(node.item?.action) && !node.item?.separator;
+      if (!isExecutable && children.length === 0) {
+        return [];
+      }
+      return [{ ...node, children }];
+    });
 
   const handleDocumentClick = (e: MouseEvent) => {
     // Basic click outside
@@ -75,7 +92,7 @@ export function Menubar(props: MenubarProps) {
     document.removeEventListener("keydown", handleKeyDown);
   });
 
-  const topLevelItems = menuTree;
+  const topLevelItems = pruneTree(menuTree);
 
   return (
     <div
@@ -159,16 +176,14 @@ function MenuNode(props: {
   if (node.item?.labelKey) {
     label = t(node.item.labelKey) || node.label;
   }
+  const icon = node.item?.icon;
 
   const handleClick = (e: MouseEvent) => {
     e.stopPropagation();
     if (hasChildren) return;
     
     if (node.item?.action) {
-      node.item.action(ctx);
-    } else if (node.item?.command) {
-      // Execute command using context, for now placeholder
-      console.log("Execute command:", node.item.command);
+      void node.item.action(ctx);
     }
     onClose();
   };
@@ -187,7 +202,14 @@ function MenuNode(props: {
       aria-haspopup={hasChildren}
       aria-expanded={showSub()}
     >
-      <span>{label}</span>
+      <span class="oasis-menubar-item-main">
+        <Show when={icon}>
+          <span class="oasis-menubar-item-icon" aria-hidden="true">
+            <i data-lucide={icon!} />
+          </span>
+        </Show>
+        <span>{label}</span>
+      </span>
       <Show when={node.item?.shortcut}>
         <span class="oasis-menubar-shortcut">
           {node.item!.shortcut}

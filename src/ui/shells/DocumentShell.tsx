@@ -86,7 +86,10 @@ export function DocumentShell(props: ShellProps) {
           </TitleBar>
         </Show>
         <Show when={props.showToolbar}>
-          <EditorToolbar ctx={props.toolbarCtx} />
+          <EditorToolbar
+            ctx={props.toolbarCtx}
+            showFileGroup={!props.showMenubar}
+          />
         </Show>
       </Show>
 

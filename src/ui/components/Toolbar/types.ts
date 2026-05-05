@@ -29,6 +29,7 @@ export interface EditorToolbarCtx {
   isInsideTable: () => boolean;
 
   handleExportDocx: () => void;
+  toggleFindReplace: (open?: boolean) => void;
   performUndo: () => void;
   performRedo: () => void;
   focusInput: () => void;

@@ -1170,6 +1170,29 @@
   white-space: nowrap;
 }
 
+.oasis-menubar-item-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.oasis-menubar-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--oasis-text-muted);
+  flex: 0 0 16px;
+}
+
+.oasis-menubar-item-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
 .oasis-menubar-item:hover {
   background: var(--oasis-hover-bg);
 }

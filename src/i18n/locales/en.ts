@@ -150,6 +150,7 @@ export const en = {
 
   // Menu
   "menu.file": "File",
+  "menu.file.export": "Export",
   "menu.file.new": "New",
   "menu.file.print": "Print",
   "menu.edit": "Edit",
@@ -163,6 +164,8 @@ export const en = {
   "menu.insert": "Insert",
   "menu.format": "Format",
   "menu.format.align": "Align",
+  "menu.format.text": "Text",
+  "menu.format.lists": "Lists",
   "menu.tools": "Tools",
   "menu.tools.wordcount": "Word count",
   "menu.help": "Help",
