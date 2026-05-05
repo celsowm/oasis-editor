@@ -510,48 +510,50 @@ describe("layoutProjection", () => {
     expect(layout.pages[1]?.blocks.map((block) => block.paragraphId)).toEqual([paragraphs[2]!.id]);
   });
 
-  // ----------------------------------------------------------------
-  // Golden tests: layoutProjection currently IGNORES named styles
-  // These tests lock in the CURRENT (static) behavior so that when
-  // layoutProjection is migrated to resolve via document.styles,
-  // the diff is explicit and intentional.
-  // ----------------------------------------------------------------
-
-  it("[GOLDEN] estimateParagraphBlockHeight ignores named style fontSize/lineHeight via styleId", () => {
+  it("resolves named paragraph styles when estimating paragraph block height", () => {
     resetEditorIds();
     const paragraph = createEditorParagraphFromRuns([{ text: "hello world" }]);
     paragraph.style = { styleId: "Heading1" };
 
-    const blockHeight = estimateParagraphBlockHeight(paragraph);
+    const blockHeight = estimateParagraphBlockHeight(paragraph, GOLDEN_STYLES);
 
-    const fontSize = 20; // DEFAULT_FONT_SIZE — golden: does NOT resolve Heading1's 28
-    const lineHeight = 1.6 * fontSize; // DEFAULT_LINE_HEIGHT — golden: does NOT resolve Heading1's 1.2
-    const spacingBefore = 0; // paragraph.style?.spacingBefore is undefined → 0
-    const spacingAfter = 0; // paragraph.style?.spacingAfter is undefined → 0
+    const fontSize = 28;
+    const lineHeight = 1.2 * fontSize;
+    const spacingBefore = 24;
+    const spacingAfter = 12;
     const charsPerLine = 48; // no indent, no list
     const lineCount = Math.ceil("hello world".length / charsPerLine);
     const expected = spacingBefore + spacingAfter + lineCount * lineHeight + 10;
 
-    expect(blockHeight).toBe(expected);
+    expect(blockHeight).toBeCloseTo(expected, 5);
   });
 
-  it("[GOLDEN] projectDocumentLayout page breaks are computed with default font metrics when only styleId is set", () => {
+  it("uses named paragraph styles when computing pagination from document styles", () => {
     resetEditorIds();
     const paragraph = createEditorParagraphFromRuns([{ text: "a".repeat(500) }]);
     paragraph.style = { styleId: "Heading1" };
 
-    const layout = projectDocumentLayout([paragraph], 220);
+    const defaultLayout = projectDocumentLayout(
+      {
+        id: "doc:unstyled",
+        blocks: [paragraph],
+      },
+      220,
+    );
+    const styledLayout = projectDocumentLayout(
+      {
+        id: "doc:styled",
+        blocks: [paragraph],
+        styles: GOLDEN_STYLES,
+      },
+      220,
+    );
 
-    const pageCount = layout.pages.length;
-    // Golden: because Heading1's styleId is not resolved, the paragraph is
-    // estimated with default 20px font / 1.6 line-height.
-    // This means it will fit on fewer pages vs. if 28px / 1.2 were used.
-    // The exact page count is the GOLDEN — if it changes after migration, that's expected.
-    expect(pageCount).toBeGreaterThanOrEqual(1);
-    expect(layout.pages[0]?.blocks[0]?.paragraphId).toBe(paragraph.id);
+    expect(styledLayout.pages.length).toBeGreaterThan(defaultLayout.pages.length);
+    expect(styledLayout.pages[0]?.blocks[0]?.paragraphId).toBe(paragraph.id);
   });
 
-  it("[GOLDEN] projectDocumentLayout with full EditorDocument (incl. styles) ignores styles in height estimation", () => {
+  it("resolves basedOn chains from document styles during height estimation", () => {
     resetEditorIds();
     const paragraph = createEditorParagraphFromRuns([{ text: "x".repeat(300) }]);
     paragraph.style = { styleId: "Heading2" };
@@ -564,9 +566,6 @@ describe("layoutProjection", () => {
 
     const layout = projectDocumentLayout(doc, 220);
 
-    // Golden: Heading2 should resolve to fontSize=24, lineHeight=1.3 via basedOn
-    // chain, but currently layoutProjection reads paragraph.style directly
-    // and gets undefined for fontSize/lineHeight → uses defaults (20, 1.6).
-    expect(layout.pages.length).toBeGreaterThanOrEqual(1);
+    expect(layout.pages.length).toBeGreaterThanOrEqual(2);
   });
 });

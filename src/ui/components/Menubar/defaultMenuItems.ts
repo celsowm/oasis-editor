@@ -16,7 +16,7 @@ export const defaultMenuItems: MenuItem[] = [
   { id: "edit_undo", path: "Edit/Undo", labelKey: "toolbar.undo", shortcut: "Ctrl+Z", action: (ctx) => ctx.performUndo(), icon: "undo-2" },
   { id: "edit_redo", path: "Edit/Redo", labelKey: "toolbar.redo", shortcut: "Ctrl+Y", action: (ctx) => ctx.performRedo(), icon: "redo-2" },
   { id: "edit_cut", path: "Edit/Cut", labelKey: "menu.edit.cut", shortcut: "Ctrl+X", hidden: true },
-  { id: "edit_copy", path: "Edit/Copy", labelKey: "menu.edit.copy", shortcut: "Ctrl+C", action: () => document.execCommand("copy"), icon: "copy" },
+  { id: "edit_copy", path: "Edit/Copy", labelKey: "menu.edit.copy", shortcut: "Ctrl+C", action: () => { document.execCommand("copy"); }, icon: "copy" },
   { id: "edit_paste", path: "Edit/Paste", labelKey: "menu.edit.paste", shortcut: "Ctrl+V", hidden: true },
   { id: "edit_find", path: "Edit/Find & Replace", labelKey: "find.title", shortcut: "Ctrl+F", action: (ctx) => ctx.toggleFindReplace(true), icon: "search" },
   { id: "edit_selectAll", path: "Edit/Select All", labelKey: "menu.edit.selectAll", shortcut: "Ctrl+A", hidden: true },

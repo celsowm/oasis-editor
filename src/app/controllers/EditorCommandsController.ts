@@ -341,6 +341,7 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
     handleListFormatChange,
     handleListStartAtChange,
     applyInsertSectionBreakCommand,
+    applyInsertPageBreakCommand,
     handleStyleChange,
     applyUpdateSectionSettingsCommand,
     applyToggleTrackChangesCommand,

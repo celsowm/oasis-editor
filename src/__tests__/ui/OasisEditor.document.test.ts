@@ -669,6 +669,60 @@ describe("OasisEditor", () => {
     instance.dispose();
   });
 
+  it("applies pending bold from the toolbar at the caret without rewriting prior text", async () => {
+    const root = document.getElementById("oasis-editor-root") as HTMLElement;
+    const instance = createOasisEditor(root);
+    const input = root.querySelector('[data-testid="editor-input"]') as HTMLTextAreaElement;
+
+    input.value = "ab";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "ab", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const boldButton = root.querySelector('[data-testid="editor-toolbar-bold"]') as HTMLButtonElement;
+    expect(boldButton.disabled).toBe(false);
+    boldButton.click();
+    await Promise.resolve();
+
+    input.value = "X";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "X", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const runNodes = Array.from(root.querySelectorAll('[data-testid="editor-run"]')) as HTMLSpanElement[];
+    expect(runNodes).toHaveLength(2);
+    expect(runNodes[0]?.textContent).toBe("ab");
+    expect(runNodes[0]?.style.fontWeight).not.toBe("700");
+    expect(runNodes[1]?.textContent).toBe("X");
+    expect(runNodes[1]?.style.fontWeight).toBe("700");
+
+    instance.dispose();
+  });
+
+  it("applies pending bold from ctrl+b at the caret without rewriting prior text", async () => {
+    const root = document.getElementById("oasis-editor-root") as HTMLElement;
+    const instance = createOasisEditor(root);
+    const input = root.querySelector('[data-testid="editor-input"]') as HTMLTextAreaElement;
+
+    input.value = "ab";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "ab", inputType: "insertText" }));
+    await Promise.resolve();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "b", ctrlKey: true }));
+    await Promise.resolve();
+
+    input.value = "Y";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "Y", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const runNodes = Array.from(root.querySelectorAll('[data-testid="editor-run"]')) as HTMLSpanElement[];
+    expect(runNodes).toHaveLength(2);
+    expect(runNodes[0]?.textContent).toBe("ab");
+    expect(runNodes[0]?.style.fontWeight).not.toBe("700");
+    expect(runNodes[1]?.textContent).toBe("Y");
+    expect(runNodes[1]?.style.fontWeight).toBe("700");
+
+    instance.dispose();
+  });
+
   it("applies a link from the toolbar prompt", async () => {
     const root = document.getElementById("oasis-editor-root") as HTMLElement;
     const instance = createOasisEditor(root);
@@ -896,6 +950,133 @@ describe("OasisEditor", () => {
     expect(selectedRun.style.fontSize).toBe("24px");
     expect(selectedRun.style.color).toBe("rgb(255, 0, 0)");
     expect(selectedRun.style.backgroundColor).toBe("rgb(255, 255, 0)");
+
+    instance.dispose();
+  });
+
+  it("applies named paragraph styles from the toolbar to rendered text", async () => {
+    const root = document.getElementById("oasis-editor-root") as HTMLElement;
+    const instance = createOasisEditor(root);
+    const input = root.querySelector('[data-testid="editor-input"]') as HTMLTextAreaElement;
+
+    input.value = "Title";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "Title", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const styleSelect = root.querySelector(
+      '[data-testid="editor-toolbar-style"]',
+    ) as HTMLSelectElement;
+    styleSelect.value = "heading1";
+    styleSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    await Promise.resolve();
+
+    const runNode = root.querySelector('[data-testid="editor-run"]') as HTMLSpanElement;
+    expect(runNode.style.fontFamily).toContain("Calibri Light");
+    expect(runNode.style.fontSize).toBe("27px");
+    expect(runNode.style.color).toBe("rgb(46, 116, 181)");
+
+    instance.dispose();
+  });
+
+  it("applies pending inline styles at the caret without rewriting existing text", async () => {
+    const root = document.getElementById("oasis-editor-root") as HTMLElement;
+    const instance = createOasisEditor(root);
+    const input = root.querySelector('[data-testid="editor-input"]') as HTMLTextAreaElement;
+
+    input.value = "base";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "base", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const fontFamilySelect = root.querySelector(
+      '[data-testid="editor-toolbar-font-family"]',
+    ) as HTMLSelectElement;
+    const fontSizeSelect = root.querySelector(
+      '[data-testid="editor-toolbar-font-size"]',
+    ) as HTMLSelectElement;
+    const colorInput = root.querySelector('[data-testid="editor-toolbar-color"]') as HTMLInputElement;
+    const highlightInput = root.querySelector(
+      '[data-testid="editor-toolbar-highlight"]',
+    ) as HTMLInputElement;
+
+    expect(fontFamilySelect.disabled).toBe(false);
+    expect(fontSizeSelect.disabled).toBe(false);
+    expect(colorInput.disabled).toBe(false);
+    expect(highlightInput.disabled).toBe(false);
+
+    fontFamilySelect.value = "Georgia";
+    fontFamilySelect.dispatchEvent(new Event("change", { bubbles: true }));
+    await Promise.resolve();
+
+    fontSizeSelect.value = "24";
+    fontSizeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    await Promise.resolve();
+
+    colorInput.value = "#ff0000";
+    colorInput.dispatchEvent(new Event("input", { bubbles: true }));
+    await Promise.resolve();
+
+    highlightInput.value = "#ffff00";
+    highlightInput.dispatchEvent(new Event("input", { bubbles: true }));
+    await Promise.resolve();
+
+    input.value = "X";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "X", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const runNodes = Array.from(root.querySelectorAll('[data-testid="editor-run"]')) as HTMLSpanElement[];
+    expect(runNodes).toHaveLength(2);
+    expect(runNodes[0]?.textContent).toBe("base");
+    expect(runNodes[0]?.style.fontFamily).not.toContain("Georgia");
+    expect(runNodes[0]?.style.fontSize).not.toBe("24px");
+    expect(runNodes[1]?.textContent).toBe("X");
+    expect(runNodes[1]?.style.fontFamily).toContain("Georgia");
+    expect(runNodes[1]?.style.fontSize).toBe("24px");
+    expect(runNodes[1]?.style.color).toBe("rgb(255, 0, 0)");
+    expect(runNodes[1]?.style.backgroundColor).toBe("rgb(255, 255, 0)");
+
+    instance.dispose();
+  });
+
+  it("applies pending strike, superscript, and subscript at the caret without rewriting existing text", async () => {
+    const root = document.getElementById("oasis-editor-root") as HTMLElement;
+    const instance = createOasisEditor(root);
+    const input = root.querySelector('[data-testid="editor-input"]') as HTMLTextAreaElement;
+
+    input.value = "base";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "base", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const strikeButton = root.querySelector('[data-testid="editor-toolbar-strike"]') as HTMLButtonElement;
+    const superscriptButton = root.querySelector(
+      '[data-testid="editor-toolbar-superscript"]',
+    ) as HTMLButtonElement;
+    const subscriptButton = root.querySelector(
+      '[data-testid="editor-toolbar-subscript"]',
+    ) as HTMLButtonElement;
+
+    expect(strikeButton.disabled).toBe(false);
+    expect(superscriptButton.disabled).toBe(false);
+    expect(subscriptButton.disabled).toBe(false);
+
+    strikeButton.click();
+    await Promise.resolve();
+    superscriptButton.click();
+    await Promise.resolve();
+    subscriptButton.click();
+    await Promise.resolve();
+
+    input.value = "X";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "X", inputType: "insertText" }));
+    await Promise.resolve();
+
+    const runNodes = Array.from(root.querySelectorAll('[data-testid="editor-run"]')) as HTMLSpanElement[];
+    expect(runNodes).toHaveLength(2);
+    expect(runNodes[0]?.textContent).toBe("base");
+    expect(runNodes[0]?.style.textDecoration).not.toContain("line-through");
+    expect(runNodes[0]?.style.verticalAlign).not.toBe("sub");
+    expect(runNodes[1]?.textContent).toBe("X");
+    expect(runNodes[1]?.style.textDecoration).toContain("line-through");
+    expect(runNodes[1]?.style.verticalAlign).toBe("sub");
 
     instance.dispose();
   });

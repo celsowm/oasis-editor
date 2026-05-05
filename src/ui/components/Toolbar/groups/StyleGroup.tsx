@@ -26,7 +26,6 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
 
       <ToolbarSelect
         data-testid="editor-toolbar-font-family"
-        disabled={ctx().selectionCollapsed()}
         value={t_style().fontFamily}
         onChange={(event) =>
           ctx().applyValueStyleCommand("fontFamily", event.currentTarget.value || null)
@@ -43,7 +42,6 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
       <ToolbarSelect
         small
         data-testid="editor-toolbar-font-size"
-        disabled={ctx().selectionCollapsed()}
         value={t_style().fontSize}
         onChange={(event) =>
           ctx().applyValueStyleCommand(
@@ -68,7 +66,6 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
           type="color"
           class="oasis-editor-tool-color-input"
           data-testid="editor-toolbar-color"
-          disabled={ctx().selectionCollapsed()}
           value={t_style().color || "#111827"}
           onInput={(event) => ctx().applyValueStyleCommand("color", event.currentTarget.value)}
           aria-label={t("toolbar.color")}
@@ -81,7 +78,6 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
           type="color"
           class="oasis-editor-tool-color-input"
           data-testid="editor-toolbar-highlight"
-          disabled={ctx().selectionCollapsed()}
           value={t_style().highlight || "#fef08a"}
           onInput={(event) =>
             ctx().applyValueStyleCommand("highlight", event.currentTarget.value)

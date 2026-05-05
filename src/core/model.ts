@@ -310,6 +310,22 @@ export function resolveEffectiveTextStyle(
 }
 
 /**
+ * Resolve the effective text style for a run, inheriting textStyle from the
+ * paragraph named style when the run does not override it locally.
+ */
+export function resolveEffectiveTextStyleForParagraph(
+  style: EditorTextStyle | undefined,
+  paragraphStyleId: string | undefined,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): Required<EditorTextStyle> {
+  const paragraphNamed = resolveNamedTextStyle(paragraphStyleId, styles);
+  const runNamed = resolveNamedTextStyle(style?.styleId, styles);
+  const inherited = mergeTextStyles(paragraphNamed, runNamed);
+  const merged = mergeTextStyles(inherited, style);
+  return { ...DEFAULT_TEXT_STYLE, ...merged };
+}
+
+/**
  * Resolve the effective paragraph style:
  * 1. Resolve named style via styleId + basedOn chain
  * 2. Apply local overrides (undefined → inherit, null → keep as null for reset)

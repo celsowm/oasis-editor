@@ -10,7 +10,7 @@ import {
   getParagraphs,
   positionToParagraphOffset,
   resolveEffectiveParagraphStyle,
-  resolveEffectiveTextStyle,
+  resolveEffectiveTextStyleForParagraph,
 } from "../core/model.js";
 import { clampPosition, normalizeSelection } from "../core/selection.js";
 
@@ -87,7 +87,13 @@ function getSelectedRunStyles(state: EditorState): EditorTextStyle[] {
       return [];
     }
     const style = getCollapsedRunStyle(paragraph, clampPosition(state, state.selection.focus));
-    return style ? [resolveEffectiveTextStyle(style, docStyles)] : [];
+    return [
+      resolveEffectiveTextStyleForParagraph(
+        style,
+        paragraph.style?.styleId,
+        docStyles,
+      ),
+    ];
   }
 
   const styles: EditorTextStyle[] = [];
@@ -106,7 +112,13 @@ function getSelectedRunStyles(state: EditorState): EditorTextStyle[] {
     for (const run of paragraph.runs) {
       const runEnd = runStart + run.text.length;
       if (selectionOverlapsRun(runStart, runEnd, selectionStart, selectionEnd)) {
-        styles.push(resolveEffectiveTextStyle(run.styles, docStyles));
+        styles.push(
+          resolveEffectiveTextStyleForParagraph(
+            run.styles,
+            paragraph.style?.styleId,
+            docStyles,
+          ),
+        );
       }
       runStart = runEnd;
     }

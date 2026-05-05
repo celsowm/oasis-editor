@@ -17,7 +17,6 @@ export function FormatGroup(props: { ctx: () => EditorToolbarCtx }) {
             icon={button.icon}
             active={!!t_style()[button.key]}
             data-testid={button.testId}
-            disabled={ctx().selectionCollapsed()}
             onClick={() => ctx().applyBooleanStyleCommand(button.key)}
             tooltip={t(`toolbar.${button.key}` as any)}
           />

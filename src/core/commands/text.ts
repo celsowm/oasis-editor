@@ -4,14 +4,18 @@ import { createEditorStyledRun } from "../editorState.js";
 import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
 import { deleteSelectionRange, getFocusParagraph, getStyleAtOffset, insertRunsAtOffset, cloneParagraph, cloneStateWithParagraphs, withSelection, sliceRuns, buildParagraphFromRuns, createParagraphFromRuns, cloneParagraphs, cloneRun, ToggleableTextStyleKey, mapRunsInRange, setBooleanStyle, preserveSelectionByParagraphOffsets, ValueTextStyleKey, setValueStyle } from "./utils.js";
 
-export function insertTextAtSelection(state: EditorState, text: string): EditorState {
+export function insertTextAtSelection(
+  state: EditorState,
+  text: string,
+  styleOverride?: EditorTextStyle,
+): EditorState {
   if (text.length === 0) {
     return state;
   }
 
   const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
-  const styles = getStyleAtOffset(paragraph, offset);
+  const styles = styleOverride ? { ...styleOverride } : getStyleAtOffset(paragraph, offset);
   
   const insertedRun: EditorTextRun = {
     id: `run:${Math.random().toString(36).slice(2, 9)}`,
@@ -41,20 +45,24 @@ export function insertTextAtSelection(state: EditorState, text: string): EditorS
   );
 }
 
-export function insertPlainTextAtSelection(state: EditorState, text: string): EditorState {
+export function insertPlainTextAtSelection(
+  state: EditorState,
+  text: string,
+  styleOverride?: EditorTextStyle,
+): EditorState {
   if (text.length === 0) {
     return state;
   }
 
   const normalizedText = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   if (!normalizedText.includes("\n")) {
-    return insertTextAtSelection(state, normalizedText);
+    return insertTextAtSelection(state, normalizedText, styleOverride);
   }
 
   const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
   const lines = normalizedText.split("\n");
-  const insertionStyles = getStyleAtOffset(paragraph, offset);
+  const insertionStyles = styleOverride ? { ...styleOverride } : getStyleAtOffset(paragraph, offset);
   const beforeRuns = sliceRuns(paragraph, 0, offset);
   const firstParagraph = buildParagraphFromRuns(paragraph, [
     ...beforeRuns,

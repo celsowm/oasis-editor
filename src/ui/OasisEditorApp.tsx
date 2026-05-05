@@ -172,6 +172,7 @@ import { createEditorTableOperations } from "../app/controllers/useEditorTableOp
 import { createEditorImageOperations } from "../app/controllers/useEditorImageOperations.js";
 import { createEditorTableResize } from "../app/controllers/useEditorTableResize.js";
 import { createEditorTableDrag } from "../app/controllers/useEditorTableDrag.js";
+import { cloneStyle } from "../core/commands/utils.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
 import { FindReplaceDialog } from "./components/FindReplace/FindReplaceDialog.js";
@@ -254,6 +255,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const [redoStack, setRedoStack] = createSignal<EditorState[]>([]);
   const [hoveredRevision, setHoveredRevision] =
     createSignal<RevisionBox | null>(null);
+  const [pendingCaretTextStyle, setPendingCaretTextStyle] =
+    createSignal<EditorTextStyle | undefined>(undefined);
   const [linkDialog, setLinkDialog] = createSignal<{
     isOpen: boolean;
     initialHref: string;
@@ -321,6 +324,42 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         sections: source.document.sections?.map(cloneSection),
       },
     });
+
+  const clearPendingCaretTextStyle = () => {
+    setPendingCaretTextStyle(undefined);
+  };
+
+  const updatePendingCaretTextStyleValue = <K extends ValueStyleKey>(
+    key: K,
+    value: EditorTextStyle[K] | null,
+  ) => {
+    setPendingCaretTextStyle((current) => {
+      const next = { ...(current ?? {}) } as Record<string, unknown>;
+      if (value === null || value === undefined || value === "") {
+        delete next[key];
+      } else {
+        next[key] = value;
+      }
+      return Object.keys(next).length > 0 ? (next as EditorTextStyle) : undefined;
+    });
+  };
+
+  const updatePendingCaretBooleanStyle = (
+    key: BooleanStyleKey,
+    enabled: boolean,
+  ) => {
+    setPendingCaretTextStyle((current) => {
+      const next = { ...(current ?? {}) } as Record<string, unknown>;
+      next[key] = enabled;
+      if (key === "superscript" && enabled) {
+        next.subscript = false;
+      }
+      if (key === "subscript" && enabled) {
+        next.superscript = false;
+      }
+      return next as EditorTextStyle;
+    });
+  };
 
   const applyState = (nextState: EditorState) => {
     setState(nextState);
@@ -481,7 +520,29 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   };
 
   const toolbarStyleState = (): ToolbarStyleState => {
-    return getToolbarStyleState(state);
+    const resolved = getToolbarStyleState(state);
+    const pending = pendingCaretTextStyle();
+    if (!isSelectionCollapsed(state.selection) || !pending) {
+      return resolved;
+    }
+
+    return {
+      ...resolved,
+      bold: pending.bold ?? resolved.bold,
+      italic: pending.italic ?? resolved.italic,
+      underline: pending.underline ?? resolved.underline,
+      strike: pending.strike ?? resolved.strike,
+      superscript: pending.superscript ?? resolved.superscript,
+      subscript: pending.subscript ?? resolved.subscript,
+      fontFamily: pending.fontFamily ?? resolved.fontFamily,
+      fontSize:
+        pending.fontSize !== undefined && pending.fontSize !== null
+          ? String(pending.fontSize)
+          : resolved.fontSize,
+      color: pending.color ?? resolved.color,
+      highlight: pending.highlight ?? resolved.highlight,
+      link: pending.link ?? resolved.link,
+    };
   };
 
   const selectedImageRun = () => getSelectedImageRun(state);
@@ -714,10 +775,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       `input:text ${JSON.stringify(text)} (len=${text.length}) at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}] run:${JSON.stringify(runStyle)}`,
     );
     clearPreferredColumn();
+    const pendingStyle = cloneStyle(pendingCaretTextStyle());
     applyTransactionalState(
       (current) =>
         tableOps.applyTableAwareParagraphEdit(current, (temp) =>
-          insertTextAtSelection(temp, text),
+          insertTextAtSelection(temp, text, pendingStyle),
         ),
       {
         mergeKey: "insertText",
@@ -754,10 +816,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     );
     suppressedInputText = text;
     clearPreferredColumn();
+    const pendingStyle = cloneStyle(pendingCaretTextStyle());
     applyTransactionalState(
       (current) =>
         tableOps.applyTableAwareParagraphEdit(current, (temp) =>
-          insertTextAtSelection(temp, text),
+          insertTextAtSelection(temp, text, pendingStyle),
         ),
       {
         mergeKey: "insertText",
@@ -1184,6 +1247,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     event: MouseEvent,
     forceTransition = false,
   ) => {
+    clearPendingCaretTextStyle();
     if (tableResize.handleMouseDown(event)) {
       return;
     }
@@ -1382,6 +1446,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   };
 
   const handleSurfaceDblClick = (event: MouseEvent) => {
+    clearPendingCaretTextStyle();
     event.preventDefault();
     const headerZone = (event.target as HTMLElement).closest(
       ".oasis-editor-page-header-zone",
@@ -1400,6 +1465,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     paragraphId: string,
     event: MouseEvent & { currentTarget: HTMLParagraphElement },
   ) => {
+    clearPendingCaretTextStyle();
     event.preventDefault();
     event.stopPropagation();
     const paragraph = getDocumentParagraphs(state.document).find(
@@ -1665,6 +1731,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   };
 
   const onEditorMouseDown = (event: MouseEvent) => {
+    clearPendingCaretTextStyle();
     event.preventDefault();
     focusInput();
   };
@@ -1707,6 +1774,12 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       setImageAltDialog({ isOpen: true, initialAlt }),
   });
 
+  const keyboardCommandsController = {
+    ...commandsController,
+    applyBooleanStyleCommand: (style: BooleanStyleKey) =>
+      applyToolbarBooleanStyleCommand(style),
+  };
+
   const { handleKeyDown: rawHandleKeyDown } = createEditorKeyboardController({
     state: () => state,
     isReadOnly,
@@ -1718,7 +1791,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     applySelectionAwareParagraphCommand:
       tableOps.applySelectionAwareParagraphCommand,
     focusInput,
-    commandsController,
+    commandsController: keyboardCommandsController,
     selectedImageRun,
     setForcePlainTextPaste: (value) => {
       forcePlainTextPaste = value;
@@ -1744,6 +1817,21 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const handleKeyDown = (
     event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
   ) => {
+    if (
+      [
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowUp",
+        "ArrowDown",
+        "Home",
+        "End",
+        "PageUp",
+        "PageDown",
+        "Escape",
+      ].includes(event.key)
+    ) {
+      clearPendingCaretTextStyle();
+    }
     const mods = [
       event.ctrlKey ? "Ctrl" : null,
       event.metaKey ? "Meta" : null,
@@ -1805,6 +1893,42 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const selectionCollapsed = (): boolean =>
     isSelectionCollapsed(state.selection);
 
+  createEffect(() => {
+    if (!selectionCollapsed()) {
+      clearPendingCaretTextStyle();
+    }
+  });
+
+  const applyToolbarValueStyleCommand = <K extends ValueStyleKey>(
+    key: K,
+    value: EditorTextStyle[K] | null,
+  ) => {
+    if (selectionCollapsed()) {
+      logger.info(`setPendingStyle:${key}=${JSON.stringify(value)}`);
+      clearPreferredColumn();
+      resetTransactionGrouping();
+      updatePendingCaretTextStyleValue(key, value);
+      focusInput();
+      return;
+    }
+
+    commandsController.applyValueStyleCommand(key, value);
+  };
+
+  const applyToolbarBooleanStyleCommand = (key: BooleanStyleKey) => {
+    if (selectionCollapsed()) {
+      const nextValue = !toolbarStyleState()[key];
+      logger.info(`setPendingStyle:${key}=${JSON.stringify(nextValue)}`);
+      clearPreferredColumn();
+      resetTransactionGrouping();
+      updatePendingCaretBooleanStyle(key, nextValue);
+      focusInput();
+      return;
+    }
+
+    commandsController.applyBooleanStyleCommand(key);
+  };
+
   const toolbarCtx = {
     state,
     undoStack,
@@ -1819,7 +1943,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     tableActionRestrictionLabel: tableOps.tableActionRestrictionLabel,
     isInsideTable,
     handleExportDocx,
-    toggleFindReplace: (open) => {
+    toggleFindReplace: (open?: boolean) => {
       fr.setIsOpen(open ?? !fr.isOpen());
     },
     performUndo,
@@ -1830,6 +1954,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     applyTransactionalState,
     applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
     ...commandsController,
+    applyBooleanStyleCommand: applyToolbarBooleanStyleCommand,
+    applyValueStyleCommand: applyToolbarValueStyleCommand,
     canMergeSelectedTable: tableOps.canMergeSelectedTable,
     canMergeSelectedTableCells: tableOps.canMergeSelectedTableCells,
     canMergeSelectedTableRows: tableOps.canMergeSelectedTableRows,

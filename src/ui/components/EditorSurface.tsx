@@ -19,6 +19,7 @@ import {
   resolveNamedParagraphStyle,
   resolveNamedTextStyle,
   resolveEffectiveTextStyle,
+  resolveEffectiveTextStyleForParagraph,
   resolveEffectiveParagraphStyle,
 } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
@@ -224,9 +225,14 @@ function buildParagraphListMarkers(
 
 function runStyleToCss(
   style: EditorTextStyle | undefined,
+  paragraphStyleId: string | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
 ): Record<string, string> | undefined {
-  const merged = resolveEffectiveTextStyle(style, styles);
+  const merged = resolveEffectiveTextStyleForParagraph(
+    style,
+    paragraphStyleId,
+    styles,
+  );
 
   const css: Record<string, string> = {};
   const textDecorations: string[] = [];
@@ -313,7 +319,9 @@ function renderParagraph(
     testId?: string;
   },
 ) {
-  const paragraphLayout = layout ?? projectParagraphLayout(paragraph);
+  const paragraphLayout =
+    layout ??
+    projectParagraphLayout(paragraph, undefined, undefined, state.document.styles);
   const chars = paragraphLayout.fragments.flatMap((fragment) => fragment.chars);
   const normalized = () => normalizeSelection(state);
   const isContinuation = (paragraphLayout.startOffset ?? 0) > 0;
@@ -423,6 +431,7 @@ function renderParagraph(
                       data-testid="editor-run"
                       style={runStyleToCss(
                         fragment.styles,
+                        paragraph.style?.styleId,
                         state.document.styles,
                       )}
                       onMouseEnter={

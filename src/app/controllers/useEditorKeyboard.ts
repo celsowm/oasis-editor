@@ -25,6 +25,7 @@ import {
   type EditorState,
 } from "../../core/model.js";
 import { isSelectionCollapsed } from "../../core/selection.js";
+import type { BooleanStyleKey } from "../../ui/toolbarStyleState.js";
 import { resolveWordSelection } from "../../core/wordBoundaries.js";
 import { defaultEditorKeyBindings, EditorCommandRegistry } from "./EditorCommandRegistry.js";
 
@@ -48,7 +49,7 @@ export interface EditorKeyboardDeps {
   commandsController: {
     promptForImageAlt: () => void;
     promptForLink: () => void;
-    applyBooleanStyleCommand: (style: "bold" | "italic" | "underline") => void;
+    applyBooleanStyleCommand: (style: BooleanStyleKey) => void;
     applyParagraphListCommand: (style: "bullet" | "ordered") => void;
     handleListEnter: () => boolean;
     handleListBoundaryBackspace: (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => boolean;
