@@ -5,6 +5,7 @@ import { OutlinePanel } from "../components/Outline/OutlinePanel.js";
 import { EditorToolbar } from "../components/Toolbar/EditorToolbar.js";
 import { OasisEditorEditor } from "../OasisEditorEditor.js";
 import type { EditorToolbarCtx } from "../components/Toolbar/types.js";
+import { t } from "../../i18n/index.js";
 
 export interface ShellProps {
   state: any;
@@ -70,7 +71,7 @@ export function DocumentShell(props: ShellProps) {
       <Show when={props.showChrome}>
         <Show when={props.showTitleBar} fallback={<Show when={props.showMenubar}><Menubar ctx={props.toolbarCtx} /></Show>}>
           <TitleBar
-            title={props.state.document.metadata?.title || "Untitled document"}
+            title={props.state.document.metadata?.title || t("title.untitled")}
             onTitleChange={(newTitle: string) => {
               if (props.state.document.metadata) {
                 props.setState("document", "metadata", "title", newTitle);

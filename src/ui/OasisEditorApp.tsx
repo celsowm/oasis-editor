@@ -178,6 +178,7 @@ import { FindReplaceDialog } from "./components/FindReplace/FindReplaceDialog.js
 import "./components/FindReplace/findReplace.css";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import type { EditorToolbarCtx } from "./components/Toolbar/types.js";
+import { setLocale } from "../i18n/index.js";
 
 interface ActiveImageResize {
   paragraphId: string;
@@ -219,6 +220,9 @@ export interface OasisEditorAppProps {
 type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
+  createEffect(() => {
+    setLocale(props.locale ?? "pt-BR");
+  });
   const logger = createEditorLogger("app");
   const [state, setState] = createStore<EditorState>(
     props.initialState

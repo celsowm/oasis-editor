@@ -4,22 +4,16 @@ import { t } from "../../../i18n/index.js";
 
 export function ToolbarOverflowManager(props: { children: JSX.Element }) {
   const [overflowCount, setOverflowCount] = createSignal(0);
-  const [docsMode, setDocsMode] = createSignal(false);
+  const [separatorIndexes, setSeparatorIndexes] = createSignal<Set<number>>(new Set());
   let containerRef: HTMLDivElement | undefined;
   let measurementRef: HTMLDivElement | undefined;
+  let moreMeasureRef: HTMLButtonElement | undefined;
 
   const resolved = children(() => props.children);
   const items = createMemo(() => resolved.toArray().filter(i => i !== null && i !== undefined));
 
   const updateOverflow = () => {
     if (!containerRef || !measurementRef) return;
-
-    const isDocs = Boolean(containerRef.closest(".oasis-editor-docs"));
-    setDocsMode(isDocs);
-    if (isDocs) {
-      setOverflowCount(0);
-      return;
-    }
 
     const containerWidth = containerRef.clientWidth;
     if (containerWidth <= 0) {
@@ -28,33 +22,50 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
     }
 
     const itemElements = Array.from(measurementRef.children) as HTMLElement[];
+    setSeparatorIndexes(new Set(
+      itemElements
+        .map((element, index) => element.querySelector(".oasis-editor-toolbar-separator") ? index : -1)
+        .filter((index) => index >= 0),
+    ));
     if (itemElements.length === 0) {
       setOverflowCount(0);
       return;
     }
 
     const GAP = 8;
-    // Width reserved for the absolutely-positioned overflow button on the right.
-    // Must match the padding-right applied to the visible items wrapper below.
-    const MORE_BUTTON_WIDTH = 96;
-    const MIN_VISIBLE = 3;
+    const EDGE_PADDING = 16;
+    const MORE_GAP = 16;
+    const moreButtonWidth = moreMeasureRef?.offsetWidth || 40;
+    const itemWidths = itemElements.map((el) => (el.offsetWidth > 0 ? el.offsetWidth : 120) + GAP);
+    const totalWidth = itemWidths.reduce((sum, width) => sum + width, 0);
 
-    let currentWidth = 0;
-    let newOverflowCount = 0;
-
-    for (let i = 0; i < itemElements.length; i++) {
-      const elWidth = itemElements[i].offsetWidth;
-      // If element is not ready, assume a reasonable width to prevent collapse
-      const itemWidth = (elWidth > 0 ? elWidth : 120) + GAP;
-
-      if (i >= MIN_VISIBLE && currentWidth + itemWidth + MORE_BUTTON_WIDTH > containerWidth) {
-        newOverflowCount = itemElements.length - i;
-        break;
-      }
-      currentWidth += itemWidth;
+    if (totalWidth <= containerWidth - EDGE_PADDING) {
+      setOverflowCount(0);
+      return;
     }
 
-    setOverflowCount(newOverflowCount);
+    const availableWidth = Math.max(0, containerWidth - moreButtonWidth - MORE_GAP - EDGE_PADDING);
+    const minVisible = Math.min(1, itemElements.length);
+    let visibleCount = 0;
+    let currentWidth = 0;
+
+    for (let i = 0; i < itemElements.length; i++) {
+      const nextWidth = currentWidth + itemWidths[i];
+      if (i >= minVisible && nextWidth > availableWidth) {
+        break;
+      }
+      currentWidth = nextWidth;
+      visibleCount = i + 1;
+    }
+
+    while (
+      visibleCount > 1 &&
+      itemElements[visibleCount - 1]?.querySelector(".oasis-editor-toolbar-separator")
+    ) {
+      visibleCount -= 1;
+    }
+
+    setOverflowCount(Math.max(0, itemElements.length - visibleCount));
   };
 
   onMount(() => {
@@ -77,7 +88,11 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
   });
 
   const visibleItems = createMemo(() => items().slice(0, items().length - overflowCount()));
-  const hiddenItems = createMemo(() => items().slice(items().length - overflowCount()));
+  const hiddenItems = createMemo(() => {
+    const start = items().length - overflowCount();
+    const separators = separatorIndexes();
+    return items().slice(start).filter((_, index) => !separators.has(start + index));
+  });
 
   return (
     <div 
@@ -87,7 +102,7 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
         display: 'flex',
         "align-items": 'center',
         width: '100%',
-        overflow: docsMode() ? 'auto' : 'hidden',
+        overflow: 'hidden',
         position: 'relative'
       }}
     >
@@ -105,9 +120,29 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
         }}
       >
         <For each={items()}>
-          {(item) => <div style={{ display: 'flex', "align-items": 'center' }}>{item}</div>}
+          {(item) => (
+            <div
+              style={{
+                display: 'flex',
+                "align-items": 'center',
+                "flex-shrink": 0,
+                "white-space": "nowrap",
+              }}
+            >
+              {item}
+            </div>
+          )}
         </For>
       </div>
+      <button
+        ref={moreMeasureRef}
+        type="button"
+        class="oasis-editor-tool-button oasis-editor-tool-button-dropdown oasis-editor-toolbar-more-measure"
+        aria-hidden="true"
+        tabIndex={-1}
+      >
+        <i data-lucide="ellipsis" />
+      </button>
 
       {/* 2. Real Visible Toolbar — flex:1 with min-width:0 so it shares
            space cleanly with the overflow button sibling. */}
@@ -117,7 +152,7 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
         gap: '8px',
         flex: '1 1 0',
         "min-width": '0',
-        overflow: docsMode() ? 'visible' : 'hidden'
+        overflow: 'hidden'
       }}>
         <For each={visibleItems()}>
           {(item) => <div class="oasis-editor-toolbar-item-wrapper" style={{ display: 'flex', "align-items": 'center', "flex-shrink": 0 }}>{item}</div>}
@@ -129,20 +164,18 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
       <Show when={overflowCount() > 0}>
         <div style={{
           "flex-shrink": 0,
-          "padding-left": "8px"
+          "padding-left": "8px",
+          "padding-right": "8px"
         }}>
           <ToolbarDropdown 
             label="" 
             icon="ellipsis" 
             testId="editor-toolbar-overflow-dropdown"
             tooltip={t("toolbar.moreTools")}
+            hideChevron
+            menuClass="oasis-editor-toolbar-overflow-dropdown-menu"
           >
-            <div class="oasis-editor-toolbar-overflow-menu" style={{ 
-              display: "flex", 
-              "flex-direction": "column", 
-              gap: "8px", 
-              padding: "8px" 
-            }}>
+            <div class="oasis-editor-toolbar-overflow-menu">
                 <For each={hiddenItems()}>
                   {(item) => (
                     <div class="oasis-editor-toolbar-overflow-item">

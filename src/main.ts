@@ -23,32 +23,12 @@ function hideLoading(): void {
 }
 
 function init(): void {
-  const tabsContainer = document.createElement("div");
-  tabsContainer.style.padding = "10px";
-  tabsContainer.style.background = "#eee";
-  tabsContainer.style.display = "flex";
-  tabsContainer.style.gap = "10px";
-  
-  const shells: Array<"document" | "inline" | "balloon"> = ["document", "inline", "balloon"];
-  let currentInstance: any = null;
+  const params = new URLSearchParams(window.location.search);
+  const requestedShell = params.get("shell");
+  const shell = requestedShell === "inline" || requestedShell === "balloon" ? requestedShell : "document";
 
-  shells.forEach(shell => {
-    const btn = document.createElement("button");
-    btn.textContent = shell.charAt(0).toUpperCase() + shell.slice(1) + " Shell";
-    btn.onclick = () => {
-      if (currentInstance) currentInstance.dispose();
-      container!.innerHTML = "";
-      currentInstance = createOasisEditor(container as HTMLElement, {
-        shell,
-        uiVariant: "docs",
-      });
-    };
-    tabsContainer.appendChild(btn);
-  });
-
-  document.body.prepend(tabsContainer);
-  currentInstance = createOasisEditor(container as HTMLElement, {
-    shell: "document",
+  createOasisEditor(container as HTMLElement, {
+    shell,
     uiVariant: "docs",
   });
   hideLoading();

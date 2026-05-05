@@ -109,7 +109,12 @@ export const ptBR = {
   "generic.cancel": "Cancelar",
   "generic.save": "Salvar",
   "generic.apply": "Aplicar",
+  "title.untitled": "Documento sem título",
+  "title.documentTitle": "Título do documento",
+  "title.star": "Marcar documento com estrela",
+  "title.move": "Mover documento",
   "title.share": "Compartilhar",
+  "title.currentUser": "Usuário atual",
 
   // Dialogs
   "dialog.imageAlt.title": "Texto Alternativo da Imagem",
@@ -163,4 +168,6 @@ export const ptBR = {
   "menu.help": "Ajuda",
   "menu.help.shortcuts": "Atalhos de teclado",
   "menu.help.about": "Sobre",
+  "outline.toggle": "Alternar estrutura",
+  "outline.empty": "Os títulos adicionados ao documento aparecerão aqui.",
 };

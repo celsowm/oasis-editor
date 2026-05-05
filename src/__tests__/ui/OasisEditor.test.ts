@@ -30,6 +30,27 @@ describe("OasisEditor", () => {
     expect(root.textContent).toBe("");
   });
 
+  it("localizes docs chrome labels in Portuguese", () => {
+    const root = document.getElementById("oasis-editor-root") as HTMLElement;
+    const instance = createOasisEditor(root, {
+      uiVariant: "docs",
+      locale: "pt-BR",
+    });
+
+    const title = root.querySelector(".oasis-titlebar-title-input") as HTMLInputElement;
+    const unlink = root.querySelector('[data-testid="editor-toolbar-unlink"]') as HTMLButtonElement;
+    const outlineToggle = root.querySelector(".oasis-outline-toggle") as HTMLButtonElement;
+
+    expect(title.value).toBe("Documento sem título");
+    expect(title.getAttribute("aria-label")).toBe("Título do documento");
+    expect(unlink.textContent).toContain("Remover Link");
+    expect(outlineToggle.getAttribute("aria-label")).toBe("Alternar estrutura");
+    expect(root.textContent).not.toContain("Untitled document");
+    expect(root.textContent).not.toContain("Remove Link");
+
+    instance.dispose();
+  });
+
   it("renders the public container without demo chrome and emits state changes", async () => {
     const root = document.getElementById("oasis-editor-root") as HTMLElement;
     const onStateChange = vi.fn();

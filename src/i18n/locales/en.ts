@@ -109,7 +109,12 @@ export const en = {
   "generic.cancel": "Cancel",
   "generic.save": "Save",
   "generic.apply": "Apply",
+  "title.untitled": "Untitled document",
+  "title.documentTitle": "Document title",
+  "title.star": "Star document",
+  "title.move": "Move document",
   "title.share": "Share",
+  "title.currentUser": "Current user",
 
   // Dialogs
   "dialog.imageAlt.title": "Image Alt Text",
@@ -163,4 +168,6 @@ export const en = {
   "menu.help": "Help",
   "menu.help.shortcuts": "Keyboard shortcuts",
   "menu.help.about": "About",
+  "outline.toggle": "Toggle outline",
+  "outline.empty": "Headings you add to the document will appear here.",
 };

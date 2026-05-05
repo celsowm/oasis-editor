@@ -9,15 +9,16 @@ export interface TitleBarProps {
 
 export function TitleBar(props: TitleBarProps) {
   const [editingTitle, setEditingTitle] = createSignal(props.title);
+  const displayTitle = () => props.title === "Untitled document" ? t("title.untitled") : props.title;
   
   createEffect(() => {
-    setEditingTitle(props.title);
+    setEditingTitle(displayTitle());
   });
 
   const handleBlur = () => {
     let finalTitle = editingTitle().trim();
     if (!finalTitle) {
-      finalTitle = "Untitled document"; // Default title
+      finalTitle = t("title.untitled");
       setEditingTitle(finalTitle);
     }
     props.onTitleChange(finalTitle);
@@ -28,14 +29,14 @@ export function TitleBar(props: TitleBarProps) {
       (e.currentTarget as HTMLInputElement).blur();
     }
     if (e.key === "Escape") {
-      setEditingTitle(props.title);
+      setEditingTitle(displayTitle());
       (e.currentTarget as HTMLInputElement).blur();
     }
   };
 
   // Sync browser title
   createEffect(() => {
-    document.title = `${props.title} - Oasis Editor`;
+    document.title = `${displayTitle()} - Oasis Editor`;
     onCleanup(() => {
       document.title = "Oasis Editor";
     });
@@ -58,16 +59,16 @@ export function TitleBar(props: TitleBarProps) {
               onInput={(e) => setEditingTitle(e.currentTarget.value)}
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
-              aria-label="Document Title"
+              aria-label={t("title.documentTitle")}
               class="oasis-titlebar-title-input"
               onFocus={(e) => {
                 e.currentTarget.select();
               }}
             />
-            <button type="button" class="oasis-titlebar-icon-button" aria-label="Star document" title="Star document">
+            <button type="button" class="oasis-titlebar-icon-button" aria-label={t("title.star")} title={t("title.star")}>
               <i data-lucide="star" />
             </button>
-            <button type="button" class="oasis-titlebar-icon-button" aria-label="Move document" title="Move document">
+            <button type="button" class="oasis-titlebar-icon-button" aria-label={t("title.move")} title={t("title.move")}>
               <i data-lucide="folder" />
             </button>
           </div>
@@ -86,7 +87,7 @@ export function TitleBar(props: TitleBarProps) {
           <i data-lucide="lock-keyhole" />
           <span>{t("title.share") || "Share"}</span>
         </button>
-        <div class="oasis-titlebar-avatar" aria-label="Current user">
+        <div class="oasis-titlebar-avatar" aria-label={t("title.currentUser")}>
           U
         </div>
       </div>

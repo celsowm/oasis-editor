@@ -6,7 +6,7 @@ const SAMPLE_PNG = Buffer.from(
 );
 
 async function ensureToolbarVisible(page: import("@playwright/test").Page, testId: string) {
-  const target = page.locator(`[data-testid="${testId}"]`);
+  const target = page.locator(`[data-testid="${testId}"]:visible`);
   if (!(await target.isVisible().catch(() => false))) {
     const overflow = page.locator('[data-testid="editor-toolbar-overflow-dropdown"]');
     if (await overflow.isVisible().catch(() => false)) {
@@ -168,9 +168,9 @@ test.describe("Oasis Editor 2 smoke tests", () => {
       formattedRun.evaluate((node) => getComputedStyle(node).textDecorationLine),
     ).toContain("underline");
 
-    const lineHeight = page.locator('[data-testid="editor-toolbar-line-height"]');
-    const spacingAfter = page.locator('[data-testid="editor-toolbar-spacing-after"]');
-    const indentLeft = page.locator('[data-testid="editor-toolbar-indent-left"]');
+    const lineHeight = await ensureToolbarVisible(page, "editor-toolbar-line-height");
+    const spacingAfter = await ensureToolbarVisible(page, "editor-toolbar-spacing-after");
+    const indentLeft = await ensureToolbarVisible(page, "editor-toolbar-indent-left");
 
     await lineHeight.fill("1.8");
     await lineHeight.press("Enter");

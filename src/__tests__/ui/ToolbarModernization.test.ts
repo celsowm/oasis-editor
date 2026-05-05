@@ -59,8 +59,7 @@ describe("ToolbarModernization Safety Net", () => {
     "editor-toolbar-align-justify",
     "editor-toolbar-list-bullet",
     "editor-toolbar-list-ordered",
-    "editor-toolbar-list-format",
-    "editor-toolbar-list-start-at",
+    "editor-toolbar-list-options-dropdown",
     "editor-toolbar-orientation",
     "editor-toolbar-margins",
     "editor-toolbar-section-break-next",
@@ -95,12 +94,20 @@ describe("ToolbarModernization Safety Net", () => {
 
     // Check dropdown content is hidden initially
     expect(root.querySelector('[data-testid="editor-toolbar-export-docx"]')).toBeNull();
+    expect(document.querySelector('[data-testid="editor-toolbar-list-format"]')).toBeNull();
 
     // Open File dropdown
     (root.querySelector('[data-testid="editor-toolbar-file-dropdown"]') as HTMLElement).click();
     await Promise.resolve();
     await new Promise(r => setTimeout(r, 0));
     expect(document.querySelector('[data-testid="editor-toolbar-export-docx"]')).not.toBeNull();
+
+    // Open list options dropdown
+    (root.querySelector('[data-testid="editor-toolbar-list-options-dropdown"]') as HTMLElement).click();
+    await Promise.resolve();
+    await new Promise(r => setTimeout(r, 0));
+    expect(document.querySelector('[data-testid="editor-toolbar-list-format"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="editor-toolbar-list-start-at"]')).not.toBeNull();
 
     // Insert table to trigger context
     const insertDropdown = root.querySelector('[data-testid="editor-toolbar-insert-dropdown"]') as HTMLElement;

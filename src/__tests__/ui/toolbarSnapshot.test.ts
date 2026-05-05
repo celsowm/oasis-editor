@@ -46,6 +46,7 @@ const EXPECTED_TOOLBAR_TESTIDS: readonly string[] = [
   "editor-toolbar-link",
   "editor-toolbar-list-bullet",
   "editor-toolbar-list-format",
+  "editor-toolbar-list-options-dropdown",
   "editor-toolbar-list-ordered",
   "editor-toolbar-list-start-at",
   "editor-toolbar-margins",
@@ -150,7 +151,7 @@ describe("Toolbar testid snapshot (regression guard for Phase 2 UI rewrite)", ()
     });
 
     // 3. Open dropdowns to render their contents in Portals
-    const dropdowns = ["file", "insert", "review"];
+    const dropdowns = ["file", "insert", "review", "list-options"];
     for (const name of dropdowns) {
       const dropdown = root.querySelector(`[data-testid="editor-toolbar-${name}-dropdown"]`) as HTMLElement;
       dropdown.click();

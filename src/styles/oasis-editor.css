@@ -142,7 +142,7 @@
   backdrop-filter: blur(12px);
   min-height: 48px;
   flex-wrap: nowrap;
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 .oasis-editor-main-container {
@@ -397,6 +397,29 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(95, 99, 104, 0.42) transparent;
+}
+
+.oasis-editor-editor::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.oasis-editor-editor::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.oasis-editor-editor::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: rgba(95, 99, 104, 0.36);
+  background-clip: content-box;
+}
+
+.oasis-editor-editor::-webkit-scrollbar-thumb:hover {
+  background: rgba(95, 99, 104, 0.5);
+  background-clip: content-box;
 }
 
 .oasis-editor-statusbar {
@@ -838,11 +861,79 @@
   max-width: none;
   min-height: 42px;
   margin: 0;
-  padding: 6px 16px;
+  padding: 6px 20px 6px 14px;
   border-width: 1px 0;
   border-radius: 0;
   box-shadow: none;
   backdrop-filter: none;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.oasis-editor-docs .oasis-editor-toolbar-group {
+  flex-wrap: nowrap;
+  gap: 2px;
+  padding: 0 3px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.oasis-editor-docs .oasis-editor-toolbar-item-wrapper {
+  max-width: 100%;
+}
+
+.oasis-editor-docs .oasis-editor-toolbar-separator {
+  height: 24px;
+  margin: 0 3px;
+  background: rgba(95, 99, 104, 0.22);
+}
+
+.oasis-editor-docs .oasis-editor-tool-button,
+.oasis-editor-docs .oasis-editor-tool-select,
+.oasis-editor-docs .oasis-editor-tool-color,
+.oasis-editor-docs .oasis-editor-tool-metric {
+  height: 32px;
+  min-height: 32px;
+}
+
+.oasis-editor-docs .oasis-editor-tool-button i,
+.oasis-editor-docs .oasis-editor-tool-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.oasis-editor-docs .oasis-editor-tool-button:disabled,
+.oasis-editor-docs .oasis-editor-tool-select:disabled,
+.oasis-editor-docs .oasis-editor-tool-color:has(input:disabled) {
+  opacity: 0.56;
+}
+
+.oasis-editor-toolbar-more-measure {
+  position: absolute;
+  top: 0;
+  right: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.oasis-editor-toolbar-overflow-menu .oasis-editor-toolbar-group {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  border: 0;
+  background: transparent;
+}
+
+.oasis-editor-toolbar-overflow-dropdown-menu {
+  width: min(360px, calc(100vw - 16px));
+  max-height: min(520px, calc(100vh - 88px));
+  overflow: auto;
+}
+
+.oasis-editor-toolbar-overflow-menu .oasis-editor-toolbar-separator {
+  width: 100%;
+  height: 1px;
+  margin: 2px 0;
+  background: var(--oasis-border-color-muted);
 }
 
 .oasis-editor-docs .oasis-editor-editor-shell {
@@ -865,15 +956,21 @@
 
 .oasis-editor-docs .oasis-editor-paper {
   border-radius: 2px;
+  border: 1px solid rgba(218, 220, 224, 0.92);
   box-shadow:
-    0 1px 2px rgba(60, 64, 67, 0.2),
-    0 1px 3px 1px rgba(60, 64, 67, 0.08);
+    0 1px 2px rgba(60, 64, 67, 0.24),
+    0 2px 6px 1px rgba(60, 64, 67, 0.10);
 }
 
 .oasis-editor-docs .oasis-editor-statusbar {
   min-height: 28px;
-  padding: 4px 18px;
-  background: var(--oasis-toolbar-bg);
+  margin-top: 8px;
+  padding: 4px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  align-self: flex-end;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.10);
 }
 
 .oasis-titlebar {
@@ -902,7 +999,7 @@
 
 .oasis-titlebar-actions {
   flex: 0 0 auto;
-  gap: 12px;
+  gap: 10px;
 }
 
 .oasis-titlebar-doc-icon {
@@ -982,13 +1079,13 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 36px;
-  padding: 0 18px;
+  min-height: 34px;
+  padding: 0 16px;
   border: 0;
-  border-radius: 18px;
+  border-radius: 999px;
   background: var(--oasis-accent-active);
   color: var(--oasis-accent-active-text);
-  font: 600 14px/1 var(--oasis-font-ui);
+  font: 600 13px/1 var(--oasis-font-ui);
   cursor: pointer;
 }
 
@@ -1090,7 +1187,7 @@
   flex-direction: column;
   width: 248px;
   border-right: 1px solid var(--oasis-border-color-muted);
-  background: var(--oasis-toolbar-bg);
+  background: rgba(255, 255, 255, 0.68);
   overflow: hidden;
   transition:
     width 0.18s ease,
@@ -1098,8 +1195,10 @@
 }
 
 .oasis-outline-panel-collapsed {
-  flex-basis: 44px;
-  width: 44px;
+  flex-basis: 32px;
+  width: 32px;
+  border-right-color: transparent;
+  background: transparent;
 }
 
 .oasis-outline-header {
@@ -1146,11 +1245,12 @@
 }
 
 .oasis-outline-empty {
-  margin-top: 22px;
+  margin-top: 14px;
+  padding: 0 4px;
   color: var(--oasis-text-muted);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.45;
-  text-align: center;
+  text-align: left;
 }
 
 .oasis-outline-item {

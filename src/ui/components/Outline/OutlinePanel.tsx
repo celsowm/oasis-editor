@@ -108,7 +108,7 @@ export function OutlinePanel(props: OutlinePanelProps) {
         <button
           onClick={toggleCollapsed}
           class="oasis-outline-toggle"
-          aria-label="Toggle Outline"
+          aria-label={t("outline.toggle")}
         >
           <i data-lucide={collapsed() ? "panel-left-open" : "panel-left-close"} />
         </button>
@@ -120,7 +120,7 @@ export function OutlinePanel(props: OutlinePanelProps) {
             when={items().length > 0}
             fallback={
               <div class="oasis-outline-empty">
-                Headings you add to the document will appear here.
+                {t("outline.empty")}
               </div>
             }
           >

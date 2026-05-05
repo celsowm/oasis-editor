@@ -7,6 +7,8 @@ export interface ToolbarDropdownProps {
   children: JSX.Element;
   tooltip?: string;
   testId?: string;
+  hideChevron?: boolean;
+  menuClass?: string;
 }
 
 export function ToolbarDropdown(props: ToolbarDropdownProps) {
@@ -20,9 +22,13 @@ export function ToolbarDropdown(props: ToolbarDropdownProps) {
   const updateCoords = () => {
     if (buttonRef && isOpen()) {
       const rect = buttonRef.getBoundingClientRect();
+      const menuWidth = menuRef?.offsetWidth || 240;
+      const viewportPadding = 8;
+      const preferredLeft = rect.left + window.scrollX;
+      const maxLeft = window.scrollX + window.innerWidth - menuWidth - viewportPadding;
       setCoords({
         top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
+        left: Math.max(window.scrollX + viewportPadding, Math.min(preferredLeft, maxLeft)),
       });
     }
   };
@@ -37,6 +43,7 @@ export function ToolbarDropdown(props: ToolbarDropdownProps) {
   createEffect(() => {
     if (isOpen()) {
       updateCoords();
+      requestAnimationFrame(updateCoords);
       window.addEventListener("resize", updateCoords);
       window.addEventListener("scroll", updateCoords, true);
     } else {
@@ -71,14 +78,16 @@ export function ToolbarDropdown(props: ToolbarDropdownProps) {
         <Show when={props.label}>
           <span class="oasis-editor-tool-button-label">{props.label}</span>
         </Show>
-        <i data-lucide="chevron-down" class="oasis-editor-dropdown-chevron" />
+        <Show when={!props.hideChevron}>
+          <i data-lucide="chevron-down" class="oasis-editor-dropdown-chevron" />
+        </Show>
       </button>
 
       <Show when={isOpen()}>
         <Portal>
           <div
             ref={menuRef}
-            class="oasis-editor-toolbar-dropdown-menu"
+            class={`oasis-editor-toolbar-dropdown-menu ${props.menuClass || ""}`}
             style={{
               position: "absolute",
               top: `${coords().top + 4}px`,
@@ -86,7 +95,10 @@ export function ToolbarDropdown(props: ToolbarDropdownProps) {
             }}
             onClick={(e) => {
                // Close if a button inside is clicked
-               if ((e.target as HTMLElement).closest('button')) {
+               if (
+                 (e.target as HTMLElement).closest('button') &&
+                 !(e.target as HTMLElement).closest(".oasis-editor-toolbar-list-options")
+               ) {
                  setIsOpen(false);
                }
             }}
