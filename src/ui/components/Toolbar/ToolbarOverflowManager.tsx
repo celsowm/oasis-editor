@@ -4,6 +4,7 @@ import { t } from "../../../i18n/index.js";
 
 export function ToolbarOverflowManager(props: { children: JSX.Element }) {
   const [overflowCount, setOverflowCount] = createSignal(0);
+  const [docsMode, setDocsMode] = createSignal(false);
   let containerRef: HTMLDivElement | undefined;
   let measurementRef: HTMLDivElement | undefined;
 
@@ -12,6 +13,13 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
 
   const updateOverflow = () => {
     if (!containerRef || !measurementRef) return;
+
+    const isDocs = Boolean(containerRef.closest(".oasis-editor-docs"));
+    setDocsMode(isDocs);
+    if (isDocs) {
+      setOverflowCount(0);
+      return;
+    }
 
     const containerWidth = containerRef.clientWidth;
     if (containerWidth <= 0) {
@@ -79,7 +87,7 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
         display: 'flex',
         "align-items": 'center',
         width: '100%',
-        overflow: 'hidden',
+        overflow: docsMode() ? 'auto' : 'hidden',
         position: 'relative'
       }}
     >
@@ -109,7 +117,7 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
         gap: '8px',
         flex: '1 1 0',
         "min-width": '0',
-        overflow: 'hidden'
+        overflow: docsMode() ? 'visible' : 'hidden'
       }}>
         <For each={visibleItems()}>
           {(item) => <div class="oasis-editor-toolbar-item-wrapper" style={{ display: 'flex', "align-items": 'center', "flex-shrink": 0 }}>{item}</div>}

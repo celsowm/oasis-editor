@@ -4,7 +4,11 @@ const PORT = process.env.PORT || 5173;
 
 export default defineConfig({
   testDir: './e2e',
-  testIgnore: ['**/editor.spec.ts', '**/image.spec.ts'],
+  testIgnore: [
+    '**/editor.spec.ts',
+    '**/image.spec.ts',
+    '**/*-legacy.spec.ts',
+  ],
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,

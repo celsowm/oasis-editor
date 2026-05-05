@@ -15,7 +15,7 @@ export function InlineShell(props: ShellProps) {
         "flex-direction": "column",
       }}
     >
-      <Show when={props.showChrome}>
+      <Show when={props.showChrome && props.showToolbar}>
         <EditorToolbar ctx={props.toolbarCtx} />
       </Show>
       <div class="oasis-editor-main-container">
@@ -32,6 +32,8 @@ export function InlineShell(props: ShellProps) {
             hoveredRevision={() => props.hoveredRevision()}
             focused={() => props.focused()}
             viewportHeight={props.viewportHeight()}
+            class={props.class}
+            style={props.style}
             readOnly={props.isReadOnly}
             showCaret={() => props.showCaret()}
             onViewportRef={props.onViewportRef}

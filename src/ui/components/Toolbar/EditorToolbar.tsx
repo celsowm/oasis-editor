@@ -98,6 +98,10 @@ export function EditorToolbar(props: { ctx: EditorToolbarCtx }): JSX.Element {
 
         <ToolbarSeparator />
 
+        <MetricGroup ctx={ctx} />
+
+        <ToolbarSeparator />
+
         <Show when={ctx().isInsideTable()}>
           <TableGroup ctx={ctx} />
           <ToolbarSeparator />

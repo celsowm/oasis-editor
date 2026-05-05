@@ -219,15 +219,20 @@ test.describe("Oasis Editor 2 smoke tests", () => {
       node.scrollTop = node.scrollHeight;
     });
 
+    await page.waitForTimeout(100);
     const lastParagraph = page.locator('[data-testid="editor-block"]').last();
     await expect(lastParagraph).toBeVisible();
-    const firstChar = lastParagraph.locator('[data-testid="editor-char"]').first();
-    const box = await firstChar.boundingBox();
+    const box = await lastParagraph.boundingBox();
     if (!box) {
-      throw new Error("Could not measure the first character on the lower page");
+      throw new Error("Could not measure the lower page paragraph");
     }
 
-    await page.mouse.click(box.x + box.width - 1, box.y + box.height / 2);
+    await lastParagraph.click({
+      position: {
+        x: Math.max(1, box.width - 1),
+        y: Math.max(1, box.height / 2),
+      },
+    });
     await page.keyboard.type("X");
 
     await expect(lastParagraph).toContainText("Paragraph 60X");

@@ -1,4 +1,4 @@
-import { createSignal, createEffect, onCleanup, Show, type JSX } from "solid-js";
+import { createSignal, createEffect, onCleanup, type JSX } from "solid-js";
 import { t } from "../../../i18n/index.js";
 
 export interface TitleBarProps {
@@ -44,40 +44,14 @@ export function TitleBar(props: TitleBarProps) {
   return (
     <div
       class="oasis-titlebar"
-      style={{
-        display: "flex",
-        "align-items": "center",
-        "justify-content": "space-between",
-        "min-height": "64px",
-        padding: "8px 16px",
-        "background-color": "var(--oasis-toolbar-bg)",
-        "font-family": "var(--oasis-font-ui)",
-        color: "var(--oasis-text)",
-        "box-sizing": "border-box",
-      }}
     >
-      <div style={{ display: "flex", "align-items": "center", gap: "12px" }}>
-        {/* Placeholder Icon */}
-        <div
-          style={{
-            width: "32px",
-            height: "32px",
-            "background-color": "var(--oasis-accent)",
-            "border-radius": "4px",
-            display: "flex",
-            "align-items": "center",
-            "justify-content": "center",
-            color: "white",
-            "font-weight": "bold",
-            "font-size": "18px",
-            "user-select": "none",
-          }}
-        >
-          O
+      <div class="oasis-titlebar-left">
+        <div class="oasis-titlebar-doc-icon" aria-hidden="true">
+          <i data-lucide="file-text" />
         </div>
 
-        <div style={{ display: "flex", "flex-direction": "column" }}>
-          <div style={{ display: "flex", "align-items": "center" }}>
+        <div class="oasis-titlebar-title-stack">
+          <div class="oasis-titlebar-title-row">
             <input
               type="text"
               value={editingTitle()}
@@ -85,75 +59,34 @@ export function TitleBar(props: TitleBarProps) {
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
               aria-label="Document Title"
-              style={{
-                border: "1px solid transparent",
-                "background-color": "transparent",
-                "font-family": "var(--oasis-font-ui)",
-                "font-size": "16px",
-                color: "var(--oasis-text)",
-                padding: "2px 6px",
-                "border-radius": "4px",
-                outline: "none",
-                margin: "0",
-                "box-sizing": "border-box",
-                "min-width": "150px",
-              }}
-              onMouseEnter={(e) => {
-                if (document.activeElement !== e.currentTarget) {
-                  e.currentTarget.style.border = "1px solid var(--oasis-toolbar-border)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (document.activeElement !== e.currentTarget) {
-                  e.currentTarget.style.border = "1px solid transparent";
-                }
-              }}
+              class="oasis-titlebar-title-input"
               onFocus={(e) => {
-                e.currentTarget.style.border = "1px solid var(--oasis-accent)";
                 e.currentTarget.select();
               }}
             />
-            <span style={{ "font-size": "14px", color: "var(--oasis-text-muted)", cursor: "pointer", "margin-left": "8px" }}>☆</span>
-            <span style={{ "font-size": "14px", color: "var(--oasis-text-muted)", cursor: "pointer", "margin-left": "8px" }}>📁</span>
+            <button type="button" class="oasis-titlebar-icon-button" aria-label="Star document" title="Star document">
+              <i data-lucide="star" />
+            </button>
+            <button type="button" class="oasis-titlebar-icon-button" aria-label="Move document" title="Move document">
+              <i data-lucide="folder" />
+            </button>
           </div>
-          <div style={{ "margin-top": "-2px", "margin-left": "-2px" }}>
+          <div class="oasis-titlebar-menubar-slot">
             {props.children}
           </div>
         </div>
       </div>
 
-      <div style={{ display: "flex", "align-items": "center", gap: "16px" }}>
+      <div class="oasis-titlebar-actions">
         <button
           onClick={() => alert("Share dialog placeholder")}
-          style={{
-            "background-color": "var(--oasis-accentSoft, #c2e7ff)",
-            color: "var(--oasis-text, #001d35)",
-            border: "none",
-            padding: "8px 24px",
-            "border-radius": "20px",
-            "font-family": "var(--oasis-font-ui)",
-            "font-weight": "500",
-            cursor: "pointer",
-            display: "flex",
-            "align-items": "center",
-            gap: "8px",
-          }}
+          class="oasis-titlebar-share"
+          type="button"
         >
-          🔒 Share
+          <i data-lucide="lock-keyhole" />
+          <span>{t("title.share") || "Share"}</span>
         </button>
-        <div
-          style={{
-            width: "32px",
-            height: "32px",
-            "border-radius": "50%",
-            "background-color": "#5b42f3",
-            color: "white",
-            display: "flex",
-            "align-items": "center",
-            "justify-content": "center",
-            "font-weight": "bold",
-          }}
-        >
+        <div class="oasis-titlebar-avatar" aria-label="Current user">
           U
         </div>
       </div>

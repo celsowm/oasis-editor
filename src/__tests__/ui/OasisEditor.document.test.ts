@@ -993,7 +993,7 @@ describe("OasisEditor", () => {
     await Promise.resolve();
 
     let marker = root.querySelector('[data-testid="editor-list-marker"]') as HTMLSpanElement;
-    expect(marker.textContent).toBe("â€¢");
+    expect(marker.textContent).toBe("•");
     expect(bulletButton.classList.contains("oasis-editor-tool-button-active")).toBe(true);
 
     const orderedButton = root.querySelector(
@@ -1024,7 +1024,7 @@ describe("OasisEditor", () => {
     await Promise.resolve();
 
     let marker = root.querySelector('[data-testid="editor-list-marker"]') as HTMLSpanElement;
-    expect(marker.textContent).toBe("â€¢");
+    expect(marker.textContent).toBe("•");
 
     input.dispatchEvent(
       new KeyboardEvent("keydown", { bubbles: true, key: "7", ctrlKey: true, shiftKey: true }),

@@ -159,6 +159,9 @@ import {
 import { resolveClickOffset } from "./tableUiUtils.js";
 import { findImageFileFromTransfer, readFileBuffer } from "./clipboardImage.js";
 import { EditorToolbar } from "./components/Toolbar/EditorToolbar.js";
+import { DocumentShell } from "./shells/DocumentShell.js";
+import { InlineShell } from "./shells/InlineShell.js";
+import { BalloonShell } from "./shells/BalloonShell.js";
 import { createEditorCommandsController } from "../app/controllers/EditorCommandsController.js";
 import { createEditorClipboardController } from "../app/controllers/useEditorClipboard.js";
 import { createEditorKeyboardController } from "../app/controllers/useEditorKeyboard.js";
@@ -196,6 +199,13 @@ interface ActiveImageDrag {
 
 export interface OasisEditorAppProps {
   showChrome?: boolean;
+  shell?: "document" | "inline" | "balloon";
+  uiVariant?: "classic" | "docs";
+  showTitleBar?: boolean;
+  showMenubar?: boolean;
+  showToolbar?: boolean;
+  showOutline?: boolean;
+  locale?: "pt-BR" | "en";
   viewportHeight?: number | string;
   class?: string;
   style?: JSX.CSSProperties;
@@ -219,6 +229,12 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   );
   const pageSettings = () => getDocumentPageSettings(state.document);
   const showChrome = () => props.showChrome ?? true;
+  const showTitleBar = () => props.showTitleBar ?? true;
+  const showMenubar = () => props.showMenubar ?? true;
+  const showToolbar = () => props.showToolbar ?? true;
+  const showOutline = () => props.showOutline ?? true;
+  const useComposedShell = () =>
+    props.uiVariant === "docs" || (props.shell ?? "document") !== "document";
   const isReadOnly = () => props.readOnly ?? false;
 
   const shellComponent = () => {
@@ -1872,15 +1888,134 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     insertTableCommand: tableOps.insertTableCommand,
   } as unknown as EditorToolbarCtx;
 
+  const shouldShowCaret = () => {
+    if (!caretBox().visible || !isSelectionCollapsed(state.selection)) {
+      return false;
+    }
+    const anchorLoc = findParagraphTableLocation(
+      state.document,
+      state.selection.anchor.paragraphId,
+      getActiveSectionIndex(state),
+    );
+    const focusLoc = findParagraphTableLocation(
+      state.document,
+      state.selection.focus.paragraphId,
+      getActiveSectionIndex(state),
+    );
+    const inTableSelection =
+      anchorLoc &&
+      focusLoc &&
+      anchorLoc.blockIndex === focusLoc.blockIndex &&
+      (anchorLoc.rowIndex !== focusLoc.rowIndex ||
+        anchorLoc.cellIndex !== focusLoc.cellIndex);
+    return !inTableSelection;
+  };
+
+  const renderComposedShell = () => {
+    const Shell = shellComponent();
+    return (
+      <Shell
+        state={state}
+        setState={setState}
+        toolbarCtx={toolbarCtx}
+        showChrome={showChrome()}
+        showTitleBar={showTitleBar()}
+        showMenubar={showMenubar()}
+        showToolbar={showToolbar()}
+        showOutline={showOutline()}
+        isReadOnly={isReadOnly()}
+        measuredBlockHeights={() => measuredBlockHeights()}
+        measuredParagraphLayouts={() => measuredParagraphLayouts()}
+        viewportHeight={() => props.viewportHeight}
+        selectionBoxes={() => selectionBoxes()}
+        showFloatingTableToolbar={() =>
+          !isReadOnly() && tableSelectionLabel() !== null
+        }
+        caretBox={() => caretBox()}
+        inputBox={() => inputBox()}
+        hoveredRevision={() => hoveredRevision()}
+        focused={() => focused()}
+        showCaret={shouldShowCaret}
+        class={props.class}
+        style={props.style}
+        onViewportRef={(element: HTMLDivElement) => {
+          viewportRef = element;
+        }}
+        onSurfaceRef={(element: HTMLDivElement) => {
+          surfaceRef = element;
+        }}
+        onTextareaRef={(element: HTMLTextAreaElement) => {
+          textareaRef = element;
+        }}
+        onImportInputRef={(element: HTMLInputElement) => {
+          importInputRef = element;
+        }}
+        onImageInputRef={(element: HTMLInputElement) => {
+          imageInputRef = element;
+        }}
+        onImportInputChange={(e: Event & { currentTarget: HTMLInputElement }) =>
+          handleImportDocx(e.currentTarget.files?.[0] ?? null)
+        }
+        onImageInputChange={(e: Event & { currentTarget: HTMLInputElement }) =>
+          handleInsertImage(e.currentTarget.files?.[0] ?? null)
+        }
+        onDragOver={(event: DragEvent) => event.preventDefault()}
+        onDrop={handleDrop}
+        onEditorMouseDown={onEditorMouseDown}
+        onSurfaceMouseDown={handleSurfaceMouseDown}
+        onSurfaceMouseMove={tableResize.handleMouseMove}
+        onSurfaceDblClick={handleSurfaceDblClick}
+        onParagraphMouseDown={handleParagraphMouseDown}
+        onRevisionMouseEnter={handleRevisionMouseEnter}
+        onRevisionMouseLeave={handleRevisionMouseLeave}
+        onImageMouseDown={(paragraphId: string, paragraphOffset: number, event: MouseEvent & { currentTarget: HTMLElement }) => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          const paragraph = getDocumentParagraphs(state.document).find(
+            (p) => p.id === paragraphId,
+          );
+          if (paragraph) {
+            applyState(
+              setSelection(state, {
+                anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),
+                focus: paragraphOffsetToPosition(paragraph, paragraphOffset + 1),
+              }),
+            );
+          }
+
+          imageOps.startImageDrag(paragraphId, paragraphOffset, event);
+          focusInput();
+        }}
+        onImageResizeHandleMouseDown={(paragraphId: string, paragraphOffset: number, event: MouseEvent & { currentTarget: HTMLElement }) => {
+          event.preventDefault();
+          event.stopPropagation();
+          imageOps.startImageResize(paragraphId, paragraphOffset, event, state);
+        }}
+        onTableDragHandleMouseDown={tableDrag.handleMouseDown}
+        onInputBlur={() => setFocused(false)}
+        onInputFocus={() => setFocused(true)}
+        onCompositionEnd={handleCompositionEnd}
+        onCompositionStart={handleCompositionStart}
+        onCopy={handleCopy}
+        onCut={handleCut}
+        onInput={handleTextInput}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+      />
+    );
+  };
+
   return (
     <div
       classList={{
         "oasis-editor-shell": true,
         "oasis-editor-app": true,
+        "oasis-editor-docs": useComposedShell(),
         "oasis-editor-read-only": isReadOnly(),
       }}
     >
-      <Show when={showChrome()}>
+      <Show when={!useComposedShell() && showChrome() && showToolbar()}>
         <EditorToolbar ctx={toolbarCtx} />
       </Show>
 
@@ -1906,6 +2041,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         onConfirm={(alt) => commandsController.applyImageAltCommand(alt.trim())}
       />
 
+      <Show when={useComposedShell()}>
+        {renderComposedShell()}
+      </Show>
+
+      <Show when={!useComposedShell()}>
       <div class="oasis-editor-main-container">
         <section class="oasis-editor-stage">
           <OasisEditorEditor
@@ -1925,31 +2065,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             class={props.class}
             style={props.style}
             readOnly={isReadOnly()}
-            showCaret={() => {
-              if (
-                !caretBox().visible ||
-                !isSelectionCollapsed(state.selection)
-              ) {
-                return false;
-              }
-              const anchorLoc = findParagraphTableLocation(
-                state.document,
-                state.selection.anchor.paragraphId,
-                getActiveSectionIndex(state),
-              );
-              const focusLoc = findParagraphTableLocation(
-                state.document,
-                state.selection.focus.paragraphId,
-                getActiveSectionIndex(state),
-              );
-              const inTableSelection =
-                anchorLoc &&
-                focusLoc &&
-                anchorLoc.blockIndex === focusLoc.blockIndex &&
-                (anchorLoc.rowIndex !== focusLoc.rowIndex ||
-                  anchorLoc.cellIndex !== focusLoc.cellIndex);
-              return !inTableSelection;
-            }}
+            showCaret={shouldShowCaret}
             onViewportRef={(element) => {
               viewportRef = element;
             }}
@@ -2094,6 +2210,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           }}
         </Show>
       </div>
+      </Show>
     </div>
   );
 }

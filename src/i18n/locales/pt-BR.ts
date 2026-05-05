@@ -109,6 +109,7 @@ export const ptBR = {
   "generic.cancel": "Cancelar",
   "generic.save": "Salvar",
   "generic.apply": "Aplicar",
+  "title.share": "Compartilhar",
 
   // Dialogs
   "dialog.imageAlt.title": "Texto Alternativo da Imagem",

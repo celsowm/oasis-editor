@@ -94,58 +94,32 @@ export function OutlinePanel(props: OutlinePanelProps) {
   return (
     <div
       class="oasis-outline-panel"
-      style={{
-        display: "flex",
-        "flex-direction": "column",
-        width: collapsed() ? "40px" : "240px",
-        "border-right": "1px solid var(--oasis-toolbar-border)",
-        "background-color": "var(--oasis-toolbar-bg)",
-        transition: "width 0.2s ease",
-        overflow: "hidden",
-        "font-family": "var(--oasis-font-ui)",
-        "box-sizing": "border-box",
-      }}
+      classList={{ "oasis-outline-panel-collapsed": collapsed() }}
     >
       <div
-        style={{
-          display: "flex",
-          "align-items": "center",
-          "justify-content": collapsed() ? "center" : "space-between",
-          padding: collapsed() ? "16px 0" : "16px",
-          height: "48px",
-          "box-sizing": "border-box",
-        }}
+        class="oasis-outline-header"
+        classList={{ "oasis-outline-header-collapsed": collapsed() }}
       >
         <Show when={!collapsed()}>
-          <span style={{ "font-weight": "500", color: "var(--oasis-text)", "font-size": "14px" }}>
+          <span class="oasis-outline-title">
             {t("menu.view.outline") || "Outline"}
           </span>
         </Show>
         <button
           onClick={toggleCollapsed}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "var(--oasis-text-muted)",
-            padding: "4px",
-            "border-radius": "4px",
-            display: "flex",
-            "align-items": "center",
-            "justify-content": "center",
-          }}
+          class="oasis-outline-toggle"
           aria-label="Toggle Outline"
         >
-          {collapsed() ? "▶" : "◀"}
+          <i data-lucide={collapsed() ? "panel-left-open" : "panel-left-close"} />
         </button>
       </div>
 
       <Show when={!collapsed()}>
-        <div style={{ flex: 1, overflow: "auto", padding: "0 16px 16px 16px" }}>
+        <div class="oasis-outline-list">
           <Show
             when={items().length > 0}
             fallback={
-              <div style={{ color: "var(--oasis-text-muted)", "font-size": "13px", "margin-top": "24px", "text-align": "center" }}>
+              <div class="oasis-outline-empty">
                 Headings you add to the document will appear here.
               </div>
             }
@@ -154,19 +128,9 @@ export function OutlinePanel(props: OutlinePanelProps) {
               {(item) => (
                 <div
                   onClick={() => props.onNavigate(item.anchor)}
-                  style={{
-                    padding: "4px 8px",
-                    cursor: "pointer",
-                    "border-radius": "4px",
-                    "margin-bottom": "4px",
-                    "font-size": "13px",
-                    "margin-left": `${(item.level - 1) * 12}px`,
-                    color: activeId() === item.id ? "var(--oasis-accent)" : "var(--oasis-text-muted)",
-                    "background-color": activeId() === item.id ? "var(--oasis-accentSoft, #e8f0fe)" : "transparent",
-                    "white-space": "nowrap",
-                    "overflow": "hidden",
-                    "text-overflow": "ellipsis",
-                  }}
+                  class="oasis-outline-item"
+                  classList={{ "oasis-outline-item-active": activeId() === item.id }}
+                  style={{ "--oasis-outline-level": String(item.level - 1) }}
                   title={item.text}
                 >
                   {item.text}

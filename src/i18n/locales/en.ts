@@ -109,6 +109,7 @@ export const en = {
   "generic.cancel": "Cancel",
   "generic.save": "Save",
   "generic.apply": "Apply",
+  "title.share": "Share",
 
   // Dialogs
   "dialog.imageAlt.title": "Image Alt Text",

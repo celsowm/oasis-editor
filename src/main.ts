@@ -38,13 +38,19 @@ function init(): void {
     btn.onclick = () => {
       if (currentInstance) currentInstance.dispose();
       container!.innerHTML = "";
-      currentInstance = createOasisEditor(container as HTMLElement, { shell });
+      currentInstance = createOasisEditor(container as HTMLElement, {
+        shell,
+        uiVariant: "docs",
+      });
     };
     tabsContainer.appendChild(btn);
   });
 
   document.body.prepend(tabsContainer);
-  currentInstance = createOasisEditor(container as HTMLElement, { shell: "document" });
+  currentInstance = createOasisEditor(container as HTMLElement, {
+    shell: "document",
+    uiVariant: "docs",
+  });
   hideLoading();
 }
 

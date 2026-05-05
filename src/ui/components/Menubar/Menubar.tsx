@@ -8,8 +8,8 @@ import {
 } from "solid-js";
 import { t, type TranslationKey } from "../../../i18n/index.js";
 import { type MenuItem, defaultMenuRegistry } from "./menuRegistry.js";
+import "./defaultMenuItems.js";
 import type { EditorToolbarCtx } from "../Toolbar/types.js";
-import type { EditorCommandsControllerDeps } from "../../../app/controllers/EditorCommandsController.js";
 
 export interface MenubarProps {
   ctx: EditorToolbarCtx;
@@ -80,25 +80,12 @@ export function Menubar(props: MenubarProps) {
   return (
     <div
       class="oasis-menubar"
-      style={{
-        display: "flex",
-        "align-items": "center",
-        padding: "0 8px",
-        height: "28px",
-        "background-color": "var(--oasis-toolbar-bg)",
-        "border-bottom": "1px solid var(--oasis-toolbar-border)",
-        "font-size": "13px",
-        "user-select": "none",
-        "font-family": "var(--oasis-font-ui)",
-        color: "var(--oasis-text)",
-      }}
       role="menubar"
     >
       <For each={topLevelItems}>
         {(topLevel) => (
           <div
             class="oasis-menubar-menu"
-            style={{ position: "relative" }}
             onMouseEnter={() => {
               if (activeMenu() && activeMenu() !== topLevel.id) {
                 setActiveMenu(topLevel.id);
@@ -107,15 +94,7 @@ export function Menubar(props: MenubarProps) {
           >
             <div
               class="oasis-menubar-button"
-              style={{
-                padding: "4px 8px",
-                cursor: "pointer",
-                "border-radius": "4px",
-                "background-color":
-                  activeMenu() === topLevel.id
-                    ? "var(--oasis-accent-soft)"
-                    : "transparent",
-              }}
+              classList={{ "oasis-menubar-button-active": activeMenu() === topLevel.id }}
               onClick={(e) => {
                 e.stopPropagation();
                 if (activeMenu() === topLevel.id) {
@@ -135,20 +114,6 @@ export function Menubar(props: MenubarProps) {
             <Show when={activeMenu() === topLevel.id}>
               <div
                 class="oasis-menubar-dropdown"
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  left: "0",
-                  "background-color": "var(--oasis-paper)",
-                  border: "1px solid var(--oasis-toolbar-border)",
-                  "box-shadow": "var(--oasis-paper-shadow)",
-                  "border-radius": "4px",
-                  padding: "4px 0",
-                  "min-width": "200px",
-                  "z-index": "100",
-                  display: "flex",
-                  "flex-direction": "column",
-                }}
                 role="menu"
               >
                 <For each={topLevel.children}>
@@ -180,11 +145,7 @@ function MenuNode(props: {
   if (isSeparator) {
     return (
       <div
-        style={{
-          height: "1px",
-          "background-color": "var(--oasis-toolbar-border)",
-          margin: "4px 0",
-        }}
+        class="oasis-menubar-separator"
         role="separator"
       />
     );
@@ -214,21 +175,11 @@ function MenuNode(props: {
 
   return (
     <div
-      style={{
-        position: "relative",
-        padding: "6px 16px",
-        cursor: "pointer",
-        display: "flex",
-        "justify-content": "space-between",
-        "align-items": "center",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.backgroundColor =
-          "var(--oasis-accent-soft)";
+      class="oasis-menubar-item"
+      onMouseEnter={() => {
         if (hasChildren) setShowSub(true);
       }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+      onMouseLeave={() => {
         if (hasChildren) setShowSub(false);
       }}
       onClick={handleClick}
@@ -238,30 +189,17 @@ function MenuNode(props: {
     >
       <span>{label}</span>
       <Show when={node.item?.shortcut}>
-        <span style={{ "margin-left": "16px", color: "var(--oasis-text-muted)" }}>
+        <span class="oasis-menubar-shortcut">
           {node.item!.shortcut}
         </span>
       </Show>
       <Show when={hasChildren}>
-        <span style={{ "margin-left": "16px" }}>▶</span>
+        <i class="oasis-menubar-submenu-icon" data-lucide="chevron-right" />
       </Show>
 
       <Show when={showSub() && hasChildren}>
         <div
-          style={{
-            position: "absolute",
-            top: "-4px",
-            left: "100%",
-            "background-color": "var(--oasis-paper)",
-            border: "1px solid var(--oasis-toolbar-border)",
-            "box-shadow": "var(--oasis-paper-shadow)",
-            "border-radius": "4px",
-            padding: "4px 0",
-            "min-width": "160px",
-            "z-index": "100",
-            display: "flex",
-            "flex-direction": "column",
-          }}
+          class="oasis-menubar-submenu"
           role="menu"
         >
           <For each={node.children}>

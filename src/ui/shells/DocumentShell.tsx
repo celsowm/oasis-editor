@@ -12,11 +12,15 @@ export interface ShellProps {
   toolbarCtx: EditorToolbarCtx;
   showChrome: boolean;
   showTitleBar: boolean;
+  showMenubar: boolean;
+  showToolbar: boolean;
   showOutline: boolean;
   isReadOnly: boolean;
   measuredBlockHeights: any;
   measuredParagraphLayouts: any;
   viewportHeight: any;
+  class?: string;
+  style?: JSX.CSSProperties;
   
   // Passed-through OasisEditorEditor props
   selectionBoxes: any;
@@ -64,7 +68,7 @@ export function DocumentShell(props: ShellProps) {
   return (
     <>
       <Show when={props.showChrome}>
-        <Show when={props.showTitleBar} fallback={<Menubar ctx={props.toolbarCtx} />}>
+        <Show when={props.showTitleBar} fallback={<Show when={props.showMenubar}><Menubar ctx={props.toolbarCtx} /></Show>}>
           <TitleBar
             title={props.state.document.metadata?.title || "Untitled document"}
             onTitleChange={(newTitle: string) => {
@@ -75,10 +79,14 @@ export function DocumentShell(props: ShellProps) {
               }
             }}
           >
-            <Menubar ctx={props.toolbarCtx} />
+            <Show when={props.showMenubar}>
+              <Menubar ctx={props.toolbarCtx} />
+            </Show>
           </TitleBar>
         </Show>
-        <EditorToolbar ctx={props.toolbarCtx} />
+        <Show when={props.showToolbar}>
+          <EditorToolbar ctx={props.toolbarCtx} />
+        </Show>
       </Show>
 
       <div class="oasis-editor-main-container">
@@ -106,6 +114,8 @@ export function DocumentShell(props: ShellProps) {
             hoveredRevision={() => props.hoveredRevision()}
             focused={() => props.focused()}
             viewportHeight={props.viewportHeight()}
+            class={props.class}
+            style={props.style}
             readOnly={props.isReadOnly}
             showCaret={() => props.showCaret()}
             onViewportRef={props.onViewportRef}

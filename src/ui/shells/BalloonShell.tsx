@@ -19,6 +19,8 @@ export function BalloonShell(props: ShellProps) {
             hoveredRevision={() => props.hoveredRevision()}
             focused={() => props.focused()}
             viewportHeight={props.viewportHeight()}
+            class={props.class}
+            style={props.style}
             readOnly={props.isReadOnly}
             showCaret={() => props.showCaret()}
             onViewportRef={props.onViewportRef}
