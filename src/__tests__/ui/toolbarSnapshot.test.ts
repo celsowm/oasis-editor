@@ -31,7 +31,6 @@ const EXPECTED_TOOLBAR_TESTIDS: readonly string[] = [
   "editor-toolbar-indent-first-line",
   "editor-toolbar-indent-hanging",
   "editor-toolbar-indent-left",
-  "editor-toolbar-insert-dropdown",
   "editor-toolbar-insert-image",
   "editor-toolbar-insert-page-number",
   "editor-toolbar-insert-table",
@@ -91,9 +90,6 @@ describe("Toolbar testid snapshot (regression guard for Phase 2 UI rewrite)", ()
     const instance = createOasisEditor(root);
 
     // 1. Insert a table to show contextual table buttons
-    const insertDropdown = root.querySelector('[data-testid="editor-toolbar-insert-dropdown"]') as HTMLElement;
-    insertDropdown.click();
-    await Promise.resolve();
     const insertTableButton = document.querySelector('[data-testid="editor-toolbar-insert-table"]') as HTMLElement;
     insertTableButton.click();
     await Promise.resolve();
@@ -151,7 +147,7 @@ describe("Toolbar testid snapshot (regression guard for Phase 2 UI rewrite)", ()
     });
 
     // 3. Open dropdowns to render their contents in Portals
-    const dropdowns = ["file", "insert", "review", "list-options"];
+    const dropdowns = ["file", "review", "list-options"];
     for (const name of dropdowns) {
       const dropdown = root.querySelector(`[data-testid="editor-toolbar-${name}-dropdown"]`) as HTMLElement;
       dropdown.click();

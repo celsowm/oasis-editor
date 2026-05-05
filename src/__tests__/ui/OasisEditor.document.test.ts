@@ -1425,10 +1425,6 @@ describe("OasisEditor", () => {
     });
 
     try {
-      const insertDropdown = document.querySelector('[data-testid="editor-toolbar-insert-dropdown"]') as HTMLElement;
-      insertDropdown.click();
-      await Promise.resolve();
-
       const insertTableButton = document.querySelector(
         '[data-testid="editor-toolbar-insert-table"]',
       ) as HTMLButtonElement;

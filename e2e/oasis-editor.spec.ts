@@ -16,11 +16,6 @@ async function ensureToolbarVisible(page: import("@playwright/test").Page, testI
   return target;
 }
 
-async function openInsertDropdown(page: import("@playwright/test").Page) {
-  const dropdown = await ensureToolbarVisible(page, "editor-toolbar-insert-dropdown");
-  await dropdown.click();
-}
-
 async function clickToolbarLink(page: import("@playwright/test").Page) {
   const link = await ensureToolbarVisible(page, "editor-toolbar-link");
   await link.click();
@@ -87,7 +82,6 @@ test.describe("Oasis Editor 2 smoke tests", () => {
   });
 
   test("inserts and selects an inline image from the toolbar", async ({ page }) => {
-    await openInsertDropdown(page);
     await page.locator('[data-testid="editor-toolbar-insert-image"]').click();
     await page.locator('[data-testid="editor-insert-image-input"]').setInputFiles({
       name: "inline.png",
@@ -103,7 +97,6 @@ test.describe("Oasis Editor 2 smoke tests", () => {
   });
 
   test("inserts a table and moves between cells with tab", async ({ page }) => {
-    await openInsertDropdown(page);
     await page.locator('[data-testid="editor-toolbar-insert-table"]').click();
     await expect(page.locator('[data-testid="editor-table-cell"]')).toHaveCount(9);
 

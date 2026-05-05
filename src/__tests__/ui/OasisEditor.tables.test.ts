@@ -1891,10 +1891,6 @@ describe("OasisEditor", () => {
     const root = document.getElementById("oasis-editor-root") as HTMLElement;
     const instance = createOasisEditor(root);
 
-    const insertDropdown = document.querySelector('[data-testid="editor-toolbar-insert-dropdown"]') as HTMLElement;
-    insertDropdown.click();
-    await Promise.resolve();
-
     const insertTableButton = document.querySelector(
       '[data-testid="editor-toolbar-insert-table"]',
     ) as HTMLButtonElement;
@@ -1906,10 +1902,6 @@ describe("OasisEditor", () => {
   it("inserts a 3x3 table into the document on Insert Table click", async () => {
     const root = document.getElementById("oasis-editor-root") as HTMLElement;
     const instance = createOasisEditor(root);
-
-    const insertDropdown = document.querySelector('[data-testid="editor-toolbar-insert-dropdown"]') as HTMLElement;
-    insertDropdown.click();
-    await Promise.resolve();
 
     const insertTableButton = document.querySelector(
       '[data-testid="editor-toolbar-insert-table"]',
@@ -1939,10 +1931,6 @@ describe("OasisEditor", () => {
     input.dispatchEvent(new InputEvent("input", { bubbles: true, data: "before", inputType: "insertText" }));
     await Promise.resolve();
 
-    const insertDropdown = document.querySelector('[data-testid="editor-toolbar-insert-dropdown"]') as HTMLElement;
-    insertDropdown.click();
-    await Promise.resolve();
-
     const insertTableButton = document.querySelector(
       '[data-testid="editor-toolbar-insert-table"]',
     ) as HTMLButtonElement;
@@ -1964,10 +1952,6 @@ describe("OasisEditor", () => {
   it("renders cell data-row-index and data-cell-index attributes for selection", async () => {
     const root = document.getElementById("oasis-editor-root") as HTMLElement;
     const instance = createOasisEditor(root);
-
-    const insertDropdown = document.querySelector('[data-testid="editor-toolbar-insert-dropdown"]') as HTMLElement;
-    insertDropdown.click();
-    await Promise.resolve();
 
     const insertTableButton = document.querySelector(
       '[data-testid="editor-toolbar-insert-table"]',

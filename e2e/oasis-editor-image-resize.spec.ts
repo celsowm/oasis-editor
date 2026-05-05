@@ -30,7 +30,6 @@ test.describe("Oasis Editor 2 image resize", () => {
     const dataUrl = await createCanvasPngDataUrl(page, 120, 48);
     const buffer = Buffer.from(dataUrl.split(",")[1]!, "base64");
 
-    await page.locator('[data-testid="editor-toolbar-insert-dropdown"]').click();
     await page.locator('[data-testid="editor-toolbar-insert-image"]').click();
     await page.locator('[data-testid="editor-insert-image-input"]').setInputFiles({
       name: "resize.png",

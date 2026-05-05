@@ -43,7 +43,7 @@ describe("OasisEditor", () => {
 
     expect(title.value).toBe("Documento sem título");
     expect(title.getAttribute("aria-label")).toBe("Título do documento");
-    expect(unlink.textContent).toContain("Remover Link");
+    expect(unlink.getAttribute("aria-label")).toBe("Remover Link");
     expect(outlineToggle.getAttribute("aria-label")).toBe("Alternar estrutura");
     expect(root.textContent).not.toContain("Untitled document");
     expect(root.textContent).not.toContain("Remove Link");
@@ -494,12 +494,6 @@ describe("OasisEditor", () => {
     const imageInput = root.querySelector(
       '[data-testid="editor-insert-image-input"]',
     ) as HTMLInputElement;
-    const insertDropdown = root.querySelector(
-      '[data-testid="editor-toolbar-insert-dropdown"]',
-    ) as HTMLElement;
-    insertDropdown.click();
-    await Promise.resolve();
-
     const insertTableButton = document.querySelector(
       '[data-testid="editor-toolbar-insert-table"]',
     ) as HTMLButtonElement;

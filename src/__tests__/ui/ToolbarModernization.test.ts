@@ -39,7 +39,6 @@ describe("ToolbarModernization Safety Net", () => {
     "editor-toolbar-file-dropdown",
     "editor-toolbar-undo",
     "editor-toolbar-redo",
-    "editor-toolbar-insert-dropdown",
     "editor-toolbar-style",
     "editor-toolbar-font-family",
     "editor-toolbar-font-size",
@@ -110,11 +109,6 @@ describe("ToolbarModernization Safety Net", () => {
     expect(document.querySelector('[data-testid="editor-toolbar-list-start-at"]')).not.toBeNull();
 
     // Insert table to trigger context
-    const insertDropdown = root.querySelector('[data-testid="editor-toolbar-insert-dropdown"]') as HTMLElement;
-    insertDropdown.click();
-    await Promise.resolve();
-    await new Promise(r => setTimeout(r, 0));
-    
     const insertTableButton = document.querySelector('[data-testid="editor-toolbar-insert-table"]') as HTMLElement;
     insertTableButton.click();
     await Promise.resolve();
@@ -188,11 +182,6 @@ describe("ToolbarModernization Safety Net", () => {
     // Initially table group should be hidden
     let mergeButton = root.querySelector('[data-testid="editor-toolbar-merge-table"]') as HTMLButtonElement;
     expect(mergeButton).toBeNull();
-
-    // Open Insert dropdown
-    (root.querySelector('[data-testid="editor-toolbar-insert-dropdown"]') as HTMLElement).click();
-    await Promise.resolve();
-    await new Promise(r => setTimeout(r, 0));
 
     // Insert table
     const insertTableButton = document.querySelector('[data-testid="editor-toolbar-insert-table"]') as HTMLElement;
