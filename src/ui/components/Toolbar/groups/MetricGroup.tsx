@@ -3,44 +3,45 @@ import type { EditorBorderStyle } from "../../../../core/model.js";
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup } from "../ToolbarGroup.js";
+import { t } from "../../../../i18n/index.js";
 
 export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
-  const t = () => ctx().toolbarStyleState();
+  const t_style = () => ctx().toolbarStyleState();
 
   return (
     <>
       <ToolbarGroup>
         <ToolbarButton
           icon="file-up"
-          label="Page Break"
+          label={t("metric.pageBreak")}
           wide
-          active={t().pageBreakBefore}
+          active={t_style().pageBreakBefore}
           data-testid="editor-toolbar-page-break-before"
           onClick={() => ctx().toggleParagraphFlagCommand("pageBreakBefore")}
-          tooltip="Page Break Before"
+          tooltip={t("metric.pageBreakBefore")}
         />
         <ToolbarButton
           icon="link-2"
-          label="Keep Next"
+          label={t("metric.keepNext")}
           wide
-          active={t().keepWithNext}
+          active={t_style().keepWithNext}
           data-testid="editor-toolbar-keep-with-next"
           onClick={() => ctx().toggleParagraphFlagCommand("keepWithNext")}
-          tooltip="Keep with Next"
+          tooltip={t("metric.keepWithNext")}
         />
       </ToolbarGroup>
 
       <ToolbarGroup>
-        <label class="oasis-editor-tool-metric" title="Line Height">
-          <span>Line</span>
+        <label class="oasis-editor-tool-metric" title={t("metric.lineHeight")}>
+          <span>{t("metric.line")}</span>
           <input
             type="number"
             class="oasis-editor-tool-number"
             data-testid="editor-toolbar-line-height"
             min="1"
             step="0.1"
-            value={t().lineHeight}
+            value={t_style().lineHeight}
             onChange={(event) =>
               ctx().applyParagraphStyleCommand(
                 "lineHeight",
@@ -50,15 +51,15 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
           />
         </label>
 
-        <label class="oasis-editor-tool-metric" title="Spacing Before">
-          <span>Before</span>
+        <label class="oasis-editor-tool-metric" title={t("metric.spacingBefore")}>
+          <span>{t("metric.before")}</span>
           <input
             type="number"
             class="oasis-editor-tool-number"
             data-testid="editor-toolbar-spacing-before"
             min="0"
             step="1"
-            value={t().spacingBefore}
+            value={t_style().spacingBefore}
             onChange={(event) =>
               ctx().applyParagraphStyleCommand(
                 "spacingBefore",
@@ -68,15 +69,15 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
           />
         </label>
 
-        <label class="oasis-editor-tool-metric" title="Spacing After">
-          <span>After</span>
+        <label class="oasis-editor-tool-metric" title={t("metric.spacingAfter")}>
+          <span>{t("metric.after")}</span>
           <input
             type="number"
             class="oasis-editor-tool-number"
             data-testid="editor-toolbar-spacing-after"
             min="0"
             step="1"
-            value={t().spacingAfter}
+            value={t_style().spacingAfter}
             onChange={(event) =>
               ctx().applyParagraphStyleCommand(
                 "spacingAfter",
@@ -86,15 +87,15 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
           />
         </label>
 
-        <label class="oasis-editor-tool-metric" title="Left Indent">
-          <span>Indent</span>
+        <label class="oasis-editor-tool-metric" title={t("metric.leftIndent")}>
+          <span>{t("metric.indent")}</span>
           <input
             type="number"
             class="oasis-editor-tool-number"
             data-testid="editor-toolbar-indent-left"
             min="0"
             step="1"
-            value={t().indentLeft}
+            value={t_style().indentLeft}
             onChange={(event) =>
               ctx().applyParagraphStyleCommand(
                 "indentLeft",
@@ -104,14 +105,14 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
           />
         </label>
 
-        <label class="oasis-editor-tool-metric" title="First Line Indent">
-          <span>First</span>
+        <label class="oasis-editor-tool-metric" title={t("metric.firstLineIndent")}>
+          <span>{t("metric.first")}</span>
           <input
             type="number"
             class="oasis-editor-tool-number"
             data-testid="editor-toolbar-indent-first-line"
             step="1"
-            value={t().indentFirstLine}
+            value={t_style().indentFirstLine}
             onChange={(event) =>
               ctx().applyParagraphStyleCommand(
                 "indentFirstLine",
@@ -121,15 +122,15 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
           />
         </label>
 
-        <label class="oasis-editor-tool-metric" title="Hanging Indent">
-          <span>Hang</span>
+        <label class="oasis-editor-tool-metric" title={t("metric.hangingIndent")}>
+          <span>{t("metric.hang")}</span>
           <input
             type="number"
             class="oasis-editor-tool-number"
             data-testid="editor-toolbar-indent-hanging"
             min="0"
             step="1"
-            value={t().indentHanging}
+            value={t_style().indentHanging}
             onChange={(event) =>
               ctx().applyParagraphStyleCommand(
                 "indentHanging",
@@ -139,20 +140,20 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
           />
         </label>
 
-        <label class="oasis-editor-tool-color" title="Paragraph Background Color">
-          <span>Para BG</span>
+        <label class="oasis-editor-tool-color" title={t("metric.paragraphBgColor")}>
+          <span>{t("metric.paraBg")}</span>
           <input
             type="color"
             class="oasis-editor-tool-color-input"
             data-testid="editor-toolbar-paragraph-shading"
-            value={t().shading || "#ffffff"}
+            value={t_style().shading || "#ffffff"}
             onInput={(event) => ctx().applyParagraphStyleCommand("shading", event.currentTarget.value)}
           />
         </label>
 
         <ToolbarButton
           icon="frame"
-          label="Para Borders"
+          label={t("metric.paraBorders")}
           wide
           data-testid="editor-toolbar-paragraph-borders"
           onClick={() => {
@@ -169,7 +170,7 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Apply borders to paragraph"
+          tooltip={t("metric.applyBorders")}
         />
       </ToolbarGroup>
     </>

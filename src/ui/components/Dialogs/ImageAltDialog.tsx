@@ -1,5 +1,6 @@
 import { createSignal, createEffect } from "solid-js";
 import { Dialog } from "./Dialog.js";
+import { t } from "../../../i18n/index.js";
 
 interface ImageAltDialogProps {
   isOpen: boolean;
@@ -27,7 +28,7 @@ export function ImageAltDialog(props: ImageAltDialogProps) {
   return (
     <Dialog
       isOpen={props.isOpen}
-      title="Image Alt Text"
+      title={t("dialog.imageAlt.title")}
       onClose={props.onClose}
       footer={
         <>
@@ -35,19 +36,19 @@ export function ImageAltDialog(props: ImageAltDialogProps) {
             class="oasis-editor-dialog-button oasis-editor-dialog-button-secondary"
             onClick={props.onClose}
           >
-            Cancel
+            {t("generic.cancel")}
           </button>
           <button
             class="oasis-editor-dialog-button oasis-editor-dialog-button-primary"
             onClick={handleConfirm}
           >
-            Save
+            {t("generic.save")}
           </button>
         </>
       }
     >
       <div class="oasis-editor-dialog-input-group">
-        <label class="oasis-editor-dialog-label">Description (Alt text)</label>
+        <label class="oasis-editor-dialog-label">{t("dialog.imageAlt.label")}</label>
         <input
           ref={inputRef}
           type="text"
@@ -55,7 +56,7 @@ export function ImageAltDialog(props: ImageAltDialogProps) {
           value={alt()}
           onInput={(e) => setAlt(e.currentTarget.value)}
           onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
-          placeholder="Describe the image"
+          placeholder={t("dialog.imageAlt.placeholder")}
         />
       </div>
     </Dialog>

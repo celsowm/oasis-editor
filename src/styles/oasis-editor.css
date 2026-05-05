@@ -1,3 +1,41 @@
+:root,
+.oasis-editor {
+  --oasis-bg: #f6f8fb;
+  --oasis-paper: #ffffff;
+  --oasis-paper-shadow: 0 1px 3px rgba(60, 64, 67, 0.15), 0 4px 8px rgba(60, 64, 67, 0.07);
+
+  --oasis-toolbar-bg: rgba(255, 255, 255, 0.85);
+  --oasis-toolbar-border: rgba(148, 163, 184, 0.22);
+  --oasis-toolbar-shadow: 0 4px 12px rgba(15, 23, 42, 0.04), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+
+  --oasis-text: #202124;
+  --oasis-text-muted: #5f6368;
+  --oasis-accent: #1a73e8;
+  --oasis-accent-soft: #e8f0fe;
+  --oasis-accent-active: #c2e7ff;
+  --oasis-accent-active-text: #001d35;
+
+  --oasis-radius: 8px;
+  --oasis-radius-lg: 14px;
+  --oasis-radius-xl: 28px;
+
+  --oasis-font-ui: "Inter", system-ui, -apple-system, sans-serif;
+  --oasis-font-doc: "Source Serif Pro", Georgia, serif;
+
+  --oasis-border-color: rgba(148, 163, 184, 0.22);
+  --oasis-border-color-muted: rgba(148, 163, 184, 0.15);
+  --oasis-hover-bg: rgba(226, 232, 240, 0.8);
+  --oasis-active-bg: #e2e8f0;
+  --oasis-selection-bg: rgba(37, 99, 235, 0.22);
+  --oasis-caret-color: #2563eb;
+
+  --oasis-success: #15803d;
+  --oasis-warning: #a16207;
+  --oasis-danger: #b91c1c;
+  --oasis-revision-insert: #059669;
+  --oasis-revision-delete: #dc2626;
+}
+
 .oasis-editor-app {
   display: grid;
   grid-template-rows: auto auto 1fr;
@@ -6,6 +44,9 @@
   padding: 28px 24px 32px;
   box-sizing: border-box;
   gap: 20px;
+  font-family: var(--oasis-font-ui);
+  color: var(--oasis-text);
+  background-color: var(--oasis-bg);
 }
 
 .oasis-editor-hover-col-resize,
@@ -57,7 +98,7 @@
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #b45309;
+  color: var(--oasis-accent);
 }
 
 .oasis-editor-title {
@@ -72,7 +113,7 @@
   max-width: 68ch;
   font-size: 16px;
   line-height: 1.6;
-  color: #475569;
+  color: var(--oasis-text-muted);
 }
 
 .oasis-editor-shell {
@@ -89,12 +130,10 @@
   width: min(1160px, 100%);
   margin: 0 auto;
   padding: 8px 10px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  box-shadow:
-    0 4px 12px rgba(15, 23, 42, 0.04),
-    0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  border-radius: var(--oasis-radius-lg);
+  background: var(--oasis-toolbar-bg);
+  border: 1px solid var(--oasis-toolbar-border);
+  box-shadow: var(--oasis-toolbar-shadow);
   backdrop-filter: blur(12px);
   min-height: 48px;
   flex-wrap: nowrap;
@@ -119,7 +158,7 @@
   padding: 2px;
   border-radius: 10px;
   background: rgba(241, 245, 249, 0.55);
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  border: 1px solid var(--oasis-border-color-muted);
 }
 
 .oasis-editor-table-actions-advanced {
@@ -136,25 +175,28 @@
   display: inline-flex;
   align-items: center;
   padding: 0 10px;
-  border-radius: 8px;
+  border-radius: var(--oasis-radius);
   border: 1px solid transparent;
   background: transparent;
-  color: #475569;
+  color: var(--oasis-text-muted);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.01em;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .oasis-editor-table-actions-summary:hover {
-  background: rgba(226, 232, 240, 0.8);
-  color: #0f172a;
+  background: var(--oasis-hover-bg);
+  color: var(--oasis-text);
 }
 
 .oasis-editor-table-actions-advanced[open] .oasis-editor-table-actions-summary {
-  background: #e2e8f0;
+  background: var(--oasis-active-bg);
   border-color: rgba(148, 163, 184, 0.32);
-  color: #0f172a;
+  color: var(--oasis-text);
 }
 
 .oasis-editor-table-actions-group {
@@ -166,7 +208,7 @@
 .oasis-editor-tool-color {
   border: 1px solid transparent;
   background: transparent;
-  color: #1f2937;
+  color: var(--oasis-text);
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
@@ -178,7 +220,7 @@
   min-width: 30px;
   height: 30px;
   padding: 0 10px;
-  border-radius: 8px;
+  border-radius: var(--oasis-radius);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -189,7 +231,7 @@
 .oasis-editor-tool-button:hover,
 .oasis-editor-tool-select:hover,
 .oasis-editor-tool-color:hover {
-  background: rgba(226, 232, 240, 0.85);
+  background: var(--oasis-hover-bg);
   border-color: rgba(148, 163, 184, 0.28);
 }
 
@@ -206,14 +248,14 @@
 }
 
 .oasis-editor-tool-button-active {
-  background: #dbeafe;
+  background: var(--oasis-accent-active);
   border-color: rgba(37, 99, 235, 0.4);
-  color: #1d4ed8;
+  color: var(--oasis-accent-active-text);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .oasis-editor-tool-button-active:hover {
-  background: #bfdbfe;
+  background: var(--oasis-accent-soft);
   border-color: rgba(37, 99, 235, 0.55);
 }
 
@@ -227,12 +269,12 @@
 .oasis-editor-tool-select {
   height: 30px;
   padding: 0 8px;
-  border-radius: 8px;
+  border-radius: var(--oasis-radius);
   border: 1px solid rgba(148, 163, 184, 0.3);
   background: rgba(255, 255, 255, 0.7);
   font: inherit;
   font-size: 13px;
-  color: #1f2937;
+  color: var(--oasis-text);
 }
 
 .oasis-editor-tool-select-small {
@@ -245,7 +287,7 @@
   gap: 6px;
   height: 30px;
   padding: 0 8px;
-  border-radius: 8px;
+  border-radius: var(--oasis-radius);
   border: 1px solid rgba(148, 163, 184, 0.3);
   background: rgba(255, 255, 255, 0.7);
   font-size: 12px;
@@ -258,12 +300,12 @@
   gap: 6px;
   height: 30px;
   padding: 0 8px;
-  border-radius: 8px;
+  border-radius: var(--oasis-radius);
   border: 1px solid rgba(148, 163, 184, 0.3);
   background: rgba(255, 255, 255, 0.7);
   font-size: 12px;
   font-weight: 600;
-  color: #475569;
+  color: var(--oasis-text-muted);
 }
 
 .oasis-editor-tool-metric:focus-within {
@@ -279,7 +321,7 @@
   border-radius: 999px;
   border: 1px solid rgba(37, 99, 235, 0.22);
   background: rgba(219, 234, 254, 0.85);
-  color: #1d4ed8;
+  color: var(--oasis-accent);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -293,7 +335,7 @@
   border-radius: 999px;
   border: 1px solid rgba(124, 58, 237, 0.18);
   background: rgba(124, 58, 237, 0.06);
-  color: #6b21a8;
+  color: var(--oasis-text-muted);
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
@@ -305,7 +347,7 @@
   border: 0;
   outline: none;
   background: transparent;
-  color: #0f172a;
+  color: var(--oasis-text);
   font: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -335,9 +377,9 @@
   width: min(860px, 100%);
   min-height: 0;
   max-height: 100%;
-  border-radius: 28px;
+  border-radius: var(--oasis-radius-xl);
   background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(148, 163, 184, 0.26);
+  border: 1px solid var(--oasis-border-color);
   box-shadow:
     0 26px 80px rgba(15, 23, 42, 0.12),
     0 4px 14px rgba(15, 23, 42, 0.05);
@@ -360,9 +402,9 @@
   gap: 12px;
   padding: 6px 16px;
   font-size: 12px;
-  color: rgba(15, 23, 42, 0.65);
+  color: var(--oasis-text-muted);
   background: rgba(248, 250, 252, 0.85);
-  border-top: 1px solid rgba(148, 163, 184, 0.22);
+  border-top: 1px solid var(--oasis-border-color);
 }
 
 .oasis-editor-statusbar-item {
@@ -380,15 +422,15 @@
 }
 
 .oasis-editor-status-saved {
-  color: #15803d;
+  color: var(--oasis-success);
 }
 
 .oasis-editor-status-saving {
-  color: #a16207;
+  color: var(--oasis-warning);
 }
 
 .oasis-editor-status-error {
-  color: #b91c1c;
+  color: var(--oasis-danger);
 }
 
 .oasis-editor-editor-scroll-content {
@@ -403,10 +445,10 @@
   width: 100%;
   min-height: 100%;
   border-radius: 20px;
-  background: #fffdf8;
+  background: var(--oasis-paper);
   box-shadow:
-    inset 0 0 0 1px rgba(148, 163, 184, 0.16),
-    0 10px 30px rgba(148, 163, 184, 0.1);
+    inset 0 0 0 1px var(--oasis-border-color-muted),
+    var(--oasis-paper-shadow);
 }
 
 .oasis-editor-paper-stack {
@@ -464,6 +506,7 @@
   letter-spacing: 0.002em;
   white-space: pre-wrap;
   word-break: break-word;
+  font-family: var(--oasis-font-doc);
 }
 
 .oasis-editor-block-list {
@@ -488,8 +531,8 @@
   left: -12px;
   width: 24px;
   height: 24px;
-  background-color: white;
-  border: 1px solid #cbd5e1;
+  background-color: var(--oasis-paper);
+  border: 1px solid var(--oasis-border-color);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -498,8 +541,8 @@
   opacity: 0;
   transition: opacity 0.2s;
   z-index: 100;
-  color: #64748b;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  color: var(--oasis-text-muted);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .oasis-editor-table-block:hover .oasis-editor-table-drag-handle {
@@ -515,7 +558,7 @@
   position: fixed;
   pointer-events: none;
   background-color: rgba(226, 232, 240, 0.4);
-  border: 2px dashed #94a3b8;
+  border: 2px dashed var(--oasis-text-muted);
   border-radius: 4px;
   z-index: 10001;
   transform: scale(0.95);
@@ -531,7 +574,7 @@
   transform: scale(0.95);
   transform-origin: top left;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #94a3b8;
+  border: 1px solid var(--oasis-text-muted);
 }
 
 .oasis-editor-table-grid {
@@ -570,7 +613,7 @@
   font-size: 0.95em;
   line-height: inherit;
   text-align: right;
-  color: #475569;
+  color: var(--oasis-text-muted);
   user-select: none;
 }
 
@@ -584,13 +627,13 @@
 }
 
 .oasis-editor-revision-insert {
-  color: #059669;
+  color: var(--oasis-revision-insert);
   text-decoration: underline;
   text-decoration-thickness: 1px;
 }
 
 .oasis-editor-revision-delete {
-  color: #dc2626;
+  color: var(--oasis-revision-delete);
   text-decoration: line-through;
   text-decoration-thickness: 1px;
 }
@@ -603,15 +646,15 @@
 }
 
 .oasis-editor-revision-overlay-content {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--oasis-paper);
+  border: 1px solid var(--oasis-border-color);
   border-radius: 6px;
   padding: 8px 12px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   font-size: 12px;
-  color: #374151;
+  color: var(--oasis-text);
   white-space: nowrap;
 }
 
@@ -620,7 +663,7 @@
 }
 
 .oasis-editor-revision-overlay-date {
-  color: #6b7280;
+  color: var(--oasis-text-muted);
   font-size: 11px;
 }
 
@@ -630,9 +673,9 @@
   left: 12px;
   width: 12px;
   height: 12px;
-  background: white;
-  border-right: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--oasis-paper);
+  border-right: 1px solid var(--oasis-border-color);
+  border-bottom: 1px solid var(--oasis-border-color);
   transform: rotate(45deg);
 }
 
@@ -686,7 +729,7 @@
 }
 
 .oasis-editor-caret-active {
-  border-left-color: #2563eb;
+  border-left-color: var(--oasis-caret-color);
   animation: oasis-editor-blink 1.05s steps(1) infinite;
 }
 
@@ -694,7 +737,7 @@
   position: absolute;
   pointer-events: none;
   z-index: 1;
-  background: rgba(37, 99, 235, 0.22);
+  background: var(--oasis-selection-bg);
   border-radius: 3px;
 }
 
@@ -705,9 +748,9 @@
   width: 14px;
   height: 14px;
   padding: 0;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--oasis-paper);
   border-radius: 999px;
-  background: #2563eb;
+  background: var(--oasis-caret-color);
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
   cursor: nwse-resize;
   pointer-events: auto;
@@ -736,7 +779,7 @@
   display: grid;
   place-items: center;
   gap: 12px;
-  background: #f8fafc;
+  background: var(--oasis-bg);
   transition: opacity 0.25s ease;
 }
 
@@ -747,7 +790,7 @@
 
 .oasis-editor-loading-text {
   font-size: 14px;
-  color: #64748b;
+  color: var(--oasis-text-muted);
 }
 
 @keyframes oasis-editor-blink {

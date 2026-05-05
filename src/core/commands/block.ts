@@ -1,0 +1,327 @@
+import type { EditorBlockNode, EditorParagraphStyle, EditorPosition, EditorState, EditorSection, EditorTabStop } from "../model.js";
+import { getBlockParagraphs, getDocumentSections, getParagraphLength, getParagraphs, paragraphOffsetToPosition, getActiveSectionIndex, getActiveZone } from "../model.js";
+import { createEditorParagraph } from "../editorState.js";
+import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
+import { deleteSelectionRange, getFocusParagraph, buildParagraphFromRuns, sliceRuns, getStyleAtOffset, createParagraphFromRuns, cloneParagraphs, cloneStateWithParagraphs, withSelection, cloneBlocks, ValueParagraphStyleKey, cloneParagraph, setParagraphStyleValue, preserveSelectionByParagraphOffsets } from "./utils.js";
+
+export function moveBlockToPosition(
+  state: EditorState,
+  blockId: string,
+  targetPosition: EditorPosition,
+): EditorState {
+  console.log("[moveBlockToPosition] Start move. BlockId:", blockId, "Target:", targetPosition.paragraphId);
+  
+  // 1. Find and remove the block from its current location
+  let movedBlock: EditorBlockNode | undefined;
+  
+  const removeFromBlocks = (blocks: EditorBlockNode[]): EditorBlockNode[] => {
+    const idx = blocks.findIndex(b => b.id === blockId);
+    if (idx >= 0) {
+      movedBlock = blocks[idx];
+      return [...blocks.slice(0, idx), ...blocks.slice(idx + 1)];
+    }
+    return blocks;
+  };
+
+  const removeFromSections = (sections: EditorSection[]): EditorSection[] => {
+    return sections.map(s => ({
+      ...s,
+      blocks: removeFromBlocks(s.blocks),
+      header: s.header ? removeFromBlocks(s.header) : undefined,
+      footer: s.footer ? removeFromBlocks(s.footer) : undefined,
+    }));
+  };
+
+  let nextDocument = { ...state.document };
+  if (nextDocument.sections && nextDocument.sections.length > 0) {
+    nextDocument.sections = removeFromSections(nextDocument.sections);
+  } else {
+    nextDocument.blocks = removeFromBlocks(nextDocument.blocks);
+  }
+
+  if (!movedBlock) {
+    console.error("[moveBlockToPosition] Failed to find block to move:", blockId);
+    return state;
+  }
+
+  // 2. Identify the target block and zone
+  const targetId = targetPosition.paragraphId;
+  
+  // Check if target is inside the moved block itself
+  if (movedBlock.type === "table") {
+      const internalParagraphs = getBlockParagraphs(movedBlock);
+      if (internalParagraphs.some(p => p.id === targetId)) {
+          console.warn("[moveBlockToPosition] Target is inside the moved block. Aborting move to avoid self-nesting.");
+          return state;
+      }
+  }
+
+  const insertIntoBlocks = (blocks: EditorBlockNode[]): { nextBlocks: EditorBlockNode[]; found: boolean } => {
+    const idx = blocks.findIndex(b => {
+        if (b.id === targetId) return true;
+        if (b.type === "table") {
+            return getBlockParagraphs(b).some(p => p.id === targetId);
+        }
+        return false;
+    });
+
+    if (idx < 0) return { nextBlocks: blocks, found: false };
+
+    // Insert BEFORE the block containing the target paragraph
+    console.log("[moveBlockToPosition] Found target at block index:", idx);
+    const nextBlocks = [...blocks.slice(0, idx), movedBlock!, ...blocks.slice(idx)];
+    return { nextBlocks, found: true };
+  };
+
+  if (nextDocument.sections && nextDocument.sections.length > 0) {
+    const activeIdx = getActiveSectionIndex(state);
+    const zone = getActiveZone(state);
+    const section = { ...nextDocument.sections[activeIdx]! };
+    let found = false;
+
+    if (zone === "header") {
+      const res = insertIntoBlocks(section.header ?? []);
+      section.header = res.nextBlocks;
+      found = res.found;
+    } else if (zone === "footer") {
+      const res = insertIntoBlocks(section.footer ?? []);
+      section.footer = res.nextBlocks;
+      found = res.found;
+    } else {
+      const res = insertIntoBlocks(section.blocks);
+      section.blocks = res.nextBlocks;
+      found = res.found;
+    }
+
+    if (!found) {
+        console.log("[moveBlockToPosition] Target not found in active zone, appending to main blocks");
+        section.blocks = [...section.blocks, movedBlock];
+    }
+
+    nextDocument.sections = [...nextDocument.sections];
+    nextDocument.sections[activeIdx] = section;
+  } else {
+    const res = insertIntoBlocks(nextDocument.blocks);
+    if (res.found) {
+        nextDocument.blocks = res.nextBlocks;
+    } else {
+        console.log("[moveBlockToPosition] Target not found in blocks, appending");
+        nextDocument.blocks = [...nextDocument.blocks, movedBlock];
+    }
+  }
+
+  console.log("[moveBlockToPosition] Move complete.");
+  return {
+    ...state,
+    document: nextDocument,
+  };
+}
+
+export function splitBlockAtSelection(state: EditorState): EditorState {
+  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+  const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  const firstParagraph = buildParagraphFromRuns(paragraph, sliceRuns(paragraph, 0, offset), getStyleAtOffset(paragraph, offset));
+  const secondRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
+  const nextParagraph =
+    secondRuns.length > 0
+      ? createParagraphFromRuns(secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
+      : createEditorParagraph("");
+  const paragraphs = getParagraphs(collapsedState);
+  const nextParagraphs = [
+    ...cloneParagraphs(paragraphs.slice(0, index)),
+    firstParagraph,
+    nextParagraph,
+    ...cloneParagraphs(paragraphs.slice(index + 1)),
+  ];
+
+  return cloneStateWithParagraphs(
+    collapsedState,
+    nextParagraphs,
+    withSelection(paragraphOffsetToPosition(nextParagraph, 0)),
+  );
+}
+
+export function insertPageBreakAtSelection(state: EditorState): EditorState {
+  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+  const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  const firstParagraph = buildParagraphFromRuns(
+    paragraph,
+    sliceRuns(paragraph, 0, offset),
+    getStyleAtOffset(paragraph, offset),
+  );
+  const secondRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
+  const nextParagraph =
+    secondRuns.length > 0
+      ? createParagraphFromRuns(secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
+      : createEditorParagraph("");
+
+  nextParagraph.style = {
+    ...(paragraph.style ?? {}),
+    pageBreakBefore: true,
+  };
+
+  const paragraphs = getParagraphs(collapsedState);
+  const nextParagraphs = [
+    ...cloneParagraphs(paragraphs.slice(0, index)),
+    firstParagraph,
+    nextParagraph,
+    ...cloneParagraphs(paragraphs.slice(index + 1)),
+  ];
+
+  return cloneStateWithParagraphs(
+    collapsedState,
+    nextParagraphs,
+    withSelection(paragraphOffsetToPosition(nextParagraph, 0)),
+  );
+}
+
+export function insertSectionBreakAtSelection(
+  state: EditorState,
+  breakType: "nextPage" | "continuous",
+): EditorState {
+  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+  const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  const sections = getDocumentSections(collapsedState.document);
+  const activeSectionIndex = getActiveSectionIndex(collapsedState);
+  const zone = getActiveZone(collapsedState);
+
+  if (zone !== "main") {
+    return state;
+  }
+
+  const section = sections[activeSectionIndex];
+  if (!section) {
+    return state;
+  }
+
+  // Split the current section blocks at the current paragraph
+  const blockIndex = section.blocks.findIndex((block) => {
+    if (block.type === "paragraph") {
+      return block.id === paragraph.id;
+    }
+    return false; // For now, we only support splitting at paragraph level
+  });
+
+  if (blockIndex === -1) {
+    return state;
+  }
+
+  const beforeBlocks = section.blocks.slice(0, blockIndex);
+  const afterBlocks = section.blocks.slice(blockIndex + 1);
+
+  // Split the paragraph itself
+  const firstParagraph = buildParagraphFromRuns(
+    paragraph,
+    sliceRuns(paragraph, 0, offset),
+    getStyleAtOffset(paragraph, offset),
+  );
+  const secondRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
+  const secondParagraph =
+    secondRuns.length > 0
+      ? createParagraphFromRuns(secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
+      : createEditorParagraph("");
+
+  const newSectionId = `section:${Math.random().toString(36).slice(2, 9)}`;
+  const newSection: EditorSection = {
+    id: newSectionId,
+    blocks: [secondParagraph, ...afterBlocks],
+    pageSettings: { ...section.pageSettings },
+    header: section.header ? cloneBlocks(section.header) : undefined,
+    footer: section.footer ? cloneBlocks(section.footer) : undefined,
+    breakType: breakType,
+  };
+
+  const updatedSection: EditorSection = {
+    ...section,
+    blocks: [...beforeBlocks, firstParagraph],
+  };
+
+  const nextSections = [
+    ...sections.slice(0, activeSectionIndex),
+    updatedSection,
+    newSection,
+    ...sections.slice(activeSectionIndex + 1),
+  ];
+
+  return {
+    ...collapsedState,
+    document: {
+      ...collapsedState.document,
+      sections: nextSections,
+    },
+    activeSectionIndex: activeSectionIndex + 1,
+    selection: withSelection(paragraphOffsetToPosition(secondParagraph, 0)),
+  };
+}
+
+export function updateSectionSettings(
+  state: EditorState,
+  sectionIndex: number,
+  settings: Partial<EditorSection>,
+): EditorState {
+  const sections = getDocumentSections(state.document);
+  if (sectionIndex < 0 || sectionIndex >= sections.length) {
+    return state;
+  }
+
+  const nextSections = [...sections];
+  nextSections[sectionIndex] = {
+    ...nextSections[sectionIndex],
+    ...settings,
+    pageSettings: {
+      ...nextSections[sectionIndex].pageSettings,
+      ...(settings.pageSettings ?? {}),
+      margins: {
+        ...nextSections[sectionIndex].pageSettings.margins,
+        ...(settings.pageSettings?.margins ?? {}),
+      },
+    },
+  };
+
+  return {
+    ...state,
+    document: {
+      ...state.document,
+      sections: nextSections,
+    },
+  };
+}
+
+export function setParagraphNamedStyle(state: EditorState, styleId: string | null): EditorState {
+  return setParagraphStyle(state, "styleId", styleId);
+}
+
+export function setParagraphStyle<K extends ValueParagraphStyleKey>(
+  state: EditorState,
+  key: K,
+  value: EditorParagraphStyle[K] | null,
+): EditorState {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  const startIndex = normalized.startIndex;
+  const endIndex = normalized.endIndex;
+
+  const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
+    if (paragraphIndex < startIndex || paragraphIndex > endIndex) {
+      return cloneParagraph(paragraph);
+    }
+
+    return {
+      ...cloneParagraph(paragraph),
+      style: setParagraphStyleValue(paragraph.style, key, value),
+    };
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(nextParagraphs, normalized),
+  );
+}
+
+export function setParagraphTabStops(
+  state: EditorState,
+  tabs: EditorTabStop[] | null,
+): EditorState {
+  return setParagraphStyle(state, "tabs", tabs);
+}

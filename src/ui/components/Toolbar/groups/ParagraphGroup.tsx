@@ -5,10 +5,11 @@ import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup, ToolbarSeparator } from "../ToolbarGroup.js";
 import { ToolbarSelect } from "../ToolbarSelect.js";
 import { alignButtons, listButtons } from "../toolbarConfig.js";
+import { t } from "../../../../i18n/index.js";
 
 export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
-  const t = () => ctx().toolbarStyleState();
+  const t_style = () => ctx().toolbarStyleState();
 
   return (
     <div style={{ display: "flex", "align-items": "center", gap: "8px" }}>
@@ -17,10 +18,10 @@ export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
           {(button) => (
             <ToolbarButton
               icon={button.icon}
-              active={t().align === button.value}
+              active={t_style().align === button.value}
               data-testid={button.testId}
               onClick={() => ctx().applyParagraphStyleCommand("align", button.value)}
-              tooltip={button.label}
+              tooltip={t(`toolbar.${button.icon.replace(/-./g, x => x[1].toUpperCase())}` as any)}
             />
           )}
         </For>
@@ -33,10 +34,10 @@ export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
           {(button) => (
             <ToolbarButton
               icon={button.icon}
-              active={t().listKind === button.kind}
+              active={t_style().listKind === button.kind}
               data-testid={button.testId}
               onClick={() => ctx().applyParagraphListCommand(button.kind)}
-              tooltip={button.label}
+              tooltip={t(`toolbar.${button.kind}List` as any)}
             />
           )}
         </For>
@@ -48,18 +49,18 @@ export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
               e.currentTarget.value as EditorParagraphListStyle["format"],
             )
           }
-          tooltip="Change list numbering format"
+          tooltip={t("toolbar.listFormat")}
         >
-          <option value="decimal">1, 2, 3</option>
-          <option value="lowerLetter">a, b, c</option>
-          <option value="upperLetter">A, B, C</option>
-          <option value="lowerRoman">i, ii, iii</option>
-          <option value="upperRoman">I, II, III</option>
-          <option value="bullet">Bullet</option>
+          <option value="decimal">{t("toolbar.formatDecimal")}</option>
+          <option value="lowerLetter">{t("toolbar.formatLowerLetter")}</option>
+          <option value="upperLetter">{t("toolbar.formatUpperLetter")}</option>
+          <option value="lowerRoman">{t("toolbar.formatLowerRoman")}</option>
+          <option value="upperRoman">{t("toolbar.formatUpperRoman")}</option>
+          <option value="bullet">{t("toolbar.formatBullet")}</option>
         </ToolbarSelect>
 
         <label class="oasis-editor-tool-metric">
-          <span>Start</span>
+          <span>{t("toolbar.listStartAt")}</span>
           <input
             type="number"
             class="oasis-editor-tool-number"
@@ -72,7 +73,7 @@ export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
                 e.currentTarget.value ? Number(e.currentTarget.value) : null,
               )
             }
-            title="Start numbering at"
+            title={t("toolbar.listStartAt")}
           />
         </label>
       </ToolbarGroup>

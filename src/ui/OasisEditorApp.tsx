@@ -220,6 +220,14 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const pageSettings = () => getDocumentPageSettings(state.document);
   const showChrome = () => props.showChrome ?? true;
   const isReadOnly = () => props.readOnly ?? false;
+
+  const shellComponent = () => {
+    const s = props.shell ?? "document";
+    if (s === "inline") return InlineShell;
+    if (s === "balloon") return BalloonShell;
+    return DocumentShell;
+  };
+
   const [focused, setFocused] = createSignal(false);
   const [composing, setComposing] = createSignal(false);
   const [undoStack, setUndoStack] = createSignal<EditorState[]>([]);

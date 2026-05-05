@@ -1,0 +1,93 @@
+.oasis-editor-menubar {
+  display: flex;
+  background: var(--oasis-bg);
+  padding: 0 16px;
+  border-bottom: 1px solid var(--oasis-toolbar-border);
+  font-family: var(--oasis-font-ui);
+  font-size: 14px;
+  user-select: none;
+  height: 32px;
+  align-items: center;
+}
+
+.oasis-editor-menubar-item {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.oasis-editor-menubar-button {
+  height: 24px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--oasis-text);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  transition: background 0.1s;
+}
+
+.oasis-editor-menubar-button:hover,
+.oasis-editor-menubar-button.active {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.oasis-editor-menubar-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid var(--oasis-toolbar-border);
+  box-shadow: var(--oasis-paper-shadow);
+  border-radius: 4px;
+  min-width: 200px;
+  padding: 4px 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.oasis-editor-menubar-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: var(--oasis-text);
+  font-size: 13px;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.oasis-editor-menubar-menu-item:hover {
+  background: var(--oasis-accent-soft);
+}
+
+.oasis-editor-menubar-menu-item.disabled {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
+.oasis-editor-menubar-menu-item-label {
+  flex: 1;
+}
+
+.oasis-editor-menubar-menu-item-shortcut {
+  color: var(--oasis-text-muted);
+  font-size: 11px;
+}
+
+.oasis-editor-menubar-separator {
+  height: 1px;
+  background: var(--oasis-toolbar-border);
+  margin: 4px 0;
+}
+
+.oasis-editor-menubar-submenu-arrow {
+  font-size: 10px;
+  color: var(--oasis-text-muted);
+}

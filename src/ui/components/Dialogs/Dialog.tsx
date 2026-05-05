@@ -1,5 +1,6 @@
 import { createEffect, onCleanup, onMount, Show, type JSX } from "solid-js";
 import "./Dialog.css";
+import { t } from "../../../i18n/index.js";
 
 interface DialogProps {
   isOpen: boolean;
@@ -42,7 +43,7 @@ export function Dialog(props: DialogProps) {
             <button
               class="oasis-editor-dialog-close"
               onClick={props.onClose}
-              title="Close"
+              title={t("generic.close")}
               data-testid="editor-dialog-close"
             >
               <i data-lucide="x" />

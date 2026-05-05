@@ -9,7 +9,9 @@ interface ToolbarButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 export function ToolbarButton(props: ToolbarButtonProps) {
-  const [local, others] = splitProps(props, ["icon", "label", "active", "tooltip", "wide", "class", "classList"]);
+  const [local, others] = splitProps(props, ["icon", "label", "active", "tooltip", "wide", "aria-label", "class", "classList"]);
+
+  const ariaLabel = () => local["aria-label"] || local.tooltip || local.label || "";
 
   return (
     <button
@@ -21,6 +23,7 @@ export function ToolbarButton(props: ToolbarButtonProps) {
         ...local.classList,
       }}
       title={local.tooltip}
+      aria-label={ariaLabel()}
       {...others}
     >
       <Show when={local.icon}>

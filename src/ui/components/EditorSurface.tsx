@@ -26,6 +26,7 @@ import {
   projectDocumentLayout,
   projectParagraphLayout,
 } from "../layoutProjection.js";
+import { PageBreak } from "./PageBreak.js";
 
 interface EditorSurfaceProps {
   state: Accessor<EditorState>;
@@ -791,14 +792,18 @@ export function EditorSurface(props: EditorSurfaceProps) {
   return (
     <div class="oasis-editor-paper-stack">
       <For each={documentLayout().pages}>
-        {(page) => {
+        {(page, index) => {
           const pageSettings = page.pageSettings;
           const contentWidth = getPageContentWidth(pageSettings);
           const contentHeight = getPageContentHeight(pageSettings);
 
           return (
-            <div
-              class="oasis-editor-paper"
+            <>
+              <Show when={index() > 0}>
+                <PageBreak pageIndex={index()} />
+              </Show>
+              <div
+                class="oasis-editor-paper"
               classList={{
                 "oasis-editor-paper-landscape":
                   pageSettings.orientation === "landscape",
@@ -972,6 +977,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 </For>
               </div>
             </div>
+            </>
           );
         }}
       </For>

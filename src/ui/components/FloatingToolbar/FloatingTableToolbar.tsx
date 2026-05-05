@@ -9,6 +9,7 @@ import type { SelectionBox } from "../../editorUiTypes.js";
 import type { EditorToolbarCtx } from "../Toolbar/types.js";
 import { ToolbarButton } from "../Toolbar/ToolbarButton.js";
 import { ToolbarGroup, ToolbarSeparator } from "../Toolbar/ToolbarGroup.js";
+import { t } from "../../../i18n/index.js";
 
 export interface FloatingTableToolbarProps {
   ctx: () => EditorToolbarCtx;
@@ -119,7 +120,7 @@ export function FloatingTableToolbar(
                   );
                   ctx().focusInput();
                 }}
-                tooltip="Merge cells"
+                tooltip={t("table.mergeTooltip")}
               />
               <ToolbarButton
                 icon="split"
@@ -132,7 +133,7 @@ export function FloatingTableToolbar(
                   );
                   ctx().focusInput();
                 }}
-                tooltip="Split cells"
+                tooltip={t("table.splitTooltip")}
               />
             </ToolbarGroup>
 
@@ -150,7 +151,7 @@ export function FloatingTableToolbar(
                   );
                   ctx().focusInput();
                 }}
-                tooltip="Align left"
+                tooltip={t("table.alignLeft")}
               />
               <ToolbarButton
                 icon="align-center"
@@ -163,7 +164,7 @@ export function FloatingTableToolbar(
                   );
                   ctx().focusInput();
                 }}
-                tooltip="Align center"
+                tooltip={t("table.alignCenter")}
               />
               <ToolbarButton
                 icon="align-right"
@@ -176,7 +177,7 @@ export function FloatingTableToolbar(
                   );
                   ctx().focusInput();
                 }}
-                tooltip="Align right"
+                tooltip={t("table.alignRight")}
               />
             </ToolbarGroup>
 
@@ -187,7 +188,7 @@ export function FloatingTableToolbar(
                 icon="palette"
                 data-testid="editor-floating-toolbar-shading"
                 onClick={() => {
-                  const color = prompt("Cell Background Color:", "#f1f5f9");
+                  const color = prompt(t("table.cellBgColorPrompt"), "#f1f5f9");
                   if (color !== null) {
                     ctx().applyTransactionalState(
                       (current) =>
@@ -197,7 +198,7 @@ export function FloatingTableToolbar(
                     ctx().focusInput();
                   }
                 }}
-                tooltip="Cell color"
+                tooltip={t("table.cellColor")}
               />
               <ToolbarButton
                 icon="frame"
@@ -214,7 +215,7 @@ export function FloatingTableToolbar(
                   );
                   ctx().focusInput();
                 }}
-                tooltip="Apply borders"
+                tooltip={t("table.applyBorders")}
               />
               <ToolbarButton
                 icon="square"
@@ -231,7 +232,7 @@ export function FloatingTableToolbar(
                   );
                   ctx().focusInput();
                 }}
-                tooltip="Remove borders"
+                tooltip={t("table.removeBorders")}
               />
             </ToolbarGroup>
 
@@ -249,7 +250,7 @@ export function FloatingTableToolbar(
                   );
                   ctx().focusInput();
                 }}
-                tooltip="Insert row above"
+                tooltip={t("table.insertRowAbove")}
               />
               <ToolbarButton
                 icon="arrow-down-to-line"
@@ -262,7 +263,7 @@ export function FloatingTableToolbar(
                   );
                   ctx().focusInput();
                 }}
-                tooltip="Insert row below"
+                tooltip={t("table.insertRowBelow")}
               />
               <ToolbarButton
                 icon="arrow-left-to-line"
@@ -275,7 +276,7 @@ export function FloatingTableToolbar(
                   );
                   ctx().focusInput();
                 }}
-                tooltip="Insert column left"
+                tooltip={t("table.insertColumnLeft")}
               />
               <ToolbarButton
                 icon="arrow-right-to-line"
@@ -288,7 +289,7 @@ export function FloatingTableToolbar(
                   );
                   ctx().focusInput();
                 }}
-                tooltip="Insert column right"
+                tooltip={t("table.insertColumnRight")}
               />
             </ToolbarGroup>
 
@@ -306,7 +307,7 @@ export function FloatingTableToolbar(
                   );
                   ctx().focusInput();
                 }}
-                tooltip="Delete row"
+                tooltip={t("table.deleteRow")}
               />
               <ToolbarButton
                 icon="columns-3"
@@ -319,7 +320,7 @@ export function FloatingTableToolbar(
                   );
                   ctx().focusInput();
                 }}
-                tooltip="Delete column"
+                tooltip={t("table.deleteColumn")}
               />
             </ToolbarGroup>
           </div>

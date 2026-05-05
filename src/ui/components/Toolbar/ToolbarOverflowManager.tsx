@@ -1,5 +1,6 @@
 import { createSignal, onCleanup, onMount, For, type JSX, Show, createMemo, children, createEffect } from "solid-js";
 import { ToolbarDropdown } from "./ToolbarDropdown.js";
+import { t } from "../../../i18n/index.js";
 
 export function ToolbarOverflowManager(props: { children: JSX.Element }) {
   const [overflowCount, setOverflowCount] = createSignal(0);
@@ -25,7 +26,9 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
     }
 
     const GAP = 8;
-    const MORE_BUTTON_WIDTH = 56;
+    // Width reserved for the absolutely-positioned overflow button on the right.
+    // Must match the padding-right applied to the visible items wrapper below.
+    const MORE_BUTTON_WIDTH = 96;
     const MIN_VISIBLE = 3;
 
     let currentWidth = 0;
@@ -98,21 +101,33 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
         </For>
       </div>
 
-      {/* 2. Real Visible Toolbar */}
-      <div style={{ display: 'flex', "align-items": 'center', gap: '8px', "flex-shrink": 0 }}>
+      {/* 2. Real Visible Toolbar — flex:1 with min-width:0 so it shares
+           space cleanly with the overflow button sibling. */}
+      <div style={{
+        display: 'flex',
+        "align-items": 'center',
+        gap: '8px',
+        flex: '1 1 0',
+        "min-width": '0',
+        overflow: 'hidden'
+      }}>
         <For each={visibleItems()}>
-          {(item) => <div class="oasis-editor-toolbar-item-wrapper" style={{ display: 'flex', "align-items": 'center' }}>{item}</div>}
+          {(item) => <div class="oasis-editor-toolbar-item-wrapper" style={{ display: 'flex', "align-items": 'center', "flex-shrink": 0 }}>{item}</div>}
         </For>
       </div>
 
-      {/* 3. Overflow Dropdown */}
+      {/* 3. Overflow Dropdown — flex sibling with flex-shrink:0 so it
+           always reserves its space and is never clipped. */}
       <Show when={overflowCount() > 0}>
-        <div style={{ "margin-left": "auto", "flex-shrink": 0, "padding-left": "8px" }}>
+        <div style={{
+          "flex-shrink": 0,
+          "padding-left": "8px"
+        }}>
           <ToolbarDropdown 
             label="" 
-            icon="more-horizontal" 
+            icon="ellipsis" 
             testId="editor-toolbar-overflow-dropdown"
-            tooltip="More tools"
+            tooltip={t("toolbar.moreTools")}
           >
             <div class="oasis-editor-toolbar-overflow-menu" style={{ 
               display: "flex", 

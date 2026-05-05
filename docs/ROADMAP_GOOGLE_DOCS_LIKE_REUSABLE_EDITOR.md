@@ -566,6 +566,15 @@ npm run dev
 | Date | Phase | Agent | Commit | Notes |
 |---|---|---|---|---|
 | 2026‑05‑04 | 0 | human | — | Plan drafted. |
+| 2026‑05‑04 | 1 | agent | | Theming tokens & Visual Audit complete. |
+| 2026‑05‑04 | 2 | agent | | Status Bar v2 + i18n Skeleton complete. |
+| 2026-05-04 | 3 | agent | | Menu Bar implementation complete. |
+| 2026-05-04 | 4 | agent | | Document Title Bar + Share Placeholder complete. |
+| 2026-05-04 | 5 | agent | | Outline Panel implementation complete. |
+| 2026-05-04 | 6 | agent | | Pagination v1 complete. |
+| 2026-05-04 | 7 | agent | | Plugin Host & Command Registry Refactor complete. |
+| 2026-05-04 | 8 | agent | | Shell Abstraction (Document/Inline/Balloon) complete. |
+| 2026-05-04 | 9 | agent | | Framework Adapters (React/Vue) complete. |
 |  |  |  |  |  |
 
 ---

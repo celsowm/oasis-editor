@@ -4,33 +4,36 @@ import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup } from "../ToolbarGroup.js";
 import { ToolbarDropdown } from "../ToolbarDropdown.js";
+import { t } from "../../../../i18n/index.js";
+
+const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 
 export function InsertGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
-  const t = () => ctx().toolbarStyleState();
+  const t_style = () => ctx().toolbarStyleState();
 
   return (
     <ToolbarGroup>
-      <ToolbarDropdown label="Insert" icon="plus" testId="editor-toolbar-insert-dropdown">
+      <ToolbarDropdown label={t("toolbar.insert")} icon="plus" testId="editor-toolbar-insert-dropdown">
         <ToolbarButton
           icon="image"
-          label="Image"
+          label={t("toolbar.image")}
           wide
           data-testid="editor-toolbar-insert-image"
           onClick={() => ctx().imageInputRef()?.click()}
-          tooltip="Insert Image"
+          tooltip={t("toolbar.image")}
         />
         <ToolbarButton
           icon="table"
-          label="Table"
+          label={t("toolbar.table")}
           wide
           data-testid="editor-toolbar-insert-table"
           onClick={() => ctx().insertTableCommand(3, 3)}
-          tooltip="Insert 3x3 Table"
+          tooltip={t("toolbar.table")}
         />
         <ToolbarButton
           icon="hash"
-          label="Page #"
+          label={t("toolbar.pageNumber")}
           wide
           data-testid="editor-toolbar-insert-page-number"
           onClick={() => {
@@ -43,11 +46,11 @@ export function InsertGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Insert Page Number"
+          tooltip={t("toolbar.pageNumber")}
         />
         <ToolbarButton
           icon="layers"
-          label="Total Pages"
+          label={t("toolbar.totalPages")}
           wide
           data-testid="editor-toolbar-insert-total-pages"
           onClick={() => {
@@ -60,39 +63,39 @@ export function InsertGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Insert Total Pages"
+          tooltip={t("toolbar.totalPages")}
         />
       </ToolbarDropdown>
 
       <ToolbarButton
         icon="link"
-        label="Link"
+        label={t("toolbar.link")}
         wide
-        active={Boolean(t().link)}
+        active={Boolean(t_style().link)}
         data-testid="editor-toolbar-link"
-        disabled={ctx().selectionCollapsed() && !t().link}
+        disabled={ctx().selectionCollapsed() && !t_style().link}
         onClick={() => ctx().promptForLink()}
-        tooltip="Insert Link"
+        tooltip={`${t("toolbar.link")} (${mod}+K)`}
       />
       <ToolbarButton
         icon="unlink"
-        label="Unlink"
+        label={t("toolbar.unlink")}
         wide
         data-testid="editor-toolbar-unlink"
-        disabled={!t().link}
+        disabled={!t_style().link}
         onClick={() => ctx().removeLinkCommand()}
-        tooltip="Remove Link"
+        tooltip={t("toolbar.unlink")}
       />
 
       <Show when={Boolean(ctx().selectedImageRun())}>
         <ToolbarButton
           icon="file-text"
-          label="Alt"
+          label={t("toolbar.alt")}
           wide
           active={true}
           data-testid="editor-toolbar-image-alt"
           onClick={() => ctx().promptForImageAlt()}
-          tooltip="Edit the selected image alt text"
+          tooltip={t("toolbar.alt")}
         />
       </Show>
     </ToolbarGroup>

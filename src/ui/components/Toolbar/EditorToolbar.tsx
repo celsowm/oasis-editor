@@ -25,6 +25,9 @@ import { SectionGroup } from "./groups/SectionGroup.js";
 import { StyleGroup } from "./groups/StyleGroup.js";
 import { TableGroup } from "./groups/TableGroup.js";
 import type { EditorToolbarCtx, ValueStyleKey } from "./types.js";
+import { t } from "../../../i18n/index.js";
+
+const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 
 export function EditorToolbar(props: { ctx: EditorToolbarCtx }): JSX.Element {
   let toolbarRef: HTMLElement | undefined;
@@ -38,22 +41,22 @@ export function EditorToolbar(props: { ctx: EditorToolbarCtx }): JSX.Element {
     >
       <ToolbarOverflowManager>
         <ToolbarGroup>
-          <ToolbarDropdown label="File" icon="file" testId="editor-toolbar-file-dropdown">
+          <ToolbarDropdown label={t("toolbar.file")} icon="file" testId="editor-toolbar-file-dropdown">
             <ToolbarButton
               icon="download"
-              label="Export"
+              label={t("toolbar.export")}
               wide
               data-testid="editor-toolbar-export-docx"
               onClick={() => void ctx().handleExportDocx()}
-              tooltip="Export DOCX"
+              tooltip={t("toolbar.export")}
             />
             <ToolbarButton
               icon="upload"
-              label="Import"
+              label={t("toolbar.import")}
               wide
               data-testid="editor-toolbar-import-docx"
               onClick={() => ctx().importInputRef()?.click()}
-              tooltip="Import DOCX"
+              tooltip={t("toolbar.import")}
             />
           </ToolbarDropdown>
         </ToolbarGroup>
@@ -66,14 +69,14 @@ export function EditorToolbar(props: { ctx: EditorToolbarCtx }): JSX.Element {
             data-testid="editor-toolbar-undo"
             disabled={ctx().undoStack().length === 0}
             onClick={() => ctx().performUndo()}
-            tooltip="Undo last change"
+            tooltip={`${t("toolbar.undo")} (${mod}+Z)`}
           />
           <ToolbarButton
             icon="redo"
             data-testid="editor-toolbar-redo"
             disabled={ctx().redoStack().length === 0}
             onClick={() => ctx().performRedo()}
-            tooltip="Redo last undone change"
+            tooltip={`${t("toolbar.redo")} (${mod}+Shift+Z)`}
           />
         </ToolbarGroup>
 

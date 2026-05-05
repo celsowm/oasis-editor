@@ -23,7 +23,28 @@ function hideLoading(): void {
 }
 
 function init(): void {
-  createOasisEditor(container as HTMLElement);
+  const tabsContainer = document.createElement("div");
+  tabsContainer.style.padding = "10px";
+  tabsContainer.style.background = "#eee";
+  tabsContainer.style.display = "flex";
+  tabsContainer.style.gap = "10px";
+  
+  const shells: Array<"document" | "inline" | "balloon"> = ["document", "inline", "balloon"];
+  let currentInstance: any = null;
+
+  shells.forEach(shell => {
+    const btn = document.createElement("button");
+    btn.textContent = shell.charAt(0).toUpperCase() + shell.slice(1) + " Shell";
+    btn.onclick = () => {
+      if (currentInstance) currentInstance.dispose();
+      container!.innerHTML = "";
+      currentInstance = createOasisEditor(container as HTMLElement, { shell });
+    };
+    tabsContainer.appendChild(btn);
+  });
+
+  document.body.prepend(tabsContainer);
+  currentInstance = createOasisEditor(container as HTMLElement, { shell: "document" });
   hideLoading();
 }
 

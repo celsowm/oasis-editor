@@ -242,6 +242,13 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
     focusInput();
   };
 
+  const applyInsertPageBreakCommand = () => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => insertPageBreakAtSelection(temp)));
+    focusInput();
+  };
+
   const handleStyleChange = (styleId: string) => {
     clearPreferredColumn();
     resetTransactionGrouping();

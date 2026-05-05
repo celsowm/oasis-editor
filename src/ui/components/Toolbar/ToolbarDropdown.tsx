@@ -15,6 +15,8 @@ export function ToolbarDropdown(props: ToolbarDropdownProps) {
   let buttonRef: HTMLButtonElement | undefined;
   let menuRef: HTMLDivElement | undefined;
 
+  const ariaLabel = () => (props as any)["aria-label"] || props.tooltip || props.label || "";
+
   const updateCoords = () => {
     if (buttonRef && isOpen()) {
       const rect = buttonRef.getBoundingClientRect();
@@ -62,6 +64,7 @@ export function ToolbarDropdown(props: ToolbarDropdownProps) {
         classList={{ "oasis-editor-tool-button-active": isOpen() }}
         onClick={() => setIsOpen(!isOpen())}
         title={props.tooltip}
+        aria-label={ariaLabel()}
         data-testid={props.testId}
       >
         <i data-lucide={props.icon} />

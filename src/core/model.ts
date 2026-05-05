@@ -176,6 +176,10 @@ export interface EditorDocument {
   pageSettings?: EditorPageSettings;
   sections?: EditorSection[];
   styles?: Record<string, EditorNamedStyle>;
+  metadata?: {
+    title?: string;
+    [key: string]: any;
+  };
 }
 
 /**

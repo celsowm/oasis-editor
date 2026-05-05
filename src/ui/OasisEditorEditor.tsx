@@ -5,6 +5,7 @@ import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { RevisionOverlay } from "./components/RevisionOverlay.js";
 import { FloatingTableToolbar } from "./components/FloatingToolbar/FloatingTableToolbar.js";
 import type { EditorToolbarCtx } from "./components/Toolbar/types.js";
+import { t } from "../i18n/index.js";
 import {
   getDocumentParagraphs,
   getDocumentPageSettings,
@@ -12,6 +13,7 @@ import {
   type EditorLayoutParagraph,
   type EditorState,
 } from "../core/model.js";
+import { getDocumentCharacterCount, getDocumentWordCount } from "../core/editorState.js";
 import type { CaretBox, InputBox, RevisionBox, SelectionBox } from "./editorUiTypes.js";
 
 export interface OasisEditorEditorProps {
@@ -71,16 +73,34 @@ export interface OasisEditorEditorProps {
   onImageInputChange: (event: Event & { currentTarget: HTMLInputElement }) => void;
 }
 
+import { projectDocumentLayout } from "./layoutProjection.js";
+
 export function OasisEditorEditor(props: OasisEditorEditorProps) {
   let scrollContentRef: HTMLDivElement | undefined;
   const pageSettings = () => getDocumentPageSettings(props.state().document);
   const viewportHeight = () =>
     typeof props.viewportHeight === "number" ? `${props.viewportHeight}px` : props.viewportHeight ?? "min(72vh, 920px)";
-  const characterCount = () =>
-    getDocumentParagraphs(props.state().document).reduce(
-      (total, paragraph) => total + getParagraphLength(paragraph),
-      0,
+  const characterCount = () => getDocumentCharacterCount(props.state().document);
+  const wordCount = () => getDocumentWordCount(props.state().document);
+
+  const documentLayout = () =>
+    projectDocumentLayout(
+      props.state().document,
+      undefined,
+      props.measuredBlockHeights?.(),
+      props.measuredParagraphLayouts?.(),
     );
+
+  const totalPages = () => Math.max(1, documentLayout().pages.length);
+  
+  const currentPage = () => {
+    const layout = documentLayout();
+    const focusId = props.state().selection.focus.paragraphId;
+    const pageIndex = layout.pages.findIndex((page) =>
+      page.blocks.some((block) => block.sourceBlockId === focusId)
+    );
+    return pageIndex === -1 ? 1 : pageIndex + 1;
+  };
 
   return (
     <div
@@ -200,20 +220,42 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
       >
         <span
           class="oasis-editor-statusbar-item"
+          data-testid="editor-statusbar-word-count"
+        >
+          {t("status.words", [wordCount()])}
+        </span>
+        <span
+          class="oasis-editor-statusbar-item"
           data-testid="editor-statusbar-character-count"
         >
-          {characterCount()} {characterCount() === 1 ? "caractere" : "caracteres"}
+          {t("status.characters", [characterCount()])}
+        </span>
+        <span class="oasis-editor-statusbar-item">
+          {t("status.page", [currentPage(), totalPages()])}
+        </span>
+        <span class="oasis-editor-statusbar-item">
+          {t("status.zoom")}: 100%
         </span>
         <Show when={props.toolbarCtx}>
-          <span
-            class={`oasis-editor-statusbar-item oasis-editor-persistence-status oasis-editor-status-${props.toolbarCtx!()
-              .persistenceStatus()
-              .toLowerCase()
-              .replace("...", "ing")
-              .replace(".", "")}`}
-          >
-            {props.toolbarCtx!().persistenceStatus()}
-          </span>
+          {(() => {
+            const ctx = props.toolbarCtx!();
+            const rawStatus = ctx.persistenceStatus();
+            const status = rawStatus.toLowerCase();
+            const key = status.includes("saved") ? "status.saved" :
+                        status.includes("saving") ? "status.saving" : 
+                        status.includes("error") ? "status.error" : null;
+            return (
+              <Show when={key}>
+                <span
+                  class={`oasis-editor-statusbar-item oasis-editor-persistence-status oasis-editor-status-${status
+                    .replace("...", "ing")
+                    .replace(".", "")}`}
+                >
+                  {t(key as any)}
+                </span>
+              </Show>
+            );
+          })()}
         </Show>
       </div>
     </div>

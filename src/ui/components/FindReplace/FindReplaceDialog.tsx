@@ -1,5 +1,6 @@
 import { Show, type JSX } from "solid-js";
 import type { UseEditorFindReplaceResult } from "../../../app/controllers/useEditorFindReplace.js";
+import { t } from "../../../i18n/index.js";
 
 export interface FindReplaceDialogProps {
   fr: UseEditorFindReplaceResult;
@@ -28,11 +29,11 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
         onKeyDown={handleKeyDown}
       >
         <div class="oasis-editor-fr-header">
-          <span>Find & Replace</span>
+          <span>{t("find.title")}</span>
           <button 
             class="oasis-editor-fr-close" 
             onClick={() => fr.setIsOpen(false)}
-            aria-label="Close"
+            aria-label={t("generic.close")}
           >
             <i data-lucide="x" />
           </button>
@@ -43,14 +44,14 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
             <div class="oasis-editor-fr-input-wrapper">
               <input
                 type="text"
-                placeholder="Find"
+                placeholder={t("find.placeholder")}
                 value={fr.searchTerm()}
                 onInput={(e) => fr.setSearchTerm(e.currentTarget.value)}
                 autofocus
                 class="oasis-editor-fr-input"
               />
               <span class="oasis-editor-fr-counter">
-                {fr.matches().length > 0 ? `${fr.currentIndex() + 1} / ${fr.matches().length}` : "No matches"}
+                {fr.matches().length > 0 ? `${fr.currentIndex() + 1} / ${fr.matches().length}` : t("find.noMatches")}
               </span>
             </div>
             
@@ -58,14 +59,14 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
               <button 
                 onClick={fr.findPrevious} 
                 disabled={fr.matches().length === 0}
-                title="Previous Match (Shift+Enter)"
+                title={t("find.prevTooltip")}
               >
                 <i data-lucide="chevron-up" />
               </button>
               <button 
                 onClick={fr.findNext} 
                 disabled={fr.matches().length === 0}
-                title="Next Match (Enter)"
+                title={t("find.nextTooltip")}
               >
                 <i data-lucide="chevron-down" />
               </button>
@@ -75,7 +76,7 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
           <div class="oasis-editor-fr-input-group">
             <input
               type="text"
-              placeholder="Replace with"
+              placeholder={t("replace.placeholder")}
               value={fr.replaceTerm()}
               onInput={(e) => fr.setReplaceTerm(e.currentTarget.value)}
               class="oasis-editor-fr-input"
@@ -86,14 +87,14 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
                 onClick={fr.replace}
                 disabled={fr.matches().length === 0}
               >
-                Replace
+                {t("replace.one")}
               </button>
               <button 
                 class="oasis-editor-fr-btn-text" 
                 onClick={fr.replaceAll}
                 disabled={fr.matches().length === 0}
               >
-                All
+                {t("replace.allBtn")}
               </button>
             </div>
           </div>
@@ -105,7 +106,7 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
                 checked={fr.findOptions().matchCase}
                 onChange={(e) => fr.setFindOptions({ ...fr.findOptions(), matchCase: e.currentTarget.checked })}
               />
-              <span>Match case</span>
+              <span>{t("find.matchCase")}</span>
             </label>
             <label class="oasis-editor-fr-checkbox">
               <input
@@ -113,7 +114,7 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
                 checked={fr.findOptions().wholeWord}
                 onChange={(e) => fr.setFindOptions({ ...fr.findOptions(), wholeWord: e.currentTarget.checked })}
               />
-              <span>Whole word</span>
+              <span>{t("find.wholeWord")}</span>
             </label>
           </div>
         </div>

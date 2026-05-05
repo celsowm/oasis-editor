@@ -201,6 +201,7 @@ export function createEditorDocument(
   pageSettings?: EditorPageSettings,
   sections?: EditorSection[],
   styles?: Record<string, EditorNamedStyle>,
+  metadata?: { title?: string; [key: string]: any }
 ): EditorDocument {
   const normalizedPageSettings = normalizePageSettings(
     pageSettings
@@ -223,9 +224,33 @@ export function createEditorDocument(
     pageSettings: normalizedPageSettings,
     sections: sections ?? undefined,
     styles: styles ?? { ...DEFAULT_EDITOR_STYLES },
+    metadata: metadata ?? { title: "Untitled document" },
   };
   nextDocumentId += 1;
   return document;
+}
+
+export function getDocumentCharacterCount(document: EditorDocument): number {
+  return getDocumentParagraphs(document).reduce((sum, p) => sum + getParagraphLength(p), 0);
+}
+
+export function getDocumentWordCount(document: EditorDocument): number {
+  const paragraphs = getDocumentParagraphs(document);
+  let totalWords = 0;
+
+  for (const paragraph of paragraphs) {
+    const text = paragraph.runs.reduce((sum, run) => sum + run.text, "");
+    if (!text.trim()) continue;
+
+    // Split by whitespace and punctuation that typically separates words
+    // This is a naive implementation but covers basic English/Portuguese needs
+    const words = text
+      .split(/[\s\p{P}]+/u)
+      .filter((word) => word.length > 0);
+    totalWords += words.length;
+  }
+
+  return totalWords;
 }
 
 export function createEditorStateFromDocument(

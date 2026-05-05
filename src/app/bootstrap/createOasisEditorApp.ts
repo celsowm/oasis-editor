@@ -5,8 +5,11 @@ export interface OasisEditorInstance {
   dispose: () => void;
 }
 
-export function createOasisEditor(container: HTMLElement): OasisEditorInstance {
-  const dispose = render(OasisEditorApp, container);
+export function createOasisEditor(
+  container: HTMLElement,
+  props: { shell?: "document" | "inline" | "balloon" } = {}
+): OasisEditorInstance {
+  const dispose = render(() => OasisEditorApp(props), container);
 
   return {
     dispose,

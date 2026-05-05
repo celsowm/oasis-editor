@@ -2,8 +2,8 @@
   display: flex;
   align-items: center;
   padding: 8px 12px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #dadce0;
+  background: var(--oasis-toolbar-bg);
+  border-bottom: 1px solid var(--oasis-toolbar-border);
   gap: 8px;
   position: relative;
   min-height: 48px;
@@ -16,17 +16,17 @@
   flex-direction: row;
   align-items: center;
   gap: 2px;
-  background: white;
+  background: var(--oasis-paper);
   padding: 4px;
-  border-radius: 6px;
-  border: 1px solid #e8eaed;
+  border-radius: var(--oasis-radius);
+  border: 1px solid var(--oasis-border-color-muted);
   flex-shrink: 0;
 }
 
 .oasis-editor-toolbar-separator {
   width: 1px;
   height: 24px;
-  background: #dadce0;
+  background: var(--oasis-toolbar-border);
   margin: 0 4px;
   flex-shrink: 0;
 }
@@ -40,7 +40,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #444746;
+  color: var(--oasis-text);
   font-size: 13px;
   gap: 4px;
   min-width: 32px;
@@ -49,7 +49,7 @@
 }
 
 .oasis-editor-tool-button:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--oasis-hover-bg);
 }
 
 .oasis-editor-tool-button:disabled {
@@ -58,8 +58,8 @@
 }
 
 .oasis-editor-tool-button-active {
-  background: #c2e7ff !important;
-  color: #001d35 !important;
+  background: var(--oasis-accent-active) !important;
+  color: var(--oasis-accent-active-text) !important;
 }
 
 .oasis-editor-tool-button-wide {
@@ -79,16 +79,16 @@
   padding: 4px 8px;
   font-size: 13px;
   border-radius: 4px;
-  border: 1px solid #dadce0;
-  background: white;
-  color: #444746;
+  border: 1px solid var(--oasis-toolbar-border);
+  background: var(--oasis-paper);
+  color: var(--oasis-text);
   cursor: pointer;
   outline: none;
   height: 32px;
 }
 
 .oasis-editor-tool-select:hover {
-  background: #f8f9fa;
+  background: var(--oasis-bg);
   border-color: #c0c4c9;
 }
 
@@ -105,14 +105,14 @@
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: #70757a;
+  color: var(--oasis-text-muted);
   padding: 0 4px;
 }
 
 .oasis-editor-tool-number {
   width: 50px;
   height: 28px;
-  border: 1px solid #dadce0;
+  border: 1px solid var(--oasis-toolbar-border);
   border-radius: 4px;
   padding: 0 4px;
   font-size: 12px;
@@ -123,7 +123,7 @@
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: #70757a;
+  color: var(--oasis-text-muted);
   padding: 0 4px;
 }
 
@@ -131,14 +131,14 @@
   width: 24px;
   height: 24px;
   padding: 0;
-  border: 1px solid #dadce0;
+  border: 1px solid var(--oasis-toolbar-border);
   border-radius: 2px;
   cursor: pointer;
 }
 
 .oasis-editor-toolbar-badge {
-  background: #e8f0fe;
-  color: #1967d2;
+  background: var(--oasis-accent-soft);
+  color: var(--oasis-accent);
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 11px;
@@ -147,7 +147,7 @@
 
 .oasis-editor-toolbar-note {
   font-size: 11px;
-  color: #70757a;
+  color: var(--oasis-text-muted);
   font-style: italic;
   margin-left: 8px;
 }
@@ -158,7 +158,7 @@
 
 .oasis-editor-table-actions-summary {
   font-size: 12px;
-  color: #1a73e8;
+  color: var(--oasis-accent);
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
@@ -166,16 +166,16 @@
 }
 
 .oasis-editor-table-actions-summary:hover {
-  background: #f1f3f4;
+  background: var(--oasis-hover-bg);
 }
 
 .oasis-editor-table-actions-group {
   position: absolute;
   top: 100%;
   left: 0;
-  background: white;
-  border: 1px solid #dadce0;
-  border-radius: 8px;
+  background: var(--oasis-paper);
+  border: 1px solid var(--oasis-toolbar-border);
+  border-radius: var(--oasis-radius);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
   padding: 8px;
   z-index: 1000;
@@ -207,9 +207,9 @@
   top: calc(100% + 4px);
   left: 0;
   z-index: 1000;
-  background: white;
-  border: 1px solid #dadce0;
-  border-radius: 8px;
+  background: var(--oasis-paper);
+  border: 1px solid var(--oasis-toolbar-border);
+  border-radius: var(--oasis-radius);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   padding: 6px;
   min-width: 200px;
@@ -228,7 +228,7 @@
 }
 
 .oasis-editor-toolbar-dropdown-menu .oasis-editor-tool-button:hover {
-  background: #f1f3f4;
+  background: var(--oasis-hover-bg);
 }
 
 .oasis-editor-toolbar-overflow-menu .oasis-editor-toolbar-group {
@@ -248,7 +248,7 @@
 .oasis-editor-toolbar-overflow-item {
   width: 100%;
   padding-bottom: 8px;
-  border-bottom: 1px solid #f1f3f4;
+  border-bottom: 1px solid var(--oasis-hover-bg);
 }
 
 .oasis-editor-toolbar-overflow-item:last-child {

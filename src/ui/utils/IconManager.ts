@@ -10,7 +10,7 @@ export function startIconObserver(root: HTMLElement = document.body): void {
   observer = new MutationObserver((mutations) => {
     let needsScan = false;
     for (const mutation of mutations) {
-      if (mutation.addedNodes.length > 0) {
+      if (mutation.addedNodes.length > 0 || mutation.type === "attributes") {
         needsScan = true;
         break;
       }

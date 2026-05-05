@@ -7,7 +7,9 @@ interface ToolbarSelectProps extends JSX.SelectHTMLAttributes<HTMLSelectElement>
 }
 
 export function ToolbarSelect(props: ToolbarSelectProps) {
-  const [local, others] = splitProps(props, ["wide", "small", "class", "tooltip"]);
+  const [local, others] = splitProps(props, ["wide", "small", "class", "tooltip", "aria-label"]);
+
+  const ariaLabel = () => local["aria-label"] || local.tooltip || "";
 
   return (
     <select
@@ -17,6 +19,7 @@ export function ToolbarSelect(props: ToolbarSelectProps) {
         "oasis-editor-tool-select-small": local.small,
       }}
       title={local.tooltip}
+      aria-label={ariaLabel()}
       {...others}
     >
       {others.children}

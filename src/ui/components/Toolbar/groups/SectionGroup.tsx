@@ -3,6 +3,7 @@ import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup } from "../ToolbarGroup.js";
 import { ToolbarSelect } from "../ToolbarSelect.js";
+import { t } from "../../../../i18n/index.js";
 
 export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
@@ -13,7 +14,7 @@ export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
       <ToolbarGroup>
         <ToolbarButton
           icon="layout"
-          label="Orient"
+          label={t("section.orient")}
           wide
           active={
             (state().document.sections?.[getActiveSectionIndex(state())] ?? state().document)
@@ -33,7 +34,7 @@ export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
               },
             });
           }}
-          tooltip="Toggle Orientation"
+          tooltip={t("section.toggleOrientation")}
         />
         <ToolbarSelect
           data-testid="editor-toolbar-margins"
@@ -54,27 +55,27 @@ export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
             });
           }}
         >
-          <option value="normal">Normal Margins</option>
-          <option value="narrow">Narrow Margins</option>
+          <option value="normal">{t("section.marginsNormal")}</option>
+          <option value="narrow">{t("section.marginsNarrow")}</option>
         </ToolbarSelect>
       </ToolbarGroup>
 
       <ToolbarGroup>
         <ToolbarButton
           icon="scissors"
-          label="Sec Next"
+          label={t("section.secNext")}
           wide
           data-testid="editor-toolbar-section-break-next"
           onClick={() => ctx().applyInsertSectionBreakCommand("nextPage")}
-          tooltip="Insert Section Break (Next Page)"
+          tooltip={t("section.secNextTooltip")}
         />
         <ToolbarButton
           icon="scissors"
-          label="Sec Cont"
+          label={t("section.secCont")}
           wide
           data-testid="editor-toolbar-section-break-continuous"
           onClick={() => ctx().applyInsertSectionBreakCommand("continuous")}
-          tooltip="Insert Section Break (Continuous)"
+          tooltip={t("section.secContTooltip")}
         />
       </ToolbarGroup>
     </>

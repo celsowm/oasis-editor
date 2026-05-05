@@ -8,6 +8,7 @@ import {
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup } from "../ToolbarGroup.js";
+import { t } from "../../../../i18n/index.js";
 
 export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
@@ -19,7 +20,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
       <ToolbarGroup>
         <ToolbarButton
           icon="combine"
-          label="Merge"
+          label={t("table.merge")}
           wide
           data-testid="editor-toolbar-merge-table"
           disabled={!ctx().canMergeSelectedTable(state())}
@@ -30,11 +31,11 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Merge selected cells"
+          tooltip={t("table.mergeTooltip")}
         />
         <ToolbarButton
           icon="split"
-          label="Split"
+          label={t("table.split")}
           wide
           data-testid="editor-toolbar-split-table"
           disabled={!ctx().canSplitSelectedTable(state())}
@@ -45,7 +46,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Split selected cells"
+          tooltip={t("table.splitTooltip")}
         />
       </ToolbarGroup>
 
@@ -61,7 +62,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Insert column left"
+          tooltip={t("table.insertColumnLeft")}
         />
         <ToolbarButton
           icon="columns"
@@ -74,7 +75,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Insert column right"
+          tooltip={t("table.insertColumnRight")}
         />
         <ToolbarButton
           icon="trash-2"
@@ -87,7 +88,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Delete column"
+          tooltip={t("table.deleteColumn")}
         />
       </ToolbarGroup>
 
@@ -103,7 +104,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Insert row above"
+          tooltip={t("table.insertRowAbove")}
         />
         <ToolbarButton
           icon="rows"
@@ -116,7 +117,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Insert row below"
+          tooltip={t("table.insertRowBelow")}
         />
         <ToolbarButton
           icon="trash-2"
@@ -129,7 +130,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Delete row"
+          tooltip={t("table.deleteRow")}
         />
       </ToolbarGroup>
 
@@ -138,7 +139,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
           icon="palette"
           data-testid="editor-toolbar-table-shading"
           onClick={() => {
-            const color = prompt("Cell Background Color:", "#f1f5f9");
+            const color = prompt(t("table.cellBgColorPrompt"), "#f1f5f9");
             if (color !== null) {
               ctx().applyTransactionalState(
                 (current) => setTableCellStyleValue(current, "shading", color || null),
@@ -147,7 +148,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
               ctx().focusInput();
             }
           }}
-          tooltip="Cell Color"
+          tooltip={t("table.cellColor")}
         />
         <ToolbarButton
           icon="frame"
@@ -160,7 +161,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Apply borders"
+          tooltip={t("table.applyBorders")}
         />
         <ToolbarButton
           icon="square"
@@ -173,14 +174,14 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Remove borders"
+          tooltip={t("table.removeBorders")}
         />
       </ToolbarGroup>
 
       <ToolbarGroup>
         <ToolbarButton
           icon="maximize"
-          label="100%"
+          label={t("table.width100")}
           wide
           data-testid="editor-toolbar-table-width-100"
           onClick={() => {
@@ -190,7 +191,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Table Width 100%"
+          tooltip={t("table.width100Tooltip")}
         />
       </ToolbarGroup>
 
@@ -205,7 +206,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Align Left"
+          tooltip={t("table.alignLeft")}
         />
         <ToolbarButton
           icon="align-center"
@@ -217,7 +218,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Align Center"
+          tooltip={t("table.alignCenter")}
         />
         <ToolbarButton
           icon="align-right"
@@ -229,13 +230,13 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
             );
             ctx().focusInput();
           }}
-          tooltip="Align Right"
+          tooltip={t("table.alignRight")}
         />
         <ToolbarButton
           icon="move-horizontal"
           data-testid="editor-toolbar-table-cell-width"
           onClick={() => {
-            const width = prompt("Cell Width (e.g. 50% or 200pt):");
+            const width = prompt(t("table.cellWidthPrompt"));
             if (width) {
               ctx().applyTransactionalState(
                 (current) => setTableCellWidth(current, width),
@@ -244,7 +245,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
               ctx().focusInput();
             }
           }}
-          tooltip="Cell Width"
+          tooltip={t("table.cellWidth")}
         />
       </ToolbarGroup>
 

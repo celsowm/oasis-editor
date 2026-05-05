@@ -1,5 +1,6 @@
 import { createSignal, createEffect } from "solid-js";
 import { Dialog } from "./Dialog.js";
+import { t } from "../../../i18n/index.js";
 
 interface LinkDialogProps {
   isOpen: boolean;
@@ -27,7 +28,7 @@ export function LinkDialog(props: LinkDialogProps) {
   return (
     <Dialog
       isOpen={props.isOpen}
-      title="Insert Link"
+      title={t("dialog.link.title")}
       onClose={props.onClose}
       footer={
         <>
@@ -36,20 +37,20 @@ export function LinkDialog(props: LinkDialogProps) {
             onClick={props.onClose}
             data-testid="editor-link-dialog-cancel"
           >
-            Cancel
+            {t("generic.cancel")}
           </button>
           <button
             class="oasis-editor-dialog-button oasis-editor-dialog-button-primary"
             onClick={handleConfirm}
             data-testid="editor-link-dialog-apply"
           >
-            Apply
+            {t("generic.apply")}
           </button>
         </>
       }
     >
       <div class="oasis-editor-dialog-input-group">
-        <label class="oasis-editor-dialog-label">Link URL</label>
+        <label class="oasis-editor-dialog-label">{t("dialog.link.label")}</label>
         <input
           ref={inputRef}
           type="text"
@@ -57,7 +58,7 @@ export function LinkDialog(props: LinkDialogProps) {
           value={href()}
           onInput={(e) => setHref(e.currentTarget.value)}
           onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
-          placeholder="https://example.com"
+          placeholder={t("dialog.link.placeholder")}
           data-testid="editor-link-dialog-input"
         />
       </div>
