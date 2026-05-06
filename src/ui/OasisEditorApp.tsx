@@ -2285,66 +2285,70 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             onPaste={handlePaste}
           />
         </section>
-        <Show when={tableResize.resizing()}>
-          {(resizing) => (
-            <div
-              class="oasis-editor-table-resize-guide"
-              classList={{
-                "oasis-editor-table-resize-guide-column": resizing().type === "column",
-                "oasis-editor-table-resize-guide-row": resizing().type === "row",
-              }}
-              style={{
-                [resizing().type === "column" ? "left" : "top"]: `${resizing().currentPos}px`,
-              }}
-            />
-          )}
-        </Show>
-
-        <Show when={imageOps.dragging() && imageOps.draggedImageInfo()}>
-          {(info) => (
-            <img
-              src={info().src}
-              class="oasis-editor-image-ghost"
-              style={{
-                width: `${info().width}px`,
-                height: `${info().height}px`,
-                left: `${imageOps.mousePos().x - info().offsetX}px`,
-                top: `${imageOps.mousePos().y - info().offsetY}px`,
-              }}
-            />
-          )}
-        </Show>
-
-        <Show when={tableDrag.dragging() && tableDrag.draggedTableInfo()}>
-          {(info) => (
-            <div
-              class="oasis-editor-table-ghost"
-              style={{
-                width: `${info().width}px`,
-                height: `${info().height}px`,
-                left: `${tableDrag.mousePos().x - info().offsetX}px`,
-                top: `${tableDrag.mousePos().y - info().offsetY}px`,
-              }}
-            />
-          )}
-        </Show>
-
-        <Show when={tableDrag.dragging() && tableDrag.dropTargetPos()}>
-          {(pos) => {
-            const charRects = surfaceRef ? collectParagraphCharRects(surfaceRef, pos().paragraphId) : [];
-            const rects = getCaretSlotRects(charRects);
-            const rect = rects[pos().offset] || rects[rects.length - 1];
-            return (
-              <CaretOverlay
-                active={true}
-                left={rect?.left ?? 0}
-                top={rect?.top ?? 0}
-                height={rect?.height ?? 28}
-              />
-            );
-          }}
-        </Show>
       </div>
+      </Show>
+
+      {/* Drag/resize overlays must render in BOTH the legacy and composed-shell
+          layouts, otherwise the dashed resize guide and ghost previews silently
+          disappear when the composed shell is active. */}
+      <Show when={tableResize.resizing()}>
+        {(resizing) => (
+          <div
+            class="oasis-editor-table-resize-guide"
+            classList={{
+              "oasis-editor-table-resize-guide-column": resizing().type === "column",
+              "oasis-editor-table-resize-guide-row": resizing().type === "row",
+            }}
+            style={{
+              [resizing().type === "column" ? "left" : "top"]: `${resizing().currentPos}px`,
+            }}
+          />
+        )}
+      </Show>
+
+      <Show when={imageOps.dragging() && imageOps.draggedImageInfo()}>
+        {(info) => (
+          <img
+            src={info().src}
+            class="oasis-editor-image-ghost"
+            style={{
+              width: `${info().width}px`,
+              height: `${info().height}px`,
+              left: `${imageOps.mousePos().x - info().offsetX}px`,
+              top: `${imageOps.mousePos().y - info().offsetY}px`,
+            }}
+          />
+        )}
+      </Show>
+
+      <Show when={tableDrag.dragging() && tableDrag.draggedTableInfo()}>
+        {(info) => (
+          <div
+            class="oasis-editor-table-ghost"
+            style={{
+              width: `${info().width}px`,
+              height: `${info().height}px`,
+              left: `${tableDrag.mousePos().x - info().offsetX}px`,
+              top: `${tableDrag.mousePos().y - info().offsetY}px`,
+            }}
+          />
+        )}
+      </Show>
+
+      <Show when={tableDrag.dragging() && tableDrag.dropTargetPos()}>
+        {(pos) => {
+          const charRects = surfaceRef ? collectParagraphCharRects(surfaceRef, pos().paragraphId) : [];
+          const rects = getCaretSlotRects(charRects);
+          const rect = rects[pos().offset] || rects[rects.length - 1];
+          return (
+            <CaretOverlay
+              active={true}
+              left={rect?.left ?? 0}
+              top={rect?.top ?? 0}
+              height={rect?.height ?? 28}
+            />
+          );
+        }}
       </Show>
     </div>
   );
