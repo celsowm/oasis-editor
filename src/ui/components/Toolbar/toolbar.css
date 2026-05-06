@@ -312,3 +312,50 @@
   right: 0;
   top: 0;
 }
+
+.oasis-editor-table-grid-picker {
+  z-index: 1000;
+  background: var(--oasis-paper);
+  border: 1px solid var(--oasis-toolbar-border);
+  border-radius: var(--oasis-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  user-select: none;
+}
+
+.oasis-editor-table-grid-picker-status {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--oasis-text);
+  text-align: center;
+  min-height: 16px;
+}
+
+.oasis-editor-table-grid-picker-grid {
+  display: grid;
+  gap: 2px;
+}
+
+.oasis-editor-table-grid-picker-cell {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--oasis-toolbar-border);
+  background: var(--oasis-bg);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.05s, border-color 0.05s;
+}
+
+.oasis-editor-table-grid-picker-cell:hover {
+  border-color: var(--oasis-accent);
+}
+
+.oasis-editor-table-grid-picker-cell-active {
+  background: var(--oasis-accent-soft);
+  border-color: var(--oasis-accent);
+}

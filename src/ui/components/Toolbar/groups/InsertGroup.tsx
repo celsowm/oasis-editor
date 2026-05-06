@@ -3,6 +3,7 @@ import { insertFieldAtSelection } from "../../../../core/editorCommands.js";
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup } from "../ToolbarGroup.js";
+import { TableGridPicker } from "../TableGridPicker.js";
 import { t } from "../../../../i18n/index.js";
 
 const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
@@ -20,12 +21,10 @@ export function InsertGroup(props: { ctx: () => EditorToolbarCtx }) {
         tooltip={t("toolbar.image")}
         aria-label={t("toolbar.image")}
       />
-      <ToolbarButton
-        icon="table"
-        data-testid="editor-toolbar-insert-table"
-        onClick={() => ctx().insertTableCommand(3, 3)}
+      <TableGridPicker
+        testId="editor-toolbar-insert-table"
         tooltip={t("toolbar.table")}
-        aria-label={t("toolbar.table")}
+        onSelect={(rows, cols) => ctx().insertTableCommand(rows, cols)}
       />
       <ToolbarButton
         icon="hash"
