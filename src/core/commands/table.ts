@@ -334,15 +334,26 @@ export function setTableCellBorders(
 }
 
 export function insertTableAtSelection(state: EditorState, rows: number, cols: number): EditorState {
+  const initialCellWidth = `${100 / Math.max(1, cols)}%`;
   const tableRows = [];
   for (let r = 0; r < rows; r += 1) {
     const cells = [];
     for (let c = 0; c < cols; c += 1) {
-      cells.push(createEditorTableCell([createEditorParagraph("")]));
+      cells.push({
+        ...createEditorTableCell([createEditorParagraph("")]),
+        style: {
+          width: initialCellWidth,
+        },
+      });
     }
     tableRows.push(createEditorTableRow(cells));
   }
-  const table = createEditorTable(tableRows);
+  const table = {
+    ...createEditorTable(tableRows),
+    style: {
+      width: "100%",
+    },
+  };
 
   const focus = clampPosition(state, state.selection.focus);
   const sections = getDocumentSections(state.document);

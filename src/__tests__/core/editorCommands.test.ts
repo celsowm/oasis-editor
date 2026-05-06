@@ -740,6 +740,10 @@ describe("editor commands", () => {
     expect(table.rows.length).toBe(2);
     expect(table.rows[0]?.cells.length).toBe(3);
     expect(table.rows[1]?.cells.length).toBe(3);
+    expect(table.style?.width).toBe("100%");
+    expect(table.rows[0]?.cells[0]?.style?.width).toBe("33.333333333333336%");
+    expect(table.rows[0]?.cells[1]?.style?.width).toBe("33.333333333333336%");
+    expect(table.rows[0]?.cells[2]?.style?.width).toBe("33.333333333333336%");
   });
 
   it("moves the caret into the first cell after table insertion", () => {
