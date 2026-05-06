@@ -3,6 +3,7 @@ interface CaretOverlayProps {
   left: number;
   top: number;
   height: number;
+  fixed?: boolean;
 }
 
 export function CaretOverlay(props: CaretOverlayProps) {
@@ -17,6 +18,7 @@ export function CaretOverlay(props: CaretOverlayProps) {
         left: `${props.left}px`,
         top: `${props.top}px`,
         height: `${props.height}px`,
+        ...(props.fixed ? { position: "fixed", zIndex: 10002 } : {}),
       }}
     />
   );

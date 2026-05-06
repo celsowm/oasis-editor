@@ -49,6 +49,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
   const [dragging, setDragging] = createSignal(false);
   const [draggedImageInfo, setDraggedImageInfo] = createSignal<ActiveImageDrag | null>(null);
   const [mousePos, setMousePos] = createSignal({ x: 0, y: 0 });
+  const [dropTargetPos, setDropTargetPos] = createSignal<EditorPosition | null>(null);
 
   let activeImageDrag: ActiveImageDrag | null = null;
   let activeImageResize: ActiveImageResize | null = null;
@@ -126,6 +127,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     activeImageDrag = null;
     setDragging(false);
     setDraggedImageInfo(null);
+    setDropTargetPos(null);
     window.removeEventListener("mousemove", handleImageDragMouseMove);
     window.removeEventListener("mouseup", handleImageDragMouseUp);
   };
@@ -155,6 +157,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
 
     if (dragState.dragging) {
         setDraggedImageInfo({ ...dragState });
+        setDropTargetPos(resolvePositionAtSurfacePoint(event.clientX, event.clientY));
     }
   };
 
@@ -319,6 +322,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     dragging,
     draggedImageInfo,
     mousePos,
+    dropTargetPos,
     getSelectedImageInfo,
     startImageDrag,
     startImageResize,

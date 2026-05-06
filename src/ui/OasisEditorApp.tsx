@@ -1,5 +1,6 @@
 import {
   createEffect,
+  createMemo,
   createSignal,
   onCleanup,
   onMount,
@@ -219,6 +220,60 @@ export interface OasisEditorAppProps {
 }
 
 type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
+
+function DropCaret(props: {
+  surfaceRef: HTMLDivElement | undefined;
+  state: EditorState;
+  targetPos: () => EditorPosition;
+}) {
+  const layout = createMemo(() => {
+    const pos = props.targetPos();
+    const surfaceRef = props.surfaceRef;
+    if (!surfaceRef) return null;
+
+    const charRects = collectParagraphCharRects(surfaceRef, pos.paragraphId);
+    let viewportLeft = 0;
+    let viewportTop = 0;
+    let height = 28;
+
+    if (charRects.length === 0) {
+      const pElement = getParagraphBoundaryElement(surfaceRef, pos.paragraphId, "end");
+      const fallbackRect = pElement ? (getEmptyBlockRect(pElement) ?? pElement.getBoundingClientRect()) : null;
+      if (fallbackRect) {
+        viewportLeft = fallbackRect.left;
+        viewportTop = fallbackRect.top;
+        height = fallbackRect.height || 28;
+      }
+    } else {
+      const rects = getCaretSlotRects(charRects);
+      const paragraphNode = getParagraphs(props.state).find((p) => p.id === pos.paragraphId);
+      const paragraphOffset = paragraphNode ? positionToParagraphOffset(paragraphNode, pos) : 0;
+      const slotIndex = Math.max(0, Math.min(paragraphOffset, rects.length - 1));
+      const rect = rects[slotIndex];
+      if (rect) {
+        viewportLeft = rect.left;
+        viewportTop = rect.top;
+        height = Math.min(rect.height, 32);
+      }
+    }
+
+    return { viewportLeft, viewportTop, height };
+  });
+
+  return (
+    <Show when={layout()}>
+      {(l) => (
+        <CaretOverlay
+          active={true}
+          fixed={true}
+          left={l().viewportLeft}
+          top={l().viewportTop}
+          height={l().height}
+        />
+      )}
+    </Show>
+  );
+}
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   createEffect(() => {
@@ -2336,19 +2391,23 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       </Show>
 
       <Show when={tableDrag.dragging() && tableDrag.dropTargetPos()}>
-        {(pos) => {
-          const charRects = surfaceRef ? collectParagraphCharRects(surfaceRef, pos().paragraphId) : [];
-          const rects = getCaretSlotRects(charRects);
-          const rect = rects[pos().offset] || rects[rects.length - 1];
-          return (
-            <CaretOverlay
-              active={true}
-              left={rect?.left ?? 0}
-              top={rect?.top ?? 0}
-              height={rect?.height ?? 28}
-            />
-          );
-        }}
+        {(pos) => (
+          <DropCaret
+            surfaceRef={surfaceRef}
+            state={state as EditorState}
+            targetPos={pos}
+          />
+        )}
+      </Show>
+
+      <Show when={imageOps.dragging() && imageOps.dropTargetPos()}>
+        {(pos) => (
+          <DropCaret
+            surfaceRef={surfaceRef}
+            state={state as EditorState}
+            targetPos={pos}
+          />
+        )}
       </Show>
     </div>
   );
