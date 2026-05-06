@@ -25,6 +25,14 @@ import {
   resolveEffectiveTextStyleForParagraph,
 } from "../../core/model.js";
 
+export type DocxImportStage =
+  | "opening-docx"
+  | "parsing-document";
+
+export interface ImportDocxToEditorDocumentOptions {
+  onProgress?: (stage: DocxImportStage) => void;
+}
+
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 const TWIPS_PER_INCH = 1440;
@@ -763,7 +771,11 @@ async function parseTableNode(
   return createEditorTable(rows);
 }
 
-export async function importDocxToEditorDocument(buffer: ArrayBuffer): Promise<EditorDocument> {
+export async function importDocxToEditorDocument(
+  buffer: ArrayBuffer,
+  options: ImportDocxToEditorDocumentOptions = {},
+): Promise<EditorDocument> {
+  options.onProgress?.("opening-docx");
   const zip = await JSZip.loadAsync(buffer);
   const documentXml = await zip.file("word/document.xml")?.async("string");
   if (!documentXml) {
@@ -794,6 +806,7 @@ export async function importDocxToEditorDocument(buffer: ArrayBuffer): Promise<E
 
   const numberingXml = (await zip.file("word/numbering.xml")?.async("string")) ?? null;
   const numberingMaps = parseNumbering(numberingXml);
+  options.onProgress?.("parsing-document");
   const document = new DOMParser().parseFromString(documentXml, "application/xml");
   const body = document.getElementsByTagNameNS(WORD_NS, "body")[0];
 

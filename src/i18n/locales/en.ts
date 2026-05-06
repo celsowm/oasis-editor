@@ -132,6 +132,14 @@ export const en = {
   "status.saved": "Saved",
   "status.saving": "Saving...",
   "status.error": "Error saving",
+  "import.overlay.title": "Importing DOCX",
+  "import.phase.reading-file": "Reading file",
+  "import.phase.opening-docx": "Opening DOCX package",
+  "import.phase.parsing-document": "Parsing document structure",
+  "import.phase.applying-editor-state": "Applying editor state",
+  "import.phase.stabilizing-layout": "Stabilizing layout",
+  "import.phase.done": "Import complete",
+  "import.phase.error": "Import failed",
 
   // Find & Replace
   "find.title": "Find & Replace",

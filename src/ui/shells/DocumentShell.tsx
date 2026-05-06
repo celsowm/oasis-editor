@@ -31,6 +31,7 @@ export interface ShellProps {
   hoveredRevision: any;
   focused: any;
   showCaret: any;
+  importProgress?: any;
   
   // Refs
   onViewportRef: any;
@@ -117,6 +118,7 @@ export function DocumentShell(props: ShellProps) {
             inputBox={() => props.inputBox()}
             hoveredRevision={() => props.hoveredRevision()}
             focused={() => props.focused()}
+            importProgress={props.importProgress ? () => props.importProgress() : undefined}
             viewportHeight={props.viewportHeight()}
             class={props.class}
             style={props.style}

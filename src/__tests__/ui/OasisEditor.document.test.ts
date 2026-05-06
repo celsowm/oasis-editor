@@ -1529,6 +1529,55 @@ describe("OasisEditor", () => {
     instance.dispose();
   });
 
+  it("shows a blocking import overlay until docx import and layout stabilization finish", async () => {
+    const root = document.getElementById("oasis-editor-root") as HTMLElement;
+    const instance = createOasisEditor(root);
+    const importInput = root.querySelector(
+      '[data-testid="editor-import-docx-input"]',
+    ) as HTMLInputElement;
+    const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:p><w:r><w:t>Overlay import</w:t></w:r></w:p>
+        </w:body>
+      </w:document>`);
+
+    let resolveArrayBuffer: ((value: ArrayBuffer) => void) | null = null;
+    const realArrayBuffer = file.arrayBuffer.bind(file);
+    Object.defineProperty(file, "arrayBuffer", {
+      configurable: true,
+      value: () =>
+        new Promise<ArrayBuffer>((resolve) => {
+          resolveArrayBuffer = resolve;
+        }),
+    });
+
+    Object.defineProperty(importInput, "files", {
+      configurable: true,
+      value: [file],
+    });
+
+    importInput.dispatchEvent(new Event("change", { bubbles: true }));
+    await Promise.resolve();
+
+    expect(root.querySelector('[data-testid="editor-import-overlay"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="editor-import-phase"]')?.textContent).toContain("Lendo");
+
+    resolveArrayBuffer?.(await realArrayBuffer());
+
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      if (!root.querySelector('[data-testid="editor-import-overlay"]')) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    expect(root.querySelector('[data-testid="editor-import-overlay"]')).toBeNull();
+    expect(root.querySelector('[data-testid="editor-block"]')?.textContent).toContain("Overlay import");
+
+    instance.dispose();
+  });
+
   it("inserts an inline image through the hidden image input", async () => {
     const root = document.getElementById("oasis-editor-root") as HTMLElement;
     const instance = createOasisEditor(root);

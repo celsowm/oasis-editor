@@ -31,6 +31,7 @@ export function InlineShell(props: ShellProps) {
             inputBox={() => props.inputBox()}
             hoveredRevision={() => props.hoveredRevision()}
             focused={() => props.focused()}
+            importProgress={props.importProgress ? () => props.importProgress() : undefined}
             viewportHeight={props.viewportHeight()}
             class={props.class}
             style={props.style}

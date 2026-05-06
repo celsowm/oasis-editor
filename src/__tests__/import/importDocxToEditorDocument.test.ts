@@ -48,6 +48,22 @@ describe("importDocxToEditorDocument", () => {
     resetEditorIds();
   });
 
+  it("reports top-level import progress stages when requested", async () => {
+    const buffer = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:p><w:r><w:t>Hello</w:t></w:r></w:p>
+        </w:body>
+      </w:document>`);
+    const stages: string[] = [];
+
+    await importDocxToEditorDocument(buffer, {
+      onProgress: (stage) => stages.push(stage),
+    });
+
+    expect(stages).toEqual(["opening-docx", "parsing-document"]);
+  });
+
   it("imports paragraphs, runs, inline styles, alignment, list and page flags", async () => {
     const buffer = await buildDocx(
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

@@ -468,6 +468,63 @@
   box-sizing: border-box;
 }
 
+.oasis-editor-import-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(248, 250, 252, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+.oasis-editor-import-card {
+  width: min(360px, 100%);
+  padding: 22px 24px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.16);
+}
+
+.oasis-editor-import-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--oasis-text);
+}
+
+.oasis-editor-import-phase {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--oasis-text-muted);
+}
+
+.oasis-editor-import-progress-track {
+  width: 100%;
+  height: 8px;
+  margin-top: 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(203, 213, 225, 0.55);
+}
+
+.oasis-editor-import-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb 0%, #0f766e 100%);
+}
+
+.oasis-editor-import-progress-label {
+  margin-top: 10px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--oasis-text-muted);
+  text-align: right;
+}
+
 .oasis-editor-paper {
   position: relative;
   width: 100%;

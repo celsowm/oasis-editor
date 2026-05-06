@@ -126,7 +126,10 @@ import {
 } from "../core/model.js";
 import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
 import { exportEditorDocumentToDocxBlob } from "../export/docx/exportEditorDocumentToDocx.js";
-import { importDocxToEditorDocument } from "../import/docx/importDocxToEditorDocument.js";
+import {
+  importDocxToEditorDocument,
+  type DocxImportStage,
+} from "../import/docx/importDocxToEditorDocument.js";
 import { createEditorLogger } from "../utils/logger.js";
 import type {
   CaretBox,
@@ -205,6 +208,19 @@ interface ActiveImageDrag {
   startClientX: number;
   startClientY: number;
   dragging: boolean;
+}
+
+type ImportProgressPhase =
+  | "reading-file"
+  | DocxImportStage
+  | "applying-editor-state"
+  | "stabilizing-layout"
+  | "done"
+  | "error";
+
+interface ImportProgressState {
+  phase: ImportProgressPhase;
+  progress: number;
 }
 
 export interface OasisEditorAppProps {
@@ -333,6 +349,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     isOpen: false,
     initialAlt: "",
   });
+  const [importProgress, setImportProgress] =
+    createSignal<ImportProgressState | null>(null);
   let viewportRef: HTMLDivElement | undefined;
   let surfaceRef: HTMLDivElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
@@ -348,9 +366,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     preferredColumnX,
     setPreferredColumnX,
     clearPreferredColumn,
-    requestInputBoxSync,
-    syncMeasuredLayoutMetrics,
-    syncInputBox,
+    stabilizeLayoutAfterImport,
     setMeasuredBlockHeights,
     setMeasuredParagraphLayouts,
     onCleanupHook,
@@ -637,6 +653,30 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setRedoStack([]);
   };
 
+  const setImportPhase = (phase: ImportProgressPhase) => {
+    const progressByPhase: Record<ImportProgressPhase, number> = {
+      "reading-file": 10,
+      "opening-docx": 28,
+      "parsing-document": 52,
+      "applying-editor-state": 74,
+      "stabilizing-layout": 92,
+      done: 100,
+      error: 100,
+    };
+    setImportProgress({
+      phase,
+      progress: progressByPhase[phase],
+    });
+  };
+
+  const clearImportProgressSoon = () => {
+    globalThis.setTimeout(() => {
+      setImportProgress((current) =>
+        current?.phase === "done" || current?.phase === "error" ? null : current,
+      );
+    }, 0);
+  };
+
   const handleImportDocx = async (file: File | null) => {
     if (isReadOnly()) {
       return;
@@ -645,16 +685,55 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       return;
     }
 
+    const startedAt = performance.now();
     logger.info("import docx:start", { name: file.name, size: file.size });
-    const arrayBuffer = await readFileBuffer(file);
-    const document = await importDocxToEditorDocument(arrayBuffer);
-    resetEditorChromeState();
-    applyState(createEditorStateFromDocument(document));
-    logger.info("import docx:done", { blocks: document.blocks.length });
-    if (importInputRef) {
-      importInputRef.value = "";
+    setImportPhase("reading-file");
+
+    try {
+      const readingStartedAt = performance.now();
+      const arrayBuffer = await readFileBuffer(file);
+      logger.info("import docx:phase", {
+        phase: "reading-file",
+        durationMs: Math.round((performance.now() - readingStartedAt) * 100) / 100,
+      });
+
+      const document = await importDocxToEditorDocument(arrayBuffer, {
+        onProgress: (stage) => {
+          setImportPhase(stage);
+          logger.info("import docx:phase", { phase: stage });
+        },
+      });
+
+      setImportPhase("applying-editor-state");
+      resetEditorChromeState();
+      applyState(createEditorStateFromDocument(document));
+
+      const stabilizationStartedAt = performance.now();
+      setImportPhase("stabilizing-layout");
+      await stabilizeLayoutAfterImport();
+      logger.info("import docx:phase", {
+        phase: "stabilizing-layout",
+        durationMs: Math.round((performance.now() - stabilizationStartedAt) * 100) / 100,
+      });
+
+      setImportPhase("done");
+      logger.info("import docx:done", {
+        blocks: document.blocks.length,
+        durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
+      });
+      if (importInputRef) {
+        importInputRef.value = "";
+      }
+      focusInput();
+    } catch (error) {
+      setImportPhase("error");
+      logger.error("import docx:error", error);
+      if (importInputRef) {
+        importInputRef.value = "";
+      }
+    } finally {
+      clearImportProgressSoon();
     }
-    focusInput();
   };
 
   const insertImageFromFile = async (
@@ -2133,6 +2212,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         inputBox={() => inputBox()}
         hoveredRevision={() => hoveredRevision()}
         focused={() => focused()}
+        importProgress={() => importProgress()}
         showCaret={shouldShowCaret}
         class={props.class}
         style={props.style}
@@ -2261,6 +2341,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             inputBox={() => inputBox()}
             hoveredRevision={() => hoveredRevision()}
             focused={() => focused()}
+            importProgress={() => importProgress()}
             viewportHeight={props.viewportHeight}
             class={props.class}
             style={props.style}

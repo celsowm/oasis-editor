@@ -27,6 +27,17 @@ export interface OasisEditorEditorProps {
   hoveredRevision: Accessor<RevisionBox | null>;
   focused: Accessor<boolean>;
   showCaret: Accessor<boolean>;
+  importProgress?: Accessor<{
+    phase:
+      | "reading-file"
+      | "opening-docx"
+      | "parsing-document"
+      | "applying-editor-state"
+      | "stabilizing-layout"
+      | "done"
+      | "error";
+    progress: number;
+  } | null>;
   toolbarCtx?: () => EditorToolbarCtx;
   showFloatingTableToolbar?: Accessor<boolean>;
   viewportHeight?: number | string;
@@ -216,6 +227,37 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
         />
       </div>
     </div>
+      <Show when={props.importProgress?.()}>
+        {(progress) => (
+          <div
+            class="oasis-editor-import-overlay"
+            data-testid="editor-import-overlay"
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+          >
+            <div class="oasis-editor-import-card">
+              <div class="oasis-editor-import-title">{t("import.overlay.title")}</div>
+              <div
+                class="oasis-editor-import-phase"
+                data-testid="editor-import-phase"
+              >
+                {t(`import.phase.${progress().phase}` as any)}
+              </div>
+              <div class="oasis-editor-import-progress-track">
+                <div
+                  class="oasis-editor-import-progress-bar"
+                  data-testid="editor-import-progress-bar"
+                  style={{ width: `${progress().progress}%` }}
+                />
+              </div>
+              <div class="oasis-editor-import-progress-label">
+                {Math.round(progress().progress)}%
+              </div>
+            </div>
+          </div>
+        )}
+      </Show>
       <div
         class="oasis-editor-statusbar"
         data-testid="editor-statusbar"

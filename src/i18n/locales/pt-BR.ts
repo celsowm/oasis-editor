@@ -132,6 +132,14 @@ export const ptBR = {
   "status.saved": "Salvo",
   "status.saving": "Salvando...",
   "status.error": "Erro ao salvar",
+  "import.overlay.title": "Importando DOCX",
+  "import.phase.reading-file": "Lendo arquivo",
+  "import.phase.opening-docx": "Abrindo pacote DOCX",
+  "import.phase.parsing-document": "Interpretando estrutura do documento",
+  "import.phase.applying-editor-state": "Aplicando estado no editor",
+  "import.phase.stabilizing-layout": "Estabilizando layout",
+  "import.phase.done": "Importação concluída",
+  "import.phase.error": "Falha na importação",
 
   // Find & Replace
   "find.title": "Localizar e Substituir",
