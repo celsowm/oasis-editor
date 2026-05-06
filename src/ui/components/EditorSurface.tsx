@@ -123,6 +123,16 @@ function getParagraphRenderStyle(
   return Object.keys(css).length > 0 ? css : undefined;
 }
 
+function getParagraphAlign(
+  paragraph: EditorParagraphNode,
+  state: EditorState,
+): NonNullable<EditorParagraphStyle["align"]> {
+  return (
+    resolveEffectiveParagraphStyle(paragraph.style, state.document.styles)?.align ??
+    "left"
+  );
+}
+
 function numberToLowerLetter(n: number): string {
   let result = "";
   while (n > 0) {
@@ -328,6 +338,7 @@ function renderParagraph(
   const domParagraphId = options?.domParagraphId ?? paragraph.id;
   const interactive = options?.interactive ?? true;
   const testId = options?.testId ?? "editor-block";
+  const paragraphAlign = getParagraphAlign(paragraph, state);
   const isEmptyBlockSelected = () => {
     const current = normalized();
     return (
@@ -372,32 +383,8 @@ function renderParagraph(
     resolveNamedParagraphStyle(paragraph.style?.styleId, state.document.styles);
   const effectiveTabs = () =>
     paragraph.style?.tabs ?? resolvedParagraphStyle()?.tabs;
-
-  return (
-    <p
-      class="oasis-editor-block"
-      classList={{ "oasis-editor-block-list": Boolean(paragraph.list) }}
-      data-block-id={blockId}
-      data-paragraph-id={domParagraphId}
-      data-source-paragraph-id={paragraph.id}
-      data-start-offset={paragraphLayout.startOffset ?? 0}
-      data-end-offset={paragraphLayout.endOffset ?? chars.length}
-      data-testid={testId}
-      style={getParagraphRenderStyle(paragraph, state)}
-      onMouseDown={
-        interactive
-          ? (event) => onParagraphMouseDown(paragraph.id, event)
-          : undefined
-      }
-    >
-      <Show when={paragraph.list}>
-        <span
-          class="oasis-editor-list-marker"
-          data-testid="editor-list-marker"
-        >
-          {isContinuation ? "" : listMarker}
-        </span>
-      </Show>
+  const paragraphContent = (
+    <>
       <Show
         when={chars.length > 0}
         fallback={
@@ -598,6 +585,39 @@ function renderParagraph(
           </span>
         </Show>
       </Show>
+    </>
+  );
+
+  return (
+    <p
+      class="oasis-editor-block"
+      classList={{ "oasis-editor-block-list": Boolean(paragraph.list) }}
+      data-block-id={blockId}
+      data-paragraph-id={domParagraphId}
+      data-source-paragraph-id={paragraph.id}
+      data-start-offset={paragraphLayout.startOffset ?? 0}
+      data-end-offset={paragraphLayout.endOffset ?? chars.length}
+      data-testid={testId}
+      data-list-align={paragraph.list ? paragraphAlign : undefined}
+      style={getParagraphRenderStyle(paragraph, state)}
+      onMouseDown={
+        interactive
+          ? (event) => onParagraphMouseDown(paragraph.id, event)
+          : undefined
+      }
+    >
+      <Show when={paragraph.list}>
+        <div class="oasis-editor-list-item" data-testid="editor-list-item">
+          <span
+            class="oasis-editor-list-marker"
+            data-testid="editor-list-marker"
+          >
+            {isContinuation ? "" : listMarker}
+          </span>
+          <div class="oasis-editor-list-content">{paragraphContent}</div>
+        </div>
+      </Show>
+      <Show when={!paragraph.list}>{paragraphContent}</Show>
     </p>
   );
 }

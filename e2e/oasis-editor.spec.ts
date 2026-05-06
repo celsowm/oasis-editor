@@ -178,6 +178,65 @@ test.describe("Oasis Editor 2 smoke tests", () => {
     await expect(paragraph).toHaveCSS("padding-left", "32px");
   });
 
+  test("keeps the list marker attached to the item when centered and right-aligned", async ({ page }) => {
+    const input = page.locator('[data-testid="editor-input"]');
+    await input.focus();
+    await page.keyboard.type("foo");
+
+    const bulletButton = await ensureToolbarVisible(page, "editor-toolbar-list-bullet");
+    await bulletButton.click();
+
+    const block = page.locator('[data-testid="editor-block"]').first();
+    const marker = page.locator('[data-testid="editor-list-marker"]').first();
+    const firstChar = page.locator('[data-testid="editor-char"]').first();
+
+    const measure = async () =>
+      page.evaluate(() => {
+        const pageNode = document.querySelector('[data-testid="editor-page"]') as HTMLElement | null;
+        const blockNode = document.querySelector('[data-testid="editor-block"]') as HTMLElement | null;
+        const listItemNode = document.querySelector('[data-testid="editor-list-item"]') as HTMLElement | null;
+        const markerNode = document.querySelector('[data-testid="editor-list-marker"]') as HTMLElement | null;
+        const charNode = document.querySelector('[data-testid="editor-char"]') as HTMLElement | null;
+        if (!pageNode || !blockNode || !listItemNode || !markerNode || !charNode) {
+          throw new Error("List geometry is not available");
+        }
+
+        const pageRect = pageNode.getBoundingClientRect();
+        const blockRect = blockNode.getBoundingClientRect();
+        const listItemRect = listItemNode.getBoundingClientRect();
+        const markerRect = markerNode.getBoundingClientRect();
+        const charRect = charNode.getBoundingClientRect();
+
+        return {
+          itemOffset: listItemRect.left - pageRect.left,
+          blockOffset: blockRect.left - pageRect.left,
+          markerToTextGap: charRect.left - markerRect.right,
+        };
+      });
+
+    await expect(block).toContainText("foo");
+    await expect(marker).toContainText("•");
+    await expect(firstChar).toContainText("f");
+
+    const leftMetrics = await measure();
+
+    const alignCenterButton = await ensureToolbarVisible(page, "editor-toolbar-align-center");
+    await alignCenterButton.click();
+    await expect(block).toHaveAttribute("data-list-align", "center");
+
+    const centeredMetrics = await measure();
+    expect(centeredMetrics.itemOffset).toBeGreaterThan(leftMetrics.itemOffset + 40);
+    expect(centeredMetrics.markerToTextGap).toBeLessThan(40);
+
+    const alignRightButton = await ensureToolbarVisible(page, "editor-toolbar-align-right");
+    await alignRightButton.click();
+    await expect(block).toHaveAttribute("data-list-align", "right");
+
+    const rightMetrics = await measure();
+    expect(rightMetrics.itemOffset).toBeGreaterThan(centeredMetrics.itemOffset + 40);
+    expect(rightMetrics.markerToTextGap).toBeLessThan(40);
+  });
+
   test("keeps typing after repagination and internal scroll", async ({ page }) => {
     const input = page.locator('[data-testid="editor-input"]');
     await input.focus();

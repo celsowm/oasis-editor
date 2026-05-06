@@ -345,6 +345,59 @@ describe("EditorSurface", () => {
     dispose();
   });
 
+  it("wraps list marker and content together for centered list alignment", () => {
+    const container = document.createElement("div");
+    const paragraph = createEditorParagraphFromRuns([{ text: "ab" }]);
+    paragraph.list = { kind: "bullet", level: 0 };
+    paragraph.style = { align: "center" };
+    const state: EditorState = {
+      document: createEditorDocument([paragraph]),
+      selection: {
+        anchor: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+        focus: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+      },
+    };
+
+    const dispose = render(
+      () => (
+        <EditorSurface
+          state={() => state}
+          onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
+          onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
+        />
+      ),
+      container,
+    );
+
+    const blockNode = container.querySelector('[data-testid="editor-block"]') as HTMLParagraphElement;
+    const listItemNode = container.querySelector('[data-testid="editor-list-item"]') as HTMLDivElement;
+    const markerNode = container.querySelector('[data-testid="editor-list-marker"]') as HTMLSpanElement;
+    const contentNode = container.querySelector(".oasis-editor-list-content") as HTMLDivElement;
+
+    expect(blockNode.getAttribute("data-list-align")).toBe("center");
+    expect(blockNode.style.textAlign).toBe("center");
+    expect(listItemNode).not.toBeNull();
+    expect(markerNode.textContent).toBe("•");
+    expect(contentNode.textContent).toContain("ab");
+    expect(markerNode.parentElement).toBe(listItemNode);
+    expect(contentNode.parentElement).toBe(listItemNode);
+
+    dispose();
+  });
+
   it("renders paginated page containers for the projected document layout", () => {
     const container = document.createElement("div");
     const paragraphs = Array.from({ length: 3 }, (_, index) =>
