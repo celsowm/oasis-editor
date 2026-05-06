@@ -1000,6 +1000,27 @@ describe("OasisEditor", () => {
     instance.dispose();
   });
 
+  it("starts with style, font family and font size synced in the toolbar", () => {
+    const root = document.getElementById("oasis-editor-root") as HTMLElement;
+    const instance = createOasisEditor(root);
+
+    const styleSelect = root.querySelector(
+      '[data-testid="editor-toolbar-style"]',
+    ) as HTMLSelectElement;
+    const fontFamilySelect = root.querySelector(
+      '[data-testid="editor-toolbar-font-family"]',
+    ) as HTMLSelectElement;
+    const fontSizeSelect = root.querySelector(
+      '[data-testid="editor-toolbar-font-size"]',
+    ) as HTMLSelectElement;
+
+    expect(styleSelect.value).toBe("normal");
+    expect(fontFamilySelect.value).toBe("Calibri, sans-serif");
+    expect(fontSizeSelect.value).toBe("15");
+
+    instance.dispose();
+  });
+
   it("applies pending inline styles at the caret without rewriting existing text", async () => {
     const root = document.getElementById("oasis-editor-root") as HTMLElement;
     const instance = createOasisEditor(root);

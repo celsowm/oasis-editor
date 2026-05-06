@@ -260,6 +260,30 @@ const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> = {
 
 export const EFFECTIVE_PARAGRAPH_STYLE_DEFAULTS: Required<EditorParagraphStyle> = DEFAULT_PARAGRAPH_STYLE;
 
+function resolveDefaultParagraphStyleId(
+  styles: Record<string, EditorNamedStyle> | undefined,
+): string | undefined {
+  if (!styles) {
+    return undefined;
+  }
+
+  const exactNormal = Object.values(styles).find(
+    (style) => style.type === "paragraph" && style.id.toLowerCase() === "normal",
+  );
+  if (exactNormal) {
+    return exactNormal.id;
+  }
+
+  const namedNormal = Object.values(styles).find(
+    (style) => style.type === "paragraph" && style.name.toLowerCase() === "normal",
+  );
+  if (namedNormal) {
+    return namedNormal.id;
+  }
+
+  return undefined;
+}
+
 export function resolveNamedTextStyle(
   styleId: string | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
@@ -318,7 +342,9 @@ export function resolveEffectiveTextStyleForParagraph(
   paragraphStyleId: string | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
 ): Required<EditorTextStyle> {
-  const paragraphNamed = resolveNamedTextStyle(paragraphStyleId, styles);
+  const effectiveParagraphStyleId =
+    paragraphStyleId ?? resolveDefaultParagraphStyleId(styles);
+  const paragraphNamed = resolveNamedTextStyle(effectiveParagraphStyleId, styles);
   const runNamed = resolveNamedTextStyle(style?.styleId, styles);
   const inherited = mergeTextStyles(paragraphNamed, runNamed);
   const merged = mergeTextStyles(inherited, style);
@@ -335,8 +361,12 @@ export function resolveEffectiveParagraphStyle(
   style: EditorParagraphStyle | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
 ): Required<EditorParagraphStyle> {
-  const named = resolveNamedParagraphStyle(style?.styleId, styles);
-  const merged = mergeParagraphStyles(named, style);
+  const effectiveStyleId = style?.styleId ?? resolveDefaultParagraphStyleId(styles);
+  const named = resolveNamedParagraphStyle(effectiveStyleId, styles);
+  const merged = mergeParagraphStyles(named, {
+    ...style,
+    styleId: effectiveStyleId,
+  });
   return { ...DEFAULT_PARAGRAPH_STYLE, ...merged };
 }
 

@@ -1,4 +1,4 @@
-import { splitProps, type JSX } from "solid-js";
+import { createEffect, splitProps, type JSX } from "solid-js";
 
 interface ToolbarSelectProps extends JSX.SelectHTMLAttributes<HTMLSelectElement> {
   wide?: boolean;
@@ -7,12 +7,26 @@ interface ToolbarSelectProps extends JSX.SelectHTMLAttributes<HTMLSelectElement>
 }
 
 export function ToolbarSelect(props: ToolbarSelectProps) {
-  const [local, others] = splitProps(props, ["wide", "small", "class", "tooltip", "aria-label"]);
+  let selectRef: HTMLSelectElement | undefined;
+  const [local, others] = splitProps(props, ["wide", "small", "class", "tooltip", "aria-label", "value"]);
 
   const ariaLabel = () => local["aria-label"] || local.tooltip || "";
 
+  createEffect(() => {
+    const nextValue = local.value;
+    if (!selectRef || nextValue === undefined || nextValue === null) {
+      return;
+    }
+
+    const serialized = String(nextValue);
+    if (selectRef.value !== serialized) {
+      selectRef.value = serialized;
+    }
+  });
+
   return (
     <select
+      ref={selectRef}
       class={`oasis-editor-tool-select ${local.class || ""}`}
       classList={{
         "oasis-editor-tool-select-wide": local.wide,
@@ -20,6 +34,7 @@ export function ToolbarSelect(props: ToolbarSelectProps) {
       }}
       title={local.tooltip}
       aria-label={ariaLabel()}
+      value={local.value as string | number | string[] | undefined}
       {...others}
     >
       {others.children}

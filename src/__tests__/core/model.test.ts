@@ -3,6 +3,7 @@ import {
   resolveNamedTextStyle,
   resolveNamedParagraphStyle,
   resolveEffectiveTextStyle,
+  resolveEffectiveTextStyleForParagraph,
   resolveEffectiveParagraphStyle,
   EFFECTIVE_TEXT_STYLE_DEFAULTS,
   EFFECTIVE_PARAGRAPH_STYLE_DEFAULTS,
@@ -211,6 +212,13 @@ describe("resolveEffectiveParagraphStyle", () => {
     expect(result.pageBreakBefore).toBe(false);
   });
 
+  it("falls back to the default Normal paragraph style when styleId is missing", () => {
+    const result = resolveEffectiveParagraphStyle(undefined, BASE_STYLES);
+    expect(result.styleId).toBe("Normal");
+    expect(result.lineHeight).toBe(1.6);
+    expect(result.spacingAfter).toBe(10);
+  });
+
   it("resolves named paragraph style and fills defaults", () => {
     const result = resolveEffectiveParagraphStyle({ styleId: "Heading1" }, BASE_STYLES);
     expect(result.lineHeight).toBe(1.2); // from Heading1
@@ -249,5 +257,13 @@ describe("resolveEffectiveParagraphStyle", () => {
     expect(result.lineHeight).toBe(1.3); // own
     expect(result.spacingBefore).toBe(18); // own
     expect(result.spacingAfter).toBe(12); // inherited from Heading1
+  });
+});
+
+describe("resolveEffectiveTextStyleForParagraph", () => {
+  it("falls back to the default Normal paragraph style when paragraph styleId is missing", () => {
+    const result = resolveEffectiveTextStyleForParagraph(undefined, undefined, BASE_STYLES);
+    expect(result.fontFamily).toBe("Calibri");
+    expect(result.fontSize).toBe(20);
   });
 });
