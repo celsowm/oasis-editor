@@ -28,7 +28,7 @@ export function getElementContentWidth(element: HTMLElement | null | undefined):
 export function getMaxInlineImageWidth(
   surface: HTMLDivElement | undefined,
   document: EditorDocument,
-  paragraphId?: string,
+  _paragraphId?: string,
 ): number {
   if (!surface) {
     return getPageContentWidth(getDocumentPageSettings(document));
@@ -36,16 +36,11 @@ export function getMaxInlineImageWidth(
 
   const contentSurface =
     surface.querySelector<HTMLDivElement>('[data-testid="editor-surface"]') ?? surface;
-  if (paragraphId) {
-    const paragraphElement = contentSurface.querySelector<HTMLElement>(
-      `[data-paragraph-id="${paragraphId}"]`,
-    );
-    const cellElement = paragraphElement?.closest<HTMLElement>("td.oasis-editor-table-cell");
-    if (cellElement) {
-      return getElementContentWidth(cellElement);
-    }
-  }
 
+  // We no longer restrict the image width to the table cell's current width.
+  // MS Word allows images to grow and push the table cell/column width up to the page margins.
+  // By returning the content surface width, we allow the image to be resized up to the page boundaries,
+  // and the table (with table-layout: auto) will naturally expand to fit.
   return getElementContentWidth(contentSurface);
 }
 

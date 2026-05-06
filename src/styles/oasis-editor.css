@@ -608,7 +608,6 @@
 .oasis-editor-table-grid {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
   background: rgba(255, 255, 255, 0.7);
 }
 
