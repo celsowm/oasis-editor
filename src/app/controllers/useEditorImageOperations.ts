@@ -5,13 +5,16 @@ import { normalizeSelection, isSelectionCollapsed } from "../../core/selection.j
 import { moveSelectedImageToPosition, setSelection, resizeSelectedImage } from "../../core/editorCommands.js";
 import { getMaxInlineImageWidth } from "../../ui/domGeometry.js";
 import { resolvePositionAtPoint } from "../../ui/positionAtPoint.js";
+import type { ImageResizeHandleDirection } from "../../ui/editorUiTypes.js";
 import type { EditorLogger } from "../../utils/logger.js";
 import type { EditorHistoryState } from "../../ui/editorHistory.js";
 
 export interface ActiveImageResize {
   paragraphId: string;
   paragraphOffset: number;
+  handleDirection: ImageResizeHandleDirection;
   startClientX: number;
+  startClientY: number;
   startWidth: number;
   startHeight: number;
   aspectRatio: number;
@@ -54,6 +57,82 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
   let activeImageDrag: ActiveImageDrag | null = null;
   let activeImageResize: ActiveImageResize | null = null;
   let imageDragCursorStyle: HTMLStyleElement | null = null;
+
+  const clamp = (value: number, min: number, max?: number): number => {
+    const lowerBound = Math.max(min, value);
+    if (max === undefined) {
+      return lowerBound;
+    }
+    return Math.min(max, lowerBound);
+  };
+
+  const axisSignForDirection = (
+    direction: ImageResizeHandleDirection,
+    axis: "x" | "y",
+  ): -1 | 0 | 1 => {
+    if (axis === "x") {
+      if (direction.includes("e")) return 1;
+      if (direction.includes("w")) return -1;
+      return 0;
+    }
+
+    if (direction.includes("s")) return 1;
+    if (direction.includes("n")) return -1;
+    return 0;
+  };
+
+  const resolveResizedDimensions = (
+    resizeState: ActiveImageResize,
+    deltaX: number,
+    deltaY: number,
+    preserveAspectRatio: boolean,
+    maxWidth: number,
+  ) => {
+    const widthSign = axisSignForDirection(resizeState.handleDirection, "x");
+    const heightSign = axisSignForDirection(resizeState.handleDirection, "y");
+    const rawWidth =
+      widthSign === 0
+        ? resizeState.startWidth
+        : resizeState.startWidth + deltaX * widthSign;
+    const rawHeight =
+      heightSign === 0
+        ? resizeState.startHeight
+        : resizeState.startHeight + deltaY * heightSign;
+
+    let nextWidth = clamp(rawWidth, 24, maxWidth);
+    let nextHeight = clamp(rawHeight, 24);
+
+    if (!preserveAspectRatio) {
+      return { width: nextWidth, height: nextHeight };
+    }
+
+    const aspectRatio = resizeState.aspectRatio || 1;
+    const hasHorizontalHandle = widthSign !== 0;
+    const hasVerticalHandle = heightSign !== 0;
+
+    if (hasHorizontalHandle && hasVerticalHandle) {
+      const widthScale = nextWidth / resizeState.startWidth;
+      const heightScale = nextHeight / resizeState.startHeight;
+      const dominantScale =
+        Math.abs(widthScale - 1) >= Math.abs(heightScale - 1)
+          ? widthScale
+          : heightScale;
+      nextWidth = clamp(resizeState.startWidth * dominantScale, 24, maxWidth);
+      nextHeight = clamp(nextWidth / aspectRatio, 24);
+      return { width: nextWidth, height: nextHeight };
+    }
+
+    if (hasHorizontalHandle) {
+      nextWidth = clamp(nextWidth, 24, maxWidth);
+      nextHeight = clamp(nextWidth / aspectRatio, 24);
+      return { width: nextWidth, height: nextHeight };
+    }
+
+    nextHeight = clamp(nextHeight, 24);
+    nextWidth = clamp(nextHeight * aspectRatio, 24, maxWidth);
+    nextHeight = clamp(nextWidth / aspectRatio, 24);
+    return { width: nextWidth, height: nextHeight };
+  };
 
   const getSelectedImageInfo = (current: EditorState) => {
     const normalized = normalizeSelection(current);
@@ -192,9 +271,15 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     }
 
     const deltaX = event.clientX - resizeState.startClientX;
+    const deltaY = event.clientY - resizeState.startClientY;
     const maxWidth = getMaxInlineImageWidth(deps.surfaceRef(), deps.state.document, resizeState.paragraphId);
-    const nextWidth = Math.max(24, Math.min(maxWidth, resizeState.startWidth + deltaX));
-    const nextHeight = Math.max(24, nextWidth / resizeState.aspectRatio);
+    const { width: nextWidth, height: nextHeight } = resolveResizedDimensions(
+      resizeState,
+      deltaX,
+      deltaY,
+      event.shiftKey,
+      maxWidth,
+    );
     const paragraph = getParagraphs(deps.state).find((candidate) => candidate.id === resizeState.paragraphId);
     if (!paragraph) {
       deps.logger.warn("image resize:missing paragraph", resizeState);
@@ -203,10 +288,13 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     deps.logger.debug("image resize:move", {
       paragraphId: resizeState.paragraphId,
       paragraphOffset: resizeState.paragraphOffset,
+      handleDirection: resizeState.handleDirection,
       deltaX,
+      deltaY,
       nextWidth,
       nextHeight,
       maxWidth,
+      preserveAspectRatio: event.shiftKey,
     });
     
     const applySelectionToStatePreservingStructure = (
@@ -282,7 +370,13 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     window.addEventListener("mouseup", handleImageDragMouseUp);
   };
 
-  const startImageResize = (paragraphId: string, paragraphOffset: number, event: MouseEvent, initialState: EditorState) => {
+  const startImageResize = (
+    paragraphId: string,
+    paragraphOffset: number,
+    handleDirection: ImageResizeHandleDirection,
+    event: MouseEvent,
+    initialState: EditorState,
+  ) => {
     const paragraph = getParagraphs(initialState).find((p) => p.id === paragraphId);
     if (!paragraph) return;
 
@@ -308,7 +402,9 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     activeImageResize = {
       paragraphId,
       paragraphOffset,
+      handleDirection,
       startClientX: event.clientX,
+      startClientY: event.clientY,
       startWidth: selectedImage.width,
       startHeight: selectedImage.height,
       aspectRatio: selectedImage.width / selectedImage.height,

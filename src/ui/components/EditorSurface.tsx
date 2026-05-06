@@ -24,6 +24,10 @@ import {
 } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
 import {
+  IMAGE_RESIZE_HANDLE_DIRECTIONS,
+  type ImageResizeHandleDirection,
+} from "../editorUiTypes.js";
+import {
   projectDocumentLayout,
   projectParagraphLayout,
 } from "../layoutProjection.js";
@@ -48,6 +52,7 @@ interface EditorSurfaceProps {
   onImageResizeHandleMouseDown: (
     paragraphId: string,
     paragraphOffset: number,
+    direction: ImageResizeHandleDirection,
     event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
   onTableDragHandleMouseDown: (tableId: string, event: MouseEvent) => void;
@@ -526,22 +531,28 @@ function renderParagraph(
                                       data-testid="editor-image"
                                     />
                                     <Show when={imageSelected()}>
-                                      <button
-                                        type="button"
-                                        aria-label="Resize image"
-                                        class="oasis-editor-image-resize-handle"
-                                        data-testid="editor-image-resize-handle"
-                                        onMouseDown={
-                                          interactive
-                                            ? (event) =>
-                                                onImageResizeHandleMouseDown(
-                                                  paragraph.id,
-                                                  char.paragraphOffset,
-                                                  event,
-                                                )
-                                            : undefined
-                                        }
-                                      />
+                                      <For each={IMAGE_RESIZE_HANDLE_DIRECTIONS}>
+                                        {(direction) => (
+                                          <button
+                                            type="button"
+                                            aria-label={`Resize image ${direction}`}
+                                            class="oasis-editor-image-resize-handle"
+                                            data-direction={direction}
+                                            data-testid={`editor-image-resize-handle-${direction}`}
+                                            onMouseDown={
+                                              interactive
+                                                ? (event) =>
+                                                    onImageResizeHandleMouseDown(
+                                                      paragraph.id,
+                                                      char.paragraphOffset,
+                                                      direction,
+                                                      event,
+                                                    )
+                                                : undefined
+                                            }
+                                          />
+                                        )}
+                                      </For>
                                     </Show>
                                   </span>
                                 ) : char.char === "\t" ? (

@@ -654,6 +654,7 @@
 
 .oasis-editor-table-row-repeated-header .oasis-editor-block,
 .oasis-editor-table-row-repeated-header .oasis-editor-image,
+.oasis-editor-table-row-repeated-header .oasis-editor-image-inline,
 .oasis-editor-table-row-repeated-header .oasis-editor-image-resize-handle {
   pointer-events: none;
 }
@@ -795,8 +796,6 @@
 
 .oasis-editor-image-resize-handle {
   position: absolute;
-  right: -7px;
-  bottom: -7px;
   width: 14px;
   height: 14px;
   padding: 0;
@@ -804,8 +803,55 @@
   border-radius: 999px;
   background: var(--oasis-caret-color);
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
-  cursor: nwse-resize;
   pointer-events: auto;
+}
+
+.oasis-editor-image-resize-handle[data-direction="nw"] {
+  top: -7px;
+  left: -7px;
+  cursor: nwse-resize;
+}
+
+.oasis-editor-image-resize-handle[data-direction="n"] {
+  top: -7px;
+  left: calc(50% - 7px);
+  cursor: ns-resize;
+}
+
+.oasis-editor-image-resize-handle[data-direction="ne"] {
+  top: -7px;
+  right: -7px;
+  cursor: nesw-resize;
+}
+
+.oasis-editor-image-resize-handle[data-direction="e"] {
+  top: calc(50% - 7px);
+  right: -7px;
+  cursor: ew-resize;
+}
+
+.oasis-editor-image-resize-handle[data-direction="se"] {
+  right: -7px;
+  bottom: -7px;
+  cursor: nwse-resize;
+}
+
+.oasis-editor-image-resize-handle[data-direction="s"] {
+  bottom: -7px;
+  left: calc(50% - 7px);
+  cursor: ns-resize;
+}
+
+.oasis-editor-image-resize-handle[data-direction="sw"] {
+  bottom: -7px;
+  left: -7px;
+  cursor: nesw-resize;
+}
+
+.oasis-editor-image-resize-handle[data-direction="w"] {
+  top: calc(50% - 7px);
+  left: -7px;
+  cursor: ew-resize;
 }
 
 .oasis-editor-input {

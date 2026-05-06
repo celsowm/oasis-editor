@@ -93,7 +93,7 @@ test.describe("Oasis Editor 2 smoke tests", () => {
     await expect(image).toBeVisible();
 
     await image.click();
-    await expect(page.locator('[data-testid="editor-image-resize-handle"]')).toBeVisible();
+    await expect(page.locator('[data-testid="editor-image-resize-handle-se"]')).toBeVisible();
   });
 
   test("inserts a table and moves between cells with tab", async ({ page }) => {

@@ -133,6 +133,7 @@ import type {
   InputBox,
   RevisionBox,
   SelectionBox,
+  ImageResizeHandleDirection,
 } from "./editorUiTypes.js";
 import {
   cloneBlock,
@@ -2178,10 +2179,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           imageOps.startImageDrag(paragraphId, paragraphOffset, event);
           focusInput();
         }}
-        onImageResizeHandleMouseDown={(paragraphId: string, paragraphOffset: number, event: MouseEvent & { currentTarget: HTMLElement }) => {
+        onImageResizeHandleMouseDown={(paragraphId: string, paragraphOffset: number, direction: ImageResizeHandleDirection, event: MouseEvent & { currentTarget: HTMLElement }) => {
           event.preventDefault();
           event.stopPropagation();
-          imageOps.startImageResize(paragraphId, paragraphOffset, event, state);
+          imageOps.startImageResize(paragraphId, paragraphOffset, direction, event, state);
         }}
         onTableDragHandleMouseDown={tableDrag.handleMouseDown}
         onInputBlur={() => setFocused(false)}
@@ -2317,6 +2318,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             onImageResizeHandleMouseDown={(
               paragraphId,
               paragraphOffset,
+              direction,
               event,
             ) => {
               event.preventDefault();
@@ -2324,6 +2326,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
               imageOps.startImageResize(
                 paragraphId,
                 paragraphOffset,
+                direction,
                 event,
                 state,
               );

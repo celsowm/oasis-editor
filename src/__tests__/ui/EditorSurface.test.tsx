@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render } from "solid-js/web";
 import { EditorSurface } from "../../ui/components/EditorSurface.js";
+import { IMAGE_RESIZE_HANDLE_DIRECTIONS } from "../../ui/editorUiTypes.js";
 import {
   createEditorDocument,
   createEditorParagraphFromRuns,
@@ -284,6 +285,15 @@ describe("EditorSurface", () => {
 
     const image = container.querySelector('[data-testid="editor-image"]') as HTMLImageElement;
     expect(image.classList.contains("oasis-editor-image-selected")).toBe(true);
+    const handles = container.querySelectorAll('[data-testid^="editor-image-resize-handle-"]');
+    expect(handles.length).toBe(IMAGE_RESIZE_HANDLE_DIRECTIONS.length);
+    for (const direction of IMAGE_RESIZE_HANDLE_DIRECTIONS) {
+      expect(
+        container.querySelector(
+          `[data-testid="editor-image-resize-handle-${direction}"]`,
+        ),
+      ).not.toBeNull();
+    }
 
     dispose();
   });

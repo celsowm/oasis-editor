@@ -613,6 +613,28 @@ describe("editor commands", () => {
     expect(imageRun?.image?.alt).toBe("Diagram");
   });
 
+  it("persists freeform image dimensions without forcing proportional resize", () => {
+    const inserted = insertImageAtSelection(
+      createEditorStateFromTexts([""], { blockIndex: 0, offset: 0 }),
+      { src: "data:image/png;base64,abc", width: 120, height: 60, alt: "Chart" },
+    );
+    const paragraph = getParagraphs(inserted)[0]!;
+    const selected = {
+      ...inserted,
+      selection: {
+        anchor: paragraphOffsetToPosition(paragraph, 0),
+        focus: paragraphOffsetToPosition(paragraph, 1),
+      },
+    };
+
+    const resized = resizeSelectedImage(selected, 180, 140);
+    const imageRun = getParagraphs(resized)[0]!.runs.find((run) => run.image);
+
+    expect(imageRun?.image?.width).toBe(180);
+    expect(imageRun?.image?.height).toBe(140);
+    expect(imageRun?.image?.alt).toBe("Chart");
+  });
+
   it("edits the selected image alt text without changing image geometry", () => {
     const inserted = insertImageAtSelection(
       createEditorStateFromTexts([""], { blockIndex: 0, offset: 0 }),

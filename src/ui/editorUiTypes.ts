@@ -23,3 +23,24 @@ export interface RevisionBox {
   left: number;
   top: number;
 }
+
+export type ImageResizeHandleDirection =
+  | "n"
+  | "ne"
+  | "e"
+  | "se"
+  | "s"
+  | "sw"
+  | "w"
+  | "nw";
+
+export const IMAGE_RESIZE_HANDLE_DIRECTIONS: ImageResizeHandleDirection[] = [
+  "nw",
+  "n",
+  "ne",
+  "e",
+  "se",
+  "s",
+  "sw",
+  "w",
+];

@@ -15,6 +15,7 @@ import {
 } from "../core/model.js";
 import { getDocumentCharacterCount, getDocumentWordCount } from "../core/editorState.js";
 import type { CaretBox, InputBox, RevisionBox, SelectionBox } from "./editorUiTypes.js";
+import type { ImageResizeHandleDirection } from "./editorUiTypes.js";
 
 export interface OasisEditorEditorProps {
   state: Accessor<EditorState>;
@@ -55,6 +56,7 @@ export interface OasisEditorEditorProps {
   onImageResizeHandleMouseDown: (
     paragraphId: string,
     paragraphOffset: number,
+    direction: ImageResizeHandleDirection,
     event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
   onTableDragHandleMouseDown: (tableId: string, event: MouseEvent) => void;
