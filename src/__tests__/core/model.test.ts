@@ -146,14 +146,14 @@ describe("resolveEffectiveTextStyle", () => {
   it("returns defaults when no style and no styles registry are provided", () => {
     const result = resolveEffectiveTextStyle(undefined, undefined);
     expect(result.bold).toBe(false);
-    expect(result.fontSize).toBe(20);
-    expect(result.fontFamily).toBe("Arial");
+    expect(result.fontSize).toBe(15);
+    expect(result.fontFamily).toBe("Calibri, sans-serif");
   });
 
   it("returns defaults when run has no style and no styleId", () => {
     const result = resolveEffectiveTextStyle({}, BASE_STYLES);
     expect(result.bold).toBe(false);
-    expect(result.fontSize).toBe(20);
+    expect(result.fontSize).toBe(15);
   });
 
   it("resolves named style and fills defaults", () => {
@@ -207,7 +207,7 @@ describe("resolveEffectiveParagraphStyle", () => {
   it("returns defaults when no style and no styles registry", () => {
     const result = resolveEffectiveParagraphStyle(undefined, undefined);
     expect(result.align).toBe("left");
-    expect(result.lineHeight).toBe(1.6);
+    expect(result.lineHeight).toBe(1.15);
     expect(result.spacingBefore).toBe(0);
     expect(result.pageBreakBefore).toBe(false);
   });

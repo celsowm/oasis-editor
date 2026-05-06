@@ -93,6 +93,8 @@ describe("Toolbar testid snapshot (regression guard for Phase 2 UI rewrite)", ()
     const insertTableButton = document.querySelector('[data-testid="editor-toolbar-insert-table"]') as HTMLElement;
     insertTableButton.click();
     await Promise.resolve();
+    (document.querySelector('[data-testid="editor-toolbar-table-grid-2x1"]') as HTMLElement).click();
+    await Promise.resolve();
 
     // 2. Insert an image to show the 'Alt' button
     const imageInput = root.querySelector('[data-testid="editor-insert-image-input"]') as HTMLInputElement;

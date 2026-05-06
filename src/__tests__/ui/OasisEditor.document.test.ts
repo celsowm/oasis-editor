@@ -178,9 +178,11 @@ describe("OasisEditor", () => {
       input.value = "Line 2";
       input.dispatchEvent(new Event("input", { bubbles: true }));
 
-      const run = root.querySelector('[data-testid="editor-run"]') as HTMLElement | null;
-      expect(run?.textContent).toContain("Line 1");
-      expect(run?.textContent).toContain("Line 2");
+      const text = Array.from(root.querySelectorAll('[data-testid="editor-run"]'))
+        .map((run) => run.textContent ?? "")
+        .join("");
+      expect(text).toContain("Line 1");
+      expect(text).toContain("Line 2");
     } finally {
       instance.dispose();
     }
@@ -1653,6 +1655,8 @@ describe("OasisEditor", () => {
         '[data-testid="editor-toolbar-insert-table"]',
       ) as HTMLButtonElement;
       insertTableButton.click();
+      await Promise.resolve();
+      (document.querySelector('[data-testid="editor-toolbar-table-grid-2x1"]') as HTMLElement).click();
       await Promise.resolve();
 
       input.dispatchEvent(

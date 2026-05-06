@@ -1909,9 +1909,8 @@ describe("OasisEditor", () => {
 
     insertTableButton.click();
     await Promise.resolve();
-
-    const tableGrid = root.querySelector('[data-testid="editor-table-grid"]');
-    expect(tableGrid).not.toBeNull();
+    (document.querySelector('[data-testid="editor-toolbar-table-grid-3x3"]') as HTMLElement).click();
+    await Promise.resolve();
 
     const rows = root.querySelectorAll('[data-testid="editor-table-row"]');
     expect(rows.length).toBe(3);
@@ -1937,6 +1936,8 @@ describe("OasisEditor", () => {
 
     insertTableButton.click();
     await Promise.resolve();
+    (document.querySelector('[data-testid="editor-toolbar-table-grid-3x3"]') as HTMLElement).click();
+    await Promise.resolve();
 
     // After inserting, the first cell should be in the DOM and text typed goes there
     input.value = "cell";
@@ -1958,6 +1959,8 @@ describe("OasisEditor", () => {
     ) as HTMLButtonElement;
 
     insertTableButton.click();
+    await Promise.resolve();
+    (document.querySelector('[data-testid="editor-toolbar-table-grid-3x3"]') as HTMLElement).click();
     await Promise.resolve();
 
     const cells = root.querySelectorAll<HTMLElement>('[data-testid="editor-table-cell"]');

@@ -534,6 +534,8 @@ describe("OasisEditor", () => {
     try {
       insertTableButton.click();
       await Promise.resolve();
+      (document.querySelector('[data-testid="editor-toolbar-table-grid-2x1"]') as HTMLElement).click();
+      await Promise.resolve();
 
       Object.defineProperty(imageInput, "files", {
         configurable: true,

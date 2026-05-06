@@ -112,6 +112,9 @@ describe("ToolbarModernization Safety Net", () => {
     insertTableButton.click();
     await Promise.resolve();
     await new Promise(r => setTimeout(r, 0));
+    (document.querySelector('[data-testid="editor-toolbar-table-grid-2x1"]') as HTMLElement).click();
+    await Promise.resolve();
+    await new Promise(r => setTimeout(r, 0));
 
     // Check table elements now exist
     for (const testId of tableTestIds) {
@@ -216,6 +219,9 @@ describe("ToolbarModernization Safety Net", () => {
     // Insert table
     const insertTableButton = document.querySelector('[data-testid="editor-toolbar-insert-table"]') as HTMLElement;
     insertTableButton.click();
+    await Promise.resolve();
+    await new Promise(r => setTimeout(r, 0));
+    (document.querySelector('[data-testid="editor-toolbar-table-grid-2x1"]') as HTMLElement).click();
     await Promise.resolve();
     await new Promise(r => setTimeout(r, 0));
 
