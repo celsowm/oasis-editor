@@ -260,6 +260,28 @@ interface DocContext {
   hyperlinkMap: Map<string, string>;
 }
 
+interface NumberingContext {
+  numberingInfo: Map<string, { numId: number; level: number }>;
+  definitions: Array<{ kind: EditorParagraphListStyle["kind"]; level: number; abstractNumId: number; numId: number }>;
+}
+
+interface ExportBuildState {
+  nextImageId: number;
+}
+
+interface PartDefinition {
+  kind: "header" | "footer";
+  path: string;
+  relId: string;
+  blocks: EditorBlockNode[];
+  context: DocContext;
+}
+
+interface SectionReferenceDefinition {
+  header?: { relId: string };
+  footer?: { relId: string };
+}
+
 function serializeRun(
   run: EditorTextRun,
   context: DocContext,
@@ -267,6 +289,10 @@ function serializeRun(
   styles: Record<string, EditorNamedStyle> | undefined,
 ): string {
   const materializedRunStyle = materializeRunStyle(run, paragraphStyleId, styles);
+  if (run.field) {
+    const instr = run.field.type === "PAGE" ? " PAGE " : " NUMPAGES ";
+    return `<w:fldSimple w:instr="${instr}"><w:r>${serializeRunProperties(materializedRunStyle)}<w:t>1</w:t></w:r></w:fldSimple>`;
+  }
   if (run.image) {
     const rId = context.imageMap.get(run.id);
     if (rId) {
@@ -409,40 +435,97 @@ function pxToTwips(value: number, fallback: number): number {
 }
 
 function serializeSectionProperties(pageSettings: EditorPageSettings): string {
+  return serializeSectionPropertiesWithReferences(pageSettings);
+}
+
+function serializeSectionPropertiesWithReferences(
+  pageSettings: EditorPageSettings,
+  references?: SectionReferenceDefinition,
+): string {
   const width = pxToTwips(pageSettings.width, 12240);
   const height = pxToTwips(pageSettings.height, 15840);
   const margins = pageSettings.margins;
   const orientationAttr = pageSettings.orientation === "landscape" ? ' w:orient="landscape"' : "";
+  const referencesXml = [
+    references?.header ? `<w:headerReference w:type="default" r:id="${references.header.relId}"/>` : "",
+    references?.footer ? `<w:footerReference w:type="default" r:id="${references.footer.relId}"/>` : "",
+  ].join("");
 
-  return `<w:sectPr><w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/></w:sectPr>`;
+  return `<w:sectPr>${referencesXml}<w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/></w:sectPr>`;
 }
 
-function buildDocumentContext(document: EditorDocument): DocContext {
+function visitBlocks(
+  blocks: EditorBlockNode[],
+  callback: (paragraph: EditorParagraphNode) => void,
+): void {
+  for (const block of blocks) {
+    if (block.type === "paragraph") {
+      callback(block);
+      continue;
+    }
+
+    for (const row of block.rows) {
+      for (const cell of row.cells) {
+        for (const paragraph of cell.blocks) {
+          callback(paragraph);
+        }
+      }
+    }
+  }
+}
+
+function buildNumberingContext(document: EditorDocument): NumberingContext {
   const numberingInfo = new Map<string, { numId: number; level: number }>();
   const definitionMap = new Map<string, { abstractNumId: number; numId: number }>();
   const definitions: Array<{ kind: EditorParagraphListStyle["kind"]; level: number; abstractNumId: number; numId: number }> = [];
+  let nextAbstractNumId = 1;
+  let nextNumId = 1;
+
+  const traverseParagraph = (paragraph: EditorParagraphNode) => {
+    if (!paragraph.list) {
+      return;
+    }
+
+    const level = Math.max(0, paragraph.list.level ?? 0);
+    const key = `${paragraph.list.kind}:${level}`;
+    let definition = definitionMap.get(key);
+    if (!definition) {
+      definition = { abstractNumId: nextAbstractNumId++, numId: nextNumId++ };
+      definitionMap.set(key, definition);
+      definitions.push({
+        kind: paragraph.list.kind,
+        level,
+        abstractNumId: definition.abstractNumId,
+        numId: definition.numId,
+      });
+    }
+    numberingInfo.set(paragraph.id, { numId: definition.numId, level });
+  };
+
+  for (const section of getDocumentSections(document)) {
+    visitBlocks(section.blocks, traverseParagraph);
+    if (section.header) {
+      visitBlocks(section.header, traverseParagraph);
+    }
+    if (section.footer) {
+      visitBlocks(section.footer, traverseParagraph);
+    }
+  }
+
+  return { numberingInfo, definitions };
+}
+
+function buildPartContext(
+  blocks: EditorBlockNode[],
+  numberingContext: NumberingContext,
+  state: ExportBuildState,
+): DocContext {
   const images: Array<{ rId: string; target: string; base64: string; runId: string; cx: number; cy: number; alt?: string }> = [];
   const imageMap = new Map<string, string>();
   const hyperlinks: Array<{ rId: string; href: string }> = [];
   const hyperlinkMap = new Map<string, string>();
-  
-  let nextAbstractNumId = 1;
-  let nextNumId = 1;
-  let nextImageId = 1;
 
-  const traverseParagraph = (paragraph: EditorParagraphNode) => {
-    if (paragraph.list) {
-      const level = Math.max(0, paragraph.list.level ?? 0);
-      const key = `${paragraph.list.kind}:${level}`;
-      let definition = definitionMap.get(key);
-      if (!definition) {
-        definition = { abstractNumId: nextAbstractNumId++, numId: nextNumId++ };
-        definitionMap.set(key, definition);
-        definitions.push({ kind: paragraph.list.kind, level, abstractNumId: definition.abstractNumId, numId: definition.numId });
-      }
-      numberingInfo.set(paragraph.id, { numId: definition.numId, level });
-    }
-
+  visitBlocks(blocks, (paragraph) => {
     for (const run of paragraph.runs) {
       if (run.styles?.link && !hyperlinkMap.has(run.styles.link)) {
         const rId = `rIdLink${hyperlinks.length + 1}`;
@@ -450,36 +533,42 @@ function buildDocumentContext(document: EditorDocument): DocContext {
         hyperlinks.push({ rId, href: run.styles.link });
       }
 
-      if (run.image) {
-        const match = run.image.src.match(/^data:image\/(png|jpeg|jpg);base64,(.*)$/);
-        if (match) {
-           const ext = match[1] === 'jpeg' ? 'jpg' : match[1];
-           const base64 = match[2];
-           const target = `media/image${nextImageId}.${ext}`;
-           const rId = `rIdImg${nextImageId}`;
-           images.push({ rId, target, base64, runId: run.id, cx: Math.round(run.image.width * 9525), cy: Math.round(run.image.height * 9525), alt: run.image.alt });
-           imageMap.set(run.id, rId);
-           nextImageId++;
-        }
+      if (!run.image) {
+        continue;
       }
+
+      const match = run.image.src.match(/^data:image\/(png|jpeg|jpg);base64,(.*)$/);
+      if (!match) {
+        continue;
+      }
+
+      const imageNumber = state.nextImageId;
+      const ext = match[1] === "jpeg" ? "jpg" : match[1];
+      const base64 = match[2];
+      const target = `media/image${imageNumber}.${ext}`;
+      const rId = `rIdImg${imageNumber}`;
+      images.push({
+        rId,
+        target,
+        base64,
+        runId: run.id,
+        cx: Math.round(run.image.width * 9525),
+        cy: Math.round(run.image.height * 9525),
+        alt: run.image.alt,
+      });
+      imageMap.set(run.id, rId);
+      state.nextImageId += 1;
     }
+  });
+
+  return {
+    numberingInfo: numberingContext.numberingInfo,
+    definitions: numberingContext.definitions,
+    images,
+    imageMap,
+    hyperlinks,
+    hyperlinkMap,
   };
-
-  for (const block of document.blocks) {
-    if (block.type === "paragraph") {
-      traverseParagraph(block);
-    } else if (block.type === "table") {
-      for (const row of block.rows) {
-        for (const cell of row.cells) {
-          for (const paragraph of cell.blocks) {
-            traverseParagraph(paragraph);
-          }
-        }
-      }
-    }
-  }
-
-  return { numberingInfo, definitions, images, imageMap, hyperlinks, hyperlinkMap };
 }
 
 function buildNumberingXml(
@@ -506,49 +595,82 @@ function buildNumberingXml(
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:numbering xmlns:w="${WORD_NS}">${abstractNums}${nums}</w:numbering>`;
 }
 
-function buildDocumentXml(document: EditorDocument, context: DocContext): string {
+function serializeBlocksXml(
+  blocks: EditorBlockNode[],
+  context: DocContext,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): string {
+  return blocks
+    .map((block) => {
+      if (block.type === "table") {
+        const rowsXml = block.rows.map(row => {
+          const cellsXml = row.cells.map(cell => {
+            const paragraphs = cell.blocks.length > 0 ? cell.blocks : [{ id: "", type: "paragraph" as const, runs: [{ id: "", text: "" }] }];
+            const paragraphsXml = paragraphs.map(p => {
+              const runs = p.runs.length > 0 ? p.runs : [{ id: "", text: "" }];
+              return `<w:p>${serializeParagraphProperties(p, context.numberingInfo, styles)}${runs.map(r => serializeRunWithRelationships(r, context, p.style?.styleId, styles)).join("")}</w:p>`;
+            }).join("");
+            const contentXml = cell.vMerge === "continue" ? "<w:p/>" : paragraphsXml;
+            return `<w:tc>${serializeTableCellProperties(cell)}${contentXml}</w:tc>`;
+          }).join("");
+          return `<w:tr>${serializeTableRowProperties(row)}${cellsXml}</w:tr>`;
+        }).join("");
+        return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>${rowsXml}</w:tbl>`;
+      }
+      const runs = block.runs.length > 0 ? block.runs : [{ id: "", text: "" }];
+      return `<w:p>${serializeParagraphProperties(block, context.numberingInfo, styles)}${runs
+        .map((run) => serializeRunWithRelationships(run, context, block.style?.styleId, styles))
+        .join("")}</w:p>`;
+    })
+    .join("");
+}
+
+function buildDocumentXml(
+  document: EditorDocument,
+  context: DocContext,
+  sectionReferences: SectionReferenceDefinition[],
+): string {
   const sections = getDocumentSections(document);
 
-  const sectionsXml = sections.map((section) => {
-    const blocksXml = section.blocks
-      .map((block) => {
-        if (block.type === "table") {
-          const rowsXml = block.rows.map(row => {
-            const cellsXml = row.cells.map(cell => {
-              const paragraphs = cell.blocks.length > 0 ? cell.blocks : [{ id: "", type: "paragraph" as const, runs: [{ id: "", text: "" }] }];
-              const paragraphsXml = paragraphs.map(p => {
-                const runs = p.runs.length > 0 ? p.runs : [{ id: "", text: "" }];
-                return `<w:p>${serializeParagraphProperties(p, context.numberingInfo, document.styles)}${runs.map(r => serializeRunWithRelationships(r, context, p.style?.styleId, document.styles)).join("")}</w:p>`;
-              }).join("");
-              const contentXml = cell.vMerge === "continue" ? "<w:p/>" : paragraphsXml;
-              return `<w:tc>${serializeTableCellProperties(cell)}${contentXml}</w:tc>`;
-            }).join("");
-            return `<w:tr>${serializeTableRowProperties(row)}${cellsXml}</w:tr>`;
-          }).join("");
-          return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>${rowsXml}</w:tbl>`;
-        }
-        const runs = block.runs.length > 0 ? block.runs : [{ id: "", text: "" }];
-        return `<w:p>${serializeParagraphProperties(block, context.numberingInfo, document.styles)}${runs
-          .map((run) => serializeRunWithRelationships(run, context, block.style?.styleId, document.styles))
-          .join("")}</w:p>`;
-      })
-      .join("");
-
-    const sectionPr = serializeSectionProperties(section.pageSettings);
+  const sectionsXml = sections.map((section, sectionIndex) => {
+    const blocksXml = serializeBlocksXml(section.blocks, context, document.styles);
+    const sectionPr = serializeSectionPropertiesWithReferences(
+      section.pageSettings,
+      sectionReferences[sectionIndex],
+    );
     return blocksXml + sectionPr;
   }).join("");
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${WORD_NS}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="${OFFICE_REL_NS}"><w:body>${sectionsXml}</w:body></w:document>`;
 }
 
-function buildContentTypesXml(hasNumbering: boolean, hasImages: boolean): string {
+function buildHeaderFooterXml(
+  kind: "header" | "footer",
+  blocks: EditorBlockNode[],
+  context: DocContext,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): string {
+  const tag = kind === "header" ? "hdr" : "ftr";
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:${tag} xmlns:w="${WORD_NS}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="${OFFICE_REL_NS}">${serializeBlocksXml(blocks, context, styles)}</w:${tag}>`;
+}
+
+function buildContentTypesXml(hasNumbering: boolean, hasImages: boolean, parts: PartDefinition[]): string {
+  const overrides = parts
+    .map((part) => {
+      const contentType =
+        part.kind === "header"
+          ? "application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"
+          : "application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml";
+      return `<Override PartName="/word/${part.path}" ContentType="${contentType}"/>`;
+    })
+    .join("");
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${
     hasImages ? '<Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="jpeg" ContentType="image/jpeg"/>' : ""
   }<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>${
     hasNumbering
       ? '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>'
       : ""
-  }</Types>`;
+  }${overrides}</Types>`;
 }
 
 function buildRootRelationshipsXml(): string {
@@ -559,9 +681,28 @@ function buildDocumentRelationshipsXml(
   hasNumbering: boolean,
   images: DocContext["images"],
   hyperlinks: DocContext["hyperlinks"],
+  parts: PartDefinition[],
 ): string {
   let rels = "";
   if (hasNumbering) rels += `<Relationship Id="rIdNum" Type="${OFFICE_REL_NS}/numbering" Target="numbering.xml"/>`;
+  for (const hyperlink of hyperlinks) {
+    rels += `<Relationship Id="${hyperlink.rId}" Type="${OFFICE_REL_NS}/hyperlink" Target="${escapeXml(hyperlink.href)}" TargetMode="External"/>`;
+  }
+  for (const img of images) {
+    rels += `<Relationship Id="${img.rId}" Type="${OFFICE_REL_NS}/image" Target="${img.target}"/>`;
+  }
+  for (const part of parts) {
+    const relType = part.kind === "header" ? "header" : "footer";
+    rels += `<Relationship Id="${part.relId}" Type="${OFFICE_REL_NS}/${relType}" Target="${part.path}"/>`;
+  }
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${PACKAGE_REL_NS}">${rels}</Relationships>`;
+}
+
+function buildPartRelationshipsXml(
+  images: DocContext["images"],
+  hyperlinks: DocContext["hyperlinks"],
+): string {
+  let rels = "";
   for (const hyperlink of hyperlinks) {
     rels += `<Relationship Id="${hyperlink.rId}" Type="${OFFICE_REL_NS}/hyperlink" Target="${escapeXml(hyperlink.href)}" TargetMode="External"/>`;
   }
@@ -573,27 +714,68 @@ function buildDocumentRelationshipsXml(
 
 export async function exportEditorDocumentToDocx(document: EditorDocument): Promise<ArrayBuffer> {
   const zip = new JSZip();
-  const context = buildDocumentContext(document);
-  const hasNumbering = context.definitions.length > 0;
-  const hasImages = context.images.length > 0;
-  const hasHyperlinks = context.hyperlinks.length > 0;
+  const numberingContext = buildNumberingContext(document);
+  const buildState: ExportBuildState = { nextImageId: 1 };
+  const sections = getDocumentSections(document);
+  const bodyContext = buildPartContext(
+    sections.flatMap((section) => section.blocks),
+    numberingContext,
+    buildState,
+  );
+  const parts: PartDefinition[] = [];
+  const sectionReferences: SectionReferenceDefinition[] = sections.map(() => ({}));
+  let nextHeaderIndex = 1;
+  let nextFooterIndex = 1;
 
-  zip.file("[Content_Types].xml", buildContentTypesXml(hasNumbering, hasImages));
+  sections.forEach((section, sectionIndex) => {
+    if (section.header && section.header.length > 0) {
+      const path = `header${nextHeaderIndex}.xml`;
+      const relId = `rIdHeader${nextHeaderIndex}`;
+      const context = buildPartContext(section.header, numberingContext, buildState);
+      parts.push({ kind: "header", path, relId, blocks: section.header, context });
+      sectionReferences[sectionIndex]!.header = { relId };
+      nextHeaderIndex += 1;
+    }
+    if (section.footer && section.footer.length > 0) {
+      const path = `footer${nextFooterIndex}.xml`;
+      const relId = `rIdFooter${nextFooterIndex}`;
+      const context = buildPartContext(section.footer, numberingContext, buildState);
+      parts.push({ kind: "footer", path, relId, blocks: section.footer, context });
+      sectionReferences[sectionIndex]!.footer = { relId };
+      nextFooterIndex += 1;
+    }
+  });
+
+  const hasNumbering = numberingContext.definitions.length > 0;
+  const allImages = [...bodyContext.images, ...parts.flatMap((part) => part.context.images)];
+  const hasImages = allImages.length > 0;
+
+  zip.file("[Content_Types].xml", buildContentTypesXml(hasNumbering, hasImages, parts));
   zip.file("_rels/.rels", buildRootRelationshipsXml());
-  zip.file("word/document.xml", buildDocumentXml(document, context));
+  zip.file("word/document.xml", buildDocumentXml(document, bodyContext, sectionReferences));
 
   if (hasNumbering) {
-    zip.file("word/numbering.xml", buildNumberingXml(context.definitions));
+    zip.file("word/numbering.xml", buildNumberingXml(numberingContext.definitions));
   }
   
-  if (hasNumbering || hasImages || hasHyperlinks) {
+  if (hasNumbering || bodyContext.images.length > 0 || bodyContext.hyperlinks.length > 0 || parts.length > 0) {
     zip.file(
       "word/_rels/document.xml.rels",
-      buildDocumentRelationshipsXml(hasNumbering, context.images, context.hyperlinks),
+      buildDocumentRelationshipsXml(hasNumbering, bodyContext.images, bodyContext.hyperlinks, parts),
     );
   }
 
-  for (const img of context.images) {
+  for (const part of parts) {
+    zip.file(`word/${part.path}`, buildHeaderFooterXml(part.kind, part.blocks, part.context, document.styles));
+    if (part.context.images.length > 0 || part.context.hyperlinks.length > 0) {
+      zip.file(
+        `word/_rels/${part.path}.rels`,
+        buildPartRelationshipsXml(part.context.images, part.context.hyperlinks),
+      );
+    }
+  }
+
+  for (const img of allImages) {
     zip.file(`word/${img.target}`, img.base64, { base64: true });
   }
 

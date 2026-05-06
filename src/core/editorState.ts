@@ -146,6 +146,26 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
       fontSize: 15,
     },
   },
+  header: {
+    id: "header",
+    name: "Header",
+    type: "paragraph",
+    basedOn: "normal",
+    nextStyle: "header",
+    paragraphStyle: {
+      spacingAfter: 0,
+    },
+  },
+  footer: {
+    id: "footer",
+    name: "Footer",
+    type: "paragraph",
+    basedOn: "normal",
+    nextStyle: "footer",
+    paragraphStyle: {
+      spacingAfter: 0,
+    },
+  },
   heading1: {
     id: "heading1",
     name: "Heading 1",

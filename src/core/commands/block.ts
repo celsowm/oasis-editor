@@ -2,7 +2,7 @@ import type { EditorBlockNode, EditorParagraphStyle, EditorPosition, EditorState
 import { getBlockParagraphs, getDocumentSections, getParagraphLength, getParagraphs, paragraphOffsetToPosition, getActiveSectionIndex, getActiveZone } from "../model.js";
 import { createEditorParagraph } from "../editorState.js";
 import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
-import { deleteSelectionRange, getFocusParagraph, buildParagraphFromRuns, sliceRuns, getStyleAtOffset, createParagraphFromRuns, cloneParagraphs, cloneStateWithParagraphs, withSelection, cloneBlocks, ValueParagraphStyleKey, cloneParagraph, setParagraphStyleValue, preserveSelectionByParagraphOffsets } from "./utils.js";
+import { deleteSelectionRange, getFocusParagraph, buildParagraphFromRuns, sliceRuns, getStyleAtOffset, createParagraphFromRunsLike, cloneParagraphs, cloneStateWithParagraphs, withSelection, cloneBlocks, ValueParagraphStyleKey, cloneParagraph, setParagraphStyleValue, preserveSelectionByParagraphOffsets } from "./utils.js";
 
 export function moveBlockToPosition(
   state: EditorState,
@@ -124,8 +124,13 @@ export function splitBlockAtSelection(state: EditorState): EditorState {
   const secondRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
   const nextParagraph =
     secondRuns.length > 0
-      ? createParagraphFromRuns(secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
-      : createEditorParagraph("");
+      ? createParagraphFromRunsLike(paragraph, secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
+      : (() => {
+          const emptyParagraph = createEditorParagraph("");
+          emptyParagraph.style = paragraph.style ? { ...paragraph.style } : undefined;
+          emptyParagraph.list = paragraph.list ? { ...paragraph.list } : undefined;
+          return emptyParagraph;
+        })();
   const paragraphs = getParagraphs(collapsedState);
   const nextParagraphs = [
     ...cloneParagraphs(paragraphs.slice(0, index)),
@@ -152,8 +157,13 @@ export function insertPageBreakAtSelection(state: EditorState): EditorState {
   const secondRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
   const nextParagraph =
     secondRuns.length > 0
-      ? createParagraphFromRuns(secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
-      : createEditorParagraph("");
+      ? createParagraphFromRunsLike(paragraph, secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
+      : (() => {
+          const emptyParagraph = createEditorParagraph("");
+          emptyParagraph.style = paragraph.style ? { ...paragraph.style } : undefined;
+          emptyParagraph.list = paragraph.list ? { ...paragraph.list } : undefined;
+          return emptyParagraph;
+        })();
 
   nextParagraph.style = {
     ...(paragraph.style ?? {}),
@@ -218,8 +228,13 @@ export function insertSectionBreakAtSelection(
   const secondRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
   const secondParagraph =
     secondRuns.length > 0
-      ? createParagraphFromRuns(secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
-      : createEditorParagraph("");
+      ? createParagraphFromRunsLike(paragraph, secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
+      : (() => {
+          const emptyParagraph = createEditorParagraph("");
+          emptyParagraph.style = paragraph.style ? { ...paragraph.style } : undefined;
+          emptyParagraph.list = paragraph.list ? { ...paragraph.list } : undefined;
+          return emptyParagraph;
+        })();
 
   const newSectionId = `section:${Math.random().toString(36).slice(2, 9)}`;
   const newSection: EditorSection = {

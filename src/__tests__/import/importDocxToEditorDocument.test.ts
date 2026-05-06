@@ -4,7 +4,13 @@ import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditor
 import { getParagraphText } from "../../core/model.js";
 import { resetEditorIds } from "../../core/editorState.js";
 
-async function buildDocx(documentXml: string, numberingXml?: string, relsXml?: string): Promise<ArrayBuffer> {
+async function buildDocx(
+  documentXml: string,
+  numberingXml?: string,
+  relsXml?: string,
+  extraFiles?: Record<string, string>,
+  extraContentTypeOverrides?: string[],
+): Promise<ArrayBuffer> {
   const zip = new JSZip();
   zip.file(
     "[Content_Types].xml",
@@ -14,6 +20,7 @@ async function buildDocx(documentXml: string, numberingXml?: string, relsXml?: s
         <Default Extension="xml" ContentType="application/xml"/>
         <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
         ${numberingXml ? '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>' : ""}
+        ${(extraContentTypeOverrides ?? []).join("")}
       </Types>`,
   );
   zip.file(
@@ -29,6 +36,9 @@ async function buildDocx(documentXml: string, numberingXml?: string, relsXml?: s
   }
   if (relsXml) {
     zip.file("word/_rels/document.xml.rels", relsXml);
+  }
+  for (const [path, content] of Object.entries(extraFiles ?? {})) {
+    zip.file(path, content);
   }
   return zip.generateAsync({ type: "arraybuffer" });
 }
@@ -417,5 +427,65 @@ describe("importDocxToEditorDocument", () => {
         gutter: 10,
       },
     });
+  });
+
+  it("preserves single-section header/footer blocks and PAGE/NUMPAGES fields", async () => {
+    const buffer = await buildDocx(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+        <w:body>
+          <w:p><w:r><w:t>Body</w:t></w:r></w:p>
+          <w:sectPr>
+            <w:headerReference w:type="default" r:id="rIdHeader1"/>
+            <w:footerReference w:type="default" r:id="rIdFooter1"/>
+            <w:pgSz w:w="11910" w:h="16845"/>
+            <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+          </w:sectPr>
+        </w:body>
+      </w:document>`,
+      undefined,
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship Id="rIdHeader1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>
+        <Relationship Id="rIdFooter1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
+      </Relationships>`,
+      {
+        "word/header1.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+          <w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+            <w:p>
+              <w:r><w:t>Header </w:t></w:r>
+              <w:fldSimple w:instr=" PAGE "><w:r><w:t>1</w:t></w:r></w:fldSimple>
+            </w:p>
+          </w:hdr>`,
+        "word/footer1.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+          <w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+            <w:p>
+              <w:r><w:t>Footer </w:t></w:r>
+              <w:fldSimple w:instr=" NUMPAGES "><w:r><w:t>3</w:t></w:r></w:fldSimple>
+            </w:p>
+          </w:ftr>`,
+      },
+      [
+        '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>',
+        '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>',
+      ],
+    );
+
+    const document = await importDocxToEditorDocument(buffer);
+    expect(document.sections).toHaveLength(1);
+    expect(document.blocks).toEqual([]);
+    const section = document.sections![0]!;
+    const header = section.header?.[0];
+    const footer = section.footer?.[0];
+    expect(header?.type).toBe("paragraph");
+    expect(footer?.type).toBe("paragraph");
+    if (header?.type !== "paragraph" || footer?.type !== "paragraph") {
+      throw new Error("Expected paragraph header/footer blocks");
+    }
+
+    expect(getParagraphText(header)).toBe("Header 1");
+    expect(header.runs[1]?.field).toEqual({ type: "PAGE" });
+    expect(getParagraphText(footer)).toBe("Footer 3");
+    expect(footer.runs[1]?.field).toEqual({ type: "NUMPAGES" });
   });
 });

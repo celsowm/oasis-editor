@@ -47,6 +47,15 @@ const WORD_BASELINE_STYLES: Record<string, EditorNamedStyle> = {
 
 function buildCanonicalWordParityDocument() {
   resetEditorIds();
+  const header = createEditorParagraphFromRuns([{ text: "cabecalho fixo" }]);
+  const footer = createEditorParagraphFromRuns([
+    { text: "pagina " },
+    { text: "1" },
+    { text: " de " },
+    { text: "1" },
+  ]);
+  footer.runs[1]!.field = { type: "PAGE" };
+  footer.runs[3]!.field = { type: "NUMPAGES" };
 
   const paragraphs = [
     createEditorParagraphFromRuns([{ text: "texto muito colado ne?" }]),
@@ -77,7 +86,20 @@ function buildCanonicalWordParityDocument() {
     ]),
   );
 
-  return createEditorDocument(paragraphs, A4_PAGE_SETTINGS, undefined, WORD_BASELINE_STYLES);
+  return createEditorDocument(
+    [],
+    A4_PAGE_SETTINGS,
+    [
+      {
+        id: "section:1",
+        blocks: paragraphs,
+        header: [header],
+        footer: [footer],
+        pageSettings: A4_PAGE_SETTINGS,
+      },
+    ],
+    WORD_BASELINE_STYLES,
+  );
 }
 
 describeWordParity("Word layout parity", () => {

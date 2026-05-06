@@ -383,6 +383,79 @@ describe("exportEditorDocumentToDocx", () => {
     expect(normalizeEditorDocument(imported)).toEqual(normalizeEditorDocument(document));
   });
 
+  it("exports real header/footer parts and preserves them on single-section round-trip", async () => {
+    const header = createEditorParagraphFromRuns([{ text: "Cabecalho " }, { text: "1" }]);
+    header.runs[1]!.field = { type: "PAGE" };
+    const footer = createEditorParagraphFromRuns([
+      { text: "Pagina " },
+      { text: "1" },
+      { text: " de " },
+      { text: "1" },
+    ]);
+    footer.runs[1]!.field = { type: "PAGE" };
+    footer.runs[3]!.field = { type: "NUMPAGES" };
+    const body = createEditorParagraphFromRuns([{ text: "Corpo" }]);
+    const document = createEditorDocument([], undefined, [
+      {
+        id: "section:1",
+        blocks: [body],
+        header: [header],
+        footer: [footer],
+        pageSettings: {
+          width: 794,
+          height: 1123,
+          orientation: "portrait",
+          margins: {
+            top: 96,
+            right: 96,
+            bottom: 96,
+            left: 96,
+            header: 48,
+            footer: 48,
+            gutter: 0,
+          },
+        },
+      },
+    ]);
+
+    const buffer = await exportEditorDocumentToDocx(document);
+    const zip = await JSZip.loadAsync(buffer);
+    const contentTypes = await zip.file("[Content_Types].xml")?.async("string");
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+    const relsXml = await zip.file("word/_rels/document.xml.rels")?.async("string");
+    const headerXml = await zip.file("word/header1.xml")?.async("string");
+    const footerXml = await zip.file("word/footer1.xml")?.async("string");
+
+    expect(contentTypes).toContain("/word/header1.xml");
+    expect(contentTypes).toContain("/word/footer1.xml");
+    expect(documentXml).toContain("<w:headerReference");
+    expect(documentXml).toContain("<w:footerReference");
+    expect(relsXml).toContain('/header" Target="header1.xml"');
+    expect(relsXml).toContain('/footer" Target="footer1.xml"');
+    expect(headerXml).toContain("Cabecalho");
+    expect(headerXml).toContain('w:instr=" PAGE "');
+    expect(footerXml).toContain('w:instr=" NUMPAGES "');
+
+    resetEditorIds();
+    const imported = await importDocxToEditorDocument(buffer);
+    expect(imported.sections).toHaveLength(1);
+    expect(imported.blocks).toHaveLength(0);
+    const importedSection = imported.sections![0]!;
+    const importedHeader = importedSection.header?.[0];
+    const importedFooter = importedSection.footer?.[0];
+    expect(importedHeader?.type).toBe("paragraph");
+    expect(importedFooter?.type).toBe("paragraph");
+    if (importedHeader?.type !== "paragraph" || importedFooter?.type !== "paragraph") {
+      throw new Error("Expected paragraph header/footer blocks");
+    }
+
+    expect(getParagraphText(importedHeader)).toBe("Cabecalho 1");
+    expect(importedHeader.runs[1]?.field).toEqual({ type: "PAGE" });
+    expect(getParagraphText(importedFooter)).toBe("Pagina 1 de 1");
+    expect(importedFooter.runs[1]?.field).toEqual({ type: "PAGE" });
+    expect(importedFooter.runs[3]?.field).toEqual({ type: "NUMPAGES" });
+  });
+
   it("exports and reimports mixed table spans", async () => {
     const mergedTopCell = createEditorTableCell(
       [createEditorParagraphFromRuns([{ text: "Merged" }])],

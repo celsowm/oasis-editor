@@ -110,4 +110,53 @@ describe("exportMultiSection", () => {
     const sections = getDocumentSections(imported);
     expect(sections.length).toBeGreaterThanOrEqual(1);
   });
+
+  it("exports different header/footer references per section", async () => {
+    const s1Block = createEditorParagraph("Section 1");
+    const s2Block = createEditorParagraph("Section 2");
+    const h1 = createEditorParagraph("Header 1");
+    const h2 = createEditorParagraph("Header 2");
+    const f1 = createEditorParagraph("Footer 1");
+    const f2 = createEditorParagraph("Footer 2");
+
+    const doc = createEditorDocument([]);
+    (doc as any).sections = [
+      {
+        id: "section:1",
+        blocks: [s1Block],
+        header: [h1],
+        footer: [f1],
+        pageSettings: { width: 816, height: 1056, margins: defaultMargins },
+      },
+      {
+        id: "section:2",
+        blocks: [s2Block],
+        header: [h2],
+        footer: [f2],
+        pageSettings: { width: 816, height: 1056, margins: defaultMargins },
+      },
+    ];
+
+    const buffer = await exportEditorDocumentToDocx(doc);
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+    const relsXml = await zip.file("word/_rels/document.xml.rels")?.async("string");
+    const header1 = await zip.file("word/header1.xml")?.async("string");
+    const header2 = await zip.file("word/header2.xml")?.async("string");
+    const footer1 = await zip.file("word/footer1.xml")?.async("string");
+    const footer2 = await zip.file("word/footer2.xml")?.async("string");
+
+    expect(documentXml).toContain('w:headerReference w:type="default" r:id="rIdHeader1"');
+    expect(documentXml).toContain('w:headerReference w:type="default" r:id="rIdHeader2"');
+    expect(documentXml).toContain('w:footerReference w:type="default" r:id="rIdFooter1"');
+    expect(documentXml).toContain('w:footerReference w:type="default" r:id="rIdFooter2"');
+    expect(relsXml).toContain('Target="header1.xml"');
+    expect(relsXml).toContain('Target="header2.xml"');
+    expect(relsXml).toContain('Target="footer1.xml"');
+    expect(relsXml).toContain('Target="footer2.xml"');
+    expect(header1).toContain("Header 1");
+    expect(header2).toContain("Header 2");
+    expect(footer1).toContain("Footer 1");
+    expect(footer2).toContain("Footer 2");
+  });
 });

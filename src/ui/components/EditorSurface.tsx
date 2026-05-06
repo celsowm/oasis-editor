@@ -2,11 +2,8 @@ import { For, Show } from "solid-js";
 import type { Accessor } from "solid-js";
 import {
   getPageBodyTop,
-  getPageContentWidth,
   getPageContentHeight,
-  getPageFooterZoneHeight,
-  getPageFooterZoneTop,
-  getPageHeaderZoneHeight,
+  getPageContentWidth,
   getPageHeaderZoneTop,
   type EditorLayoutParagraph,
   type EditorParagraphNode,
@@ -859,12 +856,14 @@ export function EditorSurface(props: EditorSurfaceProps) {
         {(page, index) => {
           const pageSettings = page.pageSettings;
           const contentWidth = getPageContentWidth(pageSettings);
-          const contentHeight = getPageContentHeight(pageSettings);
-          const bodyTop = getPageBodyTop(pageSettings);
+          const bodyTop = page.bodyTop ?? getPageBodyTop(pageSettings);
+          const bodyBottom = page.bodyBottom ?? bodyTop + getPageContentHeight(pageSettings);
+          const contentHeight = Math.max(24, Math.floor(bodyBottom - bodyTop));
           const headerZoneTop = getPageHeaderZoneTop(pageSettings);
-          const headerZoneHeight = getPageHeaderZoneHeight(pageSettings);
-          const footerZoneTop = getPageFooterZoneTop(pageSettings);
-          const footerZoneHeight = getPageFooterZoneHeight(pageSettings);
+          const headerZoneHeight = Math.max(0, bodyTop - headerZoneTop);
+          const footerZoneTop = bodyBottom;
+          const footerZoneHeight = Math.max(0, pageSettings.height - footerZoneTop);
+          const headerContentOffset = Math.min(pageSettings.margins.header, headerZoneHeight);
 
           return (
             <>
@@ -905,40 +904,42 @@ export function EditorSurface(props: EditorSurfaceProps) {
                     top: `${headerZoneHeight}px`,
                   }}
                 />
-                <For each={page.headerBlocks}>
-                  {(block) => {
-                    return block.sourceBlock.type === "paragraph"
-                      ? renderParagraph(
-                          block.sourceBlock,
-                          paragraphIndexById().get(block.sourceBlock.id) ?? 0,
-                          listMarkers().get(block.sourceBlock.id) ?? null,
-                          block.layout,
-                          block.blockId,
-                          props.state(),
-                          props.onParagraphMouseDown,
-                          props.onImageMouseDown,
-                          props.onImageResizeHandleMouseDown,
-                          props.onTableDragHandleMouseDown,
-                          props.onRevisionMouseEnter,
-                          props.onRevisionMouseLeave,
-                          { testId: "editor-header-block" },
-                        )
-                      : renderTable(
-                          block.sourceBlock,
-                          block.blockId,
-                          paragraphIndexById(),
-                          listMarkers(),
-                          props.state(),
-                          props.onParagraphMouseDown,
-                          props.onImageMouseDown,
-                          props.onImageResizeHandleMouseDown,
-                          props.onTableDragHandleMouseDown,
-                          props.onRevisionMouseEnter,
-                          props.onRevisionMouseLeave,
-                          block.tableSegment,
-                        );
-                  }}
-                </For>
+                <div style={{ "padding-top": `${headerContentOffset}px` }}>
+                  <For each={page.headerBlocks}>
+                    {(block) => {
+                      return block.sourceBlock.type === "paragraph"
+                        ? renderParagraph(
+                            block.sourceBlock,
+                            paragraphIndexById().get(block.sourceBlock.id) ?? 0,
+                            listMarkers().get(block.sourceBlock.id) ?? null,
+                            block.layout,
+                            block.blockId,
+                            props.state(),
+                            props.onParagraphMouseDown,
+                            props.onImageMouseDown,
+                            props.onImageResizeHandleMouseDown,
+                            props.onTableDragHandleMouseDown,
+                            props.onRevisionMouseEnter,
+                            props.onRevisionMouseLeave,
+                            { testId: "editor-header-block" },
+                          )
+                        : renderTable(
+                            block.sourceBlock,
+                            block.blockId,
+                            paragraphIndexById(),
+                            listMarkers(),
+                            props.state(),
+                            props.onParagraphMouseDown,
+                            props.onImageMouseDown,
+                            props.onImageResizeHandleMouseDown,
+                            props.onTableDragHandleMouseDown,
+                            props.onRevisionMouseEnter,
+                            props.onRevisionMouseLeave,
+                            block.tableSegment,
+                          );
+                    }}
+                  </For>
+                </div>
               </div>
               <div
                 class="oasis-editor-surface"

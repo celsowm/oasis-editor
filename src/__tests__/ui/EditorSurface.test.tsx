@@ -657,20 +657,20 @@ describe("EditorSurface", () => {
     expect(surface.style.marginBottom).toBe("144px");
     expect(surface.style.marginLeft).toBe("130px");
     expect(headerZone.style.width).toBe("830px");
-    expect(headerZone.style.top).toBe("24px");
-    expect(headerZone.style.height).toBe("24px");
+    expect(headerZone.style.top).toBe("0px");
+    expect(headerZone.style.height).toBe("48px");
     expect(headerZone.style.left).toBe("130px");
-    expect(headerGuide.style.top).toBe("24px");
+    expect(headerGuide.style.top).toBe("48px");
     expect(footerZone.style.width).toBe("830px");
     expect(footerZone.style.top).toBe("672px");
-    expect(footerZone.style.height).toBe("108px");
+    expect(footerZone.style.height).toBe("144px");
     expect(footerZone.style.left).toBe("130px");
-    expect(footerGuide.style.bottom).toBe("108px");
+    expect(footerGuide.style.bottom).toBe("144px");
 
     dispose();
   });
 
-  it("clamps body height when header or footer intrude past the body margins", () => {
+  it("keeps the full margin area editable for header and footer zones", () => {
     const container = document.createElement("div");
     const paragraph = createEditorParagraphFromRuns([{ text: "Overlap" }]);
     const state: EditorState = {
@@ -721,17 +721,17 @@ describe("EditorSurface", () => {
     const footerZone = container.querySelector('[data-testid="editor-page-footer-zone"]') as HTMLDivElement;
     const surface = container.querySelector('[data-testid="editor-surface"]') as HTMLDivElement;
 
-    expect(headerZone.style.top).toBe("120px");
-    expect(headerZone.style.height).toBe("0px");
-    expect(surface.style.marginTop).toBe("120px");
-    expect(surface.style.minHeight).toBe("816px");
+    expect(headerZone.style.top).toBe("0px");
+    expect(headerZone.style.height).toBe("96px");
+    expect(surface.style.marginTop).toBe("96px");
+    expect(surface.style.minHeight).toBe("840px");
     expect(footerZone.style.top).toBe("936px");
-    expect(footerZone.style.height).toBe("0px");
+    expect(footerZone.style.height).toBe("120px");
 
     dispose();
   });
 
-  it("keeps a narrow editable header band when header is close to the top margin", () => {
+  it("keeps the header editable across the full top margin even when the reference is close to the body", () => {
     const container = document.createElement("div");
     const paragraph = createEditorParagraphFromRuns([{ text: "Tight" }]);
     const state: EditorState = {
@@ -782,9 +782,9 @@ describe("EditorSurface", () => {
     const headerGuide = container.querySelector(".oasis-editor-page-header-guide") as HTMLDivElement;
     const surface = container.querySelector('[data-testid="editor-surface"]') as HTMLDivElement;
 
-    expect(headerZone.style.top).toBe("90px");
-    expect(headerZone.style.height).toBe("6px");
-    expect(headerGuide.style.top).toBe("6px");
+    expect(headerZone.style.top).toBe("0px");
+    expect(headerZone.style.height).toBe("96px");
+    expect(headerGuide.style.top).toBe("96px");
     expect(surface.style.marginTop).toBe("96px");
 
     dispose();

@@ -60,9 +60,14 @@ describe("Sections Layout", () => {
       ]
     };
     
-    // pageContentHeight = 100 - 20 - 20 = 60
-    // bodyP1 height (estimated) is > 30 usually, so two body paragraphs should split into two pages
-    const layout = projectDocumentLayout(doc, 60);
+    const layout = projectDocumentLayout(
+      doc,
+      60,
+      {
+        [bodyP1.id]: 40,
+        [bodyP2.id]: 40,
+      },
+    );
     
     expect(layout.pages.length).toBeGreaterThanOrEqual(2);
     for (const page of layout.pages) {
@@ -73,7 +78,7 @@ describe("Sections Layout", () => {
     }
   });
 
-  it("reduces body pagination height when header or footer cross into the body area", () => {
+  it("reduces body pagination height when the footer reference crosses into the body area", () => {
     const table1 = createEditorTable([
       createEditorTableRow([createEditorTableCell([createEditorParagraphFromRuns([{ text: "A1" }])])]),
     ]);
@@ -91,7 +96,7 @@ describe("Sections Layout", () => {
           pageSettings: {
             width: 816,
             height: 150,
-            margins: { top: 20, right: 20, bottom: 20, left: 20, header: 30, footer: 10, gutter: 0 },
+            margins: { top: 20, right: 20, bottom: 20, left: 20, header: 10, footer: 30, gutter: 0 },
           },
         },
       ],
@@ -106,5 +111,38 @@ describe("Sections Layout", () => {
     expect(layout.pages[0].maxHeight).toBe(100);
     expect(layout.pages[0].blocks).toHaveLength(1);
     expect(layout.pages[1].blocks).toHaveLength(1);
+  });
+
+  it("pushes the body down when header content is taller than the top margin", () => {
+    const header1 = createEditorParagraph("Header 1");
+    const header2 = createEditorParagraph("Header 2");
+    const body = createEditorParagraph("Body");
+
+    const doc = {
+      id: "doc:1",
+      blocks: [],
+      sections: [
+        {
+          id: "section:1",
+          header: [header1, header2],
+          blocks: [body],
+          pageSettings: {
+            width: 816,
+            height: 200,
+            margins: { top: 20, right: 20, bottom: 20, left: 20, header: 10, footer: 10, gutter: 0 },
+          },
+        },
+      ],
+    };
+
+    const layout = projectDocumentLayout(doc, undefined, {
+      [header1.id]: 18,
+      [header2.id]: 18,
+      [body.id]: 20,
+    });
+
+    expect(layout.pages).toHaveLength(1);
+    expect(layout.pages[0]?.bodyTop).toBe(46);
+    expect(layout.pages[0]?.maxHeight).toBe(134);
   });
 });

@@ -123,6 +123,7 @@ describe("editor commands with sections", () => {
 
   it("splitBlockAtSelection splits within the active zone", () => {
     const headerP = createEditorParagraph("HeaderLine1");
+    headerP.style = { styleId: "header", spacingAfter: 0 };
     const bodyP = createEditorParagraph("Body");
 
     const state: EditorState = {
@@ -151,6 +152,8 @@ describe("editor commands with sections", () => {
     expect(newSection.header).toHaveLength(2);
     expect((newSection.header![0] as EditorParagraphNode).runs[0].text).toBe("Heade");
     expect((newSection.header![1] as EditorParagraphNode).runs[0].text).toBe("rLine1");
+    expect((newSection.header![0] as EditorParagraphNode).style).toEqual({ styleId: "header", spacingAfter: 0 });
+    expect((newSection.header![1] as EditorParagraphNode).style).toEqual({ styleId: "header", spacingAfter: 0 });
     // Body unchanged
     expect((newSection.blocks[0] as EditorParagraphNode).runs[0].text).toBe("Body");
   });

@@ -16,6 +16,8 @@ import type {
 } from "../core/model.js";
 import {
   getDocumentSections,
+  getPageBodyBottom,
+  getPageBodyTop,
   getPageContentWidth,
   getPageContentHeight,
   getParagraphText,
@@ -504,14 +506,15 @@ function projectHeaderFooterBlocks(
   return blocks.map((block, index) => {
     if (block.type === "paragraph") {
       const layout = projectParagraphLayout(block, pageIndex, totalPages, styles, contentWidth);
-      // We ignore measured layouts for headers/footers in the first pass for simplicity
+      const estimatedHeight =
+        measuredHeights?.[block.id] ?? estimateParagraphBlockHeight(block, styles, contentWidth);
       return {
         blockId: block.id,
         sourceBlockId: block.id,
         blockType: block.type,
         paragraphId: block.id,
         globalIndex: index,
-        estimatedHeight: estimateParagraphBlockHeight(block, styles, contentWidth),
+        estimatedHeight,
         layout,
         sourceBlock: block,
       };
@@ -521,10 +524,47 @@ function projectHeaderFooterBlocks(
       sourceBlockId: block.id,
       blockType: block.type,
       globalIndex: index,
-      estimatedHeight: estimateTableBlockHeight(block, styles),
+      estimatedHeight:
+        measuredHeights?.[block.id] ?? estimateTableBlockHeight(block, styles, contentWidth),
       sourceBlock: block,
     };
   });
+}
+
+function getProjectedBlocksHeight(blocks: EditorLayoutBlock[] | undefined): number {
+  if (!blocks || blocks.length === 0) {
+    return 0;
+  }
+  return blocks.reduce((sum, block) => sum + block.estimatedHeight, 0);
+}
+
+function resolveEffectiveVerticalMetrics(
+  pageSettings: EditorPageSettings,
+  headerBlocks: EditorLayoutBlock[] | undefined,
+  footerBlocks: EditorLayoutBlock[] | undefined,
+): { bodyTop: number; bodyBottom: number; contentHeight: number } {
+  const staticBodyTop = getPageBodyTop(pageSettings);
+  const staticBodyBottom = getPageBodyBottom(pageSettings);
+  const headerHeight = getProjectedBlocksHeight(headerBlocks);
+  const footerHeight = getProjectedBlocksHeight(footerBlocks);
+  const headerOccupiedBottom =
+    headerHeight > 0
+      ? Math.min(pageSettings.height, pageSettings.margins.header + headerHeight)
+      : 0;
+  const footerOccupiedTop =
+    footerHeight > 0
+      ? Math.max(0, pageSettings.height - (pageSettings.margins.footer + footerHeight))
+      : pageSettings.height;
+  const bodyTop = Math.max(staticBodyTop, headerOccupiedBottom);
+  const bodyBottom = Math.max(
+    bodyTop,
+    Math.min(staticBodyBottom, footerOccupiedTop),
+  );
+  return {
+    bodyTop,
+    bodyBottom,
+    contentHeight: Math.max(24, Math.floor(bodyBottom - bodyTop)),
+  };
 }
 
 function projectBlocksLayout(
@@ -845,7 +885,35 @@ export function projectDocumentLayout(
     let currentTotal = 0;
     let activePages: EditorLayoutPage[] = [];
     for (const section of sections) {
-      const pageHeight = maxPageHeightOverride ?? getPageContentHeight(section.pageSettings);
+      const contentWidth = getPageContentWidth(section.pageSettings);
+      const headerBlocks = section.header
+        ? projectHeaderFooterBlocks(
+            section.header,
+            undefined,
+            undefined,
+            measuredHeights,
+            measuredParagraphLayouts,
+            document.styles,
+            contentWidth,
+          )
+        : undefined;
+      const footerBlocks = section.footer
+        ? projectHeaderFooterBlocks(
+            section.footer,
+            undefined,
+            undefined,
+            measuredHeights,
+            measuredParagraphLayouts,
+            document.styles,
+            contentWidth,
+          )
+        : undefined;
+      const metrics = resolveEffectiveVerticalMetrics(
+        section.pageSettings,
+        headerBlocks,
+        footerBlocks,
+      );
+      const pageHeight = maxPageHeightOverride ?? metrics.contentHeight;
       const isContinuous = section.breakType === "continuous" && activePages.length > 0;
       
       const sectionPages = projectBlocksLayout(
@@ -876,7 +944,35 @@ export function projectDocumentLayout(
   const allPages: EditorLayoutPage[] = [];
 
   for (const section of sections) {
-    const pageHeight = maxPageHeightOverride ?? getPageContentHeight(section.pageSettings);
+    const contentWidth = getPageContentWidth(section.pageSettings);
+    const sectionHeaderBlocks = section.header
+      ? projectHeaderFooterBlocks(
+          section.header,
+          undefined,
+          totalPages,
+          measuredHeights,
+          measuredParagraphLayouts,
+          document.styles,
+          contentWidth,
+        )
+      : undefined;
+    const sectionFooterBlocks = section.footer
+      ? projectHeaderFooterBlocks(
+          section.footer,
+          undefined,
+          totalPages,
+          measuredHeights,
+          measuredParagraphLayouts,
+          document.styles,
+          contentWidth,
+        )
+      : undefined;
+    const sectionMetrics = resolveEffectiveVerticalMetrics(
+      section.pageSettings,
+      sectionHeaderBlocks,
+      sectionFooterBlocks,
+    );
+    const pageHeight = maxPageHeightOverride ?? sectionMetrics.contentHeight;
     const isContinuous = section.breakType === "continuous" && allPages.length > 0;
     
     const sectionPages = projectBlocksLayout(
@@ -919,8 +1015,16 @@ export function projectDocumentLayout(
           )
         : page.footerBlocks;
 
+      const pageMetrics = resolveEffectiveVerticalMetrics(
+        page.pageSettings,
+        headerBlocks,
+        footerBlocks,
+      );
       page.headerBlocks = headerBlocks;
       page.footerBlocks = footerBlocks;
+      page.bodyTop = pageMetrics.bodyTop;
+      page.bodyBottom = pageMetrics.bodyBottom;
+      page.maxHeight = maxPageHeightOverride ?? pageMetrics.contentHeight;
       allPages.push(page);
     }
   }

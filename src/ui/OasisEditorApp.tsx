@@ -183,6 +183,12 @@ import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import type { EditorToolbarCtx } from "./components/Toolbar/types.js";
 import { setLocale } from "../i18n/index.js";
 
+function createSectionBoundaryParagraph(zone: "header" | "footer"): EditorParagraphNode {
+  const paragraph = createEditorParagraph("");
+  paragraph.style = { styleId: zone };
+  return paragraph;
+}
+
 interface ActiveImageResize {
   paragraphId: string;
   paragraphOffset: number;
@@ -1363,8 +1369,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           !updatedDocument.sections ||
           updatedDocument.sections.length === 0
         ) {
-          const headerParagraph = createEditorParagraph("");
-          const footerParagraph = createEditorParagraph("");
+          const headerParagraph = createSectionBoundaryParagraph("header");
+          const footerParagraph = createSectionBoundaryParagraph("footer");
           updatedDocument = {
             ...updatedDocument,
             sections: [
@@ -1392,7 +1398,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
         if (targetZone === "header") {
           if (!newHeader || newHeader.length === 0) {
-            zoneParagraph = createEditorParagraph("");
+            zoneParagraph = createSectionBoundaryParagraph("header");
             newHeader = [zoneParagraph];
           } else {
             const firstBlock = newHeader[0];
@@ -1403,7 +1409,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           }
         } else if (targetZone === "footer") {
           if (!newFooter || newFooter.length === 0) {
-            zoneParagraph = createEditorParagraph("");
+            zoneParagraph = createSectionBoundaryParagraph("footer");
             newFooter = [zoneParagraph];
           } else {
             const firstBlock = newFooter[0];
@@ -1609,8 +1615,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           !updatedDocument.sections ||
           updatedDocument.sections.length === 0
         ) {
-          const headerParagraph = createEditorParagraph("");
-          const footerParagraph = createEditorParagraph("");
+          const headerParagraph = createSectionBoundaryParagraph("header");
+          const footerParagraph = createSectionBoundaryParagraph("footer");
           updatedDocument = {
             ...updatedDocument,
             sections: [
@@ -1638,7 +1644,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
         if (targetZone === "header") {
           if (!newHeader || newHeader.length === 0) {
-            zoneParagraph = createEditorParagraph("");
+            zoneParagraph = createSectionBoundaryParagraph("header");
             newHeader = [zoneParagraph];
           } else {
             const firstBlock = newHeader[0];
@@ -1649,7 +1655,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           }
         } else if (targetZone === "footer") {
           if (!newFooter || newFooter.length === 0) {
-            zoneParagraph = createEditorParagraph("");
+            zoneParagraph = createSectionBoundaryParagraph("footer");
             newFooter = [zoneParagraph];
           } else {
             const firstBlock = newFooter[0];

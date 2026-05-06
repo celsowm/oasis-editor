@@ -5,7 +5,13 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { EditorDocument } from "../core/model.js";
-import { getPageBodyTop, getPageContentHeight } from "../core/model.js";
+import {
+  getPageBodyTop,
+  getPageContentHeight,
+  getPageFooterReferenceTop,
+  getPageFooterZoneTop,
+  getPageHeaderZoneTop,
+} from "../core/model.js";
 import { exportEditorDocumentToDocx } from "../export/docx/exportEditorDocumentToDocx.js";
 import { projectDocumentLayout } from "../ui/layoutProjection.js";
 
@@ -53,9 +59,15 @@ interface WordPdfLayout {
 }
 
 interface EditorPageSnapshot {
-  lineTexts: string[];
+  headerLineTexts: string[];
+  bodyLineTexts: string[];
+  footerLineTexts: string[];
+  headerTop: number;
   bodyTop: number;
   bodyHeight: number;
+  footerTop: number;
+  footerReferenceTop: number;
+  pageHeight: number;
 }
 
 export interface WordLayoutParityResult {
@@ -135,11 +147,36 @@ function collectEditorPageSnapshots(document: EditorDocument): EditorPageSnapsho
         .map((line) => normalizeLineText(line.fragments.map((fragment) => fragment.text).join("")))
         .filter((line) => line.length > 0);
     });
+    const headerLineTexts = (page.headerBlocks ?? []).flatMap((block) => {
+      if (!block.layout) {
+        return [];
+      }
+      return block.layout.lines
+        .map((line) => normalizeLineText(line.fragments.map((fragment) => fragment.text).join("")))
+        .filter((line) => line.length > 0);
+    });
+    const footerLineTexts = (page.footerBlocks ?? []).flatMap((block) => {
+      if (!block.layout) {
+        return [];
+      }
+      return block.layout.lines
+        .map((line) => normalizeLineText(line.fragments.map((fragment) => fragment.text).join("")))
+        .filter((line) => line.length > 0);
+    });
 
     return {
-      lineTexts,
-      bodyTop: getPageBodyTop(page.pageSettings),
-      bodyHeight: getPageContentHeight(page.pageSettings),
+      headerLineTexts,
+      bodyLineTexts: lineTexts,
+      footerLineTexts,
+      headerTop: getPageHeaderZoneTop(page.pageSettings),
+      bodyTop: page.bodyTop ?? getPageBodyTop(page.pageSettings),
+      bodyHeight:
+        page.bodyBottom !== undefined && page.bodyTop !== undefined
+          ? page.bodyBottom - page.bodyTop
+          : getPageContentHeight(page.pageSettings),
+      footerTop: page.bodyBottom ?? getPageFooterZoneTop(page.pageSettings),
+      footerReferenceTop: getPageFooterReferenceTop(page.pageSettings),
+      pageHeight: page.pageSettings.height,
     };
   });
 }
@@ -190,13 +227,22 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
         const importModule = (specifier: string) =>
           // `eval` keeps TypeScript from trying to resolve Vite-only browser module specifiers.
           (0, eval)(`import(${JSON.stringify(specifier)})`) as Promise<Record<string, any>>;
-        const [{ projectDocumentLayout }, { getPageBodyTop, getPageContentHeight }] = await Promise.all([
+        const [
+          { projectDocumentLayout },
+          {
+            getPageBodyTop,
+            getPageContentHeight,
+            getPageFooterReferenceTop,
+            getPageFooterZoneTop,
+            getPageHeaderZoneTop,
+          },
+        ] = await Promise.all([
           importModule("/src/ui/layoutProjection.ts"),
           importModule("/src/core/model.ts"),
         ]);
         const layout = projectDocumentLayout(inputDocument);
         return layout.pages.map((page: any) => ({
-          lineTexts: page.blocks.flatMap((block: any) => {
+          headerLineTexts: (page.headerBlocks ?? []).flatMap((block: any) => {
             if (!block.layout) {
               return [];
             }
@@ -207,8 +253,37 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
               )
               .filter((line: string) => line.length > 0);
           }),
-          bodyTop: getPageBodyTop(page.pageSettings),
-          bodyHeight: getPageContentHeight(page.pageSettings),
+          bodyLineTexts: page.blocks.flatMap((block: any) => {
+            if (!block.layout) {
+              return [];
+            }
+
+            return block.layout.lines
+              .map((line: any) =>
+                line.fragments.map((fragment: any) => fragment.text).join("").replace(/\s+/g, " ").trim(),
+              )
+              .filter((line: string) => line.length > 0);
+          }),
+          footerLineTexts: (page.footerBlocks ?? []).flatMap((block: any) => {
+            if (!block.layout) {
+              return [];
+            }
+
+            return block.layout.lines
+              .map((line: any) =>
+                line.fragments.map((fragment: any) => fragment.text).join("").replace(/\s+/g, " ").trim(),
+              )
+              .filter((line: string) => line.length > 0);
+          }),
+          headerTop: getPageHeaderZoneTop(page.pageSettings),
+          bodyTop: page.bodyTop ?? getPageBodyTop(page.pageSettings),
+          bodyHeight:
+            page.bodyBottom !== undefined && page.bodyTop !== undefined
+              ? page.bodyBottom - page.bodyTop
+              : getPageContentHeight(page.pageSettings),
+          footerTop: page.bodyBottom ?? getPageFooterZoneTop(page.pageSettings),
+          footerReferenceTop: getPageFooterReferenceTop(page.pageSettings),
+          pageHeight: page.pageSettings.height,
         }));
       }, document);
 
@@ -292,26 +367,45 @@ function compareWordAndEditorLayout(
   for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
     const editorPage = editorPages[pageIndex]!;
     const wordPage = wordLayout.pages[pageIndex]!;
-    const wordLines = wordPage.lines
-      .filter((line) => line.y >= editorPage.bodyTop * PX_TO_POINTS - 1)
+    const headerLimit = editorPage.bodyTop * PX_TO_POINTS - 1;
+    const footerStart = editorPage.footerTop * PX_TO_POINTS - 1;
+    const footerEnd = editorPage.pageHeight * PX_TO_POINTS + 1;
+    const wordHeaderLines = wordPage.lines
+      .filter((line) => line.y >= editorPage.headerTop * PX_TO_POINTS - 1 && line.y < headerLimit)
+      .map((line) => normalizeLineText(line.text))
+      .filter((line) => line.length > 0);
+    const wordBodyLines = wordPage.lines
+      .filter((line) => line.y >= editorPage.bodyTop * PX_TO_POINTS - 1 && line.y < footerStart)
+      .map((line) => normalizeLineText(line.text))
+      .filter((line) => line.length > 0);
+    const wordFooterLines = wordPage.lines
+      .filter((line) => line.y >= footerStart && line.y <= footerEnd)
       .map((line) => normalizeLineText(line.text))
       .filter((line) => line.length > 0);
 
-    if (editorPage.lineTexts.length !== wordLines.length) {
-      mismatches.push(
-        `Page ${pageIndex + 1} line count mismatch: editor=${editorPage.lineTexts.length}, word=${wordLines.length}.`,
-      );
-      continue;
-    }
+    const zones = [
+      { name: "header", editorLines: editorPage.headerLineTexts, wordLines: wordHeaderLines },
+      { name: "body", editorLines: editorPage.bodyLineTexts, wordLines: wordBodyLines },
+      { name: "footer", editorLines: editorPage.footerLineTexts, wordLines: wordFooterLines },
+    ];
 
-    for (let lineIndex = 0; lineIndex < editorPage.lineTexts.length; lineIndex += 1) {
-      const editorLine = editorPage.lineTexts[lineIndex]!;
-      const wordLine = wordLines[lineIndex]!;
-      if (editorLine !== wordLine) {
+    for (const zone of zones) {
+      if (zone.editorLines.length !== zone.wordLines.length) {
         mismatches.push(
-          `Page ${pageIndex + 1} line ${lineIndex + 1} text mismatch: editor="${editorLine}" word="${wordLine}".`,
+          `Page ${pageIndex + 1} ${zone.name} line count mismatch: editor=${zone.editorLines.length}, word=${zone.wordLines.length}.`,
         );
         break;
+      }
+
+      for (let lineIndex = 0; lineIndex < zone.editorLines.length; lineIndex += 1) {
+        const editorLine = zone.editorLines[lineIndex]!;
+        const wordLine = zone.wordLines[lineIndex]!;
+        if (editorLine !== wordLine) {
+          mismatches.push(
+            `Page ${pageIndex + 1} ${zone.name} line ${lineIndex + 1} text mismatch: editor="${editorLine}" word="${wordLine}".`,
+          );
+          break;
+        }
       }
     }
   }

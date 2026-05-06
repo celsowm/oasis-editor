@@ -26,6 +26,7 @@ import {
 } from "../../core/model.js";
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 const TWIPS_PER_INCH = 1440;
 const PX_PER_INCH = 96;
 
@@ -176,8 +177,8 @@ interface SectionProperties {
 interface ParsedSection {
   blocks: EditorBlockNode[];
   pageSettings: EditorPageSettings;
-  header: EditorParagraphNode[];
-  footer: EditorParagraphNode[];
+  header: EditorBlockNode[];
+  footer: EditorBlockNode[];
 }
 
 function parseSectionProperties(sectPr: XmlElement): SectionProperties {
@@ -215,11 +216,19 @@ function parseSectionProperties(sectPr: XmlElement): SectionProperties {
 
   const headerRef = getFirstChildByTagNameNS(sectPr, WORD_NS, "headerReference");
   const footerRef = getFirstChildByTagNameNS(sectPr, WORD_NS, "footerReference");
+  const headerRId =
+    headerRef?.getAttribute("r:id") ??
+    headerRef?.getAttributeNS(OFFICE_REL_NS, "id") ??
+    null;
+  const footerRId =
+    footerRef?.getAttribute("r:id") ??
+    footerRef?.getAttributeNS(OFFICE_REL_NS, "id") ??
+    null;
 
   return {
     pageSettings,
-    headerRId: headerRef ? getAttributeValue(headerRef, "id") : null,
-    footerRId: footerRef ? getAttributeValue(footerRef, "id") : null,
+    headerRId,
+    footerRId,
   };
 }
 
@@ -228,7 +237,7 @@ async function parseHeaderFooterXml(
   numberingMaps: NumberingMaps,
   zip: JSZip,
   relsMap: Map<string, string>,
-): Promise<EditorParagraphNode[]> {
+): Promise<EditorBlockNode[]> {
   if (!xmlContent) {
     return [];
   }
@@ -239,7 +248,7 @@ async function parseHeaderFooterXml(
     return [];
   }
 
-  const paragraphs: EditorParagraphNode[] = [];
+  const blocks: EditorBlockNode[] = [];
   for (let index = 0; index < root.childNodes.length; index += 1) {
     const node = root.childNodes[index];
     if (node?.nodeType !== node.ELEMENT_NODE) {
@@ -247,10 +256,12 @@ async function parseHeaderFooterXml(
     }
     const element = node as XmlElement;
     if (element.localName === "p" && element.namespaceURI === WORD_NS) {
-      paragraphs.push(await parseParagraphNode(element, numberingMaps, zip, relsMap));
+      blocks.push(await parseParagraphNode(element, numberingMaps, zip, relsMap));
+    } else if (element.localName === "tbl" && element.namespaceURI === WORD_NS) {
+      blocks.push(await parseTableNode(element, numberingMaps, zip, relsMap));
     }
   }
-  return paragraphs;
+  return blocks;
 }
 
 function parsePageSettings(body: XmlElement | undefined): EditorPageSettings | undefined {
@@ -590,7 +601,12 @@ async function parseRunsContainer(
   relsMap: Map<string, string>,
   inheritedLink?: string | null,
 ) {
-  const runs: Array<{ text: string; image?: { src: string; width: number; height: number; alt?: string }; styles?: EditorTextStyle }> = [];
+  const runs: Array<{
+    text: string;
+    image?: { src: string; width: number; height: number; alt?: string };
+    styles?: EditorTextStyle;
+    field?: { type: "PAGE" | "NUMPAGES" };
+  }> = [];
 
   for (let index = 0; index < container.childNodes.length; index += 1) {
     const node = container.childNodes[index];
@@ -614,6 +630,31 @@ async function parseRunsContainer(
         (styles ??= {}).link = inheritedLink;
       }
       runs.push({ text, image, styles });
+      continue;
+    }
+
+    if (element.localName === "fldSimple") {
+      const instr =
+        element.getAttribute("w:instr") ??
+        element.getAttributeNS(WORD_NS, "instr") ??
+        element.getAttribute("instr") ??
+        "";
+      const fieldType =
+        /\bNUMPAGES\b/i.test(instr) ? "NUMPAGES" : /\bPAGE\b/i.test(instr) ? "PAGE" : null;
+      const fieldRuns = await parseRunsContainer(
+        element,
+        numberingMaps,
+        zip,
+        relsMap,
+        inheritedLink,
+      );
+      const displayText = fieldRuns.map((run) => run.text).join("") || "1";
+      const styles = fieldRuns.find((run) => run.styles)?.styles;
+      runs.push({
+        text: displayText,
+        styles,
+        ...(fieldType ? { field: { type: fieldType } } : {}),
+      });
       continue;
     }
 
@@ -651,8 +692,13 @@ async function parseParagraphNode(
   const runs = await parseRunsContainer(paragraphNode, numberingMaps, zip, relsMap);
 
   const paragraph = createEditorParagraphFromRuns(
-    runs.length > 0 ? runs : [{ text: "" }],
+    runs.length > 0 ? runs.map((run) => ({ text: run.text, styles: run.styles, image: run.image })) : [{ text: "" }],
   );
+  runs.forEach((run, index) => {
+    if (run.field) {
+      paragraph.runs[index]!.field = { ...run.field };
+    }
+  });
   paragraph.style = normalizeImportedParagraphStyle(parseParagraphStyle(paragraphProperties));
   for (const run of paragraph.runs) {
     run.styles = normalizeImportedRunStyle(run.styles, paragraph.style?.styleId);
@@ -802,8 +848,8 @@ export async function importDocxToEditorDocument(buffer: ArrayBuffer): Promise<E
     const blocks = sectionBlocks[i] ?? [];
 
     // Load header and footer if referenced
-    let header: EditorParagraphNode[] = [];
-    let footer: EditorParagraphNode[] = [];
+    let header: EditorBlockNode[] = [];
+    let footer: EditorBlockNode[] = [];
 
     if (props.headerRId) {
       const headerTarget = relsMap.get(props.headerRId);
@@ -842,12 +888,17 @@ export async function importDocxToEditorDocument(buffer: ArrayBuffer): Promise<E
     });
   }
 
-  // Create document with sections only if there are multiple sections
-  // For single-section documents, use flat blocks for Solid.js compatibility
-  if (sections.length > 1) {
+  const shouldPreserveSections =
+    sections.length > 1 ||
+    sections.some((section) => (section.header?.length ?? 0) > 0 || (section.footer?.length ?? 0) > 0);
+
+  if (shouldPreserveSections) {
     const doc = createEditorDocument([]);
     (doc as any).sections = sections;
     doc.blocks = [];
+    if (sections.length === 1) {
+      doc.pageSettings = sections[0]!.pageSettings;
+    }
     return doc;
   }
 
