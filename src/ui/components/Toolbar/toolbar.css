@@ -8,7 +8,7 @@
   position: relative;
   min-height: 48px;
   flex-wrap: nowrap;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .oasis-editor-toolbar-group {

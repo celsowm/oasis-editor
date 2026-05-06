@@ -1949,6 +1949,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     performUndo,
     performRedo,
     focusInput,
+    debugToolbarEvent: (control: string, eventName: string, payload?: unknown) => {
+      logger.info(`toolbar:${control}:${eventName}`, payload);
+    },
     clearPreferredColumn,
     resetTransactionGrouping,
     applyTransactionalState,

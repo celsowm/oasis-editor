@@ -33,6 +33,7 @@ export interface EditorToolbarCtx {
   performUndo: () => void;
   performRedo: () => void;
   focusInput: () => void;
+  debugToolbarEvent: (control: string, eventName: string, payload?: unknown) => void;
   clearPreferredColumn: () => void;
   resetTransactionGrouping: () => void;
   applyTransactionalState: (

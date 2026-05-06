@@ -139,10 +139,9 @@
   background: var(--oasis-toolbar-bg);
   border: 1px solid var(--oasis-toolbar-border);
   box-shadow: var(--oasis-toolbar-shadow);
-  backdrop-filter: blur(12px);
   min-height: 48px;
   flex-wrap: nowrap;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .oasis-editor-main-container {

@@ -29,6 +29,10 @@ import { t } from "../../../i18n/index.js";
 
 const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 
+const shouldAllowNativeMouseDown = (target: EventTarget | null): boolean =>
+  target instanceof Element &&
+  target.closest("select, input, textarea, label") !== null;
+
 export function EditorToolbar(props: {
   ctx: EditorToolbarCtx;
   showFileGroup?: boolean;
@@ -41,7 +45,12 @@ export function EditorToolbar(props: {
     <section
       ref={toolbarRef}
       class="oasis-editor-toolbar"
-      onMouseDown={(event) => event.preventDefault()}
+      onMouseDown={(event) => {
+        if (shouldAllowNativeMouseDown(event.target)) {
+          return;
+        }
+        event.preventDefault();
+      }}
     >
       <ToolbarOverflowManager>
         <Show when={showFileGroup()}>

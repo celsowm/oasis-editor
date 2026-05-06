@@ -1,6 +1,5 @@
 import { For } from "solid-js";
 import type { EditorToolbarCtx } from "../types.js";
-import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup } from "../ToolbarGroup.js";
 import { ToolbarSelect } from "../ToolbarSelect.js";
 import { t } from "../../../../i18n/index.js";
@@ -9,6 +8,49 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
   const t_style = () => ctx().toolbarStyleState();
   const state = () => ctx().state;
+  const fontFamilyOptions = () => {
+    const values = new Set<string>([
+      "Arial",
+      "Calibri, sans-serif",
+      "Calibri Light, sans-serif",
+      "Georgia",
+      "Inter",
+      "Times New Roman",
+      "Courier New",
+    ]);
+
+    for (const style of Object.values(state().document.styles ?? {})) {
+      const fontFamily = style.textStyle?.fontFamily?.trim();
+      if (fontFamily) {
+        values.add(fontFamily);
+      }
+    }
+
+    const currentFontFamily = t_style().fontFamily.trim();
+    if (currentFontFamily) {
+      values.add(currentFontFamily);
+    }
+
+    return Array.from(values).sort((a, b) => a.localeCompare(b));
+  };
+
+  const fontSizeOptions = () => {
+    const values = new Set<number>([12, 14, 15, 16, 18, 20, 24, 28, 32]);
+
+    for (const style of Object.values(state().document.styles ?? {})) {
+      const fontSize = style.textStyle?.fontSize;
+      if (typeof fontSize === "number" && Number.isFinite(fontSize)) {
+        values.add(fontSize);
+      }
+    }
+
+    const currentFontSize = Number(t_style().fontSize);
+    if (Number.isFinite(currentFontSize) && currentFontSize > 0) {
+      values.add(currentFontSize);
+    }
+
+    return Array.from(values).sort((a, b) => a - b);
+  };
 
   return (
     <ToolbarGroup>
@@ -27,37 +69,78 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
       <ToolbarSelect
         data-testid="editor-toolbar-font-family"
         value={t_style().fontFamily}
+        onMouseDown={() =>
+          ctx().debugToolbarEvent("font-family", "mousedown", {
+            value: t_style().fontFamily,
+            options: fontFamilyOptions(),
+          })
+        }
+        onClick={() =>
+          ctx().debugToolbarEvent("font-family", "click", {
+            value: t_style().fontFamily,
+            options: fontFamilyOptions(),
+          })
+        }
+        onFocus={() =>
+          ctx().debugToolbarEvent("font-family", "focus", {
+            value: t_style().fontFamily,
+            options: fontFamilyOptions(),
+          })
+        }
         onChange={(event) =>
+          (ctx().debugToolbarEvent("font-family", "change", {
+            previousValue: t_style().fontFamily,
+            nextValue: event.currentTarget.value,
+          }),
           ctx().applyValueStyleCommand("fontFamily", event.currentTarget.value || null)
+          )
         }
         tooltip={t("toolbar.fontFamily")}
       >
         <option value="">{t("toolbar.font")}</option>
-        <option value="Georgia">Georgia</option>
-        <option value="Inter">Inter</option>
-        <option value="Times New Roman">Times New Roman</option>
-        <option value="Courier New">Courier New</option>
+        <For each={fontFamilyOptions()}>
+          {(fontFamily) => <option value={fontFamily}>{fontFamily}</option>}
+        </For>
       </ToolbarSelect>
 
       <ToolbarSelect
         small
         data-testid="editor-toolbar-font-size"
         value={t_style().fontSize}
+        onMouseDown={() =>
+          ctx().debugToolbarEvent("font-size", "mousedown", {
+            value: t_style().fontSize,
+            options: fontSizeOptions(),
+          })
+        }
+        onClick={() =>
+          ctx().debugToolbarEvent("font-size", "click", {
+            value: t_style().fontSize,
+            options: fontSizeOptions(),
+          })
+        }
+        onFocus={() =>
+          ctx().debugToolbarEvent("font-size", "focus", {
+            value: t_style().fontSize,
+            options: fontSizeOptions(),
+          })
+        }
         onChange={(event) =>
+          (ctx().debugToolbarEvent("font-size", "change", {
+            previousValue: t_style().fontSize,
+            nextValue: event.currentTarget.value,
+          }),
           ctx().applyValueStyleCommand(
             "fontSize",
             event.currentTarget.value ? Number(event.currentTarget.value) : null,
-          )
+          ))
         }
         tooltip={t("toolbar.fontSize")}
       >
         <option value="">{t("toolbar.size")}</option>
-        <option value="14">14</option>
-        <option value="16">16</option>
-        <option value="18">18</option>
-        <option value="20">20</option>
-        <option value="24">24</option>
-        <option value="28">28</option>
+        <For each={fontSizeOptions()}>
+          {(fontSize) => <option value={String(fontSize)}>{fontSize}</option>}
+        </For>
       </ToolbarSelect>
 
       <label class="oasis-editor-tool-color" title={t("toolbar.color")}>
