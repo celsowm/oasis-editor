@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { EditorDocument } from "../core/model.js";
 import { getPageBodyTop, getPageContentHeight } from "../core/model.js";
@@ -24,6 +24,7 @@ const POWERSHELL_COMMAND = "powershell.exe";
 const CONVERT_SCRIPT_PATH = fileURLToPath(new URL("../../scripts/convert-docx-to-pdf.ps1", import.meta.url));
 const EXTRACT_SCRIPT_PATH = fileURLToPath(new URL("../../scripts/extract-pdf-lines.py", import.meta.url));
 const PX_TO_POINTS = 72 / 96;
+const PROJECT_ROOT = dirname(fileURLToPath(new URL("../../package.json", import.meta.url)));
 
 export interface WordLayoutSupportStatus {
   supported: boolean;
@@ -143,6 +144,88 @@ function collectEditorPageSnapshots(document: EditorDocument): EditorPageSnapsho
   });
 }
 
+async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Promise<EditorPageSnapshot[] | null> {
+  if (process.env.OASIS_WORD_PARITY_USE_NODE_LAYOUT === "1") {
+    return null;
+  }
+
+  let closeServer: (() => Promise<void>) | undefined;
+  try {
+    const [{ createServer }, { chromium }] = await Promise.all([
+      import("vite"),
+      import("@playwright/test"),
+    ]);
+    const server = await createServer({
+      root: PROJECT_ROOT,
+      logLevel: "error",
+      server: {
+        host: "127.0.0.1",
+        port: 0,
+      },
+    });
+
+    await server.listen();
+    closeServer = () => server.close();
+
+    const baseUrl = server.resolvedUrls?.local?.[0];
+    if (!baseUrl) {
+      return null;
+    }
+
+    const launchBrowser = async () => {
+      try {
+        return await chromium.launch({ channel: "msedge", headless: true });
+      } catch {
+        return chromium.launch({ headless: true });
+      }
+    };
+
+    const browser = await launchBrowser();
+
+    try {
+      const page = await browser.newPage();
+      await page.goto(baseUrl, { waitUntil: "networkidle" });
+
+      const snapshots = await page.evaluate(async (inputDocument) => {
+        const importModule = (specifier: string) =>
+          // `eval` keeps TypeScript from trying to resolve Vite-only browser module specifiers.
+          (0, eval)(`import(${JSON.stringify(specifier)})`) as Promise<Record<string, any>>;
+        const [{ projectDocumentLayout }, { getPageBodyTop, getPageContentHeight }] = await Promise.all([
+          importModule("/src/ui/layoutProjection.ts"),
+          importModule("/src/core/model.ts"),
+        ]);
+        const layout = projectDocumentLayout(inputDocument);
+        return layout.pages.map((page: any) => ({
+          lineTexts: page.blocks.flatMap((block: any) => {
+            if (!block.layout) {
+              return [];
+            }
+
+            return block.layout.lines
+              .map((line: any) =>
+                line.fragments.map((fragment: any) => fragment.text).join("").replace(/\s+/g, " ").trim(),
+              )
+              .filter((line: string) => line.length > 0);
+          }),
+          bodyTop: getPageBodyTop(page.pageSettings),
+          bodyHeight: getPageContentHeight(page.pageSettings),
+        }));
+      }, document);
+
+      return snapshots;
+    } finally {
+      await browser.close();
+    }
+  } catch (error) {
+    if (process.env.OASIS_WORD_PARITY_DEBUG === "1") {
+      console.error("Word parity browser measurement failed:", error);
+    }
+    return null;
+  } finally {
+    await closeServer?.();
+  }
+}
+
 async function convertDocxToPdfWithWord(docxPath: string, pdfPath: string): Promise<void> {
   const result = spawnSync(
     POWERSHELL_COMMAND,
@@ -251,7 +334,9 @@ export async function verifyWordLayoutParity(document: EditorDocument): Promise<
     await writeFile(docxPath, Buffer.from(docxBuffer));
     await convertDocxToPdfWithWord(docxPath, pdfPath);
 
-    const editorPages = collectEditorPageSnapshots(document);
+    const editorPages =
+      (await collectEditorPageSnapshotsInBrowser(document)) ??
+      collectEditorPageSnapshots(document);
     const wordLayout = extractPdfLayout(pdfPath, support);
     const mismatches = compareWordAndEditorLayout(editorPages, wordLayout);
 

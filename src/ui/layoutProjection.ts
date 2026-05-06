@@ -23,6 +23,7 @@ import {
   resolveEffectiveTextStyleForParagraph,
 } from "../core/model.js";
 import { measureLinesFromRects, type CharRect } from "./caretGeometry.js";
+import { composeMeasuredParagraphLines, resolveRenderedLineHeightPx } from "./textMeasurement.js";
 
 const DEFAULT_FONT_SIZE = 15;
 const DEFAULT_LINE_HEIGHT = 1.15;
@@ -54,21 +55,6 @@ function sliceFragmentToRange(
     revision: fragment.revision ? { ...fragment.revision } : undefined,
     chars,
   };
-}
-
-function buildEstimatedLineRanges(textLength: number, charsPerLine: number): Array<{ start: number; end: number }> {
-  if (textLength <= 0) {
-    return [{ start: 0, end: 0 }];
-  }
-
-  const ranges: Array<{ start: number; end: number }> = [];
-  let start = 0;
-  while (start < textLength) {
-    const end = Math.min(textLength, start + charsPerLine);
-    ranges.push({ start, end });
-    start = end;
-  }
-  return ranges;
 }
 
 export function projectParagraphLayout(
@@ -113,24 +99,16 @@ export function projectParagraphLayout(
 
   const fontSize = estimateParagraphFontSize(paragraph, styles);
   const lineHeight = estimateParagraphLineHeight(paragraph, fontSize, styles);
-  const charsPerLine = estimateCharsPerLine(paragraph, fontSize, styles, contentWidth);
-  const lineRanges = buildEstimatedLineRanges(paragraphOffset, charsPerLine);
-  const lines: EditorLayoutLine[] = lineRanges.map((range, index) => ({
-    paragraphId: paragraph.id,
-    index,
-    startOffset: range.start,
-    endOffset: range.end,
-    top: index * lineHeight,
-    height: lineHeight,
-    slots: Array.from({ length: range.end - range.start + 1 }, (_, slotIndex) => ({
-      paragraphId: paragraph.id,
-      offset: range.start + slotIndex,
-      left: 0,
-      top: index * lineHeight,
-      height: lineHeight,
-    })),
+  const lines = composeMeasuredParagraphLines({
+    paragraph,
+    fragments,
+    styles,
+    contentWidth,
+  }).map((line) => ({
+    ...line,
+    height: line.height || lineHeight,
     fragments: fragments
-      .map((fragment) => sliceFragmentToRange(fragment, range.start, range.end))
+      .map((fragment) => sliceFragmentToRange(fragment, line.startOffset, line.endOffset))
       .filter((fragment): fragment is EditorLayoutFragment => fragment !== null),
   }));
 
@@ -289,23 +267,19 @@ function estimateParagraphLineHeight(
   fontSize: number,
   styles: Record<string, EditorNamedStyle> | undefined,
 ): number {
-  return (getEffectiveParagraphStyle(paragraph, styles).lineHeight ?? DEFAULT_LINE_HEIGHT) * fontSize;
-}
-
-function estimateCharsPerLine(
-  paragraph: EditorParagraphNode,
-  fontSize: number,
-  styles: Record<string, EditorNamedStyle> | undefined,
-  contentWidth?: number,
-): number {
-  const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
-  const usableWidth = Math.max(120, contentWidth ?? 624);
-  const averageCharWidth = Math.max(4.5, fontSize * 0.4);
-  const baseCharsPerLine = Math.floor(usableWidth / averageCharWidth);
-  const indentPenalty = Math.floor((paragraphStyle.indentLeft ?? 0) / averageCharWidth);
-  const firstLinePenalty = Math.floor(Math.abs(paragraphStyle.indentFirstLine ?? 0) / averageCharWidth);
-  const listPenalty = paragraph.list ? Math.floor(24 / averageCharWidth) : 0;
-  return Math.max(12, baseCharsPerLine - indentPenalty - firstLinePenalty - listPenalty);
+  const lineHeight = getEffectiveParagraphStyle(paragraph, styles).lineHeight ?? DEFAULT_LINE_HEIGHT;
+  const effectiveTextStyle = resolveEffectiveTextStyleForParagraph(
+    undefined,
+    paragraph.style?.styleId,
+    styles,
+  );
+  return resolveRenderedLineHeightPx(
+    {
+      ...effectiveTextStyle,
+      fontSize: effectiveTextStyle.fontSize ?? fontSize,
+    },
+    lineHeight,
+  );
 }
 
 function getParagraphSegmentHeight(
@@ -466,21 +440,47 @@ function createParagraphSegmentLayout(
   };
 }
 
+function applyWidowOrphanControl(
+  paragraph: EditorParagraphNode,
+  lines: EditorLayoutLine[],
+  startLineIndex: number,
+  endLineIndexExclusive: number,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): { endLineIndexExclusive: number; height: number } {
+  let adjustedEnd = endLineIndexExclusive;
+  const segmentLineCount = adjustedEnd - startLineIndex;
+  const remainingLineCount = lines.length - adjustedEnd;
+
+  // Match Word's default widow/orphan behavior by avoiding a lone line
+  // at the top of the next page when we can move one line down.
+  if (remainingLineCount === 1 && segmentLineCount > 1) {
+    adjustedEnd -= 1;
+  }
+
+  return {
+    endLineIndexExclusive: adjustedEnd,
+    height: getParagraphSegmentHeight(
+      paragraph,
+      lines.slice(startLineIndex, adjustedEnd),
+      startLineIndex === 0,
+      adjustedEnd === lines.length,
+      styles,
+    ),
+  };
+}
+
 export function estimateParagraphBlockHeight(
   paragraph: EditorParagraphNode,
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
 ): number {
-  const textLength = Math.max(1, getParagraphText(paragraph).length);
-  const fontSize = estimateParagraphFontSize(paragraph, styles);
-  const lineHeightPx = estimateParagraphLineHeight(paragraph, fontSize, styles);
-  const charsPerLine = estimateCharsPerLine(paragraph, fontSize, styles, contentWidth);
-  const lineCount = Math.max(1, Math.ceil(textLength / charsPerLine));
+  const layout = projectParagraphLayout(paragraph, undefined, undefined, styles, contentWidth);
+  const lineHeightPx = layout.lines.reduce((sum, line) => sum + line.height, 0);
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
   const spacingBefore = paragraphStyle.spacingBefore ?? 0;
   const spacingAfter = paragraphStyle.spacingAfter ?? 0;
 
-  return spacingBefore + spacingAfter + lineCount * lineHeightPx;
+  return spacingBefore + spacingAfter + lineHeightPx;
 }
 
 export function estimateTableBlockHeight(
@@ -645,6 +645,18 @@ function projectBlocksLayout(
             lineEndIndex === paragraphLayout.lines.length,
             styles,
           );
+        }
+
+        if (lineEndIndex < paragraphLayout.lines.length) {
+          const widowOrphanAdjusted = applyWidowOrphanControl(
+            sourceBlock,
+            paragraphLayout.lines,
+            startLineIndex,
+            lineEndIndex,
+            styles,
+          );
+          lineEndIndex = widowOrphanAdjusted.endLineIndexExclusive;
+          segmentHeight = widowOrphanAdjusted.height;
         }
 
         const segmentLayout = createParagraphSegmentLayout(paragraphLayout, startLineIndex, lineEndIndex);

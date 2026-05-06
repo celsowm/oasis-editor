@@ -35,6 +35,7 @@ import {
   projectDocumentLayout,
   projectParagraphLayout,
 } from "../layoutProjection.js";
+import { resolveRenderedLineHeightPx } from "../textMeasurement.js";
 import { PageBreak } from "./PageBreak.js";
 
 interface EditorSurfaceProps {
@@ -82,7 +83,12 @@ function paragraphStyleToCss(
     css["text-align"] = merged.align;
   }
   if (merged.lineHeight !== undefined && merged.lineHeight !== null) {
-    css["line-height"] = `${merged.lineHeight}`;
+    const effectiveTextStyle = resolveEffectiveTextStyleForParagraph(
+      undefined,
+      style?.styleId,
+      styles,
+    );
+    css["line-height"] = `${resolveRenderedLineHeightPx(effectiveTextStyle, merged.lineHeight)}px`;
   }
   if (merged.spacingBefore !== undefined && merged.spacingBefore !== null) {
     css["padding-top"] = `${merged.spacingBefore}px`;

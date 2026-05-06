@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render } from "solid-js/web";
 import { EditorSurface } from "../../ui/components/EditorSurface.js";
 import { IMAGE_RESIZE_HANDLE_DIRECTIONS } from "../../ui/editorUiTypes.js";
+import { resolveRenderedLineHeightPx } from "../../ui/textMeasurement.js";
 import {
   createEditorDocument,
   createEditorParagraphFromRuns,
@@ -355,9 +356,16 @@ describe("EditorSurface", () => {
     );
 
     const blockNode = container.querySelector('[data-testid="editor-block"]') as HTMLParagraphElement;
+    const expectedLineHeight = `${resolveRenderedLineHeightPx(
+      {
+        fontFamily: "Calibri, sans-serif",
+        fontSize: 15,
+      },
+      1.8,
+    )}px`;
 
     expect(blockNode.style.textAlign).toBe("center");
-    expect(blockNode.style.lineHeight).toBe("1.8");
+    expect(blockNode.style.lineHeight).toBe(expectedLineHeight);
     expect(blockNode.style.paddingTop).toBe("12px");
     expect(blockNode.style.paddingBottom).toBe("8px");
     expect(blockNode.style.paddingLeft).toBe("16px");
