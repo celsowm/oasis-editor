@@ -46,8 +46,8 @@ describe("importDocxToEditorDocument", () => {
           <w:p>
             <w:pPr>
               <w:jc w:val="center"/>
-              <w:spacing w:before="240" w:after="120" w:line="360"/>
-              <w:ind w:left="720" w:firstLine="360"/>
+              <w:spacing w:before="180" w:after="90" w:line="360"/>
+              <w:ind w:left="540" w:firstLine="270"/>
               <w:pageBreakBefore/>
               <w:keepNext/>
               <w:numPr>
@@ -69,7 +69,7 @@ describe("importDocxToEditorDocument", () => {
                 <w:strike/>
                 <w:vertAlign w:val="superscript"/>
                 <w:rFonts w:ascii="Georgia"/>
-                <w:sz w:val="28"/>
+                <w:sz w:val="21"/>
                 <w:highlight w:val="yellow"/>
               </w:rPr>
               <w:t> world</w:t>

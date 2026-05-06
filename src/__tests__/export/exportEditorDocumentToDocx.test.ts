@@ -58,18 +58,31 @@ describe("exportEditorDocumentToDocx", () => {
     expect(contentTypes).toContain("/word/document.xml");
     expect(contentTypes).toContain("/word/numbering.xml");
     expect(documentXml).toContain('<w:jc w:val="center"/>');
-    expect(documentXml).toContain('<w:spacing w:before="240" w:after="120" w:line="360"/>');
-    expect(documentXml).toContain('<w:ind w:left="720" w:firstLine="360"/>');
+    expect(documentXml).toContain('<w:spacing w:before="180" w:after="90" w:line="360"/>');
+    expect(documentXml).toContain('<w:ind w:left="540" w:right="0" w:firstLine="270"/>');
     expect(documentXml).toContain("<w:pageBreakBefore/>");
     expect(documentXml).toContain("<w:keepNext/>");
     expect(documentXml).toContain('<w:b/>');
     expect(documentXml).toContain('<w:color w:val="ff0000"/>');
     expect(documentXml).toContain('<w:u w:val="single"/>');
     expect(documentXml).toContain('<w:rFonts w:ascii="Georgia" w:hAnsi="Georgia" w:cs="Georgia"/>');
-    expect(documentXml).toContain('<w:sz w:val="28"/>');
+    expect(documentXml).toContain('<w:sz w:val="21"/>');
     expect(numberingXml).toContain('<w:numFmt w:val="bullet"/>');
     expect(numberingXml).toContain('<w:numFmt w:val="decimal"/>');
     expect(documentRels).toContain("/numbering");
+  });
+
+  it("materializes effective default paragraph and run metrics for Word pagination parity", async () => {
+    const paragraph = createEditorParagraphFromRuns([{ text: "Body" }]);
+    const document = createEditorDocument([paragraph]);
+
+    const buffer = await exportEditorDocumentToDocx(document);
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+
+    expect(documentXml).toContain('<w:spacing w:before="0" w:after="120" w:line="276"/>');
+    expect(documentXml).toContain('<w:rFonts w:ascii="Calibri, sans-serif" w:hAnsi="Calibri, sans-serif" w:cs="Calibri, sans-serif"/>');
+    expect(documentXml).toContain('<w:sz w:val="23"/>');
   });
 
   it("round-trips the supported subset through docx export and import", async () => {

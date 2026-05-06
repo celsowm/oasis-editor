@@ -16,6 +16,7 @@ import type {
 } from "../core/model.js";
 import {
   getDocumentSections,
+  getPageContentWidth,
   getPageContentHeight,
   getParagraphText,
   resolveEffectiveParagraphStyle,
@@ -23,10 +24,9 @@ import {
 } from "../core/model.js";
 import { measureLinesFromRects, type CharRect } from "./caretGeometry.js";
 
-const DEFAULT_FONT_SIZE = 20;
-const DEFAULT_LINE_HEIGHT = 1.6;
+const DEFAULT_FONT_SIZE = 15;
+const DEFAULT_LINE_HEIGHT = 1.15;
 const DEFAULT_PAGE_HEIGHT = 920;
-const DEFAULT_PARAGRAPH_GAP = 10;
 
 function sliceFragmentToRange(
   fragment: EditorLayoutFragment,
@@ -76,6 +76,7 @@ export function projectParagraphLayout(
   pageIndex?: number,
   totalPages?: number,
   styles?: Record<string, EditorNamedStyle>,
+  contentWidth?: number,
 ): EditorLayoutParagraph {
   let paragraphOffset = 0;
   const fragments: EditorLayoutFragment[] = paragraph.runs.map((run) => {
@@ -112,7 +113,7 @@ export function projectParagraphLayout(
 
   const fontSize = estimateParagraphFontSize(paragraph, styles);
   const lineHeight = estimateParagraphLineHeight(paragraph, fontSize, styles);
-  const charsPerLine = estimateCharsPerLine(paragraph, styles);
+  const charsPerLine = estimateCharsPerLine(paragraph, fontSize, styles, contentWidth);
   const lineRanges = buildEstimatedLineRanges(paragraphOffset, charsPerLine);
   const lines: EditorLayoutLine[] = lineRanges.map((range, index) => ({
     paragraphId: paragraph.id,
@@ -293,13 +294,18 @@ function estimateParagraphLineHeight(
 
 function estimateCharsPerLine(
   paragraph: EditorParagraphNode,
+  fontSize: number,
   styles: Record<string, EditorNamedStyle> | undefined,
+  contentWidth?: number,
 ): number {
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
-  const indentPenalty = Math.floor((paragraphStyle.indentLeft ?? 0) / 16);
-  const firstLinePenalty = Math.floor(Math.abs(paragraphStyle.indentFirstLine ?? 0) / 16);
-  const listPenalty = paragraph.list ? 4 : 0;
-  return Math.max(12, 48 - indentPenalty - firstLinePenalty - listPenalty);
+  const usableWidth = Math.max(120, contentWidth ?? 624);
+  const averageCharWidth = Math.max(4.5, fontSize * 0.4);
+  const baseCharsPerLine = Math.floor(usableWidth / averageCharWidth);
+  const indentPenalty = Math.floor((paragraphStyle.indentLeft ?? 0) / averageCharWidth);
+  const firstLinePenalty = Math.floor(Math.abs(paragraphStyle.indentFirstLine ?? 0) / averageCharWidth);
+  const listPenalty = paragraph.list ? Math.floor(24 / averageCharWidth) : 0;
+  return Math.max(12, baseCharsPerLine - indentPenalty - firstLinePenalty - listPenalty);
 }
 
 function getParagraphSegmentHeight(
@@ -313,7 +319,7 @@ function getParagraphSegmentHeight(
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
   const spacingBefore = isFirstSegment ? (paragraphStyle.spacingBefore ?? 0) : 0;
   const spacingAfter = isLastSegment ? (paragraphStyle.spacingAfter ?? 0) : 0;
-  return spacingBefore + spacingAfter + lineHeights + DEFAULT_PARAGRAPH_GAP;
+  return spacingBefore + spacingAfter + lineHeights;
 }
 
 function getParagraphMeasuredHeight(
@@ -333,11 +339,12 @@ function getParagraphMeasuredHeight(
 function estimateTableRowHeight(
   row: EditorTableNode["rows"][number],
   styles: Record<string, EditorNamedStyle> | undefined,
+  contentWidth?: number,
 ): number {
   const cellHeights = row.cells
     .filter((cell) => cell.vMerge !== "continue")
     .map((cell) =>
-      cell.blocks.reduce((sum, paragraph) => sum + estimateParagraphBlockHeight(paragraph, styles), 0),
+      cell.blocks.reduce((sum, paragraph) => sum + estimateParagraphBlockHeight(paragraph, styles, contentWidth), 0),
     );
 
   return Math.max(...cellHeights, DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT) + 12;
@@ -415,16 +422,17 @@ function getTableSegmentHeight(
   rowEndIndexExclusive: number,
   repeatedHeaderRowCount: number,
   styles: Record<string, EditorNamedStyle> | undefined,
+  contentWidth?: number,
 ): number {
   const headerHeight =
     repeatedHeaderRowCount > 0
       ? table.rows
           .slice(0, repeatedHeaderRowCount)
-          .reduce((sum, row) => sum + estimateTableRowHeight(row, styles), 0)
+          .reduce((sum, row) => sum + estimateTableRowHeight(row, styles, contentWidth), 0)
       : 0;
   const bodyHeight = table.rows
     .slice(rowStartIndex, rowEndIndexExclusive)
-    .reduce((sum, row) => sum + estimateTableRowHeight(row, styles), 0);
+    .reduce((sum, row) => sum + estimateTableRowHeight(row, styles, contentWidth), 0);
   return headerHeight + bodyHeight + 16;
 }
 
@@ -461,24 +469,26 @@ function createParagraphSegmentLayout(
 export function estimateParagraphBlockHeight(
   paragraph: EditorParagraphNode,
   styles?: Record<string, EditorNamedStyle>,
+  contentWidth?: number,
 ): number {
   const textLength = Math.max(1, getParagraphText(paragraph).length);
   const fontSize = estimateParagraphFontSize(paragraph, styles);
   const lineHeightPx = estimateParagraphLineHeight(paragraph, fontSize, styles);
-  const charsPerLine = estimateCharsPerLine(paragraph, styles);
+  const charsPerLine = estimateCharsPerLine(paragraph, fontSize, styles, contentWidth);
   const lineCount = Math.max(1, Math.ceil(textLength / charsPerLine));
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
   const spacingBefore = paragraphStyle.spacingBefore ?? 0;
   const spacingAfter = paragraphStyle.spacingAfter ?? 0;
 
-  return spacingBefore + spacingAfter + lineCount * lineHeightPx + DEFAULT_PARAGRAPH_GAP;
+  return spacingBefore + spacingAfter + lineCount * lineHeightPx;
 }
 
 export function estimateTableBlockHeight(
   table: EditorTableNode,
   styles?: Record<string, EditorNamedStyle>,
+  contentWidth?: number,
 ): number {
-  return getTableSegmentHeight(table, 0, table.rows.length, 0, styles);
+  return getTableSegmentHeight(table, 0, table.rows.length, 0, styles, contentWidth);
 }
 
 function projectHeaderFooterBlocks(
@@ -488,11 +498,12 @@ function projectHeaderFooterBlocks(
   measuredHeights?: Record<string, number>,
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>,
   styles?: Record<string, EditorNamedStyle>,
+  contentWidth?: number,
 ): EditorLayoutBlock[] {
   // Headers/Footers are projected as a single sequence of blocks, no pagination for now
   return blocks.map((block, index) => {
     if (block.type === "paragraph") {
-      const layout = projectParagraphLayout(block, pageIndex, totalPages, styles);
+      const layout = projectParagraphLayout(block, pageIndex, totalPages, styles, contentWidth);
       // We ignore measured layouts for headers/footers in the first pass for simplicity
       return {
         blockId: block.id,
@@ -500,7 +511,7 @@ function projectHeaderFooterBlocks(
         blockType: block.type,
         paragraphId: block.id,
         globalIndex: index,
-        estimatedHeight: estimateParagraphBlockHeight(block, styles),
+        estimatedHeight: estimateParagraphBlockHeight(block, styles, contentWidth),
         layout,
         sourceBlock: block,
       };
@@ -527,6 +538,7 @@ function projectBlocksLayout(
   totalPages?: number,
   existingPages: EditorLayoutPage[] = [],
 ): EditorLayoutPage[] {
+  const contentWidth = getPageContentWidth(pageSettings);
   const pages: EditorLayoutPage[] = [...existingPages];
   let currentPage = pages[pages.length - 1];
   let currentBlocks: EditorLayoutBlock[] = currentPage ? [...currentPage.blocks] : [];
@@ -569,6 +581,7 @@ function projectBlocksLayout(
         pageIndex,
         totalPages,
         styles,
+        contentWidth,
       );
       const measuredParagraphLayout = measuredParagraphLayouts?.[sourceBlock.id];
       const paragraphLayout =
@@ -576,12 +589,12 @@ function projectBlocksLayout(
           ? applyMeasuredLineGeometry(projectedParagraphLayout, measuredParagraphLayout)
           : projectedParagraphLayout;
       const paragraphTotalHeight =
-        measuredHeights?.[sourceBlock.id] ?? estimateParagraphBlockHeight(sourceBlock, styles);
+        measuredHeights?.[sourceBlock.id] ?? estimateParagraphBlockHeight(sourceBlock, styles, contentWidth);
       const nextBlockHeight =
         nextBlock?.type === "paragraph"
-          ? measuredHeights?.[nextBlock.id] ?? estimateParagraphBlockHeight(nextBlock, styles)
+          ? measuredHeights?.[nextBlock.id] ?? estimateParagraphBlockHeight(nextBlock, styles, contentWidth)
           : nextBlock
-            ? measuredHeights?.[nextBlock.id] ?? estimateTableBlockHeight(nextBlock, styles)
+            ? measuredHeights?.[nextBlock.id] ?? estimateTableBlockHeight(nextBlock, styles, contentWidth)
             : 0;
       if (
         sourceBlock.style?.keepWithNext &&
@@ -667,7 +680,7 @@ function projectBlocksLayout(
     }
 
     const tableHeight =
-      measuredHeights?.[sourceBlock.id] ?? estimateTableBlockHeight(sourceBlock, styles);
+      measuredHeights?.[sourceBlock.id] ?? estimateTableBlockHeight(sourceBlock, styles, contentWidth);
     if (sourceBlock.rows.length <= 1 || tableHeight <= maxPageHeight) {
       if (currentBlocks.length > 0 && currentHeight + tableHeight > maxPageHeight) {
         flushPage();
@@ -710,6 +723,7 @@ function projectBlocksLayout(
           candidateEnd,
           repeatedHeaderRowCount,
           styles,
+          contentWidth,
         );
         if (
           candidateHeight > remainingHeight &&
@@ -739,6 +753,7 @@ function projectBlocksLayout(
           endRowIndex,
           repeatedHeaderRowCount,
           styles,
+          contentWidth,
         );
       }
 
@@ -877,6 +892,7 @@ export function projectDocumentLayout(
             measuredHeights,
             measuredParagraphLayouts,
             document.styles,
+            getPageContentWidth(page.pageSettings),
           )
         : page.headerBlocks;
       const footerBlocks = section.footer
@@ -887,6 +903,7 @@ export function projectDocumentLayout(
             measuredHeights,
             measuredParagraphLayouts,
             document.styles,
+            getPageContentWidth(page.pageSettings),
           )
         : page.footerBlocks;
 

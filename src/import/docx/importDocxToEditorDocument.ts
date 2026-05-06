@@ -11,8 +11,19 @@ import type {
   EditorTableNode,
   EditorTextStyle,
 } from "../../core/model.js";
-import { createEditorDocument, createEditorParagraphFromRuns, createEditorTable, createEditorTableCell, createEditorTableRow } from "../../core/editorState.js";
-import { normalizePageSettings } from "../../core/model.js";
+import {
+  createEditorDocument,
+  createEditorParagraphFromRuns,
+  createEditorTable,
+  createEditorTableCell,
+  createEditorTableRow,
+  DEFAULT_EDITOR_STYLES,
+} from "../../core/editorState.js";
+import {
+  normalizePageSettings,
+  resolveEffectiveParagraphStyle,
+  resolveEffectiveTextStyleForParagraph,
+} from "../../core/model.js";
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const TWIPS_PER_INCH = 1440;
@@ -21,6 +32,62 @@ const PX_PER_INCH = 96;
 interface NumberingMaps {
   abstractKinds: Map<string, EditorParagraphListStyle["kind"]>;
   numKinds: Map<string, EditorParagraphListStyle["kind"]>;
+}
+
+function stripUndefined<T extends Record<string, unknown>>(value: T): Partial<T> | undefined {
+  const entries = Object.entries(value).filter(([, entryValue]) => entryValue !== undefined);
+  return entries.length > 0 ? (Object.fromEntries(entries) as Partial<T>) : undefined;
+}
+
+function normalizeImportedParagraphStyle(style: EditorParagraphStyle | undefined): EditorParagraphStyle | undefined {
+  if (!style) {
+    return undefined;
+  }
+
+  const effective = resolveEffectiveParagraphStyle(style, DEFAULT_EDITOR_STYLES);
+  const defaultEffective = resolveEffectiveParagraphStyle(undefined, DEFAULT_EDITOR_STYLES);
+
+  return stripUndefined({
+    align: effective.align !== defaultEffective.align ? effective.align : undefined,
+    spacingBefore:
+      effective.spacingBefore !== defaultEffective.spacingBefore ? effective.spacingBefore : undefined,
+    spacingAfter:
+      effective.spacingAfter !== defaultEffective.spacingAfter ? effective.spacingAfter : undefined,
+    lineHeight: effective.lineHeight !== defaultEffective.lineHeight ? effective.lineHeight : undefined,
+    indentLeft: effective.indentLeft !== defaultEffective.indentLeft ? effective.indentLeft : undefined,
+    indentRight: effective.indentRight !== defaultEffective.indentRight ? effective.indentRight : undefined,
+    indentFirstLine:
+      effective.indentFirstLine !== defaultEffective.indentFirstLine ? effective.indentFirstLine : undefined,
+    pageBreakBefore:
+      effective.pageBreakBefore !== defaultEffective.pageBreakBefore ? effective.pageBreakBefore : undefined,
+    keepWithNext: effective.keepWithNext !== defaultEffective.keepWithNext ? effective.keepWithNext : undefined,
+  });
+}
+
+function normalizeImportedRunStyle(
+  style: EditorTextStyle | undefined,
+  paragraphStyleId: string | undefined,
+): EditorTextStyle | undefined {
+  if (!style) {
+    return undefined;
+  }
+
+  const effective = resolveEffectiveTextStyleForParagraph(style, paragraphStyleId, DEFAULT_EDITOR_STYLES);
+  const defaultEffective = resolveEffectiveTextStyleForParagraph(undefined, paragraphStyleId, DEFAULT_EDITOR_STYLES);
+
+  return stripUndefined({
+    bold: effective.bold !== defaultEffective.bold ? effective.bold : undefined,
+    italic: effective.italic !== defaultEffective.italic ? effective.italic : undefined,
+    underline: effective.underline !== defaultEffective.underline ? effective.underline : undefined,
+    strike: effective.strike !== defaultEffective.strike ? effective.strike : undefined,
+    superscript: effective.superscript !== defaultEffective.superscript ? effective.superscript : undefined,
+    subscript: effective.subscript !== defaultEffective.subscript ? effective.subscript : undefined,
+    fontFamily: effective.fontFamily !== defaultEffective.fontFamily ? effective.fontFamily : undefined,
+    fontSize: effective.fontSize !== defaultEffective.fontSize ? effective.fontSize : undefined,
+    color: effective.color !== defaultEffective.color ? effective.color : undefined,
+    highlight: effective.highlight !== defaultEffective.highlight ? effective.highlight : undefined,
+    link: effective.link !== defaultEffective.link ? effective.link : undefined,
+  });
 }
 
 function getChildrenByTagNameNS(element: XmlElement, namespace: string, localName: string): XmlElement[] {
@@ -89,6 +156,15 @@ function twipsToPx(value: string | null | undefined, fallback: number): number {
   }
 
   return Math.round((parsed / TWIPS_PER_INCH) * PX_PER_INCH);
+}
+
+function halfPointsToPx(value: string | null | undefined): number | null {
+  const parsed = value ? Number(value) : Number.NaN;
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return Math.round((parsed / 2 / 72) * PX_PER_INCH);
 }
 
 interface SectionProperties {
@@ -281,9 +357,9 @@ function parseRunStyle(runProperties: XmlElement | null): EditorTextStyle | unde
   const size = getFirstChildByTagNameNS(runProperties, WORD_NS, "sz");
   const sizeValue = getAttributeValue(size, "val");
   if (sizeValue) {
-    const parsed = Number(sizeValue);
-    if (Number.isFinite(parsed)) {
-      styles.fontSize = parsed / 2;
+    const parsed = halfPointsToPx(sizeValue);
+    if (parsed !== null) {
+      styles.fontSize = parsed;
     }
   }
 
@@ -324,10 +400,10 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   const after = getAttributeValue(spacing, "after");
   const line = getAttributeValue(spacing, "line");
   if (before) {
-    style.spacingBefore = Number(before) / 20;
+    style.spacingBefore = twipsToPx(before, 0);
   }
   if (after) {
-    style.spacingAfter = Number(after) / 20;
+    style.spacingAfter = twipsToPx(after, 0);
   }
   if (line) {
     style.lineHeight = Number(line) / 240;
@@ -338,13 +414,13 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   const right = getAttributeValue(indent, "right");
   const firstLine = getAttributeValue(indent, "firstLine");
   if (left) {
-    style.indentLeft = Number(left) / 20;
+    style.indentLeft = twipsToPx(left, 0);
   }
   if (right) {
-    style.indentRight = Number(right) / 20;
+    style.indentRight = twipsToPx(right, 0);
   }
   if (firstLine) {
-    style.indentFirstLine = Number(firstLine) / 20;
+    style.indentFirstLine = twipsToPx(firstLine, 0);
   }
 
   if (parseBooleanProperty(paragraphProperties, "pageBreakBefore")) {
@@ -577,7 +653,10 @@ async function parseParagraphNode(
   const paragraph = createEditorParagraphFromRuns(
     runs.length > 0 ? runs : [{ text: "" }],
   );
-  paragraph.style = parseParagraphStyle(paragraphProperties);
+  paragraph.style = normalizeImportedParagraphStyle(parseParagraphStyle(paragraphProperties));
+  for (const run of paragraph.runs) {
+    run.styles = normalizeImportedRunStyle(run.styles, paragraph.style?.styleId);
+  }
   paragraph.list = parseParagraphList(paragraphProperties, numberingMaps);
   return paragraph;
 }

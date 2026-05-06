@@ -527,14 +527,10 @@
 }
 
 .oasis-editor-block {
-  margin: 0 0 10px;
-  min-height: 1.6em;
-  font-size: 20px;
-  line-height: 1.6;
+  margin: 0;
   letter-spacing: 0.002em;
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: var(--oasis-font-doc);
 }
 
 .oasis-editor-block-list {
@@ -1426,6 +1422,6 @@
   }
 
   .oasis-editor-block {
-    font-size: 18px;
+    font-size: inherit;
   }
 }

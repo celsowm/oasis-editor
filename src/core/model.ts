@@ -229,8 +229,8 @@ const DEFAULT_TEXT_STYLE: Required<EditorTextStyle> = {
   strike: false,
   superscript: false,
   subscript: false,
-  fontFamily: "Arial",
-  fontSize: 20,
+  fontFamily: "Calibri, sans-serif",
+  fontSize: 15,
   color: "#000000",
   highlight: null as unknown as string | null,
   link: null as unknown as string | null,
@@ -242,8 +242,8 @@ const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> = {
   styleId: undefined as unknown as string,
   align: "left",
   spacingBefore: 0,
-  spacingAfter: 0,
-  lineHeight: 1.6,
+  spacingAfter: 8,
+  lineHeight: 1.15,
   indentLeft: 0,
   indentRight: 0,
   indentFirstLine: 0,
@@ -536,10 +536,52 @@ export function getPageContentWidth(pageSettings: EditorPageSettings): number {
   );
 }
 
+function clampPageOffset(value: number, limit: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.min(Math.max(0, value), limit);
+}
+
+export function getPageHeaderZoneTop(pageSettings: EditorPageSettings): number {
+  return clampPageOffset(pageSettings.margins.header, pageSettings.height);
+}
+
+export function getPageBodyTop(pageSettings: EditorPageSettings): number {
+  return Math.max(
+    clampPageOffset(pageSettings.margins.top, pageSettings.height),
+    getPageHeaderZoneTop(pageSettings),
+  );
+}
+
+export function getPageFooterReferenceTop(pageSettings: EditorPageSettings): number {
+  return pageSettings.height - clampPageOffset(pageSettings.margins.footer, pageSettings.height);
+}
+
+export function getPageBodyBottom(pageSettings: EditorPageSettings): number {
+  const marginBottomTop = pageSettings.height - clampPageOffset(pageSettings.margins.bottom, pageSettings.height);
+  return Math.min(
+    pageSettings.height,
+    Math.max(getPageBodyTop(pageSettings), Math.min(marginBottomTop, getPageFooterReferenceTop(pageSettings))),
+  );
+}
+
+export function getPageHeaderZoneHeight(pageSettings: EditorPageSettings): number {
+  return Math.max(0, getPageBodyTop(pageSettings) - getPageHeaderZoneTop(pageSettings));
+}
+
+export function getPageFooterZoneTop(pageSettings: EditorPageSettings): number {
+  return getPageBodyBottom(pageSettings);
+}
+
+export function getPageFooterZoneHeight(pageSettings: EditorPageSettings): number {
+  return Math.max(0, getPageFooterReferenceTop(pageSettings) - getPageFooterZoneTop(pageSettings));
+}
+
 export function getPageContentHeight(pageSettings: EditorPageSettings): number {
   return Math.max(
     24,
-    Math.floor(pageSettings.height - pageSettings.margins.top - pageSettings.margins.bottom),
+    Math.floor(getPageBodyBottom(pageSettings) - getPageBodyTop(pageSettings)),
   );
 }
 

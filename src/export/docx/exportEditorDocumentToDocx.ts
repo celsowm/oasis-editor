@@ -2,6 +2,8 @@ import JSZip from "jszip";
 import type {
   EditorBlockNode,
   EditorDocument,
+  EditorNamedStyle,
+  EditorParagraphStyle,
   EditorPageSettings,
   EditorParagraphListStyle,
   EditorParagraphNode,
@@ -10,7 +12,12 @@ import type {
   EditorTextStyle,
   EditorSection,
 } from "../../core/model.js";
-import { getDocumentPageSettings, getDocumentSections } from "../../core/model.js";
+import {
+  getDocumentPageSettings,
+  getDocumentSections,
+  resolveEffectiveParagraphStyle,
+  resolveEffectiveTextStyleForParagraph,
+} from "../../core/model.js";
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const PACKAGE_REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships";
@@ -60,14 +67,14 @@ function toTwips(value: number | null | undefined): number | null {
   if (value === undefined || value === null || !Number.isFinite(value)) {
     return null;
   }
-  return Math.round(value * 20);
+  return Math.round((value / PX_PER_INCH) * TWIPS_PER_INCH);
 }
 
 function toHalfPoints(value: number | null | undefined): number | null {
   if (value === undefined || value === null || !Number.isFinite(value)) {
     return null;
   }
-  return Math.round(value * 2);
+  return Math.round((value / PX_PER_INCH) * 72 * 2);
 }
 
 function parseHexColor(color: string): [number, number, number] | null {
@@ -194,6 +201,56 @@ function serializeRunProperties(styles?: EditorTextStyle): string {
   return parts.length > 0 ? `<w:rPr>${parts.join("")}</w:rPr>` : "";
 }
 
+function materializeParagraphStyle(
+  paragraph: EditorParagraphNode,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): EditorParagraphStyle {
+  const effective = resolveEffectiveParagraphStyle(paragraph.style, styles);
+  const materialized: EditorParagraphStyle = {
+    align: effective.align,
+    spacingBefore: effective.spacingBefore,
+    spacingAfter: effective.spacingAfter,
+    lineHeight: effective.lineHeight,
+    indentLeft: effective.indentLeft,
+    indentRight: effective.indentRight,
+    indentFirstLine: effective.indentFirstLine,
+    pageBreakBefore: effective.pageBreakBefore,
+    keepWithNext: effective.keepWithNext,
+  };
+  return materialized;
+}
+
+function materializeRunStyle(
+  run: EditorTextRun,
+  paragraphStyleId: string | undefined,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): EditorTextStyle | undefined {
+  const effective = resolveEffectiveTextStyleForParagraph(
+    run.styles,
+    paragraphStyleId,
+    styles,
+  );
+
+  const materialized: EditorTextStyle = {
+    bold: effective.bold,
+    italic: effective.italic,
+    underline: effective.underline,
+    strike: effective.strike,
+    superscript: effective.superscript,
+    subscript: effective.subscript,
+    fontFamily: effective.fontFamily,
+    fontSize: effective.fontSize,
+    color: effective.color,
+    highlight: effective.highlight,
+  };
+
+  if (run.styles?.link) {
+    materialized.link = run.styles.link;
+  }
+
+  return materialized;
+}
+
 interface DocContext {
   numberingInfo: Map<string, { numId: number; level: number }>;
   definitions: Array<{ kind: EditorParagraphListStyle["kind"]; level: number; abstractNumId: number; numId: number }>;
@@ -203,7 +260,13 @@ interface DocContext {
   hyperlinkMap: Map<string, string>;
 }
 
-function serializeRun(run: EditorTextRun, context: DocContext): string {
+function serializeRun(
+  run: EditorTextRun,
+  context: DocContext,
+  paragraphStyleId: string | undefined,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): string {
+  const materializedRunStyle = materializeRunStyle(run, paragraphStyleId, styles);
   if (run.image) {
     const rId = context.imageMap.get(run.id);
     if (rId) {
@@ -212,15 +275,20 @@ function serializeRun(run: EditorTextRun, context: DocContext): string {
         const docPrId = Math.floor(Math.random() * 10000) + 1;
         const altAttr = img.alt !== undefined ? ` descr="${escapeXml(img.alt)}" title="${escapeXml(img.alt)}"` : "";
         const drawing = `<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${img.cx}" cy="${img.cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${docPrId}" name="Picture"${altAttr}/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="Picture"${altAttr}/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rId}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${img.cx}" cy="${img.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>`;
-        return `<w:r>${serializeRunProperties(run.styles)}${drawing}</w:r>`;
+        return `<w:r>${serializeRunProperties(materializedRunStyle)}${drawing}</w:r>`;
       }
     }
   }
-  return `<w:r>${serializeRunProperties(run.styles)}${serializeRunText(run.text)}</w:r>`;
+  return `<w:r>${serializeRunProperties(materializedRunStyle)}${serializeRunText(run.text)}</w:r>`;
 }
 
-function serializeRunWithRelationships(run: EditorTextRun, context: DocContext): string {
-  const runXml = serializeRun(run, context);
+function serializeRunWithRelationships(
+  run: EditorTextRun,
+  context: DocContext,
+  paragraphStyleId: string | undefined,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): string {
+  const runXml = serializeRun(run, context, paragraphStyleId, styles);
   const href = run.styles?.link;
   if (!href) {
     return runXml;
@@ -237,18 +305,19 @@ function serializeRunWithRelationships(run: EditorTextRun, context: DocContext):
 function serializeParagraphProperties(
   paragraph: EditorParagraphNode,
   numberingInfo: Map<string, { numId: number; level: number }>,
+  styles?: Record<string, EditorNamedStyle>,
 ): string {
   const parts: string[] = [];
-  const style = paragraph.style;
+  const style = materializeParagraphStyle(paragraph, styles);
 
-  if (style?.align) {
+  if (style.align) {
     parts.push(`<w:jc w:val="${style.align}"/>`);
   }
 
   if (
-    style?.spacingBefore !== undefined ||
-    style?.spacingAfter !== undefined ||
-    style?.lineHeight !== undefined
+    style.spacingBefore !== undefined ||
+    style.spacingAfter !== undefined ||
+    style.lineHeight !== undefined
   ) {
     const attrs: string[] = [];
     const before = toTwips(style.spacingBefore);
@@ -272,9 +341,9 @@ function serializeParagraphProperties(
   }
 
   if (
-    style?.indentLeft !== undefined ||
-    style?.indentRight !== undefined ||
-    style?.indentFirstLine !== undefined
+    style.indentLeft !== undefined ||
+    style.indentRight !== undefined ||
+    style.indentFirstLine !== undefined
   ) {
     const attrs: string[] = [];
     const left = toTwips(style.indentLeft);
@@ -294,10 +363,10 @@ function serializeParagraphProperties(
     }
   }
 
-  if (style?.pageBreakBefore) {
+  if (style.pageBreakBefore) {
     parts.push("<w:pageBreakBefore/>");
   }
-  if (style?.keepWithNext) {
+  if (style.keepWithNext) {
     parts.push("<w:keepNext/>");
   }
 
@@ -449,7 +518,7 @@ function buildDocumentXml(document: EditorDocument, context: DocContext): string
               const paragraphs = cell.blocks.length > 0 ? cell.blocks : [{ id: "", type: "paragraph" as const, runs: [{ id: "", text: "" }] }];
               const paragraphsXml = paragraphs.map(p => {
                 const runs = p.runs.length > 0 ? p.runs : [{ id: "", text: "" }];
-                return `<w:p>${serializeParagraphProperties(p, context.numberingInfo)}${runs.map(r => serializeRunWithRelationships(r, context)).join("")}</w:p>`;
+                return `<w:p>${serializeParagraphProperties(p, context.numberingInfo, document.styles)}${runs.map(r => serializeRunWithRelationships(r, context, p.style?.styleId, document.styles)).join("")}</w:p>`;
               }).join("");
               const contentXml = cell.vMerge === "continue" ? "<w:p/>" : paragraphsXml;
               return `<w:tc>${serializeTableCellProperties(cell)}${contentXml}</w:tc>`;
@@ -459,8 +528,8 @@ function buildDocumentXml(document: EditorDocument, context: DocContext): string
           return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>${rowsXml}</w:tbl>`;
         }
         const runs = block.runs.length > 0 ? block.runs : [{ id: "", text: "" }];
-        return `<w:p>${serializeParagraphProperties(block, context.numberingInfo)}${runs
-          .map((run) => serializeRunWithRelationships(run, context))
+        return `<w:p>${serializeParagraphProperties(block, context.numberingInfo, document.styles)}${runs
+          .map((run) => serializeRunWithRelationships(run, context, block.style?.styleId, document.styles))
           .join("")}</w:p>`;
       })
       .join("");

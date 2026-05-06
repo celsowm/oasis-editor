@@ -191,7 +191,19 @@ describe("EditorSurface", () => {
     const container = document.createElement("div");
     const paragraph = createEditorParagraphFromRuns([{ text: "x".repeat(1800) }]);
     const state: EditorState = {
-      document: createEditorDocument([paragraph]),
+      document: createEditorDocument([paragraph], {
+        width: 816,
+        height: 220,
+        margins: {
+          top: 24,
+          right: 96,
+          bottom: 24,
+          left: 96,
+          header: 12,
+          footer: 12,
+          gutter: 0,
+        },
+      }),
       selection: {
         anchor: {
           paragraphId: paragraph.id,
@@ -414,7 +426,19 @@ describe("EditorSurface", () => {
       createEditorParagraphFromRuns([{ text: `${index}`.repeat(520) }]),
     );
     const state: EditorState = {
-      document: createEditorDocument(paragraphs),
+      document: createEditorDocument(paragraphs, {
+        width: 816,
+        height: 240,
+        margins: {
+          top: 24,
+          right: 96,
+          bottom: 24,
+          left: 96,
+          header: 12,
+          footer: 12,
+          gutter: 0,
+        },
+      }),
       selection: {
         anchor: {
           paragraphId: paragraphs[0]!.id,
@@ -610,7 +634,9 @@ describe("EditorSurface", () => {
 
     const page = container.querySelector('[data-testid="editor-page"]') as HTMLDivElement;
     const headerZone = container.querySelector('[data-testid="editor-page-header-zone"]') as HTMLDivElement;
+    const headerGuide = container.querySelector(".oasis-editor-page-header-guide") as HTMLDivElement;
     const footerZone = container.querySelector('[data-testid="editor-page-footer-zone"]') as HTMLDivElement;
+    const footerGuide = container.querySelector(".oasis-editor-page-footer-guide") as HTMLDivElement;
     const surface = container.querySelector('[data-testid="editor-surface"]') as HTMLDivElement;
 
     expect(page.style.width).toBe("1056px");
@@ -623,11 +649,135 @@ describe("EditorSurface", () => {
     expect(surface.style.marginBottom).toBe("144px");
     expect(surface.style.marginLeft).toBe("130px");
     expect(headerZone.style.width).toBe("830px");
-    expect(headerZone.style.height).toBe("48px");
+    expect(headerZone.style.top).toBe("24px");
+    expect(headerZone.style.height).toBe("24px");
     expect(headerZone.style.left).toBe("130px");
+    expect(headerGuide.style.top).toBe("24px");
     expect(footerZone.style.width).toBe("830px");
-    expect(footerZone.style.height).toBe("144px");
+    expect(footerZone.style.top).toBe("672px");
+    expect(footerZone.style.height).toBe("108px");
     expect(footerZone.style.left).toBe("130px");
+    expect(footerGuide.style.bottom).toBe("108px");
+
+    dispose();
+  });
+
+  it("clamps body height when header or footer intrude past the body margins", () => {
+    const container = document.createElement("div");
+    const paragraph = createEditorParagraphFromRuns([{ text: "Overlap" }]);
+    const state: EditorState = {
+      document: createEditorDocument([paragraph], {
+        width: 816,
+        height: 1056,
+        margins: {
+          top: 96,
+          right: 96,
+          bottom: 96,
+          left: 96,
+          header: 120,
+          footer: 120,
+          gutter: 0,
+        },
+      }),
+      selection: {
+        anchor: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+        focus: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+      },
+    };
+
+    const dispose = render(
+      () => (
+        <EditorSurface
+          state={() => state}
+          onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
+          onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
+        />
+      ),
+      container,
+    );
+
+    const headerZone = container.querySelector('[data-testid="editor-page-header-zone"]') as HTMLDivElement;
+    const footerZone = container.querySelector('[data-testid="editor-page-footer-zone"]') as HTMLDivElement;
+    const surface = container.querySelector('[data-testid="editor-surface"]') as HTMLDivElement;
+
+    expect(headerZone.style.top).toBe("120px");
+    expect(headerZone.style.height).toBe("0px");
+    expect(surface.style.marginTop).toBe("120px");
+    expect(surface.style.minHeight).toBe("816px");
+    expect(footerZone.style.top).toBe("936px");
+    expect(footerZone.style.height).toBe("0px");
+
+    dispose();
+  });
+
+  it("keeps a narrow editable header band when header is close to the top margin", () => {
+    const container = document.createElement("div");
+    const paragraph = createEditorParagraphFromRuns([{ text: "Tight" }]);
+    const state: EditorState = {
+      document: createEditorDocument([paragraph], {
+        width: 816,
+        height: 1056,
+        margins: {
+          top: 96,
+          right: 96,
+          bottom: 96,
+          left: 96,
+          header: 90,
+          footer: 48,
+          gutter: 0,
+        },
+      }),
+      selection: {
+        anchor: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+        focus: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+      },
+    };
+
+    const dispose = render(
+      () => (
+        <EditorSurface
+          state={() => state}
+          onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
+          onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
+        />
+      ),
+      container,
+    );
+
+    const headerZone = container.querySelector('[data-testid="editor-page-header-zone"]') as HTMLDivElement;
+    const headerGuide = container.querySelector(".oasis-editor-page-header-guide") as HTMLDivElement;
+    const surface = container.querySelector('[data-testid="editor-surface"]') as HTMLDivElement;
+
+    expect(headerZone.style.top).toBe("90px");
+    expect(headerZone.style.height).toBe("6px");
+    expect(headerGuide.style.top).toBe("6px");
+    expect(surface.style.marginTop).toBe("96px");
 
     dispose();
   });

@@ -1,9 +1,13 @@
 import { For, Show } from "solid-js";
 import type { Accessor } from "solid-js";
 import {
-  getDocumentPageSettings,
+  getPageBodyTop,
   getPageContentWidth,
   getPageContentHeight,
+  getPageFooterZoneHeight,
+  getPageFooterZoneTop,
+  getPageHeaderZoneHeight,
+  getPageHeaderZoneTop,
   type EditorLayoutParagraph,
   type EditorParagraphNode,
   getParagraphText,
@@ -120,6 +124,20 @@ function getParagraphRenderStyle(
   state: EditorState,
 ): Record<string, string> | undefined {
   const css = paragraphStyleToCss(paragraph.style, state.document.styles) ?? {};
+  const effectiveTextStyle = resolveEffectiveTextStyleForParagraph(
+    undefined,
+    paragraph.style?.styleId,
+    state.document.styles,
+  );
+  if (effectiveTextStyle.fontFamily) {
+    css["font-family"] = effectiveTextStyle.fontFamily;
+  }
+  if (effectiveTextStyle.fontSize !== undefined && effectiveTextStyle.fontSize !== null) {
+    css["font-size"] = `${effectiveTextStyle.fontSize}px`;
+  }
+  if (effectiveTextStyle.color) {
+    css.color = effectiveTextStyle.color;
+  }
   if (paragraph.list) {
     css["--list-level"] = String(Math.max(0, paragraph.list.level ?? 0));
     css["margin-left"] = `${Math.max(0, paragraph.list.level ?? 0) * 28}px`;
@@ -836,6 +854,11 @@ export function EditorSurface(props: EditorSurfaceProps) {
           const pageSettings = page.pageSettings;
           const contentWidth = getPageContentWidth(pageSettings);
           const contentHeight = getPageContentHeight(pageSettings);
+          const bodyTop = getPageBodyTop(pageSettings);
+          const headerZoneTop = getPageHeaderZoneTop(pageSettings);
+          const headerZoneHeight = getPageHeaderZoneHeight(pageSettings);
+          const footerZoneTop = getPageFooterZoneTop(pageSettings);
+          const footerZoneHeight = getPageFooterZoneHeight(pageSettings);
 
           return (
             <>
@@ -863,9 +886,9 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 data-testid="editor-page-header-zone"
                 style={{
                   left: `${pageSettings.margins.left + pageSettings.margins.gutter}px`,
-                  top: "0px",
+                  top: `${headerZoneTop}px`,
                   width: `${contentWidth}px`,
-                  height: `${pageSettings.margins.top}px`,
+                  height: `${headerZoneHeight}px`,
                 }}
                 onMouseDown={props.onSurfaceMouseDown}
                 onMouseMove={props.onSurfaceMouseMove}
@@ -873,7 +896,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 <div
                   class="oasis-editor-page-header-guide"
                   style={{
-                    top: `${pageSettings.margins.header}px`,
+                    top: `${headerZoneHeight}px`,
                   }}
                 />
                 <For each={page.headerBlocks}>
@@ -917,9 +940,9 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 style={{
                   width: `${contentWidth}px`,
                   "min-height": `${contentHeight}px`,
-                  "margin-top": `${pageSettings.margins.top}px`,
+                  "margin-top": `${bodyTop}px`,
                   "margin-right": `${pageSettings.margins.right}px`,
-                  "margin-bottom": `${pageSettings.margins.bottom}px`,
+                  "margin-bottom": `${pageSettings.height - footerZoneTop}px`,
                   "margin-left": `${pageSettings.margins.left + pageSettings.margins.gutter}px`,
                 }}
                 onMouseDown={props.onSurfaceMouseDown}
@@ -968,9 +991,9 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 data-testid="editor-page-footer-zone"
                 style={{
                   left: `${pageSettings.margins.left + pageSettings.margins.gutter}px`,
-                  bottom: "0px",
+                  top: `${footerZoneTop}px`,
                   width: `${contentWidth}px`,
-                  height: `${pageSettings.margins.bottom}px`,
+                  height: `${footerZoneHeight}px`,
                 }}
                 onMouseDown={props.onSurfaceMouseDown}
                 onMouseMove={props.onSurfaceMouseMove}
@@ -978,7 +1001,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 <div
                   class="oasis-editor-page-footer-guide"
                   style={{
-                    bottom: `${pageSettings.margins.footer}px`,
+                    bottom: `${footerZoneHeight}px`,
                   }}
                 />
                 <For each={page.footerBlocks}>

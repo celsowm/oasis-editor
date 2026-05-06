@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { createEditorParagraph } from "../../core/editorState.js";
+import {
+  createEditorParagraph,
+  createEditorParagraphFromRuns,
+  createEditorTable,
+  createEditorTableCell,
+  createEditorTableRow,
+} from "../../core/editorState.js";
 import { projectDocumentLayout } from "../../ui/layoutProjection.js";
 
 describe("Sections Layout", () => {
@@ -65,5 +71,40 @@ describe("Sections Layout", () => {
       expect(page.footerBlocks).toHaveLength(1);
       expect(page.footerBlocks![0].sourceBlockId).toBe(footerP.id);
     }
+  });
+
+  it("reduces body pagination height when header or footer cross into the body area", () => {
+    const table1 = createEditorTable([
+      createEditorTableRow([createEditorTableCell([createEditorParagraphFromRuns([{ text: "A1" }])])]),
+    ]);
+    const table2 = createEditorTable([
+      createEditorTableRow([createEditorTableCell([createEditorParagraphFromRuns([{ text: "B1" }])])]),
+    ]);
+
+    const doc = {
+      id: "doc:1",
+      blocks: [],
+      sections: [
+        {
+          id: "section:1",
+          blocks: [table1, table2],
+          pageSettings: {
+            width: 816,
+            height: 150,
+            margins: { top: 20, right: 20, bottom: 20, left: 20, header: 30, footer: 10, gutter: 0 },
+          },
+        },
+      ],
+    };
+
+    const layout = projectDocumentLayout(doc, undefined, {
+      [table1.id]: 52,
+      [table2.id]: 52,
+    });
+
+    expect(layout.pages).toHaveLength(2);
+    expect(layout.pages[0].maxHeight).toBe(100);
+    expect(layout.pages[0].blocks).toHaveLength(1);
+    expect(layout.pages[1].blocks).toHaveLength(1);
   });
 });

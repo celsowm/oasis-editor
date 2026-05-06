@@ -130,7 +130,7 @@ describe("layoutProjection", () => {
       createEditorParagraphFromRuns([{ text: "c".repeat(240) }]),
     ];
 
-    const layout = projectDocumentLayout(paragraphs, 220);
+    const layout = projectDocumentLayout(paragraphs, 140);
 
     expect(layout.pages.length).toBeGreaterThan(1);
     const paragraphIds = layout.pages.flatMap((page) => page.blocks.map((block) => block.paragraphId));
@@ -147,7 +147,7 @@ describe("layoutProjection", () => {
 
     const layout = projectDocumentLayout(
       paragraphs,
-      120,
+      90,
       {
         [paragraphs[0]!.id]: 80,
         [paragraphs[1]!.id]: 80,
@@ -163,7 +163,7 @@ describe("layoutProjection", () => {
     resetEditorIds();
     const paragraph = createEditorParagraphFromRuns([{ text: "x".repeat(520) }]);
 
-    const layout = projectDocumentLayout([paragraph], 180);
+    const layout = projectDocumentLayout([paragraph], 90);
     const blocks = layout.pages.flatMap((page) => page.blocks);
 
     expect(layout.pages.length).toBeGreaterThan(1);
@@ -211,7 +211,7 @@ describe("layoutProjection", () => {
       createEditorTableRow([createEditorTableCell([createEditorParagraphFromRuns([{ text: "C".repeat(220) }])])]),
     ]);
 
-    const layout = projectDocumentLayout([table], 220);
+    const layout = projectDocumentLayout([table], 150);
 
     expect(layout.pages).toHaveLength(3);
     expect(layout.pages.map((page) => page.blocks[0]?.blockType)).toEqual([
@@ -247,20 +247,15 @@ describe("layoutProjection", () => {
       createEditorTableRow([createEditorTableCell([createEditorParagraphFromRuns([{ text: "Body2".repeat(20) }])])]),
     ]);
 
-    const layout = projectDocumentLayout([table], 220);
+    const layout = projectDocumentLayout([table], 120);
 
-    expect(layout.pages).toHaveLength(3);
+    expect(layout.pages).toHaveLength(2);
     expect(layout.pages[0]?.blocks[0]?.tableSegment).toEqual({
       startRowIndex: 0,
-      endRowIndex: 1,
+      endRowIndex: 2,
       repeatedHeaderRowCount: 0,
     });
     expect(layout.pages[1]?.blocks[0]?.tableSegment).toEqual({
-      startRowIndex: 1,
-      endRowIndex: 2,
-      repeatedHeaderRowCount: 1,
-    });
-    expect(layout.pages[2]?.blocks[0]?.tableSegment).toEqual({
       startRowIndex: 2,
       endRowIndex: 3,
       repeatedHeaderRowCount: 1,
@@ -282,7 +277,7 @@ describe("layoutProjection", () => {
       createEditorTableRow([createEditorTableCell([createEditorParagraphFromRuns([{ text: "Tail".repeat(20) }])])]),
     ]);
 
-    const layout = projectDocumentLayout([table], 220);
+    const layout = projectDocumentLayout([table], 120);
 
     expect(layout.pages).toHaveLength(2);
     expect(layout.pages[0]?.blocks[0]?.tableSegment).toEqual({
@@ -313,11 +308,14 @@ describe("layoutProjection", () => {
       createEditorTableRow([createEditorTableCell([createEditorParagraphFromRuns([{ text: "Body2".repeat(18) }])])]),
     ]);
 
-    const layout = projectDocumentLayout([table], 220);
+    const layout = projectDocumentLayout([table], 120);
 
-    expect(layout.pages).toHaveLength(3);
-    expect(layout.pages[1]?.blocks[0]?.tableSegment?.repeatedHeaderRowCount).toBe(2);
-    expect(layout.pages[2]?.blocks[0]?.tableSegment?.repeatedHeaderRowCount).toBe(2);
+    expect(layout.pages.length).toBeGreaterThanOrEqual(2);
+    expect(
+      layout.pages
+        .slice(1)
+        .every((page) => page.blocks[0]?.tableSegment?.repeatedHeaderRowCount === 2),
+    ).toBe(true);
   });
 
   it("prefers measured paragraph lines when paginating a paragraph", () => {
@@ -523,9 +521,24 @@ describe("layoutProjection", () => {
     const spacingAfter = 12;
     const charsPerLine = 48; // no indent, no list
     const lineCount = Math.ceil("hello world".length / charsPerLine);
-    const expected = spacingBefore + spacingAfter + lineCount * lineHeight + 10;
+    const expected = spacingBefore + spacingAfter + lineCount * lineHeight;
 
     expect(blockHeight).toBeCloseTo(expected, 5);
+  });
+
+  it("estimates paragraph height from effective Word-like spacing only, without synthetic gap", () => {
+    resetEditorIds();
+    const paragraph = createEditorParagraphFromRuns([{ text: "Word" }]);
+
+    expect(estimateParagraphBlockHeight(paragraph)).toBeCloseTo(25.25, 5);
+  });
+
+  it("uses explicit spacingAfter without adding hidden extra paragraph gap", () => {
+    resetEditorIds();
+    const paragraph = createEditorParagraphFromRuns([{ text: "Word" }]);
+    paragraph.style = { spacingAfter: 0, lineHeight: 1 };
+
+    expect(estimateParagraphBlockHeight(paragraph)).toBeCloseTo(15, 5);
   });
 
   it("uses named paragraph styles when computing pagination from document styles", () => {
@@ -564,7 +577,7 @@ describe("layoutProjection", () => {
       styles: GOLDEN_STYLES,
     };
 
-    const layout = projectDocumentLayout(doc, 220);
+    const layout = projectDocumentLayout(doc, 140);
 
     expect(layout.pages.length).toBeGreaterThanOrEqual(2);
   });
