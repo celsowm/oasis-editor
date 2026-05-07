@@ -181,6 +181,22 @@ export function resolvePositionAtPoint(options: {
   if (directParagraph) {
     const paragraph = resolveParagraphFromElement(state, directParagraph);
     if (paragraph) {
+      // Fast path: cursor is directly over a character span — use its rect
+      // alone instead of measuring every char in the paragraph.
+      const directChar = targetElement?.closest<HTMLElement>("[data-char-index]") ?? null;
+      if (directChar) {
+        const charIndex = Number(directChar.dataset.charIndex);
+        if (Number.isFinite(charIndex)) {
+          const rect = directChar.getBoundingClientRect();
+          const midX = rect.left + rect.width / 2;
+          const offset = clientX <= midX ? charIndex : charIndex + 1;
+          return paragraphOffsetToPosition(
+            paragraph,
+            Math.max(0, Math.min(offset, getParagraphText(paragraph).length)),
+          );
+        }
+      }
+
       const layout = measureParagraphLayoutFromRects(
         paragraph,
         collectParagraphCharRects(surface, paragraph.id),

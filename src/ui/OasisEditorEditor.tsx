@@ -1,4 +1,4 @@
-import { Show, type Accessor, type JSX } from "solid-js";
+import { Show, createMemo, type Accessor, type JSX } from "solid-js";
 import { EditorSurface } from "./components/EditorSurface.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
@@ -96,13 +96,17 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   const characterCount = () => getDocumentCharacterCount(props.state().document);
   const wordCount = () => getDocumentWordCount(props.state().document);
 
-  const documentLayout = () =>
+  // Memoize: projectDocumentLayout walks the entire document and produces
+  // per-character layout. Without memoization each totalPages()/currentPage()
+  // call would re-run the full projection.
+  const documentLayout = createMemo(() =>
     projectDocumentLayout(
       props.state().document,
       undefined,
       props.measuredBlockHeights?.(),
       props.measuredParagraphLayouts?.(),
-    );
+    ),
+  );
 
   const totalPages = () => Math.max(1, documentLayout().pages.length);
   

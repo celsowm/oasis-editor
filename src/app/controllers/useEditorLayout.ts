@@ -54,6 +54,40 @@ function cancelFrame(handle: number): void {
   globalThis.clearTimeout(handle);
 }
 
+function getCollapsedCaretRectFast(
+  surface: HTMLElement,
+  paragraphId: string,
+  offset: number,
+): { left: number; top: number; height: number } | null {
+  const escapedId =
+    typeof CSS !== "undefined" && typeof CSS.escape === "function"
+      ? CSS.escape(paragraphId)
+      : paragraphId.replace(/"/g, '\\"');
+  // Caret sits on the left edge of the char at `offset`.
+  const charAtOffset = surface.querySelector<HTMLElement>(
+    `[data-paragraph-id="${escapedId}"] [data-char-index="${offset}"]`,
+  );
+  if (charAtOffset) {
+    const rect = charAtOffset.getBoundingClientRect();
+    if (rect.height > 0) {
+      return { left: rect.left, top: rect.top, height: rect.height };
+    }
+  }
+  if (offset > 0) {
+    // Fallback: char before caret — caret sits on its right edge.
+    const charBefore = surface.querySelector<HTMLElement>(
+      `[data-paragraph-id="${escapedId}"] [data-char-index="${offset - 1}"]`,
+    );
+    if (charBefore) {
+      const rect = charBefore.getBoundingClientRect();
+      if (rect.height > 0) {
+        return { left: rect.right, top: rect.top, height: rect.height };
+      }
+    }
+  }
+  return null;
+}
+
 function buildParagraphSignature(paragraph: EditorParagraphNode): string {
   return paragraph.runs
     .map((run) => {
@@ -207,22 +241,45 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     }
 
     const surfaceRect = surface.getBoundingClientRect();
-    const paragraphs = getParagraphs(props.state);
-    const paragraphsById = new Map(paragraphs.map((paragraph) => [paragraph.id, paragraph] as const));
     const normalized = normalizeSelection(props.state);
     const nextSelectionBoxes: SelectionBox[] = [];
 
+    // Lazy: building the full paragraph list and table locations is O(N) over
+    // the document. Skip it for collapsed selections (the common typing case)
+    // since neither isTableSelection nor the table-selection render branch
+    // applies in that case.
+    let paragraphsCache: EditorParagraphNode[] | null = null;
+    let paragraphsByIdCache: Map<string, EditorParagraphNode> | null = null;
+    const getParagraphsLazy = () => {
+      if (!paragraphsCache) {
+        paragraphsCache = getParagraphs(props.state);
+      }
+      return paragraphsCache;
+    };
+    const getParagraphsByIdLazy = () => {
+      if (!paragraphsByIdCache) {
+        paragraphsByIdCache = new Map(
+          getParagraphsLazy().map((paragraph) => [paragraph.id, paragraph] as const),
+        );
+      }
+      return paragraphsByIdCache;
+    };
+
     const activeSectionIndex = getActiveSectionIndex(props.state);
-    const anchorLocation = findParagraphTableLocation(
-      props.state.document,
-      props.state.selection.anchor.paragraphId,
-      activeSectionIndex,
-    );
-    const focusLocation = findParagraphTableLocation(
-      props.state.document,
-      props.state.selection.focus.paragraphId,
-      activeSectionIndex,
-    );
+    const anchorLocation = normalized.isCollapsed
+      ? null
+      : findParagraphTableLocation(
+          props.state.document,
+          props.state.selection.anchor.paragraphId,
+          activeSectionIndex,
+        );
+    const focusLocation = normalized.isCollapsed
+      ? null
+      : findParagraphTableLocation(
+          props.state.document,
+          props.state.selection.focus.paragraphId,
+          activeSectionIndex,
+        );
 
     const isTableSelection =
       anchorLocation &&
@@ -308,6 +365,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
         }
       }
     } else if (!normalized.isCollapsed) {
+      const paragraphs = getParagraphsLazy();
       for (let paragraphIndex = normalized.startIndex; paragraphIndex <= normalized.endIndex; paragraphIndex += 1) {
         const paragraph = paragraphs[paragraphIndex];
         if (!paragraph) {
@@ -377,7 +435,8 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     }
 
     const selectedParagraphNode =
-      paragraphsById.get(props.state.selection.focus.paragraphId) ?? paragraphs[0];
+      getParagraphsByIdLazy().get(props.state.selection.focus.paragraphId) ??
+      getParagraphsLazy()[0];
     if (!selectedParagraphNode) {
       setCaretBox((current) => ({ ...current, visible: false }));
       return;
@@ -386,6 +445,28 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     let left = 0;
     let top = 0;
     let height = 28;
+
+    // Fast path for collapsed selection: avoid measuring every char rect in the
+    // paragraph (O(n) DOM reads + forced reflow). Look up only the char span
+    // at the caret offset.
+    if (normalized.isCollapsed) {
+      const focusOffset = positionToParagraphOffset(
+        selectedParagraphNode,
+        props.state.selection.focus,
+      );
+      const fastRect = getCollapsedCaretRectFast(
+        surface,
+        selectedParagraphNode.id,
+        focusOffset,
+      );
+      if (fastRect) {
+        const caretLeft = fastRect.left - surfaceRect.left;
+        const caretTop = fastRect.top - surfaceRect.top;
+        setInputBox({ left: caretLeft, top: caretTop, height: fastRect.height });
+        setCaretBox({ left: caretLeft, top: caretTop, height: fastRect.height, visible: true });
+        return;
+      }
+    }
 
     const layout =
       getParagraphLayout(surface, selectedParagraphNode, {
@@ -625,8 +706,20 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       scheduleFrame(() => resolve());
     });
     requestInputBoxSync("import");
+    // Only measure block heights and the paragraphs touching the current
+    // selection. Per-paragraph char rect measurement is now lazy: it happens
+    // on demand (e.g. non-collapsed selection rendering, click outside text),
+    // which avoids stalling the import for many seconds on large documents.
+    const focusId = props.state.selection.focus.paragraphId;
+    const anchorId = props.state.selection.anchor.paragraphId;
+    const selectionParagraphIds = Array.from(
+      new Set([anchorId, focusId].filter((id): id is string => Boolean(id))),
+    );
     const pending =
-      scheduleDeferredLayoutMeasurement("import", { resolveWhenDone: true }) ?? Promise.resolve();
+      scheduleDeferredLayoutMeasurement("import", {
+        paragraphIds: selectionParagraphIds,
+        resolveWhenDone: true,
+      }) ?? Promise.resolve();
     await pending;
     requestInputBoxSync("selection");
   };
@@ -676,9 +769,19 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     if (changedParagraphIds.size > 0) {
       invalidateParagraphLayouts(changedParagraphIds);
       requestInputBoxSync("content-change");
-      scheduleDeferredLayoutMeasurement("content-change", {
-        paragraphIds: Array.from(changedParagraphIds).filter((paragraphId) => nextSignatures.has(paragraphId)),
-      });
+      // Skip deferred whole-paragraph measurement on plain text edits: the
+      // collapsed-caret fast path in syncInputBox does not need the measured
+      // line model, and re-measuring every char rect of the edited paragraph
+      // on every keystroke is the dominant source of typing latency. We still
+      // run the measurement when the block structure changes (paragraphs
+      // added/removed/reordered), since pagination relies on it.
+      if (blockStructureChanged) {
+        scheduleDeferredLayoutMeasurement("content-change", {
+          paragraphIds: Array.from(changedParagraphIds).filter((paragraphId) =>
+            nextSignatures.has(paragraphId),
+          ),
+        });
+      }
     } else if (blockStructureChanged) {
       scheduleDeferredLayoutMeasurement("content-change");
     }

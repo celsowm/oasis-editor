@@ -1648,13 +1648,39 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
     clearPreferredColumn();
     resetTransactionGrouping();
-    const offset = resolveClickOffset(
-      event,
-      measureParagraphLayoutFromRects(
-        paragraph,
-        collectParagraphCharRects(surfaceRef, paragraph.id),
-      ),
-    );
+    // Fast path: clicking directly on a char span avoids measuring every
+    // char rect in the paragraph (which is O(n) DOM reads + reflow).
+    const directChar =
+      (event.target as HTMLElement).closest<HTMLElement>("[data-char-index]") ?? null;
+    let offset: number;
+    if (directChar) {
+      const charIndex = Number(directChar.dataset.charIndex);
+      if (Number.isFinite(charIndex)) {
+        const rect = directChar.getBoundingClientRect();
+        const midX = rect.left + rect.width / 2;
+        const computed = event.clientX <= midX ? charIndex : charIndex + 1;
+        offset = Math.max(
+          0,
+          Math.min(getParagraphText(paragraph).length, computed),
+        );
+      } else {
+        offset = resolveClickOffset(
+          event,
+          measureParagraphLayoutFromRects(
+            paragraph,
+            collectParagraphCharRects(surfaceRef, paragraph.id),
+          ),
+        );
+      }
+    } else {
+      offset = resolveClickOffset(
+        event,
+        measureParagraphLayoutFromRects(
+          paragraph,
+          collectParagraphCharRects(surfaceRef, paragraph.id),
+        ),
+      );
+    }
     const position = paragraphOffsetToPosition(paragraph, offset);
 
     imageOps.stopImageDrag();

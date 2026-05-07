@@ -1,4 +1,4 @@
-import { For, Show } from "solid-js";
+import { For, Show, createMemo } from "solid-js";
 import type { Accessor } from "solid-js";
 import {
   getPageBodyTop,
@@ -835,20 +835,25 @@ function renderTable(
 }
 
 export function EditorSurface(props: EditorSurfaceProps) {
-  const paragraphs = () => getParagraphs(props.state());
+  // Memoize: each accessor below would otherwise re-walk the full document
+  // tree (and project per-character layout) on every read inside JSX.
+  const paragraphs = createMemo(() => getParagraphs(props.state()));
   const activeZone = () => props.state().activeZone ?? "main";
-  const paragraphIndexById = () =>
-    new Map(
-      paragraphs().map((paragraph, index) => [paragraph.id, index] as const),
-    );
-  const listMarkers = () => buildParagraphListMarkers(paragraphs());
-  const documentLayout = () =>
+  const paragraphIndexById = createMemo(
+    () =>
+      new Map(
+        paragraphs().map((paragraph, index) => [paragraph.id, index] as const),
+      ),
+  );
+  const listMarkers = createMemo(() => buildParagraphListMarkers(paragraphs()));
+  const documentLayout = createMemo(() =>
     projectDocumentLayout(
       props.state().document,
       undefined,
       props.measuredBlockHeights?.(),
       props.measuredParagraphLayouts?.(),
-    );
+    ),
+  );
 
   return (
     <div class="oasis-editor-paper-stack">
