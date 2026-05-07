@@ -109,6 +109,7 @@ import {
   getParagraphLength,
   getParagraphs,
   getDocumentParagraphs,
+  getParagraphById,
   getBlockParagraphs,
   getParagraphText,
   findParagraphLocation,
@@ -1623,9 +1624,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     clearPendingCaretTextStyle();
     event.preventDefault();
     event.stopPropagation();
-    const paragraph = getDocumentParagraphs(state.document).find(
-      (candidate) => candidate.id === paragraphId,
-    );
+    const paragraph = getParagraphById(state.document, paragraphId);
     if (!paragraph || !surfaceRef) {
       return;
     }

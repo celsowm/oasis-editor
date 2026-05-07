@@ -613,12 +613,20 @@ export function getBlockParagraphs(block: EditorBlockNode): EditorParagraphNode[
 }
 
 export function getDocumentParagraphs(document: EditorDocument): EditorParagraphNode[] {
+  let paragraphs = documentParagraphsCache.get(document);
+  if (paragraphs) {
+    return paragraphs;
+  }
+  
   const sections = getDocumentSections(document);
-  return sections.flatMap((section) => [
+  paragraphs = sections.flatMap((section) => [
     ...(section.header?.flatMap(getBlockParagraphs) ?? []),
     ...section.blocks.flatMap(getBlockParagraphs),
     ...(section.footer?.flatMap(getBlockParagraphs) ?? []),
   ]);
+  
+  documentParagraphsCache.set(document, paragraphs);
+  return paragraphs;
 }
 
 export function getParagraphs(state: EditorState): EditorParagraphNode[] {
@@ -659,72 +667,141 @@ export interface EditorParagraphLocation {
   paragraphIndexInSection: number;
 }
 
+export interface DocumentParagraphIndexEntry {
+  paragraph: EditorParagraphNode;
+  location: EditorParagraphLocation;
+  tableLocation: {
+    blockIndex: number;
+    rowIndex: number;
+    cellIndex: number;
+    paragraphIndex: number;
+  } | null;
+}
+
+const documentIndexCache = new WeakMap<EditorDocument, Map<string, DocumentParagraphIndexEntry>>();
+const documentParagraphsCache = new WeakMap<EditorDocument, EditorParagraphNode[]>();
+
+export function getDocumentParagraphIndex(document: EditorDocument): Map<string, DocumentParagraphIndexEntry> {
+  let index = documentIndexCache.get(document);
+  if (index) {
+    return index;
+  }
+  
+  index = new Map();
+  const sections = getDocumentSections(document);
+  
+  for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex += 1) {
+    const section = sections[sectionIndex];
+    
+    // Header
+    if (section.header) {
+      let paraIndex = 0;
+      for (let blockIndex = 0; blockIndex < section.header.length; blockIndex += 1) {
+        const block = section.header[blockIndex];
+        if (block.type === "paragraph") {
+          index.set(block.id, {
+            paragraph: block,
+            location: { sectionIndex, zone: "header", paragraphIndexInSection: paraIndex },
+            tableLocation: null,
+          });
+          paraIndex += 1;
+        } else if (block.type === "table") {
+          for (let rowIndex = 0; rowIndex < block.rows.length; rowIndex += 1) {
+            const row = block.rows[rowIndex];
+            for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+              const cell = row.cells[cellIndex];
+              for (let cpIndex = 0; cpIndex < cell.blocks.length; cpIndex += 1) {
+                const cp = cell.blocks[cpIndex];
+                index.set(cp.id, {
+                  paragraph: cp,
+                  location: { sectionIndex, zone: "header", paragraphIndexInSection: paraIndex },
+                  tableLocation: { blockIndex, rowIndex, cellIndex, paragraphIndex: cpIndex },
+                });
+                paraIndex += 1;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Main blocks
+    let paraIndex = 0;
+    for (let blockIndex = 0; blockIndex < section.blocks.length; blockIndex += 1) {
+      const block = section.blocks[blockIndex];
+      if (block.type === "paragraph") {
+        index.set(block.id, {
+          paragraph: block,
+          location: { sectionIndex, zone: "main", paragraphIndexInSection: paraIndex },
+          tableLocation: null,
+        });
+        paraIndex += 1;
+      } else if (block.type === "table") {
+        for (let rowIndex = 0; rowIndex < block.rows.length; rowIndex += 1) {
+          const row = block.rows[rowIndex];
+          for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+            const cell = row.cells[cellIndex];
+            for (let cpIndex = 0; cpIndex < cell.blocks.length; cpIndex += 1) {
+              const cp = cell.blocks[cpIndex];
+              index.set(cp.id, {
+                paragraph: cp,
+                location: { sectionIndex, zone: "main", paragraphIndexInSection: paraIndex },
+                tableLocation: { blockIndex, rowIndex, cellIndex, paragraphIndex: cpIndex },
+              });
+              paraIndex += 1;
+            }
+          }
+        }
+      }
+    }
+    
+    // Footer
+    if (section.footer) {
+      let paraIndex = 0;
+      for (let blockIndex = 0; blockIndex < section.footer.length; blockIndex += 1) {
+        const block = section.footer[blockIndex];
+        if (block.type === "paragraph") {
+          index.set(block.id, {
+            paragraph: block,
+            location: { sectionIndex, zone: "footer", paragraphIndexInSection: paraIndex },
+            tableLocation: null,
+          });
+          paraIndex += 1;
+        } else if (block.type === "table") {
+          for (let rowIndex = 0; rowIndex < block.rows.length; rowIndex += 1) {
+            const row = block.rows[rowIndex];
+            for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+              const cell = row.cells[cellIndex];
+              for (let cpIndex = 0; cpIndex < cell.blocks.length; cpIndex += 1) {
+                const cp = cell.blocks[cpIndex];
+                index.set(cp.id, {
+                  paragraph: cp,
+                  location: { sectionIndex, zone: "footer", paragraphIndexInSection: paraIndex },
+                  tableLocation: { blockIndex, rowIndex, cellIndex, paragraphIndex: cpIndex },
+                });
+                paraIndex += 1;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  documentIndexCache.set(document, index);
+  return index;
+}
+
+export function getParagraphById(document: EditorDocument, paragraphId: string): EditorParagraphNode | undefined {
+  return getDocumentParagraphIndex(document).get(paragraphId)?.paragraph;
+}
+
 export function findParagraphLocation(
   document: EditorDocument,
   paragraphId: string,
 ): EditorParagraphLocation | null {
-  const sections = getDocumentSections(document);
-
-  for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex += 1) {
-    const section = sections[sectionIndex];
-
-    // Check header
-    if (section.header) {
-      for (let i = 0; i < section.header.length; i += 1) {
-        if (section.header[i].id === paragraphId) {
-          return { sectionIndex, zone: "header", paragraphIndexInSection: i };
-        }
-      }
-    }
-
-    // Check main blocks
-    let mainIndex = 0;
-    for (const block of section.blocks) {
-      const paragraphs = getBlockParagraphs(block);
-      for (const p of paragraphs) {
-        if (p.id === paragraphId) {
-          return { sectionIndex, zone: "main", paragraphIndexInSection: mainIndex };
-        }
-        mainIndex += 1;
-      }
-    }
-
-    // Check footer
-    if (section.footer) {
-      for (let i = 0; i < section.footer.length; i += 1) {
-        if (section.footer[i].id === paragraphId) {
-          return { sectionIndex, zone: "footer", paragraphIndexInSection: i };
-        }
-      }
-    }
-  }
-
-  return null;
-}
-
-function findInBlocks(
-  blocks: EditorBlockNode[],
-  paragraphId: string,
-): { blockIndex: number; rowIndex: number; cellIndex: number; paragraphIndex: number } | null {
-  for (let blockIndex = 0; blockIndex < blocks.length; blockIndex += 1) {
-    const block = blocks[blockIndex]!;
-    if (block.type !== "table") {
-      continue;
-    }
-
-    for (let rowIndex = 0; rowIndex < block.rows.length; rowIndex += 1) {
-      const row = block.rows[rowIndex]!;
-      for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
-        const cell = row.cells[cellIndex]!;
-        const paragraphIndex = cell.blocks.findIndex((paragraph) => paragraph.id === paragraphId);
-        if (paragraphIndex !== -1) {
-          return { blockIndex, rowIndex, cellIndex, paragraphIndex };
-        }
-      }
-    }
-  }
-
-  return null;
+  const entry = getDocumentParagraphIndex(document).get(paragraphId);
+  return entry ? entry.location : null;
 }
 
 export function findParagraphTableLocation(
@@ -732,28 +809,14 @@ export function findParagraphTableLocation(
   paragraphId: string,
   activeSectionIndex: number = 0,
 ): { blockIndex: number; rowIndex: number; cellIndex: number; paragraphIndex: number; zone: EditorEditingZone } | null {
-  const hasSections = document.sections && document.sections.length > 0;
-  const section = hasSections ? document.sections![activeSectionIndex] : null;
-
-  if (section) {
-    // Search in header
-    const headerLoc = findInBlocks(section.header ?? [], paragraphId);
-    if (headerLoc) return { ...headerLoc, zone: "header" };
-
-    // Search in main blocks
-    const mainLoc = findInBlocks(section.blocks, paragraphId);
-    if (mainLoc) return { ...mainLoc, zone: "main" };
-
-    // Search in footer
-    const footerLoc = findInBlocks(section.footer ?? [], paragraphId);
-    if (footerLoc) return { ...footerLoc, zone: "footer" };
-  } else {
-    // No sections, search in top-level blocks
-    const mainLoc = findInBlocks(document.blocks, paragraphId);
-    if (mainLoc) return { ...mainLoc, zone: "main" };
+  const entry = getDocumentParagraphIndex(document).get(paragraphId);
+  if (!entry || !entry.tableLocation) return null;
+  
+  if (document.sections && document.sections.length > 0) {
+    if (entry.location.sectionIndex !== activeSectionIndex) return null;
   }
-
-  return null;
+  
+  return { ...entry.tableLocation, zone: entry.location.zone };
 }
 
 export function getParagraphText(paragraph: EditorParagraphNode): string {

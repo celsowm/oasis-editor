@@ -4,6 +4,7 @@ import {
   getParagraphText, 
   paragraphOffsetToPosition,
   getDocumentParagraphs,
+  getParagraphById,
   getDocumentSections,
   type EditorBlockNode,
 } from "../core/model.js";
@@ -153,11 +154,7 @@ function resolveParagraphFromElement(
     return null;
   }
 
-  return (
-    getDocumentParagraphs(state.document).find(
-      (candidate) => candidate.id === paragraphId,
-    ) ?? null
-  );
+  return getParagraphById(state.document, paragraphId) ?? null;
 }
 
 export function resolvePositionAtPoint(options: {
