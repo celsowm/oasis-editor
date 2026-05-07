@@ -24,9 +24,18 @@ export interface ActiveImageResize {
 export interface ActiveImageDrag {
   paragraphId: string;
   paragraphOffset: number;
+  src: string;
+  width: number;
+  height: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+interface PendingImagePointer {
+  paragraphId: string;
+  paragraphOffset: number;
   startClientX: number;
   startClientY: number;
-  dragging: boolean;
   src: string;
   width: number;
   height: number;
@@ -56,6 +65,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
 
   let activeImageDrag: ActiveImageDrag | null = null;
   let activeImageResize: ActiveImageResize | null = null;
+  let pendingImagePointer: PendingImagePointer | null = null;
   let imageDragCursorStyle: HTMLStyleElement | null = null;
 
   const clamp = (value: number, min: number, max?: number): number => {
@@ -201,14 +211,19 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     document.body.style.cursor = "";
   };
 
-  const stopImageDrag = () => {
+  const clearImagePointerTracking = () => {
     hideImageDragCursor();
+    pendingImagePointer = null;
     activeImageDrag = null;
     setDragging(false);
     setDraggedImageInfo(null);
     setDropTargetPos(null);
     window.removeEventListener("mousemove", handleImageDragMouseMove);
     window.removeEventListener("mouseup", handleImageDragMouseUp);
+  };
+
+  const stopImageDrag = () => {
+    clearImagePointerTracking();
   };
 
   const stopImageResize = () => {
@@ -218,36 +233,51 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
   };
 
   const handleImageDragMouseMove = (event: MouseEvent) => {
-    const dragState = activeImageDrag;
+    let dragState = activeImageDrag;
     if (!dragState) {
-      return;
+      const pendingState = pendingImagePointer;
+      if (!pendingState) {
+        return;
+      }
+
+      const deltaX = Math.abs(event.clientX - pendingState.startClientX);
+      const deltaY = Math.abs(event.clientY - pendingState.startClientY);
+      if (deltaX + deltaY < 4) {
+        return;
+      }
+
+      dragState = {
+        paragraphId: pendingState.paragraphId,
+        paragraphOffset: pendingState.paragraphOffset,
+        src: pendingState.src,
+        width: pendingState.width,
+        height: pendingState.height,
+        offsetX: pendingState.offsetX,
+        offsetY: pendingState.offsetY,
+      };
+      activeImageDrag = dragState;
+      pendingImagePointer = null;
+      setDragging(true);
+      showImageDragCursor();
+      deps.logger.info(
+        `image drag:start ${dragState.paragraphId}@${dragState.paragraphOffset} client=(${event.clientX},${event.clientY})`,
+      );
     }
 
     setMousePos({ x: event.clientX, y: event.clientY });
-
-    const deltaX = Math.abs(event.clientX - dragState.startClientX);
-    const deltaY = Math.abs(event.clientY - dragState.startClientY);
-    if (!dragState.dragging && deltaX + deltaY >= 4) {
-      dragState.dragging = true;
-      setDragging(true);
-      showImageDragCursor();
-      deps.logger.info(`image drag:start ${dragState.paragraphId}@${dragState.paragraphOffset} client=(${dragState.startClientX},${dragState.startClientY})`);
-    }
-
-    if (dragState.dragging) {
-        setDraggedImageInfo({ ...dragState });
-        setDropTargetPos(resolvePositionAtSurfacePoint(event.clientX, event.clientY));
-    }
+    setDraggedImageInfo({ ...dragState });
+    setDropTargetPos(resolvePositionAtSurfacePoint(event.clientX, event.clientY));
   };
 
   const handleImageDragMouseUp = (event: MouseEvent) => {
+    const pendingState = pendingImagePointer;
     const dragState = activeImageDrag;
-    if (!dragState) {
+    if (!dragState && !pendingState) {
       deps.focusInput();
       return;
     }
 
-    if (dragState.dragging) {
+    if (dragState) {
       const position = resolvePositionAtSurfacePoint(event.clientX, event.clientY);
       if (position) {
         deps.logger.info(`image drag:done ${dragState.paragraphId} -> ${position.paragraphId}:${position.runId}[${position.offset}]`);
@@ -260,7 +290,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
       }
     }
 
-    stopImageDrag();
+    clearImagePointerTracking();
     deps.focusInput();
   };
 
@@ -353,19 +383,22 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
 
     const selectedImage = getSelectedImageInfo(deps.state);
 
-    activeImageDrag = {
+    pendingImagePointer = {
       paragraphId,
       paragraphOffset,
       startClientX: event.clientX,
       startClientY: event.clientY,
-      dragging: false,
       src: selectedImage?.src ?? "",
       width: selectedImage?.width ?? rect.width,
       height: selectedImage?.height ?? rect.height,
       offsetX: event.clientX - rect.left,
       offsetY: event.clientY - rect.top,
     };
+    activeImageDrag = null;
     setMousePos({ x: event.clientX, y: event.clientY });
+    setDragging(false);
+    setDraggedImageInfo(null);
+    setDropTargetPos(null);
     window.addEventListener("mousemove", handleImageDragMouseMove);
     window.addEventListener("mouseup", handleImageDragMouseUp);
   };

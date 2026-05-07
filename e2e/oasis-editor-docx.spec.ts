@@ -1,7 +1,12 @@
 import { expect, test } from "@playwright/test";
 import JSZip from "jszip";
 
-async function buildDocx(documentXml: string, relsXml?: string): Promise<Buffer> {
+async function buildDocx(
+  documentXml: string,
+  relsXml?: string,
+  extraFiles?: Record<string, Buffer | string>,
+  extraContentTypeOverrides?: string[],
+): Promise<Buffer> {
   const zip = new JSZip();
   zip.file(
     "[Content_Types].xml",
@@ -10,6 +15,7 @@ async function buildDocx(documentXml: string, relsXml?: string): Promise<Buffer>
         <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
         <Default Extension="xml" ContentType="application/xml"/>
         <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+        ${(extraContentTypeOverrides ?? []).join("")}
       </Types>`,
   );
   zip.file(
@@ -22,6 +28,9 @@ async function buildDocx(documentXml: string, relsXml?: string): Promise<Buffer>
   zip.file("word/document.xml", documentXml);
   if (relsXml) {
     zip.file("word/_rels/document.xml.rels", relsXml);
+  }
+  for (const [filePath, fileContent] of Object.entries(extraFiles ?? {})) {
+    zip.file(filePath, fileContent);
   }
   return Buffer.from(await zip.generateAsync({ type: "arraybuffer" }));
 }
@@ -153,5 +162,88 @@ test.describe("Oasis Editor 2 DOCX", () => {
 
     expect(documentXml).toContain("<w:hyperlink");
     expect(relsXml).toContain('Target="https://example.com"');
+  });
+
+  test("keeps paragraph clicks editable after selecting an imported inline image", async ({ page }) => {
+    const pngBytes = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a7d4AAAAASUVORK5CYII=",
+      "base64",
+    );
+    const file = await buildDocx(
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document
+        xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+        xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+        xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+        xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+        <w:body>
+          <w:p>
+            <w:pPr><w:jc w:val="center"/></w:pPr>
+            <w:r>
+              <w:drawing>
+                <wp:inline>
+                  <wp:extent cx="1097280" cy="1097280"/>
+                  <wp:docPr id="1" name="Picture 1"/>
+                  <a:graphic>
+                    <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                      <pic:pic>
+                        <pic:nvPicPr>
+                          <pic:cNvPr id="0" name="brasao.png"/>
+                          <pic:cNvPicPr/>
+                        </pic:nvPicPr>
+                        <pic:blipFill>
+                          <a:blip r:embed="rIdImage1"/>
+                          <a:stretch><a:fillRect/></a:stretch>
+                        </pic:blipFill>
+                        <pic:spPr>
+                          <a:xfrm>
+                            <a:off x="0" y="0"/>
+                            <a:ext cx="1097280" cy="1097280"/>
+                          </a:xfrm>
+                          <a:prstGeom prst="rect"/>
+                        </pic:spPr>
+                      </pic:pic>
+                    </a:graphicData>
+                  </a:graphic>
+                </wp:inline>
+              </w:drawing>
+            </w:r>
+          </w:p>
+          <w:p><w:r><w:t>Heading text</w:t></w:r></w:p>
+          <w:p/>
+          <w:p><w:r><w:t>Body text</w:t></w:r></w:p>
+        </w:body>
+      </w:document>`,
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+        <Relationship Id="rIdImage1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.png"/>
+      </Relationships>`,
+      {
+        "word/media/image1.png": pngBytes,
+      },
+      [
+        '<Default Extension="png" ContentType="image/png"/>',
+      ],
+    );
+
+    await page.locator('[data-testid="editor-import-docx-input"]').setInputFiles({
+      name: "image-first.docx",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      buffer: file,
+    });
+
+    await expect(page.locator('[data-testid="editor-image"]').first()).toBeVisible();
+
+    const blocks = page.locator('[data-testid="editor-block"]');
+    await page.locator('[data-testid="editor-image"]').first().click();
+    await blocks.nth(3).click();
+    await page.keyboard.type(" updated");
+    await expect(blocks.nth(3)).toContainText("Body text updated");
+
+    await page.locator('[data-testid="editor-image"]').first().click();
+    await blocks.nth(2).click();
+    await page.keyboard.type("Empty line");
+    await expect(blocks.nth(2)).toContainText("Empty line");
   });
 });

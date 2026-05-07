@@ -637,6 +637,19 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     });
   };
 
+  const focusInputAfterPointerSelection = () => {
+    setFocused(true);
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        textareaRef?.focus();
+        if (textareaRef) {
+          textareaRef.selectionStart = textareaRef.value.length;
+          textareaRef.selectionEnd = textareaRef.value.length;
+        }
+      });
+    });
+  };
+
   const fr = useEditorFindReplace({
     state,
     applyState,
@@ -1264,7 +1277,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       `selection:end ${sel.anchor.paragraphId}[${sel.anchor.offset}]→${sel.focus.paragraphId}[${sel.focus.offset}] [${anchorLoc}→${focusLoc}]`,
     );
     stopDragging();
-    focusInput();
+    focusInputAfterPointerSelection();
   };
 
   const moveSelectionToParagraphBoundary = (
@@ -1416,7 +1429,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       : null;
 
     if (!paragraphElement && !isZoneTransition) {
-      focusInput();
+      focusInputAfterPointerSelection();
       return;
     }
 
@@ -1428,7 +1441,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       : undefined;
 
     if (!isZoneTransition && (!paragraphId || !paragraph || !surfaceRef)) {
-      focusInput();
+      focusInputAfterPointerSelection();
       return;
     }
 
@@ -1568,12 +1581,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         if (isZoneTransition) {
           applyWithZone(state, position);
         } else {
-          applyWithZone(
-            setSelection(state, {
-              anchor: position,
-              focus: position,
-            }),
-          );
+          applyWithZone({
+            ...state,
+            selection: {
+              anchor: { ...position },
+              focus: { ...position },
+            },
+          });
         }
       }
     } else if (isZoneTransition) {
@@ -1583,7 +1597,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
     window.addEventListener("mousemove", handleWindowMouseMove);
     window.addEventListener("mouseup", handleWindowMouseUp);
-    focusInput();
+    focusInputAfterPointerSelection();
   };
 
   const handleSurfaceDblClick = (event: MouseEvent) => {
@@ -1786,7 +1800,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       );
       window.addEventListener("mousemove", handleWindowMouseMove);
       window.addEventListener("mouseup", handleWindowMouseUp);
-      focusInput();
+      focusInputAfterPointerSelection();
       return;
     }
 
@@ -1804,7 +1818,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         targetPos,
       );
       stopDragging();
-      focusInput();
+      focusInputAfterPointerSelection();
       return;
     }
 
@@ -1820,21 +1834,24 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         targetPos,
       );
       stopDragging();
-      focusInput();
+      focusInputAfterPointerSelection();
       return;
     }
 
     dragAnchor = cellLocation ? anchorPosition : position;
     applyWithZone(
-      setSelection(state, {
-        anchor: position,
-        focus: position,
-      }),
+      {
+        ...state,
+        selection: {
+          anchor: { ...position },
+          focus: { ...position },
+        },
+      },
       position,
     );
     window.addEventListener("mousemove", handleWindowMouseMove);
     window.addEventListener("mouseup", handleWindowMouseUp);
-    focusInput();
+    focusInputAfterPointerSelection();
   };
 
   const handleRevisionMouseEnter = (revisionId: string, event: MouseEvent) => {
@@ -2263,7 +2280,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           }
 
           imageOps.startImageDrag(paragraphId, paragraphOffset, event);
-          focusInput();
+          focusInputAfterPointerSelection();
         }}
         onImageResizeHandleMouseDown={(paragraphId: string, paragraphOffset: number, direction: ImageResizeHandleDirection, event: MouseEvent & { currentTarget: HTMLElement }) => {
           event.preventDefault();
@@ -2400,7 +2417,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
               }
 
               imageOps.startImageDrag(paragraphId, paragraphOffset, event);
-              focusInput();
+              focusInputAfterPointerSelection();
             }}
             onImageResizeHandleMouseDown={(
               paragraphId,
