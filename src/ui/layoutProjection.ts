@@ -298,6 +298,20 @@ function getParagraphSegmentHeight(
   return spacingBefore + spacingAfter + lineHeights;
 }
 
+function getProjectedParagraphBlockHeight(
+  paragraph: EditorParagraphNode,
+  layout: EditorLayoutParagraph,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): number {
+  return getParagraphSegmentHeight(
+    paragraph,
+    layout.lines,
+    true,
+    true,
+    styles,
+  );
+}
+
 function getParagraphMeasuredHeight(
   measuredHeights: Record<string, number> | undefined,
   paragraphId: string,
@@ -507,7 +521,7 @@ function projectHeaderFooterBlocks(
     if (block.type === "paragraph") {
       const layout = projectParagraphLayout(block, pageIndex, totalPages, styles, contentWidth);
       const estimatedHeight =
-        measuredHeights?.[block.id] ?? estimateParagraphBlockHeight(block, styles, contentWidth);
+        measuredHeights?.[block.id] ?? getProjectedParagraphBlockHeight(block, layout, styles);
       return {
         blockId: block.id,
         sourceBlockId: block.id,
@@ -536,6 +550,23 @@ function getProjectedBlocksHeight(blocks: EditorLayoutBlock[] | undefined): numb
     return 0;
   }
   return blocks.reduce((sum, block) => sum + block.estimatedHeight, 0);
+}
+
+function blockContainsNumPagesField(block: EditorBlockNode): boolean {
+  if (block.type === "paragraph") {
+    return block.runs.some((run) => run.field?.type === "NUMPAGES");
+  }
+  return block.rows.some((row) =>
+    row.cells.some((cell) => cell.blocks.some(blockContainsNumPagesField)),
+  );
+}
+
+function documentContainsNumPagesField(document: EditorDocument): boolean {
+  return getDocumentSections(document).some((section) =>
+    [...(section.header ?? []), ...section.blocks, ...(section.footer ?? [])].some(
+      blockContainsNumPagesField,
+    ),
+  );
 }
 
 function resolveEffectiveVerticalMetrics(
@@ -629,7 +660,7 @@ function projectBlocksLayout(
           ? applyMeasuredLineGeometry(projectedParagraphLayout, measuredParagraphLayout)
           : projectedParagraphLayout;
       const paragraphTotalHeight =
-        measuredHeights?.[sourceBlock.id] ?? estimateParagraphBlockHeight(sourceBlock, styles, contentWidth);
+        measuredHeights?.[sourceBlock.id] ?? getProjectedParagraphBlockHeight(sourceBlock, paragraphLayout, styles);
       const nextBlockHeight =
         nextBlock?.type === "paragraph"
           ? measuredHeights?.[nextBlock.id] ?? estimateParagraphBlockHeight(nextBlock, styles, contentWidth)
@@ -880,6 +911,7 @@ export function projectDocumentLayout(
 
   const document = blocksOrDocument;
   const sections = getDocumentSections(document);
+  const needsTotalPages = documentContainsNumPagesField(document);
   
   const calculateTotalPages = () => {
     let currentTotal = 0;
@@ -940,7 +972,7 @@ export function projectDocumentLayout(
     return currentTotal;
   };
 
-  const totalPages = calculateTotalPages();
+  const totalPages = needsTotalPages ? calculateTotalPages() : undefined;
   const allPages: EditorLayoutPage[] = [];
 
   for (const section of sections) {
