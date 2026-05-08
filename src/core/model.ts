@@ -170,16 +170,56 @@ export interface EditorSection {
   breakType?: "nextPage" | "continuous";
 }
 
+/**
+ * An out-of-band asset bundled with the document (e.g. an embedded image).
+ * Heavy binary data (data URLs) lives here exactly once; runs reference it
+ * via `image.src = "asset:<id>"`. Keeping payloads off the per-paragraph
+ * state lets equality checks, signatures and clones stay cheap on every
+ * keystroke even when a document embeds large images.
+ */
+export interface EditorAsset {
+  id: string;
+  /** Full data URL (e.g. `data:image/png;base64,...`) or remote URL. */
+  url: string;
+}
+
+export const EDITOR_ASSET_REF_PREFIX = "asset:";
+
 export interface EditorDocument {
   id: string;
   blocks: EditorBlockNode[];
   pageSettings?: EditorPageSettings;
   sections?: EditorSection[];
   styles?: Record<string, EditorNamedStyle>;
+  /**
+   * Out-of-band asset registry. Image runs reference entries here using
+   * `src = "asset:<id>"`. The map itself is treated as append-only and is
+   * deliberately excluded from per-keystroke equality checks/signatures.
+   */
+  assets?: Record<string, EditorAsset>;
   metadata?: {
     title?: string;
     [key: string]: any;
   };
+}
+
+/**
+ * Resolve an `asset:<id>` reference (or pass through any other src) to the
+ * actual URL using the document's asset registry.
+ */
+export function resolveImageSrc(
+  document: Pick<EditorDocument, "assets"> | undefined,
+  src: string | undefined,
+): string {
+  if (!src) {
+    return "";
+  }
+  if (!src.startsWith(EDITOR_ASSET_REF_PREFIX)) {
+    return src;
+  }
+  const id = src.slice(EDITOR_ASSET_REF_PREFIX.length);
+  const asset = document?.assets?.[id];
+  return asset?.url ?? src;
 }
 
 /**

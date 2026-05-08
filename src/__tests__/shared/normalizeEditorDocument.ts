@@ -10,6 +10,7 @@ import type {
 import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
+  resolveImageSrc,
 } from "../../core/model.js";
 import { DEFAULT_EDITOR_STYLES } from "../../core/editorState.js";
 
@@ -69,24 +70,39 @@ function normalizeRunStyle(style: EditorTextStyle | undefined, paragraphStyleId:
   });
 }
 
-function normalizeRun(run: EditorTextRun, paragraphStyleId: string | undefined) {
+function normalizeRun(
+  run: EditorTextRun,
+  paragraphStyleId: string | undefined,
+  document: Pick<EditorDocument, "assets"> | undefined,
+) {
   return {
     text: run.text,
     styles: normalizeRunStyle(run.styles, paragraphStyleId),
-    image: run.image ? { ...run.image } : undefined,
+    // Resolve any "asset:<id>" reference back to the materialized URL so
+    // round-trip comparisons against the original (inline-data-URL) spec
+    // still match after the importer dedupes images into `document.assets`.
+    image: run.image
+      ? { ...run.image, src: resolveImageSrc(document, run.image.src) }
+      : undefined,
   };
 }
 
-function normalizeParagraph(paragraph: EditorParagraphNode) {
+function normalizeParagraph(
+  paragraph: EditorParagraphNode,
+  document: Pick<EditorDocument, "assets"> | undefined,
+) {
   return {
     type: paragraph.type,
-    runs: paragraph.runs.map((run) => normalizeRun(run, paragraph.style?.styleId)),
+    runs: paragraph.runs.map((run) => normalizeRun(run, paragraph.style?.styleId, document)),
     style: normalizeParagraphStyle(paragraph.style),
     list: paragraph.list ?? undefined,
   };
 }
 
-function normalizeTable(table: EditorTableNode) {
+function normalizeTable(
+  table: EditorTableNode,
+  document: Pick<EditorDocument, "assets"> | undefined,
+) {
   return {
     type: table.type,
     rows: table.rows.map((row) => ({
@@ -95,14 +111,19 @@ function normalizeTable(table: EditorTableNode) {
         colSpan: cell.colSpan ?? undefined,
         rowSpan: cell.rowSpan ?? undefined,
         vMerge: cell.vMerge ?? undefined,
-        blocks: cell.blocks.map(normalizeParagraph),
+        blocks: cell.blocks.map((paragraph) => normalizeParagraph(paragraph, document)),
       })),
     })),
   };
 }
 
-function normalizeBlock(block: EditorBlockNode) {
-  return block.type === "paragraph" ? normalizeParagraph(block) : normalizeTable(block);
+function normalizeBlock(
+  block: EditorBlockNode,
+  document: Pick<EditorDocument, "assets"> | undefined,
+) {
+  return block.type === "paragraph"
+    ? normalizeParagraph(block, document)
+    : normalizeTable(block, document);
 }
 
 export function normalizeEditorDocument(document: EditorDocument) {
@@ -115,6 +136,6 @@ export function normalizeEditorDocument(document: EditorDocument) {
             margins: { ...document.pageSettings.margins },
           }
         : undefined,
-    blocks: document.blocks.map(normalizeBlock),
+    blocks: document.blocks.map((block) => normalizeBlock(block, document)),
   };
 }

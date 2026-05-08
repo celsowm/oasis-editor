@@ -1202,7 +1202,16 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
 
     const tempState: EditorState = {
       ...current,
-      document: createEditorDocument(targetCell.blocks),
+      document: createEditorDocument(
+        targetCell.blocks,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        // Carry the asset registry through so image runs inside the cell
+        // can still resolve their `asset:<id>` references during the edit.
+        current.document.assets,
+      ),
       selection: {
         anchor: { ...current.selection.anchor },
         focus: { ...current.selection.focus },
@@ -1268,7 +1277,16 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       // 2. Create temp state with these paragraphs
       const tempState: EditorState = {
         ...current,
-        document: createEditorDocument(allParagraphs),
+        document: createEditorDocument(
+          allParagraphs,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          // Carry the asset registry through so image runs inside the
+          // cells can still resolve their `asset:<id>` references.
+          current.document.assets,
+        ),
         selection: {
           anchor: paragraphOffsetToPosition(allParagraphs[0], 0),
           focus: paragraphOffsetToPosition(

@@ -38,7 +38,7 @@ export function serializeEditorSelectionToHtml(state: EditorState): string {
     const runs = sliceRuns(paragraph, startOffset, endOffset);
     const css = paragraphStyleToCssText(paragraph.style);
     const attrs = css.length > 0 ? ` style="${css}"` : "";
-    const paragraphHtml = serializeParagraphRunsToHtml(runs);
+    const paragraphHtml = serializeParagraphRunsToHtml(runs, state.document);
 
     if (paragraph.list?.kind) {
       const wrapperTag = paragraph.list.kind === "bullet" ? "ul" : "ol";

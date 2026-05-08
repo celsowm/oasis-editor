@@ -12,7 +12,7 @@ import {
 import { moveSelectedImageToPosition } from "../../core/editorCommands.js";
 import { exportEditorDocumentToDocx } from "../../export/docx/exportEditorDocumentToDocx.js";
 import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditorDocument.js";
-import { getParagraphText, getParagraphs, paragraphOffsetToPosition } from "../../core/model.js";
+import { getParagraphText, getParagraphs, paragraphOffsetToPosition, resolveImageSrc } from "../../core/model.js";
 import {
   createDocxRoundTripFixtures,
   createMixedTableAndImageFixture,
@@ -514,11 +514,16 @@ describe("exportEditorDocumentToDocx", () => {
     resetEditorIds();
     const imported = await importDocxToEditorDocument(buffer);
     const importedRun = (imported.blocks[0] as any).runs[1];
-    
+
     expect(importedRun.image).toBeDefined();
     expect(importedRun.image?.width).toBe(100);
     expect(importedRun.image?.height).toBe(100);
-    expect(importedRun.image?.src).toContain("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
+    // Image payloads now live out-of-band in `document.assets`; the run's
+    // `src` is an "asset:<id>" reference that the resolver expands to the
+    // original data URL.
+    expect(resolveImageSrc(imported, importedRun.image?.src)).toContain(
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    );
     expect(importedRun.image?.alt).toBe("Chart");
   });
 

@@ -17,6 +17,7 @@ import {
   getDocumentSections,
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
+  resolveImageSrc,
 } from "../../core/model.js";
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -519,6 +520,7 @@ function buildPartContext(
   blocks: EditorBlockNode[],
   numberingContext: NumberingContext,
   state: ExportBuildState,
+  document: EditorDocument,
 ): DocContext {
   const images: Array<{ rId: string; target: string; base64: string; runId: string; cx: number; cy: number; alt?: string }> = [];
   const imageMap = new Map<string, string>();
@@ -537,7 +539,10 @@ function buildPartContext(
         continue;
       }
 
-      const match = run.image.src.match(/^data:image\/(png|jpeg|jpg);base64,(.*)$/);
+      // Image src may be an "asset:<id>" reference into the document's
+      // asset registry — resolve it to the actual data URL before parsing.
+      const resolvedSrc = resolveImageSrc(document, run.image.src);
+      const match = resolvedSrc.match(/^data:image\/(png|jpeg|jpg);base64,(.*)$/);
       if (!match) {
         continue;
       }
@@ -721,6 +726,7 @@ export async function exportEditorDocumentToDocx(document: EditorDocument): Prom
     sections.flatMap((section) => section.blocks),
     numberingContext,
     buildState,
+    document,
   );
   const parts: PartDefinition[] = [];
   const sectionReferences: SectionReferenceDefinition[] = sections.map(() => ({}));
@@ -731,7 +737,7 @@ export async function exportEditorDocumentToDocx(document: EditorDocument): Prom
     if (section.header && section.header.length > 0) {
       const path = `header${nextHeaderIndex}.xml`;
       const relId = `rIdHeader${nextHeaderIndex}`;
-      const context = buildPartContext(section.header, numberingContext, buildState);
+      const context = buildPartContext(section.header, numberingContext, buildState, document);
       parts.push({ kind: "header", path, relId, blocks: section.header, context });
       sectionReferences[sectionIndex]!.header = { relId };
       nextHeaderIndex += 1;
@@ -739,7 +745,7 @@ export async function exportEditorDocumentToDocx(document: EditorDocument): Prom
     if (section.footer && section.footer.length > 0) {
       const path = `footer${nextFooterIndex}.xml`;
       const relId = `rIdFooter${nextFooterIndex}`;
-      const context = buildPartContext(section.footer, numberingContext, buildState);
+      const context = buildPartContext(section.footer, numberingContext, buildState, document);
       parts.push({ kind: "footer", path, relId, blocks: section.footer, context });
       sectionReferences[sectionIndex]!.footer = { relId };
       nextFooterIndex += 1;

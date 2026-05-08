@@ -1542,13 +1542,18 @@ describe("OasisEditor", () => {
         </w:body>
       </w:document>`);
 
-    let resolveArrayBuffer: ((value: ArrayBuffer) => void) | null = null;
+    // Use a typed object wrapper so TypeScript doesn't narrow this `let` to
+    // `never` at the call site below (assignment happens inside a Promise
+    // executor callback, which control-flow analysis can't see).
+    const deferred: { resolve: ((value: ArrayBuffer) => void) | null } = {
+      resolve: null,
+    };
     const realArrayBuffer = file.arrayBuffer.bind(file);
     Object.defineProperty(file, "arrayBuffer", {
       configurable: true,
       value: () =>
         new Promise<ArrayBuffer>((resolve) => {
-          resolveArrayBuffer = resolve;
+          deferred.resolve = resolve;
         }),
     });
 
@@ -1563,7 +1568,7 @@ describe("OasisEditor", () => {
     expect(root.querySelector('[data-testid="editor-import-overlay"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="editor-import-phase"]')?.textContent).toContain("Lendo");
 
-    resolveArrayBuffer?.(await realArrayBuffer());
+    deferred.resolve?.(await realArrayBuffer());
 
     for (let attempt = 0; attempt < 30; attempt += 1) {
       if (!root.querySelector('[data-testid="editor-import-overlay"]')) {

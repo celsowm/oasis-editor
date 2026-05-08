@@ -17,6 +17,7 @@ import {
   type EditorBorderStyle,
   type EditorNamedStyle,
   type EditorTabStop,
+  resolveImageSrc,
   resolveNamedParagraphStyle,
   resolveNamedTextStyle,
   resolveEffectiveTextStyle,
@@ -536,7 +537,7 @@ function renderParagraph(
                                     }
                                   >
                                     <img
-                                      src={fragment.image.src}
+                                      src={resolveImageSrc(state.document, fragment.image.src)}
                                       width={fragment.image.width}
                                       height={fragment.image.height}
                                       alt={fragment.image.alt ?? ""}

@@ -4,6 +4,7 @@ import {
   getActiveSectionIndex,
   getParagraphText,
   getParagraphs,
+  getDocumentSections,
   positionToParagraphOffset,
   type EditorBlockNode,
   type EditorLayoutParagraph,
@@ -43,7 +44,10 @@ function scheduleFrame(callback: () => void): number {
   if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
     return window.requestAnimationFrame(() => callback());
   }
-  return globalThis.setTimeout(callback, 16);
+  // `setTimeout` is typed as `Timeout` under @types/node and `number` in DOM
+  // typings; both runtimes accept an opaque numeric handle, so coerce here
+  // for portability.
+  return globalThis.setTimeout(callback, 16) as unknown as number;
 }
 
 function cancelFrame(handle: number): void {
@@ -51,7 +55,7 @@ function cancelFrame(handle: number): void {
     window.cancelAnimationFrame(handle);
     return;
   }
-  globalThis.clearTimeout(handle);
+  globalThis.clearTimeout(handle as unknown as ReturnType<typeof setTimeout>);
 }
 
 function getCollapsedCaretRectFast(
@@ -91,7 +95,15 @@ function getCollapsedCaretRectFast(
 function buildParagraphSignature(paragraph: EditorParagraphNode): string {
   return paragraph.runs
     .map((run) => {
-      const image = run.image ? `${run.image.src}:${run.image.width ?? ""}x${run.image.height ?? ""}` : "";
+      // Use only the image's structural dimensions in the signature.
+      // The src may be an arbitrarily large data URL (legacy paths) — the
+      // image asset itself is identified by the (immutable) run id, so
+      // including the src here is redundant and would make signature
+      // building O(payload size) per keystroke for documents with embedded
+      // images.
+      const image = run.image
+        ? `img:${run.image.width ?? ""}x${run.image.height ?? ""}`
+        : "";
       return `${run.id}:${run.text}:${image}`;
     })
     .join("|");
@@ -747,7 +759,10 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       }
       paragraph.runs.forEach((run) => {
         run.text;
-        run.image?.src;
+        // Track only structural image fields. Reading `run.image?.src`
+        // would force the reactive system to re-evaluate this effect when
+        // the (potentially huge) data URL string identity changes, which
+        // is exactly what we want to avoid for embedded images.
         run.image?.width;
         run.image?.height;
       });
@@ -759,8 +774,8 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       }
     }
 
-    const nextBlockIds = Array.from(props.surfaceRef()?.querySelectorAll<HTMLElement>("[data-block-id]") ?? []).map(
-      (element) => element.dataset.blockId ?? "",
+    const nextBlockIds = getDocumentSections(props.state.document).flatMap(section => 
+      [...(section.header || []), ...section.blocks, ...(section.footer || [])].map(b => b.id)
     );
     const blockStructureChanged =
       previousBlockIds.length !== nextBlockIds.length ||

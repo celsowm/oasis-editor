@@ -1,4 +1,5 @@
 import type {
+  EditorAsset,
   EditorBlockNode,
   EditorDocument,
   EditorEditingZone,
@@ -221,7 +222,8 @@ export function createEditorDocument(
   pageSettings?: EditorPageSettings,
   sections?: EditorSection[],
   styles?: Record<string, EditorNamedStyle>,
-  metadata?: { title?: string; [key: string]: any }
+  metadata?: { title?: string; [key: string]: any },
+  assets?: Record<string, EditorAsset>,
 ): EditorDocument {
   const normalizedPageSettings = normalizePageSettings(
     pageSettings
@@ -245,6 +247,11 @@ export function createEditorDocument(
     sections: sections ?? undefined,
     styles: styles ?? { ...DEFAULT_EDITOR_STYLES },
     metadata: metadata ?? { title: "Untitled document" },
+    // The asset registry holds out-of-band image payloads (data URLs).
+    // It must be carried through any document-rebuild path or `asset:<id>`
+    // refs in image runs will dangle and the renderer will try to GET
+    // "asset:img-1" as a URL.
+    assets: assets ?? undefined,
   };
   nextDocumentId += 1;
   return document;

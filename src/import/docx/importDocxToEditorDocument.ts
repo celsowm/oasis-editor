@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type {
+  EditorAsset,
   EditorBlockNode,
   EditorDocument,
   EditorPageSettings,
@@ -11,6 +12,7 @@ import type {
   EditorTableNode,
   EditorTextStyle,
 } from "../../core/model.js";
+import { EDITOR_ASSET_REF_PREFIX } from "../../core/model.js";
 import {
   createEditorDocument,
   createEditorParagraphFromRuns,
@@ -41,6 +43,41 @@ const PX_PER_INCH = 96;
 interface NumberingMaps {
   abstractKinds: Map<string, EditorParagraphListStyle["kind"]>;
   numKinds: Map<string, EditorParagraphListStyle["kind"]>;
+}
+
+/**
+ * Mutable registry that collects unique image payloads encountered during
+ * import and assigns each a stable id. Image runs reference the entry via
+ * `image.src = "asset:<id>"` so the heavy base64 payload lives in
+ * `document.assets` exactly once instead of being copied into every run.
+ */
+interface AssetRegistry {
+  /** id → asset record (stored as the document's `assets` map). */
+  assets: Record<string, EditorAsset>;
+  /** zip path → asset id, used to dedupe images that share a source file. */
+  byPath: Map<string, string>;
+  /** monotonically increasing counter used to mint new asset ids. */
+  nextId: number;
+}
+
+function createAssetRegistry(): AssetRegistry {
+  return { assets: {}, byPath: new Map(), nextId: 1 };
+}
+
+function registerImageAsset(
+  registry: AssetRegistry,
+  zipPath: string,
+  url: string,
+): string {
+  const existing = registry.byPath.get(zipPath);
+  if (existing) {
+    return `${EDITOR_ASSET_REF_PREFIX}${existing}`;
+  }
+  const id = `img-${registry.nextId}`;
+  registry.nextId += 1;
+  registry.assets[id] = { id, url };
+  registry.byPath.set(zipPath, id);
+  return `${EDITOR_ASSET_REF_PREFIX}${id}`;
 }
 
 function stripUndefined<T extends Record<string, unknown>>(value: T): Partial<T> | undefined {
@@ -245,6 +282,7 @@ async function parseHeaderFooterXml(
   numberingMaps: NumberingMaps,
   zip: JSZip,
   relsMap: Map<string, string>,
+  assets: AssetRegistry,
 ): Promise<EditorBlockNode[]> {
   if (!xmlContent) {
     return [];
@@ -264,9 +302,9 @@ async function parseHeaderFooterXml(
     }
     const element = node as XmlElement;
     if (element.localName === "p" && element.namespaceURI === WORD_NS) {
-      blocks.push(await parseParagraphNode(element, numberingMaps, zip, relsMap));
+      blocks.push(await parseParagraphNode(element, numberingMaps, zip, relsMap, assets));
     } else if (element.localName === "tbl" && element.namespaceURI === WORD_NS) {
-      blocks.push(await parseTableNode(element, numberingMaps, zip, relsMap));
+      blocks.push(await parseTableNode(element, numberingMaps, zip, relsMap, assets));
     }
   }
   return blocks;
@@ -530,6 +568,7 @@ async function parseRunElement(
   runElement: XmlElement,
   zip: JSZip,
   relsMap: Map<string, string>,
+  assets: AssetRegistry,
 ): Promise<{ text: string; image?: { src: string; width: number; height: number; alt?: string } }> {
   const textParts: string[] = [];
   let image: { src: string; width: number; height: number; alt?: string } | undefined;
@@ -585,8 +624,17 @@ async function parseRunElement(
                 const alt = docPr
                   ? getAttributeValue(docPr, "descr") ?? getAttributeValue(docPr, "title")
                   : null;
+                // Store the heavy base64 payload in the document's asset
+                // registry exactly once and reference it from the run.
+                // Without this, every clone/equality check/signature pass
+                // would have to walk a multi-hundred-KB string per keystroke.
+                const assetSrc = registerImageAsset(
+                  assets,
+                  zipPath,
+                  `data:${mime};base64,${base64}`,
+                );
                 image = {
-                  src: `data:${mime};base64,${base64}`,
+                  src: assetSrc,
                   width,
                   height,
                   ...(alt !== null ? { alt } : {}),
@@ -607,6 +655,7 @@ async function parseRunsContainer(
   numberingMaps: NumberingMaps,
   zip: JSZip,
   relsMap: Map<string, string>,
+  assets: AssetRegistry,
   inheritedLink?: string | null,
 ) {
   const runs: Array<{
@@ -628,7 +677,7 @@ async function parseRunsContainer(
     }
 
     if (element.localName === "r") {
-      const { text, image } = await parseRunElement(element, zip, relsMap);
+      const { text, image } = await parseRunElement(element, zip, relsMap, assets);
       if (text.length === 0) {
         continue;
       }
@@ -654,6 +703,7 @@ async function parseRunsContainer(
         numberingMaps,
         zip,
         relsMap,
+        assets,
         inheritedLink,
       );
       const displayText = fieldRuns.map((run) => run.text).join("") || "1";
@@ -681,6 +731,7 @@ async function parseRunsContainer(
           numberingMaps,
           zip,
           relsMap,
+          assets,
           href,
         )),
       );
@@ -695,9 +746,10 @@ async function parseParagraphNode(
   numberingMaps: NumberingMaps,
   zip: JSZip,
   relsMap: Map<string, string>,
+  assets: AssetRegistry,
 ) {
   const paragraphProperties = getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr");
-  const runs = await parseRunsContainer(paragraphNode, numberingMaps, zip, relsMap);
+  const runs = await parseRunsContainer(paragraphNode, numberingMaps, zip, relsMap, assets);
 
   const paragraph = createEditorParagraphFromRuns(
     runs.length > 0 ? runs.map((run) => ({ text: run.text, styles: run.styles, image: run.image })) : [{ text: "" }],
@@ -720,6 +772,7 @@ async function parseTableNode(
   numberingMaps: NumberingMaps,
   zip: JSZip,
   relsMap: Map<string, string>,
+  assets: AssetRegistry,
 ): Promise<EditorTableNode> {
   const rows = [];
   for (const rowNode of getChildrenByTagNameNS(tableNode, WORD_NS, "tr")) {
@@ -728,7 +781,7 @@ async function parseTableNode(
       const paragraphs = [];
       const cellProperties = getFirstChildByTagNameNS(cellNode, WORD_NS, "tcPr");
       for (const paragraphNode of getChildrenByTagNameNS(cellNode, WORD_NS, "p")) {
-        paragraphs.push(await parseParagraphNode(paragraphNode, numberingMaps, zip, relsMap));
+        paragraphs.push(await parseParagraphNode(paragraphNode, numberingMaps, zip, relsMap, assets));
       }
       const colSpan = getTableCellColSpan(cellProperties);
       const vMerge = getTableCellVMerge(cellProperties);
@@ -814,6 +867,10 @@ export async function importDocxToEditorDocument(
     return createEditorDocument([createEditorParagraphFromRuns([{ text: "" }])]);
   }
 
+  // Single registry shared across body, headers and footers so identical
+  // images referenced from multiple places dedupe to one stored payload.
+  const assets = createAssetRegistry();
+
   // Parse body into sections separated by sectPr elements
   const sectionProps: SectionProperties[] = [];
   const sectionBlocks: EditorBlockNode[][] = [[]];
@@ -835,11 +892,11 @@ export async function importDocxToEditorDocument(
       sectionBlocks.push([]);
     } else if (element.localName === "p") {
       sectionBlocks[sectionBlocks.length - 1]!.push(
-        await parseParagraphNode(element, numberingMaps, zip, relsMap),
+        await parseParagraphNode(element, numberingMaps, zip, relsMap, assets),
       );
     } else if (element.localName === "tbl") {
       sectionBlocks[sectionBlocks.length - 1]!.push(
-        await parseTableNode(element, numberingMaps, zip, relsMap),
+        await parseTableNode(element, numberingMaps, zip, relsMap, assets),
       );
     }
   }
@@ -870,7 +927,7 @@ export async function importDocxToEditorDocument(
         let zipPath = headerTarget.startsWith("/") ? headerTarget.slice(1) : headerTarget;
         if (!zipPath.startsWith("word/")) zipPath = "word/" + headerTarget;
         const headerXml = await zip.file(zipPath)?.async("string");
-        header = await parseHeaderFooterXml(headerXml ?? null, numberingMaps, zip, relsMap);
+        header = await parseHeaderFooterXml(headerXml ?? null, numberingMaps, zip, relsMap, assets);
       }
     }
 
@@ -880,7 +937,7 @@ export async function importDocxToEditorDocument(
         let zipPath = footerTarget.startsWith("/") ? footerTarget.slice(1) : footerTarget;
         if (!zipPath.startsWith("word/")) zipPath = "word/" + footerTarget;
         const footerXml = await zip.file(zipPath)?.async("string");
-        footer = await parseHeaderFooterXml(footerXml ?? null, numberingMaps, zip, relsMap);
+        footer = await parseHeaderFooterXml(footerXml ?? null, numberingMaps, zip, relsMap, assets);
       }
     }
 
@@ -905,6 +962,8 @@ export async function importDocxToEditorDocument(
     sections.length > 1 ||
     sections.some((section) => (section.header?.length ?? 0) > 0 || (section.footer?.length ?? 0) > 0);
 
+  const hasAssets = Object.keys(assets.assets).length > 0;
+
   if (shouldPreserveSections) {
     const doc = createEditorDocument([]);
     (doc as any).sections = sections;
@@ -912,13 +971,20 @@ export async function importDocxToEditorDocument(
     if (sections.length === 1) {
       doc.pageSettings = sections[0]!.pageSettings;
     }
+    if (hasAssets) {
+      doc.assets = assets.assets;
+    }
     return doc;
   }
 
   // Single section: use flat blocks for compatibility
   const singleSection = sections[0];
-  return createEditorDocument(
+  const doc = createEditorDocument(
     singleSection?.blocks.length > 0 ? singleSection.blocks : [createEditorParagraphFromRuns([{ text: "" }])],
     singleSection?.pageSettings,
   );
+  if (hasAssets) {
+    doc.assets = assets.assets;
+  }
+  return doc;
 }

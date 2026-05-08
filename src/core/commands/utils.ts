@@ -1,5 +1,5 @@
-import type { EditorBlockNode, EditorParagraphListStyle, EditorParagraphStyle, EditorParagraphNode, EditorPosition, EditorSelection, EditorState, EditorTextRun, EditorTextStyle, EditorImageRunData, EditorSection, EditorTableCellNode } from "../model.js";
-import { getParagraphLength, getParagraphs, paragraphOffsetToPosition, positionToParagraphOffset, getActiveSectionIndex, getActiveZone } from "../model.js";
+import type { EditorBlockNode, EditorDocument, EditorParagraphListStyle, EditorParagraphStyle, EditorParagraphNode, EditorPosition, EditorSelection, EditorState, EditorTextRun, EditorTextStyle, EditorImageRunData, EditorSection, EditorTableCellNode } from "../model.js";
+import { getParagraphLength, getParagraphs, paragraphOffsetToPosition, positionToParagraphOffset, getActiveSectionIndex, getActiveZone, resolveImageSrc } from "../model.js";
 import { createEditorDocument, createEditorParagraphFromRuns, createEditorStyledRun } from "../editorState.js";
 import { clampPosition, createCollapsedSelection, findParagraphIndex, isSelectionCollapsed, normalizeSelection } from "../selection.js";
 import { deleteBackward } from "./text.js";
@@ -311,9 +311,18 @@ export function cloneStateWithParagraphs(
     };
   }
 
+  // Preserve every existing field on the document (id, styles, assets,
+  // metadata, sections, pageSettings, …) and only swap the paragraph
+  // blocks. The previous implementation called `createEditorDocument`,
+  // which minted a fresh document and silently dropped fields it didn't
+  // know about — most importantly the `assets` registry, causing image
+  // runs to dangle on `asset:<id>` references that no longer resolved.
   return {
     ...state,
-    document: createEditorDocument(paragraphs, state.document.pageSettings, state.document.sections),
+    document: {
+      ...state.document,
+      blocks: paragraphs,
+    },
     selection,
   };
 }
@@ -699,13 +708,19 @@ export function paragraphStyleToCssText(style?: EditorParagraphStyle): string {
   return parts.join(";");
 }
 
-export function serializeImageRunToHtml(run: EditorTextRun): string {
+export function serializeImageRunToHtml(
+  run: EditorTextRun,
+  document?: Pick<EditorDocument, "assets">,
+): string {
   if (!run.image) {
     return "";
   }
 
+  // Asset references must be expanded to the actual data URL so the
+  // copied HTML is portable (clipboard consumers don't see our registry).
+  const resolvedSrc = resolveImageSrc(document, run.image.src);
   const altAttr = run.image.alt !== undefined ? ` alt="${escapeHtml(run.image.alt)}"` : "";
-  const img = `<img src="${escapeHtml(run.image.src)}" width="${Math.max(1, Math.round(run.image.width))}" height="${Math.max(1, Math.round(run.image.height))}"${altAttr}>`;
+  const img = `<img src="${escapeHtml(resolvedSrc)}" width="${Math.max(1, Math.round(run.image.width))}" height="${Math.max(1, Math.round(run.image.height))}"${altAttr}>`;
   if (run.styles?.link) {
     return `<a href="${escapeHtml(run.styles.link)}">${img}</a>`;
   }
@@ -713,9 +728,12 @@ export function serializeImageRunToHtml(run: EditorTextRun): string {
   return img;
 }
 
-export function serializeTextRunToHtml(run: EditorTextRun): string {
+export function serializeTextRunToHtml(
+  run: EditorTextRun,
+  document?: Pick<EditorDocument, "assets">,
+): string {
   if (run.image) {
-    return serializeImageRunToHtml(run);
+    return serializeImageRunToHtml(run, document);
   }
 
   const text = escapeHtml(run.text).replace(/\n/g, "<br>");
@@ -749,8 +767,11 @@ export function serializeTextRunToHtml(run: EditorTextRun): string {
   return html;
 }
 
-export function serializeParagraphRunsToHtml(runs: EditorTextRun[]): string {
-  return runs.map((run) => serializeTextRunToHtml(run)).join("") || "<br>";
+export function serializeParagraphRunsToHtml(
+  runs: EditorTextRun[],
+  document?: Pick<EditorDocument, "assets">,
+): string {
+  return runs.map((run) => serializeTextRunToHtml(run, document)).join("") || "<br>";
 }
 
 export function parseInlineStyles(element: Element): EditorTextStyle | undefined {

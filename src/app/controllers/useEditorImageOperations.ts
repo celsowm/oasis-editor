@@ -1,6 +1,6 @@
 
 import { createSignal } from "solid-js";
-import { getParagraphs, paragraphOffsetToPosition, type EditorPosition, type EditorState } from "../../core/model.js";
+import { getParagraphs, paragraphOffsetToPosition, resolveImageSrc, type EditorPosition, type EditorState } from "../../core/model.js";
 import { normalizeSelection, isSelectionCollapsed } from "../../core/selection.js";
 import { moveSelectedImageToPosition, setSelection, resizeSelectedImage } from "../../core/editorCommands.js";
 import { getMaxInlineImageWidth } from "../../ui/domGeometry.js";
@@ -174,7 +174,9 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
           startOffset,
           width: run.image.width,
           height: run.image.height,
-          src: run.image.src,
+          // Resolve any "asset:<id>" reference to the actual URL so the
+          // drag-ghost <img> rendered into the DOM works directly.
+          src: resolveImageSrc(current.document, run.image.src),
         };
       }
     }
