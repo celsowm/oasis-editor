@@ -11,7 +11,15 @@ export function ReviewGroup(props: { ctx: () => EditorToolbarCtx }) {
 
   return (
     <ToolbarGroup>
-      <ToolbarDropdown label={t("toolbar.review")} icon="message-square" testId="editor-toolbar-review-dropdown">
+      <ToolbarDropdown
+        label=""
+        icon="message-square"
+        testId="editor-toolbar-review-dropdown"
+        tooltip={t("toolbar.review")}
+        hideChevron
+        menuClass="oasis-editor-toolbar-panel"
+      >
+        <div class="oasis-editor-toolbar-panel-section">
         <ToolbarButton
           icon="eye"
           label={t("toolbar.trackChanges")}
@@ -39,6 +47,7 @@ export function ReviewGroup(props: { ctx: () => EditorToolbarCtx }) {
           onClick={() => ctx().applyRejectRevisionsCommand()}
           tooltip={t("toolbar.reject")}
         />
+        </div>
       </ToolbarDropdown>
     </ToolbarGroup>
   );

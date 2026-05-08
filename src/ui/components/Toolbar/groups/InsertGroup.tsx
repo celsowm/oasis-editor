@@ -80,8 +80,6 @@ export function InsertGroup(props: { ctx: () => EditorToolbarCtx }) {
       <Show when={Boolean(ctx().selectedImageRun())}>
         <ToolbarButton
           icon="file-text"
-          label={t("toolbar.alt")}
-          wide
           active={true}
           data-testid="editor-toolbar-image-alt"
           onClick={() => ctx().promptForImageAlt()}

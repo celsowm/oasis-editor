@@ -2,7 +2,7 @@ import { For } from "solid-js";
 import type { EditorParagraphListStyle } from "../../../../core/model.js";
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
-import { ToolbarGroup, ToolbarSeparator } from "../ToolbarGroup.js";
+import { ToolbarGroup } from "../ToolbarGroup.js";
 import { ToolbarDropdown } from "../ToolbarDropdown.js";
 import { ToolbarSelect } from "../ToolbarSelect.js";
 import { alignButtons, listButtons } from "../toolbarConfig.js";
@@ -13,8 +13,17 @@ export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
   const t_style = () => ctx().toolbarStyleState();
 
   return (
-    <div style={{ display: "flex", "align-items": "center", gap: "8px" }}>
-      <ToolbarGroup>
+    <ToolbarGroup>
+      <ToolbarDropdown
+        label=""
+        icon="align-left"
+        testId="editor-toolbar-paragraph-dropdown"
+        tooltip={t("menu.format.align")}
+        hideChevron
+        menuClass="oasis-editor-toolbar-panel"
+        keepMounted
+      >
+        <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
         <For each={alignButtons}>
           {(button) => (
             <ToolbarButton
@@ -26,11 +35,9 @@ export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
             />
           )}
         </For>
-      </ToolbarGroup>
+        </div>
 
-      <ToolbarSeparator />
-
-      <ToolbarGroup>
+        <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
         <For each={listButtons}>
           {(button) => (
             <ToolbarButton
@@ -90,7 +97,8 @@ export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
             </label>
           </div>
         </ToolbarDropdown>
-      </ToolbarGroup>
-    </div>
+        </div>
+      </ToolbarDropdown>
+    </ToolbarGroup>
   );
 }

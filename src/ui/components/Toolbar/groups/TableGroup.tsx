@@ -8,6 +8,7 @@ import {
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup } from "../ToolbarGroup.js";
+import { ToolbarDropdown } from "../ToolbarDropdown.js";
 import { t } from "../../../../i18n/index.js";
 
 export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
@@ -16,12 +17,19 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
   const focusInput = () => ctx().focusInput();
 
   return (
-    <>
-      <ToolbarGroup>
+    <ToolbarGroup>
+      <ToolbarDropdown
+        label=""
+        icon="table-properties"
+        testId="editor-toolbar-table-dropdown"
+        tooltip={t("toolbar.table")}
+        hideChevron
+        menuClass="oasis-editor-toolbar-panel oasis-editor-toolbar-table-panel"
+        keepMounted
+      >
+      <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
         <ToolbarButton
           icon="combine"
-          label={t("table.merge")}
-          wide
           data-testid="editor-toolbar-merge-table"
           disabled={!ctx().canMergeSelectedTable(state())}
           onClick={() => {
@@ -35,8 +43,6 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
         />
         <ToolbarButton
           icon="split"
-          label={t("table.split")}
-          wide
           data-testid="editor-toolbar-split-table"
           disabled={!ctx().canSplitSelectedTable(state())}
           onClick={() => {
@@ -48,9 +54,9 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
           }}
           tooltip={t("table.splitTooltip")}
         />
-      </ToolbarGroup>
+      </div>
 
-      <ToolbarGroup>
+      <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
         <ToolbarButton
           icon="columns"
           data-testid="editor-toolbar-insert-table-column-before"
@@ -90,9 +96,9 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
           }}
           tooltip={t("table.deleteColumn")}
         />
-      </ToolbarGroup>
+      </div>
 
-      <ToolbarGroup>
+      <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
         <ToolbarButton
           icon="rows"
           data-testid="editor-toolbar-insert-table-row-before"
@@ -132,9 +138,9 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
           }}
           tooltip={t("table.deleteRow")}
         />
-      </ToolbarGroup>
+      </div>
 
-      <ToolbarGroup>
+      <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
         <ToolbarButton
           icon="palette"
           data-testid="editor-toolbar-table-shading"
@@ -176,13 +182,11 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
           }}
           tooltip={t("table.removeBorders")}
         />
-      </ToolbarGroup>
+      </div>
 
-      <ToolbarGroup>
+      <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
         <ToolbarButton
           icon="maximize"
-          label={t("table.width100")}
-          wide
           data-testid="editor-toolbar-table-width-100"
           onClick={() => {
             ctx().applyTransactionalState(
@@ -193,9 +197,9 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
           }}
           tooltip={t("table.width100Tooltip")}
         />
-      </ToolbarGroup>
+      </div>
 
-      <ToolbarGroup>
+      <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
         <ToolbarButton
           icon="align-left"
           data-testid="editor-toolbar-table-align-left"
@@ -247,7 +251,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
           }}
           tooltip={t("table.cellWidth")}
         />
-      </ToolbarGroup>
+      </div>
 
       <Show when={ctx().tableSelectionLabel()}>
         {(label) => (
@@ -256,6 +260,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
           </div>
         )}
       </Show>
-    </>
+      </ToolbarDropdown>
+    </ToolbarGroup>
   );
 }

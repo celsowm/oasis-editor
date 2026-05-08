@@ -93,6 +93,7 @@ test.describe("Oasis Editor 2 DOCX", () => {
     const paragraph = page.locator('[data-testid="editor-block"]').first();
     await expect(paragraph).toContainText("A autora da petição");
     await paragraph.click();
+    await page.locator('[data-testid="editor-toolbar-paragraph-dropdown"]').click();
     await page.locator('[data-testid="editor-toolbar-align-justify"]').click();
 
     const metrics = await paragraph.evaluate((element) => {

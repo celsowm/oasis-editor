@@ -20,6 +20,14 @@ describe("ToolbarModernization Safety Net", () => {
     return { root, dispose };
   }
 
+  async function openToolbarDropdown(testId: string, root: HTMLElement) {
+    const dropdown = root.querySelector(`[data-testid="${testId}"]`) as HTMLElement;
+    expect(dropdown, `Dropdown with testId "${testId}" should exist`).not.toBeNull();
+    dropdown.click();
+    await Promise.resolve();
+    await new Promise(r => setTimeout(r, 0));
+  }
+
   const tableTestIds = [
     "editor-toolbar-merge-table",
     "editor-toolbar-split-table",
@@ -51,6 +59,13 @@ describe("ToolbarModernization Safety Net", () => {
     "editor-toolbar-subscript",
     "editor-toolbar-link",
     "editor-toolbar-unlink",
+    "editor-toolbar-paragraph-dropdown",
+    "editor-toolbar-metrics-dropdown",
+    "editor-toolbar-section-dropdown",
+    "editor-toolbar-review-dropdown",
+  ];
+
+  const paragraphMenuTestIds = [
     "editor-toolbar-align-left",
     "editor-toolbar-align-center",
     "editor-toolbar-align-right",
@@ -58,11 +73,16 @@ describe("ToolbarModernization Safety Net", () => {
     "editor-toolbar-list-bullet",
     "editor-toolbar-list-ordered",
     "editor-toolbar-list-options-dropdown",
+  ];
+
+  const sectionMenuTestIds = [
     "editor-toolbar-orientation",
     "editor-toolbar-margins",
     "editor-toolbar-section-break-next",
     "editor-toolbar-section-break-continuous",
-    "editor-toolbar-review-dropdown",
+  ];
+
+  const metricMenuTestIds = [
     "editor-toolbar-page-break-before",
     "editor-toolbar-keep-with-next",
     "editor-toolbar-line-height",
@@ -84,6 +104,24 @@ describe("ToolbarModernization Safety Net", () => {
       expect(element, `Static element with testId "${testId}" should exist`).not.toBeNull();
     }
 
+    await openToolbarDropdown("editor-toolbar-paragraph-dropdown", root);
+    for (const testId of paragraphMenuTestIds) {
+      const element = document.querySelector(`[data-testid="${testId}"]`);
+      expect(element, `Paragraph menu element with testId "${testId}" should exist`).not.toBeNull();
+    }
+
+    await openToolbarDropdown("editor-toolbar-metrics-dropdown", root);
+    for (const testId of metricMenuTestIds) {
+      const element = document.querySelector(`[data-testid="${testId}"]`);
+      expect(element, `Metric menu element with testId "${testId}" should exist`).not.toBeNull();
+    }
+
+    await openToolbarDropdown("editor-toolbar-section-dropdown", root);
+    for (const testId of sectionMenuTestIds) {
+      const element = document.querySelector(`[data-testid="${testId}"]`);
+      expect(element, `Section menu element with testId "${testId}" should exist`).not.toBeNull();
+    }
+
     // Check table elements are hidden initially
     for (const testId of tableTestIds) {
       const element = root.querySelector(`[data-testid="${testId}"]`);
@@ -95,13 +133,11 @@ describe("ToolbarModernization Safety Net", () => {
     expect(document.querySelector('[data-testid="editor-toolbar-list-format"]')).toBeNull();
 
     // Open File dropdown
-    (root.querySelector('[data-testid="editor-toolbar-file-dropdown"]') as HTMLElement).click();
-    await Promise.resolve();
-    await new Promise(r => setTimeout(r, 0));
+    await openToolbarDropdown("editor-toolbar-file-dropdown", root);
     expect(document.querySelector('[data-testid="editor-toolbar-export-docx"]')).not.toBeNull();
 
     // Open list options dropdown
-    (root.querySelector('[data-testid="editor-toolbar-list-options-dropdown"]') as HTMLElement).click();
+    (document.querySelector('[data-testid="editor-toolbar-list-options-dropdown"]') as HTMLElement).click();
     await Promise.resolve();
     await new Promise(r => setTimeout(r, 0));
     expect(document.querySelector('[data-testid="editor-toolbar-list-format"]')).not.toBeNull();
@@ -117,8 +153,9 @@ describe("ToolbarModernization Safety Net", () => {
     await new Promise(r => setTimeout(r, 0));
 
     // Check table elements now exist
+    await openToolbarDropdown("editor-toolbar-table-dropdown", root);
     for (const testId of tableTestIds) {
-      const element = root.querySelector(`[data-testid="${testId}"]`);
+      const element = document.querySelector(`[data-testid="${testId}"]`);
       expect(element, `Table element with testId "${testId}" should exist after inserting table`).not.toBeNull();
     }
 
@@ -191,14 +228,16 @@ describe("ToolbarModernization Safety Net", () => {
     const { root, dispose } = renderEditor();
     await Promise.resolve(); // Wait for initial state
 
-    const lineHeightInput = root.querySelector('[data-testid="editor-toolbar-line-height"]') as HTMLInputElement;
+    await openToolbarDropdown("editor-toolbar-metrics-dropdown", root);
+
+    const lineHeightInput = document.querySelector('[data-testid="editor-toolbar-line-height"]') as HTMLInputElement;
     lineHeightInput.value = "2.5";
     lineHeightInput.dispatchEvent(new Event("change", { bubbles: true }));
     await Promise.resolve();
 
     expect((currentState.document.blocks[0] as any).style?.lineHeight).toBe(2.5);
 
-    const indentInput = root.querySelector('[data-testid="editor-toolbar-indent-left"]') as HTMLInputElement;
+    const indentInput = document.querySelector('[data-testid="editor-toolbar-indent-left"]') as HTMLInputElement;
     indentInput.value = "36";
     indentInput.dispatchEvent(new Event("change", { bubbles: true }));
     await Promise.resolve();
@@ -225,11 +264,12 @@ describe("ToolbarModernization Safety Net", () => {
     await Promise.resolve();
     await new Promise(r => setTimeout(r, 0));
 
-    // Now table group should be visible
-    mergeButton = root.querySelector('[data-testid="editor-toolbar-merge-table"]') as HTMLButtonElement;
+    // Now table menu should be visible and contain table controls
+    await openToolbarDropdown("editor-toolbar-table-dropdown", root);
+    mergeButton = document.querySelector('[data-testid="editor-toolbar-merge-table"]') as HTMLButtonElement;
     expect(mergeButton).not.toBeNull();
     
-    const tableBordersButton = root.querySelector('[data-testid="editor-toolbar-table-borders"]') as HTMLButtonElement;
+    const tableBordersButton = document.querySelector('[data-testid="editor-toolbar-table-borders"]') as HTMLButtonElement;
     expect(tableBordersButton.disabled).toBe(false);
 
     dispose();

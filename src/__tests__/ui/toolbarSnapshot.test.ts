@@ -49,8 +49,10 @@ const EXPECTED_TOOLBAR_TESTIDS: readonly string[] = [
   "editor-toolbar-list-ordered",
   "editor-toolbar-list-start-at",
   "editor-toolbar-margins",
+  "editor-toolbar-metrics-dropdown",
   "editor-toolbar-merge-table",
   "editor-toolbar-orientation",
+  "editor-toolbar-paragraph-dropdown",
   "editor-toolbar-page-break-before",
   "editor-toolbar-paragraph-borders",
   "editor-toolbar-paragraph-shading",
@@ -58,6 +60,7 @@ const EXPECTED_TOOLBAR_TESTIDS: readonly string[] = [
   "editor-toolbar-reject-revisions",
   "editor-toolbar-review-dropdown",
   "editor-toolbar-section-break-continuous",
+  "editor-toolbar-section-dropdown",
   "editor-toolbar-section-break-next",
   "editor-toolbar-spacing-after",
   "editor-toolbar-spacing-before",
@@ -71,6 +74,7 @@ const EXPECTED_TOOLBAR_TESTIDS: readonly string[] = [
   "editor-toolbar-table-align-right",
   "editor-toolbar-table-borders",
   "editor-toolbar-table-cell-width",
+  "editor-toolbar-table-dropdown",
   "editor-toolbar-table-no-borders",
   "editor-toolbar-table-shading",
   "editor-toolbar-table-width-100",
@@ -149,23 +153,36 @@ describe("Toolbar testid snapshot (regression guard for Phase 2 UI rewrite)", ()
     });
 
     // 3. Open dropdowns to render their contents in Portals
-    const dropdowns = ["file", "review", "list-options"];
-    for (const name of dropdowns) {
-      const dropdown = root.querySelector(`[data-testid="editor-toolbar-${name}-dropdown"]`) as HTMLElement;
+    const renderedSet = new Set<string>();
+    const collectRenderedTestIds = () => {
+      Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="editor-toolbar-"]'))
+        .map((element) => element.getAttribute("data-testid"))
+        .filter((id): id is string => Boolean(id))
+        .forEach((id) => renderedSet.add(id));
+    };
+
+    collectRenderedTestIds();
+
+    const dropdowns = [
+      "editor-toolbar-file-dropdown",
+      "editor-toolbar-review-dropdown",
+      "editor-toolbar-paragraph-dropdown",
+      "editor-toolbar-metrics-dropdown",
+      "editor-toolbar-section-dropdown",
+      "editor-toolbar-table-dropdown",
+    ];
+    for (const testId of dropdowns) {
+      const dropdown = root.querySelector(`[data-testid="${testId}"]`) as HTMLElement;
       dropdown.click();
       await Promise.resolve();
+      collectRenderedTestIds();
     }
-
-    const rendered = Array.from(
-      document.querySelectorAll<HTMLElement>('[data-testid^="editor-toolbar-"]'),
-    )
-      .map((element) => element.getAttribute("data-testid"))
-      .filter((id): id is string => Boolean(id));
-
-    const renderedSet = new Set(rendered);
+    (document.querySelector('[data-testid="editor-toolbar-list-options-dropdown"]') as HTMLElement).click();
+    await Promise.resolve();
+    collectRenderedTestIds();
 
     const missing = EXPECTED_TOOLBAR_TESTIDS.filter((id) => !renderedSet.has(id));
-    const extra = rendered.filter((id) => !EXPECTED_TOOLBAR_TESTIDS.includes(id));
+    const extra = Array.from(renderedSet).filter((id) => !EXPECTED_TOOLBAR_TESTIDS.includes(id));
 
     expect(missing, `Missing toolbar controls: ${missing.join(", ")}`).toEqual([]);
     expect(extra, `Unexpected new toolbar controls: ${extra.join(", ")}`).toEqual([]);

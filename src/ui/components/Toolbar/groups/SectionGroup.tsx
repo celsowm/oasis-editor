@@ -2,6 +2,7 @@ import { getActiveSectionIndex } from "../../../../core/model.js";
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup } from "../ToolbarGroup.js";
+import { ToolbarDropdown } from "../ToolbarDropdown.js";
 import { ToolbarSelect } from "../ToolbarSelect.js";
 import { t } from "../../../../i18n/index.js";
 
@@ -10,12 +11,19 @@ export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
   const state = () => ctx().state;
 
   return (
-    <>
-      <ToolbarGroup>
+    <ToolbarGroup>
+      <ToolbarDropdown
+        label=""
+        icon="layout-template"
+        testId="editor-toolbar-section-dropdown"
+        tooltip={t("section.margins")}
+        hideChevron
+        menuClass="oasis-editor-toolbar-panel"
+        keepMounted
+      >
+        <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
         <ToolbarButton
           icon="layout"
-          label={t("section.orient")}
-          wide
           active={
             (state().document.sections?.[getActiveSectionIndex(state())] ?? state().document)
               .pageSettings?.orientation === "landscape"
@@ -36,8 +44,11 @@ export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
           }}
           tooltip={t("section.toggleOrientation")}
         />
+        </div>
+        <div class="oasis-editor-toolbar-panel-section">
         <ToolbarSelect
           data-testid="editor-toolbar-margins"
+          tooltip={t("section.margins")}
           onChange={(event) => {
             const currentSectionIndex = getActiveSectionIndex(state());
             const section =
@@ -58,26 +69,23 @@ export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
           <option value="normal">{t("section.marginsNormal")}</option>
           <option value="narrow">{t("section.marginsNarrow")}</option>
         </ToolbarSelect>
-      </ToolbarGroup>
+        </div>
 
-      <ToolbarGroup>
+        <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
         <ToolbarButton
           icon="scissors"
-          label={t("section.secNext")}
-          wide
           data-testid="editor-toolbar-section-break-next"
           onClick={() => ctx().applyInsertSectionBreakCommand("nextPage")}
           tooltip={t("section.secNextTooltip")}
         />
         <ToolbarButton
           icon="scissors"
-          label={t("section.secCont")}
-          wide
           data-testid="editor-toolbar-section-break-continuous"
           onClick={() => ctx().applyInsertSectionBreakCommand("continuous")}
           tooltip={t("section.secContTooltip")}
         />
-      </ToolbarGroup>
-    </>
+        </div>
+      </ToolbarDropdown>
+    </ToolbarGroup>
   );
 }

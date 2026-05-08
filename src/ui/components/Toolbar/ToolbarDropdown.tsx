@@ -9,6 +9,7 @@ export interface ToolbarDropdownProps {
   testId?: string;
   hideChevron?: boolean;
   menuClass?: string;
+  keepMounted?: boolean;
 }
 
 export function ToolbarDropdown(props: ToolbarDropdownProps) {
@@ -97,6 +98,7 @@ export function ToolbarDropdown(props: ToolbarDropdownProps) {
                // Close if a button inside is clicked
                if (
                  (e.target as HTMLElement).closest('button') &&
+                 !(e.target as HTMLElement).closest(".oasis-editor-tool-button-dropdown") &&
                  !(e.target as HTMLElement).closest(".oasis-editor-toolbar-list-options")
                ) {
                  setIsOpen(false);
@@ -106,6 +108,15 @@ export function ToolbarDropdown(props: ToolbarDropdownProps) {
             {props.children}
           </div>
         </Portal>
+      </Show>
+      <Show when={!isOpen() && props.keepMounted}>
+        <div
+          class={`oasis-editor-toolbar-dropdown-menu ${props.menuClass || ""}`}
+          style={{ display: "none" }}
+          aria-hidden="true"
+        >
+          {props.children}
+        </div>
       </Show>
     </div>
   );

@@ -3,6 +3,7 @@ import type { EditorBorderStyle } from "../../../../core/model.js";
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
 import { ToolbarGroup } from "../ToolbarGroup.js";
+import { ToolbarDropdown } from "../ToolbarDropdown.js";
 import { t } from "../../../../i18n/index.js";
 
 export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
@@ -10,12 +11,19 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
   const t_style = () => ctx().toolbarStyleState();
 
   return (
-    <>
-      <ToolbarGroup>
+    <ToolbarGroup>
+      <ToolbarDropdown
+        label=""
+        icon="sliders-horizontal"
+        testId="editor-toolbar-metrics-dropdown"
+        tooltip={`${t("metric.lineHeight")} / ${t("metric.leftIndent")}`}
+        hideChevron
+        menuClass="oasis-editor-toolbar-panel"
+        keepMounted
+      >
+        <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
         <ToolbarButton
           icon="file-up"
-          label={t("metric.pageBreak")}
-          wide
           active={t_style().pageBreakBefore}
           data-testid="editor-toolbar-page-break-before"
           onClick={() => ctx().toggleParagraphFlagCommand("pageBreakBefore")}
@@ -23,16 +31,14 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
         />
         <ToolbarButton
           icon="link-2"
-          label={t("metric.keepNext")}
-          wide
           active={t_style().keepWithNext}
           data-testid="editor-toolbar-keep-with-next"
           onClick={() => ctx().toggleParagraphFlagCommand("keepWithNext")}
           tooltip={t("metric.keepWithNext")}
         />
-      </ToolbarGroup>
+        </div>
 
-      <ToolbarGroup>
+        <div class="oasis-editor-toolbar-panel-grid">
         <label class="oasis-editor-tool-metric" title={t("metric.lineHeight")}>
           <span>{t("metric.line")}</span>
           <input
@@ -153,8 +159,6 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
 
         <ToolbarButton
           icon="frame"
-          label={t("metric.paraBorders")}
-          wide
           data-testid="editor-toolbar-paragraph-borders"
           onClick={() => {
             const border: EditorBorderStyle = { width: 1, type: "solid", color: "#000000" };
@@ -172,7 +176,8 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
           }}
           tooltip={t("metric.applyBorders")}
         />
-      </ToolbarGroup>
-    </>
+        </div>
+      </ToolbarDropdown>
+    </ToolbarGroup>
   );
 }

@@ -8,9 +8,37 @@ const SAMPLE_PNG = Buffer.from(
 async function ensureToolbarVisible(page: import("@playwright/test").Page, testId: string) {
   const target = page.locator(`[data-testid="${testId}"]:visible`);
   if (!(await target.isVisible().catch(() => false))) {
-    const overflow = page.locator('[data-testid="editor-toolbar-overflow-dropdown"]');
-    if (await overflow.isVisible().catch(() => false)) {
-      await overflow.click();
+    const dropdownByControl: Record<string, string> = {
+      "editor-toolbar-align-left": "editor-toolbar-paragraph-dropdown",
+      "editor-toolbar-align-center": "editor-toolbar-paragraph-dropdown",
+      "editor-toolbar-align-right": "editor-toolbar-paragraph-dropdown",
+      "editor-toolbar-align-justify": "editor-toolbar-paragraph-dropdown",
+      "editor-toolbar-list-bullet": "editor-toolbar-paragraph-dropdown",
+      "editor-toolbar-list-ordered": "editor-toolbar-paragraph-dropdown",
+      "editor-toolbar-line-height": "editor-toolbar-metrics-dropdown",
+      "editor-toolbar-spacing-before": "editor-toolbar-metrics-dropdown",
+      "editor-toolbar-spacing-after": "editor-toolbar-metrics-dropdown",
+      "editor-toolbar-indent-left": "editor-toolbar-metrics-dropdown",
+      "editor-toolbar-indent-first-line": "editor-toolbar-metrics-dropdown",
+      "editor-toolbar-indent-hanging": "editor-toolbar-metrics-dropdown",
+      "editor-toolbar-page-break-before": "editor-toolbar-metrics-dropdown",
+      "editor-toolbar-keep-with-next": "editor-toolbar-metrics-dropdown",
+      "editor-toolbar-orientation": "editor-toolbar-section-dropdown",
+      "editor-toolbar-margins": "editor-toolbar-section-dropdown",
+      "editor-toolbar-section-break-next": "editor-toolbar-section-dropdown",
+      "editor-toolbar-section-break-continuous": "editor-toolbar-section-dropdown",
+      "editor-toolbar-merge-table": "editor-toolbar-table-dropdown",
+      "editor-toolbar-split-table": "editor-toolbar-table-dropdown",
+      "editor-toolbar-table-borders": "editor-toolbar-table-dropdown",
+    };
+    const dropdownId = dropdownByControl[testId];
+    if (dropdownId) {
+      await page.locator(`[data-testid="${dropdownId}"]`).click();
+    } else {
+      const overflow = page.locator('[data-testid="editor-toolbar-overflow-dropdown"]');
+      if (await overflow.isVisible().catch(() => false)) {
+        await overflow.click();
+      }
     }
   }
   return target;
@@ -345,4 +373,32 @@ test.describe("Oasis Editor 2 smoke tests", () => {
 
     await expect(lastParagraph).toContainText("Paragraph 60X");
   });
+
+  for (const viewport of [
+    { width: 1280, height: 720 },
+    { width: 768, height: 720 },
+    { width: 390, height: 720 },
+  ]) {
+    test(`keeps toolbar compact and menus inside viewport at ${viewport.width}px`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.reload();
+      await page.waitForSelector("#oasis-editor-loading", { state: "detached" });
+
+      const toolbar = page.locator(".oasis-editor-toolbar");
+      await expect(toolbar).toBeVisible();
+      await expect(toolbar).not.toContainText("Quebra de Página");
+      await expect(toolbar).not.toContainText("Manter Próximo");
+      await expect(toolbar).not.toContainText("Bordas Para");
+
+      const metricsDropdown = await ensureToolbarVisible(page, "editor-toolbar-metrics-dropdown");
+      await metricsDropdown.click();
+      const panel = page.locator(".oasis-editor-toolbar-panel:visible").last();
+      await expect(panel).toBeVisible();
+      const box = await panel.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height);
+    });
+  }
 });

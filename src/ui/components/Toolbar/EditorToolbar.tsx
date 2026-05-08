@@ -55,7 +55,7 @@ export function EditorToolbar(props: {
       <ToolbarOverflowManager>
         <Show when={showFileGroup()}>
           <ToolbarGroup>
-            <ToolbarDropdown label={t("toolbar.file")} icon="file" testId="editor-toolbar-file-dropdown">
+            <ToolbarDropdown label="" icon="file" testId="editor-toolbar-file-dropdown" tooltip={t("toolbar.file")}>
               <ToolbarButton
                 icon="download"
                 label={t("toolbar.export")}
