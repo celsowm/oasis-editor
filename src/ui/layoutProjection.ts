@@ -121,6 +121,7 @@ export function projectParagraphLayout(
     lines,
     startOffset: 0,
     endOffset: paragraphOffset,
+    contentWidth,
   };
 }
 
@@ -156,6 +157,7 @@ export function measureParagraphLayoutFromRects(
           .filter((fragment): fragment is EditorLayoutFragment => fragment !== null),
       };
     }),
+    contentWidth: projected.contentWidth,
   };
 }
 
@@ -206,6 +208,10 @@ function isMeasuredLayoutCurrent(
   const measuredEnd = measured.endOffset ?? measured.text.length;
 
   if (projectedStart !== measuredStart || projectedEnd !== measuredEnd) {
+    return false;
+  }
+
+  if (projected.contentWidth !== measured.contentWidth) {
     return false;
   }
 
@@ -453,6 +459,7 @@ function createParagraphSegmentLayout(
     })),
     startOffset,
     endOffset,
+    contentWidth: layout.contentWidth,
   };
 }
 

@@ -361,6 +361,7 @@ describe("layoutProjection", () => {
           fragments: projected.fragments,
           startOffset: 0,
           endOffset: 6,
+          contentWidth: 624,
           lines: [
             {
               paragraphId: paragraph.id,
@@ -459,6 +460,7 @@ describe("layoutProjection", () => {
       fragments: projected.fragments,
       startOffset: 0,
       endOffset: 8,
+      contentWidth: 624,
       lines: [
         {
           paragraphId: paragraph.id,
@@ -543,6 +545,7 @@ describe("layoutProjection", () => {
           fragments: [],
           startOffset: 0,
           endOffset: 1,
+          contentWidth: 624,
           lines: [
             {
               paragraphId: paragraph.id,
@@ -710,3 +713,54 @@ describe("layoutProjection", () => {
     expect(layout.pages.length).toBeGreaterThanOrEqual(2);
   });
 });
+  
+  it("invalidates measured paragraph geometry when contentWidth changes", () => {
+    resetEditorIds();
+    const paragraph = createEditorParagraphFromRuns([{ text: "word" }]);
+
+    // Measure at width 624
+    const measuredLayout = {
+      paragraphId: paragraph.id,
+      text: "word",
+      fragments: [],
+      startOffset: 0,
+      endOffset: 4,
+      contentWidth: 624,
+      lines: [
+        {
+          paragraphId: paragraph.id,
+          index: 0,
+          startOffset: 0,
+          endOffset: 4,
+          top: 0,
+          height: 20,
+          slots: [],
+          fragments: [],
+        },
+      ],
+    };
+
+    // Project with a document that results in contentWidth 400
+    const layout = projectDocumentLayout(
+      {
+        id: "doc:1",
+        blocks: [paragraph],
+        pageSettings: {
+          width: 592, // 400 + 96 + 96
+          height: 1056,
+          margins: { left: 96, right: 96, top: 96, bottom: 96, header: 48, footer: 48, gutter: 0 },
+          orientation: "portrait"
+        }
+      },
+      200,
+      undefined,
+      { [paragraph.id]: measuredLayout },
+    );
+
+    // Should NOT use measuredLayout because contentWidth (400) != measuredLayout.contentWidth (624)
+    expect(layout.pages[0]?.blocks[0]?.layout?.contentWidth).toBe(400);
+    // In our mock, 'slots' is empty. projectParagraphLayout results in non-empty slots.
+    expect(layout.pages[0]?.blocks[0]?.layout?.lines[0]?.slots.length).toBeGreaterThan(0);
+  });
+
+

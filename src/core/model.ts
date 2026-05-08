@@ -475,6 +475,7 @@ export interface EditorLayoutParagraph {
   lines: EditorLayoutLine[];
   startOffset?: number;
   endOffset?: number;
+  contentWidth?: number;
 }
 
 export interface EditorLayoutBlock {

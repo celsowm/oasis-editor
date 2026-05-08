@@ -859,3 +859,54 @@ describe("EditorSurface", () => {
     dispose();
   });
 });
+  
+  it("suppresses text-indent for continuation segments of a split paragraph", () => {
+    const container = document.createElement("div");
+    const paragraph = createEditorParagraphFromRuns([{ text: "x".repeat(1000) }]);
+    paragraph.style = { indentFirstLine: 50 }; // Apply text-indent
+
+    const state: EditorState = {
+      document: createEditorDocument([paragraph], {
+        width: 816,
+        height: 200, // Small height to force split
+        margins: { top: 20, right: 20, bottom: 20, left: 20, header: 10, footer: 10, gutter: 0 },
+      }),
+      selection: {
+        anchor: { paragraphId: paragraph.id, runId: paragraph.runs[0]!.id, offset: 0 },
+        focus: { paragraphId: paragraph.id, runId: paragraph.runs[0]!.id, offset: 0 },
+      },
+    };
+
+    const dispose = render(
+      () => (
+        <EditorSurface
+          state={() => state}
+          onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
+          onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
+        />
+      ),
+      container,
+    );
+
+    const blocks = Array.from(container.querySelectorAll('[data-testid="editor-block"]'))
+      .filter((node) => node.getAttribute("data-source-paragraph-id") === paragraph.id) as HTMLParagraphElement[];
+
+    expect(blocks.length).toBeGreaterThan(1);
+    
+    // First block should have text-indent
+    expect(blocks[0]?.style.textIndent).toBe("50px");
+    
+    // Continuation blocks should NOT have text-indent
+    for (let i = 1; i < blocks.length; i++) {
+      expect(blocks[i]?.style.textIndent).toBe("");
+    }
+
+    dispose();
+  });
+
+

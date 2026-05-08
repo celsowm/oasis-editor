@@ -76,6 +76,7 @@ function getBorderStyle(border?: EditorBorderStyle): string | undefined {
 function paragraphStyleToCss(
   style: EditorParagraphStyle | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
+  isContinuation?: boolean,
 ): Record<string, string> | undefined {
   const merged = resolveEffectiveParagraphStyle(style, styles);
 
@@ -117,7 +118,7 @@ function paragraphStyleToCss(
   if (indentLeft !== 0) {
     css["padding-left"] = `${indentLeft}px`;
   }
-  if (textIndent !== 0) {
+  if (textIndent !== 0 && !isContinuation) {
     css["text-indent"] = `${textIndent}px`;
   }
   if (merged.indentRight !== undefined && merged.indentRight !== null) {
@@ -130,8 +131,9 @@ function paragraphStyleToCss(
 function getParagraphRenderStyle(
   paragraph: EditorParagraphNode,
   state: EditorState,
+  isContinuation?: boolean,
 ): Record<string, string> | undefined {
-  const css = paragraphStyleToCss(paragraph.style, state.document.styles) ?? {};
+  const css = paragraphStyleToCss(paragraph.style, state.document.styles, isContinuation) ?? {};
   const effectiveTextStyle = resolveEffectiveTextStyleForParagraph(
     undefined,
     paragraph.style?.styleId,
@@ -183,6 +185,7 @@ function getJustifiedLineExtraSpace(
   line: EditorLayoutLine,
   lineIndex: number,
   lineCount: number,
+  isContinuation: boolean,
   contentWidth?: number,
 ): number {
   if (
@@ -208,7 +211,7 @@ function getJustifiedLineExtraSpace(
     paragraph,
     state,
     contentWidth,
-    lineIndex === 0,
+    lineIndex === 0 && !isContinuation,
   );
   const extraSpace = availableWidth - lineWidth;
   if (extraSpace <= 0.5) {
@@ -501,6 +504,7 @@ function renderParagraph(
                     line,
                     lineIndex(),
                     paragraphLayout.lines.length,
+                    isContinuation,
                     options?.contentWidth,
                   );
                   const runContent = (
@@ -722,7 +726,7 @@ function renderParagraph(
       data-end-offset={paragraphLayout.endOffset ?? chars.length}
       data-testid={testId}
       data-list-align={paragraph.list ? paragraphAlign : undefined}
-      style={getParagraphRenderStyle(paragraph, state)}
+      style={getParagraphRenderStyle(paragraph, state, isContinuation)}
       onMouseDown={
         interactive
           ? (event) => onParagraphMouseDown(paragraph.id, event)
