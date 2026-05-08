@@ -428,6 +428,75 @@ describe("EditorSurface", () => {
     dispose();
   });
 
+  it("expands spaces on justified projected lines", () => {
+    const container = document.createElement("div");
+    const paragraph = createEditorParagraphFromRuns([
+      { text: "alpha beta gamma delta epsilon zeta eta theta iota kappa" },
+    ]);
+    paragraph.style = { align: "justify" };
+    const state: EditorState = {
+      document: createEditorDocument(
+        [paragraph],
+        {
+          width: 260,
+          height: 920,
+          margins: {
+            top: 72,
+            right: 40,
+            bottom: 72,
+            left: 40,
+            header: 36,
+            footer: 36,
+            gutter: 0,
+          },
+        },
+      ),
+      selection: {
+        anchor: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+        focus: {
+          paragraphId: paragraph.id,
+          runId: paragraph.runs[0]!.id,
+          offset: 0,
+        },
+      },
+    };
+
+    const dispose = render(
+      () => (
+        <EditorSurface
+          state={() => state}
+          onSurfaceMouseDown={() => undefined}
+          onSurfaceDblClick={() => undefined}
+          onParagraphMouseDown={() => undefined}
+          onImageMouseDown={() => undefined}
+          onImageResizeHandleMouseDown={() => undefined}
+          onTableDragHandleMouseDown={() => undefined}
+          onRevisionMouseEnter={() => undefined}
+        />
+      ),
+      container,
+    );
+
+    const blockNode = container.querySelector('[data-testid="editor-block"]') as HTMLParagraphElement;
+    const lineNodes = Array.from(container.querySelectorAll('[data-testid="editor-line"]')) as HTMLDivElement[];
+    const firstLineSpace = Array.from(lineNodes[0]?.querySelectorAll('[data-testid="editor-char"]') ?? [])
+      .find((node) => node.textContent === " ") as HTMLSpanElement | undefined;
+    const lastLineSpace = Array.from(lineNodes[lineNodes.length - 1]?.querySelectorAll('[data-testid="editor-char"]') ?? [])
+      .find((node) => node.textContent === " ") as HTMLSpanElement | undefined;
+
+    expect(blockNode.style.textAlign).toBe("justify");
+    expect(lineNodes.length).toBeGreaterThan(1);
+    expect(firstLineSpace?.style.display).toBe("inline-block");
+    expect(firstLineSpace?.style.width).not.toBe("");
+    expect(lastLineSpace?.style.width).toBe("");
+
+    dispose();
+  });
+
   it("renders paginated page containers for the projected document layout", () => {
     const container = document.createElement("div");
     const paragraphs = Array.from({ length: 3 }, (_, index) =>

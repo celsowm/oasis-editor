@@ -72,6 +72,53 @@ test.describe("Oasis Editor 2 DOCX", () => {
     await expect(page.locator('[data-testid="editor-table-cell"]').nth(1)).toContainText("B1");
   });
 
+  test("visually justifies wrapped imported paragraphs from the toolbar", async ({ page }) => {
+    const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+      <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+        <w:body>
+          <w:p>
+            <w:r>
+              <w:t>A autora da petição alega que foi injustamente bloqueada a sua Carteira Nacional de Habilitação pelo órgão público, apesar de já ter obtido decisão administrativa favorável, mantendo a restrição indevida por vários meses.</w:t>
+            </w:r>
+          </w:p>
+        </w:body>
+      </w:document>`);
+
+    await page.locator('[data-testid="editor-import-docx-input"]').setInputFiles({
+      name: "justify.docx",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      buffer: file,
+    });
+
+    const paragraph = page.locator('[data-testid="editor-block"]').first();
+    await expect(paragraph).toContainText("A autora da petição");
+    await paragraph.click();
+    await page.locator('[data-testid="editor-toolbar-align-justify"]').click();
+
+    const metrics = await paragraph.evaluate((element) => {
+      const lineNodes = Array.from(
+        element.querySelectorAll<HTMLElement>('[data-testid="editor-line"]'),
+      );
+      return {
+        textAlign: getComputedStyle(element).textAlign,
+        visualRightDeltas: lineNodes.slice(0, -1).map((line) => {
+          const chars = Array.from(
+            line.querySelectorAll<HTMLElement>('[data-testid="editor-char"]'),
+          );
+          const nonSpaceChars = chars.filter((char) => char.textContent !== " ");
+          const lastChar = nonSpaceChars[nonSpaceChars.length - 1];
+          return lastChar
+            ? line.getBoundingClientRect().right - lastChar.getBoundingClientRect().right
+            : Number.POSITIVE_INFINITY;
+        }),
+      };
+    });
+
+    expect(metrics.textAlign).toBe("justify");
+    expect(metrics.visualRightDeltas.length).toBeGreaterThan(0);
+    expect(Math.max(...metrics.visualRightDeltas)).toBeLessThan(12);
+  });
+
   test("exports the imported DOCX back to a downloadable file", async ({ page }) => {
     const file = await buildDocx(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">

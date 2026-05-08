@@ -7,6 +7,7 @@ import {
   getPageHeaderZoneTop,
   type EditorLayoutBlock,
   type EditorLayoutDocument,
+  type EditorLayoutLine,
   type EditorLayoutPage,
   type EditorLayoutParagraph,
   type EditorParagraphNode,
@@ -161,6 +162,60 @@ function getParagraphAlign(
     resolveEffectiveParagraphStyle(paragraph.style, state.document.styles)?.align ??
     "left"
   );
+}
+
+function getEffectiveParagraphContentWidth(
+  paragraph: EditorParagraphNode,
+  state: EditorState,
+  contentWidth: number,
+  isFirstLine: boolean,
+): number {
+  const style = resolveEffectiveParagraphStyle(paragraph.style, state.document.styles);
+  const indentLeft = (style.indentLeft ?? 0) + (style.indentHanging ?? 0);
+  const textIndent = (style.indentFirstLine ?? 0) - (style.indentHanging ?? 0);
+  const startInset = indentLeft + (isFirstLine ? textIndent : 0);
+  return Math.max(0, contentWidth - Math.max(0, startInset) - (style.indentRight ?? 0));
+}
+
+function getJustifiedLineExtraSpace(
+  paragraph: EditorParagraphNode,
+  state: EditorState,
+  line: EditorLayoutLine,
+  lineIndex: number,
+  lineCount: number,
+  contentWidth?: number,
+): number {
+  if (
+    contentWidth === undefined ||
+    getParagraphAlign(paragraph, state) !== "justify" ||
+    lineIndex >= lineCount - 1
+  ) {
+    return 0;
+  }
+
+  const lineChars = line.fragments.flatMap((fragment) => fragment.chars);
+  if (lineChars[lineChars.length - 1]?.char === "\n") {
+    return 0;
+  }
+
+  const expandableSpaces = lineChars.filter((char) => char.char === " ").length;
+  if (expandableSpaces === 0) {
+    return 0;
+  }
+
+  const lineWidth = line.slots[line.slots.length - 1]?.left ?? 0;
+  const availableWidth = getEffectiveParagraphContentWidth(
+    paragraph,
+    state,
+    contentWidth,
+    lineIndex === 0,
+  );
+  const extraSpace = availableWidth - lineWidth;
+  if (extraSpace <= 0.5) {
+    return 0;
+  }
+
+  return extraSpace / expandableSpaces;
 }
 
 function numberToLowerLetter(n: number): string {
@@ -358,6 +413,7 @@ function renderParagraph(
     domParagraphId?: string;
     interactive?: boolean;
     testId?: string;
+    contentWidth?: number;
   },
 ) {
   const paragraphLayout =
@@ -432,10 +488,21 @@ function renderParagraph(
         }
       >
         <For each={paragraphLayout.lines}>
-          {(line) => (
-            <div class="oasis-editor-line" data-testid="editor-line">
+          {(line, lineIndex) => (
+            <div
+              class="oasis-editor-line"
+              data-testid="editor-line"
+            >
               <For each={line.fragments}>
                 {(fragment) => {
+                  const justifiedSpaceWidthExtra = getJustifiedLineExtraSpace(
+                    paragraph,
+                    state,
+                    line,
+                    lineIndex(),
+                    paragraphLayout.lines.length,
+                    options?.contentWidth,
+                  );
                   const runContent = (
                     <span
                       class="oasis-editor-run"
@@ -490,6 +557,18 @@ function renderParagraph(
                               );
                               return Math.max(0, nextTabPos - currentX);
                             };
+                            const justifiedSpaceWidth = () => {
+                              if (char.char !== " " || justifiedSpaceWidthExtra <= 0) {
+                                return 0;
+                              }
+                              const currentX = slot()?.left ?? 0;
+                              const nextX =
+                                line.slots.find(
+                                  (s) => s.offset === char.paragraphOffset + 1,
+                                )?.left ?? currentX;
+                              const measuredSpaceWidth = Math.max(0, nextX - currentX);
+                              return measuredSpaceWidth + justifiedSpaceWidthExtra;
+                            };
 
                             return (
                               <span
@@ -514,6 +593,13 @@ function renderParagraph(
                                         overflow: "hidden",
                                         "white-space": "pre",
                                       }
+                                    : justifiedSpaceWidth() > 0
+                                      ? {
+                                          display: "inline-block",
+                                          width: `${justifiedSpaceWidth()}px`,
+                                          overflow: "hidden",
+                                          "white-space": "pre",
+                                        }
                                     : undefined
                                 }
                               >
@@ -1064,7 +1150,10 @@ export function EditorSurface(props: EditorSurfaceProps) {
                             props.onTableDragHandleMouseDown,
                             props.onRevisionMouseEnter,
                             props.onRevisionMouseLeave,
-                            { testId: "editor-header-block" },
+                            {
+                              testId: "editor-header-block",
+                              contentWidth: contentWidth(),
+                            },
                           )
                         : renderTable(
                             block.sourceBlock,
@@ -1116,6 +1205,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onTableDragHandleMouseDown,
                           props.onRevisionMouseEnter,
                           props.onRevisionMouseLeave,
+                          { contentWidth: contentWidth() },
                         )
                       : renderTable(
                           block.sourceBlock,
@@ -1174,7 +1264,10 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onTableDragHandleMouseDown,
                           props.onRevisionMouseEnter,
                           props.onRevisionMouseLeave,
-                          { testId: "editor-footer-block" },
+                          {
+                            testId: "editor-footer-block",
+                            contentWidth: contentWidth(),
+                          },
                         )
                       : renderTable(
                           block.sourceBlock,

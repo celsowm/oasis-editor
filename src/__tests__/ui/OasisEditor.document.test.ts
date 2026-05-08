@@ -1164,6 +1164,38 @@ describe("OasisEditor", () => {
     instance.dispose();
   });
 
+  it("renders toolbar justify as expanded word spacing on wrapped lines", async () => {
+    const root = document.getElementById("oasis-editor-root") as HTMLElement;
+    const instance = createOasisEditor(root);
+    const input = root.querySelector('[data-testid="editor-input"]') as HTMLTextAreaElement;
+
+    input.value = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau";
+    input.dispatchEvent(new InputEvent("input", { bubbles: true, data: input.value, inputType: "insertText" }));
+    await Promise.resolve();
+
+    const justifyButton = root.querySelector(
+      '[data-testid="editor-toolbar-align-justify"]',
+    ) as HTMLButtonElement;
+    justifyButton.click();
+    await Promise.resolve();
+
+    const paragraph = root.querySelector('[data-testid="editor-block"]') as HTMLParagraphElement;
+    const lines = Array.from(root.querySelectorAll('[data-testid="editor-line"]')) as HTMLDivElement[];
+    const firstLineSpace = Array.from(lines[0]?.querySelectorAll('[data-testid="editor-char"]') ?? [])
+      .find((node) => node.textContent === " ") as HTMLSpanElement | undefined;
+    const lastLineSpace = Array.from(lines[lines.length - 1]?.querySelectorAll('[data-testid="editor-char"]') ?? [])
+      .find((node) => node.textContent === " ") as HTMLSpanElement | undefined;
+
+    expect(paragraph.style.textAlign).toBe("justify");
+    expect(justifyButton.classList.contains("oasis-editor-tool-button-active")).toBe(true);
+    expect(lines.length).toBeGreaterThan(1);
+    expect(firstLineSpace?.style.display).toBe("inline-block");
+    expect(firstLineSpace?.style.width).not.toBe("");
+    expect(lastLineSpace?.style.width).toBe("");
+
+    instance.dispose();
+  });
+
   it("applies paragraph styles across all paragraphs touched by the selection", async () => {
     const root = document.getElementById("oasis-editor-root") as HTMLElement;
     const instance = createOasisEditor(root);
