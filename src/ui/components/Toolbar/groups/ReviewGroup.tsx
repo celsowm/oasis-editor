@@ -10,7 +10,7 @@ export function ReviewGroup(props: { ctx: () => EditorToolbarCtx }) {
   const state = () => ctx().state;
 
   return (
-    <ToolbarGroup>
+    <>
       <ToolbarDropdown
         label=""
         icon="message-square"
@@ -49,6 +49,6 @@ export function ReviewGroup(props: { ctx: () => EditorToolbarCtx }) {
         />
         </div>
       </ToolbarDropdown>
-    </ToolbarGroup>
+    </>
   );
 }

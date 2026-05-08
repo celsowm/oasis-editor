@@ -1,13 +1,17 @@
 import { For } from "solid-js";
 import type { EditorToolbarCtx } from "../types.js";
-import { ToolbarGroup } from "../ToolbarGroup.js";
 import { ToolbarSelect } from "../ToolbarSelect.js";
 import { t } from "../../../../i18n/index.js";
 
+/**
+ * Style tools (Selects and Colors) rendered as individual items
+ * to allow granular overflow management.
+ */
 export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
   const t_style = () => ctx().toolbarStyleState();
   const state = () => ctx().state;
+  
   const fontFamilyOptions = () => {
     const values = new Set<string>([
       "Arial",
@@ -21,15 +25,11 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
 
     for (const style of Object.values(state().document.styles ?? {})) {
       const fontFamily = style.textStyle?.fontFamily?.trim();
-      if (fontFamily) {
-        values.add(fontFamily);
-      }
+      if (fontFamily) values.add(fontFamily);
     }
 
     const currentFontFamily = t_style().fontFamily.trim();
-    if (currentFontFamily) {
-      values.add(currentFontFamily);
-    }
+    if (currentFontFamily) values.add(currentFontFamily);
 
     return Array.from(values).sort((a, b) => a.localeCompare(b));
   };
@@ -39,21 +39,17 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
 
     for (const style of Object.values(state().document.styles ?? {})) {
       const fontSize = style.textStyle?.fontSize;
-      if (typeof fontSize === "number" && Number.isFinite(fontSize)) {
-        values.add(fontSize);
-      }
+      if (typeof fontSize === "number" && Number.isFinite(fontSize)) values.add(fontSize);
     }
 
     const currentFontSize = Number(t_style().fontSize);
-    if (Number.isFinite(currentFontSize) && currentFontSize > 0) {
-      values.add(currentFontSize);
-    }
+    if (Number.isFinite(currentFontSize) && currentFontSize > 0) values.add(currentFontSize);
 
     return Array.from(values).sort((a, b) => a - b);
   };
 
   return (
-    <ToolbarGroup>
+    <>
       <ToolbarSelect
         wide
         data-testid="editor-toolbar-style"
@@ -69,31 +65,8 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
       <ToolbarSelect
         data-testid="editor-toolbar-font-family"
         value={t_style().fontFamily}
-        onMouseDown={() =>
-          ctx().debugToolbarEvent("font-family", "mousedown", {
-            value: t_style().fontFamily,
-            options: fontFamilyOptions(),
-          })
-        }
-        onClick={() =>
-          ctx().debugToolbarEvent("font-family", "click", {
-            value: t_style().fontFamily,
-            options: fontFamilyOptions(),
-          })
-        }
-        onFocus={() =>
-          ctx().debugToolbarEvent("font-family", "focus", {
-            value: t_style().fontFamily,
-            options: fontFamilyOptions(),
-          })
-        }
         onChange={(event) =>
-          (ctx().debugToolbarEvent("font-family", "change", {
-            previousValue: t_style().fontFamily,
-            nextValue: event.currentTarget.value,
-          }),
           ctx().applyValueStyleCommand("fontFamily", event.currentTarget.value || null)
-          )
         }
         tooltip={t("toolbar.fontFamily")}
       >
@@ -107,33 +80,11 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
         small
         data-testid="editor-toolbar-font-size"
         value={t_style().fontSize}
-        onMouseDown={() =>
-          ctx().debugToolbarEvent("font-size", "mousedown", {
-            value: t_style().fontSize,
-            options: fontSizeOptions(),
-          })
-        }
-        onClick={() =>
-          ctx().debugToolbarEvent("font-size", "click", {
-            value: t_style().fontSize,
-            options: fontSizeOptions(),
-          })
-        }
-        onFocus={() =>
-          ctx().debugToolbarEvent("font-size", "focus", {
-            value: t_style().fontSize,
-            options: fontSizeOptions(),
-          })
-        }
         onChange={(event) =>
-          (ctx().debugToolbarEvent("font-size", "change", {
-            previousValue: t_style().fontSize,
-            nextValue: event.currentTarget.value,
-          }),
           ctx().applyValueStyleCommand(
             "fontSize",
             event.currentTarget.value ? Number(event.currentTarget.value) : null,
-          ))
+          )
         }
         tooltip={t("toolbar.fontSize")}
       >
@@ -168,6 +119,6 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
           aria-label={t("toolbar.highlight")}
         />
       </label>
-    </ToolbarGroup>
+    </>
   );
 }

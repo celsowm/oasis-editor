@@ -286,14 +286,16 @@
 }
 
 .oasis-editor-toolbar-overflow-dropdown-menu {
-  width: min(360px, calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
   max-height: min(520px, calc(100vh - 88px));
   overflow: auto;
   padding: 8px;
   box-sizing: border-box;
+  width: auto;
 }
 
-.oasis-editor-toolbar-dropdown-menu .oasis-editor-tool-button {
+/* Full-width buttons only in standard dropdown menus, NOT in overflow */
+.oasis-editor-toolbar-dropdown-menu > .oasis-editor-tool-button {
   width: 100%;
   justify-content: flex-start;
   padding: 8px 12px;
@@ -335,6 +337,14 @@
   background: var(--oasis-paper);
 }
 
+.oasis-editor-toolbar-overflow-menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+}
+
 .oasis-editor-toolbar-overflow-menu .oasis-editor-toolbar-group {
   background: transparent;
   border: none;
@@ -343,33 +353,24 @@
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
-}
-
-.oasis-editor-toolbar-overflow-menu {
-  display: grid;
-  gap: 6px;
+  gap: 2px;
 }
 
 .oasis-editor-toolbar-overflow-menu .oasis-editor-toolbar-separator {
-  width: 100%;
-  height: 1px;
-  margin: 2px 0;
+  width: 1px;
+  height: 24px;
+  background: var(--oasis-toolbar-border);
+  margin: 0 2px;
+  flex-shrink: 0;
 }
 
 .oasis-editor-toolbar-overflow-menu .oasis-editor-toolbar-item-wrapper {
-  width: 100%;
+  flex-shrink: 0;
 }
 
-.oasis-editor-toolbar-overflow-item {
-  width: 100%;
-  padding: 4px 0 8px;
-  border-bottom: 1px solid var(--oasis-hover-bg);
-  overflow: hidden;
-}
-
-.oasis-editor-toolbar-overflow-item:last-child {
-  border-bottom: none;
+.oasis-editor-toolbar-overflow-menu .oasis-editor-tool-button {
+  width: auto;
+  padding: 6px 8px;
 }
 
 .oasis-editor-toolbar-more-measure {

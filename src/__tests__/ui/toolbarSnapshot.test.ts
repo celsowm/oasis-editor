@@ -52,6 +52,7 @@ const EXPECTED_TOOLBAR_TESTIDS: readonly string[] = [
   "editor-toolbar-metrics-dropdown",
   "editor-toolbar-merge-table",
   "editor-toolbar-orientation",
+  "editor-toolbar-overflow-dropdown",
   "editor-toolbar-paragraph-dropdown",
   "editor-toolbar-page-break-before",
   "editor-toolbar-paragraph-borders",

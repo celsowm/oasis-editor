@@ -54,46 +54,42 @@ export function EditorToolbar(props: {
     >
       <ToolbarOverflowManager>
         <Show when={showFileGroup()}>
-          <ToolbarGroup>
-            <ToolbarDropdown label="" icon="file" testId="editor-toolbar-file-dropdown" tooltip={t("toolbar.file")}>
-              <ToolbarButton
-                icon="download"
-                label={t("toolbar.export")}
-                wide
-                data-testid="editor-toolbar-export-docx"
-                onClick={() => void ctx().handleExportDocx()}
-                tooltip={t("toolbar.export")}
-              />
-              <ToolbarButton
-                icon="upload"
-                label={t("toolbar.import")}
-                wide
-                data-testid="editor-toolbar-import-docx"
-                onClick={() => ctx().importInputRef()?.click()}
-                tooltip={t("toolbar.import")}
-              />
-            </ToolbarDropdown>
-          </ToolbarGroup>
+          <ToolbarDropdown label="" icon="file" testId="editor-toolbar-file-dropdown" tooltip={t("toolbar.file")}>
+            <ToolbarButton
+              icon="download"
+              label={t("toolbar.export")}
+              wide
+              data-testid="editor-toolbar-export-docx"
+              onClick={() => void ctx().handleExportDocx()}
+              tooltip={t("toolbar.export")}
+            />
+            <ToolbarButton
+              icon="upload"
+              label={t("toolbar.import")}
+              wide
+              data-testid="editor-toolbar-import-docx"
+              onClick={() => ctx().importInputRef()?.click()}
+              tooltip={t("toolbar.import")}
+            />
+          </ToolbarDropdown>
 
           <ToolbarSeparator />
         </Show>
 
-        <ToolbarGroup>
-          <ToolbarButton
-            icon="undo"
-            data-testid="editor-toolbar-undo"
-            disabled={ctx().undoStack().length === 0}
-            onClick={() => ctx().performUndo()}
-            tooltip={`${t("toolbar.undo")} (${mod}+Z)`}
-          />
-          <ToolbarButton
-            icon="redo"
-            data-testid="editor-toolbar-redo"
-            disabled={ctx().redoStack().length === 0}
-            onClick={() => ctx().performRedo()}
-            tooltip={`${t("toolbar.redo")} (${mod}+Shift+Z)`}
-          />
-        </ToolbarGroup>
+        <ToolbarButton
+          icon="undo"
+          data-testid="editor-toolbar-undo"
+          disabled={ctx().undoStack().length === 0}
+          onClick={() => ctx().performUndo()}
+          tooltip={`${t("toolbar.undo")} (${mod}+Z)`}
+        />
+        <ToolbarButton
+          icon="redo"
+          data-testid="editor-toolbar-redo"
+          disabled={ctx().redoStack().length === 0}
+          onClick={() => ctx().performRedo()}
+          tooltip={`${t("toolbar.redo")} (${mod}+Shift+Z)`}
+        />
 
         <ToolbarSeparator />
 

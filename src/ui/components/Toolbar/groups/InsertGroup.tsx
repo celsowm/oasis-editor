@@ -2,18 +2,21 @@ import { Show } from "solid-js";
 import { insertFieldAtSelection } from "../../../../core/editorCommands.js";
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
-import { ToolbarGroup } from "../ToolbarGroup.js";
 import { TableGridPicker } from "../TableGridPicker.js";
 import { t } from "../../../../i18n/index.js";
 
 const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 
+/**
+ * Insert tools rendered as individual items (no ToolbarGroup wrapper)
+ * so the OverflowManager can move them one-by-one.
+ */
 export function InsertGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
   const t_style = () => ctx().toolbarStyleState();
 
   return (
-    <ToolbarGroup>
+    <>
       <ToolbarButton
         icon="image"
         data-testid="editor-toolbar-insert-image"
@@ -86,6 +89,6 @@ export function InsertGroup(props: { ctx: () => EditorToolbarCtx }) {
           tooltip={t("toolbar.alt")}
         />
       </Show>
-    </ToolbarGroup>
+    </>
   );
 }

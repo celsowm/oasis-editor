@@ -11,7 +11,7 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
   const t_style = () => ctx().toolbarStyleState();
 
   return (
-    <ToolbarGroup>
+    <>
       <ToolbarDropdown
         label=""
         icon="sliders-horizontal"
@@ -178,6 +178,6 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
         />
         </div>
       </ToolbarDropdown>
-    </ToolbarGroup>
+    </>
   );
 }

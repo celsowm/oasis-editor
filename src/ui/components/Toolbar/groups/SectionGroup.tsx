@@ -11,7 +11,7 @@ export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
   const state = () => ctx().state;
 
   return (
-    <ToolbarGroup>
+    <>
       <ToolbarDropdown
         label=""
         icon="layout-template"
@@ -86,6 +86,6 @@ export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
         />
         </div>
       </ToolbarDropdown>
-    </ToolbarGroup>
+    </>
   );
 }
