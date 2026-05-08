@@ -516,9 +516,6 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       if (requestId !== syncRequestId) {
         return;
       }
-      if (reason === "scroll") {
-        logger.debug("layout:sync skipped global measurement", { reason });
-      }
       syncInputBox(reason);
     });
   };
