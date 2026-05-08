@@ -299,19 +299,6 @@ function DropCaret(props: {
   );
 }
 
-/**
- * Produce a stable string used to detect whether two editor states differ.
- * The document's `assets` map (e.g. embedded image data URLs) is excluded
- * because asset payloads are append-only and cheap-to-compare by reference;
- * stringifying multi-hundred-KB base64 blobs on every keystroke would
- * dominate the cost of typing and selection changes.
- */
-function stringifyStateForEquality(state: EditorState): string {
-  return JSON.stringify(state, (key, value) =>
-    key === "assets" ? undefined : value,
-  );
-}
-
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   createEffect(() => {
     setLocale(props.locale ?? "pt-BR");
@@ -506,23 +493,12 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     producer: (current: EditorState) => EditorState,
     options?: EditorTransactionOptions,
   ) => {
-    const previous = cloneState(state);
     const next = producer(state);
-    // The previous implementation used `JSON.stringify(prev) === JSON.stringify(next)`
-    // here, which forced a full serialization of the document on every keystroke.
-    // For documents with embedded images stored as data URLs that meant
-    // serializing several hundred KB of base64 twice per edit (the dominant
-    // typing-latency cost). Now that image payloads live out-of-band in
-    // `document.assets`, the state is small enough that stringify is cheap,
-    // but we still skip the heavy `assets` map via a replacer so the cost
-    // never depends on embedded media size.
-    if (
-      stringifyStateForEquality(previous) ===
-      stringifyStateForEquality(next)
-    ) {
+    if (next === state) {
       return;
     }
 
+    const previous = cloneState(state);
     historyState = applyEditorHistoryTransaction(
       historyState,
       previous,

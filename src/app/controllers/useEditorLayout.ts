@@ -109,14 +109,6 @@ function buildParagraphSignature(paragraph: EditorParagraphNode): string {
     .join("|");
 }
 
-function copyWithoutKeys<T>(source: Record<string, T>, keys: Iterable<string>): Record<string, T> {
-  const next = { ...source };
-  for (const key of keys) {
-    delete next[key];
-  }
-  return next;
-}
-
 function areParagraphLayoutsEquivalent(
   previous: EditorLayoutParagraph | undefined,
   next: EditorLayoutParagraph,
@@ -212,7 +204,6 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     for (const paragraphId of ids) {
       cachedParagraphSignatures.delete(paragraphId);
     }
-    setMeasuredParagraphLayouts((current) => copyWithoutKeys(current, ids));
   };
 
   const getParagraphLayout = (

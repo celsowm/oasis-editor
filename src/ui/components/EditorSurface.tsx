@@ -1,10 +1,13 @@
-import { For, Show, createMemo } from "solid-js";
+import { For, Index, Show, createMemo } from "solid-js";
 import type { Accessor } from "solid-js";
 import {
   getPageBodyTop,
   getPageContentHeight,
   getPageContentWidth,
   getPageHeaderZoneTop,
+  type EditorLayoutBlock,
+  type EditorLayoutDocument,
+  type EditorLayoutPage,
   type EditorLayoutParagraph,
   type EditorParagraphNode,
   getParagraphText,
@@ -344,6 +347,7 @@ function renderParagraph(
   layout: EditorLayoutParagraph | undefined,
   blockId: string,
   state: EditorState,
+  normalizedSelection: Accessor<ReturnType<typeof normalizeSelection>>,
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
   onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
   onImageResizeHandleMouseDown: EditorSurfaceProps["onImageResizeHandleMouseDown"],
@@ -360,7 +364,7 @@ function renderParagraph(
     layout ??
     projectParagraphLayout(paragraph, undefined, undefined, state.document.styles);
   const chars = paragraphLayout.fragments.flatMap((fragment) => fragment.chars);
-  const normalized = () => normalizeSelection(state);
+  const normalized = normalizedSelection;
   const isContinuation = (paragraphLayout.startOffset ?? 0) > 0;
   const domParagraphId = options?.domParagraphId ?? paragraph.id;
   const interactive = options?.interactive ?? true;
@@ -667,6 +671,7 @@ function renderTable(
   paragraphIndexById: Map<string, number>,
   listMarkers: Map<string, string>,
   state: EditorState,
+  normalizedSelection: Accessor<ReturnType<typeof normalizeSelection>>,
   onParagraphMouseDown: EditorSurfaceProps["onParagraphMouseDown"],
   onImageMouseDown: EditorSurfaceProps["onImageMouseDown"],
   onImageResizeHandleMouseDown: EditorSurfaceProps["onImageResizeHandleMouseDown"],
@@ -807,6 +812,7 @@ function renderTable(
                                 ? `${blockId}:repeat:${renderedRow.repeatedIndex}:${cell.id}:${paragraphIndex()}`
                                 : paragraph.id,
                               state,
+                              normalizedSelection,
                               onParagraphMouseDown,
                               onImageMouseDown,
                               onImageResizeHandleMouseDown,
@@ -835,7 +841,132 @@ function renderTable(
   );
 }
 
+function areLayoutParagraphsEquivalentForRender(
+  previous: EditorLayoutParagraph | undefined,
+  next: EditorLayoutParagraph | undefined,
+): boolean {
+  if (previous === next) {
+    return true;
+  }
+  if (!previous || !next) {
+    return false;
+  }
+  if (
+    previous.text !== next.text ||
+    previous.startOffset !== next.startOffset ||
+    previous.endOffset !== next.endOffset ||
+    previous.lines.length !== next.lines.length
+  ) {
+    return false;
+  }
+  return next.lines.every((line, index) => {
+    const previousLine = previous.lines[index];
+    return (
+      previousLine &&
+      previousLine.startOffset === line.startOffset &&
+      previousLine.endOffset === line.endOffset &&
+      previousLine.top === line.top &&
+      previousLine.height === line.height
+    );
+  });
+}
+
+function canReuseLayoutBlock(
+  previous: EditorLayoutBlock | undefined,
+  next: EditorLayoutBlock,
+): previous is EditorLayoutBlock {
+  return Boolean(
+    previous &&
+      previous.blockId === next.blockId &&
+      previous.sourceBlock === next.sourceBlock &&
+      previous.estimatedHeight === next.estimatedHeight &&
+      previous.tableSegment?.startRowIndex === next.tableSegment?.startRowIndex &&
+      previous.tableSegment?.endRowIndex === next.tableSegment?.endRowIndex &&
+      previous.tableSegment?.repeatedHeaderRowCount ===
+        next.tableSegment?.repeatedHeaderRowCount &&
+      areLayoutParagraphsEquivalentForRender(previous.layout, next.layout),
+  );
+}
+
+function canReuseLayoutPage(
+  previous: EditorLayoutPage | undefined,
+  next: EditorLayoutPage,
+): previous is EditorLayoutPage {
+  const samePageSettings = Boolean(
+    previous &&
+      previous.pageSettings.width === next.pageSettings.width &&
+      previous.pageSettings.height === next.pageSettings.height &&
+      previous.pageSettings.orientation === next.pageSettings.orientation &&
+      previous.pageSettings.margins.top === next.pageSettings.margins.top &&
+      previous.pageSettings.margins.right === next.pageSettings.margins.right &&
+      previous.pageSettings.margins.bottom === next.pageSettings.margins.bottom &&
+      previous.pageSettings.margins.left === next.pageSettings.margins.left &&
+      previous.pageSettings.margins.header === next.pageSettings.margins.header &&
+      previous.pageSettings.margins.footer === next.pageSettings.margins.footer &&
+      previous.pageSettings.margins.gutter === next.pageSettings.margins.gutter,
+  );
+  if (
+    !previous ||
+    previous.id !== next.id ||
+    previous.index !== next.index ||
+    previous.height !== next.height ||
+    previous.maxHeight !== next.maxHeight ||
+    !samePageSettings ||
+    previous.bodyTop !== next.bodyTop ||
+    previous.bodyBottom !== next.bodyBottom
+  ) {
+    return false;
+  }
+
+  const sameBlocks = (left?: EditorLayoutBlock[], right?: EditorLayoutBlock[]) => {
+    if ((left?.length ?? 0) !== (right?.length ?? 0)) {
+      return false;
+    }
+    return (right ?? []).every((block, index) => left?.[index] === block);
+  };
+
+  return (
+    sameBlocks(previous.blocks, next.blocks) &&
+    sameBlocks(previous.headerBlocks, next.headerBlocks) &&
+    sameBlocks(previous.footerBlocks, next.footerBlocks)
+  );
+}
+
 export function EditorSurface(props: EditorSurfaceProps) {
+  let reusableLayoutBlocks = new Map<string, EditorLayoutBlock>();
+  let reusableLayoutPages = new Map<string, EditorLayoutPage>();
+
+  const preserveStableLayoutIdentity = (
+    layout: EditorLayoutDocument,
+  ): EditorLayoutDocument => {
+    const nextBlockCache = new Map<string, EditorLayoutBlock>();
+    const stabilizeBlocks = (blocks: EditorLayoutBlock[] | undefined) =>
+      blocks?.map((block) => {
+        const previous = reusableLayoutBlocks.get(block.blockId);
+        const stable = canReuseLayoutBlock(previous, block) ? previous : block;
+        nextBlockCache.set(stable.blockId, stable);
+        return stable;
+      });
+
+    const pages = layout.pages.map((page) => {
+      const nextPage: EditorLayoutPage = {
+        ...page,
+        blocks: stabilizeBlocks(page.blocks) ?? [],
+        headerBlocks: stabilizeBlocks(page.headerBlocks),
+        footerBlocks: stabilizeBlocks(page.footerBlocks),
+      };
+      const previous = reusableLayoutPages.get(nextPage.id);
+      if (canReuseLayoutPage(previous, nextPage)) {
+        return previous;
+      }
+      return nextPage;
+    });
+
+    reusableLayoutBlocks = nextBlockCache;
+    reusableLayoutPages = new Map(pages.map((page) => [page.id, page]));
+    return { pages };
+  };
+
   // Memoize: each accessor below would otherwise re-walk the full document
   // tree (and project per-character layout) on every read inside JSX.
   const paragraphs = createMemo(() => getParagraphs(props.state()));
@@ -847,45 +978,50 @@ export function EditorSurface(props: EditorSurfaceProps) {
       ),
   );
   const listMarkers = createMemo(() => buildParagraphListMarkers(paragraphs()));
-  const documentLayout = createMemo(() =>
-    projectDocumentLayout(
-      props.state().document,
-      undefined,
-      props.measuredBlockHeights?.(),
-      props.measuredParagraphLayouts?.(),
-    ),
-  );
+  const normalizedSelection = createMemo(() => normalizeSelection(props.state()));
+  const documentLayout = createMemo(() => {
+    return preserveStableLayoutIdentity(
+      projectDocumentLayout(
+        props.state().document,
+        undefined,
+        props.measuredBlockHeights?.(),
+        props.measuredParagraphLayouts?.(),
+      ),
+    );
+  });
 
   return (
     <div class="oasis-editor-paper-stack">
-      <For each={documentLayout().pages}>
+      <Index each={documentLayout().pages}>
         {(page, index) => {
-          const pageSettings = page.pageSettings;
-          const contentWidth = getPageContentWidth(pageSettings);
-          const bodyTop = page.bodyTop ?? getPageBodyTop(pageSettings);
-          const bodyBottom = page.bodyBottom ?? bodyTop + getPageContentHeight(pageSettings);
-          const contentHeight = Math.max(24, Math.floor(bodyBottom - bodyTop));
-          const headerZoneTop = getPageHeaderZoneTop(pageSettings);
-          const headerZoneHeight = Math.max(0, bodyTop - headerZoneTop);
-          const footerZoneTop = bodyBottom;
-          const footerZoneHeight = Math.max(0, pageSettings.height - footerZoneTop);
-          const headerContentOffset = Math.min(pageSettings.margins.header, headerZoneHeight);
+          const pageSettings = () => page().pageSettings;
+          const contentWidth = () => getPageContentWidth(pageSettings());
+          const bodyTop = () => page().bodyTop ?? getPageBodyTop(pageSettings());
+          const bodyBottom = () =>
+            page().bodyBottom ?? bodyTop() + getPageContentHeight(pageSettings());
+          const contentHeight = () => Math.max(24, Math.floor(bodyBottom() - bodyTop()));
+          const headerZoneTop = () => getPageHeaderZoneTop(pageSettings());
+          const headerZoneHeight = () => Math.max(0, bodyTop() - headerZoneTop());
+          const footerZoneTop = () => bodyBottom();
+          const footerZoneHeight = () => Math.max(0, pageSettings().height - footerZoneTop());
+          const headerContentOffset = () =>
+            Math.min(pageSettings().margins.header, headerZoneHeight());
 
           return (
             <>
-              <Show when={index() > 0}>
-                <PageBreak pageIndex={index()} />
+              <Show when={index > 0}>
+                <PageBreak pageIndex={index} />
               </Show>
               <div
                 class="oasis-editor-paper"
               classList={{
                 "oasis-editor-paper-landscape":
-                  pageSettings.orientation === "landscape",
+                  pageSettings().orientation === "landscape",
               }}
               data-testid="editor-page"
               style={{
-                width: `${pageSettings.width}px`,
-                "min-height": `${pageSettings.height}px`,
+                width: `${pageSettings().width}px`,
+                "min-height": `${pageSettings().height}px`,
               }}
             >
               <div
@@ -896,10 +1032,10 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 }}
                 data-testid="editor-page-header-zone"
                 style={{
-                  left: `${pageSettings.margins.left + pageSettings.margins.gutter}px`,
-                  top: `${headerZoneTop}px`,
-                  width: `${contentWidth}px`,
-                  height: `${headerZoneHeight}px`,
+                  left: `${pageSettings().margins.left + pageSettings().margins.gutter}px`,
+                  top: `${headerZoneTop()}px`,
+                  width: `${contentWidth()}px`,
+                  height: `${headerZoneHeight()}px`,
                 }}
                 onMouseDown={props.onSurfaceMouseDown}
                 onMouseMove={props.onSurfaceMouseMove}
@@ -907,11 +1043,11 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 <div
                   class="oasis-editor-page-header-guide"
                   style={{
-                    top: `${headerZoneHeight}px`,
+                    top: `${headerZoneHeight()}px`,
                   }}
                 />
-                <div style={{ "padding-top": `${headerContentOffset}px` }}>
-                  <For each={page.headerBlocks}>
+                <div style={{ "padding-top": `${headerContentOffset()}px` }}>
+                  <For each={page().headerBlocks}>
                     {(block) => {
                       return block.sourceBlock.type === "paragraph"
                         ? renderParagraph(
@@ -921,6 +1057,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                             block.layout,
                             block.blockId,
                             props.state(),
+                            normalizedSelection,
                             props.onParagraphMouseDown,
                             props.onImageMouseDown,
                             props.onImageResizeHandleMouseDown,
@@ -935,6 +1072,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                             paragraphIndexById(),
                             listMarkers(),
                             props.state(),
+                            normalizedSelection,
                             props.onParagraphMouseDown,
                             props.onImageMouseDown,
                             props.onImageResizeHandleMouseDown,
@@ -951,17 +1089,17 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 class="oasis-editor-surface"
                 data-testid="editor-surface"
                 style={{
-                  width: `${contentWidth}px`,
-                  "min-height": `${contentHeight}px`,
-                  "margin-top": `${bodyTop}px`,
-                  "margin-right": `${pageSettings.margins.right}px`,
-                  "margin-bottom": `${pageSettings.height - footerZoneTop}px`,
-                  "margin-left": `${pageSettings.margins.left + pageSettings.margins.gutter}px`,
+                  width: `${contentWidth()}px`,
+                  "min-height": `${contentHeight()}px`,
+                  "margin-top": `${bodyTop()}px`,
+                  "margin-right": `${pageSettings().margins.right}px`,
+                  "margin-bottom": `${pageSettings().height - footerZoneTop()}px`,
+                  "margin-left": `${pageSettings().margins.left + pageSettings().margins.gutter}px`,
                 }}
                 onMouseDown={props.onSurfaceMouseDown}
                 onMouseMove={props.onSurfaceMouseMove}
                 onDblClick={props.onSurfaceDblClick}              >
-                <For each={page.blocks}>
+                <For each={page().blocks}>
                   {(block) => {
                     return block.sourceBlock.type === "paragraph"
                       ? renderParagraph(
@@ -971,6 +1109,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           block.layout,
                           block.blockId,
                           props.state(),
+                          normalizedSelection,
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
@@ -984,6 +1123,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           paragraphIndexById(),
                           listMarkers(),
                           props.state(),
+                          normalizedSelection,
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
@@ -1003,10 +1143,10 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 }}
                 data-testid="editor-page-footer-zone"
                 style={{
-                  left: `${pageSettings.margins.left + pageSettings.margins.gutter}px`,
-                  top: `${footerZoneTop}px`,
-                  width: `${contentWidth}px`,
-                  height: `${footerZoneHeight}px`,
+                  left: `${pageSettings().margins.left + pageSettings().margins.gutter}px`,
+                  top: `${footerZoneTop()}px`,
+                  width: `${contentWidth()}px`,
+                  height: `${footerZoneHeight()}px`,
                 }}
                 onMouseDown={props.onSurfaceMouseDown}
                 onMouseMove={props.onSurfaceMouseMove}
@@ -1014,10 +1154,10 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 <div
                   class="oasis-editor-page-footer-guide"
                   style={{
-                    bottom: `${footerZoneHeight}px`,
+                    bottom: `${footerZoneHeight()}px`,
                   }}
                 />
-                <For each={page.footerBlocks}>
+                <For each={page().footerBlocks}>
                   {(block) => {
                     return block.sourceBlock.type === "paragraph"
                       ? renderParagraph(
@@ -1027,6 +1167,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           block.layout,
                           block.blockId,
                           props.state(),
+                          normalizedSelection,
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
@@ -1041,6 +1182,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           paragraphIndexById(),
                           listMarkers(),
                           props.state(),
+                          normalizedSelection,
                           props.onParagraphMouseDown,
                           props.onImageMouseDown,
                           props.onImageResizeHandleMouseDown,
@@ -1056,7 +1198,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
             </>
           );
         }}
-      </For>
+      </Index>
     </div>
   );
 }
