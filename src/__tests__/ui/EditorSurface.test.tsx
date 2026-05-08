@@ -483,16 +483,13 @@ describe("EditorSurface", () => {
 
     const blockNode = container.querySelector('[data-testid="editor-block"]') as HTMLParagraphElement;
     const lineNodes = Array.from(container.querySelectorAll('[data-testid="editor-line"]')) as HTMLDivElement[];
-    const firstLineSpace = Array.from(lineNodes[0]?.querySelectorAll('[data-testid="editor-char"]') ?? [])
-      .find((node) => node.textContent === " ") as HTMLSpanElement | undefined;
-    const lastLineSpace = Array.from(lineNodes[lineNodes.length - 1]?.querySelectorAll('[data-testid="editor-char"]') ?? [])
-      .find((node) => node.textContent === " ") as HTMLSpanElement | undefined;
+    const firstLine = lineNodes[0];
+    const lastLine = lineNodes[lineNodes.length - 1];
 
     expect(blockNode.style.textAlign).toBe("justify");
     expect(lineNodes.length).toBeGreaterThan(1);
-    expect(firstLineSpace?.style.display).toBe("inline-block");
-    expect(firstLineSpace?.style.width).not.toBe("");
-    expect(lastLineSpace?.style.width).toBe("");
+    expect(firstLine?.style.textAlignLast).toBe("justify");
+    expect(lastLine?.style.textAlignLast).toBe("");
 
     dispose();
   });

@@ -1181,17 +1181,14 @@ describe("OasisEditor", () => {
 
     const paragraph = root.querySelector('[data-testid="editor-block"]') as HTMLParagraphElement;
     const lines = Array.from(root.querySelectorAll('[data-testid="editor-line"]')) as HTMLDivElement[];
-    const firstLineSpace = Array.from(lines[0]?.querySelectorAll('[data-testid="editor-char"]') ?? [])
-      .find((node) => node.textContent === " ") as HTMLSpanElement | undefined;
-    const lastLineSpace = Array.from(lines[lines.length - 1]?.querySelectorAll('[data-testid="editor-char"]') ?? [])
-      .find((node) => node.textContent === " ") as HTMLSpanElement | undefined;
+    const firstLine = lines[0];
+    const lastLine = lines[lines.length - 1];
 
     expect(paragraph.style.textAlign).toBe("justify");
     expect(justifyButton.classList.contains("oasis-editor-tool-button-active")).toBe(true);
     expect(lines.length).toBeGreaterThan(1);
-    expect(firstLineSpace?.style.display).toBe("inline-block");
-    expect(firstLineSpace?.style.width).not.toBe("");
-    expect(lastLineSpace?.style.width).toBe("");
+    expect(firstLine?.style.textAlignLast).toBe("justify");
+    expect(lastLine?.style.textAlignLast).toBe("");
 
     instance.dispose();
   });
