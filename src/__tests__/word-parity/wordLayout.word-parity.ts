@@ -88,13 +88,24 @@ describeWordParity("Word layout parity", () => {
       expect(editorPage1Lines).not.toContain("Sumário");
       expect(editorPage2Lines).toContain("Sumário");
 
+      const expectedPage3TailLine =
+        "recursos específicos de inspeção, depuração e teste de conteúdo web em Safari, aplicativos no Mac,";
       const expectedPage3Tail =
         "2.2.2. O Safari utiliza tecnologias e ferramentas próprias do ecossistema Apple, e a Apple disponibiliza recursos específicos de inspeção, depuração e teste de conteúdo web em Safari, aplicativos no Mac,";
+      const expectedPage4Start =
+        "dispositivos iOS/iPadOS e simuladores. Assim, a ausência de ambiente macOS nativo reduz a capacidade";
       const wordPage3Text = wordPageLines(result.word.pages[2]);
       const editorPage3Text = result.editor.pages[2]?.bodyLineTexts.join(" ") ?? "";
+      const editorPage4Text = result.editor.pages[3]?.bodyLineTexts.join(" ") ?? "";
+      const wordPage3Lines = result.word.pages[2]?.lines.map((line) => line.text.trim()).filter(Boolean) ?? [];
 
       expect(wordPage3Text).toContain(expectedPage3Tail);
       expect(editorPage3Text).toContain(expectedPage3Tail);
+      expect(wordPage3Lines.at(-2)).toBe(expectedPage3TailLine);
+      expect(result.editor.pages[2]?.bodyLineTexts.at(-1)).toBe(expectedPage3TailLine);
+      expect(editorPage3Text).not.toContain(expectedPage4Start);
+      expect(editorPage4Text).toContain(expectedPage4Start);
+      expect(result.editor.pages[2]?.footerLineTexts).toEqual(["3"]);
 
       const domStyles = result.editor.domStyles;
       expect(domStyles?.runFontFamilies.some((family) => family.includes("Times New Roman"))).toBe(true);

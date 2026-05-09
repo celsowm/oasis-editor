@@ -77,6 +77,7 @@ function paragraphStyleToCss(
   style: EditorParagraphStyle | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
   isContinuation?: boolean,
+  isTruncated?: boolean,
 ): Record<string, string> | undefined {
   const merged = resolveEffectiveParagraphStyle(style, styles);
 
@@ -93,10 +94,10 @@ function paragraphStyleToCss(
     );
     css["line-height"] = `${resolveRenderedLineHeightPx(effectiveTextStyle, merged.lineHeight)}px`;
   }
-  if (merged.spacingBefore !== undefined && merged.spacingBefore !== null) {
+  if (!isContinuation && merged.spacingBefore !== undefined && merged.spacingBefore !== null) {
     css["padding-top"] = `${merged.spacingBefore}px`;
   }
-  if (merged.spacingAfter !== undefined && merged.spacingAfter !== null) {
+  if (!isTruncated && merged.spacingAfter !== undefined && merged.spacingAfter !== null) {
     css["padding-bottom"] = `${merged.spacingAfter}px`;
   }
 
@@ -132,8 +133,9 @@ function getParagraphRenderStyle(
   paragraph: EditorParagraphNode,
   state: EditorState,
   isContinuation?: boolean,
+  isTruncated?: boolean,
 ): Record<string, string> | undefined {
-  const css = paragraphStyleToCss(paragraph.style, state.document.styles, isContinuation) ?? {};
+  const css = paragraphStyleToCss(paragraph.style, state.document.styles, isContinuation, isTruncated) ?? {};
   const effectiveTextStyle = resolveEffectiveTextStyleForParagraph(
     undefined,
     paragraph.style?.styleId,
@@ -396,6 +398,7 @@ function renderParagraph(
   const chars = paragraphLayout.fragments.flatMap((fragment) => fragment.chars);
   const normalized = normalizedSelection;
   const isContinuation = (paragraphLayout.startOffset ?? 0) > 0;
+  const isTruncated = (paragraphLayout.endOffset ?? getParagraphText(paragraph).length) < getParagraphText(paragraph).length;
   const domParagraphId = options?.domParagraphId ?? paragraph.id;
   const interactive = options?.interactive ?? true;
   const testId = options?.testId ?? "editor-block";
@@ -682,7 +685,7 @@ function renderParagraph(
       data-end-offset={paragraphLayout.endOffset ?? chars.length}
       data-testid={testId}
       data-list-align={paragraph.list ? paragraphAlign : undefined}
-      style={getParagraphRenderStyle(paragraph, state, isContinuation)}
+      style={getParagraphRenderStyle(paragraph, state, isContinuation, isTruncated)}
       onMouseDown={
         interactive
           ? (event) => onParagraphMouseDown(paragraph.id, event)

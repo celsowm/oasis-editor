@@ -624,6 +624,7 @@
 
 .oasis-editor-line {
   display: block;
+  white-space: nowrap;
 }
 
 .oasis-editor-table-block {

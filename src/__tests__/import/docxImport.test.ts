@@ -36,9 +36,17 @@ describe("DOCX import", () => {
     const secondTitle = paragraphs.find((paragraph, index) =>
       index > 20 && paragraph.runs.some((run) => run.text.includes("TERMO DE REFERÊNCIA")),
     );
+    const renderedBreakContinuation = paragraphs.find((paragraph) =>
+      paragraph.runs.some((run) => run.text.includes("dispositivos iOS/iPadOS e simuladores")),
+    );
+    const footerPageField = document.sections?.[0]?.footer?.flatMap((block) =>
+      block.type === "paragraph" ? block.runs : [],
+    ).find((run) => run.field?.type === "PAGE");
 
     expect(summary?.style?.pageBreakBefore).toBe(true);
     expect(secondTitle?.style?.pageBreakBefore).toBe(true);
+    expect(renderedBreakContinuation?.style?.pageBreakBefore).toBe(true);
+    expect(footerPageField?.field?.type).toBe("PAGE");
     expect(paragraphs.some((paragraph) => paragraph.runs.some((run) => run.text.includes("\f")))).toBe(false);
   });
 

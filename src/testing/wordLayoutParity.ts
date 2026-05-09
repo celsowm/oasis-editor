@@ -80,6 +80,7 @@ interface EditorPageSnapshot {
   footerReferenceTop: number;
   pageHeight: number;
   firstBodyLineGeometry?: LayoutLineGeometry;
+  lastBodyLineBottom?: number;
 }
 
 interface EditorDomStyleSnapshot {
@@ -208,6 +209,7 @@ function collectEditorPageSnapshots(document: EditorDocument): EditorPageSnapsho
       footerReferenceTop: getPageFooterReferenceTop(page.pageSettings),
       pageHeight: page.pageSettings.height,
       firstBodyLineGeometry: undefined,
+      lastBodyLineBottom: undefined,
     };
   });
 }
@@ -274,7 +276,28 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
         });
         try {
           await globalThis.document.fonts.ready;
-          await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          let previousSignature = "";
+          let stableFrameCount = 0;
+          for (let frame = 0; frame < 40 && stableFrameCount < 3; frame += 1) {
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+            const signature = Array.from(host.querySelectorAll('[data-testid="editor-page"]'))
+              .map((page) => {
+                const body = page.querySelector('[data-testid="editor-surface"]') as HTMLElement | null;
+                const footer = page.querySelector('[data-testid="editor-page-footer-zone"]') as HTMLElement | null;
+                return [
+                  body?.style.minHeight ?? "",
+                  footer?.style.top ?? "",
+                  body?.querySelectorAll('[data-testid="editor-line"]').length ?? 0,
+                ].join(":");
+              })
+              .join("|");
+            if (signature === previousSignature && signature.length > 0) {
+              stableFrameCount += 1;
+            } else {
+              stableFrameCount = 0;
+              previousSignature = signature;
+            }
+          }
 
           const normalize = (value: string | null | undefined) =>
             (value ?? "").replace(/\s+/g, " ").trim();
@@ -308,6 +331,24 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
               height: lineRect.height * 0.75 + domTextHeightToPdfBboxPoints,
             };
           };
+          const lineBottomFromPageTop = (
+            pageElement: HTMLElement,
+            bodyElement: HTMLElement | null,
+            lineElement: Element | null,
+          ) => {
+            if (!bodyElement || !lineElement) {
+              return undefined;
+            }
+            const lineHtmlElement = lineElement as HTMLElement;
+            const bodyTop = parsePx(bodyElement.style.marginTop);
+            let offsetTop = 0;
+            let current: HTMLElement | null = lineHtmlElement;
+            while (current && current !== bodyElement) {
+              offsetTop += current.offsetTop;
+              current = current.offsetParent as HTMLElement | null;
+            }
+            return bodyTop + offsetTop + lineHtmlElement.offsetHeight;
+          };
 
           const pages = Array.from(host.querySelectorAll('[data-testid="editor-page"]')).map((pageElement: Element) => {
             const pageHtmlElement = pageElement as HTMLElement;
@@ -320,6 +361,8 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
             const bodyHeight = parsePx(body?.style.minHeight);
             const footerTop = parsePx((footer as HTMLElement | null)?.style.top, pageHeight);
             const firstBodyLine = body?.querySelector('[data-testid="editor-line"]');
+            const bodyLines = Array.from(body?.querySelectorAll('[data-testid="editor-line"]') ?? []);
+            const lastBodyLine = bodyLines[bodyLines.length - 1] ?? null;
             return {
               headerLineTexts: lineTexts(header),
               bodyLineTexts: lineTexts(body),
@@ -333,6 +376,7 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
               footerReferenceTop: footerTop,
               pageHeight,
               firstBodyLineGeometry: geometryFromLine(pageHtmlElement, body, firstBodyLine ?? null),
+              lastBodyLineBottom: lineBottomFromPageTop(pageHtmlElement, body, lastBodyLine),
             };
           });
 

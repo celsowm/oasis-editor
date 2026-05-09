@@ -868,6 +868,8 @@ async function parseRunElement(
         textParts.push("\t");
       } else if (element.localName === "br") {
         textParts.push(getAttributeValue(element, "type") === "page" ? PAGE_BREAK_MARKER : "\n");
+      } else if (element.localName === "lastRenderedPageBreak") {
+        textParts.push(PAGE_BREAK_MARKER);
       } else if (element.localName === "cr") {
         textParts.push("\n");
       } else if (element.localName === "drawing") {
@@ -932,6 +934,17 @@ async function parseRunElement(
   return { text: textParts.join(""), image };
 }
 
+function getRunFieldCharType(runElement: XmlElement): string | null {
+  const fieldChar = getFirstChildByTagNameNS(runElement, WORD_NS, "fldChar");
+  return fieldChar ? getAttributeValue(fieldChar, "fldCharType") : null;
+}
+
+function getRunInstructionText(runElement: XmlElement): string {
+  return getChildrenByTagNameNS(runElement, WORD_NS, "instrText")
+    .map((element) => element.textContent ?? "")
+    .join("");
+}
+
 async function parseRunsContainer(
   container: XmlElement,
   numberingMaps: NumberingMaps,
@@ -942,6 +955,30 @@ async function parseRunsContainer(
   inheritedLink?: string | null,
 ) {
   const runs: ImportedRun[] = [];
+  let activeField:
+    | {
+        instruction: string;
+        resultRuns: ImportedRun[];
+        collectingResult: boolean;
+      }
+    | null = null;
+
+  const flushActiveField = () => {
+    if (!activeField) {
+      return;
+    }
+    const instruction = activeField.instruction;
+    const fieldType =
+      /\bNUMPAGES\b/i.test(instruction) ? "NUMPAGES" : /\bPAGE\b/i.test(instruction) ? "PAGE" : null;
+    const displayText = activeField.resultRuns.map((run) => run.text).join("") || "1";
+    const styles = activeField.resultRuns.find((run) => run.styles)?.styles;
+    runs.push({
+      text: displayText,
+      styles,
+      ...(fieldType ? { field: { type: fieldType } } : {}),
+    });
+    activeField = null;
+  };
 
   for (let index = 0; index < container.childNodes.length; index += 1) {
     const node = container.childNodes[index];
@@ -955,6 +992,35 @@ async function parseRunsContainer(
     }
 
     if (element.localName === "r") {
+      const fieldCharType = getRunFieldCharType(element);
+      if (fieldCharType === "begin") {
+        flushActiveField();
+        activeField = {
+          instruction: "",
+          resultRuns: [],
+          collectingResult: false,
+        };
+        continue;
+      }
+
+      if (activeField) {
+        const instructionText = getRunInstructionText(element);
+        if (instructionText) {
+          activeField.instruction += instructionText;
+          continue;
+        }
+
+        if (fieldCharType === "separate") {
+          activeField.collectingResult = true;
+          continue;
+        }
+
+        if (fieldCharType === "end") {
+          flushActiveField();
+          continue;
+        }
+      }
+
       const { text, image } = await parseRunElement(element, zip, relsMap, assets);
       if (text.length === 0) {
         continue;
@@ -964,7 +1030,12 @@ async function parseRunsContainer(
       if (inheritedLink) {
         (styles ??= {}).link = inheritedLink;
       }
-      runs.push({ text, image, styles });
+      const importedRun = { text, image, styles };
+      if (activeField?.collectingResult) {
+        activeField.resultRuns.push(importedRun);
+      } else {
+        runs.push(importedRun);
+      }
       continue;
     }
 
@@ -1017,6 +1088,8 @@ async function parseRunsContainer(
       );
     }
   }
+
+  flushActiveField();
 
   return runs;
 }
