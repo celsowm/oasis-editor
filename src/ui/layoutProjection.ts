@@ -514,7 +514,7 @@ export function estimateTableBlockHeight(
   return getTableSegmentHeight(table, 0, table.rows.length, 0, styles, contentWidth);
 }
 
-function projectHeaderFooterBlocks(
+export function projectHeaderFooterBlocks(
   blocks: EditorBlockNode[],
   pageIndex?: number,
   totalPages?: number,
@@ -605,7 +605,7 @@ function resolveEffectiveVerticalMetrics(
   };
 }
 
-function projectBlocksLayout(
+export function projectBlocksLayout(
   blocks: EditorBlockNode[],
   pageSettings: EditorPageSettings,
   maxPageHeight: number,
