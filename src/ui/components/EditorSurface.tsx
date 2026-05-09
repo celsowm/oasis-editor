@@ -394,7 +394,13 @@ function renderParagraph(
 ) {
   const paragraphLayout =
     layout ??
-    projectParagraphLayout(paragraph, undefined, undefined, state.document.styles);
+    projectParagraphLayout(
+      paragraph,
+      undefined,
+      undefined,
+      state.document.styles,
+      options?.contentWidth,
+    );
   const chars = paragraphLayout.fragments.flatMap((fragment) => fragment.chars);
   const normalized = normalizedSelection;
   const isContinuation = (paragraphLayout.startOffset ?? 0) > 0;
@@ -714,6 +720,24 @@ function formatDimension(dim?: number | string): string | undefined {
   return dim;
 }
 
+const POINT_TO_PX = 96 / 72;
+const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 28;
+const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
+
+function tableCellContentWidthPx(cell: EditorTableNode["rows"][number]["cells"][number]): number | undefined {
+  if (typeof cell.style?.width !== "number") {
+    return undefined;
+  }
+
+  const widthPx = cell.style.width * POINT_TO_PX;
+  const horizontalPaddingPx =
+    cell.style.padding !== undefined
+      ? cell.style.padding * POINT_TO_PX * 2
+      : DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX;
+
+  return Math.max(MIN_TABLE_CELL_CONTENT_WIDTH_PX, widthPx - horizontalPaddingPx);
+}
+
 function renderTable(
   table: EditorTableNode,
   blockId: string,
@@ -872,8 +896,9 @@ function renderTable(
                                 ? {
                                     domParagraphId: `${paragraph.id}:repeat:${blockId}:${renderedRow.repeatedIndex}:${paragraphIndex()}`,
                                     interactive: false,
+                                    contentWidth: tableCellContentWidthPx(cell),
                                   }
-                                : undefined,
+                                : { contentWidth: tableCellContentWidthPx(cell) },
                             )
                           }
                         </For>

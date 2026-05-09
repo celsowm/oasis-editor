@@ -30,6 +30,9 @@ import { composeMeasuredParagraphLines, resolveRenderedLineHeightPx } from "./te
 const DEFAULT_FONT_SIZE = 15;
 const DEFAULT_LINE_HEIGHT = 1.15;
 const DEFAULT_PAGE_HEIGHT = 920;
+const POINT_TO_PX = 96 / 72;
+const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 28;
+const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
 
 function sliceFragmentToRange(
   fragment: EditorLayoutFragment,
@@ -332,6 +335,23 @@ function getParagraphMeasuredHeight(
   );
 }
 
+function getTableCellContentWidth(
+  cell: EditorTableNode["rows"][number]["cells"][number],
+  fallbackContentWidth?: number,
+): number | undefined {
+  if (typeof cell.style?.width !== "number") {
+    return fallbackContentWidth;
+  }
+
+  const widthPx = cell.style.width * POINT_TO_PX;
+  const horizontalPaddingPx =
+    cell.style.padding !== undefined
+      ? cell.style.padding * POINT_TO_PX * 2
+      : DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX;
+
+  return Math.max(MIN_TABLE_CELL_CONTENT_WIDTH_PX, widthPx - horizontalPaddingPx);
+}
+
 function estimateTableRowHeight(
   row: EditorTableNode["rows"][number],
   styles: Record<string, EditorNamedStyle> | undefined,
@@ -340,7 +360,11 @@ function estimateTableRowHeight(
   const cellHeights = row.cells
     .filter((cell) => cell.vMerge !== "continue")
     .map((cell) =>
-      cell.blocks.reduce((sum, paragraph) => sum + estimateParagraphBlockHeight(paragraph, styles, contentWidth), 0),
+      cell.blocks.reduce(
+        (sum, paragraph) =>
+          sum + estimateParagraphBlockHeight(paragraph, styles, getTableCellContentWidth(cell, contentWidth)),
+        0,
+      ),
     );
 
   return Math.max(...cellHeights, DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT) + 12;

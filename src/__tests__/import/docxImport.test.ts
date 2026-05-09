@@ -3,11 +3,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditorDocument.js";
-import type { EditorDocument, EditorParagraphNode, EditorTableNode } from "../../core/model.js";
-import { resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
+import type { EditorDocument, EditorParagraphNode, EditorTableCellNode, EditorTableNode } from "../../core/model.js";
+import { getParagraphText, resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
+import { projectParagraphLayout } from "../../ui/layoutProjection.js";
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "word-parity", "fixtures");
 const COMPLEX_DOCX = join(FIXTURES_DIR, "documento_complexo.docx");
+const POINT_TO_PX = 96 / 72;
+const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 28;
 
 function getDocumentParagraphs(document: EditorDocument): EditorParagraphNode[] {
   const blocks = document.sections?.flatMap((section) => section.blocks) ?? document.blocks;
@@ -24,6 +27,15 @@ async function importComplexDocument(): Promise<EditorDocument> {
   return importDocxToEditorDocument(
     docxBuffer.buffer.slice(docxBuffer.byteOffset, docxBuffer.byteOffset + docxBuffer.byteLength),
   );
+}
+
+function getCellContentWidth(cell: EditorTableCellNode): number {
+  const widthPx = typeof cell.style?.width === "number" ? cell.style.width * POINT_TO_PX : 624;
+  const horizontalPaddingPx =
+    cell.style?.padding !== undefined
+      ? cell.style.padding * POINT_TO_PX * 2
+      : DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX;
+  return Math.max(24, widthPx - horizontalPaddingPx);
 }
 
 describe("DOCX import", () => {
@@ -97,5 +109,24 @@ describe("DOCX import", () => {
 
     expect(tableFontSizes).toContain(12);
     expect(tableFontSizes).toContain(10.6667);
+  });
+
+  it("wraps imported table cell text using the cell width", async () => {
+    const document = await importComplexDocument();
+    const technicalSpecsTable = getDocumentTables(document)[1];
+    const storageSpecCell = technicalSpecsTable!.rows.find((row) =>
+      row.cells[0]?.blocks.some((paragraph) => getParagraphText(paragraph).includes("Armazenamento")),
+    )!.cells[1]!;
+    const paragraph = storageSpecCell.blocks[0]!;
+    const layout = projectParagraphLayout(
+      paragraph,
+      undefined,
+      undefined,
+      document.styles,
+      getCellContentWidth(storageSpecCell),
+    );
+
+    expect(layout.lines.length).toBeGreaterThan(1);
+    expect(layout.lines[0]!.fragments.map((fragment) => fragment.text).join("")).not.toContain("rápido");
   });
 });
