@@ -39,6 +39,7 @@ type LayoutSyncReason =
 
 const logger = createEditorLogger("layout");
 const DEFAULT_BATCH_SIZE = 8;
+const VISIBLE_PAGE_OVERSCAN_PX = 900;
 
 function scheduleFrame(callback: () => void): number {
   if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
@@ -56,6 +57,13 @@ function cancelFrame(handle: number): void {
     return;
   }
   globalThis.clearTimeout(handle as unknown as ReturnType<typeof setTimeout>);
+}
+
+function isRectNearViewport(rect: DOMRect, viewportRect: DOMRect): boolean {
+  return (
+    rect.bottom >= viewportRect.top - VISIBLE_PAGE_OVERSCAN_PX &&
+    rect.top <= viewportRect.bottom + VISIBLE_PAGE_OVERSCAN_PX
+  );
 }
 
 function getCollapsedCaretRectFast(
@@ -595,7 +603,11 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
 
   const scheduleDeferredLayoutMeasurement = (
     reason: LayoutSyncReason,
-    options: { paragraphIds?: string[]; resolveWhenDone?: boolean } = {},
+    options: {
+      paragraphIds?: string[];
+      resolveWhenDone?: boolean;
+      blockHeightScope?: "all" | "visible";
+    } = {},
   ): Promise<void> | null => {
     const surface = props.surfaceRef();
     if (!surface) {
@@ -618,9 +630,30 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       });
     }
 
+    const getBlockElementsToMeasure = () => {
+      if (options.blockHeightScope !== "visible") {
+        return Array.from(surface.querySelectorAll<HTMLElement>("[data-block-id]"));
+      }
+
+      const viewport = props.viewportRef();
+      if (!viewport) {
+        return [];
+      }
+
+      const viewportRect = viewport.getBoundingClientRect();
+      const pages = Array.from(surface.querySelectorAll<HTMLElement>('[data-testid="editor-page"]'));
+      const visiblePages = pages.filter((page) =>
+        isRectNearViewport(page.getBoundingClientRect(), viewportRect),
+      );
+      return visiblePages.flatMap((page) =>
+        Array.from(page.querySelectorAll<HTMLElement>("[data-block-id]")),
+      );
+    };
+
     const flushBlockHeights = () => {
-      const nextHeights: Record<string, number> = {};
-      const blockElements = surface.querySelectorAll<HTMLElement>("[data-block-id]");
+      const nextHeights: Record<string, number> =
+        options.blockHeightScope === "visible" ? { ...measuredBlockHeights() } : {};
+      const blockElements = getBlockElementsToMeasure();
       for (const element of blockElements) {
         const blockId = element.dataset.blockId;
         if (!blockId) {
@@ -719,6 +752,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       scheduleDeferredLayoutMeasurement("import", {
         paragraphIds: selectionParagraphIds,
         resolveWhenDone: true,
+        blockHeightScope: "visible",
       }) ?? Promise.resolve();
     await pending;
     requestInputBoxSync("selection");
@@ -799,7 +833,13 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       return;
     }
 
-    const handleViewportScroll = () => requestInputBoxSync("scroll");
+    const handleViewportScroll = () => {
+      requestInputBoxSync("scroll");
+      scheduleDeferredLayoutMeasurement("scroll", {
+        paragraphIds: [],
+        blockHeightScope: "visible",
+      });
+    };
     const handleWindowResize = () => {
       invalidateParagraphLayouts();
       requestInputBoxSync("resize");

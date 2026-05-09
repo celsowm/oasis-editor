@@ -127,10 +127,8 @@ import {
 } from "../core/model.js";
 import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
 import { exportEditorDocumentToDocxBlob } from "../export/docx/exportEditorDocumentToDocx.js";
-import {
-  importDocxToEditorDocument,
-  type DocxImportStage,
-} from "../import/docx/importDocxToEditorDocument.js";
+import { importDocxInWorker } from "../import/docx/importDocxInWorker.js";
+import type { DocxImportStage } from "../import/docx/importDocxToEditorDocument.js";
 import { createEditorLogger } from "../utils/logger.js";
 import type {
   CaretBox,
@@ -162,7 +160,6 @@ import {
   buildTableCellLayout,
   type TableCellLayoutEntry,
 } from "../core/tableLayout.js";
-import { resolveClickOffset } from "./tableUiUtils.js";
 import { findImageFileFromTransfer, readFileBuffer } from "./clipboardImage.js";
 import { EditorToolbar } from "./components/Toolbar/EditorToolbar.js";
 import { DocumentShell } from "./shells/DocumentShell.js";
@@ -652,6 +649,90 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     });
   };
 
+  const isMeasuredParagraphLayoutCurrent = (
+    paragraph: EditorParagraphNode,
+    layout: EditorLayoutParagraph | undefined,
+  ): layout is EditorLayoutParagraph => {
+    if (!layout || layout.text !== getParagraphText(paragraph) || !surfaceRef) {
+      return false;
+    }
+
+    const firstLine = layout.lines[0];
+    if (!firstLine) {
+      return false;
+    }
+
+    const directChar = surfaceRef.querySelector<HTMLElement>(
+      `[data-source-paragraph-id="${paragraph.id}"] [data-char-index="${firstLine.startOffset}"], [data-paragraph-id="${paragraph.id}"] [data-char-index="${firstLine.startOffset}"]`,
+    );
+    if (!directChar) {
+      return false;
+    }
+
+    return Math.abs(directChar.getBoundingClientRect().top - firstLine.top) < 2;
+  };
+
+  const resolveParagraphClickOffset = (
+    paragraph: EditorParagraphNode,
+    event: MouseEvent,
+  ): number => {
+    const paragraphLength = getParagraphText(paragraph).length;
+    const directChar =
+      (event.target as HTMLElement).closest<HTMLElement>("[data-char-index]") ?? null;
+    if (directChar) {
+      const charIndex = Number(directChar.dataset.charIndex);
+      if (Number.isFinite(charIndex)) {
+        const rect = directChar.getBoundingClientRect();
+        const midX = rect.left + rect.width / 2;
+        const computed = event.clientX <= midX ? charIndex : charIndex + 1;
+        return Math.max(0, Math.min(paragraphLength, computed));
+      }
+    }
+
+    const cachedLayout = measuredParagraphLayouts()[paragraph.id];
+    const layout =
+      isMeasuredParagraphLayoutCurrent(paragraph, cachedLayout) || !surfaceRef
+        ? cachedLayout
+        : measureParagraphLayoutFromRects(
+            paragraph,
+            collectParagraphCharRects(surfaceRef, paragraph.id),
+          );
+
+    return layout.text.length === 0
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            layout.text.length,
+            resolveClosestOffsetInMeasuredLayout(layout, event.clientX, event.clientY),
+          ),
+        );
+  };
+
+  const findPointerParagraphElement = (
+    event: MouseEvent,
+    root: HTMLElement,
+  ): HTMLElement | null => {
+    const target = event.target instanceof HTMLElement ? event.target : null;
+    const direct = target?.closest<HTMLElement>("[data-paragraph-id]") ?? null;
+    if (direct && root.contains(direct)) {
+      return direct;
+    }
+
+    const elementAtPoint = document.elementFromPoint(event.clientX, event.clientY);
+    const hitParagraph =
+      elementAtPoint instanceof HTMLElement
+        ? elementAtPoint.closest<HTMLElement>("[data-paragraph-id]")
+        : null;
+    if (hitParagraph && root.contains(hitParagraph)) {
+      return hitParagraph;
+    }
+
+    const page = target?.closest<HTMLElement>('[data-testid="editor-page"]');
+    const scopedRoot = page && root.contains(page) ? page : root;
+    return findNearestParagraphElement(scopedRoot, event.clientX, event.clientY);
+  };
+
   const fr = useEditorFindReplace({
     state,
     applyState,
@@ -723,10 +804,35 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         durationMs: Math.round((performance.now() - readingStartedAt) * 100) / 100,
       });
 
-      const document = await importDocxToEditorDocument(arrayBuffer, {
+      let lastProgressStage: DocxImportStage | null = null;
+      let lastProgressValue = -1;
+      let lastProgressAt = 0;
+      const document = await importDocxInWorker(arrayBuffer, {
         onProgress: (stage, subProgress) => {
+          const now = performance.now();
+          const roundedProgress =
+            subProgress === undefined || !Number.isFinite(subProgress)
+              ? undefined
+              : Math.floor(subProgress * 100);
+          const stageChanged = stage !== lastProgressStage;
+          const progressChanged =
+            roundedProgress !== undefined &&
+            (lastProgressValue < 0 || roundedProgress - lastProgressValue >= 1);
+          const timeElapsed = now - lastProgressAt >= 80;
+          if (!stageChanged && !progressChanged && !timeElapsed) {
+            return;
+          }
+
+          lastProgressStage = stage;
+          lastProgressValue = roundedProgress ?? lastProgressValue;
+          lastProgressAt = now;
           setImportPhase(stage, subProgress);
-          logger.info("import docx:phase", { phase: stage, subProgress });
+          const payload = { phase: stage, subProgress };
+          if (stageChanged || subProgress === undefined || subProgress === 1) {
+            logger.info("import docx:phase", payload);
+          } else {
+            logger.debug("import docx:phase", payload);
+          }
         },
       });
 
@@ -1434,10 +1540,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     const isZoneTransition = targetZone !== state.activeZone;
 
     const paragraphElement = surfaceRef
-      ? findNearestParagraphElement(
+      ? findPointerParagraphElement(
+          event,
           (headerZone || footerZone || surfaceRef) as HTMLElement,
-          event.clientX,
-          event.clientY,
         )
       : null;
 
@@ -1557,24 +1662,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     };
 
     if (paragraph && surfaceRef) {
-      const layout = measureParagraphLayoutFromRects(
-        paragraph,
-        collectParagraphCharRects(surfaceRef, paragraph.id),
-      );
-      const offset =
-        layout.text.length === 0
-          ? 0
-          : Math.max(
-              0,
-              Math.min(
-                layout.text.length,
-                resolveClosestOffsetInMeasuredLayout(
-                  layout,
-                  event.clientX,
-                  event.clientY,
-                ),
-              ),
-            );
+      const offset = resolveParagraphClickOffset(paragraph, event);
       const position = paragraphOffsetToPosition(paragraph, offset);
 
       if (event.shiftKey) {
@@ -1659,39 +1747,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
     clearPreferredColumn();
     resetTransactionGrouping();
-    // Fast path: clicking directly on a char span avoids measuring every
-    // char rect in the paragraph (which is O(n) DOM reads + reflow).
-    const directChar =
-      (event.target as HTMLElement).closest<HTMLElement>("[data-char-index]") ?? null;
-    let offset: number;
-    if (directChar) {
-      const charIndex = Number(directChar.dataset.charIndex);
-      if (Number.isFinite(charIndex)) {
-        const rect = directChar.getBoundingClientRect();
-        const midX = rect.left + rect.width / 2;
-        const computed = event.clientX <= midX ? charIndex : charIndex + 1;
-        offset = Math.max(
-          0,
-          Math.min(getParagraphText(paragraph).length, computed),
-        );
-      } else {
-        offset = resolveClickOffset(
-          event,
-          measureParagraphLayoutFromRects(
-            paragraph,
-            collectParagraphCharRects(surfaceRef, paragraph.id),
-          ),
-        );
-      }
-    } else {
-      offset = resolveClickOffset(
-        event,
-        measureParagraphLayoutFromRects(
-          paragraph,
-          collectParagraphCharRects(surfaceRef, paragraph.id),
-        ),
-      );
-    }
+    const offset = resolveParagraphClickOffset(paragraph, event);
     const position = paragraphOffsetToPosition(paragraph, offset);
 
     imageOps.stopImageDrag();

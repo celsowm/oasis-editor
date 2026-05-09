@@ -40,6 +40,13 @@ export function clampOffset(offset: number, paragraph: EditorParagraphNode): num
 export function clampPosition(state: EditorState, position: EditorPosition): EditorPosition {
   const paragraphs = getParagraphs(state);
   const paragraph = findParagraphById(paragraphs, position.paragraphId);
+  return clampPositionInParagraph(position, paragraph);
+}
+
+function clampPositionInParagraph(
+  position: EditorPosition,
+  paragraph: EditorParagraphNode,
+): EditorPosition {
   const paragraphOffset = positionToParagraphOffset(paragraph, position);
   return paragraphOffsetToPosition(paragraph, clampOffset(paragraphOffset, paragraph));
 }
@@ -75,13 +82,25 @@ export function isSelectionCollapsed(selection: EditorSelection): boolean {
   );
 }
 
-export function normalizeSelection(state: EditorState): NormalizedEditorSelection {
-  const paragraphs = getParagraphs(state);
-  const anchor = clampPosition(state, state.selection.anchor);
-  const focus = clampPosition(state, state.selection.focus);
-  const anchorIndex = findParagraphIndex(paragraphs, anchor.paragraphId);
-  const focusIndex = findParagraphIndex(paragraphs, focus.paragraphId);
-  const comparison = comparePositions(paragraphs, anchor, focus);
+export function normalizeSelection(
+  state: EditorState,
+  providedParagraphs?: EditorParagraphNode[],
+): NormalizedEditorSelection {
+  const paragraphs = providedParagraphs ?? getParagraphs(state);
+  const indexById = new Map(paragraphs.map((paragraph, index) => [paragraph.id, index] as const));
+  const rawAnchorIndex = indexById.get(state.selection.anchor.paragraphId) ?? 0;
+  const rawFocusIndex = indexById.get(state.selection.focus.paragraphId) ?? 0;
+  const anchorParagraph = paragraphs[rawAnchorIndex] ?? paragraphs[0];
+  const focusParagraph = paragraphs[rawFocusIndex] ?? paragraphs[0];
+  const anchor = clampPositionInParagraph(state.selection.anchor, anchorParagraph);
+  const focus = clampPositionInParagraph(state.selection.focus, focusParagraph);
+  const anchorIndex = indexById.get(anchor.paragraphId) ?? rawAnchorIndex;
+  const focusIndex = indexById.get(focus.paragraphId) ?? rawFocusIndex;
+  const comparison =
+    anchorIndex !== focusIndex
+      ? anchorIndex - focusIndex
+      : positionToParagraphOffset(paragraphs[anchorIndex], anchor) -
+        positionToParagraphOffset(paragraphs[focusIndex], focus);
   const start = comparison <= 0 ? anchor : focus;
   const end = comparison <= 0 ? focus : anchor;
   const startParagraph = paragraphs[comparison <= 0 ? anchorIndex : focusIndex];

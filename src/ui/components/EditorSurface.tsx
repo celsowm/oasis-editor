@@ -1,4 +1,4 @@
-import { For, Index, Show, createMemo } from "solid-js";
+import { For, Index, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import type { Accessor } from "solid-js";
 import {
   getPageBodyTop,
@@ -472,81 +472,83 @@ function renderParagraph(
       >
         <For each={paragraphLayout.lines}>
           {(line, lineIndex) => (
-            <div
-              class="oasis-editor-line"
-              data-testid="editor-line"
-              style={
-                shouldJustifyLine(
-                  paragraph,
-                  state,
-                  line,
-                  lineIndex(),
-                  paragraphLayout.lines.length,
-                )
-                  ? {
-                      "text-align": "justify",
-                      "text-align-last": "justify",
-                    }
-                  : undefined
-              }
-            >
-              <For each={line.fragments}>
-                {(fragment) => {
-                  const runContent = (
-                    <span
-                      class="oasis-editor-run"
-                      classList={{
-                        "oasis-editor-revision-insert":
-                          fragment.revision?.type === "insert",
-                        "oasis-editor-revision-delete":
-                          fragment.revision?.type === "delete",
-                      }}
-                      data-run-id={fragment.runId}
-                      data-testid="editor-run"
-                      style={runStyleToCss(
-                        fragment.styles,
-                        paragraph.style?.styleId,
-                        state.document.styles,
-                      )}
-                      onMouseEnter={
-                        interactive && fragment.revision
-                          ? (event) =>
-                              onRevisionMouseEnter?.(
-                                fragment.revision!.id,
-                                event,
-                              )
-                          : undefined
-                      }
-                      onMouseLeave={
-                        interactive && fragment.revision
-                          ? (event) =>
-                              onRevisionMouseLeave?.(
-                                fragment.revision!.id,
-                                event,
-                              )
-                          : undefined
-                      }
-                    >
-                      <For each={fragment.chars}>
-                        {(char) =>
-                          (() => {
-                            const imageSelected = () =>
-                              Boolean(fragment.image) &&
-                              isCharSelected(char.paragraphOffset);
-                            const slot = () =>
-                              line.slots.find(
-                                (s) => s.offset === char.paragraphOffset,
-                              );
-                            const tabWidth = () => {
-                              if (char.char !== "\t") return 0;
-                              const currentX = slot()?.left ?? 0;
-                              const nextTabPos = resolveNextTabStop(
-                                currentX,
-                                effectiveTabs(),
-                              );
-                              return Math.max(0, nextTabPos - currentX);
-                            };
-                            return (
+            (() => {
+              const slotsByOffset = new Map(
+                line.slots.map((slot) => [slot.offset, slot] as const),
+              );
+              return (
+                <div
+                  class="oasis-editor-line"
+                  data-testid="editor-line"
+                  style={
+                    shouldJustifyLine(
+                      paragraph,
+                      state,
+                      line,
+                      lineIndex(),
+                      paragraphLayout.lines.length,
+                    )
+                      ? {
+                          "text-align": "justify",
+                          "text-align-last": "justify",
+                        }
+                      : undefined
+                  }
+                >
+                  <For each={line.fragments}>
+                    {(fragment) => {
+                      const runContent = (
+                        <span
+                          class="oasis-editor-run"
+                          classList={{
+                            "oasis-editor-revision-insert":
+                              fragment.revision?.type === "insert",
+                            "oasis-editor-revision-delete":
+                              fragment.revision?.type === "delete",
+                          }}
+                          data-run-id={fragment.runId}
+                          data-testid="editor-run"
+                          style={runStyleToCss(
+                            fragment.styles,
+                            paragraph.style?.styleId,
+                            state.document.styles,
+                          )}
+                          onMouseEnter={
+                            interactive && fragment.revision
+                              ? (event) =>
+                                  onRevisionMouseEnter?.(
+                                    fragment.revision!.id,
+                                    event,
+                                  )
+                              : undefined
+                          }
+                          onMouseLeave={
+                            interactive && fragment.revision
+                              ? (event) =>
+                                  onRevisionMouseLeave?.(
+                                    fragment.revision!.id,
+                                    event,
+                                  )
+                              : undefined
+                          }
+                        >
+                          <For each={fragment.chars}>
+                            {(char) =>
+                              (() => {
+                                const imageSelected = () =>
+                                  Boolean(fragment.image) &&
+                                  isCharSelected(char.paragraphOffset);
+                                const slot = () => slotsByOffset.get(char.paragraphOffset);
+                                const tabWidth = () => {
+                                  if (char.char !== "\t") return 0;
+                                  const currentX = slot()?.left ?? 0;
+                                  const nextTabPos = resolveNextTabStop(
+                                    currentX,
+                                    effectiveTabs(),
+                                  );
+                                  return Math.max(0, nextTabPos - currentX);
+                                };
+                                return (
                               <span
                                 classList={{
                                   "oasis-editor-char": true,
@@ -642,29 +644,31 @@ function renderParagraph(
                                   char.char
                                 )}
                               </span>
-                            );
-                          })()
-                        }
-                      </For>
-                    </span>
-                  );
+                                );
+                              })()
+                            }
+                          </For>
+                        </span>
+                      );
 
-                  return fragment.styles?.link ? (
-                    <a
-                      class="oasis-editor-link"
-                      data-testid="editor-link"
-                      href={fragment.styles.link}
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      {runContent}
-                    </a>
-                  ) : (
-                    runContent
-                  );
-                }}
-              </For>
-            </div>
+                      return fragment.styles?.link ? (
+                        <a
+                          class="oasis-editor-link"
+                          data-testid="editor-link"
+                          href={fragment.styles.link}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          {runContent}
+                        </a>
+                      ) : (
+                        runContent
+                      );
+                    }}
+                  </For>
+                </div>
+              );
+            })()
           )}
         </For>
         <Show when={getParagraphText(paragraph).endsWith("\n")}>
@@ -1007,8 +1011,12 @@ function canReuseLayoutPage(
 }
 
 export function EditorSurface(props: EditorSurfaceProps) {
+  let rootRef: HTMLDivElement | undefined;
   let reusableLayoutBlocks = new Map<string, EditorLayoutBlock>();
   let reusableLayoutPages = new Map<string, EditorLayoutPage>();
+  const [visiblePageIndexes, setVisiblePageIndexes] = createSignal<Set<number>>(
+    new Set([0, 1, 2]),
+  );
 
   const preserveStableLayoutIdentity = (
     layout: EditorLayoutDocument,
@@ -1064,10 +1072,58 @@ export function EditorSurface(props: EditorSurfaceProps) {
     );
   });
 
+  onMount(() => {
+    let frame: number | null = null;
+    const viewport = rootRef?.closest<HTMLElement>(".oasis-editor-editor");
+    const scheduleVisiblePageUpdate = () => {
+      if (frame !== null) {
+        return;
+      }
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        if (!rootRef || !viewport) {
+          return;
+        }
+
+        const viewportRect = viewport.getBoundingClientRect();
+        const next = new Set<number>();
+        const pages = rootRef.querySelectorAll<HTMLElement>('[data-testid="editor-page"]');
+        pages.forEach((page) => {
+          const index = Number(page.dataset.pageIndex ?? -1);
+          if (index < 0) {
+            return;
+          }
+          const rect = page.getBoundingClientRect();
+          if (rect.bottom >= viewportRect.top - 1400 && rect.top <= viewportRect.bottom + 1400) {
+            next.add(index);
+          }
+        });
+
+        if (next.size === 0) {
+          next.add(0);
+        }
+        setVisiblePageIndexes(next);
+      });
+    };
+
+    scheduleVisiblePageUpdate();
+    viewport?.addEventListener("scroll", scheduleVisiblePageUpdate, { passive: true });
+    window.addEventListener("resize", scheduleVisiblePageUpdate);
+
+    onCleanup(() => {
+      if (frame !== null) {
+        cancelAnimationFrame(frame);
+      }
+      viewport?.removeEventListener("scroll", scheduleVisiblePageUpdate);
+      window.removeEventListener("resize", scheduleVisiblePageUpdate);
+    });
+  });
+
   return (
-    <div class="oasis-editor-paper-stack">
+    <div ref={rootRef} class="oasis-editor-paper-stack">
       <Index each={documentLayout().pages}>
         {(page, index) => {
+          const pageIsRendered = () => visiblePageIndexes().has(index);
           const pageSettings = () => page().pageSettings;
           const contentWidth = () => getPageContentWidth(pageSettings());
           const bodyTop = () => page().bodyTop ?? getPageBodyTop(pageSettings());
@@ -1092,12 +1148,14 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 "oasis-editor-paper-landscape":
                   pageSettings().orientation === "landscape",
               }}
+              data-page-index={index}
               data-testid="editor-page"
               style={{
                 width: `${pageSettings().width}px`,
                 "min-height": `${pageSettings().height}px`,
               }}
             >
+              <Show when={pageIsRendered()}>
               <div
                 class="oasis-editor-page-header-zone"
                 classList={{
@@ -1275,6 +1333,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                   }}
                 </For>
               </div>
+              </Show>
             </div>
             </>
           );

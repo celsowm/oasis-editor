@@ -13,6 +13,7 @@ import {
   resolveEffectiveTextStyleForParagraph,
 } from "../core/model.js";
 import { clampPosition, normalizeSelection } from "../core/selection.js";
+import type { NormalizedEditorSelection } from "../core/selection.js";
 
 export type BooleanStyleKey =
   | "bold"
@@ -77,9 +78,11 @@ function selectionOverlapsRun(
   return Math.max(runStart, selectionStart) < Math.min(runEnd, selectionEnd);
 }
 
-function getSelectedRunStyles(state: EditorState): EditorTextStyle[] {
-  const normalized = normalizeSelection(state);
-  const paragraphs = getParagraphs(state);
+function getSelectedRunStyles(
+  state: EditorState,
+  paragraphs: EditorParagraphNode[],
+  normalized: NormalizedEditorSelection,
+): EditorTextStyle[] {
   const { styles: docStyles } = state.document;
   if (normalized.isCollapsed) {
     const paragraph = paragraphs[normalized.startIndex];
@@ -178,10 +181,13 @@ function resolveUniformStyleValue<K extends ValueStyleKey>(
   return styles.every((style) => String(style[key] ?? "") === serialized) ? serialized : "";
 }
 
-function getSelectedParagraphStyles(state: EditorState): EditorParagraphStyle[] {
-  const normalized = normalizeSelection(state);
+function getSelectedParagraphStyles(
+  state: EditorState,
+  paragraphs: EditorParagraphNode[],
+  normalized: NormalizedEditorSelection,
+): EditorParagraphStyle[] {
   const { styles: docStyles } = state.document;
-  return getParagraphs(state)
+  return paragraphs
     .slice(normalized.startIndex, normalized.endIndex + 1)
     .map((paragraph) => resolveEffectiveParagraphStyle(paragraph.style, docStyles));
 }
@@ -224,10 +230,11 @@ function resolveUniformListKind(paragraphs: ReturnType<typeof getParagraphs>): s
 }
 
 export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
-  const normalized = normalizeSelection(state);
-  const styles = getSelectedRunStyles(state);
-  const paragraphStyles = getSelectedParagraphStyles(state);
-  const selectedParagraphs = getParagraphs(state).slice(
+  const paragraphs = getParagraphs(state);
+  const normalized = normalizeSelection(state, paragraphs);
+  const styles = getSelectedRunStyles(state, paragraphs, normalized);
+  const paragraphStyles = getSelectedParagraphStyles(state, paragraphs, normalized);
+  const selectedParagraphs = paragraphs.slice(
     normalized.startIndex,
     normalized.endIndex + 1,
   );

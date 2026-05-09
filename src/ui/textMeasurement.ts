@@ -247,6 +247,7 @@ function buildMeasuredChars(
   styles: Record<string, EditorNamedStyle> | undefined,
 ): MeasuredChar[] {
   const measured: MeasuredChar[] = [];
+  const runsById = new Map(paragraph.runs.map((run) => [run.id, run] as const));
   const fallbackFontSize = Math.max(
     DEFAULT_FONT_SIZE,
     ...paragraph.runs
@@ -256,7 +257,7 @@ function buildMeasuredChars(
   );
 
   for (const fragment of fragments) {
-    const run = paragraph.runs.find((candidate) => candidate.id === fragment.runId);
+    const run = runsById.get(fragment.runId);
     const effectiveStyles = resolveEffectiveTextStyleForParagraph(
       run?.styles,
       paragraph.style?.styleId,

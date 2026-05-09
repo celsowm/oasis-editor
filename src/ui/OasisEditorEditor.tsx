@@ -95,25 +95,21 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   const pageSettings = () => getDocumentPageSettings(props.state().document);
   const viewportHeight = () =>
     typeof props.viewportHeight === "number" ? `${props.viewportHeight}px` : props.viewportHeight ?? "min(72vh, 920px)";
-  const characterCount = () => getDocumentCharacterCount(props.state().document);
-  const wordCount = () => getDocumentWordCount(props.state().document);
+  const documentForStats = createMemo(() => props.state().document);
+  const characterCount = createMemo(() => getDocumentCharacterCount(documentForStats()));
+  const wordCount = createMemo(() => getDocumentWordCount(documentForStats()));
 
-  // Memoize: projectDocumentLayout walks the entire document and produces
-  // per-character layout. Without memoization each totalPages()/currentPage()
-  // call would re-run the full projection.
-  const documentLayout = createMemo(() =>
-    projectDocumentLayout(
-      props.state().document,
-      undefined,
-      props.measuredBlockHeights?.(),
-      props.measuredParagraphLayouts?.(),
-    ),
+  // Status pagination is deliberately estimated and keyed only by document
+  // identity. The measured layout used by EditorSurface updates more often
+  // during import/scroll and should not make the statusbar re-project pages.
+  const statusDocumentLayout = createMemo(() =>
+    projectDocumentLayout(documentForStats()),
   );
 
-  const totalPages = () => Math.max(1, documentLayout().pages.length);
+  const totalPages = () => Math.max(1, statusDocumentLayout().pages.length);
   
   const currentPage = () => {
-    const layout = documentLayout();
+    const layout = statusDocumentLayout();
     const focusId = props.state().selection.focus.paragraphId;
     const pageIndex = layout.pages.findIndex((page) =>
       page.blocks.some((block) => block.sourceBlockId === focusId)
