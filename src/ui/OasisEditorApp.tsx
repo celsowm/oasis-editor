@@ -222,6 +222,7 @@ type ImportProgressPhase =
 interface ImportProgressState {
   phase: ImportProgressPhase;
   progress: number;
+  subProgress?: number;
 }
 
 export interface OasisEditorAppProps {
@@ -667,19 +668,30 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setRedoStack([]);
   };
 
-  const setImportPhase = (phase: ImportProgressPhase) => {
-    const progressByPhase: Record<ImportProgressPhase, number> = {
-      "reading-file": 10,
-      "opening-docx": 28,
-      "parsing-document": 52,
-      "applying-editor-state": 74,
-      "stabilizing-layout": 92,
-      done: 100,
-      error: 100,
-    };
+  const PHASE_RANGES: Record<ImportProgressPhase, [number, number]> = {
+    "reading-file": [0, 8],
+    "opening-docx": [8, 20],
+    "parsing-document": [20, 72],
+    "parsing-headers-footers": [72, 78],
+    "applying-editor-state": [78, 88],
+    "stabilizing-layout": [88, 98],
+    done: [100, 100],
+    error: [100, 100],
+  };
+
+  const computeProgress = (phase: ImportProgressPhase, subProgress?: number): number => {
+    const [min, max] = PHASE_RANGES[phase];
+    if (subProgress !== undefined && Number.isFinite(subProgress)) {
+      return Math.round((min + (max - min) * Math.min(1, Math.max(0, subProgress))) * 10) / 10;
+    }
+    return max;
+  };
+
+  const setImportPhase = (phase: ImportProgressPhase, subProgress?: number) => {
     setImportProgress({
       phase,
-      progress: progressByPhase[phase],
+      progress: computeProgress(phase, subProgress),
+      subProgress,
     });
   };
 
@@ -688,7 +700,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       setImportProgress((current) =>
         current?.phase === "done" || current?.phase === "error" ? null : current,
       );
-    }, 0);
+    }, 1200);
   };
 
   const handleImportDocx = async (file: File | null) => {
@@ -712,9 +724,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       });
 
       const document = await importDocxToEditorDocument(arrayBuffer, {
-        onProgress: (stage) => {
-          setImportPhase(stage);
-          logger.info("import docx:phase", { phase: stage });
+        onProgress: (stage, subProgress) => {
+          setImportPhase(stage, subProgress);
+          logger.info("import docx:phase", { phase: stage, subProgress });
         },
       });
 

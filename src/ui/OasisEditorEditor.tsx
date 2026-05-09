@@ -32,11 +32,13 @@ export interface OasisEditorEditorProps {
       | "reading-file"
       | "opening-docx"
       | "parsing-document"
+      | "parsing-headers-footers"
       | "applying-editor-state"
       | "stabilizing-layout"
       | "done"
       | "error";
     progress: number;
+    subProgress?: number;
   } | null>;
   toolbarCtx?: () => EditorToolbarCtx;
   showFloatingTableToolbar?: Accessor<boolean>;
@@ -232,13 +234,20 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
       </div>
     </div>
       <Show when={props.importProgress?.()}>
-        {(progress) => (
+        {(progress) => {
+          const isDone = progress().phase === "done";
+          const isError = progress().phase === "error";
+          return (
           <div
             class="oasis-editor-import-overlay"
+            classList={{
+              "oasis-editor-import-overlay-done": isDone,
+              "oasis-editor-import-overlay-error": isError,
+            }}
             data-testid="editor-import-overlay"
             role="status"
             aria-live="polite"
-            aria-busy="true"
+            aria-busy={!isDone && !isError}
           >
             <div class="oasis-editor-import-card">
               <div class="oasis-editor-import-title">{t("import.overlay.title")}</div>
@@ -251,16 +260,30 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
               <div class="oasis-editor-import-progress-track">
                 <div
                   class="oasis-editor-import-progress-bar"
+                  classList={{
+                    "oasis-editor-import-progress-bar-done": isDone,
+                    "oasis-editor-import-progress-bar-error": isError,
+                    "oasis-editor-import-progress-bar-indeterminate":
+                      progress().phase === "applying-editor-state" ||
+                      progress().phase === "stabilizing-layout",
+                  }}
                   data-testid="editor-import-progress-bar"
                   style={{ width: `${progress().progress}%` }}
                 />
               </div>
               <div class="oasis-editor-import-progress-label">
-                {Math.round(progress().progress)}%
+                {isDone ? (
+                  <span class="oasis-editor-import-done-icon">{t("import.phase.done")}</span>
+                ) : isError ? (
+                  <span class="oasis-editor-import-error-icon">{t("import.phase.error")}</span>
+                ) : (
+                  <>{Math.round(progress().progress)}%</>
+                )}
               </div>
             </div>
           </div>
-        )}
+          );
+        }}
       </Show>
       <div
         class="oasis-editor-statusbar"

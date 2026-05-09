@@ -515,6 +515,39 @@
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #2563eb 0%, #0f766e 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.oasis-editor-import-progress-bar-indeterminate {
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 50%, #2563eb 100%);
+  background-size: 200% 100%;
+  animation: oasis-indeterminate 1.2s ease-in-out infinite;
+}
+
+@keyframes oasis-indeterminate {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.oasis-editor-import-progress-bar-done {
+  background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+}
+
+.oasis-editor-import-progress-bar-error {
+  background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%);
+}
+
+.oasis-editor-import-overlay-done {
+  background: rgba(248, 250, 252, 0.85);
+}
+
+.oasis-editor-import-overlay-error {
+  background: rgba(254, 242, 242, 0.85);
 }
 
 .oasis-editor-import-progress-label {
@@ -523,6 +556,54 @@
   font-variant-numeric: tabular-nums;
   color: var(--oasis-text-muted);
   text-align: right;
+}
+
+.oasis-editor-import-done-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #059669;
+  font-weight: 600;
+}
+
+.oasis-editor-import-done-icon::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #059669;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") center / contain no-repeat;
+  animation: oasis-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.oasis-editor-import-error-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.oasis-editor-import-error-icon::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #dc2626;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z'/%3E%3C/svg%3E") center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+@keyframes oasis-pop {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .oasis-editor-paper {

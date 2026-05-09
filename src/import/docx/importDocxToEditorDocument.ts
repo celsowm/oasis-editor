@@ -31,10 +31,11 @@ import {
 
 export type DocxImportStage =
   | "opening-docx"
-  | "parsing-document";
+  | "parsing-document"
+  | "parsing-headers-footers";
 
 export interface ImportDocxToEditorDocumentOptions {
-  onProgress?: (stage: DocxImportStage) => void;
+  onProgress?: (stage: DocxImportStage, progress?: number) => void;
 }
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -1337,6 +1338,26 @@ export async function importDocxToEditorDocument(
     sectionBlocks[sectionBlocks.length - 1]!.push(block);
   };
 
+  // Count total body work items for progress tracking
+  let totalBodyWorkItems = 0;
+  for (let index = 0; index < body.childNodes.length; index += 1) {
+    const node = body.childNodes[index];
+    if (node?.nodeType === node.ELEMENT_NODE) {
+      const element = node as XmlElement;
+      if (element.namespaceURI === WORD_NS && element.localName !== "sectPr") {
+        totalBodyWorkItems += 1;
+      }
+    }
+  }
+  let completedBodyWorkItems = 0;
+
+  const reportBodyProgress = () => {
+    completedBodyWorkItems += 1;
+    if (totalBodyWorkItems > 0) {
+      options.onProgress?.("parsing-document", completedBodyWorkItems / totalBodyWorkItems);
+    }
+  };
+
   for (let index = 0; index < body.childNodes.length; index += 1) {
     const node = body.childNodes[index];
     if (node?.nodeType !== node.ELEMENT_NODE) {
@@ -1361,8 +1382,10 @@ export async function importDocxToEditorDocument(
       if (parsedParagraph.pageBreakAfter) {
         pendingPageBreakBefore = true;
       }
+      reportBodyProgress();
     } else if (element.localName === "tbl") {
       appendBodyBlock(await parseTableNode(element, numberingMaps, zip, relsMap, assets, themeFonts));
+      reportBodyProgress();
     }
   }
 
@@ -1377,7 +1400,18 @@ export async function importDocxToEditorDocument(
   }
 
   // Build sections with headers/footers
+  options.onProgress?.("parsing-headers-footers");
   const sections: EditorSection[] = [];
+  const totalSectionsWithHeaders = sectionProps.filter((p) => p.headerRId || p.footerRId).length;
+  let processedSections = 0;
+
+  const reportHeaderFooterProgress = () => {
+    processedSections += 1;
+    if (totalSectionsWithHeaders > 0) {
+      options.onProgress?.("parsing-headers-footers", processedSections / totalSectionsWithHeaders);
+    }
+  };
+
   for (let i = 0; i < sectionProps.length; i += 1) {
     const props = sectionProps[i]!;
     const blocks = sectionBlocks[i] ?? [];
@@ -1404,6 +1438,10 @@ export async function importDocxToEditorDocument(
         const footerXml = await zip.file(zipPath)?.async("string");
         footer = await parseHeaderFooterXml(footerXml ?? null, numberingMaps, zip, relsMap, assets, themeFonts);
       }
+    }
+
+    if (props.headerRId || props.footerRId) {
+      reportHeaderFooterProgress();
     }
 
     const rawPageSettings = props.pageSettings ?? {
