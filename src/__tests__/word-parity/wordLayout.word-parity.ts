@@ -95,6 +95,18 @@ describeWordParity("Word layout parity", () => {
 
       expect(wordPage3Text).toContain(expectedPage3Tail);
       expect(editorPage3Text).toContain(expectedPage3Tail);
+
+      const domStyles = result.editor.domStyles;
+      expect(domStyles?.runFontFamilies.some((family) => family.includes("Times New Roman"))).toBe(true);
+      expect(domStyles?.runFontFamilies.some((family) => family.includes("Calibri"))).toBe(true);
+      expect(domStyles?.runFontSizes).toContain("12px");
+      expect(domStyles?.runFontSizes).toContain("10.6667px");
+      expect(domStyles?.firstTableFirstRowBackgrounds).toEqual([
+        "rgb(217, 234, 247)",
+        "rgb(217, 234, 247)",
+        "rgb(217, 234, 247)",
+        "rgb(217, 234, 247)",
+      ]);
     },
     120_000,
   );

@@ -82,9 +82,21 @@ interface EditorPageSnapshot {
   firstBodyLineGeometry?: LayoutLineGeometry;
 }
 
+interface EditorDomStyleSnapshot {
+  runFontFamilies: string[];
+  runFontSizes: string[];
+  firstTableFirstRowBackgrounds: string[];
+}
+
+interface BrowserEditorSnapshot {
+  pages: EditorPageSnapshot[];
+  domStyles: EditorDomStyleSnapshot;
+}
+
 export interface WordLayoutParityResult {
   editor: {
     pages: EditorPageSnapshot[];
+    domStyles?: EditorDomStyleSnapshot;
   };
   word: WordPdfLayout;
   mismatches: string[];
@@ -200,7 +212,7 @@ function collectEditorPageSnapshots(document: EditorDocument): EditorPageSnapsho
   });
 }
 
-async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Promise<EditorPageSnapshot[] | null> {
+async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Promise<BrowserEditorSnapshot | null> {
   if (process.env.OASIS_WORD_PARITY_USE_NODE_LAYOUT === "1") {
     return null;
   }
@@ -297,7 +309,7 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
             };
           };
 
-          return Array.from(host.querySelectorAll('[data-testid="editor-page"]')).map((pageElement: Element) => {
+          const pages = Array.from(host.querySelectorAll('[data-testid="editor-page"]')).map((pageElement: Element) => {
             const pageHtmlElement = pageElement as HTMLElement;
             const header = pageElement.querySelector('[data-testid="editor-page-header-zone"]');
             const body = pageElement.querySelector('[data-testid="editor-surface"]') as HTMLElement | null;
@@ -323,6 +335,29 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
               firstBodyLineGeometry: geometryFromLine(pageHtmlElement, body, firstBodyLine ?? null),
             };
           });
+
+          const runFontFamilies = Array.from(host.querySelectorAll('[data-testid="editor-run"]'))
+            .map((run) => globalThis.getComputedStyle(run as HTMLElement).fontFamily)
+            .filter((fontFamily) => fontFamily.length > 0);
+          const runFontSizes = Array.from(host.querySelectorAll('[data-testid="editor-run"]'))
+            .map((run) => globalThis.getComputedStyle(run as HTMLElement).fontSize)
+            .filter((fontSize) => fontSize.length > 0);
+          const firstTable = host.querySelector('[data-testid="editor-table"]');
+          const firstTableFirstRow = firstTable?.querySelector('[data-testid="editor-table-row"]');
+          const firstTableFirstRowBackgrounds = Array.from(
+            firstTableFirstRow?.querySelectorAll('[data-testid="editor-table-cell"]') ?? [],
+          )
+            .map((cell) => globalThis.getComputedStyle(cell as HTMLElement).backgroundColor)
+            .filter((backgroundColor) => backgroundColor.length > 0);
+
+          return {
+            pages,
+            domStyles: {
+              runFontFamilies,
+              runFontSizes,
+              firstTableFirstRowBackgrounds,
+            },
+          };
         } finally {
           instance.dispose();
         }
@@ -512,14 +547,13 @@ async function verifyWordLayoutParityFromDocx(
     await writeFile(docxPath, docxBuffer);
     await convertDocxToPdfWithWord(docxPath, pdfPath);
 
-    const editorPages =
-      (await collectEditorPageSnapshotsInBrowser(document)) ??
-      collectEditorPageSnapshots(document);
+    const browserSnapshot = await collectEditorPageSnapshotsInBrowser(document);
+    const editorPages = browserSnapshot?.pages ?? collectEditorPageSnapshots(document);
     const wordLayout = extractPdfLayout(pdfPath, support);
     const mismatches = compareWordAndEditorLayout(editorPages, wordLayout, options);
 
     return {
-      editor: { pages: editorPages },
+      editor: { pages: editorPages, domStyles: browserSnapshot?.domStyles },
       word: wordLayout,
       mismatches,
     };

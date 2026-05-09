@@ -10,6 +10,7 @@ import type {
   EditorParagraphNode,
   EditorParagraphStyle,
   EditorSection,
+  EditorTableCellStyle,
   EditorTableNode,
   EditorTextStyle,
 } from "../../core/model.js";
@@ -37,6 +38,7 @@ export interface ImportDocxToEditorDocumentOptions {
 }
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const DRAWINGML_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
 const OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 const TWIPS_PER_INCH = 1440;
 const PX_PER_INCH = 96;
@@ -46,6 +48,15 @@ const WORD_SINGLE_LINE_RATIO = 1.223;
 interface NumberingMaps {
   abstractKinds: Map<string, EditorParagraphListStyle["kind"]>;
   numKinds: Map<string, EditorParagraphListStyle["kind"]>;
+}
+
+interface ThemeFontMap {
+  majorHAnsi?: string;
+  minorHAnsi?: string;
+  majorEastAsia?: string;
+  minorEastAsia?: string;
+  majorBidi?: string;
+  minorBidi?: string;
 }
 
 /**
@@ -133,8 +144,18 @@ function normalizeImportedRunStyle(
     strike: effective.strike !== defaultEffective.strike ? effective.strike : undefined,
     superscript: effective.superscript !== defaultEffective.superscript ? effective.superscript : undefined,
     subscript: effective.subscript !== defaultEffective.subscript ? effective.subscript : undefined,
-    fontFamily: effective.fontFamily !== defaultEffective.fontFamily ? effective.fontFamily : undefined,
-    fontSize: effective.fontSize !== defaultEffective.fontSize ? effective.fontSize : undefined,
+    fontFamily:
+      style.fontFamily !== undefined
+        ? style.fontFamily
+        : effective.fontFamily !== defaultEffective.fontFamily
+          ? effective.fontFamily
+          : undefined,
+    fontSize:
+      style.fontSize !== undefined
+        ? style.fontSize
+        : effective.fontSize !== defaultEffective.fontSize
+          ? effective.fontSize
+          : undefined,
     color: effective.color !== defaultEffective.color ? effective.color : undefined,
     highlight: effective.highlight !== defaultEffective.highlight ? effective.highlight : undefined,
     link: effective.link !== defaultEffective.link ? effective.link : undefined,
@@ -200,6 +221,36 @@ function getTableCellVMerge(cellProperties: XmlElement | null): "restart" | "con
   return value === "restart" ? "restart" : "continue";
 }
 
+function parseTableCellStyle(cellProperties: XmlElement | null): EditorTableCellStyle | undefined {
+  if (!cellProperties) {
+    return undefined;
+  }
+
+  const style: EditorTableCellStyle = {};
+  const shading = getFirstChildByTagNameNS(cellProperties, WORD_NS, "shd");
+  const fill = normalizeImportedHexColor(getAttributeValue(shading, "fill"));
+  if (fill) {
+    style.shading = fill;
+  }
+
+  const cellWidth = getFirstChildByTagNameNS(cellProperties, WORD_NS, "tcW");
+  const cellWidthType = getAttributeValue(cellWidth, "type");
+  const cellWidthValue = getAttributeValue(cellWidth, "w");
+  if (cellWidthType === "dxa") {
+    const width = twipsToPoints(cellWidthValue);
+    if (width !== undefined) {
+      style.width = width;
+    }
+  } else if (cellWidthType === "pct" && cellWidthValue) {
+    const pct = Number(cellWidthValue);
+    if (Number.isFinite(pct)) {
+      style.width = `${Math.round((pct / 50) * 10000) / 10000}%`;
+    }
+  }
+
+  return Object.keys(style).length > 0 ? style : undefined;
+}
+
 function parseBooleanProperty(parent: XmlElement, localName: string): boolean {
   return getFirstChildByTagNameNS(parent, WORD_NS, localName) !== null;
 }
@@ -216,6 +267,15 @@ function twipsToPx(value: string | null | undefined, fallback: number): number {
   }
 
   return Math.round((parsed / TWIPS_PER_INCH) * PX_PER_INCH);
+}
+
+function twipsToPoints(value: string | null | undefined): number | undefined {
+  const parsed = value ? Number(value) : Number.NaN;
+  if (!Number.isFinite(parsed)) {
+    return undefined;
+  }
+
+  return Math.round((parsed / 20) * 10000) / 10000;
 }
 
 function halfPointsToPx(value: string | null | undefined): number | null {
@@ -235,6 +295,80 @@ function normalizeImportedFontFamily(value: string | null | undefined): string |
   const quoted = /[\s,]/.test(family) ? `"${family.replace(/"/g, "\\\"")}"` : family;
   const fallback = /times/i.test(family) ? "serif" : "sans-serif";
   return `${quoted}, ${fallback}`;
+}
+
+function normalizeImportedHexColor(value: string | null | undefined): string | undefined {
+  const color = value?.trim();
+  if (!color || color === "auto" || color === "none") {
+    return undefined;
+  }
+  return color.startsWith("#") ? color : `#${color.toUpperCase()}`;
+}
+
+function parseThemeFonts(themeXml: string | null): ThemeFontMap {
+  if (!themeXml) {
+    return {};
+  }
+
+  const document = new DOMParser().parseFromString(themeXml, "application/xml");
+  const root = document.documentElement;
+  const themeElements = root ? getChildrenByTagNameNS(root, DRAWINGML_NS, "themeElements")[0] : null;
+  const fontScheme = getFirstChildByTagNameNS(themeElements, DRAWINGML_NS, "fontScheme");
+  const majorFont = getFirstChildByTagNameNS(fontScheme, DRAWINGML_NS, "majorFont");
+  const minorFont = getFirstChildByTagNameNS(fontScheme, DRAWINGML_NS, "minorFont");
+
+  const latinTypeface = (fontElement: XmlElement | null): string | undefined => {
+    const latin = getFirstChildByTagNameNS(fontElement, DRAWINGML_NS, "latin");
+    const typeface = latin?.getAttribute("typeface")?.trim();
+    return typeface || undefined;
+  };
+  const complexScriptTypeface = (fontElement: XmlElement | null): string | undefined => {
+    const complexScript = getFirstChildByTagNameNS(fontElement, DRAWINGML_NS, "cs");
+    const typeface = complexScript?.getAttribute("typeface")?.trim();
+    return typeface || latinTypeface(fontElement);
+  };
+  const eastAsiaTypeface = (fontElement: XmlElement | null): string | undefined => {
+    const eastAsia = getFirstChildByTagNameNS(fontElement, DRAWINGML_NS, "ea");
+    const typeface = eastAsia?.getAttribute("typeface")?.trim();
+    return typeface || latinTypeface(fontElement);
+  };
+
+  return {
+    majorHAnsi: latinTypeface(majorFont),
+    minorHAnsi: latinTypeface(minorFont),
+    majorEastAsia: eastAsiaTypeface(majorFont),
+    minorEastAsia: eastAsiaTypeface(minorFont),
+    majorBidi: complexScriptTypeface(majorFont),
+    minorBidi: complexScriptTypeface(minorFont),
+  };
+}
+
+function resolveThemeFont(fonts: XmlElement | null, themeFonts: ThemeFontMap): string | undefined {
+  const themeKey =
+    getAttributeValue(fonts, "asciiTheme") ??
+    getAttributeValue(fonts, "hAnsiTheme") ??
+    getAttributeValue(fonts, "eastAsiaTheme") ??
+    getAttributeValue(fonts, "cstheme");
+  if (!themeKey) {
+    return undefined;
+  }
+
+  const normalizedThemeKey =
+    themeKey === "majorAscii" || themeKey === "majorHAnsi"
+      ? "majorHAnsi"
+      : themeKey === "minorAscii" || themeKey === "minorHAnsi"
+        ? "minorHAnsi"
+        : themeKey === "majorEastAsia"
+          ? "majorEastAsia"
+          : themeKey === "minorEastAsia"
+            ? "minorEastAsia"
+            : themeKey === "majorBidi"
+              ? "majorBidi"
+              : themeKey === "minorBidi"
+                ? "minorBidi"
+                : undefined;
+
+  return normalizedThemeKey ? themeFonts[normalizedThemeKey] : undefined;
 }
 
 interface ImportedRun {
@@ -314,6 +448,7 @@ async function parseHeaderFooterXml(
   zip: JSZip,
   relsMap: Map<string, string>,
   assets: AssetRegistry,
+  themeFonts: ThemeFontMap,
 ): Promise<EditorBlockNode[]> {
   if (!xmlContent) {
     return [];
@@ -333,9 +468,9 @@ async function parseHeaderFooterXml(
     }
     const element = node as XmlElement;
     if (element.localName === "p" && element.namespaceURI === WORD_NS) {
-      blocks.push(await parseParagraphNode(element, numberingMaps, zip, relsMap, assets));
+      blocks.push(await parseParagraphNode(element, numberingMaps, zip, relsMap, assets, themeFonts));
     } else if (element.localName === "tbl" && element.namespaceURI === WORD_NS) {
-      blocks.push(await parseTableNode(element, numberingMaps, zip, relsMap, assets));
+      blocks.push(await parseTableNode(element, numberingMaps, zip, relsMap, assets, themeFonts));
     }
   }
   return blocks;
@@ -402,7 +537,7 @@ function findElementDeep(element: XmlElement, localName: string): XmlElement | n
   return null;
 }
 
-function parseRunStyle(runProperties: XmlElement | null): EditorTextStyle | undefined {
+function parseRunStyle(runProperties: XmlElement | null, themeFonts: ThemeFontMap): EditorTextStyle | undefined {
   if (!runProperties) {
     return undefined;
   }
@@ -442,7 +577,8 @@ function parseRunStyle(runProperties: XmlElement | null): EditorTextStyle | unde
     getAttributeValue(fonts, "ascii") ??
     getAttributeValue(fonts, "hAnsi") ??
     getAttributeValue(fonts, "cs") ??
-    getAttributeValue(fonts, "eastAsia");
+    getAttributeValue(fonts, "eastAsia") ??
+    resolveThemeFont(fonts, themeFonts);
   if (fontFamily) {
     styles.fontFamily = normalizeImportedFontFamily(fontFamily);
   }
@@ -554,7 +690,7 @@ function isWordTrue(value: string | null | undefined): boolean {
   return value === "1" || value === "true" || value === "on";
 }
 
-function parseImportedStyles(stylesXml: string | null): Record<string, EditorNamedStyle> | undefined {
+function parseImportedStyles(stylesXml: string | null, themeFonts: ThemeFontMap): Record<string, EditorNamedStyle> | undefined {
   if (!stylesXml) {
     return undefined;
   }
@@ -577,7 +713,7 @@ function parseImportedStyles(stylesXml: string | null): Record<string, EditorNam
     "rPr",
   );
   const defaultParagraphStyle = parseParagraphStyle(pPrDefault);
-  const defaultTextStyle = parseRunStyle(rPrDefault);
+  const defaultTextStyle = parseRunStyle(rPrDefault, themeFonts);
   const styles: Record<string, EditorNamedStyle> = {};
   let defaultParagraphStyleId: string | undefined;
 
@@ -592,7 +728,7 @@ function parseImportedStyles(stylesXml: string | null): Record<string, EditorNam
     const basedOn = getAttributeValue(getFirstChildByTagNameNS(styleElement, WORD_NS, "basedOn"), "val") ?? undefined;
     const nextStyle = getAttributeValue(getFirstChildByTagNameNS(styleElement, WORD_NS, "next"), "val") ?? undefined;
     const paragraphStyle = parseParagraphStyle(getFirstChildByTagNameNS(styleElement, WORD_NS, "pPr"));
-    const textStyle = parseRunStyle(getFirstChildByTagNameNS(styleElement, WORD_NS, "rPr"));
+    const textStyle = parseRunStyle(getFirstChildByTagNameNS(styleElement, WORD_NS, "rPr"), themeFonts);
     const isDefaultParagraph =
       type === "paragraph" && isWordTrue(getAttributeValue(styleElement, "default"));
 
@@ -802,6 +938,7 @@ async function parseRunsContainer(
   zip: JSZip,
   relsMap: Map<string, string>,
   assets: AssetRegistry,
+  themeFonts: ThemeFontMap,
   inheritedLink?: string | null,
 ) {
   const runs: ImportedRun[] = [];
@@ -823,7 +960,7 @@ async function parseRunsContainer(
         continue;
       }
 
-      let styles = parseRunStyle(getFirstChildByTagNameNS(element, WORD_NS, "rPr"));
+      let styles = parseRunStyle(getFirstChildByTagNameNS(element, WORD_NS, "rPr"), themeFonts);
       if (inheritedLink) {
         (styles ??= {}).link = inheritedLink;
       }
@@ -845,6 +982,7 @@ async function parseRunsContainer(
         zip,
         relsMap,
         assets,
+        themeFonts,
         inheritedLink,
       );
       const displayText = fieldRuns.map((run) => run.text).join("") || "1";
@@ -873,6 +1011,7 @@ async function parseRunsContainer(
           zip,
           relsMap,
           assets,
+          themeFonts,
           href,
         )),
       );
@@ -948,9 +1087,10 @@ async function parseParagraphNodes(
   zip: JSZip,
   relsMap: Map<string, string>,
   assets: AssetRegistry,
+  themeFonts: ThemeFontMap,
 ): Promise<{ paragraphs: EditorParagraphNode[]; pageBreakAfter: boolean }> {
   const paragraphProperties = getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr");
-  const runs = await parseRunsContainer(paragraphNode, numberingMaps, zip, relsMap, assets);
+  const runs = await parseRunsContainer(paragraphNode, numberingMaps, zip, relsMap, assets, themeFonts);
   const paragraphStyle = normalizeImportedParagraphStyle(parseParagraphStyle(paragraphProperties));
   const list = parseParagraphList(paragraphProperties, numberingMaps);
   const { segments, hasPageBreak } = splitRunsAtPageBreaks(runs);
@@ -992,8 +1132,9 @@ async function parseParagraphNode(
   zip: JSZip,
   relsMap: Map<string, string>,
   assets: AssetRegistry,
+  themeFonts: ThemeFontMap,
 ) {
-  const parsed = await parseParagraphNodes(paragraphNode, numberingMaps, zip, relsMap, assets);
+  const parsed = await parseParagraphNodes(paragraphNode, numberingMaps, zip, relsMap, assets, themeFonts);
   return parsed.paragraphs[0] ?? createEditorParagraphFromRuns([{ text: "" }]);
 }
 
@@ -1003,6 +1144,7 @@ async function parseTableNode(
   zip: JSZip,
   relsMap: Map<string, string>,
   assets: AssetRegistry,
+  themeFonts: ThemeFontMap,
 ): Promise<EditorTableNode> {
   const rows = [];
   for (const rowNode of getChildrenByTagNameNS(tableNode, WORD_NS, "tr")) {
@@ -1011,15 +1153,19 @@ async function parseTableNode(
       const paragraphs = [];
       const cellProperties = getFirstChildByTagNameNS(cellNode, WORD_NS, "tcPr");
       for (const paragraphNode of getChildrenByTagNameNS(cellNode, WORD_NS, "p")) {
-        paragraphs.push(await parseParagraphNode(paragraphNode, numberingMaps, zip, relsMap, assets));
+        paragraphs.push(await parseParagraphNode(paragraphNode, numberingMaps, zip, relsMap, assets, themeFonts));
       }
       const colSpan = getTableCellColSpan(cellProperties);
       const vMerge = getTableCellVMerge(cellProperties);
+      const cellStyle = parseTableCellStyle(cellProperties);
       const cell = createEditorTableCell(
         paragraphs.length > 0 ? paragraphs : [createEditorParagraphFromRuns([{ text: "" }])],
         colSpan,
         vMerge === "restart" ? { rowSpan: 1, vMerge } : vMerge ? { vMerge } : undefined,
       );
+      if (cellStyle) {
+        cell.style = cellStyle;
+      }
       if (vMerge === "continue") {
         cell.blocks = [];
       }
@@ -1090,7 +1236,9 @@ export async function importDocxToEditorDocument(
   const numberingXml = (await zip.file("word/numbering.xml")?.async("string")) ?? null;
   const numberingMaps = parseNumbering(numberingXml);
   const stylesXml = (await zip.file("word/styles.xml")?.async("string")) ?? null;
-  const importedStyles = parseImportedStyles(stylesXml);
+  const themeXml = (await zip.file("word/theme/theme1.xml")?.async("string")) ?? null;
+  const themeFonts = parseThemeFonts(themeXml);
+  const importedStyles = parseImportedStyles(stylesXml, themeFonts);
   options.onProgress?.("parsing-document");
   const document = new DOMParser().parseFromString(documentXml, "application/xml");
   const body = document.getElementsByTagNameNS(WORD_NS, "body")[0];
@@ -1133,7 +1281,7 @@ export async function importDocxToEditorDocument(
       sectionBlocks.push([]);
       pendingPageBreakBefore = false;
     } else if (element.localName === "p") {
-      const parsedParagraph = await parseParagraphNodes(element, numberingMaps, zip, relsMap, assets);
+      const parsedParagraph = await parseParagraphNodes(element, numberingMaps, zip, relsMap, assets, themeFonts);
       for (const paragraph of parsedParagraph.paragraphs) {
         appendBodyBlock(paragraph);
       }
@@ -1141,7 +1289,7 @@ export async function importDocxToEditorDocument(
         pendingPageBreakBefore = true;
       }
     } else if (element.localName === "tbl") {
-      appendBodyBlock(await parseTableNode(element, numberingMaps, zip, relsMap, assets));
+      appendBodyBlock(await parseTableNode(element, numberingMaps, zip, relsMap, assets, themeFonts));
     }
   }
 
@@ -1171,7 +1319,7 @@ export async function importDocxToEditorDocument(
         let zipPath = headerTarget.startsWith("/") ? headerTarget.slice(1) : headerTarget;
         if (!zipPath.startsWith("word/")) zipPath = "word/" + headerTarget;
         const headerXml = await zip.file(zipPath)?.async("string");
-        header = await parseHeaderFooterXml(headerXml ?? null, numberingMaps, zip, relsMap, assets);
+        header = await parseHeaderFooterXml(headerXml ?? null, numberingMaps, zip, relsMap, assets, themeFonts);
       }
     }
 
@@ -1181,7 +1329,7 @@ export async function importDocxToEditorDocument(
         let zipPath = footerTarget.startsWith("/") ? footerTarget.slice(1) : footerTarget;
         if (!zipPath.startsWith("word/")) zipPath = "word/" + footerTarget;
         const footerXml = await zip.file(zipPath)?.async("string");
-        footer = await parseHeaderFooterXml(footerXml ?? null, numberingMaps, zip, relsMap, assets);
+        footer = await parseHeaderFooterXml(footerXml ?? null, numberingMaps, zip, relsMap, assets, themeFonts);
       }
     }
 
