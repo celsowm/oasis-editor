@@ -27,6 +27,10 @@ async function expectNoWordLayoutMismatches(
   expect(result.mismatches, `${name} mismatches:\n${result.mismatches.join("\n")}`).toEqual([]);
 }
 
+function wordPageLines(page: { lines: Array<{ text: string }> } | undefined): string {
+  return page?.lines.map((line) => line.text.replace(/\s+/g, " ").trim()).join(" ") ?? "";
+}
+
 describeWordParity("Word layout parity", () => {
   it(
     "matches Word for A4 Calibri lorem on a single page",
@@ -83,6 +87,14 @@ describeWordParity("Word layout parity", () => {
       expect(wordPage2Lines).toContain("Sumário");
       expect(editorPage1Lines).not.toContain("Sumário");
       expect(editorPage2Lines).toContain("Sumário");
+
+      const expectedPage3Tail =
+        "2.2.2. O Safari utiliza tecnologias e ferramentas próprias do ecossistema Apple, e a Apple disponibiliza recursos específicos de inspeção, depuração e teste de conteúdo web em Safari, aplicativos no Mac,";
+      const wordPage3Text = wordPageLines(result.word.pages[2]);
+      const editorPage3Text = result.editor.pages[2]?.bodyLineTexts.join(" ") ?? "";
+
+      expect(wordPage3Text).toContain(expectedPage3Tail);
+      expect(editorPage3Text).toContain(expectedPage3Tail);
     },
     120_000,
   );

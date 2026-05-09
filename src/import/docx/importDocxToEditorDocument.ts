@@ -4,6 +4,7 @@ import type {
   EditorAsset,
   EditorBlockNode,
   EditorDocument,
+  EditorNamedStyle,
   EditorPageSettings,
   EditorParagraphListStyle,
   EditorParagraphNode,
@@ -40,6 +41,7 @@ const OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/rel
 const TWIPS_PER_INCH = 1440;
 const PX_PER_INCH = 96;
 const PAGE_BREAK_MARKER = "\f";
+const WORD_SINGLE_LINE_RATIO = 1.223;
 
 interface NumberingMaps {
   abstractKinds: Map<string, EditorParagraphListStyle["kind"]>;
@@ -95,6 +97,7 @@ function normalizeImportedParagraphStyle(style: EditorParagraphStyle | undefined
   const defaultEffective = resolveEffectiveParagraphStyle(undefined, DEFAULT_EDITOR_STYLES);
 
   return stripUndefined({
+    styleId: style.styleId,
     align: effective.align !== defaultEffective.align ? effective.align : undefined,
     spacingBefore:
       effective.spacingBefore !== defaultEffective.spacingBefore ? effective.spacingBefore : undefined,
@@ -123,6 +126,7 @@ function normalizeImportedRunStyle(
   const defaultEffective = resolveEffectiveTextStyleForParagraph(undefined, paragraphStyleId, DEFAULT_EDITOR_STYLES);
 
   return stripUndefined({
+    styleId: style.styleId,
     bold: effective.bold !== defaultEffective.bold ? effective.bold : undefined,
     italic: effective.italic !== defaultEffective.italic ? effective.italic : undefined,
     underline: effective.underline !== defaultEffective.underline ? effective.underline : undefined,
@@ -137,7 +141,11 @@ function normalizeImportedRunStyle(
   });
 }
 
-function getChildrenByTagNameNS(element: XmlElement, namespace: string, localName: string): XmlElement[] {
+function getChildrenByTagNameNS(element: XmlElement | null | undefined, namespace: string, localName: string): XmlElement[] {
+  if (!element) {
+    return [];
+  }
+
   const result: XmlElement[] = [];
   for (let index = 0; index < element.childNodes.length; index += 1) {
     const node = element.childNodes[index];
@@ -153,7 +161,7 @@ function getChildrenByTagNameNS(element: XmlElement, namespace: string, localNam
 }
 
 function getFirstChildByTagNameNS(
-  element: XmlElement,
+  element: XmlElement | null | undefined,
   namespace: string,
   localName: string,
 ): XmlElement | null {
@@ -196,6 +204,11 @@ function parseBooleanProperty(parent: XmlElement, localName: string): boolean {
   return getFirstChildByTagNameNS(parent, WORD_NS, localName) !== null;
 }
 
+function parseStyleIdProperty(parent: XmlElement | null, localName: "pStyle" | "rStyle"): string | undefined {
+  const styleElement = getFirstChildByTagNameNS(parent, WORD_NS, localName);
+  return getAttributeValue(styleElement, "val") ?? undefined;
+}
+
 function twipsToPx(value: string | null | undefined, fallback: number): number {
   const parsed = value ? Number(value) : Number.NaN;
   if (!Number.isFinite(parsed)) {
@@ -212,6 +225,16 @@ function halfPointsToPx(value: string | null | undefined): number | null {
   }
 
   return Math.round((parsed / 2 / 72) * PX_PER_INCH * 10000) / 10000;
+}
+
+function normalizeImportedFontFamily(value: string | null | undefined): string | undefined {
+  const family = value?.trim();
+  if (!family) {
+    return undefined;
+  }
+  const quoted = /[\s,]/.test(family) ? `"${family.replace(/"/g, "\\\"")}"` : family;
+  const fallback = /times/i.test(family) ? "serif" : "sans-serif";
+  return `${quoted}, ${fallback}`;
 }
 
 interface ImportedRun {
@@ -385,6 +408,10 @@ function parseRunStyle(runProperties: XmlElement | null): EditorTextStyle | unde
   }
 
   const styles: EditorTextStyle = {};
+  const styleId = parseStyleIdProperty(runProperties, "rStyle");
+  if (styleId) {
+    styles.styleId = styleId;
+  }
   if (parseBooleanProperty(runProperties, "b")) {
     styles.bold = true;
   }
@@ -414,9 +441,10 @@ function parseRunStyle(runProperties: XmlElement | null): EditorTextStyle | unde
   const fontFamily =
     getAttributeValue(fonts, "ascii") ??
     getAttributeValue(fonts, "hAnsi") ??
-    getAttributeValue(fonts, "cs");
+    getAttributeValue(fonts, "cs") ??
+    getAttributeValue(fonts, "eastAsia");
   if (fontFamily) {
-    styles.fontFamily = fontFamily;
+    styles.fontFamily = normalizeImportedFontFamily(fontFamily);
   }
 
   const size = getFirstChildByTagNameNS(runProperties, WORD_NS, "sz");
@@ -449,6 +477,10 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   }
 
   const style: EditorParagraphStyle = {};
+  const styleId = parseStyleIdProperty(paragraphProperties, "pStyle");
+  if (styleId) {
+    style.styleId = styleId;
+  }
   const justification = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "jc");
   const justificationValue = getAttributeValue(justification, "val");
   if (
@@ -464,6 +496,7 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   const before = getAttributeValue(spacing, "before");
   const after = getAttributeValue(spacing, "after");
   const line = getAttributeValue(spacing, "line");
+  const lineRule = getAttributeValue(spacing, "lineRule");
   if (before) {
     style.spacingBefore = twipsToPx(before, 0);
   }
@@ -471,7 +504,10 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
     style.spacingAfter = twipsToPx(after, 0);
   }
   if (line) {
-    style.lineHeight = Number(line) / 240;
+    const parsedLineHeight = Number(line) / 240;
+    style.lineHeight = lineRule === "exact" || lineRule === "atLeast"
+      ? parsedLineHeight
+      : Math.round((parsedLineHeight / WORD_SINGLE_LINE_RATIO) * 10000) / 10000;
   }
 
   const indent = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "ind");
@@ -496,6 +532,106 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   }
 
   return Object.keys(style).length > 0 ? style : undefined;
+}
+
+function mergeImportedParagraphStyles(
+  base: EditorParagraphStyle | undefined,
+  local: EditorParagraphStyle | undefined,
+): EditorParagraphStyle | undefined {
+  const merged = { ...(base ?? {}), ...(local ?? {}) };
+  return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
+function mergeImportedTextStyles(
+  base: EditorTextStyle | undefined,
+  local: EditorTextStyle | undefined,
+): EditorTextStyle | undefined {
+  const merged = { ...(base ?? {}), ...(local ?? {}) };
+  return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
+function isWordTrue(value: string | null | undefined): boolean {
+  return value === "1" || value === "true" || value === "on";
+}
+
+function parseImportedStyles(stylesXml: string | null): Record<string, EditorNamedStyle> | undefined {
+  if (!stylesXml) {
+    return undefined;
+  }
+
+  const document = new DOMParser().parseFromString(stylesXml, "application/xml");
+  const root = document.documentElement;
+  if (!root) {
+    return undefined;
+  }
+
+  const docDefaults = getFirstChildByTagNameNS(root, WORD_NS, "docDefaults");
+  const pPrDefault = getFirstChildByTagNameNS(
+    getFirstChildByTagNameNS(docDefaults, WORD_NS, "pPrDefault"),
+    WORD_NS,
+    "pPr",
+  );
+  const rPrDefault = getFirstChildByTagNameNS(
+    getFirstChildByTagNameNS(docDefaults, WORD_NS, "rPrDefault"),
+    WORD_NS,
+    "rPr",
+  );
+  const defaultParagraphStyle = parseParagraphStyle(pPrDefault);
+  const defaultTextStyle = parseRunStyle(rPrDefault);
+  const styles: Record<string, EditorNamedStyle> = {};
+  let defaultParagraphStyleId: string | undefined;
+
+  for (const styleElement of getChildrenByTagNameNS(root, WORD_NS, "style")) {
+    const id = getAttributeValue(styleElement, "styleId");
+    const type = getAttributeValue(styleElement, "type");
+    if (!id || (type !== "paragraph" && type !== "character")) {
+      continue;
+    }
+
+    const name = getAttributeValue(getFirstChildByTagNameNS(styleElement, WORD_NS, "name"), "val") ?? id;
+    const basedOn = getAttributeValue(getFirstChildByTagNameNS(styleElement, WORD_NS, "basedOn"), "val") ?? undefined;
+    const nextStyle = getAttributeValue(getFirstChildByTagNameNS(styleElement, WORD_NS, "next"), "val") ?? undefined;
+    const paragraphStyle = parseParagraphStyle(getFirstChildByTagNameNS(styleElement, WORD_NS, "pPr"));
+    const textStyle = parseRunStyle(getFirstChildByTagNameNS(styleElement, WORD_NS, "rPr"));
+    const isDefaultParagraph =
+      type === "paragraph" && isWordTrue(getAttributeValue(styleElement, "default"));
+
+    if (isDefaultParagraph) {
+      defaultParagraphStyleId = id;
+    }
+
+    styles[id] = {
+      id,
+      name,
+      type,
+      basedOn,
+      nextStyle,
+      paragraphStyle:
+        type === "paragraph" && isDefaultParagraph
+          ? mergeImportedParagraphStyles(defaultParagraphStyle, paragraphStyle)
+          : paragraphStyle,
+      textStyle:
+        type === "paragraph" && isDefaultParagraph
+          ? mergeImportedTextStyles(defaultTextStyle, textStyle)
+          : textStyle,
+    };
+  }
+
+  if (defaultParagraphStyleId && styles[defaultParagraphStyleId]) {
+    return styles;
+  }
+
+  if (defaultParagraphStyle || defaultTextStyle) {
+    styles.Normal = {
+      id: "Normal",
+      name: "Normal",
+      type: "paragraph",
+      paragraphStyle: defaultParagraphStyle,
+      textStyle: defaultTextStyle,
+    };
+  }
+
+  return Object.keys(styles).length > 0 ? styles : undefined;
 }
 
 function parseNumbering(numberingXml: string | null): NumberingMaps {
@@ -953,6 +1089,8 @@ export async function importDocxToEditorDocument(
 
   const numberingXml = (await zip.file("word/numbering.xml")?.async("string")) ?? null;
   const numberingMaps = parseNumbering(numberingXml);
+  const stylesXml = (await zip.file("word/styles.xml")?.async("string")) ?? null;
+  const importedStyles = parseImportedStyles(stylesXml);
   options.onProgress?.("parsing-document");
   const document = new DOMParser().parseFromString(documentXml, "application/xml");
   const body = document.getElementsByTagNameNS(WORD_NS, "body")[0];
@@ -1077,6 +1215,9 @@ export async function importDocxToEditorDocument(
     if (sections.length === 1) {
       doc.pageSettings = sections[0]!.pageSettings;
     }
+    if (importedStyles) {
+      doc.styles = importedStyles;
+    }
     if (hasAssets) {
       doc.assets = assets.assets;
     }
@@ -1091,6 +1232,9 @@ export async function importDocxToEditorDocument(
   );
   if (hasAssets) {
     doc.assets = assets.assets;
+  }
+  if (importedStyles) {
+    doc.styles = importedStyles;
   }
   return doc;
 }
