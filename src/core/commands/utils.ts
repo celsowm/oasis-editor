@@ -233,23 +233,51 @@ export function replaceParagraphsInBlocks(blocks: EditorBlockNode[], newParagrap
   }
 
   let index = 0;
+
   const processBlocks = (nodes: EditorBlockNode[]): EditorBlockNode[] => {
-    return nodes.map(node => {
+    let changed = false;
+    const newNodes: EditorBlockNode[] = [];
+
+    for (const node of nodes) {
       if (node.type === "paragraph") {
-        return newParagraphs[index++] ?? node;
+        const newPara = newParagraphs[index++] ?? node;
+        if (newPara !== node) changed = true;
+        newNodes.push(newPara);
+      } else {
+        let rowsChanged = false;
+        const newRows = [];
+        for (const row of node.rows) {
+          let cellsChanged = false;
+          const newCells = [];
+          for (const cell of row.cells) {
+            const newCellBlocks = processBlocks(cell.blocks) as EditorParagraphNode[];
+            if (newCellBlocks !== cell.blocks) {
+              cellsChanged = true;
+              newCells.push({ ...cell, blocks: newCellBlocks });
+            } else {
+              newCells.push(cell);
+            }
+          }
+          if (cellsChanged) {
+            rowsChanged = true;
+            newRows.push({ ...row, cells: newCells });
+          } else {
+            newRows.push(row);
+          }
+        }
+        if (rowsChanged) {
+          changed = true;
+          newNodes.push({ ...node, rows: newRows });
+        } else {
+          newNodes.push(node);
+        }
       }
-      return {
-        ...node,
-        rows: node.rows.map(row => ({
-          ...row,
-          cells: row.cells.map(cell => ({
-            ...cell,
-            blocks: processBlocks(cell.blocks) as EditorParagraphNode[]
-          }))
-        }))
-      };
-    });
+    }
+
+    if (nodes.length !== newNodes.length) changed = true;
+    return changed ? newNodes : nodes;
   };
+
   return processBlocks(blocks);
 }
 
