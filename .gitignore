@@ -66,3 +66,5 @@ dist-app/
 # Playwright debug screenshots
 *-debug-*.png
 vite.log
+documento_complexo.docx
+~$*.docx

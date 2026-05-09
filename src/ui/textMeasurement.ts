@@ -14,6 +14,8 @@ const DEFAULT_LIST_GUTTER = 24;
 const MIN_CONTENT_WIDTH = 120;
 const TAB_SIZE = 4;
 const DEFAULT_WORD_SINGLE_LINE_RATIO = 1.223;
+const WORD_COMPAT_SHORT_TOKEN_OVERFLOW_PX = 34;
+const WORD_COMPAT_SHORT_TOKEN_MAX_CHARS = 6;
 
 interface MeasuredChar {
   char: string;
@@ -320,6 +322,27 @@ function commitLine(
   });
 }
 
+function canApplyWordShortTokenFit(
+  token: MeasuredToken,
+  lineWidth: number,
+  availableWidth: number,
+  isEmptyLine: boolean,
+): boolean {
+  if (isEmptyLine || token.kind !== "text") {
+    return false;
+  }
+  const text = token.chars.map((char) => char.char).join("");
+  if (
+    text.length === 0 ||
+    text.length > WORD_COMPAT_SHORT_TOKEN_MAX_CHARS ||
+    !/^[A-Za-z]+$/.test(text)
+  ) {
+    return false;
+  }
+  const overflow = lineWidth + token.width - availableWidth;
+  return overflow > 0 && overflow <= WORD_COMPAT_SHORT_TOKEN_OVERFLOW_PX;
+}
+
 export function composeMeasuredParagraphLines(options: TextMeasureOptions): EditorLayoutLine[] {
   const { paragraph, fragments, styles, contentWidth } = options;
   const measuredChars = buildMeasuredChars(paragraph, fragments, styles);
@@ -396,7 +419,11 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
     const availableWidth = getAvailableWidth(paragraph, styles, width, isFirstLine);
     const fitsCurrentLine = lineWidth + token.width <= availableWidth;
     const isEmptyLine = lineStartOffset === lineEndOffset;
-    if (fitsCurrentLine || (isEmptyLine && token.kind === "whitespace")) {
+    if (
+      fitsCurrentLine ||
+      (isEmptyLine && token.kind === "whitespace") ||
+      canApplyWordShortTokenFit(token, lineWidth, availableWidth, isEmptyLine)
+    ) {
       appendChars(token.chars);
       continue;
     }

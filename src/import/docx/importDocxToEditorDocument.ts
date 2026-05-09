@@ -39,6 +39,7 @@ const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 const TWIPS_PER_INCH = 1440;
 const PX_PER_INCH = 96;
+const PAGE_BREAK_MARKER = "\f";
 
 interface NumberingMaps {
   abstractKinds: Map<string, EditorParagraphListStyle["kind"]>;
@@ -210,7 +211,14 @@ function halfPointsToPx(value: string | null | undefined): number | null {
     return null;
   }
 
-  return Math.round((parsed / 2 / 72) * PX_PER_INCH);
+  return Math.round((parsed / 2 / 72) * PX_PER_INCH * 10000) / 10000;
+}
+
+interface ImportedRun {
+  text: string;
+  image?: { src: string; width: number; height: number; alt?: string };
+  styles?: EditorTextStyle;
+  field?: { type: "PAGE" | "NUMPAGES" };
 }
 
 interface SectionProperties {
@@ -586,7 +594,9 @@ async function parseRunElement(
         textParts.push(element.textContent ?? "");
       } else if (element.localName === "tab") {
         textParts.push("\t");
-      } else if (element.localName === "br" || element.localName === "cr") {
+      } else if (element.localName === "br") {
+        textParts.push(getAttributeValue(element, "type") === "page" ? PAGE_BREAK_MARKER : "\n");
+      } else if (element.localName === "cr") {
         textParts.push("\n");
       } else if (element.localName === "drawing") {
         const blip = findElementDeep(element, "blip");
@@ -658,12 +668,7 @@ async function parseRunsContainer(
   assets: AssetRegistry,
   inheritedLink?: string | null,
 ) {
-  const runs: Array<{
-    text: string;
-    image?: { src: string; width: number; height: number; alt?: string };
-    styles?: EditorTextStyle;
-    field?: { type: "PAGE" | "NUMPAGES" };
-  }> = [];
+  const runs: ImportedRun[] = [];
 
   for (let index = 0; index < container.childNodes.length; index += 1) {
     const node = container.childNodes[index];
@@ -741,6 +746,110 @@ async function parseRunsContainer(
   return runs;
 }
 
+function createImportedParagraph(
+  runs: ImportedRun[],
+  paragraphStyle: EditorParagraphStyle | undefined,
+  list: EditorParagraphListStyle | undefined,
+): EditorParagraphNode {
+  const paragraph = createEditorParagraphFromRuns(
+    runs.length > 0
+      ? runs.map((run) => ({ text: run.text, styles: run.styles, image: run.image }))
+      : [{ text: "" }],
+  );
+  runs.forEach((run, index) => {
+    if (run.field) {
+      paragraph.runs[index]!.field = { ...run.field };
+    }
+  });
+  paragraph.style = paragraphStyle ? { ...paragraphStyle } : undefined;
+  for (const run of paragraph.runs) {
+    run.styles = normalizeImportedRunStyle(run.styles, paragraph.style?.styleId);
+  }
+  paragraph.list = list ? { ...list } : undefined;
+  return paragraph;
+}
+
+function splitRunsAtPageBreaks(runs: ImportedRun[]): { segments: ImportedRun[][]; hasPageBreak: boolean } {
+  const segments: ImportedRun[][] = [[]];
+  let hasPageBreak = false;
+
+  const appendRun = (run: ImportedRun, text: string) => {
+    if (text.length === 0 && !run.image && !run.field) {
+      return;
+    }
+    segments[segments.length - 1]!.push({
+      ...run,
+      text,
+    });
+  };
+
+  for (const run of runs) {
+    if (!run.text.includes(PAGE_BREAK_MARKER)) {
+      appendRun(run, run.text);
+      continue;
+    }
+
+    const parts = run.text.split(PAGE_BREAK_MARKER);
+    parts.forEach((part, index) => {
+      appendRun(run, part);
+      if (index < parts.length - 1) {
+        hasPageBreak = true;
+        segments.push([]);
+      }
+    });
+  }
+
+  return { segments, hasPageBreak };
+}
+
+function paragraphHasVisibleContent(runs: ImportedRun[]): boolean {
+  return runs.some((run) => run.image || run.field || run.text.replace(/\s/g, "").length > 0);
+}
+
+async function parseParagraphNodes(
+  paragraphNode: XmlElement,
+  numberingMaps: NumberingMaps,
+  zip: JSZip,
+  relsMap: Map<string, string>,
+  assets: AssetRegistry,
+): Promise<{ paragraphs: EditorParagraphNode[]; pageBreakAfter: boolean }> {
+  const paragraphProperties = getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr");
+  const runs = await parseRunsContainer(paragraphNode, numberingMaps, zip, relsMap, assets);
+  const paragraphStyle = normalizeImportedParagraphStyle(parseParagraphStyle(paragraphProperties));
+  const list = parseParagraphList(paragraphProperties, numberingMaps);
+  const { segments, hasPageBreak } = splitRunsAtPageBreaks(runs);
+
+  if (!hasPageBreak) {
+    return {
+      paragraphs: [createImportedParagraph(runs, paragraphStyle, list)],
+      pageBreakAfter: false,
+    };
+  }
+
+  const paragraphs: EditorParagraphNode[] = [];
+  let pendingPageBreakBefore = false;
+  for (let index = 0; index < segments.length; index += 1) {
+    const segment = segments[index]!;
+    if (index > 0) {
+      pendingPageBreakBefore = true;
+    }
+    if (!paragraphHasVisibleContent(segment)) {
+      continue;
+    }
+
+    const style = pendingPageBreakBefore
+      ? { ...(paragraphStyle ?? {}), pageBreakBefore: true }
+      : paragraphStyle;
+    paragraphs.push(createImportedParagraph(segment, style, list));
+    pendingPageBreakBefore = false;
+  }
+
+  return {
+    paragraphs,
+    pageBreakAfter: pendingPageBreakBefore,
+  };
+}
+
 async function parseParagraphNode(
   paragraphNode: XmlElement,
   numberingMaps: NumberingMaps,
@@ -748,23 +857,8 @@ async function parseParagraphNode(
   relsMap: Map<string, string>,
   assets: AssetRegistry,
 ) {
-  const paragraphProperties = getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr");
-  const runs = await parseRunsContainer(paragraphNode, numberingMaps, zip, relsMap, assets);
-
-  const paragraph = createEditorParagraphFromRuns(
-    runs.length > 0 ? runs.map((run) => ({ text: run.text, styles: run.styles, image: run.image })) : [{ text: "" }],
-  );
-  runs.forEach((run, index) => {
-    if (run.field) {
-      paragraph.runs[index]!.field = { ...run.field };
-    }
-  });
-  paragraph.style = normalizeImportedParagraphStyle(parseParagraphStyle(paragraphProperties));
-  for (const run of paragraph.runs) {
-    run.styles = normalizeImportedRunStyle(run.styles, paragraph.style?.styleId);
-  }
-  paragraph.list = parseParagraphList(paragraphProperties, numberingMaps);
-  return paragraph;
+  const parsed = await parseParagraphNodes(paragraphNode, numberingMaps, zip, relsMap, assets);
+  return parsed.paragraphs[0] ?? createEditorParagraphFromRuns([{ text: "" }]);
 }
 
 async function parseTableNode(
@@ -874,6 +968,15 @@ export async function importDocxToEditorDocument(
   // Parse body into sections separated by sectPr elements
   const sectionProps: SectionProperties[] = [];
   const sectionBlocks: EditorBlockNode[][] = [[]];
+  let pendingPageBreakBefore = false;
+
+  const appendBodyBlock = (block: EditorBlockNode) => {
+    if (pendingPageBreakBefore && block.type === "paragraph") {
+      block.style = { ...(block.style ?? {}), pageBreakBefore: true };
+      pendingPageBreakBefore = false;
+    }
+    sectionBlocks[sectionBlocks.length - 1]!.push(block);
+  };
 
   for (let index = 0; index < body.childNodes.length; index += 1) {
     const node = body.childNodes[index];
@@ -890,14 +993,17 @@ export async function importDocxToEditorDocument(
       // sectPr marks the end of a section
       sectionProps.push(parseSectionProperties(element));
       sectionBlocks.push([]);
+      pendingPageBreakBefore = false;
     } else if (element.localName === "p") {
-      sectionBlocks[sectionBlocks.length - 1]!.push(
-        await parseParagraphNode(element, numberingMaps, zip, relsMap, assets),
-      );
+      const parsedParagraph = await parseParagraphNodes(element, numberingMaps, zip, relsMap, assets);
+      for (const paragraph of parsedParagraph.paragraphs) {
+        appendBodyBlock(paragraph);
+      }
+      if (parsedParagraph.pageBreakAfter) {
+        pendingPageBreakBefore = true;
+      }
     } else if (element.localName === "tbl") {
-      sectionBlocks[sectionBlocks.length - 1]!.push(
-        await parseTableNode(element, numberingMaps, zip, relsMap, assets),
-      );
+      appendBodyBlock(await parseTableNode(element, numberingMaps, zip, relsMap, assets));
     }
   }
 

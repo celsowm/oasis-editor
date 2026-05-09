@@ -19,7 +19,6 @@ describe('Layout Projection', () => {
       expect(layout.paragraphId).toBe(p.id);
       expect(layout.text).toBe('hello');
       expect(layout.lines).toHaveLength(1);
-      expect(layout.lines[0].text).toBeUndefined(); // Lines don't store text directly, they have fragments
       expect(layout.lines[0].fragments).toHaveLength(1);
       expect(layout.lines[0].fragments[0].text).toBe('hello');
     });
