@@ -1,4 +1,4 @@
-import {
+﻿import {
   createEffect,
   createMemo,
   createSignal,
@@ -130,6 +130,13 @@ import { exportEditorDocumentToDocxBlob } from "../export/docx/exportEditorDocum
 import { importDocxInWorker } from "../import/docx/importDocxInWorker.js";
 import type { DocxImportStage } from "../import/docx/importDocxToEditorDocument.js";
 import { createEditorLogger } from "../utils/logger.js";
+import {
+  markEnd,
+  markStart,
+  recordDuration,
+  startLongTaskObserver,
+  installGlobalReport,
+} from "../utils/performanceMetrics.js";
 import type {
   CaretBox,
   InputBox,
@@ -996,6 +1003,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   onMount(() => {
     startIconObserver();
+    startLongTaskObserver();
+    installGlobalReport();
   });
 
   onCleanup(() => {
@@ -1009,6 +1018,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const handleTextInput = (
     event: InputEvent & { currentTarget: HTMLTextAreaElement },
   ) => {
+    markStart("input:text");
     if (isReadOnly()) {
       logger.debug(
         `input:readonly ignored value=${JSON.stringify(event.currentTarget.value)}`,
@@ -1060,6 +1070,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     );
     event.currentTarget.value = "";
     focusInput();
+    markEnd("input:text");
   };
 
   const handleCompositionStart = () => {
@@ -2097,7 +2108,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     logger.debug(
       `key:down ${combo} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`,
     );
+    markStart("input-to-layout");
     rawHandleKeyDown(event);
+    markEnd("input-to-layout");
   };
 
   const tableSelectionLabel = (): string | null => {

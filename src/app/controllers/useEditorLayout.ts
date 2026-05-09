@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup } from "solid-js";
+﻿import { createEffect, createSignal, onCleanup } from "solid-js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
@@ -15,6 +15,7 @@ import {
 import { normalizeSelection } from "../../core/selection.js";
 import { buildTableCellLayout } from "../../core/tableLayout.js";
 import { createEditorLogger } from "../../utils/logger.js";
+import { recordDuration } from "../../utils/performanceMetrics.js";
 import { getCaretSlotRects } from "../../ui/caretGeometry.js";
 import {
   getEmptyBlockRect,
@@ -617,6 +618,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       heightsChanged,
       paragraphLayoutsChanged,
     });
+    recordDuration("layout:sync", Math.round((performance.now() - startedAt) * 100) / 100);
 
     return heightsChanged || paragraphLayoutsChanged;
   };
@@ -744,6 +746,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
         blocksMeasured: Object.keys(measuredBlockHeights()).length,
         paragraphsMeasured: measuredCount,
       });
+      recordDuration("layout:deferred", Math.round((performance.now() - startedAt) * 100) / 100);
       resolveStabilization();
     };
 
