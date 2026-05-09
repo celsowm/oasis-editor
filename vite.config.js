@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { existsSync } from 'fs';
 import { resolve } from 'path';
 import dts from 'vite-plugin-dts';
 import solidPlugin from 'vite-plugin-solid';
@@ -17,11 +18,15 @@ export default defineConfig(({ mode }) => {
         formats: ['es', 'umd'],
       } : undefined,
       rollupOptions: {
-        input: isLib ? undefined : {
-          root: resolve(__dirname, 'index.html'),
-          oasisEditor: resolve(__dirname, 'oasis-editor/index.html'),
-          oasisEditorLegacy: resolve(__dirname, 'oasis-editor-legacy/index.html'),
-        },
+        input: isLib ? undefined : Object.fromEntries(
+          [
+            ['root', 'index.html'],
+            ['oasisEditor', 'oasis-editor/index.html'],
+            ['oasisEditorLegacy', 'oasis-editor-legacy/index.html'],
+          ]
+            .filter(([, relativePath]) => existsSync(resolve(__dirname, relativePath)))
+            .map(([key, relativePath]) => [key, resolve(__dirname, relativePath)]),
+        ),
         output: isLib ? {
           assetFileNames: (assetInfo) => {
             if (assetInfo.name === 'style.css') return 'oasis-editor.css';
