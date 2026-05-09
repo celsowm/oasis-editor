@@ -5,6 +5,7 @@ import {
   getParagraphText,
   getParagraphs,
   getDocumentSections,
+  getParagraphById,
   positionToParagraphOffset,
   type EditorBlockNode,
   type EditorLayoutParagraph,
@@ -75,9 +76,16 @@ function getCollapsedCaretRectFast(
     typeof CSS !== "undefined" && typeof CSS.escape === "function"
       ? CSS.escape(paragraphId)
       : paragraphId.replace(/"/g, '\\"');
+  const paragraphElement = surface.querySelector<HTMLElement>(
+    `[data-paragraph-id="${escapedId}"]`,
+  );
+  if (!paragraphElement) {
+    return null;
+  }
+
   // Caret sits on the left edge of the char at `offset`.
-  const charAtOffset = surface.querySelector<HTMLElement>(
-    `[data-paragraph-id="${escapedId}"] [data-char-index="${offset}"]`,
+  const charAtOffset = paragraphElement.querySelector<HTMLElement>(
+    `[data-char-index="${offset}"]`,
   );
   if (charAtOffset) {
     const rect = charAtOffset.getBoundingClientRect();
@@ -87,8 +95,8 @@ function getCollapsedCaretRectFast(
   }
   if (offset > 0) {
     // Fallback: char before caret — caret sits on its right edge.
-    const charBefore = surface.querySelector<HTMLElement>(
-      `[data-paragraph-id="${escapedId}"] [data-char-index="${offset - 1}"]`,
+    const charBefore = paragraphElement.querySelector<HTMLElement>(
+      `[data-char-index="${offset - 1}"]`,
     );
     if (charBefore) {
       const rect = charBefore.getBoundingClientRect();
@@ -393,6 +401,18 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
         const endOffset =
           paragraphIndex === normalized.endIndex ? normalized.endParagraphOffset : paragraphText.length;
 
+        if (startOffset === 0 && endOffset >= paragraphText.length) {
+          const paragraphRect =
+            getEmptyBlockRect(paragraphElement) ?? paragraphElement.getBoundingClientRect();
+          nextSelectionBoxes.push({
+            left: paragraphRect.left - surfaceRect.left,
+            top: paragraphRect.top - surfaceRect.top,
+            width: Math.max(12, paragraphRect.width || 12),
+            height: paragraphRect.height || 28,
+          });
+          continue;
+        }
+
         const layout =
           getParagraphLayout(surface, paragraph, {
             preferCache: reason === "scroll",
@@ -435,18 +455,8 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
 
     setSelectionBoxes(nextSelectionBoxes);
 
-    const selectedParagraph = getParagraphBoundaryElement(
-      surface,
-      props.state.selection.focus.paragraphId,
-      "end",
-    );
-    if (!selectedParagraph) {
-      setCaretBox((current) => ({ ...current, visible: false }));
-      return;
-    }
-
     const selectedParagraphNode =
-      getParagraphsByIdLazy().get(props.state.selection.focus.paragraphId) ??
+      getParagraphById(props.state.document, props.state.selection.focus.paragraphId) ??
       getParagraphsLazy()[0];
     if (!selectedParagraphNode) {
       setCaretBox((current) => ({ ...current, visible: false }));
@@ -459,7 +469,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
 
     // Fast path for collapsed selection: avoid measuring every char rect in the
     // paragraph (O(n) DOM reads + forced reflow). Look up only the char span
-    // at the caret offset.
+    // at the caret offset and avoid the broader paragraph-boundary query.
     if (normalized.isCollapsed) {
       const focusOffset = positionToParagraphOffset(
         selectedParagraphNode,
@@ -477,6 +487,16 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
         setCaretBox({ left: caretLeft, top: caretTop, height: fastRect.height, visible: true });
         return;
       }
+    }
+
+    const selectedParagraph = getParagraphBoundaryElement(
+      surface,
+      props.state.selection.focus.paragraphId,
+      "end",
+    );
+    if (!selectedParagraph) {
+      setCaretBox((current) => ({ ...current, visible: false }));
+      return;
     }
 
     const layout =
@@ -739,22 +759,6 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       scheduleFrame(() => resolve());
     });
     requestInputBoxSync("import");
-    // Only measure block heights and the paragraphs touching the current
-    // selection. Per-paragraph char rect measurement is now lazy: it happens
-    // on demand (e.g. non-collapsed selection rendering, click outside text),
-    // which avoids stalling the import for many seconds on large documents.
-    const focusId = props.state.selection.focus.paragraphId;
-    const anchorId = props.state.selection.anchor.paragraphId;
-    const selectionParagraphIds = Array.from(
-      new Set([anchorId, focusId].filter((id): id is string => Boolean(id))),
-    );
-    const pending =
-      scheduleDeferredLayoutMeasurement("import", {
-        paragraphIds: selectionParagraphIds,
-        resolveWhenDone: true,
-        blockHeightScope: "visible",
-      }) ?? Promise.resolve();
-    await pending;
     requestInputBoxSync("selection");
   };
 
@@ -834,11 +838,9 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     }
 
     const handleViewportScroll = () => {
-      requestInputBoxSync("scroll");
-      scheduleDeferredLayoutMeasurement("scroll", {
-        paragraphIds: [],
-        blockHeightScope: "visible",
-      });
+      // Caret and selection overlays are positioned inside the scroll content,
+      // so they move naturally with the document. Recomputing them on every
+      // scroll can force geometry reads on offscreen text.
     };
     const handleWindowResize = () => {
       invalidateParagraphLayouts();

@@ -1,4 +1,4 @@
-import { For, Index, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Index, Show, createMemo } from "solid-js";
 import type { Accessor } from "solid-js";
 import {
   getPageBodyTop,
@@ -409,15 +409,6 @@ function renderParagraph(
   const interactive = options?.interactive ?? true;
   const testId = options?.testId ?? "editor-block";
   const paragraphAlign = getParagraphAlign(paragraph, state);
-  const isEmptyBlockSelected = () => {
-    const current = normalized();
-    return (
-      !current.isCollapsed &&
-      getParagraphText(paragraph).length === 0 &&
-      paragraphIndex >= current.startIndex &&
-      paragraphIndex <= current.endIndex
-    );
-  };
   const isCharSelected = (charIndex: number) => {
     const current = normalized();
     if (current.isCollapsed) {
@@ -459,10 +450,7 @@ function renderParagraph(
         when={chars.length > 0}
         fallback={
           <span
-            classList={{
-              "oasis-editor-empty-char": true,
-              "oasis-editor-empty-char-selected": isEmptyBlockSelected(),
-            }}
+            class="oasis-editor-empty-char"
             data-empty-block="true"
             data-testid="editor-empty-char"
           >
@@ -552,8 +540,6 @@ function renderParagraph(
                               <span
                                 classList={{
                                   "oasis-editor-char": true,
-                                  "oasis-editor-char-selected":
-                                    isCharSelected(char.paragraphOffset),
                                   "oasis-editor-image-char": Boolean(
                                     fragment.image,
                                   ),
@@ -1011,12 +997,8 @@ function canReuseLayoutPage(
 }
 
 export function EditorSurface(props: EditorSurfaceProps) {
-  let rootRef: HTMLDivElement | undefined;
   let reusableLayoutBlocks = new Map<string, EditorLayoutBlock>();
   let reusableLayoutPages = new Map<string, EditorLayoutPage>();
-  const [visiblePageIndexes, setVisiblePageIndexes] = createSignal<Set<number>>(
-    new Set([0, 1, 2]),
-  );
 
   const preserveStableLayoutIdentity = (
     layout: EditorLayoutDocument,
@@ -1072,58 +1054,10 @@ export function EditorSurface(props: EditorSurfaceProps) {
     );
   });
 
-  onMount(() => {
-    let frame: number | null = null;
-    const viewport = rootRef?.closest<HTMLElement>(".oasis-editor-editor");
-    const scheduleVisiblePageUpdate = () => {
-      if (frame !== null) {
-        return;
-      }
-      frame = requestAnimationFrame(() => {
-        frame = null;
-        if (!rootRef || !viewport) {
-          return;
-        }
-
-        const viewportRect = viewport.getBoundingClientRect();
-        const next = new Set<number>();
-        const pages = rootRef.querySelectorAll<HTMLElement>('[data-testid="editor-page"]');
-        pages.forEach((page) => {
-          const index = Number(page.dataset.pageIndex ?? -1);
-          if (index < 0) {
-            return;
-          }
-          const rect = page.getBoundingClientRect();
-          if (rect.bottom >= viewportRect.top - 1400 && rect.top <= viewportRect.bottom + 1400) {
-            next.add(index);
-          }
-        });
-
-        if (next.size === 0) {
-          next.add(0);
-        }
-        setVisiblePageIndexes(next);
-      });
-    };
-
-    scheduleVisiblePageUpdate();
-    viewport?.addEventListener("scroll", scheduleVisiblePageUpdate, { passive: true });
-    window.addEventListener("resize", scheduleVisiblePageUpdate);
-
-    onCleanup(() => {
-      if (frame !== null) {
-        cancelAnimationFrame(frame);
-      }
-      viewport?.removeEventListener("scroll", scheduleVisiblePageUpdate);
-      window.removeEventListener("resize", scheduleVisiblePageUpdate);
-    });
-  });
-
   return (
-    <div ref={rootRef} class="oasis-editor-paper-stack">
+    <div class="oasis-editor-paper-stack">
       <Index each={documentLayout().pages}>
         {(page, index) => {
-          const pageIsRendered = () => visiblePageIndexes().has(index);
           const pageSettings = () => page().pageSettings;
           const contentWidth = () => getPageContentWidth(pageSettings());
           const bodyTop = () => page().bodyTop ?? getPageBodyTop(pageSettings());
@@ -1155,7 +1089,6 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 "min-height": `${pageSettings().height}px`,
               }}
             >
-              <Show when={pageIsRendered()}>
               <div
                 class="oasis-editor-page-header-zone"
                 classList={{
@@ -1333,7 +1266,6 @@ export function EditorSurface(props: EditorSurfaceProps) {
                   }}
                 </For>
               </div>
-              </Show>
             </div>
             </>
           );

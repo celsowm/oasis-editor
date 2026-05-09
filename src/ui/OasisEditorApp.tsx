@@ -628,7 +628,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const focusInput = () => {
     setFocused(true);
     queueMicrotask(() => {
-      textareaRef?.focus();
+      textareaRef?.focus({ preventScroll: true });
       if (textareaRef) {
         textareaRef.selectionStart = textareaRef.value.length;
         textareaRef.selectionEnd = textareaRef.value.length;
@@ -640,7 +640,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setFocused(true);
     queueMicrotask(() => {
       requestAnimationFrame(() => {
-        textareaRef?.focus();
+        textareaRef?.focus({ preventScroll: true });
         if (textareaRef) {
           textareaRef.selectionStart = textareaRef.value.length;
           textareaRef.selectionEnd = textareaRef.value.length;
@@ -1747,46 +1747,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
     clearPreferredColumn();
     resetTransactionGrouping();
-    const offset = resolveParagraphClickOffset(paragraph, event);
-    const position = paragraphOffsetToPosition(paragraph, offset);
 
     imageOps.stopImageDrag();
     imageOps.stopImageResize();
-
-    const cellLocation = findParagraphTableLocation(
-      state.document,
-      paragraphId,
-      getActiveSectionIndex(state),
-    );
-    const anchorPosition = cellLocation
-      ? (() => {
-          const hasSections =
-            state.document.sections && state.document.sections.length > 0;
-          const section = hasSections
-            ? state.document.sections![getActiveSectionIndex(state)]
-            : null;
-
-          let targetBlocks: EditorBlockNode[] = [];
-          if (section) {
-            if (cellLocation.zone === "header") targetBlocks = section.header || [];
-            else if (cellLocation.zone === "footer")
-              targetBlocks = section.footer || [];
-            else targetBlocks = section.blocks;
-          } else {
-            targetBlocks = state.document.blocks;
-          }
-
-          const block = targetBlocks[cellLocation.blockIndex];
-          const cellParagraph =
-            block?.type === "table"
-              ? block.rows[cellLocation.rowIndex]?.cells[cellLocation.cellIndex]
-                  ?.blocks[0]
-              : undefined;
-          return cellParagraph
-            ? paragraphOffsetToPosition(cellParagraph, 0)
-            : position;
-        })()
-      : position;
 
     const applyWithZone = (
       newState: EditorState,
@@ -1883,20 +1846,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       }
     };
 
-    if (event.shiftKey) {
-      dragAnchor = state.selection.anchor;
-      applyWithZone(
-        setSelection(state, {
-          anchor: state.selection.anchor,
-          focus: position,
-        }),
-      );
-      window.addEventListener("mousemove", handleWindowMouseMove);
-      window.addEventListener("mouseup", handleWindowMouseUp);
-      focusInputAfterPointerSelection();
-      return;
-    }
-
     if (event.detail >= 3) {
       dragAnchor = null;
       const targetPos = paragraphOffsetToPosition(paragraph, 0);
@@ -1911,6 +1860,58 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         targetPos,
       );
       stopDragging();
+      focusInputAfterPointerSelection();
+      return;
+    }
+
+    const offset = resolveParagraphClickOffset(paragraph, event);
+    const position = paragraphOffsetToPosition(paragraph, offset);
+
+    const cellLocation = findParagraphTableLocation(
+      state.document,
+      paragraphId,
+      getActiveSectionIndex(state),
+    );
+    const anchorPosition = cellLocation
+      ? (() => {
+          const hasSections =
+            state.document.sections && state.document.sections.length > 0;
+          const section = hasSections
+            ? state.document.sections![getActiveSectionIndex(state)]
+            : null;
+
+          let targetBlocks: EditorBlockNode[] = [];
+          if (section) {
+            if (cellLocation.zone === "header") targetBlocks = section.header || [];
+            else if (cellLocation.zone === "footer")
+              targetBlocks = section.footer || [];
+            else targetBlocks = section.blocks;
+          } else {
+            targetBlocks = state.document.blocks;
+          }
+
+          const block = targetBlocks[cellLocation.blockIndex];
+          const cellParagraph =
+            block?.type === "table"
+              ? block.rows[cellLocation.rowIndex]?.cells[cellLocation.cellIndex]
+                  ?.blocks[0]
+              : undefined;
+          return cellParagraph
+            ? paragraphOffsetToPosition(cellParagraph, 0)
+            : position;
+        })()
+      : position;
+
+    if (event.shiftKey) {
+      dragAnchor = state.selection.anchor;
+      applyWithZone(
+        setSelection(state, {
+          anchor: state.selection.anchor,
+          focus: position,
+        }),
+      );
+      window.addEventListener("mousemove", handleWindowMouseMove);
+      window.addEventListener("mouseup", handleWindowMouseUp);
       focusInputAfterPointerSelection();
       return;
     }
