@@ -30,6 +30,7 @@ interface UseEditorLayoutProps {
   state: EditorState;
   surfaceRef: () => HTMLDivElement | undefined;
   viewportRef: () => HTMLDivElement | undefined;
+  isImporting?: () => boolean;
 }
 
 type LayoutSyncReason =
@@ -40,7 +41,7 @@ type LayoutSyncReason =
   | "import";
 
 const logger = createEditorLogger("layout");
-const DEFAULT_BATCH_SIZE = 8;
+const DEFAULT_BATCH_SIZE = 32;
 const VISIBLE_PAGE_OVERSCAN_PX = 900;
 
 function scheduleFrame(callback: () => void): number {
@@ -755,14 +756,21 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
   };
 
   const stabilizeLayoutAfterImport = async () => {
+    const startedAt = performance.now();
+    logger.info("layout:import-stabilize-start");
+    
     clearDeferredMeasurement();
     invalidateParagraphLayouts();
     setMeasuredBlockHeights({});
+    
     await new Promise<void>((resolve) => {
       scheduleFrame(() => resolve());
     });
+    
     requestInputBoxSync("import");
     requestInputBoxSync("selection");
+    
+    logger.info("layout:import-stabilize-done", { durationMs: Math.round((performance.now() - startedAt) * 100) / 100 });
   };
 
   createEffect(() => {
@@ -778,6 +786,17 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
 
   createEffect(() => {
     const paragraphs = getParagraphs(props.state);
+
+    // Fast path during import: skip signature diff entirely. All paragraphs
+    // are new, so there's nothing to compare against. Just invalidate everything
+    // and let the DOM render naturally. The measurement will happen via the
+    // normal import stabilization flow.
+    if (props.isImporting?.()) {
+      previousParagraphSignatures.clear();
+      previousBlockIds = [];
+      return;
+    }
+
     const nextSignatures = new Map<string, string>();
     const changedParagraphIds = new Set<string>();
     for (const paragraph of paragraphs) {
@@ -803,7 +822,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       }
     }
 
-    const nextBlockIds = getDocumentSections(props.state.document).flatMap(section => 
+    const nextBlockIds = getDocumentSections(props.state.document).flatMap(section =>
       [...(section.header || []), ...section.blocks, ...(section.footer || [])].map(b => b.id)
     );
     const blockStructureChanged =
@@ -813,12 +832,10 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     if (changedParagraphIds.size > 0) {
       invalidateParagraphLayouts(changedParagraphIds);
       requestInputBoxSync("content-change");
-      // Skip deferred whole-paragraph measurement on plain text edits: the
-      // collapsed-caret fast path in syncInputBox does not need the measured
-      // line model, and re-measuring every char rect of the edited paragraph
-      // on every keystroke is the dominant source of typing latency. We still
-      // run the measurement when the block structure changes (paragraphs
-      // added/removed/reordered), since pagination relies on it.
+      // Skip deferred measurement during import: measuring hundreds of
+      // paragraphs via getBoundingClientRect on every batch causes massive
+      // layout thrashing. The measurement will happen naturally after the
+      // DOM is fully rendered.
       if (blockStructureChanged) {
         scheduleDeferredLayoutMeasurement("content-change", {
           paragraphIds: Array.from(changedParagraphIds).filter((paragraphId) =>

@@ -380,6 +380,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     state,
     surfaceRef: () => surfaceRef,
     viewportRef: () => viewportRef,
+    isImporting: () => importProgress()?.phase !== "done" && importProgress()?.phase !== "error" && importProgress() !== null,
   });
 
   const { status: persistenceStatus } = useEditorPersistence(
@@ -487,6 +488,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   });
 
   createEffect(() => {
+    // Skip expensive deep-clone during import to avoid blocking the main thread
+    if (importProgress()?.phase !== "done" && importProgress()?.phase !== "error" && importProgress() !== null) {
+      return;
+    }
     props.onStateChange?.(cloneState(state));
   });
 
@@ -825,7 +830,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           const progressChanged =
             roundedProgress !== undefined &&
             (lastProgressValue < 0 || roundedProgress - lastProgressValue >= 1);
-          const timeElapsed = now - lastProgressAt >= 80;
+          const timeElapsed = now - lastProgressAt >= 40;
           if (!stageChanged && !progressChanged && !timeElapsed) {
             return;
           }

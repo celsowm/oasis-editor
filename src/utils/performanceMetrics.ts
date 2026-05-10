@@ -5,6 +5,15 @@
  * a global report via `window.__OASIS_PERF_REPORT()`.
  */
 
+function formatTimestamp(): string {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, "0");
+  const m = String(now.getMinutes()).padStart(2, "0");
+  const s = String(now.getSeconds()).padStart(2, "0");
+  const ms = String(now.getMilliseconds()).padStart(3, "0");
+  return `${h}:${m}:${s}.${ms}`;
+}
+
 interface PerfMark {
   name: string;
   duration: number;
@@ -45,7 +54,7 @@ export function markEnd(label: string): void {
     console.info(
       `%c[perf] ${label}`,
       "color: #f59e0b;",
-      `${duration}ms`,
+      `${formatTimestamp()} ${duration}ms`,
     );
 
     // Clean up marks from the browser timeline
@@ -68,7 +77,7 @@ export function recordDuration(label: string, durationMs: number): void {
   console.debug(
     `%c[perf] ${label}`,
     "color: #f59e0b;",
-    `${Math.round(durationMs * 100) / 100}ms`,
+    `${formatTimestamp()} ${Math.round(durationMs * 100) / 100}ms`,
   );
 }
 

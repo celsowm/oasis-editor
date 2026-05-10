@@ -39,6 +39,12 @@ export interface ImportDocxToEditorDocumentOptions {
 }
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+
+async function yieldToEventLoop(every: number, counter: number): Promise<void> {
+  if (counter > 0 && counter % every === 0) {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  }
+}
 const DRAWINGML_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
 const OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 const TWIPS_PER_INCH = 1440;
@@ -1387,6 +1393,9 @@ export async function importDocxToEditorDocument(
       appendBodyBlock(await parseTableNode(element, numberingMaps, zip, relsMap, assets, themeFonts));
       reportBodyProgress();
     }
+
+    // Yield to event loop every 50 items so progress messages are delivered
+    await yieldToEventLoop(50, completedBodyWorkItems);
   }
 
   // Ensure at least one section
@@ -1443,6 +1452,9 @@ export async function importDocxToEditorDocument(
     if (props.headerRId || props.footerRId) {
       reportHeaderFooterProgress();
     }
+
+    // Yield to event loop every 2 sections so progress messages are delivered
+    await yieldToEventLoop(2, processedSections);
 
     const rawPageSettings = props.pageSettings ?? {
       width: 816,
