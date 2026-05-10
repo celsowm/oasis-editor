@@ -1189,8 +1189,7 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       targetBlocks = current.document.blocks;
     }
 
-    const nextBlocks = targetBlocks.map(cloneBlock);
-    const tableBlock = nextBlocks[location.blockIndex] as EditorTableNode;
+    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return edit(current);
     }
@@ -1222,7 +1221,15 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       (block): block is EditorParagraphNode => block.type === "paragraph",
     );
 
-    targetCell.blocks.splice(0, targetCell.blocks.length, ...replacementParagraphs);
+    // Structural sharing: Create a new cell, row, table, and blocks array to reflect the change.
+    const nextBlocks = [...targetBlocks];
+    const nextTableBlock = { ...tableBlock, rows: [...tableBlock.rows] };
+    const nextTargetRow = { ...nextTableBlock.rows[location.rowIndex], cells: [...nextTableBlock.rows[location.rowIndex].cells] };
+    const nextTargetCell = { ...nextTargetRow.cells[location.cellIndex], blocks: replacementParagraphs };
+
+    nextTargetRow.cells[location.cellIndex] = nextTargetCell;
+    nextTableBlock.rows[location.rowIndex] = nextTargetRow;
+    nextBlocks[location.blockIndex] = nextTableBlock;
 
     const nextState = updateBlocksInCurrentSection(current, nextBlocks, zone);
     return {
