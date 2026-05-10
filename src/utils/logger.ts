@@ -149,6 +149,15 @@ function formatInlineSummary(payload: unknown): string | null {
   }
 }
 
+function formatTimestamp(): string {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, "0");
+  const m = String(now.getMinutes()).padStart(2, "0");
+  const s = String(now.getSeconds()).padStart(2, "0");
+  const ms = String(now.getMilliseconds()).padStart(3, "0");
+  return `${h}:${m}:${s}.${ms}`;
+}
+
 export type EditorLogger = ReturnType<typeof createEditorLogger>;
 
 export function createEditorLogger(scope: string) {
@@ -157,7 +166,8 @@ export function createEditorLogger(scope: string) {
       return;
     }
 
-    const prefix = `[oasis-editor:${scope}] ${message}`;
+    const timestamp = formatTimestamp();
+    const prefix = `[${timestamp} oasis-editor:${scope}] ${message}`;
     const debugSink = isLocalhostLike() ? console.info : console.debug;
     const sink =
       level === "error"
