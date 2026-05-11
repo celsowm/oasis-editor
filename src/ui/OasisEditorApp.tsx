@@ -185,6 +185,7 @@ import { createEditorTableOperations } from "../app/controllers/useEditorTableOp
 import { createEditorImageOperations } from "../app/controllers/useEditorImageOperations.js";
 import { createEditorTableResize } from "../app/controllers/useEditorTableResize.js";
 import { createEditorTableDrag } from "../app/controllers/useEditorTableDrag.js";
+import { createEditorSurfaceEvents } from "../app/controllers/useEditorSurfaceEvents.js";
 import { cloneStyle } from "../core/commands/utils.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
@@ -1158,6 +1159,24 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     focusInput,
   });
 
+  const surfaceEvents = createEditorSurfaceEvents({
+    state: () => state,
+    applyState,
+    surfaceRef: () => surfaceRef,
+    tableResize,
+    imageOps,
+    clearPendingCaretTextStyle,
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    focusInputAfterPointerSelection,
+    resolvePositionAtSurfacePoint,
+    resolveParagraphClickOffset,
+    findPointerParagraphElement,
+    getDocumentParagraphs,
+    getParagraphById,
+    logger,
+  });
+
   onMount(() => {
     startIconObserver();
     startLongTaskObserver();
@@ -1167,7 +1186,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   onCleanup(() => {
     onCleanupHook();
-    stopDragging();
+    surfaceEvents.stopDragging();
     imageOps.stopImageDrag();
     imageOps.stopImageResize();
     stopIconObserver();
@@ -1270,6 +1289,123 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     );
     event.currentTarget.value = "";
     focusInput();
+  };
+
+  const moveSelectionToParagraphBoundary = (
+    boundary: "start" | "end",
+    extend: boolean,
+  ) => {
+    const targetParagraph = getParagraphs(state).find(
+      (paragraph) => paragraph.id === state.selection.focus.paragraphId,
+    );
+    if (!targetParagraph) {
+      return false;
+    }
+
+    const targetOffset =
+      boundary === "start" ? 0 : getParagraphText(targetParagraph).length;
+    const targetPosition = paragraphOffsetToPosition(
+      targetParagraph,
+      targetOffset,
+    );
+    clearPreferredColumn();
+    applyState(
+      setSelection(state, {
+        anchor: extend ? state.selection.anchor : targetPosition,
+        focus: targetPosition,
+      }),
+    );
+    return true;
+  };
+
+  const moveSelectionToDocumentBoundary = (
+    boundary: "start" | "end",
+    extend: boolean,
+  ) => {
+    const paragraphs = getParagraphs(state);
+    if (paragraphs.length === 0) {
+      return false;
+    }
+
+    const targetParagraph =
+      boundary === "start" ? paragraphs[0] : paragraphs[paragraphs.length - 1];
+    const targetOffset =
+      boundary === "start" ? 0 : getParagraphText(targetParagraph).length;
+    const targetPosition = paragraphOffsetToPosition(
+      targetParagraph,
+      targetOffset,
+    );
+    clearPreferredColumn();
+    applyState(
+      setSelection(state, {
+        anchor: extend ? state.selection.anchor : targetPosition,
+        focus: targetPosition,
+      }),
+    );
+    return true;
+  };
+
+  const moveSelectionByWord = (
+    direction: "left" | "right",
+    extend: boolean,
+  ) => {
+    const paragraphs = getParagraphs(state);
+    const focusParagraphIndex = paragraphs.findIndex(
+      (paragraph) => paragraph.id === state.selection.focus.paragraphId,
+    );
+    const focusParagraph = paragraphs[focusParagraphIndex];
+    if (!focusParagraph) {
+      return false;
+    }
+
+    const paragraphText = getParagraphText(focusParagraph);
+    const focusOffset = state.selection.focus.offset;
+    const paragraphLength = paragraphText.length;
+
+    if (!extend && !isSelectionCollapsed(state.selection)) {
+      clearPreferredColumn();
+      applyState(
+        direction === "left"
+          ? moveSelectionLeft(state)
+          : moveSelectionRight(state),
+      );
+      return true;
+    }
+
+    let targetParagraph = focusParagraph;
+    let targetOffset = focusOffset;
+
+    if (direction === "left") {
+      if (focusOffset === 0 && focusParagraphIndex > 0) {
+        targetParagraph = paragraphs[focusParagraphIndex - 1]!;
+        targetOffset = getParagraphText(targetParagraph).length;
+      } else {
+        targetOffset = findPreviousWordBoundary(paragraphText, focusOffset);
+      }
+    } else {
+      if (
+        focusOffset === paragraphLength &&
+        focusParagraphIndex < paragraphs.length - 1
+      ) {
+        targetParagraph = paragraphs[focusParagraphIndex + 1]!;
+        targetOffset = 0;
+      } else {
+        targetOffset = findNextWordBoundary(paragraphText, focusOffset);
+      }
+    }
+
+    const targetPosition = paragraphOffsetToPosition(
+      targetParagraph,
+      targetOffset,
+    );
+    clearPreferredColumn();
+    applyState(
+      setSelection(state, {
+        anchor: extend ? state.selection.anchor : targetPosition,
+        focus: targetPosition,
+      }),
+    );
+    return true;
   };
 
   const moveVerticalByBlock = (direction: -1 | 1) => {
@@ -1471,650 +1607,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     );
     focusInput();
     return true;
-  };
-
-  const stopDragging = () => {
-    dragAnchor = null;
-    window.removeEventListener("mousemove", handleWindowMouseMove);
-    window.removeEventListener("mouseup", handleWindowMouseUp);
-  };
-
-  let imageDragCursorStyle: HTMLStyleElement | null = null;
-
-  const showImageDragCursor = () => {
-    if (imageDragCursorStyle) return;
-    imageDragCursorStyle = document.createElement("style");
-    imageDragCursorStyle.setAttribute("data-oasis-image-drag-cursor", "");
-    imageDragCursorStyle.textContent =
-      "*, *::before, *::after { cursor: grabbing !important; }";
-    document.head.appendChild(imageDragCursorStyle);
-  };
-
-  const hideImageDragCursor = () => {
-    if (imageDragCursorStyle) {
-      imageDragCursorStyle.remove();
-      imageDragCursorStyle = null;
-    }
-    document.body.style.cursor = "";
-  };
-
-  const handleWindowMouseMove = (event: MouseEvent) => {
-    if (!dragAnchor) {
-      return;
-    }
-
-    const position = resolvePositionAtSurfacePoint(
-      event.clientX,
-      event.clientY,
-    );
-    if (!position) {
-      return;
-    }
-
-    applyState(
-      setSelection(state, {
-        anchor: dragAnchor,
-        focus: position,
-      }),
-    );
-    const sel = state.selection;
-    const anchorLoc = (() => {
-      const secIdx = getActiveSectionIndex(state);
-      const loc = findParagraphTableLocation(
-        state.document,
-        dragAnchor!.paragraphId,
-        secIdx,
-      );
-      return loc ? `b${loc.blockIndex}r${loc.rowIndex}c${loc.cellIndex}` : "";
-    })();
-    const focusLoc = (() => {
-      const secIdx = getActiveSectionIndex(state);
-      const loc = findParagraphTableLocation(
-        state.document,
-        sel.focus.paragraphId,
-        secIdx,
-      );
-      return loc ? `b${loc.blockIndex}r${loc.rowIndex}c${loc.cellIndex}` : "";
-    })();
-    logger.debug(
-      `selection:drag ${dragAnchor!.paragraphId}[${dragAnchor!.offset}]→${sel.focus.paragraphId}[${sel.focus.offset}] [${anchorLoc}→${focusLoc}]`,
-    );
-  };
-
-  const handleWindowMouseUp = () => {
-    const sel = state.selection;
-    const anchorLoc = (() => {
-      const secIdx = getActiveSectionIndex(state);
-      const loc = findParagraphTableLocation(
-        state.document,
-        sel.anchor.paragraphId,
-        secIdx,
-      );
-      return loc ? `b${loc.blockIndex}r${loc.rowIndex}c${loc.cellIndex}` : "";
-    })();
-    const focusLoc = (() => {
-      const secIdx = getActiveSectionIndex(state);
-      const loc = findParagraphTableLocation(
-        state.document,
-        sel.focus.paragraphId,
-        secIdx,
-      );
-      return loc ? `b${loc.blockIndex}r${loc.rowIndex}c${loc.cellIndex}` : "";
-    })();
-    logger.info(
-      `selection:end ${sel.anchor.paragraphId}[${sel.anchor.offset}]→${sel.focus.paragraphId}[${sel.focus.offset}] [${anchorLoc}→${focusLoc}]`,
-    );
-    stopDragging();
-    focusInputAfterPointerSelection();
-  };
-
-  const moveSelectionToParagraphBoundary = (
-    boundary: "start" | "end",
-    extend: boolean,
-  ) => {
-    const targetParagraph = getParagraphs(state).find(
-      (paragraph) => paragraph.id === state.selection.focus.paragraphId,
-    );
-    if (!targetParagraph) {
-      return false;
-    }
-
-    const targetOffset =
-      boundary === "start" ? 0 : getParagraphText(targetParagraph).length;
-    const targetPosition = paragraphOffsetToPosition(
-      targetParagraph,
-      targetOffset,
-    );
-    clearPreferredColumn();
-    applyState(
-      setSelection(state, {
-        anchor: extend ? state.selection.anchor : targetPosition,
-        focus: targetPosition,
-      }),
-    );
-    return true;
-  };
-
-  const moveSelectionToDocumentBoundary = (
-    boundary: "start" | "end",
-    extend: boolean,
-  ) => {
-    const paragraphs = getParagraphs(state);
-    if (paragraphs.length === 0) {
-      return false;
-    }
-
-    const targetParagraph =
-      boundary === "start" ? paragraphs[0] : paragraphs[paragraphs.length - 1];
-    const targetOffset =
-      boundary === "start" ? 0 : getParagraphText(targetParagraph).length;
-    const targetPosition = paragraphOffsetToPosition(
-      targetParagraph,
-      targetOffset,
-    );
-    clearPreferredColumn();
-    applyState(
-      setSelection(state, {
-        anchor: extend ? state.selection.anchor : targetPosition,
-        focus: targetPosition,
-      }),
-    );
-    return true;
-  };
-
-  const moveSelectionByWord = (
-    direction: "left" | "right",
-    extend: boolean,
-  ) => {
-    const paragraphs = getParagraphs(state);
-    const focusParagraphIndex = paragraphs.findIndex(
-      (paragraph) => paragraph.id === state.selection.focus.paragraphId,
-    );
-    const focusParagraph = paragraphs[focusParagraphIndex];
-    if (!focusParagraph) {
-      return false;
-    }
-
-    const paragraphText = getParagraphText(focusParagraph);
-    const focusOffset = state.selection.focus.offset;
-    const paragraphLength = paragraphText.length;
-
-    if (!extend && !isSelectionCollapsed(state.selection)) {
-      clearPreferredColumn();
-      applyState(
-        direction === "left"
-          ? moveSelectionLeft(state)
-          : moveSelectionRight(state),
-      );
-      return true;
-    }
-
-    let targetParagraph = focusParagraph;
-    let targetOffset = focusOffset;
-
-    if (direction === "left") {
-      if (focusOffset === 0 && focusParagraphIndex > 0) {
-        targetParagraph = paragraphs[focusParagraphIndex - 1]!;
-        targetOffset = getParagraphText(targetParagraph).length;
-      } else {
-        targetOffset = findPreviousWordBoundary(paragraphText, focusOffset);
-      }
-    } else {
-      if (
-        focusOffset === paragraphLength &&
-        focusParagraphIndex < paragraphs.length - 1
-      ) {
-        targetParagraph = paragraphs[focusParagraphIndex + 1]!;
-        targetOffset = 0;
-      } else {
-        targetOffset = findNextWordBoundary(paragraphText, focusOffset);
-      }
-    }
-
-    const targetPosition = paragraphOffsetToPosition(
-      targetParagraph,
-      targetOffset,
-    );
-    clearPreferredColumn();
-    applyState(
-      setSelection(state, {
-        anchor: extend ? state.selection.anchor : targetPosition,
-        focus: targetPosition,
-      }),
-    );
-    return true;
-  };
-
-  const handleSurfaceMouseDown = (
-    event: MouseEvent,
-    forceTransition = false,
-  ) => {
-    clearPendingCaretTextStyle();
-    if (tableResize.handleMouseDown(event)) {
-      return;
-    }
-
-    event.preventDefault();
-
-    imageOps.stopImageDrag();
-    imageOps.stopImageResize();
-
-    const headerZone = (event.target as HTMLElement).closest(
-      ".oasis-editor-page-header-zone",
-    );
-    const footerZone = (event.target as HTMLElement).closest(
-      ".oasis-editor-page-footer-zone",
-    );
-    const targetZone = headerZone ? "header" : footerZone ? "footer" : "main";
-    const isZoneTransition = targetZone !== state.activeZone;
-
-    const paragraphElement = surfaceRef
-      ? findPointerParagraphElement(
-          event,
-          (headerZone || footerZone || surfaceRef) as HTMLElement,
-        )
-      : null;
-
-    if (!paragraphElement && !isZoneTransition) {
-      focusInputAfterPointerSelection();
-      return;
-    }
-
-    const paragraphId = paragraphElement?.dataset.paragraphId;
-    const paragraph = paragraphId
-      ? getDocumentParagraphs(state.document).find(
-          (candidate) => candidate.id === paragraphId,
-        )
-      : undefined;
-
-    if (!isZoneTransition && (!paragraphId || !paragraph || !surfaceRef)) {
-      focusInputAfterPointerSelection();
-      return;
-    }
-
-    clearPreferredColumn();
-    resetTransactionGrouping();
-
-    const applyWithZone = (
-      newState: EditorState,
-      targetPosition?: EditorPosition,
-    ) => {
-      if (isZoneTransition) {
-        let updatedDocument = newState.document;
-        let activeSectionIndex = state.activeSectionIndex ?? 0;
-
-        // Upgrade to sections if missing
-        if (
-          !updatedDocument.sections ||
-          updatedDocument.sections.length === 0
-        ) {
-          const headerParagraph = createSectionBoundaryParagraph("header");
-          const footerParagraph = createSectionBoundaryParagraph("footer");
-          updatedDocument = {
-            ...updatedDocument,
-            sections: [
-              {
-                id: "section:1",
-                blocks: updatedDocument.blocks,
-                pageSettings: normalizePageSettings(
-                  updatedDocument.pageSettings ?? DEFAULT_EDITOR_PAGE_SETTINGS,
-                ),
-                header: [headerParagraph],
-                footer: [footerParagraph],
-              },
-            ],
-          };
-          activeSectionIndex = 0;
-        }
-
-        const sections = updatedDocument.sections!;
-        const section = sections[activeSectionIndex]!;
-
-        // Ensure header/footer exist in the section
-        let newHeader = section.header;
-        let newFooter = section.footer;
-        let zoneParagraph: EditorParagraphNode | null = null;
-
-        if (targetZone === "header") {
-          if (!newHeader || newHeader.length === 0) {
-            zoneParagraph = createSectionBoundaryParagraph("header");
-            newHeader = [zoneParagraph];
-          } else {
-            const firstBlock = newHeader[0];
-            zoneParagraph =
-              firstBlock.type === "paragraph"
-                ? firstBlock
-                : (getBlockParagraphs(firstBlock)[0] ?? null);
-          }
-        } else if (targetZone === "footer") {
-          if (!newFooter || newFooter.length === 0) {
-            zoneParagraph = createSectionBoundaryParagraph("footer");
-            newFooter = [zoneParagraph];
-          } else {
-            const firstBlock = newFooter[0];
-            zoneParagraph =
-              firstBlock.type === "paragraph"
-                ? firstBlock
-                : (getBlockParagraphs(firstBlock)[0] ?? null);
-          }
-        }
-
-        if (newHeader !== section.header || newFooter !== section.footer) {
-          const newSections = [...sections];
-          newSections[activeSectionIndex] = {
-            ...section,
-            header: newHeader,
-            footer: newFooter,
-          };
-          updatedDocument = {
-            ...updatedDocument,
-            sections: newSections,
-          };
-        }
-
-        const zonePosition = targetPosition
-          ? targetPosition
-          : zoneParagraph
-            ? paragraphOffsetToPosition(zoneParagraph, 0)
-            : newState.selection.anchor;
-
-        applyState({
-          ...newState,
-          document: updatedDocument,
-          selection: { anchor: zonePosition, focus: zonePosition },
-          activeSectionIndex,
-          activeZone: targetZone,
-        });
-      } else {
-        applyState(newState);
-      }
-    };
-
-    if (paragraph && surfaceRef) {
-      const offset = resolveParagraphClickOffset(paragraph, event);
-      const position = paragraphOffsetToPosition(paragraph, offset);
-
-      if (event.shiftKey) {
-        dragAnchor = state.selection.anchor;
-        if (isZoneTransition) {
-          applyWithZone(state, position);
-        } else {
-          applyWithZone(
-            setSelection(state, {
-              anchor: state.selection.anchor,
-              focus: position,
-            }),
-          );
-        }
-      } else {
-        dragAnchor = position;
-        if (isZoneTransition) {
-          applyWithZone(state, position);
-        } else {
-          applyWithZone({
-            ...state,
-            selection: {
-              anchor: { ...position },
-              focus: { ...position },
-            },
-          });
-        }
-      }
-    } else if (isZoneTransition) {
-      // Zone transition without a paragraph target
-      applyWithZone(state);
-    }
-
-    window.addEventListener("mousemove", handleWindowMouseMove);
-    window.addEventListener("mouseup", handleWindowMouseUp);
-    focusInputAfterPointerSelection();
-  };
-
-  const handleSurfaceDblClick = (event: MouseEvent) => {
-    clearPendingCaretTextStyle();
-    event.preventDefault();
-    const headerZone = (event.target as HTMLElement).closest(
-      ".oasis-editor-page-header-zone",
-    );
-    const footerZone = (event.target as HTMLElement).closest(
-      ".oasis-editor-page-footer-zone",
-    );
-    const targetZone = headerZone ? "header" : footerZone ? "footer" : "main";
-
-    if (targetZone !== state.activeZone) {
-      handleSurfaceMouseDown(event, true);
-    }
-  };
-
-  const handleParagraphMouseDown = (
-    paragraphId: string,
-    event: MouseEvent & { currentTarget: HTMLParagraphElement },
-  ) => {
-    clearPendingCaretTextStyle();
-    event.preventDefault();
-    event.stopPropagation();
-    const paragraph = getParagraphById(state.document, paragraphId);
-    if (!paragraph || !surfaceRef) {
-      return;
-    }
-
-    const isHeaderClick =
-      (event.target as HTMLElement).closest(
-        ".oasis-editor-page-header-zone",
-      ) !== null;
-    const isFooterClick =
-      (event.target as HTMLElement).closest(
-        ".oasis-editor-page-footer-zone",
-      ) !== null;
-    const targetZone = isHeaderClick
-      ? "header"
-      : isFooterClick
-        ? "footer"
-        : "main";
-
-    const isZoneTransition = targetZone !== state.activeZone;
-
-    clearPreferredColumn();
-    resetTransactionGrouping();
-
-    imageOps.stopImageDrag();
-    imageOps.stopImageResize();
-
-    const applyWithZone = (
-      newState: EditorState,
-      targetPosition?: EditorPosition,
-    ) => {
-      if (isZoneTransition) {
-        let updatedDocument = newState.document;
-        let activeSectionIndex = state.activeSectionIndex ?? 0;
-
-        // Upgrade to sections if missing
-        if (
-          !updatedDocument.sections ||
-          updatedDocument.sections.length === 0
-        ) {
-          const headerParagraph = createSectionBoundaryParagraph("header");
-          const footerParagraph = createSectionBoundaryParagraph("footer");
-          updatedDocument = {
-            ...updatedDocument,
-            sections: [
-              {
-                id: "section:1",
-                blocks: updatedDocument.blocks,
-                pageSettings: normalizePageSettings(
-                  updatedDocument.pageSettings ?? DEFAULT_EDITOR_PAGE_SETTINGS,
-                ),
-                header: [headerParagraph],
-                footer: [footerParagraph],
-              },
-            ],
-          };
-          activeSectionIndex = 0;
-        }
-
-        const sections = updatedDocument.sections!;
-        const section = sections[activeSectionIndex]!;
-
-        // Ensure header/footer exist in the section
-        let newHeader = section.header;
-        let newFooter = section.footer;
-        let zoneParagraph: EditorParagraphNode | null = null;
-
-        if (targetZone === "header") {
-          if (!newHeader || newHeader.length === 0) {
-            zoneParagraph = createSectionBoundaryParagraph("header");
-            newHeader = [zoneParagraph];
-          } else {
-            const firstBlock = newHeader[0];
-            zoneParagraph =
-              firstBlock.type === "paragraph"
-                ? firstBlock
-                : (getBlockParagraphs(firstBlock)[0] ?? null);
-          }
-        } else if (targetZone === "footer") {
-          if (!newFooter || newFooter.length === 0) {
-            zoneParagraph = createSectionBoundaryParagraph("footer");
-            newFooter = [zoneParagraph];
-          } else {
-            const firstBlock = newFooter[0];
-            zoneParagraph =
-              firstBlock.type === "paragraph"
-                ? firstBlock
-                : (getBlockParagraphs(firstBlock)[0] ?? null);
-          }
-        }
-
-        if (newHeader !== section.header || newFooter !== section.footer) {
-          const newSections = [...sections];
-          newSections[activeSectionIndex] = {
-            ...section,
-            header: newHeader,
-            footer: newFooter,
-          };
-          updatedDocument = {
-            ...updatedDocument,
-            sections: newSections,
-          };
-        }
-
-        const zonePosition = targetPosition
-          ? targetPosition
-          : zoneParagraph
-            ? paragraphOffsetToPosition(zoneParagraph, 0)
-            : newState.selection.anchor;
-
-        applyState({
-          ...newState,
-          document: updatedDocument,
-          selection: { anchor: zonePosition, focus: zonePosition },
-          activeSectionIndex,
-          activeZone: targetZone,
-        });
-      } else {
-        applyState(newState);
-      }
-    };
-
-    if (event.detail >= 3) {
-      dragAnchor = null;
-      const targetPos = paragraphOffsetToPosition(paragraph, 0);
-      applyWithZone(
-        setSelection(state, {
-          anchor: targetPos,
-          focus: paragraphOffsetToPosition(
-            paragraph,
-            getParagraphText(paragraph).length,
-          ),
-        }),
-        targetPos,
-      );
-      stopDragging();
-      focusInputAfterPointerSelection();
-      return;
-    }
-
-    const offset = resolveParagraphClickOffset(paragraph, event);
-    const position = paragraphOffsetToPosition(paragraph, offset);
-
-    const cellLocation = findParagraphTableLocation(
-      state.document,
-      paragraphId,
-      getActiveSectionIndex(state),
-    );
-    const anchorPosition = cellLocation
-      ? (() => {
-          const hasSections =
-            state.document.sections && state.document.sections.length > 0;
-          const section = hasSections
-            ? state.document.sections![getActiveSectionIndex(state)]
-            : null;
-
-          let targetBlocks: EditorBlockNode[] = [];
-          if (section) {
-            if (cellLocation.zone === "header") targetBlocks = section.header || [];
-            else if (cellLocation.zone === "footer")
-              targetBlocks = section.footer || [];
-            else targetBlocks = section.blocks;
-          } else {
-            targetBlocks = state.document.blocks;
-          }
-
-          const block = targetBlocks[cellLocation.blockIndex];
-          const cellParagraph =
-            block?.type === "table"
-              ? block.rows[cellLocation.rowIndex]?.cells[cellLocation.cellIndex]
-                  ?.blocks[0]
-              : undefined;
-          return cellParagraph
-            ? paragraphOffsetToPosition(cellParagraph, 0)
-            : position;
-        })()
-      : position;
-
-    if (event.shiftKey) {
-      dragAnchor = state.selection.anchor;
-      applyWithZone(
-        setSelection(state, {
-          anchor: state.selection.anchor,
-          focus: position,
-        }),
-      );
-      window.addEventListener("mousemove", handleWindowMouseMove);
-      window.addEventListener("mouseup", handleWindowMouseUp);
-      focusInputAfterPointerSelection();
-      return;
-    }
-
-    if (event.detail === 2) {
-      const word = resolveWordSelection(getParagraphText(paragraph), offset);
-      dragAnchor = null;
-      const targetPos = paragraphOffsetToPosition(paragraph, word.start);
-      applyWithZone(
-        setSelection(state, {
-          anchor: targetPos,
-          focus: paragraphOffsetToPosition(paragraph, word.end),
-        }),
-        targetPos,
-      );
-      stopDragging();
-      focusInputAfterPointerSelection();
-      return;
-    }
-
-    dragAnchor = cellLocation ? anchorPosition : position;
-    applyWithZone(
-      {
-        ...state,
-        selection: {
-          anchor: { ...position },
-          focus: { ...position },
-        },
-      },
-      position,
-    );
-    window.addEventListener("mousemove", handleWindowMouseMove);
-    window.addEventListener("mouseup", handleWindowMouseUp);
-    focusInputAfterPointerSelection();
   };
 
   const handleRevisionMouseEnter = (revisionId: string, event: MouseEvent) => {
@@ -2522,10 +2014,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         onDragOver={(event: DragEvent) => event.preventDefault()}
         onDrop={handleDrop}
         onEditorMouseDown={onEditorMouseDown}
-        onSurfaceMouseDown={handleSurfaceMouseDown}
+        onSurfaceMouseDown={surfaceEvents.handleSurfaceMouseDown}
         onSurfaceMouseMove={tableResize.handleMouseMove}
-        onSurfaceDblClick={handleSurfaceDblClick}
-        onParagraphMouseDown={handleParagraphMouseDown}
+        onSurfaceDblClick={surfaceEvents.handleSurfaceDblClick}
+        onParagraphMouseDown={surfaceEvents.handleParagraphMouseDown}
         onRevisionMouseEnter={handleRevisionMouseEnter}
         onRevisionMouseLeave={handleRevisionMouseLeave}
         onImageMouseDown={(paragraphId: string, paragraphOffset: number, event: MouseEvent & { currentTarget: HTMLElement }) => {
@@ -2653,10 +2145,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             onDragOver={(event) => event.preventDefault()}
             onDrop={handleDrop}
             onEditorMouseDown={onEditorMouseDown}
-            onSurfaceMouseDown={handleSurfaceMouseDown}
+            onSurfaceMouseDown={surfaceEvents.handleSurfaceMouseDown}
             onSurfaceMouseMove={tableResize.handleMouseMove}
-            onSurfaceDblClick={handleSurfaceDblClick}
-            onParagraphMouseDown={handleParagraphMouseDown}
+            onSurfaceDblClick={surfaceEvents.handleSurfaceDblClick}
+            onParagraphMouseDown={surfaceEvents.handleParagraphMouseDown}
             onRevisionMouseEnter={handleRevisionMouseEnter}
             onRevisionMouseLeave={handleRevisionMouseLeave}
             onImageMouseDown={(paragraphId, paragraphOffset, event) => {
