@@ -186,6 +186,7 @@ import { createEditorImageOperations } from "../app/controllers/useEditorImageOp
 import { createEditorTableResize } from "../app/controllers/useEditorTableResize.js";
 import { createEditorTableDrag } from "../app/controllers/useEditorTableDrag.js";
 import { createEditorSurfaceEvents } from "../app/controllers/useEditorSurfaceEvents.js";
+import { createEditorTextInput } from "../app/controllers/useEditorTextInput.js";
 import { cloneStyle } from "../core/commands/utils.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
@@ -470,7 +471,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   };
 
   const [focused, setFocused] = createSignal(false);
-  const [composing, setComposing] = createSignal(false);
+
   const [undoStack, setUndoStack] = createSignal<EditorState[]>([]);
   const [redoStack, setRedoStack] = createSignal<EditorState[]>([]);
   const [hoveredRevision, setHoveredRevision] =
@@ -535,7 +536,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   let activeImageDrag: ActiveImageDrag | null = null;
   let activeImageResize: ActiveImageResize | null = null;
   let historyState = createEmptyEditorHistoryState();
-  let suppressedInputText: string | null = null;
+
   let forcePlainTextPaste = false;
   const cloneState = cloneEditorState;
 
@@ -1162,7 +1163,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const surfaceEvents = createEditorSurfaceEvents({
     state: () => state,
     applyState,
-    surfaceRef: () => surfaceRef,
+    surfaceRef: () => surfaceRef ?? null,
     tableResize,
     imageOps,
     clearPendingCaretTextStyle,
@@ -1175,6 +1176,17 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     getDocumentParagraphs,
     getParagraphById,
     logger,
+  });
+
+  const textInput = createEditorTextInput({
+    state: () => state,
+    isReadOnly,
+    logger,
+    clearPreferredColumn,
+    pendingCaretTextStyle: () => pendingCaretTextStyle(),
+    applyTransactionalState,
+    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
+    focusInput,
   });
 
   onMount(() => {
@@ -1192,104 +1204,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     stopIconObserver();
   });
 
-  const handleTextInput = (
-    event: InputEvent & { currentTarget: HTMLTextAreaElement },
-  ) => {
-    markStart("input:text");
-    if (isReadOnly()) {
-      logger.debug(
-        `input:readonly ignored value=${JSON.stringify(event.currentTarget.value)}`,
-      );
-      event.currentTarget.value = "";
-      return;
-    }
-    const text = event.currentTarget.value;
-    if (text.length === 0) {
-      return;
-    }
 
-    if (composing()) {
-      logger.debug(`input:composing buffer=${JSON.stringify(text)}`);
-      return;
-    }
 
-    if (suppressedInputText !== null && text === suppressedInputText) {
-      logger.debug(`input:suppressed text=${JSON.stringify(text)}`);
-      suppressedInputText = null;
-      event.currentTarget.value = "";
-      return;
-    }
 
-    const sel = state.selection;
-    const currentRun = getParagraphs(state)
-      .find((p) => p.id === sel.anchor.paragraphId)
-      ?.runs.find((r) => r.id === sel.anchor.runId);
-    const runStyle = currentRun
-      ? {
-          bold: currentRun.styles?.bold,
-          italic: currentRun.styles?.italic,
-          underline: currentRun.styles?.underline,
-        }
-      : null;
-    logger.info(
-      `input:text ${JSON.stringify(text)} (len=${text.length}) at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}] run:${JSON.stringify(runStyle)}`,
-    );
-    clearPreferredColumn();
-    const pendingStyle = cloneStyle(pendingCaretTextStyle());
-    applyTransactionalState(
-      (current) =>
-        tableOps.applyTableAwareParagraphEdit(current, (temp) =>
-          insertTextAtSelection(temp, text, pendingStyle),
-        ),
-      {
-        mergeKey: "insertText",
-      },
-    );
-    event.currentTarget.value = "";
-    focusInput();
-    markEnd("input:text");
-  };
 
-  const handleCompositionStart = () => {
-    logger.debug("input:composition start");
-    setComposing(true);
-  };
 
-  const handleCompositionEnd = (
-    event: CompositionEvent & { currentTarget: HTMLTextAreaElement },
-  ) => {
-    if (isReadOnly()) {
-      event.currentTarget.value = "";
-      setComposing(false);
-      return;
-    }
-    const text = event.data ?? event.currentTarget.value;
-    setComposing(false);
-
-    if (text.length === 0) {
-      event.currentTarget.value = "";
-      return;
-    }
-
-    const sel = state.selection;
-    logger.info(
-      `input:composition end ${JSON.stringify(text)} (len=${text.length}) at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`,
-    );
-    suppressedInputText = text;
-    clearPreferredColumn();
-    const pendingStyle = cloneStyle(pendingCaretTextStyle());
-    applyTransactionalState(
-      (current) =>
-        tableOps.applyTableAwareParagraphEdit(current, (temp) =>
-          insertTextAtSelection(temp, text, pendingStyle),
-        ),
-      {
-        mergeKey: "insertText",
-      },
-    );
-    event.currentTarget.value = "";
-    focusInput();
-  };
 
   const moveSelectionToParagraphBoundary = (
     boundary: "start" | "end",
@@ -2047,11 +1966,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         onTableDragHandleMouseDown={tableDrag.handleMouseDown}
         onInputBlur={() => setFocused(false)}
         onInputFocus={() => setFocused(true)}
-        onCompositionEnd={handleCompositionEnd}
-        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={textInput.handleCompositionEnd}
+        onCompositionStart={textInput.handleCompositionStart}
         onCopy={handleCopy}
         onCut={handleCut}
-        onInput={handleTextInput}
+        onInput={textInput.handleTextInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
       />
@@ -2195,11 +2114,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             onTableDragHandleMouseDown={tableDrag.handleMouseDown}
             onInputBlur={() => setFocused(false)}
             onInputFocus={() => setFocused(true)}
-            onCompositionEnd={handleCompositionEnd}
-            onCompositionStart={handleCompositionStart}
+            onCompositionEnd={textInput.handleCompositionEnd}
+            onCompositionStart={textInput.handleCompositionStart}
             onCopy={handleCopy}
             onCut={handleCut}
-            onInput={handleTextInput}
+            onInput={textInput.handleTextInput}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
           />
