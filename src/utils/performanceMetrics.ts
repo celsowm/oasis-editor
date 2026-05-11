@@ -74,11 +74,76 @@ export function recordDuration(label: string, durationMs: number): void {
 
   // Auto-log to console in real time
   // eslint-disable-next-line no-console
-  console.debug(
+  console.info(
     `%c[perf] ${label}`,
     "color: #f59e0b;",
     `${formatTimestamp()} ${Math.round(durationMs * 100) / 100}ms`,
   );
+}
+
+/**
+ * Synchronous timing helper. Use to wrap a hot function and record
+ * its duration to the perf log:
+ *
+ *     const result = perfTimer("layout:project", () => projectDocumentLayout(...));
+ *
+ * Records via `recordDuration` only when the duration exceeds
+ * `minMs` to avoid log spam. Always returns the inner result.
+ */
+export function perfTimer<T>(label: string, fn: () => T, minMs = 1): T {
+  const startedAt = performance.now();
+  try {
+    return fn();
+  } finally {
+    const duration = performance.now() - startedAt;
+    if (duration >= minMs) {
+      recordDuration(label, duration);
+    }
+  }
+}
+
+/**
+ * Walk a surface element and report DOM-size statistics.
+ * Call from devtools as `window.__OASIS_DOM_STATS()`.
+ */
+export function snapshotEditorDomStats(surface: HTMLElement | null | undefined): {
+  totalNodes: number;
+  pages: number;
+  blocks: number;
+  paragraphs: number;
+  lines: number;
+  charSpans: number;
+  segmentSpans: number;
+  runSpans: number;
+} {
+  if (!surface) {
+    return {
+      totalNodes: 0,
+      pages: 0,
+      blocks: 0,
+      paragraphs: 0,
+      lines: 0,
+      charSpans: 0,
+      segmentSpans: 0,
+      runSpans: 0,
+    };
+  }
+  const totalNodes = surface.querySelectorAll("*").length;
+  return {
+    totalNodes,
+    pages: surface.querySelectorAll('[data-testid="editor-page"]').length,
+    blocks: surface.querySelectorAll("[data-block-id]").length,
+    paragraphs: surface.querySelectorAll("[data-paragraph-id]").length,
+    lines: surface.querySelectorAll('[data-testid="editor-line"]').length,
+    charSpans: surface.querySelectorAll("[data-char-index]").length,
+    segmentSpans: surface.querySelectorAll("[data-segment]").length,
+    runSpans: surface.querySelectorAll('[data-testid="editor-run"]').length,
+  };
+}
+
+let domStatsSurfaceProvider: (() => HTMLElement | null | undefined) | null = null;
+export function registerDomStatsSurface(getSurface: () => HTMLElement | null | undefined): void {
+  domStatsSurfaceProvider = getSurface;
 }
 
 export function getMarks(): ReadonlyArray<PerfMark> {
@@ -194,6 +259,14 @@ export function installGlobalReport(): void {
     );
     // eslint-disable-next-line no-console
     console.groupEnd();
+  };
+
+  (window as any).__OASIS_DOM_STATS = () => {
+    const surface = domStatsSurfaceProvider?.() ?? null;
+    const stats = snapshotEditorDomStats(surface);
+    // eslint-disable-next-line no-console
+    console.info("%c[perf] DOM stats", "color: #f59e0b; font-weight: bold;", stats);
+    return stats;
   };
 }
 

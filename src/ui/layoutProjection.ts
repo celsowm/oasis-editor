@@ -26,6 +26,7 @@ import {
 } from "../core/model.js";
 import { measureLinesFromRects, type CharRect } from "./caretGeometry.js";
 import { composeMeasuredParagraphLines, resolveRenderedLineHeightPx } from "./textMeasurement.js";
+import { perfTimer } from "../utils/performanceMetrics.js";
 
 const DEFAULT_FONT_SIZE = 15;
 const DEFAULT_LINE_HEIGHT = 1.15;
@@ -62,6 +63,8 @@ function sliceFragmentToRange(
   };
 }
 
+const paragraphLayoutCache = new WeakMap<EditorParagraphNode, Map<string, EditorLayoutParagraph>>();
+
 export function projectParagraphLayout(
   paragraph: EditorParagraphNode,
   pageIndex?: number,
@@ -69,63 +72,82 @@ export function projectParagraphLayout(
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
 ): EditorLayoutParagraph {
-  let paragraphOffset = 0;
-  const fragments: EditorLayoutFragment[] = paragraph.runs.map((run) => {
-    let resolvedText = run.text;
-    if (run.field) {
-      if (run.field.type === "PAGE") {
-        resolvedText = typeof pageIndex === "number" ? String(pageIndex + 1) : "1";
-      } else if (run.field.type === "NUMPAGES") {
-        resolvedText = typeof totalPages === "number" ? String(totalPages) : "1";
-      }
+  const cacheKey = `${pageIndex ?? ""}:${totalPages ?? ""}:${contentWidth ?? ""}`;
+  let cacheForParagraph = paragraphLayoutCache.get(paragraph);
+  if (cacheForParagraph) {
+    const cached = cacheForParagraph.get(cacheKey);
+    if (cached) {
+      return cached;
     }
+  }
 
-    const chars: EditorLayoutFragmentChar[] = Array.from(resolvedText).map((char, index) => ({
-      char,
-      paragraphOffset: paragraphOffset + index,
-      runOffset: index,
+  const result = perfTimer("layout:projectParagraphLayout", () => {
+    let paragraphOffset = 0;
+    const fragments: EditorLayoutFragment[] = paragraph.runs.map((run) => {
+      let resolvedText = run.text;
+      if (run.field) {
+        if (run.field.type === "PAGE") {
+          resolvedText = typeof pageIndex === "number" ? String(pageIndex + 1) : "1";
+        } else if (run.field.type === "NUMPAGES") {
+          resolvedText = typeof totalPages === "number" ? String(totalPages) : "1";
+        }
+      }
+
+      const chars: EditorLayoutFragmentChar[] = Array.from(resolvedText).map((char, index) => ({
+        char,
+        paragraphOffset: paragraphOffset + index,
+        runOffset: index,
+      }));
+
+      const fragment: EditorLayoutFragment = {
+        paragraphId: paragraph.id,
+        runId: run.id,
+        startOffset: paragraphOffset,
+        endOffset: paragraphOffset + resolvedText.length,
+        text: resolvedText,
+        styles: run.styles ? { ...run.styles } : undefined,
+        image: run.image ? { ...run.image } : undefined,
+        revision: run.revision ? { ...run.revision } : undefined,
+        chars,
+      };
+
+      paragraphOffset += resolvedText.length;
+      return fragment;
+    });
+
+    const fontSize = estimateParagraphFontSize(paragraph, styles);
+    const lineHeight = estimateParagraphLineHeight(paragraph, fontSize, styles);
+    const lines = composeMeasuredParagraphLines({
+      paragraph,
+      fragments,
+      styles,
+      contentWidth,
+    }).map((line) => ({
+      ...line,
+      height: line.height || lineHeight,
+      fragments: fragments
+        .map((fragment) => sliceFragmentToRange(fragment, line.startOffset, line.endOffset))
+        .filter((fragment): fragment is EditorLayoutFragment => fragment !== null),
     }));
 
-    const fragment: EditorLayoutFragment = {
+    return {
       paragraphId: paragraph.id,
-      runId: run.id,
-      startOffset: paragraphOffset,
-      endOffset: paragraphOffset + resolvedText.length,
-      text: resolvedText,
-      styles: run.styles ? { ...run.styles } : undefined,
-      image: run.image ? { ...run.image } : undefined,
-      revision: run.revision ? { ...run.revision } : undefined,
-      chars,
+      text: fragments.map((f) => f.text).join(""),
+      fragments,
+      lines,
+      startOffset: 0,
+      endOffset: paragraphOffset,
+      contentWidth,
     };
+  }, 0);
 
-    paragraphOffset += resolvedText.length;
-    return fragment;
-  });
+  if (!cacheForParagraph) {
+    cacheForParagraph = new Map();
+    paragraphLayoutCache.set(paragraph, cacheForParagraph);
+  }
+  cacheForParagraph.set(cacheKey, result);
 
-  const fontSize = estimateParagraphFontSize(paragraph, styles);
-  const lineHeight = estimateParagraphLineHeight(paragraph, fontSize, styles);
-  const lines = composeMeasuredParagraphLines({
-    paragraph,
-    fragments,
-    styles,
-    contentWidth,
-  }).map((line) => ({
-    ...line,
-    height: line.height || lineHeight,
-    fragments: fragments
-      .map((fragment) => sliceFragmentToRange(fragment, line.startOffset, line.endOffset))
-      .filter((fragment): fragment is EditorLayoutFragment => fragment !== null),
-  }));
-
-  return {
-    paragraphId: paragraph.id,
-    text: fragments.map((f) => f.text).join(""),
-    fragments,
-    lines,
-    startOffset: 0,
-    endOffset: paragraphOffset,
-    contentWidth,
-  };
+  return result;
 }
 
 export function measureParagraphLayoutFromRects(

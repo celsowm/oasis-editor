@@ -8,7 +8,6 @@
   For,
   type JSX,
 } from "solid-js";
-import { createStore } from "solid-js/store";
 import { OasisEditorEditor } from "./OasisEditorEditor.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { getCaretSlotRects } from "./caretGeometry.js";
@@ -134,8 +133,10 @@ import {
   markEnd,
   markStart,
   recordDuration,
+  perfTimer,
   startLongTaskObserver,
   installGlobalReport,
+  registerDomStatsSurface,
 } from "../utils/performanceMetrics.js";
 import type {
   CaretBox,
@@ -157,11 +158,13 @@ import {
   resolveWordSelection,
 } from "../core/wordBoundaries.js";
 import {
+  getCaretRectAtOffset,
   getElementContentWidth,
   getEmptyBlockRect,
   getMaxInlineImageWidth,
   getParagraphBoundaryElement,
   hasUsableCharGeometry,
+  resolveClickOffsetFromTarget,
 } from "./domGeometry.js";
 import {
   buildTableCellLayout,
@@ -175,7 +178,7 @@ import { BalloonShell } from "./shells/BalloonShell.js";
 import { createEditorCommandsController } from "../app/controllers/EditorCommandsController.js";
 import { createEditorClipboardController } from "../app/controllers/useEditorClipboard.js";
 import { createEditorKeyboardController } from "../app/controllers/useEditorKeyboard.js";
-import { useEditorLayout } from "../app/controllers/useEditorLayout.js";
+import { useEditorLayout, type LayoutInvalidation } from "../app/controllers/useEditorLayout.js";
 import { useEditorPersistence } from "../app/controllers/useEditorPersistence.js";
 import { useEditorFindReplace } from "../app/controllers/useEditorFindReplace.js";
 import { createEditorTableOperations } from "../app/controllers/useEditorTableOperations.js";
@@ -195,6 +198,113 @@ function createSectionBoundaryParagraph(zone: "header" | "footer"): EditorParagr
   const paragraph = createEditorParagraph("");
   paragraph.style = { styleId: zone };
   return paragraph;
+}
+
+/**
+ * Phase 3: Cheap diff between two editor states. Produces an explicit
+ * `LayoutInvalidation` hint for the layout controller, so the layout effect
+ * never has to walk every paragraph in the document on every keystroke.
+ *
+ * Worst case is still O(total chars) — same as the legacy signature loop
+ * — but this is computed exactly once per transaction (vs once per Solid
+ * reactive notification), and it does NOT participate in the reactive graph,
+ * so it doesn't itself cause re-renders.
+ *
+ * Errs on the side of `dirtyAll` for any structural shape mismatch we can
+ * detect cheaply, to avoid stale layout caches.
+ */
+function computeLayoutInvalidationFromTransaction(
+  prev: EditorState,
+  next: EditorState,
+): LayoutInvalidation {
+  if (prev === next || prev.document === next.document) {
+    return {};
+  }
+
+  // Fast structural check: if any block's id at any position differs, mark
+  // structureChanged. Don't try to be clever about partial reorderings.
+  const prevBlockIds = prev.document.blocks.map((b) => b.id).join("|");
+  const nextBlockIds = next.document.blocks.map((b) => b.id).join("|");
+  let structureChanged = prevBlockIds !== nextBlockIds;
+
+  if (!structureChanged && prev.document.sections && next.document.sections) {
+    const prevSecs = prev.document.sections;
+    const nextSecs = next.document.sections;
+    if (prevSecs.length !== nextSecs.length) {
+      structureChanged = true;
+    } else {
+      for (let i = 0; i < prevSecs.length; i += 1) {
+        const a = prevSecs[i]!;
+        const b = nextSecs[i]!;
+        const aIds = [
+          ...(a.header ?? []).map((x) => x.id),
+          ...a.blocks.map((x) => x.id),
+          ...(a.footer ?? []).map((x) => x.id),
+        ].join("|");
+        const bIds = [
+          ...(b.header ?? []).map((x) => x.id),
+          ...b.blocks.map((x) => x.id),
+          ...(b.footer ?? []).map((x) => x.id),
+        ].join("|");
+        if (aIds !== bIds) {
+          structureChanged = true;
+          break;
+        }
+      }
+    }
+  } else if (Boolean(prev.document.sections) !== Boolean(next.document.sections)) {
+    structureChanged = true;
+  }
+
+  if (structureChanged) {
+    return { dirtyAll: true, structureChanged: true };
+  }
+
+  // Same block shape: compare paragraphs by id, find ones whose run text
+  // or shape changed. This is the typing/backspace fast path.
+  const prevParas = getParagraphs(prev);
+  const nextParas = getParagraphs(next);
+  const prevById = new Map<string, EditorParagraphNode>();
+  for (const p of prevParas) prevById.set(p.id, p);
+
+  const dirtyParagraphIds: string[] = [];
+  for (const np of nextParas) {
+    const pp = prevById.get(np.id);
+    if (!pp) {
+      dirtyParagraphIds.push(np.id);
+      continue;
+    }
+    if (pp === np) {
+      // Reference equality (rare with the current cloneState, but cheap to
+      // check): nothing changed.
+      continue;
+    }
+    if (pp.runs.length !== np.runs.length) {
+      dirtyParagraphIds.push(np.id);
+      continue;
+    }
+    let changed = false;
+    for (let i = 0; i < pp.runs.length; i += 1) {
+      const a = pp.runs[i]!;
+      const b = np.runs[i]!;
+      if (a === b) continue;
+      if (a.id !== b.id || a.text !== b.text) {
+        changed = true;
+        break;
+      }
+      if (Boolean(a.image) !== Boolean(b.image) ||
+          (a.image?.width ?? -1) !== (b.image?.width ?? -1) ||
+          (a.image?.height ?? -1) !== (b.image?.height ?? -1)) {
+        changed = true;
+        break;
+      }
+    }
+    if (changed) {
+      dirtyParagraphIds.push(np.id);
+    }
+  }
+
+  return { dirtyParagraphIds };
 }
 
 interface ActiveImageResize {
@@ -309,13 +419,38 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setLocale(props.locale ?? "pt-BR");
   });
   const logger = createEditorLogger("app");
-  const [state, setState] = createStore<EditorState>(
-    props.initialState
-      ? cloneEditorState(props.initialState)
-      : props.initialDocument
-        ? createEditorStateFromDocument(props.initialDocument)
-        : createInitialEditorState(),
-  );
+  const initialEditorState = props.initialState
+    ? cloneEditorState(props.initialState)
+    : props.initialDocument
+      ? createEditorStateFromDocument(props.initialDocument)
+      : createInitialEditorState();
+
+  let stateSnapshot: EditorState = initialEditorState;
+  const [stateAccessor, setStateSignal] = createSignal<EditorState>(initialEditorState);
+
+  const state = new Proxy({} as EditorState, {
+    get(_, prop) {
+      return Reflect.get(stateAccessor(), prop);
+    },
+    has(_, prop) {
+      return Reflect.has(stateAccessor(), prop);
+    },
+    ownKeys(_) {
+      return Reflect.ownKeys(stateAccessor());
+    },
+    getOwnPropertyDescriptor(_, prop) {
+      return {
+        ...Reflect.getOwnPropertyDescriptor(stateAccessor(), prop),
+        configurable: true,
+        enumerable: true
+      };
+    }
+  });
+
+  const commitState = (next: EditorState) => {
+    stateSnapshot = next;
+    setStateSignal(next);
+  };
   const pageSettings = () => getDocumentPageSettings(state.document);
   const showChrome = () => props.showChrome ?? true;
   const showTitleBar = () => props.showTitleBar ?? true;
@@ -375,6 +510,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     stabilizeLayoutAfterImport,
     setMeasuredBlockHeights,
     setMeasuredParagraphLayouts,
+    applyInvalidation: applyLayoutInvalidation,
     onCleanupHook,
   } = useEditorLayout({
     state,
@@ -388,7 +524,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     (loadedDoc) => {
       logger.info("persistence:loaded", { docId: loadedDoc.id });
       const nextState = createEditorStateFromDocument(loadedDoc);
-      setState(nextState);
+      commitState(nextState);
       resetEditorChromeState();
     },
     { enabled: props.persistenceEnabled ?? false },
@@ -400,15 +536,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   let historyState = createEmptyEditorHistoryState();
   let suppressedInputText: string | null = null;
   let forcePlainTextPaste = false;
-  const cloneState = (source: EditorState): EditorState =>
-    cloneEditorState({
-      ...source,
-      document: {
-        ...source.document,
-        blocks: source.document.blocks.map(cloneBlock),
-        sections: source.document.sections?.map(cloneSection),
-      },
-    });
+  const cloneState = cloneEditorState;
 
   const clearPendingCaretTextStyle = () => {
     setPendingCaretTextStyle(undefined);
@@ -447,22 +575,22 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   };
 
   const applyState = (nextState: EditorState) => {
-    setState(nextState);
+    commitState(nextState);
   };
 
   const applyHistoryState = (nextState: EditorState) => {
-    setState(cloneState(nextState));
+    commitState(cloneState(nextState));
   };
 
   const applySelectionPreservingStructure = (
     nextSelection: EditorState["selection"],
   ) => {
     applyState({
-      ...state,
+      ...stateSnapshot,
       document: {
-        ...state.document,
-        blocks: state.document.blocks.map(cloneBlock),
-        sections: state.document.sections?.map(cloneSection),
+        ...stateSnapshot.document,
+        blocks: stateSnapshot.document.blocks.map(cloneBlock),
+        sections: stateSnapshot.document.sections?.map(cloneSection),
       },
       selection: {
         anchor: { ...nextSelection.anchor },
@@ -488,11 +616,15 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   });
 
   createEffect(() => {
+    state.document;
+    state.selection;
+    state.activeSectionIndex;
+    state.activeZone;
     // Skip expensive deep-clone during import to avoid blocking the main thread
     if (importProgress()?.phase !== "done" && importProgress()?.phase !== "error" && importProgress() !== null) {
       return;
     }
-    props.onStateChange?.(cloneState(state));
+    props.onStateChange?.(cloneState(stateSnapshot));
   });
 
   const resetTransactionGrouping = () => {
@@ -503,25 +635,36 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     producer: (current: EditorState) => EditorState,
     options?: EditorTransactionOptions,
   ) => {
-    const next = producer(state);
-    if (next === state) {
+    const prev = stateSnapshot;
+    const next = perfTimer("txn:produce", () => producer(prev), 0);
+    if (next === prev) {
       return;
     }
 
-    const previous = cloneState(state);
     historyState = applyEditorHistoryTransaction(
       historyState,
-      previous,
+      prev,
       next,
       options,
     );
     setUndoStack(historyState.undoStack);
     setRedoStack(historyState.redoStack);
-    applyState(next);
+
+    // Phase 3: compute layout invalidation from the (prev, next) pair and
+    // hand it to the layout controller BEFORE setState. The controller's
+    // doc-wide signature createEffect is then short-circuited.
+    const invalidation = perfTimer(
+      "txn:invalidate",
+      () => computeLayoutInvalidationFromTransaction(prev, next),
+      0,
+    );
+    applyLayoutInvalidation(invalidation);
+
+    perfTimer("txn:setState", () => commitState(next), 0);
   };
 
   const performUndo = () => {
-    const step = takeEditorUndoStep(historyState, cloneState(state));
+    const step = takeEditorUndoStep(historyState, stateSnapshot);
     if (!step) {
       return;
     }
@@ -535,7 +678,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   };
 
   const performRedo = () => {
-    const step = takeEditorRedoStep(historyState, cloneState(state));
+    const step = takeEditorRedoStep(historyState, stateSnapshot);
     if (!step) {
       return;
     }
@@ -674,14 +817,14 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       return false;
     }
 
-    const directChar = surfaceRef.querySelector<HTMLElement>(
-      `[data-source-paragraph-id="${paragraph.id}"] [data-char-index="${firstLine.startOffset}"], [data-paragraph-id="${paragraph.id}"] [data-char-index="${firstLine.startOffset}"]`,
-    );
-    if (!directChar) {
+    // Use the Range-API helper instead of querying [data-char-index] (which
+    // is no longer present on text segments after the per-char-span removal).
+    const caret = getCaretRectAtOffset(surfaceRef, paragraph.id, firstLine.startOffset);
+    if (!caret) {
       return false;
     }
 
-    return Math.abs(directChar.getBoundingClientRect().top - firstLine.top) < 2;
+    return Math.abs(caret.top - firstLine.top) < 2;
   };
 
   const resolveParagraphClickOffset = (
@@ -689,6 +832,15 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     event: MouseEvent,
   ): number => {
     const paragraphLength = getParagraphText(paragraph).length;
+
+    // Fast path: click landed on a known segment span (text/tab/image).
+    // This covers nearly all in-text clicks without touching layout caches.
+    const segmentResult = resolveClickOffsetFromTarget(event.target, event.clientX);
+    if (segmentResult && segmentResult.paragraphId === paragraph.id) {
+      return Math.max(0, Math.min(paragraphLength, segmentResult.offset));
+    }
+
+    // Legacy atom path (kept for safety: phantom span and edge cases).
     const directChar =
       (event.target as HTMLElement).closest<HTMLElement>("[data-char-index]") ?? null;
     if (directChar) {
@@ -1010,6 +1162,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     startIconObserver();
     startLongTaskObserver();
     installGlobalReport();
+    registerDomStatsSurface(() => surfaceRef ?? null);
   });
 
   onCleanup(() => {
@@ -2322,7 +2475,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     return (
       <Shell
         state={state}
-        setState={setState}
+        setState={setStateSignal}
         toolbarCtx={toolbarCtx}
         showChrome={showChrome()}
         showTitleBar={showTitleBar()}
