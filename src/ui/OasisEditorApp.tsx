@@ -1,22 +1,16 @@
-﻿import {
+import {
   createEffect,
-  createMemo,
   createSignal,
   onCleanup,
   onMount,
   Show,
-  For,
   type JSX,
 } from "solid-js";
 import { OasisEditorEditor } from "./OasisEditorEditor.js";
-import { CaretOverlay } from "./components/CaretOverlay.js";
-import { getCaretSlotRects } from "./caretGeometry.js";
 import {
   applyEditorHistoryTransaction,
   createEmptyEditorHistoryState,
   resetEditorHistoryGrouping,
-  takeEditorRedoStep,
-  takeEditorUndoStep,
   type EditorTransactionOptions,
 } from "./editorHistory.js";
 import {
@@ -26,151 +20,52 @@ import {
 import {
   collectParagraphCharRects,
   findNearestParagraphElement,
-  getParagraphElements,
   resolvePositionAtPoint,
 } from "./positionAtPoint.js";
 import {
-  getToolbarStyleState,
   type BooleanStyleKey,
-  type ParagraphStyleKey,
-  type ToolbarStyleState,
 } from "./toolbarStyleState.js";
 import {
-  clearParagraphListAtSelection,
-  deleteBackward,
-  deleteForward,
-  extendSelectionDown,
-  extendSelectionLeft,
-  extendSelectionRight,
-  extendSelectionUp,
-  getLinkAtSelection,
   getSelectedImageRun,
-  getSelectedText,
-  insertClipboardHtmlAtSelection,
-  insertPlainTextAtSelection,
-  insertTextAtSelection,
-  insertImageAtSelection,
-  insertFieldAtSelection,
-  insertPageBreakAtSelection,
-  insertSectionBreakAtSelection,
-  updateSectionSettings,
-  indentParagraphList,
-  moveSelectionDown,
-  moveSelectedImageToPosition,
-  resizeSelectedImage,
-  moveSelectionLeft,
-  moveSelectionRight,
-  moveSelectionUp,
-  outdentParagraphList,
-  parseEditorClipboardHtml,
-  setParagraphStyle,
-  setParagraphNamedStyle,
-  setLinkAtSelection,
-  setTableCellStyleValue,
-  setTableStyleValue,
-  setTableCellWidth,
-  setTableCellBorders,
-  toggleTrackChanges,
-  acceptRevision,
-  rejectRevision,
-  acceptRevisionsInSelection,
-  rejectRevisionsInSelection,
-  setSelectedImageAlt,
   setSelection,
-  splitListItemAtSelection,
-  setParagraphListFormat,
-  setParagraphListStartAt,
-  setTextStyleValue,
-  serializeEditorSelectionToHtml,
-  splitBlockAtSelection,
-  toggleParagraphList,
-  toggleTextStyle,
 } from "../core/editorCommands.js";
 import {
-  createEditorDocument,
-  createEditorParagraph,
   createInitialEditorState,
   createEditorStateFromDocument,
 } from "../core/editorState.js";
 import {
-  DEFAULT_EDITOR_PAGE_SETTINGS,
-  normalizePageSettings,
-  getDocumentPageSettings,
-  getPageContentWidth,
-  type EditorDocument,
-  type EditorBlockNode,
-  type EditorLayoutParagraph,
-  type EditorParagraphNode,
-  type EditorParagraphListStyle,
-  type EditorTextRun,
-  type EditorBorderStyle,
-  type EditorNamedStyle,
-  getParagraphLength,
-  getParagraphs,
   getDocumentParagraphs,
   getParagraphById,
-  getBlockParagraphs,
   getParagraphText,
-  findParagraphLocation,
   findParagraphTableLocation,
   getActiveSectionIndex,
-  getActiveZone,
   paragraphOffsetToPosition,
-  positionToParagraphOffset,
-  type EditorParagraphStyle,
+  type EditorDocument,
+  type EditorParagraphNode,
   type EditorPosition,
-  type EditorRevision,
-  type EditorSection,
   type EditorState,
-  type EditorTextStyle,
 } from "../core/model.js";
-import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
-
-
+import { isSelectionCollapsed } from "../core/selection.js";
 
 import { createEditorLogger } from "../utils/logger.js";
 import {
   markEnd,
   markStart,
-  recordDuration,
   perfTimer,
   startLongTaskObserver,
   installGlobalReport,
   registerDomStatsSurface,
 } from "../utils/performanceMetrics.js";
 import type {
-  CaretBox,
-  InputBox,
-  RevisionBox,
-  SelectionBox,
   ImageResizeHandleDirection,
 } from "./editorUiTypes.js";
 import {
-  cloneBlock,
-  cloneDocumentBlock,
-  cloneSection,
   cloneEditorState,
 } from "../core/cloneState.js";
 import {
-  findNextWordBoundary,
-  findPreviousWordBoundary,
-  isWordCharacter,
-  resolveWordSelection,
-} from "../core/wordBoundaries.js";
-import {
   getCaretRectAtOffset,
-  getElementContentWidth,
-  getEmptyBlockRect,
-  getMaxInlineImageWidth,
-  getParagraphBoundaryElement,
-  hasUsableCharGeometry,
   resolveClickOffsetFromTarget,
 } from "./domGeometry.js";
-import {
-  buildTableCellLayout,
-  type TableCellLayoutEntry,
-} from "../core/tableLayout.js";
-import { findImageFileFromTransfer, readFileBuffer } from "./clipboardImage.js";
 import { EditorToolbar } from "./components/Toolbar/EditorToolbar.js";
 import { DocumentShell } from "./shells/DocumentShell.js";
 import { InlineShell } from "./shells/InlineShell.js";
@@ -178,7 +73,7 @@ import { BalloonShell } from "./shells/BalloonShell.js";
 import { createEditorCommandsController } from "../app/controllers/EditorCommandsController.js";
 import { createEditorClipboardController } from "../app/controllers/useEditorClipboard.js";
 import { createEditorKeyboardController } from "../app/controllers/useEditorKeyboard.js";
-import { useEditorLayout, type LayoutInvalidation } from "../app/controllers/useEditorLayout.js";
+import { useEditorLayout } from "../app/controllers/useEditorLayout.js";
 import { useEditorPersistence } from "../app/controllers/useEditorPersistence.js";
 import { useEditorFindReplace } from "../app/controllers/useEditorFindReplace.js";
 import { createEditorTableOperations } from "../app/controllers/useEditorTableOperations.js";
@@ -189,149 +84,18 @@ import { createEditorSurfaceEvents } from "../app/controllers/useEditorSurfaceEv
 import { createEditorTextInput } from "../app/controllers/useEditorTextInput.js";
 import { createEditorNavigation } from "../app/controllers/useEditorNavigation.js";
 import { createEditorDocumentIO } from "../app/controllers/useEditorDocumentIO.js";
-import { cloneStyle } from "../core/commands/utils.js";
+import { createEditorRevisionController } from "../app/controllers/useEditorRevision.js";
+import { createEditorStyleController } from "../app/controllers/useEditorStyle.js";
+import { createEditorHistoryActions } from "../app/controllers/useEditorHistoryActions.js";
+import { createEditorToolbarController } from "../app/controllers/useEditorToolbar.js";
+import { computeLayoutInvalidationFromTransaction } from "./layoutInvalidation.js";
+import { DropCaret } from "./components/DropCaret.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
 import { FindReplaceDialog } from "./components/FindReplace/FindReplaceDialog.js";
 import "./components/FindReplace/findReplace.css";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
-import type { EditorToolbarCtx } from "./components/Toolbar/types.js";
 import { setLocale } from "../i18n/index.js";
-
-function createSectionBoundaryParagraph(zone: "header" | "footer"): EditorParagraphNode {
-  const paragraph = createEditorParagraph("");
-  paragraph.style = { styleId: zone };
-  return paragraph;
-}
-
-/**
- * Phase 3: Cheap diff between two editor states. Produces an explicit
- * `LayoutInvalidation` hint for the layout controller, so the layout effect
- * never has to walk every paragraph in the document on every keystroke.
- *
- * Worst case is still O(total chars) — same as the legacy signature loop
- * — but this is computed exactly once per transaction (vs once per Solid
- * reactive notification), and it does NOT participate in the reactive graph,
- * so it doesn't itself cause re-renders.
- *
- * Errs on the side of `dirtyAll` for any structural shape mismatch we can
- * detect cheaply, to avoid stale layout caches.
- */
-function computeLayoutInvalidationFromTransaction(
-  prev: EditorState,
-  next: EditorState,
-): LayoutInvalidation {
-  if (prev === next || prev.document === next.document) {
-    return {};
-  }
-
-  // Fast structural check: if any block's id at any position differs, mark
-  // structureChanged. Don't try to be clever about partial reorderings.
-  const prevBlockIds = prev.document.blocks.map((b) => b.id).join("|");
-  const nextBlockIds = next.document.blocks.map((b) => b.id).join("|");
-  let structureChanged = prevBlockIds !== nextBlockIds;
-
-  if (!structureChanged && prev.document.sections && next.document.sections) {
-    const prevSecs = prev.document.sections;
-    const nextSecs = next.document.sections;
-    if (prevSecs.length !== nextSecs.length) {
-      structureChanged = true;
-    } else {
-      for (let i = 0; i < prevSecs.length; i += 1) {
-        const a = prevSecs[i]!;
-        const b = nextSecs[i]!;
-        const aIds = [
-          ...(a.header ?? []).map((x) => x.id),
-          ...a.blocks.map((x) => x.id),
-          ...(a.footer ?? []).map((x) => x.id),
-        ].join("|");
-        const bIds = [
-          ...(b.header ?? []).map((x) => x.id),
-          ...b.blocks.map((x) => x.id),
-          ...(b.footer ?? []).map((x) => x.id),
-        ].join("|");
-        if (aIds !== bIds) {
-          structureChanged = true;
-          break;
-        }
-      }
-    }
-  } else if (Boolean(prev.document.sections) !== Boolean(next.document.sections)) {
-    structureChanged = true;
-  }
-
-  if (structureChanged) {
-    return { dirtyAll: true, structureChanged: true };
-  }
-
-  // Same block shape: compare paragraphs by id, find ones whose run text
-  // or shape changed. This is the typing/backspace fast path.
-  const prevParas = getParagraphs(prev);
-  const nextParas = getParagraphs(next);
-  const prevById = new Map<string, EditorParagraphNode>();
-  for (const p of prevParas) prevById.set(p.id, p);
-
-  const dirtyParagraphIds: string[] = [];
-  for (const np of nextParas) {
-    const pp = prevById.get(np.id);
-    if (!pp) {
-      dirtyParagraphIds.push(np.id);
-      continue;
-    }
-    if (pp === np) {
-      // Reference equality (rare with the current cloneState, but cheap to
-      // check): nothing changed.
-      continue;
-    }
-    if (pp.runs.length !== np.runs.length) {
-      dirtyParagraphIds.push(np.id);
-      continue;
-    }
-    let changed = false;
-    for (let i = 0; i < pp.runs.length; i += 1) {
-      const a = pp.runs[i]!;
-      const b = np.runs[i]!;
-      if (a === b) continue;
-      if (a.id !== b.id || a.text !== b.text) {
-        changed = true;
-        break;
-      }
-      if (Boolean(a.image) !== Boolean(b.image) ||
-          (a.image?.width ?? -1) !== (b.image?.width ?? -1) ||
-          (a.image?.height ?? -1) !== (b.image?.height ?? -1)) {
-        changed = true;
-        break;
-      }
-    }
-    if (changed) {
-      dirtyParagraphIds.push(np.id);
-    }
-  }
-
-  return { dirtyParagraphIds };
-}
-
-interface ActiveImageResize {
-  paragraphId: string;
-  paragraphOffset: number;
-  startClientX: number;
-  startWidth: number;
-  startHeight: number;
-  aspectRatio: number;
-  initialState: EditorState;
-}
-
-interface ActiveImageDrag {
-  paragraphId: string;
-  paragraphOffset: number;
-  startClientX: number;
-  startClientY: number;
-  dragging: boolean;
-}
-
-
-
-
 
 export interface OasisEditorAppProps {
   showChrome?: boolean;
@@ -350,62 +114,6 @@ export interface OasisEditorAppProps {
   onStateChange?: (state: EditorState) => void;
   readOnly?: boolean;
   persistenceEnabled?: boolean;
-}
-
-type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
-
-function DropCaret(props: {
-  surfaceRef: HTMLDivElement | undefined;
-  state: EditorState;
-  targetPos: () => EditorPosition;
-}) {
-  const layout = createMemo(() => {
-    const pos = props.targetPos();
-    const surfaceRef = props.surfaceRef;
-    if (!surfaceRef) return null;
-
-    const charRects = collectParagraphCharRects(surfaceRef, pos.paragraphId);
-    let viewportLeft = 0;
-    let viewportTop = 0;
-    let height = 28;
-
-    if (charRects.length === 0) {
-      const pElement = getParagraphBoundaryElement(surfaceRef, pos.paragraphId, "end");
-      const fallbackRect = pElement ? (getEmptyBlockRect(pElement) ?? pElement.getBoundingClientRect()) : null;
-      if (fallbackRect) {
-        viewportLeft = fallbackRect.left;
-        viewportTop = fallbackRect.top;
-        height = fallbackRect.height || 28;
-      }
-    } else {
-      const rects = getCaretSlotRects(charRects);
-      const paragraphNode = getParagraphs(props.state).find((p) => p.id === pos.paragraphId);
-      const paragraphOffset = paragraphNode ? positionToParagraphOffset(paragraphNode, pos) : 0;
-      const slotIndex = Math.max(0, Math.min(paragraphOffset, rects.length - 1));
-      const rect = rects[slotIndex];
-      if (rect) {
-        viewportLeft = rect.left;
-        viewportTop = rect.top;
-        height = Math.min(rect.height, 32);
-      }
-    }
-
-    return { viewportLeft, viewportTop, height };
-  });
-
-  return (
-    <Show when={layout()}>
-      {(l) => (
-        <CaretOverlay
-          active={true}
-          fixed={true}
-          left={l().viewportLeft}
-          top={l().viewportTop}
-          height={l().height}
-        />
-      )}
-    </Show>
-  );
 }
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
@@ -460,11 +168,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     });
   };
 
-
-
-
-
-  const pageSettings = () => getDocumentPageSettings(state.document);
   const showChrome = () => props.showChrome ?? true;
   const showTitleBar = () => props.showTitleBar ?? true;
   const showMenubar = () => props.showMenubar ?? true;
@@ -482,13 +185,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   };
 
   const [focused, setFocused] = createSignal(false);
-
   const [undoStack, setUndoStack] = createSignal<EditorState[]>([]);
   const [redoStack, setRedoStack] = createSignal<EditorState[]>([]);
-  const [hoveredRevision, setHoveredRevision] =
-    createSignal<RevisionBox | null>(null);
-  const [pendingCaretTextStyle, setPendingCaretTextStyle] =
-    createSignal<EditorTextStyle | undefined>(undefined);
+
   const [linkDialog, setLinkDialog] = createSignal<{
     isOpen: boolean;
     initialHref: string;
@@ -556,87 +255,28 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     { enabled: props.persistenceEnabled ?? false },
   );
 
-  let dragAnchor: EditorPosition | null = null;
-  let activeImageDrag: ActiveImageDrag | null = null;
-  let activeImageResize: ActiveImageResize | null = null;
   let historyState = createEmptyEditorHistoryState();
-
   let forcePlainTextPaste = false;
   const cloneState = cloneEditorState;
-
-  const clearPendingCaretTextStyle = () => {
-    setPendingCaretTextStyle(undefined);
-  };
-
-  const updatePendingCaretTextStyleValue = <K extends ValueStyleKey>(
-    key: K,
-    value: EditorTextStyle[K] | null,
-  ) => {
-    setPendingCaretTextStyle((current) => {
-      const next = { ...(current ?? {}) } as Record<string, unknown>;
-      if (value === null || value === undefined || value === "") {
-        delete next[key];
-      } else {
-        next[key] = value;
-      }
-      return Object.keys(next).length > 0 ? (next as EditorTextStyle) : undefined;
-    });
-  };
-
-  const updatePendingCaretBooleanStyle = (
-    key: BooleanStyleKey,
-    enabled: boolean,
-  ) => {
-    setPendingCaretTextStyle((current) => {
-      const next = { ...(current ?? {}) } as Record<string, unknown>;
-      next[key] = enabled;
-      if (key === "superscript" && enabled) {
-        next.subscript = false;
-      }
-      if (key === "subscript" && enabled) {
-        next.superscript = false;
-      }
-      return next as EditorTextStyle;
-    });
-  };
-
-
 
   const applyHistoryState = (nextState: EditorState) => {
     commitState(cloneState(nextState));
   };
 
-  const applySelectionPreservingStructure = (
-    nextSelection: EditorState["selection"],
-  ) => {
-    applyState({
-      ...stateSnapshot,
-      document: {
-        ...stateSnapshot.document,
-        blocks: stateSnapshot.document.blocks.map(cloneBlock),
-        sections: stateSnapshot.document.sections?.map(cloneSection),
-      },
-      selection: {
-        anchor: { ...nextSelection.anchor },
-        focus: { ...nextSelection.focus },
-      },
-    });
-  };
-
-  const applySelectionToStatePreservingStructure = (
-    current: EditorState,
-    nextSelection: EditorState["selection"],
-  ): EditorState => ({
-    ...current,
-    document: {
-      ...current.document,
-      blocks: current.document.blocks.map(cloneBlock),
-      sections: current.document.sections?.map(cloneSection),
+  const historyActions = createEditorHistoryActions({
+    state: () => state,
+    stateSnapshot: () => stateSnapshot,
+    applyHistoryState,
+    applyTransactionalState: (producer, options) => applyTransactionalState(producer, options),
+    focusInput,
+    clearPreferredColumn,
+    imageOps: () => imageOps,
+    updateHistoryState: (updater) => {
+      historyState = updater(historyState);
+      setUndoStack(historyState.undoStack);
+      setRedoStack(historyState.redoStack);
     },
-    selection: {
-      anchor: { ...nextSelection.anchor },
-      focus: { ...nextSelection.focus },
-    },
+    getHistoryState: () => historyState,
   });
 
   createEffect(() => {
@@ -644,7 +284,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     state.selection;
     state.activeSectionIndex;
     state.activeZone;
-    // Skip expensive deep-clone during import to avoid blocking the main thread
     if (docIO.importProgress()?.phase !== "done" && docIO.importProgress()?.phase !== "error" && docIO.importProgress() !== null) {
       return;
     }
@@ -674,9 +313,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setUndoStack(historyState.undoStack);
     setRedoStack(historyState.redoStack);
 
-    // Phase 3: compute layout invalidation from the (prev, next) pair and
-    // hand it to the layout controller BEFORE setState. The controller's
-    // doc-wide signature createEffect is then short-circuited.
     const invalidation = perfTimer(
       "txn:invalidate",
       () => computeLayoutInvalidationFromTransaction(prev, next),
@@ -687,124 +323,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     perfTimer("txn:setState", () => commitState(next), 0);
   };
 
-  const performUndo = () => {
-    const step = takeEditorUndoStep(historyState, stateSnapshot);
-    if (!step) {
-      return;
-    }
-
-    historyState = step.history;
-    setUndoStack(historyState.undoStack);
-    setRedoStack(historyState.redoStack);
-    clearPreferredColumn();
-    applyHistoryState(step.nextState);
-    focusInput();
-  };
-
-  const performRedo = () => {
-    const step = takeEditorRedoStep(historyState, stateSnapshot);
-    if (!step) {
-      return;
-    }
-
-    historyState = step.history;
-    setUndoStack(historyState.undoStack);
-    setRedoStack(historyState.redoStack);
-    clearPreferredColumn();
-    applyHistoryState(step.nextState);
-    focusInput();
-  };
-
-  const moveSelectedImageByParagraph = (direction: -1 | 1) => {
-    const selectedImage = imageOps.getSelectedImageInfo(state);
-    if (!selectedImage) {
-      return false;
-    }
-
-    const paragraphs = getParagraphs(state);
-    const sourceIndex = paragraphs.findIndex(
-      (paragraph) => paragraph.id === selectedImage.paragraph.id,
-    );
-    if (sourceIndex < 0) {
-      return false;
-    }
-
-    const targetIndex = sourceIndex + direction;
-    if (targetIndex < 0 || targetIndex >= paragraphs.length) {
-      const insertedParagraph = createEditorParagraph("");
-      const nextState: EditorState = {
-        document: {
-          ...state.document,
-          blocks:
-            direction < 0
-              ? [insertedParagraph, ...state.document.blocks]
-              : [...state.document.blocks, insertedParagraph],
-        },
-        selection: {
-          anchor: { ...state.selection.anchor },
-          focus: { ...state.selection.focus },
-        },
-      };
-      const targetPosition = paragraphOffsetToPosition(
-        insertedParagraph,
-        direction < 0 ? getParagraphLength(insertedParagraph) : 0,
-      );
-      applyTransactionalState(
-        () => moveSelectedImageToPosition(nextState, targetPosition),
-        {
-          mergeKey: "moveImage",
-        },
-      );
-      focusInput();
-      return true;
-    }
-
-    const targetParagraph = paragraphs[targetIndex];
-    const targetOffset =
-      direction < 0 ? getParagraphLength(targetParagraph) : 0;
-
-    applyTransactionalState(
-      (current) =>
-        moveSelectedImageToPosition(
-          current,
-          paragraphOffsetToPosition(targetParagraph, targetOffset),
-        ),
-      { mergeKey: "moveImage" },
-    );
-    focusInput();
-    return true;
-  };
-
-  const toolbarStyleState = (): ToolbarStyleState => {
-    const resolved = getToolbarStyleState(state);
-    const pending = pendingCaretTextStyle();
-    if (!isSelectionCollapsed(state.selection) || !pending) {
-      return resolved;
-    }
-
-    return {
-      ...resolved,
-      bold: pending.bold ?? resolved.bold,
-      italic: pending.italic ?? resolved.italic,
-      underline: pending.underline ?? resolved.underline,
-      strike: pending.strike ?? resolved.strike,
-      superscript: pending.superscript ?? resolved.superscript,
-      subscript: pending.subscript ?? resolved.subscript,
-      fontFamily: pending.fontFamily ?? resolved.fontFamily,
-      fontSize:
-        pending.fontSize !== undefined && pending.fontSize !== null
-          ? String(pending.fontSize)
-          : resolved.fontSize,
-      color: pending.color ?? resolved.color,
-      highlight: pending.highlight ?? resolved.highlight,
-      link: pending.link ?? resolved.link,
-    };
-  };
-
   const selectedImageRun = () => getSelectedImageRun(state);
-  const selectedImageAlt = () => selectedImageRun()?.run.image?.alt ?? null;
-
-
 
   const focusInputAfterPointerSelection = () => {
     setFocused(true);
@@ -819,43 +338,16 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     });
   };
 
-  const isMeasuredParagraphLayoutCurrent = (
-    paragraph: EditorParagraphNode,
-    layout: EditorLayoutParagraph | undefined,
-  ): layout is EditorLayoutParagraph => {
-    if (!layout || layout.text !== getParagraphText(paragraph) || !surfaceRef) {
-      return false;
-    }
-
-    const firstLine = layout.lines[0];
-    if (!firstLine) {
-      return false;
-    }
-
-    // Use the Range-API helper instead of querying [data-char-index] (which
-    // is no longer present on text segments after the per-char-span removal).
-    const caret = getCaretRectAtOffset(surfaceRef, paragraph.id, firstLine.startOffset);
-    if (!caret) {
-      return false;
-    }
-
-    return Math.abs(caret.top - firstLine.top) < 2;
-  };
-
   const resolveParagraphClickOffset = (
     paragraph: EditorParagraphNode,
     event: MouseEvent,
   ): number => {
     const paragraphLength = getParagraphText(paragraph).length;
-
-    // Fast path: click landed on a known segment span (text/tab/image).
-    // This covers nearly all in-text clicks without touching layout caches.
     const segmentResult = resolveClickOffsetFromTarget(event.target, event.clientX);
     if (segmentResult && segmentResult.paragraphId === paragraph.id) {
       return Math.max(0, Math.min(paragraphLength, segmentResult.offset));
     }
 
-    // Legacy atom path (kept for safety: phantom span and edge cases).
     const directChar =
       (event.target as HTMLElement).closest<HTMLElement>("[data-char-index]") ?? null;
     if (directChar) {
@@ -869,15 +361,21 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     }
 
     const cachedLayout = measuredParagraphLayouts()[paragraph.id];
-    const layout =
-      isMeasuredParagraphLayoutCurrent(paragraph, cachedLayout) || !surfaceRef
+    const isCurrent = cachedLayout && cachedLayout.text === getParagraphText(paragraph) && surfaceRef && (() => {
+      const firstLine = cachedLayout.lines[0];
+      if (!firstLine) return false;
+      const caret = getCaretRectAtOffset(surfaceRef, paragraph.id, firstLine.startOffset);
+      return caret && Math.abs(caret.top - firstLine.top) < 2;
+    })();
+
+    const layout = isCurrent || !surfaceRef
         ? cachedLayout
         : measureParagraphLayoutFromRects(
             paragraph,
             collectParagraphCharRects(surfaceRef, paragraph.id),
           );
 
-    return layout.text.length === 0
+    return !layout || layout.text.length === 0
       ? 0
       : Math.max(
           0,
@@ -928,25 +426,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setRedoStack([]);
   };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   const tableOps = createEditorTableOperations({
     applyTransactionalState,
-    applySelectionToStatePreservingStructure,
+    applySelectionToStatePreservingStructure: (current, nextSelection) => ({
+      ...current,
+      document: cloneEditorState(current).document, 
+      selection: nextSelection,
+    }),
     focusInput,
     logger,
   });
@@ -993,13 +479,27 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     focusInput,
   });
 
+  const revisionController = createEditorRevisionController({
+    state: () => state,
+    surfaceRef: () => surfaceRef ?? null,
+  });
+
+  const styleController = createEditorStyleController({
+    state: () => state,
+    commandsController: () => commandsController,
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    focusInput,
+    logger,
+  });
+
   const surfaceEvents = createEditorSurfaceEvents({
     state: () => state,
     applyState,
     surfaceRef: () => surfaceRef ?? null,
     tableResize,
     imageOps,
-    clearPendingCaretTextStyle,
+    clearPendingCaretTextStyle: styleController.clearPendingCaretTextStyle,
     clearPreferredColumn,
     resetTransactionGrouping,
     focusInputAfterPointerSelection,
@@ -1016,7 +516,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     isReadOnly,
     logger,
     clearPreferredColumn,
-    pendingCaretTextStyle: () => pendingCaretTextStyle(),
+    pendingCaretTextStyle: styleController.pendingCaretTextStyle,
     applyTransactionalState,
     applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
     focusInput,
@@ -1035,73 +535,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     focusInput,
   });
 
-  onMount(() => {
-    startIconObserver();
-    startLongTaskObserver();
-    installGlobalReport();
-    registerDomStatsSurface(() => surfaceRef ?? null);
-  });
-
-  onCleanup(() => {
-    onCleanupHook();
-    surfaceEvents.stopDragging();
-    imageOps.stopImageDrag();
-    imageOps.stopImageResize();
-    stopIconObserver();
-  });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  const handleRevisionMouseEnter = (revisionId: string, event: MouseEvent) => {
-    const paragraphs = getParagraphs(state);
-    let foundRevision: EditorRevision | undefined;
-    for (const p of paragraphs) {
-      for (const run of p.runs) {
-        if (run.revision?.id === revisionId) {
-          foundRevision = run.revision;
-          break;
-        }
-      }
-      if (foundRevision) break;
-    }
-
-    if (!foundRevision) return;
-
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    const surfaceRect = surfaceRef?.getBoundingClientRect();
-
-    if (!surfaceRect) return;
-
-    setHoveredRevision({
-      revisionId: foundRevision.id,
-      author: foundRevision.author,
-      date: foundRevision.date,
-      type: foundRevision.type,
-      left: rect.left - surfaceRect.left,
-      top: rect.top - surfaceRect.top,
-    });
-  };
-
-  const handleRevisionMouseLeave = () => {
-    setHoveredRevision(null);
-  };
-
   const onEditorMouseDown = (event: MouseEvent) => {
-    clearPendingCaretTextStyle();
+    styleController.clearPendingCaretTextStyle();
     event.preventDefault();
     focusInput();
   };
@@ -1135,7 +570,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     focusInput,
     clearPreferredColumn,
     resetTransactionGrouping,
-    toolbarStyleState,
+    toolbarStyleState: styleController.toolbarStyleState,
     selectionCollapsed: () => isSelectionCollapsed(state.selection),
     selectedImageRun,
     openLinkDialog: (initialHref) =>
@@ -1144,10 +579,32 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       setImageAltDialog({ isOpen: true, initialAlt }),
   });
 
+  const toolbarController = createEditorToolbarController({
+    state: () => state,
+    undoStack,
+    redoStack,
+    persistenceStatus,
+    importInputRef: () => importInputRef,
+    imageInputRef: () => imageInputRef,
+    styleController,
+    commandsController,
+    tableOps,
+    docIO,
+    historyActions,
+    selectionBoxes: () => selectionBoxes(),
+    selectedImageRun,
+    toggleFindReplace: (open) => fr.setIsOpen(open ?? !fr.isOpen()),
+    focusInput,
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    applyTransactionalState,
+    logger,
+  });
+
   const keyboardCommandsController = {
     ...commandsController,
     applyBooleanStyleCommand: (style: BooleanStyleKey) =>
-      applyToolbarBooleanStyleCommand(style),
+      styleController.applyToolbarBooleanStyleCommand(style),
   };
 
   const { handleKeyDown: rawHandleKeyDown } = createEditorKeyboardController({
@@ -1169,13 +626,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     moveSelectionByWord: navigation.moveSelectionByWord,
     moveSelectionToDocumentBoundary: navigation.moveSelectionToDocumentBoundary,
     moveSelectionToParagraphBoundary: navigation.moveSelectionToParagraphBoundary,
-    moveSelectedImageByParagraph,
-    performUndo,
-    performRedo,
+    moveSelectedImageByParagraph: historyActions.moveSelectedImageByParagraph,
+    performUndo: historyActions.performUndo,
+    performRedo: historyActions.performRedo,
     moveVerticalSelection: navigation.moveVerticalSelection,
     moveVerticalByBlock: navigation.moveVerticalByBlock,
     resolveAdjacentTableCellPosition: tableOps.resolveAdjacentTableCellPosition,
-    applySelectionPreservingStructure,
+    applySelectionPreservingStructure: historyActions.applySelectionPreservingStructure,
     toggleFindReplace: (open) => {
       fr.setIsOpen(open ?? !fr.isOpen());
     },
@@ -1200,7 +657,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         "Escape",
       ].includes(event.key)
     ) {
-      clearPendingCaretTextStyle();
+      styleController.clearPendingCaretTextStyle();
     }
     const mods = [
       event.ctrlKey ? "Ctrl" : null,
@@ -1219,182 +676,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     rawHandleKeyDown(event);
     markEnd("input-to-layout");
   };
-
-  const tableSelectionLabel = (): string | null => {
-    const normalized = normalizeSelection(state);
-    if (normalized.isCollapsed) {
-      return null;
-    }
-
-    const anchorLocation = findParagraphTableLocation(
-      state.document,
-      state.selection.anchor.paragraphId,
-      getActiveSectionIndex(state),
-    );
-    const focusLocation = findParagraphTableLocation(
-      state.document,
-      state.selection.focus.paragraphId,
-      getActiveSectionIndex(state),
-    );
-    if (
-      !anchorLocation ||
-      !focusLocation ||
-      anchorLocation.blockIndex !== focusLocation.blockIndex ||
-      (anchorLocation.rowIndex === focusLocation.rowIndex &&
-        anchorLocation.cellIndex === focusLocation.cellIndex)
-    ) {
-      return null;
-    }
-
-    const count = selectionBoxes().length;
-    if (count === 0) {
-      return null;
-    }
-
-    return `Table selection: ${count} cell${count === 1 ? "" : "s"}`;
-  };
-
-  const isInsideTable = (): boolean => {
-    return !!findParagraphTableLocation(
-      state.document,
-      state.selection.focus.paragraphId,
-      getActiveSectionIndex(state),
-    );
-  };
-
-  const selectionCollapsed = (): boolean =>
-    isSelectionCollapsed(state.selection);
-
-  createEffect(() => {
-    if (!selectionCollapsed()) {
-      clearPendingCaretTextStyle();
-    }
-  });
-
-  const applyToolbarValueStyleCommand = <K extends ValueStyleKey>(
-    key: K,
-    value: EditorTextStyle[K] | null,
-  ) => {
-    if (selectionCollapsed()) {
-      logger.info(`setPendingStyle:${key}=${JSON.stringify(value)}`);
-      clearPreferredColumn();
-      resetTransactionGrouping();
-      updatePendingCaretTextStyleValue(key, value);
-      focusInput();
-      return;
-    }
-
-    commandsController.applyValueStyleCommand(key, value);
-  };
-
-  const applyToolbarBooleanStyleCommand = (key: BooleanStyleKey) => {
-    if (selectionCollapsed()) {
-      const nextValue = !toolbarStyleState()[key];
-      logger.info(`setPendingStyle:${key}=${JSON.stringify(nextValue)}`);
-      clearPreferredColumn();
-      resetTransactionGrouping();
-      updatePendingCaretBooleanStyle(key, nextValue);
-      focusInput();
-      return;
-    }
-
-    commandsController.applyBooleanStyleCommand(key);
-  };
-
-  const toolbarCtx = {
-    state,
-    undoStack,
-    redoStack,
-    persistenceStatus,
-    importInputRef: () => importInputRef,
-    imageInputRef: () => imageInputRef,
-    toolbarStyleState,
-    selectionCollapsed,
-    selectedImageRun,
-    tableSelectionLabel,
-    tableActionRestrictionLabel: tableOps.tableActionRestrictionLabel,
-    isInsideTable,
-    handleExportDocx: docIO.handleExportDocx,
-    toggleFindReplace: (open?: boolean) => {
-      fr.setIsOpen(open ?? !fr.isOpen());
-    },
-    performUndo,
-    performRedo,
-    focusInput,
-    debugToolbarEvent: (control: string, eventName: string, payload?: unknown) => {
-      logger.info(`toolbar:${control}:${eventName}`, payload);
-    },
-    clearPreferredColumn,
-    resetTransactionGrouping,
-    applyTransactionalState,
-    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
-    ...commandsController,
-    applyBooleanStyleCommand: applyToolbarBooleanStyleCommand,
-    applyValueStyleCommand: applyToolbarValueStyleCommand,
-    canMergeSelectedTable: tableOps.canMergeSelectedTable,
-    canMergeSelectedTableCells: tableOps.canMergeSelectedTableCells,
-    canMergeSelectedTableRows: tableOps.canMergeSelectedTableRows,
-    canSplitSelectedTable: tableOps.canSplitSelectedTable,
-    canSplitSelectedTableCell: tableOps.canSplitSelectedTableCell,
-    canSplitSelectedTableCellVertically:
-      tableOps.canSplitSelectedTableCellVertically,
-    canEditSelectedTableColumn: tableOps.canEditSelectedTableColumn,
-    canEditSelectedTableRow: tableOps.canEditSelectedTableRow,
-    mergeSelectedTable: (current: EditorState) => {
-      const result = tableOps.mergeSelectedTable(current);
-      if (result !== current) logger.info("tableOp:mergeSelectedTable");
-      return result;
-    },
-    mergeSelectedTableCells: (current: EditorState) => {
-      const result = tableOps.mergeSelectedTableCells(current);
-      if (result !== current) logger.info("tableOp:mergeSelectedTableCells");
-      return result;
-    },
-    mergeSelectedTableRows: (current: EditorState) => {
-      const result = tableOps.mergeSelectedTableRows(current);
-      if (result !== current) logger.info("tableOp:mergeSelectedTableRows");
-      return result;
-    },
-    splitSelectedTable: (current: EditorState) => {
-      const result = tableOps.splitSelectedTable(current);
-      if (result !== current) logger.info("tableOp:splitSelectedTable");
-      return result;
-    },
-    splitSelectedTableCell: (current: EditorState) => {
-      const result = tableOps.splitSelectedTableCell(current);
-      if (result !== current) logger.info("tableOp:splitSelectedTableCell");
-      return result;
-    },
-    splitSelectedTableCellVertically: (current: EditorState) => {
-      const result = tableOps.splitSelectedTableCellVertically(current);
-      if (result !== current)
-        logger.info("tableOp:splitSelectedTableCellVertically");
-      return result;
-    },
-    insertSelectedTableColumn: (current: EditorState, direction: -1 | 1) => {
-      const result = tableOps.insertSelectedTableColumn(current, direction);
-      if (result !== current)
-        logger.info(`tableOp:insertSelectedTableColumn dir=${direction}`);
-      return result;
-    },
-    insertSelectedTableRow: (current: EditorState, direction: -1 | 1) => {
-      const result = tableOps.insertSelectedTableRow(current, direction);
-      if (result !== current)
-        logger.info(`tableOp:insertSelectedTableRow dir=${direction}`);
-      return result;
-    },
-    deleteSelectedTableColumn: (current: EditorState) => {
-      const result = tableOps.deleteSelectedTableColumn(current);
-      if (result !== current) logger.info("tableOp:deleteSelectedTableColumn");
-      return result;
-    },
-    deleteSelectedTableRow: (current: EditorState) => {
-      const result = tableOps.deleteSelectedTableRow(current);
-      if (result !== current) logger.info("tableOp:deleteSelectedTableRow");
-      return result;
-    },
-    insertTableCommand: tableOps.insertTableCommand,
-  } as unknown as EditorToolbarCtx;
 
   const shouldShowCaret = () => {
     if (!caretBox().visible || !isSelectionCollapsed(state.selection)) {
@@ -1425,7 +706,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       <Shell
         state={state}
         setState={setStateSignal}
-        toolbarCtx={toolbarCtx}
+        toolbarCtx={toolbarController.toolbarCtx}
         showChrome={showChrome()}
         showTitleBar={showTitleBar()}
         showMenubar={showMenubar()}
@@ -1437,11 +718,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         viewportHeight={() => props.viewportHeight}
         selectionBoxes={() => selectionBoxes()}
         showFloatingTableToolbar={() =>
-          !isReadOnly() && tableSelectionLabel() !== null
+          !isReadOnly() && toolbarController.tableSelectionLabel() !== null
         }
         caretBox={() => caretBox()}
         inputBox={() => inputBox()}
-        hoveredRevision={() => hoveredRevision()}
+        hoveredRevision={revisionController.hoveredRevision}
         focused={() => focused()}
         importProgress={() => docIO.importProgress()}
         showCaret={shouldShowCaret}
@@ -1475,8 +756,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         onSurfaceMouseMove={tableResize.handleMouseMove}
         onSurfaceDblClick={surfaceEvents.handleSurfaceDblClick}
         onParagraphMouseDown={surfaceEvents.handleParagraphMouseDown}
-        onRevisionMouseEnter={handleRevisionMouseEnter}
-        onRevisionMouseLeave={handleRevisionMouseLeave}
+        onRevisionMouseEnter={revisionController.handleRevisionMouseEnter}
+        onRevisionMouseLeave={revisionController.handleRevisionMouseLeave}
         onImageMouseDown={(paragraphId: string, paragraphOffset: number, event: MouseEvent & { currentTarget: HTMLElement }) => {
           event.preventDefault();
           event.stopPropagation();
@@ -1515,6 +796,21 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     );
   };
 
+  onMount(() => {
+    startIconObserver();
+    startLongTaskObserver();
+    installGlobalReport();
+    registerDomStatsSurface(() => surfaceRef ?? null);
+  });
+
+  onCleanup(() => {
+    onCleanupHook();
+    surfaceEvents.stopDragging();
+    imageOps.stopImageDrag();
+    imageOps.stopImageResize();
+    stopIconObserver();
+  });
+
   return (
     <div
       classList={{
@@ -1525,7 +821,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       }}
     >
       <Show when={!useComposedShell() && showChrome() && showToolbar()}>
-        <EditorToolbar ctx={toolbarCtx} />
+        <EditorToolbar ctx={toolbarController.toolbarCtx} />
       </Show>
 
       <LinkDialog
@@ -1564,13 +860,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             measuredBlockHeights={() => measuredBlockHeights()}
             measuredParagraphLayouts={() => measuredParagraphLayouts()}
             selectionBoxes={() => selectionBoxes()}
-            toolbarCtx={() => toolbarCtx}
+            toolbarCtx={() => toolbarController.toolbarCtx}
             showFloatingTableToolbar={() =>
-              !isReadOnly() && tableSelectionLabel() !== null
+              !isReadOnly() && toolbarController.tableSelectionLabel() !== null
             }
             caretBox={() => caretBox()}
             inputBox={() => inputBox()}
-            hoveredRevision={() => hoveredRevision()}
+            hoveredRevision={revisionController.hoveredRevision}
             focused={() => focused()}
             importProgress={() => docIO.importProgress()}
             viewportHeight={props.viewportHeight}
@@ -1606,8 +902,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             onSurfaceMouseMove={tableResize.handleMouseMove}
             onSurfaceDblClick={surfaceEvents.handleSurfaceDblClick}
             onParagraphMouseDown={surfaceEvents.handleParagraphMouseDown}
-            onRevisionMouseEnter={handleRevisionMouseEnter}
-            onRevisionMouseLeave={handleRevisionMouseLeave}
+            onRevisionMouseEnter={revisionController.handleRevisionMouseEnter}
+            onRevisionMouseLeave={revisionController.handleRevisionMouseLeave}
             onImageMouseDown={(paragraphId, paragraphOffset, event) => {
               event.preventDefault();
               event.stopPropagation();
@@ -1664,9 +960,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       </div>
       </Show>
 
-      {/* Drag/resize overlays must render in BOTH the legacy and composed-shell
-          layouts, otherwise the dashed resize guide and ghost previews silently
-          disappear when the composed shell is active. */}
       <Show when={tableResize.resizing()}>
         {(resizing) => (
           <div

@@ -14,15 +14,7 @@ import {
 import { isSelectionCollapsed } from "../../core/selection.js";
 import { resolveWordSelection } from "../../core/wordBoundaries.js";
 import { setSelection } from "../../core/editorCommands.js";
-
-function createSectionBoundaryParagraph(zone: "header" | "footer"): EditorParagraphNode {
-  return {
-    type: "paragraph",
-    id: `paragraph:${crypto.randomUUID()}`,
-    runs: [],
-    style: { styleId: zone }
-  };
-}
+import { createSectionBoundaryParagraph } from "../../core/editorState.js";
 
 export interface UseEditorSurfaceEventsProps {
   state: () => EditorState;

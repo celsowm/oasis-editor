@@ -316,6 +316,12 @@ export function createEditorStateFromDocument(
   return result;
 }
 
+export function createSectionBoundaryParagraph(zone: "header" | "footer"): EditorParagraphNode {
+  const paragraph = createEditorParagraph("");
+  paragraph.style = { styleId: zone };
+  return paragraph;
+}
+
 export function createInitialEditorState(): EditorState {
   const paragraph = createEditorParagraph("");
   const run = paragraph.runs[0]!;
