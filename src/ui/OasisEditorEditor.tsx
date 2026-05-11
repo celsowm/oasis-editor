@@ -92,6 +92,7 @@ import { projectDocumentLayout } from "./layoutProjection.js";
 
 export function OasisEditorEditor(props: OasisEditorEditorProps) {
   let scrollContentRef: HTMLDivElement | undefined;
+  let viewportElement: HTMLDivElement | undefined;
   const pageSettings = () => getDocumentPageSettings(props.state().document);
   const viewportHeight = () =>
     typeof props.viewportHeight === "number" ? `${props.viewportHeight}px` : props.viewportHeight ?? "min(72vh, 920px)";
@@ -129,7 +130,10 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
       }}
     >
     <div
-      ref={props.onViewportRef}
+      ref={(el) => {
+        viewportElement = el;
+        props.onViewportRef?.(el);
+      }}
       class="oasis-editor-editor"
       data-testid="editor-editor"
       onDragOver={props.onDragOver}
@@ -148,6 +152,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
           state={props.state}
           measuredBlockHeights={props.measuredBlockHeights}
           measuredParagraphLayouts={props.measuredParagraphLayouts}
+          viewportRef={() => viewportElement ?? undefined}
           onSurfaceMouseDown={props.onSurfaceMouseDown}
           onSurfaceMouseMove={props.onSurfaceMouseMove}
           onSurfaceDblClick={props.onSurfaceDblClick}

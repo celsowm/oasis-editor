@@ -164,18 +164,21 @@ test("triple-click paragraph selection after complex DOCX import stays responsiv
   await page.waitForTimeout(1_000);
 
   const clickTarget = await page.evaluate(() => {
-    const chars = Array.from(
+    // After the per-char-span removal, contiguous text is rendered as a
+    // single segment span. Look for either an atom char (tab/image/phantom)
+    // or a text segment that the cursor can reliably hit.
+    const candidates = Array.from(
       document.querySelectorAll<HTMLElement>(
-        '[data-testid="editor-surface"] [data-testid="editor-block"][data-paragraph-id] [data-char-index]',
+        '[data-testid="editor-surface"] [data-testid="editor-block"][data-paragraph-id] [data-segment="text"], [data-testid="editor-surface"] [data-testid="editor-block"][data-paragraph-id] [data-char-index]',
       ),
     );
 
-    for (const char of chars) {
-      const paragraph = char.closest<HTMLElement>("[data-paragraph-id]");
+    for (const candidate of candidates) {
+      const paragraph = candidate.closest<HTMLElement>("[data-paragraph-id]");
       if (!paragraph) {
         continue;
       }
-      const rect = char.getBoundingClientRect();
+      const rect = candidate.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) {
         continue;
       }
@@ -183,12 +186,14 @@ test("triple-click paragraph selection after complex DOCX import stays responsiv
       const x = Math.round(rect.left + rect.width / 2);
       const y = Math.round(rect.top + rect.height / 2);
       const topElement = document.elementFromPoint(x, y);
-      if (topElement instanceof HTMLElement && char.contains(topElement)) {
+      if (topElement instanceof HTMLElement && candidate.contains(topElement)) {
         return {
           x,
           y,
           paragraphId: paragraph.dataset.paragraphId ?? "",
-          charIndex: char.dataset.charIndex ?? "",
+          segmentStart: candidate.dataset.segmentStart ?? candidate.dataset.charIndex ?? "0",
+          segmentEnd: candidate.dataset.segmentEnd ?? candidate.dataset.charIndex ?? "0",
+          segmentKind: candidate.dataset.segment ?? "atom",
         };
       }
     }
@@ -205,9 +210,13 @@ test("triple-click paragraph selection after complex DOCX import stays responsiv
     eventDurations.push(
       await page.evaluate(
         ({ target, detail }) => {
-          const char = document.querySelector<HTMLElement>(
-            `[data-paragraph-id="${target.paragraphId}"] [data-char-index="${target.charIndex}"]`,
-          );
+          const char =
+            document.querySelector<HTMLElement>(
+              `[data-paragraph-id="${target.paragraphId}"] [data-segment-start="${target.segmentStart}"]`,
+            ) ??
+            document.querySelector<HTMLElement>(
+              `[data-paragraph-id="${target.paragraphId}"] [data-char-index="${target.segmentStart}"]`,
+            );
           if (!char) {
             throw new Error("triple-click target char not found");
           }

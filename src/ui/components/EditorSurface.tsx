@@ -1,4 +1,4 @@
-import { For, Index, Show, createMemo } from "solid-js";
+import { For, Index, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import type { Accessor } from "solid-js";
 import {
   getPageBodyTop,
@@ -7,6 +7,7 @@ import {
   getPageHeaderZoneTop,
   type EditorLayoutBlock,
   type EditorLayoutDocument,
+  type EditorLayoutFragment,
   type EditorLayoutLine,
   type EditorLayoutPage,
   type EditorLayoutParagraph,
@@ -38,12 +39,21 @@ import {
   projectParagraphLayout,
 } from "../layoutProjection.js";
 import { resolveRenderedLineHeightPx } from "../textMeasurement.js";
+import { perfTimer } from "../../utils/performanceMetrics.js";
 import { PageBreak } from "./PageBreak.js";
 
 interface EditorSurfaceProps {
   state: Accessor<EditorState>;
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
+  /**
+   * Phase 4: scroll viewport accessor for page virtualization.
+   * When provided, only pages within (or near) the viewport are rendered with
+   * their full block content; off-screen pages are replaced with a same-sized
+   * placeholder so scroll geometry is preserved. Optional — when omitted, all
+   * pages render in full (legacy behaviour).
+   */
+  viewportRef?: () => HTMLElement | undefined;
   onSurfaceMouseDown: (event: MouseEvent) => void;
   onSurfaceMouseMove?: (event: MouseEvent) => void;
   onSurfaceDblClick: (event: MouseEvent) => void;
@@ -192,6 +202,62 @@ function shouldJustifyLine(
 
   const expandableSpaces = lineChars.filter((char) => char.char === " ").length;
   return expandableSpaces > 0;
+}
+
+/**
+ * A renderable atom inside a fragment.
+ *
+ *  - `text`: a contiguous run of non-tab characters → one DOM span with raw text.
+ *  - `tab`:  a single \t character → its own span (variable width via tab stops).
+ *  - `image`: a single image-bearing run character → its own span with <img>.
+ *
+ * Replacing the original "one span per character" rendering with these atoms is
+ * the single biggest perf win for import/typing on real documents.
+ */
+type FragmentAtom =
+  | { kind: "text"; startOffset: number; endOffset: number; text: string }
+  | { kind: "tab"; offset: number; runOffset: number }
+  | { kind: "image"; offset: number; runOffset: number };
+
+function computeFragmentAtoms(fragment: EditorLayoutFragment): FragmentAtom[] {
+  if (fragment.image && fragment.chars.length > 0) {
+    const c = fragment.chars[0]!;
+    return [{ kind: "image", offset: c.paragraphOffset, runOffset: c.runOffset }];
+  }
+
+  const atoms: FragmentAtom[] = [];
+  let buf = "";
+  let bufStart = -1;
+  let bufEnd = -1;
+
+  const flushText = () => {
+    if (buf.length > 0) {
+      atoms.push({
+        kind: "text",
+        startOffset: bufStart,
+        endOffset: bufEnd + 1,
+        text: buf,
+      });
+      buf = "";
+      bufStart = -1;
+      bufEnd = -1;
+    }
+  };
+
+  for (const char of fragment.chars) {
+    if (char.char === "\t") {
+      flushText();
+      atoms.push({ kind: "tab", offset: char.paragraphOffset, runOffset: char.runOffset });
+    } else {
+      if (buf.length === 0) {
+        bufStart = char.paragraphOffset;
+      }
+      bufEnd = char.paragraphOffset;
+      buf += char.char;
+    }
+  }
+  flushText();
+  return atoms;
 }
 
 function numberToLowerLetter(n: number): string {
@@ -485,6 +551,7 @@ function renderParagraph(
                 >
                   <For each={line.fragments}>
                     {(fragment) => {
+                      const atoms = computeFragmentAtoms(fragment);
                       const runContent = (
                         <span
                           class="oasis-editor-run"
@@ -520,16 +587,28 @@ function renderParagraph(
                               : undefined
                           }
                         >
-                          <For each={fragment.chars}>
-                            {(char) =>
-                              (() => {
-                                const imageSelected = () =>
-                                  Boolean(fragment.image) &&
-                                  isCharSelected(char.paragraphOffset);
-                                const slot = () => slotsByOffset.get(char.paragraphOffset);
+                          <For each={atoms}>
+                            {(atom) => {
+                              if (atom.kind === "text") {
+                                // Single span per contiguous text run. No per-char DOM nodes.
+                                return (
+                                  <span
+                                    class="oasis-editor-text-segment"
+                                    data-segment="text"
+                                    data-paragraph-id={paragraph.id}
+                                    data-run-id={fragment.runId}
+                                    data-segment-start={atom.startOffset}
+                                    data-segment-end={atom.endOffset}
+                                    data-testid="editor-text-segment"
+                                  >
+                                    {atom.text}
+                                  </span>
+                                );
+                              }
+
+                              if (atom.kind === "tab") {
                                 const tabWidth = () => {
-                                  if (char.char !== "\t") return 0;
-                                  const currentX = slot()?.left ?? 0;
+                                  const currentX = slotsByOffset.get(atom.offset)?.left ?? 0;
                                   const nextTabPos = resolveNextTabStop(
                                     currentX,
                                     effectiveTabs(),
@@ -537,30 +616,40 @@ function renderParagraph(
                                   return Math.max(0, nextTabPos - currentX);
                                 };
                                 return (
-                              <span
-                                classList={{
-                                  "oasis-editor-char": true,
-                                  "oasis-editor-image-char": Boolean(
-                                    fragment.image,
-                                  ),
-                                  "oasis-editor-tab-char": char.char === "\t",
-                                }}
-                                data-char-index={char.paragraphOffset}
-                                data-run-id={fragment.runId}
-                                data-run-offset={char.runOffset}
-                                data-testid="editor-char"
-                                style={
-                                  char.char === "\t"
-                                    ? {
-                                        display: "inline-block",
-                                        width: `${tabWidth()}pt`,
-                                        overflow: "hidden",
-                                        "white-space": "pre",
-                                      }
-                                    : undefined
-                                }
-                              >
-                                {fragment.image ? (
+                                  <span
+                                    class="oasis-editor-char oasis-editor-tab-char"
+                                    data-char-index={atom.offset}
+                                    data-run-id={fragment.runId}
+                                    data-run-offset={atom.runOffset}
+                                    data-segment="tab"
+                                    data-segment-start={atom.offset}
+                                    data-segment-end={atom.offset + 1}
+                                    data-testid="editor-char"
+                                    style={{
+                                      display: "inline-block",
+                                      width: `${tabWidth()}pt`,
+                                      overflow: "hidden",
+                                      "white-space": "pre",
+                                    }}
+                                  >
+                                    {"\u00A0"}
+                                  </span>
+                                );
+                              }
+
+                              // image atom
+                              const imageSelected = () => isCharSelected(atom.offset);
+                              return (
+                                <span
+                                  class="oasis-editor-char oasis-editor-image-char"
+                                  data-char-index={atom.offset}
+                                  data-run-id={fragment.runId}
+                                  data-run-offset={atom.runOffset}
+                                  data-segment="image"
+                                  data-segment-start={atom.offset}
+                                  data-segment-end={atom.offset + 1}
+                                  data-testid="editor-char"
+                                >
                                   <span
                                     classList={{
                                       "oasis-editor-image-inline": true,
@@ -572,7 +661,7 @@ function renderParagraph(
                                         ? (event) =>
                                             onImageMouseDown(
                                               paragraph.id,
-                                              char.paragraphOffset,
+                                              atom.offset,
                                               event,
                                             )
                                         : undefined
@@ -584,14 +673,14 @@ function renderParagraph(
                                     }
                                   >
                                     <img
-                                      src={resolveImageSrc(state.document, fragment.image.src)}
-                                      width={fragment.image.width}
-                                      height={fragment.image.height}
-                                      alt={fragment.image.alt ?? ""}
+                                      src={resolveImageSrc(state.document, fragment.image!.src)}
+                                      width={fragment.image!.width}
+                                      height={fragment.image!.height}
+                                      alt={fragment.image!.alt ?? ""}
                                       class="oasis-editor-image"
                                       style={{
-                                        width: `${fragment.image.width}px`,
-                                        height: `${fragment.image.height}px`,
+                                        width: `${fragment.image!.width}px`,
+                                        height: `${fragment.image!.height}px`,
                                       }}
                                       classList={{
                                         "oasis-editor-image-selected":
@@ -613,7 +702,7 @@ function renderParagraph(
                                                 ? (event) =>
                                                     onImageResizeHandleMouseDown(
                                                       paragraph.id,
-                                                      char.paragraphOffset,
+                                                      atom.offset,
                                                       direction,
                                                       event,
                                                     )
@@ -624,15 +713,9 @@ function renderParagraph(
                                       </For>
                                     </Show>
                                   </span>
-                                ) : char.char === "\t" ? (
-                                  "\u00A0"
-                                ) : (
-                                  char.char
-                                )}
-                              </span>
-                                );
-                              })()
-                            }
+                                </span>
+                              );
+                            }}
                           </For>
                         </span>
                       );
@@ -1044,14 +1127,160 @@ export function EditorSurface(props: EditorSurfaceProps) {
   const listMarkers = createMemo(() => buildParagraphListMarkers(paragraphs()));
   const normalizedSelection = createMemo(() => normalizeSelection(props.state()));
   const documentLayout = createMemo(() => {
-    return preserveStableLayoutIdentity(
-      projectDocumentLayout(
-        props.state().document,
-        undefined,
-        props.measuredBlockHeights?.(),
-        props.measuredParagraphLayouts?.(),
+    return perfTimer("layout:project", () =>
+      preserveStableLayoutIdentity(
+        projectDocumentLayout(
+          props.state().document,
+          undefined,
+          props.measuredBlockHeights?.(),
+          props.measuredParagraphLayouts?.(),
+        ),
       ),
     );
+  });
+
+  // ── Phase 4: page virtualization ────────────────────────────────────────
+  //
+  // Only pages that intersect the viewport rect (with overscan) are rendered
+  // with their full block contents. Other pages render as a same-sized
+  // placeholder div so the scroll geometry (and surrounding pages' visual
+  // positions) is preserved.
+  //
+  // We additionally pin the page that owns the caret / selection anchor /
+  // selection focus paragraph, so caret + selection geometry remains
+  // available even if the user briefly scrolls those off-screen.
+  const VIRTUAL_OVERSCAN_PX = 1200;
+  const [scrollTick, setScrollTick] = createSignal(0);
+  let scrollHandler: (() => void) | null = null;
+  let resizeHandler: (() => void) | null = null;
+  let lastViewport: HTMLElement | null = null;
+
+  onMount(() => {
+    const attach = () => {
+      const v = props.viewportRef?.();
+      if (!v || v === lastViewport) return;
+      if (lastViewport && scrollHandler) {
+        lastViewport.removeEventListener("scroll", scrollHandler);
+      }
+      lastViewport = v;
+      scrollHandler = () => setScrollTick((n) => n + 1);
+      v.addEventListener("scroll", scrollHandler, { passive: true });
+      // Fire once so the initial visible range is computed.
+      setScrollTick((n) => n + 1);
+    };
+    resizeHandler = () => setScrollTick((n) => n + 1);
+    window.addEventListener("resize", resizeHandler);
+    attach();
+    // Re-attach on the next animation frame in case viewportRef wasn't ready
+    // at mount time.
+    requestAnimationFrame(attach);
+  });
+
+  onCleanup(() => {
+    if (lastViewport && scrollHandler) {
+      lastViewport.removeEventListener("scroll", scrollHandler);
+    }
+    if (resizeHandler) {
+      window.removeEventListener("resize", resizeHandler);
+    }
+    scrollHandler = null;
+    resizeHandler = null;
+    lastViewport = null;
+  });
+
+  const pinnedPageIds = createMemo(() => {
+    const sel = props.state().selection;
+    const pinnedParagraphIds = new Set([
+      sel.anchor.paragraphId,
+      sel.focus.paragraphId,
+    ]);
+    const ids = new Set<string>();
+    for (const page of documentLayout().pages) {
+      const owns = (blocks: EditorLayoutBlock[] | undefined) =>
+        blocks?.some((b) =>
+          b.sourceBlock.type === "paragraph"
+            ? pinnedParagraphIds.has(b.sourceBlock.id)
+            : b.sourceBlock.rows.some((row) =>
+                row.cells.some((cell) =>
+                  cell.blocks.some((p) => pinnedParagraphIds.has(p.id)),
+                ),
+              ),
+        );
+      if (owns(page.blocks) || owns(page.headerBlocks) || owns(page.footerBlocks)) {
+        ids.add(page.id);
+      }
+    }
+    return ids;
+  });
+
+  // Returns a `(pageIndex) => boolean` accessor that says whether a given
+  // page should be rendered with its full content. When no viewport is
+  // wired (e.g. headless tests or Word-parity scaffolding), everything
+  // renders.
+  const visiblePageIds = createMemo<Set<string> | null>(() => {
+    scrollTick(); // reactive dep
+    const viewport = props.viewportRef?.();
+    if (!viewport) return null; // no virtualization possible
+
+    const pages = documentLayout().pages;
+    if (pages.length === 0) return new Set();
+
+    const viewportRect = viewport.getBoundingClientRect();
+    const visible = new Set<string>();
+
+    // 1. Try DOM-based query (fast, accurate after first render).
+    const pageEls = viewport.querySelectorAll<HTMLElement>('[data-testid="editor-page"]');
+    if (pageEls.length > 0) {
+      const top = viewportRect.top - VIRTUAL_OVERSCAN_PX;
+      const bottom = viewportRect.bottom + VIRTUAL_OVERSCAN_PX;
+      for (const el of pageEls) {
+        const idx = Number(el.dataset.pageIndex);
+        if (!Number.isFinite(idx)) continue;
+        const page = pages[idx];
+        if (!page) continue;
+        const r = el.getBoundingClientRect();
+        if (r.bottom >= top && r.top <= bottom) {
+          visible.add(page.id);
+        }
+      }
+      return visible;
+    }
+
+    // 2. First render fallback: predict page positions from cumulative
+    //    heights so we don't render hundreds of pages on initial mount of
+    //    a long document.
+    const scrollTop = viewport.scrollTop;
+    const viewportHeight = viewport.clientHeight || 800;
+    const visibleTop = scrollTop - VIRTUAL_OVERSCAN_PX;
+    const visibleBottom = scrollTop + viewportHeight + VIRTUAL_OVERSCAN_PX;
+
+    let cumulative = 0;
+    for (const page of pages) {
+      const pageHeight = Math.max(page.height || 0, page.pageSettings.height);
+      const pageBottom = cumulative + pageHeight;
+      if (pageBottom >= visibleTop && cumulative <= visibleBottom) {
+        visible.add(page.id);
+      }
+      cumulative = pageBottom + 24; // grid gap
+      if (cumulative > visibleBottom + VIRTUAL_OVERSCAN_PX) break;
+    }
+    return visible;
+  });
+
+  const shouldRenderPageContent = (page: EditorLayoutPage): boolean => {
+    const visible = visiblePageIds();
+    if (visible === null) return true; // legacy / unvirtualized
+    if (visible.has(page.id)) return true;
+    if (pinnedPageIds().has(page.id)) return true;
+    return false;
+  };
+
+  // After every layout / state change, re-tick on the next microtask so
+  // `visiblePageIds` queries the freshly mounted DOM (otherwise it would
+  // see the pre-commit DOM and we'd render stale visibility for one frame).
+  createEffect(() => {
+    documentLayout();
+    queueMicrotask(() => setScrollTick((n) => n + 1));
   });
 
   return (
@@ -1089,6 +1318,20 @@ export function EditorSurface(props: EditorSurfaceProps) {
                 "min-height": `${pageSettings().height}px`,
               }}
             >
+              <Show
+                when={shouldRenderPageContent(page())}
+                fallback={
+                  // Phase 4: lightweight placeholder for off-screen pages.
+                  // Scroll geometry stays correct because the parent
+                  // `.oasis-editor-paper` already enforces min-height equal to
+                  // the page paper height.
+                  <div
+                    class="oasis-editor-page-virtual-placeholder"
+                    data-testid="editor-page-virtual-placeholder"
+                    aria-hidden="true"
+                  />
+                }
+              >
               <div
                 class="oasis-editor-page-header-zone"
                 classList={{
@@ -1266,6 +1509,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                   }}
                 </For>
               </div>
+              </Show>
             </div>
             </>
           );

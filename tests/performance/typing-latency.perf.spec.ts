@@ -60,15 +60,17 @@ test("typing latency after DOCX import — baseline", async ({ page }) => {
   await page.waitForTimeout(1000);
   consoleEntries.length = 0;
 
-  // Click into a paragraph with text to position the caret
+  // Click into a paragraph with text to position the caret. After the
+  // per-char-span removal, text is rendered as one segment span per
+  // contiguous run of non-tab characters; query for those instead.
   const firstTextChar = await page.evaluate(() => {
-    const chars = Array.from(
+    const segments = Array.from(
       document.querySelectorAll<HTMLElement>(
-        '[data-testid="editor-surface"] [data-char-index]',
+        '[data-testid="editor-surface"] [data-segment="text"], [data-testid="editor-surface"] [data-char-index]',
       ),
     );
-    for (const char of chars) {
-      const rect = char.getBoundingClientRect();
+    for (const seg of segments) {
+      const rect = seg.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
         return {
           x: Math.round(rect.left + rect.width / 2),
@@ -157,15 +159,17 @@ test("backspace latency after DOCX import — baseline", async ({ page }) => {
   await page.waitForTimeout(1000);
   consoleEntries.length = 0;
 
-  // Navigate to end of a text paragraph with arrow keys
+  // Navigate to end of a text paragraph with arrow keys. After the
+  // per-char-span removal, text is rendered as one segment span per
+  // contiguous run of non-tab characters; query for those instead.
   const firstTextChar = await page.evaluate(() => {
-    const chars = Array.from(
+    const segments = Array.from(
       document.querySelectorAll<HTMLElement>(
-        '[data-testid="editor-surface"] [data-char-index]',
+        '[data-testid="editor-surface"] [data-segment="text"], [data-testid="editor-surface"] [data-char-index]',
       ),
     );
-    for (const char of chars) {
-      const rect = char.getBoundingClientRect();
+    for (const seg of segments) {
+      const rect = seg.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
         return {
           x: Math.round(rect.left + rect.width / 2),
