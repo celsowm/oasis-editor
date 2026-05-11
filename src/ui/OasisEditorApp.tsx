@@ -125,9 +125,9 @@ import {
   type EditorTextStyle,
 } from "../core/model.js";
 import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
-import { exportEditorDocumentToDocxBlob } from "../export/docx/exportEditorDocumentToDocx.js";
-import { importDocxInWorker } from "../import/docx/importDocxInWorker.js";
-import type { DocxImportStage } from "../import/docx/importDocxToEditorDocument.js";
+
+
+
 import { createEditorLogger } from "../utils/logger.js";
 import {
   markEnd,
@@ -188,6 +188,7 @@ import { createEditorTableDrag } from "../app/controllers/useEditorTableDrag.js"
 import { createEditorSurfaceEvents } from "../app/controllers/useEditorSurfaceEvents.js";
 import { createEditorTextInput } from "../app/controllers/useEditorTextInput.js";
 import { createEditorNavigation } from "../app/controllers/useEditorNavigation.js";
+import { createEditorDocumentIO } from "../app/controllers/useEditorDocumentIO.js";
 import { cloneStyle } from "../core/commands/utils.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
@@ -328,19 +329,9 @@ interface ActiveImageDrag {
   dragging: boolean;
 }
 
-type ImportProgressPhase =
-  | "reading-file"
-  | DocxImportStage
-  | "applying-editor-state"
-  | "stabilizing-layout"
-  | "done"
-  | "error";
 
-interface ImportProgressState {
-  phase: ImportProgressPhase;
-  progress: number;
-  subProgress?: number;
-}
+
+
 
 export interface OasisEditorAppProps {
   showChrome?: boolean;
@@ -454,6 +445,25 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     stateSnapshot = next;
     setStateSignal(next);
   };
+  const applyState = (nextState: EditorState) => {
+    commitState(nextState);
+  };
+
+  const focusInput = () => {
+    setFocused(true);
+    queueMicrotask(() => {
+      textareaRef?.focus({ preventScroll: true });
+      if (textareaRef) {
+        textareaRef.selectionStart = textareaRef.value.length;
+        textareaRef.selectionEnd = textareaRef.value.length;
+      }
+    });
+  };
+
+
+
+
+
   const pageSettings = () => getDocumentPageSettings(state.document);
   const showChrome = () => props.showChrome ?? true;
   const showTitleBar = () => props.showTitleBar ?? true;
@@ -493,13 +503,26 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     isOpen: false,
     initialAlt: "",
   });
-  const [importProgress, setImportProgress] =
-    createSignal<ImportProgressState | null>(null);
+
   let viewportRef: HTMLDivElement | undefined;
   let surfaceRef: HTMLDivElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
   let importInputRef: HTMLInputElement | undefined;
   let imageInputRef: HTMLInputElement | undefined;
+
+  const docIO = createEditorDocumentIO({
+    state: () => state,
+    applyState,
+    applyTransactionalState: (producer, options) => applyTransactionalState(producer, options),
+    isReadOnly,
+    surfaceRef: () => surfaceRef ?? null,
+    stabilizeLayoutAfterImport: async () => {
+      await stabilizeLayoutAfterImport();
+    },
+    resetEditorChromeState: () => resetEditorChromeState(),
+    focusInput,
+    logger,
+  });
 
   const {
     measuredBlockHeights,
@@ -519,7 +542,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     state,
     surfaceRef: () => surfaceRef,
     viewportRef: () => viewportRef,
-    isImporting: () => importProgress()?.phase !== "done" && importProgress()?.phase !== "error" && importProgress() !== null,
+    isImporting: () => docIO.importProgress()?.phase !== "done" && docIO.importProgress()?.phase !== "error" && docIO.importProgress() !== null,
   });
 
   const { status: persistenceStatus } = useEditorPersistence(
@@ -577,9 +600,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     });
   };
 
-  const applyState = (nextState: EditorState) => {
-    commitState(nextState);
-  };
+
 
   const applyHistoryState = (nextState: EditorState) => {
     commitState(cloneState(nextState));
@@ -624,7 +645,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     state.activeSectionIndex;
     state.activeZone;
     // Skip expensive deep-clone during import to avoid blocking the main thread
-    if (importProgress()?.phase !== "done" && importProgress()?.phase !== "error" && importProgress() !== null) {
+    if (docIO.importProgress()?.phase !== "done" && docIO.importProgress()?.phase !== "error" && docIO.importProgress() !== null) {
       return;
     }
     props.onStateChange?.(cloneState(stateSnapshot));
@@ -783,16 +804,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const selectedImageRun = () => getSelectedImageRun(state);
   const selectedImageAlt = () => selectedImageRun()?.run.image?.alt ?? null;
 
-  const focusInput = () => {
-    setFocused(true);
-    queueMicrotask(() => {
-      textareaRef?.focus({ preventScroll: true });
-      if (textareaRef) {
-        textareaRef.selectionStart = textareaRef.value.length;
-        textareaRef.selectionEnd = textareaRef.value.length;
-      }
-    });
-  };
+
 
   const focusInputAfterPointerSelection = () => {
     setFocused(true);
@@ -916,201 +928,21 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setRedoStack([]);
   };
 
-  const PHASE_RANGES: Record<ImportProgressPhase, [number, number]> = {
-    "reading-file": [0, 8],
-    "opening-docx": [8, 20],
-    "parsing-document": [20, 72],
-    "parsing-headers-footers": [72, 78],
-    "applying-editor-state": [78, 88],
-    "stabilizing-layout": [88, 98],
-    done: [100, 100],
-    error: [100, 100],
-  };
 
-  const computeProgress = (phase: ImportProgressPhase, subProgress?: number): number => {
-    const [min, max] = PHASE_RANGES[phase];
-    if (subProgress !== undefined && Number.isFinite(subProgress)) {
-      return Math.round((min + (max - min) * Math.min(1, Math.max(0, subProgress))) * 10) / 10;
-    }
-    return max;
-  };
 
-  const setImportPhase = (phase: ImportProgressPhase, subProgress?: number) => {
-    setImportProgress({
-      phase,
-      progress: computeProgress(phase, subProgress),
-      subProgress,
-    });
-  };
 
-  const clearImportProgressSoon = () => {
-    globalThis.setTimeout(() => {
-      setImportProgress((current) =>
-        current?.phase === "done" || current?.phase === "error" ? null : current,
-      );
-    }, 1200);
-  };
 
-  const handleImportDocx = async (file: File | null) => {
-    if (isReadOnly()) {
-      return;
-    }
-    if (!file) {
-      return;
-    }
 
-    const startedAt = performance.now();
-    logger.info("import docx:start", { name: file.name, size: file.size });
-    setImportPhase("reading-file");
 
-    try {
-      const readingStartedAt = performance.now();
-      const arrayBuffer = await readFileBuffer(file);
-      logger.info("import docx:phase", {
-        phase: "reading-file",
-        durationMs: Math.round((performance.now() - readingStartedAt) * 100) / 100,
-      });
 
-      let lastProgressStage: DocxImportStage | null = null;
-      let lastProgressValue = -1;
-      let lastProgressAt = 0;
-      const document = await importDocxInWorker(arrayBuffer, {
-        onProgress: (stage, subProgress) => {
-          const now = performance.now();
-          const roundedProgress =
-            subProgress === undefined || !Number.isFinite(subProgress)
-              ? undefined
-              : Math.floor(subProgress * 100);
-          const stageChanged = stage !== lastProgressStage;
-          const progressChanged =
-            roundedProgress !== undefined &&
-            (lastProgressValue < 0 || roundedProgress - lastProgressValue >= 1);
-          const timeElapsed = now - lastProgressAt >= 40;
-          if (!stageChanged && !progressChanged && !timeElapsed) {
-            return;
-          }
 
-          lastProgressStage = stage;
-          lastProgressValue = roundedProgress ?? lastProgressValue;
-          lastProgressAt = now;
-          setImportPhase(stage, subProgress);
-          const payload = { phase: stage, subProgress };
-          if (stageChanged || subProgress === undefined || subProgress === 1) {
-            logger.info("import docx:phase", payload);
-          } else {
-            logger.debug("import docx:phase", payload);
-          }
-        },
-      });
 
-      setImportPhase("applying-editor-state");
-      resetEditorChromeState();
-      applyState(createEditorStateFromDocument(document));
 
-      const stabilizationStartedAt = performance.now();
-      setImportPhase("stabilizing-layout");
-      await stabilizeLayoutAfterImport();
-      logger.info("import docx:phase", {
-        phase: "stabilizing-layout",
-        durationMs: Math.round((performance.now() - stabilizationStartedAt) * 100) / 100,
-      });
 
-      setImportPhase("done");
-      logger.info("import docx:done", {
-        blocks: document.blocks.length,
-        durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
-      });
-      if (importInputRef) {
-        importInputRef.value = "";
-      }
-      focusInput();
-    } catch (error) {
-      setImportPhase("error");
-      logger.error("import docx:error", error);
-      if (importInputRef) {
-        importInputRef.value = "";
-      }
-    } finally {
-      clearImportProgressSoon();
-    }
-  };
 
-  const insertImageFromFile = async (
-    file: File,
-    position?: EditorPosition | null,
-  ) => {
-    logger.info(
-      `image insert:start name="${file.name}" type=${file.type} size=${file.size}`,
-    );
-    const arrayBuffer = await readFileBuffer(file);
-    const base64 = btoa(
-      new Uint8Array(arrayBuffer).reduce(
-        (data, byte) => data + String.fromCharCode(byte),
-        "",
-      ),
-    );
-    const src = `data:${file.type};base64,${base64}`;
 
-    const img = new Image();
-    img.src = src;
-    await new Promise((resolve) => {
-      img.onload = resolve;
-      img.onerror = resolve;
-    });
 
-    const naturalWidth = img.naturalWidth || 300;
-    const naturalHeight = img.naturalHeight || 300;
-    const maxWidth = getMaxInlineImageWidth(
-      surfaceRef,
-      state.document,
-      state.selection.focus.paragraphId,
-    );
-    const scale = naturalWidth > maxWidth ? maxWidth / naturalWidth : 1;
-    const width = Math.max(24, Math.round(naturalWidth * scale));
-    const height = Math.max(24, Math.round(naturalHeight * scale));
-    logger.info(
-      `image insert:decoded natural=${naturalWidth}x${naturalHeight} fitted=${width}x${height} maxWidth=${maxWidth}`,
-    );
 
-    applyTransactionalState(
-      (current) => {
-        const targetState = position
-          ? setSelection(current, { anchor: position, focus: position })
-          : current;
-        return insertImageAtSelection(targetState, { src, width, height });
-      },
-      { mergeKey: "insertImage" },
-    );
-    const sel = state.selection;
-    logger.debug(
-      `image insert:selection anchor=${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`,
-    );
-  };
-
-  const handleInsertImage = async (file: File | null) => {
-    if (isReadOnly()) {
-      return;
-    }
-    if (!file) return;
-
-    await insertImageFromFile(file);
-
-    if (imageInputRef) {
-      imageInputRef.value = "";
-    }
-    focusInput();
-  };
-
-  const handleExportDocx = async () => {
-    const blob = await exportEditorDocumentToDocxBlob(state.document);
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "oasis-editor.docx";
-    anchor.click();
-    URL.revokeObjectURL(url);
-    focusInput();
-  };
 
   const tableOps = createEditorTableOperations({
     applyTransactionalState,
@@ -1287,7 +1119,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       applyTransactionalState,
       applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
       focusInput,
-      insertImageFromFile,
+      insertImageFromFile: docIO.insertImageFromFile,
       resolvePositionAtSurfacePoint,
     });
 
@@ -1482,7 +1314,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     tableSelectionLabel,
     tableActionRestrictionLabel: tableOps.tableActionRestrictionLabel,
     isInsideTable,
-    handleExportDocx,
+    handleExportDocx: docIO.handleExportDocx,
     toggleFindReplace: (open?: boolean) => {
       fr.setIsOpen(open ?? !fr.isOpen());
     },
@@ -1611,7 +1443,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         inputBox={() => inputBox()}
         hoveredRevision={() => hoveredRevision()}
         focused={() => focused()}
-        importProgress={() => importProgress()}
+        importProgress={() => docIO.importProgress()}
         showCaret={shouldShowCaret}
         class={props.class}
         style={props.style}
@@ -1631,10 +1463,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           imageInputRef = element;
         }}
         onImportInputChange={(e: Event & { currentTarget: HTMLInputElement }) =>
-          handleImportDocx(e.currentTarget.files?.[0] ?? null)
+          docIO.handleImportDocx(e.currentTarget.files?.[0] ?? null)
         }
         onImageInputChange={(e: Event & { currentTarget: HTMLInputElement }) =>
-          handleInsertImage(e.currentTarget.files?.[0] ?? null)
+          docIO.handleInsertImage(e.currentTarget.files?.[0] ?? null)
         }
         onDragOver={(event: DragEvent) => event.preventDefault()}
         onDrop={handleDrop}
@@ -1740,7 +1572,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             inputBox={() => inputBox()}
             hoveredRevision={() => hoveredRevision()}
             focused={() => focused()}
-            importProgress={() => importProgress()}
+            importProgress={() => docIO.importProgress()}
             viewportHeight={props.viewportHeight}
             class={props.class}
             style={props.style}
@@ -1762,10 +1594,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
               imageInputRef = element;
             }}
             onImportInputChange={(e) =>
-              handleImportDocx(e.currentTarget.files?.[0] ?? null)
+              docIO.handleImportDocx(e.currentTarget.files?.[0] ?? null)
             }
             onImageInputChange={(e) =>
-              handleInsertImage(e.currentTarget.files?.[0] ?? null)
+              docIO.handleInsertImage(e.currentTarget.files?.[0] ?? null)
             }
             onDragOver={(event) => event.preventDefault()}
             onDrop={handleDrop}
