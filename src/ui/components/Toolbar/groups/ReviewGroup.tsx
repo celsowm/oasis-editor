@@ -7,7 +7,7 @@ import { t } from "../../../../i18n/index.js";
 
 export function ReviewGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
-  const state = () => ctx().state;
+  const state = () => ctx().state();
 
   return (
     <>
@@ -24,7 +24,7 @@ export function ReviewGroup(props: { ctx: () => EditorToolbarCtx }) {
           icon="eye"
           label={t("toolbar.trackChanges")}
           wide
-          active={state().trackChangesEnabled}
+          active={state()?.trackChangesEnabled}
           data-testid="editor-toolbar-track-changes"
           onClick={() => ctx().applyToggleTrackChangesCommand()}
           tooltip={t("toolbar.trackChanges")}

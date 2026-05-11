@@ -13,7 +13,7 @@ import { t } from "../../../../i18n/index.js";
 
 export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
-  const state = () => ctx().state;
+  const state = () => ctx().state();
   const focusInput = () => ctx().focusInput();
 
   return (
@@ -31,7 +31,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
         <ToolbarButton
           icon="combine"
           data-testid="editor-toolbar-merge-table"
-          disabled={!ctx().canMergeSelectedTable(state())}
+          disabled={!state() || !ctx().canMergeSelectedTable(state())}
           onClick={() => {
             ctx().applyTransactionalState(
               (current) => ctx().mergeSelectedTable(current),
@@ -44,7 +44,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
         <ToolbarButton
           icon="split"
           data-testid="editor-toolbar-split-table"
-          disabled={!ctx().canSplitSelectedTable(state())}
+          disabled={!state() || !ctx().canSplitSelectedTable(state())}
           onClick={() => {
             ctx().applyTransactionalState(
               (current) => ctx().splitSelectedTable(current),
@@ -60,7 +60,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
         <ToolbarButton
           icon="columns"
           data-testid="editor-toolbar-insert-table-column-before"
-          disabled={!ctx().canEditSelectedTableColumn(state())}
+          disabled={!state() || !ctx().canEditSelectedTableColumn(state())}
           onClick={() => {
             ctx().applyTransactionalState(
               (current) => ctx().insertSelectedTableColumn(current, -1),
@@ -73,7 +73,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
         <ToolbarButton
           icon="columns"
           data-testid="editor-toolbar-insert-table-column-after"
-          disabled={!ctx().canEditSelectedTableColumn(state())}
+          disabled={!state() || !ctx().canEditSelectedTableColumn(state())}
           onClick={() => {
             ctx().applyTransactionalState(
               (current) => ctx().insertSelectedTableColumn(current, 1),
@@ -86,7 +86,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
         <ToolbarButton
           icon="trash-2"
           data-testid="editor-toolbar-delete-table-column"
-          disabled={!ctx().canEditSelectedTableColumn(state())}
+          disabled={!state() || !ctx().canEditSelectedTableColumn(state())}
           onClick={() => {
             ctx().applyTransactionalState(
               (current) => ctx().deleteSelectedTableColumn(current),
@@ -102,7 +102,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
         <ToolbarButton
           icon="rows"
           data-testid="editor-toolbar-insert-table-row-before"
-          disabled={!ctx().canEditSelectedTableRow(state())}
+          disabled={!state() || !ctx().canEditSelectedTableRow(state())}
           onClick={() => {
             ctx().applyTransactionalState(
               (current) => ctx().insertSelectedTableRow(current, -1),
@@ -115,7 +115,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
         <ToolbarButton
           icon="rows"
           data-testid="editor-toolbar-insert-table-row-after"
-          disabled={!ctx().canEditSelectedTableRow(state())}
+          disabled={!state() || !ctx().canEditSelectedTableRow(state())}
           onClick={() => {
             ctx().applyTransactionalState(
               (current) => ctx().insertSelectedTableRow(current, 1),
@@ -128,7 +128,7 @@ export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
         <ToolbarButton
           icon="trash-2"
           data-testid="editor-toolbar-delete-table-row"
-          disabled={!ctx().canEditSelectedTableRow(state())}
+          disabled={!state() || !ctx().canEditSelectedTableRow(state())}
           onClick={() => {
             ctx().applyTransactionalState(
               (current) => ctx().deleteSelectedTableRow(current),

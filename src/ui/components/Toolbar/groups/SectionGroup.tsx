@@ -8,7 +8,7 @@ import { t } from "../../../../i18n/index.js";
 
 export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
-  const state = () => ctx().state;
+  const state = () => ctx().state();
 
   return (
     <>
@@ -25,14 +25,15 @@ export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
         <ToolbarButton
           icon="layout"
           active={
-            (state().document.sections?.[getActiveSectionIndex(state())] ?? state().document)
-              .pageSettings?.orientation === "landscape"
+            (state()?.document.sections?.[getActiveSectionIndex(state())] ?? state()?.document)
+              ?.pageSettings?.orientation === "landscape"
           }
           data-testid="editor-toolbar-orientation"
           onClick={() => {
             const currentSectionIndex = getActiveSectionIndex(state());
             const section =
-              state().document.sections?.[currentSectionIndex] || state().document;
+              state()?.document.sections?.[currentSectionIndex] || state()?.document;
+            if (!section) return;
             const currentOrientation = section.pageSettings?.orientation || "portrait";
             const nextOrientation = currentOrientation === "portrait" ? "landscape" : "portrait";
             ctx().applyUpdateSectionSettingsCommand(currentSectionIndex, {
@@ -52,7 +53,8 @@ export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
           onChange={(event) => {
             const currentSectionIndex = getActiveSectionIndex(state());
             const section =
-              state().document.sections?.[currentSectionIndex] || state().document;
+              state()?.document.sections?.[currentSectionIndex] || state()?.document;
+            if (!section) return;
             const value = event.currentTarget.value;
             const margins =
               value === "narrow"

@@ -14,7 +14,7 @@ import type { PersistenceStatus } from "../../../app/controllers/useEditorPersis
 export type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
 
 export interface EditorToolbarCtx {
-  state: EditorState;
+  state: () => EditorState;
   undoStack: () => unknown[];
   redoStack: () => unknown[];
   persistenceStatus: () => PersistenceStatus;

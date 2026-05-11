@@ -10,7 +10,7 @@ import { t } from "../../../../i18n/index.js";
 export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
   const t_style = () => ctx().toolbarStyleState();
-  const state = () => ctx().state;
+  const state = () => ctx().state();
   
   const fontFamilyOptions = () => {
     const values = new Set<string>([
@@ -23,7 +23,7 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
       "Courier New",
     ]);
 
-    for (const style of Object.values(state().document.styles ?? {})) {
+    for (const style of Object.values(state().document?.styles ?? {})) {
       const fontFamily = style.textStyle?.fontFamily?.trim();
       if (fontFamily) values.add(fontFamily);
     }
@@ -37,7 +37,7 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
   const fontSizeOptions = () => {
     const values = new Set<number>([12, 14, 15, 16, 18, 20, 24, 28, 32]);
 
-    for (const style of Object.values(state().document.styles ?? {})) {
+    for (const style of Object.values(state().document?.styles ?? {})) {
       const fontSize = style.textStyle?.fontSize;
       if (typeof fontSize === "number" && Number.isFinite(fontSize)) values.add(fontSize);
     }
@@ -57,7 +57,7 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
         onChange={(e) => ctx().handleStyleChange(e.currentTarget.value)}
         tooltip={t("toolbar.style")}
       >
-        <For each={Object.values(state().document.styles ?? {})}>
+        <For each={Object.values(state().document?.styles ?? {})}>
           {(style) => <option value={style.id}>{style.name}</option>}
         </For>
       </ToolbarSelect>

@@ -22,7 +22,7 @@ export function FloatingTableToolbar(
   props: FloatingTableToolbarProps,
 ): JSX.Element {
   const ctx = props.ctx;
-  const state = () => ctx().state;
+  const state = () => ctx().state();
 
   const [surfaceRect, setSurfaceRect] = createSignal<DOMRect | null>(null);
   const [tick, setTick] = createSignal(0);
