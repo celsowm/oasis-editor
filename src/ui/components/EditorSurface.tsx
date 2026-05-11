@@ -178,30 +178,42 @@ function getParagraphAlign(
   );
 }
 
-function shouldJustifyLine(
+function computeJustifyLineStyle(
   paragraph: EditorParagraphNode,
   state: EditorState,
   line: EditorLayoutLine,
   lineIndex: number,
   lineCount: number,
-): boolean {
+): Record<string, string> | undefined {
   if (
     getParagraphAlign(paragraph, state) !== "justify" ||
     lineIndex >= lineCount - 1
   ) {
-    return false;
+    return undefined;
   }
 
   const lineChars = line.fragments.flatMap((fragment) => fragment.chars);
   if (lineChars.length === 0) {
-    return false;
+    return undefined;
   }
   if (lineChars[lineChars.length - 1]?.char === "\n") {
-    return false;
+    return undefined;
   }
 
   const expandableSpaces = lineChars.filter((char) => char.char === " ").length;
-  return expandableSpaces > 0;
+  if (expandableSpaces === 0) {
+    return undefined;
+  }
+
+  // white-space:nowrap (from .oasis-editor-line CSS) prevents text-align:justify
+  // from working. Override to "normal" so the browser can distribute inter-word
+  // space. The text won't re-wrap because the layout engine already ensures each
+  // line's content fits within the available width.
+  return {
+    "text-align": "justify",
+    "text-align-last": "justify",
+    "white-space": "normal",
+  };
 }
 
 /**
@@ -535,18 +547,14 @@ function renderParagraph(
                   class="oasis-editor-line"
                   data-testid="editor-line"
                   style={
-                    shouldJustifyLine(
+                    computeJustifyLineStyle(
                       paragraph,
                       state,
                       line,
                       lineIndex(),
                       paragraphLayout.lines.length,
+                      options?.contentWidth ?? paragraphLayout.contentWidth,
                     )
-                      ? {
-                          "text-align": "justify",
-                          "text-align-last": "justify",
-                        }
-                      : undefined
                   }
                 >
                   <For each={line.fragments}>

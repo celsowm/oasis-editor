@@ -628,11 +628,19 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   const justificationValue = getAttributeValue(justification, "val");
   if (
     justificationValue === "left" ||
+    justificationValue === "start" ||
     justificationValue === "center" ||
     justificationValue === "right" ||
+    justificationValue === "end" ||
     justificationValue === "justify"
   ) {
-    style.align = justificationValue;
+    style.align = justificationValue === "start" ? "left"
+      : justificationValue === "end" ? "right"
+      : justificationValue as "left" | "center" | "right" | "justify";
+  } else if (justificationValue === "both" || justificationValue === "distribute") {
+    // Word OOXML uses "both" for full justification (both edges aligned)
+    // and "distribute" for distributed justification (a variant of justify).
+    style.align = "justify";
   }
 
   const spacing = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "spacing");
