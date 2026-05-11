@@ -64,6 +64,28 @@ function sliceFragmentToRange(
 }
 
 const paragraphLayoutCache = new WeakMap<EditorParagraphNode, Map<string, EditorLayoutParagraph>>();
+const paragraphFieldDependenceCache = new WeakMap<
+  EditorParagraphNode,
+  { dependsOnPageIndex: boolean; dependsOnTotalPages: boolean }
+>();
+
+function getParagraphFieldDependence(paragraph: EditorParagraphNode): {
+  dependsOnPageIndex: boolean;
+  dependsOnTotalPages: boolean;
+} {
+  const cached = paragraphFieldDependenceCache.get(paragraph);
+  if (cached) return cached;
+  let dependsOnPageIndex = false;
+  let dependsOnTotalPages = false;
+  for (const run of paragraph.runs) {
+    if (run.field?.type === "PAGE") dependsOnPageIndex = true;
+    else if (run.field?.type === "NUMPAGES") dependsOnTotalPages = true;
+    if (dependsOnPageIndex && dependsOnTotalPages) break;
+  }
+  const result = { dependsOnPageIndex, dependsOnTotalPages };
+  paragraphFieldDependenceCache.set(paragraph, result);
+  return result;
+}
 
 export function projectParagraphLayout(
   paragraph: EditorParagraphNode,
@@ -72,7 +94,15 @@ export function projectParagraphLayout(
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
 ): EditorLayoutParagraph {
-  const cacheKey = `${pageIndex ?? ""}:${totalPages ?? ""}:${contentWidth ?? ""}`;
+  // Only include pageIndex / totalPages in the cache key when this paragraph
+  // actually contains a PAGE / NUMPAGES field. Otherwise the projection result
+  // is independent of those values, and including them in the key forces a
+  // cache miss every time pagination shifts (e.g. after a single-paragraph
+  // alignment change near the top of the document re-flows downstream pages).
+  const { dependsOnPageIndex, dependsOnTotalPages } = getParagraphFieldDependence(paragraph);
+  const cacheKey = `${dependsOnPageIndex ? pageIndex ?? "" : ""}:${
+    dependsOnTotalPages ? totalPages ?? "" : ""
+  }:${contentWidth ?? ""}`;
   let cacheForParagraph = paragraphLayoutCache.get(paragraph);
   if (cacheForParagraph) {
     const cached = cacheForParagraph.get(cacheKey);
