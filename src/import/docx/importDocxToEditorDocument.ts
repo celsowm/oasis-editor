@@ -51,7 +51,7 @@ const TWIPS_PER_INCH = 1440;
 const PX_PER_INCH = 96;
 const PAGE_BREAK_MARKER = "\f";
 const WORD_SINGLE_LINE_RATIO = 1.223;
-const WORD_DOC_GRID_LATIN_LINE_FACTOR = 0.95;
+const WORD_IMPLICIT_DOC_GRID_LINE_PITCH_RATIO = 19 / 20;
 
 interface NumberingMaps {
   abstractKinds: Map<string, EditorParagraphListStyle["kind"]>;
@@ -123,6 +123,8 @@ function normalizeImportedParagraphStyle(style: EditorParagraphStyle | undefined
     spacingAfter:
       effective.spacingAfter !== defaultEffective.spacingAfter ? effective.spacingAfter : undefined,
     lineHeight: effective.lineHeight !== defaultEffective.lineHeight ? effective.lineHeight : undefined,
+    lineGridPitch: style.lineGridPitch ?? undefined,
+    snapToGrid: effective.snapToGrid !== defaultEffective.snapToGrid ? effective.snapToGrid : undefined,
     indentLeft: effective.indentLeft !== defaultEffective.indentLeft ? effective.indentLeft : undefined,
     indentRight: effective.indentRight !== defaultEffective.indentRight ? effective.indentRight : undefined,
     indentFirstLine:
@@ -267,6 +269,22 @@ function parseBooleanProperty(parent: XmlElement, localName: string): boolean {
   return getFirstChildByTagNameNS(parent, WORD_NS, localName) !== null;
 }
 
+function parseOnOffProperty(parent: XmlElement, localName: string): boolean | undefined {
+  const element = getFirstChildByTagNameNS(parent, WORD_NS, localName);
+  if (!element) {
+    return undefined;
+  }
+
+  const value = getAttributeValue(element, "val");
+  if (value === null || value === undefined) {
+    return true;
+  }
+  if (value === "0" || value === "false" || value === "off") {
+    return false;
+  }
+  return isWordTrue(value);
+}
+
 function parseStyleIdProperty(parent: XmlElement | null, localName: "pStyle" | "rStyle"): string | undefined {
   const styleElement = getFirstChildByTagNameNS(parent, WORD_NS, localName);
   return getAttributeValue(styleElement, "val") ?? undefined;
@@ -395,6 +413,7 @@ interface SectionProperties {
   headerRId: string | null;
   footerRId: string | null;
   docGridLinePitchPx?: number;
+  docGridMode?: "explicit" | "implicit";
 }
 
 interface ParsedSection {
@@ -448,6 +467,7 @@ function parseSectionProperties(sectPr: XmlElement): SectionProperties {
     footerRef?.getAttributeNS(OFFICE_REL_NS, "id") ??
     null;
   const docGrid = getFirstChildByTagNameNS(sectPr, WORD_NS, "docGrid");
+  const docGridType = getAttributeValue(docGrid, "type");
   const docGridLinePitchPx = twipsToPx(getAttributeValue(docGrid, "linePitch"), Number.NaN);
 
   return {
@@ -458,6 +478,14 @@ function parseSectionProperties(sectPr: XmlElement): SectionProperties {
       Number.isFinite(docGridLinePitchPx) && docGridLinePitchPx > 0
         ? docGridLinePitchPx
         : undefined,
+    docGridMode:
+      docGridType === "lines" ||
+      docGridType === "linesAndChars" ||
+      docGridType === "snapToChars"
+        ? "explicit"
+        : docGrid && docGridType === null
+          ? "implicit"
+          : undefined,
   };
 }
 
@@ -484,9 +512,10 @@ function getParagraphMaxFontSize(
 function applyDocGridLinePitch(
   blocks: EditorBlockNode[],
   linePitchPx: number | undefined,
+  mode: SectionProperties["docGridMode"],
   styles: Record<string, EditorNamedStyle> | undefined,
 ): void {
-  if (!linePitchPx) {
+  if (!linePitchPx || !mode) {
     return;
   }
 
@@ -496,21 +525,29 @@ function applyDocGridLinePitch(
       if (
         block.style?.lineHeight === undefined &&
         block.style?.align === "justify" &&
+        block.style?.snapToGrid !== false &&
         hasLocalFontSize
       ) {
-        const maxFontSize = getParagraphMaxFontSize(block, styles);
-        const effectiveLinePitchPx = linePitchPx * WORD_DOC_GRID_LATIN_LINE_FACTOR;
-        block.style = {
-          ...(block.style ?? {}),
-          lineHeight: Math.round((effectiveLinePitchPx / (maxFontSize * WORD_SINGLE_LINE_RATIO)) * 10000) / 10000,
-        };
+        if (mode === "explicit") {
+          block.style = {
+            ...(block.style ?? {}),
+            lineGridPitch: linePitchPx,
+          };
+        } else {
+          const maxFontSize = getParagraphMaxFontSize(block, styles);
+          const effectiveLinePitchPx = linePitchPx * WORD_IMPLICIT_DOC_GRID_LINE_PITCH_RATIO;
+          block.style = {
+            ...(block.style ?? {}),
+            lineHeight: Math.round((effectiveLinePitchPx / (maxFontSize * WORD_SINGLE_LINE_RATIO)) * 10000) / 10000,
+          };
+        }
       }
       continue;
     }
 
     for (const row of block.rows) {
       for (const cell of row.cells) {
-        applyDocGridLinePitch(cell.blocks, linePitchPx, styles);
+        applyDocGridLinePitch(cell.blocks, linePitchPx, mode, styles);
       }
     }
   }
@@ -726,6 +763,11 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
     style.lineHeight = lineRule === "exact" || lineRule === "atLeast"
       ? parsedLineHeight
       : Math.round((parsedLineHeight / WORD_SINGLE_LINE_RATIO) * 10000) / 10000;
+  }
+
+  const snapToGrid = parseOnOffProperty(paragraphProperties, "snapToGrid");
+  if (snapToGrid !== undefined) {
+    style.snapToGrid = snapToGrid;
   }
 
   const indent = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "ind");
@@ -1507,7 +1549,7 @@ export async function importDocxToEditorDocument(
   for (let i = 0; i < sectionProps.length; i += 1) {
     const props = sectionProps[i]!;
     const blocks = sectionBlocks[i] ?? [];
-    applyDocGridLinePitch(blocks, props.docGridLinePitchPx, importedStyles);
+    applyDocGridLinePitch(blocks, props.docGridLinePitchPx, props.docGridMode, importedStyles);
 
     // Load header and footer if referenced
     let header: EditorBlockNode[] = [];

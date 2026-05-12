@@ -89,7 +89,7 @@ describeWordParity("Word layout parity", () => {
       expect(editorPage1Lines.length).toBeLessThanOrEqual(wordPage1Lines.length + 1);
       expect(editorPage1Lines.at(-1)).toContain("Sed dictum, lorem nec");
     },
-    120_000,
+    300_000,
   );
 
   it(

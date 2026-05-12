@@ -111,10 +111,14 @@ function paragraphStyleToCss(
       );
       return Math.max(largest, runTextStyle.fontSize ?? largest);
     }, effectiveTextStyle.fontSize ?? 15);
-    css["line-height"] = `${resolveRenderedLineHeightPx(
+    const renderedLineHeight = resolveRenderedLineHeightPx(
       { ...effectiveTextStyle, fontSize: maxFontSize },
       merged.lineHeight,
-    )}px`;
+    );
+    const lineGridPitch = style?.lineGridPitch;
+    css["line-height"] = `${lineGridPitch && lineGridPitch > 0
+      ? Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch
+      : renderedLineHeight}px`;
   }
   if (!isContinuation && merged.spacingBefore !== undefined && merged.spacingBefore !== null) {
     css["padding-top"] = `${merged.spacingBefore}px`;

@@ -242,6 +242,7 @@ function getParagraphLineHeight(
   fallbackFontSize: number,
 ): number {
   const lineHeight = resolveEffectiveParagraphStyle(paragraph.style, styles).lineHeight ?? DEFAULT_LINE_HEIGHT;
+  const lineGridPitch = paragraph.style?.lineGridPitch;
   const paragraphTextStyle = resolveEffectiveTextStyleForParagraph(
     undefined,
     paragraph.style?.styleId,
@@ -256,13 +257,16 @@ function getParagraphLineHeight(
     return Math.max(largest, runTextStyle.fontSize ?? largest);
   }, paragraphTextStyle.fontSize ?? fallbackFontSize);
 
-  return resolveRenderedLineHeightPx(
+  const renderedLineHeight = resolveRenderedLineHeightPx(
     {
       ...paragraphTextStyle,
       fontSize: maxFontSize,
     },
     lineHeight,
   );
+  return lineGridPitch && lineGridPitch > 0
+    ? Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch
+    : renderedLineHeight;
 }
 
 function buildMeasuredChars(

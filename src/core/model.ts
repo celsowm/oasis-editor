@@ -25,6 +25,8 @@ export interface EditorParagraphStyle {
   spacingBefore?: number | null;
   spacingAfter?: number | null;
   lineHeight?: number | null;
+  lineGridPitch?: number | null;
+  snapToGrid?: boolean;
   indentLeft?: number | null;
   indentRight?: number | null;
   indentFirstLine?: number | null;
@@ -284,6 +286,8 @@ const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> = {
   spacingBefore: 0,
   spacingAfter: 8,
   lineHeight: 1.15,
+  lineGridPitch: null as unknown as number | null,
+  snapToGrid: true,
   indentLeft: 0,
   indentRight: 0,
   indentFirstLine: 0,

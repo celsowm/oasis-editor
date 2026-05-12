@@ -331,18 +331,22 @@ function estimateParagraphLineHeight(
   styles: Record<string, EditorNamedStyle> | undefined,
 ): number {
   const lineHeight = getEffectiveParagraphStyle(paragraph, styles).lineHeight ?? DEFAULT_LINE_HEIGHT;
+  const lineGridPitch = paragraph.style?.lineGridPitch;
   const effectiveTextStyle = resolveEffectiveTextStyleForParagraph(
     undefined,
     paragraph.style?.styleId,
     styles,
   );
-  return resolveRenderedLineHeightPx(
+  const renderedLineHeight = resolveRenderedLineHeightPx(
     {
       ...effectiveTextStyle,
       fontSize: effectiveTextStyle.fontSize ?? fontSize,
     },
     lineHeight,
   );
+  return lineGridPitch && lineGridPitch > 0
+    ? Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch
+    : renderedLineHeight;
 }
 
 function getParagraphSegmentHeight(
