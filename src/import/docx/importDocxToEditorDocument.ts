@@ -51,6 +51,7 @@ const TWIPS_PER_INCH = 1440;
 const PX_PER_INCH = 96;
 const PAGE_BREAK_MARKER = "\f";
 const WORD_SINGLE_LINE_RATIO = 1.223;
+const WORD_DOC_GRID_LATIN_LINE_FACTOR = 0.95;
 
 interface NumberingMaps {
   abstractKinds: Map<string, EditorParagraphListStyle["kind"]>;
@@ -132,16 +133,7 @@ function normalizeImportedParagraphStyle(style: EditorParagraphStyle | undefined
       effective.pageBreakBefore !== defaultEffective.pageBreakBefore ? effective.pageBreakBefore : undefined,
     keepWithNext: effective.keepWithNext !== defaultEffective.keepWithNext ? effective.keepWithNext : undefined,
   });
-  
-  // DEBUG: Log normalized style
-  if (normalized?.spacingAfter || normalized?.indentFirstLine) {
-    console.log("[DOCX IMPORT] Normalized style:", {
-      spacingAfter: normalized.spacingAfter,
-      indentFirstLine: normalized.indentFirstLine,
-      spacingBefore: normalized.spacingBefore,
-    });
-  }
-  
+
   return normalized;
 }
 
@@ -402,6 +394,7 @@ interface SectionProperties {
   pageSettings?: EditorPageSettings;
   headerRId: string | null;
   footerRId: string | null;
+  docGridLinePitchPx?: number;
 }
 
 interface ParsedSection {
@@ -454,12 +447,73 @@ function parseSectionProperties(sectPr: XmlElement): SectionProperties {
     footerRef?.getAttribute("r:id") ??
     footerRef?.getAttributeNS(OFFICE_REL_NS, "id") ??
     null;
+  const docGrid = getFirstChildByTagNameNS(sectPr, WORD_NS, "docGrid");
+  const docGridLinePitchPx = twipsToPx(getAttributeValue(docGrid, "linePitch"), Number.NaN);
 
   return {
     pageSettings,
     headerRId,
     footerRId,
+    docGridLinePitchPx:
+      Number.isFinite(docGridLinePitchPx) && docGridLinePitchPx > 0
+        ? docGridLinePitchPx
+        : undefined,
   };
+}
+
+function getParagraphMaxFontSize(
+  paragraph: EditorParagraphNode,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): number {
+  const paragraphTextStyle = resolveEffectiveTextStyleForParagraph(
+    undefined,
+    paragraph.style?.styleId,
+    styles,
+  );
+
+  return paragraph.runs.reduce((maxFontSize, run) => {
+    const runTextStyle = resolveEffectiveTextStyleForParagraph(
+      run.styles,
+      paragraph.style?.styleId,
+      styles,
+    );
+    return Math.max(maxFontSize, runTextStyle.fontSize ?? maxFontSize);
+  }, paragraphTextStyle.fontSize ?? 15);
+}
+
+function applyDocGridLinePitch(
+  blocks: EditorBlockNode[],
+  linePitchPx: number | undefined,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): void {
+  if (!linePitchPx) {
+    return;
+  }
+
+  for (const block of blocks) {
+    if (block.type === "paragraph") {
+      const hasLocalFontSize = block.runs.some((run) => run.styles?.fontSize !== undefined);
+      if (
+        block.style?.lineHeight === undefined &&
+        block.style?.align === "justify" &&
+        hasLocalFontSize
+      ) {
+        const maxFontSize = getParagraphMaxFontSize(block, styles);
+        const effectiveLinePitchPx = linePitchPx * WORD_DOC_GRID_LATIN_LINE_FACTOR;
+        block.style = {
+          ...(block.style ?? {}),
+          lineHeight: Math.round((effectiveLinePitchPx / (maxFontSize * WORD_SINGLE_LINE_RATIO)) * 10000) / 10000,
+        };
+      }
+      continue;
+    }
+
+    for (const row of block.rows) {
+      for (const cell of row.cells) {
+        applyDocGridLinePitch(cell.blocks, linePitchPx, styles);
+      }
+    }
+  }
 }
 
 async function parseHeaderFooterXml(
@@ -690,25 +744,6 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   }
   if (hanging) {
     style.indentHanging = twipsToPx(hanging, 0);
-  }
-
-  // DEBUG: Log paragraph spacing values
-  if (before || after || line) {
-    console.log("[DOCX IMPORT] Paragraph spacing:", {
-      before: before ? twipsToPx(before, 0) : 0,
-      after: after ? twipsToPx(after, 0) : 0,
-      line: line ? Number(line) : 0,
-    });
-  }
-
-  // DEBUG: Log paragraph indent values
-  if (left || right || firstLine || hanging) {
-    console.log("[DOCX IMPORT] Paragraph indent:", {
-      left: left ? twipsToPx(left, 0) : 0,
-      right: right ? twipsToPx(right, 0) : 0,
-      firstLine: firstLine ? twipsToPx(firstLine, 0) : 0,
-      hanging: hanging ? twipsToPx(hanging, 0) : 0,
-    });
   }
 
   if (parseBooleanProperty(paragraphProperties, "pageBreakBefore")) {
@@ -1444,12 +1479,16 @@ export async function importDocxToEditorDocument(
 
   // Ensure at least one section
   if (sectionProps.length === 0) {
-    const defaultPageSettings = parsePageSettings(body);
-    sectionProps.push({
-      pageSettings: defaultPageSettings,
-      headerRId: null,
-      footerRId: null,
-    });
+    const defaultSectionProperties = getFirstChildByTagNameNS(body, WORD_NS, "sectPr");
+    sectionProps.push(
+      defaultSectionProperties
+        ? parseSectionProperties(defaultSectionProperties)
+        : {
+            pageSettings: parsePageSettings(body),
+            headerRId: null,
+            footerRId: null,
+          },
+    );
   }
 
   // Build sections with headers/footers
@@ -1468,6 +1507,7 @@ export async function importDocxToEditorDocument(
   for (let i = 0; i < sectionProps.length; i += 1) {
     const props = sectionProps[i]!;
     const blocks = sectionBlocks[i] ?? [];
+    applyDocGridLinePitch(blocks, props.docGridLinePitchPx, importedStyles);
 
     // Load header and footer if referenced
     let header: EditorBlockNode[] = [];

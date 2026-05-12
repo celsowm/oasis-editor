@@ -84,6 +84,7 @@ function getBorderStyle(border?: EditorBorderStyle): string | undefined {
 }
 
 function paragraphStyleToCss(
+  paragraph: EditorParagraphNode,
   style: EditorParagraphStyle | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
   isContinuation?: boolean,
@@ -102,7 +103,18 @@ function paragraphStyleToCss(
       style?.styleId,
       styles,
     );
-    css["line-height"] = `${resolveRenderedLineHeightPx(effectiveTextStyle, merged.lineHeight)}px`;
+    const maxFontSize = paragraph.runs.reduce((largest, run) => {
+      const runTextStyle = resolveEffectiveTextStyleForParagraph(
+        run.styles,
+        style?.styleId,
+        styles,
+      );
+      return Math.max(largest, runTextStyle.fontSize ?? largest);
+    }, effectiveTextStyle.fontSize ?? 15);
+    css["line-height"] = `${resolveRenderedLineHeightPx(
+      { ...effectiveTextStyle, fontSize: maxFontSize },
+      merged.lineHeight,
+    )}px`;
   }
   if (!isContinuation && merged.spacingBefore !== undefined && merged.spacingBefore !== null) {
     css["padding-top"] = `${merged.spacingBefore}px`;
@@ -149,7 +161,7 @@ function getParagraphRenderStyle(
   isContinuation?: boolean,
   isTruncated?: boolean,
 ): Record<string, string> | undefined {
-  const css = paragraphStyleToCss(paragraph.style, state.document.styles, isContinuation, isTruncated) ?? {};
+  const css = paragraphStyleToCss(paragraph, paragraph.style, state.document.styles, isContinuation, isTruncated) ?? {};
   const effectiveTextStyle = resolveEffectiveTextStyleForParagraph(
     undefined,
     paragraph.style?.styleId,
@@ -209,14 +221,9 @@ function computeJustifyLineStyle(
     return undefined;
   }
 
-  // white-space:nowrap (from .oasis-editor-line CSS) prevents text-align:justify
-  // from working. Override to "normal" so the browser can distribute inter-word
-  // space. The text won't re-wrap because the layout engine already ensures each
-  // line's content fits within the available width.
   return {
     "text-align": "justify",
     "text-align-last": "justify",
-    "white-space": "normal",
   };
 }
 
@@ -558,7 +565,10 @@ function renderParagraph(
                       lineIndex(),
                       paragraphLayout.lines.length,
                     ),
+                    "overflow-wrap": "normal",
                     "padding-left": `${getLinePaddingLeft(paragraph.style, state.document.styles, lineIndex() === 0)}px`,
+                    "white-space": "nowrap",
+                    "word-break": "normal",
                   }}
                 >
                   <For each={line.fragments}>

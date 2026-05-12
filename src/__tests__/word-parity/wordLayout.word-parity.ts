@@ -18,6 +18,7 @@ const describeWordParity = support.supported ? describe : describe.skip;
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const WORD_AUTHORED_LOREM_DOCX = join(FIXTURES_DIR, "word-authored-lorem.docx");
 const COMPLEX_DOCX = join(FIXTURES_DIR, "documento_complexo.docx");
+const LOREM_COMPLEX_DOCX = join(FIXTURES_DIR, "lorem_ipsum_complex_document.docx");
 
 async function expectNoWordLayoutMismatches(
   name: string,
@@ -69,6 +70,24 @@ describeWordParity("Word layout parity", () => {
       await expectNoWordLayoutMismatches("word-authored-lorem-import", () =>
         verifyImportedDocxWordLayoutParity(WORD_AUTHORED_LOREM_DOCX),
       );
+    },
+    120_000,
+  );
+
+  it(
+    "imports the complex lorem DOCX without overfilling the first Word page",
+    async () => {
+      expect(existsSync(LOREM_COMPLEX_DOCX), "missing complex lorem DOCX fixture").toBe(true);
+      const result = await verifyImportedDocxWordLayoutParity(LOREM_COMPLEX_DOCX);
+      const editorPage1Lines = result.editor.pages[0]?.bodyLineTexts ?? [];
+      const wordPage1Lines =
+        result.word.pages[0]?.lines
+          .map((line) => line.text.trim())
+          .filter((line) => line.length > 0 && line !== "Página") ?? [];
+
+      expect(editorPage1Lines.length).toBeGreaterThanOrEqual(wordPage1Lines.length - 3);
+      expect(editorPage1Lines.length).toBeLessThanOrEqual(wordPage1Lines.length + 1);
+      expect(editorPage1Lines.at(-1)).toContain("Sed dictum, lorem nec");
     },
     120_000,
   );

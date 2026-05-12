@@ -14,14 +14,15 @@ const DEFAULT_LIST_GUTTER = 24;
 const MIN_CONTENT_WIDTH = 120;
 const TAB_SIZE = 4;
 const DEFAULT_WORD_SINGLE_LINE_RATIO = 1.223;
-const WORD_COMPAT_SHORT_TOKEN_OVERFLOW_PX = 34;
-const WORD_COMPAT_SHORT_TOKEN_MAX_CHARS = 6;
 
 // Calibração para paridade com MS Word
 // O Word usa DirectWrite/GDI que tem métricas ligeiramente diferentes do Canvas 2D
 // Fator calibrado comparando medições de Canvas 2D vs Word para fontes comuns
 const WORD_CALIBRATION_FACTOR = 1.015; // Canvas 2D mede ~1.5% menor que Word
 const CALIBRATED_FONTS = new Set(["calibri", "times new roman", "arial", "cambria", "courier new", "georgia", "verdana"]);
+const WORD_COMPAT_SHORT_TOKEN_OVERFLOW_PX = 34;
+const WORD_COMPAT_SHORT_TOKEN_MIN_CHARS = 4;
+const WORD_COMPAT_SHORT_TOKEN_MAX_CHARS = 6;
 
 interface MeasuredChar {
   char: string;
@@ -241,15 +242,24 @@ function getParagraphLineHeight(
   fallbackFontSize: number,
 ): number {
   const lineHeight = resolveEffectiveParagraphStyle(paragraph.style, styles).lineHeight ?? DEFAULT_LINE_HEIGHT;
-  const effectiveTextStyle = resolveEffectiveTextStyleForParagraph(
+  const paragraphTextStyle = resolveEffectiveTextStyleForParagraph(
     undefined,
     paragraph.style?.styleId,
     styles,
   );
+  const maxFontSize = paragraph.runs.reduce((largest, run) => {
+    const runTextStyle = resolveEffectiveTextStyleForParagraph(
+      run.styles,
+      paragraph.style?.styleId,
+      styles,
+    );
+    return Math.max(largest, runTextStyle.fontSize ?? largest);
+  }, paragraphTextStyle.fontSize ?? fallbackFontSize);
+
   return resolveRenderedLineHeightPx(
     {
-      ...effectiveTextStyle,
-      fontSize: effectiveTextStyle.fontSize ?? fallbackFontSize,
+      ...paragraphTextStyle,
+      fontSize: maxFontSize,
     },
     lineHeight,
   );
@@ -303,24 +313,7 @@ function getAvailableWidth(
   const baseInset = (paragraphStyle.indentLeft ?? 0) + (paragraphStyle.indentHanging ?? 0) + listGutter;
   const startInset = baseInset + (isFirstLine ? (paragraphStyle.indentFirstLine ?? 0) : 0);
   const rightInset = paragraphStyle.indentRight ?? 0;
-  const available = Math.max(MIN_CONTENT_WIDTH, contentWidth - rightInset - startInset);
-  
-  // DEBUG: Log available width calculation
-  if (paragraph.style?.indentFirstLine || paragraph.style?.indentLeft || paragraph.style?.indentHanging) {
-    console.log("[LAYOUT] getAvailableWidth:", {
-      contentWidth,
-      indentLeft: paragraphStyle.indentLeft,
-      indentHanging: paragraphStyle.indentHanging,
-      indentFirstLine: paragraphStyle.indentFirstLine,
-      baseInset,
-      startInset,
-      rightInset,
-      available,
-      isFirstLine,
-    });
-  }
-  
-  return available;
+  return Math.max(MIN_CONTENT_WIDTH, contentWidth - rightInset - startInset);
 }
 
 function buildSlots(startOffset: number, endOffset: number, lefts: number[], top: number, height: number) {
@@ -368,7 +361,7 @@ function canApplyWordShortTokenFit(
   }
   const text = token.chars.map((char) => char.char).join("");
   if (
-    text.length === 0 ||
+    text.length < WORD_COMPAT_SHORT_TOKEN_MIN_CHARS ||
     text.length > WORD_COMPAT_SHORT_TOKEN_MAX_CHARS ||
     !/^[A-Za-z]+$/.test(text)
   ) {
@@ -444,7 +437,8 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
     }
   };
 
-  for (const token of tokens) {
+  for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex += 1) {
+    const token = tokens[tokenIndex]!;
     if (token.kind === "newline") {
       flushLine();
       resetLine(token.chars[0]!.offset + 1);

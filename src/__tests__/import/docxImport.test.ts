@@ -4,11 +4,12 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditorDocument.js";
 import type { EditorDocument, EditorParagraphNode, EditorTableCellNode, EditorTableNode } from "../../core/model.js";
-import { getParagraphText, resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
+import { getPageContentWidth, getParagraphText, resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
 import { projectParagraphLayout } from "../../ui/layoutProjection.js";
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "word-parity", "fixtures");
 const COMPLEX_DOCX = join(FIXTURES_DIR, "documento_complexo.docx");
+const LOREM_COMPLEX_DOCX = join(FIXTURES_DIR, "lorem_ipsum_complex_document.docx");
 const POINT_TO_PX = 96 / 72;
 const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 28;
 
@@ -29,6 +30,13 @@ async function importComplexDocument(): Promise<EditorDocument> {
   );
 }
 
+async function importLoremComplexDocument(): Promise<EditorDocument> {
+  const docxBuffer = await readFile(LOREM_COMPLEX_DOCX);
+  return importDocxToEditorDocument(
+    docxBuffer.buffer.slice(docxBuffer.byteOffset, docxBuffer.byteOffset + docxBuffer.byteLength),
+  );
+}
+
 function getCellContentWidth(cell: EditorTableCellNode): number {
   const widthPx = typeof cell.style?.width === "number" ? cell.style.width * POINT_TO_PX : 624;
   const horizontalPaddingPx =
@@ -39,6 +47,41 @@ function getCellContentWidth(cell: EditorTableCellNode): number {
 }
 
 describe("DOCX import", () => {
+  it("preserves long lorem paragraphs and page-break-only paragraphs structurally", async () => {
+    const document = await importLoremComplexDocument();
+    const paragraphs = getDocumentParagraphs(document);
+    const firstChapter = paragraphs.find((paragraph) => getParagraphText(paragraph) === "Capítulo 1");
+    const secondChapter = paragraphs.find((paragraph) => getParagraphText(paragraph) === "Capítulo 2");
+    const firstLorem = paragraphs[paragraphs.findIndex((paragraph) => paragraph === firstChapter) + 1]!;
+
+    expect(firstChapter?.style?.styleId?.toLowerCase()).toBe("heading1");
+    expect(secondChapter?.style?.pageBreakBefore).toBe(true);
+    expect(getParagraphText(firstLorem)).toHaveLength(2015);
+    expect(getParagraphText(firstLorem)).not.toContain("\n");
+    expect(firstLorem.style?.align).toBe("justify");
+    expect(paragraphs.some((paragraph) => getParagraphText(paragraph).includes("\f"))).toBe(false);
+    expect(paragraphs.filter((paragraph) => getParagraphText(paragraph).length === 0)).toHaveLength(0);
+  });
+
+  it("lays out imported lorem text by wrapping one real paragraph instead of forced line breaks", async () => {
+    const document = await importLoremComplexDocument();
+    const paragraphs = getDocumentParagraphs(document);
+    const firstLorem = paragraphs.find((paragraph) => getParagraphText(paragraph).length === 2015)!;
+    const pageSettings = document.sections?.[0]?.pageSettings ?? document.pageSettings;
+    const layout = projectParagraphLayout(
+      firstLorem,
+      undefined,
+      undefined,
+      document.styles,
+      pageSettings ? getPageContentWidth(pageSettings) : undefined,
+    );
+    const lineTexts = layout.lines.map((line) => line.fragments.map((fragment) => fragment.text).join("").trim());
+
+    expect(getParagraphText(firstLorem)).not.toContain("\n");
+    expect(layout.lines.length).toBeGreaterThan(10);
+    expect(lineTexts).not.toContain("Sed");
+  });
+
   it("preserves manual page breaks as paragraph page breaks", async () => {
     const document = await importComplexDocument();
     const paragraphs = getDocumentParagraphs(document);
