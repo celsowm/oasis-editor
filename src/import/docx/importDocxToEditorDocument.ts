@@ -114,7 +114,7 @@ function normalizeImportedParagraphStyle(style: EditorParagraphStyle | undefined
   const effective = resolveEffectiveParagraphStyle(style, DEFAULT_EDITOR_STYLES);
   const defaultEffective = resolveEffectiveParagraphStyle(undefined, DEFAULT_EDITOR_STYLES);
 
-  return stripUndefined({
+  const normalized = stripUndefined({
     styleId: style.styleId,
     align: effective.align !== defaultEffective.align ? effective.align : undefined,
     spacingBefore:
@@ -132,6 +132,17 @@ function normalizeImportedParagraphStyle(style: EditorParagraphStyle | undefined
       effective.pageBreakBefore !== defaultEffective.pageBreakBefore ? effective.pageBreakBefore : undefined,
     keepWithNext: effective.keepWithNext !== defaultEffective.keepWithNext ? effective.keepWithNext : undefined,
   });
+  
+  // DEBUG: Log normalized style
+  if (normalized?.spacingAfter || normalized?.indentFirstLine) {
+    console.log("[DOCX IMPORT] Normalized style:", {
+      spacingAfter: normalized.spacingAfter,
+      indentFirstLine: normalized.indentFirstLine,
+      spacingBefore: normalized.spacingBefore,
+    });
+  }
+  
+  return normalized;
 }
 
 function normalizeImportedRunStyle(
@@ -679,6 +690,15 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   }
   if (hanging) {
     style.indentHanging = twipsToPx(hanging, 0);
+  }
+
+  // DEBUG: Log paragraph spacing values
+  if (before || after || line) {
+    console.log("[DOCX IMPORT] Paragraph spacing:", {
+      before: before ? twipsToPx(before, 0) : 0,
+      after: after ? twipsToPx(after, 0) : 0,
+      line: line ? Number(line) : 0,
+    });
   }
 
   // DEBUG: Log paragraph indent values

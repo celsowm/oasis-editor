@@ -63,6 +63,9 @@ debug_artifacts/
 dist-app/
 *.err
 
+# DOCX extraction output
+output/
+
 # Playwright debug screenshots
 *-debug-*.png
 vite.log
