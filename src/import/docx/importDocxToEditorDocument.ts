@@ -126,6 +126,8 @@ function normalizeImportedParagraphStyle(style: EditorParagraphStyle | undefined
     indentRight: effective.indentRight !== defaultEffective.indentRight ? effective.indentRight : undefined,
     indentFirstLine:
       effective.indentFirstLine !== defaultEffective.indentFirstLine ? effective.indentFirstLine : undefined,
+    indentHanging:
+      effective.indentHanging !== defaultEffective.indentHanging ? effective.indentHanging : undefined,
     pageBreakBefore:
       effective.pageBreakBefore !== defaultEffective.pageBreakBefore ? effective.pageBreakBefore : undefined,
     keepWithNext: effective.keepWithNext !== defaultEffective.keepWithNext ? effective.keepWithNext : undefined,
@@ -665,6 +667,7 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   const left = getAttributeValue(indent, "left");
   const right = getAttributeValue(indent, "right");
   const firstLine = getAttributeValue(indent, "firstLine");
+  const hanging = getAttributeValue(indent, "hanging");
   if (left) {
     style.indentLeft = twipsToPx(left, 0);
   }
@@ -673,6 +676,19 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   }
   if (firstLine) {
     style.indentFirstLine = twipsToPx(firstLine, 0);
+  }
+  if (hanging) {
+    style.indentHanging = twipsToPx(hanging, 0);
+  }
+
+  // DEBUG: Log paragraph indent values
+  if (left || right || firstLine || hanging) {
+    console.log("[DOCX IMPORT] Paragraph indent:", {
+      left: left ? twipsToPx(left, 0) : 0,
+      right: right ? twipsToPx(right, 0) : 0,
+      firstLine: firstLine ? twipsToPx(firstLine, 0) : 0,
+      hanging: hanging ? twipsToPx(hanging, 0) : 0,
+    });
   }
 
   if (parseBooleanProperty(paragraphProperties, "pageBreakBefore")) {

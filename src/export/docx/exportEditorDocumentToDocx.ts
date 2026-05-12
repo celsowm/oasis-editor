@@ -215,6 +215,7 @@ function materializeParagraphStyle(
     indentLeft: effective.indentLeft,
     indentRight: effective.indentRight,
     indentFirstLine: effective.indentFirstLine,
+    indentHanging: effective.indentHanging,
     pageBreakBefore: effective.pageBreakBefore,
     keepWithNext: effective.keepWithNext,
   };
@@ -370,12 +371,14 @@ function serializeParagraphProperties(
   if (
     style.indentLeft !== undefined ||
     style.indentRight !== undefined ||
-    style.indentFirstLine !== undefined
+    style.indentFirstLine !== undefined ||
+    style.indentHanging !== undefined
   ) {
     const attrs: string[] = [];
     const left = toTwips(style.indentLeft);
     const right = toTwips(style.indentRight);
     const firstLine = toTwips(style.indentFirstLine);
+    const hanging = toTwips(style.indentHanging);
     if (left !== null) {
       attrs.push(`w:left="${left}"`);
     }
@@ -384,6 +387,9 @@ function serializeParagraphProperties(
     }
     if (firstLine !== null) {
       attrs.push(`w:firstLine="${firstLine}"`);
+    }
+    if (hanging !== null) {
+      attrs.push(`w:hanging="${hanging}"`);
     }
     if (attrs.length > 0) {
       parts.push(`<w:ind ${attrs.join(" ")}/>`);

@@ -122,21 +122,25 @@ function paragraphStyleToCss(
   if (merged.borderLeft)
     css["border-left"] = getBorderStyle(merged.borderLeft)!;
 
-  const indentLeft = (merged.indentLeft ?? 0) + (merged.indentHanging ?? 0);
-  const textIndent =
-    (merged.indentFirstLine ?? 0) - (merged.indentHanging ?? 0);
-
-  if (indentLeft !== 0) {
-    css["padding-left"] = `${indentLeft}px`;
-  }
-  if (textIndent !== 0 && !isContinuation) {
-    css["text-indent"] = `${textIndent}px`;
-  }
+  // Indentation is applied per-line in renderParagraph, not here.
+  // The layout engine already accounts for indents when calculating line breaks.
+  // We only apply padding-right here since it applies uniformly to all lines.
   if (merged.indentRight !== undefined && merged.indentRight !== null) {
     css["padding-right"] = `${merged.indentRight}px`;
   }
 
   return Object.keys(css).length > 0 ? css : undefined;
+}
+
+function getLinePaddingLeft(
+  style: EditorParagraphStyle | undefined,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  isFirstLine: boolean,
+): number {
+  const merged = resolveEffectiveParagraphStyle(style, styles);
+  const baseIndent = (merged.indentLeft ?? 0) + (merged.indentHanging ?? 0);
+  const firstLineExtra = isFirstLine ? (merged.indentFirstLine ?? 0) : 0;
+  return baseIndent + firstLineExtra;
 }
 
 function getParagraphRenderStyle(
@@ -546,16 +550,16 @@ function renderParagraph(
                 <div
                   class="oasis-editor-line"
                   data-testid="editor-line"
-                  style={
-                    computeJustifyLineStyle(
+                  style={{
+                    ...computeJustifyLineStyle(
                       paragraph,
                       state,
                       line,
                       lineIndex(),
                       paragraphLayout.lines.length,
-                      options?.contentWidth ?? paragraphLayout.contentWidth,
-                    )
-                  }
+                    ),
+                    "padding-left": `${getLinePaddingLeft(paragraph.style, state.document.styles, lineIndex() === 0)}px`,
+                  }}
                 >
                   <For each={line.fragments}>
                     {(fragment) => {

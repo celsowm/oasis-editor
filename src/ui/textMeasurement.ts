@@ -284,9 +284,29 @@ function getAvailableWidth(
 ): number {
   const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, styles);
   const listGutter = paragraph.list ? DEFAULT_LIST_GUTTER : 0;
-  const startInset = (paragraphStyle.indentLeft ?? 0) + listGutter + (isFirstLine ? (paragraphStyle.indentFirstLine ?? 0) : 0);
+  // indentHanging shifts all lines to the right, first line can have additional indentFirstLine
+  // For hanging indent: firstLine indent is typically negative (hanging to the left)
+  const baseInset = (paragraphStyle.indentLeft ?? 0) + (paragraphStyle.indentHanging ?? 0) + listGutter;
+  const startInset = baseInset + (isFirstLine ? (paragraphStyle.indentFirstLine ?? 0) : 0);
   const rightInset = paragraphStyle.indentRight ?? 0;
-  return Math.max(MIN_CONTENT_WIDTH, contentWidth - rightInset - startInset);
+  const available = Math.max(MIN_CONTENT_WIDTH, contentWidth - rightInset - startInset);
+  
+  // DEBUG: Log available width calculation
+  if (paragraph.style?.indentFirstLine || paragraph.style?.indentLeft || paragraph.style?.indentHanging) {
+    console.log("[LAYOUT] getAvailableWidth:", {
+      contentWidth,
+      indentLeft: paragraphStyle.indentLeft,
+      indentHanging: paragraphStyle.indentHanging,
+      indentFirstLine: paragraphStyle.indentFirstLine,
+      baseInset,
+      startInset,
+      rightInset,
+      available,
+      isFirstLine,
+    });
+  }
+  
+  return available;
 }
 
 function buildSlots(startOffset: number, endOffset: number, lefts: number[], top: number, height: number) {
