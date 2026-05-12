@@ -51,7 +51,7 @@ const TWIPS_PER_INCH = 1440;
 const PX_PER_INCH = 96;
 const PAGE_BREAK_MARKER = "\f";
 const WORD_SINGLE_LINE_RATIO = 1.223;
-const WORD_IMPLICIT_DOC_GRID_LINE_PITCH_RATIO = 19 / 20;
+const WORD_IMPLICIT_DOC_GRID_LINE_PITCH_RATIO = 97 / 100;
 
 interface NumberingMaps {
   abstractKinds: Map<string, EditorParagraphListStyle["kind"]>;
@@ -522,11 +522,15 @@ function applyDocGridLinePitch(
   for (const block of blocks) {
     if (block.type === "paragraph") {
       const hasLocalFontSize = block.runs.some((run) => run.styles?.fontSize !== undefined);
+      const hasCompleteLocalFontSize = block.runs
+        .filter((run) => run.text.length > 0)
+        .every((run) => run.styles?.fontSize !== undefined);
       if (
         block.style?.lineHeight === undefined &&
         block.style?.align === "justify" &&
         block.style?.snapToGrid !== false &&
-        hasLocalFontSize
+        hasLocalFontSize &&
+        (mode === "explicit" || hasCompleteLocalFontSize)
       ) {
         if (mode === "explicit") {
           block.style = {

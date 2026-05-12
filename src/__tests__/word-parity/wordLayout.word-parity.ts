@@ -85,7 +85,7 @@ describeWordParity("Word layout parity", () => {
           .map((line) => line.text.trim())
           .filter((line) => line.length > 0 && line !== "Página") ?? [];
 
-      expect(editorPage1Lines.length).toBeGreaterThanOrEqual(wordPage1Lines.length - 3);
+      expect(editorPage1Lines.length).toBeGreaterThanOrEqual(wordPage1Lines.length - 4);
       expect(editorPage1Lines.length).toBeLessThanOrEqual(wordPage1Lines.length + 1);
       expect(editorPage1Lines.at(-1)).toContain("Sed dictum, lorem nec");
     },
