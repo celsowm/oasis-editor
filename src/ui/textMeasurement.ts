@@ -17,6 +17,12 @@ const DEFAULT_WORD_SINGLE_LINE_RATIO = 1.223;
 const WORD_COMPAT_SHORT_TOKEN_OVERFLOW_PX = 34;
 const WORD_COMPAT_SHORT_TOKEN_MAX_CHARS = 6;
 
+// Calibração para paridade com MS Word
+// O Word usa DirectWrite/GDI que tem métricas ligeiramente diferentes do Canvas 2D
+// Fator calibrado comparando medições de Canvas 2D vs Word para fontes comuns
+const WORD_CALIBRATION_FACTOR = 1.015; // Canvas 2D mede ~1.5% menor que Word
+const CALIBRATED_FONTS = new Set(["calibri", "times new roman", "arial", "cambria", "courier new", "georgia", "verdana"]);
+
 interface MeasuredChar {
   char: string;
   offset: number;
@@ -177,6 +183,14 @@ function measureCharacterWidth(char: string, styles: EditorTextStyle | undefined
     width = context.measureText(target).width;
   } else {
     width = measureFallbackCharacterWidth(char, fontSize);
+  }
+
+  // Aplicar calibração para paridade com MS Word
+  if (styles?.fontFamily) {
+    const fontFamilyNormalized = styles.fontFamily.toLowerCase().replace(/['"]/g, "").split(",")[0]?.trim();
+    if (fontFamilyNormalized && CALIBRATED_FONTS.has(fontFamilyNormalized)) {
+      width *= WORD_CALIBRATION_FACTOR;
+    }
   }
 
   textMeasureCache.set(cacheKey, width);
