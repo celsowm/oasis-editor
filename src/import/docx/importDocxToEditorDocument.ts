@@ -51,7 +51,7 @@ const TWIPS_PER_INCH = 1440;
 const PX_PER_INCH = 96;
 const PAGE_BREAK_MARKER = "\f";
 const WORD_SINGLE_LINE_RATIO = 1.223;
-const WORD_IMPLICIT_DOC_GRID_LINE_PITCH_RATIO = 97 / 100;
+const WORD_IMPLICIT_DOC_GRID_LINE_PITCH_RATIO = 91 / 100;
 
 interface NumberingMaps {
   abstractKinds: Map<string, EditorParagraphListStyle["kind"]>;
