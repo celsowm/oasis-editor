@@ -21,6 +21,7 @@ export interface OasisEditorEditorProps {
   state: Accessor<EditorState>;
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
+  layoutMode?: "fast" | "wordParity";
   selectionBoxes: Accessor<SelectionBox[]>;
   caretBox: Accessor<CaretBox>;
   inputBox: Accessor<InputBox>;
@@ -104,7 +105,15 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   // identity. The measured layout used by EditorSurface updates more often
   // during import/scroll and should not make the statusbar re-project pages.
   const statusDocumentLayout = createMemo(() =>
-    projectDocumentLayout(documentForStats()),
+    props.layoutMode === "wordParity"
+      ? projectDocumentLayout(
+          documentForStats(),
+          undefined,
+          props.measuredBlockHeights?.(),
+          props.measuredParagraphLayouts?.(),
+          { layoutMode: "wordParity" },
+        )
+      : projectDocumentLayout(documentForStats()),
   );
 
   const totalPages = () => Math.max(1, statusDocumentLayout().pages.length);
@@ -152,6 +161,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
           state={props.state}
           measuredBlockHeights={props.measuredBlockHeights}
           measuredParagraphLayouts={props.measuredParagraphLayouts}
+          layoutMode={props.layoutMode}
           viewportRef={() => viewportElement ?? undefined}
           onSurfaceMouseDown={props.onSurfaceMouseDown}
           onSurfaceMouseMove={props.onSurfaceMouseMove}

@@ -12,6 +12,7 @@ import {
   createA4CalibriLoremSinglePageDocument,
   createA4LoremHeaderFooterDocument,
 } from "./fixtures/loremFixtures.js";
+import { WORD_PARITY_CORPUS } from "./fixtures/corpus.js";
 
 const support = detectWordLayoutParitySupport();
 const describeWordParity = support.supported ? describe : describe.skip;
@@ -19,6 +20,7 @@ const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const WORD_AUTHORED_LOREM_DOCX = join(FIXTURES_DIR, "word-authored-lorem.docx");
 const COMPLEX_DOCX = join(FIXTURES_DIR, "documento_complexo.docx");
 const LOREM_COMPLEX_DOCX = join(FIXTURES_DIR, "lorem_ipsum_complex_document.docx");
+const STRICT_WORD_PARITY_ENABLED = process.env.OASIS_WORD_PARITY_STRICT === "1";
 
 async function expectNoWordLayoutMismatches(
   name: string,
@@ -145,6 +147,28 @@ describeWordParity("Word layout parity", () => {
   it.todo("tracks multilevel list parity with Word numbering formats");
   it.todo("tracks floating image parity once floating anchors are supported");
   it.todo("tracks advanced named style inheritance parity");
+
+  it(
+    "runs strict corpus parity checks when explicitly enabled",
+    async () => {
+      if (!STRICT_WORD_PARITY_ENABLED) {
+        return;
+      }
+
+      for (const entry of WORD_PARITY_CORPUS) {
+        const path = join(FIXTURES_DIR, entry.fileName);
+        expect(existsSync(path), `missing corpus fixture: ${entry.fileName}`).toBe(true);
+        await expectNoWordLayoutMismatches(`strict-corpus:${entry.id}`, () =>
+          verifyImportedDocxWordLayoutParity(path, {
+            strictTextAndGeometry: true,
+            geometryTolerancePoints: 0.5,
+            layoutMode: "wordParity",
+          }),
+        );
+      }
+    },
+    600_000,
+  );
 });
 
 if (!support.supported) {

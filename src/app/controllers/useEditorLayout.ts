@@ -32,6 +32,7 @@ interface UseEditorLayoutProps {
   surfaceRef: () => HTMLDivElement | undefined;
   viewportRef: () => HTMLDivElement | undefined;
   isImporting?: () => boolean;
+  layoutMode?: "fast" | "wordParity";
 }
 
 type LayoutSyncReason =
@@ -183,6 +184,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
   // an explicit transaction-layer hint (Phase 3). When true, the doc-wide
   // signature createEffect skips its expensive O(N) loop and trusts the hint.
   let pendingExplicitInvalidations = 0;
+  const isWordParityMode = () => props.layoutMode === "wordParity";
 
   const clearDeferredMeasurement = () => {
     deferredMeasureToken += 1;
@@ -239,7 +241,12 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       return null;
     }
 
-    const nextLayout = measureParagraphLayoutFromRects(paragraph, charRects);
+    const nextLayout = measureParagraphLayoutFromRects(
+      paragraph,
+      charRects,
+      undefined,
+      props.layoutMode ?? "fast",
+    );
     cachedParagraphSignatures.set(paragraph.id, signature);
     if (options.cacheMeasured && !areParagraphLayoutsEquivalent(cachedLayout, nextLayout)) {
       setMeasuredParagraphLayouts((current) => ({ ...current, [paragraph.id]: nextLayout }));
@@ -606,6 +613,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     }
 
     logger.info("layout:sync complete", {
+      layoutMode: props.layoutMode ?? "fast",
       reason,
       durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
       blocksMeasured: Object.keys(nextHeights).length,
@@ -666,16 +674,21 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     // Default to visible-only measurement. The previous behaviour
     // ("measure every paragraph in the document") was the source of the
     // 80+ second deferred sync after content changes / imports.
-    const visibleParagraphIds = options.paragraphIds ? null : getVisibleParagraphIds(surface);
-    const targetParagraphIds = options.paragraphIds
-      ?? (visibleParagraphIds
+    const visibleParagraphIds =
+      options.paragraphIds || isWordParityMode() ? null : getVisibleParagraphIds(surface);
+    const targetParagraphIds = options.paragraphIds ?? (
+      isWordParityMode()
+        ? paragraphs.map((paragraph) => paragraph.id)
+        : (visibleParagraphIds
             ? paragraphs.map((p) => p.id).filter((id) => visibleParagraphIds.has(id))
-            : []);
+            : [])
+    );
 
     // Prefer visible-block scope by default to avoid touching every block in
     // the document on each invalidation. Callers can still opt in to "all"
     // explicitly when they truly need a full pass.
-    const effectiveBlockScope: "all" | "visible" = options.blockHeightScope ?? "visible";
+    const effectiveBlockScope: "all" | "visible" =
+      options.blockHeightScope ?? (isWordParityMode() ? "all" : "visible");
 
     const token = ++deferredMeasureToken;
     const startedAt = performance.now();
@@ -799,7 +812,9 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
 
       deferredMeasureHandle = null;
       logger.info("layout:deferred sync complete", {
+        layoutMode: props.layoutMode ?? "fast",
         reason,
+        blockScope: effectiveBlockScope,
         durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
         blocksMeasured: Object.keys(measuredBlockHeights()).length,
         paragraphsMeasured: measuredCount,
@@ -862,16 +877,23 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       if (invalidation.dirtyAll || invalidation.structureChanged) {
         scheduleDeferredLayoutMeasurement("content-change");
       } else if ((invalidation.dirtyParagraphIds?.length ?? 0) > 0) {
-        scheduleDeferredLayoutMeasurement("content-change", {
-          paragraphIds: invalidation.dirtyParagraphIds,
-        });
+        scheduleDeferredLayoutMeasurement(
+          "content-change",
+          isWordParityMode()
+            ? {}
+            : {
+                paragraphIds: invalidation.dirtyParagraphIds,
+              },
+        );
       }
     });
   };
 
   const stabilizeLayoutAfterImport = async () => {
     const startedAt = performance.now();
-    logger.info("layout:import-stabilize-start");
+    logger.info("layout:import-stabilize-start", {
+      layoutMode: props.layoutMode ?? "fast",
+    });
 
     clearDeferredMeasurement();
 
@@ -893,6 +915,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     requestInputBoxSync("import");
 
     logger.info("layout:import-stabilize-done", {
+      layoutMode: props.layoutMode ?? "fast",
       durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
     });
   };
@@ -990,9 +1013,11 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       // DOM is fully rendered.
       if (blockStructureChanged) {
         scheduleDeferredLayoutMeasurement("content-change", {
-          paragraphIds: Array.from(changedParagraphIds).filter((paragraphId) =>
-            nextSignatures.has(paragraphId),
-          ),
+          paragraphIds: isWordParityMode()
+            ? undefined
+            : Array.from(changedParagraphIds).filter((paragraphId) =>
+                nextSignatures.has(paragraphId),
+              ),
         });
       }
     } else if (blockStructureChanged) {

@@ -36,13 +36,6 @@ export type DocxImportStage =
 
 export interface ImportDocxToEditorDocumentOptions {
   onProgress?: (stage: DocxImportStage, progress?: number) => void;
-  /**
-   * Override the implicit Word `<w:docGrid>` line-pitch ratio used when a section
-   * declares a docGrid without an explicit type. Defaults to the value resolved
-   * from {@link readImplicitDocGridRatio} (env override `OASIS_WORD_IMPLICIT_DOC_GRID_RATIO`,
-   * else 0.91). Only useful for calibration tooling.
-   */
-  implicitDocGridRatio?: number;
 }
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -58,22 +51,6 @@ const TWIPS_PER_INCH = 1440;
 const PX_PER_INCH = 96;
 const PAGE_BREAK_MARKER = "\f";
 const WORD_SINGLE_LINE_RATIO = 1.223;
-function readImplicitDocGridRatio(): number {
-  const fromEnv =
-    typeof process !== "undefined" && process?.env?.OASIS_WORD_IMPLICIT_DOC_GRID_RATIO;
-  if (fromEnv) {
-    const parsed = Number(fromEnv);
-    if (Number.isFinite(parsed) && parsed > 0) {
-      return parsed;
-    }
-  }
-  // Calibrated against Word's implicit <w:docGrid/> rendering of the lorem
-  // complex DOCX fixture. The sweep in scripts/calibrate-doc-grid.ts shows that
-  // ratios in [0.855, 0.870] reproduce Word's page-1 line packing (41 lines
-  // with last line "...Sed dictum, lorem nec..."); 0.86 is the center.
-  return 0.86;
-}
-const WORD_IMPLICIT_DOC_GRID_LINE_PITCH_RATIO = readImplicitDocGridRatio();
 
 interface NumberingMaps {
   abstractKinds: Map<string, EditorParagraphListStyle["kind"]>;
@@ -180,6 +157,12 @@ function normalizeImportedParagraphStyle(style: EditorParagraphStyle | undefined
     pageBreakBefore:
       effective.pageBreakBefore !== defaultEffective.pageBreakBefore ? effective.pageBreakBefore : undefined,
     keepWithNext: effective.keepWithNext !== defaultEffective.keepWithNext ? effective.keepWithNext : undefined,
+    keepLinesTogether:
+      effective.keepLinesTogether !== defaultEffective.keepLinesTogether
+        ? effective.keepLinesTogether
+        : undefined,
+    widowControl:
+      effective.widowControl !== defaultEffective.widowControl ? effective.widowControl : undefined,
   });
 
   return normalized;
@@ -562,9 +545,7 @@ function applyDocGridLinePitch(
   linePitchPx: number | undefined,
   mode: SectionProperties["docGridMode"],
   docGridType: string | null | undefined,
-  styles: Record<string, EditorNamedStyle> | undefined,
   settings: DocxSettings,
-  implicitRatio: number = WORD_IMPLICIT_DOC_GRID_LINE_PITCH_RATIO,
 ): void {
   if (!linePitchPx || !mode) {
     return;
@@ -572,28 +553,16 @@ function applyDocGridLinePitch(
 
   for (const block of blocks) {
     if (block.type === "paragraph") {
-      const hasLocalFontSize = block.runs.some((run) => run.text.length > 0 && run.styles?.fontSize !== undefined);
-      const hasCompleteLocalFontSize = block.runs
-        .filter((run) => run.text.length > 0)
-        .every((run) => run.styles?.fontSize !== undefined);
       if (
         block.style?.lineHeight === undefined &&
-        block.style?.snapToGrid !== false &&
-        hasLocalFontSize &&
-        (mode === "explicit" || (hasCompleteLocalFontSize && block.style?.align === "justify"))
+        block.style?.snapToGrid !== false
       ) {
-        // TODO: align === "justify" gating is a parity hack; snapToGrid should apply regardless of alignment.
         const lineGridType = mode === "implicit" ? "implicit" : (docGridType as any);
         block.style = {
           ...(block.style ?? {}),
           lineGridPitch: linePitchPx,
           lineGridType,
         };
-        
-        // Apply implicit ratio to the pitch itself if in implicit mode
-        if (mode === "implicit") {
-          block.style.lineGridPitch = linePitchPx * implicitRatio;
-        }
       }
       continue;
     }
@@ -601,7 +570,7 @@ function applyDocGridLinePitch(
     if (settings.adjustLineHeightInTable) {
       for (const row of block.rows) {
         for (const cell of row.cells) {
-          applyDocGridLinePitch(cell.blocks, linePitchPx, mode, docGridType, styles, settings, implicitRatio);
+          applyDocGridLinePitch(cell.blocks, linePitchPx, mode, docGridType, settings);
         }
       }
     }
@@ -848,6 +817,13 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   }
   if (parseBooleanProperty(paragraphProperties, "keepNext")) {
     style.keepWithNext = true;
+  }
+  if (parseBooleanProperty(paragraphProperties, "keepLines")) {
+    style.keepLinesTogether = true;
+  }
+  const widowControl = parseOnOffProperty(paragraphProperties, "widowControl");
+  if (widowControl !== undefined) {
+    style.widowControl = widowControl;
   }
 
   return Object.keys(style).length > 0 ? style : undefined;
@@ -1611,9 +1587,7 @@ export async function importDocxToEditorDocument(
       props.docGridLinePitchPx,
       props.docGridMode,
       props.docGridType,
-      importedStyles,
       docSettings,
-      options.implicitDocGridRatio,
     );
 
     // Load header and footer if referenced
@@ -1632,9 +1606,7 @@ export async function importDocxToEditorDocument(
           props.docGridLinePitchPx,
           props.docGridMode,
           props.docGridType,
-          importedStyles,
           docSettings,
-          options.implicitDocGridRatio,
         );
       }
     }
@@ -1651,9 +1623,7 @@ export async function importDocxToEditorDocument(
           props.docGridLinePitchPx,
           props.docGridMode,
           props.docGridType,
-          importedStyles,
           docSettings,
-          options.implicitDocGridRatio,
         );
       }
     }

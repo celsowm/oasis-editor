@@ -14,6 +14,7 @@ const DEFAULT_LIST_GUTTER = 24;
 const MIN_CONTENT_WIDTH = 120;
 const TAB_SIZE = 4;
 const DEFAULT_WORD_SINGLE_LINE_RATIO = 1.223;
+const FAST_IMPLICIT_DOC_GRID_RATIO = 0.86;
 
 // Calibração para paridade com MS Word
 // O Word usa DirectWrite/GDI que tem métricas ligeiramente diferentes do Canvas 2D
@@ -41,6 +42,7 @@ interface TextMeasureOptions {
   fragments: EditorLayoutFragment[];
   styles?: Record<string, EditorNamedStyle>;
   contentWidth?: number;
+  layoutMode?: "fast" | "wordParity";
 }
 
 const textMeasureCache = new Map<string, number>();
@@ -163,7 +165,12 @@ function measureFallbackCharacterWidth(char: string, fontSize: number): number {
   return fontSize * 0.66;
 }
 
-function measureCharacterWidth(char: string, styles: EditorTextStyle | undefined, fallbackFontSize: number): number {
+function measureCharacterWidth(
+  char: string,
+  styles: EditorTextStyle | undefined,
+  fallbackFontSize: number,
+  layoutMode: "fast" | "wordParity",
+): number {
   if (char === "\n") {
     return 0;
   }
@@ -186,8 +193,8 @@ function measureCharacterWidth(char: string, styles: EditorTextStyle | undefined
     width = measureFallbackCharacterWidth(char, fontSize);
   }
 
-  // Aplicar calibração para paridade com MS Word
-  if (styles?.fontFamily) {
+  // Fast mode keeps calibrated width heuristics; wordParity mode relies on measured DOM layout.
+  if (layoutMode !== "wordParity" && styles?.fontFamily) {
     const fontFamilyNormalized = styles.fontFamily.toLowerCase().replace(/['"]/g, "").split(",")[0]?.trim();
     if (fontFamilyNormalized && CALIBRATED_FONTS.has(fontFamilyNormalized)) {
       width *= WORD_CALIBRATION_FACTOR;
@@ -240,6 +247,7 @@ function getParagraphLineHeight(
   paragraph: EditorParagraphNode,
   styles: Record<string, EditorNamedStyle> | undefined,
   fallbackFontSize: number,
+  layoutMode: "fast" | "wordParity",
 ): number {
   const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, styles);
   const lineHeight = paragraphStyle.lineHeight ?? DEFAULT_LINE_HEIGHT;
@@ -270,7 +278,9 @@ function getParagraphLineHeight(
 
   if (lineGridPitch && lineGridPitch > 0 && snapToGrid) {
     if (paragraphStyle.lineGridType === "implicit") {
-      return Math.max(renderedLineHeight, lineGridPitch);
+      const pitch =
+        layoutMode === "wordParity" ? lineGridPitch : lineGridPitch * FAST_IMPLICIT_DOC_GRID_RATIO;
+      return Math.max(renderedLineHeight, pitch);
     }
     return Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch;
   }
@@ -281,6 +291,7 @@ function buildMeasuredChars(
   paragraph: EditorParagraphNode,
   fragments: EditorLayoutFragment[],
   styles: Record<string, EditorNamedStyle> | undefined,
+  layoutMode: "fast" | "wordParity",
 ): MeasuredChar[] {
   const measured: MeasuredChar[] = [];
   const runsById = new Map(paragraph.runs.map((run) => [run.id, run] as const));
@@ -304,7 +315,7 @@ function buildMeasuredChars(
       measured.push({
         char: char.char,
         offset: char.paragraphOffset,
-        width: measureCharacterWidth(char.char, effectiveStyles, fallbackFontSize),
+        width: measureCharacterWidth(char.char, effectiveStyles, fallbackFontSize, layoutMode),
       });
     }
   }
@@ -384,8 +395,8 @@ function canApplyWordShortTokenFit(
 }
 
 export function composeMeasuredParagraphLines(options: TextMeasureOptions): EditorLayoutLine[] {
-  const { paragraph, fragments, styles, contentWidth } = options;
-  const measuredChars = buildMeasuredChars(paragraph, fragments, styles);
+  const { paragraph, fragments, styles, contentWidth, layoutMode = "fast" } = options;
+  const measuredChars = buildMeasuredChars(paragraph, fragments, styles, layoutMode);
   const tokens = tokenizeMeasuredChars(measuredChars);
   const fallbackFontSize = Math.max(
     DEFAULT_FONT_SIZE,
@@ -394,7 +405,7 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
         resolveEffectiveTextStyleForParagraph(run.styles, paragraph.style?.styleId, styles).fontSize ?? DEFAULT_FONT_SIZE,
       ),
   );
-  const lineHeight = getParagraphLineHeight(paragraph, styles, fallbackFontSize);
+  const lineHeight = getParagraphLineHeight(paragraph, styles, fallbackFontSize, layoutMode);
   const width = Math.max(MIN_CONTENT_WIDTH, contentWidth ?? DEFAULT_CONTENT_WIDTH);
 
   if (tokens.length === 0) {
@@ -463,7 +474,8 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
     if (
       fitsCurrentLine ||
       (isEmptyLine && token.kind === "whitespace") ||
-      canApplyWordShortTokenFit(token, lineWidth, availableWidth, isEmptyLine)
+      (layoutMode !== "wordParity" &&
+        canApplyWordShortTokenFit(token, lineWidth, availableWidth, isEmptyLine))
     ) {
       appendChars(token.chars);
       continue;

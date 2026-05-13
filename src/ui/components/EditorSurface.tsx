@@ -46,6 +46,7 @@ interface EditorSurfaceProps {
   state: Accessor<EditorState>;
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
+  layoutMode?: "fast" | "wordParity";
   /**
    * Phase 4: scroll viewport accessor for page virtualization.
    * When provided, only pages within (or near) the viewport are rendered with
@@ -87,6 +88,7 @@ function paragraphStyleToCss(
   paragraph: EditorParagraphNode,
   style: EditorParagraphStyle | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
+  layoutMode: "fast" | "wordParity",
   isContinuation?: boolean,
   isTruncated?: boolean,
 ): Record<string, string> | undefined {
@@ -119,9 +121,15 @@ function paragraphStyleToCss(
       merged.lineHeight ?? 1.15,
     );
     if (hasLineGrid) {
+      const implicitPitch =
+        style?.lineGridType === "implicit"
+          ? layoutMode === "wordParity"
+            ? lineGridPitch!
+            : lineGridPitch! * 0.86
+          : lineGridPitch!;
       css["line-height"] = `${style?.lineGridType === "implicit"
-        ? Math.max(renderedLineHeight, lineGridPitch!)
-        : Math.ceil(renderedLineHeight / lineGridPitch!) * lineGridPitch!
+        ? Math.max(renderedLineHeight, implicitPitch)
+        : Math.ceil(renderedLineHeight / implicitPitch) * implicitPitch
       }px`;
     } else {
       css["line-height"] = `${renderedLineHeight}px`;
@@ -169,10 +177,19 @@ function getLinePaddingLeft(
 function getParagraphRenderStyle(
   paragraph: EditorParagraphNode,
   state: EditorState,
+  layoutMode: "fast" | "wordParity",
   isContinuation?: boolean,
   isTruncated?: boolean,
 ): Record<string, string> | undefined {
-  const css = paragraphStyleToCss(paragraph, paragraph.style, state.document.styles, isContinuation, isTruncated) ?? {};
+  const css =
+    paragraphStyleToCss(
+      paragraph,
+      paragraph.style,
+      state.document.styles,
+      layoutMode,
+      isContinuation,
+      isTruncated,
+    ) ?? {};
   const effectiveTextStyle = resolveEffectiveTextStyleForParagraph(
     undefined,
     paragraph.style?.styleId,
@@ -490,6 +507,7 @@ function renderParagraph(
     interactive?: boolean;
     testId?: string;
     contentWidth?: number;
+    layoutMode?: "fast" | "wordParity";
   },
 ) {
   const paragraphLayout =
@@ -500,6 +518,7 @@ function renderParagraph(
       undefined,
       state.document.styles,
       options?.contentWidth,
+      options?.layoutMode ?? "fast",
     );
   const chars = paragraphLayout.fragments.flatMap((fragment) => fragment.chars);
   const normalized = normalizedSelection;
@@ -509,6 +528,7 @@ function renderParagraph(
   const interactive = options?.interactive ?? true;
   const testId = options?.testId ?? "editor-block";
   const paragraphAlign = getParagraphAlign(paragraph, state);
+  const layoutMode = options?.layoutMode ?? "fast";
   const isCharSelected = (charIndex: number) => {
     const current = normalized();
     if (current.isCollapsed) {
@@ -797,7 +817,7 @@ function renderParagraph(
       data-end-offset={paragraphLayout.endOffset ?? chars.length}
       data-testid={testId}
       data-list-align={paragraph.list ? paragraphAlign : undefined}
-      style={getParagraphRenderStyle(paragraph, state, isContinuation, isTruncated)}
+          style={getParagraphRenderStyle(paragraph, state, layoutMode, isContinuation, isTruncated)}
       onMouseDown={
         interactive
           ? (event) => onParagraphMouseDown(paragraph.id, event)
@@ -862,6 +882,7 @@ function renderTable(
     endRowIndex: number;
     repeatedHeaderRowCount: number;
   },
+  layoutMode: "fast" | "wordParity" = "fast",
 ) {
   const repeatedHeaderRows =
     segment && segment.repeatedHeaderRowCount > 0
@@ -1003,8 +1024,9 @@ function renderTable(
                                     domParagraphId: `${paragraph.id}:repeat:${blockId}:${renderedRow.repeatedIndex}:${paragraphIndex()}`,
                                     interactive: false,
                                     contentWidth: tableCellContentWidthPx(cell),
+                                    layoutMode,
                                   }
-                                : { contentWidth: tableCellContentWidthPx(cell) },
+                                : { contentWidth: tableCellContentWidthPx(cell), layoutMode },
                             )
                           }
                         </For>
@@ -1167,6 +1189,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
           undefined,
           props.measuredBlockHeights?.(),
           props.measuredParagraphLayouts?.(),
+          { layoutMode: props.layoutMode ?? "fast" },
         ),
       ),
     );
@@ -1252,6 +1275,9 @@ export function EditorSurface(props: EditorSurfaceProps) {
   // renders.
   const visiblePageIds = createMemo<Set<string> | null>(() => {
     scrollTick(); // reactive dep
+    if (props.layoutMode === "wordParity") {
+      return null;
+    }
     const viewport = props.viewportRef?.();
     if (!viewport) return null; // no virtualization possible
 
@@ -1408,6 +1434,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                             {
                               testId: "editor-header-block",
                               contentWidth: contentWidth(),
+                              layoutMode: props.layoutMode ?? "fast",
                             },
                           )
                         : renderTable(
@@ -1424,6 +1451,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                             props.onRevisionMouseEnter,
                             props.onRevisionMouseLeave,
                             block.tableSegment,
+                            props.layoutMode ?? "fast",
                           );
                     }}
                   </For>
@@ -1460,7 +1488,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onTableDragHandleMouseDown,
                           props.onRevisionMouseEnter,
                           props.onRevisionMouseLeave,
-                          { contentWidth: contentWidth() },
+                          { contentWidth: contentWidth(), layoutMode: props.layoutMode ?? "fast" },
                         )
                       : renderTable(
                           block.sourceBlock,
@@ -1476,6 +1504,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onRevisionMouseEnter,
                           props.onRevisionMouseLeave,
                           block.tableSegment,
+                          props.layoutMode ?? "fast",
                         );
                   }}
                 </For>
@@ -1522,6 +1551,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           {
                             testId: "editor-footer-block",
                             contentWidth: contentWidth(),
+                            layoutMode: props.layoutMode ?? "fast",
                           },
                         )
                       : renderTable(
@@ -1538,6 +1568,7 @@ export function EditorSurface(props: EditorSurfaceProps) {
                           props.onRevisionMouseEnter,
                           props.onRevisionMouseLeave,
                           block.tableSegment,
+                          props.layoutMode ?? "fast",
                         );
                   }}
                 </For>

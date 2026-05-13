@@ -32,6 +32,7 @@ const CONVERT_SCRIPT_PATH = fileURLToPath(new URL("../../scripts/convert-docx-to
 const EXTRACT_SCRIPT_PATH = fileURLToPath(new URL("../../scripts/extract-pdf-lines.py", import.meta.url));
 const PX_TO_POINTS = 72 / 96;
 const GEOMETRY_TOLERANCE_POINTS = 1.5;
+const STRICT_GEOMETRY_TOLERANCE_POINTS = 0.5;
 const PROJECT_ROOT = dirname(fileURLToPath(new URL("../../package.json", import.meta.url)));
 
 export interface WordLayoutSupportStatus {
@@ -81,6 +82,7 @@ interface EditorPageSnapshot {
   pageHeight: number;
   firstBodyLineGeometry?: LayoutLineGeometry;
   lastBodyLineBottom?: number;
+  firstFooterLineTop?: number;
 }
 
 interface EditorDomStyleSnapshot {
@@ -105,6 +107,8 @@ export interface WordLayoutParityResult {
 
 export interface WordLayoutParityOptions {
   geometryTolerancePoints?: number;
+  strictTextAndGeometry?: boolean;
+  layoutMode?: "fast" | "wordParity";
 }
 
 function normalizeLineText(text: string): string {
@@ -163,8 +167,13 @@ export function detectWordLayoutParitySupport(): WordLayoutSupportStatus {
   };
 }
 
-function collectEditorPageSnapshots(document: EditorDocument): EditorPageSnapshot[] {
-  const layout = projectDocumentLayout(document);
+function collectEditorPageSnapshots(
+  document: EditorDocument,
+  options: WordLayoutParityOptions = {},
+): EditorPageSnapshot[] {
+  const layout = projectDocumentLayout(document, undefined, undefined, undefined, {
+    layoutMode: options.layoutMode ?? "fast",
+  });
 
   return layout.pages.map((page) => {
     const lineTexts = page.blocks.flatMap((block) => {
@@ -210,11 +219,15 @@ function collectEditorPageSnapshots(document: EditorDocument): EditorPageSnapsho
       pageHeight: page.pageSettings.height,
       firstBodyLineGeometry: undefined,
       lastBodyLineBottom: undefined,
+      firstFooterLineTop: undefined,
     };
   });
 }
 
-async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Promise<BrowserEditorSnapshot | null> {
+async function collectEditorPageSnapshotsInBrowser(
+  document: EditorDocument,
+  options: WordLayoutParityOptions = {},
+): Promise<BrowserEditorSnapshot | null> {
   if (process.env.OASIS_WORD_PARITY_USE_NODE_LAYOUT === "1") {
     return null;
   }
@@ -254,9 +267,10 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
 
     try {
       const page = await browser.newPage();
-      await page.goto(baseUrl, { waitUntil: "networkidle" });
+      await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 90_000 });
 
-      const snapshots = await page.evaluate(async (inputDocument) => {
+      const snapshots = await page.evaluate(async (payload) => {
+        const { inputDocument, layoutMode } = payload;
         const domLineBoxToPdfTextTopPoints = 2.18;
         const domTextWidthToPdfBboxPoints = 2.05;
         const domTextHeightToPdfBboxPoints = -2.46;
@@ -273,6 +287,7 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
           showChrome: false,
           readOnly: true,
           viewportHeight: "none",
+          layoutMode,
         });
         try {
           await globalThis.document.fonts.ready;
@@ -309,11 +324,7 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
             const parsed = Number.parseFloat(value ?? "");
             return Number.isFinite(parsed) ? parsed : fallback;
           };
-          const geometryFromLine = (
-            pageElement: HTMLElement,
-            bodyElement: HTMLElement | null,
-            lineElement: Element | null,
-          ) => {
+          const geometryFromLine = (bodyElement: HTMLElement | null, lineElement: Element | null) => {
             if (!bodyElement || !lineElement) {
               return undefined;
             }
@@ -332,7 +343,6 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
             };
           };
           const lineBottomFromPageTop = (
-            pageElement: HTMLElement,
             bodyElement: HTMLElement | null,
             lineElement: Element | null,
           ) => {
@@ -349,6 +359,17 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
             }
             return bodyTop + offsetTop + lineHtmlElement.offsetHeight;
           };
+          const textTopFromPageTop = (pageElement: HTMLElement, lineElement: Element | null) => {
+            if (!lineElement) {
+              return undefined;
+            }
+            const pageRect = pageElement.getBoundingClientRect();
+            const range = globalThis.document.createRange();
+            range.selectNodeContents(lineElement);
+            const lineRect = range.getBoundingClientRect();
+            range.detach();
+            return (lineRect.top - pageRect.top) * 0.75 + domLineBoxToPdfTextTopPoints;
+          };
 
           const pages = Array.from(host.querySelectorAll('[data-testid="editor-page"]')).map((pageElement: Element) => {
             const pageHtmlElement = pageElement as HTMLElement;
@@ -363,6 +384,7 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
             const firstBodyLine = body?.querySelector('[data-testid="editor-line"]');
             const bodyLines = Array.from(body?.querySelectorAll('[data-testid="editor-line"]') ?? []);
             const lastBodyLine = bodyLines[bodyLines.length - 1] ?? null;
+            const firstFooterLine = footer?.querySelector('[data-testid="editor-line"]') ?? null;
             return {
               headerLineTexts: lineTexts(header),
               bodyLineTexts: lineTexts(body),
@@ -375,8 +397,9 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
               footerTop,
               footerReferenceTop: footerTop,
               pageHeight,
-              firstBodyLineGeometry: geometryFromLine(pageHtmlElement, body, firstBodyLine ?? null),
-              lastBodyLineBottom: lineBottomFromPageTop(pageHtmlElement, body, lastBodyLine),
+              firstBodyLineGeometry: geometryFromLine(body, firstBodyLine ?? null),
+              lastBodyLineBottom: lineBottomFromPageTop(body, lastBodyLine),
+              firstFooterLineTop: textTopFromPageTop(pageHtmlElement, firstFooterLine),
             };
           });
 
@@ -405,7 +428,7 @@ async function collectEditorPageSnapshotsInBrowser(document: EditorDocument): Pr
         } finally {
           instance.dispose();
         }
-      }, document);
+      }, { inputDocument: document, layoutMode: options.layoutMode ?? "fast" });
 
       return snapshots;
     } finally {
@@ -477,7 +500,10 @@ function compareWordAndEditorLayout(
   options: WordLayoutParityOptions = {},
 ): string[] {
   const mismatches: string[] = [];
-  const geometryTolerance = options.geometryTolerancePoints ?? GEOMETRY_TOLERANCE_POINTS;
+  const strict = options.strictTextAndGeometry === true;
+  const geometryTolerance =
+    options.geometryTolerancePoints ??
+    (strict ? STRICT_GEOMETRY_TOLERANCE_POINTS : GEOMETRY_TOLERANCE_POINTS);
 
   if (editorPages.length !== wordLayout.pages.length) {
     mismatches.push(
@@ -568,6 +594,57 @@ function compareWordAndEditorLayout(
         }
       }
     }
+
+    if (strict) {
+      const editorFirstBodyText = editorPage.bodyLineTexts[0] ?? "";
+      const editorLastBodyText = editorPage.bodyLineTexts.at(-1) ?? "";
+      const wordFirstBodyText = wordBodyLines[0] ?? "";
+      const wordLastBodyText = wordBodyLines.at(-1) ?? "";
+
+      if (editorFirstBodyText !== wordFirstBodyText) {
+        mismatches.push(
+          `Page ${pageIndex + 1} first body line mismatch: editor="${editorFirstBodyText}" word="${wordFirstBodyText}".`,
+        );
+      }
+      if (editorLastBodyText !== wordLastBodyText) {
+        mismatches.push(
+          `Page ${pageIndex + 1} last body line mismatch: editor="${editorLastBodyText}" word="${wordLastBodyText}".`,
+        );
+      }
+
+      const wordBodyTop = wordBodyLinesWithGeometry[0]?.y;
+      const wordBodyBottom = wordBodyLinesWithGeometry.at(-1)
+        ? wordBodyLinesWithGeometry.at(-1)!.y + wordBodyLinesWithGeometry.at(-1)!.height
+        : undefined;
+      const wordFooterTop = wordFooterLinesWithGeometry[0]?.y;
+      const checks = [
+        {
+          name: "bodyTop",
+          editor: (editorPage.firstBodyLineGeometry?.y ?? editorPage.bodyTop * PX_TO_POINTS),
+          word: wordBodyTop,
+        },
+        {
+          name: "bodyBottom",
+          editor: (editorPage.lastBodyLineBottom ?? editorPage.footerTop) * PX_TO_POINTS,
+          word: wordBodyBottom,
+        },
+        {
+          name: "footerTop",
+          editor: (editorPage.firstFooterLineTop ?? editorPage.footerTop * PX_TO_POINTS),
+          word: wordFooterTop,
+        },
+      ];
+      for (const check of checks) {
+        if (typeof check.word !== "number") {
+          continue;
+        }
+        if (Math.abs(check.editor - check.word) > geometryTolerance) {
+          mismatches.push(
+            `Page ${pageIndex + 1} ${check.name} mismatch: editor=${check.editor.toFixed(2)}pt, word=${check.word.toFixed(2)}pt.`,
+          );
+        }
+      }
+    }
   }
 
   return mismatches;
@@ -591,8 +668,8 @@ async function verifyWordLayoutParityFromDocx(
     await writeFile(docxPath, docxBuffer);
     await convertDocxToPdfWithWord(docxPath, pdfPath);
 
-    const browserSnapshot = await collectEditorPageSnapshotsInBrowser(document);
-    const editorPages = browserSnapshot?.pages ?? collectEditorPageSnapshots(document);
+    const browserSnapshot = await collectEditorPageSnapshotsInBrowser(document, options);
+    const editorPages = browserSnapshot?.pages ?? collectEditorPageSnapshots(document, options);
     const wordLayout = extractPdfLayout(pdfPath, support);
     const mismatches = compareWordAndEditorLayout(editorPages, wordLayout, options);
 

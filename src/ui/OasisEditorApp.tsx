@@ -114,6 +114,7 @@ export interface OasisEditorAppProps {
   onStateChange?: (state: EditorState) => void;
   readOnly?: boolean;
   persistenceEnabled?: boolean;
+  layoutMode?: "fast" | "wordParity";
 }
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
@@ -173,6 +174,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const showMenubar = () => props.showMenubar ?? true;
   const showToolbar = () => props.showToolbar ?? true;
   const showOutline = () => props.showOutline ?? true;
+  const layoutMode = () => props.layoutMode ?? "fast";
   const useComposedShell = () =>
     props.uiVariant === "docs" || (props.shell ?? "document") !== "document";
   const isReadOnly = () => props.readOnly ?? false;
@@ -242,6 +244,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     surfaceRef: () => surfaceRef,
     viewportRef: () => viewportRef,
     isImporting: () => docIO.importProgress()?.phase !== "done" && docIO.importProgress()?.phase !== "error" && docIO.importProgress() !== null,
+    layoutMode: layoutMode(),
   });
 
   const { status: persistenceStatus } = useEditorPersistence(
@@ -728,6 +731,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         showCaret={shouldShowCaret}
         class={props.class}
         style={props.style}
+        layoutMode={layoutMode()}
         onViewportRef={(element: HTMLDivElement) => {
           viewportRef = element;
         }}
@@ -869,6 +873,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             hoveredRevision={revisionController.hoveredRevision}
             focused={() => focused()}
             importProgress={() => docIO.importProgress()}
+            layoutMode={layoutMode()}
             viewportHeight={props.viewportHeight}
             class={props.class}
             style={props.style}

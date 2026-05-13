@@ -34,6 +34,7 @@ const DEFAULT_PAGE_HEIGHT = 920;
 const POINT_TO_PX = 96 / 72;
 const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 28;
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
+const FAST_IMPLICIT_DOC_GRID_RATIO = 0.86;
 
 function sliceFragmentToRange(
   fragment: EditorLayoutFragment,
@@ -93,6 +94,7 @@ export function projectParagraphLayout(
   totalPages?: number,
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
+  layoutMode: "fast" | "wordParity" = "fast",
 ): EditorLayoutParagraph {
   // Only include pageIndex / totalPages in the cache key when this paragraph
   // actually contains a PAGE / NUMPAGES field. Otherwise the projection result
@@ -102,7 +104,7 @@ export function projectParagraphLayout(
   const { dependsOnPageIndex, dependsOnTotalPages } = getParagraphFieldDependence(paragraph);
   const cacheKey = `${dependsOnPageIndex ? pageIndex ?? "" : ""}:${
     dependsOnTotalPages ? totalPages ?? "" : ""
-  }:${contentWidth ?? ""}`;
+  }:${contentWidth ?? ""}:${layoutMode}`;
   let cacheForParagraph = paragraphLayoutCache.get(paragraph);
   if (cacheForParagraph) {
     const cached = cacheForParagraph.get(cacheKey);
@@ -146,12 +148,13 @@ export function projectParagraphLayout(
     });
 
     const fontSize = estimateParagraphFontSize(paragraph, styles);
-    const lineHeight = estimateParagraphLineHeight(paragraph, fontSize, styles);
+    const lineHeight = estimateParagraphLineHeight(paragraph, fontSize, styles, layoutMode);
     const lines = composeMeasuredParagraphLines({
       paragraph,
       fragments,
       styles,
       contentWidth,
+      layoutMode,
     }).map((line) => ({
       ...line,
       height: line.height || lineHeight,
@@ -184,8 +187,9 @@ export function measureParagraphLayoutFromRects(
   paragraph: EditorParagraphNode,
   charRects: CharRect[],
   styles?: Record<string, EditorNamedStyle>,
+  layoutMode: "fast" | "wordParity" = "fast",
 ): EditorLayoutParagraph {
-  const projected = projectParagraphLayout(paragraph, undefined, undefined, styles);
+  const projected = projectParagraphLayout(paragraph, undefined, undefined, styles, undefined, layoutMode);
   const measuredLines = measureLinesFromRects(charRects);
 
   return {
@@ -329,6 +333,7 @@ function estimateParagraphLineHeight(
   paragraph: EditorParagraphNode,
   fontSize: number,
   styles: Record<string, EditorNamedStyle> | undefined,
+  layoutMode: "fast" | "wordParity",
 ): number {
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
   const lineHeight = paragraphStyle.lineHeight ?? DEFAULT_LINE_HEIGHT;
@@ -350,7 +355,9 @@ function estimateParagraphLineHeight(
 
   if (lineGridPitch && lineGridPitch > 0 && snapToGrid) {
     if (paragraphStyle.lineGridType === "implicit") {
-      return Math.max(renderedLineHeight, lineGridPitch);
+      const pitch =
+        layoutMode === "wordParity" ? lineGridPitch : lineGridPitch * FAST_IMPLICIT_DOC_GRID_RATIO;
+      return Math.max(renderedLineHeight, pitch);
     }
     return Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch;
   }
@@ -419,6 +426,7 @@ function getTableCellContentWidth(
 function estimateTableRowHeight(
   row: EditorTableNode["rows"][number],
   styles: Record<string, EditorNamedStyle> | undefined,
+  layoutMode: "fast" | "wordParity",
   contentWidth?: number,
 ): number {
   const cellHeights = row.cells
@@ -426,7 +434,13 @@ function estimateTableRowHeight(
     .map((cell) =>
       cell.blocks.reduce(
         (sum, paragraph) =>
-          sum + estimateParagraphBlockHeight(paragraph, styles, getTableCellContentWidth(cell, contentWidth)),
+          sum +
+          estimateParagraphBlockHeight(
+            paragraph,
+            styles,
+            getTableCellContentWidth(cell, contentWidth),
+            layoutMode,
+          ),
         0,
       ),
     );
@@ -506,17 +520,18 @@ function getTableSegmentHeight(
   rowEndIndexExclusive: number,
   repeatedHeaderRowCount: number,
   styles: Record<string, EditorNamedStyle> | undefined,
+  layoutMode: "fast" | "wordParity",
   contentWidth?: number,
 ): number {
   const headerHeight =
     repeatedHeaderRowCount > 0
       ? table.rows
           .slice(0, repeatedHeaderRowCount)
-          .reduce((sum, row) => sum + estimateTableRowHeight(row, styles, contentWidth), 0)
+          .reduce((sum, row) => sum + estimateTableRowHeight(row, styles, layoutMode, contentWidth), 0)
       : 0;
   const bodyHeight = table.rows
     .slice(rowStartIndex, rowEndIndexExclusive)
-    .reduce((sum, row) => sum + estimateTableRowHeight(row, styles, contentWidth), 0);
+    .reduce((sum, row) => sum + estimateTableRowHeight(row, styles, layoutMode, contentWidth), 0);
   return headerHeight + bodyHeight + 16;
 }
 
@@ -558,6 +573,20 @@ function applyWidowOrphanControl(
   endLineIndexExclusive: number,
   styles: Record<string, EditorNamedStyle> | undefined,
 ): { endLineIndexExclusive: number; height: number } {
+  const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
+  if (paragraphStyle.widowControl === false) {
+    return {
+      endLineIndexExclusive,
+      height: getParagraphSegmentHeight(
+        paragraph,
+        lines.slice(startLineIndex, endLineIndexExclusive),
+        startLineIndex === 0,
+        endLineIndexExclusive === lines.length,
+        styles,
+      ),
+    };
+  }
+
   let adjustedEnd = endLineIndexExclusive;
   const segmentLineCount = adjustedEnd - startLineIndex;
   const remainingLineCount = lines.length - adjustedEnd;
@@ -584,8 +613,16 @@ export function estimateParagraphBlockHeight(
   paragraph: EditorParagraphNode,
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
+  layoutMode: "fast" | "wordParity" = "fast",
 ): number {
-  const layout = projectParagraphLayout(paragraph, undefined, undefined, styles, contentWidth);
+  const layout = projectParagraphLayout(
+    paragraph,
+    undefined,
+    undefined,
+    styles,
+    contentWidth,
+    layoutMode,
+  );
   const lineHeightPx = layout.lines.reduce((sum, line) => sum + line.height, 0);
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
   const spacingBefore = paragraphStyle.spacingBefore ?? 0;
@@ -598,8 +635,9 @@ export function estimateTableBlockHeight(
   table: EditorTableNode,
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
+  layoutMode: "fast" | "wordParity" = "fast",
 ): number {
-  return getTableSegmentHeight(table, 0, table.rows.length, 0, styles, contentWidth);
+  return getTableSegmentHeight(table, 0, table.rows.length, 0, styles, layoutMode, contentWidth);
 }
 
 export function projectHeaderFooterBlocks(
@@ -610,11 +648,19 @@ export function projectHeaderFooterBlocks(
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>,
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
+  layoutMode: "fast" | "wordParity" = "fast",
 ): EditorLayoutBlock[] {
   // Headers/Footers are projected as a single sequence of blocks, no pagination for now
   return blocks.map((block, index) => {
     if (block.type === "paragraph") {
-      const layout = projectParagraphLayout(block, pageIndex, totalPages, styles, contentWidth);
+      const layout = projectParagraphLayout(
+        block,
+        pageIndex,
+        totalPages,
+        styles,
+        contentWidth,
+        layoutMode,
+      );
       const estimatedHeight =
         measuredHeights?.[block.id] ?? getProjectedParagraphBlockHeight(block, layout, styles);
       return {
@@ -634,7 +680,7 @@ export function projectHeaderFooterBlocks(
       blockType: block.type,
       globalIndex: index,
       estimatedHeight:
-        measuredHeights?.[block.id] ?? estimateTableBlockHeight(block, styles, contentWidth),
+        measuredHeights?.[block.id] ?? estimateTableBlockHeight(block, styles, contentWidth, layoutMode),
       sourceBlock: block,
     };
   });
@@ -703,6 +749,7 @@ export function projectBlocksLayout(
   pageOffset = 0,
   totalPages?: number,
   existingPages: EditorLayoutPage[] = [],
+  layoutMode: "fast" | "wordParity" = "fast",
 ): EditorLayoutPage[] {
   const contentWidth = getPageContentWidth(pageSettings);
   const pages: EditorLayoutPage[] = [...existingPages];
@@ -736,7 +783,11 @@ export function projectBlocksLayout(
     const sourceBlock = blocks[index]!;
     const nextBlock = blocks[index + 1];
 
-    if (sourceBlock.type === "paragraph" && sourceBlock.style?.pageBreakBefore && currentBlocks.length > 0) {
+    if (
+      sourceBlock.type === "paragraph" &&
+      currentBlocks.length > 0 &&
+      getEffectiveParagraphStyle(sourceBlock, styles).pageBreakBefore
+    ) {
       flushPage();
     }
 
@@ -748,6 +799,7 @@ export function projectBlocksLayout(
         totalPages,
         styles,
         contentWidth,
+        layoutMode,
       );
       const measuredParagraphLayout = measuredParagraphLayouts?.[sourceBlock.id];
       const paragraphLayout =
@@ -756,19 +808,48 @@ export function projectBlocksLayout(
           : projectedParagraphLayout;
       const paragraphTotalHeight =
         measuredHeights?.[sourceBlock.id] ?? getProjectedParagraphBlockHeight(sourceBlock, paragraphLayout, styles);
+      const paragraphStyle = getEffectiveParagraphStyle(sourceBlock, styles);
       const nextBlockHeight =
         nextBlock?.type === "paragraph"
-          ? measuredHeights?.[nextBlock.id] ?? estimateParagraphBlockHeight(nextBlock, styles, contentWidth)
+          ? measuredHeights?.[nextBlock.id] ??
+            estimateParagraphBlockHeight(nextBlock, styles, contentWidth, layoutMode)
           : nextBlock
-            ? measuredHeights?.[nextBlock.id] ?? estimateTableBlockHeight(nextBlock, styles, contentWidth)
+            ? measuredHeights?.[nextBlock.id] ??
+              estimateTableBlockHeight(nextBlock, styles, contentWidth, layoutMode)
             : 0;
       if (
-        sourceBlock.style?.keepWithNext &&
+        paragraphStyle.keepWithNext &&
         currentBlocks.length > 0 &&
         currentHeight + paragraphTotalHeight + nextBlockHeight > maxPageHeight &&
         paragraphTotalHeight + nextBlockHeight <= maxPageHeight
       ) {
         flushPage();
+      }
+
+      if (paragraphStyle.keepLinesTogether && paragraphTotalHeight <= maxPageHeight) {
+        if (currentBlocks.length > 0 && currentHeight + paragraphTotalHeight > maxPageHeight) {
+          flushPage();
+        }
+        const segmentId = `${sourceBlock.id}:segment:0`;
+        const measuredHeight = getParagraphMeasuredHeight(
+          measuredHeights,
+          sourceBlock.id,
+          segmentId,
+          true,
+          paragraphTotalHeight,
+        );
+        currentBlocks.push({
+          blockId: segmentId,
+          sourceBlockId: sourceBlock.id,
+          blockType: sourceBlock.type,
+          paragraphId: sourceBlock.id,
+          globalIndex: index,
+          estimatedHeight: measuredHeight,
+          layout: paragraphLayout,
+          sourceBlock,
+        });
+        currentHeight += measuredHeight;
+        continue;
       }
 
       let startLineIndex = 0;
@@ -858,7 +939,8 @@ export function projectBlocksLayout(
     }
 
     const tableHeight =
-      measuredHeights?.[sourceBlock.id] ?? estimateTableBlockHeight(sourceBlock, styles, contentWidth);
+      measuredHeights?.[sourceBlock.id] ??
+      estimateTableBlockHeight(sourceBlock, styles, contentWidth, layoutMode);
     if (sourceBlock.rows.length <= 1 || tableHeight <= maxPageHeight) {
       if (currentBlocks.length > 0 && currentHeight + tableHeight > maxPageHeight) {
         flushPage();
@@ -901,6 +983,7 @@ export function projectBlocksLayout(
           candidateEnd,
           repeatedHeaderRowCount,
           styles,
+          layoutMode,
           contentWidth,
         );
         if (
@@ -931,6 +1014,7 @@ export function projectBlocksLayout(
           endRowIndex,
           repeatedHeaderRowCount,
           styles,
+          layoutMode,
           contentWidth,
         );
       }
@@ -985,7 +1069,9 @@ export function projectDocumentLayout(
   maxPageHeightOverride?: number,
   measuredHeights?: Record<string, number>,
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>,
+  options: { layoutMode?: "fast" | "wordParity" } = {},
 ): EditorLayoutDocument {
+  const layoutMode = options.layoutMode ?? "fast";
   if (Array.isArray(blocksOrDocument)) {
     // Legacy support for blocks only
     const pages = projectBlocksLayout(
@@ -1000,6 +1086,10 @@ export function projectDocumentLayout(
       measuredHeights,
       measuredParagraphLayouts,
       undefined,
+      0,
+      undefined,
+      [],
+      layoutMode,
     );
     return { pages };
   }
@@ -1022,6 +1112,7 @@ export function projectDocumentLayout(
             measuredParagraphLayouts,
             document.styles,
             contentWidth,
+            layoutMode,
           )
         : undefined;
       const footerBlocks = section.footer
@@ -1033,6 +1124,7 @@ export function projectDocumentLayout(
             measuredParagraphLayouts,
             document.styles,
             contentWidth,
+            layoutMode,
           )
         : undefined;
       const metrics = resolveEffectiveVerticalMetrics(
@@ -1052,7 +1144,8 @@ export function projectDocumentLayout(
         undefined,
         isContinuous ? currentTotal - 1 : currentTotal,
         undefined,
-        isContinuous ? [activePages[activePages.length - 1]] : []
+        isContinuous ? [activePages[activePages.length - 1]] : [],
+        layoutMode,
       );
 
       if (isContinuous) {
@@ -1081,6 +1174,7 @@ export function projectDocumentLayout(
           measuredParagraphLayouts,
           document.styles,
           contentWidth,
+          layoutMode,
         )
       : undefined;
     const sectionFooterBlocks = section.footer
@@ -1092,6 +1186,7 @@ export function projectDocumentLayout(
           measuredParagraphLayouts,
           document.styles,
           contentWidth,
+          layoutMode,
         )
       : undefined;
     const sectionMetrics = resolveEffectiveVerticalMetrics(
@@ -1111,7 +1206,8 @@ export function projectDocumentLayout(
       document.styles,
       isContinuous ? allPages.length - 1 : allPages.length,
       totalPages,
-      isContinuous ? [allPages[allPages.length - 1]] : []
+      isContinuous ? [allPages[allPages.length - 1]] : [],
+      layoutMode,
     );
 
     if (isContinuous) {
@@ -1128,6 +1224,7 @@ export function projectDocumentLayout(
             measuredParagraphLayouts,
             document.styles,
             getPageContentWidth(page.pageSettings),
+            layoutMode,
           )
         : page.headerBlocks;
       const footerBlocks = section.footer
@@ -1139,6 +1236,7 @@ export function projectDocumentLayout(
             measuredParagraphLayouts,
             document.styles,
             getPageContentWidth(page.pageSettings),
+            layoutMode,
           )
         : page.footerBlocks;
 

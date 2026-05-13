@@ -218,6 +218,8 @@ function materializeParagraphStyle(
     indentHanging: effective.indentHanging,
     pageBreakBefore: effective.pageBreakBefore,
     keepWithNext: effective.keepWithNext,
+    keepLinesTogether: effective.keepLinesTogether,
+    widowControl: effective.widowControl,
   };
   return materialized;
 }
@@ -401,6 +403,12 @@ function serializeParagraphProperties(
   }
   if (style.keepWithNext) {
     parts.push("<w:keepNext/>");
+  }
+  if (style.keepLinesTogether) {
+    parts.push("<w:keepLines/>");
+  }
+  if (style.widowControl === false) {
+    parts.push('<w:widowControl w:val="0"/>');
   }
 
   const numbering = numberingInfo.get(paragraph.id);

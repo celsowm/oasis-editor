@@ -40,6 +40,8 @@ export interface EditorParagraphStyle {
   tabs?: EditorTabStop[] | null;
   pageBreakBefore?: boolean;
   keepWithNext?: boolean;
+  keepLinesTogether?: boolean;
+  widowControl?: boolean;
 }
 
 export interface EditorNamedStyle {
@@ -302,6 +304,8 @@ const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> = {
   tabs: null as unknown as EditorTabStop[] | null,
   pageBreakBefore: false,
   keepWithNext: false,
+  keepLinesTogether: false,
+  widowControl: true,
 };
 
 export const EFFECTIVE_PARAGRAPH_STYLE_DEFAULTS: Required<EditorParagraphStyle> = DEFAULT_PARAGRAPH_STYLE;
