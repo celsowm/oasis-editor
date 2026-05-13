@@ -80,6 +80,30 @@ interface NumberingMaps {
   numKinds: Map<string, EditorParagraphListStyle["kind"]>;
 }
 
+interface DocxSettings {
+  adjustLineHeightInTable: boolean;
+}
+
+function parseSettings(xml: string | null): DocxSettings {
+  const settings: DocxSettings = {
+    adjustLineHeightInTable: true, // Default to true for parity
+  };
+  if (!xml) {
+    return settings;
+  }
+
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  const compat = getFirstChildByTagNameNS(doc.documentElement, WORD_NS, "compat");
+  if (compat) {
+    const adjustLineHeightInTable = getFirstChildByTagNameNS(compat, WORD_NS, "adjustLineHeightInTable");
+    if (adjustLineHeightInTable) {
+      const val = getAttributeValue(adjustLineHeightInTable, "val");
+      settings.adjustLineHeightInTable = val !== "0" && val !== "false";
+    }
+  }
+  return settings;
+}
+
 interface ThemeFontMap {
   majorHAnsi?: string;
   minorHAnsi?: string;
@@ -436,6 +460,7 @@ interface SectionProperties {
   footerRId: string | null;
   docGridLinePitchPx?: number;
   docGridMode?: "explicit" | "implicit";
+  docGridType?: string | null;
 }
 
 interface ParsedSection {
@@ -508,6 +533,7 @@ function parseSectionProperties(sectPr: XmlElement): SectionProperties {
         : docGrid && docGridType === null
           ? "implicit"
           : undefined,
+    docGridType,
   };
 }
 
@@ -535,7 +561,9 @@ function applyDocGridLinePitch(
   blocks: EditorBlockNode[],
   linePitchPx: number | undefined,
   mode: SectionProperties["docGridMode"],
+  docGridType: string | null | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
+  settings: DocxSettings,
   implicitRatio: number = WORD_IMPLICIT_DOC_GRID_LINE_PITCH_RATIO,
 ): void {
   if (!linePitchPx || !mode) {
@@ -544,37 +572,37 @@ function applyDocGridLinePitch(
 
   for (const block of blocks) {
     if (block.type === "paragraph") {
-      const hasLocalFontSize = block.runs.some((run) => run.styles?.fontSize !== undefined);
+      const hasLocalFontSize = block.runs.some((run) => run.text.length > 0 && run.styles?.fontSize !== undefined);
       const hasCompleteLocalFontSize = block.runs
         .filter((run) => run.text.length > 0)
         .every((run) => run.styles?.fontSize !== undefined);
       if (
         block.style?.lineHeight === undefined &&
-        block.style?.align === "justify" &&
         block.style?.snapToGrid !== false &&
         hasLocalFontSize &&
-        (mode === "explicit" || hasCompleteLocalFontSize)
+        (mode === "explicit" || (hasCompleteLocalFontSize && block.style?.align === "justify"))
       ) {
-        if (mode === "explicit") {
-          block.style = {
-            ...(block.style ?? {}),
-            lineGridPitch: linePitchPx,
-          };
-        } else {
-          const maxFontSize = getParagraphMaxFontSize(block, styles);
-          const effectiveLinePitchPx = linePitchPx * implicitRatio;
-          block.style = {
-            ...(block.style ?? {}),
-            lineHeight: Math.round((effectiveLinePitchPx / (maxFontSize * WORD_SINGLE_LINE_RATIO)) * 10000) / 10000,
-          };
+        // TODO: align === "justify" gating is a parity hack; snapToGrid should apply regardless of alignment.
+        const lineGridType = mode === "implicit" ? "implicit" : (docGridType as any);
+        block.style = {
+          ...(block.style ?? {}),
+          lineGridPitch: linePitchPx,
+          lineGridType,
+        };
+        
+        // Apply implicit ratio to the pitch itself if in implicit mode
+        if (mode === "implicit") {
+          block.style.lineGridPitch = linePitchPx * implicitRatio;
         }
       }
       continue;
     }
 
-    for (const row of block.rows) {
-      for (const cell of row.cells) {
-        applyDocGridLinePitch(cell.blocks, linePitchPx, mode, styles, implicitRatio);
+    if (settings.adjustLineHeightInTable) {
+      for (const row of block.rows) {
+        for (const cell of row.cells) {
+          applyDocGridLinePitch(cell.blocks, linePitchPx, mode, docGridType, styles, settings, implicitRatio);
+        }
       }
     }
   }
@@ -1463,6 +1491,8 @@ export async function importDocxToEditorDocument(
 
   const numberingXml = (await zip.file("word/numbering.xml")?.async("string")) ?? null;
   const numberingMaps = parseNumbering(numberingXml);
+  const settingsXml = (await zip.file("word/settings.xml")?.async("string")) ?? null;
+  const docSettings = parseSettings(settingsXml);
   const stylesXml = (await zip.file("word/styles.xml")?.async("string")) ?? null;
   const themeXml = (await zip.file("word/theme/theme1.xml")?.async("string")) ?? null;
   const themeFonts = parseThemeFonts(themeXml);
@@ -1580,7 +1610,9 @@ export async function importDocxToEditorDocument(
       blocks,
       props.docGridLinePitchPx,
       props.docGridMode,
+      props.docGridType,
       importedStyles,
+      docSettings,
       options.implicitDocGridRatio,
     );
 
@@ -1595,6 +1627,15 @@ export async function importDocxToEditorDocument(
         if (!zipPath.startsWith("word/")) zipPath = "word/" + headerTarget;
         const headerXml = await zip.file(zipPath)?.async("string");
         header = await parseHeaderFooterXml(headerXml ?? null, numberingMaps, zip, relsMap, assets, themeFonts);
+        applyDocGridLinePitch(
+          header,
+          props.docGridLinePitchPx,
+          props.docGridMode,
+          props.docGridType,
+          importedStyles,
+          docSettings,
+          options.implicitDocGridRatio,
+        );
       }
     }
 
@@ -1605,6 +1646,15 @@ export async function importDocxToEditorDocument(
         if (!zipPath.startsWith("word/")) zipPath = "word/" + footerTarget;
         const footerXml = await zip.file(zipPath)?.async("string");
         footer = await parseHeaderFooterXml(footerXml ?? null, numberingMaps, zip, relsMap, assets, themeFonts);
+        applyDocGridLinePitch(
+          footer,
+          props.docGridLinePitchPx,
+          props.docGridMode,
+          props.docGridType,
+          importedStyles,
+          docSettings,
+          options.implicitDocGridRatio,
+        );
       }
     }
 

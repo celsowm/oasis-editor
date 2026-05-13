@@ -241,8 +241,11 @@ function getParagraphLineHeight(
   styles: Record<string, EditorNamedStyle> | undefined,
   fallbackFontSize: number,
 ): number {
-  const lineHeight = resolveEffectiveParagraphStyle(paragraph.style, styles).lineHeight ?? DEFAULT_LINE_HEIGHT;
-  const lineGridPitch = paragraph.style?.lineGridPitch;
+  const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, styles);
+  const lineHeight = paragraphStyle.lineHeight ?? DEFAULT_LINE_HEIGHT;
+  const lineGridPitch = paragraphStyle.lineGridPitch;
+  const snapToGrid = paragraphStyle.snapToGrid !== false;
+  
   const paragraphTextStyle = resolveEffectiveTextStyleForParagraph(
     undefined,
     paragraph.style?.styleId,
@@ -264,9 +267,14 @@ function getParagraphLineHeight(
     },
     lineHeight,
   );
-  return lineGridPitch && lineGridPitch > 0
-    ? Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch
-    : renderedLineHeight;
+
+  if (lineGridPitch && lineGridPitch > 0 && snapToGrid) {
+    if (paragraphStyle.lineGridType === "implicit") {
+      return Math.max(renderedLineHeight, lineGridPitch);
+    }
+    return Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch;
+  }
+  return renderedLineHeight;
 }
 
 function buildMeasuredChars(

@@ -97,7 +97,10 @@ function paragraphStyleToCss(
   if (merged.align) {
     css["text-align"] = merged.align;
   }
-  if (merged.lineHeight !== undefined && merged.lineHeight !== null) {
+  const lineGridPitch = style?.lineGridPitch;
+  const hasLineGrid = lineGridPitch && lineGridPitch > 0 && style?.snapToGrid !== false;
+
+  if ((merged.lineHeight !== undefined && merged.lineHeight !== null) || hasLineGrid) {
     const effectiveTextStyle = resolveEffectiveTextStyleForParagraph(
       undefined,
       style?.styleId,
@@ -113,12 +116,16 @@ function paragraphStyleToCss(
     }, effectiveTextStyle.fontSize ?? 15);
     const renderedLineHeight = resolveRenderedLineHeightPx(
       { ...effectiveTextStyle, fontSize: maxFontSize },
-      merged.lineHeight,
+      merged.lineHeight ?? 1.15,
     );
-    const lineGridPitch = style?.lineGridPitch;
-    css["line-height"] = `${lineGridPitch && lineGridPitch > 0
-      ? Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch
-      : renderedLineHeight}px`;
+    if (hasLineGrid) {
+      css["line-height"] = `${style?.lineGridType === "implicit"
+        ? Math.max(renderedLineHeight, lineGridPitch!)
+        : Math.ceil(renderedLineHeight / lineGridPitch!) * lineGridPitch!
+      }px`;
+    } else {
+      css["line-height"] = `${renderedLineHeight}px`;
+    }
   }
   if (!isContinuation && merged.spacingBefore !== undefined && merged.spacingBefore !== null) {
     css["padding-top"] = `${merged.spacingBefore}px`;
