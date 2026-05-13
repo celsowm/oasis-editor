@@ -36,6 +36,13 @@ export type DocxImportStage =
 
 export interface ImportDocxToEditorDocumentOptions {
   onProgress?: (stage: DocxImportStage, progress?: number) => void;
+  /**
+   * Override the implicit Word `<w:docGrid>` line-pitch ratio used when a section
+   * declares a docGrid without an explicit type. Defaults to the value resolved
+   * from {@link readImplicitDocGridRatio} (env override `OASIS_WORD_IMPLICIT_DOC_GRID_RATIO`,
+   * else 0.91). Only useful for calibration tooling.
+   */
+  implicitDocGridRatio?: number;
 }
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
@@ -51,7 +58,22 @@ const TWIPS_PER_INCH = 1440;
 const PX_PER_INCH = 96;
 const PAGE_BREAK_MARKER = "\f";
 const WORD_SINGLE_LINE_RATIO = 1.223;
-const WORD_IMPLICIT_DOC_GRID_LINE_PITCH_RATIO = 91 / 100;
+function readImplicitDocGridRatio(): number {
+  const fromEnv =
+    typeof process !== "undefined" && process?.env?.OASIS_WORD_IMPLICIT_DOC_GRID_RATIO;
+  if (fromEnv) {
+    const parsed = Number(fromEnv);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+  // Calibrated against Word's implicit <w:docGrid/> rendering of the lorem
+  // complex DOCX fixture. The sweep in scripts/calibrate-doc-grid.ts shows that
+  // ratios in [0.855, 0.870] reproduce Word's page-1 line packing (41 lines
+  // with last line "...Sed dictum, lorem nec..."); 0.86 is the center.
+  return 0.86;
+}
+const WORD_IMPLICIT_DOC_GRID_LINE_PITCH_RATIO = readImplicitDocGridRatio();
 
 interface NumberingMaps {
   abstractKinds: Map<string, EditorParagraphListStyle["kind"]>;
@@ -514,6 +536,7 @@ function applyDocGridLinePitch(
   linePitchPx: number | undefined,
   mode: SectionProperties["docGridMode"],
   styles: Record<string, EditorNamedStyle> | undefined,
+  implicitRatio: number = WORD_IMPLICIT_DOC_GRID_LINE_PITCH_RATIO,
 ): void {
   if (!linePitchPx || !mode) {
     return;
@@ -539,7 +562,7 @@ function applyDocGridLinePitch(
           };
         } else {
           const maxFontSize = getParagraphMaxFontSize(block, styles);
-          const effectiveLinePitchPx = linePitchPx * WORD_IMPLICIT_DOC_GRID_LINE_PITCH_RATIO;
+          const effectiveLinePitchPx = linePitchPx * implicitRatio;
           block.style = {
             ...(block.style ?? {}),
             lineHeight: Math.round((effectiveLinePitchPx / (maxFontSize * WORD_SINGLE_LINE_RATIO)) * 10000) / 10000,
@@ -551,7 +574,7 @@ function applyDocGridLinePitch(
 
     for (const row of block.rows) {
       for (const cell of row.cells) {
-        applyDocGridLinePitch(cell.blocks, linePitchPx, mode, styles);
+        applyDocGridLinePitch(cell.blocks, linePitchPx, mode, styles, implicitRatio);
       }
     }
   }
@@ -1553,7 +1576,13 @@ export async function importDocxToEditorDocument(
   for (let i = 0; i < sectionProps.length; i += 1) {
     const props = sectionProps[i]!;
     const blocks = sectionBlocks[i] ?? [];
-    applyDocGridLinePitch(blocks, props.docGridLinePitchPx, props.docGridMode, importedStyles);
+    applyDocGridLinePitch(
+      blocks,
+      props.docGridLinePitchPx,
+      props.docGridMode,
+      importedStyles,
+      options.implicitDocGridRatio,
+    );
 
     // Load header and footer if referenced
     let header: EditorBlockNode[] = [];
