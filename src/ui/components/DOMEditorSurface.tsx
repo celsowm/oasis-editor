@@ -41,42 +41,7 @@ import {
 import { resolveRenderedLineHeightPx } from "../textMeasurement.js";
 import { perfTimer } from "../../utils/performanceMetrics.js";
 import { PageBreak } from "./PageBreak.js";
-
-interface EditorSurfaceProps {
-  state: Accessor<EditorState>;
-  measuredBlockHeights?: Accessor<Record<string, number>>;
-  measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
-  layoutMode?: "fast" | "wordParity";
-  /**
-   * Phase 4: scroll viewport accessor for page virtualization.
-   * When provided, only pages within (or near) the viewport are rendered with
-   * their full block content; off-screen pages are replaced with a same-sized
-   * placeholder so scroll geometry is preserved. Optional — when omitted, all
-   * pages render in full (legacy behaviour).
-   */
-  viewportRef?: () => HTMLElement | undefined;
-  onSurfaceMouseDown: (event: MouseEvent) => void;
-  onSurfaceMouseMove?: (event: MouseEvent) => void;
-  onSurfaceDblClick: (event: MouseEvent) => void;
-  onParagraphMouseDown: (
-    paragraphId: string,
-    event: MouseEvent & { currentTarget: HTMLParagraphElement },
-  ) => void;
-  onImageMouseDown: (
-    paragraphId: string,
-    paragraphOffset: number,
-    event: MouseEvent & { currentTarget: HTMLElement },
-  ) => void;
-  onImageResizeHandleMouseDown: (
-    paragraphId: string,
-    paragraphOffset: number,
-    direction: ImageResizeHandleDirection,
-    event: MouseEvent & { currentTarget: HTMLElement },
-  ) => void;
-  onTableDragHandleMouseDown: (tableId: string, event: MouseEvent) => void;
-  onRevisionMouseEnter: (revisionId: string, event: MouseEvent) => void;
-  onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
-}
+import type { EditorSurfaceProps } from "../editorUiTypes.js";
 
 function getBorderStyle(border?: EditorBorderStyle): string | undefined {
   if (!border) return undefined;
@@ -1134,7 +1099,7 @@ function canReuseLayoutPage(
   );
 }
 
-export function EditorSurface(props: EditorSurfaceProps) {
+export function DOMEditorSurface(props: EditorSurfaceProps) {
   let reusableLayoutBlocks = new Map<string, EditorLayoutBlock>();
   let reusableLayoutPages = new Map<string, EditorLayoutPage>();
 

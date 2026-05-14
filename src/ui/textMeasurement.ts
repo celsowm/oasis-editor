@@ -37,13 +37,16 @@ interface MeasuredToken {
   width: number;
 }
 
-interface TextMeasureOptions {
+export interface TextMeasureOptions {
   paragraph: EditorParagraphNode;
   fragments: EditorLayoutFragment[];
   styles?: Record<string, EditorNamedStyle>;
   contentWidth?: number;
   layoutMode?: "fast" | "wordParity";
 }
+
+// ... existing code down to composeMeasuredParagraphLines
+
 
 const textMeasureCache = new Map<string, number>();
 
@@ -519,3 +522,11 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
 
   return lines;
 }
+
+import type { ITextMeasurer } from "../core/engine.js";
+
+export const domTextMeasurer: ITextMeasurer = {
+  composeMeasuredParagraphLines,
+  resolveRenderedLineHeightPx,
+};
+

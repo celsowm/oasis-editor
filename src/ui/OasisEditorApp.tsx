@@ -96,6 +96,7 @@ import { FindReplaceDialog } from "./components/FindReplace/FindReplaceDialog.js
 import "./components/FindReplace/findReplace.css";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import { setLocale } from "../i18n/index.js";
+import type { IRenderingEngine } from "../core/engine.js";
 
 export interface OasisEditorAppProps {
   showChrome?: boolean;
@@ -115,6 +116,7 @@ export interface OasisEditorAppProps {
   readOnly?: boolean;
   persistenceEnabled?: boolean;
   layoutMode?: "fast" | "wordParity";
+  engine?: IRenderingEngine;
 }
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
@@ -732,6 +734,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         class={props.class}
         style={props.style}
         layoutMode={layoutMode()}
+        engine={props.engine}
         onViewportRef={(element: HTMLDivElement) => {
           viewportRef = element;
         }}

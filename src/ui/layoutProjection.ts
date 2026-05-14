@@ -25,7 +25,8 @@ import {
   resolveEffectiveTextStyleForParagraph,
 } from "../core/model.js";
 import { measureLinesFromRects, type CharRect } from "./caretGeometry.js";
-import { composeMeasuredParagraphLines, resolveRenderedLineHeightPx } from "./textMeasurement.js";
+import type { ITextMeasurer } from "../core/engine.js";
+import { domTextMeasurer, resolveRenderedLineHeightPx } from "./textMeasurement.js";
 import { perfTimer } from "../utils/performanceMetrics.js";
 
 const DEFAULT_FONT_SIZE = 15;
@@ -95,6 +96,7 @@ export function projectParagraphLayout(
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
   layoutMode: "fast" | "wordParity" = "fast",
+  measurer: ITextMeasurer = domTextMeasurer,
 ): EditorLayoutParagraph {
   // Only include pageIndex / totalPages in the cache key when this paragraph
   // actually contains a PAGE / NUMPAGES field. Otherwise the projection result
@@ -149,7 +151,7 @@ export function projectParagraphLayout(
 
     const fontSize = estimateParagraphFontSize(paragraph, styles);
     const lineHeight = estimateParagraphLineHeight(paragraph, fontSize, styles, layoutMode);
-    const lines = composeMeasuredParagraphLines({
+    const lines = measurer.composeMeasuredParagraphLines({
       paragraph,
       fragments,
       styles,
@@ -522,6 +524,7 @@ function getTableSegmentHeight(
   styles: Record<string, EditorNamedStyle> | undefined,
   layoutMode: "fast" | "wordParity",
   contentWidth?: number,
+  measurer: ITextMeasurer = domTextMeasurer,
 ): number {
   const headerHeight =
     repeatedHeaderRowCount > 0
@@ -614,15 +617,9 @@ export function estimateParagraphBlockHeight(
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
   layoutMode: "fast" | "wordParity" = "fast",
+  measurer: ITextMeasurer = domTextMeasurer,
 ): number {
-  const layout = projectParagraphLayout(
-    paragraph,
-    undefined,
-    undefined,
-    styles,
-    contentWidth,
-    layoutMode,
-  );
+  const layout = projectParagraphLayout(paragraph, undefined, undefined, styles, contentWidth, layoutMode, measurer);
   const lineHeightPx = layout.lines.reduce((sum, line) => sum + line.height, 0);
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
   const spacingBefore = paragraphStyle.spacingBefore ?? 0;
@@ -636,8 +633,9 @@ export function estimateTableBlockHeight(
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
   layoutMode: "fast" | "wordParity" = "fast",
+  measurer: ITextMeasurer = domTextMeasurer,
 ): number {
-  return getTableSegmentHeight(table, 0, table.rows.length, 0, styles, layoutMode, contentWidth);
+  return getTableSegmentHeight(table, 0, table.rows.length, 0, styles, layoutMode, contentWidth, measurer);
 }
 
 export function projectHeaderFooterBlocks(
@@ -649,18 +647,12 @@ export function projectHeaderFooterBlocks(
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
   layoutMode: "fast" | "wordParity" = "fast",
+  measurer: ITextMeasurer = domTextMeasurer,
 ): EditorLayoutBlock[] {
   // Headers/Footers are projected as a single sequence of blocks, no pagination for now
   return blocks.map((block, index) => {
     if (block.type === "paragraph") {
-      const layout = projectParagraphLayout(
-        block,
-        pageIndex,
-        totalPages,
-        styles,
-        contentWidth,
-        layoutMode,
-      );
+      const layout = projectParagraphLayout(block, pageIndex, totalPages, styles, contentWidth, layoutMode, measurer);
       const estimatedHeight =
         measuredHeights?.[block.id] ?? getProjectedParagraphBlockHeight(block, layout, styles);
       return {
@@ -680,7 +672,7 @@ export function projectHeaderFooterBlocks(
       blockType: block.type,
       globalIndex: index,
       estimatedHeight:
-        measuredHeights?.[block.id] ?? estimateTableBlockHeight(block, styles, contentWidth, layoutMode),
+        measuredHeights?.[block.id] ?? estimateTableBlockHeight(block, styles, contentWidth, layoutMode, measurer),
       sourceBlock: block,
     };
   });
@@ -750,6 +742,7 @@ export function projectBlocksLayout(
   totalPages?: number,
   existingPages: EditorLayoutPage[] = [],
   layoutMode: "fast" | "wordParity" = "fast",
+  measurer: ITextMeasurer = domTextMeasurer,
 ): EditorLayoutPage[] {
   const contentWidth = getPageContentWidth(pageSettings);
   const pages: EditorLayoutPage[] = [...existingPages];
@@ -793,14 +786,7 @@ export function projectBlocksLayout(
 
     if (sourceBlock.type === "paragraph") {
       const pageIndex = pageOffset + pages.length;
-      const projectedParagraphLayout = projectParagraphLayout(
-        sourceBlock,
-        pageIndex,
-        totalPages,
-        styles,
-        contentWidth,
-        layoutMode,
-      );
+      const projectedParagraphLayout = projectParagraphLayout(sourceBlock, pageIndex, totalPages, styles, contentWidth, layoutMode, measurer);
       const measuredParagraphLayout = measuredParagraphLayouts?.[sourceBlock.id];
       const paragraphLayout =
         measuredParagraphLayout && isMeasuredLayoutCurrent(projectedParagraphLayout, measuredParagraphLayout)
@@ -868,10 +854,11 @@ export function projectBlocksLayout(
             lineEndIndex === paragraphLayout.lines.length - 1,
             styles,
           );
-          if (candidateHeight > remainingHeight && lineEndIndex === startLineIndex && currentBlocks.length > 0) {
+          const tolerance = layoutMode === "wordParity" ? 1.5 : 0;
+          if (candidateHeight > remainingHeight + tolerance && lineEndIndex === startLineIndex && currentBlocks.length > 0) {
             break;
           }
-          if (candidateHeight > remainingHeight && lineEndIndex > startLineIndex) {
+          if (candidateHeight > remainingHeight + tolerance && lineEndIndex > startLineIndex) {
             break;
           }
           segmentHeight = candidateHeight;
@@ -1069,9 +1056,10 @@ export function projectDocumentLayout(
   maxPageHeightOverride?: number,
   measuredHeights?: Record<string, number>,
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>,
-  options: { layoutMode?: "fast" | "wordParity" } = {},
+  options: { layoutMode?: "fast" | "wordParity"; measurer?: ITextMeasurer } = {},
 ): EditorLayoutDocument {
   const layoutMode = options.layoutMode ?? "fast";
+  const measurer = options.measurer ?? domTextMeasurer;
   if (Array.isArray(blocksOrDocument)) {
     // Legacy support for blocks only
     const pages = projectBlocksLayout(
@@ -1090,6 +1078,7 @@ export function projectDocumentLayout(
       undefined,
       [],
       layoutMode,
+      measurer,
     );
     return { pages };
   }
@@ -1113,6 +1102,7 @@ export function projectDocumentLayout(
             document.styles,
             contentWidth,
             layoutMode,
+            measurer,
           )
         : undefined;
       const footerBlocks = section.footer
@@ -1125,6 +1115,7 @@ export function projectDocumentLayout(
             document.styles,
             contentWidth,
             layoutMode,
+            measurer,
           )
         : undefined;
       const metrics = resolveEffectiveVerticalMetrics(
@@ -1146,6 +1137,7 @@ export function projectDocumentLayout(
         undefined,
         isContinuous ? [activePages[activePages.length - 1]] : [],
         layoutMode,
+        measurer,
       );
 
       if (isContinuous) {
@@ -1175,6 +1167,7 @@ export function projectDocumentLayout(
           document.styles,
           contentWidth,
           layoutMode,
+          measurer,
         )
       : undefined;
     const sectionFooterBlocks = section.footer
@@ -1187,6 +1180,7 @@ export function projectDocumentLayout(
           document.styles,
           contentWidth,
           layoutMode,
+          measurer,
         )
       : undefined;
     const sectionMetrics = resolveEffectiveVerticalMetrics(
@@ -1208,6 +1202,7 @@ export function projectDocumentLayout(
       totalPages,
       isContinuous ? [allPages[allPages.length - 1]] : [],
       layoutMode,
+      measurer,
     );
 
     if (isContinuous) {
@@ -1225,6 +1220,7 @@ export function projectDocumentLayout(
             document.styles,
             getPageContentWidth(page.pageSettings),
             layoutMode,
+            measurer,
           )
         : page.headerBlocks;
       const footerBlocks = section.footer
@@ -1237,6 +1233,7 @@ export function projectDocumentLayout(
             document.styles,
             getPageContentWidth(page.pageSettings),
             layoutMode,
+            measurer,
           )
         : page.footerBlocks;
 

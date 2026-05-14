@@ -20,8 +20,8 @@ export function BalloonShell(props: ShellProps) {
             focused={() => props.focused()}
             importProgress={props.importProgress ? () => props.importProgress() : undefined}
             layoutMode={props.layoutMode}
-            viewportHeight={props.viewportHeight()}
-            class={props.class}
+            engine={props.engine}
+            viewportHeight={props.viewportHeight()}            class={props.class}
             style={props.style}
             readOnly={props.isReadOnly}
             showCaret={() => props.showCaret()}

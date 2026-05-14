@@ -280,6 +280,8 @@ async function collectEditorPageSnapshotsInBrowser(
         const { createOasisEditor } = await importModule("/src/app/bootstrap/createOasisEditorApp.ts");
         const host = globalThis.document.createElement("div");
         host.setAttribute("data-testid", "word-parity-host");
+        host.style.textRendering = "geometricPrecision";
+        host.style.fontKerning = "none";
         globalThis.document.body.innerHTML = "";
         globalThis.document.body.appendChild(host);
         const instance = createOasisEditor(host, {
