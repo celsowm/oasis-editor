@@ -4,15 +4,14 @@ import {
   getPageBodyTop,
   getPageContentWidth,
   getParagraphText,
-  paragraphOffsetToPosition,
   type EditorEditingZone,
   type EditorLayoutParagraph,
   type EditorParagraphNode,
   type EditorPosition,
   type EditorState,
-  type EditorTableNode,
 } from "../../core/model.js";
-import { projectDocumentLayout, projectParagraphLayout } from "../layoutProjection.js";
+import { projectDocumentLayout } from "../layoutProjection.js";
+import { buildCanvasTableLayout, type CanvasUnsupportedReason } from "./CanvasTableLayout.js";
 
 export interface CanvasSnapshotSlot {
   offset: number;
@@ -72,6 +71,15 @@ export interface CanvasLayoutSnapshot {
   pages: CanvasSnapshotPage[];
   paragraphs: CanvasSnapshotParagraph[];
   paragraphsById: Map<string, CanvasSnapshotParagraph[]>;
+  unsupportedRegions: Array<{
+    pageIndex: number;
+    zone: EditorEditingZone;
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    reason: CanvasUnsupportedReason;
+  }>;
 }
 
 export interface BuildCanvasLayoutSnapshotOptions {
@@ -80,125 +88,6 @@ export interface BuildCanvasLayoutSnapshotOptions {
   measuredBlockHeights?: Record<string, number>;
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>;
   layoutMode?: "fast" | "wordParity";
-}
-
-interface TableCellLayoutEntry {
-  paragraph: EditorParagraphNode;
-  lines: CanvasSnapshotLine[];
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  rowIndex: number;
-  cellIndex: number;
-  tableId: string;
-  anchorPosition: EditorPosition;
-}
-
-function resolveTableWidth(table: EditorTableNode, contentWidth: number): number {
-  const raw = table.style?.width;
-  if (typeof raw === "number") return Math.max(24, raw);
-  if (typeof raw === "string" && raw.trim().endsWith("%")) {
-    const value = Number.parseFloat(raw.trim().slice(0, -1));
-    if (Number.isFinite(value)) return Math.max(24, contentWidth * (value / 100));
-  }
-  return contentWidth;
-}
-
-function createTableCellLayouts(
-  table: EditorTableNode,
-  state: EditorState,
-  pageIndex: number,
-  layoutMode: "fast" | "wordParity",
-  originX: number,
-  originY: number,
-  contentWidth: number,
-  estimatedHeight: number,
-): TableCellLayoutEntry[] {
-  const entries: TableCellLayoutEntry[] = [];
-  const tableWidth = resolveTableWidth(table, contentWidth);
-  const rowCount = Math.max(1, table.rows.length);
-  const rowHeight = estimatedHeight > 0 ? estimatedHeight / rowCount : 28;
-  let y = originY;
-
-  for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
-    const row = table.rows[rowIndex]!;
-    const columns = Math.max(1, row.cells.length);
-    const baseCellWidth = tableWidth / columns;
-    let x = originX;
-
-    for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
-      const cell = row.cells[cellIndex]!;
-      const colSpan = Math.max(1, cell.colSpan ?? 1);
-      const cellWidth = baseCellWidth * colSpan;
-      const cellLeft = x;
-      const cellTop = y;
-      const cellHeight = rowHeight;
-      const contentLeft = cellLeft + 6;
-      const contentTop = cellTop + 4;
-      const contentWidthPx = Math.max(24, cellWidth - 12);
-      let paragraphCursorY = 0;
-      const firstParagraph = cell.blocks[0];
-      const anchorPosition = firstParagraph
-        ? paragraphOffsetToPosition(firstParagraph, 0)
-        : paragraphOffsetToPosition(
-            {
-              id: `table:${table.id}:r${rowIndex}:c${cellIndex}:empty`,
-              type: "paragraph",
-              runs: [{ id: "run:empty", text: "" }],
-            },
-            0,
-          );
-
-      for (const paragraph of cell.blocks) {
-        const projected = projectParagraphLayout(
-          paragraph,
-          pageIndex,
-          undefined,
-          state.document.styles,
-          contentWidthPx,
-          layoutMode,
-        );
-        const lines: CanvasSnapshotLine[] = projected.lines.map((line) => ({
-          startOffset: line.startOffset,
-          endOffset: line.endOffset,
-          top: contentTop + paragraphCursorY + line.top,
-          height: line.height,
-          slots: line.slots.map((slot) => ({
-            offset: slot.offset,
-            left: contentLeft + slot.left,
-            top: contentTop + paragraphCursorY + slot.top,
-            height: slot.height,
-          })),
-        }));
-        const linesBottom =
-          lines.length > 0
-            ? Math.max(...lines.map((line) => line.top + line.height))
-            : contentTop + paragraphCursorY + 18;
-        const paraTop = contentTop + paragraphCursorY;
-        const paraHeight = Math.max(18, linesBottom - paraTop);
-        entries.push({
-          paragraph,
-          lines,
-          left: contentLeft,
-          top: paraTop,
-          width: contentWidthPx,
-          height: paraHeight,
-          rowIndex,
-          cellIndex,
-          tableId: table.id,
-          anchorPosition,
-        });
-        paragraphCursorY += paraHeight + 4;
-      }
-
-      x += cellWidth;
-    }
-
-    y += rowHeight;
-  }
-
-  return entries;
 }
 
 function getCanvasPageElements(surface: HTMLElement): HTMLElement[] {
@@ -236,6 +125,7 @@ export function buildCanvasLayoutSnapshot(
   const surfaceRect = surface.getBoundingClientRect();
   const snapshotPages: CanvasSnapshotPage[] = [];
   const snapshotParagraphs: CanvasSnapshotParagraph[] = [];
+  const unsupportedRegions: CanvasLayoutSnapshot["unsupportedRegions"] = [];
 
   for (const page of documentLayout.pages) {
     const pageElement =
@@ -301,21 +191,33 @@ export function buildCanvasLayoutSnapshot(
             })),
           });
         } else if (block.sourceBlock.type === "table") {
-          const tableCellLayouts = createTableCellLayouts(
-            block.sourceBlock,
+          const tableLayout = buildCanvasTableLayout({
+            table: block.sourceBlock,
             state,
-            page.index,
+            pageIndex: page.index,
             layoutMode,
-            contentLeft,
-            cursorY,
+            originX: contentLeft,
+            originY: cursorY,
             contentWidth,
-            block.estimatedHeight,
-          );
-          for (const tableParagraph of tableCellLayouts) {
-            const paragraphId = tableParagraph.paragraph.id;
-            const textLength = getParagraphText(tableParagraph.paragraph).length;
-            snapshotParagraphs.push({
-              paragraph: tableParagraph.paragraph,
+            estimatedHeight: block.estimatedHeight,
+          });
+          for (const reason of tableLayout.unsupported) {
+            unsupportedRegions.push({
+              pageIndex: page.index,
+              zone,
+              left: tableLayout.left,
+              top: tableLayout.top,
+              width: tableLayout.width,
+              height: tableLayout.height,
+              reason,
+            });
+          }
+          for (const cell of tableLayout.cells) {
+            for (const paragraphLayout of cell.paragraphs) {
+              const paragraphId = paragraphLayout.paragraph.id;
+              const textLength = getParagraphText(paragraphLayout.paragraph).length;
+              snapshotParagraphs.push({
+                paragraph: paragraphLayout.paragraph,
               paragraphId,
               paragraphIndex: paragraphIndexById.get(paragraphId) ?? 0,
               zone,
@@ -323,22 +225,34 @@ export function buildCanvasLayoutSnapshot(
               startOffset: 0,
               endOffset: textLength,
               textLength,
-              left: tableParagraph.left,
-              top: tableParagraph.top,
-              width: tableParagraph.width,
-              height: tableParagraph.height,
-              lines: tableParagraph.lines,
+              left: paragraphLayout.originX,
+              top: paragraphLayout.originY,
+              width: paragraphLayout.width,
+              height: paragraphLayout.height,
+              lines: paragraphLayout.lines.map((line) => ({
+                startOffset: line.startOffset,
+                endOffset: line.endOffset,
+                top: paragraphLayout.originY + line.top,
+                height: line.height,
+                slots: line.slots.map((slot) => ({
+                  offset: slot.offset,
+                  left: paragraphLayout.originX + slot.left,
+                  top: paragraphLayout.originY + slot.top,
+                  height: slot.height,
+                })),
+              })),
               tableCell: {
-                tableId: tableParagraph.tableId,
-                rowIndex: tableParagraph.rowIndex,
-                cellIndex: tableParagraph.cellIndex,
-                left: tableParagraph.left - 6,
-                top: tableParagraph.top - 4,
-                width: tableParagraph.width + 12,
-                height: Math.max(18, tableParagraph.height + 8),
-                anchorPosition: tableParagraph.anchorPosition,
+                tableId: cell.tableId,
+                rowIndex: cell.rowIndex,
+                cellIndex: cell.cellIndex,
+                left: cell.left,
+                top: cell.top,
+                width: cell.width,
+                height: cell.height,
+                anchorPosition: cell.anchorPosition,
               },
-            });
+              });
+            }
           }
         }
         cursorY += Math.max(0, block.estimatedHeight);
@@ -370,6 +284,6 @@ export function buildCanvasLayoutSnapshot(
     pages: snapshotPages,
     paragraphs: snapshotParagraphs,
     paragraphsById,
+    unsupportedRegions,
   };
 }
-

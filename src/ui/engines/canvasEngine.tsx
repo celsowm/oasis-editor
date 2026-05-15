@@ -17,6 +17,7 @@ import {
 import { domTextMeasurer } from "../textMeasurement.js";
 import { projectDocumentLayout } from "../layoutProjection.js";
 import { PageBreak } from "../components/PageBreak.js";
+import { buildCanvasTableLayout, type CanvasTableBorderSpec } from "../canvas/CanvasTableLayout.js";
 
 const canvasTextMeasurer: ITextMeasurer = {
   composeMeasuredParagraphLines: (options) => domTextMeasurer.composeMeasuredParagraphLines(options),
@@ -92,10 +93,18 @@ function CanvasPage(props: {
     const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
     const bodyWidth = getPageContentWidth(page.pageSettings);
 
-    renderBlockList(ctx, props.state, page.headerBlocks ?? [], marginX, 0, bodyWidth);
-    renderBlockList(ctx, props.state, page.blocks, marginX, bodyTop, bodyWidth);
+    renderBlockList(ctx, props.state, page.headerBlocks ?? [], marginX, 0, bodyWidth, page.index);
+    renderBlockList(ctx, props.state, page.blocks, marginX, bodyTop, bodyWidth, page.index);
     if (page.bodyBottom !== undefined) {
-      renderBlockList(ctx, props.state, page.footerBlocks ?? [], marginX, page.bodyBottom, bodyWidth);
+      renderBlockList(
+        ctx,
+        props.state,
+        page.footerBlocks ?? [],
+        marginX,
+        page.bodyBottom,
+        bodyWidth,
+        page.index,
+      );
     }
   });
 
@@ -127,13 +136,23 @@ function renderBlockList(
   originX: number,
   originY: number,
   contentWidth: number,
+  pageIndex: number,
 ) {
   let cursorY = originY;
   for (const block of blocks) {
     if (block.sourceBlock.type === "paragraph" && block.layout) {
       drawParagraph(ctx, block.sourceBlock, block.layout.lines, state, originX, cursorY);
     } else if (block.sourceBlock.type === "table") {
-      drawTable(ctx, block.sourceBlock, state, originX, cursorY, contentWidth, block.estimatedHeight);
+      drawTable(
+        ctx,
+        block.sourceBlock,
+        state,
+        originX,
+        cursorY,
+        contentWidth,
+        block.estimatedHeight,
+        pageIndex,
+      );
     }
     cursorY += Math.max(0, block.estimatedHeight);
   }
@@ -247,64 +266,97 @@ function drawTable(
   originY: number,
   contentWidth: number,
   estimatedHeight: number,
+  pageIndex: number,
 ) {
-  const tableWidth = resolveTableWidth(table, contentWidth);
-  const rowCount = Math.max(1, table.rows.length);
-  const rowHeight = estimatedHeight > 0 ? estimatedHeight / rowCount : 28;
-  let y = originY;
-  for (const row of table.rows) {
-    const columns = Math.max(1, row.cells.length);
-    const cellWidth = tableWidth / columns;
-    let x = originX;
-    for (const cell of row.cells) {
-      const colSpan = Math.max(1, cell.colSpan ?? 1);
-      const width = cellWidth * colSpan;
-      if (cell.style?.shading) {
-        ctx.fillStyle = cell.style.shading;
-        ctx.fillRect(x, y, width, rowHeight);
-      }
-      ctx.strokeStyle = "#6f6f6f";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, width, rowHeight);
-      drawTableCellText(ctx, cell.blocks, state, x + 6, y + 4);
-      x += width;
+  const tableLayout = buildCanvasTableLayout({
+    table,
+    state,
+    pageIndex,
+    layoutMode: resolveCanvasLayoutMode(),
+    originX,
+    originY,
+    contentWidth,
+    estimatedHeight,
+  });
+  for (const cell of tableLayout.cells) {
+    if (cell.shading) {
+      ctx.fillStyle = cell.shading;
+      ctx.fillRect(cell.left, cell.top, cell.width, cell.height);
     }
-    y += rowHeight;
+    drawCellBorders(ctx, cell.left, cell.top, cell.width, cell.height, cell.borders);
+    for (const paragraphLayout of cell.paragraphs) {
+      drawParagraph(
+        ctx,
+        paragraphLayout.paragraph,
+        paragraphLayout.lines,
+        state,
+        paragraphLayout.originX,
+        paragraphLayout.originY,
+      );
+    }
+  }
+  if (tableLayout.unsupported.length > 0 && (import.meta as any)?.env?.DEV) {
+    console.warn("[oasis-editor] canvas table unsupported features", {
+      tableId: table.id,
+      reasons: tableLayout.unsupported,
+    });
   }
 }
 
-function drawTableCellText(
+function drawCellBorders(
   ctx: CanvasRenderingContext2D,
-  blocks: EditorParagraphNode[],
-  state: EditorState,
-  x: number,
-  y: number,
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+  borders: {
+    top: CanvasTableBorderSpec;
+    right: CanvasTableBorderSpec;
+    bottom: CanvasTableBorderSpec;
+    left: CanvasTableBorderSpec;
+  },
 ) {
-  let offsetY = 0;
-  for (const paragraph of blocks) {
-    const text = paragraph.runs.map((run) => run.text).join("");
-    const style = resolveEffectiveTextStyleForParagraph(undefined, paragraph.style?.styleId, state.document.styles);
-    const fontSize = style.fontSize ?? 15;
-    const fontFamily = style.fontFamily ?? "Calibri, sans-serif";
-    const fontWeight = style.bold ? "700" : "400";
-    const fontStyle = style.italic ? "italic" : "normal";
+  const right = left + width;
+  const bottom = top + height;
+  const drawEdge = (
+    border: CanvasTableBorderSpec,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+  ) => {
+    if (border.type === "none" || border.width <= 0) {
+      return;
+    }
     ctx.save();
-    ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
-    ctx.fillStyle = style.color ?? "#000000";
-    ctx.fillText(text, x, y + offsetY + fontSize);
+    ctx.beginPath();
+    ctx.strokeStyle = border.color;
+    ctx.lineWidth = border.width;
+    if (border.type === "dashed") {
+      ctx.setLineDash([5, 3]);
+    } else if (border.type === "dotted") {
+      ctx.setLineDash([1, 3]);
+    } else {
+      ctx.setLineDash([]);
+    }
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
     ctx.restore();
-    offsetY += Math.max(fontSize + 4, 18);
-  }
+  };
+
+  drawEdge(borders.top, left, top, right, top);
+  drawEdge(borders.right, right, top, right, bottom);
+  drawEdge(borders.bottom, left, bottom, right, bottom);
+  drawEdge(borders.left, left, top, left, bottom);
 }
 
-function resolveTableWidth(table: EditorTableNode, contentWidth: number): number {
-  const raw = table.style?.width;
-  if (typeof raw === "number") return Math.max(24, raw);
-  if (typeof raw === "string" && raw.trim().endsWith("%")) {
-    const value = Number.parseFloat(raw.trim().slice(0, -1));
-    if (Number.isFinite(value)) return Math.max(24, contentWidth * (value / 100));
+function resolveCanvasLayoutMode(): "fast" | "wordParity" {
+  const viteEnv = (import.meta as { env?: Record<string, string | boolean | undefined> }).env ?? {};
+  if (viteEnv.VITE_OASIS_WORD_PARITY_STRICT === "1") {
+    return "wordParity";
   }
-  return contentWidth;
+  return "wordParity";
 }
 
 function resolveListPrefix(paragraph: EditorParagraphNode): string {

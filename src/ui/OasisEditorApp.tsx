@@ -91,6 +91,12 @@ import {
   type SurfaceHit,
 } from "./canvas/CanvasHitTestService.js";
 import { buildCanvasLayoutSnapshot } from "./canvas/CanvasLayoutSnapshot.js";
+import {
+  recordCanvasDebugFallbackEvent,
+  recordCanvasDebugHit,
+  recordCanvasDebugLayoutSnapshot,
+  syncCanvasDebugApiVisibility,
+} from "./canvas/CanvasDebug.js";
 
 export interface OasisEditorAppProps {
   showChrome?: boolean;
@@ -114,6 +120,7 @@ export interface OasisEditorAppProps {
 }
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
+  syncCanvasDebugApiVisibility();
   createEffect(() => {
     setLocale(props.locale ?? "pt-BR");
   });
@@ -391,7 +398,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     if (selectedEngine().id !== "canvas") {
       const position = resolvePositionAtSurfacePointLegacy(clientX, clientY);
       if (!position) return null;
-      return {
+      const hit: SurfaceHit = {
         zone: resolveZoneAtPoint(clientX, clientY),
         paragraphId: position.paragraphId,
         paragraphOffset: position.offset,
@@ -399,6 +406,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         source: "dom-fallback",
         resolvedFromParagraph: true,
       };
+      recordCanvasDebugHit(hit);
+      return hit;
     }
 
     const snapshot = buildCanvasLayoutSnapshot({
@@ -408,11 +417,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       measuredParagraphLayouts: measuredParagraphLayouts(),
       layoutMode: layoutMode(),
     });
+    recordCanvasDebugLayoutSnapshot(snapshot);
     if (!snapshot) {
+      recordCanvasDebugHit(null);
       return null;
     }
 
-    return resolveCanvasSurfaceHitAtPointWithFallback({
+    const hit = resolveCanvasSurfaceHitAtPointWithFallback({
       snapshot,
       state: state as EditorState,
       clientX,
@@ -420,12 +431,15 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       allowDomFallback: isCanvasDomFallbackEnabled(),
       resolveDomFallbackPosition: resolvePositionAtSurfacePointLegacy,
       onFallbackUsed: (reason, details) => {
+        recordCanvasDebugFallbackEvent(reason, details);
         logger.info("canvas:fallback-hit-test", {
           reason,
           ...details,
         });
       },
     });
+    recordCanvasDebugHit(hit);
+    return hit;
   };
 
   const fr = useEditorFindReplace({

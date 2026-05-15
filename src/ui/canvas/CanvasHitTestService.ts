@@ -177,6 +177,25 @@ function resolveParagraphHit(
   };
 }
 
+function resolveUnsupportedReasonAtPoint(
+  snapshot: CanvasLayoutSnapshot,
+  pageIndex: number,
+  zone: EditorEditingZone,
+  clientX: number,
+  clientY: number,
+): string | null {
+  const region = snapshot.unsupportedRegions.find(
+    (candidate) =>
+      candidate.pageIndex === pageIndex &&
+      candidate.zone === zone &&
+      clientX >= candidate.left &&
+      clientX <= candidate.left + candidate.width &&
+      clientY >= candidate.top &&
+      clientY <= candidate.top + candidate.height,
+  );
+  return region?.reason ?? null;
+}
+
 export function resolveCanvasSurfaceHitAtPoint(
   options: ResolveCanvasHitOptions,
 ): SurfaceHit | null {
@@ -194,6 +213,13 @@ export function resolveCanvasSurfaceHitAtPoint(
   if (!paragraphHit) {
     const focusParagraph = state.selection.focus.paragraphId;
     const focusOffset = state.selection.focus.offset;
+    const unsupportedReason = resolveUnsupportedReasonAtPoint(
+      snapshot,
+      page.index,
+      zone,
+      clientX,
+      clientY,
+    );
     return {
       zone,
       paragraphId: focusParagraph,
@@ -201,7 +227,7 @@ export function resolveCanvasSurfaceHitAtPoint(
       position: { ...state.selection.focus },
       source: "canvas-layout",
       resolvedFromParagraph: false,
-      fallbackReason: "zone-without-paragraph",
+      fallbackReason: unsupportedReason ?? "zone-without-paragraph",
     };
   }
 

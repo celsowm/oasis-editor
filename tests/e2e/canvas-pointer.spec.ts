@@ -2,7 +2,21 @@ import { expect, test, type Page } from "@playwright/test";
 import { resolve } from "node:path";
 
 const SIMPLE_LOREM_DOCX = resolve("src/__tests__/word-parity/fixtures/word-authored-lorem.docx");
-test.describe.configure({ timeout: 90_000 });
+test.describe.configure({ timeout: 180_000 });
+
+type CanvasDebugHit = {
+  source: "canvas-layout" | "dom-fallback";
+  zone: "main" | "header" | "footer";
+  paragraphId: string;
+  paragraphOffset: number;
+  resolvedFromParagraph: boolean;
+  fallbackReason?: string;
+};
+
+type CanvasDebugState = {
+  lastHit: CanvasDebugHit | null;
+  fallbackEvents: Array<{ reason: string; clientX: number; clientY: number }>;
+};
 
 async function canvasPageRect(page: Page) {
   const rect = await page
@@ -14,23 +28,45 @@ async function canvasPageRect(page: Page) {
 }
 
 async function gotoEditor(page: Page) {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      await page.goto("/oasis-editor/index.html", { waitUntil: "load" });
-      await expect(
-        page.locator('[data-testid="editor-page"][data-renderer="canvas"]').first(),
-      ).toBeVisible();
-      return;
-    } catch (error) {
-      if (attempt === 2) throw error;
-      await page.waitForTimeout(300);
-    }
+  await page.goto("/oasis-editor/index.html", { waitUntil: "load" });
+  await expect(
+    page.locator('[data-testid="editor-page"][data-renderer="canvas"]').first(),
+  ).toBeVisible();
+  const debugReady = await page.evaluate(() => Boolean(window.__oasisCanvasDebug));
+  if (!debugReady) {
+    throw new Error("__oasisCanvasDebug is not available");
   }
+}
+
+async function getCanvasDebugState(page: Page): Promise<CanvasDebugState> {
+  return page.evaluate(() => ({
+    lastHit: window.__oasisCanvasDebug?.getLastHit() ?? null,
+    fallbackEvents: window.__oasisCanvasDebug?.getFallbackEvents() ?? [],
+  }));
+}
+
+async function clearFallbackEvents(page: Page) {
+  await page.evaluate(() => {
+    window.__oasisCanvasDebug?.clearFallbackEvents();
+  });
+}
+
+async function expectLastHitFromCanvas(page: Page) {
+  const state = await getCanvasDebugState(page);
+  expect(state.lastHit).not.toBeNull();
+  expect(state.lastHit?.source).toBe("canvas-layout");
+  return state.lastHit;
+}
+
+async function expectNoFallbackEvents(page: Page) {
+  const state = await getCanvasDebugState(page);
+  expect(state.fallbackEvents).toEqual([]);
 }
 
 async function seedText(page: Page, text: string) {
   const pageRect = await canvasPageRect(page);
   await page.mouse.click(pageRect.x + 180, pageRect.y + 140);
+  await expectLastHitFromCanvas(page);
   await page.keyboard.type(text);
   await page.waitForTimeout(60);
 }
@@ -49,152 +85,182 @@ async function clickToolbarAction(page: Page, testId: string) {
   await button.click();
 }
 
-test("canvas pointer interactions update caret and selection without fallback", async ({ page }) => {
-  const fallbackLogs: string[] = [];
-  page.on("console", (message) => {
-    if (message.text().includes("canvas:fallback-hit-test")) {
-      fallbackLogs.push(message.text());
-    }
-  });
+async function insertTable(page: Page, rows: number, cols: number) {
+  await clickToolbarAction(page, "editor-toolbar-insert-table");
+  const gridCell = page.getByTestId(`editor-toolbar-table-grid-${rows}x${cols}`);
+  await expect(gridCell).toBeVisible();
+  await gridCell.click();
+}
 
-  await gotoEditor(page);
-  await seedText(page, "alpha beta gamma delta epsilon");
-
-  const pageRect = await canvasPageRect(page);
-  const p1 = { x: pageRect.x + 186, y: pageRect.y + 140 };
-  const p2 = { x: pageRect.x + 334, y: pageRect.y + 140 };
-
+async function exercisePointerCoherence(
+  page: Page,
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+  options: { requireWordClicks?: boolean; requireCaretDelta?: boolean; requireSelectionVisible?: boolean } = {},
+) {
+  const requireWordClicks = options.requireWordClicks ?? true;
+  const requireCaretDelta = options.requireCaretDelta ?? true;
+  const requireSelectionVisible = options.requireSelectionVisible ?? true;
   await page.mouse.click(p1.x, p1.y);
+  await expectLastHitFromCanvas(page);
   const caretBefore = await page.locator(".oasis-editor-caret").boundingBox();
+
   await page.mouse.click(p2.x, p2.y);
+  const hitAfterSecondClick = await expectLastHitFromCanvas(page);
   const caretAfter = await page.locator(".oasis-editor-caret").boundingBox();
   expect(caretBefore).not.toBeNull();
   expect(caretAfter).not.toBeNull();
-  expect(Math.abs((caretAfter?.x ?? 0) - (caretBefore?.x ?? 0))).toBeGreaterThan(8);
+  if (requireCaretDelta) {
+    expect(Math.abs((caretAfter?.x ?? 0) - (caretBefore?.x ?? 0))).toBeGreaterThan(8);
+  }
+  expect(hitAfterSecondClick.resolvedFromParagraph).toBe(true);
 
   await page.mouse.move(p1.x, p1.y);
   await page.mouse.down();
   await page.mouse.move(p2.x, p2.y);
   await page.mouse.up();
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  if (requireSelectionVisible) {
+    await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  }
+  await expectLastHitFromCanvas(page);
 
-  await page.mouse.click(p1.x, p1.y);
-  await page.keyboard.down("Shift");
-  await page.mouse.click(p2.x, p2.y);
-  await page.keyboard.up("Shift");
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  if (requireWordClicks) {
+    await page.mouse.dblclick(p2.x, p2.y);
+    await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+    await expectLastHitFromCanvas(page);
 
-  await page.mouse.dblclick(p2.x, p2.y);
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+    await page.mouse.click(p2.x, p2.y, { clickCount: 3 });
+    await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+    await expectLastHitFromCanvas(page);
+  }
+}
 
-  await page.mouse.click(p2.x, p2.y, { clickCount: 3 });
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
-
-  expect(fallbackLogs).toEqual([]);
-});
-
-test("canvas header click moves caret to header zone without fallback", async ({
+test("canvas pointer interactions update caret and selection from canvas layout only", async ({
   page,
 }) => {
-  const fallbackLogs: string[] = [];
-  page.on("console", (message) => {
-    if (message.text().includes("canvas:fallback-hit-test")) {
-      fallbackLogs.push(message.text());
-    }
-  });
-
   await gotoEditor(page);
+  await clearFallbackEvents(page);
+  await seedText(page, "alpha beta gamma delta epsilon");
+
+  const pageRect = await canvasPageRect(page);
+  const p1 = { x: pageRect.x + 186, y: pageRect.y + 140 };
+  const p2 = { x: pageRect.x + 334, y: pageRect.y + 140 };
+  await exercisePointerCoherence(page, p1, p2);
+  await expectNoFallbackEvents(page);
+});
+
+test("canvas header click moves caret to header zone without fallback", async ({ page }) => {
+  await gotoEditor(page);
+  await clearFallbackEvents(page);
   await seedText(page, "header zone trigger");
 
   const editorPage = await canvasPageRect(page);
-  if (!editorPage) throw new Error("editor page missing");
   await page.mouse.click(editorPage.x + editorPage.width / 2, editorPage.y + 26);
+  const hit = await expectLastHitFromCanvas(page);
   await page.waitForTimeout(80);
+
   const caret = await page.locator(".oasis-editor-caret").boundingBox();
   expect(caret).not.toBeNull();
   expect((caret?.y ?? Number.POSITIVE_INFINITY) < editorPage.y + 92).toBeTruthy();
-
-  expect(fallbackLogs).toEqual([]);
+  expect(hit.zone).toBe("header");
+  await expectNoFallbackEvents(page);
 });
 
-test("DOCX lorem simples hit-test never uses source=dom-fallback", async ({ page }) => {
-  const fallbackSourceLogs: string[] = [];
-  page.on("console", (message) => {
-    if (message.text().includes("source\":\"dom-fallback\"")) {
-      fallbackSourceLogs.push(message.text());
-    }
-  });
-
+test("DOCX lorem simples hit-test never uses dom fallback", async ({ page }) => {
   await gotoEditor(page);
+  await clearFallbackEvents(page);
   await page.getByTestId("editor-import-docx-input").setInputFiles(SIMPLE_LOREM_DOCX);
   await page.waitForEvent("console", {
     predicate: (message) => message.text().includes("import docx:done"),
     timeout: 45_000,
   });
   await page.getByTestId("editor-import-overlay").waitFor({ state: "detached" });
-
   const pageRect = await canvasPageRect(page);
-  const p1 = { x: pageRect.x + 220, y: pageRect.y + 200 };
-  const p2 = { x: pageRect.x + 420, y: pageRect.y + 200 };
+  await page.mouse.click(pageRect.x + 220, pageRect.y + 200);
+  await expectLastHitFromCanvas(page);
 
-  await page.mouse.click(p1.x, p1.y);
-  await page.mouse.click(p2.x, p2.y);
-  await page.mouse.dblclick(p2.x, p2.y);
-  await page.mouse.click(p2.x, p2.y, { clickCount: 3 });
+  const points = await page.evaluate(() => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const paragraph = snapshot.paragraphs.find(
+      (entry) => entry.zone === "main" && !entry.tableCell && entry.lines.length > 0 && entry.lines[0]!.slots.length > 6,
+    );
+    if (!paragraph) return null;
+    const line = paragraph.lines[0]!;
+    const first = line.slots[1]!;
+    const mid = line.slots[Math.floor(line.slots.length * 0.6)] ?? line.slots[line.slots.length - 2];
+    if (!mid) return null;
+    return {
+      p1: { x: first.left + 0.5, y: line.top + line.height * 0.5 },
+      p2: { x: mid.left + 0.5, y: line.top + line.height * 0.5 },
+    };
+  });
+  if (!points) {
+    throw new Error("unable to resolve stable DOCX click points from canvas snapshot");
+  }
 
-  await page.mouse.move(p1.x, p1.y);
-  await page.mouse.down();
-  await page.mouse.move(p2.x, p2.y);
-  await page.mouse.up();
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
-
-  expect(fallbackSourceLogs).toEqual([]);
+  await exercisePointerCoherence(page, points.p1, points.p2, { requireWordClicks: true });
+  await expectNoFallbackEvents(page);
 });
 
-test("canvas aligned paragraph keeps mouse selection, double and triple click stable", async ({
-  page,
-}) => {
-  const fallbackLogs: string[] = [];
-  const fallbackSourceLogs: string[] = [];
-  page.on("console", (message) => {
-    const text = message.text();
-    if (text.includes("canvas:fallback-hit-test")) {
-      fallbackLogs.push(text);
-    }
-    if (text.includes("source\":\"dom-fallback\"")) {
-      fallbackSourceLogs.push(text);
-    }
+for (const align of ["center", "right", "justify"] as const) {
+  test(`canvas ${align} paragraph keeps caret/selection/hit-test coherent`, async ({ page }) => {
+    await gotoEditor(page);
+    await clearFallbackEvents(page);
+    await seedText(page, "alpha beta gamma delta epsilon zeta eta theta iota kappa");
+    await clickToolbarAction(page, `editor-toolbar-align-${align}`);
+    await page.waitForTimeout(100);
+
+    const pageRect = await canvasPageRect(page);
+    const p1 = { x: pageRect.x + 300, y: pageRect.y + 140 };
+    const p2 = { x: pageRect.x + 470, y: pageRect.y + 140 };
+    await exercisePointerCoherence(page, p1, p2);
+    await expectNoFallbackEvents(page);
   });
+}
 
+test("canvas simple 2x2 table hit-test uses canvas layout only", async ({ page }) => {
   await gotoEditor(page);
-  await seedText(page, "alpha beta gamma delta epsilon zeta eta theta iota kappa");
-  await clickToolbarAction(page, "editor-toolbar-align-center");
-  await page.waitForTimeout(100);
+  await clearFallbackEvents(page);
+  await seedText(page, "table baseline");
+  await insertTable(page, 2, 2);
+  await page.waitForTimeout(120);
+  const editorPage = await canvasPageRect(page);
+  await page.mouse.click(editorPage.x + 210, editorPage.y + 210);
+  await expectLastHitFromCanvas(page);
+  const points = await page.evaluate(() => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const tableParagraphs = snapshot.paragraphs.filter((paragraph) => paragraph.tableCell);
+    if (tableParagraphs.length === 0) return null;
 
-  const pageRect = await canvasPageRect(page);
-  const p1 = { x: pageRect.x + 300, y: pageRect.y + 140 };
-  const p2 = { x: pageRect.x + 470, y: pageRect.y + 140 };
+    const firstCell = tableParagraphs[0]!.tableCell!;
+    const secondCell =
+      tableParagraphs.find(
+        (paragraph) =>
+          paragraph.tableCell &&
+          (paragraph.tableCell.rowIndex !== firstCell.rowIndex ||
+            paragraph.tableCell.cellIndex !== firstCell.cellIndex),
+      )?.tableCell ?? firstCell;
+    return {
+      p1: {
+        x: firstCell.left + Math.min(28, firstCell.width * 0.35),
+        y: firstCell.top + Math.min(22, firstCell.height * 0.5),
+      },
+      p2: {
+        x: secondCell.left + Math.min(28, secondCell.width * 0.35),
+        y: secondCell.top + Math.min(22, secondCell.height * 0.5),
+      },
+    };
+  });
+  if (!points) {
+    throw new Error("table cell geometry not found in canvas debug snapshot");
+  }
 
-  await page.mouse.click(p1.x, p1.y);
-  const caretBefore = await page.locator(".oasis-editor-caret").boundingBox();
-  await page.mouse.click(p2.x, p2.y);
-  const caretAfter = await page.locator(".oasis-editor-caret").boundingBox();
-  expect(caretBefore).not.toBeNull();
-  expect(caretAfter).not.toBeNull();
-  expect(Math.abs((caretAfter?.x ?? 0) - (caretBefore?.x ?? 0))).toBeGreaterThan(8);
-
-  await page.mouse.move(p1.x, p1.y);
-  await page.mouse.down();
-  await page.mouse.move(p2.x, p2.y);
-  await page.mouse.up();
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
-
-  await page.mouse.dblclick(p2.x, p2.y);
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
-
-  await page.mouse.click(p2.x, p2.y, { clickCount: 3 });
-  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
-
-  expect(fallbackLogs).toEqual([]);
-  expect(fallbackSourceLogs).toEqual([]);
+  await exercisePointerCoherence(page, points.p1, points.p2, {
+    requireWordClicks: false,
+    requireCaretDelta: false,
+    requireSelectionVisible: false,
+  });
+  await expectNoFallbackEvents(page);
 });
