@@ -354,6 +354,112 @@ function commitLine(
   });
 }
 
+function shiftLine(line: EditorLayoutLine, deltaX: number): EditorLayoutLine {
+  if (Math.abs(deltaX) < 0.01) {
+    return line;
+  }
+  return {
+    ...line,
+    slots: line.slots.map((slot) => ({
+      ...slot,
+      left: slot.left + deltaX,
+    })),
+  };
+}
+
+function getLineContentWidth(line: EditorLayoutLine): number {
+  const lastSlot = line.slots[line.slots.length - 1];
+  return lastSlot ? lastSlot.left : 0;
+}
+
+function justifyLineBySpaces(
+  line: EditorLayoutLine,
+  extraSpace: number,
+  charByOffset: Map<number, string>,
+): EditorLayoutLine {
+  if (extraSpace <= 0 || line.endOffset <= line.startOffset) {
+    return line;
+  }
+
+  let lastContentOffset = line.endOffset - 1;
+  while (lastContentOffset >= line.startOffset) {
+    const char = charByOffset.get(lastContentOffset);
+    if (char && char !== " " && char !== "\t" && char !== "\n") {
+      break;
+    }
+    lastContentOffset -= 1;
+  }
+  if (lastContentOffset < line.startOffset) {
+    return line;
+  }
+
+  const spaceOffsets: number[] = [];
+  for (let offset = line.startOffset; offset <= lastContentOffset; offset += 1) {
+    if (charByOffset.get(offset) === " ") {
+      spaceOffsets.push(offset);
+    }
+  }
+  if (spaceOffsets.length === 0) {
+    return line;
+  }
+
+  const gap = extraSpace / spaceOffsets.length;
+  let spaceIndex = 0;
+  let shift = 0;
+  return {
+    ...line,
+    slots: line.slots.map((slot) => {
+      while (spaceIndex < spaceOffsets.length && slot.offset > spaceOffsets[spaceIndex]!) {
+        shift += gap;
+        spaceIndex += 1;
+      }
+      return {
+        ...slot,
+        left: slot.left + shift,
+      };
+    }),
+  };
+}
+
+function applyParagraphAlignment(
+  paragraph: EditorParagraphNode,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  contentWidth: number,
+  lines: EditorLayoutLine[],
+  lineHardBreaks: boolean[],
+  charByOffset: Map<number, string>,
+): EditorLayoutLine[] {
+  if (lines.length === 0) {
+    return lines;
+  }
+  const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, styles);
+  const align = paragraphStyle.align ?? "left";
+  if (align === "left") {
+    return lines;
+  }
+
+  return lines.map((line, lineIndex) => {
+    const availableWidth = getAvailableWidth(paragraph, styles, contentWidth, lineIndex === 0);
+    const lineWidth = getLineContentWidth(line);
+    const extraSpace = Math.max(0, availableWidth - lineWidth);
+    if (extraSpace <= 0) {
+      return line;
+    }
+    if (align === "center") {
+      return shiftLine(line, extraSpace / 2);
+    }
+    if (align === "right") {
+      return shiftLine(line, extraSpace);
+    }
+    const isLastLine = lineIndex === lines.length - 1;
+    const endsWithHardBreak = lineHardBreaks[lineIndex] === true;
+    if (align === "justify" && !isLastLine && !endsWithHardBreak) {
+      return justifyLineBySpaces(line, extraSpace, charByOffset);
+    }
+    return line;
+  });
+}
+
 function canApplyWordShortTokenFit(
   token: MeasuredToken,
   lineWidth: number,
@@ -379,6 +485,7 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
   const { paragraph, fragments, styles, contentWidth, layoutMode = "fast" } = options;
   const measuredChars = buildMeasuredChars(paragraph, fragments, styles, layoutMode);
   const tokens = tokenizeMeasuredChars(measuredChars);
+  const charByOffset = new Map<number, string>(measuredChars.map((char) => [char.offset, char.char] as const));
   const fallbackFontSize = Math.max(
     DEFAULT_FONT_SIZE,
     ...paragraph.runs
@@ -413,6 +520,7 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
   }
 
   const lines: EditorLayoutLine[] = [];
+  const lineHardBreaks: boolean[] = [];
   let lineStartOffset = tokens[0]!.kind === "newline" ? tokens[0]!.chars[0]!.offset + 1 : tokens[0]!.chars[0]!.offset;
   let lineWidth = 0;
   let lineSlotLefts = [0];
@@ -420,8 +528,9 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
   let top = 0;
   let isFirstLine = true;
 
-  const flushLine = () => {
+  const flushLine = (hardBreak = false) => {
     commitLine(lines, paragraph.id, lineStartOffset, lineEndOffset, lineSlotLefts, top, lineHeight);
+    lineHardBreaks.push(hardBreak);
     top += lineHeight;
     isFirstLine = false;
   };
@@ -444,7 +553,7 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
   for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex += 1) {
     const token = tokens[tokenIndex]!;
     if (token.kind === "newline") {
-      flushLine();
+      flushLine(true);
       resetLine(token.chars[0]!.offset + 1);
       continue;
     }
@@ -498,7 +607,7 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
     flushLine();
   }
 
-  return lines;
+  return applyParagraphAlignment(paragraph, styles, width, lines, lineHardBreaks, charByOffset);
 }
 
 import type { ITextMeasurer } from "../core/engine.js";
