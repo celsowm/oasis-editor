@@ -1,7 +1,39 @@
-import type { EditorBlockNode, EditorDocument, EditorParagraphListStyle, EditorParagraphStyle, EditorParagraphNode, EditorPosition, EditorSelection, EditorState, EditorTextRun, EditorTextStyle, EditorImageRunData, EditorSection, EditorTableCellNode } from "../model.js";
-import { getParagraphLength, getParagraphs, paragraphOffsetToPosition, positionToParagraphOffset, getActiveSectionIndex, getActiveZone, resolveImageSrc } from "../model.js";
-import { createEditorDocument, createEditorParagraphFromRuns, createEditorStyledRun } from "../editorState.js";
-import { clampPosition, createCollapsedSelection, findParagraphIndex, isSelectionCollapsed, normalizeSelection } from "../selection.js";
+import type {
+  EditorBlockNode,
+  EditorDocument,
+  EditorParagraphListStyle,
+  EditorParagraphStyle,
+  EditorParagraphNode,
+  EditorPosition,
+  EditorSelection,
+  EditorState,
+  EditorTextRun,
+  EditorTextStyle,
+  EditorImageRunData,
+  EditorSection,
+  EditorTableCellNode,
+} from "../model.js";
+import {
+  getParagraphLength,
+  getParagraphs,
+  paragraphOffsetToPosition,
+  positionToParagraphOffset,
+  getActiveSectionIndex,
+  getActiveZone,
+  resolveImageSrc,
+} from "../model.js";
+import {
+  createEditorDocument,
+  createEditorParagraphFromRuns,
+  createEditorStyledRun,
+} from "../editorState.js";
+import {
+  clampPosition,
+  createCollapsedSelection,
+  findParagraphIndex,
+  isSelectionCollapsed,
+  normalizeSelection,
+} from "../selection.js";
 import { deleteBackward } from "./text.js";
 import { setSelection } from "./selection.js";
 
@@ -13,7 +45,12 @@ export type ToggleableTextStyleKey =
   | "superscript"
   | "subscript";
 
-export type ValueTextStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
+export type ValueTextStyleKey =
+  | "fontFamily"
+  | "fontSize"
+  | "color"
+  | "highlight"
+  | "link";
 
 export type ValueParagraphStyleKey =
   | "styleId"
@@ -36,11 +73,16 @@ export type ValueParagraphStyleKey =
 
 export type ParagraphListKind = EditorParagraphListStyle["kind"];
 
-export function cloneStyle(style?: EditorTextStyle): EditorTextStyle | undefined {
+export function cloneStyle(
+  style?: EditorTextStyle,
+): EditorTextStyle | undefined {
   return style ? { ...style } : undefined;
 }
 
-export function stylesEqual(left?: EditorTextStyle, right?: EditorTextStyle): boolean {
+export function stylesEqual(
+  left?: EditorTextStyle,
+  right?: EditorTextStyle,
+): boolean {
   return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
 }
 
@@ -49,7 +91,8 @@ export function setBooleanStyle(
   key: ToggleableTextStyleKey,
   enabled: boolean,
 ): EditorTextStyle | undefined {
-  const next = { ...(style ?? {}) } as EditorTextStyle & Record<string, unknown>;
+  const next = { ...(style ?? {}) } as EditorTextStyle &
+    Record<string, unknown>;
 
   if (enabled) {
     next[key] = true;
@@ -83,7 +126,9 @@ export function cloneRun(run: EditorTextRun): EditorTextRun {
   };
 }
 
-export function cloneParagraph(paragraph: EditorParagraphNode): EditorParagraphNode {
+export function cloneParagraph(
+  paragraph: EditorParagraphNode,
+): EditorParagraphNode {
   return {
     ...paragraph,
     runs: paragraph.runs.map(cloneRun),
@@ -111,10 +156,14 @@ export function setParagraphStyleValue<K extends ValueParagraphStyleKey>(
     next[key] = value;
   }
 
-  return Object.keys(next).length > 0 ? (next as EditorParagraphStyle) : undefined;
+  return Object.keys(next).length > 0
+    ? (next as EditorParagraphStyle)
+    : undefined;
 }
 
-export function cloneParagraphs(paragraphs: EditorParagraphNode[]): EditorParagraphNode[] {
+export function cloneParagraphs(
+  paragraphs: EditorParagraphNode[],
+): EditorParagraphNode[] {
   return paragraphs.map(cloneParagraph);
 }
 
@@ -136,7 +185,10 @@ export function cloneBlocks(blocks: EditorBlockNode[]): EditorBlockNode[] {
   });
 }
 
-export function normalizeRuns(runs: EditorTextRun[], fallbackStyles?: EditorTextStyle): EditorTextRun[] {
+export function normalizeRuns(
+  runs: EditorTextRun[],
+  fallbackStyles?: EditorTextStyle,
+): EditorTextRun[] {
   const merged: EditorTextRun[] = [];
 
   for (const run of runs) {
@@ -145,7 +197,12 @@ export function normalizeRuns(runs: EditorTextRun[], fallbackStyles?: EditorText
     }
 
     const previous = merged[merged.length - 1];
-    if (previous && !run.image && !previous.image && stylesEqual(previous.styles, run.styles)) {
+    if (
+      previous &&
+      !run.image &&
+      !previous.image &&
+      stylesEqual(previous.styles, run.styles)
+    ) {
       previous.text += run.text;
       continue;
     }
@@ -207,7 +264,9 @@ export function cloneParagraphWithListLevel(
   return nextParagraph;
 }
 
-export function clearParagraphList(paragraph: EditorParagraphNode): EditorParagraphNode {
+export function clearParagraphList(
+  paragraph: EditorParagraphNode,
+): EditorParagraphNode {
   const nextParagraph = cloneParagraph(paragraph);
   delete nextParagraph.list;
   return nextParagraph;
@@ -222,7 +281,10 @@ export function blocksContainTables(nodes: EditorBlockNode[]): boolean {
   return false;
 }
 
-export function replaceParagraphsInBlocks(blocks: EditorBlockNode[], newParagraphs: EditorParagraphNode[]): EditorBlockNode[] {
+export function replaceParagraphsInBlocks(
+  blocks: EditorBlockNode[],
+  newParagraphs: EditorParagraphNode[],
+): EditorBlockNode[] {
   // Fast path: when the zone contains no tables, the flat paragraph list from
   // `getParagraphs(state)` IS the canonical block list. Replace wholesale so
   // that paragraph-count changes (split, merge via deleteBackward, etc.) are
@@ -234,21 +296,56 @@ export function replaceParagraphsInBlocks(blocks: EditorBlockNode[], newParagrap
 
   let index = 0;
   const processBlocks = (nodes: EditorBlockNode[]): EditorBlockNode[] => {
-    return nodes.map(node => {
+    let changed = false;
+    const newNodes = nodes.map((node) => {
       if (node.type === "paragraph") {
-        return newParagraphs[index++] ?? node;
+        const nextPara = newParagraphs[index++];
+        if (nextPara && nextPara !== node) {
+          changed = true;
+          return nextPara;
+        }
+        return node;
       }
-      return {
-        ...node,
-        rows: node.rows.map(row => ({
-          ...row,
-          cells: row.cells.map(cell => ({
-            ...cell,
-            blocks: processBlocks(cell.blocks) as EditorParagraphNode[]
-          }))
-        }))
-      };
+
+      let nodeChanged = false;
+      const newRows = node.rows.map((row) => {
+        let rowChanged = false;
+        const newCells = row.cells.map((cell) => {
+          const startIdx = index;
+          const newCellBlocks = processBlocks(
+            cell.blocks,
+          ) as EditorParagraphNode[];
+          if (newCellBlocks !== cell.blocks) {
+            rowChanged = true;
+            return {
+              ...cell,
+              blocks: newCellBlocks,
+            };
+          }
+          return cell;
+        });
+
+        if (rowChanged) {
+          nodeChanged = true;
+          return {
+            ...row,
+            cells: newCells,
+          };
+        }
+        return row;
+      });
+
+      if (nodeChanged) {
+        changed = true;
+        return {
+          ...node,
+          rows: newRows,
+        };
+      }
+      return node;
     });
+
+    return changed ? newNodes : nodes;
   };
   return processBlocks(blocks);
 }
@@ -259,14 +356,23 @@ export function replaceParagraphsInSection(
   zone: "main" | "header" | "footer",
 ): EditorSection {
   if (zone === "header") {
-    return { ...section, header: replaceParagraphsInBlocks(section.header ?? [], paragraphs) };
+    return {
+      ...section,
+      header: replaceParagraphsInBlocks(section.header ?? [], paragraphs),
+    };
   }
   if (zone === "footer") {
-    return { ...section, footer: replaceParagraphsInBlocks(section.footer ?? [], paragraphs) };
+    return {
+      ...section,
+      footer: replaceParagraphsInBlocks(section.footer ?? [], paragraphs),
+    };
   }
 
   // main zone: preserve table structure
-  return { ...section, blocks: replaceParagraphsInBlocks(section.blocks, paragraphs) };
+  return {
+    ...section,
+    blocks: replaceParagraphsInBlocks(section.blocks, paragraphs),
+  };
 }
 
 export function cloneStateWithParagraphs(
@@ -274,7 +380,8 @@ export function cloneStateWithParagraphs(
   paragraphs: EditorParagraphNode[],
   selection: EditorSelection,
 ): EditorState {
-  const hasSections = state.document.sections && state.document.sections.length > 0;
+  const hasSections =
+    state.document.sections && state.document.sections.length > 0;
 
   if (hasSections) {
     const sectionIndex = getActiveSectionIndex(state);
@@ -282,7 +389,11 @@ export function cloneStateWithParagraphs(
     const section = state.document.sections![sectionIndex];
 
     if (section) {
-      const updatedSection = replaceParagraphsInSection(section, paragraphs, zone);
+      const updatedSection = replaceParagraphsInSection(
+        section,
+        paragraphs,
+        zone,
+      );
       const updatedSections = [...state.document.sections!];
       updatedSections[sectionIndex] = updatedSection;
 
@@ -298,7 +409,9 @@ export function cloneStateWithParagraphs(
   }
 
   // Legacy fallback: for documents with tables, use replaceParagraphsInBlocks to preserve table structure
-  const hasTableInBlocks = state.document.blocks.some(b => b.type === "table");
+  const hasTableInBlocks = state.document.blocks.some(
+    (b) => b.type === "table",
+  );
 
   if (hasTableInBlocks) {
     return {
@@ -347,7 +460,10 @@ export function getFocusParagraph(state: EditorState): {
   };
 }
 
-export function getStyleAtOffset(paragraph: EditorParagraphNode, offset: number): EditorTextStyle | undefined {
+export function getStyleAtOffset(
+  paragraph: EditorParagraphNode,
+  offset: number,
+): EditorTextStyle | undefined {
   if (paragraph.runs.length === 0) {
     return undefined;
   }
@@ -460,8 +576,14 @@ export function sliceRuns(
   startOffset: number,
   endOffset: number,
 ): EditorTextRun[] {
-  const start = Math.max(0, Math.min(startOffset, getParagraphLength(paragraph)));
-  const end = Math.max(start, Math.min(endOffset, getParagraphLength(paragraph)));
+  const start = Math.max(
+    0,
+    Math.min(startOffset, getParagraphLength(paragraph)),
+  );
+  const end = Math.max(
+    start,
+    Math.min(endOffset, getParagraphLength(paragraph)),
+  );
   const pieces: EditorTextRun[] = [];
 
   let consumed = 0;
@@ -474,7 +596,9 @@ export function sliceRuns(
     if (overlapStart < overlapEnd) {
       const piece: EditorTextRun = {
         id: `run:${Math.random().toString(36).slice(2, 9)}`,
-        text: run.image ? "\uFFFC" : run.text.slice(overlapStart - runStart, overlapEnd - runStart),
+        text: run.image
+          ? "\uFFFC"
+          : run.text.slice(overlapStart - runStart, overlapEnd - runStart),
       };
       if (run.styles) {
         piece.styles = { ...run.styles };
@@ -534,11 +658,17 @@ export function deleteSelectionRange(state: EditorState): EditorState {
     const date = Date.now();
 
     const nextParagraphs = paragraphs.map((paragraph, paragraphIndex) => {
-      if (paragraphIndex < normalized.startIndex || paragraphIndex > normalized.endIndex) {
+      if (
+        paragraphIndex < normalized.startIndex ||
+        paragraphIndex > normalized.endIndex
+      ) {
         return cloneParagraph(paragraph);
       }
 
-      const startOffset = paragraphIndex === normalized.startIndex ? normalized.startParagraphOffset : 0;
+      const startOffset =
+        paragraphIndex === normalized.startIndex
+          ? normalized.startParagraphOffset
+          : 0;
       const endOffset =
         paragraphIndex === normalized.endIndex
           ? normalized.endParagraphOffset
@@ -566,7 +696,10 @@ export function deleteSelectionRange(state: EditorState): EditorState {
 
   const startParagraph = paragraphs[normalized.startIndex];
   const endParagraph = paragraphs[normalized.endIndex];
-  const startOffset = positionToParagraphOffset(startParagraph, normalized.start);
+  const startOffset = positionToParagraphOffset(
+    startParagraph,
+    normalized.start,
+  );
   const endOffset = positionToParagraphOffset(endParagraph, normalized.end);
   const mergedParagraph = buildParagraphFromRuns(startParagraph, [
     ...sliceRuns(startParagraph, 0, startOffset),
@@ -607,12 +740,21 @@ export function preserveSelectionByParagraphOffsets(
   const endParagraph = paragraphs[normalized.endIndex]!;
 
   return {
-    anchor: paragraphOffsetToPosition(startParagraph, normalized.startParagraphOffset),
-    focus: paragraphOffsetToPosition(endParagraph, normalized.endParagraphOffset),
+    anchor: paragraphOffsetToPosition(
+      startParagraph,
+      normalized.startParagraphOffset,
+    ),
+    focus: paragraphOffsetToPosition(
+      endParagraph,
+      normalized.endParagraphOffset,
+    ),
   };
 }
 
-export function collapseToBoundary(state: EditorState, direction: "start" | "end"): EditorState {
+export function collapseToBoundary(
+  state: EditorState,
+  direction: "start" | "end",
+): EditorState {
   const normalized = normalizeSelection(state);
   if (normalized.isCollapsed) {
     return state;
@@ -620,7 +762,9 @@ export function collapseToBoundary(state: EditorState, direction: "start" | "end
 
   return {
     document: state.document,
-    selection: withSelection(direction === "start" ? normalized.start : normalized.end),
+    selection: withSelection(
+      direction === "start" ? normalized.start : normalized.end,
+    ),
   };
 }
 
@@ -719,7 +863,8 @@ export function serializeImageRunToHtml(
   // Asset references must be expanded to the actual data URL so the
   // copied HTML is portable (clipboard consumers don't see our registry).
   const resolvedSrc = resolveImageSrc(document, run.image.src);
-  const altAttr = run.image.alt !== undefined ? ` alt="${escapeHtml(run.image.alt)}"` : "";
+  const altAttr =
+    run.image.alt !== undefined ? ` alt="${escapeHtml(run.image.alt)}"` : "";
   const img = `<img src="${escapeHtml(resolvedSrc)}" width="${Math.max(1, Math.round(run.image.width))}" height="${Math.max(1, Math.round(run.image.height))}"${altAttr}>`;
   if (run.styles?.link) {
     return `<a href="${escapeHtml(run.styles.link)}">${img}</a>`;
@@ -771,10 +916,14 @@ export function serializeParagraphRunsToHtml(
   runs: EditorTextRun[],
   document?: Pick<EditorDocument, "assets">,
 ): string {
-  return runs.map((run) => serializeTextRunToHtml(run, document)).join("") || "<br>";
+  return (
+    runs.map((run) => serializeTextRunToHtml(run, document)).join("") || "<br>"
+  );
 }
 
-export function parseInlineStyles(element: Element): EditorTextStyle | undefined {
+export function parseInlineStyles(
+  element: Element,
+): EditorTextStyle | undefined {
   const style = (element as HTMLElement).style;
   const result: EditorTextStyle = {};
 
@@ -826,7 +975,10 @@ export function parseInlineStyles(element: Element): EditorTextStyle | undefined
     result.subscript = true;
   }
 
-  const link = element.tagName === "A" ? (element as HTMLAnchorElement).getAttribute("href")?.trim() ?? "" : "";
+  const link =
+    element.tagName === "A"
+      ? ((element as HTMLAnchorElement).getAttribute("href")?.trim() ?? "")
+      : "";
   if (link) {
     result.link = link;
     result.underline = true;
@@ -835,7 +987,9 @@ export function parseInlineStyles(element: Element): EditorTextStyle | undefined
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
-export function parseInlineImage(element: Element): EditorImageRunData | undefined {
+export function parseInlineImage(
+  element: Element,
+): EditorImageRunData | undefined {
   if (element.tagName !== "IMG") {
     return undefined;
   }
@@ -850,8 +1004,12 @@ export function parseInlineImage(element: Element): EditorImageRunData | undefin
   const heightAttr = img.getAttribute("height")?.trim() ?? "";
   const widthStyle = img.style.width.trim();
   const heightStyle = img.style.height.trim();
-  const widthFromStyle = widthStyle.endsWith("px") ? Number.parseFloat(widthStyle) : Number.NaN;
-  const heightFromStyle = heightStyle.endsWith("px") ? Number.parseFloat(heightStyle) : Number.NaN;
+  const widthFromStyle = widthStyle.endsWith("px")
+    ? Number.parseFloat(widthStyle)
+    : Number.NaN;
+  const heightFromStyle = heightStyle.endsWith("px")
+    ? Number.parseFloat(heightStyle)
+    : Number.NaN;
   const widthFromAttr = Number.parseFloat(widthAttr);
   const heightFromAttr = Number.parseFloat(heightAttr);
 
@@ -880,12 +1038,19 @@ export function parseInlineImage(element: Element): EditorImageRunData | undefin
   return image;
 }
 
-export function parseParagraphStyle(element: Element): EditorParagraphStyle | undefined {
+export function parseParagraphStyle(
+  element: Element,
+): EditorParagraphStyle | undefined {
   const style = (element as HTMLElement).style;
   const result: EditorParagraphStyle = {};
 
   const align = style.textAlign.trim();
-  if (align === "left" || align === "center" || align === "right" || align === "justify") {
+  if (
+    align === "left" ||
+    align === "center" ||
+    align === "right" ||
+    align === "justify"
+  ) {
     result.align = align;
   }
 
@@ -937,7 +1102,10 @@ export function parseParagraphStyle(element: Element): EditorParagraphStyle | un
     }
   }
 
-  if (style.breakBefore === "page" || (element as HTMLElement).dataset.oasisPageBreakBefore === "true") {
+  if (
+    style.breakBefore === "page" ||
+    (element as HTMLElement).dataset.oasisPageBreakBefore === "true"
+  ) {
     result.pageBreakBefore = true;
   }
 
@@ -951,21 +1119,23 @@ export function parseParagraphStyle(element: Element): EditorParagraphStyle | un
 export function updateTableCellsInBlocks(
   blocks: EditorBlockNode[],
   selectedParagraphIds: Set<string>,
-  updateCell: (cell: EditorTableCellNode) => EditorTableCellNode
+  updateCell: (cell: EditorTableCellNode) => EditorTableCellNode,
 ): EditorBlockNode[] {
-  return blocks.map(block => {
+  return blocks.map((block) => {
     if (block.type === "paragraph") return block;
-    
+
     return {
       ...block,
-      rows: block.rows.map(row => ({
+      rows: block.rows.map((row) => ({
         ...row,
-        cells: row.cells.map(cell => {
+        cells: row.cells.map((cell) => {
           // Check if this cell contains any of the selected paragraphs
-          const isSelected = cell.blocks.some(p => selectedParagraphIds.has(p.id));
+          const isSelected = cell.blocks.some((p) =>
+            selectedParagraphIds.has(p.id),
+          );
           return isSelected ? updateCell(cell) : cell;
-        })
-      }))
+        }),
+      })),
     };
   });
 }
@@ -987,12 +1157,18 @@ export function moveVertical(state: EditorState, delta: -1 | 1): EditorState {
   return {
     document: state.document,
     selection: withSelection(
-      paragraphOffsetToPosition(nextParagraph, Math.min(offset, getParagraphLength(nextParagraph))),
+      paragraphOffsetToPosition(
+        nextParagraph,
+        Math.min(offset, getParagraphLength(nextParagraph)),
+      ),
     ),
   };
 }
 
-export function moveFocusHorizontally(state: EditorState, delta: -1 | 1): EditorState {
+export function moveFocusHorizontally(
+  state: EditorState,
+  delta: -1 | 1,
+): EditorState {
   const focus = clampPosition(state, state.selection.focus);
   const paragraphs = getParagraphs(state);
   const index = findParagraphIndex(paragraphs, focus.paragraphId);
@@ -1018,7 +1194,10 @@ export function moveFocusHorizontally(state: EditorState, delta: -1 | 1): Editor
     const previousParagraph = paragraphs[index - 1];
     return setSelection(state, {
       anchor: state.selection.anchor,
-      focus: paragraphOffsetToPosition(previousParagraph, getParagraphLength(previousParagraph)),
+      focus: paragraphOffsetToPosition(
+        previousParagraph,
+        getParagraphLength(previousParagraph),
+      ),
     });
   }
 
@@ -1033,7 +1212,10 @@ export function moveFocusHorizontally(state: EditorState, delta: -1 | 1): Editor
   return state;
 }
 
-export function moveFocusVertical(state: EditorState, delta: -1 | 1): EditorState {
+export function moveFocusVertical(
+  state: EditorState,
+  delta: -1 | 1,
+): EditorState {
   const focus = clampPosition(state, state.selection.focus);
   const paragraphs = getParagraphs(state);
   const index = findParagraphIndex(paragraphs, focus.paragraphId);
@@ -1048,6 +1230,9 @@ export function moveFocusVertical(state: EditorState, delta: -1 | 1): EditorStat
   const nextParagraph = paragraphs[nextIndex];
   return setSelection(state, {
     anchor: state.selection.anchor,
-    focus: paragraphOffsetToPosition(nextParagraph, Math.min(paragraphOffset, getParagraphLength(nextParagraph))),
+    focus: paragraphOffsetToPosition(
+      nextParagraph,
+      Math.min(paragraphOffset, getParagraphLength(nextParagraph)),
+    ),
   });
 }
