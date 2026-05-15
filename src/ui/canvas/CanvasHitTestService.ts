@@ -225,6 +225,10 @@ export interface ResolveHitWithFallbackOptions extends ResolveCanvasHitOptions {
   onFallbackUsed?: (reason: string, details: { clientX: number; clientY: number }) => void;
 }
 
+function isUnsupportedFallbackReason(reason: string): boolean {
+  return reason.startsWith("unsupported:");
+}
+
 export function resolveCanvasSurfaceHitAtPointWithFallback(
   options: ResolveHitWithFallbackOptions,
 ): SurfaceHit | null {
@@ -245,6 +249,9 @@ export function resolveCanvasSurfaceHitAtPointWithFallback(
   }
 
   const reason = primary?.fallbackReason ?? "unresolved-hit";
+  if (!isUnsupportedFallbackReason(reason)) {
+    return primary;
+  }
   options.onFallbackUsed?.(reason, {
     clientX: options.clientX,
     clientY: options.clientY,
@@ -261,4 +268,3 @@ export function resolveCanvasSurfaceHitAtPointWithFallback(
     resolvedFromParagraph: true,
   };
 }
-

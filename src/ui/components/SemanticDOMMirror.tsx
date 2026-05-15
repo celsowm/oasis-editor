@@ -5,6 +5,7 @@ export function SemanticDOMMirror(props: EditorSurfaceProps) {
   return (
     <div
       class="oasis-editor-semantic-dom-mirror"
+      data-semantic-mirror="true"
       aria-hidden="true"
       style={{
         position: "absolute",
