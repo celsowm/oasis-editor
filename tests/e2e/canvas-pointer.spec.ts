@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { resolve } from "node:path";
 
 const SIMPLE_LOREM_DOCX = resolve("src/__tests__/word-parity/fixtures/word-authored-lorem.docx");
+test.describe.configure({ timeout: 90_000 });
 
 async function canvasPageRect(page: Page) {
   const rect = await page
@@ -32,6 +33,20 @@ async function seedText(page: Page, text: string) {
   await page.mouse.click(pageRect.x + 180, pageRect.y + 140);
   await page.keyboard.type(text);
   await page.waitForTimeout(60);
+}
+
+async function clickToolbarAction(page: Page, testId: string) {
+  const button = page.getByTestId(testId);
+  if (await button.isVisible()) {
+    await button.click();
+    return;
+  }
+
+  const overflow = page.getByTestId("editor-toolbar-overflow-dropdown");
+  await expect(overflow).toBeVisible();
+  await overflow.click();
+  await expect(button).toBeVisible();
+  await button.click();
 }
 
 test("canvas pointer interactions update caret and selection without fallback", async ({ page }) => {
@@ -133,5 +148,53 @@ test("DOCX lorem simples hit-test never uses source=dom-fallback", async ({ page
   await page.mouse.up();
   await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
 
+  expect(fallbackSourceLogs).toEqual([]);
+});
+
+test("canvas aligned paragraph keeps mouse selection, double and triple click stable", async ({
+  page,
+}) => {
+  const fallbackLogs: string[] = [];
+  const fallbackSourceLogs: string[] = [];
+  page.on("console", (message) => {
+    const text = message.text();
+    if (text.includes("canvas:fallback-hit-test")) {
+      fallbackLogs.push(text);
+    }
+    if (text.includes("source\":\"dom-fallback\"")) {
+      fallbackSourceLogs.push(text);
+    }
+  });
+
+  await gotoEditor(page);
+  await seedText(page, "alpha beta gamma delta epsilon zeta eta theta iota kappa");
+  await clickToolbarAction(page, "editor-toolbar-align-center");
+  await page.waitForTimeout(100);
+
+  const pageRect = await canvasPageRect(page);
+  const p1 = { x: pageRect.x + 300, y: pageRect.y + 140 };
+  const p2 = { x: pageRect.x + 470, y: pageRect.y + 140 };
+
+  await page.mouse.click(p1.x, p1.y);
+  const caretBefore = await page.locator(".oasis-editor-caret").boundingBox();
+  await page.mouse.click(p2.x, p2.y);
+  const caretAfter = await page.locator(".oasis-editor-caret").boundingBox();
+  expect(caretBefore).not.toBeNull();
+  expect(caretAfter).not.toBeNull();
+  expect(Math.abs((caretAfter?.x ?? 0) - (caretBefore?.x ?? 0))).toBeGreaterThan(8);
+
+  await page.mouse.move(p1.x, p1.y);
+  await page.mouse.down();
+  await page.mouse.move(p2.x, p2.y);
+  await page.mouse.up();
+  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+
+  await page.mouse.dblclick(p2.x, p2.y);
+  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+
+  await page.mouse.click(p2.x, p2.y, { clickCount: 3 });
+  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+
+  expect(fallbackLogs).toEqual([]);
   expect(fallbackSourceLogs).toEqual([]);
 });
