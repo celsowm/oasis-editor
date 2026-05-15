@@ -51,7 +51,6 @@ export interface TextMeasureOptions {
 const textMeasureCache = new Map<string, number>();
 
 let sharedCanvasContext: CanvasRenderingContext2D | null | undefined;
-let sharedLineHeightProbe: HTMLSpanElement | null | undefined;
 
 function getCanvasContext(): CanvasRenderingContext2D | null {
   if (sharedCanvasContext !== undefined) {
@@ -85,30 +84,6 @@ function buildCanvasFont(styles: EditorTextStyle | undefined, fallbackFontSize: 
   return `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
 }
 
-function getLineHeightProbe(): HTMLSpanElement | null {
-  if (sharedLineHeightProbe !== undefined) {
-    return sharedLineHeightProbe;
-  }
-
-  if (typeof document === "undefined" || !document.body) {
-    sharedLineHeightProbe = null;
-    return sharedLineHeightProbe;
-  }
-
-  const probe = document.createElement("span");
-  probe.textContent = "Hg";
-  probe.setAttribute("aria-hidden", "true");
-  probe.style.position = "absolute";
-  probe.style.visibility = "hidden";
-  probe.style.pointerEvents = "none";
-  probe.style.whiteSpace = "pre";
-  probe.style.left = "-9999px";
-  probe.style.top = "-9999px";
-  document.body.appendChild(probe);
-  sharedLineHeightProbe = probe;
-  return sharedLineHeightProbe;
-}
-
 const normalLineHeightCache = new Map<string, number>();
 
 function measureNormalLineHeight(styles: EditorTextStyle | undefined, fallbackFontSize: number): number {
@@ -120,15 +95,18 @@ function measureNormalLineHeight(styles: EditorTextStyle | undefined, fallbackFo
 
   const fontSize = styles?.fontSize ?? fallbackFontSize;
   const minimumWordLineHeight = fontSize * DEFAULT_WORD_SINGLE_LINE_RATIO;
-  const probe = getLineHeightProbe();
-  if (!probe) {
-    normalLineHeightCache.set(font, minimumWordLineHeight);
-    return minimumWordLineHeight;
+  const context = getCanvasContext();
+  let measured = minimumWordLineHeight;
+  if (context) {
+    context.font = font;
+    const metrics = context.measureText("Hg");
+    const ascent = metrics.actualBoundingBoxAscent ?? metrics.fontBoundingBoxAscent ?? 0;
+    const descent = metrics.actualBoundingBoxDescent ?? metrics.fontBoundingBoxDescent ?? 0;
+    const canvasMeasured = ascent + descent;
+    if (canvasMeasured > 0) {
+      measured = canvasMeasured;
+    }
   }
-
-  probe.style.font = font;
-  probe.style.lineHeight = "normal";
-  const measured = probe.getBoundingClientRect().height || minimumWordLineHeight;
   const resolved = Math.max(measured, minimumWordLineHeight);
   normalLineHeightCache.set(font, resolved);
   return resolved;
@@ -196,7 +174,7 @@ function measureCharacterWidth(
     width = measureFallbackCharacterWidth(char, fontSize);
   }
 
-  // Fast mode keeps calibrated width heuristics; wordParity mode relies on measured DOM layout.
+  // Fast mode keeps calibrated width heuristics; wordParity mode uses raw canvas metrics.
   if (layoutMode !== "wordParity" && styles?.fontFamily) {
     const fontFamilyNormalized = styles.fontFamily.toLowerCase().replace(/['"]/g, "").split(",")[0]?.trim();
     if (fontFamilyNormalized && CALIBRATED_FONTS.has(fontFamilyNormalized)) {

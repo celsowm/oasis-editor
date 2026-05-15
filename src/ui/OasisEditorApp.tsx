@@ -97,6 +97,7 @@ import "./components/FindReplace/findReplace.css";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import { setLocale } from "../i18n/index.js";
 import type { IRenderingEngine } from "../core/engine.js";
+import { canvasEngine } from "./engines/canvasEngine.js";
 
 export interface OasisEditorAppProps {
   showChrome?: boolean;
@@ -180,6 +181,17 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const useComposedShell = () =>
     props.uiVariant === "docs" || (props.shell ?? "document") !== "document";
   const isReadOnly = () => props.readOnly ?? false;
+  const selectedEngine = (): IRenderingEngine => {
+    if (props.engine) {
+      return props.engine;
+    }
+    if (typeof HTMLCanvasElement === "undefined") {
+      throw new Error(
+        "Canvas renderer is required. Inject an engine explicitly if you need a non-canvas fallback.",
+      );
+    }
+    return canvasEngine;
+  };
 
   const shellComponent = () => {
     const s = props.shell ?? "document";
@@ -734,7 +746,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         class={props.class}
         style={props.style}
         layoutMode={layoutMode()}
-        engine={props.engine}
+        engine={selectedEngine()}
         onViewportRef={(element: HTMLDivElement) => {
           viewportRef = element;
         }}
@@ -877,6 +889,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             focused={() => focused()}
             importProgress={() => docIO.importProgress()}
             layoutMode={layoutMode()}
+            engine={selectedEngine()}
             viewportHeight={props.viewportHeight}
             class={props.class}
             style={props.style}

@@ -47,12 +47,14 @@ export const IMAGE_RESIZE_HANDLE_DIRECTIONS: ImageResizeHandleDirection[] = [
 
 import type { Accessor } from "solid-js";
 import type { EditorState, EditorLayoutParagraph } from "../core/model.js";
+import type { ITextMeasurer } from "../core/engine.js";
 
 export interface EditorSurfaceProps {
   state: Accessor<EditorState>;
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
   layoutMode?: "fast" | "wordParity";
+  measurer?: ITextMeasurer;
   /**
    * Phase 4: scroll viewport accessor for page virtualization.
    * When provided, only pages within (or near) the viewport are rendered with
@@ -83,4 +85,3 @@ export interface EditorSurfaceProps {
   onRevisionMouseEnter: (revisionId: string, event: MouseEvent) => void;
   onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
 }
-

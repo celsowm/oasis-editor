@@ -42,6 +42,8 @@ import { resolveRenderedLineHeightPx } from "../textMeasurement.js";
 import { perfTimer } from "../../utils/performanceMetrics.js";
 import { PageBreak } from "./PageBreak.js";
 import type { EditorSurfaceProps } from "../editorUiTypes.js";
+import type { ITextMeasurer } from "../../core/engine.js";
+import { domTextMeasurer } from "../textMeasurement.js";
 
 function getBorderStyle(border?: EditorBorderStyle): string | undefined {
   if (!border) return undefined;
@@ -473,6 +475,7 @@ function renderParagraph(
     testId?: string;
     contentWidth?: number;
     layoutMode?: "fast" | "wordParity";
+    measurer?: ITextMeasurer;
   },
 ) {
   const paragraphLayout =
@@ -484,6 +487,7 @@ function renderParagraph(
       state.document.styles,
       options?.contentWidth,
       options?.layoutMode ?? "fast",
+      options?.measurer ?? domTextMeasurer,
     );
   const chars = paragraphLayout.fragments.flatMap((fragment) => fragment.chars);
   const normalized = normalizedSelection;
@@ -1146,6 +1150,7 @@ export function DOMEditorSurface(props: EditorSurfaceProps) {
   );
   const listMarkers = createMemo(() => buildParagraphListMarkers(paragraphs()));
   const normalizedSelection = createMemo(() => normalizeSelection(props.state()));
+  const layoutMeasurer = () => props.measurer ?? domTextMeasurer;
   const documentLayout = createMemo(() => {
     return perfTimer("layout:project", () =>
       preserveStableLayoutIdentity(
@@ -1154,7 +1159,7 @@ export function DOMEditorSurface(props: EditorSurfaceProps) {
           undefined,
           props.measuredBlockHeights?.(),
           props.measuredParagraphLayouts?.(),
-          { layoutMode: props.layoutMode ?? "fast" },
+          { layoutMode: props.layoutMode ?? "fast", measurer: layoutMeasurer() },
         ),
       ),
     );

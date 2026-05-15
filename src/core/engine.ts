@@ -18,5 +18,9 @@ export interface ITextMeasurer {
 export interface IRenderingEngine {
   id: "dom" | "canvas";
   measurer: ITextMeasurer;
+  /**
+   * Visual-only renderer: input/caret/selection continues in DOM overlays.
+   */
+  visualPrimary?: boolean;
   SurfaceComponent: (props: EditorSurfaceProps) => JSX.Element;
 }

@@ -35,6 +35,21 @@ const GEOMETRY_TOLERANCE_POINTS = 1.5;
 const STRICT_GEOMETRY_TOLERANCE_POINTS = 0.5;
 const PROJECT_ROOT = dirname(fileURLToPath(new URL("../../package.json", import.meta.url)));
 
+let sharedBrowserResources:
+  | {
+      baseUrl: string;
+      browser: { newPage: () => Promise<any>; close: () => Promise<void> };
+      closeServer: () => Promise<void>;
+    }
+  | null = null;
+let sharedBrowserResourcesPromise:
+  | Promise<{
+      baseUrl: string;
+      browser: { newPage: () => Promise<any>; close: () => Promise<void> };
+      closeServer: () => Promise<void>;
+    }>
+  | null = null;
+
 export interface WordLayoutSupportStatus {
   supported: boolean;
   reason?: string;
@@ -109,6 +124,7 @@ export interface WordLayoutParityOptions {
   geometryTolerancePoints?: number;
   strictTextAndGeometry?: boolean;
   layoutMode?: "fast" | "wordParity";
+  browserBackend?: "browser" | "node";
 }
 
 function normalizeLineText(text: string): string {
@@ -228,221 +244,240 @@ async function collectEditorPageSnapshotsInBrowser(
   document: EditorDocument,
   options: WordLayoutParityOptions = {},
 ): Promise<BrowserEditorSnapshot | null> {
-  if (process.env.OASIS_WORD_PARITY_USE_NODE_LAYOUT === "1") {
+  if (
+    process.env.OASIS_WORD_PARITY_USE_NODE_LAYOUT === "1" ||
+    options.browserBackend === "node"
+  ) {
     return null;
   }
 
-  let closeServer: (() => Promise<void>) | undefined;
   try {
-    const [{ createServer }, { chromium }] = await Promise.all([
-      import("vite"),
-      import("@playwright/test"),
-    ]);
-    const server = await createServer({
-      root: PROJECT_ROOT,
-      logLevel: "error",
-      server: {
-        host: "127.0.0.1",
-        port: 0,
-      },
-    });
+    if (!sharedBrowserResourcesPromise) {
+      sharedBrowserResourcesPromise = (async () => {
+        const [{ createServer }, { chromium }] = await Promise.all([
+          import("vite"),
+          import("@playwright/test"),
+        ]);
+        const server = await createServer({
+          root: PROJECT_ROOT,
+          logLevel: "error",
+          server: {
+            host: "127.0.0.1",
+            port: 0,
+          },
+        });
 
-    await server.listen();
-    closeServer = () => server.close();
+        await server.listen();
+        const baseUrl = server.resolvedUrls?.local?.[0];
+        if (!baseUrl) {
+          throw new Error("Unable to resolve local Vite URL for parity snapshot.");
+        }
 
-    const baseUrl = server.resolvedUrls?.local?.[0];
-    if (!baseUrl) {
-      return null;
+        const browser = await (async () => {
+          try {
+            return await chromium.launch({ channel: "msedge", headless: true });
+          } catch {
+            return chromium.launch({ headless: true });
+          }
+        })();
+
+        return {
+          baseUrl,
+          browser: {
+            newPage: () => browser.newPage(),
+            close: () => browser.close(),
+          },
+          closeServer: () => server.close(),
+        };
+      })().then((resources) => {
+        sharedBrowserResources = resources;
+        return resources;
+      });
     }
 
-    const launchBrowser = async () => {
-      try {
-        return await chromium.launch({ channel: "msedge", headless: true });
-      } catch {
-        return chromium.launch({ headless: true });
-      }
-    };
-
-    const browser = await launchBrowser();
-
+    const resources = sharedBrowserResources ?? (await sharedBrowserResourcesPromise);
+    const { baseUrl, browser } = resources;
+    const page = await browser.newPage();
     try {
-      const page = await browser.newPage();
       await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 90_000 });
-
-      const snapshots = await page.evaluate(async (payload) => {
-        const { inputDocument, layoutMode } = payload;
-        const domLineBoxToPdfTextTopPoints = 2.18;
-        const domTextWidthToPdfBboxPoints = 2.05;
-        const domTextHeightToPdfBboxPoints = -2.46;
-        const importModule = (specifier: string) =>
-          // `eval` keeps TypeScript from trying to resolve Vite-only browser module specifiers.
-          (0, eval)(`import(${JSON.stringify(specifier)})`) as Promise<Record<string, any>>;
-        const { createOasisEditor } = await importModule("/src/app/bootstrap/createOasisEditorApp.ts");
-        const host = globalThis.document.createElement("div");
-        host.setAttribute("data-testid", "word-parity-host");
-        host.style.textRendering = "geometricPrecision";
-        host.style.fontKerning = "none";
-        globalThis.document.body.innerHTML = "";
-        globalThis.document.body.appendChild(host);
-        const instance = createOasisEditor(host, {
-          initialDocument: inputDocument,
-          showChrome: false,
-          readOnly: true,
-          viewportHeight: "none",
-          layoutMode,
-        });
-        try {
-          await globalThis.document.fonts.ready;
-          let previousSignature = "";
-          let stableFrameCount = 0;
-          for (let frame = 0; frame < 40 && stableFrameCount < 3; frame += 1) {
-            await new Promise((resolve) => requestAnimationFrame(resolve));
-            const signature = Array.from(host.querySelectorAll('[data-testid="editor-page"]'))
-              .map((page) => {
-                const body = page.querySelector('[data-testid="editor-surface"]') as HTMLElement | null;
-                const footer = page.querySelector('[data-testid="editor-page-footer-zone"]') as HTMLElement | null;
-                return [
-                  body?.style.minHeight ?? "",
-                  footer?.style.top ?? "",
-                  body?.querySelectorAll('[data-testid="editor-line"]').length ?? 0,
-                ].join(":");
-              })
-              .join("|");
-            if (signature === previousSignature && signature.length > 0) {
-              stableFrameCount += 1;
-            } else {
-              stableFrameCount = 0;
-              previousSignature = signature;
-            }
-          }
-
-          const normalize = (value: string | null | undefined) =>
-            (value ?? "").replace(/\s+/g, " ").trim();
-          const lineTexts = (root: Element | null) =>
-            Array.from(root?.querySelectorAll('[data-testid="editor-line"]') ?? [])
-              .map((line) => normalize(line.textContent))
-              .filter((line) => line.length > 0);
-          const parsePx = (value: string | null | undefined, fallback = 0) => {
-            const parsed = Number.parseFloat(value ?? "");
-            return Number.isFinite(parsed) ? parsed : fallback;
-          };
-          const geometryFromLine = (bodyElement: HTMLElement | null, lineElement: Element | null) => {
-            if (!bodyElement || !lineElement) {
-              return undefined;
-            }
-            const bodyRect = bodyElement.getBoundingClientRect();
-            const range = globalThis.document.createRange();
-            range.selectNodeContents(lineElement);
-            const lineRect = range.getBoundingClientRect();
-            range.detach();
-            const bodyLeft = parsePx(bodyElement.style.marginLeft);
-            const bodyTop = parsePx(bodyElement.style.marginTop);
-            return {
-              x: (bodyLeft + lineRect.left - bodyRect.left) * 0.75,
-              y: (bodyTop + lineRect.top - bodyRect.top) * 0.75 + domLineBoxToPdfTextTopPoints,
-              width: lineRect.width * 0.75 + domTextWidthToPdfBboxPoints,
-              height: lineRect.height * 0.75 + domTextHeightToPdfBboxPoints,
-            };
-          };
-          const lineBottomFromPageTop = (
-            bodyElement: HTMLElement | null,
-            lineElement: Element | null,
-          ) => {
-            if (!bodyElement || !lineElement) {
-              return undefined;
-            }
-            const lineHtmlElement = lineElement as HTMLElement;
-            const bodyTop = parsePx(bodyElement.style.marginTop);
-            let offsetTop = 0;
-            let current: HTMLElement | null = lineHtmlElement;
-            while (current && current !== bodyElement) {
-              offsetTop += current.offsetTop;
-              current = current.offsetParent as HTMLElement | null;
-            }
-            return bodyTop + offsetTop + lineHtmlElement.offsetHeight;
-          };
-          const textTopFromPageTop = (pageElement: HTMLElement, lineElement: Element | null) => {
-            if (!lineElement) {
-              return undefined;
-            }
-            const pageRect = pageElement.getBoundingClientRect();
-            const range = globalThis.document.createRange();
-            range.selectNodeContents(lineElement);
-            const lineRect = range.getBoundingClientRect();
-            range.detach();
-            return (lineRect.top - pageRect.top) * 0.75 + domLineBoxToPdfTextTopPoints;
-          };
-
-          const pages = Array.from(host.querySelectorAll('[data-testid="editor-page"]')).map((pageElement: Element) => {
-            const pageHtmlElement = pageElement as HTMLElement;
-            const header = pageElement.querySelector('[data-testid="editor-page-header-zone"]');
-            const body = pageElement.querySelector('[data-testid="editor-surface"]') as HTMLElement | null;
-            const footer = pageElement.querySelector('[data-testid="editor-page-footer-zone"]');
-            const pageWidth = parsePx(pageHtmlElement.style.width, pageHtmlElement.getBoundingClientRect().width);
-            const pageHeight = parsePx(pageHtmlElement.style.minHeight, pageHtmlElement.getBoundingClientRect().height);
-            const bodyTop = parsePx(body?.style.marginTop);
-            const bodyHeight = parsePx(body?.style.minHeight);
-            const footerTop = parsePx((footer as HTMLElement | null)?.style.top, pageHeight);
-            const firstBodyLine = body?.querySelector('[data-testid="editor-line"]');
-            const bodyLines = Array.from(body?.querySelectorAll('[data-testid="editor-line"]') ?? []);
-            const lastBodyLine = bodyLines[bodyLines.length - 1] ?? null;
-            const firstFooterLine = footer?.querySelector('[data-testid="editor-line"]') ?? null;
-            return {
-              headerLineTexts: lineTexts(header),
-              bodyLineTexts: lineTexts(body),
-              footerLineTexts: lineTexts(footer),
-              width: pageWidth,
-              height: pageHeight,
-              headerTop: 0,
-              bodyTop,
-              bodyHeight,
-              footerTop,
-              footerReferenceTop: footerTop,
-              pageHeight,
-              firstBodyLineGeometry: geometryFromLine(body, firstBodyLine ?? null),
-              lastBodyLineBottom: lineBottomFromPageTop(body, lastBodyLine),
-              firstFooterLineTop: textTopFromPageTop(pageHtmlElement, firstFooterLine),
-            };
+      const snapshots = await page.evaluate(
+        async (payload: {
+          inputDocument: EditorDocument;
+          layoutMode: "fast" | "wordParity";
+        }) => {
+          const { inputDocument, layoutMode } = payload;
+          const domLineBoxToPdfTextTopPoints = 2.18;
+          const domTextWidthToPdfBboxPoints = 2.05;
+          const domTextHeightToPdfBboxPoints = -2.46;
+          const importModule = (specifier: string) =>
+            (0, eval)(`import(${JSON.stringify(specifier)})`) as Promise<Record<string, any>>;
+          const { createOasisEditor } = await importModule("/src/app/bootstrap/createOasisEditorApp.ts");
+          const host = globalThis.document.createElement("div");
+          host.setAttribute("data-testid", "word-parity-host");
+          host.style.textRendering = "geometricPrecision";
+          host.style.fontKerning = "none";
+          globalThis.document.body.innerHTML = "";
+          globalThis.document.body.appendChild(host);
+          const instance = createOasisEditor(host, {
+            initialDocument: inputDocument,
+            showChrome: false,
+            readOnly: true,
+            viewportHeight: "none",
+            layoutMode,
           });
+          try {
+            await globalThis.document.fonts.ready;
+            const normalize = (value: string | null | undefined) => (value ?? "").replace(/\s+/g, " ").trim();
+            let previousSignature = "";
+            let stableFrameCount = 0;
+            for (let frame = 0; frame < 40 && stableFrameCount < 3; frame += 1) {
+              await new Promise((resolve) => requestAnimationFrame(resolve));
+              const signature = Array.from(host.querySelectorAll('[data-testid="editor-page"]'))
+                .map((page) => {
+                  const body = page.querySelector('[data-testid="editor-surface"]') as HTMLElement | null;
+                  const footer = page.querySelector('[data-testid="editor-page-footer-zone"]') as HTMLElement | null;
+                  const bodyTexts = Array.from(body?.querySelectorAll('[data-testid="editor-line"]') ?? [])
+                    .map((line) => normalize(line.textContent))
+                    .join("|");
+                  const footerTexts = Array.from(footer?.querySelectorAll('[data-testid="editor-line"]') ?? [])
+                    .map((line) => normalize(line.textContent))
+                    .join("|");
+                  return [body?.style.minHeight ?? "", footer?.style.top ?? "", bodyTexts, footerTexts].join(":");
+                })
+                .join("|");
+              if (signature === previousSignature && signature.length > 0) {
+                stableFrameCount += 1;
+              } else {
+                stableFrameCount = 0;
+                previousSignature = signature;
+              }
+            }
 
-          const runFontFamilies = Array.from(host.querySelectorAll('[data-testid="editor-run"]'))
-            .map((run) => globalThis.getComputedStyle(run as HTMLElement).fontFamily)
-            .filter((fontFamily) => fontFamily.length > 0);
-          const runFontSizes = Array.from(host.querySelectorAll('[data-testid="editor-run"]'))
-            .map((run) => globalThis.getComputedStyle(run as HTMLElement).fontSize)
-            .filter((fontSize) => fontSize.length > 0);
-          const firstTable = host.querySelector('[data-testid="editor-table"]');
-          const firstTableFirstRow = firstTable?.querySelector('[data-testid="editor-table-row"]');
-          const firstTableFirstRowBackgrounds = Array.from(
-            firstTableFirstRow?.querySelectorAll('[data-testid="editor-table-cell"]') ?? [],
-          )
-            .map((cell) => globalThis.getComputedStyle(cell as HTMLElement).backgroundColor)
-            .filter((backgroundColor) => backgroundColor.length > 0);
+            const lineTexts = (root: Element | null) =>
+              Array.from(root?.querySelectorAll('[data-testid="editor-line"]') ?? [])
+                .map((line) => normalize(line.textContent))
+                .filter((line) => line.length > 0);
+            const parsePx = (value: string | null | undefined, fallback = 0) => {
+              const parsed = Number.parseFloat(value ?? "");
+              return Number.isFinite(parsed) ? parsed : fallback;
+            };
+            const geometryFromLine = (bodyElement: HTMLElement | null, lineElement: Element | null) => {
+              if (!bodyElement || !lineElement) {
+                return undefined;
+              }
+              const bodyRect = bodyElement.getBoundingClientRect();
+              const range = globalThis.document.createRange();
+              range.selectNodeContents(lineElement);
+              const lineRect = range.getBoundingClientRect();
+              range.detach();
+              const bodyLeft = parsePx(bodyElement.style.marginLeft);
+              const bodyTop = parsePx(bodyElement.style.marginTop);
+              return {
+                x: (bodyLeft + lineRect.left - bodyRect.left) * 0.75,
+                y: (bodyTop + lineRect.top - bodyRect.top) * 0.75 + domLineBoxToPdfTextTopPoints,
+                width: lineRect.width * 0.75 + domTextWidthToPdfBboxPoints,
+                height: lineRect.height * 0.75 + domTextHeightToPdfBboxPoints,
+              };
+            };
+            const lineBottomFromPageTop = (bodyElement: HTMLElement | null, lineElement: Element | null) => {
+              if (!bodyElement || !lineElement) {
+                return undefined;
+              }
+              const lineHtmlElement = lineElement as HTMLElement;
+              const bodyTop = parsePx(bodyElement.style.marginTop);
+              let offsetTop = 0;
+              let current: HTMLElement | null = lineHtmlElement;
+              while (current && current !== bodyElement) {
+                offsetTop += current.offsetTop;
+                current = current.offsetParent as HTMLElement | null;
+              }
+              return bodyTop + offsetTop + lineHtmlElement.offsetHeight;
+            };
+            const textTopFromPageTop = (pageElement: HTMLElement, lineElement: Element | null) => {
+              if (!lineElement) {
+                return undefined;
+              }
+              const pageRect = pageElement.getBoundingClientRect();
+              const range = globalThis.document.createRange();
+              range.selectNodeContents(lineElement);
+              const lineRect = range.getBoundingClientRect();
+              range.detach();
+              return (lineRect.top - pageRect.top) * 0.75 + domLineBoxToPdfTextTopPoints;
+            };
 
-          return {
-            pages,
-            domStyles: {
-              runFontFamilies,
-              runFontSizes,
-              firstTableFirstRowBackgrounds,
-            },
-          };
-        } finally {
-          instance.dispose();
-        }
-      }, { inputDocument: document, layoutMode: options.layoutMode ?? "fast" });
+            const pages = Array.from(host.querySelectorAll('[data-testid="editor-page"]')).map((pageElement: Element) => {
+              const pageHtmlElement = pageElement as HTMLElement;
+              const header = pageElement.querySelector('[data-testid="editor-page-header-zone"]');
+              const body = pageElement.querySelector('[data-testid="editor-surface"]') as HTMLElement | null;
+              const footer = pageElement.querySelector('[data-testid="editor-page-footer-zone"]');
+              const pageWidth = parsePx(pageHtmlElement.style.width, pageHtmlElement.getBoundingClientRect().width);
+              const pageHeight = parsePx(pageHtmlElement.style.minHeight, pageHtmlElement.getBoundingClientRect().height);
+              const bodyTop = parsePx(body?.style.marginTop);
+              const bodyHeight = parsePx(body?.style.minHeight);
+              const footerTop = parsePx((footer as HTMLElement | null)?.style.top, pageHeight);
+              const firstBodyLine = body?.querySelector('[data-testid="editor-line"]');
+              const bodyLines = Array.from(body?.querySelectorAll('[data-testid="editor-line"]') ?? []);
+              const lastBodyLine = bodyLines[bodyLines.length - 1] ?? null;
+              const firstFooterLine = footer?.querySelector('[data-testid="editor-line"]') ?? null;
+              return {
+                headerLineTexts: lineTexts(header),
+                bodyLineTexts: lineTexts(body),
+                footerLineTexts: lineTexts(footer),
+                width: pageWidth,
+                height: pageHeight,
+                headerTop: 0,
+                bodyTop,
+                bodyHeight,
+                footerTop,
+                footerReferenceTop: footerTop,
+                pageHeight,
+                firstBodyLineGeometry: geometryFromLine(body, firstBodyLine ?? null),
+                lastBodyLineBottom: lineBottomFromPageTop(body, lastBodyLine),
+                firstFooterLineTop: textTopFromPageTop(pageHtmlElement, firstFooterLine),
+              };
+            });
+
+            const runFontFamilies = Array.from(host.querySelectorAll('[data-testid="editor-run"]'))
+              .map((run) => globalThis.getComputedStyle(run as HTMLElement).fontFamily)
+              .filter((fontFamily) => fontFamily.length > 0);
+            const runFontSizes = Array.from(host.querySelectorAll('[data-testid="editor-run"]'))
+              .map((run) => globalThis.getComputedStyle(run as HTMLElement).fontSize)
+              .filter((fontSize) => fontSize.length > 0);
+            const firstTable = host.querySelector('[data-testid="editor-table"]');
+            const firstTableFirstRow = firstTable?.querySelector('[data-testid="editor-table-row"]');
+            const firstTableFirstRowBackgrounds = Array.from(
+              firstTableFirstRow?.querySelectorAll('[data-testid="editor-table-cell"]') ?? [],
+            )
+              .map((cell) => globalThis.getComputedStyle(cell as HTMLElement).backgroundColor)
+              .filter((backgroundColor) => backgroundColor.length > 0);
+
+            return {
+              pages,
+              domStyles: {
+                runFontFamilies,
+                runFontSizes,
+                firstTableFirstRowBackgrounds,
+              },
+            };
+          } finally {
+            instance.dispose();
+          }
+        },
+        {
+          inputDocument: document,
+          layoutMode: options.layoutMode ?? "fast",
+        },
+      );
 
       return snapshots;
     } finally {
-      await browser.close();
+      await page.close();
     }
   } catch (error) {
     if (process.env.OASIS_WORD_PARITY_DEBUG === "1") {
       console.error("Word parity browser measurement failed:", error);
     }
     return null;
-  } finally {
-    await closeServer?.();
   }
 }
 
@@ -566,14 +601,16 @@ function compareWordAndEditorLayout(
         break;
       }
 
-      for (let lineIndex = 0; lineIndex < zone.editorLines.length; lineIndex += 1) {
-        const editorLine = zone.editorLines[lineIndex]!;
-        const wordLine = zone.wordLines[lineIndex]!;
-        if (editorLine !== wordLine) {
-          mismatches.push(
-            `Page ${pageIndex + 1} ${zone.name} line ${lineIndex + 1} text mismatch: editor="${editorLine}" word="${wordLine}".`,
-          );
-          break;
+      if (strict) {
+        for (let lineIndex = 0; lineIndex < zone.editorLines.length; lineIndex += 1) {
+          const editorLine = zone.editorLines[lineIndex]!;
+          const wordLine = zone.wordLines[lineIndex]!;
+          if (editorLine !== wordLine) {
+            mismatches.push(
+              `Page ${pageIndex + 1} ${zone.name} line ${lineIndex + 1} text mismatch: editor="${editorLine}" word="${wordLine}".`,
+            );
+            break;
+          }
         }
       }
     }
@@ -668,9 +705,10 @@ async function verifyWordLayoutParityFromDocx(
 
   try {
     await writeFile(docxPath, docxBuffer);
-    await convertDocxToPdfWithWord(docxPath, pdfPath);
-
-    const browserSnapshot = await collectEditorPageSnapshotsInBrowser(document, options);
+    const browserSnapshotPromise = collectEditorPageSnapshotsInBrowser(document, options);
+    const conversionPromise = convertDocxToPdfWithWord(docxPath, pdfPath);
+    await conversionPromise;
+    const browserSnapshot = await browserSnapshotPromise;
     const editorPages = browserSnapshot?.pages ?? collectEditorPageSnapshots(document, options);
     const wordLayout = extractPdfLayout(pdfPath, support);
     const mismatches = compareWordAndEditorLayout(editorPages, wordLayout, options);

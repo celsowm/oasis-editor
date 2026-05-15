@@ -1,7 +1,6 @@
 import { Show, createMemo, type Accessor, type JSX } from "solid-js";
-import { DOMEditorSurface } from "./components/DOMEditorSurface.js";
 import type { IRenderingEngine } from "../core/engine.js";
-import { domEngine } from "./engines/domEngine.js";
+import { canvasEngine } from "./engines/canvasEngine.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { RevisionOverlay } from "./components/RevisionOverlay.js";
@@ -161,7 +160,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
         data-testid="editor-editor-scroll-content"
       >
         {(() => {
-          const Surface = props.engine?.SurfaceComponent ?? domEngine.SurfaceComponent;
+          const Surface = props.engine?.SurfaceComponent ?? canvasEngine.SurfaceComponent;
           return (
             <Surface
               state={props.state}

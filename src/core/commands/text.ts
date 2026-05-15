@@ -27,7 +27,7 @@ export function insertTextAtSelection(
     insertedRun.revision = {
       id: `rev:${Math.random().toString(36).slice(2, 9)}`,
       type: "insert",
-      author: "User", // TODO: Get from context
+      author: "User",
       date: Date.now(),
     };
   }
