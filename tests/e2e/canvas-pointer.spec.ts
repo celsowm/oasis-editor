@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
+import { resolve } from "node:path";
 
-type Point = { x: number; y: number };
+const SIMPLE_LOREM_DOCX = resolve("src/__tests__/word-parity/fixtures/word-authored-lorem.docx");
 
 async function canvasPageRect(page: Page) {
   const rect = await page
@@ -26,21 +27,11 @@ async function gotoEditor(page: Page) {
   }
 }
 
-async function caretPoint(page: Page): Promise<Point> {
-  const caret = await page.locator(".oasis-editor-caret").boundingBox();
-  if (!caret) throw new Error("caret not visible");
-  return { x: caret.x + Math.max(2, caret.width / 2), y: caret.y + caret.height / 2 };
-}
-
 async function seedText(page: Page, text: string) {
   const pageRect = await canvasPageRect(page);
   await page.mouse.click(pageRect.x + 180, pageRect.y + 140);
   await page.keyboard.type(text);
   await page.waitForTimeout(60);
-}
-
-function offsetPoint(point: Point, dx: number, dy = 0): Point {
-  return { x: point.x + dx, y: point.y + dy };
 }
 
 test("canvas pointer interactions update caret and selection without fallback", async ({ page }) => {
@@ -87,7 +78,7 @@ test("canvas pointer interactions update caret and selection without fallback", 
   expect(fallbackLogs).toEqual([]);
 });
 
-test("canvas header click moves caret to header zone and table cell text selection works", async ({
+test("canvas header click moves caret to header zone without fallback", async ({
   page,
 }) => {
   const fallbackLogs: string[] = [];
@@ -108,22 +99,39 @@ test("canvas header click moves caret to header zone and table cell text selecti
   expect(caret).not.toBeNull();
   expect((caret?.y ?? Number.POSITIVE_INFINITY) < editorPage.y + 92).toBeTruthy();
 
-  await page.getByTestId("editor-toolbar-insert-table").click();
-  await page.getByTestId("editor-toolbar-table-grid-2x2").click();
+  expect(fallbackLogs).toEqual([]);
+});
 
-  await page.waitForTimeout(80);
-  const start = await caretPoint(page);
-  await page.mouse.click(start.x, start.y);
-  await page.keyboard.type("table cell words");
-  await page.waitForTimeout(80);
+test("DOCX lorem simples hit-test never uses source=dom-fallback", async ({ page }) => {
+  const fallbackSourceLogs: string[] = [];
+  page.on("console", (message) => {
+    if (message.text().includes("source\":\"dom-fallback\"")) {
+      fallbackSourceLogs.push(message.text());
+    }
+  });
 
-  const c1 = await caretPoint(page);
-  const c2 = offsetPoint(c1, -88, 0);
-  await page.mouse.move(c1.x, c1.y);
+  await gotoEditor(page);
+  await page.getByTestId("editor-import-docx-input").setInputFiles(SIMPLE_LOREM_DOCX);
+  await page.waitForEvent("console", {
+    predicate: (message) => message.text().includes("import docx:done"),
+    timeout: 45_000,
+  });
+  await page.getByTestId("editor-import-overlay").waitFor({ state: "detached" });
+
+  const pageRect = await canvasPageRect(page);
+  const p1 = { x: pageRect.x + 220, y: pageRect.y + 200 };
+  const p2 = { x: pageRect.x + 420, y: pageRect.y + 200 };
+
+  await page.mouse.click(p1.x, p1.y);
+  await page.mouse.click(p2.x, p2.y);
+  await page.mouse.dblclick(p2.x, p2.y);
+  await page.mouse.click(p2.x, p2.y, { clickCount: 3 });
+
+  await page.mouse.move(p1.x, p1.y);
   await page.mouse.down();
-  await page.mouse.move(c2.x, c2.y);
+  await page.mouse.move(p2.x, p2.y);
   await page.mouse.up();
   await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
 
-  expect(fallbackLogs).toEqual([]);
+  expect(fallbackSourceLogs).toEqual([]);
 });

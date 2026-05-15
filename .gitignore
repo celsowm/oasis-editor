@@ -40,6 +40,10 @@ logs/
 # Testing
 coverage/
 .nyc_output/
+test-results/
+test-results/**/trace.zip
+test-results/**/error-context.md
+test-results/.last-run.json
 
 # Misc
 .cache/
