@@ -9,56 +9,129 @@ import {
   getBlockParagraphs,
   normalizePageSettings,
   DEFAULT_EDITOR_PAGE_SETTINGS,
-  type EditorDocument,
 } from "../../core/model.js";
-import { isSelectionCollapsed } from "../../core/selection.js";
 import { resolveWordSelection } from "../../core/wordBoundaries.js";
 import { setSelection } from "../../core/editorCommands.js";
 import { createSectionBoundaryParagraph } from "../../core/editorState.js";
+import type { SurfaceHit } from "../../ui/canvas/CanvasHitTestService.js";
 
 export interface UseEditorSurfaceEventsProps {
   state: () => EditorState;
   applyState: (newState: EditorState) => void;
-  surfaceRef: () => HTMLDivElement | null;
   tableResize: { handleMouseDown: (event: MouseEvent) => boolean };
   imageOps: { stopImageDrag: () => void; stopImageResize: () => void };
   clearPendingCaretTextStyle: () => void;
   clearPreferredColumn: () => void;
   resetTransactionGrouping: () => void;
   focusInputAfterPointerSelection: () => void;
-  resolvePositionAtSurfacePoint: (clientX: number, clientY: number) => EditorPosition | null;
-  resolveParagraphClickOffset: (paragraph: EditorParagraphNode, event: MouseEvent) => number;
-  findPointerParagraphElement: (event: MouseEvent, root: HTMLElement) => HTMLElement | null;
-  getDocumentParagraphs: (doc: EditorDocument) => EditorParagraphNode[];
-  getParagraphById: (doc: EditorDocument, id: string) => EditorParagraphNode | undefined;
-  logger: { debug: (msg: string) => void; info: (msg: string) => void };
+  resolveSurfaceHitAtPoint: (clientX: number, clientY: number) => SurfaceHit | null;
+  getParagraphById: (doc: EditorState["document"], id: string) => EditorParagraphNode | undefined;
+  logger: { debug: (msg: string) => void; info: (msg: string, payload?: unknown) => void };
 }
 
 export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
   let dragAnchor: EditorPosition | null = null;
 
-  const handleWindowMouseMove = (event: MouseEvent) => {
-    if (!dragAnchor) return;
-    const position = deps.resolvePositionAtSurfacePoint(event.clientX, event.clientY);
-    if (!position) return;
+  const applyWithZone = (
+    state: EditorState,
+    targetZone: "main" | "header" | "footer",
+    newState: EditorState,
+    targetPosition?: EditorPosition,
+  ) => {
+    const isZoneTransition = targetZone !== (state.activeZone ?? "main");
+    if (!isZoneTransition) {
+      deps.applyState(newState);
+      return;
+    }
 
+    let updatedDocument = newState.document;
+    let activeSectionIndex = state.activeSectionIndex ?? 0;
+
+    if (!updatedDocument.sections || updatedDocument.sections.length === 0) {
+      const headerParagraph = createSectionBoundaryParagraph("header");
+      const footerParagraph = createSectionBoundaryParagraph("footer");
+      updatedDocument = {
+        ...updatedDocument,
+        sections: [
+          {
+            id: "section:1",
+            blocks: updatedDocument.blocks,
+            pageSettings: normalizePageSettings(
+              updatedDocument.pageSettings ?? DEFAULT_EDITOR_PAGE_SETTINGS,
+            ),
+            header: [headerParagraph],
+            footer: [footerParagraph],
+          },
+        ],
+      };
+      activeSectionIndex = 0;
+    }
+
+    const sections = updatedDocument.sections!;
+    const section = sections[activeSectionIndex]!;
+    let newHeader = section.header;
+    let newFooter = section.footer;
+    let zoneParagraph: EditorParagraphNode | null = null;
+
+    if (targetZone === "header") {
+      if (!newHeader || newHeader.length === 0) {
+        zoneParagraph = createSectionBoundaryParagraph("header");
+        newHeader = [zoneParagraph];
+      } else {
+        const firstBlock = newHeader[0];
+        zoneParagraph =
+          firstBlock.type === "paragraph"
+            ? firstBlock
+            : (getBlockParagraphs(firstBlock)[0] ?? null);
+      }
+    } else if (targetZone === "footer") {
+      if (!newFooter || newFooter.length === 0) {
+        zoneParagraph = createSectionBoundaryParagraph("footer");
+        newFooter = [zoneParagraph];
+      } else {
+        const firstBlock = newFooter[0];
+        zoneParagraph =
+          firstBlock.type === "paragraph"
+            ? firstBlock
+            : (getBlockParagraphs(firstBlock)[0] ?? null);
+      }
+    }
+
+    if (newHeader !== section.header || newFooter !== section.footer) {
+      const newSections = [...sections];
+      newSections[activeSectionIndex] = { ...section, header: newHeader, footer: newFooter };
+      updatedDocument = { ...updatedDocument, sections: newSections };
+    }
+
+    const zonePosition = targetPosition
+      ? targetPosition
+      : zoneParagraph
+        ? paragraphOffsetToPosition(zoneParagraph, 0)
+        : newState.selection.anchor;
+
+    deps.applyState({
+      ...newState,
+      document: updatedDocument,
+      selection: { anchor: zonePosition, focus: zonePosition },
+      activeSectionIndex,
+      activeZone: targetZone,
+    });
+  };
+
+  const logSelection = (label: string) => {
     const state = deps.state();
-    deps.applyState(
-      setSelection(state, {
-        anchor: dragAnchor,
-        focus: position,
-      }),
-    );
-    const sel = deps.state().selection;
+    const sel = state.selection;
     const secIdx = getActiveSectionIndex(state);
-    const anchorLocInfo = findParagraphTableLocation(state.document, dragAnchor.paragraphId, secIdx);
+    const anchorLocInfo = findParagraphTableLocation(state.document, sel.anchor.paragraphId, secIdx);
     const focusLocInfo = findParagraphTableLocation(state.document, sel.focus.paragraphId, secIdx);
-    
-    const anchorLoc = anchorLocInfo ? `b${anchorLocInfo.blockIndex}r${anchorLocInfo.rowIndex}c${anchorLocInfo.cellIndex}` : "";
-    const focusLoc = focusLocInfo ? `b${focusLocInfo.blockIndex}r${focusLocInfo.rowIndex}c${focusLocInfo.cellIndex}` : "";
-    
+    const anchorLoc = anchorLocInfo
+      ? `b${anchorLocInfo.blockIndex}r${anchorLocInfo.rowIndex}c${anchorLocInfo.cellIndex}`
+      : "";
+    const focusLoc = focusLocInfo
+      ? `b${focusLocInfo.blockIndex}r${focusLocInfo.rowIndex}c${focusLocInfo.cellIndex}`
+      : "";
     deps.logger.debug(
-      `selection:drag ${dragAnchor.paragraphId}[${dragAnchor.offset}]→${sel.focus.paragraphId}[${sel.focus.offset}] [${anchorLoc}→${focusLoc}]`
+      `${label} ${sel.anchor.paragraphId}[${sel.anchor.offset}]→${sel.focus.paragraphId}[${sel.focus.offset}] [${anchorLoc}→${focusLoc}]`,
     );
   };
 
@@ -68,24 +141,27 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     window.removeEventListener("mouseup", handleWindowMouseUp);
   };
 
-  const handleWindowMouseUp = () => {
+  const handleWindowMouseMove = (event: MouseEvent) => {
+    if (!dragAnchor) return;
+    const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY);
+    if (!hit?.resolvedFromParagraph) return;
+
     const state = deps.state();
-    const sel = state.selection;
-    const secIdx = getActiveSectionIndex(state);
-    const anchorLocInfo = findParagraphTableLocation(state.document, sel.anchor.paragraphId, secIdx);
-    const focusLocInfo = findParagraphTableLocation(state.document, sel.focus.paragraphId, secIdx);
-    
-    const anchorLoc = anchorLocInfo ? `b${anchorLocInfo.blockIndex}r${anchorLocInfo.rowIndex}c${anchorLocInfo.cellIndex}` : "";
-    const focusLoc = focusLocInfo ? `b${focusLocInfo.blockIndex}r${focusLocInfo.rowIndex}c${focusLocInfo.cellIndex}` : "";
-    
-    deps.logger.info(
-      `selection:end ${sel.anchor.paragraphId}[${sel.anchor.offset}]→${sel.focus.paragraphId}[${sel.focus.offset}] [${anchorLoc}→${focusLoc}]`
-    );
+    const next = setSelection(state, {
+      anchor: dragAnchor,
+      focus: hit.position,
+    });
+    applyWithZone(state, hit.zone, next, hit.position);
+    logSelection("selection:drag");
+  };
+
+  const handleWindowMouseUp = () => {
+    logSelection("selection:end");
     stopDragging();
     deps.focusInputAfterPointerSelection();
   };
 
-  const handleSurfaceMouseDown = (event: MouseEvent, forceTransition = false) => {
+  const handleSurfaceMouseDown = (event: MouseEvent) => {
     const state = deps.state();
     deps.clearPendingCaretTextStyle();
     if (deps.tableResize.handleMouseDown(event)) return;
@@ -93,302 +169,109 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     event.preventDefault();
     deps.imageOps.stopImageDrag();
     deps.imageOps.stopImageResize();
-
-    const headerZone = (event.target as HTMLElement).closest(".oasis-editor-page-header-zone");
-    const footerZone = (event.target as HTMLElement).closest(".oasis-editor-page-footer-zone");
-    const targetZone = headerZone ? "header" : footerZone ? "footer" : "main";
-    const isZoneTransition = targetZone !== state.activeZone;
-
-    const surface = deps.surfaceRef();
-    const paragraphElement = surface
-      ? deps.findPointerParagraphElement(event, (headerZone || footerZone || surface) as HTMLElement)
-      : null;
-
-    if (!paragraphElement && !isZoneTransition) {
-      deps.focusInputAfterPointerSelection();
-      return;
-    }
-
-    const paragraphId = paragraphElement?.dataset.paragraphId;
-    const paragraph = paragraphId
-      ? deps.getDocumentParagraphs(state.document).find((candidate) => candidate.id === paragraphId)
-      : undefined;
-
-    if (!isZoneTransition && (!paragraphId || !paragraph || !surface)) {
-      deps.focusInputAfterPointerSelection();
-      return;
-    }
-
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
 
-    const applyWithZone = (newState: EditorState, targetPosition?: EditorPosition) => {
-      if (isZoneTransition) {
-        let updatedDocument = newState.document;
-        let activeSectionIndex = state.activeSectionIndex ?? 0;
-
-        if (!updatedDocument.sections || updatedDocument.sections.length === 0) {
-          const headerParagraph = createSectionBoundaryParagraph("header");
-          const footerParagraph = createSectionBoundaryParagraph("footer");
-          updatedDocument = {
-            ...updatedDocument,
-            sections: [
-              {
-                id: "section:1",
-                blocks: updatedDocument.blocks,
-                pageSettings: normalizePageSettings(updatedDocument.pageSettings ?? DEFAULT_EDITOR_PAGE_SETTINGS),
-                header: [headerParagraph],
-                footer: [footerParagraph],
-              },
-            ],
-          };
-          activeSectionIndex = 0;
-        }
-
-        const sections = updatedDocument.sections!;
-        const section = sections[activeSectionIndex]!;
-
-        let newHeader = section.header;
-        let newFooter = section.footer;
-        let zoneParagraph: EditorParagraphNode | null = null;
-
-        if (targetZone === "header") {
-          if (!newHeader || newHeader.length === 0) {
-            zoneParagraph = createSectionBoundaryParagraph("header");
-            newHeader = [zoneParagraph];
-          } else {
-            const firstBlock = newHeader[0];
-            zoneParagraph = firstBlock.type === "paragraph" ? firstBlock : (getBlockParagraphs(firstBlock)[0] ?? null);
-          }
-        } else if (targetZone === "footer") {
-          if (!newFooter || newFooter.length === 0) {
-            zoneParagraph = createSectionBoundaryParagraph("footer");
-            newFooter = [zoneParagraph];
-          } else {
-            const firstBlock = newFooter[0];
-            zoneParagraph = firstBlock.type === "paragraph" ? firstBlock : (getBlockParagraphs(firstBlock)[0] ?? null);
-          }
-        }
-
-        if (newHeader !== section.header || newFooter !== section.footer) {
-          const newSections = [...sections];
-          newSections[activeSectionIndex] = { ...section, header: newHeader, footer: newFooter };
-          updatedDocument = { ...updatedDocument, sections: newSections };
-        }
-
-        const zonePosition = targetPosition ? targetPosition : zoneParagraph ? paragraphOffsetToPosition(zoneParagraph, 0) : newState.selection.anchor;
-
-        deps.applyState({
-          ...newState,
-          document: updatedDocument,
-          selection: { anchor: zonePosition, focus: zonePosition },
-          activeSectionIndex,
-          activeZone: targetZone,
-        });
-      } else {
-        deps.applyState(newState);
-      }
-    };
-
-    if (paragraph && surface) {
-      const offset = deps.resolveParagraphClickOffset(paragraph, event);
-      const position = paragraphOffsetToPosition(paragraph, offset);
-
-      if (event.shiftKey) {
-        dragAnchor = state.selection.anchor;
-        if (isZoneTransition) {
-          applyWithZone(state, position);
-        } else {
-          applyWithZone(setSelection(state, { anchor: state.selection.anchor, focus: position }));
-        }
-      } else {
-        dragAnchor = position;
-        if (isZoneTransition) {
-          applyWithZone(state, position);
-        } else {
-          applyWithZone({ ...state, selection: { anchor: { ...position }, focus: { ...position } } });
-        }
-      }
-    } else if (isZoneTransition) {
-      applyWithZone(state);
-    }
-
-    window.addEventListener("mousemove", handleWindowMouseMove);
-    window.addEventListener("mouseup", handleWindowMouseUp);
-    deps.focusInputAfterPointerSelection();
-  };
-
-  const handleSurfaceDblClick = (event: MouseEvent) => {
-    deps.clearPendingCaretTextStyle();
-    event.preventDefault();
-    const headerZone = (event.target as HTMLElement).closest(".oasis-editor-page-header-zone");
-    const footerZone = (event.target as HTMLElement).closest(".oasis-editor-page-footer-zone");
-    const targetZone = headerZone ? "header" : footerZone ? "footer" : "main";
-
-    if (targetZone !== deps.state().activeZone) {
-      handleSurfaceMouseDown(event, true);
-    }
-  };
-
-  const handleParagraphMouseDown = (paragraphId: string, event: MouseEvent & { currentTarget: HTMLParagraphElement }) => {
-    const state = deps.state();
-    deps.clearPendingCaretTextStyle();
-    event.preventDefault();
-    event.stopPropagation();
-    
-    const paragraph = deps.getParagraphById(state.document, paragraphId);
-    if (!paragraph || !deps.surfaceRef()) return;
-
-    const isHeaderClick = (event.target as HTMLElement).closest(".oasis-editor-page-header-zone") !== null;
-    const isFooterClick = (event.target as HTMLElement).closest(".oasis-editor-page-footer-zone") !== null;
-    const targetZone = isHeaderClick ? "header" : isFooterClick ? "footer" : "main";
-    const isZoneTransition = targetZone !== state.activeZone;
-
-    deps.clearPreferredColumn();
-    deps.resetTransactionGrouping();
-    deps.imageOps.stopImageDrag();
-    deps.imageOps.stopImageResize();
-
-    const applyWithZone = (newState: EditorState, targetPosition?: EditorPosition) => {
-      if (isZoneTransition) {
-        let updatedDocument = newState.document;
-        let activeSectionIndex = state.activeSectionIndex ?? 0;
-
-        if (!updatedDocument.sections || updatedDocument.sections.length === 0) {
-          const headerParagraph = createSectionBoundaryParagraph("header");
-          const footerParagraph = createSectionBoundaryParagraph("footer");
-          updatedDocument = {
-            ...updatedDocument,
-            sections: [
-              {
-                id: "section:1",
-                blocks: updatedDocument.blocks,
-                pageSettings: normalizePageSettings(updatedDocument.pageSettings ?? DEFAULT_EDITOR_PAGE_SETTINGS),
-                header: [headerParagraph],
-                footer: [footerParagraph],
-              },
-            ],
-          };
-          activeSectionIndex = 0;
-        }
-
-        const sections = updatedDocument.sections!;
-        const section = sections[activeSectionIndex]!;
-
-        let newHeader = section.header;
-        let newFooter = section.footer;
-        let zoneParagraph: EditorParagraphNode | null = null;
-
-        if (targetZone === "header") {
-          if (!newHeader || newHeader.length === 0) {
-            zoneParagraph = createSectionBoundaryParagraph("header");
-            newHeader = [zoneParagraph];
-          } else {
-            const firstBlock = newHeader[0];
-            zoneParagraph = firstBlock.type === "paragraph" ? firstBlock : (getBlockParagraphs(firstBlock)[0] ?? null);
-          }
-        } else if (targetZone === "footer") {
-          if (!newFooter || newFooter.length === 0) {
-            zoneParagraph = createSectionBoundaryParagraph("footer");
-            newFooter = [zoneParagraph];
-          } else {
-            const firstBlock = newFooter[0];
-            zoneParagraph = firstBlock.type === "paragraph" ? firstBlock : (getBlockParagraphs(firstBlock)[0] ?? null);
-          }
-        }
-
-        if (newHeader !== section.header || newFooter !== section.footer) {
-          const newSections = [...sections];
-          newSections[activeSectionIndex] = { ...section, header: newHeader, footer: newFooter };
-          updatedDocument = { ...updatedDocument, sections: newSections };
-        }
-
-        const zonePosition = targetPosition ? targetPosition : zoneParagraph ? paragraphOffsetToPosition(zoneParagraph, 0) : newState.selection.anchor;
-
-        deps.applyState({
-          ...newState,
-          document: updatedDocument,
-          selection: { anchor: zonePosition, focus: zonePosition },
-          activeSectionIndex,
-          activeZone: targetZone,
-        });
-      } else {
-        deps.applyState(newState);
-      }
-    };
-
-    if (event.detail >= 3) {
-      dragAnchor = null;
-      const targetPos = paragraphOffsetToPosition(paragraph, 0);
-      applyWithZone(
-        setSelection(state, {
-          anchor: targetPos,
-          focus: paragraphOffsetToPosition(paragraph, getParagraphText(paragraph).length),
-        }),
-        targetPos,
-      );
-      stopDragging();
+    const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY);
+    if (!hit) {
       deps.focusInputAfterPointerSelection();
       return;
     }
 
-    const offset = deps.resolveParagraphClickOffset(paragraph, event);
-    const position = paragraphOffsetToPosition(paragraph, offset);
-    const cellLocation = findParagraphTableLocation(state.document, paragraphId, getActiveSectionIndex(state));
-    
-    const anchorPosition = cellLocation
-      ? (() => {
-          const hasSections = state.document.sections && state.document.sections.length > 0;
-          const section = hasSections ? state.document.sections![getActiveSectionIndex(state)] : null;
+    const paragraph = deps.getParagraphById(state.document, hit.paragraphId);
+    const isZoneTransition = hit.zone !== (state.activeZone ?? "main");
 
-          let targetBlocks = [];
-          if (section) {
-            if (cellLocation.zone === "header") targetBlocks = section.header || [];
-            else if (cellLocation.zone === "footer") targetBlocks = section.footer || [];
-            else targetBlocks = section.blocks;
-          } else {
-            targetBlocks = state.document.blocks;
-          }
-
-          const block = targetBlocks[cellLocation.blockIndex];
-          const cellParagraph = block?.type === "table" ? block.rows[cellLocation.rowIndex]?.cells[cellLocation.cellIndex]?.blocks[0] : undefined;
-          return cellParagraph ? paragraphOffsetToPosition(cellParagraph, 0) : position;
-        })()
-      : position;
-
-    if (event.shiftKey) {
+    if (event.shiftKey && hit.resolvedFromParagraph) {
       dragAnchor = state.selection.anchor;
-      applyWithZone(setSelection(state, { anchor: state.selection.anchor, focus: position }));
+      applyWithZone(
+        state,
+        hit.zone,
+        setSelection(state, {
+          anchor: state.selection.anchor,
+          focus: hit.position,
+        }),
+        hit.position,
+      );
       window.addEventListener("mousemove", handleWindowMouseMove);
       window.addEventListener("mouseup", handleWindowMouseUp);
       deps.focusInputAfterPointerSelection();
       return;
     }
 
-    if (event.detail === 2) {
-      const word = resolveWordSelection(getParagraphText(paragraph), offset);
+    if (event.detail >= 3 && paragraph) {
       dragAnchor = null;
-      const targetPos = paragraphOffsetToPosition(paragraph, word.start);
+      const startPos = paragraphOffsetToPosition(paragraph, 0);
+      const endPos = paragraphOffsetToPosition(paragraph, getParagraphText(paragraph).length);
       applyWithZone(
-        setSelection(state, {
-          anchor: targetPos,
-          focus: paragraphOffsetToPosition(paragraph, word.end),
-        }),
-        targetPos,
+        state,
+        hit.zone,
+        setSelection(state, { anchor: startPos, focus: endPos }),
+        startPos,
       );
       stopDragging();
       deps.focusInputAfterPointerSelection();
       return;
     }
 
-    dragAnchor = cellLocation ? anchorPosition : position;
+    if (event.detail === 2 && paragraph) {
+      dragAnchor = null;
+      const word = resolveWordSelection(getParagraphText(paragraph), hit.paragraphOffset);
+      const startPos = paragraphOffsetToPosition(paragraph, word.start);
+      const endPos = paragraphOffsetToPosition(paragraph, word.end);
+      applyWithZone(
+        state,
+        hit.zone,
+        setSelection(state, { anchor: startPos, focus: endPos }),
+        startPos,
+      );
+      stopDragging();
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
+
+    if (!hit.resolvedFromParagraph && isZoneTransition) {
+      dragAnchor = null;
+      applyWithZone(state, hit.zone, state);
+      stopDragging();
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
+
+    if (!hit.resolvedFromParagraph) {
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
+
+    const dragStart = hit.tableCellAnchorPosition ?? hit.position;
+    dragAnchor = dragStart;
     applyWithZone(
-      { ...state, selection: { anchor: { ...position }, focus: { ...position } } },
-      position,
+      state,
+      hit.zone,
+      {
+        ...state,
+        selection: {
+          anchor: { ...hit.position },
+          focus: { ...hit.position },
+        },
+      },
+      hit.position,
     );
     window.addEventListener("mousemove", handleWindowMouseMove);
     window.addEventListener("mouseup", handleWindowMouseUp);
     deps.focusInputAfterPointerSelection();
+  };
+
+  const handleSurfaceDblClick = (event: MouseEvent) => {
+    event.preventDefault();
+  };
+
+  const handleParagraphMouseDown = (
+    _paragraphId: string,
+    event: MouseEvent & { currentTarget: HTMLParagraphElement },
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    handleSurfaceMouseDown(event);
   };
 
   return {
@@ -398,3 +281,4 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     stopDragging,
   };
 }
+

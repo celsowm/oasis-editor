@@ -26,6 +26,8 @@ import {
 import type { CaretBox, InputBox, SelectionBox } from "../../ui/editorUiTypes.js";
 import { measureParagraphLayoutFromRects } from "../../ui/layoutProjection.js";
 import { collectParagraphCharRects } from "../../ui/positionAtPoint.js";
+import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
+import { computeCanvasSelectionGeometry } from "../../ui/canvas/CanvasSelectionGeometry.js";
 
 interface UseEditorLayoutProps {
   state: EditorState;
@@ -33,6 +35,7 @@ interface UseEditorLayoutProps {
   viewportRef: () => HTMLDivElement | undefined;
   isImporting?: () => boolean;
   layoutMode?: "fast" | "wordParity";
+  geometrySource?: "dom" | "canvas";
 }
 
 type LayoutSyncReason =
@@ -185,6 +188,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
   // signature createEffect skips its expensive O(N) loop and trusts the hint.
   let pendingExplicitInvalidations = 0;
   const isWordParityMode = () => props.layoutMode === "wordParity";
+  const isCanvasGeometryMode = () => props.geometrySource === "canvas";
 
   const clearDeferredMeasurement = () => {
     deferredMeasureToken += 1;
@@ -259,6 +263,26 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     if (!surface) {
       setSelectionBoxes([]);
       setCaretBox((current) => ({ ...current, visible: false }));
+      return;
+    }
+
+    if (isCanvasGeometryMode()) {
+      const snapshot = buildCanvasLayoutSnapshot({
+        surface,
+        state: props.state,
+        measuredBlockHeights: measuredBlockHeights(),
+        measuredParagraphLayouts: measuredParagraphLayouts(),
+        layoutMode: props.layoutMode ?? "wordParity",
+      });
+      if (!snapshot) {
+        setSelectionBoxes([]);
+        setCaretBox((current) => ({ ...current, visible: false }));
+        return;
+      }
+      const geometry = computeCanvasSelectionGeometry(snapshot, props.state);
+      setSelectionBoxes(geometry.selectionBoxes);
+      setInputBox(geometry.inputBox);
+      setCaretBox(geometry.caretBox);
       return;
     }
 
@@ -555,6 +579,11 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     reason: LayoutSyncReason = "content-change",
     paragraphIds?: string[],
   ): boolean => {
+    if (isCanvasGeometryMode()) {
+      requestInputBoxSync(reason);
+      return false;
+    }
+
     const surface = props.surfaceRef();
     if (!surface) {
       return false;
@@ -662,6 +691,11 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       blockHeightScope?: "all" | "visible";
     } = {},
   ): Promise<void> | null => {
+    if (isCanvasGeometryMode()) {
+      requestInputBoxSync(reason);
+      return options.resolveWhenDone ? Promise.resolve() : null;
+    }
+
     const surface = props.surfaceRef();
     if (!surface) {
       return null;
@@ -842,6 +876,14 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
    * deferred to a microtask so it runs against the new state.
    */
   const applyInvalidation = (invalidation: LayoutInvalidation): void => {
+    if (isCanvasGeometryMode()) {
+      pendingExplicitInvalidations += 1;
+      queueMicrotask(() => {
+        requestInputBoxSync("content-change");
+      });
+      return;
+    }
+
     if (props.isImporting?.()) {
       // Import path drives stabilization through `stabilizeLayoutAfterImport`.
       // Still count this as an explicit invalidation so the signature
@@ -897,13 +939,15 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
 
     clearDeferredMeasurement();
 
-    // Phase 2: collapse the two cache-clearing setState calls into a single
-    // Solid `batch(...)` so the documentLayout memo (and the entire
-    // EditorSurface render) only re-runs ONCE here, not twice.
-    batch(() => {
-      invalidateParagraphLayouts();
-      setMeasuredBlockHeights({});
-    });
+    if (!isCanvasGeometryMode()) {
+      // Phase 2: collapse the two cache-clearing setState calls into a single
+      // Solid `batch(...)` so the documentLayout memo (and the entire
+      // EditorSurface render) only re-runs ONCE here, not twice.
+      batch(() => {
+        invalidateParagraphLayouts();
+        setMeasuredBlockHeights({});
+      });
+    }
 
     // Wait one frame so the browser commits the post-import DOM before we
     // try to position the caret/input box. Drop the second redundant
@@ -933,6 +977,19 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
 
   createEffect(() => {
     const paragraphs = getParagraphs(props.state);
+
+    if (isCanvasGeometryMode()) {
+      previousParagraphSignatures = new Map(
+        paragraphs.map((paragraph) => [paragraph.id, ""] as const),
+      );
+      previousBlockIds = getDocumentSections(props.state.document).flatMap((section) =>
+        [...(section.header || []), ...section.blocks, ...(section.footer || [])].map(
+          (block) => block.id,
+        ),
+      );
+      requestInputBoxSync("content-change");
+      return;
+    }
 
     // Fast path during import: skip signature diff entirely. All paragraphs
     // are new, so there's nothing to compare against. Just invalidate everything
@@ -1040,6 +1097,10 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       // scroll can force geometry reads on offscreen text.
     };
     const handleWindowResize = () => {
+      if (isCanvasGeometryMode()) {
+        requestInputBoxSync("resize");
+        return;
+      }
       invalidateParagraphLayouts();
       requestInputBoxSync("resize");
       scheduleDeferredLayoutMeasurement("resize");

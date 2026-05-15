@@ -13,15 +13,7 @@ import {
   resetEditorHistoryGrouping,
   type EditorTransactionOptions,
 } from "./editorHistory.js";
-import {
-  measureParagraphLayoutFromRects,
-  resolveClosestOffsetInMeasuredLayout,
-} from "./layoutProjection.js";
-import {
-  collectParagraphCharRects,
-  findNearestParagraphElement,
-  resolvePositionAtPoint,
-} from "./positionAtPoint.js";
+import { resolvePositionAtPoint } from "./positionAtPoint.js";
 import {
   type BooleanStyleKey,
 } from "./toolbarStyleState.js";
@@ -62,10 +54,6 @@ import type {
 import {
   cloneEditorState,
 } from "../core/cloneState.js";
-import {
-  getCaretRectAtOffset,
-  resolveClickOffsetFromTarget,
-} from "./domGeometry.js";
 import { EditorToolbar } from "./components/Toolbar/EditorToolbar.js";
 import { DocumentShell } from "./shells/DocumentShell.js";
 import { InlineShell } from "./shells/InlineShell.js";
@@ -98,6 +86,11 @@ import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import { setLocale } from "../i18n/index.js";
 import type { IRenderingEngine } from "../core/engine.js";
 import { canvasEngine } from "./engines/canvasEngine.js";
+import {
+  resolveCanvasSurfaceHitAtPointWithFallback,
+  type SurfaceHit,
+} from "./canvas/CanvasHitTestService.js";
+import { buildCanvasLayoutSnapshot } from "./canvas/CanvasLayoutSnapshot.js";
 
 export interface OasisEditorAppProps {
   showChrome?: boolean;
@@ -259,6 +252,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     viewportRef: () => viewportRef,
     isImporting: () => docIO.importProgress()?.phase !== "done" && docIO.importProgress()?.phase !== "error" && docIO.importProgress() !== null,
     layoutMode: layoutMode(),
+    geometrySource: selectedEngine().id === "canvas" ? "canvas" : "dom",
   });
 
   const { status: persistenceStatus } = useEditorPersistence(
@@ -355,76 +349,83 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     });
   };
 
-  const resolveParagraphClickOffset = (
-    paragraph: EditorParagraphNode,
-    event: MouseEvent,
-  ): number => {
-    const paragraphLength = getParagraphText(paragraph).length;
-    const segmentResult = resolveClickOffsetFromTarget(event.target, event.clientX);
-    if (segmentResult && segmentResult.paragraphId === paragraph.id) {
-      return Math.max(0, Math.min(paragraphLength, segmentResult.offset));
-    }
+  const processEnv = (globalThis as any)?.process?.env ?? {};
+  const viteEnv = (import.meta as any)?.env ?? {};
+  const isWordParityStrict = () =>
+    processEnv.OASIS_WORD_PARITY_STRICT === "1" ||
+    processEnv.OASIS_WORD_PARITY_USE_NODE_LAYOUT === "1" ||
+    viteEnv.VITE_OASIS_WORD_PARITY_STRICT === "1";
+  const isCanvasDomFallbackEnabled = () =>
+    !isWordParityStrict() &&
+    (processEnv.OASIS_CANVAS_GEOMETRY_FALLBACK === "1" ||
+      viteEnv.VITE_OASIS_CANVAS_GEOMETRY_FALLBACK === "1");
 
-    const directChar =
-      (event.target as HTMLElement).closest<HTMLElement>("[data-char-index]") ?? null;
-    if (directChar) {
-      const charIndex = Number(directChar.dataset.charIndex);
-      if (Number.isFinite(charIndex)) {
-        const rect = directChar.getBoundingClientRect();
-        const midX = rect.left + rect.width / 2;
-        const computed = event.clientX <= midX ? charIndex : charIndex + 1;
-        return Math.max(0, Math.min(paragraphLength, computed));
-      }
-    }
+  const resolvePositionAtSurfacePointLegacy = (
+    clientX: number,
+    clientY: number,
+  ): EditorPosition | null =>
+    surfaceRef
+      ? resolvePositionAtPoint({
+          clientX,
+          clientY,
+          surface: surfaceRef,
+          state: state as EditorState,
+          documentLike: document,
+        })
+      : null;
 
-    const cachedLayout = measuredParagraphLayouts()[paragraph.id];
-    const isCurrent = cachedLayout && cachedLayout.text === getParagraphText(paragraph) && surfaceRef && (() => {
-      const firstLine = cachedLayout.lines[0];
-      if (!firstLine) return false;
-      const caret = getCaretRectAtOffset(surfaceRef, paragraph.id, firstLine.startOffset);
-      return caret && Math.abs(caret.top - firstLine.top) < 2;
-    })();
-
-    const layout = isCurrent || !surfaceRef
-        ? cachedLayout
-        : measureParagraphLayoutFromRects(
-            paragraph,
-            collectParagraphCharRects(surfaceRef, paragraph.id),
-          );
-
-    return !layout || layout.text.length === 0
-      ? 0
-      : Math.max(
-          0,
-          Math.min(
-            layout.text.length,
-            resolveClosestOffsetInMeasuredLayout(layout, event.clientX, event.clientY),
-          ),
-        );
+  const resolveZoneAtPoint = (clientX: number, clientY: number) => {
+    const target = document.elementFromPoint(clientX, clientY);
+    const el = target instanceof HTMLElement ? target : null;
+    if (el?.closest(".oasis-editor-page-header-zone")) return "header" as const;
+    if (el?.closest(".oasis-editor-page-footer-zone")) return "footer" as const;
+    return "main" as const;
   };
 
-  const findPointerParagraphElement = (
-    event: MouseEvent,
-    root: HTMLElement,
-  ): HTMLElement | null => {
-    const target = event.target instanceof HTMLElement ? event.target : null;
-    const direct = target?.closest<HTMLElement>("[data-paragraph-id]") ?? null;
-    if (direct && root.contains(direct)) {
-      return direct;
+  const resolveSurfaceHitAtPoint = (
+    clientX: number,
+    clientY: number,
+  ): SurfaceHit | null => {
+    if (!surfaceRef) return null;
+
+    if (selectedEngine().id !== "canvas") {
+      const position = resolvePositionAtSurfacePointLegacy(clientX, clientY);
+      if (!position) return null;
+      return {
+        zone: resolveZoneAtPoint(clientX, clientY),
+        paragraphId: position.paragraphId,
+        paragraphOffset: position.offset,
+        position,
+        source: "dom-fallback",
+        resolvedFromParagraph: true,
+      };
     }
 
-    const elementAtPoint = document.elementFromPoint(event.clientX, event.clientY);
-    const hitParagraph =
-      elementAtPoint instanceof HTMLElement
-        ? elementAtPoint.closest<HTMLElement>("[data-paragraph-id]")
-        : null;
-    if (hitParagraph && root.contains(hitParagraph)) {
-      return hitParagraph;
+    const snapshot = buildCanvasLayoutSnapshot({
+      surface: surfaceRef,
+      state: state as EditorState,
+      measuredBlockHeights: measuredBlockHeights(),
+      measuredParagraphLayouts: measuredParagraphLayouts(),
+      layoutMode: layoutMode(),
+    });
+    if (!snapshot) {
+      return null;
     }
 
-    const page = target?.closest<HTMLElement>('[data-testid="editor-page"]');
-    const scopedRoot = page && root.contains(page) ? page : root;
-    return findNearestParagraphElement(scopedRoot, event.clientX, event.clientY);
+    return resolveCanvasSurfaceHitAtPointWithFallback({
+      snapshot,
+      state: state as EditorState,
+      clientX,
+      clientY,
+      allowDomFallback: isCanvasDomFallbackEnabled(),
+      resolveDomFallbackPosition: resolvePositionAtSurfacePointLegacy,
+      onFallbackUsed: (reason, details) => {
+        logger.info("canvas:fallback-hit-test", {
+          reason,
+          ...details,
+        });
+      },
+    });
   };
 
   const fr = useEditorFindReplace({
@@ -478,16 +479,12 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const resolvePositionAtSurfacePoint = (
     clientX: number,
     clientY: number,
-  ): EditorPosition | null =>
-    surfaceRef
-      ? resolvePositionAtPoint({
-          clientX,
-          clientY,
-          surface: surfaceRef,
-          state: state as EditorState,
-          documentLike: document,
-        })
-      : null;
+  ): EditorPosition | null => {
+    const hitPosition = resolveSurfaceHitAtPoint(clientX, clientY)?.position ?? null;
+    if (hitPosition) return hitPosition;
+    if (selectedEngine().id === "canvas") return null;
+    return resolvePositionAtSurfacePointLegacy(clientX, clientY);
+  };
 
   const tableDrag = createEditorTableDrag({
     state: () => state,
@@ -513,17 +510,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const surfaceEvents = createEditorSurfaceEvents({
     state: () => state,
     applyState,
-    surfaceRef: () => surfaceRef ?? null,
     tableResize,
     imageOps,
     clearPendingCaretTextStyle: styleController.clearPendingCaretTextStyle,
     clearPreferredColumn,
     resetTransactionGrouping,
     focusInputAfterPointerSelection,
-    resolvePositionAtSurfacePoint,
-    resolveParagraphClickOffset,
-    findPointerParagraphElement,
-    getDocumentParagraphs,
+    resolveSurfaceHitAtPoint,
     getParagraphById,
     logger,
   });

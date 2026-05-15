@@ -44,7 +44,14 @@ function CanvasEditorSurface(props: EditorSurfaceProps) {
             <Show when={index > 0}>
               <PageBreak pageIndex={index} />
             </Show>
-            <CanvasPage page={page()} index={index} state={props.state()} />
+            <CanvasPage
+              page={page()}
+              index={index}
+              state={props.state()}
+              onSurfaceMouseDown={props.onSurfaceMouseDown}
+              onSurfaceMouseMove={props.onSurfaceMouseMove}
+              onSurfaceDblClick={props.onSurfaceDblClick}
+            />
           </>
         )}
       </Index>
@@ -52,7 +59,14 @@ function CanvasEditorSurface(props: EditorSurfaceProps) {
   );
 }
 
-function CanvasPage(props: { page: EditorLayoutPage; index: number; state: EditorState }) {
+function CanvasPage(props: {
+  page: EditorLayoutPage;
+  index: number;
+  state: EditorState;
+  onSurfaceMouseDown: (event: MouseEvent) => void;
+  onSurfaceMouseMove?: (event: MouseEvent) => void;
+  onSurfaceDblClick: (event: MouseEvent) => void;
+}) {
   let canvasRef: HTMLCanvasElement | undefined;
 
   createEffect(() => {
@@ -88,13 +102,18 @@ function CanvasPage(props: { page: EditorLayoutPage; index: number; state: Edito
   return (
     <div
       class="oasis-editor-paper"
+      data-renderer="canvas"
       data-page-index={props.index}
+      data-testid="editor-page"
       style={{
         position: "relative",
         "z-index": 1,
         width: `${props.page.pageSettings.width}px`,
         "min-height": `${props.page.pageSettings.height}px`,
       }}
+      onMouseDown={props.onSurfaceMouseDown}
+      onMouseMove={props.onSurfaceMouseMove}
+      onDblClick={props.onSurfaceDblClick}
     >
       <canvas ref={canvasRef} />
     </div>
