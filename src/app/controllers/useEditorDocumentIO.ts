@@ -5,6 +5,10 @@ import type {
   EditorPosition,
 } from "../../core/model.js";
 import {
+  getDocumentParagraphsCanonical,
+  getDocumentSectionsCanonical,
+} from "../../core/model.js";
+import {
   createEditorStateFromDocument,
 } from "../../core/editorState.js";
 import {
@@ -141,9 +145,18 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
         durationMs: Math.round((performance.now() - stabilizationStartedAt) * 100) / 100,
       });
 
+      const sections = getDocumentSectionsCanonical(document);
+      const canonicalBlocks = sections.reduce(
+        (total, section) =>
+          total + (section.header?.length ?? 0) + section.blocks.length + (section.footer?.length ?? 0),
+        0,
+      );
+      const canonicalParagraphs = getDocumentParagraphsCanonical(document).length;
       setImportPhase("done");
       deps.logger.info("import docx:done", {
-        blocks: document.blocks.length,
+        blocks: canonicalBlocks,
+        paragraphs: canonicalParagraphs,
+        legacyBlocks: document.blocks.length,
         durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
       });
       deps.focusInput();

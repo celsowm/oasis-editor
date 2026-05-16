@@ -18,7 +18,10 @@ import type {
 } from "./model.js";
 import {
   DEFAULT_EDITOR_PAGE_SETTINGS,
-  getDocumentParagraphs,
+  findParagraphLocation,
+  getBlockParagraphs,
+  getDocumentParagraphsCanonical,
+  getDocumentSectionsCanonical,
   getParagraphLength,
   normalizePageSettings,
   paragraphOffsetToPosition,
@@ -258,11 +261,11 @@ export function createEditorDocument(
 }
 
 export function getDocumentCharacterCount(document: EditorDocument): number {
-  return getDocumentParagraphs(document).reduce((sum, p) => sum + getParagraphLength(p), 0);
+  return getDocumentParagraphsCanonical(document).reduce((sum, p) => sum + getParagraphLength(p), 0);
 }
 
 export function getDocumentWordCount(document: EditorDocument): number {
-  const paragraphs = getDocumentParagraphs(document);
+  const paragraphs = getDocumentParagraphsCanonical(document);
   let totalWords = 0;
 
   for (const paragraph of paragraphs) {
@@ -288,29 +291,91 @@ export function createEditorStateFromDocument(
   const blocks = hasSections
     ? document.blocks
     : (document.blocks.length > 0 ? document.blocks : [createEditorParagraph("")]);
-  const paragraphs = getDocumentParagraphs({
+  let normalizedDocument: EditorDocument = {
     ...document,
     blocks,
-  });
-  const paragraphIndex = Math.max(
-    0,
-    Math.min(selection?.paragraphIndex ?? 0, paragraphs.length - 1),
-  );
-  const paragraph = paragraphs[paragraphIndex]!;
+    sections: hasSections ? document.sections : undefined,
+  };
+
+  let allParagraphs = getDocumentParagraphsCanonical(normalizedDocument);
+  if (allParagraphs.length === 0) {
+    const fallbackParagraph = createEditorParagraph("");
+    if (hasSections) {
+      const sections = getDocumentSectionsCanonical(normalizedDocument);
+      const firstSection = sections[0];
+      if (firstSection) {
+        const nextSections = [...sections];
+        nextSections[0] = {
+          ...firstSection,
+          blocks: [fallbackParagraph, ...firstSection.blocks],
+        };
+        normalizedDocument = {
+          ...normalizedDocument,
+          sections: nextSections,
+        };
+      } else {
+        normalizedDocument = {
+          ...normalizedDocument,
+          blocks: [fallbackParagraph],
+        };
+      }
+    } else {
+      normalizedDocument = {
+        ...normalizedDocument,
+        blocks: [fallbackParagraph],
+      };
+    }
+    allParagraphs = getDocumentParagraphsCanonical(normalizedDocument);
+  }
+
+  const hasExplicitSelection = selection !== undefined;
+  let targetParagraph = allParagraphs[0]!;
+  let activeSectionIndex = 0;
+  let activeZone: EditorEditingZone = "main";
+
+  if (hasExplicitSelection) {
+    const paragraphIndex = Math.max(
+      0,
+      Math.min(selection?.paragraphIndex ?? 0, allParagraphs.length - 1),
+    );
+    targetParagraph = allParagraphs[paragraphIndex]!;
+    const location = findParagraphLocation(normalizedDocument, targetParagraph.id);
+    if (location) {
+      activeSectionIndex = location.sectionIndex;
+      activeZone = location.zone;
+    }
+  } else if (hasSections) {
+    const sections = getDocumentSectionsCanonical(normalizedDocument);
+    const firstSection = sections[0];
+    const mainParagraphs = firstSection?.blocks.flatMap(getBlockParagraphs) ?? [];
+    if (mainParagraphs.length > 0) {
+      targetParagraph = mainParagraphs[0]!;
+      activeZone = "main";
+      activeSectionIndex = 0;
+    } else {
+      const headerParagraphs = firstSection?.header?.flatMap(getBlockParagraphs) ?? [];
+      const footerParagraphs = firstSection?.footer?.flatMap(getBlockParagraphs) ?? [];
+      if (headerParagraphs.length > 0) {
+        targetParagraph = headerParagraphs[0]!;
+        activeZone = "header";
+      } else if (footerParagraphs.length > 0) {
+        targetParagraph = footerParagraphs[0]!;
+        activeZone = "footer";
+      }
+      activeSectionIndex = 0;
+    }
+  }
+
   const position: EditorPosition = paragraphOffsetToPosition(
-    paragraph,
-    Math.max(0, Math.min(selection?.offset ?? 0, getParagraphLength(paragraph))),
+    targetParagraph,
+    Math.max(0, Math.min(selection?.offset ?? 0, getParagraphLength(targetParagraph))),
   );
 
   const result = {
-    document: {
-      ...document,
-      blocks,
-      sections: hasSections ? document.sections : undefined,
-    },
+    document: normalizedDocument,
     selection: createCollapsedSelection(position),
-    activeSectionIndex: 0,
-    activeZone: "main" as EditorEditingZone,
+    activeSectionIndex,
+    activeZone,
   };
 
   return result;

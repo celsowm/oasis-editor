@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditorDocument.js";
 import type { EditorDocument, EditorParagraphNode, EditorTableCellNode, EditorTableNode } from "../../core/model.js";
-import { getPageContentWidth, getParagraphText, resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
+import { getPageContentWidth, getParagraphText, getParagraphById, resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
+import { createEditorStateFromDocument } from "../../core/editorState.js";
 import { projectParagraphLayout } from "../../ui/layoutProjection.js";
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "word-parity", "fixtures");
@@ -61,6 +62,21 @@ describe("DOCX import", () => {
     expect(firstLorem.style?.align).toBe("justify");
     expect(paragraphs.some((paragraph) => getParagraphText(paragraph).includes("\f"))).toBe(false);
     expect(paragraphs.filter((paragraph) => getParagraphText(paragraph).length === 0)).toHaveLength(0);
+  });
+
+  it("creates a valid canonical selection when imported doc uses sections with empty legacy blocks", async () => {
+    const document = await importLoremComplexDocument();
+    expect((document.sections?.length ?? 0) > 0).toBe(true);
+    expect(document.blocks).toHaveLength(0);
+
+    const state = createEditorStateFromDocument(document);
+    const focusedParagraph = getParagraphById(
+      state.document,
+      state.selection.focus.paragraphId,
+    );
+
+    expect(state.activeZone).toBe("main");
+    expect(focusedParagraph).toBeDefined();
   });
 
   it("lays out imported lorem text by wrapping one real paragraph instead of forced line breaks", async () => {

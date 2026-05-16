@@ -24,13 +24,34 @@ export interface UseEditorSurfaceEventsProps {
   clearPreferredColumn: () => void;
   resetTransactionGrouping: () => void;
   focusInputAfterPointerSelection: () => void;
-  resolveSurfaceHitAtPoint: (clientX: number, clientY: number) => SurfaceHit | null;
+  resolveSurfaceHitAtPoint: (
+    clientX: number,
+    clientY: number,
+    context?: { forDrag?: boolean },
+  ) => SurfaceHit | null;
   getParagraphById: (doc: EditorState["document"], id: string) => EditorParagraphNode | undefined;
   logger: { debug: (msg: string) => void; info: (msg: string, payload?: unknown) => void };
 }
 
 export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
   let dragAnchor: EditorPosition | null = null;
+  let dragFrameHandle: number | null = null;
+  let dragPendingPoint: { clientX: number; clientY: number } | null = null;
+
+  const scheduleFrame = (callback: () => void): number => {
+    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+      return window.requestAnimationFrame(() => callback());
+    }
+    return globalThis.setTimeout(callback, 16) as unknown as number;
+  };
+
+  const cancelFrame = (handle: number) => {
+    if (typeof window !== "undefined" && typeof window.cancelAnimationFrame === "function") {
+      window.cancelAnimationFrame(handle);
+      return;
+    }
+    globalThis.clearTimeout(handle as unknown as ReturnType<typeof setTimeout>);
+  };
 
   const applyWithZone = (
     state: EditorState,
@@ -137,14 +158,31 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
 
   const stopDragging = () => {
     dragAnchor = null;
+    dragPendingPoint = null;
+    if (dragFrameHandle !== null) {
+      cancelFrame(dragFrameHandle);
+      dragFrameHandle = null;
+    }
     window.removeEventListener("mousemove", handleWindowMouseMove);
     window.removeEventListener("mouseup", handleWindowMouseUp);
   };
 
-  const handleWindowMouseMove = (event: MouseEvent) => {
+  const processDragFrame = () => {
+    dragFrameHandle = null;
     if (!dragAnchor) return;
-    const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY);
-    if (!hit?.resolvedFromParagraph) return;
+    const pendingPoint = dragPendingPoint;
+    dragPendingPoint = null;
+    if (!pendingPoint) {
+      return;
+    }
+    const hit = deps.resolveSurfaceHitAtPoint(
+      pendingPoint.clientX,
+      pendingPoint.clientY,
+      { forDrag: true },
+    );
+    if (!hit?.resolvedFromParagraph) {
+      return;
+    }
 
     const state = deps.state();
     const next = setSelection(state, {
@@ -153,6 +191,14 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     });
     applyWithZone(state, hit.zone, next, hit.position);
     logSelection("selection:drag");
+  };
+
+  const handleWindowMouseMove = (event: MouseEvent) => {
+    if (!dragAnchor) return;
+    dragPendingPoint = { clientX: event.clientX, clientY: event.clientY };
+    if (dragFrameHandle === null) {
+      dragFrameHandle = scheduleFrame(processDragFrame);
+    }
   };
 
   const handleWindowMouseUp = () => {
@@ -281,4 +327,3 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     stopDragging,
   };
 }
-

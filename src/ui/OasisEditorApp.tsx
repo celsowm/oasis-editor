@@ -33,6 +33,7 @@ import {
   getActiveSectionIndex,
   paragraphOffsetToPosition,
   type EditorDocument,
+  type EditorLayoutParagraph,
   type EditorParagraphNode,
   type EditorPosition,
   type EditorState,
@@ -224,6 +225,21 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   let textareaRef: HTMLTextAreaElement | undefined;
   let importInputRef: HTMLInputElement | undefined;
   let imageInputRef: HTMLInputElement | undefined;
+  type CanvasSnapshotCache = {
+    snapshot: ReturnType<typeof buildCanvasLayoutSnapshot>;
+    documentRef: EditorState["document"];
+    measuredBlockHeightsRef: Record<string, number>;
+    measuredParagraphLayoutsRef: Record<string, EditorLayoutParagraph>;
+    layoutModeValue: "fast" | "wordParity";
+    surfaceRef: HTMLDivElement;
+    viewportScrollTop: number;
+    viewportScrollLeft: number;
+    surfaceClientWidth: number;
+    surfaceClientHeight: number;
+    windowWidth: number;
+    windowHeight: number;
+  };
+  let canvasSnapshotCache: CanvasSnapshotCache | null = null;
 
   const docIO = createEditorDocumentIO({
     state: () => state,
@@ -392,6 +408,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const resolveSurfaceHitAtPoint = (
     clientX: number,
     clientY: number,
+    context: { forDrag?: boolean } = {},
   ): SurfaceHit | null => {
     if (!surfaceRef) return null;
 
@@ -410,13 +427,51 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       return hit;
     }
 
-    const snapshot = buildCanvasLayoutSnapshot({
-      surface: surfaceRef,
-      state: state as EditorState,
-      measuredBlockHeights: measuredBlockHeights(),
-      measuredParagraphLayouts: measuredParagraphLayouts(),
-      layoutMode: layoutMode(),
-    });
+    const currentMeasuredBlockHeights = measuredBlockHeights();
+    const currentMeasuredParagraphLayouts = measuredParagraphLayouts();
+    const currentLayoutMode = layoutMode();
+    const viewportScrollTop = viewportRef?.scrollTop ?? 0;
+    const viewportScrollLeft = viewportRef?.scrollLeft ?? 0;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const shouldReuseSnapshot =
+      canvasSnapshotCache &&
+      canvasSnapshotCache.documentRef === (state as EditorState).document &&
+      canvasSnapshotCache.measuredBlockHeightsRef === currentMeasuredBlockHeights &&
+      canvasSnapshotCache.measuredParagraphLayoutsRef === currentMeasuredParagraphLayouts &&
+      canvasSnapshotCache.layoutModeValue === currentLayoutMode &&
+      canvasSnapshotCache.surfaceRef === surfaceRef &&
+      canvasSnapshotCache.viewportScrollTop === viewportScrollTop &&
+      canvasSnapshotCache.viewportScrollLeft === viewportScrollLeft &&
+      canvasSnapshotCache.surfaceClientWidth === surfaceRef.clientWidth &&
+      canvasSnapshotCache.surfaceClientHeight === surfaceRef.clientHeight &&
+      canvasSnapshotCache.windowWidth === windowWidth &&
+      canvasSnapshotCache.windowHeight === windowHeight;
+    const snapshot = shouldReuseSnapshot
+      ? canvasSnapshotCache!.snapshot
+      : buildCanvasLayoutSnapshot({
+          surface: surfaceRef,
+          state: state as EditorState,
+          measuredBlockHeights: currentMeasuredBlockHeights,
+          measuredParagraphLayouts: currentMeasuredParagraphLayouts,
+          layoutMode: currentLayoutMode,
+        });
+    if (!shouldReuseSnapshot) {
+      canvasSnapshotCache = {
+        snapshot,
+        documentRef: (state as EditorState).document,
+        measuredBlockHeightsRef: currentMeasuredBlockHeights,
+        measuredParagraphLayoutsRef: currentMeasuredParagraphLayouts,
+        layoutModeValue: currentLayoutMode,
+        surfaceRef,
+        viewportScrollTop,
+        viewportScrollLeft,
+        surfaceClientWidth: surfaceRef.clientWidth,
+        surfaceClientHeight: surfaceRef.clientHeight,
+        windowWidth,
+        windowHeight,
+      };
+    }
     recordCanvasDebugLayoutSnapshot(snapshot);
     if (!snapshot) {
       recordCanvasDebugHit(null);
@@ -428,7 +483,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       state: state as EditorState,
       clientX,
       clientY,
-      allowDomFallback: isCanvasDomFallbackEnabled(),
+      allowDomFallback: !context.forDrag && isCanvasDomFallbackEnabled(),
       resolveDomFallbackPosition: resolvePositionAtSurfacePointLegacy,
       onFallbackUsed: (reason, details) => {
         recordCanvasDebugFallbackEvent(reason, details);

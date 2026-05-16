@@ -536,6 +536,14 @@ export const DEFAULT_EDITOR_PAGE_SETTINGS: EditorPageSettings = {
   },
 };
 
+const warnedMixedSectionLegacyDocs = new Set<string>();
+
+function shouldWarnCanonicalShape(): boolean {
+  const viteEnv = (import.meta as { env?: Record<string, string | boolean | undefined> }).env ?? {};
+  const processEnv = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
+  return viteEnv.DEV === true || viteEnv.MODE === "test" || processEnv.NODE_ENV === "test";
+}
+
 function inferPageOrientation(width: number, height: number): "portrait" | "landscape" {
   return width > height ? "landscape" : "portrait";
 }
@@ -638,8 +646,20 @@ export function getPageContentHeight(pageSettings: EditorPageSettings): number {
   );
 }
 
-export function getDocumentSections(document: EditorDocument): EditorSection[] {
+export function getDocumentSectionsCanonical(document: EditorDocument): EditorSection[] {
   if (document.sections && document.sections.length > 0) {
+    if (
+      document.blocks.length > 0 &&
+      shouldWarnCanonicalShape() &&
+      !warnedMixedSectionLegacyDocs.has(document.id)
+    ) {
+      warnedMixedSectionLegacyDocs.add(document.id);
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[oasis-editor] document contains both sections and legacy root blocks; canonical section path is being used",
+        { documentId: document.id, legacyBlockCount: document.blocks.length, sectionCount: document.sections.length },
+      );
+    }
     return document.sections.map((section) => ({
       ...section,
       pageSettings: normalizePageSettings(section.pageSettings),
@@ -655,6 +675,36 @@ export function getDocumentSections(document: EditorDocument): EditorSection[] {
   ];
 }
 
+export function getDocumentSections(document: EditorDocument): EditorSection[] {
+  return getDocumentSectionsCanonical(document);
+}
+
+export function getEditableBlocksForZone(
+  state: EditorState,
+  zone: EditorEditingZone,
+): EditorBlockNode[] {
+  const sections = getDocumentSectionsCanonical(state.document);
+  const sectionIndex = Math.max(
+    0,
+    Math.min(getActiveSectionIndex(state), sections.length - 1),
+  );
+  const section = sections[sectionIndex];
+  if (!section) {
+    return [];
+  }
+  if (zone === "header") {
+    return section.header ?? [];
+  }
+  if (zone === "footer") {
+    return section.footer ?? [];
+  }
+  return section.blocks;
+}
+
+export function getActiveSectionBlocks(state: EditorState): EditorBlockNode[] {
+  return getEditableBlocksForZone(state, "main");
+}
+
 export function getBlockParagraphs(block: EditorBlockNode): EditorParagraphNode[] {
   if (block.type === "paragraph") {
     return [block];
@@ -663,45 +713,29 @@ export function getBlockParagraphs(block: EditorBlockNode): EditorParagraphNode[
   return block.rows.flatMap((row) => row.cells.flatMap((cell) => cell.blocks));
 }
 
-export function getDocumentParagraphs(document: EditorDocument): EditorParagraphNode[] {
+export function getDocumentParagraphsCanonical(document: EditorDocument): EditorParagraphNode[] {
   let paragraphs = documentParagraphsCache.get(document);
   if (paragraphs) {
     return paragraphs;
   }
-  
-  const sections = getDocumentSections(document);
+
+  const sections = getDocumentSectionsCanonical(document);
   paragraphs = sections.flatMap((section) => [
     ...(section.header?.flatMap(getBlockParagraphs) ?? []),
     ...section.blocks.flatMap(getBlockParagraphs),
     ...(section.footer?.flatMap(getBlockParagraphs) ?? []),
   ]);
-  
+
   documentParagraphsCache.set(document, paragraphs);
   return paragraphs;
 }
 
+export function getDocumentParagraphs(document: EditorDocument): EditorParagraphNode[] {
+  return getDocumentParagraphsCanonical(document);
+}
+
 export function getParagraphs(state: EditorState): EditorParagraphNode[] {
-  // When document has sections, return paragraphs from the active zone only
-  if (state.document.sections && state.document.sections.length > 0) {
-    const sectionIndex = getActiveSectionIndex(state);
-    const zone = getActiveZone(state);
-    const section = state.document.sections[sectionIndex];
-    if (!section) {
-      // Fallback to all paragraphs if section index is invalid
-      return getDocumentParagraphs(state.document);
-    }
-
-    const headerParagraphs = zone === "header" ? (section.header?.flatMap(getBlockParagraphs) ?? []) : [];
-    const footerParagraphs = zone === "footer" ? (section.footer?.flatMap(getBlockParagraphs) ?? []) : [];
-    const mainParagraphs = zone === "main"
-      ? section.blocks.flatMap(getBlockParagraphs)
-      : [];
-
-    return [...headerParagraphs, ...mainParagraphs, ...footerParagraphs];
-  }
-
-  // Legacy: no sections, return flat from document.blocks
-  return getDocumentParagraphs(state.document);
+  return getEditableBlocksForZone(state, getActiveZone(state)).flatMap(getBlockParagraphs);
 }
 
 export function getActiveSectionIndex(state: EditorState): number {

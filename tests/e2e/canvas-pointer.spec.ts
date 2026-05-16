@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type ConsoleMessage, type Page } from "@playwright/test";
 import { resolve } from "node:path";
 
 const SIMPLE_LOREM_DOCX = resolve("src/__tests__/word-parity/fixtures/word-authored-lorem.docx");
@@ -201,6 +201,73 @@ test("DOCX lorem simples hit-test never uses dom fallback", async ({ page }) => 
 
   await exercisePointerCoherence(page, points.p1, points.p2, { requireWordClicks: true });
   await expectNoFallbackEvents(page);
+});
+
+test("canvas drag on imported DOCX does not trigger repeated layout projection", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+  await clearFallbackEvents(page);
+  await page.getByTestId("editor-import-docx-input").setInputFiles(SIMPLE_LOREM_DOCX);
+  await page.waitForEvent("console", {
+    predicate: (message) => message.text().includes("import docx:done"),
+    timeout: 45_000,
+  });
+  await page.getByTestId("editor-import-overlay").waitFor({ state: "detached" });
+  const pageRect = await canvasPageRect(page);
+  await page.mouse.click(pageRect.x + 220, pageRect.y + 200);
+  await expectLastHitFromCanvas(page);
+
+  const points = await page.evaluate(() => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const paragraph = snapshot.paragraphs.find(
+      (entry) =>
+        entry.zone === "main" &&
+        !entry.tableCell &&
+        entry.lines.length > 0 &&
+        entry.lines[0]!.slots.length > 8,
+    );
+    if (!paragraph) return null;
+    const line = paragraph.lines[0]!;
+    const first = line.slots[1]!;
+    const last = line.slots[Math.max(2, line.slots.length - 2)]!;
+    return {
+      from: { x: first.left + 0.5, y: line.top + line.height * 0.5 },
+      to: { x: last.left + 0.5, y: line.top + line.height * 0.5 },
+    };
+  });
+  if (!points) {
+    throw new Error("unable to resolve drag points from imported DOCX snapshot");
+  }
+
+  await page.mouse.click(points.from.x, points.from.y);
+  await expectLastHitFromCanvas(page);
+  await clearFallbackEvents(page);
+
+  let layoutProjectCount = 0;
+  const onConsole = (message: ConsoleMessage) => {
+    if (message.text().includes("[perf] layout:project ")) {
+      layoutProjectCount += 1;
+    }
+  };
+  page.on("console", onConsole);
+
+  await page.mouse.move(points.from.x, points.from.y);
+  await page.mouse.down();
+  const steps = 24;
+  for (let index = 1; index <= steps; index += 1) {
+    const t = index / steps;
+    const x = points.from.x + (points.to.x - points.from.x) * t;
+    const y = points.from.y + (points.to.y - points.from.y) * t;
+    await page.mouse.move(x, y);
+  }
+  await page.mouse.up();
+  page.off("console", onConsole);
+
+  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  await expectNoFallbackEvents(page);
+  expect(layoutProjectCount).toBeLessThanOrEqual(5);
 });
 
 for (const align of ["center", "right", "justify"] as const) {

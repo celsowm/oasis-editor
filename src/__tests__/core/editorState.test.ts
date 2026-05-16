@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { resetEditorIds, createEditorParagraph, createEditorDocument, createEditorStateFromTexts, createEditorStateFromParagraphRuns, createInitialEditorState, DEFAULT_EDITOR_STYLES } from '../../core/editorState.js';
+import { resetEditorIds, createEditorParagraph, createEditorDocument, createEditorStateFromTexts, createEditorStateFromParagraphRuns, createEditorStateFromDocument, createInitialEditorState, DEFAULT_EDITOR_STYLES } from '../../core/editorState.js';
+import { DEFAULT_EDITOR_PAGE_SETTINGS } from '../../core/model.js';
 import { getParagraphs } from '../../core/model.js';
 
 beforeEach(() => {
@@ -120,6 +121,50 @@ describe('createInitialEditorState', () => {
   it('active zone is main by default', () => {
     const state = createInitialEditorState();
     expect(state.activeZone).toBe('main');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// createEditorStateFromDocument
+// ---------------------------------------------------------------------------
+
+describe('createEditorStateFromDocument', () => {
+  it('starts in main zone when sections exist and main has content', () => {
+    const mainParagraph = createEditorParagraph('main');
+    const headerParagraph = createEditorParagraph('header');
+    const doc = {
+      id: 'doc:1',
+      blocks: [],
+      sections: [{
+        id: 'section:1',
+        pageSettings: DEFAULT_EDITOR_PAGE_SETTINGS,
+        blocks: [mainParagraph],
+        header: [headerParagraph],
+      }],
+    };
+
+    const state = createEditorStateFromDocument(doc as any);
+    expect(state.activeZone).toBe('main');
+    expect(state.selection.anchor.paragraphId).toBe(mainParagraph.id);
+    expect(state.selection.focus.paragraphId).toBe(mainParagraph.id);
+  });
+
+  it('falls back to header zone when main is empty', () => {
+    const headerParagraph = createEditorParagraph('header only');
+    const doc = {
+      id: 'doc:1',
+      blocks: [],
+      sections: [{
+        id: 'section:1',
+        pageSettings: DEFAULT_EDITOR_PAGE_SETTINGS,
+        blocks: [],
+        header: [headerParagraph],
+      }],
+    };
+
+    const state = createEditorStateFromDocument(doc as any);
+    expect(state.activeZone).toBe('header');
+    expect(state.selection.focus.paragraphId).toBe(headerParagraph.id);
   });
 });
 

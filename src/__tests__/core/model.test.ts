@@ -8,6 +8,10 @@ import {
   getPageBodyTop,
   getPageBodyBottom,
   normalizePageSettings,
+  getDocumentParagraphsCanonical,
+  getDocumentSectionsCanonical,
+  getEditableBlocksForZone,
+  getActiveSectionBlocks,
   getDocumentSections,
   getBlockParagraphs,
   EFFECTIVE_TEXT_STYLE_DEFAULTS,
@@ -215,6 +219,62 @@ describe('getDocumentSections', () => {
     const sections = getDocumentSections(doc as any);
     expect(sections).toHaveLength(1);
     expect(sections[0].id).toBe('section:1');
+  });
+
+  it('prefers sections over legacy document.blocks', () => {
+    const sectionParagraph = { id: 'p:section', type: 'paragraph' as const, runs: [] };
+    const legacyParagraph = { id: 'p:legacy', type: 'paragraph' as const, runs: [] };
+    const doc = {
+      id: 'doc:1',
+      blocks: [legacyParagraph],
+      sections: [{ id: 'section:1', blocks: [sectionParagraph], pageSettings: A4 }],
+    };
+    const sections = getDocumentSectionsCanonical(doc as any);
+    expect(sections).toHaveLength(1);
+    expect(sections[0].blocks[0]?.id).toBe('p:section');
+  });
+});
+
+describe('canonical block/paragraph helpers', () => {
+  it('returns canonical paragraphs from sections when blocks is empty', () => {
+    const sectionParagraph = { id: 'p:1', type: 'paragraph' as const, runs: [] };
+    const doc = {
+      id: 'doc:1',
+      blocks: [],
+      sections: [{ id: 'section:1', blocks: [sectionParagraph], pageSettings: A4 }],
+    };
+    const paragraphs = getDocumentParagraphsCanonical(doc as any);
+    expect(paragraphs).toHaveLength(1);
+    expect(paragraphs[0]?.id).toBe('p:1');
+  });
+
+  it('resolves active section blocks and zone blocks canonically', () => {
+    const main = { id: 'p:main', type: 'paragraph' as const, runs: [] };
+    const header = { id: 'p:header', type: 'paragraph' as const, runs: [] };
+    const footer = { id: 'p:footer', type: 'paragraph' as const, runs: [] };
+    const state = {
+      document: {
+        id: 'doc:1',
+        blocks: [],
+        sections: [{
+          id: 'section:1',
+          pageSettings: A4,
+          blocks: [main],
+          header: [header],
+          footer: [footer],
+        }],
+      },
+      selection: {
+        anchor: { paragraphId: 'p:main', runId: 'r:1', offset: 0 },
+        focus: { paragraphId: 'p:main', runId: 'r:1', offset: 0 },
+      },
+      activeSectionIndex: 0,
+      activeZone: 'main',
+    };
+
+    expect(getActiveSectionBlocks(state as any).map((b) => b.id)).toEqual(['p:main']);
+    expect(getEditableBlocksForZone(state as any, 'header').map((b) => b.id)).toEqual(['p:header']);
+    expect(getEditableBlocksForZone(state as any, 'footer').map((b) => b.id)).toEqual(['p:footer']);
   });
 });
 

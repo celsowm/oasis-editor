@@ -1,7 +1,7 @@
 import { createEffect, createMemo, Index, Show } from "solid-js";
 import type { IRenderingEngine, ITextMeasurer } from "../../core/engine.js";
 import type { EditorSurfaceProps } from "../editorUiTypes.js";
-import { SemanticDOMMirror } from "../components/SemanticDOMMirror.js";
+import { MinimalSemanticPageMirror } from "../components/MinimalSemanticMirror.js";
 import {
   type EditorLayoutBlock,
   type EditorLayoutLine,
@@ -16,6 +16,7 @@ import {
 } from "../../core/model.js";
 import { domTextMeasurer } from "../textMeasurement.js";
 import { projectDocumentLayout } from "../layoutProjection.js";
+import { createLayoutIdentityStabilizer } from "../layoutIdentity.js";
 import { PageBreak } from "../components/PageBreak.js";
 import { buildCanvasTableLayout, type CanvasTableBorderSpec } from "../canvas/CanvasTableLayout.js";
 
@@ -26,19 +27,24 @@ const canvasTextMeasurer: ITextMeasurer = {
 };
 
 function CanvasEditorSurface(props: EditorSurfaceProps) {
+  // Preserves object identity for unchanged pages/blocks across re-projections.
+  // Without this, every state change produces brand-new page objects and every
+  // CanvasPage repaints — even pages the user did not touch.
+  const stabilize = createLayoutIdentityStabilizer();
   const documentLayout = createMemo(() =>
-    projectDocumentLayout(
-      props.state().document,
-      undefined,
-      props.measuredBlockHeights?.(),
-      props.measuredParagraphLayouts?.(),
-      { layoutMode: props.layoutMode ?? "wordParity", measurer: canvasTextMeasurer },
+    stabilize(
+      projectDocumentLayout(
+        props.state().document,
+        undefined,
+        props.measuredBlockHeights?.(),
+        props.measuredParagraphLayouts?.(),
+        { layoutMode: props.layoutMode ?? "wordParity", measurer: canvasTextMeasurer },
+      ),
     ),
   );
 
   return (
     <div class="oasis-editor-paper-stack oasis-editor-canvas-stack" style={{ position: "relative" }}>
-      <SemanticDOMMirror {...props} measurer={canvasTextMeasurer} />
       <Index each={documentLayout().pages}>
         {(page, index) => (
           <>
@@ -69,21 +75,45 @@ function CanvasPage(props: {
   onSurfaceDblClick: (event: MouseEvent) => void;
 }) {
   let canvasRef: HTMLCanvasElement | undefined;
+  // Skip repaints when neither the projected page nor the document styles
+  // (which drive resolved text rendering) actually changed. The Solid
+  // reactive system would otherwise re-run this effect for every page on
+  // every keystroke.
+  let lastPaintedPage: EditorLayoutPage | undefined;
+  let lastStyles: unknown;
+  let lastWidth = 0;
+  let lastHeight = 0;
+  let lastDpr = 0;
+  let rafHandle: number | null = null;
 
-  createEffect(() => {
+  const paint = () => {
+    rafHandle = null;
     const canvas = canvasRef;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const page = props.page;
+    const state = props.state;
+    const styles = state.document.styles;
+    if (page === lastPaintedPage && styles === lastStyles) {
+      return;
+    }
+    lastPaintedPage = page;
+    lastStyles = styles;
+
     const dpr = window.devicePixelRatio || 1;
     const width = page.pageSettings.width;
     const height = page.pageSettings.height;
-    canvas.width = Math.floor(width * dpr);
-    canvas.height = Math.floor(height * dpr);
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
+    if (lastWidth !== width || lastHeight !== height || lastDpr !== dpr) {
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      lastWidth = width;
+      lastHeight = height;
+      lastDpr = dpr;
+    }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.fillStyle = "#ffffff";
@@ -93,12 +123,12 @@ function CanvasPage(props: {
     const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
     const bodyWidth = getPageContentWidth(page.pageSettings);
 
-    renderBlockList(ctx, props.state, page.headerBlocks ?? [], marginX, 0, bodyWidth, page.index);
-    renderBlockList(ctx, props.state, page.blocks, marginX, bodyTop, bodyWidth, page.index);
+    renderBlockList(ctx, state, page.headerBlocks ?? [], marginX, 0, bodyWidth, page.index);
+    renderBlockList(ctx, state, page.blocks, marginX, bodyTop, bodyWidth, page.index);
     if (page.bodyBottom !== undefined) {
       renderBlockList(
         ctx,
-        props.state,
+        state,
         page.footerBlocks ?? [],
         marginX,
         page.bodyBottom,
@@ -106,6 +136,16 @@ function CanvasPage(props: {
         page.index,
       );
     }
+  };
+
+  createEffect(() => {
+    // Track reactive dependencies eagerly, then defer the actual paint to a
+    // single requestAnimationFrame so multiple synchronous state updates
+    // coalesce into one repaint per page.
+    props.page;
+    props.state.document;
+    if (rafHandle !== null) return;
+    rafHandle = requestAnimationFrame(paint);
   });
 
   return (
@@ -125,6 +165,7 @@ function CanvasPage(props: {
       onDblClick={props.onSurfaceDblClick}
     >
       <canvas ref={canvasRef} />
+      <MinimalSemanticPageMirror page={props.page} />
     </div>
   );
 }
@@ -166,8 +207,17 @@ function drawParagraph(
   originX: number,
   originY: number,
 ) {
-  const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, state.document.styles);
+  resolveEffectiveParagraphStyle(paragraph.style, state.document.styles);
   for (const line of lines) {
+    // Build a slot index ONCE per line. The previous code did
+    // `line.slots.find(...)` per character, which was O(N²) per line and the
+    // dominant cost when typing into long paragraphs.
+    const slotByOffset = new Map<number, (typeof line.slots)[number]>();
+    for (const slot of line.slots) {
+      slotByOffset.set(slot.offset, slot);
+    }
+    const baselineY = originY + line.top + line.height * 0.8;
+
     const listPrefix = line.index === 0 ? resolveListPrefix(paragraph) : "";
     if (listPrefix) {
       ctx.save();
@@ -175,7 +225,7 @@ function drawParagraph(
       ctx.fillStyle = "#000000";
       const first = line.slots[0];
       const left = first ? Math.max(0, first.left - 28) : 0;
-      ctx.fillText(listPrefix, originX + left, originY + line.top + line.height * 0.8);
+      ctx.fillText(listPrefix, originX + left, baselineY);
       ctx.restore();
     }
     for (const fragment of line.fragments) {
@@ -196,9 +246,9 @@ function drawParagraph(
       }
       for (const char of fragment.chars) {
         if (char.char === "\n" || char.char === "\t") continue;
-        const slot = line.slots.find((candidate) => candidate.offset === char.paragraphOffset);
+        const slot = slotByOffset.get(char.paragraphOffset);
         if (!slot) continue;
-        ctx.fillText(char.char, originX + slot.left, originY + line.top + line.height * 0.8);
+        ctx.fillText(char.char, originX + slot.left, baselineY);
       }
       if (styles.underline) {
         drawTextDecoration(ctx, line, fragment, originX, originY, "underline");
@@ -207,9 +257,6 @@ function drawParagraph(
         drawTextDecoration(ctx, line, fragment, originX, originY, "strike");
       }
       ctx.restore();
-    }
-    if (paragraphStyle.align === "justify") {
-      // The projected line slots already include justified distribution.
     }
   }
 }

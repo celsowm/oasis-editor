@@ -2,6 +2,7 @@
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
+  getEditableBlocksForZone,
   getParagraphText,
   getParagraphs,
   getDocumentSections,
@@ -335,19 +336,10 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
         anchorLocation.cellIndex !== focusLocation.cellIndex);
 
     if (isTableSelection) {
-      const section =
-        props.state.document.sections && props.state.document.sections.length > 0
-          ? props.state.document.sections[activeSectionIndex]
-          : null;
-
-      let targetBlocks: EditorBlockNode[] = [];
-      if (section) {
-        if (anchorLocation.zone === "header") targetBlocks = section.header || [];
-        else if (anchorLocation.zone === "footer") targetBlocks = section.footer || [];
-        else targetBlocks = section.blocks;
-      } else {
-        targetBlocks = props.state.document.blocks;
-      }
+      const targetBlocks: EditorBlockNode[] = getEditableBlocksForZone(
+        props.state,
+        anchorLocation.zone,
+      );
 
       const tableBlock = targetBlocks[anchorLocation.blockIndex];
       const tableId = tableBlock?.id;

@@ -1,5 +1,5 @@
 import type { EditorState, EditorParagraphNode } from "../core/model.js";
-import { getParagraphs } from "../core/model.js";
+import { getDocumentSectionsCanonical, getParagraphs } from "../core/model.js";
 import type { LayoutInvalidation } from "../app/controllers/useEditorLayout.js";
 
 /**
@@ -15,40 +15,20 @@ export function computeLayoutInvalidationFromTransaction(
     return {};
   }
 
-  // Fast structural check: if any block's id at any position differs, mark
-  // structureChanged. Don't try to be clever about partial reorderings.
-  const prevBlockIds = prev.document.blocks.map((b) => b.id).join("|");
-  const nextBlockIds = next.document.blocks.map((b) => b.id).join("|");
-  let structureChanged = prevBlockIds !== nextBlockIds;
+  // Fast structural check in canonical order: section-by-section including
+  // header/body/footer block ids.
+  const serializeSections = (state: EditorState): string =>
+    getDocumentSectionsCanonical(state.document)
+      .map((section) =>
+        [
+          ...(section.header ?? []).map((block) => block.id),
+          ...section.blocks.map((block) => block.id),
+          ...(section.footer ?? []).map((block) => block.id),
+        ].join("|"),
+      )
+      .join("||");
 
-  if (!structureChanged && prev.document.sections && next.document.sections) {
-    const prevSecs = prev.document.sections;
-    const nextSecs = next.document.sections;
-    if (prevSecs.length !== nextSecs.length) {
-      structureChanged = true;
-    } else {
-      for (let i = 0; i < prevSecs.length; i += 1) {
-        const a = prevSecs[i]!;
-        const b = nextSecs[i]!;
-        const aIds = [
-          ...(a.header ?? []).map((x) => x.id),
-          ...a.blocks.map((x) => x.id),
-          ...(a.footer ?? []).map((x) => x.id),
-        ].join("|");
-        const bIds = [
-          ...(b.header ?? []).map((x) => x.id),
-          ...b.blocks.map((x) => x.id),
-          ...(b.footer ?? []).map((x) => x.id),
-        ].join("|");
-        if (aIds !== bIds) {
-          structureChanged = true;
-          break;
-        }
-      }
-    }
-  } else if (Boolean(prev.document.sections) !== Boolean(next.document.sections)) {
-    structureChanged = true;
-  }
+  const structureChanged = serializeSections(prev) !== serializeSections(next);
 
   if (structureChanged) {
     return { dirtyAll: true, structureChanged: true };

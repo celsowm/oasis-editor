@@ -5,6 +5,7 @@ import type {
   EditorPosition,
 } from "../../core/model.js";
 import {
+  getEditableBlocksForZone,
   getParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
@@ -180,18 +181,10 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
       getActiveSectionIndex(state),
     );
     if (tableLocation) {
-      const activeSectionIndex = getActiveSectionIndex(state);
-      const hasSections = state.document.sections && state.document.sections.length > 0;
-      const section = hasSections ? state.document.sections![activeSectionIndex] : null;
-
-      let targetBlocks: EditorBlockNode[] = [];
-      if (section) {
-        if (tableLocation.zone === "header") targetBlocks = section.header || [];
-        else if (tableLocation.zone === "footer") targetBlocks = section.footer || [];
-        else targetBlocks = section.blocks;
-      } else {
-        targetBlocks = state.document.blocks;
-      }
+      const targetBlocks: EditorBlockNode[] = getEditableBlocksForZone(
+        state,
+        tableLocation.zone,
+      );
 
       const block = targetBlocks[tableLocation.blockIndex];
       if (block && block.type === "table") {
