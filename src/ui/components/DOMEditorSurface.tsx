@@ -58,6 +58,7 @@ function paragraphStyleToCss(
   layoutMode: "fast" | "wordParity",
   isContinuation?: boolean,
   isTruncated?: boolean,
+  isAtTopOfPage?: boolean,
 ): Record<string, string> | undefined {
   const merged = resolveEffectiveParagraphStyle(style, styles);
 
@@ -102,7 +103,7 @@ function paragraphStyleToCss(
       css["line-height"] = `${renderedLineHeight}px`;
     }
   }
-  if (!isContinuation && merged.spacingBefore !== undefined && merged.spacingBefore !== null) {
+  if (!isContinuation && !isAtTopOfPage && merged.spacingBefore !== undefined && merged.spacingBefore !== null) {
     css["margin-top"] = `${merged.spacingBefore}px`;
   }
   if (!isTruncated && merged.spacingAfter !== undefined && merged.spacingAfter !== null) {
@@ -148,6 +149,7 @@ function getParagraphRenderStyle(
   layoutMode: "fast" | "wordParity",
   isContinuation?: boolean,
   isTruncated?: boolean,
+  isAtTopOfPage?: boolean,
 ): Record<string, string> | undefined {
   const css =
     paragraphStyleToCss(
@@ -157,6 +159,7 @@ function getParagraphRenderStyle(
       layoutMode,
       isContinuation,
       isTruncated,
+      isAtTopOfPage,
     ) ?? {};
   const effectiveTextStyle = resolveEffectiveTextStyleForParagraph(
     undefined,
@@ -477,6 +480,7 @@ function renderParagraph(
     contentWidth?: number;
     layoutMode?: "fast" | "wordParity";
     measurer?: ITextMeasurer;
+    isAtTopOfPage?: boolean;
   },
 ) {
   const paragraphLayout =
@@ -787,7 +791,7 @@ function renderParagraph(
       data-end-offset={paragraphLayout.endOffset ?? chars.length}
       data-testid={testId}
       data-list-align={paragraph.list ? paragraphAlign : undefined}
-          style={getParagraphRenderStyle(paragraph, state, layoutMode, isContinuation, isTruncated)}
+          style={getParagraphRenderStyle(paragraph, state, layoutMode, isContinuation, isTruncated, options?.isAtTopOfPage)}
       onMouseDown={
         interactive
           ? (event) => onParagraphMouseDown(paragraph.id, event)
@@ -1386,7 +1390,7 @@ export function DOMEditorSurface(props: EditorSurfaceProps) {
                 />
                 <div style={{ "padding-top": `${headerContentOffset()}px` }}>
                   <For each={page().headerBlocks}>
-                    {(block) => {
+                    {(block, index) => {
                       return block.sourceBlock.type === "paragraph"
                         ? renderParagraph(
                             block.sourceBlock,
@@ -1406,6 +1410,7 @@ export function DOMEditorSurface(props: EditorSurfaceProps) {
                               testId: "editor-header-block",
                               contentWidth: contentWidth(),
                               layoutMode: props.layoutMode ?? "fast",
+                              isAtTopOfPage: index() === 0,
                             },
                           )
                         : renderTable(
@@ -1443,7 +1448,7 @@ export function DOMEditorSurface(props: EditorSurfaceProps) {
                 onMouseMove={props.onSurfaceMouseMove}
                 onDblClick={props.onSurfaceDblClick}              >
                 <For each={page().blocks}>
-                  {(block) => {
+                  {(block, index) => {
                     return block.sourceBlock.type === "paragraph"
                       ? renderParagraph(
                           block.sourceBlock,
@@ -1459,7 +1464,11 @@ export function DOMEditorSurface(props: EditorSurfaceProps) {
                           props.onTableDragHandleMouseDown,
                           props.onRevisionMouseEnter,
                           props.onRevisionMouseLeave,
-                          { contentWidth: contentWidth(), layoutMode: props.layoutMode ?? "fast" },
+                          {
+                            contentWidth: contentWidth(),
+                            layoutMode: props.layoutMode ?? "fast",
+                            isAtTopOfPage: index() === 0,
+                          },
                         )
                       : renderTable(
                           block.sourceBlock,
@@ -1503,7 +1512,7 @@ export function DOMEditorSurface(props: EditorSurfaceProps) {
                   }}
                 />
                 <For each={page().footerBlocks}>
-                  {(block) => {
+                  {(block, index) => {
                     return block.sourceBlock.type === "paragraph"
                       ? renderParagraph(
                           block.sourceBlock,
@@ -1523,6 +1532,7 @@ export function DOMEditorSurface(props: EditorSurfaceProps) {
                             testId: "editor-footer-block",
                             contentWidth: contentWidth(),
                             layoutMode: props.layoutMode ?? "fast",
+                            isAtTopOfPage: index() === 0,
                           },
                         )
                       : renderTable(

@@ -372,10 +372,11 @@ function getParagraphSegmentHeight(
   isFirstSegment: boolean,
   isLastSegment: boolean,
   styles: Record<string, EditorNamedStyle> | undefined,
+  allowSpacingBefore = true,
 ): number {
   const lineHeights = lines.reduce((sum, line) => sum + line.height, 0);
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
-  const spacingBefore = isFirstSegment ? (paragraphStyle.spacingBefore ?? 0) : 0;
+  const spacingBefore = isFirstSegment && allowSpacingBefore ? (paragraphStyle.spacingBefore ?? 0) : 0;
   const spacingAfter = isLastSegment ? (paragraphStyle.spacingAfter ?? 0) : 0;
   return spacingBefore + spacingAfter + lineHeights;
 }
@@ -384,6 +385,7 @@ function getProjectedParagraphBlockHeight(
   paragraph: EditorParagraphNode,
   layout: EditorLayoutParagraph,
   styles: Record<string, EditorNamedStyle> | undefined,
+  allowSpacingBefore = true,
 ): number {
   return getParagraphSegmentHeight(
     paragraph,
@@ -391,6 +393,7 @@ function getProjectedParagraphBlockHeight(
     true,
     true,
     styles,
+    allowSpacingBefore,
   );
 }
 
@@ -575,6 +578,7 @@ function applyWidowOrphanControl(
   startLineIndex: number,
   endLineIndexExclusive: number,
   styles: Record<string, EditorNamedStyle> | undefined,
+  allowSpacingBefore = true,
 ): { endLineIndexExclusive: number; height: number } {
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
   if (paragraphStyle.widowControl === false) {
@@ -586,6 +590,7 @@ function applyWidowOrphanControl(
         startLineIndex === 0,
         endLineIndexExclusive === lines.length,
         styles,
+        allowSpacingBefore,
       ),
     };
   }
@@ -608,6 +613,7 @@ function applyWidowOrphanControl(
       startLineIndex === 0,
       adjustedEnd === lines.length,
       styles,
+      allowSpacingBefore,
     ),
   };
 }
@@ -793,7 +799,7 @@ export function projectBlocksLayout(
           ? applyMeasuredLineGeometry(projectedParagraphLayout, measuredParagraphLayout)
           : projectedParagraphLayout;
       const paragraphTotalHeight =
-        measuredHeights?.[sourceBlock.id] ?? getProjectedParagraphBlockHeight(sourceBlock, paragraphLayout, styles);
+        measuredHeights?.[sourceBlock.id] ?? getProjectedParagraphBlockHeight(sourceBlock, paragraphLayout, styles, currentHeight > 0);
       const paragraphStyle = getEffectiveParagraphStyle(sourceBlock, styles);
       const nextBlockHeight =
         nextBlock?.type === "paragraph"
@@ -853,6 +859,7 @@ export function projectBlocksLayout(
             startLineIndex === 0,
             lineEndIndex === paragraphLayout.lines.length - 1,
             styles,
+            currentHeight > 0,
           );
           const tolerance = layoutMode === "wordParity" ? 1.5 : 0;
           if (candidateHeight > remainingHeight + tolerance && lineEndIndex === startLineIndex && currentBlocks.length > 0) {
@@ -878,6 +885,7 @@ export function projectBlocksLayout(
             startLineIndex === 0,
             lineEndIndex === paragraphLayout.lines.length,
             styles,
+            currentHeight > 0,
           );
         }
 
@@ -888,6 +896,7 @@ export function projectBlocksLayout(
             startLineIndex,
             lineEndIndex,
             styles,
+            currentHeight > 0,
           );
           lineEndIndex = widowOrphanAdjusted.endLineIndexExclusive;
           segmentHeight = widowOrphanAdjusted.height;
