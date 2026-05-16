@@ -1,5 +1,5 @@
 import { normalizeSelection } from "../../core/selection.js";
-import { positionToParagraphOffset, type EditorState } from "../../core/model.js";
+import { getParagraphs, positionToParagraphOffset, type EditorState } from "../../core/model.js";
 import type { CaretBox, InputBox, SelectionBox } from "../editorUiTypes.js";
 import type { CanvasLayoutSnapshot, CanvasSnapshotParagraph } from "./CanvasLayoutSnapshot.js";
 
@@ -11,10 +11,14 @@ export interface CanvasSelectionGeometryResult {
 
 function getParagraphSelectionRange(
   paragraphId: string,
-  paragraphIndex: number,
+  paragraphIndexById: Map<string, number>,
   normalized: ReturnType<typeof normalizeSelection>,
 ): { start: number; end: number } | null {
   if (normalized.isCollapsed) {
+    return null;
+  }
+  const paragraphIndex = paragraphIndexById.get(paragraphId);
+  if (paragraphIndex === undefined) {
     return null;
   }
   if (paragraphIndex < normalized.startIndex || paragraphIndex > normalized.endIndex) {
@@ -89,12 +93,15 @@ export function computeCanvasSelectionGeometry(
   const normalized = normalizeSelection(state);
   const selectionBoxes: SelectionBox[] = [];
   const surfaceRect = snapshot.surfaceRect;
+  const paragraphIndexById = new Map(
+    getParagraphs(state).map((paragraph, index) => [paragraph.id, index] as const),
+  );
 
   if (!normalized.isCollapsed) {
     for (const paragraph of snapshot.paragraphs) {
       const selectedRange = getParagraphSelectionRange(
         paragraph.paragraphId,
-        paragraph.paragraphIndex,
+        paragraphIndexById,
         normalized,
       );
       if (!selectedRange) continue;
@@ -147,4 +154,3 @@ export function computeCanvasSelectionGeometry(
     caretBox,
   };
 }
-

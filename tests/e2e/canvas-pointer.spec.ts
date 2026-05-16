@@ -2,6 +2,7 @@ import { expect, test, type ConsoleMessage, type Page } from "@playwright/test";
 import { resolve } from "node:path";
 
 const SIMPLE_LOREM_DOCX = resolve("src/__tests__/word-parity/fixtures/word-authored-lorem.docx");
+const COMPLEX_DOCX = resolve("src/__tests__/word-parity/fixtures/documento_complexo.docx");
 test.describe.configure({ timeout: 180_000 });
 
 type CanvasDebugHit = {
@@ -268,6 +269,61 @@ test("canvas drag on imported DOCX does not trigger repeated layout projection",
   await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
   await expectNoFallbackEvents(page);
   expect(layoutProjectCount).toBeLessThanOrEqual(5);
+});
+
+test("canvas selection overlay stays visible on imported complex DOCX (header/footer aware)", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+  await clearFallbackEvents(page);
+  await page.getByTestId("editor-import-docx-input").setInputFiles(COMPLEX_DOCX);
+  await page.waitForEvent("console", {
+    predicate: (message) => message.text().includes("import docx:done"),
+    timeout: 60_000,
+  });
+  await page.getByTestId("editor-import-overlay").waitFor({ state: "detached" });
+  const pageRect = await canvasPageRect(page);
+  await page.mouse.click(pageRect.x + 220, pageRect.y + 220);
+  await expectLastHitFromCanvas(page);
+
+  const points = await page.evaluate(() => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const paragraph = snapshot.paragraphs.find(
+      (entry) => entry.zone === "main" && !entry.tableCell && entry.lines.length > 0,
+    );
+    if (!paragraph) return null;
+
+    const line =
+      paragraph.lines.find((candidate) => candidate.slots.length > 6) ??
+      paragraph.lines.find((candidate) => candidate.slots.length > 2) ??
+      paragraph.lines[0];
+    if (!line) return null;
+
+    const startSlot = line.slots[Math.min(2, Math.max(0, line.slots.length - 2))] ?? line.slots[0];
+    const endSlot = line.slots[Math.max(1, Math.floor(line.slots.length * 0.65))];
+    if (!startSlot || !endSlot) return null;
+
+    return {
+      from: { x: startSlot.left + 0.5, y: line.top + line.height * 0.5 },
+      to: { x: endSlot.left + 0.5, y: line.top + line.height * 0.5 },
+    };
+  });
+  if (!points) {
+    throw new Error("unable to resolve main paragraph drag points from complex DOCX snapshot");
+  }
+
+  await page.mouse.click(points.from.x, points.from.y);
+  await expectLastHitFromCanvas(page);
+
+  await page.mouse.move(points.from.x, points.from.y);
+  await page.mouse.down();
+  await page.mouse.move(points.to.x, points.to.y);
+  await page.mouse.up();
+
+  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  await expectLastHitFromCanvas(page);
+  await expectNoFallbackEvents(page);
 });
 
 for (const align of ["center", "right", "justify"] as const) {
