@@ -19,9 +19,9 @@ const FAST_IMPLICIT_DOC_GRID_RATIO = 0.86;
 // Calibração para paridade com MS Word
 // O Word usa DirectWrite/GDI que tem métricas ligeiramente diferentes do Canvas 2D
 // Fator calibrado comparando medições de Canvas 2D vs Word para fontes comuns
-const WORD_CALIBRATION_FACTOR = 1.015; // Canvas 2D mede ~1.5% menor que Word
+const WORD_CALIBRATION_FACTOR = 1.0; // Desativado temporariamente: causava quebra prematura de palavras na borda (ex: "neque.")
 const CALIBRATED_FONTS = new Set(["calibri", "times new roman", "arial", "cambria", "courier new", "georgia", "verdana"]);
-const WORD_COMPAT_SHORT_TOKEN_OVERFLOW_PX = 34;
+const WORD_COMPAT_SHORT_TOKEN_OVERFLOW_PX = 0; // Removido para impedir que o texto atravesse a margem direita quebrando a justificação
 const WORD_COMPAT_SHORT_TOKEN_MIN_CHARS = 4;
 const WORD_COMPAT_SHORT_TOKEN_MAX_CHARS = 6;
 
@@ -312,10 +312,16 @@ function getAvailableWidth(
 ): number {
   const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, styles);
   const listGutter = paragraph.list ? DEFAULT_LIST_GUTTER : 0;
-  // indentHanging shifts all lines to the right, first line can have additional indentFirstLine
-  // For hanging indent: firstLine indent is typically negative (hanging to the left)
-  const baseInset = (paragraphStyle.indentLeft ?? 0) + (paragraphStyle.indentHanging ?? 0) + listGutter;
-  const startInset = baseInset + (isFirstLine ? (paragraphStyle.indentFirstLine ?? 0) : 0);
+  
+  // indentLeft specifies the start edge for all lines.
+  const baseInset = (paragraphStyle.indentLeft ?? 0) + listGutter;
+  
+  // If first line, we add indentFirstLine. If indentHanging is present, it acts as a negative indentFirstLine.
+  const firstLineOffset = paragraphStyle.indentHanging 
+    ? -Math.abs(paragraphStyle.indentHanging) 
+    : (paragraphStyle.indentFirstLine ?? 0);
+    
+  const startInset = baseInset + (isFirstLine ? firstLineOffset : 0);
   const rightInset = paragraphStyle.indentRight ?? 0;
   return Math.max(MIN_CONTENT_WIDTH, contentWidth - rightInset - startInset);
 }
@@ -327,8 +333,13 @@ function getLineStartInset(
 ): number {
   const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, styles);
   const listGutter = paragraph.list ? DEFAULT_LIST_GUTTER : 0;
-  const baseInset = (paragraphStyle.indentLeft ?? 0) + (paragraphStyle.indentHanging ?? 0) + listGutter;
-  return baseInset + (isFirstLine ? (paragraphStyle.indentFirstLine ?? 0) : 0);
+  
+  const baseInset = (paragraphStyle.indentLeft ?? 0) + listGutter;
+  const firstLineOffset = paragraphStyle.indentHanging 
+    ? -Math.abs(paragraphStyle.indentHanging) 
+    : (paragraphStyle.indentFirstLine ?? 0);
+    
+  return baseInset + (isFirstLine ? firstLineOffset : 0);
 }
 
 function buildSlots(startOffset: number, endOffset: number, lefts: number[], top: number, height: number) {
