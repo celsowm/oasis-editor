@@ -103,11 +103,12 @@ function paragraphStyleToCss(
     }
   }
   if (!isContinuation && merged.spacingBefore !== undefined && merged.spacingBefore !== null) {
-    css["padding-top"] = `${merged.spacingBefore}px`;
+    css["margin-top"] = `${merged.spacingBefore}px`;
   }
   if (!isTruncated && merged.spacingAfter !== undefined && merged.spacingAfter !== null) {
-    css["padding-bottom"] = `${merged.spacingAfter}px`;
+    css["margin-bottom"] = `${merged.spacingAfter}px`;
   }
+
 
   if (merged.shading) {
     css["background-color"] = merged.shading;

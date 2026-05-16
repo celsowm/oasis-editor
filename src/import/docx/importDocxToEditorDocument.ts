@@ -553,9 +553,11 @@ function applyDocGridLinePitch(
 
   for (const block of blocks) {
     if (block.type === "paragraph") {
+      const isHeading = block.style?.styleId && /heading/i.test(block.style.styleId);
       if (
         block.style?.lineHeight === undefined &&
-        block.style?.snapToGrid !== false
+        block.style?.snapToGrid !== false &&
+        !isHeading
       ) {
         const lineGridType = mode === "implicit" ? "implicit" : (docGridType as any);
         block.style = {

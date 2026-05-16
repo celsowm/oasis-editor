@@ -182,7 +182,9 @@ function renderBlockList(
   let cursorY = originY;
   for (const block of blocks) {
     if (block.sourceBlock.type === "paragraph" && block.layout) {
-      drawParagraph(ctx, block.sourceBlock, block.layout.lines, state, originX, cursorY);
+      const paragraphStyle = resolveEffectiveParagraphStyle(block.sourceBlock.style, state.document.styles);
+      const spacingBefore = block.layout.startOffset === 0 ? (paragraphStyle.spacingBefore ?? 0) : 0;
+      drawParagraph(ctx, block.sourceBlock, block.layout.lines, state, originX, cursorY + spacingBefore);
     } else if (block.sourceBlock.type === "table") {
       drawTable(
         ctx,

@@ -137,6 +137,8 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
       deps.resetEditorChromeState();
       deps.applyState(createEditorStateFromDocument(document));
 
+
+
       const stabilizationStartedAt = performance.now();
       setImportPhase("stabilizing-layout");
       await deps.stabilizeLayoutAfterImport();
