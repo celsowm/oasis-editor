@@ -37,7 +37,13 @@ function measure(paragraph: EditorParagraphNode, contentWidth: number) {
 }
 
 function lineWidth(line: ReturnType<typeof measure>[number]): number {
-  return line.slots[line.slots.length - 1]?.left ?? 0;
+  const first = line.slots[0]?.left ?? 0;
+  const last = line.slots[line.slots.length - 1]?.left ?? first;
+  return last - first;
+}
+
+function lineStart(line: ReturnType<typeof measure>[number]): number {
+  return line.slots[0]?.left ?? 0;
 }
 
 describe("composeMeasuredParagraphLines alignment", () => {
@@ -48,6 +54,26 @@ describe("composeMeasuredParagraphLines alignment", () => {
     const firstLine = lines[0];
     expect(firstLine).toBeTruthy();
     expect(firstLine?.slots[0]?.left ?? -1).toBe(0);
+  });
+
+  it("applies first line indent to the first line start slot", () => {
+    const paragraph = createEditorParagraph("first line indent baseline");
+    paragraph.style = { align: "left", indentFirstLine: 29 };
+    const lines = measure(paragraph, 600);
+    expect(lines).toHaveLength(1);
+    expect(lineStart(lines[0]!)).toBe(29);
+  });
+
+  it("applies base indent to all wrapped lines", () => {
+    const paragraph = createEditorParagraph(
+      "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu",
+    );
+    paragraph.style = { align: "left", indentLeft: 20, indentHanging: 10 };
+    const lines = measure(paragraph, 180);
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(lineStart(line)).toBe(30);
+    }
   });
 
   it("applies center alignment as half of remaining width", () => {
@@ -62,6 +88,21 @@ describe("composeMeasuredParagraphLines alignment", () => {
 
     const expectedShift = (620 - lineWidth(leftLines[0]!)) / 2;
     expect(centerLines[0]!.slots[0]?.left ?? 0).toBeCloseTo(expectedShift, 6);
+  });
+
+  it("keeps alignment math correct with first-line indent", () => {
+    const text = "center alignment with first line indent";
+    const paragraphLeft = createEditorParagraph(text);
+    paragraphLeft.style = { align: "left", indentFirstLine: 29 };
+    const leftLines = measure(paragraphLeft, 620);
+
+    const paragraphCenter = createEditorParagraph(text);
+    paragraphCenter.style = { align: "center", indentFirstLine: 29 };
+    const centerLines = measure(paragraphCenter, 620);
+
+    const availableWidth = 620 - 29;
+    const expectedShift = (availableWidth - lineWidth(leftLines[0]!)) / 2;
+    expect(lineStart(centerLines[0]!)).toBeCloseTo(29 + expectedShift, 6);
   });
 
   it("applies right alignment as full remaining width", () => {

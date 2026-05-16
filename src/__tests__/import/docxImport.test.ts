@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import JSZip from "jszip";
 import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditorDocument.js";
 import type { EditorDocument, EditorParagraphNode, EditorTableCellNode, EditorTableNode } from "../../core/model.js";
 import { getPageContentWidth, getParagraphText, getParagraphById, resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
@@ -45,6 +46,27 @@ function getCellContentWidth(cell: EditorTableCellNode): number {
       ? cell.style.padding * POINT_TO_PX * 2
       : DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX;
   return Math.max(24, widthPx - horizontalPaddingPx);
+}
+
+async function buildDocxWithSingleParagraph(indAttributes: string): Promise<ArrayBuffer> {
+  const zip = new JSZip();
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:pPr>
+        <w:ind ${indAttributes}/>
+      </w:pPr>
+      <w:r><w:t>Indented paragraph</w:t></w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+  zip.file("word/document.xml", documentXml);
+  return zip.generateAsync({ type: "arraybuffer" });
 }
 
 describe("DOCX import", () => {
@@ -96,6 +118,41 @@ describe("DOCX import", () => {
     expect(getParagraphText(firstLorem)).not.toContain("\n");
     expect(layout.lines.length).toBeGreaterThan(10);
     expect(lineTexts).not.toContain("Sed");
+  });
+
+  it("preserves first-line indentation from DOCX in projected layout slots", async () => {
+    const document = await importLoremComplexDocument();
+    const paragraphs = getDocumentParagraphs(document);
+    const firstIndentedParagraph = paragraphs.find((paragraph) => (paragraph.style?.indentFirstLine ?? 0) > 0);
+    const pageSettings = document.sections?.[0]?.pageSettings ?? document.pageSettings;
+
+    expect(firstIndentedParagraph).toBeDefined();
+    expect(firstIndentedParagraph!.style?.indentFirstLine).toBeCloseTo(29, 0);
+
+    const layout = projectParagraphLayout(
+      firstIndentedParagraph!,
+      undefined,
+      undefined,
+      document.styles,
+      pageSettings ? getPageContentWidth(pageSettings) : undefined,
+    );
+
+    expect(layout.lines.length).toBeGreaterThan(1);
+    expect(layout.lines[0]!.slots[0]?.left ?? 0).toBeCloseTo(29, 0);
+    expect(layout.lines[1]!.slots[0]?.left ?? 0).toBeCloseTo(0, 0);
+  });
+
+  it("maps OOXML start/end indents and applies hanging precedence over firstLine", async () => {
+    const buffer = await buildDocxWithSingleParagraph(
+      'w:start="720" w:end="360" w:firstLine="300" w:hanging="180"',
+    );
+    const document = await importDocxToEditorDocument(buffer);
+    const paragraph = getDocumentParagraphs(document)[0]!;
+
+    expect(paragraph.style?.indentLeft).toBe(48);
+    expect(paragraph.style?.indentRight).toBe(24);
+    expect(paragraph.style?.indentHanging).toBe(12);
+    expect(paragraph.style?.indentFirstLine).toBeUndefined();
   });
 
   it("preserves manual page breaks as paragraph page breaks", async () => {

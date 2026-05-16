@@ -320,6 +320,17 @@ function getAvailableWidth(
   return Math.max(MIN_CONTENT_WIDTH, contentWidth - rightInset - startInset);
 }
 
+function getLineStartInset(
+  paragraph: EditorParagraphNode,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  isFirstLine: boolean,
+): number {
+  const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, styles);
+  const listGutter = paragraph.list ? DEFAULT_LIST_GUTTER : 0;
+  const baseInset = (paragraphStyle.indentLeft ?? 0) + (paragraphStyle.indentHanging ?? 0) + listGutter;
+  return baseInset + (isFirstLine ? (paragraphStyle.indentFirstLine ?? 0) : 0);
+}
+
 function buildSlots(startOffset: number, endOffset: number, lefts: number[], top: number, height: number) {
   return Array.from({ length: endOffset - startOffset + 1 }, (_, slotIndex) => ({
     paragraphId: "",
@@ -368,8 +379,12 @@ function shiftLine(line: EditorLayoutLine, deltaX: number): EditorLayoutLine {
 }
 
 function getLineContentWidth(line: EditorLayoutLine): number {
+  const firstSlot = line.slots[0];
   const lastSlot = line.slots[line.slots.length - 1];
-  return lastSlot ? lastSlot.left : 0;
+  if (!firstSlot || !lastSlot) {
+    return 0;
+  }
+  return Math.max(0, lastSlot.left - firstSlot.left);
 }
 
 function justifyLineBySpaces(
@@ -497,6 +512,7 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
   const width = Math.max(MIN_CONTENT_WIDTH, contentWidth ?? DEFAULT_CONTENT_WIDTH);
 
   if (tokens.length === 0) {
+    const firstLineInset = getLineStartInset(paragraph, styles, true);
     return [
       {
         paragraphId: paragraph.id,
@@ -509,7 +525,7 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
           {
             paragraphId: paragraph.id,
             offset: 0,
-            left: 0,
+            left: firstLineInset,
             top: 0,
             height: lineHeight,
           },
@@ -523,7 +539,8 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
   const lineHardBreaks: boolean[] = [];
   let lineStartOffset = tokens[0]!.kind === "newline" ? tokens[0]!.chars[0]!.offset + 1 : tokens[0]!.chars[0]!.offset;
   let lineWidth = 0;
-  let lineSlotLefts = [0];
+  let lineStartInset = getLineStartInset(paragraph, styles, true);
+  let lineSlotLefts = [lineStartInset];
   let lineEndOffset = lineStartOffset;
   let top = 0;
   let isFirstLine = true;
@@ -539,14 +556,15 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
     lineStartOffset = nextOffset;
     lineEndOffset = nextOffset;
     lineWidth = 0;
-    lineSlotLefts = [0];
+    lineStartInset = getLineStartInset(paragraph, styles, isFirstLine);
+    lineSlotLefts = [lineStartInset];
   };
 
   const appendChars = (chars: MeasuredChar[]) => {
     for (const char of chars) {
       lineWidth += char.width;
       lineEndOffset = char.offset + 1;
-      lineSlotLefts.push(lineWidth);
+      lineSlotLefts.push(lineStartInset + lineWidth);
     }
   };
 

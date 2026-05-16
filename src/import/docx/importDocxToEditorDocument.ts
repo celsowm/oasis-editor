@@ -795,8 +795,10 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   }
 
   const indent = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "ind");
-  const left = getAttributeValue(indent, "left");
-  const right = getAttributeValue(indent, "right");
+  // OOXML supports both physical (left/right) and logical (start/end) indents.
+  // Prefer start/end when present to preserve modern bidi-aware documents.
+  const left = getAttributeValue(indent, "start") ?? getAttributeValue(indent, "left");
+  const right = getAttributeValue(indent, "end") ?? getAttributeValue(indent, "right");
   const firstLine = getAttributeValue(indent, "firstLine");
   const hanging = getAttributeValue(indent, "hanging");
   if (left) {
@@ -805,11 +807,12 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   if (right) {
     style.indentRight = twipsToPx(right, 0);
   }
-  if (firstLine) {
-    style.indentFirstLine = twipsToPx(firstLine, 0);
-  }
   if (hanging) {
     style.indentHanging = twipsToPx(hanging, 0);
+    // When both are present, keep a deterministic behavior and let hanging win.
+    style.indentFirstLine = undefined;
+  } else if (firstLine) {
+    style.indentFirstLine = twipsToPx(firstLine, 0);
   }
 
   if (parseBooleanProperty(paragraphProperties, "pageBreakBefore")) {
