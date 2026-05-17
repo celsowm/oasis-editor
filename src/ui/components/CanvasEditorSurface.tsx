@@ -124,6 +124,8 @@ function CanvasPage(props: {
 
     const marginX = page.pageSettings.margins.left + page.pageSettings.margins.gutter;
     const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
+    const headerTop = page.headerTop ?? getPageHeaderZoneTop(page.pageSettings);
+    const footerTop = page.footerTop ?? page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
     const bodyWidth = getPageContentWidth(page.pageSettings);
 
     if (state.showMargins) {
@@ -137,7 +139,7 @@ function CanvasPage(props: {
       ctx.restore();
     }
 
-    renderBlockList(ctx, state, page.headerBlocks ?? [], marginX, 0, bodyWidth, page.index);
+    renderBlockList(ctx, state, page.headerBlocks ?? [], marginX, headerTop, bodyWidth, page.index);
     renderBlockList(ctx, state, page.blocks, marginX, bodyTop, bodyWidth, page.index);
     if (page.bodyBottom !== undefined) {
       renderBlockList(
@@ -145,7 +147,7 @@ function CanvasPage(props: {
         state,
         page.footerBlocks ?? [],
         marginX,
-        page.bodyBottom,
+        footerTop,
         bodyWidth,
         page.index,
       );

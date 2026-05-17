@@ -516,6 +516,8 @@ export interface EditorLayoutPage {
   footerBlocks?: EditorLayoutBlock[];
   bodyTop?: number;
   bodyBottom?: number;
+  headerTop?: number;
+  footerTop?: number;
 }
 
 export interface EditorLayoutDocument {
@@ -606,7 +608,7 @@ function clampPageOffset(value: number, limit: number): number {
 }
 
 export function getPageHeaderZoneTop(pageSettings: EditorPageSettings): number {
-  return 0;
+  return clampPageOffset(pageSettings.margins.header, pageSettings.height);
 }
 
 export function getPageBodyTop(pageSettings: EditorPageSettings): number {

@@ -712,18 +712,22 @@ function resolveEffectiveVerticalMetrics(
   pageSettings: EditorPageSettings,
   headerBlocks: EditorLayoutBlock[] | undefined,
   footerBlocks: EditorLayoutBlock[] | undefined,
-): { bodyTop: number; bodyBottom: number; contentHeight: number } {
+): { bodyTop: number; bodyBottom: number; contentHeight: number; headerTop: number; footerTop: number } {
   const staticBodyTop = getPageBodyTop(pageSettings);
   const staticBodyBottom = getPageBodyBottom(pageSettings);
   const headerHeight = getProjectedBlocksHeight(headerBlocks);
   const footerHeight = getProjectedBlocksHeight(footerBlocks);
+
+  const headerTop = pageSettings.margins.header;
+  const footerTop = pageSettings.height - pageSettings.margins.footer - footerHeight;
+
   const headerOccupiedBottom =
     headerHeight > 0
-      ? Math.min(pageSettings.height, pageSettings.margins.header + headerHeight)
+      ? Math.min(pageSettings.height, headerTop + headerHeight)
       : 0;
   const footerOccupiedTop =
     footerHeight > 0
-      ? Math.max(0, pageSettings.height - (pageSettings.margins.footer + footerHeight))
+      ? Math.max(0, footerTop)
       : pageSettings.height;
   const bodyTop = Math.max(staticBodyTop, headerOccupiedBottom);
   const bodyBottom = Math.max(
@@ -733,6 +737,8 @@ function resolveEffectiveVerticalMetrics(
   return {
     bodyTop,
     bodyBottom,
+    headerTop,
+    footerTop,
     contentHeight: Math.max(24, Math.floor(bodyBottom - bodyTop)),
   };
 }
@@ -1255,6 +1261,8 @@ export function projectDocumentLayout(
       page.footerBlocks = footerBlocks;
       page.bodyTop = pageMetrics.bodyTop;
       page.bodyBottom = pageMetrics.bodyBottom;
+      page.headerTop = pageMetrics.headerTop;
+      page.footerTop = pageMetrics.footerTop;
       page.maxHeight = maxPageHeightOverride ?? pageMetrics.contentHeight;
       allPages.push(page);
     }

@@ -1,9 +1,19 @@
-import { For, createMemo } from "solid-js";
+import { For, createMemo, Show } from "solid-js";
 import {
   type EditorLayoutBlock,
   type EditorLayoutPage,
+  type EditorTextStyle,
   getPageBodyTop,
+  getPageHeaderZoneTop,
+  getPageBodyBottom,
+  getPageFooterZoneTop,
+  resolveEffectiveTextStyleForParagraph,
 } from "../../core/model.js";
+
+interface ParagraphRunStub {
+  text: string;
+  styles?: EditorTextStyle;
+}
 
 interface ParagraphStub {
   key: string;
@@ -13,18 +23,41 @@ interface ParagraphStub {
   height: number;
   left: number;
   width: number;
+  runs: ParagraphRunStub[];
+  paragraphStyleId?: string;
+}
+
+interface TableStub {
+  key: string;
+  blockId: string;
+  top: number;
+  height: number;
+  left: number;
+  width: number;
+  rows: TableRowStub[];
+}
+
+interface TableRowStub {
+  cells: TableCellStub[];
+}
+
+interface TableCellStub {
+  shading?: string;
+  blocks: (ParagraphStub | TableStub)[];
+}
+
+interface PageStubs {
+  header: (ParagraphStub | TableStub)[];
+  body: (ParagraphStub | TableStub)[];
+  footer: (ParagraphStub | TableStub)[];
 }
 
 /**
  * Lightweight semantic compatibility layer for the canvas engine.
  *
- * Renders one absolutely-positioned, empty <div> per paragraph/block so the
- * existing features that still query DOM nodes (outline panel, "scroll to
- * paragraph" actions, table drag targeting, useEditorLayout block scoping)
- * keep working. The canvas itself remains the visual source of truth.
- *
- * Mount this *inside* each canvas page wrapper so positions are relative to
- * the page and we don't need to compute cumulative page tops.
+ * Renders absolutely-positioned divs per line so the word-parity tests,
+ * accessibility tools, and pointer-event systems can interact with the
+ * document structure as if it were DOM-based.
  */
 export interface MinimalSemanticPageMirrorProps {
   page: EditorLayoutPage;
@@ -32,6 +65,9 @@ export interface MinimalSemanticPageMirrorProps {
 
 export function MinimalSemanticPageMirror(props: MinimalSemanticPageMirrorProps) {
   const stubs = createMemo(() => collectPageStubs(props.page));
+
+  const bodyTop = () => props.page.bodyTop ?? getPageBodyTop(props.page.pageSettings);
+  const footerTop = () => props.page.footerTop ?? props.page.bodyBottom ?? getPageBodyBottom(props.page.pageSettings);
 
   return (
     <div
@@ -47,50 +83,166 @@ export function MinimalSemanticPageMirror(props: MinimalSemanticPageMirrorProps)
         overflow: "hidden",
       }}
     >
-      <For each={stubs()}>
-        {(stub) => (
-          <div
-            data-paragraph-id={stub.paragraphId}
-            data-source-paragraph-id={stub.paragraphId}
-            data-block-id={stub.blockId}
+      <div
+        data-testid="editor-page-header-zone"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: `${bodyTop()}px`,
+        }}
+      >
+        <For each={stubs().header}>
+          {(stub) => <BlockStubView stub={stub} />}
+        </For>
+      </div>
+
+      <div
+        data-testid="editor-surface"
+        style={{
+          position: "absolute",
+          top: `${bodyTop()}px`,
+          left: 0,
+          right: 0,
+          height: `${footerTop() - bodyTop()}px`,
+          "margin-top": `${bodyTop()}px`, // Mirror legacy layout-engine expectation
+        }}
+      >
+        <For each={stubs().body}>
+          {(stub) => <BlockStubView stub={stub} offsetTop={-bodyTop()} />}
+        </For>
+      </div>
+
+      <Show when={props.page.bodyBottom !== undefined}>
+        <div
+          data-testid="editor-page-footer-zone"
+          style={{
+            position: "absolute",
+            top: `${footerTop()}px`,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        >
+          <For each={stubs().footer}>
+            {(stub) => <BlockStubView stub={stub} offsetTop={-footerTop()} />}
+          </For>
+        </div>
+      </Show>
+    </div>
+  );
+}
+
+function BlockStubView(props: { stub: ParagraphStub | TableStub; offsetTop?: number }) {
+  if ("rows" in props.stub) {
+    return <TableStubView stub={props.stub} offsetTop={props.offsetTop} />;
+  }
+  return <ParagraphStubView stub={props.stub} offsetTop={props.offsetTop} />;
+}
+
+function ParagraphStubView(props: { stub: ParagraphStub; offsetTop?: number }) {
+  return (
+    <div
+      data-paragraph-id={props.stub.paragraphId}
+      data-source-paragraph-id={props.stub.paragraphId}
+      data-block-id={props.stub.blockId}
+      data-testid="editor-line"
+      style={{
+        position: "absolute",
+        left: `${props.stub.left}px`,
+        top: `${props.stub.top + (props.offsetTop ?? 0)}px`,
+        width: "auto", // Let text define width for parity tests
+        height: `${props.stub.height}px`,
+        "white-space": "pre",
+      }}
+    >
+      <For each={props.stub.runs}>
+        {(run) => (
+          <span
+            data-testid="editor-run"
             style={{
-              position: "absolute",
-              left: `${stub.left}px`,
-              top: `${stub.top}px`,
-              width: `${stub.width}px`,
-              height: `${stub.height}px`,
+              "font-family": run.styles?.fontFamily ?? "Calibri",
+              "font-size": `${run.styles?.fontSize ?? 15}px`,
+              "font-weight": run.styles?.bold ? "bold" : "normal",
+              "font-style": run.styles?.italic ? "italic" : "normal",
             }}
-          />
+          >
+            {run.text}
+          </span>
         )}
       </For>
     </div>
   );
 }
 
-function collectPageStubs(page: EditorLayoutPage): ParagraphStub[] {
+function TableStubView(props: { stub: TableStub; offsetTop?: number }) {
+  return (
+    <div
+      data-testid="editor-table"
+      style={{
+        position: "absolute",
+        left: `${props.stub.left}px`,
+        top: `${props.stub.top + (props.offsetTop ?? 0)}px`,
+        width: `${props.stub.width}px`,
+        height: `${props.stub.height}px`,
+        display: "table",
+      }}
+    >
+      <For each={props.stub.rows}>
+        {(row) => (
+          <div data-testid="editor-table-row" style={{ display: "table-row" }}>
+            <For each={row.cells}>
+              {(cell) => (
+                <div
+                  data-testid="editor-table-cell"
+                  style={{
+                    display: "table-cell",
+                    background: cell.shading ?? "transparent",
+                  }}
+                >
+                  <For each={cell.blocks}>
+                    {(block) => <BlockStubView stub={block} offsetTop={-props.stub.top} />}
+                  </For>
+                </div>
+              )}
+            </For>
+          </div>
+        )}
+      </For>
+    </div>
+  );
+}
+
+function collectPageStubs(page: EditorLayoutPage): PageStubs {
   const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
+  const headerTop = page.headerTop ?? getPageHeaderZoneTop(page.pageSettings);
+  const footerTop = page.footerTop ?? page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
   const marginX =
     page.pageSettings.margins.left + page.pageSettings.margins.gutter;
-  const stubs: ParagraphStub[] = [];
 
-  appendBlockStubs(page.headerBlocks ?? [], stubs, marginX, 0, page);
-  appendBlockStubs(page.blocks, stubs, marginX, bodyTop, page);
+  const header: (ParagraphStub | TableStub)[] = [];
+  const body: (ParagraphStub | TableStub)[] = [];
+  const footer: (ParagraphStub | TableStub)[] = [];
+
+  appendBlockStubs(page.headerBlocks ?? [], header, marginX, headerTop, page);
+  appendBlockStubs(page.blocks, body, marginX, bodyTop, page);
   if (page.bodyBottom !== undefined) {
     appendBlockStubs(
       page.footerBlocks ?? [],
-      stubs,
+      footer,
       marginX,
-      page.bodyBottom,
+      footerTop,
       page,
     );
   }
 
-  return stubs;
+  return { header, body, footer };
 }
 
 function appendBlockStubs(
   blocks: EditorLayoutBlock[],
-  out: ParagraphStub[],
+  out: (ParagraphStub | TableStub)[],
   originX: number,
   originY: number,
   page: EditorLayoutPage,
@@ -103,26 +255,41 @@ function appendBlockStubs(
   let cursorY = originY;
   for (const block of blocks) {
     const blockId = block.blockId;
-    if (block.sourceBlock.type === "paragraph") {
-      const paragraphId = block.paragraphId ?? block.sourceBlock.id;
-      out.push({
-        key: `${page.id}:${blockId}`,
-        paragraphId,
-        blockId,
-        top: cursorY,
-        left: originX,
-        width: Math.max(1, bodyWidth),
-        height: Math.max(1, block.estimatedHeight),
-      });
+    const paragraphId = block.paragraphId ?? block.sourceBlock.id;
+
+    if (block.sourceBlock.type === "paragraph" && block.layout) {
+      for (let i = 0; i < block.layout.lines.length; i++) {
+        const line = block.layout.lines[i]!;
+        out.push({
+          key: `${page.id}:${blockId}:L${i}`,
+          paragraphId,
+          blockId,
+          top: cursorY + line.top,
+          left: originX,
+          width: Math.max(1, bodyWidth),
+          height: Math.max(1, line.height),
+          runs: line.fragments.map((f) => ({
+            text: f.text,
+            styles: f.styles,
+          })),
+          paragraphStyleId: block.sourceBlock.style?.styleId,
+        });
+      }
     } else if (block.sourceBlock.type === "table") {
+      // Basic table stubbing for parity tests
       out.push({
         key: `${page.id}:${blockId}`,
-        paragraphId: block.sourceBlock.id,
         blockId,
         top: cursorY,
         left: originX,
-        width: Math.max(1, bodyWidth),
-        height: Math.max(1, block.estimatedHeight),
+        width: bodyWidth,
+        height: block.estimatedHeight,
+        rows: block.sourceBlock.rows.map((row) => ({
+          cells: row.cells.map((cell) => ({
+            shading: cell.style?.shading,
+            blocks: [], // Nested blocks would need complex layout projection here
+          })),
+        })),
       });
     }
     cursorY += Math.max(0, block.estimatedHeight);
