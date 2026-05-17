@@ -5,7 +5,7 @@ export interface MenuItem {
   id: string;
   path: string; // e.g., "File/New"
   labelKey?: TranslationKey; // e.g., "menu.file.new"
-  icon?: string;
+  icon?: string | ((ctx: EditorToolbarCtx) => string);
   action?: (ctx: EditorToolbarCtx) => void | Promise<void>;
   shortcut?: string;
   when?: () => boolean;

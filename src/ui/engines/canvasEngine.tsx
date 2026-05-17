@@ -81,6 +81,7 @@ function CanvasPage(props: {
   // every keystroke.
   let lastPaintedPage: EditorLayoutPage | undefined;
   let lastStyles: unknown;
+  let lastShowMargins: boolean | undefined;
   let lastWidth = 0;
   let lastHeight = 0;
   let lastDpr = 0;
@@ -96,11 +97,13 @@ function CanvasPage(props: {
     const page = props.page;
     const state = props.state;
     const styles = state.document.styles;
-    if (page === lastPaintedPage && styles === lastStyles) {
+    const showMargins = state.showMargins;
+    if (page === lastPaintedPage && styles === lastStyles && showMargins === lastShowMargins) {
       return;
     }
     lastPaintedPage = page;
     lastStyles = styles;
+    lastShowMargins = showMargins;
 
     const dpr = window.devicePixelRatio || 1;
     const width = page.pageSettings.width;
@@ -122,6 +125,17 @@ function CanvasPage(props: {
     const marginX = page.pageSettings.margins.left + page.pageSettings.margins.gutter;
     const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
     const bodyWidth = getPageContentWidth(page.pageSettings);
+
+    if (state.showMargins) {
+      const footerZoneTop = page.bodyBottom ?? height;
+      const contentHeight = Math.max(24, Math.floor(footerZoneTop - bodyTop));
+      ctx.save();
+      ctx.strokeStyle = "#d1d5db";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 5]);
+      ctx.strokeRect(marginX, bodyTop, bodyWidth, contentHeight);
+      ctx.restore();
+    }
 
     renderBlockList(ctx, state, page.headerBlocks ?? [], marginX, 0, bodyWidth, page.index);
     renderBlockList(ctx, state, page.blocks, marginX, bodyTop, bodyWidth, page.index);
@@ -145,6 +159,21 @@ function CanvasPage(props: {
     props.page;
     props.state.document;
     if (rafHandle !== null) return;
+    rafHandle = requestAnimationFrame(paint);
+  });
+
+  // showMargins toggle doesn't change page/styles, so we need a dedicated
+  // effect that forces an immediate repaint bypassing the RAF deduplication.
+  createEffect(() => {
+    // Reading showMargins here creates the reactive dependency.
+    const _ = props.state.showMargins;
+    // Reset the cache so paint() does not short-circuit.
+    lastShowMargins = undefined;
+    // Cancel any pending RAF and repaint synchronously on next frame.
+    if (rafHandle !== null) {
+      cancelAnimationFrame(rafHandle);
+      rafHandle = null;
+    }
     rafHandle = requestAnimationFrame(paint);
   });
 

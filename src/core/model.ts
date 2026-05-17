@@ -439,6 +439,7 @@ export interface EditorState {
   activeSectionIndex?: number;
   activeZone?: EditorEditingZone;
   trackChangesEnabled?: boolean;
+  showMargins?: boolean;
 }
 
 export interface EditorCaretSlot {

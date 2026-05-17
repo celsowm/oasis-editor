@@ -62,6 +62,7 @@ export interface EditorToolbarCtx {
   applyInsertSectionBreakCommand: (breakType: "nextPage" | "continuous") => void;
   applyInsertPageBreakCommand: () => void;
   applyToggleTrackChangesCommand: () => void;
+  applyToggleShowMarginsCommand: () => void;
   applyAcceptRevisionsCommand: () => void;
   applyRejectRevisionsCommand: () => void;
   applyUpdateSectionSettingsCommand: (

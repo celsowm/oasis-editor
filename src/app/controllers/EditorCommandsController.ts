@@ -275,6 +275,12 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
     focusInput();
   };
 
+  const applyToggleShowMarginsCommand = () => {
+    console.log("Toggle margins command called. Current:", state.showMargins);
+    applyState({ ...state, showMargins: !state.showMargins });
+    focusInput();
+  };
+
   const applyAcceptRevisionsCommand = () => {
     clearPreferredColumn();
     resetTransactionGrouping();
@@ -345,6 +351,7 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
     handleStyleChange,
     applyUpdateSectionSettingsCommand,
     applyToggleTrackChangesCommand,
+    applyToggleShowMarginsCommand,
     applyAcceptRevisionsCommand,
     applyRejectRevisionsCommand,
     applyLinkCommand,

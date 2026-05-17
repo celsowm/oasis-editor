@@ -1443,6 +1443,7 @@ export function DOMEditorSurface(props: EditorSurfaceProps) {
                   "margin-right": `${pageSettings().margins.right}px`,
                   "margin-bottom": `${pageSettings().height - footerZoneTop()}px`,
                   "margin-left": `${pageSettings().margins.left + pageSettings().margins.gutter}px`,
+                  outline: props.state().showMargins ? "1px dashed #d1d5db" : undefined,
                 }}
                 onMouseDown={props.onSurfaceMouseDown}
                 onMouseMove={props.onSurfaceMouseMove}

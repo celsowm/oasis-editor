@@ -176,7 +176,8 @@ function MenuNode(props: {
   if (node.item?.labelKey) {
     label = t(node.item.labelKey) || node.label;
   }
-  const icon = node.item?.icon;
+  const rawIcon = node.item?.icon;
+  const icon = () => typeof rawIcon === "function" ? rawIcon(ctx) : rawIcon;
 
   const handleClick = (e: MouseEvent) => {
     e.stopPropagation();
@@ -203,9 +204,9 @@ function MenuNode(props: {
       aria-expanded={showSub()}
     >
       <span class="oasis-menubar-item-main">
-        <Show when={icon}>
+        <Show when={icon()}>
           <span class="oasis-menubar-item-icon" aria-hidden="true">
-            <i data-lucide={icon!} />
+            <i data-lucide={icon()!} />
           </span>
         </Show>
         <span>{label}</span>

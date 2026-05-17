@@ -167,6 +167,7 @@ export const ptBR = {
   "menu.edit.paste": "Colar",
   "menu.edit.selectAll": "Selecionar Tudo",
   "menu.view": "Ver",
+  "menu.view.margins": "Mostrar Margens",
   "menu.view.outline": "Mostrar Estrutura",
   "menu.view.fullscreen": "Tela Inteira",
   "menu.insert": "Inserir",
