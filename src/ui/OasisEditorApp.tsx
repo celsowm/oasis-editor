@@ -85,8 +85,6 @@ import { FindReplaceDialog } from "./components/FindReplace/FindReplaceDialog.js
 import "./components/FindReplace/findReplace.css";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import { setLocale } from "../i18n/index.js";
-import type { IRenderingEngine } from "../core/engine.js";
-import { canvasEngine } from "./engines/canvasEngine.js";
 import {
   resolveCanvasSurfaceHitAtPointWithFallback,
   type SurfaceHit,
@@ -117,7 +115,6 @@ export interface OasisEditorAppProps {
   readOnly?: boolean;
   persistenceEnabled?: boolean;
   layoutMode?: "fast" | "wordParity";
-  engine?: IRenderingEngine;
 }
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
@@ -182,17 +179,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const useComposedShell = () =>
     props.uiVariant === "docs" || (props.shell ?? "document") !== "document";
   const isReadOnly = () => props.readOnly ?? false;
-  const selectedEngine = (): IRenderingEngine => {
-    if (props.engine) {
-      return props.engine;
-    }
-    if (typeof HTMLCanvasElement === "undefined") {
-      throw new Error(
-        "Canvas renderer is required. Inject an engine explicitly if you need a non-canvas fallback.",
-      );
-    }
-    return canvasEngine;
-  };
 
   const shellComponent = () => {
     const s = props.shell ?? "document";
@@ -275,7 +261,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     viewportRef: () => viewportRef,
     isImporting: () => docIO.importProgress()?.phase !== "done" && docIO.importProgress()?.phase !== "error" && docIO.importProgress() !== null,
     layoutMode: layoutMode(),
-    geometrySource: selectedEngine().id === "canvas" ? "canvas" : "dom",
+    geometrySource: "canvas",
   });
 
   const { status: persistenceStatus } = useEditorPersistence(
@@ -412,20 +398,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   ): SurfaceHit | null => {
     if (!surfaceRef) return null;
 
-    if (selectedEngine().id !== "canvas") {
-      const position = resolvePositionAtSurfacePointLegacy(clientX, clientY);
-      if (!position) return null;
-      const hit: SurfaceHit = {
-        zone: resolveZoneAtPoint(clientX, clientY),
-        paragraphId: position.paragraphId,
-        paragraphOffset: position.offset,
-        position,
-        source: "dom-fallback",
-        resolvedFromParagraph: true,
-      };
-      recordCanvasDebugHit(hit);
-      return hit;
-    }
+
 
     const currentMeasuredBlockHeights = measuredBlockHeights();
     const currentMeasuredParagraphLayouts = measuredParagraphLayouts();
@@ -549,10 +522,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     clientX: number,
     clientY: number,
   ): EditorPosition | null => {
-    const hitPosition = resolveSurfaceHitAtPoint(clientX, clientY)?.position ?? null;
-    if (hitPosition) return hitPosition;
-    if (selectedEngine().id === "canvas") return null;
-    return resolvePositionAtSurfacePointLegacy(clientX, clientY);
+    return resolveSurfaceHitAtPoint(clientX, clientY)?.position ?? null;
   };
 
   const tableDrag = createEditorTableDrag({
@@ -808,7 +778,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         class={props.class}
         style={props.style}
         layoutMode={layoutMode()}
-        engine={selectedEngine()}
+
         onViewportRef={(element: HTMLDivElement) => {
           viewportRef = element;
         }}
@@ -951,7 +921,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             focused={() => focused()}
             importProgress={() => docIO.importProgress()}
             layoutMode={layoutMode()}
-            engine={selectedEngine()}
             viewportHeight={props.viewportHeight}
             class={props.class}
             style={props.style}

@@ -1,5 +1,5 @@
 import { createEffect, createMemo, Index, Show } from "solid-js";
-import type { IRenderingEngine, ITextMeasurer } from "../../core/engine.js";
+import type { ITextMeasurer } from "../../core/engine.js";
 import type { EditorSurfaceProps } from "../editorUiTypes.js";
 import { MinimalSemanticPageMirror } from "../components/MinimalSemanticMirror.js";
 import {
@@ -26,7 +26,7 @@ const canvasTextMeasurer: ITextMeasurer = {
     domTextMeasurer.resolveRenderedLineHeightPx(styles, lineHeightMultiple),
 };
 
-function CanvasEditorSurface(props: EditorSurfaceProps) {
+export function CanvasEditorSurface(props: EditorSurfaceProps) {
   // Preserves object identity for unchanged pages/blocks across re-projections.
   // Without this, every state change produces brand-new page objects and every
   // CanvasPage repaints — even pages the user did not touch.
@@ -443,9 +443,5 @@ function resolveListPrefix(paragraph: EditorParagraphNode): string {
   return "1.";
 }
 
-export const canvasEngine: IRenderingEngine = {
-  id: "canvas",
-  measurer: canvasTextMeasurer,
-  visualPrimary: true,
-  SurfaceComponent: CanvasEditorSurface,
-};
+
+

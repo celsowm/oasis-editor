@@ -71,8 +71,9 @@ describe("composeMeasuredParagraphLines alignment", () => {
     paragraph.style = { align: "left", indentLeft: 20, indentHanging: 10 };
     const lines = measure(paragraph, 180);
     expect(lines.length).toBeGreaterThan(1);
-    for (const line of lines) {
-      expect(lineStart(line)).toBe(30);
+    expect(lineStart(lines[0])).toBe(10);
+    for (let i = 1; i < lines.length; i++) {
+      expect(lineStart(lines[i])).toBe(20);
     }
   });
 

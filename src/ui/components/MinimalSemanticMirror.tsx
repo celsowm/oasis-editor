@@ -21,8 +21,7 @@ interface ParagraphStub {
  * Renders one absolutely-positioned, empty <div> per paragraph/block so the
  * existing features that still query DOM nodes (outline panel, "scroll to
  * paragraph" actions, table drag targeting, useEditorLayout block scoping)
- * keep working without forcing a full DOMEditorSurface reconciliation on every
- * keystroke. The canvas itself remains the visual source of truth.
+ * keep working. The canvas itself remains the visual source of truth.
  *
  * Mount this *inside* each canvas page wrapper so positions are relative to
  * the page and we don't need to compute cumulative page tops.

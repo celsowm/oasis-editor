@@ -1,6 +1,5 @@
 import { Show, createMemo, type Accessor, type JSX } from "solid-js";
-import type { IRenderingEngine } from "../core/engine.js";
-import { canvasEngine } from "./engines/canvasEngine.js";
+import { CanvasEditorSurface } from "./components/CanvasEditorSurface.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { RevisionOverlay } from "./components/RevisionOverlay.js";
@@ -23,7 +22,6 @@ export interface OasisEditorEditorProps {
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
   layoutMode?: "fast" | "wordParity";
-  engine?: IRenderingEngine;
   selectionBoxes: Accessor<SelectionBox[]>;
   caretBox: Accessor<CaretBox>;
   inputBox: Accessor<InputBox>;
@@ -159,27 +157,22 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
         class="oasis-editor-editor-scroll-content"
         data-testid="editor-editor-scroll-content"
       >
-        {(() => {
-          const Surface = props.engine?.SurfaceComponent ?? canvasEngine.SurfaceComponent;
-          return (
-            <Surface
-              state={props.state}
-              measuredBlockHeights={props.measuredBlockHeights}
-              measuredParagraphLayouts={props.measuredParagraphLayouts}
-              layoutMode={props.layoutMode}
-              viewportRef={() => viewportElement ?? undefined}
-              onSurfaceMouseDown={props.onSurfaceMouseDown}
-              onSurfaceMouseMove={props.onSurfaceMouseMove}
-              onSurfaceDblClick={props.onSurfaceDblClick}
-              onParagraphMouseDown={props.onParagraphMouseDown}
-              onImageMouseDown={props.onImageMouseDown}
-              onImageResizeHandleMouseDown={props.onImageResizeHandleMouseDown}
-              onTableDragHandleMouseDown={props.onTableDragHandleMouseDown}
-              onRevisionMouseEnter={props.onRevisionMouseEnter}
-              onRevisionMouseLeave={props.onRevisionMouseLeave}
-            />
-          );
-        })()}
+        <CanvasEditorSurface
+          state={props.state}
+          measuredBlockHeights={props.measuredBlockHeights}
+          measuredParagraphLayouts={props.measuredParagraphLayouts}
+          layoutMode={props.layoutMode}
+          viewportRef={() => viewportElement ?? undefined}
+          onSurfaceMouseDown={props.onSurfaceMouseDown}
+          onSurfaceMouseMove={props.onSurfaceMouseMove}
+          onSurfaceDblClick={props.onSurfaceDblClick}
+          onParagraphMouseDown={props.onParagraphMouseDown}
+          onImageMouseDown={props.onImageMouseDown}
+          onImageResizeHandleMouseDown={props.onImageResizeHandleMouseDown}
+          onTableDragHandleMouseDown={props.onTableDragHandleMouseDown}
+          onRevisionMouseEnter={props.onRevisionMouseEnter}
+          onRevisionMouseLeave={props.onRevisionMouseLeave}
+        />
 
         <Show when={props.hoveredRevision()}>
           {(revision) => <RevisionOverlay box={revision()} />}

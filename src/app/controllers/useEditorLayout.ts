@@ -189,7 +189,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
   // signature createEffect skips its expensive O(N) loop and trusts the hint.
   let pendingExplicitInvalidations = 0;
   const isWordParityMode = () => props.layoutMode === "wordParity";
-  const isCanvasGeometryMode = () => props.geometrySource === "canvas";
+  const isCanvasGeometryMode = () => true;
 
   const clearDeferredMeasurement = () => {
     deferredMeasureToken += 1;
