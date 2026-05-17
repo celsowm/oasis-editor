@@ -389,13 +389,43 @@ function shiftLine(line: EditorLayoutLine, deltaX: number): EditorLayoutLine {
   };
 }
 
-function getLineContentWidth(line: EditorLayoutLine): number {
+function getLineContentWidth(line: EditorLayoutLine, charByOffset: Map<number, string>): number {
   const firstSlot = line.slots[0];
-  const lastSlot = line.slots[line.slots.length - 1];
-  if (!firstSlot || !lastSlot) {
+  if (!firstSlot) {
     return 0;
   }
-  return Math.max(0, lastSlot.left - firstSlot.left);
+
+  let endSlotIndex = line.slots.length - 1;
+  while (endSlotIndex > 0) {
+    const slot = line.slots[endSlotIndex];
+    if (!slot) break;
+    const charIndex = slot.offset - 1;
+    const char = charByOffset.get(charIndex);
+    if (char === " " || char === "\t" || char === "\n") {
+      endSlotIndex--;
+    } else {
+      break;
+    }
+  }
+
+  const lastContentSlot = line.slots[endSlotIndex];
+  if (!lastContentSlot) return 0;
+
+  let width = Math.max(0, lastContentSlot.left - firstSlot.left);
+
+  if (endSlotIndex > 0) {
+    const charIndex = lastContentSlot.offset - 1;
+    const char = charByOffset.get(charIndex);
+    if (char && /^[.,;:?!'"\-\)\]]$/.test(char)) {
+      const prevSlot = line.slots[endSlotIndex - 1];
+      if (prevSlot) {
+        const charWidth = lastContentSlot.left - prevSlot.left;
+        width -= charWidth * 0.5;
+      }
+    }
+  }
+
+  return width;
 }
 
 function justifyLineBySpaces(
@@ -466,7 +496,7 @@ function applyParagraphAlignment(
 
   return lines.map((line, lineIndex) => {
     const availableWidth = getAvailableWidth(paragraph, styles, contentWidth, lineIndex === 0);
-    const lineWidth = getLineContentWidth(line);
+    const lineWidth = getLineContentWidth(line, charByOffset);
     const extraSpace = Math.max(0, availableWidth - lineWidth);
     if (extraSpace <= 0) {
       return line;

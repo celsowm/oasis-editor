@@ -786,9 +786,11 @@ function parseParagraphStyle(paragraphProperties: XmlElement | null): EditorPara
   }
   if (line) {
     const parsedLineHeight = Number(line) / 240;
-    style.lineHeight = lineRule === "exact" || lineRule === "atLeast"
-      ? parsedLineHeight
-      : Math.round((parsedLineHeight / WORD_SINGLE_LINE_RATIO) * 10000) / 10000;
+    if (lineRule === "exact" || lineRule === "atLeast") {
+      style.lineHeight = parsedLineHeight;
+    } else {
+      style.lineHeight = parsedLineHeight;
+    }
   }
 
   const snapToGrid = parseOnOffProperty(paragraphProperties, "snapToGrid");
