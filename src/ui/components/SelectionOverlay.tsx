@@ -1,3 +1,5 @@
+import { For } from "solid-js";
+
 interface SelectionBox {
   left: number;
   top: number;
@@ -11,8 +13,8 @@ interface SelectionOverlayProps {
 
 export function SelectionOverlay(props: SelectionOverlayProps) {
   return (
-    <>
-      {props.boxes.map((box) => (
+    <For each={props.boxes}>
+      {(box) => (
         <span
           aria-hidden="true"
           class="oasis-editor-selection-box"
@@ -24,7 +26,7 @@ export function SelectionOverlay(props: SelectionOverlayProps) {
             height: `${box.height}px`,
           }}
         />
-      ))}
-    </>
+      )}
+    </For>
   );
 }
