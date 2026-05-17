@@ -240,21 +240,30 @@ function getParagraphLineHeight(
     paragraph.style?.styleId,
     styles,
   );
-  const maxFontSize = paragraph.runs.reduce((largest, run) => {
+  const maxRunHeight = paragraph.runs.reduce((largest, run) => {
     const runTextStyle = resolveEffectiveTextStyleForParagraph(
       run.styles,
       paragraph.style?.styleId,
       styles,
     );
-    return Math.max(largest, runTextStyle.fontSize ?? largest);
-  }, paragraphTextStyle.fontSize ?? fallbackFontSize);
+    const fontSize = runTextStyle.fontSize ?? paragraphTextStyle.fontSize ?? fallbackFontSize;
+    const runLineHeight = resolveRenderedLineHeightPx(
+      { ...runTextStyle, fontSize },
+      lineHeight,
+    );
+    const imageHeight = run.image?.height ?? 0;
+    return Math.max(largest, runLineHeight, imageHeight);
+  }, 0);
 
-  const renderedLineHeight = resolveRenderedLineHeightPx(
-    {
-      ...paragraphTextStyle,
-      fontSize: maxFontSize,
-    },
-    lineHeight,
+  const renderedLineHeight = Math.max(
+    resolveRenderedLineHeightPx(
+      {
+        ...paragraphTextStyle,
+        fontSize: paragraphTextStyle.fontSize ?? fallbackFontSize,
+      },
+      lineHeight,
+    ),
+    maxRunHeight,
   );
 
   if (lineGridPitch && lineGridPitch > 0 && snapToGrid) {
@@ -293,10 +302,13 @@ function buildMeasuredChars(
     );
 
     for (const char of fragment.chars) {
+      const width = (char.char === "\uFFFC" && fragment.image)
+        ? fragment.image.width
+        : measureCharacterWidth(char.char, effectiveStyles, fallbackFontSize, layoutMode);
       measured.push({
         char: char.char,
         offset: char.paragraphOffset,
-        width: measureCharacterWidth(char.char, effectiveStyles, fallbackFontSize, layoutMode),
+        width,
       });
     }
   }

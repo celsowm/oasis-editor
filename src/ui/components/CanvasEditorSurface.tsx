@@ -13,7 +13,21 @@ import {
   getPageContentWidth,
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
+  resolveImageSrc,
 } from "../../core/model.js";
+
+const imageCache = new Map<string, HTMLImageElement>();
+
+function getCachedImage(src: string, onUpdate: () => void): HTMLImageElement {
+  const cached = imageCache.get(src);
+  if (cached) return cached;
+  const img = new Image();
+  img.src = src;
+  img.onload = onUpdate;
+  imageCache.set(src, img);
+  return img;
+}
+
 import { domTextMeasurer } from "../textMeasurement.js";
 import { projectDocumentLayout } from "../layoutProjection.js";
 import { createLayoutIdentityStabilizer } from "../layoutIdentity.js";
@@ -139,8 +153,14 @@ function CanvasPage(props: {
       ctx.restore();
     }
 
-    renderBlockList(ctx, state, page.headerBlocks ?? [], marginX, headerTop, bodyWidth, page.index);
-    renderBlockList(ctx, state, page.blocks, marginX, bodyTop, bodyWidth, page.index);
+    renderBlockList(ctx, state, page.headerBlocks ?? [], marginX, headerTop, bodyWidth, page.index, () => {
+      lastPaintedPage = undefined;
+      rafHandle = requestAnimationFrame(paint);
+    });
+    renderBlockList(ctx, state, page.blocks, marginX, bodyTop, bodyWidth, page.index, () => {
+      lastPaintedPage = undefined;
+      rafHandle = requestAnimationFrame(paint);
+    });
     if (page.bodyBottom !== undefined) {
       renderBlockList(
         ctx,
@@ -150,6 +170,10 @@ function CanvasPage(props: {
         footerTop,
         bodyWidth,
         page.index,
+        () => {
+          lastPaintedPage = undefined;
+          rafHandle = requestAnimationFrame(paint);
+        },
       );
     }
   };
@@ -209,13 +233,14 @@ function renderBlockList(
   originY: number,
   contentWidth: number,
   pageIndex: number,
+  onUpdate: () => void,
 ) {
   let cursorY = originY;
   for (const block of blocks) {
     if (block.sourceBlock.type === "paragraph" && block.layout) {
       const paragraphStyle = resolveEffectiveParagraphStyle(block.sourceBlock.style, state.document.styles);
       const spacingBefore = (block.layout.startOffset === 0 && cursorY > originY) ? (paragraphStyle.spacingBefore ?? 0) : 0;
-      drawParagraph(ctx, block.sourceBlock, block.layout.lines, state, originX, cursorY + spacingBefore);
+      drawParagraph(ctx, block.sourceBlock, block.layout.lines, state, originX, cursorY + spacingBefore, onUpdate);
     } else if (block.sourceBlock.type === "table") {
       drawTable(
         ctx,
@@ -226,6 +251,7 @@ function renderBlockList(
         contentWidth,
         block.estimatedHeight,
         pageIndex,
+        onUpdate,
       );
     }
     cursorY += Math.max(0, block.estimatedHeight);
@@ -239,6 +265,7 @@ function drawParagraph(
   state: EditorState,
   originX: number,
   originY: number,
+  onUpdate: () => void,
 ) {
   resolveEffectiveParagraphStyle(paragraph.style, state.document.styles);
   for (const line of lines) {
@@ -277,11 +304,28 @@ function drawParagraph(
       if (styles.highlight) {
         drawFragmentHighlight(ctx, line, fragment, originX, originY, styles.highlight);
       }
-      for (const char of fragment.chars) {
-        if (char.char === "\n" || char.char === "\t") continue;
-        const slot = slotByOffset.get(char.paragraphOffset);
-        if (!slot) continue;
-        ctx.fillText(char.char, originX + slot.left, baselineY);
+      if (fragment.image) {
+        const slot = slotByOffset.get(fragment.startOffset);
+        if (slot) {
+          const src = resolveImageSrc(state.document, fragment.image.src);
+          const img = getCachedImage(src, onUpdate);
+          if (img.complete && img.naturalWidth > 0) {
+            ctx.drawImage(
+              img,
+              originX + slot.left,
+              originY + line.top + line.height - fragment.image.height,
+              fragment.image.width,
+              fragment.image.height,
+            );
+          }
+        }
+      } else {
+        for (const char of fragment.chars) {
+          if (char.char === "\n" || char.char === "\t") continue;
+          const slot = slotByOffset.get(char.paragraphOffset);
+          if (!slot) continue;
+          ctx.fillText(char.char, originX + slot.left, baselineY);
+        }
       }
       if (styles.underline) {
         drawTextDecoration(ctx, line, fragment, originX, originY, "underline");
@@ -347,6 +391,7 @@ function drawTable(
   contentWidth: number,
   estimatedHeight: number,
   pageIndex: number,
+  onUpdate: () => void,
 ) {
   const tableLayout = buildCanvasTableLayout({
     table,
@@ -372,6 +417,7 @@ function drawTable(
         state,
         paragraphLayout.originX,
         paragraphLayout.originY,
+        onUpdate,
       );
     }
   }

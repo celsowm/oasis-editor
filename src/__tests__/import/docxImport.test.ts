@@ -142,6 +142,23 @@ describe("DOCX import", () => {
     expect(layout.lines[1]!.slots[0]?.left ?? 0).toBeCloseTo(0, 0);
   });
 
+  it("imports images with correct dimensions from DOCX", async () => {
+    const document = await importLoremComplexDocument();
+    const paragraphs = getDocumentParagraphs(document);
+    const imageParagraph = paragraphs.find((p) => p.runs.some((r) => r.image));
+
+    expect(imageParagraph).toBeDefined();
+    const imageRun = imageParagraph!.runs.find((r) => r.image)!;
+    expect(imageRun.text).toBe("\uFFFC");
+    expect(imageRun.image?.width).toBe(557);
+    expect(imageRun.image?.height).toBe(278);
+    expect(imageRun.image?.src).toMatch(/^asset:/);
+    
+    const assetId = imageRun.image!.src.split(":")[1]!;
+    expect(document.assets?.[assetId]).toBeDefined();
+    expect(document.assets?.[assetId]?.url).toMatch(/^data:image\/png;base64,/);
+  });
+
   it("maps OOXML start/end indents and applies hanging precedence over firstLine", async () => {
     const buffer = await buildDocxWithSingleParagraph(
       'w:start="720" w:end="360" w:firstLine="300" w:hanging="180"',
