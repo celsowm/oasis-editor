@@ -634,7 +634,12 @@ function serializeBlocksXml(
           }).join("");
           return `<w:tr>${serializeTableRowProperties(row)}${cellsXml}</w:tr>`;
         }).join("");
-        return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>${rowsXml}</w:tbl>`;
+        const gridXml = block.gridCols
+          ? `<w:tblGrid>${block.gridCols
+              .map((w) => `<w:gridCol w:w="${Math.round(w * 20)}"/>`)
+              .join("")}</w:tblGrid>`
+          : "";
+        return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/></w:tblPr>${gridXml}${rowsXml}</w:tbl>`;
       }
       const runs = block.runs.length > 0 ? block.runs : [{ id: "", text: "" }];
       return `<w:p>${serializeParagraphProperties(block, context.numberingInfo, styles)}${runs

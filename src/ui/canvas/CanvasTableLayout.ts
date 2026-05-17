@@ -10,10 +10,11 @@ import {
 import { buildTableCellLayout } from "../../core/tableLayout.js";
 import { projectParagraphLayout } from "../layoutProjection.js";
 
-const DEFAULT_TABLE_ROW_HEIGHT = 28;
-const DEFAULT_CELL_PADDING_PX = 4;
+const DEFAULT_TABLE_ROW_HEIGHT = 14;
+const DEFAULT_CELL_PADDING_TOP_BOTTOM_PX = 0;
+const DEFAULT_CELL_PADDING_LEFT_RIGHT_PX = 7.2; // ~5.4pt
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
-const MIN_TABLE_CELL_CONTENT_HEIGHT_PX = 18;
+const MIN_TABLE_CELL_CONTENT_HEIGHT_PX = 1;
 const POINT_TO_PX = 96 / 72;
 
 function toPx(value: number): number {
@@ -117,11 +118,17 @@ function resolveBorder(border: EditorBorderStyle | undefined): CanvasTableBorder
 
 function resolveCellPadding(cell: EditorTableCellNode): { top: number; right: number; bottom: number; left: number } {
   const paddingValue = cell.style?.padding;
-  const resolved =
-    typeof paddingValue === "number" && Number.isFinite(paddingValue)
-      ? Math.max(0, toPx(paddingValue))
-      : DEFAULT_CELL_PADDING_PX;
-  return { top: resolved, right: resolved, bottom: resolved, left: resolved };
+  if (typeof paddingValue === "number" && Number.isFinite(paddingValue)) {
+    const resolved = Math.max(0, toPx(paddingValue));
+    return { top: resolved, right: resolved, bottom: resolved, left: resolved };
+  }
+  
+  const top = cell.style?.paddingTop !== undefined ? toPx(cell.style.paddingTop) : DEFAULT_CELL_PADDING_TOP_BOTTOM_PX;
+  const right = cell.style?.paddingRight !== undefined ? toPx(cell.style.paddingRight) : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
+  const bottom = cell.style?.paddingBottom !== undefined ? toPx(cell.style.paddingBottom) : DEFAULT_CELL_PADDING_TOP_BOTTOM_PX;
+  const left = cell.style?.paddingLeft !== undefined ? toPx(cell.style.paddingLeft) : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
+  
+  return { top, right, bottom, left };
 }
 
 function resolveRowHeights(table: EditorTableNode, estimatedHeight: number): number[] {
@@ -163,7 +170,23 @@ export function buildCanvasTableLayout(options: {
     1,
     ...tableEntries.map((entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan)),
   );
-  const baseCellWidth = tableWidth / visualColumnCount;
+
+  let resolvedColumnWidths: number[] = [];
+  if (table.gridCols && table.gridCols.length >= visualColumnCount) {
+    const gridTotalWidth = table.gridCols.reduce((a, b) => a + b, 0);
+    // If table has a specific width (e.g. 100%), scale the grid columns to fit
+    const scale = gridTotalWidth > 0 ? tableWidth / gridTotalWidth : 1;
+    resolvedColumnWidths = table.gridCols.map((w) => w * scale);
+  } else {
+    const baseCellWidth = tableWidth / visualColumnCount;
+    resolvedColumnWidths = Array(visualColumnCount).fill(baseCellWidth);
+  }
+
+  const columnOffsets: number[] = [0];
+  for (let i = 0; i < resolvedColumnWidths.length; i++) {
+    columnOffsets[i + 1] = columnOffsets[i]! + resolvedColumnWidths[i]!;
+  }
+
   const rowOffsets: number[] = [];
   let cumulativeY = 0;
   for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
@@ -197,8 +220,13 @@ export function buildCanvasTableLayout(options: {
 
       const visualCol = entry.visualColumnIndex;
       const colSpan = Math.max(1, entry.colSpan);
-      const left = originX + visualCol * baseCellWidth;
-      const width = Math.max(1, baseCellWidth * colSpan);
+      
+      const left = originX + (columnOffsets[visualCol] ?? 0);
+      const width = Math.max(
+        1,
+        (columnOffsets[visualCol + colSpan] ?? tableWidth) - (columnOffsets[visualCol] ?? 0),
+      );
+
       const top = originY + (rowOffsets[rowIndex] ?? 0);
       const height = Math.max(
         1,
@@ -250,8 +278,8 @@ export function buildCanvasTableLayout(options: {
         const linesBottom =
           projected.lines.length > 0
             ? Math.max(...projected.lines.map((line) => line.top + line.height))
-            : 18;
-        const paragraphHeight = Math.max(18, linesBottom);
+            : 1;
+        const paragraphHeight = Math.max(1, linesBottom);
         paragraphs.push({
           paragraph,
           lines: projected.lines,
@@ -260,7 +288,7 @@ export function buildCanvasTableLayout(options: {
           width: contentWidthPx,
           height: paragraphHeight,
         });
-        paragraphCursorY += paragraphHeight + 4;
+        paragraphCursorY += paragraphHeight;
       }
 
       cells.push({

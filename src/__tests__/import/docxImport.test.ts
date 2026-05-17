@@ -227,6 +227,53 @@ describe("DOCX import", () => {
     expect(tableFontSizes).toContain(10.6667);
   });
 
+  it("imports table grid column widths (gridCols) from DOCX", async () => {
+    const document = await importLoremComplexDocument();
+    const table = getDocumentTables(document)[0];
+
+    expect(table).toBeDefined();
+    // lorem_ipsum_complex_document.docx has 4 columns with w="2484" (124.2pt)
+    expect(table!.gridCols).toBeDefined();
+    expect(table!.gridCols).toHaveLength(4);
+    table!.gridCols!.forEach((width) => {
+      expect(width).toBeCloseTo(124.2, 1);
+    });
+  });
+
+  it("imports individual table cell margins (tcMar) from DOCX", async () => {
+    const zip = new JSZip();
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcMar>
+              <w:top w:w="200" w:type="dxa"/>
+              <w:bottom w:w="100" w:type="dxa"/>
+              <w:left w:w="300" w:type="dxa"/>
+              <w:right w:w="400" w:type="dxa"/>
+            </w:tcMar>
+          </w:tcPr>
+          <w:p><w:r><w:t>Cell with margins</w:t></w:r></w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+    const buffer = await zip.generateAsync({ type: "arraybuffer" });
+    const document = await importDocxToEditorDocument(buffer);
+    const table = getDocumentTables(document)[0]!;
+    const cellStyle = table.rows[0]!.cells[0]!.style;
+
+    expect(cellStyle?.paddingTop).toBe(10); // 200 / 20
+    expect(cellStyle?.paddingBottom).toBe(5); // 100 / 20
+    expect(cellStyle?.paddingLeft).toBe(15); // 300 / 20
+    expect(cellStyle?.paddingRight).toBe(20); // 400 / 20
+  });
+
   it("wraps imported table cell text using the cell width", async () => {
     const document = await importComplexDocument();
     const technicalSpecsTable = getDocumentTables(document)[1];

@@ -33,8 +33,10 @@ const DEFAULT_FONT_SIZE = 15;
 const DEFAULT_LINE_HEIGHT = 1.15;
 const DEFAULT_PAGE_HEIGHT = 920;
 const POINT_TO_PX = 96 / 72;
-const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 28;
+const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 14.4; // 2 * 5.4pt (7.2px)
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
+const DEFAULT_TABLE_SEGMENT_VERTICAL_SPACING = 0;
+const DEFAULT_TABLE_ROW_VERTICAL_SPACING = 0;
 const FAST_IMPLICIT_DOC_GRID_RATIO = 0.86;
 
 function sliceFragmentToRange(
@@ -450,7 +452,7 @@ function estimateTableRowHeight(
       ),
     );
 
-  return Math.max(...cellHeights, DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT) + 12;
+  return Math.max(...cellHeights, DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT) + DEFAULT_TABLE_ROW_VERTICAL_SPACING;
 }
 
 function getTableHeaderRowCount(table: EditorTableNode): number {
@@ -538,7 +540,7 @@ function getTableSegmentHeight(
   const bodyHeight = table.rows
     .slice(rowStartIndex, rowEndIndexExclusive)
     .reduce((sum, row) => sum + estimateTableRowHeight(row, styles, layoutMode, contentWidth), 0);
-  return headerHeight + bodyHeight + 16;
+  return headerHeight + bodyHeight + DEFAULT_TABLE_SEGMENT_VERTICAL_SPACING;
 }
 
 function createParagraphSegmentLayout(

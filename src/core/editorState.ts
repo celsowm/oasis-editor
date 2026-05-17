@@ -126,11 +126,12 @@ export function createEditorTableRow(
   return row;
 }
 
-export function createEditorTable(rows: EditorTableRowNode[]): EditorTableNode {
+export function createEditorTable(rows: EditorTableRowNode[], gridCols?: number[]): EditorTableNode {
   const table: EditorTableNode = {
     id: `table:${nextTableId}`,
     type: "table",
     rows,
+    gridCols,
   };
   nextTableId += 1;
   return table;

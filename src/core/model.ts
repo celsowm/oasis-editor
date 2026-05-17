@@ -47,11 +47,12 @@ export interface EditorParagraphStyle {
 export interface EditorNamedStyle {
   id: string;
   name: string;
-  type: "paragraph" | "character";
+  type: "paragraph" | "character" | "table";
   basedOn?: string; // ID of the parent style
   nextStyle?: string; // ID of the style for the next paragraph
   paragraphStyle?: EditorParagraphStyle;
   textStyle?: EditorTextStyle;
+  tableStyle?: EditorTableStyle;
 }
 
 export interface EditorParagraphListStyle {
@@ -110,6 +111,10 @@ export interface EditorTableCellStyle {
   borderBottom?: EditorBorderStyle;
   borderLeft?: EditorBorderStyle;
   padding?: number; // uniform padding in pt
+  paddingTop?: number; // pt
+  paddingRight?: number; // pt
+  paddingBottom?: number; // pt
+  paddingLeft?: number; // pt
   verticalAlign?: "top" | "middle" | "bottom";
   horizontalAlign?: "left" | "center" | "right" | "justify";
 }
@@ -135,6 +140,7 @@ export interface EditorTableRowNode {
 }
 
 export interface EditorTableStyle {
+  styleId?: string; // ID of the named table style (e.g., "TableGrid")
   width?: number | string; // table width in pt or percentage
   align?: "left" | "center" | "right";
   indentLeft?: number; // pt (tblInd)
@@ -144,6 +150,7 @@ export interface EditorTableNode {
   id: string;
   type: "table";
   rows: EditorTableRowNode[];
+  gridCols?: number[]; // column widths in pt (tblGrid)
   style?: EditorTableStyle;
 }
 

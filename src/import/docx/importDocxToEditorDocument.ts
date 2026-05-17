@@ -291,6 +291,19 @@ function parseTableCellStyle(cellProperties: XmlElement | null): EditorTableCell
     }
   }
 
+  const tcMar = getFirstChildByTagNameNS(cellProperties, WORD_NS, "tcMar");
+  if (tcMar) {
+    const top = twipsToPoints(getAttributeValue(getFirstChildByTagNameNS(tcMar, WORD_NS, "top"), "w"));
+    const bottom = twipsToPoints(getAttributeValue(getFirstChildByTagNameNS(tcMar, WORD_NS, "bottom"), "w"));
+    const left = twipsToPoints(getAttributeValue(getFirstChildByTagNameNS(tcMar, WORD_NS, "left"), "w"));
+    const right = twipsToPoints(getAttributeValue(getFirstChildByTagNameNS(tcMar, WORD_NS, "right"), "w"));
+
+    if (top !== undefined) style.paddingTop = top;
+    if (bottom !== undefined) style.paddingBottom = bottom;
+    if (left !== undefined) style.paddingLeft = left;
+    if (right !== undefined) style.paddingRight = right;
+  }
+
   return Object.keys(style).length > 0 ? style : undefined;
 }
 
@@ -586,6 +599,7 @@ async function parseHeaderFooterXml(
   relsMap: Map<string, string>,
   assets: AssetRegistry,
   themeFonts: ThemeFontMap,
+  styles?: Record<string, EditorNamedStyle>,
 ): Promise<EditorBlockNode[]> {
   if (!xmlContent) {
     return [];
@@ -607,7 +621,7 @@ async function parseHeaderFooterXml(
     if (element.localName === "p" && element.namespaceURI === WORD_NS) {
       blocks.push(await parseParagraphNode(element, numberingMaps, zip, relsMap, assets, themeFonts));
     } else if (element.localName === "tbl" && element.namespaceURI === WORD_NS) {
-      blocks.push(await parseTableNode(element, numberingMaps, zip, relsMap, assets, themeFonts));
+      blocks.push(await parseTableNode(element, numberingMaps, zip, relsMap, assets, themeFonts, styles));
     }
   }
   return blocks;
@@ -886,7 +900,7 @@ function parseImportedStyles(stylesXml: string | null, themeFonts: ThemeFontMap)
   for (const styleElement of getChildrenByTagNameNS(root, WORD_NS, "style")) {
     const id = getAttributeValue(styleElement, "styleId");
     const type = getAttributeValue(styleElement, "type");
-    if (!id || (type !== "paragraph" && type !== "character")) {
+    if (!id || (type !== "paragraph" && type !== "character" && type !== "table")) {
       continue;
     }
 
@@ -895,6 +909,18 @@ function parseImportedStyles(stylesXml: string | null, themeFonts: ThemeFontMap)
     const nextStyle = getAttributeValue(getFirstChildByTagNameNS(styleElement, WORD_NS, "next"), "val") ?? undefined;
     const paragraphStyle = parseParagraphStyle(getFirstChildByTagNameNS(styleElement, WORD_NS, "pPr"));
     const textStyle = parseRunStyle(getFirstChildByTagNameNS(styleElement, WORD_NS, "rPr"), themeFonts);
+    
+    let tableStyle: EditorTableStyle | undefined;
+    if (type === "table") {
+      const tblPr = getFirstChildByTagNameNS(styleElement, WORD_NS, "tblPr");
+      const tblInd = getFirstChildByTagNameNS(tblPr, WORD_NS, "tblInd");
+      const indentLeft = twipsToPoints(getAttributeValue(tblInd, "w"));
+      tableStyle = {
+        styleId: id,
+        indentLeft,
+      };
+    }
+
     const isDefaultParagraph =
       type === "paragraph" && isWordTrue(getAttributeValue(styleElement, "default"));
 
@@ -916,6 +942,7 @@ function parseImportedStyles(stylesXml: string | null, themeFonts: ThemeFontMap)
         type === "paragraph" && isDefaultParagraph
           ? mergeImportedTextStyles(defaultTextStyle, textStyle)
           : textStyle,
+      tableStyle,
     };
   }
 
@@ -1327,10 +1354,14 @@ async function parseParagraphNodes(
   relsMap: Map<string, string>,
   assets: AssetRegistry,
   themeFonts: ThemeFontMap,
+  inheritedStyle?: EditorParagraphStyle,
 ): Promise<{ paragraphs: EditorParagraphNode[]; pageBreakAfter: boolean }> {
   const paragraphProperties = getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr");
   const runs = await parseRunsContainer(paragraphNode, numberingMaps, zip, relsMap, assets, themeFonts);
-  const paragraphStyle = normalizeImportedParagraphStyle(parseParagraphStyle(paragraphProperties));
+  const parsedStyle = parseParagraphStyle(paragraphProperties);
+  const paragraphStyle = normalizeImportedParagraphStyle(
+    inheritedStyle ? { ...inheritedStyle, ...(parsedStyle ?? {}) } : parsedStyle,
+  );
   const list = parseParagraphList(paragraphProperties, numberingMaps);
   const { segments, hasPageBreak } = splitRunsAtPageBreaks(runs);
 
@@ -1372,8 +1403,17 @@ async function parseParagraphNode(
   relsMap: Map<string, string>,
   assets: AssetRegistry,
   themeFonts: ThemeFontMap,
+  inheritedStyle?: EditorParagraphStyle,
 ) {
-  const parsed = await parseParagraphNodes(paragraphNode, numberingMaps, zip, relsMap, assets, themeFonts);
+  const parsed = await parseParagraphNodes(
+    paragraphNode,
+    numberingMaps,
+    zip,
+    relsMap,
+    assets,
+    themeFonts,
+    inheritedStyle,
+  );
   return parsed.paragraphs[0] ?? createEditorParagraphFromRuns([{ text: "" }]);
 }
 
@@ -1384,7 +1424,24 @@ async function parseTableNode(
   relsMap: Map<string, string>,
   assets: AssetRegistry,
   themeFonts: ThemeFontMap,
+  styles?: Record<string, EditorNamedStyle>,
 ): Promise<EditorTableNode> {
+  const gridCols: number[] = [];
+  const tblGrid = getFirstChildByTagNameNS(tableNode, WORD_NS, "tblGrid");
+  if (tblGrid) {
+    for (const gridCol of getChildrenByTagNameNS(tblGrid, WORD_NS, "gridCol")) {
+      const w = getAttributeValue(gridCol, "w");
+      const pt = twipsToPoints(w);
+      if (pt !== undefined) {
+        gridCols.push(pt);
+      }
+    }
+  }
+
+  const tblPr = getFirstChildByTagNameNS(tableNode, WORD_NS, "tblPr");
+  const tableStyleId = getAttributeValue(getFirstChildByTagNameNS(tblPr, WORD_NS, "tblStyle"), "val");
+  const inheritedParagraphStyle = tableStyleId && styles?.[tableStyleId]?.paragraphStyle;
+
   const rows = [];
   for (const rowNode of getChildrenByTagNameNS(tableNode, WORD_NS, "tr")) {
     const cells = [];
@@ -1392,7 +1449,17 @@ async function parseTableNode(
       const paragraphs = [];
       const cellProperties = getFirstChildByTagNameNS(cellNode, WORD_NS, "tcPr");
       for (const paragraphNode of getChildrenByTagNameNS(cellNode, WORD_NS, "p")) {
-        paragraphs.push(await parseParagraphNode(paragraphNode, numberingMaps, zip, relsMap, assets, themeFonts));
+        paragraphs.push(
+          await parseParagraphNode(
+            paragraphNode,
+            numberingMaps,
+            zip,
+            relsMap,
+            assets,
+            themeFonts,
+            inheritedParagraphStyle,
+          ),
+        );
       }
       const colSpan = getTableCellColSpan(cellProperties);
       const vMerge = getTableCellVMerge(cellProperties);
@@ -1436,7 +1503,7 @@ async function parseTableNode(
     }
   }
 
-  return createEditorTable(rows);
+  return createEditorTable(rows, gridCols.length > 0 ? gridCols : undefined);
 }
 
 export async function importDocxToEditorDocument(
@@ -1551,7 +1618,7 @@ export async function importDocxToEditorDocument(
       }
       reportBodyProgress();
     } else if (element.localName === "tbl") {
-      appendBodyBlock(await parseTableNode(element, numberingMaps, zip, relsMap, assets, themeFonts));
+      appendBodyBlock(await parseTableNode(element, numberingMaps, zip, relsMap, assets, themeFonts, importedStyles));
       reportBodyProgress();
     }
 
@@ -1607,7 +1674,7 @@ export async function importDocxToEditorDocument(
         let zipPath = headerTarget.startsWith("/") ? headerTarget.slice(1) : headerTarget;
         if (!zipPath.startsWith("word/")) zipPath = "word/" + headerTarget;
         const headerXml = await zip.file(zipPath)?.async("string");
-        header = await parseHeaderFooterXml(headerXml ?? null, numberingMaps, zip, relsMap, assets, themeFonts);
+        header = await parseHeaderFooterXml(headerXml ?? null, numberingMaps, zip, relsMap, assets, themeFonts, importedStyles);
         applyDocGridLinePitch(
           header,
           props.docGridLinePitchPx,
@@ -1624,7 +1691,7 @@ export async function importDocxToEditorDocument(
         let zipPath = footerTarget.startsWith("/") ? footerTarget.slice(1) : footerTarget;
         if (!zipPath.startsWith("word/")) zipPath = "word/" + footerTarget;
         const footerXml = await zip.file(zipPath)?.async("string");
-        footer = await parseHeaderFooterXml(footerXml ?? null, numberingMaps, zip, relsMap, assets, themeFonts);
+        footer = await parseHeaderFooterXml(footerXml ?? null, numberingMaps, zip, relsMap, assets, themeFonts, importedStyles);
         applyDocGridLinePitch(
           footer,
           props.docGridLinePitchPx,
