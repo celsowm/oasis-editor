@@ -1,5 +1,13 @@
 import { normalizeSelection } from "../../core/selection.js";
-import { getParagraphs, positionToParagraphOffset, type EditorState } from "../../core/model.js";
+import {
+  getParagraphs,
+  positionToParagraphOffset,
+  type EditorState,
+  findParagraphTableLocation,
+  getActiveSectionIndex,
+  getDocumentSections,
+} from "../../core/model.js";
+import { buildTableCellLayout } from "../../core/tableLayout.js";
 import type { CaretBox, InputBox, SelectionBox } from "../editorUiTypes.js";
 import type { CanvasLayoutSnapshot, CanvasSnapshotParagraph } from "./CanvasLayoutSnapshot.js";
 
@@ -97,7 +105,91 @@ export function computeCanvasSelectionGeometry(
     getParagraphs(state).map((paragraph, index) => [paragraph.id, index] as const),
   );
 
-  if (!normalized.isCollapsed) {
+  // Check if we have a table-cell selection across multiple cells
+  const activeSectionIndex = getActiveSectionIndex(state);
+  const anchorLoc = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, activeSectionIndex);
+  const focusLoc = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, activeSectionIndex);
+
+  let isMultiCellSelection = false;
+
+  if (
+    anchorLoc &&
+    focusLoc &&
+    anchorLoc.blockIndex === focusLoc.blockIndex &&
+    anchorLoc.zone === focusLoc.zone &&
+    (anchorLoc.rowIndex !== focusLoc.rowIndex || anchorLoc.cellIndex !== focusLoc.cellIndex)
+  ) {
+    const sections = getDocumentSections(state.document);
+    const section = sections[activeSectionIndex];
+    let tableBlock;
+    if (anchorLoc.zone === "header") {
+      tableBlock = section?.header?.[anchorLoc.blockIndex];
+    } else if (anchorLoc.zone === "footer") {
+      tableBlock = section?.footer?.[anchorLoc.blockIndex];
+    } else {
+      tableBlock = section?.blocks?.[anchorLoc.blockIndex];
+    }
+
+    if (tableBlock && tableBlock.type === "table") {
+      isMultiCellSelection = true;
+      const tableLayout = buildTableCellLayout(tableBlock);
+      const anchorCell = tableLayout.find(
+        (entry) =>
+          entry.rowIndex === anchorLoc.rowIndex && entry.cellIndex === anchorLoc.cellIndex,
+      );
+      const focusCell = tableLayout.find(
+        (entry) =>
+          entry.rowIndex === focusLoc.rowIndex && entry.cellIndex === focusLoc.cellIndex,
+      );
+
+      if (anchorCell && focusCell) {
+        const startRow = Math.min(anchorCell.visualRowIndex, focusCell.visualRowIndex);
+        const endRow = Math.max(
+          anchorCell.visualRowIndex + anchorCell.rowSpan - 1,
+          focusCell.visualRowIndex + focusCell.rowSpan - 1,
+        );
+        const startCol = Math.min(anchorCell.visualColumnIndex, focusCell.visualColumnIndex);
+        const endCol = Math.max(
+          anchorCell.visualColumnIndex + anchorCell.colSpan - 1,
+          focusCell.visualColumnIndex + focusCell.colSpan - 1,
+        );
+
+        const uniqueCells = new Set<string>();
+
+        for (const paragraph of snapshot.paragraphs) {
+          if (paragraph.tableCell && paragraph.tableCell.tableId === tableBlock.id) {
+            const cell = tableLayout.find(
+              (c) =>
+                c.rowIndex === paragraph.tableCell!.rowIndex &&
+                c.cellIndex === paragraph.tableCell!.cellIndex,
+            );
+            if (cell) {
+              const inRow =
+                cell.visualRowIndex <= endRow &&
+                cell.visualRowIndex + cell.rowSpan - 1 >= startRow;
+              const inCol =
+                cell.visualColumnIndex <= endCol &&
+                cell.visualColumnIndex + cell.colSpan - 1 >= startCol;
+              if (inRow && inCol) {
+                const cellKey = `${cell.rowIndex}:${cell.cellIndex}`;
+                if (!uniqueCells.has(cellKey)) {
+                  uniqueCells.add(cellKey);
+                  selectionBoxes.push({
+                    left: paragraph.tableCell.left - surfaceRect.left,
+                    top: paragraph.tableCell.top - surfaceRect.top,
+                    width: paragraph.tableCell.width,
+                    height: paragraph.tableCell.height,
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (!isMultiCellSelection && !normalized.isCollapsed) {
     for (const paragraph of snapshot.paragraphs) {
       const selectedRange = getParagraphSelectionRange(
         paragraph.paragraphId,
@@ -145,7 +237,7 @@ export function computeCanvasSelectionGeometry(
     left: caretLeft,
     top: caretTop,
     height: caretHeight,
-    visible: focusParagraphSegments.length > 0,
+    visible: focusParagraphSegments.length > 0 && !isMultiCellSelection,
   };
 
   return {
@@ -154,3 +246,4 @@ export function computeCanvasSelectionGeometry(
     caretBox,
   };
 }
+
