@@ -805,6 +805,148 @@ test("canvas table row resize on last bottom border increases last row height", 
   await expectNoMissEvents(page);
 });
 
+test("canvas table row resize does not shrink below row content minimum", async ({ page }) => {
+  await gotoEditor(page);
+  await clearMissEvents(page);
+  await seedText(page, "resize row min baseline");
+  await insertTable(page, 2, 2);
+  await page.waitForTimeout(140);
+  const editorPage = await canvasPageRect(page);
+  await page.mouse.click(editorPage.x + 210, editorPage.y + 210);
+  await expectLastHitFromCanvas(page);
+
+  const geometryBefore = await page.evaluate(() => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const cells = snapshot.paragraphs
+      .filter((paragraph) => paragraph.tableCell)
+      .map((paragraph) => paragraph.tableCell!)
+      .filter((cell, index, all) =>
+        all.findIndex((candidate) =>
+          candidate.tableId === cell.tableId &&
+          candidate.rowIndex === cell.rowIndex &&
+          candidate.cellIndex === cell.cellIndex,
+        ) === index,
+      );
+    if (cells.length === 0) return null;
+    const tableId = cells[0]!.tableId;
+    const tableCells = cells.filter((cell) => cell.tableId === tableId);
+    const lastRowIndex = Math.max(...tableCells.map((cell) => cell.rowIndex));
+    const lastRowCell =
+      tableCells.find((cell) => cell.rowIndex === lastRowIndex && cell.cellIndex === 0) ??
+      tableCells.find((cell) => cell.rowIndex === lastRowIndex);
+    if (!lastRowCell) return null;
+    return {
+      tableId,
+      lastRowIndex,
+      midX: lastRowCell.left + lastRowCell.width * 0.5,
+      edgeY: lastRowCell.top + lastRowCell.height,
+      lastRowHeight: lastRowCell.height,
+    };
+  });
+  if (!geometryBefore) {
+    throw new Error("unable to resolve table geometry for row min resize");
+  }
+
+  await page.mouse.move(geometryBefore.midX, geometryBefore.edgeY);
+  await page.mouse.down();
+  await page.mouse.move(geometryBefore.midX, geometryBefore.edgeY - 120);
+  await page.mouse.up();
+  await page.waitForTimeout(120);
+
+  const geometryAfter = await page.evaluate(({ tableId, lastRowIndex }) => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const cells = snapshot.paragraphs
+      .filter((paragraph) => paragraph.tableCell?.tableId === tableId)
+      .map((paragraph) => paragraph.tableCell!)
+      .filter((cell, index, all) =>
+        all.findIndex((candidate) =>
+          candidate.tableId === cell.tableId &&
+          candidate.rowIndex === cell.rowIndex &&
+          candidate.cellIndex === cell.cellIndex,
+        ) === index,
+      );
+    const lastRowCell =
+      cells.find((cell) => cell.rowIndex === lastRowIndex && cell.cellIndex === 0) ??
+      cells.find((cell) => cell.rowIndex === lastRowIndex);
+    if (!lastRowCell) return null;
+    return { lastRowHeight: lastRowCell.height };
+  }, { tableId: geometryBefore.tableId, lastRowIndex: geometryBefore.lastRowIndex });
+
+  expect(geometryAfter).not.toBeNull();
+  expect((geometryAfter?.lastRowHeight ?? 0) + 1).toBeGreaterThanOrEqual(geometryBefore.lastRowHeight);
+  await expectNoMissEvents(page);
+});
+
+test("canvas table column resize does not shrink below content minimum", async ({ page }) => {
+  await gotoEditor(page);
+  await clearMissEvents(page);
+  await seedText(page, "resize column min baseline");
+  await insertTable(page, 2, 2);
+  await page.waitForTimeout(140);
+  const editorPage = await canvasPageRect(page);
+  await page.mouse.click(editorPage.x + 210, editorPage.y + 210);
+  await expectLastHitFromCanvas(page);
+
+  const geometryBefore = await page.evaluate(() => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const cells = snapshot.paragraphs
+      .filter((paragraph) => paragraph.tableCell)
+      .map((paragraph) => paragraph.tableCell!)
+      .filter((cell, index, all) =>
+        all.findIndex((candidate) =>
+          candidate.tableId === cell.tableId &&
+          candidate.rowIndex === cell.rowIndex &&
+          candidate.cellIndex === cell.cellIndex,
+        ) === index,
+      );
+    if (cells.length === 0) return null;
+    const tableId = cells[0]!.tableId;
+    const tableCells = cells.filter((cell) => cell.tableId === tableId);
+    const first = tableCells.find((cell) => cell.rowIndex === 0 && cell.cellIndex === 0) ?? tableCells[0];
+    if (!first) return null;
+    return {
+      tableId,
+      edgeX: first.left + first.width,
+      midY: first.top + first.height * 0.5,
+      firstWidth: first.width,
+    };
+  });
+  if (!geometryBefore) {
+    throw new Error("unable to resolve table geometry for column min resize");
+  }
+
+  await page.mouse.move(geometryBefore.edgeX, geometryBefore.midY);
+  await page.mouse.down();
+  await page.mouse.move(geometryBefore.edgeX - 180, geometryBefore.midY);
+  await page.mouse.up();
+  await page.waitForTimeout(120);
+
+  const geometryAfter = await page.evaluate((tableId) => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const cells = snapshot.paragraphs
+      .filter((paragraph) => paragraph.tableCell?.tableId === tableId)
+      .map((paragraph) => paragraph.tableCell!)
+      .filter((cell, index, all) =>
+        all.findIndex((candidate) =>
+          candidate.tableId === cell.tableId &&
+          candidate.rowIndex === cell.rowIndex &&
+          candidate.cellIndex === cell.cellIndex,
+        ) === index,
+      );
+    const first = cells.find((cell) => cell.rowIndex === 0 && cell.cellIndex === 0);
+    if (!first) return null;
+    return { firstWidth: first.width };
+  }, geometryBefore.tableId);
+
+  expect(geometryAfter).not.toBeNull();
+  expect((geometryAfter?.firstWidth ?? 0) + 1).toBeGreaterThanOrEqual(geometryBefore.firstWidth);
+  await expectNoMissEvents(page);
+});
+
 test("toolbar overflow table insert does not throw insertBefore NotFoundError", async ({
   page,
 }) => {

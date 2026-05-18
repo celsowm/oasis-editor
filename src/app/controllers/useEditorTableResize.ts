@@ -12,8 +12,10 @@ export interface TableResizeOps {
     initialPos: number;
     currentPos: number;
     initialRowHeightPx?: number;
+    minRowHeightPx?: number;
     columnWidthsPt?: Record<number, number>;
     maxColumnIndex?: number;
+    minColumnWidthsPx?: Record<number, number>;
     guideBounds: { left: number; top: number; width: number; height: number };
   } | null;
   handleMouseMove: (event: MouseEvent) => void;
@@ -32,6 +34,8 @@ interface SnapshotCellRect {
   bottom: number;
   width: number;
   height: number;
+  contentMinWidth: number;
+  contentMinHeight: number;
 }
 
 interface TableGeometry {
@@ -53,8 +57,11 @@ interface ResizeHoverInfo {
 
 const POINTS_PER_PIXEL = 0.75;
 const PIXELS_PER_POINT = 1 / POINTS_PER_PIXEL;
-const EDGE_THRESHOLD_PX = 12;
+const EDGE_THRESHOLD_COLUMN_PX = 4;
+const EDGE_THRESHOLD_ROW_PX = 4;
 const MIN_TABLE_SIZE_PT = 10;
+const CONTENT_MIN_WIDTH_GUARD_PX = 12;
+const CONTENT_MIN_HEIGHT_GUARD_PX = 4;
 
 function pxToPt(px: number): number {
   return px * POINTS_PER_PIXEL;
@@ -120,6 +127,10 @@ function buildTableGeometries(surface: HTMLElement, state: EditorState): TableGe
   }
 
   const byTable = new Map<string, Map<string, SnapshotCellRect>>();
+  const contentBoundsByCell = new Map<
+    string,
+    { left: number; top: number; right: number; bottom: number }
+  >();
   for (const paragraph of snapshot.paragraphs) {
     const cell = paragraph.tableCell;
     if (!cell) {
@@ -138,8 +149,42 @@ function buildTableGeometries(surface: HTMLElement, state: EditorState): TableGe
         bottom: cell.top + cell.height,
         width: cell.width,
         height: cell.height,
+        contentMinWidth: 0,
+        contentMinHeight: 0,
       });
       byTable.set(cell.tableId, tableMap);
+    }
+
+    const lineRightEdges = paragraph.lines.flatMap((line) => line.slots.map((slot) => slot.left));
+    const lineBottomEdges = paragraph.lines.map((line) => line.top + line.height);
+    const contentLeft = lineRightEdges.length > 0 ? Math.min(...lineRightEdges) : paragraph.left;
+    const contentRight = lineRightEdges.length > 0 ? Math.max(...lineRightEdges) : paragraph.left;
+    const contentTop = paragraph.lines.length > 0 ? paragraph.lines[0]!.top : paragraph.top;
+    const contentBottom =
+      lineBottomEdges.length > 0 ? Math.max(...lineBottomEdges) : paragraph.top + paragraph.height;
+    const contentKey = `${cell.tableId}:${cell.rowIndex}:${cell.cellIndex}`;
+    const current = contentBoundsByCell.get(contentKey);
+    if (!current) {
+      contentBoundsByCell.set(contentKey, {
+        left: contentLeft,
+        top: contentTop,
+        right: contentRight,
+        bottom: contentBottom,
+      });
+    } else {
+      current.left = Math.min(current.left, contentLeft);
+      current.top = Math.min(current.top, contentTop);
+      current.right = Math.max(current.right, contentRight);
+      current.bottom = Math.max(current.bottom, contentBottom);
+    }
+  }
+
+  for (const [tableId, cellsMap] of byTable.entries()) {
+    for (const cell of cellsMap.values()) {
+      const content = contentBoundsByCell.get(`${tableId}:${cell.rowIndex}:${cell.cellIndex}`);
+      if (!content) continue;
+      cell.contentMinWidth = Math.max(0, content.right - content.left);
+      cell.contentMinHeight = Math.max(0, content.bottom - content.top);
     }
   }
 
@@ -245,6 +290,60 @@ function resolveColumnWidthsPt(
   return { widthsPt, maxColumnIndex };
 }
 
+function resolveMinRowHeightPx(
+  tableNode: EditorTableNode,
+  tableLayout: TableCellLayoutEntry[],
+  geometry: TableGeometry,
+  targetRowIndex: number,
+): number {
+  const row = tableNode.rows[targetRowIndex];
+  if (!row) {
+    return ptToPx(MIN_TABLE_SIZE_PT);
+  }
+  const minFloor = ptToPx(MIN_TABLE_SIZE_PT);
+  let minHeight = minFloor;
+  for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+    const cell = row.cells[cellIndex];
+    if (!cell) continue;
+    const layoutEntry = tableLayout.find(
+      (entry) => entry.rowIndex === targetRowIndex && entry.cellIndex === cellIndex,
+    );
+    if (!layoutEntry || layoutEntry.rowSpan !== 1) {
+      continue;
+    }
+    const geometryCell = geometry.cells.find(
+      (candidate) => candidate.rowIndex === targetRowIndex && candidate.cellIndex === cellIndex,
+    );
+    if (!geometryCell) continue;
+    minHeight = Math.max(minHeight, geometryCell.contentMinHeight + CONTENT_MIN_HEIGHT_GUARD_PX);
+  }
+  return Math.max(minFloor, minHeight);
+}
+
+function resolveMinColumnWidthsPx(
+  tableLayout: TableCellLayoutEntry[],
+  geometry: TableGeometry,
+): Record<number, number> {
+  const minFloor = ptToPx(MIN_TABLE_SIZE_PT);
+  const result: Record<number, number> = {};
+  const geometryByKey = new Map(
+    geometry.cells.map((cell) => [`${cell.rowIndex}:${cell.cellIndex}`, cell] as const),
+  );
+  for (const entry of tableLayout) {
+    if (entry.colSpan !== 1) continue;
+    const geometryCell = geometryByKey.get(`${entry.rowIndex}:${entry.cellIndex}`);
+    if (!geometryCell) continue;
+    const visualCol = entry.visualColumnIndex;
+    const currentMin = result[visualCol] ?? minFloor;
+    result[visualCol] = Math.max(
+      currentMin,
+      geometryCell.contentMinWidth + CONTENT_MIN_WIDTH_GUARD_PX,
+      minFloor,
+    );
+  }
+  return result;
+}
+
 export function createEditorTableResize(deps: {
   state: () => EditorState;
   applyTransactionalState: (producer: (current: EditorState) => EditorState) => void;
@@ -258,8 +357,10 @@ export function createEditorTableResize(deps: {
     initialPos: number;
     currentPos: number;
     initialRowHeightPx?: number;
+    minRowHeightPx?: number;
     columnWidthsPt?: Record<number, number>;
     maxColumnIndex?: number;
+    minColumnWidthsPx?: Record<number, number>;
     guideBounds: { left: number; top: number; width: number; height: number };
   } | null>(null);
 
@@ -294,32 +395,32 @@ export function createEditorTableResize(deps: {
     for (const geometry of geometries) {
       for (const cell of geometry.cells) {
         const verticallyAligned =
-          event.clientY >= cell.top - EDGE_THRESHOLD_PX &&
-          event.clientY <= cell.bottom + EDGE_THRESHOLD_PX;
+          event.clientY >= cell.top - EDGE_THRESHOLD_COLUMN_PX &&
+          event.clientY <= cell.bottom + EDGE_THRESHOLD_COLUMN_PX;
         const horizontallyAligned =
-          event.clientX >= cell.left - EDGE_THRESHOLD_PX &&
-          event.clientX <= cell.right + EDGE_THRESHOLD_PX;
+          event.clientX >= cell.left - EDGE_THRESHOLD_ROW_PX &&
+          event.clientX <= cell.right + EDGE_THRESHOLD_ROW_PX;
 
         if (verticallyAligned) {
           const distLeft = Math.abs(event.clientX - cell.left);
-          if (distLeft <= EDGE_THRESHOLD_PX && (!best || distLeft < best.distance)) {
+          if (distLeft <= EDGE_THRESHOLD_COLUMN_PX && (!best || distLeft < best.distance)) {
             best = { geometry, cell, side: "left", distance: distLeft };
           }
 
           const distRight = Math.abs(event.clientX - cell.right);
-          if (distRight <= EDGE_THRESHOLD_PX && (!best || distRight < best.distance)) {
+          if (distRight <= EDGE_THRESHOLD_COLUMN_PX && (!best || distRight < best.distance)) {
             best = { geometry, cell, side: "right", distance: distRight };
           }
         }
 
         if (horizontallyAligned) {
           const distTop = Math.abs(event.clientY - cell.top);
-          if (distTop <= EDGE_THRESHOLD_PX && (!best || distTop < best.distance)) {
+          if (distTop <= EDGE_THRESHOLD_ROW_PX && (!best || distTop < best.distance)) {
             best = { geometry, cell, side: "top", distance: distTop };
           }
 
           const distBottom = Math.abs(event.clientY - cell.bottom);
-          if (distBottom <= EDGE_THRESHOLD_PX && (!best || distBottom < best.distance)) {
+          if (distBottom <= EDGE_THRESHOLD_ROW_PX && (!best || distBottom < best.distance)) {
             best = { geometry, cell, side: "bottom", distance: distBottom };
           }
         }
@@ -409,6 +510,7 @@ export function createEditorTableResize(deps: {
         tableLayout,
         info.tableGeometry,
       );
+      const minColumnWidthsPx = resolveMinColumnWidthsPx(tableLayout, info.tableGeometry);
 
       setResizing({
         type: "column",
@@ -418,6 +520,7 @@ export function createEditorTableResize(deps: {
         currentPos: initialPos,
         columnWidthsPt: widthsPt,
         maxColumnIndex,
+        minColumnWidthsPx,
         guideBounds: getGuideBounds(),
       });
 
@@ -440,6 +543,12 @@ export function createEditorTableResize(deps: {
     }
 
     const initialPos = info.side === "top" ? info.rect.top : info.rect.bottom;
+    const minRowHeightPx = resolveMinRowHeightPx(
+      info.tableNode,
+      tableLayout,
+      info.tableGeometry,
+      targetRowIndex,
+    );
 
     setResizing({
       type: "row",
@@ -448,6 +557,7 @@ export function createEditorTableResize(deps: {
       initialPos,
       currentPos: initialPos,
       initialRowHeightPx: rowHeightsPx[targetRowIndex],
+      minRowHeightPx,
       guideBounds: getGuideBounds(),
     });
 
@@ -490,7 +600,11 @@ export function createEditorTableResize(deps: {
       deps.applyTransactionalState((current) => {
         if (currentResizing.type === "row") {
           const basePx = currentResizing.initialRowHeightPx ?? ptToPx(MIN_TABLE_SIZE_PT);
-          const newSizePt = Math.max(MIN_TABLE_SIZE_PT, pxToPt(basePx + delta));
+          const minRowHeightPx = Math.max(
+            ptToPx(MIN_TABLE_SIZE_PT),
+            currentResizing.minRowHeightPx ?? ptToPx(MIN_TABLE_SIZE_PT),
+          );
+          const newSizePt = Math.max(MIN_TABLE_SIZE_PT, pxToPt(Math.max(minRowHeightPx, basePx + delta)));
           return setTableRowHeight(
             current,
             currentResizing.tableId,
@@ -508,18 +622,27 @@ export function createEditorTableResize(deps: {
         }
 
         const oldWidth = baseWidths[currentResizing.index] ?? MIN_TABLE_SIZE_PT;
-        let newWidth = Math.max(MIN_TABLE_SIZE_PT, oldWidth + deltaPt);
+        const minColumnWidthsPx = currentResizing.minColumnWidthsPx ?? {};
+        const minWidthPt = Math.max(
+          MIN_TABLE_SIZE_PT,
+          pxToPt(minColumnWidthsPx[currentResizing.index] ?? ptToPx(MIN_TABLE_SIZE_PT)),
+        );
+        let newWidth = Math.max(minWidthPt, oldWidth + deltaPt);
         const isLastColumn = currentResizing.index === maxColumnIndex;
 
         if (!isLastColumn) {
           const nextIndex = currentResizing.index + 1;
           const oldNextWidth = baseWidths[nextIndex] ?? MIN_TABLE_SIZE_PT;
+          const minNextWidthPt = Math.max(
+            MIN_TABLE_SIZE_PT,
+            pxToPt(minColumnWidthsPx[nextIndex] ?? ptToPx(MIN_TABLE_SIZE_PT)),
+          );
           let newNextWidth = oldNextWidth - (newWidth - oldWidth);
 
-          if (newNextWidth < MIN_TABLE_SIZE_PT) {
-            newNextWidth = MIN_TABLE_SIZE_PT;
-            newWidth = oldWidth + (oldNextWidth - MIN_TABLE_SIZE_PT);
-            newWidth = Math.max(MIN_TABLE_SIZE_PT, newWidth);
+          if (newNextWidth < minNextWidthPt) {
+            newNextWidth = minNextWidthPt;
+            newWidth = oldWidth + (oldNextWidth - minNextWidthPt);
+            newWidth = Math.max(minWidthPt, newWidth);
           }
 
           baseWidths[currentResizing.index] = newWidth;
