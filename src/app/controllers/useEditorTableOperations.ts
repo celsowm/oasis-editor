@@ -438,7 +438,9 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       return current;
     }
 
-    const targetBlocks = getTargetBlocks(current, range.zone).map(cloneBlock);
+    const _tBlocks = getTargetBlocks(current, range.zone);
+    const targetBlocks = [..._tBlocks];
+    if (range.blockIndex >= 0) targetBlocks[range.blockIndex] = cloneBlock(_tBlocks[range.blockIndex]!);
     const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -483,7 +485,9 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       return current;
     }
 
-    const targetBlocks = getTargetBlocks(current, range.zone).map(cloneBlock);
+    const _tBlocks = getTargetBlocks(current, range.zone);
+    const targetBlocks = [..._tBlocks];
+    if (range.blockIndex >= 0) targetBlocks[range.blockIndex] = cloneBlock(_tBlocks[range.blockIndex]!);
     const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -558,7 +562,9 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       return current;
     }
 
-    const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+    const _tBlocks = getTargetBlocks(current, location.zone);
+    const targetBlocks = [..._tBlocks];
+    if (location.blockIndex >= 0) targetBlocks[location.blockIndex] = cloneBlock(_tBlocks[location.blockIndex]!);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -605,7 +611,9 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       return current;
     }
 
-    const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+    const _tBlocks = getTargetBlocks(current, location.zone);
+    const targetBlocks = [..._tBlocks];
+    if (location.blockIndex >= 0) targetBlocks[location.blockIndex] = cloneBlock(_tBlocks[location.blockIndex]!);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -726,7 +734,9 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       return current;
     }
 
-    const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+    const _tBlocks = getTargetBlocks(current, location.zone);
+    const targetBlocks = [..._tBlocks];
+    if (location.blockIndex >= 0) targetBlocks[location.blockIndex] = cloneBlock(_tBlocks[location.blockIndex]!);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -838,7 +848,9 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       return current;
     }
 
-    const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+    const _tBlocks = getTargetBlocks(current, location.zone);
+    const targetBlocks = [..._tBlocks];
+    if (location.blockIndex >= 0) targetBlocks[location.blockIndex] = cloneBlock(_tBlocks[location.blockIndex]!);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -923,7 +935,9 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       return current;
     }
 
-    const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+    const _tBlocks = getTargetBlocks(current, location.zone);
+    const targetBlocks = [..._tBlocks];
+    if (location.blockIndex >= 0) targetBlocks[location.blockIndex] = cloneBlock(_tBlocks[location.blockIndex]!);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -1026,7 +1040,9 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       return current;
     }
 
-    const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+    const _tBlocks = getTargetBlocks(current, location.zone);
+    const targetBlocks = [..._tBlocks];
+    if (location.blockIndex >= 0) targetBlocks[location.blockIndex] = cloneBlock(_tBlocks[location.blockIndex]!);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -1189,21 +1205,25 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       targetBlocks = current.document.blocks;
     }
 
-    const nextBlocks = targetBlocks.map(cloneBlock);
-    const tableBlock = nextBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const originalTable = targetBlocks[location.blockIndex] as EditorTableNode;
+    if (!originalTable || originalTable.type !== "table") {
       return edit(current);
     }
 
-    const targetCell = tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
-    if (!targetCell) {
+    const originalRow = originalTable.rows[location.rowIndex];
+    if (!originalRow) {
+      return edit(current);
+    }
+
+    const originalCell = originalRow.cells[location.cellIndex];
+    if (!originalCell) {
       return edit(current);
     }
 
     const tempState: EditorState = {
       ...current,
       document: createEditorDocument(
-        targetCell.blocks,
+        originalCell.blocks,
         undefined,
         undefined,
         undefined,
@@ -1222,7 +1242,14 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       (block): block is EditorParagraphNode => block.type === "paragraph",
     );
 
-    targetCell.blocks.splice(0, targetCell.blocks.length, ...replacementParagraphs);
+    const nextCell = { ...originalCell, blocks: replacementParagraphs };
+    const nextRow = { ...originalRow, cells: [...originalRow.cells] };
+    nextRow.cells[location.cellIndex] = nextCell;
+    const nextTable = { ...originalTable, rows: [...originalTable.rows] };
+    nextTable.rows[location.rowIndex] = nextRow;
+
+    const nextBlocks = [...targetBlocks];
+    nextBlocks[location.blockIndex] = nextTable;
 
     const nextState = updateBlocksInCurrentSection(current, nextBlocks, zone);
     return {
@@ -1301,7 +1328,9 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       const resultParagraphs = getParagraphs(tempResult);
 
       // 4. Distribute paragraphs back to cells
-      const targetBlocks = getTargetBlocks(current, zone).map(cloneBlock);
+      const _tBlocks = getTargetBlocks(current, zone);
+      const targetBlocks = [..._tBlocks];
+      if (blockIndex >= 0) targetBlocks[blockIndex] = cloneBlock(_tBlocks[blockIndex]!);
       const tableBlock = targetBlocks[blockIndex] as EditorTableNode;
       if (!tableBlock) {
         return current;

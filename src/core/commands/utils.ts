@@ -234,21 +234,30 @@ export function replaceParagraphsInBlocks(blocks: EditorBlockNode[], newParagrap
 
   let index = 0;
   const processBlocks = (nodes: EditorBlockNode[]): EditorBlockNode[] => {
-    return nodes.map(node => {
+    let changed = false;
+    const nextNodes = nodes.map(node => {
       if (node.type === "paragraph") {
-        return newParagraphs[index++] ?? node;
+        const newP = newParagraphs[index++] ?? node;
+        if (newP !== node) changed = true;
+        return newP;
       }
-      return {
-        ...node,
-        rows: node.rows.map(row => ({
-          ...row,
-          cells: row.cells.map(cell => ({
-            ...cell,
-            blocks: processBlocks(cell.blocks) as EditorParagraphNode[]
-          }))
-        }))
-      };
+
+      let nodeChanged = false;
+      const newRows = node.rows.map(row => {
+        let rowChanged = false;
+        const newCells = row.cells.map(cell => {
+          const newCellBlocks = processBlocks(cell.blocks) as EditorParagraphNode[];
+          if (newCellBlocks !== cell.blocks) rowChanged = true;
+          return newCellBlocks !== cell.blocks ? { ...cell, blocks: newCellBlocks } : cell;
+        });
+        if (rowChanged) nodeChanged = true;
+        return rowChanged ? { ...row, cells: newCells } : row;
+      });
+
+      if (nodeChanged) changed = true;
+      return nodeChanged ? { ...node, rows: newRows } : node;
     });
+    return changed ? nextNodes : nodes;
   };
   return processBlocks(blocks);
 }
