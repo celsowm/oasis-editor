@@ -10,6 +10,7 @@ import type {
   EditorParagraphNode,
   EditorParagraphStyle,
   EditorSection,
+  EditorTableStyle,
   EditorTableCellStyle,
   EditorTableNode,
   EditorTextStyle,
@@ -1440,7 +1441,10 @@ async function parseTableNode(
 
   const tblPr = getFirstChildByTagNameNS(tableNode, WORD_NS, "tblPr");
   const tableStyleId = getAttributeValue(getFirstChildByTagNameNS(tblPr, WORD_NS, "tblStyle"), "val");
-  const inheritedParagraphStyle = tableStyleId && styles?.[tableStyleId]?.paragraphStyle;
+  const inheritedParagraphStyle =
+    tableStyleId && styles?.[tableStyleId]?.paragraphStyle
+      ? styles[tableStyleId]!.paragraphStyle
+      : undefined;
 
   const rows = [];
   for (const rowNode of getChildrenByTagNameNS(tableNode, WORD_NS, "tr")) {

@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, onMount, Show, createEffect, For } from "solid-js";
+import { createSignal, onCleanup, onMount, Show, createEffect, For, startTransition } from "solid-js";
 import { Portal } from "solid-js/web";
 import { t } from "../../../i18n/index.js";
 
@@ -21,6 +21,13 @@ export function TableGridPicker(props: TableGridPickerProps) {
   const close = () => {
     setIsOpen(false);
     setHover({ row: 0, col: 0 });
+  };
+
+  const selectGridSize = (rows: number, cols: number) => {
+    close();
+    void startTransition(() => {
+      props.onSelect(rows, cols);
+    });
   };
 
   const updateCoords = () => {
@@ -75,8 +82,7 @@ export function TableGridPicker(props: TableGridPickerProps) {
       case "Enter":
         event.preventDefault();
         if (cur.row > 0 && cur.col > 0) {
-          props.onSelect(cur.row, cur.col);
-          close();
+          selectGridSize(cur.row, cur.col);
         }
         return;
       default:
@@ -180,8 +186,7 @@ export function TableGridPicker(props: TableGridPickerProps) {
                         onMouseEnter={() => setHover({ row: r, col: c })}
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={() => {
-                          props.onSelect(r, c);
-                          close();
+                          selectGridSize(r, c);
                         }}
                         aria-label={`${r} × ${c}`}
                       />
