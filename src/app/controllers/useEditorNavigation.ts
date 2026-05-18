@@ -20,6 +20,7 @@ import {
   findNextWordBoundary,
 } from "../../core/wordBoundaries.js";
 import { buildTableCellLayout } from "../../core/tableLayout.js";
+import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
 import { getParagraphBoundaryElement } from "../../ui/domGeometry.js";
 import { collectParagraphCharRects } from "../../ui/positionAtPoint.js";
 import { measureParagraphLayoutFromRects } from "../../ui/layoutProjection.js";
@@ -174,6 +175,19 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
     }
 
     const surfaceRef = deps.surfaceRef();
+    const surfaceRect = surfaceRef?.getBoundingClientRect() ?? null;
+    const preferredX = deps.preferredColumnX();
+    const desiredX =
+      preferredX === null
+        ? deps.caretBox().left + (surfaceRect?.left ?? 0)
+        : preferredX;
+    const snapshot = surfaceRef
+      ? buildCanvasLayoutSnapshot({
+          surface: surfaceRef,
+          state,
+          layoutMode: "wordParity",
+        })
+      : null;
     let targetIndex = currentIndex + direction;
     const tableLocation = findParagraphTableLocation(
       state.document,
@@ -195,24 +209,6 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
             entry.cellIndex === tableLocation.cellIndex,
         );
         if (currentCell) {
-          const currentElementCandidates = surfaceRef
-            ? Array.from(
-                surfaceRef.querySelectorAll<HTMLElement>(
-                  `[data-source-block-id="${block.id}"] [data-row-index="${tableLocation.rowIndex}"][data-cell-index="${tableLocation.cellIndex}"], ` +
-                    `[data-block-id="${block.id}"] [data-row-index="${tableLocation.rowIndex}"][data-cell-index="${tableLocation.cellIndex}"]`,
-                ),
-              )
-            : [];
-          const currentElement =
-            currentElementCandidates.find(
-              (element) =>
-                element.closest('[data-repeated-header="true"]') === null,
-            ) ?? currentElementCandidates[0];
-          const desiredX =
-            deps.preferredColumnX() ??
-            (currentElement
-              ? currentElement.getBoundingClientRect().left
-              : deps.caretBox().left);
           const candidateRows: number[] = [];
           for (
             let rowIndex = currentCell.visualRowIndex + direction;
@@ -235,22 +231,17 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
 
             const scoredCandidates = rowCandidates
               .map((entry) => {
-                const cellElementCandidates = surfaceRef
-                  ? Array.from(
-                      surfaceRef.querySelectorAll<HTMLElement>(
-                        `[data-source-block-id="${block.id}"] [data-row-index="${entry.rowIndex}"][data-cell-index="${entry.cellIndex}"], ` +
-                          `[data-block-id="${block.id}"] [data-row-index="${entry.rowIndex}"][data-cell-index="${entry.cellIndex}"]`,
-                      ),
-                    )
-                  : [];
-                const cellElement =
-                  cellElementCandidates.find(
-                    (element) =>
-                      element.closest('[data-repeated-header="true"]') === null,
-                  ) ?? cellElementCandidates[0];
-                const rect = cellElement?.getBoundingClientRect();
-                const left = rect?.left ?? desiredX;
-                const right = rect?.right ?? desiredX;
+                const paragraphId = entry.cell.blocks[0]?.id;
+                const cellRect = paragraphId
+                  ? snapshot?.paragraphs.find(
+                      (paragraph) =>
+                        paragraph.paragraphId === paragraphId &&
+                        paragraph.tableCell &&
+                        paragraph.tableCell.tableId === block.id,
+                    )?.tableCell
+                  : null;
+                const left = cellRect?.left ?? desiredX;
+                const right = cellRect ? cellRect.left + cellRect.width : desiredX;
                 const distance =
                   desiredX < left
                     ? left - desiredX
@@ -305,8 +296,6 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
           direction < 0 ? "end" : "start",
         )
       : null;
-    const desiredX = deps.preferredColumnX() ?? deps.caretBox().left;
-
     let offset = 0;
     if (targetElement && surfaceRef) {
       const layout = measureParagraphLayoutFromRects(
@@ -318,16 +307,7 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
       offset = boundaryLine?.slots.length
         ? boundaryLine.slots.reduce(
             (best: { left: number; offset: number }, slot: { left: number; offset: number }) =>
-              Math.abs(
-                desiredX +
-                  (surfaceRef?.getBoundingClientRect().left ?? 0) -
-                  slot.left,
-              ) <
-              Math.abs(
-                desiredX +
-                  (surfaceRef?.getBoundingClientRect().left ?? 0) -
-                  best.left,
-              )
+              Math.abs(desiredX - slot.left) < Math.abs(desiredX - best.left)
                 ? slot
                 : best,
             boundaryLine.slots[0]!,

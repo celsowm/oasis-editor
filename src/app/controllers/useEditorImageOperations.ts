@@ -4,7 +4,6 @@ import { getParagraphs, paragraphOffsetToPosition, resolveImageSrc, type EditorP
 import { normalizeSelection, isSelectionCollapsed } from "../../core/selection.js";
 import { moveSelectedImageToPosition, setSelection, resizeSelectedImage } from "../../core/editorCommands.js";
 import { getMaxInlineImageWidth } from "../../ui/domGeometry.js";
-import { resolvePositionAtPoint } from "../../ui/positionAtPoint.js";
 import type { ImageResizeHandleDirection } from "../../ui/editorUiTypes.js";
 import type { EditorLogger } from "../../utils/logger.js";
 import type { EditorHistoryState } from "../../ui/editorHistory.js";
@@ -46,6 +45,7 @@ interface PendingImagePointer {
 export interface EditorImageOperationsDeps {
   state: EditorState;
   surfaceRef: () => HTMLDivElement | undefined;
+  resolvePositionAtSurfacePoint: (clientX: number, clientY: number) => EditorPosition | null;
   applyState: (next: EditorState) => void;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
@@ -185,16 +185,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
   };
 
   const resolvePositionAtSurfacePoint = (clientX: number, clientY: number): EditorPosition | null => {
-    const surface = deps.surfaceRef();
-    return surface
-      ? resolvePositionAtPoint({
-          clientX,
-          clientY,
-          surface,
-          state: deps.state,
-          documentLike: document,
-        })
-      : null;
+    return deps.resolvePositionAtSurfacePoint(clientX, clientY);
   };
 
   const showImageDragCursor = () => {

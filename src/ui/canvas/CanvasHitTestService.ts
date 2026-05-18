@@ -4,7 +4,6 @@ import {
   type EditorPosition,
   type EditorState,
 } from "../../core/model.js";
-import { recordDuration } from "../../utils/performanceMetrics.js";
 import type {
   CanvasLayoutSnapshot,
   CanvasSnapshotLine,
@@ -285,53 +284,3 @@ export function resolveCanvasSurfaceHitAtPoint(
   };
 }
 
-export interface ResolveHitWithFallbackOptions extends ResolveCanvasHitOptions {
-  allowDomFallback: boolean;
-  resolveDomFallbackPosition: (clientX: number, clientY: number) => EditorPosition | null;
-  onFallbackUsed?: (reason: string, details: { clientX: number; clientY: number }) => void;
-}
-
-function isUnsupportedFallbackReason(reason: string): boolean {
-  return reason.startsWith("unsupported:");
-}
-
-export function resolveCanvasSurfaceHitAtPointWithFallback(
-  options: ResolveHitWithFallbackOptions,
-): SurfaceHit | null {
-  const primary = resolveCanvasSurfaceHitAtPoint(options);
-  if (primary?.resolvedFromParagraph) {
-    return primary;
-  }
-  if (!options.allowDomFallback) {
-    return primary;
-  }
-
-  const fallbackPosition = options.resolveDomFallbackPosition(
-    options.clientX,
-    options.clientY,
-  );
-  if (!fallbackPosition) {
-    return primary;
-  }
-
-  const reason = primary?.fallbackReason ?? "unresolved-hit";
-  if (!isUnsupportedFallbackReason(reason)) {
-    return primary;
-  }
-  options.onFallbackUsed?.(reason, {
-    clientX: options.clientX,
-    clientY: options.clientY,
-  });
-  recordDuration("canvas:fallback:hit-test", 0);
-
-  return {
-    zone: primary?.zone ?? (options.state.activeZone ?? "main"),
-    paragraphId: fallbackPosition.paragraphId,
-    paragraphOffset: fallbackPosition.offset,
-    position: fallbackPosition,
-    source: "dom-fallback",
-    fallbackReason: reason,
-    resolvedFromParagraph: true,
-    caretViewport: undefined,
-  };
-}

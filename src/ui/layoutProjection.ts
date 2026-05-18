@@ -430,6 +430,32 @@ function getTableCellContentWidth(
   return Math.max(MIN_TABLE_CELL_CONTENT_WIDTH_PX, widthPx - horizontalPaddingPx);
 }
 
+function parseTableRowHeightToPx(height: number | string | undefined): number | null {
+  if (typeof height === "number" && Number.isFinite(height)) {
+    return Math.max(0, height * POINT_TO_PX);
+  }
+  if (typeof height !== "string") {
+    return null;
+  }
+  const trimmed = height.trim().toLowerCase();
+  if (!trimmed || trimmed.includes("%")) {
+    return null;
+  }
+  if (trimmed.endsWith("pt")) {
+    const parsed = Number.parseFloat(trimmed.slice(0, -2));
+    return Number.isFinite(parsed) ? Math.max(0, parsed * POINT_TO_PX) : null;
+  }
+  if (trimmed.endsWith("px")) {
+    const parsed = Number.parseFloat(trimmed.slice(0, -2));
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : null;
+  }
+  if (!/^[+-]?\d+(\.\d+)?$/.test(trimmed)) {
+    return null;
+  }
+  const parsed = Number.parseFloat(trimmed);
+  return Number.isFinite(parsed) ? Math.max(0, parsed * POINT_TO_PX) : null;
+}
+
 function estimateTableRowHeight(
   row: EditorTableNode["rows"][number],
   styles: Record<string, EditorNamedStyle> | undefined,
@@ -452,7 +478,9 @@ function estimateTableRowHeight(
       ),
     );
 
-  return Math.max(...cellHeights, DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT) + DEFAULT_TABLE_ROW_VERTICAL_SPACING;
+  const contentHeight = Math.max(...cellHeights, DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT);
+  const explicitHeight = parseTableRowHeightToPx(row.style?.height);
+  return Math.max(contentHeight, explicitHeight ?? 0) + DEFAULT_TABLE_ROW_VERTICAL_SPACING;
 }
 
 function getTableHeaderRowCount(table: EditorTableNode): number {

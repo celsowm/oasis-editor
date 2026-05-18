@@ -13,7 +13,6 @@ import {
   resetEditorHistoryGrouping,
   type EditorTransactionOptions,
 } from "./editorHistory.js";
-import { resolvePositionAtPoint } from "./positionAtPoint.js";
 import {
   type BooleanStyleKey,
 } from "./toolbarStyleState.js";
@@ -87,12 +86,11 @@ import "./components/FindReplace/findReplace.css";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import { setLocale } from "../i18n/index.js";
 import {
-  resolveCanvasSurfaceHitAtPointWithFallback,
+  resolveCanvasSurfaceHitAtPoint,
   type SurfaceHit,
 } from "./canvas/CanvasHitTestService.js";
 import { buildCanvasLayoutSnapshot } from "./canvas/CanvasLayoutSnapshot.js";
 import {
-  recordCanvasDebugFallbackEvent,
   recordCanvasDebugHit,
   recordCanvasDebugLayoutSnapshot,
   syncCanvasDebugApiVisibility,
@@ -359,43 +357,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     });
   };
 
-  const processEnv = (globalThis as any)?.process?.env ?? {};
-  const viteEnv = (import.meta as any)?.env ?? {};
-  const isWordParityStrict = () =>
-    processEnv.OASIS_WORD_PARITY_STRICT === "1" ||
-    processEnv.OASIS_WORD_PARITY_USE_NODE_LAYOUT === "1" ||
-    viteEnv.VITE_OASIS_WORD_PARITY_STRICT === "1";
-  const isCanvasDomFallbackEnabled = () =>
-    !isWordParityStrict() &&
-    (processEnv.OASIS_CANVAS_GEOMETRY_FALLBACK === "1" ||
-      viteEnv.VITE_OASIS_CANVAS_GEOMETRY_FALLBACK === "1");
-
-  const resolvePositionAtSurfacePointLegacy = (
-    clientX: number,
-    clientY: number,
-  ): EditorPosition | null =>
-    surfaceRef
-      ? resolvePositionAtPoint({
-          clientX,
-          clientY,
-          surface: surfaceRef,
-          state: state as EditorState,
-          documentLike: document,
-        })
-      : null;
-
-  const resolveZoneAtPoint = (clientX: number, clientY: number) => {
-    const target = document.elementFromPoint(clientX, clientY);
-    const el = target instanceof HTMLElement ? target : null;
-    if (el?.closest(".oasis-editor-page-header-zone")) return "header" as const;
-    if (el?.closest(".oasis-editor-page-footer-zone")) return "footer" as const;
-    return "main" as const;
-  };
-
   const resolveSurfaceHitAtPoint = (
     clientX: number,
     clientY: number,
-    context: { forDrag?: boolean } = {},
+    _context: { forDrag?: boolean } = {},
   ): SurfaceHit | null => {
     if (!surfaceRef) return null;
 
@@ -452,20 +417,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       return null;
     }
 
-    const hit = resolveCanvasSurfaceHitAtPointWithFallback({
+    const hit = resolveCanvasSurfaceHitAtPoint({
       snapshot,
       state: state as EditorState,
       clientX,
       clientY,
-      allowDomFallback: !context.forDrag && isCanvasDomFallbackEnabled(),
-      resolveDomFallbackPosition: resolvePositionAtSurfacePointLegacy,
-      onFallbackUsed: (reason, details) => {
-        recordCanvasDebugFallbackEvent(reason, details);
-        logger.info("canvas:fallback-hit-test", {
-          reason,
-          ...details,
-        });
-      },
     });
     recordCanvasDebugHit(hit);
     return hit;
@@ -501,6 +457,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const imageOps = createEditorImageOperations({
     state,
     surfaceRef: () => surfaceRef,
+    resolvePositionAtSurfacePoint: (clientX, clientY) =>
+      resolveSurfaceHitAtPoint(clientX, clientY)?.position ?? null,
     applyState,
     applyTransactionalState,
     updateHistoryState: (updater) => {
@@ -517,6 +475,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     state: () => state,
     applyTransactionalState,
     surfaceRef: () => surfaceRef,
+    viewportRef: () => viewportRef,
   });
 
   const resolvePositionAtSurfacePoint = (
@@ -1038,7 +997,19 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
               "oasis-editor-table-resize-guide-row": resizing().type === "row",
             }}
             style={{
-              [resizing().type === "column" ? "left" : "top"]: `${resizing().currentPos}px`,
+              ...(resizing().type === "column"
+                ? {
+                    left: `${resizing().currentPos}px`,
+                    top: `${resizing().guideBounds.top}px`,
+                    width: "0px",
+                    height: `${resizing().guideBounds.height}px`,
+                  }
+                : {
+                    left: `${resizing().guideBounds.left}px`,
+                    top: `${resizing().currentPos}px`,
+                    width: `${resizing().guideBounds.width}px`,
+                    height: "0px",
+                  }),
             }}
           />
         )}

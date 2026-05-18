@@ -388,6 +388,205 @@ test("canvas simple 2x2 table hit-test uses canvas layout only", async ({ page }
   await expectNoFallbackEvents(page);
 });
 
+test("canvas table column resize uses editor-bounded guide and applies width", async ({ page }) => {
+  await gotoEditor(page);
+  await clearFallbackEvents(page);
+  await seedText(page, "resize column baseline");
+  await insertTable(page, 2, 2);
+  await page.waitForTimeout(140);
+  const editorPage = await canvasPageRect(page);
+  await page.mouse.click(editorPage.x + 210, editorPage.y + 210);
+  await expectLastHitFromCanvas(page);
+
+  const geometryBefore = await page.evaluate(() => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const cells = snapshot.paragraphs
+      .filter((paragraph) => paragraph.tableCell)
+      .map((paragraph) => paragraph.tableCell!)
+      .filter((cell, index, all) =>
+        all.findIndex((candidate) =>
+          candidate.tableId === cell.tableId &&
+          candidate.rowIndex === cell.rowIndex &&
+          candidate.cellIndex === cell.cellIndex,
+        ) === index,
+      );
+    if (cells.length === 0) return null;
+    const tableId = cells[0]!.tableId;
+    const tableCells = cells.filter((cell) => cell.tableId === tableId);
+    const first = tableCells.find((cell) => cell.rowIndex === 0 && cell.cellIndex === 0) ?? tableCells[0];
+    if (!first) return null;
+    const left = Math.min(...tableCells.map((cell) => cell.left));
+    const right = Math.max(...tableCells.map((cell) => cell.left + cell.width));
+    return {
+      tableId,
+      edgeX: first.left + first.width,
+      midY: first.top + first.height * 0.5,
+      firstWidth: first.width,
+      tableWidth: right - left,
+    };
+  });
+  if (!geometryBefore) {
+    throw new Error("unable to resolve table geometry for column resize");
+  }
+
+  await page.mouse.move(geometryBefore.edgeX, geometryBefore.midY);
+  await page.mouse.down();
+  await page.mouse.move(geometryBefore.edgeX + 36, geometryBefore.midY);
+
+  const guide = page.locator(".oasis-editor-table-resize-guide");
+  await expect(guide).toBeVisible();
+
+  const guideRect = await guide.boundingBox();
+  const editorRect = await page.locator('[data-testid="editor-editor"]').boundingBox();
+  if (!guideRect || !editorRect) {
+    throw new Error("unable to resolve guide/editor bounds");
+  }
+
+  expect(Math.abs(guideRect.y - editorRect.y)).toBeLessThanOrEqual(2);
+  expect(Math.abs(guideRect.height - editorRect.height)).toBeLessThanOrEqual(2);
+
+  await page.mouse.up();
+  await page.waitForTimeout(120);
+  await page.mouse.click(geometryBefore.edgeX + 12, geometryBefore.midY);
+  await expectLastHitFromCanvas(page);
+
+  const geometryAfter = await page.evaluate((tableId) => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const cells = snapshot.paragraphs
+      .filter((paragraph) => paragraph.tableCell?.tableId === tableId)
+      .map((paragraph) => paragraph.tableCell!)
+      .filter((cell, index, all) =>
+        all.findIndex((candidate) =>
+          candidate.tableId === cell.tableId &&
+          candidate.rowIndex === cell.rowIndex &&
+          candidate.cellIndex === cell.cellIndex,
+        ) === index,
+      );
+    if (cells.length === 0) return null;
+    const first = cells.find((cell) => cell.rowIndex === 0 && cell.cellIndex === 0);
+    if (!first) return null;
+    const left = Math.min(...cells.map((cell) => cell.left));
+    const right = Math.max(...cells.map((cell) => cell.left + cell.width));
+    return {
+      firstWidth: first.width,
+      tableWidth: right - left,
+    };
+  }, geometryBefore.tableId);
+
+  expect(geometryAfter).not.toBeNull();
+  expect(Math.abs((geometryAfter?.firstWidth ?? geometryBefore.firstWidth) - geometryBefore.firstWidth)).toBeGreaterThan(4);
+  expect(Math.abs((geometryAfter?.tableWidth ?? geometryBefore.tableWidth) - geometryBefore.tableWidth)).toBeLessThanOrEqual(4);
+  await expectNoFallbackEvents(page);
+});
+
+test("canvas table row resize on last bottom border increases last row height", async ({ page }) => {
+  await gotoEditor(page);
+  await clearFallbackEvents(page);
+  await seedText(page, "resize row baseline");
+  await insertTable(page, 2, 2);
+  await page.waitForTimeout(140);
+  const editorPage = await canvasPageRect(page);
+  await page.mouse.click(editorPage.x + 210, editorPage.y + 210);
+  await expectLastHitFromCanvas(page);
+
+  const geometryBefore = await page.evaluate(() => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const cells = snapshot.paragraphs
+      .filter((paragraph) => paragraph.tableCell)
+      .map((paragraph) => paragraph.tableCell!)
+      .filter((cell, index, all) =>
+        all.findIndex((candidate) =>
+          candidate.tableId === cell.tableId &&
+          candidate.rowIndex === cell.rowIndex &&
+          candidate.cellIndex === cell.cellIndex,
+        ) === index,
+      );
+    if (cells.length === 0) return null;
+    const tableId = cells[0]!.tableId;
+    const tableCells = cells.filter((cell) => cell.tableId === tableId);
+    const rowIndexes = Array.from(new Set(tableCells.map((cell) => cell.rowIndex))).sort((a, b) => a - b);
+    const firstRowIndex = rowIndexes[0];
+    const maxRowIndex = rowIndexes[rowIndexes.length - 1];
+    if (firstRowIndex === undefined || maxRowIndex === undefined) return null;
+    const firstRowCell =
+      tableCells.find((cell) => cell.rowIndex === firstRowIndex && cell.cellIndex === 0) ??
+      tableCells.find((cell) => cell.rowIndex === firstRowIndex) ??
+      tableCells[0];
+    const lastRowCell =
+      tableCells.find((cell) => cell.rowIndex === maxRowIndex && cell.cellIndex === 0) ??
+      tableCells.find((cell) => cell.rowIndex === maxRowIndex) ??
+      tableCells[tableCells.length - 1];
+    if (!firstRowCell || !lastRowCell) return null;
+    return {
+      tableId,
+      midX: lastRowCell.left + lastRowCell.width * 0.5,
+      edgeY: lastRowCell.top + lastRowCell.height,
+      firstRowHeight: firstRowCell.height,
+      lastRowHeight: lastRowCell.height,
+      firstRowIndex,
+      maxRowIndex,
+    };
+  });
+  if (!geometryBefore) {
+    throw new Error("unable to resolve table geometry for row resize");
+  }
+
+  await page.mouse.move(geometryBefore.midX, geometryBefore.edgeY);
+  await page.mouse.down();
+  await page.mouse.move(geometryBefore.midX, geometryBefore.edgeY + 26);
+
+  const guide = page.locator(".oasis-editor-table-resize-guide");
+  await expect(guide).toBeVisible();
+
+  const guideRect = await guide.boundingBox();
+  const editorRect = await page.locator('[data-testid="editor-editor"]').boundingBox();
+  if (!guideRect || !editorRect) {
+    throw new Error("unable to resolve guide/editor bounds");
+  }
+
+  expect(Math.abs(guideRect.x - editorRect.x)).toBeLessThanOrEqual(2);
+  expect(Math.abs(guideRect.width - editorRect.width)).toBeLessThanOrEqual(2);
+
+  await page.mouse.up();
+  await page.waitForTimeout(120);
+  await page.mouse.click(geometryBefore.midX, geometryBefore.edgeY + 12);
+  await expectLastHitFromCanvas(page);
+
+  const geometryAfter = await page.evaluate(({ tableId, firstRowIndex, maxRowIndex }) => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const cells = snapshot.paragraphs
+      .filter((paragraph) => paragraph.tableCell?.tableId === tableId)
+      .map((paragraph) => paragraph.tableCell!)
+      .filter((cell, index, all) =>
+        all.findIndex((candidate) =>
+          candidate.tableId === cell.tableId &&
+          candidate.rowIndex === cell.rowIndex &&
+          candidate.cellIndex === cell.cellIndex,
+        ) === index,
+      );
+    const firstRowCell =
+      cells.find((cell) => cell.rowIndex === firstRowIndex && cell.cellIndex === 0) ??
+      cells.find((cell) => cell.rowIndex === firstRowIndex);
+    const lastRowCell =
+      cells.find((cell) => cell.rowIndex === maxRowIndex && cell.cellIndex === 0) ??
+      cells.find((cell) => cell.rowIndex === maxRowIndex);
+    if (!firstRowCell || !lastRowCell) return null;
+    return {
+      firstRowHeight: firstRowCell.height,
+      lastRowHeight: lastRowCell.height,
+    };
+  }, { tableId: geometryBefore.tableId, firstRowIndex: geometryBefore.firstRowIndex, maxRowIndex: geometryBefore.maxRowIndex });
+
+  expect(geometryAfter).not.toBeNull();
+  expect((geometryAfter?.lastRowHeight ?? geometryBefore.lastRowHeight) - geometryBefore.lastRowHeight).toBeGreaterThan(4);
+  expect(Math.abs((geometryAfter?.firstRowHeight ?? geometryBefore.firstRowHeight) - geometryBefore.firstRowHeight)).toBeLessThanOrEqual(3);
+  await expectNoFallbackEvents(page);
+});
+
 test("toolbar overflow table insert does not throw insertBefore NotFoundError", async ({
   page,
 }) => {

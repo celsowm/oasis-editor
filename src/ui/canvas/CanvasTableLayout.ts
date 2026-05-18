@@ -133,13 +133,29 @@ function resolveCellPadding(cell: EditorTableCellNode): { top: number; right: nu
 
 function resolveRowHeights(table: EditorTableNode, estimatedHeight: number): number[] {
   const rowCount = Math.max(1, table.rows.length);
-  const fallback = estimatedHeight > 0 ? estimatedHeight / rowCount : DEFAULT_TABLE_ROW_HEIGHT;
-  const rowHeights = table.rows.map((row) => {
+  const explicitRowHeights = table.rows.map((row) => {
     const explicit = parseDimensionToPx(row.style?.height);
-    return explicit && explicit > 0 ? explicit : fallback;
+    return explicit !== null && explicit > 0 ? explicit : null;
   });
+  const explicitTotal = explicitRowHeights.reduce<number>((sum, height) => sum + (height ?? 0), 0);
+  const nonExplicitCount = explicitRowHeights.filter((height) => height === null).length;
+  const fallbackWithoutExplicit =
+    estimatedHeight > 0 ? estimatedHeight / rowCount : DEFAULT_TABLE_ROW_HEIGHT;
+  const fallbackForNonExplicit =
+    nonExplicitCount > 0
+      ? Math.max(
+          1,
+          estimatedHeight > 0
+            ? (estimatedHeight - explicitTotal) / nonExplicitCount
+            : DEFAULT_TABLE_ROW_HEIGHT,
+        )
+      : fallbackWithoutExplicit;
+  const rowHeights = explicitRowHeights.map((explicit) =>
+    explicit !== null ? explicit : fallbackForNonExplicit,
+  );
+  const hasExplicitHeights = explicitRowHeights.some((height) => height !== null);
   const measuredTotal = rowHeights.reduce((sum, current) => sum + current, 0);
-  if (estimatedHeight > 0 && measuredTotal > 0) {
+  if (!hasExplicitHeights && estimatedHeight > 0 && measuredTotal > 0) {
     const scale = estimatedHeight / measuredTotal;
     return rowHeights.map((height) => Math.max(1, height * scale));
   }

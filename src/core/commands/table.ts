@@ -246,11 +246,60 @@ export function setTableColumnWidths(
   columnWidths: Record<number, number | string>, // visualColumnIndex -> width
   tableWidth?: number | string
 ): EditorState {
+  const parseWidthToPt = (value: number | string | undefined): number | null => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value !== "string") {
+      return null;
+    }
+    const trimmed = value.trim().toLowerCase();
+    if (!trimmed || trimmed.includes("%")) {
+      return null;
+    }
+    if (trimmed.endsWith("pt")) {
+      const parsed = Number.parseFloat(trimmed.slice(0, -2));
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    if (trimmed.endsWith("px")) {
+      const parsed = Number.parseFloat(trimmed.slice(0, -2));
+      return Number.isFinite(parsed) ? parsed * (72 / 96) : null;
+    }
+    if (!/^[+-]?\d+(\.\d+)?$/.test(trimmed)) {
+      return null;
+    }
+    const parsed = Number.parseFloat(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
   console.log("[EditorCommands] setTableColumnWidths. Table:", tableId, "Widths:", columnWidths, "TableWidth:", tableWidth);
   const updateTable = (table: EditorTableNode): EditorTableNode => {
     if (table.id !== tableId) return table;
 
     const tableLayout = buildTableCellLayout(table);
+    const visualColumnCount = Math.max(
+      1,
+      ...tableLayout.map((entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan)),
+    );
+    const nextGridCols = Array<number>(visualColumnCount);
+    let hasGridOverride = false;
+    let canResolveGrid = true;
+    for (let columnIndex = 0; columnIndex < visualColumnCount; columnIndex += 1) {
+      const override = parseWidthToPt(columnWidths[columnIndex]);
+      if (override !== null) {
+        nextGridCols[columnIndex] = Math.max(1, override);
+        hasGridOverride = true;
+        continue;
+      }
+      const existing = table.gridCols?.[columnIndex];
+      if (typeof existing === "number" && Number.isFinite(existing) && existing > 0) {
+        nextGridCols[columnIndex] = existing;
+        continue;
+      }
+      canResolveGrid = false;
+      break;
+    }
+
     const nextRows = table.rows.map((row, rowIndex) => {
       const nextCells = row.cells.map((cell, cellIndex) => {
         const entry = tableLayout.find(
@@ -288,6 +337,7 @@ export function setTableColumnWidths(
     return { 
       ...table, 
       rows: nextRows,
+      gridCols: hasGridOverride && canResolveGrid ? nextGridCols : table.gridCols,
       style: Object.keys(nextStyle).length > 0 ? nextStyle : undefined
     };
   };

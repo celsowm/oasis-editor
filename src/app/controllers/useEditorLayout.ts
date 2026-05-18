@@ -259,7 +259,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     return nextLayout;
   };
 
-  const syncInputBox = (reason: LayoutSyncReason = "selection") => {
+  const syncInputBox = (_reason: LayoutSyncReason = "selection") => {
     const surface = props.surfaceRef();
     if (!surface) {
       setSelectionBoxes([]);
@@ -267,294 +267,23 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       return;
     }
 
-    if (isCanvasGeometryMode()) {
-      const snapshot = buildCanvasLayoutSnapshot({
-        surface,
-        state: props.state,
-        measuredBlockHeights: measuredBlockHeights(),
-        measuredParagraphLayouts: measuredParagraphLayouts(),
-        layoutMode: props.layoutMode ?? "wordParity",
-      });
-      if (!snapshot) {
-        setSelectionBoxes([]);
-        setCaretBox((current) => ({ ...current, visible: false }));
-        return;
-      }
-      const geometry = computeCanvasSelectionGeometry(snapshot, props.state);
-      setSelectionBoxes(geometry.selectionBoxes);
-      setInputBox(geometry.inputBox);
-      setCaretBox(geometry.caretBox);
-      return;
-    }
-
-    const surfaceRect = surface.getBoundingClientRect();
-    const normalized = normalizeSelection(props.state);
-    const nextSelectionBoxes: SelectionBox[] = [];
-
-    // Lazy: building the full paragraph list and table locations is O(N) over
-    // the document. Skip it for collapsed selections (the common typing case)
-    // since neither isTableSelection nor the table-selection render branch
-    // applies in that case.
-    let paragraphsCache: EditorParagraphNode[] | null = null;
-    let paragraphsByIdCache: Map<string, EditorParagraphNode> | null = null;
-    const getParagraphsLazy = () => {
-      if (!paragraphsCache) {
-        paragraphsCache = getParagraphs(props.state);
-      }
-      return paragraphsCache;
-    };
-    const getParagraphsByIdLazy = () => {
-      if (!paragraphsByIdCache) {
-        paragraphsByIdCache = new Map(
-          getParagraphsLazy().map((paragraph) => [paragraph.id, paragraph] as const),
-        );
-      }
-      return paragraphsByIdCache;
-    };
-
-    const activeSectionIndex = getActiveSectionIndex(props.state);
-    const anchorLocation = normalized.isCollapsed
-      ? null
-      : findParagraphTableLocation(
-          props.state.document,
-          props.state.selection.anchor.paragraphId,
-          activeSectionIndex,
-        );
-    const focusLocation = normalized.isCollapsed
-      ? null
-      : findParagraphTableLocation(
-          props.state.document,
-          props.state.selection.focus.paragraphId,
-          activeSectionIndex,
-        );
-
-    const isTableSelection =
-      anchorLocation &&
-      focusLocation &&
-      anchorLocation.blockIndex === focusLocation.blockIndex &&
-      (anchorLocation.rowIndex !== focusLocation.rowIndex ||
-        anchorLocation.cellIndex !== focusLocation.cellIndex);
-
-    if (isTableSelection) {
-      const targetBlocks: EditorBlockNode[] = getEditableBlocksForZone(
-        props.state,
-        anchorLocation.zone,
-      );
-
-      const tableBlock = targetBlocks[anchorLocation.blockIndex];
-      const tableId = tableBlock?.id;
-      if (tableId) {
-        const tableElement =
-          surface.querySelector<HTMLElement>(`[data-source-block-id="${tableId}"]`) ??
-          surface.querySelector<HTMLElement>(`[data-block-id="${tableId}"]`);
-        if (tableElement && tableBlock?.type === "table") {
-          const tableLayout = buildTableCellLayout(tableBlock);
-          const anchorCell = tableLayout.find(
-            (entry) =>
-              entry.rowIndex === anchorLocation.rowIndex && entry.cellIndex === anchorLocation.cellIndex,
-          );
-          const focusCell = tableLayout.find(
-            (entry) =>
-              entry.rowIndex === focusLocation.rowIndex && entry.cellIndex === focusLocation.cellIndex,
-          );
-
-          if (anchorCell && focusCell) {
-            const minRow = Math.min(anchorCell.visualRowIndex, focusCell.visualRowIndex);
-            const maxRow = Math.max(
-              anchorCell.visualRowIndex + anchorCell.rowSpan - 1,
-              focusCell.visualRowIndex + focusCell.rowSpan - 1,
-            );
-            const minCol = Math.min(anchorCell.visualColumnIndex, focusCell.visualColumnIndex);
-            const maxCol = Math.max(
-              anchorCell.visualColumnIndex + anchorCell.colSpan - 1,
-              focusCell.visualColumnIndex + focusCell.colSpan - 1,
-            );
-
-            for (const entry of tableLayout) {
-              const cellRowStart = entry.visualRowIndex;
-              const cellRowEnd = entry.visualRowIndex + entry.rowSpan - 1;
-              const cellColStart = entry.visualColumnIndex;
-              const cellColEnd = entry.visualColumnIndex + entry.colSpan - 1;
-              const intersects =
-                cellRowStart <= maxRow &&
-                cellRowEnd >= minRow &&
-                cellColStart <= maxCol &&
-                cellColEnd >= minCol;
-              if (!intersects) {
-                continue;
-              }
-
-              const cellElement = tableElement.querySelector<HTMLElement>(
-                `[data-row-index="${entry.rowIndex}"][data-cell-index="${entry.cellIndex}"]`,
-              );
-              if (!cellElement) {
-                continue;
-              }
-
-              const cellRect = cellElement.getBoundingClientRect();
-              nextSelectionBoxes.push({
-                left: cellRect.left - surfaceRect.left,
-                top: cellRect.top - surfaceRect.top,
-                width: cellRect.width,
-                height: cellRect.height,
-              });
-            }
-          }
-        }
-      }
-    } else if (!normalized.isCollapsed) {
-      const paragraphs = getParagraphsLazy();
-      for (let paragraphIndex = normalized.startIndex; paragraphIndex <= normalized.endIndex; paragraphIndex += 1) {
-        const paragraph = paragraphs[paragraphIndex];
-        if (!paragraph) {
-          continue;
-        }
-
-        const paragraphElement = getParagraphBoundaryElement(surface, paragraph.id, "start");
-        if (!paragraphElement) {
-          continue;
-        }
-
-        const paragraphText = getParagraphText(paragraph);
-        const startOffset = paragraphIndex === normalized.startIndex ? normalized.startParagraphOffset : 0;
-        const endOffset =
-          paragraphIndex === normalized.endIndex ? normalized.endParagraphOffset : paragraphText.length;
-
-        if (startOffset === 0 && endOffset >= paragraphText.length) {
-          const paragraphRect =
-            getEmptyBlockRect(paragraphElement) ?? paragraphElement.getBoundingClientRect();
-          nextSelectionBoxes.push({
-            left: paragraphRect.left - surfaceRect.left,
-            top: paragraphRect.top - surfaceRect.top,
-            width: Math.max(12, paragraphRect.width || 12),
-            height: paragraphRect.height || 28,
-          });
-          continue;
-        }
-
-        const layout =
-          getParagraphLayout(surface, paragraph, {
-            preferCache: reason === "scroll",
-            cacheMeasured: true,
-          }) ?? null;
-
-        if (!layout) {
-          const paragraphRect = paragraphElement.getBoundingClientRect();
-          nextSelectionBoxes.push({
-            left: paragraphRect.left - surfaceRect.left,
-            top: paragraphRect.top - surfaceRect.top,
-            width: Math.max(12, paragraphRect.width || 12),
-            height: paragraphRect.height || 28,
-          });
-          continue;
-        }
-
-        for (const line of layout.lines) {
-          const lineStart = Math.max(startOffset, line.startOffset);
-          const lineEnd = Math.min(endOffset, line.endOffset);
-          if (lineStart >= lineEnd) {
-            continue;
-          }
-
-          const startSlot = line.slots.find((slot) => slot.offset === lineStart);
-          const endSlot = line.slots.find((slot) => slot.offset === lineEnd);
-          if (!startSlot || !endSlot) {
-            continue;
-          }
-
-          nextSelectionBoxes.push({
-            left: startSlot.left - surfaceRect.left,
-            top: line.top - surfaceRect.top,
-            width: Math.max(1, endSlot.left - startSlot.left),
-            height: line.height,
-          });
-        }
-      }
-    }
-
-    setSelectionBoxes(nextSelectionBoxes);
-
-    const selectedParagraphNode =
-      getParagraphById(props.state.document, props.state.selection.focus.paragraphId) ??
-      getParagraphsLazy()[0];
-    if (!selectedParagraphNode) {
-      setCaretBox((current) => ({ ...current, visible: false }));
-      return;
-    }
-
-    let left = 0;
-    let top = 0;
-    let height = 28;
-
-    // Fast path for collapsed selection: avoid measuring every char rect in the
-    // paragraph (O(n) DOM reads + forced reflow). Look up only the char span
-    // at the caret offset and avoid the broader paragraph-boundary query.
-    if (normalized.isCollapsed) {
-      const focusOffset = positionToParagraphOffset(
-        selectedParagraphNode,
-        props.state.selection.focus,
-      );
-      const fastRect = getCollapsedCaretRectFast(
-        surface,
-        selectedParagraphNode.id,
-        focusOffset,
-      );
-      if (fastRect) {
-        const caretLeft = fastRect.left - surfaceRect.left;
-        const caretTop = fastRect.top - surfaceRect.top;
-        setInputBox({ left: caretLeft, top: caretTop, height: fastRect.height });
-        setCaretBox({ left: caretLeft, top: caretTop, height: fastRect.height, visible: true });
-        return;
-      }
-    }
-
-    const selectedParagraph = getParagraphBoundaryElement(
+    const snapshot = buildCanvasLayoutSnapshot({
       surface,
-      props.state.selection.focus.paragraphId,
-      "end",
-    );
-    if (!selectedParagraph) {
+      state: props.state,
+      measuredBlockHeights: measuredBlockHeights(),
+      measuredParagraphLayouts: measuredParagraphLayouts(),
+      layoutMode: props.layoutMode ?? "wordParity",
+    });
+    if (!snapshot) {
+      setSelectionBoxes([]);
       setCaretBox((current) => ({ ...current, visible: false }));
       return;
     }
 
-    const layout =
-      getParagraphLayout(surface, selectedParagraphNode, {
-        preferCache: reason === "scroll",
-        cacheMeasured: true,
-      }) ?? null;
-
-    if (!layout) {
-      const fallbackRect =
-        getEmptyBlockRect(selectedParagraph) ?? selectedParagraph.getBoundingClientRect();
-      left = fallbackRect.left - surfaceRect.left;
-      top = fallbackRect.top - surfaceRect.top;
-      height = fallbackRect.height || 28;
-    } else {
-      const slots =
-        layout.lines.length > 0
-          ? layout.lines.flatMap((line, lineIndex) =>
-              lineIndex === layout.lines.length - 1 ? line.slots : line.slots.slice(0, -1),
-            )
-          : getCaretSlotRects(collectParagraphCharRects(surface, selectedParagraphNode.id)).map((slot, offset) => ({
-              paragraphId: selectedParagraphNode.id,
-              offset,
-              left: slot.left,
-              top: slot.top,
-              height: slot.height,
-            }));
-      const focusOffset = positionToParagraphOffset(selectedParagraphNode, props.state.selection.focus);
-      const slotIndex = Math.max(0, Math.min(focusOffset, slots.length - 1));
-      const slot = slots[slotIndex];
-      if (slot) {
-        left = slot.left - surfaceRect.left;
-        top = slot.top - surfaceRect.top;
-        height = slot.height;
-      }
-    }
-
-    setInputBox({ left, top, height });
-    setCaretBox({ left, top, height, visible: true });
+    const geometry = computeCanvasSelectionGeometry(snapshot, props.state);
+    setSelectionBoxes(geometry.selectionBoxes);
+    setInputBox(geometry.inputBox);
+    setCaretBox(geometry.caretBox);
   };
 
   const requestInputBoxSync = (reason: LayoutSyncReason = "selection") => {

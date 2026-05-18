@@ -73,8 +73,6 @@
 }
 
 .oasis-editor-table-resize-guide-column {
-  top: 0;
-  bottom: 0;
   width: 0;
   border-left-width: 1px;
   border-right-width: 0;
@@ -83,8 +81,6 @@
 }
 
 .oasis-editor-table-resize-guide-row {
-  left: 0;
-  right: 0;
   height: 0;
   border-top-width: 1px;
   border-bottom-width: 0;
