@@ -1,8 +1,183 @@
-import type { EditorState, EditorTextRun, EditorTextStyle } from "../model.js";
-import { getParagraphLength, getParagraphs, paragraphOffsetToPosition } from "../model.js";
+import type { EditorParagraphNode, EditorPosition, EditorState, EditorTextRun, EditorTextStyle } from "../model.js";
+import { getParagraphLength, getParagraphs, paragraphOffsetToPosition, positionToParagraphOffset } from "../model.js";
 import { createEditorStyledRun } from "../editorState.js";
 import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
-import { deleteSelectionRange, getFocusParagraph, getStyleAtOffset, insertRunsAtOffset, cloneStateWithParagraphs, withSelection, sliceRuns, buildParagraphFromRuns, createParagraphFromRuns, cloneRun, ToggleableTextStyleKey, mapRunsInRange, setBooleanStyle, preserveSelectionByParagraphOffsets, ValueTextStyleKey, setValueStyle } from "./utils.js";
+import { deleteSelectionRange, getFocusParagraph, getStyleAtOffset, insertRunsAtOffset, cloneStateWithParagraphs, withSelection, sliceRuns, buildParagraphFromRuns, createParagraphFromRuns, cloneRun, cloneParagraph, ToggleableTextStyleKey, mapRunsInRange, setBooleanStyle, preserveSelectionByParagraphOffsets, ValueTextStyleKey, setValueStyle } from "./utils.js";
+
+interface SelectionFragment {
+  paragraphTemplate: EditorParagraphNode;
+  runs: EditorTextRun[];
+}
+
+function cloneFragmentRuns(runs: EditorTextRun[]): EditorTextRun[] {
+  return runs.map(cloneRun);
+}
+
+function getRunsLength(runs: EditorTextRun[]): number {
+  return runs.reduce((total, run) => total + run.text.length, 0);
+}
+
+function collectSelectionFragments(state: EditorState): SelectionFragment[] {
+  const normalized = normalizeSelection(state);
+  if (normalized.isCollapsed) {
+    return [];
+  }
+  const paragraphs = getParagraphs(state);
+  const fragments: SelectionFragment[] = [];
+  for (let index = normalized.startIndex; index <= normalized.endIndex; index += 1) {
+    const paragraph = paragraphs[index]!;
+    const startOffset = index === normalized.startIndex ? normalized.startParagraphOffset : 0;
+    const endOffset =
+      index === normalized.endIndex
+        ? normalized.endParagraphOffset
+        : getParagraphLength(paragraph);
+    const runs = sliceRuns(paragraph, startOffset, endOffset);
+    fragments.push({
+      paragraphTemplate: cloneParagraph(paragraph),
+      runs,
+    });
+  }
+  return fragments;
+}
+
+function insertFragmentsAtPosition(
+  state: EditorState,
+  targetPosition: EditorPosition,
+  fragments: SelectionFragment[],
+): EditorState {
+  if (fragments.length === 0) {
+    return state;
+  }
+  const paragraphs = getParagraphs(state);
+  const targetIndex = paragraphs.findIndex((paragraph) => paragraph.id === targetPosition.paragraphId);
+  if (targetIndex === -1) {
+    return state;
+  }
+  const targetParagraph = paragraphs[targetIndex]!;
+  const targetOffset = positionToParagraphOffset(targetParagraph, targetPosition);
+  const firstRuns = cloneFragmentRuns(fragments[0]!.runs);
+
+  if (fragments.length === 1) {
+    const nextTarget = insertRunsAtOffset(targetParagraph, targetOffset, firstRuns);
+    const nextParagraphs = paragraphs.map((candidate, index) =>
+      index === targetIndex ? nextTarget : candidate,
+    );
+    const insertedLength = getRunsLength(firstRuns);
+    const anchor = paragraphOffsetToPosition(nextTarget, targetOffset);
+    const focus = paragraphOffsetToPosition(nextTarget, targetOffset + insertedLength);
+    return cloneStateWithParagraphs(
+      state,
+      nextParagraphs,
+      {
+        anchor,
+        focus,
+      },
+    );
+  }
+
+  const beforeRuns = sliceRuns(targetParagraph, 0, targetOffset);
+  const afterRuns = sliceRuns(targetParagraph, targetOffset, getParagraphLength(targetParagraph));
+  const lastFragment = fragments[fragments.length - 1]!;
+  const middleFragments = fragments.slice(1, -1);
+
+  const firstInserted = buildParagraphFromRuns(
+    cloneParagraph(fragments[0]!.paragraphTemplate),
+    [...beforeRuns, ...firstRuns],
+    getStyleAtOffset(targetParagraph, targetOffset),
+  );
+  const insertedMiddle = middleFragments.map((fragment) =>
+    buildParagraphFromRuns(cloneParagraph(fragment.paragraphTemplate), cloneFragmentRuns(fragment.runs)),
+  );
+  const lastInserted = buildParagraphFromRuns(
+    cloneParagraph(lastFragment.paragraphTemplate),
+    [...cloneFragmentRuns(lastFragment.runs), ...afterRuns],
+    getStyleAtOffset(targetParagraph, targetOffset),
+  );
+
+  const nextParagraphs = [
+    ...paragraphs.slice(0, targetIndex),
+    firstInserted,
+    ...insertedMiddle,
+    lastInserted,
+    ...paragraphs.slice(targetIndex + 1),
+  ];
+  const anchor = paragraphOffsetToPosition(firstInserted, getRunsLength(beforeRuns));
+  const focus = paragraphOffsetToPosition(lastInserted, getRunsLength(lastFragment.runs));
+  return cloneStateWithParagraphs(state, nextParagraphs, { anchor, focus });
+}
+
+function isTargetInsideSelection(state: EditorState, targetPosition: EditorPosition): boolean {
+  const normalized = normalizeSelection(state);
+  if (normalized.isCollapsed) {
+    return false;
+  }
+  const paragraphs = getParagraphs(state);
+  const targetIndex = paragraphs.findIndex((paragraph) => paragraph.id === targetPosition.paragraphId);
+  if (targetIndex === -1) {
+    return false;
+  }
+  if (targetIndex < normalized.startIndex || targetIndex > normalized.endIndex) {
+    return false;
+  }
+  const paragraph = paragraphs[targetIndex]!;
+  const targetOffset = positionToParagraphOffset(paragraph, targetPosition);
+  if (targetIndex === normalized.startIndex && targetOffset < normalized.startParagraphOffset) {
+    return false;
+  }
+  if (targetIndex === normalized.endIndex && targetOffset > normalized.endParagraphOffset) {
+    return false;
+  }
+  return true;
+}
+
+function mapTargetAfterDelete(state: EditorState, targetPosition: EditorPosition): EditorPosition {
+  const normalized = normalizeSelection(state);
+  const paragraphs = getParagraphs(state);
+  const targetIndex = paragraphs.findIndex((paragraph) => paragraph.id === targetPosition.paragraphId);
+  if (targetIndex === -1) {
+    return targetPosition;
+  }
+  const targetParagraph = paragraphs[targetIndex]!;
+  const targetOffset = positionToParagraphOffset(targetParagraph, targetPosition);
+
+  if (normalized.startIndex === normalized.endIndex) {
+    if (targetIndex !== normalized.startIndex || targetOffset <= normalized.endParagraphOffset) {
+      return targetPosition;
+    }
+    const startParagraph = paragraphs[normalized.startIndex]!;
+    return paragraphOffsetToPosition(
+      startParagraph,
+      targetOffset - (normalized.endParagraphOffset - normalized.startParagraphOffset),
+    );
+  }
+  return targetPosition;
+}
+
+export function moveOrCopySelectionToPosition(
+  state: EditorState,
+  targetPosition: EditorPosition,
+  options: { copy?: boolean } = {},
+): EditorState {
+  const normalized = normalizeSelection(state);
+  if (normalized.isCollapsed) {
+    return state;
+  }
+  if (isTargetInsideSelection(state, targetPosition)) {
+    return state;
+  }
+  const fragments = collectSelectionFragments(state);
+  if (fragments.length === 0) {
+    return state;
+  }
+
+  if (options.copy) {
+    return insertFragmentsAtPosition(state, targetPosition, fragments);
+  }
+
+  const mappedTarget = mapTargetAfterDelete(state, targetPosition);
+  const deleted = deleteSelectionRange(state);
+  return insertFragmentsAtPosition(deleted, mappedTarget, fragments);
+}
 
 export function insertTextAtSelection(
   state: EditorState,

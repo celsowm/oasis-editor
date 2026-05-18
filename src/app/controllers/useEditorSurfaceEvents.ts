@@ -30,6 +30,7 @@ export interface UseEditorSurfaceEventsProps {
     context?: { forDrag?: boolean },
   ) => SurfaceHit | null;
   getParagraphById: (doc: EditorState["document"], id: string) => EditorParagraphNode | undefined;
+  textDrag?: { tryStartTextDrag: (event: MouseEvent, hit: SurfaceHit | null) => boolean };
   logger: { debug: (msg: string) => void; info: (msg: string, payload?: unknown) => void };
 }
 
@@ -219,6 +220,10 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     deps.resetTransactionGrouping();
 
     const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY);
+    if (deps.textDrag?.tryStartTextDrag(event, hit)) {
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
     if (!hit) {
       deps.focusInputAfterPointerSelection();
       return;

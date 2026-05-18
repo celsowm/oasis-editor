@@ -21,6 +21,7 @@ export interface SurfaceHit {
   fallbackReason?: string;
   resolvedFromParagraph: boolean;
   tableCellAnchorPosition?: EditorPosition;
+  caretViewport?: { left: number; top: number; height: number };
 }
 
 export interface ResolveCanvasHitOptions {
@@ -83,12 +84,15 @@ function resolveClosestOffsetInLine(
   line: CanvasSnapshotLine,
   clientX: number,
   clientY: number,
-): { offset: number; score: number } {
+): { offset: number; score: number; slotLeft?: number; slotTop?: number; slotHeight?: number } {
   if (line.slots.length === 0) {
     return { offset: line.startOffset, score: Number.POSITIVE_INFINITY };
   }
   let bestOffset = line.slots[0]!.offset;
   let bestScore = Number.POSITIVE_INFINITY;
+  let bestSlotLeft = line.slots[0]!.left;
+  let bestSlotTop = line.slots[0]!.top;
+  let bestSlotHeight = line.slots[0]!.height;
   for (const slot of line.slots) {
     const verticalDelta =
       clientY < slot.top
@@ -101,9 +105,18 @@ function resolveClosestOffsetInLine(
     if (score < bestScore) {
       bestScore = score;
       bestOffset = slot.offset;
+      bestSlotLeft = slot.left;
+      bestSlotTop = slot.top;
+      bestSlotHeight = slot.height;
     }
   }
-  return { offset: bestOffset, score: bestScore };
+  return {
+    offset: bestOffset,
+    score: bestScore,
+    slotLeft: bestSlotLeft,
+    slotTop: bestSlotTop,
+    slotHeight: bestSlotHeight,
+  };
 }
 
 function resolveClosestOffsetInParagraph(
@@ -127,13 +140,18 @@ function resolveParagraphHit(
   paragraphs: CanvasSnapshotParagraph[],
   clientX: number,
   clientY: number,
-): { paragraph: CanvasSnapshotParagraph; offset: number } | null {
+): {
+  paragraph: CanvasSnapshotParagraph;
+  offset: number;
+  caretViewport?: { left: number; top: number; height: number };
+} | null {
   if (paragraphs.length === 0) return null;
 
   let bestLineHit: {
     paragraph: CanvasSnapshotParagraph;
     offset: number;
     score: number;
+    caretViewport?: { left: number; top: number; height: number };
   } | null = null;
 
   for (const paragraph of paragraphs) {
@@ -141,15 +159,31 @@ function resolveParagraphHit(
       const lineTop = line.top - 2;
       const lineBottom = line.top + line.height + 2;
       if (clientY < lineTop || clientY > lineBottom) continue;
-      const { offset, score } = resolveClosestOffsetInLine(line, clientX, clientY);
+      const { offset, score, slotLeft, slotTop, slotHeight } = resolveClosestOffsetInLine(
+        line,
+        clientX,
+        clientY,
+      );
       if (!bestLineHit || score < bestLineHit.score) {
-        bestLineHit = { paragraph, offset, score };
+        bestLineHit = {
+          paragraph,
+          offset,
+          score,
+          caretViewport:
+            slotLeft !== undefined && slotTop !== undefined && slotHeight !== undefined
+              ? { left: slotLeft, top: slotTop, height: slotHeight }
+              : undefined,
+        };
       }
     }
   }
 
   if (bestLineHit) {
-    return { paragraph: bestLineHit.paragraph, offset: bestLineHit.offset };
+    return {
+      paragraph: bestLineHit.paragraph,
+      offset: bestLineHit.offset,
+      caretViewport: bestLineHit.caretViewport,
+    };
   }
 
   let nearestParagraph: CanvasSnapshotParagraph | null = null;
@@ -174,6 +208,11 @@ function resolveParagraphHit(
   return {
     paragraph: nearestParagraph,
     offset: resolveClosestOffsetInParagraph(nearestParagraph, clientX, clientY),
+    caretViewport: {
+      left: nearestParagraph.left,
+      top: nearestParagraph.top,
+      height: Math.max(16, Math.min(32, nearestParagraph.height || 24)),
+    },
   };
 }
 
@@ -242,6 +281,7 @@ export function resolveCanvasSurfaceHitAtPoint(
     source: "canvas-layout",
     resolvedFromParagraph: true,
     tableCellAnchorPosition: paragraph.tableCell?.anchorPosition,
+    caretViewport: paragraphHit.caretViewport,
   };
 }
 
@@ -292,5 +332,6 @@ export function resolveCanvasSurfaceHitAtPointWithFallback(
     source: "dom-fallback",
     fallbackReason: reason,
     resolvedFromParagraph: true,
+    caretViewport: undefined,
   };
 }

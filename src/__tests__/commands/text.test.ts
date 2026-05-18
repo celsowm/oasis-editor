@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createEditorStateFromTexts, resetEditorIds } from '../../core/editorState.js';
-import { insertTextAtSelection, deleteBackward, deleteForward, toggleTextStyle } from '../../core/commands/text.js';
+import { insertTextAtSelection, deleteBackward, deleteForward, toggleTextStyle, moveOrCopySelectionToPosition } from '../../core/commands/text.js';
+import { paragraphOffsetToPosition } from '../../core/model.js';
 import { getParagraphs } from '../../core/model.js';
 
 beforeEach(() => {
@@ -81,6 +82,53 @@ describe('Text Commands', () => {
       expect(paragraphs[0].runs[0].styles?.bold).toBe(true);
       expect(paragraphs[0].runs[1].text).toBe(' world');
       expect(paragraphs[0].runs[1].styles?.bold).toBeFalsy();
+    });
+  });
+
+  describe('moveOrCopySelectionToPosition', () => {
+    it('moves selection in same paragraph', () => {
+      const state = createEditorStateFromTexts(['hello world'], {
+        anchor: { blockIndex: 0, offset: 0 },
+        focus: { blockIndex: 0, offset: 5 }
+      });
+      const paragraph = getParagraphs(state)[0];
+      const target = paragraphOffsetToPosition(paragraph, 11);
+      const next = moveOrCopySelectionToPosition(state, target);
+      expect(getParagraphs(next)[0].runs[0].text).toBe(' worldhello');
+    });
+
+    it('moves multi-paragraph selection', () => {
+      const state = createEditorStateFromTexts(['one', 'two', 'three'], {
+        anchor: { blockIndex: 0, offset: 1 },
+        focus: { blockIndex: 1, offset: 2 }
+      });
+      const destinationParagraph = getParagraphs(state)[2];
+      const target = paragraphOffsetToPosition(destinationParagraph, 5);
+      const next = moveOrCopySelectionToPosition(state, target);
+      const texts = getParagraphs(next).map((p) => p.runs.map((r) => r.text).join(''));
+      expect(texts).toEqual(['oo', 'threene', 'tw']);
+    });
+
+    it('copies selection when copy option is enabled', () => {
+      const state = createEditorStateFromTexts(['hello world'], {
+        anchor: { blockIndex: 0, offset: 0 },
+        focus: { blockIndex: 0, offset: 5 }
+      });
+      const paragraph = getParagraphs(state)[0];
+      const target = paragraphOffsetToPosition(paragraph, 11);
+      const next = moveOrCopySelectionToPosition(state, target, { copy: true });
+      expect(getParagraphs(next)[0].runs[0].text).toBe('hello worldhello');
+    });
+
+    it('returns no-op when target is inside current selection', () => {
+      const state = createEditorStateFromTexts(['hello world'], {
+        anchor: { blockIndex: 0, offset: 0 },
+        focus: { blockIndex: 0, offset: 5 }
+      });
+      const paragraph = getParagraphs(state)[0];
+      const target = paragraphOffsetToPosition(paragraph, 2);
+      const next = moveOrCopySelectionToPosition(state, target);
+      expect(next).toBe(state);
     });
   });
 });

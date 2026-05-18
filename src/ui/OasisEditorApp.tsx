@@ -71,6 +71,7 @@ import { createEditorTableResize } from "../app/controllers/useEditorTableResize
 import { createEditorTableDrag } from "../app/controllers/useEditorTableDrag.js";
 import { createEditorSurfaceEvents } from "../app/controllers/useEditorSurfaceEvents.js";
 import { createEditorTextInput } from "../app/controllers/useEditorTextInput.js";
+import { createEditorTextDrag } from "../app/controllers/useEditorTextDrag.js";
 import { createEditorNavigation } from "../app/controllers/useEditorNavigation.js";
 import { createEditorDocumentIO } from "../app/controllers/useEditorDocumentIO.js";
 import { createEditorRevisionController } from "../app/controllers/useEditorRevision.js";
@@ -546,7 +547,19 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     logger,
   });
 
-  const surfaceEvents = createEditorSurfaceEvents({
+  const textDrag = createEditorTextDrag({
+    state: () => state,
+    isReadOnly,
+    resolveSurfaceHitAtPoint,
+    applyTransactionalState,
+    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    focusInputAfterPointerSelection,
+    logger,
+  });
+
+  const surfaceEventsWithTextDrag = createEditorSurfaceEvents({
     state: () => state,
     applyState,
     tableResize,
@@ -557,6 +570,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     focusInputAfterPointerSelection,
     resolveSurfaceHitAtPoint,
     getParagraphById,
+    textDrag: {
+      tryStartTextDrag: textDrag.tryStartTextDrag,
+    },
     logger,
   });
 
@@ -803,10 +819,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         onDragOver={(event: DragEvent) => event.preventDefault()}
         onDrop={handleDrop}
         onEditorMouseDown={onEditorMouseDown}
-        onSurfaceMouseDown={surfaceEvents.handleSurfaceMouseDown}
+        onSurfaceMouseDown={surfaceEventsWithTextDrag.handleSurfaceMouseDown}
         onSurfaceMouseMove={tableResize.handleMouseMove}
-        onSurfaceDblClick={surfaceEvents.handleSurfaceDblClick}
-        onParagraphMouseDown={surfaceEvents.handleParagraphMouseDown}
+        onSurfaceDblClick={surfaceEventsWithTextDrag.handleSurfaceDblClick}
+        onParagraphMouseDown={surfaceEventsWithTextDrag.handleParagraphMouseDown}
         onRevisionMouseEnter={revisionController.handleRevisionMouseEnter}
         onRevisionMouseLeave={revisionController.handleRevisionMouseLeave}
         onImageMouseDown={(paragraphId: string, paragraphOffset: number, event: MouseEvent & { currentTarget: HTMLElement }) => {
@@ -856,7 +872,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   onCleanup(() => {
     onCleanupHook();
-    surfaceEvents.stopDragging();
+    surfaceEventsWithTextDrag.stopDragging();
+    textDrag.stopDrag();
     imageOps.stopImageDrag();
     imageOps.stopImageResize();
     stopIconObserver();
@@ -950,10 +967,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             onDragOver={(event) => event.preventDefault()}
             onDrop={handleDrop}
             onEditorMouseDown={onEditorMouseDown}
-            onSurfaceMouseDown={surfaceEvents.handleSurfaceMouseDown}
+            onSurfaceMouseDown={surfaceEventsWithTextDrag.handleSurfaceMouseDown}
             onSurfaceMouseMove={tableResize.handleMouseMove}
-            onSurfaceDblClick={surfaceEvents.handleSurfaceDblClick}
-            onParagraphMouseDown={surfaceEvents.handleParagraphMouseDown}
+            onSurfaceDblClick={surfaceEventsWithTextDrag.handleSurfaceDblClick}
+            onParagraphMouseDown={surfaceEventsWithTextDrag.handleParagraphMouseDown}
             onRevisionMouseEnter={revisionController.handleRevisionMouseEnter}
             onRevisionMouseLeave={revisionController.handleRevisionMouseLeave}
             onImageMouseDown={(paragraphId, paragraphOffset, event) => {
@@ -1072,6 +1089,18 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             surfaceRef={surfaceRef}
             state={state as EditorState}
             targetPos={pos}
+          />
+        )}
+      </Show>
+
+      <Show when={textDrag.dragging() && textDrag.dropTargetPos()}>
+        {(pos) => (
+          <DropCaret
+            surfaceRef={surfaceRef}
+            state={state as EditorState}
+            targetPos={pos}
+            pointerPos={textDrag.pointerPos}
+            caretViewport={textDrag.caretViewport}
           />
         )}
       </Show>
