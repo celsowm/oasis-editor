@@ -25,6 +25,7 @@ export const defaultMenuItems: MenuItem[] = [
   { id: "view_outline", path: "View/Show Outline", labelKey: "menu.view.outline", hidden: true },
   { id: "view_ruler", path: "View/Show Ruler", hidden: true },
   { id: "view_margins", path: "View/Show Margins", labelKey: "menu.view.margins", action: (ctx) => ctx.applyToggleShowMarginsCommand(), icon: (ctx) => ctx.state().showMargins ? "check-square" : "square" },
+  { id: "view_paragraph_marks", path: "View/Show Paragraph Marks", labelKey: "menu.view.paragraphMarks", action: (ctx) => ctx.applyToggleShowParagraphMarksCommand(), icon: (ctx) => ctx.state().showParagraphMarks ? "check-square" : "square" },
   { id: "view_fullscreen", path: "View/Full Screen", labelKey: "menu.view.fullscreen", hidden: true },
   { id: "view_zoom", path: "View/Zoom", labelKey: "status.zoom", hidden: true },
   { id: "view_zoom_50", path: "View/Zoom/50%", hidden: true },

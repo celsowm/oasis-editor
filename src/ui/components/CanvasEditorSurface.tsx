@@ -71,6 +71,7 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
               index={index}
               state={props.state()}
               onSurfaceMouseDown={props.onSurfaceMouseDown}
+              onSurfaceClick={props.onSurfaceClick}
               onSurfaceMouseMove={props.onSurfaceMouseMove}
               onSurfaceDblClick={props.onSurfaceDblClick}
             />
@@ -86,6 +87,7 @@ function CanvasPage(props: {
   index: number;
   state: EditorState;
   onSurfaceMouseDown: (event: MouseEvent) => void;
+  onSurfaceClick?: (event: MouseEvent) => void;
   onSurfaceMouseMove?: (event: MouseEvent) => void;
   onSurfaceDblClick: (event: MouseEvent) => void;
 }) {
@@ -97,6 +99,7 @@ function CanvasPage(props: {
   let lastPaintedPage: EditorLayoutPage | undefined;
   let lastStyles: unknown;
   let lastShowMargins: boolean | undefined;
+  let lastShowParagraphMarks: boolean | undefined;
   let lastWidth = 0;
   let lastHeight = 0;
   let lastDpr = 0;
@@ -113,12 +116,19 @@ function CanvasPage(props: {
     const state = props.state;
     const styles = state.document.styles;
     const showMargins = state.showMargins;
-    if (page === lastPaintedPage && styles === lastStyles && showMargins === lastShowMargins) {
+    const showParagraphMarks = state.showParagraphMarks;
+    if (
+      page === lastPaintedPage &&
+      styles === lastStyles &&
+      showMargins === lastShowMargins &&
+      showParagraphMarks === lastShowParagraphMarks
+    ) {
       return;
     }
     lastPaintedPage = page;
     lastStyles = styles;
     lastShowMargins = showMargins;
+    lastShowParagraphMarks = showParagraphMarks;
 
     const dpr = window.devicePixelRatio || 1;
     const width = page.pageSettings.width;
@@ -196,7 +206,18 @@ function CanvasPage(props: {
     const _ = props.state.showMargins;
     // Reset the cache so paint() does not short-circuit.
     lastShowMargins = undefined;
+    lastShowParagraphMarks = undefined;
     // Cancel any pending RAF and repaint synchronously on next frame.
+    if (rafHandle !== null) {
+      cancelAnimationFrame(rafHandle);
+      rafHandle = null;
+    }
+    rafHandle = requestAnimationFrame(paint);
+  });
+
+  createEffect(() => {
+    const _ = props.state.showParagraphMarks;
+    lastShowParagraphMarks = undefined;
     if (rafHandle !== null) {
       cancelAnimationFrame(rafHandle);
       rafHandle = null;
@@ -217,6 +238,7 @@ function CanvasPage(props: {
         "min-height": `${props.page.pageSettings.height}px`,
       }}
       onMouseDown={props.onSurfaceMouseDown}
+      onClick={props.onSurfaceClick}
       onMouseMove={props.onSurfaceMouseMove}
       onDblClick={props.onSurfaceDblClick}
     >
@@ -334,6 +356,20 @@ function drawParagraph(
         drawTextDecoration(ctx, line, fragment, originX, originY, "strike");
       }
       ctx.restore();
+    }
+
+    const isLastLine = line.index === lines.length - 1;
+    if (state.showParagraphMarks && isLastLine) {
+      const lastSlot = line.slots[line.slots.length - 1];
+      const markSlot = line.slots.find((slot) => slot.offset === line.endOffset) ?? lastSlot;
+      if (markSlot) {
+        ctx.save();
+        ctx.font = "400 13px Calibri";
+        ctx.fillStyle = "#9ca3af";
+        const y = originY + line.top + line.height * 0.8;
+        ctx.fillText("\u00B6", originX + markSlot.left + 2, y);
+        ctx.restore();
+      }
     }
   }
 }

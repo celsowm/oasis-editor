@@ -93,6 +93,7 @@ import { buildCanvasLayoutSnapshot } from "./canvas/CanvasLayoutSnapshot.js";
 import {
   recordCanvasDebugHit,
   recordCanvasDebugLayoutSnapshot,
+  recordCanvasDebugSelection,
   syncCanvasDebugApiVisibility,
 } from "./canvas/CanvasDebug.js";
 
@@ -133,17 +134,36 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   const state = new Proxy({} as EditorState, {
     get(_, prop) {
-      return Reflect.get(stateAccessor(), prop);
+      const current = stateAccessor() as unknown;
+      if (current === null || (typeof current !== "object" && typeof current !== "function")) {
+        return undefined;
+      }
+      return Reflect.get(current as object, prop);
     },
     has(_, prop) {
-      return Reflect.has(stateAccessor(), prop);
+      const current = stateAccessor() as unknown;
+      if (current === null || (typeof current !== "object" && typeof current !== "function")) {
+        return false;
+      }
+      return Reflect.has(current as object, prop);
     },
     ownKeys(_) {
-      return Reflect.ownKeys(stateAccessor());
+      const current = stateAccessor() as unknown;
+      if (current === null || (typeof current !== "object" && typeof current !== "function")) {
+        return [];
+      }
+      return Reflect.ownKeys(current as object);
     },
     getOwnPropertyDescriptor(_, prop) {
+      const current = stateAccessor() as unknown;
+      if (current === null || (typeof current !== "object" && typeof current !== "function")) {
+        return {
+          configurable: true,
+          enumerable: true,
+        };
+      }
       return {
-        ...Reflect.getOwnPropertyDescriptor(stateAccessor(), prop),
+        ...Reflect.getOwnPropertyDescriptor(current as object, prop),
         configurable: true,
         enumerable: true
       };
@@ -302,6 +322,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     state.selection;
     state.activeSectionIndex;
     state.activeZone;
+    recordCanvasDebugSelection(state as EditorState);
     if (docIO.importProgress()?.phase !== "done" && docIO.importProgress()?.phase !== "error" && docIO.importProgress() !== null) {
       return;
     }
@@ -778,6 +799,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         onDrop={handleDrop}
         onEditorMouseDown={onEditorMouseDown}
         onSurfaceMouseDown={surfaceEventsWithTextDrag.handleSurfaceMouseDown}
+        onSurfaceClick={surfaceEventsWithTextDrag.handleSurfaceClick}
         onSurfaceMouseMove={tableResize.handleMouseMove}
         onSurfaceDblClick={surfaceEventsWithTextDrag.handleSurfaceDblClick}
         onParagraphMouseDown={surfaceEventsWithTextDrag.handleParagraphMouseDown}
@@ -926,6 +948,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             onDrop={handleDrop}
             onEditorMouseDown={onEditorMouseDown}
             onSurfaceMouseDown={surfaceEventsWithTextDrag.handleSurfaceMouseDown}
+            onSurfaceClick={surfaceEventsWithTextDrag.handleSurfaceClick}
             onSurfaceMouseMove={tableResize.handleMouseMove}
             onSurfaceDblClick={surfaceEventsWithTextDrag.handleSurfaceDblClick}
             onParagraphMouseDown={surfaceEventsWithTextDrag.handleParagraphMouseDown}

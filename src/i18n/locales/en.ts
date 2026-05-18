@@ -168,6 +168,7 @@ export const en = {
   "menu.edit.selectAll": "Select All",
   "menu.view": "View",
   "menu.view.margins": "Show Margins",
+  "menu.view.paragraphMarks": "Show ¶",
   "menu.view.outline": "Show Outline",
   "menu.view.fullscreen": "Full Screen",
   "menu.insert": "Insert",

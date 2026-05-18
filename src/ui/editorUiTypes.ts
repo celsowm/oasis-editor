@@ -62,6 +62,7 @@ export interface EditorSurfaceProps {
    */
   viewportRef?: () => HTMLElement | undefined;
   onSurfaceMouseDown: (event: MouseEvent) => void;
+  onSurfaceClick?: (event: MouseEvent) => void;
   onSurfaceMouseMove?: (event: MouseEvent) => void;
   onSurfaceDblClick: (event: MouseEvent) => void;
   onParagraphMouseDown: (

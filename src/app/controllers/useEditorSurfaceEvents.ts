@@ -3,6 +3,8 @@ import {
   type EditorPosition,
   type EditorParagraphNode,
   findParagraphTableLocation,
+  findParagraphLocation,
+  getDocumentParagraphs,
   getActiveSectionIndex,
   getParagraphText,
   paragraphOffsetToPosition,
@@ -34,10 +36,37 @@ export interface UseEditorSurfaceEventsProps {
   logger: { debug: (msg: string) => void; info: (msg: string, payload?: unknown) => void };
 }
 
+function resolveTripleClickParagraphRange(
+  state: EditorState,
+  paragraph: EditorParagraphNode,
+  targetZone: "main" | "header" | "footer",
+): { start: EditorPosition; end: EditorPosition } {
+  const zoneParagraphs = getDocumentParagraphs(state.document).filter((candidate) => {
+    const location = findParagraphLocation(state.document, candidate.id);
+    return location !== null && location.zone === targetZone;
+  });
+  const index = zoneParagraphs.findIndex((candidate) => candidate.id === paragraph.id);
+  const nextParagraph = index >= 0 ? zoneParagraphs[index + 1] : undefined;
+  const start = paragraphOffsetToPosition(paragraph, 0);
+  const end = nextParagraph
+    ? paragraphOffsetToPosition(nextParagraph, 0)
+    : paragraphOffsetToPosition(paragraph, getParagraphText(paragraph).length);
+  return { start, end };
+}
+
 export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
   let dragAnchor: EditorPosition | null = null;
   let dragFrameHandle: number | null = null;
   let dragPendingPoint: { clientX: number; clientY: number } | null = null;
+  let clickStreak = 0;
+  let lastClickAt = 0;
+  let lastClickX = 0;
+  let lastClickY = 0;
+  let lastClickButton = 0;
+  let lastMouseDownHit: SurfaceHit | null = null;
+  let lastMouseDownAt = 0;
+  let lastMouseDownX = 0;
+  let lastMouseDownY = 0;
 
   const scheduleFrame = (callback: () => void): number => {
     if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
@@ -209,6 +238,16 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
   };
 
   const handleSurfaceMouseDown = (event: MouseEvent) => {
+    const now = Date.now();
+    const distance = Math.hypot(event.clientX - lastClickX, event.clientY - lastClickY);
+    const withinStreakWindow = now - lastClickAt <= 450 && distance <= 6 && event.button === lastClickButton;
+    clickStreak = withinStreakWindow ? clickStreak + 1 : 1;
+    lastClickAt = now;
+    lastClickX = event.clientX;
+    lastClickY = event.clientY;
+    lastClickButton = event.button;
+    const clickDetail = Math.max(event.detail, clickStreak);
+
     const state = deps.state();
     deps.clearPendingCaretTextStyle();
     if (deps.tableResize.handleMouseDown(event)) return;
@@ -220,10 +259,10 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     deps.resetTransactionGrouping();
 
     const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY);
-    if (deps.textDrag?.tryStartTextDrag(event, hit)) {
-      deps.focusInputAfterPointerSelection();
-      return;
-    }
+    lastMouseDownHit = hit;
+    lastMouseDownAt = now;
+    lastMouseDownX = event.clientX;
+    lastMouseDownY = event.clientY;
     if (!hit) {
       deps.focusInputAfterPointerSelection();
       return;
@@ -249,22 +288,21 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
       return;
     }
 
-    if (event.detail >= 3 && paragraph) {
+    if (clickDetail >= 3 && paragraph) {
       dragAnchor = null;
-      const startPos = paragraphOffsetToPosition(paragraph, 0);
-      const endPos = paragraphOffsetToPosition(paragraph, getParagraphText(paragraph).length);
+      const range = resolveTripleClickParagraphRange(state, paragraph, hit.zone);
       applyWithZone(
         state,
         hit.zone,
-        setSelection(state, { anchor: startPos, focus: endPos }),
-        startPos,
+        setSelection(state, { anchor: range.start, focus: range.end }),
+        range.start,
       );
       stopDragging();
       deps.focusInputAfterPointerSelection();
       return;
     }
 
-    if (event.detail === 2 && paragraph) {
+    if (clickDetail === 2 && paragraph) {
       dragAnchor = null;
       const word = resolveWordSelection(getParagraphText(paragraph), hit.paragraphOffset);
       const startPos = paragraphOffsetToPosition(paragraph, word.start);
@@ -314,6 +352,45 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
 
   const handleSurfaceDblClick = (event: MouseEvent) => {
     event.preventDefault();
+    // Keep default browser text selection disabled, but do not block bubbling:
+    // some environments sequence triple-click as dblclick + click.
+  };
+
+  const handleSurfaceClick = (event: MouseEvent) => {
+    if (event.detail < 3) {
+      return;
+    }
+    event.preventDefault();
+    const state = deps.state();
+    const distanceFromMouseDown = Math.hypot(event.clientX - lastMouseDownX, event.clientY - lastMouseDownY);
+    const useMouseDownHit = Date.now() - lastMouseDownAt <= 600 && distanceFromMouseDown <= 8;
+    const hit = useMouseDownHit
+      ? lastMouseDownHit
+      : deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY);
+    if (!hit?.resolvedFromParagraph) {
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
+
+    if (deps.textDrag?.tryStartTextDrag(event, hit)) {
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
+    const paragraph = deps.getParagraphById(state.document, hit.paragraphId);
+    if (!paragraph) {
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
+    dragAnchor = null;
+    const range = resolveTripleClickParagraphRange(state, paragraph, hit.zone);
+    applyWithZone(
+      state,
+      hit.zone,
+      setSelection(state, { anchor: range.start, focus: range.end }),
+      range.start,
+    );
+    stopDragging();
+    deps.focusInputAfterPointerSelection();
   };
 
   const handleParagraphMouseDown = (
@@ -321,12 +398,12 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     event: MouseEvent & { currentTarget: HTMLParagraphElement },
   ) => {
     event.preventDefault();
-    event.stopPropagation();
     handleSurfaceMouseDown(event);
   };
 
   return {
     handleSurfaceMouseDown,
+    handleSurfaceClick,
     handleSurfaceDblClick,
     handleParagraphMouseDown,
     stopDragging,

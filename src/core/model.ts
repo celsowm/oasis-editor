@@ -446,6 +446,7 @@ export interface EditorState {
   activeZone?: EditorEditingZone;
   trackChangesEnabled?: boolean;
   showMargins?: boolean;
+  showParagraphMarks?: boolean;
 }
 
 export interface EditorCaretSlot {

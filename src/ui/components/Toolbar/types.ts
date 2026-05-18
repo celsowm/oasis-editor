@@ -63,6 +63,7 @@ export interface EditorToolbarCtx {
   applyInsertPageBreakCommand: () => void;
   applyToggleTrackChangesCommand: () => void;
   applyToggleShowMarginsCommand: () => void;
+  applyToggleShowParagraphMarksCommand: () => void;
   applyAcceptRevisionsCommand: () => void;
   applyRejectRevisionsCommand: () => void;
   applyUpdateSectionSettingsCommand: (

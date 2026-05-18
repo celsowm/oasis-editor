@@ -6,6 +6,7 @@ import type {
   CanvasSnapshotParagraph,
   CanvasSnapshotSlot,
 } from "./CanvasLayoutSnapshot.js";
+import type { EditorState } from "../../core/model.js";
 
 export interface CanvasDebugMissEvent {
   timestamp: number;
@@ -78,6 +79,7 @@ export interface CanvasDebugLayoutSnapshot {
 export interface OasisCanvasDebugApi {
   getLastHit: () => CanvasDebugHitSnapshot | null;
   getLayoutSnapshot: () => CanvasDebugLayoutSnapshot | null;
+  getSelection: () => CanvasDebugSelectionSnapshot | null;
   getMissEvents: () => CanvasDebugMissEvent[];
   clearMissEvents: () => void;
 }
@@ -91,7 +93,23 @@ declare global {
 let installed = false;
 let lastHit: CanvasDebugHitSnapshot | null = null;
 let lastLayoutSnapshot: CanvasDebugLayoutSnapshot | null = null;
+let lastSelectionSnapshot: CanvasDebugSelectionSnapshot | null = null;
 let missEvents: CanvasDebugMissEvent[] = [];
+
+export interface CanvasDebugSelectionSnapshot {
+  anchor: {
+    paragraphId: string;
+    runId: string;
+    offset: number;
+  };
+  focus: {
+    paragraphId: string;
+    runId: string;
+    offset: number;
+  };
+  activeZone: "main" | "header" | "footer";
+  activeSectionIndex: number;
+}
 
 function cloneSlots(slots: CanvasSnapshotSlot[]) {
   return slots.map((slot) => ({
@@ -195,6 +213,15 @@ function buildApi(): OasisCanvasDebugApi {
             })),
           }
         : null,
+    getSelection: () =>
+      lastSelectionSnapshot
+        ? {
+            anchor: { ...lastSelectionSnapshot.anchor },
+            focus: { ...lastSelectionSnapshot.focus },
+            activeZone: lastSelectionSnapshot.activeZone,
+            activeSectionIndex: lastSelectionSnapshot.activeSectionIndex,
+          }
+        : null,
     getMissEvents: () => missEvents.map((entry) => ({ ...entry })),
     clearMissEvents: () => {
       missEvents = [];
@@ -239,6 +266,26 @@ export function recordCanvasDebugLayoutSnapshot(snapshot: CanvasLayoutSnapshot |
     return;
   }
   lastLayoutSnapshot = snapshot ? cloneLayoutSnapshot(snapshot) : null;
+}
+
+export function recordCanvasDebugSelection(state: EditorState): void {
+  if (!installed) {
+    return;
+  }
+  lastSelectionSnapshot = {
+    anchor: {
+      paragraphId: state.selection.anchor.paragraphId,
+      runId: state.selection.anchor.runId,
+      offset: state.selection.anchor.offset,
+    },
+    focus: {
+      paragraphId: state.selection.focus.paragraphId,
+      runId: state.selection.focus.runId,
+      offset: state.selection.focus.offset,
+    },
+    activeZone: state.activeZone ?? "main",
+    activeSectionIndex: state.activeSectionIndex ?? 0,
+  };
 }
 
 export function recordCanvasDebugMissEvent(reason: string, details: { clientX: number; clientY: number }): void {

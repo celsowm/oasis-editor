@@ -56,6 +56,7 @@ export interface OasisEditorEditorProps {
   onDrop: (event: DragEvent) => void;
   onEditorMouseDown: (event: MouseEvent) => void;
   onSurfaceMouseDown: (event: MouseEvent) => void;
+  onSurfaceClick?: (event: MouseEvent) => void;
   onSurfaceMouseMove?: (event: MouseEvent) => void;
   onSurfaceDblClick: (event: MouseEvent) => void;
   onParagraphMouseDown: (
@@ -164,6 +165,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
           layoutMode={props.layoutMode}
           viewportRef={() => viewportElement ?? undefined}
           onSurfaceMouseDown={props.onSurfaceMouseDown}
+          onSurfaceClick={props.onSurfaceClick}
           onSurfaceMouseMove={props.onSurfaceMouseMove}
           onSurfaceDblClick={props.onSurfaceDblClick}
           onParagraphMouseDown={props.onParagraphMouseDown}

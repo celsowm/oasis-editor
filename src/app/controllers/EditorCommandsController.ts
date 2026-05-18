@@ -276,8 +276,12 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
   };
 
   const applyToggleShowMarginsCommand = () => {
-    console.log("Toggle margins command called. Current:", state.showMargins);
     applyState({ ...state, showMargins: !state.showMargins });
+    focusInput();
+  };
+
+  const applyToggleShowParagraphMarksCommand = () => {
+    applyState({ ...state, showParagraphMarks: !state.showParagraphMarks });
     focusInput();
   };
 
@@ -352,6 +356,7 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
     applyUpdateSectionSettingsCommand,
     applyToggleTrackChangesCommand,
     applyToggleShowMarginsCommand,
+    applyToggleShowParagraphMarksCommand,
     applyAcceptRevisionsCommand,
     applyRejectRevisionsCommand,
     applyLinkCommand,
