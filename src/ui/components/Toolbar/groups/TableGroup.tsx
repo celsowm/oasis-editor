@@ -11,13 +11,13 @@ import { ToolbarGroup } from "../ToolbarGroup.js";
 import { ToolbarDropdown } from "../ToolbarDropdown.js";
 import { t } from "../../../../i18n/index.js";
 
-export function TableGroup(props: { ctx: () => EditorToolbarCtx }) {
+export function TableGroup(props: { ctx: () => EditorToolbarCtx; hidden?: boolean }) {
   const ctx = props.ctx;
   const state = () => ctx().state();
   const focusInput = () => ctx().focusInput();
 
   return (
-    <ToolbarGroup>
+    <ToolbarGroup class={props.hidden ? "oasis-editor-toolbar-item-hidden" : undefined}>
       <ToolbarDropdown
         label=""
         icon="table-properties"

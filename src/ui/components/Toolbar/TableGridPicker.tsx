@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, onMount, Show, createEffect, For, startTransition } from "solid-js";
+import { createSignal, onCleanup, onMount, Show, createEffect, For } from "solid-js";
 import { Portal } from "solid-js/web";
 import { t } from "../../../i18n/index.js";
 
@@ -25,7 +25,7 @@ export function TableGridPicker(props: TableGridPickerProps) {
 
   const selectGridSize = (rows: number, cols: number) => {
     close();
-    void startTransition(() => {
+    queueMicrotask(() => {
       props.onSelect(rows, cols);
     });
   };

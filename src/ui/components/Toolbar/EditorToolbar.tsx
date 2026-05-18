@@ -113,10 +113,8 @@ export function EditorToolbar(props: {
 
         <ToolbarSeparator />
 
-        <Show when={ctx().isInsideTable()}>
-          <TableGroup ctx={ctx} />
-          <ToolbarSeparator />
-        </Show>
+        <TableGroup ctx={ctx} hidden={!ctx().isInsideTable()} />
+        <ToolbarSeparator hidden={!ctx().isInsideTable()} />
 
         <SectionGroup ctx={ctx} />
 

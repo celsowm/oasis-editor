@@ -387,3 +387,28 @@ test("canvas simple 2x2 table hit-test uses canvas layout only", async ({ page }
   });
   await expectNoFallbackEvents(page);
 });
+
+test("toolbar overflow table insert does not throw insertBefore NotFoundError", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 760, height: 900 });
+  await gotoEditor(page);
+  await clearFallbackEvents(page);
+  await seedText(page, "overflow table insert");
+
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => {
+    pageErrors.push(error.message);
+  });
+
+  await expect(page.getByTestId("editor-toolbar-overflow-dropdown")).toBeVisible();
+  await insertTable(page, 2, 3);
+  await page.waitForTimeout(120);
+
+  const hasInsertBeforeNotFoundError = pageErrors.some(
+    (message) =>
+      message.includes("insertBefore") &&
+      message.includes("The node before which the new node is to be inserted is not a child of this node"),
+  );
+  expect(hasInsertBeforeNotFoundError).toBeFalsy();
+});

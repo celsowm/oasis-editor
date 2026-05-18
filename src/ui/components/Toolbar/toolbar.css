@@ -32,6 +32,10 @@
   flex-shrink: 0;
 }
 
+.oasis-editor-toolbar-item-hidden {
+  display: none !important;
+}
+
 .oasis-editor-toolbar-separator {
   width: 1px;
   height: 24px;

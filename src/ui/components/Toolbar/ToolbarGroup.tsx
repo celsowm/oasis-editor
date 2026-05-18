@@ -13,6 +13,11 @@ export function ToolbarGroup(props: ToolbarGroupProps) {
   );
 }
 
-export function ToolbarSeparator() {
-  return <div class="oasis-editor-toolbar-separator" />;
+export function ToolbarSeparator(props: { hidden?: boolean }) {
+  return (
+    <div
+      class="oasis-editor-toolbar-separator"
+      style={{ display: props.hidden ? "none" : undefined }}
+    />
+  );
 }
