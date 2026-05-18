@@ -3,7 +3,7 @@ import { createSignal } from "solid-js";
 import { getParagraphs, paragraphOffsetToPosition, resolveImageSrc, type EditorPosition, type EditorState } from "../../core/model.js";
 import { normalizeSelection, isSelectionCollapsed } from "../../core/selection.js";
 import { moveSelectedImageToPosition, setSelection, resizeSelectedImage } from "../../core/editorCommands.js";
-import { getMaxInlineImageWidth } from "../../ui/domGeometry.js";
+import { getMaxInlineImageWidth } from "../../ui/imageGeometry.js";
 import type { ImageResizeHandleDirection } from "../../ui/editorUiTypes.js";
 import type { EditorLogger } from "../../utils/logger.js";
 import type { EditorHistoryState } from "../../ui/editorHistory.js";

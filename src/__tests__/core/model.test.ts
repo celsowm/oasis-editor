@@ -201,12 +201,12 @@ describe('getDocumentSections', () => {
   it('wraps flat blocks into a synthetic default section', () => {
     const doc = {
       id: 'doc:1',
-      blocks: [{ id: 'p:1', type: 'paragraph' as const, runs: [] }],
+      sections: [{ id: 'section:1', blocks: [{ id: 'p:1', type: 'paragraph' as const, runs: [] }], pageSettings: A4 }],
     };
     const sections = getDocumentSections(doc as any);
     expect(sections).toHaveLength(1);
-    expect(sections[0].id).toBe('section:default');
-    expect(sections[0].blocks).toBe(doc.blocks);
+    expect(sections[0].id).toBe('section:1');
+    expect(sections[0].blocks[0]?.id).toBe('p:1');
   });
 
   it('returns existing sections when present', () => {
@@ -215,18 +215,16 @@ describe('getDocumentSections', () => {
       blocks: [],
       pageSettings: A4,
     };
-    const doc = { id: 'doc:1', blocks: [], sections: [section] };
+    const doc = { id: 'doc:1', sections: [section] };
     const sections = getDocumentSections(doc as any);
     expect(sections).toHaveLength(1);
     expect(sections[0].id).toBe('section:1');
   });
 
-  it('prefers sections over legacy document.blocks', () => {
+  it('reads canonical sections', () => {
     const sectionParagraph = { id: 'p:section', type: 'paragraph' as const, runs: [] };
-    const legacyParagraph = { id: 'p:legacy', type: 'paragraph' as const, runs: [] };
     const doc = {
       id: 'doc:1',
-      blocks: [legacyParagraph],
       sections: [{ id: 'section:1', blocks: [sectionParagraph], pageSettings: A4 }],
     };
     const sections = getDocumentSectionsCanonical(doc as any);
@@ -240,7 +238,6 @@ describe('canonical block/paragraph helpers', () => {
     const sectionParagraph = { id: 'p:1', type: 'paragraph' as const, runs: [] };
     const doc = {
       id: 'doc:1',
-      blocks: [],
       sections: [{ id: 'section:1', blocks: [sectionParagraph], pageSettings: A4 }],
     };
     const paragraphs = getDocumentParagraphsCanonical(doc as any);
@@ -255,7 +252,6 @@ describe('canonical block/paragraph helpers', () => {
     const state = {
       document: {
         id: 'doc:1',
-        blocks: [],
         sections: [{
           id: 'section:1',
           pageSettings: A4,

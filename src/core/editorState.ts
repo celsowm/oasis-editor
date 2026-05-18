@@ -246,9 +246,16 @@ export function createEditorDocument(
   );
   const document: EditorDocument = {
     id: `document:${nextDocumentId}`,
-    blocks,
     pageSettings: normalizedPageSettings,
-    sections: sections ?? undefined,
+    sections:
+      sections ??
+      [
+        {
+          id: "section:default",
+          blocks,
+          pageSettings: normalizedPageSettings,
+        },
+      ],
     styles: styles ?? { ...DEFAULT_EDITOR_STYLES },
     metadata: metadata ?? { title: "Untitled document" },
     // The asset registry holds out-of-band image payloads (data URLs).
@@ -288,42 +295,34 @@ export function createEditorStateFromDocument(
   document: EditorDocument,
   selection?: { paragraphIndex?: number; offset?: number },
 ): EditorState {
-  const hasSections = document.sections && document.sections.length > 0;
-  const blocks = hasSections
-    ? document.blocks
-    : (document.blocks.length > 0 ? document.blocks : [createEditorParagraph("")]);
   let normalizedDocument: EditorDocument = {
     ...document,
-    blocks,
-    sections: hasSections ? document.sections : undefined,
+    sections:
+      document.sections && document.sections.length > 0
+        ? document.sections
+        : [
+            {
+              id: "section:default",
+              blocks: [createEditorParagraph("")],
+              pageSettings: getDocumentSectionsCanonical(document)[0]?.pageSettings ?? DEFAULT_EDITOR_PAGE_SETTINGS,
+            },
+          ],
   };
 
   let allParagraphs = getDocumentParagraphsCanonical(normalizedDocument);
   if (allParagraphs.length === 0) {
     const fallbackParagraph = createEditorParagraph("");
-    if (hasSections) {
-      const sections = getDocumentSectionsCanonical(normalizedDocument);
-      const firstSection = sections[0];
-      if (firstSection) {
-        const nextSections = [...sections];
-        nextSections[0] = {
-          ...firstSection,
-          blocks: [fallbackParagraph, ...firstSection.blocks],
-        };
-        normalizedDocument = {
-          ...normalizedDocument,
-          sections: nextSections,
-        };
-      } else {
-        normalizedDocument = {
-          ...normalizedDocument,
-          blocks: [fallbackParagraph],
-        };
-      }
-    } else {
+    const sections = getDocumentSectionsCanonical(normalizedDocument);
+    const firstSection = sections[0];
+    if (firstSection) {
+      const nextSections = [...sections];
+      nextSections[0] = {
+        ...firstSection,
+        blocks: [fallbackParagraph, ...firstSection.blocks],
+      };
       normalizedDocument = {
         ...normalizedDocument,
-        blocks: [fallbackParagraph],
+        sections: nextSections,
       };
     }
     allParagraphs = getDocumentParagraphsCanonical(normalizedDocument);
@@ -345,7 +344,7 @@ export function createEditorStateFromDocument(
       activeSectionIndex = location.sectionIndex;
       activeZone = location.zone;
     }
-  } else if (hasSections) {
+  } else {
     const sections = getDocumentSectionsCanonical(normalizedDocument);
     const firstSection = sections[0];
     const mainParagraphs = firstSection?.blocks.flatMap(getBlockParagraphs) ?? [];
@@ -392,7 +391,7 @@ export function createInitialEditorState(): EditorState {
   const paragraph = createEditorParagraph("");
   const run = paragraph.runs[0]!;
   return {
-    document: createEditorDocument([paragraph], undefined, []),
+    document: createEditorDocument([paragraph]),
     selection: createCollapsedSelection({
       paragraphId: paragraph.id,
       runId: run.id,

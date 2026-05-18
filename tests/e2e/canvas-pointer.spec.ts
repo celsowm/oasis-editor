@@ -6,17 +6,17 @@ const COMPLEX_DOCX = resolve("src/__tests__/word-parity/fixtures/documento_compl
 test.describe.configure({ timeout: 180_000 });
 
 type CanvasDebugHit = {
-  source: "canvas-layout" | "dom-fallback";
+  source: "canvas-layout";
   zone: "main" | "header" | "footer";
   paragraphId: string;
   paragraphOffset: number;
   resolvedFromParagraph: boolean;
-  fallbackReason?: string;
+  missReason?: string;
 };
 
 type CanvasDebugState = {
   lastHit: CanvasDebugHit | null;
-  fallbackEvents: Array<{ reason: string; clientX: number; clientY: number }>;
+  missEvents: Array<{ reason: string; clientX: number; clientY: number }>;
 };
 
 async function canvasPageRect(page: Page) {
@@ -42,13 +42,13 @@ async function gotoEditor(page: Page) {
 async function getCanvasDebugState(page: Page): Promise<CanvasDebugState> {
   return page.evaluate(() => ({
     lastHit: window.__oasisCanvasDebug?.getLastHit() ?? null,
-    fallbackEvents: window.__oasisCanvasDebug?.getFallbackEvents() ?? [],
+    missEvents: window.__oasisCanvasDebug?.getMissEvents() ?? [],
   }));
 }
 
-async function clearFallbackEvents(page: Page) {
+async function clearMissEvents(page: Page) {
   await page.evaluate(() => {
-    window.__oasisCanvasDebug?.clearFallbackEvents();
+    window.__oasisCanvasDebug?.clearMissEvents();
   });
 }
 
@@ -59,9 +59,9 @@ async function expectLastHitFromCanvas(page: Page) {
   return state.lastHit;
 }
 
-async function expectNoFallbackEvents(page: Page) {
+async function expectNoMissEvents(page: Page) {
   const state = await getCanvasDebugState(page);
-  expect(state.fallbackEvents).toEqual([]);
+  expect(state.missEvents).toEqual([]);
 }
 
 async function seedText(page: Page, text: string) {
@@ -140,19 +140,19 @@ test("canvas pointer interactions update caret and selection from canvas layout 
   page,
 }) => {
   await gotoEditor(page);
-  await clearFallbackEvents(page);
+  await clearMissEvents(page);
   await seedText(page, "alpha beta gamma delta epsilon");
 
   const pageRect = await canvasPageRect(page);
   const p1 = { x: pageRect.x + 186, y: pageRect.y + 140 };
   const p2 = { x: pageRect.x + 334, y: pageRect.y + 140 };
   await exercisePointerCoherence(page, p1, p2);
-  await expectNoFallbackEvents(page);
+  await expectNoMissEvents(page);
 });
 
-test("canvas header click moves caret to header zone without fallback", async ({ page }) => {
+test("canvas header click moves caret to header zone without miss", async ({ page }) => {
   await gotoEditor(page);
-  await clearFallbackEvents(page);
+  await clearMissEvents(page);
   await seedText(page, "header zone trigger");
 
   const editorPage = await canvasPageRect(page);
@@ -164,12 +164,12 @@ test("canvas header click moves caret to header zone without fallback", async ({
   expect(caret).not.toBeNull();
   expect((caret?.y ?? Number.POSITIVE_INFINITY) < editorPage.y + 92).toBeTruthy();
   expect(hit.zone).toBe("header");
-  await expectNoFallbackEvents(page);
+  await expectNoMissEvents(page);
 });
 
-test("DOCX lorem simples hit-test never uses dom fallback", async ({ page }) => {
+test("DOCX lorem simples hit-test never misses in hit-test", async ({ page }) => {
   await gotoEditor(page);
-  await clearFallbackEvents(page);
+  await clearMissEvents(page);
   await page.getByTestId("editor-import-docx-input").setInputFiles(SIMPLE_LOREM_DOCX);
   await page.waitForEvent("console", {
     predicate: (message) => message.text().includes("import docx:done"),
@@ -201,14 +201,14 @@ test("DOCX lorem simples hit-test never uses dom fallback", async ({ page }) => 
   }
 
   await exercisePointerCoherence(page, points.p1, points.p2, { requireWordClicks: true });
-  await expectNoFallbackEvents(page);
+  await expectNoMissEvents(page);
 });
 
 test("canvas drag on imported DOCX does not trigger repeated layout projection", async ({
   page,
 }) => {
   await gotoEditor(page);
-  await clearFallbackEvents(page);
+  await clearMissEvents(page);
   await page.getByTestId("editor-import-docx-input").setInputFiles(SIMPLE_LOREM_DOCX);
   await page.waitForEvent("console", {
     predicate: (message) => message.text().includes("import docx:done"),
@@ -244,7 +244,7 @@ test("canvas drag on imported DOCX does not trigger repeated layout projection",
 
   await page.mouse.click(points.from.x, points.from.y);
   await expectLastHitFromCanvas(page);
-  await clearFallbackEvents(page);
+  await clearMissEvents(page);
 
   let layoutProjectCount = 0;
   const onConsole = (message: ConsoleMessage) => {
@@ -267,7 +267,7 @@ test("canvas drag on imported DOCX does not trigger repeated layout projection",
   page.off("console", onConsole);
 
   await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
-  await expectNoFallbackEvents(page);
+  await expectNoMissEvents(page);
   expect(layoutProjectCount).toBeLessThanOrEqual(5);
 });
 
@@ -275,7 +275,7 @@ test("canvas selection overlay stays visible on imported complex DOCX (header/fo
   page,
 }) => {
   await gotoEditor(page);
-  await clearFallbackEvents(page);
+  await clearMissEvents(page);
   await page.getByTestId("editor-import-docx-input").setInputFiles(COMPLEX_DOCX);
   await page.waitForEvent("console", {
     predicate: (message) => message.text().includes("import docx:done"),
@@ -323,13 +323,13 @@ test("canvas selection overlay stays visible on imported complex DOCX (header/fo
 
   await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
   await expectLastHitFromCanvas(page);
-  await expectNoFallbackEvents(page);
+  await expectNoMissEvents(page);
 });
 
 for (const align of ["center", "right", "justify"] as const) {
   test(`canvas ${align} paragraph keeps caret/selection/hit-test coherent`, async ({ page }) => {
     await gotoEditor(page);
-    await clearFallbackEvents(page);
+    await clearMissEvents(page);
     await seedText(page, "alpha beta gamma delta epsilon zeta eta theta iota kappa");
     await clickToolbarAction(page, `editor-toolbar-align-${align}`);
     await page.waitForTimeout(100);
@@ -338,13 +338,13 @@ for (const align of ["center", "right", "justify"] as const) {
     const p1 = { x: pageRect.x + 300, y: pageRect.y + 140 };
     const p2 = { x: pageRect.x + 470, y: pageRect.y + 140 };
     await exercisePointerCoherence(page, p1, p2);
-    await expectNoFallbackEvents(page);
+    await expectNoMissEvents(page);
   });
 }
 
 test("canvas simple 2x2 table hit-test uses canvas layout only", async ({ page }) => {
   await gotoEditor(page);
-  await clearFallbackEvents(page);
+  await clearMissEvents(page);
   await seedText(page, "table baseline");
   await insertTable(page, 2, 2);
   await page.waitForTimeout(120);
@@ -385,12 +385,12 @@ test("canvas simple 2x2 table hit-test uses canvas layout only", async ({ page }
     requireCaretDelta: false,
     requireSelectionVisible: false,
   });
-  await expectNoFallbackEvents(page);
+  await expectNoMissEvents(page);
 });
 
 test("canvas table column resize uses editor-bounded guide and applies width", async ({ page }) => {
   await gotoEditor(page);
-  await clearFallbackEvents(page);
+  await clearMissEvents(page);
   await seedText(page, "resize column baseline");
   await insertTable(page, 2, 2);
   await page.waitForTimeout(140);
@@ -478,12 +478,12 @@ test("canvas table column resize uses editor-bounded guide and applies width", a
   expect(geometryAfter).not.toBeNull();
   expect(Math.abs((geometryAfter?.firstWidth ?? geometryBefore.firstWidth) - geometryBefore.firstWidth)).toBeGreaterThan(4);
   expect(Math.abs((geometryAfter?.tableWidth ?? geometryBefore.tableWidth) - geometryBefore.tableWidth)).toBeLessThanOrEqual(4);
-  await expectNoFallbackEvents(page);
+  await expectNoMissEvents(page);
 });
 
 test("canvas table row resize on last bottom border increases last row height", async ({ page }) => {
   await gotoEditor(page);
-  await clearFallbackEvents(page);
+  await clearMissEvents(page);
   await seedText(page, "resize row baseline");
   await insertTable(page, 2, 2);
   await page.waitForTimeout(140);
@@ -584,7 +584,7 @@ test("canvas table row resize on last bottom border increases last row height", 
   expect(geometryAfter).not.toBeNull();
   expect((geometryAfter?.lastRowHeight ?? geometryBefore.lastRowHeight) - geometryBefore.lastRowHeight).toBeGreaterThan(4);
   expect(Math.abs((geometryAfter?.firstRowHeight ?? geometryBefore.firstRowHeight) - geometryBefore.firstRowHeight)).toBeLessThanOrEqual(3);
-  await expectNoFallbackEvents(page);
+  await expectNoMissEvents(page);
 });
 
 test("toolbar overflow table insert does not throw insertBefore NotFoundError", async ({
@@ -592,7 +592,7 @@ test("toolbar overflow table insert does not throw insertBefore NotFoundError", 
 }) => {
   await page.setViewportSize({ width: 760, height: 900 });
   await gotoEditor(page);
-  await clearFallbackEvents(page);
+  await clearMissEvents(page);
   await seedText(page, "overflow table insert");
 
   const pageErrors: string[] = [];
@@ -611,3 +611,4 @@ test("toolbar overflow table insert does not throw insertBefore NotFoundError", 
   );
   expect(hasInsertBeforeNotFoundError).toBeFalsy();
 });
+

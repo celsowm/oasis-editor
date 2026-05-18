@@ -415,17 +415,6 @@ describeWordParity("Word layout parity", () => {
       expect(wordPage3Lines.some((line) => line.includes("Safari"))).toBe(true);
       expect(result.editor.pages[2]?.footerLineTexts).toEqual(["3"]);
 
-      const domStyles = result.editor.domStyles;
-      expect(domStyles?.runFontFamilies.some((family) => family.includes("Times New Roman"))).toBe(true);
-      expect(domStyles?.runFontFamilies.some((family) => family.includes("Calibri"))).toBe(true);
-      expect(domStyles?.runFontSizes).toContain("12px");
-      expect(domStyles?.runFontSizes).toContain("10.6667px");
-      expect(domStyles?.firstTableFirstRowBackgrounds).toEqual([
-        "rgb(217, 234, 247)",
-        "rgb(217, 234, 247)",
-        "rgb(217, 234, 247)",
-        "rgb(217, 234, 247)",
-      ]);
     },
     300_000,
   );
@@ -439,10 +428,6 @@ describeWordParity("Word layout parity", () => {
 
       expect(result.mismatches.length).toBeLessThanOrEqual(2);
       expect(result.editor.pages[0]?.bodyLineTexts.join(" ")).toContain("Merged table parity coverage");
-      expect(result.editor.domStyles?.firstTableFirstRowBackgrounds).toEqual([
-        "rgb(217, 234, 247)",
-        "rgb(217, 234, 247)",
-      ]);
     },
     300_000,
   );

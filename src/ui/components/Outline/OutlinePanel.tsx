@@ -3,11 +3,15 @@ import { outlineFrom, type OutlineItem } from "../../../core/headings.js";
 import type { EditorState } from "../../../core/model.js";
 import { t } from "../../../i18n/index.js";
 import { debounce } from "../../../utils/throttle.js";
+import { buildCanvasLayoutSnapshot } from "../../canvas/CanvasLayoutSnapshot.js";
+import { getParagraphEntries } from "../../canvas/CanvasGeometry.js";
 
 export interface OutlinePanelProps {
   state: EditorState;
   onNavigate: (paragraphId: string) => void;
   defaultCollapsed?: boolean;
+  surfaceRef?: () => HTMLDivElement | undefined;
+  viewportRef?: () => HTMLDivElement | undefined;
 }
 
 export function OutlinePanel(props: OutlinePanelProps) {
@@ -37,57 +41,54 @@ export function OutlinePanel(props: OutlinePanelProps) {
     updateOutline(props.state.document);
   });
 
-  // IntersectionObserver to highlight active heading
-  let observer: IntersectionObserver | null = null;
+  // Snapshot-driven detection of the currently visible heading.
+  const recomputeActive = () => {
+    const surface = props.surfaceRef?.();
+    if (!surface) return;
+    const snapshot = buildCanvasLayoutSnapshot({
+      surface,
+      state: props.state,
+      layoutMode: "wordParity",
+    });
+    if (!snapshot) return;
+    const viewport = props.viewportRef?.();
+    const anchorY = viewport
+      ? viewport.getBoundingClientRect().top + viewport.clientHeight * 0.2
+      : window.innerHeight * 0.2;
+    let bestId: string | null = null;
+    let bestDelta = Number.POSITIVE_INFINITY;
+    for (const item of items()) {
+      const entry = getParagraphEntries(snapshot, item.anchor)[0];
+      if (!entry) continue;
+      const delta = anchorY - entry.top;
+      // Prefer headings already above the anchor; pick the closest one.
+      if (delta >= 0 && delta < bestDelta) {
+        bestDelta = delta;
+        bestId = item.anchor;
+      }
+    }
+    if (bestId) {
+      setActiveId(bestId);
+    }
+  };
+
+  const recomputeActiveDebounced = debounce(recomputeActive, 80);
+  let scrollTarget: HTMLElement | Window | null = null;
 
   onMount(() => {
-    if (typeof IntersectionObserver !== "undefined") {
-      observer = new IntersectionObserver(
-        (entries) => {
-          // Find the first intersecting heading
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              const id = entry.target.getAttribute("data-paragraph-id");
-              if (id) {
-                setActiveId(id);
-                break;
-              }
-            }
-          }
-        },
-        {
-          root: null, // viewport or a specific scroll container? Assuming the scroll container is the body/window or .oasis-editor-app
-          rootMargin: "-20% 0px -60% 0px", // Trigger when heading is near the top
-        }
-      );
-    }
+    scrollTarget = props.viewportRef?.() ?? window;
+    scrollTarget.addEventListener("scroll", recomputeActiveDebounced, { passive: true });
+    recomputeActive();
 
-    // This is a naive implementation since DOM nodes are dynamically rendered.
-    // A more robust implementation would observe all heading elements in the editor surface.
-    // For now, we'll try to find them by data-paragraph-id.
-    const observeHeadings = () => {
-      if (!observer) return;
-      observer.disconnect();
-      const currentItems = items();
-      for (const item of currentItems) {
-        const el = document.querySelector(`[data-paragraph-id="${item.anchor}"]`);
-        if (el) {
-          observer.observe(el);
-        }
-      }
-    };
-
-    // Re-observe when items change
     createEffect(() => {
       items(); // depend on items
-      // wait for next tick for DOM to update
-      setTimeout(observeHeadings, 150);
+      setTimeout(recomputeActive, 80);
     });
   });
 
   onCleanup(() => {
-    if (observer) {
-      observer.disconnect();
+    if (scrollTarget) {
+      scrollTarget.removeEventListener("scroll", recomputeActiveDebounced);
     }
   });
 

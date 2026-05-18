@@ -16,8 +16,8 @@ export interface SurfaceHit {
   paragraphId: string;
   paragraphOffset: number;
   position: EditorPosition;
-  source: "canvas-layout" | "dom-fallback";
-  fallbackReason?: string;
+  source: "canvas-layout";
+  missReason?: string;
   resolvedFromParagraph: boolean;
   tableCellAnchorPosition?: EditorPosition;
   caretViewport?: { left: number; top: number; height: number };
@@ -265,7 +265,7 @@ export function resolveCanvasSurfaceHitAtPoint(
       position: { ...state.selection.focus },
       source: "canvas-layout",
       resolvedFromParagraph: false,
-      fallbackReason: unsupportedReason ?? "zone-without-paragraph",
+      missReason: unsupportedReason ?? "zone-without-paragraph",
     };
   }
 

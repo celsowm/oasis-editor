@@ -1,34 +1,8 @@
-﻿import { batch, createEffect, createSignal, onCleanup } from "solid-js";
-import {
-  findParagraphTableLocation,
-  getActiveSectionIndex,
-  getEditableBlocksForZone,
-  getParagraphText,
-  getParagraphs,
-  getDocumentSections,
-  getParagraphById,
-  positionToParagraphOffset,
-  type EditorBlockNode,
-  type EditorLayoutParagraph,
-  type EditorParagraphNode,
-  type EditorState,
-} from "../../core/model.js";
-import { normalizeSelection } from "../../core/selection.js";
-import { buildTableCellLayout } from "../../core/tableLayout.js";
-import { createEditorLogger } from "../../utils/logger.js";
-import { recordDuration } from "../../utils/performanceMetrics.js";
-import { getCaretSlotRects } from "../../ui/caretGeometry.js";
-import {
-  getCaretRectAtOffset,
-  getEmptyBlockRect,
-  getParagraphBoundaryElement,
-  hasUsableCharGeometry,
-} from "../../ui/domGeometry.js";
-import type { CaretBox, InputBox, SelectionBox } from "../../ui/editorUiTypes.js";
-import { measureParagraphLayoutFromRects } from "../../ui/layoutProjection.js";
-import { collectParagraphCharRects } from "../../ui/positionAtPoint.js";
+import { createEffect, createSignal, onCleanup } from "solid-js";
+import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
 import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
 import { computeCanvasSelectionGeometry } from "../../ui/canvas/CanvasSelectionGeometry.js";
+import type { CaretBox, InputBox, SelectionBox } from "../../ui/editorUiTypes.js";
 
 interface UseEditorLayoutProps {
   state: EditorState;
@@ -36,7 +10,6 @@ interface UseEditorLayoutProps {
   viewportRef: () => HTMLDivElement | undefined;
   isImporting?: () => boolean;
   layoutMode?: "fast" | "wordParity";
-  geometrySource?: "dom" | "canvas";
 }
 
 type LayoutSyncReason =
@@ -46,120 +19,31 @@ type LayoutSyncReason =
   | "resize"
   | "import";
 
-/**
- * Hints emitted by the transaction layer to tell the layout controller
- * exactly what changed in the model — so we can skip the doc-wide reactive
- * signature diff that used to run on every keystroke.
- *
- *  - `dirtyParagraphIds`: only these paragraphs need their layout cache cleared
- *    + re-measured.
- *  - `structureChanged`:  block-level structure (insert / delete / split / merge
- *    paragraph, table edits, etc.) changed; the visible block heights need a
- *    refresh.
- *  - `dirtyAll`:          conservative fallback (undo/redo, import, persistence
- *    reload, …). Behaves like the legacy "rebuild everything visible" path.
- */
 export interface LayoutInvalidation {
   dirtyParagraphIds?: string[];
   structureChanged?: boolean;
   dirtyAll?: boolean;
 }
 
-const logger = createEditorLogger("layout");
-const DEFAULT_BATCH_SIZE = 32;
-const VISIBLE_PAGE_OVERSCAN_PX = 900;
-
 function scheduleFrame(callback: () => void): number {
   if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
     return window.requestAnimationFrame(() => callback());
   }
-  // `setTimeout` is typed as `Timeout` under @types/node and `number` in DOM
-  // typings; both runtimes accept an opaque numeric handle, so coerce here
-  // for portability.
   return globalThis.setTimeout(callback, 16) as unknown as number;
 }
 
-function cancelFrame(handle: number): void {
-  if (typeof window !== "undefined" && typeof window.cancelAnimationFrame === "function") {
-    window.cancelAnimationFrame(handle);
-    return;
+function normalizeParagraphLayouts(
+  current: Record<string, EditorLayoutParagraph>,
+  dirtyParagraphIds: string[],
+): Record<string, EditorLayoutParagraph> {
+  if (dirtyParagraphIds.length === 0) {
+    return current;
   }
-  globalThis.clearTimeout(handle as unknown as ReturnType<typeof setTimeout>);
-}
-
-function isRectNearViewport(rect: DOMRect, viewportRect: DOMRect): boolean {
-  return (
-    rect.bottom >= viewportRect.top - VISIBLE_PAGE_OVERSCAN_PX &&
-    rect.top <= viewportRect.bottom + VISIBLE_PAGE_OVERSCAN_PX
-  );
-}
-
-function getCollapsedCaretRectFast(
-  surface: HTMLElement,
-  paragraphId: string,
-  offset: number,
-): { left: number; top: number; height: number } | null {
-  // Range-API-based fast path. Works for both atom segments (tab/image/phantom)
-  // and the new text-segment spans, without requiring per-character DOM nodes.
-  return getCaretRectAtOffset(surface, paragraphId, offset);
-}
-
-function buildParagraphSignature(paragraph: EditorParagraphNode): string {
-  return paragraph.runs
-    .map((run) => {
-      // Use only the image's structural dimensions in the signature.
-      // The src may be an arbitrarily large data URL (legacy paths) — the
-      // image asset itself is identified by the (immutable) run id, so
-      // including the src here is redundant and would make signature
-      // building O(payload size) per keystroke for documents with embedded
-      // images.
-      const image = run.image
-        ? `img:${run.image.width ?? ""}x${run.image.height ?? ""}`
-        : "";
-      return `${run.id}:${run.text}:${image}`;
-    })
-    .join("|");
-}
-
-function areParagraphLayoutsEquivalent(
-  previous: EditorLayoutParagraph | undefined,
-  next: EditorLayoutParagraph,
-): boolean {
-  if (!previous) {
-    return false;
+  const next = { ...current };
+  for (const paragraphId of dirtyParagraphIds) {
+    delete next[paragraphId];
   }
-  if (previous.lines.length !== next.lines.length) {
-    return false;
-  }
-  if ((previous.endOffset ?? previous.text.length) !== (next.endOffset ?? next.text.length)) {
-    return false;
-  }
-
-  return !next.lines.some((line, index) => {
-    const previousLine = previous.lines[index];
-    if (!previousLine) {
-      return true;
-    }
-    return (
-      previousLine.startOffset !== line.startOffset ||
-      previousLine.endOffset !== line.endOffset ||
-      Math.abs(previousLine.top - line.top) > 0.5 ||
-      Math.abs(previousLine.height - line.height) > 0.5 ||
-      previousLine.slots.length !== line.slots.length
-    );
-  });
-}
-
-function areBlockHeightsEquivalent(
-  previous: Record<string, number>,
-  next: Record<string, number>,
-): boolean {
-  const previousKeys = Object.keys(previous);
-  const nextKeys = Object.keys(next);
-  return !(
-    previousKeys.length !== nextKeys.length ||
-    nextKeys.some((key) => Math.abs((previous[key] ?? 0) - next[key]!) > 0.5)
-  );
+  return next;
 }
 
 export function useEditorLayout(props: UseEditorLayoutProps) {
@@ -176,88 +60,6 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
   const [preferredColumnX, setPreferredColumnX] = createSignal<number | null>(null);
 
   let syncRequestId = 0;
-  let deferredMeasureHandle: number | null = null;
-  let deferredMeasureToken = 0;
-  let pendingStabilization: Promise<void> | null = null;
-  let resolvePendingStabilization: (() => void) | null = null;
-  let previousParagraphSignatures = new Map<string, string>();
-  let previousBlockIds: string[] = [];
-  let cachedParagraphSignatures = new Map<string, string>();
-
-  // Tracks whether the most recent state change was already invalidated by
-  // an explicit transaction-layer hint (Phase 3). When true, the doc-wide
-  // signature createEffect skips its expensive O(N) loop and trusts the hint.
-  let pendingExplicitInvalidations = 0;
-  const isWordParityMode = () => props.layoutMode === "wordParity";
-  const isCanvasGeometryMode = () => true;
-
-  const clearDeferredMeasurement = () => {
-    deferredMeasureToken += 1;
-    if (deferredMeasureHandle !== null) {
-      cancelFrame(deferredMeasureHandle);
-      deferredMeasureHandle = null;
-    }
-    if (resolvePendingStabilization) {
-      resolvePendingStabilization();
-      resolvePendingStabilization = null;
-      pendingStabilization = null;
-    }
-  };
-
-  const resolveStabilization = () => {
-    if (resolvePendingStabilization) {
-      resolvePendingStabilization();
-      resolvePendingStabilization = null;
-      pendingStabilization = null;
-    }
-  };
-
-  const invalidateParagraphLayouts = (paragraphIds?: Iterable<string>) => {
-    if (!paragraphIds) {
-      cachedParagraphSignatures.clear();
-      setMeasuredParagraphLayouts({});
-      return;
-    }
-
-    const ids = Array.from(paragraphIds);
-    for (const paragraphId of ids) {
-      cachedParagraphSignatures.delete(paragraphId);
-    }
-  };
-
-  const getParagraphLayout = (
-    surface: HTMLElement,
-    paragraph: EditorParagraphNode,
-    options: { preferCache: boolean; cacheMeasured: boolean },
-  ): EditorLayoutParagraph | null => {
-    const signature = buildParagraphSignature(paragraph);
-    const currentLayouts = measuredParagraphLayouts();
-    const cachedLayout = currentLayouts[paragraph.id];
-    if (
-      options.preferCache &&
-      cachedLayout &&
-      cachedParagraphSignatures.get(paragraph.id) === signature
-    ) {
-      return cachedLayout;
-    }
-
-    const charRects = collectParagraphCharRects(surface, paragraph.id);
-    if (charRects.length === 0 || !hasUsableCharGeometry(charRects)) {
-      return null;
-    }
-
-    const nextLayout = measureParagraphLayoutFromRects(
-      paragraph,
-      charRects,
-      undefined,
-      props.layoutMode ?? "fast",
-    );
-    cachedParagraphSignatures.set(paragraph.id, signature);
-    if (options.cacheMeasured && !areParagraphLayoutsEquivalent(cachedLayout, nextLayout)) {
-      setMeasuredParagraphLayouts((current) => ({ ...current, [paragraph.id]: nextLayout }));
-    }
-    return nextLayout;
-  };
 
   const syncInputBox = (_reason: LayoutSyncReason = "selection") => {
     const surface = props.surfaceRef();
@@ -296,112 +98,9 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     });
   };
 
-  const syncMeasuredLayoutMetrics = (
-    reason: LayoutSyncReason = "content-change",
-    paragraphIds?: string[],
-  ): boolean => {
-    if (isCanvasGeometryMode()) {
-      requestInputBoxSync(reason);
-      return false;
-    }
-
-    const surface = props.surfaceRef();
-    if (!surface) {
-      return false;
-    }
-
-    const startedAt = performance.now();
-    const currentHeights = measuredBlockHeights();
-    const currentLayouts = measuredParagraphLayouts();
-    const nextHeights: Record<string, number> = {};
-    const blockElements = surface.querySelectorAll<HTMLElement>("[data-block-id]");
-    for (const element of blockElements) {
-      const blockId = element.dataset.blockId;
-      if (!blockId) {
-        continue;
-      }
-      nextHeights[blockId] = element.getBoundingClientRect().height;
-    }
-
-    const paragraphsById = new Map(
-      getParagraphs(props.state).map((paragraph) => [paragraph.id, paragraph] as const),
-    );
-    const targetParagraphIds = paragraphIds ?? Array.from(paragraphsById.keys());
-    const layoutUpdates: Record<string, EditorLayoutParagraph> = {};
-
-    for (const paragraphId of targetParagraphIds) {
-      const paragraph = paragraphsById.get(paragraphId);
-      if (!paragraph) {
-        continue;
-      }
-      const layout = getParagraphLayout(surface, paragraph, {
-        preferCache: false,
-        cacheMeasured: false,
-      });
-      if (!layout) {
-        continue;
-      }
-      layoutUpdates[paragraphId] = layout;
-      cachedParagraphSignatures.set(paragraphId, buildParagraphSignature(paragraph));
-    }
-
-    const heightsChanged = !areBlockHeightsEquivalent(currentHeights, nextHeights);
-    if (heightsChanged) {
-      setMeasuredBlockHeights(nextHeights);
-    }
-
-    let paragraphLayoutsChanged = false;
-    const mergedLayouts = { ...currentLayouts };
-    for (const [paragraphId, layout] of Object.entries(layoutUpdates)) {
-      if (!areParagraphLayoutsEquivalent(mergedLayouts[paragraphId], layout)) {
-        mergedLayouts[paragraphId] = layout;
-        paragraphLayoutsChanged = true;
-      }
-    }
-    if (paragraphLayoutsChanged) {
-      setMeasuredParagraphLayouts(mergedLayouts);
-    }
-
-    logger.info("layout:sync complete", {
-      layoutMode: props.layoutMode ?? "fast",
-      reason,
-      durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
-      blocksMeasured: Object.keys(nextHeights).length,
-      paragraphsMeasured: targetParagraphIds.length,
-      heightsChanged,
-      paragraphLayoutsChanged,
-    });
-    recordDuration("layout:sync", Math.round((performance.now() - startedAt) * 100) / 100);
-
-    return heightsChanged || paragraphLayoutsChanged;
-  };
-
-  /**
-   * Collect the DOM paragraph IDs whose container blocks are within (or near)
-   * the viewport. Returns null if no viewport is mounted (caller should fall
-   * back to "no work").
-   */
-  const getVisibleParagraphIds = (surface: HTMLElement): Set<string> | null => {
-    const viewport = props.viewportRef();
-    if (!viewport) {
-      return null;
-    }
-    const viewportRect = viewport.getBoundingClientRect();
-    const pages = Array.from(surface.querySelectorAll<HTMLElement>('[data-testid="editor-page"]'));
-    const visibleParagraphIds = new Set<string>();
-    for (const page of pages) {
-      if (!isRectNearViewport(page.getBoundingClientRect(), viewportRect)) {
-        continue;
-      }
-      const paragraphs = page.querySelectorAll<HTMLElement>("[data-paragraph-id]");
-      for (const p of paragraphs) {
-        const id = p.dataset.sourceParagraphId ?? p.dataset.paragraphId;
-        if (id) {
-          visibleParagraphIds.add(id);
-        }
-      }
-    }
-    return visibleParagraphIds;
+  const syncMeasuredLayoutMetrics = (reason: LayoutSyncReason = "content-change"): boolean => {
+    requestInputBoxSync(reason);
+    return false;
   };
 
   const scheduleDeferredLayoutMeasurement = (
@@ -412,277 +111,40 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       blockHeightScope?: "all" | "visible";
     } = {},
   ): Promise<void> | null => {
-    if (isCanvasGeometryMode()) {
-      requestInputBoxSync(reason);
-      return options.resolveWhenDone ? Promise.resolve() : null;
-    }
-
-    const surface = props.surfaceRef();
-    if (!surface) {
-      return null;
-    }
-
-    clearDeferredMeasurement();
-    const paragraphs = getParagraphs(props.state);
-    const paragraphsById = new Map(paragraphs.map((paragraph) => [paragraph.id, paragraph] as const));
-
-    // Default to visible-only measurement. The previous behaviour
-    // ("measure every paragraph in the document") was the source of the
-    // 80+ second deferred sync after content changes / imports.
-    const visibleParagraphIds =
-      options.paragraphIds || isWordParityMode() ? null : getVisibleParagraphIds(surface);
-    const targetParagraphIds = options.paragraphIds ?? (
-      isWordParityMode()
-        ? paragraphs.map((paragraph) => paragraph.id)
-        : (visibleParagraphIds
-            ? paragraphs.map((p) => p.id).filter((id) => visibleParagraphIds.has(id))
-            : [])
-    );
-
-    // Prefer visible-block scope by default to avoid touching every block in
-    // the document on each invalidation. Callers can still opt in to "all"
-    // explicitly when they truly need a full pass.
-    const effectiveBlockScope: "all" | "visible" =
-      options.blockHeightScope ?? (isWordParityMode() ? "all" : "visible");
-
-    const token = ++deferredMeasureToken;
-    const startedAt = performance.now();
-    let index = 0;
-    let blocksMeasured = false;
-    let measuredCount = 0;
-
-    if (options.resolveWhenDone) {
-      pendingStabilization = new Promise<void>((resolve) => {
-        resolvePendingStabilization = resolve;
-      });
-    }
-
-    const getBlockElementsToMeasure = () => {
-      if (effectiveBlockScope !== "visible") {
-        return Array.from(surface.querySelectorAll<HTMLElement>("[data-block-id]"));
-      }
-
-      const viewport = props.viewportRef();
-      if (!viewport) {
-        return [];
-      }
-
-      const viewportRect = viewport.getBoundingClientRect();
-      const pages = Array.from(surface.querySelectorAll<HTMLElement>('[data-testid="editor-page"]'));
-      const visiblePages = pages.filter((page) =>
-        isRectNearViewport(page.getBoundingClientRect(), viewportRect),
+    if (options.paragraphIds && options.paragraphIds.length > 0) {
+      setMeasuredParagraphLayouts((current) =>
+        normalizeParagraphLayouts(current, options.paragraphIds ?? []),
       );
-      return visiblePages.flatMap((page) =>
-        Array.from(page.querySelectorAll<HTMLElement>("[data-block-id]")),
-      );
-    };
-
-    // Phase 2 perf refactor: accumulate ALL measurements (paragraphs +
-    // block heights) across batches and commit ONCE at the end inside a
-    // single `batch(...)`. The previous code committed per-batch, which
-    // triggered a full `projectDocumentLayout(...)` re-run per batch — for
-    // 160 paragraphs / 32-batch that meant 5 full doc re-projections during
-    // a single "deferred sync", each costing many seconds.
-    const pendingParagraphUpdates: Record<string, EditorLayoutParagraph> = {};
-    let pendingBlockHeights: Record<string, number> | null = null;
-
-    const collectBlockHeights = () => {
-      const nextHeights: Record<string, number> =
-        effectiveBlockScope === "visible" ? { ...measuredBlockHeights() } : {};
-      const blockElements = getBlockElementsToMeasure();
-      for (const element of blockElements) {
-        const blockId = element.dataset.blockId;
-        if (!blockId) {
-          continue;
-        }
-        nextHeights[blockId] = element.getBoundingClientRect().height;
-      }
-      pendingBlockHeights = nextHeights;
-    };
-
-    const commitPendingMeasurements = () => {
-      batch(() => {
-        if (
-          pendingBlockHeights &&
-          !areBlockHeightsEquivalent(measuredBlockHeights(), pendingBlockHeights)
-        ) {
-          setMeasuredBlockHeights(pendingBlockHeights);
-        }
-        if (Object.keys(pendingParagraphUpdates).length > 0) {
-          setMeasuredParagraphLayouts((current) => ({
-            ...current,
-            ...pendingParagraphUpdates,
-          }));
-        }
-      });
-    };
-
-    const processBatch = () => {
-      if (token !== deferredMeasureToken) {
-        resolveStabilization();
-        return;
-      }
-
-      const currentSurface = props.surfaceRef();
-      if (!currentSurface) {
-        resolveStabilization();
-        return;
-      }
-
-      if (!blocksMeasured) {
-        blocksMeasured = true;
-        collectBlockHeights();
-      }
-
-      let processedInBatch = 0;
-      while (index < targetParagraphIds.length && processedInBatch < DEFAULT_BATCH_SIZE) {
-        const paragraphId = targetParagraphIds[index]!;
-        const paragraph = paragraphsById.get(paragraphId);
-        index += 1;
-        if (!paragraph) {
-          continue;
-        }
-
-        const layout = getParagraphLayout(currentSurface, paragraph, {
-          preferCache: false,
-          cacheMeasured: false,
-        });
-        if (!layout) {
-          continue;
-        }
-
-        pendingParagraphUpdates[paragraphId] = layout;
-        cachedParagraphSignatures.set(paragraphId, buildParagraphSignature(paragraph));
-        processedInBatch += 1;
-        measuredCount += 1;
-      }
-
-      if (index < targetParagraphIds.length) {
-        deferredMeasureHandle = scheduleFrame(processBatch);
-        return;
-      }
-
-      // Final batch: single Solid update so projectDocumentLayout runs once.
-      commitPendingMeasurements();
-
-      deferredMeasureHandle = null;
-      logger.info("layout:deferred sync complete", {
-        layoutMode: props.layoutMode ?? "fast",
-        reason,
-        blockScope: effectiveBlockScope,
-        durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
-        blocksMeasured: Object.keys(measuredBlockHeights()).length,
-        paragraphsMeasured: measuredCount,
-      });
-      recordDuration("layout:deferred", Math.round((performance.now() - startedAt) * 100) / 100);
-      resolveStabilization();
-    };
-
-    deferredMeasureHandle = scheduleFrame(processBatch);
-    return pendingStabilization;
+    }
+    requestInputBoxSync(reason);
+    return options.resolveWhenDone ? Promise.resolve() : null;
   };
 
-  /**
-   * Apply an explicit invalidation hint produced by the transaction layer
-   * (Phase 3). This bypasses the expensive doc-wide signature `createEffect`
-   * and goes straight to the targeted invalidation + visible-only
-   * re-measurement path.
-   *
-   * Marks `pendingExplicitInvalidations` so that the next reactive run of
-   * the signature `createEffect` skips its O(N) loop — it knows the work
-   * has already been done.
-   *
-   * Note: callers invoke this BEFORE `setState(next)`. The cache mutation
-   * and counter bump are synchronous; the actual measurement scheduling is
-   * deferred to a microtask so it runs against the new state.
-   */
   const applyInvalidation = (invalidation: LayoutInvalidation): void => {
-    if (isCanvasGeometryMode()) {
-      pendingExplicitInvalidations += 1;
-      queueMicrotask(() => {
-        requestInputBoxSync("content-change");
-      });
-      return;
-    }
-
     if (props.isImporting?.()) {
-      // Import path drives stabilization through `stabilizeLayoutAfterImport`.
-      // Still count this as an explicit invalidation so the signature
-      // createEffect won't race with the import flow.
-      pendingExplicitInvalidations += 1;
       return;
     }
 
-    // Empty hint: nothing changed.
-    if (
-      !invalidation.dirtyAll &&
-      !invalidation.structureChanged &&
-      (invalidation.dirtyParagraphIds?.length ?? 0) === 0
-    ) {
-      pendingExplicitInvalidations += 1;
-      return;
-    }
-
-    // Synchronous: clear the relevant entries from the projected-layout cache
-    // before the state mutation triggers EditorSurface's reactive re-projection.
-    if (invalidation.dirtyAll) {
-      invalidateParagraphLayouts();
+    if (invalidation.dirtyAll || invalidation.structureChanged) {
+      setMeasuredBlockHeights({});
+      setMeasuredParagraphLayouts({});
     } else if ((invalidation.dirtyParagraphIds?.length ?? 0) > 0) {
-      invalidateParagraphLayouts(invalidation.dirtyParagraphIds);
+      const dirtyIds = invalidation.dirtyParagraphIds ?? [];
+      setMeasuredParagraphLayouts((current) => normalizeParagraphLayouts(current, dirtyIds));
     }
 
-    pendingExplicitInvalidations += 1;
-
-    // Defer the visible-only deferred measurement to a microtask, so it sees
-    // the post-setState document.
-    queueMicrotask(() => {
-      requestInputBoxSync("content-change");
-      if (invalidation.dirtyAll || invalidation.structureChanged) {
-        scheduleDeferredLayoutMeasurement("content-change");
-      } else if ((invalidation.dirtyParagraphIds?.length ?? 0) > 0) {
-        scheduleDeferredLayoutMeasurement(
-          "content-change",
-          isWordParityMode()
-            ? {}
-            : {
-                paragraphIds: invalidation.dirtyParagraphIds,
-              },
-        );
-      }
-    });
+    requestInputBoxSync("content-change");
   };
 
   const stabilizeLayoutAfterImport = async () => {
-    const startedAt = performance.now();
-    logger.info("layout:import-stabilize-start", {
-      layoutMode: props.layoutMode ?? "fast",
-    });
+    setMeasuredBlockHeights({});
+    setMeasuredParagraphLayouts({});
 
-    clearDeferredMeasurement();
-
-    if (!isCanvasGeometryMode()) {
-      // Phase 2: collapse the two cache-clearing setState calls into a single
-      // Solid `batch(...)` so the documentLayout memo (and the entire
-      // EditorSurface render) only re-runs ONCE here, not twice.
-      batch(() => {
-        invalidateParagraphLayouts();
-        setMeasuredBlockHeights({});
-      });
-    }
-
-    // Wait one frame so the browser commits the post-import DOM before we
-    // try to position the caret/input box. Drop the second redundant
-    // selection sync — `import` already covers caret + input geometry.
     await new Promise<void>((resolve) => {
       scheduleFrame(() => resolve());
     });
 
     requestInputBoxSync("import");
-
-    logger.info("layout:import-stabilize-done", {
-      layoutMode: props.layoutMode ?? "fast",
-      durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
-    });
   };
 
   createEffect(() => {
@@ -692,118 +154,17 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     props.state.selection.focus.paragraphId;
     props.state.selection.focus.runId;
     props.state.selection.focus.offset;
-
     requestInputBoxSync("selection");
   });
 
   createEffect(() => {
-    const paragraphs = getParagraphs(props.state);
-
-    if (isCanvasGeometryMode()) {
-      previousParagraphSignatures = new Map(
-        paragraphs.map((paragraph) => [paragraph.id, ""] as const),
-      );
-      previousBlockIds = getDocumentSections(props.state.document).flatMap((section) =>
-        [...(section.header || []), ...section.blocks, ...(section.footer || [])].map(
-          (block) => block.id,
-        ),
-      );
-      requestInputBoxSync("content-change");
-      return;
-    }
-
-    // Fast path during import: skip signature diff entirely. All paragraphs
-    // are new, so there's nothing to compare against. Just invalidate everything
-    // and let the DOM render naturally. The measurement will happen via the
-    // normal import stabilization flow.
+    props.state.document;
+    props.state.activeSectionIndex;
+    props.state.activeZone;
     if (props.isImporting?.()) {
-      previousParagraphSignatures.clear();
-      previousBlockIds = [];
       return;
     }
-
-    // Phase 3: if the transaction layer already applied an explicit
-    // invalidation, skip the doc-wide signature diff entirely. This is the
-    // common case during typing — we trust the hint and pay only O(1) work
-    // per keystroke instead of O(N) over every paragraph.
-    if (pendingExplicitInvalidations > 0) {
-      pendingExplicitInvalidations -= 1;
-      // Still touch reactive deps so this effect re-subscribes to future
-      // changes; do it cheaply (just iterate IDs / structural image fields).
-      const nextSignatures = new Map<string, string>();
-      for (const paragraph of paragraphs) {
-        // Note: we deliberately do NOT call buildParagraphSignature here.
-        // The transaction-layer hint is the source of truth. We still cache
-        // an empty marker so we have something to fall back on the next
-        // time this effect runs without a hint.
-        nextSignatures.set(paragraph.id, "");
-        paragraph.runs.forEach((run) => {
-          run.text;
-          run.image?.width;
-          run.image?.height;
-        });
-      }
-      previousParagraphSignatures = nextSignatures;
-      previousBlockIds = getDocumentSections(props.state.document).flatMap(section =>
-        [...(section.header || []), ...section.blocks, ...(section.footer || [])].map(b => b.id)
-      );
-      return;
-    }
-
-    const nextSignatures = new Map<string, string>();
-    const changedParagraphIds = new Set<string>();
-    for (const paragraph of paragraphs) {
-      const signature = buildParagraphSignature(paragraph);
-      nextSignatures.set(paragraph.id, signature);
-      if (previousParagraphSignatures.get(paragraph.id) !== signature) {
-        changedParagraphIds.add(paragraph.id);
-      }
-      paragraph.runs.forEach((run) => {
-        run.text;
-        // Track only structural image fields. Reading `run.image?.src`
-        // would force the reactive system to re-evaluate this effect when
-        // the (potentially huge) data URL string identity changes, which
-        // is exactly what we want to avoid for embedded images.
-        run.image?.width;
-        run.image?.height;
-      });
-    }
-
-    for (const paragraphId of previousParagraphSignatures.keys()) {
-      if (!nextSignatures.has(paragraphId)) {
-        changedParagraphIds.add(paragraphId);
-      }
-    }
-
-    const nextBlockIds = getDocumentSections(props.state.document).flatMap(section =>
-      [...(section.header || []), ...section.blocks, ...(section.footer || [])].map(b => b.id)
-    );
-    const blockStructureChanged =
-      previousBlockIds.length !== nextBlockIds.length ||
-      previousBlockIds.some((blockId, index) => blockId !== nextBlockIds[index]);
-
-    if (changedParagraphIds.size > 0) {
-      invalidateParagraphLayouts(changedParagraphIds);
-      requestInputBoxSync("content-change");
-      // Skip deferred measurement during import: measuring hundreds of
-      // paragraphs via getBoundingClientRect on every batch causes massive
-      // layout thrashing. The measurement will happen naturally after the
-      // DOM is fully rendered.
-      if (blockStructureChanged) {
-        scheduleDeferredLayoutMeasurement("content-change", {
-          paragraphIds: isWordParityMode()
-            ? undefined
-            : Array.from(changedParagraphIds).filter((paragraphId) =>
-                nextSignatures.has(paragraphId),
-              ),
-        });
-      }
-    } else if (blockStructureChanged) {
-      scheduleDeferredLayoutMeasurement("content-change");
-    }
-
-    previousParagraphSignatures = nextSignatures;
-    previousBlockIds = nextBlockIds;
+    requestInputBoxSync("content-change");
   });
 
   createEffect(() => {
@@ -813,19 +174,12 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     }
 
     const handleViewportScroll = () => {
-      // Caret and selection overlays are positioned inside the scroll content,
-      // so they move naturally with the document. Recomputing them on every
-      // scroll can force geometry reads on offscreen text.
+      requestInputBoxSync("scroll");
     };
     const handleWindowResize = () => {
-      if (isCanvasGeometryMode()) {
-        requestInputBoxSync("resize");
-        return;
-      }
-      invalidateParagraphLayouts();
       requestInputBoxSync("resize");
-      scheduleDeferredLayoutMeasurement("resize");
     };
+
     viewport.addEventListener("scroll", handleViewportScroll, { passive: true });
     window.addEventListener("resize", handleWindowResize);
 
@@ -839,7 +193,6 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
 
   const onCleanupHook = () => {
     syncRequestId += 1;
-    clearDeferredMeasurement();
   };
 
   return {

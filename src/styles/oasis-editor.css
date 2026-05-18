@@ -713,11 +713,6 @@
   min-width: 0;
 }
 
-.oasis-editor-line {
-  display: block;
-  white-space: nowrap;
-}
-
 .oasis-editor-table-block {
   margin: 0 0 18px;
   position: relative;
@@ -781,29 +776,6 @@
   background: rgba(255, 255, 255, 0.7);
 }
 
-.oasis-editor-table-cell {
-  vertical-align: top;
-  padding: 12px 14px;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  box-sizing: border-box;
-  word-break: break-word;
-}
-
-.oasis-editor-table-cell .oasis-editor-block:last-child {
-  margin-bottom: 0;
-}
-
-.oasis-editor-table-row-repeated-header {
-  background: rgba(241, 245, 249, 0.7);
-}
-
-.oasis-editor-table-row-repeated-header .oasis-editor-block,
-.oasis-editor-table-row-repeated-header .oasis-editor-image,
-.oasis-editor-table-row-repeated-header .oasis-editor-image-inline,
-.oasis-editor-table-row-repeated-header .oasis-editor-image-resize-handle {
-  pointer-events: none;
-}
-
 .oasis-editor-list-marker {
   flex: 0 0 34px;
   min-width: 34px;
@@ -813,10 +785,6 @@
   text-align: right;
   color: var(--oasis-text-muted);
   user-select: none;
-}
-
-.oasis-editor-run {
-  display: inline;
 }
 
 .oasis-editor-link {
@@ -911,8 +879,6 @@
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
 }
 
-/* Table cell selection overlay fills the whole cell (Word-style) */
-.oasis-editor-selection-box:has(+ .oasis-editor-table-cell),
 .oasis-editor-selection-box {
   border-radius: 2px;
 }

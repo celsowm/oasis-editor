@@ -16,12 +16,12 @@ const POINT_TO_PX = 96 / 72;
 const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 28;
 
 function getDocumentParagraphs(document: EditorDocument): EditorParagraphNode[] {
-  const blocks = document.sections?.flatMap((section) => section.blocks) ?? document.blocks;
+  const blocks = document.sections?.flatMap((section) => section.blocks) ?? [];
   return blocks.filter((block): block is EditorParagraphNode => block.type === "paragraph");
 }
 
 function getDocumentTables(document: EditorDocument): EditorTableNode[] {
-  const blocks = document.sections?.flatMap((section) => section.blocks) ?? document.blocks;
+  const blocks = document.sections?.flatMap((section) => section.blocks) ?? [];
   return blocks.filter((block): block is EditorTableNode => block.type === "table");
 }
 
@@ -89,7 +89,6 @@ describe("DOCX import", () => {
   it("creates a valid canonical selection when imported doc uses sections with empty legacy blocks", async () => {
     const document = await importLoremComplexDocument();
     expect((document.sections?.length ?? 0) > 0).toBe(true);
-    expect(document.blocks).toHaveLength(0);
 
     const state = createEditorStateFromDocument(document);
     const focusedParagraph = getParagraphById(

@@ -1,7 +1,12 @@
 import { createSignal } from "solid-js";
 import type { EditorState } from "../../core/model.js";
 import { moveBlockToPosition } from "../../core/editorCommands.js";
-import type { EditorPosition } from "../../core/model.js";
+import {
+  findParagraphTableLocation,
+  getActiveSectionIndex,
+  getEditableBlocksForZone,
+  type EditorPosition,
+} from "../../core/model.js";
 
 export interface TableDragOps {
   dragging: () => boolean;
@@ -16,14 +21,6 @@ export function createEditorTableDrag(deps: {
   resolvePositionAtSurfacePoint: (clientX: number, clientY: number) => EditorPosition | null;
   focusInput: () => void;
 }) {
-  const [resizing, setResizing] = createSignal<{
-    tableId: string;
-    width: number;
-    height: number;
-    offsetX: number; // mouse offset relative to handle top-left
-    offsetY: number;
-  } | null>(null);
-
   const [dragging, setDragging] = createSignal(false);
   const [draggedTableInfo, setDraggedTableInfo] = createSignal<{
     tableId: string;
@@ -50,7 +47,6 @@ export function createEditorTableDrag(deps: {
     if (!dragging()) {
         const delta = Math.abs(event.clientY - startClientY());
         if (delta > 4) {
-            console.log("[TableDrag] Starting drag for table:", draggedTableInfo()?.tableId);
             setDragging(true);
             document.body.style.cursor = "grabbing";
         } else {
@@ -64,11 +60,19 @@ export function createEditorTableDrag(deps: {
     // Check if target is inside the dragged table
     const tableId = draggedTableInfo()?.tableId;
     if (pos && tableId) {
-        const tableBlock = document.querySelector(`[data-source-block-id="${tableId}"]`);
-        const targetElement = document.querySelector(`[data-paragraph-id="${pos.paragraphId}"]`);
-        if (tableBlock && targetElement && tableBlock.contains(targetElement)) {
-            setDropTargetPos(null);
-            return;
+        const state = deps.state();
+        const location = findParagraphTableLocation(
+            state.document,
+            pos.paragraphId,
+            getActiveSectionIndex(state),
+        );
+        if (location) {
+            const blocks = getEditableBlocksForZone(state, location.zone);
+            const tableBlock = blocks[location.blockIndex];
+            if (tableBlock && tableBlock.type === "table" && tableBlock.id === tableId) {
+                setDropTargetPos(null);
+                return;
+            }
         }
     }
 
@@ -77,13 +81,11 @@ export function createEditorTableDrag(deps: {
 
   const handleMouseUp = (event: MouseEvent) => {
     const info = draggedTableInfo();
-    console.log("[TableDrag] MouseUp. Dragging:", dragging(), "Table:", info?.tableId, "Target:", dropTargetPos());
     if (dragging()) {
         const pos = deps.resolvePositionAtSurfacePoint(event.clientX, event.clientY);
         const tableId = info?.tableId;
         
         if (pos && tableId) {
-            console.log("[TableDrag] Moving table", tableId, "to", pos);
             deps.applyTransactionalState((current) => {
                 return moveBlockToPosition(current, tableId, pos);
             });
@@ -94,14 +96,12 @@ export function createEditorTableDrag(deps: {
   };
 
   const handleMouseDown = (tableId: string, event: MouseEvent) => {
-    console.log("[TableDrag] MouseDown on handle for table:", tableId);
     event.preventDefault();
     event.stopPropagation();
 
     const handle = event.currentTarget as HTMLElement;
     const handleRect = handle.getBoundingClientRect();
-    const tableBlock = handle.closest(".oasis-editor-table-block") as HTMLElement;
-    const tableRect = tableBlock.getBoundingClientRect();
+    const tableRect = handleRect;
     
     setDraggedTableInfo({
       tableId,

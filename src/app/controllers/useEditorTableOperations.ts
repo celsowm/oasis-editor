@@ -10,6 +10,7 @@ import {
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
+  getDocumentSectionsCanonical,
   getParagraphs,
   getDocumentSections,
   getDocumentParagraphs,
@@ -52,16 +53,15 @@ export interface EditorTableOperationsDeps {
 
 export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
   const getTargetBlocks = (state: EditorState, zone: EditorEditingZone): EditorBlockNode[] => {
+    const sections = getDocumentSectionsCanonical(state.document);
     const activeSectionIndex = getActiveSectionIndex(state);
-    const hasSections = state.document.sections && state.document.sections.length > 0;
-    const section = hasSections ? state.document.sections![activeSectionIndex] : null;
-
-    if (section) {
-      if (zone === "header") return section.header || [];
-      if (zone === "footer") return section.footer || [];
-      return section.blocks;
+    const section = sections[Math.max(0, Math.min(activeSectionIndex, sections.length - 1))];
+    if (!section) {
+      return [];
     }
-    return state.document.blocks;
+    if (zone === "header") return section.header || [];
+    if (zone === "footer") return section.footer || [];
+    return section.blocks;
   };
 
   const resolveTableCellRangeSelection = (
@@ -402,32 +402,26 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
     zone: EditorEditingZone = "main",
   ): EditorState => {
     const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-
-    if (hasSections) {
-      const nextSections = [...current.document.sections!];
-      const section = nextSections[activeSectionIndex];
-      if (zone === "header") {
-        nextSections[activeSectionIndex] = { ...section, header: blocks };
-      } else if (zone === "footer") {
-        nextSections[activeSectionIndex] = { ...section, footer: blocks };
-      } else {
-        nextSections[activeSectionIndex] = { ...section, blocks: blocks };
-      }
-      return {
-        ...current,
-        document: {
-          ...current.document,
-          sections: nextSections,
-        },
-      };
+    const sections = getDocumentSectionsCanonical(current.document);
+    const boundedSectionIndex = Math.max(0, Math.min(activeSectionIndex, sections.length - 1));
+    const section = sections[boundedSectionIndex];
+    if (!section) {
+      return current;
     }
 
+    const nextSections = [...sections];
+    if (zone === "header") {
+      nextSections[boundedSectionIndex] = { ...section, header: blocks };
+    } else if (zone === "footer") {
+      nextSections[boundedSectionIndex] = { ...section, footer: blocks };
+    } else {
+      nextSections[boundedSectionIndex] = { ...section, blocks };
+    }
     return {
       ...current,
       document: {
         ...current.document,
-        blocks,
+        sections: nextSections,
       },
     };
   };
@@ -1175,19 +1169,8 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       return edit(current);
     }
 
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const hasSections = current.document.sections && current.document.sections.length > 0;
-    const section = hasSections ? current.document.sections![activeSectionIndex] : null;
-
     const zone = location.zone;
-    let targetBlocks: EditorBlockNode[] = [];
-    if (section) {
-      if (zone === "header") targetBlocks = section.header || [];
-      else if (zone === "footer") targetBlocks = section.footer || [];
-      else targetBlocks = section.blocks;
-    } else {
-      targetBlocks = current.document.blocks;
-    }
+    const targetBlocks = getTargetBlocks(current, zone);
 
     const nextBlocks = targetBlocks.map(cloneBlock);
     const tableBlock = nextBlocks[location.blockIndex] as EditorTableNode;
@@ -1218,7 +1201,7 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       },
     };
     const tempResult = edit(tempState);
-    const replacementParagraphs = tempResult.document.blocks.filter(
+    const replacementParagraphs = getDocumentParagraphs(tempResult.document).filter(
       (block): block is EditorParagraphNode => block.type === "paragraph",
     );
 

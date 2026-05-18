@@ -1,7 +1,6 @@
 import { createEffect, createMemo, Index, Show } from "solid-js";
 import type { ITextMeasurer } from "../../core/engine.js";
 import type { EditorSurfaceProps } from "../editorUiTypes.js";
-import { MinimalSemanticPageMirror } from "../components/MinimalSemanticMirror.js";
 import {
   type EditorLayoutBlock,
   type EditorLayoutLine,
@@ -222,7 +221,6 @@ function CanvasPage(props: {
       onDblClick={props.onSurfaceDblClick}
     >
       <canvas ref={canvasRef} />
-      <MinimalSemanticPageMirror page={props.page} />
     </div>
   );
 }

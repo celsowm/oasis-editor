@@ -260,7 +260,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     viewportRef: () => viewportRef,
     isImporting: () => docIO.importProgress()?.phase !== "done" && docIO.importProgress()?.phase !== "error" && docIO.importProgress() !== null,
     layoutMode: layoutMode(),
-    geometrySource: "canvas",
   });
 
   const { status: persistenceStatus } = useEditorPersistence(

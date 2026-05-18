@@ -1,8 +1,7 @@
 import type { EditorBlockNode, EditorDocument, EditorParagraphListStyle, EditorParagraphStyle, EditorParagraphNode, EditorPosition, EditorSelection, EditorState, EditorTextRun, EditorTextStyle, EditorImageRunData, EditorSection, EditorTableCellNode } from "../model.js";
-import { getParagraphLength, getParagraphs, paragraphOffsetToPosition, positionToParagraphOffset, getActiveSectionIndex, getActiveZone, resolveImageSrc } from "../model.js";
-import { createEditorDocument, createEditorParagraphFromRuns, createEditorStyledRun } from "../editorState.js";
+import { getDocumentSections, getParagraphLength, getParagraphs, paragraphOffsetToPosition, positionToParagraphOffset, getActiveSectionIndex, getActiveZone, resolveImageSrc } from "../model.js";
+import { createEditorParagraphFromRuns, createEditorStyledRun } from "../editorState.js";
 import { clampPosition, createCollapsedSelection, findParagraphIndex, isSelectionCollapsed, normalizeSelection } from "../selection.js";
-import { deleteBackward } from "./text.js";
 import { setSelection } from "./selection.js";
 
 export type ToggleableTextStyleKey =
@@ -274,54 +273,26 @@ export function cloneStateWithParagraphs(
   paragraphs: EditorParagraphNode[],
   selection: EditorSelection,
 ): EditorState {
-  const hasSections = state.document.sections && state.document.sections.length > 0;
-
-  if (hasSections) {
-    const sectionIndex = getActiveSectionIndex(state);
-    const zone = getActiveZone(state);
-    const section = state.document.sections![sectionIndex];
-
-    if (section) {
-      const updatedSection = replaceParagraphsInSection(section, paragraphs, zone);
-      const updatedSections = [...state.document.sections!];
-      updatedSections[sectionIndex] = updatedSection;
-
-      return {
-        ...state,
-        document: {
-          ...state.document,
-          sections: updatedSections,
-        },
-        selection,
-      };
-    }
+  const sections = getDocumentSections(state.document);
+  const sectionIndex = Math.max(
+    0,
+    Math.min(getActiveSectionIndex(state), sections.length - 1),
+  );
+  const zone = getActiveZone(state);
+  const section = sections[sectionIndex];
+  if (!section) {
+    return { ...state, selection };
   }
 
-  // Legacy fallback: for documents with tables, use replaceParagraphsInBlocks to preserve table structure
-  const hasTableInBlocks = state.document.blocks.some(b => b.type === "table");
+  const updatedSection = replaceParagraphsInSection(section, paragraphs, zone);
+  const updatedSections = [...sections];
+  updatedSections[sectionIndex] = updatedSection;
 
-  if (hasTableInBlocks) {
-    return {
-      ...state,
-      document: {
-        ...state.document,
-        blocks: replaceParagraphsInBlocks(state.document.blocks, paragraphs),
-      },
-      selection,
-    };
-  }
-
-  // Preserve every existing field on the document (id, styles, assets,
-  // metadata, sections, pageSettings, …) and only swap the paragraph
-  // blocks. The previous implementation called `createEditorDocument`,
-  // which minted a fresh document and silently dropped fields it didn't
-  // know about — most importantly the `assets` registry, causing image
-  // runs to dangle on `asset:<id>` references that no longer resolved.
   return {
     ...state,
     document: {
       ...state.document,
-      blocks: paragraphs,
+      sections: updatedSections,
     },
     selection,
   };

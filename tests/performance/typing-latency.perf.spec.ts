@@ -40,6 +40,33 @@ async function importComplexDocx(page: Page) {
   await page.waitForTimeout(250);
 }
 
+async function resolveCanvasClickPoint(page: Page): Promise<{ x: number; y: number } | null> {
+  return page.evaluate(() => {
+    const debugApi = (window as typeof window & {
+      __oasisCanvasDebug?: { getLayoutSnapshot?: () => any };
+    }).__oasisCanvasDebug;
+    const snapshot = debugApi?.getLayoutSnapshot?.();
+    const paragraph = snapshot?.paragraphs?.find((entry: any) => entry.lines?.length > 0);
+    const firstLine = paragraph?.lines?.[0];
+    const firstSlot = firstLine?.slots?.[0];
+    if (firstSlot && Number.isFinite(firstSlot.left) && Number.isFinite(firstSlot.top)) {
+      return {
+        x: Math.round(firstSlot.left + 2),
+        y: Math.round(firstSlot.top + Math.max(3, Math.min(10, (firstSlot.height ?? 12) / 2))),
+      };
+    }
+    const pageEl = document.querySelector<HTMLElement>('[data-testid="editor-page"]');
+    if (!pageEl) {
+      return null;
+    }
+    const rect = pageEl.getBoundingClientRect();
+    return {
+      x: Math.round(rect.left + Math.min(80, rect.width * 0.2)),
+      y: Math.round(rect.top + Math.min(120, rect.height * 0.2)),
+    };
+  });
+}
+
 /**
  * Baseline test: typing latency after importing a complex DOCX.
  *
@@ -60,26 +87,7 @@ test("typing latency after DOCX import — baseline", async ({ page }) => {
   await page.waitForTimeout(1000);
   consoleEntries.length = 0;
 
-  // Click into a paragraph with text to position the caret. After the
-  // per-char-span removal, text is rendered as one segment span per
-  // contiguous run of non-tab characters; query for those instead.
-  const firstTextChar = await page.evaluate(() => {
-    const segments = Array.from(
-      document.querySelectorAll<HTMLElement>(
-        '[data-testid="editor-surface"] [data-segment="text"], [data-testid="editor-surface"] [data-char-index]',
-      ),
-    );
-    for (const seg of segments) {
-      const rect = seg.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        return {
-          x: Math.round(rect.left + rect.width / 2),
-          y: Math.round(rect.top + rect.height / 2),
-        };
-      }
-    }
-    return null;
-  });
+  const firstTextChar = await resolveCanvasClickPoint(page);
   expect(firstTextChar).not.toBeNull();
 
   // Click to focus
@@ -159,26 +167,7 @@ test("backspace latency after DOCX import — baseline", async ({ page }) => {
   await page.waitForTimeout(1000);
   consoleEntries.length = 0;
 
-  // Navigate to end of a text paragraph with arrow keys. After the
-  // per-char-span removal, text is rendered as one segment span per
-  // contiguous run of non-tab characters; query for those instead.
-  const firstTextChar = await page.evaluate(() => {
-    const segments = Array.from(
-      document.querySelectorAll<HTMLElement>(
-        '[data-testid="editor-surface"] [data-segment="text"], [data-testid="editor-surface"] [data-char-index]',
-      ),
-    );
-    for (const seg of segments) {
-      const rect = seg.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        return {
-          x: Math.round(rect.left + rect.width / 2),
-          y: Math.round(rect.top + rect.height / 2),
-        };
-      }
-    }
-    return null;
-  });
+  const firstTextChar = await resolveCanvasClickPoint(page);
   expect(firstTextChar).not.toBeNull();
 
   await page.mouse.click(firstTextChar!.x, firstTextChar!.y);

@@ -1739,7 +1739,6 @@ export async function importDocxToEditorDocument(
   if (shouldPreserveSections) {
     const doc = createEditorDocument([]);
     (doc as any).sections = sections;
-    doc.blocks = [];
     if (sections.length === 1) {
       doc.pageSettings = sections[0]!.pageSettings;
     }

@@ -77,7 +77,7 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
         sections: [
           {
             id: "section:1",
-            blocks: updatedDocument.blocks,
+            blocks: [],
             pageSettings: normalizePageSettings(
               updatedDocument.pageSettings ?? DEFAULT_EDITOR_PAGE_SETTINGS,
             ),

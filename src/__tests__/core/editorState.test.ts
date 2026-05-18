@@ -54,7 +54,7 @@ describe('createEditorDocument', () => {
     const p1 = createEditorParagraph('a');
     const p2 = createEditorParagraph('b');
     const doc = createEditorDocument([p1, p2]);
-    expect(doc.blocks).toHaveLength(2);
+    expect(doc.sections?.[0]?.blocks).toHaveLength(2);
   });
 
   it('carries custom metadata', () => {
@@ -134,7 +134,6 @@ describe('createEditorStateFromDocument', () => {
     const headerParagraph = createEditorParagraph('header');
     const doc = {
       id: 'doc:1',
-      blocks: [],
       sections: [{
         id: 'section:1',
         pageSettings: DEFAULT_EDITOR_PAGE_SETTINGS,
@@ -153,7 +152,6 @@ describe('createEditorStateFromDocument', () => {
     const headerParagraph = createEditorParagraph('header only');
     const doc = {
       id: 'doc:1',
-      blocks: [],
       sections: [{
         id: 'section:1',
         pageSettings: DEFAULT_EDITOR_PAGE_SETTINGS,

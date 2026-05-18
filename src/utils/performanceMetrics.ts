@@ -129,15 +129,19 @@ export function snapshotEditorDomStats(surface: HTMLElement | null | undefined):
     };
   }
   const totalNodes = surface.querySelectorAll("*").length;
+  // Canvas-only DOM: the surface contains <div data-renderer="canvas"
+  // data-page-index><canvas/></div> per page plus a few overlay divs
+  // (caret, selection). Block/paragraph/line/char counts are intentionally
+  // 0 — they live inside the canvas paint, not as DOM nodes.
   return {
     totalNodes,
-    pages: surface.querySelectorAll('[data-testid="editor-page"]').length,
-    blocks: surface.querySelectorAll("[data-block-id]").length,
-    paragraphs: surface.querySelectorAll("[data-paragraph-id]").length,
-    lines: surface.querySelectorAll('[data-testid="editor-line"]').length,
-    charSpans: surface.querySelectorAll("[data-char-index]").length,
-    segmentSpans: surface.querySelectorAll("[data-segment]").length,
-    runSpans: surface.querySelectorAll('[data-testid="editor-run"]').length,
+    pages: surface.querySelectorAll('[data-renderer="canvas"][data-page-index]').length,
+    blocks: 0,
+    paragraphs: 0,
+    lines: 0,
+    charSpans: 0,
+    segmentSpans: 0,
+    runSpans: 0,
   };
 }
 

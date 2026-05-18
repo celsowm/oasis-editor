@@ -35,8 +35,6 @@ export function moveBlockToPosition(
   let nextDocument = { ...state.document };
   if (nextDocument.sections && nextDocument.sections.length > 0) {
     nextDocument.sections = removeFromSections(nextDocument.sections);
-  } else {
-    nextDocument.blocks = removeFromBlocks(nextDocument.blocks);
   }
 
   if (!movedBlock) {
@@ -73,42 +71,32 @@ export function moveBlockToPosition(
     return { nextBlocks, found: true };
   };
 
-  if (nextDocument.sections && nextDocument.sections.length > 0) {
-    const activeIdx = getActiveSectionIndex(state);
-    const zone = getActiveZone(state);
-    const section = { ...nextDocument.sections[activeIdx]! };
-    let found = false;
+  const activeIdx = getActiveSectionIndex(state);
+  const zone = getActiveZone(state);
+  const section = { ...nextDocument.sections?.[activeIdx]! };
+  let found = false;
 
-    if (zone === "header") {
-      const res = insertIntoBlocks(section.header ?? []);
-      section.header = res.nextBlocks;
-      found = res.found;
-    } else if (zone === "footer") {
-      const res = insertIntoBlocks(section.footer ?? []);
-      section.footer = res.nextBlocks;
-      found = res.found;
-    } else {
-      const res = insertIntoBlocks(section.blocks);
-      section.blocks = res.nextBlocks;
-      found = res.found;
-    }
-
-    if (!found) {
-        console.log("[moveBlockToPosition] Target not found in active zone, appending to main blocks");
-        section.blocks = [...section.blocks, movedBlock];
-    }
-
-    nextDocument.sections = [...nextDocument.sections];
-    nextDocument.sections[activeIdx] = section;
+  if (zone === "header") {
+    const res = insertIntoBlocks(section.header ?? []);
+    section.header = res.nextBlocks;
+    found = res.found;
+  } else if (zone === "footer") {
+    const res = insertIntoBlocks(section.footer ?? []);
+    section.footer = res.nextBlocks;
+    found = res.found;
   } else {
-    const res = insertIntoBlocks(nextDocument.blocks);
-    if (res.found) {
-        nextDocument.blocks = res.nextBlocks;
-    } else {
-        console.log("[moveBlockToPosition] Target not found in blocks, appending");
-        nextDocument.blocks = [...nextDocument.blocks, movedBlock];
-    }
+    const res = insertIntoBlocks(section.blocks);
+    section.blocks = res.nextBlocks;
+    found = res.found;
   }
+
+  if (!found) {
+    console.log("[moveBlockToPosition] Target not found in active zone, appending to main blocks");
+    section.blocks = [...section.blocks, movedBlock];
+  }
+
+  nextDocument.sections = [...(nextDocument.sections ?? [])];
+  nextDocument.sections[activeIdx] = section;
 
   console.log("[moveBlockToPosition] Move complete.");
   return {

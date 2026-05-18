@@ -122,8 +122,8 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
       showCursor();
     }
     setPointerPos({ x: event.clientX, y: event.clientY });
-    // For text drag preview, allow DOM fallback to keep drop-caret geometry
-    // aligned with what the user sees under the pointer.
+    // Keep drop-caret preview aligned with the pointer using the
+    // canvas hit result.
     const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY);
     if (!hit?.resolvedFromParagraph) {
       deps.logger?.debug("text-drag:hit-miss", {

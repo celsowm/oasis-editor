@@ -75,30 +75,17 @@ export function setTableCellStyleValue<K extends keyof EditorTableCellStyle>(
   };
 
   const sections = getDocumentSections(state.document);
-  const hasSections = state.document.sections && state.document.sections.length > 0;
-
-  if (hasSections) {
-    const nextSections = sections.map(section => ({
-      ...section,
-      blocks: updateTableCellsInBlocks(section.blocks, selectedParagraphIds, updateCell),
-      header: section.header ? updateTableCellsInBlocks(section.header, selectedParagraphIds, updateCell) : undefined,
-      footer: section.footer ? updateTableCellsInBlocks(section.footer, selectedParagraphIds, updateCell) : undefined,
-    }));
-
-    return {
-      ...state,
-      document: {
-        ...state.document,
-        sections: nextSections
-      }
-    };
-  }
-
+  const nextSections = sections.map(section => ({
+    ...section,
+    blocks: updateTableCellsInBlocks(section.blocks, selectedParagraphIds, updateCell),
+    header: section.header ? updateTableCellsInBlocks(section.header, selectedParagraphIds, updateCell) : undefined,
+    footer: section.footer ? updateTableCellsInBlocks(section.footer, selectedParagraphIds, updateCell) : undefined,
+  }));
   return {
     ...state,
     document: {
       ...state.document,
-      blocks: updateTableCellsInBlocks(state.document.blocks, selectedParagraphIds, updateCell)
+      sections: nextSections,
     }
   };
 }
@@ -150,30 +137,17 @@ export function setTableStyleValue<K extends keyof EditorTableStyle>(
   };
 
   const sections = getDocumentSections(state.document);
-  const hasSections = state.document.sections && state.document.sections.length > 0;
-
-  if (hasSections) {
-    const nextSections = sections.map(section => ({
-      ...section,
-      blocks: updateBlocks(section.blocks),
-      header: section.header ? updateBlocks(section.header) : undefined,
-      footer: section.footer ? updateBlocks(section.footer) : undefined,
-    }));
-
-    return {
-      ...state,
-      document: {
-        ...state.document,
-        sections: nextSections
-      }
-    };
-  }
-
+  const nextSections = sections.map(section => ({
+    ...section,
+    blocks: updateBlocks(section.blocks),
+    header: section.header ? updateBlocks(section.header) : undefined,
+    footer: section.footer ? updateBlocks(section.footer) : undefined,
+  }));
   return {
     ...state,
     document: {
       ...state.document,
-      blocks: updateBlocks(state.document.blocks)
+      sections: nextSections,
     }
   };
 }
@@ -218,24 +192,17 @@ export function setTableRowHeight(
     });
   };
 
-  if (state.document.sections && state.document.sections.length > 0) {
-    const nextSections = state.document.sections.map((section) => ({
-      ...section,
-      blocks: updateBlocks(section.blocks),
-      header: section.header ? updateBlocks(section.header) : undefined,
-      footer: section.footer ? updateBlocks(section.footer) : undefined,
-    }));
-    return {
-      ...state,
-      document: { ...state.document, sections: nextSections },
-    };
-  }
-
+  const nextSections = getDocumentSections(state.document).map((section) => ({
+    ...section,
+    blocks: updateBlocks(section.blocks),
+    header: section.header ? updateBlocks(section.header) : undefined,
+    footer: section.footer ? updateBlocks(section.footer) : undefined,
+  }));
   return {
     ...state,
     document: {
       ...state.document,
-      blocks: updateBlocks(state.document.blocks),
+      sections: nextSections,
     },
   };
 }
@@ -350,24 +317,17 @@ export function setTableColumnWidths(
     });
   };
 
-  if (state.document.sections && state.document.sections.length > 0) {
-    const nextSections = state.document.sections.map((section) => ({
-      ...section,
-      blocks: updateBlocks(section.blocks),
-      header: section.header ? updateBlocks(section.header) : undefined,
-      footer: section.footer ? updateBlocks(section.footer) : undefined,
-    }));
-    return {
-      ...state,
-      document: { ...state.document, sections: nextSections },
-    };
-  }
-
+  const nextSections = getDocumentSections(state.document).map((section) => ({
+    ...section,
+    blocks: updateBlocks(section.blocks),
+    header: section.header ? updateBlocks(section.header) : undefined,
+    footer: section.footer ? updateBlocks(section.footer) : undefined,
+  }));
   return {
     ...state,
     document: {
       ...state.document,
-      blocks: updateBlocks(state.document.blocks),
+      sections: nextSections,
     },
   };
 }
@@ -427,51 +387,36 @@ export function insertTableAtSelection(state: EditorState, rows: number, cols: n
     };
   };
 
-  if (state.document.sections && state.document.sections.length > 0) {
-    const section = sections[activeSectionIndex];
-    if (!section) return state;
+  const section = sections[activeSectionIndex];
+  if (!section) return state;
 
-    const nextSection = { ...section };
-    let found = false;
+  const nextSection = { ...section };
+  let found = false;
 
-    if (zone === "header") {
-      const result = insertIntoBlocks(section.header ?? []);
-      nextSection.header = result.nextBlocks;
-      found = result.found;
-    } else if (zone === "footer") {
-      const result = insertIntoBlocks(section.footer ?? []);
-      nextSection.footer = result.nextBlocks;
-      found = result.found;
-    } else {
-      const result = insertIntoBlocks(section.blocks);
-      nextSection.blocks = result.nextBlocks;
-      found = result.found;
-    }
-
-    if (!found) return state;
-
-    const nextSections = [...state.document.sections];
-    nextSections[activeSectionIndex] = nextSection;
-
-    return {
-      ...state,
-      document: {
-        ...state.document,
-        sections: nextSections,
-      },
-      selection: withSelection(paragraphOffsetToPosition(table.rows[0]!.cells[0]!.blocks[0]!, 0)),
-    };
+  if (zone === "header") {
+    const result = insertIntoBlocks(section.header ?? []);
+    nextSection.header = result.nextBlocks;
+    found = result.found;
+  } else if (zone === "footer") {
+    const result = insertIntoBlocks(section.footer ?? []);
+    nextSection.footer = result.nextBlocks;
+    found = result.found;
+  } else {
+    const result = insertIntoBlocks(section.blocks);
+    nextSection.blocks = result.nextBlocks;
+    found = result.found;
   }
 
-  // Fallback for document.blocks
-  const result = insertIntoBlocks(state.document.blocks);
-  if (!result.found) return state;
+  if (!found) return state;
+
+  const nextSections = [...sections];
+  nextSections[activeSectionIndex] = nextSection;
 
   return {
     ...state,
     document: {
       ...state.document,
-      blocks: result.nextBlocks,
+      sections: nextSections,
     },
     selection: withSelection(paragraphOffsetToPosition(table.rows[0]!.cells[0]!.blocks[0]!, 0)),
   };

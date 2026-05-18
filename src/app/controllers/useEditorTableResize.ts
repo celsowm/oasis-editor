@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import type { EditorState, EditorTableNode } from "../../core/model.js";
+import { getDocumentSectionsCanonical, type EditorState, type EditorTableNode } from "../../core/model.js";
 import { setTableRowHeight, setTableColumnWidths } from "../../core/editorCommands.js";
 import { buildTableCellLayout, type TableCellLayoutEntry } from "../../core/tableLayout.js";
 import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
@@ -95,14 +95,11 @@ function parseSizeToPt(value: number | string | undefined): number | null {
 }
 
 function getAllBlocks(state: EditorState) {
-  return [
-    ...state.document.blocks,
-    ...(state.document.sections?.flatMap((section) => [
-      ...section.blocks,
-      ...(section.header ?? []),
-      ...(section.footer ?? []),
-    ]) ?? []),
-  ];
+  return getDocumentSectionsCanonical(state.document).flatMap((section) => [
+    ...(section.header ?? []),
+    ...section.blocks,
+    ...(section.footer ?? []),
+  ]);
 }
 
 function getTableById(state: EditorState, tableId: string): EditorTableNode | null {
@@ -281,11 +278,6 @@ export function createEditorTableResize(deps: {
   };
 
   const getTableAtEvent = (event: MouseEvent): ResizeHoverInfo | null => {
-    const target = event.target;
-    if (target instanceof HTMLElement && target.closest(".oasis-editor-table-drag-handle")) {
-      return null;
-    }
-
     const surface = deps.surfaceRef();
     if (!surface) {
       return null;

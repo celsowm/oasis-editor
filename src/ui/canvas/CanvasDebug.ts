@@ -7,7 +7,7 @@ import type {
   CanvasSnapshotSlot,
 } from "./CanvasLayoutSnapshot.js";
 
-export interface CanvasDebugFallbackEvent {
+export interface CanvasDebugMissEvent {
   timestamp: number;
   reason: string;
   clientX: number;
@@ -20,7 +20,7 @@ export interface CanvasDebugHitSnapshot {
   paragraphId: string;
   paragraphOffset: number;
   source: SurfaceHit["source"];
-  fallbackReason?: string;
+  missReason?: string;
   resolvedFromParagraph: boolean;
 }
 
@@ -78,8 +78,8 @@ export interface CanvasDebugLayoutSnapshot {
 export interface OasisCanvasDebugApi {
   getLastHit: () => CanvasDebugHitSnapshot | null;
   getLayoutSnapshot: () => CanvasDebugLayoutSnapshot | null;
-  getFallbackEvents: () => CanvasDebugFallbackEvent[];
-  clearFallbackEvents: () => void;
+  getMissEvents: () => CanvasDebugMissEvent[];
+  clearMissEvents: () => void;
 }
 
 declare global {
@@ -91,7 +91,7 @@ declare global {
 let installed = false;
 let lastHit: CanvasDebugHitSnapshot | null = null;
 let lastLayoutSnapshot: CanvasDebugLayoutSnapshot | null = null;
-let fallbackEvents: CanvasDebugFallbackEvent[] = [];
+let missEvents: CanvasDebugMissEvent[] = [];
 
 function cloneSlots(slots: CanvasSnapshotSlot[]) {
   return slots.map((slot) => ({
@@ -195,9 +195,9 @@ function buildApi(): OasisCanvasDebugApi {
             })),
           }
         : null,
-    getFallbackEvents: () => fallbackEvents.map((entry) => ({ ...entry })),
-    clearFallbackEvents: () => {
-      fallbackEvents = [];
+    getMissEvents: () => missEvents.map((entry) => ({ ...entry })),
+    clearMissEvents: () => {
+      missEvents = [];
     },
   };
 }
@@ -229,7 +229,7 @@ export function recordCanvasDebugHit(hit: SurfaceHit | null): void {
     paragraphId: hit.paragraphId,
     paragraphOffset: hit.paragraphOffset,
     source: hit.source,
-    fallbackReason: hit.fallbackReason,
+    missReason: hit.missReason,
     resolvedFromParagraph: hit.resolvedFromParagraph,
   };
 }
@@ -241,12 +241,12 @@ export function recordCanvasDebugLayoutSnapshot(snapshot: CanvasLayoutSnapshot |
   lastLayoutSnapshot = snapshot ? cloneLayoutSnapshot(snapshot) : null;
 }
 
-export function recordCanvasDebugFallbackEvent(reason: string, details: { clientX: number; clientY: number }): void {
+export function recordCanvasDebugMissEvent(reason: string, details: { clientX: number; clientY: number }): void {
   if (!installed) {
     return;
   }
-  fallbackEvents = [
-    ...fallbackEvents,
+  missEvents = [
+    ...missEvents,
     {
       timestamp: Date.now(),
       reason,

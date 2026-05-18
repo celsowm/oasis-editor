@@ -199,7 +199,6 @@ export const EDITOR_ASSET_REF_PREFIX = "asset:";
 
 export interface EditorDocument {
   id: string;
-  blocks: EditorBlockNode[];
   pageSettings?: EditorPageSettings;
   sections?: EditorSection[];
   styles?: Record<string, EditorNamedStyle>;
@@ -546,14 +545,6 @@ export const DEFAULT_EDITOR_PAGE_SETTINGS: EditorPageSettings = {
   },
 };
 
-const warnedMixedSectionLegacyDocs = new Set<string>();
-
-function shouldWarnCanonicalShape(): boolean {
-  const viteEnv = (import.meta as { env?: Record<string, string | boolean | undefined> }).env ?? {};
-  const processEnv = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
-  return viteEnv.DEV === true || viteEnv.MODE === "test" || processEnv.NODE_ENV === "test";
-}
-
 function inferPageOrientation(width: number, height: number): "portrait" | "landscape" {
   return width > height ? "landscape" : "portrait";
 }
@@ -658,18 +649,6 @@ export function getPageContentHeight(pageSettings: EditorPageSettings): number {
 
 export function getDocumentSectionsCanonical(document: EditorDocument): EditorSection[] {
   if (document.sections && document.sections.length > 0) {
-    if (
-      document.blocks.length > 0 &&
-      shouldWarnCanonicalShape() &&
-      !warnedMixedSectionLegacyDocs.has(document.id)
-    ) {
-      warnedMixedSectionLegacyDocs.add(document.id);
-      // eslint-disable-next-line no-console
-      console.warn(
-        "[oasis-editor] document contains both sections and legacy root blocks; canonical section path is being used",
-        { documentId: document.id, legacyBlockCount: document.blocks.length, sectionCount: document.sections.length },
-      );
-    }
     return document.sections.map((section) => ({
       ...section,
       pageSettings: normalizePageSettings(section.pageSettings),
@@ -679,7 +658,7 @@ export function getDocumentSectionsCanonical(document: EditorDocument): EditorSe
   return [
     {
       id: "section:default",
-      blocks: document.blocks,
+      blocks: [],
       pageSettings: getDocumentPageSettings(document),
     },
   ];

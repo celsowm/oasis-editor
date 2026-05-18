@@ -101,6 +101,35 @@ async function importComplexDocx(page: Page) {
   await page.waitForTimeout(250);
 }
 
+async function resolveCanvasClickTarget(
+  page: Page,
+): Promise<{ x: number; y: number } | null> {
+  return page.evaluate(() => {
+    const debugApi = (window as typeof window & {
+      __oasisCanvasDebug?: { getLayoutSnapshot?: () => any };
+    }).__oasisCanvasDebug;
+    const snapshot = debugApi?.getLayoutSnapshot?.();
+    const paragraph = snapshot?.paragraphs?.find((entry: any) => entry.lines?.length > 0);
+    const firstLine = paragraph?.lines?.[0];
+    const firstSlot = firstLine?.slots?.[0];
+    if (firstSlot && Number.isFinite(firstSlot.left) && Number.isFinite(firstSlot.top)) {
+      return {
+        x: Math.round(firstSlot.left + 2),
+        y: Math.round(firstSlot.top + Math.max(3, Math.min(10, (firstSlot.height ?? 12) / 2))),
+      };
+    }
+    const pageEl = document.querySelector<HTMLElement>('[data-testid="editor-page"]');
+    if (!pageEl) {
+      return null;
+    }
+    const rect = pageEl.getBoundingClientRect();
+    return {
+      x: Math.round(rect.left + Math.min(80, rect.width * 0.2)),
+      y: Math.round(rect.top + Math.min(120, rect.height * 0.2)),
+    };
+  });
+}
+
 test("scrolling imported complex DOCX does not run heavy layout work", async ({ page }) => {
   const consoleEntries: ConsoleEntry[] = [];
   page.on("console", (message) => {
@@ -163,43 +192,7 @@ test("triple-click paragraph selection after complex DOCX import stays responsiv
   await importComplexDocx(page);
   await page.waitForTimeout(1_000);
 
-  const clickTarget = await page.evaluate(() => {
-    // After the per-char-span removal, contiguous text is rendered as a
-    // single segment span. Look for either an atom char (tab/image/phantom)
-    // or a text segment that the cursor can reliably hit.
-    const candidates = Array.from(
-      document.querySelectorAll<HTMLElement>(
-        '[data-testid="editor-surface"] [data-testid="editor-block"][data-paragraph-id] [data-segment="text"], [data-testid="editor-surface"] [data-testid="editor-block"][data-paragraph-id] [data-char-index]',
-      ),
-    );
-
-    for (const candidate of candidates) {
-      const paragraph = candidate.closest<HTMLElement>("[data-paragraph-id]");
-      if (!paragraph) {
-        continue;
-      }
-      const rect = candidate.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) {
-        continue;
-      }
-
-      const x = Math.round(rect.left + rect.width / 2);
-      const y = Math.round(rect.top + rect.height / 2);
-      const topElement = document.elementFromPoint(x, y);
-      if (topElement instanceof HTMLElement && candidate.contains(topElement)) {
-        return {
-          x,
-          y,
-          paragraphId: paragraph.dataset.paragraphId ?? "",
-          segmentStart: candidate.dataset.segmentStart ?? candidate.dataset.charIndex ?? "0",
-          segmentEnd: candidate.dataset.segmentEnd ?? candidate.dataset.charIndex ?? "0",
-          segmentKind: candidate.dataset.segment ?? "atom",
-        };
-      }
-    }
-
-    return null;
-  });
+  const clickTarget = await resolveCanvasClickTarget(page);
   expect(clickTarget).not.toBeNull();
 
   consoleEntries.length = 0;
@@ -207,50 +200,12 @@ test("triple-click paragraph selection after complex DOCX import stays responsiv
 
   const eventDurations: Array<{ detail: number; durationMs: number }> = [];
   for (const detail of [1, 2, 3]) {
-    eventDurations.push(
-      await page.evaluate(
-        ({ target, detail }) => {
-          const char =
-            document.querySelector<HTMLElement>(
-              `[data-paragraph-id="${target.paragraphId}"] [data-segment-start="${target.segmentStart}"]`,
-            ) ??
-            document.querySelector<HTMLElement>(
-              `[data-paragraph-id="${target.paragraphId}"] [data-char-index="${target.segmentStart}"]`,
-            );
-          if (!char) {
-            throw new Error("triple-click target char not found");
-          }
-
-          const dispatchMouse = (type: string) => {
-            char.dispatchEvent(
-              new MouseEvent(type, {
-                bubbles: true,
-                cancelable: true,
-                clientX: target.x,
-                clientY: target.y,
-                detail,
-                button: 0,
-                buttons: type === "mouseup" || type === "click" ? 0 : 1,
-                view: window,
-              }),
-            );
-          };
-
-          const eventStartedAt = performance.now();
-          dispatchMouse("mousedown");
-          dispatchMouse("mouseup");
-          dispatchMouse("click");
-          if (detail === 2) {
-            dispatchMouse("dblclick");
-          }
-          return {
-            detail,
-            durationMs: performance.now() - eventStartedAt,
-          };
-        },
-        { target: clickTarget!, detail },
-      ),
-    );
+    const startedAt = Date.now();
+    await page.mouse.click(clickTarget!.x, clickTarget!.y, { clickCount: detail });
+    eventDurations.push({
+      detail,
+      durationMs: Date.now() - startedAt,
+    });
     await page.waitForTimeout(20);
   }
   await page.waitForTimeout(250);

@@ -21,9 +21,7 @@ import {
 } from "../../core/wordBoundaries.js";
 import { buildTableCellLayout } from "../../core/tableLayout.js";
 import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
-import { getParagraphBoundaryElement } from "../../ui/domGeometry.js";
-import { collectParagraphCharRects } from "../../ui/positionAtPoint.js";
-import { measureParagraphLayoutFromRects } from "../../ui/layoutProjection.js";
+import { getParagraphEntries } from "../../ui/canvas/CanvasGeometry.js";
 import type { CaretBox } from "../../ui/editorUiTypes.js";
 
 export interface UseEditorNavigationProps {
@@ -289,24 +287,16 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
     }
 
     const targetParagraph = paragraphs[targetIndex];
-    const targetElement = surfaceRef
-      ? getParagraphBoundaryElement(
-          surfaceRef,
-          targetParagraph.id,
-          direction < 0 ? "end" : "start",
-        )
-      : null;
     let offset = 0;
-    if (targetElement && surfaceRef) {
-      const layout = measureParagraphLayoutFromRects(
-        targetParagraph,
-        collectParagraphCharRects(surfaceRef, targetParagraph.id),
-      );
-      const lines = layout.lines;
-      const boundaryLine = direction < 0 ? lines[lines.length - 1] : lines[0];
-      offset = boundaryLine?.slots.length
+    const targetEntries = snapshot ? getParagraphEntries(snapshot, targetParagraph.id) : [];
+    const targetEntry =
+      direction < 0 ? targetEntries[targetEntries.length - 1] : targetEntries[0];
+    if (targetEntry && targetEntry.lines.length > 0) {
+      const lines = targetEntry.lines;
+      const boundaryLine = direction < 0 ? lines[lines.length - 1]! : lines[0]!;
+      offset = boundaryLine.slots.length
         ? boundaryLine.slots.reduce(
-            (best: { left: number; offset: number }, slot: { left: number; offset: number }) =>
+            (best, slot) =>
               Math.abs(desiredX - slot.left) < Math.abs(desiredX - best.left)
                 ? slot
                 : best,

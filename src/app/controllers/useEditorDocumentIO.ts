@@ -18,7 +18,7 @@ import {
 import { exportEditorDocumentToDocxBlob } from "../../export/docx/exportEditorDocumentToDocx.js";
 import { importDocxInWorker } from "../../import/docx/importDocxInWorker.js";
 import type { DocxImportStage } from "../../import/docx/importDocxToEditorDocument.js";
-import { getMaxInlineImageWidth } from "../../ui/domGeometry.js";
+import { getMaxInlineImageWidth } from "../../ui/imageGeometry.js";
 import { readFileBuffer } from "../../ui/clipboardImage.js";
 
 export type ImportProgressPhase =
@@ -158,7 +158,6 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
       deps.logger.info("import docx:done", {
         blocks: canonicalBlocks,
         paragraphs: canonicalParagraphs,
-        legacyBlocks: document.blocks.length,
         durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
       });
       deps.focusInput();

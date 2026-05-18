@@ -6,6 +6,8 @@ import { EditorToolbar } from "../components/Toolbar/EditorToolbar.js";
 import { OasisEditorEditor } from "../OasisEditorEditor.js";
 import type { EditorToolbarCtx } from "../components/Toolbar/types.js";
 import { t } from "../../i18n/index.js";
+import { buildCanvasLayoutSnapshot } from "../canvas/CanvasLayoutSnapshot.js";
+import { getParagraphEntries } from "../canvas/CanvasGeometry.js";
 
 export interface ShellProps {
   state: any;
@@ -69,6 +71,42 @@ export interface ShellProps {
 }
 
 export function DocumentShell(props: ShellProps) {
+  let surfaceEl: HTMLDivElement | undefined;
+  let viewportEl: HTMLDivElement | undefined;
+  const captureSurfaceRef = (el: HTMLDivElement) => {
+    surfaceEl = el;
+    props.onSurfaceRef?.(el);
+  };
+  const captureViewportRef = (el: HTMLDivElement) => {
+    viewportEl = el;
+    props.onViewportRef?.(el);
+  };
+  const handleOutlineNavigate = (id: string) => {
+    if (!surfaceEl) return;
+    const snapshot = buildCanvasLayoutSnapshot({
+      surface: surfaceEl,
+      state: props.state,
+      layoutMode: props.layoutMode ?? "wordParity",
+    });
+    if (!snapshot) return;
+    const entries = getParagraphEntries(snapshot, id);
+    const entry = entries[0];
+    if (!entry) return;
+    const viewport = viewportEl;
+    const targetTop = entry.top;
+    if (viewport) {
+      const viewportRect = viewport.getBoundingClientRect();
+      viewport.scrollTo({
+        top: viewport.scrollTop + (targetTop - viewportRect.top) - 24,
+        behavior: "smooth",
+      });
+      return;
+    }
+    window.scrollTo({
+      top: window.scrollY + targetTop - 24,
+      behavior: "smooth",
+    });
+  };
   return (
     <>
       <Show when={props.showChrome}>
@@ -100,12 +138,9 @@ export function DocumentShell(props: ShellProps) {
         <Show when={props.showChrome && props.showOutline}>
           <OutlinePanel
             state={props.state}
-            onNavigate={(id) => {
-              const el = document.querySelector(`[data-paragraph-id="${id}"]`);
-              if (el) {
-                el.scrollIntoView({ behavior: "smooth", block: "start" });
-              }
-            }}
+            onNavigate={handleOutlineNavigate}
+            surfaceRef={() => surfaceEl}
+            viewportRef={() => viewportEl}
           />
         </Show>
         <section class="oasis-editor-stage">
@@ -128,8 +163,8 @@ export function DocumentShell(props: ShellProps) {
             style={props.style}
             readOnly={props.isReadOnly}
             showCaret={() => props.showCaret()}
-            onViewportRef={props.onViewportRef}
-            onSurfaceRef={props.onSurfaceRef}
+            onViewportRef={captureViewportRef}
+            onSurfaceRef={captureSurfaceRef}
             onTextareaRef={props.onTextareaRef}
             onImportInputRef={props.onImportInputRef}
             onImageInputRef={props.onImageInputRef}

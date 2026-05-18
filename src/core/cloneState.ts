@@ -48,7 +48,6 @@ export function cloneEditorState(source: EditorState): EditorState {
     ...source,
     document: {
       ...source.document,
-      blocks: source.document.blocks.map(cloneBlock),
       sections: source.document.sections?.map(cloneSection),
     },
     selection: {
