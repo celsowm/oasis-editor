@@ -222,34 +222,38 @@ export function blocksContainTables(nodes: EditorBlockNode[]): boolean {
 }
 
 export function replaceParagraphsInBlocks(blocks: EditorBlockNode[], newParagraphs: EditorParagraphNode[]): EditorBlockNode[] {
-  // Fast path: when the zone contains no tables, the flat paragraph list from
-  // `getParagraphs(state)` IS the canonical block list. Replace wholesale so
-  // that paragraph-count changes (split, merge via deleteBackward, etc.) are
-  // reflected. The structure-preserving walk below assumes a 1:1 mapping and
-  // would silently drop split halves or leave merged paragraphs behind.
   if (!blocksContainTables(blocks)) {
     return newParagraphs;
   }
-
   let index = 0;
+  let hasAnyChanges = false;
   const processBlocks = (nodes: EditorBlockNode[]): EditorBlockNode[] => {
-    return nodes.map(node => {
+    let localChanges = false;
+    const mapped = nodes.map(node => {
       if (node.type === "paragraph") {
-        return newParagraphs[index++] ?? node;
+        const next = newParagraphs[index++] ?? node;
+        if (next !== node) localChanges = true;
+        return next;
       }
-      return {
-        ...node,
-        rows: node.rows.map(row => ({
-          ...row,
-          cells: row.cells.map(cell => ({
-            ...cell,
-            blocks: processBlocks(cell.blocks) as EditorParagraphNode[]
-          }))
-        }))
-      };
+      let tableChanges = false;
+      const nextRows = node.rows.map(row => {
+        let rowChanges = false;
+        const nextCells = row.cells.map(cell => {
+          const nextBlocks = processBlocks(cell.blocks);
+          if (nextBlocks !== cell.blocks) rowChanges = true;
+          return nextBlocks !== cell.blocks ? { ...cell, blocks: nextBlocks as EditorParagraphNode[] } : cell;
+        });
+        if (rowChanges) tableChanges = true;
+        return rowChanges ? { ...row, cells: nextCells } : row;
+      });
+      if (tableChanges) localChanges = true;
+      return tableChanges ? { ...node, rows: nextRows } : node;
     });
+    if (localChanges) hasAnyChanges = true;
+    return localChanges ? mapped : nodes;
   };
-  return processBlocks(blocks);
+  const result = processBlocks(blocks);
+  return hasAnyChanges ? result : blocks;
 }
 
 export function replaceParagraphsInSection(
