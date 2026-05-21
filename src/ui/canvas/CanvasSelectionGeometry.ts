@@ -11,10 +11,21 @@ import { buildTableCellLayout } from "../../core/tableLayout.js";
 import type { CaretBox, InputBox, SelectionBox } from "../editorUiTypes.js";
 import type { CanvasLayoutSnapshot, CanvasSnapshotParagraph } from "./CanvasLayoutSnapshot.js";
 
+export interface SelectedImageSelectionBox {
+  paragraphId: string;
+  startOffset: number;
+  endOffset: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export interface CanvasSelectionGeometryResult {
   selectionBoxes: SelectionBox[];
   caretBox: CaretBox;
   inputBox: InputBox;
+  selectedImageBox: SelectedImageSelectionBox | null;
 }
 
 function getParagraphSelectionRange(
@@ -104,6 +115,31 @@ export function computeCanvasSelectionGeometry(
   const paragraphIndexById = new Map(
     getParagraphs(state).map((paragraph, index) => [paragraph.id, index] as const),
   );
+  let selectedImageBox: SelectedImageSelectionBox | null = null;
+
+  if (
+    !normalized.isCollapsed &&
+    normalized.startIndex === normalized.endIndex &&
+    normalized.endParagraphOffset - normalized.startParagraphOffset === 1
+  ) {
+    const selectedImage = snapshot.inlineImages.find(
+      (image) =>
+        image.paragraphId === normalized.start.paragraphId &&
+        image.startOffset === normalized.startParagraphOffset &&
+        image.endOffset === normalized.endParagraphOffset,
+    );
+    if (selectedImage) {
+      selectedImageBox = {
+        paragraphId: selectedImage.paragraphId,
+        startOffset: selectedImage.startOffset,
+        endOffset: selectedImage.endOffset,
+        left: selectedImage.left - surfaceRect.left,
+        top: selectedImage.top - surfaceRect.top,
+        width: selectedImage.width,
+        height: selectedImage.height,
+      };
+    }
+  }
 
   // Check if we have a table-cell selection across multiple cells
   const activeSectionIndex = getActiveSectionIndex(state);
@@ -189,7 +225,7 @@ export function computeCanvasSelectionGeometry(
     }
   }
 
-  if (!isMultiCellSelection && !normalized.isCollapsed) {
+  if (!isMultiCellSelection && !normalized.isCollapsed && !selectedImageBox) {
     for (const paragraph of snapshot.paragraphs) {
       const selectedRange = getParagraphSelectionRange(
         paragraph.paragraphId,
@@ -244,6 +280,7 @@ export function computeCanvasSelectionGeometry(
     selectionBoxes,
     inputBox: { left: caretLeft, top: caretTop, height: caretHeight },
     caretBox,
+    selectedImageBox,
   };
 }
 

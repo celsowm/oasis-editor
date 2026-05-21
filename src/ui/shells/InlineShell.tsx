@@ -25,6 +25,7 @@ export function InlineShell(props: ShellProps) {
             measuredBlockHeights={() => props.measuredBlockHeights()}
             measuredParagraphLayouts={() => props.measuredParagraphLayouts()}
             selectionBoxes={() => props.selectionBoxes()}
+            selectedImageBox={() => props.selectedImageBox()}
             toolbarCtx={() => props.toolbarCtx}
             showFloatingTableToolbar={() => props.showFloatingTableToolbar()}
             caretBox={() => props.caretBox()}
@@ -49,6 +50,7 @@ export function InlineShell(props: ShellProps) {
             onDrop={props.onDrop}
             onEditorMouseDown={props.onEditorMouseDown}
             onSurfaceMouseDown={props.onSurfaceMouseDown}
+            onSurfaceClick={props.onSurfaceClick}
             onSurfaceMouseMove={props.onSurfaceMouseMove}
             onSurfaceDblClick={props.onSurfaceDblClick}
             onParagraphMouseDown={props.onParagraphMouseDown}

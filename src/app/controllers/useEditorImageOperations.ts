@@ -30,6 +30,13 @@ export interface ActiveImageDrag {
   offsetY: number;
 }
 
+export interface ImagePointerBounds {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 interface PendingImagePointer {
   paragraphId: string;
   paragraphOffset: number;
@@ -370,9 +377,24 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     deps.focusInput();
   };
 
-  const startImageDrag = (paragraphId: string, paragraphOffset: number, event: MouseEvent) => {
-    const imageElement = event.currentTarget as HTMLElement;
-    const rect = imageElement.getBoundingClientRect();
+  const startImageDrag = (
+    paragraphId: string,
+    paragraphOffset: number,
+    event: MouseEvent,
+    pointerBounds?: ImagePointerBounds,
+  ) => {
+    const currentTarget = event.currentTarget as HTMLElement | null;
+    const rect = pointerBounds
+      ? {
+          left: pointerBounds.left,
+          top: pointerBounds.top,
+          width: pointerBounds.width,
+          height: pointerBounds.height,
+        }
+      : currentTarget?.getBoundingClientRect();
+    if (!rect) {
+      return;
+    }
 
     const selectedImage = getSelectedImageInfo(deps.state);
 

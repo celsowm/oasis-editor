@@ -947,6 +947,75 @@ test("canvas table column resize does not shrink below content minimum", async (
   await expectNoMissEvents(page);
 });
 
+test("canvas image click selects object and resize handle changes image dimensions", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+  await clearMissEvents(page);
+  await page.getByTestId("editor-import-docx-input").setInputFiles(COMPLEX_DOCX);
+  await page.waitForEvent("console", {
+    predicate: (message) => message.text().includes("import docx:done"),
+    timeout: 60_000,
+  });
+  await page.getByTestId("editor-import-overlay").waitFor({ state: "detached" });
+
+  const imageTarget = await page.evaluate(() => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const image = snapshot.inlineImages.find((entry) => entry.zone === "main");
+    if (!image) return null;
+    return {
+      paragraphId: image.paragraphId,
+      startOffset: image.startOffset,
+      clickX: image.left + image.width / 2,
+      clickY: image.top + image.height / 2,
+      width: image.width,
+      height: image.height,
+    };
+  });
+  if (!imageTarget) {
+    throw new Error("unable to resolve image geometry from canvas snapshot");
+  }
+
+  await page.mouse.click(imageTarget.clickX, imageTarget.clickY);
+  await expectLastHitFromCanvas(page);
+  await expect(page.locator(".oasis-editor-image-selection-overlay")).toBeVisible();
+
+  const handle = page.locator('.oasis-editor-image-resize-handle[data-direction="se"]');
+  await expect(handle).toBeVisible();
+  const handleBox = await handle.boundingBox();
+  if (!handleBox) {
+    throw new Error("unable to resolve southeast image resize handle bounds");
+  }
+
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(
+    handleBox.x + handleBox.width / 2 + 36,
+    handleBox.y + handleBox.height / 2 + 18,
+  );
+  await page.mouse.up();
+  await page.waitForTimeout(100);
+
+  const imageAfter = await page.evaluate(({ paragraphId, startOffset }) => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const image = snapshot.inlineImages.find(
+      (entry) => entry.paragraphId === paragraphId && entry.startOffset === startOffset,
+    );
+    if (!image) return null;
+    return {
+      width: image.width,
+      height: image.height,
+    };
+  }, { paragraphId: imageTarget.paragraphId, startOffset: imageTarget.startOffset });
+
+  expect(imageAfter).not.toBeNull();
+  expect((imageAfter?.width ?? imageTarget.width) - imageTarget.width).toBeGreaterThan(8);
+  expect((imageAfter?.height ?? imageTarget.height) - imageTarget.height).toBeGreaterThan(4);
+  await expectNoMissEvents(page);
+});
+
 test("toolbar overflow table insert does not throw insertBefore NotFoundError", async ({
   page,
 }) => {

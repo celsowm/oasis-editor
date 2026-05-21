@@ -1,4 +1,4 @@
-import { Show, createMemo, type Accessor, type JSX } from "solid-js";
+import { For, Show, createMemo, type Accessor, type JSX } from "solid-js";
 import { CanvasEditorSurface } from "./components/CanvasEditorSurface.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
@@ -14,8 +14,8 @@ import {
   type EditorState,
 } from "../core/model.js";
 import { getDocumentCharacterCount, getDocumentWordCount } from "../core/editorState.js";
-import type { CaretBox, InputBox, RevisionBox, SelectionBox } from "./editorUiTypes.js";
-import type { ImageResizeHandleDirection } from "./editorUiTypes.js";
+import type { CaretBox, InputBox, RevisionBox, SelectedImageBox, SelectionBox } from "./editorUiTypes.js";
+import { IMAGE_RESIZE_HANDLE_DIRECTIONS, type ImageResizeHandleDirection } from "./editorUiTypes.js";
 
 export interface OasisEditorEditorProps {
   state: Accessor<EditorState>;
@@ -23,6 +23,7 @@ export interface OasisEditorEditorProps {
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
   layoutMode?: "fast" | "wordParity";
   selectionBoxes: Accessor<SelectionBox[]>;
+  selectedImageBox: Accessor<SelectedImageBox | null>;
   caretBox: Accessor<CaretBox>;
   inputBox: Accessor<InputBox>;
   hoveredRevision: Accessor<RevisionBox | null>;
@@ -182,6 +183,53 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
 
         <Show when={props.selectionBoxes().length > 0}>
           <SelectionOverlay boxes={props.selectionBoxes()} />
+        </Show>
+
+        <Show when={props.selectedImageBox()}>
+          {(selectedImage) => (
+            <div
+              aria-hidden="true"
+              class="oasis-editor-image-selection-overlay"
+              style={{
+                left: `${selectedImage().left}px`,
+                top: `${selectedImage().top}px`,
+                width: `${selectedImage().width}px`,
+                height: `${selectedImage().height}px`,
+              }}
+              onMouseDown={(event) => {
+                if (props.readOnly) {
+                  return;
+                }
+                props.onImageMouseDown(
+                  selectedImage().paragraphId,
+                  selectedImage().startOffset,
+                  event as MouseEvent & { currentTarget: HTMLElement },
+                );
+              }}
+            >
+              <Show when={!props.readOnly}>
+                <For each={IMAGE_RESIZE_HANDLE_DIRECTIONS}>
+                  {(direction) => (
+                    <button
+                      aria-hidden="true"
+                      class="oasis-editor-image-resize-handle"
+                      data-direction={direction}
+                      tabindex={-1}
+                      type="button"
+                      onMouseDown={(event) => {
+                        props.onImageResizeHandleMouseDown(
+                          selectedImage().paragraphId,
+                          selectedImage().startOffset,
+                          direction,
+                          event as MouseEvent & { currentTarget: HTMLElement },
+                        );
+                      }}
+                    />
+                  )}
+                </For>
+              </Show>
+            </div>
+          )}
         </Show>
 
         <Show when={props.toolbarCtx && props.showFloatingTableToolbar}>

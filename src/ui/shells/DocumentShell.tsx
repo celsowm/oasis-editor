@@ -29,6 +29,7 @@ export interface ShellProps {
   
   // Passed-through OasisEditorEditor props
   selectionBoxes: any;
+  selectedImageBox: any;
   showFloatingTableToolbar: any;
   caretBox: any;
   inputBox: any;
@@ -51,6 +52,7 @@ export interface ShellProps {
   onDrop: any;
   onEditorMouseDown: any;
   onSurfaceMouseDown: any;
+  onSurfaceClick: any;
   onSurfaceMouseMove: any;
   onSurfaceDblClick: any;
   onParagraphMouseDown: any;
@@ -149,6 +151,7 @@ export function DocumentShell(props: ShellProps) {
             measuredBlockHeights={() => props.measuredBlockHeights()}
             measuredParagraphLayouts={() => props.measuredParagraphLayouts()}
             selectionBoxes={() => props.selectionBoxes()}
+            selectedImageBox={() => props.selectedImageBox()}
             toolbarCtx={() => props.toolbarCtx}
             showFloatingTableToolbar={() => props.showFloatingTableToolbar()}
             caretBox={() => props.caretBox()}
@@ -174,6 +177,7 @@ export function DocumentShell(props: ShellProps) {
             onDrop={props.onDrop}
             onEditorMouseDown={props.onEditorMouseDown}
             onSurfaceMouseDown={props.onSurfaceMouseDown}
+            onSurfaceClick={props.onSurfaceClick}
             onSurfaceMouseMove={props.onSurfaceMouseMove}
             onSurfaceDblClick={props.onSurfaceDblClick}
             onParagraphMouseDown={props.onParagraphMouseDown}

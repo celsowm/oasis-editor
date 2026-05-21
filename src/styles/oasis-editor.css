@@ -879,6 +879,16 @@
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
 }
 
+.oasis-editor-image-selection-overlay {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid rgba(37, 99, 235, 0.9);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
+  border-radius: 2px;
+  z-index: 3;
+  pointer-events: auto;
+}
+
 .oasis-editor-selection-box {
   border-radius: 2px;
 }

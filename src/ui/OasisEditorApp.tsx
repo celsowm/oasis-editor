@@ -265,6 +265,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     measuredParagraphLayouts,
     inputBox,
     selectionBoxes,
+    selectedImageBox,
     caretBox,
     preferredColumnX,
     setPreferredColumnX,
@@ -761,6 +762,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         measuredParagraphLayouts={() => measuredParagraphLayouts()}
         viewportHeight={() => props.viewportHeight}
         selectionBoxes={() => selectionBoxes()}
+        selectedImageBox={() => selectedImageBox()}
         showFloatingTableToolbar={() =>
           !isReadOnly() && toolbarController.tableSelectionLabel() !== null
         }
@@ -908,6 +910,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             measuredBlockHeights={() => measuredBlockHeights()}
             measuredParagraphLayouts={() => measuredParagraphLayouts()}
             selectionBoxes={() => selectionBoxes()}
+            selectedImageBox={() => selectedImageBox()}
             toolbarCtx={() => toolbarController.toolbarCtx}
             showFloatingTableToolbar={() =>
               !isReadOnly() && toolbarController.tableSelectionLabel() !== null

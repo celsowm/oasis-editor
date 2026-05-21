@@ -56,6 +56,19 @@ export interface CanvasSnapshotParagraph {
   tableCell?: CanvasSnapshotTableCellInfo;
 }
 
+export interface CanvasSnapshotInlineImage {
+  paragraphId: string;
+  paragraphIndex: number;
+  zone: EditorEditingZone;
+  pageIndex: number;
+  startOffset: number;
+  endOffset: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export interface CanvasSnapshotPage {
   index: number;
   left: number;
@@ -71,6 +84,7 @@ export interface CanvasLayoutSnapshot {
   pages: CanvasSnapshotPage[];
   paragraphs: CanvasSnapshotParagraph[];
   paragraphsById: Map<string, CanvasSnapshotParagraph[]>;
+  inlineImages: CanvasSnapshotInlineImage[];
   unsupportedRegions: Array<{
     pageIndex: number;
     zone: EditorEditingZone;
@@ -101,6 +115,56 @@ function getCanvasPageElements(surface: HTMLElement): HTMLElement[] {
   });
 }
 
+function collectInlineImagesFromLines(options: {
+  lines: Array<{
+    top: number;
+    height: number;
+    slots: Array<{ offset: number; left: number; top: number; height: number }>;
+    fragments: Array<{
+      startOffset: number;
+      endOffset: number;
+      image?: { width: number; height: number };
+    }>;
+  }>;
+  paragraphId: string;
+  paragraphIndex: number;
+  zone: EditorEditingZone;
+  pageIndex: number;
+  lineTopOffset: number;
+  lineLeftOffset: number;
+}): CanvasSnapshotInlineImage[] {
+  const inlineImages: CanvasSnapshotInlineImage[] = [];
+  for (const line of options.lines) {
+    for (const fragment of line.fragments) {
+      if (!fragment.image) {
+        continue;
+      }
+      const imageStartOffset = fragment.startOffset;
+      const imageEndOffset =
+        fragment.endOffset > imageStartOffset ? fragment.endOffset : imageStartOffset + 1;
+      const slot =
+        line.slots.find((candidate) => candidate.offset === imageStartOffset) ??
+        line.slots.find((candidate) => candidate.offset >= imageStartOffset);
+      if (!slot) {
+        continue;
+      }
+      inlineImages.push({
+        paragraphId: options.paragraphId,
+        paragraphIndex: options.paragraphIndex,
+        zone: options.zone,
+        pageIndex: options.pageIndex,
+        startOffset: imageStartOffset,
+        endOffset: imageEndOffset,
+        left: options.lineLeftOffset + slot.left,
+        top: options.lineTopOffset + line.top + line.height - fragment.image.height,
+        width: fragment.image.width,
+        height: fragment.image.height,
+      });
+    }
+  }
+  return inlineImages;
+}
+
 export function buildCanvasLayoutSnapshot(
   options: BuildCanvasLayoutSnapshotOptions,
 ): CanvasLayoutSnapshot | null {
@@ -125,6 +189,7 @@ export function buildCanvasLayoutSnapshot(
   const surfaceRect = surface.getBoundingClientRect();
   const snapshotPages: CanvasSnapshotPage[] = [];
   const snapshotParagraphs: CanvasSnapshotParagraph[] = [];
+  const inlineImages: CanvasSnapshotInlineImage[] = [];
   const unsupportedRegions: CanvasLayoutSnapshot["unsupportedRegions"] = [];
 
   for (const page of documentLayout.pages) {
@@ -164,10 +229,11 @@ export function buildCanvasLayoutSnapshot(
         if (block.sourceBlock.type === "paragraph" && block.layout) {
           const paragraphNode = block.sourceBlock;
           const paragraphId = paragraphNode.id;
+          const paragraphIndex = paragraphIndexById.get(paragraphId) ?? 0;
           snapshotParagraphs.push({
             paragraph: paragraphNode,
             paragraphId,
-            paragraphIndex: paragraphIndexById.get(paragraphId) ?? 0,
+            paragraphIndex,
             zone,
             pageIndex: page.index,
             startOffset: block.layout.startOffset ?? 0,
@@ -190,6 +256,17 @@ export function buildCanvasLayoutSnapshot(
               })),
             })),
           });
+          inlineImages.push(
+            ...collectInlineImagesFromLines({
+              lines: block.layout.lines,
+              paragraphId,
+              paragraphIndex,
+              zone,
+              pageIndex: page.index,
+              lineTopOffset: cursorY,
+              lineLeftOffset: contentLeft,
+            }),
+          );
         } else if (block.sourceBlock.type === "table") {
           const tableLayout = buildCanvasTableLayout({
             table: block.sourceBlock,
@@ -215,11 +292,12 @@ export function buildCanvasLayoutSnapshot(
           for (const cell of tableLayout.cells) {
             for (const paragraphLayout of cell.paragraphs) {
               const paragraphId = paragraphLayout.paragraph.id;
+              const paragraphIndex = paragraphIndexById.get(paragraphId) ?? 0;
               const textLength = getParagraphText(paragraphLayout.paragraph).length;
               snapshotParagraphs.push({
                 paragraph: paragraphLayout.paragraph,
               paragraphId,
-              paragraphIndex: paragraphIndexById.get(paragraphId) ?? 0,
+              paragraphIndex,
               zone,
               pageIndex: page.index,
               startOffset: 0,
@@ -252,6 +330,17 @@ export function buildCanvasLayoutSnapshot(
                 anchorPosition: cell.anchorPosition,
               },
               });
+              inlineImages.push(
+                ...collectInlineImagesFromLines({
+                  lines: paragraphLayout.lines,
+                  paragraphId,
+                  paragraphIndex,
+                  zone,
+                  pageIndex: page.index,
+                  lineTopOffset: paragraphLayout.originY,
+                  lineLeftOffset: paragraphLayout.originX,
+                }),
+              );
             }
           }
         }
@@ -284,6 +373,7 @@ export function buildCanvasLayoutSnapshot(
     pages: snapshotPages,
     paragraphs: snapshotParagraphs,
     paragraphsById,
+    inlineImages,
     unsupportedRegions,
   };
 }

@@ -15,6 +15,16 @@ export interface SelectionBox {
   height: number;
 }
 
+export interface SelectedImageBox {
+  paragraphId: string;
+  startOffset: number;
+  endOffset: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export interface RevisionBox {
   revisionId: string;
   author: string;

@@ -3,6 +3,7 @@ import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
 import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
 import { computeCanvasSelectionGeometry } from "../../ui/canvas/CanvasSelectionGeometry.js";
 import type { CaretBox, InputBox, SelectionBox } from "../../ui/editorUiTypes.js";
+import type { SelectedImageSelectionBox } from "../../ui/canvas/CanvasSelectionGeometry.js";
 
 interface UseEditorLayoutProps {
   state: EditorState;
@@ -51,6 +52,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
   const [measuredParagraphLayouts, setMeasuredParagraphLayouts] = createSignal<Record<string, EditorLayoutParagraph>>({});
   const [inputBox, setInputBox] = createSignal<InputBox>({ left: 0, top: 0, height: 28 });
   const [selectionBoxes, setSelectionBoxes] = createSignal<SelectionBox[]>([]);
+  const [selectedImageBox, setSelectedImageBox] = createSignal<SelectedImageSelectionBox | null>(null);
   const [caretBox, setCaretBox] = createSignal<CaretBox>({
     left: 0,
     top: 0,
@@ -65,6 +67,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     const surface = props.surfaceRef();
     if (!surface) {
       setSelectionBoxes([]);
+      setSelectedImageBox(null);
       setCaretBox((current) => ({ ...current, visible: false }));
       return;
     }
@@ -78,12 +81,14 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     });
     if (!snapshot) {
       setSelectionBoxes([]);
+      setSelectedImageBox(null);
       setCaretBox((current) => ({ ...current, visible: false }));
       return;
     }
 
     const geometry = computeCanvasSelectionGeometry(snapshot, props.state);
     setSelectionBoxes(geometry.selectionBoxes);
+    setSelectedImageBox(geometry.selectedImageBox);
     setInputBox(geometry.inputBox);
     setCaretBox(geometry.caretBox);
   };
@@ -200,6 +205,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     measuredParagraphLayouts,
     inputBox,
     selectionBoxes,
+    selectedImageBox,
     caretBox,
     preferredColumnX,
     setPreferredColumnX,

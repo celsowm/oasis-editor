@@ -65,6 +65,18 @@ export interface CanvasDebugLayoutSnapshot {
       height: number;
     };
   }>;
+  inlineImages: Array<{
+    paragraphId: string;
+    paragraphIndex: number;
+    zone: "main" | "header" | "footer";
+    pageIndex: number;
+    startOffset: number;
+    endOffset: number;
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  }>;
   unsupportedRegions: Array<{
     pageIndex: number;
     zone: "main" | "header" | "footer";
@@ -176,6 +188,18 @@ function cloneLayoutSnapshot(snapshot: CanvasLayoutSnapshot): CanvasDebugLayoutS
           }
         : undefined,
     })),
+    inlineImages: snapshot.inlineImages.map((image) => ({
+      paragraphId: image.paragraphId,
+      paragraphIndex: image.paragraphIndex,
+      zone: image.zone,
+      pageIndex: image.pageIndex,
+      startOffset: image.startOffset,
+      endOffset: image.endOffset,
+      left: image.left,
+      top: image.top,
+      width: image.width,
+      height: image.height,
+    })),
     unsupportedRegions: snapshot.unsupportedRegions.map((region) => ({ ...region })),
   };
 }
@@ -208,6 +232,7 @@ function buildApi(): OasisCanvasDebugApi {
               })),
               tableCell: paragraph.tableCell ? { ...paragraph.tableCell } : undefined,
             })),
+            inlineImages: lastLayoutSnapshot.inlineImages.map((image) => ({ ...image })),
             unsupportedRegions: lastLayoutSnapshot.unsupportedRegions.map((region) => ({
               ...region,
             })),

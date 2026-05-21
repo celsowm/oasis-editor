@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createEditorDocument,
   createEditorParagraph,
+  createEditorParagraphFromRuns,
   createEditorStateFromDocument,
   createEditorTableCell,
   createEditorTableRow,
@@ -53,6 +54,7 @@ function createMockSnapshot(paragraph: EditorParagraphNode, textLength: number, 
       snapshotParagraph,
     ],
     paragraphsById: new Map([[snapshotParagraph.paragraphId, [snapshotParagraph]]]),
+    inlineImages: [],
     unsupportedRegions: [],
   } as unknown as CanvasLayoutSnapshot;
 }
@@ -163,6 +165,7 @@ describe('CanvasSelectionGeometry', () => {
         [pCell1.id, [snapP1]],
         [pCell2.id, [snapP2]],
       ]),
+      inlineImages: [],
       unsupportedRegions: [],
     } as unknown as CanvasLayoutSnapshot;
 
@@ -186,5 +189,88 @@ describe('CanvasSelectionGeometry', () => {
     // Blinking cursor should be hidden during multi-cell selection
     expect(geometry.caretBox.visible).toBe(false);
   });
-});
 
+  it("hides text highlight and exposes selectedImageBox when selection is a single inline image", () => {
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "\uFFFC",
+        image: {
+          src: "data:image/png;base64,abc",
+          width: 140,
+          height: 80,
+        },
+      },
+    ]);
+    const state = createEditorStateFromDocument(createEditorDocument([paragraph]));
+    const imageParagraph = getParagraphs(state)[0]!;
+    const selectedState = {
+      ...state,
+      selection: {
+        anchor: paragraphOffsetToPosition(imageParagraph, 0),
+        focus: paragraphOffsetToPosition(imageParagraph, 1),
+      },
+    };
+    const snapshot: CanvasLayoutSnapshot = {
+      surfaceRect: { left: 0, top: 0, width: 900, height: 700 } as DOMRect,
+      pages: [],
+      paragraphs: [
+        {
+          paragraph: imageParagraph,
+          paragraphId: imageParagraph.id,
+          paragraphIndex: 0,
+          zone: "main",
+          pageIndex: 0,
+          startOffset: 0,
+          endOffset: 1,
+          textLength: 1,
+          left: 120,
+          top: 200,
+          width: 300,
+          height: 100,
+          lines: [
+            {
+              startOffset: 0,
+              endOffset: 1,
+              top: 200,
+              height: 100,
+              slots: [
+                { offset: 0, left: 120, top: 200, height: 100 },
+                { offset: 1, left: 260, top: 200, height: 100 },
+              ],
+            },
+          ],
+        },
+      ],
+      paragraphsById: new Map(),
+      inlineImages: [
+        {
+          paragraphId: imageParagraph.id,
+          paragraphIndex: 0,
+          zone: "main",
+          pageIndex: 0,
+          startOffset: 0,
+          endOffset: 1,
+          left: 120,
+          top: 220,
+          width: 140,
+          height: 80,
+        },
+      ],
+      unsupportedRegions: [],
+    } as unknown as CanvasLayoutSnapshot;
+    snapshot.paragraphsById.set(imageParagraph.id, [snapshot.paragraphs[0]!]);
+
+    const geometry = computeCanvasSelectionGeometry(snapshot, selectedState);
+
+    expect(geometry.selectionBoxes).toEqual([]);
+    expect(geometry.selectedImageBox).toEqual({
+      paragraphId: imageParagraph.id,
+      startOffset: 0,
+      endOffset: 1,
+      left: 120,
+      top: 220,
+      width: 140,
+      height: 80,
+    });
+  });
+});

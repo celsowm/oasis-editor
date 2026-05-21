@@ -21,7 +21,16 @@ export interface UseEditorSurfaceEventsProps {
   state: () => EditorState;
   applyState: (newState: EditorState) => void;
   tableResize: { handleMouseDown: (event: MouseEvent) => boolean };
-  imageOps: { stopImageDrag: () => void; stopImageResize: () => void };
+  imageOps: {
+    stopImageDrag: () => void;
+    stopImageResize: () => void;
+    startImageDrag: (
+      paragraphId: string,
+      paragraphOffset: number,
+      event: MouseEvent,
+      pointerBounds?: { left: number; top: number; width: number; height: number },
+    ) => void;
+  };
   clearPendingCaretTextStyle: () => void;
   clearPreferredColumn: () => void;
   resetTransactionGrouping: () => void;
@@ -270,6 +279,41 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
 
     const paragraph = deps.getParagraphById(state.document, hit.paragraphId);
     const isZoneTransition = hit.zone !== (state.activeZone ?? "main");
+
+    if (hit.image) {
+      const imageParagraph = deps.getParagraphById(state.document, hit.image.paragraphId);
+      if (!imageParagraph) {
+        deps.focusInputAfterPointerSelection();
+        return;
+      }
+
+      dragAnchor = null;
+      const start = paragraphOffsetToPosition(imageParagraph, hit.image.startOffset);
+      const end = paragraphOffsetToPosition(imageParagraph, hit.image.endOffset);
+      applyWithZone(
+        state,
+        hit.zone,
+        setSelection(state, {
+          anchor: start,
+          focus: end,
+        }),
+        start,
+      );
+      stopDragging();
+      deps.imageOps.startImageDrag(
+        hit.image.paragraphId,
+        hit.image.startOffset,
+        event,
+        {
+          left: hit.image.left,
+          top: hit.image.top,
+          width: hit.image.width,
+          height: hit.image.height,
+        },
+      );
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
 
     if (event.shiftKey && hit.resolvedFromParagraph) {
       dragAnchor = state.selection.anchor;

@@ -6,10 +6,22 @@ import {
 } from "../../core/model.js";
 import type {
   CanvasLayoutSnapshot,
+  CanvasSnapshotInlineImage,
   CanvasSnapshotLine,
   CanvasSnapshotPage,
   CanvasSnapshotParagraph,
 } from "./CanvasLayoutSnapshot.js";
+
+export interface SurfaceHitImage {
+  paragraphId: string;
+  paragraphOffset: number;
+  startOffset: number;
+  endOffset: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
 
 export interface SurfaceHit {
   zone: EditorEditingZone;
@@ -21,6 +33,7 @@ export interface SurfaceHit {
   resolvedFromParagraph: boolean;
   tableCellAnchorPosition?: EditorPosition;
   caretViewport?: { left: number; top: number; height: number };
+  image?: SurfaceHitImage;
 }
 
 export interface ResolveCanvasHitOptions {
@@ -234,6 +247,37 @@ function resolveUnsupportedReasonAtPoint(
   return region?.reason ?? null;
 }
 
+function isPointInsideRect(
+  clientX: number,
+  clientY: number,
+  rect: { left: number; top: number; width: number; height: number },
+): boolean {
+  return (
+    clientX >= rect.left &&
+    clientX <= rect.left + rect.width &&
+    clientY >= rect.top &&
+    clientY <= rect.top + rect.height
+  );
+}
+
+function resolveImageAtPoint(
+  snapshot: CanvasLayoutSnapshot,
+  pageIndex: number,
+  zone: EditorEditingZone,
+  clientX: number,
+  clientY: number,
+): CanvasSnapshotInlineImage | null {
+  for (const image of snapshot.inlineImages) {
+    if (image.pageIndex !== pageIndex || image.zone !== zone) {
+      continue;
+    }
+    if (isPointInsideRect(clientX, clientY, image)) {
+      return image;
+    }
+  }
+  return null;
+}
+
 export function resolveCanvasSurfaceHitAtPoint(
   options: ResolveCanvasHitOptions,
 ): SurfaceHit | null {
@@ -244,6 +288,50 @@ export function resolveCanvasSurfaceHitAtPoint(
   }
 
   const zone = resolveZoneFromPage(page, clientY);
+  const imageHit = resolveImageAtPoint(snapshot, page.index, zone, clientX, clientY);
+  if (imageHit) {
+    const paragraphSegments = snapshot.paragraphsById.get(imageHit.paragraphId) ?? [];
+    const paragraphSegment =
+      paragraphSegments.find(
+        (segment) =>
+          segment.pageIndex === page.index &&
+          segment.zone === zone &&
+          imageHit.startOffset >= segment.startOffset &&
+          imageHit.startOffset <= segment.endOffset,
+      ) ?? paragraphSegments[0];
+    if (paragraphSegment) {
+      const paragraphOffset = Math.max(
+        paragraphSegment.startOffset,
+        Math.min(imageHit.startOffset, paragraphSegment.endOffset),
+      );
+      const position = paragraphOffsetToPosition(paragraphSegment.paragraph, paragraphOffset);
+      return {
+        zone,
+        paragraphId: imageHit.paragraphId,
+        paragraphOffset,
+        position,
+        source: "canvas-layout",
+        resolvedFromParagraph: true,
+        tableCellAnchorPosition: paragraphSegment.tableCell?.anchorPosition,
+        caretViewport: {
+          left: imageHit.left,
+          top: imageHit.top,
+          height: imageHit.height,
+        },
+        image: {
+          paragraphId: imageHit.paragraphId,
+          paragraphOffset,
+          startOffset: imageHit.startOffset,
+          endOffset: imageHit.endOffset,
+          left: imageHit.left,
+          top: imageHit.top,
+          width: imageHit.width,
+          height: imageHit.height,
+        },
+      };
+    }
+  }
+
   const zoneParagraphs = snapshot.paragraphs.filter(
     (paragraph) => paragraph.pageIndex === page.index && paragraph.zone === zone,
   );
