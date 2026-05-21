@@ -28,6 +28,8 @@ import { measureLinesFromRects, type CharRect } from "./caretGeometry.js";
 import type { ITextMeasurer } from "../core/engine.js";
 import { domTextMeasurer, resolveRenderedLineHeightPx } from "./textMeasurement.js";
 import { perfTimer } from "../utils/performanceMetrics.js";
+import { resolveTableColumnWidthsPx } from "./tableGeometry.js";
+import { buildTableCellLayout } from "../core/tableLayout.js";
 
 const DEFAULT_FONT_SIZE = 15;
 const DEFAULT_LINE_HEIGHT = 1.15;
@@ -413,10 +415,39 @@ function getParagraphMeasuredHeight(
   );
 }
 
+function getCellHorizontalChromePx(cell: EditorTableNode["rows"][number]["cells"][number]): number {
+  const padLeft =
+    cell.style?.padding !== undefined
+      ? cell.style.padding * POINT_TO_PX
+      : cell.style?.paddingLeft !== undefined
+        ? cell.style.paddingLeft * POINT_TO_PX
+        : DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX / 2;
+  const padRight =
+    cell.style?.padding !== undefined
+      ? cell.style.padding * POINT_TO_PX
+      : cell.style?.paddingRight !== undefined
+        ? cell.style.paddingRight * POINT_TO_PX
+        : DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX / 2;
+  const borderLeft = cell.style?.borderLeft
+    ? Math.max(0, cell.style.borderLeft.width * POINT_TO_PX)
+    : 1;
+  const borderRight = cell.style?.borderRight
+    ? Math.max(0, cell.style.borderRight.width * POINT_TO_PX)
+    : 1;
+  return Math.max(0, padLeft + padRight + borderLeft + borderRight);
+}
+
 function getTableCellContentWidth(
   cell: EditorTableNode["rows"][number]["cells"][number],
   fallbackContentWidth?: number,
+  columnWidthPx?: number,
 ): number | undefined {
+  if (typeof columnWidthPx === "number" && Number.isFinite(columnWidthPx) && columnWidthPx > 0) {
+    return Math.max(
+      MIN_TABLE_CELL_CONTENT_WIDTH_PX,
+      columnWidthPx - getCellHorizontalChromePx(cell),
+    );
+  }
   if (typeof cell.style?.width !== "number") {
     return fallbackContentWidth;
   }
@@ -456,27 +487,109 @@ function parseTableRowHeightToPx(height: number | string | undefined): number | 
   return Number.isFinite(parsed) ? Math.max(0, parsed * POINT_TO_PX) : null;
 }
 
+interface TableColumnGeometry {
+  columnWidths: number[];
+  cellColumnWidth: Map<string, number>;
+}
+
+const tableColumnGeometryCache = new WeakMap<
+  EditorTableNode,
+  Map<number, TableColumnGeometry>
+>();
+
+function getCachedTableColumnGeometry(
+  table: EditorTableNode,
+  contentWidthPx: number,
+): TableColumnGeometry {
+  let perTable = tableColumnGeometryCache.get(table);
+  if (!perTable) {
+    perTable = new Map();
+    tableColumnGeometryCache.set(table, perTable);
+  }
+  // Round to integer pixel so layout/estimator hit the same key without
+  // floating point noise blowing the cache.
+  const key = Math.round(contentWidthPx);
+  let geometry = perTable.get(key);
+  if (geometry) return geometry;
+
+  const columnWidths = resolveTableColumnWidthsPx(table, contentWidthPx);
+  const entries = buildTableCellLayout(table);
+  const cellColumnWidth = new Map<string, number>();
+  for (const entry of entries) {
+    let total = 0;
+    for (
+      let i = entry.visualColumnIndex;
+      i < Math.min(entry.visualColumnIndex + entry.colSpan, columnWidths.length);
+      i += 1
+    ) {
+      total += columnWidths[i] ?? 0;
+    }
+    cellColumnWidth.set(`${entry.rowIndex}:${entry.cellIndex}`, total);
+  }
+
+  geometry = { columnWidths, cellColumnWidth };
+  perTable.set(key, geometry);
+  return geometry;
+}
+
 function estimateTableRowHeight(
   row: EditorTableNode["rows"][number],
   styles: Record<string, EditorNamedStyle> | undefined,
   layoutMode: "fast" | "wordParity",
   contentWidth?: number,
+  table?: EditorTableNode,
+  rowIndex?: number,
 ): number {
+  const geometry =
+    table && typeof contentWidth === "number"
+      ? getCachedTableColumnGeometry(table, contentWidth)
+      : null;
+
   const cellHeights = row.cells
-    .filter((cell) => cell.vMerge !== "continue")
-    .map((cell) =>
-      cell.blocks.reduce(
-        (sum, paragraph) =>
-          sum +
-          estimateParagraphBlockHeight(
-            paragraph,
-            styles,
-            getTableCellContentWidth(cell, contentWidth),
-            layoutMode,
-          ),
-        0,
-      ),
-    );
+    .map((cell, cellIndex) => {
+      if (cell.vMerge === "continue") return 0;
+      let columnWidthPx: number | undefined;
+      if (geometry && typeof rowIndex === "number") {
+        const total = geometry.cellColumnWidth.get(`${rowIndex}:${cellIndex}`);
+        if (total !== undefined && total > 0) columnWidthPx = total;
+      }
+      const cellContentWidth = getTableCellContentWidth(cell, contentWidth, columnWidthPx);
+      const horizontalChrome = getCellHorizontalChromePx(cell);
+      let blockHeights = 0;
+      for (const paragraph of cell.blocks) {
+        blockHeights += estimateParagraphBlockHeight(
+          paragraph,
+          styles,
+          cellContentWidth,
+          layoutMode,
+        );
+      }
+      // Account for the (rare) case where an inline image is taller than what
+      // text alone would imply: pick the max between text-driven height and
+      // the largest inline image height encountered in any run.
+      let largestImageHeight = 0;
+      for (const paragraph of cell.blocks) {
+        for (const run of paragraph.runs) {
+          if (run.image && run.image.height > largestImageHeight) {
+            // Mirror the visual fit-to-cell: an oversized image is scaled
+            // down to the cell content width, so the contributing height
+            // shrinks proportionally.
+            const fitted =
+              cellContentWidth !== undefined && run.image.width > cellContentWidth
+                ? Math.floor(run.image.height * (cellContentWidth / run.image.width))
+                : run.image.height;
+            if (fitted > largestImageHeight) {
+              largestImageHeight = fitted;
+            }
+          }
+        }
+      }
+      // Tiny vertical padding allowance based on chrome ratio so the height
+      // estimator and the canvas layout agree more closely (both ignore
+      // vertical padding by default but borders are constant).
+      const verticalChromeFallback = horizontalChrome > 0 ? 0 : 0;
+      return Math.max(blockHeights, largestImageHeight) + verticalChromeFallback;
+    });
 
   const contentHeight = Math.max(...cellHeights, DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT);
   const explicitHeight = parseTableRowHeightToPx(row.style?.height);
@@ -563,11 +676,27 @@ function getTableSegmentHeight(
     repeatedHeaderRowCount > 0
       ? table.rows
           .slice(0, repeatedHeaderRowCount)
-          .reduce((sum, row) => sum + estimateTableRowHeight(row, styles, layoutMode, contentWidth), 0)
+          .reduce(
+            (sum, row, index) =>
+              sum + estimateTableRowHeight(row, styles, layoutMode, contentWidth, table, index),
+            0,
+          )
       : 0;
   const bodyHeight = table.rows
     .slice(rowStartIndex, rowEndIndexExclusive)
-    .reduce((sum, row) => sum + estimateTableRowHeight(row, styles, layoutMode, contentWidth), 0);
+    .reduce(
+      (sum, row, indexOffset) =>
+        sum +
+        estimateTableRowHeight(
+          row,
+          styles,
+          layoutMode,
+          contentWidth,
+          table,
+          rowStartIndex + indexOffset,
+        ),
+      0,
+    );
   return headerHeight + bodyHeight + DEFAULT_TABLE_SEGMENT_VERTICAL_SPACING;
 }
 

@@ -302,7 +302,12 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
 
     const deltaX = event.clientX - resizeState.startClientX;
     const deltaY = event.clientY - resizeState.startClientY;
-    const maxWidth = getMaxInlineImageWidth(deps.surfaceRef(), deps.state.document, resizeState.paragraphId);
+    const maxWidth = getMaxInlineImageWidth(
+      deps.surfaceRef(),
+      deps.state.document,
+      resizeState.paragraphId,
+      deps.state.activeSectionIndex ?? 0,
+    );
     const { width: nextWidth, height: nextHeight } = resolveResizedDimensions(
       resizeState,
       deltaX,

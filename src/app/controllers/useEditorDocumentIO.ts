@@ -195,10 +195,13 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
     const naturalWidth = img.naturalWidth || 300;
     const naturalHeight = img.naturalHeight || 300;
     const state = deps.state();
+    const targetParagraphId =
+      position?.paragraphId ?? state.selection.focus.paragraphId;
     const maxWidth = getMaxInlineImageWidth(
       deps.surfaceRef() ?? undefined,
       state.document,
-      state.selection.focus.paragraphId,
+      targetParagraphId,
+      state.activeSectionIndex ?? 0,
     );
     const scale = naturalWidth > maxWidth ? maxWidth / naturalWidth : 1;
     const width = Math.max(24, Math.round(naturalWidth * scale));

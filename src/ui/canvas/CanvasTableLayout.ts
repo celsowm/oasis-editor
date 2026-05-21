@@ -6,6 +6,7 @@ import {
   type EditorState,
   type EditorTableCellNode,
   type EditorTableNode,
+  type EditorTextRun,
 } from "../../core/model.js";
 import { buildTableCellLayout } from "../../core/tableLayout.js";
 import { projectParagraphLayout } from "../layoutProjection.js";
@@ -131,39 +132,40 @@ function resolveCellPadding(cell: EditorTableCellNode): { top: number; right: nu
   return { top, right, bottom, left };
 }
 
-function resolveRowHeights(table: EditorTableNode, estimatedHeight: number): number[] {
-  const rowCount = Math.max(1, table.rows.length);
-  const explicitRowHeights = table.rows.map((row) => {
-    const explicit = parseDimensionToPx(row.style?.height);
-    return explicit !== null && explicit > 0 ? explicit : null;
-  });
-  const explicitTotal = explicitRowHeights.reduce<number>((sum, height) => sum + (height ?? 0), 0);
-  const nonExplicitCount = explicitRowHeights.filter((height) => height === null).length;
-  const fallbackWithoutExplicit =
-    estimatedHeight > 0 ? estimatedHeight / rowCount : DEFAULT_TABLE_ROW_HEIGHT;
-  const fallbackForNonExplicit =
-    nonExplicitCount > 0
-      ? Math.max(
-          1,
-          estimatedHeight > 0
-            ? (estimatedHeight - explicitTotal) / nonExplicitCount
-            : DEFAULT_TABLE_ROW_HEIGHT,
-        )
-      : fallbackWithoutExplicit;
-  const rowHeights = explicitRowHeights.map((explicit) =>
-    explicit !== null ? explicit : fallbackForNonExplicit,
-  );
-  const hasExplicitHeights = explicitRowHeights.some((height) => height !== null);
-  const measuredTotal = rowHeights.reduce((sum, current) => sum + current, 0);
-  if (!hasExplicitHeights && estimatedHeight > 0 && measuredTotal > 0) {
-    const scale = estimatedHeight / measuredTotal;
-    return rowHeights.map((height) => Math.max(1, height * scale));
-  }
-  return rowHeights;
-}
-
 function hasNestedTable(_cell: EditorTableCellNode): boolean {
   return false;
+}
+
+/**
+ * Returns a paragraph clone whose inline image runs have been scaled
+ * down so they never exceed `maxImageWidthPx`. Aspect ratio is preserved.
+ * If no image needs shrinking, returns the original paragraph reference.
+ */
+function fitImagesToCellWidth(
+  paragraph: EditorParagraphNode,
+  maxImageWidthPx: number,
+): EditorParagraphNode {
+  if (!Number.isFinite(maxImageWidthPx) || maxImageWidthPx <= 0) {
+    return paragraph;
+  }
+  let changed = false;
+  const runs: EditorTextRun[] = paragraph.runs.map((run) => {
+    if (!run.image) return run;
+    const { width: w, height: h } = run.image;
+    if (w <= maxImageWidthPx) return run;
+    const scale = maxImageWidthPx / w;
+    changed = true;
+    return {
+      ...run,
+      image: {
+        ...run.image,
+        width: Math.max(1, Math.floor(w * scale)),
+        height: Math.max(1, Math.floor(h * scale)),
+      },
+    };
+  });
+  if (!changed) return paragraph;
+  return { ...paragraph, runs };
 }
 
 export function buildCanvasTableLayout(options: {
@@ -179,7 +181,6 @@ export function buildCanvasTableLayout(options: {
   const { table, state, pageIndex, layoutMode, originX, originY, contentWidth, estimatedHeight } =
     options;
   const tableWidth = resolveTableWidth(table, contentWidth);
-  const rowHeights = resolveRowHeights(table, estimatedHeight);
   const tableEntries = buildTableCellLayout(table);
   const unsupported: CanvasUnsupportedReason[] = [];
   const visualColumnCount = Math.max(
@@ -203,17 +204,33 @@ export function buildCanvasTableLayout(options: {
     columnOffsets[i + 1] = columnOffsets[i]! + resolvedColumnWidths[i]!;
   }
 
-  const rowOffsets: number[] = [];
-  let cumulativeY = 0;
-  for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
-    rowOffsets[rowIndex] = cumulativeY;
-    cumulativeY += rowHeights[rowIndex] ?? DEFAULT_TABLE_ROW_HEIGHT;
+  // ---------------------------------------------------------------------------
+  // Pass 1: resolve geometry per cell (size, padding, borders, content width)
+  //          and project each cell's paragraphs so we know their actual heights.
+  // ---------------------------------------------------------------------------
+  interface PreparedCell {
+    rowIndex: number;
+    cellIndex: number;
+    cell: EditorTableCellNode;
+    visualCol: number;
+    colSpan: number;
+    rowSpan: number;
+    width: number;
+    padding: { top: number; right: number; bottom: number; left: number };
+    borders: CanvasTableCellLayoutEntry["borders"];
+    contentWidthPx: number;
+    projectedParagraphs: Array<{
+      paragraph: EditorParagraphNode;
+      lines: ReturnType<typeof projectParagraphLayout>["lines"];
+      height: number;
+    }>;
+    contentNaturalHeightPx: number;
   }
 
   const cellEntriesByKey = new Map(
     tableEntries.map((entry) => [`${entry.rowIndex}:${entry.cellIndex}`, entry] as const),
   );
-  const cells: CanvasTableCellLayoutEntry[] = [];
+  const prepared: PreparedCell[] = [];
 
   for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
     const row = table.rows[rowIndex]!;
@@ -236,17 +253,10 @@ export function buildCanvasTableLayout(options: {
 
       const visualCol = entry.visualColumnIndex;
       const colSpan = Math.max(1, entry.colSpan);
-      
-      const left = originX + (columnOffsets[visualCol] ?? 0);
+
       const width = Math.max(
         1,
         (columnOffsets[visualCol + colSpan] ?? tableWidth) - (columnOffsets[visualCol] ?? 0),
-      );
-
-      const top = originY + (rowOffsets[rowIndex] ?? 0);
-      const height = Math.max(
-        1,
-        rowHeights.slice(rowIndex, rowIndex + rowSpan).reduce((sum, current) => sum + current, 0),
       );
 
       const padding = resolveCellPadding(cell);
@@ -257,32 +267,17 @@ export function buildCanvasTableLayout(options: {
         left: resolveBorder(cell.style?.borderLeft),
       };
 
-      const contentLeft = left + borders.left.width + padding.left;
-      const contentTop = top + borders.top.width + padding.top;
       const contentWidthPx = Math.max(
         MIN_TABLE_CELL_CONTENT_WIDTH_PX,
         width - borders.left.width - borders.right.width - padding.left - padding.right,
       );
-      const contentHeightPx = Math.max(
-        MIN_TABLE_CELL_CONTENT_HEIGHT_PX,
-        height - borders.top.width - borders.bottom.width - padding.top - padding.bottom,
-      );
 
-      const firstParagraph = cell.blocks[0];
-      const anchorPosition = firstParagraph
-        ? paragraphOffsetToPosition(firstParagraph, 0)
-        : paragraphOffsetToPosition(
-            {
-              id: `table:${table.id}:r${rowIndex}:c${cellIndex}:empty`,
-              type: "paragraph",
-              runs: [{ id: "run:empty", text: "" }],
-            },
-            0,
-          );
-
-      let paragraphCursorY = 0;
-      const paragraphs: CanvasTableParagraphLayoutEntry[] = [];
-      for (const paragraph of cell.blocks) {
+      // Project paragraphs at the actual cell content width, after shrinking
+      // any oversized inline image so it never exceeds the cell width.
+      const projectedParagraphs: PreparedCell["projectedParagraphs"] = [];
+      let contentNaturalHeightPx = 0;
+      for (const original of cell.blocks) {
+        const paragraph = fitImagesToCellWidth(original, contentWidthPx);
         const projected = projectParagraphLayout(
           paragraph,
           pageIndex,
@@ -296,36 +291,142 @@ export function buildCanvasTableLayout(options: {
             ? Math.max(...projected.lines.map((line) => line.top + line.height))
             : 1;
         const paragraphHeight = Math.max(1, linesBottom);
-        paragraphs.push({
+        projectedParagraphs.push({
           paragraph,
           lines: projected.lines,
-          originX: contentLeft,
-          originY: contentTop + paragraphCursorY,
-          width: contentWidthPx,
           height: paragraphHeight,
         });
-        paragraphCursorY += paragraphHeight;
+        contentNaturalHeightPx += paragraphHeight;
       }
 
-      cells.push({
-        tableId: table.id,
+      prepared.push({
         rowIndex,
         cellIndex,
-        left,
-        top,
+        cell,
+        visualCol,
+        colSpan,
+        rowSpan,
         width,
-        height,
-        contentLeft,
-        contentTop,
-        contentWidth: contentWidthPx,
-        contentHeight: contentHeightPx,
-        shading: cell.style?.shading,
-        anchorPosition,
         padding,
         borders,
-        paragraphs,
+        contentWidthPx,
+        projectedParagraphs,
+        contentNaturalHeightPx,
       });
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Pass 2: compute each row's height from the actual content of its cells.
+  //          We respect explicit row heights as a minimum. We also honor a
+  //          minimum derived from the previous "evenly distributed" estimate
+  //          so empty tables don't visually collapse compared to the
+  //          previous behavior.
+  // ---------------------------------------------------------------------------
+  const rowCount = Math.max(1, table.rows.length);
+  const explicitRowHeights = table.rows.map((row) => {
+    const explicit = parseDimensionToPx(row.style?.height);
+    return explicit !== null && explicit > 0 ? explicit : null;
+  });
+  const fallbackPerRow =
+    estimatedHeight > 0 ? estimatedHeight / rowCount : DEFAULT_TABLE_ROW_HEIGHT;
+
+  const rowHeights: number[] = [];
+  for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
+    let measured = 0;
+    for (const cellEntry of prepared) {
+      if (cellEntry.rowIndex !== rowIndex) continue;
+      // For row-spanning cells, only contribute to the first row they occupy
+      // (we treat rowSpan>1 as unsupported elsewhere, but still avoid double
+      // counting if it shows up).
+      const needed =
+        cellEntry.contentNaturalHeightPx +
+        cellEntry.padding.top +
+        cellEntry.padding.bottom +
+        cellEntry.borders.top.width +
+        cellEntry.borders.bottom.width;
+      const distributed = cellEntry.rowSpan > 1 ? needed / cellEntry.rowSpan : needed;
+      if (distributed > measured) measured = distributed;
+    }
+
+    const explicit = explicitRowHeights[rowIndex];
+    const baseFloor = explicit !== null ? explicit : Math.max(1, fallbackPerRow * 0.25);
+    rowHeights[rowIndex] = Math.max(baseFloor, measured, 1);
+  }
+
+  const rowOffsets: number[] = [];
+  let cumulativeY = 0;
+  for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
+    rowOffsets[rowIndex] = cumulativeY;
+    cumulativeY += rowHeights[rowIndex] ?? DEFAULT_TABLE_ROW_HEIGHT;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Pass 3: assemble the public layout entries with final positions.
+  // ---------------------------------------------------------------------------
+  const cells: CanvasTableCellLayoutEntry[] = [];
+  for (const cellEntry of prepared) {
+    const { rowIndex, cellIndex, cell, visualCol, colSpan, rowSpan, width, padding, borders, contentWidthPx } =
+      cellEntry;
+
+    const left = originX + (columnOffsets[visualCol] ?? 0);
+    const top = originY + (rowOffsets[rowIndex] ?? 0);
+    const height = Math.max(
+      1,
+      rowHeights.slice(rowIndex, rowIndex + rowSpan).reduce((sum, current) => sum + current, 0),
+    );
+
+    const contentLeft = left + borders.left.width + padding.left;
+    const contentTop = top + borders.top.width + padding.top;
+    const contentHeightPx = Math.max(
+      MIN_TABLE_CELL_CONTENT_HEIGHT_PX,
+      height - borders.top.width - borders.bottom.width - padding.top - padding.bottom,
+    );
+
+    const firstParagraph = cell.blocks[0];
+    const anchorPosition = firstParagraph
+      ? paragraphOffsetToPosition(firstParagraph, 0)
+      : paragraphOffsetToPosition(
+          {
+            id: `table:${table.id}:r${rowIndex}:c${cellIndex}:empty`,
+            type: "paragraph",
+            runs: [{ id: "run:empty", text: "" }],
+          },
+          0,
+        );
+
+    let paragraphCursorY = 0;
+    const paragraphs: CanvasTableParagraphLayoutEntry[] = [];
+    for (const projected of cellEntry.projectedParagraphs) {
+      paragraphs.push({
+        paragraph: projected.paragraph,
+        lines: projected.lines,
+        originX: contentLeft,
+        originY: contentTop + paragraphCursorY,
+        width: contentWidthPx,
+        height: projected.height,
+      });
+      paragraphCursorY += projected.height;
+    }
+
+    cells.push({
+      tableId: table.id,
+      rowIndex,
+      cellIndex,
+      left,
+      top,
+      width,
+      height,
+      contentLeft,
+      contentTop,
+      contentWidth: contentWidthPx,
+      contentHeight: contentHeightPx,
+      shading: cell.style?.shading,
+      anchorPosition,
+      padding,
+      borders,
+      paragraphs,
+    });
   }
 
   return {

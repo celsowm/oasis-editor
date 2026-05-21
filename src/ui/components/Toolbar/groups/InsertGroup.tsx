@@ -1,4 +1,3 @@
-import { Show } from "solid-js";
 import { insertFieldAtSelection } from "../../../../core/editorCommands.js";
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
@@ -80,15 +79,24 @@ export function InsertGroup(props: { ctx: () => EditorToolbarCtx }) {
         aria-label={t("toolbar.unlink")}
       />
 
-      <Show when={Boolean(ctx().selectedImageRun())}>
-        <ToolbarButton
-          icon="file-text"
-          active={true}
-          data-testid="editor-toolbar-image-alt"
-          onClick={() => ctx().promptForImageAlt()}
-          tooltip={t("toolbar.alt")}
-        />
-      </Show>
+      {/*
+        Always render the alt button to keep the toolbar's children list
+        stable. The ToolbarOverflowManager moves wrappers imperatively between
+        the strip and the overflow menu; if the number of children changes
+        (e.g. with <Show>) Solid's <For> reconciliation tries to insertBefore
+        a node that the imperative move already relocated, producing
+        "Failed to execute 'insertBefore'" errors. Toggling visibility via
+        style/disabled keeps the DOM topology stable.
+      */}
+      <ToolbarButton
+        icon="file-text"
+        active={Boolean(ctx().selectedImageRun())}
+        disabled={!ctx().selectedImageRun()}
+        data-testid="editor-toolbar-image-alt"
+        onClick={() => ctx().promptForImageAlt()}
+        tooltip={t("toolbar.alt")}
+        style={{ display: ctx().selectedImageRun() ? undefined : "none" }}
+      />
     </>
   );
 }

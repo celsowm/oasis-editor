@@ -62,7 +62,12 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
     <div class="oasis-editor-paper-stack oasis-editor-canvas-stack" style={{ position: "relative" }}>
       <Index each={documentLayout().pages}>
         {(page, index) => (
-          <>
+          // Each Index slot must be a single, stable root element. Returning a
+          // Fragment (with a conditional <Show> sibling) confuses Solid's
+          // reconcileArrays when the page list grows/shrinks (e.g. after
+          // inserting an image that triggers re-pagination in a narrow viewport),
+          // causing "Failed to execute 'insertBefore'" errors.
+          <div class="oasis-editor-canvas-page-slot" style={{ position: "relative" }}>
             <Show when={index > 0}>
               <PageBreak pageIndex={index} />
             </Show>
@@ -75,7 +80,7 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
               onSurfaceMouseMove={props.onSurfaceMouseMove}
               onSurfaceDblClick={props.onSurfaceDblClick}
             />
-          </>
+          </div>
         )}
       </Index>
     </div>
