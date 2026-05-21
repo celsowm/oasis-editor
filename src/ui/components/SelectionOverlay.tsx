@@ -1,4 +1,4 @@
-import { For } from "solid-js";
+import { Index } from "solid-js";
 
 interface SelectionBox {
   left: number;
@@ -13,20 +13,22 @@ interface SelectionOverlayProps {
 
 export function SelectionOverlay(props: SelectionOverlayProps) {
   return (
-    <For each={props.boxes}>
-      {(box) => (
-        <span
-          aria-hidden="true"
-          class="oasis-editor-selection-box"
-          data-testid="editor-selection-box"
-          style={{
-            left: `${box.left}px`,
-            top: `${box.top}px`,
-            width: `${box.width}px`,
-            height: `${box.height}px`,
-          }}
-        />
-      )}
-    </For>
+    <div aria-hidden="true" class="oasis-editor-selection-overlay-root">
+      <Index each={props.boxes}>
+        {(box) => (
+          <span
+            aria-hidden="true"
+            class="oasis-editor-selection-box"
+            data-testid="editor-selection-box"
+            style={{
+              left: `${box().left}px`,
+              top: `${box().top}px`,
+              width: `${box().width}px`,
+              height: `${box().height}px`,
+            }}
+          />
+        )}
+      </Index>
+    </div>
   );
 }

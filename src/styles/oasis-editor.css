@@ -889,6 +889,10 @@
   pointer-events: auto;
 }
 
+.oasis-editor-selection-overlay-root {
+  pointer-events: none;
+}
+
 .oasis-editor-selection-box {
   border-radius: 2px;
 }
