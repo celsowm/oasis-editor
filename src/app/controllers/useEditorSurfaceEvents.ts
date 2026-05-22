@@ -280,6 +280,36 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     const paragraph = deps.getParagraphById(state.document, hit.paragraphId);
     const isZoneTransition = hit.zone !== (state.activeZone ?? "main");
 
+    if (isZoneTransition) {
+      if (clickDetail < 2) {
+        dragAnchor = null;
+        stopDragging();
+        deps.focusInputAfterPointerSelection();
+        return;
+      }
+
+      dragAnchor = null;
+      if (hit.resolvedFromParagraph) {
+        applyWithZone(
+          state,
+          hit.zone,
+          {
+            ...state,
+            selection: {
+              anchor: { ...hit.position },
+              focus: { ...hit.position },
+            },
+          },
+          hit.position,
+        );
+      } else {
+        applyWithZone(state, hit.zone, state);
+      }
+      stopDragging();
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
+
     if (hit.image) {
       const imageParagraph = deps.getParagraphById(state.document, hit.image.paragraphId);
       if (!imageParagraph) {
@@ -357,14 +387,6 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
         setSelection(state, { anchor: startPos, focus: endPos }),
         startPos,
       );
-      stopDragging();
-      deps.focusInputAfterPointerSelection();
-      return;
-    }
-
-    if (!hit.resolvedFromParagraph && isZoneTransition) {
-      dragAnchor = null;
-      applyWithZone(state, hit.zone, state);
       stopDragging();
       deps.focusInputAfterPointerSelection();
       return;

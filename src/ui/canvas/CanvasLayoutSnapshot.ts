@@ -3,6 +3,7 @@ import {
   getPageBodyBottom,
   getPageBodyTop,
   getPageContentWidth,
+  getPageHeaderZoneTop,
   getParagraphText,
   type EditorEditingZone,
   type EditorLayoutParagraph,
@@ -204,6 +205,8 @@ export function buildCanvasLayoutSnapshot(
     const pageRect = pageElement.getBoundingClientRect();
     const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
     const bodyBottom = page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
+    const headerTop = page.headerTop ?? getPageHeaderZoneTop(page.pageSettings);
+    const footerTop = page.footerTop ?? page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
     const snapshotPage: CanvasSnapshotPage = {
       index: page.index,
       left: pageRect.left,
@@ -348,9 +351,9 @@ export function buildCanvasLayoutSnapshot(
       }
     };
 
-    collectParagraphBlock("header", page.headerBlocks ?? [], pageRect.top);
+    collectParagraphBlock("header", page.headerBlocks ?? [], pageRect.top + headerTop);
     collectParagraphBlock("main", page.blocks, pageRect.top + bodyTop);
-    collectParagraphBlock("footer", page.footerBlocks ?? [], pageRect.top + bodyBottom);
+    collectParagraphBlock("footer", page.footerBlocks ?? [], pageRect.top + footerTop);
   }
 
   const paragraphsById = new Map<string, CanvasSnapshotParagraph[]>();

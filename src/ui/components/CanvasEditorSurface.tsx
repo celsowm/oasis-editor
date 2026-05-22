@@ -2,6 +2,7 @@ import { createEffect, createMemo, Index, Show } from "solid-js";
 import type { ITextMeasurer } from "../../core/engine.js";
 import type { EditorSurfaceProps } from "../editorUiTypes.js";
 import {
+  type EditorEditingZone,
   type EditorLayoutBlock,
   type EditorLayoutLine,
   type EditorLayoutPage,
@@ -105,6 +106,7 @@ function CanvasPage(props: {
   let lastStyles: unknown;
   let lastShowMargins: boolean | undefined;
   let lastShowParagraphMarks: boolean | undefined;
+  let lastActiveZone: EditorEditingZone | undefined;
   let lastWidth = 0;
   let lastHeight = 0;
   let lastDpr = 0;
@@ -122,11 +124,13 @@ function CanvasPage(props: {
     const styles = state.document.styles;
     const showMargins = state.showMargins;
     const showParagraphMarks = state.showParagraphMarks;
+    const activeZone = state.activeZone ?? "main";
     if (
       page === lastPaintedPage &&
       styles === lastStyles &&
       showMargins === lastShowMargins &&
-      showParagraphMarks === lastShowParagraphMarks
+      showParagraphMarks === lastShowParagraphMarks &&
+      activeZone === lastActiveZone
     ) {
       return;
     }
@@ -134,6 +138,7 @@ function CanvasPage(props: {
     lastStyles = styles;
     lastShowMargins = showMargins;
     lastShowParagraphMarks = showParagraphMarks;
+    lastActiveZone = activeZone;
 
     const dpr = window.devicePixelRatio || 1;
     const width = page.pageSettings.width;
@@ -157,10 +162,10 @@ function CanvasPage(props: {
     const headerTop = page.headerTop ?? getPageHeaderZoneTop(page.pageSettings);
     const footerTop = page.footerTop ?? page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
     const bodyWidth = getPageContentWidth(page.pageSettings);
+    const zoneBodyBottom = page.bodyBottom ?? height;
 
     if (state.showMargins) {
-      const footerZoneTop = page.bodyBottom ?? height;
-      const contentHeight = Math.max(24, Math.floor(footerZoneTop - bodyTop));
+      const contentHeight = Math.max(24, Math.floor(zoneBodyBottom - bodyTop));
       ctx.save();
       ctx.strokeStyle = "#d1d5db";
       ctx.lineWidth = 1;
@@ -169,15 +174,30 @@ function CanvasPage(props: {
       ctx.restore();
     }
 
+    const inHeaderFooterMode = activeZone === "header" || activeZone === "footer";
+    const bodyAlpha = inHeaderFooterMode ? 0.5 : 1;
+    const headerAlpha = activeZone === "main" ? 0.42 : activeZone === "header" ? 1 : 0.42;
+    const footerAlpha = activeZone === "main" ? 0.42 : activeZone === "footer" ? 1 : 0.42;
+
+    ctx.save();
+    ctx.globalAlpha = headerAlpha;
     renderBlockList(ctx, state, page.headerBlocks ?? [], marginX, headerTop, bodyWidth, page.index, () => {
       lastPaintedPage = undefined;
       rafHandle = requestAnimationFrame(paint);
     });
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = bodyAlpha;
     renderBlockList(ctx, state, page.blocks, marginX, bodyTop, bodyWidth, page.index, () => {
       lastPaintedPage = undefined;
       rafHandle = requestAnimationFrame(paint);
     });
+    ctx.restore();
+
     if (page.bodyBottom !== undefined) {
+      ctx.save();
+      ctx.globalAlpha = footerAlpha;
       renderBlockList(
         ctx,
         state,
@@ -191,6 +211,35 @@ function CanvasPage(props: {
           rafHandle = requestAnimationFrame(paint);
         },
       );
+      ctx.restore();
+    }
+
+    if (activeZone === "main") {
+      // Word-like idle hint: header/footer content remains visible but subdued.
+      ctx.save();
+      ctx.fillStyle = "rgba(148, 163, 184, 0.08)";
+      if (bodyTop > 0) {
+        ctx.fillRect(0, 0, width, bodyTop);
+      }
+      if (zoneBodyBottom < height) {
+        ctx.fillRect(0, zoneBodyBottom, width, height - zoneBodyBottom);
+      }
+      ctx.restore();
+    } else {
+      // Word-like editing mode guides for header/footer.
+      ctx.save();
+      ctx.strokeStyle = "rgba(71, 85, 105, 0.55)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6, 4]);
+      const guideLeft = Math.max(0, marginX - 10);
+      const guideRight = Math.min(width, marginX + bodyWidth + 10);
+      ctx.beginPath();
+      ctx.moveTo(guideLeft, bodyTop + 0.5);
+      ctx.lineTo(guideRight, bodyTop + 0.5);
+      ctx.moveTo(guideLeft, zoneBodyBottom + 0.5);
+      ctx.lineTo(guideRight, zoneBodyBottom + 0.5);
+      ctx.stroke();
+      ctx.restore();
     }
   };
 
@@ -223,6 +272,16 @@ function CanvasPage(props: {
   createEffect(() => {
     const _ = props.state.showParagraphMarks;
     lastShowParagraphMarks = undefined;
+    if (rafHandle !== null) {
+      cancelAnimationFrame(rafHandle);
+      rafHandle = null;
+    }
+    rafHandle = requestAnimationFrame(paint);
+  });
+
+  createEffect(() => {
+    const _ = props.state.activeZone;
+    lastActiveZone = undefined;
     if (rafHandle !== null) {
       cancelAnimationFrame(rafHandle);
       rafHandle = null;
@@ -531,6 +590,5 @@ function resolveListPrefix(paragraph: EditorParagraphNode): string {
   if (paragraph.list.kind === "bullet") return "•";
   return "1.";
 }
-
 
 

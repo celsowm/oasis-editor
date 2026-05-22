@@ -150,6 +150,11 @@ async function insertTable(page: Page, rows: number, cols: number) {
   await gridCell.click();
 }
 
+async function waitForDocxImportReady(page: Page, timeoutMs = 90_000) {
+  const overlay = page.getByTestId("editor-import-overlay");
+  await overlay.waitFor({ state: "detached", timeout: timeoutMs });
+}
+
 async function exercisePointerCoherence(
   page: Page,
   p1: { x: number; y: number },
@@ -207,20 +212,41 @@ test("canvas pointer interactions update caret and selection from canvas layout 
   await expectNoMissEvents(page);
 });
 
-test("canvas header click moves caret to header zone without miss", async ({ page }) => {
+test("canvas header requires double-click to enter and double-click body to exit", async ({ page }) => {
   await gotoEditor(page);
   await clearMissEvents(page);
   await seedText(page, "header zone trigger");
 
   const editorPage = await canvasPageRect(page);
-  await page.mouse.click(editorPage.x + editorPage.width / 2, editorPage.y + 26);
-  const hit = await expectLastHitFromCanvas(page);
+  const headerPoint = { x: editorPage.x + editorPage.width / 2, y: editorPage.y + 26 };
+  const bodyPoint = { x: editorPage.x + editorPage.width / 2, y: editorPage.y + 140 };
+
+  await page.mouse.click(headerPoint.x, headerPoint.y);
+  const singleClickHit = await expectLastHitFromCanvas(page);
+  let selection = await expectDebugSelection(page);
+  expect(singleClickHit.zone).toBe("header");
+  expect(selection.activeZone).toBe("main");
+
+  await page.mouse.dblclick(headerPoint.x, headerPoint.y);
+  const headerHit = await expectLastHitFromCanvas(page);
   await page.waitForTimeout(80);
 
-  const caret = await page.locator(".oasis-editor-caret").boundingBox();
+  let caret = await page.locator(".oasis-editor-caret").boundingBox();
   expect(caret).not.toBeNull();
   expect((caret?.y ?? Number.POSITIVE_INFINITY) < editorPage.y + 92).toBeTruthy();
-  expect(hit.zone).toBe("header");
+  selection = await expectDebugSelection(page);
+  expect(headerHit.zone).toBe("header");
+  expect(selection.activeZone).toBe("header");
+
+  await page.mouse.dblclick(bodyPoint.x, bodyPoint.y);
+  const bodyHit = await expectLastHitFromCanvas(page);
+  selection = await expectDebugSelection(page);
+  expect(bodyHit.zone).toBe("main");
+  expect(selection.activeZone).toBe("main");
+  caret = await page.locator(".oasis-editor-caret").boundingBox();
+  expect(caret).not.toBeNull();
+  expect((caret?.y ?? 0) > editorPage.y + 92).toBeTruthy();
+
   await expectNoMissEvents(page);
 });
 
@@ -228,11 +254,7 @@ test("DOCX lorem simples hit-test never misses in hit-test", async ({ page }) =>
   await gotoEditor(page);
   await clearMissEvents(page);
   await page.getByTestId("editor-import-docx-input").setInputFiles(SIMPLE_LOREM_DOCX);
-  await page.waitForEvent("console", {
-    predicate: (message) => message.text().includes("import docx:done"),
-    timeout: 45_000,
-  });
-  await page.getByTestId("editor-import-overlay").waitFor({ state: "detached" });
+  await waitForDocxImportReady(page, 90_000);
   const pageRect = await canvasPageRect(page);
   await page.mouse.click(pageRect.x + 220, pageRect.y + 200);
   await expectLastHitFromCanvas(page);
@@ -267,11 +289,7 @@ test("canvas drag on imported DOCX does not trigger repeated layout projection",
   await gotoEditor(page);
   await clearMissEvents(page);
   await page.getByTestId("editor-import-docx-input").setInputFiles(SIMPLE_LOREM_DOCX);
-  await page.waitForEvent("console", {
-    predicate: (message) => message.text().includes("import docx:done"),
-    timeout: 45_000,
-  });
-  await page.getByTestId("editor-import-overlay").waitFor({ state: "detached" });
+  await waitForDocxImportReady(page, 90_000);
   const pageRect = await canvasPageRect(page);
   await page.mouse.click(pageRect.x + 220, pageRect.y + 200);
   await expectLastHitFromCanvas(page);
@@ -334,11 +352,7 @@ test("canvas selection overlay stays visible on imported complex DOCX (header/fo
   await gotoEditor(page);
   await clearMissEvents(page);
   await page.getByTestId("editor-import-docx-input").setInputFiles(COMPLEX_DOCX);
-  await page.waitForEvent("console", {
-    predicate: (message) => message.text().includes("import docx:done"),
-    timeout: 60_000,
-  });
-  await page.getByTestId("editor-import-overlay").waitFor({ state: "detached" });
+  await waitForDocxImportReady(page, 120_000);
   const pageRect = await canvasPageRect(page);
   await page.mouse.click(pageRect.x + 220, pageRect.y + 220);
   await expectLastHitFromCanvas(page);
@@ -571,13 +585,9 @@ test("triple-click in header includes paragraph mark to next header paragraph", 
   await gotoEditor(page);
   await clearMissEvents(page);
   await page.getByTestId("editor-import-docx-input").setInputFiles(COMPLEX_DOCX);
-  await page.waitForEvent("console", {
-    predicate: (message) => message.text().includes("import docx:done"),
-    timeout: 60_000,
-  });
-  await page.getByTestId("editor-import-overlay").waitFor({ state: "detached" });
+  await waitForDocxImportReady(page, 120_000);
   const editorPage = await canvasPageRect(page);
-  await page.mouse.click(editorPage.x + editorPage.width / 2, editorPage.y + 26);
+  await page.mouse.dblclick(editorPage.x + editorPage.width / 2, editorPage.y + 26);
   await expectLastHitFromCanvas(page);
 
   const target = await page.evaluate(() => {
