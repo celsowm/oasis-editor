@@ -1,4 +1,4 @@
-import { Show, createMemo, type Accessor, type JSX } from "solid-js";
+import { Show, createEffect, createMemo, createSignal, onCleanup, type Accessor, type JSX } from "solid-js";
 import { CanvasEditorSurface } from "./components/CanvasEditorSurface.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
@@ -119,8 +119,43 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   );
 
   const totalPages = () => Math.max(1, statusDocumentLayout().pages.length);
-  
+  const [viewportPageIndex, setViewportPageIndex] = createSignal<number | null>(null);
+
+  const recomputeViewportPageIndex = () => {
+    const viewport = viewportElement;
+    if (!viewport) {
+      setViewportPageIndex(null);
+      return;
+    }
+    const pageElements = Array.from(viewport.querySelectorAll<HTMLElement>(".oasis-editor-paper[data-page-index]"));
+    if (pageElements.length === 0) {
+      setViewportPageIndex(null);
+      return;
+    }
+
+    const viewportRect = viewport.getBoundingClientRect();
+    const viewportCenterY = viewportRect.top + viewportRect.height * 0.5;
+    let bestIndex = 0;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    for (const pageElement of pageElements) {
+      const pageRect = pageElement.getBoundingClientRect();
+      const pageCenterY = pageRect.top + pageRect.height * 0.5;
+      const distance = Math.abs(pageCenterY - viewportCenterY);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = Number(pageElement.dataset.pageIndex ?? "0");
+      }
+    }
+
+    setViewportPageIndex(Number.isFinite(bestIndex) ? bestIndex : null);
+  };
+
   const currentPage = () => {
+    const visiblePageIndex = viewportPageIndex();
+    if (visiblePageIndex !== null) {
+      return Math.max(1, visiblePageIndex + 1);
+    }
     const layout = statusDocumentLayout();
     const focusId = props.state().selection.focus.paragraphId;
     const pageIndex = layout.pages.findIndex((page) =>
@@ -130,6 +165,11 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   };
 
   const selectedImage = createMemo(() => props.selectedImageBox());
+
+  createEffect(() => {
+    statusDocumentLayout();
+    queueMicrotask(recomputeViewportPageIndex);
+  });
 
   const handleResizeHandleMouseDown = (
     direction: ImageResizeHandleDirection,
@@ -161,6 +201,14 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
       ref={(el) => {
         viewportElement = el;
         props.onViewportRef?.(el);
+        const onScroll = () => {
+          recomputeViewportPageIndex();
+        };
+        el.addEventListener("scroll", onScroll, { passive: true });
+        queueMicrotask(recomputeViewportPageIndex);
+        onCleanup(() => {
+          el.removeEventListener("scroll", onScroll);
+        });
       }}
       class="oasis-editor-editor"
       data-testid="editor-editor"
