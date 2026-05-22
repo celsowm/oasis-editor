@@ -233,22 +233,46 @@ export function replaceParagraphsInBlocks(blocks: EditorBlockNode[], newParagrap
 
   let index = 0;
   const processBlocks = (nodes: EditorBlockNode[]): EditorBlockNode[] => {
-    return nodes.map(node => {
+    let changed = false;
+    const newNodes = nodes.map(node => {
       if (node.type === "paragraph") {
-        return newParagraphs[index++] ?? node;
+        const next = newParagraphs[index++] ?? node;
+        if (next !== node) {
+          changed = true;
+        }
+        return next;
       }
-      return {
-        ...node,
-        rows: node.rows.map(row => ({
-          ...row,
-          cells: row.cells.map(cell => ({
-            ...cell,
-            blocks: processBlocks(cell.blocks) as EditorParagraphNode[]
-          }))
-        }))
-      };
+
+      let rowsChanged = false;
+      const nextRows = node.rows.map(row => {
+        let cellsChanged = false;
+        const nextCells = row.cells.map(cell => {
+          const nextBlocks = processBlocks(cell.blocks) as EditorParagraphNode[];
+          if (nextBlocks !== cell.blocks) {
+            cellsChanged = true;
+          }
+          // Only create a new cell if we just detected a change for THIS cell
+          // (not if a previous cell changed but this one didn't)
+          return nextBlocks !== cell.blocks ? { ...cell, blocks: nextBlocks } : cell;
+        });
+
+        if (cellsChanged) {
+          rowsChanged = true;
+        }
+        // Only create a new row if we just detected a change for THIS row
+        return cellsChanged ? { ...row, cells: nextCells } : row;
+      });
+
+      if (rowsChanged) {
+        changed = true;
+      }
+      // Only create a new node if we just detected a change for THIS node
+      return rowsChanged ? { ...node, rows: nextRows } : node;
     });
+
+    return changed ? newNodes : nodes;
   };
+
   return processBlocks(blocks);
 }
 
