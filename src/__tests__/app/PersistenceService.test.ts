@@ -19,7 +19,7 @@ beforeEach(async () => {
   await deleteDatabase(DB_NAME);
 });
 
-describe("PersistenceService", () => {
+describe("persistence service", () => {
   it("keeps canonical section document unchanged", async () => {
     const service = new PersistenceService();
     const paragraph = createEditorParagraph("canonical");

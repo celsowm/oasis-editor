@@ -83,7 +83,7 @@ function createSnapshotWithInlineImage(): { snapshot: CanvasLayoutSnapshot; stat
   return { snapshot, state };
 }
 
-describe("CanvasHitTestService image hit", () => {
+describe("canvas hit-test service image hit", () => {
   it("returns image payload when pointer is inside inline image bounds", () => {
     const { snapshot, state } = createSnapshotWithInlineImage();
     const hit = resolveCanvasSurfaceHitAtPoint({
@@ -114,4 +114,3 @@ describe("CanvasHitTestService image hit", () => {
     expect(hit?.resolvedFromParagraph).toBe(true);
   });
 });
-

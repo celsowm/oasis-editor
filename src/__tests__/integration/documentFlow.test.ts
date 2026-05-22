@@ -7,7 +7,7 @@ beforeEach(() => {
   resetEditorIds();
 });
 
-describe('Document Flow Integration', () => {
+describe('document flow integration', () => {
   it('performs a sequence of edits correctly', () => {
     let state = createInitialEditorState();
     

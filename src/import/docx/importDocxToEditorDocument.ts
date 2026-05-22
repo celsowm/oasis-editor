@@ -52,6 +52,7 @@ const TWIPS_PER_INCH = 1440;
 const PX_PER_INCH = 96;
 const PAGE_BREAK_MARKER = "\f";
 const WORD_SINGLE_LINE_RATIO = 1.223;
+const DOCX_IMPLICIT_SINGLE_LINE_HEIGHT = 1.1;
 
 interface NumberingMaps {
   abstractKinds: Map<string, EditorParagraphListStyle["kind"]>;
@@ -167,6 +168,18 @@ function normalizeImportedParagraphStyle(style: EditorParagraphStyle | undefined
   });
 
   return normalized;
+}
+
+function withDocxImplicitSingleLineHeight(
+  style: EditorParagraphStyle | undefined,
+): EditorParagraphStyle {
+  if (style?.lineHeight !== undefined) {
+    return style;
+  }
+  return {
+    ...(style ?? {}),
+    lineHeight: DOCX_IMPLICIT_SINGLE_LINE_HEIGHT,
+  };
 }
 
 function normalizeImportedRunStyle(
@@ -893,7 +906,7 @@ function parseImportedStyles(stylesXml: string | null, themeFonts: ThemeFontMap)
     WORD_NS,
     "rPr",
   );
-  const defaultParagraphStyle = parseParagraphStyle(pPrDefault);
+  const defaultParagraphStyle = withDocxImplicitSingleLineHeight(parseParagraphStyle(pPrDefault));
   const defaultTextStyle = parseRunStyle(rPrDefault, themeFonts);
   const styles: Record<string, EditorNamedStyle> = {};
   let defaultParagraphStyleId: string | undefined;
@@ -908,7 +921,9 @@ function parseImportedStyles(stylesXml: string | null, themeFonts: ThemeFontMap)
     const name = getAttributeValue(getFirstChildByTagNameNS(styleElement, WORD_NS, "name"), "val") ?? id;
     const basedOn = getAttributeValue(getFirstChildByTagNameNS(styleElement, WORD_NS, "basedOn"), "val") ?? undefined;
     const nextStyle = getAttributeValue(getFirstChildByTagNameNS(styleElement, WORD_NS, "next"), "val") ?? undefined;
-    const paragraphStyle = parseParagraphStyle(getFirstChildByTagNameNS(styleElement, WORD_NS, "pPr"));
+    const paragraphStyle = withDocxImplicitSingleLineHeight(
+      parseParagraphStyle(getFirstChildByTagNameNS(styleElement, WORD_NS, "pPr")),
+    );
     const textStyle = parseRunStyle(getFirstChildByTagNameNS(styleElement, WORD_NS, "rPr"), themeFonts);
     
     let tableStyle: EditorTableStyle | undefined;
@@ -1359,7 +1374,7 @@ async function parseParagraphNodes(
 ): Promise<{ paragraphs: EditorParagraphNode[]; pageBreakAfter: boolean }> {
   const paragraphProperties = getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr");
   const runs = await parseRunsContainer(paragraphNode, numberingMaps, zip, relsMap, assets, themeFonts);
-  const parsedStyle = parseParagraphStyle(paragraphProperties);
+  const parsedStyle = withDocxImplicitSingleLineHeight(parseParagraphStyle(paragraphProperties));
   const paragraphStyle = normalizeImportedParagraphStyle(
     inheritedStyle ? { ...inheritedStyle, ...(parsedStyle ?? {}) } : parsedStyle,
   );

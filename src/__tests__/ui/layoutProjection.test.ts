@@ -10,7 +10,7 @@ const A4: EditorPageSettings = {
   margins: { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 },
 };
 
-describe('Layout Projection', () => {
+describe('layout projection', () => {
   describe('projectParagraphLayout', () => {
     it('projects a simple paragraph into a single line', () => {
       const p = createEditorParagraph('hello');

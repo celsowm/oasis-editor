@@ -59,7 +59,7 @@ function createMockSnapshot(paragraph: EditorParagraphNode, textLength: number, 
   } as unknown as CanvasLayoutSnapshot;
 }
 
-describe('CanvasSelectionGeometry', () => {
+describe('canvas selection geometry', () => {
   it('renders selection boxes using local paragraph order even when snapshot paragraphIndex is globally shifted', () => {
     const sourceParagraph = createEditorParagraph('abcdef');
     const state = createEditorStateFromDocument(createEditorDocument([sourceParagraph]));

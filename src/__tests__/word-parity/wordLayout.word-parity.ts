@@ -54,6 +54,19 @@ function wordPageLines(page: { lines: Array<{ text: string }> } | undefined): st
   return page?.lines.map((line) => line.text.replace(/\s+/g, " ").trim()).join(" ") ?? "";
 }
 
+function normalizeWordPageLines(page: { lines: Array<{ text: string }> } | undefined): string[] {
+  return (
+    page?.lines
+      .map((line) => line.text.trim())
+      .filter(
+        (line) =>
+          line.length > 0 &&
+          line !== "Página" &&
+          line !== "Documento de Teste Lorem Ipsum",
+      ) ?? []
+  );
+}
+
 function applyWordLikeBodyStyle(paragraph: EditorParagraphNode): void {
   paragraph.style = {
     ...(paragraph.style ?? {}),
@@ -315,7 +328,7 @@ function createStyleInheritanceParityDocument(): EditorDocument {
   return createEditorDocument([paragraph], undefined, undefined, styles);
 }
 
-describeWordParity("Word layout parity", () => {
+describeWordParity("word layout parity", () => {
   it(
     "matches Word for A4 Calibri lorem on a single page",
     async () => {
@@ -353,7 +366,7 @@ describeWordParity("Word layout parity", () => {
   );
 
   it(
-    "imports a Word-authored A4 lorem DOCX and matches Word layout",
+    "matches Word layout when importing a Word-authored A4 lorem DOCX",
     async () => {
       expect(existsSync(WORD_AUTHORED_LOREM_DOCX), "missing Word-authored DOCX fixture").toBe(true);
       await expectNoWordLayoutMismatches("word-authored-lorem-import", () =>
@@ -366,7 +379,7 @@ describeWordParity("Word layout parity", () => {
   );
 
   it(
-    "imports the complex lorem DOCX without overfilling the first Word page",
+    "matches Word pagination for the complex lorem DOCX on page 1 and page 2 tail line",
     async () => {
       expect(existsSync(LOREM_COMPLEX_DOCX), "missing complex lorem DOCX fixture").toBe(true);
       const result = await verifyImportedDocxWordLayoutParity(LOREM_COMPLEX_DOCX, {
@@ -377,15 +390,21 @@ describeWordParity("Word layout parity", () => {
         result.word.pages[0]?.lines
           .map((line) => line.text.trim())
           .filter((line) => line.length > 0 && line !== "Página") ?? [];
+      const editorPage2Lines = result.editor.pages[1]?.bodyLineTexts ?? [];
+      const wordPage2Lines = normalizeWordPageLines(result.word.pages[1]);
 
       expect(editorPage1Lines.length).toBeGreaterThanOrEqual(wordPage1Lines.length - 5);
       expect(editorPage1Lines.length).toBeLessThanOrEqual(wordPage1Lines.length + 1);
+      expect(editorPage2Lines.at(-1)).toBe(wordPage2Lines.at(-1));
+      expect(editorPage2Lines.at(-1)).toBe(
+        "Vestibulum viverra massa ut turpis cursus, at fermentum nulla hendrerit. Sed dictum, lorem nec",
+      );
     },
     300_000,
   );
 
   it(
-    "preserves Word-authored manual page breaks in the complex document",
+    "matches Word manual page breaks in the complex document",
     async () => {
       expect(existsSync(COMPLEX_DOCX), "missing complex DOCX fixture").toBe(true);
       const result = await verifyImportedDocxWordLayoutParity(COMPLEX_DOCX, {
@@ -420,7 +439,7 @@ describeWordParity("Word layout parity", () => {
   );
 
   it(
-    "tracks table layout parity for complex tables with merged cells",
+    "matches Word table layout parity for complex tables with merged cells",
     async () => {
       const result = await verifyWordLayoutParity(createMergedTableParityDocument(), {
         layoutMode: "wordParity",
@@ -433,7 +452,7 @@ describeWordParity("Word layout parity", () => {
   );
 
   it(
-    "tracks multilevel list parity with Word numbering formats",
+    "matches Word multilevel list parity with numbering formats",
     async () => {
       const result = await verifyWordLayoutParity(createMultilevelListParityDocument(), {
         layoutMode: "wordParity",
@@ -450,7 +469,7 @@ describeWordParity("Word layout parity", () => {
   );
 
   it(
-    "tracks embedded image parity for inline image runs",
+    "matches Word embedded image parity for inline image runs",
     async () => {
       const result = await verifyWordLayoutParity(createInlineImageParityDocument(), {
         layoutMode: "wordParity",
@@ -464,7 +483,7 @@ describeWordParity("Word layout parity", () => {
   );
 
   it(
-    "tracks advanced named style inheritance parity",
+    "matches Word advanced named style inheritance parity",
     async () => {
       const result = await verifyWordLayoutParity(createStyleInheritanceParityDocument(), {
         layoutMode: "wordParity",
@@ -500,7 +519,7 @@ describeWordParity("Word layout parity", () => {
 });
 
 if (!support.supported) {
-  describe("Word layout parity support", () => {
+  describe("word layout parity support", () => {
     it.skip(`requires local Word parity support: ${support.reason ?? "unknown reason"}`, () => {});
   });
 }

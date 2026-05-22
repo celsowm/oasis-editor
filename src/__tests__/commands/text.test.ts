@@ -8,7 +8,7 @@ beforeEach(() => {
   resetEditorIds();
 });
 
-describe('Text Commands', () => {
+describe('text commands', () => {
   describe('insertTextAtSelection', () => {
     it('inserts text at the beginning of a paragraph', () => {
       const state = createEditorStateFromTexts(['world']);
