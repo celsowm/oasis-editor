@@ -36,6 +36,15 @@ export interface OasisPdfTextOptions {
   color?: string;
   bold?: boolean;
   italic?: boolean;
+  fontResourceName?: string;
+}
+
+export type OasisPdfFontResource = OasisPdfBase14FontResource;
+
+export interface OasisPdfBase14FontResource {
+  kind: "base14";
+  resourceName: string;
+  baseFont: string;
 }
 
 interface PdfObject {
@@ -43,17 +52,12 @@ interface PdfObject {
   body: string;
 }
 
-interface PdfFontResource {
-  name: string;
-  baseFont: string;
-}
-
 const PDF_HEADER = "%PDF-1.4\n% Oasis PDF\n";
-const PDF_FONT_RESOURCES: PdfFontResource[] = [
-  { name: "F1", baseFont: "Helvetica" },
-  { name: "F2", baseFont: "Helvetica-Bold" },
-  { name: "F3", baseFont: "Helvetica-Oblique" },
-  { name: "F4", baseFont: "Helvetica-BoldOblique" },
+const DEFAULT_PDF_FONT_RESOURCES: OasisPdfFontResource[] = [
+  { kind: "base14", resourceName: "F1", baseFont: "Helvetica" },
+  { kind: "base14", resourceName: "F2", baseFont: "Helvetica-Bold" },
+  { kind: "base14", resourceName: "F3", baseFont: "Helvetica-Oblique" },
+  { kind: "base14", resourceName: "F4", baseFont: "Helvetica-BoldOblique" },
 ];
 
 function formatNumber(value: number): string {
@@ -102,7 +106,10 @@ function colorCommand(
   return `${formatNumber(r)} ${formatNumber(g)} ${formatNumber(b)} ${operator}`;
 }
 
-function resolveFontName(options: Pick<OasisPdfTextOptions, "bold" | "italic">): string {
+function resolveFontName(options: Pick<OasisPdfTextOptions, "bold" | "italic" | "fontResourceName">): string {
+  if (options.fontResourceName) {
+    return options.fontResourceName;
+  }
   if (options.bold && options.italic) {
     return "F4";
   }
@@ -115,8 +122,26 @@ function resolveFontName(options: Pick<OasisPdfTextOptions, "bold" | "italic">):
   return "F1";
 }
 
+function fontResourceObjectBody(resource: OasisPdfFontResource): string {
+  switch (resource.kind) {
+    case "base14":
+      return `<< /Type /Font /Subtype /Type1 /BaseFont /${resource.baseFont} >>`;
+  }
+}
+
 export class OasisPdfWriter {
   private readonly pages: OasisPdfPage[] = [];
+  private readonly fontResources = new Map<string, OasisPdfFontResource>();
+
+  constructor(fontResources: OasisPdfFontResource[] = DEFAULT_PDF_FONT_RESOURCES) {
+    for (const resource of fontResources) {
+      this.registerFontResource(resource);
+    }
+  }
+
+  registerFontResource(resource: OasisPdfFontResource): void {
+    this.fontResources.set(resource.resourceName, resource);
+  }
 
   addPage(size: OasisPdfPageSize): number {
     this.pages.push({
@@ -221,11 +246,10 @@ export class OasisPdfWriter {
 
     const catalogObjectId = addObject("");
     const pagesObjectId = addObject("");
-    const fontObjectIds = PDF_FONT_RESOURCES.map((font) =>
-      addObject(`<< /Type /Font /Subtype /Type1 /BaseFont /${font.baseFont} >>`),
-    );
-    const fontResourceXml = PDF_FONT_RESOURCES
-      .map((font, index) => `/${font.name} ${fontObjectIds[index]} 0 R`)
+    const fontResourceEntries = Array.from(this.fontResources.values());
+    const fontObjectIds = fontResourceEntries.map((font) => addObject(fontResourceObjectBody(font)));
+    const fontResourceXml = fontResourceEntries
+      .map((font, index) => `/${font.resourceName} ${fontObjectIds[index]} 0 R`)
       .join(" ");
     const pageObjectIds: number[] = [];
 
