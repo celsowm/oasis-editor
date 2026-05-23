@@ -306,42 +306,13 @@ function drawBlockParagraphs(
   }
 }
 
-function drawDiagnosticPageFrame(
-  writer: OasisPdfWriter,
-  pageIndex: number,
-  width: number,
-  height: number,
-  sectionIndex: number,
-): void {
+function drawPageBackground(writer: OasisPdfWriter, pageIndex: number, width: number, height: number): void {
   writer.drawRect(pageIndex, {
     x: 0,
     y: 0,
     width,
     height,
     fill: "#ffffff",
-  });
-  writer.drawRect(pageIndex, {
-    x: 18,
-    y: 18,
-    width: Math.max(1, width - 36),
-    height: Math.max(1, height - 36),
-    stroke: "#d1d5db",
-    lineWidth: 0.75,
-  });
-  writer.drawLine(pageIndex, {
-    x1: 18,
-    y1: 48,
-    x2: Math.max(18, width - 18),
-    y2: 48,
-    stroke: "#e5e7eb",
-    lineWidth: 0.75,
-  });
-  writer.drawText(pageIndex, {
-    x: 24,
-    y: 38,
-    text: `Oasis PDF section ${sectionIndex + 1}`,
-    fontSize: 12,
-    color: "#111827",
   });
 }
 
@@ -364,14 +335,9 @@ function drawSectionHeaderFooter(
   drawBlockParagraphs(writer, page.pageIndex, page.footer, marginLeft, footerY, contentWidth, context);
 }
 
-function addSectionPage(
-  writer: OasisPdfWriter,
-  width: number,
-  height: number,
-  sectionIndex: number,
-): number {
+function addSectionPage(writer: OasisPdfWriter, width: number, height: number): number {
   const pageIndex = writer.addPage({ width, height });
-  drawDiagnosticPageFrame(writer, pageIndex, width, height, sectionIndex);
+  drawPageBackground(writer, pageIndex, width, height);
   return pageIndex;
 }
 
@@ -380,7 +346,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
   const sections = getDocumentSections(document);
   const headerFooterPages: PdfHeaderFooterPage[] = [];
 
-  for (const [sectionIndex, section] of sections.entries()) {
+  for (const section of sections) {
     const width = Math.max(1, pxToPt(section.pageSettings.width));
     const height = Math.max(1, pxToPt(section.pageSettings.height));
     const marginLeft = pxToPt(section.pageSettings.margins.left + section.pageSettings.margins.gutter);
@@ -389,7 +355,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
     const marginBottom = pxToPt(section.pageSettings.margins.bottom);
     const contentWidth = Math.max(1, width - marginLeft - marginRight);
     const contentBottom = Math.max(marginTop + DEFAULT_LINE_HEIGHT_PT, height - marginBottom);
-    let pageIndex = addSectionPage(writer, width, height, sectionIndex);
+    let pageIndex = addSectionPage(writer, width, height);
     headerFooterPages.push({
       pageIndex,
       width,
@@ -408,7 +374,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
 
       cursorY += styleLengthToPt(block.style?.spacingBefore);
       if (cursorY + DEFAULT_LINE_HEIGHT_PT > contentBottom) {
-        pageIndex = addSectionPage(writer, width, height, sectionIndex);
+        pageIndex = addSectionPage(writer, width, height);
         headerFooterPages.push({
           pageIndex,
           width,
@@ -438,13 +404,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
 
   if (writer.getPageCount() === 0) {
     const pageIndex = writer.addPage({ width: 612, height: 792 });
-    writer.drawText(pageIndex, {
-      x: 24,
-      y: 38,
-      text: "Oasis PDF",
-      fontSize: 12,
-      color: "#111827",
-    });
+    drawPageBackground(writer, pageIndex, 612, 792);
   }
 
   const totalPages = writer.getPageCount();
