@@ -12,7 +12,8 @@ import { t } from "../../../i18n/index.js";
 export function ToolbarOverflowManager(props: { children: JSX.Element }) {
   const [overflowCount, setOverflowCount] = createSignal(0);
   const [menuOpen, setMenuOpen] = createSignal(false);
-  
+  const [panelWidth, setPanelWidth] = createSignal<number | null>(null);
+
   let containerRef: HTMLDivElement | undefined;
   let stripRef: HTMLDivElement | undefined;
   let overflowMenuRef: HTMLDivElement | undefined;
@@ -108,36 +109,93 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
     setTimeout(updateOverflow, 1000);
   });
 
+  /**
+   * Measure the panel's natural single-line width (no wrapping) and clamp it
+   * to the available horizontal space. The result is the actual width we apply
+   * to the panel — items only wrap when content truly does not fit.
+   */
+  const remeasurePanel = () => {
+    if (!overflowMenuRef || !moreButtonRef) return;
+    const el = overflowMenuRef;
+
+    // Force single-line layout for accurate intrinsic measurement
+    const prev = {
+      flexWrap: el.style.flexWrap,
+      width: el.style.width,
+      maxWidth: el.style.maxWidth,
+      display: el.style.display,
+      visibility: el.style.visibility,
+    };
+    el.style.display = 'flex';
+    el.style.visibility = 'hidden';
+    el.style.flexWrap = 'nowrap';
+    el.style.width = 'max-content';
+    el.style.maxWidth = 'none';
+    const natural = Math.ceil(el.getBoundingClientRect().width);
+    el.style.flexWrap = prev.flexWrap;
+    el.style.width = prev.width;
+    el.style.maxWidth = prev.maxWidth;
+    el.style.display = prev.display;
+    el.style.visibility = prev.visibility;
+
+    const r = moreButtonRef.getBoundingClientRect();
+    const vw = window.innerWidth;
+    // Horizontal space available between the viewport's left edge (with 8px
+    // margin) and the right edge of the "..." button.
+    const available = Math.max(160, Math.min(vw - 16, r.right - 8));
+    setPanelWidth(Math.min(natural, available));
+  };
+
   onMount(() => {
-    const observer = new ResizeObserver(() => updateOverflow());
+    const observer = new ResizeObserver(() => {
+      updateOverflow();
+      if (menuOpen()) requestAnimationFrame(remeasurePanel);
+    });
     observer.observe(containerRef!);
-    
+
     const handleOutsideClick = (e: MouseEvent) => {
-      if (menuOpen() && moreButtonRef && !moreButtonRef.contains(e.target as Node) && 
+      if (menuOpen() && moreButtonRef && !moreButtonRef.contains(e.target as Node) &&
           overflowMenuRef && !overflowMenuRef.contains(e.target as Node)) {
         setMenuOpen(false);
       }
     };
-    
+
+    const handleWindowResize = () => {
+      if (menuOpen()) requestAnimationFrame(remeasurePanel);
+    };
+
     window.addEventListener('mousedown', handleOutsideClick);
+    window.addEventListener('resize', handleWindowResize);
     onCleanup(() => {
       observer.disconnect();
       window.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('resize', handleWindowResize);
     });
   });
 
-  // Position the overflow popover below the "..." button
+  // Re-measure whenever the menu opens or the overflow set changes
+  createEffect(() => {
+    if (menuOpen() && overflowCount() > 0) {
+      // Run after layout settles
+      requestAnimationFrame(() => requestAnimationFrame(remeasurePanel));
+    }
+  });
+
+  // Position the overflow popover below the "..." button.
+  // We anchor to the right edge of the "..." button and apply the explicitly
+  // measured panel width so the panel only wraps when content cannot fit.
   const menuStyle = () => {
     if (!moreButtonRef) return {};
     const r = moreButtonRef.getBoundingClientRect();
     const vw = window.innerWidth;
-    
+    const w = panelWidth();
+
     return {
       position: 'fixed' as const,
       top: `${r.bottom + 4}px`,
-      right: `${vw - r.right}px`,
+      right: `${Math.max(8, vw - r.right)}px`,
       "z-index": 1000,
-      "min-width": "max-content",
+      ...(w !== null ? { width: `${w}px` } : {}),
     };
   };
 
@@ -196,7 +254,10 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
         </button>
       </div>
 
-      {/* Overflow panel — Items are moved here imperatively. Prefer single-line layout. */}
+      {/* Overflow panel — Items are moved here imperatively.
+          The panel width is measured via JS (`remeasurePanel`) so it hugs the
+          natural content width when it fits, and snaps to the available space
+          (wrapping to 2+ rows) when the viewport is too narrow. */}
       <div
         ref={overflowMenuRef}
         class="oasis-editor-toolbar-overflow-dropdown-menu oasis-editor-toolbar-overflow-menu"
@@ -204,7 +265,7 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
           ...menuStyle(),
           display: menuOpen() && overflowCount() > 0 ? 'flex' : 'none',
           "flex-direction": 'row',
-          "flex-wrap": 'nowrap',
+          "flex-wrap": 'wrap',
           "align-items": 'center',
           gap: '4px',
           padding: '8px',
@@ -213,7 +274,8 @@ export function ToolbarOverflowManager(props: { children: JSX.Element }) {
           "border-radius": 'var(--oasis-radius)',
           "box-shadow": '0 4px 12px rgba(0, 0, 0, 0.15)',
           "max-width": 'calc(100vw - 16px)',
-          "overflow-x": 'auto'
+          "overflow-x": 'hidden',
+          "overflow-y": 'auto'
         }}
         onClick={(e) => {
           // Close when a tool button is clicked (but not nested dropdowns)
