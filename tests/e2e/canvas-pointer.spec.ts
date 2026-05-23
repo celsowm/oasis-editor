@@ -397,6 +397,81 @@ test("canvas selection overlay stays visible on imported complex DOCX (header/fo
   await expectNoMissEvents(page);
 });
 
+test("text drag moves selected text and does not trigger selection drag concurrently", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+  await clearMissEvents(page);
+  await seedText(page, "alpha beta gamma delta epsilon");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("zeta eta theta iota");
+  await page.waitForTimeout(80);
+  const pageRect = await canvasPageRect(page);
+  const points = {
+    selectFrom: { x: pageRect.x + 190, y: pageRect.y + 140 },
+    selectTo: { x: pageRect.x + 330, y: pageRect.y + 140 },
+    dragFrom: { x: pageRect.x + 230, y: pageRect.y + 140 },
+    dropTo: { x: pageRect.x + 250, y: pageRect.y + 176 },
+  };
+
+  await page.mouse.move(points.selectFrom.x, points.selectFrom.y);
+  await page.mouse.down();
+  await page.mouse.move(points.selectTo.x, points.selectTo.y);
+  await page.mouse.up();
+  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+
+  const applyLogs: string[] = [];
+  const concurrentSelectionDragLogs: string[] = [];
+  const onConsole = (message: ConsoleMessage) => {
+    const text = message.text();
+    if (text.includes("text-drag:apply")) {
+      applyLogs.push(text);
+    }
+    if (text.includes("selection:drag")) {
+      concurrentSelectionDragLogs.push(text);
+    }
+  };
+  page.on("console", onConsole);
+
+  await page.mouse.move(points.dragFrom.x, points.dragFrom.y);
+  await page.mouse.down();
+  await page.mouse.move(points.dropTo.x, points.dropTo.y);
+  await page.mouse.up();
+  page.off("console", onConsole);
+
+  expect(applyLogs.length).toBeGreaterThan(0);
+  expect(concurrentSelectionDragLogs).toEqual([]);
+  await expectNoMissEvents(page);
+});
+
+test("single click inside selection collapses caret with word parity", async ({ page }) => {
+  await gotoEditor(page);
+  await clearMissEvents(page);
+  await seedText(page, "alpha beta gamma delta epsilon zeta");
+  await page.waitForTimeout(80);
+  const pageRect = await canvasPageRect(page);
+  const points = {
+    selectFrom: { x: pageRect.x + 190, y: pageRect.y + 140 },
+    selectTo: { x: pageRect.x + 340, y: pageRect.y + 140 },
+    inside: { x: pageRect.x + 240, y: pageRect.y + 140 },
+  };
+
+  await page.mouse.move(points.selectFrom.x, points.selectFrom.y);
+  await page.mouse.down();
+  await page.mouse.move(points.selectTo.x, points.selectTo.y);
+  await page.mouse.up();
+  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+
+  let selection = await expectDebugSelection(page);
+  expect(selection.anchor.paragraphId !== selection.focus.paragraphId || selection.anchor.offset !== selection.focus.offset).toBeTruthy();
+
+  await page.mouse.click(points.inside.x, points.inside.y);
+  selection = await expectDebugSelection(page);
+  expect(selection.anchor.paragraphId).toBe(selection.focus.paragraphId);
+  expect(selection.anchor.offset).toBe(selection.focus.offset);
+  await expectNoMissEvents(page);
+});
+
 for (const align of ["center", "right", "justify"] as const) {
   test(`canvas ${align} paragraph keeps caret/selection/hit-test coherent`, async ({ page }) => {
     await gotoEditor(page);

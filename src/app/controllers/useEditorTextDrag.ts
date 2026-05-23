@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import { moveOrCopySelectionToPosition } from "../../core/editorCommands.js";
+import { moveOrCopySelectionToPosition, setSelection } from "../../core/editorCommands.js";
 import type { EditorPosition, EditorState } from "../../core/model.js";
 import { getParagraphs, positionToParagraphOffset } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
@@ -61,7 +61,7 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
   const [copyMode, setCopyMode] = createSignal(false);
   const [pointerPos, setPointerPos] = createSignal<{ x: number; y: number } | null>(null);
   const [caretViewport, setCaretViewport] = createSignal<{ left: number; top: number; height: number } | null>(null);
-  let pendingStart: { x: number; y: number } | null = null;
+  let pendingStart: { x: number; y: number; position: EditorPosition } | null = null;
   let cursorStyleEl: HTMLStyleElement | null = null;
   let lastDropTargetKey: string | null = null;
 
@@ -180,6 +180,23 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
         mode: copy ? "copy" : "move",
         destination: `${destination.paragraphId}:${destination.runId}[${destination.offset}]`,
       });
+    } else if (pendingStart) {
+      const startPosition = pendingStart.position;
+      deps.applyTransactionalState(
+        (current) => {
+          if (!isPositionInsideSelection(current, startPosition)) {
+            return current;
+          }
+          return setSelection(current, {
+            anchor: startPosition,
+            focus: startPosition,
+          });
+        },
+        { mergeKey: "collapseSelectionByClick" },
+      );
+      deps.logger?.info("text-drag:collapse", {
+        at: `${startPosition.paragraphId}:${startPosition.runId}[${startPosition.offset}]`,
+      });
     }
     stopDrag();
     deps.focusInputAfterPointerSelection();
@@ -210,7 +227,11 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
       hit: `${hit.position.paragraphId}:${hit.position.runId}[${hit.position.offset}]`,
       zone: hit.zone,
     });
-    pendingStart = { x: event.clientX, y: event.clientY };
+    pendingStart = {
+      x: event.clientX,
+      y: event.clientY,
+      position: hit.tableCellAnchorPosition ?? hit.position,
+    };
     setPointerPos({ x: event.clientX, y: event.clientY });
     setCopyMode(event.ctrlKey || event.metaKey);
     setDropTargetPos(null);

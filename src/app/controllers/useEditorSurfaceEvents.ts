@@ -276,6 +276,12 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
       deps.focusInputAfterPointerSelection();
       return;
     }
+    if (deps.textDrag?.tryStartTextDrag(event, hit)) {
+      dragAnchor = null;
+      stopDragging();
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
 
     const paragraph = deps.getParagraphById(state.document, hit.paragraphId);
     const isZoneTransition = hit.zone !== (state.activeZone ?? "main");
@@ -438,10 +444,6 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
       return;
     }
 
-    if (deps.textDrag?.tryStartTextDrag(event, hit)) {
-      deps.focusInputAfterPointerSelection();
-      return;
-    }
     const paragraph = deps.getParagraphById(state.document, hit.paragraphId);
     if (!paragraph) {
       deps.focusInputAfterPointerSelection();
