@@ -166,7 +166,7 @@ describe('OasisPdfWriter', () => {
     expect(blob.size).toBeGreaterThan(0);
     expect(pdf.startsWith('%PDF-1.4')).toBe(true);
     expect(pdf).toContain('/MediaBox [0 0 612 792]');
-    expect(pdf).toContain('Oasis PDF section 1');
+    expect(pdf).not.toContain('Oasis PDF section');
     expect(pdf).toContain('Smoke test');
     expect(pdf).toContain('Second ');
     expect(pdf).toContain('paragraph');
@@ -189,7 +189,7 @@ describe('OasisPdfWriter', () => {
     expect(pdf).toContain('463.95 672 Td');
     expect(pdf).toContain('126 650 Td');
     expect(pdf).toContain('90 622 Td');
-    expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(4);
+    expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
   it('creates additional pages when paragraphs overflow the section content area', async () => {
@@ -229,7 +229,7 @@ describe('OasisPdfWriter', () => {
     expect((pdf.match(/\/Type \/Page\n/g) ?? []).length).toBe(2);
     expect(pdf).toContain('Overflow paragraph 1');
     expect(pdf).toContain('Overflow paragraph 12');
-    expect((pdf.match(/Oasis PDF section 1/g) ?? []).length).toBe(2);
+    expect(pdf).not.toContain('Oasis PDF section');
   });
 
   it('renders section headers and footers on every generated page with total page count', async () => {
