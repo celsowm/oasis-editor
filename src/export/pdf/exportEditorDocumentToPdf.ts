@@ -1,12 +1,14 @@
 import type {
   EditorBlockNode,
   EditorDocument,
+  EditorNamedStyle,
   EditorPageMargins,
   EditorParagraphListStyle,
   EditorParagraphNode,
+  EditorParagraphStyle,
   EditorTextRun,
 } from "../../core/model.js";
-import { getDocumentSections } from "../../core/model.js";
+import { getDocumentSections, resolveEffectiveParagraphStyle } from "../../core/model.js";
 import { PdfFontRegistry } from "./fonts/PdfFontRegistry.js";
 import {
   layoutPdfParagraph,
@@ -59,7 +61,7 @@ function measurePlainTextWidthPt(text: string, fontSize: number, context: PdfPar
 }
 
 function resolveParagraphX(
-  paragraph: EditorParagraphNode,
+  effectiveStyle: Required<EditorParagraphStyle>,
   contentLeft: number,
   contentWidth: number,
   lineWidth: number,
@@ -68,7 +70,7 @@ function resolveParagraphX(
     return contentLeft;
   }
 
-  switch (paragraph.style?.align) {
+  switch (effectiveStyle.align) {
     case "center":
       return contentLeft + Math.max(0, (contentWidth - lineWidth) / 2);
     case "right":
@@ -82,13 +84,14 @@ function resolveParagraphX(
 
 function resolveParagraphHorizontalMetrics(
   paragraph: EditorParagraphNode,
+  effectiveStyle: Required<EditorParagraphStyle>,
   marginLeft: number,
   contentWidth: number,
 ): { left: number; width: number } {
-  const indentLeft = styleLengthToPt(paragraph.style?.indentLeft);
-  const indentRight = styleLengthToPt(paragraph.style?.indentRight);
+  const indentLeft = styleLengthToPt(effectiveStyle.indentLeft);
+  const indentRight = styleLengthToPt(effectiveStyle.indentRight);
   const firstLineOffset =
-    styleLengthToPt(paragraph.style?.indentFirstLine) - styleLengthToPt(paragraph.style?.indentHanging);
+    styleLengthToPt(effectiveStyle.indentFirstLine) - styleLengthToPt(effectiveStyle.indentHanging);
   const listOffset = paragraph.list ? LIST_INDENT_PT * ((paragraph.list.level ?? 0) + 1) : 0;
   const left = marginLeft + indentLeft + firstLineOffset + listOffset;
   const width = Math.max(
@@ -190,14 +193,15 @@ function drawLineFragment(
 function drawParagraphLine(
   writer: OasisPdfWriter,
   pageIndex: number,
-  paragraph: EditorParagraphNode,
+  effectiveStyle: Required<EditorParagraphStyle>,
   line: PdfParagraphLine,
   contentLeft: number,
   contentWidth: number,
   y: number,
   context: PdfExportContext,
+  isLastLine: boolean,
 ): void {
-  const lineX = resolveParagraphX(paragraph, contentLeft, contentWidth, line.width);
+  const lineX = resolveParagraphX(effectiveStyle, contentLeft, contentWidth, line.width);
   if (line.fragments.length === 0) {
     writer.drawText(pageIndex, {
       x: lineX,
@@ -210,8 +214,25 @@ function drawParagraphLine(
     return;
   }
 
-  for (const fragment of line.fragments) {
-    drawLineFragment(writer, pageIndex, fragment, lineX, y, context);
+  const shouldJustify =
+    effectiveStyle.align === "justify" &&
+    !isLastLine &&
+    line.fragments.length > 1 &&
+    line.width < contentWidth;
+  const gapShift = shouldJustify
+    ? (contentWidth - line.width) / (line.fragments.length - 1)
+    : 0;
+
+  for (const [index, fragment] of line.fragments.entries()) {
+    const extra = gapShift * index;
+    drawLineFragment(
+      writer,
+      pageIndex,
+      { ...fragment, x: fragment.x + extra },
+      lineX,
+      y,
+      context,
+    );
   }
 }
 
@@ -282,6 +303,7 @@ function drawBlockParagraphs(
   y: number,
   contentWidth: number,
   context: PdfExportContext,
+  styles: Record<string, EditorNamedStyle> | undefined,
 ): void {
   if (!blocks || blocks.length === 0) {
     return;
@@ -292,8 +314,9 @@ function drawBlockParagraphs(
     if (block.type !== "paragraph") {
       continue;
     }
-    cursorY += styleLengthToPt(block.style?.spacingBefore);
-    const horizontal = resolveParagraphHorizontalMetrics(block, x, contentWidth);
+    const effectiveStyle = resolveEffectiveParagraphStyle(block.style, styles);
+    cursorY += styleLengthToPt(effectiveStyle.spacingBefore);
+    const horizontal = resolveParagraphHorizontalMetrics(block, effectiveStyle, x, contentWidth);
     const layout = layoutPdfParagraph({
       paragraph: block,
       maxWidth: horizontal.width,
@@ -302,11 +325,22 @@ function drawBlockParagraphs(
       defaultLineHeight: DEFAULT_LINE_HEIGHT_PT,
       pxToPt,
     });
-    for (const line of layout.lines) {
-      drawParagraphLine(writer, pageIndex, block, line, horizontal.left, horizontal.width, cursorY, context);
+    for (const [lineIndex, line] of layout.lines.entries()) {
+      const isLastLine = lineIndex === layout.lines.length - 1;
+      drawParagraphLine(
+        writer,
+        pageIndex,
+        effectiveStyle,
+        line,
+        horizontal.left,
+        horizontal.width,
+        cursorY,
+        context,
+        isLastLine,
+      );
       cursorY += line.height;
     }
-    cursorY += styleLengthToPt(block.style?.spacingAfter);
+    cursorY += styleLengthToPt(effectiveStyle.spacingAfter);
   }
 }
 
@@ -326,6 +360,7 @@ function drawSectionHeaderFooter(
   totalPages: number,
   measurer: PdfTextMeasurer,
   fontRegistry: PdfFontRegistry,
+  styles: Record<string, EditorNamedStyle> | undefined,
 ): void {
   const marginLeft = pxToPt(page.margins.left + page.margins.gutter);
   const marginRight = pxToPt(page.margins.right);
@@ -339,8 +374,8 @@ function drawSectionHeaderFooter(
     fontRegistry,
   };
 
-  drawBlockParagraphs(writer, page.pageIndex, page.header, marginLeft, headerY, contentWidth, context);
-  drawBlockParagraphs(writer, page.pageIndex, page.footer, marginLeft, footerY, contentWidth, context);
+  drawBlockParagraphs(writer, page.pageIndex, page.header, marginLeft, headerY, contentWidth, context, styles);
+  drawBlockParagraphs(writer, page.pageIndex, page.footer, marginLeft, footerY, contentWidth, context, styles);
 }
 
 function addSectionPage(writer: OasisPdfWriter, width: number, height: number): number {
@@ -382,8 +417,9 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
         continue;
       }
 
+      const effectiveStyle = resolveEffectiveParagraphStyle(block.style, document.styles);
       const context: PdfExportContext = { pageNumber: pageIndex + 1, totalPages: 0, measurer, fontRegistry };
-      const horizontal = resolveParagraphHorizontalMetrics(block, marginLeft, contentWidth);
+      const horizontal = resolveParagraphHorizontalMetrics(block, effectiveStyle, marginLeft, contentWidth);
       const layout = layoutPdfParagraph({
         paragraph: block,
         maxWidth: horizontal.width,
@@ -394,7 +430,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
       });
       const prefix = resolveListPrefix(block, listState);
 
-      cursorY += styleLengthToPt(block.style?.spacingBefore);
+      cursorY += styleLengthToPt(effectiveStyle.spacingBefore);
       for (const [lineIndex, line] of layout.lines.entries()) {
         if (cursorY + line.height > contentBottom) {
           pageIndex = addSectionPage(writer, width, height);
@@ -410,14 +446,25 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
         }
 
         const lineContext: PdfExportContext = { pageNumber: pageIndex + 1, totalPages: 0, measurer, fontRegistry };
-        const lineX = resolveParagraphX(block, horizontal.left, horizontal.width, line.width);
+        const lineX = resolveParagraphX(effectiveStyle, horizontal.left, horizontal.width, line.width);
         if (lineIndex === 0) {
           drawListPrefix(writer, pageIndex, prefix, lineX, cursorY, lineContext);
         }
-        drawParagraphLine(writer, pageIndex, block, line, horizontal.left, horizontal.width, cursorY, lineContext);
+        const isLastLine = lineIndex === layout.lines.length - 1;
+        drawParagraphLine(
+          writer,
+          pageIndex,
+          effectiveStyle,
+          line,
+          horizontal.left,
+          horizontal.width,
+          cursorY,
+          lineContext,
+          isLastLine,
+        );
         cursorY += line.height;
       }
-      cursorY += styleLengthToPt(block.style?.spacingAfter);
+      cursorY += styleLengthToPt(effectiveStyle.spacingAfter);
     }
   }
 
@@ -428,7 +475,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
 
   const totalPages = writer.getPageCount();
   for (const page of headerFooterPages) {
-    drawSectionHeaderFooter(writer, page, totalPages, measurer, fontRegistry);
+    drawSectionHeaderFooter(writer, page, totalPages, measurer, fontRegistry, document.styles);
   }
 
   return writer.toArrayBuffer();

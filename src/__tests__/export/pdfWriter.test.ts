@@ -270,10 +270,10 @@ describe('OasisPdfWriter', () => {
     expect(pdf).toContain('/F3 15 Tf');
     expect(pdf).toContain('1 0 0 rg');
     expect(pdf).toContain('1 1 0 rg');
-    expect(pdf).toContain('282.864 686 Td');
-    expect(pdf).toContain('474.345 670 Td');
-    expect(pdf).toContain('126 648 Td');
-    expect(pdf).toContain('90 620 Td');
+    expect(pdf).toContain('282.864 674 Td');
+    expect(pdf).toContain('474.345 652 Td');
+    expect(pdf).toContain('126 624 Td');
+    expect(pdf).toContain('90 596 Td');
     expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
