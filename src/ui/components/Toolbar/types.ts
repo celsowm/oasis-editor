@@ -28,7 +28,8 @@ export interface EditorToolbarCtx {
   tableActionRestrictionLabel: () => string | null;
   isInsideTable: () => boolean;
 
-  handleExportDocx: () => void;
+  handleExportDocx: () => void | Promise<void>;
+  handleExportPdf: () => void | Promise<void>;
   toggleFindReplace: (open?: boolean) => void;
   performUndo: () => void;
   performRedo: () => void;

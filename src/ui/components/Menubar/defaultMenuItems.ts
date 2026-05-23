@@ -6,7 +6,7 @@ export const defaultMenuItems: MenuItem[] = [
   { id: "file_import", path: "File/Import", labelKey: "toolbar.import", shortcut: "Ctrl+O", action: (ctx) => ctx.importInputRef()?.click(), icon: "upload" },
   { id: "file_save", path: "File/Save", labelKey: "generic.save", shortcut: "Ctrl+S", hidden: true, icon: "save" },
   { id: "file_export", path: "File/Export", labelKey: "menu.file.export", icon: "download" },
-  { id: "file_export_pdf", path: "File/Export/PDF", hidden: true },
+  { id: "file_export_pdf", path: "File/Export/PDF", action: (ctx) => void ctx.handleExportPdf(), icon: "file-down" },
   { id: "file_export_docx", path: "File/Export/DOCX", action: (ctx) => void ctx.handleExportDocx(), icon: "file-text" },
   { id: "file_export_html", path: "File/Export/HTML", hidden: true },
   { id: "file_export_md", path: "File/Export/MD", hidden: true },
@@ -64,7 +64,7 @@ export const defaultMenuItems: MenuItem[] = [
 
   // Tools
   { id: "tools_wordcount", path: "Tools/Word count", labelKey: "menu.tools.wordcount", hidden: true },
-  { id: "tools_spelling", path: "Tools/Spelling", hidden: true },
+  { id: "tools_spelling", hidden: true, path: "Tools/Spelling" },
   { id: "tools_preferences", path: "Tools/Preferences", hidden: true },
 
   // Help

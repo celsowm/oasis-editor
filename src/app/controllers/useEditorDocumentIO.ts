@@ -16,6 +16,7 @@ import {
   setSelection,
 } from "../../core/editorCommands.js";
 import { exportEditorDocumentToDocxBlob } from "../../export/docx/exportEditorDocumentToDocx.js";
+import { exportEditorDocumentToPdfBlob } from "../../export/pdf/exportEditorDocumentToPdf.js";
 import { importDocxInWorker } from "../../import/docx/importDocxInWorker.js";
 import type { DocxImportStage } from "../../import/docx/importDocxToEditorDocument.js";
 import { getMaxInlineImageWidth } from "../../ui/imageGeometry.js";
@@ -83,6 +84,15 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
         current?.phase === "done" || current?.phase === "error" ? null : current,
       );
     }, 1200);
+  };
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleImportDocx = async (file: File | null) => {
@@ -231,12 +241,13 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
 
   const handleExportDocx = async () => {
     const blob = await exportEditorDocumentToDocxBlob(deps.state().document);
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "oasis-editor.docx";
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, "oasis-editor.docx");
+    deps.focusInput();
+  };
+
+  const handleExportPdf = async () => {
+    const blob = await exportEditorDocumentToPdfBlob(deps.state().document);
+    downloadBlob(blob, "oasis-editor.pdf");
     deps.focusInput();
   };
 
@@ -244,6 +255,7 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
     importProgress,
     handleImportDocx,
     handleExportDocx,
+    handleExportPdf,
     insertImageFromFile,
     handleInsertImage,
   };

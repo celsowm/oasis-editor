@@ -56,12 +56,20 @@ export function EditorToolbar(props: {
         <Show when={showFileGroup()}>
           <ToolbarDropdown label="" icon="file" testId="editor-toolbar-file-dropdown" tooltip={t("toolbar.file")}>
             <ToolbarButton
-              icon="download"
-              label={t("toolbar.export")}
+              icon="file-text"
+              label="Export DOCX"
               wide
               data-testid="editor-toolbar-export-docx"
               onClick={() => void ctx().handleExportDocx()}
-              tooltip={t("toolbar.export")}
+              tooltip="Export DOCX"
+            />
+            <ToolbarButton
+              icon="file-down"
+              label="Export PDF"
+              wide
+              data-testid="editor-toolbar-export-pdf"
+              onClick={() => void ctx().handleExportPdf()}
+              tooltip="Export PDF"
             />
             <ToolbarButton
               icon="upload"

@@ -97,6 +97,7 @@ export function createEditorToolbarController(deps: UseEditorToolbarProps) {
     tableActionRestrictionLabel: deps.tableOps.tableActionRestrictionLabel,
     isInsideTable,
     handleExportDocx: deps.docIO.handleExportDocx,
+    handleExportPdf: deps.docIO.handleExportPdf,
     toggleFindReplace: deps.toggleFindReplace,
     performUndo: deps.historyActions.performUndo,
     performRedo: deps.historyActions.performRedo,

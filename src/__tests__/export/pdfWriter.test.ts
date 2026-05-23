@@ -1,0 +1,390 @@
+import { describe, expect, it } from 'vitest';
+import type { EditorDocument } from '../../core/model.js';
+import { PdfFontRegistry } from '../../export/pdf/fonts/PdfFontRegistry.js';
+import { layoutPdfParagraph } from '../../export/pdf/layout/layoutParagraph.js';
+import { PdfTextMeasurer } from '../../export/pdf/layout/PdfTextMeasurer.js';
+import { OasisPdfWriter } from '../../export/pdf/OasisPdfWriter.js';
+import { exportEditorDocumentToPdfBlob } from '../../export/pdf/exportEditorDocumentToPdf.js';
+
+function decodePdf(buffer: ArrayBuffer): string {
+  return new TextDecoder().decode(buffer);
+}
+
+const PX_TO_PT = 72 / 96;
+
+function pxToPt(value: number): number {
+  return value * PX_TO_PT;
+}
+
+describe('PdfFontRegistry', () => {
+  it('resolves built-in Helvetica faces and exposes writer resources', () => {
+    const registry = new PdfFontRegistry();
+
+    expect(registry.resolveFontFace({}).writerResourceName).toBe('F1');
+    expect(registry.resolveFontFace({ bold: true }).writerResourceName).toBe('F2');
+    expect(registry.resolveFontFace({ italic: true }).writerResourceName).toBe('F3');
+    expect(registry.resolveFontFace({ bold: true, italic: true }).writerResourceName).toBe('F4');
+    expect(registry.resolveFontFace({ fontFamily: 'Unknown Font', bold: true }).writerResourceName).toBe('F2');
+    expect(registry.getPdfFontResources().map((resource) => resource.resourceName)).toEqual(['F1', 'F2', 'F3', 'F4']);
+  });
+});
+
+describe('PdfTextMeasurer', () => {
+  it('measures text using cached PDF font metrics', () => {
+    const measurer = new PdfTextMeasurer();
+
+    expect(measurer.measureTextWidth({ text: 'iii', fontSize: 10 })).toBeCloseTo(6.66, 2);
+    expect(measurer.measureTextWidth({ text: 'WWW', fontSize: 10 })).toBeCloseTo(28.32, 2);
+    expect(measurer.measureTextWidth({ text: 'Hello', fontSize: 12 })).toBeCloseTo(27.34, 2);
+    expect(measurer.getCacheSize()).toBe(3);
+
+    expect(measurer.measureTextWidth({ text: 'Hello', fontSize: 12 })).toBeCloseTo(27.34, 2);
+    expect(measurer.getCacheSize()).toBe(3);
+  });
+});
+
+describe('layoutPdfParagraph', () => {
+  it('wraps paragraph text into measured lines in linear order', () => {
+    const measurer = new PdfTextMeasurer();
+    const layout = layoutPdfParagraph({
+      paragraph: {
+        id: 'wrapped-paragraph',
+        type: 'paragraph',
+        runs: [{ id: 'run-1', text: 'Alpha beta gamma delta' }],
+      },
+      maxWidth: 70,
+      context: { pageNumber: 1, totalPages: 1, measurer },
+      defaultFontSize: 11.25,
+      defaultLineHeight: 16,
+      pxToPt,
+    });
+
+    expect(layout.lines.length).toBeGreaterThan(1);
+    expect(layout.lines.every((line) => line.width <= 70)).toBe(true);
+    expect(layout.lines.map((line) => line.fragments.map((fragment) => fragment.text).join('')).join('')).toBe(
+      'Alpha beta gamma delta',
+    );
+  });
+});
+
+describe('OasisPdfWriter', () => {
+  it('writes a structurally valid PDF with basic drawing commands', () => {
+    const writer = new OasisPdfWriter();
+    const pageIndex = writer.addPage({ width: 612, height: 792 });
+
+    writer.drawRect(pageIndex, {
+      x: 10,
+      y: 20,
+      width: 100,
+      height: 50,
+      fill: '#ffffff',
+      stroke: '#111827',
+      lineWidth: 1,
+    });
+    writer.drawLine(pageIndex, {
+      x1: 10,
+      y1: 90,
+      x2: 110,
+      y2: 90,
+      stroke: '#d1d5db',
+      lineWidth: 0.75,
+    });
+    writer.drawText(pageIndex, {
+      x: 24,
+      y: 48,
+      text: 'Hello PDF',
+      fontSize: 12,
+      color: '#111827',
+    });
+    writer.drawText(pageIndex, {
+      x: 24,
+      y: 68,
+      text: 'Bold italic PDF',
+      fontSize: 14,
+      color: '#ff0000',
+      bold: true,
+      italic: true,
+    });
+
+    const blob = writer.toBlob();
+    const pdf = decodePdf(writer.toArrayBuffer());
+
+    expect(blob.type).toBe('application/pdf');
+    expect(blob.size).toBeGreaterThan(0);
+    expect(pdf.startsWith('%PDF-1.4')).toBe(true);
+    expect(pdf).toContain('/Catalog');
+    expect(pdf).toContain('/Pages');
+    expect(pdf).toContain('/Page');
+    expect(pdf).toContain('/MediaBox [0 0 612 792]');
+    expect(pdf).toContain('/Contents');
+    expect(pdf).toContain('/Font');
+    expect(pdf).toContain('/Helvetica');
+    expect(pdf).toContain('/Helvetica-Bold');
+    expect(pdf).toContain('/Helvetica-Oblique');
+    expect(pdf).toContain('/Helvetica-BoldOblique');
+    expect(pdf).toContain('Hello PDF');
+    expect(pdf).toContain('Bold italic PDF');
+    expect(pdf).toContain('/F4 14 Tf');
+    expect(pdf).toContain('1 0 0 rg');
+    expect(pdf).toContain('xref');
+    expect(pdf).toContain('trailer');
+    expect(pdf).toContain('startxref');
+    expect(pdf.trim().endsWith('%%EOF')).toBe(true);
+  });
+
+  it('uses explicitly registered font resource names', () => {
+    const writer = new OasisPdfWriter([
+      { kind: 'base14', resourceName: 'CustomRegular', baseFont: 'Helvetica' },
+      { kind: 'base14', resourceName: 'CustomBold', baseFont: 'Helvetica-Bold' },
+    ]);
+    const pageIndex = writer.addPage({ width: 300, height: 300 });
+
+    writer.drawText(pageIndex, {
+      x: 24,
+      y: 48,
+      text: 'Custom font resource',
+      fontSize: 12,
+      fontResourceName: 'CustomBold',
+    });
+
+    const pdf = decodePdf(writer.toArrayBuffer());
+
+    expect(pdf).toContain('/CustomRegular');
+    expect(pdf).toContain('/CustomBold');
+    expect(pdf).toContain('/CustomBold 12 Tf');
+    expect(pdf).toContain('/Helvetica-Bold');
+  });
+
+  it('exports an editor document to an application/pdf blob with paragraph text and basic inline styles', async () => {
+    const document: EditorDocument = {
+      id: 'pdf-smoke-document',
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 816,
+            height: 1056,
+            orientation: 'portrait',
+            margins: {
+              top: 96,
+              right: 96,
+              bottom: 96,
+              left: 96,
+              header: 48,
+              footer: 48,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: 'paragraph-1',
+              type: 'paragraph',
+              runs: [{ id: 'run-1', text: 'Smoke test' }],
+            },
+            {
+              id: 'paragraph-2',
+              type: 'paragraph',
+              runs: [
+                { id: 'run-2', text: 'Second ', styles: { bold: true, underline: true, highlight: '#ffff00' } },
+                { id: 'run-3', text: 'paragraph', styles: { italic: true, strike: true, color: '#ff0000', fontSize: 20 } },
+              ],
+            },
+            {
+              id: 'paragraph-3',
+              type: 'paragraph',
+              style: { align: 'center' },
+              runs: [{ id: 'run-4', text: 'Centered' }],
+            },
+            {
+              id: 'paragraph-4',
+              type: 'paragraph',
+              style: { align: 'right' },
+              runs: [{ id: 'run-5', text: 'Right aligned' }],
+            },
+            {
+              id: 'paragraph-5',
+              type: 'paragraph',
+              style: {
+                spacingBefore: 8,
+                spacingAfter: 16,
+                indentLeft: 48,
+                indentRight: 24,
+                indentFirstLine: 24,
+              },
+              runs: [{ id: 'run-6', text: 'Indented paragraph' }],
+            },
+            {
+              id: 'paragraph-6',
+              type: 'paragraph',
+              style: { indentLeft: 48, indentHanging: 24 },
+              runs: [{ id: 'run-7', text: 'Hanging paragraph' }],
+            },
+            {
+              id: 'paragraph-7',
+              type: 'paragraph',
+              list: { kind: 'bullet' },
+              runs: [{ id: 'run-8', text: 'Bullet item' }],
+            },
+            {
+              id: 'paragraph-8',
+              type: 'paragraph',
+              list: { kind: 'ordered', startAt: 3 },
+              runs: [{ id: 'run-9', text: 'Ordered item' }],
+            },
+            {
+              id: 'paragraph-9',
+              type: 'paragraph',
+              list: { kind: 'ordered', format: 'upperLetter' },
+              runs: [{ id: 'run-10', text: 'Letter item' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+
+    expect(blob.type).toBe('application/pdf');
+    expect(blob.size).toBeGreaterThan(0);
+    expect(pdf.startsWith('%PDF-1.4')).toBe(true);
+    expect(pdf).toContain('/MediaBox [0 0 612 792]');
+    expect(pdf).not.toContain('Oasis PDF section');
+    expect(pdf).toContain('(Smoke ) Tj');
+    expect(pdf).toContain('(test) Tj');
+    expect(pdf).toContain('(Second ) Tj');
+    expect(pdf).toContain('(paragraph) Tj');
+    expect(pdf).toContain('(Centered) Tj');
+    expect(pdf).toContain('(Right ) Tj');
+    expect(pdf).toContain('(aligned) Tj');
+    expect(pdf).toContain('(Indented ) Tj');
+    expect(pdf).toContain('(Hanging ) Tj');
+    expect(pdf).toContain('(Bullet ) Tj');
+    expect(pdf).toContain('(Ordered ) Tj');
+    expect(pdf).toContain('(Letter ) Tj');
+    expect(pdf).toContain('(•) Tj');
+    expect(pdf).toContain('(3.) Tj');
+    expect(pdf).toContain('(A.) Tj');
+    expect(pdf).not.toContain('(4.) Tj');
+    expect(pdf).toContain('/F2 11.25 Tf');
+    expect(pdf).toContain('/F3 15 Tf');
+    expect(pdf).toContain('1 0 0 rg');
+    expect(pdf).toContain('1 1 0 rg');
+    expect(pdf).toContain('282.864 686 Td');
+    expect(pdf).toContain('474.345 670 Td');
+    expect(pdf).toContain('126 648 Td');
+    expect(pdf).toContain('90 620 Td');
+    expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('wraps long paragraphs and creates additional pages when lines overflow the section content area', async () => {
+    const document: EditorDocument = {
+      id: 'pdf-overflow-document',
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 240,
+            height: 240,
+            orientation: 'portrait',
+            margins: {
+              top: 48,
+              right: 48,
+              bottom: 48,
+              left: 48,
+              header: 24,
+              footer: 24,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: 'overflow-paragraph',
+              type: 'paragraph',
+              runs: [
+                {
+                  id: 'overflow-run',
+                  text: Array.from({ length: 36 }, (_, index) => `word${index + 1}`).join(' '),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+    const pageCount = (pdf.match(/\/Type \/Page\n/g) ?? []).length;
+
+    expect(blob.type).toBe('application/pdf');
+    expect(pageCount).toBeGreaterThan(1);
+    expect(pdf).toContain(`/Count ${pageCount}`);
+    expect(pdf).toContain('(word1 ) Tj');
+    expect(pdf).toContain('(word36) Tj');
+    expect(pdf).not.toContain('Oasis PDF section');
+  });
+
+  it('renders section headers and footers on every generated page with total page count', async () => {
+    const document: EditorDocument = {
+      id: 'pdf-header-footer-document',
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 240,
+            height: 240,
+            orientation: 'portrait',
+            margins: {
+              top: 48,
+              right: 48,
+              bottom: 48,
+              left: 48,
+              header: 24,
+              footer: 24,
+              gutter: 0,
+            },
+          },
+          header: [
+            {
+              id: 'header-paragraph',
+              type: 'paragraph',
+              runs: [{ id: 'header-run', text: 'Document header' }],
+            },
+          ],
+          footer: [
+            {
+              id: 'footer-paragraph',
+              type: 'paragraph',
+              runs: [
+                { id: 'footer-label', text: 'Page ' },
+                { id: 'footer-page', text: '', field: { type: 'PAGE' } },
+                { id: 'footer-of', text: ' of ' },
+                { id: 'footer-total', text: '', field: { type: 'NUMPAGES' } },
+              ],
+            },
+          ],
+          blocks: Array.from({ length: 36 }, (_, index) => ({
+            id: `body-paragraph-${index + 1}`,
+            type: 'paragraph' as const,
+            runs: [{ id: `body-run-${index + 1}`, text: `Body paragraph ${index + 1}` }],
+          })),
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+    const pageCount = (pdf.match(/\/Type \/Page\n/g) ?? []).length;
+
+    expect(blob.type).toBe('application/pdf');
+    expect(pageCount).toBeGreaterThan(1);
+    expect(pdf).toContain(`/Count ${pageCount}`);
+    expect((pdf.match(/Document /g) ?? []).length).toBe(pageCount);
+    expect((pdf.match(/header/g) ?? []).length).toBe(pageCount);
+    expect((pdf.match(/Page /g) ?? []).length).toBe(pageCount);
+    expect((pdf.match(/of /g) ?? []).length).toBe(pageCount);
+    expect(pdf).toContain('(1) Tj');
+    expect(pdf).toContain(`(${pageCount}) Tj`);
+  });
+});
