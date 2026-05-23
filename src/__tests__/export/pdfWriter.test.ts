@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { EditorDocument } from '../../core/model.js';
+import { layoutPdfParagraph } from '../../export/pdf/layout/layoutParagraph.js';
 import { PdfTextMeasurer } from '../../export/pdf/layout/PdfTextMeasurer.js';
 import { OasisPdfWriter } from '../../export/pdf/OasisPdfWriter.js';
 import { exportEditorDocumentToPdfBlob } from '../../export/pdf/exportEditorDocumentToPdf.js';
 
 function decodePdf(buffer: ArrayBuffer): string {
   return new TextDecoder().decode(buffer);
+}
+
+const PX_TO_PT = 72 / 96;
+
+function pxToPt(value: number): number {
+  return value * PX_TO_PT;
 }
 
 describe('PdfTextMeasurer', () => {
@@ -19,6 +26,30 @@ describe('PdfTextMeasurer', () => {
 
     expect(measurer.measureTextWidth({ text: 'Hello', fontSize: 12 })).toBeCloseTo(27.34, 2);
     expect(measurer.getCacheSize()).toBe(3);
+  });
+});
+
+describe('layoutPdfParagraph', () => {
+  it('wraps paragraph text into measured lines in linear order', () => {
+    const measurer = new PdfTextMeasurer();
+    const layout = layoutPdfParagraph({
+      paragraph: {
+        id: 'wrapped-paragraph',
+        type: 'paragraph',
+        runs: [{ id: 'run-1', text: 'Alpha beta gamma delta' }],
+      },
+      maxWidth: 70,
+      context: { pageNumber: 1, totalPages: 1, measurer },
+      defaultFontSize: 11.25,
+      defaultLineHeight: 16,
+      pxToPt,
+    });
+
+    expect(layout.lines.length).toBeGreaterThan(1);
+    expect(layout.lines.every((line) => line.width <= 70)).toBe(true);
+    expect(layout.lines.map((line) => line.fragments.map((fragment) => fragment.text).join('')).join('')).toBe(
+      'Alpha beta gamma delta',
+    );
   });
 });
 
@@ -201,20 +232,20 @@ describe('OasisPdfWriter', () => {
     expect(pdf).toContain('1 0 0 rg');
     expect(pdf).toContain('1 1 0 rg');
     expect(pdf).toContain('282.864 688 Td');
-    expect(pdf).toContain('474.345 672 Td');
+    expect(pdf).toContain('480.6 672 Td');
     expect(pdf).toContain('126 650 Td');
     expect(pdf).toContain('90 622 Td');
     expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
-  it('creates additional pages when paragraphs overflow the section content area', async () => {
+  it('wraps long paragraphs and creates additional pages when lines overflow the section content area', async () => {
     const document: EditorDocument = {
       id: 'pdf-overflow-document',
       sections: [
         {
           id: 'section-1',
           pageSettings: {
-            width: 816,
+            width: 240,
             height: 240,
             orientation: 'portrait',
             margins: {
@@ -227,11 +258,18 @@ describe('OasisPdfWriter', () => {
               gutter: 0,
             },
           },
-          blocks: Array.from({ length: 12 }, (_, index) => ({
-            id: `overflow-paragraph-${index + 1}`,
-            type: 'paragraph' as const,
-            runs: [{ id: `overflow-run-${index + 1}`, text: `Overflow paragraph ${index + 1}` }],
-          })),
+          blocks: [
+            {
+              id: 'overflow-paragraph',
+              type: 'paragraph',
+              runs: [
+                {
+                  id: 'overflow-run',
+                  text: Array.from({ length: 36 }, (_, index) => `word${index + 1}`).join(' '),
+                },
+              ],
+            },
+          ],
         },
       ],
     };
@@ -242,8 +280,8 @@ describe('OasisPdfWriter', () => {
     expect(blob.type).toBe('application/pdf');
     expect(pdf).toContain('/Count 2');
     expect((pdf.match(/\/Type \/Page\n/g) ?? []).length).toBe(2);
-    expect(pdf).toContain('Overflow paragraph 1');
-    expect(pdf).toContain('Overflow paragraph 12');
+    expect(pdf).toContain('word1 ');
+    expect(pdf).toContain('word36');
     expect(pdf).not.toContain('Oasis PDF section');
   });
 
