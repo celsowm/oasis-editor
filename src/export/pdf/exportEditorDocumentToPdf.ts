@@ -7,11 +7,9 @@ import type {
   EditorTextRun,
 } from "../../core/model.js";
 import { getDocumentSections } from "../../core/model.js";
+import { PdfFontRegistry } from "./fonts/PdfFontRegistry.js";
 import {
   layoutPdfParagraph,
-  measurePdfRunTextWidthPt,
-  pdfRunFontSizePt,
-  resolvePdfRunText,
   type PdfParagraphFragment,
   type PdfParagraphLine,
   type PdfParagraphTextContext,
@@ -36,6 +34,10 @@ interface PdfHeaderFooterPage {
   margins: EditorPageMargins;
   header?: EditorBlockNode[];
   footer?: EditorBlockNode[];
+}
+
+interface PdfExportContext extends PdfParagraphTextContext {
+  fontRegistry: PdfFontRegistry;
 }
 
 function pxToPt(value: number): number {
@@ -161,10 +163,16 @@ function drawLineFragment(
   fragment: PdfParagraphFragment,
   lineX: number,
   y: number,
+  context: PdfExportContext,
 ): void {
   const run = fragment.run;
   const x = lineX + fragment.x;
   const color = run.styles?.color ?? "#111827";
+  const fontFace = context.fontRegistry.resolveFontFace({
+    fontFamily: run.styles?.fontFamily,
+    bold: run.styles?.bold,
+    italic: run.styles?.italic,
+  });
   drawTextHighlight(writer, pageIndex, x, y, fragment.width, fragment.fontSize, run);
   writer.drawText(pageIndex, {
     x,
@@ -174,6 +182,7 @@ function drawLineFragment(
     color,
     bold: run.styles?.bold,
     italic: run.styles?.italic,
+    fontResourceName: fontFace.writerResourceName,
   });
   drawTextDecorations(writer, pageIndex, x, y, fragment.width, fragment.fontSize, color, run);
 }
@@ -186,6 +195,7 @@ function drawParagraphLine(
   contentLeft: number,
   contentWidth: number,
   y: number,
+  context: PdfExportContext,
 ): void {
   const lineX = resolveParagraphX(paragraph, contentLeft, contentWidth, line.width);
   if (line.fragments.length === 0) {
@@ -195,12 +205,13 @@ function drawParagraphLine(
       text: " ",
       fontSize: DEFAULT_FONT_SIZE_PT,
       color: "#111827",
+      fontResourceName: context.fontRegistry.resolveFontFace({}).writerResourceName,
     });
     return;
   }
 
   for (const fragment of line.fragments) {
-    drawLineFragment(writer, pageIndex, fragment, lineX, y);
+    drawLineFragment(writer, pageIndex, fragment, lineX, y, context);
   }
 }
 
@@ -247,7 +258,7 @@ function drawListPrefix(
   prefix: string | null,
   paragraphX: number,
   y: number,
-  context: PdfParagraphTextContext,
+  context: PdfExportContext,
 ): void {
   if (!prefix) {
     return;
@@ -259,6 +270,7 @@ function drawListPrefix(
     text: prefix,
     fontSize: DEFAULT_FONT_SIZE_PT,
     color: "#111827",
+    fontResourceName: context.fontRegistry.resolveFontFace({}).writerResourceName,
   });
 }
 
@@ -269,7 +281,7 @@ function drawBlockParagraphs(
   x: number,
   y: number,
   contentWidth: number,
-  context: PdfParagraphTextContext,
+  context: PdfExportContext,
 ): void {
   if (!blocks || blocks.length === 0) {
     return;
@@ -291,7 +303,7 @@ function drawBlockParagraphs(
       pxToPt,
     });
     for (const line of layout.lines) {
-      drawParagraphLine(writer, pageIndex, block, line, horizontal.left, horizontal.width, cursorY);
+      drawParagraphLine(writer, pageIndex, block, line, horizontal.left, horizontal.width, cursorY, context);
       cursorY += line.height;
     }
     cursorY += styleLengthToPt(block.style?.spacingAfter);
@@ -313,16 +325,18 @@ function drawSectionHeaderFooter(
   page: PdfHeaderFooterPage,
   totalPages: number,
   measurer: PdfTextMeasurer,
+  fontRegistry: PdfFontRegistry,
 ): void {
   const marginLeft = pxToPt(page.margins.left + page.margins.gutter);
   const marginRight = pxToPt(page.margins.right);
   const contentWidth = Math.max(1, page.width - marginLeft - marginRight);
   const headerY = Math.max(56, pxToPt(page.margins.header));
   const footerY = Math.min(Math.max(headerY + DEFAULT_LINE_HEIGHT_PT, page.height - pxToPt(page.margins.footer)), page.height - 18);
-  const context: PdfParagraphTextContext = {
+  const context: PdfExportContext = {
     pageNumber: page.pageIndex + 1,
     totalPages,
     measurer,
+    fontRegistry,
   };
 
   drawBlockParagraphs(writer, page.pageIndex, page.header, marginLeft, headerY, contentWidth, context);
@@ -336,7 +350,8 @@ function addSectionPage(writer: OasisPdfWriter, width: number, height: number): 
 }
 
 export async function exportEditorDocumentToPdf(document: EditorDocument): Promise<ArrayBuffer> {
-  const writer = new OasisPdfWriter();
+  const fontRegistry = new PdfFontRegistry();
+  const writer = new OasisPdfWriter(fontRegistry.getPdfFontResources());
   const measurer = new PdfTextMeasurer();
   const sections = getDocumentSections(document);
   const headerFooterPages: PdfHeaderFooterPage[] = [];
@@ -367,7 +382,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
         continue;
       }
 
-      const context = { pageNumber: pageIndex + 1, totalPages: 0, measurer };
+      const context: PdfExportContext = { pageNumber: pageIndex + 1, totalPages: 0, measurer, fontRegistry };
       const horizontal = resolveParagraphHorizontalMetrics(block, marginLeft, contentWidth);
       const layout = layoutPdfParagraph({
         paragraph: block,
@@ -394,12 +409,12 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
           cursorY = Math.max(64, marginTop);
         }
 
-        const lineContext = { pageNumber: pageIndex + 1, totalPages: 0, measurer };
+        const lineContext: PdfExportContext = { pageNumber: pageIndex + 1, totalPages: 0, measurer, fontRegistry };
         const lineX = resolveParagraphX(block, horizontal.left, horizontal.width, line.width);
         if (lineIndex === 0) {
           drawListPrefix(writer, pageIndex, prefix, lineX, cursorY, lineContext);
         }
-        drawParagraphLine(writer, pageIndex, block, line, horizontal.left, horizontal.width, cursorY);
+        drawParagraphLine(writer, pageIndex, block, line, horizontal.left, horizontal.width, cursorY, lineContext);
         cursorY += line.height;
       }
       cursorY += styleLengthToPt(block.style?.spacingAfter);
@@ -413,7 +428,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
 
   const totalPages = writer.getPageCount();
   for (const page of headerFooterPages) {
-    drawSectionHeaderFooter(writer, page, totalPages, measurer);
+    drawSectionHeaderFooter(writer, page, totalPages, measurer, fontRegistry);
   }
 
   return writer.toArrayBuffer();
