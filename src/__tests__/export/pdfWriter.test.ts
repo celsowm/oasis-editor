@@ -1,11 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import type { EditorDocument } from '../../core/model.js';
+import { PdfTextMeasurer } from '../../export/pdf/layout/PdfTextMeasurer.js';
 import { OasisPdfWriter } from '../../export/pdf/OasisPdfWriter.js';
 import { exportEditorDocumentToPdfBlob } from '../../export/pdf/exportEditorDocumentToPdf.js';
 
 function decodePdf(buffer: ArrayBuffer): string {
   return new TextDecoder().decode(buffer);
 }
+
+describe('PdfTextMeasurer', () => {
+  it('measures text using cached PDF font metrics', () => {
+    const measurer = new PdfTextMeasurer();
+
+    expect(measurer.measureTextWidth({ text: 'iii', fontSize: 10 })).toBeCloseTo(6.66, 2);
+    expect(measurer.measureTextWidth({ text: 'WWW', fontSize: 10 })).toBeCloseTo(28.32, 2);
+    expect(measurer.measureTextWidth({ text: 'Hello', fontSize: 12 })).toBeCloseTo(27.34, 2);
+    expect(measurer.getCacheSize()).toBe(3);
+
+    expect(measurer.measureTextWidth({ text: 'Hello', fontSize: 12 })).toBeCloseTo(27.34, 2);
+    expect(measurer.getCacheSize()).toBe(3);
+  });
+});
 
 describe('OasisPdfWriter', () => {
   it('writes a structurally valid PDF with basic drawing commands', () => {
@@ -185,8 +200,8 @@ describe('OasisPdfWriter', () => {
     expect(pdf).toContain('/F3 15 Tf');
     expect(pdf).toContain('1 0 0 rg');
     expect(pdf).toContain('1 1 0 rg');
-    expect(pdf).toContain('282.6 688 Td');
-    expect(pdf).toContain('463.95 672 Td');
+    expect(pdf).toContain('282.864 688 Td');
+    expect(pdf).toContain('474.345 672 Td');
     expect(pdf).toContain('126 650 Td');
     expect(pdf).toContain('90 622 Td');
     expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(2);
