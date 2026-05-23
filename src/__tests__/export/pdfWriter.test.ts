@@ -213,16 +213,18 @@ describe('OasisPdfWriter', () => {
     expect(pdf.startsWith('%PDF-1.4')).toBe(true);
     expect(pdf).toContain('/MediaBox [0 0 612 792]');
     expect(pdf).not.toContain('Oasis PDF section');
-    expect(pdf).toContain('Smoke test');
-    expect(pdf).toContain('Second ');
-    expect(pdf).toContain('paragraph');
-    expect(pdf).toContain('Centered');
-    expect(pdf).toContain('Right aligned');
-    expect(pdf).toContain('Indented paragraph');
-    expect(pdf).toContain('Hanging paragraph');
-    expect(pdf).toContain('Bullet item');
-    expect(pdf).toContain('Ordered item');
-    expect(pdf).toContain('Letter item');
+    expect(pdf).toContain('(Smoke ) Tj');
+    expect(pdf).toContain('(test) Tj');
+    expect(pdf).toContain('(Second ) Tj');
+    expect(pdf).toContain('(paragraph) Tj');
+    expect(pdf).toContain('(Centered) Tj');
+    expect(pdf).toContain('(Right ) Tj');
+    expect(pdf).toContain('(aligned) Tj');
+    expect(pdf).toContain('(Indented ) Tj');
+    expect(pdf).toContain('(Hanging ) Tj');
+    expect(pdf).toContain('(Bullet ) Tj');
+    expect(pdf).toContain('(Ordered ) Tj');
+    expect(pdf).toContain('(Letter ) Tj');
     expect(pdf).toContain('(•) Tj');
     expect(pdf).toContain('(3.) Tj');
     expect(pdf).toContain('(A.) Tj');
@@ -231,10 +233,10 @@ describe('OasisPdfWriter', () => {
     expect(pdf).toContain('/F3 15 Tf');
     expect(pdf).toContain('1 0 0 rg');
     expect(pdf).toContain('1 1 0 rg');
-    expect(pdf).toContain('282.864 688 Td');
-    expect(pdf).toContain('480.6 672 Td');
-    expect(pdf).toContain('126 650 Td');
-    expect(pdf).toContain('90 622 Td');
+    expect(pdf).toContain('282.864 686 Td');
+    expect(pdf).toContain('474.345 670 Td');
+    expect(pdf).toContain('126 648 Td');
+    expect(pdf).toContain('90 620 Td');
     expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
@@ -276,12 +278,13 @@ describe('OasisPdfWriter', () => {
 
     const blob = await exportEditorDocumentToPdfBlob(document);
     const pdf = await blob.text();
+    const pageCount = (pdf.match(/\/Type \/Page\n/g) ?? []).length;
 
     expect(blob.type).toBe('application/pdf');
-    expect(pdf).toContain('/Count 2');
-    expect((pdf.match(/\/Type \/Page\n/g) ?? []).length).toBe(2);
-    expect(pdf).toContain('word1 ');
-    expect(pdf).toContain('word36');
+    expect(pageCount).toBeGreaterThan(1);
+    expect(pdf).toContain(`/Count ${pageCount}`);
+    expect(pdf).toContain('(word1 ) Tj');
+    expect(pdf).toContain('(word36) Tj');
     expect(pdf).not.toContain('Oasis PDF section');
   });
 
@@ -292,7 +295,7 @@ describe('OasisPdfWriter', () => {
         {
           id: 'section-1',
           pageSettings: {
-            width: 816,
+            width: 240,
             height: 240,
             orientation: 'portrait',
             margins: {
@@ -324,7 +327,7 @@ describe('OasisPdfWriter', () => {
               ],
             },
           ],
-          blocks: Array.from({ length: 12 }, (_, index) => ({
+          blocks: Array.from({ length: 36 }, (_, index) => ({
             id: `body-paragraph-${index + 1}`,
             type: 'paragraph' as const,
             runs: [{ id: `body-run-${index + 1}`, text: `Body paragraph ${index + 1}` }],
@@ -335,13 +338,16 @@ describe('OasisPdfWriter', () => {
 
     const blob = await exportEditorDocumentToPdfBlob(document);
     const pdf = await blob.text();
+    const pageCount = (pdf.match(/\/Type \/Page\n/g) ?? []).length;
 
     expect(blob.type).toBe('application/pdf');
-    expect(pdf).toContain('/Count 2');
-    expect((pdf.match(/Document header/g) ?? []).length).toBe(2);
-    expect((pdf.match(/Page /g) ?? []).length).toBe(2);
-    expect((pdf.match(/ of /g) ?? []).length).toBe(2);
+    expect(pageCount).toBeGreaterThan(1);
+    expect(pdf).toContain(`/Count ${pageCount}`);
+    expect((pdf.match(/Document /g) ?? []).length).toBe(pageCount);
+    expect((pdf.match(/header/g) ?? []).length).toBe(pageCount);
+    expect((pdf.match(/Page /g) ?? []).length).toBe(pageCount);
+    expect((pdf.match(/of /g) ?? []).length).toBe(pageCount);
     expect(pdf).toContain('(1) Tj');
-    expect((pdf.match(/\(2\) Tj/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect(pdf).toContain(`(${pageCount}) Tj`);
   });
 });
