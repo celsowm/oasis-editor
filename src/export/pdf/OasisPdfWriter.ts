@@ -225,7 +225,7 @@ export class OasisPdfWriter {
 
   toArrayBuffer(): ArrayBuffer {
     const bytes = this.toUint8Array();
-    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    return Uint8Array.from(bytes).buffer;
   }
 
   toBlob(): Blob {
