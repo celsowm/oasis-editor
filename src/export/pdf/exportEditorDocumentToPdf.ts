@@ -7,12 +7,12 @@ import type {
   EditorTextRun,
 } from "../../core/model.js";
 import { getDocumentSections } from "../../core/model.js";
+import { PdfTextMeasurer } from "./layout/PdfTextMeasurer.js";
 import { OasisPdfWriter } from "./OasisPdfWriter.js";
 
 const PX_TO_PT = 72 / 96;
 const DEFAULT_FONT_SIZE_PT = 11.25;
 const DEFAULT_LINE_HEIGHT_PT = 16;
-const HELVETICA_AVERAGE_GLYPH_WIDTH = 0.52;
 const LIST_INDENT_PT = 18;
 const LIST_PREFIX_GAP_PT = 6;
 
@@ -23,6 +23,7 @@ interface PdfListState {
 interface PdfTextContext {
   pageNumber: number;
   totalPages: number;
+  measurer: PdfTextMeasurer;
 }
 
 interface PdfHeaderFooterPage {
@@ -45,10 +46,6 @@ function styleLengthToPt(value: number | null | undefined): number {
   return value !== undefined && value !== null ? pxToPt(value) : 0;
 }
 
-function estimateTextWidthPt(text: string, fontSize: number): number {
-  return text.length * fontSize * HELVETICA_AVERAGE_GLYPH_WIDTH;
-}
-
 function runText(run: EditorTextRun, context: PdfTextContext): string {
   if (run.field) {
     return run.field.type === "NUMPAGES" ? String(context.totalPages) : String(context.pageNumber);
@@ -65,13 +62,30 @@ function runFontSizePt(run: EditorTextRun): number {
     : DEFAULT_FONT_SIZE_PT;
 }
 
+function measureRunTextWidthPt(run: EditorTextRun, text: string, context: PdfTextContext): number {
+  return context.measurer.measureTextWidth({
+    text,
+    fontFamily: run.styles?.fontFamily,
+    fontSize: runFontSizePt(run),
+    bold: run.styles?.bold,
+    italic: run.styles?.italic,
+  });
+}
+
+function measurePlainTextWidthPt(text: string, fontSize: number, context: PdfTextContext): number {
+  return context.measurer.measureTextWidth({
+    text,
+    fontSize,
+  });
+}
+
 function estimateParagraphWidthPt(paragraph: EditorParagraphNode, context: PdfTextContext): number {
   return paragraph.runs.reduce((width, run) => {
     const text = runText(run, context);
     if (text.length === 0) {
       return width;
     }
-    return width + estimateTextWidthPt(text, runFontSizePt(run));
+    return width + measureRunTextWidthPt(run, text, context);
   }, 0);
 }
 
@@ -194,7 +208,7 @@ function drawParagraphRuns(
 
     const fontSize = runFontSizePt(run);
     const color = run.styles?.color ?? "#111827";
-    const textWidth = estimateTextWidthPt(text, fontSize);
+    const textWidth = measureRunTextWidthPt(run, text, context);
     drawTextHighlight(writer, pageIndex, cursorX, y, textWidth, fontSize, run);
     writer.drawText(pageIndex, {
       x: cursorX,
@@ -265,6 +279,7 @@ function drawListPrefix(
   listState: PdfListState,
   paragraphX: number,
   y: number,
+  context: PdfTextContext,
 ): void {
   const prefix = resolveListPrefix(paragraph, listState);
   if (!prefix) {
@@ -272,7 +287,7 @@ function drawListPrefix(
   }
 
   writer.drawText(pageIndex, {
-    x: Math.max(0, paragraphX - LIST_PREFIX_GAP_PT - estimateTextWidthPt(prefix, DEFAULT_FONT_SIZE_PT)),
+    x: Math.max(0, paragraphX - LIST_PREFIX_GAP_PT - measurePlainTextWidthPt(prefix, DEFAULT_FONT_SIZE_PT, context)),
     y,
     text: prefix,
     fontSize: DEFAULT_FONT_SIZE_PT,
@@ -320,6 +335,7 @@ function drawSectionHeaderFooter(
   writer: OasisPdfWriter,
   page: PdfHeaderFooterPage,
   totalPages: number,
+  measurer: PdfTextMeasurer,
 ): void {
   const marginLeft = pxToPt(page.margins.left + page.margins.gutter);
   const marginRight = pxToPt(page.margins.right);
@@ -329,6 +345,7 @@ function drawSectionHeaderFooter(
   const context: PdfTextContext = {
     pageNumber: page.pageIndex + 1,
     totalPages,
+    measurer,
   };
 
   drawBlockParagraphs(writer, page.pageIndex, page.header, marginLeft, headerY, contentWidth, context);
@@ -343,6 +360,7 @@ function addSectionPage(writer: OasisPdfWriter, width: number, height: number): 
 
 export async function exportEditorDocumentToPdf(document: EditorDocument): Promise<ArrayBuffer> {
   const writer = new OasisPdfWriter();
+  const measurer = new PdfTextMeasurer();
   const sections = getDocumentSections(document);
   const headerFooterPages: PdfHeaderFooterPage[] = [];
 
@@ -386,10 +404,10 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
         cursorY = Math.max(64, marginTop) + styleLengthToPt(block.style?.spacingBefore);
       }
 
-      const context = { pageNumber: pageIndex + 1, totalPages: 0 };
+      const context = { pageNumber: pageIndex + 1, totalPages: 0, measurer };
       const horizontal = resolveParagraphHorizontalMetrics(block, marginLeft, contentWidth);
       const paragraphX = resolveParagraphX(block, horizontal.left, horizontal.width, context);
-      drawListPrefix(writer, pageIndex, block, listState, paragraphX, cursorY);
+      drawListPrefix(writer, pageIndex, block, listState, paragraphX, cursorY, context);
       drawParagraphRuns(
         writer,
         pageIndex,
@@ -409,7 +427,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
 
   const totalPages = writer.getPageCount();
   for (const page of headerFooterPages) {
-    drawSectionHeaderFooter(writer, page, totalPages);
+    drawSectionHeaderFooter(writer, page, totalPages, measurer);
   }
 
   return writer.toArrayBuffer();
