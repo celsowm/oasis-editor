@@ -29,6 +29,8 @@ export const en = {
   "toolbar.justify": "Justify",
   "toolbar.bulletList": "Bulleted list",
   "toolbar.numberedList": "Numbered list",
+  "toolbar.increaseIndent": "Increase indent (Tab)",
+  "toolbar.decreaseIndent": "Decrease indent (Shift+Tab)",
   "toolbar.listFormat": "Change list numbering format",
   "toolbar.listStartAt": "Start numbering at",
   "toolbar.formatDecimal": "1, 2, 3",

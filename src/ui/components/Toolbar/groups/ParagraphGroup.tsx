@@ -42,6 +42,19 @@ export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
         )}
       </For>
 
+      <ToolbarButton
+        icon="indent-decrease"
+        data-testid="editor-toolbar-list-outdent"
+        onClick={() => ctx().handleListTab("outdent")}
+        tooltip={t("toolbar.decreaseIndent")}
+      />
+      <ToolbarButton
+        icon="indent-increase"
+        data-testid="editor-toolbar-list-indent"
+        onClick={() => ctx().handleListTab("indent")}
+        tooltip={t("toolbar.increaseIndent")}
+      />
+
       <ToolbarDropdown
         label=""
         icon="list-filter"

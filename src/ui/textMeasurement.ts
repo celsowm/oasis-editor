@@ -11,6 +11,16 @@ const DEFAULT_FONT_SIZE = 15;
 const DEFAULT_LINE_HEIGHT = 1.15;
 const DEFAULT_CONTENT_WIDTH = 624;
 const DEFAULT_LIST_GUTTER = 24;
+// Extra horizontal indent added per nested list level, matching the
+// 0.25 inch "Define New Multilevel List" default step Word applies for the
+// built-in numbering gallery.
+const LIST_LEVEL_INDENT_STEP = 24;
+
+function getListIndentPx(paragraph: EditorParagraphNode): number {
+  if (!paragraph.list) return 0;
+  const level = paragraph.list.level ?? 0;
+  return DEFAULT_LIST_GUTTER + level * LIST_LEVEL_INDENT_STEP;
+}
 const MIN_CONTENT_WIDTH = 120;
 const TAB_SIZE = 4;
 const DEFAULT_WORD_SINGLE_LINE_RATIO = 1.223;
@@ -323,7 +333,7 @@ function getAvailableWidth(
   isFirstLine: boolean,
 ): number {
   const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, styles);
-  const listGutter = paragraph.list ? DEFAULT_LIST_GUTTER : 0;
+  const listGutter = getListIndentPx(paragraph);
   
   // indentLeft specifies the start edge for all lines.
   const baseInset = (paragraphStyle.indentLeft ?? 0) + listGutter;
@@ -344,7 +354,7 @@ function getLineStartInset(
   isFirstLine: boolean,
 ): number {
   const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, styles);
-  const listGutter = paragraph.list ? DEFAULT_LIST_GUTTER : 0;
+  const listGutter = getListIndentPx(paragraph);
   
   const baseInset = (paragraphStyle.indentLeft ?? 0) + listGutter;
   const firstLineOffset = paragraphStyle.indentHanging 

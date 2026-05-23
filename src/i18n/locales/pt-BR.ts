@@ -29,6 +29,8 @@ export const ptBR = {
   "toolbar.justify": "Justificar",
   "toolbar.bulletList": "Lista com marcadores",
   "toolbar.numberedList": "Lista numerada",
+  "toolbar.increaseIndent": "Aumentar recuo (Tab)",
+  "toolbar.decreaseIndent": "Diminuir recuo (Shift+Tab)",
   "toolbar.listFormat": "Alterar formato de numeração",
   "toolbar.listStartAt": "Iniciar numeração em",
   "toolbar.formatDecimal": "1, 2, 3",

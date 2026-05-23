@@ -373,7 +373,7 @@ function drawParagraph(
       ctx.font = "400 15px Calibri";
       ctx.fillStyle = "#000000";
       const first = line.slots[0];
-      const left = first ? Math.max(0, first.left - 28) : 0;
+      const left = first ? Math.max(0, first.left - 24) : 0;
       ctx.fillText(listPrefix, originX + left, baselineY);
       ctx.restore();
     }
@@ -679,13 +679,32 @@ function toRoman(value: number): string {
   return out;
 }
 
+// Word's default bullet glyphs cycle by depth in the built-in bullet gallery.
+const BULLET_GLYPHS = ["•", "○", "▪", "•", "○", "▪"];
+// Word's default ordered formats cycle by depth (1./a./i./1./a./i.).
+const ORDERED_DEFAULT_FORMATS: NonNullable<EditorParagraphListStyle["format"]>[] = [
+  "decimal",
+  "lowerLetter",
+  "lowerRoman",
+  "decimal",
+  "lowerLetter",
+  "lowerRoman",
+];
+
 function resolveListPrefix(paragraph: EditorParagraphNode, document: EditorDocument): string {
   if (!paragraph.list) return "";
-  if (paragraph.list.kind === "bullet") return "•";
+  const level = Math.max(0, paragraph.list.level ?? 0);
+  if (paragraph.list.kind === "bullet") {
+    return BULLET_GLYPHS[level % BULLET_GLYPHS.length];
+  }
   const ordinals = getListOrdinals(document);
   const value = ordinals.get(paragraph.id);
   if (value === undefined) return "1.";
-  return `${formatOrdinal(value, paragraph.list.format)}.`;
+  const format =
+    paragraph.list.format && paragraph.list.format !== "bullet"
+      ? paragraph.list.format
+      : ORDERED_DEFAULT_FORMATS[level % ORDERED_DEFAULT_FORMATS.length];
+  return `${formatOrdinal(value, format)}.`;
 }
 
 

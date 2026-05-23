@@ -73,6 +73,7 @@ export interface EditorToolbarCtx {
   toggleParagraphFlagCommand: (key: "pageBreakBefore" | "keepWithNext") => void;
   handleListFormatChange: (format: EditorParagraphListStyle["format"]) => void;
   handleListStartAtChange: (startAt: number | null) => void;
+  handleListTab: (direction: "indent" | "outdent") => boolean;
   handleStyleChange: (styleId: string) => void;
 
   canMergeSelectedTable: (state: EditorState) => boolean;
