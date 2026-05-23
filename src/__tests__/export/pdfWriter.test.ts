@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { EditorDocument } from '../../core/model.js';
+import { PdfFontRegistry } from '../../export/pdf/fonts/PdfFontRegistry.js';
 import { layoutPdfParagraph } from '../../export/pdf/layout/layoutParagraph.js';
 import { PdfTextMeasurer } from '../../export/pdf/layout/PdfTextMeasurer.js';
 import { OasisPdfWriter } from '../../export/pdf/OasisPdfWriter.js';
@@ -14,6 +15,19 @@ const PX_TO_PT = 72 / 96;
 function pxToPt(value: number): number {
   return value * PX_TO_PT;
 }
+
+describe('PdfFontRegistry', () => {
+  it('resolves built-in Helvetica faces and exposes writer resources', () => {
+    const registry = new PdfFontRegistry();
+
+    expect(registry.resolveFontFace({}).writerResourceName).toBe('F1');
+    expect(registry.resolveFontFace({ bold: true }).writerResourceName).toBe('F2');
+    expect(registry.resolveFontFace({ italic: true }).writerResourceName).toBe('F3');
+    expect(registry.resolveFontFace({ bold: true, italic: true }).writerResourceName).toBe('F4');
+    expect(registry.resolveFontFace({ fontFamily: 'Unknown Font', bold: true }).writerResourceName).toBe('F2');
+    expect(registry.getPdfFontResources().map((resource) => resource.resourceName)).toEqual(['F1', 'F2', 'F3', 'F4']);
+  });
+});
 
 describe('PdfTextMeasurer', () => {
   it('measures text using cached PDF font metrics', () => {
@@ -116,6 +130,29 @@ describe('OasisPdfWriter', () => {
     expect(pdf).toContain('trailer');
     expect(pdf).toContain('startxref');
     expect(pdf.trim().endsWith('%%EOF')).toBe(true);
+  });
+
+  it('uses explicitly registered font resource names', () => {
+    const writer = new OasisPdfWriter([
+      { kind: 'base14', resourceName: 'CustomRegular', baseFont: 'Helvetica' },
+      { kind: 'base14', resourceName: 'CustomBold', baseFont: 'Helvetica-Bold' },
+    ]);
+    const pageIndex = writer.addPage({ width: 300, height: 300 });
+
+    writer.drawText(pageIndex, {
+      x: 24,
+      y: 48,
+      text: 'Custom font resource',
+      fontSize: 12,
+      fontResourceName: 'CustomBold',
+    });
+
+    const pdf = decodePdf(writer.toArrayBuffer());
+
+    expect(pdf).toContain('/CustomRegular');
+    expect(pdf).toContain('/CustomBold');
+    expect(pdf).toContain('/CustomBold 12 Tf');
+    expect(pdf).toContain('/Helvetica-Bold');
   });
 
   it('exports an editor document to an application/pdf blob with paragraph text and basic inline styles', async () => {
