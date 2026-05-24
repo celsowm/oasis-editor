@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import { existsSync } from 'fs';
+import { cpSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import dts from 'vite-plugin-dts';
 import solidPlugin from 'vite-plugin-solid';
@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
     base: isLib ? './' : '/',
     build: {
       outDir: isLib ? 'dist' : 'dist-app',
+      assetsInlineLimit: isLib ? 0 : undefined,
       lib: isLib ? {
         entry: resolve(__dirname, 'src/index.ts'),
         name: 'OasisEditor',
@@ -42,6 +43,16 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       solidPlugin(),
+      isLib && {
+        name: 'copy-pdf-font-assets',
+        writeBundle() {
+          cpSync(
+            resolve(__dirname, 'src/export/pdf/fonts/assets'),
+            resolve(__dirname, 'dist/assets'),
+            { recursive: true },
+          );
+        },
+      },
       isLib && dts({
         outDir: 'dist',
       }),

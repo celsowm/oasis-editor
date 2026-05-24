@@ -34,20 +34,41 @@ function pdfHex(value: string): string {
     .join('');
 }
 
+function pdfUtf16Hex(value: string): string {
+  const units: number[] = [];
+  for (let codePoint of Array.from(value).map((char) => char.codePointAt(0) ?? 0xfffd)) {
+    if (codePoint > 0xffff) {
+      codePoint -= 0x10000;
+      units.push(((codePoint >>> 10) & 0x3ff) | 0xd800);
+      units.push((codePoint & 0x3ff) | 0xdc00);
+    } else {
+      units.push(codePoint);
+    }
+  }
+  return units.map((unit) => unit.toString(16).padStart(4, '0').toUpperCase()).join('');
+}
+
+function pdfTextMarker(text: string): string {
+  return `% OasisText ${pdfUtf16Hex(text)}`;
+}
+
 function expectPdfText(pdf: string, text: string): void {
-  expect(pdf).toContain(`<${pdfHex(text)}> Tj`);
+  expect(pdf.includes(`<${pdfHex(text)}> Tj`) || pdf.includes(pdfTextMarker(text))).toBe(true);
 }
 
 function expectPdfTextFragment(pdf: string, text: string): void {
-  expect(pdf).toContain(pdfHex(text));
+  expect(pdf.includes(pdfHex(text)) || pdf.includes(pdfUtf16Hex(text))).toBe(true);
 }
 
 function countPdfText(pdf: string, text: string): number {
-  return pdf.split(`<${pdfHex(text)}> Tj`).length - 1;
+  const markerCount = pdf.split(pdfTextMarker(text)).length - 1;
+  return markerCount > 0 ? markerCount : pdf.split(`<${pdfHex(text)}> Tj`).length - 1;
 }
 
 function findTextTopY(pdf: string, pageHeight: number, text: string): number {
-  const match = new RegExp(`([\\d.]+) ([\\d.]+) Td\\n<${pdfHex(text)}> Tj`).exec(pdf);
+  const match =
+    new RegExp(`${pdfTextMarker(text)}\\nBT\\n[^\\n]+\\n/[^\\n]+\\n([\\d.]+) ([\\d.]+) Td`).exec(pdf) ??
+    new RegExp(`([\\d.]+) ([\\d.]+) Td\\n<${pdfHex(text)}> Tj`).exec(pdf);
   if (!match) {
     throw new Error(`Unable to find PDF text command for "${text}"`);
   }
@@ -55,7 +76,9 @@ function findTextTopY(pdf: string, pageHeight: number, text: string): number {
 }
 
 function findTextX(pdf: string, text: string): number {
-  const match = new RegExp(`([\\d.]+) ([\\d.]+) Td\\n<${pdfHex(text)}> Tj`).exec(pdf);
+  const match =
+    new RegExp(`${pdfTextMarker(text)}\\nBT\\n[^\\n]+\\n/[^\\n]+\\n([\\d.]+) ([\\d.]+) Td`).exec(pdf) ??
+    new RegExp(`([\\d.]+) ([\\d.]+) Td\\n<${pdfHex(text)}> Tj`).exec(pdf);
   if (!match) {
     throw new Error(`Unable to find PDF text command for "${text}"`);
   }
@@ -63,15 +86,101 @@ function findTextX(pdf: string, text: string): number {
 }
 
 describe('PdfFontRegistry', () => {
-  it('resolves built-in Helvetica faces and exposes writer resources', () => {
+  it('resolves bundled Unicode faces and keeps built-in Helvetica fallbacks', async () => {
     const registry = new PdfFontRegistry();
+    await registry.loadBundledUnicodeFaces();
 
     expect(registry.resolveFontFace({}).writerResourceName).toBe('F1');
     expect(registry.resolveFontFace({ bold: true }).writerResourceName).toBe('F2');
     expect(registry.resolveFontFace({ italic: true }).writerResourceName).toBe('F3');
     expect(registry.resolveFontFace({ bold: true, italic: true }).writerResourceName).toBe('F4');
-    expect(registry.resolveFontFace({ fontFamily: 'Unknown Font', bold: true }).writerResourceName).toBe('F2');
-    expect(registry.getPdfFontResources().map((resource) => resource.resourceName)).toEqual(['F1', 'F2', 'F3', 'F4']);
+    expect(registry.resolveFontFace({ fontFamily: 'Helvetica', bold: true }).writerResourceName).toBe('F2');
+    expect(registry.resolveFontFace({ fontFamily: 'Unknown Font', bold: true }).writerResourceName).toBe('RobotoBold');
+    expect(registry.resolveFontFace({ fontFamily: 'Calibri' }).writerResourceName).toBe('CarlitoRegular');
+    expect(registry.resolveFontFace({ fontFamily: 'Aptos', bold: true }).writerResourceName).toBe('CarlitoBold');
+    expect(registry.resolveFontFace({ fontFamily: 'Arial', italic: true }).writerResourceName).toBe('ArimoItalic');
+    expect(registry.resolveFontFace({ fontFamily: 'Times New Roman', bold: true, italic: true }).writerResourceName).toBe(
+      'TinosBolditalic',
+    );
+    expect(registry.getPdfFontResources().map((resource) => resource.resourceName)).toEqual([
+      'F1',
+      'F2',
+      'F3',
+      'F4',
+      'CarlitoRegular',
+      'CarlitoBold',
+      'CarlitoItalic',
+      'CarlitoBolditalic',
+      'ArimoRegular',
+      'ArimoBold',
+      'ArimoItalic',
+      'ArimoBolditalic',
+      'TinosRegular',
+      'TinosBold',
+      'TinosItalic',
+      'TinosBolditalic',
+      'RobotoRegular',
+      'RobotoBold',
+      'RobotoItalic',
+      'RobotoBolditalic',
+    ]);
+  });
+
+  it('exports Office-compatible font aliases as embedded Unicode fonts', async () => {
+    const document: EditorDocument = {
+      id: 'office-compatible-fonts-document',
+      metadata: {},
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 816,
+            height: 1056,
+            orientation: 'portrait',
+            margins: { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 },
+          },
+          blocks: [
+            {
+              id: 'calibri',
+              type: 'paragraph',
+              runs: [{ id: 'calibri-run', text: 'Calibri sample', styles: { fontFamily: 'Calibri' } }],
+            },
+            {
+              id: 'aptos',
+              type: 'paragraph',
+              runs: [{ id: 'aptos-run', text: 'Aptos sample', styles: { fontFamily: 'Aptos', bold: true } }],
+            },
+            {
+              id: 'arial',
+              type: 'paragraph',
+              runs: [{ id: 'arial-run', text: 'Arial sample', styles: { fontFamily: 'Arial', italic: true } }],
+            },
+            {
+              id: 'times',
+              type: 'paragraph',
+              runs: [
+                {
+                  id: 'times-run',
+                  text: 'Times sample',
+                  styles: { fontFamily: 'Times New Roman', bold: true, italic: true },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const pdf = decodePdf(await (await exportEditorDocumentToPdfBlob(document)).arrayBuffer());
+
+    expect(pdf).toContain('/CarlitoRegular');
+    expect(pdf).toContain('/CarlitoBold');
+    expect(pdf).toContain('/ArimoItalic');
+    expect(pdf).toContain('/TinosBolditalic');
+    expectPdfText(pdf, 'Calibri sample');
+    expectPdfText(pdf, 'Aptos sample');
+    expectPdfText(pdf, 'Arial sample');
+    expectPdfText(pdf, 'Times sample');
   });
 });
 
@@ -311,8 +420,8 @@ describe('OasisPdfWriter', () => {
     expectPdfText(pdf, '3.');
     expectPdfText(pdf, 'D.');
     expect(pdf).not.toContain(`<${pdfHex('4.')}> Tj`);
-    expect(pdf).toContain('/F2 11.25 Tf');
-    expect(pdf).toContain('/F3 15 Tf');
+    expect(pdf).toContain('/CarlitoBold 11.25 Tf');
+    expect(pdf).toContain('/CarlitoItalic 15 Tf');
     expect(pdf).toContain('1 0 0 rg');
     expect(pdf).toContain('1 1 0 rg');
     expect(pdf).toContain('277.538 658.423 Td');
@@ -469,7 +578,7 @@ describe('OasisPdfWriter', () => {
     const pdf = await blob.text();
 
     expectPdfText(pdf, 'Capítulo 1');
-    expect(pdf).toContain('/F2 18 Tf');
+    expect(pdf).toContain('/CarlitoBold 18 Tf');
     expect(pdf).toContain('0.2 0.4 0.6 rg');
   });
 
@@ -564,7 +673,7 @@ describe('OasisPdfWriter', () => {
     expectPdfTextFragment(pdf, 'non neque.');
   });
 
-  it('writes accented text with WinAnsi hex encoding instead of corrupt UTF-8 literals', async () => {
+  it('writes accented text through embedded Unicode fonts instead of corrupt UTF-8 literals', async () => {
     const document: EditorDocument = {
       id: 'pdf-accented-text-document',
       sections: [
@@ -592,7 +701,57 @@ describe('OasisPdfWriter', () => {
 
     expectPdfText(pdf, 'Página Capítulo ação não');
     expect(pdf).not.toContain('Página');
-    expect(pdf).toContain('/Encoding /WinAnsiEncoding');
+    expect(pdf).toContain('/Subtype /Type0');
+    expect(pdf).toContain('/Subtype /CIDFontType2');
+    expect(pdf).toContain('/Encoding /Identity-H');
+    expect(pdf).toContain('/ToUnicode');
+    expect(pdf).toContain('/FontFile2');
+    expect(pdf).toContain('<0050> <00E1>');
+    expect(pdf).not.toContain(`<${pdfHex('Página Capítulo ação não')}> Tj`);
+  });
+
+  it('applies fontkit kerning advances with TJ adjustments for embedded Unicode text', async () => {
+    const registry = new PdfFontRegistry();
+    await registry.loadBundledUnicodeFaces();
+    const writer = new OasisPdfWriter(registry.getPdfFontResources());
+    const pageIndex = writer.addPage({ width: 300, height: 200 });
+
+    writer.drawText(pageIndex, {
+      x: 24,
+      y: 48,
+      text: 'AV',
+      fontSize: 24,
+      fontResourceName: registry.resolveFontFace({ fontFamily: 'Unknown Font' }).writerResourceName,
+    });
+
+    const pdf = decodePdf(writer.toArrayBuffer());
+
+    expectPdfText(pdf, 'AV');
+    expect(pdf).toContain('/Subtype /Type0');
+    expect(pdf).toContain('/Encoding /Identity-H');
+    expect(pdf).toMatch(/\[[^\]]*<0001>[^\]]+<0002>[^\]]*\] TJ/);
+  });
+
+  it('maps shaped ligature clusters back through ToUnicode', async () => {
+    const registry = new PdfFontRegistry();
+    await registry.loadBundledUnicodeFaces();
+    const writer = new OasisPdfWriter(registry.getPdfFontResources());
+    const pageIndex = writer.addPage({ width: 300, height: 200 });
+
+    writer.drawText(pageIndex, {
+      x: 24,
+      y: 48,
+      text: 'office',
+      fontSize: 24,
+      fontResourceName: registry.resolveFontFace({ fontFamily: 'Unknown Font' }).writerResourceName,
+    });
+
+    const pdf = decodePdf(writer.toArrayBuffer());
+
+    expectPdfText(pdf, 'office');
+    expect(pdf).toContain('/ToUnicode');
+    expect(pdf).toContain('<006F>');
+    expect(pdf).toContain('<006600660069>');
   });
 
   it('positions header, body, and footer from real section margins instead of fixed PDF offsets', async () => {

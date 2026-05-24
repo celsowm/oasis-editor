@@ -1,3 +1,12 @@
+import * as fontkit from "fontkit";
+import type {
+  FontkitFont,
+  FontkitGlyph,
+  FontkitGlyphRun,
+  FontkitPosition,
+  FontkitSubset,
+} from "fontkit";
+
 export interface OasisPdfPageSize {
   width: number;
   height: number;
@@ -39,7 +48,7 @@ export interface OasisPdfTextOptions {
   fontResourceName?: string;
 }
 
-export type OasisPdfFontResource = OasisPdfBase14FontResource;
+export type OasisPdfFontResource = OasisPdfBase14FontResource | OasisPdfUnicodeFontResource;
 
 export interface OasisPdfBase14FontResource {
   kind: "base14";
@@ -47,9 +56,27 @@ export interface OasisPdfBase14FontResource {
   baseFont: string;
 }
 
+export interface OasisPdfUnicodeFontResource {
+  kind: "unicode";
+  resourceName: string;
+  family: string;
+  fontData: Uint8Array;
+  postscriptName?: string;
+}
+
 interface PdfObject {
   id: number;
   body: string;
+}
+
+interface OasisPdfUnicodeFontState {
+  resource: OasisPdfUnicodeFontResource;
+  font: FontkitFont;
+  subset: FontkitSubset;
+  unicode: number[][];
+  widths: number[];
+  scale: number;
+  layoutCache: Map<string, FontkitGlyphRun>;
 }
 
 const PDF_HEADER = "%PDF-1.4\n% Oasis PDF\n";
@@ -69,6 +96,16 @@ function formatNumber(value: number): string {
 
 function byteLength(value: string): number {
   return new TextEncoder().encode(value).byteLength;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((byte) => byte.toString(16).padStart(2, "0").toUpperCase())
+    .join("");
+}
+
+function toHex16(value: number): string {
+  return Math.max(0, value).toString(16).padStart(4, "0").slice(-4).toUpperCase();
 }
 
 function colorToRgb(color: string | undefined, fallback: [number, number, number]): [number, number, number] {
@@ -117,7 +154,14 @@ function fontResourceObjectBody(resource: OasisPdfFontResource): string {
   switch (resource.kind) {
     case "base14":
       return `<< /Type /Font /Subtype /Type1 /BaseFont /${resource.baseFont} /Encoding /WinAnsiEncoding >>`;
+    case "unicode":
+      return "<< /Type /Font /Subtype /Type0 /BaseFont /OasisPending /Encoding /Identity-H >>";
   }
+}
+
+function sanitizePdfName(value: string | undefined, fallback: string): string {
+  const normalized = (value && value.trim().length > 0 ? value : fallback).replaceAll(" ", "_");
+  return normalized.replace(/[^A-Za-z0-9_.+-]/g, "");
 }
 
 const WIN_ANSI_OVERRIDES = new Map<number, number>([
@@ -164,9 +208,83 @@ function encodePdfHexString(value: string): string {
     .join("");
 }
 
+function encodePdfUtf16Hex(codePoints: number[]): string {
+  const values: number[] = [];
+  for (let value of codePoints) {
+    if (value > 0xffff) {
+      value -= 0x10000;
+      values.push(((value >>> 10) & 0x3ff) | 0xd800);
+      values.push((value & 0x3ff) | 0xdc00);
+    } else {
+      values.push(value);
+    }
+  }
+  return values.map(toHex16).join("");
+}
+
+function buildToUnicodeCMap(unicode: number[][]): string {
+  const entries = unicode.map((codePoints) => `<${encodePdfUtf16Hex(codePoints)}>`).filter((entry) => entry !== "<>");
+  if (entries.length === 0) {
+    entries.push("<0000>");
+  }
+
+  const ranges: string[] = [];
+  const chunkSize = 256;
+  for (let start = 0; start < entries.length; start += chunkSize) {
+    const end = Math.min(start + chunkSize, entries.length);
+    ranges.push(`<${toHex16(start)}> <${toHex16(end - 1)}> [${entries.slice(start, end).join(" ")}]`);
+  }
+
+  return [
+    "/CIDInit /ProcSet findresource begin",
+    "12 dict begin",
+    "begincmap",
+    "/CIDSystemInfo <<",
+    "  /Registry (Adobe)",
+    "  /Ordering (UCS)",
+    "  /Supplement 0",
+    ">> def",
+    "/CMapName /Adobe-Identity-UCS def",
+    "/CMapType 2 def",
+    "1 begincodespacerange",
+    "<0000><ffff>",
+    "endcodespacerange",
+    `${ranges.length} beginbfrange`,
+    ranges.join("\n"),
+    "endbfrange",
+    "endcmap",
+    "CMapName currentdict /CMap defineresource pop",
+    "end",
+    "end",
+    "",
+  ].join("\n");
+}
+
+function streamObjectBody(stream: string, extraDictionary = ""): string {
+  const dictionary = extraDictionary ? ` /${extraDictionary.trim().replace(/^\/+/, "")}` : "";
+  return `<< /Length ${byteLength(stream)}${dictionary} >>\nstream\n${stream}endstream`;
+}
+
+function asciiHexStreamObjectBody(bytes: Uint8Array, extraDictionary = ""): string {
+  const stream = `${bytesToHex(bytes)}>`;
+  const dictionary = extraDictionary ? ` /${extraDictionary.trim().replace(/^\/+/, "")}` : "";
+  return `<< /Length ${byteLength(stream)} /Filter /ASCIIHexDecode${dictionary} >>\nstream\n${stream}\nendstream`;
+}
+
+function encodeGlyphHex(glyphId: number): string {
+  return toHex16(glyphId);
+}
+
+function textMarkerComment(value: string): string {
+  const codePoints = Array.from(value).map((char) => char.codePointAt(0) ?? 0xfffd);
+  return `% OasisText ${encodePdfUtf16Hex(codePoints)}`;
+}
+
 export class OasisPdfWriter {
   private readonly pages: OasisPdfPage[] = [];
   private readonly fontResources = new Map<string, OasisPdfFontResource>();
+  private readonly unicodeFontStates = new Map<string, OasisPdfUnicodeFontState>();
+  private readonly usedFontResourceNames = new Set<string>();
 
   constructor(fontResources: OasisPdfFontResource[] = DEFAULT_PDF_FONT_RESOURCES) {
     for (const resource of fontResources) {
@@ -176,6 +294,20 @@ export class OasisPdfWriter {
 
   registerFontResource(resource: OasisPdfFontResource): void {
     this.fontResources.set(resource.resourceName, resource);
+    if (resource.kind === "unicode" && !this.unicodeFontStates.has(resource.resourceName)) {
+      const font = fontkit.create(resource.fontData, resource.postscriptName);
+      const subset = font.createSubset();
+      const scale = 1000 / font.unitsPerEm;
+      this.unicodeFontStates.set(resource.resourceName, {
+        resource,
+        font,
+        subset,
+        unicode: [[0]],
+        widths: [font.getGlyph(0).advanceWidth * scale],
+        scale,
+        layoutCache: new Map(),
+      });
+    }
   }
 
   addPage(size: OasisPdfPageSize): number {
@@ -248,12 +380,80 @@ export class OasisPdfWriter {
       return;
     }
 
+    const fontResourceName = resolveFontName(options);
+    this.usedFontResourceNames.add(fontResourceName);
+    const unicodeFont = this.unicodeFontStates.get(fontResourceName);
+    if (unicodeFont) {
+      this.drawUnicodeText(page, unicodeFont, options);
+      return;
+    }
+
     page.commands.push([
+      textMarkerComment(options.text),
       "BT",
       colorCommand(options.color, "rg", [0, 0, 0]),
-      `/${resolveFontName(options)} ${formatNumber(options.fontSize ?? 12)} Tf`,
+      `/${fontResourceName} ${formatNumber(options.fontSize ?? 12)} Tf`,
       `${formatNumber(options.x)} ${formatNumber(page.height - options.y)} Td`,
       `<${encodePdfHexString(options.text)}> Tj`,
+      "ET",
+    ].join("\n"));
+  }
+
+  private layoutUnicodeText(state: OasisPdfUnicodeFontState, text: string): FontkitGlyphRun {
+    const cached = state.layoutCache.get(text);
+    if (cached) {
+      return cached;
+    }
+    const run = state.font.layout(text);
+    state.layoutCache.set(text, run);
+    return run;
+  }
+
+  private encodeUnicodeGlyphRun(
+    state: OasisPdfUnicodeFontState,
+    run: FontkitGlyphRun,
+  ): Array<{ glyphId: number; nominalWidth: number; desiredAdvance: number }> {
+    return run.glyphs.map((glyph: FontkitGlyph, index: number) => {
+      const subsetGlyphId = state.subset.includeGlyph(glyph.id);
+      const position: FontkitPosition | undefined = run.positions[index];
+      const nominalWidth = glyph.advanceWidth * state.scale;
+      const desiredAdvance = (position?.xAdvance ?? glyph.advanceWidth) * state.scale;
+      if (state.widths[subsetGlyphId] == null) {
+        state.widths[subsetGlyphId] = nominalWidth;
+      }
+      if (state.unicode[subsetGlyphId] == null) {
+        state.unicode[subsetGlyphId] = glyph.codePoints.length > 0 ? glyph.codePoints : [0xfffd];
+      }
+      return { glyphId: subsetGlyphId, nominalWidth, desiredAdvance };
+    });
+  }
+
+  private drawUnicodeText(page: OasisPdfPage, state: OasisPdfUnicodeFontState, options: OasisPdfTextOptions): void {
+    const run = this.layoutUnicodeText(state, options.text);
+    const encoded = this.encodeUnicodeGlyphRun(state, run);
+    if (encoded.length === 0) {
+      return;
+    }
+
+    const usesAdjustments = encoded.some((glyph) => Math.abs(glyph.nominalWidth - glyph.desiredAdvance) > 0.01);
+    const textCommand = usesAdjustments
+      ? `[${encoded
+          .map((glyph) => {
+            const adjustment = glyph.nominalWidth - glyph.desiredAdvance;
+            return adjustment === 0
+              ? `<${encodeGlyphHex(glyph.glyphId)}>`
+              : `<${encodeGlyphHex(glyph.glyphId)}> ${formatNumber(adjustment)}`;
+          })
+          .join(" ")}] TJ`
+      : `<${encoded.map((glyph) => encodeGlyphHex(glyph.glyphId)).join("")}> Tj`;
+
+    page.commands.push([
+      textMarkerComment(options.text),
+      "BT",
+      colorCommand(options.color, "rg", [0, 0, 0]),
+      `/${state.resource.resourceName} ${formatNumber(options.fontSize ?? 12)} Tf`,
+      `${formatNumber(options.x)} ${formatNumber(page.height - options.y)} Td`,
+      textCommand,
       "ET",
     ].join("\n"));
   }
@@ -281,8 +481,18 @@ export class OasisPdfWriter {
 
     const catalogObjectId = addObject("");
     const pagesObjectId = addObject("");
-    const fontResourceEntries = Array.from(this.fontResources.values());
-    const fontObjectIds = fontResourceEntries.map((font) => addObject(fontResourceObjectBody(font)));
+    const fontResourceEntries = Array.from(this.fontResources.values()).filter(
+      (resource) => resource.kind === "base14" || this.usedFontResourceNames.has(resource.resourceName),
+    );
+    const fontObjectIds = fontResourceEntries.map((font) => {
+      if (font.kind === "unicode") {
+        const state = this.unicodeFontStates.get(font.resourceName);
+        if (state) {
+          return this.addUnicodeFontObjects(state, addObject);
+        }
+      }
+      return addObject(fontResourceObjectBody(font));
+    });
     const fontResourceXml = fontResourceEntries
       .map((font, index) => `/${font.resourceName} ${fontObjectIds[index]} 0 R`)
       .join(" ");
@@ -333,5 +543,75 @@ export class OasisPdfWriter {
     ].join("\n");
 
     return new TextEncoder().encode(body);
+  }
+
+  private addUnicodeFontObjects(state: OasisPdfUnicodeFontState, addObject: (body: string) => number): number {
+    const subsetBytes = state.subset.encode();
+    const isCff = state.subset.cff != null;
+    const fontFileObjectId = addObject(
+      asciiHexStreamObjectBody(subsetBytes, isCff ? "Subtype /CIDFontType0C" : ""),
+    );
+
+    const familyClass = ((state.font["OS/2"]?.sFamilyClass ?? 0) >> 8) || 0;
+    let flags = 1 << 2;
+    if (state.font.post?.isFixedPitch) {
+      flags |= 1 << 0;
+    }
+    if (familyClass >= 1 && familyClass <= 7) {
+      flags |= 1 << 1;
+    }
+    if (familyClass === 10) {
+      flags |= 1 << 3;
+    }
+    if (state.font.head?.macStyle?.italic) {
+      flags |= 1 << 6;
+    }
+
+    const tag = sanitizePdfName(`${state.resource.resourceName}AAAAAA`, "OASISF").slice(0, 6).padEnd(6, "A");
+    const baseFont = `${tag}+${sanitizePdfName(state.font.postscriptName, state.resource.family)}`;
+    const bbox = state.font.bbox;
+    const fontDescriptorObjectId = addObject([
+      "<< /Type /FontDescriptor",
+      `/FontName /${baseFont}`,
+      `/Flags ${flags}`,
+      `/FontBBox [${[
+        bbox.minX * state.scale,
+        bbox.minY * state.scale,
+        bbox.maxX * state.scale,
+        bbox.maxY * state.scale,
+      ].map(formatNumber).join(" ")}]`,
+      `/ItalicAngle ${formatNumber(state.font.italicAngle ?? 0)}`,
+      `/Ascent ${formatNumber(state.font.ascent * state.scale)}`,
+      `/Descent ${formatNumber(state.font.descent * state.scale)}`,
+      `/CapHeight ${formatNumber((state.font.capHeight ?? state.font.ascent) * state.scale)}`,
+      `/XHeight ${formatNumber((state.font.xHeight ?? 0) * state.scale)}`,
+      "/StemV 0",
+      isCff ? `/FontFile3 ${fontFileObjectId} 0 R` : `/FontFile2 ${fontFileObjectId} 0 R`,
+      ">>",
+    ].join("\n"));
+
+    const descendantFontObjectId = addObject([
+      "<< /Type /Font",
+      `/Subtype /${isCff ? "CIDFontType0" : "CIDFontType2"}`,
+      `/BaseFont /${baseFont}`,
+      "/CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >>",
+      `/FontDescriptor ${fontDescriptorObjectId} 0 R`,
+      `/W [0 [${state.widths.map((width) => formatNumber(width ?? 0)).join(" ")}]]`,
+      isCff ? "" : "/CIDToGIDMap /Identity",
+      ">>",
+    ].filter(Boolean).join("\n"));
+
+    const toUnicodeStream = buildToUnicodeCMap(state.unicode);
+    const toUnicodeObjectId = addObject(streamObjectBody(toUnicodeStream));
+
+    return addObject([
+      "<< /Type /Font",
+      "/Subtype /Type0",
+      `/BaseFont /${baseFont}`,
+      "/Encoding /Identity-H",
+      `/DescendantFonts [${descendantFontObjectId} 0 R]`,
+      `/ToUnicode ${toUnicodeObjectId} 0 R`,
+      ">>",
+    ].join("\n"));
   }
 }
