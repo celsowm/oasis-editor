@@ -1,430 +1,42 @@
 import type {
-  EditorBlockNode,
   EditorDocument,
-  EditorNamedStyle,
-  EditorPageMargins,
+  EditorLayoutBlock,
+  EditorLayoutFragment,
+  EditorLayoutLine,
   EditorParagraphListStyle,
   EditorParagraphNode,
-  EditorParagraphStyle,
-  EditorTextRun,
+  EditorTextStyle,
 } from "../../core/model.js";
-import { getDocumentSections, resolveEffectiveParagraphStyle } from "../../core/model.js";
-import { PdfFontRegistry } from "./fonts/PdfFontRegistry.js";
 import {
-  layoutPdfParagraph,
-  type PdfParagraphFragment,
-  type PdfParagraphLine,
-  type PdfParagraphTextContext,
-} from "./layout/layoutParagraph.js";
-import { PdfTextMeasurer } from "./layout/PdfTextMeasurer.js";
+  getDocumentParagraphs,
+  getPageBodyTop,
+  getPageHeaderZoneTop,
+  resolveEffectiveParagraphStyle,
+  resolveEffectiveTextStyleForParagraph,
+} from "../../core/model.js";
+import { projectDocumentLayout } from "../../ui/layoutProjection.js";
+import { PdfFontRegistry } from "./fonts/PdfFontRegistry.js";
 import { OasisPdfWriter } from "./OasisPdfWriter.js";
 
 const PX_TO_PT = 72 / 96;
-const DEFAULT_FONT_SIZE_PT = 11.25;
-const DEFAULT_LINE_HEIGHT_PT = 16;
-const LIST_INDENT_PT = 18;
-const LIST_PREFIX_GAP_PT = 6;
+const DEFAULT_FONT_SIZE_PX = 15;
+const LIST_PREFIX_OFFSET_PX = 24;
 
-interface PdfListState {
-  orderedCounters: Map<string, number>;
-}
-
-interface PdfHeaderFooterPage {
-  pageIndex: number;
-  width: number;
-  height: number;
-  margins: EditorPageMargins;
-  header?: EditorBlockNode[];
-  footer?: EditorBlockNode[];
-}
-
-interface PdfExportContext extends PdfParagraphTextContext {
-  fontRegistry: PdfFontRegistry;
-}
-
-interface PdfVerticalMetrics {
-  headerTop: number;
-  bodyTop: number;
-  bodyBottom: number;
-  footerTop: number;
-}
+const BULLET_GLYPHS = ["•", "○", "▪", "•", "○", "▪"];
+const ORDERED_DEFAULT_FORMATS: NonNullable<EditorParagraphListStyle["format"]>[] = [
+  "decimal",
+  "lowerLetter",
+  "lowerRoman",
+  "decimal",
+  "lowerLetter",
+  "lowerRoman",
+];
 
 function pxToPt(value: number): number {
   if (!Number.isFinite(value)) {
     return 0;
   }
   return value * PX_TO_PT;
-}
-
-function styleLengthToPt(value: number | null | undefined): number {
-  return value !== undefined && value !== null ? pxToPt(value) : 0;
-}
-
-function measurePlainTextWidthPt(text: string, fontSize: number, context: PdfParagraphTextContext): number {
-  return context.measurer.measureTextWidth({
-    text,
-    fontSize,
-  });
-}
-
-function resolveParagraphX(
-  effectiveStyle: Required<EditorParagraphStyle>,
-  contentLeft: number,
-  contentWidth: number,
-  lineWidth: number,
-): number {
-  if (lineWidth <= 0) {
-    return contentLeft;
-  }
-
-  switch (effectiveStyle.align) {
-    case "center":
-      return contentLeft + Math.max(0, (contentWidth - lineWidth) / 2);
-    case "right":
-      return contentLeft + Math.max(0, contentWidth - lineWidth);
-    case "justify":
-    case "left":
-    default:
-      return contentLeft;
-  }
-}
-
-function resolveParagraphHorizontalMetrics(
-  paragraph: EditorParagraphNode,
-  effectiveStyle: Required<EditorParagraphStyle>,
-  marginLeft: number,
-  contentWidth: number,
-): { left: number; width: number } {
-  const indentLeft = styleLengthToPt(effectiveStyle.indentLeft);
-  const indentRight = styleLengthToPt(effectiveStyle.indentRight);
-  const firstLineOffset =
-    styleLengthToPt(effectiveStyle.indentFirstLine) - styleLengthToPt(effectiveStyle.indentHanging);
-  const listOffset = paragraph.list ? LIST_INDENT_PT * ((paragraph.list.level ?? 0) + 1) : 0;
-  const left = marginLeft + indentLeft + firstLineOffset + listOffset;
-  const width = Math.max(
-    1,
-    contentWidth - indentLeft - indentRight - Math.max(0, firstLineOffset) - listOffset,
-  );
-  return { left, width };
-}
-
-function drawTextHighlight(
-  writer: OasisPdfWriter,
-  pageIndex: number,
-  x: number,
-  y: number,
-  width: number,
-  fontSize: number,
-  run: EditorTextRun,
-): void {
-  if (!run.styles?.highlight || width <= 0) {
-    return;
-  }
-
-  writer.drawRect(pageIndex, {
-    x,
-    y: y - fontSize * 0.82,
-    width,
-    height: fontSize,
-    fill: run.styles.highlight,
-  });
-}
-
-function drawTextDecorations(
-  writer: OasisPdfWriter,
-  pageIndex: number,
-  x: number,
-  y: number,
-  width: number,
-  fontSize: number,
-  color: string,
-  run: EditorTextRun,
-): void {
-  if (width <= 0) {
-    return;
-  }
-
-  const lineWidth = Math.max(0.5, fontSize / 18);
-  if (run.styles?.underline) {
-    writer.drawLine(pageIndex, {
-      x1: x,
-      y1: y + fontSize * 0.14,
-      x2: x + width,
-      y2: y + fontSize * 0.14,
-      stroke: color,
-      lineWidth,
-    });
-  }
-  if (run.styles?.strike) {
-    writer.drawLine(pageIndex, {
-      x1: x,
-      y1: y - fontSize * 0.32,
-      x2: x + width,
-      y2: y - fontSize * 0.32,
-      stroke: color,
-      lineWidth,
-    });
-  }
-}
-
-function drawLineFragment(
-  writer: OasisPdfWriter,
-  pageIndex: number,
-  fragment: PdfParagraphFragment,
-  lineX: number,
-  y: number,
-  context: PdfExportContext,
-): void {
-  const run = fragment.run;
-  const x = lineX + fragment.x;
-  const color = run.styles?.color ?? "#111827";
-  const fontFace = context.fontRegistry.resolveFontFace({
-    fontFamily: run.styles?.fontFamily,
-    bold: run.styles?.bold,
-    italic: run.styles?.italic,
-  });
-  drawTextHighlight(writer, pageIndex, x, y, fragment.width, fragment.fontSize, run);
-  writer.drawText(pageIndex, {
-    x,
-    y,
-    text: fragment.text,
-    fontSize: fragment.fontSize,
-    color,
-    bold: run.styles?.bold,
-    italic: run.styles?.italic,
-    fontResourceName: fontFace.writerResourceName,
-  });
-  drawTextDecorations(writer, pageIndex, x, y, fragment.width, fragment.fontSize, color, run);
-}
-
-function drawParagraphLine(
-  writer: OasisPdfWriter,
-  pageIndex: number,
-  effectiveStyle: Required<EditorParagraphStyle>,
-  line: PdfParagraphLine,
-  contentLeft: number,
-  contentWidth: number,
-  y: number,
-  context: PdfExportContext,
-  isLastLine: boolean,
-): void {
-  const lineX = resolveParagraphX(effectiveStyle, contentLeft, contentWidth, line.width);
-  if (line.fragments.length === 0) {
-    writer.drawText(pageIndex, {
-      x: lineX,
-      y,
-      text: " ",
-      fontSize: DEFAULT_FONT_SIZE_PT,
-      color: "#111827",
-      fontResourceName: context.fontRegistry.resolveFontFace({}).writerResourceName,
-    });
-    return;
-  }
-
-  const shouldJustify =
-    effectiveStyle.align === "justify" &&
-    !isLastLine &&
-    line.fragments.length > 1 &&
-    line.width < contentWidth;
-  const gapShift = shouldJustify
-    ? (contentWidth - line.width) / (line.fragments.length - 1)
-    : 0;
-
-  for (const [index, fragment] of line.fragments.entries()) {
-    const extra = gapShift * index;
-    drawLineFragment(
-      writer,
-      pageIndex,
-      { ...fragment, x: fragment.x + extra },
-      lineX,
-      y,
-      context,
-    );
-  }
-}
-
-function orderedListValueToText(value: number, format: EditorParagraphListStyle["format"]): string {
-  if (format === "lowerLetter" || format === "upperLetter") {
-    const letter = String.fromCharCode(97 + ((value - 1) % 26));
-    return format === "upperLetter" ? letter.toUpperCase() : letter;
-  }
-  return String(value);
-}
-
-function orderedListCounterKey(list: NonNullable<EditorParagraphNode["list"]>): string {
-  return `${list.level ?? 0}:${list.format ?? "decimal"}`;
-}
-
-function resolveListPrefix(paragraph: EditorParagraphNode, listState: PdfListState): string | null {
-  if (!paragraph.list) {
-    listState.orderedCounters.clear();
-    return null;
-  }
-
-  const level = Math.max(0, paragraph.list.level ?? 0);
-  for (const key of Array.from(listState.orderedCounters.keys())) {
-    const keyLevel = Number.parseInt(key.split(":", 1)[0] ?? "0", 10);
-    if (keyLevel > level) {
-      listState.orderedCounters.delete(key);
-    }
-  }
-
-  if (paragraph.list.kind === "bullet") {
-    return "•";
-  }
-
-  const counterKey = orderedListCounterKey(paragraph.list);
-  const previous = listState.orderedCounters.get(counterKey);
-  const next = previous === undefined ? (paragraph.list.startAt ?? 1) : previous + 1;
-  listState.orderedCounters.set(counterKey, next);
-  return `${orderedListValueToText(next, paragraph.list.format)}.`;
-}
-
-function drawListPrefix(
-  writer: OasisPdfWriter,
-  pageIndex: number,
-  prefix: string | null,
-  paragraphX: number,
-  y: number,
-  context: PdfExportContext,
-): void {
-  if (!prefix) {
-    return;
-  }
-
-  writer.drawText(pageIndex, {
-    x: Math.max(0, paragraphX - LIST_PREFIX_GAP_PT - measurePlainTextWidthPt(prefix, DEFAULT_FONT_SIZE_PT, context)),
-    y,
-    text: prefix,
-    fontSize: DEFAULT_FONT_SIZE_PT,
-    color: "#111827",
-    fontResourceName: context.fontRegistry.resolveFontFace({}).writerResourceName,
-  });
-}
-
-function drawBlockParagraphs(
-  writer: OasisPdfWriter,
-  pageIndex: number,
-  blocks: EditorBlockNode[] | undefined,
-  x: number,
-  y: number,
-  contentWidth: number,
-  context: PdfExportContext,
-  styles: Record<string, EditorNamedStyle> | undefined,
-): void {
-  if (!blocks || blocks.length === 0) {
-    return;
-  }
-
-  let cursorY = y;
-  for (const block of blocks) {
-    if (block.type !== "paragraph") {
-      continue;
-    }
-    const effectiveStyle = resolveEffectiveParagraphStyle(block.style, styles);
-    cursorY += styleLengthToPt(effectiveStyle.spacingBefore);
-    const horizontal = resolveParagraphHorizontalMetrics(block, effectiveStyle, x, contentWidth);
-    const layout = layoutPdfParagraph({
-      paragraph: block,
-      maxWidth: horizontal.width,
-      context,
-      defaultFontSize: DEFAULT_FONT_SIZE_PT,
-      defaultLineHeight: DEFAULT_LINE_HEIGHT_PT,
-      pxToPt,
-    });
-    for (const [lineIndex, line] of layout.lines.entries()) {
-      const isLastLine = lineIndex === layout.lines.length - 1;
-      drawParagraphLine(
-        writer,
-        pageIndex,
-        effectiveStyle,
-        line,
-        horizontal.left,
-        horizontal.width,
-        cursorY,
-        context,
-        isLastLine,
-      );
-      cursorY += line.height;
-    }
-    cursorY += styleLengthToPt(effectiveStyle.spacingAfter);
-  }
-}
-
-function measureBlockParagraphsHeight(
-  blocks: EditorBlockNode[] | undefined,
-  contentWidth: number,
-  context: PdfExportContext,
-  styles: Record<string, EditorNamedStyle> | undefined,
-): number {
-  if (!blocks || blocks.length === 0) {
-    return 0;
-  }
-
-  let height = 0;
-  for (const block of blocks) {
-    if (block.type !== "paragraph") {
-      continue;
-    }
-    const effectiveStyle = resolveEffectiveParagraphStyle(block.style, styles);
-    const horizontal = resolveParagraphHorizontalMetrics(block, effectiveStyle, 0, contentWidth);
-    const layout = layoutPdfParagraph({
-      paragraph: block,
-      maxWidth: horizontal.width,
-      context,
-      defaultFontSize: DEFAULT_FONT_SIZE_PT,
-      defaultLineHeight: DEFAULT_LINE_HEIGHT_PT,
-      pxToPt,
-    });
-    height += styleLengthToPt(effectiveStyle.spacingBefore);
-    height += layout.lines.reduce((sum, line) => sum + line.height, 0);
-    height += styleLengthToPt(effectiveStyle.spacingAfter);
-  }
-  return height;
-}
-
-function clampPageOffsetPt(value: number, pageHeight: number): number {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return Math.min(Math.max(0, value), pageHeight);
-}
-
-function resolvePdfVerticalMetrics(
-  page: Pick<PdfHeaderFooterPage, "height" | "margins" | "header" | "footer">,
-  contentWidth: number,
-  context: PdfExportContext,
-  styles: Record<string, EditorNamedStyle> | undefined,
-): PdfVerticalMetrics {
-  const headerTop = clampPageOffsetPt(pxToPt(page.margins.header), page.height);
-  const staticBodyTop = Math.max(
-    clampPageOffsetPt(pxToPt(page.margins.top), page.height),
-    headerTop,
-  );
-  const staticBodyBottom = Math.min(
-    page.height,
-    Math.max(
-      staticBodyTop,
-      Math.min(
-        page.height - clampPageOffsetPt(pxToPt(page.margins.bottom), page.height),
-        page.height - clampPageOffsetPt(pxToPt(page.margins.footer), page.height),
-      ),
-    ),
-  );
-  const headerHeight = measureBlockParagraphsHeight(page.header, contentWidth, context, styles);
-  const footerHeight = measureBlockParagraphsHeight(page.footer, contentWidth, context, styles);
-  const footerTop = page.footer && page.footer.length > 0
-    ? Math.max(0, page.height - pxToPt(page.margins.footer) - footerHeight)
-    : page.height;
-  const bodyTop = Math.max(staticBodyTop, headerHeight > 0 ? Math.min(page.height, headerTop + headerHeight) : 0);
-  const bodyBottom = Math.max(bodyTop, Math.min(staticBodyBottom, footerHeight > 0 ? footerTop : page.height));
-
-  return {
-    headerTop,
-    bodyTop,
-    bodyBottom,
-    footerTop,
-  };
 }
 
 function drawPageBackground(writer: OasisPdfWriter, pageIndex: number, width: number, height: number): void {
@@ -437,137 +49,404 @@ function drawPageBackground(writer: OasisPdfWriter, pageIndex: number, width: nu
   });
 }
 
-function drawSectionHeaderFooter(
-  writer: OasisPdfWriter,
-  page: PdfHeaderFooterPage,
-  totalPages: number,
-  measurer: PdfTextMeasurer,
-  fontRegistry: PdfFontRegistry,
-  styles: Record<string, EditorNamedStyle> | undefined,
-): void {
-  const marginLeft = pxToPt(page.margins.left + page.margins.gutter);
-  const marginRight = pxToPt(page.margins.right);
-  const contentWidth = Math.max(1, page.width - marginLeft - marginRight);
-  const context: PdfExportContext = {
-    pageNumber: page.pageIndex + 1,
-    totalPages,
-    measurer,
-    fontRegistry,
-  };
-  const metrics = resolvePdfVerticalMetrics(page, contentWidth, context, styles);
-
-  drawBlockParagraphs(writer, page.pageIndex, page.header, marginLeft, metrics.headerTop, contentWidth, context, styles);
-  drawBlockParagraphs(writer, page.pageIndex, page.footer, marginLeft, metrics.footerTop, contentWidth, context, styles);
+function textStyleToFontSizePt(style: Required<EditorTextStyle>): number {
+  return pxToPt(style.fontSize ?? DEFAULT_FONT_SIZE_PX);
 }
 
-function addSectionPage(writer: OasisPdfWriter, width: number, height: number): number {
-  const pageIndex = writer.addPage({ width, height });
-  drawPageBackground(writer, pageIndex, width, height);
-  return pageIndex;
+function resolveFragmentSlots(
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+): Array<{ char: string; left: number; offset: number }> {
+  const slotByOffset = new Map(line.slots.map((slot) => [slot.offset, slot] as const));
+  const result: Array<{ char: string; left: number; offset: number }> = [];
+  for (const char of fragment.chars) {
+    if (char.char === "\n" || char.char === "\t") {
+      continue;
+    }
+    const slot = slotByOffset.get(char.paragraphOffset);
+    if (!slot) {
+      continue;
+    }
+    result.push({
+      char: char.char,
+      left: slot.left,
+      offset: char.paragraphOffset,
+    });
+  }
+  return result;
+}
+
+function resolveFragmentBounds(
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+  fontSizePx: number,
+): { left: number; right: number } | null {
+  const slots = resolveFragmentSlots(line, fragment);
+  if (slots.length === 0) {
+    return null;
+  }
+
+  const slotByOffset = new Map(line.slots.map((slot) => [slot.offset, slot] as const));
+  const first = slots[0]!;
+  const last = slots[slots.length - 1]!;
+  const nextSlot = slotByOffset.get(last.offset + 1);
+  return {
+    left: first.left,
+    right: nextSlot?.left ?? last.left + fontSizePx * 0.55,
+  };
+}
+
+function drawFragmentHighlight(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+  originX: number,
+  originY: number,
+  styles: Required<EditorTextStyle>,
+): void {
+  if (!styles.highlight) {
+    return;
+  }
+  const bounds = resolveFragmentBounds(line, fragment, styles.fontSize ?? DEFAULT_FONT_SIZE_PX);
+  if (!bounds) {
+    return;
+  }
+  writer.drawRect(pageIndex, {
+    x: pxToPt(originX + bounds.left),
+    y: pxToPt(originY + line.top + 2),
+    width: pxToPt(Math.max(0, bounds.right - bounds.left)),
+    height: pxToPt(Math.max(2, line.height - 4)),
+    fill: styles.highlight,
+  });
+}
+
+function drawFragmentDecoration(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+  originX: number,
+  originY: number,
+  styles: Required<EditorTextStyle>,
+  kind: "underline" | "strike",
+): void {
+  const bounds = resolveFragmentBounds(line, fragment, styles.fontSize ?? DEFAULT_FONT_SIZE_PX);
+  if (!bounds) {
+    return;
+  }
+  const y = kind === "underline"
+    ? originY + line.top + line.height - 2
+    : originY + line.top + line.height * 0.52;
+  writer.drawLine(pageIndex, {
+    x1: pxToPt(originX + bounds.left),
+    y1: pxToPt(y),
+    x2: pxToPt(originX + bounds.right),
+    y2: pxToPt(y),
+    stroke: styles.color ?? "#000000",
+    lineWidth: pxToPt(1),
+  });
+}
+
+function drawFragmentText(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  paragraph: EditorParagraphNode,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+  document: EditorDocument,
+  originX: number,
+  originY: number,
+  fontRegistry: PdfFontRegistry,
+): void {
+  if (fragment.image) {
+    return;
+  }
+
+  const styles = resolveEffectiveTextStyleForParagraph(
+    fragment.styles,
+    paragraph.style?.styleId,
+    document.styles,
+  );
+  const fontFace = fontRegistry.resolveFontFace({
+    fontFamily: styles.fontFamily,
+    bold: styles.bold,
+    italic: styles.italic,
+  });
+  const fontSizePt = textStyleToFontSizePt(styles);
+  const baselineY = originY + line.top + line.height * 0.8;
+  const chars = resolveFragmentSlots(line, fragment);
+  const text = chars.map((char) => char.char).join("");
+  const firstChar = chars[0];
+  if (!firstChar || text.length === 0) {
+    return;
+  }
+
+  drawFragmentHighlight(writer, pageIndex, line, fragment, originX, originY, styles);
+  writer.drawText(pageIndex, {
+    x: pxToPt(originX + firstChar.left),
+    y: pxToPt(baselineY),
+    text,
+    fontSize: fontSizePt,
+    color: styles.color ?? "#000000",
+    bold: styles.bold,
+    italic: styles.italic,
+    fontResourceName: fontFace.writerResourceName,
+  });
+  if (styles.underline) {
+    drawFragmentDecoration(writer, pageIndex, line, fragment, originX, originY, styles, "underline");
+  }
+  if (styles.strike) {
+    drawFragmentDecoration(writer, pageIndex, line, fragment, originX, originY, styles, "strike");
+  }
+}
+
+function toAlpha(value: number): string {
+  if (value <= 0) {
+    return String(value);
+  }
+  let remaining = value;
+  let output = "";
+  while (remaining > 0) {
+    const rem = (remaining - 1) % 26;
+    output = String.fromCharCode(65 + rem) + output;
+    remaining = Math.floor((remaining - 1) / 26);
+  }
+  return output;
+}
+
+function toRoman(value: number): string {
+  if (value <= 0 || value >= 4000) {
+    return String(value);
+  }
+  const map: Array<[number, string]> = [
+    [1000, "M"], [900, "CM"], [500, "D"], [400, "CD"],
+    [100, "C"], [90, "XC"], [50, "L"], [40, "XL"],
+    [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"],
+  ];
+  let remaining = value;
+  let output = "";
+  for (const [amount, text] of map) {
+    while (remaining >= amount) {
+      output += text;
+      remaining -= amount;
+    }
+  }
+  return output;
+}
+
+function formatOrdinal(value: number, format: EditorParagraphListStyle["format"]): string {
+  switch (format) {
+    case "lowerLetter":
+      return toAlpha(value).toLowerCase();
+    case "upperLetter":
+      return toAlpha(value).toUpperCase();
+    case "lowerRoman":
+      return toRoman(value).toLowerCase();
+    case "upperRoman":
+      return toRoman(value).toUpperCase();
+    case "decimal":
+    default:
+      return String(value);
+  }
+}
+
+function getListOrdinals(document: EditorDocument): Map<string, number> {
+  const result = new Map<string, number>();
+  const paragraphs = getDocumentParagraphs(document);
+  let counters: number[] = [];
+  let previousWasOrdered = false;
+
+  for (const paragraph of paragraphs) {
+    const list = paragraph.list;
+    if (!list || list.kind !== "ordered") {
+      counters = [];
+      previousWasOrdered = false;
+      continue;
+    }
+
+    const level = list.level ?? 0;
+    if (!previousWasOrdered) {
+      counters = [];
+    }
+    if (counters.length > level + 1) {
+      counters.length = level + 1;
+    }
+    while (counters.length <= level) {
+      counters.push(0);
+    }
+    counters[level] = counters[level] === 0 && typeof list.startAt === "number"
+      ? list.startAt
+      : counters[level]! + 1;
+    result.set(paragraph.id, counters[level]!);
+    previousWasOrdered = true;
+  }
+
+  return result;
+}
+
+function resolveListPrefix(
+  paragraph: EditorParagraphNode,
+  listOrdinals: Map<string, number>,
+): string {
+  if (!paragraph.list) {
+    return "";
+  }
+  const level = Math.max(0, paragraph.list.level ?? 0);
+  if (paragraph.list.kind === "bullet") {
+    return BULLET_GLYPHS[level % BULLET_GLYPHS.length]!;
+  }
+  const value = listOrdinals.get(paragraph.id) ?? paragraph.list.startAt ?? 1;
+  const format =
+    paragraph.list.format && paragraph.list.format !== "bullet"
+      ? paragraph.list.format
+      : ORDERED_DEFAULT_FORMATS[level % ORDERED_DEFAULT_FORMATS.length];
+  return `${formatOrdinal(value, format)}.`;
+}
+
+function drawListPrefix(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  paragraph: EditorParagraphNode,
+  line: EditorLayoutLine,
+  document: EditorDocument,
+  originX: number,
+  originY: number,
+  fontRegistry: PdfFontRegistry,
+  listOrdinals: Map<string, number>,
+): void {
+  if (line.index !== 0) {
+    return;
+  }
+  const prefix = resolveListPrefix(paragraph, listOrdinals);
+  if (!prefix) {
+    return;
+  }
+  const firstSlot = line.slots[0];
+  if (!firstSlot) {
+    return;
+  }
+  const styles = resolveEffectiveTextStyleForParagraph(undefined, paragraph.style?.styleId, document.styles);
+  const fontFace = fontRegistry.resolveFontFace({
+    fontFamily: styles.fontFamily,
+    bold: styles.bold,
+    italic: styles.italic,
+  });
+  writer.drawText(pageIndex, {
+    x: pxToPt(originX + Math.max(0, firstSlot.left - LIST_PREFIX_OFFSET_PX)),
+    y: pxToPt(originY + line.top + line.height * 0.8),
+    text: prefix,
+    fontSize: textStyleToFontSizePt(styles),
+    color: styles.color ?? "#000000",
+    bold: styles.bold,
+    italic: styles.italic,
+    fontResourceName: fontFace.writerResourceName,
+  });
+}
+
+function drawParagraph(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  paragraph: EditorParagraphNode,
+  lines: EditorLayoutLine[],
+  document: EditorDocument,
+  originX: number,
+  originY: number,
+  fontRegistry: PdfFontRegistry,
+  listOrdinals: Map<string, number>,
+): void {
+  for (const line of lines) {
+    drawListPrefix(writer, pageIndex, paragraph, line, document, originX, originY, fontRegistry, listOrdinals);
+    for (const fragment of line.fragments) {
+      drawFragmentText(writer, pageIndex, paragraph, line, fragment, document, originX, originY, fontRegistry);
+    }
+  }
+}
+
+function drawBlockList(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  blocks: EditorLayoutBlock[] | undefined,
+  document: EditorDocument,
+  originX: number,
+  originY: number,
+  fontRegistry: PdfFontRegistry,
+  listOrdinals: Map<string, number>,
+): void {
+  if (!blocks || blocks.length === 0) {
+    return;
+  }
+
+  let cursorY = originY;
+  for (const block of blocks) {
+    if (block.sourceBlock.type === "paragraph" && block.layout) {
+      const paragraphStyle = resolveEffectiveParagraphStyle(block.sourceBlock.style, document.styles);
+      const spacingBefore =
+        block.layout.startOffset === 0 && cursorY > originY ? paragraphStyle.spacingBefore ?? 0 : 0;
+      drawParagraph(
+        writer,
+        pageIndex,
+        block.sourceBlock,
+        block.layout.lines,
+        document,
+        originX,
+        cursorY + spacingBefore,
+        fontRegistry,
+        listOrdinals,
+      );
+    }
+    cursorY += Math.max(0, block.estimatedHeight);
+  }
 }
 
 export async function exportEditorDocumentToPdf(document: EditorDocument): Promise<ArrayBuffer> {
   const fontRegistry = new PdfFontRegistry();
   const writer = new OasisPdfWriter(fontRegistry.getPdfFontResources());
-  const measurer = new PdfTextMeasurer();
-  const sections = getDocumentSections(document);
-  const headerFooterPages: PdfHeaderFooterPage[] = [];
+  const layout = projectDocumentLayout(document, undefined, undefined, undefined, { layoutMode: "wordParity" });
+  const listOrdinals = getListOrdinals(document);
 
-  for (const section of sections) {
-    const width = Math.max(1, pxToPt(section.pageSettings.width));
-    const height = Math.max(1, pxToPt(section.pageSettings.height));
-    const marginLeft = pxToPt(section.pageSettings.margins.left + section.pageSettings.margins.gutter);
-    const marginRight = pxToPt(section.pageSettings.margins.right);
-    const contentWidth = Math.max(1, width - marginLeft - marginRight);
-    const initialContext: PdfExportContext = { pageNumber: 1, totalPages: 0, measurer, fontRegistry };
-    const initialMetrics = resolvePdfVerticalMetrics(
-      {
-        height,
-        margins: section.pageSettings.margins,
-        header: section.header,
-        footer: section.footer,
-      },
-      contentWidth,
-      initialContext,
-      document.styles,
-    );
-    const contentBottom = initialMetrics.bodyBottom;
-    let pageIndex = addSectionPage(writer, width, height);
-    headerFooterPages.push({
+  for (const page of layout.pages) {
+    const width = Math.max(1, pxToPt(page.pageSettings.width));
+    const height = Math.max(1, pxToPt(page.pageSettings.height));
+    const pageIndex = writer.addPage({ width, height });
+    drawPageBackground(writer, pageIndex, width, height);
+
+    const originX = page.pageSettings.margins.left + page.pageSettings.margins.gutter;
+    drawBlockList(
+      writer,
       pageIndex,
-      width,
-      height,
-      margins: section.pageSettings.margins,
-      header: section.header,
-      footer: section.footer,
-    });
-    const listState: PdfListState = { orderedCounters: new Map() };
-
-    let cursorY = initialMetrics.bodyTop;
-    for (const block of section.blocks) {
-      if (block.type !== "paragraph") {
-        continue;
-      }
-
-      const effectiveStyle = resolveEffectiveParagraphStyle(block.style, document.styles);
-      const context: PdfExportContext = { pageNumber: pageIndex + 1, totalPages: 0, measurer, fontRegistry };
-      const horizontal = resolveParagraphHorizontalMetrics(block, effectiveStyle, marginLeft, contentWidth);
-      const layout = layoutPdfParagraph({
-        paragraph: block,
-        maxWidth: horizontal.width,
-        context,
-        defaultFontSize: DEFAULT_FONT_SIZE_PT,
-        defaultLineHeight: DEFAULT_LINE_HEIGHT_PT,
-        pxToPt,
-      });
-      const prefix = resolveListPrefix(block, listState);
-
-      cursorY += styleLengthToPt(effectiveStyle.spacingBefore);
-      for (const [lineIndex, line] of layout.lines.entries()) {
-        if (cursorY + line.height > contentBottom) {
-          pageIndex = addSectionPage(writer, width, height);
-          headerFooterPages.push({
-            pageIndex,
-            width,
-            height,
-            margins: section.pageSettings.margins,
-            header: section.header,
-            footer: section.footer,
-          });
-          cursorY = initialMetrics.bodyTop;
-        }
-
-        const lineContext: PdfExportContext = { pageNumber: pageIndex + 1, totalPages: 0, measurer, fontRegistry };
-        const lineX = resolveParagraphX(effectiveStyle, horizontal.left, horizontal.width, line.width);
-        if (lineIndex === 0) {
-          drawListPrefix(writer, pageIndex, prefix, lineX, cursorY, lineContext);
-        }
-        const isLastLine = lineIndex === layout.lines.length - 1;
-        drawParagraphLine(
-          writer,
-          pageIndex,
-          effectiveStyle,
-          line,
-          horizontal.left,
-          horizontal.width,
-          cursorY,
-          lineContext,
-          isLastLine,
-        );
-        cursorY += line.height;
-      }
-      cursorY += styleLengthToPt(effectiveStyle.spacingAfter);
-    }
+      page.headerBlocks,
+      document,
+      originX,
+      page.headerTop ?? getPageHeaderZoneTop(page.pageSettings),
+      fontRegistry,
+      listOrdinals,
+    );
+    drawBlockList(
+      writer,
+      pageIndex,
+      page.blocks,
+      document,
+      originX,
+      page.bodyTop ?? getPageBodyTop(page.pageSettings),
+      fontRegistry,
+      listOrdinals,
+    );
+    drawBlockList(
+      writer,
+      pageIndex,
+      page.footerBlocks,
+      document,
+      originX,
+      page.footerTop ?? page.bodyBottom ?? page.pageSettings.height,
+      fontRegistry,
+      listOrdinals,
+    );
   }
 
   if (writer.getPageCount() === 0) {
     const pageIndex = writer.addPage({ width: 612, height: 792 });
     drawPageBackground(writer, pageIndex, 612, 792);
-  }
-
-  const totalPages = writer.getPageCount();
-  for (const page of headerFooterPages) {
-    drawSectionHeaderFooter(writer, page, totalPages, measurer, fontRegistry, document.styles);
   }
 
   return writer.toArrayBuffer();

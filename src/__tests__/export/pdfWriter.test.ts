@@ -5,6 +5,7 @@ import { layoutPdfParagraph } from '../../export/pdf/layout/layoutParagraph.js';
 import { PdfTextMeasurer } from '../../export/pdf/layout/PdfTextMeasurer.js';
 import { OasisPdfWriter } from '../../export/pdf/OasisPdfWriter.js';
 import { exportEditorDocumentToPdfBlob } from '../../export/pdf/exportEditorDocumentToPdf.js';
+import { projectDocumentLayout } from '../../ui/layoutProjection.js';
 
 function decodePdf(buffer: ArrayBuffer): string {
   return new TextDecoder().decode(buffer);
@@ -16,13 +17,49 @@ function pxToPt(value: number): number {
   return value * PX_TO_PT;
 }
 
+const WIN_ANSI_OVERRIDES = new Map<number, number>([
+  [0x2022, 0x95],
+]);
+
+function pdfHex(value: string): string {
+  return Array.from(value)
+    .map((char) => {
+      const codePoint = char.codePointAt(0) ?? 0x3f;
+      const byte =
+        (codePoint >= 0x20 && codePoint <= 0x7e) || (codePoint >= 0xa0 && codePoint <= 0xff)
+          ? codePoint
+          : WIN_ANSI_OVERRIDES.get(codePoint) ?? 0x3f;
+      return byte.toString(16).padStart(2, '0').toUpperCase();
+    })
+    .join('');
+}
+
+function expectPdfText(pdf: string, text: string): void {
+  expect(pdf).toContain(`<${pdfHex(text)}> Tj`);
+}
+
+function expectPdfTextFragment(pdf: string, text: string): void {
+  expect(pdf).toContain(pdfHex(text));
+}
+
+function countPdfText(pdf: string, text: string): number {
+  return pdf.split(`<${pdfHex(text)}> Tj`).length - 1;
+}
+
 function findTextTopY(pdf: string, pageHeight: number, text: string): number {
-  const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = new RegExp(`([\\d.]+) ([\\d.]+) Td\\n\\(${escaped}\\) Tj`).exec(pdf);
+  const match = new RegExp(`([\\d.]+) ([\\d.]+) Td\\n<${pdfHex(text)}> Tj`).exec(pdf);
   if (!match) {
     throw new Error(`Unable to find PDF text command for "${text}"`);
   }
   return pageHeight - Number(match[2]);
+}
+
+function findTextX(pdf: string, text: string): number {
+  const match = new RegExp(`([\\d.]+) ([\\d.]+) Td\\n<${pdfHex(text)}> Tj`).exec(pdf);
+  if (!match) {
+    throw new Error(`Unable to find PDF text command for "${text}"`);
+  }
+  return Number(match[1]);
 }
 
 describe('PdfFontRegistry', () => {
@@ -131,8 +168,9 @@ describe('OasisPdfWriter', () => {
     expect(pdf).toContain('/Helvetica-Bold');
     expect(pdf).toContain('/Helvetica-Oblique');
     expect(pdf).toContain('/Helvetica-BoldOblique');
-    expect(pdf).toContain('Hello PDF');
-    expect(pdf).toContain('Bold italic PDF');
+    expect(pdf).toContain('/Encoding /WinAnsiEncoding');
+    expectPdfText(pdf, 'Hello PDF');
+    expectPdfText(pdf, 'Bold italic PDF');
     expect(pdf).toContain('/F4 14 Tf');
     expect(pdf).toContain('1 0 0 rg');
     expect(pdf).toContain('xref');
@@ -259,30 +297,28 @@ describe('OasisPdfWriter', () => {
     expect(pdf.startsWith('%PDF-1.4')).toBe(true);
     expect(pdf).toContain('/MediaBox [0 0 612 792]');
     expect(pdf).not.toContain('Oasis PDF section');
-    expect(pdf).toContain('(Smoke ) Tj');
-    expect(pdf).toContain('(test) Tj');
-    expect(pdf).toContain('(Second ) Tj');
-    expect(pdf).toContain('(paragraph) Tj');
-    expect(pdf).toContain('(Centered) Tj');
-    expect(pdf).toContain('(Right ) Tj');
-    expect(pdf).toContain('(aligned) Tj');
-    expect(pdf).toContain('(Indented ) Tj');
-    expect(pdf).toContain('(Hanging ) Tj');
-    expect(pdf).toContain('(Bullet ) Tj');
-    expect(pdf).toContain('(Ordered ) Tj');
-    expect(pdf).toContain('(Letter ) Tj');
-    expect(pdf).toContain('(•) Tj');
-    expect(pdf).toContain('(3.) Tj');
-    expect(pdf).toContain('(A.) Tj');
-    expect(pdf).not.toContain('(4.) Tj');
+    expectPdfText(pdf, 'Smoke test');
+    expectPdfText(pdf, 'Second ');
+    expectPdfText(pdf, 'paragraph');
+    expectPdfText(pdf, 'Centered');
+    expectPdfText(pdf, 'Right aligned');
+    expectPdfText(pdf, 'Indented paragraph');
+    expectPdfText(pdf, 'Hanging paragraph');
+    expectPdfText(pdf, 'Bullet item');
+    expectPdfText(pdf, 'Ordered item');
+    expectPdfText(pdf, 'Letter item');
+    expectPdfText(pdf, '•');
+    expectPdfText(pdf, '3.');
+    expectPdfText(pdf, 'D.');
+    expect(pdf).not.toContain(`<${pdfHex('4.')}> Tj`);
     expect(pdf).toContain('/F2 11.25 Tf');
     expect(pdf).toContain('/F3 15 Tf');
     expect(pdf).toContain('1 0 0 rg');
     expect(pdf).toContain('1 1 0 rg');
-    expect(pdf).toContain('282.864 674 Td');
-    expect(pdf).toContain('474.345 652 Td');
-    expect(pdf).toContain('126 624 Td');
-    expect(pdf).toContain('90 596 Td');
+    expect(pdf).toContain('277.538 658.423 Td');
+    expect(pdf).toContain('462.037 636.6 Td');
+    expect(pdf).toContain('126 608.778 Td');
+    expect(pdf).toContain('90 580.955 Td');
     expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
@@ -329,8 +365,8 @@ describe('OasisPdfWriter', () => {
     expect(blob.type).toBe('application/pdf');
     expect(pageCount).toBeGreaterThan(1);
     expect(pdf).toContain(`/Count ${pageCount}`);
-    expect(pdf).toContain('(word1 ) Tj');
-    expect(pdf).toContain('(word36) Tj');
+    expectPdfTextFragment(pdf, 'word1 ');
+    expectPdfTextFragment(pdf, 'word36');
     expect(pdf).not.toContain('Oasis PDF section');
   });
 
@@ -389,12 +425,174 @@ describe('OasisPdfWriter', () => {
     expect(blob.type).toBe('application/pdf');
     expect(pageCount).toBeGreaterThan(1);
     expect(pdf).toContain(`/Count ${pageCount}`);
-    expect((pdf.match(/Document /g) ?? []).length).toBe(pageCount);
-    expect((pdf.match(/header/g) ?? []).length).toBe(pageCount);
-    expect((pdf.match(/Page /g) ?? []).length).toBe(pageCount);
-    expect((pdf.match(/of /g) ?? []).length).toBe(pageCount);
-    expect(pdf).toContain('(1) Tj');
-    expect(pdf).toContain(`(${pageCount}) Tj`);
+    expect(countPdfText(pdf, 'Document header')).toBe(pageCount);
+    expect(countPdfText(pdf, 'Page ')).toBe(pageCount);
+    expect(countPdfText(pdf, ' of ')).toBe(pageCount);
+    expectPdfText(pdf, '1');
+    expectPdfText(pdf, String(pageCount));
+  });
+
+  it('applies inherited named paragraph text styles such as Heading1', async () => {
+    const document: EditorDocument = {
+      id: 'pdf-heading-style-document',
+      styles: {
+        Heading1: {
+          id: 'Heading1',
+          name: 'Heading 1',
+          type: 'paragraph',
+          paragraphStyle: { spacingAfter: 0 },
+          textStyle: { bold: true, fontSize: 24, color: '#336699' },
+        },
+      },
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 816,
+            height: 1056,
+            orientation: 'portrait',
+            margins: { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 },
+          },
+          blocks: [
+            {
+              id: 'heading-paragraph',
+              type: 'paragraph',
+              style: { styleId: 'Heading1' },
+              runs: [{ id: 'heading-run', text: 'Capítulo 1' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+
+    expectPdfText(pdf, 'Capítulo 1');
+    expect(pdf).toContain('/F2 18 Tf');
+    expect(pdf).toContain('0.2 0.4 0.6 rg');
+  });
+
+  it('uses first-line indent only for the first projected line', async () => {
+    const document: EditorDocument = {
+      id: 'pdf-first-line-indent-document',
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 240,
+            height: 360,
+            orientation: 'portrait',
+            margins: { top: 48, right: 48, bottom: 48, left: 48, header: 24, footer: 24, gutter: 0 },
+          },
+          blocks: [
+            {
+              id: 'indented-paragraph',
+              type: 'paragraph',
+              style: { spacingAfter: 0, indentLeft: 20, indentFirstLine: 40 },
+              runs: [{ id: 'indented-run', text: 'Alpha beta gamma delta epsilon zeta eta theta iota kappa' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+    const layout = projectDocumentLayout(document, undefined, undefined, undefined, { layoutMode: 'wordParity' });
+    const page = layout.pages[0]!;
+    const paragraphLayout = page.blocks[0]!.layout!;
+    const firstText = paragraphLayout.lines[0]!.fragments.map((fragment) => fragment.text).join('');
+    const secondText = paragraphLayout.lines[1]!.fragments.map((fragment) => fragment.text).join('');
+
+    expect(paragraphLayout.lines.length).toBeGreaterThan(1);
+    expect(findTextX(pdf, firstText)).toBeCloseTo(
+      pxToPt(page.pageSettings.margins.left + paragraphLayout.lines[0]!.slots[0]!.left),
+      3,
+    );
+    expect(findTextX(pdf, secondText)).toBeCloseTo(
+      pxToPt(page.pageSettings.margins.left + paragraphLayout.lines[1]!.slots[0]!.left),
+      3,
+    );
+    expect(findTextX(pdf, firstText) - findTextX(pdf, secondText)).toBeCloseTo(pxToPt(40), 3);
+  });
+
+  it('keeps long lorem pagination aligned with the canvas projection', async () => {
+    const phrase = 'facilisis luctus, massa risus pretium velit, ac porta enim erat non neque. ';
+    const document: EditorDocument = {
+      id: 'pdf-lorem-pagination-document',
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 360,
+            height: 360,
+            orientation: 'portrait',
+            margins: { top: 48, right: 48, bottom: 48, left: 48, header: 24, footer: 24, gutter: 0 },
+          },
+          blocks: [
+            {
+              id: 'lorem-paragraph',
+              type: 'paragraph',
+              style: { spacingAfter: 0, indentFirstLine: 28, align: 'justify' },
+              runs: [
+                {
+                  id: 'lorem-run',
+                  text: Array.from({ length: 20 }, () => `Integer luctus, orci non ${phrase}`).join(''),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+    const pageCount = (pdf.match(/\/Type \/Page\n/g) ?? []).length;
+    const projectedPageCount = projectDocumentLayout(
+      document,
+      undefined,
+      undefined,
+      undefined,
+      { layoutMode: 'wordParity' },
+    ).pages.length;
+
+    expect(pageCount).toBe(projectedPageCount);
+    expect(pageCount).toBeGreaterThan(1);
+    expectPdfTextFragment(pdf, 'facilisis luctus');
+    expectPdfTextFragment(pdf, 'non neque.');
+  });
+
+  it('writes accented text with WinAnsi hex encoding instead of corrupt UTF-8 literals', async () => {
+    const document: EditorDocument = {
+      id: 'pdf-accented-text-document',
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 816,
+            height: 1056,
+            orientation: 'portrait',
+            margins: { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 },
+          },
+          blocks: [
+            {
+              id: 'accented-paragraph',
+              type: 'paragraph',
+              runs: [{ id: 'accented-run', text: 'Página Capítulo ação não' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+
+    expectPdfText(pdf, 'Página Capítulo ação não');
+    expect(pdf).not.toContain('Página');
+    expect(pdf).toContain('/Encoding /WinAnsiEncoding');
   });
 
   it('positions header, body, and footer from real section margins instead of fixed PDF offsets', async () => {
@@ -448,10 +646,24 @@ describe('OasisPdfWriter', () => {
 
     const blob = await exportEditorDocumentToPdfBlob(document);
     const pdf = await blob.text();
+    const layout = projectDocumentLayout(document, undefined, undefined, undefined, { layoutMode: 'wordParity' });
+    const page = layout.pages[0]!;
+    const headerLine = page.headerBlocks?.[0]?.layout?.lines[0]!;
+    const bodyLine = page.blocks[0]?.layout?.lines[0]!;
+    const footerLine = page.footerBlocks?.[0]?.layout?.lines[0]!;
 
-    expect(findTextTopY(pdf, pageHeight, 'HeaderOnly')).toBeCloseTo(pxToPt(12), 3);
-    expect(findTextTopY(pdf, pageHeight, 'BodyOnly')).toBeCloseTo(pxToPt(48), 3);
-    expect(findTextTopY(pdf, pageHeight, 'FooterOnly')).toBeCloseTo(pageHeight - pxToPt(24) - 16, 3);
+    expect(findTextTopY(pdf, pageHeight, 'HeaderOnly')).toBeCloseTo(
+      pxToPt((page.headerTop ?? 0) + headerLine.top + headerLine.height * 0.8),
+      3,
+    );
+    expect(findTextTopY(pdf, pageHeight, 'BodyOnly')).toBeCloseTo(
+      pxToPt((page.bodyTop ?? 0) + bodyLine.top + bodyLine.height * 0.8),
+      3,
+    );
+    expect(findTextTopY(pdf, pageHeight, 'FooterOnly')).toBeCloseTo(
+      pxToPt((page.footerTop ?? 0) + footerLine.top + footerLine.height * 0.8),
+      3,
+    );
     expect(findTextTopY(pdf, pageHeight, 'HeaderOnly')).not.toBeCloseTo(56, 3);
   });
 
@@ -507,9 +719,19 @@ describe('OasisPdfWriter', () => {
     const pageCount = (pdf.match(/\/Type \/Page\n/g) ?? []).length;
 
     expect(pageCount).toBeGreaterThan(1);
-    expect((pdf.match(/RepeatHeader/g) ?? []).length).toBe(pageCount);
-    expect((pdf.match(/RepeatFooter/g) ?? []).length).toBe(pageCount);
-    expect(findTextTopY(pdf, pageHeight, 'RepeatHeader')).toBeCloseTo(pxToPt(12), 3);
-    expect(findTextTopY(pdf, pageHeight, 'RepeatFooter')).toBeCloseTo(pageHeight - pxToPt(24) - 16, 3);
+    expect(countPdfText(pdf, 'RepeatHeader')).toBe(pageCount);
+    expect(countPdfText(pdf, 'RepeatFooter')).toBe(pageCount);
+    const layout = projectDocumentLayout(document, undefined, undefined, undefined, { layoutMode: 'wordParity' });
+    const firstPage = layout.pages[0]!;
+    const headerLine = firstPage.headerBlocks?.[0]?.layout?.lines[0]!;
+    const footerLine = firstPage.footerBlocks?.[0]?.layout?.lines[0]!;
+    expect(findTextTopY(pdf, pageHeight, 'RepeatHeader')).toBeCloseTo(
+      pxToPt((firstPage.headerTop ?? 0) + headerLine.top + headerLine.height * 0.8),
+      3,
+    );
+    expect(findTextTopY(pdf, pageHeight, 'RepeatFooter')).toBeCloseTo(
+      pxToPt((firstPage.footerTop ?? 0) + footerLine.top + footerLine.height * 0.8),
+      3,
+    );
   });
 });
