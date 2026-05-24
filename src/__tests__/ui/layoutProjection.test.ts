@@ -24,8 +24,7 @@ describe('layout projection', () => {
     });
 
     it('splits long text into multiple lines', () => {
-      // With a very narrow width, text should split. 
-      // MIN_CONTENT_WIDTH is 120, so we need enough text to exceed that.
+      // With a very narrow width, text should split.
       const p = createEditorParagraph('This is a very long paragraph that should definitely wrap into multiple lines given the width constraints of the layout engine.');
       const layout = projectParagraphLayout(p, 0, 1, undefined, 50); 
       

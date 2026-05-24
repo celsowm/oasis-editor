@@ -345,7 +345,7 @@ function getAvailableWidth(
     
   const startInset = baseInset + (isFirstLine ? firstLineOffset : 0);
   const rightInset = paragraphStyle.indentRight ?? 0;
-  return Math.max(MIN_CONTENT_WIDTH, contentWidth - rightInset - startInset);
+  return Math.max(1, contentWidth - rightInset - startInset);
 }
 
 function getLineStartInset(
@@ -559,6 +559,51 @@ function canApplyWordShortTokenFit(
   return overflow > 0 && overflow <= WORD_COMPAT_SHORT_TOKEN_OVERFLOW_PX;
 }
 
+function buildParagraphFragments(paragraph: EditorParagraphNode): EditorLayoutFragment[] {
+  let paragraphOffset = 0;
+  return paragraph.runs.map((run) => {
+    const chars = Array.from(run.text).map((char, index) => ({
+      char,
+      paragraphOffset: paragraphOffset + index,
+      runOffset: index,
+    }));
+    const fragment: EditorLayoutFragment = {
+      paragraphId: paragraph.id,
+      runId: run.id,
+      startOffset: paragraphOffset,
+      endOffset: paragraphOffset + run.text.length,
+      text: run.text,
+      styles: run.styles ? { ...run.styles } : undefined,
+      image: run.image ? { ...run.image } : undefined,
+      revision: run.revision ? { ...run.revision } : undefined,
+      chars,
+    };
+    paragraphOffset += run.text.length;
+    return fragment;
+  });
+}
+
+export function measureParagraphMinContentWidthPx(
+  paragraph: EditorParagraphNode,
+  styles?: Record<string, EditorNamedStyle>,
+  layoutMode: "fast" | "wordParity" = "wordParity",
+): number {
+  const fragments = buildParagraphFragments(paragraph);
+  const measuredChars = buildMeasuredChars(paragraph, fragments, styles, layoutMode);
+  const tokens = tokenizeMeasuredChars(measuredChars);
+  const firstLineInset = Math.max(0, getLineStartInset(paragraph, styles, true));
+  const otherLineInset = Math.max(0, getLineStartInset(paragraph, styles, false));
+  const inset = Math.max(firstLineInset, otherLineInset);
+  const largestUnbreakableToken = tokens.reduce((largest, token) => {
+    if (token.kind !== "text") return largest;
+    return Math.max(largest, token.width);
+  }, 0);
+  const largestImage = paragraph.runs.reduce((largest, run) => {
+    return Math.max(largest, run.image?.width ?? 0);
+  }, 0);
+  return Math.max(1, inset + largestUnbreakableToken, largestImage);
+}
+
 export function composeMeasuredParagraphLines(options: TextMeasureOptions): EditorLayoutLine[] {
   const { paragraph, fragments, styles, contentWidth, layoutMode = "fast" } = options;
   const measuredChars = buildMeasuredChars(paragraph, fragments, styles, layoutMode);
@@ -572,7 +617,10 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
       ),
   );
   const lineHeight = getParagraphLineHeight(paragraph, styles, fallbackFontSize, layoutMode);
-  const width = Math.max(MIN_CONTENT_WIDTH, contentWidth ?? DEFAULT_CONTENT_WIDTH);
+  const width =
+    contentWidth === undefined
+      ? Math.max(MIN_CONTENT_WIDTH, DEFAULT_CONTENT_WIDTH)
+      : Math.max(1, contentWidth);
 
   if (tokens.length === 0) {
     const firstLineInset = getLineStartInset(paragraph, styles, true);
@@ -697,4 +745,3 @@ export const domTextMeasurer: ITextMeasurer = {
   composeMeasuredParagraphLines,
   resolveRenderedLineHeightPx,
 };
-

@@ -1,6 +1,29 @@
-import type { EditorBlockNode, EditorParagraphNode, EditorState, EditorTableCellStyle, EditorBorderStyle, EditorTableCellNode, EditorTableNode, EditorTableStyle, EditorTableRowStyle } from "../model.js";
-import { getBlockParagraphs, getDocumentSections, getParagraphs, paragraphOffsetToPosition, getActiveSectionIndex, getActiveZone, findParagraphTableLocation } from "../model.js";
-import { createEditorParagraph, createEditorTable, createEditorTableCell, createEditorTableRow } from "../editorState.js";
+import type {
+  EditorBlockNode,
+  EditorParagraphNode,
+  EditorState,
+  EditorTableCellStyle,
+  EditorBorderStyle,
+  EditorTableCellNode,
+  EditorTableNode,
+  EditorTableStyle,
+  EditorTableRowStyle,
+} from "../model.js";
+import {
+  getBlockParagraphs,
+  getDocumentSections,
+  getParagraphs,
+  paragraphOffsetToPosition,
+  getActiveSectionIndex,
+  getActiveZone,
+  findParagraphTableLocation,
+} from "../model.js";
+import {
+  createEditorParagraph,
+  createEditorTable,
+  createEditorTableCell,
+  createEditorTableRow,
+} from "../editorState.js";
 import { clampPosition, normalizeSelection } from "../selection.js";
 import { buildTableCellLayout } from "../tableLayout.js";
 import { updateTableCellsInBlocks, withSelection } from "./utils.js";
@@ -12,28 +35,66 @@ export function setTableCellStyleValue<K extends keyof EditorTableCellStyle>(
 ): EditorState {
   const selectedParagraphIds = new Set<string>();
   const activeSectionIndex = getActiveSectionIndex(state);
-  const anchorLoc = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, activeSectionIndex);
-  const focusLoc = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, activeSectionIndex);
+  const anchorLoc = findParagraphTableLocation(
+    state.document,
+    state.selection.anchor.paragraphId,
+    activeSectionIndex,
+  );
+  const focusLoc = findParagraphTableLocation(
+    state.document,
+    state.selection.focus.paragraphId,
+    activeSectionIndex,
+  );
 
-  if (anchorLoc && focusLoc && anchorLoc.blockIndex === focusLoc.blockIndex && anchorLoc.zone === focusLoc.zone) {
+  if (
+    anchorLoc &&
+    focusLoc &&
+    anchorLoc.blockIndex === focusLoc.blockIndex &&
+    anchorLoc.zone === focusLoc.zone
+  ) {
     // Table-aware selection: identify all cells in the rectangular range
     const sections = getDocumentSections(state.document);
     const section = sections[activeSectionIndex];
     if (section) {
-      const blocks = anchorLoc.zone === "header" ? section.header : anchorLoc.zone === "footer" ? section.footer : section.blocks;
+      const blocks =
+        anchorLoc.zone === "header"
+          ? section.header
+          : anchorLoc.zone === "footer"
+            ? section.footer
+            : section.blocks;
       const tableBlock = blocks?.[anchorLoc.blockIndex];
       if (tableBlock && tableBlock.type === "table") {
         const tableLayout = buildTableCellLayout(tableBlock);
-        const anchorCell = tableLayout.find(e => e.rowIndex === anchorLoc.rowIndex && e.cellIndex === anchorLoc.cellIndex);
-        const focusCell = tableLayout.find(e => e.rowIndex === focusLoc.rowIndex && e.cellIndex === focusLoc.cellIndex);
+        const anchorCell = tableLayout.find(
+          (e) =>
+            e.rowIndex === anchorLoc.rowIndex &&
+            e.cellIndex === anchorLoc.cellIndex,
+        );
+        const focusCell = tableLayout.find(
+          (e) =>
+            e.rowIndex === focusLoc.rowIndex &&
+            e.cellIndex === focusLoc.cellIndex,
+        );
 
         if (anchorCell && focusCell) {
-          const startRow = Math.min(anchorCell.visualRowIndex, focusCell.visualRowIndex);
-          const endRow = Math.max(anchorCell.visualRowIndex + anchorCell.rowSpan - 1, focusCell.visualRowIndex + focusCell.rowSpan - 1);
-          const startCol = Math.min(anchorCell.visualColumnIndex, focusCell.visualColumnIndex);
-          const endCol = Math.max(anchorCell.visualColumnIndex + anchorCell.colSpan - 1, focusCell.visualColumnIndex + focusCell.colSpan - 1);
+          const startRow = Math.min(
+            anchorCell.visualRowIndex,
+            focusCell.visualRowIndex,
+          );
+          const endRow = Math.max(
+            anchorCell.visualRowIndex + anchorCell.rowSpan - 1,
+            focusCell.visualRowIndex + focusCell.rowSpan - 1,
+          );
+          const startCol = Math.min(
+            anchorCell.visualColumnIndex,
+            focusCell.visualColumnIndex,
+          );
+          const endCol = Math.max(
+            anchorCell.visualColumnIndex + anchorCell.colSpan - 1,
+            focusCell.visualColumnIndex + focusCell.colSpan - 1,
+          );
 
-          const cells = tableLayout.filter(entry => {
+          const cells = tableLayout.filter((entry) => {
             return (
               entry.visualRowIndex <= endRow &&
               entry.visualRowIndex + entry.rowSpan - 1 >= startRow &&
@@ -70,23 +131,42 @@ export function setTableCellStyleValue<K extends keyof EditorTableCellStyle>(
     }
     return {
       ...cell,
-      style: Object.keys(nextStyle).length > 0 ? (nextStyle as EditorTableCellStyle) : undefined
+      style:
+        Object.keys(nextStyle).length > 0
+          ? (nextStyle as EditorTableCellStyle)
+          : undefined,
     };
   };
 
   const sections = getDocumentSections(state.document);
-  const nextSections = sections.map(section => ({
+  const nextSections = sections.map((section) => ({
     ...section,
-    blocks: updateTableCellsInBlocks(section.blocks, selectedParagraphIds, updateCell),
-    header: section.header ? updateTableCellsInBlocks(section.header, selectedParagraphIds, updateCell) : undefined,
-    footer: section.footer ? updateTableCellsInBlocks(section.footer, selectedParagraphIds, updateCell) : undefined,
+    blocks: updateTableCellsInBlocks(
+      section.blocks,
+      selectedParagraphIds,
+      updateCell,
+    ),
+    header: section.header
+      ? updateTableCellsInBlocks(
+          section.header,
+          selectedParagraphIds,
+          updateCell,
+        )
+      : undefined,
+    footer: section.footer
+      ? updateTableCellsInBlocks(
+          section.footer,
+          selectedParagraphIds,
+          updateCell,
+        )
+      : undefined,
   }));
   return {
     ...state,
     document: {
       ...state.document,
       sections: nextSections,
-    }
+    },
   };
 }
 
@@ -112,23 +192,28 @@ export function setTableStyleValue<K extends keyof EditorTableStyle>(
     }
     return {
       ...table,
-      style: Object.keys(nextStyle).length > 0 ? (nextStyle as EditorTableStyle) : undefined
+      style:
+        Object.keys(nextStyle).length > 0
+          ? (nextStyle as EditorTableStyle)
+          : undefined,
     };
   };
 
   const updateBlocks = (blocks: EditorBlockNode[]): EditorBlockNode[] => {
-    return blocks.map(block => {
+    return blocks.map((block) => {
       if (block.type === "paragraph") return block;
-      
-      const paragraphsInTable = getBlockParagraphs(block);
-      const isSelected = paragraphsInTable.some(p => selectedParagraphIds.has(p.id));
 
-      const updatedRows = block.rows.map(row => ({
+      const paragraphsInTable = getBlockParagraphs(block);
+      const isSelected = paragraphsInTable.some((p) =>
+        selectedParagraphIds.has(p.id),
+      );
+
+      const updatedRows = block.rows.map((row) => ({
         ...row,
-        cells: row.cells.map(cell => ({
+        cells: row.cells.map((cell) => ({
           ...cell,
-          blocks: updateBlocks(cell.blocks) as EditorParagraphNode[]
-        }))
+          blocks: updateBlocks(cell.blocks) as EditorParagraphNode[],
+        })),
       }));
 
       const nextTable = { ...block, rows: updatedRows };
@@ -137,7 +222,7 @@ export function setTableStyleValue<K extends keyof EditorTableStyle>(
   };
 
   const sections = getDocumentSections(state.document);
-  const nextSections = sections.map(section => ({
+  const nextSections = sections.map((section) => ({
     ...section,
     blocks: updateBlocks(section.blocks),
     header: section.header ? updateBlocks(section.header) : undefined,
@@ -148,11 +233,14 @@ export function setTableStyleValue<K extends keyof EditorTableStyle>(
     document: {
       ...state.document,
       sections: nextSections,
-    }
+    },
   };
 }
 
-export function setTableCellWidth(state: EditorState, width: number | string | null): EditorState {
+export function setTableCellWidth(
+  state: EditorState,
+  width: number | string | null,
+): EditorState {
   return setTableCellStyleValue(state, "width", width);
 }
 
@@ -162,7 +250,14 @@ export function setTableRowHeight(
   rowIndex: number,
   height: number | string | null,
 ): EditorState {
-  console.log("[EditorCommands] setTableRowHeight:", tableId, "Row:", rowIndex, "Height:", height);
+  console.log(
+    "[EditorCommands] setTableRowHeight:",
+    tableId,
+    "Row:",
+    rowIndex,
+    "Height:",
+    height,
+  );
   const updateTable = (table: EditorTableNode): EditorTableNode => {
     if (table.id !== tableId) return table;
     const nextRows = [...table.rows];
@@ -176,9 +271,15 @@ export function setTableRowHeight(
       }
       nextRows[rowIndex] = {
         ...row,
-        style: Object.keys(nextStyle).length > 0 ? (nextStyle as EditorTableRowStyle) : undefined,
+        style:
+          Object.keys(nextStyle).length > 0
+            ? (nextStyle as EditorTableRowStyle)
+            : undefined,
       };
-      console.log("[EditorCommands] Updated row style:", nextRows[rowIndex].style);
+      console.log(
+        "[EditorCommands] Updated row style:",
+        nextRows[rowIndex].style,
+      );
     }
     return { ...table, rows: nextRows };
   };
@@ -211,9 +312,12 @@ export function setTableColumnWidths(
   state: EditorState,
   tableId: string,
   columnWidths: Record<number, number | string>, // visualColumnIndex -> width
-  tableWidth?: number | string
+  tableWidth?: number | string,
+  tableIndentLeft?: number | string,
 ): EditorState {
-  const parseWidthToPt = (value: number | string | undefined): number | null => {
+  const parseWidthToPt = (
+    value: number | string | undefined,
+  ): number | null => {
     if (typeof value === "number" && Number.isFinite(value)) {
       return value;
     }
@@ -239,19 +343,32 @@ export function setTableColumnWidths(
     return Number.isFinite(parsed) ? parsed : null;
   };
 
-  console.log("[EditorCommands] setTableColumnWidths. Table:", tableId, "Widths:", columnWidths, "TableWidth:", tableWidth);
+  console.log(
+    "[EditorCommands] setTableColumnWidths. Table:",
+    tableId,
+    "Widths:",
+    columnWidths,
+    "TableWidth:",
+    tableWidth,
+  );
   const updateTable = (table: EditorTableNode): EditorTableNode => {
     if (table.id !== tableId) return table;
 
     const tableLayout = buildTableCellLayout(table);
     const visualColumnCount = Math.max(
       1,
-      ...tableLayout.map((entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan)),
+      ...tableLayout.map(
+        (entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan),
+      ),
     );
     const nextGridCols = Array<number>(visualColumnCount);
     let hasGridOverride = false;
     let canResolveGrid = true;
-    for (let columnIndex = 0; columnIndex < visualColumnCount; columnIndex += 1) {
+    for (
+      let columnIndex = 0;
+      columnIndex < visualColumnCount;
+      columnIndex += 1
+    ) {
       const override = parseWidthToPt(columnWidths[columnIndex]);
       if (override !== null) {
         nextGridCols[columnIndex] = Math.max(1, override);
@@ -259,7 +376,11 @@ export function setTableColumnWidths(
         continue;
       }
       const existing = table.gridCols?.[columnIndex];
-      if (typeof existing === "number" && Number.isFinite(existing) && existing > 0) {
+      if (
+        typeof existing === "number" &&
+        Number.isFinite(existing) &&
+        existing > 0
+      ) {
         nextGridCols[columnIndex] = existing;
         continue;
       }
@@ -274,19 +395,22 @@ export function setTableColumnWidths(
         );
         if (!entry) return cell;
 
-        const rightVisualColumnIndex = entry.visualColumnIndex + entry.colSpan - 1;
+        const rightVisualColumnIndex =
+          entry.visualColumnIndex + entry.colSpan - 1;
         const newWidth = columnWidths[rightVisualColumnIndex];
 
         if (newWidth !== undefined) {
           if (entry.colSpan === 1) {
-             console.log(`[EditorCommands] Updating cell at row ${rowIndex} col ${cellIndex} to ${newWidth}pt`);
-             return {
-                ...cell,
-                style: {
-                  ...(cell.style ?? {}),
-                  width: typeof newWidth === "number" ? newWidth : newWidth,
-                },
-              };
+            console.log(
+              `[EditorCommands] Updating cell at row ${rowIndex} col ${cellIndex} to ${newWidth}pt`,
+            );
+            return {
+              ...cell,
+              style: {
+                ...(cell.style ?? {}),
+                width: typeof newWidth === "number" ? newWidth : newWidth,
+              },
+            };
           }
         }
 
@@ -298,14 +422,20 @@ export function setTableColumnWidths(
     const nextStyle = { ...(table.style ?? {}) } as any;
     if (tableWidth !== undefined) {
       nextStyle.width = tableWidth;
-      console.log(`[EditorCommands] Updating table total width to ${tableWidth}pt`);
+      console.log(
+        `[EditorCommands] Updating table total width to ${tableWidth}pt`,
+      );
+    }
+    if (tableIndentLeft !== undefined) {
+      nextStyle.indentLeft = tableIndentLeft;
     }
 
-    return { 
-      ...table, 
+    return {
+      ...table,
       rows: nextRows,
-      gridCols: hasGridOverride && canResolveGrid ? nextGridCols : table.gridCols,
-      style: Object.keys(nextStyle).length > 0 ? nextStyle : undefined
+      gridCols:
+        hasGridOverride && canResolveGrid ? nextGridCols : table.gridCols,
+      style: Object.keys(nextStyle).length > 0 ? nextStyle : undefined,
     };
   };
   const updateBlocks = (blocks: EditorBlockNode[]): EditorBlockNode[] => {
@@ -334,7 +464,7 @@ export function setTableColumnWidths(
 
 export function setTableCellBorders(
   state: EditorState,
-  border: EditorBorderStyle | null
+  border: EditorBorderStyle | null,
 ): EditorState {
   let nextState = setTableCellStyleValue(state, "borderTop", border);
   nextState = setTableCellStyleValue(nextState, "borderRight", border);
@@ -343,7 +473,11 @@ export function setTableCellBorders(
   return nextState;
 }
 
-export function insertTableAtSelection(state: EditorState, rows: number, cols: number): EditorState {
+export function insertTableAtSelection(
+  state: EditorState,
+  rows: number,
+  cols: number,
+): EditorState {
   const initialCellWidth = `${100 / Math.max(1, cols)}%`;
   const tableRows = [];
   for (let r = 0; r < rows; r += 1) {
@@ -370,7 +504,9 @@ export function insertTableAtSelection(state: EditorState, rows: number, cols: n
   const activeSectionIndex = getActiveSectionIndex(state);
   const zone = getActiveZone(state);
 
-  const insertIntoBlocks = (blocks: EditorBlockNode[]): { nextBlocks: EditorBlockNode[]; found: boolean } => {
+  const insertIntoBlocks = (
+    blocks: EditorBlockNode[],
+  ): { nextBlocks: EditorBlockNode[]; found: boolean } => {
     const blockIndex = blocks.findIndex((b) => {
       if (b.id === focus.paragraphId) return true;
       if (b.type === "paragraph") return false;
@@ -382,7 +518,11 @@ export function insertTableAtSelection(state: EditorState, rows: number, cols: n
     }
 
     return {
-      nextBlocks: [...blocks.slice(0, blockIndex + 1), table, ...blocks.slice(blockIndex + 1)],
+      nextBlocks: [
+        ...blocks.slice(0, blockIndex + 1),
+        table,
+        ...blocks.slice(blockIndex + 1),
+      ],
       found: true,
     };
   };
@@ -418,6 +558,8 @@ export function insertTableAtSelection(state: EditorState, rows: number, cols: n
       ...state.document,
       sections: nextSections,
     },
-    selection: withSelection(paragraphOffsetToPosition(table.rows[0]!.cells[0]!.blocks[0]!, 0)),
+    selection: withSelection(
+      paragraphOffsetToPosition(table.rows[0]!.cells[0]!.blocks[0]!, 0),
+    ),
   };
 }

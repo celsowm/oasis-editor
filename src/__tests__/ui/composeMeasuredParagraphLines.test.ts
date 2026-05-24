@@ -47,6 +47,16 @@ function lineStart(line: ReturnType<typeof measure>[number]): number {
 }
 
 describe("composeMeasuredParagraphLines alignment", () => {
+  it("honors explicit narrow content widths for table-cell wrapping", () => {
+    const paragraph = createEditorParagraph("Linha 1 Col 4");
+    const lines = measure(paragraph, 45);
+
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(lineWidth(line)).toBeLessThanOrEqual(45);
+    }
+  });
+
   it("keeps left alignment without slot shift", () => {
     const paragraph = createEditorParagraph("left alignment baseline");
     paragraph.style = { align: "left" };

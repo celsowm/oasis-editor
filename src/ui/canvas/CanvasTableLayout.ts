@@ -38,14 +38,25 @@ function parseDimensionToPx(value: number | string | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function resolveTableWidth(table: EditorTableNode, contentWidth: number): number {
+function resolveTableWidth(
+  table: EditorTableNode,
+  contentWidth: number,
+): number {
   const raw = table.style?.width;
   if (typeof raw === "number") return Math.max(24, raw);
   if (typeof raw === "string" && raw.trim().endsWith("%")) {
     const value = Number.parseFloat(raw.trim().slice(0, -1));
-    if (Number.isFinite(value)) return Math.max(24, contentWidth * (value / 100));
+    if (Number.isFinite(value))
+      return Math.max(24, contentWidth * (value / 100));
   }
   return contentWidth;
+}
+
+function resolveTableIndentLeft(table: EditorTableNode): number {
+  const raw = table.style?.indentLeft;
+  return typeof raw === "number" && Number.isFinite(raw)
+    ? Math.max(0, toPx(raw))
+    : 0;
 }
 
 export type CanvasUnsupportedReason =
@@ -107,9 +118,14 @@ function resolveDefaultBorder(): CanvasTableBorderSpec {
   return { width: 1, color: "#6f6f6f", type: "solid" };
 }
 
-function resolveBorder(border: EditorBorderStyle | undefined): CanvasTableBorderSpec {
+function resolveBorder(
+  border: EditorBorderStyle | undefined,
+): CanvasTableBorderSpec {
   if (!border) return resolveDefaultBorder();
-  const width = Math.max(0, Number.isFinite(border.width) ? toPx(border.width) : 1);
+  const width = Math.max(
+    0,
+    Number.isFinite(border.width) ? toPx(border.width) : 1,
+  );
   return {
     width,
     color: border.color ?? "#6f6f6f",
@@ -117,18 +133,35 @@ function resolveBorder(border: EditorBorderStyle | undefined): CanvasTableBorder
   };
 }
 
-function resolveCellPadding(cell: EditorTableCellNode): { top: number; right: number; bottom: number; left: number } {
+function resolveCellPadding(cell: EditorTableCellNode): {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+} {
   const paddingValue = cell.style?.padding;
   if (typeof paddingValue === "number" && Number.isFinite(paddingValue)) {
     const resolved = Math.max(0, toPx(paddingValue));
     return { top: resolved, right: resolved, bottom: resolved, left: resolved };
   }
-  
-  const top = cell.style?.paddingTop !== undefined ? toPx(cell.style.paddingTop) : DEFAULT_CELL_PADDING_TOP_BOTTOM_PX;
-  const right = cell.style?.paddingRight !== undefined ? toPx(cell.style.paddingRight) : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
-  const bottom = cell.style?.paddingBottom !== undefined ? toPx(cell.style.paddingBottom) : DEFAULT_CELL_PADDING_TOP_BOTTOM_PX;
-  const left = cell.style?.paddingLeft !== undefined ? toPx(cell.style.paddingLeft) : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
-  
+
+  const top =
+    cell.style?.paddingTop !== undefined
+      ? toPx(cell.style.paddingTop)
+      : DEFAULT_CELL_PADDING_TOP_BOTTOM_PX;
+  const right =
+    cell.style?.paddingRight !== undefined
+      ? toPx(cell.style.paddingRight)
+      : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
+  const bottom =
+    cell.style?.paddingBottom !== undefined
+      ? toPx(cell.style.paddingBottom)
+      : DEFAULT_CELL_PADDING_TOP_BOTTOM_PX;
+  const left =
+    cell.style?.paddingLeft !== undefined
+      ? toPx(cell.style.paddingLeft)
+      : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
+
   return { top, right, bottom, left };
 }
 
@@ -178,14 +211,25 @@ export function buildCanvasTableLayout(options: {
   contentWidth: number;
   estimatedHeight: number;
 }): CanvasTableLayoutResult {
-  const { table, state, pageIndex, layoutMode, originX, originY, contentWidth, estimatedHeight } =
-    options;
+  const {
+    table,
+    state,
+    pageIndex,
+    layoutMode,
+    originX,
+    originY,
+    contentWidth,
+    estimatedHeight,
+  } = options;
   const tableWidth = resolveTableWidth(table, contentWidth);
+  const tableLeft = originX + resolveTableIndentLeft(table);
   const tableEntries = buildTableCellLayout(table);
   const unsupported: CanvasUnsupportedReason[] = [];
   const visualColumnCount = Math.max(
     1,
-    ...tableEntries.map((entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan)),
+    ...tableEntries.map(
+      (entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan),
+    ),
   );
 
   let resolvedColumnWidths: number[] = [];
@@ -228,7 +272,9 @@ export function buildCanvasTableLayout(options: {
   }
 
   const cellEntriesByKey = new Map(
-    tableEntries.map((entry) => [`${entry.rowIndex}:${entry.cellIndex}`, entry] as const),
+    tableEntries.map(
+      (entry) => [`${entry.rowIndex}:${entry.cellIndex}`, entry] as const,
+    ),
   );
   const prepared: PreparedCell[] = [];
 
@@ -256,7 +302,8 @@ export function buildCanvasTableLayout(options: {
 
       const width = Math.max(
         1,
-        (columnOffsets[visualCol + colSpan] ?? tableWidth) - (columnOffsets[visualCol] ?? 0),
+        (columnOffsets[visualCol + colSpan] ?? tableWidth) -
+          (columnOffsets[visualCol] ?? 0),
       );
 
       const padding = resolveCellPadding(cell);
@@ -269,7 +316,11 @@ export function buildCanvasTableLayout(options: {
 
       const contentWidthPx = Math.max(
         MIN_TABLE_CELL_CONTENT_WIDTH_PX,
-        width - borders.left.width - borders.right.width - padding.left - padding.right,
+        width -
+          borders.left.width -
+          borders.right.width -
+          padding.left -
+          padding.right,
       );
 
       // Project paragraphs at the actual cell content width, after shrinking
@@ -345,12 +396,14 @@ export function buildCanvasTableLayout(options: {
         cellEntry.padding.bottom +
         cellEntry.borders.top.width +
         cellEntry.borders.bottom.width;
-      const distributed = cellEntry.rowSpan > 1 ? needed / cellEntry.rowSpan : needed;
+      const distributed =
+        cellEntry.rowSpan > 1 ? needed / cellEntry.rowSpan : needed;
       if (distributed > measured) measured = distributed;
     }
 
     const explicit = explicitRowHeights[rowIndex];
-    const baseFloor = explicit !== null ? explicit : Math.max(1, fallbackPerRow * 0.25);
+    const baseFloor =
+      explicit !== null ? explicit : Math.max(1, fallbackPerRow * 0.25);
     rowHeights[rowIndex] = Math.max(baseFloor, measured, 1);
   }
 
@@ -366,21 +419,37 @@ export function buildCanvasTableLayout(options: {
   // ---------------------------------------------------------------------------
   const cells: CanvasTableCellLayoutEntry[] = [];
   for (const cellEntry of prepared) {
-    const { rowIndex, cellIndex, cell, visualCol, colSpan, rowSpan, width, padding, borders, contentWidthPx } =
-      cellEntry;
+    const {
+      rowIndex,
+      cellIndex,
+      cell,
+      visualCol,
+      colSpan,
+      rowSpan,
+      width,
+      padding,
+      borders,
+      contentWidthPx,
+    } = cellEntry;
 
-    const left = originX + (columnOffsets[visualCol] ?? 0);
+    const left = tableLeft + (columnOffsets[visualCol] ?? 0);
     const top = originY + (rowOffsets[rowIndex] ?? 0);
     const height = Math.max(
       1,
-      rowHeights.slice(rowIndex, rowIndex + rowSpan).reduce((sum, current) => sum + current, 0),
+      rowHeights
+        .slice(rowIndex, rowIndex + rowSpan)
+        .reduce((sum, current) => sum + current, 0),
     );
 
     const contentLeft = left + borders.left.width + padding.left;
     const contentTop = top + borders.top.width + padding.top;
     const contentHeightPx = Math.max(
       MIN_TABLE_CELL_CONTENT_HEIGHT_PX,
-      height - borders.top.width - borders.bottom.width - padding.top - padding.bottom,
+      height -
+        borders.top.width -
+        borders.bottom.width -
+        padding.top -
+        padding.bottom,
     );
 
     const firstParagraph = cell.blocks[0];
@@ -431,7 +500,7 @@ export function buildCanvasTableLayout(options: {
 
   return {
     tableId: table.id,
-    left: originX,
+    left: tableLeft,
     top: originY,
     width: tableWidth,
     height: rowHeights.reduce((sum, current) => sum + current, 0),
