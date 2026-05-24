@@ -42,6 +42,13 @@ interface PdfExportContext extends PdfParagraphTextContext {
   fontRegistry: PdfFontRegistry;
 }
 
+interface PdfVerticalMetrics {
+  headerTop: number;
+  bodyTop: number;
+  bodyBottom: number;
+  footerTop: number;
+}
+
 function pxToPt(value: number): number {
   if (!Number.isFinite(value)) {
     return 0;
@@ -344,6 +351,82 @@ function drawBlockParagraphs(
   }
 }
 
+function measureBlockParagraphsHeight(
+  blocks: EditorBlockNode[] | undefined,
+  contentWidth: number,
+  context: PdfExportContext,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): number {
+  if (!blocks || blocks.length === 0) {
+    return 0;
+  }
+
+  let height = 0;
+  for (const block of blocks) {
+    if (block.type !== "paragraph") {
+      continue;
+    }
+    const effectiveStyle = resolveEffectiveParagraphStyle(block.style, styles);
+    const horizontal = resolveParagraphHorizontalMetrics(block, effectiveStyle, 0, contentWidth);
+    const layout = layoutPdfParagraph({
+      paragraph: block,
+      maxWidth: horizontal.width,
+      context,
+      defaultFontSize: DEFAULT_FONT_SIZE_PT,
+      defaultLineHeight: DEFAULT_LINE_HEIGHT_PT,
+      pxToPt,
+    });
+    height += styleLengthToPt(effectiveStyle.spacingBefore);
+    height += layout.lines.reduce((sum, line) => sum + line.height, 0);
+    height += styleLengthToPt(effectiveStyle.spacingAfter);
+  }
+  return height;
+}
+
+function clampPageOffsetPt(value: number, pageHeight: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.min(Math.max(0, value), pageHeight);
+}
+
+function resolvePdfVerticalMetrics(
+  page: Pick<PdfHeaderFooterPage, "height" | "margins" | "header" | "footer">,
+  contentWidth: number,
+  context: PdfExportContext,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): PdfVerticalMetrics {
+  const headerTop = clampPageOffsetPt(pxToPt(page.margins.header), page.height);
+  const staticBodyTop = Math.max(
+    clampPageOffsetPt(pxToPt(page.margins.top), page.height),
+    headerTop,
+  );
+  const staticBodyBottom = Math.min(
+    page.height,
+    Math.max(
+      staticBodyTop,
+      Math.min(
+        page.height - clampPageOffsetPt(pxToPt(page.margins.bottom), page.height),
+        page.height - clampPageOffsetPt(pxToPt(page.margins.footer), page.height),
+      ),
+    ),
+  );
+  const headerHeight = measureBlockParagraphsHeight(page.header, contentWidth, context, styles);
+  const footerHeight = measureBlockParagraphsHeight(page.footer, contentWidth, context, styles);
+  const footerTop = page.footer && page.footer.length > 0
+    ? Math.max(0, page.height - pxToPt(page.margins.footer) - footerHeight)
+    : page.height;
+  const bodyTop = Math.max(staticBodyTop, headerHeight > 0 ? Math.min(page.height, headerTop + headerHeight) : 0);
+  const bodyBottom = Math.max(bodyTop, Math.min(staticBodyBottom, footerHeight > 0 ? footerTop : page.height));
+
+  return {
+    headerTop,
+    bodyTop,
+    bodyBottom,
+    footerTop,
+  };
+}
+
 function drawPageBackground(writer: OasisPdfWriter, pageIndex: number, width: number, height: number): void {
   writer.drawRect(pageIndex, {
     x: 0,
@@ -365,17 +448,16 @@ function drawSectionHeaderFooter(
   const marginLeft = pxToPt(page.margins.left + page.margins.gutter);
   const marginRight = pxToPt(page.margins.right);
   const contentWidth = Math.max(1, page.width - marginLeft - marginRight);
-  const headerY = Math.max(56, pxToPt(page.margins.header));
-  const footerY = Math.min(Math.max(headerY + DEFAULT_LINE_HEIGHT_PT, page.height - pxToPt(page.margins.footer)), page.height - 18);
   const context: PdfExportContext = {
     pageNumber: page.pageIndex + 1,
     totalPages,
     measurer,
     fontRegistry,
   };
+  const metrics = resolvePdfVerticalMetrics(page, contentWidth, context, styles);
 
-  drawBlockParagraphs(writer, page.pageIndex, page.header, marginLeft, headerY, contentWidth, context, styles);
-  drawBlockParagraphs(writer, page.pageIndex, page.footer, marginLeft, footerY, contentWidth, context, styles);
+  drawBlockParagraphs(writer, page.pageIndex, page.header, marginLeft, metrics.headerTop, contentWidth, context, styles);
+  drawBlockParagraphs(writer, page.pageIndex, page.footer, marginLeft, metrics.footerTop, contentWidth, context, styles);
 }
 
 function addSectionPage(writer: OasisPdfWriter, width: number, height: number): number {
@@ -396,10 +478,20 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
     const height = Math.max(1, pxToPt(section.pageSettings.height));
     const marginLeft = pxToPt(section.pageSettings.margins.left + section.pageSettings.margins.gutter);
     const marginRight = pxToPt(section.pageSettings.margins.right);
-    const marginTop = pxToPt(section.pageSettings.margins.top);
-    const marginBottom = pxToPt(section.pageSettings.margins.bottom);
     const contentWidth = Math.max(1, width - marginLeft - marginRight);
-    const contentBottom = Math.max(marginTop + DEFAULT_LINE_HEIGHT_PT, height - marginBottom);
+    const initialContext: PdfExportContext = { pageNumber: 1, totalPages: 0, measurer, fontRegistry };
+    const initialMetrics = resolvePdfVerticalMetrics(
+      {
+        height,
+        margins: section.pageSettings.margins,
+        header: section.header,
+        footer: section.footer,
+      },
+      contentWidth,
+      initialContext,
+      document.styles,
+    );
+    const contentBottom = initialMetrics.bodyBottom;
     let pageIndex = addSectionPage(writer, width, height);
     headerFooterPages.push({
       pageIndex,
@@ -411,7 +503,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
     });
     const listState: PdfListState = { orderedCounters: new Map() };
 
-    let cursorY = Math.max(64, marginTop);
+    let cursorY = initialMetrics.bodyTop;
     for (const block of section.blocks) {
       if (block.type !== "paragraph") {
         continue;
@@ -442,7 +534,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
             header: section.header,
             footer: section.footer,
           });
-          cursorY = Math.max(64, marginTop);
+          cursorY = initialMetrics.bodyTop;
         }
 
         const lineContext: PdfExportContext = { pageNumber: pageIndex + 1, totalPages: 0, measurer, fontRegistry };

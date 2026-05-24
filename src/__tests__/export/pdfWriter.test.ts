@@ -16,6 +16,15 @@ function pxToPt(value: number): number {
   return value * PX_TO_PT;
 }
 
+function findTextTopY(pdf: string, pageHeight: number, text: string): number {
+  const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = new RegExp(`([\\d.]+) ([\\d.]+) Td\\n\\(${escaped}\\) Tj`).exec(pdf);
+  if (!match) {
+    throw new Error(`Unable to find PDF text command for "${text}"`);
+  }
+  return pageHeight - Number(match[2]);
+}
+
 describe('PdfFontRegistry', () => {
   it('resolves built-in Helvetica faces and exposes writer resources', () => {
     const registry = new PdfFontRegistry();
@@ -386,5 +395,121 @@ describe('OasisPdfWriter', () => {
     expect((pdf.match(/of /g) ?? []).length).toBe(pageCount);
     expect(pdf).toContain('(1) Tj');
     expect(pdf).toContain(`(${pageCount}) Tj`);
+  });
+
+  it('positions header, body, and footer from real section margins instead of fixed PDF offsets', async () => {
+    const pageHeight = pxToPt(240);
+    const document: EditorDocument = {
+      id: 'pdf-header-footer-geometry-document',
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 240,
+            height: 240,
+            orientation: 'portrait',
+            margins: {
+              top: 48,
+              right: 48,
+              bottom: 24,
+              left: 48,
+              header: 12,
+              footer: 24,
+              gutter: 0,
+            },
+          },
+          header: [
+            {
+              id: 'small-header',
+              type: 'paragraph',
+              style: { spacingAfter: 0 },
+              runs: [{ id: 'small-header-run', text: 'HeaderOnly' }],
+            },
+          ],
+          footer: [
+            {
+              id: 'small-footer',
+              type: 'paragraph',
+              style: { spacingAfter: 0 },
+              runs: [{ id: 'small-footer-run', text: 'FooterOnly' }],
+            },
+          ],
+          blocks: [
+            {
+              id: 'body-paragraph',
+              type: 'paragraph',
+              style: { spacingAfter: 0 },
+              runs: [{ id: 'body-run', text: 'BodyOnly' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+
+    expect(findTextTopY(pdf, pageHeight, 'HeaderOnly')).toBeCloseTo(pxToPt(12), 3);
+    expect(findTextTopY(pdf, pageHeight, 'BodyOnly')).toBeCloseTo(pxToPt(48), 3);
+    expect(findTextTopY(pdf, pageHeight, 'FooterOnly')).toBeCloseTo(pageHeight - pxToPt(24) - 16, 3);
+    expect(findTextTopY(pdf, pageHeight, 'HeaderOnly')).not.toBeCloseTo(56, 3);
+  });
+
+  it('preserves header and footer geometry on every generated page', async () => {
+    const pageHeight = pxToPt(300);
+    const document: EditorDocument = {
+      id: 'pdf-repeated-header-footer-geometry-document',
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 240,
+            height: 300,
+            orientation: 'portrait',
+            margins: {
+              top: 24,
+              right: 48,
+              bottom: 24,
+              left: 48,
+              header: 12,
+              footer: 24,
+              gutter: 0,
+            },
+          },
+          header: [
+            {
+              id: 'repeat-header',
+              type: 'paragraph',
+              style: { spacingAfter: 0 },
+              runs: [{ id: 'repeat-header-run', text: 'RepeatHeader' }],
+            },
+          ],
+          footer: [
+            {
+              id: 'repeat-footer',
+              type: 'paragraph',
+              style: { spacingAfter: 0 },
+              runs: [{ id: 'repeat-footer-run', text: 'RepeatFooter' }],
+            },
+          ],
+          blocks: Array.from({ length: 18 }, (_, index) => ({
+            id: `paged-body-${index + 1}`,
+            type: 'paragraph' as const,
+            style: { spacingAfter: 0 },
+            runs: [{ id: `paged-body-run-${index + 1}`, text: `PagedBody${index + 1}` }],
+          })),
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+    const pageCount = (pdf.match(/\/Type \/Page\n/g) ?? []).length;
+
+    expect(pageCount).toBeGreaterThan(1);
+    expect((pdf.match(/RepeatHeader/g) ?? []).length).toBe(pageCount);
+    expect((pdf.match(/RepeatFooter/g) ?? []).length).toBe(pageCount);
+    expect(findTextTopY(pdf, pageHeight, 'RepeatHeader')).toBeCloseTo(pxToPt(12), 3);
+    expect(findTextTopY(pdf, pageHeight, 'RepeatFooter')).toBeCloseTo(pageHeight - pxToPt(24) - 16, 3);
   });
 });
