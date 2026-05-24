@@ -69,7 +69,7 @@ function drawCellBorders(
   drawCellEdge(writer, pageIndex, cell.borders.left, left, top, left, bottom);
 }
 
-export function drawTableBlock(
+export async function drawTableBlock(
   writer: OasisPdfWriter,
   pageIndex: number,
   block: EditorLayoutBlock,
@@ -79,7 +79,7 @@ export function drawTableBlock(
   contentWidth: number,
   fontRegistry: PdfFontRegistry,
   listOrdinals: Map<string, number>,
-): void {
+): Promise<void> {
   if (block.sourceBlock.type !== "table") {
     return;
   }
@@ -123,7 +123,7 @@ export function drawTableBlock(
   // 3. Cell content.
   for (const cell of tableLayout.cells) {
     for (const paragraphLayout of cell.paragraphs) {
-      drawParagraph(
+      await drawParagraph(
         writer,
         pageIndex,
         paragraphLayout.paragraph,

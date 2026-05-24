@@ -85,6 +85,19 @@ function findTextX(pdf: string, text: string): number {
   return Number(match[1]);
 }
 
+function findImageDraw(pdf: string): { width: number; height: number; x: number; y: number } {
+  const match = /\nq\n([\d.]+) 0 0 ([\d.]+) ([\d.]+) ([\d.]+) cm\n\/Im\d+ Do\nQ/.exec(pdf);
+  if (!match) {
+    throw new Error('Unable to find PDF image draw command');
+  }
+  return {
+    width: Number(match[1]),
+    height: Number(match[2]),
+    x: Number(match[3]),
+    y: Number(match[4]),
+  };
+}
+
 describe('PdfFontRegistry', () => {
   it('resolves bundled Unicode faces and keeps built-in Helvetica fallbacks', async () => {
     const registry = new PdfFontRegistry();
@@ -987,5 +1000,74 @@ describe('OasisPdfWriter', () => {
     // Shading on the first header cell produces a filled rectangle in the
     // cell's shading color.
     expect(pdf).toContain('0.933 0.933 0.933 rg');
+  });
+
+  it('embeds and positions inline images using the projected layout geometry', async () => {
+    const imageWidth = 32;
+    const imageHeight = 24;
+    const document: EditorDocument = {
+      id: 'pdf-inline-image-document',
+      assets: {
+        tiny: {
+          id: 'tiny',
+          url: 'data:image/jpeg;base64,/9j/2Q==',
+        },
+      },
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 240,
+            height: 240,
+            orientation: 'portrait',
+            margins: { top: 48, right: 48, bottom: 48, left: 48, header: 24, footer: 24, gutter: 0 },
+          },
+          blocks: [
+            {
+              id: 'image-paragraph',
+              type: 'paragraph',
+              style: { spacingAfter: 0, indentLeft: 16 },
+              runs: [
+                { id: 'before-run', text: 'A' },
+                {
+                  id: 'image-run',
+                  text: '\uFFFC',
+                  image: {
+                    src: 'asset:tiny',
+                    width: imageWidth,
+                    height: imageHeight,
+                    alt: 'Tiny image',
+                  },
+                },
+                { id: 'after-run', text: 'B' },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+    const layout = projectDocumentLayout(document, undefined, undefined, undefined, { layoutMode: 'wordParity' });
+    const page = layout.pages[0]!;
+    const line = page.blocks[0]!.layout!.lines[0]!;
+    const imageFragment = line.fragments.find((fragment) => fragment.image)!;
+    const imageSlot = line.slots.find((slot) => slot.offset === imageFragment.startOffset)!;
+    const drawnImage = findImageDraw(pdf);
+    const pageHeightPt = pxToPt(page.pageSettings.height);
+
+    expect(blob.type).toBe('application/pdf');
+    expect(pdf).toContain('/Subtype /Image');
+    expect(pdf).toContain('/XObject << /Im1');
+    expect(pdf).toContain('/Filter [/ASCIIHexDecode /DCTDecode]');
+    expect(pdf).toContain('/Im1 Do');
+    expect(drawnImage.width).toBeCloseTo(pxToPt(imageWidth), 3);
+    expect(drawnImage.height).toBeCloseTo(pxToPt(imageHeight), 3);
+    expect(drawnImage.x).toBeCloseTo(pxToPt(page.pageSettings.margins.left + imageSlot.left), 3);
+    expect(pageHeightPt - drawnImage.y - drawnImage.height).toBeCloseTo(
+      pxToPt((page.bodyTop ?? page.pageSettings.margins.top) + line.top + line.height - imageHeight),
+      3,
+    );
   });
 });

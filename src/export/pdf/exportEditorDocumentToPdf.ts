@@ -28,7 +28,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
 
     const originX = page.pageSettings.margins.left + page.pageSettings.margins.gutter;
     const contentWidth = getPageContentWidth(page.pageSettings);
-    drawBlockList(
+    await drawBlockList(
       writer,
       pageIndex,
       page.headerBlocks,
@@ -39,7 +39,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
       fontRegistry,
       listOrdinals,
     );
-    drawBlockList(
+    await drawBlockList(
       writer,
       pageIndex,
       page.blocks,
@@ -50,7 +50,7 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
       fontRegistry,
       listOrdinals,
     );
-    drawBlockList(
+    await drawBlockList(
       writer,
       pageIndex,
       page.footerBlocks,

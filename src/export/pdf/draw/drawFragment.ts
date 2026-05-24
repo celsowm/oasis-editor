@@ -10,6 +10,7 @@ import {
   resolveEffectiveTextStyleForParagraph,
 } from "../../../core/model.js";
 import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
+import { registerPdfImageRun } from "../images.js";
 import { OasisPdfWriter } from "../OasisPdfWriter.js";
 import { DEFAULT_FONT_SIZE_PX, pxToPt, textStyleToFontSizePt } from "../units.js";
 import { resolveFragmentBounds, resolveFragmentSlots, type FragmentSlot } from "./fragmentGeometry.js";
@@ -85,7 +86,7 @@ function groupSlotChunksByWhitespace(chars: FragmentSlot[]): FragmentSlot[][] {
   return chunks;
 }
 
-export function drawFragmentText(
+export async function drawFragmentText(
   writer: OasisPdfWriter,
   pageIndex: number,
   paragraph: EditorParagraphNode,
@@ -95,8 +96,25 @@ export function drawFragmentText(
   originX: number,
   originY: number,
   fontRegistry: PdfFontRegistry,
-): void {
+): Promise<void> {
   if (fragment.image) {
+    const slot =
+      line.slots.find((candidate) => candidate.offset === fragment.startOffset) ??
+      line.slots.find((candidate) => candidate.offset >= fragment.startOffset);
+    if (!slot) {
+      return;
+    }
+    const resourceName = await registerPdfImageRun(writer, document, fragment.image);
+    if (!resourceName) {
+      return;
+    }
+    writer.drawImage(pageIndex, {
+      resourceName,
+      x: pxToPt(originX + slot.left),
+      y: pxToPt(originY + line.top + line.height - fragment.image.height),
+      width: pxToPt(fragment.image.width),
+      height: pxToPt(fragment.image.height),
+    });
     return;
   }
 

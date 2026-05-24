@@ -8,7 +8,7 @@ import { OasisPdfWriter } from "../OasisPdfWriter.js";
 import { drawParagraph } from "./drawParagraph.js";
 import { drawTableBlock } from "./drawTable.js";
 
-export function drawBlockList(
+export async function drawBlockList(
   writer: OasisPdfWriter,
   pageIndex: number,
   blocks: EditorLayoutBlock[] | undefined,
@@ -18,7 +18,7 @@ export function drawBlockList(
   contentWidth: number,
   fontRegistry: PdfFontRegistry,
   listOrdinals: Map<string, number>,
-): void {
+): Promise<void> {
   if (!blocks || blocks.length === 0) {
     return;
   }
@@ -29,7 +29,7 @@ export function drawBlockList(
       const paragraphStyle = resolveEffectiveParagraphStyle(block.sourceBlock.style, document.styles);
       const spacingBefore =
         block.layout.startOffset === 0 && cursorY > originY ? paragraphStyle.spacingBefore ?? 0 : 0;
-      drawParagraph(
+      await drawParagraph(
         writer,
         pageIndex,
         block.sourceBlock,
@@ -41,7 +41,7 @@ export function drawBlockList(
         listOrdinals,
       );
     } else if (block.sourceBlock.type === "table") {
-      drawTableBlock(
+      await drawTableBlock(
         writer,
         pageIndex,
         block,

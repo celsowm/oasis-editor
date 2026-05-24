@@ -16,6 +16,7 @@ export interface OasisPdfPage {
   width: number;
   height: number;
   commands: string[];
+  imageResourceNames: Set<string>;
 }
 
 export interface OasisPdfRectOptions {
@@ -46,6 +47,22 @@ export interface OasisPdfTextOptions {
   bold?: boolean;
   italic?: boolean;
   fontResourceName?: string;
+}
+
+export interface OasisPdfImageResource {
+  resourceName: string;
+  width: number;
+  height: number;
+  data: Uint8Array;
+  filter: "DCTDecode";
+}
+
+export interface OasisPdfImageOptions {
+  resourceName: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export type OasisPdfFontResource = OasisPdfBase14FontResource | OasisPdfUnicodeFontResource;
@@ -271,6 +288,19 @@ function asciiHexStreamObjectBody(bytes: Uint8Array, extraDictionary = ""): stri
   return `<< /Length ${byteLength(stream)} /Filter /ASCIIHexDecode${dictionary} >>\nstream\n${stream}\nendstream`;
 }
 
+function asciiHexImageStreamObjectBody(bytes: Uint8Array, dictionaryEntries: string[]): string {
+  const stream = `${bytesToHex(bytes)}>`;
+  return [
+    `<< /Length ${byteLength(stream)}`,
+    " /Filter [/ASCIIHexDecode /DCTDecode]",
+    ` ${dictionaryEntries.join(" ")}`,
+    " >>",
+    "stream",
+    stream,
+    "endstream",
+  ].join("\n");
+}
+
 function encodeGlyphHex(glyphId: number): string {
   return toHex16(glyphId);
 }
@@ -285,6 +315,7 @@ export class OasisPdfWriter {
   private readonly fontResources = new Map<string, OasisPdfFontResource>();
   private readonly unicodeFontStates = new Map<string, OasisPdfUnicodeFontState>();
   private readonly usedFontResourceNames = new Set<string>();
+  private readonly imageResources = new Map<string, OasisPdfImageResource>();
 
   constructor(fontResources: OasisPdfFontResource[] = DEFAULT_PDF_FONT_RESOURCES) {
     for (const resource of fontResources) {
@@ -315,6 +346,7 @@ export class OasisPdfWriter {
       width: Math.max(1, size.width),
       height: Math.max(1, size.height),
       commands: [],
+      imageResourceNames: new Set(),
     });
     return this.pages.length - 1;
   }
@@ -396,6 +428,43 @@ export class OasisPdfWriter {
       `${formatNumber(options.x)} ${formatNumber(page.height - options.y)} Td`,
       `<${encodePdfHexString(options.text)}> Tj`,
       "ET",
+    ].join("\n"));
+  }
+
+  registerImageResource(resource: Omit<OasisPdfImageResource, "resourceName"> & { resourceName?: string }): string {
+    const resourceName = resource.resourceName ?? `Im${this.imageResources.size + 1}`;
+    if (!this.imageResources.has(resourceName)) {
+      this.imageResources.set(resourceName, {
+        resourceName,
+        width: Math.max(1, Math.round(resource.width)),
+        height: Math.max(1, Math.round(resource.height)),
+        data: resource.data,
+        filter: resource.filter,
+      });
+    }
+    return resourceName;
+  }
+
+  drawImage(pageIndex: number, options: OasisPdfImageOptions): void {
+    const page = this.pages[pageIndex];
+    if (!page || options.width <= 0 || options.height <= 0 || !this.imageResources.has(options.resourceName)) {
+      return;
+    }
+
+    page.imageResourceNames.add(options.resourceName);
+    page.commands.push([
+      "q",
+      [
+        formatNumber(options.width),
+        "0",
+        "0",
+        formatNumber(options.height),
+        formatNumber(options.x),
+        formatNumber(page.height - options.y - options.height),
+        "cm",
+      ].join(" "),
+      `/${options.resourceName} Do`,
+      "Q",
     ].join("\n"));
   }
 
@@ -496,16 +565,28 @@ export class OasisPdfWriter {
     const fontResourceXml = fontResourceEntries
       .map((font, index) => `/${font.resourceName} ${fontObjectIds[index]} 0 R`)
       .join(" ");
+    const imageObjectIds = new Map<string, number>();
+    for (const image of this.imageResources.values()) {
+      imageObjectIds.set(image.resourceName, this.addImageObject(image, addObject));
+    }
     const pageObjectIds: number[] = [];
 
     for (const page of this.pages) {
       const stream = `${page.commands.join("\n")}\n`;
       const contentObjectId = addObject(`<< /Length ${byteLength(stream)} >>\nstream\n${stream}endstream`);
+      const imageResourceXml = Array.from(page.imageResourceNames)
+        .map((resourceName) => {
+          const objectId = imageObjectIds.get(resourceName);
+          return objectId ? `/${resourceName} ${objectId} 0 R` : "";
+        })
+        .filter(Boolean)
+        .join(" ");
+      const xObjectResourceXml = imageResourceXml ? ` /XObject << ${imageResourceXml} >>` : "";
       const pageObjectId = addObject([
         "<< /Type /Page",
         `/Parent ${pagesObjectId} 0 R`,
         `/MediaBox [0 0 ${formatNumber(page.width)} ${formatNumber(page.height)}]`,
-        `/Resources << /Font << ${fontResourceXml} >> >>`,
+        `/Resources << /Font << ${fontResourceXml} >>${xObjectResourceXml} >>`,
         `/Contents ${contentObjectId} 0 R`,
         ">>",
       ].join("\n"));
@@ -543,6 +624,17 @@ export class OasisPdfWriter {
     ].join("\n");
 
     return new TextEncoder().encode(body);
+  }
+
+  private addImageObject(resource: OasisPdfImageResource, addObject: (body: string) => number): number {
+    return addObject(asciiHexImageStreamObjectBody(resource.data, [
+      "/Type /XObject",
+      "/Subtype /Image",
+      `/Width ${resource.width}`,
+      `/Height ${resource.height}`,
+      "/ColorSpace /DeviceRGB",
+      "/BitsPerComponent 8",
+    ]));
   }
 
   private addUnicodeFontObjects(state: OasisPdfUnicodeFontState, addObject: (body: string) => number): number {
