@@ -129,6 +129,13 @@ async function seedText(page: Page, text: string) {
   await page.waitForTimeout(60);
 }
 
+async function selectFirstSeedWord(page: Page) {
+  const pageRect = await canvasPageRect(page);
+  await page.mouse.dblclick(pageRect.x + 190, pageRect.y + 140);
+  await expect(page.locator(".oasis-editor-selection-box").first()).toBeVisible();
+  await expectDebugSelection(page);
+}
+
 async function clickToolbarAction(page: Page, testId: string) {
   const button = page.getByTestId(testId);
   if (await button.isVisible()) {
@@ -210,6 +217,55 @@ test("canvas pointer interactions update caret and selection from canvas layout 
   const p2 = { x: pageRect.x + 334, y: pageRect.y + 140 };
   await exercisePointerCoherence(page, p1, p2);
   await expectNoMissEvents(page);
+});
+
+test("toolbar color split buttons separate direct apply from palette selection", async ({ page }) => {
+  await gotoEditor(page);
+  await seedText(page, "alpha beta gamma");
+  await selectFirstSeedWord(page);
+
+  await page.getByTestId("editor-toolbar-color").click();
+  await expect(page.locator(".oasis-editor-color-menu")).toHaveCount(0);
+
+  await page.getByTestId("editor-toolbar-color-dropdown").click();
+  await expect(page.locator(".oasis-editor-color-menu")).toBeVisible();
+  await expect(page.getByTestId("editor-toolbar-color-clear")).toBeVisible();
+  await page.getByTestId("editor-toolbar-color-standard-swatch-ff0000").click();
+  await expect(page.locator(".oasis-editor-color-menu")).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page
+        .getByTestId("editor-toolbar-color")
+        .locator(".oasis-editor-color-split-indicator")
+        .evaluate((element) => getComputedStyle(element).backgroundColor),
+    )
+    .toBe("rgb(255, 0, 0)");
+
+  await page.getByTestId("editor-toolbar-color-dropdown").click();
+  await page.getByTestId("editor-toolbar-color-clear").click();
+  await expect(page.locator(".oasis-editor-color-menu")).toHaveCount(0);
+
+  await selectFirstSeedWord(page);
+  await page.getByTestId("editor-toolbar-highlight").click();
+  await expect(page.locator(".oasis-editor-color-menu")).toHaveCount(0);
+
+  await page.getByTestId("editor-toolbar-highlight-dropdown").click();
+  await expect(page.locator(".oasis-editor-color-menu")).toBeVisible();
+  await expect(page.getByTestId("editor-toolbar-highlight-clear")).toBeVisible();
+  await page.getByTestId("editor-toolbar-highlight-standard-swatch-00b050").click();
+  await expect(page.locator(".oasis-editor-color-menu")).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page
+        .getByTestId("editor-toolbar-highlight")
+        .locator(".oasis-editor-color-split-indicator")
+        .evaluate((element) => getComputedStyle(element).backgroundColor),
+    )
+    .toBe("rgb(0, 176, 80)");
+
+  await page.getByTestId("editor-toolbar-highlight-dropdown").click();
+  await page.getByTestId("editor-toolbar-highlight-clear").click();
+  await expect(page.locator(".oasis-editor-color-menu")).toHaveCount(0);
 });
 
 test("canvas header requires double-click to enter and double-click body to exit", async ({ page }) => {

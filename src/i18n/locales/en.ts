@@ -49,6 +49,11 @@ export const en = {
   "toolbar.size": "Size",
   "toolbar.color": "Text Color",
   "toolbar.highlight": "Highlight Color",
+  "toolbar.colorAutomatic": "Automatic",
+  "toolbar.noHighlight": "No highlight",
+  "toolbar.themeColors": "Theme Colors",
+  "toolbar.standardColors": "Standard Colors",
+  "toolbar.moreColors": "More Colors...",
 
   // Metric
   "metric.pageBreak": "Page Break",

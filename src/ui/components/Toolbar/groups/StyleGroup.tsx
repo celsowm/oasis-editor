@@ -1,7 +1,8 @@
-import { For } from "solid-js";
+import { For, createSignal } from "solid-js";
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarSelect } from "../ToolbarSelect.js";
 import { t } from "../../../../i18n/index.js";
+import { ColorSplitButton } from "../ColorSplitButton.js";
 
 /**
  * Style tools (Selects and Colors) rendered as individual items
@@ -11,6 +12,18 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
   const t_style = () => ctx().toolbarStyleState();
   const state = () => ctx().state();
+  const [lastTextColor, setLastTextColor] = createSignal("#111827");
+  const [lastHighlightColor, setLastHighlightColor] = createSignal("#fef08a");
+
+  const applyTextColor = (value: string | null) => {
+    if (value) setLastTextColor(value);
+    ctx().applyValueStyleCommand("color", value);
+  };
+
+  const applyHighlightColor = (value: string | null) => {
+    if (value) setLastHighlightColor(value);
+    ctx().applyValueStyleCommand("highlight", value);
+  };
   
   const fontFamilyOptions = () => {
     const values = new Set<string>([
@@ -94,31 +107,35 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
         </For>
       </ToolbarSelect>
 
-      <label class="oasis-editor-tool-color" title={t("toolbar.color")}>
-        <i data-lucide="type" />
-        <input
-          type="color"
-          class="oasis-editor-tool-color-input"
-          data-testid="editor-toolbar-color"
-          value={t_style().color || "#111827"}
-          onInput={(event) => ctx().applyValueStyleCommand("color", event.currentTarget.value)}
-          aria-label={t("toolbar.color")}
-        />
-      </label>
+      <ColorSplitButton
+        kind="color"
+        icon="type"
+        value={t_style().color || null}
+        defaultValue="#111827"
+        lastValue={lastTextColor()}
+        tooltip={t("toolbar.color")}
+        testId="editor-toolbar-color"
+        automaticLabel={t("toolbar.colorAutomatic")}
+        themeColorsLabel={t("toolbar.themeColors")}
+        standardColorsLabel={t("toolbar.standardColors")}
+        moreColorsLabel={t("toolbar.moreColors")}
+        onApply={applyTextColor}
+      />
 
-      <label class="oasis-editor-tool-color" title={t("toolbar.highlight")}>
-        <i data-lucide="highlighter" />
-        <input
-          type="color"
-          class="oasis-editor-tool-color-input"
-          data-testid="editor-toolbar-highlight"
-          value={t_style().highlight || "#fef08a"}
-          onInput={(event) =>
-            ctx().applyValueStyleCommand("highlight", event.currentTarget.value)
-          }
-          aria-label={t("toolbar.highlight")}
-        />
-      </label>
+      <ColorSplitButton
+        kind="highlight"
+        icon="highlighter"
+        value={t_style().highlight || null}
+        defaultValue="#fef08a"
+        lastValue={lastHighlightColor()}
+        tooltip={t("toolbar.highlight")}
+        testId="editor-toolbar-highlight"
+        noColorLabel={t("toolbar.noHighlight")}
+        themeColorsLabel={t("toolbar.themeColors")}
+        standardColorsLabel={t("toolbar.standardColors")}
+        moreColorsLabel={t("toolbar.moreColors")}
+        onApply={applyHighlightColor}
+      />
     </>
   );
 }

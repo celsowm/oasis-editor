@@ -49,6 +49,11 @@ export const ptBR = {
   "toolbar.size": "Tamanho",
   "toolbar.color": "Cor do Texto",
   "toolbar.highlight": "Cor de Realce",
+  "toolbar.colorAutomatic": "Automático",
+  "toolbar.noHighlight": "Sem realce",
+  "toolbar.themeColors": "Cores do Tema",
+  "toolbar.standardColors": "Cores Padrão",
+  "toolbar.moreColors": "Mais Cores...",
 
   // Metric
   "metric.pageBreak": "Quebra de Página",
