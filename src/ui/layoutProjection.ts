@@ -437,6 +437,28 @@ function getCellHorizontalChromePx(cell: EditorTableNode["rows"][number]["cells"
   return Math.max(0, padLeft + padRight + borderLeft + borderRight);
 }
 
+function getCellVerticalChromePx(cell: EditorTableNode["rows"][number]["cells"][number]): number {
+  const padTop =
+    cell.style?.padding !== undefined
+      ? cell.style.padding * POINT_TO_PX
+      : cell.style?.paddingTop !== undefined
+        ? cell.style.paddingTop * POINT_TO_PX
+        : 0;
+  const padBottom =
+    cell.style?.padding !== undefined
+      ? cell.style.padding * POINT_TO_PX
+      : cell.style?.paddingBottom !== undefined
+        ? cell.style.paddingBottom * POINT_TO_PX
+        : 0;
+  const borderTop = cell.style?.borderTop
+    ? Math.max(0, cell.style.borderTop.width * POINT_TO_PX)
+    : 1;
+  const borderBottom = cell.style?.borderBottom
+    ? Math.max(0, cell.style.borderBottom.width * POINT_TO_PX)
+    : 1;
+  return Math.max(0, padTop + padBottom + borderTop + borderBottom);
+}
+
 function getTableCellContentWidth(
   cell: EditorTableNode["rows"][number]["cells"][number],
   fallbackContentWidth?: number,
@@ -554,7 +576,6 @@ function estimateTableRowHeight(
         if (total !== undefined && total > 0) columnWidthPx = total;
       }
       const cellContentWidth = getTableCellContentWidth(cell, contentWidth, columnWidthPx);
-      const horizontalChrome = getCellHorizontalChromePx(cell);
       let blockHeights = 0;
       for (const paragraph of cell.blocks) {
         blockHeights += estimateParagraphBlockHeight(
@@ -584,11 +605,7 @@ function estimateTableRowHeight(
           }
         }
       }
-      // Tiny vertical padding allowance based on chrome ratio so the height
-      // estimator and the canvas layout agree more closely (both ignore
-      // vertical padding by default but borders are constant).
-      const verticalChromeFallback = horizontalChrome > 0 ? 0 : 0;
-      return Math.max(blockHeights, largestImageHeight) + verticalChromeFallback;
+      return Math.max(blockHeights, largestImageHeight) + getCellVerticalChromePx(cell);
     });
 
   const contentHeight = Math.max(...cellHeights, DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT);

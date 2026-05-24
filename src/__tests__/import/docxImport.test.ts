@@ -7,7 +7,8 @@ import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditor
 import type { EditorDocument, EditorParagraphNode, EditorTableCellNode, EditorTableNode } from "../../core/model.js";
 import { getPageContentWidth, getParagraphText, getParagraphById, resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
 import { createEditorStateFromDocument } from "../../core/editorState.js";
-import { projectParagraphLayout } from "../../ui/layoutProjection.js";
+import { estimateTableBlockHeight, projectParagraphLayout } from "../../ui/layoutProjection.js";
+import { buildCanvasTableLayout } from "../../ui/canvas/CanvasTableLayout.js";
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "word-parity", "fixtures");
 const COMPLEX_DOCX = join(FIXTURES_DIR, "documento_complexo.docx");
@@ -254,6 +255,31 @@ describe("DOCX import", () => {
     table!.gridCols!.forEach((width) => {
       expect(width).toBeCloseTo(124.2, 1);
     });
+  });
+
+  it("keeps imported table layout height aligned with canvas table rendering", async () => {
+    const document = await importLoremComplexDocument();
+    const table = getDocumentTables(document)[0]!;
+    const pageSettings = document.sections?.[0]?.pageSettings ?? document.pageSettings;
+    const contentWidth = pageSettings ? getPageContentWidth(pageSettings) : 662;
+    const estimatedHeight = estimateTableBlockHeight(
+      table,
+      document.styles,
+      contentWidth,
+    );
+    const canvasLayout = buildCanvasTableLayout({
+      table,
+      state: createEditorStateFromDocument(document),
+      pageIndex: 0,
+      layoutMode: "fast",
+      originX: 0,
+      originY: 0,
+      contentWidth,
+      estimatedHeight,
+    });
+
+    expect(table.rows).toHaveLength(5);
+    expect(estimatedHeight).toBeCloseTo(canvasLayout.height, 4);
   });
 
   it("imports individual table cell margins (tcMar) from DOCX", async () => {
