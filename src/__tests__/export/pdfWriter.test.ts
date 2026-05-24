@@ -669,8 +669,12 @@ describe('OasisPdfWriter', () => {
 
     expect(pageCount).toBe(projectedPageCount);
     expect(pageCount).toBeGreaterThan(1);
-    expectPdfTextFragment(pdf, 'facilisis luctus');
-    expectPdfTextFragment(pdf, 'non neque.');
+    // Justified paragraphs render one PDF text command per word so per-word
+    // shifts (computed by the layout) are preserved in the output.
+    expectPdfTextFragment(pdf, 'facilisis');
+    expectPdfTextFragment(pdf, 'luctus,');
+    expectPdfTextFragment(pdf, 'non');
+    expectPdfTextFragment(pdf, 'neque.');
   });
 
   it('writes accented text through embedded Unicode fonts instead of corrupt UTF-8 literals', async () => {
@@ -892,5 +896,96 @@ describe('OasisPdfWriter', () => {
       pxToPt((firstPage.footerTop ?? 0) + footerLine.top + footerLine.height * 0.8),
       3,
     );
+  });
+
+  it('renders table cell text, borders and shading for table blocks', async () => {
+    const document: EditorDocument = {
+      id: 'pdf-table-document',
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 480,
+            height: 480,
+            orientation: 'portrait',
+            margins: { top: 48, right: 48, bottom: 48, left: 48, header: 24, footer: 24, gutter: 0 },
+          },
+          blocks: [
+            {
+              id: 'table-1',
+              type: 'table',
+              gridCols: [120, 120],
+              rows: [
+                {
+                  id: 'row-1',
+                  isHeader: true,
+                  cells: [
+                    {
+                      id: 'cell-1-1',
+                      style: { shading: '#eeeeee' },
+                      blocks: [
+                        {
+                          id: 'p-1-1',
+                          type: 'paragraph',
+                          runs: [{ id: 'r-1-1', text: 'HeaderA' }],
+                        },
+                      ],
+                    },
+                    {
+                      id: 'cell-1-2',
+                      blocks: [
+                        {
+                          id: 'p-1-2',
+                          type: 'paragraph',
+                          runs: [{ id: 'r-1-2', text: 'HeaderB' }],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  id: 'row-2',
+                  cells: [
+                    {
+                      id: 'cell-2-1',
+                      blocks: [
+                        {
+                          id: 'p-2-1',
+                          type: 'paragraph',
+                          runs: [{ id: 'r-2-1', text: 'BodyA' }],
+                        },
+                      ],
+                    },
+                    {
+                      id: 'cell-2-2',
+                      blocks: [
+                        {
+                          id: 'p-2-2',
+                          type: 'paragraph',
+                          runs: [{ id: 'r-2-2', text: 'BodyB' }],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+
+    expectPdfText(pdf, 'HeaderA');
+    expectPdfText(pdf, 'HeaderB');
+    expectPdfText(pdf, 'BodyA');
+    expectPdfText(pdf, 'BodyB');
+    // Cell borders are emitted as PDF line segments.
+    expect(pdf).toMatch(/\d+(\.\d+)? \d+(\.\d+)? m\n\d+(\.\d+)? \d+(\.\d+)? l\nS/);
+    // Shading on the first header cell produces a filled rectangle in the
+    // cell's shading color.
+    expect(pdf).toContain('0.933 0.933 0.933 rg');
   });
 });
