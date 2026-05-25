@@ -12,6 +12,7 @@ import type {
   EditorPageSettings,
   EditorNamedStyle,
   EditorParagraphNode,
+  EditorSection,
   EditorTableNode,
 } from "../core/model.js";
 import {
@@ -878,10 +879,48 @@ function blockContainsNumPagesField(block: EditorBlockNode): boolean {
 
 function documentContainsNumPagesField(document: EditorDocument): boolean {
   return getDocumentSections(document).some((section) =>
-    [...(section.header ?? []), ...section.blocks, ...(section.footer ?? [])].some(
-      blockContainsNumPagesField,
-    ),
+    [
+      ...(section.header ?? []),
+      ...(section.firstPageHeader ?? []),
+      ...(section.evenPageHeader ?? []),
+      ...section.blocks,
+      ...(section.footer ?? []),
+      ...(section.firstPageFooter ?? []),
+      ...(section.evenPageFooter ?? []),
+    ].some(blockContainsNumPagesField),
   );
+}
+
+function selectSectionHeaderBlocks(
+  section: EditorSection,
+  pageIndexInSection: number,
+  globalPageIndex: number,
+): EditorBlockNode[] | undefined {
+  const isFirstPageOfSection = pageIndexInSection === 0;
+  const isEvenPageNumber = (globalPageIndex + 1) % 2 === 0;
+  if (isFirstPageOfSection && section.firstPageHeader) {
+    return section.firstPageHeader;
+  }
+  if (isEvenPageNumber && section.evenPageHeader) {
+    return section.evenPageHeader;
+  }
+  return section.header;
+}
+
+function selectSectionFooterBlocks(
+  section: EditorSection,
+  pageIndexInSection: number,
+  globalPageIndex: number,
+): EditorBlockNode[] | undefined {
+  const isFirstPageOfSection = pageIndexInSection === 0;
+  const isEvenPageNumber = (globalPageIndex + 1) % 2 === 0;
+  if (isFirstPageOfSection && section.firstPageFooter) {
+    return section.firstPageFooter;
+  }
+  if (isEvenPageNumber && section.evenPageFooter) {
+    return section.evenPageFooter;
+  }
+  return section.footer;
 }
 
 function resolveEffectiveVerticalMetrics(
@@ -965,9 +1004,10 @@ export function projectBlocksLayout(
     const nextBlock = blocks[index + 1];
 
     if (
-      sourceBlock.type === "paragraph" &&
       currentBlocks.length > 0 &&
-      getEffectiveParagraphStyle(sourceBlock, styles).pageBreakBefore
+      (sourceBlock.type === "paragraph"
+        ? getEffectiveParagraphStyle(sourceBlock, styles).pageBreakBefore
+        : sourceBlock.style?.pageBreakBefore)
     ) {
       flushPage();
     }
@@ -1277,38 +1317,48 @@ export function projectDocumentLayout(
   const document = blocksOrDocument;
   const sections = getDocumentSections(document);
   const needsTotalPages = documentContainsNumPagesField(document);
+
+  const projectHeaderFooterVariant = (
+    blocks: EditorBlockNode[] | undefined,
+    contentWidth: number,
+    pageIndex?: number,
+    totalPageCount?: number,
+  ) =>
+    blocks
+      ? projectHeaderFooterBlocks(
+          blocks,
+          pageIndex,
+          totalPageCount,
+          measuredHeights,
+          measuredParagraphLayouts,
+          document.styles,
+          contentWidth,
+          layoutMode,
+          measurer,
+        )
+      : undefined;
+
+  const projectTallestHeaderVariant = (section: EditorSection, contentWidth: number) => {
+    const variants = [section.header, section.firstPageHeader, section.evenPageHeader]
+      .map((blocks) => projectHeaderFooterVariant(blocks, contentWidth))
+      .filter((blocks): blocks is EditorLayoutBlock[] => !!blocks);
+    return variants.sort((a, b) => getProjectedBlocksHeight(b) - getProjectedBlocksHeight(a))[0];
+  };
+
+  const projectTallestFooterVariant = (section: EditorSection, contentWidth: number) => {
+    const variants = [section.footer, section.firstPageFooter, section.evenPageFooter]
+      .map((blocks) => projectHeaderFooterVariant(blocks, contentWidth))
+      .filter((blocks): blocks is EditorLayoutBlock[] => !!blocks);
+    return variants.sort((a, b) => getProjectedBlocksHeight(b) - getProjectedBlocksHeight(a))[0];
+  };
   
   const calculateTotalPages = () => {
     let currentTotal = 0;
     let activePages: EditorLayoutPage[] = [];
     for (const section of sections) {
       const contentWidth = getPageContentWidth(section.pageSettings);
-      const headerBlocks = section.header
-        ? projectHeaderFooterBlocks(
-            section.header,
-            undefined,
-            undefined,
-            measuredHeights,
-            measuredParagraphLayouts,
-            document.styles,
-            contentWidth,
-            layoutMode,
-            measurer,
-          )
-        : undefined;
-      const footerBlocks = section.footer
-        ? projectHeaderFooterBlocks(
-            section.footer,
-            undefined,
-            undefined,
-            measuredHeights,
-            measuredParagraphLayouts,
-            document.styles,
-            contentWidth,
-            layoutMode,
-            measurer,
-          )
-        : undefined;
+      const headerBlocks = projectTallestHeaderVariant(section, contentWidth);
+      const footerBlocks = projectTallestFooterVariant(section, contentWidth);
       const metrics = resolveEffectiveVerticalMetrics(
         section.pageSettings,
         headerBlocks,
@@ -1348,32 +1398,8 @@ export function projectDocumentLayout(
 
   for (const section of sections) {
     const contentWidth = getPageContentWidth(section.pageSettings);
-    const sectionHeaderBlocks = section.header
-      ? projectHeaderFooterBlocks(
-          section.header,
-          undefined,
-          totalPages,
-          measuredHeights,
-          measuredParagraphLayouts,
-          document.styles,
-          contentWidth,
-          layoutMode,
-          measurer,
-        )
-      : undefined;
-    const sectionFooterBlocks = section.footer
-      ? projectHeaderFooterBlocks(
-          section.footer,
-          undefined,
-          totalPages,
-          measuredHeights,
-          measuredParagraphLayouts,
-          document.styles,
-          contentWidth,
-          layoutMode,
-          measurer,
-        )
-      : undefined;
+    const sectionHeaderBlocks = projectTallestHeaderVariant(section, contentWidth);
+    const sectionFooterBlocks = projectTallestFooterVariant(section, contentWidth);
     const sectionMetrics = resolveEffectiveVerticalMetrics(
       section.pageSettings,
       sectionHeaderBlocks,
@@ -1381,6 +1407,7 @@ export function projectDocumentLayout(
     );
     const pageHeight = maxPageHeightOverride ?? sectionMetrics.contentHeight;
     const isContinuous = section.breakType === "continuous" && allPages.length > 0;
+    const sectionPageOffset = isContinuous ? allPages.length - 1 : allPages.length;
     
     const sectionPages = projectBlocksLayout(
       section.blocks,
@@ -1389,7 +1416,7 @@ export function projectDocumentLayout(
       measuredHeights,
       measuredParagraphLayouts,
       document.styles,
-      isContinuous ? allPages.length - 1 : allPages.length,
+      sectionPageOffset,
       totalPages,
       isContinuous ? [allPages[allPages.length - 1]] : [],
       layoutMode,
@@ -1401,32 +1428,22 @@ export function projectDocumentLayout(
     }
 
     for (const page of sectionPages) {
-      const headerBlocks = section.header
-        ? projectHeaderFooterBlocks(
-            section.header,
-            page.index,
-            totalPages,
-            measuredHeights,
-            measuredParagraphLayouts,
-            document.styles,
-            getPageContentWidth(page.pageSettings),
-            layoutMode,
-            measurer,
-          )
-        : page.headerBlocks;
-      const footerBlocks = section.footer
-        ? projectHeaderFooterBlocks(
-            section.footer,
-            page.index,
-            totalPages,
-            measuredHeights,
-            measuredParagraphLayouts,
-            document.styles,
-            getPageContentWidth(page.pageSettings),
-            layoutMode,
-            measurer,
-          )
-        : page.footerBlocks;
+      const pageIndexInSection = page.index - sectionPageOffset;
+      const pageContentWidth = getPageContentWidth(page.pageSettings);
+      const headerBlocks =
+        projectHeaderFooterVariant(
+          selectSectionHeaderBlocks(section, Math.max(0, pageIndexInSection), page.index),
+          pageContentWidth,
+          page.index,
+          totalPages,
+        ) ?? page.headerBlocks;
+      const footerBlocks =
+        projectHeaderFooterVariant(
+          selectSectionFooterBlocks(section, Math.max(0, pageIndexInSection), page.index),
+          pageContentWidth,
+          page.index,
+          totalPages,
+        ) ?? page.footerBlocks;
 
       const pageMetrics = resolveEffectiveVerticalMetrics(
         page.pageSettings,

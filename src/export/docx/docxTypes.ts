@@ -41,6 +41,7 @@ export interface ExportBuildState {
 
 export interface PartDefinition {
   kind: "header" | "footer";
+  type: "default" | "first" | "even";
   path: string;
   relId: string;
   blocks: EditorBlockNode[];
@@ -48,6 +49,6 @@ export interface PartDefinition {
 }
 
 export interface SectionReferenceDefinition {
-  header?: { relId: string };
-  footer?: { relId: string };
+  header?: Partial<Record<"default" | "first" | "even", { relId: string }>>;
+  footer?: Partial<Record<"default" | "first" | "even", { relId: string }>>;
 }

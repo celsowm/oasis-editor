@@ -8,12 +8,22 @@ import {
   createEditorTableRow,
 } from "../../core/editorState.js";
 import { exportEditorDocumentToDocx } from "../../export/docx/exportEditorDocumentToDocx.js";
+import type { EditorDocument } from "../../core/model.js";
 
 async function readDocumentXml(buffer: ArrayBuffer): Promise<string> {
   const zip = await JSZip.loadAsync(buffer);
   const xml = await zip.file("word/document.xml")?.async("string");
   if (!xml) {
     throw new Error("Missing word/document.xml");
+  }
+  return xml;
+}
+
+async function readZipText(buffer: ArrayBuffer, path: string): Promise<string> {
+  const zip = await JSZip.loadAsync(buffer);
+  const xml = await zip.file(path)?.async("string");
+  if (!xml) {
+    throw new Error(`Missing ${path}`);
   }
   return xml;
 }
@@ -80,5 +90,64 @@ describe("DOCX export", () => {
       '<w:left w:val="dotted" w:sz="6" w:space="0" w:color="64748B"/>',
     );
     expect(xml).toContain('<w:jc w:val="center"/>');
+  });
+
+  it("serializes a manual page break before tables that request it", async () => {
+    const table = createEditorTable([
+      createEditorTableRow([
+        createEditorTableCell([createEditorParagraph("After break")]),
+      ]),
+    ]);
+    table.style = { pageBreakBefore: true };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(
+        createEditorDocument([createEditorParagraph("Before break"), table]),
+      ),
+    );
+
+    const breakIndex = xml.indexOf('<w:p><w:r><w:br w:type="page"/></w:r></w:p>');
+    const tableIndex = xml.indexOf("<w:tbl>");
+
+    expect(breakIndex).toBeGreaterThan(-1);
+    expect(tableIndex).toBeGreaterThan(breakIndex);
+  });
+
+  it("serializes first, even, and default header/footer references", async () => {
+    const document = createEditorDocument([]);
+    const pageSettings = document.pageSettings!;
+    const body = createEditorParagraph("Body");
+    const doc: EditorDocument = {
+      ...document,
+      sections: [
+        {
+          id: "section:1",
+          pageSettings,
+          blocks: [body],
+          firstPageHeader: [createEditorParagraph("First header")],
+          evenPageHeader: [createEditorParagraph("Even header")],
+          header: [createEditorParagraph("Default header")],
+          firstPageFooter: [createEditorParagraph("First footer")],
+          evenPageFooter: [createEditorParagraph("Even footer")],
+          footer: [createEditorParagraph("Default footer")],
+        },
+      ],
+    };
+
+    const buffer = await exportEditorDocumentToDocx(doc);
+    const documentXml = await readZipText(buffer, "word/document.xml");
+    const relsXml = await readZipText(buffer, "word/_rels/document.xml.rels");
+    const settingsXml = await readZipText(buffer, "word/settings.xml");
+
+    expect(documentXml).toContain('<w:headerReference w:type="first"');
+    expect(documentXml).toContain('<w:headerReference w:type="even"');
+    expect(documentXml).toContain('<w:headerReference w:type="default"');
+    expect(documentXml).toContain('<w:footerReference w:type="first"');
+    expect(documentXml).toContain('<w:footerReference w:type="even"');
+    expect(documentXml).toContain('<w:footerReference w:type="default"');
+    expect(documentXml).toContain("<w:titlePg/>");
+    expect(settingsXml).toContain("<w:evenAndOddHeaders/>");
+    expect(relsXml.match(/relationships\/header/g)).toHaveLength(3);
+    expect(relsXml.match(/relationships\/footer/g)).toHaveLength(3);
   });
 });

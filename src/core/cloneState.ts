@@ -39,7 +39,11 @@ export function cloneSection(section: EditorSection): EditorSection {
     ...section,
     blocks: section.blocks.map(cloneBlock),
     header: section.header?.map(cloneBlock),
+    firstPageHeader: section.firstPageHeader?.map(cloneBlock),
+    evenPageHeader: section.evenPageHeader?.map(cloneBlock),
     footer: section.footer?.map(cloneBlock),
+    firstPageFooter: section.firstPageFooter?.map(cloneBlock),
+    evenPageFooter: section.evenPageFooter?.map(cloneBlock),
   };
 }
 

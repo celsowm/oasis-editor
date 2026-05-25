@@ -39,15 +39,29 @@ function serializeSectionPropertiesWithReferences(
   const orientationAttr =
     pageSettings.orientation === "landscape" ? ' w:orient="landscape"' : "";
   const referencesXml = [
-    references?.header
-      ? `<w:headerReference w:type="default" r:id="${references.header.relId}"/>`
+    references?.header?.first
+      ? `<w:headerReference w:type="first" r:id="${references.header.first.relId}"/>`
       : "",
-    references?.footer
-      ? `<w:footerReference w:type="default" r:id="${references.footer.relId}"/>`
+    references?.header?.even
+      ? `<w:headerReference w:type="even" r:id="${references.header.even.relId}"/>`
+      : "",
+    references?.header?.default
+      ? `<w:headerReference w:type="default" r:id="${references.header.default.relId}"/>`
+      : "",
+    references?.footer?.first
+      ? `<w:footerReference w:type="first" r:id="${references.footer.first.relId}"/>`
+      : "",
+    references?.footer?.even
+      ? `<w:footerReference w:type="even" r:id="${references.footer.even.relId}"/>`
+      : "",
+    references?.footer?.default
+      ? `<w:footerReference w:type="default" r:id="${references.footer.default.relId}"/>`
       : "",
   ].join("");
+  const titlePageXml =
+    references?.header?.first || references?.footer?.first ? "<w:titlePg/>" : "";
 
-  return `<w:sectPr>${referencesXml}<w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/></w:sectPr>`;
+  return `<w:sectPr>${referencesXml}${titlePageXml}<w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/></w:sectPr>`;
 }
 
 function visitBlocks(
@@ -111,8 +125,20 @@ function buildNumberingContext(document: EditorDocument): NumberingContext {
     if (section.header) {
       visitBlocks(section.header, traverseParagraph);
     }
+    if (section.firstPageHeader) {
+      visitBlocks(section.firstPageHeader, traverseParagraph);
+    }
+    if (section.evenPageHeader) {
+      visitBlocks(section.evenPageHeader, traverseParagraph);
+    }
     if (section.footer) {
       visitBlocks(section.footer, traverseParagraph);
+    }
+    if (section.firstPageFooter) {
+      visitBlocks(section.firstPageFooter, traverseParagraph);
+    }
+    if (section.evenPageFooter) {
+      visitBlocks(section.evenPageFooter, traverseParagraph);
     }
   }
 
@@ -228,7 +254,10 @@ function serializeBlocksXml(
   return blocks
     .map((block) => {
       if (block.type === "table") {
-        return serializeTableXml(block, (paragraph, cell) =>
+        const pageBreakXml = block.style?.pageBreakBefore
+          ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
+          : "";
+        return pageBreakXml + serializeTableXml(block, (paragraph, cell) =>
           serializeParagraphXml(paragraph, context, styles, {
             align: cell.style?.horizontalAlign,
           }),
@@ -277,6 +306,7 @@ function buildHeaderFooterXml(
 function buildContentTypesXml(
   hasNumbering: boolean,
   hasImages: boolean,
+  hasSettings: boolean,
   parts: PartDefinition[],
 ): string {
   const overrides = parts
@@ -296,6 +326,10 @@ function buildContentTypesXml(
     hasNumbering
       ? '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>'
       : ""
+  }${
+    hasSettings
+      ? '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>'
+      : ""
   }${overrides}</Types>`;
 }
 
@@ -305,6 +339,7 @@ function buildRootRelationshipsXml(): string {
 
 function buildDocumentRelationshipsXml(
   hasNumbering: boolean,
+  hasSettings: boolean,
   images: DocContext["images"],
   hyperlinks: DocContext["hyperlinks"],
   parts: PartDefinition[],
@@ -312,6 +347,8 @@ function buildDocumentRelationshipsXml(
   let rels = "";
   if (hasNumbering)
     rels += `<Relationship Id="rIdNum" Type="${OFFICE_REL_NS}/numbering" Target="numbering.xml"/>`;
+  if (hasSettings)
+    rels += `<Relationship Id="rIdSettings" Type="${OFFICE_REL_NS}/settings" Target="settings.xml"/>`;
   for (const hyperlink of hyperlinks) {
     rels += `<Relationship Id="${hyperlink.rId}" Type="${OFFICE_REL_NS}/hyperlink" Target="${escapeXml(hyperlink.href)}" TargetMode="External"/>`;
   }
@@ -323,6 +360,12 @@ function buildDocumentRelationshipsXml(
     rels += `<Relationship Id="${part.relId}" Type="${OFFICE_REL_NS}/${relType}" Target="${part.path}"/>`;
   }
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${PACKAGE_REL_NS}">${rels}</Relationships>`;
+}
+
+function buildSettingsXml(hasEvenAndOddHeaders: boolean): string {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="${WORD_NS}">${
+    hasEvenAndOddHeaders ? "<w:evenAndOddHeaders/>" : ""
+  }</w:settings>`;
 }
 
 function buildPartRelationshipsXml(
@@ -360,47 +403,55 @@ export async function exportEditorDocumentToDocx(
   let nextFooterIndex = 1;
 
   sections.forEach((section, sectionIndex) => {
-    if (section.header && section.header.length > 0) {
-      const path = `header${nextHeaderIndex}.xml`;
-      const relId = `rIdHeader${nextHeaderIndex}`;
+    const addPart = (
+      kind: "header" | "footer",
+      type: "default" | "first" | "even",
+      blocks: EditorBlockNode[] | undefined,
+    ) => {
+      if (!blocks || blocks.length === 0) {
+        return;
+      }
+      const partIndex = kind === "header" ? nextHeaderIndex : nextFooterIndex;
+      const relPrefix = kind === "header" ? "Header" : "Footer";
+      const path = `${kind}${partIndex}.xml`;
+      const relId = `rId${relPrefix}${partIndex}`;
       const context = buildPartContext(
-        section.header,
+        blocks,
         numberingContext,
         buildState,
         document,
       );
       parts.push({
-        kind: "header",
+        kind,
+        type,
         path,
         relId,
-        blocks: section.header,
+        blocks,
         context,
       });
-      sectionReferences[sectionIndex]!.header = { relId };
-      nextHeaderIndex += 1;
-    }
-    if (section.footer && section.footer.length > 0) {
-      const path = `footer${nextFooterIndex}.xml`;
-      const relId = `rIdFooter${nextFooterIndex}`;
-      const context = buildPartContext(
-        section.footer,
-        numberingContext,
-        buildState,
-        document,
-      );
-      parts.push({
-        kind: "footer",
-        path,
-        relId,
-        blocks: section.footer,
-        context,
-      });
-      sectionReferences[sectionIndex]!.footer = { relId };
-      nextFooterIndex += 1;
-    }
+      const referenceKey = kind === "header" ? "header" : "footer";
+      (sectionReferences[sectionIndex]![referenceKey] ??= {})[type] = { relId };
+      if (kind === "header") {
+        nextHeaderIndex += 1;
+      } else {
+        nextFooterIndex += 1;
+      }
+    };
+
+    addPart("header", "first", section.firstPageHeader);
+    addPart("header", "even", section.evenPageHeader);
+    addPart("header", "default", section.header);
+    addPart("footer", "first", section.firstPageFooter);
+    addPart("footer", "even", section.evenPageFooter);
+    addPart("footer", "default", section.footer);
   });
 
   const hasNumbering = numberingContext.definitions.length > 0;
+  const hasEvenAndOddHeaders = sections.some(
+    (section) =>
+      (section.evenPageHeader?.length ?? 0) > 0 ||
+      (section.evenPageFooter?.length ?? 0) > 0,
+  );
   const allImages = [
     ...bodyContext.images,
     ...parts.flatMap((part) => part.context.images),
@@ -409,7 +460,7 @@ export async function exportEditorDocumentToDocx(
 
   zip.file(
     "[Content_Types].xml",
-    buildContentTypesXml(hasNumbering, hasImages, parts),
+    buildContentTypesXml(hasNumbering, hasImages, hasEvenAndOddHeaders, parts),
   );
   zip.file("_rels/.rels", buildRootRelationshipsXml());
   zip.file(
@@ -426,6 +477,7 @@ export async function exportEditorDocumentToDocx(
 
   if (
     hasNumbering ||
+    hasEvenAndOddHeaders ||
     bodyContext.images.length > 0 ||
     bodyContext.hyperlinks.length > 0 ||
     parts.length > 0
@@ -434,11 +486,16 @@ export async function exportEditorDocumentToDocx(
       "word/_rels/document.xml.rels",
       buildDocumentRelationshipsXml(
         hasNumbering,
+        hasEvenAndOddHeaders,
         bodyContext.images,
         bodyContext.hyperlinks,
         parts,
       ),
     );
+  }
+
+  if (hasEvenAndOddHeaders) {
+    zip.file("word/settings.xml", buildSettingsXml(hasEvenAndOddHeaders));
   }
 
   for (const part of parts) {

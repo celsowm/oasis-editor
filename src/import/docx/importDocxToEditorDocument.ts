@@ -150,12 +150,22 @@ function normalizeImportedParagraphStyle(style: EditorParagraphStyle | undefined
     lineHeight: effective.lineHeight !== defaultEffective.lineHeight ? effective.lineHeight : undefined,
     lineGridPitch: style.lineGridPitch ?? undefined,
     snapToGrid: effective.snapToGrid !== defaultEffective.snapToGrid ? effective.snapToGrid : undefined,
-    indentLeft: effective.indentLeft !== defaultEffective.indentLeft ? effective.indentLeft : undefined,
-    indentRight: effective.indentRight !== defaultEffective.indentRight ? effective.indentRight : undefined,
+    indentLeft:
+      style.indentLeft !== undefined || effective.indentLeft !== defaultEffective.indentLeft
+        ? effective.indentLeft
+        : undefined,
+    indentRight:
+      style.indentRight !== undefined || effective.indentRight !== defaultEffective.indentRight
+        ? effective.indentRight
+        : undefined,
     indentFirstLine:
-      effective.indentFirstLine !== defaultEffective.indentFirstLine ? effective.indentFirstLine : undefined,
+      style.indentFirstLine !== undefined || effective.indentFirstLine !== defaultEffective.indentFirstLine
+        ? effective.indentFirstLine
+        : undefined,
     indentHanging:
-      effective.indentHanging !== defaultEffective.indentHanging ? effective.indentHanging : undefined,
+      style.indentHanging !== undefined || effective.indentHanging !== defaultEffective.indentHanging
+        ? effective.indentHanging
+        : undefined,
     pageBreakBefore:
       effective.pageBreakBefore !== defaultEffective.pageBreakBefore ? effective.pageBreakBefore : undefined,
     keepWithNext: effective.keepWithNext !== defaultEffective.keepWithNext ? effective.keepWithNext : undefined,
@@ -251,6 +261,43 @@ function getAttributeValue(element: XmlElement | null, localName: string): strin
     return null;
   }
   return element.getAttributeNS(WORD_NS, localName) ?? element.getAttribute(`w:${localName}`) ?? element.getAttribute(localName);
+}
+
+function parseRelationshipsXml(xml: string | null | undefined): Map<string, string> {
+  const relsMap = new Map<string, string>();
+  if (!xml) {
+    return relsMap;
+  }
+
+  const relsDoc = new DOMParser().parseFromString(xml, "application/xml");
+  const relNodes = relsDoc.documentElement?.childNodes;
+  if (!relNodes) {
+    return relsMap;
+  }
+
+  for (let index = 0; index < relNodes.length; index += 1) {
+    const node = relNodes[index];
+    if (node?.nodeType === 1) {
+      const rel = node as XmlElement;
+      if (rel.localName === "Relationship") {
+        const id = rel.getAttribute("Id");
+        const target = rel.getAttribute("Target");
+        if (id && target) {
+          relsMap.set(id, target);
+        }
+      }
+    }
+  }
+
+  return relsMap;
+}
+
+async function loadPartRelationships(zip: JSZip, partPath: string): Promise<Map<string, string>> {
+  const slashIndex = partPath.lastIndexOf("/");
+  const directory = slashIndex >= 0 ? partPath.slice(0, slashIndex) : "";
+  const fileName = slashIndex >= 0 ? partPath.slice(slashIndex + 1) : partPath;
+  const relsPath = directory ? `${directory}/_rels/${fileName}.rels` : `_rels/${fileName}.rels`;
+  return parseRelationshipsXml(await zip.file(relsPath)?.async("string"));
 }
 
 function getTableCellColSpan(cellProperties: XmlElement | null): number {
@@ -466,8 +513,8 @@ interface ImportedRun {
 
 interface SectionProperties {
   pageSettings?: EditorPageSettings;
-  headerRId: string | null;
-  footerRId: string | null;
+  headerRIds: Partial<Record<"default" | "first" | "even", string>>;
+  footerRIds: Partial<Record<"default" | "first" | "even", string>>;
   docGridLinePitchPx?: number;
   docGridMode?: "explicit" | "implicit";
   docGridType?: string | null;
@@ -513,24 +560,33 @@ function parseSectionProperties(sectPr: XmlElement): SectionProperties {
     };
   }
 
-  const headerRef = getFirstChildByTagNameNS(sectPr, WORD_NS, "headerReference");
-  const footerRef = getFirstChildByTagNameNS(sectPr, WORD_NS, "footerReference");
-  const headerRId =
-    headerRef?.getAttribute("r:id") ??
-    headerRef?.getAttributeNS(OFFICE_REL_NS, "id") ??
-    null;
-  const footerRId =
-    footerRef?.getAttribute("r:id") ??
-    footerRef?.getAttributeNS(OFFICE_REL_NS, "id") ??
-    null;
+  const parseSectionReferences = (localName: "headerReference" | "footerReference") => {
+    const refs: Partial<Record<"default" | "first" | "even", string>> = {};
+    for (const ref of getChildrenByTagNameNS(sectPr, WORD_NS, localName)) {
+      const type = getAttributeValue(ref, "type") ?? "default";
+      if (type !== "default" && type !== "first" && type !== "even") {
+        continue;
+      }
+      const rId =
+        ref.getAttribute("r:id") ??
+        ref.getAttributeNS(OFFICE_REL_NS, "id") ??
+        null;
+      if (rId) {
+        refs[type] = rId;
+      }
+    }
+    return refs;
+  };
+  const headerRIds = parseSectionReferences("headerReference");
+  const footerRIds = parseSectionReferences("footerReference");
   const docGrid = getFirstChildByTagNameNS(sectPr, WORD_NS, "docGrid");
   const docGridType = getAttributeValue(docGrid, "type");
   const docGridLinePitchPx = twipsToPx(getAttributeValue(docGrid, "linePitch"), Number.NaN);
 
   return {
     pageSettings,
-    headerRId,
-    footerRId,
+    headerRIds,
+    footerRIds,
     docGridLinePitchPx:
       Number.isFinite(docGridLinePitchPx) && docGridLinePitchPx > 0
         ? docGridLinePitchPx
@@ -1537,26 +1593,7 @@ export async function importDocxToEditorDocument(
   }
 
   const relsXml = await zip.file("word/_rels/document.xml.rels")?.async("string");
-  const relsMap = new Map<string, string>();
-  if (relsXml) {
-    const relsDoc = new DOMParser().parseFromString(relsXml, "application/xml");
-    const relNodes = relsDoc.documentElement?.childNodes;
-    if (relNodes) {
-      for (let index = 0; index < relNodes.length; index += 1) {
-        const node = relNodes[index];
-        if (node?.nodeType === 1) {
-          const rel = node as XmlElement;
-          if (rel.localName === "Relationship") {
-            const id = rel.getAttribute("Id");
-            const target = rel.getAttribute("Target");
-            if (id && target) {
-              relsMap.set(id, target);
-            }
-          }
-        }
-      }
-    }
-  }
+  const relsMap = parseRelationshipsXml(relsXml);
 
   const numberingXml = (await zip.file("word/numbering.xml")?.async("string")) ?? null;
   const numberingMaps = parseNumbering(numberingXml);
@@ -1584,7 +1621,7 @@ export async function importDocxToEditorDocument(
   let pendingPageBreakBefore = false;
 
   const appendBodyBlock = (block: EditorBlockNode) => {
-    if (pendingPageBreakBefore && block.type === "paragraph") {
+    if (pendingPageBreakBefore) {
       block.style = { ...(block.style ?? {}), pageBreakBefore: true };
       pendingPageBreakBefore = false;
     }
@@ -1653,8 +1690,8 @@ export async function importDocxToEditorDocument(
         ? parseSectionProperties(defaultSectionProperties)
         : {
             pageSettings: parsePageSettings(body),
-            headerRId: null,
-            footerRId: null,
+            headerRIds: {},
+            footerRIds: {},
           },
     );
   }
@@ -1662,7 +1699,9 @@ export async function importDocxToEditorDocument(
   // Build sections with headers/footers
   options.onProgress?.("parsing-headers-footers");
   const sections: EditorSection[] = [];
-  const totalSectionsWithHeaders = sectionProps.filter((p) => p.headerRId || p.footerRId).length;
+  const hasHeaderFooterReferences = (props: SectionProperties) =>
+    Object.keys(props.headerRIds).length > 0 || Object.keys(props.footerRIds).length > 0;
+  const totalSectionsWithHeaders = sectionProps.filter(hasHeaderFooterReferences).length;
   let processedSections = 0;
 
   const reportHeaderFooterProgress = () => {
@@ -1683,45 +1722,37 @@ export async function importDocxToEditorDocument(
       docSettings,
     );
 
-    // Load header and footer if referenced
-    let header: EditorBlockNode[] = [];
-    let footer: EditorBlockNode[] = [];
-
-    if (props.headerRId) {
-      const headerTarget = relsMap.get(props.headerRId);
-      if (headerTarget) {
-        let zipPath = headerTarget.startsWith("/") ? headerTarget.slice(1) : headerTarget;
-        if (!zipPath.startsWith("word/")) zipPath = "word/" + headerTarget;
-        const headerXml = await zip.file(zipPath)?.async("string");
-        header = await parseHeaderFooterXml(headerXml ?? null, numberingMaps, zip, relsMap, assets, themeFonts, importedStyles);
-        applyDocGridLinePitch(
-          header,
-          props.docGridLinePitchPx,
-          props.docGridMode,
-          props.docGridType,
-          docSettings,
-        );
+    const loadHeaderFooterBlocks = async (rId: string | undefined) => {
+      if (!rId) {
+        return [];
       }
-    }
-
-    if (props.footerRId) {
-      const footerTarget = relsMap.get(props.footerRId);
-      if (footerTarget) {
-        let zipPath = footerTarget.startsWith("/") ? footerTarget.slice(1) : footerTarget;
-        if (!zipPath.startsWith("word/")) zipPath = "word/" + footerTarget;
-        const footerXml = await zip.file(zipPath)?.async("string");
-        footer = await parseHeaderFooterXml(footerXml ?? null, numberingMaps, zip, relsMap, assets, themeFonts, importedStyles);
-        applyDocGridLinePitch(
-          footer,
-          props.docGridLinePitchPx,
-          props.docGridMode,
-          props.docGridType,
-          docSettings,
-        );
+      const target = relsMap.get(rId);
+      if (!target) {
+        return [];
       }
-    }
+      let zipPath = target.startsWith("/") ? target.slice(1) : target;
+      if (!zipPath.startsWith("word/")) zipPath = `word/${target}`;
+      const xml = await zip.file(zipPath)?.async("string");
+      const partRelsMap = await loadPartRelationships(zip, zipPath);
+      const partBlocks = await parseHeaderFooterXml(xml ?? null, numberingMaps, zip, partRelsMap, assets, themeFonts, importedStyles);
+      applyDocGridLinePitch(
+        partBlocks,
+        props.docGridLinePitchPx,
+        props.docGridMode,
+        props.docGridType,
+        docSettings,
+      );
+      return partBlocks;
+    };
 
-    if (props.headerRId || props.footerRId) {
+    const header = await loadHeaderFooterBlocks(props.headerRIds.default);
+    const firstPageHeader = await loadHeaderFooterBlocks(props.headerRIds.first);
+    const evenPageHeader = await loadHeaderFooterBlocks(props.headerRIds.even);
+    const footer = await loadHeaderFooterBlocks(props.footerRIds.default);
+    const firstPageFooter = await loadHeaderFooterBlocks(props.footerRIds.first);
+    const evenPageFooter = await loadHeaderFooterBlocks(props.footerRIds.even);
+
+    if (hasHeaderFooterReferences(props)) {
       reportHeaderFooterProgress();
     }
 
@@ -1741,13 +1772,24 @@ export async function importDocxToEditorDocument(
       blocks: blocks.length > 0 ? blocks : [createEditorParagraphFromRuns([{ text: "" }])],
       pageSettings,
       header: header.length > 0 ? header : undefined,
+      firstPageHeader: firstPageHeader.length > 0 ? firstPageHeader : undefined,
+      evenPageHeader: evenPageHeader.length > 0 ? evenPageHeader : undefined,
       footer: footer.length > 0 ? footer : undefined,
+      firstPageFooter: firstPageFooter.length > 0 ? firstPageFooter : undefined,
+      evenPageFooter: evenPageFooter.length > 0 ? evenPageFooter : undefined,
     });
   }
 
   const shouldPreserveSections =
     sections.length > 1 ||
-    sections.some((section) => (section.header?.length ?? 0) > 0 || (section.footer?.length ?? 0) > 0);
+    sections.some((section) =>
+      (section.header?.length ?? 0) > 0 ||
+      (section.firstPageHeader?.length ?? 0) > 0 ||
+      (section.evenPageHeader?.length ?? 0) > 0 ||
+      (section.footer?.length ?? 0) > 0 ||
+      (section.firstPageFooter?.length ?? 0) > 0 ||
+      (section.evenPageFooter?.length ?? 0) > 0
+    );
 
   const hasAssets = Object.keys(assets.assets).length > 0;
 

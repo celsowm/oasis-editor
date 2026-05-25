@@ -144,6 +144,7 @@ export interface EditorTableStyle {
   width?: number | string; // table width in pt or percentage
   align?: "left" | "center" | "right";
   indentLeft?: number; // pt (tblInd)
+  pageBreakBefore?: boolean;
 }
 
 export interface EditorTableNode {
@@ -178,7 +179,11 @@ export interface EditorSection {
   blocks: EditorBlockNode[];
   pageSettings: EditorPageSettings;
   header?: EditorBlockNode[];
+  firstPageHeader?: EditorBlockNode[];
+  evenPageHeader?: EditorBlockNode[];
   footer?: EditorBlockNode[];
+  firstPageFooter?: EditorBlockNode[];
+  evenPageFooter?: EditorBlockNode[];
   breakType?: "nextPage" | "continuous";
 }
 
@@ -712,8 +717,12 @@ export function getDocumentParagraphsCanonical(document: EditorDocument): Editor
   const sections = getDocumentSectionsCanonical(document);
   paragraphs = sections.flatMap((section) => [
     ...(section.header?.flatMap(getBlockParagraphs) ?? []),
+    ...(section.firstPageHeader?.flatMap(getBlockParagraphs) ?? []),
+    ...(section.evenPageHeader?.flatMap(getBlockParagraphs) ?? []),
     ...section.blocks.flatMap(getBlockParagraphs),
     ...(section.footer?.flatMap(getBlockParagraphs) ?? []),
+    ...(section.firstPageFooter?.flatMap(getBlockParagraphs) ?? []),
+    ...(section.evenPageFooter?.flatMap(getBlockParagraphs) ?? []),
   ]);
 
   documentParagraphsCache.set(document, paragraphs);
