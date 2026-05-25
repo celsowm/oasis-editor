@@ -55,6 +55,7 @@ export function BalloonShell(props: ShellProps) {
             onInput={props.onInput}
             onKeyDown={props.onKeyDown}
             onPaste={props.onPaste}
+            onEditorContextMenu={props.onEditorContextMenu}
           />
         </section>
       </div>

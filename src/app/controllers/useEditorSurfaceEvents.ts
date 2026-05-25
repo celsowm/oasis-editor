@@ -247,6 +247,11 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
   };
 
   const handleSurfaceMouseDown = (event: MouseEvent) => {
+    // Non-left mouse buttons (e.g. right-click for context menu) must not
+    // alter the selection or steal focus mid-drag.
+    if (event.button !== 0) {
+      return;
+    }
     const now = Date.now();
     const distance = Math.hypot(event.clientX - lastClickX, event.clientY - lastClickY);
     const withinStreakWindow = now - lastClickAt <= 450 && distance <= 6 && event.button === lastClickButton;
@@ -465,6 +470,9 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     _paragraphId: string,
     event: MouseEvent & { currentTarget: HTMLParagraphElement },
   ) => {
+    if (event.button !== 0) {
+      return;
+    }
     event.preventDefault();
     handleSurfaceMouseDown(event);
   };

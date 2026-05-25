@@ -134,3 +134,54 @@
 .oasis-editor-dialog-button-secondary:hover {
   background: #f1f3f4;
 }
+
+.oasis-editor-dialog-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.oasis-editor-dialog-input-group-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.oasis-editor-dialog-color {
+  width: 56px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+}
+
+.oasis-editor-dialog-style-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 4px 0;
+}
+
+.oasis-editor-dialog-style-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #1f1f1f;
+  cursor: pointer;
+}
+
+.oasis-editor-dialog-style-toggle input {
+  accent-color: #1a73e8;
+  cursor: pointer;
+}
+
+.oasis-editor-dialog-preview {
+  min-height: 56px;
+  padding: 12px;
+  border: 1px dashed #dadce0;
+  border-radius: 4px;
+  background: #fafbfc;
+  line-height: 1.4;
+}

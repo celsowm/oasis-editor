@@ -81,10 +81,22 @@ import { computeLayoutInvalidationFromTransaction } from "./layoutInvalidation.j
 import { DropCaret } from "./components/DropCaret.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
+import { FontDialog, type FontDialogInitialValues } from "./components/Dialogs/FontDialog.js";
 import { FindReplaceDialog } from "./components/FindReplace/FindReplaceDialog.js";
+import { ContextMenu, type ContextMenuItem } from "./components/ContextMenu/ContextMenu.js";
 import "./components/FindReplace/findReplace.css";
+import {
+  getSelectedText as getEditorSelectedText,
+  serializeEditorSelectionToHtml,
+  insertClipboardHtmlAtSelection,
+  insertPlainTextAtSelection,
+  parseEditorClipboardHtml,
+  deleteBackward,
+  setTextStyleValue,
+  toggleTextStyle,
+} from "../core/editorCommands.js";
+import { setLocale, t } from "../i18n/index.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
-import { setLocale } from "../i18n/index.js";
 import {
   resolveCanvasSurfaceHitAtPoint,
   type SurfaceHit,
@@ -223,6 +235,28 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   }>({
     isOpen: false,
     initialAlt: "",
+  });
+
+  const [contextMenu, setContextMenu] = createSignal<{
+    isOpen: boolean;
+    x: number;
+    y: number;
+  }>({ isOpen: false, x: 0, y: 0 });
+
+  const [fontDialog, setFontDialog] = createSignal<{
+    isOpen: boolean;
+    initial: FontDialogInitialValues;
+  }>({
+    isOpen: false,
+    initial: {
+      fontFamily: "",
+      fontSize: "",
+      color: "",
+      bold: false,
+      italic: false,
+      underline: false,
+      strike: false,
+    },
   });
 
   let viewportRef: HTMLDivElement | undefined;
@@ -581,6 +615,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   });
 
   const onEditorMouseDown = (event: MouseEvent) => {
+    // Preserve the current selection on right-click so the user can copy/cut
+    // from the selected text via the context menu.
+    if (event.button !== 0) {
+      return;
+    }
     styleController.clearPendingCaretTextStyle();
     event.preventDefault();
     focusInput();
@@ -841,8 +880,267 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         onInput={textInput.handleTextInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
+        onEditorContextMenu={handleEditorContextMenu}
       />
     );
+  };
+
+  const computeFontFamilyOptions = (): string[] => {
+    const values = new Set<string>([
+      "Arial",
+      "Calibri, sans-serif",
+      "Calibri Light, sans-serif",
+      "Georgia",
+      "Inter",
+      "Times New Roman",
+      "Courier New",
+    ]);
+    for (const style of Object.values(state.document?.styles ?? {})) {
+      const fontFamily = (style as any).textStyle?.fontFamily?.trim?.();
+      if (fontFamily) values.add(fontFamily);
+    }
+    const current = styleController.toolbarStyleState().fontFamily.trim();
+    if (current) values.add(current);
+    return Array.from(values).sort((a, b) => a.localeCompare(b));
+  };
+
+  const computeFontSizeOptions = (): number[] => {
+    const values = new Set<number>([8, 9, 10, 11, 12, 14, 15, 16, 18, 20, 24, 28, 32, 36, 48, 72]);
+    for (const style of Object.values(state.document?.styles ?? {})) {
+      const fontSize = (style as any).textStyle?.fontSize;
+      if (typeof fontSize === "number" && Number.isFinite(fontSize)) values.add(fontSize);
+    }
+    const current = Number(styleController.toolbarStyleState().fontSize);
+    if (Number.isFinite(current) && current > 0) values.add(current);
+    return Array.from(values).sort((a, b) => a - b);
+  };
+
+  const openFontDialog = () => {
+    const ts = styleController.toolbarStyleState();
+    setFontDialog({
+      isOpen: true,
+      initial: {
+        fontFamily: ts.fontFamily ?? "",
+        fontSize: ts.fontSize ?? "",
+        color: ts.color ?? "",
+        bold: Boolean(ts.bold),
+        italic: Boolean(ts.italic),
+        underline: Boolean(ts.underline),
+        strike: Boolean(ts.strike),
+      },
+    });
+    setContextMenu({ isOpen: false, x: 0, y: 0 });
+  };
+
+  const applyFontDialogValues = (
+    values: {
+      fontFamily: string | null;
+      fontSize: number | null;
+      color: string | null;
+      bold: boolean;
+      italic: boolean;
+      underline: boolean;
+      strike: boolean;
+    },
+    original: FontDialogInitialValues,
+  ) => {
+    if (isReadOnly()) return;
+    if (isSelectionCollapsed(state.selection)) {
+      focusInput();
+      return;
+    }
+
+    clearPreferredColumn();
+    resetTransactionGrouping();
+
+    applyTransactionalState((current) => {
+      let next = current;
+      if (values.fontFamily !== (original.fontFamily || null)) {
+        next = setTextStyleValue(next, "fontFamily", values.fontFamily);
+      }
+      if (values.fontSize !== (original.fontSize ? Number(original.fontSize) : null)) {
+        next = setTextStyleValue(next, "fontSize", values.fontSize);
+      }
+      if ((values.color ?? "") !== (original.color ?? "")) {
+        next = setTextStyleValue(next, "color", values.color);
+      }
+      if (values.bold !== Boolean(original.bold)) {
+        next = toggleTextStyle(next, "bold");
+      }
+      if (values.italic !== Boolean(original.italic)) {
+        next = toggleTextStyle(next, "italic");
+      }
+      if (values.underline !== Boolean(original.underline)) {
+        next = toggleTextStyle(next, "underline");
+      }
+      if (values.strike !== Boolean(original.strike)) {
+        next = toggleTextStyle(next, "strike");
+      }
+      return next;
+    }, { mergeKey: "font-dialog" });
+
+    focusInput();
+  };
+
+  const programmaticCopy = async () => {
+    const text = getEditorSelectedText(state);
+    if (!text) return;
+    const html = serializeEditorSelectionToHtml(state);
+    try {
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/plain": new Blob([text], { type: "text/plain" }),
+            "text/html": new Blob([html], { type: "text/html" }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
+    } catch (err) {
+      logger.warn?.("contextMenu:copy:failed", { error: String(err) });
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        /* ignore */
+      }
+    }
+  };
+
+  const programmaticCut = async () => {
+    if (isReadOnly()) return;
+    const text = getEditorSelectedText(state);
+    if (!text) return;
+    await programmaticCopy();
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyTransactionalState((current) =>
+      tableOps.applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)),
+    );
+    focusInput();
+  };
+
+  const programmaticPaste = async () => {
+    if (isReadOnly()) return;
+    let html = "";
+    let text = "";
+    try {
+      if (navigator.clipboard?.read) {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          if (item.types.includes("text/html")) {
+            const blob = await item.getType("text/html");
+            html = await blob.text();
+          }
+          if (item.types.includes("text/plain")) {
+            const blob = await item.getType("text/plain");
+            text = await blob.text();
+          }
+        }
+      } else if (navigator.clipboard?.readText) {
+        text = await navigator.clipboard.readText();
+      }
+    } catch (err) {
+      logger.warn?.("contextMenu:paste:failed", { error: String(err) });
+      try {
+        text = await navigator.clipboard.readText();
+      } catch {
+        return;
+      }
+    }
+
+    if (html.trim() && parseEditorClipboardHtml(html).length > 0) {
+      clearPreferredColumn();
+      resetTransactionGrouping();
+      applyTransactionalState((current) =>
+        tableOps.applyTableAwareParagraphEdit(current, (temp) =>
+          insertClipboardHtmlAtSelection(temp, html),
+        ),
+      );
+      focusInput();
+      return;
+    }
+
+    if (text) {
+      clearPreferredColumn();
+      resetTransactionGrouping();
+      applyTransactionalState((current) =>
+        tableOps.applyTableAwareParagraphEdit(current, (temp) =>
+          insertPlainTextAtSelection(temp, text),
+        ),
+      );
+      focusInput();
+    }
+  };
+
+  const buildContextMenuItems = (): ContextMenuItem[] => {
+    const hasSelection = !isSelectionCollapsed(state.selection);
+    const readOnly = isReadOnly();
+    return [
+      {
+        id: "cut",
+        label: t("contextmenu.cut"),
+        icon: "scissors",
+        shortcut: "Ctrl+X",
+        disabled: readOnly || !hasSelection,
+        testId: "editor-context-menu-cut",
+        onSelect: () => {
+          void programmaticCut();
+        },
+      },
+      {
+        id: "copy",
+        label: t("contextmenu.copy"),
+        icon: "copy",
+        shortcut: "Ctrl+C",
+        disabled: !hasSelection,
+        testId: "editor-context-menu-copy",
+        onSelect: () => {
+          void programmaticCopy();
+        },
+      },
+      {
+        id: "paste",
+        label: t("contextmenu.paste"),
+        icon: "clipboard",
+        shortcut: "Ctrl+V",
+        disabled: readOnly,
+        testId: "editor-context-menu-paste",
+        onSelect: () => {
+          void programmaticPaste();
+        },
+      },
+      { id: "sep1", type: "separator" },
+      {
+        id: "link",
+        label: t("contextmenu.link"),
+        icon: "link",
+        disabled: readOnly || !hasSelection,
+        testId: "editor-context-menu-link",
+        onSelect: () => {
+          commandsController.promptForLink();
+        },
+      },
+      {
+        id: "font",
+        label: t("contextmenu.font"),
+        icon: "type",
+        disabled: readOnly || !hasSelection,
+        testId: "editor-context-menu-font",
+        onSelect: () => {
+          openFontDialog();
+        },
+      },
+    ];
+  };
+
+  const handleEditorContextMenu = (event: MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({ isOpen: true, x: event.clientX, y: event.clientY });
+  };
+
+  const closeContextMenu = () => {
+    setContextMenu({ isOpen: false, x: 0, y: 0 });
   };
 
   onMount(() => {
@@ -897,6 +1195,26 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       />
 
       <FindReplaceDialog fr={fr} />
+
+      <FontDialog
+        isOpen={fontDialog().isOpen}
+        initial={fontDialog().initial}
+        familyOptions={computeFontFamilyOptions()}
+        sizeOptions={computeFontSizeOptions()}
+        onClose={() => {
+          setFontDialog({ ...fontDialog(), isOpen: false });
+          focusInput();
+        }}
+        onApply={applyFontDialogValues}
+      />
+
+      <ContextMenu
+        isOpen={contextMenu().isOpen}
+        x={contextMenu().x}
+        y={contextMenu().y}
+        items={buildContextMenuItems()}
+        onClose={closeContextMenu}
+      />
 
       <Show when={useComposedShell()}>
         {renderComposedShell()}
@@ -1008,6 +1326,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             onInput={textInput.handleTextInput}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
+            onEditorContextMenu={handleEditorContextMenu}
           />
         </section>
       </div>

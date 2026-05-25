@@ -130,6 +130,24 @@ export const ptBR = {
   "dialog.link.title": "Inserir Link",
   "dialog.link.label": "URL do Link",
   "dialog.link.placeholder": "https://exemplo.com",
+  "dialog.font.title": "Fonte",
+  "dialog.font.family": "Família da Fonte",
+  "dialog.font.size": "Tamanho",
+  "dialog.font.style": "Estilo",
+  "dialog.font.bold": "Negrito",
+  "dialog.font.italic": "Itálico",
+  "dialog.font.underline": "Sublinhado",
+  "dialog.font.strike": "Tachado",
+  "dialog.font.color": "Cor",
+  "dialog.font.preview": "Pré-visualização",
+  "dialog.font.previewText": "O rápido cão marrom salta sobre a raposa preguiçosa",
+
+  // Context menu
+  "contextmenu.cut": "Recortar",
+  "contextmenu.copy": "Copiar",
+  "contextmenu.paste": "Colar",
+  "contextmenu.link": "Link...",
+  "contextmenu.font": "Fonte...",
 
   // Status Bar
   "status.words": "{0} palavras",

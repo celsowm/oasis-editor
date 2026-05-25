@@ -130,6 +130,24 @@ export const en = {
   "dialog.link.title": "Insert Link",
   "dialog.link.label": "Link URL",
   "dialog.link.placeholder": "https://example.com",
+  "dialog.font.title": "Font",
+  "dialog.font.family": "Font Family",
+  "dialog.font.size": "Size",
+  "dialog.font.style": "Style",
+  "dialog.font.bold": "Bold",
+  "dialog.font.italic": "Italic",
+  "dialog.font.underline": "Underline",
+  "dialog.font.strike": "Strikethrough",
+  "dialog.font.color": "Color",
+  "dialog.font.preview": "Preview",
+  "dialog.font.previewText": "The quick brown fox jumps over the lazy dog",
+
+  // Context menu
+  "contextmenu.cut": "Cut",
+  "contextmenu.copy": "Copy",
+  "contextmenu.paste": "Paste",
+  "contextmenu.link": "Link...",
+  "contextmenu.font": "Font...",
 
   // Status Bar
   "status.words": "{0} words",

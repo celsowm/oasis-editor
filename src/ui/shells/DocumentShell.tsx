@@ -70,6 +70,7 @@ export interface ShellProps {
   onInput: any;
   onKeyDown: any;
   onPaste: any;
+  onEditorContextMenu?: any;
 }
 
 export function DocumentShell(props: ShellProps) {
@@ -195,6 +196,7 @@ export function DocumentShell(props: ShellProps) {
             onInput={props.onInput}
             onKeyDown={props.onKeyDown}
             onPaste={props.onPaste}
+            onEditorContextMenu={props.onEditorContextMenu}
           />
         </section>
       </div>

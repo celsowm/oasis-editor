@@ -89,6 +89,7 @@ export interface OasisEditorEditorProps {
   onPaste: (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => void;
   onImportInputChange: (event: Event & { currentTarget: HTMLInputElement }) => void;
   onImageInputChange: (event: Event & { currentTarget: HTMLInputElement }) => void;
+  onEditorContextMenu?: (event: MouseEvent) => void;
 }
 
 import { projectDocumentLayout } from "./layoutProjection.js";
@@ -215,6 +216,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
       onDragOver={props.onDragOver}
       onDrop={props.onDrop}
       onMouseDown={props.onEditorMouseDown}
+      onContextMenu={props.onEditorContextMenu}
     >
       <div
         ref={(el) => {
