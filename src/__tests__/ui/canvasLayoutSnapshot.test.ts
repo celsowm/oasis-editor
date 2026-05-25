@@ -31,6 +31,39 @@ function createSurfaceWithSinglePage(pageIndex = 0): { surface: HTMLDivElement; 
 }
 
 describe("buildCanvasLayoutSnapshot", () => {
+  it("offsets first-page paragraph line geometry by spacingBefore for hit testing", () => {
+    const heading = createEditorParagraph("Capítulo 1");
+    heading.style = { spacingBefore: 32, spacingAfter: 0 };
+    const document = createEditorDocument([heading]);
+    const state = createEditorStateFromDocument(document);
+    const projected = projectDocumentLayout(document, undefined, undefined, undefined, {
+      layoutMode: "wordParity",
+    });
+    const projectedPage = projected.pages[0];
+    if (!projectedPage) {
+      throw new Error("missing projected page");
+    }
+
+    const { surface, page } = createSurfaceWithSinglePage(projectedPage.index);
+    surface.getBoundingClientRect = () => createRect(0, 0, 940, 1200);
+    page.getBoundingClientRect = () => createRect(100, 200, 816, 1056);
+
+    const snapshot = buildCanvasLayoutSnapshot({
+      surface,
+      state,
+      layoutMode: "wordParity",
+    });
+    const headingParagraph = snapshot!.paragraphs.find(
+      (paragraph) => paragraph.zone === "main" && paragraph.paragraphId === heading.id,
+    );
+    const expectedParagraphTop = 200 + (projectedPage.bodyTop ?? 0);
+
+    expect(headingParagraph).toBeDefined();
+    expect(headingParagraph!.top).toBe(expectedParagraphTop);
+    expect(headingParagraph!.lines[0]?.top).toBe(expectedParagraphTop + 32);
+    expect(headingParagraph!.lines[0]?.slots[0]?.top).toBe(expectedParagraphTop + 32);
+  });
+
   it("uses projected headerTop/footerTop offsets for header/footer paragraph geometry", () => {
     const header = createEditorParagraph("header text");
     header.style = { styleId: "header" };

@@ -42,6 +42,28 @@ describe('layout projection', () => {
       expect(pages[0].blocks).toHaveLength(2);
     });
 
+    it('keeps spacing before for the first paragraph on a page', () => {
+      const p = createEditorParagraph('heading');
+      p.style = { spacingBefore: 24, spacingAfter: 0 };
+      const pages = projectBlocksLayout([p], A4, 800);
+      const block = pages[0]!.blocks[0]!;
+      const lineHeights = block.layout!.lines.reduce((sum, line) => sum + line.height, 0);
+
+      expect(block.layout?.startOffset).toBe(0);
+      expect(block.estimatedHeight).toBeCloseTo(lineHeights + 24, 4);
+    });
+
+    it('does not repeat spacing before on a continued paragraph segment', () => {
+      const p = createEditorParagraph('word '.repeat(80));
+      p.style = { spacingBefore: 24, spacingAfter: 0, widowControl: false };
+      const pages = projectBlocksLayout([p], A4, 50);
+      const continuedBlock = pages.find((page) => (page.blocks[0]?.layout?.startOffset ?? 0) > 0)?.blocks[0];
+      const lineHeights = continuedBlock!.layout!.lines.reduce((sum, line) => sum + line.height, 0);
+
+      expect(continuedBlock).toBeDefined();
+      expect(continuedBlock!.estimatedHeight).toBeCloseTo(lineHeights, 4);
+    });
+
     it('creates new pages for overflowing blocks', () => {
       const blocks = Array.from({ length: 50 }, (_, i) => createEditorParagraph(`Paragraph ${i}`));
       // maxPageHeight 100 is very small, should force many pages

@@ -5,6 +5,7 @@ import {
   getPageContentWidth,
   getPageHeaderZoneTop,
   getParagraphText,
+  resolveEffectiveParagraphStyle,
   type EditorEditingZone,
   type EditorLayoutParagraph,
   type EditorParagraphNode,
@@ -233,6 +234,9 @@ export function buildCanvasLayoutSnapshot(
           const paragraphNode = block.sourceBlock;
           const paragraphId = paragraphNode.id;
           const paragraphIndex = paragraphIndexById.get(paragraphId) ?? 0;
+          const paragraphStyle = resolveEffectiveParagraphStyle(paragraphNode.style, state.document.styles);
+          const spacingBefore = block.layout.startOffset === 0 ? (paragraphStyle.spacingBefore ?? 0) : 0;
+          const lineTopOffset = cursorY + spacingBefore;
           snapshotParagraphs.push({
             paragraph: paragraphNode,
             paragraphId,
@@ -249,12 +253,12 @@ export function buildCanvasLayoutSnapshot(
             lines: block.layout.lines.map((line) => ({
               startOffset: line.startOffset,
               endOffset: line.endOffset,
-              top: cursorY + line.top,
+              top: lineTopOffset + line.top,
               height: line.height,
               slots: line.slots.map((slot) => ({
                 offset: slot.offset,
                 left: contentLeft + slot.left,
-                top: cursorY + slot.top,
+                top: lineTopOffset + slot.top,
                 height: slot.height,
               })),
             })),
@@ -266,7 +270,7 @@ export function buildCanvasLayoutSnapshot(
               paragraphIndex,
               zone,
               pageIndex: page.index,
-              lineTopOffset: cursorY,
+              lineTopOffset,
               lineLeftOffset: contentLeft,
             }),
           );

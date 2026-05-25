@@ -11,6 +11,7 @@ import {
   getPageFooterReferenceTop,
   getPageFooterZoneTop,
   getPageHeaderZoneTop,
+  resolveEffectiveParagraphStyle,
 } from "../core/model.js";
 import { exportEditorDocumentToDocx } from "../export/docx/exportEditorDocumentToDocx.js";
 import { importDocxToEditorDocument } from "../import/docx/importDocxToEditorDocument.js";
@@ -102,6 +103,50 @@ function normalizeLineText(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
+function collectRenderedLineGeometry(
+  blocks: NonNullable<ReturnType<typeof projectDocumentLayout>["pages"][number]["blocks"]>,
+  originX: number,
+  originY: number,
+  styles: EditorDocument["styles"],
+): Array<{ text: string; geometry: LayoutLineGeometry; bottomPx: number }> {
+  const lines: Array<{ text: string; geometry: LayoutLineGeometry; bottomPx: number }> = [];
+  let cursorY = originY;
+
+  for (const block of blocks) {
+    if (block.sourceBlock.type === "paragraph" && block.layout) {
+      const paragraphStyle = resolveEffectiveParagraphStyle(block.sourceBlock.style, styles);
+      const spacingBefore = block.layout.startOffset === 0 ? (paragraphStyle.spacingBefore ?? 0) : 0;
+      const paragraphOriginY = cursorY + spacingBefore;
+
+      for (const line of block.layout.lines) {
+        const text = normalizeLineText(line.fragments.map((fragment) => fragment.text).join(""));
+        if (text.length === 0) {
+          continue;
+        }
+        const firstSlot = line.slots[0];
+        const lastSlot = line.slots[line.slots.length - 1];
+        const xPx = originX + (firstSlot?.left ?? 0);
+        const yPx = paragraphOriginY + line.top;
+        const widthPx = Math.max(0, (lastSlot?.left ?? firstSlot?.left ?? 0) - (firstSlot?.left ?? 0));
+        lines.push({
+          text,
+          geometry: {
+            x: xPx * PX_TO_POINTS,
+            y: yPx * PX_TO_POINTS,
+            width: widthPx * PX_TO_POINTS,
+            height: line.height * PX_TO_POINTS,
+          },
+          bottomPx: yPx + line.height,
+        });
+      }
+    }
+
+    cursorY += Math.max(0, block.estimatedHeight);
+  }
+
+  return lines;
+}
+
 function findWordPath(): string | null {
   for (const candidate of WORD_CANDIDATE_PATHS) {
     if (existsSync(candidate)) {
@@ -163,50 +208,41 @@ function collectEditorPageSnapshots(
   });
 
   return layout.pages.map((page) => {
-    const lineTexts = page.blocks.flatMap((block) => {
-      if (!block.layout) {
-        return [];
-      }
-
-      return block.layout.lines
-        .map((line) => normalizeLineText(line.fragments.map((fragment) => fragment.text).join("")))
-        .filter((line) => line.length > 0);
-    });
-    const headerLineTexts = (page.headerBlocks ?? []).flatMap((block) => {
-      if (!block.layout) {
-        return [];
-      }
-      return block.layout.lines
-        .map((line) => normalizeLineText(line.fragments.map((fragment) => fragment.text).join("")))
-        .filter((line) => line.length > 0);
-    });
-    const footerLineTexts = (page.footerBlocks ?? []).flatMap((block) => {
-      if (!block.layout) {
-        return [];
-      }
-      return block.layout.lines
-        .map((line) => normalizeLineText(line.fragments.map((fragment) => fragment.text).join("")))
-        .filter((line) => line.length > 0);
-    });
+    const originX = page.pageSettings.margins.left + page.pageSettings.margins.gutter;
+    const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
+    const footerTop = page.footerTop ?? page.bodyBottom ?? getPageFooterZoneTop(page.pageSettings);
+    const headerLines = collectRenderedLineGeometry(
+      page.headerBlocks ?? [],
+      originX,
+      page.headerTop ?? getPageHeaderZoneTop(page.pageSettings),
+      document.styles,
+    );
+    const bodyLines = collectRenderedLineGeometry(page.blocks, originX, bodyTop, document.styles);
+    const footerLines = collectRenderedLineGeometry(
+      page.footerBlocks ?? [],
+      originX,
+      footerTop,
+      document.styles,
+    );
 
     return {
-      headerLineTexts,
-      bodyLineTexts: lineTexts,
-      footerLineTexts,
+      headerLineTexts: headerLines.map((line) => line.text),
+      bodyLineTexts: bodyLines.map((line) => line.text),
+      footerLineTexts: footerLines.map((line) => line.text),
       width: page.pageSettings.width,
       height: page.pageSettings.height,
       headerTop: getPageHeaderZoneTop(page.pageSettings),
-      bodyTop: page.bodyTop ?? getPageBodyTop(page.pageSettings),
+      bodyTop,
       bodyHeight:
         page.bodyBottom !== undefined && page.bodyTop !== undefined
           ? page.bodyBottom - page.bodyTop
           : getPageContentHeight(page.pageSettings),
-      footerTop: page.bodyBottom ?? getPageFooterZoneTop(page.pageSettings),
+      footerTop,
       footerReferenceTop: getPageFooterReferenceTop(page.pageSettings),
       pageHeight: page.pageSettings.height,
-      firstBodyLineGeometry: undefined,
-      lastBodyLineBottom: undefined,
-      firstFooterLineTop: undefined,
+      firstBodyLineGeometry: bodyLines[0]?.geometry,
+      lastBodyLineBottom: bodyLines.at(-1)?.bottomPx,
+      firstFooterLineTop: footerLines[0]?.geometry.y,
     };
   });
 }

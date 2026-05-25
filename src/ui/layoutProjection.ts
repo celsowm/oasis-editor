@@ -1021,7 +1021,7 @@ export function projectBlocksLayout(
           ? applyMeasuredLineGeometry(projectedParagraphLayout, measuredParagraphLayout)
           : projectedParagraphLayout;
       const paragraphTotalHeight =
-        measuredHeights?.[sourceBlock.id] ?? getProjectedParagraphBlockHeight(sourceBlock, paragraphLayout, styles, currentHeight > 0);
+        measuredHeights?.[sourceBlock.id] ?? getProjectedParagraphBlockHeight(sourceBlock, paragraphLayout, styles);
       const paragraphStyle = getEffectiveParagraphStyle(sourceBlock, styles);
       const nextBlockHeight =
         nextBlock?.type === "paragraph"
@@ -1081,7 +1081,6 @@ export function projectBlocksLayout(
             startLineIndex === 0,
             lineEndIndex === paragraphLayout.lines.length - 1,
             styles,
-            currentHeight > 0,
           );
           const tolerance = layoutMode === "wordParity" ? 1.5 : 0;
           if (candidateHeight > remainingHeight + tolerance && lineEndIndex === startLineIndex && currentBlocks.length > 0) {
@@ -1107,7 +1106,6 @@ export function projectBlocksLayout(
             startLineIndex === 0,
             lineEndIndex === paragraphLayout.lines.length,
             styles,
-            currentHeight > 0,
           );
         }
 
@@ -1118,7 +1116,6 @@ export function projectBlocksLayout(
             startLineIndex,
             lineEndIndex,
             styles,
-            currentHeight > 0,
           );
           lineEndIndex = widowOrphanAdjusted.endLineIndexExclusive;
           segmentHeight = widowOrphanAdjusted.height;

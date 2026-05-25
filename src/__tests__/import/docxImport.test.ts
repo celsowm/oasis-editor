@@ -5,7 +5,13 @@ import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditorDocument.js";
 import type { EditorDocument, EditorParagraphNode, EditorTableCellNode, EditorTableNode } from "../../core/model.js";
-import { getPageContentWidth, getParagraphText, getParagraphById, resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
+import {
+  getPageContentWidth,
+  getParagraphText,
+  getParagraphById,
+  resolveEffectiveParagraphStyle,
+  resolveEffectiveTextStyleForParagraph,
+} from "../../core/model.js";
 import { createEditorStateFromDocument } from "../../core/editorState.js";
 import { estimateTableBlockHeight, projectDocumentLayout, projectParagraphLayout } from "../../ui/layoutProjection.js";
 import { buildCanvasTableLayout } from "../../ui/canvas/CanvasTableLayout.js";
@@ -271,6 +277,22 @@ describe("DOCX import", () => {
     expect(getParagraphText(firstLorem)).not.toContain("\n");
     expect(layout.lines.length).toBeGreaterThan(10);
     expect(lineTexts).not.toContain("Sed");
+  });
+
+  it("keeps Heading 1 spacing before at the top of the first imported page", async () => {
+    const document = await importLoremComplexDocument();
+    const paragraphs = getDocumentParagraphs(document);
+    const firstChapter = paragraphs.find((paragraph) => getParagraphText(paragraph) === "Capítulo 1")!;
+    const effectiveStyle = resolveEffectiveParagraphStyle(firstChapter.style, document.styles);
+    const layout = projectDocumentLayout(document, undefined, undefined, undefined, { layoutMode: "wordParity" });
+    const firstBlock = layout.pages[0]!.blocks[0]!;
+    const lineHeights = firstBlock.layout!.lines.reduce((sum, line) => sum + line.height, 0);
+
+    expect(effectiveStyle.spacingBefore).toBe(32);
+    expect(effectiveStyle.spacingAfter).toBe(0);
+    expect(firstBlock.sourceBlockId).toBe(firstChapter.id);
+    expect(firstBlock.layout?.startOffset).toBe(0);
+    expect(firstBlock.estimatedHeight).toBeCloseTo(lineHeights + 32, 4);
   });
 
   it("preserves first-line indentation from DOCX in projected layout slots", async () => {

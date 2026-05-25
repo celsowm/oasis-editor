@@ -98,6 +98,20 @@ function resolveCaretSlot(
       bestDistance = distance;
     }
   }
+  const firstLine = containingSegment.lines[0];
+  const shouldIncludeSpacingBefore =
+    containingSegment.startOffset === 0 &&
+    firstLine !== undefined &&
+    focusOffset >= firstLine.startOffset &&
+    focusOffset <= firstLine.endOffset &&
+    best.top > containingSegment.top;
+  if (shouldIncludeSpacingBefore) {
+    return {
+      left: best.left,
+      top: containingSegment.top,
+      height: best.top + best.height - containingSegment.top,
+    };
+  }
   return {
     left: best.left,
     top: best.top,
@@ -247,12 +261,18 @@ export function computeCanvasSelectionGeometry(
           line.slots.find((slot) => slot.offset === lineEnd) ??
           line.slots[line.slots.length - 1];
         if (!startSlot || !endSlot) continue;
+        const shouldIncludeSpacingBefore =
+          paragraph.startOffset === 0 &&
+          line.startOffset === paragraph.startOffset &&
+          line.top > paragraph.top;
+        const boxTop = shouldIncludeSpacingBefore ? paragraph.top : line.top;
+        const boxHeight = shouldIncludeSpacingBefore ? line.top + line.height - paragraph.top : line.height;
 
         selectionBoxes.push({
           left: startSlot.left - surfaceRect.left,
-          top: line.top - surfaceRect.top,
+          top: boxTop - surfaceRect.top,
           width: Math.max(1, endSlot.left - startSlot.left),
-          height: line.height,
+          height: boxHeight,
         });
       }
     }

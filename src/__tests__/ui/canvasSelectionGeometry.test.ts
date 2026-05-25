@@ -60,6 +60,75 @@ function createMockSnapshot(paragraph: EditorParagraphNode, textLength: number, 
 }
 
 describe('canvas selection geometry', () => {
+  it('extends first-line selection and caret over spacingBefore like Word', () => {
+    const sourceParagraph = createEditorParagraph('Capítulo 1');
+    const state = createEditorStateFromDocument(createEditorDocument([sourceParagraph]));
+    const paragraph = getParagraphs(state)[0]!;
+    const paragraphTop = 200;
+    const lineTop = 232;
+    const slots = Array.from({ length: 10 + 1 }, (_, offset) => ({
+      offset,
+      left: 120 + offset * 10,
+      top: lineTop,
+      height: 20,
+    }));
+    const snapshotParagraph: CanvasSnapshotParagraph = {
+      paragraph,
+      paragraphId: paragraph.id,
+      paragraphIndex: 0,
+      zone: 'main',
+      pageIndex: 0,
+      startOffset: 0,
+      endOffset: 10,
+      textLength: 10,
+      left: 120,
+      top: paragraphTop,
+      width: 400,
+      height: 52,
+      lines: [
+        {
+          startOffset: 0,
+          endOffset: 10,
+          top: lineTop,
+          height: 20,
+          slots,
+        },
+      ],
+    };
+    const snapshot: CanvasLayoutSnapshot = {
+      surfaceRect: { left: 0, top: 0, width: 900, height: 700 } as DOMRect,
+      pages: [],
+      paragraphs: [snapshotParagraph],
+      paragraphsById: new Map([[paragraph.id, [snapshotParagraph]]]),
+      inlineImages: [],
+      unsupportedRegions: [],
+    } as unknown as CanvasLayoutSnapshot;
+
+    const selectedGeometry = computeCanvasSelectionGeometry(snapshot, {
+      ...state,
+      selection: {
+        anchor: paragraphOffsetToPosition(paragraph, 0),
+        focus: paragraphOffsetToPosition(paragraph, 10),
+      },
+    });
+    const collapsedGeometry = computeCanvasSelectionGeometry(snapshot, {
+      ...state,
+      selection: {
+        anchor: paragraphOffsetToPosition(paragraph, 0),
+        focus: paragraphOffsetToPosition(paragraph, 0),
+      },
+    });
+
+    expect(selectedGeometry.selectionBoxes[0]).toMatchObject({
+      top: paragraphTop,
+      height: 52,
+    });
+    expect(collapsedGeometry.caretBox).toMatchObject({
+      top: paragraphTop,
+      height: 52,
+    });
+  });
+
   it('renders selection boxes using local paragraph order even when snapshot paragraphIndex is globally shifted', () => {
     const sourceParagraph = createEditorParagraph('abcdef');
     const state = createEditorStateFromDocument(createEditorDocument([sourceParagraph]));
