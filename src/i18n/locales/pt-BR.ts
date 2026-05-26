@@ -20,6 +20,7 @@ export const ptBR = {
   "toolbar.bold": "Negrito",
   "toolbar.italic": "Itálico",
   "toolbar.underline": "Sublinhado",
+  "toolbar.underlineRemove": "Sem sublinhado",
   "toolbar.strike": "Tachado",
   "toolbar.superscript": "Sobrescrito",
   "toolbar.subscript": "Subscrito",

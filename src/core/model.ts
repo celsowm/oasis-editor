@@ -1,8 +1,28 @@
+export type EditorUnderlineStyle =
+  | "single"
+  | "double"
+  | "thick"
+  | "dotted"
+  | "dottedHeavy"
+  | "dash"
+  | "dashedHeavy"
+  | "dashLong"
+  | "dashLongHeavy"
+  | "dotDash"
+  | "dashDotHeavy"
+  | "dotDotDash"
+  | "dashDotDotHeavy"
+  | "wave"
+  | "wavyHeavy"
+  | "wavyDouble"
+  | "words";
+
 export interface EditorTextStyle {
   styleId?: string; // ID of the named character style
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
+  underlineStyle?: EditorUnderlineStyle | null;
   strike?: boolean;
   superscript?: boolean;
   subscript?: boolean;
@@ -282,6 +302,7 @@ const DEFAULT_TEXT_STYLE: Required<EditorTextStyle> = {
   bold: false,
   italic: false,
   underline: false,
+  underlineStyle: null as unknown as EditorUnderlineStyle | null,
   strike: false,
   superscript: false,
   subscript: false,

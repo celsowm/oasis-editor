@@ -11,7 +11,7 @@ import type {
 } from "../../toolbarStyleState.js";
 import type { PersistenceStatus } from "../../../app/controllers/useEditorPersistence.js";
 
-export type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
+export type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link" | "underlineStyle";
 
 export interface EditorToolbarCtx {
   state: () => EditorState;

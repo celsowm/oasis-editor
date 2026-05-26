@@ -208,6 +208,8 @@ function normalizeImportedRunStyle(
     bold: effective.bold !== defaultEffective.bold ? effective.bold : undefined,
     italic: effective.italic !== defaultEffective.italic ? effective.italic : undefined,
     underline: effective.underline !== defaultEffective.underline ? effective.underline : undefined,
+    underlineStyle:
+      effective.underlineStyle !== defaultEffective.underlineStyle ? effective.underlineStyle : undefined,
     strike: effective.strike !== defaultEffective.strike ? effective.strike : undefined,
     superscript: effective.superscript !== defaultEffective.superscript ? effective.superscript : undefined,
     subscript: effective.subscript !== defaultEffective.subscript ? effective.subscript : undefined,
@@ -782,6 +784,9 @@ function parseRunStyle(runProperties: XmlElement | null, themeFonts: ThemeFontMa
   const underlineValue = getAttributeValue(underline, "val");
   if (underline && underlineValue !== "none") {
     styles.underline = true;
+    if (underlineValue && underlineValue !== "single") {
+      styles.underlineStyle = underlineValue as EditorTextStyle["underlineStyle"];
+    }
   }
 
   const vertAlign = getFirstChildByTagNameNS(runProperties, WORD_NS, "vertAlign");

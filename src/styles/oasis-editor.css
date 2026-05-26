@@ -893,10 +893,6 @@
   pointer-events: none;
 }
 
-.oasis-editor-selection-box {
-  border-radius: 2px;
-}
-
 .oasis-editor-caret {
   position: absolute;
   width: 0;
@@ -916,7 +912,7 @@
   pointer-events: none;
   z-index: 1;
   background: var(--oasis-selection-bg);
-  border-radius: 3px;
+  border-radius: 0;
 }
 
 .oasis-editor-image-resize-handle {

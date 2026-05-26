@@ -57,14 +57,119 @@ export function drawFragmentDecoration(
   const y = kind === "underline"
     ? originY + line.top + line.height - 2
     : originY + line.top + line.height * 0.52;
-  writer.drawLine(pageIndex, {
-    x1: pxToPt(originX + bounds.left),
-    y1: pxToPt(y),
-    x2: pxToPt(originX + bounds.right),
-    y2: pxToPt(y),
-    stroke: styles.color ?? "#000000",
-    lineWidth: pxToPt(1),
-  });
+  const x1 = originX + bounds.left;
+  const x2 = originX + bounds.right;
+  const stroke = styles.color ?? "#000000";
+
+  if (kind === "strike") {
+    writer.drawLine(pageIndex, {
+      x1: pxToPt(x1),
+      y1: pxToPt(y),
+      x2: pxToPt(x2),
+      y2: pxToPt(y),
+      stroke,
+      lineWidth: pxToPt(1),
+    });
+    return;
+  }
+
+  drawUnderlineWithStyle(writer, pageIndex, x1, x2, y, stroke, styles.underlineStyle);
+}
+
+function drawUnderlineWithStyle(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  x1: number,
+  x2: number,
+  y: number,
+  stroke: string,
+  underlineStyle: EditorTextStyle["underlineStyle"],
+): void {
+  const heavy =
+    underlineStyle === "thick" ||
+    underlineStyle === "dottedHeavy" ||
+    underlineStyle === "dashedHeavy" ||
+    underlineStyle === "dashLongHeavy" ||
+    underlineStyle === "dashDotHeavy" ||
+    underlineStyle === "dashDotDotHeavy" ||
+    underlineStyle === "wavyHeavy";
+  const lineWidthPx = heavy ? 2 : 1;
+
+  const drawAt = (yy: number, dash?: number[]) => {
+    writer.drawLine(pageIndex, {
+      x1: pxToPt(x1),
+      y1: pxToPt(yy),
+      x2: pxToPt(x2),
+      y2: pxToPt(yy),
+      stroke,
+      lineWidth: pxToPt(lineWidthPx),
+      dashArray: dash,
+    });
+  };
+
+  switch (underlineStyle) {
+    case "double":
+    case "wavyDouble":
+      drawAt(y - 1.5);
+      drawAt(y + 1.5);
+      return;
+    case "dotted":
+    case "dottedHeavy":
+      drawAt(y, [1.5, 2.5]);
+      return;
+    case "dash":
+    case "dashedHeavy":
+      drawAt(y, [4, 3]);
+      return;
+    case "dashLong":
+    case "dashLongHeavy":
+      drawAt(y, [8, 3]);
+      return;
+    case "dotDash":
+    case "dashDotHeavy":
+      drawAt(y, [4, 2, 1, 2]);
+      return;
+    case "dotDotDash":
+    case "dashDotDotHeavy":
+      drawAt(y, [4, 2, 1, 2, 1, 2]);
+      return;
+    case "wave":
+    case "wavyHeavy":
+      drawWavyUnderline(writer, pageIndex, x1, x2, y, stroke, lineWidthPx);
+      return;
+    default:
+      drawAt(y);
+      return;
+  }
+}
+
+function drawWavyUnderline(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  x1: number,
+  x2: number,
+  y: number,
+  stroke: string,
+  lineWidthPx: number,
+): void {
+  const wavelength = 4;
+  const amplitude = 1.5;
+  let prevX = x1;
+  let prevY = y;
+  for (let x = x1; x <= x2; x += 1) {
+    const dy = Math.sin(((x - x1) / wavelength) * Math.PI) * amplitude;
+    const curY = y + dy;
+    writer.drawLine(pageIndex, {
+      x1: pxToPt(prevX),
+      y1: pxToPt(prevY),
+      x2: pxToPt(x),
+      y2: pxToPt(curY),
+      stroke,
+      lineWidth: pxToPt(lineWidthPx),
+    });
+    prevX = x;
+    prevY = curY;
+  }
 }
 
 function groupSlotChunksByWhitespace(chars: FragmentSlot[]): FragmentSlot[][] {

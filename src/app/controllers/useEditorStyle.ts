@@ -5,7 +5,7 @@ import { getToolbarStyleState } from "../../ui/toolbarStyleState.js";
 import type { ToolbarStyleState, BooleanStyleKey } from "../../ui/toolbarStyleState.js";
 import type { createEditorCommandsController } from "./EditorCommandsController.js";
 
-type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
+type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link" | "underlineStyle";
 
 export interface UseEditorStyleProps {
   state: () => EditorState;
@@ -73,6 +73,10 @@ export function createEditorStyleController(deps: UseEditorStyleProps) {
       bold: pending.bold ?? resolved.bold,
       italic: pending.italic ?? resolved.italic,
       underline: pending.underline ?? resolved.underline,
+      underlineStyle:
+        pending.underlineStyle !== undefined && pending.underlineStyle !== null
+          ? String(pending.underlineStyle)
+          : resolved.underlineStyle,
       strike: pending.strike ?? resolved.strike,
       superscript: pending.superscript ?? resolved.superscript,
       subscript: pending.subscript ?? resolved.subscript,

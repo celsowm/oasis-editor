@@ -12,7 +12,7 @@ export type ToggleableTextStyleKey =
   | "superscript"
   | "subscript";
 
-export type ValueTextStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
+export type ValueTextStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link" | "underlineStyle";
 
 export type ValueParagraphStyleKey =
   | "styleId"
@@ -644,9 +644,42 @@ export function textRunStylesToCss(style?: EditorTextStyle): string {
   }
   if (decorations.length > 0) {
     parts.push(`text-decoration:${decorations.join(" ")}`);
+    if (style.underline || style.link) {
+      const cssDecorationStyle = underlineStyleToCssDecorationStyle(style.underlineStyle);
+      if (cssDecorationStyle) {
+        parts.push(`text-decoration-style:${cssDecorationStyle}`);
+      }
+    }
   }
 
   return parts.join(";");
+}
+
+function underlineStyleToCssDecorationStyle(
+  underlineStyle: EditorTextStyle["underlineStyle"],
+): string | null {
+  switch (underlineStyle) {
+    case "double":
+    case "wavyDouble":
+      return "double";
+    case "dotted":
+    case "dottedHeavy":
+      return "dotted";
+    case "dash":
+    case "dashedHeavy":
+    case "dashLong":
+    case "dashLongHeavy":
+    case "dotDash":
+    case "dashDotHeavy":
+    case "dotDotDash":
+    case "dashDotDotHeavy":
+      return "dashed";
+    case "wave":
+    case "wavyHeavy":
+      return "wavy";
+    default:
+      return null;
+  }
 }
 
 export function paragraphStyleToCssText(style?: EditorParagraphStyle): string {
@@ -775,6 +808,21 @@ export function parseInlineStyles(element: Element): EditorTextStyle | undefined
   const textDecoration = style.textDecoration.toLowerCase();
   if (textDecoration.includes("underline")) {
     result.underline = true;
+    const decorationStyle = (style as CSSStyleDeclaration).textDecorationStyle?.toLowerCase();
+    switch (decorationStyle) {
+      case "double":
+        result.underlineStyle = "double";
+        break;
+      case "dotted":
+        result.underlineStyle = "dotted";
+        break;
+      case "dashed":
+        result.underlineStyle = "dash";
+        break;
+      case "wavy":
+        result.underlineStyle = "wave";
+        break;
+    }
   }
   if (textDecoration.includes("line-through")) {
     result.strike = true;

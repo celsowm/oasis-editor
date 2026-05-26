@@ -132,7 +132,10 @@ function serializeRunProperties(styles?: EditorTextStyle): string {
   const parts: string[] = [];
   if (styles.bold) parts.push("<w:b/>");
   if (styles.italic) parts.push("<w:i/>");
-  if (styles.underline) parts.push('<w:u w:val="single"/>');
+  if (styles.underline) {
+    const underlineVal = styles.underlineStyle ?? "single";
+    parts.push(`<w:u w:val="${escapeXml(underlineVal)}"/>`);
+  }
   if (styles.strike) parts.push("<w:strike/>");
   if (styles.superscript) {
     parts.push('<w:vertAlign w:val="superscript"/>');
@@ -198,6 +201,7 @@ function materializeRunStyle(
     bold: effective.bold,
     italic: effective.italic,
     underline: effective.underline,
+    underlineStyle: effective.underlineStyle,
     strike: effective.strike,
     superscript: effective.superscript,
     subscript: effective.subscript,

@@ -23,7 +23,7 @@ export type BooleanStyleKey =
   | "superscript"
   | "subscript";
 
-export type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link";
+export type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link" | "underlineStyle";
 export type ParagraphStyleKey =
   | "styleId"
   | "align"
@@ -47,6 +47,7 @@ export interface ToolbarStyleState {
   bold: boolean;
   italic: boolean;
   underline: boolean;
+  underlineStyle: string;
   strike: boolean;
   superscript: boolean;
   subscript: boolean;
@@ -243,6 +244,7 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     bold: areAllBooleanStylesEnabled(styles, "bold"),
     italic: areAllBooleanStylesEnabled(styles, "italic"),
     underline: areAllBooleanStylesEnabled(styles, "underline"),
+    underlineStyle: resolveUniformStyleValue(styles, "underlineStyle"),
     strike: areAllBooleanStylesEnabled(styles, "strike"),
     superscript: areAllBooleanStylesEnabled(styles, "superscript"),
     subscript: areAllBooleanStylesEnabled(styles, "subscript"),

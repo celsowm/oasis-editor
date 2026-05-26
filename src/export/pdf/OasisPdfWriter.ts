@@ -36,6 +36,7 @@ export interface OasisPdfLineOptions {
   y2: number;
   stroke?: string;
   lineWidth?: number;
+  dashArray?: number[];
 }
 
 export interface OasisPdfTextOptions {
@@ -395,15 +396,23 @@ export class OasisPdfWriter {
       return;
     }
 
-    page.commands.push([
-      "q",
-      colorCommand(options.stroke, "RG", [0, 0, 0]),
+    const dashCommand =
+      options.dashArray && options.dashArray.length > 0
+        ? `[${options.dashArray.map((value) => formatNumber(value)).join(" ")}] 0 d`
+        : null;
+
+    const commands: string[] = ["q", colorCommand(options.stroke, "RG", [0, 0, 0])];
+    if (dashCommand) {
+      commands.push(dashCommand);
+    }
+    commands.push(
       `${formatNumber(options.lineWidth ?? 1)} w`,
       `${formatNumber(options.x1)} ${formatNumber(page.height - options.y1)} m`,
       `${formatNumber(options.x2)} ${formatNumber(page.height - options.y2)} l`,
       "S",
       "Q",
-    ].join("\n"));
+    );
+    page.commands.push(commands.join("\n"));
   }
 
   drawText(pageIndex: number, options: OasisPdfTextOptions): void {

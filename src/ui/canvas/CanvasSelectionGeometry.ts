@@ -28,6 +28,17 @@ export interface CanvasSelectionGeometryResult {
   selectedImageBox: SelectedImageSelectionBox | null;
 }
 
+const TEXT_SELECTION_ANTIALIAS_OVERSCAN_PX = 1;
+const TEXT_SELECTION_LEADING_BEARING_INSET_PX = 1;
+
+function getParagraphTextAtOffset(paragraph: CanvasSnapshotParagraph, offset: number): string {
+  return paragraph.paragraph.runs.map((run) => run.text).join("")[offset] ?? "";
+}
+
+function isSelectionEdgeWhitespace(char: string): boolean {
+  return char === " " || char === "\t" || char === "\n";
+}
+
 function getParagraphSelectionRange(
   paragraphId: string,
   paragraphIndexById: Map<string, number>,
@@ -252,8 +263,14 @@ export function computeCanvasSelectionGeometry(
       if (paragraphSelectionStart >= paragraphSelectionEnd) continue;
 
       for (const line of paragraph.lines) {
-        const lineStart = Math.max(paragraphSelectionStart, line.startOffset);
-        const lineEnd = Math.min(paragraphSelectionEnd, line.endOffset);
+        let lineStart = Math.max(paragraphSelectionStart, line.startOffset);
+        let lineEnd = Math.min(paragraphSelectionEnd, line.endOffset);
+        while (lineStart < lineEnd && isSelectionEdgeWhitespace(getParagraphTextAtOffset(paragraph, lineStart))) {
+          lineStart += 1;
+        }
+        while (lineEnd > lineStart && isSelectionEdgeWhitespace(getParagraphTextAtOffset(paragraph, lineEnd - 1))) {
+          lineEnd -= 1;
+        }
         if (lineStart >= lineEnd) continue;
 
         const startSlot = line.slots.find((slot) => slot.offset === lineStart);
@@ -269,9 +286,15 @@ export function computeCanvasSelectionGeometry(
         const boxHeight = shouldIncludeSpacingBefore ? line.top + line.height - paragraph.top : line.height;
 
         selectionBoxes.push({
-          left: startSlot.left - surfaceRect.left,
+          left: startSlot.left - surfaceRect.left + TEXT_SELECTION_LEADING_BEARING_INSET_PX,
           top: boxTop - surfaceRect.top,
-          width: Math.max(1, endSlot.left - startSlot.left),
+          width: Math.max(
+            1,
+            endSlot.left -
+              startSlot.left +
+              TEXT_SELECTION_ANTIALIAS_OVERSCAN_PX -
+              TEXT_SELECTION_LEADING_BEARING_INSET_PX,
+          ),
           height: boxHeight,
         });
       }

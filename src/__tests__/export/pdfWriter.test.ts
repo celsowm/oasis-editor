@@ -444,6 +444,83 @@ describe('OasisPdfWriter', () => {
     expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
+  it('exports styled underline variants as distinct PDF line patterns', async () => {
+    const document: EditorDocument = {
+      id: 'pdf-underline-style-document',
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 816,
+            height: 1056,
+            orientation: 'portrait',
+            margins: { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 },
+          },
+          blocks: [
+            {
+              id: 'underline-single',
+              type: 'paragraph',
+              runs: [{ id: 'run-single', text: 'Single underline', styles: { underline: true } }],
+            },
+            {
+              id: 'underline-double',
+              type: 'paragraph',
+              runs: [{ id: 'run-double', text: 'Double underline', styles: { underline: true, underlineStyle: 'double' } }],
+            },
+            {
+              id: 'underline-dotted',
+              type: 'paragraph',
+              runs: [{ id: 'run-dotted', text: 'Dotted underline', styles: { underline: true, underlineStyle: 'dotted' } }],
+            },
+            {
+              id: 'underline-dash',
+              type: 'paragraph',
+              runs: [{ id: 'run-dash', text: 'Dash underline', styles: { underline: true, underlineStyle: 'dash' } }],
+            },
+            {
+              id: 'underline-dash-long',
+              type: 'paragraph',
+              runs: [{ id: 'run-dash-long', text: 'Long dash underline', styles: { underline: true, underlineStyle: 'dashLong' } }],
+            },
+            {
+              id: 'underline-dot-dash',
+              type: 'paragraph',
+              runs: [{ id: 'run-dot-dash', text: 'Dot dash underline', styles: { underline: true, underlineStyle: 'dotDash' } }],
+            },
+            {
+              id: 'underline-dot-dot-dash',
+              type: 'paragraph',
+              runs: [{ id: 'run-dot-dot-dash', text: 'Dot dot dash underline', styles: { underline: true, underlineStyle: 'dotDotDash' } }],
+            },
+            {
+              id: 'underline-wave',
+              type: 'paragraph',
+              runs: [{ id: 'run-wave', text: 'Wave underline', styles: { underline: true, underlineStyle: 'wave' } }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+
+    expectPdfText(pdf, 'Single underline');
+    expectPdfText(pdf, 'Double underline');
+    expectPdfText(pdf, 'Dotted underline');
+    expectPdfText(pdf, 'Dash underline');
+    expectPdfText(pdf, 'Long dash underline');
+    expectPdfText(pdf, 'Dot dash underline');
+    expectPdfText(pdf, 'Dot dot dash underline');
+    expectPdfText(pdf, 'Wave underline');
+    expect(pdf).toContain('[1.5 2.5] 0 d');
+    expect(pdf).toContain('[4 3] 0 d');
+    expect(pdf).toContain('[8 3] 0 d');
+    expect(pdf).toContain('[4 2 1 2] 0 d');
+    expect(pdf).toContain('[4 2 1 2 1 2] 0 d');
+    expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThan(18);
+  });
+
   it('wraps long paragraphs and creates additional pages when lines overflow the section content area', async () => {
     const document: EditorDocument = {
       id: 'pdf-overflow-document',

@@ -30,11 +30,12 @@ const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 export const booleanButtons: BooleanButton[] = [
   { key: "bold", label: "B", icon: "bold", testId: "editor-toolbar-bold", tooltip: `Bold (${mod}+B)` },
   { key: "italic", label: "I", icon: "italic", testId: "editor-toolbar-italic", tooltip: `Italic (${mod}+I)` },
-  { key: "underline", label: "U", icon: "underline", testId: "editor-toolbar-underline", tooltip: `Underline (${mod}+U)` },
   { key: "strike", label: "S", icon: "strikethrough", testId: "editor-toolbar-strike", tooltip: "Strikethrough" },
   { key: "superscript", label: "Sup", icon: "superscript", testId: "editor-toolbar-superscript", tooltip: "Superscript" },
   { key: "subscript", label: "Sub", icon: "subscript", testId: "editor-toolbar-subscript", tooltip: "Subscript" },
 ];
+
+export const UNDERLINE_BUTTON_TOOLTIP = `Underline (${mod}+U)`;
 
 export const alignButtons: AlignButton[] = [
   { value: "left", label: "L", icon: "align-left", testId: "editor-toolbar-align-left", tooltip: "Align left" },

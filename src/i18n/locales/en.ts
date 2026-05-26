@@ -20,6 +20,7 @@ export const en = {
   "toolbar.bold": "Bold",
   "toolbar.italic": "Italic",
   "toolbar.underline": "Underline",
+  "toolbar.underlineRemove": "No underline",
   "toolbar.strike": "Strikethrough",
   "toolbar.superscript": "Superscript",
   "toolbar.subscript": "Subscript",

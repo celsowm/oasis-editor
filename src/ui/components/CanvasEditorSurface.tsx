@@ -417,7 +417,7 @@ function drawParagraph(
         }
       }
       if (styles.underline) {
-        drawTextDecoration(ctx, line, fragment, originX, originY, "underline");
+        drawTextDecoration(ctx, line, fragment, originX, originY, "underline", styles.underlineStyle ?? undefined);
       }
       if (styles.strike) {
         drawTextDecoration(ctx, line, fragment, originX, originY, "strike");
@@ -469,6 +469,7 @@ function drawTextDecoration(
   originX: number,
   originY: number,
   kind: "underline" | "strike",
+  underlineStyle?: string,
 ) {
   const slots = fragment.chars
     .map((char) => line.slots.find((slot) => slot.offset === char.paragraphOffset))
@@ -477,11 +478,107 @@ function drawTextDecoration(
   const left = slots[0]!.left;
   const right = slots[slots.length - 1]!.left + 8;
   const y = kind === "underline" ? originY + line.top + line.height - 2 : originY + line.top + line.height * 0.52;
-  ctx.beginPath();
-  ctx.moveTo(originX + left, y);
-  ctx.lineTo(originX + right, y);
-  ctx.lineWidth = 1;
+  const x1 = originX + left;
+  const x2 = originX + right;
+  ctx.save();
   ctx.strokeStyle = ctx.fillStyle as string;
+
+  if (kind === "underline") {
+    drawUnderlineWithStyle(ctx, x1, x2, y, underlineStyle);
+  } else {
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawUnderlineWithStyle(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  x2: number,
+  y: number,
+  underlineStyle: string | undefined,
+) {
+  ctx.setLineDash([]);
+  ctx.lineWidth = 1;
+
+  switch (underlineStyle) {
+    case "double":
+    case "wavyDouble": {
+      const offset = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x1, y - offset);
+      ctx.lineTo(x2, y - offset);
+      ctx.moveTo(x1, y + offset);
+      ctx.lineTo(x2, y + offset);
+      ctx.stroke();
+      return;
+    }
+    case "thick":
+    case "dashedHeavy":
+    case "dashLongHeavy":
+    case "dashDotHeavy":
+    case "dashDotDotHeavy":
+    case "dottedHeavy":
+    case "wavyHeavy": {
+      ctx.lineWidth = 2;
+      break;
+    }
+  }
+
+  switch (underlineStyle) {
+    case "dotted":
+    case "dottedHeavy":
+      ctx.setLineDash([1.5, 2.5]);
+      break;
+    case "dash":
+    case "dashedHeavy":
+      ctx.setLineDash([4, 3]);
+      break;
+    case "dashLong":
+    case "dashLongHeavy":
+      ctx.setLineDash([8, 3]);
+      break;
+    case "dotDash":
+    case "dashDotHeavy":
+      ctx.setLineDash([4, 2, 1, 2]);
+      break;
+    case "dotDotDash":
+    case "dashDotDotHeavy":
+      ctx.setLineDash([4, 2, 1, 2, 1, 2]);
+      break;
+    case "wave":
+    case "wavyHeavy": {
+      drawWavyLine(ctx, x1, x2, y);
+      return;
+    }
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(x1, y);
+  ctx.lineTo(x2, y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawWavyLine(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  x2: number,
+  y: number,
+) {
+  const amplitude = 1.5;
+  const wavelength = 4;
+  ctx.beginPath();
+  ctx.moveTo(x1, y);
+  for (let x = x1; x <= x2; x += 1) {
+    const dy = Math.sin(((x - x1) / wavelength) * Math.PI) * amplitude;
+    ctx.lineTo(x, y + dy);
+  }
   ctx.stroke();
 }
 

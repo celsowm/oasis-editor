@@ -147,7 +147,31 @@ describe('canvas selection geometry', () => {
     const geometry = computeCanvasSelectionGeometry(snapshot, selectedState);
 
     expect(geometry.selectionBoxes.length).toBeGreaterThan(0);
-    expect(geometry.selectionBoxes[0]!.width).toBeGreaterThan(0);
+    expect(geometry.selectionBoxes[0]).toMatchObject({
+      left: 133,
+      width: 36,
+    });
+  });
+
+  it("does not paint leading whitespace at a visual selection edge", () => {
+    const sourceParagraph = createEditorParagraph("aaaa bbbb");
+    const state = createEditorStateFromDocument(createEditorDocument([sourceParagraph]));
+    const paragraph = getParagraphs(state)[0]!;
+    const selectedState = {
+      ...state,
+      selection: {
+        anchor: paragraphOffsetToPosition(paragraph, 4),
+        focus: paragraphOffsetToPosition(paragraph, 9),
+      },
+    };
+
+    const snapshot = createMockSnapshot(paragraph, 9, 0);
+    const geometry = computeCanvasSelectionGeometry(snapshot, selectedState);
+
+    expect(geometry.selectionBoxes[0]).toMatchObject({
+      left: 181,
+      width: 48,
+    });
   });
 
   it('correctly calculates geometry and hides caret when multi-cell table selection is active', () => {

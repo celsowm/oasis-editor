@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createEditorStateFromTexts, resetEditorIds } from '../../core/editorState.js';
-import { insertTextAtSelection, deleteBackward, deleteForward, toggleTextStyle, moveOrCopySelectionToPosition } from '../../core/commands/text.js';
-import { paragraphOffsetToPosition } from '../../core/model.js';
+import { insertTextAtSelection, deleteBackward, deleteForward, toggleTextStyle, moveOrCopySelectionToPosition, setTextStyleValue } from '../../core/commands/text.js';
+import { paragraphOffsetToPosition, type EditorState, type EditorUnderlineStyle } from '../../core/model.js';
 import { getParagraphs } from '../../core/model.js';
 
 beforeEach(() => {
@@ -83,6 +83,27 @@ describe('text commands', () => {
       expect(paragraphs[0].runs[1].text).toBe(' world');
       expect(paragraphs[0].runs[1].styles?.bold).toBeFalsy();
     });
+
+    it.each<EditorUnderlineStyle>(['double', 'dotted', 'dash', 'wave'])(
+      'applies underline style "%s" before enabling underline like the toolbar split button',
+      (style) => {
+        const state = createEditorStateFromTexts(['hello world'], {
+          anchor: { blockIndex: 0, offset: 0 },
+          focus: { blockIndex: 0, offset: 5 }
+        });
+
+        const applyUnderlineStyle = (current: EditorState, underlineStyle: EditorUnderlineStyle) => {
+          const styleValue = underlineStyle === 'single' ? null : underlineStyle;
+          return toggleTextStyle(setTextStyleValue(current, 'underlineStyle', styleValue), 'underline');
+        };
+        const nextState = applyUnderlineStyle(state, style);
+        const styledRun = getParagraphs(nextState)[0].runs[0];
+
+        expect(styledRun.text).toBe('hello');
+        expect(styledRun.styles?.underline).toBe(true);
+        expect(styledRun.styles?.underlineStyle).toBe(style);
+      },
+    );
   });
 
   describe('moveOrCopySelectionToPosition', () => {

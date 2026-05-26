@@ -184,7 +184,7 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
     focusInput();
   };
 
-  const applyValueStyleCommand = <K extends "fontFamily" | "fontSize" | "color" | "highlight" | "link">(
+  const applyValueStyleCommand = <K extends "fontFamily" | "fontSize" | "color" | "highlight" | "link" | "underlineStyle">(
     key: K,
     value: EditorTextStyle[K] | null,
   ) => {

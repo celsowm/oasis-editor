@@ -219,6 +219,55 @@ test("canvas pointer interactions update caret and selection from canvas layout 
   await expectNoMissEvents(page);
 });
 
+test("canvas text selection uses square overlay covering the final character slot", async ({ page }) => {
+  await gotoEditor(page);
+  await clearMissEvents(page);
+  await seedText(page, "asdasdasda");
+  const pageRect = await canvasPageRect(page);
+  await page.mouse.click(pageRect.x + 190, pageRect.y + 140);
+  await expectLastHitFromCanvas(page);
+
+  const points = await page.evaluate(() => {
+    const snapshot = window.__oasisCanvasDebug?.getLayoutSnapshot();
+    if (!snapshot) return null;
+    const paragraph = snapshot.paragraphs.find(
+      (entry) =>
+        entry.zone === "main" &&
+        !entry.tableCell &&
+        entry.lines.some((candidate) => candidate.slots.length >= 11),
+    );
+    const line = paragraph?.lines.find((candidate) => candidate.slots.length >= 11);
+    if (!line || line.slots.length < 11) return null;
+    const startSlot = line.slots[0]!;
+    const endSlot = line.slots[10]!;
+    return {
+      from: { x: startSlot.left + 0.5, y: line.top + line.height * 0.5 },
+      to: { x: endSlot.left + 0.5, y: line.top + line.height * 0.5 },
+      expectedRight: endSlot.left,
+    };
+  });
+  if (!points) {
+    throw new Error("unable to resolve short text selection slots");
+  }
+
+  await page.mouse.move(points.from.x, points.from.y);
+  await page.mouse.down();
+  await page.mouse.move(points.to.x, points.to.y);
+  await page.mouse.up();
+
+  const selectionBox = page.locator(".oasis-editor-selection-box").first();
+  await expect(selectionBox).toBeVisible();
+  const box = await selectionBox.boundingBox();
+  if (!box) {
+    throw new Error("unable to resolve selection box bounds");
+  }
+  expect(box.x + box.width).toBeGreaterThanOrEqual(points.expectedRight - 0.5);
+  await expect
+    .poll(() => selectionBox.evaluate((element) => getComputedStyle(element).borderRadius))
+    .toBe("0px");
+  await expectNoMissEvents(page);
+});
+
 test("toolbar color split buttons separate direct apply from palette selection", async ({ page }) => {
   await gotoEditor(page);
   await seedText(page, "alpha beta gamma");
@@ -266,6 +315,44 @@ test("toolbar color split buttons separate direct apply from palette selection",
   await page.getByTestId("editor-toolbar-highlight-dropdown").click();
   await page.getByTestId("editor-toolbar-highlight-clear").click();
   await expect(page.locator(".oasis-editor-color-menu")).toHaveCount(0);
+});
+
+test("underline split button matches text color split button dimensions", async ({ page }) => {
+  await gotoEditor(page);
+
+  const dimensions = await page.evaluate(() => {
+    const read = (testId: string) => {
+      const main = document.querySelector(`[data-testid="${testId}"]`) as HTMLElement | null;
+      const menu = document.querySelector(`[data-testid="${testId}-dropdown"]`) as HTMLElement | null;
+      const root = main?.closest(".oasis-editor-color-split") as HTMLElement | null;
+      const icon = main?.querySelector(".oasis-editor-color-split-icon") as HTMLElement | null;
+      const glyph = icon?.querySelector("svg, i, .oasis-editor-underline-split-glyph") as HTMLElement | null;
+      if (!root || !main || !menu || !icon) return null;
+
+      const rect = (element: HTMLElement) => {
+        const bounds = element.getBoundingClientRect();
+        return { width: bounds.width, height: bounds.height };
+      };
+      const iconStyles = getComputedStyle(icon);
+      return {
+        root: rect(root),
+        main: rect(main),
+        menu: rect(menu),
+        icon: rect(icon),
+        glyph: glyph ? rect(glyph) : null,
+        iconPaddingBottom: iconStyles.paddingBottom,
+      };
+    };
+
+    return {
+      color: read("editor-toolbar-color"),
+      underline: read("editor-toolbar-underline"),
+    };
+  });
+
+  expect(dimensions.color).not.toBeNull();
+  expect(dimensions.underline).not.toBeNull();
+  expect(dimensions.underline).toEqual(dimensions.color);
 });
 
 test("canvas header requires double-click to enter and double-click body to exit", async ({ page }) => {
