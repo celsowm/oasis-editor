@@ -1,9 +1,7 @@
 import { getActiveSectionIndex } from "../../../../core/model.js";
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
-import { ToolbarGroup } from "../ToolbarGroup.js";
 import { ToolbarDropdown } from "../ToolbarDropdown.js";
-import { ToolbarSelect } from "../ToolbarSelect.js";
 import { t } from "../../../../i18n/index.js";
 
 export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
@@ -16,7 +14,7 @@ export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
         label=""
         icon="layout-template"
         testId="editor-toolbar-section-dropdown"
-        tooltip={t("section.margins")}
+        tooltip={t("section.pageSetup")}
         hideChevron
         menuClass="oasis-editor-toolbar-panel"
         keepMounted
@@ -45,32 +43,6 @@ export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
           }}
           tooltip={t("section.toggleOrientation")}
         />
-        </div>
-        <div class="oasis-editor-toolbar-panel-section">
-        <ToolbarSelect
-          data-testid="editor-toolbar-margins"
-          tooltip={t("section.margins")}
-          onChange={(event) => {
-            const currentSectionIndex = getActiveSectionIndex(state());
-            const section =
-              state()?.document.sections?.[currentSectionIndex] || state()?.document;
-            if (!section) return;
-            const value = event.currentTarget.value;
-            const margins =
-              value === "narrow"
-                ? { top: 48, right: 48, bottom: 48, left: 48, header: 24, footer: 24, gutter: 0 }
-                : { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 };
-            ctx().applyUpdateSectionSettingsCommand(currentSectionIndex, {
-              pageSettings: {
-                ...section.pageSettings!,
-                margins,
-              },
-            });
-          }}
-        >
-          <option value="normal">{t("section.marginsNormal")}</option>
-          <option value="narrow">{t("section.marginsNarrow")}</option>
-        </ToolbarSelect>
         </div>
 
         <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">

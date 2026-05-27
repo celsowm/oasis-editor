@@ -1,4 +1,3 @@
-import { insertFieldAtSelection } from "../../../../core/editorCommands.js";
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
 import { TableGridPicker } from "../TableGridPicker.js";
@@ -27,38 +26,6 @@ export function InsertGroup(props: { ctx: () => EditorToolbarCtx }) {
         testId="editor-toolbar-insert-table"
         tooltip={t("toolbar.table")}
         onSelect={(rows, cols) => ctx().insertTableCommand(rows, cols)}
-      />
-      <ToolbarButton
-        icon="hash"
-        data-testid="editor-toolbar-insert-page-number"
-        onClick={() => {
-          ctx().clearPreferredColumn();
-          ctx().resetTransactionGrouping();
-          ctx().applyTransactionalState((current) =>
-            ctx().applyTableAwareParagraphEdit(current, (temp) =>
-              insertFieldAtSelection(temp, "PAGE"),
-            ),
-          );
-          ctx().focusInput();
-        }}
-        tooltip={t("toolbar.pageNumber")}
-        aria-label={t("toolbar.pageNumber")}
-      />
-      <ToolbarButton
-        icon="layers"
-        data-testid="editor-toolbar-insert-total-pages"
-        onClick={() => {
-          ctx().clearPreferredColumn();
-          ctx().resetTransactionGrouping();
-          ctx().applyTransactionalState((current) =>
-            ctx().applyTableAwareParagraphEdit(current, (temp) =>
-              insertFieldAtSelection(temp, "NUMPAGES"),
-            ),
-          );
-          ctx().focusInput();
-        }}
-        tooltip={t("toolbar.totalPages")}
-        aria-label={t("toolbar.totalPages")}
       />
 
       <ToolbarButton

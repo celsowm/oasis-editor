@@ -2,7 +2,6 @@ import { setParagraphStyle } from "../../../../core/editorCommands.js";
 import type { EditorBorderStyle } from "../../../../core/model.js";
 import type { EditorToolbarCtx } from "../types.js";
 import { ToolbarButton } from "../ToolbarButton.js";
-import { ToolbarGroup } from "../ToolbarGroup.js";
 import { ToolbarDropdown } from "../ToolbarDropdown.js";
 import { t } from "../../../../i18n/index.js";
 
@@ -16,7 +15,7 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
         label=""
         icon="sliders-horizontal"
         testId="editor-toolbar-metrics-dropdown"
-        tooltip={`${t("metric.lineHeight")} / ${t("metric.leftIndent")}`}
+        tooltip={t("metric.leftIndent")}
         hideChevron
         menuClass="oasis-editor-toolbar-panel"
         keepMounted
@@ -39,42 +38,6 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
         </div>
 
         <div class="oasis-editor-toolbar-panel-grid">
-        <label class="oasis-editor-tool-metric" title={t("metric.lineHeight")}>
-          <span>{t("metric.line")}</span>
-          <input
-            type="number"
-            class="oasis-editor-tool-number"
-            data-testid="editor-toolbar-line-height"
-            min="1"
-            step="0.1"
-            value={t_style().lineHeight}
-            onChange={(event) =>
-              ctx().applyParagraphStyleCommand(
-                "lineHeight",
-                event.currentTarget.value ? Number(event.currentTarget.value) : null,
-              )
-            }
-          />
-        </label>
-
-        <label class="oasis-editor-tool-metric" title={t("metric.spacingBefore")}>
-          <span>{t("metric.before")}</span>
-          <input
-            type="number"
-            class="oasis-editor-tool-number"
-            data-testid="editor-toolbar-spacing-before"
-            min="0"
-            step="1"
-            value={t_style().spacingBefore}
-            onChange={(event) =>
-              ctx().applyParagraphStyleCommand(
-                "spacingBefore",
-                event.currentTarget.value ? Number(event.currentTarget.value) : null,
-              )
-            }
-          />
-        </label>
-
         <label class="oasis-editor-tool-metric" title={t("metric.spacingAfter")}>
           <span>{t("metric.after")}</span>
           <input

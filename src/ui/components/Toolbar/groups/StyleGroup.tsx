@@ -101,7 +101,6 @@ export function StyleGroup(props: { ctx: () => EditorToolbarCtx }) {
         }
         tooltip={t("toolbar.fontSize")}
       >
-        <option value="">{t("toolbar.size")}</option>
         <For each={fontSizeOptions()}>
           {(fontSize) => <option value={String(fontSize)}>{fontSize}</option>}
         </For>

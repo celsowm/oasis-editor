@@ -836,3 +836,74 @@
   color: var(--oasis-text);
   line-height: 1.2;
 }
+
+
+/* Line spacing button & menu */
+.oasis-editor-line-spacing-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: currentColor;
+}
+
+.oasis-editor-line-spacing-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.oasis-editor-line-spacing-menu {
+  min-width: 200px;
+  padding: 4px;
+  gap: 0;
+}
+
+.oasis-editor-line-spacing-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  color: var(--oasis-text);
+}
+
+.oasis-editor-line-spacing-item:hover {
+  background: var(--oasis-hover-bg);
+}
+
+.oasis-editor-line-spacing-item-active {
+  font-weight: 600;
+}
+
+.oasis-editor-line-spacing-item-check {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--oasis-text);
+}
+
+.oasis-editor-line-spacing-item-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.oasis-editor-line-spacing-menu-separator {
+  height: 1px;
+  background: var(--oasis-toolbar-border);
+  margin: 4px 0;
+}
+
+.oasis-editor-line-spacing-item-more {
+  color: var(--oasis-text);
+}
