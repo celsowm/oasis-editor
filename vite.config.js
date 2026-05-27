@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
   const isLib = mode === 'lib';
 
   return {
-    base: isLib ? './' : '/',
+    base: './',
     build: {
       outDir: isLib ? 'dist' : 'dist-app',
       assetsInlineLimit: isLib ? 0 : undefined,

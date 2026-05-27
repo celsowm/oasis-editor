@@ -109,6 +109,12 @@ import {
   syncCanvasDebugApiVisibility,
 } from "./canvas/CanvasDebug.js";
 
+export interface OasisEditorLoadingOptions {
+  label?: string;
+  class?: string;
+  style?: JSX.CSSProperties;
+}
+
 export interface OasisEditorAppProps {
   showChrome?: boolean;
   shell?: "document" | "inline" | "balloon";
@@ -127,6 +133,8 @@ export interface OasisEditorAppProps {
   readOnly?: boolean;
   persistenceEnabled?: boolean;
   layoutMode?: "fast" | "wordParity";
+  loading?: boolean | OasisEditorLoadingOptions;
+  onReady?: () => void;
 }
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
@@ -210,6 +218,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const useComposedShell = () =>
     props.uiVariant === "docs" || (props.shell ?? "document") !== "document";
   const isReadOnly = () => props.readOnly ?? false;
+  const loadingOptions = () =>
+    typeof props.loading === "object" ? props.loading : undefined;
+  const loadingLabel = () => loadingOptions()?.label ?? "Loading oasis-editor...";
 
   const shellComponent = () => {
     const s = props.shell ?? "document";
@@ -219,6 +230,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   };
 
   const [focused, setFocused] = createSignal(false);
+  const [initialLoading, setInitialLoading] = createSignal(props.loading !== false);
   const [undoStack, setUndoStack] = createSignal<EditorState[]>([]);
   const [redoStack, setRedoStack] = createSignal<EditorState[]>([]);
 
@@ -1148,6 +1160,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     startLongTaskObserver();
     installGlobalReport();
     registerDomStatsSurface(() => surfaceRef ?? null);
+    requestAnimationFrame(() => {
+      setInitialLoading(false);
+      props.onReady?.();
+    });
   });
 
   onCleanup(() => {
@@ -1418,6 +1434,19 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             caretViewport={textDrag.caretViewport}
           />
         )}
+      </Show>
+
+      <Show when={initialLoading()}>
+        <div
+          class={["oasis-editor-loading", loadingOptions()?.class]
+            .filter(Boolean)
+            .join(" ")}
+          style={loadingOptions()?.style}
+          role="status"
+          aria-live="polite"
+        >
+          <div class="oasis-editor-loading-text">{loadingLabel()}</div>
+        </div>
       </Show>
     </div>
   );

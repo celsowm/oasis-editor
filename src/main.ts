@@ -8,32 +8,13 @@ if (!container) {
   throw new Error("OasisEditor: missing mount target #oasis-editor-root");
 }
 
-const loading = document.getElementById("oasis-editor-loading");
 installEditorDebugControl();
 
-function hideLoading(): void {
-  if (loading) {
-    loading.classList.add("oasis-editor-loading-hidden");
-    loading.addEventListener(
-      "transitionend",
-      () => loading.remove(),
-      { once: true },
-    );
-  }
-}
+const params = new URLSearchParams(window.location.search);
+const requestedShell = params.get("shell");
+const shell = requestedShell === "inline" || requestedShell === "balloon" ? requestedShell : "document";
 
-function init(): void {
-  const params = new URLSearchParams(window.location.search);
-  const requestedShell = params.get("shell");
-  const shell = requestedShell === "inline" || requestedShell === "balloon" ? requestedShell : "document";
-
-  createOasisEditor(container as HTMLElement, {
-    shell,
-    uiVariant: "docs",
-  });
-  hideLoading();
-}
-
-document.fonts.ready.then(init).catch(() => {
-  init();
+createOasisEditor(container as HTMLElement, {
+  shell,
+  uiVariant: "docs",
 });

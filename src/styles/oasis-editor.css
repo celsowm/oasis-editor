@@ -42,6 +42,7 @@
 }
 
 .oasis-editor-app {
+  position: relative;
   display: grid;
   grid-template-rows: auto auto 1fr;
   width: 100%;
@@ -992,19 +993,14 @@
   pointer-events: none;
 }
 
-#oasis-editor-loading {
-  position: fixed;
+.oasis-editor-loading {
+  position: absolute;
   inset: 0;
+  z-index: 1000;
   display: grid;
   place-items: center;
   gap: 12px;
   background: var(--oasis-bg);
-  transition: opacity 0.25s ease;
-}
-
-#oasis-editor-loading.oasis-editor-loading-hidden {
-  opacity: 0;
-  pointer-events: none;
 }
 
 .oasis-editor-loading-text {
