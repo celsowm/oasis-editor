@@ -201,6 +201,21 @@ function fitImagesToCellWidth(
   return { ...paragraph, runs };
 }
 
+function resolveVerticalContentOffset(
+  cell: EditorTableCellNode,
+  contentHeightPx: number,
+  contentNaturalHeightPx: number,
+): number {
+  const available = Math.max(0, contentHeightPx - contentNaturalHeightPx);
+  if (cell.style?.verticalAlign === "bottom") {
+    return available;
+  }
+  if (cell.style?.verticalAlign === "middle") {
+    return available / 2;
+  }
+  return 0;
+}
+
 export function buildCanvasTableLayout(options: {
   table: EditorTableNode;
   state: EditorState;
@@ -465,13 +480,18 @@ export function buildCanvasTableLayout(options: {
         );
 
     let paragraphCursorY = 0;
+    const verticalContentOffset = resolveVerticalContentOffset(
+      cell,
+      contentHeightPx,
+      cellEntry.contentNaturalHeightPx,
+    );
     const paragraphs: CanvasTableParagraphLayoutEntry[] = [];
     for (const projected of cellEntry.projectedParagraphs) {
       paragraphs.push({
         paragraph: projected.paragraph,
         lines: projected.lines,
         originX: contentLeft,
-        originY: contentTop + paragraphCursorY,
+        originY: contentTop + verticalContentOffset + paragraphCursorY,
         width: contentWidthPx,
         height: projected.height,
       });

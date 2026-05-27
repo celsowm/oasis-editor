@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { type Element as XmlElement } from "@xmldom/xmldom";
 import type {
+  EditorBorderStyle,
   EditorNamedStyle,
   EditorTableCellStyle,
   EditorTableNode,
@@ -49,6 +50,66 @@ function getTableCellVMerge(cellProperties: XmlElement | null): "restart" | "con
   return value === "restart" ? "restart" : "continue";
 }
 
+function parseTableCellVerticalAlign(
+  cellProperties: XmlElement | null,
+): EditorTableCellStyle["verticalAlign"] | undefined {
+  if (!cellProperties) {
+    return undefined;
+  }
+
+  const vAlign = getFirstChildByTagNameNS(cellProperties, WORD_NS, "vAlign");
+  const value = getAttributeValue(vAlign, "val");
+  if (value === "top" || value === "bottom") {
+    return value;
+  }
+  if (value === "center") {
+    return "middle";
+  }
+  return undefined;
+}
+
+function parseTableCellBorder(borderNode: XmlElement | null): EditorBorderStyle | undefined {
+  if (!borderNode) {
+    return undefined;
+  }
+
+  const value = getAttributeValue(borderNode, "val");
+  if (value === "nil" || value === "none") {
+    return { width: 0, type: "none", color: "transparent" };
+  }
+
+  const size = Number(getAttributeValue(borderNode, "sz"));
+  const width = Number.isFinite(size) && size > 0 ? Math.round((size / 8) * 10000) / 10000 : 0.75;
+  const color = normalizeImportedHexColor(getAttributeValue(borderNode, "color")) ?? "#000000";
+  const normalizedValue = value?.toLowerCase() ?? "single";
+  const type =
+    normalizedValue.includes("dotted") || normalizedValue.includes("dot")
+      ? "dotted"
+      : normalizedValue.includes("dash")
+        ? "dashed"
+        : "solid";
+
+  return { width, type, color };
+}
+
+function parseTableCellBorders(cellProperties: XmlElement | null): Partial<EditorTableCellStyle> {
+  if (!cellProperties) {
+    return {};
+  }
+
+  const tcBorders = getFirstChildByTagNameNS(cellProperties, WORD_NS, "tcBorders");
+  if (!tcBorders) {
+    return {};
+  }
+
+  return {
+    borderTop: parseTableCellBorder(getFirstChildByTagNameNS(tcBorders, WORD_NS, "top")),
+    borderRight: parseTableCellBorder(getFirstChildByTagNameNS(tcBorders, WORD_NS, "right")),
+    borderBottom: parseTableCellBorder(getFirstChildByTagNameNS(tcBorders, WORD_NS, "bottom")),
+    borderLeft: parseTableCellBorder(getFirstChildByTagNameNS(tcBorders, WORD_NS, "left")),
+  };
+}
+
 function parseTableCellStyle(cellProperties: XmlElement | null): EditorTableCellStyle | undefined {
   if (!cellProperties) {
     return undefined;
@@ -87,6 +148,17 @@ function parseTableCellStyle(cellProperties: XmlElement | null): EditorTableCell
     if (bottom !== undefined) style.paddingBottom = bottom;
     if (left !== undefined) style.paddingLeft = left;
     if (right !== undefined) style.paddingRight = right;
+  }
+
+  const verticalAlign = parseTableCellVerticalAlign(cellProperties);
+  if (verticalAlign) {
+    style.verticalAlign = verticalAlign;
+  }
+
+  for (const [key, border] of Object.entries(parseTableCellBorders(cellProperties))) {
+    if (border) {
+      (style as Record<string, unknown>)[key] = border;
+    }
   }
 
   return Object.keys(style).length > 0 ? style : undefined;

@@ -22,8 +22,8 @@ Este documento detalha a cobertura atual do padrão OOXML para importação e ex
 | | Largura da Tabela e Células | ✅ | ✅ | ✅ | |
 | | Sombreamento de Célula (Fill) | ✅ | ✅ | ✅ | |
 | | Espaçamento Interno (Padding) | ✅ | ✅ | ✅ | |
-| | Bordas de Célula | ❌ | ✅ | ✅ | PDF converte bordas tracejadas/pontilhadas em sólidas |
-| | Alinhamento Vertical | ❌ | ✅ | ✅ | |
+| | Bordas de Célula | ✅ | ✅ | ✅ | PDF converte bordas tracejadas/pontilhadas em sólidas |
+| | Alinhamento Vertical | ✅ | ✅ | ✅ | |
 | | Linha de Cabeçalho (`tblHeader`) | ✅ | ✅ | ✅ | PDF repete cabeçalhos em quebras de página |
 | **Documento** | Tamanho de Página e Orientação | ✅ | ✅ | ✅ | |
 | | Margens da Página | ✅ | ✅ | ✅ | |
@@ -40,9 +40,7 @@ Este documento detalha a cobertura atual do padrão OOXML para importação e ex
 ## O que falta (Principais Lacunas)
 
 ### DOCX
-1.  **Importação de Bordas de Tabela**: O importador ignora atualmente as definições de bordas nas células das tabelas.
-2.  **Importação de Alinhamento Vertical em Tabelas**: O texto dentro de células sempre importa com alinhamento padrão (topo).
-3.  **Exportação de Snap to Grid**: O editor possui suporte interno a grade, mas não salva essa preferência no DOCX.
+1.  **Exportação de Snap to Grid**: O editor possui suporte interno a grade, mas não salva essa preferência no DOCX.
 
 ### PDF
 1.  **Hyperlinks Clicáveis**: Embora o PDF renderize o texto do link, ele não cria a anotação `/Link` clicável.

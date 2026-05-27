@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditorDocument.js";
+import { exportEditorDocumentToDocx } from "../../export/docx/exportEditorDocumentToDocx.js";
+import { exportEditorDocumentToPdfBlob } from "../../export/pdf/exportEditorDocumentToPdf.js";
 import type { EditorDocument, EditorParagraphNode, EditorTableCellNode, EditorTableNode } from "../../core/model.js";
 import {
   getPageContentWidth,
@@ -21,6 +23,14 @@ const COMPLEX_DOCX = join(FIXTURES_DIR, "documento_complexo.docx");
 const LOREM_COMPLEX_DOCX = join(FIXTURES_DIR, "lorem_ipsum_complex_document.docx");
 const POINT_TO_PX = 96 / 72;
 const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 28;
+
+function pdfColorCommand(color: string, operator: "rg" | "RG"): string {
+  const normalized = color.replace("#", "");
+  const r = Number.parseInt(normalized.slice(0, 2), 16) / 255;
+  const g = Number.parseInt(normalized.slice(2, 4), 16) / 255;
+  const b = Number.parseInt(normalized.slice(4, 6), 16) / 255;
+  return `${Number(r.toFixed(3))} ${Number(g.toFixed(3))} ${Number(b.toFixed(3))} ${operator}`;
+}
 
 function getDocumentParagraphs(document: EditorDocument): EditorParagraphNode[] {
   const blocks = document.sections?.flatMap((section) => section.blocks) ?? [];
@@ -560,6 +570,92 @@ describe("DOCX import", () => {
     expect(cellStyle?.paddingBottom).toBe(5); // 100 / 20
     expect(cellStyle?.paddingLeft).toBe(15); // 300 / 20
     expect(cellStyle?.paddingRight).toBe(20); // 400 / 20
+  });
+
+  it("imports table cell vertical alignment from DOCX", async () => {
+    const zip = new JSZip();
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tr>
+        <w:tc>
+          <w:tcPr><w:vAlign w:val="top"/></w:tcPr>
+          <w:p><w:r><w:t>Top</w:t></w:r></w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr><w:vAlign w:val="center"/></w:tcPr>
+          <w:p><w:r><w:t>Middle</w:t></w:r></w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr><w:vAlign w:val="bottom"/></w:tcPr>
+          <w:p><w:r><w:t>Bottom</w:t></w:r></w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr><w:vAlign w:val="both"/></w:tcPr>
+          <w:p><w:r><w:t>Unsupported</w:t></w:r></w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+
+    const document = await importDocxToEditorDocument(await zip.generateAsync({ type: "arraybuffer" }));
+    const cells = getDocumentTables(document)[0]!.rows[0]!.cells;
+
+    expect(cells[0]!.style?.verticalAlign).toBe("top");
+    expect(cells[1]!.style?.verticalAlign).toBe("middle");
+    expect(cells[2]!.style?.verticalAlign).toBe("bottom");
+    expect(cells[3]!.style?.verticalAlign).toBeUndefined();
+  });
+
+  it("imports table cell borders and carries them through DOCX and PDF export", async () => {
+    const zip = new JSZip();
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tblGrid><w:gridCol w:w="2400"/></w:tblGrid>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:w="2400" w:type="dxa"/>
+            <w:tcBorders>
+              <w:top w:val="single" w:sz="8" w:space="0" w:color="112233"/>
+              <w:right w:val="dashed" w:sz="12" w:space="0" w:color="445566"/>
+              <w:bottom w:val="nil"/>
+              <w:left w:val="dotted" w:sz="6" w:space="0" w:color="778899"/>
+            </w:tcBorders>
+          </w:tcPr>
+          <w:p><w:r><w:t>Bordered cell</w:t></w:r></w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+
+    const document = await importDocxToEditorDocument(await zip.generateAsync({ type: "arraybuffer" }));
+    const cellStyle = getDocumentTables(document)[0]!.rows[0]!.cells[0]!.style;
+
+    expect(cellStyle?.borderTop).toEqual({ width: 1, type: "solid", color: "#112233" });
+    expect(cellStyle?.borderRight).toEqual({ width: 1.5, type: "dashed", color: "#445566" });
+    expect(cellStyle?.borderBottom).toEqual({ width: 0, type: "none", color: "transparent" });
+    expect(cellStyle?.borderLeft).toEqual({ width: 0.75, type: "dotted", color: "#778899" });
+
+    const exportedZip = await JSZip.loadAsync(await exportEditorDocumentToDocx(document));
+    const exportedDocumentXml = await exportedZip.file("word/document.xml")?.async("string");
+    expect(exportedDocumentXml).toContain('<w:top w:val="single" w:sz="8" w:space="0" w:color="112233"/>');
+    expect(exportedDocumentXml).toContain('<w:right w:val="dashed" w:sz="12" w:space="0" w:color="445566"/>');
+    expect(exportedDocumentXml).toContain('<w:bottom w:val="nil"/>');
+    expect(exportedDocumentXml).toContain('<w:left w:val="dotted" w:sz="6" w:space="0" w:color="778899"/>');
+
+    const pdf = await (await exportEditorDocumentToPdfBlob(document)).text();
+    expect(pdf).toContain(pdfColorCommand("#112233", "RG"));
+    expect(pdf).toContain(pdfColorCommand("#445566", "RG"));
+    expect(pdf).toContain(pdfColorCommand("#778899", "RG"));
+    expect(pdf).not.toContain("transparent");
   });
 
   it("wraps imported table cell text using the cell width", async () => {

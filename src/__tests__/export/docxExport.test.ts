@@ -51,29 +51,39 @@ describe("DOCX export", () => {
     const secondCell = createEditorTableCell([
       createEditorParagraph("Linha 1 Col 2"),
     ]);
-    const row = createEditorTableRow([firstCell, secondCell], {
+    secondCell.style = { verticalAlign: "top" };
+
+    const thirdCell = createEditorTableCell([
+      createEditorParagraph("Linha 1 Col 3"),
+    ]);
+    thirdCell.style = { verticalAlign: "bottom" };
+
+    const row = createEditorTableRow([firstCell, secondCell, thirdCell], {
       isHeader: true,
     });
     row.style = { height: 24 };
 
-    const table = createEditorTable([row], [72, 108]);
-    table.style = { width: 180, indentLeft: 18, align: "left" };
+    const table = createEditorTable([row], [72, 108, 90]);
+    table.style = { width: 270, indentLeft: 18, align: "left" };
 
     const xml = await readDocumentXml(
       await exportEditorDocumentToDocx(createEditorDocument([table])),
     );
 
-    expect(xml).toContain('<w:tblW w:w="3600" w:type="dxa"/>');
+    expect(xml).toContain('<w:tblW w:w="5400" w:type="dxa"/>');
     expect(xml).toContain('<w:tblInd w:w="360" w:type="dxa"/>');
     expect(xml).toContain('<w:tblLayout w:type="fixed"/>');
     expect(xml).toContain('<w:gridCol w:w="1440"/>');
     expect(xml).toContain('<w:gridCol w:w="2160"/>');
+    expect(xml).toContain('<w:gridCol w:w="1800"/>');
     expect(xml).toContain('<w:trHeight w:val="480" w:hRule="atLeast"/>');
     expect(xml).toContain('<w:tcW w:w="1440" w:type="dxa"/>');
     expect(xml).toContain(
       '<w:shd w:val="clear" w:color="auto" w:fill="F1F5F9"/>',
     );
     expect(xml).toContain('<w:vAlign w:val="center"/>');
+    expect(xml).toContain('<w:vAlign w:val="top"/>');
+    expect(xml).toContain('<w:vAlign w:val="bottom"/>');
     expect(xml).toContain("<w:tcMar>");
     expect(xml).toContain('<w:top w:w="60" w:type="dxa"/>');
     expect(xml).toContain('<w:left w:w="100" w:type="dxa"/>');

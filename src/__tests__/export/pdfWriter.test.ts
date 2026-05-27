@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { EditorDocument } from '../../core/model.js';
+import { createEditorStateFromDocument } from '../../core/editorState.js';
 import { PdfFontRegistry } from '../../export/pdf/fonts/PdfFontRegistry.js';
 import { layoutPdfParagraph } from '../../export/pdf/layout/layoutParagraph.js';
 import { PdfTextMeasurer } from '../../export/pdf/layout/PdfTextMeasurer.js';
 import { OasisPdfWriter } from '../../export/pdf/OasisPdfWriter.js';
 import { exportEditorDocumentToPdfBlob } from '../../export/pdf/exportEditorDocumentToPdf.js';
+import { buildCanvasTableLayout } from '../../ui/canvas/CanvasTableLayout.js';
 import { projectDocumentLayout } from '../../ui/layoutProjection.js';
 
 function decodePdf(buffer: ArrayBuffer): string {
@@ -1077,6 +1079,78 @@ describe('OasisPdfWriter', () => {
     // Shading on the first header cell produces a filled rectangle in the
     // cell's shading color.
     expect(pdf).toContain('0.933 0.933 0.933 rg');
+  });
+
+  it('exports vertically aligned table cell text using projected table geometry', async () => {
+    const document: EditorDocument = {
+      id: 'pdf-table-vertical-align-document',
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 240,
+            height: 240,
+            orientation: 'portrait',
+            margins: { top: 48, right: 48, bottom: 48, left: 48, header: 24, footer: 24, gutter: 0 },
+          },
+          blocks: [
+            {
+              id: 'table-vertical-align',
+              type: 'table',
+              gridCols: [120],
+              rows: [
+                {
+                  id: 'row-1',
+                  style: { height: 90 },
+                  cells: [
+                    {
+                      id: 'cell-1-1',
+                      style: { verticalAlign: 'bottom' },
+                      blocks: [
+                        {
+                          id: 'p-1-1',
+                          type: 'paragraph',
+                          runs: [{ id: 'r-1-1', text: 'BottomCell' }],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+    const projected = projectDocumentLayout(document, undefined, undefined, undefined, { layoutMode: 'wordParity' });
+    const page = projected.pages[0]!;
+    const tableBlock = page.blocks[0]!;
+    if (tableBlock.sourceBlock.type !== 'table') {
+      throw new Error('Expected projected table block');
+    }
+    const tableLayout = buildCanvasTableLayout({
+      table: tableBlock.sourceBlock,
+      state: createEditorStateFromDocument(document),
+      pageIndex: 0,
+      layoutMode: 'wordParity',
+      originX: 0,
+      originY: 0,
+      contentWidth: page.pageSettings.width - page.pageSettings.margins.left - page.pageSettings.margins.right,
+      estimatedHeight: tableBlock.estimatedHeight,
+    });
+    const paragraph = tableLayout.cells[0]!.paragraphs[0]!;
+    const line = paragraph.lines[0]!;
+    const pageHeight = pxToPt(page.pageSettings.height);
+
+    expectPdfText(pdf, 'BottomCell');
+    expect(findTextTopY(pdf, pageHeight, 'BottomCell')).toBeCloseTo(
+      pxToPt((page.bodyTop ?? page.pageSettings.margins.top) + paragraph.originY + line.top + line.height * 0.8),
+      3,
+    );
+    expect(paragraph.originY).toBeGreaterThan(tableLayout.cells[0]!.contentTop);
   });
 
   it('embeds and positions inline images using the projected layout geometry', async () => {

@@ -74,4 +74,49 @@ describe("buildCanvasTableLayout", () => {
     expect(layout.cells[0]!.left).toBeCloseTo(132, 6);
     expect(layout.cells[1]!.left).toBeCloseTo(212, 6);
   });
+
+  it("positions cell paragraphs using vertical alignment within explicit row height", () => {
+    const topCell = createEditorTableCell([createEditorParagraph("Top")]);
+    topCell.style = { verticalAlign: "top" };
+    const middleCell = createEditorTableCell([createEditorParagraph("Middle")]);
+    middleCell.style = { verticalAlign: "middle" };
+    const bottomCell = createEditorTableCell([createEditorParagraph("Bottom")]);
+    bottomCell.style = { verticalAlign: "bottom" };
+    const row = createEditorTableRow([topCell, middleCell, bottomCell]);
+    row.style = { height: 90 };
+    const table = createEditorTable([row], [80, 80, 80]);
+    table.style = { width: 240 };
+    const state = createEditorStateFromDocument(createEditorDocument([table]));
+
+    const layout = buildCanvasTableLayout({
+      table,
+      state,
+      pageIndex: 0,
+      layoutMode: "wordParity",
+      originX: 0,
+      originY: 0,
+      contentWidth: 624,
+      estimatedHeight: 20,
+    });
+
+    const renderedTopCell = layout.cells[0]!;
+    const renderedMiddleCell = layout.cells[1]!;
+    const renderedBottomCell = layout.cells[2]!;
+    const topParagraph = renderedTopCell.paragraphs[0]!;
+    const middleParagraph = renderedMiddleCell.paragraphs[0]!;
+    const bottomParagraph = renderedBottomCell.paragraphs[0]!;
+
+    expect(topParagraph.originY).toBeCloseTo(renderedTopCell.contentTop, 6);
+    expect(middleParagraph.originY).toBeCloseTo(
+      renderedMiddleCell.contentTop +
+        (renderedMiddleCell.contentHeight - middleParagraph.height) / 2,
+      6,
+    );
+    expect(bottomParagraph.originY).toBeCloseTo(
+      renderedBottomCell.contentTop +
+        renderedBottomCell.contentHeight -
+        bottomParagraph.height,
+      6,
+    );
+  });
 });
