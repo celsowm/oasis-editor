@@ -1,5 +1,7 @@
 import type {
   EditorBlockNode,
+  EditorFootnote,
+  EditorFootnotes,
   EditorSection,
   EditorState,
 } from "./model.js";
@@ -8,7 +10,14 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
   return block.type === "paragraph"
     ? {
         ...block,
-        runs: block.runs.map((run) => ({ ...run })),
+        runs: block.runs.map((run) => ({
+          ...run,
+          styles: run.styles ? { ...run.styles } : undefined,
+          image: run.image ? { ...run.image } : undefined,
+          field: run.field ? { ...run.field } : undefined,
+          revision: run.revision ? { ...run.revision } : undefined,
+          footnoteReference: run.footnoteReference ? { ...run.footnoteReference } : undefined,
+        })),
         style: block.style ? { ...block.style } : undefined,
         list: block.list ? { ...block.list } : undefined,
       }
@@ -23,7 +32,14 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
             vMerge: cell.vMerge ?? undefined,
             blocks: cell.blocks.map((paragraph) => ({
               ...paragraph,
-              runs: paragraph.runs.map((run) => ({ ...run })),
+              runs: paragraph.runs.map((run) => ({
+                ...run,
+                styles: run.styles ? { ...run.styles } : undefined,
+                image: run.image ? { ...run.image } : undefined,
+                field: run.field ? { ...run.field } : undefined,
+                revision: run.revision ? { ...run.revision } : undefined,
+                footnoteReference: run.footnoteReference ? { ...run.footnoteReference } : undefined,
+              })),
               style: paragraph.style ? { ...paragraph.style } : undefined,
               list: paragraph.list ? { ...paragraph.list } : undefined,
             })),
@@ -47,12 +63,34 @@ export function cloneSection(section: EditorSection): EditorSection {
   };
 }
 
+export function cloneFootnote(footnote: EditorFootnote): EditorFootnote {
+  return {
+    ...footnote,
+    blocks: footnote.blocks.map(cloneBlock),
+  };
+}
+
+export function cloneFootnotes(footnotes: EditorFootnotes | undefined): EditorFootnotes | undefined {
+  if (!footnotes) return undefined;
+  const nextItems: Record<string, EditorFootnote> = {};
+  for (const [id, footnote] of Object.entries(footnotes.items)) {
+    nextItems[id] = cloneFootnote(footnote);
+  }
+  return {
+    items: nextItems,
+    settings: footnotes.settings ? { ...footnotes.settings } : undefined,
+    separator: footnotes.separator?.map(cloneBlock),
+    continuationSeparator: footnotes.continuationSeparator?.map(cloneBlock),
+  };
+}
+
 export function cloneEditorState(source: EditorState): EditorState {
   return {
     ...source,
     document: {
       ...source.document,
       sections: source.document.sections?.map(cloneSection),
+      footnotes: cloneFootnotes(source.document.footnotes),
     },
     selection: {
       anchor: { ...source.selection.anchor },
@@ -60,5 +98,6 @@ export function cloneEditorState(source: EditorState): EditorState {
     },
     activeSectionIndex: source.activeSectionIndex ?? 0,
     activeZone: source.activeZone ?? "main",
+    activeFootnoteId: source.activeFootnoteId,
   };
 }

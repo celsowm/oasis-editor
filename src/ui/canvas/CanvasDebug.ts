@@ -6,7 +6,7 @@ import type {
   CanvasSnapshotParagraph,
   CanvasSnapshotSlot,
 } from "./CanvasLayoutSnapshot.js";
-import type { EditorState } from "../../core/model.js";
+import type { EditorEditingZone, EditorState } from "../../core/model.js";
 
 export interface CanvasDebugMissEvent {
   timestamp: number;
@@ -68,7 +68,7 @@ export interface CanvasDebugLayoutSnapshot {
   inlineImages: Array<{
     paragraphId: string;
     paragraphIndex: number;
-    zone: "main" | "header" | "footer";
+    zone: EditorEditingZone;
     pageIndex: number;
     startOffset: number;
     endOffset: number;
@@ -79,7 +79,7 @@ export interface CanvasDebugLayoutSnapshot {
   }>;
   unsupportedRegions: Array<{
     pageIndex: number;
-    zone: "main" | "header" | "footer";
+    zone: EditorEditingZone;
     left: number;
     top: number;
     width: number;
@@ -119,7 +119,7 @@ export interface CanvasDebugSelectionSnapshot {
     runId: string;
     offset: number;
   };
-  activeZone: "main" | "header" | "footer";
+  activeZone: EditorEditingZone;
   activeSectionIndex: number;
 }
 

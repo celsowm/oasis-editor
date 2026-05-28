@@ -93,6 +93,20 @@ export interface EditorFieldData {
   type: "PAGE" | "NUMPAGES";
 }
 
+/**
+ * Inline reference to a footnote body stored in `EditorDocument.footnotes`.
+ * The `run.text` carries the materialized marker (e.g. "1", "2", "*") so
+ * layout, hit-testing and export can treat the run as ordinary text.
+ *
+ * Renumbering rewrites `run.text` to keep markers in sync with document
+ * order. `customMark` (mapped from DOCX `w:customMarkFollows`) signals a
+ * user-provided marker that should not be auto-numbered.
+ */
+export interface EditorFootnoteReferenceData {
+  footnoteId: string;
+  customMark?: string;
+}
+
 export interface EditorRevision {
   id: string;
   type: "insert" | "delete";
@@ -107,6 +121,12 @@ export interface EditorTextRun {
   image?: EditorImageRunData;
   field?: EditorFieldData;
   revision?: EditorRevision;
+  /**
+   * When set, this run is the inline marker of a footnote whose body lives in
+   * `EditorDocument.footnotes.items[footnoteReference.footnoteId]`. The run
+   * should be treated as atomic for selection/editing purposes.
+   */
+  footnoteReference?: EditorFootnoteReferenceData;
 }
 
 export interface EditorParagraphNode {
@@ -222,6 +242,43 @@ export interface EditorAsset {
 
 export const EDITOR_ASSET_REF_PREFIX = "asset:";
 
+export type EditorFootnoteNumberFormat =
+  | "decimal"
+  | "lowerRoman"
+  | "upperRoman"
+  | "lowerLetter"
+  | "upperLetter"
+  | "symbol";
+
+export type EditorFootnoteRestart = "continuous" | "eachSection";
+
+/**
+ * Body of a single footnote. `blocks` is fully editable, mirroring the
+ * shape of a section's main content. The DOCX `<w:footnoteRef/>` marker
+ * inside the body is NOT stored here — render/export reinjects it.
+ */
+export interface EditorFootnote {
+  id: string;
+  blocks: EditorBlockNode[];
+  /** Original DOCX `w:id`, kept for round-trip diagnostics only. */
+  docxId?: number;
+}
+
+export interface EditorFootnoteSettings {
+  numberFormat?: EditorFootnoteNumberFormat;
+  restart?: EditorFootnoteRestart;
+  startAt?: number;
+}
+
+export interface EditorFootnotes {
+  items: Record<string, EditorFootnote>;
+  settings?: EditorFootnoteSettings;
+  /** Optional imported separator part (Fase futura: render/export). */
+  separator?: EditorBlockNode[];
+  /** Optional imported continuation separator part (Fase futura). */
+  continuationSeparator?: EditorBlockNode[];
+}
+
 export interface EditorDocument {
   id: string;
   pageSettings?: EditorPageSettings;
@@ -233,6 +290,12 @@ export interface EditorDocument {
    * deliberately excluded from per-keystroke equality checks/signatures.
    */
   assets?: Record<string, EditorAsset>;
+  /**
+   * Footnote bodies keyed by id. Inline references live in
+   * `EditorTextRun.footnoteReference` and point here. May be undefined when
+   * the document has no notes.
+   */
+  footnotes?: EditorFootnotes;
   metadata?: {
     title?: string;
     [key: string]: any;
@@ -463,13 +526,18 @@ export interface EditorSelection {
   focus: EditorPosition;
 }
 
-export type EditorEditingZone = "main" | "header" | "footer";
+export type EditorEditingZone = "main" | "header" | "footer" | "footnote";
 
 export interface EditorState {
   document: EditorDocument;
   selection: EditorSelection;
   activeSectionIndex?: number;
   activeZone?: EditorEditingZone;
+  /**
+   * Identifies the footnote currently being edited when `activeZone === "footnote"`.
+   * Ignored for other zones.
+   */
+  activeFootnoteId?: string;
   trackChangesEnabled?: boolean;
   showMargins?: boolean;
   showParagraphMarks?: boolean;
@@ -699,6 +767,14 @@ export function getEditableBlocksForZone(
   state: EditorState,
   zone: EditorEditingZone,
 ): EditorBlockNode[] {
+  if (zone === "footnote") {
+    const footnoteId = state.activeFootnoteId;
+    if (!footnoteId) {
+      return [];
+    }
+    const footnote = state.document.footnotes?.items?.[footnoteId];
+    return footnote ? footnote.blocks : [];
+  }
   const sections = getDocumentSectionsCanonical(state.document);
   const sectionIndex = Math.max(
     0,
@@ -736,7 +812,7 @@ export function getDocumentParagraphsCanonical(document: EditorDocument): Editor
   }
 
   const sections = getDocumentSectionsCanonical(document);
-  paragraphs = sections.flatMap((section) => [
+  const sectionParagraphs = sections.flatMap((section) => [
     ...(section.header?.flatMap(getBlockParagraphs) ?? []),
     ...(section.firstPageHeader?.flatMap(getBlockParagraphs) ?? []),
     ...(section.evenPageHeader?.flatMap(getBlockParagraphs) ?? []),
@@ -745,6 +821,13 @@ export function getDocumentParagraphsCanonical(document: EditorDocument): Editor
     ...(section.firstPageFooter?.flatMap(getBlockParagraphs) ?? []),
     ...(section.evenPageFooter?.flatMap(getBlockParagraphs) ?? []),
   ]);
+
+  const footnoteItems = document.footnotes?.items;
+  const footnoteParagraphs: EditorParagraphNode[] = footnoteItems
+    ? Object.values(footnoteItems).flatMap((footnote) => footnote.blocks.flatMap(getBlockParagraphs))
+    : [];
+
+  paragraphs = [...sectionParagraphs, ...footnoteParagraphs];
 
   documentParagraphsCache.set(document, paragraphs);
   return paragraphs;
@@ -770,6 +853,8 @@ export interface EditorParagraphLocation {
   sectionIndex: number;
   zone: EditorEditingZone;
   paragraphIndexInSection: number;
+  /** When `zone === "footnote"`, identifies which footnote owns the paragraph. */
+  footnoteId?: string;
 }
 
 export interface DocumentParagraphIndexEntry {
@@ -892,7 +977,44 @@ export function getDocumentParagraphIndex(document: EditorDocument): Map<string,
       }
     }
   }
-  
+
+  // Footnotes (zone "footnote", sectionIndex left as 0; navigation uses footnoteId).
+  const footnoteItems = document.footnotes?.items;
+  if (footnoteItems) {
+    for (const footnoteId of Object.keys(footnoteItems)) {
+      const footnote = footnoteItems[footnoteId];
+      if (!footnote) continue;
+      let paraIndex = 0;
+      for (let blockIndex = 0; blockIndex < footnote.blocks.length; blockIndex += 1) {
+        const block = footnote.blocks[blockIndex];
+        if (block.type === "paragraph") {
+          index.set(block.id, {
+            paragraph: block,
+            location: { sectionIndex: 0, zone: "footnote", paragraphIndexInSection: paraIndex, footnoteId },
+            tableLocation: null,
+          });
+          paraIndex += 1;
+        } else if (block.type === "table") {
+          for (let rowIndex = 0; rowIndex < block.rows.length; rowIndex += 1) {
+            const row = block.rows[rowIndex];
+            for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+              const cell = row.cells[cellIndex];
+              for (let cpIndex = 0; cpIndex < cell.blocks.length; cpIndex += 1) {
+                const cp = cell.blocks[cpIndex];
+                index.set(cp.id, {
+                  paragraph: cp,
+                  location: { sectionIndex: 0, zone: "footnote", paragraphIndexInSection: paraIndex, footnoteId },
+                  tableLocation: { blockIndex, rowIndex, cellIndex, paragraphIndex: cpIndex },
+                });
+                paraIndex += 1;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   documentIndexCache.set(document, index);
   return index;
 }

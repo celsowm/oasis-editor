@@ -79,6 +79,10 @@ export function cloneRun(run: EditorTextRun): EditorTextRun {
   return {
     ...run,
     styles: cloneStyle(run.styles),
+    image: run.image ? { ...run.image } : undefined,
+    field: run.field ? { ...run.field } : undefined,
+    revision: run.revision ? { ...run.revision } : undefined,
+    footnoteReference: run.footnoteReference ? { ...run.footnoteReference } : undefined,
   };
 }
 
@@ -273,12 +277,37 @@ export function cloneStateWithParagraphs(
   paragraphs: EditorParagraphNode[],
   selection: EditorSelection,
 ): EditorState {
+  const zone = getActiveZone(state);
+
+  if (zone === "footnote") {
+    const footnoteId = state.activeFootnoteId;
+    const footnotes = state.document.footnotes;
+    if (!footnoteId || !footnotes || !footnotes.items[footnoteId]) {
+      return { ...state, selection };
+    }
+    const currentFootnote = footnotes.items[footnoteId];
+    const updatedBlocks = replaceParagraphsInBlocks(currentFootnote.blocks, paragraphs);
+    return {
+      ...state,
+      document: {
+        ...state.document,
+        footnotes: {
+          ...footnotes,
+          items: {
+            ...footnotes.items,
+            [footnoteId]: { ...currentFootnote, blocks: updatedBlocks },
+          },
+        },
+      },
+      selection,
+    };
+  }
+
   const sections = getDocumentSections(state.document);
   const sectionIndex = Math.max(
     0,
     Math.min(getActiveSectionIndex(state), sections.length - 1),
   );
-  const zone = getActiveZone(state);
   const section = sections[sectionIndex];
   if (!section) {
     return { ...state, selection };
@@ -458,6 +487,9 @@ export function sliceRuns(
       }
       if (run.field) {
         piece.field = { ...run.field };
+      }
+      if (run.footnoteReference) {
+        piece.footnoteReference = { ...run.footnoteReference };
       }
       pieces.push(piece);
     }

@@ -3,6 +3,8 @@ import type {
   EditorBlockNode,
   EditorDocument,
   EditorEditingZone,
+  EditorFootnote,
+  EditorFootnoteReferenceData,
   EditorPageSettings,
   EditorParagraphNode,
   EditorPosition,
@@ -34,6 +36,7 @@ let nextRunId = 1;
 let nextTableId = 1;
 let nextTableRowId = 1;
 let nextTableCellId = 1;
+let nextFootnoteId = 1;
 
 export function resetEditorIds(): void {
   nextDocumentId = 1;
@@ -42,6 +45,7 @@ export function resetEditorIds(): void {
   nextTableId = 1;
   nextTableRowId = 1;
   nextTableCellId = 1;
+  nextFootnoteId = 1;
 }
 
 export function createEditorRun(text = ""): EditorTextRun {
@@ -137,6 +141,48 @@ export function createEditorTable(rows: EditorTableRowNode[], gridCols?: number[
   return table;
 }
 
+export function createEditorFootnoteId(): string {
+  const id = `footnote:${nextFootnoteId}`;
+  nextFootnoteId += 1;
+  return id;
+}
+
+export function createEditorFootnote(blocks?: EditorBlockNode[]): EditorFootnote {
+  const initialBlocks: EditorBlockNode[] =
+    blocks && blocks.length > 0 ? blocks : [createEditorParagraphWithStyle("", { styleId: "footnoteText" })];
+  return {
+    id: createEditorFootnoteId(),
+    blocks: initialBlocks,
+  };
+}
+
+function createEditorParagraphWithStyle(text: string, style: { styleId?: string }): EditorParagraphNode {
+  const paragraph = createEditorParagraph(text);
+  if (style.styleId) {
+    paragraph.style = { styleId: style.styleId };
+  }
+  return paragraph;
+}
+
+export function createFootnoteReferenceRun(
+  footnoteId: string,
+  marker: string,
+  options?: { customMark?: string; styles?: EditorTextStyle },
+): EditorTextRun {
+  const styles: EditorTextStyle = {
+    styleId: "footnoteReference",
+    superscript: true,
+    ...(options?.styles ?? {}),
+  };
+  const run = createEditorStyledRun(marker, styles);
+  const reference: EditorFootnoteReferenceData = { footnoteId };
+  if (options?.customMark) {
+    reference.customMark = options.customMark;
+  }
+  run.footnoteReference = reference;
+  return run;
+}
+
 export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
   normal: {
     id: "normal",
@@ -217,6 +263,29 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
       fontFamily: "Calibri Light, sans-serif",
       fontSize: 16,
       color: "#1f4d78",
+    },
+  },
+  footnoteText: {
+    id: "footnoteText",
+    name: "Footnote Text",
+    type: "paragraph",
+    basedOn: "normal",
+    nextStyle: "footnoteText",
+    paragraphStyle: {
+      spacingAfter: 0,
+      lineHeight: 1.0,
+    },
+    textStyle: {
+      fontSize: 10,
+    },
+  },
+  footnoteReference: {
+    id: "footnoteReference",
+    name: "Footnote Reference",
+    type: "character",
+    basedOn: "normal",
+    textStyle: {
+      superscript: true,
     },
   },
 };

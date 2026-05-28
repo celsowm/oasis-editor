@@ -36,6 +36,13 @@ function createImportedParagraph(
     if (run.field) {
       paragraph.runs[index]!.field = { ...run.field };
     }
+    if (run.footnoteReference) {
+      // Store a transient marker on the run; the import driver remaps the
+      // docxId to the document-local footnote id after `word/footnotes.xml`
+      // has been parsed. Using a non-conflicting symbol-less property keeps
+      // existing consumers unaffected.
+      (paragraph.runs[index]! as any).__importedFootnoteRef = { ...run.footnoteReference };
+    }
   });
   paragraph.style = paragraphStyle ? { ...paragraphStyle } : undefined;
   for (const run of paragraph.runs) {

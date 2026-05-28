@@ -1,4 +1,5 @@
 import {
+  type EditorEditingZone,
   type EditorState,
   type EditorPosition,
   type EditorParagraphNode,
@@ -48,7 +49,7 @@ export interface UseEditorSurfaceEventsProps {
 function resolveTripleClickParagraphRange(
   state: EditorState,
   paragraph: EditorParagraphNode,
-  targetZone: "main" | "header" | "footer",
+  targetZone: EditorEditingZone,
 ): { start: EditorPosition; end: EditorPosition } {
   const zoneParagraphs = getDocumentParagraphs(state.document).filter((candidate) => {
     const location = findParagraphLocation(state.document, candidate.id);
@@ -94,7 +95,7 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
 
   const applyWithZone = (
     state: EditorState,
-    targetZone: "main" | "header" | "footer",
+    targetZone: EditorEditingZone,
     newState: EditorState,
     targetPosition?: EditorPosition,
   ) => {

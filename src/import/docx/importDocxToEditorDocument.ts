@@ -26,6 +26,8 @@ import {
 import { parseParagraphNodes } from "./paragraphs.js";
 import { parseTableNode } from "./tables.js";
 import { parseHeaderFooterXml } from "./headerFooter.js";
+import { parseFootnotesXml } from "./footnotes.js";
+import { renumberFootnotes } from "../../core/footnotes.js";
 
 export type DocxImportStage =
   | "opening-docx"
@@ -235,6 +237,29 @@ export async function importDocxToEditorDocument(
     });
   }
 
+  // Footnotes: parse `word/footnotes.xml` (if present) and remap inline
+  // references inside the body/header/footer paragraphs from the transient
+  // `__importedFootnoteRef` marker to the editor's `run.footnoteReference`.
+  const footnotesXml = (await zip.file("word/footnotes.xml")?.async("string")) ?? null;
+  const footnotesPartRels = footnotesXml ? await loadPartRelationships(zip, "word/footnotes.xml") : new Map<string, string>();
+  const parsedFootnotes = await parseFootnotesXml(
+    footnotesXml,
+    numberingMaps,
+    zip,
+    footnotesPartRels,
+    assets,
+    themeFonts,
+    importedStyles,
+  );
+  const editorFootnotes =
+    Object.keys(parsedFootnotes.footnotes.items).length > 0 ||
+    parsedFootnotes.footnotes.separator ||
+    parsedFootnotes.footnotes.continuationSeparator
+      ? parsedFootnotes.footnotes
+      : undefined;
+
+  remapImportedFootnoteRefsInSections(sections, parsedFootnotes.byDocxId);
+
   const shouldPreserveSections =
     sections.length > 1 ||
     sections.some((section) =>
@@ -248,6 +273,16 @@ export async function importDocxToEditorDocument(
 
   const hasAssets = Object.keys(assets.assets).length > 0;
 
+  const finalize = (doc: EditorDocument): EditorDocument => {
+    if (editorFootnotes) {
+      doc.footnotes = editorFootnotes;
+      // Materialize markers ("1", "2", ...) from references in document order
+      // and prune any footnote body that ends up unreferenced.
+      return renumberFootnotes(doc);
+    }
+    return doc;
+  };
+
   if (shouldPreserveSections) {
     const doc = createEditorDocument([]);
     (doc as any).sections = sections;
@@ -260,7 +295,7 @@ export async function importDocxToEditorDocument(
     if (hasAssets) {
       doc.assets = assets.assets;
     }
-    return doc;
+    return finalize(doc);
   }
 
   // Single section: use flat blocks for compatibility
@@ -275,5 +310,58 @@ export async function importDocxToEditorDocument(
   if (importedStyles) {
     doc.styles = importedStyles;
   }
-  return doc;
+  return finalize(doc);
+}
+
+/**
+ * Walk every paragraph in the sections and convert the transient
+ * `__importedFootnoteRef` markers (left by `paragraphs.ts`) into proper
+ * `run.footnoteReference` fields pointing to the local footnote ids.
+ *
+ * Runs that reference an unknown docxId are stripped of the marker so they
+ * don't leak as fake references in the model.
+ */
+function remapImportedFootnoteRefsInSections(
+  sections: EditorSection[],
+  byDocxId: Map<string, import("../../core/model.js").EditorFootnote>,
+): void {
+  const remapBlock = (block: EditorBlockNode): void => {
+    if (block.type === "paragraph") {
+      for (const run of block.runs) {
+        const transient = (run as any).__importedFootnoteRef as
+          | { docxId: string; customMark?: string }
+          | undefined;
+        if (!transient) continue;
+        delete (run as any).__importedFootnoteRef;
+        const footnote = byDocxId.get(transient.docxId);
+        if (!footnote) {
+          // Dangling reference (unknown id). Drop the marker but keep the
+          // (probably empty) run text so we don't blow up the paragraph.
+          continue;
+        }
+        run.footnoteReference = {
+          footnoteId: footnote.id,
+          ...(transient.customMark ? { customMark: transient.customMark } : {}),
+        };
+      }
+      return;
+    }
+    for (const row of block.rows) {
+      for (const cell of row.cells) {
+        for (const p of cell.blocks) {
+          remapBlock(p);
+        }
+      }
+    }
+  };
+
+  for (const section of sections) {
+    section.blocks.forEach(remapBlock);
+    section.header?.forEach(remapBlock);
+    section.firstPageHeader?.forEach(remapBlock);
+    section.evenPageHeader?.forEach(remapBlock);
+    section.footer?.forEach(remapBlock);
+    section.firstPageFooter?.forEach(remapBlock);
+    section.evenPageFooter?.forEach(remapBlock);
+  }
 }

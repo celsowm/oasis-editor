@@ -19,6 +19,12 @@ export interface ImportedRun {
   image?: { src: string; width: number; height: number; alt?: string };
   styles?: EditorTextStyle;
   field?: { type: "PAGE" | "NUMPAGES" };
+  /**
+   * When present, the run is an inline footnote reference. The DOCX `w:id`
+   * is carried verbatim so a later pass can remap it to a real footnote id.
+   * `text` is the placeholder marker (numbering is resolved post-parse).
+   */
+  footnoteReference?: { docxId: string; customMark?: string };
 }
 
 export async function parseRunElement(
@@ -196,6 +202,36 @@ export async function parseRunsContainer(
           flushActiveField();
           continue;
         }
+      }
+
+      // Detect a footnote reference child element. It is mutually exclusive
+      // with normal text/image content inside the run.
+      const footnoteRefEl = getFirstChildByTagNameNS(element, WORD_NS, "footnoteReference");
+      if (footnoteRefEl) {
+        const docxId = getAttributeValue(footnoteRefEl, "id");
+        if (!docxId) {
+          continue;
+        }
+        const customMark = getAttributeValue(footnoteRefEl, "customMarkFollows");
+        let styles = parseRunStyle(getFirstChildByTagNameNS(element, WORD_NS, "rPr"), themeFonts);
+        // Default to superscript marker styling when the run does not specify it.
+        (styles ??= {}).styleId ??= "footnoteReference";
+        if (styles.superscript === undefined) styles.superscript = true;
+        const importedRun: ImportedRun = {
+          // Placeholder marker; resolved to a real number after import.
+          text: "?",
+          styles,
+          footnoteReference: {
+            docxId,
+            ...(customMark ? { customMark } : {}),
+          },
+        };
+        if (activeField?.collectingResult) {
+          activeField.resultRuns.push(importedRun);
+        } else {
+          runs.push(importedRun);
+        }
+        continue;
       }
 
       const { text, image } = await parseRunElement(element, zip, relsMap, assets);
