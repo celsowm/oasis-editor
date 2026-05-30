@@ -1172,21 +1172,42 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
     const zone = location.zone;
     const targetBlocks = getTargetBlocks(current, zone);
 
-    const nextBlocks = targetBlocks.map(cloneBlock);
-    const tableBlock = nextBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const originalTableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
+    if (!originalTableBlock || originalTableBlock.type !== "table") {
       return edit(current);
     }
 
-    const targetCell = tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
-    if (!targetCell) {
+    const originalRow = originalTableBlock.rows[location.rowIndex];
+    const originalCell = originalRow?.cells[location.cellIndex];
+
+    if (!originalCell) {
       return edit(current);
     }
+
+    const nextBlocks = [...targetBlocks];
+
+    const tableBlock = {
+      ...originalTableBlock,
+      rows: [...originalTableBlock.rows]
+    };
+    nextBlocks[location.blockIndex] = tableBlock;
+
+    const nextRow = {
+      ...originalRow,
+      cells: [...originalRow.cells]
+    };
+    tableBlock.rows[location.rowIndex] = nextRow;
+
+    const nextCell = {
+      ...originalCell,
+      blocks: [...originalCell.blocks]
+    };
+    nextRow.cells[location.cellIndex] = nextCell;
 
     const tempState: EditorState = {
       ...current,
       document: createEditorDocument(
-        targetCell.blocks,
+        originalCell.blocks,
         undefined,
         undefined,
         undefined,
@@ -1205,7 +1226,7 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
       (block): block is EditorParagraphNode => block.type === "paragraph",
     );
 
-    targetCell.blocks.splice(0, targetCell.blocks.length, ...replacementParagraphs);
+    nextCell.blocks = replacementParagraphs;
 
     const nextState = updateBlocksInCurrentSection(current, nextBlocks, zone);
     return {
