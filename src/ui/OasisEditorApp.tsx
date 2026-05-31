@@ -211,6 +211,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     focusInput,
     logger,
   });
+  const isImportInProgress = () =>
+    docIO.importProgress()?.phase !== "done" &&
+    docIO.importProgress()?.phase !== "error" &&
+    docIO.importProgress() !== null;
 
   const {
     measuredBlockHeights,
@@ -231,7 +235,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     state,
     surfaceRef,
     viewportRef,
-    isImporting: () => docIO.importProgress()?.phase !== "done" && docIO.importProgress()?.phase !== "error" && docIO.importProgress() !== null,
+    isImporting: isImportInProgress,
     layoutMode: layoutMode(),
   });
 
@@ -276,7 +280,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     state.activeSectionIndex;
     state.activeZone;
     recordCanvasDebugSelection(state as EditorState);
-    if (docIO.importProgress()?.phase !== "done" && docIO.importProgress()?.phase !== "error" && docIO.importProgress() !== null) {
+    if (isImportInProgress()) {
       return;
     }
     props.onStateChange?.(cloneState(getStateSnapshot()));
@@ -354,11 +358,17 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     logger,
   });
 
+  const resolvePositionAtSurfacePoint = (
+    clientX: number,
+    clientY: number,
+  ): EditorPosition | null => {
+    return resolveSurfaceHitAtPoint(clientX, clientY)?.position ?? null;
+  };
+
   const imageOps = createEditorImageOperations({
     state,
     surfaceRef,
-    resolvePositionAtSurfacePoint: (clientX, clientY) =>
-      resolveSurfaceHitAtPoint(clientX, clientY)?.position ?? null,
+    resolvePositionAtSurfacePoint,
     applyState,
     applyTransactionalState,
     updateHistoryState: (updater) => {
@@ -377,13 +387,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     surfaceRef,
     viewportRef,
   });
-
-  const resolvePositionAtSurfacePoint = (
-    clientX: number,
-    clientY: number,
-  ): EditorPosition | null => {
-    return resolveSurfaceHitAtPoint(clientX, clientY)?.position ?? null;
-  };
 
   const tableDrag = createEditorTableDrag({
     state: () => state,
