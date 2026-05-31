@@ -1043,19 +1043,16 @@ function applyFootnotesToPages(
       layoutMode,
       measurer,
     );
-    const reservation = reservations.get(page.index) ?? 0;
-    const originalBodyBottom = page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
-    const footnoteTop = Math.max(
-      page.bodyTop ?? getPageBodyTop(page.pageSettings),
-      originalBodyBottom - reservation + FOOTNOTE_SEPARATOR_HEIGHT,
-    );
+    const bodyBottom = page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
+    const footnoteSeparatorTop = Math.max(page.bodyTop ?? getPageBodyTop(page.pageSettings), bodyBottom);
+    const footnoteTop = footnoteSeparatorTop + FOOTNOTE_SEPARATOR_HEIGHT;
     return {
       ...page,
       footnoteBlocks,
       footnoteReferenceIds,
-      footnoteSeparatorTop: Math.max(0, footnoteTop - FOOTNOTE_SEPARATOR_HEIGHT),
+      footnoteSeparatorTop,
       footnoteTop,
-      bodyBottom: Math.max(page.bodyTop ?? getPageBodyTop(page.pageSettings), originalBodyBottom - reservation),
+      bodyBottom,
     };
   });
 }

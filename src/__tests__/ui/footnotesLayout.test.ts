@@ -76,6 +76,56 @@ describe("projectDocumentLayout footnotes", () => {
     expect(page.footnoteTop!).toBeLessThan(page.footerTop!);
   });
 
+  it("does not subtract footnote reservation twice from the footer page body", () => {
+    const { document, footnotes } = buildDocumentWithFootnotes(1);
+    const footer = createEditorParagraph("footer text");
+    footer.style = { styleId: "footer" };
+    const section = document.sections?.[0];
+    if (!section) {
+      throw new Error("document missing default section");
+    }
+    document.sections = [
+      {
+        ...section,
+        footer: [footer],
+      },
+    ];
+
+    const documentWithoutReference = createEditorDocument([
+      createEditorParagraph("body text without footnote reference"),
+    ]);
+    documentWithoutReference.sections = [
+      {
+        ...documentWithoutReference.sections![0]!,
+        footer: [footer],
+      },
+    ];
+
+    const basePage = projectDocumentLayout(
+      documentWithoutReference,
+      undefined,
+      undefined,
+      undefined,
+      { layoutMode: "wordParity" },
+    ).pages[0]!;
+    const page = projectDocumentLayout(document, undefined, undefined, undefined, {
+      layoutMode: "wordParity",
+    }).pages[0]!;
+
+    const reservedHeight = Math.max(
+      0,
+      (basePage.bodyBottom ?? getPageBodyBottom(basePage.pageSettings)) - page.bodyBottom!,
+    );
+
+    expect(page.footnoteReferenceIds).toEqual([footnotes[0]!.id]);
+    expect(page.footerTop).toBe(basePage.footerTop);
+    expect(reservedHeight).toBeGreaterThan(0);
+    expect(page.footnoteSeparatorTop).toBe(page.bodyBottom);
+    expect(page.footnoteTop).toBe(page.bodyBottom! + 10);
+    expect(page.footnoteTop!).toBeLessThan(basePage.bodyBottom!);
+    expect(page.footnoteTop!).toBeLessThan(page.footerTop!);
+  });
+
   it("keeps footnotes on the page that contains their inline reference", () => {
     const { document, footnotes } = buildDocumentWithFootnotes(1);
     const secondPage = createEditorParagraph("second page");

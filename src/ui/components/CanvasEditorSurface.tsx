@@ -69,6 +69,15 @@ export function resolveCanvasTextRenderMetrics(
   };
 }
 
+export function resolveCanvasFooterZoneTop(
+  page: Pick<EditorLayoutPage, "pageSettings" | "bodyTop" | "footerTop">,
+): number {
+  const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
+  const staticBodyBottom = getPageBodyBottom(page.pageSettings);
+  const footerContentTop = page.footerTop ?? staticBodyBottom;
+  return Math.max(bodyTop, Math.min(staticBodyBottom, footerContentTop));
+}
+
 export function CanvasEditorSurface(props: EditorSurfaceProps) {
   // Preserves object identity for unchanged pages/blocks across re-projections.
   // Without this, every state change produces brand-new page objects and every
@@ -192,8 +201,23 @@ function CanvasPage(props: {
     const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
     const headerTop = page.headerTop ?? getPageHeaderZoneTop(page.pageSettings);
     const footerTop = page.footerTop ?? page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
+    const footerZoneTop = resolveCanvasFooterZoneTop(page);
     const bodyWidth = getPageContentWidth(page.pageSettings);
     const zoneBodyBottom = page.bodyBottom ?? height;
+
+    if (activeZone === "main") {
+      // Word-like idle hint: paint the non-body regions as a background so
+      // header/footer/footnote text is not washed out by an overlay.
+      ctx.save();
+      ctx.fillStyle = "rgba(148, 163, 184, 0.08)";
+      if (bodyTop > 0) {
+        ctx.fillRect(0, 0, width, bodyTop);
+      }
+      if (footerZoneTop < height) {
+        ctx.fillRect(0, footerZoneTop, width, height - footerZoneTop);
+      }
+      ctx.restore();
+    }
 
     if (state.showMargins) {
       const contentHeight = Math.max(24, Math.floor(zoneBodyBottom - bodyTop));
@@ -231,7 +255,7 @@ function CanvasPage(props: {
       ctx.save();
       ctx.globalAlpha = footnoteAlpha;
       const clipTop = page.footnoteSeparatorTop ?? page.footnoteTop;
-      const clipBottom = Math.max(clipTop, footerTop);
+      const clipBottom = Math.max(clipTop, footerZoneTop);
       ctx.beginPath();
       ctx.rect(0, clipTop, width, clipBottom - clipTop);
       ctx.clip();
@@ -279,20 +303,7 @@ function CanvasPage(props: {
       ctx.restore();
     }
 
-    if (activeZone === "main") {
-      // Word-like idle hint: header/footer content remains visible but subdued.
-      ctx.save();
-      ctx.fillStyle = "rgba(148, 163, 184, 0.08)";
-      if (bodyTop > 0) {
-        ctx.fillRect(0, 0, width, bodyTop);
-      }
-      const hasFootnotes = (page.footnoteBlocks?.length ?? 0) > 0;
-      const lowerHintTop = hasFootnotes ? footerTop : zoneBodyBottom;
-      if (lowerHintTop < height) {
-        ctx.fillRect(0, lowerHintTop, width, height - lowerHintTop);
-      }
-      ctx.restore();
-    } else {
+    if (activeZone !== "main") {
       // Word-like editing mode guides for header/footer.
       ctx.save();
       ctx.strokeStyle = "rgba(71, 85, 105, 0.55)";
