@@ -1,4 +1,4 @@
-/comexport type EditorUnderlineStyle =
+export type EditorUnderlineStyle =
   | "single"
   | "double"
   | "thick"
