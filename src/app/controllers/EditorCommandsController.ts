@@ -4,6 +4,7 @@ import {
   getLinkAtSelection,
   indentParagraphList,
   insertPageBreakAtSelection,
+  insertFootnote,
   insertSectionBreakAtSelection,
   outdentParagraphList,
   rejectRevisionsInSelection,
@@ -249,6 +250,18 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
     focusInput();
   };
 
+  const canInsertFootnoteCommand = () => (state.activeZone ?? "main") === "main";
+
+  const applyInsertFootnoteCommand = () => {
+    if (!canInsertFootnoteCommand()) {
+      return;
+    }
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyTransactionalState((current) => insertFootnote(current));
+    focusInput();
+  };
+
   const handleStyleChange = (styleId: string) => {
     clearPreferredColumn();
     resetTransactionGrouping();
@@ -352,6 +365,8 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
     handleListStartAtChange,
     applyInsertSectionBreakCommand,
     applyInsertPageBreakCommand,
+    canInsertFootnoteCommand,
+    applyInsertFootnoteCommand,
     handleStyleChange,
     applyUpdateSectionSettingsCommand,
     applyToggleTrackChangesCommand,

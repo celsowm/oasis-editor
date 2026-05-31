@@ -45,6 +45,14 @@ export function InsertGroup(props: { ctx: () => EditorToolbarCtx }) {
         tooltip={t("toolbar.unlink")}
         aria-label={t("toolbar.unlink")}
       />
+      <ToolbarButton
+        icon="superscript"
+        data-testid="editor-toolbar-footnote"
+        disabled={!ctx().canInsertFootnoteCommand()}
+        onClick={() => ctx().applyInsertFootnoteCommand()}
+        tooltip={`${t("toolbar.footnote")} (${mod}+Alt+F)`}
+        aria-label={t("toolbar.footnote")}
+      />
 
       {/*
         Always render the alt button to keep the toolbar's children list

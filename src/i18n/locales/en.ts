@@ -12,6 +12,7 @@ export const en = {
   "toolbar.totalPages": "Total Pages",
   "toolbar.link": "Link",
   "toolbar.unlink": "Remove Link",
+  "toolbar.footnote": "Footnote",
   "toolbar.alt": "Alt Text",
   "toolbar.review": "Review",
   "toolbar.trackChanges": "Track Changes",

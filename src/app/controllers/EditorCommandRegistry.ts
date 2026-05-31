@@ -85,6 +85,16 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
     },
   },
   {
+    id: "insertFootnote",
+    key: "f",
+    ctrlOrMeta: true,
+    alt: true,
+    execute: (deps) => {
+      deps.commandsController.applyInsertFootnoteCommand();
+      return true;
+    },
+  },
+  {
     id: "pastePlainText",
     key: "v",
     ctrlOrMeta: true,

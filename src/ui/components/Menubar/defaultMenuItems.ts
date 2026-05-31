@@ -39,6 +39,7 @@ export const defaultMenuItems: MenuItem[] = [
   { id: "insert_image", path: "Insert/Image", labelKey: "toolbar.image", action: (ctx) => ctx.imageInputRef()?.click(), icon: "image" },
   { id: "insert_table", path: "Insert/Table", labelKey: "toolbar.table", action: (ctx) => ctx.insertTableCommand(3, 3), icon: "table" },
   { id: "insert_link", path: "Insert/Link", labelKey: "toolbar.link", action: (ctx) => ctx.promptForLink(), icon: "link" },
+  { id: "insert_footnote", path: "Insert/Footnote", labelKey: "toolbar.footnote", shortcut: "Ctrl+Alt+F", action: (ctx) => ctx.applyInsertFootnoteCommand(), icon: "superscript" },
   { id: "insert_hr", path: "Insert/Horizontal Rule", hidden: true },
   { id: "insert_pageBreak", path: "Insert/Page Break", labelKey: "metric.pageBreak", action: (ctx) => ctx.applyInsertPageBreakCommand(), icon: "file-minus" },
   { id: "insert_specialChar", path: "Insert/Special Character", hidden: true },

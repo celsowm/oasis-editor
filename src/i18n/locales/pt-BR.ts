@@ -12,6 +12,7 @@ export const ptBR = {
   "toolbar.totalPages": "Total de Páginas",
   "toolbar.link": "Link",
   "toolbar.unlink": "Remover Link",
+  "toolbar.footnote": "Nota de rodapé",
   "toolbar.alt": "Texto Alt",
   "toolbar.review": "Revisão",
   "toolbar.trackChanges": "Controlar Alterações",

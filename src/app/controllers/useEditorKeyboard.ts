@@ -51,6 +51,7 @@ export interface EditorKeyboardDeps {
     promptForLink: () => void;
     applyBooleanStyleCommand: (style: BooleanStyleKey) => void;
     applyParagraphListCommand: (style: "bullet" | "ordered") => void;
+    applyInsertFootnoteCommand: () => void;
     handleListEnter: () => boolean;
     handleListBoundaryBackspace: (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => boolean;
     handleListTab: (direction: "indent" | "outdent") => boolean;

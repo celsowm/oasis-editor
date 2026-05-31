@@ -62,6 +62,8 @@ export interface EditorToolbarCtx {
   applyParagraphListCommand: (kind: NonNullable<EditorParagraphListStyle["kind"]>) => void;
   applyInsertSectionBreakCommand: (breakType: "nextPage" | "continuous") => void;
   applyInsertPageBreakCommand: () => void;
+  canInsertFootnoteCommand: () => boolean;
+  applyInsertFootnoteCommand: () => void;
   applyToggleTrackChangesCommand: () => void;
   applyToggleShowMarginsCommand: () => void;
   applyToggleShowParagraphMarksCommand: () => void;
