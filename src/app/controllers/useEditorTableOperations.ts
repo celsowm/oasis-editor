@@ -45,6 +45,11 @@ import {
   applyTableAwareParagraphEdit as applyTableAwareParagraphEditInternal,
   updateBlocksInCurrentSection,
 } from "./tableOpsMutationCommands.js";
+import {
+  createTableOpsGuards,
+  type HorizontalTableCellRange,
+  type VerticalTableCellRange,
+} from "./tableOpsGuards.js";
 
 export interface EditorTableOperationsDeps {
   applyTransactionalState: (
@@ -212,13 +217,7 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
 
   const resolveHorizontalTableCellRange = (
     current: EditorState,
-  ): {
-    blockIndex: number;
-    rowIndex: number;
-    startCellIndex: number;
-    endCellIndex: number;
-    zone: EditorEditingZone;
-  } | null => {
+  ): HorizontalTableCellRange | null => {
     const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId, getActiveSectionIndex(current));
     const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (
@@ -282,36 +281,9 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
     };
   };
 
-  const canMergeSelectedTableCells = (current: EditorState): boolean => {
-    const range = resolveHorizontalTableCellRange(current);
-    return Boolean(range && range.endCellIndex > range.startCellIndex);
-  };
-
-  const canSplitSelectedTableCell = (current: EditorState): boolean => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return false;
-    }
-
-    const blocks = getTargetBlocks(current, location.zone);
-    const block = blocks[location.blockIndex];
-    if (!block || block.type !== "table") {
-      return false;
-    }
-
-    const cell = block.rows[location.rowIndex]?.cells[location.cellIndex];
-    return Boolean((cell?.colSpan ?? 1) > 1);
-  };
-
   const resolveVerticalTableCellRange = (
     current: EditorState,
-  ): {
-    blockIndex: number;
-    startRowIndex: number;
-    endRowIndex: number;
-    cellIndex: number;
-    zone: EditorEditingZone;
-  } | null => {
+  ): VerticalTableCellRange | null => {
     const anchorLocation = findParagraphTableLocation(current.document, current.selection.anchor.paragraphId, getActiveSectionIndex(current));
     const focusLocation = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
     if (
@@ -358,51 +330,20 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
     };
   };
 
-  const canMergeSelectedTableRows = (current: EditorState): boolean => {
-    const range = resolveVerticalTableCellRange(current);
-    if (!range) {
-      return false;
-    }
-
-    const blocks = getTargetBlocks(current, range.zone);
-    const tableBlock = blocks[range.blockIndex];
-    if (!tableBlock || tableBlock.type !== "table") {
-      return false;
-    }
-
-    for (let rowIndex = range.startRowIndex; rowIndex <= range.endRowIndex; rowIndex += 1) {
-      const cell = tableBlock.rows[rowIndex]?.cells[range.cellIndex];
-      if (!cell || cell.vMerge === "continue" || cell.blocks.length !== 1) {
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  const canMergeSelectedTable = (current: EditorState): boolean => {
-    return canMergeSelectedTableCells(current) || canMergeSelectedTableRows(current);
-  };
-
-  const canSplitSelectedTableCellVertically = (current: EditorState): boolean => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return false;
-    }
-
-    const blocks = getTargetBlocks(current, location.zone);
-    const block = blocks[location.blockIndex];
-    if (!block || block.type !== "table") {
-      return false;
-    }
-
-    const cell = block.rows[location.rowIndex]?.cells[location.cellIndex];
-    return Boolean((cell?.rowSpan ?? 1) > 1 && cell?.vMerge === "restart");
-  };
-
-  const canSplitSelectedTable = (current: EditorState): boolean => {
-    return canSplitSelectedTableCell(current) || canSplitSelectedTableCellVertically(current);
-  };
+  const {
+    canMergeSelectedTableCells,
+    canSplitSelectedTableCell,
+    canMergeSelectedTableRows,
+    canMergeSelectedTable,
+    canSplitSelectedTableCellVertically,
+    canSplitSelectedTable,
+    canEditSelectedTableRow,
+    canEditSelectedTableColumn,
+  } = createTableOpsGuards({
+    getTargetBlocks,
+    resolveHorizontalTableCellRange,
+    resolveVerticalTableCellRange,
+  });
 
   const mergeSelectedTableCells = (current: EditorState): EditorState => {
     const range = resolveHorizontalTableCellRange(current);
@@ -626,34 +567,6 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
     }
 
     return current;
-  };
-
-  
-
-  const canEditSelectedTableRow = (current: EditorState): boolean => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return false;
-    }
-
-    const blocks = getTargetBlocks(current, location.zone);
-    const block = blocks[location.blockIndex];
-    return Boolean(block && block.type === "table");
-  };
-
-  const canEditSelectedTableColumn = (current: EditorState): boolean => {
-    const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
-    if (!location) {
-      return false;
-    }
-
-    const blocks = getTargetBlocks(current, location.zone);
-    const block = blocks[location.blockIndex];
-    if (!block || block.type !== "table") {
-      return false;
-    }
-
-    return getTableVisualWidth(block) > 1;
   };
 
   const insertSelectedTableRow = (current: EditorState, direction: -1 | 1): EditorState => {
