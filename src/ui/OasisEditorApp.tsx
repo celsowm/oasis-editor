@@ -21,7 +21,6 @@ import {
   setSelection,
 } from "../core/editorCommands.js";
 import {
-  createInitialEditorState,
   createEditorStateFromDocument,
 } from "../core/editorState.js";
 import {
@@ -108,6 +107,13 @@ import {
   recordCanvasDebugSelection,
   syncCanvasDebugApiVisibility,
 } from "./canvas/CanvasDebug.js";
+import {
+  computeFontFamilyOptions as collectFontFamilyOptions,
+  computeFontSizeOptions as collectFontSizeOptions,
+} from "./app/fontOptions.js";
+import { createEditorFocusController } from "./app/useEditorFocus.js";
+import { createEditorDialogs } from "./app/useEditorDialogs.js";
+import { createEditorAppState } from "./app/useEditorAppState.js";
 
 export interface OasisEditorLoadingOptions {
   label?: string;
@@ -143,70 +149,14 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setLocale(props.locale ?? "pt-BR");
   });
   const logger = createEditorLogger("app");
-  const initialEditorState = props.initialState
-    ? cloneEditorState(props.initialState)
-    : props.initialDocument
-      ? createEditorStateFromDocument(props.initialDocument)
-      : createInitialEditorState();
-
-  let stateSnapshot: EditorState = initialEditorState;
-  const [stateAccessor, setStateSignal] = createSignal<EditorState>(initialEditorState);
-
-  const state = new Proxy({} as EditorState, {
-    get(_, prop) {
-      const current = stateAccessor() as unknown;
-      if (current === null || (typeof current !== "object" && typeof current !== "function")) {
-        return undefined;
-      }
-      return Reflect.get(current as object, prop);
-    },
-    has(_, prop) {
-      const current = stateAccessor() as unknown;
-      if (current === null || (typeof current !== "object" && typeof current !== "function")) {
-        return false;
-      }
-      return Reflect.has(current as object, prop);
-    },
-    ownKeys(_) {
-      const current = stateAccessor() as unknown;
-      if (current === null || (typeof current !== "object" && typeof current !== "function")) {
-        return [];
-      }
-      return Reflect.ownKeys(current as object);
-    },
-    getOwnPropertyDescriptor(_, prop) {
-      const current = stateAccessor() as unknown;
-      if (current === null || (typeof current !== "object" && typeof current !== "function")) {
-        return {
-          configurable: true,
-          enumerable: true,
-        };
-      }
-      return {
-        ...Reflect.getOwnPropertyDescriptor(current as object, prop),
-        configurable: true,
-        enumerable: true
-      };
-    }
-  });
-
-  const commitState = (next: EditorState) => {
-    stateSnapshot = next;
-    setStateSignal(next);
-  };
+  const {
+    state,
+    setStateSignal,
+    commitState,
+    getStateSnapshot,
+  } = createEditorAppState(props);
   const applyState = (nextState: EditorState) => {
     commitState(nextState);
-  };
-
-  const focusInput = () => {
-    setFocused(true);
-    queueMicrotask(() => {
-      textareaRef?.focus({ preventScroll: true });
-      if (textareaRef) {
-        textareaRef.selectionStart = textareaRef.value.length;
-        textareaRef.selectionEnd = textareaRef.value.length;
-      }
-    });
   };
 
   const showChrome = () => props.showChrome ?? true;
@@ -229,53 +179,31 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     return DocumentShell;
   };
 
-  const [focused, setFocused] = createSignal(false);
+  const focusController = createEditorFocusController();
+  const focused = focusController.focused;
+  const setFocused = focusController.setFocused;
+  const focusInput = focusController.focusInput;
+  const focusInputAfterPointerSelection = focusController.focusInputAfterPointerSelection;
   const [initialLoading, setInitialLoading] = createSignal(props.loading !== false);
   const [undoStack, setUndoStack] = createSignal<EditorState[]>([]);
   const [redoStack, setRedoStack] = createSignal<EditorState[]>([]);
 
-  const [linkDialog, setLinkDialog] = createSignal<{
-    isOpen: boolean;
-    initialHref: string;
-  }>({
-    isOpen: false,
-    initialHref: "",
-  });
-  const [imageAltDialog, setImageAltDialog] = createSignal<{
-    isOpen: boolean;
-    initialAlt: string;
-  }>({
-    isOpen: false,
-    initialAlt: "",
-  });
+  const {
+    linkDialog,
+    setLinkDialog,
+    imageAltDialog,
+    setImageAltDialog,
+    contextMenu,
+    setContextMenu,
+    fontDialog,
+    setFontDialog,
+  } = createEditorDialogs();
 
-  const [contextMenu, setContextMenu] = createSignal<{
-    isOpen: boolean;
-    x: number;
-    y: number;
-  }>({ isOpen: false, x: 0, y: 0 });
-
-  const [fontDialog, setFontDialog] = createSignal<{
-    isOpen: boolean;
-    initial: FontDialogInitialValues;
-  }>({
-    isOpen: false,
-    initial: {
-      fontFamily: "",
-      fontSize: "",
-      color: "",
-      bold: false,
-      italic: false,
-      underline: false,
-      strike: false,
-    },
-  });
-
-  let viewportRef: HTMLDivElement | undefined;
-  let surfaceRef: HTMLDivElement | undefined;
-  let textareaRef: HTMLTextAreaElement | undefined;
-  let importInputRef: HTMLInputElement | undefined;
-  let imageInputRef: HTMLInputElement | undefined;
+  const viewportRef = () => focusController.viewportRef;
+  const surfaceRef = () => focusController.surfaceRef;
+  const textareaRef = () => focusController.textareaRef;
+  const importInputRef = () => focusController.importInputRef;
+  const imageInputRef = () => focusController.imageInputRef;
   type CanvasSnapshotCache = {
     snapshot: ReturnType<typeof buildCanvasLayoutSnapshot>;
     documentRef: EditorState["document"];
@@ -297,7 +225,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     applyState,
     applyTransactionalState: (producer, options) => applyTransactionalState(producer, options),
     isReadOnly,
-    surfaceRef: () => surfaceRef ?? null,
+    surfaceRef: () => surfaceRef() ?? null,
     stabilizeLayoutAfterImport: async () => {
       await stabilizeLayoutAfterImport();
     },
@@ -323,8 +251,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     onCleanupHook,
   } = useEditorLayout({
     state,
-    surfaceRef: () => surfaceRef,
-    viewportRef: () => viewportRef,
+    surfaceRef,
+    viewportRef,
     isImporting: () => docIO.importProgress()?.phase !== "done" && docIO.importProgress()?.phase !== "error" && docIO.importProgress() !== null,
     layoutMode: layoutMode(),
   });
@@ -350,7 +278,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   const historyActions = createEditorHistoryActions({
     state: () => state,
-    stateSnapshot: () => stateSnapshot,
+    stateSnapshot: getStateSnapshot,
     applyHistoryState,
     applyTransactionalState: (producer, options) => applyTransactionalState(producer, options),
     focusInput,
@@ -373,7 +301,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     if (docIO.importProgress()?.phase !== "done" && docIO.importProgress()?.phase !== "error" && docIO.importProgress() !== null) {
       return;
     }
-    props.onStateChange?.(cloneState(stateSnapshot));
+    props.onStateChange?.(cloneState(getStateSnapshot()));
   });
 
   const resetTransactionGrouping = () => {
@@ -384,7 +312,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     producer: (current: EditorState) => EditorState,
     options?: EditorTransactionOptions,
   ) => {
-    const prev = stateSnapshot;
+    const prev = getStateSnapshot();
     const next = perfTimer("txn:produce", () => producer(prev), 0);
     if (next === prev) {
       return;
@@ -411,33 +339,22 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   const selectedImageRun = () => getSelectedImageRun(state);
 
-  const focusInputAfterPointerSelection = () => {
-    setFocused(true);
-    queueMicrotask(() => {
-      requestAnimationFrame(() => {
-        textareaRef?.focus({ preventScroll: true });
-        if (textareaRef) {
-          textareaRef.selectionStart = textareaRef.value.length;
-          textareaRef.selectionEnd = textareaRef.value.length;
-        }
-      });
-    });
-  };
-
   const resolveSurfaceHitAtPoint = (
     clientX: number,
     clientY: number,
     _context: { forDrag?: boolean } = {},
   ): SurfaceHit | null => {
-    if (!surfaceRef) return null;
+    const currentSurfaceRef = surfaceRef();
+    const currentViewportRef = viewportRef();
+    if (!currentSurfaceRef) return null;
 
 
 
     const currentMeasuredBlockHeights = measuredBlockHeights();
     const currentMeasuredParagraphLayouts = measuredParagraphLayouts();
     const currentLayoutMode = layoutMode();
-    const viewportScrollTop = viewportRef?.scrollTop ?? 0;
-    const viewportScrollLeft = viewportRef?.scrollLeft ?? 0;
+    const viewportScrollTop = currentViewportRef?.scrollTop ?? 0;
+    const viewportScrollLeft = currentViewportRef?.scrollLeft ?? 0;
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
     const shouldReuseSnapshot =
@@ -446,17 +363,17 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       canvasSnapshotCache.measuredBlockHeightsRef === currentMeasuredBlockHeights &&
       canvasSnapshotCache.measuredParagraphLayoutsRef === currentMeasuredParagraphLayouts &&
       canvasSnapshotCache.layoutModeValue === currentLayoutMode &&
-      canvasSnapshotCache.surfaceRef === surfaceRef &&
+      canvasSnapshotCache.surfaceRef === currentSurfaceRef &&
       canvasSnapshotCache.viewportScrollTop === viewportScrollTop &&
       canvasSnapshotCache.viewportScrollLeft === viewportScrollLeft &&
-      canvasSnapshotCache.surfaceClientWidth === surfaceRef.clientWidth &&
-      canvasSnapshotCache.surfaceClientHeight === surfaceRef.clientHeight &&
+      canvasSnapshotCache.surfaceClientWidth === currentSurfaceRef.clientWidth &&
+      canvasSnapshotCache.surfaceClientHeight === currentSurfaceRef.clientHeight &&
       canvasSnapshotCache.windowWidth === windowWidth &&
       canvasSnapshotCache.windowHeight === windowHeight;
     const snapshot = shouldReuseSnapshot
       ? canvasSnapshotCache!.snapshot
       : buildCanvasLayoutSnapshot({
-          surface: surfaceRef,
+          surface: currentSurfaceRef,
           state: state as EditorState,
           measuredBlockHeights: currentMeasuredBlockHeights,
           measuredParagraphLayouts: currentMeasuredParagraphLayouts,
@@ -469,11 +386,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         measuredBlockHeightsRef: currentMeasuredBlockHeights,
         measuredParagraphLayoutsRef: currentMeasuredParagraphLayouts,
         layoutModeValue: currentLayoutMode,
-        surfaceRef,
+        surfaceRef: currentSurfaceRef,
         viewportScrollTop,
         viewportScrollLeft,
-        surfaceClientWidth: surfaceRef.clientWidth,
-        surfaceClientHeight: surfaceRef.clientHeight,
+        surfaceClientWidth: currentSurfaceRef.clientWidth,
+        surfaceClientHeight: currentSurfaceRef.clientHeight,
         windowWidth,
         windowHeight,
       };
@@ -523,7 +440,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   const imageOps = createEditorImageOperations({
     state,
-    surfaceRef: () => surfaceRef,
+    surfaceRef,
     resolvePositionAtSurfacePoint: (clientX, clientY) =>
       resolveSurfaceHitAtPoint(clientX, clientY)?.position ?? null,
     applyState,
@@ -541,8 +458,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const tableResize = createEditorTableResize({
     state: () => state,
     applyTransactionalState,
-    surfaceRef: () => surfaceRef,
-    viewportRef: () => viewportRef,
+    surfaceRef,
+    viewportRef,
   });
 
   const resolvePositionAtSurfacePoint = (
@@ -561,7 +478,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   const revisionController = createEditorRevisionController({
     state: () => state,
-    surfaceRef: () => surfaceRef ?? null,
+    surfaceRef: () => surfaceRef() ?? null,
   });
 
   const styleController = createEditorStyleController({
@@ -617,7 +534,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     state: () => state,
     applyState,
     applyTransactionalState,
-    surfaceRef: () => surfaceRef ?? null,
+    surfaceRef: () => surfaceRef() ?? null,
     caretBox: () => caretBox(),
     preferredColumnX: () => preferredColumnX(),
     setPreferredColumnX,
@@ -680,8 +597,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     undoStack,
     redoStack,
     persistenceStatus,
-    importInputRef: () => importInputRef,
-    imageInputRef: () => imageInputRef,
+    importInputRef,
+    imageInputRef,
     styleController,
     commandsController,
     tableOps,
@@ -828,19 +745,19 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         layoutMode={layoutMode()}
 
         onViewportRef={(element: HTMLDivElement) => {
-          viewportRef = element;
+          focusController.viewportRef = element;
         }}
         onSurfaceRef={(element: HTMLDivElement) => {
-          surfaceRef = element;
+          focusController.surfaceRef = element;
         }}
         onTextareaRef={(element: HTMLTextAreaElement) => {
-          textareaRef = element;
+          focusController.textareaRef = element;
         }}
         onImportInputRef={(element: HTMLInputElement) => {
-          importInputRef = element;
+          focusController.importInputRef = element;
         }}
         onImageInputRef={(element: HTMLInputElement) => {
-          imageInputRef = element;
+          focusController.imageInputRef = element;
         }}
         onImportInputChange={(e: Event & { currentTarget: HTMLInputElement }) =>
           docIO.handleImportDocx(e.currentTarget.files?.[0] ?? null)
@@ -898,33 +815,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   };
 
   const computeFontFamilyOptions = (): string[] => {
-    const values = new Set<string>([
-      "Arial",
-      "Calibri, sans-serif",
-      "Calibri Light, sans-serif",
-      "Georgia",
-      "Inter",
-      "Times New Roman",
-      "Courier New",
-    ]);
-    for (const style of Object.values(state.document?.styles ?? {})) {
-      const fontFamily = (style as any).textStyle?.fontFamily?.trim?.();
-      if (fontFamily) values.add(fontFamily);
-    }
-    const current = styleController.toolbarStyleState().fontFamily.trim();
-    if (current) values.add(current);
-    return Array.from(values).sort((a, b) => a.localeCompare(b));
+    return collectFontFamilyOptions(state.document, styleController.toolbarStyleState());
   };
 
   const computeFontSizeOptions = (): number[] => {
-    const values = new Set<number>([8, 9, 10, 11, 12, 14, 15, 16, 18, 20, 24, 28, 32, 36, 48, 72]);
-    for (const style of Object.values(state.document?.styles ?? {})) {
-      const fontSize = (style as any).textStyle?.fontSize;
-      if (typeof fontSize === "number" && Number.isFinite(fontSize)) values.add(fontSize);
-    }
-    const current = Number(styleController.toolbarStyleState().fontSize);
-    if (Number.isFinite(current) && current > 0) values.add(current);
-    return Array.from(values).sort((a, b) => a - b);
+    return collectFontSizeOptions(state.document, styleController.toolbarStyleState());
   };
 
   const openFontDialog = () => {
@@ -1159,7 +1054,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     startIconObserver();
     startLongTaskObserver();
     installGlobalReport();
-    registerDomStatsSurface(() => surfaceRef ?? null);
+    registerDomStatsSurface(() => surfaceRef() ?? null);
     requestAnimationFrame(() => {
       setInitialLoading(false);
       props.onReady?.();
@@ -1261,19 +1156,19 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             readOnly={isReadOnly()}
             showCaret={shouldShowCaret}
             onViewportRef={(element) => {
-              viewportRef = element;
+              focusController.viewportRef = element;
             }}
             onSurfaceRef={(element) => {
-              surfaceRef = element;
+              focusController.surfaceRef = element;
             }}
             onTextareaRef={(element) => {
-              textareaRef = element;
+              focusController.textareaRef = element;
             }}
             onImportInputRef={(element) => {
-              importInputRef = element;
+              focusController.importInputRef = element;
             }}
             onImageInputRef={(element) => {
-              imageInputRef = element;
+              focusController.imageInputRef = element;
             }}
             onImportInputChange={(e) =>
               docIO.handleImportDocx(e.currentTarget.files?.[0] ?? null)
@@ -1407,7 +1302,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       <Show when={tableDrag.dragging() && tableDrag.dropTargetPos()}>
         {(pos) => (
           <DropCaret
-            surfaceRef={surfaceRef}
+            surfaceRef={surfaceRef()}
             state={state as EditorState}
             targetPos={pos}
           />
@@ -1417,7 +1312,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       <Show when={imageOps.dragging() && imageOps.dropTargetPos()}>
         {(pos) => (
           <DropCaret
-            surfaceRef={surfaceRef}
+            surfaceRef={surfaceRef()}
             state={state as EditorState}
             targetPos={pos}
           />
@@ -1427,7 +1322,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       <Show when={textDrag.dragging() && textDrag.dropTargetPos()}>
         {(pos) => (
           <DropCaret
-            surfaceRef={surfaceRef}
+            surfaceRef={surfaceRef()}
             state={state as EditorState}
             targetPos={pos}
             pointerPos={textDrag.pointerPos}

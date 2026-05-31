@@ -1,0 +1,257 @@
+.oasis-editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(1160px, 100%);
+  margin: 0 auto;
+  padding: 8px 10px;
+  border-radius: var(--oasis-radius-lg);
+  background: var(--oasis-toolbar-bg);
+  border: 1px solid var(--oasis-toolbar-border);
+  box-shadow: var(--oasis-toolbar-shadow);
+  min-height: 48px;
+  flex-wrap: nowrap;
+  overflow: visible;
+}
+
+.oasis-editor-toolbar-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(241, 245, 249, 0.55);
+  border: 1px solid var(--oasis-border-color-muted);
+}
+
+.oasis-editor-table-actions-advanced {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.oasis-editor-table-actions-summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: var(--oasis-radius);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--oasis-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.oasis-editor-table-actions-summary:hover {
+  background: var(--oasis-hover-bg);
+  color: var(--oasis-text);
+}
+
+.oasis-editor-table-actions-advanced[open] .oasis-editor-table-actions-summary {
+  background: var(--oasis-active-bg);
+  border-color: rgba(148, 163, 184, 0.32);
+  color: var(--oasis-text);
+}
+
+.oasis-editor-table-actions-group {
+  padding-top: 2px;
+}
+
+.oasis-editor-tool-button,
+.oasis-editor-tool-select,
+.oasis-editor-tool-color {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--oasis-text);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.oasis-editor-tool-button {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--oasis-radius);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+}
+
+.oasis-editor-tool-button:hover,
+.oasis-editor-tool-select:hover,
+.oasis-editor-tool-color:hover {
+  background: var(--oasis-hover-bg);
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.oasis-editor-tool-button:focus-visible,
+.oasis-editor-tool-select:focus-visible,
+.oasis-editor-tool-color:focus-visible {
+  outline: none;
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.oasis-editor-tool-button-wide {
+  min-width: 64px;
+}
+
+.oasis-editor-tool-button-active {
+  background: var(--oasis-accent-active);
+  border-color: rgba(37, 99, 235, 0.4);
+  color: var(--oasis-accent-active-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.oasis-editor-tool-button-active:hover {
+  background: var(--oasis-accent-soft);
+  border-color: rgba(37, 99, 235, 0.55);
+}
+
+.oasis-editor-tool-button:disabled,
+.oasis-editor-tool-select:disabled,
+.oasis-editor-tool-color:has(input:disabled) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.oasis-editor-tool-select {
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--oasis-radius);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(255, 255, 255, 0.7);
+  font: inherit;
+  font-size: 13px;
+  color: var(--oasis-text);
+}
+
+.oasis-editor-tool-select-small {
+  min-width: 64px;
+}
+
+.oasis-editor-tool-color {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--oasis-radius);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.oasis-editor-tool-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--oasis-radius);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--oasis-text-muted);
+}
+
+.oasis-editor-tool-metric:focus-within {
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.oasis-editor-toolbar-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  background: rgba(219, 234, 254, 0.85);
+  color: var(--oasis-accent);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.oasis-editor-toolbar-note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 58, 237, 0.18);
+  background: rgba(124, 58, 237, 0.06);
+  color: var(--oasis-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.oasis-editor-tool-number {
+  width: 48px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--oasis-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.oasis-editor-tool-color-input {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.oasis-editor-toolbar-more-measure {
+  position: absolute;
+  top: 0;
+  right: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.oasis-editor-toolbar-overflow-menu .oasis-editor-toolbar-group {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  border: 0;
+  background: transparent;
+}
+
+.oasis-editor-toolbar-overflow-dropdown-menu {
+  width: min(360px, calc(100vw - 16px));
+  max-height: min(520px, calc(100vh - 88px));
+  overflow: auto;
+}
+
+.oasis-editor-toolbar-overflow-menu .oasis-editor-toolbar-separator {
+  width: 100%;
+  height: 1px;
+  margin: 2px 0;
+  background: var(--oasis-border-color-muted);
+}

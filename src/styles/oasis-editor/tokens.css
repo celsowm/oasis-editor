@@ -1,0 +1,42 @@
+:root,
+.oasis-editor {
+  --oasis-bg: #f6f8fb;
+  --oasis-paper: #ffffff;
+  --oasis-paper-shadow: 0 1px 3px rgba(60, 64, 67, 0.15), 0 4px 8px rgba(60, 64, 67, 0.07);
+
+  --oasis-toolbar-bg: rgba(255, 255, 255, 0.85);
+  --oasis-toolbar-border: rgba(148, 163, 184, 0.22);
+  --oasis-toolbar-shadow: 0 4px 12px rgba(15, 23, 42, 0.04), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+
+  --oasis-text: #202124;
+  --oasis-text-muted: #5f6368;
+  --oasis-accent: #1a73e8;
+  --oasis-accent-soft: #e8f0fe;
+  --oasis-accent-active: #c2e7ff;
+  --oasis-accent-active-text: #001d35;
+
+  --oasis-radius: 8px;
+  --oasis-radius-lg: 14px;
+  --oasis-radius-xl: 28px;
+
+  --oasis-font-ui: "Inter", system-ui, -apple-system, sans-serif;
+  --oasis-font-doc: "Source Serif Pro", Georgia, serif;
+
+  --oasis-border-color: rgba(148, 163, 184, 0.22);
+  --oasis-border-color-muted: rgba(148, 163, 184, 0.15);
+  --oasis-hover-bg: rgba(226, 232, 240, 0.8);
+  --oasis-active-bg: #e2e8f0;
+  --oasis-selection-bg: rgba(37, 99, 235, 0.22);
+  --oasis-caret-color: #2563eb;
+
+  --oasis-success: #15803d;
+  --oasis-warning: #a16207;
+  --oasis-danger: #b91c1c;
+  --oasis-revision-insert: #059669;
+  --oasis-revision-delete: #dc2626;
+  --oasis-chrome-height: 64px;
+  --oasis-menu-height: 28px;
+  --oasis-docs-surface: #edf2f7;
+  --oasis-menu-shadow: 0 8px 24px rgba(60, 64, 67, 0.18);
+  --oasis-focus-ring: 0 0 0 2px rgba(26, 115, 232, 0.22);
+}

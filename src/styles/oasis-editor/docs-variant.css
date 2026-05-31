@@ -1,0 +1,115 @@
+.oasis-editor-docs.oasis-editor-app {
+  grid-template-rows: auto auto 1fr;
+  gap: 0;
+  padding: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0)),
+    var(--oasis-docs-surface);
+}
+
+.oasis-editor-docs .oasis-editor-main-container {
+  width: 100%;
+  max-width: none;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  background: var(--oasis-docs-surface);
+}
+
+.oasis-editor-docs .oasis-editor-stage {
+  padding: 18px 24px 8px;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+.oasis-editor-docs .oasis-editor-toolbar {
+  width: 100%;
+  max-width: none;
+  min-height: 42px;
+  margin: 0;
+  padding: 6px 20px 6px 14px;
+  border-width: 1px 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.oasis-editor-docs .oasis-editor-toolbar-group {
+  flex-wrap: nowrap;
+  gap: 2px;
+  padding: 0 3px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.oasis-editor-docs .oasis-editor-toolbar-item-wrapper {
+  max-width: 100%;
+}
+
+.oasis-editor-docs .oasis-editor-toolbar-separator {
+  height: 24px;
+  margin: 0 3px;
+  background: rgba(95, 99, 104, 0.22);
+}
+
+.oasis-editor-docs .oasis-editor-tool-button,
+.oasis-editor-docs .oasis-editor-tool-select,
+.oasis-editor-docs .oasis-editor-tool-color,
+.oasis-editor-docs .oasis-editor-tool-metric {
+  height: 32px;
+  min-height: 32px;
+}
+
+.oasis-editor-docs .oasis-editor-tool-button i,
+.oasis-editor-docs .oasis-editor-tool-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.oasis-editor-docs .oasis-editor-tool-button:disabled,
+.oasis-editor-docs .oasis-editor-tool-select:disabled,
+.oasis-editor-docs .oasis-editor-tool-color:has(input:disabled) {
+  opacity: 0.56;
+}
+
+.oasis-editor-docs .oasis-editor-editor-shell {
+  width: min(918px, 100%);
+  height: 100%;
+  max-height: 100% !important;
+  min-height: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.oasis-editor-docs .oasis-editor-editor,
+.oasis-editor-docs .oasis-editor-editor-scroll-content {
+  background: transparent;
+}
+
+.oasis-editor-docs .oasis-editor-editor-scroll-content {
+  padding: 18px 0 28px;
+}
+
+.oasis-editor-docs .oasis-editor-paper {
+  border-radius: 2px;
+  border: 1px solid rgba(218, 220, 224, 0.92);
+  box-shadow:
+    0 1px 2px rgba(60, 64, 67, 0.24),
+    0 2px 6px 1px rgba(60, 64, 67, 0.10);
+}
+
+.oasis-editor-docs .oasis-editor-statusbar {
+  min-height: 28px;
+  margin-top: 8px;
+  padding: 4px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  align-self: flex-end;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.10);
+}
+

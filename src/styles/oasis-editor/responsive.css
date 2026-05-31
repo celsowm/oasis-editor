@@ -1,0 +1,60 @@
+@media (max-width: 900px) {
+  .oasis-editor-docs .oasis-editor-stage {
+    padding: 10px 8px 8px;
+  }
+
+  .oasis-titlebar {
+    min-height: auto;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .oasis-titlebar-doc-icon,
+  .oasis-titlebar-avatar {
+    display: none;
+  }
+
+  .oasis-titlebar-title-input {
+    min-width: 128px;
+    max-width: 52vw;
+    font-size: 16px;
+  }
+
+  .oasis-titlebar-share {
+    min-height: 32px;
+    padding: 0 12px;
+  }
+
+  .oasis-outline-panel {
+    display: none;
+  }
+
+  .oasis-editor-app {
+    padding: 20px 14px 20px;
+  }
+
+  .oasis-editor-docs.oasis-editor-app {
+    padding: 0;
+  }
+
+  .oasis-editor-toolbar {
+    padding: 10px;
+  }
+
+  .oasis-editor-editor-shell {
+    border-radius: 22px;
+  }
+
+  .oasis-editor-editor-scroll-content {
+    padding: 18px;
+  }
+
+  .oasis-editor-surface {
+    min-height: 0;
+  }
+
+  .oasis-editor-block {
+    font-size: inherit;
+  }
+}

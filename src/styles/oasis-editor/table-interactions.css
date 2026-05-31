@@ -1,0 +1,107 @@
+.oasis-editor-hover-col-resize,
+.oasis-editor-hover-col-resize * {
+  cursor: col-resize !important;
+}
+
+.oasis-editor-hover-row-resize,
+.oasis-editor-hover-row-resize * {
+  cursor: row-resize !important;
+}
+
+.oasis-editor-table-resize-guide {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  background-color: transparent;
+  border: 1px dashed rgba(0, 0, 0, 0.5);
+}
+
+.oasis-editor-table-resize-guide-column {
+  width: 0;
+  border-left-width: 1px;
+  border-right-width: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
+}
+
+.oasis-editor-table-resize-guide-row {
+  height: 0;
+  border-top-width: 1px;
+  border-bottom-width: 0;
+  border-left-width: 0;
+  border-right-width: 0;
+}
+
+.oasis-editor-table-block {
+  margin: 0 0 18px;
+  position: relative;
+}
+
+.oasis-editor-table-drag-handle {
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  width: 24px;
+  height: 24px;
+  background-color: var(--oasis-paper);
+  border: 1px solid var(--oasis-border-color);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: move;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 100;
+  color: var(--oasis-text-muted);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.oasis-editor-table-block:hover .oasis-editor-table-drag-handle {
+  opacity: 1;
+}
+
+.oasis-editor-table-drag-handle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.oasis-editor-table-ghost {
+  position: fixed;
+  pointer-events: none;
+  background-color: rgba(226, 232, 240, 0.4);
+  border: 2px dashed var(--oasis-text-muted);
+  border-radius: 4px;
+  z-index: 10001;
+  transform: scale(0.95);
+  transform-origin: top left;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.oasis-editor-image-ghost {
+  position: fixed;
+  pointer-events: none;
+  opacity: 0.5;
+  z-index: 10001;
+  transform: scale(0.95);
+  transform-origin: top left;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--oasis-text-muted);
+}
+
+.oasis-editor-table-grid {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.oasis-editor-list-marker {
+  flex: 0 0 34px;
+  min-width: 34px;
+  padding-top: 0.1em;
+  font-size: 0.95em;
+  line-height: inherit;
+  text-align: right;
+  color: var(--oasis-text-muted);
+  user-select: none;
+}
