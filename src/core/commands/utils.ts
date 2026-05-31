@@ -237,21 +237,45 @@ export function replaceParagraphsInBlocks(blocks: EditorBlockNode[], newParagrap
 
   let index = 0;
   const processBlocks = (nodes: EditorBlockNode[]): EditorBlockNode[] => {
-    return nodes.map(node => {
+    let nodesChanged = false;
+    const nextNodes = nodes.map(node => {
       if (node.type === "paragraph") {
-        return newParagraphs[index++] ?? node;
+        const nextPara = newParagraphs[index++];
+        const resultPara = nextPara ?? node;
+        if (resultPara !== node) {
+          nodesChanged = true;
+        }
+        return resultPara;
       }
-      return {
-        ...node,
-        rows: node.rows.map(row => ({
-          ...row,
-          cells: row.cells.map(cell => ({
-            ...cell,
-            blocks: processBlocks(cell.blocks) as EditorParagraphNode[]
-          }))
-        }))
-      };
+      if (node.type === "table") {
+        let rowsChanged = false;
+        const nextRows = node.rows.map(row => {
+          let cellsChanged = false;
+          const nextCells = row.cells.map(cell => {
+            const nextCellBlocks = processBlocks(cell.blocks);
+            if (nextCellBlocks !== cell.blocks) {
+              cellsChanged = true;
+              return { ...cell, blocks: nextCellBlocks as EditorParagraphNode[] };
+            }
+            return cell;
+          });
+
+          if (cellsChanged) {
+            rowsChanged = true;
+            return { ...row, cells: nextCells };
+          }
+          return row;
+        });
+
+        if (rowsChanged) {
+          nodesChanged = true;
+          return { ...node, rows: nextRows };
+        }
+      }
+      return node;
     });
+
+    return nodesChanged ? nextNodes : nodes;
   };
   return processBlocks(blocks);
 }
