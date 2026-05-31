@@ -5,12 +5,20 @@ import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditor
 import {
   createEditorDocument,
   createEditorParagraph,
+  createEditorParagraphFromRuns,
   createEditorStateFromDocument,
   resetEditorIds,
 } from "../../core/editorState.js";
-import { insertFootnote, goToFootnoteReference } from "../../core/commands/footnotes.js";
+import {
+  insertFootnote,
+  goToFootnoteReference,
+} from "../../core/commands/footnotes.js";
 import { collectFootnoteReferences } from "../../core/footnotes.js";
-import { paragraphOffsetToPosition, getDocumentParagraphs } from "../../core/model.js";
+import {
+  paragraphOffsetToPosition,
+  getDocumentParagraphs,
+  type EditorParagraphNode,
+} from "../../core/model.js";
 
 beforeEach(() => {
   resetEditorIds();
@@ -39,10 +47,14 @@ function buildDocWithTwoFootnotes() {
   });
 
   // Switch back to main, then insert at end → "2".
-  const firstFootnoteId = collectFootnoteReferences(s1.document)[0].run.footnoteReference!.footnoteId;
+  const firstFootnoteId = collectFootnoteReferences(s1.document)[0].run
+    .footnoteReference!.footnoteId;
   const back = goToFootnoteReference(s1, firstFootnoteId);
   const mainParagraph = getDocumentParagraphs(back.document)[0];
-  const totalLen = mainParagraph.runs.reduce((sum, r) => sum + r.text.length, 0);
+  const totalLen = mainParagraph.runs.reduce(
+    (sum, r) => sum + r.text.length,
+    0,
+  );
 
   const s2 = insertFootnote({
     ...back,
@@ -53,6 +65,10 @@ function buildDocWithTwoFootnotes() {
   });
 
   return s2.document;
+}
+
+function getFirstFootnoteParagraphText(paragraph: EditorParagraphNode): string {
+  return paragraph.runs.map((run) => run.text).join("");
 }
 
 describe("DOCX export: footnotes", () => {
@@ -85,7 +101,7 @@ describe("DOCX export: footnotes", () => {
 
     const rels = await readPart(zip, "word/_rels/document.xml.rels");
     expect(rels).not.toBeNull();
-    expect(rels!).toContain("Target=\"footnotes.xml\"");
+    expect(rels!).toContain('Target="footnotes.xml"');
     expect(rels!).toContain("/footnotes");
   });
 
@@ -96,9 +112,9 @@ describe("DOCX export: footnotes", () => {
 
     const documentXml = await readPart(zip, "word/document.xml");
     expect(documentXml).not.toBeNull();
-    const idMatches = [...documentXml!.matchAll(/<w:footnoteReference[^>]*w:id="(\d+)"/g)].map(
-      (m) => m[1],
-    );
+    const idMatches = [
+      ...documentXml!.matchAll(/<w:footnoteReference[^>]*w:id="(\d+)"/g),
+    ].map((m) => m[1]);
     expect(idMatches).toEqual(["1", "2"]);
   });
 
@@ -120,5 +136,57 @@ describe("DOCX export: footnotes", () => {
     const refs = collectFootnoteReferences(reimported);
     expect(refs.map((r) => r.run.text)).toEqual(["1", "2"]);
     expect(Object.keys(reimported.footnotes!.items)).toHaveLength(2);
+  });
+
+  it("round-trips footnote body text and inline styles through export → import", async () => {
+    const doc = buildDocWithTwoFootnotes();
+    const refs = collectFootnoteReferences(doc);
+    const firstFootnoteId = refs[0].run.footnoteReference!.footnoteId;
+    const secondFootnoteId = refs[1].run.footnoteReference!.footnoteId;
+
+    doc.footnotes!.items[firstFootnoteId] = {
+      ...doc.footnotes!.items[firstFootnoteId],
+      blocks: [
+        createEditorParagraphFromRuns([
+          { text: "Styled ", styles: { bold: true } },
+          { text: "footnote", styles: { italic: true } },
+        ]),
+      ],
+    };
+    doc.footnotes!.items[secondFootnoteId] = {
+      ...doc.footnotes!.items[secondFootnoteId],
+      blocks: [createEditorParagraph("Plain second note")],
+    };
+
+    const reimported = await importDocxToEditorDocument(
+      await exportEditorDocumentToDocx(doc),
+    );
+    const reimportedRefs = collectFootnoteReferences(reimported);
+    const reimportedFirstId =
+      reimportedRefs[0].run.footnoteReference!.footnoteId;
+    const reimportedSecondId =
+      reimportedRefs[1].run.footnoteReference!.footnoteId;
+    const firstParagraph = reimported.footnotes!.items[reimportedFirstId]
+      .blocks[0] as EditorParagraphNode;
+    const secondParagraph = reimported.footnotes!.items[reimportedSecondId]
+      .blocks[0] as EditorParagraphNode;
+
+    expect(reimportedRefs.map((ref) => ref.run.text)).toEqual(["1", "2"]);
+    expect(getFirstFootnoteParagraphText(firstParagraph)).toBe(
+      "Styled footnote",
+    );
+    expect(
+      firstParagraph.runs.some(
+        (run) => run.text.includes("Styled") && run.styles?.bold,
+      ),
+    ).toBe(true);
+    expect(
+      firstParagraph.runs.some(
+        (run) => run.text.includes("footnote") && run.styles?.italic,
+      ),
+    ).toBe(true);
+    expect(getFirstFootnoteParagraphText(secondParagraph)).toBe(
+      "Plain second note",
+    );
   });
 });
