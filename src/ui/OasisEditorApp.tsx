@@ -97,13 +97,6 @@ import {
 import { setLocale, t } from "../i18n/index.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import {
-  resolveCanvasSurfaceHitAtPoint,
-  type SurfaceHit,
-} from "./canvas/CanvasHitTestService.js";
-import { buildCanvasLayoutSnapshot } from "./canvas/CanvasLayoutSnapshot.js";
-import {
-  recordCanvasDebugHit,
-  recordCanvasDebugLayoutSnapshot,
   recordCanvasDebugSelection,
   syncCanvasDebugApiVisibility,
 } from "./canvas/CanvasDebug.js";
@@ -114,6 +107,7 @@ import {
 import { createEditorFocusController } from "./app/useEditorFocus.js";
 import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
+import { createCanvasSurfaceHitResolver } from "./app/useCanvasSurfaceHitResolver.js";
 
 export interface OasisEditorLoadingOptions {
   label?: string;
@@ -204,22 +198,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const textareaRef = () => focusController.textareaRef;
   const importInputRef = () => focusController.importInputRef;
   const imageInputRef = () => focusController.imageInputRef;
-  type CanvasSnapshotCache = {
-    snapshot: ReturnType<typeof buildCanvasLayoutSnapshot>;
-    documentRef: EditorState["document"];
-    measuredBlockHeightsRef: Record<string, number>;
-    measuredParagraphLayoutsRef: Record<string, EditorLayoutParagraph>;
-    layoutModeValue: "fast" | "wordParity";
-    surfaceRef: HTMLDivElement;
-    viewportScrollTop: number;
-    viewportScrollLeft: number;
-    surfaceClientWidth: number;
-    surfaceClientHeight: number;
-    windowWidth: number;
-    windowHeight: number;
-  };
-  let canvasSnapshotCache: CanvasSnapshotCache | null = null;
-
   const docIO = createEditorDocumentIO({
     state: () => state,
     applyState,
@@ -339,77 +317,15 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   const selectedImageRun = () => getSelectedImageRun(state);
 
-  const resolveSurfaceHitAtPoint = (
-    clientX: number,
-    clientY: number,
-    _context: { forDrag?: boolean } = {},
-  ): SurfaceHit | null => {
-    const currentSurfaceRef = surfaceRef();
-    const currentViewportRef = viewportRef();
-    if (!currentSurfaceRef) return null;
-
-
-
-    const currentMeasuredBlockHeights = measuredBlockHeights();
-    const currentMeasuredParagraphLayouts = measuredParagraphLayouts();
-    const currentLayoutMode = layoutMode();
-    const viewportScrollTop = currentViewportRef?.scrollTop ?? 0;
-    const viewportScrollLeft = currentViewportRef?.scrollLeft ?? 0;
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-    const shouldReuseSnapshot =
-      canvasSnapshotCache &&
-      canvasSnapshotCache.documentRef === (state as EditorState).document &&
-      canvasSnapshotCache.measuredBlockHeightsRef === currentMeasuredBlockHeights &&
-      canvasSnapshotCache.measuredParagraphLayoutsRef === currentMeasuredParagraphLayouts &&
-      canvasSnapshotCache.layoutModeValue === currentLayoutMode &&
-      canvasSnapshotCache.surfaceRef === currentSurfaceRef &&
-      canvasSnapshotCache.viewportScrollTop === viewportScrollTop &&
-      canvasSnapshotCache.viewportScrollLeft === viewportScrollLeft &&
-      canvasSnapshotCache.surfaceClientWidth === currentSurfaceRef.clientWidth &&
-      canvasSnapshotCache.surfaceClientHeight === currentSurfaceRef.clientHeight &&
-      canvasSnapshotCache.windowWidth === windowWidth &&
-      canvasSnapshotCache.windowHeight === windowHeight;
-    const snapshot = shouldReuseSnapshot
-      ? canvasSnapshotCache!.snapshot
-      : buildCanvasLayoutSnapshot({
-          surface: currentSurfaceRef,
-          state: state as EditorState,
-          measuredBlockHeights: currentMeasuredBlockHeights,
-          measuredParagraphLayouts: currentMeasuredParagraphLayouts,
-          layoutMode: currentLayoutMode,
-        });
-    if (!shouldReuseSnapshot) {
-      canvasSnapshotCache = {
-        snapshot,
-        documentRef: (state as EditorState).document,
-        measuredBlockHeightsRef: currentMeasuredBlockHeights,
-        measuredParagraphLayoutsRef: currentMeasuredParagraphLayouts,
-        layoutModeValue: currentLayoutMode,
-        surfaceRef: currentSurfaceRef,
-        viewportScrollTop,
-        viewportScrollLeft,
-        surfaceClientWidth: currentSurfaceRef.clientWidth,
-        surfaceClientHeight: currentSurfaceRef.clientHeight,
-        windowWidth,
-        windowHeight,
-      };
-    }
-    recordCanvasDebugLayoutSnapshot(snapshot);
-    if (!snapshot) {
-      recordCanvasDebugHit(null);
-      return null;
-    }
-
-    const hit = resolveCanvasSurfaceHitAtPoint({
-      snapshot,
-      state: state as EditorState,
-      clientX,
-      clientY,
-    });
-    recordCanvasDebugHit(hit);
-    return hit;
-  };
+  const canvasHitResolver = createCanvasSurfaceHitResolver({
+    state: () => state as EditorState,
+    surfaceRef: () => surfaceRef() ?? null,
+    viewportRef: () => viewportRef() ?? null,
+    measuredBlockHeights,
+    measuredParagraphLayouts,
+    layoutMode,
+  });
+  const resolveSurfaceHitAtPoint = canvasHitResolver.resolveSurfaceHitAtPoint;
 
   const fr = useEditorFindReplace({
     state,

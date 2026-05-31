@@ -32,6 +32,7 @@ import { domTextMeasurer, resolveRenderedLineHeightPx } from "../textMeasurement
 import { perfTimer } from "../../utils/performanceMetrics.js";
 import { resolveTableColumnWidthsPx } from "../tableGeometry.js";
 import { buildTableCellLayout } from "../../core/tableLayout.js";
+import { projectHeaderFooterBlocksWithDependencies } from "./headerFooterProjection.js";
 
 const DEFAULT_FONT_SIZE = 15;
 const DEFAULT_LINE_HEIGHT = 1.15;
@@ -851,33 +852,22 @@ export function projectHeaderFooterBlocks(
   layoutMode: "fast" | "wordParity" = "fast",
   measurer: ITextMeasurer = domTextMeasurer,
 ): EditorLayoutBlock[] {
-  // Headers/Footers are projected as a single sequence of blocks, no pagination for now
-  return blocks.map((block, index) => {
-    if (block.type === "paragraph") {
-      const layout = projectParagraphLayout(block, pageIndex, totalPages, styles, contentWidth, layoutMode, measurer);
-      const estimatedHeight =
-        measuredHeights?.[block.id] ?? getProjectedParagraphBlockHeight(block, layout, styles);
-      return {
-        blockId: block.id,
-        sourceBlockId: block.id,
-        blockType: block.type,
-        paragraphId: block.id,
-        globalIndex: index,
-        estimatedHeight,
-        layout,
-        sourceBlock: block,
-      };
-    }
-    return {
-      blockId: block.id,
-      sourceBlockId: block.id,
-      blockType: block.type,
-      globalIndex: index,
-      estimatedHeight:
-        measuredHeights?.[block.id] ?? estimateTableBlockHeight(block, styles, contentWidth, layoutMode, measurer),
-      sourceBlock: block,
-    };
-  });
+  return projectHeaderFooterBlocksWithDependencies(
+    blocks,
+    {
+      projectParagraphLayout,
+      estimateTableBlockHeight,
+      getProjectedParagraphBlockHeight,
+    },
+    pageIndex,
+    totalPages,
+    measuredHeights,
+    measuredParagraphLayouts,
+    styles,
+    contentWidth,
+    layoutMode,
+    measurer,
+  );
 }
 
 function getProjectedBlocksHeight(blocks: EditorLayoutBlock[] | undefined): number {

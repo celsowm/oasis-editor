@@ -12,8 +12,6 @@ import {
   getActiveSectionIndex,
   getDocumentSectionsCanonical,
   getParagraphs,
-  getDocumentSections,
-  getDocumentParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
   type EditorBlockNode,
@@ -27,7 +25,6 @@ import {
   type EditorTableNode,
   type EditorTableCellNode,
   type EditorTableRowNode,
-  type EditorTextRun,
   type EditorEditingZone,
 } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
@@ -37,6 +34,17 @@ import {
 } from "../../core/tableLayout.js";
 import { insertTableAtSelection } from "../../core/editorCommands.js";
 import type { EditorLogger } from "../../utils/logger.js";
+import {
+  findCellAtVisualColumn,
+  findFirstNavigableParagraphInTable,
+  getRowVisualWidth,
+  getTableVisualWidth,
+  resolveAdjacentTableCellPosition,
+} from "./tableOpsSelectionNavigation.js";
+import {
+  applyTableAwareParagraphEdit as applyTableAwareParagraphEditInternal,
+  updateBlocksInCurrentSection,
+} from "./tableOpsMutationCommands.js";
 
 export interface EditorTableOperationsDeps {
   applyTransactionalState: (
@@ -396,36 +404,6 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
     return canSplitSelectedTableCell(current) || canSplitSelectedTableCellVertically(current);
   };
 
-  const updateBlocksInCurrentSection = (
-    current: EditorState,
-    blocks: EditorBlockNode[],
-    zone: EditorEditingZone = "main",
-  ): EditorState => {
-    const activeSectionIndex = getActiveSectionIndex(current);
-    const sections = getDocumentSectionsCanonical(current.document);
-    const boundedSectionIndex = Math.max(0, Math.min(activeSectionIndex, sections.length - 1));
-    const section = sections[boundedSectionIndex];
-    if (!section) {
-      return current;
-    }
-
-    const nextSections = [...sections];
-    if (zone === "header") {
-      nextSections[boundedSectionIndex] = { ...section, header: blocks };
-    } else if (zone === "footer") {
-      nextSections[boundedSectionIndex] = { ...section, footer: blocks };
-    } else {
-      nextSections[boundedSectionIndex] = { ...section, blocks };
-    }
-    return {
-      ...current,
-      document: {
-        ...current.document,
-        sections: nextSections,
-      },
-    };
-  };
-
   const mergeSelectedTableCells = (current: EditorState): EditorState => {
     const range = resolveHorizontalTableCellRange(current);
     if (!range) {
@@ -650,43 +628,7 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
     return current;
   };
 
-  const getRowVisualWidth = (row: EditorTableRowNode): number =>
-    row.cells.reduce((sum, cell) => sum + Math.max(1, cell.colSpan ?? 1), 0);
-
-  const getTableVisualWidth = (table: EditorTableNode): number =>
-    table.rows.reduce((max, row) => Math.max(max, getRowVisualWidth(row)), 0);
-
-  const findCellAtVisualColumn = (
-    row: EditorTableRowNode,
-    visualColumn: number,
-  ): EditorTableCellNode | null => {
-    let visualCursor = 0;
-    for (const cell of row.cells) {
-      const span = Math.max(1, cell.colSpan ?? 1);
-      if (visualColumn >= visualCursor && visualColumn < visualCursor + span) {
-        return cell;
-      }
-      visualCursor += span;
-    }
-
-    return null;
-  };
-
-  const findFirstNavigableParagraphInTable = (table: EditorTableNode): EditorParagraphNode | null => {
-    for (const row of table.rows) {
-      for (const cell of row.cells) {
-        if (cell.vMerge === "continue") {
-          continue;
-        }
-        const paragraph = cell.blocks[0];
-        if (paragraph) {
-          return paragraph;
-        }
-      }
-    }
-
-    return null;
-  };
+  
 
   const canEditSelectedTableRow = (current: EditorState): boolean => {
     const location = findParagraphTableLocation(current.document, current.selection.focus.paragraphId, getActiveSectionIndex(current));
@@ -1110,109 +1052,10 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
     };
   };
 
-  const resolveAdjacentTableCellPosition = (
-    document: EditorDocument,
-    paragraphId: string,
-    delta: -1 | 1,
-  ): EditorPosition | null => {
-    // Search all potential blocks
-    const sections = getDocumentSections(document);
-    for (const section of sections) {
-      const allBlocks = [
-        ...(section.header || []),
-        ...section.blocks,
-        ...(section.footer || []),
-      ];
-
-      for (const block of allBlocks) {
-        if (block.type !== "table") {
-          continue;
-        }
-
-        const cells = block.rows.flatMap((row) =>
-          row.cells.filter((cell) => cell.vMerge !== "continue" && cell.blocks.length > 0),
-        );
-        const currentCellIndex = cells.findIndex((cell) =>
-          cell.blocks.some((paragraph) => paragraph.id === paragraphId),
-        );
-        if (currentCellIndex === -1) {
-          continue;
-        }
-
-        const nextCell = cells[currentCellIndex + delta];
-        if (!nextCell) {
-          return null;
-        }
-
-        const targetParagraph = nextCell.blocks[0];
-        if (!targetParagraph) {
-          return null;
-        }
-
-        return paragraphOffsetToPosition(targetParagraph, 0);
-      }
-    }
-
-    return null;
-  };
-
   const applyTableAwareParagraphEdit = (
     current: EditorState,
     edit: (tempState: EditorState) => EditorState,
-  ): EditorState => {
-    const location = findParagraphTableLocation(
-      current.document,
-      current.selection.focus.paragraphId,
-      getActiveSectionIndex(current),
-    );
-    if (!location || current.selection.anchor.paragraphId !== current.selection.focus.paragraphId) {
-      return edit(current);
-    }
-
-    const zone = location.zone;
-    const targetBlocks = getTargetBlocks(current, zone);
-
-    const nextBlocks = targetBlocks.map(cloneBlock);
-    const tableBlock = nextBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return edit(current);
-    }
-
-    const targetCell = tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
-    if (!targetCell) {
-      return edit(current);
-    }
-
-    const tempState: EditorState = {
-      ...current,
-      document: createEditorDocument(
-        targetCell.blocks,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        // Carry the asset registry through so image runs inside the cell
-        // can still resolve their `asset:<id>` references during the edit.
-        current.document.assets,
-      ),
-      selection: {
-        anchor: { ...current.selection.anchor },
-        focus: { ...current.selection.focus },
-      },
-    };
-    const tempResult = edit(tempState);
-    const replacementParagraphs = getDocumentParagraphs(tempResult.document).filter(
-      (block): block is EditorParagraphNode => block.type === "paragraph",
-    );
-
-    targetCell.blocks.splice(0, targetCell.blocks.length, ...replacementParagraphs);
-
-    const nextState = updateBlocksInCurrentSection(current, nextBlocks, zone);
-    return {
-      ...nextState,
-      selection: tempResult.selection,
-    };
-  };
+  ): EditorState => applyTableAwareParagraphEditInternal(current, getTargetBlocks, edit);
 
   const withExpandedTableCellSelection = (current: EditorState): EditorState => {
     const expandedSelection = resolveTableCellRangeSelection(current);
