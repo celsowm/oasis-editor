@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   createEditorDocument,
+  createEditorFootnote,
   createEditorParagraph,
+  createEditorRun,
   createEditorStateFromDocument,
+  createFootnoteReferenceRun,
 } from "../../core/editorState.js";
 import { projectDocumentLayout } from "../../ui/layoutProjection.js";
 import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
@@ -122,5 +125,55 @@ describe("buildCanvasLayoutSnapshot", () => {
     expect(headerParagraph!.lines[0]?.slots[0]?.top).toBe(expectedHeaderTop);
     expect(footerParagraph!.lines[0]?.top).toBe(expectedFooterTop);
     expect(footerParagraph!.lines[0]?.slots[0]?.top).toBe(expectedFooterTop);
+  });
+
+  it("emits footnote paragraph geometry below the page footnote separator", () => {
+    const body = createEditorParagraph("");
+    const footnote = createEditorFootnote([createEditorParagraph("note text")]);
+    body.runs = [
+      createEditorRun("body"),
+      createFootnoteReferenceRun(footnote.id, "1"),
+    ];
+    const document = createEditorDocument([body]);
+    document.footnotes = { items: { [footnote.id]: footnote } };
+    const state = createEditorStateFromDocument(document);
+    const projected = projectDocumentLayout(document, undefined, undefined, undefined, {
+      layoutMode: "wordParity",
+    });
+    const projectedPage = projected.pages[0];
+    if (!projectedPage) {
+      throw new Error("missing projected page");
+    }
+
+    const { surface, page } = createSurfaceWithSinglePage(projectedPage.index);
+    surface.getBoundingClientRect = () => createRect(0, 0, 940, 1200);
+    page.getBoundingClientRect = () => createRect(100, 200, 816, 1056);
+
+    const snapshot = buildCanvasLayoutSnapshot({
+      surface,
+      state,
+      layoutMode: "wordParity",
+    });
+
+    expect(snapshot).not.toBeNull();
+    const footnoteParagraph = snapshot!.paragraphs.find(
+      (paragraph) => paragraph.zone === "footnote" && paragraph.footnoteId === footnote.id,
+    );
+    const bodyParagraph = snapshot!.paragraphs.find(
+      (paragraph) => paragraph.zone === "main" && paragraph.paragraphId === body.id,
+    );
+    const snapshotPage = snapshot!.pages[0]!;
+
+    expect(snapshotPage.footnoteSeparatorTop).toBeDefined();
+    expect(footnoteParagraph).toBeDefined();
+    expect(footnoteParagraph!.top).toBeGreaterThan(
+      page.getBoundingClientRect().top + snapshotPage.footnoteSeparatorTop!,
+    );
+    expect(footnoteParagraph!.top + footnoteParagraph!.height).toBeLessThanOrEqual(
+      page.getBoundingClientRect().bottom,
+    );
+    expect(bodyParagraph!.top + bodyParagraph!.height).toBeLessThanOrEqual(
+      page.getBoundingClientRect().top + snapshotPage.footnoteSeparatorTop!,
+    );
   });
 });

@@ -100,7 +100,13 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     targetPosition?: EditorPosition,
   ) => {
     const isZoneTransition = targetZone !== (state.activeZone ?? "main");
-    if (!isZoneTransition) {
+    const targetFootnoteId =
+      targetZone === "footnote" && targetPosition
+        ? findParagraphLocation(newState.document, targetPosition.paragraphId)?.footnoteId
+        : undefined;
+    const isFootnoteTransition =
+      targetZone === "footnote" && targetFootnoteId !== state.activeFootnoteId;
+    if (!isZoneTransition && !isFootnoteTransition) {
       deps.applyState(newState);
       return;
     }
@@ -176,6 +182,7 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
       selection: { anchor: zonePosition, focus: zonePosition },
       activeSectionIndex,
       activeZone: targetZone,
+      activeFootnoteId: targetZone === "footnote" ? targetFootnoteId : undefined,
     });
   };
 

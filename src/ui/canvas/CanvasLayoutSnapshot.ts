@@ -13,6 +13,7 @@ import {
   type EditorState,
 } from "../../core/model.js";
 import { projectDocumentLayout } from "../layoutProjection.js";
+import { FOOTNOTE_MARKER_GUTTER_PX } from "../layoutProjection.js";
 import { buildCanvasTableLayout, type CanvasUnsupportedReason } from "./CanvasTableLayout.js";
 
 export interface CanvasSnapshotSlot {
@@ -46,6 +47,7 @@ export interface CanvasSnapshotParagraph {
   paragraphId: string;
   paragraphIndex: number;
   zone: EditorEditingZone;
+  footnoteId?: string;
   pageIndex: number;
   startOffset: number;
   endOffset: number;
@@ -62,6 +64,7 @@ export interface CanvasSnapshotInlineImage {
   paragraphId: string;
   paragraphIndex: number;
   zone: EditorEditingZone;
+  footnoteId?: string;
   pageIndex: number;
   startOffset: number;
   endOffset: number;
@@ -79,6 +82,9 @@ export interface CanvasSnapshotPage {
   height: number;
   bodyTop: number;
   bodyBottom: number;
+  footerTop?: number;
+  footnoteTop?: number;
+  footnoteSeparatorTop?: number;
 }
 
 export interface CanvasLayoutSnapshot {
@@ -90,6 +96,7 @@ export interface CanvasLayoutSnapshot {
   unsupportedRegions: Array<{
     pageIndex: number;
     zone: EditorEditingZone;
+    footnoteId?: string;
     left: number;
     top: number;
     width: number;
@@ -131,6 +138,7 @@ function collectInlineImagesFromLines(options: {
   paragraphId: string;
   paragraphIndex: number;
   zone: EditorEditingZone;
+  footnoteId?: string;
   pageIndex: number;
   lineTopOffset: number;
   lineLeftOffset: number;
@@ -154,6 +162,7 @@ function collectInlineImagesFromLines(options: {
         paragraphId: options.paragraphId,
         paragraphIndex: options.paragraphIndex,
         zone: options.zone,
+        footnoteId: options.footnoteId,
         pageIndex: options.pageIndex,
         startOffset: imageStartOffset,
         endOffset: imageEndOffset,
@@ -216,6 +225,9 @@ export function buildCanvasLayoutSnapshot(
       height: pageRect.height,
       bodyTop,
       bodyBottom,
+      footerTop,
+      footnoteTop: page.footnoteTop,
+      footnoteSeparatorTop: page.footnoteSeparatorTop,
     };
     snapshotPages.push(snapshotPage);
 
@@ -227,9 +239,19 @@ export function buildCanvasLayoutSnapshot(
       zone: EditorEditingZone,
       blocks: typeof page.blocks,
       startTop: number,
+      options: {
+        footnoteId?: string;
+        footnoteIdForBlock?: (block: (typeof page.blocks)[number]) => string | undefined;
+        contentLeft?: number;
+        contentWidth?: number;
+        blockGap?: number;
+      } = {},
     ) => {
       let cursorY = startTop;
+      const blockContentLeft = options.contentLeft ?? contentLeft;
+      const blockContentWidth = options.contentWidth ?? contentWidth;
       for (const block of blocks) {
+        const blockFootnoteId = options.footnoteIdForBlock?.(block) ?? options.footnoteId;
         if (block.sourceBlock.type === "paragraph" && block.layout) {
           const paragraphNode = block.sourceBlock;
           const paragraphId = paragraphNode.id;
@@ -242,13 +264,14 @@ export function buildCanvasLayoutSnapshot(
             paragraphId,
             paragraphIndex,
             zone,
+            footnoteId: blockFootnoteId,
             pageIndex: page.index,
             startOffset: block.layout.startOffset ?? 0,
             endOffset: block.layout.endOffset ?? getParagraphText(paragraphNode).length,
             textLength: getParagraphText(paragraphNode).length,
-            left: contentLeft,
+            left: blockContentLeft,
             top: cursorY,
-            width: contentWidth,
+            width: blockContentWidth,
             height: Math.max(0, block.estimatedHeight),
             lines: block.layout.lines.map((line) => ({
               startOffset: line.startOffset,
@@ -257,7 +280,7 @@ export function buildCanvasLayoutSnapshot(
               height: line.height,
               slots: line.slots.map((slot) => ({
                 offset: slot.offset,
-                left: contentLeft + slot.left,
+                left: blockContentLeft + slot.left,
                 top: lineTopOffset + slot.top,
                 height: slot.height,
               })),
@@ -269,9 +292,10 @@ export function buildCanvasLayoutSnapshot(
               paragraphId,
               paragraphIndex,
               zone,
+              footnoteId: blockFootnoteId,
               pageIndex: page.index,
               lineTopOffset,
-              lineLeftOffset: contentLeft,
+              lineLeftOffset: blockContentLeft,
             }),
           );
         } else if (block.sourceBlock.type === "table") {
@@ -280,15 +304,16 @@ export function buildCanvasLayoutSnapshot(
             state,
             pageIndex: page.index,
             layoutMode,
-            originX: contentLeft,
+            originX: blockContentLeft,
             originY: cursorY,
-            contentWidth,
+            contentWidth: blockContentWidth,
             estimatedHeight: block.estimatedHeight,
           });
           for (const reason of tableLayout.unsupported) {
             unsupportedRegions.push({
               pageIndex: page.index,
               zone,
+              footnoteId: blockFootnoteId,
               left: tableLayout.left,
               top: tableLayout.top,
               width: tableLayout.width,
@@ -306,6 +331,7 @@ export function buildCanvasLayoutSnapshot(
               paragraphId,
               paragraphIndex,
               zone,
+              footnoteId: blockFootnoteId,
               pageIndex: page.index,
               startOffset: 0,
               endOffset: textLength,
@@ -343,6 +369,7 @@ export function buildCanvasLayoutSnapshot(
                   paragraphId,
                   paragraphIndex,
                   zone,
+                  footnoteId: blockFootnoteId,
                   pageIndex: page.index,
                   lineTopOffset: paragraphLayout.originY,
                   lineLeftOffset: paragraphLayout.originX,
@@ -351,12 +378,22 @@ export function buildCanvasLayoutSnapshot(
             }
           }
         }
-        cursorY += Math.max(0, block.estimatedHeight);
+        cursorY += Math.max(0, block.estimatedHeight) + (options.blockGap ?? 0);
       }
     };
 
     collectParagraphBlock("header", page.headerBlocks ?? [], pageRect.top + headerTop);
     collectParagraphBlock("main", page.blocks, pageRect.top + bodyTop);
+    if (page.footnoteBlocks && page.footnoteTop !== undefined) {
+      const footnoteReferenceIds = page.footnoteReferenceIds ?? [];
+      collectParagraphBlock("footnote", page.footnoteBlocks, pageRect.top + page.footnoteTop, {
+        footnoteIdForBlock: (block) =>
+          footnoteReferenceIds.find((footnoteId) => block.blockId.startsWith(`${footnoteId}:`)),
+        contentLeft: contentLeft + FOOTNOTE_MARKER_GUTTER_PX,
+        contentWidth: Math.max(24, contentWidth - FOOTNOTE_MARKER_GUTTER_PX),
+        blockGap: 2,
+      });
+    }
     collectParagraphBlock("footer", page.footerBlocks ?? [], pageRect.top + footerTop);
   }
 

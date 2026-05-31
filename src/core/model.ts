@@ -1,4 +1,4 @@
-export type EditorUnderlineStyle =
+/comexport type EditorUnderlineStyle =
   | "single"
   | "double"
   | "thick"
@@ -615,10 +615,14 @@ export interface EditorLayoutPage {
   pageSettings: EditorPageSettings;
   headerBlocks?: EditorLayoutBlock[];
   footerBlocks?: EditorLayoutBlock[];
+  footnoteBlocks?: EditorLayoutBlock[];
+  footnoteReferenceIds?: string[];
   bodyTop?: number;
   bodyBottom?: number;
   headerTop?: number;
   footerTop?: number;
+  footnoteTop?: number;
+  footnoteSeparatorTop?: number;
 }
 
 export interface EditorLayoutDocument {

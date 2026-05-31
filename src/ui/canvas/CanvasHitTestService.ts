@@ -25,6 +25,7 @@ export interface SurfaceHitImage {
 
 export interface SurfaceHit {
   zone: EditorEditingZone;
+  footnoteId?: string;
   paragraphId: string;
   paragraphOffset: number;
   position: EditorPosition;
@@ -63,6 +64,13 @@ function scoreRectDistance(
 function resolveZoneFromPage(page: CanvasSnapshotPage, clientY: number): EditorEditingZone {
   const localY = clientY - page.top;
   if (localY < page.bodyTop) return "header";
+  if (
+    page.footnoteSeparatorTop !== undefined &&
+    localY >= page.footnoteSeparatorTop &&
+    localY < (page.footerTop ?? page.height)
+  ) {
+    return "footnote";
+  }
   if (localY >= page.bodyBottom) return "footer";
   return "main";
 }
@@ -307,6 +315,7 @@ export function resolveCanvasSurfaceHitAtPoint(
       const position = paragraphOffsetToPosition(paragraphSegment.paragraph, paragraphOffset);
       return {
         zone,
+        footnoteId: paragraphSegment.footnoteId,
         paragraphId: imageHit.paragraphId,
         paragraphOffset,
         position,
@@ -362,6 +371,7 @@ export function resolveCanvasSurfaceHitAtPoint(
   const position = paragraphOffsetToPosition(paragraph.paragraph, offset);
   return {
     zone,
+    footnoteId: paragraph.footnoteId,
     paragraphId: paragraph.paragraphId,
     paragraphOffset: offset,
     position,

@@ -17,6 +17,7 @@ import type {
 } from "../core/model.js";
 import {
   getDocumentSections,
+  getBlockParagraphs,
   getPageBodyBottom,
   getPageBodyTop,
   getPageContentWidth,
@@ -41,6 +42,10 @@ const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
 const DEFAULT_TABLE_SEGMENT_VERTICAL_SPACING = 0;
 const DEFAULT_TABLE_ROW_VERTICAL_SPACING = 0;
 const FAST_IMPLICIT_DOC_GRID_RATIO = 0.86;
+const FOOTNOTE_SEPARATOR_HEIGHT = 10;
+const FOOTNOTE_BLOCK_GAP = 2;
+export const FOOTNOTE_MARKER_GUTTER_PX = 24;
+const MAX_FOOTNOTE_LAYOUT_ITERATIONS = 4;
 
 function sliceFragmentToRange(
   fragment: EditorLayoutFragment,
@@ -868,6 +873,179 @@ function getProjectedBlocksHeight(blocks: EditorLayoutBlock[] | undefined): numb
   return blocks.reduce((sum, block) => sum + block.estimatedHeight, 0);
 }
 
+function collectFootnoteReferencesFromBlock(block: EditorLayoutBlock): string[] {
+  const result: string[] = [];
+  const appendFromParagraph = (
+    paragraph: EditorParagraphNode,
+    startOffset: number,
+    endOffset: number,
+  ) => {
+    let runStart = 0;
+    for (const run of paragraph.runs) {
+      const runEnd = runStart + run.text.length;
+      if (
+        run.footnoteReference &&
+        runEnd > startOffset &&
+        runStart < endOffset
+      ) {
+        result.push(run.footnoteReference.footnoteId);
+      }
+      runStart = runEnd;
+    }
+  };
+
+  if (block.sourceBlock.type === "paragraph") {
+    appendFromParagraph(
+      block.sourceBlock,
+      block.layout?.startOffset ?? 0,
+      block.layout?.endOffset ?? getParagraphText(block.sourceBlock).length,
+    );
+    return result;
+  }
+
+  for (const paragraph of getBlockParagraphs(block.sourceBlock)) {
+    appendFromParagraph(paragraph, 0, getParagraphText(paragraph).length);
+  }
+  return result;
+}
+
+function collectPageFootnoteReferenceIds(page: EditorLayoutPage): string[] {
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const block of page.blocks) {
+    for (const footnoteId of collectFootnoteReferencesFromBlock(block)) {
+      if (seen.has(footnoteId)) continue;
+      seen.add(footnoteId);
+      ids.push(footnoteId);
+    }
+  }
+  return ids;
+}
+
+function projectFootnoteBlocksForPage(
+  document: EditorDocument,
+  footnoteReferenceIds: string[],
+  page: EditorLayoutPage,
+  totalPages: number | undefined,
+  measuredHeights: Record<string, number> | undefined,
+  measuredParagraphLayouts: Record<string, EditorLayoutParagraph> | undefined,
+  layoutMode: "fast" | "wordParity",
+  measurer: ITextMeasurer,
+): EditorLayoutBlock[] {
+  const contentWidth = Math.max(24, getPageContentWidth(page.pageSettings) - FOOTNOTE_MARKER_GUTTER_PX);
+  const blocks: EditorLayoutBlock[] = [];
+  for (const footnoteId of footnoteReferenceIds) {
+    const footnote = document.footnotes?.items?.[footnoteId];
+    if (!footnote) continue;
+    const projected = projectHeaderFooterBlocks(
+      footnote.blocks,
+      page.index,
+      totalPages,
+      measuredHeights,
+      measuredParagraphLayouts,
+      document.styles,
+      contentWidth,
+      layoutMode,
+      measurer,
+    );
+    for (const block of projected) {
+      blocks.push({
+        ...block,
+        blockId: `${footnoteId}:${block.blockId}`,
+      });
+    }
+  }
+  return blocks;
+}
+
+function buildFootnoteReservations(
+  document: EditorDocument,
+  pages: EditorLayoutPage[],
+  totalPages: number | undefined,
+  measuredHeights: Record<string, number> | undefined,
+  measuredParagraphLayouts: Record<string, EditorLayoutParagraph> | undefined,
+  layoutMode: "fast" | "wordParity",
+  measurer: ITextMeasurer,
+): Map<number, number> {
+  const reservations = new Map<number, number>();
+  for (const page of pages) {
+    const footnoteReferenceIds = collectPageFootnoteReferenceIds(page);
+    if (footnoteReferenceIds.length === 0) continue;
+    const footnoteBlocks = projectFootnoteBlocksForPage(
+      document,
+      footnoteReferenceIds,
+      page,
+      totalPages,
+      measuredHeights,
+      measuredParagraphLayouts,
+      layoutMode,
+      measurer,
+    );
+    if (footnoteBlocks.length === 0) continue;
+    const blockGaps = Math.max(0, footnoteBlocks.length - 1) * FOOTNOTE_BLOCK_GAP;
+    reservations.set(
+      page.index,
+      FOOTNOTE_SEPARATOR_HEIGHT + getProjectedBlocksHeight(footnoteBlocks) + blockGaps,
+    );
+  }
+  return reservations;
+}
+
+function reservationSignature(reservations: Map<number, number>): string {
+  return [...reservations.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([pageIndex, height]) => `${pageIndex}:${Math.round(height)}`)
+    .join("|");
+}
+
+function applyFootnotesToPages(
+  document: EditorDocument,
+  pages: EditorLayoutPage[],
+  reservations: Map<number, number>,
+  totalPages: number | undefined,
+  measuredHeights: Record<string, number> | undefined,
+  measuredParagraphLayouts: Record<string, EditorLayoutParagraph> | undefined,
+  layoutMode: "fast" | "wordParity",
+  measurer: ITextMeasurer,
+): EditorLayoutPage[] {
+  return pages.map((page) => {
+    const footnoteReferenceIds = collectPageFootnoteReferenceIds(page);
+    if (footnoteReferenceIds.length === 0) {
+      return {
+        ...page,
+        footnoteBlocks: undefined,
+        footnoteReferenceIds: undefined,
+        footnoteTop: undefined,
+        footnoteSeparatorTop: undefined,
+      };
+    }
+    const footnoteBlocks = projectFootnoteBlocksForPage(
+      document,
+      footnoteReferenceIds,
+      page,
+      totalPages,
+      measuredHeights,
+      measuredParagraphLayouts,
+      layoutMode,
+      measurer,
+    );
+    const reservation = reservations.get(page.index) ?? 0;
+    const originalBodyBottom = page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
+    const footnoteTop = Math.max(
+      page.bodyTop ?? getPageBodyTop(page.pageSettings),
+      originalBodyBottom - reservation + FOOTNOTE_SEPARATOR_HEIGHT,
+    );
+    return {
+      ...page,
+      footnoteBlocks,
+      footnoteReferenceIds,
+      footnoteSeparatorTop: Math.max(0, footnoteTop - FOOTNOTE_SEPARATOR_HEIGHT),
+      footnoteTop,
+      bodyBottom: Math.max(page.bodyTop ?? getPageBodyTop(page.pageSettings), originalBodyBottom - reservation),
+    };
+  });
+}
+
 function blockContainsNumPagesField(block: EditorBlockNode): boolean {
   if (block.type === "paragraph") {
     return block.runs.some((run) => run.field?.type === "NUMPAGES");
@@ -970,12 +1148,17 @@ export function projectBlocksLayout(
   existingPages: EditorLayoutPage[] = [],
   layoutMode: "fast" | "wordParity" = "fast",
   measurer: ITextMeasurer = domTextMeasurer,
+  reservedHeightByPageIndex?: Map<number, number>,
 ): EditorLayoutPage[] {
   const contentWidth = getPageContentWidth(pageSettings);
   const pages: EditorLayoutPage[] = [...existingPages];
   let currentPage = pages[pages.length - 1];
   let currentBlocks: EditorLayoutBlock[] = currentPage ? [...currentPage.blocks] : [];
   let currentHeight = currentPage ? currentPage.height : 0;
+
+  const getCurrentPageIndex = () => pageOffset + pages.length;
+  const getMaxHeightForPage = (pageIndex: number) =>
+    Math.max(24, maxPageHeight - (reservedHeightByPageIndex?.get(pageIndex) ?? 0));
 
   if (currentPage) {
     pages.pop(); // We will re-push it updated
@@ -986,12 +1169,13 @@ export function projectBlocksLayout(
       return;
     }
 
-    const pageIndex = pageOffset + pages.length;
+    const pageIndex = getCurrentPageIndex();
+    const currentMaxHeight = getMaxHeightForPage(pageIndex);
     pages.push({
       id: `page:${pageIndex + 1}`,
       index: pageIndex,
       height: currentHeight,
-      maxHeight: maxPageHeight,
+      maxHeight: currentMaxHeight,
       blocks: currentBlocks,
       pageSettings,
     });
@@ -1034,14 +1218,14 @@ export function projectBlocksLayout(
       if (
         paragraphStyle.keepWithNext &&
         currentBlocks.length > 0 &&
-        currentHeight + paragraphTotalHeight + nextBlockHeight > maxPageHeight &&
-        paragraphTotalHeight + nextBlockHeight <= maxPageHeight
+        currentHeight + paragraphTotalHeight + nextBlockHeight > getMaxHeightForPage(getCurrentPageIndex()) &&
+        paragraphTotalHeight + nextBlockHeight <= getMaxHeightForPage(getCurrentPageIndex())
       ) {
         flushPage();
       }
 
-      if (paragraphStyle.keepLinesTogether && paragraphTotalHeight <= maxPageHeight) {
-        if (currentBlocks.length > 0 && currentHeight + paragraphTotalHeight > maxPageHeight) {
+      if (paragraphStyle.keepLinesTogether && paragraphTotalHeight <= getMaxHeightForPage(getCurrentPageIndex())) {
+        if (currentBlocks.length > 0 && currentHeight + paragraphTotalHeight > getMaxHeightForPage(getCurrentPageIndex())) {
           flushPage();
         }
         const segmentId = `${sourceBlock.id}:segment:0`;
@@ -1069,7 +1253,7 @@ export function projectBlocksLayout(
       let startLineIndex = 0;
       let segmentIndex = 0;
       while (startLineIndex < paragraphLayout.lines.length) {
-        const remainingHeight = maxPageHeight - currentHeight;
+        const remainingHeight = getMaxHeightForPage(getCurrentPageIndex()) - currentHeight;
         let lineEndIndex = startLineIndex;
         let segmentHeight = 0;
 
@@ -1156,8 +1340,8 @@ export function projectBlocksLayout(
     const tableHeight =
       measuredHeights?.[sourceBlock.id] ??
       estimateTableBlockHeight(sourceBlock, styles, contentWidth, layoutMode);
-    if (sourceBlock.rows.length <= 1 || tableHeight <= maxPageHeight) {
-      if (currentBlocks.length > 0 && currentHeight + tableHeight > maxPageHeight) {
+    if (sourceBlock.rows.length <= 1 || tableHeight <= getMaxHeightForPage(getCurrentPageIndex())) {
+      if (currentBlocks.length > 0 && currentHeight + tableHeight > getMaxHeightForPage(getCurrentPageIndex())) {
         flushPage();
       }
 
@@ -1185,7 +1369,7 @@ export function projectBlocksLayout(
     while (groupStartIndex < rowGroups.length) {
       const startRowIndex = rowGroups[groupStartIndex]!.startRowIndex;
       const repeatedHeaderRowCount = startRowIndex > 0 ? headerRowCount : 0;
-      const remainingHeight = maxPageHeight - currentHeight;
+      const remainingHeight = getMaxHeightForPage(getCurrentPageIndex()) - currentHeight;
       let groupEndIndex = groupStartIndex;
       let endRowIndex = startRowIndex;
       let segmentHeight = 0;
@@ -1266,11 +1450,12 @@ export function projectBlocksLayout(
 
   if (pages.length === 0) {
     const pageIndex = pageOffset;
+    const currentMaxHeight = getMaxHeightForPage(pageIndex);
     pages.push({
       id: `page:${pageIndex + 1}`,
       index: pageIndex,
       height: 0,
-      maxHeight: maxPageHeight,
+      maxHeight: currentMaxHeight,
       blocks: [],
       pageSettings,
     });
@@ -1391,72 +1576,122 @@ export function projectDocumentLayout(
   };
 
   const totalPages = needsTotalPages ? calculateTotalPages() : undefined;
-  const allPages: EditorLayoutPage[] = [];
 
-  for (const section of sections) {
-    const contentWidth = getPageContentWidth(section.pageSettings);
-    const sectionHeaderBlocks = projectTallestHeaderVariant(section, contentWidth);
-    const sectionFooterBlocks = projectTallestFooterVariant(section, contentWidth);
-    const sectionMetrics = resolveEffectiveVerticalMetrics(
-      section.pageSettings,
-      sectionHeaderBlocks,
-      sectionFooterBlocks,
-    );
-    const pageHeight = maxPageHeightOverride ?? sectionMetrics.contentHeight;
-    const isContinuous = section.breakType === "continuous" && allPages.length > 0;
-    const sectionPageOffset = isContinuous ? allPages.length - 1 : allPages.length;
-    
-    const sectionPages = projectBlocksLayout(
-      section.blocks,
-      section.pageSettings,
-      pageHeight,
+  const projectAllPages = (reservedHeightByPageIndex?: Map<number, number>) => {
+    const allPages: EditorLayoutPage[] = [];
+
+    for (const section of sections) {
+      const contentWidth = getPageContentWidth(section.pageSettings);
+      const sectionHeaderBlocks = projectTallestHeaderVariant(section, contentWidth);
+      const sectionFooterBlocks = projectTallestFooterVariant(section, contentWidth);
+      const sectionMetrics = resolveEffectiveVerticalMetrics(
+        section.pageSettings,
+        sectionHeaderBlocks,
+        sectionFooterBlocks,
+      );
+      const pageHeight = maxPageHeightOverride ?? sectionMetrics.contentHeight;
+      const isContinuous = section.breakType === "continuous" && allPages.length > 0;
+      const sectionPageOffset = isContinuous ? allPages.length - 1 : allPages.length;
+      
+      const sectionPages = projectBlocksLayout(
+        section.blocks,
+        section.pageSettings,
+        pageHeight,
+        measuredHeights,
+        measuredParagraphLayouts,
+        document.styles,
+        sectionPageOffset,
+        totalPages,
+        isContinuous ? [allPages[allPages.length - 1]] : [],
+        layoutMode,
+        measurer,
+        reservedHeightByPageIndex,
+      );
+
+      if (isContinuous) {
+        allPages.pop();
+      }
+
+      for (const page of sectionPages) {
+        const pageIndexInSection = page.index - sectionPageOffset;
+        const pageContentWidth = getPageContentWidth(page.pageSettings);
+        const headerBlocks =
+          projectHeaderFooterVariant(
+            selectSectionHeaderBlocks(section, Math.max(0, pageIndexInSection), page.index),
+            pageContentWidth,
+            page.index,
+            totalPages,
+          ) ?? page.headerBlocks;
+        const footerBlocks =
+          projectHeaderFooterVariant(
+            selectSectionFooterBlocks(section, Math.max(0, pageIndexInSection), page.index),
+            pageContentWidth,
+            page.index,
+            totalPages,
+          ) ?? page.footerBlocks;
+
+        const pageMetrics = resolveEffectiveVerticalMetrics(
+          page.pageSettings,
+          headerBlocks,
+          footerBlocks,
+        );
+        const reservedHeight = reservedHeightByPageIndex?.get(page.index) ?? 0;
+        page.headerBlocks = headerBlocks;
+        page.footerBlocks = footerBlocks;
+        page.bodyTop = pageMetrics.bodyTop;
+        page.bodyBottom = Math.max(pageMetrics.bodyTop, pageMetrics.bodyBottom - reservedHeight);
+        page.headerTop = pageMetrics.headerTop;
+        page.footerTop = pageMetrics.footerTop;
+        page.maxHeight = Math.max(24, (maxPageHeightOverride ?? pageMetrics.contentHeight) - reservedHeight);
+        allPages.push(page);
+      }
+    }
+
+    return allPages;
+  };
+
+  let pages = projectAllPages();
+  if (!document.footnotes || Object.keys(document.footnotes.items).length === 0) {
+    return { pages };
+  }
+  let reservations = buildFootnoteReservations(
+    document,
+    pages,
+    totalPages,
+    measuredHeights,
+    measuredParagraphLayouts,
+    layoutMode,
+    measurer,
+  );
+  let previousSignature = "";
+  for (let iteration = 0; iteration < MAX_FOOTNOTE_LAYOUT_ITERATIONS; iteration += 1) {
+    const signature = reservationSignature(reservations);
+    if (signature === previousSignature) {
+      break;
+    }
+    previousSignature = signature;
+    pages = projectAllPages(reservations);
+    reservations = buildFootnoteReservations(
+      document,
+      pages,
+      totalPages,
       measuredHeights,
       measuredParagraphLayouts,
-      document.styles,
-      sectionPageOffset,
-      totalPages,
-      isContinuous ? [allPages[allPages.length - 1]] : [],
       layoutMode,
       measurer,
     );
-
-    if (isContinuous) {
-      allPages.pop();
-    }
-
-    for (const page of sectionPages) {
-      const pageIndexInSection = page.index - sectionPageOffset;
-      const pageContentWidth = getPageContentWidth(page.pageSettings);
-      const headerBlocks =
-        projectHeaderFooterVariant(
-          selectSectionHeaderBlocks(section, Math.max(0, pageIndexInSection), page.index),
-          pageContentWidth,
-          page.index,
-          totalPages,
-        ) ?? page.headerBlocks;
-      const footerBlocks =
-        projectHeaderFooterVariant(
-          selectSectionFooterBlocks(section, Math.max(0, pageIndexInSection), page.index),
-          pageContentWidth,
-          page.index,
-          totalPages,
-        ) ?? page.footerBlocks;
-
-      const pageMetrics = resolveEffectiveVerticalMetrics(
-        page.pageSettings,
-        headerBlocks,
-        footerBlocks,
-      );
-      page.headerBlocks = headerBlocks;
-      page.footerBlocks = footerBlocks;
-      page.bodyTop = pageMetrics.bodyTop;
-      page.bodyBottom = pageMetrics.bodyBottom;
-      page.headerTop = pageMetrics.headerTop;
-      page.footerTop = pageMetrics.footerTop;
-      page.maxHeight = maxPageHeightOverride ?? pageMetrics.contentHeight;
-      allPages.push(page);
-    }
   }
 
-  return { pages: allPages };
+  return {
+    pages: applyFootnotesToPages(
+      document,
+      pages,
+      reservations,
+      totalPages,
+      measuredHeights,
+      measuredParagraphLayouts,
+      layoutMode,
+      measurer,
+    ),
+  };
 }

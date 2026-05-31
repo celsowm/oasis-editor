@@ -35,6 +35,8 @@ function getCachedImage(src: string, onUpdate: () => void): HTMLImageElement {
 
 import { domTextMeasurer } from "../textMeasurement.js";
 import { projectDocumentLayout } from "../layoutProjection.js";
+import { FOOTNOTE_MARKER_GUTTER_PX } from "../layoutProjection.js";
+import { findFootnoteReference } from "../../core/footnotes.js";
 import { createLayoutIdentityStabilizer } from "../layoutIdentity.js";
 import { PageBreak } from "../components/PageBreak.js";
 import { buildCanvasTableLayout, type CanvasTableBorderSpec } from "../canvas/CanvasTableLayout.js";
@@ -110,6 +112,7 @@ function CanvasPage(props: {
   let lastShowMargins: boolean | undefined;
   let lastShowParagraphMarks: boolean | undefined;
   let lastActiveZone: EditorEditingZone | undefined;
+  let lastActiveFootnoteId: string | undefined;
   let lastWidth = 0;
   let lastHeight = 0;
   let lastDpr = 0;
@@ -128,12 +131,14 @@ function CanvasPage(props: {
     const showMargins = state.showMargins;
     const showParagraphMarks = state.showParagraphMarks;
     const activeZone = state.activeZone ?? "main";
+    const activeFootnoteId = state.activeFootnoteId;
     if (
       page === lastPaintedPage &&
       styles === lastStyles &&
       showMargins === lastShowMargins &&
       showParagraphMarks === lastShowParagraphMarks &&
-      activeZone === lastActiveZone
+      activeZone === lastActiveZone &&
+      activeFootnoteId === lastActiveFootnoteId
     ) {
       return;
     }
@@ -142,6 +147,7 @@ function CanvasPage(props: {
     lastShowMargins = showMargins;
     lastShowParagraphMarks = showParagraphMarks;
     lastActiveZone = activeZone;
+    lastActiveFootnoteId = activeFootnoteId;
 
     const dpr = window.devicePixelRatio || 1;
     const width = page.pageSettings.width;
@@ -178,9 +184,10 @@ function CanvasPage(props: {
     }
 
     const inHeaderFooterMode = activeZone === "header" || activeZone === "footer";
-    const bodyAlpha = inHeaderFooterMode ? 0.5 : 1;
+    const bodyAlpha = inHeaderFooterMode || activeZone === "footnote" ? 0.5 : 1;
     const headerAlpha = activeZone === "main" ? 0.42 : activeZone === "header" ? 1 : 0.42;
     const footerAlpha = activeZone === "main" ? 0.42 : activeZone === "footer" ? 1 : 0.42;
+    const footnoteAlpha = activeZone === "footnote" ? 1 : activeZone === "main" ? 0.86 : 0.42;
 
     ctx.save();
     ctx.globalAlpha = headerAlpha;
@@ -207,6 +214,34 @@ function CanvasPage(props: {
         page.footerBlocks ?? [],
         marginX,
         footerTop,
+        bodyWidth,
+        page.index,
+        () => {
+          lastPaintedPage = undefined;
+          rafHandle = requestAnimationFrame(paint);
+        },
+      );
+      ctx.restore();
+    }
+
+    if (page.footnoteBlocks && page.footnoteBlocks.length > 0 && page.footnoteTop !== undefined) {
+      ctx.save();
+      ctx.globalAlpha = footnoteAlpha;
+      if (page.footnoteSeparatorTop !== undefined) {
+        ctx.strokeStyle = "#64748b";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(marginX, page.footnoteSeparatorTop + 0.5);
+        ctx.lineTo(marginX + Math.min(180, bodyWidth * 0.35), page.footnoteSeparatorTop + 0.5);
+        ctx.stroke();
+      }
+      renderFootnoteBlockList(
+        ctx,
+        state,
+        page.footnoteBlocks,
+        page.footnoteReferenceIds ?? [],
+        marginX,
+        page.footnoteTop,
         bodyWidth,
         page.index,
         () => {
@@ -284,7 +319,10 @@ function CanvasPage(props: {
 
   createEffect(() => {
     const _ = props.state.activeZone;
+    const __ = props.state.activeFootnoteId;
+    void __;
     lastActiveZone = undefined;
+    lastActiveFootnoteId = undefined;
     if (rafHandle !== null) {
       cancelAnimationFrame(rafHandle);
       rafHandle = null;
@@ -344,6 +382,69 @@ function renderBlockList(
       );
     }
     cursorY += Math.max(0, block.estimatedHeight);
+  }
+}
+
+function renderFootnoteBlockList(
+  ctx: CanvasRenderingContext2D,
+  state: EditorState,
+  blocks: EditorLayoutBlock[],
+  footnoteReferenceIds: string[],
+  originX: number,
+  originY: number,
+  contentWidth: number,
+  pageIndex: number,
+  onUpdate: () => void,
+) {
+  let cursorY = originY;
+  const markerDrawn = new Set<string>();
+  const markerByFootnoteId = new Map(
+    footnoteReferenceIds.map((footnoteId) => [
+      footnoteId,
+      findFootnoteReference(state.document, footnoteId)?.run.text ?? "",
+    ]),
+  );
+  for (const block of blocks) {
+    const owningFootnoteId = footnoteReferenceIds.find((footnoteId) =>
+      block.blockId.startsWith(`${footnoteId}:`),
+    );
+    if (owningFootnoteId && !markerDrawn.has(owningFootnoteId)) {
+      const marker = markerByFootnoteId.get(owningFootnoteId);
+      if (marker) {
+        ctx.save();
+        ctx.font = "400 11px Calibri, sans-serif";
+        ctx.fillStyle = "#000000";
+        ctx.fillText(marker, originX, cursorY + 12);
+        ctx.restore();
+      }
+      markerDrawn.add(owningFootnoteId);
+    }
+    if (block.sourceBlock.type === "paragraph" && block.layout) {
+      const paragraphStyle = resolveEffectiveParagraphStyle(block.sourceBlock.style, state.document.styles);
+      const spacingBefore = block.layout.startOffset === 0 ? (paragraphStyle.spacingBefore ?? 0) : 0;
+      drawParagraph(
+        ctx,
+        block.sourceBlock,
+        block.layout.lines,
+        state,
+        originX + FOOTNOTE_MARKER_GUTTER_PX,
+        cursorY + spacingBefore,
+        onUpdate,
+      );
+    } else if (block.sourceBlock.type === "table") {
+      drawTable(
+        ctx,
+        block.sourceBlock,
+        state,
+        originX + FOOTNOTE_MARKER_GUTTER_PX,
+        cursorY,
+        Math.max(24, contentWidth - FOOTNOTE_MARKER_GUTTER_PX),
+        block.estimatedHeight,
+        pageIndex,
+        onUpdate,
+      );
+    }
+    cursorY += Math.max(0, block.estimatedHeight) + 2;
   }
 }
 
