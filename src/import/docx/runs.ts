@@ -52,7 +52,9 @@ export async function parseRunElement(
       } else if (element.localName === "br") {
         textParts.push(getAttributeValue(element, "type") === "page" ? PAGE_BREAK_MARKER : "\n");
       } else if (element.localName === "lastRenderedPageBreak") {
-        textParts.push(PAGE_BREAK_MARKER);
+        // Word writes this as cached layout information. It is not an authored
+        // hard page break and should not become pageBreakBefore on import.
+        continue;
       } else if (element.localName === "cr") {
         textParts.push("\n");
       } else if (element.localName === "drawing") {

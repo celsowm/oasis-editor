@@ -139,6 +139,23 @@ async function buildDocxWithPageBreakBeforeTable(): Promise<ArrayBuffer> {
   return zip.generateAsync({ type: "arraybuffer" });
 }
 
+async function buildDocxWithLastRenderedPageBreak(): Promise<ArrayBuffer> {
+  const zip = new JSZip();
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Before rendered break</w:t></w:r></w:p>
+    <w:p><w:r><w:lastRenderedPageBreak/><w:t>After rendered break</w:t></w:r></w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+  zip.file("word/document.xml", documentXml);
+  return zip.generateAsync({ type: "arraybuffer" });
+}
+
 async function buildDocxWithHeaderImage(): Promise<ArrayBuffer> {
   const zip = new JSZip();
   const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -394,9 +411,17 @@ describe("DOCX import", () => {
 
     expect(summary?.style?.pageBreakBefore).toBe(true);
     expect(secondTitle?.style?.pageBreakBefore).toBe(true);
-    expect(renderedBreakContinuation?.style?.pageBreakBefore).toBe(true);
+    expect(renderedBreakContinuation?.style?.pageBreakBefore).toBeUndefined();
     expect(footerPageField?.field?.type).toBe("PAGE");
     expect(paragraphs.some((paragraph) => paragraph.runs.some((run) => run.text.includes("\f")))).toBe(false);
+  });
+
+  it("ignores Word lastRenderedPageBreak markers on import", async () => {
+    const document = await importDocxToEditorDocument(await buildDocxWithLastRenderedPageBreak());
+    const paragraphs = getDocumentParagraphs(document);
+
+    expect(paragraphs.map(getParagraphText)).toEqual(["Before rendered break", "After rendered break"]);
+    expect(paragraphs[1]?.style?.pageBreakBefore).toBeUndefined();
   });
 
   it("preserves a manual page break before a table", async () => {

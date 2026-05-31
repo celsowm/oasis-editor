@@ -47,6 +47,28 @@ const canvasTextMeasurer: ITextMeasurer = {
     domTextMeasurer.resolveRenderedLineHeightPx(styles, lineHeightMultiple),
 };
 
+export function resolveCanvasTextRenderMetrics(
+  styles: { superscript?: boolean; subscript?: boolean } | undefined,
+  fontSize: number,
+) {
+  if (styles?.superscript) {
+    return {
+      fontSize: fontSize * 0.75,
+      baselineOffset: -fontSize * 0.35,
+    };
+  }
+  if (styles?.subscript) {
+    return {
+      fontSize: fontSize * 0.75,
+      baselineOffset: fontSize * 0.2,
+    };
+  }
+  return {
+    fontSize,
+    baselineOffset: 0,
+  };
+}
+
 export function CanvasEditorSurface(props: EditorSurfaceProps) {
   // Preserves object identity for unchanged pages/blocks across re-projections.
   // Without this, every state change produces brand-new page objects and every
@@ -205,28 +227,14 @@ function CanvasPage(props: {
     });
     ctx.restore();
 
-    if (page.bodyBottom !== undefined) {
-      ctx.save();
-      ctx.globalAlpha = footerAlpha;
-      renderBlockList(
-        ctx,
-        state,
-        page.footerBlocks ?? [],
-        marginX,
-        footerTop,
-        bodyWidth,
-        page.index,
-        () => {
-          lastPaintedPage = undefined;
-          rafHandle = requestAnimationFrame(paint);
-        },
-      );
-      ctx.restore();
-    }
-
     if (page.footnoteBlocks && page.footnoteBlocks.length > 0 && page.footnoteTop !== undefined) {
       ctx.save();
       ctx.globalAlpha = footnoteAlpha;
+      const clipTop = page.footnoteSeparatorTop ?? page.footnoteTop;
+      const clipBottom = Math.max(clipTop, footerTop);
+      ctx.beginPath();
+      ctx.rect(0, clipTop, width, clipBottom - clipTop);
+      ctx.clip();
       if (page.footnoteSeparatorTop !== undefined) {
         ctx.strokeStyle = "#64748b";
         ctx.lineWidth = 1;
@@ -252,6 +260,25 @@ function CanvasPage(props: {
       ctx.restore();
     }
 
+    if (page.bodyBottom !== undefined) {
+      ctx.save();
+      ctx.globalAlpha = footerAlpha;
+      renderBlockList(
+        ctx,
+        state,
+        page.footerBlocks ?? [],
+        marginX,
+        footerTop,
+        bodyWidth,
+        page.index,
+        () => {
+          lastPaintedPage = undefined;
+          rafHandle = requestAnimationFrame(paint);
+        },
+      );
+      ctx.restore();
+    }
+
     if (activeZone === "main") {
       // Word-like idle hint: header/footer content remains visible but subdued.
       ctx.save();
@@ -259,8 +286,10 @@ function CanvasPage(props: {
       if (bodyTop > 0) {
         ctx.fillRect(0, 0, width, bodyTop);
       }
-      if (zoneBodyBottom < height) {
-        ctx.fillRect(0, zoneBodyBottom, width, height - zoneBodyBottom);
+      const hasFootnotes = (page.footnoteBlocks?.length ?? 0) > 0;
+      const lowerHintTop = hasFootnotes ? footerTop : zoneBodyBottom;
+      if (lowerHintTop < height) {
+        ctx.fillRect(0, lowerHintTop, width, height - lowerHintTop);
       }
       ctx.restore();
     } else {
@@ -411,10 +440,11 @@ function renderFootnoteBlockList(
     if (owningFootnoteId && !markerDrawn.has(owningFootnoteId)) {
       const marker = markerByFootnoteId.get(owningFootnoteId);
       if (marker) {
+        const markerMetrics = resolveCanvasTextRenderMetrics({ superscript: true }, 11);
         ctx.save();
-        ctx.font = "400 11px Calibri, sans-serif";
+        ctx.font = `400 ${markerMetrics.fontSize}px Calibri, sans-serif`;
         ctx.fillStyle = "#000000";
-        ctx.fillText(marker, originX, cursorY + 12);
+        ctx.fillText(marker, originX, cursorY + 12 + markerMetrics.baselineOffset);
         ctx.restore();
       }
       markerDrawn.add(owningFootnoteId);
@@ -488,8 +518,9 @@ function drawParagraph(
       const fontFamily = styles.fontFamily ?? "Calibri, sans-serif";
       const fontWeight = styles.bold ? "700" : "400";
       const fontStyle = styles.italic ? "italic" : "normal";
+      const renderMetrics = resolveCanvasTextRenderMetrics(styles, fontSize);
       ctx.save();
-      ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+      ctx.font = `${fontStyle} ${fontWeight} ${renderMetrics.fontSize}px ${fontFamily}`;
       ctx.fillStyle = styles.color ?? "#000000";
       if (styles.highlight) {
         drawFragmentHighlight(ctx, line, fragment, originX, originY, styles.highlight);
@@ -514,7 +545,7 @@ function drawParagraph(
           if (char.char === "\n" || char.char === "\t") continue;
           const slot = slotByOffset.get(char.paragraphOffset);
           if (!slot) continue;
-          ctx.fillText(char.char, originX + slot.left, baselineY);
+          ctx.fillText(char.char, originX + slot.left, baselineY + renderMetrics.baselineOffset);
         }
       }
       if (styles.underline) {

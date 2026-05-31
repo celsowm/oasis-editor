@@ -83,7 +83,11 @@ export function canReuseLayoutPage(
     previous.maxHeight !== next.maxHeight ||
     !samePageSettings ||
     previous.bodyTop !== next.bodyTop ||
-    previous.bodyBottom !== next.bodyBottom
+    previous.bodyBottom !== next.bodyBottom ||
+    previous.headerTop !== next.headerTop ||
+    previous.footerTop !== next.footerTop ||
+    previous.footnoteTop !== next.footnoteTop ||
+    previous.footnoteSeparatorTop !== next.footnoteSeparatorTop
   ) {
     return false;
   }
@@ -95,10 +99,19 @@ export function canReuseLayoutPage(
     return (right ?? []).every((block, index) => left?.[index] === block);
   };
 
+  const sameFootnoteReferences = (left?: string[], right?: string[]) => {
+    if ((left?.length ?? 0) !== (right?.length ?? 0)) {
+      return false;
+    }
+    return (right ?? []).every((footnoteId, index) => left?.[index] === footnoteId);
+  };
+
   return (
     sameBlocks(previous.blocks, next.blocks) &&
     sameBlocks(previous.headerBlocks, next.headerBlocks) &&
-    sameBlocks(previous.footerBlocks, next.footerBlocks)
+    sameBlocks(previous.footerBlocks, next.footerBlocks) &&
+    sameBlocks(previous.footnoteBlocks, next.footnoteBlocks) &&
+    sameFootnoteReferences(previous.footnoteReferenceIds, next.footnoteReferenceIds)
   );
 }
 
@@ -133,6 +146,7 @@ export function createLayoutIdentityStabilizer() {
         blocks: stabilizeBlocks(page.blocks) ?? [],
         headerBlocks: stabilizeBlocks(page.headerBlocks),
         footerBlocks: stabilizeBlocks(page.footerBlocks),
+        footnoteBlocks: stabilizeBlocks(page.footnoteBlocks),
       };
       const previous = reusableLayoutPages.get(nextPage.id);
       if (canReuseLayoutPage(previous, nextPage)) {

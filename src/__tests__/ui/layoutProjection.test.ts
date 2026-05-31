@@ -71,6 +71,74 @@ describe('layout projection', () => {
       
       expect(pages.length).toBeGreaterThan(1);
     });
+
+    it('keeps a Word-like final paragraph on the page when only trailing spacing overflows', () => {
+      const pageSettings: EditorPageSettings = {
+        width: 794,
+        height: 1123,
+        orientation: 'portrait',
+        margins: { top: 94, right: 113, bottom: 94, left: 113, header: 47, footer: 47, gutter: 0 },
+      };
+      const blocks = Array.from({ length: 29 }, (_, index) => {
+        const paragraph = createEditorParagraph(index === 28 ? 'Das' : `P${index + 1}`);
+        paragraph.style = { spacingAfter: 11, lineHeight: 1.1 };
+        return paragraph;
+      });
+      const nextPage = createEditorParagraph('sd');
+      nextPage.style = { spacingAfter: 11, lineHeight: 1.1, pageBreakBefore: true };
+
+      const pages = projectBlocksLayout(
+        [...blocks, nextPage],
+        pageSettings,
+        935,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        undefined,
+        [],
+        'wordParity',
+      );
+
+      expect(pages).toHaveLength(2);
+      expect(pages[0]!.blocks).toHaveLength(29);
+      expect(pages[0]!.blocks.at(-1)?.layout?.text).toBe('Das');
+      expect(pages[1]!.blocks[0]?.layout?.text).toBe('sd');
+    });
+
+    it('keeps a final paragraph on the page in fast mode when only trailing spacing overflows', () => {
+      const pageSettings: EditorPageSettings = {
+        width: 794,
+        height: 1123,
+        orientation: 'portrait',
+        margins: { top: 94, right: 113, bottom: 94, left: 113, header: 47, footer: 47, gutter: 0 },
+      };
+      const blocks = Array.from({ length: 29 }, (_, index) => {
+        const paragraph = createEditorParagraph(index === 28 ? 'Das' : `P${index + 1}`);
+        paragraph.style = { spacingAfter: 11, lineHeight: 1.1 };
+        return paragraph;
+      });
+      const nextPage = createEditorParagraph('sd');
+      nextPage.style = { spacingAfter: 11, lineHeight: 1.1, pageBreakBefore: true };
+
+      const pages = projectBlocksLayout(
+        [...blocks, nextPage],
+        pageSettings,
+        935,
+        undefined,
+        undefined,
+        undefined,
+        0,
+        undefined,
+        [],
+        'fast',
+      );
+
+      expect(pages).toHaveLength(2);
+      expect(pages[0]!.blocks).toHaveLength(29);
+      expect(pages[0]!.blocks.at(-1)?.layout?.text).toBe('Das');
+      expect(pages[1]!.blocks[0]?.layout?.text).toBe('sd');
+    });
   });
 
   describe('estimateParagraphBlockHeight', () => {

@@ -45,7 +45,35 @@ describe("projectDocumentLayout footnotes", () => {
     expect(page.footnoteReferenceIds).toEqual([footnotes[0]!.id]);
     expect(page.footnoteBlocks?.length).toBeGreaterThan(0);
     expect(page.footnoteTop).toBeGreaterThan(page.bodyBottom!);
+    expect(page.footnoteSeparatorTop).toBeGreaterThanOrEqual(page.bodyBottom!);
     expect(page.bodyBottom).toBeLessThan(getPageBodyBottom(page.pageSettings));
+  });
+
+  it("places footnotes above footer content when a footer is present", () => {
+    const { document } = buildDocumentWithFootnotes(1);
+    const footer = createEditorParagraph("footer text");
+    footer.style = { styleId: "footer" };
+    const section = document.sections?.[0];
+    if (!section) {
+      throw new Error("document missing default section");
+    }
+    document.sections = [
+      {
+        ...section,
+        footer: [footer],
+      },
+    ];
+
+    const layout = projectDocumentLayout(document, undefined, undefined, undefined, {
+      layoutMode: "wordParity",
+    });
+    const page = layout.pages[0]!;
+
+    expect(page.footerTop).toBeDefined();
+    expect(page.footnoteTop).toBeDefined();
+    expect(page.footnoteTop!).toBeGreaterThan(page.bodyBottom!);
+    expect(page.footnoteSeparatorTop!).toBeGreaterThanOrEqual(page.bodyBottom!);
+    expect(page.footnoteTop!).toBeLessThan(page.footerTop!);
   });
 
   it("keeps footnotes on the page that contains their inline reference", () => {

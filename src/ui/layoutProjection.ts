@@ -391,6 +391,20 @@ function getParagraphSegmentHeight(
   return spacingBefore + spacingAfter + lineHeights;
 }
 
+function getParagraphSegmentFitHeight(
+  paragraph: EditorParagraphNode,
+  segmentHeight: number,
+  isLastSegment: boolean,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  _layoutMode: "fast" | "wordParity",
+): number {
+  if (!isLastSegment) {
+    return segmentHeight;
+  }
+  const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
+  return Math.max(0, segmentHeight - (paragraphStyle.spacingAfter ?? 0));
+}
+
 function getProjectedParagraphBlockHeight(
   paragraph: EditorParagraphNode,
   layout: EditorLayoutParagraph,
@@ -1266,11 +1280,18 @@ export function projectBlocksLayout(
             lineEndIndex === paragraphLayout.lines.length - 1,
             styles,
           );
+          const candidateFitHeight = getParagraphSegmentFitHeight(
+            sourceBlock,
+            candidateHeight,
+            lineEndIndex === paragraphLayout.lines.length - 1,
+            styles,
+            layoutMode,
+          );
           const tolerance = layoutMode === "wordParity" ? 1.5 : 0;
-          if (candidateHeight > remainingHeight + tolerance && lineEndIndex === startLineIndex && currentBlocks.length > 0) {
+          if (candidateFitHeight > remainingHeight + tolerance && lineEndIndex === startLineIndex && currentBlocks.length > 0) {
             break;
           }
-          if (candidateHeight > remainingHeight + tolerance && lineEndIndex > startLineIndex) {
+          if (candidateFitHeight > remainingHeight + tolerance && lineEndIndex > startLineIndex) {
             break;
           }
           segmentHeight = candidateHeight;
