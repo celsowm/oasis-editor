@@ -224,11 +224,39 @@ function serializeRun(
   paragraphStyleId: string | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
 ): string {
+  // Synthetic `<w:footnoteRef/>` marker injected by the footnotes-part
+  // serializer to render the visible number inside a footnote body.
+  if ((run as { __isFootnoteRefMarker?: boolean }).__isFootnoteRefMarker) {
+    return `<w:r><w:rPr><w:rStyle w:val="FootnoteReference"/><w:vertAlign w:val="superscript"/></w:rPr><w:footnoteRef/></w:r>`;
+  }
+
   const materializedRunStyle = materializeRunStyle(
     run,
     paragraphStyleId,
     styles,
   );
+  if (run.footnoteReference) {
+    // Emit `<w:footnoteReference>` in the main document. The marker text
+    // (run.text, e.g. "1") is auto-rendered by Word from the footnotes part.
+    const docxId = context.footnoteIdMap?.get(run.footnoteReference.footnoteId);
+    if (docxId !== undefined) {
+      // Force superscript styling and the FootnoteReference rStyle so the
+      // marker is visually consistent even when the named style isn't shipped.
+      const referenceStyle: EditorTextStyle = {
+        ...(materializedRunStyle ?? {}),
+        styleId: "FootnoteReference",
+        superscript: true,
+      };
+      const customMarkAttr = run.footnoteReference.customMark
+        ? ' w:customMarkFollows="1"'
+        : "";
+      const customMarkText = run.footnoteReference.customMark
+        ? `<w:t xml:space="preserve">${escapeXml(run.footnoteReference.customMark)}</w:t>`
+        : "";
+      return `<w:r>${serializeRunProperties(referenceStyle)}<w:footnoteReference${customMarkAttr} w:id="${docxId}"/>${customMarkText}</w:r>`;
+    }
+    // Unknown footnote id: fall back to plain text so we don't drop content.
+  }
   if (run.field) {
     const instr = run.field.type === "PAGE" ? " PAGE " : " NUMPAGES ";
     return `<w:fldSimple w:instr="${instr}"><w:r>${serializeRunProperties(materializedRunStyle)}<w:t>1</w:t></w:r></w:fldSimple>`;

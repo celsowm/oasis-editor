@@ -18,6 +18,12 @@ import type {
 import { serializeTableXml } from "./tableXml.js";
 import { serializeParagraphXml } from "./textXml.js";
 import {
+  buildFootnoteIdMap,
+  buildFootnotesXml,
+  collectReferencedFootnotesForExport,
+  type ReferencedFootnote,
+} from "./footnotesXml.js";
+import {
   escapeXml,
   OFFICE_REL_NS,
   PACKAGE_REL_NS,
@@ -308,6 +314,7 @@ function buildContentTypesXml(
   hasImages: boolean,
   hasSettings: boolean,
   parts: PartDefinition[],
+  hasFootnotes: boolean,
 ): string {
   const overrides = parts
     .map((part) => {
@@ -330,6 +337,10 @@ function buildContentTypesXml(
     hasSettings
       ? '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>'
       : ""
+  }${
+    hasFootnotes
+      ? '<Override PartName="/word/footnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"/>'
+      : ""
   }${overrides}</Types>`;
 }
 
@@ -343,6 +354,7 @@ function buildDocumentRelationshipsXml(
   images: DocContext["images"],
   hyperlinks: DocContext["hyperlinks"],
   parts: PartDefinition[],
+  hasFootnotes: boolean,
 ): string {
   let rels = "";
   if (hasNumbering)
@@ -358,6 +370,9 @@ function buildDocumentRelationshipsXml(
   for (const part of parts) {
     const relType = part.kind === "header" ? "header" : "footer";
     rels += `<Relationship Id="${part.relId}" Type="${OFFICE_REL_NS}/${relType}" Target="${part.path}"/>`;
+  }
+  if (hasFootnotes) {
+    rels += `<Relationship Id="rIdFootnotes" Type="${OFFICE_REL_NS}/footnotes" Target="footnotes.xml"/>`;
   }
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${PACKAGE_REL_NS}">${rels}</Relationships>`;
 }
@@ -389,12 +404,21 @@ export async function exportEditorDocumentToDocx(
   const numberingContext = buildNumberingContext(document);
   const buildState: ExportBuildState = { nextImageId: 1 };
   const sections = getDocumentSections(document);
+
+  // Footnotes: assign DOCX `w:id` values in reading order so reference runs
+  // and body entries stay in sync. Bodies that aren't referenced are dropped.
+  const referencedFootnotes: ReferencedFootnote[] =
+    collectReferencedFootnotesForExport(document);
+  const footnoteIdMap = buildFootnoteIdMap(referencedFootnotes);
+  const hasFootnotes = referencedFootnotes.length > 0;
+
   const bodyContext = buildPartContext(
     sections.flatMap((section) => section.blocks),
     numberingContext,
     buildState,
     document,
   );
+  bodyContext.footnoteIdMap = footnoteIdMap;
   const parts: PartDefinition[] = [];
   const sectionReferences: SectionReferenceDefinition[] = sections.map(
     () => ({}),
@@ -421,6 +445,9 @@ export async function exportEditorDocumentToDocx(
         buildState,
         document,
       );
+      // Footnote references in headers/footers must use the same numeric ids
+      // as the body so the references resolve to the correct footnote bodies.
+      context.footnoteIdMap = footnoteIdMap;
       parts.push({
         kind,
         type,
@@ -456,11 +483,33 @@ export async function exportEditorDocumentToDocx(
     ...bodyContext.images,
     ...parts.flatMap((part) => part.context.images),
   ];
-  const hasImages = allImages.length > 0;
+  // Build the footnotes part XML now so its image/hyperlink registry can be
+  // merged into `allImages` (binaries are written to the same `word/media/`).
+  const footnotesPart = hasFootnotes
+    ? buildFootnotesXml(
+        document,
+        referencedFootnotes,
+        numberingContext,
+        buildState,
+        (blocks) => buildPartContext(blocks, numberingContext, buildState, document),
+        document.styles,
+        footnoteIdMap,
+      )
+    : null;
+  if (footnotesPart) {
+    allImages.push(...footnotesPart.partContext.images);
+  }
+  const hasImagesIncludingFootnotes = allImages.length > 0;
 
   zip.file(
     "[Content_Types].xml",
-    buildContentTypesXml(hasNumbering, hasImages, hasEvenAndOddHeaders, parts),
+    buildContentTypesXml(
+      hasNumbering,
+      hasImagesIncludingFootnotes,
+      hasEvenAndOddHeaders,
+      parts,
+      hasFootnotes,
+    ),
   );
   zip.file("_rels/.rels", buildRootRelationshipsXml());
   zip.file(
@@ -480,7 +529,8 @@ export async function exportEditorDocumentToDocx(
     hasEvenAndOddHeaders ||
     bodyContext.images.length > 0 ||
     bodyContext.hyperlinks.length > 0 ||
-    parts.length > 0
+    parts.length > 0 ||
+    hasFootnotes
   ) {
     zip.file(
       "word/_rels/document.xml.rels",
@@ -490,6 +540,7 @@ export async function exportEditorDocumentToDocx(
         bodyContext.images,
         bodyContext.hyperlinks,
         parts,
+        hasFootnotes,
       ),
     );
   }
@@ -512,6 +563,22 @@ export async function exportEditorDocumentToDocx(
       zip.file(
         `word/_rels/${part.path}.rels`,
         buildPartRelationshipsXml(part.context.images, part.context.hyperlinks),
+      );
+    }
+  }
+
+  if (footnotesPart) {
+    zip.file("word/footnotes.xml", footnotesPart.xml);
+    if (
+      footnotesPart.partContext.images.length > 0 ||
+      footnotesPart.partContext.hyperlinks.length > 0
+    ) {
+      zip.file(
+        "word/_rels/footnotes.xml.rels",
+        buildPartRelationshipsXml(
+          footnotesPart.partContext.images,
+          footnotesPart.partContext.hyperlinks,
+        ),
       );
     }
   }

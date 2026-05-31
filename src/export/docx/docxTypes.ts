@@ -23,6 +23,12 @@ export interface DocContext {
   imageMap: Map<string, string>;
   hyperlinks: Array<{ rId: string; href: string }>;
   hyperlinkMap: Map<string, string>;
+  /**
+   * Maps `EditorFootnote.id` to the numeric `w:id` value used when emitting
+   * `<w:footnoteReference w:id="N"/>` in the document body. Empty when the
+   * document has no footnotes.
+   */
+  footnoteIdMap?: Map<string, number>;
 }
 
 export interface NumberingContext {
