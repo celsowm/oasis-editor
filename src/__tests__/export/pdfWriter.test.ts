@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { EditorDocument } from '../../core/model.js';
-import { createEditorStateFromDocument } from '../../core/editorState.js';
+import {
+  createEditorFootnote,
+  createEditorParagraph,
+  createEditorStateFromDocument,
+  createFootnoteReferenceRun,
+} from '../../core/editorState.js';
 import { PdfFontRegistry } from '../../export/pdf/fonts/PdfFontRegistry.js';
 import { layoutPdfParagraph } from '../../export/pdf/layout/layoutParagraph.js';
 import { PdfTextMeasurer } from '../../export/pdf/layout/PdfTextMeasurer.js';
@@ -444,6 +449,66 @@ describe('OasisPdfWriter', () => {
     expect(pdf).toContain('126 608.778 Td');
     expect(pdf).toContain('90 580.955 Td');
     expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('exports canvas footnotes at the bottom of the reference page', async () => {
+    const footnote = createEditorFootnote([createEditorParagraph('PDF footnote body')]);
+    const document: EditorDocument = {
+      id: 'pdf-footnote-document',
+      sections: [
+        {
+          id: 'section-1',
+          pageSettings: {
+            width: 816,
+            height: 1056,
+            orientation: 'portrait',
+            margins: {
+              top: 96,
+              right: 96,
+              bottom: 96,
+              left: 96,
+              header: 48,
+              footer: 48,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: 'paragraph-main',
+              type: 'paragraph',
+              runs: [
+                { id: 'run-before', text: 'Body with note' },
+                createFootnoteReferenceRun(footnote.id, '1'),
+              ],
+            },
+          ],
+        },
+      ],
+      footnotes: {
+        items: {
+          [footnote.id]: footnote,
+        },
+      },
+    };
+
+    const layout = projectDocumentLayout(document, undefined, undefined, undefined, { layoutMode: 'wordParity' });
+    const page = layout.pages[0]!;
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+    const pageHeight = pxToPt(page.pageSettings.height);
+
+    expect(page.footnoteSeparatorTop).toBeDefined();
+    expect(page.footnoteTop).toBeDefined();
+    expectPdfText(pdf, 'Body with note');
+    expectPdfText(pdf, 'PDF footnote body');
+    expect(findTextTopY(pdf, pageHeight, 'PDF footnote body')).toBeGreaterThan(
+      pxToPt(page.footnoteSeparatorTop!),
+    );
+    expect(findTextX(pdf, 'PDF footnote body')).toBeCloseTo(
+      pxToPt(page.pageSettings.margins.left + 24),
+      3,
+    );
+    expect(findTextTopY(pdf, pageHeight, 'Body with note')).toBeLessThan(pxToPt(page.footnoteSeparatorTop!));
   });
 
   it('exports styled underline variants as distinct PDF line patterns', async () => {
