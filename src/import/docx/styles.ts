@@ -12,6 +12,7 @@ import {
 } from "../../core/model.js";
 import {
   WORD_NS,
+  WORD14_NS,
   getChildrenByTagNameNS,
   getFirstChildByTagNameNS,
   getAttributeValue,
@@ -114,9 +115,33 @@ export function normalizeImportedRunStyle(
     underline: effective.underline !== defaultEffective.underline ? effective.underline : undefined,
     underlineStyle:
       effective.underlineStyle !== defaultEffective.underlineStyle ? effective.underlineStyle : undefined,
+    underlineColor:
+      effective.underlineColor !== defaultEffective.underlineColor ? effective.underlineColor : undefined,
     strike: effective.strike !== defaultEffective.strike ? effective.strike : undefined,
+    doubleStrike: effective.doubleStrike !== defaultEffective.doubleStrike ? effective.doubleStrike : undefined,
     superscript: effective.superscript !== defaultEffective.superscript ? effective.superscript : undefined,
     subscript: effective.subscript !== defaultEffective.subscript ? effective.subscript : undefined,
+    smallCaps: effective.smallCaps !== defaultEffective.smallCaps ? effective.smallCaps : undefined,
+    allCaps: effective.allCaps !== defaultEffective.allCaps ? effective.allCaps : undefined,
+    hidden: effective.hidden !== defaultEffective.hidden ? effective.hidden : undefined,
+    characterScale:
+      effective.characterScale !== defaultEffective.characterScale ? effective.characterScale : undefined,
+    characterSpacing:
+      effective.characterSpacing !== defaultEffective.characterSpacing ? effective.characterSpacing : undefined,
+    baselineShift:
+      effective.baselineShift !== defaultEffective.baselineShift ? effective.baselineShift : undefined,
+    kerningThreshold:
+      effective.kerningThreshold !== defaultEffective.kerningThreshold ? effective.kerningThreshold : undefined,
+    ligatures: effective.ligatures !== defaultEffective.ligatures ? effective.ligatures : undefined,
+    numberSpacing:
+      effective.numberSpacing !== defaultEffective.numberSpacing ? effective.numberSpacing : undefined,
+    numberForm: effective.numberForm !== defaultEffective.numberForm ? effective.numberForm : undefined,
+    stylisticSet:
+      effective.stylisticSet !== defaultEffective.stylisticSet ? effective.stylisticSet : undefined,
+    contextualAlternates:
+      effective.contextualAlternates !== defaultEffective.contextualAlternates
+        ? effective.contextualAlternates
+        : undefined,
     fontFamily:
       style.fontFamily !== undefined
         ? style.fontFamily
@@ -157,6 +182,86 @@ export function parseRunStyle(
   if (parseBooleanProperty(runProperties, "strike")) {
     styles.strike = true;
   }
+  if (parseBooleanProperty(runProperties, "dstrike")) {
+    styles.doubleStrike = true;
+  }
+  if (parseBooleanProperty(runProperties, "smallCaps")) {
+    styles.smallCaps = true;
+  }
+  if (parseBooleanProperty(runProperties, "caps")) {
+    styles.allCaps = true;
+  }
+  if (parseBooleanProperty(runProperties, "vanish")) {
+    styles.hidden = true;
+  }
+  const characterScale = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD_NS, "w"), "val");
+  if (characterScale) {
+    const parsed = Number(characterScale);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      styles.characterScale = parsed;
+    }
+  }
+  const characterSpacing = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD_NS, "spacing"), "val");
+  if (characterSpacing) {
+    const parsed = twipsToPoints(characterSpacing);
+    if (parsed !== undefined) {
+      styles.characterSpacing = parsed;
+    }
+  }
+  const baselineShift = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD_NS, "position"), "val");
+  if (baselineShift) {
+    const parsed = Number(baselineShift);
+    if (Number.isFinite(parsed)) {
+      styles.baselineShift = parsed / 2;
+    }
+  }
+  const kerningThreshold = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD_NS, "kern"), "val");
+  if (kerningThreshold) {
+    const parsed = Number(kerningThreshold);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      styles.kerningThreshold = parsed / 2;
+    }
+  }
+  const ligatures = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD14_NS, "ligatures"), "val");
+  if (
+    ligatures === "none" ||
+    ligatures === "standard" ||
+    ligatures === "contextual" ||
+    ligatures === "historical" ||
+    ligatures === "standardContextual"
+  ) {
+    styles.ligatures = ligatures;
+  }
+  const numberSpacing = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD14_NS, "numSpacing"), "val");
+  if (numberSpacing === "proportional" || numberSpacing === "tabular") {
+    styles.numberSpacing = numberSpacing;
+  }
+  const numberForm = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD14_NS, "numForm"), "val");
+  if (numberForm === "lining" || numberForm === "oldStyle") {
+    styles.numberForm = numberForm;
+  }
+  const stylisticSet = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD14_NS, "stylisticSets"), "val");
+  if (stylisticSet) {
+    const parsed = /^[0-9a-fA-F]+$/.test(stylisticSet) && stylisticSet.length > 2
+      ? Number.parseInt(stylisticSet, 16)
+      : Number(stylisticSet);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      for (let set = 1; set <= 20; set += 1) {
+        if ((parsed & (1 << (set - 1))) !== 0) {
+          styles.stylisticSet = set;
+          break;
+        }
+      }
+    }
+  }
+  const contextualAlternates = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD14_NS, "cntxtAlts"), "val");
+  if (contextualAlternates === null) {
+    if (getFirstChildByTagNameNS(runProperties, WORD14_NS, "cntxtAlts")) {
+      styles.contextualAlternates = true;
+    }
+  } else if (isWordTrue(contextualAlternates)) {
+    styles.contextualAlternates = true;
+  }
 
   const underline = getFirstChildByTagNameNS(runProperties, WORD_NS, "u");
   const underlineValue = getAttributeValue(underline, "val");
@@ -164,6 +269,10 @@ export function parseRunStyle(
     styles.underline = true;
     if (underlineValue && underlineValue !== "single") {
       styles.underlineStyle = underlineValue as EditorTextStyle["underlineStyle"];
+    }
+    const underlineColor = getAttributeValue(underline, "color");
+    if (underlineColor && underlineColor !== "auto") {
+      styles.underlineColor = underlineColor.startsWith("#") ? underlineColor : `#${underlineColor}`;
     }
   }
 

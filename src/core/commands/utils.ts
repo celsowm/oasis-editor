@@ -9,10 +9,30 @@ export type ToggleableTextStyleKey =
   | "italic"
   | "underline"
   | "strike"
+  | "doubleStrike"
   | "superscript"
-  | "subscript";
+  | "subscript"
+  | "smallCaps"
+  | "allCaps"
+  | "hidden"
+  | "contextualAlternates";
 
-export type ValueTextStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link" | "underlineStyle";
+export type ValueTextStyleKey =
+  | "fontFamily"
+  | "fontSize"
+  | "color"
+  | "highlight"
+  | "link"
+  | "underlineStyle"
+  | "underlineColor"
+  | "characterScale"
+  | "characterSpacing"
+  | "baselineShift"
+  | "kerningThreshold"
+  | "ligatures"
+  | "numberSpacing"
+  | "numberForm"
+  | "stylisticSet";
 
 export type ValueParagraphStyleKey =
   | "styleId"
@@ -667,11 +687,44 @@ export function textRunStylesToCss(style?: EditorTextStyle): string {
   if (style.italic) {
     parts.push("font-style:italic");
   }
+  if (style.hidden) {
+    parts.push("display:none");
+  }
+  if (style.allCaps) {
+    parts.push("text-transform:uppercase");
+  }
+  if (style.smallCaps) {
+    parts.push("font-variant:small-caps");
+  }
+  if (style.characterScale !== undefined && style.characterScale !== null) {
+    parts.push(`font-stretch:${style.characterScale}%`);
+  }
+  if (style.characterSpacing !== undefined && style.characterSpacing !== null) {
+    parts.push(`letter-spacing:${style.characterSpacing}pt`);
+  }
+  if (style.baselineShift !== undefined && style.baselineShift !== null) {
+    parts.push(`vertical-align:${style.baselineShift}pt`);
+  }
+  const ligatures = ligaturesToCss(style.ligatures);
+  if (ligatures) {
+    parts.push(`font-variant-ligatures:${ligatures}`);
+  }
+  const numeric = numericToCss(style.numberSpacing, style.numberForm);
+  if (numeric) {
+    parts.push(`font-variant-numeric:${numeric}`);
+  }
+  const featureSettings = fontFeatureSettingsToCss(style.stylisticSet, style.contextualAlternates);
+  if (featureSettings) {
+    parts.push(`font-feature-settings:${featureSettings}`);
+  }
   const decorations: string[] = [];
   if (style.underline || style.link) {
     decorations.push("underline");
   }
   if (style.strike) {
+    decorations.push("line-through");
+  }
+  if (style.doubleStrike) {
     decorations.push("line-through");
   }
   if (decorations.length > 0) {
@@ -680,6 +733,9 @@ export function textRunStylesToCss(style?: EditorTextStyle): string {
       const cssDecorationStyle = underlineStyleToCssDecorationStyle(style.underlineStyle);
       if (cssDecorationStyle) {
         parts.push(`text-decoration-style:${cssDecorationStyle}`);
+      }
+      if (style.underlineColor) {
+        parts.push(`text-decoration-color:${style.underlineColor}`);
       }
     }
   }
@@ -712,6 +768,49 @@ function underlineStyleToCssDecorationStyle(
     default:
       return null;
   }
+}
+
+function ligaturesToCss(ligatures: EditorTextStyle["ligatures"]): string | null {
+  switch (ligatures) {
+    case "none":
+      return "none";
+    case "standard":
+      return "common-ligatures";
+    case "contextual":
+      return "contextual";
+    case "historical":
+      return "historical-ligatures";
+    case "standardContextual":
+      return "common-ligatures contextual";
+    default:
+      return null;
+  }
+}
+
+function numericToCss(
+  numberSpacing: EditorTextStyle["numberSpacing"],
+  numberForm: EditorTextStyle["numberForm"],
+): string | null {
+  const parts: string[] = [];
+  if (numberSpacing === "proportional") parts.push("proportional-nums");
+  if (numberSpacing === "tabular") parts.push("tabular-nums");
+  if (numberForm === "lining") parts.push("lining-nums");
+  if (numberForm === "oldStyle") parts.push("oldstyle-nums");
+  return parts.join(" ") || null;
+}
+
+function fontFeatureSettingsToCss(
+  stylisticSet: EditorTextStyle["stylisticSet"],
+  contextualAlternates: EditorTextStyle["contextualAlternates"],
+): string | null {
+  const parts: string[] = [];
+  if (typeof stylisticSet === "number" && stylisticSet >= 1 && stylisticSet <= 20) {
+    parts.push(`"ss${String(stylisticSet).padStart(2, "0")}" 1`);
+  }
+  if (contextualAlternates) {
+    parts.push('"calt" 1');
+  }
+  return parts.join(", ") || null;
 }
 
 export function paragraphStyleToCssText(style?: EditorParagraphStyle): string {
@@ -859,6 +958,10 @@ export function parseInlineStyles(element: Element): EditorTextStyle | undefined
   if (textDecoration.includes("line-through")) {
     result.strike = true;
   }
+  const decorationColor = (style as CSSStyleDeclaration).textDecorationColor?.trim();
+  if (decorationColor) {
+    result.underlineColor = decorationColor;
+  }
 
   const fontWeight = style.fontWeight.trim();
   if (fontWeight === "bold" || Number.parseInt(fontWeight, 10) >= 600) {
@@ -869,12 +972,73 @@ export function parseInlineStyles(element: Element): EditorTextStyle | undefined
   if (fontStyle === "italic") {
     result.italic = true;
   }
+  if (style.display.trim().toLowerCase() === "none") {
+    result.hidden = true;
+  }
+  if (style.textTransform.trim().toLowerCase() === "uppercase") {
+    result.allCaps = true;
+  }
+  if (style.fontVariant.trim().toLowerCase().includes("small-caps")) {
+    result.smallCaps = true;
+  }
+  const letterSpacing = style.letterSpacing.trim();
+  if (letterSpacing.endsWith("pt")) {
+    const parsed = Number.parseFloat(letterSpacing);
+    if (Number.isFinite(parsed)) {
+      result.characterSpacing = parsed;
+    }
+  }
+  const fontStretch = style.fontStretch.trim();
+  if (fontStretch.endsWith("%")) {
+    const parsed = Number.parseFloat(fontStretch);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      result.characterScale = parsed;
+    }
+  }
+  const ligatures = style.fontVariantLigatures.trim().toLowerCase();
+  if (ligatures === "none") {
+    result.ligatures = "none";
+  } else if (ligatures.includes("historical")) {
+    result.ligatures = "historical";
+  } else if (ligatures.includes("common-ligatures") && ligatures.includes("contextual")) {
+    result.ligatures = "standardContextual";
+  } else if (ligatures.includes("common-ligatures")) {
+    result.ligatures = "standard";
+  } else if (ligatures.includes("contextual")) {
+    result.ligatures = "contextual";
+  }
+  const numeric = style.fontVariantNumeric.trim().toLowerCase();
+  if (numeric.includes("proportional-nums")) {
+    result.numberSpacing = "proportional";
+  } else if (numeric.includes("tabular-nums")) {
+    result.numberSpacing = "tabular";
+  }
+  if (numeric.includes("lining-nums")) {
+    result.numberForm = "lining";
+  } else if (numeric.includes("oldstyle-nums")) {
+    result.numberForm = "oldStyle";
+  }
+  const featureSettings = style.fontFeatureSettings.trim().toLowerCase();
+  const stylisticSet = featureSettings.match(/["']ss(0[1-9]|1[0-9]|20)["']\s+1/);
+  if (stylisticSet?.[1]) {
+    result.stylisticSet = Number(stylisticSet[1]);
+  }
+  if (/["']calt["']\s+1/.test(featureSettings)) {
+    result.contextualAlternates = true;
+  }
 
   if (element.tagName === "SUP") {
     result.superscript = true;
   }
   if (element.tagName === "SUB") {
     result.subscript = true;
+  }
+  const verticalAlign = style.verticalAlign.trim();
+  if (verticalAlign.endsWith("pt")) {
+    const parsed = Number.parseFloat(verticalAlign);
+    if (Number.isFinite(parsed)) {
+      result.baselineShift = parsed;
+    }
   }
 
   const link = element.tagName === "A" ? (element as HTMLAnchorElement).getAttribute("href")?.trim() ?? "" : "";

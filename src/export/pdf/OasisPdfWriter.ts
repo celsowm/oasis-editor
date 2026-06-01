@@ -48,6 +48,8 @@ export interface OasisPdfTextOptions {
   bold?: boolean;
   italic?: boolean;
   fontResourceName?: string;
+  characterSpacing?: number;
+  horizontalScale?: number;
 }
 
 export interface OasisPdfImageResource {
@@ -434,6 +436,12 @@ export class OasisPdfWriter {
       "BT",
       colorCommand(options.color, "rg", [0, 0, 0]),
       `/${fontResourceName} ${formatNumber(options.fontSize ?? 12)} Tf`,
+      ...(options.horizontalScale && options.horizontalScale > 0 && options.horizontalScale !== 100
+        ? [`${formatNumber(options.horizontalScale)} Tz`]
+        : []),
+      ...(options.characterSpacing && options.characterSpacing !== 0
+        ? [`${formatNumber(options.characterSpacing)} Tc`]
+        : []),
       `${formatNumber(options.x)} ${formatNumber(page.height - options.y)} Td`,
       `<${encodePdfHexString(options.text)}> Tj`,
       "ET",
@@ -530,6 +538,12 @@ export class OasisPdfWriter {
       "BT",
       colorCommand(options.color, "rg", [0, 0, 0]),
       `/${state.resource.resourceName} ${formatNumber(options.fontSize ?? 12)} Tf`,
+      ...(options.horizontalScale && options.horizontalScale > 0 && options.horizontalScale !== 100
+        ? [`${formatNumber(options.horizontalScale)} Tz`]
+        : []),
+      ...(options.characterSpacing && options.characterSpacing !== 0
+        ? [`${formatNumber(options.characterSpacing)} Tc`]
+        : []),
       `${formatNumber(options.x)} ${formatNumber(page.height - options.y)} Td`,
       textCommand,
       "ET",

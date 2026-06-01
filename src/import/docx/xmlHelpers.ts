@@ -3,6 +3,7 @@ import { type Element as XmlElement } from "@xmldom/xmldom";
 export const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 export const DRAWINGML_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
 export const OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+export const WORD14_NS = "http://schemas.microsoft.com/office/word/2010/wordml";
 
 export function getChildrenByTagNameNS(
   element: XmlElement | null | undefined,
@@ -41,7 +42,9 @@ export function getAttributeValue(element: XmlElement | null, localName: string)
   }
   return (
     element.getAttributeNS(WORD_NS, localName) ??
+    element.getAttributeNS(WORD14_NS, localName) ??
     element.getAttribute(`w:${localName}`) ??
+    element.getAttribute(`w14:${localName}`) ??
     element.getAttribute(localName)
   );
 }

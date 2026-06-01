@@ -12,6 +12,7 @@ import {
   type EditorPosition,
   type EditorState,
 } from "../../core/model.js";
+import { buildSegmentTable } from "../../core/tableLayout.js";
 import { projectDocumentLayout } from "../layoutProjection.js";
 import { FOOTNOTE_MARKER_GUTTER_PX } from "../layoutProjection.js";
 import { buildCanvasTableLayout, type CanvasUnsupportedReason } from "./CanvasTableLayout.js";
@@ -299,8 +300,11 @@ export function buildCanvasLayoutSnapshot(
             }),
           );
         } else if (block.sourceBlock.type === "table") {
+          const segmentTable = block.tableSegment
+            ? buildSegmentTable(block.sourceBlock, block.tableSegment)
+            : block.sourceBlock;
           const tableLayout = buildCanvasTableLayout({
-            table: block.sourceBlock,
+            table: segmentTable,
             state,
             pageIndex: page.index,
             layoutMode,

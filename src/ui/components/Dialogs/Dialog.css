@@ -18,15 +18,39 @@
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
   min-width: 320px;
   max-width: 90vw;
+  max-height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   animation: oasis-dialog-in 0.2s ease-out;
 }
 
+.oasis-editor-dialog-sm {
+  width: min(360px, calc(100vw - 32px));
+}
+
+.oasis-editor-dialog-md {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.oasis-editor-dialog-lg {
+  width: min(720px, calc(100vw - 32px));
+}
+
+.oasis-editor-dialog-font {
+  width: min(720px, calc(100vw - 32px));
+  min-height: min(640px, calc(100vh - 48px));
+}
+
 @keyframes oasis-dialog-in {
-  from { opacity: 0; transform: translateY(10px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .oasis-editor-dialog-header {
@@ -69,9 +93,12 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .oasis-editor-dialog-footer {
+  flex: 0 0 auto;
   padding: 12px 16px;
   border-top: 1px solid #dadce0;
   display: flex;
@@ -98,7 +125,9 @@
   border: 1px solid #dadce0;
   border-radius: 4px;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .oasis-editor-dialog-input:focus {
@@ -184,4 +213,154 @@
   border-radius: 4px;
   background: #fafbfc;
   line-height: 1.4;
+}
+
+.oasis-editor-dialog-help-text {
+  min-height: 16px;
+  font-size: 12px;
+  color: #70757a;
+}
+
+.oasis-editor-font-dialog-body {
+  padding: 12px;
+}
+
+.oasis-editor-font-dialog-tabs {
+  min-height: 500px;
+}
+
+.oasis-editor-font-dialog-tabs .oasis-editor-tabs-panel {
+  min-height: 468px;
+  padding: 12px;
+  overflow: auto;
+}
+
+.oasis-editor-font-dialog-panel {
+  display: flex;
+  min-height: 444px;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.oasis-editor-font-dialog-font-panel .oasis-editor-dialog-row {
+  align-items: flex-start;
+}
+
+.oasis-editor-font-dialog-size-group {
+  width: 96px;
+  flex: 0 0 96px;
+}
+
+.oasis-editor-font-dialog-custom-size-group,
+.oasis-editor-font-dialog-style-list-group,
+.oasis-editor-font-dialog-color-mode-group {
+  width: 170px;
+  flex: 0 0 170px;
+}
+
+.oasis-editor-font-dialog-color-row {
+  align-items: flex-start;
+}
+
+.oasis-editor-font-dialog-fieldset {
+  margin: 0 0 12px;
+  padding: 10px 8px 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 0;
+}
+
+.oasis-editor-font-dialog-fieldset legend {
+  padding: 0 6px;
+  font-size: 12px;
+  color: #202124;
+}
+
+.oasis-editor-font-dialog-word-row {
+  display: grid;
+  grid-template-columns: 156px minmax(160px, 172px) 36px 76px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.oasis-editor-font-dialog-word-row .oasis-editor-dialog-input {
+  min-width: 0;
+  width: 100%;
+}
+
+.oasis-editor-font-dialog-word-row .oasis-editor-dialog-label {
+  margin: 0;
+}
+
+.oasis-editor-font-dialog-small-input {
+  width: 76px;
+}
+
+.oasis-editor-font-dialog-by-label {
+  justify-self: end;
+}
+
+.oasis-editor-font-dialog-kerning-row {
+  grid-template-columns: max-content 64px max-content 1fr;
+  column-gap: 8px;
+}
+
+.oasis-editor-font-dialog-kerning-toggle,
+.oasis-editor-font-dialog-contextual-toggle {
+  margin-top: 2px;
+}
+
+.oasis-editor-font-dialog-kerning-toggle {
+  min-width: 136px;
+  white-space: nowrap;
+}
+
+.oasis-editor-font-dialog-kerning-input {
+  width: 64px;
+}
+
+.oasis-editor-font-dialog-kerning-suffix {
+  min-height: 0;
+  white-space: nowrap;
+}
+
+.oasis-editor-font-dialog-advanced-preview {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-style: solid;
+  overflow: hidden;
+  white-space: nowrap;
+  background:
+    linear-gradient(#111, #111) left 12px center / 80px 1px no-repeat,
+    linear-gradient(#111, #111) right 12px center / 80px 1px no-repeat,
+    #fff;
+  font-size: 18px;
+}
+
+@media (max-width: 640px) {
+  .oasis-editor-dialog-font {
+    min-height: 0;
+  }
+
+  .oasis-editor-dialog-row,
+  .oasis-editor-font-dialog-word-row,
+  .oasis-editor-font-dialog-kerning-row {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .oasis-editor-font-dialog-size-group,
+  .oasis-editor-font-dialog-custom-size-group,
+  .oasis-editor-font-dialog-style-list-group,
+  .oasis-editor-font-dialog-color-mode-group {
+    width: auto;
+    flex: 1 1 auto;
+  }
+
+  .oasis-editor-font-dialog-by-label {
+    justify-self: start;
+  }
 }

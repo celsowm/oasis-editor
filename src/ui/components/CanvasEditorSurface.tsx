@@ -20,6 +20,7 @@ import {
   resolveEffectiveTextStyleForParagraph,
   resolveImageSrc,
 } from "../../core/model.js";
+import { buildSegmentTable } from "../../core/tableLayout.js";
 
 const imageCache = new Map<string, HTMLImageElement>();
 
@@ -46,26 +47,39 @@ const canvasTextMeasurer: ITextMeasurer = {
   resolveRenderedLineHeightPx: (styles, lineHeightMultiple) =>
     domTextMeasurer.resolveRenderedLineHeightPx(styles, lineHeightMultiple),
 };
+const PX_PER_POINT = 96 / 72;
 
 export function resolveCanvasTextRenderMetrics(
-  styles: { superscript?: boolean; subscript?: boolean } | undefined,
+  styles: {
+    superscript?: boolean;
+    subscript?: boolean;
+    smallCaps?: boolean;
+    baselineShift?: number | null;
+  } | undefined,
   fontSize: number,
 ) {
+  const explicitBaselineShift = (styles?.baselineShift ?? 0) * PX_PER_POINT;
+  if (styles?.smallCaps) {
+    return {
+      fontSize: fontSize * 0.8,
+      baselineOffset: -explicitBaselineShift,
+    };
+  }
   if (styles?.superscript) {
     return {
       fontSize: fontSize * 0.75,
-      baselineOffset: -fontSize * 0.35,
+      baselineOffset: -fontSize * 0.35 - explicitBaselineShift,
     };
   }
   if (styles?.subscript) {
     return {
       fontSize: fontSize * 0.75,
-      baselineOffset: fontSize * 0.2,
+      baselineOffset: fontSize * 0.2 - explicitBaselineShift,
     };
   }
   return {
     fontSize,
-    baselineOffset: 0,
+    baselineOffset: -explicitBaselineShift,
   };
 }
 
@@ -412,6 +426,7 @@ function renderBlockList(
       drawTable(
         ctx,
         block.sourceBlock,
+        block.tableSegment,
         state,
         originX,
         cursorY,
@@ -476,6 +491,7 @@ function renderFootnoteBlockList(
       drawTable(
         ctx,
         block.sourceBlock,
+        block.tableSegment,
         state,
         originX + FOOTNOTE_MARKER_GUTTER_PX,
         cursorY,
@@ -525,6 +541,9 @@ function drawParagraph(
         paragraph.style?.styleId,
         state.document.styles,
       );
+      if (styles.hidden) {
+        continue;
+      }
       const fontSize = styles.fontSize ?? 15;
       const fontFamily = styles.fontFamily ?? "Calibri, sans-serif";
       const fontWeight = styles.bold ? "700" : "400";
@@ -556,14 +575,37 @@ function drawParagraph(
           if (char.char === "\n" || char.char === "\t") continue;
           const slot = slotByOffset.get(char.paragraphOffset);
           if (!slot) continue;
-          ctx.fillText(char.char, originX + slot.left, baselineY + renderMetrics.baselineOffset);
+          const renderedChar = styles.allCaps ? char.char.toUpperCase() : char.char;
+          const scale = styles.characterScale && styles.characterScale > 0 ? styles.characterScale / 100 : 1;
+          if (scale !== 1) {
+            const x = originX + slot.left;
+            ctx.save();
+            ctx.translate(x, baselineY + renderMetrics.baselineOffset);
+            ctx.scale(scale, 1);
+            ctx.fillText(renderedChar, 0, 0);
+            ctx.restore();
+          } else {
+            ctx.fillText(renderedChar, originX + slot.left, baselineY + renderMetrics.baselineOffset);
+          }
         }
       }
       if (styles.underline) {
-        drawTextDecoration(ctx, line, fragment, originX, originY, "underline", styles.underlineStyle ?? undefined);
+        drawTextDecoration(
+          ctx,
+          line,
+          fragment,
+          originX,
+          originY,
+          "underline",
+          styles.underlineStyle ?? undefined,
+          styles.underlineColor ?? undefined,
+        );
       }
       if (styles.strike) {
         drawTextDecoration(ctx, line, fragment, originX, originY, "strike");
+      }
+      if (styles.doubleStrike) {
+        drawTextDecoration(ctx, line, fragment, originX, originY, "doubleStrike");
       }
       ctx.restore();
     }
@@ -611,8 +653,9 @@ function drawTextDecoration(
   fragment: EditorLayoutLine["fragments"][number],
   originX: number,
   originY: number,
-  kind: "underline" | "strike",
+  kind: "underline" | "strike" | "doubleStrike",
   underlineStyle?: string,
+  underlineColor?: string,
 ) {
   const slots = fragment.chars
     .map((char) => line.slots.find((slot) => slot.offset === char.paragraphOffset))
@@ -620,14 +663,28 @@ function drawTextDecoration(
   if (slots.length === 0) return;
   const left = slots[0]!.left;
   const right = slots[slots.length - 1]!.left + 8;
-  const y = kind === "underline" ? originY + line.top + line.height - 2 : originY + line.top + line.height * 0.52;
+  const y = kind === "underline"
+    ? originY + line.top + line.height - 2
+    : kind === "doubleStrike"
+      ? originY + line.top + line.height * 0.5
+      : originY + line.top + line.height * 0.52;
   const x1 = originX + left;
   const x2 = originX + right;
   ctx.save();
-  ctx.strokeStyle = ctx.fillStyle as string;
+  ctx.strokeStyle = underlineColor || (ctx.fillStyle as string);
 
   if (kind === "underline") {
     drawUnderlineWithStyle(ctx, x1, x2, y, underlineStyle);
+  } else if (kind === "doubleStrike") {
+    const offset = 1.3;
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.moveTo(x1, y - offset);
+    ctx.lineTo(x2, y - offset);
+    ctx.moveTo(x1, y + offset);
+    ctx.lineTo(x2, y + offset);
+    ctx.stroke();
   } else {
     ctx.beginPath();
     ctx.lineWidth = 1;
@@ -728,6 +785,7 @@ function drawWavyLine(
 function drawTable(
   ctx: CanvasRenderingContext2D,
   table: EditorTableNode,
+  tableSegment: EditorLayoutBlock["tableSegment"] | undefined,
   state: EditorState,
   originX: number,
   originY: number,
@@ -736,8 +794,9 @@ function drawTable(
   pageIndex: number,
   onUpdate: () => void,
 ) {
+  const segmentTable = tableSegment ? buildSegmentTable(table, tableSegment) : table;
   const tableLayout = buildCanvasTableLayout({
-    table,
+    table: segmentTable,
     state,
     pageIndex,
     layoutMode: resolveCanvasLayoutMode(),

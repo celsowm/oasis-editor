@@ -84,7 +84,11 @@ import { computeLayoutInvalidationFromTransaction } from "./layoutInvalidation.j
 import { DropCaret } from "./components/DropCaret.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
-import { FontDialog, type FontDialogInitialValues } from "./components/Dialogs/FontDialog.js";
+import {
+  FontDialog,
+  type FontDialogApplyValues,
+  type FontDialogInitialValues,
+} from "./components/Dialogs/FontDialog.js";
 import { FindReplaceDialog } from "./components/FindReplace/FindReplaceDialog.js";
 import { ContextMenu, type ContextMenuItem } from "./components/ContextMenu/ContextMenu.js";
 import "./components/FindReplace/findReplace.css";
@@ -190,6 +194,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const [initialLoading, setInitialLoading] = createSignal(props.loading !== false);
   const [undoStack, setUndoStack] = createSignal<EditorState[]>([]);
   const [redoStack, setRedoStack] = createSignal<EditorState[]>([]);
+  const [localFontFamilyOptions, setLocalFontFamilyOptions] = createSignal<string[]>([]);
 
   const {
     linkDialog,
@@ -864,14 +869,37 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   };
 
   const computeFontFamilyOptions = (): string[] => {
-    return collectFontFamilyOptions(state.document, styleController.toolbarStyleState());
+    return collectFontFamilyOptions(state.document, styleController.toolbarStyleState(), localFontFamilyOptions());
   };
 
   const computeFontSizeOptions = (): number[] => {
     return collectFontSizeOptions(state.document, styleController.toolbarStyleState());
   };
 
+  const loadLocalFontFamilyOptions = async () => {
+    const maybeQueryLocalFonts = (globalThis as {
+      queryLocalFonts?: () => Promise<Array<{ family?: string; fullName?: string }>>;
+    }).queryLocalFonts;
+    if (!maybeQueryLocalFonts || localFontFamilyOptions().length > 0) {
+      return;
+    }
+    try {
+      const fonts = await maybeQueryLocalFonts();
+      const families = Array.from(
+        new Set(
+          fonts
+            .map((font) => font.family?.trim() || font.fullName?.trim() || "")
+            .filter(Boolean),
+        ),
+      ).sort((a, b) => a.localeCompare(b));
+      setLocalFontFamilyOptions(families);
+    } catch {
+      // Local font access is permission-gated; the fallback list remains available.
+    }
+  };
+
   const openFontDialog = () => {
+    void loadLocalFontFamilyOptions();
     const ts = styleController.toolbarStyleState();
     setFontDialog({
       isOpen: true,
@@ -879,25 +907,38 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         fontFamily: ts.fontFamily ?? "",
         fontSize: ts.fontSize ?? "",
         color: ts.color ?? "",
+        colorMode: ts.color ? "custom" : "automatic",
+        highlight: ts.highlight ?? "",
         bold: Boolean(ts.bold),
         italic: Boolean(ts.italic),
         underline: Boolean(ts.underline),
+        underlineStyle: ts.underlineStyle
+          ? (ts.underlineStyle as FontDialogInitialValues["underlineStyle"])
+          : null,
+        underlineColor: ts.underlineColor ?? "",
         strike: Boolean(ts.strike),
+        doubleStrike: Boolean(ts.doubleStrike),
+        superscript: Boolean(ts.superscript),
+        subscript: Boolean(ts.subscript),
+        smallCaps: Boolean(ts.smallCaps),
+        allCaps: Boolean(ts.allCaps),
+        hidden: Boolean(ts.hidden),
+        characterScale: ts.characterScale ?? "",
+        characterSpacing: ts.characterSpacing ?? "",
+        baselineShift: ts.baselineShift ?? "",
+        kerningThreshold: ts.kerningThreshold ?? "",
+        ligatures: (ts.ligatures ?? "") as FontDialogInitialValues["ligatures"],
+        numberSpacing: (ts.numberSpacing ?? "") as FontDialogInitialValues["numberSpacing"],
+        numberForm: (ts.numberForm ?? "") as FontDialogInitialValues["numberForm"],
+        stylisticSet: ts.stylisticSet ?? "",
+        contextualAlternates: Boolean(ts.contextualAlternates),
       },
     });
     setContextMenu({ isOpen: false, x: 0, y: 0 });
   };
 
   const applyFontDialogValues = (
-    values: {
-      fontFamily: string | null;
-      fontSize: number | null;
-      color: string | null;
-      bold: boolean;
-      italic: boolean;
-      underline: boolean;
-      strike: boolean;
-    },
+    values: FontDialogApplyValues,
     original: FontDialogInitialValues,
   ) => {
     if (isReadOnly()) return;
@@ -917,8 +958,12 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       if (values.fontSize !== (original.fontSize ? Number(original.fontSize) : null)) {
         next = setTextStyleValue(next, "fontSize", values.fontSize);
       }
-      if ((values.color ?? "") !== (original.color ?? "")) {
+      const originalColor = original.colorMode === "automatic" ? null : original.color || null;
+      if (values.color !== originalColor) {
         next = setTextStyleValue(next, "color", values.color);
+      }
+      if ((values.highlight ?? "") !== (original.highlight ?? "")) {
+        next = setTextStyleValue(next, "highlight", values.highlight);
       }
       if (values.bold !== Boolean(original.bold)) {
         next = toggleTextStyle(next, "bold");
@@ -926,11 +971,76 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       if (values.italic !== Boolean(original.italic)) {
         next = toggleTextStyle(next, "italic");
       }
+      const originalUnderlineStyle = original.underline ? (original.underlineStyle ?? "single") : null;
+      if ((values.underlineStyle ?? null) !== (originalUnderlineStyle ?? null)) {
+        next = setTextStyleValue(next, "underlineStyle", values.underlineStyle);
+      }
+      const originalUnderlineColor = original.underline ? (original.underlineColor || null) : null;
+      if ((values.underlineColor ?? null) !== (originalUnderlineColor ?? null)) {
+        next = setTextStyleValue(next, "underlineColor", values.underlineColor);
+      }
       if (values.underline !== Boolean(original.underline)) {
         next = toggleTextStyle(next, "underline");
       }
       if (values.strike !== Boolean(original.strike)) {
         next = toggleTextStyle(next, "strike");
+      }
+      if (values.doubleStrike !== Boolean(original.doubleStrike)) {
+        next = toggleTextStyle(next, "doubleStrike");
+      }
+      if (values.superscript !== Boolean(original.superscript)) {
+        next = toggleTextStyle(next, "superscript");
+      }
+      if (values.subscript !== Boolean(original.subscript)) {
+        next = toggleTextStyle(next, "subscript");
+      }
+      if (values.superscript && values.subscript) {
+        // Defensive guard: keep them mutually exclusive even if payload is inconsistent.
+        next = toggleTextStyle(next, "subscript");
+      }
+      if (values.strike && values.doubleStrike) {
+        next = toggleTextStyle(next, "doubleStrike");
+      }
+      if (values.smallCaps !== Boolean(original.smallCaps)) {
+        next = toggleTextStyle(next, "smallCaps");
+      }
+      if (values.allCaps !== Boolean(original.allCaps)) {
+        next = toggleTextStyle(next, "allCaps");
+      }
+      if (values.hidden !== Boolean(original.hidden)) {
+        next = toggleTextStyle(next, "hidden");
+      }
+      const originalCharacterScale = original.characterScale ? Number(original.characterScale) : null;
+      if ((values.characterScale ?? null) !== (originalCharacterScale ?? null)) {
+        next = setTextStyleValue(next, "characterScale", values.characterScale);
+      }
+      const originalCharacterSpacing = original.characterSpacing ? Number(original.characterSpacing) : null;
+      if ((values.characterSpacing ?? null) !== (originalCharacterSpacing ?? null)) {
+        next = setTextStyleValue(next, "characterSpacing", values.characterSpacing);
+      }
+      const originalBaselineShift = original.baselineShift ? Number(original.baselineShift) : null;
+      if ((values.baselineShift ?? null) !== (originalBaselineShift ?? null)) {
+        next = setTextStyleValue(next, "baselineShift", values.baselineShift);
+      }
+      const originalKerningThreshold = original.kerningThreshold ? Number(original.kerningThreshold) : null;
+      if ((values.kerningThreshold ?? null) !== (originalKerningThreshold ?? null)) {
+        next = setTextStyleValue(next, "kerningThreshold", values.kerningThreshold);
+      }
+      if ((values.ligatures ?? null) !== (original.ligatures || null)) {
+        next = setTextStyleValue(next, "ligatures", values.ligatures);
+      }
+      if ((values.numberSpacing ?? null) !== (original.numberSpacing || null)) {
+        next = setTextStyleValue(next, "numberSpacing", values.numberSpacing);
+      }
+      if ((values.numberForm ?? null) !== (original.numberForm || null)) {
+        next = setTextStyleValue(next, "numberForm", values.numberForm);
+      }
+      const originalStylisticSet = original.stylisticSet ? Number(original.stylisticSet) : null;
+      if ((values.stylisticSet ?? null) !== (originalStylisticSet ?? null)) {
+        next = setTextStyleValue(next, "stylisticSet", values.stylisticSet);
+      }
+      if (values.contextualAlternates !== Boolean(original.contextualAlternates)) {
+        next = toggleTextStyle(next, "contextualAlternates");
       }
       return next;
     }, { mergeKey: "font-dialog" });

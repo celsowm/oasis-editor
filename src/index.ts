@@ -15,6 +15,10 @@ export { mount } from "./ui/mount.js";
 export { DocumentShell } from "./ui/shells/DocumentShell.js";
 export { InlineShell } from "./ui/shells/InlineShell.js";
 export { BalloonShell } from "./ui/shells/BalloonShell.js";
+export { Dialog } from "./ui/components/Dialogs/Dialog.js";
+export type { DialogProps } from "./ui/components/Dialogs/Dialog.js";
+export { Tabs } from "./ui/components/Tabs/Tabs.js";
+export type { TabsItem, TabsProps } from "./ui/components/Tabs/Tabs.js";
 export type {
   OasisPlugin,
   OasisPluginDefinition,

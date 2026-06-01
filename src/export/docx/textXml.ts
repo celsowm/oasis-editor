@@ -42,6 +42,59 @@ const DOCX_HIGHLIGHT_HEX_ALIASES: Record<string, string> = {
   ffffff: "white",
 };
 
+function pointsToSignedTwips(value: number | null | undefined): number | null {
+  if (value === undefined || value === null || !Number.isFinite(value)) {
+    return null;
+  }
+  return Math.round(value * 20);
+}
+
+function ligaturesToDocx(value: EditorTextStyle["ligatures"]): string | null {
+  switch (value) {
+    case "none":
+      return "none";
+    case "standard":
+      return "standard";
+    case "contextual":
+      return "contextual";
+    case "historical":
+      return "historical";
+    case "standardContextual":
+      return "standardContextual";
+    default:
+      return null;
+  }
+}
+
+function numberSpacingToDocx(value: EditorTextStyle["numberSpacing"]): string | null {
+  switch (value) {
+    case "proportional":
+      return "proportional";
+    case "tabular":
+      return "tabular";
+    default:
+      return null;
+  }
+}
+
+function numberFormToDocx(value: EditorTextStyle["numberForm"]): string | null {
+  switch (value) {
+    case "lining":
+      return "lining";
+    case "oldStyle":
+      return "oldStyle";
+    default:
+      return null;
+  }
+}
+
+function stylisticSetToDocx(value: EditorTextStyle["stylisticSet"]): string | null {
+  if (typeof value !== "number" || value < 1 || value > 20) {
+    return null;
+  }
+  return (1 << (value - 1)).toString(16).toUpperCase().padStart(8, "0");
+}
+
 function parseHexColor(color: string): [number, number, number] | null {
   const normalized = color.trim().replace(/^#/, "");
   if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
@@ -134,9 +187,46 @@ function serializeRunProperties(styles?: EditorTextStyle): string {
   if (styles.italic) parts.push("<w:i/>");
   if (styles.underline) {
     const underlineVal = styles.underlineStyle ?? "single";
-    parts.push(`<w:u w:val="${escapeXml(underlineVal)}"/>`);
+    const underlineColor = styles.underlineColor ? ` w:color="${escapeXml(styles.underlineColor.replace(/^#/, ""))}"` : "";
+    parts.push(`<w:u w:val="${escapeXml(underlineVal)}"${underlineColor}/>`);
   }
   if (styles.strike) parts.push("<w:strike/>");
+  if (styles.doubleStrike) parts.push("<w:dstrike/>");
+  if (styles.smallCaps) parts.push("<w:smallCaps/>");
+  if (styles.allCaps) parts.push("<w:caps/>");
+  if (styles.hidden) parts.push("<w:vanish/>");
+  if (styles.characterScale !== undefined && styles.characterScale !== null && Number.isFinite(styles.characterScale)) {
+    parts.push(`<w:w w:val="${Math.max(1, Math.round(styles.characterScale))}"/>`);
+  }
+  if (styles.characterSpacing !== undefined && styles.characterSpacing !== null) {
+    const spacing = pointsToSignedTwips(styles.characterSpacing);
+    if (spacing !== null) parts.push(`<w:spacing w:val="${spacing}"/>`);
+  }
+  if (styles.baselineShift !== undefined && styles.baselineShift !== null && Number.isFinite(styles.baselineShift)) {
+    parts.push(`<w:position w:val="${Math.round(styles.baselineShift * 2)}"/>`);
+  }
+  if (styles.kerningThreshold !== undefined && styles.kerningThreshold !== null && Number.isFinite(styles.kerningThreshold)) {
+    parts.push(`<w:kern w:val="${Math.max(0, Math.round(styles.kerningThreshold * 2))}"/>`);
+  }
+  const ligatures = ligaturesToDocx(styles.ligatures);
+  if (ligatures) {
+    parts.push(`<w14:ligatures w14:val="${ligatures}"/>`);
+  }
+  const numberSpacing = numberSpacingToDocx(styles.numberSpacing);
+  if (numberSpacing) {
+    parts.push(`<w14:numSpacing w14:val="${numberSpacing}"/>`);
+  }
+  const numberForm = numberFormToDocx(styles.numberForm);
+  if (numberForm) {
+    parts.push(`<w14:numForm w14:val="${numberForm}"/>`);
+  }
+  const stylisticSet = stylisticSetToDocx(styles.stylisticSet);
+  if (stylisticSet) {
+    parts.push(`<w14:stylisticSets w14:val="${stylisticSet}"/>`);
+  }
+  if (styles.contextualAlternates) {
+    parts.push('<w14:cntxtAlts w14:val="1"/>');
+  }
   if (styles.superscript) {
     parts.push('<w:vertAlign w:val="superscript"/>');
   } else if (styles.subscript) {
@@ -202,9 +292,23 @@ function materializeRunStyle(
     italic: effective.italic,
     underline: effective.underline,
     underlineStyle: effective.underlineStyle,
+    underlineColor: effective.underlineColor,
     strike: effective.strike,
+    doubleStrike: effective.doubleStrike,
     superscript: effective.superscript,
     subscript: effective.subscript,
+    smallCaps: effective.smallCaps,
+    allCaps: effective.allCaps,
+    hidden: effective.hidden,
+    characterScale: effective.characterScale,
+    characterSpacing: effective.characterSpacing,
+    baselineShift: effective.baselineShift,
+    kerningThreshold: effective.kerningThreshold,
+    ligatures: effective.ligatures,
+    numberSpacing: effective.numberSpacing,
+    numberForm: effective.numberForm,
+    stylisticSet: effective.stylisticSet,
+    contextualAlternates: effective.contextualAlternates,
     fontFamily: effective.fontFamily,
     fontSize: effective.fontSize,
     color: effective.color,

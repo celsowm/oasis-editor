@@ -10,7 +10,7 @@ import { iterateFootnoteReferenceRuns } from "../../core/footnotes.js";
 import type { DocContext, ExportBuildState, NumberingContext } from "./docxTypes.js";
 import { serializeParagraphXml } from "./textXml.js";
 import { serializeTableXml } from "./tableXml.js";
-import { OFFICE_REL_NS, WORD_NS } from "./xmlUtils.js";
+import { OFFICE_REL_NS, WORD14_NS, WORD_NS } from "./xmlUtils.js";
 
 /**
  * The DOCX `w:id` value to use when materializing footnotes. Real footnote
@@ -179,7 +179,7 @@ export function buildFootnotesXml(
 
   const xml =
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-    `<w:footnotes xmlns:w="${WORD_NS}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="${OFFICE_REL_NS}">` +
+    `<w:footnotes xmlns:w="${WORD_NS}" xmlns:w14="${WORD14_NS}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="${OFFICE_REL_NS}">` +
     `${specials}${footnoteEntries}` +
     `</w:footnotes>`;
 

@@ -28,8 +28,16 @@ import {
   OFFICE_REL_NS,
   PACKAGE_REL_NS,
   pxToTwips,
+  WORD14_NS,
   WORD_NS,
 } from "./xmlUtils.js";
+
+const DOCUMENT_XMLNS =
+  `xmlns:w="${WORD_NS}" xmlns:w14="${WORD14_NS}" ` +
+  'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" ' +
+  'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+  'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" ' +
+  `xmlns:r="${OFFICE_REL_NS}"`;
 
 function serializeSectionProperties(pageSettings: EditorPageSettings): string {
   return serializeSectionPropertiesWithReferences(pageSettings);
@@ -296,7 +304,7 @@ function buildDocumentXml(
     })
     .join("");
 
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${WORD_NS}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="${OFFICE_REL_NS}"><w:body>${sectionsXml}</w:body></w:document>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${DOCUMENT_XMLNS}><w:body>${sectionsXml}</w:body></w:document>`;
 }
 
 function buildHeaderFooterXml(
@@ -306,7 +314,7 @@ function buildHeaderFooterXml(
   styles: Record<string, EditorNamedStyle> | undefined,
 ): string {
   const tag = kind === "header" ? "hdr" : "ftr";
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:${tag} xmlns:w="${WORD_NS}" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" xmlns:r="${OFFICE_REL_NS}">${serializeBlocksXml(blocks, context, styles)}</w:${tag}>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:${tag} ${DOCUMENT_XMLNS}>${serializeBlocksXml(blocks, context, styles)}</w:${tag}>`;
 }
 
 function buildContentTypesXml(

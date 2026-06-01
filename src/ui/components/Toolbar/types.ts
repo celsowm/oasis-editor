@@ -11,7 +11,22 @@ import type {
 } from "../../toolbarStyleState.js";
 import type { PersistenceStatus } from "../../../app/controllers/useEditorPersistence.js";
 
-export type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link" | "underlineStyle";
+export type ValueStyleKey =
+  | "fontFamily"
+  | "fontSize"
+  | "color"
+  | "highlight"
+  | "link"
+  | "underlineStyle"
+  | "underlineColor"
+  | "characterScale"
+  | "characterSpacing"
+  | "baselineShift"
+  | "kerningThreshold"
+  | "ligatures"
+  | "numberSpacing"
+  | "numberForm"
+  | "stylisticSet";
 
 export interface EditorToolbarCtx {
   state: () => EditorState;

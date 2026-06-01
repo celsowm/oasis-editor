@@ -5,6 +5,9 @@ import {
   createEditorParagraph,
   createEditorRun,
   createEditorStateFromDocument,
+  createEditorTable,
+  createEditorTableCell,
+  createEditorTableRow,
   createFootnoteReferenceRun,
 } from "../../core/editorState.js";
 import { projectDocumentLayout } from "../../ui/layoutProjection.js";
@@ -31,6 +34,18 @@ function createSurfaceWithSinglePage(pageIndex = 0): { surface: HTMLDivElement; 
   page.dataset.pageIndex = String(pageIndex);
   surface.appendChild(page);
   return { surface, page };
+}
+
+function createSurfaceWithPages(pageCount: number): { surface: HTMLDivElement; pages: HTMLDivElement[] } {
+  const surface = document.createElement("div");
+  const pages = Array.from({ length: pageCount }, (_, pageIndex) => {
+    const page = document.createElement("div");
+    page.dataset.renderer = "canvas";
+    page.dataset.pageIndex = String(pageIndex);
+    surface.appendChild(page);
+    return page;
+  });
+  return { surface, pages };
 }
 
 describe("buildCanvasLayoutSnapshot", () => {
@@ -175,5 +190,60 @@ describe("buildCanvasLayoutSnapshot", () => {
     expect(bodyParagraph!.top + bodyParagraph!.height).toBeLessThanOrEqual(
       page.getBoundingClientRect().top + snapshotPage.footnoteSeparatorTop!,
     );
+  });
+
+  it("uses the paginated table segment for snapshot geometry instead of the full table", () => {
+    const rows = Array.from({ length: 24 }, (_, index) =>
+      createEditorTableRow([
+        createEditorTableCell([createEditorParagraph(`Row ${index + 1}`)]),
+      ]),
+    );
+    const table = createEditorTable(rows, [180]);
+    const document = createEditorDocument([table]);
+    const firstSection = document.sections?.[0];
+    if (!firstSection) {
+      throw new Error("document missing default section");
+    }
+    document.sections = [
+      {
+        ...firstSection,
+        blocks: [table],
+        pageSettings: {
+          ...firstSection.pageSettings,
+          height: 180,
+          margins: {
+            ...firstSection.pageSettings.margins,
+            top: 18,
+            bottom: 18,
+          },
+        },
+      },
+    ];
+
+    const state = createEditorStateFromDocument(document);
+    const projected = projectDocumentLayout(document, undefined, undefined, undefined, {
+      layoutMode: "wordParity",
+    });
+    expect(projected.pages.length).toBeGreaterThan(1);
+
+    const { surface, pages } = createSurfaceWithPages(projected.pages.length);
+    surface.getBoundingClientRect = () => createRect(0, 0, 940, 2000);
+    pages.forEach((page, index) => {
+      page.getBoundingClientRect = () => createRect(100, 200 + index * 200, 816, 180);
+    });
+
+    const snapshot = buildCanvasLayoutSnapshot({
+      surface,
+      state,
+      layoutMode: "wordParity",
+    });
+
+    expect(snapshot).not.toBeNull();
+    const firstPageRowTexts = snapshot!.paragraphs
+      .filter((paragraph) => paragraph.zone === "main" && paragraph.pageIndex === 0)
+      .map((paragraph) => paragraph.paragraph.runs.map((run) => run.text).join(""));
+
+    expect(firstPageRowTexts).toContain("Row 1");
+    expect(firstPageRowTexts).not.toContain("Row 24");
   });
 });

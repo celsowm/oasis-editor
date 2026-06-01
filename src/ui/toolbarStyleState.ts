@@ -20,10 +20,30 @@ export type BooleanStyleKey =
   | "italic"
   | "underline"
   | "strike"
+  | "doubleStrike"
   | "superscript"
-  | "subscript";
+  | "subscript"
+  | "smallCaps"
+  | "allCaps"
+  | "hidden"
+  | "contextualAlternates";
 
-export type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link" | "underlineStyle";
+export type ValueStyleKey =
+  | "fontFamily"
+  | "fontSize"
+  | "color"
+  | "highlight"
+  | "link"
+  | "underlineStyle"
+  | "underlineColor"
+  | "characterScale"
+  | "characterSpacing"
+  | "baselineShift"
+  | "kerningThreshold"
+  | "ligatures"
+  | "numberSpacing"
+  | "numberForm"
+  | "stylisticSet";
 export type ParagraphStyleKey =
   | "styleId"
   | "align"
@@ -48,9 +68,23 @@ export interface ToolbarStyleState {
   italic: boolean;
   underline: boolean;
   underlineStyle: string;
+  underlineColor: string;
   strike: boolean;
+  doubleStrike: boolean;
   superscript: boolean;
   subscript: boolean;
+  smallCaps: boolean;
+  allCaps: boolean;
+  hidden: boolean;
+  characterScale: string;
+  characterSpacing: string;
+  baselineShift: string;
+  kerningThreshold: string;
+  ligatures: string;
+  numberSpacing: string;
+  numberForm: string;
+  stylisticSet: string;
+  contextualAlternates: boolean;
   fontFamily: string;
   fontSize: string;
   color: string;
@@ -245,9 +279,23 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     italic: areAllBooleanStylesEnabled(styles, "italic"),
     underline: areAllBooleanStylesEnabled(styles, "underline"),
     underlineStyle: resolveUniformStyleValue(styles, "underlineStyle"),
+    underlineColor: resolveUniformStyleValue(styles, "underlineColor"),
     strike: areAllBooleanStylesEnabled(styles, "strike"),
+    doubleStrike: areAllBooleanStylesEnabled(styles, "doubleStrike"),
     superscript: areAllBooleanStylesEnabled(styles, "superscript"),
     subscript: areAllBooleanStylesEnabled(styles, "subscript"),
+    smallCaps: areAllBooleanStylesEnabled(styles, "smallCaps"),
+    allCaps: areAllBooleanStylesEnabled(styles, "allCaps"),
+    hidden: areAllBooleanStylesEnabled(styles, "hidden"),
+    characterScale: resolveUniformStyleValue(styles, "characterScale"),
+    characterSpacing: resolveUniformStyleValue(styles, "characterSpacing"),
+    baselineShift: resolveUniformStyleValue(styles, "baselineShift"),
+    kerningThreshold: resolveUniformStyleValue(styles, "kerningThreshold"),
+    ligatures: resolveUniformStyleValue(styles, "ligatures"),
+    numberSpacing: resolveUniformStyleValue(styles, "numberSpacing"),
+    numberForm: resolveUniformStyleValue(styles, "numberForm"),
+    stylisticSet: resolveUniformStyleValue(styles, "stylisticSet"),
+    contextualAlternates: areAllBooleanStylesEnabled(styles, "contextualAlternates"),
     fontFamily: resolveUniformStyleValue(styles, "fontFamily"),
     fontSize: resolveUniformStyleValue(styles, "fontSize"),
     color: resolveUniformStyleValue(styles, "color"),

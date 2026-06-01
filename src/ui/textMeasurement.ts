@@ -25,6 +25,7 @@ const MIN_CONTENT_WIDTH = 120;
 const TAB_SIZE = 4;
 const DEFAULT_WORD_SINGLE_LINE_RATIO = 1.223;
 const FAST_IMPLICIT_DOC_GRID_RATIO = 0.86;
+const PX_PER_POINT = 96 / 72;
 
 // Calibração para paridade com MS Word
 // O Word usa DirectWrite/GDI que tem métricas ligeiramente diferentes do Canvas 2D
@@ -86,8 +87,17 @@ function getCanvasContext(): CanvasRenderingContext2D | null {
   return sharedCanvasContext;
 }
 
-function buildCanvasFont(styles: EditorTextStyle | undefined, fallbackFontSize: number): string {
+function getMeasuredFontSize(styles: EditorTextStyle | undefined, fallbackFontSize: number): number {
   const fontSize = styles?.fontSize ?? fallbackFontSize;
+  return styles?.smallCaps ? fontSize * 0.8 : fontSize;
+}
+
+function getRenderedMeasureChar(char: string, styles: EditorTextStyle | undefined): string {
+  return styles?.allCaps ? char.toUpperCase() : char;
+}
+
+function buildCanvasFont(styles: EditorTextStyle | undefined, fallbackFontSize: number): string {
+  const fontSize = getMeasuredFontSize(styles, fallbackFontSize);
   const fontFamily = styles?.fontFamily ?? "Calibri, sans-serif";
   const fontWeight = styles?.bold ? "700" : "400";
   const fontStyle = styles?.italic ? "italic" : "normal";
@@ -103,7 +113,7 @@ function measureNormalLineHeight(styles: EditorTextStyle | undefined, fallbackFo
     return cached;
   }
 
-  const fontSize = styles?.fontSize ?? fallbackFontSize;
+  const fontSize = getMeasuredFontSize(styles, fallbackFontSize);
   const minimumWordLineHeight = fontSize * DEFAULT_WORD_SINGLE_LINE_RATIO;
   const context = getCanvasContext();
   let measured = minimumWordLineHeight;
@@ -168,7 +178,10 @@ function measureCharacterWidth(
 
   const fontSize = styles?.fontSize ?? fallbackFontSize;
   const font = buildCanvasFont(styles, fallbackFontSize);
-  const cacheKey = `${font}|${char}`;
+  const renderedChar = getRenderedMeasureChar(char, styles);
+  const scale = styles?.characterScale && styles.characterScale > 0 ? styles.characterScale / 100 : 1;
+  const spacing = (styles?.characterSpacing ?? 0) * PX_PER_POINT;
+  const cacheKey = `${font}|${renderedChar}|${scale}|${spacing}`;
   const cached = textMeasureCache.get(cacheKey);
   if (cached !== undefined) {
     return cached;
@@ -178,10 +191,10 @@ function measureCharacterWidth(
   let width: number;
   if (context) {
     context.font = font;
-    const target = char === "\t" ? " ".repeat(TAB_SIZE) : char;
+    const target = renderedChar === "\t" ? " ".repeat(TAB_SIZE) : renderedChar;
     width = context.measureText(target).width;
   } else {
-    width = measureFallbackCharacterWidth(char, fontSize);
+    width = measureFallbackCharacterWidth(renderedChar, fontSize);
   }
 
   // Fast mode keeps calibrated width heuristics; wordParity mode uses raw canvas metrics.
@@ -192,6 +205,7 @@ function measureCharacterWidth(
     }
   }
 
+  width = Math.max(0, width * scale + spacing);
   textMeasureCache.set(cacheKey, width);
   return width;
 }
@@ -257,12 +271,13 @@ function getParagraphLineHeight(
       styles,
     );
     const fontSize = runTextStyle.fontSize ?? paragraphTextStyle.fontSize ?? fallbackFontSize;
+    const baselineShiftPx = Math.abs(runTextStyle.baselineShift ?? 0) * PX_PER_POINT;
     const runLineHeight = resolveRenderedLineHeightPx(
       { ...runTextStyle, fontSize },
       lineHeight,
     );
     const imageHeight = run.image?.height ?? 0;
-    return Math.max(largest, runLineHeight, imageHeight);
+    return Math.max(largest, runLineHeight + baselineShiftPx, imageHeight);
   }, 0);
 
   const renderedLineHeight = Math.max(

@@ -15,6 +15,8 @@ import { OasisPdfWriter } from "../OasisPdfWriter.js";
 import { DEFAULT_FONT_SIZE_PX, pxToPt, textStyleToFontSizePt } from "../units.js";
 import { resolveFragmentBounds, resolveFragmentSlots, type FragmentSlot } from "./fragmentGeometry.js";
 
+const PX_PER_POINT = 96 / 72;
+
 export function drawFragmentHighlight(
   writer: OasisPdfWriter,
   pageIndex: number,
@@ -48,7 +50,7 @@ export function drawFragmentDecoration(
   originX: number,
   originY: number,
   styles: Required<EditorTextStyle>,
-  kind: "underline" | "strike",
+  kind: "underline" | "strike" | "doubleStrike",
 ): void {
   const bounds = resolveFragmentBounds(line, fragment, styles.fontSize ?? DEFAULT_FONT_SIZE_PX);
   if (!bounds) {
@@ -56,10 +58,14 @@ export function drawFragmentDecoration(
   }
   const y = kind === "underline"
     ? originY + line.top + line.height - 2
-    : originY + line.top + line.height * 0.52;
+    : kind === "doubleStrike"
+      ? originY + line.top + line.height * 0.5
+      : originY + line.top + line.height * 0.52;
   const x1 = originX + bounds.left;
   const x2 = originX + bounds.right;
-  const stroke = styles.color ?? "#000000";
+  const stroke = kind === "underline"
+    ? (styles.underlineColor ?? styles.color ?? "#000000")
+    : (styles.color ?? "#000000");
 
   if (kind === "strike") {
     writer.drawLine(pageIndex, {
@@ -67,6 +73,26 @@ export function drawFragmentDecoration(
       y1: pxToPt(y),
       x2: pxToPt(x2),
       y2: pxToPt(y),
+      stroke,
+      lineWidth: pxToPt(1),
+    });
+    return;
+  }
+  if (kind === "doubleStrike") {
+    const offset = 1.3;
+    writer.drawLine(pageIndex, {
+      x1: pxToPt(x1),
+      y1: pxToPt(y - offset),
+      x2: pxToPt(x2),
+      y2: pxToPt(y - offset),
+      stroke,
+      lineWidth: pxToPt(1),
+    });
+    writer.drawLine(pageIndex, {
+      x1: pxToPt(x1),
+      y1: pxToPt(y + offset),
+      x2: pxToPt(x2),
+      y2: pxToPt(y + offset),
       stroke,
       lineWidth: pxToPt(1),
     });
@@ -228,15 +254,19 @@ export async function drawFragmentText(
     paragraph.style?.styleId,
     document.styles,
   );
+  if (styles.hidden) {
+    return;
+  }
   const fontFace = fontRegistry.resolveFontFace({
     fontFamily: styles.fontFamily,
     bold: styles.bold,
     italic: styles.italic,
   });
-  const fontSizePt = textStyleToFontSizePt(styles);
-  const baselineY = originY + line.top + line.height * 0.8;
+  const fontSizePt = styles.smallCaps ? textStyleToFontSizePt(styles) * 0.8 : textStyleToFontSizePt(styles);
+  const baselineShiftPx = (styles.baselineShift ?? 0) * PX_PER_POINT;
+  const baselineY = originY + line.top + line.height * 0.8 - baselineShiftPx;
   const chars = resolveFragmentSlots(line, fragment);
-  const text = chars.map((char) => char.char).join("");
+  const text = chars.map((char) => (styles.allCaps ? char.char.toUpperCase() : char.char)).join("");
   const firstChar = chars[0];
   if (!firstChar || text.length === 0) {
     return;
@@ -253,7 +283,7 @@ export async function drawFragmentText(
   if (paragraphAlign === "justify") {
     const chunks = groupSlotChunksByWhitespace(chars);
     for (const chunk of chunks) {
-      const chunkText = chunk.map((c) => c.char).join("");
+      const chunkText = chunk.map((c) => (styles.allCaps ? c.char.toUpperCase() : c.char)).join("");
       if (chunkText.length === 0) continue;
       writer.drawText(pageIndex, {
         x: pxToPt(originX + chunk[0]!.left),
@@ -264,6 +294,8 @@ export async function drawFragmentText(
         bold: styles.bold,
         italic: styles.italic,
         fontResourceName: fontFace.writerResourceName,
+        characterSpacing: styles.characterSpacing ?? 0,
+        horizontalScale: styles.characterScale ?? 100,
       });
     }
   } else {
@@ -276,6 +308,8 @@ export async function drawFragmentText(
       bold: styles.bold,
       italic: styles.italic,
       fontResourceName: fontFace.writerResourceName,
+      characterSpacing: styles.characterSpacing ?? 0,
+      horizontalScale: styles.characterScale ?? 100,
     });
   }
   if (styles.underline) {
@@ -283,5 +317,8 @@ export async function drawFragmentText(
   }
   if (styles.strike) {
     drawFragmentDecoration(writer, pageIndex, line, fragment, originX, originY, styles, "strike");
+  }
+  if (styles.doubleStrike) {
+    drawFragmentDecoration(writer, pageIndex, line, fragment, originX, originY, styles, "doubleStrike");
   }
 }

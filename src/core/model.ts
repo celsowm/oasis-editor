@@ -17,15 +17,33 @@ export type EditorUnderlineStyle =
   | "wavyDouble"
   | "words";
 
+export type EditorLigatures = "none" | "standard" | "contextual" | "historical" | "standardContextual";
+export type EditorNumberSpacing = "default" | "proportional" | "tabular";
+export type EditorNumberForm = "default" | "lining" | "oldStyle";
+
 export interface EditorTextStyle {
   styleId?: string; // ID of the named character style
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
   underlineStyle?: EditorUnderlineStyle | null;
+  underlineColor?: string | null;
   strike?: boolean;
+  doubleStrike?: boolean;
   superscript?: boolean;
   subscript?: boolean;
+  smallCaps?: boolean;
+  allCaps?: boolean;
+  hidden?: boolean;
+  characterScale?: number | null;
+  characterSpacing?: number | null;
+  baselineShift?: number | null;
+  kerningThreshold?: number | null;
+  ligatures?: EditorLigatures | null;
+  numberSpacing?: EditorNumberSpacing | null;
+  numberForm?: EditorNumberForm | null;
+  stylisticSet?: number | null;
+  contextualAlternates?: boolean;
   fontFamily?: string | null;
   fontSize?: number | null;
   color?: string | null;
@@ -375,9 +393,23 @@ const DEFAULT_TEXT_STYLE: Required<EditorTextStyle> = {
   italic: false,
   underline: false,
   underlineStyle: null as unknown as EditorUnderlineStyle | null,
+  underlineColor: null as unknown as string | null,
   strike: false,
+  doubleStrike: false,
   superscript: false,
   subscript: false,
+  smallCaps: false,
+  allCaps: false,
+  hidden: false,
+  characterScale: null as unknown as number | null,
+  characterSpacing: null as unknown as number | null,
+  baselineShift: null as unknown as number | null,
+  kerningThreshold: null as unknown as number | null,
+  ligatures: null as unknown as EditorLigatures | null,
+  numberSpacing: null as unknown as EditorNumberSpacing | null,
+  numberForm: null as unknown as EditorNumberForm | null,
+  stylisticSet: null as unknown as number | null,
+  contextualAlternates: false,
   fontFamily: "Calibri, sans-serif",
   fontSize: 15,
   color: "#000000",

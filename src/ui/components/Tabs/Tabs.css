@@ -1,0 +1,61 @@
+.oasis-editor-tabs {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.oasis-editor-tabs-list {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  border-bottom: 1px solid #c7cbd1;
+  padding: 0 8px;
+}
+
+.oasis-editor-tabs-tab {
+  position: relative;
+  bottom: -1px;
+  min-height: 30px;
+  padding: 6px 13px;
+  border: 1px solid #c7cbd1;
+  border-bottom-color: transparent;
+  border-radius: 4px 4px 0 0;
+  background: #f3f4f6;
+  color: #202124;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.oasis-editor-tabs-tab:hover:not(:disabled) {
+  background: #fff;
+}
+
+.oasis-editor-tabs-tab:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: -2px;
+}
+
+.oasis-editor-tabs-tab.is-active {
+  z-index: 1;
+  background: #fff;
+  border-bottom-color: #fff;
+  font-weight: 500;
+}
+
+.oasis-editor-tabs-tab:disabled {
+  color: #9aa0a6;
+  cursor: default;
+}
+
+.oasis-editor-tabs-panel {
+  display: none;
+  min-width: 0;
+  border: 1px solid #c7cbd1;
+  border-top: 0;
+  background: #fff;
+}
+
+.oasis-editor-tabs-panel.is-active {
+  display: block;
+}

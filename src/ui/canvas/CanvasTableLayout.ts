@@ -1,5 +1,6 @@
 import {
   paragraphOffsetToPosition,
+  resolveEffectiveParagraphStyle,
   type EditorBorderStyle,
   type EditorParagraphNode,
   type EditorPosition,
@@ -282,6 +283,7 @@ export function buildCanvasTableLayout(options: {
       paragraph: EditorParagraphNode;
       lines: ReturnType<typeof projectParagraphLayout>["lines"];
       height: number;
+      spacingBefore: number;
     }>;
     contentNaturalHeightPx: number;
   }
@@ -356,11 +358,18 @@ export function buildCanvasTableLayout(options: {
           projected.lines.length > 0
             ? Math.max(...projected.lines.map((line) => line.top + line.height))
             : 1;
-        const paragraphHeight = Math.max(1, linesBottom);
+        const paragraphStyle = resolveEffectiveParagraphStyle(
+          paragraph.style,
+          state.document.styles,
+        );
+        const spacingBefore = paragraphStyle.spacingBefore ?? 0;
+        const spacingAfter = paragraphStyle.spacingAfter ?? 0;
+        const paragraphHeight = Math.max(1, spacingBefore + linesBottom + spacingAfter);
         projectedParagraphs.push({
           paragraph,
           lines: projected.lines,
           height: paragraphHeight,
+          spacingBefore,
         });
         contentNaturalHeightPx += paragraphHeight;
       }
@@ -491,7 +500,11 @@ export function buildCanvasTableLayout(options: {
         paragraph: projected.paragraph,
         lines: projected.lines,
         originX: contentLeft,
-        originY: contentTop + verticalContentOffset + paragraphCursorY,
+        originY:
+          contentTop +
+          verticalContentOffset +
+          paragraphCursorY +
+          projected.spacingBefore,
         width: contentWidthPx,
         height: projected.height,
       });

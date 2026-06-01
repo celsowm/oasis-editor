@@ -2,8 +2,8 @@ import type {
   EditorDocument,
   EditorLayoutBlock,
   EditorState,
-  EditorTableNode,
 } from "../../../core/model.js";
+import { buildSegmentTable } from "../../../core/tableLayout.js";
 import {
   buildCanvasTableLayout,
   type CanvasTableBorderSpec,
@@ -13,19 +13,6 @@ import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
 import { OasisPdfWriter } from "../OasisPdfWriter.js";
 import { pxToPt } from "../units.js";
 import { drawParagraph } from "./drawParagraph.js";
-
-function buildSegmentTable(
-  table: EditorTableNode,
-  segment: NonNullable<EditorLayoutBlock["tableSegment"]>,
-): EditorTableNode {
-  const { startRowIndex, endRowIndex, repeatedHeaderRowCount } = segment;
-  const headerRows =
-    startRowIndex > 0 && repeatedHeaderRowCount > 0
-      ? table.rows.slice(0, repeatedHeaderRowCount)
-      : [];
-  const bodyRows = table.rows.slice(startRowIndex, endRowIndex);
-  return { ...table, rows: [...headerRows, ...bodyRows] };
-}
 
 function drawCellEdge(
   writer: OasisPdfWriter,

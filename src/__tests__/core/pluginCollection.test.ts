@@ -11,10 +11,10 @@ function createEditorStub() {
     commands,
     registerCommand: commands.register.bind(commands),
     unregisterCommand: commands.unregister.bind(commands),
-    execute: (name: string, payload?: unknown) => {
+    execute: <TPayload = unknown, TResult = unknown>(name: string, payload?: TPayload): TResult => {
       const command = commands.get(name);
       if (!command) throw new Error(`Unknown command: ${name}`);
-      return command.execute(payload);
+      return command.execute(payload) as TResult;
     },
     canExecute: (name: string) => {
       const command = commands.get(name);
@@ -34,17 +34,29 @@ describe("PluginCollection", () => {
 
     const base: OasisPlugin = {
       name: "Base",
-      init: () => events.push("init:base"),
-      afterInit: () => events.push("after:base"),
-      destroy: () => events.push("destroy:base"),
+      init: () => {
+        events.push("init:base");
+      },
+      afterInit: () => {
+        events.push("after:base");
+      },
+      destroy: () => {
+        events.push("destroy:base");
+      },
     };
 
     const feature: OasisPlugin = {
       name: "Feature",
       requires: ["Base"],
-      init: () => events.push("init:feature"),
-      afterInit: () => events.push("after:feature"),
-      destroy: () => events.push("destroy:feature"),
+      init: () => {
+        events.push("init:feature");
+      },
+      afterInit: () => {
+        events.push("after:feature");
+      },
+      destroy: () => {
+        events.push("destroy:feature");
+      },
     };
 
     const plugins = new PluginCollection(editor, [feature, base]);
@@ -87,8 +99,18 @@ describe("PluginCollection", () => {
   it("deduplicates by plugin name", () => {
     const editor = createEditorStub();
     const calls: string[] = [];
-    const a1: OasisPlugin = { name: "A", init: () => calls.push("a1") };
-    const a2: OasisPlugin = { name: "A", init: () => calls.push("a2") };
+    const a1: OasisPlugin = {
+      name: "A",
+      init: () => {
+        calls.push("a1");
+      },
+    };
+    const a2: OasisPlugin = {
+      name: "A",
+      init: () => {
+        calls.push("a2");
+      },
+    };
 
     new PluginCollection(editor, [a1, a2]);
 
@@ -106,8 +128,12 @@ describe("PluginCollection", () => {
           execute: () => "ok",
         },
       },
-      init: () => events.push("ok:init"),
-      destroy: () => events.push("ok:destroy"),
+      init: () => {
+        events.push("ok:init");
+      },
+      destroy: () => {
+        events.push("ok:destroy");
+      },
     };
 
     const boom: OasisPlugin = {

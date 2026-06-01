@@ -119,4 +119,37 @@ describe("buildCanvasTableLayout", () => {
       6,
     );
   });
+
+  it("includes paragraph spacing when measuring and positioning table cell text", () => {
+    const paragraph = createEditorParagraph("Com espaco");
+    paragraph.style = { spacingBefore: 12, spacingAfter: 8, lineHeight: 1 };
+    const cell = createEditorTableCell([paragraph]);
+    const table = createEditorTable([createEditorTableRow([cell])], [180]);
+    table.style = { width: 180 };
+    const state = createEditorStateFromDocument(createEditorDocument([table]));
+
+    const layout = buildCanvasTableLayout({
+      table,
+      state,
+      pageIndex: 0,
+      layoutMode: "wordParity",
+      originX: 0,
+      originY: 0,
+      contentWidth: 624,
+      estimatedHeight: 1,
+    });
+
+    const renderedCell = layout.cells[0]!;
+    const renderedParagraph = renderedCell.paragraphs[0]!;
+    const linesBottom = Math.max(
+      ...renderedParagraph.lines.map((line) => line.top + line.height),
+    );
+
+    expect(renderedParagraph.originY).toBeCloseTo(
+      renderedCell.contentTop + 12,
+      6,
+    );
+    expect(renderedParagraph.height).toBeCloseTo(12 + linesBottom + 8, 6);
+    expect(layout.height).toBeGreaterThan(linesBottom);
+  });
 });
