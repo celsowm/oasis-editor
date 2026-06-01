@@ -62,7 +62,7 @@ export function Menubar(props: MenubarProps) {
   const pruneTree = (nodes: MenuTreeItem[]): MenuTreeItem[] =>
     nodes.flatMap((node) => {
       const children = pruneTree(node.children);
-      const isExecutable = Boolean(node.item?.action) && !node.item?.separator;
+      const isExecutable = (Boolean(node.item?.action) || Boolean(node.item?.command)) && !node.item?.separator;
       if (!isExecutable && children.length === 0) {
         return [];
       }
@@ -183,6 +183,14 @@ function MenuNode(props: {
     e.stopPropagation();
     if (hasChildren) return;
     
+    if (node.item?.command && (!ctx.canExecuteCommand || ctx.canExecuteCommand(node.item.command) !== false)) {
+      if (ctx.executeCommand) {
+        ctx.executeCommand(node.item.command);
+        onClose();
+        return;
+      }
+    }
+
     if (node.item?.action) {
       void node.item.action(ctx);
     }

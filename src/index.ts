@@ -9,6 +9,8 @@ export type { OasisEditorContainerInstance } from "./app/bootstrap/createOasisEd
 export { OasisEditorContainer } from "./ui/OasisEditorContainer.js";
 export type { OasisEditorContainerProps } from "./ui/OasisEditorContainer.js";
 export { Editor } from "./core/Editor.js";
+export { CommandRegistry } from "./core/commands/CommandRegistry.js";
+export { PluginCollection } from "./core/plugins/PluginCollection.js";
 export { mount } from "./ui/mount.js";
 export { DocumentShell } from "./ui/shells/DocumentShell.js";
 export { InlineShell } from "./ui/shells/InlineShell.js";
@@ -18,6 +20,8 @@ export type {
   OasisPluginDefinition,
   OasisEditor,
   OasisCommand,
+  OasisCommandRegistry,
   CommandState,
+  PluginReference,
   Unsubscribe,
 } from "./core/plugin.js";

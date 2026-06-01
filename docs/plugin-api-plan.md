@@ -614,11 +614,24 @@ const editor = await createOasisEditor(root, {
 
 - [x] Criar tipos publicos iniciais para plugin/editor/comando em `src/core`.
 - [x] Trocar `any` de `OasisPlugin.install(editor: any)` por `OasisEditor`.
-- [ ] Implementar unregister em toolbar registry.
+- [x] Implementar unregister em toolbar registry.
 - [x] Criar runtime de comandos no core e adaptar `EditorCommandRegistry`.
 - [x] Criar `editor.execute`.
 - [x] Criar event bus basico (`on/once/off` + `change:data`).
 - [x] Iniciar migracao de comandos para plugin interno (`Essentials`).
-- [ ] Criar exemplo de plugin em `docs/examples` ou `src/examples`.
+- [x] Criar exemplo de plugin em `docs/examples` ou `src/examples`.
 - [x] Atualizar exports de tipos publicos no pacote raiz.
-- [ ] Adicionar testes unitarios para plugin lifecycle e comandos.
+- [x] Adicionar testes unitarios para plugin lifecycle e comandos.
+
+## Atualizacao MVP (2026-06-01)
+
+- `PluginCollection` implementada em `src/core/plugins/PluginCollection.ts` com:
+  - resolucao de `requires` (inclusive erro para dependencia ausente);
+  - deteccao de ciclo de dependencia;
+  - lifecycle previsivel `init -> afterInit -> destroy` com cleanup reverso em falha parcial.
+- Registry dedicado de comandos implementado em `src/core/commands/CommandRegistry.ts` e exposto em `editor.commands`.
+- `Editor` mantem compatibilidade com fachada legada: `registerCommand`, `unregisterCommand`, `execute`, `canExecute`.
+- Registries de UI atualizadas:
+  - `ToolbarRegistry`: dedupe por `id`, `unregister`, ordenacao por `order`;
+  - `MenuRegistry`: dedupe por `id`, `unregister`, ordenacao por `order`.
+- Menubar agora aceita itens com `command` (sem `action`) e usa fallback existente quando necessario.

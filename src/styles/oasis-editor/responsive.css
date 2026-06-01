@@ -5,25 +5,8 @@
 
   .oasis-titlebar {
     min-height: auto;
-    align-items: flex-start;
-    gap: 8px;
+    align-items: center;
     padding: 8px;
-  }
-
-  .oasis-titlebar-doc-icon,
-  .oasis-titlebar-avatar {
-    display: none;
-  }
-
-  .oasis-titlebar-title-input {
-    min-width: 128px;
-    max-width: 52vw;
-    font-size: 16px;
-  }
-
-  .oasis-titlebar-share {
-    min-height: 32px;
-    padding: 0 12px;
   }
 
   .oasis-outline-panel {

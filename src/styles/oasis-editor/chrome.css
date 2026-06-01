@@ -1,132 +1,32 @@
 .oasis-titlebar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  min-height: var(--oasis-chrome-height);
-  padding: 8px 16px 6px;
+  min-height: calc(var(--oasis-menu-height) + 8px);
+  padding: 2px 16px;
   border-bottom: 1px solid var(--oasis-border-color-muted);
   background: var(--oasis-toolbar-bg);
   color: var(--oasis-text);
   box-sizing: border-box;
 }
 
-.oasis-titlebar-left,
-.oasis-titlebar-actions,
-.oasis-titlebar-title-row {
+.oasis-titlebar-left {
   display: flex;
   align-items: center;
 }
 
 .oasis-titlebar-left {
   min-width: 0;
-  gap: 12px;
 }
 
-.oasis-titlebar-actions {
-  flex: 0 0 auto;
-  gap: 10px;
-}
-
-.oasis-titlebar-doc-icon {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-  background: var(--oasis-accent);
-  color: var(--oasis-paper);
-}
-
-.oasis-titlebar-doc-icon svg,
-.oasis-titlebar-icon-button svg,
-.oasis-titlebar-share svg,
+.oasis-titlebar svg,
 .oasis-outline-toggle svg,
 .oasis-menubar-submenu-icon {
   width: 18px;
   height: 18px;
 }
 
-.oasis-titlebar-title-stack {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.oasis-titlebar-title-row {
-  gap: 4px;
-}
-
-.oasis-titlebar-title-input {
-  min-width: 180px;
-  max-width: min(42vw, 520px);
-  margin: 0;
-  padding: 1px 6px;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  outline: none;
-  background: transparent;
-  color: var(--oasis-text);
-  font: 500 18px/1.35 var(--oasis-font-ui);
-}
-
-.oasis-titlebar-title-input:hover {
-  border-color: var(--oasis-toolbar-border);
-}
-
-.oasis-titlebar-title-input:focus {
-  border-color: var(--oasis-accent);
-  box-shadow: var(--oasis-focus-ring);
-}
-
-.oasis-titlebar-icon-button {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--oasis-text-muted);
-  cursor: pointer;
-}
-
-.oasis-titlebar-icon-button:hover {
-  background: var(--oasis-hover-bg);
-  color: var(--oasis-text);
-}
-
 .oasis-titlebar-menubar-slot {
-  margin-left: -8px;
-}
-
-.oasis-titlebar-share {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 34px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--oasis-accent-active);
-  color: var(--oasis-accent-active-text);
-  font: 600 13px/1 var(--oasis-font-ui);
-  cursor: pointer;
-}
-
-.oasis-titlebar-share:hover {
-  background: var(--oasis-accent-soft);
-}
-
-.oasis-titlebar-avatar {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #0f766e;
-  color: var(--oasis-paper);
-  font-weight: 700;
+  min-width: 0;
 }
 
 .oasis-menubar {

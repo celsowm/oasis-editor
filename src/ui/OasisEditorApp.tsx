@@ -113,6 +113,9 @@ import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
 import { createCanvasSurfaceHitResolver } from "./app/useCanvasSurfaceHitResolver.js";
 import { createEssentialsPlugin } from "../plugins/internal/createEssentialsPlugin.js";
+import type { OasisPlugin } from "../core/plugin.js";
+import { defaultToolbarRegistry } from "./components/Toolbar/toolbarRegistry.js";
+import { defaultMenuRegistry } from "./components/Menubar/menuRegistry.js";
 
 export interface OasisEditorLoadingOptions {
   label?: string;
@@ -140,6 +143,7 @@ export interface OasisEditorAppProps {
   layoutMode?: "fast" | "wordParity";
   loading?: boolean | OasisEditorLoadingOptions;
   onReady?: () => void;
+  plugins?: OasisPlugin[];
 }
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
@@ -516,10 +520,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       setImageAltDialog({ isOpen: true, initialAlt }),
   });
 
-  const runtimeEditor = new Editor({
-    doc: getStateSnapshot().document,
-    plugins: [
-      createEssentialsPlugin({
+  const essentialsPlugin = createEssentialsPlugin({
         isCommandEnabled: (commandName) =>
           !isReadOnly() &&
           (commandName !== "insertFootnote" || commandsController.canInsertFootnoteCommand()),
@@ -599,9 +600,42 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           focusInput();
           return true;
         },
-      }),
-    ],
+      });
+
+  const externalPlugins = props.plugins ?? [];
+  const runtimePlugins = [essentialsPlugin, ...externalPlugins];
+  const contributedToolbarIds: string[] = [];
+  const contributedMenuIds: string[] = [];
+
+  const runtimeEditor = new Editor({
+    doc: getStateSnapshot().document,
+    plugins: runtimePlugins,
   });
+
+  for (const plugin of runtimePlugins) {
+    for (const item of plugin.toolbar ?? []) {
+      defaultToolbarRegistry.register({
+        id: item.id,
+        type: "button",
+        command: item.command,
+        icon: item.icon,
+        group: item.group,
+        onClick: item.action ? () => item.action?.(runtimeEditor) : undefined,
+      });
+      contributedToolbarIds.push(item.id);
+    }
+
+    for (const item of plugin.menubar ?? []) {
+      defaultMenuRegistry.register({
+        id: item.id,
+        path: item.path,
+        command: item.command,
+        icon: item.icon,
+        shortcut: item.shortcut,
+      });
+      contributedMenuIds.push(item.id);
+    }
+  }
 
   const toolbarController = createEditorToolbarController({
     state: () => state,
@@ -1078,6 +1112,12 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   onCleanup(() => {
     runtimeEditor.destroy();
+    for (const id of contributedToolbarIds) {
+      defaultToolbarRegistry.unregister(id);
+    }
+    for (const id of contributedMenuIds) {
+      defaultMenuRegistry.unregister(id);
+    }
     onCleanupHook();
     surfaceEventsWithTextDrag.stopDragging();
     textDrag.stopDrag();

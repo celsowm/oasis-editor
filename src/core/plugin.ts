@@ -8,6 +8,16 @@ export interface OasisCommand<TPayload = unknown, TResult = unknown> {
   refresh?: () => CommandState;
 }
 
+export interface OasisCommandRegistry {
+  register: <TPayload = unknown, TResult = unknown>(
+    name: string,
+    command: OasisCommand<TPayload, TResult>,
+  ) => void;
+  unregister: (name: string) => void;
+  get: (name: string) => OasisCommand | undefined;
+  has: (name: string) => boolean;
+}
+
 export interface CommandState {
   isEnabled: boolean;
   isActive?: boolean;
@@ -16,17 +26,20 @@ export interface CommandState {
 
 export interface OasisEditor {
   readonly state: EditorState;
+  readonly commands: OasisCommandRegistry;
   registerCommand: <TPayload = unknown, TResult = unknown>(
     name: string,
     command: OasisCommand<TPayload, TResult>
   ) => void;
   unregisterCommand: (name: string) => void;
   execute: <TPayload = unknown, TResult = unknown>(name: string, payload?: TPayload) => TResult;
-  canExecute: (name: string) => boolean;
+  canExecute: (name: string, payload?: unknown) => boolean;
   on: (event: string, callback: (...args: unknown[]) => void) => Unsubscribe;
   once: (event: string, callback: (...args: unknown[]) => void) => Unsubscribe;
   off: (event: string, callback: (...args: unknown[]) => void) => void;
 }
+
+export type PluginReference = string | OasisPlugin;
 
 // Basic action descriptor for toolbar/menu
 export interface PluginAction {
@@ -46,6 +59,7 @@ export interface PluginMenuItem extends PluginAction {
 
 export interface OasisPlugin {
   name: string;
+  requires?: PluginReference[];
   schema?: {
     nodes?: Record<string, unknown>;
     marks?: Record<string, unknown>;

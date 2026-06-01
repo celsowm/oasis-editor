@@ -130,11 +130,6 @@ export const en = {
   "generic.save": "Save",
   "generic.apply": "Apply",
   "title.untitled": "Untitled document",
-  "title.documentTitle": "Document title",
-  "title.star": "Star document",
-  "title.move": "Move document",
-  "title.share": "Share",
-  "title.currentUser": "Current user",
 
   // Dialogs
   "dialog.imageAlt.title": "Image Alt Text",

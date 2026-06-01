@@ -1,7 +1,8 @@
 import { createStore } from "solid-js/store";
 import type { EditorState, EditorDocument } from "./model.js";
 import { createInitialEditorState, createEditorStateFromDocument } from "./editorState.js";
-import { PluginHost } from "./pluginHost.js";
+import { PluginCollection } from "./plugins/PluginCollection.js";
+import { CommandRegistry } from "./commands/CommandRegistry.js";
 import type { OasisCommand, OasisEditor, OasisPlugin } from "./plugin.js";
 
 export interface EditorOptions {
@@ -13,9 +14,9 @@ export interface EditorOptions {
 export class Editor implements OasisEditor {
   private stateStore: EditorState;
   private setState: any;
-  private pluginHost: PluginHost;
-  private commands = new Map<string, OasisCommand>();
+  private pluginCollection: PluginCollection;
   private listeners = new Map<string, Set<(...args: unknown[]) => void>>();
+  readonly commands = new CommandRegistry();
 
   constructor(options: EditorOptions = {}) {
     const initialState = options.doc 
@@ -26,7 +27,7 @@ export class Editor implements OasisEditor {
     this.stateStore = state;
     this.setState = setState;
 
-    this.pluginHost = new PluginHost(this, options.plugins ?? []);
+    this.pluginCollection = new PluginCollection(this, options.plugins ?? []);
   }
 
   get state(): EditorState {
@@ -44,11 +45,11 @@ export class Editor implements OasisEditor {
     name: string,
     command: OasisCommand<TPayload, TResult>
   ) {
-    this.commands.set(name, command as OasisCommand);
+    this.commands.register(name, command);
   }
 
   unregisterCommand(name: string) {
-    this.commands.delete(name);
+    this.commands.unregister(name);
   }
 
   execute<TPayload = unknown, TResult = unknown>(name: string, payload?: TPayload): TResult {
@@ -62,7 +63,7 @@ export class Editor implements OasisEditor {
     return command.execute(payload) as TResult;
   }
 
-  canExecute(name: string): boolean {
+  canExecute(name: string, _payload?: unknown): boolean {
     const command = this.commands.get(name);
     if (!command) {
       return false;
@@ -74,7 +75,7 @@ export class Editor implements OasisEditor {
   }
 
   destroy() {
-    this.pluginHost.destroy();
+    this.pluginCollection.destroy();
     this.commands.clear();
     this.listeners.clear();
   }

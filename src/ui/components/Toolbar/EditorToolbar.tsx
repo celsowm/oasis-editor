@@ -1,4 +1,4 @@
-import { Show, type JSX } from "solid-js";
+import { For, Show, type JSX } from "solid-js";
 import "./toolbar.css";
 import { ToolbarButton } from "./ToolbarButton.js";
 import { ToolbarSeparator } from "./ToolbarGroup.js";
@@ -14,6 +14,7 @@ import { StyleGroup } from "./groups/StyleGroup.js";
 import { TableGroup } from "./groups/TableGroup.js";
 import type { EditorToolbarCtx } from "./types.js";
 import { t } from "../../../i18n/index.js";
+import { defaultToolbarRegistry } from "./toolbarRegistry.js";
 
 const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 
@@ -43,6 +44,14 @@ export function EditorToolbar(props: {
       }
     }
     fallback();
+  };
+  const registryItems = () => defaultToolbarRegistry.getItems();
+  const runToolbarItem = (item: { command?: string; onClick?: (ctx: EditorToolbarCtx) => void }) => {
+    if (item.command) {
+      executeOrFallback(item.command, () => item.onClick?.(ctx()));
+      return;
+    }
+    item.onClick?.(ctx());
   };
 
   return (
@@ -131,6 +140,23 @@ export function EditorToolbar(props: {
         <ToolbarSeparator hidden={!ctx().isInsideTable()} />
 
         <SectionGroup ctx={ctx} />
+        <For each={registryItems()}>
+          {(item) => (
+            <Show
+              when={item.type === "separator"}
+              fallback={
+                <ToolbarButton
+                  icon={item.icon}
+                  tooltip={item.tooltip}
+                  onClick={() => runToolbarItem(item)}
+                  disabled={item.disabled?.(ctx())}
+                />
+              }
+            >
+              <ToolbarSeparator />
+            </Show>
+          )}
+        </For>
       </ToolbarOverflowManager>
     </section>
   );
