@@ -8,6 +8,22 @@ import { t } from "../../../../i18n/index.js";
 export function ReviewGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
   const state = () => ctx().state();
+  const executeOrFallback = (commandName: string, fallback: () => void) => {
+    const toolbarCtx = ctx();
+    const executeCommand = toolbarCtx.executeCommand;
+    const canExecuteCommand = toolbarCtx.canExecuteCommand;
+    if (executeCommand) {
+      if (canExecuteCommand && canExecuteCommand(commandName)) {
+        executeCommand(commandName);
+        return;
+      }
+      if (!canExecuteCommand) {
+        executeCommand(commandName);
+        return;
+      }
+    }
+    fallback();
+  };
 
   return (
     <>
@@ -26,7 +42,9 @@ export function ReviewGroup(props: { ctx: () => EditorToolbarCtx }) {
           wide
           active={state()?.trackChangesEnabled}
           data-testid="editor-toolbar-track-changes"
-          onClick={() => ctx().applyToggleTrackChangesCommand()}
+          onClick={() =>
+            executeOrFallback("toggleTrackChanges", () => ctx().applyToggleTrackChangesCommand())
+          }
           tooltip={t("toolbar.trackChanges")}
         />
         <ToolbarButton
@@ -35,7 +53,9 @@ export function ReviewGroup(props: { ctx: () => EditorToolbarCtx }) {
           wide
           data-testid="editor-toolbar-accept-revisions"
           disabled={ctx().selectionCollapsed()}
-          onClick={() => ctx().applyAcceptRevisionsCommand()}
+          onClick={() =>
+            executeOrFallback("acceptRevisions", () => ctx().applyAcceptRevisionsCommand())
+          }
           tooltip={t("toolbar.accept")}
         />
         <ToolbarButton
@@ -44,7 +64,9 @@ export function ReviewGroup(props: { ctx: () => EditorToolbarCtx }) {
           wide
           data-testid="editor-toolbar-reject-revisions"
           disabled={ctx().selectionCollapsed()}
-          onClick={() => ctx().applyRejectRevisionsCommand()}
+          onClick={() =>
+            executeOrFallback("rejectRevisions", () => ctx().applyRejectRevisionsCommand())
+          }
           tooltip={t("toolbar.reject")}
         />
         </div>

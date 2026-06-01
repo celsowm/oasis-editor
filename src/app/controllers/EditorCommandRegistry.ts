@@ -2,8 +2,14 @@ import { setSelection, insertPageBreakAtSelection, insertTextAtSelection, splitB
 import { getParagraphs, getParagraphText, paragraphOffsetToPosition } from "../../core/model.js";
 import type { EditorKeyboardDeps } from "./useEditorKeyboard.js";
 
+export interface EditorCommandExecutor {
+  executeCommand: (commandName: string, payload?: unknown) => unknown;
+  canExecuteCommand?: (commandName: string, payload?: unknown) => boolean | undefined;
+}
+
 export interface EditorKeyBinding {
   id: string;
+  command?: string;
   key: string;
   ctrlOrMeta?: boolean;
   shift?: boolean;
@@ -26,7 +32,7 @@ export class EditorCommandRegistry {
     return Array.from(this.bindings.values());
   }
 
-  execute(event: KeyboardEvent, deps: EditorKeyboardDeps): boolean {
+  execute(event: KeyboardEvent, deps: EditorKeyboardDeps, commandExecutor?: EditorCommandExecutor): boolean {
     const isCtrlOrMeta = event.ctrlKey || event.metaKey;
     const lowerKey = event.key.toLowerCase();
 
@@ -37,6 +43,14 @@ export class EditorCommandRegistry {
         Boolean(binding.shift) === event.shiftKey &&
         Boolean(binding.alt) === event.altKey
       ) {
+        if (binding.command && commandExecutor) {
+          const canExecute = commandExecutor.canExecuteCommand?.(binding.command) ?? true;
+          if (canExecute) {
+            commandExecutor.executeCommand(binding.command);
+            event.preventDefault();
+            return true;
+          }
+        }
         const handled = binding.execute(deps, event);
         if (handled !== false) {
           event.preventDefault();
@@ -51,6 +65,7 @@ export class EditorCommandRegistry {
 export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   {
     id: "selectAll",
+    command: "selectAll",
     key: "a",
     ctrlOrMeta: true,
     execute: (deps) => {
@@ -72,6 +87,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "editImageAlt",
+    command: "editImageAlt",
     key: "a",
     ctrlOrMeta: true,
     alt: true,
@@ -86,6 +102,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "insertFootnote",
+    command: "insertFootnote",
     key: "f",
     ctrlOrMeta: true,
     alt: true,
@@ -96,6 +113,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "pastePlainText",
+    command: "pastePlainText",
     key: "v",
     ctrlOrMeta: true,
     shift: true,
@@ -107,6 +125,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "bold",
+    command: "bold",
     key: "b",
     ctrlOrMeta: true,
     execute: (deps) => {
@@ -116,6 +135,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "italic",
+    command: "italic",
     key: "i",
     ctrlOrMeta: true,
     execute: (deps) => {
@@ -125,6 +145,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "underline",
+    command: "underline",
     key: "u",
     ctrlOrMeta: true,
     execute: (deps) => {
@@ -134,6 +155,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "link",
+    command: "link",
     key: "k",
     ctrlOrMeta: true,
     execute: (deps) => {
@@ -143,6 +165,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "orderedList",
+    command: "orderedList",
     key: "7",
     ctrlOrMeta: true,
     shift: true,
@@ -153,6 +176,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "bulletList",
+    command: "bulletList",
     key: "8",
     ctrlOrMeta: true,
     shift: true,
@@ -163,6 +187,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "find",
+    command: "find",
     key: "f",
     ctrlOrMeta: true,
     execute: (deps) => {
@@ -172,6 +197,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "replace",
+    command: "replace",
     key: "h",
     ctrlOrMeta: true,
     execute: (deps) => {
@@ -181,6 +207,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "undo",
+    command: "undo",
     key: "z",
     ctrlOrMeta: true,
     execute: (deps) => {
@@ -190,6 +217,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "redo",
+    command: "redo",
     key: "z",
     ctrlOrMeta: true,
     shift: true,
@@ -200,6 +228,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "redoAlternative",
+    command: "redo",
     key: "y",
     ctrlOrMeta: true,
     execute: (deps) => {
@@ -209,6 +238,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "pageBreak",
+    command: "pageBreak",
     key: "Enter",
     ctrlOrMeta: true,
     execute: (deps) => {
@@ -223,6 +253,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "lineBreak",
+    command: "lineBreak",
     key: "Enter",
     shift: true,
     execute: (deps) => {
@@ -237,6 +268,7 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
   },
   {
     id: "splitBlock",
+    command: "splitBlock",
     key: "Enter",
     execute: (deps) => {
       if (deps.commandsController.handleListEnter()) {

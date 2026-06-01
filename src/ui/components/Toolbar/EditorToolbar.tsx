@@ -28,6 +28,22 @@ export function EditorToolbar(props: {
   let toolbarRef: HTMLElement | undefined;
   const ctx = () => props.ctx;
   const showFileGroup = () => props.showFileGroup ?? true;
+  const executeOrFallback = (commandName: string, fallback: () => void) => {
+    const toolbarCtx = ctx();
+    const executeCommand = toolbarCtx.executeCommand;
+    const canExecuteCommand = toolbarCtx.canExecuteCommand;
+    if (executeCommand) {
+      if (canExecuteCommand && canExecuteCommand(commandName)) {
+        executeCommand(commandName);
+        return;
+      }
+      if (!canExecuteCommand) {
+        executeCommand(commandName);
+        return;
+      }
+    }
+    fallback();
+  };
 
   return (
     <section
@@ -76,14 +92,14 @@ export function EditorToolbar(props: {
           icon="undo"
           data-testid="editor-toolbar-undo"
           disabled={ctx().undoStack().length === 0}
-          onClick={() => ctx().performUndo()}
+          onClick={() => executeOrFallback("undo", () => ctx().performUndo())}
           tooltip={`${t("toolbar.undo")} (${mod}+Z)`}
         />
         <ToolbarButton
           icon="redo"
           data-testid="editor-toolbar-redo"
           disabled={ctx().redoStack().length === 0}
-          onClick={() => ctx().performRedo()}
+          onClick={() => executeOrFallback("redo", () => ctx().performRedo())}
           tooltip={`${t("toolbar.redo")} (${mod}+Shift+Z)`}
         />
 

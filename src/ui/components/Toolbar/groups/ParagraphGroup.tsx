@@ -15,6 +15,22 @@ import { t } from "../../../../i18n/index.js";
 export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
   const t_style = () => ctx().toolbarStyleState();
+  const executeOrFallback = (commandName: string, fallback: () => void) => {
+    const toolbarCtx = ctx();
+    const executeCommand = toolbarCtx.executeCommand;
+    const canExecuteCommand = toolbarCtx.canExecuteCommand;
+    if (executeCommand) {
+      if (canExecuteCommand && canExecuteCommand(commandName)) {
+        executeCommand(commandName);
+        return;
+      }
+      if (!canExecuteCommand) {
+        executeCommand(commandName);
+        return;
+      }
+    }
+    fallback();
+  };
 
   return (
     <>
@@ -24,7 +40,17 @@ export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
             icon={button.icon}
             active={t_style().align === button.value}
             data-testid={button.testId}
-            onClick={() => ctx().applyParagraphStyleCommand("align", button.value)}
+            onClick={() => {
+              const commandName =
+                button.value === "left"
+                  ? "alignLeft"
+                  : button.value === "center"
+                    ? "alignCenter"
+                    : button.value === "right"
+                      ? "alignRight"
+                      : "alignJustify";
+              executeOrFallback(commandName, () => ctx().applyParagraphStyleCommand("align", button.value));
+            }}
             tooltip={t(`toolbar.${button.icon.replace(/-./g, x => x[1].toUpperCase())}` as any)}
           />
         )}
@@ -36,7 +62,11 @@ export function ParagraphGroup(props: { ctx: () => EditorToolbarCtx }) {
             icon={button.icon}
             active={t_style().listKind === button.kind}
             data-testid={button.testId}
-            onClick={() => ctx().applyParagraphListCommand(button.kind)}
+            onClick={() =>
+              button.kind === "bullet"
+                ? executeOrFallback("bulletList", () => ctx().applyParagraphListCommand(button.kind))
+                : executeOrFallback("orderedList", () => ctx().applyParagraphListCommand(button.kind))
+            }
             tooltip={t(`toolbar.${button.kind}List` as any)}
           />
         )}

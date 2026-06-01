@@ -12,6 +12,22 @@ const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 export function InsertGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
   const t_style = () => ctx().toolbarStyleState();
+  const executeOrFallback = (commandName: string, fallback: () => void) => {
+    const toolbarCtx = ctx();
+    const executeCommand = toolbarCtx.executeCommand;
+    const canExecuteCommand = toolbarCtx.canExecuteCommand;
+    if (executeCommand) {
+      if (canExecuteCommand && canExecuteCommand(commandName)) {
+        executeCommand(commandName);
+        return;
+      }
+      if (!canExecuteCommand) {
+        executeCommand(commandName);
+        return;
+      }
+    }
+    fallback();
+  };
 
   return (
     <>
@@ -33,7 +49,7 @@ export function InsertGroup(props: { ctx: () => EditorToolbarCtx }) {
         active={Boolean(t_style().link)}
         data-testid="editor-toolbar-link"
         disabled={ctx().selectionCollapsed() && !t_style().link}
-        onClick={() => ctx().promptForLink()}
+        onClick={() => executeOrFallback("link", () => ctx().promptForLink())}
         tooltip={`${t("toolbar.link")} (${mod}+K)`}
         aria-label={t("toolbar.link")}
       />
@@ -49,7 +65,9 @@ export function InsertGroup(props: { ctx: () => EditorToolbarCtx }) {
         icon="superscript"
         data-testid="editor-toolbar-footnote"
         disabled={!ctx().canInsertFootnoteCommand()}
-        onClick={() => ctx().applyInsertFootnoteCommand()}
+        onClick={() =>
+          executeOrFallback("insertFootnote", () => ctx().applyInsertFootnoteCommand())
+        }
         tooltip={`${t("toolbar.footnote")} (${mod}+Alt+F)`}
         aria-label={t("toolbar.footnote")}
       />

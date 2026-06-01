@@ -13,4 +13,11 @@ export { mount } from "./ui/mount.js";
 export { DocumentShell } from "./ui/shells/DocumentShell.js";
 export { InlineShell } from "./ui/shells/InlineShell.js";
 export { BalloonShell } from "./ui/shells/BalloonShell.js";
-export type { OasisPlugin } from "./core/plugin.js";
+export type {
+  OasisPlugin,
+  OasisPluginDefinition,
+  OasisEditor,
+  OasisCommand,
+  CommandState,
+  Unsubscribe,
+} from "./core/plugin.js";

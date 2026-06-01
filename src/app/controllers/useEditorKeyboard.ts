@@ -74,6 +74,8 @@ export interface EditorKeyboardDeps {
   applySelectionPreservingStructure: (selection: EditorState["selection"]) => void;
   toggleFindReplace: (open?: boolean) => void;
   toggleReplace: (open?: boolean) => void;
+  executeCommand?: (commandName: string, payload?: unknown) => unknown;
+  canExecuteCommand?: (commandName: string, payload?: unknown) => boolean;
 }
 
 export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
@@ -105,7 +107,16 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
       return;
     }
 
-    if (registry.execute(event, deps)) {
+    const commandExecutor = deps.executeCommand
+      ? {
+          executeCommand: (commandName: string, payload?: unknown) =>
+            deps.executeCommand?.(commandName, payload),
+          canExecuteCommand: (commandName: string, payload?: unknown) =>
+            deps.canExecuteCommand?.(commandName, payload),
+        }
+      : undefined;
+
+    if (registry.execute(event, deps, commandExecutor)) {
       return;
     }
 

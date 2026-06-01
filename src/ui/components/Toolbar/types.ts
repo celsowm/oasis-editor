@@ -31,6 +31,8 @@ export interface EditorToolbarCtx {
   handleExportDocx: () => void | Promise<void>;
   handleExportPdf: () => void | Promise<void>;
   toggleFindReplace: (open?: boolean) => void;
+  executeCommand?: (commandName: string, payload?: unknown) => unknown;
+  canExecuteCommand?: (commandName: string, payload?: unknown) => boolean;
   performUndo: () => void;
   performRedo: () => void;
   focusInput: () => void;

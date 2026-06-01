@@ -2,6 +2,18 @@
 
 Este documento propoe um caminho para transformar o Oasis Editor em um editor customizavel e extensivel, com uma API publica inspirada no modelo do CKEditor 5: configuracao declarativa, plugins com ciclo de vida claro, comandos nomeados, extensoes de UI e pontos formais para schema, importacao/exportacao e integracoes de framework.
 
+## Status da implementacao (2026-06-01)
+
+Ja implementado no codigo:
+
+- Contratos tipados em `src/core/plugin.ts`: `OasisEditor`, `OasisPlugin`, `OasisCommand`, `CommandState`.
+- Runtime de comandos em `src/core/Editor.ts`: `registerCommand`, `unregisterCommand`, `execute`, `canExecute`.
+- Event bus basico em `Editor`: `on`, `once`, `off` e emissao de `change:data` no `dispatch`.
+- Ciclo de plugin no `PluginHost`: `init`, `afterInit`, `destroy`, registro/desregistro de comandos e deduplicacao por nome.
+- Integracao de comandos nomeados no teclado (`EditorCommandRegistry` + `useEditorKeyboard`).
+- Integracao de comandos nomeados em menubar e toolbar (com fallback legado quando necessario).
+- Plugin interno inicial `Essentials` via factory: `src/plugins/internal/createEssentialsPlugin.ts`, carregado no `Editor` por `plugins`.
+
 ## Objetivos
 
 1. Permitir criar builds customizados do Oasis com conjuntos diferentes de plugins.
@@ -13,15 +25,20 @@ Este documento propoe um caminho para transformar o Oasis Editor em um editor cu
 
 ## Situacao atual
 
-Ja existem pecas iniciais:
+As pecas principais de plugin/comando ja estao de pe, com tipagem e integracao funcional no app:
 
-- `src/core/plugin.ts` define `OasisPlugin`, `PluginAction` e `PluginMenuItem`.
-- `src/core/pluginHost.ts` registra plugins e executa `install`.
-- `src/core/Editor.ts` aceita `plugins` em `EditorOptions`.
-- `EditorCommandRegistry`, `ToolbarRegistry` e `MenuRegistry` ja apontam para uma arquitetura baseada em registros.
-- `src/index.ts` exporta `Editor`, shells, `mount`, `createOasisEditor` e o tipo `OasisPlugin`.
+- `src/core/plugin.ts` nao depende mais de `any` para o contrato principal.
+- `src/core/Editor.ts` ja funciona como runtime de comandos/eventos e recebe `plugins`.
+- `src/core/pluginHost.ts` ja registra comandos de plugin e roda ciclo de vida.
+- UI de teclado, menubar e toolbar ja usa comandos nomeados como caminho primario.
+- `Essentials` foi iniciado como plugin interno para concentrar comandos centrais.
 
-O problema principal e que essas pecas ainda sao superficiais: o plugin recebe `any`, os registries nao estao integrados num unico contexto publico, o comando nao tem contrato transacional forte, a UI ainda e majoritariamente fixa e nao ha divisao clara entre plugin de core e plugin de aplicacao.
+Gaps atuais:
+
+- `requires` ainda nao e resolvido no `PluginHost`.
+- Nao ha `CommandRegistry`/`PluginCollection` dedicados como modulos separados.
+- Facade de `model.change(writer)` ainda nao esta pronta.
+- Registries de schema/conversao/ui ainda nao estao formalizados como API publica estavel.
 
 ## Principios de arquitetura
 
@@ -334,6 +351,8 @@ Pronto quando:
 - `src/index.ts` exporta apenas a API publica pretendida.
 - exemplos TypeScript compilam sem depender de caminhos internos.
 
+Status: **parcialmente concluida**.
+
 ### Fase 1 - PluginCollection real
 
 Entregas:
@@ -349,6 +368,8 @@ Pronto quando:
 - `destroy` limpa contribuicoes registradas.
 - ha testes unitarios para ordem, erro e cleanup.
 
+Status: **parcialmente concluida** (ciclo de vida e deduplicacao ok; `requires` e tratamento de erros ainda pendentes).
+
 ### Fase 2 - CommandRegistry unificada
 
 Entregas:
@@ -363,6 +384,8 @@ Pronto quando:
 - UI nao chama diretamente metodos especificos para os comandos migrados.
 - toolbar reflete `isEnabled`, `isActive` e `value` dos comandos.
 
+Status: **parcialmente concluida** (execucao/canExecute e integracao de UI feitos para comandos principais; falta consolidar registry dedicado e cobertura completa de estado visual).
+
 ### Fase 3 - Event bus e ciclo de dados
 
 Entregas:
@@ -375,6 +398,8 @@ Pronto quando:
 
 - apps conseguem salvar automaticamente ouvindo `change:data`.
 - plugins conseguem reagir a selecao e documento sem acoplar em Solid/React.
+
+Status: **iniciada** (event bus basico existe; faltam eventos padronizados adicionais).
 
 ### Fase 4 - ModelFacade e Writer
 
@@ -534,6 +559,16 @@ O MVP de editor plugavel deve entregar:
 
 Esse MVP ja permitiria usar o Oasis como editor customizavel em aplicacoes reais, mesmo antes de schema e conversores totalmente plugaveis.
 
+Status atual do MVP:
+
+- `plugins` no `Editor`: **feito**.
+- ciclo basico de plugin (`init/afterInit/destroy`): **feito**.
+- `editor.execute` e `editor.canExecute`: **feito**.
+- teclado/toolbar/menu usando comandos registrados: **feito para comandos principais**.
+- event bus basico: **feito**.
+- plugins internos migrados: **em andamento** (`Essentials` iniciado).
+- plugin externo de exemplo completo: **pendente**.
+
 ## Exemplo de configuracao alvo
 
 ```ts
@@ -577,14 +612,13 @@ const editor = await createOasisEditor(root, {
 
 ## Checklist inicial de engenharia
 
-- [ ] Criar tipos publicos definitivos em `src/core/plugins`.
-- [ ] Trocar `any` de `OasisPlugin.install(editor: any)` por `OasisEditor`.
+- [x] Criar tipos publicos iniciais para plugin/editor/comando em `src/core`.
+- [x] Trocar `any` de `OasisPlugin.install(editor: any)` por `OasisEditor`.
 - [ ] Implementar unregister em toolbar registry.
-- [ ] Criar command registry no core e adaptar `EditorCommandRegistry`.
-- [ ] Criar `editor.execute`.
-- [ ] Criar event bus real.
-- [ ] Migrar comandos de texto para plugins internos.
+- [x] Criar runtime de comandos no core e adaptar `EditorCommandRegistry`.
+- [x] Criar `editor.execute`.
+- [x] Criar event bus basico (`on/once/off` + `change:data`).
+- [x] Iniciar migracao de comandos para plugin interno (`Essentials`).
 - [ ] Criar exemplo de plugin em `docs/examples` ou `src/examples`.
-- [ ] Atualizar exports do pacote.
+- [x] Atualizar exports de tipos publicos no pacote raiz.
 - [ ] Adicionar testes unitarios para plugin lifecycle e comandos.
-

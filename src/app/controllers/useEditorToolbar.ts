@@ -32,6 +32,8 @@ export interface UseEditorToolbarProps {
   selectionBoxes: Accessor<any[]>;
   selectedImageRun: () => any;
   toggleFindReplace: (open?: boolean) => void;
+  executeCommand?: (commandName: string, payload?: unknown) => unknown;
+  canExecuteCommand?: (commandName: string, payload?: unknown) => boolean;
   focusInput: () => void;
   clearPreferredColumn: () => void;
   resetTransactionGrouping: () => void;
@@ -99,6 +101,8 @@ export function createEditorToolbarController(deps: UseEditorToolbarProps) {
     handleExportDocx: deps.docIO.handleExportDocx,
     handleExportPdf: deps.docIO.handleExportPdf,
     toggleFindReplace: deps.toggleFindReplace,
+    executeCommand: deps.executeCommand,
+    canExecuteCommand: deps.canExecuteCommand,
     performUndo: deps.historyActions.performUndo,
     performRedo: deps.historyActions.performRedo,
     focusInput: deps.focusInput,

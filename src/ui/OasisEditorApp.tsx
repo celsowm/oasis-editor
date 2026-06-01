@@ -18,11 +18,15 @@ import {
 } from "./toolbarStyleState.js";
 import {
   getSelectedImageRun,
+  insertPageBreakAtSelection,
+  insertTextAtSelection,
   setSelection,
+  splitBlockAtSelection,
 } from "../core/editorCommands.js";
 import {
   createEditorStateFromDocument,
 } from "../core/editorState.js";
+import { Editor } from "../core/Editor.js";
 import {
   getDocumentParagraphs,
   getParagraphById,
@@ -108,6 +112,7 @@ import { createEditorFocusController } from "./app/useEditorFocus.js";
 import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
 import { createCanvasSurfaceHitResolver } from "./app/useCanvasSurfaceHitResolver.js";
+import { createEssentialsPlugin } from "../plugins/internal/createEssentialsPlugin.js";
 
 export interface OasisEditorLoadingOptions {
   label?: string;
@@ -511,6 +516,93 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       setImageAltDialog({ isOpen: true, initialAlt }),
   });
 
+  const runtimeEditor = new Editor({
+    doc: getStateSnapshot().document,
+    plugins: [
+      createEssentialsPlugin({
+        isCommandEnabled: (commandName) =>
+          !isReadOnly() &&
+          (commandName !== "insertFootnote" || commandsController.canInsertFootnoteCommand()),
+        selectAll: () => {
+          const paragraphs = getDocumentParagraphs(state.document);
+          if (paragraphs.length === 0) return false;
+          const firstParagraph = paragraphs[0]!;
+          const lastParagraph = paragraphs[paragraphs.length - 1]!;
+          clearPreferredColumn();
+          applyState(
+            setSelection(state, {
+              anchor: paragraphOffsetToPosition(firstParagraph, 0),
+              focus: paragraphOffsetToPosition(lastParagraph, getParagraphText(lastParagraph).length),
+            }),
+          );
+          focusInput();
+          return true;
+        },
+        editImageAlt: () => {
+          if (!selectedImageRun()) return false;
+          commandsController.promptForImageAlt();
+          return true;
+        },
+        insertFootnote: () => (commandsController.applyInsertFootnoteCommand(), true),
+        pastePlainText: () => {
+          forcePlainTextPaste = true;
+          focusInput();
+          return true;
+        },
+        bold: () => (keyboardCommandsController.applyBooleanStyleCommand("bold"), true),
+        italic: () => (keyboardCommandsController.applyBooleanStyleCommand("italic"), true),
+        underline: () => (keyboardCommandsController.applyBooleanStyleCommand("underline"), true),
+        strike: () => (keyboardCommandsController.applyBooleanStyleCommand("strike"), true),
+        superscript: () => (keyboardCommandsController.applyBooleanStyleCommand("superscript"), true),
+        subscript: () => (keyboardCommandsController.applyBooleanStyleCommand("subscript"), true),
+        link: () => (commandsController.promptForLink(), true),
+        alignLeft: () => (commandsController.applyParagraphStyleCommand("align", "left"), true),
+        alignCenter: () => (commandsController.applyParagraphStyleCommand("align", "center"), true),
+        alignRight: () => (commandsController.applyParagraphStyleCommand("align", "right"), true),
+        alignJustify: () => (commandsController.applyParagraphStyleCommand("align", "justify"), true),
+        orderedList: () => (commandsController.applyParagraphListCommand("ordered"), true),
+        bulletList: () => (commandsController.applyParagraphListCommand("bullet"), true),
+        find: () => (fr.setIsOpen(true), true),
+        replace: () => (fr.setIsOpen(true), true),
+        toggleTrackChanges: () => (commandsController.applyToggleTrackChangesCommand(), true),
+        acceptRevisions: () => (commandsController.applyAcceptRevisionsCommand(), true),
+        rejectRevisions: () => (commandsController.applyRejectRevisionsCommand(), true),
+        toggleShowMargins: () => (commandsController.applyToggleShowMarginsCommand(), true),
+        toggleShowParagraphMarks: () => (commandsController.applyToggleShowParagraphMarksCommand(), true),
+        undo: () => (historyActions.performUndo(), true),
+        redo: () => (historyActions.performRedo(), true),
+        pageBreak: () => {
+          clearPreferredColumn();
+          resetTransactionGrouping();
+          applyTransactionalState((current) =>
+            tableOps.applyTableAwareParagraphEdit(current, (temp) => insertPageBreakAtSelection(temp)),
+          );
+          focusInput();
+          return true;
+        },
+        lineBreak: () => {
+          clearPreferredColumn();
+          resetTransactionGrouping();
+          applyTransactionalState((current) =>
+            tableOps.applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, "\n")),
+          );
+          focusInput();
+          return true;
+        },
+        splitBlock: () => {
+          if (commandsController.handleListEnter()) return true;
+          clearPreferredColumn();
+          resetTransactionGrouping();
+          applyTransactionalState((current) =>
+            tableOps.applyTableAwareParagraphEdit(current, (temp) => splitBlockAtSelection(temp)),
+          );
+          focusInput();
+          return true;
+        },
+      }),
+    ],
+  });
+
   const toolbarController = createEditorToolbarController({
     state: () => state,
     undoStack,
@@ -526,6 +618,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     selectionBoxes: () => selectionBoxes(),
     selectedImageRun,
     toggleFindReplace: (open) => fr.setIsOpen(open ?? !fr.isOpen()),
+    executeCommand: (commandName, payload) => runtimeEditor.execute(commandName, payload),
+    canExecuteCommand: (commandName) => runtimeEditor.canExecute(commandName),
     focusInput,
     clearPreferredColumn,
     resetTransactionGrouping,
@@ -571,6 +665,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     toggleReplace: (open) => {
       fr.setIsOpen(open ?? !fr.isOpen());
     },
+    executeCommand: (commandName, payload) => runtimeEditor.execute(commandName, payload),
+    canExecuteCommand: (commandName) => runtimeEditor.canExecute(commandName),
   });
 
   const handleKeyDown = (
@@ -981,6 +1077,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   });
 
   onCleanup(() => {
+    runtimeEditor.destroy();
     onCleanupHook();
     surfaceEventsWithTextDrag.stopDragging();
     textDrag.stopDrag();

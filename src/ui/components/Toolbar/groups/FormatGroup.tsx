@@ -19,6 +19,22 @@ export function FormatGroup(props: { ctx: () => EditorToolbarCtx }) {
   const ctx = props.ctx;
   const t_style = () => ctx().toolbarStyleState();
   const [lastUnderlineStyle, setLastUnderlineStyle] = createSignal<EditorUnderlineStyle>("single");
+  const executeOrFallback = (commandName: string, fallback: () => void) => {
+    const toolbarCtx = ctx();
+    const executeCommand = toolbarCtx.executeCommand;
+    const canExecuteCommand = toolbarCtx.canExecuteCommand;
+    if (executeCommand) {
+      if (canExecuteCommand && canExecuteCommand(commandName)) {
+        executeCommand(commandName);
+        return;
+      }
+      if (!canExecuteCommand) {
+        executeCommand(commandName);
+        return;
+      }
+    }
+    fallback();
+  };
 
   const applyUnderlineStyle = (style: EditorUnderlineStyle) => {
     setLastUnderlineStyle(style);
@@ -26,7 +42,7 @@ export function FormatGroup(props: { ctx: () => EditorToolbarCtx }) {
     const styleValue: EditorUnderlineStyle | null = style === "single" ? null : style;
     ctx().applyValueStyleCommand("underlineStyle", styleValue);
     if (!wasActive) {
-      ctx().applyBooleanStyleCommand("underline");
+      executeOrFallback("underline", () => ctx().applyBooleanStyleCommand("underline"));
     }
   };
 
@@ -37,12 +53,12 @@ export function FormatGroup(props: { ctx: () => EditorToolbarCtx }) {
         ctx().applyValueStyleCommand("underlineStyle", style);
       }
     }
-    ctx().applyBooleanStyleCommand("underline");
+    executeOrFallback("underline", () => ctx().applyBooleanStyleCommand("underline"));
   };
 
   const removeUnderline = () => {
     if (t_style().underline) {
-      ctx().applyBooleanStyleCommand("underline");
+      executeOrFallback("underline", () => ctx().applyBooleanStyleCommand("underline"));
     }
     ctx().applyValueStyleCommand("underlineStyle", null);
   };
@@ -61,7 +77,11 @@ export function FormatGroup(props: { ctx: () => EditorToolbarCtx }) {
             icon={button.icon}
             active={!!t_style()[button.key]}
             data-testid={button.testId}
-            onClick={() => ctx().applyBooleanStyleCommand(button.key)}
+            onClick={() =>
+              button.key === "bold" || button.key === "italic"
+                ? executeOrFallback(button.key, () => ctx().applyBooleanStyleCommand(button.key))
+                : ctx().applyBooleanStyleCommand(button.key)
+            }
             tooltip={t(`toolbar.${button.key}` as any)}
           />
         )}
@@ -83,7 +103,11 @@ export function FormatGroup(props: { ctx: () => EditorToolbarCtx }) {
             icon={button.icon}
             active={!!t_style()[button.key]}
             data-testid={button.testId}
-            onClick={() => ctx().applyBooleanStyleCommand(button.key)}
+            onClick={() =>
+              button.key === "strike" || button.key === "superscript" || button.key === "subscript"
+                ? executeOrFallback(button.key, () => ctx().applyBooleanStyleCommand(button.key))
+                : ctx().applyBooleanStyleCommand(button.key)
+            }
             tooltip={t(`toolbar.${button.key}` as any)}
           />
         )}

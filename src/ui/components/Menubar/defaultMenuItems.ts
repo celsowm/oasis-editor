@@ -1,5 +1,16 @@
 import { defaultMenuRegistry, type MenuItem } from "./menuRegistry.js";
 
+const runCommand = (ctx: any, commandName: string, fallback: () => void) => {
+  if (ctx.canExecuteCommand && ctx.canExecuteCommand(commandName) === false) {
+    return;
+  }
+  if (ctx.executeCommand) {
+    ctx.executeCommand(commandName);
+    return;
+  }
+  fallback();
+};
+
 export const defaultMenuItems: MenuItem[] = [
   // File
   { id: "file_new", path: "File/New", labelKey: "menu.file.new", shortcut: "Ctrl+N", hidden: true, icon: "file-plus" },
@@ -13,19 +24,19 @@ export const defaultMenuItems: MenuItem[] = [
   { id: "file_print", path: "File/Print", labelKey: "menu.file.print", shortcut: "Ctrl+P", action: () => window.print(), icon: "printer" },
 
   // Edit
-  { id: "edit_undo", path: "Edit/Undo", labelKey: "toolbar.undo", shortcut: "Ctrl+Z", action: (ctx) => ctx.performUndo(), icon: "undo-2" },
-  { id: "edit_redo", path: "Edit/Redo", labelKey: "toolbar.redo", shortcut: "Ctrl+Y", action: (ctx) => ctx.performRedo(), icon: "redo-2" },
+  { id: "edit_undo", path: "Edit/Undo", labelKey: "toolbar.undo", shortcut: "Ctrl+Z", action: (ctx) => runCommand(ctx, "undo", () => ctx.performUndo()), icon: "undo-2" },
+  { id: "edit_redo", path: "Edit/Redo", labelKey: "toolbar.redo", shortcut: "Ctrl+Y", action: (ctx) => runCommand(ctx, "redo", () => ctx.performRedo()), icon: "redo-2" },
   { id: "edit_cut", path: "Edit/Cut", labelKey: "menu.edit.cut", shortcut: "Ctrl+X", hidden: true },
   { id: "edit_copy", path: "Edit/Copy", labelKey: "menu.edit.copy", shortcut: "Ctrl+C", action: () => { document.execCommand("copy"); }, icon: "copy" },
   { id: "edit_paste", path: "Edit/Paste", labelKey: "menu.edit.paste", shortcut: "Ctrl+V", hidden: true },
-  { id: "edit_find", path: "Edit/Find & Replace", labelKey: "find.title", shortcut: "Ctrl+F", action: (ctx) => ctx.toggleFindReplace(true), icon: "search" },
+  { id: "edit_find", path: "Edit/Find & Replace", labelKey: "find.title", shortcut: "Ctrl+F", action: (ctx) => runCommand(ctx, "find", () => ctx.toggleFindReplace(true)), icon: "search" },
   { id: "edit_selectAll", path: "Edit/Select All", labelKey: "menu.edit.selectAll", shortcut: "Ctrl+A", hidden: true },
 
   // View
   { id: "view_outline", path: "View/Show Outline", labelKey: "menu.view.outline", hidden: true },
   { id: "view_ruler", path: "View/Show Ruler", hidden: true },
-  { id: "view_margins", path: "View/Show Margins", labelKey: "menu.view.margins", action: (ctx) => ctx.applyToggleShowMarginsCommand(), icon: (ctx) => ctx.state().showMargins ? "check-square" : "square" },
-  { id: "view_paragraph_marks", path: "View/Show Paragraph Marks", labelKey: "menu.view.paragraphMarks", action: (ctx) => ctx.applyToggleShowParagraphMarksCommand(), icon: (ctx) => ctx.state().showParagraphMarks ? "check-square" : "square" },
+  { id: "view_margins", path: "View/Show Margins", labelKey: "menu.view.margins", action: (ctx) => runCommand(ctx, "toggleShowMargins", () => ctx.applyToggleShowMarginsCommand()), icon: (ctx) => ctx.state().showMargins ? "check-square" : "square" },
+  { id: "view_paragraph_marks", path: "View/Show Paragraph Marks", labelKey: "menu.view.paragraphMarks", action: (ctx) => runCommand(ctx, "toggleShowParagraphMarks", () => ctx.applyToggleShowParagraphMarksCommand()), icon: (ctx) => ctx.state().showParagraphMarks ? "check-square" : "square" },
   { id: "view_fullscreen", path: "View/Full Screen", labelKey: "menu.view.fullscreen", hidden: true },
   { id: "view_zoom", path: "View/Zoom", labelKey: "status.zoom", hidden: true },
   { id: "view_zoom_50", path: "View/Zoom/50%", hidden: true },
@@ -38,29 +49,29 @@ export const defaultMenuItems: MenuItem[] = [
   // Insert
   { id: "insert_image", path: "Insert/Image", labelKey: "toolbar.image", action: (ctx) => ctx.imageInputRef()?.click(), icon: "image" },
   { id: "insert_table", path: "Insert/Table", labelKey: "toolbar.table", action: (ctx) => ctx.insertTableCommand(3, 3), icon: "table" },
-  { id: "insert_link", path: "Insert/Link", labelKey: "toolbar.link", action: (ctx) => ctx.promptForLink(), icon: "link" },
-  { id: "insert_footnote", path: "Insert/Footnote", labelKey: "toolbar.footnote", shortcut: "Ctrl+Alt+F", action: (ctx) => ctx.applyInsertFootnoteCommand(), icon: "superscript" },
+  { id: "insert_link", path: "Insert/Link", labelKey: "toolbar.link", action: (ctx) => runCommand(ctx, "link", () => ctx.promptForLink()), icon: "link" },
+  { id: "insert_footnote", path: "Insert/Footnote", labelKey: "toolbar.footnote", shortcut: "Ctrl+Alt+F", action: (ctx) => runCommand(ctx, "insertFootnote", () => ctx.applyInsertFootnoteCommand()), icon: "superscript" },
   { id: "insert_hr", path: "Insert/Horizontal Rule", hidden: true },
-  { id: "insert_pageBreak", path: "Insert/Page Break", labelKey: "metric.pageBreak", action: (ctx) => ctx.applyInsertPageBreakCommand(), icon: "file-minus" },
+  { id: "insert_pageBreak", path: "Insert/Page Break", labelKey: "metric.pageBreak", action: (ctx) => runCommand(ctx, "pageBreak", () => ctx.applyInsertPageBreakCommand()), icon: "file-minus" },
   { id: "insert_specialChar", path: "Insert/Special Character", hidden: true },
   { id: "insert_comment", path: "Insert/Comment", hidden: true },
 
   // Format
   { id: "format_text", path: "Format/Text", labelKey: "menu.format.text", icon: "type" },
-  { id: "format_text_bold", path: "Format/Text/Bold", labelKey: "toolbar.bold", shortcut: "Ctrl+B", action: (ctx) => ctx.applyBooleanStyleCommand("bold"), icon: "bold" },
-  { id: "format_text_italic", path: "Format/Text/Italic", labelKey: "toolbar.italic", shortcut: "Ctrl+I", action: (ctx) => ctx.applyBooleanStyleCommand("italic"), icon: "italic" },
-  { id: "format_text_underline", path: "Format/Text/Underline", labelKey: "toolbar.underline", shortcut: "Ctrl+U", action: (ctx) => ctx.applyBooleanStyleCommand("underline"), icon: "underline" },
-  { id: "format_text_strike", path: "Format/Text/Strikethrough", labelKey: "toolbar.strike", action: (ctx) => ctx.applyBooleanStyleCommand("strike"), icon: "strikethrough" },
+  { id: "format_text_bold", path: "Format/Text/Bold", labelKey: "toolbar.bold", shortcut: "Ctrl+B", action: (ctx) => runCommand(ctx, "bold", () => ctx.applyBooleanStyleCommand("bold")), icon: "bold" },
+  { id: "format_text_italic", path: "Format/Text/Italic", labelKey: "toolbar.italic", shortcut: "Ctrl+I", action: (ctx) => runCommand(ctx, "italic", () => ctx.applyBooleanStyleCommand("italic")), icon: "italic" },
+  { id: "format_text_underline", path: "Format/Text/Underline", labelKey: "toolbar.underline", shortcut: "Ctrl+U", action: (ctx) => runCommand(ctx, "underline", () => ctx.applyBooleanStyleCommand("underline")), icon: "underline" },
+  { id: "format_text_strike", path: "Format/Text/Strikethrough", labelKey: "toolbar.strike", action: (ctx) => runCommand(ctx, "strike", () => ctx.applyBooleanStyleCommand("strike")), icon: "strikethrough" },
   { id: "format_paragraphStyles", path: "Format/Paragraph styles", labelKey: "toolbar.style", hidden: true },
   { id: "format_align", path: "Format/Align", labelKey: "menu.format.align", icon: "align-left" },
-  { id: "format_align_left", path: "Format/Align/Left", labelKey: "toolbar.alignLeft", action: (ctx) => ctx.applyParagraphStyleCommand("align", "left"), icon: "align-left" },
-  { id: "format_align_center", path: "Format/Align/Center", labelKey: "toolbar.alignCenter", action: (ctx) => ctx.applyParagraphStyleCommand("align", "center"), icon: "align-center" },
-  { id: "format_align_right", path: "Format/Align/Right", labelKey: "toolbar.alignRight", action: (ctx) => ctx.applyParagraphStyleCommand("align", "right"), icon: "align-right" },
-  { id: "format_align_justify", path: "Format/Align/Justify", labelKey: "toolbar.justify", action: (ctx) => ctx.applyParagraphStyleCommand("align", "justify"), icon: "align-justify" },
+  { id: "format_align_left", path: "Format/Align/Left", labelKey: "toolbar.alignLeft", action: (ctx) => runCommand(ctx, "alignLeft", () => ctx.applyParagraphStyleCommand("align", "left")), icon: "align-left" },
+  { id: "format_align_center", path: "Format/Align/Center", labelKey: "toolbar.alignCenter", action: (ctx) => runCommand(ctx, "alignCenter", () => ctx.applyParagraphStyleCommand("align", "center")), icon: "align-center" },
+  { id: "format_align_right", path: "Format/Align/Right", labelKey: "toolbar.alignRight", action: (ctx) => runCommand(ctx, "alignRight", () => ctx.applyParagraphStyleCommand("align", "right")), icon: "align-right" },
+  { id: "format_align_justify", path: "Format/Align/Justify", labelKey: "toolbar.justify", action: (ctx) => runCommand(ctx, "alignJustify", () => ctx.applyParagraphStyleCommand("align", "justify")), icon: "align-justify" },
   { id: "format_lineSpacing", path: "Format/Line spacing", hidden: true },
   { id: "format_lists", path: "Format/Lists", labelKey: "menu.format.lists", icon: "list" },
-  { id: "format_lists_bullet", path: "Format/Lists/Bullet List", labelKey: "toolbar.bulletList", action: (ctx) => ctx.applyParagraphListCommand("bullet"), icon: "list" },
-  { id: "format_lists_numbered", path: "Format/Lists/Numbered List", labelKey: "toolbar.numberedList", action: (ctx) => ctx.applyParagraphListCommand("ordered"), icon: "list-ordered" },
+  { id: "format_lists_bullet", path: "Format/Lists/Bullet List", labelKey: "toolbar.bulletList", action: (ctx) => runCommand(ctx, "bulletList", () => ctx.applyParagraphListCommand("bullet")), icon: "list" },
+  { id: "format_lists_numbered", path: "Format/Lists/Numbered List", labelKey: "toolbar.numberedList", action: (ctx) => runCommand(ctx, "orderedList", () => ctx.applyParagraphListCommand("ordered")), icon: "list-ordered" },
   { id: "format_clear", path: "Format/Clear formatting", hidden: true },
 
   // Tools
