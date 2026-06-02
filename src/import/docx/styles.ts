@@ -414,6 +414,28 @@ export function parseParagraphStyle(
   return Object.keys(style).length > 0 ? style : undefined;
 }
 
+export interface ParagraphAutospacingFlags {
+  before: boolean;
+  after: boolean;
+}
+
+/**
+ * Reads Word's "auto spacing" flags (`w:beforeAutospacing` / `w:afterAutospacing`)
+ * from a paragraph's `<w:spacing>` element. When these are set, Word ignores the
+ * literal before/after values and treats the margins as automatic HTML-style
+ * collapsing margins. The flags are needed so containers (e.g. table cells) can
+ * reproduce that collapsing; see `collapseCellAutospacing` in tables.ts.
+ */
+export function parseAutospacingFlags(
+  paragraphProperties: XmlElement | null,
+): ParagraphAutospacingFlags {
+  const spacing = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "spacing");
+  return {
+    before: isWordTrue(getAttributeValue(spacing, "beforeAutospacing")),
+    after: isWordTrue(getAttributeValue(spacing, "afterAutospacing")),
+  };
+}
+
 export function mergeImportedParagraphStyles(
   base: EditorParagraphStyle | undefined,
   local: EditorParagraphStyle | undefined,

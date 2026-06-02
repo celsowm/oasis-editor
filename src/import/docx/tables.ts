@@ -3,6 +3,7 @@ import { type Element as XmlElement } from "@xmldom/xmldom";
 import type {
   EditorBorderStyle,
   EditorNamedStyle,
+  EditorParagraphNode,
   EditorTableCellStyle,
   EditorTableNode,
 } from "../../core/model.js";
@@ -24,6 +25,7 @@ import { type AssetRegistry } from "./assetRegistry.js";
 import { type ThemeFontMap } from "./themeFonts.js";
 import { type NumberingMaps } from "./numbering.js";
 import { parseParagraphNode } from "./paragraphs.js";
+import { parseAutospacingFlags, type ParagraphAutospacingFlags } from "./styles.js";
 
 function getTableCellColSpan(cellProperties: XmlElement | null): number {
   if (!cellProperties) {
@@ -169,6 +171,53 @@ function isTableHeaderRow(rowNode: XmlElement): boolean {
   return rowProperties ? parseBooleanProperty(rowProperties, "tblHeader") : false;
 }
 
+/**
+ * Reproduces Word's HTML-style margin collapsing for paragraphs that use "auto
+ * spacing" (`w:beforeAutospacing` / `w:afterAutospacing`) inside a table cell.
+ * Word ignores the literal before/after values for these margins and collapses
+ * them: the first paragraph's auto before-space and the last paragraph's auto
+ * after-space collapse to 0 against the cell edge, and two adjacent auto margins
+ * collapse to their max instead of summing. Without this, oasis renders cells
+ * taller than Word because every paragraph's spacing is summed in full.
+ *
+ * The flags array is parallel to `paragraphs` (one entry per `<w:p>` in the cell).
+ */
+function collapseCellAutospacing(
+  paragraphs: EditorParagraphNode[],
+  flags: ParagraphAutospacingFlags[],
+): void {
+  const styleOf = (paragraph: EditorParagraphNode) =>
+    (paragraph.style ??= {});
+
+  const lastIndex = paragraphs.length - 1;
+  for (let index = 0; index < paragraphs.length; index += 1) {
+    const flag = flags[index];
+    if (!flag) {
+      continue;
+    }
+    if (index === 0 && flag.before) {
+      styleOf(paragraphs[index]!).spacingBefore = 0;
+    }
+    if (index === lastIndex && flag.after) {
+      styleOf(paragraphs[index]!).spacingAfter = 0;
+    }
+  }
+
+  for (let index = 0; index < lastIndex; index += 1) {
+    if (!flags[index]?.after || !flags[index + 1]?.before) {
+      continue;
+    }
+    const prev = styleOf(paragraphs[index]!);
+    const next = styleOf(paragraphs[index + 1]!);
+    // Collapse the adjacent auto margins into a single gap = max(after, before).
+    if ((prev.spacingAfter ?? 0) >= (next.spacingBefore ?? 0)) {
+      next.spacingBefore = 0;
+    } else {
+      prev.spacingAfter = 0;
+    }
+  }
+}
+
 export async function parseTableNode(
   tableNode: XmlElement,
   numberingMaps: NumberingMaps,
@@ -202,6 +251,7 @@ export async function parseTableNode(
     const cells = [];
     for (const cellNode of getChildrenByTagNameNS(rowNode, WORD_NS, "tc")) {
       const paragraphs = [];
+      const autospacingFlags: ParagraphAutospacingFlags[] = [];
       const cellProperties = getFirstChildByTagNameNS(cellNode, WORD_NS, "tcPr");
       for (const paragraphNode of getChildrenByTagNameNS(cellNode, WORD_NS, "p")) {
         paragraphs.push(
@@ -215,7 +265,11 @@ export async function parseTableNode(
             inheritedParagraphStyle,
           ),
         );
+        autospacingFlags.push(
+          parseAutospacingFlags(getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr")),
+        );
       }
+      collapseCellAutospacing(paragraphs, autospacingFlags);
       const colSpan = getTableCellColSpan(cellProperties);
       const vMerge = getTableCellVMerge(cellProperties);
       const cellStyle = parseTableCellStyle(cellProperties);

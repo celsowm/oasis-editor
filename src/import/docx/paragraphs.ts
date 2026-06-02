@@ -4,6 +4,7 @@ import type {
   EditorParagraphListStyle,
   EditorParagraphNode,
   EditorParagraphStyle,
+  EditorTextStyle,
 } from "../../core/model.js";
 import { createEditorParagraphFromRuns } from "../../core/editorState.js";
 import {
@@ -15,6 +16,7 @@ import { type AssetRegistry } from "./assetRegistry.js";
 import { type ThemeFontMap } from "./themeFonts.js";
 import {
   parseParagraphStyle,
+  parseRunStyle,
   normalizeImportedParagraphStyle,
   normalizeImportedRunStyle,
   withDocxImplicitSingleLineHeight,
@@ -26,11 +28,15 @@ function createImportedParagraph(
   runs: ImportedRun[],
   paragraphStyle: EditorParagraphStyle | undefined,
   list: EditorParagraphListStyle | undefined,
+  markRunStyle?: EditorTextStyle,
 ): EditorParagraphNode {
   const paragraph = createEditorParagraphFromRuns(
     runs.length > 0
       ? runs.map((run) => ({ text: run.text, styles: run.styles, image: run.image }))
-      : [{ text: "" }],
+      : // An empty paragraph still carries the formatting of its paragraph mark
+        // (`w:pPr/w:rPr`), which Word uses to render the blank line's font/size.
+        // Apply it so empty lines match Word instead of falling back to defaults.
+        [{ text: "", styles: markRunStyle }],
   );
   runs.forEach((run, index) => {
     if (run.field) {
@@ -104,12 +110,18 @@ export async function parseParagraphNodes(
   const paragraphStyle = normalizeImportedParagraphStyle(
     inheritedStyle ? { ...inheritedStyle, ...(parsedStyle ?? {}) } : parsedStyle,
   );
+  // Paragraph-mark run properties: the font/size Word applies to the blank line
+  // of an empty paragraph (and to its trailing mark).
+  const markRunStyle = parseRunStyle(
+    getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "rPr"),
+    themeFonts,
+  );
   const list = parseParagraphList(paragraphProperties, numberingMaps);
   const { segments, hasPageBreak } = splitRunsAtPageBreaks(runs);
 
   if (!hasPageBreak) {
     return {
-      paragraphs: [createImportedParagraph(runs, paragraphStyle, list)],
+      paragraphs: [createImportedParagraph(runs, paragraphStyle, list, markRunStyle)],
       pageBreakAfter: false,
     };
   }
@@ -128,7 +140,7 @@ export async function parseParagraphNodes(
     const style = pendingPageBreakBefore
       ? { ...(paragraphStyle ?? {}), pageBreakBefore: true }
       : paragraphStyle;
-    paragraphs.push(createImportedParagraph(segment, style, list));
+    paragraphs.push(createImportedParagraph(segment, style, list, markRunStyle));
     pendingPageBreakBefore = false;
   }
 

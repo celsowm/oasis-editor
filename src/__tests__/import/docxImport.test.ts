@@ -635,6 +635,41 @@ describe("DOCX import", () => {
     expect(cells[3]!.style?.verticalAlign).toBeUndefined();
   });
 
+  it("collapses auto-spacing (beforeAutospacing/afterAutospacing) margins in table cells", async () => {
+    const zip = new JSZip();
+    // Mirrors HTML-origin DOCX content (e.g. the OCJ model): every paragraph carries
+    // auto spacing, so Word ignores the literal before/after values and collapses the
+    // first paragraph's leading margin and the last paragraph's trailing margin against
+    // the cell edge, and collapses the adjacent auto margins between paragraphs.
+    const autoSpacing = `<w:spacing w:before="100" w:beforeAutospacing="1" w:after="100" w:afterAutospacing="1" w:line="240" w:lineRule="auto"/>`;
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tr>
+        <w:tc>
+          <w:p><w:pPr>${autoSpacing}</w:pPr></w:p>
+          <w:p><w:pPr>${autoSpacing}</w:pPr><w:r><w:t>OFICIO</w:t></w:r></w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+
+    const document = await importDocxToEditorDocument(await zip.generateAsync({ type: "arraybuffer" }));
+    const cellBlocks = getDocumentTables(document)[0]!.rows[0]!.cells[0]!.blocks;
+
+    // First paragraph: leading auto margin collapses to 0 against the cell top.
+    expect(cellBlocks[0]!.style?.spacingBefore).toBe(0);
+    // Last paragraph: trailing auto margin collapses to 0 against the cell bottom
+    // (this is the extra height that made oasis cells taller than Word).
+    expect(cellBlocks[1]!.style?.spacingAfter).toBe(0);
+    // Adjacent auto margins between the two paragraphs collapse to a single gap
+    // (max) rather than summing before + after.
+    expect(cellBlocks[1]!.style?.spacingBefore).toBe(0);
+  });
+
   it("imports table cell borders and carries them through DOCX and PDF export", async () => {
     const zip = new JSZip();
     const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

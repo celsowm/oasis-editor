@@ -1348,8 +1348,14 @@ export function projectBlocksLayout(
     const tableHeight =
       measuredHeights?.[sourceBlock.id] ??
       estimateTableBlockHeight(sourceBlock, styles, contentWidth, layoutMode);
-    if (sourceBlock.rows.length <= 1 || tableHeight <= getMaxHeightForPage(getCurrentPageIndex())) {
-      if (currentBlocks.length > 0 && currentHeight + tableHeight > getMaxHeightForPage(getCurrentPageIndex())) {
+    // Keep the table as a single atomic block only when it actually fits in the
+    // remaining space on the current page (or it is a single, unsplittable row).
+    // A multi-row table that fits on a full page but not in the remaining space
+    // must split to fill the current page first — matching Word, which breaks
+    // tables across pages by default instead of pushing the whole table down.
+    const maxHeightForCurrentPage = getMaxHeightForPage(getCurrentPageIndex());
+    if (sourceBlock.rows.length <= 1 || currentHeight + tableHeight <= maxHeightForCurrentPage) {
+      if (currentBlocks.length > 0 && currentHeight + tableHeight > maxHeightForCurrentPage) {
         flushPage();
       }
 
