@@ -2,11 +2,13 @@
 
 ## Sumário Executivo
 
+> Revisado contra o estado atual do repositório em 2026-06-02. Alguns achados originais continuam válidos, mas parte da modularização de layout já começou em `src/ui/layoutProjection/*`; este relatório trata esses pontos como continuidade de extração, não como trabalho ainda inexistente.
+
 | Top problema | Impacto | Esforço |
 |---|---:|---:|
 | **`OasisEditorApp.tsx` é um "composition root" com lógica demais**: estado, histórico, layout, comandos, plugins, IO, clipboard, dialogs, context menu e renderização no mesmo componente. | Alto: qualquer feature toca um arquivo crítico de ~1.700 linhas e aumenta risco de regressão. | **L** |
-| **Layout/paginação centralizado em `documentPagination.ts`**: texto, tabelas, headers/footers, footnotes, cache e paginação misturados. | Alto: difícil evoluir layout Word-like sem alterar função enorme e parâmetros longos. | **L/XL** |
-| **Contratos de plugin inconsistentes**: interface permite hooks assíncronos, mas runtime rejeita ou ignora `Promise`. | Alto para extensibilidade pública: plugins válidos pelo tipo podem quebrar em runtime. | **M** |
+| **Layout/paginação ainda concentrado em `documentPagination.ts`, apesar de extrações já iniciadas**: existem módulos auxiliares para parágrafo, tabela, headers/footers e constantes, mas as funções centrais ainda coordenam muita regra de paginação. | Alto: evoluir layout Word-like ainda exige alterar fluxo central e parâmetros longos. | **L/XL** |
+| **Contratos de plugin inconsistentes**: interface permite hooks assíncronos, mas runtime rejeita ou ignora `Promise`. | Alto para extensibilidade pública: plugins válidos pelo tipo podem quebrar em runtime. | **M/L** |
 | **Acoplamento de camadas e dependências concretas**: core acessa DOM em clipboard/parser HTML, export PDF depende de `ui/layoutProjection`, persistência usa singleton concreto. | Médio/alto: reduz testabilidade, SSR/worker e portabilidade. | **M/L** |
 | **OCP fraco para novos tipos/formatos**: muitos `if (block.type === ...)`, `switch` de underline/list/field, comandos hardcoded e unions espalhadas. | Médio/alto: adicionar bloco/estilo/export novo exige shotgun surgery. | **M/L** |
 
@@ -38,7 +40,7 @@
 
 ---
 
-### 1.2 `documentPagination.ts` mistura projeção de parágrafo, tabela, header/footer, footnote e paginação
+### 1.2 `documentPagination.ts` ainda concentra a orquestração de paginação
 
 - **`src/ui/layoutProjection/documentPagination.ts:37-49`** — constantes de fonte, página, tabela, footnote e grid no mesmo módulo.
 - **`src/ui/layoutProjection/documentPagination.ts:103-197`** — `projectParagraphLayout` mede campos `PAGE/NUMPAGES`, cria fragments, mede linhas e cacheia.
@@ -47,16 +49,17 @@
 - **`src/ui/layoutProjection/documentPagination.ts:1140-1479`** — `projectBlocksLayout` pagina parágrafos e tabelas.
 - **`src/ui/layoutProjection/documentPagination.ts:1481-1711`** — `projectDocumentLayout` resolve seções, headers/footers, footnotes e itera layout.
 
-**Por que viola SRP:** um arquivo único cuida de medição, cache, paginação, tabelas, footnotes, headers/footers e adaptação legacy.
+**Status atual:** já existem extrações em `src/ui/layoutProjection/paragraphProjection.ts`, `tableProjection.ts`, `headerFooterProjection.ts`, `headerFooterFootnotes.ts`, `blockHeights.ts` e `constants.ts`. Portanto, o anti-pattern não é mais "tudo está em um único arquivo", e sim que `documentPagination.ts` ainda funciona como orquestrador pesado com overload legacy, parâmetros longos e regras de footnotes/seções acopladas ao loop central.
+
+**Por que viola SRP:** a façade central ainda combina cache, paginação, tabelas, footnotes, headers/footers, adaptação legacy e coordenação de seções.
 
 **Impacto:** evolução de uma parte do layout exige entender todas as outras; grande risco de bugs cruzados entre footnotes, tables e headers.
 
-**Refatoração sugerida:** dividir em módulos pequenos mantendo API pública:
-- `paragraphLayout.ts`: `projectParagraphLayout`, `estimateParagraphBlockHeight`.
-- `tablePagination.ts`: altura/segmentação de tabelas.
-- `footnoteLayout.ts`: reservations/aplicação.
-- `sectionPagination.ts`: `projectDocumentLayout`.
-- Manter `documentPagination.ts` como façade exportando os mesmos símbolos.
+**Refatoração sugerida:** continuar a extração já iniciada, mantendo API pública:
+- mover reservas/aplicação de footnotes para um módulo dedicado que opere sobre estruturas de página;
+- mover a paginação de seções para um `sectionPagination.ts`;
+- converter parâmetros longos de `projectBlocksLayout`/`projectDocumentLayout` em objetos de contexto;
+- manter `documentPagination.ts` como façade compatível enquanto consumidores usam `src/ui/layoutProjection.ts`.
 
 ---
 
@@ -299,9 +302,12 @@ const UNDERLINE_RENDERING = {
 
 **Impacto:** extensibilidade pública enganosa; plugin válido por TypeScript falha em execução.
 
-**Refatoração sugerida:** escolher um contrato:
-- Simples: tornar hooks estritamente síncronos na interface.
-- Ou: tornar `PluginCollection.initializeAll()` async e o bootstrap aguardar.
+**Refatoração sugerida:** corrigir a violação preservando o contrato assíncrono já exposto:
+- tornar a inicialização de `PluginCollection` assíncrona, sem chamar `initializeAll()` no construtor;
+- expor um método como `await pluginCollection.initializeAll()` ou uma factory `createInitializedPluginCollection(...)`;
+- fazer o bootstrap do runtime aguardar `init` e `afterInit` antes de considerar o editor pronto;
+- tornar `destroy` assíncrono e aguardar `plugin.destroy`;
+- manter compatibilidade com plugins síncronos, pois `void` continua sendo um caso válido de `Promise<void>`.
 
 ---
 
@@ -514,7 +520,7 @@ interface DocumentPersistence {
 | Arquivo | Evidência |
 |---|---|
 | **`src/ui/OasisEditorApp.tsx:167-1721`** | God component/composition root com estado, controllers, plugins, clipboard, dialogs, overlays. |
-| **`src/ui/layoutProjection/documentPagination.ts:37-1711`** | God file de layout/paginação. |
+| **`src/ui/layoutProjection/documentPagination.ts:37-1711`** | Orquestrador ainda pesado de layout/paginação, apesar de extrações auxiliares já existentes. |
 | **`src/ui/components/CanvasEditorSurface.tsx:95-1009`** | Componente + painter + list numbering + cache + tabelas. |
 | **`src/app/controllers/useEditorTableOperations.ts:67-1131`** | God hook/service de tabelas. |
 | **`src/ui/components/Dialogs/FontDialog.tsx:223-1269`** | Dialog monolítico com dois tabs e regras. |
@@ -718,10 +724,10 @@ Exemplos de produção encontrados:
 
 | Problema | Prioridade | Esforço | Benefício |
 |---|---:|---:|---|
+| Corrigir runtime de plugins para suportar hooks async de verdade | P0 | M/L | Remove violação LSP em API pública e evita quebra de plugins válidos por tipo. |
 | Extrair runtime/plugins/clipboard/font-dialog bridge de `OasisEditorApp.tsx` | P0 | L | Reduz risco em arquivo central e facilita novas features. |
-| Corrigir contrato de plugin async vs sync | P0 | M | Evita quebra de plugins válidos por tipo. |
 | Mover parsing DOM de clipboard para `app/ui`, deixando core receber specs | P1 | M | Melhora testabilidade e separação de camadas. |
-| Separar `documentPagination.ts` em façade + módulos de parágrafo/tabela/footnote/seção | P1 | L/XL | Layout fica evolutivo e menos arriscado. |
+| Continuar extração de `documentPagination.ts` para footnotes/seções/context objects | P1 | L/XL | Layout fica evolutivo e menos arriscado sem desfazer extrações já feitas. |
 | Criar `textStyleMappings.ts` compartilhado | P1 | M | Remove duplicação em UI/canvas/PDF/DOCX. |
 | Quebrar `useEditorTableOperations.ts` em seleção/merge-split/row-column | P1 | L | Reduz complexidade de tabelas. |
 | Tipar `SelectedImageRun`, `WindowWithOasisDebug`, transient DOCX ref | P2 | S/M | Reduz `any` e bugs silenciosos. |
@@ -735,7 +741,7 @@ Exemplos de produção encontrados:
 ## 8. Próximos Passos Sugeridos
 
 1. **Correção rápida P0/P1**
-   - Ajustar `OasisPlugin` para hooks síncronos ou tornar `PluginCollection` async.
+   - Tornar `PluginCollection` e o bootstrap do runtime assíncronos, preservando `OasisPlugin` com hooks `void | Promise<void>`.
    - Remover/encapsular `any` mais arriscados (`selectedImageRun`, transient footnote ref, `setState`).
    - Trocar logs diretos em core por logger ou remover.
 
@@ -753,6 +759,6 @@ Exemplos de produção encontrados:
    - Centralizar mapeamentos tipográficos e unidades.
 
 5. **Depois que os módulos estiverem menores**
-   - Dividir `documentPagination.ts`.
+   - Continuar a redução de `documentPagination.ts`, priorizando footnotes, paginação de seções e objetos de contexto.
    - Dividir `CanvasEditorSurface.tsx` em painters.
    - Dividir `useEditorTableOperations.ts` em serviços menores.
