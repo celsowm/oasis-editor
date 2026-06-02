@@ -325,6 +325,22 @@ export function buildCanvasLayoutSnapshot(
               reason,
             });
           }
+          // As linhas de cada segmento são re-indexadas a partir de 0 dentro do
+          // segmento (ver buildSegmentTable). Traduzimos o índice local de volta
+          // para o índice global da linha no documento, para que hit-testing de
+          // resize e geometria de seleção casem com a tabela completa.
+          const segment = block.tableSegment;
+          const repeatedHeaderCount =
+            segment && segment.startRowIndex > 0
+              ? segment.repeatedHeaderRowCount
+              : 0;
+          const toDocumentRowIndex = (localRowIndex: number): number => {
+            if (!segment) return localRowIndex;
+            if (localRowIndex < repeatedHeaderCount) return localRowIndex;
+            return (
+              segment.startRowIndex + (localRowIndex - repeatedHeaderCount)
+            );
+          };
           for (const cell of tableLayout.cells) {
             for (const paragraphLayout of cell.paragraphs) {
               const paragraphId = paragraphLayout.paragraph.id;
@@ -358,7 +374,7 @@ export function buildCanvasLayoutSnapshot(
               })),
               tableCell: {
                 tableId: cell.tableId,
-                rowIndex: cell.rowIndex,
+                rowIndex: toDocumentRowIndex(cell.rowIndex),
                 cellIndex: cell.cellIndex,
                 left: cell.left,
                 top: cell.top,

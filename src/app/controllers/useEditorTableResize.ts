@@ -190,7 +190,7 @@ function buildTableGeometries(
     if (!cell) {
       continue;
     }
-    const key = `${cell.rowIndex}:${cell.cellIndex}`;
+    const key = `${paragraph.pageIndex}:${cell.rowIndex}:${cell.cellIndex}`;
     const tableMap =
       byTable.get(cell.tableId) ?? new Map<string, SnapshotCellRect>();
     let geometryCell = tableMap.get(key);
@@ -213,16 +213,6 @@ function buildTableGeometries(
       byTable.set(cell.tableId, tableMap);
     }
 
-    // Tabelas que atravessam páginas geram múltiplos segmentos cujos
-    // índices de linha são re-iniciados a partir de 0 dentro de cada segmento
-    // (ver buildSegmentTable). Sem o filtro abaixo, o conteúdo da "row 0" da
-    // página 2 contaminaria os bounds da "row 0" da página 1, produzindo um
-    // contentMinHeight = bottom(página 2) - top(página 1) gigante e fazendo
-    // o resize commitar uma altura absurda.
-    if (paragraph.pageIndex !== geometryCell.pageIndex) {
-      continue;
-    }
-
     const lineRightEdges = paragraph.lines.flatMap((line) =>
       line.slots.map((slot) => slot.left),
     );
@@ -239,7 +229,7 @@ function buildTableGeometries(
       lineBottomEdges.length > 0
         ? Math.max(...lineBottomEdges)
         : paragraph.top + paragraph.height;
-    const contentKey = `${cell.tableId}:${cell.rowIndex}:${cell.cellIndex}`;
+    const contentKey = `${cell.tableId}:${paragraph.pageIndex}:${cell.rowIndex}:${cell.cellIndex}`;
     const current = contentBoundsByCell.get(contentKey);
     if (!current) {
       contentBoundsByCell.set(contentKey, {
@@ -259,7 +249,7 @@ function buildTableGeometries(
   for (const [tableId, cellsMap] of byTable.entries()) {
     for (const cell of cellsMap.values()) {
       const content = contentBoundsByCell.get(
-        `${tableId}:${cell.rowIndex}:${cell.cellIndex}`,
+        `${tableId}:${cell.pageIndex}:${cell.rowIndex}:${cell.cellIndex}`,
       );
       if (!content) continue;
       cell.contentMinWidth = Math.max(0, content.right - content.left);
