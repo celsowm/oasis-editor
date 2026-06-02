@@ -41,6 +41,7 @@ interface SnapshotCellRect {
   tableId: string;
   rowIndex: number;
   cellIndex: number;
+  pageIndex: number;
   left: number;
   top: number;
   right: number;
@@ -192,11 +193,13 @@ function buildTableGeometries(
     const key = `${cell.rowIndex}:${cell.cellIndex}`;
     const tableMap =
       byTable.get(cell.tableId) ?? new Map<string, SnapshotCellRect>();
-    if (!tableMap.has(key)) {
-      tableMap.set(key, {
+    let geometryCell = tableMap.get(key);
+    if (!geometryCell) {
+      geometryCell = {
         tableId: cell.tableId,
         rowIndex: cell.rowIndex,
         cellIndex: cell.cellIndex,
+        pageIndex: paragraph.pageIndex,
         left: cell.left,
         top: cell.top,
         right: cell.left + cell.width,
@@ -205,8 +208,19 @@ function buildTableGeometries(
         height: cell.height,
         contentMinWidth: 0,
         contentMinHeight: 0,
-      });
+      };
+      tableMap.set(key, geometryCell);
       byTable.set(cell.tableId, tableMap);
+    }
+
+    // Tabelas que atravessam páginas geram múltiplos segmentos cujos
+    // índices de linha são re-iniciados a partir de 0 dentro de cada segmento
+    // (ver buildSegmentTable). Sem o filtro abaixo, o conteúdo da "row 0" da
+    // página 2 contaminaria os bounds da "row 0" da página 1, produzindo um
+    // contentMinHeight = bottom(página 2) - top(página 1) gigante e fazendo
+    // o resize commitar uma altura absurda.
+    if (paragraph.pageIndex !== geometryCell.pageIndex) {
+      continue;
     }
 
     const lineRightEdges = paragraph.lines.flatMap((line) =>
