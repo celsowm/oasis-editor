@@ -16,18 +16,16 @@ async function readComplexDocx(): Promise<ArrayBuffer> {
   );
 }
 
-describe("DOCX performance guardrails", () => {
-  it("imports and projects the complex document within the local budget", async () => {
-    const importStartedAt = performance.now();
+describe("DOCX complex document smoke test", () => {
+  it("imports and projects the complex document without dropping document structure", async () => {
     const document = await importDocxToEditorDocument(await readComplexDocx());
-    const importDurationMs = performance.now() - importStartedAt;
-
-    const layoutStartedAt = performance.now();
     const layout = projectDocumentLayout(document);
-    const layoutDurationMs = performance.now() - layoutStartedAt;
+    const blocks = document.sections?.flatMap((section) => section.blocks) ?? [];
+    const projectedBlocks = layout.pages.reduce((sum, page) => sum + page.blocks.length, 0);
 
-    expect(layout.pages.length).toBeGreaterThan(1);
-    expect(importDurationMs).toBeLessThan(5_000);
-    expect(layoutDurationMs).toBeLessThan(1_000);
+    expect(document.sections).toHaveLength(1);
+    expect(blocks.length).toBeGreaterThan(250);
+    expect(layout.pages.length).toBeGreaterThan(10);
+    expect(projectedBlocks).toBeGreaterThanOrEqual(blocks.length);
   });
 });

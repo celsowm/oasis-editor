@@ -114,6 +114,6 @@ describe("footnote UI commands", () => {
     expect(item?.path).toBe("Insert/Footnote");
     expect(item?.labelKey).toBe("toolbar.footnote");
     expect(item?.shortcut).toBe("Ctrl+Alt+F");
-    expect(item?.action).toBeTypeOf("function");
+    expect(item?.command).toBe("insertFootnote");
   });
 });

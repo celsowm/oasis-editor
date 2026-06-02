@@ -31,6 +31,22 @@ let observer: PerformanceObserver | null = null;
 
 // --- Public API ---
 
+function shouldLogPerformanceMetrics(): boolean {
+  if (typeof process !== "undefined" && process.env.OASIS_PERF_LOG === "1") {
+    return true;
+  }
+
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    return window.localStorage?.getItem("oasis:perf:log") === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function markStart(label: string): void {
   performance.mark(`${label}:start`);
 }
@@ -49,13 +65,14 @@ export function markEnd(label: string): void {
       timestamp: Math.round(measure.startTime),
     });
 
-    // Auto-log to console in real time
-    // eslint-disable-next-line no-console
-    console.info(
-      `%c[perf] ${label}`,
-      "color: #f59e0b;",
-      `${formatTimestamp()} ${duration}ms`,
-    );
+    if (shouldLogPerformanceMetrics()) {
+      // eslint-disable-next-line no-console
+      console.info(
+        `%c[perf] ${label}`,
+        "color: #f59e0b;",
+        `${formatTimestamp()} ${duration}ms`,
+      );
+    }
 
     // Clean up marks from the browser timeline
     performance.clearMarks(startName);
@@ -72,13 +89,14 @@ export function recordDuration(label: string, durationMs: number): void {
     timestamp: Date.now(),
   });
 
-  // Auto-log to console in real time
-  // eslint-disable-next-line no-console
-  console.info(
-    `%c[perf] ${label}`,
-    "color: #f59e0b;",
-    `${formatTimestamp()} ${Math.round(durationMs * 100) / 100}ms`,
-  );
+  if (shouldLogPerformanceMetrics()) {
+    // eslint-disable-next-line no-console
+    console.info(
+      `%c[perf] ${label}`,
+      "color: #f59e0b;",
+      `${formatTimestamp()} ${Math.round(durationMs * 100) / 100}ms`,
+    );
+  }
 }
 
 /**

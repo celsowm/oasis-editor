@@ -1,65 +1,45 @@
-import { getActiveSectionIndex } from "../../../../core/model.js";
-import type { EditorToolbarCtx } from "../types.js";
-import { ToolbarButton } from "../ToolbarButton.js";
-import { ToolbarDropdown } from "../ToolbarDropdown.js";
+import { Button } from "../primitives/Button.js";
+import { Menu } from "../primitives/Menu.js";
 import { t } from "../../../../i18n/index.js";
+import type { ToolbarActionApi } from "../schema/items.js";
 
-export function SectionGroup(props: { ctx: () => EditorToolbarCtx }) {
-  const ctx = props.ctx;
-  const state = () => ctx().state();
+/** Section page-setup panel (orientation, section breaks) — command-driven. */
+export function SectionGroup(props: { api: ToolbarActionApi }) {
+  const api = props.api;
 
   return (
-    <>
-      <ToolbarDropdown
-        label=""
-        icon="layout-template"
-        testId="editor-toolbar-section-dropdown"
-        tooltip={t("section.pageSetup")}
-        hideChevron
-        menuClass="oasis-editor-toolbar-panel"
-        keepMounted
-      >
-        <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
-        <ToolbarButton
+    <Menu
+      icon="layout-template"
+      testId="editor-toolbar-section-dropdown"
+      tooltip={t("section.pageSetup")}
+      hideChevron
+      panelClass="oasis-editor-toolbar-panel"
+      keepMounted
+    >
+      <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
+        <Button
           icon="layout"
-          active={
-            (state()?.document.sections?.[getActiveSectionIndex(state())] ?? state()?.document)
-              ?.pageSettings?.orientation === "landscape"
-          }
+          active={api.commands.state("toggleOrientation").isActive}
           data-testid="editor-toolbar-orientation"
-          onClick={() => {
-            const currentSectionIndex = getActiveSectionIndex(state());
-            const section =
-              state()?.document.sections?.[currentSectionIndex] || state()?.document;
-            if (!section) return;
-            const currentOrientation = section.pageSettings?.orientation || "portrait";
-            const nextOrientation = currentOrientation === "portrait" ? "landscape" : "portrait";
-            ctx().applyUpdateSectionSettingsCommand(currentSectionIndex, {
-              pageSettings: {
-                ...section.pageSettings!,
-                orientation: nextOrientation,
-              },
-            });
-          }}
+          onClick={() => api.commands.execute("toggleOrientation")}
           tooltip={t("section.toggleOrientation")}
         />
-        </div>
+      </div>
 
-        <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
-        <ToolbarButton
+      <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
+        <Button
           icon="scissors"
           data-testid="editor-toolbar-section-break-next"
-          onClick={() => ctx().applyInsertSectionBreakCommand("nextPage")}
+          onClick={() => api.commands.execute("sectionBreakNextPage")}
           tooltip={t("section.secNextTooltip")}
         />
-        <ToolbarButton
+        <Button
           icon="scissors"
           data-testid="editor-toolbar-section-break-continuous"
-          onClick={() => ctx().applyInsertSectionBreakCommand("continuous")}
+          onClick={() => api.commands.execute("sectionBreakContinuous")}
           tooltip={t("section.secContTooltip")}
         />
-        </div>
-      </ToolbarDropdown>
-    </>
+      </div>
+    </Menu>
   );
 }

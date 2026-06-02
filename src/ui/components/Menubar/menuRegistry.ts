@@ -1,13 +1,19 @@
+import type { CommandBus } from "../../../core/commands/CommandBus.js";
+import type { CommandRef } from "../../../core/commands/CommandRef.js";
 import type { TranslationKey } from "../../../i18n/index.js";
-import type { EditorToolbarCtx } from "../Toolbar/types.js";
+import type { ToolbarCommandState } from "../Toolbar/schema/items.js";
+
+/** Narrow host the menubar dispatches through — the command registry. */
+export interface MenubarHost {
+  commands: CommandBus<ToolbarCommandState>;
+}
 
 export interface MenuItem {
   id: string;
   path: string; // e.g., "File/New"
-  command?: string;
+  command?: CommandRef;
   labelKey?: TranslationKey; // e.g., "menu.file.new"
-  icon?: string | ((ctx: EditorToolbarCtx) => string);
-  action?: (ctx: EditorToolbarCtx) => void | Promise<void>;
+  icon?: string | ((host: MenubarHost) => string);
   shortcut?: string;
   order?: number;
   when?: () => boolean;

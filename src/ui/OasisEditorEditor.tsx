@@ -4,7 +4,7 @@ import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { RevisionOverlay } from "./components/RevisionOverlay.js";
 import { FloatingTableToolbar } from "./components/FloatingToolbar/FloatingTableToolbar.js";
-import type { EditorToolbarCtx } from "./components/Toolbar/types.js";
+import type { ToolbarHost } from "./components/Toolbar/state/createToolbarApi.js";
 import { t } from "../i18n/index.js";
 import {
   getDocumentParagraphs,
@@ -42,7 +42,8 @@ export interface OasisEditorEditorProps {
     progress: number;
     subProgress?: number;
   } | null>;
-  toolbarCtx?: () => EditorToolbarCtx;
+  toolbarHost?: () => ToolbarHost;
+  persistenceStatus?: () => string;
   showFloatingTableToolbar?: Accessor<boolean>;
   viewportHeight?: number | string;
   class?: string;
@@ -411,9 +412,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
           )}
         </div>
 
-        <Show when={props.toolbarCtx && props.showFloatingTableToolbar}>
+        <Show when={props.toolbarHost && props.showFloatingTableToolbar}>
           <FloatingTableToolbar
-            ctx={props.toolbarCtx!}
+            host={props.toolbarHost!}
             selectionBoxes={props.selectionBoxes}
             visible={props.showFloatingTableToolbar!}
             surfaceRef={() => scrollContentRef}
@@ -547,10 +548,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
         <span class="oasis-editor-statusbar-item">
           {t("status.zoom")}: 100%
         </span>
-        <Show when={props.toolbarCtx}>
+        <Show when={props.persistenceStatus}>
           {(() => {
-            const ctx = props.toolbarCtx!();
-            const rawStatus = ctx.persistenceStatus();
+            const rawStatus = props.persistenceStatus!();
             const status = rawStatus.toLowerCase();
             const key = status.includes("saved") ? "status.saved" :
                         status.includes("saving") ? "status.saving" : 

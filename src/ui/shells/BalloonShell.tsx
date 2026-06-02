@@ -13,13 +13,14 @@ export function BalloonShell(props: ShellProps) {
             measuredParagraphLayouts={() => props.measuredParagraphLayouts()}
             selectionBoxes={() => props.selectionBoxes()}
             selectedImageBox={() => props.selectedImageBox()}
-            toolbarCtx={() => props.toolbarCtx}
+            toolbarHost={props.toolbarHost}
+            persistenceStatus={() => props.persistenceStatus()}
             showFloatingTableToolbar={() => props.showFloatingTableToolbar()}
             caretBox={() => props.caretBox()}
             inputBox={() => props.inputBox()}
             hoveredRevision={() => props.hoveredRevision()}
             focused={() => props.focused()}
-            importProgress={props.importProgress ? () => props.importProgress() : undefined}
+            importProgress={props.importProgress}
             layoutMode={props.layoutMode}
 
             viewportHeight={props.viewportHeight()}            class={props.class}

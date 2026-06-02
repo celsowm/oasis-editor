@@ -57,7 +57,7 @@ export class Editor implements OasisEditor {
     if (!command) {
       throw new Error(`Unknown command: ${name}`);
     }
-    if (!this.canExecute(name)) {
+    if (!this.canExecute(name, payload)) {
       throw new Error(`Command disabled: ${name}`);
     }
     return command.execute(payload) as TResult;

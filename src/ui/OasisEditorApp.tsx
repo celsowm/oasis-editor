@@ -22,6 +22,11 @@ import {
   insertTextAtSelection,
   setSelection,
   splitBlockAtSelection,
+  setParagraphStyle,
+  setTableCellBorders,
+  setTableCellStyleValue,
+  setTableCellWidth,
+  setTableStyleValue,
 } from "../core/editorCommands.js";
 import {
   createEditorStateFromDocument,
@@ -39,8 +44,9 @@ import {
   type EditorParagraphNode,
   type EditorPosition,
   type EditorState,
+  type EditorBorderStyle,
 } from "../core/model.js";
-import { isSelectionCollapsed } from "../core/selection.js";
+import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
 
 import { createEditorLogger } from "../utils/logger.js";
 import {
@@ -57,7 +63,11 @@ import type {
 import {
   cloneEditorState,
 } from "../core/cloneState.js";
-import { EditorToolbar } from "./components/Toolbar/EditorToolbar.js";
+import { Toolbar } from "./components/Toolbar/Toolbar.js";
+import type { ToolbarHost } from "./components/Toolbar/state/createToolbarApi.js";
+import { createToolbarRegistry, type ToolbarRegistry } from "./components/Toolbar/registry/ToolbarRegistry.js";
+import { createDefaultToolbarPreset } from "./components/Toolbar/presets/defaultToolbar.js";
+import type { ToolbarItem } from "./components/Toolbar/schema/items.js";
 import { DocumentShell } from "./shells/DocumentShell.js";
 import { InlineShell } from "./shells/InlineShell.js";
 import { BalloonShell } from "./shells/BalloonShell.js";
@@ -79,7 +89,6 @@ import { createEditorDocumentIO } from "../app/controllers/useEditorDocumentIO.j
 import { createEditorRevisionController } from "../app/controllers/useEditorRevision.js";
 import { createEditorStyleController } from "../app/controllers/useEditorStyle.js";
 import { createEditorHistoryActions } from "../app/controllers/useEditorHistoryActions.js";
-import { createEditorToolbarController } from "../app/controllers/useEditorToolbar.js";
 import { computeLayoutInvalidationFromTransaction } from "./layoutInvalidation.js";
 import { DropCaret } from "./components/DropCaret.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
@@ -117,8 +126,8 @@ import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
 import { createCanvasSurfaceHitResolver } from "./app/useCanvasSurfaceHitResolver.js";
 import { createEssentialsPlugin } from "../plugins/internal/createEssentialsPlugin.js";
+import { commandRefName, resolveCommandRef, type CommandRef } from "../core/commands/CommandRef.js";
 import type { OasisPlugin } from "../core/plugin.js";
-import { defaultToolbarRegistry } from "./components/Toolbar/toolbarRegistry.js";
 import { defaultMenuRegistry } from "./components/Menubar/menuRegistry.js";
 
 export interface OasisEditorLoadingOptions {
@@ -148,6 +157,12 @@ export interface OasisEditorAppProps {
   loading?: boolean | OasisEditorLoadingOptions;
   onReady?: () => void;
   plugins?: OasisPlugin[];
+  /**
+   * Customize the toolbar after the built-in preset and plugin contributions
+   * load. Use the registry to add/insert/replace/remove/move items. Clients can
+   * tailor the toolbar without forking.
+   */
+  customizeToolbar?: (registry: ToolbarRegistry) => void;
 }
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
@@ -158,7 +173,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const logger = createEditorLogger("app");
   const {
     state,
-    setStateSignal,
     commitState,
     getStateSnapshot,
   } = createEditorAppState(props);
@@ -529,6 +543,17 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         isCommandEnabled: (commandName) =>
           !isReadOnly() &&
           (commandName !== "insertFootnote" || commandsController.canInsertFootnoteCommand()),
+        styleState: () => styleController.toolbarStyleState(),
+        documentStyles: () =>
+          Object.values(state.document?.styles ?? {}).map((style) => ({
+            id: style.id,
+            name: style.name,
+            fontFamily: style.textStyle?.fontFamily?.trim() || undefined,
+            fontSize:
+              typeof style.textStyle?.fontSize === "number" ? style.textStyle.fontSize : undefined,
+          })),
+        canUndo: () => undoStack().length > 0,
+        canRedo: () => redoStack().length > 0,
         selectAll: () => {
           const paragraphs = getDocumentParagraphs(state.document);
           if (paragraphs.length === 0) return false;
@@ -542,11 +567,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             }),
           );
           focusInput();
-          return true;
-        },
-        editImageAlt: () => {
-          if (!selectedImageRun()) return false;
-          commandsController.promptForImageAlt();
           return true;
         },
         insertFootnote: () => (commandsController.applyInsertFootnoteCommand(), true),
@@ -605,6 +625,187 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           focusInput();
           return true;
         },
+        setFontFamily: (value) => (
+          styleController.applyToolbarValueStyleCommand("fontFamily", value), true
+        ),
+        setFontSize: (value) => (
+          styleController.applyToolbarValueStyleCommand("fontSize", value), true
+        ),
+        setColor: (value) => (
+          styleController.applyToolbarValueStyleCommand("color", value), true
+        ),
+        setHighlight: (value) => (
+          styleController.applyToolbarValueStyleCommand("highlight", value), true
+        ),
+        setStyleId: (value) => (commandsController.handleStyleChange(value), true),
+        io: {
+          exportDocx: () => void docIO.handleExportDocx(),
+          exportPdf: () => void docIO.handleExportPdf(),
+          importDocx: () => importInputRef()?.click(),
+          insertImage: () => imageInputRef()?.click(),
+        },
+        linkOps: {
+          prompt: () => commandsController.promptForLink(),
+          remove: () => commandsController.removeLinkCommand(),
+          canPrompt: () =>
+            !isSelectionCollapsed(state.selection) ||
+            Boolean(styleController.toolbarStyleState().link),
+        },
+        imageAlt: {
+          prompt: () => commandsController.promptForImageAlt(),
+          isSelected: () => Boolean(selectedImageRun()),
+        },
+        paragraph: {
+          togglePageBreakBefore: () =>
+            commandsController.toggleParagraphFlagCommand("pageBreakBefore"),
+          toggleKeepWithNext: () =>
+            commandsController.toggleParagraphFlagCommand("keepWithNext"),
+          setSpacingAfter: (v) => commandsController.applyParagraphStyleCommand("spacingAfter", v),
+          setSpacingBefore: (v) => commandsController.applyParagraphStyleCommand("spacingBefore", v),
+          setIndentLeft: (v) => commandsController.applyParagraphStyleCommand("indentLeft", v),
+          setIndentFirstLine: (v) =>
+            commandsController.applyParagraphStyleCommand("indentFirstLine", v),
+          setIndentHanging: (v) =>
+            commandsController.applyParagraphStyleCommand("indentHanging", v),
+          setShading: (v) => commandsController.applyParagraphStyleCommand("shading", v),
+          applyBorders: () => {
+            const border: EditorBorderStyle = { width: 1, type: "solid", color: "#000000" };
+            applyTransactionalState(
+              (current) => {
+                let next = setParagraphStyle(current, "borderTop", border);
+                next = setParagraphStyle(next, "borderRight", border);
+                next = setParagraphStyle(next, "borderBottom", border);
+                next = setParagraphStyle(next, "borderLeft", border);
+                return next;
+              },
+              { mergeKey: "paraBorders" },
+            );
+            focusInput();
+          },
+          setLineHeight: (v) => commandsController.applyParagraphStyleCommand("lineHeight", v),
+          setListFormat: (format) =>
+            commandsController.handleListFormatChange(
+              format as Parameters<typeof commandsController.handleListFormatChange>[0],
+            ),
+          setListStartAt: (n) => commandsController.handleListStartAtChange(n),
+          outdent: () => void commandsController.handleListTab("outdent"),
+          indent: () => void commandsController.handleListTab("indent"),
+        },
+        setUnderlineStyle: (v) =>
+          (
+            styleController.applyToolbarValueStyleCommand as (
+              key: "underlineStyle",
+              value: string | null,
+            ) => void
+          )("underlineStyle", v),
+        section: {
+          isLandscape: () => {
+            const idx = getActiveSectionIndex(state);
+            const section = state.document.sections?.[idx] ?? state.document;
+            return section?.pageSettings?.orientation === "landscape";
+          },
+          toggleOrientation: () => {
+            const idx = getActiveSectionIndex(state);
+            const section = state.document.sections?.[idx] ?? state.document;
+            if (!section) return;
+            const current = section.pageSettings?.orientation ?? "portrait";
+            commandsController.applyUpdateSectionSettingsCommand(idx, {
+              pageSettings: {
+                ...section.pageSettings!,
+                orientation: current === "portrait" ? "landscape" : "portrait",
+              },
+            });
+          },
+          breakNextPage: () => commandsController.applyInsertSectionBreakCommand("nextPage"),
+          breakContinuous: () => commandsController.applyInsertSectionBreakCommand("continuous"),
+        },
+        table: (() => {
+          const insideTable = () =>
+            Boolean(
+              findParagraphTableLocation(
+                state.document,
+                state.selection.focus.paragraphId,
+                getActiveSectionIndex(state),
+              ),
+            );
+          const apply = (
+            producer: (current: EditorState) => EditorState,
+            mergeKey: string,
+          ) => {
+            applyTransactionalState(producer, { mergeKey });
+            focusInput();
+          };
+          const selectionLabel = (): string | null => {
+            const normalized = normalizeSelection(state);
+            if (normalized.isCollapsed) return null;
+            const secIdx = getActiveSectionIndex(state);
+            const anchorLoc = findParagraphTableLocation(
+              state.document,
+              state.selection.anchor.paragraphId,
+              secIdx,
+            );
+            const focusLoc = findParagraphTableLocation(
+              state.document,
+              state.selection.focus.paragraphId,
+              secIdx,
+            );
+            if (
+              !anchorLoc ||
+              !focusLoc ||
+              anchorLoc.blockIndex !== focusLoc.blockIndex ||
+              (anchorLoc.rowIndex === focusLoc.rowIndex &&
+                anchorLoc.cellIndex === focusLoc.cellIndex)
+            ) {
+              return null;
+            }
+            const count = selectionBoxes().length;
+            if (count === 0) return null;
+            return `Table selection: ${count} cell${count === 1 ? "" : "s"}`;
+          };
+          return {
+            insideTable,
+            selectionLabel,
+            canMerge: () => tableOps.canMergeSelectedTable(state),
+            canSplit: () => tableOps.canSplitSelectedTable(state),
+            canEditColumn: () => tableOps.canEditSelectedTableColumn(state),
+            canEditRow: () => tableOps.canEditSelectedTableRow(state),
+            merge: () => apply((c) => tableOps.mergeSelectedTable(c), "mergeTable"),
+            split: () => apply((c) => tableOps.splitSelectedTable(c), "splitTable"),
+            insertColumnBefore: () =>
+              apply((c) => tableOps.insertSelectedTableColumn(c, -1), "insertTableColumn"),
+            insertColumnAfter: () =>
+              apply((c) => tableOps.insertSelectedTableColumn(c, 1), "insertTableColumn"),
+            deleteColumn: () =>
+              apply((c) => tableOps.deleteSelectedTableColumn(c), "deleteTableColumn"),
+            insertRowBefore: () =>
+              apply((c) => tableOps.insertSelectedTableRow(c, -1), "insertTableRow"),
+            insertRowAfter: () =>
+              apply((c) => tableOps.insertSelectedTableRow(c, 1), "insertTableRow"),
+            deleteRow: () => apply((c) => tableOps.deleteSelectedTableRow(c), "deleteTableRow"),
+            cellShading: (color: string | null) =>
+              apply((c) => setTableCellStyleValue(c, "shading", color || null), "tableShading"),
+            cellBorders: () =>
+              apply(
+                (c) => setTableCellBorders(c, { width: 1, type: "solid", color: "#64748b" }),
+                "tableBorders",
+              ),
+            cellNoBorders: () =>
+              apply(
+                (c) => setTableCellBorders(c, { width: 0, type: "none", color: "transparent" }),
+                "tableBorders",
+              ),
+            width100: () => apply((c) => setTableStyleValue(c, "width", "100%"), "tableWidth"),
+            alignLeft: () =>
+              apply((c) => setTableCellStyleValue(c, "horizontalAlign", "left"), "tableAlign"),
+            alignCenter: () =>
+              apply((c) => setTableCellStyleValue(c, "horizontalAlign", "center"), "tableAlign"),
+            alignRight: () =>
+              apply((c) => setTableCellStyleValue(c, "horizontalAlign", "right"), "tableAlign"),
+            setCellWidth: (width: string) =>
+              apply((c) => setTableCellWidth(c, width), "tableCellWidth"),
+            insert: (rows: number, cols: number) => tableOps.insertTableCommand(rows, cols),
+          };
+        })(),
       });
 
   const externalPlugins = props.plugins ?? [];
@@ -617,16 +818,22 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     plugins: runtimePlugins,
   });
 
+  const toolbarRegistry = createToolbarRegistry();
+  for (const item of createDefaultToolbarPreset()) {
+    toolbarRegistry.register(item);
+  }
+
   for (const plugin of runtimePlugins) {
     for (const item of plugin.toolbar ?? []) {
-      defaultToolbarRegistry.register({
-        id: item.id,
+      const contributed: ToolbarItem = {
         type: "button",
+        id: item.id,
+        testId: item.id,
         command: item.command,
-        icon: item.icon,
+        iconName: item.icon,
         group: item.group,
-        onClick: item.action ? () => item.action?.(runtimeEditor) : undefined,
-      });
+      };
+      toolbarRegistry.register(contributed);
       contributedToolbarIds.push(item.id);
     }
 
@@ -642,28 +849,36 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     }
   }
 
-  const toolbarController = createEditorToolbarController({
-    state: () => state,
-    undoStack,
-    redoStack,
-    persistenceStatus,
-    importInputRef,
-    imageInputRef,
-    styleController,
-    commandsController,
-    tableOps,
-    docIO,
-    historyActions,
-    selectionBoxes: () => selectionBoxes(),
-    selectedImageRun,
-    toggleFindReplace: (open) => fr.setIsOpen(open ?? !fr.isOpen()),
-    executeCommand: (commandName, payload) => runtimeEditor.execute(commandName, payload),
-    canExecuteCommand: (commandName) => runtimeEditor.canExecute(commandName),
-    focusInput,
-    clearPreferredColumn,
-    resetTransactionGrouping,
-    applyTransactionalState,
-    logger,
+  props.customizeToolbar?.(toolbarRegistry);
+
+  const commandStateOf = (commandRef: CommandRef) => {
+    const commandName = commandRefName(commandRef);
+    const cmd = runtimeEditor.commands.get(commandName);
+    if (!cmd) {
+      return { isEnabled: false, isActive: false, value: undefined };
+    }
+    const refreshed = cmd.refresh?.() ?? { isEnabled: true };
+    return {
+      isEnabled: refreshed.isEnabled !== false,
+      isActive: Boolean(refreshed.isActive),
+      value: refreshed.value,
+    };
+  };
+
+  /** Narrow host the data-driven toolbar consumes — purely the command registry. */
+  const toolbarHost = (): ToolbarHost => ({
+    commands: {
+      execute: (command, payload) => {
+        const resolved = resolveCommandRef(command, payload);
+        return runtimeEditor.execute(resolved.name, resolved.payload);
+      },
+      canExecute: (command, payload) => {
+        const resolved = resolveCommandRef(command, payload);
+        return runtimeEditor.canExecute(resolved.name, resolved.payload);
+      },
+      state: commandStateOf,
+    },
+    focusEditor: focusInput,
   });
 
   const keyboardCommandsController = {
@@ -772,8 +987,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     return (
       <Shell
         state={state}
-        setState={setStateSignal}
-        toolbarCtx={toolbarController.toolbarCtx}
+        toolbarHost={toolbarHost}
+        persistenceStatus={persistenceStatus}
+        toolbarRegistry={toolbarRegistry}
         showChrome={showChrome()}
         showTitleBar={showTitleBar()}
         showMenubar={showMenubar()}
@@ -786,7 +1002,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         selectionBoxes={() => selectionBoxes()}
         selectedImageBox={() => selectedImageBox()}
         showFloatingTableToolbar={() =>
-          !isReadOnly() && toolbarController.tableSelectionLabel() !== null
+          !isReadOnly() && commandStateOf("tableContext").value !== null
         }
         caretBox={() => caretBox()}
         inputBox={() => inputBox()}
@@ -1223,7 +1439,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   onCleanup(() => {
     runtimeEditor.destroy();
     for (const id of contributedToolbarIds) {
-      defaultToolbarRegistry.unregister(id);
+      toolbarRegistry.remove(id);
     }
     for (const id of contributedMenuIds) {
       defaultMenuRegistry.unregister(id);
@@ -1246,7 +1462,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       }}
     >
       <Show when={!useComposedShell() && showChrome() && showToolbar()}>
-        <EditorToolbar ctx={toolbarController.toolbarCtx} />
+        <Toolbar host={toolbarHost} registry={toolbarRegistry} />
       </Show>
 
       <LinkDialog
@@ -1306,9 +1522,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
             measuredParagraphLayouts={() => measuredParagraphLayouts()}
             selectionBoxes={() => selectionBoxes()}
             selectedImageBox={() => selectedImageBox()}
-            toolbarCtx={() => toolbarController.toolbarCtx}
+            toolbarHost={toolbarHost}
+            persistenceStatus={persistenceStatus}
             showFloatingTableToolbar={() =>
-              !isReadOnly() && toolbarController.tableSelectionLabel() !== null
+              !isReadOnly() && commandStateOf("tableContext").value !== null
             }
             caretBox={() => caretBox()}
             inputBox={() => inputBox()}

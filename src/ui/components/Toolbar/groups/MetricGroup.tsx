@@ -1,43 +1,47 @@
-import { setParagraphStyle } from "../../../../core/editorCommands.js";
-import type { EditorBorderStyle } from "../../../../core/model.js";
-import type { EditorToolbarCtx } from "../types.js";
-import { ToolbarButton } from "../ToolbarButton.js";
-import { ToolbarDropdown } from "../ToolbarDropdown.js";
+import { Button } from "../primitives/Button.js";
+import { Menu } from "../primitives/Menu.js";
 import { t } from "../../../../i18n/index.js";
+import type { ToolbarActionApi } from "../schema/items.js";
 
-export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
-  const ctx = props.ctx;
-  const t_style = () => ctx().toolbarStyleState();
+const numValue = (api: ToolbarActionApi, command: string): string => {
+  const value = api.commands.state(command).value;
+  return value == null ? "" : String(value);
+};
+
+/** Paragraph metrics panel (spacing, indents, shading, borders) — command-driven. */
+export function MetricGroup(props: { api: ToolbarActionApi }) {
+  const api = props.api;
+  const onNumber =
+    (command: string) => (event: { currentTarget: HTMLInputElement }) =>
+      api.commands.execute(command, event.currentTarget.value);
 
   return (
-    <>
-      <ToolbarDropdown
-        label=""
-        icon="sliders-horizontal"
-        testId="editor-toolbar-metrics-dropdown"
-        tooltip={t("metric.leftIndent")}
-        hideChevron
-        menuClass="oasis-editor-toolbar-panel"
-        keepMounted
-      >
-        <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
-        <ToolbarButton
+    <Menu
+      icon="sliders-horizontal"
+      testId="editor-toolbar-metrics-dropdown"
+      tooltip={t("metric.leftIndent")}
+      hideChevron
+      panelClass="oasis-editor-toolbar-panel"
+      keepMounted
+    >
+      <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
+        <Button
           icon="file-up"
-          active={t_style().pageBreakBefore}
+          active={api.commands.state("togglePageBreakBefore").isActive}
           data-testid="editor-toolbar-page-break-before"
-          onClick={() => ctx().toggleParagraphFlagCommand("pageBreakBefore")}
+          onClick={() => api.commands.execute("togglePageBreakBefore")}
           tooltip={t("metric.pageBreakBefore")}
         />
-        <ToolbarButton
+        <Button
           icon="link-2"
-          active={t_style().keepWithNext}
+          active={api.commands.state("toggleKeepWithNext").isActive}
           data-testid="editor-toolbar-keep-with-next"
-          onClick={() => ctx().toggleParagraphFlagCommand("keepWithNext")}
+          onClick={() => api.commands.execute("toggleKeepWithNext")}
           tooltip={t("metric.keepWithNext")}
         />
-        </div>
+      </div>
 
-        <div class="oasis-editor-toolbar-panel-grid">
+      <div class="oasis-editor-toolbar-panel-grid">
         <label class="oasis-editor-tool-metric" title={t("metric.spacingAfter")}>
           <span>{t("metric.after")}</span>
           <input
@@ -46,13 +50,8 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
             data-testid="editor-toolbar-spacing-after"
             min="0"
             step="1"
-            value={t_style().spacingAfter}
-            onChange={(event) =>
-              ctx().applyParagraphStyleCommand(
-                "spacingAfter",
-                event.currentTarget.value ? Number(event.currentTarget.value) : null,
-              )
-            }
+            value={numValue(api, "setSpacingAfter")}
+            onChange={onNumber("setSpacingAfter")}
           />
         </label>
 
@@ -64,13 +63,8 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
             data-testid="editor-toolbar-indent-left"
             min="0"
             step="1"
-            value={t_style().indentLeft}
-            onChange={(event) =>
-              ctx().applyParagraphStyleCommand(
-                "indentLeft",
-                event.currentTarget.value ? Number(event.currentTarget.value) : null,
-              )
-            }
+            value={numValue(api, "setIndentLeft")}
+            onChange={onNumber("setIndentLeft")}
           />
         </label>
 
@@ -81,13 +75,8 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
             class="oasis-editor-tool-number"
             data-testid="editor-toolbar-indent-first-line"
             step="1"
-            value={t_style().indentFirstLine}
-            onChange={(event) =>
-              ctx().applyParagraphStyleCommand(
-                "indentFirstLine",
-                event.currentTarget.value ? Number(event.currentTarget.value) : null,
-              )
-            }
+            value={numValue(api, "setIndentFirstLine")}
+            onChange={onNumber("setIndentFirstLine")}
           />
         </label>
 
@@ -99,13 +88,8 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
             data-testid="editor-toolbar-indent-hanging"
             min="0"
             step="1"
-            value={t_style().indentHanging}
-            onChange={(event) =>
-              ctx().applyParagraphStyleCommand(
-                "indentHanging",
-                event.currentTarget.value ? Number(event.currentTarget.value) : null,
-              )
-            }
+            value={numValue(api, "setIndentHanging")}
+            onChange={onNumber("setIndentHanging")}
           />
         </label>
 
@@ -115,32 +99,20 @@ export function MetricGroup(props: { ctx: () => EditorToolbarCtx }) {
             type="color"
             class="oasis-editor-tool-color-input"
             data-testid="editor-toolbar-paragraph-shading"
-            value={t_style().shading || "#ffffff"}
-            onInput={(event) => ctx().applyParagraphStyleCommand("shading", event.currentTarget.value)}
+            value={numValue(api, "setParagraphShading") || "#ffffff"}
+            onInput={(event) =>
+              api.commands.execute("setParagraphShading", event.currentTarget.value)
+            }
           />
         </label>
 
-        <ToolbarButton
+        <Button
           icon="frame"
           data-testid="editor-toolbar-paragraph-borders"
-          onClick={() => {
-            const border: EditorBorderStyle = { width: 1, type: "solid", color: "#000000" };
-            ctx().applyTransactionalState(
-              (current) => {
-                let next = setParagraphStyle(current, "borderTop", border);
-                next = setParagraphStyle(next, "borderRight", border);
-                next = setParagraphStyle(next, "borderBottom", border);
-                next = setParagraphStyle(next, "borderLeft", border);
-                return next;
-              },
-              { mergeKey: "paraBorders" },
-            );
-            ctx().focusInput();
-          }}
+          onClick={() => api.commands.execute("applyParagraphBorders")}
           tooltip={t("metric.applyBorders")}
         />
-        </div>
-      </ToolbarDropdown>
-    </>
+      </div>
+    </Menu>
   );
 }

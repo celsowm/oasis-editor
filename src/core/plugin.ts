@@ -1,5 +1,6 @@
 import type { EditorState } from "./model.js";
 import type { Editor } from "./Editor.js";
+import type { CommandRef } from "./commands/CommandRef.js";
 
 export type Unsubscribe = () => void;
 
@@ -41,13 +42,14 @@ export interface OasisEditor {
 
 export type PluginReference = string | OasisPlugin;
 
-// Basic action descriptor for toolbar/menu
+// Toolbar/menu contribution descriptor. Contributions dispatch exclusively
+// through the command registry — register the command in `commands`, then
+// reference it here by name. There is no inline-callback escape hatch.
 export interface PluginAction {
   id: string;
-  command?: string;
+  command: CommandRef;
   icon?: string;
   group?: string; // e.g. "insert", "format"
-  action?: (editor: OasisEditor) => void;
 }
 
 export interface PluginMenuItem extends PluginAction {

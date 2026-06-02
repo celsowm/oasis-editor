@@ -1,6 +1,7 @@
 import { Show, splitProps, type JSX } from "solid-js";
 
-interface ToolbarButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ToolbarButtonProps
+  extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: string;
   label?: string;
   active?: boolean;
@@ -8,8 +9,18 @@ interface ToolbarButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement>
   wide?: boolean;
 }
 
-export function ToolbarButton(props: ToolbarButtonProps) {
-  const [local, others] = splitProps(props, ["icon", "label", "active", "tooltip", "wide", "aria-label", "class", "classList"]);
+/** Generic toolbar button primitive (icon and/or label, active/disabled). */
+export function Button(props: ToolbarButtonProps): JSX.Element {
+  const [local, others] = splitProps(props, [
+    "icon",
+    "label",
+    "active",
+    "tooltip",
+    "wide",
+    "aria-label",
+    "class",
+    "classList",
+  ]);
 
   const ariaLabel = () => local["aria-label"] || local.tooltip || local.label || "";
 
@@ -32,9 +43,7 @@ export function ToolbarButton(props: ToolbarButtonProps) {
       <Show when={local.label}>
         <span>{local.label}</span>
       </Show>
-      <Show when={!local.icon && !local.label}>
-        {others.children}
-      </Show>
+      <Show when={!local.icon && !local.label}>{others.children}</Show>
     </button>
   );
 }

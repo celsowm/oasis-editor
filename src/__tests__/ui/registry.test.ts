@@ -1,20 +1,43 @@
 import { describe, expect, it } from "vitest";
-import { ToolbarRegistry } from "../../ui/components/Toolbar/toolbarRegistry.js";
+import { createToolbarRegistry } from "../../ui/components/Toolbar/registry/ToolbarRegistry.js";
 import { MenuRegistry } from "../../ui/components/Menubar/menuRegistry.js";
 
 describe("UI registries", () => {
   it("deduplicates and orders toolbar items", () => {
-    const registry = new ToolbarRegistry();
+    const registry = createToolbarRegistry();
 
-    registry.register({ id: "b", type: "button", order: 20 });
-    registry.register({ id: "a", type: "button", order: 10 });
-    registry.register({ id: "a", type: "button", order: 5, tooltip: "updated" });
+    registry.register({ id: "b", type: "button", command: "b", order: 20 });
+    registry.register({ id: "a", type: "button", command: "a", order: 10 });
+    registry.register({ id: "a", type: "button", command: "a2", order: 5, tooltip: "updated" });
 
     expect(registry.getItems().map((item) => item.id)).toEqual(["a", "b"]);
-    expect(registry.getItems()[0]?.tooltip).toBe("updated");
+    expect((registry.getItems()[0] as { tooltip?: string })?.tooltip).toBe("updated");
 
-    registry.unregister("a");
+    registry.remove("a");
     expect(registry.getItems().map((item) => item.id)).toEqual(["b"]);
+  });
+
+  it("supports positional insertion, replacement and removal", () => {
+    const registry = createToolbarRegistry();
+    registry.register({ id: "bold", type: "toggle", command: "bold" });
+    registry.register({ id: "italic", type: "toggle", command: "italic" });
+
+    registry.insertAfter("bold", { id: "brand", type: "button", command: "brand" });
+    expect(registry.getOrdered().map((item) => item.id)).toEqual([
+      "bold",
+      "brand",
+      "italic",
+    ]);
+
+    registry.replace("brand", { id: "brand", type: "button", command: "brand2" });
+    expect((registry.get("brand") as { command?: string }).command).toBe("brand2");
+
+    registry.move("brand", 0);
+    expect(registry.getOrdered().map((item) => item.id)).toEqual([
+      "brand",
+      "bold",
+      "italic",
+    ]);
   });
 
   it("deduplicates and unregisters menu items", () => {

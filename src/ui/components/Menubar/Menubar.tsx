@@ -7,13 +7,11 @@ import {
   type JSX,
 } from "solid-js";
 import { t, type TranslationKey } from "../../../i18n/index.js";
-import { type MenuItem, defaultMenuRegistry } from "./menuRegistry.js";
+import { type MenuItem, type MenubarHost, defaultMenuRegistry } from "./menuRegistry.js";
 import "./defaultMenuItems.js";
-import type { EditorToolbarCtx } from "../Toolbar/types.js";
 
 export interface MenubarProps {
-  ctx: EditorToolbarCtx;
-  // Passing commandsController or other deps as needed
+  host: () => MenubarHost;
 }
 
 interface MenuTreeItem {
@@ -62,7 +60,7 @@ export function Menubar(props: MenubarProps) {
   const pruneTree = (nodes: MenuTreeItem[]): MenuTreeItem[] =>
     nodes.flatMap((node) => {
       const children = pruneTree(node.children);
-      const isExecutable = (Boolean(node.item?.action) || Boolean(node.item?.command)) && !node.item?.separator;
+      const isExecutable = Boolean(node.item?.command) && !node.item?.separator;
       if (!isExecutable && children.length === 0) {
         return [];
       }
@@ -137,7 +135,7 @@ export function Menubar(props: MenubarProps) {
                   {(child) => (
                     <MenuNode
                       node={child}
-                      ctx={props.ctx}
+                      host={props.host}
                       onClose={() => setActiveMenu(null)}
                     />
                   )}
@@ -153,10 +151,10 @@ export function Menubar(props: MenubarProps) {
 
 function MenuNode(props: {
   node: MenuTreeItem;
-  ctx: EditorToolbarCtx;
+  host: () => MenubarHost;
   onClose: () => void;
 }) {
-  const { node, ctx, onClose } = props;
+  const { node, onClose } = props;
   const isSeparator = node.item?.separator;
 
   if (isSeparator) {
@@ -177,22 +175,15 @@ function MenuNode(props: {
     label = t(node.item.labelKey) || node.label;
   }
   const rawIcon = node.item?.icon;
-  const icon = () => typeof rawIcon === "function" ? rawIcon(ctx) : rawIcon;
+  const icon = () => typeof rawIcon === "function" ? rawIcon(props.host()) : rawIcon;
 
   const handleClick = (e: MouseEvent) => {
     e.stopPropagation();
     if (hasChildren) return;
-    
-    if (node.item?.command && (!ctx.canExecuteCommand || ctx.canExecuteCommand(node.item.command) !== false)) {
-      if (ctx.executeCommand) {
-        ctx.executeCommand(node.item.command);
-        onClose();
-        return;
-      }
-    }
 
-    if (node.item?.action) {
-      void node.item.action(ctx);
+    const command = node.item?.command;
+    if (command && props.host().commands.canExecute(command) !== false) {
+      props.host().commands.execute(command);
     }
     onClose();
   };
@@ -235,7 +226,7 @@ function MenuNode(props: {
         >
           <For each={node.children}>
             {(child) => (
-              <MenuNode node={child} ctx={ctx} onClose={onClose} />
+              <MenuNode node={child} host={props.host} onClose={onClose} />
             )}
           </For>
         </div>

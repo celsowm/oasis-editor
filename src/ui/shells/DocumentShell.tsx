@@ -1,75 +1,79 @@
-import { Show, type JSX } from "solid-js";
+import { Show, type Accessor } from "solid-js";
 import { Menubar } from "../components/Menubar/Menubar.js";
 import { TitleBar } from "../components/TitleBar/TitleBar.js";
 import { OutlinePanel } from "../components/Outline/OutlinePanel.js";
-import { EditorToolbar } from "../components/Toolbar/EditorToolbar.js";
-import { OasisEditorEditor } from "../OasisEditorEditor.js";
-import type { EditorToolbarCtx } from "../components/Toolbar/types.js";
+import { Toolbar } from "../components/Toolbar/Toolbar.js";
+import { OasisEditorEditor, type OasisEditorEditorProps } from "../OasisEditorEditor.js";
+import type { ToolbarHost } from "../components/Toolbar/state/createToolbarApi.js";
+import type { ToolbarRegistry } from "../components/Toolbar/registry/ToolbarRegistry.js";
+import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
 import { buildCanvasLayoutSnapshot } from "../canvas/CanvasLayoutSnapshot.js";
 import { getParagraphEntries } from "../canvas/CanvasGeometry.js";
 
-export interface ShellProps {
-  state: any;
-  setState: any;
-  toolbarCtx: EditorToolbarCtx;
+/**
+ * Props the shell forwards verbatim to {@link OasisEditorEditor}. Reusing the
+ * editor's own prop types keeps a single source of truth for these signatures.
+ */
+type ForwardedEditorProps = Pick<
+  OasisEditorEditorProps,
+  | "selectionBoxes"
+  | "selectedImageBox"
+  | "caretBox"
+  | "inputBox"
+  | "hoveredRevision"
+  | "focused"
+  | "showCaret"
+  | "importProgress"
+  | "layoutMode"
+  | "class"
+  | "style"
+  | "onViewportRef"
+  | "onSurfaceRef"
+  | "onTextareaRef"
+  | "onImportInputRef"
+  | "onImageInputRef"
+  | "onImportInputChange"
+  | "onImageInputChange"
+  | "onDragOver"
+  | "onDrop"
+  | "onEditorMouseDown"
+  | "onSurfaceMouseDown"
+  | "onSurfaceClick"
+  | "onSurfaceMouseMove"
+  | "onSurfaceDblClick"
+  | "onParagraphMouseDown"
+  | "onRevisionMouseEnter"
+  | "onRevisionMouseLeave"
+  | "onImageMouseDown"
+  | "onImageResizeHandleMouseDown"
+  | "onTableDragHandleMouseDown"
+  | "onInputBlur"
+  | "onInputFocus"
+  | "onCompositionEnd"
+  | "onCompositionStart"
+  | "onCopy"
+  | "onCut"
+  | "onInput"
+  | "onKeyDown"
+  | "onPaste"
+  | "onEditorContextMenu"
+>;
+
+export interface ShellProps extends ForwardedEditorProps {
+  state: EditorState;
+  toolbarHost: () => ToolbarHost;
+  persistenceStatus: () => string;
+  toolbarRegistry: ToolbarRegistry;
   showChrome: boolean;
   showTitleBar: boolean;
   showMenubar: boolean;
   showToolbar: boolean;
   showOutline: boolean;
   isReadOnly: boolean;
-  measuredBlockHeights: any;
-  measuredParagraphLayouts: any;
-  layoutMode?: "fast" | "wordParity";
-  engine?: any;
-  viewportHeight: any;
-  class?: string;
-  style?: JSX.CSSProperties;
-  
-  // Passed-through OasisEditorEditor props
-  selectionBoxes: any;
-  selectedImageBox: any;
-  showFloatingTableToolbar: any;
-  caretBox: any;
-  inputBox: any;
-  hoveredRevision: any;
-  focused: any;
-  showCaret: any;
-  importProgress?: any;
-  
-  // Refs
-  onViewportRef: any;
-  onSurfaceRef: any;
-  onTextareaRef: any;
-  onImportInputRef: any;
-  onImageInputRef: any;
-
-  // Handlers
-  onImportInputChange: any;
-  onImageInputChange: any;
-  onDragOver: any;
-  onDrop: any;
-  onEditorMouseDown: any;
-  onSurfaceMouseDown: any;
-  onSurfaceClick: any;
-  onSurfaceMouseMove: any;
-  onSurfaceDblClick: any;
-  onParagraphMouseDown: any;
-  onRevisionMouseEnter: any;
-  onRevisionMouseLeave: any;
-  onImageMouseDown: any;
-  onImageResizeHandleMouseDown: any;
-  onTableDragHandleMouseDown: any;
-  onInputBlur: any;
-  onInputFocus: any;
-  onCompositionEnd: any;
-  onCompositionStart: any;
-  onCopy: any;
-  onCut: any;
-  onInput: any;
-  onKeyDown: any;
-  onPaste: any;
-  onEditorContextMenu?: any;
+  measuredBlockHeights: Accessor<Record<string, number>>;
+  measuredParagraphLayouts: Accessor<Record<string, EditorLayoutParagraph>>;
+  viewportHeight: Accessor<number | string | undefined>;
+  showFloatingTableToolbar: Accessor<boolean>;
 }
 
 export function DocumentShell(props: ShellProps) {
@@ -112,16 +116,17 @@ export function DocumentShell(props: ShellProps) {
   return (
     <>
       <Show when={props.showChrome}>
-        <Show when={props.showTitleBar} fallback={<Show when={props.showMenubar}><Menubar ctx={props.toolbarCtx} /></Show>}>
+        <Show when={props.showTitleBar} fallback={<Show when={props.showMenubar}><Menubar host={props.toolbarHost} /></Show>}>
           <TitleBar>
             <Show when={props.showMenubar}>
-              <Menubar ctx={props.toolbarCtx} />
+              <Menubar host={props.toolbarHost} />
             </Show>
           </TitleBar>
         </Show>
         <Show when={props.showToolbar}>
-          <EditorToolbar
-            ctx={props.toolbarCtx}
+          <Toolbar
+            host={props.toolbarHost}
+            registry={props.toolbarRegistry}
             showFileGroup={!props.showMenubar}
           />
         </Show>
@@ -143,13 +148,14 @@ export function DocumentShell(props: ShellProps) {
             measuredParagraphLayouts={() => props.measuredParagraphLayouts()}
             selectionBoxes={() => props.selectionBoxes()}
             selectedImageBox={() => props.selectedImageBox()}
-            toolbarCtx={() => props.toolbarCtx}
+            toolbarHost={props.toolbarHost}
+            persistenceStatus={() => props.persistenceStatus()}
             showFloatingTableToolbar={() => props.showFloatingTableToolbar()}
             caretBox={() => props.caretBox()}
             inputBox={() => props.inputBox()}
             hoveredRevision={() => props.hoveredRevision()}
             focused={() => props.focused()}
-            importProgress={props.importProgress ? () => props.importProgress() : undefined}
+            importProgress={props.importProgress}
             layoutMode={props.layoutMode}
 
             viewportHeight={props.viewportHeight()}

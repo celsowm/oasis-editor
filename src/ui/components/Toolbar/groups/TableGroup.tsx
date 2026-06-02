@@ -1,266 +1,159 @@
-import { Show, type JSX } from "solid-js";
-import {
-  setTableCellBorders,
-  setTableCellStyleValue,
-  setTableCellWidth,
-  setTableStyleValue,
-} from "../../../../core/editorCommands.js";
-import type { EditorToolbarCtx } from "../types.js";
-import { ToolbarButton } from "../ToolbarButton.js";
-import { ToolbarGroup } from "../ToolbarGroup.js";
-import { ToolbarDropdown } from "../ToolbarDropdown.js";
+import { Show } from "solid-js";
+import { Button } from "../primitives/Button.js";
+import { Menu } from "../primitives/Menu.js";
 import { t } from "../../../../i18n/index.js";
+import type { ToolbarActionApi } from "../schema/items.js";
 
-export function TableGroup(props: { ctx: () => EditorToolbarCtx; hidden?: boolean }) {
-  const ctx = props.ctx;
-  const state = () => ctx().state();
-  const focusInput = () => ctx().focusInput();
+/** Table tools panel — command-driven; enablement derives from command state. */
+export function TableGroup(props: { api: ToolbarActionApi }) {
+  const api = props.api;
+  const disabled = (command: string) => !api.commands.state(command).isEnabled;
+  const selectionLabel = () => api.commands.state("tableContext").value as string | null;
 
   return (
-    <ToolbarGroup class={props.hidden ? "oasis-editor-toolbar-item-hidden" : undefined}>
-      <ToolbarDropdown
-        label=""
-        icon="table-properties"
-        testId="editor-toolbar-table-dropdown"
-        tooltip={t("toolbar.table")}
-        hideChevron
-        menuClass="oasis-editor-toolbar-panel oasis-editor-toolbar-table-panel"
-        keepMounted
-      >
+    <Menu
+      icon="table-properties"
+      testId="editor-toolbar-table-dropdown"
+      tooltip={t("toolbar.table")}
+      hideChevron
+      panelClass="oasis-editor-toolbar-panel oasis-editor-toolbar-table-panel"
+      keepMounted
+    >
       <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
-        <ToolbarButton
+        <Button
           icon="combine"
           data-testid="editor-toolbar-merge-table"
-          disabled={!state() || !ctx().canMergeSelectedTable(state())}
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) => ctx().mergeSelectedTable(current),
-              { mergeKey: "mergeTable" },
-            );
-            ctx().focusInput();
-          }}
+          disabled={disabled("tableMerge")}
+          onClick={() => api.commands.execute("tableMerge")}
           tooltip={t("table.mergeTooltip")}
         />
-        <ToolbarButton
+        <Button
           icon="split"
           data-testid="editor-toolbar-split-table"
-          disabled={!state() || !ctx().canSplitSelectedTable(state())}
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) => ctx().splitSelectedTable(current),
-              { mergeKey: "splitTable" },
-            );
-            ctx().focusInput();
-          }}
+          disabled={disabled("tableSplit")}
+          onClick={() => api.commands.execute("tableSplit")}
           tooltip={t("table.splitTooltip")}
         />
       </div>
 
       <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
-        <ToolbarButton
+        <Button
           icon="columns"
           data-testid="editor-toolbar-insert-table-column-before"
-          disabled={!state() || !ctx().canEditSelectedTableColumn(state())}
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) => ctx().insertSelectedTableColumn(current, -1),
-              { mergeKey: "insertTableColumn" },
-            );
-            ctx().focusInput();
-          }}
+          disabled={disabled("tableInsertColumnBefore")}
+          onClick={() => api.commands.execute("tableInsertColumnBefore")}
           tooltip={t("table.insertColumnLeft")}
         />
-        <ToolbarButton
+        <Button
           icon="columns"
           data-testid="editor-toolbar-insert-table-column-after"
-          disabled={!state() || !ctx().canEditSelectedTableColumn(state())}
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) => ctx().insertSelectedTableColumn(current, 1),
-              { mergeKey: "insertTableColumn" },
-            );
-            ctx().focusInput();
-          }}
+          disabled={disabled("tableInsertColumnAfter")}
+          onClick={() => api.commands.execute("tableInsertColumnAfter")}
           tooltip={t("table.insertColumnRight")}
         />
-        <ToolbarButton
+        <Button
           icon="trash-2"
           data-testid="editor-toolbar-delete-table-column"
-          disabled={!state() || !ctx().canEditSelectedTableColumn(state())}
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) => ctx().deleteSelectedTableColumn(current),
-              { mergeKey: "deleteTableColumn" },
-            );
-            ctx().focusInput();
-          }}
+          disabled={disabled("tableDeleteColumn")}
+          onClick={() => api.commands.execute("tableDeleteColumn")}
           tooltip={t("table.deleteColumn")}
         />
       </div>
 
       <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
-        <ToolbarButton
+        <Button
           icon="rows"
           data-testid="editor-toolbar-insert-table-row-before"
-          disabled={!state() || !ctx().canEditSelectedTableRow(state())}
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) => ctx().insertSelectedTableRow(current, -1),
-              { mergeKey: "insertTableRow" },
-            );
-            ctx().focusInput();
-          }}
+          disabled={disabled("tableInsertRowBefore")}
+          onClick={() => api.commands.execute("tableInsertRowBefore")}
           tooltip={t("table.insertRowAbove")}
         />
-        <ToolbarButton
+        <Button
           icon="rows"
           data-testid="editor-toolbar-insert-table-row-after"
-          disabled={!state() || !ctx().canEditSelectedTableRow(state())}
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) => ctx().insertSelectedTableRow(current, 1),
-              { mergeKey: "insertTableRow" },
-            );
-            ctx().focusInput();
-          }}
+          disabled={disabled("tableInsertRowAfter")}
+          onClick={() => api.commands.execute("tableInsertRowAfter")}
           tooltip={t("table.insertRowBelow")}
         />
-        <ToolbarButton
+        <Button
           icon="trash-2"
           data-testid="editor-toolbar-delete-table-row"
-          disabled={!state() || !ctx().canEditSelectedTableRow(state())}
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) => ctx().deleteSelectedTableRow(current),
-              { mergeKey: "deleteTableRow" },
-            );
-            ctx().focusInput();
-          }}
+          disabled={disabled("tableDeleteRow")}
+          onClick={() => api.commands.execute("tableDeleteRow")}
           tooltip={t("table.deleteRow")}
         />
       </div>
 
       <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
-        <ToolbarButton
+        <Button
           icon="palette"
           data-testid="editor-toolbar-table-shading"
           onClick={() => {
             const color = prompt(t("table.cellBgColorPrompt"), "#f1f5f9");
-            if (color !== null) {
-              ctx().applyTransactionalState(
-                (current) => setTableCellStyleValue(current, "shading", color || null),
-                { mergeKey: "tableShading" },
-              );
-              ctx().focusInput();
-            }
+            if (color !== null) api.commands.execute("tableCellShading", color);
           }}
           tooltip={t("table.cellColor")}
         />
-        <ToolbarButton
+        <Button
           icon="frame"
           data-testid="editor-toolbar-table-borders"
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) =>
-                setTableCellBorders(current, { width: 1, type: "solid", color: "#64748b" }),
-              { mergeKey: "tableBorders" },
-            );
-            ctx().focusInput();
-          }}
+          onClick={() => api.commands.execute("tableCellBorders")}
           tooltip={t("table.applyBorders")}
         />
-        <ToolbarButton
+        <Button
           icon="square"
           data-testid="editor-toolbar-table-no-borders"
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) =>
-                setTableCellBorders(current, { width: 0, type: "none", color: "transparent" }),
-              { mergeKey: "tableBorders" },
-            );
-            ctx().focusInput();
-          }}
+          onClick={() => api.commands.execute("tableCellNoBorders")}
           tooltip={t("table.removeBorders")}
         />
       </div>
 
       <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
-        <ToolbarButton
+        <Button
           icon="maximize"
           data-testid="editor-toolbar-table-width-100"
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) => setTableStyleValue(current, "width", "100%"),
-              { mergeKey: "tableWidth" },
-            );
-            ctx().focusInput();
-          }}
+          onClick={() => api.commands.execute("tableWidth100")}
           tooltip={t("table.width100Tooltip")}
         />
       </div>
 
       <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
-        <ToolbarButton
+        <Button
           icon="align-left"
           data-testid="editor-toolbar-table-align-left"
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) => setTableCellStyleValue(current, "horizontalAlign", "left"),
-              { mergeKey: "tableAlign" },
-            );
-            ctx().focusInput();
-          }}
+          onClick={() => api.commands.execute("tableAlignLeft")}
           tooltip={t("table.alignLeft")}
         />
-        <ToolbarButton
+        <Button
           icon="align-center"
           data-testid="editor-toolbar-table-align-center"
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) => setTableCellStyleValue(current, "horizontalAlign", "center"),
-              { mergeKey: "tableAlign" },
-            );
-            ctx().focusInput();
-          }}
+          onClick={() => api.commands.execute("tableAlignCenter")}
           tooltip={t("table.alignCenter")}
         />
-        <ToolbarButton
+        <Button
           icon="align-right"
           data-testid="editor-toolbar-table-align-right"
-          onClick={() => {
-            ctx().applyTransactionalState(
-              (current) => setTableCellStyleValue(current, "horizontalAlign", "right"),
-              { mergeKey: "tableAlign" },
-            );
-            ctx().focusInput();
-          }}
+          onClick={() => api.commands.execute("tableAlignRight")}
           tooltip={t("table.alignRight")}
         />
-        <ToolbarButton
+        <Button
           icon="move-horizontal"
           data-testid="editor-toolbar-table-cell-width"
           onClick={() => {
             const width = prompt(t("table.cellWidthPrompt"));
-            if (width) {
-              ctx().applyTransactionalState(
-                (current) => setTableCellWidth(current, width),
-                { mergeKey: "tableCellWidth" },
-              );
-              ctx().focusInput();
-            }
+            if (width) api.commands.execute("tableSetCellWidth", width);
           }}
           tooltip={t("table.cellWidth")}
         />
       </div>
 
-      <Show when={ctx().tableSelectionLabel()}>
+      <Show when={selectionLabel()}>
         {(label) => (
           <div class="oasis-editor-toolbar-badge" data-testid="editor-table-selection-label">
             {label()}
           </div>
         )}
       </Show>
-      </ToolbarDropdown>
-    </ToolbarGroup>
+    </Menu>
   );
 }
