@@ -1,9 +1,5 @@
 import type { OasisEditor, OasisPlugin, PluginReference, Unsubscribe } from "../plugin.js";
 
-function isPromiseLike(value: unknown): value is Promise<unknown> {
-  return Boolean(value) && typeof (value as Promise<unknown>).then === "function";
-}
-
 interface RegisteredPlugin {
   plugin: OasisPlugin;
   commandNames: string[];
@@ -13,10 +9,10 @@ export class PluginCollection {
   private plugins: OasisPlugin[] = [];
   private cleanups: Unsubscribe[] = [];
   private initialized: RegisteredPlugin[] = [];
+  private isInitialized = false;
 
   constructor(private editorInstance: OasisEditor, plugins: OasisPlugin[] = []) {
     this.plugins = this.resolvePlugins(plugins);
-    this.initializeAll();
   }
 
   private resolvePlugins(input: OasisPlugin[]): OasisPlugin[] {
@@ -76,37 +72,32 @@ export class PluginCollection {
     return ordered;
   }
 
-  private initializeAll() {
+  async initializeAll() {
+    if (this.isInitialized) {
+      return;
+    }
+
     try {
       for (const plugin of this.plugins) {
-        this.initializePlugin(plugin);
+        await this.initializePlugin(plugin);
       }
       for (const entry of this.initialized) {
-        const result = entry.plugin.afterInit?.(this.editorInstance);
-        if (isPromiseLike(result)) {
-          throw new Error(`Plugin '${entry.plugin.name}' afterInit must be synchronous in this runtime.`);
-        }
+        await entry.plugin.afterInit?.(this.editorInstance);
       }
+      this.isInitialized = true;
     } catch (error) {
-      this.destroy();
+      await this.destroy();
       throw error;
     }
   }
 
-  private initializePlugin(plugin: OasisPlugin) {
+  private async initializePlugin(plugin: OasisPlugin) {
     const commandNames: string[] = [];
 
-    if (plugin.commands) {
-      for (const [name, command] of Object.entries(plugin.commands)) {
-        this.editorInstance.commands.register(name, command);
-        commandNames.push(name);
-      }
-    }
+    this.registerPluginCommands(plugin, commandNames);
+    this.initialized.push({ plugin, commandNames });
 
-    const initResult = plugin.init?.(this.editorInstance);
-    if (isPromiseLike(initResult)) {
-      throw new Error(`Plugin '${plugin.name}' init must be synchronous in this runtime.`);
-    }
+    await plugin.init?.(this.editorInstance);
 
     if (plugin.install) {
       const cleanup = plugin.install(this.editorInstance);
@@ -114,26 +105,35 @@ export class PluginCollection {
         this.cleanups.push(cleanup);
       }
     }
-
-    this.initialized.push({ plugin, commandNames });
   }
 
-  destroy() {
+  private registerPluginCommands(plugin: OasisPlugin, commandNames: string[]) {
+    if (!plugin.commands) {
+      return;
+    }
+
+    for (const [name, command] of Object.entries(plugin.commands)) {
+      this.editorInstance.commands.register(name, command);
+      commandNames.push(name);
+    }
+  }
+
+  async destroy() {
     for (const cleanup of this.cleanups) {
       cleanup();
     }
 
     for (let index = this.initialized.length - 1; index >= 0; index -= 1) {
       const entry = this.initialized[index]!;
-      entry.plugin.destroy?.(this.editorInstance);
+      await entry.plugin.destroy?.(this.editorInstance);
       for (const commandName of entry.commandNames) {
         this.editorInstance.commands.unregister(commandName);
       }
     }
 
     this.initialized = [];
-    this.plugins = [];
     this.cleanups = [];
+    this.isInitialized = false;
   }
 
   getPlugins() {

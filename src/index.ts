@@ -23,7 +23,6 @@ export { Tabs } from "./ui/components/Tabs/Tabs.js";
 export type { TabsItem, TabsProps } from "./ui/components/Tabs/Tabs.js";
 export type {
   OasisPlugin,
-  OasisPluginDefinition,
   OasisEditor,
   OasisCommand,
   OasisCommandRegistry,

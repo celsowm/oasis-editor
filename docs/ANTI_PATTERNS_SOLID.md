@@ -2,6 +2,8 @@
 
 ## Sumário Executivo
 
+!!! REGRA SUPREMA: NÃO MANTER NENHUMA RETRO COMPAT !!!
+
 > Revisado contra o estado atual do repositório em 2026-06-02. Alguns achados originais continuam válidos, mas parte da modularização de layout já começou em `src/ui/layoutProjection/*`; este relatório trata esses pontos como continuidade de extração, não como trabalho ainda inexistente.
 
 | Top problema | Impacto | Esforço |
@@ -296,7 +298,6 @@ const UNDERLINE_RENDERING = {
 - **`src/core/plugins/PluginCollection.ts:85-88`** — lança erro se `afterInit` retorna Promise.
 - **`src/core/plugins/PluginCollection.ts:106-108`** — lança erro se `init` retorna Promise.
 - **`src/core/plugins/PluginCollection.ts:126-130`** — chama `destroy?.(...)` sem aguardar Promise.
-- **`src/core/pluginHost.ts:25-34`** — `PluginHost` chama `init/install/afterInit` sem validação/await.
 
 **Por que viola LSP:** um plugin que obedece ao tipo `OasisPlugin` retornando `Promise<void>` não é substituível no runtime síncrono.
 
@@ -313,15 +314,11 @@ const UNDERLINE_RENDERING = {
 
 ### 3.2 `canExecute` aceita payload no contrato, mas implementação ignora
 
-- **`src/core/plugin.ts:35-36`** — `execute(name, payload?)` e `canExecute(name, payload?)`.
-- **`src/core/Editor.ts:66-75`** — `canExecute(name, _payload?)` ignora payload e chama só `command.refresh()`.
-- **`src/app/controllers/EditorCommandRegistry.ts:46-52`** — keybinding checa `canExecuteCommand?.(binding.command)` sem payload.
+**Status:** resolvido. `OasisCommand.refresh(payload)` agora recebe o payload, `Editor.canExecute(name, payload)` repassa esse valor e `CommandBus.state(commandRef)` usa o payload resolvido do comando.
 
-**Por que viola LSP:** consumidores podem esperar que comandos payload-dependent sejam validados com payload, mas o runtime não preserva esse contrato.
+**Histórico:** consumidores podiam esperar que comandos payload-dependent fossem validados com payload, mas o runtime não preservava esse contrato.
 
-**Impacto:** comandos como `insertTable` ou value commands podem parecer executáveis mesmo com payload inválido.
-
-**Refatoração sugerida:** ou remover payload de `canExecute`, ou permitir `refresh(payload)`/`canExecute(payload)` no comando.
+**Validação:** coberto por teste de integração de plugin com comando payload-dependent.
 
 ---
 
@@ -705,7 +702,6 @@ Exemplos de produção encontrados:
 
 #### Código morto / API duplicada
 
-- **`src/core/pluginHost.ts:3-56`** — `PluginHost` exportado mas grep encontrou apenas a própria definição; runtime atual usa `PluginCollection`.
 - **`src/app/controllers/useEditorTableOperations.ts:1082-1092`** — `tableSelectionLabel`, `isInsideTable`, `tableActionRestrictionLabel` retornam sempre `null`/`false` e só são retornadas pela façade.
 
 **Sugestão:** remover se realmente não usados, ou implementar/ligar à UI.
@@ -733,7 +729,7 @@ Exemplos de produção encontrados:
 | Tipar `SelectedImageRun`, `WindowWithOasisDebug`, transient DOCX ref | P2 | S/M | Reduz `any` e bugs silenciosos. |
 | Injetar `PersistenceService` no hook | P2 | S/M | Facilita testes e troca de storage. |
 | Trocar long parameter lists por context objects | P2 | M | Melhora legibilidade sem mudança funcional. |
-| Remover `PluginHost` e stubs de tabela se não usados | P3 | S | Limpa código morto. |
+| Remover stubs de tabela se não usados | P3 | S | Limpa código morto. |
 | Consolidar magic numbers em constants por domínio | P3 | S/M | Melhora manutenção e documentação de calibração. |
 
 ---

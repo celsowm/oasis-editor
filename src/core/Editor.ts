@@ -12,13 +12,28 @@ export interface EditorOptions {
 }
 
 export class Editor implements OasisEditor {
-  private stateStore: EditorState;
+  private stateStore!: EditorState;
   private setState: any;
-  private pluginCollection: PluginCollection;
+  private pluginCollection!: PluginCollection;
   private listeners = new Map<string, Set<(...args: unknown[]) => void>>();
   readonly commands = new CommandRegistry();
 
   constructor(options: EditorOptions = {}) {
+    if (options.plugins && options.plugins.length > 0) {
+      throw new Error("Editor plugins must be initialized with Editor.create(...).");
+    }
+    this.initializeState(options);
+    this.pluginCollection = new PluginCollection(this, []);
+  }
+
+  static async create(options: EditorOptions = {}): Promise<Editor> {
+    const editor = new Editor({ ...options, plugins: [] });
+    editor.pluginCollection = new PluginCollection(editor, options.plugins ?? []);
+    await editor.pluginCollection.initializeAll();
+    return editor;
+  }
+
+  private initializeState(options: EditorOptions) {
     const initialState = options.doc 
       ? createEditorStateFromDocument(options.doc)
       : createInitialEditorState();
@@ -26,8 +41,6 @@ export class Editor implements OasisEditor {
     const [state, setState] = createStore(initialState);
     this.stateStore = state;
     this.setState = setState;
-
-    this.pluginCollection = new PluginCollection(this, options.plugins ?? []);
   }
 
   get state(): EditorState {
@@ -63,7 +76,7 @@ export class Editor implements OasisEditor {
     return command.execute(payload) as TResult;
   }
 
-  canExecute(name: string, _payload?: unknown): boolean {
+  canExecute(name: string, payload?: unknown): boolean {
     const command = this.commands.get(name);
     if (!command) {
       return false;
@@ -71,11 +84,11 @@ export class Editor implements OasisEditor {
     if (!command.refresh) {
       return true;
     }
-    return command.refresh().isEnabled !== false;
+    return command.refresh(payload).isEnabled !== false;
   }
 
-  destroy() {
-    this.pluginCollection.destroy();
+  async destroy() {
+    await this.pluginCollection.destroy();
     this.commands.clear();
     this.listeners.clear();
   }

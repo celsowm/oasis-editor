@@ -1,6 +1,6 @@
 import type { CommandState, OasisEditor } from "../plugin.js";
 import type { CommandRef } from "./CommandRef.js";
-import { commandRefName, resolveCommandRef } from "./CommandRef.js";
+import { resolveCommandRef } from "./CommandRef.js";
 
 export interface CommandBus<TState = CommandState> {
   execute(command: CommandRef, payloadOverride?: unknown): unknown;
@@ -19,9 +19,9 @@ export function createEditorCommandBus(editor: OasisEditor): CommandBus {
       return editor.canExecute(resolved.name, resolved.payload);
     },
     state(command) {
-      const name = commandRefName(command);
-      const registered = editor.commands.get(name);
-      return registered?.refresh?.() ?? { isEnabled: editor.commands.has(name) };
+      const resolved = resolveCommandRef(command);
+      const registered = editor.commands.get(resolved.name);
+      return registered?.refresh?.(resolved.payload) ?? { isEnabled: editor.commands.has(resolved.name) };
     },
   };
 }

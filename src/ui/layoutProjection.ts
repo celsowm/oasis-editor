@@ -17,5 +17,7 @@ export {
 } from "./layoutProjection/headerFooterFootnotes.js";
 export {
   projectBlocksLayout,
+} from "./layoutProjection/blocksPagination.js";
+export {
   projectDocumentLayout,
-} from "./layoutProjection/documentPagination.js";
+} from "./layoutProjection/documentLayout.js";

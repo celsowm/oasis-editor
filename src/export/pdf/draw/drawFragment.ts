@@ -9,6 +9,12 @@ import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
 } from "../../../core/model.js";
+import {
+  isDoubleUnderlineStyle,
+  isWavyUnderlineStyle,
+  underlineStyleDashArray,
+  underlineStyleLineWidthPx,
+} from "../../../core/textStyleMappings.js";
 import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
 import { registerPdfImageRun } from "../images.js";
 import { OasisPdfWriter } from "../OasisPdfWriter.js";
@@ -111,15 +117,7 @@ function drawUnderlineWithStyle(
   stroke: string,
   underlineStyle: EditorTextStyle["underlineStyle"],
 ): void {
-  const heavy =
-    underlineStyle === "thick" ||
-    underlineStyle === "dottedHeavy" ||
-    underlineStyle === "dashedHeavy" ||
-    underlineStyle === "dashLongHeavy" ||
-    underlineStyle === "dashDotHeavy" ||
-    underlineStyle === "dashDotDotHeavy" ||
-    underlineStyle === "wavyHeavy";
-  const lineWidthPx = heavy ? 2 : 1;
+  const lineWidthPx = underlineStyleLineWidthPx(underlineStyle);
 
   const drawAt = (yy: number, dash?: number[]) => {
     writer.drawLine(pageIndex, {
@@ -133,40 +131,18 @@ function drawUnderlineWithStyle(
     });
   };
 
-  switch (underlineStyle) {
-    case "double":
-    case "wavyDouble":
-      drawAt(y - 1.5);
-      drawAt(y + 1.5);
-      return;
-    case "dotted":
-    case "dottedHeavy":
-      drawAt(y, [1.5, 2.5]);
-      return;
-    case "dash":
-    case "dashedHeavy":
-      drawAt(y, [4, 3]);
-      return;
-    case "dashLong":
-    case "dashLongHeavy":
-      drawAt(y, [8, 3]);
-      return;
-    case "dotDash":
-    case "dashDotHeavy":
-      drawAt(y, [4, 2, 1, 2]);
-      return;
-    case "dotDotDash":
-    case "dashDotDotHeavy":
-      drawAt(y, [4, 2, 1, 2, 1, 2]);
-      return;
-    case "wave":
-    case "wavyHeavy":
-      drawWavyUnderline(writer, pageIndex, x1, x2, y, stroke, lineWidthPx);
-      return;
-    default:
-      drawAt(y);
-      return;
+  if (isDoubleUnderlineStyle(underlineStyle)) {
+    drawAt(y - 1.5);
+    drawAt(y + 1.5);
+    return;
   }
+
+  if (isWavyUnderlineStyle(underlineStyle)) {
+    drawWavyUnderline(writer, pageIndex, x1, x2, y, stroke, lineWidthPx);
+    return;
+  }
+
+  drawAt(y, underlineStyleDashArray(underlineStyle));
 }
 
 function drawWavyUnderline(

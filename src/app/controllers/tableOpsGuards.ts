@@ -6,22 +6,10 @@ import {
   type EditorState,
 } from "../../core/model.js";
 import { getTableVisualWidth } from "./tableOpsSelectionNavigation.js";
-
-export interface HorizontalTableCellRange {
-  blockIndex: number;
-  rowIndex: number;
-  startCellIndex: number;
-  endCellIndex: number;
-  zone: EditorEditingZone;
-}
-
-export interface VerticalTableCellRange {
-  blockIndex: number;
-  startRowIndex: number;
-  endRowIndex: number;
-  cellIndex: number;
-  zone: EditorEditingZone;
-}
+import type {
+  HorizontalTableCellRange,
+  VerticalTableCellRange,
+} from "./tableOpsSelectionRanges.js";
 
 interface TableOpsGuardsDeps {
   getTargetBlocks: (state: EditorState, zone: EditorEditingZone) => EditorBlockNode[];

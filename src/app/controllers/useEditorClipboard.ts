@@ -1,12 +1,12 @@
 import {
   deleteBackward,
   getSelectedText,
-  insertClipboardHtmlAtSelection,
+  insertClipboardParagraphsAtSelection,
   insertPlainTextAtSelection,
-  parseEditorClipboardHtml,
   serializeEditorSelectionToHtml,
 } from "../../core/editorCommands.js";
 import type { EditorPosition, EditorState } from "../../core/model.js";
+import { parseEditorClipboardHtmlWithDom } from "../clipboard/htmlClipboardParser.js";
 import { findImageFileFromTransfer } from "../../ui/clipboardImage.js";
 import type { EditorTransactionOptions } from "../../ui/editorHistory.js";
 
@@ -101,13 +101,14 @@ export function createEditorClipboardController(deps: EditorClipboardDeps) {
     }
 
     const html = event.clipboardData?.getData("text/html") ?? "";
-    if (html.trim().length > 0 && parseEditorClipboardHtml(html).length > 0) {
+    const paragraphs = parseEditorClipboardHtmlWithDom(html);
+    if (paragraphs.length > 0) {
       event.preventDefault();
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
       deps.applyTransactionalState((current) =>
         deps.applyTableAwareParagraphEdit(current, (temp) =>
-          insertClipboardHtmlAtSelection(temp, html),
+          insertClipboardParagraphsAtSelection(temp, paragraphs),
         ),
       );
       event.currentTarget.value = "";

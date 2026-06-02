@@ -61,6 +61,10 @@ export interface EssentialsPluginDeps {
     prompt: () => void;
     isSelected: () => boolean;
   };
+  browserActions: {
+    print: () => void;
+    copy: () => void;
+  };
   /** Paragraph metric / list / indent operations. */
   paragraph: {
     togglePageBreakBefore: () => void;
@@ -260,13 +264,11 @@ export function createEssentialsPlugin(deps: EssentialsPluginDeps): OasisPlugin 
       documentStyles: actionCommand("documentStyles", () => {}, () => ({
         isEnabled: true,
         value: deps.documentStyles(),
-      })),
+      })),   
 
       // --- Browser-level document commands ---
-      print: actionCommand("print", () => window.print(), () => ({ isEnabled: true })),
-      copy: actionCommand("copy", () => {
-        document.execCommand("copy");
-      }, () => ({ isEnabled: true })),
+      print: actionCommand("print", () => deps.browserActions.print(), () => ({ isEnabled: true })),
+      copy: actionCommand("copy", () => deps.browserActions.copy(), () => ({ isEnabled: true })),
 
       // --- File / insert IO ---
       exportDocx: actionCommand("exportDocx", () => deps.io.exportDocx()),

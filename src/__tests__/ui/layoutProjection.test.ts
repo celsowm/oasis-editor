@@ -36,7 +36,7 @@ describe('layout projection', () => {
     it('places blocks on a single page if they fit', () => {
       const p1 = createEditorParagraph('p1');
       const p2 = createEditorParagraph('p2');
-      const pages = projectBlocksLayout([p1, p2], A4, 800);
+      const pages = projectBlocksLayout({ blocks: [p1, p2], pageSettings: A4, maxPageHeight: 800 });
       
       expect(pages).toHaveLength(1);
       expect(pages[0].blocks).toHaveLength(2);
@@ -45,7 +45,7 @@ describe('layout projection', () => {
     it('keeps spacing before for the first paragraph on a page', () => {
       const p = createEditorParagraph('heading');
       p.style = { spacingBefore: 24, spacingAfter: 0 };
-      const pages = projectBlocksLayout([p], A4, 800);
+      const pages = projectBlocksLayout({ blocks: [p], pageSettings: A4, maxPageHeight: 800 });
       const block = pages[0]!.blocks[0]!;
       const lineHeights = block.layout!.lines.reduce((sum, line) => sum + line.height, 0);
 
@@ -56,7 +56,7 @@ describe('layout projection', () => {
     it('does not repeat spacing before on a continued paragraph segment', () => {
       const p = createEditorParagraph('word '.repeat(80));
       p.style = { spacingBefore: 24, spacingAfter: 0, widowControl: false };
-      const pages = projectBlocksLayout([p], A4, 50);
+      const pages = projectBlocksLayout({ blocks: [p], pageSettings: A4, maxPageHeight: 50 });
       const continuedBlock = pages.find((page) => (page.blocks[0]?.layout?.startOffset ?? 0) > 0)?.blocks[0];
       const lineHeights = continuedBlock!.layout!.lines.reduce((sum, line) => sum + line.height, 0);
 
@@ -67,7 +67,7 @@ describe('layout projection', () => {
     it('creates new pages for overflowing blocks', () => {
       const blocks = Array.from({ length: 50 }, (_, i) => createEditorParagraph(`Paragraph ${i}`));
       // maxPageHeight 100 is very small, should force many pages
-      const pages = projectBlocksLayout(blocks, A4, 100);
+      const pages = projectBlocksLayout({ blocks, pageSettings: A4, maxPageHeight: 100 });
       
       expect(pages.length).toBeGreaterThan(1);
     });
@@ -87,18 +87,12 @@ describe('layout projection', () => {
       const nextPage = createEditorParagraph('sd');
       nextPage.style = { spacingAfter: 11, lineHeight: 1.1, pageBreakBefore: true };
 
-      const pages = projectBlocksLayout(
-        [...blocks, nextPage],
+      const pages = projectBlocksLayout({
+        blocks: [...blocks, nextPage],
         pageSettings,
-        935,
-        undefined,
-        undefined,
-        undefined,
-        0,
-        undefined,
-        [],
-        'wordParity',
-      );
+        maxPageHeight: 935,
+        layoutMode: 'wordParity',
+      });
 
       expect(pages).toHaveLength(2);
       expect(pages[0]!.blocks).toHaveLength(29);
@@ -121,18 +115,12 @@ describe('layout projection', () => {
       const nextPage = createEditorParagraph('sd');
       nextPage.style = { spacingAfter: 11, lineHeight: 1.1, pageBreakBefore: true };
 
-      const pages = projectBlocksLayout(
-        [...blocks, nextPage],
+      const pages = projectBlocksLayout({
+        blocks: [...blocks, nextPage],
         pageSettings,
-        935,
-        undefined,
-        undefined,
-        undefined,
-        0,
-        undefined,
-        [],
-        'fast',
-      );
+        maxPageHeight: 935,
+        layoutMode: 'fast',
+      });
 
       expect(pages).toHaveLength(2);
       expect(pages[0]!.blocks).toHaveLength(29);

@@ -6,7 +6,7 @@ export type Unsubscribe = () => void;
 
 export interface OasisCommand<TPayload = unknown, TResult = unknown> {
   execute: (payload?: TPayload) => TResult;
-  refresh?: () => CommandState;
+  refresh?: (payload?: TPayload) => CommandState;
 }
 
 export interface OasisCommandRegistry {
@@ -75,8 +75,5 @@ export interface OasisPlugin {
   destroy?: (editor: OasisEditor) => void | Promise<void>;
   install?: (editor: OasisEditor) => void | Unsubscribe;
 }
-
-// Backward-compat alias while migrating internal API names.
-export type OasisPluginDefinition = OasisPlugin;
 
 export type OasisEditorRuntime = Editor;

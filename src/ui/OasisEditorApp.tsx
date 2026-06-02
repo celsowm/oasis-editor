@@ -65,9 +65,7 @@ import {
 } from "../core/cloneState.js";
 import { Toolbar } from "./components/Toolbar/Toolbar.js";
 import type { ToolbarHost } from "./components/Toolbar/state/createToolbarApi.js";
-import { createToolbarRegistry, type ToolbarRegistry } from "./components/Toolbar/registry/ToolbarRegistry.js";
-import { createDefaultToolbarPreset } from "./components/Toolbar/presets/defaultToolbar.js";
-import type { ToolbarItem } from "./components/Toolbar/schema/items.js";
+import type { ToolbarRegistry } from "./components/Toolbar/registry/ToolbarRegistry.js";
 import { DocumentShell } from "./shells/DocumentShell.js";
 import { InlineShell } from "./shells/InlineShell.js";
 import { BalloonShell } from "./shells/BalloonShell.js";
@@ -104,13 +102,13 @@ import "./components/FindReplace/findReplace.css";
 import {
   getSelectedText as getEditorSelectedText,
   serializeEditorSelectionToHtml,
-  insertClipboardHtmlAtSelection,
+  insertClipboardParagraphsAtSelection,
   insertPlainTextAtSelection,
-  parseEditorClipboardHtml,
   deleteBackward,
   setTextStyleValue,
   toggleTextStyle,
 } from "../core/editorCommands.js";
+import { parseEditorClipboardHtmlWithDom } from "../app/clipboard/htmlClipboardParser.js";
 import { setLocale, t } from "../i18n/index.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import {
@@ -125,10 +123,10 @@ import { createEditorFocusController } from "./app/useEditorFocus.js";
 import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
 import { createCanvasSurfaceHitResolver } from "./app/useCanvasSurfaceHitResolver.js";
+import { useEditorRuntimePlugins } from "./app/useEditorRuntimePlugins.js";
 import { createEssentialsPlugin } from "../plugins/internal/createEssentialsPlugin.js";
 import { commandRefName, resolveCommandRef, type CommandRef } from "../core/commands/CommandRef.js";
 import type { OasisPlugin } from "../core/plugin.js";
-import { defaultMenuRegistry } from "./components/Menubar/menuRegistry.js";
 
 export interface OasisEditorLoadingOptions {
   label?: string;
@@ -655,6 +653,12 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           prompt: () => commandsController.promptForImageAlt(),
           isSelected: () => Boolean(selectedImageRun()),
         },
+        browserActions: {
+          print: () => window.print(),
+          copy: () => {
+            document.execCommand("copy");
+          },
+        },
         paragraph: {
           togglePageBreakBefore: () =>
             commandsController.toggleParagraphFlagCommand("pageBreakBefore"),
@@ -808,52 +812,22 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         })(),
       });
 
-  const externalPlugins = props.plugins ?? [];
-  const runtimePlugins = [essentialsPlugin, ...externalPlugins];
-  const contributedToolbarIds: string[] = [];
-  const contributedMenuIds: string[] = [];
-
-  const runtimeEditor = new Editor({
+  const [runtimeReady, setRuntimeReady] = createSignal(false);
+  const initialRuntimeEditor = new Editor({
     doc: getStateSnapshot().document,
-    plugins: runtimePlugins,
+    plugins: [],
   });
+  const [runtimeEditor, setRuntimeEditor] = createSignal(initialRuntimeEditor);
 
-  const toolbarRegistry = createToolbarRegistry();
-  for (const item of createDefaultToolbarPreset()) {
-    toolbarRegistry.register(item);
-  }
-
-  for (const plugin of runtimePlugins) {
-    for (const item of plugin.toolbar ?? []) {
-      const contributed: ToolbarItem = {
-        type: "button",
-        id: item.id,
-        testId: item.id,
-        command: item.command,
-        iconName: item.icon,
-        group: item.group,
-      };
-      toolbarRegistry.register(contributed);
-      contributedToolbarIds.push(item.id);
-    }
-
-    for (const item of plugin.menubar ?? []) {
-      defaultMenuRegistry.register({
-        id: item.id,
-        path: item.path,
-        command: item.command,
-        icon: item.icon,
-        shortcut: item.shortcut,
-      });
-      contributedMenuIds.push(item.id);
-    }
-  }
-
-  props.customizeToolbar?.(toolbarRegistry);
+  const { runtimePlugins, toolbarRegistry, dispose: disposeRuntimePlugins } = useEditorRuntimePlugins({
+    essentialsPlugin,
+    externalPlugins: props.plugins,
+    customizeToolbar: props.customizeToolbar,
+  });
 
   const commandStateOf = (commandRef: CommandRef) => {
     const commandName = commandRefName(commandRef);
-    const cmd = runtimeEditor.commands.get(commandName);
+    const cmd = runtimeEditor().commands.get(commandName);
     if (!cmd) {
       return { isEnabled: false, isActive: false, value: undefined };
     }
@@ -870,11 +844,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     commands: {
       execute: (command, payload) => {
         const resolved = resolveCommandRef(command, payload);
-        return runtimeEditor.execute(resolved.name, resolved.payload);
+        return runtimeEditor().execute(resolved.name, resolved.payload);
       },
       canExecute: (command, payload) => {
         const resolved = resolveCommandRef(command, payload);
-        return runtimeEditor.canExecute(resolved.name, resolved.payload);
+        return runtimeEditor().canExecute(resolved.name, resolved.payload);
       },
       state: commandStateOf,
     },
@@ -919,8 +893,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     toggleReplace: (open) => {
       fr.setIsOpen(open ?? !fr.isOpen());
     },
-    executeCommand: (commandName, payload) => runtimeEditor.execute(commandName, payload),
-    canExecuteCommand: (commandName) => runtimeEditor.canExecute(commandName),
+    executeCommand: (commandName, payload) => runtimeEditor().execute(commandName, payload),
+    canExecuteCommand: (commandName) => runtimeEditor().canExecute(commandName),
   });
 
   const handleKeyDown = (
@@ -1331,12 +1305,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       }
     }
 
-    if (html.trim() && parseEditorClipboardHtml(html).length > 0) {
+    const paragraphs = parseEditorClipboardHtmlWithDom(html);
+    if (paragraphs.length > 0) {
       clearPreferredColumn();
       resetTransactionGrouping();
       applyTransactionalState((current) =>
         tableOps.applyTableAwareParagraphEdit(current, (temp) =>
-          insertClipboardHtmlAtSelection(temp, html),
+          insertClipboardParagraphsAtSelection(temp, paragraphs),
         ),
       );
       focusInput();
@@ -1425,25 +1400,44 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setContextMenu({ isOpen: false, x: 0, y: 0 });
   };
 
+  let runtimeDisposed = false;
+
   onMount(() => {
     startIconObserver();
     startLongTaskObserver();
     installGlobalReport();
     registerDomStatsSurface(() => surfaceRef() ?? null);
-    requestAnimationFrame(() => {
-      setInitialLoading(false);
-      props.onReady?.();
-    });
+    void (async () => {
+      try {
+        const initializedRuntimeEditor = await Editor.create({
+          doc: getStateSnapshot().document,
+          plugins: runtimePlugins,
+        });
+        if (runtimeDisposed) {
+          await initializedRuntimeEditor.destroy();
+          return;
+        }
+
+        const previousRuntimeEditor = runtimeEditor();
+        setRuntimeEditor(initializedRuntimeEditor);
+        await previousRuntimeEditor.destroy();
+        setRuntimeReady(true);
+
+        requestAnimationFrame(() => {
+          setInitialLoading(false);
+          props.onReady?.();
+        });
+      } catch (error) {
+        logger.error("runtime:init failed", error);
+        setInitialLoading(false);
+      }
+    })();
   });
 
   onCleanup(() => {
-    runtimeEditor.destroy();
-    for (const id of contributedToolbarIds) {
-      toolbarRegistry.remove(id);
-    }
-    for (const id of contributedMenuIds) {
-      defaultMenuRegistry.unregister(id);
-    }
+    runtimeDisposed = true;
+    void runtimeEditor().destroy();
+    disposeRuntimePlugins();
     onCleanupHook();
     surfaceEventsWithTextDrag.stopDragging();
     textDrag.stopDrag();
@@ -1714,7 +1708,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         )}
       </Show>
 
-      <Show when={initialLoading()}>
+      <Show when={initialLoading() || !runtimeReady()}>
         <div
           class={["oasis-editor-loading", loadingOptions()?.class]
             .filter(Boolean)

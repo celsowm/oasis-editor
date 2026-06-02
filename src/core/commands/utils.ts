@@ -2,6 +2,7 @@ import type { EditorBlockNode, EditorDocument, EditorParagraphListStyle, EditorP
 import { getDocumentSections, getParagraphLength, getParagraphs, paragraphOffsetToPosition, positionToParagraphOffset, getActiveSectionIndex, getActiveZone, resolveImageSrc } from "../model.js";
 import { createEditorParagraphFromRuns, createEditorStyledRun } from "../editorState.js";
 import { clampPosition, createCollapsedSelection, findParagraphIndex, isSelectionCollapsed, normalizeSelection } from "../selection.js";
+import { underlineStyleToCssDecorationStyle } from "../textStyleMappings.js";
 import { setSelection } from "./selection.js";
 
 export type ToggleableTextStyleKey =
@@ -741,33 +742,6 @@ export function textRunStylesToCss(style?: EditorTextStyle): string {
   }
 
   return parts.join(";");
-}
-
-function underlineStyleToCssDecorationStyle(
-  underlineStyle: EditorTextStyle["underlineStyle"],
-): string | null {
-  switch (underlineStyle) {
-    case "double":
-    case "wavyDouble":
-      return "double";
-    case "dotted":
-    case "dottedHeavy":
-      return "dotted";
-    case "dash":
-    case "dashedHeavy":
-    case "dashLong":
-    case "dashLongHeavy":
-    case "dotDash":
-    case "dashDotHeavy":
-    case "dotDotDash":
-    case "dashDotDotHeavy":
-      return "dashed";
-    case "wave":
-    case "wavyHeavy":
-      return "wavy";
-    default:
-      return null;
-  }
 }
 
 function ligaturesToCss(ligatures: EditorTextStyle["ligatures"]): string | null {

@@ -9,6 +9,21 @@ import type {
   EditorUnderlineStyle,
 } from "../../../core/model.js";
 import { UNDERLINE_STYLE_OPTIONS } from "../Toolbar/underlineStyles.js";
+import {
+  featureSettingsToCss,
+  formatNullableNumber,
+  ligaturesToCss,
+  numericToCss,
+  parseNonNegativeNumber,
+  parsePositiveNumber,
+  parseStylisticSet,
+  resolveFontFaceStyle,
+  resolvePositionMode,
+  resolveSpacingMode,
+  type FontDialogPositionMode,
+  type FontDialogSpacingMode,
+  type FontFaceStyle,
+} from "./FontDialogModel.js";
 
 export interface FontDialogInitialValues {
   fontFamily: string;
@@ -88,7 +103,6 @@ const WORD_FONT_SIZES = [
 const WORD_CHARACTER_SCALES = [
   33, 50, 66, 75, 90, 100, 105, 110, 115, 120, 150, 200,
 ];
-type FontFaceStyle = "regular" | "italic" | "bold" | "boldItalic";
 type UnderlineStyleValue = EditorUnderlineStyle | "none";
 
 interface FontTabValues {
@@ -114,9 +128,9 @@ interface FontTabValues {
 
 interface AdvancedTabValues {
   characterScale: string;
-  spacingMode: "normal" | "expanded" | "condensed";
+  spacingMode: FontDialogSpacingMode;
   spacingAmount: string;
-  positionMode: "normal" | "raised" | "lowered";
+  positionMode: FontDialogPositionMode;
   positionAmount: string;
   kerningEnabled: boolean;
   kerningThreshold: string;
@@ -125,99 +139,6 @@ interface AdvancedTabValues {
   numberForm: EditorNumberForm | "";
   stylisticSet: string;
   contextualAlternates: boolean;
-}
-
-function parsePositiveNumber(value: string): number | null {
-  const parsed = Number(value.trim());
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
-function parseNonNegativeNumber(value: string): number | null {
-  const parsed = Number(value.trim());
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
-}
-
-function formatNullableNumber(
-  value: string | number | null | undefined,
-): string {
-  return value === undefined || value === null || value === ""
-    ? ""
-    : String(value);
-}
-
-function resolveSpacingMode(
-  value: string | number | null | undefined,
-): AdvancedTabValues["spacingMode"] {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed === 0) return "normal";
-  return parsed > 0 ? "expanded" : "condensed";
-}
-
-function resolvePositionMode(
-  value: string | number | null | undefined,
-): AdvancedTabValues["positionMode"] {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed === 0) return "normal";
-  return parsed > 0 ? "raised" : "lowered";
-}
-
-function parseStylisticSet(value: string): number | null {
-  if (!value.trim()) return null;
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed >= 1 && parsed <= 20
-    ? parsed
-    : null;
-}
-
-function ligaturesToCss(value: EditorLigatures | ""): string | undefined {
-  switch (value) {
-    case "none":
-      return "none";
-    case "standard":
-      return "common-ligatures";
-    case "contextual":
-      return "contextual";
-    case "historical":
-      return "historical-ligatures";
-    case "standardContextual":
-      return "common-ligatures contextual";
-    default:
-      return undefined;
-  }
-}
-
-function numericToCss(
-  numberSpacing: EditorNumberSpacing | "",
-  numberForm: EditorNumberForm | "",
-): string | undefined {
-  const parts: string[] = [];
-  if (numberSpacing === "proportional") parts.push("proportional-nums");
-  if (numberSpacing === "tabular") parts.push("tabular-nums");
-  if (numberForm === "lining") parts.push("lining-nums");
-  if (numberForm === "oldStyle") parts.push("oldstyle-nums");
-  return parts.join(" ") || undefined;
-}
-
-function featureSettingsToCss(
-  stylisticSet: string,
-  contextualAlternates: boolean,
-): string | undefined {
-  const parts: string[] = [];
-  const set = parseStylisticSet(stylisticSet);
-  if (set !== null) {
-    parts.push(`"ss${String(set).padStart(2, "0")}" 1`);
-  }
-  if (contextualAlternates) {
-    parts.push('"calt" 1');
-  }
-  return parts.join(", ") || undefined;
-}
-
-function resolveFontFaceStyle(bold: boolean, italic: boolean): FontFaceStyle {
-  if (bold && italic) return "boldItalic";
-  if (bold) return "bold";
-  if (italic) return "italic";
-  return "regular";
 }
 
 export function FontDialog(props: FontDialogProps) {

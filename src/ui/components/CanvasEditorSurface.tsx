@@ -38,6 +38,13 @@ import { domTextMeasurer } from "../textMeasurement.js";
 import { projectDocumentLayout } from "../layoutProjection.js";
 import { FOOTNOTE_MARKER_GUTTER_PX } from "../layoutProjection.js";
 import { findFootnoteReference } from "../../core/footnotes.js";
+import {
+  isDoubleUnderlineStyle,
+  isWavyUnderlineStyle,
+  type UnderlineStyle,
+  underlineStyleDashArray,
+  underlineStyleLineWidthPx,
+} from "../../core/textStyleMappings.js";
 import { createLayoutIdentityStabilizer } from "../layoutIdentity.js";
 import { PageBreak } from "../components/PageBreak.js";
 import { buildCanvasTableLayout, type CanvasTableBorderSpec } from "../canvas/CanvasTableLayout.js";
@@ -654,7 +661,7 @@ function drawTextDecoration(
   originX: number,
   originY: number,
   kind: "underline" | "strike" | "doubleStrike",
-  underlineStyle?: string,
+  underlineStyle?: UnderlineStyle,
   underlineColor?: string,
 ) {
   const slots = fragment.chars
@@ -701,61 +708,30 @@ function drawUnderlineWithStyle(
   x1: number,
   x2: number,
   y: number,
-  underlineStyle: string | undefined,
+  underlineStyle: UnderlineStyle,
 ) {
   ctx.setLineDash([]);
-  ctx.lineWidth = 1;
+  ctx.lineWidth = underlineStyleLineWidthPx(underlineStyle);
 
-  switch (underlineStyle) {
-    case "double":
-    case "wavyDouble": {
-      const offset = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(x1, y - offset);
-      ctx.lineTo(x2, y - offset);
-      ctx.moveTo(x1, y + offset);
-      ctx.lineTo(x2, y + offset);
-      ctx.stroke();
-      return;
-    }
-    case "thick":
-    case "dashedHeavy":
-    case "dashLongHeavy":
-    case "dashDotHeavy":
-    case "dashDotDotHeavy":
-    case "dottedHeavy":
-    case "wavyHeavy": {
-      ctx.lineWidth = 2;
-      break;
-    }
+  if (isDoubleUnderlineStyle(underlineStyle)) {
+    const offset = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x1, y - offset);
+    ctx.lineTo(x2, y - offset);
+    ctx.moveTo(x1, y + offset);
+    ctx.lineTo(x2, y + offset);
+    ctx.stroke();
+    return;
   }
 
-  switch (underlineStyle) {
-    case "dotted":
-    case "dottedHeavy":
-      ctx.setLineDash([1.5, 2.5]);
-      break;
-    case "dash":
-    case "dashedHeavy":
-      ctx.setLineDash([4, 3]);
-      break;
-    case "dashLong":
-    case "dashLongHeavy":
-      ctx.setLineDash([8, 3]);
-      break;
-    case "dotDash":
-    case "dashDotHeavy":
-      ctx.setLineDash([4, 2, 1, 2]);
-      break;
-    case "dotDotDash":
-    case "dashDotDotHeavy":
-      ctx.setLineDash([4, 2, 1, 2, 1, 2]);
-      break;
-    case "wave":
-    case "wavyHeavy": {
-      drawWavyLine(ctx, x1, x2, y);
-      return;
-    }
+  if (isWavyUnderlineStyle(underlineStyle)) {
+    drawWavyLine(ctx, x1, x2, y);
+    return;
+  }
+
+  const dashArray = underlineStyleDashArray(underlineStyle);
+  if (dashArray) {
+    ctx.setLineDash(dashArray);
   }
 
   ctx.beginPath();
