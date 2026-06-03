@@ -20,12 +20,12 @@ O projeto já saiu do estágio em que layout, plugins, IO e contratos públicos 
 - tabela de operações extraída para módulos menores;
 - registro do Essentials quebrado por grupos de comandos;
 - `EssentialsPluginDeps` substituído por capabilities nomeadas;
-- `documentPagination.ts` removido e drenado em módulos de paginação por domínio.
+- `documentPagination.ts` removido e drenado em módulos de paginação por domínio;
+- DIP da persistência concluído: o hook depende só de `DocumentPersistence` e o default concreto vive no composition root.
 
-O projeto ainda não terminou a limpeza estrutural. Os hotspots reais remanescentes são:
+O projeto ainda não terminou a limpeza estrutural. O hotspot real remanescente é:
 
 1. `src/ui/OasisEditorApp.tsx` ainda é um composition root grande demais.
-2. Persistência ainda usa um default concreto de IndexedDB no hook, apesar de já aceitar injeção.
 
 ## Status Atual
 
@@ -40,7 +40,7 @@ O projeto ainda não terminou a limpeza estrutural. Os hotspots reais remanescen
 | `OasisEditorEditorProps` | Resolvido | O contrato foi quebrado em `layout`, `overlays`, `refs`, `surfaceHandlers`, `inputHandlers` e `fileHandlers`. |
 | `OasisEditorAppProps` | Resolvido | O contrato foi quebrado em `ui`, `document` e `runtime`. |
 | Operações de tabela | Parcial | Seleção, guards, spans, row/column e selection-aware já estão separados; a façade ainda agrega tudo. |
-| Persistência injetável | Parcial | `useEditorPersistence` aceita `DocumentPersistence`, mas continua com singleton default. |
+| Persistência injetável | Resolvido | `useEditorPersistence` depende só de `DocumentPersistence`; o default concreto (`persistenceService`) vive no composition root via prop `persistence`. |
 | Essentials por domínio | Resolvido | `EssentialsPluginDeps` é só composição de capabilities (`gate`, `style`, `history`, `formatting`, `document`, `link`, `image`, `browser`, `paragraph`, `section`, `table`). |
 | `documentPagination.ts` | Resolvido | Arquivo removido; lógica drenada em `paragraphPagination`, `tablePagination`, `footnotePagination`, `sectionPagination` e `blocksPagination`. |
 | Logs diretos em comandos core | Resolvido | Os pontos já identificados foram limpos. |
@@ -79,20 +79,6 @@ Próximo corte recomendado:
 2. extrair um `useEditorInteractionWiring`;
 3. deixar o componente final apenas montar shells, overlays e loading state.
 
-### 2. Persistência
-
-`useEditorPersistence` já permite injeção, mas o default concreto ainda é o serviço de IndexedDB (`options.persistence ?? persistenceService`).
-
-Diagnóstico SOLID:
-
-- DIP melhorou, mas ainda não está completo;
-- a camada continua opinando sobre uma implementação default concreta.
-
-Próximo corte recomendado:
-
-1. mover a escolha do backend default para bootstrap/app;
-2. deixar o hook depender só de `DocumentPersistence`.
-
 ## Itens Considerados Resolvidos
 
 Os pontos abaixo não devem mais voltar para a lista principal:
@@ -106,16 +92,15 @@ Os pontos abaixo não devem mais voltar para a lista principal:
 - logging direto nos comandos core já tratados;
 - `CanvasPage` como camada de orquestração de repaint (agora em `canvasPageRenderer.ts`);
 - `EssentialsPluginDeps` amplo (agora composição de capabilities);
-- `documentPagination.ts` como hotspot central (removido e drenado).
+- `documentPagination.ts` como hotspot central (removido e drenado);
+- DIP da persistência (hook depende só de `DocumentPersistence`; default concreto no composition root).
 
 ## Ordem Recomendada de Ataque
 
-1. reduzir `OasisEditorApp.tsx`;
-2. terminar DIP da persistência.
+1. reduzir `OasisEditorApp.tsx`.
 
 ## Critério de Encerramento
 
 Este relatório só deve ser considerado encerrado quando:
 
-- `OasisEditorApp.tsx` deixar de ser o principal concentrador de wiring;
-- persistência não depender mais de implementação concreta default no hook.
+- `OasisEditorApp.tsx` deixar de ser o principal concentrador de wiring.

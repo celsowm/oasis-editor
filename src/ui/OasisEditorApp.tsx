@@ -28,7 +28,6 @@ import {
   getDocumentParagraphs,
   findParagraphTableLocation,
   getActiveSectionIndex,
-  getParagraphById,
   paragraphOffsetToPosition,
   type EditorDocument,
   type EditorLayoutParagraph,
@@ -58,30 +57,20 @@ import { DocumentShell } from "./shells/DocumentShell.js";
 import { InlineShell } from "./shells/InlineShell.js";
 import { BalloonShell } from "./shells/BalloonShell.js";
 import { createEditorCommandsController } from "../app/controllers/EditorCommandsController.js";
-import { createEditorClipboardController } from "../app/controllers/useEditorClipboard.js";
 import { createEditorKeyboardController } from "../app/controllers/useEditorKeyboard.js";
 import { useEditorLayout } from "../app/controllers/useEditorLayout.js";
-import { useEditorPersistence } from "../app/controllers/useEditorPersistence.js";
+import {
+  useEditorPersistence,
+  type DocumentPersistence,
+} from "../app/controllers/useEditorPersistence.js";
+import { persistenceService } from "../app/services/PersistenceService.js";
 import { useEditorFindReplace } from "../app/controllers/useEditorFindReplace.js";
 import { createEditorTableOperations } from "../app/controllers/useEditorTableOperations.js";
 import { createEditorImageOperations } from "../app/controllers/useEditorImageOperations.js";
-import { createEditorTableResize } from "../app/controllers/useEditorTableResize.js";
-import { createEditorTableDrag } from "../app/controllers/useEditorTableDrag.js";
-import { createEditorSurfaceEvents } from "../app/controllers/useEditorSurfaceEvents.js";
-import { createEditorTextInput } from "../app/controllers/useEditorTextInput.js";
-import { createEditorTextDrag } from "../app/controllers/useEditorTextDrag.js";
-import { createEditorNavigation } from "../app/controllers/useEditorNavigation.js";
 import { createEditorDocumentIO } from "../app/controllers/useEditorDocumentIO.js";
-import { createEditorRevisionController } from "../app/controllers/useEditorRevision.js";
 import { createEditorStyleController } from "../app/controllers/useEditorStyle.js";
 import { createEditorHistoryActions } from "../app/controllers/useEditorHistoryActions.js";
 import { computeLayoutInvalidationFromTransaction } from "./layoutInvalidation.js";
-import { DropCaret } from "./components/DropCaret.js";
-import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
-import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
-import { FontDialog } from "./components/Dialogs/FontDialog.js";
-import { FindReplaceDialog } from "./components/FindReplace/FindReplaceDialog.js";
-import { ContextMenu } from "./components/ContextMenu/ContextMenu.js";
 import "./components/FindReplace/findReplace.css";
 import { setLocale } from "../i18n/index.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
@@ -103,6 +92,10 @@ import { createEditorContextMenuClipboard } from "./app/useEditorContextMenuClip
 import type { OasisPlugin } from "../core/plugin.js";
 import { createEditorEssentialsRuntimePlugin } from "./app/createEditorEssentialsPlugin.js";
 import { createRuntimeCommandHost } from "./app/createRuntimeCommandHost.js";
+import { EditorDragLayers } from "./app/EditorDragLayers.js";
+import { EditorDialogsLayer } from "./app/EditorDialogsLayer.js";
+import { useEditorInteractionWiring } from "./app/useEditorInteractionWiring.js";
+import { buildEditorViewProps } from "./app/buildEditorViewProps.js";
 
 export interface OasisEditorLoadingOptions {
   label?: string;
@@ -131,6 +124,7 @@ export interface OasisEditorAppDocumentProps {
   onStateChange?: (state: EditorState) => void;
   readOnly?: boolean;
   persistenceEnabled?: boolean;
+  persistence?: DocumentPersistence;
   layoutMode?: "fast" | "wordParity";
 }
 
@@ -269,7 +263,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       commitState(nextState);
       resetEditorChromeState();
     },
-    { enabled: documentOptions().persistenceEnabled ?? false, logger },
+    {
+      enabled: documentOptions().persistenceEnabled ?? false,
+      persistence: documentOptions().persistence ?? persistenceService,
+      logger,
+    },
   );
 
   let historyState = createEmptyEditorHistoryState();
@@ -403,25 +401,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     logger,
   });
 
-  const tableResize = createEditorTableResize({
-    state: () => state,
-    applyTransactionalState,
-    surfaceRef,
-    viewportRef,
-  });
-
-  const tableDrag = createEditorTableDrag({
-    state: () => state,
-    applyTransactionalState,
-    resolvePositionAtSurfacePoint,
-    focusInput,
-  });
-
-  const revisionController = createEditorRevisionController({
-    state: () => state,
-    surfaceRef: () => surfaceRef() ?? null,
-  });
-
   const styleController = createEditorStyleController({
     state: () => state,
     commandsController: () => commandsController,
@@ -431,57 +410,43 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     logger,
   });
 
-  const textDrag = createEditorTextDrag({
-    state: () => state,
-    isReadOnly,
-    resolveSurfaceHitAtPoint,
-    applyTransactionalState,
-    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
-    clearPreferredColumn,
-    resetTransactionGrouping,
-    focusInputAfterPointerSelection,
-    logger,
-  });
-
-  const surfaceEventsWithTextDrag = createEditorSurfaceEvents({
-    state: () => state,
-    applyState,
+  const {
     tableResize,
-    imageOps,
-    clearPendingCaretTextStyle: styleController.clearPendingCaretTextStyle,
-    clearPreferredColumn,
-    resetTransactionGrouping,
-    focusInputAfterPointerSelection,
-    resolveSurfaceHitAtPoint,
-    getParagraphById,
-    textDrag: {
-      tryStartTextDrag: textDrag.tryStartTextDrag,
-    },
-    logger,
-  });
-
-  const textInput = createEditorTextInput({
-    state: () => state,
-    isReadOnly,
-    logger,
-    clearPreferredColumn,
-    pendingCaretTextStyle: styleController.pendingCaretTextStyle,
-    applyTransactionalState,
-    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
-    focusInput,
-  });
-
-  const navigation = createEditorNavigation({
-    state: () => state,
+    tableDrag,
+    revisionController,
+    textDrag,
+    surfaceEvents: surfaceEventsWithTextDrag,
+    textInput,
+    navigation,
+    handleCopy,
+    handleCut,
+    handlePaste,
+    handleDrop,
+  } = useEditorInteractionWiring({
+    state,
     applyState,
     applyTransactionalState,
-    surfaceRef: () => surfaceRef() ?? null,
+    isReadOnly,
+    logger,
+    focusInput,
+    focusInputAfterPointerSelection,
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    surfaceRef,
+    viewportRef,
     caretBox: () => caretBox(),
     preferredColumnX: () => preferredColumnX(),
     setPreferredColumnX,
-    clearPreferredColumn,
-    resetTransactionGrouping,
-    focusInput,
+    resolveSurfaceHitAtPoint,
+    resolvePositionAtSurfacePoint,
+    tableOps,
+    imageOps,
+    styleController,
+    getForcePlainTextPaste: () => forcePlainTextPaste,
+    setForcePlainTextPaste: (value) => {
+      forcePlainTextPaste = value;
+    },
+    insertImageFromFile: docIO.insertImageFromFile,
   });
 
   const onEditorMouseDown = (event: MouseEvent) => {
@@ -494,23 +459,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     event.preventDefault();
     focusInput();
   };
-
-  const { handleCopy, handleCut, handlePaste, handleDrop } =
-    createEditorClipboardController({
-      state: () => state,
-      isReadOnly,
-      forcePlainTextPaste: () => forcePlainTextPaste,
-      setForcePlainTextPaste: (value) => {
-        forcePlainTextPaste = value;
-      },
-      clearPreferredColumn,
-      resetTransactionGrouping,
-      applyTransactionalState,
-      applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
-      focusInput,
-      insertImageFromFile: docIO.insertImageFromFile,
-      resolvePositionAtSurfacePoint,
-    });
 
   const commandsController = createEditorCommandsController({
     state,
@@ -717,78 +665,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     imageOps.startImageResize(paragraphId, paragraphOffset, direction, event, state);
   };
 
-  const editorLayoutProps = {
-    layoutMode: layoutMode(),
-    viewportHeight: ui().viewportHeight,
-    class: ui().class,
-    style: ui().style,
-  };
-
-  const editorOverlayProps = {
-    selectionBoxes: () => selectionBoxes(),
-    selectedImageBox: () => selectedImageBox(),
-    caretBox: () => caretBox(),
-    inputBox: () => inputBox(),
-    hoveredRevision: revisionController.hoveredRevision,
-    focused: () => focused(),
-    showCaret: shouldShowCaret,
-    importProgress: () => docIO.importProgress(),
-  };
-
-  const editorRefs = {
-    onViewportRef: (element: HTMLDivElement) => {
-      focusController.viewportRef = element;
-    },
-    onSurfaceRef: (element: HTMLDivElement) => {
-      focusController.surfaceRef = element;
-    },
-    onTextareaRef: (element: HTMLTextAreaElement) => {
-      focusController.textareaRef = element;
-    },
-    onImportInputRef: (element: HTMLInputElement) => {
-      focusController.importInputRef = element;
-    },
-    onImageInputRef: (element: HTMLInputElement) => {
-      focusController.imageInputRef = element;
-    },
-  };
-
-  const editorFileHandlers = {
-    onImportInputChange: (e: Event & { currentTarget: HTMLInputElement }) =>
-      docIO.handleImportDocx(e.currentTarget.files?.[0] ?? null),
-    onImageInputChange: (e: Event & { currentTarget: HTMLInputElement }) =>
-      docIO.handleInsertImage(e.currentTarget.files?.[0] ?? null),
-  };
-
-  const editorSurfaceHandlers = {
-    onDragOver: (event: DragEvent) => event.preventDefault(),
-    onDrop: handleDrop,
-    onEditorMouseDown,
-    onSurfaceMouseDown: surfaceEventsWithTextDrag.handleSurfaceMouseDown,
-    onSurfaceClick: surfaceEventsWithTextDrag.handleSurfaceClick,
-    onSurfaceMouseMove: tableResize.handleMouseMove,
-    onSurfaceDblClick: surfaceEventsWithTextDrag.handleSurfaceDblClick,
-    onParagraphMouseDown: surfaceEventsWithTextDrag.handleParagraphMouseDown,
-    onImageMouseDown: handleImageMouseDown,
-    onImageResizeHandleMouseDown: handleImageResizeHandleMouseDown,
-    onTableDragHandleMouseDown: tableDrag.handleMouseDown,
-    onRevisionMouseEnter: revisionController.handleRevisionMouseEnter,
-    onRevisionMouseLeave: revisionController.handleRevisionMouseLeave,
-    onEditorContextMenu: (event: MouseEvent) => handleEditorContextMenu(event),
-  };
-
-  const editorInputHandlers = {
-    onInputBlur: () => setFocused(false),
-    onInputFocus: () => setFocused(true),
-    onCompositionEnd: textInput.handleCompositionEnd,
-    onCompositionStart: textInput.handleCompositionStart,
-    onCopy: handleCopy,
-    onCut: handleCut,
-    onInput: textInput.handleTextInput,
-    onKeyDown: handleKeyDown,
-    onPaste: handlePaste,
-  };
-
   const renderComposedShell = () => {
     const Shell = shellComponent();
     return (
@@ -881,6 +757,46 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const handleEditorContextMenu = contextMenuClipboard.handleEditorContextMenu;
   const closeContextMenu = contextMenuClipboard.closeContextMenu;
 
+  const {
+    layout: editorLayoutProps,
+    overlays: editorOverlayProps,
+    refs: editorRefs,
+    surfaceHandlers: editorSurfaceHandlers,
+    inputHandlers: editorInputHandlers,
+    fileHandlers: editorFileHandlers,
+  } = buildEditorViewProps({
+    layoutMode: layoutMode(),
+    viewportHeight: ui().viewportHeight,
+    className: ui().class,
+    style: ui().style,
+    selectionBoxes,
+    selectedImageBox,
+    caretBox,
+    inputBox,
+    hoveredRevision: revisionController.hoveredRevision,
+    focused,
+    showCaret: shouldShowCaret,
+    importProgress: docIO.importProgress,
+    focusController,
+    handleImportDocx: docIO.handleImportDocx,
+    handleInsertImage: docIO.handleInsertImage,
+    surfaceEvents: surfaceEventsWithTextDrag,
+    tableResize,
+    tableDrag,
+    revisionController,
+    handleDrop,
+    onEditorMouseDown,
+    handleImageMouseDown,
+    handleImageResizeHandleMouseDown,
+    handleEditorContextMenu,
+    textInput,
+    setFocused,
+    handleCopy,
+    handleCut,
+    handlePaste,
+    handleKeyDown,
+  });
+
   onMount(() => {
     startIconObserver();
     startLongTaskObserver();
@@ -913,48 +829,26 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         <Toolbar host={toolbarHost} registry={toolbarRegistry} />
       </Show>
 
-      <LinkDialog
-        isOpen={linkDialog().isOpen}
-        initialHref={linkDialog().initialHref}
-        onClose={() => {
-          setLinkDialog({ ...linkDialog(), isOpen: false });
-          focusInput();
+      <EditorDialogsLayer
+        dialogs={{
+          linkDialog,
+          setLinkDialog,
+          imageAltDialog,
+          setImageAltDialog,
+          contextMenu,
+          setContextMenu,
+          fontDialog,
+          setFontDialog,
         }}
-        onConfirm={(href) =>
-          commandsController.applyLinkCommand(href.trim() || null)
-        }
-      />
-
-      <ImageAltDialog
-        isOpen={imageAltDialog().isOpen}
-        initialAlt={imageAltDialog().initialAlt}
-        onClose={() => {
-          setImageAltDialog({ ...imageAltDialog(), isOpen: false });
-          focusInput();
-        }}
-        onConfirm={(alt) => commandsController.applyImageAltCommand(alt.trim())}
-      />
-
-      <FindReplaceDialog fr={fr} />
-
-      <FontDialog
-        isOpen={fontDialog().isOpen}
-        initial={fontDialog().initial}
-        familyOptions={computeFontFamilyOptions()}
-        sizeOptions={computeFontSizeOptions()}
-        onClose={() => {
-          setFontDialog({ ...fontDialog(), isOpen: false });
-          focusInput();
-        }}
-        onApply={applyFontDialogValues}
-      />
-
-      <ContextMenu
-        isOpen={contextMenu().isOpen}
-        x={contextMenu().x}
-        y={contextMenu().y}
-        items={buildContextMenuItems()}
-        onClose={closeContextMenu}
+        findReplace={fr}
+        fontFamilyOptions={computeFontFamilyOptions}
+        fontSizeOptions={computeFontSizeOptions}
+        contextMenuItems={buildContextMenuItems}
+        focusInput={focusInput}
+        applyLinkCommand={commandsController.applyLinkCommand}
+        applyImageAltCommand={commandsController.applyImageAltCommand}
+        applyFontDialogValues={applyFontDialogValues}
+        closeContextMenu={closeContextMenu}
       />
 
       <Show when={useComposedShell()}>
@@ -988,93 +882,14 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       </div>
       </Show>
 
-      <Show when={tableResize.resizing()}>
-        {(resizing) => (
-          <div
-            class="oasis-editor-table-resize-guide"
-            classList={{
-              "oasis-editor-table-resize-guide-column": resizing().type === "column",
-              "oasis-editor-table-resize-guide-row": resizing().type === "row",
-            }}
-            style={{
-              ...(resizing().type === "column"
-                ? {
-                    left: `${resizing().currentPos}px`,
-                    top: `${resizing().guideBounds.top}px`,
-                    width: "0px",
-                    height: `${resizing().guideBounds.height}px`,
-                  }
-                : {
-                    left: `${resizing().guideBounds.left}px`,
-                    top: `${resizing().currentPos}px`,
-                    width: `${resizing().guideBounds.width}px`,
-                    height: "0px",
-                  }),
-            }}
-          />
-        )}
-      </Show>
-
-      <Show when={imageOps.dragging() && imageOps.draggedImageInfo()}>
-        {(info) => (
-          <img
-            src={info().src}
-            class="oasis-editor-image-ghost"
-            style={{
-              width: `${info().width}px`,
-              height: `${info().height}px`,
-              left: `${imageOps.mousePos().x - info().offsetX}px`,
-              top: `${imageOps.mousePos().y - info().offsetY}px`,
-            }}
-          />
-        )}
-      </Show>
-
-      <Show when={tableDrag.dragging() && tableDrag.draggedTableInfo()}>
-        {(info) => (
-          <div
-            class="oasis-editor-table-ghost"
-            style={{
-              width: `${info().width}px`,
-              height: `${info().height}px`,
-              left: `${tableDrag.mousePos().x - info().offsetX}px`,
-              top: `${tableDrag.mousePos().y - info().offsetY}px`,
-            }}
-          />
-        )}
-      </Show>
-
-      <Show when={tableDrag.dragging() && tableDrag.dropTargetPos()}>
-        {(pos) => (
-          <DropCaret
-            surfaceRef={surfaceRef()}
-            state={state as EditorState}
-            targetPos={pos}
-          />
-        )}
-      </Show>
-
-      <Show when={imageOps.dragging() && imageOps.dropTargetPos()}>
-        {(pos) => (
-          <DropCaret
-            surfaceRef={surfaceRef()}
-            state={state as EditorState}
-            targetPos={pos}
-          />
-        )}
-      </Show>
-
-      <Show when={textDrag.dragging() && textDrag.dropTargetPos()}>
-        {(pos) => (
-          <DropCaret
-            surfaceRef={surfaceRef()}
-            state={state as EditorState}
-            targetPos={pos}
-            pointerPos={textDrag.pointerPos}
-            caretViewport={textDrag.caretViewport}
-          />
-        )}
-      </Show>
+      <EditorDragLayers
+        state={state as EditorState}
+        surfaceRef={surfaceRef()}
+        tableResize={tableResize}
+        imageOps={imageOps}
+        tableDrag={tableDrag}
+        textDrag={textDrag}
+      />
 
       <Show when={initialLoading() || !runtimeReady()}>
         <div

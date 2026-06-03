@@ -1,6 +1,5 @@
 import { createEffect, createSignal, onMount, on } from "solid-js";
 import { unwrap } from "solid-js/store";
-import { persistenceService } from "../services/PersistenceService.js";
 import { debounce } from "../../utils/throttle.js";
 import type { EditorDocument, EditorState } from "../../core/model.js";
 import type { EditorLogger } from "../../utils/logger.js";
@@ -21,15 +20,15 @@ export function useEditorPersistence(
   onLoaded: (doc: EditorDocument) => void,
   options: {
     enabled?: boolean;
-    persistence?: DocumentPersistence;
+    persistence: DocumentPersistence;
     logger?: Pick<EditorLogger, "error">;
-  } = { enabled: false },
+  },
 ): UseEditorPersistenceResult {
   const [status, setStatus] = createSignal<PersistenceStatus>("Initial");
   const [isInitialized, setIsInitialized] = createSignal(false);
 
   const isEnabled = () => options.enabled ?? false;
-  const persistence = options.persistence ?? persistenceService;
+  const persistence = options.persistence;
 
   const debouncedSave = debounce(async (doc: EditorDocument) => {
     if (!isEnabled() || !isInitialized()) return;
