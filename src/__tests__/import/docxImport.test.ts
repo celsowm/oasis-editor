@@ -15,7 +15,7 @@ import {
   resolveEffectiveTextStyleForParagraph,
 } from "../../core/model.js";
 import { createEditorStateFromDocument } from "../../core/editorState.js";
-import { estimateTableBlockHeight, projectDocumentLayout, projectParagraphLayout } from "../../ui/layoutProjection.js";
+import { estimateTableBlockHeight, projectDocumentLayout, projectParagraphLayout } from "../../layoutProjection/index.js";
 import { buildCanvasTableLayout } from "../../ui/canvas/CanvasTableLayout.js";
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "word-parity", "fixtures");

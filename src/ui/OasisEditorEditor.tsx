@@ -7,21 +7,40 @@ import { FloatingTableToolbar } from "./components/FloatingToolbar/FloatingTable
 import type { ToolbarHost } from "./components/Toolbar/state/createToolbarApi.js";
 import { t } from "../i18n/index.js";
 import {
-  getDocumentParagraphs,
   getDocumentPageSettings,
-  getParagraphLength,
   type EditorLayoutParagraph,
   type EditorState,
 } from "../core/model.js";
 import { getDocumentCharacterCount, getDocumentWordCount } from "../core/editorState.js";
 import type { CaretBox, InputBox, RevisionBox, SelectedImageBox, SelectionBox } from "./editorUiTypes.js";
-import { type ImageResizeHandleDirection } from "./editorUiTypes.js";
+import type { ImageResizeHandleDirection } from "./editorUiTypes.js";
+import { projectDocumentLayout } from "../layoutProjection/index.js";
 
-export interface OasisEditorEditorProps {
-  state: Accessor<EditorState>;
+type ImportProgress = {
+  phase:
+    | "reading-file"
+    | "opening-docx"
+    | "parsing-document"
+    | "parsing-headers-footers"
+    | "applying-editor-state"
+    | "stabilizing-layout"
+    | "done"
+    | "error";
+  progress: number;
+  subProgress?: number;
+};
+
+export interface OasisEditorEditorLayoutProps {
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
   layoutMode?: "fast" | "wordParity";
+  viewportHeight?: number | string;
+  class?: string;
+  style?: JSX.CSSProperties;
+  readOnly?: boolean;
+}
+
+export interface OasisEditorEditorOverlayProps {
   selectionBoxes: Accessor<SelectionBox[]>;
   selectedImageBox: Accessor<SelectedImageBox | null>;
   caretBox: Accessor<CaretBox>;
@@ -29,31 +48,21 @@ export interface OasisEditorEditorProps {
   hoveredRevision: Accessor<RevisionBox | null>;
   focused: Accessor<boolean>;
   showCaret: Accessor<boolean>;
-  importProgress?: Accessor<{
-    phase:
-      | "reading-file"
-      | "opening-docx"
-      | "parsing-document"
-      | "parsing-headers-footers"
-      | "applying-editor-state"
-      | "stabilizing-layout"
-      | "done"
-      | "error";
-    progress: number;
-    subProgress?: number;
-  } | null>;
+  importProgress?: Accessor<ImportProgress | null>;
   toolbarHost?: () => ToolbarHost;
   persistenceStatus?: () => string;
   showFloatingTableToolbar?: Accessor<boolean>;
-  viewportHeight?: number | string;
-  class?: string;
-  style?: JSX.CSSProperties;
-  readOnly?: boolean;
+}
+
+export interface OasisEditorEditorRefProps {
   onViewportRef?: (element: HTMLDivElement) => void;
   onSurfaceRef?: (element: HTMLDivElement) => void;
   onTextareaRef?: (element: HTMLTextAreaElement) => void;
   onImportInputRef?: (element: HTMLInputElement) => void;
   onImageInputRef?: (element: HTMLInputElement) => void;
+}
+
+export interface OasisEditorEditorSurfaceHandlers {
   onDragOver: (event: DragEvent) => void;
   onDrop: (event: DragEvent) => void;
   onEditorMouseDown: (event: MouseEvent) => void;
@@ -79,6 +88,10 @@ export interface OasisEditorEditorProps {
   onTableDragHandleMouseDown: (tableId: string, event: MouseEvent) => void;
   onRevisionMouseEnter: (revisionId: string, event: MouseEvent) => void;
   onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
+  onEditorContextMenu?: (event: MouseEvent) => void;
+}
+
+export interface OasisEditorEditorInputHandlers {
   onInputBlur: () => void;
   onInputFocus: () => void;
   onCompositionEnd: (event: CompositionEvent & { currentTarget: HTMLTextAreaElement }) => void;
@@ -88,33 +101,57 @@ export interface OasisEditorEditorProps {
   onInput: (event: InputEvent & { currentTarget: HTMLTextAreaElement }) => void;
   onKeyDown: (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => void;
   onPaste: (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => void;
-  onImportInputChange: (event: Event & { currentTarget: HTMLInputElement }) => void;
-  onImageInputChange: (event: Event & { currentTarget: HTMLInputElement }) => void;
-  onEditorContextMenu?: (event: MouseEvent) => void;
 }
 
-import { projectDocumentLayout } from "./layoutProjection.js";
+export interface OasisEditorEditorFileHandlers {
+  onImportInputChange: (event: Event & { currentTarget: HTMLInputElement }) => void;
+  onImageInputChange: (event: Event & { currentTarget: HTMLInputElement }) => void;
+}
+
+export interface OasisEditorEditorProps {
+  state: Accessor<EditorState>;
+  layout?: OasisEditorEditorLayoutProps;
+  overlays: OasisEditorEditorOverlayProps;
+  refs?: OasisEditorEditorRefProps;
+  surfaceHandlers: OasisEditorEditorSurfaceHandlers;
+  inputHandlers: OasisEditorEditorInputHandlers;
+  fileHandlers: OasisEditorEditorFileHandlers;
+}
 
 export function OasisEditorEditor(props: OasisEditorEditorProps) {
+  const layout = () => props.layout ?? {};
+  const overlays = () => props.overlays;
+  const refs = () => props.refs ?? {};
+  const surfaceHandlers = () => props.surfaceHandlers;
+  const inputHandlers = () => props.inputHandlers;
+  const fileHandlers = () => props.fileHandlers;
   let scrollContentRef: HTMLDivElement | undefined;
   let viewportElement: HTMLDivElement | undefined;
   const pageSettings = () => getDocumentPageSettings(props.state().document);
-  const viewportHeight = () =>
-    typeof props.viewportHeight === "number" ? `${props.viewportHeight}px` : props.viewportHeight ?? "min(72vh, 920px)";
+  const viewportHeight = (): string => {
+    const rawViewportHeight = layout().viewportHeight;
+    if (typeof rawViewportHeight === "number") {
+      return `${rawViewportHeight}px`;
+    }
+    return rawViewportHeight ?? "min(72vh, 920px)";
+  };
+  const shellStyle = createMemo<JSX.CSSProperties>(() => ({
+    width: `min(${pageSettings().width + 68}px, 100%)`,
+    height: "100%",
+    "max-height": viewportHeight(),
+    ...(layout().style ?? {}),
+  }));
   const documentForStats = createMemo(() => props.state().document);
   const characterCount = createMemo(() => getDocumentCharacterCount(documentForStats()));
   const wordCount = createMemo(() => getDocumentWordCount(documentForStats()));
 
-  // Status pagination is deliberately estimated and keyed only by document
-  // identity. The measured layout used by EditorSurface updates more often
-  // during import/scroll and should not make the statusbar re-project pages.
   const statusDocumentLayout = createMemo(() =>
-    props.layoutMode === "wordParity"
+    layout().layoutMode === "wordParity"
       ? projectDocumentLayout(
           documentForStats(),
           undefined,
-          props.measuredBlockHeights?.(),
-          props.measuredParagraphLayouts?.(),
+          layout().measuredBlockHeights?.(),
+          layout().measuredParagraphLayouts?.(),
           { layoutMode: "wordParity" },
         )
       : projectDocumentLayout(documentForStats()),
@@ -129,7 +166,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
       setViewportPageIndex(null);
       return;
     }
-    const pageElements = Array.from(viewport.querySelectorAll<HTMLElement>(".oasis-editor-paper[data-page-index]"));
+    const pageElements = Array.from(
+      viewport.querySelectorAll<HTMLElement>(".oasis-editor-paper[data-page-index]"),
+    );
     if (pageElements.length === 0) {
       setViewportPageIndex(null);
       return;
@@ -158,15 +197,15 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
     if (visiblePageIndex !== null) {
       return Math.max(1, visiblePageIndex + 1);
     }
-    const layout = statusDocumentLayout();
+    const projectedLayout = statusDocumentLayout();
     const focusId = props.state().selection.focus.paragraphId;
-    const pageIndex = layout.pages.findIndex((page) =>
-      page.blocks.some((block) => block.sourceBlockId === focusId)
+    const pageIndex = projectedLayout.pages.findIndex((page) =>
+      page.blocks.some((block) => block.sourceBlockId === focusId),
     );
     return pageIndex === -1 ? 1 : pageIndex + 1;
   };
 
-  const selectedImage = createMemo(() => props.selectedImageBox());
+  const selectedImage = createMemo(() => overlays().selectedImageBox());
 
   createEffect(() => {
     statusDocumentLayout();
@@ -180,7 +219,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   ) => {
     event.preventDefault();
     event.stopPropagation();
-    props.onImageResizeHandleMouseDown(
+    surfaceHandlers().onImageResizeHandleMouseDown(
       image.paragraphId,
       image.startOffset,
       direction,
@@ -190,339 +229,333 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
 
   return (
     <div
-      class={`oasis-editor-editor-shell${props.class ? ` ${props.class}` : ""}`}
+      class={`oasis-editor-editor-shell${layout().class ? ` ${layout().class}` : ""}`}
       data-testid="editor-editor-shell"
-      style={{
-        width: `min(${pageSettings().width + 68}px, 100%)`,
-        height: "100%",
-        "max-height": viewportHeight(),
-        ...(props.style ?? {}),
-      }}
-    >
-    <div
-      ref={(el) => {
-        viewportElement = el;
-        props.onViewportRef?.(el);
-        const onScroll = () => {
-          recomputeViewportPageIndex();
-        };
-        el.addEventListener("scroll", onScroll, { passive: true });
-        queueMicrotask(recomputeViewportPageIndex);
-        onCleanup(() => {
-          el.removeEventListener("scroll", onScroll);
-        });
-      }}
-      class="oasis-editor-editor"
-      data-testid="editor-editor"
-      onDragOver={props.onDragOver}
-      onDrop={props.onDrop}
-      onMouseDown={props.onEditorMouseDown}
-      onContextMenu={props.onEditorContextMenu}
+      style={shellStyle()}
     >
       <div
         ref={(el) => {
-          scrollContentRef = el;
-          props.onSurfaceRef?.(el);
+          viewportElement = el;
+          refs().onViewportRef?.(el);
+          const onScroll = () => {
+            recomputeViewportPageIndex();
+          };
+          el.addEventListener("scroll", onScroll, { passive: true });
+          queueMicrotask(recomputeViewportPageIndex);
+          onCleanup(() => {
+            el.removeEventListener("scroll", onScroll);
+          });
         }}
-        class="oasis-editor-editor-scroll-content"
-        data-testid="editor-editor-scroll-content"
+        class="oasis-editor-editor"
+        data-testid="editor-editor"
+        onDragOver={surfaceHandlers().onDragOver}
+        onDrop={surfaceHandlers().onDrop}
+        onMouseDown={surfaceHandlers().onEditorMouseDown}
+        onContextMenu={surfaceHandlers().onEditorContextMenu}
       >
-        <CanvasEditorSurface
-          state={props.state}
-          measuredBlockHeights={props.measuredBlockHeights}
-          measuredParagraphLayouts={props.measuredParagraphLayouts}
-          layoutMode={props.layoutMode}
-          viewportRef={() => viewportElement ?? undefined}
-          onSurfaceMouseDown={props.onSurfaceMouseDown}
-          onSurfaceClick={props.onSurfaceClick}
-          onSurfaceMouseMove={props.onSurfaceMouseMove}
-          onSurfaceDblClick={props.onSurfaceDblClick}
-          onParagraphMouseDown={props.onParagraphMouseDown}
-          onImageMouseDown={props.onImageMouseDown}
-          onImageResizeHandleMouseDown={props.onImageResizeHandleMouseDown}
-          onTableDragHandleMouseDown={props.onTableDragHandleMouseDown}
-          onRevisionMouseEnter={props.onRevisionMouseEnter}
-          onRevisionMouseLeave={props.onRevisionMouseLeave}
-        />
-
-        <Show when={props.hoveredRevision()}>
-          {(revision) => <RevisionOverlay box={revision()} />}
-        </Show>
-
-        <Show when={props.selectionBoxes().length > 0}>
-          <SelectionOverlay boxes={props.selectionBoxes()} />
-        </Show>
-
         <div
-          aria-hidden="true"
-          class="oasis-editor-image-selection-overlay"
-          style={{
-            display: selectedImage() ? undefined : "none",
-            left: `${selectedImage()?.left ?? 0}px`,
-            top: `${selectedImage()?.top ?? 0}px`,
-            width: `${selectedImage()?.width ?? 0}px`,
-            height: `${selectedImage()?.height ?? 0}px`,
-            "pointer-events":
-              !props.readOnly && selectedImage() ? "auto" : "none",
+          ref={(el) => {
+            scrollContentRef = el;
+            refs().onSurfaceRef?.(el);
           }}
-          onMouseDown={(event) => {
-            const image = selectedImage();
-            if (props.readOnly || !image) {
-              return;
-            }
-            event.preventDefault();
-            props.onImageMouseDown(
-              image.paragraphId,
-              image.startOffset,
-              event as MouseEvent & { currentTarget: HTMLElement },
-            );
-          }}
+          class="oasis-editor-editor-scroll-content"
+          data-testid="editor-editor-scroll-content"
         >
-          {!props.readOnly && (
-            <>
-              <button
-                aria-hidden="true"
-                class="oasis-editor-image-resize-handle"
-                data-direction="nw"
-                tabIndex={-1}
-                type="button"
-                onMouseDown={(event) => {
-                  const image = selectedImage();
-                  if (!image) return;
-                  handleResizeHandleMouseDown(
-                    "nw",
-                    image,
-                    event as MouseEvent & { currentTarget: HTMLElement },
-                  );
-                }}
-              />
-              <button
-                aria-hidden="true"
-                class="oasis-editor-image-resize-handle"
-                data-direction="n"
-                tabIndex={-1}
-                type="button"
-                onMouseDown={(event) => {
-                  const image = selectedImage();
-                  if (!image) return;
-                  handleResizeHandleMouseDown(
-                    "n",
-                    image,
-                    event as MouseEvent & { currentTarget: HTMLElement },
-                  );
-                }}
-              />
-              <button
-                aria-hidden="true"
-                class="oasis-editor-image-resize-handle"
-                data-direction="ne"
-                tabIndex={-1}
-                type="button"
-                onMouseDown={(event) => {
-                  const image = selectedImage();
-                  if (!image) return;
-                  handleResizeHandleMouseDown(
-                    "ne",
-                    image,
-                    event as MouseEvent & { currentTarget: HTMLElement },
-                  );
-                }}
-              />
-              <button
-                aria-hidden="true"
-                class="oasis-editor-image-resize-handle"
-                data-direction="e"
-                tabIndex={-1}
-                type="button"
-                onMouseDown={(event) => {
-                  const image = selectedImage();
-                  if (!image) return;
-                  handleResizeHandleMouseDown(
-                    "e",
-                    image,
-                    event as MouseEvent & { currentTarget: HTMLElement },
-                  );
-                }}
-              />
-              <button
-                aria-hidden="true"
-                class="oasis-editor-image-resize-handle"
-                data-direction="se"
-                tabIndex={-1}
-                type="button"
-                onMouseDown={(event) => {
-                  const image = selectedImage();
-                  if (!image) return;
-                  handleResizeHandleMouseDown(
-                    "se",
-                    image,
-                    event as MouseEvent & { currentTarget: HTMLElement },
-                  );
-                }}
-              />
-              <button
-                aria-hidden="true"
-                class="oasis-editor-image-resize-handle"
-                data-direction="s"
-                tabIndex={-1}
-                type="button"
-                onMouseDown={(event) => {
-                  const image = selectedImage();
-                  if (!image) return;
-                  handleResizeHandleMouseDown(
-                    "s",
-                    image,
-                    event as MouseEvent & { currentTarget: HTMLElement },
-                  );
-                }}
-              />
-              <button
-                aria-hidden="true"
-                class="oasis-editor-image-resize-handle"
-                data-direction="sw"
-                tabIndex={-1}
-                type="button"
-                onMouseDown={(event) => {
-                  const image = selectedImage();
-                  if (!image) return;
-                  handleResizeHandleMouseDown(
-                    "sw",
-                    image,
-                    event as MouseEvent & { currentTarget: HTMLElement },
-                  );
-                }}
-              />
-              <button
-                aria-hidden="true"
-                class="oasis-editor-image-resize-handle"
-                data-direction="w"
-                tabIndex={-1}
-                type="button"
-                onMouseDown={(event) => {
-                  const image = selectedImage();
-                  if (!image) return;
-                  handleResizeHandleMouseDown(
-                    "w",
-                    image,
-                    event as MouseEvent & { currentTarget: HTMLElement },
-                  );
-                }}
-              />
-            </>
-          )}
+          <CanvasEditorSurface
+            state={props.state}
+            measuredBlockHeights={layout().measuredBlockHeights}
+            measuredParagraphLayouts={layout().measuredParagraphLayouts}
+            layoutMode={layout().layoutMode}
+            viewportRef={() => viewportElement ?? undefined}
+            onSurfaceMouseDown={surfaceHandlers().onSurfaceMouseDown}
+            onSurfaceClick={surfaceHandlers().onSurfaceClick}
+            onSurfaceMouseMove={surfaceHandlers().onSurfaceMouseMove}
+            onSurfaceDblClick={surfaceHandlers().onSurfaceDblClick}
+            onParagraphMouseDown={surfaceHandlers().onParagraphMouseDown}
+            onImageMouseDown={surfaceHandlers().onImageMouseDown}
+            onImageResizeHandleMouseDown={surfaceHandlers().onImageResizeHandleMouseDown}
+            onTableDragHandleMouseDown={surfaceHandlers().onTableDragHandleMouseDown}
+            onRevisionMouseEnter={surfaceHandlers().onRevisionMouseEnter}
+            onRevisionMouseLeave={surfaceHandlers().onRevisionMouseLeave}
+          />
+
+          <Show when={overlays().hoveredRevision()}>
+            {(revision) => <RevisionOverlay box={revision()} />}
+          </Show>
+
+          <Show when={overlays().selectionBoxes().length > 0}>
+            <SelectionOverlay boxes={overlays().selectionBoxes()} />
+          </Show>
+
+          <div
+            aria-hidden="true"
+            class="oasis-editor-image-selection-overlay"
+            style={{
+              display: selectedImage() ? undefined : "none",
+              left: `${selectedImage()?.left ?? 0}px`,
+              top: `${selectedImage()?.top ?? 0}px`,
+              width: `${selectedImage()?.width ?? 0}px`,
+              height: `${selectedImage()?.height ?? 0}px`,
+              "pointer-events": !layout().readOnly && selectedImage() ? "auto" : "none",
+            }}
+            onMouseDown={(event) => {
+              const image = selectedImage();
+              if (layout().readOnly || !image) {
+                return;
+              }
+              event.preventDefault();
+              surfaceHandlers().onImageMouseDown(
+                image.paragraphId,
+                image.startOffset,
+                event as MouseEvent & { currentTarget: HTMLElement },
+              );
+            }}
+          >
+            {!layout().readOnly && (
+              <>
+                <button
+                  aria-hidden="true"
+                  class="oasis-editor-image-resize-handle"
+                  data-direction="nw"
+                  tabIndex={-1}
+                  type="button"
+                  onMouseDown={(event) => {
+                    const image = selectedImage();
+                    if (!image) return;
+                    handleResizeHandleMouseDown(
+                      "nw",
+                      image,
+                      event as MouseEvent & { currentTarget: HTMLElement },
+                    );
+                  }}
+                />
+                <button
+                  aria-hidden="true"
+                  class="oasis-editor-image-resize-handle"
+                  data-direction="n"
+                  tabIndex={-1}
+                  type="button"
+                  onMouseDown={(event) => {
+                    const image = selectedImage();
+                    if (!image) return;
+                    handleResizeHandleMouseDown(
+                      "n",
+                      image,
+                      event as MouseEvent & { currentTarget: HTMLElement },
+                    );
+                  }}
+                />
+                <button
+                  aria-hidden="true"
+                  class="oasis-editor-image-resize-handle"
+                  data-direction="ne"
+                  tabIndex={-1}
+                  type="button"
+                  onMouseDown={(event) => {
+                    const image = selectedImage();
+                    if (!image) return;
+                    handleResizeHandleMouseDown(
+                      "ne",
+                      image,
+                      event as MouseEvent & { currentTarget: HTMLElement },
+                    );
+                  }}
+                />
+                <button
+                  aria-hidden="true"
+                  class="oasis-editor-image-resize-handle"
+                  data-direction="e"
+                  tabIndex={-1}
+                  type="button"
+                  onMouseDown={(event) => {
+                    const image = selectedImage();
+                    if (!image) return;
+                    handleResizeHandleMouseDown(
+                      "e",
+                      image,
+                      event as MouseEvent & { currentTarget: HTMLElement },
+                    );
+                  }}
+                />
+                <button
+                  aria-hidden="true"
+                  class="oasis-editor-image-resize-handle"
+                  data-direction="se"
+                  tabIndex={-1}
+                  type="button"
+                  onMouseDown={(event) => {
+                    const image = selectedImage();
+                    if (!image) return;
+                    handleResizeHandleMouseDown(
+                      "se",
+                      image,
+                      event as MouseEvent & { currentTarget: HTMLElement },
+                    );
+                  }}
+                />
+                <button
+                  aria-hidden="true"
+                  class="oasis-editor-image-resize-handle"
+                  data-direction="s"
+                  tabIndex={-1}
+                  type="button"
+                  onMouseDown={(event) => {
+                    const image = selectedImage();
+                    if (!image) return;
+                    handleResizeHandleMouseDown(
+                      "s",
+                      image,
+                      event as MouseEvent & { currentTarget: HTMLElement },
+                    );
+                  }}
+                />
+                <button
+                  aria-hidden="true"
+                  class="oasis-editor-image-resize-handle"
+                  data-direction="sw"
+                  tabIndex={-1}
+                  type="button"
+                  onMouseDown={(event) => {
+                    const image = selectedImage();
+                    if (!image) return;
+                    handleResizeHandleMouseDown(
+                      "sw",
+                      image,
+                      event as MouseEvent & { currentTarget: HTMLElement },
+                    );
+                  }}
+                />
+                <button
+                  aria-hidden="true"
+                  class="oasis-editor-image-resize-handle"
+                  data-direction="w"
+                  tabIndex={-1}
+                  type="button"
+                  onMouseDown={(event) => {
+                    const image = selectedImage();
+                    if (!image) return;
+                    handleResizeHandleMouseDown(
+                      "w",
+                      image,
+                      event as MouseEvent & { currentTarget: HTMLElement },
+                    );
+                  }}
+                />
+              </>
+            )}
+          </div>
+
+          <Show when={overlays().toolbarHost && overlays().showFloatingTableToolbar}>
+            <FloatingTableToolbar
+              host={overlays().toolbarHost!}
+              selectionBoxes={overlays().selectionBoxes}
+              visible={overlays().showFloatingTableToolbar!}
+              surfaceRef={() => scrollContentRef}
+            />
+          </Show>
+
+          <Show when={overlays().showCaret()}>
+            <CaretOverlay
+              active={overlays().focused()}
+              left={overlays().caretBox().left}
+              top={overlays().caretBox().top}
+              height={overlays().caretBox().height}
+            />
+          </Show>
+
+          <textarea
+            ref={refs().onTextareaRef}
+            aria-label="Editor input"
+            autocomplete="off"
+            autocapitalize="off"
+            class="oasis-editor-input"
+            data-testid="editor-input"
+            readOnly={layout().readOnly}
+            spellcheck={false}
+            value=""
+            style={{
+              left: `${overlays().inputBox().left}px`,
+              top: `${overlays().inputBox().top}px`,
+              height: `${overlays().inputBox().height}px`,
+              "pointer-events": "none",
+            }}
+            onBlur={inputHandlers().onInputBlur}
+            onCompositionEnd={inputHandlers().onCompositionEnd}
+            onCompositionStart={inputHandlers().onCompositionStart}
+            onCopy={inputHandlers().onCopy}
+            onCut={inputHandlers().onCut}
+            onFocus={inputHandlers().onInputFocus}
+            onInput={inputHandlers().onInput}
+            onKeyDown={inputHandlers().onKeyDown}
+            onPaste={inputHandlers().onPaste}
+          />
+          <input
+            ref={refs().onImportInputRef}
+            accept=".docx"
+            data-testid="editor-import-docx-input"
+            style={{ display: "none" }}
+            type="file"
+            onChange={fileHandlers().onImportInputChange}
+          />
+          <input
+            ref={refs().onImageInputRef}
+            accept="image/png, image/jpeg, image/gif"
+            data-testid="editor-insert-image-input"
+            style={{ display: "none" }}
+            type="file"
+            onChange={fileHandlers().onImageInputChange}
+          />
         </div>
-
-        <Show when={props.toolbarHost && props.showFloatingTableToolbar}>
-          <FloatingTableToolbar
-            host={props.toolbarHost!}
-            selectionBoxes={props.selectionBoxes}
-            visible={props.showFloatingTableToolbar!}
-            surfaceRef={() => scrollContentRef}
-          />
-        </Show>
-
-        <Show when={props.showCaret()}>
-          <CaretOverlay
-            active={props.focused()}
-            left={props.caretBox().left}
-            top={props.caretBox().top}
-            height={props.caretBox().height}
-          />
-        </Show>
-
-        <textarea
-          ref={props.onTextareaRef}
-          aria-label="Editor input"
-          autocomplete="off"
-          autocapitalize="off"
-          class="oasis-editor-input"
-          data-testid="editor-input"
-          readOnly={props.readOnly}
-          spellcheck={false}
-          value=""
-          style={{
-            left: `${props.inputBox().left}px`,
-            top: `${props.inputBox().top}px`,
-            height: `${props.inputBox().height}px`,
-            "pointer-events": "none",
-          }}
-          onBlur={props.onInputBlur}
-          onCompositionEnd={props.onCompositionEnd}
-          onCompositionStart={props.onCompositionStart}
-          onCopy={props.onCopy}
-          onCut={props.onCut}
-          onFocus={props.onInputFocus}
-          onInput={props.onInput}
-          onKeyDown={props.onKeyDown}
-          onPaste={props.onPaste}
-        />
-        <input
-          ref={props.onImportInputRef}
-          accept=".docx"
-          data-testid="editor-import-docx-input"
-          style={{ display: "none" }}
-          type="file"
-          onChange={props.onImportInputChange}
-        />
-        <input
-          ref={props.onImageInputRef}
-          accept="image/png, image/jpeg, image/gif"
-          data-testid="editor-insert-image-input"
-          style={{ display: "none" }}
-          type="file"
-          onChange={props.onImageInputChange}
-        />
       </div>
-    </div>
-      <Show when={props.importProgress?.()}>
+      <Show when={overlays().importProgress?.()}>
         {(progress) => {
           const isDone = progress().phase === "done";
           const isError = progress().phase === "error";
           return (
-          <div
-            class="oasis-editor-import-overlay"
-            classList={{
-              "oasis-editor-import-overlay-done": isDone,
-              "oasis-editor-import-overlay-error": isError,
-            }}
-            data-testid="editor-import-overlay"
-            role="status"
-            aria-live="polite"
-            aria-busy={!isDone && !isError}
-          >
-            <div class="oasis-editor-import-card">
-              <div class="oasis-editor-import-title">{t("import.overlay.title")}</div>
-              <div
-                class="oasis-editor-import-phase"
-                data-testid="editor-import-phase"
-              >
-                {t(`import.phase.${progress().phase}` as any)}
-              </div>
-              <div class="oasis-editor-import-progress-track">
+            <div
+              class="oasis-editor-import-overlay"
+              classList={{
+                "oasis-editor-import-overlay-done": isDone,
+                "oasis-editor-import-overlay-error": isError,
+              }}
+              data-testid="editor-import-overlay"
+              role="status"
+              aria-live="polite"
+              aria-busy={!isDone && !isError}
+            >
+              <div class="oasis-editor-import-card">
+                <div class="oasis-editor-import-title">{t("import.overlay.title")}</div>
                 <div
-                  class="oasis-editor-import-progress-bar"
-                  classList={{
-                    "oasis-editor-import-progress-bar-done": isDone,
-                    "oasis-editor-import-progress-bar-error": isError,
-                    "oasis-editor-import-progress-bar-indeterminate":
-                      progress().phase === "applying-editor-state" ||
-                      progress().phase === "stabilizing-layout",
-                  }}
-                  data-testid="editor-import-progress-bar"
-                  style={{ width: `${progress().progress}%` }}
-                />
-              </div>
-              <div class="oasis-editor-import-progress-label">
-                {isDone ? (
-                  <span class="oasis-editor-import-done-icon">{t("import.phase.done")}</span>
-                ) : isError ? (
-                  <span class="oasis-editor-import-error-icon">{t("import.phase.error")}</span>
-                ) : (
-                  <>{Math.round(progress().progress)}%</>
-                )}
+                  class="oasis-editor-import-phase"
+                  data-testid="editor-import-phase"
+                >
+                  {t(`import.phase.${progress().phase}` as any)}
+                </div>
+                <div class="oasis-editor-import-progress-track">
+                  <div
+                    class="oasis-editor-import-progress-bar"
+                    classList={{
+                      "oasis-editor-import-progress-bar-done": isDone,
+                      "oasis-editor-import-progress-bar-error": isError,
+                      "oasis-editor-import-progress-bar-indeterminate":
+                        progress().phase === "applying-editor-state" ||
+                        progress().phase === "stabilizing-layout",
+                    }}
+                    data-testid="editor-import-progress-bar"
+                    style={{ width: `${progress().progress}%` }}
+                  />
+                </div>
+                <div class="oasis-editor-import-progress-label">
+                  {isDone ? (
+                    <span class="oasis-editor-import-done-icon">{t("import.phase.done")}</span>
+                  ) : isError ? (
+                    <span class="oasis-editor-import-error-icon">{t("import.phase.error")}</span>
+                  ) : (
+                    <>{Math.round(progress().progress)}%</>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
           );
         }}
       </Show>
@@ -548,13 +581,17 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
         <span class="oasis-editor-statusbar-item">
           {t("status.zoom")}: 100%
         </span>
-        <Show when={props.persistenceStatus}>
+        <Show when={overlays().persistenceStatus}>
           {(() => {
-            const rawStatus = props.persistenceStatus!();
+            const rawStatus = overlays().persistenceStatus!();
             const status = rawStatus.toLowerCase();
-            const key = status.includes("saved") ? "status.saved" :
-                        status.includes("saving") ? "status.saving" : 
-                        status.includes("error") ? "status.error" : null;
+            const key = status.includes("saved")
+              ? "status.saved"
+              : status.includes("saving")
+                ? "status.saving"
+                : status.includes("error")
+                  ? "status.error"
+                  : null;
             return (
               <Show when={key}>
                 <span

@@ -91,25 +91,11 @@ import { computeLayoutInvalidationFromTransaction } from "./layoutInvalidation.j
 import { DropCaret } from "./components/DropCaret.js";
 import { LinkDialog } from "./components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "./components/Dialogs/ImageAltDialog.js";
-import {
-  FontDialog,
-  type FontDialogApplyValues,
-  type FontDialogInitialValues,
-} from "./components/Dialogs/FontDialog.js";
+import { FontDialog } from "./components/Dialogs/FontDialog.js";
 import { FindReplaceDialog } from "./components/FindReplace/FindReplaceDialog.js";
-import { ContextMenu, type ContextMenuItem } from "./components/ContextMenu/ContextMenu.js";
+import { ContextMenu } from "./components/ContextMenu/ContextMenu.js";
 import "./components/FindReplace/findReplace.css";
-import {
-  getSelectedText as getEditorSelectedText,
-  serializeEditorSelectionToHtml,
-  insertClipboardParagraphsAtSelection,
-  insertPlainTextAtSelection,
-  deleteBackward,
-  setTextStyleValue,
-  toggleTextStyle,
-} from "../core/editorCommands.js";
-import { parseEditorClipboardHtmlWithDom } from "../app/clipboard/htmlClipboardParser.js";
-import { setLocale, t } from "../i18n/index.js";
+import { setLocale } from "../i18n/index.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import {
   recordCanvasDebugSelection,
@@ -124,6 +110,8 @@ import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
 import { createCanvasSurfaceHitResolver } from "./app/useCanvasSurfaceHitResolver.js";
 import { useEditorRuntimePlugins } from "./app/useEditorRuntimePlugins.js";
+import { createFontDialogBridge } from "./app/useFontDialogBridge.js";
+import { createEditorContextMenuClipboard } from "./app/useEditorContextMenuClipboard.js";
 import { createEssentialsPlugin } from "../plugins/internal/createEssentialsPlugin.js";
 import { commandRefName, resolveCommandRef, type CommandRef } from "../core/commands/CommandRef.js";
 import type { OasisPlugin } from "../core/plugin.js";
@@ -134,7 +122,7 @@ export interface OasisEditorLoadingOptions {
   style?: JSX.CSSProperties;
 }
 
-export interface OasisEditorAppProps {
+export interface OasisEditorAppUiProps {
   showChrome?: boolean;
   shell?: "document" | "inline" | "balloon";
   uiVariant?: "classic" | "docs";
@@ -146,13 +134,19 @@ export interface OasisEditorAppProps {
   viewportHeight?: number | string;
   class?: string;
   style?: JSX.CSSProperties;
+  loading?: boolean | OasisEditorLoadingOptions;
+}
+
+export interface OasisEditorAppDocumentProps {
   initialDocument?: EditorDocument;
   initialState?: EditorState;
   onStateChange?: (state: EditorState) => void;
   readOnly?: boolean;
   persistenceEnabled?: boolean;
   layoutMode?: "fast" | "wordParity";
-  loading?: boolean | OasisEditorLoadingOptions;
+}
+
+export interface OasisEditorAppRuntimeProps {
   onReady?: () => void;
   plugins?: OasisPlugin[];
   /**
@@ -163,36 +157,50 @@ export interface OasisEditorAppProps {
   customizeToolbar?: (registry: ToolbarRegistry) => void;
 }
 
+export interface OasisEditorAppProps {
+  ui?: OasisEditorAppUiProps;
+  document?: OasisEditorAppDocumentProps;
+  runtime?: OasisEditorAppRuntimeProps;
+}
+
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
+  const ui = () => props.ui ?? {};
+  const documentOptions = () => props.document ?? {};
+  const runtimeOptions = () => props.runtime ?? {};
   syncCanvasDebugApiVisibility();
   createEffect(() => {
-    setLocale(props.locale ?? "pt-BR");
+    setLocale(ui().locale ?? "pt-BR");
   });
   const logger = createEditorLogger("app");
   const {
     state,
     commitState,
     getStateSnapshot,
-  } = createEditorAppState(props);
+  } = createEditorAppState({
+    initialDocument: documentOptions().initialDocument,
+    initialState: documentOptions().initialState,
+  });
   const applyState = (nextState: EditorState) => {
     commitState(nextState);
   };
 
-  const showChrome = () => props.showChrome ?? true;
-  const showTitleBar = () => props.showTitleBar ?? true;
-  const showMenubar = () => props.showMenubar ?? true;
-  const showToolbar = () => props.showToolbar ?? true;
-  const showOutline = () => props.showOutline ?? true;
-  const layoutMode = () => props.layoutMode ?? "fast";
+  const showChrome = () => ui().showChrome ?? true;
+  const showTitleBar = () => ui().showTitleBar ?? true;
+  const showMenubar = () => ui().showMenubar ?? true;
+  const showToolbar = () => ui().showToolbar ?? true;
+  const showOutline = () => ui().showOutline ?? true;
+  const layoutMode = () => documentOptions().layoutMode ?? "fast";
   const useComposedShell = () =>
-    props.uiVariant === "docs" || (props.shell ?? "document") !== "document";
-  const isReadOnly = () => props.readOnly ?? false;
-  const loadingOptions = () =>
-    typeof props.loading === "object" ? props.loading : undefined;
+    ui().uiVariant === "docs" || (ui().shell ?? "document") !== "document";
+  const isReadOnly = () => documentOptions().readOnly ?? false;
+  const loadingOptions = (): OasisEditorLoadingOptions | undefined => {
+    const loading = ui().loading;
+    return typeof loading === "object" && loading !== null ? loading : undefined;
+  };
   const loadingLabel = () => loadingOptions()?.label ?? "Loading oasis-editor...";
 
   const shellComponent = () => {
-    const s = props.shell ?? "document";
+    const s = ui().shell ?? "document";
     if (s === "inline") return InlineShell;
     if (s === "balloon") return BalloonShell;
     return DocumentShell;
@@ -203,7 +211,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const setFocused = focusController.setFocused;
   const focusInput = focusController.focusInput;
   const focusInputAfterPointerSelection = focusController.focusInputAfterPointerSelection;
-  const [initialLoading, setInitialLoading] = createSignal(props.loading !== false);
+  const [initialLoading, setInitialLoading] = createSignal(ui().loading !== false);
   const [undoStack, setUndoStack] = createSignal<EditorState[]>([]);
   const [redoStack, setRedoStack] = createSignal<EditorState[]>([]);
   const [localFontFamilyOptions, setLocalFontFamilyOptions] = createSignal<string[]>([]);
@@ -273,7 +281,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       commitState(nextState);
       resetEditorChromeState();
     },
-    { enabled: props.persistenceEnabled ?? false },
+    { enabled: documentOptions().persistenceEnabled ?? false, logger },
   );
 
   let historyState = createEmptyEditorHistoryState();
@@ -309,7 +317,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     if (isImportInProgress()) {
       return;
     }
-    props.onStateChange?.(cloneState(getStateSnapshot()));
+    documentOptions().onStateChange?.(cloneState(getStateSnapshot()));
   });
 
   const resetTransactionGrouping = () => {
@@ -821,8 +829,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   const { runtimePlugins, toolbarRegistry, dispose: disposeRuntimePlugins } = useEditorRuntimePlugins({
     essentialsPlugin,
-    externalPlugins: props.plugins,
-    customizeToolbar: props.customizeToolbar,
+    externalPlugins: runtimeOptions().plugins,
+    customizeToolbar: runtimeOptions().customizeToolbar,
   });
 
   const commandStateOf = (commandRef: CommandRef) => {
@@ -956,6 +964,111 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     return !inTableSelection;
   };
 
+  const handleImageMouseDown = (
+    paragraphId: string,
+    paragraphOffset: number,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const paragraph = getDocumentParagraphs(state.document).find((p) => p.id === paragraphId);
+    if (paragraph) {
+      applyState(
+        setSelection(state, {
+          anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),
+          focus: paragraphOffsetToPosition(paragraph, paragraphOffset + 1),
+        }),
+      );
+    }
+
+    imageOps.startImageDrag(paragraphId, paragraphOffset, event);
+    focusInputAfterPointerSelection();
+  };
+
+  const handleImageResizeHandleMouseDown = (
+    paragraphId: string,
+    paragraphOffset: number,
+    direction: ImageResizeHandleDirection,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    imageOps.startImageResize(paragraphId, paragraphOffset, direction, event, state);
+  };
+
+  const editorLayoutProps = {
+    layoutMode: layoutMode(),
+    viewportHeight: ui().viewportHeight,
+    class: ui().class,
+    style: ui().style,
+  };
+
+  const editorOverlayProps = {
+    selectionBoxes: () => selectionBoxes(),
+    selectedImageBox: () => selectedImageBox(),
+    caretBox: () => caretBox(),
+    inputBox: () => inputBox(),
+    hoveredRevision: revisionController.hoveredRevision,
+    focused: () => focused(),
+    showCaret: shouldShowCaret,
+    importProgress: () => docIO.importProgress(),
+  };
+
+  const editorRefs = {
+    onViewportRef: (element: HTMLDivElement) => {
+      focusController.viewportRef = element;
+    },
+    onSurfaceRef: (element: HTMLDivElement) => {
+      focusController.surfaceRef = element;
+    },
+    onTextareaRef: (element: HTMLTextAreaElement) => {
+      focusController.textareaRef = element;
+    },
+    onImportInputRef: (element: HTMLInputElement) => {
+      focusController.importInputRef = element;
+    },
+    onImageInputRef: (element: HTMLInputElement) => {
+      focusController.imageInputRef = element;
+    },
+  };
+
+  const editorFileHandlers = {
+    onImportInputChange: (e: Event & { currentTarget: HTMLInputElement }) =>
+      docIO.handleImportDocx(e.currentTarget.files?.[0] ?? null),
+    onImageInputChange: (e: Event & { currentTarget: HTMLInputElement }) =>
+      docIO.handleInsertImage(e.currentTarget.files?.[0] ?? null),
+  };
+
+  const editorSurfaceHandlers = {
+    onDragOver: (event: DragEvent) => event.preventDefault(),
+    onDrop: handleDrop,
+    onEditorMouseDown,
+    onSurfaceMouseDown: surfaceEventsWithTextDrag.handleSurfaceMouseDown,
+    onSurfaceClick: surfaceEventsWithTextDrag.handleSurfaceClick,
+    onSurfaceMouseMove: tableResize.handleMouseMove,
+    onSurfaceDblClick: surfaceEventsWithTextDrag.handleSurfaceDblClick,
+    onParagraphMouseDown: surfaceEventsWithTextDrag.handleParagraphMouseDown,
+    onImageMouseDown: handleImageMouseDown,
+    onImageResizeHandleMouseDown: handleImageResizeHandleMouseDown,
+    onTableDragHandleMouseDown: tableDrag.handleMouseDown,
+    onRevisionMouseEnter: revisionController.handleRevisionMouseEnter,
+    onRevisionMouseLeave: revisionController.handleRevisionMouseLeave,
+    onEditorContextMenu: (event: MouseEvent) => handleEditorContextMenu(event),
+  };
+
+  const editorInputHandlers = {
+    onInputBlur: () => setFocused(false),
+    onInputFocus: () => setFocused(true),
+    onCompositionEnd: textInput.handleCompositionEnd,
+    onCompositionStart: textInput.handleCompositionStart,
+    onCopy: handleCopy,
+    onCut: handleCut,
+    onInput: textInput.handleTextInput,
+    onKeyDown: handleKeyDown,
+    onPaste: handlePaste,
+  };
+
   const renderComposedShell = () => {
     const Shell = shellComponent();
     return (
@@ -972,88 +1085,16 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         isReadOnly={isReadOnly()}
         measuredBlockHeights={() => measuredBlockHeights()}
         measuredParagraphLayouts={() => measuredParagraphLayouts()}
-        viewportHeight={() => props.viewportHeight}
-        selectionBoxes={() => selectionBoxes()}
-        selectedImageBox={() => selectedImageBox()}
+        viewportHeight={() => ui().viewportHeight}
         showFloatingTableToolbar={() =>
           !isReadOnly() && commandStateOf("tableContext").value !== null
         }
-        caretBox={() => caretBox()}
-        inputBox={() => inputBox()}
-        hoveredRevision={revisionController.hoveredRevision}
-        focused={() => focused()}
-        importProgress={() => docIO.importProgress()}
-        showCaret={shouldShowCaret}
-        class={props.class}
-        style={props.style}
-        layoutMode={layoutMode()}
-
-        onViewportRef={(element: HTMLDivElement) => {
-          focusController.viewportRef = element;
-        }}
-        onSurfaceRef={(element: HTMLDivElement) => {
-          focusController.surfaceRef = element;
-        }}
-        onTextareaRef={(element: HTMLTextAreaElement) => {
-          focusController.textareaRef = element;
-        }}
-        onImportInputRef={(element: HTMLInputElement) => {
-          focusController.importInputRef = element;
-        }}
-        onImageInputRef={(element: HTMLInputElement) => {
-          focusController.imageInputRef = element;
-        }}
-        onImportInputChange={(e: Event & { currentTarget: HTMLInputElement }) =>
-          docIO.handleImportDocx(e.currentTarget.files?.[0] ?? null)
-        }
-        onImageInputChange={(e: Event & { currentTarget: HTMLInputElement }) =>
-          docIO.handleInsertImage(e.currentTarget.files?.[0] ?? null)
-        }
-        onDragOver={(event: DragEvent) => event.preventDefault()}
-        onDrop={handleDrop}
-        onEditorMouseDown={onEditorMouseDown}
-        onSurfaceMouseDown={surfaceEventsWithTextDrag.handleSurfaceMouseDown}
-        onSurfaceClick={surfaceEventsWithTextDrag.handleSurfaceClick}
-        onSurfaceMouseMove={tableResize.handleMouseMove}
-        onSurfaceDblClick={surfaceEventsWithTextDrag.handleSurfaceDblClick}
-        onParagraphMouseDown={surfaceEventsWithTextDrag.handleParagraphMouseDown}
-        onRevisionMouseEnter={revisionController.handleRevisionMouseEnter}
-        onRevisionMouseLeave={revisionController.handleRevisionMouseLeave}
-        onImageMouseDown={(paragraphId: string, paragraphOffset: number, event: MouseEvent & { currentTarget: HTMLElement }) => {
-          event.preventDefault();
-          event.stopPropagation();
-
-          const paragraph = getDocumentParagraphs(state.document).find(
-            (p) => p.id === paragraphId,
-          );
-          if (paragraph) {
-            applyState(
-              setSelection(state, {
-                anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),
-                focus: paragraphOffsetToPosition(paragraph, paragraphOffset + 1),
-              }),
-            );
-          }
-
-          imageOps.startImageDrag(paragraphId, paragraphOffset, event);
-          focusInputAfterPointerSelection();
-        }}
-        onImageResizeHandleMouseDown={(paragraphId: string, paragraphOffset: number, direction: ImageResizeHandleDirection, event: MouseEvent & { currentTarget: HTMLElement }) => {
-          event.preventDefault();
-          event.stopPropagation();
-          imageOps.startImageResize(paragraphId, paragraphOffset, direction, event, state);
-        }}
-        onTableDragHandleMouseDown={tableDrag.handleMouseDown}
-        onInputBlur={() => setFocused(false)}
-        onInputFocus={() => setFocused(true)}
-        onCompositionEnd={textInput.handleCompositionEnd}
-        onCompositionStart={textInput.handleCompositionStart}
-        onCopy={handleCopy}
-        onCut={handleCut}
-        onInput={textInput.handleTextInput}
-        onKeyDown={handleKeyDown}
-        onPaste={handlePaste}
-        onEditorContextMenu={handleEditorContextMenu}
+        layout={editorLayoutProps}
+        overlays={editorOverlayProps}
+        refs={editorRefs}
+        surfaceHandlers={editorSurfaceHandlers}
+        inputHandlers={editorInputHandlers}
+        fileHandlers={editorFileHandlers}
       />
     );
   };
@@ -1088,317 +1129,37 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     }
   };
 
-  const openFontDialog = () => {
-    void loadLocalFontFamilyOptions();
-    const ts = styleController.toolbarStyleState();
-    setFontDialog({
-      isOpen: true,
-      initial: {
-        fontFamily: ts.fontFamily ?? "",
-        fontSize: ts.fontSize ?? "",
-        color: ts.color ?? "",
-        colorMode: ts.color ? "custom" : "automatic",
-        highlight: ts.highlight ?? "",
-        bold: Boolean(ts.bold),
-        italic: Boolean(ts.italic),
-        underline: Boolean(ts.underline),
-        underlineStyle: ts.underlineStyle
-          ? (ts.underlineStyle as FontDialogInitialValues["underlineStyle"])
-          : null,
-        underlineColor: ts.underlineColor ?? "",
-        strike: Boolean(ts.strike),
-        doubleStrike: Boolean(ts.doubleStrike),
-        superscript: Boolean(ts.superscript),
-        subscript: Boolean(ts.subscript),
-        smallCaps: Boolean(ts.smallCaps),
-        allCaps: Boolean(ts.allCaps),
-        hidden: Boolean(ts.hidden),
-        characterScale: ts.characterScale ?? "",
-        characterSpacing: ts.characterSpacing ?? "",
-        baselineShift: ts.baselineShift ?? "",
-        kerningThreshold: ts.kerningThreshold ?? "",
-        ligatures: (ts.ligatures ?? "") as FontDialogInitialValues["ligatures"],
-        numberSpacing: (ts.numberSpacing ?? "") as FontDialogInitialValues["numberSpacing"],
-        numberForm: (ts.numberForm ?? "") as FontDialogInitialValues["numberForm"],
-        stylisticSet: ts.stylisticSet ?? "",
-        contextualAlternates: Boolean(ts.contextualAlternates),
-      },
-    });
-    setContextMenu({ isOpen: false, x: 0, y: 0 });
-  };
+  const fontDialogBridge = createFontDialogBridge({
+    toolbarStyleState: styleController.toolbarStyleState,
+    selection: () => state.selection,
+    isReadOnly,
+    loadLocalFontFamilyOptions,
+    setFontDialog,
+    setContextMenu,
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    applyTransactionalState,
+    focusInput,
+  });
+  const openFontDialog = fontDialogBridge.openFontDialog;
+  const applyFontDialogValues = fontDialogBridge.applyFontDialogValues;
 
-  const applyFontDialogValues = (
-    values: FontDialogApplyValues,
-    original: FontDialogInitialValues,
-  ) => {
-    if (isReadOnly()) return;
-    if (isSelectionCollapsed(state.selection)) {
-      focusInput();
-      return;
-    }
-
-    clearPreferredColumn();
-    resetTransactionGrouping();
-
-    applyTransactionalState((current) => {
-      let next = current;
-      if (values.fontFamily !== (original.fontFamily || null)) {
-        next = setTextStyleValue(next, "fontFamily", values.fontFamily);
-      }
-      if (values.fontSize !== (original.fontSize ? Number(original.fontSize) : null)) {
-        next = setTextStyleValue(next, "fontSize", values.fontSize);
-      }
-      const originalColor = original.colorMode === "automatic" ? null : original.color || null;
-      if (values.color !== originalColor) {
-        next = setTextStyleValue(next, "color", values.color);
-      }
-      if ((values.highlight ?? "") !== (original.highlight ?? "")) {
-        next = setTextStyleValue(next, "highlight", values.highlight);
-      }
-      if (values.bold !== Boolean(original.bold)) {
-        next = toggleTextStyle(next, "bold");
-      }
-      if (values.italic !== Boolean(original.italic)) {
-        next = toggleTextStyle(next, "italic");
-      }
-      const originalUnderlineStyle = original.underline ? (original.underlineStyle ?? "single") : null;
-      if ((values.underlineStyle ?? null) !== (originalUnderlineStyle ?? null)) {
-        next = setTextStyleValue(next, "underlineStyle", values.underlineStyle);
-      }
-      const originalUnderlineColor = original.underline ? (original.underlineColor || null) : null;
-      if ((values.underlineColor ?? null) !== (originalUnderlineColor ?? null)) {
-        next = setTextStyleValue(next, "underlineColor", values.underlineColor);
-      }
-      if (values.underline !== Boolean(original.underline)) {
-        next = toggleTextStyle(next, "underline");
-      }
-      if (values.strike !== Boolean(original.strike)) {
-        next = toggleTextStyle(next, "strike");
-      }
-      if (values.doubleStrike !== Boolean(original.doubleStrike)) {
-        next = toggleTextStyle(next, "doubleStrike");
-      }
-      if (values.superscript !== Boolean(original.superscript)) {
-        next = toggleTextStyle(next, "superscript");
-      }
-      if (values.subscript !== Boolean(original.subscript)) {
-        next = toggleTextStyle(next, "subscript");
-      }
-      if (values.superscript && values.subscript) {
-        // Defensive guard: keep them mutually exclusive even if payload is inconsistent.
-        next = toggleTextStyle(next, "subscript");
-      }
-      if (values.strike && values.doubleStrike) {
-        next = toggleTextStyle(next, "doubleStrike");
-      }
-      if (values.smallCaps !== Boolean(original.smallCaps)) {
-        next = toggleTextStyle(next, "smallCaps");
-      }
-      if (values.allCaps !== Boolean(original.allCaps)) {
-        next = toggleTextStyle(next, "allCaps");
-      }
-      if (values.hidden !== Boolean(original.hidden)) {
-        next = toggleTextStyle(next, "hidden");
-      }
-      const originalCharacterScale = original.characterScale ? Number(original.characterScale) : null;
-      if ((values.characterScale ?? null) !== (originalCharacterScale ?? null)) {
-        next = setTextStyleValue(next, "characterScale", values.characterScale);
-      }
-      const originalCharacterSpacing = original.characterSpacing ? Number(original.characterSpacing) : null;
-      if ((values.characterSpacing ?? null) !== (originalCharacterSpacing ?? null)) {
-        next = setTextStyleValue(next, "characterSpacing", values.characterSpacing);
-      }
-      const originalBaselineShift = original.baselineShift ? Number(original.baselineShift) : null;
-      if ((values.baselineShift ?? null) !== (originalBaselineShift ?? null)) {
-        next = setTextStyleValue(next, "baselineShift", values.baselineShift);
-      }
-      const originalKerningThreshold = original.kerningThreshold ? Number(original.kerningThreshold) : null;
-      if ((values.kerningThreshold ?? null) !== (originalKerningThreshold ?? null)) {
-        next = setTextStyleValue(next, "kerningThreshold", values.kerningThreshold);
-      }
-      if ((values.ligatures ?? null) !== (original.ligatures || null)) {
-        next = setTextStyleValue(next, "ligatures", values.ligatures);
-      }
-      if ((values.numberSpacing ?? null) !== (original.numberSpacing || null)) {
-        next = setTextStyleValue(next, "numberSpacing", values.numberSpacing);
-      }
-      if ((values.numberForm ?? null) !== (original.numberForm || null)) {
-        next = setTextStyleValue(next, "numberForm", values.numberForm);
-      }
-      const originalStylisticSet = original.stylisticSet ? Number(original.stylisticSet) : null;
-      if ((values.stylisticSet ?? null) !== (originalStylisticSet ?? null)) {
-        next = setTextStyleValue(next, "stylisticSet", values.stylisticSet);
-      }
-      if (values.contextualAlternates !== Boolean(original.contextualAlternates)) {
-        next = toggleTextStyle(next, "contextualAlternates");
-      }
-      return next;
-    }, { mergeKey: "font-dialog" });
-
-    focusInput();
-  };
-
-  const programmaticCopy = async () => {
-    const text = getEditorSelectedText(state);
-    if (!text) return;
-    const html = serializeEditorSelectionToHtml(state);
-    try {
-      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/plain": new Blob([text], { type: "text/plain" }),
-            "text/html": new Blob([html], { type: "text/html" }),
-          }),
-        ]);
-      } else {
-        await navigator.clipboard.writeText(text);
-      }
-    } catch (err) {
-      logger.warn?.("contextMenu:copy:failed", { error: String(err) });
-      try {
-        await navigator.clipboard.writeText(text);
-      } catch {
-        /* ignore */
-      }
-    }
-  };
-
-  const programmaticCut = async () => {
-    if (isReadOnly()) return;
-    const text = getEditorSelectedText(state);
-    if (!text) return;
-    await programmaticCopy();
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyTransactionalState((current) =>
-      tableOps.applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)),
-    );
-    focusInput();
-  };
-
-  const programmaticPaste = async () => {
-    if (isReadOnly()) return;
-    let html = "";
-    let text = "";
-    try {
-      if (navigator.clipboard?.read) {
-        const items = await navigator.clipboard.read();
-        for (const item of items) {
-          if (item.types.includes("text/html")) {
-            const blob = await item.getType("text/html");
-            html = await blob.text();
-          }
-          if (item.types.includes("text/plain")) {
-            const blob = await item.getType("text/plain");
-            text = await blob.text();
-          }
-        }
-      } else if (navigator.clipboard?.readText) {
-        text = await navigator.clipboard.readText();
-      }
-    } catch (err) {
-      logger.warn?.("contextMenu:paste:failed", { error: String(err) });
-      try {
-        text = await navigator.clipboard.readText();
-      } catch {
-        return;
-      }
-    }
-
-    const paragraphs = parseEditorClipboardHtmlWithDom(html);
-    if (paragraphs.length > 0) {
-      clearPreferredColumn();
-      resetTransactionGrouping();
-      applyTransactionalState((current) =>
-        tableOps.applyTableAwareParagraphEdit(current, (temp) =>
-          insertClipboardParagraphsAtSelection(temp, paragraphs),
-        ),
-      );
-      focusInput();
-      return;
-    }
-
-    if (text) {
-      clearPreferredColumn();
-      resetTransactionGrouping();
-      applyTransactionalState((current) =>
-        tableOps.applyTableAwareParagraphEdit(current, (temp) =>
-          insertPlainTextAtSelection(temp, text),
-        ),
-      );
-      focusInput();
-    }
-  };
-
-  const buildContextMenuItems = (): ContextMenuItem[] => {
-    const hasSelection = !isSelectionCollapsed(state.selection);
-    const readOnly = isReadOnly();
-    return [
-      {
-        id: "cut",
-        label: t("contextmenu.cut"),
-        icon: "scissors",
-        shortcut: "Ctrl+X",
-        disabled: readOnly || !hasSelection,
-        testId: "editor-context-menu-cut",
-        onSelect: () => {
-          void programmaticCut();
-        },
-      },
-      {
-        id: "copy",
-        label: t("contextmenu.copy"),
-        icon: "copy",
-        shortcut: "Ctrl+C",
-        disabled: !hasSelection,
-        testId: "editor-context-menu-copy",
-        onSelect: () => {
-          void programmaticCopy();
-        },
-      },
-      {
-        id: "paste",
-        label: t("contextmenu.paste"),
-        icon: "clipboard",
-        shortcut: "Ctrl+V",
-        disabled: readOnly,
-        testId: "editor-context-menu-paste",
-        onSelect: () => {
-          void programmaticPaste();
-        },
-      },
-      { id: "sep1", type: "separator" },
-      {
-        id: "link",
-        label: t("contextmenu.link"),
-        icon: "link",
-        disabled: readOnly || !hasSelection,
-        testId: "editor-context-menu-link",
-        onSelect: () => {
-          commandsController.promptForLink();
-        },
-      },
-      {
-        id: "font",
-        label: t("contextmenu.font"),
-        icon: "type",
-        disabled: readOnly || !hasSelection,
-        testId: "editor-context-menu-font",
-        onSelect: () => {
-          openFontDialog();
-        },
-      },
-    ];
-  };
-
-  const handleEditorContextMenu = (event: MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ isOpen: true, x: event.clientX, y: event.clientY });
-  };
-
-  const closeContextMenu = () => {
-    setContextMenu({ isOpen: false, x: 0, y: 0 });
-  };
+  const contextMenuClipboard = createEditorContextMenuClipboard({
+    state: () => state,
+    isReadOnly,
+    logger,
+    setContextMenu,
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    applyTransactionalState,
+    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
+    focusInput,
+    promptForLink: commandsController.promptForLink,
+    openFontDialog,
+  });
+  const buildContextMenuItems = contextMenuClipboard.buildContextMenuItems;
+  const handleEditorContextMenu = contextMenuClipboard.handleEditorContextMenu;
+  const closeContextMenu = contextMenuClipboard.closeContextMenu;
 
   let runtimeDisposed = false;
 
@@ -1425,7 +1186,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
         requestAnimationFrame(() => {
           setInitialLoading(false);
-          props.onReady?.();
+          runtimeOptions().onReady?.();
         });
       } catch (error) {
         logger.error("runtime:init failed", error);
@@ -1512,109 +1273,23 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         <section class="oasis-editor-stage">
           <OasisEditorEditor
             state={() => state}
-            measuredBlockHeights={() => measuredBlockHeights()}
-            measuredParagraphLayouts={() => measuredParagraphLayouts()}
-            selectionBoxes={() => selectionBoxes()}
-            selectedImageBox={() => selectedImageBox()}
-            toolbarHost={toolbarHost}
-            persistenceStatus={persistenceStatus}
-            showFloatingTableToolbar={() =>
-              !isReadOnly() && commandStateOf("tableContext").value !== null
-            }
-            caretBox={() => caretBox()}
-            inputBox={() => inputBox()}
-            hoveredRevision={revisionController.hoveredRevision}
-            focused={() => focused()}
-            importProgress={() => docIO.importProgress()}
-            layoutMode={layoutMode()}
-            viewportHeight={props.viewportHeight}
-            class={props.class}
-            style={props.style}
-            readOnly={isReadOnly()}
-            showCaret={shouldShowCaret}
-            onViewportRef={(element) => {
-              focusController.viewportRef = element;
+            layout={{
+              ...editorLayoutProps,
+              measuredBlockHeights: () => measuredBlockHeights(),
+              measuredParagraphLayouts: () => measuredParagraphLayouts(),
+              readOnly: isReadOnly(),
             }}
-            onSurfaceRef={(element) => {
-              focusController.surfaceRef = element;
+            overlays={{
+              ...editorOverlayProps,
+              toolbarHost,
+              persistenceStatus,
+              showFloatingTableToolbar: () =>
+                !isReadOnly() && commandStateOf("tableContext").value !== null,
             }}
-            onTextareaRef={(element) => {
-              focusController.textareaRef = element;
-            }}
-            onImportInputRef={(element) => {
-              focusController.importInputRef = element;
-            }}
-            onImageInputRef={(element) => {
-              focusController.imageInputRef = element;
-            }}
-            onImportInputChange={(e) =>
-              docIO.handleImportDocx(e.currentTarget.files?.[0] ?? null)
-            }
-            onImageInputChange={(e) =>
-              docIO.handleInsertImage(e.currentTarget.files?.[0] ?? null)
-            }
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={handleDrop}
-            onEditorMouseDown={onEditorMouseDown}
-            onSurfaceMouseDown={surfaceEventsWithTextDrag.handleSurfaceMouseDown}
-            onSurfaceClick={surfaceEventsWithTextDrag.handleSurfaceClick}
-            onSurfaceMouseMove={tableResize.handleMouseMove}
-            onSurfaceDblClick={surfaceEventsWithTextDrag.handleSurfaceDblClick}
-            onParagraphMouseDown={surfaceEventsWithTextDrag.handleParagraphMouseDown}
-            onRevisionMouseEnter={revisionController.handleRevisionMouseEnter}
-            onRevisionMouseLeave={revisionController.handleRevisionMouseLeave}
-            onImageMouseDown={(paragraphId, paragraphOffset, event) => {
-              event.preventDefault();
-              event.stopPropagation();
-
-              const paragraph = getDocumentParagraphs(state.document).find(
-                (p) => p.id === paragraphId,
-              );
-              if (paragraph) {
-                applyState(
-                  setSelection(state, {
-                    anchor: paragraphOffsetToPosition(
-                      paragraph,
-                      paragraphOffset,
-                    ),
-                    focus: paragraphOffsetToPosition(
-                      paragraph,
-                      paragraphOffset + 1,
-                    ),
-                  }),
-                );
-              }
-
-              imageOps.startImageDrag(paragraphId, paragraphOffset, event);
-              focusInputAfterPointerSelection();
-            }}
-            onImageResizeHandleMouseDown={(
-              paragraphId,
-              paragraphOffset,
-              direction,
-              event,
-            ) => {
-              event.preventDefault();
-              event.stopPropagation();
-              imageOps.startImageResize(
-                paragraphId,
-                paragraphOffset,
-                direction,
-                event,
-                state,
-              );
-            }}
-            onTableDragHandleMouseDown={tableDrag.handleMouseDown}
-            onInputBlur={() => setFocused(false)}
-            onInputFocus={() => setFocused(true)}
-            onCompositionEnd={textInput.handleCompositionEnd}
-            onCompositionStart={textInput.handleCompositionStart}
-            onCopy={handleCopy}
-            onCut={handleCut}
-            onInput={textInput.handleTextInput}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-            onEditorContextMenu={handleEditorContextMenu}
+            refs={editorRefs}
+            surfaceHandlers={editorSurfaceHandlers}
+            inputHandlers={editorInputHandlers}
+            fileHandlers={editorFileHandlers}
           />
         </section>
       </div>

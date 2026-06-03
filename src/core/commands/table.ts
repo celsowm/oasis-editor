@@ -250,14 +250,6 @@ export function setTableRowHeight(
   rowIndex: number,
   height: number | string | null,
 ): EditorState {
-  console.log(
-    "[EditorCommands] setTableRowHeight:",
-    tableId,
-    "Row:",
-    rowIndex,
-    "Height:",
-    height,
-  );
   const updateTable = (table: EditorTableNode): EditorTableNode => {
     if (table.id !== tableId) return table;
     const nextRows = [...table.rows];
@@ -276,10 +268,6 @@ export function setTableRowHeight(
             ? (nextStyle as EditorTableRowStyle)
             : undefined,
       };
-      console.log(
-        "[EditorCommands] Updated row style:",
-        nextRows[rowIndex].style,
-      );
     }
     return { ...table, rows: nextRows };
   };
@@ -343,14 +331,6 @@ export function setTableColumnWidths(
     return Number.isFinite(parsed) ? parsed : null;
   };
 
-  console.log(
-    "[EditorCommands] setTableColumnWidths. Table:",
-    tableId,
-    "Widths:",
-    columnWidths,
-    "TableWidth:",
-    tableWidth,
-  );
   const updateTable = (table: EditorTableNode): EditorTableNode => {
     if (table.id !== tableId) return table;
 
@@ -401,9 +381,6 @@ export function setTableColumnWidths(
 
         if (newWidth !== undefined) {
           if (entry.colSpan === 1) {
-            console.log(
-              `[EditorCommands] Updating cell at row ${rowIndex} col ${cellIndex} to ${newWidth}pt`,
-            );
             return {
               ...cell,
               style: {
@@ -422,9 +399,6 @@ export function setTableColumnWidths(
     const nextStyle = { ...(table.style ?? {}) } as any;
     if (tableWidth !== undefined) {
       nextStyle.width = tableWidth;
-      console.log(
-        `[EditorCommands] Updating table total width to ${tableWidth}pt`,
-      );
     }
     if (tableIndentLeft !== undefined) {
       nextStyle.indentLeft = tableIndentLeft;

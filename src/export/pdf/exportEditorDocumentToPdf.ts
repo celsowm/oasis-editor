@@ -6,7 +6,7 @@ import {
   getPageHeaderZoneTop,
 } from "../../core/model.js";
 import { findFootnoteReference } from "../../core/footnotes.js";
-import { FOOTNOTE_MARKER_GUTTER_PX, projectDocumentLayout } from "../../ui/layoutProjection.js";
+import { FOOTNOTE_MARKER_GUTTER_PX, projectDocumentLayout } from "../../layoutProjection/index.js";
 import { drawBlockList } from "./draw/drawBlockList.js";
 import { drawPageBackground } from "./draw/drawPageBackground.js";
 import { getListOrdinals } from "./draw/lists.js";

@@ -28,6 +28,7 @@ import { isSelectionCollapsed } from "../../core/selection.js";
 import type { BooleanStyleKey } from "../../ui/toolbarStyleState.js";
 import { resolveWordSelection } from "../../core/wordBoundaries.js";
 import { defaultEditorKeyBindings, EditorCommandRegistry } from "./EditorCommandRegistry.js";
+import type { SelectedImageRun } from "../../core/commands/image.js";
 
 export interface EditorKeyboardDeps {
   state: () => EditorState;
@@ -56,7 +57,7 @@ export interface EditorKeyboardDeps {
     handleListBoundaryBackspace: (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => boolean;
     handleListTab: (direction: "indent" | "outdent") => boolean;
   };
-  selectedImageRun: () => any;
+  selectedImageRun: () => SelectedImageRun | null;
   setForcePlainTextPaste: (value: boolean) => void;
   moveSelectionByWord: (direction: "left" | "right", extend: boolean) => boolean;
   moveSelectionToDocumentBoundary: (boundary: "start" | "end", extend: boolean) => boolean;

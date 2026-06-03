@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { projectParagraphLayout, projectBlocksLayout, estimateParagraphBlockHeight } from '../../ui/layoutProjection.js';
+import { projectParagraphLayout, projectBlocksLayout, estimateParagraphBlockHeight } from '../../layoutProjection/index.js';
 import { createEditorParagraph, createEditorDocument } from '../../core/editorState.js';
 import type { EditorPageSettings } from '../../core/model.js';
 

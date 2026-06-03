@@ -4,15 +4,17 @@ import { createEditorStyledRun } from "../editorState.js";
 import { findParagraphIndex, isSelectionCollapsed, normalizeSelection } from "../selection.js";
 import { deleteSelectionRange, getFocusParagraph, getStyleAtOffset, insertRunsAtOffset, cloneParagraph, cloneStateWithParagraphs, withSelection, cloneRun, preserveSelectionByParagraphOffsets, buildParagraphFromRuns, sliceRuns, cloneParagraphs } from "./utils.js";
 
-export function getSelectedImageRun(
-  state: EditorState,
-): {
+export interface SelectedImageRun {
   paragraph: EditorParagraphNode;
   paragraphIndex: number;
   run: EditorTextRun;
   runIndex: number;
   offset: number;
-} | null {
+}
+
+export function getSelectedImageRun(
+  state: EditorState,
+): SelectedImageRun | null {
   const normalized = normalizeSelection(state);
   if (
     normalized.isCollapsed ||

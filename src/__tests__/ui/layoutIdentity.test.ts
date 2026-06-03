@@ -7,7 +7,7 @@ import {
   createFootnoteReferenceRun,
   resetEditorIds,
 } from "../../core/editorState.js";
-import { projectDocumentLayout } from "../../ui/layoutProjection.js";
+import { projectDocumentLayout } from "../../layoutProjection/index.js";
 import { createLayoutIdentityStabilizer } from "../../ui/layoutIdentity.js";
 
 beforeEach(() => {

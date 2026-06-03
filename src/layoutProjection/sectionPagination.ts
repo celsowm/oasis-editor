@@ -7,13 +7,13 @@ import type {
   EditorNamedStyle,
   EditorPageSettings,
   EditorSection,
-} from "../../core/model.js";
+} from "../core/model.js";
 import {
   getPageBodyBottom,
   getPageBodyTop,
   getPageContentWidth,
-} from "../../core/model.js";
-import type { ITextMeasurer } from "../../core/engine.js";
+} from "../core/model.js";
+import type { ITextMeasurer } from "../core/engine.js";
 
 export type BlocksLayoutProjector = (
   context: {

@@ -3,10 +3,10 @@ import type {
   EditorDocument,
   EditorLayoutDocument,
   EditorLayoutParagraph,
-} from "../../core/model.js";
-import { getDocumentSections } from "../../core/model.js";
-import type { ITextMeasurer } from "../../core/engine.js";
-import { domTextMeasurer } from "../textMeasurement.js";
+} from "../core/model.js";
+import { getDocumentSections } from "../core/model.js";
+import type { ITextMeasurer } from "../core/engine.js";
+import { domTextMeasurer } from "../ui/textMeasurement.js";
 import {
   applyFootnotesToPages,
   buildFootnoteReservations,

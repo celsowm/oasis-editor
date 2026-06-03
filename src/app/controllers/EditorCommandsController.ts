@@ -42,6 +42,7 @@ import type {
   ToolbarStyleState,
 } from "../../ui/toolbarStyleState.js";
 import type { EditorLogger } from "../../utils/logger.js";
+import type { SelectedImageRun } from "../../core/commands/image.js";
 
 export interface EditorCommandsControllerDeps {
   state: EditorState;
@@ -62,7 +63,7 @@ export interface EditorCommandsControllerDeps {
   resetTransactionGrouping: () => void;
   toolbarStyleState: () => ToolbarStyleState;
   selectionCollapsed: () => boolean;
-  selectedImageRun: () => any;
+  selectedImageRun: () => SelectedImageRun | null;
   openLinkDialog: (initialHref: string) => void;
   openImageAltDialog: (initialAlt: string) => void;
 }

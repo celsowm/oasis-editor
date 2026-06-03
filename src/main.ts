@@ -15,6 +15,8 @@ const requestedShell = params.get("shell");
 const shell = requestedShell === "inline" || requestedShell === "balloon" ? requestedShell : "document";
 
 createOasisEditor(container as HTMLElement, {
-  shell,
-  uiVariant: "docs",
+  ui: {
+    shell,
+    uiVariant: "docs",
+  },
 });

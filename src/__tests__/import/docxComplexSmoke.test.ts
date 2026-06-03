@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditorDocument.js";
-import { projectDocumentLayout } from "../../ui/layoutProjection.js";
+import { projectDocumentLayout } from "../../layoutProjection/index.js";
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "word-parity", "fixtures");
 const COMPLEX_DOCX = join(FIXTURES_DIR, "documento_complexo.docx");

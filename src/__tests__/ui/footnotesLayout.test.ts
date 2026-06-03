@@ -8,7 +8,7 @@ import {
   resetEditorIds,
 } from "../../core/editorState.js";
 import { getPageBodyBottom } from "../../core/model.js";
-import { projectDocumentLayout } from "../../ui/layoutProjection.js";
+import { projectDocumentLayout } from "../../layoutProjection/index.js";
 
 beforeEach(() => {
   resetEditorIds();

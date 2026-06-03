@@ -10,7 +10,7 @@ import {
   type EditorTextRun,
 } from "../../core/model.js";
 import { buildTableCellLayout } from "../../core/tableLayout.js";
-import { projectParagraphLayout } from "../layoutProjection.js";
+import { projectParagraphLayout } from "../../layoutProjection/index.js";
 
 const DEFAULT_TABLE_ROW_HEIGHT = 14;
 const DEFAULT_CELL_PADDING_TOP_BOTTOM_PX = 0;

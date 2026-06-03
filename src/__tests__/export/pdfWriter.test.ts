@@ -12,7 +12,7 @@ import { PdfTextMeasurer } from "../../export/pdf/layout/PdfTextMeasurer.js";
 import { OasisPdfWriter } from "../../export/pdf/OasisPdfWriter.js";
 import { exportEditorDocumentToPdfBlob } from "../../export/pdf/exportEditorDocumentToPdf.js";
 import { buildCanvasTableLayout } from "../../ui/canvas/CanvasTableLayout.js";
-import { projectDocumentLayout } from "../../ui/layoutProjection.js";
+import { projectDocumentLayout } from "../../layoutProjection/index.js";
 
 function decodePdf(buffer: ArrayBuffer): string {
   return new TextDecoder().decode(buffer);

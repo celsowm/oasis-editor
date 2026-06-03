@@ -15,7 +15,7 @@ import {
 } from "../core/model.js";
 import { exportEditorDocumentToDocx } from "../export/docx/exportEditorDocumentToDocx.js";
 import { importDocxToEditorDocument } from "../import/docx/importDocxToEditorDocument.js";
-import { projectDocumentLayout } from "../ui/layoutProjection.js";
+import { projectDocumentLayout } from "../layoutProjection/index.js";
 
 const WORD_CANDIDATE_PATHS = [
   "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",

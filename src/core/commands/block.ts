@@ -9,8 +9,6 @@ export function moveBlockToPosition(
   blockId: string,
   targetPosition: EditorPosition,
 ): EditorState {
-  console.log("[moveBlockToPosition] Start move. BlockId:", blockId, "Target:", targetPosition.paragraphId);
-  
   // 1. Find and remove the block from its current location
   let movedBlock: EditorBlockNode | undefined;
   
@@ -38,7 +36,6 @@ export function moveBlockToPosition(
   }
 
   if (!movedBlock) {
-    console.error("[moveBlockToPosition] Failed to find block to move:", blockId);
     return state;
   }
 
@@ -49,7 +46,6 @@ export function moveBlockToPosition(
   if (movedBlock.type === "table") {
       const internalParagraphs = getBlockParagraphs(movedBlock);
       if (internalParagraphs.some(p => p.id === targetId)) {
-          console.warn("[moveBlockToPosition] Target is inside the moved block. Aborting move to avoid self-nesting.");
           return state;
       }
   }
@@ -66,7 +62,6 @@ export function moveBlockToPosition(
     if (idx < 0) return { nextBlocks: blocks, found: false };
 
     // Insert BEFORE the block containing the target paragraph
-    console.log("[moveBlockToPosition] Found target at block index:", idx);
     const nextBlocks = [...blocks.slice(0, idx), movedBlock!, ...blocks.slice(idx)];
     return { nextBlocks, found: true };
   };
@@ -91,14 +86,12 @@ export function moveBlockToPosition(
   }
 
   if (!found) {
-    console.log("[moveBlockToPosition] Target not found in active zone, appending to main blocks");
     section.blocks = [...section.blocks, movedBlock];
   }
 
   nextDocument.sections = [...(nextDocument.sections ?? [])];
   nextDocument.sections[activeIdx] = section;
 
-  console.log("[moveBlockToPosition] Move complete.");
   return {
     ...state,
     document: nextDocument,

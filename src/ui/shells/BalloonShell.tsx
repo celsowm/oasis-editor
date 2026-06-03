@@ -9,54 +9,23 @@ export function BalloonShell(props: ShellProps) {
         <section class="oasis-editor-stage" style={{ padding: "0" }}>
           <OasisEditorEditor
             state={() => props.state}
-            measuredBlockHeights={() => props.measuredBlockHeights()}
-            measuredParagraphLayouts={() => props.measuredParagraphLayouts()}
-            selectionBoxes={() => props.selectionBoxes()}
-            selectedImageBox={() => props.selectedImageBox()}
-            toolbarHost={props.toolbarHost}
-            persistenceStatus={() => props.persistenceStatus()}
-            showFloatingTableToolbar={() => props.showFloatingTableToolbar()}
-            caretBox={() => props.caretBox()}
-            inputBox={() => props.inputBox()}
-            hoveredRevision={() => props.hoveredRevision()}
-            focused={() => props.focused()}
-            importProgress={props.importProgress}
-            layoutMode={props.layoutMode}
-
-            viewportHeight={props.viewportHeight()}            class={props.class}
-            style={props.style}
-            readOnly={props.isReadOnly}
-            showCaret={() => props.showCaret()}
-            onViewportRef={props.onViewportRef}
-            onSurfaceRef={props.onSurfaceRef}
-            onTextareaRef={props.onTextareaRef}
-            onImportInputRef={props.onImportInputRef}
-            onImageInputRef={props.onImageInputRef}
-            onImportInputChange={props.onImportInputChange}
-            onImageInputChange={props.onImageInputChange}
-            onDragOver={props.onDragOver}
-            onDrop={props.onDrop}
-            onEditorMouseDown={props.onEditorMouseDown}
-            onSurfaceMouseDown={props.onSurfaceMouseDown}
-            onSurfaceClick={props.onSurfaceClick}
-            onSurfaceMouseMove={props.onSurfaceMouseMove}
-            onSurfaceDblClick={props.onSurfaceDblClick}
-            onParagraphMouseDown={props.onParagraphMouseDown}
-            onRevisionMouseEnter={props.onRevisionMouseEnter}
-            onRevisionMouseLeave={props.onRevisionMouseLeave}
-            onImageMouseDown={props.onImageMouseDown}
-            onImageResizeHandleMouseDown={props.onImageResizeHandleMouseDown}
-            onTableDragHandleMouseDown={props.onTableDragHandleMouseDown}
-            onInputBlur={props.onInputBlur}
-            onInputFocus={props.onInputFocus}
-            onCompositionEnd={props.onCompositionEnd}
-            onCompositionStart={props.onCompositionStart}
-            onCopy={props.onCopy}
-            onCut={props.onCut}
-            onInput={props.onInput}
-            onKeyDown={props.onKeyDown}
-            onPaste={props.onPaste}
-            onEditorContextMenu={props.onEditorContextMenu}
+            layout={{
+              ...props.layout,
+              measuredBlockHeights: () => props.measuredBlockHeights(),
+              measuredParagraphLayouts: () => props.measuredParagraphLayouts(),
+              viewportHeight: props.viewportHeight(),
+              readOnly: props.isReadOnly,
+            }}
+            overlays={{
+              ...props.overlays,
+              toolbarHost: props.toolbarHost,
+              persistenceStatus: () => props.persistenceStatus(),
+              showFloatingTableToolbar: () => props.showFloatingTableToolbar(),
+            }}
+            refs={props.refs}
+            surfaceHandlers={props.surfaceHandlers}
+            inputHandlers={props.inputHandlers}
+            fileHandlers={props.fileHandlers}
           />
         </section>
       </div>

@@ -5,15 +5,15 @@ import type {
   EditorLayoutPage,
   EditorLayoutParagraph,
   EditorParagraphNode,
-} from "../../core/model.js";
+} from "../core/model.js";
 import {
   getBlockParagraphs,
   getPageBodyBottom,
   getPageBodyTop,
   getPageContentWidth,
   getParagraphText,
-} from "../../core/model.js";
-import type { ITextMeasurer } from "../../core/engine.js";
+} from "../core/model.js";
+import type { ITextMeasurer } from "../core/engine.js";
 
 export const FOOTNOTE_SEPARATOR_HEIGHT = 10;
 export const FOOTNOTE_BLOCK_GAP = 2;

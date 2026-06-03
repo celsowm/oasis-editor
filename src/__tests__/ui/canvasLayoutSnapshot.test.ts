@@ -10,7 +10,7 @@ import {
   createEditorTableRow,
   createFootnoteReferenceRun,
 } from "../../core/editorState.js";
-import { projectDocumentLayout } from "../../ui/layoutProjection.js";
+import { projectDocumentLayout } from "../../layoutProjection/index.js";
 import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
 
 function createRect(left: number, top: number, width: number, height: number): DOMRect {

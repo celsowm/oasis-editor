@@ -6,6 +6,24 @@
 
 > Revisado contra o estado atual do repositório em 2026-06-02. Alguns achados originais continuam válidos, mas parte da modularização de layout já começou em `src/ui/layoutProjection/*`; este relatório trata esses pontos como continuidade de extração, não como trabalho ainda inexistente.
 
+### Status de implementação em 2026-06-02
+
+| Item | Status | Evidência atual |
+|---|---|---|
+| Hooks async de plugins e `destroy` assíncrono | **Resolvido** | `PluginCollection.initializeAll()` e `destroy()` aguardam hooks; `Editor.create(...)` faz bootstrap assíncrono. |
+| `canExecute(name, payload)` respeitar payload | **Resolvido** | `Editor.canExecute` repassa payload para `command.refresh(payload)`. |
+| Extração inicial de layout/paginação | **Parcial** | Existem `src/layoutProjection/documentLayout.ts`, `sectionPagination.ts`, `blocksPagination.ts` e `footnotePagination.ts`; ainda restam helpers legados em `documentPagination.ts`. |
+| `FontDialogModel` | **Parcial** | Parsing/conversões foram extraídos, mas `FontDialog.tsx` ainda concentra JSX e estado dos tabs. |
+| `OasisEditorApp` | **Parcial** | Estado/app, runtime, dialogs e controllers continuam no app, mas bridge de fonte, menu/clipboard de contexto e wiring repetido do editor foram extraídos/agrupados em `src/ui/app/*` e contratos compostos. |
+| IO documental | **Parcial** | `createEditorDocumentIO` virou façade e delega para importer/exporter/image insertion/download; ainda depende de adapters browser. |
+| Canvas | **Parcial** | Cache de imagem, numeração de listas e painters de bloco/parágrafo/tabela já foram extraídos; `CanvasPage` ainda concentra RAF, DPR e orquestração de pintura. |
+| Tabelas | **Parcial** | Operações já estão quebradas em seleção, guards, spans, row/column e selection-aware; stubs mortos foram removidos. |
+| Export PDF dependendo de UI | **Resolvido** | O layout compartilhado foi movido fisicamente para `src/layoutProjection/*`; `src/ui/layoutProjection.ts` ficou só como façade de compatibilidade. |
+| Logs diretos em `src/core/commands/*` | **Resolvido para comandos core apontados** | `console.log/warn/error` foi removido de `core/commands/block.ts` e `core/commands/table.ts`. |
+| Persistência via singleton concreto | **Parcial** | `useEditorPersistence` agora aceita `DocumentPersistence` e usa o singleton IndexedDB apenas como default. |
+| Commands do Essentials em objeto único | **Parcial** | O registro foi quebrado em builders por domínio (`formatting`, `document/browser`, `paragraph/section`, `table`), mas o contrato de deps ainda é grande. |
+| Props públicas amplas e APIs agrupadas | **Resolvido** | `OasisEditorEditorProps` foi quebrado em `layout`, `overlays`, `refs`, `surfaceHandlers`, `inputHandlers` e `fileHandlers`; `OasisEditorAppProps` agora agrupa `ui`, `document` e `runtime`. |
+
 | Top problema | Impacto | Esforço |
 |---|---:|---:|
 | **`OasisEditorApp.tsx` é um "composition root" com lógica demais**: estado, histórico, layout, comandos, plugins, IO, clipboard, dialogs, context menu e renderização no mesmo componente. | Alto: qualquer feature toca um arquivo crítico de ~1.700 linhas e aumenta risco de regressão. | **L** |

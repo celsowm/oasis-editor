@@ -1,26 +1,13 @@
 import { createSignal } from "solid-js";
 import type {
   EditorState,
-  EditorDocument,
   EditorPosition,
 } from "../../core/model.js";
-import {
-  getDocumentParagraphsCanonical,
-  getDocumentSectionsCanonical,
-} from "../../core/model.js";
-import {
-  createEditorStateFromDocument,
-} from "../../core/editorState.js";
-import {
-  insertImageAtSelection,
-  setSelection,
-} from "../../core/editorCommands.js";
-import { exportEditorDocumentToDocxBlob } from "../../export/docx/exportEditorDocumentToDocx.js";
-import { exportEditorDocumentToPdfBlob } from "../../export/pdf/exportEditorDocumentToPdf.js";
-import { importDocxInWorker } from "../../import/docx/importDocxInWorker.js";
 import type { DocxImportStage } from "../../import/docx/importDocxToEditorDocument.js";
-import { getMaxInlineImageWidth } from "../../ui/imageGeometry.js";
-import { readFileBuffer } from "../../ui/clipboardImage.js";
+import type { EditorLogger } from "../../utils/logger.js";
+import { createDocumentExporter } from "./documentIO/DocumentExporter.js";
+import { createDocumentImporter } from "./documentIO/DocumentImporter.js";
+import { createImageInsertionService } from "./documentIO/ImageInsertionService.js";
 
 export type ImportProgressPhase =
   | "reading-file"
@@ -56,7 +43,7 @@ export interface UseEditorDocumentIOProps {
   stabilizeLayoutAfterImport: () => Promise<void>;
   resetEditorChromeState: () => void;
   focusInput: () => void;
-  logger: { debug: (msg: string, payload?: any) => void; info: (msg: string, payload?: any) => void; error: (msg: string, payload?: any) => void };
+  logger: EditorLogger;
 }
 
 export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
@@ -86,149 +73,39 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
     }, 1200);
   };
 
-  const downloadBlob = (blob: Blob, filename: string) => {
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  };
+  const importer = createDocumentImporter({
+    applyState: deps.applyState,
+    stabilizeLayoutAfterImport: deps.stabilizeLayoutAfterImport,
+    resetEditorChromeState: deps.resetEditorChromeState,
+    focusInput: deps.focusInput,
+    setImportPhase,
+    clearImportProgressSoon,
+    now: () => performance.now(),
+    logger: deps.logger,
+  });
+
+  const imageInsertion = createImageInsertionService({
+    state: deps.state,
+    applyTransactionalState: deps.applyTransactionalState,
+    surfaceRef: deps.surfaceRef,
+    logger: deps.logger,
+  });
+
+  const exporter = createDocumentExporter({
+    document: () => deps.state().document,
+    focusInput: deps.focusInput,
+  });
 
   const handleImportDocx = async (file: File | null) => {
     if (deps.isReadOnly()) return;
-    if (!file) return;
-
-    const startedAt = performance.now();
-    deps.logger.info("import docx:start", { name: file.name, size: file.size });
-    setImportPhase("reading-file");
-
-    try {
-      const readingStartedAt = performance.now();
-      const arrayBuffer = await readFileBuffer(file);
-      deps.logger.info("import docx:phase", {
-        phase: "reading-file",
-        durationMs: Math.round((performance.now() - readingStartedAt) * 100) / 100,
-      });
-
-      let lastProgressStage: DocxImportStage | null = null;
-      let lastProgressValue = -1;
-      let lastProgressAt = 0;
-      const document = await importDocxInWorker(arrayBuffer, {
-        onProgress: (stage, subProgress) => {
-          const now = performance.now();
-          const roundedProgress =
-            subProgress === undefined || !Number.isFinite(subProgress)
-              ? undefined
-              : Math.floor(subProgress * 100);
-          const stageChanged = stage !== lastProgressStage;
-          const progressChanged =
-            roundedProgress !== undefined &&
-            (lastProgressValue < 0 || roundedProgress - lastProgressValue >= 1);
-          const timeElapsed = now - lastProgressAt >= 40;
-          if (!stageChanged && !progressChanged && !timeElapsed) {
-            return;
-          }
-
-          lastProgressStage = stage;
-          lastProgressValue = roundedProgress ?? lastProgressValue;
-          lastProgressAt = now;
-          setImportPhase(stage, subProgress);
-          const payload = { phase: stage, subProgress };
-          if (stageChanged || subProgress === undefined || subProgress === 1) {
-            deps.logger.info("import docx:phase", payload);
-          } else {
-            deps.logger.debug("import docx:phase", payload);
-          }
-        },
-      });
-
-      setImportPhase("applying-editor-state");
-      deps.resetEditorChromeState();
-      deps.applyState(createEditorStateFromDocument(document));
-
-
-
-      const stabilizationStartedAt = performance.now();
-      setImportPhase("stabilizing-layout");
-      await deps.stabilizeLayoutAfterImport();
-      deps.logger.info("import docx:phase", {
-        phase: "stabilizing-layout",
-        durationMs: Math.round((performance.now() - stabilizationStartedAt) * 100) / 100,
-      });
-
-      const sections = getDocumentSectionsCanonical(document);
-      const canonicalBlocks = sections.reduce(
-        (total, section) =>
-          total + (section.header?.length ?? 0) + section.blocks.length + (section.footer?.length ?? 0),
-        0,
-      );
-      const canonicalParagraphs = getDocumentParagraphsCanonical(document).length;
-      setImportPhase("done");
-      deps.logger.info("import docx:done", {
-        blocks: canonicalBlocks,
-        paragraphs: canonicalParagraphs,
-        durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
-      });
-      deps.focusInput();
-    } catch (error) {
-      setImportPhase("error");
-      deps.logger.error("import docx:error", error);
-    } finally {
-      clearImportProgressSoon();
-    }
+    await importer.handleImportDocx(file);
   };
 
   const insertImageFromFile = async (
     file: File,
     position?: EditorPosition | null,
   ) => {
-    deps.logger.info(
-      `image insert:start name="${file.name}" type=${file.type} size=${file.size}`,
-    );
-    const arrayBuffer = await readFileBuffer(file);
-    const base64 = btoa(
-      new Uint8Array(arrayBuffer).reduce(
-        (data, byte) => data + String.fromCharCode(byte),
-        "",
-      ),
-    );
-    const src = `data:${file.type};base64,${base64}`;
-
-    const img = new Image();
-    img.src = src;
-    await new Promise((resolve) => {
-      img.onload = resolve;
-      img.onerror = resolve;
-    });
-
-    const naturalWidth = img.naturalWidth || 300;
-    const naturalHeight = img.naturalHeight || 300;
-    const state = deps.state();
-    const targetParagraphId =
-      position?.paragraphId ?? state.selection.focus.paragraphId;
-    const maxWidth = getMaxInlineImageWidth(
-      deps.surfaceRef() ?? undefined,
-      state.document,
-      targetParagraphId,
-      state.activeSectionIndex ?? 0,
-    );
-    const scale = naturalWidth > maxWidth ? maxWidth / naturalWidth : 1;
-    const width = Math.max(24, Math.round(naturalWidth * scale));
-    const height = Math.max(24, Math.round(naturalHeight * scale));
-    deps.logger.info(
-      `image insert:decoded natural=${naturalWidth}x${naturalHeight} fitted=${width}x${height} maxWidth=${maxWidth}`,
-    );
-
-    deps.applyTransactionalState(
-      (current) => {
-        const targetState = position
-          ? setSelection(current, { anchor: position, focus: position })
-          : current;
-        return insertImageAtSelection(targetState, { src, width, height });
-      },
-      { mergeKey: "insertImage" },
-    );
+    await imageInsertion.insertImageFromFile(file, position);
   };
 
   const handleInsertImage = async (file: File | null) => {
@@ -240,15 +117,11 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
   };
 
   const handleExportDocx = async () => {
-    const blob = await exportEditorDocumentToDocxBlob(deps.state().document);
-    downloadBlob(blob, "oasis-editor.docx");
-    deps.focusInput();
+    await exporter.handleExportDocx();
   };
 
   const handleExportPdf = async () => {
-    const blob = await exportEditorDocumentToPdfBlob(deps.state().document);
-    downloadBlob(blob, "oasis-editor.pdf");
-    deps.focusInput();
+    await exporter.handleExportPdf();
   };
 
   return {

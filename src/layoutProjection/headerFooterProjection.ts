@@ -4,8 +4,8 @@ import type {
   EditorLayoutParagraph,
   EditorNamedStyle,
   EditorParagraphNode,
-} from "../../core/model.js";
-import type { ITextMeasurer } from "../../core/engine.js";
+} from "../core/model.js";
+import type { ITextMeasurer } from "../core/engine.js";
 
 type ProjectParagraphLayoutFn = (
   paragraph: EditorParagraphNode,

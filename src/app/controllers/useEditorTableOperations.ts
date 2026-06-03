@@ -135,18 +135,6 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
     deps.focusInput();
   };
 
-  const tableSelectionLabel = (): string | null => {
-    return null;
-  };
-
-  const isInsideTable = (): boolean => {
-    return false;
-  };
-
-  const tableActionRestrictionLabel = (): string | null => {
-    return null;
-  };
-
   return {
     resolveTableCellRangeSelection,
     resolveHorizontalTableCellRange,
@@ -180,8 +168,5 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
     applySelectionAwareTextCommand,
     applySelectionAwareParagraphCommand,
     insertTableCommand,
-    tableSelectionLabel,
-    isInsideTable,
-    tableActionRestrictionLabel,
   };
 }

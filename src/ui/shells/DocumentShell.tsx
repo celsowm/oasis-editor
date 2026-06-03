@@ -3,63 +3,22 @@ import { Menubar } from "../components/Menubar/Menubar.js";
 import { TitleBar } from "../components/TitleBar/TitleBar.js";
 import { OutlinePanel } from "../components/Outline/OutlinePanel.js";
 import { Toolbar } from "../components/Toolbar/Toolbar.js";
-import { OasisEditorEditor, type OasisEditorEditorProps } from "../OasisEditorEditor.js";
+import {
+  OasisEditorEditor,
+  type OasisEditorEditorFileHandlers,
+  type OasisEditorEditorInputHandlers,
+  type OasisEditorEditorLayoutProps,
+  type OasisEditorEditorOverlayProps,
+  type OasisEditorEditorRefProps,
+  type OasisEditorEditorSurfaceHandlers,
+} from "../OasisEditorEditor.js";
 import type { ToolbarHost } from "../components/Toolbar/state/createToolbarApi.js";
 import type { ToolbarRegistry } from "../components/Toolbar/registry/ToolbarRegistry.js";
 import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
 import { buildCanvasLayoutSnapshot } from "../canvas/CanvasLayoutSnapshot.js";
 import { getParagraphEntries } from "../canvas/CanvasGeometry.js";
 
-/**
- * Props the shell forwards verbatim to {@link OasisEditorEditor}. Reusing the
- * editor's own prop types keeps a single source of truth for these signatures.
- */
-type ForwardedEditorProps = Pick<
-  OasisEditorEditorProps,
-  | "selectionBoxes"
-  | "selectedImageBox"
-  | "caretBox"
-  | "inputBox"
-  | "hoveredRevision"
-  | "focused"
-  | "showCaret"
-  | "importProgress"
-  | "layoutMode"
-  | "class"
-  | "style"
-  | "onViewportRef"
-  | "onSurfaceRef"
-  | "onTextareaRef"
-  | "onImportInputRef"
-  | "onImageInputRef"
-  | "onImportInputChange"
-  | "onImageInputChange"
-  | "onDragOver"
-  | "onDrop"
-  | "onEditorMouseDown"
-  | "onSurfaceMouseDown"
-  | "onSurfaceClick"
-  | "onSurfaceMouseMove"
-  | "onSurfaceDblClick"
-  | "onParagraphMouseDown"
-  | "onRevisionMouseEnter"
-  | "onRevisionMouseLeave"
-  | "onImageMouseDown"
-  | "onImageResizeHandleMouseDown"
-  | "onTableDragHandleMouseDown"
-  | "onInputBlur"
-  | "onInputFocus"
-  | "onCompositionEnd"
-  | "onCompositionStart"
-  | "onCopy"
-  | "onCut"
-  | "onInput"
-  | "onKeyDown"
-  | "onPaste"
-  | "onEditorContextMenu"
->;
-
-export interface ShellProps extends ForwardedEditorProps {
+export interface ShellProps {
   state: EditorState;
   toolbarHost: () => ToolbarHost;
   persistenceStatus: () => string;
@@ -74,6 +33,12 @@ export interface ShellProps extends ForwardedEditorProps {
   measuredParagraphLayouts: Accessor<Record<string, EditorLayoutParagraph>>;
   viewportHeight: Accessor<number | string | undefined>;
   showFloatingTableToolbar: Accessor<boolean>;
+  layout: Omit<OasisEditorEditorLayoutProps, "measuredBlockHeights" | "measuredParagraphLayouts" | "viewportHeight" | "readOnly">;
+  overlays: Omit<OasisEditorEditorOverlayProps, "toolbarHost" | "persistenceStatus" | "showFloatingTableToolbar">;
+  refs: OasisEditorEditorRefProps;
+  surfaceHandlers: OasisEditorEditorSurfaceHandlers;
+  inputHandlers: OasisEditorEditorInputHandlers;
+  fileHandlers: OasisEditorEditorFileHandlers;
 }
 
 export function DocumentShell(props: ShellProps) {
@@ -81,18 +46,18 @@ export function DocumentShell(props: ShellProps) {
   let viewportEl: HTMLDivElement | undefined;
   const captureSurfaceRef = (el: HTMLDivElement) => {
     surfaceEl = el;
-    props.onSurfaceRef?.(el);
+    props.refs.onSurfaceRef?.(el);
   };
   const captureViewportRef = (el: HTMLDivElement) => {
     viewportEl = el;
-    props.onViewportRef?.(el);
+    props.refs.onViewportRef?.(el);
   };
   const handleOutlineNavigate = (id: string) => {
     if (!surfaceEl) return;
     const snapshot = buildCanvasLayoutSnapshot({
       surface: surfaceEl,
       state: props.state,
-      layoutMode: props.layoutMode ?? "wordParity",
+      layoutMode: props.layout.layoutMode ?? "wordParity",
     });
     if (!snapshot) return;
     const entries = getParagraphEntries(snapshot, id);
@@ -144,55 +109,27 @@ export function DocumentShell(props: ShellProps) {
         <section class="oasis-editor-stage">
           <OasisEditorEditor
             state={() => props.state}
-            measuredBlockHeights={() => props.measuredBlockHeights()}
-            measuredParagraphLayouts={() => props.measuredParagraphLayouts()}
-            selectionBoxes={() => props.selectionBoxes()}
-            selectedImageBox={() => props.selectedImageBox()}
-            toolbarHost={props.toolbarHost}
-            persistenceStatus={() => props.persistenceStatus()}
-            showFloatingTableToolbar={() => props.showFloatingTableToolbar()}
-            caretBox={() => props.caretBox()}
-            inputBox={() => props.inputBox()}
-            hoveredRevision={() => props.hoveredRevision()}
-            focused={() => props.focused()}
-            importProgress={props.importProgress}
-            layoutMode={props.layoutMode}
-
-            viewportHeight={props.viewportHeight()}
-            class={props.class}
-            style={props.style}
-            readOnly={props.isReadOnly}
-            showCaret={() => props.showCaret()}
-            onViewportRef={captureViewportRef}
-            onSurfaceRef={captureSurfaceRef}
-            onTextareaRef={props.onTextareaRef}
-            onImportInputRef={props.onImportInputRef}
-            onImageInputRef={props.onImageInputRef}
-            onImportInputChange={props.onImportInputChange}
-            onImageInputChange={props.onImageInputChange}
-            onDragOver={props.onDragOver}
-            onDrop={props.onDrop}
-            onEditorMouseDown={props.onEditorMouseDown}
-            onSurfaceMouseDown={props.onSurfaceMouseDown}
-            onSurfaceClick={props.onSurfaceClick}
-            onSurfaceMouseMove={props.onSurfaceMouseMove}
-            onSurfaceDblClick={props.onSurfaceDblClick}
-            onParagraphMouseDown={props.onParagraphMouseDown}
-            onRevisionMouseEnter={props.onRevisionMouseEnter}
-            onRevisionMouseLeave={props.onRevisionMouseLeave}
-            onImageMouseDown={props.onImageMouseDown}
-            onImageResizeHandleMouseDown={props.onImageResizeHandleMouseDown}
-            onTableDragHandleMouseDown={props.onTableDragHandleMouseDown}
-            onInputBlur={props.onInputBlur}
-            onInputFocus={props.onInputFocus}
-            onCompositionEnd={props.onCompositionEnd}
-            onCompositionStart={props.onCompositionStart}
-            onCopy={props.onCopy}
-            onCut={props.onCut}
-            onInput={props.onInput}
-            onKeyDown={props.onKeyDown}
-            onPaste={props.onPaste}
-            onEditorContextMenu={props.onEditorContextMenu}
+            layout={{
+              ...props.layout,
+              measuredBlockHeights: () => props.measuredBlockHeights(),
+              measuredParagraphLayouts: () => props.measuredParagraphLayouts(),
+              viewportHeight: props.viewportHeight(),
+              readOnly: props.isReadOnly,
+            }}
+            overlays={{
+              ...props.overlays,
+              toolbarHost: props.toolbarHost,
+              persistenceStatus: () => props.persistenceStatus(),
+              showFloatingTableToolbar: () => props.showFloatingTableToolbar(),
+            }}
+            refs={{
+              ...props.refs,
+              onViewportRef: captureViewportRef,
+              onSurfaceRef: captureSurfaceRef,
+            }}
+            surfaceHandlers={props.surfaceHandlers}
+            inputHandlers={props.inputHandlers}
+            fileHandlers={props.fileHandlers}
           />
         </section>
       </div>

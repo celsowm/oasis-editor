@@ -10,7 +10,7 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
   EditorTableNode,
-} from "../../core/model.js";
+} from "../core/model.js";
 import {
   getBlockParagraphs,
   getPageContentWidth,
@@ -18,13 +18,13 @@ import {
   getParagraphText,
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
-} from "../../core/model.js";
-import { measureLinesFromRects, type CharRect } from "../caretGeometry.js";
-import type { ITextMeasurer } from "../../core/engine.js";
-import { domTextMeasurer, resolveRenderedLineHeightPx } from "../textMeasurement.js";
-import { perfTimer } from "../../utils/performanceMetrics.js";
-import { resolveTableColumnWidthsPx } from "../tableGeometry.js";
-import { buildTableCellLayout } from "../../core/tableLayout.js";
+} from "../core/model.js";
+import { measureLinesFromRects, type CharRect } from "../ui/caretGeometry.js";
+import type { ITextMeasurer } from "../core/engine.js";
+import { domTextMeasurer, resolveRenderedLineHeightPx } from "../ui/textMeasurement.js";
+import { perfTimer } from "../utils/performanceMetrics.js";
+import { resolveTableColumnWidthsPx } from "../ui/tableGeometry.js";
+import { buildTableCellLayout } from "../core/tableLayout.js";
 import { projectHeaderFooterBlocksWithDependencies } from "./headerFooterProjection.js";
 
 const DEFAULT_FONT_SIZE = 15;
