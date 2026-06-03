@@ -1,6 +1,6 @@
 
 import { createSignal } from "solid-js";
-import { getParagraphs, paragraphOffsetToPosition, resolveImageSrc, type EditorPosition, type EditorState } from "../../core/model.js";
+import { getDocumentParagraphs, getParagraphs, paragraphOffsetToPosition, resolveImageSrc, type EditorPosition, type EditorState } from "../../core/model.js";
 import { normalizeSelection, isSelectionCollapsed } from "../../core/selection.js";
 import { moveSelectedImageToPosition, setSelection, resizeSelectedImage } from "../../core/editorCommands.js";
 import { getMaxInlineImageWidth } from "../../ui/imageGeometry.js";
@@ -60,6 +60,7 @@ export interface EditorImageOperationsDeps {
   ) => void;
   updateHistoryState: (updater: (current: EditorHistoryState) => EditorHistoryState) => void;
   focusInput: () => void;
+  focusInputAfterPointerSelection: () => void;
   cloneState: (source: EditorState) => EditorState;
   logger: EditorLogger;
 }
@@ -467,6 +468,39 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     window.addEventListener("mouseup", handleImageResizeMouseUp);
   };
 
+  const handleImageMouseDown = (
+    paragraphId: string,
+    paragraphOffset: number,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const paragraph = getDocumentParagraphs(deps.state.document).find((p) => p.id === paragraphId);
+    if (paragraph) {
+      deps.applyState(
+        setSelection(deps.state, {
+          anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),
+          focus: paragraphOffsetToPosition(paragraph, paragraphOffset + 1),
+        }),
+      );
+    }
+
+    startImageDrag(paragraphId, paragraphOffset, event);
+    deps.focusInputAfterPointerSelection();
+  };
+
+  const handleImageResizeHandleMouseDown = (
+    paragraphId: string,
+    paragraphOffset: number,
+    direction: ImageResizeHandleDirection,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    startImageResize(paragraphId, paragraphOffset, direction, event, deps.state);
+  };
+
   return {
     dragging,
     draggedImageInfo,
@@ -477,5 +511,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     startImageResize,
     stopImageDrag,
     stopImageResize,
+    handleImageMouseDown,
+    handleImageResizeHandleMouseDown,
   };
 }

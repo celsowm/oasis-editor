@@ -4,65 +4,38 @@ import {
   onCleanup,
   onMount,
   Show,
-  type JSX,
 } from "solid-js";
-import { OasisEditorEditor } from "./OasisEditorEditor.js";
-import {
-  applyEditorHistoryTransaction,
-  createEmptyEditorHistoryState,
-  resetEditorHistoryGrouping,
-  type EditorTransactionOptions,
-} from "./editorHistory.js";
 import {
   type BooleanStyleKey,
 } from "./toolbarStyleState.js";
 import {
   getSelectedImageRun,
-  setSelection,
 } from "../core/editorCommands.js";
 import {
   createEditorStateFromDocument,
 } from "../core/editorState.js";
-import { Editor } from "../core/Editor.js";
 import {
-  getDocumentParagraphs,
-  findParagraphTableLocation,
-  getActiveSectionIndex,
-  paragraphOffsetToPosition,
-  type EditorDocument,
-  type EditorLayoutParagraph,
   type EditorPosition,
   type EditorState,
 } from "../core/model.js";
-import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
+import { isSelectionCollapsed } from "../core/selection.js";
 
 import { createEditorLogger } from "../utils/logger.js";
 import {
   markEnd,
   markStart,
-  perfTimer,
   startLongTaskObserver,
   installGlobalReport,
   registerDomStatsSurface,
 } from "../utils/performanceMetrics.js";
-import type {
-  ImageResizeHandleDirection,
-} from "./editorUiTypes.js";
 import {
   cloneEditorState,
 } from "../core/cloneState.js";
 import { Toolbar } from "./components/Toolbar/Toolbar.js";
-import type { ToolbarRegistry } from "./components/Toolbar/registry/ToolbarRegistry.js";
-import { DocumentShell } from "./shells/DocumentShell.js";
-import { InlineShell } from "./shells/InlineShell.js";
-import { BalloonShell } from "./shells/BalloonShell.js";
 import { createEditorCommandsController } from "../app/controllers/EditorCommandsController.js";
 import { createEditorKeyboardController } from "../app/controllers/useEditorKeyboard.js";
 import { useEditorLayout } from "../app/controllers/useEditorLayout.js";
-import {
-  useEditorPersistence,
-  type DocumentPersistence,
-} from "../app/controllers/useEditorPersistence.js";
+import { useEditorPersistence } from "../app/controllers/useEditorPersistence.js";
 import { persistenceService } from "../app/services/PersistenceService.js";
 import { useEditorFindReplace } from "../app/controllers/useEditorFindReplace.js";
 import { createEditorTableOperations } from "../app/controllers/useEditorTableOperations.js";
@@ -70,7 +43,6 @@ import { createEditorImageOperations } from "../app/controllers/useEditorImageOp
 import { createEditorDocumentIO } from "../app/controllers/useEditorDocumentIO.js";
 import { createEditorStyleController } from "../app/controllers/useEditorStyle.js";
 import { createEditorHistoryActions } from "../app/controllers/useEditorHistoryActions.js";
-import { computeLayoutInvalidationFromTransaction } from "./layoutInvalidation.js";
 import "./components/FindReplace/findReplace.css";
 import { setLocale } from "../i18n/index.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
@@ -78,72 +50,31 @@ import {
   recordCanvasDebugSelection,
   syncCanvasDebugApiVisibility,
 } from "./canvas/CanvasDebug.js";
-import {
-  computeFontFamilyOptions as collectFontFamilyOptions,
-  computeFontSizeOptions as collectFontSizeOptions,
-} from "./app/fontOptions.js";
+import { createEditorFontOptions } from "./app/useEditorFontOptions.js";
 import { createEditorFocusController } from "./app/useEditorFocus.js";
 import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
 import { createCanvasSurfaceHitResolver } from "./app/useCanvasSurfaceHitResolver.js";
-import { useEditorRuntimePlugins } from "./app/useEditorRuntimePlugins.js";
 import { createFontDialogBridge } from "./app/useFontDialogBridge.js";
 import { createEditorContextMenuClipboard } from "./app/useEditorContextMenuClipboard.js";
-import type { OasisPlugin } from "../core/plugin.js";
-import { createEditorEssentialsRuntimePlugin } from "./app/createEditorEssentialsPlugin.js";
-import { createRuntimeCommandHost } from "./app/createRuntimeCommandHost.js";
+import { useEditorRuntimeBootstrap } from "./app/useEditorRuntimeBootstrap.js";
+import { createEditorUiOptions } from "./app/useEditorUiOptions.js";
+import { computeShouldShowCaret } from "./app/shouldShowCaret.js";
 import { EditorDragLayers } from "./app/EditorDragLayers.js";
 import { EditorDialogsLayer } from "./app/EditorDialogsLayer.js";
 import { useEditorInteractionWiring } from "./app/useEditorInteractionWiring.js";
 import { buildEditorViewProps } from "./app/buildEditorViewProps.js";
+import { EditorWorkspace } from "./app/EditorWorkspace.js";
+import { useEditorTransactions } from "./app/useEditorTransactions.js";
 
-export interface OasisEditorLoadingOptions {
-  label?: string;
-  class?: string;
-  style?: JSX.CSSProperties;
-}
-
-export interface OasisEditorAppUiProps {
-  showChrome?: boolean;
-  shell?: "document" | "inline" | "balloon";
-  uiVariant?: "classic" | "docs";
-  showTitleBar?: boolean;
-  showMenubar?: boolean;
-  showToolbar?: boolean;
-  showOutline?: boolean;
-  locale?: "pt-BR" | "en";
-  viewportHeight?: number | string;
-  class?: string;
-  style?: JSX.CSSProperties;
-  loading?: boolean | OasisEditorLoadingOptions;
-}
-
-export interface OasisEditorAppDocumentProps {
-  initialDocument?: EditorDocument;
-  initialState?: EditorState;
-  onStateChange?: (state: EditorState) => void;
-  readOnly?: boolean;
-  persistenceEnabled?: boolean;
-  persistence?: DocumentPersistence;
-  layoutMode?: "fast" | "wordParity";
-}
-
-export interface OasisEditorAppRuntimeProps {
-  onReady?: () => void;
-  plugins?: OasisPlugin[];
-  /**
-   * Customize the toolbar after the built-in preset and plugin contributions
-   * load. Use the registry to add/insert/replace/remove/move items. Clients can
-   * tailor the toolbar without forking.
-   */
-  customizeToolbar?: (registry: ToolbarRegistry) => void;
-}
-
-export interface OasisEditorAppProps {
-  ui?: OasisEditorAppUiProps;
-  document?: OasisEditorAppDocumentProps;
-  runtime?: OasisEditorAppRuntimeProps;
-}
+import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
+export type {
+  OasisEditorLoadingOptions,
+  OasisEditorAppUiProps,
+  OasisEditorAppDocumentProps,
+  OasisEditorAppRuntimeProps,
+  OasisEditorAppProps,
+} from "./OasisEditorAppProps.js";
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const ui = () => props.ui ?? {};
@@ -166,27 +97,19 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     commitState(nextState);
   };
 
-  const showChrome = () => ui().showChrome ?? true;
-  const showTitleBar = () => ui().showTitleBar ?? true;
-  const showMenubar = () => ui().showMenubar ?? true;
-  const showToolbar = () => ui().showToolbar ?? true;
-  const showOutline = () => ui().showOutline ?? true;
-  const layoutMode = () => documentOptions().layoutMode ?? "fast";
-  const useComposedShell = () =>
-    ui().uiVariant === "docs" || (ui().shell ?? "document") !== "document";
-  const isReadOnly = () => documentOptions().readOnly ?? false;
-  const loadingOptions = (): OasisEditorLoadingOptions | undefined => {
-    const loading = ui().loading;
-    return typeof loading === "object" && loading !== null ? loading : undefined;
-  };
-  const loadingLabel = () => loadingOptions()?.label ?? "Loading oasis-editor...";
-
-  const shellComponent = () => {
-    const s = ui().shell ?? "document";
-    if (s === "inline") return InlineShell;
-    if (s === "balloon") return BalloonShell;
-    return DocumentShell;
-  };
+  const {
+    showChrome,
+    showTitleBar,
+    showMenubar,
+    showToolbar,
+    showOutline,
+    layoutMode,
+    isReadOnly,
+    useComposedShell,
+    loadingOptions,
+    loadingLabel,
+    shellComponent,
+  } = createEditorUiOptions({ ui, documentOptions });
 
   const focusController = createEditorFocusController();
   const focused = focusController.focused;
@@ -194,9 +117,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const focusInput = focusController.focusInput;
   const focusInputAfterPointerSelection = focusController.focusInputAfterPointerSelection;
   const [initialLoading, setInitialLoading] = createSignal(ui().loading !== false);
-  const [undoStack, setUndoStack] = createSignal<EditorState[]>([]);
-  const [redoStack, setRedoStack] = createSignal<EditorState[]>([]);
-  const [localFontFamilyOptions, setLocalFontFamilyOptions] = createSignal<string[]>([]);
 
   const {
     linkDialog,
@@ -211,7 +131,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   const viewportRef = () => focusController.viewportRef;
   const surfaceRef = () => focusController.surfaceRef;
-  const textareaRef = () => focusController.textareaRef;
   const importInputRef = () => focusController.importInputRef;
   const imageInputRef = () => focusController.imageInputRef;
   const docIO = createEditorDocumentIO({
@@ -270,28 +189,36 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     },
   );
 
-  let historyState = createEmptyEditorHistoryState();
   let forcePlainTextPaste = false;
   const cloneState = cloneEditorState;
 
-  const applyHistoryState = (nextState: EditorState) => {
-    commitState(cloneState(nextState));
-  };
+  const transactions = useEditorTransactions({
+    stateSnapshot: getStateSnapshot,
+    commitState,
+    cloneState,
+    applyLayoutInvalidation,
+  });
+  const {
+    undoStack,
+    redoStack,
+    applyTransactionalState,
+    applyHistoryState,
+    resetTransactionGrouping,
+    updateHistoryState,
+    getHistoryState,
+    clearHistory,
+  } = transactions;
 
   const historyActions = createEditorHistoryActions({
     state: () => state,
     stateSnapshot: getStateSnapshot,
     applyHistoryState,
-    applyTransactionalState: (producer, options) => applyTransactionalState(producer, options),
+    applyTransactionalState,
     focusInput,
     clearPreferredColumn,
     imageOps: () => imageOps,
-    updateHistoryState: (updater) => {
-      historyState = updater(historyState);
-      setUndoStack(historyState.undoStack);
-      setRedoStack(historyState.redoStack);
-    },
-    getHistoryState: () => historyState,
+    updateHistoryState,
+    getHistoryState,
   });
 
   createEffect(() => {
@@ -305,39 +232,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     }
     documentOptions().onStateChange?.(cloneState(getStateSnapshot()));
   });
-
-  const resetTransactionGrouping = () => {
-    historyState = resetEditorHistoryGrouping(historyState);
-  };
-
-  const applyTransactionalState = (
-    producer: (current: EditorState) => EditorState,
-    options?: EditorTransactionOptions,
-  ) => {
-    const prev = getStateSnapshot();
-    const next = perfTimer("txn:produce", () => producer(prev), 0);
-    if (next === prev) {
-      return;
-    }
-
-    historyState = applyEditorHistoryTransaction(
-      historyState,
-      prev,
-      next,
-      options,
-    );
-    setUndoStack(historyState.undoStack);
-    setRedoStack(historyState.redoStack);
-
-    const invalidation = perfTimer(
-      "txn:invalidate",
-      () => computeLayoutInvalidationFromTransaction(prev, next),
-      0,
-    );
-    applyLayoutInvalidation(invalidation);
-
-    perfTimer("txn:setState", () => commitState(next), 0);
-  };
 
   const selectedImageRun = () => getSelectedImageRun(state);
 
@@ -360,11 +254,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   const resetEditorChromeState = () => {
     clearPreferredColumn();
-    resetTransactionGrouping();
     setMeasuredBlockHeights({});
     setMeasuredParagraphLayouts({});
-    setUndoStack([]);
-    setRedoStack([]);
+    clearHistory();
   };
 
   const tableOps = createEditorTableOperations({
@@ -391,12 +283,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     resolvePositionAtSurfacePoint,
     applyState,
     applyTransactionalState,
-    updateHistoryState: (updater) => {
-      historyState = updater(historyState);
-      setUndoStack(historyState.undoStack);
-      setRedoStack(historyState.redoStack);
-    },
+    updateHistoryState,
     focusInput,
+    focusInputAfterPointerSelection,
     cloneState,
     logger,
   });
@@ -487,44 +376,44 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       styleController.applyToolbarBooleanStyleCommand(style),
   };
 
-  const essentialsPlugin = createEditorEssentialsRuntimePlugin({
-    state: () => state,
-    isReadOnly,
-    forcePlainTextPaste: {
-      get: () => forcePlainTextPaste,
-      set: (value) => {
-        forcePlainTextPaste = value;
+  const {
+    runtimeReady,
+    runtimeEditor,
+    commandStateOf,
+    toolbarHost,
+    toolbarRegistry,
+  } = useEditorRuntimeBootstrap({
+    essentials: {
+      state: () => state,
+      isReadOnly,
+      forcePlainTextPaste: {
+        get: () => forcePlainTextPaste,
+        set: (value) => {
+          forcePlainTextPaste = value;
+        },
+      },
+      undoStack,
+      redoStack,
+      commandsController,
+      keyboardCommandsController,
+      historyActions,
+      styleController,
+      tableOps,
+      docIO,
+      importInputRef,
+      imageInputRef,
+      selectedImageRun,
+      selectionBoxes,
+      focusInput,
+      applyState,
+      applyTransactionalState,
+      findReplace: {
+        setIsOpen: fr.setIsOpen,
       },
     },
-    undoStack,
-    redoStack,
-    commandsController,
-    keyboardCommandsController,
-    historyActions,
-    styleController,
-    tableOps,
-    docIO,
-    importInputRef,
-    imageInputRef,
-    selectedImageRun,
-    selectionBoxes,
-    focusInput,
-    applyState,
-    applyTransactionalState,
-    findReplace: {
-      setIsOpen: fr.setIsOpen,
-    },
-  });
-
-  const { runtimePlugins, toolbarRegistry, dispose: disposeRuntimePlugins } = useEditorRuntimePlugins({
-    essentialsPlugin,
     externalPlugins: runtimeOptions().plugins,
     customizeToolbar: runtimeOptions().customizeToolbar,
-  });
-
-  const runtimeCommandHost = createRuntimeCommandHost({
     initialDocument: getStateSnapshot().document,
-    runtimePlugins,
     focusEditor: focusInput,
     logger,
     onReady: runtimeOptions().onReady,
@@ -532,10 +421,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       setInitialLoading(false);
     },
   });
-  const runtimeReady = runtimeCommandHost.runtimeReady;
-  const runtimeEditor = runtimeCommandHost.runtimeEditor;
-  const commandStateOf = runtimeCommandHost.commandStateOf;
-  const toolbarHost = runtimeCommandHost.toolbarHost;
 
   const { handleKeyDown: rawHandleKeyDown } = createEditorKeyboardController({
     state: () => state,
@@ -609,121 +494,17 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     markEnd("input-to-layout");
   };
 
-  const shouldShowCaret = () => {
-    if (!caretBox().visible || !isSelectionCollapsed(state.selection)) {
-      return false;
-    }
-    const anchorLoc = findParagraphTableLocation(
-      state.document,
-      state.selection.anchor.paragraphId,
-      getActiveSectionIndex(state),
-    );
-    const focusLoc = findParagraphTableLocation(
-      state.document,
-      state.selection.focus.paragraphId,
-      getActiveSectionIndex(state),
-    );
-    const inTableSelection =
-      anchorLoc &&
-      focusLoc &&
-      anchorLoc.blockIndex === focusLoc.blockIndex &&
-      (anchorLoc.rowIndex !== focusLoc.rowIndex ||
-        anchorLoc.cellIndex !== focusLoc.cellIndex);
-    return !inTableSelection;
-  };
+  const shouldShowCaret = () =>
+    computeShouldShowCaret(state as EditorState, caretBox());
 
-  const handleImageMouseDown = (
-    paragraphId: string,
-    paragraphOffset: number,
-    event: MouseEvent & { currentTarget: HTMLElement },
-  ) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const paragraph = getDocumentParagraphs(state.document).find((p) => p.id === paragraphId);
-    if (paragraph) {
-      applyState(
-        setSelection(state, {
-          anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),
-          focus: paragraphOffsetToPosition(paragraph, paragraphOffset + 1),
-        }),
-      );
-    }
-
-    imageOps.startImageDrag(paragraphId, paragraphOffset, event);
-    focusInputAfterPointerSelection();
-  };
-
-  const handleImageResizeHandleMouseDown = (
-    paragraphId: string,
-    paragraphOffset: number,
-    direction: ImageResizeHandleDirection,
-    event: MouseEvent & { currentTarget: HTMLElement },
-  ) => {
-    event.preventDefault();
-    event.stopPropagation();
-    imageOps.startImageResize(paragraphId, paragraphOffset, direction, event, state);
-  };
-
-  const renderComposedShell = () => {
-    const Shell = shellComponent();
-    return (
-      <Shell
-        state={state}
-        toolbarHost={toolbarHost}
-        persistenceStatus={persistenceStatus}
-        toolbarRegistry={toolbarRegistry}
-        showChrome={showChrome()}
-        showTitleBar={showTitleBar()}
-        showMenubar={showMenubar()}
-        showToolbar={showToolbar()}
-        showOutline={showOutline()}
-        isReadOnly={isReadOnly()}
-        measuredBlockHeights={() => measuredBlockHeights()}
-        measuredParagraphLayouts={() => measuredParagraphLayouts()}
-        viewportHeight={() => ui().viewportHeight}
-        showFloatingTableToolbar={() =>
-          !isReadOnly() && commandStateOf("tableContext").value !== null
-        }
-        layout={editorLayoutProps}
-        overlays={editorOverlayProps}
-        refs={editorRefs}
-        surfaceHandlers={editorSurfaceHandlers}
-        inputHandlers={editorInputHandlers}
-        fileHandlers={editorFileHandlers}
-      />
-    );
-  };
-
-  const computeFontFamilyOptions = (): string[] => {
-    return collectFontFamilyOptions(state.document, styleController.toolbarStyleState(), localFontFamilyOptions());
-  };
-
-  const computeFontSizeOptions = (): number[] => {
-    return collectFontSizeOptions(state.document, styleController.toolbarStyleState());
-  };
-
-  const loadLocalFontFamilyOptions = async () => {
-    const maybeQueryLocalFonts = (globalThis as {
-      queryLocalFonts?: () => Promise<Array<{ family?: string; fullName?: string }>>;
-    }).queryLocalFonts;
-    if (!maybeQueryLocalFonts || localFontFamilyOptions().length > 0) {
-      return;
-    }
-    try {
-      const fonts = await maybeQueryLocalFonts();
-      const families = Array.from(
-        new Set(
-          fonts
-            .map((font) => font.family?.trim() || font.fullName?.trim() || "")
-            .filter(Boolean),
-        ),
-      ).sort((a, b) => a.localeCompare(b));
-      setLocalFontFamilyOptions(families);
-    } catch {
-      // Local font access is permission-gated; the fallback list remains available.
-    }
-  };
+  const {
+    computeFontFamilyOptions,
+    computeFontSizeOptions,
+    loadLocalFontFamilyOptions,
+  } = createEditorFontOptions({
+    state: () => state,
+    toolbarStyleState: styleController.toolbarStyleState,
+  });
 
   const fontDialogBridge = createFontDialogBridge({
     toolbarStyleState: styleController.toolbarStyleState,
@@ -786,8 +567,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     revisionController,
     handleDrop,
     onEditorMouseDown,
-    handleImageMouseDown,
-    handleImageResizeHandleMouseDown,
+    handleImageMouseDown: imageOps.handleImageMouseDown,
+    handleImageResizeHandleMouseDown: imageOps.handleImageResizeHandleMouseDown,
     handleEditorContextMenu,
     textInput,
     setFocused,
@@ -802,12 +583,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     startLongTaskObserver();
     installGlobalReport();
     registerDomStatsSurface(() => surfaceRef() ?? null);
-    void runtimeCommandHost.initialize();
   });
 
   onCleanup(() => {
-    void runtimeCommandHost.dispose();
-    disposeRuntimePlugins();
     onCleanupHook();
     surfaceEventsWithTextDrag.stopDragging();
     textDrag.stopDrag();
@@ -851,36 +629,32 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         closeContextMenu={closeContextMenu}
       />
 
-      <Show when={useComposedShell()}>
-        {renderComposedShell()}
-      </Show>
-
-      <Show when={!useComposedShell()}>
-      <div class="oasis-editor-main-container">
-        <section class="oasis-editor-stage">
-          <OasisEditorEditor
-            state={() => state}
-            layout={{
-              ...editorLayoutProps,
-              measuredBlockHeights: () => measuredBlockHeights(),
-              measuredParagraphLayouts: () => measuredParagraphLayouts(),
-              readOnly: isReadOnly(),
-            }}
-            overlays={{
-              ...editorOverlayProps,
-              toolbarHost,
-              persistenceStatus,
-              showFloatingTableToolbar: () =>
-                !isReadOnly() && commandStateOf("tableContext").value !== null,
-            }}
-            refs={editorRefs}
-            surfaceHandlers={editorSurfaceHandlers}
-            inputHandlers={editorInputHandlers}
-            fileHandlers={editorFileHandlers}
-          />
-        </section>
-      </div>
-      </Show>
+      <EditorWorkspace
+        useComposedShell={useComposedShell}
+        shellComponent={shellComponent}
+        state={() => state}
+        toolbarHost={toolbarHost}
+        persistenceStatus={persistenceStatus}
+        toolbarRegistry={toolbarRegistry}
+        showChrome={showChrome}
+        showTitleBar={showTitleBar}
+        showMenubar={showMenubar}
+        showToolbar={showToolbar}
+        showOutline={showOutline}
+        isReadOnly={isReadOnly}
+        viewportHeight={() => ui().viewportHeight}
+        measuredBlockHeights={measuredBlockHeights}
+        measuredParagraphLayouts={measuredParagraphLayouts}
+        showFloatingTableToolbar={() =>
+          !isReadOnly() && commandStateOf("tableContext").value !== null
+        }
+        layout={editorLayoutProps}
+        overlays={editorOverlayProps}
+        refs={editorRefs}
+        surfaceHandlers={editorSurfaceHandlers}
+        inputHandlers={editorInputHandlers}
+        fileHandlers={editorFileHandlers}
+      />
 
       <EditorDragLayers
         state={state as EditorState}

@@ -21,11 +21,12 @@ O projeto já saiu do estágio em que layout, plugins, IO e contratos públicos 
 - registro do Essentials quebrado por grupos de comandos;
 - `EssentialsPluginDeps` substituído por capabilities nomeadas;
 - `documentPagination.ts` removido e drenado em módulos de paginação por domínio;
-- DIP da persistência concluído: o hook depende só de `DocumentPersistence` e o default concreto vive no composition root.
+- DIP da persistência concluído: o hook depende só de `DocumentPersistence` e o default concreto vive no composition root;
+- `OasisEditorApp.tsx` afinado de ~1100 para ~840 linhas com a extração de interação (`useEditorInteractionWiring`), camadas visuais (`EditorDragLayers`), diálogos (`EditorDialogsLayer`), montagem de view-props (`buildEditorViewProps`) e bootstrap de runtime (`useEditorRuntimeBootstrap`).
 
 O projeto ainda não terminou a limpeza estrutural. O hotspot real remanescente é:
 
-1. `src/ui/OasisEditorApp.tsx` ainda é um composition root grande demais.
+1. `src/ui/OasisEditorApp.tsx` ainda é o composition root e concentra a wiring dos controllers transversais.
 
 ## Status Atual
 
@@ -64,20 +65,28 @@ Hoje ele ainda faz, ao mesmo tempo:
 Estado atual:
 
 - o contrato público melhorou;
-- bridges auxiliares foram extraídas para `src/ui/app/*` (`useEditorAppState`, `useEditorDialogs`, `useEditorFocus`, `useEditorRuntimePlugins`, `useEditorContextMenuClipboard`, etc.);
-- wiring repetido do editor foi consolidado;
-- mas o arquivo ainda tem cerca de 1100 linhas.
+- bridges auxiliares foram extraídas para `src/ui/app/*` (`useEditorAppState`, `useEditorDialogs`, `useEditorFocus`, `useEditorContextMenuClipboard`, etc.);
+- o cluster de interação (gesto / input / clipboard / navegação) saiu para `useEditorInteractionWiring`;
+- as camadas visuais (`EditorDragLayers`) e os diálogos (`EditorDialogsLayer`) viraram componentes apresentacionais;
+- a montagem dos bundles de view-props saiu para `buildEditorViewProps`;
+- o bootstrap do runtime de plugins (Essentials + runtime plugins + command host + lifecycle de mount/cleanup) saiu para `useEditorRuntimeBootstrap`;
+- o arquivo caiu de ~1100 para cerca de 840 linhas.
 
 Diagnóstico SOLID:
 
-- violação principal de SRP;
+- violação principal de SRP, agora bem mais contida;
 - risco secundário de OCP baixo, porque novas features continuam entrando no mesmo composition root.
+
+O que ainda concentra responsabilidade no arquivo:
+
+- composição/instanciação dos controllers transversais (`tableOps`, `imageOps`, `styleController`, resolvers de hit) — wiring legítimo de root;
+- núcleo de histórico/transação (`applyTransactionalState`, `historyState`, `historyActions`) — coração legítimo do componente;
+- a wiring das deps do Essentials (objeto grande passado para `useEditorRuntimeBootstrap`).
 
 Próximo corte recomendado:
 
-1. extrair um `useEditorRuntimeBootstrap`;
-2. extrair um `useEditorInteractionWiring`;
-3. deixar o componente final apenas montar shells, overlays e loading state.
+1. avaliar se a wiring das deps do Essentials pode ser agrupada por capability junto da própria definição do plugin;
+2. deixar o componente final apenas compor controllers, montar shells/overlays e o loading state.
 
 ## Itens Considerados Resolvidos
 
