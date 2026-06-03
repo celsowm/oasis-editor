@@ -14,19 +14,21 @@ import {
   applyWidowOrphanControl,
   createParagraphSegmentLayout,
   estimateParagraphBlockHeight,
-  estimateTableBlockHeight,
   getEffectiveParagraphStyle,
   getParagraphMeasuredHeight,
   getParagraphSegmentFitHeight,
   getParagraphSegmentHeight,
   getProjectedParagraphBlockHeight,
+  isMeasuredLayoutCurrent,
+  projectParagraphLayout,
+} from "./paragraphPagination.js";
+import {
+  estimateTableBlockHeight,
   getRepeatableHeaderRowCount,
   getTableHeaderRowCount,
   getTableRowGroups,
   getTableSegmentHeight,
-  isMeasuredLayoutCurrent,
-  projectParagraphLayout,
-} from "./documentPagination.js";
+} from "./tablePagination.js";
 
 export interface ProjectBlocksLayoutContext {
   blocks: EditorBlockNode[];

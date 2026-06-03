@@ -1,3 +1,3 @@
 export {
   estimateTableBlockHeight,
-} from "./documentPagination.js";
+} from "./tablePagination.js";

@@ -18,15 +18,7 @@ import {
 } from "./toolbarStyleState.js";
 import {
   getSelectedImageRun,
-  insertPageBreakAtSelection,
-  insertTextAtSelection,
   setSelection,
-  splitBlockAtSelection,
-  setParagraphStyle,
-  setTableCellBorders,
-  setTableCellStyleValue,
-  setTableCellWidth,
-  setTableStyleValue,
 } from "../core/editorCommands.js";
 import {
   createEditorStateFromDocument,
@@ -34,17 +26,14 @@ import {
 import { Editor } from "../core/Editor.js";
 import {
   getDocumentParagraphs,
-  getParagraphById,
-  getParagraphText,
   findParagraphTableLocation,
   getActiveSectionIndex,
+  getParagraphById,
   paragraphOffsetToPosition,
   type EditorDocument,
   type EditorLayoutParagraph,
-  type EditorParagraphNode,
   type EditorPosition,
   type EditorState,
-  type EditorBorderStyle,
 } from "../core/model.js";
 import { isSelectionCollapsed, normalizeSelection } from "../core/selection.js";
 
@@ -64,7 +53,6 @@ import {
   cloneEditorState,
 } from "../core/cloneState.js";
 import { Toolbar } from "./components/Toolbar/Toolbar.js";
-import type { ToolbarHost } from "./components/Toolbar/state/createToolbarApi.js";
 import type { ToolbarRegistry } from "./components/Toolbar/registry/ToolbarRegistry.js";
 import { DocumentShell } from "./shells/DocumentShell.js";
 import { InlineShell } from "./shells/InlineShell.js";
@@ -112,9 +100,9 @@ import { createCanvasSurfaceHitResolver } from "./app/useCanvasSurfaceHitResolve
 import { useEditorRuntimePlugins } from "./app/useEditorRuntimePlugins.js";
 import { createFontDialogBridge } from "./app/useFontDialogBridge.js";
 import { createEditorContextMenuClipboard } from "./app/useEditorContextMenuClipboard.js";
-import { createEssentialsPlugin } from "../plugins/internal/createEssentialsPlugin.js";
-import { commandRefName, resolveCommandRef, type CommandRef } from "../core/commands/CommandRef.js";
 import type { OasisPlugin } from "../core/plugin.js";
+import { createEditorEssentialsRuntimePlugin } from "./app/createEditorEssentialsPlugin.js";
+import { createRuntimeCommandHost } from "./app/createRuntimeCommandHost.js";
 
 export interface OasisEditorLoadingOptions {
   label?: string;
@@ -545,287 +533,40 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       setImageAltDialog({ isOpen: true, initialAlt }),
   });
 
-  const essentialsPlugin = createEssentialsPlugin({
-        isCommandEnabled: (commandName) =>
-          !isReadOnly() &&
-          (commandName !== "insertFootnote" || commandsController.canInsertFootnoteCommand()),
-        styleState: () => styleController.toolbarStyleState(),
-        documentStyles: () =>
-          Object.values(state.document?.styles ?? {}).map((style) => ({
-            id: style.id,
-            name: style.name,
-            fontFamily: style.textStyle?.fontFamily?.trim() || undefined,
-            fontSize:
-              typeof style.textStyle?.fontSize === "number" ? style.textStyle.fontSize : undefined,
-          })),
-        canUndo: () => undoStack().length > 0,
-        canRedo: () => redoStack().length > 0,
-        selectAll: () => {
-          const paragraphs = getDocumentParagraphs(state.document);
-          if (paragraphs.length === 0) return false;
-          const firstParagraph = paragraphs[0]!;
-          const lastParagraph = paragraphs[paragraphs.length - 1]!;
-          clearPreferredColumn();
-          applyState(
-            setSelection(state, {
-              anchor: paragraphOffsetToPosition(firstParagraph, 0),
-              focus: paragraphOffsetToPosition(lastParagraph, getParagraphText(lastParagraph).length),
-            }),
-          );
-          focusInput();
-          return true;
-        },
-        insertFootnote: () => (commandsController.applyInsertFootnoteCommand(), true),
-        pastePlainText: () => {
-          forcePlainTextPaste = true;
-          focusInput();
-          return true;
-        },
-        bold: () => (keyboardCommandsController.applyBooleanStyleCommand("bold"), true),
-        italic: () => (keyboardCommandsController.applyBooleanStyleCommand("italic"), true),
-        underline: () => (keyboardCommandsController.applyBooleanStyleCommand("underline"), true),
-        strike: () => (keyboardCommandsController.applyBooleanStyleCommand("strike"), true),
-        superscript: () => (keyboardCommandsController.applyBooleanStyleCommand("superscript"), true),
-        subscript: () => (keyboardCommandsController.applyBooleanStyleCommand("subscript"), true),
-        link: () => (commandsController.promptForLink(), true),
-        alignLeft: () => (commandsController.applyParagraphStyleCommand("align", "left"), true),
-        alignCenter: () => (commandsController.applyParagraphStyleCommand("align", "center"), true),
-        alignRight: () => (commandsController.applyParagraphStyleCommand("align", "right"), true),
-        alignJustify: () => (commandsController.applyParagraphStyleCommand("align", "justify"), true),
-        orderedList: () => (commandsController.applyParagraphListCommand("ordered"), true),
-        bulletList: () => (commandsController.applyParagraphListCommand("bullet"), true),
-        find: () => (fr.setIsOpen(true), true),
-        replace: () => (fr.setIsOpen(true), true),
-        toggleTrackChanges: () => (commandsController.applyToggleTrackChangesCommand(), true),
-        acceptRevisions: () => (commandsController.applyAcceptRevisionsCommand(), true),
-        rejectRevisions: () => (commandsController.applyRejectRevisionsCommand(), true),
-        toggleShowMargins: () => (commandsController.applyToggleShowMarginsCommand(), true),
-        toggleShowParagraphMarks: () => (commandsController.applyToggleShowParagraphMarksCommand(), true),
-        undo: () => (historyActions.performUndo(), true),
-        redo: () => (historyActions.performRedo(), true),
-        pageBreak: () => {
-          clearPreferredColumn();
-          resetTransactionGrouping();
-          applyTransactionalState((current) =>
-            tableOps.applyTableAwareParagraphEdit(current, (temp) => insertPageBreakAtSelection(temp)),
-          );
-          focusInput();
-          return true;
-        },
-        lineBreak: () => {
-          clearPreferredColumn();
-          resetTransactionGrouping();
-          applyTransactionalState((current) =>
-            tableOps.applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, "\n")),
-          );
-          focusInput();
-          return true;
-        },
-        splitBlock: () => {
-          if (commandsController.handleListEnter()) return true;
-          clearPreferredColumn();
-          resetTransactionGrouping();
-          applyTransactionalState((current) =>
-            tableOps.applyTableAwareParagraphEdit(current, (temp) => splitBlockAtSelection(temp)),
-          );
-          focusInput();
-          return true;
-        },
-        setFontFamily: (value) => (
-          styleController.applyToolbarValueStyleCommand("fontFamily", value), true
-        ),
-        setFontSize: (value) => (
-          styleController.applyToolbarValueStyleCommand("fontSize", value), true
-        ),
-        setColor: (value) => (
-          styleController.applyToolbarValueStyleCommand("color", value), true
-        ),
-        setHighlight: (value) => (
-          styleController.applyToolbarValueStyleCommand("highlight", value), true
-        ),
-        setStyleId: (value) => (commandsController.handleStyleChange(value), true),
-        io: {
-          exportDocx: () => void docIO.handleExportDocx(),
-          exportPdf: () => void docIO.handleExportPdf(),
-          importDocx: () => importInputRef()?.click(),
-          insertImage: () => imageInputRef()?.click(),
-        },
-        linkOps: {
-          prompt: () => commandsController.promptForLink(),
-          remove: () => commandsController.removeLinkCommand(),
-          canPrompt: () =>
-            !isSelectionCollapsed(state.selection) ||
-            Boolean(styleController.toolbarStyleState().link),
-        },
-        imageAlt: {
-          prompt: () => commandsController.promptForImageAlt(),
-          isSelected: () => Boolean(selectedImageRun()),
-        },
-        browserActions: {
-          print: () => window.print(),
-          copy: () => {
-            document.execCommand("copy");
-          },
-        },
-        paragraph: {
-          togglePageBreakBefore: () =>
-            commandsController.toggleParagraphFlagCommand("pageBreakBefore"),
-          toggleKeepWithNext: () =>
-            commandsController.toggleParagraphFlagCommand("keepWithNext"),
-          setSpacingAfter: (v) => commandsController.applyParagraphStyleCommand("spacingAfter", v),
-          setSpacingBefore: (v) => commandsController.applyParagraphStyleCommand("spacingBefore", v),
-          setIndentLeft: (v) => commandsController.applyParagraphStyleCommand("indentLeft", v),
-          setIndentFirstLine: (v) =>
-            commandsController.applyParagraphStyleCommand("indentFirstLine", v),
-          setIndentHanging: (v) =>
-            commandsController.applyParagraphStyleCommand("indentHanging", v),
-          setShading: (v) => commandsController.applyParagraphStyleCommand("shading", v),
-          applyBorders: () => {
-            const border: EditorBorderStyle = { width: 1, type: "solid", color: "#000000" };
-            applyTransactionalState(
-              (current) => {
-                let next = setParagraphStyle(current, "borderTop", border);
-                next = setParagraphStyle(next, "borderRight", border);
-                next = setParagraphStyle(next, "borderBottom", border);
-                next = setParagraphStyle(next, "borderLeft", border);
-                return next;
-              },
-              { mergeKey: "paraBorders" },
-            );
-            focusInput();
-          },
-          setLineHeight: (v) => commandsController.applyParagraphStyleCommand("lineHeight", v),
-          setListFormat: (format) =>
-            commandsController.handleListFormatChange(
-              format as Parameters<typeof commandsController.handleListFormatChange>[0],
-            ),
-          setListStartAt: (n) => commandsController.handleListStartAtChange(n),
-          outdent: () => void commandsController.handleListTab("outdent"),
-          indent: () => void commandsController.handleListTab("indent"),
-        },
-        setUnderlineStyle: (v) =>
-          (
-            styleController.applyToolbarValueStyleCommand as (
-              key: "underlineStyle",
-              value: string | null,
-            ) => void
-          )("underlineStyle", v),
-        section: {
-          isLandscape: () => {
-            const idx = getActiveSectionIndex(state);
-            const section = state.document.sections?.[idx] ?? state.document;
-            return section?.pageSettings?.orientation === "landscape";
-          },
-          toggleOrientation: () => {
-            const idx = getActiveSectionIndex(state);
-            const section = state.document.sections?.[idx] ?? state.document;
-            if (!section) return;
-            const current = section.pageSettings?.orientation ?? "portrait";
-            commandsController.applyUpdateSectionSettingsCommand(idx, {
-              pageSettings: {
-                ...section.pageSettings!,
-                orientation: current === "portrait" ? "landscape" : "portrait",
-              },
-            });
-          },
-          breakNextPage: () => commandsController.applyInsertSectionBreakCommand("nextPage"),
-          breakContinuous: () => commandsController.applyInsertSectionBreakCommand("continuous"),
-        },
-        table: (() => {
-          const insideTable = () =>
-            Boolean(
-              findParagraphTableLocation(
-                state.document,
-                state.selection.focus.paragraphId,
-                getActiveSectionIndex(state),
-              ),
-            );
-          const apply = (
-            producer: (current: EditorState) => EditorState,
-            mergeKey: string,
-          ) => {
-            applyTransactionalState(producer, { mergeKey });
-            focusInput();
-          };
-          const selectionLabel = (): string | null => {
-            const normalized = normalizeSelection(state);
-            if (normalized.isCollapsed) return null;
-            const secIdx = getActiveSectionIndex(state);
-            const anchorLoc = findParagraphTableLocation(
-              state.document,
-              state.selection.anchor.paragraphId,
-              secIdx,
-            );
-            const focusLoc = findParagraphTableLocation(
-              state.document,
-              state.selection.focus.paragraphId,
-              secIdx,
-            );
-            if (
-              !anchorLoc ||
-              !focusLoc ||
-              anchorLoc.blockIndex !== focusLoc.blockIndex ||
-              (anchorLoc.rowIndex === focusLoc.rowIndex &&
-                anchorLoc.cellIndex === focusLoc.cellIndex)
-            ) {
-              return null;
-            }
-            const count = selectionBoxes().length;
-            if (count === 0) return null;
-            return `Table selection: ${count} cell${count === 1 ? "" : "s"}`;
-          };
-          return {
-            insideTable,
-            selectionLabel,
-            canMerge: () => tableOps.canMergeSelectedTable(state),
-            canSplit: () => tableOps.canSplitSelectedTable(state),
-            canEditColumn: () => tableOps.canEditSelectedTableColumn(state),
-            canEditRow: () => tableOps.canEditSelectedTableRow(state),
-            merge: () => apply((c) => tableOps.mergeSelectedTable(c), "mergeTable"),
-            split: () => apply((c) => tableOps.splitSelectedTable(c), "splitTable"),
-            insertColumnBefore: () =>
-              apply((c) => tableOps.insertSelectedTableColumn(c, -1), "insertTableColumn"),
-            insertColumnAfter: () =>
-              apply((c) => tableOps.insertSelectedTableColumn(c, 1), "insertTableColumn"),
-            deleteColumn: () =>
-              apply((c) => tableOps.deleteSelectedTableColumn(c), "deleteTableColumn"),
-            insertRowBefore: () =>
-              apply((c) => tableOps.insertSelectedTableRow(c, -1), "insertTableRow"),
-            insertRowAfter: () =>
-              apply((c) => tableOps.insertSelectedTableRow(c, 1), "insertTableRow"),
-            deleteRow: () => apply((c) => tableOps.deleteSelectedTableRow(c), "deleteTableRow"),
-            cellShading: (color: string | null) =>
-              apply((c) => setTableCellStyleValue(c, "shading", color || null), "tableShading"),
-            cellBorders: () =>
-              apply(
-                (c) => setTableCellBorders(c, { width: 1, type: "solid", color: "#64748b" }),
-                "tableBorders",
-              ),
-            cellNoBorders: () =>
-              apply(
-                (c) => setTableCellBorders(c, { width: 0, type: "none", color: "transparent" }),
-                "tableBorders",
-              ),
-            width100: () => apply((c) => setTableStyleValue(c, "width", "100%"), "tableWidth"),
-            alignLeft: () =>
-              apply((c) => setTableCellStyleValue(c, "horizontalAlign", "left"), "tableAlign"),
-            alignCenter: () =>
-              apply((c) => setTableCellStyleValue(c, "horizontalAlign", "center"), "tableAlign"),
-            alignRight: () =>
-              apply((c) => setTableCellStyleValue(c, "horizontalAlign", "right"), "tableAlign"),
-            setCellWidth: (width: string) =>
-              apply((c) => setTableCellWidth(c, width), "tableCellWidth"),
-            insert: (rows: number, cols: number) => tableOps.insertTableCommand(rows, cols),
-          };
-        })(),
-      });
+  const keyboardCommandsController = {
+    ...commandsController,
+    applyBooleanStyleCommand: (style: BooleanStyleKey) =>
+      styleController.applyToolbarBooleanStyleCommand(style),
+  };
 
-  const [runtimeReady, setRuntimeReady] = createSignal(false);
-  const initialRuntimeEditor = new Editor({
-    doc: getStateSnapshot().document,
-    plugins: [],
+  const essentialsPlugin = createEditorEssentialsRuntimePlugin({
+    state: () => state,
+    isReadOnly,
+    forcePlainTextPaste: {
+      get: () => forcePlainTextPaste,
+      set: (value) => {
+        forcePlainTextPaste = value;
+      },
+    },
+    undoStack,
+    redoStack,
+    commandsController,
+    keyboardCommandsController,
+    historyActions,
+    styleController,
+    tableOps,
+    docIO,
+    importInputRef,
+    imageInputRef,
+    selectedImageRun,
+    selectionBoxes,
+    focusInput,
+    applyState,
+    applyTransactionalState,
+    findReplace: {
+      setIsOpen: fr.setIsOpen,
+    },
   });
-  const [runtimeEditor, setRuntimeEditor] = createSignal(initialRuntimeEditor);
 
   const { runtimePlugins, toolbarRegistry, dispose: disposeRuntimePlugins } = useEditorRuntimePlugins({
     essentialsPlugin,
@@ -833,41 +574,20 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     customizeToolbar: runtimeOptions().customizeToolbar,
   });
 
-  const commandStateOf = (commandRef: CommandRef) => {
-    const commandName = commandRefName(commandRef);
-    const cmd = runtimeEditor().commands.get(commandName);
-    if (!cmd) {
-      return { isEnabled: false, isActive: false, value: undefined };
-    }
-    const refreshed = cmd.refresh?.() ?? { isEnabled: true };
-    return {
-      isEnabled: refreshed.isEnabled !== false,
-      isActive: Boolean(refreshed.isActive),
-      value: refreshed.value,
-    };
-  };
-
-  /** Narrow host the data-driven toolbar consumes — purely the command registry. */
-  const toolbarHost = (): ToolbarHost => ({
-    commands: {
-      execute: (command, payload) => {
-        const resolved = resolveCommandRef(command, payload);
-        return runtimeEditor().execute(resolved.name, resolved.payload);
-      },
-      canExecute: (command, payload) => {
-        const resolved = resolveCommandRef(command, payload);
-        return runtimeEditor().canExecute(resolved.name, resolved.payload);
-      },
-      state: commandStateOf,
-    },
+  const runtimeCommandHost = createRuntimeCommandHost({
+    initialDocument: getStateSnapshot().document,
+    runtimePlugins,
     focusEditor: focusInput,
+    logger,
+    onReady: runtimeOptions().onReady,
+    onSettled: () => {
+      setInitialLoading(false);
+    },
   });
-
-  const keyboardCommandsController = {
-    ...commandsController,
-    applyBooleanStyleCommand: (style: BooleanStyleKey) =>
-      styleController.applyToolbarBooleanStyleCommand(style),
-  };
+  const runtimeReady = runtimeCommandHost.runtimeReady;
+  const runtimeEditor = runtimeCommandHost.runtimeEditor;
+  const commandStateOf = runtimeCommandHost.commandStateOf;
+  const toolbarHost = runtimeCommandHost.toolbarHost;
 
   const { handleKeyDown: rawHandleKeyDown } = createEditorKeyboardController({
     state: () => state,
@@ -1161,43 +881,16 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const handleEditorContextMenu = contextMenuClipboard.handleEditorContextMenu;
   const closeContextMenu = contextMenuClipboard.closeContextMenu;
 
-  let runtimeDisposed = false;
-
   onMount(() => {
     startIconObserver();
     startLongTaskObserver();
     installGlobalReport();
     registerDomStatsSurface(() => surfaceRef() ?? null);
-    void (async () => {
-      try {
-        const initializedRuntimeEditor = await Editor.create({
-          doc: getStateSnapshot().document,
-          plugins: runtimePlugins,
-        });
-        if (runtimeDisposed) {
-          await initializedRuntimeEditor.destroy();
-          return;
-        }
-
-        const previousRuntimeEditor = runtimeEditor();
-        setRuntimeEditor(initializedRuntimeEditor);
-        await previousRuntimeEditor.destroy();
-        setRuntimeReady(true);
-
-        requestAnimationFrame(() => {
-          setInitialLoading(false);
-          runtimeOptions().onReady?.();
-        });
-      } catch (error) {
-        logger.error("runtime:init failed", error);
-        setInitialLoading(false);
-      }
-    })();
+    void runtimeCommandHost.initialize();
   });
 
   onCleanup(() => {
-    runtimeDisposed = true;
-    void runtimeEditor().destroy();
+    void runtimeCommandHost.dispose();
     disposeRuntimePlugins();
     onCleanupHook();
     surfaceEventsWithTextDrag.stopDragging();

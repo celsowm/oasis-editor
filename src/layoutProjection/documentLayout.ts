@@ -14,7 +14,7 @@ import {
   reservationSignature,
 } from "./footnotePagination.js";
 import { projectBlocksLayout } from "./blocksPagination.js";
-import { projectHeaderFooterBlocks } from "./documentPagination.js";
+import { projectHeaderFooterBlocks } from "./headerFooterFootnotes.js";
 import { projectDocumentSections } from "./sectionPagination.js";
 
 function blockContainsNumPagesField(block: EditorBlockNode): boolean {

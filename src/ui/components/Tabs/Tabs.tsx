@@ -40,10 +40,11 @@ function findEnabledItem(
 
 export function Tabs(props: TabsProps) {
   const baseId = createUniqueId();
+  const items = createMemo(() => props.items);
   const firstEnabledId = createMemo(
     () =>
-      props.items.find((item) => !item.disabled)?.id ??
-      props.items[0]?.id ??
+      items().find((item) => !item.disabled)?.id ??
+      items()[0]?.id ??
       "",
   );
   const [internalValue, setInternalValue] = createSignal(
@@ -54,8 +55,8 @@ export function Tabs(props: TabsProps) {
   );
   const selectedItem = createMemo(
     () =>
-      props.items.find((item) => item.id === selectedId() && !item.disabled) ??
-      props.items.find((item) => !item.disabled),
+      items().find((item) => item.id === selectedId() && !item.disabled) ??
+      items().find((item) => !item.disabled),
   );
   const rootClass = createMemo(() =>
     ["oasis-editor-tabs", props.class].filter(Boolean).join(" "),
@@ -71,7 +72,7 @@ export function Tabs(props: TabsProps) {
     if (focus) {
       queueMicrotask(() =>
         tabRefs[
-          props.items.findIndex((candidate) => candidate.id === item.id)
+          items().findIndex((candidate) => candidate.id === item.id)
         ]?.focus(),
       );
     }
@@ -89,18 +90,18 @@ export function Tabs(props: TabsProps) {
     event.preventDefault();
     const currentIndex = Math.max(
       0,
-      props.items.findIndex((item) => item.id === selectedItem()?.id),
+      items().findIndex((item) => item.id === selectedItem()?.id),
     );
     if (event.key === "Home")
-      return selectItem(findEnabledItem(props.items, 0, 1), true);
+      return selectItem(findEnabledItem(items(), 0, 1), true);
     if (event.key === "End")
       return selectItem(
-        findEnabledItem(props.items, props.items.length - 1, -1),
+        findEnabledItem(items(), items().length - 1, -1),
         true,
       );
     const direction = event.key === "ArrowRight" ? 1 : -1;
     selectItem(
-      findEnabledItem(props.items, currentIndex + direction, direction),
+      findEnabledItem(items(), currentIndex + direction, direction),
       true,
     );
   };
@@ -113,7 +114,7 @@ export function Tabs(props: TabsProps) {
         aria-label={props.ariaLabel}
         onKeyDown={handleKeyDown}
       >
-        <For each={props.items}>
+        <For each={items()}>
           {(item, index) => {
             const tabId = `${baseId}-${item.id}-tab`;
             const panelId = `${baseId}-${item.id}-panel`;
@@ -143,7 +144,7 @@ export function Tabs(props: TabsProps) {
           }}
         </For>
       </div>
-      <For each={props.items}>
+      <For each={items()}>
         {(item) => (
           <div
             id={`${baseId}-${item.id}-panel`}

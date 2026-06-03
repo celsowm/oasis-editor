@@ -2,4 +2,4 @@ export {
   measureParagraphLayoutFromRects,
   projectParagraphLayout,
   resolveClosestOffsetInMeasuredLayout,
-} from "./documentPagination.js";
+} from "./paragraphPagination.js";

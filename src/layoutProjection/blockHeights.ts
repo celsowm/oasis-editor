@@ -1,3 +1,3 @@
 export {
   estimateParagraphBlockHeight,
-} from "./documentPagination.js";
+} from "./paragraphPagination.js";
