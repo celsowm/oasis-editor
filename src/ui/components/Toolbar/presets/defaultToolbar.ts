@@ -1,4 +1,5 @@
 import { t } from "../../../../i18n/index.js";
+import { STANDARD_FONT_SIZES_PT, fontSizePxToPt } from "../../../fontSizeUnits.js";
 import type {
   SelectOption,
   ToolbarActionApi,
@@ -39,10 +40,14 @@ const fontFamilyOptions = (api: ToolbarActionApi): SelectOption[] => {
 };
 
 const fontSizeOptions = (api: ToolbarActionApi): SelectOption[] => {
-  const values = new Set<number>([12, 14, 15, 16, 18, 20, 24, 28, 32]);
+  // Sizes are presented in points; document styles store pixels.
+  const values = new Set<number>(STANDARD_FONT_SIZES_PT);
   for (const s of documentStyles(api)) {
-    if (typeof s.fontSize === "number" && Number.isFinite(s.fontSize)) values.add(s.fontSize);
+    if (typeof s.fontSize === "number" && Number.isFinite(s.fontSize)) {
+      values.add(fontSizePxToPt(s.fontSize));
+    }
   }
+  // The command state already reports the current size in points.
   const current = Number(api.commands.state("setFontSize").value);
   if (Number.isFinite(current) && current > 0) values.add(current);
   return Array.from(values)

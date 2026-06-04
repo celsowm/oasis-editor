@@ -7,7 +7,7 @@ import type {
 } from "../core/model.js";
 import { resolveEffectiveParagraphStyle, resolveEffectiveTextStyleForParagraph } from "../core/model.js";
 
-const DEFAULT_FONT_SIZE = 15;
+const DEFAULT_FONT_SIZE = 14.6667; // 11pt
 const DEFAULT_LINE_HEIGHT = 1.15;
 const DEFAULT_CONTENT_WIDTH = 624;
 const DEFAULT_LIST_GUTTER = 24;

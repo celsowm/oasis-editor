@@ -1,5 +1,6 @@
 import { createSignal } from "solid-js";
 import type { FontDialogInitialValues } from "../components/Dialogs/FontDialog.js";
+import type { ParagraphDialogInitialValues } from "../components/Dialogs/ParagraphDialog.js";
 
 export function createEditorDialogs() {
   const [linkDialog, setLinkDialog] = createSignal<{
@@ -55,6 +56,22 @@ export function createEditorDialogs() {
       contextualAlternates: false,
     },
   });
+  const [paragraphDialog, setParagraphDialog] = createSignal<{
+    isOpen: boolean;
+    initial: ParagraphDialogInitialValues;
+  }>({
+    isOpen: false,
+    initial: {
+      align: "",
+      indentLeft: "",
+      indentRight: "",
+      indentFirstLine: "",
+      indentHanging: "",
+      spacingBefore: "",
+      spacingAfter: "",
+      lineHeight: "",
+    },
+  });
 
   return {
     linkDialog,
@@ -65,5 +82,7 @@ export function createEditorDialogs() {
     setContextMenu,
     fontDialog,
     setFontDialog,
+    paragraphDialog,
+    setParagraphDialog,
   };
 }

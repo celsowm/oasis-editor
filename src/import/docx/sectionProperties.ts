@@ -161,7 +161,7 @@ export function getParagraphMaxFontSize(
       styles,
     );
     return Math.max(maxFontSize, runTextStyle.fontSize ?? maxFontSize);
-  }, paragraphTextStyle.fontSize ?? 15);
+  }, paragraphTextStyle.fontSize ?? 14.6667);
 }
 
 export function applyDocGridLinePitch(

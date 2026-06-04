@@ -16,7 +16,7 @@ import type { ITextMeasurer } from "../core/engine.js";
 import { domTextMeasurer, resolveRenderedLineHeightPx } from "../ui/textMeasurement.js";
 import { perfTimer } from "../utils/performanceMetrics.js";
 
-const DEFAULT_FONT_SIZE = 15;
+const DEFAULT_FONT_SIZE = 14.6667; // 11pt
 const DEFAULT_LINE_HEIGHT = 1.15;
 const FAST_IMPLICIT_DOC_GRID_RATIO = 0.86;
 

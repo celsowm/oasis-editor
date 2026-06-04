@@ -9,6 +9,7 @@ import type {
   FontDialogInitialValues,
 } from "../components/Dialogs/FontDialog.js";
 import type { ToolbarStyleState } from "../toolbarStyleState.js";
+import { formatFontSizePt, parseFontSizePtToPx } from "../fontSizeUnits.js";
 
 interface FontDialogState {
   isOpen: boolean;
@@ -34,7 +35,7 @@ export interface FontDialogBridgeDeps {
 function createInitialValues(styleState: ToolbarStyleState): FontDialogInitialValues {
   return {
     fontFamily: styleState.fontFamily ?? "",
-    fontSize: styleState.fontSize ?? "",
+    fontSize: formatFontSizePt(styleState.fontSize),
     color: styleState.color ?? "",
     colorMode: styleState.color ? "custom" : "automatic",
     highlight: styleState.highlight ?? "",
@@ -93,7 +94,8 @@ export function createFontDialogBridge(deps: FontDialogBridgeDeps) {
         next = setTextStyleValue(next, "fontFamily", values.fontFamily);
       }
       if (values.fontSize !== (original.fontSize ? Number(original.fontSize) : null)) {
-        next = setTextStyleValue(next, "fontSize", values.fontSize);
+        // Dialog values are in points; the model stores pixels.
+        next = setTextStyleValue(next, "fontSize", parseFontSizePtToPx(values.fontSize));
       }
       const originalColor = original.colorMode === "automatic" ? null : original.color || null;
       if (values.color !== originalColor) {

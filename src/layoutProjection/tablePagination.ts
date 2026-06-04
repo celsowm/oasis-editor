@@ -5,7 +5,7 @@ import { resolveTableColumnWidthsPx } from "../ui/tableGeometry.js";
 import { buildTableCellLayout } from "../core/tableLayout.js";
 import { estimateParagraphBlockHeight } from "./paragraphPagination.js";
 
-const DEFAULT_FONT_SIZE = 15;
+const DEFAULT_FONT_SIZE = 14.6667; // 11pt
 const DEFAULT_LINE_HEIGHT = 1.15;
 const POINT_TO_PX = 96 / 72;
 const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 14.4;

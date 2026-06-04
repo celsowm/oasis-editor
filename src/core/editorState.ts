@@ -194,7 +194,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
     },
     textStyle: {
       fontFamily: "Calibri, sans-serif",
-      fontSize: 15,
+      fontSize: 14.6667, // 11pt
     },
   },
   header: {

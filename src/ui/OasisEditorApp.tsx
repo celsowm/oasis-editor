@@ -56,6 +56,7 @@ import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
 import { createCanvasSurfaceHitResolver } from "./app/useCanvasSurfaceHitResolver.js";
 import { createFontDialogBridge } from "./app/useFontDialogBridge.js";
+import { createParagraphDialogBridge } from "./app/useParagraphDialogBridge.js";
 import { createEditorContextMenuClipboard } from "./app/useEditorContextMenuClipboard.js";
 import { useEditorRuntimeBootstrap } from "./app/useEditorRuntimeBootstrap.js";
 import { createEditorUiOptions } from "./app/useEditorUiOptions.js";
@@ -127,6 +128,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setContextMenu,
     fontDialog,
     setFontDialog,
+    paragraphDialog,
+    setParagraphDialog,
   } = createEditorDialogs();
 
   const viewportRef = () => focusController.viewportRef;
@@ -521,6 +524,19 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const openFontDialog = fontDialogBridge.openFontDialog;
   const applyFontDialogValues = fontDialogBridge.applyFontDialogValues;
 
+  const paragraphDialogBridge = createParagraphDialogBridge({
+    toolbarStyleState: styleController.toolbarStyleState,
+    isReadOnly,
+    setParagraphDialog,
+    setContextMenu,
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    applyTransactionalState,
+    focusInput,
+  });
+  const openParagraphDialog = paragraphDialogBridge.openParagraphDialog;
+  const applyParagraphDialogValues = paragraphDialogBridge.applyParagraphDialogValues;
+
   const contextMenuClipboard = createEditorContextMenuClipboard({
     state: () => state,
     isReadOnly,
@@ -533,6 +549,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     focusInput,
     promptForLink: commandsController.promptForLink,
     openFontDialog,
+    openParagraphDialog,
   });
   const buildContextMenuItems = contextMenuClipboard.buildContextMenuItems;
   const handleEditorContextMenu = contextMenuClipboard.handleEditorContextMenu;
@@ -617,6 +634,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           setContextMenu,
           fontDialog,
           setFontDialog,
+          paragraphDialog,
+          setParagraphDialog,
         }}
         findReplace={fr}
         fontFamilyOptions={computeFontFamilyOptions}
@@ -626,6 +645,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         applyLinkCommand={commandsController.applyLinkCommand}
         applyImageAltCommand={commandsController.applyImageAltCommand}
         applyFontDialogValues={applyFontDialogValues}
+        applyParagraphDialogValues={applyParagraphDialogValues}
         closeContextMenu={closeContextMenu}
       />
 

@@ -96,6 +96,7 @@ export interface ToolbarStyleState {
   spacingBefore: string;
   spacingAfter: string;
   indentLeft: string;
+  indentRight: string;
   indentFirstLine: string;
   indentHanging: string;
   shading: string;
@@ -307,6 +308,7 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     spacingBefore: resolveUniformParagraphStyleValue(paragraphStyles, "spacingBefore"),
     spacingAfter: resolveUniformParagraphStyleValue(paragraphStyles, "spacingAfter"),
     indentLeft: resolveUniformParagraphStyleValue(paragraphStyles, "indentLeft"),
+    indentRight: resolveUniformParagraphStyleValue(paragraphStyles, "indentRight"),
     indentFirstLine: resolveUniformParagraphStyleValue(paragraphStyles, "indentFirstLine"),
     indentHanging: resolveUniformParagraphStyleValue(paragraphStyles, "indentHanging"),
     shading: resolveUniformParagraphStyleValue(paragraphStyles, "shading"),

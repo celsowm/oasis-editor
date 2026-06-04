@@ -411,7 +411,7 @@ const DEFAULT_TEXT_STYLE: Required<EditorTextStyle> = {
   stylisticSet: null as unknown as number | null,
   contextualAlternates: false,
   fontFamily: "Calibri, sans-serif",
-  fontSize: 15,
+  fontSize: 14.6667, // 11pt
   color: "#000000",
   highlight: null as unknown as string | null,
   link: null as unknown as string | null,

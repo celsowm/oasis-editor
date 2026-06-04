@@ -36,6 +36,7 @@ export interface EditorContextMenuClipboardDeps {
   focusInput: () => void;
   promptForLink: () => void;
   openFontDialog: () => void;
+  openParagraphDialog: () => void;
 }
 
 export function createEditorContextMenuClipboard(
@@ -187,6 +188,14 @@ export function createEditorContextMenuClipboard(
         disabled: readOnly || !hasSelection,
         testId: "editor-context-menu-font",
         onSelect: deps.openFontDialog,
+      },
+      {
+        id: "paragraph",
+        label: t("contextmenu.paragraph"),
+        icon: "pilcrow",
+        disabled: readOnly,
+        testId: "editor-context-menu-paragraph",
+        onSelect: deps.openParagraphDialog,
       },
     ];
   };

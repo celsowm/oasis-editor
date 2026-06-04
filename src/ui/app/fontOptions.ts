@@ -1,5 +1,6 @@
 import type { EditorDocument } from "../../core/model.js";
 import type { ToolbarStyleState } from "../toolbarStyleState.js";
+import { STANDARD_FONT_SIZES_PT, fontSizePxToPt } from "../fontSizeUnits.js";
 
 const COMMON_FONT_FAMILIES = [
   "Aptos, sans-serif",
@@ -76,12 +77,15 @@ export function computeFontSizeOptions(
   document: EditorDocument | undefined,
   toolbarStyleState: Pick<ToolbarStyleState, "fontSize">,
 ): number[] {
-  const values = new Set<number>([8, 9, 10, 11, 12, 14, 15, 16, 18, 20, 24, 28, 32, 36, 48, 72]);
+  // Sizes are presented in points; the model stores pixels.
+  const values = new Set<number>(STANDARD_FONT_SIZES_PT);
   for (const style of Object.values(document?.styles ?? {})) {
     const fontSize = style.textStyle?.fontSize;
-    if (typeof fontSize === "number" && Number.isFinite(fontSize)) values.add(fontSize);
+    if (typeof fontSize === "number" && Number.isFinite(fontSize)) {
+      values.add(fontSizePxToPt(fontSize));
+    }
   }
-  const current = Number(toolbarStyleState.fontSize);
+  const current = fontSizePxToPt(Number(toolbarStyleState.fontSize));
   if (Number.isFinite(current) && current > 0) values.add(current);
   return Array.from(values).sort((a, b) => a - b);
 }

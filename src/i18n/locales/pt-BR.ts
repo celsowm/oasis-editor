@@ -89,6 +89,29 @@ export const ptBR = {
   "lineSpacing.preview": "Pré-visualização",
   "lineSpacing.previewText": "O espaçamento de linha define a distância vertical entre as linhas de texto dentro de um parágrafo.",
 
+  // Paragraph dialog
+  "paragraph.title": "Parágrafo",
+  "paragraph.generalSection": "Geral",
+  "paragraph.alignLabel": "Alinhamento",
+  "paragraph.alignLeft": "Esquerda",
+  "paragraph.alignCenter": "Centralizado",
+  "paragraph.alignRight": "Direita",
+  "paragraph.alignJustify": "Justificado",
+  "paragraph.indentSection": "Recuo",
+  "paragraph.indentLeftLabel": "Esquerda (pt)",
+  "paragraph.indentRightLabel": "Direita (pt)",
+  "paragraph.specialLabel": "Especial",
+  "paragraph.specialNone": "(nenhum)",
+  "paragraph.specialFirstLine": "Primeira linha",
+  "paragraph.specialHanging": "Deslocamento",
+  "paragraph.specialByLabel": "Por (pt)",
+  "paragraph.spacingSection": "Espaçamento",
+  "paragraph.spacingBeforeLabel": "Antes (pt)",
+  "paragraph.spacingAfterLabel": "Depois (pt)",
+  "paragraph.lineSpacingLabel": "Espaçamento entre linhas",
+  "paragraph.preview": "Pré-visualização",
+  "paragraph.previewText": "Texto de Exemplo Texto de Exemplo Texto de Exemplo Texto de Exemplo Texto de Exemplo Texto de Exemplo.",
+
   // Section
   "section.orient": "Orient",
   "section.pageSetup": "Configurações de Página",
@@ -209,6 +232,7 @@ export const ptBR = {
   "contextmenu.paste": "Colar",
   "contextmenu.link": "Link...",
   "contextmenu.font": "Fonte...",
+  "contextmenu.paragraph": "Parágrafo...",
 
   // Status Bar
   "status.words": "{0} palavras",

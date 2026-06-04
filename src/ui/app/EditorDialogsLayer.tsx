@@ -2,6 +2,7 @@ import type { ComponentProps } from "solid-js";
 import { LinkDialog } from "../components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "../components/Dialogs/ImageAltDialog.js";
 import { FontDialog } from "../components/Dialogs/FontDialog.js";
+import { ParagraphDialog } from "../components/Dialogs/ParagraphDialog.js";
 import { FindReplaceDialog } from "../components/FindReplace/FindReplaceDialog.js";
 import { ContextMenu } from "../components/ContextMenu/ContextMenu.js";
 import type { createEditorDialogs } from "./useEditorDialogs.js";
@@ -18,6 +19,7 @@ export interface EditorDialogsLayerProps {
   applyLinkCommand: (href: string | null) => void;
   applyImageAltCommand: (alt: string) => void;
   applyFontDialogValues: ComponentProps<typeof FontDialog>["onApply"];
+  applyParagraphDialogValues: ComponentProps<typeof ParagraphDialog>["onApply"];
   closeContextMenu: () => void;
 }
 
@@ -35,6 +37,8 @@ export function EditorDialogsLayer(props: EditorDialogsLayerProps) {
     contextMenu,
     fontDialog,
     setFontDialog,
+    paragraphDialog,
+    setParagraphDialog,
   } = props.dialogs;
 
   return (
@@ -71,6 +75,16 @@ export function EditorDialogsLayer(props: EditorDialogsLayerProps) {
           props.focusInput();
         }}
         onApply={props.applyFontDialogValues}
+      />
+
+      <ParagraphDialog
+        isOpen={paragraphDialog().isOpen}
+        initial={paragraphDialog().initial}
+        onClose={() => {
+          setParagraphDialog({ ...paragraphDialog(), isOpen: false });
+          props.focusInput();
+        }}
+        onApply={props.applyParagraphDialogValues}
       />
 
       <ContextMenu

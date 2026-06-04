@@ -89,6 +89,29 @@ export const en = {
   "lineSpacing.preview": "Preview",
   "lineSpacing.previewText": "Line spacing controls the vertical distance between lines of text inside a paragraph.",
 
+  // Paragraph dialog
+  "paragraph.title": "Paragraph",
+  "paragraph.generalSection": "General",
+  "paragraph.alignLabel": "Alignment",
+  "paragraph.alignLeft": "Left",
+  "paragraph.alignCenter": "Centered",
+  "paragraph.alignRight": "Right",
+  "paragraph.alignJustify": "Justified",
+  "paragraph.indentSection": "Indentation",
+  "paragraph.indentLeftLabel": "Left (pt)",
+  "paragraph.indentRightLabel": "Right (pt)",
+  "paragraph.specialLabel": "Special",
+  "paragraph.specialNone": "(none)",
+  "paragraph.specialFirstLine": "First line",
+  "paragraph.specialHanging": "Hanging",
+  "paragraph.specialByLabel": "By (pt)",
+  "paragraph.spacingSection": "Spacing",
+  "paragraph.spacingBeforeLabel": "Before (pt)",
+  "paragraph.spacingAfterLabel": "After (pt)",
+  "paragraph.lineSpacingLabel": "Line spacing",
+  "paragraph.preview": "Preview",
+  "paragraph.previewText": "The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog.",
+
   // Section
   "section.orient": "Orient",
   "section.pageSetup": "Page Setup",
@@ -209,6 +232,7 @@ export const en = {
   "contextmenu.paste": "Paste",
   "contextmenu.link": "Link...",
   "contextmenu.font": "Font...",
+  "contextmenu.paragraph": "Paragraph...",
 
   // Status Bar
   "status.words": "{0} words",

@@ -544,14 +544,14 @@ describe("OasisPdfWriter", () => {
     expectPdfText(pdf, "3.");
     expectPdfText(pdf, "D.");
     expect(pdf).not.toContain(`<${pdfHex("4.")}> Tj`);
-    expect(pdf).toContain("/CarlitoBold 11.25 Tf");
+    expect(pdf).toContain("/CarlitoBold 11 Tf");
     expect(pdf).toContain("/CarlitoItalic 15 Tf");
     expect(pdf).toContain("1 0 0 rg");
     expect(pdf).toContain("1 1 0 rg");
-    expect(pdf).toContain("277.538 658.423 Td");
-    expect(pdf).toContain("462.037 636.6 Td");
-    expect(pdf).toContain("126 608.778 Td");
-    expect(pdf).toContain("90 580.955 Td");
+    expect(pdf).toContain("278.17 659.055 Td");
+    expect(pdf).toContain("463.77 637.584 Td");
+    expect(pdf).toContain("126 610.114 Td");
+    expect(pdf).toContain("90 582.643 Td");
     expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 

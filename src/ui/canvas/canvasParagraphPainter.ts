@@ -66,7 +66,7 @@ export function drawParagraph(
     const listPrefix = line.index === 0 ? resolveListPrefix(paragraph, state.document) : "";
     if (listPrefix) {
       ctx.save();
-      ctx.font = "400 15px Calibri";
+      ctx.font = "400 14.6667px Calibri";
       ctx.fillStyle = "#000000";
       const first = line.slots[0];
       const left = first ? Math.max(0, first.left - 24) : 0;
@@ -82,7 +82,7 @@ export function drawParagraph(
       if (styles.hidden) {
         continue;
       }
-      const fontSize = styles.fontSize ?? 15;
+      const fontSize = styles.fontSize ?? 14.6667;
       const fontFamily = styles.fontFamily ?? "Calibri, sans-serif";
       const fontWeight = styles.bold ? "700" : "400";
       const fontStyle = styles.italic ? "italic" : "normal";

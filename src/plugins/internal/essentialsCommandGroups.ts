@@ -5,6 +5,10 @@ import type {
   ValueCommandBuilder,
 } from "./essentialsCommandBuilders.js";
 import { numOrNull } from "./essentialsCommandBuilders.js";
+import {
+  formatFontSizePt,
+  parseFontSizePtToPx,
+} from "../../ui/fontSizeUnits.js";
 import type {
   EssentialsBrowserCapability,
   EssentialsDocumentCapability,
@@ -127,8 +131,9 @@ export function buildCoreFormattingCommands({
     ),
     setFontSize: valueCommand(
       "setFontSize",
-      (p) => formatting.setFontSize(p != null && p !== "" ? Number(p) : null),
-      () => s().fontSize,
+      // The UI speaks points; the model stores pixels.
+      (p) => formatting.setFontSize(p != null && p !== "" ? parseFontSizePtToPx(p as string) : null),
+      () => formatFontSizePt(s().fontSize),
     ),
     setColor: valueCommand(
       "setColor",
