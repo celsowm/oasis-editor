@@ -4,6 +4,9 @@ import { OasisEditorApp } from "../src/ui/OasisEditorApp.js";
 type RouteId = "editor" | "about" | "api" | "plugins";
 type Language = "pt" | "en";
 
+const brandMarkUrl = "./branding/logo-full.png";
+const brandFullUrl = "./branding/logo-full.png";
+
 function IcoEditor() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -55,13 +58,13 @@ const routes = [
 
 const routeLabels: Record<Language, Record<RouteId, string>> = {
   pt: {
-    editor: "Editor",
+    editor: "Oasis Editor",
     about: "Sobre",
     api: "API amigavel",
     plugins: "Criar plugin",
   },
   en: {
-    editor: "Editor",
+    editor: "Oasis Editor",
     about: "About",
     api: "Friendly API",
     plugins: "Create plugin",
@@ -418,7 +421,7 @@ export function OasisSiteApp() {
       <div class="oasis-site-rail">
         <div class="oasis-site-rail-inner">
           <div class="oasis-site-brand">
-            <span class="oasis-site-brand-mark">OE</span>
+            <img class="oasis-site-brand-mark" src={brandMarkUrl} alt="" />
             <span class="oasis-site-brand-name">{text().product}</span>
           </div>
 
@@ -490,6 +493,7 @@ function EditorPage(props: { language: Language }) {
   return (
     <div class="oasis-site-content oasis-site-editor-split">
       <aside class="oasis-site-editor-info">
+        <img class="oasis-site-editor-brand" src={brandFullUrl} alt="Oasis Editor" />
         <p class="oasis-site-eyebrow">{t().eyebrow}</p>
         <h2 class="oasis-site-editor-headline">{t().headline}</h2>
         <p class="oasis-site-lead">{t().description}</p>
@@ -522,6 +526,7 @@ function AboutPage(props: { language: Language }) {
     <div class="oasis-site-content is-doc">
       <div class="oasis-site-doc">
         <header class="oasis-site-hero">
+          <img class="oasis-site-hero-mark" src={brandMarkUrl} alt="" />
           <h1>{t().headline}</h1>
           <p>{t().description}</p>
         </header>
@@ -554,6 +559,7 @@ function ApiPage(props: { language: Language }) {
     <div class="oasis-site-content is-doc">
       <div class="oasis-site-doc">
         <header class="oasis-site-hero">
+          <img class="oasis-site-hero-mark" src={brandMarkUrl} alt="" />
           <h1>{api().title}</h1>
           <p>{api().subtitle}</p>
         </header>
@@ -585,6 +591,7 @@ function PluginsPage(props: { language: Language }) {
     <div class="oasis-site-content is-doc">
       <div class="oasis-site-doc">
         <header class="oasis-site-hero">
+          <img class="oasis-site-hero-mark" src={brandMarkUrl} alt="" />
           <h1>{plugins().title}</h1>
           <p>{plugins().subtitle}</p>
         </header>

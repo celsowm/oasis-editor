@@ -75,16 +75,10 @@
   flex: 0 0 40px;
   width: 40px;
   height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   border-radius: var(--radius-sm);
-  background: var(--accent);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
   box-shadow: var(--shadow-sm);
+  object-fit: contain;
+  background: #fff;
 }
 
 .oasis-site-brand-name {
@@ -306,6 +300,13 @@
   background: var(--surface);
 }
 
+.oasis-site-editor-brand {
+  display: block;
+  width: min(100%, 180px);
+  margin: 0 0 18px;
+  filter: drop-shadow(0 10px 22px rgba(15, 23, 42, 0.08));
+}
+
 .oasis-site-editor-col {
   flex: 1;
   min-width: 0;
@@ -395,6 +396,15 @@
 .oasis-site-hero {
   max-width: 720px;
   margin-bottom: 32px;
+}
+
+.oasis-site-hero-mark {
+  display: block;
+  width: 58px;
+  height: 72px;
+  margin: 0 0 14px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 22px rgba(15, 23, 42, 0.08));
 }
 
 .oasis-site-hero h1 {

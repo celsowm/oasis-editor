@@ -17,6 +17,7 @@
     "dist"
   ],
   "scripts": {
+    "brand:generate": "node ./scripts/generate-brand-assets.mjs",
     "dev": "vite",
     "build:lib": "vite build --mode lib",
     "build:app": "vite build",
