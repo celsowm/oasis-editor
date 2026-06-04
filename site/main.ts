@@ -1,9 +1,9 @@
 import { render } from "solid-js/web";
-import { OasisSiteApp } from "./demo/OasisSiteApp.js";
-import "./styles/oasis-editor.css";
-import "./styles/oasis-editor-demo.css";
-import "./styles/oasis-editor-site.css";
-import { installEditorDebugControl } from "./utils/logger.js";
+import { OasisSiteApp } from "./OasisSiteApp.js";
+import "../src/styles/oasis-editor.css";
+import "./styles/base.css";
+import "./styles/app.css";
+import { installEditorDebugControl } from "../src/utils/logger.js";
 
 const container = document.getElementById("oasis-editor-root");
 if (!container) {

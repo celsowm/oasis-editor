@@ -1,0 +1,668 @@
+/* =========================================================================
+   Oasis Editor — site shell (demo + docs)
+   Layout: [ icon rail ] [ main: thin strip + content ]
+   Single overflow owner. No sticky/fixed top bar. Rail expands as an
+   overlay, never pushing content (no reflow / no leakage).
+   ========================================================================= */
+
+.oasis-site {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --faint: #94a3b8;
+  --border: #e7e9ee;
+  --border-strong: #d7dbe2;
+  --accent: #4f46e5;
+  --accent-strong: #4338ca;
+  --accent-soft: #eef2ff;
+  --code-bg: #0f172a;
+  --code-ink: #e2e8f0;
+  --rail: 60px;
+  --strip: 48px;
+  --radius-sm: 9px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 10px 30px rgba(15, 23, 42, 0.1);
+  --shadow-lg: 0 16px 44px rgba(15, 23, 42, 0.16);
+
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Aptos", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ----------------------------------------------------------------- Rail -- */
+.oasis-site-rail {
+  position: relative;
+  z-index: 20;
+  flex: 0 0 var(--rail);
+  width: var(--rail);
+  border-right: 1px solid var(--border);
+}
+
+.oasis-site-rail-inner {
+  position: absolute;
+  inset: 0;
+  width: var(--rail);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  overflow: hidden;
+  transition: width 160ms ease, box-shadow 160ms ease;
+}
+
+.oasis-site-rail:hover .oasis-site-rail-inner,
+.oasis-site-rail:focus-within .oasis-site-rail-inner {
+  width: 234px;
+  box-shadow: var(--shadow-lg);
+}
+
+.oasis-site-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--strip);
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.oasis-site-brand-mark {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: var(--shadow-sm);
+}
+
+.oasis-site-brand-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.oasis-site-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0;
+  flex: 1 1 auto;
+}
+
+.oasis-site-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  margin: 0 8px;
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.oasis-site-nav-item:hover {
+  background: #f1f3f7;
+}
+
+.oasis-site-nav-ico {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: #f1f3f7;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.oasis-site-nav-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.oasis-site-nav-item-active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.oasis-site-nav-item-active .oasis-site-nav-label {
+  font-weight: 600;
+}
+
+.oasis-site-nav-item-active .oasis-site-nav-ico {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* Language toggle pinned to the rail footer */
+.oasis-site-lang {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  margin: 0 8px 10px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: left;
+  transition: background 140ms ease;
+}
+
+.oasis-site-lang:hover {
+  background: #f1f3f7;
+}
+
+.oasis-site-lang-ico {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.oasis-site-lang-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ----------------------------------------------------------------- Main -- */
+.oasis-site-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.oasis-site-strip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--strip);
+  padding: 0 22px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.oasis-site-strip-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.oasis-site-strip-hint {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.oasis-site-strip-hint code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+  font-size: 11px;
+}
+
+.oasis-site-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-left: -6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.oasis-site-menu-btn span,
+.oasis-site-menu-btn span::before,
+.oasis-site-menu-btn span::after {
+  position: absolute;
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.oasis-site-menu-btn span {
+  position: relative;
+}
+
+.oasis-site-menu-btn span::before {
+  content: "";
+  top: -5px;
+  left: 0;
+}
+
+.oasis-site-menu-btn span::after {
+  content: "";
+  top: 5px;
+  left: 0;
+}
+
+/* -------------------------------------------------------------- Content -- */
+.oasis-site-content {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Doc routes: this is the only scroll container. */
+.oasis-site-content.is-doc {
+  overflow: auto;
+}
+
+/* -------------------------------------------------------- Editor split --- */
+.oasis-site-editor-split {
+  display: flex;
+}
+
+.oasis-site-editor-info {
+  flex: 0 0 300px;
+  overflow-y: auto;
+  padding: 28px 24px 32px;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.oasis-site-editor-col {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Editor itself fills the whole column */
+.oasis-site-editor-host {
+  height: 100%;
+}
+
+.oasis-site-editor-host > * {
+  height: 100%;
+}
+
+.oasis-site-editor-host .oasis-editor-shell {
+  height: 100%;
+}
+
+/* Editor info panel content */
+.oasis-site-eyebrow {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.oasis-site-editor-headline {
+  margin: 0 0 14px;
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+}
+
+.oasis-site-lead {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.oasis-site-more-link {
+  display: inline-block;
+  margin-top: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.oasis-site-more-link:hover {
+  text-decoration: underline;
+}
+
+.oasis-site-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.oasis-site-tip-dot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ----------------------------------------------------------------- Docs ---- */
+.oasis-site-doc {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 40px 28px 64px;
+}
+
+.oasis-site-hero {
+  max-width: 720px;
+  margin-bottom: 32px;
+}
+
+.oasis-site-hero h1 {
+  margin: 0;
+  font-size: clamp(26px, 3vw, 38px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.oasis-site-hero p {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.oasis-site-section {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.oasis-site-section-sub {
+  margin: 0 0 18px;
+  max-width: 720px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ----------------------------------------------------------------- Cards - */
+.oasis-site-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.oasis-site-card {
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.oasis-site-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.oasis-site-card-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.oasis-site-card h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.oasis-site-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ------------------------------------------------------------- API panels */
+.oasis-site-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.oasis-site-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(0, 1.15fr);
+  gap: 24px;
+  align-items: start;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.oasis-site-panel h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.oasis-site-panel p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ---------------------------------------------------------------- Plugins */
+.oasis-site-plugin {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.oasis-site-steps {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.oasis-site-step {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.oasis-site-step:first-child {
+  padding-top: 0;
+}
+
+.oasis-site-step b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.oasis-site-step span {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.oasis-site-steps > p {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ------------------------------------------------------------------ Code - */
+.oasis-site pre {
+  margin: 0;
+  overflow: auto;
+  padding: 18px;
+  border-radius: var(--radius);
+  background: var(--code-bg);
+  color: var(--code-ink);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.oasis-site-steps pre {
+  margin-top: 16px;
+}
+
+.oasis-site code {
+  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+}
+
+/* --------------------------------------------------------------- Scrim --- */
+.oasis-site-scrim {
+  display: none;
+}
+
+/* ------------------------------------------------------------ Responsive - */
+@media (max-width: 1100px) {
+  .oasis-site-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .oasis-site-panel,
+  .oasis-site-plugin {
+    grid-template-columns: 1fr;
+  }
+
+  .oasis-site-editor-info {
+    flex-basis: 240px;
+  }
+}
+
+@media (max-width: 760px) {
+  /* Rail becomes an off-canvas drawer */
+  .oasis-site-rail {
+    position: fixed;
+    inset: 0 auto 0 0;
+    flex-basis: 0;
+    width: 0;
+    border-right: 0;
+    z-index: 50;
+  }
+
+  .oasis-site-rail-inner {
+    width: 264px;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-lg);
+    transition: transform 200ms ease;
+    border-right: 1px solid var(--border);
+  }
+
+  .oasis-site:hover .oasis-site-rail-inner,
+  .oasis-site:focus-within .oasis-site-rail-inner {
+    width: 264px;
+  }
+
+  .oasis-site-nav-open .oasis-site-rail-inner {
+    transform: translateX(0);
+  }
+
+  .oasis-site-menu-btn {
+    display: inline-flex;
+    position: relative;
+  }
+
+  .oasis-site-nav-open .oasis-site-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    border: 0;
+    background: rgba(15, 23, 42, 0.42);
+    cursor: pointer;
+  }
+
+  .oasis-site-doc {
+    padding: 28px 16px 48px;
+  }
+
+  .oasis-site-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .oasis-site-strip-hint {
+    display: none;
+  }
+
+  /* Hide info panel on mobile — content is on the About page */
+  .oasis-site-editor-info {
+    display: none;
+  }
+}

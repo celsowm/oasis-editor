@@ -1,14 +1,56 @@
 import { For, Match, Show, Switch, createMemo, createSignal, onCleanup, onMount } from "solid-js";
-import { OasisEditorApp } from "../ui/OasisEditorApp.js";
+import { OasisEditorApp } from "../src/ui/OasisEditorApp.js";
 
 type RouteId = "editor" | "about" | "api" | "plugins";
 type Language = "pt" | "en";
 
-const routes: Array<{ id: RouteId; icon: string }> = [
-  { id: "editor", icon: "ED" },
-  { id: "about", icon: "OA" },
-  { id: "api", icon: "API" },
-  { id: "plugins", icon: "PL" },
+function IcoEditor() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+    </svg>
+  );
+}
+
+function IcoAbout() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+      <path d="M5 3v4" />
+      <path d="M19 17v4" />
+      <path d="M3 5h4" />
+      <path d="M17 19h4" />
+    </svg>
+  );
+}
+
+function IcoApi() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m18 16 4-4-4-4" />
+      <path d="m6 8-4 4 4 4" />
+      <path d="m14.5 4-5 16" />
+    </svg>
+  );
+}
+
+function IcoPlugins() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+const routes = [
+  { id: "editor" as const, icon: IcoEditor },
+  { id: "about" as const, icon: IcoAbout },
+  { id: "api" as const, icon: IcoApi },
+  { id: "plugins" as const, icon: IcoPlugins },
 ];
 
 const routeLabels: Record<Language, Record<RouteId, string>> = {
@@ -33,11 +75,10 @@ const copy = {
     headline: "Editor, docs e extensibilidade no mesmo lugar.",
     description:
       "A demo abre direto no editor, mas agora tambem apresenta o que torna o Oasis Editor diferente, como integrar a API e como criar plugins.",
-    collapse: "Recolher menu",
-    expand: "Abrir menu",
-    close: "Fechar menu",
     openNav: "Menu",
-    language: "Idioma",
+    closeNav: "Fechar menu",
+    switchTo: "English",
+    moreAbout: "Ver mais sobre o editor →",
     editor: {
       title: "Editor",
       subtitle:
@@ -178,11 +219,10 @@ export const TimestampPlugin: OasisPlugin = {
     headline: "Editor, docs, and extensibility in one place.",
     description:
       "The demo still opens in the editor, but now also explains what makes Oasis Editor different, how to use the API, and how to create plugins.",
-    collapse: "Collapse menu",
-    expand: "Open menu",
-    close: "Close menu",
     openNav: "Menu",
-    language: "Language",
+    closeNav: "Close menu",
+    switchTo: "Português",
+    moreAbout: "Learn more about the editor →",
     editor: {
       title: "Editor",
       subtitle:
@@ -338,22 +378,21 @@ function loadLanguage(): Language {
 export function OasisSiteApp() {
   const [activeRoute, setActiveRoute] = createSignal<RouteId>(getHashRoute());
   const [language, setLanguage] = createSignal<Language>(loadLanguage());
-  const [collapsed, setCollapsed] = createSignal(false);
-  const [mobileOpen, setMobileOpen] = createSignal(false);
+  const [navOpen, setNavOpen] = createSignal(false);
   const text = createMemo(() => copy[language()]);
 
   const syncRoute = () => {
-    const nextRoute = getHashRoute();
-    setActiveRoute(nextRoute);
-    setMobileOpen(false);
+    setActiveRoute(getHashRoute());
+    setNavOpen(false);
     if (!window.location.hash) {
       window.history.replaceState(null, "", "#/editor");
     }
   };
 
-  const setLanguagePreference = (nextLanguage: Language) => {
-    setLanguage(nextLanguage);
-    window.localStorage.setItem("oasis-site-language", nextLanguage);
+  const toggleLanguage = () => {
+    const next: Language = language() === "pt" ? "en" : "pt";
+    setLanguage(next);
+    window.localStorage.setItem("oasis-site-language", next);
   };
 
   onMount(() => {
@@ -366,99 +405,65 @@ export function OasisSiteApp() {
   });
 
   return (
-    <div
-      classList={{
-        "oasis-site": true,
-        "oasis-site-sidebar-collapsed": collapsed(),
-        "oasis-site-mobile-open": mobileOpen(),
-      }}
-    >
-      <Show when={mobileOpen()}>
+    <div classList={{ "oasis-site": true, "oasis-site-nav-open": navOpen() }}>
+      <Show when={navOpen()}>
         <button
           class="oasis-site-scrim"
           type="button"
-          aria-label={text().close}
-          onClick={() => setMobileOpen(false)}
+          aria-label={text().closeNav}
+          onClick={() => setNavOpen(false)}
         />
       </Show>
 
-      <aside class="oasis-site-sidebar" aria-label="Oasis Editor">
-        <div class="oasis-site-brand">
-          <div class="oasis-site-brand-mark">OE</div>
-          <Show when={!collapsed()}>
-            <div>
-              <div class="oasis-site-brand-title">{text().product}</div>
-              <div class="oasis-site-brand-subtitle">{text().eyebrow}</div>
-            </div>
-          </Show>
-        </div>
-
-        <nav class="oasis-site-nav">
-          <For each={routes}>
-            {(route) => (
-              <a
-                classList={{
-                  "oasis-site-nav-item": true,
-                  "oasis-site-nav-item-active": activeRoute() === route.id,
-                }}
-                href={`#/${route.id}`}
-                title={routeLabels[language()][route.id]}
-              >
-                <span class="oasis-site-nav-icon">{route.icon}</span>
-                <Show when={!collapsed()}>
-                  <span>{routeLabels[language()][route.id]}</span>
-                </Show>
-              </a>
-            )}
-          </For>
-        </nav>
-
-        <div class="oasis-site-sidebar-footer">
-          <Show when={!collapsed()}>
-            <div class="oasis-site-language-label">{text().language}</div>
-          </Show>
-          <div class="oasis-site-language-switch" role="group" aria-label={text().language}>
-            <button
-              type="button"
-              classList={{ "is-active": language() === "pt" }}
-              onClick={() => setLanguagePreference("pt")}
-            >
-              PT
-            </button>
-            <button
-              type="button"
-              classList={{ "is-active": language() === "en" }}
-              onClick={() => setLanguagePreference("en")}
-            >
-              EN
-            </button>
+      <div class="oasis-site-rail">
+        <div class="oasis-site-rail-inner">
+          <div class="oasis-site-brand">
+            <span class="oasis-site-brand-mark">OE</span>
+            <span class="oasis-site-brand-name">{text().product}</span>
           </div>
+
+          <nav class="oasis-site-nav" aria-label="Oasis Editor">
+            <For each={routes}>
+              {(route) => (
+                <a
+                  classList={{
+                    "oasis-site-nav-item": true,
+                    "oasis-site-nav-item-active": activeRoute() === route.id,
+                  }}
+                  href={`#/${route.id}`}
+                  title={routeLabels[language()][route.id]}
+                >
+                  <span class="oasis-site-nav-ico">{route.icon()}</span>
+                  <span class="oasis-site-nav-label">{routeLabels[language()][route.id]}</span>
+                </a>
+              )}
+            </For>
+          </nav>
+
           <button
-            class="oasis-site-collapse"
+            class="oasis-site-lang"
             type="button"
-            aria-label={collapsed() ? text().expand : text().collapse}
-            onClick={() => setCollapsed((value) => !value)}
+            aria-label={`${text().product}: ${text().switchTo}`}
+            onClick={toggleLanguage}
           >
-            {collapsed() ? ">" : "<"}
+            <span class="oasis-site-lang-ico">{language() === "pt" ? "PT" : "EN"}</span>
+            <span class="oasis-site-lang-text">{text().switchTo}</span>
           </button>
         </div>
-      </aside>
+      </div>
 
       <main class="oasis-site-main">
-        <header class="oasis-site-topbar">
+        <div class="oasis-site-strip">
           <button
-            class="oasis-site-mobile-menu"
+            class="oasis-site-menu-btn"
             type="button"
-            onClick={() => setMobileOpen(true)}
+            aria-label={text().openNav}
+            onClick={() => setNavOpen(true)}
           >
-            {text().openNav}
+            <span aria-hidden="true" />
           </button>
-          <div>
-            <p>{text().eyebrow}</p>
-            <h1>{text().headline}</h1>
-            <span>{text().description}</span>
-          </div>
-        </header>
+          <span class="oasis-site-strip-title">{routeLabels[language()][activeRoute()]}</span>
+        </div>
 
         <Switch>
           <Match when={activeRoute() === "editor"}>
@@ -479,53 +484,66 @@ export function OasisSiteApp() {
   );
 }
 
-function PageIntro(props: { title: string; subtitle: string }) {
-  return (
-    <section class="oasis-site-page-intro">
-      <h2>{props.title}</h2>
-      <p>{props.subtitle}</p>
-    </section>
-  );
-}
-
 function EditorPage(props: { language: Language }) {
-  const editorCopy = () => copy[props.language].editor;
+  const t = () => copy[props.language];
 
   return (
-    <section class="oasis-site-editor-page">
-      <PageIntro title={editorCopy().title} subtitle={editorCopy().subtitle} />
-      <div class="oasis-site-editor-tip">{editorCopy().tip}</div>
-      <div class="oasis-site-editor-frame">
-        <OasisEditorApp
-          ui={{
-            shell: getRequestedShell(),
-            uiVariant: "docs",
-            locale: props.language === "pt" ? "pt-BR" : "en",
-          }}
-        />
+    <div class="oasis-site-content oasis-site-editor-split">
+      <aside class="oasis-site-editor-info">
+        <p class="oasis-site-eyebrow">{t().eyebrow}</p>
+        <h2 class="oasis-site-editor-headline">{t().headline}</h2>
+        <p class="oasis-site-lead">{t().description}</p>
+        <a class="oasis-site-more-link" href="#/about">{t().moreAbout}</a>
+        <div class="oasis-site-tip">
+          <span class="oasis-site-tip-dot" aria-hidden="true" />
+          <span>{t().editor.tip}</span>
+        </div>
+      </aside>
+      <div class="oasis-site-editor-col">
+        <div class="oasis-site-editor-host">
+          <OasisEditorApp
+            ui={{
+              shell: getRequestedShell(),
+              uiVariant: "docs",
+              locale: props.language === "pt" ? "pt-BR" : "en",
+            }}
+          />
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
 
 function AboutPage(props: { language: Language }) {
-  const about = () => copy[props.language].about;
+  const t = () => copy[props.language];
+  const about = () => t().about;
 
   return (
-    <section class="oasis-site-page">
-      <PageIntro title={about().title} subtitle={about().subtitle} />
-      <div class="oasis-site-card-grid">
-        <For each={about().cards}>
-          {(card) => (
-            <article class="oasis-site-card">
-              <span />
-              <h3>{card.title}</h3>
-              <p>{card.text}</p>
-            </article>
-          )}
-        </For>
+    <div class="oasis-site-content is-doc">
+      <div class="oasis-site-doc">
+        <header class="oasis-site-hero">
+          <h1>{t().headline}</h1>
+          <p>{t().description}</p>
+        </header>
+
+        <h2 class="oasis-site-section">{about().title}</h2>
+        <p class="oasis-site-section-sub">{about().subtitle}</p>
+
+        <div class="oasis-site-cards">
+          <For each={about().cards}>
+            {(card) => (
+              <article class="oasis-site-card">
+                <span class="oasis-site-card-ico" aria-hidden="true">
+                  {card.title.charAt(0)}
+                </span>
+                <h3>{card.title}</h3>
+                <p>{card.text}</p>
+              </article>
+            )}
+          </For>
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -533,24 +551,30 @@ function ApiPage(props: { language: Language }) {
   const api = () => copy[props.language].api;
 
   return (
-    <section class="oasis-site-page">
-      <PageIntro title={api().title} subtitle={api().subtitle} />
-      <div class="oasis-site-doc-stack">
-        <For each={api().sections}>
-          {(section) => (
-            <article class="oasis-site-doc-panel">
-              <div>
-                <h3>{section.title}</h3>
-                <p>{section.text}</p>
-              </div>
-              <pre>
-                <code>{section.code}</code>
-              </pre>
-            </article>
-          )}
-        </For>
+    <div class="oasis-site-content is-doc">
+      <div class="oasis-site-doc">
+        <header class="oasis-site-hero">
+          <h1>{api().title}</h1>
+          <p>{api().subtitle}</p>
+        </header>
+
+        <div class="oasis-site-stack">
+          <For each={api().sections}>
+            {(section) => (
+              <article class="oasis-site-panel">
+                <div>
+                  <h3>{section.title}</h3>
+                  <p>{section.text}</p>
+                </div>
+                <pre>
+                  <code>{section.code}</code>
+                </pre>
+              </article>
+            )}
+          </For>
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -558,27 +582,33 @@ function PluginsPage(props: { language: Language }) {
   const plugins = () => copy[props.language].plugins;
 
   return (
-    <section class="oasis-site-page">
-      <PageIntro title={plugins().title} subtitle={plugins().subtitle} />
-      <div class="oasis-site-plugin-layout">
-        <article class="oasis-site-steps">
-          <For each={plugins().steps}>
-            {(step, index) => (
-              <div class="oasis-site-step">
-                <strong>{index() + 1}</strong>
-                <span>{step}</span>
-              </div>
-            )}
-          </For>
-          <p>{plugins().hooks}</p>
+    <div class="oasis-site-content is-doc">
+      <div class="oasis-site-doc">
+        <header class="oasis-site-hero">
+          <h1>{plugins().title}</h1>
+          <p>{plugins().subtitle}</p>
+        </header>
+
+        <div class="oasis-site-plugin">
+          <article class="oasis-site-steps">
+            <For each={plugins().steps}>
+              {(step, index) => (
+                <div class="oasis-site-step">
+                  <b>{index() + 1}</b>
+                  <span>{step}</span>
+                </div>
+              )}
+            </For>
+            <p>{plugins().hooks}</p>
+            <pre>
+              <code>{plugins().usage}</code>
+            </pre>
+          </article>
           <pre>
-            <code>{plugins().usage}</code>
+            <code>{plugins().code}</code>
           </pre>
-        </article>
-        <pre class="oasis-site-plugin-code">
-          <code>{plugins().code}</code>
-        </pre>
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
