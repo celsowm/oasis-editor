@@ -1,4 +1,5 @@
 import { Show, splitProps, type JSX } from "solid-js";
+import { ToolIcon } from "../../../utils/customIcons.js";
 
 export interface ToolbarButtonProps
   extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -38,7 +39,7 @@ export function Button(props: ToolbarButtonProps): JSX.Element {
       {...others}
     >
       <Show when={local.icon}>
-        <i data-lucide={local.icon} />
+        <ToolIcon name={local.icon!} />
       </Show>
       <Show when={local.label}>
         <span>{local.label}</span>

@@ -282,7 +282,7 @@ export function createDefaultToolbarPreset(): ToolbarItem[] {
     type: "button",
     id: "editor-toolbar-footnote",
     testId: "editor-toolbar-footnote",
-    iconName: "superscript",
+    iconName: "footnote",
     command: "insertFootnote",
     tooltip: `${t("toolbar.footnote")} (${mod}+Alt+F)`,
   });

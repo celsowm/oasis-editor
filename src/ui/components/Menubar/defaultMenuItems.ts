@@ -39,7 +39,7 @@ export const defaultMenuItems: MenuItem[] = [
   { id: "insert_image", path: "Insert/Image", labelKey: "toolbar.image", command: "insertImage", icon: "image" },
   { id: "insert_table", path: "Insert/Table", labelKey: "toolbar.table", command: { name: "insertTable", payload: { rows: 3, cols: 3 } }, icon: "table" },
   { id: "insert_link", path: "Insert/Link", labelKey: "toolbar.link", command: "link", icon: "link" },
-  { id: "insert_footnote", path: "Insert/Footnote", labelKey: "toolbar.footnote", shortcut: "Ctrl+Alt+F", command: "insertFootnote", icon: "superscript" },
+  { id: "insert_footnote", path: "Insert/Footnote", labelKey: "toolbar.footnote", shortcut: "Ctrl+Alt+F", command: "insertFootnote", icon: "footnote" },
   { id: "insert_hr", path: "Insert/Horizontal Rule", hidden: true },
   { id: "insert_pageBreak", path: "Insert/Page Break", labelKey: "metric.pageBreak", command: "pageBreak", icon: "file-minus" },
   { id: "insert_specialChar", path: "Insert/Special Character", hidden: true },

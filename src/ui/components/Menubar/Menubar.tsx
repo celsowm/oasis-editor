@@ -8,6 +8,7 @@ import {
 } from "solid-js";
 import { t, type TranslationKey } from "../../../i18n/index.js";
 import { type MenuItem, type MenubarHost, defaultMenuRegistry } from "./menuRegistry.js";
+import { ToolIcon } from "../../utils/customIcons.js";
 import "./defaultMenuItems.js";
 
 export interface MenubarProps {
@@ -205,7 +206,7 @@ function MenuNode(props: {
       <span class="oasis-menubar-item-main">
         <Show when={icon()}>
           <span class="oasis-menubar-item-icon" aria-hidden="true">
-            <i data-lucide={icon()!} />
+            <ToolIcon name={icon()!} />
           </span>
         </Show>
         <span>{label}</span>
