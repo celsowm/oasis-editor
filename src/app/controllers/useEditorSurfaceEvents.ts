@@ -416,8 +416,11 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
       return;
     }
 
-    const dragStart = hit.tableCellAnchorPosition ?? hit.position;
-    dragAnchor = dragStart;
+    // Anchor the drag at the precise clicked offset, not the table cell start.
+    // Cross-cell selection is detected from cell locations (not offsets), so
+    // snapping to the cell anchor here would only break in-cell text selection
+    // (e.g. dragging right-to-left within a single cell).
+    dragAnchor = hit.position;
     applyWithZone(
       state,
       hit.zone,
