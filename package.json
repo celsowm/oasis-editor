@@ -1,6 +1,6 @@
 {
   "name": "oasis-editor",
-  "version": "5.0.0",
+  "version": "0.0.1",
   "type": "module",
   "main": "./dist/oasis-editor.umd.cjs",
   "module": "./dist/oasis-editor.js",
@@ -21,6 +21,7 @@
     "build:lib": "vite build --mode lib",
     "build:app": "vite build",
     "build": "npm run build:lib && npm run build:app",
+    "prepack": "npm run build:lib",
     "preview": "vite preview",
     "test:perf": "playwright test",
     "wasm:build": "wasm-pack build ./rust-core --target web --out-dir ../public/wasm",

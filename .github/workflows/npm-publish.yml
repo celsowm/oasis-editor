@@ -1,0 +1,76 @@
+name: Publish npm Package
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: npm-publish-main
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') && !startsWith(github.event.head_commit.message, 'chore(release):') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build package
+        run: npm run build:lib
+
+      - name: Configure Git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Decide publish version
+        id: versioning
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACKAGE_NAME="$(node -p "require('./package.json').name")"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+
+          if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version >/dev/null 2>&1; then
+            NEXT_VERSION="$(npm version patch -m "chore(release): v%s [skip ci]")"
+            echo "publish_version=${NEXT_VERSION#v}" >> "$GITHUB_OUTPUT"
+            echo "release_mode=patch" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish_version=${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "release_mode=initial" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        run: npm publish --access public --provenance
+
+      - name: Push release commit and tag
+        if: ${{ steps.versioning.outputs.release_mode == 'patch' }}
+        run: git push origin HEAD:main --follow-tags
+
+      - name: Tag initial release
+        if: ${{ steps.versioning.outputs.release_mode == 'initial' }}
+        run: |
+          VERSION="${{ steps.versioning.outputs.publish_version }}"
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"

@@ -1,0 +1,478 @@
+.oasis-site {
+  --site-sidebar-width: 292px;
+  --site-sidebar-collapsed-width: 88px;
+  --site-bg: #f4efe4;
+  --site-ink: #17211b;
+  --site-muted: #697268;
+  --site-border: rgba(23, 33, 27, 0.13);
+  --site-panel: rgba(255, 252, 244, 0.82);
+  --site-panel-strong: #fffaf0;
+  --site-accent: #b85c38;
+  --site-accent-2: #245c52;
+  --site-shadow: 0 24px 70px rgba(48, 37, 19, 0.16);
+  display: grid;
+  grid-template-columns: var(--site-sidebar-width) minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(184, 92, 56, 0.18), transparent 28%),
+    radial-gradient(circle at 86% 14%, rgba(36, 92, 82, 0.18), transparent 30%),
+    linear-gradient(135deg, #fbf3df 0%, #edf3ec 54%, #e8edf4 100%);
+  color: var(--site-ink);
+  overflow: hidden;
+}
+
+.oasis-site-sidebar-collapsed {
+  grid-template-columns: var(--site-sidebar-collapsed-width) minmax(0, 1fr);
+}
+
+.oasis-site-sidebar {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--site-border);
+  background:
+    linear-gradient(180deg, rgba(255, 250, 240, 0.94), rgba(240, 247, 241, 0.88)),
+    repeating-linear-gradient(135deg, rgba(23, 33, 27, 0.035) 0 1px, transparent 1px 12px);
+  box-shadow: 18px 0 42px rgba(61, 48, 27, 0.11);
+  backdrop-filter: blur(18px);
+  transition: width 180ms ease, transform 180ms ease;
+}
+
+.oasis-site-brand {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-height: 92px;
+  padding: 22px;
+  border-bottom: 1px solid var(--site-border);
+}
+
+.oasis-site-brand-mark,
+.oasis-site-nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(184, 92, 56, 0.32);
+  border-radius: 16px;
+  background: #fff5df;
+  color: #7a341f;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.oasis-site-brand-title {
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.oasis-site-brand-subtitle {
+  margin-top: 4px;
+  color: var(--site-muted);
+  font-size: 13px;
+}
+
+.oasis-site-nav {
+  display: grid;
+  gap: 8px;
+  padding: 18px 14px;
+}
+
+.oasis-site-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  color: var(--site-ink);
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.oasis-site-nav-item:hover,
+.oasis-site-nav-item-active {
+  border-color: rgba(36, 92, 82, 0.24);
+  background: rgba(255, 255, 255, 0.66);
+  transform: translateX(2px);
+}
+
+.oasis-site-nav-item-active .oasis-site-nav-icon {
+  border-color: rgba(36, 92, 82, 0.42);
+  background: #e8f2e8;
+  color: var(--site-accent-2);
+}
+
+.oasis-site-sidebar-footer {
+  display: grid;
+  gap: 12px;
+  margin-top: auto;
+  padding: 18px;
+  border-top: 1px solid var(--site-border);
+}
+
+.oasis-site-language-label {
+  color: var(--site-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.oasis-site-language-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--site-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.oasis-site-language-switch button,
+.oasis-site-collapse,
+.oasis-site-mobile-menu,
+.oasis-site-scrim {
+  font: inherit;
+}
+
+.oasis-site-language-switch button,
+.oasis-site-collapse,
+.oasis-site-mobile-menu {
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--site-ink);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.oasis-site-language-switch button {
+  padding: 8px 10px;
+}
+
+.oasis-site-language-switch button.is-active {
+  background: var(--site-accent-2);
+  color: #fffaf0;
+}
+
+.oasis-site-collapse {
+  min-height: 40px;
+  border: 1px solid var(--site-border);
+  background: rgba(255, 250, 240, 0.68);
+}
+
+.oasis-site-sidebar-collapsed .oasis-site-brand,
+.oasis-site-sidebar-collapsed .oasis-site-nav-item {
+  justify-content: center;
+  padding-inline: 8px;
+}
+
+.oasis-site-sidebar-collapsed .oasis-site-sidebar-footer {
+  padding-inline: 12px;
+}
+
+.oasis-site-main {
+  min-width: 0;
+  height: 100%;
+  overflow: auto;
+}
+
+.oasis-site-topbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+  padding: 28px 34px 18px;
+}
+
+.oasis-site-topbar p,
+.oasis-site-page-intro p,
+.oasis-site-card p,
+.oasis-site-doc-panel p,
+.oasis-site-steps p {
+  color: var(--site-muted);
+}
+
+.oasis-site-topbar p {
+  margin: 0 0 8px;
+  color: var(--site-accent);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.oasis-site-topbar h1 {
+  margin: 0;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: clamp(30px, 4vw, 54px);
+  line-height: 0.98;
+}
+
+.oasis-site-topbar span {
+  display: block;
+  max-width: 840px;
+  margin-top: 10px;
+  color: #4c574e;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.oasis-site-mobile-menu {
+  display: none;
+  width: max-content;
+  padding: 10px 14px;
+  border: 1px solid var(--site-border);
+  background: rgba(255, 250, 240, 0.88);
+}
+
+.oasis-site-page,
+.oasis-site-editor-page {
+  padding: 0 34px 34px;
+}
+
+.oasis-site-page-intro {
+  max-width: 880px;
+  margin-bottom: 20px;
+  padding: 22px 24px;
+  border: 1px solid var(--site-border);
+  border-radius: 28px;
+  background: var(--site-panel);
+  box-shadow: var(--site-shadow);
+}
+
+.oasis-site-page-intro h2 {
+  margin: 0;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: clamp(28px, 3vw, 42px);
+}
+
+.oasis-site-page-intro p {
+  margin: 10px 0 0;
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.oasis-site-editor-tip {
+  width: max-content;
+  max-width: 100%;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border: 1px solid rgba(184, 92, 56, 0.26);
+  border-radius: 999px;
+  background: rgba(255, 245, 223, 0.86);
+  color: #70401f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.oasis-site-editor-frame {
+  height: min(76vh, 920px);
+  min-height: 620px;
+  overflow: hidden;
+  border: 1px solid rgba(23, 33, 27, 0.18);
+  border-radius: 30px;
+  background: #eef2f7;
+  box-shadow: var(--site-shadow);
+}
+
+.oasis-site-editor-frame .oasis-editor-shell {
+  height: 100%;
+}
+
+.oasis-site-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.oasis-site-card,
+.oasis-site-doc-panel,
+.oasis-site-steps,
+.oasis-site-plugin-code {
+  border: 1px solid var(--site-border);
+  border-radius: 28px;
+  background: var(--site-panel);
+  box-shadow: var(--site-shadow);
+}
+
+.oasis-site-card {
+  min-height: 190px;
+  padding: 24px;
+}
+
+.oasis-site-card span {
+  display: block;
+  width: 52px;
+  height: 8px;
+  margin-bottom: 24px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--site-accent), var(--site-accent-2));
+}
+
+.oasis-site-card h3,
+.oasis-site-doc-panel h3 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.oasis-site-card p,
+.oasis-site-doc-panel p,
+.oasis-site-steps p {
+  margin: 10px 0 0;
+  line-height: 1.62;
+}
+
+.oasis-site-doc-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.oasis-site-doc-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+  gap: 22px;
+  padding: 22px;
+}
+
+.oasis-site-plugin-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+  gap: 18px;
+}
+
+.oasis-site-steps {
+  padding: 22px;
+}
+
+.oasis-site-step {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--site-border);
+}
+
+.oasis-site-step strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
+  background: var(--site-accent-2);
+  color: #fffaf0;
+}
+
+.oasis-site-step span {
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.oasis-site pre {
+  margin: 0;
+  overflow: auto;
+  border: 1px solid rgba(23, 33, 27, 0.12);
+  border-radius: 22px;
+  background: #14231f;
+  color: #f8f1df;
+  font-size: 13px;
+  line-height: 1.58;
+}
+
+.oasis-site-doc-panel pre,
+.oasis-site-steps pre {
+  padding: 18px;
+}
+
+.oasis-site-plugin-code {
+  padding: 20px;
+}
+
+.oasis-site code {
+  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+}
+
+@media (max-width: 1100px) {
+  .oasis-site-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .oasis-site-doc-panel,
+  .oasis-site-plugin-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .oasis-site,
+  .oasis-site-sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .oasis-site-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(86vw, 320px);
+    transform: translateX(-104%);
+  }
+
+  .oasis-site-mobile-open .oasis-site-sidebar {
+    transform: translateX(0);
+  }
+
+  .oasis-site-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 3;
+    border: 0;
+    background: rgba(17, 24, 19, 0.44);
+    cursor: pointer;
+  }
+
+  .oasis-site-mobile-menu {
+    display: inline-flex;
+  }
+
+  .oasis-site-topbar,
+  .oasis-site-page,
+  .oasis-site-editor-page {
+    padding-inline: 18px;
+  }
+
+  .oasis-site-topbar {
+    grid-template-columns: 1fr;
+    padding-top: 18px;
+  }
+
+  .oasis-site-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .oasis-site-editor-frame {
+    height: 74vh;
+    min-height: 520px;
+    border-radius: 20px;
+  }
+
+  .oasis-site-page-intro,
+  .oasis-site-card,
+  .oasis-site-doc-panel,
+  .oasis-site-steps,
+  .oasis-site-plugin-code {
+    border-radius: 22px;
+  }
+}
