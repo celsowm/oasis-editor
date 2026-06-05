@@ -226,6 +226,11 @@ export function buildParagraphAndSectionCommands({
       (p) => (paragraph.setIndentLeft(numOrNull(p)), true),
       () => s().indentLeft,
     ),
+    setIndentRight: valueCommand(
+      "setIndentRight",
+      (p) => (paragraph.setIndentRight(numOrNull(p)), true),
+      () => s().indentRight,
+    ),
     setIndentFirstLine: valueCommand(
       "setIndentFirstLine",
       (p) => (paragraph.setIndentFirstLine(numOrNull(p)), true),
@@ -263,6 +268,9 @@ export function buildParagraphAndSectionCommands({
     sectionBreakContinuous: actionCommand("sectionBreakContinuous", () =>
       section.breakContinuous(),
     ),
+    setPageMargins: actionCommand("setPageMargins", (p) => {
+      section.setPageMargins((p ?? {}) as { left?: number; right?: number });
+    }),
   };
 }
 

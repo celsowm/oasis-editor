@@ -12,6 +12,7 @@ import type { ShellProps } from "../shells/DocumentShell.js";
 import type { ToolbarHost } from "../components/Toolbar/state/createToolbarApi.js";
 import type { ToolbarRegistry } from "../components/Toolbar/registry/ToolbarRegistry.js";
 import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
+import type { ToolbarLayoutMode } from "../OasisEditorAppProps.js";
 
 export interface EditorWorkspaceProps {
   useComposedShell: () => boolean;
@@ -25,6 +26,7 @@ export interface EditorWorkspaceProps {
   showMenubar: () => boolean;
   showToolbar: () => boolean;
   showOutline: () => boolean;
+  toolbarLayout: () => ToolbarLayoutMode;
   isReadOnly: () => boolean;
   viewportHeight: () => number | string | undefined;
   measuredBlockHeights: Accessor<Record<string, number>>;
@@ -57,6 +59,7 @@ export function EditorWorkspace(props: EditorWorkspaceProps) {
         showMenubar={props.showMenubar()}
         showToolbar={props.showToolbar()}
         showOutline={props.showOutline()}
+        toolbarLayout={props.toolbarLayout()}
         isReadOnly={props.isReadOnly()}
         measuredBlockHeights={props.measuredBlockHeights}
         measuredParagraphLayouts={props.measuredParagraphLayouts}

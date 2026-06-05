@@ -1,0 +1,145 @@
+.oasis-editor-horizontal-ruler {
+  flex: 0 0 22px;
+  height: 22px;
+  position: relative;
+  overflow: hidden;
+  background: var(--oasis-toolbar-bg, rgba(255, 255, 255, 0.85));
+  border-bottom: 1px solid var(--oasis-border-color);
+  user-select: none;
+  touch-action: none;
+  z-index: 6;
+}
+
+.oasis-editor-horizontal-ruler-track {
+  position: relative;
+  height: 100%;
+  will-change: transform;
+}
+
+.oasis-editor-horizontal-ruler-page {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.oasis-editor-horizontal-ruler-margin {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  background: #c9ced6;
+  border-radius: 2px;
+}
+
+.oasis-editor-horizontal-ruler-content {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.35);
+  border-radius: 2px;
+}
+
+.oasis-editor-horizontal-ruler-tick {
+  position: absolute;
+  top: 50%;
+  width: 1px;
+  background: #8a909b;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.oasis-editor-horizontal-ruler-tick-minor {
+  height: 3px;
+  opacity: 0.55;
+}
+
+.oasis-editor-horizontal-ruler-tick-medium {
+  height: 6px;
+  opacity: 0.75;
+}
+
+.oasis-editor-horizontal-ruler-tick-major {
+  height: 9px;
+}
+
+.oasis-editor-horizontal-ruler-label {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 9px;
+  line-height: 1;
+  color: var(--oasis-text-muted);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* Margin drag handles sit on the gray/white boundary. */
+.oasis-editor-horizontal-ruler-margin-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+/* Indent markers. Triangles are drawn directly with borders so the colored
+   shape is itself the clickable target. */
+.oasis-editor-ruler-marker {
+  position: absolute;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border-style: solid;
+  background: transparent;
+  cursor: ew-resize;
+  transform: translateX(-50%);
+}
+
+/* First-line indent: top triangle pointing down. */
+.oasis-editor-ruler-marker-first-line {
+  top: 1px;
+  border-width: 7px 5px 0 5px;
+  border-color: var(--oasis-accent, #1a73e8) transparent transparent transparent;
+  z-index: 4;
+}
+
+/* Hanging indent: bottom triangle pointing up. */
+.oasis-editor-ruler-marker-hanging {
+  bottom: 6px;
+  border-width: 0 5px 7px 5px;
+  border-color: transparent transparent var(--oasis-accent, #1a73e8) transparent;
+  z-index: 4;
+}
+
+/* Right indent: bottom triangle pointing up (mirrors hanging). */
+.oasis-editor-ruler-marker-right-indent {
+  bottom: 6px;
+  border-width: 0 5px 7px 5px;
+  border-color: transparent transparent var(--oasis-accent, #1a73e8) transparent;
+  z-index: 4;
+}
+
+/* Left indent: small box below the hanging triangle. */
+.oasis-editor-ruler-marker-left-box {
+  bottom: 1px;
+  width: 10px;
+  height: 4px;
+  border: 0;
+  border-radius: 1px;
+  background: var(--oasis-accent, #1a73e8);
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+.oasis-editor-read-only .oasis-editor-ruler-marker,
+.oasis-editor-read-only .oasis-editor-horizontal-ruler-margin-handle {
+  cursor: default;
+  pointer-events: none;
+}

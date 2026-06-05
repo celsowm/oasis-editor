@@ -25,6 +25,23 @@ type CanvasDebugState = {
   missEvents: Array<{ reason: string; clientX: number; clientY: number }>;
 };
 
+type EditorTestProps = {
+  ui?: {
+    toolbar?: {
+      layout?: "overflow" | "wrap";
+    };
+  };
+  runtime?: {
+    customizeToolbar?: string;
+  };
+};
+
+declare global {
+  interface Window {
+    __oasisEditorTestProps?: unknown;
+  }
+}
+
 async function canvasPageRect(page: Page) {
   const rect = await page
     .locator('[data-testid="editor-page"][data-renderer="canvas"]')
@@ -34,7 +51,23 @@ async function canvasPageRect(page: Page) {
   return rect;
 }
 
-async function gotoEditor(page: Page) {
+async function gotoEditor(page: Page, testProps?: EditorTestProps) {
+  if (testProps) {
+    await page.addInitScript((props: EditorTestProps) => {
+      const runtime = props.runtime?.customizeToolbar
+        ? {
+            customizeToolbar: new Function(
+              "registry",
+              props.runtime.customizeToolbar,
+            ) as (registry: unknown) => void,
+          }
+        : undefined;
+      window.__oasisEditorTestProps = {
+        ...props,
+        runtime,
+      };
+    }, testProps);
+  }
   await page.goto("/oasis-editor/index.html", { waitUntil: "load" });
   await expect(
     page.locator('[data-testid="editor-page"][data-renderer="canvas"]').first(),
@@ -1267,5 +1300,50 @@ test("toolbar overflow table insert does not throw insertBefore NotFoundError", 
       message.includes("The node before which the new node is to be inserted is not a child of this node"),
   );
   expect(hasInsertBeforeNotFoundError).toBeFalsy();
+});
+
+test("toolbar wrap layout keeps overflowing tools visible without more menu", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 760, height: 900 });
+  await gotoEditor(page, { ui: { toolbar: { layout: "wrap" } } });
+
+  await expect(page.getByTestId("editor-toolbar-overflow-dropdown")).toBeHidden();
+  await expect(page.getByTestId("editor-toolbar-insert-table")).toBeVisible();
+  await insertTable(page, 2, 3);
+});
+
+test("toolbar customization can remove, move and add items", async ({ page }) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await gotoEditor(page, {
+    ui: { toolbar: { layout: "wrap" } },
+    runtime: {
+      customizeToolbar: `
+        registry.remove("editor-toolbar-footnote");
+        registry.move("editor-toolbar-insert-table", { before: "editor-toolbar-link" });
+        registry.register({
+          id: "editor-toolbar-custom-test",
+          type: "custom",
+          render() {
+            const el = document.createElement("button");
+            el.type = "button";
+            el.dataset.testid = "editor-toolbar-custom-test";
+            el.className = "oasis-editor-tool-button";
+            el.textContent = "Custom";
+            return el;
+          },
+        });
+      `,
+    },
+  });
+
+  await expect(page.getByTestId("editor-toolbar-footnote")).toHaveCount(0);
+  await expect(page.getByTestId("editor-toolbar-custom-test")).toBeVisible();
+
+  const tableBox = await page.getByTestId("editor-toolbar-insert-table").boundingBox();
+  const linkBox = await page.getByTestId("editor-toolbar-link").boundingBox();
+  expect(tableBox).not.toBeNull();
+  expect(linkBox).not.toBeNull();
+  expect(tableBox!.x).toBeLessThan(linkBox!.x);
 });
 

@@ -13,6 +13,10 @@
 .oasis-editor-paper-stack {
   display: grid;
   gap: 24px;
+  /* Pages have a fixed (page-width) size, so center them in the content box.
+     This keeps the page position predictable across UI variants instead of
+     relying on scroll-content padding to do the centering. */
+  justify-items: center;
 }
 
 /* Phase 4: virtualization placeholder. Off-screen pages render this empty

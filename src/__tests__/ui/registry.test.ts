@@ -17,7 +17,7 @@ describe("UI registries", () => {
     expect(registry.getItems().map((item) => item.id)).toEqual(["b"]);
   });
 
-  it("supports positional insertion, replacement and removal", () => {
+  it("supports positional insertion, replacement, moving and removal", () => {
     const registry = createToolbarRegistry();
     registry.register({ id: "bold", type: "toggle", command: "bold" });
     registry.register({ id: "italic", type: "toggle", command: "italic" });
@@ -33,6 +33,20 @@ describe("UI registries", () => {
     expect((registry.get("brand") as { command?: string }).command).toBe("brand2");
 
     registry.move("brand", 0);
+    expect(registry.getOrdered().map((item) => item.id)).toEqual([
+      "brand",
+      "bold",
+      "italic",
+    ]);
+
+    registry.move("brand", { after: "italic" });
+    expect(registry.getOrdered().map((item) => item.id)).toEqual([
+      "bold",
+      "italic",
+      "brand",
+    ]);
+
+    registry.move("brand", { before: "bold" });
     expect(registry.getOrdered().map((item) => item.id)).toEqual([
       "brand",
       "bold",

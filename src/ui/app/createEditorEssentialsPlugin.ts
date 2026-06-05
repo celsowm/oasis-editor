@@ -212,6 +212,8 @@ export function createEditorEssentialsRuntimePlugin(
       options.commandsController.applyParagraphStyleCommand("spacingBefore", value),
     setIndentLeft: (value: number | null) =>
       options.commandsController.applyParagraphStyleCommand("indentLeft", value),
+    setIndentRight: (value: number | null) =>
+      options.commandsController.applyParagraphStyleCommand("indentRight", value),
     setIndentFirstLine: (value: number | null) =>
       options.commandsController.applyParagraphStyleCommand("indentFirstLine", value),
     setIndentHanging: (value: number | null) =>
@@ -263,6 +265,20 @@ export function createEditorEssentialsRuntimePlugin(
     },
     breakNextPage: () => options.commandsController.applyInsertSectionBreakCommand("nextPage"),
     breakContinuous: () => options.commandsController.applyInsertSectionBreakCommand("continuous"),
+    setPageMargins: (margins: { left?: number; right?: number }) => {
+      const idx = getActiveSectionIndex(options.state());
+      const section = options.state().document.sections?.[idx] ?? options.state().document;
+      if (!section?.pageSettings) return;
+      options.commandsController.applyUpdateSectionSettingsCommand(idx, {
+        pageSettings: {
+          ...section.pageSettings,
+          margins: {
+            ...section.pageSettings.margins,
+            ...margins,
+          },
+        },
+      });
+    },
   };
 
   const essentialsTable = (() => {

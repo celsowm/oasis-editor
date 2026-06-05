@@ -10,6 +10,13 @@
   font-family: var(--oasis-font-ui);
   color: var(--oasis-text);
   background-color: var(--oasis-bg);
+
+  /* Vertical gutters between the page and the scroll-content edges; variants
+     tweak these for visual rhythm. The horizontal gutter
+     (--oasis-editor-gutter-x) is injected from TS (EDITOR_SCROLL_PADDING_PX) so
+     it stays in lockstep with the shell-width math — see OasisEditorApp.tsx. */
+  --oasis-editor-gutter-top: 34px;
+  --oasis-editor-gutter-bottom: 34px;
 }
 
 .oasis-editor-header {
@@ -155,7 +162,8 @@
 .oasis-editor-editor-scroll-content {
   position: relative;
   min-height: 100%;
-  padding: 34px;
+  padding: var(--oasis-editor-gutter-top) var(--oasis-editor-gutter-x)
+    var(--oasis-editor-gutter-bottom);
   box-sizing: border-box;
   cursor: text;
 }

@@ -1,5 +1,7 @@
 import { Show, createEffect, createMemo, createSignal, onCleanup, type Accessor, type JSX } from "solid-js";
 import { CanvasEditorSurface } from "./components/CanvasEditorSurface.js";
+import { HorizontalRuler } from "./components/Ruler/HorizontalRuler.js";
+import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { RevisionOverlay } from "./components/RevisionOverlay.js";
@@ -38,6 +40,7 @@ export interface OasisEditorEditorLayoutProps {
   class?: string;
   style?: JSX.CSSProperties;
   readOnly?: boolean;
+  showHorizontalRuler?: boolean;
 }
 
 export interface OasisEditorEditorOverlayProps {
@@ -127,6 +130,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   const fileHandlers = () => props.fileHandlers;
   let scrollContentRef: HTMLDivElement | undefined;
   let viewportElement: HTMLDivElement | undefined;
+  const [viewportRef, setViewportRef] = createSignal<HTMLDivElement | undefined>();
   const pageSettings = () => getDocumentPageSettings(props.state().document);
   const viewportHeight = (): string => {
     const rawViewportHeight = layout().viewportHeight;
@@ -136,7 +140,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
     return rawViewportHeight ?? "min(72vh, 920px)";
   };
   const shellStyle = createMemo<JSX.CSSProperties>(() => ({
-    width: `min(${pageSettings().width + 68}px, 100%)`,
+    width: `min(${pageSettings().width + EDITOR_SCROLL_PADDING_PX * 2}px, 100%)`,
     height: "100%",
     "max-height": viewportHeight(),
     ...(layout().style ?? {}),
@@ -233,9 +237,18 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
       data-testid="editor-editor-shell"
       style={shellStyle()}
     >
+      <Show when={layout().showHorizontalRuler && overlays().toolbarHost}>
+        <HorizontalRuler
+          state={props.state}
+          toolbarHost={overlays().toolbarHost!}
+          viewportRef={viewportRef}
+          readOnly={() => Boolean(layout().readOnly)}
+        />
+      </Show>
       <div
         ref={(el) => {
           viewportElement = el;
+          setViewportRef(el);
           refs().onViewportRef?.(el);
           const onScroll = () => {
             recomputeViewportPageIndex();

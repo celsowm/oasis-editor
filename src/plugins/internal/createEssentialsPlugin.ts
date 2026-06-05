@@ -98,6 +98,7 @@ export interface EssentialsParagraphCapability {
   setSpacingAfter: (value: number | null) => void;
   setSpacingBefore: (value: number | null) => void;
   setIndentLeft: (value: number | null) => void;
+  setIndentRight: (value: number | null) => void;
   setIndentFirstLine: (value: number | null) => void;
   setIndentHanging: (value: number | null) => void;
   setShading: (value: string | null) => void;
@@ -114,6 +115,7 @@ export interface EssentialsSectionCapability {
   toggleOrientation: () => void;
   breakNextPage: () => void;
   breakContinuous: () => void;
+  setPageMargins: (margins: { left?: number; right?: number }) => void;
 }
 
 export interface EssentialsTableCapability {

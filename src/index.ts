@@ -36,7 +36,7 @@ export type { CommandBus } from "./core/commands/CommandBus.js";
 // ---------------------------------------------------------------------------
 // Toolbar subsystem — public, client-extensible API
 // ---------------------------------------------------------------------------
-export type { OasisEditorAppProps } from "./ui/OasisEditorApp.js";
+export type { OasisEditorAppProps, ToolbarLayoutMode } from "./ui/OasisEditorApp.js";
 
 export type {
   ToolbarItem,
@@ -66,7 +66,10 @@ export type {
 export {
   createToolbarRegistry,
 } from "./ui/components/Toolbar/registry/ToolbarRegistry.js";
-export type { ToolbarRegistry } from "./ui/components/Toolbar/registry/ToolbarRegistry.js";
+export type {
+  ToolbarMoveTarget,
+  ToolbarRegistry,
+} from "./ui/components/Toolbar/registry/ToolbarRegistry.js";
 
 export { DEFAULT_PALETTE } from "./ui/components/Toolbar/presets/defaultPalette.js";
 export { createDefaultToolbarPreset } from "./ui/components/Toolbar/presets/defaultToolbar.js";

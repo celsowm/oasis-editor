@@ -293,4 +293,11 @@ export const ptBR = {
   "menu.help.about": "Sobre",
   "outline.toggle": "Alternar estrutura",
   "outline.empty": "Os títulos adicionados ao documento aparecerão aqui.",
+  "ruler.horizontal": "Régua horizontal",
+  "ruler.firstLineIndent": "Recuo da primeira linha",
+  "ruler.hangingIndent": "Recuo deslocado",
+  "ruler.leftIndent": "Recuo esquerdo",
+  "ruler.rightIndent": "Recuo direito",
+  "ruler.leftMargin": "Margem esquerda",
+  "ruler.rightMargin": "Margem direita",
 };

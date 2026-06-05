@@ -10,6 +10,27 @@
   overflow: visible;
 }
 
+.oasis-editor-toolbar-layout-wrap {
+  align-items: flex-start;
+}
+
+.oasis-editor-toolbar-wrap-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.oasis-editor-toolbar-wrap-strip > .oasis-editor-toolbar-item {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .oasis-editor-toolbar-strip {
   display: flex;
   align-items: center;

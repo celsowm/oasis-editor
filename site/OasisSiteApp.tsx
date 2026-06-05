@@ -1,8 +1,15 @@
 import { For, Match, Show, Switch, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { OasisEditorApp } from "../src/ui/OasisEditorApp.js";
+import type { OasisEditorAppProps } from "../src/ui/OasisEditorApp.js";
 
 type RouteId = "editor" | "about" | "api" | "plugins";
 type Language = "pt" | "en";
+
+declare global {
+  interface Window {
+    __oasisEditorTestProps?: OasisEditorAppProps;
+  }
+}
 
 const brandMarkUrl = "./branding/logo-full.png";
 const brandFullUrl = "./branding/logo-full.png";
@@ -489,6 +496,7 @@ export function OasisSiteApp() {
 
 function EditorPage(props: { language: Language }) {
   const t = () => copy[props.language];
+  const testProps = () => window.__oasisEditorTestProps ?? {};
 
   return (
     <div class="oasis-site-content oasis-site-editor-split">
@@ -507,10 +515,13 @@ function EditorPage(props: { language: Language }) {
         <div class="oasis-site-editor-host">
           <OasisEditorApp
             ui={{
+              ...testProps().ui,
               shell: getRequestedShell(),
               uiVariant: "docs",
               locale: props.language === "pt" ? "pt-BR" : "en",
             }}
+            document={testProps().document}
+            runtime={testProps().runtime}
           />
         </div>
       </div>

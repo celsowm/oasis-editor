@@ -293,4 +293,11 @@ export const en = {
   "menu.help.about": "About",
   "outline.toggle": "Toggle outline",
   "outline.empty": "Headings you add to the document will appear here.",
+  "ruler.horizontal": "Horizontal ruler",
+  "ruler.firstLineIndent": "First line indent",
+  "ruler.hangingIndent": "Hanging indent",
+  "ruler.leftIndent": "Left indent",
+  "ruler.rightIndent": "Right indent",
+  "ruler.leftMargin": "Left margin",
+  "ruler.rightMargin": "Right margin",
 };

@@ -4,6 +4,7 @@ import { ToolbarOverflowManager } from "./ToolbarOverflowManager.js";
 import { ToolbarItemRenderer } from "./renderers/ToolbarItemRenderer.js";
 import { createToolbarApi, type ToolbarHost } from "./state/createToolbarApi.js";
 import type { ToolbarRegistry } from "./registry/ToolbarRegistry.js";
+import type { ToolbarLayoutMode } from "../../OasisEditorAppProps.js";
 
 const shouldAllowNativeMouseDown = (target: EventTarget | null): boolean =>
   target instanceof Element &&
@@ -13,6 +14,7 @@ export interface ToolbarProps {
   host: () => ToolbarHost;
   registry: ToolbarRegistry;
   showFileGroup?: boolean;
+  layout?: ToolbarLayoutMode;
 }
 
 /**
@@ -38,9 +40,20 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
     return ordered;
   });
 
+  const layout = () => props.layout ?? "overflow";
+  const renderItems = () => (
+    <For each={items()}>
+      {(item) => <ToolbarItemRenderer item={item} api={api} />}
+    </For>
+  );
+
   return (
     <section
       class="oasis-editor-toolbar"
+      classList={{
+        "oasis-editor-toolbar-layout-overflow": layout() === "overflow",
+        "oasis-editor-toolbar-layout-wrap": layout() === "wrap",
+      }}
       onMouseDown={(event) => {
         if (shouldAllowNativeMouseDown(event.target)) {
           return;
@@ -48,11 +61,11 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
         event.preventDefault();
       }}
     >
-      <ToolbarOverflowManager>
-        <For each={items()}>
-          {(item) => <ToolbarItemRenderer item={item} api={api} />}
-        </For>
-      </ToolbarOverflowManager>
+      {layout() === "overflow" ? (
+        <ToolbarOverflowManager>{renderItems()}</ToolbarOverflowManager>
+      ) : (
+        <div class="oasis-editor-toolbar-wrap-strip">{renderItems()}</div>
+      )}
     </section>
   );
 }

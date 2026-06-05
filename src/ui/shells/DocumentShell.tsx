@@ -15,6 +15,7 @@ import {
 import type { ToolbarHost } from "../components/Toolbar/state/createToolbarApi.js";
 import type { ToolbarRegistry } from "../components/Toolbar/registry/ToolbarRegistry.js";
 import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
+import type { ToolbarLayoutMode } from "../OasisEditorAppProps.js";
 import { buildCanvasLayoutSnapshot } from "../canvas/CanvasLayoutSnapshot.js";
 import { getParagraphEntries } from "../canvas/CanvasGeometry.js";
 
@@ -28,6 +29,7 @@ export interface ShellProps {
   showMenubar: boolean;
   showToolbar: boolean;
   showOutline: boolean;
+  toolbarLayout: ToolbarLayoutMode;
   isReadOnly: boolean;
   measuredBlockHeights: Accessor<Record<string, number>>;
   measuredParagraphLayouts: Accessor<Record<string, EditorLayoutParagraph>>;
@@ -93,6 +95,7 @@ export function DocumentShell(props: ShellProps) {
             host={props.toolbarHost}
             registry={props.toolbarRegistry}
             showFileGroup={!props.showMenubar}
+            layout={props.toolbarLayout}
           />
         </Show>
       </Show>
@@ -111,6 +114,7 @@ export function DocumentShell(props: ShellProps) {
             state={() => props.state}
             layout={{
               ...props.layout,
+              showHorizontalRuler: props.showChrome,
               measuredBlockHeights: () => props.measuredBlockHeights(),
               measuredParagraphLayouts: () => props.measuredParagraphLayouts(),
               viewportHeight: props.viewportHeight(),

@@ -67,6 +67,7 @@ import { useEditorInteractionWiring } from "./app/useEditorInteractionWiring.js"
 import { buildEditorViewProps } from "./app/buildEditorViewProps.js";
 import { EditorWorkspace } from "./app/EditorWorkspace.js";
 import { useEditorTransactions } from "./app/useEditorTransactions.js";
+import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 export type {
@@ -75,6 +76,7 @@ export type {
   OasisEditorAppDocumentProps,
   OasisEditorAppRuntimeProps,
   OasisEditorAppProps,
+  ToolbarLayoutMode,
 } from "./OasisEditorAppProps.js";
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
@@ -104,6 +106,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     showMenubar,
     showToolbar,
     showOutline,
+    toolbarLayout,
     layoutMode,
     isReadOnly,
     useComposedShell,
@@ -619,9 +622,16 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         "oasis-editor-docs": useComposedShell(),
         "oasis-editor-read-only": isReadOnly(),
       }}
+      style={{
+        // Single source of truth for the horizontal page gutter: the same TS
+        // constant drives both the editor shell width (pageWidth + 2 * gutter)
+        // and the scroll-content padding the page is centered within. CSS only
+        // consumes it via var(--oasis-editor-gutter-x).
+        "--oasis-editor-gutter-x": `${EDITOR_SCROLL_PADDING_PX}px`,
+      }}
     >
       <Show when={!useComposedShell() && showChrome() && showToolbar()}>
-        <Toolbar host={toolbarHost} registry={toolbarRegistry} />
+        <Toolbar host={toolbarHost} registry={toolbarRegistry} layout={toolbarLayout()} />
       </Show>
 
       <EditorDialogsLayer
@@ -661,6 +671,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         showMenubar={showMenubar}
         showToolbar={showToolbar}
         showOutline={showOutline}
+        toolbarLayout={toolbarLayout}
         isReadOnly={isReadOnly}
         viewportHeight={() => ui().viewportHeight}
         measuredBlockHeights={measuredBlockHeights}

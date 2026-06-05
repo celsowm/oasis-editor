@@ -5,6 +5,11 @@
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0)),
     var(--oasis-docs-surface);
+
+  /* Docs keeps the shared horizontal gutter (so the page stays centered and the
+     ruler aligns) but tightens the vertical rhythm. */
+  --oasis-editor-gutter-top: 18px;
+  --oasis-editor-gutter-bottom: 28px;
 }
 
 .oasis-editor-docs .oasis-editor-main-container {
@@ -74,7 +79,8 @@
 }
 
 .oasis-editor-docs .oasis-editor-editor-shell {
-  width: min(918px, 100%);
+  /* Width is driven by the inline `pageWidth + 2 * gutter` style set in
+     OasisEditorEditor.tsx (it wins over any value here), so don't restate it. */
   height: 100%;
   max-height: 100% !important;
   min-height: 0;
@@ -88,10 +94,6 @@
 .oasis-editor-docs .oasis-editor-editor,
 .oasis-editor-docs .oasis-editor-editor-scroll-content {
   background: transparent;
-}
-
-.oasis-editor-docs .oasis-editor-editor-scroll-content {
-  padding: 18px 0 28px;
 }
 
 .oasis-editor-docs .oasis-editor-paper {

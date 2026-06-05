@@ -15,6 +15,10 @@
 
   .oasis-editor-app {
     padding: 20px 14px 20px;
+    /* Tighter vertical gutters on small screens; horizontal gutter stays in
+       sync with the shell-width constant so the page remains centered. */
+    --oasis-editor-gutter-top: 18px;
+    --oasis-editor-gutter-bottom: 18px;
   }
 
   .oasis-editor-docs.oasis-editor-app {
@@ -27,10 +31,6 @@
 
   .oasis-editor-editor-shell {
     border-radius: 22px;
-  }
-
-  .oasis-editor-editor-scroll-content {
-    padding: 18px;
   }
 
   .oasis-editor-surface {

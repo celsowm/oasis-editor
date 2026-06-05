@@ -1,5 +1,7 @@
 import type { ToolbarItem } from "../schema/items.js";
 
+export type ToolbarMoveTarget = number | { before: string } | { after: string };
+
 export interface ToolbarRegistry {
   /** Add or update by id (last-write-wins). New items append, then sort by `order`. */
   register(item: ToolbarItem): void;
@@ -10,8 +12,8 @@ export interface ToolbarRegistry {
   /** Replace an existing item in place, preserving its position. */
   replace(targetId: string, item: ToolbarItem): void;
   remove(id: string): void;
-  /** Move an existing item to an absolute index. */
-  move(id: string, toIndex: number): void;
+  /** Move an existing item to an absolute index or relative to another item. */
+  move(id: string, target: ToolbarMoveTarget): void;
   get(id: string): ToolbarItem | undefined;
   getOrdered(): ToolbarItem[];
   /** Backward-friendly alias for getOrdered. */
@@ -64,12 +66,17 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
     }
   }
 
-  move(id: string, toIndex: number): void {
+  move(id: string, target: ToolbarMoveTarget): void {
     const index = this.entries.findIndex((entry) => entry.id === id);
     if (index < 0) {
       return;
     }
     const [item] = this.entries.splice(index, 1);
+    const toIndex = this.resolveMoveIndex(target);
+    if (toIndex === null) {
+      this.entries.splice(index, 0, item!);
+      return;
+    }
     const clamped = Math.max(0, Math.min(toIndex, this.entries.length));
     this.entries.splice(clamped, 0, item!);
     this.emit();
@@ -110,6 +117,18 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
       this.entries.splice(targetIndex + offset, 0, item);
     }
     this.emit();
+  }
+
+  private resolveMoveIndex(target: ToolbarMoveTarget): number | null {
+    if (typeof target === "number") {
+      return target;
+    }
+    if ("before" in target) {
+      const index = this.entries.findIndex((entry) => entry.id === target.before);
+      return index >= 0 ? index : null;
+    }
+    const index = this.entries.findIndex((entry) => entry.id === target.after);
+    return index >= 0 ? index + 1 : null;
   }
 
   private sortByOrder(): void {
