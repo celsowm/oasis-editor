@@ -43,447 +43,459 @@ The missing coverage was mainly:
 | P3 | Preserve or approximate; lower visual impact in many documents, but relevant for round-trip. |
 | P4 | Usually out of scope unless strict archival/round-trip fidelity is required. |
 
+## Status legend (oasis editor)
+
+The **Status** column tracks what `oasis-editor`'s DOCX import/export pipeline already handles in the current source tree (`src/import/docx/*` and `src/export/docx/*`). Use it to prioritize work and to know what falls back to defaults or is silently dropped.
+
+| Status | Meaning |
+|---|---|
+| Supported | Fully imported and exported (round-trip preserves the property in practice). |
+| Partial | Imported or exported with real limitations (only one direction, only a subset of values, layout approximated, or only a specific shape of the element is handled). |
+| Not supported | Not implemented: silently dropped on import and/or never written on export. |
+| N/A | Not an importer concern in the canonical WordprocessingML model (e.g. UI-only settings, internal generator metadata). |
+
+Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs.ts`, `tables.ts`, `styles.ts`, `numbering.ts`, `sectionProperties.ts`, `settings.ts`, `themeFonts.ts`, `relationships.ts`, `assetRegistry.ts`, `footnotes.ts`, `headerFooter.ts`, `xmlHelpers.ts`, `units.ts`). Export is driven by `exportEditorDocumentToDocx.ts` (with `textXml.ts`, `tableXml.ts`, `footnotesXml.ts`, `xmlUtils.ts`).
 
 ## Added non-table DOCX / WordprocessingML coverage
 
 ## Package, relationships, metadata, and markup compatibility
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Package / OPC | `[Content_Types].xml` / `ct:Types` | Package root | — | Content type registry for every part in the package. | Importer must read this before locating document parts; do not assume every DOCX uses the same set of parts. | P0 |
-| Package / OPC | `ct:Default` | `ct:Types` | `Extension`, `ContentType` | Default content type by file extension. | Needed for media, XML, relationship parts, and extension-based dispatch. | P0 |
-| Package / OPC | `ct:Override` | `ct:Types` | `PartName`, `ContentType` | Explicit content type for a package part. | Main document, styles, numbering, settings, footnotes, endnotes, comments and glossary are normally found here. | P0 |
-| Package / OPC | `_rels/.rels` / `pr:Relationships` | Package root relationships | — | Top-level relationship set. | Find the office document relationship instead of hard-coding `word/document.xml`. | P0 |
-| Package / OPC | `pr:Relationship` | Any `.rels` part | `Id`, `Type`, `Target`, `TargetMode` | Relationship from one part to another or to an external resource. | Preserve unknown relationship types; validate external targets before dereferencing. | P0 |
-| Package / OPC | Main document part | Relationship type `officeDocument` | part path | Root WordprocessingML document story. | Usually `/word/document.xml`, but the relationship is authoritative. | P0 |
-| Package / OPC | `word/_rels/document.xml.rels` | Main document part | relationship IDs | Relationships used by the main story. | Resolve `r:id` from hyperlinks, images, headers, footers, altChunk, footnotes, etc. | P0 |
-| Package / OPC | `word/styles.xml` | Main document related part | — | Style definitions. | Essential for paragraph/run/table/list style cascade. | P0 |
-| Package / OPC | `word/numbering.xml` | Main document related part | — | Numbering and list definitions. | Required to render bullets, outline numbering and list indentation. | P0 |
-| Package / OPC | `word/settings.xml` | Main document related part | — | Document-level settings. | Affects compatibility, track changes, hyphenation, proofing, zoom, fields, math and layout switches. | P1 |
-| Package / OPC | `word/fontTable.xml` | Main document related part | — | Font table. | Map font names, aliases, charset, family and embedded font relationships when present. | P1 |
-| Package / OPC | `word/theme/theme1.xml` | Theme relationship | — | Theme colors, fonts and effects. | Needed to resolve `themeColor`, `themeFill`, `themeFont`, tint/shade and theme font slots. | P1 |
-| Package / OPC | `docProps/core.xml` | Package relationship | `cp:*`, `dc:*`, `dcterms:*` | Core metadata. | Useful for round-trip, search, audit and generated output metadata. | P3 |
-| Package / OPC | `docProps/app.xml` | Package relationship | `Application`, `Pages`, `Words`, etc. | Extended application metadata. | Usually not needed for rendering; preserve if round-tripping. | P4 |
-| Package / OPC | `docProps/custom.xml` | Package relationship | `property`, `fmtid`, `pid`, `name`, `vt:*` | Custom document properties. | Often used by legal templates and document automation systems. | P2 |
-| Package / OPC | Digital signatures / encryption | Package-level facilities | signature parts, encrypted package | Security and integrity features. | Out of scope for many importers, but detect and fail clearly if encrypted. | P4 |
-| Markup compatibility | `mc:AlternateContent` | Anywhere allowed | `mc:Ignorable`, `mc:Choice`, `mc:Fallback`, `Requires` | Versioned fallback mechanism. | Choose supported branch; otherwise fallback; preserve original XML for round-trip. | P1 |
-| Markup compatibility | `mc:Ignorable` / `mc:PreserveElements` / `mc:PreserveAttributes` / `mc:ProcessContent` | Any element with MC attributes | prefix lists | Compatibility processing hints. | Do not drop unknown `w14`, `w15`, `w16*`, `wp14`, `wps`, etc. blindly. | P1 |
-| Generic attributes | Common `w:*` and XML attrs | Many elements | `xml:space`, `w:rsid*`, `w14:paraId`, `w14:textId`, `r:id`, `w:val` | Cross-cutting attributes. | Normalize for rendering, preserve originals for round-trip. | P1 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Package / OPC | `[Content_Types].xml` / `ct:Types` | Package root | — | Content type registry for every part in the package. | Importer must read this before locating document parts; do not assume every DOCX uses the same set of parts. | P0 | Not supported |
+| Package / OPC | `ct:Default` | `ct:Types` | `Extension`, `ContentType` | Default content type by file extension. | Needed for media, XML, relationship parts, and extension-based dispatch. | P0 | Not supported |
+| Package / OPC | `ct:Override` | `ct:Types` | `PartName`, `ContentType` | Explicit content type for a package part. | Main document, styles, numbering, settings, footnotes, endnotes, comments and glossary are normally found here. | P0 | Not supported |
+| Package / OPC | `_rels/.rels` / `pr:Relationships` | Package root relationships | — | Top-level relationship set. | Find the office document relationship instead of hard-coding `word/document.xml`. | P0 | Partial |
+| Package / OPC | `pr:Relationship` | Any `.rels` part | `Id`, `Type`, `Target`, `TargetMode` | Relationship from one part to another or to an external resource. | Preserve unknown relationship types; validate external targets before dereferencing. | P0 | Partial |
+| Package / OPC | Main document part | Relationship type `officeDocument` | part path | Root WordprocessingML document story. | Usually `/word/document.xml`, but the relationship is authoritative. | P0 | Partial |
+| Package / OPC | `word/_rels/document.xml.rels` | Main document part | relationship IDs | Relationships used by the main story. | Resolve `r:id` from hyperlinks, images, headers, footers, altChunk, footnotes, etc. | P0 | Supported |
+| Package / OPC | `word/styles.xml` | Main document related part | — | Style definitions. | Essential for paragraph/run/table/list style cascade. | P0 | Supported |
+| Package / OPC | `word/numbering.xml` | Main document related part | — | Numbering and list definitions. | Required to render bullets, outline numbering and list indentation. | P0 | Partial |
+| Package / OPC | `word/settings.xml` | Main document related part | — | Document-level settings. | Affects compatibility, track changes, hyphenation, proofing, zoom, fields, math and layout switches. | P1 | Partial |
+| Package / OPC | `word/fontTable.xml` | Main document related part | — | Font table. | Map font names, aliases, charset, family and embedded font relationships when present. | P1 | Not supported |
+| Package / OPC | `word/theme/theme1.xml` | Theme relationship | — | Theme colors, fonts and effects. | Needed to resolve `themeColor`, `themeFill`, `themeFont`, tint/shade and theme font slots. | P1 | Partial |
+| Package / OPC | `docProps/core.xml` | Package relationship | `cp:*`, `dc:*`, `dcterms:*` | Core metadata. | Useful for round-trip, search, audit and generated output metadata. | P3 | Not supported |
+| Package / OPC | `docProps/app.xml` | Package relationship | `Application`, `Pages`, `Words`, etc. | Extended application metadata. | Usually not needed for rendering; preserve if round-tripping. | P4 | Not supported |
+| Package / OPC | `docProps/custom.xml` | Package relationship | `property`, `fmtid`, `pid`, `name`, `vt:*` | Custom document properties. | Often used by legal templates and document automation systems. | P2 | Not supported |
+| Package / OPC | Digital signatures / encryption | Package-level facilities | signature parts, encrypted package | Security and integrity features. | Out of scope for many importers, but detect and fail clearly if encrypted. | P4 | Not supported |
+| Markup compatibility | `mc:AlternateContent` | Anywhere allowed | `mc:Ignorable`, `mc:Choice`, `mc:Fallback`, `Requires` | Versioned fallback mechanism. | Choose supported branch; otherwise fallback; preserve original XML for round-trip. | P1 | Not supported |
+| Markup compatibility | `mc:Ignorable` / `mc:PreserveElements` / `mc:PreserveAttributes` / `mc:ProcessContent` | Any element with MC attributes | prefix lists | Compatibility processing hints. | Do not drop unknown `w14`, `w15`, `w16*`, `wp14`, `wps`, etc. blindly. | P1 | Not supported |
+| Generic attributes | Common `w:*` and XML attrs | Many elements | `xml:space`, `w:rsid*`, `w14:paraId`, `w14:textId`, `r:id`, `w:val` | Cross-cutting attributes. | Normalize for rendering, preserve originals for round-trip. | P1 | Partial |
 
 ## Main document story and block-level structure
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Main document | `w:document` | Main document part root | `mc:*`, `w:conformance` | Root of the main WordprocessingML document. | Read namespace declarations and conformance/compatibility before walking content. | P0 |
-| Main document | `w:body` | `w:document` | — | Main story content container. | Children are block-level elements; final `w:sectPr` may define page layout for the last section. | P0 |
-| Main document | `w:p` | Body, cell, header/footer, note, comment, text box, glossary, etc. | `w:rsidR`, `w:rsidRPr`, `w:rsidRDefault`, `w14:paraId`, `w14:textId` | Paragraph block. | Core unit for text layout; contains `pPr` and inline content. | P0 |
-| Main document | `w:tbl` | Any block-level story context | common attrs | Table block. | Detailed table coverage is retained in the table matrix below. | P0 |
-| Main document | `w:sectPr` | `w:body`, `w:pPr` | `w:rsidR`, `w:rsidSect` | Section properties. | Can appear at end of body or inside a paragraph's `pPr` to end a section. | P0 |
-| Main document | `w:proofErr` | Body or run-level context | `w:type` | Proofing error range marker. | Usually invisible; preserve or ignore for display. | P3 |
-| Main document | `w:permStart` / `w:permEnd` | Block/inline contexts | `w:id`, `w:edGrp`, `w:ed` | Editable range permissions. | Important when importing protected forms/templates. | P3 |
-| Main document | `w:bookmarkStart` / `w:bookmarkEnd` | Block/inline contexts | `w:id`, `w:name`, `w:colFirst`, `w:colLast` | Bookmark range. | Needed for cross-references, hyperlinks and legal-document anchors. | P1 |
-| Main document | `w:moveFromRangeStart` / `w:moveFromRangeEnd` | Block/inline contexts | `w:id`, `w:name`, `w:author`, `w:date` | Tracked moved-from range. | Revision-aware rendering; otherwise preserve/accept-final behavior. | P3 |
-| Main document | `w:moveToRangeStart` / `w:moveToRangeEnd` | Block/inline contexts | `w:id`, `w:name`, `w:author`, `w:date` | Tracked moved-to range. | Revision-aware rendering. | P3 |
-| Main document | `w:customXml` | Block or run context | `w:element`, `w:uri` | Custom XML wrapper around content. | Unwrap for display; preserve metadata for round-trip and template semantics. | P2 |
-| Main document | `w:sdt` | Block, row, cell, run and rich contexts | — | Structured document tag / content control. | Handle `sdtPr`, `sdtContent`; common in forms and generated legal templates. | P1 |
-| Main document | `w:altChunk` | Body/block context | `r:id` | External imported content chunk. | May point to HTML, MHT, RTF or another WordprocessingML part; Word expands it on open. | P2 |
-| Main document | `w:subDoc` | Run context | `r:id` | Subdocument reference. | Often rare; preserve or resolve relationship if building a full renderer. | P4 |
-| Main document | `w:background` | `w:document` | `w:color`, `w:themeColor`, `w:themeTint`, `w:themeShade` | Document background. | Affects page/background rendering; may contain VML background shape. | P2 |
-| Main document | `w:del` / `w:ins` | Block or run contexts | `w:id`, `w:author`, `w:date` | Tracked deletion/insertion container. | Choose display mode: original/final/show-revisions; preserve metadata. | P2 |
-| Main document | `w:commentRangeStart` / `w:commentRangeEnd` | Block/inline contexts | `w:id` | Comment anchor range. | Resolve to `comments.xml` and render comment marker if needed. | P2 |
-| Main document | `w:footnoteReference` / `w:endnoteReference` | Run context | `w:id`, `w:customMarkFollows` | Footnote/endnote marker. | Needs notes part plus style/counter handling. | P1 |
-| Main document | `w:annotationRef` / `w:commentReference` | Run context | `w:id` | Annotation/comment marker. | Used for comment display and round-trip. | P2 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Main document | `w:document` | Main document part root | `mc:*`, `w:conformance` | Root of the main WordprocessingML document. | Read namespace declarations and conformance/compatibility before walking content. | P0 | Supported |
+| Main document | `w:body` | `w:document` | — | Main story content container. | Children are block-level elements; final `w:sectPr` may define page layout for the last section. | P0 | Supported |
+| Main document | `w:p` | Body, cell, header/footer, note, comment, text box, glossary, etc. | `w:rsidR`, `w:rsidRPr`, `w:rsidRDefault`, `w14:paraId`, `w14:textId` | Paragraph block. | Core unit for text layout; contains `pPr` and inline content. | P0 | Supported |
+| Main document | `w:tbl` | Any block-level story context | common attrs | Table block. | Detailed table coverage is retained in the table matrix below. | P0 | Supported |
+| Main document | `w:sectPr` | `w:body`, `w:pPr` | `w:rsidR`, `w:rsidSect` | Section properties. | Can appear at end of body or inside a paragraph's `pPr` to end a section. | P0 | Partial |
+| Main document | `w:proofErr` | Body or run-level context | `w:type` | Proofing error range marker. | Usually invisible; preserve or ignore for display. | P3 | Not supported |
+| Main document | `w:permStart` / `w:permEnd` | Block/inline contexts | `w:id`, `w:edGrp`, `w:ed` | Editable range permissions. | Important when importing protected forms/templates. | P3 | Not supported |
+| Main document | `w:bookmarkStart` / `w:bookmarkEnd` | Block/inline contexts | `w:id`, `w:name`, `w:colFirst`, `w:colLast` | Bookmark range. | Needed for cross-references, hyperlinks and legal-document anchors. | P1 | Not supported |
+| Main document | `w:moveFromRangeStart` / `w:moveFromRangeEnd` | Block/inline contexts | `w:id`, `w:name`, `w:author`, `w:date` | Tracked moved-from range. | Revision-aware rendering; otherwise preserve/accept-final behavior. | P3 | Not supported |
+| Main document | `w:moveToRangeStart` / `w:moveToRangeEnd` | Block/inline contexts | `w:id`, `w:name`, `w:author`, `w:date` | Tracked moved-to range. | Revision-aware rendering. | P3 | Not supported |
+| Main document | `w:customXml` | Block or run context | `w:element`, `w:uri` | Custom XML wrapper around content. | Unwrap for display; preserve metadata for round-trip and template semantics. | P2 | Not supported |
+| Main document | `w:sdt` | Block, row, cell, run and rich contexts | — | Structured document tag / content control. | Handle `sdtPr`, `sdtContent`; common in forms and generated legal templates. | P1 | Not supported |
+| Main document | `w:altChunk` | Body/block context | `r:id` | External imported content chunk. | May point to HTML, MHT, RTF or another WordprocessingML part; Word expands it on open. | P2 | Not supported |
+| Main document | `w:subDoc` | Run context | `r:id` | Subdocument reference. | Often rare; preserve or resolve relationship if building a full renderer. | P4 | Not supported |
+| Main document | `w:background` | `w:document` | `w:color`, `w:themeColor`, `w:themeTint`, `w:themeShade` | Document background. | Affects page/background rendering; may contain VML background shape. | P2 | Not supported |
+| Main document | `w:del` / `w:ins` | Block or run contexts | `w:id`, `w:author`, `w:date` | Tracked deletion/insertion container. | Choose display mode: original/final/show-revisions; preserve metadata. | P2 | Not supported |
+| Main document | `w:commentRangeStart` / `w:commentRangeEnd` | Block/inline contexts | `w:id` | Comment anchor range. | Resolve to `comments.xml` and render comment marker if needed. | P2 | Not supported |
+| Main document | `w:footnoteReference` / `w:endnoteReference` | Run context | `w:id`, `w:customMarkFollows` | Footnote/endnote marker. | Needs notes part plus style/counter handling. | P1 | Partial |
+| Main document | `w:annotationRef` / `w:commentReference` | Run context | `w:id` | Annotation/comment marker. | Used for comment display and round-trip. | P2 | Not supported |
 
 ## Sections, pages, margins, columns, headers, and footers
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Section/page | `w:pgSz` | `w:sectPr` | `w:w`, `w:h`, `w:orient`, `w:code` | Page size and orientation. | Core for pagination, PDF export and layout width. | P0 |
-| Section/page | `w:pgMar` | `w:sectPr` | `w:top`, `w:right`, `w:bottom`, `w:left`, `w:header`, `w:footer`, `w:gutter` | Page margins. | Twips; header/footer distances affect vertical layout. | P0 |
-| Section/page | `w:cols` | `w:sectPr` | `w:num`, `w:space`, `w:sep`, `w:equalWidth` | Column layout settings. | If unequal columns, parse child `w:col` elements. | P1 |
-| Section/page | `w:col` | `w:cols` | `w:w`, `w:space` | Single section column. | Important for multi-column legal/publication layouts. | P1 |
-| Section/page | `w:type` | `w:sectPr` | `w:val` | Section break type. | Values include nextPage, continuous, evenPage, oddPage, nextColumn. | P1 |
-| Section/page | `w:docGrid` | `w:sectPr` | `w:type`, `w:linePitch`, `w:charSpace` | Document grid. | Affects East Asian and grid-snapped layout; can affect table line heights. | P2 |
-| Section/page | `w:pgNumType` | `w:sectPr` | `w:start`, `w:fmt`, `w:chapStyle`, `w:chapSep` | Page numbering format. | Needed for generated page numbers and fields. | P2 |
-| Section/page | `w:headerReference` | `w:sectPr` | `w:type`, `r:id` | Header relationship for default/even/first page. | Resolve `r:id`; section can have multiple header types. | P1 |
-| Section/page | `w:footerReference` | `w:sectPr` | `w:type`, `r:id` | Footer relationship for default/even/first page. | Required for pagination/PDF export. | P1 |
-| Section/page | `w:titlePg` | `w:sectPr` | `w:val` | Different first page header/footer flag. | Impacts which header/footer applies to page 1 of a section. | P1 |
-| Section/page | `w:evenAndOddHeaders` | `w:settings` | `w:val` | Enable distinct even/odd headers/footers. | Use with section header/footer references. | P1 |
-| Section/page | `w:pageBorders` | `w:sectPr` | `w:zOrder`, `w:display`, `w:offsetFrom` | Page border container. | Render if exporting high-fidelity pages. | P2 |
-| Section/page | `w:top` / `w:left` / `w:bottom` / `w:right` | `w:pageBorders` | border attrs | Page border edge. | Use common border parser. | P2 |
-| Section/page | `w:lnNumType` | `w:sectPr` | `w:countBy`, `w:start`, `w:restart`, `w:distance` | Line numbering. | Relevant in legal and academic documents. | P3 |
-| Section/page | `w:footnotePr` / `w:endnotePr` | `w:sectPr` | children | Section-level footnote/endnote settings. | Controls placement and numbering restarts. | P2 |
-| Section/page | `w:rtlGutter` | `w:sectPr` | `w:val` | Right-to-left gutter placement. | Needed for RTL page layout. | P3 |
-| Section/page | `w:bidi` | `w:sectPr` | `w:val` | Bidi section layout. | Affects page flow and margins in RTL sections. | P2 |
-| Section/page | `w:textDirection` | `w:sectPr` | `w:val` | Text direction for section. | Vertical/rotated document layouts. | P3 |
-| Section/page | `w:vAlign` | `w:sectPr` | `w:val` | Vertical justification of page contents. | Values top/center/both/bottom; affects page vertical placement. | P2 |
-| Section/page | `w:paperSrc` | `w:sectPr` | `w:first`, `w:other` | Printer paper source. | Usually not relevant to web rendering; preserve. | P4 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Section/page | `w:pgSz` | `w:sectPr` | `w:w`, `w:h`, `w:orient`, `w:code` | Page size and orientation. | Core for pagination, PDF export and layout width. | P0 | Supported |
+| Section/page | `w:pgMar` | `w:sectPr` | `w:top`, `w:right`, `w:bottom`, `w:left`, `w:header`, `w:footer`, `w:gutter` | Page margins. | Twips; header/footer distances affect vertical layout. | P0 | Supported |
+| Section/page | `w:cols` | `w:sectPr` | `w:num`, `w:space`, `w:sep`, `w:equalWidth` | Column layout settings. | If unequal columns, parse child `w:col` elements. | P1 | Not supported |
+| Section/page | `w:col` | `w:cols` | `w:w`, `w:space` | Single section column. | Important for multi-column legal/publication layouts. | P1 | Not supported |
+| Section/page | `w:type` | `w:sectPr` | `w:val` | Section break type. | Values include nextPage, continuous, evenPage, oddPage, nextColumn. | P1 | Not supported |
+| Section/page | `w:docGrid` | `w:sectPr` | `w:type`, `w:linePitch`, `w:charSpace` | Document grid. | Affects East Asian and grid-snapped layout; can affect table line heights. | P2 | Partial |
+| Section/page | `w:pgNumType` | `w:sectPr` | `w:start`, `w:fmt`, `w:chapStyle`, `w:chapSep` | Page numbering format. | Needed for generated page numbers and fields. | P2 | Not supported |
+| Section/page | `w:headerReference` | `w:sectPr` | `w:type`, `r:id` | Header relationship for default/even/first page. | Resolve `r:id`; section can have multiple header types. | P1 | Supported |
+| Section/page | `w:footerReference` | `w:sectPr` | `w:type`, `r:id` | Footer relationship for default/even/first page. | Required for pagination/PDF export. | P1 | Supported |
+| Section/page | `w:titlePg` | `w:sectPr` | `w:val` | Different first page header/footer flag. | Impacts which header/footer applies to page 1 of a section. | P1 | Partial |
+| Section/page | `w:evenAndOddHeaders` | `w:settings` | `w:val` | Enable distinct even/odd headers/footers. | Use with section header/footer references. | P1 | Partial |
+| Section/page | `w:pageBorders` | `w:sectPr` | `w:zOrder`, `w:display`, `w:offsetFrom` | Page border container. | Render if exporting high-fidelity pages. | P2 | Not supported |
+| Section/page | `w:top` / `w:left` / `w:bottom` / `w:right` | `w:pageBorders` | border attrs | Page border edge. | Use common border parser. | P2 | Not supported |
+| Section/page | `w:lnNumType` | `w:sectPr` | `w:countBy`, `w:start`, `w:restart`, `w:distance` | Line numbering. | Relevant in legal and academic documents. | P3 | Not supported |
+| Section/page | `w:footnotePr` / `w:endnotePr` | `w:sectPr` | children | Section-level footnote/endnote settings. | Controls placement and numbering restarts. | P2 | Not supported |
+| Section/page | `w:rtlGutter` | `w:sectPr` | `w:val` | Right-to-left gutter placement. | Needed for RTL page layout. | P3 | Not supported |
+| Section/page | `w:bidi` | `w:sectPr` | `w:val` | Bidi section layout. | Affects page flow and margins in RTL sections. | P2 | Not supported |
+| Section/page | `w:textDirection` | `w:sectPr` | `w:val` | Text direction for section. | Vertical/rotated document layouts. | P3 | Not supported |
+| Section/page | `w:vAlign` | `w:sectPr` | `w:val` | Vertical justification of page contents. | Values top/center/both/bottom; affects page vertical placement. | P2 | Not supported |
+| Section/page | `w:paperSrc` | `w:sectPr` | `w:first`, `w:other` | Printer paper source. | Usually not relevant to web rendering; preserve. | P4 | Not supported |
 
 ## Paragraph-level markup and properties
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Paragraph | `w:pPr` | `w:p`, styles, numbering levels | — | Paragraph property set. | Resolve cascade: defaults → style → numbering level → direct formatting. | P0 |
-| Paragraph | `w:pStyle` | `w:pPr` | `w:val` | Paragraph style reference. | Resolve style ID from `styles.xml`. | P0 |
-| Paragraph | `w:jc` | `w:pPr` | `w:val` | Paragraph alignment. | Values include left, right, center, both, distribute, start/end variants. | P0 |
-| Paragraph | `w:spacing` | `w:pPr` | `w:before`, `w:after`, `w:line`, `w:lineRule`, `w:beforeAutospacing`, `w:afterAutospacing`, `w:contextualSpacing` | Paragraph spacing and line spacing. | Critical for Word-like vertical layout; handle auto spacing and contextual suppression. | P0 |
-| Paragraph | `w:ind` | `w:pPr` | `w:left`, `w:right`, `w:firstLine`, `w:hanging`, `w:start`, `w:end`, `w:firstLineChars`, `w:hangingChars` | Paragraph indentation. | Bidi-aware start/end supersede left/right in newer docs. | P0 |
-| Paragraph | `w:tabs` | `w:pPr` | — | Tab stop collection. | Needed for legal templates, TOCs and aligned signature blocks. | P1 |
-| Paragraph | `w:tab` | `w:tabs` | `w:val`, `w:pos`, `w:leader` | Single tab stop. | Render tab expansion with leader dots/dashes/underscores when present. | P1 |
-| Paragraph | `w:numPr` | `w:pPr` | — | Numbering properties. | Contains `ilvl` and `numId`; list layout cannot be correct without it. | P0 |
-| Paragraph | `w:ilvl` | `w:numPr` | `w:val` | List level. | Map to `abstractNum/lvl`. | P0 |
-| Paragraph | `w:numId` | `w:numPr` | `w:val` | List instance id. | Map to `num` and then `abstractNum`. | P0 |
-| Paragraph | `w:outlineLvl` | `w:pPr` | `w:val` | Outline level. | Needed for headings, navigation and generated TOC structure. | P1 |
-| Paragraph | `w:keepNext` | `w:pPr` | `w:val` | Keep paragraph with next paragraph. | Pagination fidelity. | P1 |
-| Paragraph | `w:keepLines` | `w:pPr` | `w:val` | Keep lines together. | Avoids splitting paragraph across pages. | P1 |
-| Paragraph | `w:pageBreakBefore` | `w:pPr` | `w:val` | Start paragraph on new page. | Core for pagination. | P1 |
-| Paragraph | `w:widowControl` | `w:pPr` | `w:val` | Widow/orphan control. | Can change page breaks in Word. | P2 |
-| Paragraph | `w:suppressLineNumbers` | `w:pPr` | `w:val` | Suppress line numbering for paragraph. | Relevant when section line numbering is enabled. | P3 |
-| Paragraph | `w:pBdr` | `w:pPr` | — | Paragraph border container. | Includes top/left/bottom/right/between/bar border edges. | P1 |
-| Paragraph | `w:top` / `w:left` / `w:bottom` / `w:right` / `w:between` / `w:bar` | `w:pBdr` | border attrs | Paragraph border edge. | Use common border parser; `between` applies between adjacent matching paragraphs. | P1 |
-| Paragraph | `w:shd` | `w:pPr` | `w:val`, `w:color`, `w:fill`, theme attrs | Paragraph shading. | Resolve theme colors when possible. | P1 |
-| Paragraph | `w:framePr` | `w:pPr` | `w:w`, `w:h`, `w:x`, `w:y`, `w:hSpace`, `w:vSpace`, `w:wrap`, `w:hAnchor`, `w:vAnchor`, `w:dropCap`, `w:lines` | Text frame / positioned paragraph. | Used by old Word text boxes/drop caps; difficult in browser layout. | P2 |
-| Paragraph | `w:rPr` | `w:pPr` | run property children | Default run props for paragraph mark. | Affects paragraph mark and sometimes inherited run formatting. | P1 |
-| Paragraph | `w:sectPr` | `w:pPr` | section children | Section break after this paragraph. | Do not only scan `body/sectPr`; sections may be paragraph-scoped. | P0 |
-| Paragraph | `w:bidi` | `w:pPr` | `w:val` | Right-to-left paragraph layout. | Affects alignment, indentation and text flow. | P1 |
-| Paragraph | `w:mirrorIndents` | `w:pPr` | `w:val` | Mirror paragraph indents. | Relevant for facing pages/book layout. | P3 |
-| Paragraph | `w:snapToGrid` | `w:pPr` | `w:val` | Snap paragraph to document grid. | East Asian/grid documents; may affect line height. | P2 |
-| Paragraph | `w:suppressAutoHyphens` | `w:pPr` | `w:val` | Disable auto hyphenation. | Line breaking fidelity. | P2 |
-| Paragraph | `w:kinsoku` | `w:pPr` | `w:val` | East Asian line-breaking rule. | Preserve/approximate unless implementing full CJK line breaking. | P3 |
-| Paragraph | `w:wordWrap` | `w:pPr` | `w:val` | Allow line break inside Latin words. | Layout fidelity for CJK mixed text. | P3 |
-| Paragraph | `w:overflowPunct` | `w:pPr` | `w:val` | Punctuation overflow behavior. | CJK typography. | P3 |
-| Paragraph | `w:topLinePunct` | `w:pPr` | `w:val` | Compress punctuation at line start. | CJK typography. | P3 |
-| Paragraph | `w:autoSpaceDE` / `w:autoSpaceDN` | `w:pPr` | `w:val` | Auto spacing between East Asian/Latin or digits. | Can alter measured text widths. | P3 |
-| Paragraph | `w:textAlignment` | `w:pPr` | `w:val` | Vertical text alignment within line. | Values such as auto/top/center/baseline/bottom. | P2 |
-| Paragraph | `w:textboxTightWrap` | `w:pPr` | `w:val` | Tight wrap behavior in text boxes. | Rare but relevant for shapes/text boxes. | P3 |
-| Paragraph | `w:divId` | `w:pPr` | `w:val` | HTML import mapping id. | Preserve only for most importers. | P4 |
-| Paragraph | `w:cnfStyle` | `w:pPr` | conditional flags | Conditional style flags. | Most visible in table style contexts. | P2 |
-| Paragraph | `w:pPrChange` | `w:pPr` | `w:id`, `w:author`, `w:date` | Tracked paragraph property change. | Preserve or use for revision-aware rendering. | P3 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Paragraph | `w:pPr` | `w:p`, styles, numbering levels | — | Paragraph property set. | Resolve cascade: defaults → style → numbering level → direct formatting. | P0 | Supported |
+| Paragraph | `w:pStyle` | `w:pPr` | `w:val` | Paragraph style reference. | Resolve style ID from `styles.xml`. | P0 | Supported |
+| Paragraph | `w:jc` | `w:pPr` | `w:val` | Paragraph alignment. | Values include left, right, center, both, distribute, start/end variants. | P0 | Supported |
+| Paragraph | `w:spacing` | `w:pPr` | `w:before`, `w:after`, `w:line`, `w:lineRule`, `w:beforeAutospacing`, `w:afterAutospacing`, `w:contextualSpacing` | Paragraph spacing and line spacing. | Critical for Word-like vertical layout; handle auto spacing and contextual suppression. | P0 | Supported |
+| Paragraph | `w:ind` | `w:pPr` | `w:left`, `w:right`, `w:firstLine`, `w:hanging`, `w:start`, `w:end`, `w:firstLineChars`, `w:hangingChars` | Paragraph indentation. | Bidi-aware start/end supersede left/right in newer docs. | P0 | Partial |
+| Paragraph | `w:tabs` | `w:pPr` | — | Tab stop collection. | Needed for legal templates, TOCs and aligned signature blocks. | P1 | Not supported |
+| Paragraph | `w:tab` | `w:tabs` | `w:val`, `w:pos`, `w:leader` | Single tab stop. | Render tab expansion with leader dots/dashes/underscores when present. | P1 | Not supported |
+| Paragraph | `w:numPr` | `w:pPr` | — | Numbering properties. | Contains `ilvl` and `numId`; list layout cannot be correct without it. | P0 | Supported |
+| Paragraph | `w:ilvl` | `w:numPr` | `w:val` | List level. | Map to `abstractNum/lvl`. | P0 | Supported |
+| Paragraph | `w:numId` | `w:numPr` | `w:val` | List instance id. | Map to `num` and then `abstractNum`. | P0 | Supported |
+| Paragraph | `w:outlineLvl` | `w:pPr` | `w:val` | Outline level. | Needed for headings, navigation and generated TOC structure. | P1 | Not supported |
+| Paragraph | `w:keepNext` | `w:pPr` | `w:val` | Keep paragraph with next paragraph. | Pagination fidelity. | P1 | Supported |
+| Paragraph | `w:keepLines` | `w:pPr` | `w:val` | Keep lines together. | Avoids splitting paragraph across pages. | P1 | Supported |
+| Paragraph | `w:pageBreakBefore` | `w:pPr` | `w:val` | Start paragraph on new page. | Core for pagination. | P1 | Supported |
+| Paragraph | `w:widowControl` | `w:pPr` | `w:val` | Widow/orphan control. | Can change page breaks in Word. | P2 | Supported |
+| Paragraph | `w:suppressLineNumbers` | `w:pPr` | `w:val` | Suppress line numbering for paragraph. | Relevant when section line numbering is enabled. | P3 | Not supported |
+| Paragraph | `w:pBdr` | `w:pPr` | — | Paragraph border container. | Includes top/left/bottom/right/between/bar border edges. | P1 | Not supported |
+| Paragraph | `w:top` / `w:left` / `w:bottom` / `w:right` / `w:between` / `w:bar` | `w:pBdr` | border attrs | Paragraph border edge. | Use common border parser; `between` applies between adjacent matching paragraphs. | P1 | Not supported |
+| Paragraph | `w:shd` | `w:pPr` | `w:val`, `w:color`, `w:fill`, theme attrs | Paragraph shading. | Resolve theme colors when possible. | P1 | Not supported |
+| Paragraph | `w:framePr` | `w:pPr` | `w:w`, `w:h`, `w:x`, `w:y`, `w:hSpace`, `w:vSpace`, `w:wrap`, `w:hAnchor`, `w:vAnchor`, `w:dropCap`, `w:lines` | Text frame / positioned paragraph. | Used by old Word text boxes/drop caps; difficult in browser layout. | P2 | Not supported |
+| Paragraph | `w:rPr` | `w:pPr` | run property children | Default run props for paragraph mark. | Affects paragraph mark and sometimes inherited run formatting. | P1 | Supported |
+| Paragraph | `w:sectPr` | `w:pPr` | section children | Section break after this paragraph. | Do not only scan `body/sectPr`; sections may be paragraph-scoped. | P0 | Supported |
+| Paragraph | `w:bidi` | `w:pPr` | `w:val` | Right-to-left paragraph layout. | Affects alignment, indentation and text flow. | P1 | Not supported |
+| Paragraph | `w:mirrorIndents` | `w:pPr` | `w:val` | Mirror paragraph indents. | Relevant for facing pages/book layout. | P3 | Not supported |
+| Paragraph | `w:snapToGrid` | `w:pPr` | `w:val` | Snap paragraph to document grid. | East Asian/grid documents; may affect line height. | P2 | Partial |
+| Paragraph | `w:suppressAutoHyphens` | `w:pPr` | `w:val` | Disable auto hyphenation. | Line breaking fidelity. | P2 | Not supported |
+| Paragraph | `w:kinsoku` | `w:pPr` | `w:val` | East Asian line-breaking rule. | Preserve/approximate unless implementing full CJK line breaking. | P3 | Not supported |
+| Paragraph | `w:wordWrap` | `w:pPr` | `w:val` | Allow line break inside Latin words. | Layout fidelity for CJK mixed text. | P3 | Not supported |
+| Paragraph | `w:overflowPunct` | `w:pPr` | `w:val` | Punctuation overflow behavior. | CJK typography. | P3 | Not supported |
+| Paragraph | `w:topLinePunct` | `w:pPr` | `w:val` | Compress punctuation at line start. | CJK typography. | P3 | Not supported |
+| Paragraph | `w:autoSpaceDE` / `w:autoSpaceDN` | `w:pPr` | `w:val` | Auto spacing between East Asian/Latin or digits. | Can alter measured text widths. | P3 | Not supported |
+| Paragraph | `w:textAlignment` | `w:pPr` | `w:val` | Vertical text alignment within line. | Values such as auto/top/center/baseline/bottom. | P2 | Not supported |
+| Paragraph | `w:textboxTightWrap` | `w:pPr` | `w:val` | Tight wrap behavior in text boxes. | Rare but relevant for shapes/text boxes. | P3 | Not supported |
+| Paragraph | `w:divId` | `w:pPr` | `w:val` | HTML import mapping id. | Preserve only for most importers. | P4 | Not supported |
+| Paragraph | `w:cnfStyle` | `w:pPr` | conditional flags | Conditional style flags. | Most visible in table style contexts. | P2 | Not supported |
+| Paragraph | `w:pPrChange` | `w:pPr` | `w:id`, `w:author`, `w:date` | Tracked paragraph property change. | Preserve or use for revision-aware rendering. | P3 | Not supported |
 
 ## Run-level content
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Run/content | `w:r` | `w:p`, `w:hyperlink`, revision containers, SDT content | `w:rsidR`, `w:rsidRPr`, `w:rsidDel` | Run: inline content sharing common properties. | Core inline unit; contains optional `rPr` then text/control/drawing children. | P0 |
-| Run/content | `w:rPr` | `w:r`, `w:pPr`, styles, numbering levels | — | Run property set. | Resolve style/default cascade before direct formatting. | P0 |
-| Run/content | `w:t` | `w:r` | `xml:space` | Text node. | Preserve leading/trailing spaces with `xml:space='preserve'`; concatenate only with care. | P0 |
-| Run/content | `w:tab` | `w:r` | — | Tab character. | Requires paragraph tab-stop resolution; do not render as plain spaces blindly. | P0 |
-| Run/content | `w:br` | `w:r` | `w:type`, `w:clear` | Line/page/column break. | `type='page'` and `type='column'` affect pagination/columns. | P0 |
-| Run/content | `w:cr` | `w:r` | — | Carriage return. | Similar visual effect to line break in many cases. | P1 |
-| Run/content | `w:noBreakHyphen` | `w:r` | — | Non-breaking hyphen. | Text extraction and line breaking. | P1 |
-| Run/content | `w:softHyphen` | `w:r` | — | Optional hyphen. | Important for accurate line breaking but usually invisible until break point. | P2 |
-| Run/content | `w:sym` | `w:r` | `w:font`, `w:char` | Symbol character from a font. | Map legacy symbol fonts when possible; otherwise preserve. | P1 |
-| Run/content | `w:ptab` | `w:r` | `w:alignment`, `w:relativeTo`, `w:leader` | Positioned tab. | Used in headers/footers and page-number layouts. | P2 |
-| Run/content | `w:object` | `w:r` | children/relationship attrs | Embedded OLE/VML object. | Usually preserve/placeholder unless OLE rendering is in scope. | P4 |
-| Run/content | `w:drawing` | `w:r` | DrawingML children | Modern drawing/image/chart container. | Parse `wp:inline`/`wp:anchor`; resolve image relationships. | P1 |
-| Run/content | `w:pict` | `w:r` | VML children | Legacy VML picture/shape container. | Common in old DOCX/templates; support at least image extraction and text boxes. | P2 |
-| Run/content | `w:lastRenderedPageBreak` | `w:r` | — | Producer-saved rendered page break marker. | Useful debug hint but not normative for a new layout engine. | P3 |
-| Run/content | `w:instrText` | `w:r` | `xml:space` | Field instruction text. | Needed for complex fields like PAGE, NUMPAGES, TOC, REF, HYPERLINK. | P1 |
-| Run/content | `w:fldChar` | `w:r` | `w:fldCharType`, `w:fldLock`, `w:dirty` | Complex field delimiter. | Track begin/separate/end state to reconstruct field instructions and result. | P1 |
-| Run/content | `w:fldSimple` | Paragraph inline context | `w:instr`, `w:fldLock`, `w:dirty` | Simple field wrapper. | May contain field result runs; evaluate or preserve current result. | P1 |
-| Run/content | `w:delText` | `w:r` in deletion context | `xml:space` | Deleted text. | Show only in revision mode; include in original-mode text extraction. | P2 |
-| Run/content | `w:commentReference` | `w:r` | `w:id` | Visible comment reference marker. | Resolve comments part for UI/sidebar. | P2 |
-| Run/content | `w:separator` / `w:continuationSeparator` | Footnote/endnote special notes | — | Footnote/endnote separator markers. | Special note content. | P3 |
-| Run/content | `w:dayShort` / `w:monthLong` / date tokens | `w:r` | — | Legacy date field result tokens. | Mostly preserve. | P4 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Run/content | `w:r` | `w:p`, `w:hyperlink`, revision containers, SDT content | `w:rsidR`, `w:rsidRPr`, `w:rsidDel` | Run: inline content sharing common properties. | Core inline unit; contains optional `rPr` then text/control/drawing children. | P0 | Supported |
+| Run/content | `w:rPr` | `w:r`, `w:pPr`, styles, numbering levels | — | Run property set. | Resolve style/default cascade before direct formatting. | P0 | Supported |
+| Run/content | `w:t` | `w:r` | `xml:space` | Text node. | Preserve leading/trailing spaces with `xml:space='preserve'`; concatenate only with care. | P0 | Supported |
+| Run/content | `w:tab` | `w:r` | — | Tab character. | Requires paragraph tab-stop resolution; do not render as plain spaces blindly. | P0 | Partial |
+| Run/content | `w:br` | `w:r` | `w:type`, `w:clear` | Line/page/column break. | `type='page'` and `type='column'` affect pagination/columns. | P0 | Supported |
+| Run/content | `w:cr` | `w:r` | — | Carriage return. | Similar visual effect to line break in many cases. | P1 | Supported |
+| Run/content | `w:noBreakHyphen` | `w:r` | — | Non-breaking hyphen. | Text extraction and line breaking. | P1 | Not supported |
+| Run/content | `w:softHyphen` | `w:r` | — | Optional hyphen. | Important for accurate line breaking but usually invisible until break point. | P2 | Not supported |
+| Run/content | `w:sym` | `w:r` | `w:font`, `w:char` | Symbol character from a font. | Map legacy symbol fonts when possible; otherwise preserve. | P1 | Not supported |
+| Run/content | `w:ptab` | `w:r` | `w:alignment`, `w:relativeTo`, `w:leader` | Positioned tab. | Used in headers/footers and page-number layouts. | P2 | Not supported |
+| Run/content | `w:object` | `w:r` | children/relationship attrs | Embedded OLE/VML object. | Usually preserve/placeholder unless OLE rendering is in scope. | P4 | Not supported |
+| Run/content | `w:drawing` | `w:r` | DrawingML children | Modern drawing/image/chart container. | Parse `wp:inline`/`wp:anchor`; resolve image relationships. | P1 | Partial |
+| Run/content | `w:pict` | `w:r` | VML children | Legacy VML picture/shape container. | Common in old DOCX/templates; support at least image extraction and text boxes. | P2 | Not supported |
+| Run/content | `w:lastRenderedPageBreak` | `w:r` | — | Producer-saved rendered page break marker. | Useful debug hint but not normative for a new layout engine. | P3 | Supported |
+| Run/content | `w:instrText` | `w:r` | `xml:space` | Field instruction text. | Needed for complex fields like PAGE, NUMPAGES, TOC, REF, HYPERLINK. | P1 | Supported |
+| Run/content | `w:fldChar` | `w:r` | `w:fldCharType`, `w:fldLock`, `w:dirty` | Complex field delimiter. | Track begin/separate/end state to reconstruct field instructions and result. | P1 | Partial |
+| Run/content | `w:fldSimple` | Paragraph inline context | `w:instr`, `w:fldLock`, `w:dirty` | Simple field wrapper. | May contain field result runs; evaluate or preserve current result. | P1 | Partial |
+| Run/content | `w:delText` | `w:r` in deletion context | `xml:space` | Deleted text. | Show only in revision mode; include in original-mode text extraction. | P2 | Not supported |
+| Run/content | `w:commentReference` | `w:r` | `w:id` | Visible comment reference marker. | Resolve comments part for UI/sidebar. | P2 | Not supported |
+| Run/content | `w:separator` / `w:continuationSeparator` | Footnote/endnote special notes | — | Footnote/endnote separator markers. | Special note content. | P3 | Supported |
+| Run/content | `w:dayShort` / `w:monthLong` / date tokens | `w:r` | — | Legacy date field result tokens. | Mostly preserve. | P4 | Not supported |
 
 ## Run properties
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Run properties | `w:rStyle` | `w:rPr` | `w:val` | Character style reference. | Resolve to `style[type='character']`. | P0 |
-| Run properties | `w:rFonts` | `w:rPr` | `w:ascii`, `w:hAnsi`, `w:eastAsia`, `w:cs`, `w:asciiTheme`, `w:hAnsiTheme`, `w:eastAsiaTheme`, `w:cstheme`, `w:hint` | Run font family selection. | Resolve theme font slots and script-specific fonts. | P0 |
-| Run properties | `w:b` / `w:bCs` | `w:rPr` | `w:val` | Bold for Latin / complex script. | On/off value; complex-script variant may differ. | P0 |
-| Run properties | `w:i` / `w:iCs` | `w:rPr` | `w:val` | Italic for Latin / complex script. | On/off value. | P0 |
-| Run properties | `w:sz` / `w:szCs` | `w:rPr` | `w:val` | Font size in half-points. | Core text measurement property. | P0 |
-| Run properties | `w:color` | `w:rPr` | `w:val`, `w:themeColor`, `w:themeTint`, `w:themeShade` | Text color. | Resolve theme and auto color; preserve original attrs. | P0 |
-| Run properties | `w:u` | `w:rPr` | `w:val`, `w:color`, theme attrs | Underline. | Many styles beyond single; supports underline color. | P1 |
-| Run properties | `w:strike` / `w:dstrike` | `w:rPr` | `w:val` | Single/double strikethrough. | Visible formatting. | P1 |
-| Run properties | `w:vertAlign` | `w:rPr` | `w:val` | Superscript/subscript/baseline. | Affects baseline and line height. | P1 |
-| Run properties | `w:highlight` | `w:rPr` | `w:val` | Highlight color. | Limited named colors; distinct from `shd`. | P1 |
-| Run properties | `w:shd` | `w:rPr` | `w:val`, `w:color`, `w:fill`, theme attrs | Run shading. | Background shading behind text. | P1 |
-| Run properties | `w:caps` / `w:smallCaps` | `w:rPr` | `w:val` | All caps / small caps. | Text transform affects measurement. | P1 |
-| Run properties | `w:vanish` | `w:rPr` | `w:val` | Hidden text. | Obey `settings/displayHiddenText` or importer mode. | P1 |
-| Run properties | `w:webHidden` | `w:rPr` | `w:val` | Hidden in web view. | Usually preserve; may not affect print layout. | P3 |
-| Run properties | `w:rtl` | `w:rPr` | `w:val` | Right-to-left run. | Bidi text shaping and ordering. | P1 |
-| Run properties | `w:cs` | `w:rPr` | `w:val` | Complex-script formatting flag. | Affects font selection and shaping. | P2 |
-| Run properties | `w:lang` | `w:rPr` | `w:val`, `w:eastAsia`, `w:bidi` | Language tags. | Needed for spellcheck, hyphenation, font fallback and shaping. | P1 |
-| Run properties | `w:kern` | `w:rPr` | `w:val` | Kerning threshold. | Text measurement fidelity. | P2 |
-| Run properties | `w:spacing` | `w:rPr` | `w:val` | Character spacing. | Twips; affects text width. | P1 |
-| Run properties | `w:w` | `w:rPr` | `w:val` | Character scaling percentage. | Affects text width; do not confuse with width attrs elsewhere. | P2 |
-| Run properties | `w:position` | `w:rPr` | `w:val` | Raised/lowered text position. | Half-points; affects baseline but not semantic subscript. | P2 |
-| Run properties | `w:fitText` | `w:rPr` | `w:val`, `w:id` | Fit text into fixed width. | Word compresses/expands run; preserve or approximate. | P3 |
-| Run properties | `w:effect` | `w:rPr` | `w:val` | Legacy animated text effect. | Mostly obsolete; preserve. | P4 |
-| Run properties | `w:em` | `w:rPr` | `w:val` | Emphasis mark. | East Asian typography. | P3 |
-| Run properties | `w:bdr` | `w:rPr` | border attrs | Run border. | Visible in some templates; use common border parser. | P2 |
-| Run properties | `w:imprint` / `w:outline` / `w:shadow` | `w:rPr` | `w:val` | Legacy text effects. | Preserve/approximate with CSS when possible. | P3 |
-| Run properties | `w:emboss` | `w:rPr` | `w:val` | Emboss effect. | Legacy visual effect. | P3 |
-| Run properties | `w:snapToGrid` | `w:rPr` | `w:val` | Snap run to document grid. | May affect line height in CJK layouts. | P3 |
-| Run properties | `w:noProof` | `w:rPr` | `w:val` | Do not check spelling/grammar. | Preserve for round-trip. | P3 |
-| Run properties | `w:oMath` | `w:rPr` | `w:val` | Run contains Office Math. | Use with MathML/OMML parsing. | P2 |
-| Run properties | `w:specVanish` | `w:rPr` | `w:val` | Special hidden placeholder behavior. | Mainly for field/numbering internals. | P4 |
-| Run properties | `w:stylePaneFormatFilter` / `w:stylePaneSortMethod` | settings/style UI | `w:val` | Style pane UI settings. | Not layout-relevant. | P4 |
-| Run properties | `w:rPrChange` | `w:rPr` | `w:id`, `w:author`, `w:date` | Tracked run property change. | Revision-aware rendering or preserve. | P3 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Run properties | `w:rStyle` | `w:rPr` | `w:val` | Character style reference. | Resolve to `style[type='character']`. | P0 | Partial |
+| Run properties | `w:rFonts` | `w:rPr` | `w:ascii`, `w:hAnsi`, `w:eastAsia`, `w:cs`, `w:asciiTheme`, `w:hAnsiTheme`, `w:eastAsiaTheme`, `w:cstheme`, `w:hint` | Run font family selection. | Resolve theme font slots and script-specific fonts. | P0 | Partial |
+| Run properties | `w:b` / `w:bCs` | `w:rPr` | `w:val` | Bold for Latin / complex script. | On/off value; complex-script variant may differ. | P0 | Partial |
+| Run properties | `w:i` / `w:iCs` | `w:rPr` | `w:val` | Italic for Latin / complex script. | On/off value. | P0 | Partial |
+| Run properties | `w:sz` / `w:szCs` | `w:rPr` | `w:val` | Font size in half-points. | Core text measurement property. | P0 | Supported |
+| Run properties | `w:color` | `w:rPr` | `w:val`, `w:themeColor`, `w:themeTint`, `w:themeShade` | Text color. | Resolve theme and auto color; preserve original attrs. | P0 | Partial |
+| Run properties | `w:u` | `w:rPr` | `w:val`, `w:color`, theme attrs | Underline. | Many styles beyond single; supports underline color. | P1 | Supported |
+| Run properties | `w:strike` / `w:dstrike` | `w:rPr` | `w:val` | Single/double strikethrough. | Visible formatting. | P1 | Supported |
+| Run properties | `w:vertAlign` | `w:rPr` | `w:val` | Superscript/subscript/baseline. | Affects baseline and line height. | P1 | Supported |
+| Run properties | `w:highlight` | `w:rPr` | `w:val` | Highlight color. | Limited named colors; distinct from `shd`. | P1 | Supported |
+| Run properties | `w:shd` | `w:rPr` | `w:val`, `w:color`, `w:fill`, theme attrs | Run shading. | Background shading behind text. | P1 | Not supported |
+| Run properties | `w:caps` / `w:smallCaps` | `w:rPr` | `w:val` | All caps / small caps. | Text transform affects measurement. | P1 | Supported |
+| Run properties | `w:vanish` | `w:rPr` | `w:val` | Hidden text. | Obey `settings/displayHiddenText` or importer mode. | P1 | Supported |
+| Run properties | `w:webHidden` | `w:rPr` | `w:val` | Hidden in web view. | Usually preserve; may not affect print layout. | P3 | Not supported |
+| Run properties | `w:rtl` | `w:rPr` | `w:val` | Right-to-left run. | Bidi text shaping and ordering. | P1 | Not supported |
+| Run properties | `w:cs` | `w:rPr` | `w:val` | Complex-script formatting flag. | Affects font selection and shaping. | P2 | Not supported |
+| Run properties | `w:lang` | `w:rPr` | `w:val`, `w:eastAsia`, `w:bidi` | Language tags. | Needed for spellcheck, hyphenation, font fallback and shaping. | P1 | Not supported |
+| Run properties | `w:kern` | `w:rPr` | `w:val` | Kerning threshold. | Text measurement fidelity. | P2 | Supported |
+| Run properties | `w:spacing` | `w:rPr` | `w:val` | Character spacing. | Twips; affects text width. | P1 | Supported |
+| Run properties | `w:w` | `w:rPr` | `w:val` | Character scaling percentage. | Affects text width; do not confuse with width attrs elsewhere. | P2 | Supported |
+| Run properties | `w:position` | `w:rPr` | `w:val` | Raised/lowered text position. | Half-points; affects baseline but not semantic subscript. | P2 | Supported |
+| Run properties | `w:fitText` | `w:rPr` | `w:val`, `w:id` | Fit text into fixed width. | Word compresses/expands run; preserve or approximate. | P3 | Not supported |
+| Run properties | `w:effect` | `w:rPr` | `w:val` | Legacy animated text effect. | Mostly obsolete; preserve. | P4 | Not supported |
+| Run properties | `w:em` | `w:rPr` | `w:val` | Emphasis mark. | East Asian typography. | P3 | Not supported |
+| Run properties | `w:bdr` | `w:rPr` | border attrs | Run border. | Visible in some templates; use common border parser. | P2 | Not supported |
+| Run properties | `w:imprint` / `w:outline` / `w:shadow` | `w:rPr` | `w:val` | Legacy text effects. | Preserve/approximate with CSS when possible. | P3 | Not supported |
+| Run properties | `w:emboss` | `w:rPr` | `w:val` | Emboss effect. | Legacy visual effect. | P3 | Not supported |
+| Run properties | `w:snapToGrid` | `w:rPr` | `w:val` | Snap run to document grid. | May affect line height in CJK layouts. | P3 | Not supported |
+| Run properties | `w:noProof` | `w:rPr` | `w:val` | Do not check spelling/grammar. | Preserve for round-trip. | P3 | Not supported |
+| Run properties | `w:oMath` | `w:rPr` | `w:val` | Run contains Office Math. | Use with MathML/OMML parsing. | P2 | Not supported |
+| Run properties | `w:specVanish` | `w:rPr` | `w:val` | Special hidden placeholder behavior. | Mainly for field/numbering internals. | P4 | Not supported |
+| Run properties | `w:stylePaneFormatFilter` / `w:stylePaneSortMethod` | settings/style UI | `w:val` | Style pane UI settings. | Not layout-relevant. | P4 | Not supported |
+| Run properties | `w:rPrChange` | `w:rPr` | `w:id`, `w:author`, `w:date` | Tracked run property change. | Revision-aware rendering or preserve. | P3 | Not supported |
 
 ## Styles and defaults
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Styles | `w:styles` | `word/styles.xml` root | — | Style definitions part root. | Must be parsed before rendering document body for fidelity. | P0 |
-| Styles | `w:docDefaults` | `w:styles` | — | Document default paragraph/run properties. | Base of formatting cascade. | P0 |
-| Styles | `w:rPrDefault` / `w:pPrDefault` | `w:docDefaults` | — | Default run/paragraph props. | Apply when no more specific formatting exists. | P0 |
-| Styles | `w:latentStyles` | `w:styles` | `w:defLockedState`, `w:defUIPriority`, `w:defSemiHidden`, `w:defUnhideWhenUsed`, `w:defQFormat`, `w:count` | Latent built-in style metadata. | Mostly UI metadata; can help map built-in styles. | P3 |
-| Styles | `w:lsdException` | `w:latentStyles` | `w:name`, `w:locked`, `w:uiPriority`, `w:semiHidden`, `w:unhideWhenUsed`, `w:qFormat` | Latent style exception. | Preserve for round-trip. | P4 |
-| Styles | `w:style` | `w:styles` | `w:type`, `w:styleId`, `w:default`, `w:customStyle` | Style definition. | Types include paragraph, character, table, numbering. | P0 |
-| Styles | `w:name` | `w:style` | `w:val` | Human-readable style name. | Not always equal to `styleId`. | P1 |
-| Styles | `w:basedOn` | `w:style` | `w:val` | Base style reference. | Follow inheritance chain while avoiding cycles. | P0 |
-| Styles | `w:next` | `w:style` | `w:val` | Next paragraph style. | Useful for editing, less for static rendering. | P3 |
-| Styles | `w:link` | `w:style` | `w:val` | Linked paragraph/character style. | Used by Word's linked style model. | P2 |
-| Styles | `w:aliases` | `w:style` | `w:val` | Alternate style names. | UI/search metadata. | P4 |
-| Styles | `w:uiPriority` | `w:style` | `w:val` | Style UI priority. | Preserve only. | P4 |
-| Styles | `w:qFormat` | `w:style` | `w:val` | Primary style flag. | UI metadata. | P4 |
-| Styles | `w:semiHidden` / `w:hidden` / `w:unhideWhenUsed` | `w:style` | `w:val` | Style visibility flags. | Preserve for round-trip. | P4 |
-| Styles | `w:autoRedefine` | `w:style` | `w:val` | Automatically redefine style. | Editing behavior, not layout. | P4 |
-| Styles | `w:locked` | `w:style` | `w:val` | Style locked. | Editing/protection behavior. | P4 |
-| Styles | `w:personal` / `w:personalCompose` / `w:personalReply` | `w:style` | `w:val` | Email/personal style metadata. | Preserve. | P4 |
-| Styles | `w:pPr` / `w:rPr` / `w:tblPr` / `w:trPr` / `w:tcPr` | `w:style` | property children | Style-contained properties. | Merge into cascade based on style type and context. | P0 |
-| Styles | `w:tblStylePr` | `w:style[type='table']` | `w:type` | Conditional table style bucket. | Already covered in table matrix; essential for banded/header rows. | P2 |
-| Styles | `w:numPr` | `w:pPr` in style | `ilvl`, `numId` | Style-level numbering. | Paragraph may become list item via style alone. | P1 |
-| Styles | `w:rsid` | `w:style` | `w:val` | Revision session id for style. | Preserve only. | P4 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Styles | `w:styles` | `word/styles.xml` root | — | Style definitions part root. | Must be parsed before rendering document body for fidelity. | P0 | Supported |
+| Styles | `w:docDefaults` | `w:styles` | — | Document default paragraph/run properties. | Base of formatting cascade. | P0 | Supported |
+| Styles | `w:rPrDefault` / `w:pPrDefault` | `w:docDefaults` | — | Default run/paragraph props. | Apply when no more specific formatting exists. | P0 | Supported |
+| Styles | `w:latentStyles` | `w:styles` | `w:defLockedState`, `w:defUIPriority`, `w:defSemiHidden`, `w:defUnhideWhenUsed`, `w:defQFormat`, `w:count` | Latent built-in style metadata. | Mostly UI metadata; can help map built-in styles. | P3 | Not supported |
+| Styles | `w:lsdException` | `w:latentStyles` | `w:name`, `w:locked`, `w:uiPriority`, `w:semiHidden`, `w:unhideWhenUsed`, `w:qFormat` | Latent style exception. | Preserve for round-trip. | P4 | Not supported |
+| Styles | `w:style` | `w:styles` | `w:type`, `w:styleId`, `w:default`, `w:customStyle` | Style definition. | Types include paragraph, character, table, numbering. | P0 | Partial |
+| Styles | `w:name` | `w:style` | `w:val` | Human-readable style name. | Not always equal to `styleId`. | P1 | Supported |
+| Styles | `w:basedOn` | `w:style` | `w:val` | Base style reference. | Follow inheritance chain while avoiding cycles. | P0 | Supported |
+| Styles | `w:next` | `w:style` | `w:val` | Next paragraph style. | Useful for editing, less for static rendering. | P3 | Partial |
+| Styles | `w:link` | `w:style` | `w:val` | Linked paragraph/character style. | Used by Word's linked style model. | P2 | Not supported |
+| Styles | `w:aliases` | `w:style` | `w:val` | Alternate style names. | UI/search metadata. | P4 | Not supported |
+| Styles | `w:uiPriority` | `w:style` | `w:val` | Style UI priority. | Preserve only. | P4 | Not supported |
+| Styles | `w:qFormat` | `w:style` | `w:val` | Primary style flag. | UI metadata. | P4 | Not supported |
+| Styles | `w:semiHidden` / `w:hidden` / `w:unhideWhenUsed` | `w:style` | `w:val` | Style visibility flags. | Preserve for round-trip. | P4 | Not supported |
+| Styles | `w:autoRedefine` | `w:style` | `w:val` | Automatically redefine style. | Editing behavior, not layout. | P4 | Not supported |
+| Styles | `w:locked` | `w:style` | `w:val` | Style locked. | Editing/protection behavior. | P4 | Not supported |
+| Styles | `w:personal` / `w:personalCompose` / `w:personalReply` | `w:style` | `w:val` | Email/personal style metadata. | Preserve. | P4 | Not supported |
+| Styles | `w:pPr` / `w:rPr` / `w:tblPr` / `w:trPr` / `w:tcPr` | `w:style` | property children | Style-contained properties. | Merge into cascade based on style type and context. | P0 | Partial |
+| Styles | `w:tblStylePr` | `w:style[type='table']` | `w:type` | Conditional table style bucket. | Already covered in table matrix; essential for banded/header rows. | P2 | Not supported |
+| Styles | `w:numPr` | `w:pPr` in style | `ilvl`, `numId` | Style-level numbering. | Paragraph may become list item via style alone. | P1 | Not supported |
+| Styles | `w:rsid` | `w:style` | `w:val` | Revision session id for style. | Preserve only. | P4 | Not supported |
 
 ## Numbering and lists
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Numbering | `w:numbering` | `word/numbering.xml` root | — | Numbering definitions root. | Parse before laying out paragraphs with `numPr`. | P0 |
-| Numbering | `w:abstractNum` | `w:numbering` | `w:abstractNumId`, `w15:restartNumberingAfterBreak` | Abstract list template. | Contains levels shared by concrete numbering instances. | P0 |
-| Numbering | `w:num` | `w:numbering` | `w:numId` | Concrete numbering instance. | Maps document paragraphs to an abstract numbering template. | P0 |
-| Numbering | `w:abstractNumId` | `w:num` | `w:val` | Reference to abstract numbering. | Resolve before rendering list label. | P0 |
-| Numbering | `w:lvl` | `w:abstractNum`, `w:lvlOverride` | `w:ilvl`, `w:tplc`, `w:tentative` | Numbering level definition. | Contains format, text, indentation and style info per level. | P0 |
-| Numbering | `w:start` | `w:lvl` | `w:val` | Starting number for level. | Counter initialization. | P0 |
-| Numbering | `w:numFmt` | `w:lvl` | `w:val`, `w:format` | Number format. | Decimal, bullet, roman, letter, ordinal, etc. | P0 |
-| Numbering | `w:lvlText` | `w:lvl` | `w:val`, `w:null` | Label text pattern. | Patterns like `%1.`, `%1.%2.`; bullet glyphs too. | P0 |
-| Numbering | `w:lvlJc` | `w:lvl` | `w:val` | Number label alignment. | Combine with paragraph indentation. | P1 |
-| Numbering | `w:pPr` / `w:rPr` | `w:lvl` | property children | Level paragraph/run formatting. | Applies to list paragraphs and labels. | P0 |
-| Numbering | `w:pStyle` | `w:lvl` | `w:val` | Paragraph style associated with level. | A style may imply a numbering level. | P1 |
-| Numbering | `w:isLgl` | `w:lvl` | `w:val` | Legal numbering format. | Important for legal documents. | P1 |
-| Numbering | `w:suff` | `w:lvl` | `w:val` | Suffix after number. | Values tab/space/nothing. | P1 |
-| Numbering | `w:lvlRestart` | `w:lvl` | `w:val` | Restart behavior after higher level. | Nested counter behavior. | P2 |
-| Numbering | `w:legacy` | `w:lvl` | `w:legacy`, `w:legacySpace`, `w:legacyIndent` | Legacy numbering metrics. | Preserve/approximate for old documents. | P3 |
-| Numbering | `w:lvlPicBulletId` | `w:lvl` | `w:val` | Picture bullet reference. | Resolve `numPicBullet`. | P2 |
-| Numbering | `w:numPicBullet` | `w:numbering` | `w:numPicBulletId` | Picture bullet definition. | May contain VML/Drawing picture. | P2 |
-| Numbering | `w:lvlOverride` | `w:num` | `w:ilvl` | Override for one list level. | Can override start or entire level definition. | P1 |
-| Numbering | `w:startOverride` | `w:lvlOverride` | `w:val` | Concrete restart value. | Needed for restarted lists. | P1 |
-| Numbering | `w:multiLevelType` | `w:abstractNum` | `w:val` | List type. | singleLevel, multilevel, hybridMultilevel. | P2 |
-| Numbering | `w:nsid` / `w:tmpl` | `w:abstractNum` | `w:val` | List identity/template metadata. | Preserve; not needed for rendering. | P4 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Numbering | `w:numbering` | `word/numbering.xml` root | — | Numbering definitions root. | Parse before laying out paragraphs with `numPr`. | P0 | Partial |
+| Numbering | `w:abstractNum` | `w:numbering` | `w:abstractNumId`, `w15:restartNumberingAfterBreak` | Abstract list template. | Contains levels shared by concrete numbering instances. | P0 | Partial |
+| Numbering | `w:num` | `w:numbering` | `w:numId` | Concrete numbering instance. | Maps document paragraphs to an abstract numbering template. | P0 | Partial |
+| Numbering | `w:abstractNumId` | `w:num` | `w:val` | Reference to abstract numbering. | Resolve before rendering list label. | P0 | Supported |
+| Numbering | `w:lvl` | `w:abstractNum`, `w:lvlOverride` | `w:ilvl`, `w:tplc`, `w:tentative` | Numbering level definition. | Contains format, text, indentation and style info per level. | P0 | Partial |
+| Numbering | `w:start` | `w:lvl` | `w:val` | Starting number for level. | Counter initialization. | P0 | Not supported |
+| Numbering | `w:numFmt` | `w:lvl` | `w:val`, `w:format` | Number format. | Decimal, bullet, roman, letter, ordinal, etc. | P0 | Partial |
+| Numbering | `w:lvlText` | `w:lvl` | `w:val`, `w:null` | Label text pattern. | Patterns like `%1.`, `%1.%2.`; bullet glyphs too. | P0 | Partial |
+| Numbering | `w:lvlJc` | `w:lvl` | `w:val` | Number label alignment. | Combine with paragraph indentation. | P1 | Not supported |
+| Numbering | `w:pPr` / `w:rPr` | `w:lvl` | property children | Level paragraph/run formatting. | Applies to list paragraphs and labels. | P0 | Not supported |
+| Numbering | `w:pStyle` | `w:lvl` | `w:val` | Paragraph style associated with level. | A style may imply a numbering level. | P1 | Not supported |
+| Numbering | `w:isLgl` | `w:lvl` | `w:val` | Legal numbering format. | Important for legal documents. | P1 | Not supported |
+| Numbering | `w:suff` | `w:lvl` | `w:val` | Suffix after number. | Values tab/space/nothing. | P1 | Not supported |
+| Numbering | `w:lvlRestart` | `w:lvl` | `w:val` | Restart behavior after higher level. | Nested counter behavior. | P2 | Not supported |
+| Numbering | `w:legacy` | `w:lvl` | `w:legacy`, `w:legacySpace`, `w:legacyIndent` | Legacy numbering metrics. | Preserve/approximate for old documents. | P3 | Not supported |
+| Numbering | `w:lvlPicBulletId` | `w:lvl` | `w:val` | Picture bullet reference. | Resolve `numPicBullet`. | P2 | Not supported |
+| Numbering | `w:numPicBullet` | `w:numbering` | `w:numPicBulletId` | Picture bullet definition. | May contain VML/Drawing picture. | P2 | Not supported |
+| Numbering | `w:lvlOverride` | `w:num` | `w:ilvl` | Override for one list level. | Can override start or entire level definition. | P1 | Not supported |
+| Numbering | `w:startOverride` | `w:lvlOverride` | `w:val` | Concrete restart value. | Needed for restarted lists. | P1 | Not supported |
+| Numbering | `w:multiLevelType` | `w:abstractNum` | `w:val` | List type. | singleLevel, multilevel, hybridMultilevel. | P2 | Not supported |
+| Numbering | `w:nsid` / `w:tmpl` | `w:abstractNum` | `w:val` | List identity/template metadata. | Preserve; not needed for rendering. | P4 | Not supported |
 
 ## Hyperlinks, fields, bookmarks, and legacy forms
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Links/fields | `w:hyperlink` | Paragraph inline context | `r:id`, `w:anchor`, `w:docLocation`, `w:history`, `w:tgtFrame`, `w:tooltip` | Hyperlink wrapper. | External link via relationship or internal bookmark via `anchor`. | P1 |
-| Links/fields | `w:fldSimple` | Paragraph inline context | `w:instr`, `w:fldLock`, `w:dirty` | Simple field. | Can keep current result or implement evaluator. | P1 |
-| Links/fields | `w:fldChar` | Run | `w:fldCharType`, `w:fldLock`, `w:dirty` | Complex field delimiter. | Maintain parser stack for begin/separate/end. | P1 |
-| Links/fields | `w:instrText` | Run | `xml:space` | Complex field instruction text. | Concatenate across runs between field begin and separate/end. | P1 |
-| Links/fields | `w:ffData` | `w:fldChar` | children | Legacy form field data. | Important for old protected forms. | P2 |
-| Links/fields | `w:name` / `w:enabled` / `w:calcOnExit` / `w:entryMacro` / `w:exitMacro` | `w:ffData` | `w:val` | Form field metadata. | Preserve; may map to UI controls. | P3 |
-| Links/fields | `w:textInput` | `w:ffData` | `w:type`, `w:default`, `w:maxLength`, `w:format` | Legacy text form field. | Map to editable input if forms are supported. | P2 |
-| Links/fields | `w:checkBox` | `w:ffData` | `w:size`, `w:sizeAuto`, `w:default`, `w:checked` | Legacy checkbox field. | Common in forms/templates. | P2 |
-| Links/fields | `w:ddList` | `w:ffData` | `w:result`, `w:default`, `w:listEntry` | Legacy dropdown list field. | Map entries and selected index. | P2 |
-| Links/fields | `w:bookmarkStart` / `w:bookmarkEnd` | Block/inline contexts | `w:id`, `w:name` | Bookmark range. | Target for REF/PAGEREF/hyperlinks. | P1 |
-| Links/fields | Common fields | Field instruction stream | PAGE, NUMPAGES, SECTION, DATE, TIME, REF, PAGEREF, HYPERLINK, TOC, INCLUDEPICTURE, SEQ | Dynamic fields. | Minimal renderer can show stored result; pagination export must compute PAGE/NUMPAGES. | P1 |
-| Links/fields | `w:dirty` | Field elements | `w:val` | Field requires update. | Signal stored result may be stale. | P2 |
-| Links/fields | `w:fldLock` | Field elements | `w:val` | Locked field. | Do not update in editor mode unless user requests. | P3 |
-| Links/fields | `w:smartTag` | Inline/block wrapper | `w:uri`, `w:element` | Legacy smart tag wrapper. | Unwrap for display; preserve semantics. | P4 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Links/fields | `w:hyperlink` | Paragraph inline context | `r:id`, `w:anchor`, `w:docLocation`, `w:history`, `w:tgtFrame`, `w:tooltip` | Hyperlink wrapper. | External link via relationship or internal bookmark via `anchor`. | P1 | Partial |
+| Links/fields | `w:fldSimple` | Paragraph inline context | `w:instr`, `w:fldLock`, `w:dirty` | Simple field. | Can keep current result or implement evaluator. | P1 | Partial |
+| Links/fields | `w:fldChar` | Run | `w:fldCharType`, `w:fldLock`, `w:dirty` | Complex field delimiter. | Maintain parser stack for begin/separate/end. | P1 | Partial |
+| Links/fields | `w:instrText` | Run | `xml:space` | Complex field instruction text. | Concatenate across runs between field begin and separate/end. | P1 | Partial |
+| Links/fields | `w:ffData` | `w:fldChar` | children | Legacy form field data. | Important for old protected forms. | P2 | Not supported |
+| Links/fields | `w:name` / `w:enabled` / `w:calcOnExit` / `w:entryMacro` / `w:exitMacro` | `w:ffData` | `w:val` | Form field metadata. | Preserve; may map to UI controls. | P3 | Not supported |
+| Links/fields | `w:textInput` | `w:ffData` | `w:type`, `w:default`, `w:maxLength`, `w:format` | Legacy text form field. | Map to editable input if forms are supported. | P2 | Not supported |
+| Links/fields | `w:checkBox` | `w:ffData` | `w:size`, `w:sizeAuto`, `w:default`, `w:checked` | Legacy checkbox field. | Common in forms/templates. | P2 | Not supported |
+| Links/fields | `w:ddList` | `w:ffData` | `w:result`, `w:default`, `w:listEntry` | Legacy dropdown list field. | Map entries and selected index. | P2 | Not supported |
+| Links/fields | `w:bookmarkStart` / `w:bookmarkEnd` | Block/inline contexts | `w:id`, `w:name` | Bookmark range. | Target for REF/PAGEREF/hyperlinks. | P1 | Not supported |
+| Links/fields | Common fields | Field instruction stream | PAGE, NUMPAGES, SECTION, DATE, TIME, REF, PAGEREF, HYPERLINK, TOC, INCLUDEPICTURE, SEQ | Dynamic fields. | Minimal renderer can show stored result; pagination export must compute PAGE/NUMPAGES. | P1 | Partial |
+| Links/fields | `w:dirty` | Field elements | `w:val` | Field requires update. | Signal stored result may be stale. | P2 | Not supported |
+| Links/fields | `w:fldLock` | Field elements | `w:val` | Locked field. | Do not update in editor mode unless user requests. | P3 | Not supported |
+| Links/fields | `w:smartTag` | Inline/block wrapper | `w:uri`, `w:element` | Legacy smart tag wrapper. | Unwrap for display; preserve semantics. | P4 | Not supported |
 
 ## Tracked changes, proofing, and permissions
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Revisions | `w:ins` | Block/run contexts | `w:id`, `w:author`, `w:date` | Inserted content. | Display depends on revision mode; final mode includes inserted content. | P2 |
-| Revisions | `w:del` | Block/run contexts | `w:id`, `w:author`, `w:date` | Deleted content. | Final mode excludes deleted content; original mode includes deleted text. | P2 |
-| Revisions | `w:moveFrom` / `w:moveTo` | Block/run contexts | `w:id`, `w:author`, `w:date` | Moved content containers. | Revision-aware rendering; preserve relationships among range markers. | P3 |
-| Revisions | `w:pPrChange` / `w:rPrChange` / `w:sectPrChange` | Property containers | `w:id`, `w:author`, `w:date` | Tracked property change. | Contains previous property state. | P3 |
-| Revisions | `w:numberingChange` | `w:numPr` | `w:id`, `w:author`, `w:date`, `w:original` | Tracked numbering change. | Needed for review mode. | P3 |
-| Revisions | `w:trackRevisions` | `w:settings` | `w:val` | Track revisions setting. | Editing behavior; rendering uses actual revision markup. | P3 |
-| Revisions | `w:revisionView` | `w:settings` | `w:markup`, `w:comments`, `w:insDel`, `w:formatting`, `w:inkAnnotations` | Revision display preferences. | Importer can use as default view hint. | P3 |
-| Proofing | `w:proofState` | `w:settings` | `w:spelling`, `w:grammar` | Proofing state. | Not layout-relevant. | P4 |
-| Proofing | `w:proofErr` | Document content | `w:type` | Proofing error range marker. | Preserve or ignore for display. | P4 |
-| Permissions | `w:permStart` / `w:permEnd` | Document content | `w:id`, `w:edGrp`, `w:ed`, `w:colFirst`, `w:colLast` | Editable range permission. | Important if implementing editor permissions. | P3 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Revisions | `w:ins` | Block/run contexts | `w:id`, `w:author`, `w:date` | Inserted content. | Display depends on revision mode; final mode includes inserted content. | P2 | Not supported |
+| Revisions | `w:del` | Block/run contexts | `w:id`, `w:author`, `w:date` | Deleted content. | Final mode excludes deleted content; original mode includes deleted text. | P2 | Not supported |
+| Revisions | `w:moveFrom` / `w:moveTo` | Block/run contexts | `w:id`, `w:author`, `w:date` | Moved content containers. | Revision-aware rendering; preserve relationships among range markers. | P3 | Not supported |
+| Revisions | `w:pPrChange` / `w:rPrChange` / `w:sectPrChange` | Property containers | `w:id`, `w:author`, `w:date` | Tracked property change. | Contains previous property state. | P3 | Not supported |
+| Revisions | `w:numberingChange` | `w:numPr` | `w:id`, `w:author`, `w:date`, `w:original` | Tracked numbering change. | Needed for review mode. | P3 | Not supported |
+| Revisions | `w:trackRevisions` | `w:settings` | `w:val` | Track revisions setting. | Editing behavior; rendering uses actual revision markup. | P3 | N/A |
+| Revisions | `w:revisionView` | `w:settings` | `w:markup`, `w:comments`, `w:insDel`, `w:formatting`, `w:inkAnnotations` | Revision display preferences. | Importer can use as default view hint. | P3 | N/A |
+| Proofing | `w:proofState` | `w:settings` | `w:spelling`, `w:grammar` | Proofing state. | Not layout-relevant. | P4 | N/A |
+| Proofing | `w:proofErr` | Document content | `w:type` | Proofing error range marker. | Preserve or ignore for display. | P4 | Not supported |
+| Permissions | `w:permStart` / `w:permEnd` | Document content | `w:id`, `w:edGrp`, `w:ed`, `w:colFirst`, `w:colLast` | Editable range permission. | Important if implementing editor permissions. | P3 | Not supported |
 
 ## Comments, footnotes, endnotes, and annotations
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Comments | `w:comments` | `word/comments.xml` root | — | Comments part root. | Resolve ranges/markers from main document. | P2 |
-| Comments | `w:comment` | `w:comments` | `w:id`, `w:author`, `w:date`, `w:initials` | Single comment story. | Contains paragraphs/tables like a mini story. | P2 |
-| Comments | `w:commentRangeStart` / `w:commentRangeEnd` | Document content | `w:id` | Comment anchor range. | May be missing one endpoint in malformed docs; handle gracefully. | P2 |
-| Comments | `w:commentReference` | Run | `w:id` | Comment reference marker. | UI/sidebar link. | P2 |
-| Comments extended | `w15:commentsEx` / `w15:commentEx` | Extended comments part | `w15:paraId`, `w15:done`, `w15:parentId` | Threaded/resolved comment metadata. | Preserve when not supported. | P3 |
-| Comments extended | `w16cid:commentsIds` / `w16cid:commentId` | Comment ids part | extension attrs | Modern comment IDs. | Preserve for round-trip. | P3 |
-| Footnotes | `w:footnotes` | `word/footnotes.xml` root | — | Footnotes part root. | Contains special separator notes and user notes. | P1 |
-| Footnotes | `w:footnote` | `w:footnotes` | `w:id`, `w:type` | Single footnote story. | Contains block content; types include separator/continuationSeparator. | P1 |
-| Footnotes | `w:footnoteReference` | Run | `w:id`, `w:customMarkFollows` | Footnote anchor marker. | Resolve note and counter style. | P1 |
-| Endnotes | `w:endnotes` | `word/endnotes.xml` root | — | Endnotes part root. | Similar to footnotes but end-of-section/document placement. | P1 |
-| Endnotes | `w:endnote` | `w:endnotes` | `w:id`, `w:type` | Single endnote story. | Contains block content. | P1 |
-| Endnotes | `w:endnoteReference` | Run | `w:id`, `w:customMarkFollows` | Endnote anchor marker. | Resolve note and numbering. | P1 |
-| Annotations | `w:annotationRef` | Run in comment/note | — | Annotation reference glyph. | Special reference marker. | P3 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Comments | `w:comments` | `word/comments.xml` root | — | Comments part root. | Resolve ranges/markers from main document. | P2 | Not supported |
+| Comments | `w:comment` | `w:comments` | `w:id`, `w:author`, `w:date`, `w:initials` | Single comment story. | Contains paragraphs/tables like a mini story. | P2 | Not supported |
+| Comments | `w:commentRangeStart` / `w:commentRangeEnd` | Document content | `w:id` | Comment anchor range. | May be missing one endpoint in malformed docs; handle gracefully. | P2 | Not supported |
+| Comments | `w:commentReference` | Run | `w:id` | Comment reference marker. | UI/sidebar link. | P2 | Not supported |
+| Comments extended | `w15:commentsEx` / `w15:commentEx` | Extended comments part | `w15:paraId`, `w15:done`, `w15:parentId` | Threaded/resolved comment metadata. | Preserve when not supported. | P3 | Not supported |
+| Comments extended | `w16cid:commentsIds` / `w16cid:commentId` | Comment ids part | extension attrs | Modern comment IDs. | Preserve for round-trip. | P3 | Not supported |
+| Footnotes | `w:footnotes` | `word/footnotes.xml` root | — | Footnotes part root. | Contains special separator notes and user notes. | P1 | Supported |
+| Footnotes | `w:footnote` | `w:footnotes` | `w:id`, `w:type` | Single footnote story. | Contains block content; types include separator/continuationSeparator. | P1 | Supported |
+| Footnotes | `w:footnoteReference` | Run | `w:id`, `w:customMarkFollows` | Footnote anchor marker. | Resolve note and counter style. | P1 | Supported |
+| Endnotes | `w:endnotes` | `word/endnotes.xml` root | — | Endnotes part root. | Similar to footnotes but end-of-section/document placement. | P1 | Not supported |
+| Endnotes | `w:endnote` | `w:endnotes` | `w:id`, `w:type` | Single endnote story. | Contains block content. | P1 | Not supported |
+| Endnotes | `w:endnoteReference` | Run | `w:id`, `w:customMarkFollows` | Endnote anchor marker. | Resolve note and numbering. | P1 | Not supported |
+| Annotations | `w:annotationRef` | Run in comment/note | — | Annotation reference glyph. | Special reference marker. | P3 | Not supported |
 
 ## Headers, footers, glossary, and secondary stories
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Stories | `w:hdr` | Header part root | — | Header story root. | Contains block-level content; linked by section `headerReference`. | P1 |
-| Stories | `w:ftr` | Footer part root | — | Footer story root. | Contains page-number fields, text, tables, images. | P1 |
-| Stories | Header/footer content | `w:hdr`, `w:ftr` | normal block/inline attrs | Story content. | Render per section/page type: first/even/default. | P1 |
-| Glossary | `w:glossaryDocument` | Glossary part root | — | Building blocks / AutoText. | Usually not rendered in main document unless referenced; preserve if editing templates. | P3 |
-| Glossary | `w:docParts` / `w:docPart` | Glossary document | — | Building block collection/item. | Useful for template systems and content controls. | P3 |
-| Glossary | `w:docPartPr` / `w:docPartBody` | `w:docPart` | children | Building block metadata/content. | Body uses normal block content. | P3 |
-| Text boxes | `w:txbxContent` | VML/Drawing text box | — | Text box story content. | Contains block-level WordprocessingML; layout requires shape position/size. | P2 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Stories | `w:hdr` | Header part root | — | Header story root. | Contains block-level content; linked by section `headerReference`. | P1 | Supported |
+| Stories | `w:ftr` | Footer part root | — | Footer story root. | Contains page-number fields, text, tables, images. | P1 | Supported |
+| Stories | Header/footer content | `w:hdr`, `w:ftr` | normal block/inline attrs | Story content. | Render per section/page type: first/even/default. | P1 | Supported |
+| Glossary | `w:glossaryDocument` | Glossary part root | — | Building blocks / AutoText. | Usually not rendered in main document unless referenced; preserve if editing templates. | P3 | Not supported |
+| Glossary | `w:docParts` / `w:docPart` | Glossary document | — | Building block collection/item. | Useful for template systems and content controls. | P3 | Not supported |
+| Glossary | `w:docPartPr` / `w:docPartBody` | `w:docPart` | children | Building block metadata/content. | Body uses normal block content. | P3 | Not supported |
+| Text boxes | `w:txbxContent` | VML/Drawing text box | — | Text box story content. | Contains block-level WordprocessingML; layout requires shape position/size. | P2 | Not supported |
 
 ## Drawings, images, shapes, charts, VML, and OLE
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| DrawingML | `w:drawing` | Run | — | Drawing object wrapper. | Contains `wp:inline` or `wp:anchor`. | P1 |
-| DrawingML | `wp:inline` | `w:drawing` | `distT`, `distB`, `distL`, `distR` | Inline drawing. | Occupies inline layout box; easiest image case. | P1 |
-| DrawingML | `wp:anchor` | `w:drawing` | `simplePos`, `relativeHeight`, `behindDoc`, `locked`, `layoutInCell`, `allowOverlap`, distances | Floating drawing. | Requires positioning, wrapping and z-order handling. | P2 |
-| DrawingML | `wp:extent` | `wp:inline`, `wp:anchor` | `cx`, `cy` | Drawing size in EMUs. | Convert EMUs to pixels/points/twips. | P1 |
-| DrawingML | `wp:effectExtent` | `wp:inline`, `wp:anchor` | `l`, `t`, `r`, `b` | Visual effect extents. | Shadows/glows may extend layout bounds. | P3 |
-| DrawingML | `wp:docPr` | `wp:inline`, `wp:anchor` | `id`, `name`, `descr`, `title` | Non-visual drawing properties. | Alt text/accessibility and stable IDs. | P2 |
-| DrawingML | `wp:cNvGraphicFramePr` | `wp:inline`, `wp:anchor` | children | Non-visual frame properties. | Preserve locks. | P3 |
-| DrawingML | `wp:positionH` / `wp:positionV` | `wp:anchor` | `relativeFrom` | Horizontal/vertical positioning. | Contains `align` or `posOffset`; relative to page/margin/column/character/etc. | P2 |
-| DrawingML | `wp:wrapNone` / `wp:wrapSquare` / `wp:wrapTight` / `wp:wrapThrough` / `wp:wrapTopAndBottom` | `wp:anchor` | wrap-specific attrs | Text wrapping mode around object. | Major impact on paragraph layout. | P2 |
-| DrawingML | `wp:simplePos` | `wp:anchor` | `x`, `y` | Simple absolute position. | Used when `simplePos='1'`. | P2 |
-| DrawingML | `a:graphic` | `wp:inline`, `wp:anchor` | — | DrawingML graphic root. | Dispatch by child `a:graphicData/@uri`. | P1 |
-| DrawingML | `a:graphicData` | `a:graphic` | `uri` | Graphic payload container. | Common URIs for pictures, charts, diagrams, WPS shapes. | P1 |
-| Pictures | `pic:pic` | `a:graphicData` | — | DrawingML picture object. | Core image representation. | P1 |
-| Pictures | `pic:nvPicPr` / `pic:cNvPr` / `pic:cNvPicPr` | `pic:pic` | `id`, `name`, `descr`, `title` | Picture non-visual properties. | Alt text/name metadata. | P2 |
-| Pictures | `pic:blipFill` | `pic:pic` | — | Picture fill container. | Find `a:blip` relationship. | P1 |
-| Pictures | `a:blip` | `pic:blipFill`, other fills | `r:embed`, `r:link`, `cstate` | Image binary reference. | Resolve embedded or linked images; preserve external link. | P1 |
-| Pictures | `a:srcRect` | `pic:blipFill` | `l`, `t`, `r`, `b` | Image crop rectangle. | Percent thousandths; affects displayed crop. | P2 |
-| Pictures | `a:stretch` / `a:tile` | `pic:blipFill` | children/attrs | Image fill mode. | Commonly stretch to shape bounds. | P2 |
-| Pictures | `pic:spPr` | `pic:pic` | — | Picture shape properties. | Contains transform, geometry, line/effects. | P1 |
-| DrawingML shape | `a:xfrm` | Shape properties | `rot`, `flipH`, `flipV` | Transform container. | Child `a:off` and `a:ext` define object coordinates/size. | P1 |
-| DrawingML shape | `a:off` / `a:ext` | `a:xfrm` | `x`, `y`, `cx`, `cy` | Position/size values in EMUs. | Core for drawing geometry. | P1 |
-| DrawingML shape | `a:prstGeom` / `a:custGeom` | Shape properties | `prst` | Preset/custom geometry. | Approximate common shapes; preserve custom geometry if unsupported. | P2 |
-| DrawingML shape | `a:solidFill` / `a:gradFill` / `a:pattFill` / `a:noFill` / `a:blipFill` | Shape properties/text props | color/fill children | Fill definitions. | Resolve colors through scheme/theme where needed. | P2 |
-| DrawingML shape | `a:ln` | Shape properties | `w`, `cap`, `cmpd`, `algn` | Line/stroke definition. | Contains fill, dash, join, head/tail arrow settings. | P2 |
-| DrawingML color | `a:srgbClr` / `a:schemeClr` / `a:sysClr` / `a:prstClr` | Color contexts | `val`, transformations | Color choices. | Theme resolution is mandatory for accurate colors. | P1 |
-| Charts | `c:chart` | Drawing relationship target | `r:id` | Chart reference. | Requires chart part; can render placeholder or parse chart data. | P3 |
-| Diagrams | SmartArt/diagram parts | Drawing relationships | varies | SmartArt diagrams. | Usually preserve or render preview if available. | P4 |
-| VML | `w:pict` | Run | VML children | Legacy VML container. | Still appears in older Word docs and some templates. | P2 |
-| VML | `v:shape` | `w:pict`, VML group | `id`, `type`, `style`, `fillcolor`, `strokecolor`, `coordsize`, `path` | Legacy shape. | Parse CSS-like style for position/size; preserve unsupported geometry. | P2 |
-| VML | `v:imagedata` | `v:shape` | `r:id`, `o:title`, `croptop`, `cropright`, `cropbottom`, `cropleft` | Legacy image data. | Resolve image relationship. | P2 |
-| VML | `v:textbox` | `v:shape` | `style`, `inset` | Legacy text box. | Contains `w:txbxContent` with normal WordprocessingML. | P2 |
-| VML | `v:group` | VML contexts | `style`, `coordorigin`, `coordsize` | Grouped legacy shapes. | Transform children coordinates. | P3 |
-| VML | `v:rect` / `v:oval` / `v:line` / `v:polyline` / `v:roundrect` | VML contexts | style/fill/stroke attrs | Common legacy shapes. | Approximate to SVG/CSS if rendering. | P3 |
-| VML/OLE | `o:OLEObject` | `w:object` / VML | `Type`, `ProgID`, `ShapeID`, `DrawAspect`, `ObjectID`, `r:id` | Embedded/linked OLE object. | Usually render placeholder; preserve relationship. | P4 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| DrawingML | `w:drawing` | Run | — | Drawing object wrapper. | Contains `wp:inline` or `wp:anchor`. | P1 | Partial |
+| DrawingML | `wp:inline` | `w:drawing` | `distT`, `distB`, `distL`, `distR` | Inline drawing. | Occupies inline layout box; easiest image case. | P1 | Supported |
+| DrawingML | `wp:anchor` | `w:drawing` | `simplePos`, `relativeHeight`, `behindDoc`, `locked`, `layoutInCell`, `allowOverlap`, distances | Floating drawing. | Requires positioning, wrapping and z-order handling. | P2 | Not supported |
+| DrawingML | `wp:extent` | `wp:inline`, `wp:anchor` | `cx`, `cy` | Drawing size in EMUs. | Convert EMUs to pixels/points/twips. | P1 | Supported |
+| DrawingML | `wp:effectExtent` | `wp:inline`, `wp:anchor` | `l`, `t`, `r`, `b` | Visual effect extents. | Shadows/glows may extend layout bounds. | P3 | Not supported |
+| DrawingML | `wp:docPr` | `wp:inline`, `wp:anchor` | `id`, `name`, `descr`, `title` | Non-visual drawing properties. | Alt text/accessibility and stable IDs. | P2 | Supported |
+| DrawingML | `wp:cNvGraphicFramePr` | `wp:inline`, `wp:anchor` | children | Non-visual frame properties. | Preserve locks. | P3 | Not supported |
+| DrawingML | `wp:positionH` / `wp:positionV` | `wp:anchor` | `relativeFrom` | Horizontal/vertical positioning. | Contains `align` or `posOffset`; relative to page/margin/column/character/etc. | P2 | Not supported |
+| DrawingML | `wp:wrapNone` / `wp:wrapSquare` / `wp:wrapTight` / `wp:wrapThrough` / `wp:wrapTopAndBottom` | `wp:anchor` | wrap-specific attrs | Text wrapping mode around object. | Major impact on paragraph layout. | P2 | Not supported |
+| DrawingML | `wp:simplePos` | `wp:anchor` | `x`, `y` | Simple absolute position. | Used when `simplePos='1'`. | P2 | Not supported |
+| DrawingML | `a:graphic` | `wp:inline`, `wp:anchor` | — | DrawingML graphic root. | Dispatch by child `a:graphicData/@uri`. | P1 | Supported |
+| DrawingML | `a:graphicData` | `a:graphic` | `uri` | Graphic payload container. | Common URIs for pictures, charts, diagrams, WPS shapes. | P1 | Supported |
+| Pictures | `pic:pic` | `a:graphicData` | — | DrawingML picture object. | Core image representation. | P1 | Supported |
+| Pictures | `pic:nvPicPr` / `pic:cNvPr` / `pic:cNvPicPr` | `pic:pic` | `id`, `name`, `descr`, `title` | Picture non-visual properties. | Alt text/name metadata. | P2 | Partial |
+| Pictures | `pic:blipFill` | `pic:pic` | — | Picture fill container. | Find `a:blip` relationship. | P1 | Supported |
+| Pictures | `a:blip` | `pic:blipFill`, other fills | `r:embed`, `r:link`, `cstate` | Image binary reference. | Resolve embedded or linked images; preserve external link. | P1 | Supported |
+| Pictures | `a:srcRect` | `pic:blipFill` | `l`, `t`, `r`, `b` | Image crop rectangle. | Percent thousandths; affects displayed crop. | P2 | Not supported |
+| Pictures | `a:stretch` / `a:tile` | `pic:blipFill` | children/attrs | Image fill mode. | Commonly stretch to shape bounds. | P2 | Not supported |
+| Pictures | `pic:spPr` | `pic:pic` | — | Picture shape properties. | Contains transform, geometry, line/effects. | P1 | Not supported |
+| DrawingML shape | `a:xfrm` | Shape properties | `rot`, `flipH`, `flipV` | Transform container. | Child `a:off` and `a:ext` define object coordinates/size. | P1 | Not supported |
+| DrawingML shape | `a:off` / `a:ext` | `a:xfrm` | `x`, `y`, `cx`, `cy` | Position/size values in EMUs. | Core for drawing geometry. | P1 | Not supported |
+| DrawingML shape | `a:prstGeom` / `a:custGeom` | Shape properties | `prst` | Preset/custom geometry. | Approximate common shapes; preserve custom geometry if unsupported. | P2 | Not supported |
+| DrawingML shape | `a:solidFill` / `a:gradFill` / `a:pattFill` / `a:noFill` / `a:blipFill` | Shape properties/text props | color/fill children | Fill definitions. | Resolve colors through scheme/theme where needed. | P2 | Not supported |
+| DrawingML shape | `a:ln` | Shape properties | `w`, `cap`, `cmpd`, `algn` | Line/stroke definition. | Contains fill, dash, join, head/tail arrow settings. | P2 | Not supported |
+| DrawingML color | `a:srgbClr` / `a:schemeClr` / `a:sysClr` / `a:prstClr` | Color contexts | `val`, transformations | Color choices. | Theme resolution is mandatory for accurate colors. | P1 | Not supported |
+| Charts | `c:chart` | Drawing relationship target | `r:id` | Chart reference. | Requires chart part; can render placeholder or parse chart data. | P3 | Not supported |
+| Diagrams | SmartArt/diagram parts | Drawing relationships | varies | SmartArt diagrams. | Usually preserve or render preview if available. | P4 | Not supported |
+| VML | `w:pict` | Run | VML children | Legacy VML container. | Still appears in older Word docs and some templates. | P2 | Not supported |
+| VML | `v:shape` | `w:pict`, VML group | `id`, `type`, `style`, `fillcolor`, `strokecolor`, `coordsize`, `path` | Legacy shape. | Parse CSS-like style for position/size; preserve unsupported geometry. | P2 | Not supported |
+| VML | `v:imagedata` | `v:shape` | `r:id`, `o:title`, `croptop`, `cropright`, `cropbottom`, `cropleft` | Legacy image data. | Resolve image relationship. | P2 | Not supported |
+| VML | `v:textbox` | `v:shape` | `style`, `inset` | Legacy text box. | Contains `w:txbxContent` with normal WordprocessingML. | P2 | Not supported |
+| VML | `v:group` | VML contexts | `style`, `coordorigin`, `coordsize` | Grouped legacy shapes. | Transform children coordinates. | P3 | Not supported |
+| VML | `v:rect` / `v:oval` / `v:line` / `v:polyline` / `v:roundrect` | VML contexts | style/fill/stroke attrs | Common legacy shapes. | Approximate to SVG/CSS if rendering. | P3 | Not supported |
+| VML/OLE | `o:OLEObject` | `w:object` / VML | `Type`, `ProgID`, `ShapeID`, `DrawAspect`, `ObjectID`, `r:id` | Embedded/linked OLE object. | Usually render placeholder; preserve relationship. | P4 | Not supported |
 
 ## Content controls, custom XML, and altChunk
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Content controls | `w:sdt` | Block/run/table row/cell contexts | — | Structured document tag wrapper. | Forms/templates often depend on this. | P1 |
-| Content controls | `w:sdtPr` | `w:sdt` | — | Content control properties. | Parse tag/alias/data binding/lock/control type. | P1 |
-| Content controls | `w:sdtContent` | `w:sdt` | — | Content control content. | Contains normal block/run/row/cell content depending control type. | P1 |
-| Content controls | `w:alias` | `w:sdtPr` | `w:val` | Friendly name. | UI/template metadata. | P2 |
-| Content controls | `w:tag` | `w:sdtPr` | `w:val` | Programmatic tag. | Very important for template automation. | P1 |
-| Content controls | `w:id` | `w:sdtPr` | `w:val` | Content control id. | Preserve stable IDs. | P2 |
-| Content controls | `w:lock` | `w:sdtPr` | `w:val` | Content control lock behavior. | Editing behavior. | P3 |
-| Content controls | `w:placeholder` / `w:docPart` | `w:sdtPr` | `w:val` | Placeholder building block. | Resolve glossary if editing templates. | P3 |
-| Content controls | `w:dataBinding` | `w:sdtPr` | `w:xpath`, `w:storeItemID`, `w:prefixMappings` | Binding to custom XML data. | Core for data-driven templates. | P1 |
-| Content controls | `w:text` / `w:richText` / `w:picture` / `w:comboBox` / `w:dropDownList` / `w:date` / `w:checkbox` / `w:repeatingSection` | `w:sdtPr` | control-specific attrs | Specific content control type. | Map to editor widgets where applicable; otherwise display content. | P2 |
-| Content controls | `w:listItem` | `w:comboBox`, `w:dropDownList` | `w:displayText`, `w:value` | Dropdown/combobox item. | Preserve values for forms. | P2 |
-| Custom XML | `w:customXml` | Block/run context | `w:element`, `w:uri` | Custom XML semantic wrapper. | Unwrap for layout; retain for semantic round-trip. | P2 |
-| Custom XML | `w:customXmlPr` | `w:customXml` | — | Custom XML properties. | Contains placeholder/attrs. | P3 |
-| Custom XML | Custom XML item parts | Package customXml folder | store item ids, schema refs | Data stores for binding. | Needed if evaluating `w:dataBinding`. | P2 |
-| AltChunk | `w:altChunk` | Block context | `r:id` | Alternative-format import chunk. | Do not silently drop; convert if target part is HTML/MHT/RTF/docx or warn. | P2 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Content controls | `w:sdt` | Block/run/table row/cell contexts | — | Structured document tag wrapper. | Forms/templates often depend on this. | P1 | Not supported |
+| Content controls | `w:sdtPr` | `w:sdt` | — | Content control properties. | Parse tag/alias/data binding/lock/control type. | P1 | Not supported |
+| Content controls | `w:sdtContent` | `w:sdt` | — | Content control content. | Contains normal block/run/row/cell content depending control type. | P1 | Not supported |
+| Content controls | `w:alias` | `w:sdtPr` | `w:val` | Friendly name. | UI/template metadata. | P2 | Not supported |
+| Content controls | `w:tag` | `w:sdtPr` | `w:val` | Programmatic tag. | Very important for template automation. | P1 | Not supported |
+| Content controls | `w:id` | `w:sdtPr` | `w:val` | Content control id. | Preserve stable IDs. | P2 | Not supported |
+| Content controls | `w:lock` | `w:sdtPr` | `w:val` | Content control lock behavior. | Editing behavior. | P3 | Not supported |
+| Content controls | `w:placeholder` / `w:docPart` | `w:sdtPr` | `w:val` | Placeholder building block. | Resolve glossary if editing templates. | P3 | Not supported |
+| Content controls | `w:dataBinding` | `w:sdtPr` | `w:xpath`, `w:storeItemID`, `w:prefixMappings` | Binding to custom XML data. | Core for data-driven templates. | P1 | Not supported |
+| Content controls | `w:text` / `w:richText` / `w:picture` / `w:comboBox` / `w:dropDownList` / `w:date` / `w:checkbox` / `w:repeatingSection` | `w:sdtPr` | control-specific attrs | Specific content control type. | Map to editor widgets where applicable; otherwise display content. | P2 | Not supported |
+| Content controls | `w:listItem` | `w:comboBox`, `w:dropDownList` | `w:displayText`, `w:value` | Dropdown/combobox item. | Preserve values for forms. | P2 | Not supported |
+| Custom XML | `w:customXml` | Block/run context | `w:element`, `w:uri` | Custom XML semantic wrapper. | Unwrap for layout; retain for semantic round-trip. | P2 | Not supported |
+| Custom XML | `w:customXmlPr` | `w:customXml` | — | Custom XML properties. | Contains placeholder/attrs. | P3 | Not supported |
+| Custom XML | Custom XML item parts | Package customXml folder | store item ids, schema refs | Data stores for binding. | Needed if evaluating `w:dataBinding`. | P2 | Not supported |
+| AltChunk | `w:altChunk` | Block context | `r:id` | Alternative-format import chunk. | Do not silently drop; convert if target part is HTML/MHT/RTF/docx or warn. | P2 | Not supported |
 
 ## Office Math / OMML
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Office Math | `m:oMath` | Run/paragraph context | — | Inline Office Math object. | Convert to MathML/SVG or preserve OMML. | P2 |
-| Office Math | `m:oMathPara` | Paragraph context | — | Display math paragraph. | Affects line/block layout. | P2 |
-| Office Math | `m:r` / `m:t` | Math contexts | `xml:space` | Math run/text. | Separate from normal `w:r` and `w:t`. | P2 |
-| Office Math | `m:f` / `m:num` / `m:den` | Math contexts | properties | Fraction. | Core OMML structure. | P2 |
-| Office Math | `m:sSup` / `m:sSub` / `m:sSubSup` | Math contexts | properties | Superscript/subscript. | Core math layout. | P2 |
-| Office Math | `m:rad` / `m:deg` / `m:e` | Math contexts | properties | Radical. | Core math layout. | P2 |
-| Office Math | `m:nary` | Math contexts | properties | N-ary operator. | Integral/sum/product style layout. | P3 |
-| Office Math | `m:d` | Math contexts | properties | Delimiter expression. | Parentheses/brackets stretching. | P3 |
-| Office Math | `m:m` / `m:mr` | Math contexts | properties | Matrix. | Important for equations. | P3 |
-| Office Math | `m:acc` / `m:bar` / `m:box` / `m:borderBox` / `m:groupChr` | Math contexts | properties | Accents/bars/boxes/group characters. | Preserve or convert if math rendering is required. | P3 |
-| Office Math | `m:mathPr` | Settings part | children | Math settings. | Controls display of OMML math. | P3 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Office Math | `m:oMath` | Run/paragraph context | — | Inline Office Math object. | Convert to MathML/SVG or preserve OMML. | P2 | Not supported |
+| Office Math | `m:oMathPara` | Paragraph context | — | Display math paragraph. | Affects line/block layout. | P2 | Not supported |
+| Office Math | `m:r` / `m:t` | Math contexts | `xml:space` | Math run/text. | Separate from normal `w:r` and `w:t`. | P2 | Not supported |
+| Office Math | `m:f` / `m:num` / `m:den` | Math contexts | properties | Fraction. | Core OMML structure. | P2 | Not supported |
+| Office Math | `m:sSup` / `m:sSub` / `m:sSubSup` | Math contexts | properties | Superscript/subscript. | Core math layout. | P2 | Not supported |
+| Office Math | `m:rad` / `m:deg` / `m:e` | Math contexts | properties | Radical. | Core math layout. | P2 | Not supported |
+| Office Math | `m:nary` | Math contexts | properties | N-ary operator. | Integral/sum/product style layout. | P3 | Not supported |
+| Office Math | `m:d` | Math contexts | properties | Delimiter expression. | Parentheses/brackets stretching. | P3 | Not supported |
+| Office Math | `m:m` / `m:mr` | Math contexts | properties | Matrix. | Important for equations. | P3 | Not supported |
+| Office Math | `m:acc` / `m:bar` / `m:box` / `m:borderBox` / `m:groupChr` | Math contexts | properties | Accents/bars/boxes/group characters. | Preserve or convert if math rendering is required. | P3 | Not supported |
+| Office Math | `m:mathPr` | Settings part | children | Math settings. | Controls display of OMML math. | P3 | Not supported |
 
 ## Settings, compatibility, fonts, web settings, and themes
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Settings | `w:settings` | `word/settings.xml` root | — | Document settings root. | Parse once and pass layout/settings context to renderer. | P1 |
-| Settings | `w:zoom` | `w:settings` | `w:val`, `w:percent` | View zoom. | UI only; preserve. | P4 |
-| Settings | `w:view` | `w:settings` | `w:val` | Preferred view. | UI only. | P4 |
-| Settings | `w:displayBackgroundShape` | `w:settings` | `w:val` | Show background shape. | Affects background rendering. | P3 |
-| Settings | `w:displayProofErr` | `w:settings` | `w:val` | Display proofing errors. | UI only. | P4 |
-| Settings | `w:displayHorizontalDrawingGridEvery` / `w:displayVerticalDrawingGridEvery` | `w:settings` | `w:val` | Drawing grid display. | UI/editor behavior. | P4 |
-| Settings | `w:characterSpacingControl` | `w:settings` | `w:val` | Character spacing control mode. | Can affect East Asian layout. | P3 |
-| Settings | `w:defaultTabStop` | `w:settings` | `w:val` | Default tab width. | Core for tab layout when no explicit tab stop exists. | P1 |
-| Settings | `w:autoHyphenation` / `w:consecutiveHyphenLimit` / `w:hyphenationZone` / `w:doNotHyphenateCaps` | `w:settings` | `w:val` | Hyphenation settings. | Line breaking/page fidelity. | P2 |
-| Settings | `w:evenAndOddHeaders` | `w:settings` | `w:val` | Even/odd headers enabled. | Used with section header/footer refs. | P1 |
-| Settings | `w:bookFoldRevPrinting` / `w:bookFoldPrinting` / `w:bookFoldPrintingSheets` | `w:settings` | `w:val` | Booklet printing settings. | Print layout; usually preserve. | P4 |
-| Settings | `w:mirrorMargins` | `w:settings` | `w:val` | Mirror page margins. | Affects facing-page layout. | P2 |
-| Settings | `w:bordersDoNotSurroundHeader` / `w:bordersDoNotSurroundFooter` | `w:settings` | `w:val` | Page border/header/footer interaction. | Pagination/rendering fidelity. | P3 |
-| Settings | `w:proofState` | `w:settings` | `w:spelling`, `w:grammar` | Proofing state. | Not layout relevant. | P4 |
-| Settings | `w:formsDesign` | `w:settings` | `w:val` | Forms design mode. | Template/editor behavior. | P4 |
-| Settings | `w:attachedTemplate` | `w:settings` | `r:id` | Attached template relationship. | Can affect styles/macros in Word; usually preserve and avoid loading external templates automatically. | P3 |
-| Settings | `w:linkStyles` | `w:settings` | `w:val` | Automatically update styles from template. | Editing/security behavior; do not auto-fetch templates. | P4 |
-| Settings | `w:stylePaneFormatFilter` / `w:stylePaneSortMethod` | `w:settings` | `w:val` | Style pane UI preferences. | Preserve only. | P4 |
-| Settings | `w:documentProtection` | `w:settings` | `w:edit`, `w:formatting`, `w:enforcement`, `w:cryptProviderType`, `w:hash`, `w:salt`, spin/count attrs | Document protection settings. | Do not confuse with encryption; relevant for editor restrictions. | P2 |
-| Settings | `w:trackRevisions` | `w:settings` | `w:val` | Track revisions enabled. | Editing behavior. | P3 |
-| Settings | `w:doNotTrackMoves` / `w:doNotTrackFormatting` | `w:settings` | `w:val` | Revision tracking exclusions. | Editing behavior. | P4 |
-| Settings | `w:revisionView` | `w:settings` | revision display attrs | Revision view preferences. | View hint only. | P3 |
-| Settings | `w:mailMerge` | `w:settings` | children | Mail merge settings. | Important for document automation workflows; preserve if not executing merge. | P3 |
-| Settings | `w:writeProtection` | `w:settings` | hash/password attrs | Write protection recommendation. | Editor behavior/security metadata. | P3 |
-| Settings | `w:compat` | `w:settings` | children | Compatibility switches container. | Many Word layout differences live here. | P1 |
-| Settings/compat | `w:compatSetting` | `w:compat` | `w:name`, `w:uri`, `w:val` | Named compatibility setting. | Preserve unknown; known values may change layout. | P2 |
-| Settings/compat | `w:useFELayout` / `w:noExtraLineSpacing` / `w:doNotUseHTMLParagraphAutoSpacing` | `w:compat` | `w:val` | Legacy layout switches. | Can affect line/paragraph spacing. | P3 |
-| Settings/compat | `w:allowSpaceOfSameStyleInTable` | `w:compat` | `w:val` | Allow same-style paragraph spacing in table. | Can explain surprising spacing inside table cells. | P2 |
-| Settings/compat | `w:doNotExpandShiftReturn` | `w:compat` | `w:val` | Do not justify lines ending in soft line break. | Visible in justified paragraphs. | P2 |
-| Settings/compat | `w:splitPgBreakAndParaMark` | `w:compat` | `w:val` | Separate page break and paragraph mark layout. | Can affect pagination around breaks. | P3 |
-| Settings/compat | `w:doNotAutofitConstrainedTables` / `w:autofitToFirstFixedWidthCell` | `w:compat` | `w:val` | Table autofit compatibility. | Table layout fidelity. | P2 |
-| Settings/compat | `w:layoutRawTableWidth` / `w:layoutTableRowsApart` | `w:compat` | `w:val` | Table layout compatibility. | Already noted in table matrix; keep in settings parser. | P3 |
-| Settings | `w:rsids` / `w:rsidRoot` / `w:rsid` | `w:settings` | `w:val` | Editing session IDs. | Preserve; not layout. | P4 |
-| Settings | `w:themeFontLang` | `w:settings` | `w:val`, `w:eastAsia`, `w:bidi` | Theme font language. | Affects default theme font selection. | P1 |
-| Settings | `w:clrSchemeMapping` | `w:settings` | `w:bg1`, `w:t1`, `w:bg2`, `w:t2`, `w:accent1`... | Map document color roles to theme scheme slots. | Needed to resolve theme colors accurately. | P1 |
-| Settings | `w:shapeDefaults` | `w:settings` | VML/Drawing defaults | Default shape properties. | Legacy shape rendering. | P3 |
-| Settings | `w:decimalSymbol` / `w:listSeparator` | `w:settings` | `w:val` | Locale formatting symbols. | Fields and numbering/merge formatting. | P3 |
-| Settings | `w:docVars` / `w:docVar` | `w:settings` | `w:name`, `w:val` | Document variables. | Often used by templates and fields. | P2 |
-| Settings | `w:updateFields` | `w:settings` | `w:val` | Update fields on open. | Signal current field results may change. | P3 |
-| Settings | `w:hdrShapeDefaults` | `w:settings` | children | Header/footer shape defaults. | Legacy shape layout. | P4 |
-| Settings | `w:footnotePr` / `w:endnotePr` | `w:settings` | note setting children | Document-level note settings. | Default placement, numbering format and special note references. | P2 |
-| Fonts | `w:fonts` | `word/fontTable.xml` root | — | Font table root. | Map fonts before text measurement. | P1 |
-| Fonts | `w:font` | `w:fonts` | `w:name` | Font entry. | Contains charset, family, pitch, panose and embedded font refs. | P1 |
-| Fonts | `w:altName` / `w:family` / `w:pitch` / `w:charset` / `w:panose1` / `w:sig` | `w:font` | `w:val`, script attrs | Font metadata. | Useful for font fallback and matching. | P2 |
-| Fonts | `w:embedRegular` / `w:embedBold` / `w:embedItalic` / `w:embedBoldItalic` | `w:font` | `r:id`, `w:fontKey`, `w:subsetted` | Embedded font references. | Check licensing/obfuscation rules; never leak font files casually. | P2 |
-| Web settings | `w:webSettings` | `word/webSettings.xml` root | children | Web view/settings. | Usually not important for print layout; preserve. | P4 |
-| Theme | `a:theme` | Theme part root | `name` | Office theme root. | Provides color/font/effect schemes. | P1 |
-| Theme | `a:clrScheme` / `a:fontScheme` / `a:fmtScheme` | `a:themeElements` | `name` | Theme colors/fonts/effects. | Needed for theme resolution. | P1 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Settings | `w:settings` | `word/settings.xml` root | — | Document settings root. | Parse once and pass layout/settings context to renderer. | P1 | Partial |
+| Settings | `w:zoom` | `w:settings` | `w:val`, `w:percent` | View zoom. | UI only; preserve. | P4 | N/A |
+| Settings | `w:view` | `w:settings` | `w:val` | Preferred view. | UI only. | P4 | N/A |
+| Settings | `w:displayBackgroundShape` | `w:settings` | `w:val` | Show background shape. | Affects background rendering. | P3 | N/A |
+| Settings | `w:displayProofErr` | `w:settings` | `w:val` | Display proofing errors. | UI only. | P4 | N/A |
+| Settings | `w:displayHorizontalDrawingGridEvery` / `w:displayVerticalDrawingGridEvery` | `w:settings` | `w:val` | Drawing grid display. | UI/editor behavior. | P4 | N/A |
+| Settings | `w:characterSpacingControl` | `w:settings` | `w:val` | Character spacing control mode. | Can affect East Asian layout. | P3 | Not supported |
+| Settings | `w:defaultTabStop` | `w:settings` | `w:val` | Default tab width. | Core for tab layout when no explicit tab stop exists. | P1 | Not supported |
+| Settings | `w:autoHyphenation` / `w:consecutiveHyphenLimit` / `w:hyphenationZone` / `w:doNotHyphenateCaps` | `w:settings` | `w:val` | Hyphenation settings. | Line breaking/page fidelity. | P2 | Not supported |
+| Settings | `w:evenAndOddHeaders` | `w:settings` | `w:val` | Even/odd headers enabled. | Used with section header/footer refs. | P1 | Partial |
+| Settings | `w:bookFoldRevPrinting` / `w:bookFoldPrinting` / `w:bookFoldPrintingSheets` | `w:settings` | `w:val` | Booklet printing settings. | Print layout; usually preserve. | P4 | Not supported |
+| Settings | `w:mirrorMargins` | `w:settings` | `w:val` | Mirror page margins. | Affects facing-page layout. | P2 | Not supported |
+| Settings | `w:bordersDoNotSurroundHeader` / `w:bordersDoNotSurroundFooter` | `w:settings` | `w:val` | Page border/header/footer interaction. | Pagination/rendering fidelity. | P3 | Not supported |
+| Settings | `w:proofState` | `w:settings` | `w:spelling`, `w:grammar` | Proofing state. | Not layout relevant. | P4 | N/A |
+| Settings | `w:formsDesign` | `w:settings` | `w:val` | Forms design mode. | Template/editor behavior. | P4 | N/A |
+| Settings | `w:attachedTemplate` | `w:settings` | `r:id` | Attached template relationship. | Can affect styles/macros in Word; usually preserve and avoid loading external templates automatically. | P3 | Not supported |
+| Settings | `w:linkStyles` | `w:settings` | `w:val` | Automatically update styles from template. | Editing/security behavior; do not auto-fetch templates. | P4 | N/A |
+| Settings | `w:stylePaneFormatFilter` / `w:stylePaneSortMethod` | `w:settings` | `w:val` | Style pane UI preferences. | Preserve only. | P4 | N/A |
+| Settings | `w:documentProtection` | `w:settings` | `w:edit`, `w:formatting`, `w:enforcement`, `w:cryptProviderType`, `w:hash`, `w:salt`, spin/count attrs | Document protection settings. | Do not confuse with encryption; relevant for editor restrictions. | P2 | Not supported |
+| Settings | `w:trackRevisions` | `w:settings` | `w:val` | Track revisions enabled. | Editing behavior. | P3 | Not supported |
+| Settings | `w:doNotTrackMoves` / `w:doNotTrackFormatting` | `w:settings` | `w:val` | Revision tracking exclusions. | Editing behavior. | P4 | Not supported |
+| Settings | `w:revisionView` | `w:settings` | revision display attrs | Revision view preferences. | View hint only. | P3 | N/A |
+| Settings | `w:mailMerge` | `w:settings` | children | Mail merge settings. | Important for document automation workflows; preserve if not executing merge. | P3 | Not supported |
+| Settings | `w:writeProtection` | `w:settings` | hash/password attrs | Write protection recommendation. | Editor behavior/security metadata. | P3 | Not supported |
+| Settings | `w:compat` | `w:settings` | children | Compatibility switches container. | Many Word layout differences live here. | P1 | Partial |
+| Settings/compat | `w:compatSetting` | `w:compat` | `w:name`, `w:uri`, `w:val` | Named compatibility setting. | Preserve unknown; known values may change layout. | P2 | Partial |
+| Settings/compat | `w:useFELayout` / `w:noExtraLineSpacing` / `w:doNotUseHTMLParagraphAutoSpacing` | `w:compat` | `w:val` | Legacy layout switches. | Can affect line/paragraph spacing. | P3 | Not supported |
+| Settings/compat | `w:allowSpaceOfSameStyleInTable` | `w:compat` | `w:val` | Allow same-style paragraph spacing in table. | Can explain surprising spacing inside table cells. | P2 | Not supported |
+| Settings/compat | `w:doNotExpandShiftReturn` | `w:compat` | `w:val` | Do not justify lines ending in soft line break. | Visible in justified paragraphs. | P2 | Not supported |
+| Settings/compat | `w:splitPgBreakAndParaMark` | `w:compat` | `w:val` | Separate page break and paragraph mark layout. | Can affect pagination around breaks. | P3 | Not supported |
+| Settings/compat | `w:doNotAutofitConstrainedTables` / `w:autofitToFirstFixedWidthCell` | `w:compat` | `w:val` | Table autofit compatibility. | Table layout fidelity. | P2 | Not supported |
+| Settings/compat | `w:layoutRawTableWidth` / `w:layoutTableRowsApart` | `w:compat` | `w:val` | Table layout compatibility. | Already noted in table matrix; keep in settings parser. | P3 | Not supported |
+| Settings | `w:rsids` / `w:rsidRoot` / `w:rsid` | `w:settings` | `w:val` | Editing session IDs. | Preserve; not layout. | P4 | N/A |
+| Settings | `w:themeFontLang` | `w:settings` | `w:val`, `w:eastAsia`, `w:bidi` | Theme font language. | Affects default theme font selection. | P1 | Not supported |
+| Settings | `w:clrSchemeMapping` | `w:settings` | `w:bg1`, `w:t1`, `w:bg2`, `w:t2`, `w:accent1`... | Map document color roles to theme scheme slots. | Needed to resolve theme colors accurately. | P1 | Not supported |
+| Settings | `w:shapeDefaults` | `w:settings` | VML/Drawing defaults | Default shape properties. | Legacy shape rendering. | P3 | Not supported |
+| Settings | `w:decimalSymbol` / `w:listSeparator` | `w:settings` | `w:val` | Locale formatting symbols. | Fields and numbering/merge formatting. | P3 | Not supported |
+| Settings | `w:docVars` / `w:docVar` | `w:settings` | `w:name`, `w:val` | Document variables. | Often used by templates and fields. | P2 | Not supported |
+| Settings | `w:updateFields` | `w:settings` | `w:val` | Update fields on open. | Signal current field results may change. | P3 | N/A |
+| Settings | `w:hdrShapeDefaults` | `w:settings` | children | Header/footer shape defaults. | Legacy shape layout. | P4 | Not supported |
+| Settings | `w:footnotePr` / `w:endnotePr` | `w:settings` | note setting children | Document-level note settings. | Default placement, numbering format and special note references. | P2 | Not supported |
+| Fonts | `w:fonts` | `word/fontTable.xml` root | — | Font table root. | Map fonts before text measurement. | P1 | Not supported |
+| Fonts | `w:font` | `w:fonts` | `w:name` | Font entry. | Contains charset, family, pitch, panose and embedded font refs. | P1 | Not supported |
+| Fonts | `w:altName` / `w:family` / `w:pitch` / `w:charset` / `w:panose1` / `w:sig` | `w:font` | `w:val`, script attrs | Font metadata. | Useful for font fallback and matching. | P2 | Not supported |
+| Fonts | `w:embedRegular` / `w:embedBold` / `w:embedItalic` / `w:embedBoldItalic` | `w:font` | `r:id`, `w:fontKey`, `w:subsetted` | Embedded font references. | Check licensing/obfuscation rules; never leak font files casually. | P2 | Not supported |
+| Web settings | `w:webSettings` | `word/webSettings.xml` root | children | Web view/settings. | Usually not important for print layout; preserve. | P4 | Not supported |
+| Theme | `a:theme` | Theme part root | `name` | Office theme root. | Provides color/font/effect schemes. | P1 | Partial |
+| Theme | `a:clrScheme` / `a:fontScheme` / `a:fmtScheme` | `a:themeElements` | `name` | Theme colors/fonts/effects. | Needed for theme resolution. | P1 | Partial |
 
 ## Common value and attribute groups
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Common value groups | On/off values | Many `w:*` elements | `w:val` omitted/true/false/1/0/on/off | Boolean property encoding. | Omitted `w:val` often means true for CT_OnOff elements; preserve original lexical value. | P0 |
-| Common value groups | Twips | Page, paragraph, table widths/margins | integer | 1/20 of a point. | Core unit for page layout; convert carefully to CSS px/pt. | P0 |
-| Common value groups | Half-points | Font sizes | integer | Font size unit for `w:sz`. | 24 means 12pt. | P0 |
-| Common value groups | Eighth-points | Border sizes | integer | Border size unit. | `w:sz=8` means 1pt border for line borders. | P1 |
-| Common value groups | EMU | DrawingML sizes/positions | integer | English Metric Unit. | 914400 EMUs per inch; DrawingML coordinates use EMUs. | P1 |
-| Common value groups | Percent values | `pct` widths, DrawingML transforms/crops | OOXML-specific integer forms | Percent-like values are not always plain CSS percentages. | `tblW type='pct'` uses fiftieths of a percent; DrawingML crops use thousandths/100000-style units depending context. | P0 |
-| Common value groups | Theme colors | `themeColor`, `themeFill`, `a:schemeClr` | theme slot + tint/shade | Color indirection through theme. | Need theme part and color scheme mapping for accurate rendering. | P1 |
-| Common value groups | Relationships | Any `r:id` | relationship id | Pointer to another part or external target. | Resolve relative to the owning part, not globally. | P0 |
-| Common value groups | Language/script variants | Run fonts/size/bold/italic | ascii/hAnsi/eastAsia/cs and Cs variants | Different formatting per script. | Needed for multilingual docs and complex scripts. | P1 |
-| Common value groups | Bidi-aware start/end | Margins, borders, indents | `start`, `end` | Logical instead of physical left/right edges. | Resolve with paragraph/table direction. | P1 |
-| Common value groups | Strict vs Transitional | Whole package | namespace/content differences | Conformance families. | Transitional docs may contain VML and legacy compatibility markup. | P1 |
-| Common value groups | Unknown extension attrs/elements | `w14`, `w15`, `w16*`, `wp14`, `wps`, etc. | varies | Versioned Microsoft extensions. | Parse known ones; preserve unknown raw XML if round-trip matters. | P1 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Common value groups | On/off values | Many `w:*` elements | `w:val` omitted/true/false/1/0/on/off | Boolean property encoding. | Omitted `w:val` often means true for CT_OnOff elements; preserve original lexical value. | P0 | Supported |
+| Common value groups | Twips | Page, paragraph, table widths/margins | integer | 1/20 of a point. | Core unit for page layout; convert carefully to CSS px/pt. | P0 | Supported |
+| Common value groups | Half-points | Font sizes | integer | Font size unit for `w:sz`. | 24 means 12pt. | P0 | Supported |
+| Common value groups | Eighth-points | Border sizes | integer | Border size unit. | `w:sz=8` means 1pt border for line borders. | P1 | Supported |
+| Common value groups | EMU | DrawingML sizes/positions | integer | English Metric Unit. | 914400 EMUs per inch; DrawingML coordinates use EMUs. | P1 | Supported |
+| Common value groups | Percent values | `pct` widths, DrawingML transforms/crops | OOXML-specific integer forms | Percent-like values are not always plain CSS percentages. | `tblW type='pct'` uses fiftieths of a percent; DrawingML crops use thousandths/100000-style units depending context. | P0 | Partial |
+| Common value groups | Theme colors | `themeColor`, `themeFill`, `a:schemeClr` | theme slot + tint/shade | Color indirection through theme. | Need theme part and color scheme mapping for accurate rendering. | P1 | Not supported |
+| Common value groups | Relationships | Any `r:id` | relationship id | Pointer to another part or external target. | Resolve relative to the owning part, not globally. | P0 | Supported |
+| Common value groups | Language/script variants | Run fonts/size/bold/italic | ascii/hAnsi/eastAsia/cs and Cs variants | Different formatting per script. | Needed for multilingual docs and complex scripts. | P1 | Partial |
+| Common value groups | Bidi-aware start/end | Margins, borders, indents | `start`, `end` | Logical instead of physical left/right edges. | Resolve with paragraph/table direction. | P1 | Partial |
+| Common value groups | Strict vs Transitional | Whole package | namespace/content differences | Conformance families. | Transitional docs may contain VML and legacy compatibility markup. | P1 | Supported |
+| Common value groups | Unknown extension attrs/elements | `w14`, `w15`, `w16*`, `wp14`, `wps`, etc. | varies | Versioned Microsoft extensions. | Parse known ones; preserve unknown raw XML if round-trip matters. | P1 | Not supported |
 
 
 ## Completion pass: remaining importer gaps added
@@ -508,209 +520,209 @@ This pass fills the practical gaps left after the broad matrix above. It still a
 
 ## Additional OPC, parts, and relationship coverage
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Package / OPC | Relationship base URI | Any `.rels` part | source part path, `Target` | Relationship targets are resolved relative to the owning part. | Do not resolve all targets relative to package root; `../media/image1.png` style targets are normal. | P0 |
-| Package / OPC | External relationship | `pr:Relationship` | `TargetMode="External"`, `Target` | Link to external URL or file. | Never dereference blindly; keep as link metadata and sanitize in UI/export. | P0 |
-| Package / OPC | `word/media/*` | Image relationships | content type by extension or override | Embedded image binaries. | Support at least png/jpeg/gif/bmp/tiff/emf/wmf/svg fallback policy depending renderer. | P1 |
-| Package / OPC | `word/embeddings/*` | OLE/package relationships | binary part name/content type | Embedded OLE package or object. | Usually render placeholder; preserve binary and relationship for round-trip. | P3 |
-| Package / OPC | `word/activeX/*` | ActiveX relationship | binary/XML controls | ActiveX controls. | Treat as unsafe active content; preserve or strip according to security policy. | P4 |
-| Package / OPC | `word/printerSettings/*` | Section printer settings relationship | `r:id` from `w:printerSettings` | Binary printer settings. | Preserve for round-trip; usually irrelevant for web display. | P4 |
-| Package / OPC | `customXml/item*.xml` | Custom XML data store | XML payload | Data store used by content control bindings. | Required if evaluating `w:dataBinding` values. | P2 |
-| Package / OPC | `customXml/itemProps*.xml` / `ds:datastoreItem` | Custom XML item properties | `ds:itemID` | Metadata for a custom XML store item. | Map `w:dataBinding/@w:storeItemID` to the correct custom XML part. | P2 |
-| Package / OPC | `customXml/_rels/item*.xml.rels` | Custom XML relationships | schema refs | Relationships for custom XML item schemas. | Preserve; useful for validation/template systems. | P3 |
-| Package / OPC | `word/commentsExtended.xml` | Comment extension relationship | `w15:*` | Threaded/resolved comment metadata. | Pair with `comments.xml` by ids/paragraph ids where possible. | P3 |
-| Package / OPC | `word/commentsIds.xml` | Comment id relationship | `w16cid:*` | Durable modern comment identifiers. | Preserve to avoid breaking modern comment threads. | P3 |
-| Package / OPC | `word/people.xml` | People relationship | person/contact ids | Comment author/contact metadata. | Needed for modern threaded comment UX; preserve if not displayed. | P3 |
-| Package / OPC | `word/bibliography.xml` | Bibliography relationship | `b:Sources` | Bibliographic source list. | Needed by CITATION/BIBLIOGRAPHY fields and legal/academic documents. | P3 |
-| Package / OPC | `word/charts/chart*.xml` | Chart relationship | chart namespace | Chart definition part. | Either parse chart or render/extract placeholder; preserve dependencies. | P3 |
-| Package / OPC | `word/charts/style*.xml` / `colors*.xml` | Chart style/color rels | chart style ids | Chart formatting support parts. | Needed for faithful chart rendering. | P4 |
-| Package / OPC | `word/diagrams/*` | SmartArt/diagram rels | layout/data/colors/style parts | SmartArt dependency set. | Preserve as a family; partial preservation can corrupt diagrams. | P4 |
-| Package / OPC | `word/theme/themeOverride*.xml` | Theme override relationship | theme elements | Per-part or document theme override. | Resolve before falling back to `theme1.xml` defaults. | P3 |
-| Package / OPC | `docProps/thumbnail.*` | Package thumbnail relationship | image content type | Document thumbnail. | Not layout-relevant; preserve if round-tripping. | P4 |
-| Package / OPC | VBA/macro project parts | Macro-enabled packages, usually `.docm` | `vbaProject.bin` rels | Macro project. | A `.docx` importer should detect and reject/strip/report active macro content according to policy. | P4 |
-| Package / OPC | Digital signature origin/signature parts | Package relationships | signature XML parts | Package signatures. | Detect signatures; modifying package invalidates them. | P4 |
-| Package / OPC | Encrypted package | Package-level encryption | encrypted payload | Password/encrypted Office package. | Fail clearly unless decryption is explicitly supported. | P4 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Package / OPC | Relationship base URI | Any `.rels` part | source part path, `Target` | Relationship targets are resolved relative to the owning part. | Do not resolve all targets relative to package root; `../media/image1.png` style targets are normal. | P0 | Supported |
+| Package / OPC | External relationship | `pr:Relationship` | `TargetMode="External"`, `Target` | Link to external URL or file. | Never dereference blindly; keep as link metadata and sanitize in UI/export. | P0 | Not supported |
+| Package / OPC | `word/media/*` | Image relationships | content type by extension or override | Embedded image binaries. | Support at least png/jpeg/gif/bmp/tiff/emf/wmf/svg fallback policy depending renderer. | P1 | Supported |
+| Package / OPC | `word/embeddings/*` | OLE/package relationships | binary part name/content type | Embedded OLE package or object. | Usually render placeholder; preserve binary and relationship for round-trip. | P3 | Not supported |
+| Package / OPC | `word/activeX/*` | ActiveX relationship | binary/XML controls | ActiveX controls. | Treat as unsafe active content; preserve or strip according to security policy. | P4 | Not supported |
+| Package / OPC | `word/printerSettings/*` | Section printer settings relationship | `r:id` from `w:printerSettings` | Binary printer settings. | Preserve for round-trip; usually irrelevant for web display. | P4 | Not supported |
+| Package / OPC | `customXml/item*.xml` | Custom XML data store | XML payload | Data store used by content control bindings. | Required if evaluating `w:dataBinding` values. | P2 | Not supported |
+| Package / OPC | `customXml/itemProps*.xml` / `ds:datastoreItem` | Custom XML item properties | `ds:itemID` | Metadata for a custom XML store item. | Map `w:dataBinding/@w:storeItemID` to the correct custom XML part. | P2 | Not supported |
+| Package / OPC | `customXml/_rels/item*.xml.rels` | Custom XML relationships | schema refs | Relationships for custom XML item schemas. | Preserve; useful for validation/template systems. | P3 | Not supported |
+| Package / OPC | `word/commentsExtended.xml` | Comment extension relationship | `w15:*` | Threaded/resolved comment metadata. | Pair with `comments.xml` by ids/paragraph ids where possible. | P3 | Not supported |
+| Package / OPC | `word/commentsIds.xml` | Comment id relationship | `w16cid:*` | Durable modern comment identifiers. | Preserve to avoid breaking modern comment threads. | P3 | Not supported |
+| Package / OPC | `word/people.xml` | People relationship | person/contact ids | Comment author/contact metadata. | Needed for modern threaded comment UX; preserve if not displayed. | P3 | Not supported |
+| Package / OPC | `word/bibliography.xml` | Bibliography relationship | `b:Sources` | Bibliographic source list. | Needed by CITATION/BIBLIOGRAPHY fields and legal/academic documents. | P3 | Not supported |
+| Package / OPC | `word/charts/chart*.xml` | Chart relationship | chart namespace | Chart definition part. | Either parse chart or render/extract placeholder; preserve dependencies. | P3 | Not supported |
+| Package / OPC | `word/charts/style*.xml` / `colors*.xml` | Chart style/color rels | chart style ids | Chart formatting support parts. | Needed for faithful chart rendering. | P4 | Not supported |
+| Package / OPC | `word/diagrams/*` | SmartArt/diagram rels | layout/data/colors/style parts | SmartArt dependency set. | Preserve as a family; partial preservation can corrupt diagrams. | P4 | Not supported |
+| Package / OPC | `word/theme/themeOverride*.xml` | Theme override relationship | theme elements | Per-part or document theme override. | Resolve before falling back to `theme1.xml` defaults. | P3 | Not supported |
+| Package / OPC | `docProps/thumbnail.*` | Package thumbnail relationship | image content type | Document thumbnail. | Not layout-relevant; preserve if round-tripping. | P4 | Not supported |
+| Package / OPC | VBA/macro project parts | Macro-enabled packages, usually `.docm` | `vbaProject.bin` rels | Macro project. | A `.docx` importer should detect and reject/strip/report active macro content according to policy. | P4 | Not supported |
+| Package / OPC | Digital signature origin/signature parts | Package relationships | signature XML parts | Package signatures. | Detect signatures; modifying package invalidates them. | P4 | Not supported |
+| Package / OPC | Encrypted package | Package-level encryption | encrypted payload | Password/encrypted Office package. | Fail clearly unless decryption is explicitly supported. | P4 | Not supported |
 
 ## Additional section and page-layout edge cases
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Section/page | `w:formProt` | `w:sectPr` | `w:val` | Section form protection. | Important for protected form sections; editing behavior only unless forms are implemented. | P3 |
-| Section/page | `w:noEndnote` | `w:sectPr` | `w:val` | Suppress endnotes for this section. | Affects note placement/numbering when rendering endnotes. | P3 |
-| Section/page | `w:printerSettings` | `w:sectPr` | `r:id` | Section printer settings relationship. | Preserve binary target; usually not used for screen layout. | P4 |
-| Section/page | `w:sectPrChange` | `w:sectPr` | `w:id`, `w:author`, `w:date` | Tracked section property change. | Contains previous section properties; preserve for revision mode. | P3 |
-| Section/page | `w:footnoteColumns` | `w:footnotePr` | `w:val` | Number of columns for footnotes. | Needed for high-fidelity note layout. | P3 |
-| Section/page | `w:numStart` / `w:numRestart` / `w:numFmt` | `w:footnotePr`, `w:endnotePr` | `w:val` | Note numbering settings. | Combine document-level and section-level note properties. | P2 |
-| Section/page | `w:pos` | `w:footnotePr`, `w:endnotePr` | `w:val` | Note placement. | Examples: beneath text, bottom of page, end of section/document. | P2 |
-| Section/page | Multiple `w:sectPr` resolution | `w:pPr`, `w:body` | document order | Section break boundaries. | A paragraph-level `sectPr` describes the section ending at that paragraph, while final body `sectPr` describes the last section. | P0 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Section/page | `w:formProt` | `w:sectPr` | `w:val` | Section form protection. | Important for protected form sections; editing behavior only unless forms are implemented. | P3 | Not supported |
+| Section/page | `w:noEndnote` | `w:sectPr` | `w:val` | Suppress endnotes for this section. | Affects note placement/numbering when rendering endnotes. | P3 | Not supported |
+| Section/page | `w:printerSettings` | `w:sectPr` | `r:id` | Section printer settings relationship. | Preserve binary target; usually not used for screen layout. | P4 | Not supported |
+| Section/page | `w:sectPrChange` | `w:sectPr` | `w:id`, `w:author`, `w:date` | Tracked section property change. | Contains previous section properties; preserve for revision mode. | P3 | Not supported |
+| Section/page | `w:footnoteColumns` | `w:footnotePr` | `w:val` | Number of columns for footnotes. | Needed for high-fidelity note layout. | P3 | Not supported |
+| Section/page | `w:numStart` / `w:numRestart` / `w:numFmt` | `w:footnotePr`, `w:endnotePr` | `w:val` | Note numbering settings. | Combine document-level and section-level note properties. | P2 | Not supported |
+| Section/page | `w:pos` | `w:footnotePr`, `w:endnotePr` | `w:val` | Note placement. | Examples: beneath text, bottom of page, end of section/document. | P2 | Not supported |
+| Section/page | Multiple `w:sectPr` resolution | `w:pPr`, `w:body` | document order | Section break boundaries. | A paragraph-level `sectPr` describes the section ending at that paragraph, while final body `sectPr` describes the last section. | P0 | Supported |
 
 ## Additional paragraph and inline content coverage
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Paragraph | `w:contextualSpacing` | `w:pPr` | `w:val` | Suppress spacing between paragraphs of the same style. | This is a standalone paragraph property, not an attribute of `w:spacing`; it can explain vertical spacing differences. | P1 |
-| Paragraph | `w:adjustRightInd` | `w:pPr` | `w:val` | Auto-adjust right indent. | Compatibility-sensitive line layout; preserve/approximate. | P3 |
-| Paragraph | `w:ind` character attrs | `w:pPr` | `w:leftChars`, `w:rightChars`, `w:firstLineChars`, `w:hangingChars` | Character-count based indents. | Prefer twip values when both exist unless compatibility requires char units. | P3 |
-| Paragraph | `w:pageBreakBefore` with empty paragraphs | `w:pPr` | `w:val` | Page break before paragraph. | Empty paragraphs with this flag still affect pagination. | P1 |
-| Paragraph | Paragraph mark run props | `w:pPr/w:rPr` | run props | Formatting of paragraph mark. | Can affect final line height and list/field behavior; do not ignore completely in layout engine. | P2 |
-| Inline range | `w:bookmarkStart` / `w:bookmarkEnd` malformed ranges | inline/block | `w:id`, `w:name` | Bookmark markers may be unbalanced or overlap. | Importer should recover and preserve markers even when the XML is awkward. | P2 |
-| Inline range | `w:moveFromRangeStart` / `w:moveToRangeStart` col attrs | table/range contexts | `w:colFirst`, `w:colLast` | Move ranges across table columns. | Needed for revision-aware table display. | P3 |
-| Run/content | `w:delInstrText` | `w:r` in deletion/revision context | `xml:space` | Deleted field instruction text. | Needed for original/revision view of fields. | P3 |
-| Run/content | `w:fldData` | `w:r` / field context | base64 or opaque text | Field private data. | Preserve for round-trip; rarely interpreted by importers. | P4 |
-| Run/content | `w:footnoteRef` | Footnote content run | — | Auto footnote reference mark inside footnote text. | Distinct from `w:footnoteReference` in the main story. | P2 |
-| Run/content | `w:endnoteRef` | Endnote content run | — | Auto endnote reference mark inside endnote text. | Distinct from `w:endnoteReference` in the main story. | P2 |
-| Run/content | `w:ruby` | Run-level content | children | East Asian ruby annotation. | Parse `rubyPr`, `rt`, and `rubyBase` for correct CJK annotation layout. | P3 |
-| Run/content | `w:rubyPr` | `w:ruby` | child settings | Ruby layout properties. | Position, alignment and size can affect line height. | P3 |
-| Run/content | `w:rt` / `w:rubyBase` | `w:ruby` | run children | Ruby text and base text. | Render as annotation or preserve if not supported. | P3 |
-| Run/content | `w:contentPart` | Run/block contexts in newer docs | `r:id` | External content part reference. | Preserve or resolve if supporting rich embedded content. | P4 |
-| Run/content | `w:dir` / `w:bdo` | Inline contexts | `w:val` | Explicit direction override. | Important for mixed RTL/LTR text. | P2 |
-| Run/content | `w:smartTag` | Inline wrapper | `w:uri`, `w:element` | Legacy semantic wrapper. | Unwrap for display and preserve metadata. | P4 |
-| Run/content | `w:permStart` / `w:permEnd` in runs | inline contexts | permission attrs | Editable range boundaries inside text. | Required for editing protected documents. | P3 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Paragraph | `w:contextualSpacing` | `w:pPr` | `w:val` | Suppress spacing between paragraphs of the same style. | This is a standalone paragraph property, not an attribute of `w:spacing`; it can explain vertical spacing differences. | P1 | Not supported |
+| Paragraph | `w:adjustRightInd` | `w:pPr` | `w:val` | Auto-adjust right indent. | Compatibility-sensitive line layout; preserve/approximate. | P3 | Not supported |
+| Paragraph | `w:ind` character attrs | `w:pPr` | `w:leftChars`, `w:rightChars`, `w:firstLineChars`, `w:hangingChars` | Character-count based indents. | Prefer twip values when both exist unless compatibility requires char units. | P3 | Not supported |
+| Paragraph | `w:pageBreakBefore` with empty paragraphs | `w:pPr` | `w:val` | Page break before paragraph. | Empty paragraphs with this flag still affect pagination. | P1 | Supported |
+| Paragraph | Paragraph mark run props | `w:pPr/w:rPr` | run props | Formatting of paragraph mark. | Can affect final line height and list/field behavior; do not ignore completely in layout engine. | P2 | Supported |
+| Inline range | `w:bookmarkStart` / `w:bookmarkEnd` malformed ranges | inline/block | `w:id`, `w:name` | Bookmark markers may be unbalanced or overlap. | Importer should recover and preserve markers even when the XML is awkward. | P2 | Not supported |
+| Inline range | `w:moveFromRangeStart` / `w:moveToRangeStart` col attrs | table/range contexts | `w:colFirst`, `w:colLast` | Move ranges across table columns. | Needed for revision-aware table display. | P3 | Not supported |
+| Run/content | `w:delInstrText` | `w:r` in deletion/revision context | `xml:space` | Deleted field instruction text. | Needed for original/revision view of fields. | P3 | Not supported |
+| Run/content | `w:fldData` | `w:r` / field context | base64 or opaque text | Field private data. | Preserve for round-trip; rarely interpreted by importers. | P4 | Not supported |
+| Run/content | `w:footnoteRef` | Footnote content run | — | Auto footnote reference mark inside footnote text. | Distinct from `w:footnoteReference` in the main story. | P2 | Supported |
+| Run/content | `w:endnoteRef` | Endnote content run | — | Auto endnote reference mark inside endnote text. | Distinct from `w:endnoteReference` in the main story. | P2 | Not supported |
+| Run/content | `w:ruby` | Run-level content | children | East Asian ruby annotation. | Parse `rubyPr`, `rt`, and `rubyBase` for correct CJK annotation layout. | P3 | Not supported |
+| Run/content | `w:rubyPr` | `w:ruby` | child settings | Ruby layout properties. | Position, alignment and size can affect line height. | P3 | Not supported |
+| Run/content | `w:rt` / `w:rubyBase` | `w:ruby` | run children | Ruby text and base text. | Render as annotation or preserve if not supported. | P3 | Not supported |
+| Run/content | `w:contentPart` | Run/block contexts in newer docs | `r:id` | External content part reference. | Preserve or resolve if supporting rich embedded content. | P4 | Not supported |
+| Run/content | `w:dir` / `w:bdo` | Inline contexts | `w:val` | Explicit direction override. | Important for mixed RTL/LTR text. | P2 | Not supported |
+| Run/content | `w:smartTag` | Inline wrapper | `w:uri`, `w:element` | Legacy semantic wrapper. | Unwrap for display and preserve metadata. | P4 | Not supported |
+| Run/content | `w:permStart` / `w:permEnd` in runs | inline contexts | permission attrs | Editable range boundaries inside text. | Required for editing protected documents. | P3 | Not supported |
 
 ## Additional run-property and typography coverage
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Run properties | `w:eastAsianLayout` | `w:rPr` | `w:id`, `w:combine`, `w:combineBrackets`, `w:vert`, `w:vertCompress` | East Asian typography layout. | Affects combined characters and vertical text layout. | P3 |
-| Run properties | `w14:ligatures` | `w:rPr` | `w14:val` | OpenType ligature control. | Affects text shaping/measurement if renderer supports font features. | P3 |
-| Run properties | `w14:numForm` | `w:rPr` | `w14:val` | Number form typography. | Lining/old-style number glyph choice; preserve or map to font-feature settings. | P4 |
-| Run properties | `w14:numSpacing` | `w:rPr` | `w14:val` | Number spacing typography. | Proportional/tabular numbers; can affect aligned legal tables. | P4 |
-| Run properties | `w14:stylisticSets` / `w14:stylisticSet` | `w:rPr` | `w14:id`, `w14:val` | OpenType stylistic set selection. | Preserve or map to CSS font-feature-settings when possible. | P4 |
-| Run properties | `w14:cntxtAlts` | `w:rPr` | `w14:val` | Contextual alternates. | Text shaping feature; preserve if unsupported. | P4 |
-| Run properties | `w14:textFill` | `w:rPr` | DrawingML fill children | Modern text fill. | Overrides simple `w:color` in advanced WordArt-like text. | P3 |
-| Run properties | `w14:textOutline` | `w:rPr` | line/fill attrs | Modern text outline. | Visible in stylized documents; preserve/approximate. | P3 |
-| Run properties | `w14:textShadow` | `w:rPr` | effect attrs | Modern text shadow. | Distinct from legacy `w:shadow`. | P4 |
-| Run properties | `w14:glow` / `w14:reflection` | `w:rPr` | effect attrs | Modern text effects. | Preserve or approximate in high-fidelity renderer. | P4 |
-| Run properties | `w14:scene3d` / `w14:props3d` | `w:rPr` | 3D attrs | 3D text effects. | Usually preserve only. | P4 |
-| Run properties | `w15:collapsed` | `w:rPr` / revision contexts | `w15:val` | Collapsed revision/comment display hint. | UI/revision-display metadata. | P4 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Run properties | `w:eastAsianLayout` | `w:rPr` | `w:id`, `w:combine`, `w:combineBrackets`, `w:vert`, `w:vertCompress` | East Asian typography layout. | Affects combined characters and vertical text layout. | P3 | Not supported |
+| Run properties | `w14:ligatures` | `w:rPr` | `w14:val` | OpenType ligature control. | Affects text shaping/measurement if renderer supports font features. | P3 | Not supported |
+| Run properties | `w14:numForm` | `w:rPr` | `w14:val` | Number form typography. | Lining/old-style number glyph choice; preserve or map to font-feature settings. | P4 | Not supported |
+| Run properties | `w14:numSpacing` | `w:rPr` | `w14:val` | Number spacing typography. | Proportional/tabular numbers; can affect aligned legal tables. | P4 | Not supported |
+| Run properties | `w14:stylisticSets` / `w14:stylisticSet` | `w:rPr` | `w14:id`, `w14:val` | OpenType stylistic set selection. | Preserve or map to CSS font-feature-settings when possible. | P4 | Not supported |
+| Run properties | `w14:cntxtAlts` | `w:rPr` | `w14:val` | Contextual alternates. | Text shaping feature; preserve if unsupported. | P4 | Not supported |
+| Run properties | `w14:textFill` | `w:rPr` | DrawingML fill children | Modern text fill. | Overrides simple `w:color` in advanced WordArt-like text. | P3 | Not supported |
+| Run properties | `w14:textOutline` | `w:rPr` | line/fill attrs | Modern text outline. | Visible in stylized documents; preserve/approximate. | P3 | Not supported |
+| Run properties | `w14:textShadow` | `w:rPr` | effect attrs | Modern text shadow. | Distinct from legacy `w:shadow`. | P4 | Not supported |
+| Run properties | `w14:glow` / `w14:reflection` | `w:rPr` | effect attrs | Modern text effects. | Preserve or approximate in high-fidelity renderer. | P4 | Not supported |
+| Run properties | `w14:scene3d` / `w14:props3d` | `w:rPr` | 3D attrs | 3D text effects. | Usually preserve only. | P4 | Not supported |
+| Run properties | `w15:collapsed` | `w:rPr` / revision contexts | `w15:val` | Collapsed revision/comment display hint. | UI/revision-display metadata. | P4 | Not supported |
 
 ## Additional fields, references, and document automation coverage
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Fields | Complex field state machine | runs between `fldChar` begin/separate/end | `fldCharType` | Field instruction/result boundary model. | Build a stack; nested fields are legal and common in TOC/REF/PAGEREF constructs. | P1 |
-| Fields | Field result runs | runs after `separate` before `end` | normal run props | Cached display result. | A display-only importer can show cached result and mark as stale if `dirty`. | P1 |
-| Fields | `TOC` field switches | `w:instrText` stream | `\o`, `\h`, `\z`, `\u`, etc. | Table of contents generation instructions. | Show cached result or regenerate only if you implement heading/outline pagination. | P2 |
-| Fields | `REF` / `PAGEREF` / `NOTEREF` | field instruction stream | bookmark name, switches | Cross-reference fields. | Requires bookmark resolution and page-number context for PAGEREF. | P2 |
-| Fields | `SEQ` | field instruction stream | sequence id/switches | Sequence numbering field. | Common for figures, clauses and legal templates. | P2 |
-| Fields | `STYLEREF` | field instruction stream | style name/id | Reference text from nearest style. | Common in headers/footers. | P3 |
-| Fields | `INCLUDETEXT` / `INCLUDEPICTURE` | field instruction stream | external target | Include external content. | Security-sensitive; do not auto-fetch without explicit policy. | P3 |
-| Fields | `MERGEFIELD` / `ADDRESSBLOCK` / `GREETINGLINE` | field instruction stream | merge field name/switches | Mail merge fields. | Preserve or bind through a merge-data pipeline. | P2 |
-| Fields | `FORMTEXT` / `FORMCHECKBOX` / `FORMDROPDOWN` | field instruction stream | legacy form field backing | Legacy form controls. | Combine with `w:ffData`. | P2 |
-| References | `w:hyperlink` without `r:id` | inline context | `w:anchor` | Internal bookmark hyperlink. | Resolve within document; do not require external relationship. | P1 |
-| References | `w:hyperlink` with both target hints | inline context | `r:id`, `w:anchor`, `w:docLocation` | External document location with optional anchor. | Preserve all parts; UI target may combine relationship target and fragment. | P2 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Fields | Complex field state machine | runs between `fldChar` begin/separate/end | `fldCharType` | Field instruction/result boundary model. | Build a stack; nested fields are legal and common in TOC/REF/PAGEREF constructs. | P1 | Partial |
+| Fields | Field result runs | runs after `separate` before `end` | normal run props | Cached display result. | A display-only importer can show cached result and mark as stale if `dirty`. | P1 | Supported |
+| Fields | `TOC` field switches | `w:instrText` stream | `\o`, `\h`, `\z`, `\u`, etc. | Table of contents generation instructions. | Show cached result or regenerate only if you implement heading/outline pagination. | P2 | Not supported |
+| Fields | `REF` / `PAGEREF` / `NOTEREF` | field instruction stream | bookmark name, switches | Cross-reference fields. | Requires bookmark resolution and page-number context for PAGEREF. | P2 | Not supported |
+| Fields | `SEQ` | field instruction stream | sequence id/switches | Sequence numbering field. | Common for figures, clauses and legal templates. | P2 | Not supported |
+| Fields | `STYLEREF` | field instruction stream | style name/id | Reference text from nearest style. | Common in headers/footers. | P3 | Not supported |
+| Fields | `INCLUDETEXT` / `INCLUDEPICTURE` | field instruction stream | external target | Include external content. | Security-sensitive; do not auto-fetch without explicit policy. | P3 | Not supported |
+| Fields | `MERGEFIELD` / `ADDRESSBLOCK` / `GREETINGLINE` | field instruction stream | merge field name/switches | Mail merge fields. | Preserve or bind through a merge-data pipeline. | P2 | Not supported |
+| Fields | `FORMTEXT` / `FORMCHECKBOX` / `FORMDROPDOWN` | field instruction stream | legacy form field backing | Legacy form controls. | Combine with `w:ffData`. | P2 | Not supported |
+| References | `w:hyperlink` without `r:id` | inline context | `w:anchor` | Internal bookmark hyperlink. | Resolve within document; do not require external relationship. | P1 | Partial |
+| References | `w:hyperlink` with both target hints | inline context | `r:id`, `w:anchor`, `w:docLocation` | External document location with optional anchor. | Preserve all parts; UI target may combine relationship target and fragment. | P2 | Partial |
 
 ## Additional content-control / SDT coverage
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Content controls | `w:appearance` | `w:sdtPr` | `w:val` | Visual appearance of content control. | Values such as boundingBox, tags, hidden affect editor UI, not print layout. | P3 |
-| Content controls | `w:color` | `w:sdtPr` | `w:val`, theme attrs | Content control UI color. | Usually editor metadata; preserve. | P4 |
-| Content controls | `w:showingPlcHdr` | `w:sdtPr` | `w:val` | Content currently shows placeholder. | Important to distinguish placeholder text from user data. | P2 |
-| Content controls | `w:temporary` | `w:sdtPr` | `w:val` | Remove control after edit. | Editing behavior; preserve. | P4 |
-| Content controls | `w:lock` | `w:sdtPr` | `w:val` | Lock behavior. | Values include contentLocked and sdtContentLocked patterns. | P3 |
-| Content controls | `w:equation` / `w:citation` / `w:bibliography` | `w:sdtPr` | — | Specialized content control types. | Common around equations/citations/bibliography fields. | P3 |
-| Content controls | `w:group` | `w:sdtPr` | — | Group content control. | May wrap multiple block controls; preserve hierarchy. | P3 |
-| Content controls | `w:picture` | `w:sdtPr` | — | Picture content control. | Content normally contains drawing; placeholder/image replacement is editor logic. | P2 |
-| Content controls | `w:date` | `w:sdtPr` | date children | Date picker content control. | Parse formatting and storage behavior for form import. | P2 |
-| Content controls | `w:dateFormat` / `w:lid` / `w:calendar` / `w:storeMappedDataAs` | `w:date` | `w:val` | Date display/storage settings. | Required for round-trip and data binding. | P2 |
-| Content controls | `w:comboBox` / `w:dropDownList` | `w:sdtPr` | list item children | List-based content controls. | Preserve display/value pairs and selected content. | P2 |
-| Content controls | `w14:checkbox` | `w:sdtPr` | checkbox children | Modern checkbox content control. | Common in forms; map checked/unchecked state. | P2 |
-| Content controls | `w14:checked` / `w14:checkedState` / `w14:uncheckedState` | `w14:checkbox` | `w14:val`, `w14:font`, `w14:char` | Checkbox state/glyphs. | Needed to render checkboxes without losing chosen glyph/font. | P2 |
-| Content controls | `w:repeatingSectionItem` | `w:sdtPr` | — | Item inside repeating section. | Preserve for repeating template regions. | P3 |
-| Content controls | `w:dataBinding` prefix mappings | `w:sdtPr` | `w:prefixMappings`, `w:xpath`, `w:storeItemID` | XPath binding. | Requires namespace-aware XPath evaluation against custom XML stores. | P2 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Content controls | `w:appearance` | `w:sdtPr` | `w:val` | Visual appearance of content control. | Values such as boundingBox, tags, hidden affect editor UI, not print layout. | P3 | Not supported |
+| Content controls | `w:color` | `w:sdtPr` | `w:val`, theme attrs | Content control UI color. | Usually editor metadata; preserve. | P4 | Not supported |
+| Content controls | `w:showingPlcHdr` | `w:sdtPr` | `w:val` | Content currently shows placeholder. | Important to distinguish placeholder text from user data. | P2 | Not supported |
+| Content controls | `w:temporary` | `w:sdtPr` | `w:val` | Remove control after edit. | Editing behavior; preserve. | P4 | Not supported |
+| Content controls | `w:lock` | `w:sdtPr` | `w:val` | Lock behavior. | Values include contentLocked and sdtContentLocked patterns. | P3 | Not supported |
+| Content controls | `w:equation` / `w:citation` / `w:bibliography` | `w:sdtPr` | — | Specialized content control types. | Common around equations/citations/bibliography fields. | P3 | Not supported |
+| Content controls | `w:group` | `w:sdtPr` | — | Group content control. | May wrap multiple block controls; preserve hierarchy. | P3 | Not supported |
+| Content controls | `w:picture` | `w:sdtPr` | — | Picture content control. | Content normally contains drawing; placeholder/image replacement is editor logic. | P2 | Not supported |
+| Content controls | `w:date` | `w:sdtPr` | date children | Date picker content control. | Parse formatting and storage behavior for form import. | P2 | Not supported |
+| Content controls | `w:dateFormat` / `w:lid` / `w:calendar` / `w:storeMappedDataAs` | `w:date` | `w:val` | Date display/storage settings. | Required for round-trip and data binding. | P2 | Not supported |
+| Content controls | `w:comboBox` / `w:dropDownList` | `w:sdtPr` | list item children | List-based content controls. | Preserve display/value pairs and selected content. | P2 | Not supported |
+| Content controls | `w14:checkbox` | `w:sdtPr` | checkbox children | Modern checkbox content control. | Common in forms; map checked/unchecked state. | P2 | Not supported |
+| Content controls | `w14:checked` / `w14:checkedState` / `w14:uncheckedState` | `w14:checkbox` | `w14:val`, `w14:font`, `w14:char` | Checkbox state/glyphs. | Needed to render checkboxes without losing chosen glyph/font. | P2 | Not supported |
+| Content controls | `w:repeatingSectionItem` | `w:sdtPr` | — | Item inside repeating section. | Preserve for repeating template regions. | P3 | Not supported |
+| Content controls | `w:dataBinding` prefix mappings | `w:sdtPr` | `w:prefixMappings`, `w:xpath`, `w:storeItemID` | XPath binding. | Requires namespace-aware XPath evaluation against custom XML stores. | P2 | Not supported |
 
 ## Additional comments, notes, annotations, and people metadata
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Comments modern | `w15:commentsEx` | Extended comments part | — | Modern comment extension root. | Enables resolved/threaded comment state. | P3 |
-| Comments modern | `w15:commentEx` | `w15:commentsEx` | `w15:paraId`, `w15:parentId`, `w15:done` | Extended comment metadata. | Link to comment paragraphs and parent thread where available. | P3 |
-| Comments modern | `w16cid:commentsIds` / `w16cid:commentId` | Comments ids part | durable id attrs | Durable modern comment ids. | Preserve even if UI only displays classic comments. | P3 |
-| Comments modern | `w16cex:commentsExtensible` | Modern comments extension part | extension attrs | Newer extensible comment metadata. | Preserve unknown children/attrs. | P4 |
-| Comments modern | `w:people` / `w:person` | People part | author/provider ids | People/contact metadata for comments. | Useful for modern comment display; preserve otherwise. | P4 |
-| Comments modern | `w16du:dateUtc` | Comment-related attrs | UTC timestamp | UTC date extension. | Prefer UTC date when displaying cross-timezone comment metadata. | P4 |
-| Notes | Special note ids | `footnotes.xml`, `endnotes.xml` | negative/special ids | Separator/continuation notes. | Do not treat every note as user-authored note body. | P2 |
-| Notes | `w:customMarkFollows` | note reference elements | `w:val` | Custom note mark follows. | If true, visible mark may be supplied manually in following runs. | P2 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Comments modern | `w15:commentsEx` | Extended comments part | — | Modern comment extension root. | Enables resolved/threaded comment state. | P3 | Not supported |
+| Comments modern | `w15:commentEx` | `w15:commentsEx` | `w15:paraId`, `w15:parentId`, `w15:done` | Extended comment metadata. | Link to comment paragraphs and parent thread where available. | P3 | Not supported |
+| Comments modern | `w16cid:commentsIds` / `w16cid:commentId` | Comments ids part | durable id attrs | Durable modern comment ids. | Preserve even if UI only displays classic comments. | P3 | Not supported |
+| Comments modern | `w16cex:commentsExtensible` | Modern comments extension part | extension attrs | Newer extensible comment metadata. | Preserve unknown children/attrs. | P4 | Not supported |
+| Comments modern | `w:people` / `w:person` | People part | author/provider ids | People/contact metadata for comments. | Useful for modern comment display; preserve otherwise. | P4 | Not supported |
+| Comments modern | `w16du:dateUtc` | Comment-related attrs | UTC timestamp | UTC date extension. | Prefer UTC date when displaying cross-timezone comment metadata. | P4 | Not supported |
+| Notes | Special note ids | `footnotes.xml`, `endnotes.xml` | negative/special ids | Separator/continuation notes. | Do not treat every note as user-authored note body. | P2 | Supported |
+| Notes | `w:customMarkFollows` | note reference elements | `w:val` | Custom note mark follows. | If true, visible mark may be supplied manually in following runs. | P2 | Not supported |
 
 ## Additional DrawingML, VML, chart, and diagram coverage
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| DrawingML positioning | `wp14:sizeRelH` / `wp14:sizeRelV` | `wp:anchor` | `relativeFrom`, pct width/height | Relative object sizing. | Needed for shapes/images sized relative to page, margin or column. | P3 |
-| DrawingML positioning | `wp14:anchorId` / `wp14:editId` | `wp:inline`, `wp:anchor` | ids | Stable drawing/edit identifiers. | Preserve for round-trip; useful for diffing. | P4 |
-| DrawingML positioning | `wp:wrapPolygon` | tight/through wrapping | edited polygon points | Custom text wrap polygon. | Required for high-fidelity floating image wrap. | P3 |
-| DrawingML object | `a:hlinkClick` / `a:hlinkHover` | non-visual drawing props | `r:id`, tooltip attrs | Hyperlink on drawing/shape. | Resolve drawing relationships just like text hyperlinks. | P2 |
-| DrawingML object | `a:extLst` | Many DrawingML elements | extension children | DrawingML extension list. | Preserve unknown extensions, including Office-versioned behavior. | P2 |
-| DrawingML image | `a14:useLocalDpi` | `a:blip/a:extLst` | `val` | Use embedded image DPI. | Can affect physical image size in Word. | P3 |
-| DrawingML image | `a:alphaModFix` / `a:alphaMod` / `a:alphaOff` | image/effect contexts | value attrs | Alpha/transparency transforms. | Needed for transparent or faded images. | P3 |
-| DrawingML color | `a:lumMod` / `a:lumOff` / `a:tint` / `a:shade` / `a:satMod` | color transforms | `val` | Color transformations. | Apply in order when resolving DrawingML/theme colors. | P2 |
-| DrawingML effects | `a:effectLst` / `a:effectDag` | shape props | effect children | Shadow/glow/reflection/soft-edge effects. | Affects visible bounds and appearance. | P4 |
-| DrawingML 3D | `a:scene3d` / `a:sp3d` | shape props | 3D attrs | 3D scene/shape properties. | Usually preserve only. | P4 |
-| Wordprocessing shapes | `wps:wsp` | `a:graphicData` | shape children | Wordprocessing shape. | Modern replacement for some VML shapes; parse text body and shape props. | P2 |
-| Wordprocessing shapes | `wps:txbx` / `wps:txbxContent` | `wps:wsp` | WordprocessingML content | DrawingML text box content. | Contains normal paragraphs/tables; must enter secondary story parser. | P2 |
-| Grouped shapes | `wpg:wgp` / `wpg:grpSpPr` | `a:graphicData` | transform/group props | Wordprocessing group shape. | Apply group transforms to children or preserve. | P3 |
-| Locked canvas | `lc:lockedCanvas` | DrawingML graphicData | child drawings | Legacy grouped drawing container. | Preserve/approximate. | P4 |
-| Picture fill | `a:tile` | `pic:blipFill` | tile attrs | Tiled image fill. | Different from stretch; visible in shape/picture backgrounds. | P3 |
-| Picture recolor | `a:duotone` / `a:grayscl` / `a:biLevel` | `a:blip` | color attrs | Image recoloring. | Preserve or implement for high-fidelity rendering. | P4 |
-| Charts | `c:chartSpace` | chart part root | chart children | Chart part root. | Full chart rendering requires chart parser, not only `c:chart` reference. | P3 |
-| Charts | `c:externalData` | chart part | `r:id` | External or embedded workbook backing chart. | Preserve link or resolve embedded workbook dependency. | P3 |
-| Charts | `c:ser` / `c:cat` / `c:val` | chart plot types | data refs/cache | Series/category/value data. | Use cached data for display if workbook is unavailable. | P4 |
-| Diagrams | `dgm:dataModel` / `dgm:layoutDef` / `dgm:styleDef` / `dgm:colorsDef` | diagram parts | diagram attrs | SmartArt data/layout/style/color parts. | Preserve as dependency group; render preview/placeholder if unsupported. | P4 |
-| VML details | CSS-like `style` parser | `v:shape`, `v:textbox`, etc. | `position`, `width`, `height`, margins, z-index | Legacy shape layout. | Word VML styles are not normal browser CSS; parse supported properties explicitly. | P2 |
-| VML details | `v:fill` / `v:stroke` / `v:shadow` | VML shapes | color/effect attrs | Legacy fill/stroke/shadow. | Needed for old templates and letterheads. | P3 |
-| VML details | `o:lock` / `v:formulas` / `v:path` | VML shapes | geometry attrs | Shape locks and custom geometry. | Preserve unsupported geometry. | P4 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| DrawingML positioning | `wp14:sizeRelH` / `wp14:sizeRelV` | `wp:anchor` | `relativeFrom`, pct width/height | Relative object sizing. | Needed for shapes/images sized relative to page, margin or column. | P3 | Not supported |
+| DrawingML positioning | `wp14:anchorId` / `wp14:editId` | `wp:inline`, `wp:anchor` | ids | Stable drawing/edit identifiers. | Preserve for round-trip; useful for diffing. | P4 | Not supported |
+| DrawingML positioning | `wp:wrapPolygon` | tight/through wrapping | edited polygon points | Custom text wrap polygon. | Required for high-fidelity floating image wrap. | P3 | Not supported |
+| DrawingML object | `a:hlinkClick` / `a:hlinkHover` | non-visual drawing props | `r:id`, tooltip attrs | Hyperlink on drawing/shape. | Resolve drawing relationships just like text hyperlinks. | P2 | Not supported |
+| DrawingML object | `a:extLst` | Many DrawingML elements | extension children | DrawingML extension list. | Preserve unknown extensions, including Office-versioned behavior. | P2 | Not supported |
+| DrawingML image | `a14:useLocalDpi` | `a:blip/a:extLst` | `val` | Use embedded image DPI. | Can affect physical image size in Word. | P3 | Not supported |
+| DrawingML image | `a:alphaModFix` / `a:alphaMod` / `a:alphaOff` | image/effect contexts | value attrs | Alpha/transparency transforms. | Needed for transparent or faded images. | P3 | Not supported |
+| DrawingML color | `a:lumMod` / `a:lumOff` / `a:tint` / `a:shade` / `a:satMod` | color transforms | `val` | Color transformations. | Apply in order when resolving DrawingML/theme colors. | P2 | Not supported |
+| DrawingML effects | `a:effectLst` / `a:effectDag` | shape props | effect children | Shadow/glow/reflection/soft-edge effects. | Affects visible bounds and appearance. | P4 | Not supported |
+| DrawingML 3D | `a:scene3d` / `a:sp3d` | shape props | 3D attrs | 3D scene/shape properties. | Usually preserve only. | P4 | Not supported |
+| Wordprocessing shapes | `wps:wsp` | `a:graphicData` | shape children | Wordprocessing shape. | Modern replacement for some VML shapes; parse text body and shape props. | P2 | Not supported |
+| Wordprocessing shapes | `wps:txbx` / `wps:txbxContent` | `wps:wsp` | WordprocessingML content | DrawingML text box content. | Contains normal paragraphs/tables; must enter secondary story parser. | P2 | Not supported |
+| Grouped shapes | `wpg:wgp` / `wpg:grpSpPr` | `a:graphicData` | transform/group props | Wordprocessing group shape. | Apply group transforms to children or preserve. | P3 | Not supported |
+| Locked canvas | `lc:lockedCanvas` | DrawingML graphicData | child drawings | Legacy grouped drawing container. | Preserve/approximate. | P4 | Not supported |
+| Picture fill | `a:tile` | `pic:blipFill` | tile attrs | Tiled image fill. | Different from stretch; visible in shape/picture backgrounds. | P3 | Not supported |
+| Picture recolor | `a:duotone` / `a:grayscl` / `a:biLevel` | `a:blip` | color attrs | Image recoloring. | Preserve or implement for high-fidelity rendering. | P4 | Not supported |
+| Charts | `c:chartSpace` | chart part root | chart children | Chart part root. | Full chart rendering requires chart parser, not only `c:chart` reference. | P3 | Not supported |
+| Charts | `c:externalData` | chart part | `r:id` | External or embedded workbook backing chart. | Preserve link or resolve embedded workbook dependency. | P3 | Not supported |
+| Charts | `c:ser` / `c:cat` / `c:val` | chart plot types | data refs/cache | Series/category/value data. | Use cached data for display if workbook is unavailable. | P4 | Not supported |
+| Diagrams | `dgm:dataModel` / `dgm:layoutDef` / `dgm:styleDef` / `dgm:colorsDef` | diagram parts | diagram attrs | SmartArt data/layout/style/color parts. | Preserve as dependency group; render preview/placeholder if unsupported. | P4 | Not supported |
+| VML details | CSS-like `style` parser | `v:shape`, `v:textbox`, etc. | `position`, `width`, `height`, margins, z-index | Legacy shape layout. | Word VML styles are not normal browser CSS; parse supported properties explicitly. | P2 | Not supported |
+| VML details | `v:fill` / `v:stroke` / `v:shadow` | VML shapes | color/effect attrs | Legacy fill/stroke/shadow. | Needed for old templates and letterheads. | P3 | Not supported |
+| VML details | `o:lock` / `v:formulas` / `v:path` | VML shapes | geometry attrs | Shape locks and custom geometry. | Preserve unsupported geometry. | P4 | Not supported |
 
 ## Additional numbering, styles, and theme/font coverage
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Numbering | `w:numStyleLink` | `w:abstractNum` | `w:val` | Link numbering to numbering style. | Needed when numbering definitions delegate through styles. | P2 |
-| Numbering | `w:styleLink` | `w:abstractNum` | `w:val` | Link to paragraph style. | Resolve to avoid missing list definitions. | P2 |
-| Numbering | `w:lvlText` literal escaping | `w:lvl` | `%1`, `%2`, literal text | Label format string. | Treat `%` placeholders carefully; bullets can be literal glyphs. | P1 |
-| Numbering | Level `w:rPr/w:rFonts` | `w:lvl` | symbol fonts | Bullet font/glyph. | Do not render bullet glyph with paragraph font if level specifies Symbol/Wingdings. | P1 |
-| Numbering | Counter restart by paragraph style | list state | style/level changes | List continuity/restart heuristics. | Word behavior depends on `numId`, overrides and sometimes section/compat settings. | P2 |
-| Styles | Default style per type | `w:style` | `w:default="1"` | Default paragraph/character/table/numbering style. | Apply by style type, not globally. | P0 |
-| Styles | Style cycle handling | `w:basedOn` chain | style ids | Defensive style inheritance. | Detect cycles and missing base styles; do not crash. | P1 |
-| Theme fonts | `a:majorFont` / `a:minorFont` | `a:fontScheme` | script-specific children | Theme font groups. | `+mj-lt`, `+mn-lt`, etc. map through these. | P1 |
-| Theme fonts | `a:latin` / `a:ea` / `a:cs` / `a:font script` | theme font scheme | `typeface`, `script` | Script-specific theme fonts. | Required for East Asian and complex-script font resolution. | P1 |
-| Theme colors | `a:dk1`, `a:lt1`, `a:accent1`... | `a:clrScheme` | color choice | Theme color slots. | Combine with `w:clrSchemeMapping` before resolving document colors. | P1 |
-| Font table | Panose/signature fallback | `w:panose1`, `w:sig` | bitfields | Font classification/fallback hints. | Useful when exact font is unavailable. | P3 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Numbering | `w:numStyleLink` | `w:abstractNum` | `w:val` | Link numbering to numbering style. | Needed when numbering definitions delegate through styles. | P2 | Not supported |
+| Numbering | `w:styleLink` | `w:abstractNum` | `w:val` | Link to paragraph style. | Resolve to avoid missing list definitions. | P2 | Not supported |
+| Numbering | `w:lvlText` literal escaping | `w:lvl` | `%1`, `%2`, literal text | Label format string. | Treat `%` placeholders carefully; bullets can be literal glyphs. | P1 | Not supported |
+| Numbering | Level `w:rPr/w:rFonts` | `w:lvl` | symbol fonts | Bullet font/glyph. | Do not render bullet glyph with paragraph font if level specifies Symbol/Wingdings. | P1 | Not supported |
+| Numbering | Counter restart by paragraph style | list state | style/level changes | List continuity/restart heuristics. | Word behavior depends on `numId`, overrides and sometimes section/compat settings. | P2 | Not supported |
+| Styles | Default style per type | `w:style` | `w:default="1"` | Default paragraph/character/table/numbering style. | Apply by style type, not globally. | P0 | Supported |
+| Styles | Style cycle handling | `w:basedOn` chain | style ids | Defensive style inheritance. | Detect cycles and missing base styles; do not crash. | P1 | Supported |
+| Theme fonts | `a:majorFont` / `a:minorFont` | `a:fontScheme` | script-specific children | Theme font groups. | `+mj-lt`, `+mn-lt`, etc. map through these. | P1 | Supported |
+| Theme fonts | `a:latin` / `a:ea` / `a:cs` / `a:font script` | theme font scheme | `typeface`, `script` | Script-specific theme fonts. | Required for East Asian and complex-script font resolution. | P1 | Supported |
+| Theme colors | `a:dk1`, `a:lt1`, `a:accent1`... | `a:clrScheme` | color choice | Theme color slots. | Combine with `w:clrSchemeMapping` before resolving document colors. | P1 | Not supported |
+| Font table | Panose/signature fallback | `w:panose1`, `w:sig` | bitfields | Font classification/fallback hints. | Useful when exact font is unavailable. | P3 | Not supported |
 
 ## Additional settings and compatibility switches
 
-| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Settings | `w:displayHiddenText` | `w:settings` | `w:val` | Show hidden text. | Controls whether `w:vanish` text appears in view mode. | P2 |
-| Settings | `w:showXMLTags` | `w:settings` | `w:val` | Show XML tag markers. | UI metadata; preserve. | P4 |
-| Settings | `w:savePreviewPicture` | `w:settings` | `w:val` | Save preview thumbnail. | Package metadata behavior. | P4 |
-| Settings | `w:embedTrueTypeFonts` / `w:embedSystemFonts` / `w:saveSubsetFonts` | `w:settings` | `w:val` | Font embedding preferences. | Preserve; do not expose embedded font binaries casually. | P3 |
-| Settings | `w:doNotEmbedSmartTags` | `w:settings` | `w:val` | Smart tag saving behavior. | Legacy metadata; preserve. | P4 |
-| Settings | `w:saveFormsData` | `w:settings` | `w:val` | Save only form data. | Relevant for protected/legacy forms workflows. | P4 |
-| Settings | `w:alwaysMergeEmptyNamespace` | `w:settings` | `w:val` | Custom XML namespace behavior. | Preserve for custom XML workflows. | P4 |
-| Settings | `w:useXSLTWhenSaving` / `w:saveThroughXslt` | `w:settings` | relationship/attrs | Save through XSLT. | Security-sensitive; preserve metadata but do not execute transforms. | P4 |
-| Settings | `w:uiCompat97To2003` | `w:settings` | `w:val` | Legacy UI compatibility mode. | Usually not layout-relevant. | P4 |
-| Settings | `w:doNotIncludeSubdocsInStats` | `w:settings` | `w:val` | Subdocument statistics behavior. | Preserve if subdocuments exist. | P4 |
-| Settings | `w:summaryLength` | `w:settings` | `w:val` | Auto-summary length setting. | UI/legacy metadata. | P4 |
-| Settings/compat | `w:compatSetting` with `compatibilityMode` | `w:compat` | `w:name`, `w:uri`, `w:val` | Word compatibility mode. | Use as a coarse switch for layout defaults and legacy behavior. | P2 |
-| Settings/compat | `w:spaceForUL` / `w:ulTrailSpace` | `w:compat` | `w:val` | Underline spacing compatibility. | Can change text decoration metrics. | P4 |
-| Settings/compat | `w:doNotUseEastAsianBreakRules` / `w:useWord97LineBreakRules` | `w:compat` | `w:val` | Line-breaking compatibility. | Affects CJK/mixed line breaks. | P3 |
-| Settings/compat | `w:noColumnBalance` / `w:cachedColBalance` | `w:compat` | `w:val` | Column balancing compatibility. | Affects multi-column pagination. | P3 |
-| Settings/compat | `w:balanceSingleByteDoubleByteWidth` | `w:compat` | `w:val` | Width balancing for mixed scripts. | CJK/Latin text measurement compatibility. | P4 |
-| Settings/compat | `w:suppressTopSpacing` / `w:suppressBottomSpacing` / `w:suppressSpacingAtTopOfPage` | `w:compat` | `w:val` | Paragraph spacing suppression compatibility. | Important for page-top spacing parity. | P2 |
-| Settings/compat | `w:suppressTopSpacingWP` / `w:suppressSpBfAfterPgBrk` | `w:compat` | `w:val` | WordPerfect/legacy page-break spacing behavior. | Can change vertical position after breaks. | P3 |
-| Settings/compat | `w:doNotSuppressParagraphBorders` | `w:compat` | `w:val` | Paragraph border spacing behavior. | Affects bordered paragraphs at page/column boundaries. | P3 |
-| Settings/compat | `w:doNotWrapTextWithPunct` | `w:compat` | `w:val` | Punctuation wrapping behavior. | CJK typography compatibility. | P4 |
-| Settings/compat | `w:useWord2002TableStyleRules` | `w:compat` | `w:val` | Legacy table style application. | Can change table style cascade. | P3 |
-| Settings/compat | `w:useNormalStyleForList` | `w:compat` | `w:val` | List style compatibility. | Affects list paragraph default style behavior. | P3 |
-| Settings/compat | `w:useSingleBorderforContiguousCells` | `w:compat` | `w:val` | Adjacent cell border behavior. | Border conflict/layout fidelity. | P3 |
-| Settings/compat | `w:growAutofit` | `w:compat` | `w:val` | Table autofit expansion. | Affects table width under content pressure. | P2 |
-| Settings/compat | `w:doNotVertAlignCellWithSp` | `w:compat` | `w:val` | Cell vertical alignment with floating objects. | Table layout edge case. | P4 |
-| Settings/compat | `w:doNotUseHTMLParagraphAutoSpacing` | `w:compat` | `w:val` | HTML paragraph auto spacing compatibility. | Affects imported/generated HTML DOCX spacing. | P3 |
-| Settings/compat | `w:useAltKinsokuLineBreakRules` | `w:compat` | `w:val` | Alternative Japanese line-break rules. | CJK line-breaking fidelity. | P4 |
-| Settings/compat | `w:convMailMergeEsc` | `w:compat` | `w:val` | Mail merge escape conversion. | Mail merge field fidelity. | P4 |
-| Settings/compat | `w:truncateFontHeightsLikeWP6` | `w:compat` | `w:val` | Legacy font height truncation. | Rare, but can affect old converted documents. | P4 |
+| Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Settings | `w:displayHiddenText` | `w:settings` | `w:val` | Show hidden text. | Controls whether `w:vanish` text appears in view mode. | P2 | Not supported |
+| Settings | `w:showXMLTags` | `w:settings` | `w:val` | Show XML tag markers. | UI metadata; preserve. | P4 | N/A |
+| Settings | `w:savePreviewPicture` | `w:settings` | `w:val` | Save preview thumbnail. | Package metadata behavior. | P4 | N/A |
+| Settings | `w:embedTrueTypeFonts` / `w:embedSystemFonts` / `w:saveSubsetFonts` | `w:settings` | `w:val` | Font embedding preferences. | Preserve; do not expose embedded font binaries casually. | P3 | Not supported |
+| Settings | `w:doNotEmbedSmartTags` | `w:settings` | `w:val` | Smart tag saving behavior. | Legacy metadata; preserve. | P4 | Not supported |
+| Settings | `w:saveFormsData` | `w:settings` | `w:val` | Save only form data. | Relevant for protected/legacy forms workflows. | P4 | Not supported |
+| Settings | `w:alwaysMergeEmptyNamespace` | `w:settings` | `w:val` | Custom XML namespace behavior. | Preserve for custom XML workflows. | P4 | Not supported |
+| Settings | `w:useXSLTWhenSaving` / `w:saveThroughXslt` | `w:settings` | relationship/attrs | Save through XSLT. | Security-sensitive; preserve metadata but do not execute transforms. | P4 | Not supported |
+| Settings | `w:uiCompat97To2003` | `w:settings` | `w:val` | Legacy UI compatibility mode. | Usually not layout-relevant. | P4 | N/A |
+| Settings | `w:doNotIncludeSubdocsInStats` | `w:settings` | `w:val` | Subdocument statistics behavior. | Preserve if subdocuments exist. | P4 | N/A |
+| Settings | `w:summaryLength` | `w:settings` | `w:val` | Auto-summary length setting. | UI/legacy metadata. | P4 | N/A |
+| Settings/compat | `w:compatSetting` with `compatibilityMode` | `w:compat` | `w:name`, `w:uri`, `w:val` | Word compatibility mode. | Use as a coarse switch for layout defaults and legacy behavior. | P2 | Not supported |
+| Settings/compat | `w:spaceForUL` / `w:ulTrailSpace` | `w:compat` | `w:val` | Underline spacing compatibility. | Can change text decoration metrics. | P4 | Not supported |
+| Settings/compat | `w:doNotUseEastAsianBreakRules` / `w:useWord97LineBreakRules` | `w:compat` | `w:val` | Line-breaking compatibility. | Affects CJK/mixed line breaks. | P3 | Not supported |
+| Settings/compat | `w:noColumnBalance` / `w:cachedColBalance` | `w:compat` | `w:val` | Column balancing compatibility. | Affects multi-column pagination. | P3 | Not supported |
+| Settings/compat | `w:balanceSingleByteDoubleByteWidth` | `w:compat` | `w:val` | Width balancing for mixed scripts. | CJK/Latin text measurement compatibility. | P4 | Not supported |
+| Settings/compat | `w:suppressTopSpacing` / `w:suppressBottomSpacing` / `w:suppressSpacingAtTopOfPage` | `w:compat` | `w:val` | Paragraph spacing suppression compatibility. | Important for page-top spacing parity. | P2 | Not supported |
+| Settings/compat | `w:suppressTopSpacingWP` / `w:suppressSpBfAfterPgBrk` | `w:compat` | `w:val` | WordPerfect/legacy page-break spacing behavior. | Can change vertical position after breaks. | P3 | Not supported |
+| Settings/compat | `w:doNotSuppressParagraphBorders` | `w:compat` | `w:val` | Paragraph border spacing behavior. | Affects bordered paragraphs at page/column boundaries. | P3 | Not supported |
+| Settings/compat | `w:doNotWrapTextWithPunct` | `w:compat` | `w:val` | Punctuation wrapping behavior. | CJK typography compatibility. | P4 | Not supported |
+| Settings/compat | `w:useWord2002TableStyleRules` | `w:compat` | `w:val` | Legacy table style application. | Can change table style cascade. | P3 | Not supported |
+| Settings/compat | `w:useNormalStyleForList` | `w:compat` | `w:val` | List style compatibility. | Affects list paragraph default style behavior. | P3 | Not supported |
+| Settings/compat | `w:useSingleBorderforContiguousCells` | `w:compat` | `w:val` | Adjacent cell border behavior. | Border conflict/layout fidelity. | P3 | Not supported |
+| Settings/compat | `w:growAutofit` | `w:compat` | `w:val` | Table autofit expansion. | Affects table width under content pressure. | P2 | Not supported |
+| Settings/compat | `w:doNotVertAlignCellWithSp` | `w:compat` | `w:val` | Cell vertical alignment with floating objects. | Table layout edge case. | P4 | Not supported |
+| Settings/compat | `w:doNotUseHTMLParagraphAutoSpacing` | `w:compat` | `w:val` | HTML paragraph auto spacing compatibility. | Affects imported/generated HTML DOCX spacing. | P3 | Not supported |
+| Settings/compat | `w:useAltKinsokuLineBreakRules` | `w:compat` | `w:val` | Alternative Japanese line-break rules. | CJK line-breaking fidelity. | P4 | Not supported |
+| Settings/compat | `w:convMailMergeEsc` | `w:compat` | `w:val` | Mail merge escape conversion. | Mail merge field fidelity. | P4 | Not supported |
+| Settings/compat | `w:truncateFontHeightsLikeWP6` | `w:compat` | `w:val` | Legacy font height truncation. | Rare, but can affect old converted documents. | P4 | Not supported |
 
 ## Importer validation fixtures to add
 
@@ -801,97 +813,97 @@ Priority legend:
 
 ## Table-specific elements and attributes
 
-| Area | Element / tag | Parent / context | Key attributes | Meaning | Importer notes | Priority |
-|---|---|---|---|---|---|---|
-| Table container | `w:tbl` | Body, cell, SDT content, headers/footers, comments, etc. | common `w:rsid*`, `mc:*`, extended attrs | Table block container | Parse as a block object; nested tables are legal inside `w:tc`. | P0 |
-| Table container | `w:tblPr` | `w:tbl`, table style, `w:tblPrChange` | — | Table property set | Merge direct formatting over table style defaults. | P0 |
-| Table container | `w:tblPrEx` | `w:tr` | — | Table property exceptions for a row | Row-level override of some table properties. Often missed by importers. | P1 |
-| Table container | `w:tblGrid` | `w:tbl`, `w:tblGridChange` | — | Table grid definition | Defines logical columns and base grid widths. | P0 |
-| Table container | `w:gridCol` | `w:tblGrid` | `w:w` | Single grid column | Width in twips; may be absent or overridden by autofit behavior. | P0 |
-| Table container | `w:tblGridChange` | `w:tblGrid` | `w:id`, `w:author`, `w:date` | Revision information for grid changes | Contains previous `w:tblGrid`; preserve or use when showing revisions. | P3 |
-| Row container | `w:tr` | `w:tbl` | `w:rsidR`, `w:rsidTr`, `w:rsidRPr`, `w14:paraId`, `w14:textId`, `mc:*` | Table row | Main row layout unit. | P0 |
-| Row container | `w:trPr` | `w:tr`, table style, `w:trPrChange` | — | Row property set | Applies to all cells in row unless overridden by cell properties. | P0 |
-| Cell container | `w:tc` | `w:tr` | `w:id`, `mc:*`, extended attrs | Table cell | Must contain block-level content; empty cells normally contain at least `w:p`. | P0 |
-| Cell container | `w:tcPr` | `w:tc`, table style, `w:tcPrChange` | — | Cell property set | Highest priority in table formatting cascade for cell-level properties. | P0 |
-| Table style | `w:style[@w:type='table']` | `styles.xml` | `w:type`, `w:styleId`, `w:default`, `w:customStyle` | Table style definition | Required if you want Word-like table formatting. | P1 |
-| Table style | `w:tblStyle` | `w:tblPr` | `w:val` | Table style reference | Resolve style by `styleId`. | P1 |
-| Table style | `w:tblStylePr` | `w:style` | `w:type` | Conditional table style bucket | Applies to first row, last row, bands, corner cells, etc. | P2 |
-| Table style | `w:tblStyleRowBandSize` | `w:tblPr` | `w:val` | Number of rows per horizontal band | Used with table conditional formatting. | P2 |
-| Table style | `w:tblStyleColBandSize` | `w:tblPr` | `w:val` | Number of columns per vertical band | Used with table conditional formatting. | P2 |
-| Conditional formatting | `w:cnfStyle` | `w:trPr`, `w:tcPr` | `w:val`, `w:firstRow`, `w:lastRow`, `w:firstColumn`, `w:lastColumn`, `w:oddVBand`, `w:evenVBand`, `w:oddHBand`, `w:evenHBand`, `w:firstRowFirstColumn`, `w:firstRowLastColumn`, `w:lastRowFirstColumn`, `w:lastRowLastColumn` | Conditional-format flags | Determines which table-style conditional buckets apply. | P2 |
-| Conditional formatting | `w:tblLook` | `w:tblPr`, `w:tblPrEx` | `w:val`, `w:firstRow`, `w:lastRow`, `w:firstColumn`, `w:lastColumn`, `w:noHBand`, `w:noVBand` | Table-style mask | Controls whether header/last/banded formatting is active. | P2 |
-| Conditional formatting | `w:tblStylePr/w:pPr` | `w:tblStylePr` | — | Conditional paragraph props | Apply to matching regions. | P2 |
-| Conditional formatting | `w:tblStylePr/w:rPr` | `w:tblStylePr` | — | Conditional run props | Apply to matching regions. | P2 |
-| Conditional formatting | `w:tblStylePr/w:tblPr` | `w:tblStylePr` | — | Conditional table props | Apply to matching regions/style conditions. | P2 |
-| Conditional formatting | `w:tblStylePr/w:trPr` | `w:tblStylePr` | — | Conditional row props | Apply to rows matching style condition. | P2 |
-| Conditional formatting | `w:tblStylePr/w:tcPr` | `w:tblStylePr` | — | Conditional cell props | Apply to cells matching style condition. | P2 |
-| Widths | `w:tblW` | `w:tblPr`, `w:tblPrEx` | `w:w`, `w:type` | Preferred table width | `type` may be `auto`, `dxa`, `pct`, or `nil`; affects layout algorithm. | P0 |
-| Widths | `w:tcW` | `w:tcPr` | `w:w`, `w:type` | Preferred cell width | Interacts with table grid and autofit/fixed layout. | P0 |
-| Widths | `w:tblInd` | `w:tblPr`, `w:tblPrEx` | `w:w`, `w:type` | Table indent | Horizontal offset from leading margin. | P1 |
-| Widths | `w:tblCellSpacing` | `w:tblPr`, `w:tblPrEx`, `w:trPr` | `w:w`, `w:type` | Cell spacing | Creates space between cells; row value can override table value. | P1 |
-| Widths | `w:wBefore` | `w:trPr` | `w:w`, `w:type` | Preferred width before row | Used with skipped grid columns before first cell. | P2 |
-| Widths | `w:wAfter` | `w:trPr` | `w:w`, `w:type` | Preferred width after row | Used with skipped grid columns after last cell. | P2 |
-| Width type group | `CT_TblWidth`-based elements | `tblW`, `tcW`, `tblInd`, `tblCellSpacing`, margins, `wBefore`, `wAfter` | `w:w`, `w:type` | Table measurement | Preserve raw value; `pct` values use OOXML percentage units, not simple CSS percent strings. | P0 |
-| Alignment | `w:jc` | `w:tblPr`, `w:tblPrEx`, `w:trPr` | `w:val` | Table or row alignment | Values include left/right/center/start/end variants depending conformance/version. | P0 |
-| Floating table | `w:tblpPr` | `w:tblPr` | `w:leftFromText`, `w:rightFromText`, `w:topFromText`, `w:bottomFromText`, `w:vertAnchor`, `w:horzAnchor`, `w:tblpX`, `w:tblpY`, `w:tblpXSpec`, `w:tblpYSpec` | Floating table position | If present, table is positioned relative to page/margins/text. Hard for browser-like layout. | P2 |
-| Floating table | `w:tblOverlap` | `w:tblPr` | `w:val` | Floating table overlap behavior | Controls whether floating tables can overlap. | P3 |
-| Direction | `w:bidiVisual` | `w:tblPr` | `w:val` | Visual RTL table ordering | Important for RTL documents. | P2 |
-| Borders | `w:tblBorders` | `w:tblPr`, `w:tblPrEx` | — | Table-level border set | Must be merged/conflicted with cell borders. | P1 |
-| Borders | `w:tcBorders` | `w:tcPr` | — | Cell-level border set | Overrides/conflicts with table borders. | P1 |
-| Borders | `w:top` | `w:tblBorders`, `w:tcBorders` | `w:val`, `w:sz`, `w:space`, `w:color`, `w:themeColor`, `w:themeTint`, `w:themeShade`, `w:frame`, `w:shadow` | Top border | Use OOXML border conflict rules for adjacent cells. | P1 |
-| Borders | `w:bottom` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Bottom border | Use OOXML border conflict rules for adjacent cells. | P1 |
-| Borders | `w:left` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Left border | Transitional/legacy; consider `start` for bidi-aware docs. | P1 |
-| Borders | `w:right` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Right border | Transitional/legacy; consider `end` for bidi-aware docs. | P1 |
-| Borders | `w:start` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Leading-edge border | Bidi-aware equivalent of left/right. | P1 |
-| Borders | `w:end` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Trailing-edge border | Bidi-aware equivalent of left/right. | P1 |
-| Borders | `w:insideH` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Internal horizontal border | Table-level internal grid lines; can also appear in cell borders/style contexts. | P1 |
-| Borders | `w:insideV` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Internal vertical border | Table-level internal grid lines; can also appear in cell borders/style contexts. | P1 |
-| Borders | `w:tl2br` | `w:tcBorders` | same as border attrs | Diagonal border top-left to bottom-right | Cell-specific diagonal. | P2 |
-| Borders | `w:tr2bl` | `w:tcBorders` | same as border attrs | Diagonal border top-right to bottom-left | Cell-specific diagonal. | P2 |
-| Borders | Border value group | border elements | `w:val` | Border style | Values include `single`, `nil`, `none`, `dashed`, `dotted`, `double`, etc. | P1 |
-| Shading | `w:shd` | `w:tblPr`, `w:tblPrEx`, `w:tcPr`, table style props | `w:val`, `w:color`, `w:fill`, `w:themeColor`, `w:themeFill`, `w:themeTint`, `w:themeShade`, `w:themeFillTint`, `w:themeFillShade` | Table/cell shading | Resolve theme colors when possible; otherwise preserve values. | P1 |
-| Layout | `w:tblLayout` | `w:tblPr`, `w:tblPrEx` | `w:type` | Table layout algorithm | `fixed` vs autofit is essential for width computation. | P0 |
-| Margins | `w:tblCellMar` | `w:tblPr`, `w:tblPrEx` | — | Default cell margins | Defaults for cells unless overridden by `tcMar`. | P0 |
-| Margins | `w:tcMar` | `w:tcPr` | — | Cell-specific margins | Overrides table default cell margins. | P0 |
-| Margins | `w:top` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Top cell margin | Affects text rectangle inside cells. | P0 |
-| Margins | `w:bottom` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Bottom cell margin | Affects text rectangle and vertical fit. | P0 |
-| Margins | `w:left` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Left cell margin | Transitional/legacy; consider `start`. | P0 |
-| Margins | `w:right` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Right cell margin | Transitional/legacy; consider `end`. | P0 |
-| Margins | `w:start` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Leading cell margin | Bidi-aware margin. | P1 |
-| Margins | `w:end` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Trailing cell margin | Bidi-aware margin. | P1 |
-| Row grid | `w:gridBefore` | `w:trPr` | `w:val` | Skipped grid columns before first cell | Needed to reconstruct irregular rows. | P1 |
-| Row grid | `w:gridAfter` | `w:trPr` | `w:val` | Skipped grid columns after last cell | Needed to reconstruct irregular rows. | P1 |
-| Row layout | `w:trHeight` | `w:trPr` | `w:val`, `w:hRule` | Row height | `hRule` may be `auto`, `atLeast`, or `exact`. | P0 |
-| Row layout | `w:cantSplit` | `w:trPr` | `w:val` | Do not split row across pages | Pagination fidelity. | P1 |
-| Row layout | `w:tblHeader` | `w:trPr` | `w:val` | Repeat row on each page | Needed for paginated rendering/export. | P1 |
-| Row layout | `w:hidden` | `w:trPr` | `w:val` | Hidden table row marker | Row should not be displayed in normal view. | P2 |
-| HTML/import mapping | `w:divId` | `w:trPr` | `w:val` | HTML div mapping id | Usually safe to preserve only. | P3 |
-| Cell merge | `w:gridSpan` | `w:tcPr` | `w:val` | Horizontal cell span | Core colspan support. If span exceeds grid, grid may be augmented. | P0 |
-| Cell merge | `w:hMerge` | `w:tcPr` | `w:val` | Horizontal merge legacy marker | Older/compat representation; map to span if possible. | P1 |
-| Cell merge | `w:vMerge` | `w:tcPr` | `w:val` | Vertical merge marker | `restart` begins merge; omitted/continue continues. Core rowspan support. | P0 |
-| Cell layout | `w:vAlign` | `w:tcPr` | `w:val` | Vertical alignment in cell | Values include top/center/bottom/both. | P0 |
-| Cell layout | `w:textDirection` | `w:tcPr` | `w:val` | Rotated/vertical text direction | Needed for vertical table text. | P2 |
-| Cell layout | `w:noWrap` | `w:tcPr` | `w:val` | Do not wrap cell content | Affects width and line breaking. | P1 |
-| Cell layout | `w:tcFitText` | `w:tcPr` | `w:val` | Fit text within cell width | Word visually compresses text; difficult to emulate exactly. | P3 |
-| Cell layout | `w:hideMark` | `w:tcPr` | `w:val` | Hide cell-end marker | Affects empty-cell and bottom-spacing behavior; relevant to layout bugs. | P1 |
-| Cell semantics | `w:headers` | `w:tcPr` | `w:val` | Header cell references | Useful for accessibility/semantic export. | P3 |
-| Revision: table props | `w:tblPrChange` | `w:tblPr` | `w:id`, `w:author`, `w:date` | Revision of table properties | Contains previous `w:tblPr`. | P3 |
-| Revision: row props | `w:trPrChange` | `w:trPr` | `w:id`, `w:author`, `w:date` | Revision of row properties | Contains previous `w:trPr`. | P3 |
-| Revision: cell props | `w:tcPrChange` | `w:tcPr` | `w:id`, `w:author`, `w:date` | Revision of cell properties | Contains previous `w:tcPr`. | P3 |
-| Revision: row insertion | `w:ins` | `w:trPr` | `w:id`, `w:author`, `w:date` | Inserted table row | Only relevant when displaying tracked changes. | P3 |
-| Revision: row deletion | `w:del` | `w:trPr` | `w:id`, `w:author`, `w:date` | Deleted table row | Only relevant when displaying tracked changes. | P3 |
-| Revision: cell insertion | `w:cellIns` | `w:tcPr` | `w:id`, `w:author`, `w:date` | Inserted table cell | Tracked table structure revision. | P3 |
-| Revision: cell deletion | `w:cellDel` | `w:tcPr` | `w:id`, `w:author`, `w:date` | Deleted table cell | Tracked table structure revision. | P3 |
-| Revision: cell merge | `w:cellMerge` | `w:tcPr` | `w:id`, `w:author`, `w:date`, `w:vMerge`, `w:vMergeOrig` | Vertically merged/split cell revision | Needed only for revision-aware rendering. | P3 |
-| Revision: table property exception | `w:tblPrExChange` | `w:tblPrEx` | `w:id`, `w:author`, `w:date` | Revision of table property exceptions | Preserve if not rendering revisions. | P3 |
-| Compatibility/settings | `w:adjustLineHeightInTable` | `settings.xml/w:compat` | `w:val` | Add document grid pitch to lines in table cells | Affects line heights in tables. | P3 |
-| Compatibility/settings | `w:doNotBreakWrappedTables` | `settings.xml/w:compat` | `w:val` | Do not allow floating tables to break across pages | Pagination/floating-table behavior. | P3 |
-| Compatibility/settings | `w:doNotSnapToGridInCell` | `settings.xml/w:compat` | `w:val` | Do not snap objects to document grid in cells | Affects grid-based layout. | P3 |
-| Compatibility/settings | `w:layoutRawTableWidth` | `settings.xml/w:compat` | `w:val` | Raw table width compatibility | Word compatibility layout switch. | P3 |
-| Compatibility/settings | `w:layoutTableRowsApart` | `settings.xml/w:compat` | `w:val` | Allow table rows to wrap inline objects independently | Word compatibility layout switch. | P3 |
-| Compatibility/settings | `w:allowSpaceOfSameStyleInTable` | `settings.xml/w:compat` | `w:val` | Allow contextual spacing of same-style paragraphs in tables | Can affect paragraph spacing inside cells. | P2 |
-| Generic preservation | `mc:AlternateContent` | around/inside table content | `mc:*` | Markup compatibility choice/fallback | Required to handle versioned extensions safely. | P1 |
-| Generic preservation | Unknown `w14:*`, `w15:*`, `w16*:*` table attrs/elements | table/row/cell/properties | varies | Versioned Microsoft extensions | Parse known ones; preserve unknown for round-trip. | P2 |
+| Area | Element / tag | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
+|---|---|---|---|---|---|---|---|
+| Table container | `w:tbl` | Body, cell, SDT content, headers/footers, comments, etc. | common `w:rsid*`, `mc:*`, extended attrs | Table block container | Parse as a block object; nested tables are legal inside `w:tc`. | P0 | Supported |
+| Table container | `w:tblPr` | `w:tbl`, table style, `w:tblPrChange` | — | Table property set | Merge direct formatting over table style defaults. | P0 | Partial |
+| Table container | `w:tblPrEx` | `w:tr` | — | Table property exceptions for a row | Row-level override of some table properties. Often missed by importers. | P1 | Not supported |
+| Table container | `w:tblGrid` | `w:tbl`, `w:tblGridChange` | — | Table grid definition | Defines logical columns and base grid widths. | P0 | Supported |
+| Table container | `w:gridCol` | `w:tblGrid` | `w:w` | Single grid column | Width in twips; may be absent or overridden by autofit behavior. | P0 | Supported |
+| Table container | `w:tblGridChange` | `w:tblGrid` | `w:id`, `w:author`, `w:date` | Revision information for grid changes | Contains previous `w:tblGrid`; preserve or use when showing revisions. | P3 | Not supported |
+| Row container | `w:tr` | `w:tbl` | `w:rsidR`, `w:rsidTr`, `w:rsidRPr`, `w14:paraId`, `w14:textId`, `mc:*` | Table row | Main row layout unit. | P0 | Supported |
+| Row container | `w:trPr` | `w:tr`, table style, `w:trPrChange` | — | Row property set | Applies to all cells in row unless overridden by cell properties. | P0 | Partial |
+| Cell container | `w:tc` | `w:tr` | `w:id`, `mc:*`, extended attrs | Table cell | Must contain block-level content; empty cells normally contain at least `w:p`. | P0 | Supported |
+| Cell container | `w:tcPr` | `w:tc`, table style, `w:tcPrChange` | — | Cell property set | Highest priority in table formatting cascade for cell-level properties. | P0 | Supported |
+| Table style | `w:style[@w:type='table']` | `styles.xml` | `w:type`, `w:styleId`, `w:default`, `w:customStyle` | Table style definition | Required if you want Word-like table formatting. | P1 | Partial |
+| Table style | `w:tblStyle` | `w:tblPr` | `w:val` | Table style reference | Resolve style by `styleId`. | P1 | Partial |
+| Table style | `w:tblStylePr` | `w:style` | `w:type` | Conditional table style bucket | Applies to first row, last row, bands, corner cells, etc. | P2 | Not supported |
+| Table style | `w:tblStyleRowBandSize` | `w:tblPr` | `w:val` | Number of rows per horizontal band | Used with table conditional formatting. | P2 | Not supported |
+| Table style | `w:tblStyleColBandSize` | `w:tblPr` | `w:val` | Number of columns per vertical band | Used with table conditional formatting. | P2 | Not supported |
+| Conditional formatting | `w:cnfStyle` | `w:trPr`, `w:tcPr` | `w:val`, `w:firstRow`, `w:lastRow`, `w:firstColumn`, `w:lastColumn`, `w:oddVBand`, `w:evenVBand`, `w:oddHBand`, `w:evenHBand`, `w:firstRowFirstColumn`, `w:firstRowLastColumn`, `w:lastRowFirstColumn`, `w:lastRowLastColumn` | Conditional-format flags | Determines which table-style conditional buckets apply. | P2 | Not supported |
+| Conditional formatting | `w:tblLook` | `w:tblPr`, `w:tblPrEx` | `w:val`, `w:firstRow`, `w:lastRow`, `w:firstColumn`, `w:lastColumn`, `w:noHBand`, `w:noVBand` | Table-style mask | Controls whether header/last/banded formatting is active. | P2 | Not supported |
+| Conditional formatting | `w:tblStylePr/w:pPr` | `w:tblStylePr` | — | Conditional paragraph props | Apply to matching regions. | P2 | Not supported |
+| Conditional formatting | `w:tblStylePr/w:rPr` | `w:tblStylePr` | — | Conditional run props | Apply to matching regions. | P2 | Not supported |
+| Conditional formatting | `w:tblStylePr/w:tblPr` | `w:tblStylePr` | — | Conditional table props | Apply to matching regions/style conditions. | P2 | Not supported |
+| Conditional formatting | `w:tblStylePr/w:trPr` | `w:tblStylePr` | — | Conditional row props | Apply to rows matching style condition. | P2 | Not supported |
+| Conditional formatting | `w:tblStylePr/w:tcPr` | `w:tblStylePr` | — | Conditional cell props | Apply to cells matching style condition. | P2 | Not supported |
+| Widths | `w:tblW` | `w:tblPr`, `w:tblPrEx` | `w:w`, `w:type` | Preferred table width | `type` may be `auto`, `dxa`, `pct`, or `nil`; affects layout algorithm. | P0 | Supported |
+| Widths | `w:tcW` | `w:tcPr` | `w:w`, `w:type` | Preferred cell width | Interacts with table grid and autofit/fixed layout. | P0 | Supported |
+| Widths | `w:tblInd` | `w:tblPr`, `w:tblPrEx` | `w:w`, `w:type` | Table indent | Horizontal offset from leading margin. | P1 | Supported |
+| Widths | `w:tblCellSpacing` | `w:tblPr`, `w:tblPrEx`, `w:trPr` | `w:w`, `w:type` | Cell spacing | Creates space between cells; row value can override table value. | P1 | Not supported |
+| Widths | `w:wBefore` | `w:trPr` | `w:w`, `w:type` | Preferred width before row | Used with skipped grid columns before first cell. | P2 | Not supported |
+| Widths | `w:wAfter` | `w:trPr` | `w:w`, `w:type` | Preferred width after row | Used with skipped grid columns after last cell. | P2 | Not supported |
+| Width type group | `CT_TblWidth`-based elements | `tblW`, `tcW`, `tblInd`, `tblCellSpacing`, margins, `wBefore`, `wAfter` | `w:w`, `w:type` | Table measurement | Preserve raw value; `pct` values use OOXML percentage units, not simple CSS percent strings. | P0 | Partial |
+| Alignment | `w:jc` | `w:tblPr`, `w:tblPrEx`, `w:trPr` | `w:val` | Table or row alignment | Values include left/right/center/start/end variants depending conformance/version. | P0 | Partial |
+| Floating table | `w:tblpPr` | `w:tblPr` | `w:leftFromText`, `w:rightFromText`, `w:topFromText`, `w:bottomFromText`, `w:vertAnchor`, `w:horzAnchor`, `w:tblpX`, `w:tblpY`, `w:tblpXSpec`, `w:tblpYSpec` | Floating table position | If present, table is positioned relative to page/margins/text. Hard for browser-like layout. | P2 | Not supported |
+| Floating table | `w:tblOverlap` | `w:tblPr` | `w:val` | Floating table overlap behavior | Controls whether floating tables can overlap. | P3 | Not supported |
+| Direction | `w:bidiVisual` | `w:tblPr` | `w:val` | Visual RTL table ordering | Important for RTL documents. | P2 | Not supported |
+| Borders | `w:tblBorders` | `w:tblPr`, `w:tblPrEx` | — | Table-level border set | Must be merged/conflicted with cell borders. | P1 | Not supported |
+| Borders | `w:tcBorders` | `w:tcPr` | — | Cell-level border set | Overrides/conflicts with table borders. | P1 | Partial |
+| Borders | `w:top` | `w:tblBorders`, `w:tcBorders` | `w:val`, `w:sz`, `w:space`, `w:color`, `w:themeColor`, `w:themeTint`, `w:themeShade`, `w:frame`, `w:shadow` | Top border | Use OOXML border conflict rules for adjacent cells. | P1 | Supported |
+| Borders | `w:bottom` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Bottom border | Use OOXML border conflict rules for adjacent cells. | P1 | Supported |
+| Borders | `w:left` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Left border | Transitional/legacy; consider `start` for bidi-aware docs. | P1 | Supported |
+| Borders | `w:right` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Right border | Transitional/legacy; consider `end` for bidi-aware docs. | P1 | Supported |
+| Borders | `w:start` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Leading-edge border | Bidi-aware equivalent of left/right. | P1 | Not supported |
+| Borders | `w:end` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Trailing-edge border | Bidi-aware equivalent of left/right. | P1 | Not supported |
+| Borders | `w:insideH` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Internal horizontal border | Table-level internal grid lines; can also appear in cell borders/style contexts. | P1 | Not supported |
+| Borders | `w:insideV` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Internal vertical border | Table-level internal grid lines; can also appear in cell borders/style contexts. | P1 | Not supported |
+| Borders | `w:tl2br` | `w:tcBorders` | same as border attrs | Diagonal border top-left to bottom-right | Cell-specific diagonal. | P2 | Not supported |
+| Borders | `w:tr2bl` | `w:tcBorders` | same as border attrs | Diagonal border top-right to bottom-left | Cell-specific diagonal. | P2 | Not supported |
+| Borders | Border value group | border elements | `w:val` | Border style | Values include `single`, `nil`, `none`, `dashed`, `dotted`, `double`, etc. | P1 | Supported |
+| Shading | `w:shd` | `w:tblPr`, `w:tblPrEx`, `w:tcPr`, table style props | `w:val`, `w:color`, `w:fill`, `w:themeColor`, `w:themeFill`, `w:themeTint`, `w:themeShade`, `w:themeFillTint`, `w:themeFillShade` | Table/cell shading | Resolve theme colors when possible; otherwise preserve values. | P1 | Supported |
+| Layout | `w:tblLayout` | `w:tblPr`, `w:tblPrEx` | `w:type` | Table layout algorithm | `fixed` vs autofit is essential for width computation. | P0 | Supported |
+| Margins | `w:tblCellMar` | `w:tblPr`, `w:tblPrEx` | — | Default cell margins | Defaults for cells unless overridden by `tcMar`. | P0 | Not supported |
+| Margins | `w:tcMar` | `w:tcPr` | — | Cell-specific margins | Overrides table default cell margins. | P0 | Supported |
+| Margins | `w:top` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Top cell margin | Affects text rectangle inside cells. | P0 | Supported |
+| Margins | `w:bottom` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Bottom cell margin | Affects text rectangle and vertical fit. | P0 | Supported |
+| Margins | `w:left` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Left cell margin | Transitional/legacy; consider `start`. | P0 | Supported |
+| Margins | `w:right` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Right cell margin | Transitional/legacy; consider `end`. | P0 | Supported |
+| Margins | `w:start` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Leading cell margin | Bidi-aware margin. | P1 | Not supported |
+| Margins | `w:end` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Trailing cell margin | Bidi-aware margin. | P1 | Not supported |
+| Row grid | `w:gridBefore` | `w:trPr` | `w:val` | Skipped grid columns before first cell | Needed to reconstruct irregular rows. | P1 | Not supported |
+| Row grid | `w:gridAfter` | `w:trPr` | `w:val` | Skipped grid columns after last cell | Needed to reconstruct irregular rows. | P1 | Not supported |
+| Row layout | `w:trHeight` | `w:trPr` | `w:val`, `w:hRule` | Row height | `hRule` may be `auto`, `atLeast`, or `exact`. | P0 | Supported |
+| Row layout | `w:cantSplit` | `w:trPr` | `w:val` | Do not split row across pages | Pagination fidelity. | P1 | Not supported |
+| Row layout | `w:tblHeader` | `w:trPr` | `w:val` | Repeat row on each page | Needed for paginated rendering/export. | P1 | Supported |
+| Row layout | `w:hidden` | `w:trPr` | `w:val` | Hidden table row marker | Row should not be displayed in normal view. | P2 | Not supported |
+| HTML/import mapping | `w:divId` | `w:trPr` | `w:val` | HTML div mapping id | Usually safe to preserve only. | P3 | Not supported |
+| Cell merge | `w:gridSpan` | `w:tcPr` | `w:val` | Horizontal cell span | Core colspan support. If span exceeds grid, grid may be augmented. | P0 | Supported |
+| Cell merge | `w:hMerge` | `w:tcPr` | `w:val` | Horizontal merge legacy marker | Older/compat representation; map to span if possible. | P1 | Not supported |
+| Cell merge | `w:vMerge` | `w:tcPr` | `w:val` | Vertical merge marker | `restart` begins merge; omitted/continue continues. Core rowspan support. | P0 | Supported |
+| Cell layout | `w:vAlign` | `w:tcPr` | `w:val` | Vertical alignment in cell | Values include top/center/bottom/both. | P0 | Supported |
+| Cell layout | `w:textDirection` | `w:tcPr` | `w:val` | Rotated/vertical text direction | Needed for vertical table text. | P2 | Not supported |
+| Cell layout | `w:noWrap` | `w:tcPr` | `w:val` | Do not wrap cell content | Affects width and line breaking. | P1 | Not supported |
+| Cell layout | `w:tcFitText` | `w:tcPr` | `w:val` | Fit text within cell width | Word visually compresses text; difficult to emulate exactly. | P3 | Not supported |
+| Cell layout | `w:hideMark` | `w:tcPr` | `w:val` | Hide cell-end marker | Affects empty-cell and bottom-spacing behavior; relevant to layout bugs. | P1 | Not supported |
+| Cell semantics | `w:headers` | `w:tcPr` | `w:val` | Header cell references | Useful for accessibility/semantic export. | P3 | Not supported |
+| Revision: table props | `w:tblPrChange` | `w:tblPr` | `w:id`, `w:author`, `w:date` | Revision of table properties | Contains previous `w:tblPr`. | P3 | Not supported |
+| Revision: row props | `w:trPrChange` | `w:trPr` | `w:id`, `w:author`, `w:date` | Revision of row properties | Contains previous `w:trPr`. | P3 | Not supported |
+| Revision: cell props | `w:tcPrChange` | `w:tcPr` | `w:id`, `w:author`, `w:date` | Revision of cell properties | Contains previous `w:tcPr`. | P3 | Not supported |
+| Revision: row insertion | `w:ins` | `w:trPr` | `w:id`, `w:author`, `w:date` | Inserted table row | Only relevant when displaying tracked changes. | P3 | Not supported |
+| Revision: row deletion | `w:del` | `w:trPr` | `w:id`, `w:author`, `w:date` | Deleted table row | Only relevant when displaying tracked changes. | P3 | Not supported |
+| Revision: cell insertion | `w:cellIns` | `w:tcPr` | `w:id`, `w:author`, `w:date` | Inserted table cell | Tracked table structure revision. | P3 | Not supported |
+| Revision: cell deletion | `w:cellDel` | `w:tcPr` | `w:id`, `w:author`, `w:date` | Deleted table cell | Tracked table structure revision. | P3 | Not supported |
+| Revision: cell merge | `w:cellMerge` | `w:tcPr` | `w:id`, `w:author`, `w:date`, `w:vMerge`, `w:vMergeOrig` | Vertically merged/split cell revision | Needed only for revision-aware rendering. | P3 | Not supported |
+| Revision: table property exception | `w:tblPrExChange` | `w:tblPrEx` | `w:id`, `w:author`, `w:date` | Revision of table property exceptions | Preserve if not rendering revisions. | P3 | Not supported |
+| Compatibility/settings | `w:adjustLineHeightInTable` | `settings.xml/w:compat` | `w:val` | Add document grid pitch to lines in table cells | Affects line heights in tables. | P3 | Supported |
+| Compatibility/settings | `w:doNotBreakWrappedTables` | `settings.xml/w:compat` | `w:val` | Do not allow floating tables to break across pages | Pagination/floating-table behavior. | P3 | Not supported |
+| Compatibility/settings | `w:doNotSnapToGridInCell` | `settings.xml/w:compat` | `w:val` | Do not snap objects to document grid in cells | Affects grid-based layout. | P3 | Not supported |
+| Compatibility/settings | `w:layoutRawTableWidth` | `settings.xml/w:compat` | `w:val` | Raw table width compatibility | Word compatibility layout switch. | P3 | Not supported |
+| Compatibility/settings | `w:layoutTableRowsApart` | `settings.xml/w:compat` | `w:val` | Allow table rows to wrap inline objects independently | Word compatibility layout switch. | P3 | Not supported |
+| Compatibility/settings | `w:allowSpaceOfSameStyleInTable` | `settings.xml/w:compat` | `w:val` | Allow contextual spacing of same-style paragraphs in tables | Can affect paragraph spacing inside cells. | P2 | Not supported |
+| Generic preservation | `mc:AlternateContent` | around/inside table content | `mc:*` | Markup compatibility choice/fallback | Required to handle versioned extensions safely. | P1 | Not supported |
+| Generic preservation | Unknown `w14:*`, `w15:*`, `w16*:*` table attrs/elements | table/row/cell/properties | varies | Versioned Microsoft extensions | Parse known ones; preserve unknown for round-trip. | P2 | Not supported |
 
 ## Common value/attribute groups to normalize
 
@@ -930,3 +942,98 @@ Priority legend:
 - Microsoft Learn: Working with WordprocessingML tables.
 - Microsoft Learn Open XML SDK class docs for `TableProperties`, `TableRowProperties`, and `TableCellProperties`.
 - OOXML schema/reference mirrors were used only as a cross-check for element names not surfaced clearly in Microsoft Learn search snippets.
+
+## Oasis editor support summary (status key)
+
+This section condenses the per-table Status column into a high-level capability map of the oasis editor's DOCX import/export pipeline. It is intentionally a snapshot of the actual source code in `src/import/docx/*` and `src/export/docx/*`, not a list of aspirational features. Use it as the quick "what is real" reference when reading the matrices above.
+
+### Fully round-tripped (Supported)
+
+| Area | What works |
+|---|---|
+| Package | `[Content_Types].xml`, `_rels/.rels`, per-part `.rels`; resolves main document, styles, numbering, settings, fontTable, theme, footnotes, headers/footers, and embedded images. |
+| Sections | Page size (`w:pgSz`), page margins (`w:pgMar`), header/footer references (default/even/first) and the section `docGrid`. |
+| Paragraphs | `w:jc`, `w:spacing`, `w:ind` (left/right/start/end/firstLine/hanging), `w:numPr` (ilvl + numId), `w:keepNext`, `w:keepLines`, `w:pageBreakBefore`, `w:widowControl`, paragraph mark `rPr`, and inline `w:sectPr` in `pPr`. |
+| Run content | `w:r`, `w:t`, `w:br` (page break → `pageBreakBefore`), `w:cr`, `w:tab` (kept as `\t`), `w:lastRenderedPageBreak` (skipped), `w:separator` / `w:continuationSeparator` (correctly skipped in footnotes/headers), `w:instrText`, `w:fldChar` begin/separate/end (parsed into a stack; PAGE/NUMPAGES survive round-trip). |
+| Inline images | `wp:inline` + `pic:pic` + `pic:blipFill` + `a:blip` with embedded relationship; image bytes are deduped via `assetRegistry.ts` and exposed through the editor asset layer. |
+| Run properties | `w:sz`, `w:u` (style + color), `w:strike`/`w:dstrike`, `w:vertAlign` (superscript/subscript), `w:highlight`, `w:caps`/`w:smallCaps`, `w:vanish`, `w:kern`, `w:spacing`, `w:w`, `w:position`. |
+| Styles | `w:docDefaults`, paragraph/character/table style types, `basedOn`/`next`/`link`/`default`; table style `w:tblPr` is read and `w:tblInd` is extracted; style cycle detection; the `default` style per type is applied by category. |
+| Tables | `w:tbl`, `w:tblPr`, `w:tblGrid`/`w:gridCol`, `w:tr`/`w:trPr` (`w:trHeight`, `w:tblHeader`), `w:tc`/`w:tcPr` (`w:gridSpan`, `w:vMerge`, `w:tcW`, `w:tcMar`, `w:vAlign`, `w:shd`, `w:tcBorders` top/right/bottom/left). `w:tblLayout` is exported and applied for fixed/autofit. |
+| Footnotes | Full pipeline: `word/footnotes.xml` is parsed and exported; user notes are renumbered by document order; `w:type` in {`separator`, `continuationSeparator`, `continuationNotice`} are skipped; `w:footnoteRef` inside a footnote story is rendered as the auto glyph. |
+| Headers/footers | `w:hdr`/`w:ftr` parts are parsed, re-rendered with the normal paragraph/run/table pipeline, and linked from the right section references. First-page (`w:titlePg`) and even/odd headers are supported on export. |
+| Fields | `PAGE` and `NUMPAGES` round-trip as `w:fldSimple`; cached result text is preserved in the editor model. |
+| Theme | `a:fontScheme` (major/minor, latin/ea/cs) is read and applied to run-level fonts that do not override it. |
+| Settings | `w:adjustLineHeightInTable` is read from `w:compat` and controls table-cell line height. `w:evenAndOddHeaders` is exported and applied to the document. |
+| Style cascade | Style `basedOn` chain is walked; style cycle detection prevents infinite loops. |
+
+### Partial (one side of the round-trip or a documented subset)
+
+| Area | What's partial | Why |
+|---|---|---|
+| `w:hyperlink` | External relationships via `r:id` are kept; `w:anchor` is preserved but the document model has no native link concept. | The editor renders links but does not store them as a first-class node yet. |
+| `w:fldSimple` / `w:fldChar` | PAGE and NUMPAGES are full round-trip; other instructions are stored as static text and re-emitted as plain runs. | The editor has no field type registry beyond these two. |
+| Numbering | Only the first `w:lvl`'s `w:numFmt` is read (bullet vs ordered) and the paragraph list kind is preserved. | `lvlText`, multi-level, picture bullets, `lvlRestart`, `suff`, `isLgl`, `multiLevelType`, `nsid`, `tmpl` are dropped. Export regenerates a fresh `numbering.xml` from the paragraph's bullet/ordered + level. |
+| Images | Inline pictures only, no transforms, crop, rotation, or `wp:anchor`. | `pic:spPr`, `a:srcRect`, `a:xfrm`/`a:off`/`a:ext` are not parsed. |
+| `w:rFonts` | `ascii`/`hAnsi`/`cs` and `asciiTheme`/`hAnsiTheme`/`cstheme` with `w:hint` are read; `eastAsia`/`eastAsiaTheme` are not exported. | Run font resolution is partial. |
+| `w:b` / `w:i` / `w:bCs` / `w:iCs` | All four are parsed, but only `w:b`/`w:i` are written on export. | Complex-script bold/italic is not propagated. |
+| `w:color` | Hex `w:val` is parsed; theme colors (`a:schemeClr`, `themeColor`, `themeTint`/`themeShade`) are not resolved. | Theme color registry is missing. |
+| `w:rStyle` | Read on import (so style-based run properties cascade) but the editor does not export a `w:rStyle` reference. | Style-cascade identity is lost in export. |
+| `w:ind` character units | `w:leftChars`/`w:rightChars`/`w:firstLineChars`/`w:hangingChars` are dropped; twip values are used. | Char-unit indentation is not normalized. |
+| `w:drawing` | Only `wp:inline` + `pic:pic` survives. Floating drawings, `wp:anchor`, shapes, charts, SmartArt, OLE, VML are dropped. | No drawing model beyond the inline image. |
+| `w:tblPr` / `w:trPr` | `w:tblW`, `w:tblInd`, `w:trHeight`, `w:tblHeader` round-trip; `w:tblPrEx`, `w:tblBorders`, `w:tblCellSpacing`, `w:tblLayout` on cell, `w:gridBefore`/`w:gridAfter`, `w:wBefore`/`w:wAfter` are dropped. | Only the subset exposed by the editor model is written. |
+| `w:tcBorders` | `top`/`right`/`bottom`/`left` with `val`/`sz`/`color` round-trip; `start`/`end`/`insideH`/`insideV`/`tl2br`/`tr2bl` are not. | Bidi borders and diagonals are not in the model. |
+| `w:tblStyle` | `styleId` is read so the table style cascade can apply, but the `w:tblStylePr` conditional buckets and `cnfStyle`/`tblLook` masks are not. | Conditional formatting is not applied. |
+| Theme color (`a:clrScheme`) | `a:fontScheme` is read; `a:clrScheme` slots (`a:dk1`, `a:lt1`, `a:accent1`...) are not. | Run color through theme is not resolved. |
+| Settings (`w:settings`) | `w:compat` is read for `adjustLineHeightInTable` only; `w:evenAndOddHeaders` is exported; everything else in `settings.xml` is dropped. | No full settings consumer. |
+| Relationship types | `officeDocument`, `theme`, `styles`, `numbering`, `settings`, `fontTable`, `footnotes`, `image`, and header/footer relationships are all resolved. Custom/less-common relationship types are not enumerated. | The relationship code uses pattern matching per part, not a full content-type registry. |
+
+### Not supported (silently dropped or not parsed)
+
+| Area | What is missing |
+|---|---|
+| Tracked changes | `w:ins`, `w:del`, `w:moveFrom`, `w:moveTo`, `w:pPrChange`, `w:rPrChange`, `w:sectPrChange`, `w:numberingChange`, `w:tblPrChange`, `w:trPrChange`, `w:tcPrChange`, `w:cellIns`, `w:cellDel`, `w:cellMerge`, `w:tblPrExChange`, `w:tblGridChange`. |
+| Comments | `w:comments` part, `w:comment`, `w:commentRangeStart`/`End`, `w:commentReference`, `w15:commentsEx`, `w16cid:commentsIds`, `w:people.xml`. |
+| Endnotes | The `endnotes.xml` part is not consumed; `w:endnoteReference` and `w:endnoteRef` are dropped. |
+| Content controls | `w:sdt` and all subtypes (text, richText, picture, comboBox, dropDownList, date, checkbox, repeatingSection) plus `w:dataBinding` and `w:customXml`. |
+| Bookmarks | `w:bookmarkStart` / `w:bookmarkEnd`. |
+| Legacy forms | `w:ffData`, `w:textInput`, `w:checkBox`, `w:ddList`, `FORMTEXT`/`FORMCHECKBOX`/`FORMDROPDOWN`. |
+| Office Math | `m:oMath`, `m:oMathPara`, all child equations. |
+| Drawings beyond inline images | `wp:anchor`, all shape families (`wps:wsp`, `wpg:wgp`, `v:shape`, `v:rect`, `v:oval`, `v:group`, `v:textbox`), `v:imagedata`, `pic:spPr`, transforms, crop, recolor, alpha. |
+| Charts / diagrams / OLE | `c:chart*`, `dgm:*`, `lc:lockedCanvas`, `o:OLEObject`, `w:object`, `w:pict`. |
+| AltChunk | `w:altChunk`. |
+| Bidi/RTL/Complex script | `w:bidi` (paragraph/section), `w:rtl`, `w:cs`, `w:bdo`/`w:dir`, `w:lang`, `w:bidiVisual`, `w:noColumnBalance`. |
+| East Asian / CJK | `w:eastAsianLayout`, `w:vertAlign` for CJK, `w:ruby`/`w:rt`/`w:rubyBase`, `w:doNotUseEastAsianBreakRules`, `w:useWord97LineBreakRules`, `w:useAltKinsokuLineBreakRules`. |
+| Hyphenation | `w:autoHyphenation`, `w:consecutiveHyphenLimit`, `w:hyphenationZone`, `w:doNotHyphenateCaps`. |
+| Most `w:settings` | All of `w:zoom`, `w:view`, `w:displayBackgroundShape`, `w:displayProofErr`, `w:displayHorizontalDrawingGridEvery`/`w:displayVerticalDrawingGridEvery`, `w:characterSpacingControl`, `w:defaultTabStop`, `w:mirrorMargins`, `w:bordersDoNotSurroundHeader`/`Footer`, `w:formsDesign`, `w:attachedTemplate`, `w:linkStyles`, `w:stylePaneFormatFilter`/`w:stylePaneSortMethod`, `w:documentProtection`, `w:trackRevisions`, `w:doNotTrackMoves`/`w:doNotTrackFormatting`, `w:mailMerge`, `w:writeProtection`, `w:shapeDefaults`, `w:decimalSymbol`/`w:listSeparator`, `w:docVars`/`w:docVar`, `w:hdrShapeDefaults`, `w:footnotePr`/`w:endnotePr` (numStart/numRestart/numFmt/pos), `w:displayHiddenText`, `w:showXMLTags`, `w:savePreviewPicture`, `w:embedTrueTypeFonts`/`w:embedSystemFonts`/`w:saveSubsetFonts`, `w:themeFontLang`, `w:clrSchemeMapping`, the full `w:compat` block except `adjustLineHeightInTable`. |
+| Font table | `word/fontTable.xml` is not read; `w:font`, `w:altName`, `w:family`, `w:pitch`, `w:charset`, `w:panose1`, `w:sig`, embedded font references are all dropped. |
+| Web settings | `word/webSettings.xml` is not consumed. |
+| Columns / page borders / text direction | `w:cols`, `w:type`, `w:pgNumType`, `w:pageBorders`, `w:textDirection` (cell/section), `w:vAlign` (`both`), `w:lnNumType`, `w:paperSrc`, `w:formProt`, `w:noEndnote`, `w:printerSettings`. |
+| Paragraph decorations | `w:tabs`, `w:outlineLvl`, `w:suppressLineNumbers`, `w:pBdr`, paragraph-level `w:shd`, `w:framePr`, `w:bidi`, `w:kinsoku`, `w:wordWrap`, `w:overflowPunct`, `w:topLinePunct`, `w:autoSpaceDE`/`DN`, `w:textAlignment`, `w:textboxTightWrap`, `w:divId`, `w:cnfStyle`, `w:contextualSpacing`, `w:adjustRightInd`. |
+| Run decorations | Run-level `w:shd`, `w:webHidden`, `w:rtl`, `w:cs`, `w:lang`, `w:fitText`, `w:effect`, `w:em`, `w:bdr`, `w:imprint`/`w:outline`/`w:shadow`, `w:emboss`, `w:snapToGrid` (run), `w:noProof`, `w:oMath`, `w:specVanish`, `w:stylePaneFormatFilter`/`w:stylePaneSortMethod`, `w:rPrChange`. |
+| Run content (special glyphs) | `w:noBreakHyphen`, `w:softHyphen`, `w:sym`, `w:ptab`, `w:object`, `w:pict`, `w:delText`, `w:dayShort`/`w:monthLong`, `w:dir`/`w:bdo`, `w:smartTag`, `w:permStart`/`End` (in runs), `w:delInstrText`, `w:fldData`. |
+| OPC extensions | `customXml/*`, `word/embeddings/*`, `word/activeX/*`, `word/printerSettings/*`, `word/commentsExtended.xml`, `word/commentsIds.xml`, `word/people.xml`, `word/bibliography.xml`, `word/charts/*`, `word/diagrams/*`, `word/theme/themeOverride*.xml`, `docProps/thumbnail.*`, `vbaProject.bin`, encrypted packages, digital signatures, external relationships, `word/comments.xml`. |
+| Latent styles / SDT/control UX | `w:latentStyles`/`w:lsdException`, `w:appearance`/`w:color`/`w:showingPlcHdr`/`w:temporary`/`w:lock` on SDT, `w:equation`/`w:citation`/`w:bibliography`/`w:group`/`w:repeatingSectionItem`. |
+| Modern (w14/w15/w16) typography | `w14:ligatures`, `w14:numForm`, `w14:numSpacing`, `w14:stylisticSets`/`w14:stylisticSet`, `w14:cntxtAlts`, `w14:textFill`, `w14:textOutline`, `w14:textShadow`, `w14:glow`/`w14:reflection`, `w14:scene3d`/`w14:props3d`, `w15:collapsed`, `w16du:dateUtc`. |
+
+### Not applicable (UI / editor state, not model state)
+
+| Element / setting | Why N/A |
+|---|---|
+| `w:zoom`, `w:view`, `w:displayBackgroundShape`, `w:displayProofErr`, `w:displayHorizontalDrawingGridEvery`/`w:displayVerticalDrawingGridEvery` | UI preferences; the editor has its own view state. |
+| `w:showXMLTags`, `w:savePreviewPicture`, `w:uiCompat97To2003`, `w:doNotIncludeSubdocsInStats`, `w:summaryLength` | UI / package metadata; not stored in the document model. |
+| `w:formsDesign` | Editor-mode flag; oasis has no design-mode toggle. |
+| `w:proofState` (settings) | Proofing state; oasis has no proofing pipeline. |
+| `w:linkStyles`, `w:stylePaneFormatFilter`/`w:stylePaneSortMethod` | Style-pane UI; oasis does not connect to external templates. |
+| `w:revisionView` (settings) | Revision-display preference; no revision pipeline. |
+| `w:trackRevisions` (settings) | Editing-time toggle; oasis has its own `state.trackChangesEnabled` runtime flag that the DOCX import does not consult. |
+| `w:rsids` / `w:rsidRoot` / `w:rsid` | Editing-session identifiers; not needed for layout. |
+| `w:updateFields` | "Update fields on open" hint; the editor recomputes its own fields as needed. |
+
+### High-level takeaways
+
+- The pipeline is centered on a fixed editor model (`EditorTextStyle`, `EditorParagraphStyle`, table grid/cell properties, list kinds, footnote references, image assets, headers/footers). Anything that cannot be expressed in that model is dropped on import and not regenerated on export.
+- The export is a regeneration, not a round-trip: footnotes are renumbered, numbering definitions are rebuilt from paragraph list kind, and theme/styles are re-emitted with only the properties oasis tracks.
+- Theme/font resolution is the largest single gap relative to "Word-like" fidelity: only `a:fontScheme` is read; theme colors and full `word/fontTable.xml` are not.
+- Image and drawing support stops at inline pictures; everything floating, shaped, charted, or VML is dropped silently.
+- No comment, content control (SDT), bookmark, endnote, or tracked-change story is parsed. If a document relies on any of these, the editor sees only the visible text and loses the structure.
+- Most of `word/settings.xml`, `word/webSettings.xml`, and `word/fontTable.xml` are not consumed; the editor relies on its own runtime state.
