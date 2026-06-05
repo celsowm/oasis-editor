@@ -52,13 +52,18 @@ export const applyTableAwareParagraphEdit = (
   }
 
   const zone = location.zone;
-  const nextBlocks = getTargetBlocks(current, zone).map(cloneBlock);
-  const tableBlock = nextBlocks[location.blockIndex] as EditorTableNode;
+  const originalBlocks = getTargetBlocks(current, zone);
+  const tableBlock = originalBlocks[location.blockIndex] as EditorTableNode;
   if (!tableBlock || tableBlock.type !== "table") {
     return edit(current);
   }
 
-  const targetCell = tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
+  const targetRow = tableBlock.rows[location.rowIndex];
+  if (!targetRow) {
+    return edit(current);
+  }
+
+  const targetCell = targetRow.cells[location.cellIndex];
   if (!targetCell) {
     return edit(current);
   }
@@ -83,7 +88,16 @@ export const applyTableAwareParagraphEdit = (
     (block): block is EditorParagraphNode => block.type === "paragraph",
   );
 
-  targetCell.blocks.splice(0, targetCell.blocks.length, ...replacementParagraphs);
+  const nextCell = { ...targetCell, blocks: replacementParagraphs };
+  const nextRow = { ...targetRow, cells: [...targetRow.cells] };
+  nextRow.cells[location.cellIndex] = nextCell;
+
+  const nextTableBlock = { ...tableBlock, rows: [...tableBlock.rows] };
+  nextTableBlock.rows[location.rowIndex] = nextRow;
+
+  const nextBlocks = [...originalBlocks];
+  nextBlocks[location.blockIndex] = nextTableBlock;
+
   const nextState = updateBlocksInCurrentSection(current, nextBlocks, zone);
   return {
     ...nextState,

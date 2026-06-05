@@ -93,11 +93,14 @@ export function createTableSelectionAwareCommands(deps: TableSelectionAwareComma
 
       const tempResult = command(tempState);
       const resultParagraphs = getParagraphs(tempResult);
-      const targetBlocks = deps.getTargetBlocks(current, zone).map(cloneBlock);
-      const tableBlock = targetBlocks[blockIndex] as EditorTableNode;
-      if (!tableBlock) {
+      const originalBlocks = deps.getTargetBlocks(current, zone);
+      const originalTableBlock = originalBlocks[blockIndex] as EditorTableNode;
+      if (!originalTableBlock) {
         return current;
       }
+
+      const nextTableBlock = { ...originalTableBlock, rows: [...originalTableBlock.rows] };
+      const rowClones = new Map<number, NonNullable<EditorTableNode["rows"][number]>>();
 
       let paragraphIndex = 0;
       for (let index = 0; index < cells.length; index += 1) {
@@ -106,13 +109,28 @@ export function createTableSelectionAwareCommands(deps: TableSelectionAwareComma
         const cellParagraphs = resultParagraphs.slice(paragraphIndex, paragraphIndex + count);
         paragraphIndex += count;
 
-        const targetCell = tableBlock.rows[entry.rowIndex]?.cells[entry.cellIndex];
-        if (targetCell) {
-          targetCell.blocks = cellParagraphs;
+        let targetRow = rowClones.get(entry.rowIndex);
+        if (!targetRow) {
+           const originalRow = nextTableBlock.rows[entry.rowIndex];
+           if (originalRow) {
+               targetRow = { ...originalRow, cells: [...originalRow.cells] };
+               rowClones.set(entry.rowIndex, targetRow);
+               nextTableBlock.rows[entry.rowIndex] = targetRow;
+           }
+        }
+
+        if (targetRow) {
+           const originalCell = targetRow.cells[entry.cellIndex];
+           if (originalCell) {
+               targetRow.cells[entry.cellIndex] = { ...originalCell, blocks: cellParagraphs };
+           }
         }
       }
 
-      return updateBlocksInCurrentSection(current, targetBlocks, zone);
+      const nextBlocks = [...originalBlocks];
+      nextBlocks[blockIndex] = nextTableBlock;
+
+      return updateBlocksInCurrentSection(current, nextBlocks, zone);
     });
   };
 
