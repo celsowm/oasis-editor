@@ -32,7 +32,8 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
 
   const activeColor = () => normalizeColor(props.value);
   const displayColor = () => previewColor() || props.value || null;
-  const directApplyColor = () => props.lastValue || props.value || props.defaultValue;
+  const directApplyColor = () =>
+    props.lastValue || props.value || props.defaultValue;
   const clearLabel = () =>
     props.kind === "highlight" ? props.noColorLabel : props.automaticLabel;
 
@@ -81,7 +82,10 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
           onClick={() => applyColor(null)}
         >
           <span class="oasis-editor-color-menu-action-swatch">
-            <Show when={props.kind === "color"} fallback={<i data-lucide="slash" />}>
+            <Show
+              when={props.kind === "color"}
+              fallback={<i data-lucide="slash" />}
+            >
               <i data-lucide="type" />
             </Show>
           </span>
@@ -90,7 +94,9 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
       </Show>
 
       <div class="oasis-editor-color-menu-section">
-        <div class="oasis-editor-color-menu-heading">{props.themeColorsLabel}</div>
+        <div class="oasis-editor-color-menu-heading">
+          {props.themeColorsLabel}
+        </div>
         <div class="oasis-editor-color-theme-grid">
           <For each={props.palette.themeColors}>
             {(theme) => (
@@ -122,7 +128,9 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
       </div>
 
       <div class="oasis-editor-color-menu-section">
-        <div class="oasis-editor-color-menu-heading">{props.standardColorsLabel}</div>
+        <div class="oasis-editor-color-menu-heading">
+          {props.standardColorsLabel}
+        </div>
         <div class="oasis-editor-color-standard-grid">
           <For each={props.palette.standardColors}>
             {(swatch) => (

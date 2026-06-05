@@ -29,8 +29,12 @@ const PYTHON_CANDIDATES: Array<{ command: string; args?: string[] }> = [
 ];
 
 const POWERSHELL_COMMAND = "powershell.exe";
-const CONVERT_SCRIPT_PATH = fileURLToPath(new URL("../../scripts/convert-docx-to-pdf.ps1", import.meta.url));
-const EXTRACT_SCRIPT_PATH = fileURLToPath(new URL("../../scripts/extract-pdf-lines.py", import.meta.url));
+const CONVERT_SCRIPT_PATH = fileURLToPath(
+  new URL("../../scripts/convert-docx-to-pdf.ps1", import.meta.url),
+);
+const EXTRACT_SCRIPT_PATH = fileURLToPath(
+  new URL("../../scripts/extract-pdf-lines.py", import.meta.url),
+);
 const PX_TO_POINTS = 72 / 96;
 const GEOMETRY_TOLERANCE_POINTS = 1.5;
 const STRICT_GEOMETRY_TOLERANCE_POINTS = 0.5;
@@ -104,22 +108,36 @@ function normalizeLineText(text: string): string {
 }
 
 function collectRenderedLineGeometry(
-  blocks: NonNullable<ReturnType<typeof projectDocumentLayout>["pages"][number]["blocks"]>,
+  blocks: NonNullable<
+    ReturnType<typeof projectDocumentLayout>["pages"][number]["blocks"]
+  >,
   originX: number,
   originY: number,
   styles: EditorDocument["styles"],
 ): Array<{ text: string; geometry: LayoutLineGeometry; bottomPx: number }> {
-  const lines: Array<{ text: string; geometry: LayoutLineGeometry; bottomPx: number }> = [];
+  const lines: Array<{
+    text: string;
+    geometry: LayoutLineGeometry;
+    bottomPx: number;
+  }> = [];
   let cursorY = originY;
 
   for (const block of blocks) {
     if (block.sourceBlock.type === "paragraph" && block.layout) {
-      const paragraphStyle = resolveEffectiveParagraphStyle(block.sourceBlock.style, styles);
-      const spacingBefore = block.layout.startOffset === 0 ? (paragraphStyle.spacingBefore ?? 0) : 0;
+      const paragraphStyle = resolveEffectiveParagraphStyle(
+        block.sourceBlock.style,
+        styles,
+      );
+      const spacingBefore =
+        block.layout.startOffset === 0
+          ? (paragraphStyle.spacingBefore ?? 0)
+          : 0;
       const paragraphOriginY = cursorY + spacingBefore;
 
       for (const line of block.layout.lines) {
-        const text = normalizeLineText(line.fragments.map((fragment) => fragment.text).join(""));
+        const text = normalizeLineText(
+          line.fragments.map((fragment) => fragment.text).join(""),
+        );
         if (text.length === 0) {
           continue;
         }
@@ -127,7 +145,10 @@ function collectRenderedLineGeometry(
         const lastSlot = line.slots[line.slots.length - 1];
         const xPx = originX + (firstSlot?.left ?? 0);
         const yPx = paragraphOriginY + line.top;
-        const widthPx = Math.max(0, (lastSlot?.left ?? firstSlot?.left ?? 0) - (firstSlot?.left ?? 0));
+        const widthPx = Math.max(
+          0,
+          (lastSlot?.left ?? firstSlot?.left ?? 0) - (firstSlot?.left ?? 0),
+        );
         lines.push({
           text,
           geometry: {
@@ -158,10 +179,14 @@ function findWordPath(): string | null {
 
 function findPythonCommand(): { command: string; args: string[] } | null {
   for (const candidate of PYTHON_CANDIDATES) {
-    const result = spawnSync(candidate.command, [...(candidate.args ?? []), "-c", "import fitz"], {
-      encoding: "utf8",
-      windowsHide: true,
-    });
+    const result = spawnSync(
+      candidate.command,
+      [...(candidate.args ?? []), "-c", "import fitz"],
+      {
+        encoding: "utf8",
+        windowsHide: true,
+      },
+    );
     if (result.status === 0) {
       return {
         command: candidate.command,
@@ -178,7 +203,10 @@ export function detectWordLayoutParitySupport(): WordLayoutSupportStatus {
   }
 
   if (!existsSync(CONVERT_SCRIPT_PATH) || !existsSync(EXTRACT_SCRIPT_PATH)) {
-    return { supported: false, reason: "Word parity helper scripts are missing." };
+    return {
+      supported: false,
+      reason: "Word parity helper scripts are missing.",
+    };
   }
 
   const wordPath = findWordPath();
@@ -188,7 +216,10 @@ export function detectWordLayoutParitySupport(): WordLayoutSupportStatus {
 
   const python = findPythonCommand();
   if (!python) {
-    return { supported: false, reason: "Python with PyMuPDF (fitz) was not found." };
+    return {
+      supported: false,
+      reason: "Python with PyMuPDF (fitz) was not found.",
+    };
   }
 
   return {
@@ -203,21 +234,36 @@ function collectEditorPageSnapshots(
   document: EditorDocument,
   options: WordLayoutParityOptions = {},
 ): EditorPageSnapshot[] {
-  const layout = projectDocumentLayout(document, undefined, undefined, undefined, {
-    layoutMode: options.layoutMode ?? "fast",
-  });
+  const layout = projectDocumentLayout(
+    document,
+    undefined,
+    undefined,
+    undefined,
+    {
+      layoutMode: options.layoutMode ?? "fast",
+    },
+  );
 
   return layout.pages.map((page) => {
-    const originX = page.pageSettings.margins.left + page.pageSettings.margins.gutter;
+    const originX =
+      page.pageSettings.margins.left + page.pageSettings.margins.gutter;
     const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
-    const footerTop = page.footerTop ?? page.bodyBottom ?? getPageFooterZoneTop(page.pageSettings);
+    const footerTop =
+      page.footerTop ??
+      page.bodyBottom ??
+      getPageFooterZoneTop(page.pageSettings);
     const headerLines = collectRenderedLineGeometry(
       page.headerBlocks ?? [],
       originX,
       page.headerTop ?? getPageHeaderZoneTop(page.pageSettings),
       document.styles,
     );
-    const bodyLines = collectRenderedLineGeometry(page.blocks, originX, bodyTop, document.styles);
+    const bodyLines = collectRenderedLineGeometry(
+      page.blocks,
+      originX,
+      bodyTop,
+      document.styles,
+    );
     const footerLines = collectRenderedLineGeometry(
       page.footerBlocks ?? [],
       originX,
@@ -247,7 +293,10 @@ function collectEditorPageSnapshots(
   });
 }
 
-async function convertDocxToPdfWithWord(docxPath: string, pdfPath: string): Promise<void> {
+async function convertDocxToPdfWithWord(
+  docxPath: string,
+  pdfPath: string,
+): Promise<void> {
   const result = spawnSync(
     POWERSHELL_COMMAND,
     [
@@ -274,7 +323,10 @@ async function convertDocxToPdfWithWord(docxPath: string, pdfPath: string): Prom
   }
 }
 
-function extractPdfLayout(pdfPath: string, support: WordLayoutSupportStatus): WordPdfLayout {
+function extractPdfLayout(
+  pdfPath: string,
+  support: WordLayoutSupportStatus,
+): WordPdfLayout {
   const pythonCommand = support.pythonCommand;
   if (!pythonCommand) {
     throw new Error("Python command is not available.");
@@ -291,7 +343,9 @@ function extractPdfLayout(pdfPath: string, support: WordLayoutSupportStatus): Wo
   );
 
   if (result.status !== 0) {
-    throw new Error(`PDF line extraction failed.\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+    throw new Error(
+      `PDF line extraction failed.\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+    );
   }
 
   return JSON.parse(result.stdout) as WordPdfLayout;
@@ -335,10 +389,18 @@ function compareWordAndEditorLayout(
     const footerStart = editorPage.footerTop * PX_TO_POINTS - 1;
     const footerEnd = editorPage.pageHeight * PX_TO_POINTS + 1;
     const wordHeaderLinesWithGeometry = wordPage.lines
-      .filter((line) => line.y >= editorPage.headerTop * PX_TO_POINTS - 1 && line.y < headerLimit)
+      .filter(
+        (line) =>
+          line.y >= editorPage.headerTop * PX_TO_POINTS - 1 &&
+          line.y < headerLimit,
+      )
       .filter((line) => normalizeLineText(line.text).length > 0);
     const wordBodyLinesWithGeometry = wordPage.lines
-      .filter((line) => line.y >= editorPage.bodyTop * PX_TO_POINTS - 1 && line.y < footerStart)
+      .filter(
+        (line) =>
+          line.y >= editorPage.bodyTop * PX_TO_POINTS - 1 &&
+          line.y < footerStart,
+      )
       .filter((line) => normalizeLineText(line.text).length > 0);
     const wordFooterLinesWithGeometry = wordPage.lines
       .filter((line) => line.y >= footerStart && line.y <= footerEnd)
@@ -354,9 +416,21 @@ function compareWordAndEditorLayout(
       .filter((line) => line.length > 0);
 
     const zones = [
-      { name: "header", editorLines: editorPage.headerLineTexts, wordLines: wordHeaderLines },
-      { name: "body", editorLines: editorPage.bodyLineTexts, wordLines: wordBodyLines },
-      { name: "footer", editorLines: editorPage.footerLineTexts, wordLines: wordFooterLines },
+      {
+        name: "header",
+        editorLines: editorPage.headerLineTexts,
+        wordLines: wordHeaderLines,
+      },
+      {
+        name: "body",
+        editorLines: editorPage.bodyLineTexts,
+        wordLines: wordBodyLines,
+      },
+      {
+        name: "footer",
+        editorLines: editorPage.footerLineTexts,
+        wordLines: wordFooterLines,
+      },
     ];
 
     for (const zone of zones) {
@@ -368,7 +442,11 @@ function compareWordAndEditorLayout(
       }
 
       if (strict) {
-        for (let lineIndex = 0; lineIndex < zone.editorLines.length; lineIndex += 1) {
+        for (
+          let lineIndex = 0;
+          lineIndex < zone.editorLines.length;
+          lineIndex += 1
+        ) {
           const editorLine = zone.editorLines[lineIndex]!;
           const wordLine = zone.wordLines[lineIndex]!;
           if (editorLine !== wordLine) {
@@ -387,8 +465,16 @@ function compareWordAndEditorLayout(
       const checks = [
         { name: "x", editor: editorFirstBodyLine.x, word: wordFirstBodyLine.x },
         { name: "y", editor: editorFirstBodyLine.y, word: wordFirstBodyLine.y },
-        { name: "width", editor: editorFirstBodyLine.width, word: wordFirstBodyLine.width },
-        { name: "height", editor: editorFirstBodyLine.height, word: wordFirstBodyLine.height },
+        {
+          name: "width",
+          editor: editorFirstBodyLine.width,
+          word: wordFirstBodyLine.width,
+        },
+        {
+          name: "height",
+          editor: editorFirstBodyLine.height,
+          word: wordFirstBodyLine.height,
+        },
       ];
       for (const check of checks) {
         if (Math.abs(check.editor - check.word) > geometryTolerance) {
@@ -419,23 +505,30 @@ function compareWordAndEditorLayout(
 
       const wordBodyTop = wordBodyLinesWithGeometry[0]?.y;
       const wordBodyBottom = wordBodyLinesWithGeometry.at(-1)
-        ? wordBodyLinesWithGeometry.at(-1)!.y + wordBodyLinesWithGeometry.at(-1)!.height
+        ? wordBodyLinesWithGeometry.at(-1)!.y +
+          wordBodyLinesWithGeometry.at(-1)!.height
         : undefined;
       const wordFooterTop = wordFooterLinesWithGeometry[0]?.y;
       const checks = [
         {
           name: "bodyTop",
-          editor: (editorPage.firstBodyLineGeometry?.y ?? editorPage.bodyTop * PX_TO_POINTS),
+          editor:
+            editorPage.firstBodyLineGeometry?.y ??
+            editorPage.bodyTop * PX_TO_POINTS,
           word: wordBodyTop,
         },
         {
           name: "bodyBottom",
-          editor: (editorPage.lastBodyLineBottom ?? editorPage.footerTop) * PX_TO_POINTS,
+          editor:
+            (editorPage.lastBodyLineBottom ?? editorPage.footerTop) *
+            PX_TO_POINTS,
           word: wordBodyBottom,
         },
         {
           name: "footerTop",
-          editor: (editorPage.firstFooterLineTop ?? editorPage.footerTop * PX_TO_POINTS),
+          editor:
+            editorPage.firstFooterLineTop ??
+            editorPage.footerTop * PX_TO_POINTS,
           word: wordFooterTop,
         },
       ];
@@ -462,7 +555,9 @@ async function verifyWordLayoutParityFromDocx(
 ): Promise<WordLayoutParityResult> {
   const support = detectWordLayoutParitySupport();
   if (!support.supported) {
-    throw new Error(support.reason ?? "Word layout parity support is not available.");
+    throw new Error(
+      support.reason ?? "Word layout parity support is not available.",
+    );
   }
 
   const tempDir = await mkdtemp(join(tmpdir(), "oasis-word-parity-"));
@@ -475,7 +570,11 @@ async function verifyWordLayoutParityFromDocx(
     await conversionPromise;
     const editorPages = collectEditorPageSnapshots(document, options);
     const wordLayout = extractPdfLayout(pdfPath, support);
-    const mismatches = compareWordAndEditorLayout(editorPages, wordLayout, options);
+    const mismatches = compareWordAndEditorLayout(
+      editorPages,
+      wordLayout,
+      options,
+    );
 
     return {
       editor: { pages: editorPages },
@@ -501,7 +600,10 @@ export async function verifyImportedDocxWordLayoutParity(
 ): Promise<WordLayoutParityResult> {
   const docxBuffer = await readFile(docxPath);
   const document = await importDocxToEditorDocument(
-    docxBuffer.buffer.slice(docxBuffer.byteOffset, docxBuffer.byteOffset + docxBuffer.byteLength),
+    docxBuffer.buffer.slice(
+      docxBuffer.byteOffset,
+      docxBuffer.byteOffset + docxBuffer.byteLength,
+    ),
   );
   return verifyWordLayoutParityFromDocx(document, docxBuffer, options);
 }

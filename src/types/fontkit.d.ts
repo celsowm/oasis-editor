@@ -40,9 +40,15 @@ declare module "fontkit" {
     "OS/2"?: { sFamilyClass?: number };
     createSubset(): FontkitSubset;
     getGlyph(id: number): FontkitGlyph;
-    layout(text: string, features?: string[] | Record<string, boolean>): FontkitGlyphRun;
+    layout(
+      text: string,
+      features?: string[] | Record<string, boolean>,
+    ): FontkitGlyphRun;
     hasGlyphForCodePoint?(codePoint: number): boolean;
   }
 
-  export function create(buffer: Uint8Array | ArrayBuffer, postscriptName?: string | null): FontkitFont;
+  export function create(
+    buffer: Uint8Array | ArrayBuffer,
+    postscriptName?: string | null,
+  ): FontkitFont;
 }

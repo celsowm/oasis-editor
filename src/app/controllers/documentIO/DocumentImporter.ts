@@ -78,16 +78,21 @@ export function createDocumentImporter(deps: DocumentImporterDeps) {
       await deps.stabilizeLayoutAfterImport();
       deps.logger.info("import docx:phase", {
         phase: "stabilizing-layout",
-        durationMs: Math.round((deps.now() - stabilizationStartedAt) * 100) / 100,
+        durationMs:
+          Math.round((deps.now() - stabilizationStartedAt) * 100) / 100,
       });
 
       const sections = getDocumentSectionsCanonical(document);
       const canonicalBlocks = sections.reduce(
         (total, section) =>
-          total + (section.header?.length ?? 0) + section.blocks.length + (section.footer?.length ?? 0),
+          total +
+          (section.header?.length ?? 0) +
+          section.blocks.length +
+          (section.footer?.length ?? 0),
         0,
       );
-      const canonicalParagraphs = getDocumentParagraphsCanonical(document).length;
+      const canonicalParagraphs =
+        getDocumentParagraphsCanonical(document).length;
       deps.setImportPhase("done");
       deps.logger.info("import docx:done", {
         blocks: canonicalBlocks,

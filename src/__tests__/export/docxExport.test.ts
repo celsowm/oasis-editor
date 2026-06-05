@@ -102,6 +102,55 @@ describe("DOCX export", () => {
     expect(xml).toContain('<w:jc w:val="center"/>');
   });
 
+  it("serializes paragraph borders and shading", async () => {
+    const paragraph = createEditorParagraph("Boxed paragraph");
+    paragraph.style = {
+      shading: "#FEF3C7",
+      borderTop: { width: 1, type: "solid", color: "#111827" },
+      borderRight: { width: 0.5, type: "dashed", color: "#334155" },
+      borderBottom: { width: 0.75, type: "dotted", color: "#64748B" },
+      borderLeft: { width: 0, type: "none", color: "transparent" },
+    };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+
+    expect(xml).toContain("<w:pBdr>");
+    expect(xml).toContain(
+      '<w:top w:val="single" w:sz="8" w:space="0" w:color="111827"/>',
+    );
+    expect(xml).toContain(
+      '<w:right w:val="dashed" w:sz="4" w:space="0" w:color="334155"/>',
+    );
+    expect(xml).toContain(
+      '<w:bottom w:val="dotted" w:sz="6" w:space="0" w:color="64748B"/>',
+    );
+    expect(xml).toContain('<w:left w:val="nil"/>');
+    expect(xml).toContain(
+      '<w:shd w:val="clear" w:color="auto" w:fill="FEF3C7"/>',
+    );
+  });
+
+  it("serializes only the edges that have a border (bottom-only box)", async () => {
+    const paragraph = createEditorParagraph("Bottom rule only");
+    paragraph.style = {
+      borderBottom: { width: 1, type: "solid", color: "#111827" },
+    };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+
+    expect(xml).toContain("<w:pBdr>");
+    expect(xml).toContain(
+      '<w:bottom w:val="single" w:sz="8" w:space="0" w:color="111827"/>',
+    );
+    expect(xml).not.toContain("<w:top w:val=");
+    expect(xml).not.toContain("<w:left w:val=");
+    expect(xml).not.toContain("<w:right w:val=");
+  });
+
   it("serializes a manual page break before tables that request it", async () => {
     const table = createEditorTable([
       createEditorTableRow([
@@ -116,7 +165,9 @@ describe("DOCX export", () => {
       ),
     );
 
-    const breakIndex = xml.indexOf('<w:p><w:r><w:br w:type="page"/></w:r></w:p>');
+    const breakIndex = xml.indexOf(
+      '<w:p><w:r><w:br w:type="page"/></w:r></w:p>',
+    );
     const tableIndex = xml.indexOf("<w:tbl>");
 
     expect(breakIndex).toBeGreaterThan(-1);

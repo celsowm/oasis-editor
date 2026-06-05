@@ -28,7 +28,9 @@ function buildDocumentWithFootnotes(count = 1) {
   ];
   const document = createEditorDocument([paragraph]);
   document.footnotes = {
-    items: Object.fromEntries(footnotes.map((footnote) => [footnote.id, footnote])),
+    items: Object.fromEntries(
+      footnotes.map((footnote) => [footnote.id, footnote]),
+    ),
   };
   return { document, paragraph, footnotes };
 }
@@ -37,9 +39,15 @@ describe("projectDocumentLayout footnotes", () => {
   it("reserves page body height and projects footnote blocks for a referenced note", () => {
     const { document, footnotes } = buildDocumentWithFootnotes(1);
 
-    const layout = projectDocumentLayout(document, undefined, undefined, undefined, {
-      layoutMode: "wordParity",
-    });
+    const layout = projectDocumentLayout(
+      document,
+      undefined,
+      undefined,
+      undefined,
+      {
+        layoutMode: "wordParity",
+      },
+    );
     const page = layout.pages[0]!;
 
     expect(page.footnoteReferenceIds).toEqual([footnotes[0]!.id]);
@@ -64,9 +72,15 @@ describe("projectDocumentLayout footnotes", () => {
       },
     ];
 
-    const layout = projectDocumentLayout(document, undefined, undefined, undefined, {
-      layoutMode: "wordParity",
-    });
+    const layout = projectDocumentLayout(
+      document,
+      undefined,
+      undefined,
+      undefined,
+      {
+        layoutMode: "wordParity",
+      },
+    );
     const page = layout.pages[0]!;
 
     expect(page.footerTop).toBeDefined();
@@ -108,13 +122,20 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       { layoutMode: "wordParity" },
     ).pages[0]!;
-    const page = projectDocumentLayout(document, undefined, undefined, undefined, {
-      layoutMode: "wordParity",
-    }).pages[0]!;
+    const page = projectDocumentLayout(
+      document,
+      undefined,
+      undefined,
+      undefined,
+      {
+        layoutMode: "wordParity",
+      },
+    ).pages[0]!;
 
     const reservedHeight = Math.max(
       0,
-      (basePage.bodyBottom ?? getPageBodyBottom(basePage.pageSettings)) - page.bodyBottom!,
+      (basePage.bodyBottom ?? getPageBodyBottom(basePage.pageSettings)) -
+        page.bodyBottom!,
     );
 
     expect(page.footnoteReferenceIds).toEqual([footnotes[0]!.id]);
@@ -132,9 +153,15 @@ describe("projectDocumentLayout footnotes", () => {
     secondPage.style = { pageBreakBefore: true };
     document.sections![0]!.blocks.push(secondPage);
 
-    const layout = projectDocumentLayout(document, undefined, undefined, undefined, {
-      layoutMode: "wordParity",
-    });
+    const layout = projectDocumentLayout(
+      document,
+      undefined,
+      undefined,
+      undefined,
+      {
+        layoutMode: "wordParity",
+      },
+    );
 
     expect(layout.pages.length).toBeGreaterThanOrEqual(2);
     expect(layout.pages[0]!.footnoteReferenceIds).toEqual([footnotes[0]!.id]);
@@ -144,9 +171,15 @@ describe("projectDocumentLayout footnotes", () => {
   it("orders multiple footnotes by their reference order on the page", () => {
     const { document, footnotes } = buildDocumentWithFootnotes(2);
 
-    const layout = projectDocumentLayout(document, undefined, undefined, undefined, {
-      layoutMode: "wordParity",
-    });
+    const layout = projectDocumentLayout(
+      document,
+      undefined,
+      undefined,
+      undefined,
+      {
+        layoutMode: "wordParity",
+      },
+    );
 
     expect(layout.pages[0]!.footnoteReferenceIds).toEqual([
       footnotes[0]!.id,
@@ -159,13 +192,21 @@ describe("projectDocumentLayout footnotes", () => {
     const document = createEditorDocument([paragraph]);
     document.footnotes = {
       items: {
-        "footnote:orphan": createEditorFootnote([createEditorParagraph("orphan")]),
+        "footnote:orphan": createEditorFootnote([
+          createEditorParagraph("orphan"),
+        ]),
       },
     };
 
-    const layout = projectDocumentLayout(document, undefined, undefined, undefined, {
-      layoutMode: "wordParity",
-    });
+    const layout = projectDocumentLayout(
+      document,
+      undefined,
+      undefined,
+      undefined,
+      {
+        layoutMode: "wordParity",
+      },
+    );
 
     expect(layout.pages[0]!.footnoteBlocks).toBeUndefined();
     expect(layout.pages[0]!.footnoteReferenceIds).toBeUndefined();

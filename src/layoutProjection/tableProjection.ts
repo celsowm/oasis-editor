@@ -1,3 +1,1 @@
-export {
-  estimateTableBlockHeight,
-} from "./tablePagination.js";
+export { estimateTableBlockHeight } from "./tablePagination.js";

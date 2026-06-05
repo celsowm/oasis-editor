@@ -24,5 +24,11 @@ export const OasisEditor: React.FC<ReactOasisEditorProps> = (props) => {
   // In a real adapter, we might want to sync props updates here
   // But for a thin wrapper, this is the starting point.
 
-  return <div ref={containerRef} className={props.ui?.class} style={props.ui?.style} />;
+  return (
+    <div
+      ref={containerRef}
+      className={props.ui?.class}
+      style={props.ui?.style}
+    />
+  );
 };

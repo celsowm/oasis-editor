@@ -11,7 +11,15 @@ const LETTER: EditorPageSettings = {
   width: 816,
   height: 1056,
   orientation: "portrait",
-  margins: { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 },
+  margins: {
+    top: 96,
+    right: 96,
+    bottom: 96,
+    left: 96,
+    header: 48,
+    footer: 48,
+    gutter: 0,
+  },
 };
 
 const NO_INDENTS = {
@@ -64,7 +72,9 @@ describe("ruler geometry", () => {
 
   it("emits a labeled major tick every inch with 0 at the content edge", () => {
     const ticks = computeRulerTicks(LETTER.width, 96, "in");
-    const oneInch = ticks.find((t) => t.x === 96 + PX_PER_INCH && t.kind === "major");
+    const oneInch = ticks.find(
+      (t) => t.x === 96 + PX_PER_INCH && t.kind === "major",
+    );
     expect(oneInch?.label).toBe("1");
     const origin = ticks.find((t) => t.x === 96 && t.kind === "major");
     expect(origin?.label).toBeUndefined();

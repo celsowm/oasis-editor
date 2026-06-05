@@ -6,7 +6,10 @@ import {
 } from "../../core/editorState.js";
 import { exportEditorDocumentToDocx } from "../../export/docx/exportEditorDocumentToDocx.js";
 import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditorDocument.js";
-import type { EditorParagraphNode, EditorUnderlineStyle } from "../../core/model.js";
+import type {
+  EditorParagraphNode,
+  EditorUnderlineStyle,
+} from "../../core/model.js";
 import { UNDERLINE_STYLE_OPTIONS } from "../../ui/components/Toolbar/underlineStyles.js";
 
 async function readDocumentXml(buffer: ArrayBuffer): Promise<string> {
@@ -16,31 +19,49 @@ async function readDocumentXml(buffer: ArrayBuffer): Promise<string> {
   return xml;
 }
 
-const STYLES_TO_TEST: EditorUnderlineStyle[] = UNDERLINE_STYLE_OPTIONS.map((option) => option.value);
+const STYLES_TO_TEST: EditorUnderlineStyle[] = UNDERLINE_STYLE_OPTIONS.map(
+  (option) => option.value,
+);
 
 describe("DOCX underline style", () => {
   for (const style of STYLES_TO_TEST) {
     it(`exports <w:u w:val="${style}"/> when underlineStyle is "${style}"`, async () => {
       const document = createEditorDocument([
         createEditorParagraphFromRuns([
-          { text: "x", styles: { underline: true, underlineStyle: style === "single" ? null : style } },
+          {
+            text: "x",
+            styles: {
+              underline: true,
+              underlineStyle: style === "single" ? null : style,
+            },
+          },
         ]),
       ]);
-      const xml = await readDocumentXml(await exportEditorDocumentToDocx(document));
+      const xml = await readDocumentXml(
+        await exportEditorDocumentToDocx(document),
+      );
       expect(xml).toContain(`<w:u w:val="${style}"/>`);
     });
 
     it(`re-imports the underline style "${style}" from a round-trip`, async () => {
       const document = createEditorDocument([
         createEditorParagraphFromRuns([
-          { text: "x", styles: { underline: true, underlineStyle: style === "single" ? null : style } },
+          {
+            text: "x",
+            styles: {
+              underline: true,
+              underlineStyle: style === "single" ? null : style,
+            },
+          },
         ]),
       ]);
 
       const docx = await exportEditorDocumentToDocx(document);
       const reimported = await importDocxToEditorDocument(docx);
 
-      const paragraphs = (reimported.sections ?? []).flatMap((section) => section.blocks);
+      const paragraphs = (reimported.sections ?? []).flatMap(
+        (section) => section.blocks,
+      );
       const firstParagraph = paragraphs.find(
         (block): block is EditorParagraphNode => block.type === "paragraph",
       );
@@ -84,7 +105,9 @@ describe("DOCX underline style", () => {
       ]),
     ]);
 
-    const xml = await readDocumentXml(await exportEditorDocumentToDocx(document));
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(document),
+    );
     expect(xml).toContain('<w:u w:val="single" w:color="ff0000"/>');
     expect(xml).toContain("<w:dstrike/>");
     expect(xml).toContain("<w:smallCaps/>");
@@ -100,8 +123,12 @@ describe("DOCX underline style", () => {
     expect(xml).toContain('<w14:stylisticSets w14:val="00000040"/>');
     expect(xml).toContain('<w14:cntxtAlts w14:val="1"/>');
 
-    const reimported = await importDocxToEditorDocument(await exportEditorDocumentToDocx(document));
-    const paragraphs = (reimported.sections ?? []).flatMap((section) => section.blocks);
+    const reimported = await importDocxToEditorDocument(
+      await exportEditorDocumentToDocx(document),
+    );
+    const paragraphs = (reimported.sections ?? []).flatMap(
+      (section) => section.blocks,
+    );
     const firstParagraph = paragraphs.find(
       (block): block is EditorParagraphNode => block.type === "paragraph",
     );

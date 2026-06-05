@@ -1,6 +1,10 @@
 import { createSignal, type Accessor } from "solid-js";
 import { Editor } from "../../core/Editor.js";
-import { commandRefName, resolveCommandRef, type CommandRef } from "../../core/commands/CommandRef.js";
+import {
+  commandRefName,
+  resolveCommandRef,
+  type CommandRef,
+} from "../../core/commands/CommandRef.js";
 import type { EditorDocument } from "../../core/model.js";
 import type { OasisPlugin } from "../../core/plugin.js";
 import type { ToolbarHost } from "../components/Toolbar/state/createToolbarApi.js";
@@ -15,7 +19,9 @@ interface CreateRuntimeCommandHostOptions {
   onSettled?: () => void;
 }
 
-export function createRuntimeCommandHost(options: CreateRuntimeCommandHostOptions): {
+export function createRuntimeCommandHost(
+  options: CreateRuntimeCommandHostOptions,
+): {
   runtimeReady: Accessor<boolean>;
   runtimeEditor: Accessor<Editor>;
   commandStateOf: (commandRef: CommandRef) => {

@@ -31,7 +31,11 @@ export class MenuRegistry {
     } else {
       this.items.push(item);
     }
-    this.items.sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER));
+    this.items.sort(
+      (a, b) =>
+        (a.order ?? Number.MAX_SAFE_INTEGER) -
+        (b.order ?? Number.MAX_SAFE_INTEGER),
+    );
   }
 
   unregister(id: string) {

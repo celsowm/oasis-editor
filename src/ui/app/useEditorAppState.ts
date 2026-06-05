@@ -17,33 +17,46 @@ export function createEditorAppState(options: {
       : createInitialEditorState();
 
   let stateSnapshot: EditorState = initialEditorState;
-  const [stateAccessor, setStateSignal] = createSignal<EditorState>(initialEditorState);
+  const [stateAccessor, setStateSignal] =
+    createSignal<EditorState>(initialEditorState);
 
   const state = new Proxy({} as EditorState, {
     get(_, prop) {
       const current = stateAccessor() as unknown;
-      if (current === null || (typeof current !== "object" && typeof current !== "function")) {
+      if (
+        current === null ||
+        (typeof current !== "object" && typeof current !== "function")
+      ) {
         return undefined;
       }
       return Reflect.get(current as object, prop);
     },
     has(_, prop) {
       const current = stateAccessor() as unknown;
-      if (current === null || (typeof current !== "object" && typeof current !== "function")) {
+      if (
+        current === null ||
+        (typeof current !== "object" && typeof current !== "function")
+      ) {
         return false;
       }
       return Reflect.has(current as object, prop);
     },
     ownKeys(_) {
       const current = stateAccessor() as unknown;
-      if (current === null || (typeof current !== "object" && typeof current !== "function")) {
+      if (
+        current === null ||
+        (typeof current !== "object" && typeof current !== "function")
+      ) {
         return [];
       }
       return Reflect.ownKeys(current as object);
     },
     getOwnPropertyDescriptor(_, prop) {
       const current = stateAccessor() as unknown;
-      if (current === null || (typeof current !== "object" && typeof current !== "function")) {
+      if (
+        current === null ||
+        (typeof current !== "object" && typeof current !== "function")
+      ) {
         return {
           configurable: true,
           enumerable: true,

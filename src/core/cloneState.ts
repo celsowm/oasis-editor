@@ -16,7 +16,9 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
           image: run.image ? { ...run.image } : undefined,
           field: run.field ? { ...run.field } : undefined,
           revision: run.revision ? { ...run.revision } : undefined,
-          footnoteReference: run.footnoteReference ? { ...run.footnoteReference } : undefined,
+          footnoteReference: run.footnoteReference
+            ? { ...run.footnoteReference }
+            : undefined,
         })),
         style: block.style ? { ...block.style } : undefined,
         list: block.list ? { ...block.list } : undefined,
@@ -38,7 +40,9 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
                 image: run.image ? { ...run.image } : undefined,
                 field: run.field ? { ...run.field } : undefined,
                 revision: run.revision ? { ...run.revision } : undefined,
-                footnoteReference: run.footnoteReference ? { ...run.footnoteReference } : undefined,
+                footnoteReference: run.footnoteReference
+                  ? { ...run.footnoteReference }
+                  : undefined,
               })),
               style: paragraph.style ? { ...paragraph.style } : undefined,
               list: paragraph.list ? { ...paragraph.list } : undefined,
@@ -70,7 +74,9 @@ export function cloneFootnote(footnote: EditorFootnote): EditorFootnote {
   };
 }
 
-export function cloneFootnotes(footnotes: EditorFootnotes | undefined): EditorFootnotes | undefined {
+export function cloneFootnotes(
+  footnotes: EditorFootnotes | undefined,
+): EditorFootnotes | undefined {
   if (!footnotes) return undefined;
   const nextItems: Record<string, EditorFootnote> = {};
   for (const [id, footnote] of Object.entries(footnotes.items)) {

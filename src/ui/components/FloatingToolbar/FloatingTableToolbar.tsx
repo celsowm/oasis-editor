@@ -1,4 +1,12 @@
-import { Show, createMemo, createSignal, onCleanup, onMount, type Accessor, type JSX } from "solid-js";
+import {
+  Show,
+  createMemo,
+  createSignal,
+  onCleanup,
+  onMount,
+  type Accessor,
+  type JSX,
+} from "solid-js";
 import { Portal } from "solid-js/web";
 import "./floatingToolbar.css";
 import type { SelectionBox } from "../../editorUiTypes.js";
@@ -18,8 +26,10 @@ export function FloatingTableToolbar(
   props: FloatingTableToolbarProps,
 ): JSX.Element {
   const host = () => props.host();
-  const run = (command: string, payload?: unknown) => host().commands.execute(command, payload);
-  const blocked = (command: string) => !host().commands.state(command).isEnabled;
+  const run = (command: string, payload?: unknown) =>
+    host().commands.execute(command, payload);
+  const blocked = (command: string) =>
+    !host().commands.state(command).isEnabled;
 
   const [surfaceRect, setSurfaceRect] = createSignal<DOMRect | null>(null);
   const [tick, setTick] = createSignal(0);
@@ -75,7 +85,11 @@ export function FloatingTableToolbar(
       if (box.top < top) top = box.top;
       if (box.left + box.width > right) right = box.left + box.width;
     }
-    if (!Number.isFinite(left) || !Number.isFinite(top) || !Number.isFinite(right)) {
+    if (
+      !Number.isFinite(left) ||
+      !Number.isFinite(top) ||
+      !Number.isFinite(right)
+    ) {
       return null;
     }
     const viewportCenterX = rect.left + (left + right) / 2;

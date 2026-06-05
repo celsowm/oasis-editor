@@ -57,7 +57,11 @@ export function createEditorRun(text = ""): EditorTextRun {
   return run;
 }
 
-export function createEditorStyledRun(text = "", styles?: EditorTextStyle, image?: EditorImageRunData): EditorTextRun {
+export function createEditorStyledRun(
+  text = "",
+  styles?: EditorTextStyle,
+  image?: EditorImageRunData,
+): EditorTextRun {
   const run = createEditorRun(text);
   if (styles) {
     run.styles = { ...styles };
@@ -79,12 +83,21 @@ export function createEditorParagraph(text = ""): EditorParagraphNode {
 }
 
 export function createEditorParagraphFromRuns(
-  runs: Array<{ text: string; styles?: EditorTextStyle; image?: EditorImageRunData }>,
+  runs: Array<{
+    text: string;
+    styles?: EditorTextStyle;
+    image?: EditorImageRunData;
+  }>,
 ): EditorParagraphNode {
   const paragraph: EditorParagraphNode = {
     id: `paragraph:${nextParagraphId}`,
     type: "paragraph",
-    runs: runs.length > 0 ? runs.map((run) => createEditorStyledRun(run.text, run.styles, run.image)) : [createEditorRun("")],
+    runs:
+      runs.length > 0
+        ? runs.map((run) =>
+            createEditorStyledRun(run.text, run.styles, run.image),
+          )
+        : [createEditorRun("")],
   };
   nextParagraphId += 1;
   return paragraph;
@@ -130,7 +143,10 @@ export function createEditorTableRow(
   return row;
 }
 
-export function createEditorTable(rows: EditorTableRowNode[], gridCols?: number[]): EditorTableNode {
+export function createEditorTable(
+  rows: EditorTableRowNode[],
+  gridCols?: number[],
+): EditorTableNode {
   const table: EditorTableNode = {
     id: `table:${nextTableId}`,
     type: "table",
@@ -147,16 +163,23 @@ export function createEditorFootnoteId(): string {
   return id;
 }
 
-export function createEditorFootnote(blocks?: EditorBlockNode[]): EditorFootnote {
+export function createEditorFootnote(
+  blocks?: EditorBlockNode[],
+): EditorFootnote {
   const initialBlocks: EditorBlockNode[] =
-    blocks && blocks.length > 0 ? blocks : [createEditorParagraphWithStyle("", { styleId: "footnoteText" })];
+    blocks && blocks.length > 0
+      ? blocks
+      : [createEditorParagraphWithStyle("", { styleId: "footnoteText" })];
   return {
     id: createEditorFootnoteId(),
     blocks: initialBlocks,
   };
 }
 
-function createEditorParagraphWithStyle(text: string, style: { styleId?: string }): EditorParagraphNode {
+function createEditorParagraphWithStyle(
+  text: string,
+  style: { styleId?: string },
+): EditorParagraphNode {
   const paragraph = createEditorParagraph(text);
   if (style.styleId) {
     paragraph.style = { styleId: style.styleId };
@@ -295,7 +318,7 @@ export function createEditorDocument(
   pageSettings?: EditorPageSettings,
   sections?: EditorSection[],
   styles?: Record<string, EditorNamedStyle>,
-  metadata?: { title?: string; [key: string]: any },
+  metadata?: { title?: string; [key: string]: unknown },
   assets?: Record<string, EditorAsset>,
 ): EditorDocument {
   const normalizedPageSettings = normalizePageSettings(
@@ -316,15 +339,13 @@ export function createEditorDocument(
   const document: EditorDocument = {
     id: `document:${nextDocumentId}`,
     pageSettings: normalizedPageSettings,
-    sections:
-      sections ??
-      [
-        {
-          id: "section:default",
-          blocks,
-          pageSettings: normalizedPageSettings,
-        },
-      ],
+    sections: sections ?? [
+      {
+        id: "section:default",
+        blocks,
+        pageSettings: normalizedPageSettings,
+      },
+    ],
     styles: styles ?? { ...DEFAULT_EDITOR_STYLES },
     metadata: metadata ?? { title: "Untitled document" },
     // The asset registry holds out-of-band image payloads (data URLs).
@@ -338,7 +359,10 @@ export function createEditorDocument(
 }
 
 export function getDocumentCharacterCount(document: EditorDocument): number {
-  return getDocumentParagraphsCanonical(document).reduce((sum, p) => sum + getParagraphLength(p), 0);
+  return getDocumentParagraphsCanonical(document).reduce(
+    (sum, p) => sum + getParagraphLength(p),
+    0,
+  );
 }
 
 export function getDocumentWordCount(document: EditorDocument): number {
@@ -351,9 +375,7 @@ export function getDocumentWordCount(document: EditorDocument): number {
 
     // Split by whitespace and punctuation that typically separates words
     // This is a naive implementation but covers basic English/Portuguese needs
-    const words = text
-      .split(/[\s\p{P}]+/u)
-      .filter((word) => word.length > 0);
+    const words = text.split(/[\s\p{P}]+/u).filter((word) => word.length > 0);
     totalWords += words.length;
   }
 
@@ -373,7 +395,9 @@ export function createEditorStateFromDocument(
             {
               id: "section:default",
               blocks: [createEditorParagraph("")],
-              pageSettings: getDocumentSectionsCanonical(document)[0]?.pageSettings ?? DEFAULT_EDITOR_PAGE_SETTINGS,
+              pageSettings:
+                getDocumentSectionsCanonical(document)[0]?.pageSettings ??
+                DEFAULT_EDITOR_PAGE_SETTINGS,
             },
           ],
   };
@@ -408,7 +432,10 @@ export function createEditorStateFromDocument(
       Math.min(selection?.paragraphIndex ?? 0, allParagraphs.length - 1),
     );
     targetParagraph = allParagraphs[paragraphIndex]!;
-    const location = findParagraphLocation(normalizedDocument, targetParagraph.id);
+    const location = findParagraphLocation(
+      normalizedDocument,
+      targetParagraph.id,
+    );
     if (location) {
       activeSectionIndex = location.sectionIndex;
       activeZone = location.zone;
@@ -416,14 +443,17 @@ export function createEditorStateFromDocument(
   } else {
     const sections = getDocumentSectionsCanonical(normalizedDocument);
     const firstSection = sections[0];
-    const mainParagraphs = firstSection?.blocks.flatMap(getBlockParagraphs) ?? [];
+    const mainParagraphs =
+      firstSection?.blocks.flatMap(getBlockParagraphs) ?? [];
     if (mainParagraphs.length > 0) {
       targetParagraph = mainParagraphs[0]!;
       activeZone = "main";
       activeSectionIndex = 0;
     } else {
-      const headerParagraphs = firstSection?.header?.flatMap(getBlockParagraphs) ?? [];
-      const footerParagraphs = firstSection?.footer?.flatMap(getBlockParagraphs) ?? [];
+      const headerParagraphs =
+        firstSection?.header?.flatMap(getBlockParagraphs) ?? [];
+      const footerParagraphs =
+        firstSection?.footer?.flatMap(getBlockParagraphs) ?? [];
       if (headerParagraphs.length > 0) {
         targetParagraph = headerParagraphs[0]!;
         activeZone = "header";
@@ -437,7 +467,10 @@ export function createEditorStateFromDocument(
 
   const position: EditorPosition = paragraphOffsetToPosition(
     targetParagraph,
-    Math.max(0, Math.min(selection?.offset ?? 0, getParagraphLength(targetParagraph))),
+    Math.max(
+      0,
+      Math.min(selection?.offset ?? 0, getParagraphLength(targetParagraph)),
+    ),
   );
 
   const result = {
@@ -450,7 +483,9 @@ export function createEditorStateFromDocument(
   return result;
 }
 
-export function createSectionBoundaryParagraph(zone: "header" | "footer"): EditorParagraphNode {
+export function createSectionBoundaryParagraph(
+  zone: "header" | "footer",
+): EditorParagraphNode {
   const paragraph = createEditorParagraph("");
   paragraph.style = { styleId: zone };
   return paragraph;
@@ -481,22 +516,32 @@ export function createEditorStateFromTexts(
   },
 ): EditorState {
   const paragraphs =
-    texts.length > 0 ? texts.map((text) => createEditorParagraph(text)) : [createEditorParagraph("")];
-  const defaultIndex = selection?.blockIndex ?? selection?.anchor?.blockIndex ?? 0;
+    texts.length > 0
+      ? texts.map((text) => createEditorParagraph(text))
+      : [createEditorParagraph("")];
+  const defaultIndex =
+    selection?.blockIndex ?? selection?.anchor?.blockIndex ?? 0;
   const anchorIndex = Math.max(
     0,
-    Math.min(selection?.anchor?.blockIndex ?? defaultIndex, paragraphs.length - 1),
+    Math.min(
+      selection?.anchor?.blockIndex ?? defaultIndex,
+      paragraphs.length - 1,
+    ),
   );
   const focusIndex = Math.max(
     0,
-    Math.min(selection?.focus?.blockIndex ?? selection?.blockIndex ?? anchorIndex, paragraphs.length - 1),
+    Math.min(
+      selection?.focus?.blockIndex ?? selection?.blockIndex ?? anchorIndex,
+      paragraphs.length - 1,
+    ),
   );
   const anchorParagraph = paragraphs[anchorIndex];
   const focusParagraph = paragraphs[focusIndex];
   const anchorRun = anchorParagraph.runs[0];
   const focusRun = focusParagraph.runs[0];
   const anchorOffset = selection?.anchor?.offset ?? selection?.offset ?? 0;
-  const focusOffset = selection?.focus?.offset ?? selection?.offset ?? anchorOffset;
+  const focusOffset =
+    selection?.focus?.offset ?? selection?.offset ?? anchorOffset;
 
   return {
     document: createEditorDocument(paragraphs),
@@ -518,7 +563,13 @@ export function createEditorStateFromTexts(
 }
 
 export function createEditorStateFromParagraphRuns(
-  paragraphsSpec: Array<Array<{ text: string; styles?: EditorTextStyle; image?: EditorImageRunData }>>,
+  paragraphsSpec: Array<
+    Array<{
+      text: string;
+      styles?: EditorTextStyle;
+      image?: EditorImageRunData;
+    }>
+  >,
   selection?: {
     anchor?: { blockIndex: number; offset: number };
     focus?: { blockIndex: number; offset: number };
@@ -531,26 +582,46 @@ export function createEditorStateFromParagraphRuns(
       ? paragraphsSpec.map((runs) => createEditorParagraphFromRuns(runs))
       : [createEditorParagraph("")];
 
-  const defaultIndex = selection?.blockIndex ?? selection?.anchor?.blockIndex ?? 0;
+  const defaultIndex =
+    selection?.blockIndex ?? selection?.anchor?.blockIndex ?? 0;
   const anchorIndex = Math.max(
     0,
-    Math.min(selection?.anchor?.blockIndex ?? defaultIndex, paragraphs.length - 1),
+    Math.min(
+      selection?.anchor?.blockIndex ?? defaultIndex,
+      paragraphs.length - 1,
+    ),
   );
   const focusIndex = Math.max(
     0,
-    Math.min(selection?.focus?.blockIndex ?? selection?.blockIndex ?? anchorIndex, paragraphs.length - 1),
+    Math.min(
+      selection?.focus?.blockIndex ?? selection?.blockIndex ?? anchorIndex,
+      paragraphs.length - 1,
+    ),
   );
   const anchorParagraph = paragraphs[anchorIndex];
   const focusParagraph = paragraphs[focusIndex];
   const anchorOffset = selection?.anchor?.offset ?? selection?.offset ?? 0;
-  const focusOffset = selection?.focus?.offset ?? selection?.offset ?? anchorOffset;
+  const focusOffset =
+    selection?.focus?.offset ?? selection?.offset ?? anchorOffset;
   const anchorPosition = paragraphOffsetToPosition(
     anchorParagraph,
-    Math.max(0, Math.min(anchorOffset, anchorParagraph.runs.reduce((sum, run) => sum + run.text.length, 0))),
+    Math.max(
+      0,
+      Math.min(
+        anchorOffset,
+        anchorParagraph.runs.reduce((sum, run) => sum + run.text.length, 0),
+      ),
+    ),
   );
   const focusPosition = paragraphOffsetToPosition(
     focusParagraph,
-    Math.max(0, Math.min(focusOffset, focusParagraph.runs.reduce((sum, run) => sum + run.text.length, 0))),
+    Math.max(
+      0,
+      Math.min(
+        focusOffset,
+        focusParagraph.runs.reduce((sum, run) => sum + run.text.length, 0),
+      ),
+    ),
   );
 
   return {

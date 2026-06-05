@@ -32,14 +32,18 @@ export type HeaderFooterBlockProjector = (
   measurer?: ITextMeasurer,
 ) => EditorLayoutBlock[];
 
-function getProjectedBlocksHeight(blocks: EditorLayoutBlock[] | undefined): number {
+function getProjectedBlocksHeight(
+  blocks: EditorLayoutBlock[] | undefined,
+): number {
   if (!blocks || blocks.length === 0) {
     return 0;
   }
   return blocks.reduce((sum, block) => sum + block.estimatedHeight, 0);
 }
 
-function collectFootnoteReferencesFromBlock(block: EditorLayoutBlock): string[] {
+function collectFootnoteReferencesFromBlock(
+  block: EditorLayoutBlock,
+): string[] {
   const result: string[] = [];
   const appendFromParagraph = (
     paragraph: EditorParagraphNode,
@@ -75,7 +79,9 @@ function collectFootnoteReferencesFromBlock(block: EditorLayoutBlock): string[] 
   return result;
 }
 
-export function collectPageFootnoteReferenceIds(page: EditorLayoutPage): string[] {
+export function collectPageFootnoteReferenceIds(
+  page: EditorLayoutPage,
+): string[] {
   const seen = new Set<string>();
   const ids: string[] = [];
   for (const block of page.blocks) {
@@ -99,7 +105,10 @@ function projectFootnoteBlocksForPage(
   measurer: ITextMeasurer,
   projectBlocks: HeaderFooterBlockProjector,
 ): EditorLayoutBlock[] {
-  const contentWidth = Math.max(24, getPageContentWidth(page.pageSettings) - FOOTNOTE_MARKER_GUTTER_PX);
+  const contentWidth = Math.max(
+    24,
+    getPageContentWidth(page.pageSettings) - FOOTNOTE_MARKER_GUTTER_PX,
+  );
   const blocks: EditorLayoutBlock[] = [];
   for (const footnoteId of footnoteReferenceIds) {
     const footnote = document.footnotes?.items?.[footnoteId];
@@ -155,16 +164,21 @@ export function buildFootnoteReservations(
       context.projectBlocks,
     );
     if (footnoteBlocks.length === 0) continue;
-    const blockGaps = Math.max(0, footnoteBlocks.length - 1) * FOOTNOTE_BLOCK_GAP;
+    const blockGaps =
+      Math.max(0, footnoteBlocks.length - 1) * FOOTNOTE_BLOCK_GAP;
     reservations.set(
       page.index,
-      FOOTNOTE_SEPARATOR_HEIGHT + getProjectedBlocksHeight(footnoteBlocks) + blockGaps,
+      FOOTNOTE_SEPARATOR_HEIGHT +
+        getProjectedBlocksHeight(footnoteBlocks) +
+        blockGaps,
     );
   }
   return reservations;
 }
 
-export function reservationSignature(reservations: Map<number, number>): string {
+export function reservationSignature(
+  reservations: Map<number, number>,
+): string {
   return [...reservations.entries()]
     .sort(([left], [right]) => left - right)
     .map(([pageIndex, height]) => `${pageIndex}:${Math.round(height)}`)
@@ -198,7 +212,10 @@ export function applyFootnotesToPages(
       context.projectBlocks,
     );
     const bodyBottom = page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
-    const footnoteSeparatorTop = Math.max(page.bodyTop ?? getPageBodyTop(page.pageSettings), bodyBottom);
+    const footnoteSeparatorTop = Math.max(
+      page.bodyTop ?? getPageBodyTop(page.pageSettings),
+      bodyBottom,
+    );
     const footnoteTop = footnoteSeparatorTop + FOOTNOTE_SEPARATOR_HEIGHT;
     return {
       ...page,

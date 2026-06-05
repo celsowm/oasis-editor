@@ -10,7 +10,14 @@ import {
   resolveEffectiveTextStyleForParagraph,
 } from "../../core/model.js";
 import type { DocContext } from "./docxTypes.js";
-import { escapeXml, OFFICE_REL_NS, toHalfPoints, toTwips } from "./xmlUtils.js";
+import {
+  escapeXml,
+  normalizeDocxColor,
+  OFFICE_REL_NS,
+  toHalfPoints,
+  toTwips,
+} from "./xmlUtils.js";
+import { serializeParagraphBorders } from "./borders.js";
 
 const DOCX_HIGHLIGHT_COLORS: Record<string, [number, number, number]> = {
   black: [0, 0, 0],
@@ -66,7 +73,9 @@ function ligaturesToDocx(value: EditorTextStyle["ligatures"]): string | null {
   }
 }
 
-function numberSpacingToDocx(value: EditorTextStyle["numberSpacing"]): string | null {
+function numberSpacingToDocx(
+  value: EditorTextStyle["numberSpacing"],
+): string | null {
   switch (value) {
     case "proportional":
       return "proportional";
@@ -88,7 +97,9 @@ function numberFormToDocx(value: EditorTextStyle["numberForm"]): string | null {
   }
 }
 
-function stylisticSetToDocx(value: EditorTextStyle["stylisticSet"]): string | null {
+function stylisticSetToDocx(
+  value: EditorTextStyle["stylisticSet"],
+): string | null {
   if (typeof value !== "number" || value < 1 || value > 20) {
     return null;
   }
@@ -187,7 +198,9 @@ function serializeRunProperties(styles?: EditorTextStyle): string {
   if (styles.italic) parts.push("<w:i/>");
   if (styles.underline) {
     const underlineVal = styles.underlineStyle ?? "single";
-    const underlineColor = styles.underlineColor ? ` w:color="${escapeXml(styles.underlineColor.replace(/^#/, ""))}"` : "";
+    const underlineColor = styles.underlineColor
+      ? ` w:color="${escapeXml(styles.underlineColor.replace(/^#/, ""))}"`
+      : "";
     parts.push(`<w:u w:val="${escapeXml(underlineVal)}"${underlineColor}/>`);
   }
   if (styles.strike) parts.push("<w:strike/>");
@@ -195,18 +208,37 @@ function serializeRunProperties(styles?: EditorTextStyle): string {
   if (styles.smallCaps) parts.push("<w:smallCaps/>");
   if (styles.allCaps) parts.push("<w:caps/>");
   if (styles.hidden) parts.push("<w:vanish/>");
-  if (styles.characterScale !== undefined && styles.characterScale !== null && Number.isFinite(styles.characterScale)) {
-    parts.push(`<w:w w:val="${Math.max(1, Math.round(styles.characterScale))}"/>`);
+  if (
+    styles.characterScale !== undefined &&
+    styles.characterScale !== null &&
+    Number.isFinite(styles.characterScale)
+  ) {
+    parts.push(
+      `<w:w w:val="${Math.max(1, Math.round(styles.characterScale))}"/>`,
+    );
   }
-  if (styles.characterSpacing !== undefined && styles.characterSpacing !== null) {
+  if (
+    styles.characterSpacing !== undefined &&
+    styles.characterSpacing !== null
+  ) {
     const spacing = pointsToSignedTwips(styles.characterSpacing);
     if (spacing !== null) parts.push(`<w:spacing w:val="${spacing}"/>`);
   }
-  if (styles.baselineShift !== undefined && styles.baselineShift !== null && Number.isFinite(styles.baselineShift)) {
+  if (
+    styles.baselineShift !== undefined &&
+    styles.baselineShift !== null &&
+    Number.isFinite(styles.baselineShift)
+  ) {
     parts.push(`<w:position w:val="${Math.round(styles.baselineShift * 2)}"/>`);
   }
-  if (styles.kerningThreshold !== undefined && styles.kerningThreshold !== null && Number.isFinite(styles.kerningThreshold)) {
-    parts.push(`<w:kern w:val="${Math.max(0, Math.round(styles.kerningThreshold * 2))}"/>`);
+  if (
+    styles.kerningThreshold !== undefined &&
+    styles.kerningThreshold !== null &&
+    Number.isFinite(styles.kerningThreshold)
+  ) {
+    parts.push(
+      `<w:kern w:val="${Math.max(0, Math.round(styles.kerningThreshold * 2))}"/>`,
+    );
   }
   const ligatures = ligaturesToDocx(styles.ligatures);
   if (ligatures) {
@@ -273,6 +305,11 @@ function materializeParagraphStyle(
     keepWithNext: effective.keepWithNext,
     keepLinesTogether: effective.keepLinesTogether,
     widowControl: effective.widowControl,
+    shading: effective.shading,
+    borderTop: effective.borderTop,
+    borderRight: effective.borderRight,
+    borderBottom: effective.borderBottom,
+    borderLeft: effective.borderLeft,
   };
 }
 
@@ -459,6 +496,16 @@ function serializeParagraphProperties(
   if (style.keepWithNext) parts.push("<w:keepNext/>");
   if (style.keepLinesTogether) parts.push("<w:keepLines/>");
   if (style.widowControl === false) parts.push('<w:widowControl w:val="0"/>');
+
+  const paragraphBorders = serializeParagraphBorders(style);
+  if (paragraphBorders) {
+    parts.push(paragraphBorders);
+  }
+  if (style.shading) {
+    parts.push(
+      `<w:shd w:val="clear" w:color="auto" w:fill="${normalizeDocxColor(style.shading, "FFFFFF")}"/>`,
+    );
+  }
 
   const numbering = numberingInfo.get(paragraph.id);
   if (numbering) {

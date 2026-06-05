@@ -26,6 +26,14 @@ function mountDialog(
     spacingBefore: "0",
     spacingAfter: "8",
     lineHeight: "1.16",
+    shading: "",
+    borderStyle: "",
+    borderWidth: "",
+    borderColor: "",
+    borderSideTop: false,
+    borderSideRight: false,
+    borderSideBottom: false,
+    borderSideLeft: false,
   };
   const onClose = overrides.onClose ?? vi.fn();
   const onApply = overrides.onApply ?? vi.fn();
@@ -137,6 +145,14 @@ describe("ParagraphDialog", () => {
         spacingBefore: "",
         spacingAfter: "",
         lineHeight: "",
+        shading: "",
+        borderStyle: "",
+        borderWidth: "",
+        borderColor: "",
+        borderSideTop: false,
+        borderSideRight: false,
+        borderSideBottom: false,
+        borderSideLeft: false,
       },
     });
 
@@ -156,6 +172,46 @@ describe("ParagraphDialog", () => {
     ];
     expect(values.indentHanging).toBe(18);
     expect(values.indentFirstLine).toBeNull();
+    dispose();
+  });
+
+  it("applies a border only to the selected edges", () => {
+    setLocale("en");
+    const onApply = vi.fn();
+    const { host, dispose } = mountDialog({ onApply });
+
+    const style = host.querySelector(
+      "[data-testid='editor-paragraph-dialog-border-style']",
+    ) as HTMLSelectElement;
+    style.value = "solid";
+    style.dispatchEvent(new Event("change", { bubbles: true }));
+
+    // Selecting a style turns every side on by default; keep only the bottom.
+    for (const side of ["top", "right", "left"]) {
+      const toggle = host.querySelector(
+        `[data-testid='editor-paragraph-dialog-border-side-${side}']`,
+      ) as HTMLInputElement;
+      toggle.checked = false;
+      toggle.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    const apply = host.querySelector(
+      "[data-testid='editor-paragraph-dialog-apply']",
+    ) as HTMLButtonElement;
+    apply.click();
+
+    const [values] = onApply.mock.calls[0] as [
+      ParagraphDialogApplyValues,
+      ParagraphDialogInitialValues,
+    ];
+    expect(values.borders.top).toBeNull();
+    expect(values.borders.right).toBeNull();
+    expect(values.borders.left).toBeNull();
+    expect(values.borders.bottom).toEqual({
+      type: "solid",
+      width: 0.5,
+      color: "#000000",
+    });
     dispose();
   });
 });

@@ -396,12 +396,15 @@ export function setTableColumnWidths(
       return { ...row, cells: nextCells };
     });
 
-    const nextStyle = { ...(table.style ?? {}) } as any;
+    const nextStyle: EditorTableStyle = { ...(table.style ?? {}) };
     if (tableWidth !== undefined) {
       nextStyle.width = tableWidth;
     }
     if (tableIndentLeft !== undefined) {
-      nextStyle.indentLeft = tableIndentLeft;
+      nextStyle.indentLeft =
+        typeof tableIndentLeft === "number"
+          ? tableIndentLeft
+          : Number(tableIndentLeft);
     }
 
     return {

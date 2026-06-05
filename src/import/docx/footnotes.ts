@@ -1,6 +1,11 @@
 import JSZip from "jszip";
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
-import type { EditorBlockNode, EditorFootnotes, EditorFootnote, EditorNamedStyle } from "../../core/model.js";
+import type {
+  EditorBlockNode,
+  EditorFootnotes,
+  EditorFootnote,
+  EditorNamedStyle,
+} from "../../core/model.js";
 import {
   WORD_NS,
   getChildrenByTagNameNS,
@@ -23,7 +28,11 @@ export interface ParsedFootnotes {
   continuationSeparator?: EditorBlockNode[];
 }
 
-const SPECIAL_TYPES = new Set(["separator", "continuationSeparator", "continuationNotice"]);
+const SPECIAL_TYPES = new Set([
+  "separator",
+  "continuationSeparator",
+  "continuationNotice",
+]);
 
 export async function parseFootnotesXml(
   xmlContent: string | null,
@@ -67,9 +76,28 @@ export async function parseFootnotesXml(
       const element = node as XmlElement;
       if (element.namespaceURI !== WORD_NS) continue;
       if (element.localName === "p") {
-        blocks.push(await parseParagraphNode(element, numberingMaps, zip, relsMap, assets, themeFonts));
+        blocks.push(
+          await parseParagraphNode(
+            element,
+            numberingMaps,
+            zip,
+            relsMap,
+            assets,
+            themeFonts,
+          ),
+        );
       } else if (element.localName === "tbl") {
-        blocks.push(await parseTableNode(element, numberingMaps, zip, relsMap, assets, themeFonts, styles));
+        blocks.push(
+          await parseTableNode(
+            element,
+            numberingMaps,
+            zip,
+            relsMap,
+            assets,
+            themeFonts,
+            styles,
+          ),
+        );
       }
     }
 

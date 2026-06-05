@@ -12,9 +12,16 @@ import type {
 } from "./tableOpsSelectionRanges.js";
 
 interface TableOpsGuardsDeps {
-  getTargetBlocks: (state: EditorState, zone: EditorEditingZone) => EditorBlockNode[];
-  resolveHorizontalTableCellRange: (current: EditorState) => HorizontalTableCellRange | null;
-  resolveVerticalTableCellRange: (current: EditorState) => VerticalTableCellRange | null;
+  getTargetBlocks: (
+    state: EditorState,
+    zone: EditorEditingZone,
+  ) => EditorBlockNode[];
+  resolveHorizontalTableCellRange: (
+    current: EditorState,
+  ) => HorizontalTableCellRange | null;
+  resolveVerticalTableCellRange: (
+    current: EditorState,
+  ) => VerticalTableCellRange | null;
 }
 
 export function createTableOpsGuards(deps: TableOpsGuardsDeps) {
@@ -55,7 +62,11 @@ export function createTableOpsGuards(deps: TableOpsGuardsDeps) {
       return false;
     }
 
-    for (let rowIndex = range.startRowIndex; rowIndex <= range.endRowIndex; rowIndex += 1) {
+    for (
+      let rowIndex = range.startRowIndex;
+      rowIndex <= range.endRowIndex;
+      rowIndex += 1
+    ) {
       const cell = tableBlock.rows[rowIndex]?.cells[range.cellIndex];
       if (!cell || cell.vMerge === "continue" || cell.blocks.length !== 1) {
         return false;
@@ -66,10 +77,14 @@ export function createTableOpsGuards(deps: TableOpsGuardsDeps) {
   };
 
   const canMergeSelectedTable = (current: EditorState): boolean => {
-    return canMergeSelectedTableCells(current) || canMergeSelectedTableRows(current);
+    return (
+      canMergeSelectedTableCells(current) || canMergeSelectedTableRows(current)
+    );
   };
 
-  const canSplitSelectedTableCellVertically = (current: EditorState): boolean => {
+  const canSplitSelectedTableCellVertically = (
+    current: EditorState,
+  ): boolean => {
     const location = findParagraphTableLocation(
       current.document,
       current.selection.focus.paragraphId,
@@ -90,7 +105,10 @@ export function createTableOpsGuards(deps: TableOpsGuardsDeps) {
   };
 
   const canSplitSelectedTable = (current: EditorState): boolean => {
-    return canSplitSelectedTableCell(current) || canSplitSelectedTableCellVertically(current);
+    return (
+      canSplitSelectedTableCell(current) ||
+      canSplitSelectedTableCellVertically(current)
+    );
   };
 
   const canEditSelectedTableRow = (current: EditorState): boolean => {

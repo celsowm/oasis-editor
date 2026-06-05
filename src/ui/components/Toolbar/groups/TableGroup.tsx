@@ -8,7 +8,8 @@ import type { ToolbarActionApi } from "../schema/items.js";
 export function TableGroup(props: { api: ToolbarActionApi }) {
   const api = props.api;
   const disabled = (command: string) => !api.commands.state(command).isEnabled;
-  const selectionLabel = () => api.commands.state("tableContext").value as string | null;
+  const selectionLabel = () =>
+    api.commands.state("tableContext").value as string | null;
 
   return (
     <Menu
@@ -149,7 +150,10 @@ export function TableGroup(props: { api: ToolbarActionApi }) {
 
       <Show when={selectionLabel()}>
         {(label) => (
-          <div class="oasis-editor-toolbar-badge" data-testid="editor-table-selection-label">
+          <div
+            class="oasis-editor-toolbar-badge"
+            data-testid="editor-table-selection-label"
+          >
             {label()}
           </div>
         )}

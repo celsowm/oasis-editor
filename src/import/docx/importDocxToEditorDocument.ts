@@ -4,15 +4,23 @@ import type {
   EditorBlockNode,
   EditorDocument,
   EditorSection,
+  EditorTextRun,
 } from "../../core/model.js";
 import {
   createEditorDocument,
   createEditorParagraphFromRuns,
 } from "../../core/editorState.js";
 import { normalizePageSettings } from "../../core/model.js";
-import { WORD_NS, getFirstChildByTagNameNS, yieldToEventLoop } from "./xmlHelpers.js";
+import {
+  WORD_NS,
+  getFirstChildByTagNameNS,
+  yieldToEventLoop,
+} from "./xmlHelpers.js";
 import { createAssetRegistry } from "./assetRegistry.js";
-import { parseRelationshipsXml, loadPartRelationships } from "./relationships.js";
+import {
+  parseRelationshipsXml,
+  loadPartRelationships,
+} from "./relationships.js";
 import { parseThemeFonts } from "./themeFonts.js";
 import { parseSettings } from "./settings.js";
 import { parseNumbering } from "./numbering.js";
@@ -49,23 +57,34 @@ export async function importDocxToEditorDocument(
     throw new Error("Missing word/document.xml");
   }
 
-  const relsXml = await zip.file("word/_rels/document.xml.rels")?.async("string");
+  const relsXml = await zip
+    .file("word/_rels/document.xml.rels")
+    ?.async("string");
   const relsMap = parseRelationshipsXml(relsXml);
 
-  const numberingXml = (await zip.file("word/numbering.xml")?.async("string")) ?? null;
+  const numberingXml =
+    (await zip.file("word/numbering.xml")?.async("string")) ?? null;
   const numberingMaps = parseNumbering(numberingXml);
-  const settingsXml = (await zip.file("word/settings.xml")?.async("string")) ?? null;
+  const settingsXml =
+    (await zip.file("word/settings.xml")?.async("string")) ?? null;
   const docSettings = parseSettings(settingsXml);
-  const stylesXml = (await zip.file("word/styles.xml")?.async("string")) ?? null;
-  const themeXml = (await zip.file("word/theme/theme1.xml")?.async("string")) ?? null;
+  const stylesXml =
+    (await zip.file("word/styles.xml")?.async("string")) ?? null;
+  const themeXml =
+    (await zip.file("word/theme/theme1.xml")?.async("string")) ?? null;
   const themeFonts = parseThemeFonts(themeXml);
   const importedStyles = parseImportedStyles(stylesXml, themeFonts);
   options.onProgress?.("parsing-document");
-  const document = new DOMParser().parseFromString(documentXml, "application/xml");
+  const document = new DOMParser().parseFromString(
+    documentXml,
+    "application/xml",
+  );
   const body = document.getElementsByTagNameNS(WORD_NS, "body")[0];
 
   if (!body) {
-    return createEditorDocument([createEditorParagraphFromRuns([{ text: "" }])]);
+    return createEditorDocument([
+      createEditorParagraphFromRuns([{ text: "" }]),
+    ]);
   }
 
   // Single registry shared across body, headers and footers so identical
@@ -101,7 +120,10 @@ export async function importDocxToEditorDocument(
   const reportBodyProgress = () => {
     completedBodyWorkItems += 1;
     if (totalBodyWorkItems > 0) {
-      options.onProgress?.("parsing-document", completedBodyWorkItems / totalBodyWorkItems);
+      options.onProgress?.(
+        "parsing-document",
+        completedBodyWorkItems / totalBodyWorkItems,
+      );
     }
   };
 
@@ -122,7 +144,14 @@ export async function importDocxToEditorDocument(
       sectionBlocks.push([]);
       pendingPageBreakBefore = false;
     } else if (element.localName === "p") {
-      const parsedParagraph = await parseParagraphNodes(element, numberingMaps, zip, relsMap, assets, themeFonts);
+      const parsedParagraph = await parseParagraphNodes(
+        element,
+        numberingMaps,
+        zip,
+        relsMap,
+        assets,
+        themeFonts,
+      );
       for (const paragraph of parsedParagraph.paragraphs) {
         appendBodyBlock(paragraph);
       }
@@ -131,7 +160,17 @@ export async function importDocxToEditorDocument(
       }
       reportBodyProgress();
     } else if (element.localName === "tbl") {
-      appendBodyBlock(await parseTableNode(element, numberingMaps, zip, relsMap, assets, themeFonts, importedStyles));
+      appendBodyBlock(
+        await parseTableNode(
+          element,
+          numberingMaps,
+          zip,
+          relsMap,
+          assets,
+          themeFonts,
+          importedStyles,
+        ),
+      );
       reportBodyProgress();
     }
 
@@ -141,7 +180,11 @@ export async function importDocxToEditorDocument(
 
   // Ensure at least one section
   if (sectionProps.length === 0) {
-    const defaultSectionProperties = getFirstChildByTagNameNS(body, WORD_NS, "sectPr");
+    const defaultSectionProperties = getFirstChildByTagNameNS(
+      body,
+      WORD_NS,
+      "sectPr",
+    );
     sectionProps.push(
       defaultSectionProperties
         ? parseSectionProperties(defaultSectionProperties)
@@ -157,14 +200,20 @@ export async function importDocxToEditorDocument(
   options.onProgress?.("parsing-headers-footers");
   const sections: EditorSection[] = [];
   const hasHeaderFooterReferences = (props: SectionProperties) =>
-    Object.keys(props.headerRIds).length > 0 || Object.keys(props.footerRIds).length > 0;
-  const totalSectionsWithHeaders = sectionProps.filter(hasHeaderFooterReferences).length;
+    Object.keys(props.headerRIds).length > 0 ||
+    Object.keys(props.footerRIds).length > 0;
+  const totalSectionsWithHeaders = sectionProps.filter(
+    hasHeaderFooterReferences,
+  ).length;
   let processedSections = 0;
 
   const reportHeaderFooterProgress = () => {
     processedSections += 1;
     if (totalSectionsWithHeaders > 0) {
-      options.onProgress?.("parsing-headers-footers", processedSections / totalSectionsWithHeaders);
+      options.onProgress?.(
+        "parsing-headers-footers",
+        processedSections / totalSectionsWithHeaders,
+      );
     }
   };
 
@@ -191,7 +240,15 @@ export async function importDocxToEditorDocument(
       if (!zipPath.startsWith("word/")) zipPath = `word/${target}`;
       const xml = await zip.file(zipPath)?.async("string");
       const partRelsMap = await loadPartRelationships(zip, zipPath);
-      const partBlocks = await parseHeaderFooterXml(xml ?? null, numberingMaps, zip, partRelsMap, assets, themeFonts, importedStyles);
+      const partBlocks = await parseHeaderFooterXml(
+        xml ?? null,
+        numberingMaps,
+        zip,
+        partRelsMap,
+        assets,
+        themeFonts,
+        importedStyles,
+      );
       applyDocGridLinePitch(
         partBlocks,
         props.docGridLinePitchPx,
@@ -203,10 +260,14 @@ export async function importDocxToEditorDocument(
     };
 
     const header = await loadHeaderFooterBlocks(props.headerRIds.default);
-    const firstPageHeader = await loadHeaderFooterBlocks(props.headerRIds.first);
+    const firstPageHeader = await loadHeaderFooterBlocks(
+      props.headerRIds.first,
+    );
     const evenPageHeader = await loadHeaderFooterBlocks(props.headerRIds.even);
     const footer = await loadHeaderFooterBlocks(props.footerRIds.default);
-    const firstPageFooter = await loadHeaderFooterBlocks(props.footerRIds.first);
+    const firstPageFooter = await loadHeaderFooterBlocks(
+      props.footerRIds.first,
+    );
     const evenPageFooter = await loadHeaderFooterBlocks(props.footerRIds.even);
 
     if (hasHeaderFooterReferences(props)) {
@@ -220,13 +281,24 @@ export async function importDocxToEditorDocument(
       width: 816,
       height: 1056,
       orientation: "portrait" as const,
-      margins: { top: 96, right: 96, bottom: 96, left: 96, header: 48, footer: 48, gutter: 0 },
+      margins: {
+        top: 96,
+        right: 96,
+        bottom: 96,
+        left: 96,
+        header: 48,
+        footer: 48,
+        gutter: 0,
+      },
     };
     const pageSettings = normalizePageSettings(rawPageSettings);
 
     sections.push({
       id: `section:${i + 1}`,
-      blocks: blocks.length > 0 ? blocks : [createEditorParagraphFromRuns([{ text: "" }])],
+      blocks:
+        blocks.length > 0
+          ? blocks
+          : [createEditorParagraphFromRuns([{ text: "" }])],
       pageSettings,
       header: header.length > 0 ? header : undefined,
       firstPageHeader: firstPageHeader.length > 0 ? firstPageHeader : undefined,
@@ -240,8 +312,11 @@ export async function importDocxToEditorDocument(
   // Footnotes: parse `word/footnotes.xml` (if present) and remap inline
   // references inside the body/header/footer paragraphs from the transient
   // `__importedFootnoteRef` marker to the editor's `run.footnoteReference`.
-  const footnotesXml = (await zip.file("word/footnotes.xml")?.async("string")) ?? null;
-  const footnotesPartRels = footnotesXml ? await loadPartRelationships(zip, "word/footnotes.xml") : new Map<string, string>();
+  const footnotesXml =
+    (await zip.file("word/footnotes.xml")?.async("string")) ?? null;
+  const footnotesPartRels = footnotesXml
+    ? await loadPartRelationships(zip, "word/footnotes.xml")
+    : new Map<string, string>();
   const parsedFootnotes = await parseFootnotesXml(
     footnotesXml,
     numberingMaps,
@@ -262,13 +337,14 @@ export async function importDocxToEditorDocument(
 
   const shouldPreserveSections =
     sections.length > 1 ||
-    sections.some((section) =>
-      (section.header?.length ?? 0) > 0 ||
-      (section.firstPageHeader?.length ?? 0) > 0 ||
-      (section.evenPageHeader?.length ?? 0) > 0 ||
-      (section.footer?.length ?? 0) > 0 ||
-      (section.firstPageFooter?.length ?? 0) > 0 ||
-      (section.evenPageFooter?.length ?? 0) > 0
+    sections.some(
+      (section) =>
+        (section.header?.length ?? 0) > 0 ||
+        (section.firstPageHeader?.length ?? 0) > 0 ||
+        (section.evenPageHeader?.length ?? 0) > 0 ||
+        (section.footer?.length ?? 0) > 0 ||
+        (section.firstPageFooter?.length ?? 0) > 0 ||
+        (section.evenPageFooter?.length ?? 0) > 0,
     );
 
   const hasAssets = Object.keys(assets.assets).length > 0;
@@ -285,7 +361,7 @@ export async function importDocxToEditorDocument(
 
   if (shouldPreserveSections) {
     const doc = createEditorDocument([]);
-    (doc as any).sections = sections;
+    doc.sections = sections;
     if (sections.length === 1) {
       doc.pageSettings = sections[0]!.pageSettings;
     }
@@ -301,7 +377,9 @@ export async function importDocxToEditorDocument(
   // Single section: use flat blocks for compatibility
   const singleSection = sections[0];
   const doc = createEditorDocument(
-    singleSection?.blocks.length > 0 ? singleSection.blocks : [createEditorParagraphFromRuns([{ text: "" }])],
+    singleSection?.blocks.length > 0
+      ? singleSection.blocks
+      : [createEditorParagraphFromRuns([{ text: "" }])],
     singleSection?.pageSettings,
   );
   if (hasAssets) {
@@ -328,11 +406,12 @@ function remapImportedFootnoteRefsInSections(
   const remapBlock = (block: EditorBlockNode): void => {
     if (block.type === "paragraph") {
       for (const run of block.runs) {
-        const transient = (run as any).__importedFootnoteRef as
-          | { docxId: string; customMark?: string }
-          | undefined;
+        const runWithRef = run as EditorTextRun & {
+          __importedFootnoteRef?: { docxId: string; customMark?: string };
+        };
+        const transient = runWithRef.__importedFootnoteRef;
         if (!transient) continue;
-        delete (run as any).__importedFootnoteRef;
+        delete runWithRef.__importedFootnoteRef;
         const footnote = byDocxId.get(transient.docxId);
         if (!footnote) {
           // Dangling reference (unknown id). Drop the marker but keep the

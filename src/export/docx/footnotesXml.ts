@@ -7,7 +7,11 @@ import type {
 } from "../../core/model.js";
 import { getDocumentSections } from "../../core/model.js";
 import { iterateFootnoteReferenceRuns } from "../../core/footnotes.js";
-import type { DocContext, ExportBuildState, NumberingContext } from "./docxTypes.js";
+import type {
+  DocContext,
+  ExportBuildState,
+  NumberingContext,
+} from "./docxTypes.js";
 import { serializeParagraphXml } from "./textXml.js";
 import { serializeTableXml } from "./tableXml.js";
 import { OFFICE_REL_NS, WORD14_NS, WORD_NS } from "./xmlUtils.js";
@@ -35,7 +39,9 @@ export interface ReferencedFootnote {
  *
  * Returns an empty list when the document has no footnotes.
  */
-export function collectReferencedFootnotesForExport(document: EditorDocument): ReferencedFootnote[] {
+export function collectReferencedFootnotesForExport(
+  document: EditorDocument,
+): ReferencedFootnote[] {
   const items = document.footnotes?.items;
   if (!items) return [];
 
@@ -57,7 +63,9 @@ export function collectReferencedFootnotesForExport(document: EditorDocument): R
   return Array.from(seen.values());
 }
 
-export function buildFootnoteIdMap(referenced: ReferencedFootnote[]): Map<string, number> {
+export function buildFootnoteIdMap(
+  referenced: ReferencedFootnote[],
+): Map<string, number> {
   const map = new Map<string, number>();
   for (const entry of referenced) {
     map.set(entry.footnoteId, entry.docxId);
@@ -86,7 +94,9 @@ function withInjectedFootnoteRef(blocks: EditorBlockNode[]): EditorBlockNode[] {
   return [prependFootnoteRefMarker(first), ...rest];
 }
 
-function createEmptyFootnoteBodyParagraph(withMarker = true): EditorParagraphNode {
+function createEmptyFootnoteBodyParagraph(
+  withMarker = true,
+): EditorParagraphNode {
   return {
     id: "synthetic:footnote-body-empty",
     type: "paragraph",
@@ -98,7 +108,9 @@ function createEmptyFootnoteBodyParagraph(withMarker = true): EditorParagraphNod
   };
 }
 
-function prependFootnoteRefMarker(paragraph: EditorParagraphNode): EditorParagraphNode {
+function prependFootnoteRefMarker(
+  paragraph: EditorParagraphNode,
+): EditorParagraphNode {
   return {
     ...paragraph,
     runs: [makeFootnoteRefMarkerRun(), ...paragraph.runs],
@@ -153,7 +165,8 @@ export function buildFootnotesXml(
   const partContext = buildContext(allBlocks);
   partContext.footnoteIdMap = footnoteIdMap;
 
-  const specials = `<w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>` +
+  const specials =
+    `<w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>` +
     `<w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>`;
 
   const footnoteEntries = referenced
@@ -193,7 +206,10 @@ export function buildFootnotesXml(
 export function hasReferencedFootnotes(document: EditorDocument): boolean {
   if (!document.footnotes?.items) return false;
   for (const { run } of iterateFootnoteReferenceRuns(document)) {
-    if (run.footnoteReference && document.footnotes.items[run.footnoteReference.footnoteId]) {
+    if (
+      run.footnoteReference &&
+      document.footnotes.items[run.footnoteReference.footnoteId]
+    ) {
       return true;
     }
   }

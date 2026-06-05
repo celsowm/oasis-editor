@@ -5,7 +5,10 @@ import type {
   EditorParagraphNode,
   EditorTextStyle,
 } from "../core/model.js";
-import { resolveEffectiveParagraphStyle, resolveEffectiveTextStyleForParagraph } from "../core/model.js";
+import {
+  resolveEffectiveParagraphStyle,
+  resolveEffectiveTextStyleForParagraph,
+} from "../core/model.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
 const DEFAULT_LINE_HEIGHT = 1.15;
@@ -31,7 +34,15 @@ const PX_PER_POINT = 96 / 72;
 // O Word usa DirectWrite/GDI que tem métricas ligeiramente diferentes do Canvas 2D
 // Fator calibrado comparando medições de Canvas 2D vs Word para fontes comuns
 const WORD_CALIBRATION_FACTOR = 1.0; // Desativado temporariamente: causava quebra prematura de palavras na borda (ex: "neque.")
-const CALIBRATED_FONTS = new Set(["calibri", "times new roman", "arial", "cambria", "courier new", "georgia", "verdana"]);
+const CALIBRATED_FONTS = new Set([
+  "calibri",
+  "times new roman",
+  "arial",
+  "cambria",
+  "courier new",
+  "georgia",
+  "verdana",
+]);
 const WORD_COMPAT_SHORT_TOKEN_OVERFLOW_PX = 0; // Removido para impedir que o texto atravesse a margem direita quebrando a justificação
 const WORD_COMPAT_SHORT_TOKEN_MIN_CHARS = 4;
 const WORD_COMPAT_SHORT_TOKEN_MAX_CHARS = 6;
@@ -57,7 +68,6 @@ export interface TextMeasureOptions {
 }
 
 // ... existing code down to composeMeasuredParagraphLines
-
 
 const textMeasureCache = new Map<string, number>();
 
@@ -87,16 +97,25 @@ function getCanvasContext(): CanvasRenderingContext2D | null {
   return sharedCanvasContext;
 }
 
-function getMeasuredFontSize(styles: EditorTextStyle | undefined, fallbackFontSize: number): number {
+function getMeasuredFontSize(
+  styles: EditorTextStyle | undefined,
+  fallbackFontSize: number,
+): number {
   const fontSize = styles?.fontSize ?? fallbackFontSize;
   return styles?.smallCaps ? fontSize * 0.8 : fontSize;
 }
 
-function getRenderedMeasureChar(char: string, styles: EditorTextStyle | undefined): string {
+function getRenderedMeasureChar(
+  char: string,
+  styles: EditorTextStyle | undefined,
+): string {
   return styles?.allCaps ? char.toUpperCase() : char;
 }
 
-function buildCanvasFont(styles: EditorTextStyle | undefined, fallbackFontSize: number): string {
+function buildCanvasFont(
+  styles: EditorTextStyle | undefined,
+  fallbackFontSize: number,
+): string {
   const fontSize = getMeasuredFontSize(styles, fallbackFontSize);
   const fontFamily = styles?.fontFamily ?? "Calibri, sans-serif";
   const fontWeight = styles?.bold ? "700" : "400";
@@ -106,7 +125,10 @@ function buildCanvasFont(styles: EditorTextStyle | undefined, fallbackFontSize: 
 
 const normalLineHeightCache = new Map<string, number>();
 
-function measureNormalLineHeight(styles: EditorTextStyle | undefined, fallbackFontSize: number): number {
+function measureNormalLineHeight(
+  styles: EditorTextStyle | undefined,
+  fallbackFontSize: number,
+): number {
   const font = buildCanvasFont(styles, fallbackFontSize);
   const cached = normalLineHeightCache.get(font);
   if (cached !== undefined) {
@@ -120,8 +142,10 @@ function measureNormalLineHeight(styles: EditorTextStyle | undefined, fallbackFo
   if (context) {
     context.font = font;
     const metrics = context.measureText("Hg");
-    const ascent = metrics.actualBoundingBoxAscent ?? metrics.fontBoundingBoxAscent ?? 0;
-    const descent = metrics.actualBoundingBoxDescent ?? metrics.fontBoundingBoxDescent ?? 0;
+    const ascent =
+      metrics.actualBoundingBoxAscent ?? metrics.fontBoundingBoxAscent ?? 0;
+    const descent =
+      metrics.actualBoundingBoxDescent ?? metrics.fontBoundingBoxDescent ?? 0;
     const canvasMeasured = ascent + descent;
     if (canvasMeasured > 0) {
       measured = canvasMeasured;
@@ -132,7 +156,10 @@ function measureNormalLineHeight(styles: EditorTextStyle | undefined, fallbackFo
   return resolved;
 }
 
-export function resolveRenderedLineHeightPx(styles: EditorTextStyle | undefined, lineHeightMultiple: number): number {
+export function resolveRenderedLineHeightPx(
+  styles: EditorTextStyle | undefined,
+  lineHeightMultiple: number,
+): number {
   const fontSize = styles?.fontSize ?? DEFAULT_FONT_SIZE;
   const normalLineHeight = measureNormalLineHeight(styles, fontSize);
   return normalLineHeight * lineHeightMultiple;
@@ -160,6 +187,8 @@ function measureFallbackCharacterWidth(char: string, fontSize: number): number {
   if (/[a-z]/.test(char)) {
     return fontSize * 0.62;
   }
+  // Intentionally matches any non-Latin-1 character (control range included).
+  // eslint-disable-next-line no-control-regex
   if (/[^\u0000-\u00ff]/.test(char)) {
     return fontSize;
   }
@@ -179,7 +208,10 @@ function measureCharacterWidth(
   const fontSize = styles?.fontSize ?? fallbackFontSize;
   const font = buildCanvasFont(styles, fallbackFontSize);
   const renderedChar = getRenderedMeasureChar(char, styles);
-  const scale = styles?.characterScale && styles.characterScale > 0 ? styles.characterScale / 100 : 1;
+  const scale =
+    styles?.characterScale && styles.characterScale > 0
+      ? styles.characterScale / 100
+      : 1;
   const spacing = (styles?.characterSpacing ?? 0) * PX_PER_POINT;
   const cacheKey = `${font}|${renderedChar}|${scale}|${spacing}`;
   const cached = textMeasureCache.get(cacheKey);
@@ -199,7 +231,11 @@ function measureCharacterWidth(
 
   // Fast mode keeps calibrated width heuristics; wordParity mode uses raw canvas metrics.
   if (layoutMode !== "wordParity" && styles?.fontFamily) {
-    const fontFamilyNormalized = styles.fontFamily.toLowerCase().replace(/['"]/g, "").split(",")[0]?.trim();
+    const fontFamilyNormalized = styles.fontFamily
+      .toLowerCase()
+      .replace(/['"]/g, "")
+      .split(",")[0]
+      ?.trim();
     if (fontFamilyNormalized && CALIBRATED_FONTS.has(fontFamilyNormalized)) {
       width *= WORD_CALIBRATION_FACTOR;
     }
@@ -236,7 +272,9 @@ function tokenizeMeasuredChars(chars: MeasuredChar[]): MeasuredToken[] {
       continue;
     }
 
-    const nextKind: MeasuredToken["kind"] = /\s/.test(char.char) ? "whitespace" : "text";
+    const nextKind: MeasuredToken["kind"] = /\s/.test(char.char)
+      ? "whitespace"
+      : "text";
     if (currentKind && currentKind !== nextKind) {
       flush();
     }
@@ -254,11 +292,14 @@ function getParagraphLineHeight(
   fallbackFontSize: number,
   layoutMode: "fast" | "wordParity",
 ): number {
-  const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, styles);
+  const paragraphStyle = resolveEffectiveParagraphStyle(
+    paragraph.style,
+    styles,
+  );
   const lineHeight = paragraphStyle.lineHeight ?? DEFAULT_LINE_HEIGHT;
   const lineGridPitch = paragraphStyle.lineGridPitch;
   const snapToGrid = paragraphStyle.snapToGrid !== false;
-  
+
   const paragraphTextStyle = resolveEffectiveTextStyleForParagraph(
     undefined,
     paragraph.style?.styleId,
@@ -270,8 +311,10 @@ function getParagraphLineHeight(
       paragraph.style?.styleId,
       styles,
     );
-    const fontSize = runTextStyle.fontSize ?? paragraphTextStyle.fontSize ?? fallbackFontSize;
-    const baselineShiftPx = Math.abs(runTextStyle.baselineShift ?? 0) * PX_PER_POINT;
+    const fontSize =
+      runTextStyle.fontSize ?? paragraphTextStyle.fontSize ?? fallbackFontSize;
+    const baselineShiftPx =
+      Math.abs(runTextStyle.baselineShift ?? 0) * PX_PER_POINT;
     const runLineHeight = resolveRenderedLineHeightPx(
       { ...runTextStyle, fontSize },
       lineHeight,
@@ -294,7 +337,9 @@ function getParagraphLineHeight(
   if (lineGridPitch && lineGridPitch > 0 && snapToGrid) {
     if (paragraphStyle.lineGridType === "implicit") {
       const pitch =
-        layoutMode === "wordParity" ? lineGridPitch : lineGridPitch * FAST_IMPLICIT_DOC_GRID_RATIO;
+        layoutMode === "wordParity"
+          ? lineGridPitch
+          : lineGridPitch * FAST_IMPLICIT_DOC_GRID_RATIO;
       return Math.max(renderedLineHeight, pitch);
     }
     return Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch;
@@ -312,10 +357,14 @@ function buildMeasuredChars(
   const runsById = new Map(paragraph.runs.map((run) => [run.id, run] as const));
   const fallbackFontSize = Math.max(
     DEFAULT_FONT_SIZE,
-    ...paragraph.runs
-      .map((run) =>
-        resolveEffectiveTextStyleForParagraph(run.styles, paragraph.style?.styleId, styles).fontSize ?? DEFAULT_FONT_SIZE,
-      ),
+    ...paragraph.runs.map(
+      (run) =>
+        resolveEffectiveTextStyleForParagraph(
+          run.styles,
+          paragraph.style?.styleId,
+          styles,
+        ).fontSize ?? DEFAULT_FONT_SIZE,
+    ),
   );
 
   for (const fragment of fragments) {
@@ -327,9 +376,15 @@ function buildMeasuredChars(
     );
 
     for (const char of fragment.chars) {
-      const width = (char.char === "\uFFFC" && fragment.image)
-        ? fragment.image.width
-        : measureCharacterWidth(char.char, effectiveStyles, fallbackFontSize, layoutMode);
+      const width =
+        char.char === "\uFFFC" && fragment.image
+          ? fragment.image.width
+          : measureCharacterWidth(
+              char.char,
+              effectiveStyles,
+              fallbackFontSize,
+              layoutMode,
+            );
       measured.push({
         char: char.char,
         offset: char.paragraphOffset,
@@ -347,17 +402,20 @@ function getAvailableWidth(
   contentWidth: number,
   isFirstLine: boolean,
 ): number {
-  const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, styles);
+  const paragraphStyle = resolveEffectiveParagraphStyle(
+    paragraph.style,
+    styles,
+  );
   const listGutter = getListIndentPx(paragraph);
-  
+
   // indentLeft specifies the start edge for all lines.
   const baseInset = (paragraphStyle.indentLeft ?? 0) + listGutter;
-  
+
   // If first line, we add indentFirstLine. If indentHanging is present, it acts as a negative indentFirstLine.
-  const firstLineOffset = paragraphStyle.indentHanging 
-    ? -Math.abs(paragraphStyle.indentHanging) 
+  const firstLineOffset = paragraphStyle.indentHanging
+    ? -Math.abs(paragraphStyle.indentHanging)
     : (paragraphStyle.indentFirstLine ?? 0);
-    
+
   const startInset = baseInset + (isFirstLine ? firstLineOffset : 0);
   const rightInset = paragraphStyle.indentRight ?? 0;
   return Math.max(1, contentWidth - rightInset - startInset);
@@ -368,25 +426,37 @@ function getLineStartInset(
   styles: Record<string, EditorNamedStyle> | undefined,
   isFirstLine: boolean,
 ): number {
-  const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, styles);
+  const paragraphStyle = resolveEffectiveParagraphStyle(
+    paragraph.style,
+    styles,
+  );
   const listGutter = getListIndentPx(paragraph);
-  
+
   const baseInset = (paragraphStyle.indentLeft ?? 0) + listGutter;
-  const firstLineOffset = paragraphStyle.indentHanging 
-    ? -Math.abs(paragraphStyle.indentHanging) 
+  const firstLineOffset = paragraphStyle.indentHanging
+    ? -Math.abs(paragraphStyle.indentHanging)
     : (paragraphStyle.indentFirstLine ?? 0);
-    
+
   return baseInset + (isFirstLine ? firstLineOffset : 0);
 }
 
-function buildSlots(startOffset: number, endOffset: number, lefts: number[], top: number, height: number) {
-  return Array.from({ length: endOffset - startOffset + 1 }, (_, slotIndex) => ({
-    paragraphId: "",
-    offset: startOffset + slotIndex,
-    left: lefts[slotIndex] ?? lefts[lefts.length - 1] ?? 0,
-    top,
-    height,
-  }));
+function buildSlots(
+  startOffset: number,
+  endOffset: number,
+  lefts: number[],
+  top: number,
+  height: number,
+) {
+  return Array.from(
+    { length: endOffset - startOffset + 1 },
+    (_, slotIndex) => ({
+      paragraphId: "",
+      offset: startOffset + slotIndex,
+      left: lefts[slotIndex] ?? lefts[lefts.length - 1] ?? 0,
+      top,
+      height,
+    }),
+  );
 }
 
 function commitLine(
@@ -405,10 +475,12 @@ function commitLine(
     endOffset,
     top,
     height,
-    slots: buildSlots(startOffset, endOffset, slotLefts, top, height).map((slot) => ({
-      ...slot,
-      paragraphId,
-    })),
+    slots: buildSlots(startOffset, endOffset, slotLefts, top, height).map(
+      (slot) => ({
+        ...slot,
+        paragraphId,
+      }),
+    ),
     fragments: [],
   });
 }
@@ -426,7 +498,10 @@ function shiftLine(line: EditorLayoutLine, deltaX: number): EditorLayoutLine {
   };
 }
 
-function getLineContentWidth(line: EditorLayoutLine, charByOffset: Map<number, string>): number {
+function getLineContentWidth(
+  line: EditorLayoutLine,
+  charByOffset: Map<number, string>,
+): number {
   const firstSlot = line.slots[0];
   if (!firstSlot) {
     return 0;
@@ -453,7 +528,7 @@ function getLineContentWidth(line: EditorLayoutLine, charByOffset: Map<number, s
   if (endSlotIndex > 0) {
     const charIndex = lastContentSlot.offset - 1;
     const char = charByOffset.get(charIndex);
-    if (char && /^[.,;:?!'"\-\)\]]$/.test(char)) {
+    if (char && /^[.,;:?!'"\-)\]]$/.test(char)) {
       const prevSlot = line.slots[endSlotIndex - 1];
       if (prevSlot) {
         const charWidth = lastContentSlot.left - prevSlot.left;
@@ -487,7 +562,11 @@ function justifyLineBySpaces(
   }
 
   const spaceOffsets: number[] = [];
-  for (let offset = line.startOffset; offset <= lastContentOffset; offset += 1) {
+  for (
+    let offset = line.startOffset;
+    offset <= lastContentOffset;
+    offset += 1
+  ) {
     if (charByOffset.get(offset) === " ") {
       spaceOffsets.push(offset);
     }
@@ -502,7 +581,10 @@ function justifyLineBySpaces(
   return {
     ...line,
     slots: line.slots.map((slot) => {
-      while (spaceIndex < spaceOffsets.length && slot.offset > spaceOffsets[spaceIndex]!) {
+      while (
+        spaceIndex < spaceOffsets.length &&
+        slot.offset > spaceOffsets[spaceIndex]!
+      ) {
         shift += gap;
         spaceIndex += 1;
       }
@@ -525,14 +607,22 @@ function applyParagraphAlignment(
   if (lines.length === 0) {
     return lines;
   }
-  const paragraphStyle = resolveEffectiveParagraphStyle(paragraph.style, styles);
+  const paragraphStyle = resolveEffectiveParagraphStyle(
+    paragraph.style,
+    styles,
+  );
   const align = paragraphStyle.align ?? "left";
   if (align === "left") {
     return lines;
   }
 
   return lines.map((line, lineIndex) => {
-    const availableWidth = getAvailableWidth(paragraph, styles, contentWidth, lineIndex === 0);
+    const availableWidth = getAvailableWidth(
+      paragraph,
+      styles,
+      contentWidth,
+      lineIndex === 0,
+    );
     const lineWidth = getLineContentWidth(line, charByOffset);
     const extraSpace = Math.max(0, availableWidth - lineWidth);
     if (extraSpace <= 0) {
@@ -574,7 +664,9 @@ function canApplyWordShortTokenFit(
   return overflow > 0 && overflow <= WORD_COMPAT_SHORT_TOKEN_OVERFLOW_PX;
 }
 
-function buildParagraphFragments(paragraph: EditorParagraphNode): EditorLayoutFragment[] {
+function buildParagraphFragments(
+  paragraph: EditorParagraphNode,
+): EditorLayoutFragment[] {
   let paragraphOffset = 0;
   return paragraph.runs.map((run) => {
     const chars = Array.from(run.text).map((char, index) => ({
@@ -604,10 +696,21 @@ export function measureParagraphMinContentWidthPx(
   layoutMode: "fast" | "wordParity" = "wordParity",
 ): number {
   const fragments = buildParagraphFragments(paragraph);
-  const measuredChars = buildMeasuredChars(paragraph, fragments, styles, layoutMode);
+  const measuredChars = buildMeasuredChars(
+    paragraph,
+    fragments,
+    styles,
+    layoutMode,
+  );
   const tokens = tokenizeMeasuredChars(measuredChars);
-  const firstLineInset = Math.max(0, getLineStartInset(paragraph, styles, true));
-  const otherLineInset = Math.max(0, getLineStartInset(paragraph, styles, false));
+  const firstLineInset = Math.max(
+    0,
+    getLineStartInset(paragraph, styles, true),
+  );
+  const otherLineInset = Math.max(
+    0,
+    getLineStartInset(paragraph, styles, false),
+  );
   const inset = Math.max(firstLineInset, otherLineInset);
   const largestUnbreakableToken = tokens.reduce((largest, token) => {
     if (token.kind !== "text") return largest;
@@ -619,19 +722,43 @@ export function measureParagraphMinContentWidthPx(
   return Math.max(1, inset + largestUnbreakableToken, largestImage);
 }
 
-export function composeMeasuredParagraphLines(options: TextMeasureOptions): EditorLayoutLine[] {
-  const { paragraph, fragments, styles, contentWidth, layoutMode = "fast" } = options;
-  const measuredChars = buildMeasuredChars(paragraph, fragments, styles, layoutMode);
+export function composeMeasuredParagraphLines(
+  options: TextMeasureOptions,
+): EditorLayoutLine[] {
+  const {
+    paragraph,
+    fragments,
+    styles,
+    contentWidth,
+    layoutMode = "fast",
+  } = options;
+  const measuredChars = buildMeasuredChars(
+    paragraph,
+    fragments,
+    styles,
+    layoutMode,
+  );
   const tokens = tokenizeMeasuredChars(measuredChars);
-  const charByOffset = new Map<number, string>(measuredChars.map((char) => [char.offset, char.char] as const));
+  const charByOffset = new Map<number, string>(
+    measuredChars.map((char) => [char.offset, char.char] as const),
+  );
   const fallbackFontSize = Math.max(
     DEFAULT_FONT_SIZE,
-    ...paragraph.runs
-      .map((run) =>
-        resolveEffectiveTextStyleForParagraph(run.styles, paragraph.style?.styleId, styles).fontSize ?? DEFAULT_FONT_SIZE,
-      ),
+    ...paragraph.runs.map(
+      (run) =>
+        resolveEffectiveTextStyleForParagraph(
+          run.styles,
+          paragraph.style?.styleId,
+          styles,
+        ).fontSize ?? DEFAULT_FONT_SIZE,
+    ),
   );
-  const lineHeight = getParagraphLineHeight(paragraph, styles, fallbackFontSize, layoutMode);
+  const lineHeight = getParagraphLineHeight(
+    paragraph,
+    styles,
+    fallbackFontSize,
+    layoutMode,
+  );
   const width =
     contentWidth === undefined
       ? Math.max(MIN_CONTENT_WIDTH, DEFAULT_CONTENT_WIDTH)
@@ -663,7 +790,10 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
 
   const lines: EditorLayoutLine[] = [];
   const lineHardBreaks: boolean[] = [];
-  let lineStartOffset = tokens[0]!.kind === "newline" ? tokens[0]!.chars[0]!.offset + 1 : tokens[0]!.chars[0]!.offset;
+  let lineStartOffset =
+    tokens[0]!.kind === "newline"
+      ? tokens[0]!.chars[0]!.offset + 1
+      : tokens[0]!.chars[0]!.offset;
   let lineWidth = 0;
   let lineStartInset = getLineStartInset(paragraph, styles, true);
   let lineSlotLefts = [lineStartInset];
@@ -672,7 +802,15 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
   let isFirstLine = true;
 
   const flushLine = (hardBreak = false) => {
-    commitLine(lines, paragraph.id, lineStartOffset, lineEndOffset, lineSlotLefts, top, lineHeight);
+    commitLine(
+      lines,
+      paragraph.id,
+      lineStartOffset,
+      lineEndOffset,
+      lineSlotLefts,
+      top,
+      lineHeight,
+    );
     lineHardBreaks.push(hardBreak);
     top += lineHeight;
     isFirstLine = false;
@@ -702,14 +840,24 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
       continue;
     }
 
-    const availableWidth = getAvailableWidth(paragraph, styles, width, isFirstLine);
+    const availableWidth = getAvailableWidth(
+      paragraph,
+      styles,
+      width,
+      isFirstLine,
+    );
     const fitsCurrentLine = lineWidth + token.width <= availableWidth;
     const isEmptyLine = lineStartOffset === lineEndOffset;
     if (
       fitsCurrentLine ||
       (isEmptyLine && token.kind === "whitespace") ||
       (layoutMode !== "wordParity" &&
-        canApplyWordShortTokenFit(token, lineWidth, availableWidth, isEmptyLine))
+        canApplyWordShortTokenFit(
+          token,
+          lineWidth,
+          availableWidth,
+          isEmptyLine,
+        ))
     ) {
       appendChars(token.chars);
       continue;
@@ -724,16 +872,29 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
     flushLine();
     resetLine(token.chars[0]!.offset);
 
-    let nextLineWidth = getAvailableWidth(paragraph, styles, width, isFirstLine);
+    let nextLineWidth = getAvailableWidth(
+      paragraph,
+      styles,
+      width,
+      isFirstLine,
+    );
     let currentChunk: MeasuredChar[] = [];
     let currentChunkWidth = 0;
 
     for (const char of token.chars) {
-      if (currentChunk.length > 0 && currentChunkWidth + char.width > nextLineWidth) {
+      if (
+        currentChunk.length > 0 &&
+        currentChunkWidth + char.width > nextLineWidth
+      ) {
         appendChars(currentChunk);
         flushLine();
         resetLine(char.offset);
-        nextLineWidth = getAvailableWidth(paragraph, styles, width, isFirstLine);
+        nextLineWidth = getAvailableWidth(
+          paragraph,
+          styles,
+          width,
+          isFirstLine,
+        );
         currentChunk = [];
         currentChunkWidth = 0;
       }
@@ -747,11 +908,22 @@ export function composeMeasuredParagraphLines(options: TextMeasureOptions): Edit
     }
   }
 
-  if (lines.length === 0 || lineStartOffset !== lineEndOffset || lineSlotLefts.length > 1) {
+  if (
+    lines.length === 0 ||
+    lineStartOffset !== lineEndOffset ||
+    lineSlotLefts.length > 1
+  ) {
     flushLine();
   }
 
-  return applyParagraphAlignment(paragraph, styles, width, lines, lineHardBreaks, charByOffset);
+  return applyParagraphAlignment(
+    paragraph,
+    styles,
+    width,
+    lines,
+    lineHardBreaks,
+    charByOffset,
+  );
 }
 
 import type { ITextMeasurer } from "../core/engine.js";

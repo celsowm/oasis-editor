@@ -12,7 +12,9 @@ export function resolveWordSelection(
 
   const clampedOffset = Math.max(0, Math.min(offset, text.length));
   const index =
-    clampedOffset === text.length ? Math.max(0, clampedOffset - 1) : clampedOffset;
+    clampedOffset === text.length
+      ? Math.max(0, clampedOffset - 1)
+      : clampedOffset;
   const charAtIndex = text[index];
 
   if (!charAtIndex || !isWordCharacter(charAtIndex)) {

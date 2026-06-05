@@ -1,4 +1,10 @@
-import type { EditorLayoutLine, EditorLayoutFragment, EditorNamedStyle, EditorParagraphNode } from "./model.js";
+import type {
+  EditorLayoutLine,
+  EditorLayoutFragment,
+  EditorNamedStyle,
+  EditorParagraphNode,
+  EditorTextStyle,
+} from "./model.js";
 
 export interface TextMeasureOptions {
   paragraph: EditorParagraphNode;
@@ -9,6 +15,11 @@ export interface TextMeasureOptions {
 }
 
 export interface ITextMeasurer {
-  composeMeasuredParagraphLines(options: TextMeasureOptions): EditorLayoutLine[];
-  resolveRenderedLineHeightPx(styles: any, lineHeightMultiple: number): number;
+  composeMeasuredParagraphLines(
+    options: TextMeasureOptions,
+  ): EditorLayoutLine[];
+  resolveRenderedLineHeightPx(
+    styles: EditorTextStyle | undefined,
+    lineHeightMultiple: number,
+  ): number;
 }

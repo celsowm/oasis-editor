@@ -13,7 +13,8 @@ export function RevisionOverlay(props: RevisionOverlayProps) {
     }
   };
 
-  const label = () => (props.box.type === "insert" ? "Inserido por" : "ExcluÃ­do por");
+  const label = () =>
+    props.box.type === "insert" ? "Inserido por" : "ExcluÃ­do por";
 
   return (
     <div
@@ -28,7 +29,9 @@ export function RevisionOverlay(props: RevisionOverlayProps) {
         <span class="oasis-editor-revision-overlay-author">
           <strong>{label()}:</strong> {props.box.author}
         </span>
-        <span class="oasis-editor-revision-overlay-date">{formattedDate()}</span>
+        <span class="oasis-editor-revision-overlay-date">
+          {formattedDate()}
+        </span>
       </div>
       <div class="oasis-editor-revision-overlay-arrow" />
     </div>

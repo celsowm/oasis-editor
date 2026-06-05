@@ -58,7 +58,10 @@ export function getCustomIcon(name?: string): CustomIconRenderer | undefined {
  */
 export function ToolIcon(props: { name: string }): JSX.Element {
   return (
-    <Show when={getCustomIcon(props.name)} fallback={<i data-lucide={props.name} />}>
+    <Show
+      when={getCustomIcon(props.name)}
+      fallback={<i data-lucide={props.name} />}
+    >
       {(render) => render()()}
     </Show>
   );

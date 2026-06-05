@@ -5,7 +5,11 @@
 export interface IndexedDBOptions {
   name: string;
   version: number;
-  onUpgrade: (db: IDBDatabase, oldVersion: number, newVersion: number | null) => void;
+  onUpgrade: (
+    db: IDBDatabase,
+    oldVersion: number,
+    newVersion: number | null,
+  ) => void;
 }
 
 export function openDB(options: IndexedDBOptions): Promise<IDBDatabase> {
@@ -27,7 +31,12 @@ export function openDB(options: IndexedDBOptions): Promise<IDBDatabase> {
   });
 }
 
-export function putItem<T>(db: IDBDatabase, storeName: string, key: string, value: T): Promise<void> {
+export function putItem<T>(
+  db: IDBDatabase,
+  storeName: string,
+  key: string,
+  value: T,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
       const transaction = db.transaction([storeName], "readwrite");
@@ -35,7 +44,11 @@ export function putItem<T>(db: IDBDatabase, storeName: string, key: string, valu
       const request = store.put(value, key);
 
       request.onerror = () => {
-        reject(new Error(`Failed to put item in ${storeName}: ${request.error?.message}`));
+        reject(
+          new Error(
+            `Failed to put item in ${storeName}: ${request.error?.message}`,
+          ),
+        );
       };
 
       request.onsuccess = () => {
@@ -47,7 +60,11 @@ export function putItem<T>(db: IDBDatabase, storeName: string, key: string, valu
   });
 }
 
-export function getItem<T>(db: IDBDatabase, storeName: string, key: string): Promise<T | null> {
+export function getItem<T>(
+  db: IDBDatabase,
+  storeName: string,
+  key: string,
+): Promise<T | null> {
   return new Promise((resolve, reject) => {
     try {
       const transaction = db.transaction([storeName], "readonly");
@@ -55,7 +72,11 @@ export function getItem<T>(db: IDBDatabase, storeName: string, key: string): Pro
       const request = store.get(key);
 
       request.onerror = () => {
-        reject(new Error(`Failed to get item from ${storeName}: ${request.error?.message}`));
+        reject(
+          new Error(
+            `Failed to get item from ${storeName}: ${request.error?.message}`,
+          ),
+        );
       };
 
       request.onsuccess = () => {
@@ -67,7 +88,11 @@ export function getItem<T>(db: IDBDatabase, storeName: string, key: string): Pro
   });
 }
 
-export function deleteItem(db: IDBDatabase, storeName: string, key: string): Promise<void> {
+export function deleteItem(
+  db: IDBDatabase,
+  storeName: string,
+  key: string,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
       const transaction = db.transaction([storeName], "readwrite");
@@ -75,7 +100,11 @@ export function deleteItem(db: IDBDatabase, storeName: string, key: string): Pro
       const request = store.delete(key);
 
       request.onerror = () => {
-        reject(new Error(`Failed to delete item from ${storeName}: ${request.error?.message}`));
+        reject(
+          new Error(
+            `Failed to delete item from ${storeName}: ${request.error?.message}`,
+          ),
+        );
       };
 
       request.onsuccess = () => {

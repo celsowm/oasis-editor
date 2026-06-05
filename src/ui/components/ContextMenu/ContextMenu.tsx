@@ -33,7 +33,11 @@ export function ContextMenu(props: ContextMenuProps) {
 
   const handleWindowMouseDown = (event: MouseEvent) => {
     if (!props.isOpen) return;
-    if (menuRef && event.target instanceof Node && menuRef.contains(event.target)) {
+    if (
+      menuRef &&
+      event.target instanceof Node &&
+      menuRef.contains(event.target)
+    ) {
       return;
     }
     props.onClose();
@@ -41,7 +45,11 @@ export function ContextMenu(props: ContextMenuProps) {
 
   const handleWindowContextMenu = (event: MouseEvent) => {
     if (!props.isOpen) return;
-    if (menuRef && event.target instanceof Node && menuRef.contains(event.target)) {
+    if (
+      menuRef &&
+      event.target instanceof Node &&
+      menuRef.contains(event.target)
+    ) {
       return;
     }
     props.onClose();
@@ -107,12 +115,21 @@ export function ContextMenu(props: ContextMenuProps) {
                   props.onClose();
                 }}
               >
-                <Show when={item.icon} fallback={<i style={{ visibility: "hidden" }} data-lucide="check" />}>
+                <Show
+                  when={item.icon}
+                  fallback={
+                    <i style={{ visibility: "hidden" }} data-lucide="check" />
+                  }
+                >
                   <i data-lucide={item.icon} />
                 </Show>
-                <span class="oasis-editor-context-menu-label">{item.label}</span>
+                <span class="oasis-editor-context-menu-label">
+                  {item.label}
+                </span>
                 <Show when={item.shortcut}>
-                  <span class="oasis-editor-context-menu-shortcut">{item.shortcut}</span>
+                  <span class="oasis-editor-context-menu-shortcut">
+                    {item.shortcut}
+                  </span>
                 </Show>
               </button>
             </Show>

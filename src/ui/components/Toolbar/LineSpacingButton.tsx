@@ -1,7 +1,11 @@
 import { For, Show, createMemo, createSignal } from "solid-js";
 import { Portal } from "solid-js/web";
 import { t } from "../../../i18n/index.js";
-import { LineSpacingDialog, type LineSpacingDialogApplyValues, type LineSpacingDialogInitialValues } from "../Dialogs/LineSpacingDialog.js";
+import {
+  LineSpacingDialog,
+  type LineSpacingDialogApplyValues,
+  type LineSpacingDialogInitialValues,
+} from "../Dialogs/LineSpacingDialog.js";
 import { Popover } from "./primitives/Popover.js";
 import type { ToolbarActionApi } from "./schema/items.js";
 
@@ -27,11 +31,12 @@ export function LineSpacingButton(props: LineSpacingButtonProps) {
   const api = props.api;
   const [isOpen, setIsOpen] = createSignal(false);
   const [dialogOpen, setDialogOpen] = createSignal(false);
-  const [dialogInitial, setDialogInitial] = createSignal<LineSpacingDialogInitialValues>({
-    lineHeight: "",
-    spacingBefore: "",
-    spacingAfter: "",
-  });
+  const [dialogInitial, setDialogInitial] =
+    createSignal<LineSpacingDialogInitialValues>({
+      lineHeight: "",
+      spacingBefore: "",
+      spacingAfter: "",
+    });
 
   const currentLineHeight = createMemo<number | null>(() => {
     const raw = toStr(api.commands.state("setLineHeight").value);
@@ -63,8 +68,12 @@ export function LineSpacingButton(props: LineSpacingButtonProps) {
     original: LineSpacingDialogInitialValues,
   ) => {
     const originalLH = original.lineHeight ? Number(original.lineHeight) : null;
-    const originalSB = original.spacingBefore ? Number(original.spacingBefore) : null;
-    const originalSA = original.spacingAfter ? Number(original.spacingAfter) : null;
+    const originalSB = original.spacingBefore
+      ? Number(original.spacingBefore)
+      : null;
+    const originalSA = original.spacingAfter
+      ? Number(original.spacingAfter)
+      : null;
 
     if (values.lineHeight !== originalLH) {
       api.commands.execute("setLineHeight", values.lineHeight);
@@ -136,14 +145,19 @@ export function LineSpacingButton(props: LineSpacingButtonProps) {
               <button
                 type="button"
                 class="oasis-editor-line-spacing-item"
-                classList={{ "oasis-editor-line-spacing-item-active": isActive() }}
+                classList={{
+                  "oasis-editor-line-spacing-item-active": isActive(),
+                }}
                 role="menuitemradio"
                 aria-checked={isActive()}
                 data-testid={`editor-toolbar-line-spacing-${label.replace(".", "_")}`}
                 onClick={() => applyPreset(value)}
                 title={t("metric.lineSpacingOption", [label])}
               >
-                <span class="oasis-editor-line-spacing-item-check" aria-hidden="true">
+                <span
+                  class="oasis-editor-line-spacing-item-check"
+                  aria-hidden="true"
+                >
                   <Show when={isActive()}>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -160,13 +174,18 @@ export function LineSpacingButton(props: LineSpacingButtonProps) {
                     </svg>
                   </Show>
                 </span>
-                <span class="oasis-editor-line-spacing-item-label">{label}</span>
+                <span class="oasis-editor-line-spacing-item-label">
+                  {label}
+                </span>
               </button>
             );
           }}
         </For>
 
-        <div class="oasis-editor-line-spacing-menu-separator" role="separator" />
+        <div
+          class="oasis-editor-line-spacing-menu-separator"
+          role="separator"
+        />
 
         <button
           type="button"
@@ -175,7 +194,10 @@ export function LineSpacingButton(props: LineSpacingButtonProps) {
           data-testid="editor-toolbar-line-spacing-options"
           onClick={openDialog}
         >
-          <span class="oasis-editor-line-spacing-item-check" aria-hidden="true" />
+          <span
+            class="oasis-editor-line-spacing-item-check"
+            aria-hidden="true"
+          />
           <span class="oasis-editor-line-spacing-item-label">
             {t("metric.lineSpacingOptions")}
           </span>

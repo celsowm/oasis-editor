@@ -30,10 +30,13 @@ export interface OasisEditor {
   readonly commands: OasisCommandRegistry;
   registerCommand: <TPayload = unknown, TResult = unknown>(
     name: string,
-    command: OasisCommand<TPayload, TResult>
+    command: OasisCommand<TPayload, TResult>,
   ) => void;
   unregisterCommand: (name: string) => void;
-  execute: <TPayload = unknown, TResult = unknown>(name: string, payload?: TPayload) => TResult;
+  execute: <TPayload = unknown, TResult = unknown>(
+    name: string,
+    payload?: TPayload,
+  ) => TResult;
   canExecute: (name: string, payload?: unknown) => boolean;
   on: (event: string, callback: (...args: unknown[]) => void) => Unsubscribe;
   once: (event: string, callback: (...args: unknown[]) => void) => Unsubscribe;

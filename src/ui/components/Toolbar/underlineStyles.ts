@@ -16,18 +16,54 @@ export interface UnderlineStyleOption {
 
 export const UNDERLINE_STYLE_OPTIONS: UnderlineStyleOption[] = [
   { value: "single", label: "Single", preview: { borderStyle: "solid" } },
-  { value: "double", label: "Double", preview: { borderStyle: "double", borderBottomWidth: "3px" } },
-  { value: "thick", label: "Thick", preview: { borderStyle: "solid", borderBottomWidth: "3px" } },
+  {
+    value: "double",
+    label: "Double",
+    preview: { borderStyle: "double", borderBottomWidth: "3px" },
+  },
+  {
+    value: "thick",
+    label: "Thick",
+    preview: { borderStyle: "solid", borderBottomWidth: "3px" },
+  },
   { value: "dotted", label: "Dotted", preview: { borderStyle: "dotted" } },
-  { value: "dottedHeavy", label: "Dotted (Heavy)", preview: { borderStyle: "dotted", borderBottomWidth: "3px" } },
+  {
+    value: "dottedHeavy",
+    label: "Dotted (Heavy)",
+    preview: { borderStyle: "dotted", borderBottomWidth: "3px" },
+  },
   { value: "dash", label: "Dashed", preview: { borderStyle: "dashed" } },
-  { value: "dashedHeavy", label: "Dashed (Heavy)", preview: { borderStyle: "dashed", borderBottomWidth: "3px" } },
-  { value: "dashLong", label: "Long Dashes", preview: { borderStyle: "dashed" } },
-  { value: "dashLongHeavy", label: "Long Dashes (Heavy)", preview: { borderStyle: "dashed", borderBottomWidth: "3px" } },
+  {
+    value: "dashedHeavy",
+    label: "Dashed (Heavy)",
+    preview: { borderStyle: "dashed", borderBottomWidth: "3px" },
+  },
+  {
+    value: "dashLong",
+    label: "Long Dashes",
+    preview: { borderStyle: "dashed" },
+  },
+  {
+    value: "dashLongHeavy",
+    label: "Long Dashes (Heavy)",
+    preview: { borderStyle: "dashed", borderBottomWidth: "3px" },
+  },
   { value: "dotDash", label: "Dot-Dash", preview: { borderStyle: "dashed" } },
-  { value: "dashDotHeavy", label: "Dot-Dash (Heavy)", preview: { borderStyle: "dashed", borderBottomWidth: "3px" } },
-  { value: "dotDotDash", label: "Dot-Dot-Dash", preview: { borderStyle: "dashed" } },
-  { value: "dashDotDotHeavy", label: "Dot-Dot-Dash (Heavy)", preview: { borderStyle: "dashed", borderBottomWidth: "3px" } },
+  {
+    value: "dashDotHeavy",
+    label: "Dot-Dash (Heavy)",
+    preview: { borderStyle: "dashed", borderBottomWidth: "3px" },
+  },
+  {
+    value: "dotDotDash",
+    label: "Dot-Dot-Dash",
+    preview: { borderStyle: "dashed" },
+  },
+  {
+    value: "dashDotDotHeavy",
+    label: "Dot-Dot-Dash (Heavy)",
+    preview: { borderStyle: "dashed", borderBottomWidth: "3px" },
+  },
   {
     value: "wave",
     label: "Wave",

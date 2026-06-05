@@ -77,7 +77,13 @@ export function projectHeaderFooterBlocksWithDependencies(
       globalIndex: index,
       estimatedHeight:
         measuredHeights?.[block.id] ??
-        deps.estimateTableBlockHeight(block, styles, contentWidth, layoutMode, measurer),
+        deps.estimateTableBlockHeight(
+          block,
+          styles,
+          contentWidth,
+          layoutMode,
+          measurer,
+        ),
       sourceBlock: block,
     };
   });

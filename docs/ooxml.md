@@ -151,9 +151,9 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Paragraph | `w:pageBreakBefore` | `w:pPr` | `w:val` | Start paragraph on new page. | Core for pagination. | P1 | Supported |
 | Paragraph | `w:widowControl` | `w:pPr` | `w:val` | Widow/orphan control. | Can change page breaks in Word. | P2 | Supported |
 | Paragraph | `w:suppressLineNumbers` | `w:pPr` | `w:val` | Suppress line numbering for paragraph. | Relevant when section line numbering is enabled. | P3 | Not supported |
-| Paragraph | `w:pBdr` | `w:pPr` | — | Paragraph border container. | Includes top/left/bottom/right/between/bar border edges. | P1 | Not supported |
-| Paragraph | `w:top` / `w:left` / `w:bottom` / `w:right` / `w:between` / `w:bar` | `w:pBdr` | border attrs | Paragraph border edge. | Use common border parser; `between` applies between adjacent matching paragraphs. | P1 | Not supported |
-| Paragraph | `w:shd` | `w:pPr` | `w:val`, `w:color`, `w:fill`, theme attrs | Paragraph shading. | Resolve theme colors when possible. | P1 | Not supported |
+| Paragraph | `w:pBdr` | `w:pPr` | — | Paragraph border container. | Includes top/left/bottom/right/between/bar border edges. | P1 | Partial |
+| Paragraph | `w:top` / `w:left` / `w:bottom` / `w:right` / `w:between` / `w:bar` | `w:pBdr` | border attrs | Paragraph border edge. | Use common border parser; `between` applies between adjacent matching paragraphs. | P1 | Partial |
+| Paragraph | `w:shd` | `w:pPr` | `w:val`, `w:color`, `w:fill`, theme attrs | Paragraph shading. | Resolve theme colors when possible. | P1 | Supported |
 | Paragraph | `w:framePr` | `w:pPr` | `w:w`, `w:h`, `w:x`, `w:y`, `w:hSpace`, `w:vSpace`, `w:wrap`, `w:hAnchor`, `w:vAnchor`, `w:dropCap`, `w:lines` | Text frame / positioned paragraph. | Used by old Word text boxes/drop caps; difficult in browser layout. | P2 | Not supported |
 | Paragraph | `w:rPr` | `w:pPr` | run property children | Default run props for paragraph mark. | Affects paragraph mark and sometimes inherited run formatting. | P1 | Supported |
 | Paragraph | `w:sectPr` | `w:pPr` | section children | Section break after this paragraph. | Do not only scan `body/sectPr`; sections may be paragraph-scoped. | P0 | Supported |

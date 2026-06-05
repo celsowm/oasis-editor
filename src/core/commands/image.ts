@@ -1,8 +1,36 @@
-import type { EditorParagraphNode, EditorPosition, EditorState, EditorTextRun, EditorImageRunData } from "../model.js";
-import { getParagraphLength, getParagraphs, paragraphOffsetToPosition, positionToParagraphOffset } from "../model.js";
+import type {
+  EditorParagraphNode,
+  EditorPosition,
+  EditorState,
+  EditorTextRun,
+  EditorImageRunData,
+} from "../model.js";
+import {
+  getParagraphLength,
+  getParagraphs,
+  paragraphOffsetToPosition,
+  positionToParagraphOffset,
+} from "../model.js";
 import { createEditorStyledRun } from "../editorState.js";
-import { findParagraphIndex, isSelectionCollapsed, normalizeSelection } from "../selection.js";
-import { deleteSelectionRange, getFocusParagraph, getStyleAtOffset, insertRunsAtOffset, cloneParagraph, cloneStateWithParagraphs, withSelection, cloneRun, preserveSelectionByParagraphOffsets, buildParagraphFromRuns, sliceRuns, cloneParagraphs } from "./utils.js";
+import {
+  findParagraphIndex,
+  isSelectionCollapsed,
+  normalizeSelection,
+} from "../selection.js";
+import {
+  deleteSelectionRange,
+  getFocusParagraph,
+  getStyleAtOffset,
+  insertRunsAtOffset,
+  cloneParagraph,
+  cloneStateWithParagraphs,
+  withSelection,
+  cloneRun,
+  preserveSelectionByParagraphOffsets,
+  buildParagraphFromRuns,
+  sliceRuns,
+  cloneParagraphs,
+} from "./utils.js";
 
 export interface SelectedImageRun {
   paragraph: EditorParagraphNode;
@@ -35,7 +63,11 @@ export function getSelectedImageRun(
     const run = paragraph.runs[index]!;
     const startOffset = consumed;
     consumed += run.text.length;
-    if (run.image && run.text.length === 1 && startOffset === normalized.startParagraphOffset) {
+    if (
+      run.image &&
+      run.text.length === 1 &&
+      startOffset === normalized.startParagraphOffset
+    ) {
       return {
         paragraph,
         paragraphIndex: normalized.startIndex,
@@ -49,11 +81,20 @@ export function getSelectedImageRun(
   return null;
 }
 
-export function insertImageAtSelection(state: EditorState, image: EditorImageRunData): EditorState {
-  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+export function insertImageAtSelection(
+  state: EditorState,
+  image: EditorImageRunData,
+): EditorState {
+  const collapsedState = isSelectionCollapsed(state.selection)
+    ? state
+    : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
-  
-  const insertedRun = createEditorStyledRun("\uFFFC", getStyleAtOffset(paragraph, offset), image);
+
+  const insertedRun = createEditorStyledRun(
+    "\uFFFC",
+    getStyleAtOffset(paragraph, offset),
+    image,
+  );
   const nextParagraph = insertRunsAtOffset(paragraph, offset, [insertedRun]);
   const paragraphs = getParagraphs(collapsedState);
   const nextParagraphs = paragraphs.map((candidate, candidateIndex) =>
@@ -105,7 +146,10 @@ export function resizeSelectedImage(
   return cloneStateWithParagraphs(
     state,
     nextParagraphs,
-    preserveSelectionByParagraphOffsets(nextParagraphs, normalizeSelection(state)),
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
   );
 }
 
@@ -118,7 +162,10 @@ export function getSelectedImageAlt(state: EditorState): string | null {
   return selectedImage.run.image.alt ?? null;
 }
 
-export function setSelectedImageAlt(state: EditorState, alt: string | null): EditorState {
+export function setSelectedImageAlt(
+  state: EditorState,
+  alt: string | null,
+): EditorState {
   const selectedImage = getSelectedImageRun(state);
   if (!selectedImage?.run.image) {
     return state;
@@ -149,7 +196,10 @@ export function setSelectedImageAlt(state: EditorState, alt: string | null): Edi
   return cloneStateWithParagraphs(
     state,
     nextParagraphs,
-    preserveSelectionByParagraphOffsets(nextParagraphs, normalizeSelection(state)),
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
   );
 }
 
@@ -163,15 +213,25 @@ export function moveSelectedImageToPosition(
   }
 
   const paragraphs = getParagraphs(state);
-  const { paragraphIndex: sourceIndex, offset: sourceOffset, run: imageRun } = selectedImage;
+  const {
+    paragraphIndex: sourceIndex,
+    offset: sourceOffset,
+    run: imageRun,
+  } = selectedImage;
 
-  const targetIndex = findParagraphIndex(paragraphs, targetPosition.paragraphId);
+  const targetIndex = findParagraphIndex(
+    paragraphs,
+    targetPosition.paragraphId,
+  );
   if (targetIndex < 0) {
     return state;
   }
 
   const targetParagraph = paragraphs[targetIndex];
-  const targetOffsetRaw = positionToParagraphOffset(targetParagraph, targetPosition);
+  const targetOffsetRaw = positionToParagraphOffset(
+    targetParagraph,
+    targetPosition,
+  );
   const adjustedTargetOffset =
     targetIndex === sourceIndex && targetOffsetRaw > sourceOffset
       ? targetOffsetRaw - 1
@@ -181,7 +241,9 @@ export function moveSelectedImageToPosition(
     return state;
   }
 
-  const removeImageFromParagraph = (paragraph: EditorParagraphNode): EditorParagraphNode =>
+  const removeImageFromParagraph = (
+    paragraph: EditorParagraphNode,
+  ): EditorParagraphNode =>
     buildParagraphFromRuns(paragraph, [
       ...sliceRuns(paragraph, 0, sourceOffset),
       ...sliceRuns(paragraph, sourceOffset + 1, getParagraphLength(paragraph)),
@@ -194,12 +256,21 @@ export function moveSelectedImageToPosition(
     insertRunsAtOffset(
       paragraph,
       Math.max(0, Math.min(offset, getParagraphLength(paragraph))),
-      [createEditorStyledRun("\uFFFC", getStyleAtOffset(paragraph, offset), imageRun.image)],
+      [
+        createEditorStyledRun(
+          "\uFFFC",
+          getStyleAtOffset(paragraph, offset),
+          imageRun.image,
+        ),
+      ],
     );
 
   const nextParagraphs = paragraphs.map((paragraph, index) => {
     if (index === sourceIndex && index === targetIndex) {
-      return insertImageIntoParagraph(removeImageFromParagraph(paragraph), adjustedTargetOffset);
+      return insertImageIntoParagraph(
+        removeImageFromParagraph(paragraph),
+        adjustedTargetOffset,
+      );
     }
 
     if (index === sourceIndex) {
@@ -214,7 +285,10 @@ export function moveSelectedImageToPosition(
   });
 
   const insertedParagraph = nextParagraphs[targetIndex];
-  const insertedOffset = Math.max(0, Math.min(adjustedTargetOffset + 1, getParagraphLength(insertedParagraph)));
+  const insertedOffset = Math.max(
+    0,
+    Math.min(adjustedTargetOffset + 1, getParagraphLength(insertedParagraph)),
+  );
 
   return cloneStateWithParagraphs(
     state,

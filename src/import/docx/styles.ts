@@ -26,13 +26,21 @@ import {
   twipsToPoints,
   halfPointsToPx,
   normalizeImportedFontFamily,
+  normalizeImportedHexColor,
   DOCX_IMPLICIT_SINGLE_LINE_HEIGHT,
 } from "./units.js";
+import { parseDocxBoxBorders } from "./borders.js";
 import { type ThemeFontMap, resolveThemeFont } from "./themeFonts.js";
 
-function stripUndefined<T extends Record<string, unknown>>(value: T): Partial<T> | undefined {
-  const entries = Object.entries(value).filter(([, entryValue]) => entryValue !== undefined);
-  return entries.length > 0 ? (Object.fromEntries(entries) as Partial<T>) : undefined;
+function stripUndefined<T extends Record<string, unknown>>(
+  value: T,
+): Partial<T> | undefined {
+  const entries = Object.entries(value).filter(
+    ([, entryValue]) => entryValue !== undefined,
+  );
+  return entries.length > 0
+    ? (Object.fromEntries(entries) as Partial<T>)
+    : undefined;
 }
 
 export function normalizeImportedParagraphStyle(
@@ -42,44 +50,77 @@ export function normalizeImportedParagraphStyle(
     return undefined;
   }
 
-  const effective = resolveEffectiveParagraphStyle(style, DEFAULT_EDITOR_STYLES);
-  const defaultEffective = resolveEffectiveParagraphStyle(undefined, DEFAULT_EDITOR_STYLES);
+  const effective = resolveEffectiveParagraphStyle(
+    style,
+    DEFAULT_EDITOR_STYLES,
+  );
+  const defaultEffective = resolveEffectiveParagraphStyle(
+    undefined,
+    DEFAULT_EDITOR_STYLES,
+  );
 
   const normalized = stripUndefined({
     styleId: style.styleId,
-    align: effective.align !== defaultEffective.align ? effective.align : undefined,
+    align:
+      effective.align !== defaultEffective.align ? effective.align : undefined,
     spacingBefore:
-      effective.spacingBefore !== defaultEffective.spacingBefore ? effective.spacingBefore : undefined,
+      effective.spacingBefore !== defaultEffective.spacingBefore
+        ? effective.spacingBefore
+        : undefined,
     spacingAfter:
-      effective.spacingAfter !== defaultEffective.spacingAfter ? effective.spacingAfter : undefined,
-    lineHeight: effective.lineHeight !== defaultEffective.lineHeight ? effective.lineHeight : undefined,
+      effective.spacingAfter !== defaultEffective.spacingAfter
+        ? effective.spacingAfter
+        : undefined,
+    lineHeight:
+      effective.lineHeight !== defaultEffective.lineHeight
+        ? effective.lineHeight
+        : undefined,
     lineGridPitch: style.lineGridPitch ?? undefined,
-    snapToGrid: effective.snapToGrid !== defaultEffective.snapToGrid ? effective.snapToGrid : undefined,
+    snapToGrid:
+      effective.snapToGrid !== defaultEffective.snapToGrid
+        ? effective.snapToGrid
+        : undefined,
     indentLeft:
-      style.indentLeft !== undefined || effective.indentLeft !== defaultEffective.indentLeft
+      style.indentLeft !== undefined ||
+      effective.indentLeft !== defaultEffective.indentLeft
         ? effective.indentLeft
         : undefined,
     indentRight:
-      style.indentRight !== undefined || effective.indentRight !== defaultEffective.indentRight
+      style.indentRight !== undefined ||
+      effective.indentRight !== defaultEffective.indentRight
         ? effective.indentRight
         : undefined,
     indentFirstLine:
-      style.indentFirstLine !== undefined || effective.indentFirstLine !== defaultEffective.indentFirstLine
+      style.indentFirstLine !== undefined ||
+      effective.indentFirstLine !== defaultEffective.indentFirstLine
         ? effective.indentFirstLine
         : undefined,
     indentHanging:
-      style.indentHanging !== undefined || effective.indentHanging !== defaultEffective.indentHanging
+      style.indentHanging !== undefined ||
+      effective.indentHanging !== defaultEffective.indentHanging
         ? effective.indentHanging
         : undefined,
     pageBreakBefore:
-      effective.pageBreakBefore !== defaultEffective.pageBreakBefore ? effective.pageBreakBefore : undefined,
-    keepWithNext: effective.keepWithNext !== defaultEffective.keepWithNext ? effective.keepWithNext : undefined,
+      effective.pageBreakBefore !== defaultEffective.pageBreakBefore
+        ? effective.pageBreakBefore
+        : undefined,
+    keepWithNext:
+      effective.keepWithNext !== defaultEffective.keepWithNext
+        ? effective.keepWithNext
+        : undefined,
     keepLinesTogether:
       effective.keepLinesTogether !== defaultEffective.keepLinesTogether
         ? effective.keepLinesTogether
         : undefined,
     widowControl:
-      effective.widowControl !== defaultEffective.widowControl ? effective.widowControl : undefined,
+      effective.widowControl !== defaultEffective.widowControl
+        ? effective.widowControl
+        : undefined,
+    shading: style.shading ?? undefined,
+    borderTop: style.borderTop ?? undefined,
+    borderRight: style.borderRight ?? undefined,
+    borderBottom: style.borderBottom ?? undefined,
+    borderLeft: style.borderLeft ?? undefined,
   });
 
   return normalized;
@@ -105,39 +146,96 @@ export function normalizeImportedRunStyle(
     return undefined;
   }
 
-  const effective = resolveEffectiveTextStyleForParagraph(style, paragraphStyleId, DEFAULT_EDITOR_STYLES);
-  const defaultEffective = resolveEffectiveTextStyleForParagraph(undefined, paragraphStyleId, DEFAULT_EDITOR_STYLES);
+  const effective = resolveEffectiveTextStyleForParagraph(
+    style,
+    paragraphStyleId,
+    DEFAULT_EDITOR_STYLES,
+  );
+  const defaultEffective = resolveEffectiveTextStyleForParagraph(
+    undefined,
+    paragraphStyleId,
+    DEFAULT_EDITOR_STYLES,
+  );
 
   return stripUndefined({
     styleId: style.styleId,
     bold: effective.bold !== defaultEffective.bold ? effective.bold : undefined,
-    italic: effective.italic !== defaultEffective.italic ? effective.italic : undefined,
-    underline: effective.underline !== defaultEffective.underline ? effective.underline : undefined,
+    italic:
+      effective.italic !== defaultEffective.italic
+        ? effective.italic
+        : undefined,
+    underline:
+      effective.underline !== defaultEffective.underline
+        ? effective.underline
+        : undefined,
     underlineStyle:
-      effective.underlineStyle !== defaultEffective.underlineStyle ? effective.underlineStyle : undefined,
+      effective.underlineStyle !== defaultEffective.underlineStyle
+        ? effective.underlineStyle
+        : undefined,
     underlineColor:
-      effective.underlineColor !== defaultEffective.underlineColor ? effective.underlineColor : undefined,
-    strike: effective.strike !== defaultEffective.strike ? effective.strike : undefined,
-    doubleStrike: effective.doubleStrike !== defaultEffective.doubleStrike ? effective.doubleStrike : undefined,
-    superscript: effective.superscript !== defaultEffective.superscript ? effective.superscript : undefined,
-    subscript: effective.subscript !== defaultEffective.subscript ? effective.subscript : undefined,
-    smallCaps: effective.smallCaps !== defaultEffective.smallCaps ? effective.smallCaps : undefined,
-    allCaps: effective.allCaps !== defaultEffective.allCaps ? effective.allCaps : undefined,
-    hidden: effective.hidden !== defaultEffective.hidden ? effective.hidden : undefined,
+      effective.underlineColor !== defaultEffective.underlineColor
+        ? effective.underlineColor
+        : undefined,
+    strike:
+      effective.strike !== defaultEffective.strike
+        ? effective.strike
+        : undefined,
+    doubleStrike:
+      effective.doubleStrike !== defaultEffective.doubleStrike
+        ? effective.doubleStrike
+        : undefined,
+    superscript:
+      effective.superscript !== defaultEffective.superscript
+        ? effective.superscript
+        : undefined,
+    subscript:
+      effective.subscript !== defaultEffective.subscript
+        ? effective.subscript
+        : undefined,
+    smallCaps:
+      effective.smallCaps !== defaultEffective.smallCaps
+        ? effective.smallCaps
+        : undefined,
+    allCaps:
+      effective.allCaps !== defaultEffective.allCaps
+        ? effective.allCaps
+        : undefined,
+    hidden:
+      effective.hidden !== defaultEffective.hidden
+        ? effective.hidden
+        : undefined,
     characterScale:
-      effective.characterScale !== defaultEffective.characterScale ? effective.characterScale : undefined,
+      effective.characterScale !== defaultEffective.characterScale
+        ? effective.characterScale
+        : undefined,
     characterSpacing:
-      effective.characterSpacing !== defaultEffective.characterSpacing ? effective.characterSpacing : undefined,
+      effective.characterSpacing !== defaultEffective.characterSpacing
+        ? effective.characterSpacing
+        : undefined,
     baselineShift:
-      effective.baselineShift !== defaultEffective.baselineShift ? effective.baselineShift : undefined,
+      effective.baselineShift !== defaultEffective.baselineShift
+        ? effective.baselineShift
+        : undefined,
     kerningThreshold:
-      effective.kerningThreshold !== defaultEffective.kerningThreshold ? effective.kerningThreshold : undefined,
-    ligatures: effective.ligatures !== defaultEffective.ligatures ? effective.ligatures : undefined,
+      effective.kerningThreshold !== defaultEffective.kerningThreshold
+        ? effective.kerningThreshold
+        : undefined,
+    ligatures:
+      effective.ligatures !== defaultEffective.ligatures
+        ? effective.ligatures
+        : undefined,
     numberSpacing:
-      effective.numberSpacing !== defaultEffective.numberSpacing ? effective.numberSpacing : undefined,
-    numberForm: effective.numberForm !== defaultEffective.numberForm ? effective.numberForm : undefined,
+      effective.numberSpacing !== defaultEffective.numberSpacing
+        ? effective.numberSpacing
+        : undefined,
+    numberForm:
+      effective.numberForm !== defaultEffective.numberForm
+        ? effective.numberForm
+        : undefined,
     stylisticSet:
-      effective.stylisticSet !== defaultEffective.stylisticSet ? effective.stylisticSet : undefined,
+      effective.stylisticSet !== defaultEffective.stylisticSet
+        ? effective.stylisticSet
+        : undefined,
     contextualAlternates:
       effective.contextualAlternates !== defaultEffective.contextualAlternates
         ? effective.contextualAlternates
@@ -154,8 +252,12 @@ export function normalizeImportedRunStyle(
         : effective.fontSize !== defaultEffective.fontSize
           ? effective.fontSize
           : undefined,
-    color: effective.color !== defaultEffective.color ? effective.color : undefined,
-    highlight: effective.highlight !== defaultEffective.highlight ? effective.highlight : undefined,
+    color:
+      effective.color !== defaultEffective.color ? effective.color : undefined,
+    highlight:
+      effective.highlight !== defaultEffective.highlight
+        ? effective.highlight
+        : undefined,
     link: effective.link !== defaultEffective.link ? effective.link : undefined,
   });
 }
@@ -194,35 +296,50 @@ export function parseRunStyle(
   if (parseBooleanProperty(runProperties, "vanish")) {
     styles.hidden = true;
   }
-  const characterScale = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD_NS, "w"), "val");
+  const characterScale = getAttributeValue(
+    getFirstChildByTagNameNS(runProperties, WORD_NS, "w"),
+    "val",
+  );
   if (characterScale) {
     const parsed = Number(characterScale);
     if (Number.isFinite(parsed) && parsed > 0) {
       styles.characterScale = parsed;
     }
   }
-  const characterSpacing = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD_NS, "spacing"), "val");
+  const characterSpacing = getAttributeValue(
+    getFirstChildByTagNameNS(runProperties, WORD_NS, "spacing"),
+    "val",
+  );
   if (characterSpacing) {
     const parsed = twipsToPoints(characterSpacing);
     if (parsed !== undefined) {
       styles.characterSpacing = parsed;
     }
   }
-  const baselineShift = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD_NS, "position"), "val");
+  const baselineShift = getAttributeValue(
+    getFirstChildByTagNameNS(runProperties, WORD_NS, "position"),
+    "val",
+  );
   if (baselineShift) {
     const parsed = Number(baselineShift);
     if (Number.isFinite(parsed)) {
       styles.baselineShift = parsed / 2;
     }
   }
-  const kerningThreshold = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD_NS, "kern"), "val");
+  const kerningThreshold = getAttributeValue(
+    getFirstChildByTagNameNS(runProperties, WORD_NS, "kern"),
+    "val",
+  );
   if (kerningThreshold) {
     const parsed = Number(kerningThreshold);
     if (Number.isFinite(parsed) && parsed >= 0) {
       styles.kerningThreshold = parsed / 2;
     }
   }
-  const ligatures = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD14_NS, "ligatures"), "val");
+  const ligatures = getAttributeValue(
+    getFirstChildByTagNameNS(runProperties, WORD14_NS, "ligatures"),
+    "val",
+  );
   if (
     ligatures === "none" ||
     ligatures === "standard" ||
@@ -232,19 +349,29 @@ export function parseRunStyle(
   ) {
     styles.ligatures = ligatures;
   }
-  const numberSpacing = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD14_NS, "numSpacing"), "val");
+  const numberSpacing = getAttributeValue(
+    getFirstChildByTagNameNS(runProperties, WORD14_NS, "numSpacing"),
+    "val",
+  );
   if (numberSpacing === "proportional" || numberSpacing === "tabular") {
     styles.numberSpacing = numberSpacing;
   }
-  const numberForm = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD14_NS, "numForm"), "val");
+  const numberForm = getAttributeValue(
+    getFirstChildByTagNameNS(runProperties, WORD14_NS, "numForm"),
+    "val",
+  );
   if (numberForm === "lining" || numberForm === "oldStyle") {
     styles.numberForm = numberForm;
   }
-  const stylisticSet = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD14_NS, "stylisticSets"), "val");
+  const stylisticSet = getAttributeValue(
+    getFirstChildByTagNameNS(runProperties, WORD14_NS, "stylisticSets"),
+    "val",
+  );
   if (stylisticSet) {
-    const parsed = /^[0-9a-fA-F]+$/.test(stylisticSet) && stylisticSet.length > 2
-      ? Number.parseInt(stylisticSet, 16)
-      : Number(stylisticSet);
+    const parsed =
+      /^[0-9a-fA-F]+$/.test(stylisticSet) && stylisticSet.length > 2
+        ? Number.parseInt(stylisticSet, 16)
+        : Number(stylisticSet);
     if (Number.isFinite(parsed) && parsed > 0) {
       for (let set = 1; set <= 20; set += 1) {
         if ((parsed & (1 << (set - 1))) !== 0) {
@@ -254,7 +381,10 @@ export function parseRunStyle(
       }
     }
   }
-  const contextualAlternates = getAttributeValue(getFirstChildByTagNameNS(runProperties, WORD14_NS, "cntxtAlts"), "val");
+  const contextualAlternates = getAttributeValue(
+    getFirstChildByTagNameNS(runProperties, WORD14_NS, "cntxtAlts"),
+    "val",
+  );
   if (contextualAlternates === null) {
     if (getFirstChildByTagNameNS(runProperties, WORD14_NS, "cntxtAlts")) {
       styles.contextualAlternates = true;
@@ -268,15 +398,22 @@ export function parseRunStyle(
   if (underline && underlineValue !== "none") {
     styles.underline = true;
     if (underlineValue && underlineValue !== "single") {
-      styles.underlineStyle = underlineValue as EditorTextStyle["underlineStyle"];
+      styles.underlineStyle =
+        underlineValue as EditorTextStyle["underlineStyle"];
     }
     const underlineColor = getAttributeValue(underline, "color");
     if (underlineColor && underlineColor !== "auto") {
-      styles.underlineColor = underlineColor.startsWith("#") ? underlineColor : `#${underlineColor}`;
+      styles.underlineColor = underlineColor.startsWith("#")
+        ? underlineColor
+        : `#${underlineColor}`;
     }
   }
 
-  const vertAlign = getFirstChildByTagNameNS(runProperties, WORD_NS, "vertAlign");
+  const vertAlign = getFirstChildByTagNameNS(
+    runProperties,
+    WORD_NS,
+    "vertAlign",
+  );
   const vertAlignValue = getAttributeValue(vertAlign, "val");
   if (vertAlignValue === "superscript") {
     styles.superscript = true;
@@ -311,7 +448,11 @@ export function parseRunStyle(
     styles.color = colorValue.startsWith("#") ? colorValue : `#${colorValue}`;
   }
 
-  const highlight = getFirstChildByTagNameNS(runProperties, WORD_NS, "highlight");
+  const highlight = getFirstChildByTagNameNS(
+    runProperties,
+    WORD_NS,
+    "highlight",
+  );
   const highlightValue = getAttributeValue(highlight, "val");
   if (highlightValue && highlightValue !== "none") {
     styles.highlight = highlightValue;
@@ -332,7 +473,11 @@ export function parseParagraphStyle(
   if (styleId) {
     style.styleId = styleId;
   }
-  const justification = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "jc");
+  const justification = getFirstChildByTagNameNS(
+    paragraphProperties,
+    WORD_NS,
+    "jc",
+  );
   const justificationValue = getAttributeValue(justification, "val");
   if (
     justificationValue === "left" ||
@@ -342,16 +487,26 @@ export function parseParagraphStyle(
     justificationValue === "end" ||
     justificationValue === "justify"
   ) {
-    style.align = justificationValue === "start" ? "left"
-      : justificationValue === "end" ? "right"
-      : justificationValue as "left" | "center" | "right" | "justify";
-  } else if (justificationValue === "both" || justificationValue === "distribute") {
+    style.align =
+      justificationValue === "start"
+        ? "left"
+        : justificationValue === "end"
+          ? "right"
+          : (justificationValue as "left" | "center" | "right" | "justify");
+  } else if (
+    justificationValue === "both" ||
+    justificationValue === "distribute"
+  ) {
     // Word OOXML uses "both" for full justification (both edges aligned)
     // and "distribute" for distributed justification (a variant of justify).
     style.align = "justify";
   }
 
-  const spacing = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "spacing");
+  const spacing = getFirstChildByTagNameNS(
+    paragraphProperties,
+    WORD_NS,
+    "spacing",
+  );
   const before = getAttributeValue(spacing, "before");
   const after = getAttributeValue(spacing, "after");
   const line = getAttributeValue(spacing, "line");
@@ -379,8 +534,10 @@ export function parseParagraphStyle(
   const indent = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "ind");
   // OOXML supports both physical (left/right) and logical (start/end) indents.
   // Prefer start/end when present to preserve modern bidi-aware documents.
-  const left = getAttributeValue(indent, "start") ?? getAttributeValue(indent, "left");
-  const right = getAttributeValue(indent, "end") ?? getAttributeValue(indent, "right");
+  const left =
+    getAttributeValue(indent, "start") ?? getAttributeValue(indent, "left");
+  const right =
+    getAttributeValue(indent, "end") ?? getAttributeValue(indent, "right");
   const firstLine = getAttributeValue(indent, "firstLine");
   const hanging = getAttributeValue(indent, "hanging");
   if (left) {
@@ -411,6 +568,28 @@ export function parseParagraphStyle(
     style.widowControl = widowControl;
   }
 
+  const paragraphBorders = getFirstChildByTagNameNS(
+    paragraphProperties,
+    WORD_NS,
+    "pBdr",
+  );
+  if (paragraphBorders) {
+    const { borderTop, borderRight, borderBottom, borderLeft } =
+      parseDocxBoxBorders(paragraphBorders);
+    if (borderTop) style.borderTop = borderTop;
+    if (borderRight) style.borderRight = borderRight;
+    if (borderBottom) style.borderBottom = borderBottom;
+    if (borderLeft) style.borderLeft = borderLeft;
+  }
+
+  const shading = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "shd");
+  const shadingFill = normalizeImportedHexColor(
+    getAttributeValue(shading, "fill"),
+  );
+  if (shadingFill) {
+    style.shading = shadingFill;
+  }
+
   return Object.keys(style).length > 0 ? style : undefined;
 }
 
@@ -429,7 +608,11 @@ export interface ParagraphAutospacingFlags {
 export function parseAutospacingFlags(
   paragraphProperties: XmlElement | null,
 ): ParagraphAutospacingFlags {
-  const spacing = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "spacing");
+  const spacing = getFirstChildByTagNameNS(
+    paragraphProperties,
+    WORD_NS,
+    "spacing",
+  );
   return {
     before: isWordTrue(getAttributeValue(spacing, "beforeAutospacing")),
     after: isWordTrue(getAttributeValue(spacing, "afterAutospacing")),
@@ -460,7 +643,10 @@ export function parseImportedStyles(
     return undefined;
   }
 
-  const document = new DOMParser().parseFromString(stylesXml, "application/xml");
+  const document = new DOMParser().parseFromString(
+    stylesXml,
+    "application/xml",
+  );
   const root = document.documentElement;
   if (!root) {
     return undefined;
@@ -477,7 +663,9 @@ export function parseImportedStyles(
     WORD_NS,
     "rPr",
   );
-  const defaultParagraphStyle = withDocxImplicitSingleLineHeight(parseParagraphStyle(pPrDefault));
+  const defaultParagraphStyle = withDocxImplicitSingleLineHeight(
+    parseParagraphStyle(pPrDefault),
+  );
   const defaultTextStyle = parseRunStyle(rPrDefault, themeFonts);
   const styles: Record<string, EditorNamedStyle> = {};
   let defaultParagraphStyleId: string | undefined;
@@ -485,17 +673,37 @@ export function parseImportedStyles(
   for (const styleElement of getChildrenByTagNameNS(root, WORD_NS, "style")) {
     const id = getAttributeValue(styleElement, "styleId");
     const type = getAttributeValue(styleElement, "type");
-    if (!id || (type !== "paragraph" && type !== "character" && type !== "table")) {
+    if (
+      !id ||
+      (type !== "paragraph" && type !== "character" && type !== "table")
+    ) {
       continue;
     }
 
-    const name = getAttributeValue(getFirstChildByTagNameNS(styleElement, WORD_NS, "name"), "val") ?? id;
-    const basedOn = getAttributeValue(getFirstChildByTagNameNS(styleElement, WORD_NS, "basedOn"), "val") ?? undefined;
-    const nextStyle = getAttributeValue(getFirstChildByTagNameNS(styleElement, WORD_NS, "next"), "val") ?? undefined;
+    const name =
+      getAttributeValue(
+        getFirstChildByTagNameNS(styleElement, WORD_NS, "name"),
+        "val",
+      ) ?? id;
+    const basedOn =
+      getAttributeValue(
+        getFirstChildByTagNameNS(styleElement, WORD_NS, "basedOn"),
+        "val",
+      ) ?? undefined;
+    const nextStyle =
+      getAttributeValue(
+        getFirstChildByTagNameNS(styleElement, WORD_NS, "next"),
+        "val",
+      ) ?? undefined;
     const paragraphStyle = withDocxImplicitSingleLineHeight(
-      parseParagraphStyle(getFirstChildByTagNameNS(styleElement, WORD_NS, "pPr")),
+      parseParagraphStyle(
+        getFirstChildByTagNameNS(styleElement, WORD_NS, "pPr"),
+      ),
     );
-    const textStyle = parseRunStyle(getFirstChildByTagNameNS(styleElement, WORD_NS, "rPr"), themeFonts);
+    const textStyle = parseRunStyle(
+      getFirstChildByTagNameNS(styleElement, WORD_NS, "rPr"),
+      themeFonts,
+    );
 
     let tableStyle: EditorTableStyle | undefined;
     if (type === "table") {
@@ -509,7 +717,8 @@ export function parseImportedStyles(
     }
 
     const isDefaultParagraph =
-      type === "paragraph" && isWordTrue(getAttributeValue(styleElement, "default"));
+      type === "paragraph" &&
+      isWordTrue(getAttributeValue(styleElement, "default"));
 
     if (isDefaultParagraph) {
       defaultParagraphStyleId = id;

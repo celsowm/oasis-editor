@@ -1,5 +1,8 @@
 import { createSignal } from "solid-js";
-import { moveOrCopySelectionToPosition, setSelection } from "../../core/editorCommands.js";
+import {
+  moveOrCopySelectionToPosition,
+  setSelection,
+} from "../../core/editorCommands.js";
 import type { EditorPosition, EditorState } from "../../core/model.js";
 import { getParagraphs, positionToParagraphOffset } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
@@ -20,7 +23,10 @@ export interface EditorTextDragDeps {
     producer: (current: EditorState) => EditorState,
     options?: { mergeKey?: string },
   ) => void;
-  applyTableAwareParagraphEdit: (state: EditorState, edit: (state: EditorState) => EditorState) => EditorState;
+  applyTableAwareParagraphEdit: (
+    state: EditorState,
+    edit: (state: EditorState) => EditorState,
+  ) => EditorState;
   clearPreferredColumn: () => void;
   resetTransactionGrouping: () => void;
   focusInputAfterPointerSelection: () => void;
@@ -31,14 +37,22 @@ export interface EditorTextDragDeps {
   };
 }
 
-function isPositionInsideSelection(state: EditorState, position: EditorPosition): boolean {
+function isPositionInsideSelection(
+  state: EditorState,
+  position: EditorPosition,
+): boolean {
   const normalized = normalizeSelection(state);
   if (normalized.isCollapsed) {
     return false;
   }
   const paragraphs = getParagraphs(state);
-  const targetIndex = paragraphs.findIndex((paragraph) => paragraph.id === position.paragraphId);
-  if (targetIndex < normalized.startIndex || targetIndex > normalized.endIndex) {
+  const targetIndex = paragraphs.findIndex(
+    (paragraph) => paragraph.id === position.paragraphId,
+  );
+  if (
+    targetIndex < normalized.startIndex ||
+    targetIndex > normalized.endIndex
+  ) {
     return false;
   }
   const targetParagraph = paragraphs[targetIndex];
@@ -46,10 +60,16 @@ function isPositionInsideSelection(state: EditorState, position: EditorPosition)
     return false;
   }
   const targetOffset = positionToParagraphOffset(targetParagraph, position);
-  if (targetIndex === normalized.startIndex && targetOffset < normalized.startParagraphOffset) {
+  if (
+    targetIndex === normalized.startIndex &&
+    targetOffset < normalized.startParagraphOffset
+  ) {
     return false;
   }
-  if (targetIndex === normalized.endIndex && targetOffset > normalized.endParagraphOffset) {
+  if (
+    targetIndex === normalized.endIndex &&
+    targetOffset > normalized.endParagraphOffset
+  ) {
     return false;
   }
   return true;
@@ -57,11 +77,21 @@ function isPositionInsideSelection(state: EditorState, position: EditorPosition)
 
 export function createEditorTextDrag(deps: EditorTextDragDeps) {
   const [dragging, setDragging] = createSignal(false);
-  const [dropTargetPos, setDropTargetPos] = createSignal<EditorPosition | null>(null);
+  const [dropTargetPos, setDropTargetPos] = createSignal<EditorPosition | null>(
+    null,
+  );
   const [copyMode, setCopyMode] = createSignal(false);
-  const [pointerPos, setPointerPos] = createSignal<{ x: number; y: number } | null>(null);
-  const [caretViewport, setCaretViewport] = createSignal<{ left: number; top: number; height: number } | null>(null);
-  let pendingStart: { x: number; y: number; position: EditorPosition } | null = null;
+  const [pointerPos, setPointerPos] = createSignal<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [caretViewport, setCaretViewport] = createSignal<{
+    left: number;
+    top: number;
+    height: number;
+  } | null>(null);
+  let pendingStart: { x: number; y: number; position: EditorPosition } | null =
+    null;
   let cursorStyleEl: HTMLStyleElement | null = null;
   let lastDropTargetKey: string | null = null;
 
@@ -146,7 +176,9 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
         paragraphOffset: hit.paragraphOffset,
         hitPosition: `${hit.position.paragraphId}:${hit.position.runId}[${hit.position.offset}]`,
         target: `${nextTarget.paragraphId}:${nextTarget.runId}[${nextTarget.offset}]`,
-        source: hit.tableCellAnchorPosition ? "tableCellAnchorPosition" : "position",
+        source: hit.tableCellAnchorPosition
+          ? "tableCellAnchorPosition"
+          : "position",
       });
       lastDropTargetKey = targetKey;
     }
@@ -202,7 +234,10 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
     deps.focusInputAfterPointerSelection();
   };
 
-  const tryStartTextDrag = (event: MouseEvent, hit: SurfaceHit | null): boolean => {
+  const tryStartTextDrag = (
+    event: MouseEvent,
+    hit: SurfaceHit | null,
+  ): boolean => {
     if (deps.isReadOnly() || !hit?.resolvedFromParagraph) {
       deps.logger?.debug("text-drag:skip-start", {
         reason: deps.isReadOnly() ? "readonly" : "no-hit",

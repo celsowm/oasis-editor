@@ -1,8 +1,18 @@
-import { For, createMemo, createSignal, onCleanup, onMount, type JSX } from "solid-js";
+import {
+  For,
+  createMemo,
+  createSignal,
+  onCleanup,
+  onMount,
+  type JSX,
+} from "solid-js";
 import "./toolbar.css";
 import { ToolbarOverflowManager } from "./ToolbarOverflowManager.js";
 import { ToolbarItemRenderer } from "./renderers/ToolbarItemRenderer.js";
-import { createToolbarApi, type ToolbarHost } from "./state/createToolbarApi.js";
+import {
+  createToolbarApi,
+  type ToolbarHost,
+} from "./state/createToolbarApi.js";
 import type { ToolbarRegistry } from "./registry/ToolbarRegistry.js";
 import type { ToolbarLayoutMode } from "../../OasisEditorAppProps.js";
 

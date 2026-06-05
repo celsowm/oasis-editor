@@ -34,7 +34,11 @@ const BASE14_HELVETICA_FACES: PdfRegisteredFontFace[] = [
     bold: true,
     italic: false,
     writerResourceName: "F2",
-    pdfResource: { kind: "base14", resourceName: "F2", baseFont: "Helvetica-Bold" },
+    pdfResource: {
+      kind: "base14",
+      resourceName: "F2",
+      baseFont: "Helvetica-Bold",
+    },
   },
   {
     key: "helvetica:italic",
@@ -42,7 +46,11 @@ const BASE14_HELVETICA_FACES: PdfRegisteredFontFace[] = [
     bold: false,
     italic: true,
     writerResourceName: "F3",
-    pdfResource: { kind: "base14", resourceName: "F3", baseFont: "Helvetica-Oblique" },
+    pdfResource: {
+      kind: "base14",
+      resourceName: "F3",
+      baseFont: "Helvetica-Oblique",
+    },
   },
   {
     key: "helvetica:bolditalic",
@@ -50,7 +58,11 @@ const BASE14_HELVETICA_FACES: PdfRegisteredFontFace[] = [
     bold: true,
     italic: true,
     writerResourceName: "F4",
-    pdfResource: { kind: "base14", resourceName: "F4", baseFont: "Helvetica-BoldOblique" },
+    pdfResource: {
+      kind: "base14",
+      resourceName: "F4",
+      baseFont: "Helvetica-BoldOblique",
+    },
   },
 ];
 
@@ -64,7 +76,13 @@ const ROBOTO_FONT_FILES = {
 const OFFICE_COMPAT_FONT_FAMILIES = [
   {
     family: "Carlito",
-    aliases: ["Calibri", "Calibri Light", "Aptos", "Aptos Display", "Aptos Narrow"],
+    aliases: [
+      "Calibri",
+      "Calibri Light",
+      "Aptos",
+      "Aptos Display",
+      "Aptos Narrow",
+    ],
     files: {
       regular: "Carlito-Regular.ttf",
       bold: "Carlito-Bold.ttf",
@@ -95,7 +113,10 @@ const OFFICE_COMPAT_FONT_FAMILIES = [
 ];
 
 function normalizeFamily(fontFamily: string | null | undefined): string {
-  const firstFamily = (fontFamily ?? "Helvetica").split(",")[0]?.trim().replace(/^['\"]|['\"]$/g, "");
+  const firstFamily = (fontFamily ?? "Helvetica")
+    .split(",")[0]
+    ?.trim()
+    .replace(/^['"]|['"]$/g, "");
   return firstFamily && firstFamily.length > 0 ? firstFamily : "Helvetica";
 }
 
@@ -124,16 +145,21 @@ async function readFontAsset(fileName: string): Promise<Uint8Array | null> {
   const assetUrl = resolveFontAssetUrl(fileName);
   try {
     if (assetUrl.startsWith("file:")) {
-      const processObject = new Function("return typeof process === 'object' ? process : undefined")() as
+      const processObject = new Function(
+        "return typeof process === 'object' ? process : undefined",
+      )() as
         | {
             getBuiltinModule?(id: string): unknown;
           }
         | undefined;
-      const dynamicRequire = new Function("return typeof require === 'function' ? require : undefined")() as
-        | ((id: string) => unknown)
+      const dynamicRequire = new Function(
+        "return typeof require === 'function' ? require : undefined",
+      )() as ((id: string) => unknown) | undefined;
+      const getBuiltin = (id: string): unknown =>
+        processObject?.getBuiltinModule?.(id) ?? dynamicRequire?.(id);
+      const fs = getBuiltin("node:fs") as
+        | { readFileSync(path: URL): Uint8Array }
         | undefined;
-      const getBuiltin = (id: string): unknown => processObject?.getBuiltinModule?.(id) ?? dynamicRequire?.(id);
-      const fs = getBuiltin("node:fs") as { readFileSync(path: URL): Uint8Array } | undefined;
       return fs?.readFileSync(new URL(assetUrl)) ?? null;
     }
 
@@ -145,17 +171,26 @@ async function readFontAsset(fileName: string): Promise<Uint8Array | null> {
       return new Uint8Array(await response.arrayBuffer());
     }
 
-    const processObject = new Function("return typeof process === 'object' ? process : undefined")() as
+    const processObject = new Function(
+      "return typeof process === 'object' ? process : undefined",
+    )() as
       | {
           getBuiltinModule?(id: string): unknown;
         }
       | undefined;
-    const dynamicRequire = new Function("return typeof require === 'function' ? require : undefined")() as
-      | ((id: string) => unknown)
+    const dynamicRequire = new Function(
+      "return typeof require === 'function' ? require : undefined",
+    )() as ((id: string) => unknown) | undefined;
+    const getBuiltin = (id: string): unknown =>
+      processObject?.getBuiltinModule?.(id) ?? dynamicRequire?.(id);
+    const fs = getBuiltin("node:fs") as
+      | { readFileSync(path: string): Uint8Array }
       | undefined;
-    const getBuiltin = (id: string): unknown => processObject?.getBuiltinModule?.(id) ?? dynamicRequire?.(id);
-    const fs = getBuiltin("node:fs") as { readFileSync(path: string): Uint8Array } | undefined;
-    const fileURLToPath = (getBuiltin("node:url") as { fileURLToPath(url: string): string } | undefined)?.fileURLToPath;
+    const fileURLToPath = (
+      getBuiltin("node:url") as
+        | { fileURLToPath(url: string): string }
+        | undefined
+    )?.fileURLToPath;
     if (!fs || !fileURLToPath) {
       return null;
     }
@@ -199,16 +234,25 @@ export class PdfFontRegistry {
     return Array.from(resources.values());
   }
 
-  async loadBundledUnicodeFaces(options: PdfBundledFontLoadOptions = {}): Promise<void> {
+  async loadBundledUnicodeFaces(
+    options: PdfBundledFontLoadOptions = {},
+  ): Promise<void> {
     const requestedFamilies = options.families
-      ? new Set(Array.from(options.families).map(normalizeFamily).map((family) => family.toLowerCase()))
+      ? new Set(
+          Array.from(options.families)
+            .map(normalizeFamily)
+            .map((family) => family.toLowerCase()),
+        )
       : null;
-    const matchedFamilies = await this.registerOfficeCompatibleFaces(requestedFamilies);
+    const matchedFamilies =
+      await this.registerOfficeCompatibleFaces(requestedFamilies);
 
     const shouldLoadRoboto =
       !requestedFamilies ||
       requestedFamilies.has("roboto") ||
-      Array.from(requestedFamilies).some((family) => family !== "helvetica" && !matchedFamilies.has(family));
+      Array.from(requestedFamilies).some(
+        (family) => family !== "helvetica" && !matchedFamilies.has(family),
+      );
     if (!shouldLoadRoboto) {
       return;
     }
@@ -238,11 +282,18 @@ export class PdfFontRegistry {
     }
   }
 
-  private async registerOfficeCompatibleFaces(requestedFamilies: Set<string> | null): Promise<Set<string>> {
+  private async registerOfficeCompatibleFaces(
+    requestedFamilies: Set<string> | null,
+  ): Promise<Set<string>> {
     const matchedFamilies = new Set<string>();
     for (const familyDefinition of OFFICE_COMPAT_FONT_FAMILIES) {
-      const familyNames = [familyDefinition.family, ...familyDefinition.aliases].map((family) => family.toLowerCase());
-      const shouldLoad = !requestedFamilies || familyNames.some((family) => requestedFamilies.has(family));
+      const familyNames = [
+        familyDefinition.family,
+        ...familyDefinition.aliases,
+      ].map((family) => family.toLowerCase());
+      const shouldLoad =
+        !requestedFamilies ||
+        familyNames.some((family) => requestedFamilies.has(family));
       if (!shouldLoad) {
         continue;
       }
@@ -279,7 +330,11 @@ export class PdfFontRegistry {
 
       for (const alias of familyDefinition.aliases) {
         for (const face of registeredFaces) {
-          this.registerFontFace({ ...face, key: `${alias.toLowerCase()}:${face.key.split(":")[1]}`, family: alias });
+          this.registerFontFace({
+            ...face,
+            key: `${alias.toLowerCase()}:${face.key.split(":")[1]}`,
+            family: alias,
+          });
         }
       }
     }

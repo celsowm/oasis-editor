@@ -1,9 +1,4 @@
-import type {
-  EditorState,
-  EditorParagraphNode,
-  EditorBlockNode,
-  EditorPosition,
-} from "../../core/model.js";
+import type { EditorState, EditorBlockNode } from "../../core/model.js";
 import {
   getEditableBlocksForZone,
   getParagraphs,
@@ -13,7 +8,11 @@ import {
   getActiveSectionIndex,
   findParagraphTableLocation,
 } from "../../core/model.js";
-import { setSelection, moveSelectionLeft, moveSelectionRight } from "../../core/editorCommands.js";
+import {
+  setSelection,
+  moveSelectionLeft,
+  moveSelectionRight,
+} from "../../core/editorCommands.js";
 import { isSelectionCollapsed } from "../../core/selection.js";
 import {
   findPreviousWordBoundary,
@@ -27,7 +26,9 @@ import type { CaretBox } from "../../ui/editorUiTypes.js";
 export interface UseEditorNavigationProps {
   state: () => EditorState;
   applyState: (state: EditorState) => void;
-  applyTransactionalState: (producer: (current: EditorState) => EditorState) => void;
+  applyTransactionalState: (
+    producer: (current: EditorState) => EditorState,
+  ) => void;
   surfaceRef: () => HTMLDivElement | null;
   caretBox: () => CaretBox;
   preferredColumnX: () => number | null;
@@ -239,7 +240,9 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
                     )?.tableCell
                   : null;
                 const left = cellRect?.left ?? desiredX;
-                const right = cellRect ? cellRect.left + cellRect.width : desiredX;
+                const right = cellRect
+                  ? cellRect.left + cellRect.width
+                  : desiredX;
                 const distance =
                   desiredX < left
                     ? left - desiredX
@@ -288,9 +291,13 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
 
     const targetParagraph = paragraphs[targetIndex];
     let offset = 0;
-    const targetEntries = snapshot ? getParagraphEntries(snapshot, targetParagraph.id) : [];
+    const targetEntries = snapshot
+      ? getParagraphEntries(snapshot, targetParagraph.id)
+      : [];
     const targetEntry =
-      direction < 0 ? targetEntries[targetEntries.length - 1] : targetEntries[0];
+      direction < 0
+        ? targetEntries[targetEntries.length - 1]
+        : targetEntries[0];
     if (targetEntry && targetEntry.lines.length > 0) {
       const lines = targetEntry.lines;
       const boundaryLine = direction < 0 ? lines[lines.length - 1]! : lines[0]!;

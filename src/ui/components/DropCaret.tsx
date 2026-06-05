@@ -31,11 +31,17 @@ export function DropCaret(props: {
     let height = 28;
 
     if (snapshot) {
-      const paragraphNode = getParagraphs(props.state).find((p) => p.id === pos.paragraphId);
+      const paragraphNode = getParagraphs(props.state).find(
+        (p) => p.id === pos.paragraphId,
+      );
       const paragraphOffset = paragraphNode
         ? positionToParagraphOffset(paragraphNode, pos)
         : 0;
-      const caretRect = getCaretRectFromSnapshot(snapshot, pos, paragraphOffset);
+      const caretRect = getCaretRectFromSnapshot(
+        snapshot,
+        pos,
+        paragraphOffset,
+      );
       if (caretRect) {
         return {
           viewportLeft: caretRect.left,
@@ -43,7 +49,11 @@ export function DropCaret(props: {
           height: Math.min(caretRect.height || 28, 32),
         };
       }
-      const paragraphRect = getParagraphRectFromSnapshot(snapshot, pos.paragraphId, "end");
+      const paragraphRect = getParagraphRectFromSnapshot(
+        snapshot,
+        pos.paragraphId,
+        "end",
+      );
       if (paragraphRect) {
         return {
           viewportLeft: paragraphRect.left,

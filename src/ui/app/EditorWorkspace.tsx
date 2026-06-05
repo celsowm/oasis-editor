@@ -16,7 +16,9 @@ import type { ToolbarLayoutMode } from "../OasisEditorAppProps.js";
 
 export interface EditorWorkspaceProps {
   useComposedShell: () => boolean;
-  shellComponent: () => (props: ShellProps) => ReturnType<typeof OasisEditorEditor>;
+  shellComponent: () => (
+    props: ShellProps,
+  ) => ReturnType<typeof OasisEditorEditor>;
   state: Accessor<EditorState>;
   toolbarHost: () => ToolbarHost;
   persistenceStatus: () => string;

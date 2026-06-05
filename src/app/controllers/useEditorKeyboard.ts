@@ -5,15 +5,12 @@ import {
   extendSelectionLeft,
   extendSelectionRight,
   extendSelectionUp,
-  insertPageBreakAtSelection,
-  insertTextAtSelection,
   moveSelectionDown,
   moveSelectionLeft,
   moveSelectionRight,
   moveSelectionUp,
   outdentParagraphList,
   setSelection,
-  splitBlockAtSelection,
 } from "../../core/editorCommands.js";
 import {
   getParagraphs,
@@ -27,7 +24,10 @@ import {
 import { isSelectionCollapsed } from "../../core/selection.js";
 import type { BooleanStyleKey } from "../../ui/toolbarStyleState.js";
 import { resolveWordSelection } from "../../core/wordBoundaries.js";
-import { defaultEditorKeyBindings, EditorCommandRegistry } from "./EditorCommandRegistry.js";
+import {
+  defaultEditorKeyBindings,
+  EditorCommandRegistry,
+} from "./EditorCommandRegistry.js";
 import type { SelectedImageRun } from "../../core/commands/image.js";
 
 export interface EditorKeyboardDeps {
@@ -54,14 +54,25 @@ export interface EditorKeyboardDeps {
     applyParagraphListCommand: (style: "bullet" | "ordered") => void;
     applyInsertFootnoteCommand: () => void;
     handleListEnter: () => boolean;
-    handleListBoundaryBackspace: (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => boolean;
+    handleListBoundaryBackspace: (
+      event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
+    ) => boolean;
     handleListTab: (direction: "indent" | "outdent") => boolean;
   };
   selectedImageRun: () => SelectedImageRun | null;
   setForcePlainTextPaste: (value: boolean) => void;
-  moveSelectionByWord: (direction: "left" | "right", extend: boolean) => boolean;
-  moveSelectionToDocumentBoundary: (boundary: "start" | "end", extend: boolean) => boolean;
-  moveSelectionToParagraphBoundary: (boundary: "start" | "end", extend: boolean) => boolean;
+  moveSelectionByWord: (
+    direction: "left" | "right",
+    extend: boolean,
+  ) => boolean;
+  moveSelectionToDocumentBoundary: (
+    boundary: "start" | "end",
+    extend: boolean,
+  ) => boolean;
+  moveSelectionToParagraphBoundary: (
+    boundary: "start" | "end",
+    extend: boolean,
+  ) => boolean;
   moveSelectedImageByParagraph: (direction: -1 | 1) => boolean;
   performUndo: () => void;
   performRedo: () => void;
@@ -72,7 +83,9 @@ export interface EditorKeyboardDeps {
     paragraphId: string,
     delta: -1 | 1,
   ) => EditorPosition | null;
-  applySelectionPreservingStructure: (selection: EditorState["selection"]) => void;
+  applySelectionPreservingStructure: (
+    selection: EditorState["selection"],
+  ) => void;
   toggleFindReplace: (open?: boolean) => void;
   toggleReplace: (open?: boolean) => void;
   executeCommand?: (commandName: string, payload?: unknown) => unknown;
@@ -83,7 +96,9 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
   const registry = new EditorCommandRegistry();
   defaultEditorKeyBindings.forEach((binding) => registry.register(binding));
 
-  const handleKeyDown = (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => {
+  const handleKeyDown = (
+    event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
+  ) => {
     const currentState = deps.state();
 
     if (deps.isReadOnly()) {
@@ -101,7 +116,8 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
       const isModifierOnly =
         key === "Shift" || key === "Control" || key === "Meta" || key === "Alt";
       const isCopyOrSelectAll =
-        (event.ctrlKey || event.metaKey) && (lowerKey === "a" || lowerKey === "c");
+        (event.ctrlKey || event.metaKey) &&
+        (lowerKey === "a" || lowerKey === "c");
       if (!isNavigationKey && !isModifierOnly && !isCopyOrSelectAll) {
         event.preventDefault();
       }
@@ -125,7 +141,12 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
         deps.resetTransactionGrouping();
-        if (deps.moveSelectionByWord(event.key === "ArrowLeft" ? "left" : "right", event.shiftKey)) {
+        if (
+          deps.moveSelectionByWord(
+            event.key === "ArrowLeft" ? "left" : "right",
+            event.shiftKey,
+          )
+        ) {
           deps.focusInput();
           return;
         }
@@ -138,7 +159,9 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
 
         if (!isSelectionCollapsed(currentState.selection)) {
           deps.applyTransactionalState((current) =>
-            deps.applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)),
+            deps.applyTableAwareParagraphEdit(current, (temp) =>
+              deleteBackward(temp),
+            ),
           );
           event.currentTarget.value = "";
           deps.focusInput();
@@ -147,7 +170,8 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
 
         const paragraphs = getParagraphs(currentState);
         const focusParagraphIndex = paragraphs.findIndex(
-          (paragraph) => paragraph.id === currentState.selection.focus.paragraphId,
+          (paragraph) =>
+            paragraph.id === currentState.selection.focus.paragraphId,
         );
         const focusParagraph = paragraphs[focusParagraphIndex];
         if (!focusParagraph) {
@@ -157,9 +181,14 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
         }
 
         if (event.key === "Backspace" && focusParagraph.list) {
-          const focusParagraphOffset = positionToParagraphOffset(focusParagraph, currentState.selection.focus);
+          const focusParagraphOffset = positionToParagraphOffset(
+            focusParagraph,
+            currentState.selection.focus,
+          );
           if (focusParagraphOffset === 0) {
-            deps.applySelectionAwareParagraphCommand((current) => outdentParagraphList(current));
+            deps.applySelectionAwareParagraphCommand((current) =>
+              outdentParagraphList(current),
+            );
             event.currentTarget.value = "";
             deps.focusInput();
             return;
@@ -173,7 +202,9 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
         if (event.key === "Backspace") {
           if (focusOffset === 0 || word.start === focusOffset) {
             deps.applyTransactionalState((current) =>
-              deps.applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)),
+              deps.applyTableAwareParagraphEdit(current, (temp) =>
+                deleteBackward(temp),
+              ),
             );
           } else {
             deps.applyTransactionalState((current) =>
@@ -188,7 +219,9 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
           }
         } else if (focusOffset >= paragraphText.length) {
           deps.applyTransactionalState((current) =>
-            deps.applyTableAwareParagraphEdit(current, (temp) => deleteForward(temp)),
+            deps.applyTableAwareParagraphEdit(current, (temp) =>
+              deleteForward(temp),
+            ),
           );
         } else if (word.end > focusOffset) {
           deps.applyTransactionalState((current) =>
@@ -202,7 +235,9 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
           );
         } else {
           deps.applyTransactionalState((current) =>
-            deps.applyTableAwareParagraphEdit(current, (temp) => deleteForward(temp)),
+            deps.applyTableAwareParagraphEdit(current, (temp) =>
+              deleteForward(temp),
+            ),
           );
         }
 
@@ -230,7 +265,9 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
         event.preventDefault();
         deps.resetTransactionGrouping();
         deps.clearPreferredColumn();
-        if (deps.moveSelectedImageByParagraph(event.key === "ArrowUp" ? -1 : 1)) {
+        if (
+          deps.moveSelectedImageByParagraph(event.key === "ArrowUp" ? -1 : 1)
+        ) {
           return;
         }
       }
@@ -246,7 +283,9 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
         deps.clearPreferredColumn();
         deps.resetTransactionGrouping();
         deps.applyTransactionalState((current) =>
-          deps.applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)),
+          deps.applyTableAwareParagraphEdit(current, (temp) =>
+            deleteBackward(temp),
+          ),
         );
         event.currentTarget.value = "";
         deps.focusInput();
@@ -255,12 +294,20 @@ export function createEditorKeyboardController(deps: EditorKeyboardDeps) {
         event.preventDefault();
         deps.clearPreferredColumn();
         deps.resetTransactionGrouping();
-        deps.applyTransactionalState((current) => deps.applyTableAwareParagraphEdit(current, (temp) => deleteForward(temp)));
+        deps.applyTransactionalState((current) =>
+          deps.applyTableAwareParagraphEdit(current, (temp) =>
+            deleteForward(temp),
+          ),
+        );
         event.currentTarget.value = "";
         deps.focusInput();
         return;
       case "Tab": {
-        if (deps.commandsController.handleListTab(event.shiftKey ? "outdent" : "indent")) {
+        if (
+          deps.commandsController.handleListTab(
+            event.shiftKey ? "outdent" : "indent",
+          )
+        ) {
           event.preventDefault();
           return;
         }

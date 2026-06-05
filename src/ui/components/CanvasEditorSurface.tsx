@@ -1,10 +1,7 @@
 import { createEffect, createMemo, Index, onCleanup, Show } from "solid-js";
 import type { ITextMeasurer } from "../../core/engine.js";
 import type { EditorSurfaceProps } from "../editorUiTypes.js";
-import {
-  type EditorLayoutPage,
-  type EditorState,
-} from "../../core/model.js";
+import { type EditorLayoutPage, type EditorState } from "../../core/model.js";
 import { domTextMeasurer } from "../textMeasurement.js";
 import { projectDocumentLayout } from "../../layoutProjection/index.js";
 import { createLayoutIdentityStabilizer } from "../layoutIdentity.js";
@@ -17,7 +14,8 @@ export { resolveCanvasTextRenderMetrics } from "../canvas/canvasParagraphPainter
 export { resolveCanvasFooterZoneTop } from "../canvas/canvasPageRenderer.js";
 
 const canvasTextMeasurer: ITextMeasurer = {
-  composeMeasuredParagraphLines: (options) => domTextMeasurer.composeMeasuredParagraphLines(options),
+  composeMeasuredParagraphLines: (options) =>
+    domTextMeasurer.composeMeasuredParagraphLines(options),
   resolveRenderedLineHeightPx: (styles, lineHeightMultiple) =>
     domTextMeasurer.resolveRenderedLineHeightPx(styles, lineHeightMultiple),
 };
@@ -34,13 +32,19 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
         undefined,
         props.measuredBlockHeights?.(),
         props.measuredParagraphLayouts?.(),
-        { layoutMode: props.layoutMode ?? "wordParity", measurer: canvasTextMeasurer },
+        {
+          layoutMode: props.layoutMode ?? "wordParity",
+          measurer: canvasTextMeasurer,
+        },
       ),
     ),
   );
 
   return (
-    <div class="oasis-editor-paper-stack oasis-editor-canvas-stack" style={{ position: "relative" }}>
+    <div
+      class="oasis-editor-paper-stack oasis-editor-canvas-stack"
+      style={{ position: "relative" }}
+    >
       <Index each={documentLayout().pages}>
         {(page, index) => (
           // Each Index slot must be a single, stable root element. Returning a
@@ -48,7 +52,10 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
           // reconcileArrays when the page list grows/shrinks (e.g. after
           // inserting an image that triggers re-pagination in a narrow viewport),
           // causing "Failed to execute 'insertBefore'" errors.
-          <div class="oasis-editor-canvas-page-slot" style={{ position: "relative" }}>
+          <div
+            class="oasis-editor-canvas-page-slot"
+            style={{ position: "relative" }}
+          >
             <Show when={index > 0}>
               <PageBreak pageIndex={index} />
             </Show>
@@ -132,5 +139,3 @@ function CanvasPage(props: {
     </div>
   );
 }
-
-

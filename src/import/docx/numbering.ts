@@ -19,7 +19,10 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
     return { abstractKinds, numKinds };
   }
 
-  const document = new DOMParser().parseFromString(numberingXml, "application/xml");
+  const document = new DOMParser().parseFromString(
+    numberingXml,
+    "application/xml",
+  );
   const numbering = document.documentElement;
   if (!numbering) {
     return { abstractKinds, numKinds };
@@ -30,23 +33,28 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
     const abstractNum = abstractNums[index]!;
     const abstractId = getAttributeValue(abstractNum, "abstractNumId");
     const level = getFirstChildByTagNameNS(abstractNum, WORD_NS, "lvl");
-    const numFmt = getFirstChildByTagNameNS(level ?? abstractNum, WORD_NS, "numFmt");
+    const numFmt = getFirstChildByTagNameNS(
+      level ?? abstractNum,
+      WORD_NS,
+      "numFmt",
+    );
     const format = getAttributeValue(numFmt, "val");
     if (!abstractId || !format) {
       continue;
     }
 
-    abstractKinds.set(
-      abstractId,
-      format === "bullet" ? "bullet" : "ordered",
-    );
+    abstractKinds.set(abstractId, format === "bullet" ? "bullet" : "ordered");
   }
 
   const nums = numbering.getElementsByTagNameNS(WORD_NS, "num");
   for (let index = 0; index < nums.length; index += 1) {
     const num = nums[index]!;
     const numId = getAttributeValue(num, "numId");
-    const abstractNumIdElement = getFirstChildByTagNameNS(num, WORD_NS, "abstractNumId");
+    const abstractNumIdElement = getFirstChildByTagNameNS(
+      num,
+      WORD_NS,
+      "abstractNumId",
+    );
     const abstractNumId = getAttributeValue(abstractNumIdElement, "val");
     if (!numId || !abstractNumId) {
       continue;
@@ -71,12 +79,18 @@ export function parseParagraphList(
     return undefined;
   }
 
-  const numId = getAttributeValue(getFirstChildByTagNameNS(numPr, WORD_NS, "numId"), "val");
+  const numId = getAttributeValue(
+    getFirstChildByTagNameNS(numPr, WORD_NS, "numId"),
+    "val",
+  );
   if (!numId) {
     return undefined;
   }
 
-  const ilvlValue = getAttributeValue(getFirstChildByTagNameNS(numPr, WORD_NS, "ilvl"), "val");
+  const ilvlValue = getAttributeValue(
+    getFirstChildByTagNameNS(numPr, WORD_NS, "ilvl"),
+    "val",
+  );
   const level = ilvlValue ? Number(ilvlValue) : 0;
 
   return {

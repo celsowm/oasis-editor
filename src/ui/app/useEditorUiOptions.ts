@@ -21,7 +21,9 @@ export function createEditorUiOptions(ctx: EditorUiOptionsContext) {
 
   const loadingOptions = (): OasisEditorLoadingOptions | undefined => {
     const loading = ui().loading;
-    return typeof loading === "object" && loading !== null ? loading : undefined;
+    return typeof loading === "object" && loading !== null
+      ? loading
+      : undefined;
   };
 
   return {

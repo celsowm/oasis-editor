@@ -1,8 +1,7 @@
 import { Show, splitProps, type JSX } from "solid-js";
 import { ToolIcon } from "../../../utils/customIcons.js";
 
-export interface ToolbarButtonProps
-  extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ToolbarButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: string;
   label?: string;
   active?: boolean;
@@ -23,7 +22,8 @@ export function Button(props: ToolbarButtonProps): JSX.Element {
     "classList",
   ]);
 
-  const ariaLabel = () => local["aria-label"] || local.tooltip || local.label || "";
+  const ariaLabel = () =>
+    local["aria-label"] || local.tooltip || local.label || "";
 
   return (
     <button

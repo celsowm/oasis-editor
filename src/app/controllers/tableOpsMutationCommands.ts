@@ -19,13 +19,18 @@ export const updateBlocksInCurrentSection = (
 ): EditorState => {
   const activeSectionIndex = getActiveSectionIndex(current);
   const sections = getDocumentSectionsCanonical(current.document);
-  const boundedSectionIndex = Math.max(0, Math.min(activeSectionIndex, sections.length - 1));
+  const boundedSectionIndex = Math.max(
+    0,
+    Math.min(activeSectionIndex, sections.length - 1),
+  );
   const section = sections[boundedSectionIndex];
   if (!section) return current;
 
   const nextSections = [...sections];
-  if (zone === "header") nextSections[boundedSectionIndex] = { ...section, header: blocks };
-  else if (zone === "footer") nextSections[boundedSectionIndex] = { ...section, footer: blocks };
+  if (zone === "header")
+    nextSections[boundedSectionIndex] = { ...section, header: blocks };
+  else if (zone === "footer")
+    nextSections[boundedSectionIndex] = { ...section, footer: blocks };
   else nextSections[boundedSectionIndex] = { ...section, blocks };
 
   return {
@@ -39,7 +44,10 @@ export const updateBlocksInCurrentSection = (
 
 export const applyTableAwareParagraphEdit = (
   current: EditorState,
-  getTargetBlocks: (state: EditorState, zone: EditorEditingZone) => EditorBlockNode[],
+  getTargetBlocks: (
+    state: EditorState,
+    zone: EditorEditingZone,
+  ) => EditorBlockNode[],
   edit: (tempState: EditorState) => EditorState,
 ): EditorState => {
   const location = findParagraphTableLocation(
@@ -47,7 +55,10 @@ export const applyTableAwareParagraphEdit = (
     current.selection.focus.paragraphId,
     getActiveSectionIndex(current),
   );
-  if (!location || current.selection.anchor.paragraphId !== current.selection.focus.paragraphId) {
+  if (
+    !location ||
+    current.selection.anchor.paragraphId !== current.selection.focus.paragraphId
+  ) {
     return edit(current);
   }
 
@@ -58,7 +69,8 @@ export const applyTableAwareParagraphEdit = (
     return edit(current);
   }
 
-  const targetCell = tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
+  const targetCell =
+    tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
   if (!targetCell) {
     return edit(current);
   }
@@ -79,11 +91,15 @@ export const applyTableAwareParagraphEdit = (
     },
   };
   const tempResult = edit(tempState);
-  const replacementParagraphs = getDocumentParagraphs(tempResult.document).filter(
-    (block): block is EditorParagraphNode => block.type === "paragraph",
-  );
+  const replacementParagraphs = getDocumentParagraphs(
+    tempResult.document,
+  ).filter((block): block is EditorParagraphNode => block.type === "paragraph");
 
-  targetCell.blocks.splice(0, targetCell.blocks.length, ...replacementParagraphs);
+  targetCell.blocks.splice(
+    0,
+    targetCell.blocks.length,
+    ...replacementParagraphs,
+  );
   const nextState = updateBlocksInCurrentSection(current, nextBlocks, zone);
   return {
     ...nextState,

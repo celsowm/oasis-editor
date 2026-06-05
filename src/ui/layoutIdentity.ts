@@ -47,14 +47,14 @@ export function canReuseLayoutBlock(
 ): previous is EditorLayoutBlock {
   return Boolean(
     previous &&
-      previous.blockId === next.blockId &&
-      previous.sourceBlock === next.sourceBlock &&
-      previous.estimatedHeight === next.estimatedHeight &&
-      previous.tableSegment?.startRowIndex === next.tableSegment?.startRowIndex &&
-      previous.tableSegment?.endRowIndex === next.tableSegment?.endRowIndex &&
-      previous.tableSegment?.repeatedHeaderRowCount ===
-        next.tableSegment?.repeatedHeaderRowCount &&
-      areLayoutParagraphsEquivalentForRender(previous.layout, next.layout),
+    previous.blockId === next.blockId &&
+    previous.sourceBlock === next.sourceBlock &&
+    previous.estimatedHeight === next.estimatedHeight &&
+    previous.tableSegment?.startRowIndex === next.tableSegment?.startRowIndex &&
+    previous.tableSegment?.endRowIndex === next.tableSegment?.endRowIndex &&
+    previous.tableSegment?.repeatedHeaderRowCount ===
+      next.tableSegment?.repeatedHeaderRowCount &&
+    areLayoutParagraphsEquivalentForRender(previous.layout, next.layout),
   );
 }
 
@@ -64,16 +64,16 @@ export function canReuseLayoutPage(
 ): previous is EditorLayoutPage {
   const samePageSettings = Boolean(
     previous &&
-      previous.pageSettings.width === next.pageSettings.width &&
-      previous.pageSettings.height === next.pageSettings.height &&
-      previous.pageSettings.orientation === next.pageSettings.orientation &&
-      previous.pageSettings.margins.top === next.pageSettings.margins.top &&
-      previous.pageSettings.margins.right === next.pageSettings.margins.right &&
-      previous.pageSettings.margins.bottom === next.pageSettings.margins.bottom &&
-      previous.pageSettings.margins.left === next.pageSettings.margins.left &&
-      previous.pageSettings.margins.header === next.pageSettings.margins.header &&
-      previous.pageSettings.margins.footer === next.pageSettings.margins.footer &&
-      previous.pageSettings.margins.gutter === next.pageSettings.margins.gutter,
+    previous.pageSettings.width === next.pageSettings.width &&
+    previous.pageSettings.height === next.pageSettings.height &&
+    previous.pageSettings.orientation === next.pageSettings.orientation &&
+    previous.pageSettings.margins.top === next.pageSettings.margins.top &&
+    previous.pageSettings.margins.right === next.pageSettings.margins.right &&
+    previous.pageSettings.margins.bottom === next.pageSettings.margins.bottom &&
+    previous.pageSettings.margins.left === next.pageSettings.margins.left &&
+    previous.pageSettings.margins.header === next.pageSettings.margins.header &&
+    previous.pageSettings.margins.footer === next.pageSettings.margins.footer &&
+    previous.pageSettings.margins.gutter === next.pageSettings.margins.gutter,
   );
   if (
     !previous ||
@@ -92,7 +92,10 @@ export function canReuseLayoutPage(
     return false;
   }
 
-  const sameBlocks = (left?: EditorLayoutBlock[], right?: EditorLayoutBlock[]) => {
+  const sameBlocks = (
+    left?: EditorLayoutBlock[],
+    right?: EditorLayoutBlock[],
+  ) => {
     if ((left?.length ?? 0) !== (right?.length ?? 0)) {
       return false;
     }
@@ -103,7 +106,9 @@ export function canReuseLayoutPage(
     if ((left?.length ?? 0) !== (right?.length ?? 0)) {
       return false;
     }
-    return (right ?? []).every((footnoteId, index) => left?.[index] === footnoteId);
+    return (right ?? []).every(
+      (footnoteId, index) => left?.[index] === footnoteId,
+    );
   };
 
   return (
@@ -111,7 +116,10 @@ export function canReuseLayoutPage(
     sameBlocks(previous.headerBlocks, next.headerBlocks) &&
     sameBlocks(previous.footerBlocks, next.footerBlocks) &&
     sameBlocks(previous.footnoteBlocks, next.footnoteBlocks) &&
-    sameFootnoteReferences(previous.footnoteReferenceIds, next.footnoteReferenceIds)
+    sameFootnoteReferences(
+      previous.footnoteReferenceIds,
+      next.footnoteReferenceIds,
+    )
   );
 }
 
@@ -130,7 +138,9 @@ export function createLayoutIdentityStabilizer() {
   let reusableLayoutBlocks = new Map<string, EditorLayoutBlock>();
   let reusableLayoutPages = new Map<string, EditorLayoutPage>();
 
-  return function stabilize(layout: EditorLayoutDocument): EditorLayoutDocument {
+  return function stabilize(
+    layout: EditorLayoutDocument,
+  ): EditorLayoutDocument {
     const nextBlockCache = new Map<string, EditorLayoutBlock>();
     const stabilizeBlocks = (blocks: EditorLayoutBlock[] | undefined) =>
       blocks?.map((block) => {

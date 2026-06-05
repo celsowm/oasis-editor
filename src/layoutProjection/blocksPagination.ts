@@ -45,7 +45,9 @@ export interface ProjectBlocksLayoutContext {
   reservedHeightByPageIndex?: Map<number, number>;
 }
 
-export function projectBlocksLayout(context: ProjectBlocksLayoutContext): EditorLayoutPage[] {
+export function projectBlocksLayout(
+  context: ProjectBlocksLayoutContext,
+): EditorLayoutPage[] {
   const {
     blocks,
     pageSettings,
@@ -62,13 +64,18 @@ export function projectBlocksLayout(context: ProjectBlocksLayoutContext): Editor
   } = context;
   const contentWidth = getPageContentWidth(pageSettings);
   const pages: EditorLayoutPage[] = [...existingPages];
-  let currentPage = pages[pages.length - 1];
-  let currentBlocks: EditorLayoutBlock[] = currentPage ? [...currentPage.blocks] : [];
+  const currentPage = pages[pages.length - 1];
+  let currentBlocks: EditorLayoutBlock[] = currentPage
+    ? [...currentPage.blocks]
+    : [];
   let currentHeight = currentPage ? currentPage.height : 0;
 
   const getCurrentPageIndex = () => pageOffset + pages.length;
   const getMaxHeightForPage = (pageIndex: number) =>
-    Math.max(24, maxPageHeight - (reservedHeightByPageIndex?.get(pageIndex) ?? 0));
+    Math.max(
+      24,
+      maxPageHeight - (reservedHeightByPageIndex?.get(pageIndex) ?? 0),
+    );
 
   if (currentPage) {
     pages.pop();
@@ -108,34 +115,70 @@ export function projectBlocksLayout(context: ProjectBlocksLayoutContext): Editor
 
     if (sourceBlock.type === "paragraph") {
       const pageIndex = pageOffset + pages.length;
-      const projectedParagraphLayout = projectParagraphLayout(sourceBlock, pageIndex, totalPages, styles, contentWidth, layoutMode, measurer);
-      const measuredParagraphLayout = measuredParagraphLayouts?.[sourceBlock.id];
+      const projectedParagraphLayout = projectParagraphLayout(
+        sourceBlock,
+        pageIndex,
+        totalPages,
+        styles,
+        contentWidth,
+        layoutMode,
+        measurer,
+      );
+      const measuredParagraphLayout =
+        measuredParagraphLayouts?.[sourceBlock.id];
       const paragraphLayout =
-        measuredParagraphLayout && isMeasuredLayoutCurrent(projectedParagraphLayout, measuredParagraphLayout)
-          ? applyMeasuredLineGeometry(projectedParagraphLayout, measuredParagraphLayout)
+        measuredParagraphLayout &&
+        isMeasuredLayoutCurrent(
+          projectedParagraphLayout,
+          measuredParagraphLayout,
+        )
+          ? applyMeasuredLineGeometry(
+              projectedParagraphLayout,
+              measuredParagraphLayout,
+            )
           : projectedParagraphLayout;
       const paragraphTotalHeight =
-        measuredHeights?.[sourceBlock.id] ?? getProjectedParagraphBlockHeight(sourceBlock, paragraphLayout, styles);
+        measuredHeights?.[sourceBlock.id] ??
+        getProjectedParagraphBlockHeight(sourceBlock, paragraphLayout, styles);
       const paragraphStyle = getEffectiveParagraphStyle(sourceBlock, styles);
       const nextBlockHeight =
         nextBlock?.type === "paragraph"
-          ? measuredHeights?.[nextBlock.id] ??
-            estimateParagraphBlockHeight(nextBlock, styles, contentWidth, layoutMode)
+          ? (measuredHeights?.[nextBlock.id] ??
+            estimateParagraphBlockHeight(
+              nextBlock,
+              styles,
+              contentWidth,
+              layoutMode,
+            ))
           : nextBlock
-            ? measuredHeights?.[nextBlock.id] ??
-              estimateTableBlockHeight(nextBlock, styles, contentWidth, layoutMode)
+            ? (measuredHeights?.[nextBlock.id] ??
+              estimateTableBlockHeight(
+                nextBlock,
+                styles,
+                contentWidth,
+                layoutMode,
+              ))
             : 0;
       if (
         paragraphStyle.keepWithNext &&
         currentBlocks.length > 0 &&
-        currentHeight + paragraphTotalHeight + nextBlockHeight > getMaxHeightForPage(getCurrentPageIndex()) &&
-        paragraphTotalHeight + nextBlockHeight <= getMaxHeightForPage(getCurrentPageIndex())
+        currentHeight + paragraphTotalHeight + nextBlockHeight >
+          getMaxHeightForPage(getCurrentPageIndex()) &&
+        paragraphTotalHeight + nextBlockHeight <=
+          getMaxHeightForPage(getCurrentPageIndex())
       ) {
         flushPage();
       }
 
-      if (paragraphStyle.keepLinesTogether && paragraphTotalHeight <= getMaxHeightForPage(getCurrentPageIndex())) {
-        if (currentBlocks.length > 0 && currentHeight + paragraphTotalHeight > getMaxHeightForPage(getCurrentPageIndex())) {
+      if (
+        paragraphStyle.keepLinesTogether &&
+        paragraphTotalHeight <= getMaxHeightForPage(getCurrentPageIndex())
+      ) {
+        if (
+          currentBlocks.length > 0 &&
+          currentHeight + paragraphTotalHeight >
+            getMaxHeightForPage(getCurrentPageIndex())
+        ) {
           flushPage();
         }
         const segmentId = `${sourceBlock.id}:segment:0`;
@@ -163,12 +206,16 @@ export function projectBlocksLayout(context: ProjectBlocksLayoutContext): Editor
       let startLineIndex = 0;
       let segmentIndex = 0;
       while (startLineIndex < paragraphLayout.lines.length) {
-        const remainingHeight = getMaxHeightForPage(getCurrentPageIndex()) - currentHeight;
+        const remainingHeight =
+          getMaxHeightForPage(getCurrentPageIndex()) - currentHeight;
         let lineEndIndex = startLineIndex;
         let segmentHeight = 0;
 
         while (lineEndIndex < paragraphLayout.lines.length) {
-          const candidateLines = paragraphLayout.lines.slice(startLineIndex, lineEndIndex + 1);
+          const candidateLines = paragraphLayout.lines.slice(
+            startLineIndex,
+            lineEndIndex + 1,
+          );
           const candidateHeight = getParagraphSegmentHeight(
             sourceBlock,
             candidateLines,
@@ -184,10 +231,17 @@ export function projectBlocksLayout(context: ProjectBlocksLayoutContext): Editor
             layoutMode,
           );
           const tolerance = layoutMode === "wordParity" ? 1.5 : 0;
-          if (candidateFitHeight > remainingHeight + tolerance && lineEndIndex === startLineIndex && currentBlocks.length > 0) {
+          if (
+            candidateFitHeight > remainingHeight + tolerance &&
+            lineEndIndex === startLineIndex &&
+            currentBlocks.length > 0
+          ) {
             break;
           }
-          if (candidateFitHeight > remainingHeight + tolerance && lineEndIndex > startLineIndex) {
+          if (
+            candidateFitHeight > remainingHeight + tolerance &&
+            lineEndIndex > startLineIndex
+          ) {
             break;
           }
           segmentHeight = candidateHeight;
@@ -200,7 +254,10 @@ export function projectBlocksLayout(context: ProjectBlocksLayoutContext): Editor
         }
 
         if (lineEndIndex === startLineIndex) {
-          lineEndIndex = Math.min(paragraphLayout.lines.length, startLineIndex + 1);
+          lineEndIndex = Math.min(
+            paragraphLayout.lines.length,
+            startLineIndex + 1,
+          );
           segmentHeight = getParagraphSegmentHeight(
             sourceBlock,
             paragraphLayout.lines.slice(startLineIndex, lineEndIndex),
@@ -222,7 +279,11 @@ export function projectBlocksLayout(context: ProjectBlocksLayoutContext): Editor
           segmentHeight = widowOrphanAdjusted.height;
         }
 
-        const segmentLayout = createParagraphSegmentLayout(paragraphLayout, startLineIndex, lineEndIndex);
+        const segmentLayout = createParagraphSegmentLayout(
+          paragraphLayout,
+          startLineIndex,
+          lineEndIndex,
+        );
         const segmentId = `${sourceBlock.id}:segment:${segmentIndex}`;
         const isWholeParagraphSegment =
           startLineIndex === 0 && lineEndIndex === paragraphLayout.lines.length;
@@ -258,8 +319,14 @@ export function projectBlocksLayout(context: ProjectBlocksLayoutContext): Editor
       measuredHeights?.[sourceBlock.id] ??
       estimateTableBlockHeight(sourceBlock, styles, contentWidth, layoutMode);
     const maxHeightForCurrentPage = getMaxHeightForPage(getCurrentPageIndex());
-    if (sourceBlock.rows.length <= 1 || currentHeight + tableHeight <= maxHeightForCurrentPage) {
-      if (currentBlocks.length > 0 && currentHeight + tableHeight > maxHeightForCurrentPage) {
+    if (
+      sourceBlock.rows.length <= 1 ||
+      currentHeight + tableHeight <= maxHeightForCurrentPage
+    ) {
+      if (
+        currentBlocks.length > 0 &&
+        currentHeight + tableHeight > maxHeightForCurrentPage
+      ) {
         flushPage();
       }
 
@@ -287,7 +354,8 @@ export function projectBlocksLayout(context: ProjectBlocksLayoutContext): Editor
     while (groupStartIndex < rowGroups.length) {
       const startRowIndex = rowGroups[groupStartIndex]!.startRowIndex;
       const repeatedHeaderRowCount = startRowIndex > 0 ? headerRowCount : 0;
-      const remainingHeight = getMaxHeightForPage(getCurrentPageIndex()) - currentHeight;
+      const remainingHeight =
+        getMaxHeightForPage(getCurrentPageIndex()) - currentHeight;
       let groupEndIndex = groupStartIndex;
       let endRowIndex = startRowIndex;
       let segmentHeight = 0;
@@ -310,7 +378,10 @@ export function projectBlocksLayout(context: ProjectBlocksLayoutContext): Editor
         ) {
           break;
         }
-        if (candidateHeight > remainingHeight && groupEndIndex > groupStartIndex) {
+        if (
+          candidateHeight > remainingHeight &&
+          groupEndIndex > groupStartIndex
+        ) {
           break;
         }
         segmentHeight = candidateHeight;
@@ -337,7 +408,8 @@ export function projectBlocksLayout(context: ProjectBlocksLayoutContext): Editor
       }
 
       const segmentId = `${sourceBlock.id}:segment:${segmentIndex}`;
-      const measuredSegmentHeight = measuredHeights?.[segmentId] ?? segmentHeight;
+      const measuredSegmentHeight =
+        measuredHeights?.[segmentId] ?? segmentHeight;
 
       currentBlocks.push({
         blockId: segmentId,

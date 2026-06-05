@@ -32,9 +32,14 @@ export async function parseRunElement(
   zip: JSZip,
   relsMap: Map<string, string>,
   assets: AssetRegistry,
-): Promise<{ text: string; image?: { src: string; width: number; height: number; alt?: string } }> {
+): Promise<{
+  text: string;
+  image?: { src: string; width: number; height: number; alt?: string };
+}> {
   const textParts: string[] = [];
-  let image: { src: string; width: number; height: number; alt?: string } | undefined;
+  let image:
+    | { src: string; width: number; height: number; alt?: string }
+    | undefined;
 
   const children = runElement.childNodes;
   for (let index = 0; index < children.length; index += 1) {
@@ -50,7 +55,11 @@ export async function parseRunElement(
       } else if (element.localName === "tab") {
         textParts.push("\t");
       } else if (element.localName === "br") {
-        textParts.push(getAttributeValue(element, "type") === "page" ? PAGE_BREAK_MARKER : "\n");
+        textParts.push(
+          getAttributeValue(element, "type") === "page"
+            ? PAGE_BREAK_MARKER
+            : "\n",
+        );
       } else if (element.localName === "lastRenderedPageBreak") {
         // Word writes this as cached layout information. It is not an authored
         // hard page break and should not become pageBreakBefore on import.
@@ -62,11 +71,16 @@ export async function parseRunElement(
         if (blip) {
           let embed = null;
           for (let i = 0; i < blip.attributes.length; i++) {
-             const attr = blip.attributes[i];
-             if (attr && (attr.localName === "embed" || attr.name === "r:embed" || attr.name === "embed")) {
-                embed = attr.value;
-                break;
-             }
+            const attr = blip.attributes[i];
+            if (
+              attr &&
+              (attr.localName === "embed" ||
+                attr.name === "r:embed" ||
+                attr.name === "embed")
+            ) {
+              embed = attr.value;
+              break;
+            }
           }
           if (embed) {
             const target = relsMap.get(embed);
@@ -75,8 +89,13 @@ export async function parseRunElement(
               if (zipPath.startsWith("/")) zipPath = zipPath.slice(1);
               if (!zipPath.startsWith("word/")) zipPath = "word/" + target;
               const file = zip.file(zipPath);
-              const ext = target.split('.').pop()?.toLowerCase();
-              const mime = ext === 'png' ? 'image/png' : ext === 'jpeg' || ext === 'jpg' ? 'image/jpeg' : 'image/png';
+              const ext = target.split(".").pop()?.toLowerCase();
+              const mime =
+                ext === "png"
+                  ? "image/png"
+                  : ext === "jpeg" || ext === "jpg"
+                    ? "image/jpeg"
+                    : "image/png";
               const base64 = await file?.async("base64");
               if (base64) {
                 textParts.push("\uFFFC");
@@ -91,7 +110,8 @@ export async function parseRunElement(
                   if (cy) height = Math.round(parseInt(cy, 10) / 9525);
                 }
                 const alt = docPr
-                  ? getAttributeValue(docPr, "descr") ?? getAttributeValue(docPr, "title")
+                  ? (getAttributeValue(docPr, "descr") ??
+                    getAttributeValue(docPr, "title"))
                   : null;
                 // Store the heavy base64 payload in the document's asset
                 // registry exactly once and reference it from the run.
@@ -140,22 +160,24 @@ export async function parseRunsContainer(
   inheritedLink?: string | null,
 ): Promise<ImportedRun[]> {
   const runs: ImportedRun[] = [];
-  let activeField:
-    | {
-        instruction: string;
-        resultRuns: ImportedRun[];
-        collectingResult: boolean;
-      }
-    | null = null;
+  let activeField: {
+    instruction: string;
+    resultRuns: ImportedRun[];
+    collectingResult: boolean;
+  } | null = null;
 
   const flushActiveField = () => {
     if (!activeField) {
       return;
     }
     const instruction = activeField.instruction;
-    const fieldType =
-      /\bNUMPAGES\b/i.test(instruction) ? "NUMPAGES" : /\bPAGE\b/i.test(instruction) ? "PAGE" : null;
-    const displayText = activeField.resultRuns.map((run) => run.text).join("") || "1";
+    const fieldType = /\bNUMPAGES\b/i.test(instruction)
+      ? "NUMPAGES"
+      : /\bPAGE\b/i.test(instruction)
+        ? "PAGE"
+        : null;
+    const displayText =
+      activeField.resultRuns.map((run) => run.text).join("") || "1";
     const styles = activeField.resultRuns.find((run) => run.styles)?.styles;
     runs.push({
       text: displayText,
@@ -208,14 +230,24 @@ export async function parseRunsContainer(
 
       // Detect a footnote reference child element. It is mutually exclusive
       // with normal text/image content inside the run.
-      const footnoteRefEl = getFirstChildByTagNameNS(element, WORD_NS, "footnoteReference");
+      const footnoteRefEl = getFirstChildByTagNameNS(
+        element,
+        WORD_NS,
+        "footnoteReference",
+      );
       if (footnoteRefEl) {
         const docxId = getAttributeValue(footnoteRefEl, "id");
         if (!docxId) {
           continue;
         }
-        const customMark = getAttributeValue(footnoteRefEl, "customMarkFollows");
-        let styles = parseRunStyle(getFirstChildByTagNameNS(element, WORD_NS, "rPr"), themeFonts);
+        const customMark = getAttributeValue(
+          footnoteRefEl,
+          "customMarkFollows",
+        );
+        let styles = parseRunStyle(
+          getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
+          themeFonts,
+        );
         // Default to superscript marker styling when the run does not specify it.
         (styles ??= {}).styleId ??= "footnoteReference";
         if (styles.superscript === undefined) styles.superscript = true;
@@ -236,12 +268,20 @@ export async function parseRunsContainer(
         continue;
       }
 
-      const { text, image } = await parseRunElement(element, zip, relsMap, assets);
+      const { text, image } = await parseRunElement(
+        element,
+        zip,
+        relsMap,
+        assets,
+      );
       if (text.length === 0) {
         continue;
       }
 
-      let styles = parseRunStyle(getFirstChildByTagNameNS(element, WORD_NS, "rPr"), themeFonts);
+      let styles = parseRunStyle(
+        getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
+        themeFonts,
+      );
       if (inheritedLink) {
         (styles ??= {}).link = inheritedLink;
       }
@@ -260,8 +300,11 @@ export async function parseRunsContainer(
         element.getAttributeNS(WORD_NS, "instr") ??
         element.getAttribute("instr") ??
         "";
-      const fieldType =
-        /\bNUMPAGES\b/i.test(instr) ? "NUMPAGES" : /\bPAGE\b/i.test(instr) ? "PAGE" : null;
+      const fieldType = /\bNUMPAGES\b/i.test(instr)
+        ? "NUMPAGES"
+        : /\bPAGE\b/i.test(instr)
+          ? "PAGE"
+          : null;
       const fieldRuns = await parseRunsContainer(
         element,
         numberingMaps,
@@ -285,7 +328,10 @@ export async function parseRunsContainer(
       let href =
         relsMap.get(
           element.getAttribute("r:id") ??
-            element.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id") ??
+            element.getAttributeNS(
+              "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+              "id",
+            ) ??
             "",
         ) ?? null;
 

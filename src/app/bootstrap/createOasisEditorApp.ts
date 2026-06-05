@@ -1,5 +1,8 @@
 import { render } from "solid-js/web";
-import { OasisEditorApp, type OasisEditorAppProps } from "../../ui/OasisEditorApp.js";
+import {
+  OasisEditorApp,
+  type OasisEditorAppProps,
+} from "../../ui/OasisEditorApp.js";
 
 export interface OasisEditorInstance {
   dispose: () => void;
@@ -7,7 +10,7 @@ export interface OasisEditorInstance {
 
 export function createOasisEditor(
   container: HTMLElement,
-  props: OasisEditorAppProps = {}
+  props: OasisEditorAppProps = {},
 ): OasisEditorInstance {
   const dispose = render(() => OasisEditorApp(props), container);
 

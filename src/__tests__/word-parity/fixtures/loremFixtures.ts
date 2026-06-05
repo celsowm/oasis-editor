@@ -1,4 +1,7 @@
-import type { EditorDocument, EditorPageSettings } from "../../../core/model.js";
+import type {
+  EditorDocument,
+  EditorPageSettings,
+} from "../../../core/model.js";
 import {
   createEditorDocument,
   createEditorParagraph,
@@ -27,7 +30,9 @@ export const LOREM_PARAGRAPH =
   "Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. " +
   "Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi.";
 
-function applyWordLikeBodyStyle(paragraph: ReturnType<typeof createEditorParagraph>): void {
+function applyWordLikeBodyStyle(
+  paragraph: ReturnType<typeof createEditorParagraph>,
+): void {
   paragraph.style = {
     spacingAfter: 8,
     lineHeight: 1.15,

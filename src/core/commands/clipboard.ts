@@ -1,11 +1,40 @@
-import type { EditorParagraphListStyle, EditorParagraphStyle, EditorParagraphNode, EditorState, EditorTextStyle, EditorImageRunData } from "../model.js";
-import { getParagraphLength, getParagraphs, paragraphOffsetToPosition } from "../model.js";
+import type {
+  EditorParagraphListStyle,
+  EditorParagraphStyle,
+  EditorParagraphNode,
+  EditorState,
+  EditorTextStyle,
+  EditorImageRunData,
+} from "../model.js";
+import {
+  getParagraphLength,
+  getParagraphs,
+  paragraphOffsetToPosition,
+} from "../model.js";
 import { createEditorParagraphFromRuns } from "../editorState.js";
 import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
-import { sliceRuns, paragraphStyleToCssText, serializeParagraphRunsToHtml, cloneStyle, deleteSelectionRange, getFocusParagraph, withSelection, buildParagraphFromRuns, cloneRun, getStyleAtOffset, cloneParagraphs, cloneParagraph, cloneStateWithParagraphs } from "./utils.js";
+import {
+  sliceRuns,
+  paragraphStyleToCssText,
+  serializeParagraphRunsToHtml,
+  cloneStyle,
+  deleteSelectionRange,
+  getFocusParagraph,
+  withSelection,
+  buildParagraphFromRuns,
+  cloneRun,
+  getStyleAtOffset,
+  cloneParagraphs,
+  cloneParagraph,
+  cloneStateWithParagraphs,
+} from "./utils.js";
 
 export interface EditorClipboardParagraphSpec {
-  runs: Array<{ text: string; styles?: EditorTextStyle; image?: EditorImageRunData }>;
+  runs: Array<{
+    text: string;
+    styles?: EditorTextStyle;
+    image?: EditorImageRunData;
+  }>;
   style?: EditorParagraphStyle;
   list?: EditorParagraphListStyle;
 }
@@ -27,14 +56,22 @@ export function serializeEditorSelectionToHtml(state: EditorState): string {
     }
   };
 
-  for (let index = normalized.startIndex; index <= normalized.endIndex; index += 1) {
+  for (
+    let index = normalized.startIndex;
+    index <= normalized.endIndex;
+    index += 1
+  ) {
     const paragraph = paragraphs[index];
     if (!paragraph) {
       continue;
     }
 
-    const startOffset = index === normalized.startIndex ? normalized.startParagraphOffset : 0;
-    const endOffset = index === normalized.endIndex ? normalized.endParagraphOffset : getParagraphLength(paragraph);
+    const startOffset =
+      index === normalized.startIndex ? normalized.startParagraphOffset : 0;
+    const endOffset =
+      index === normalized.endIndex
+        ? normalized.endParagraphOffset
+        : getParagraphLength(paragraph);
     const runs = sliceRuns(paragraph, startOffset, endOffset);
     const css = paragraphStyleToCssText(paragraph.style);
     const attrs = css.length > 0 ? ` style="${css}"` : "";
@@ -67,7 +104,9 @@ export function insertClipboardParagraphsAtSelection(
     return state;
   }
 
-  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+  const collapsedState = isSelectionCollapsed(state.selection)
+    ? state
+    : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
   const paragraphs = getParagraphs(collapsedState);
   const beforeRuns = sliceRuns(paragraph, 0, offset);
@@ -86,53 +125,71 @@ export function insertClipboardParagraphsAtSelection(
   });
 
   let nextParagraphs: EditorParagraphNode[];
-  let nextSelection = withSelection(paragraphOffsetToPosition(paragraph, offset));
+  let nextSelection = withSelection(
+    paragraphOffsetToPosition(paragraph, offset),
+  );
 
   if (pastedParagraphs.length === 1) {
     const source = pastedParagraphs[0]!;
-    const sourceLength = source.runs.reduce((total, run) => total + run.text.length, 0);
+    const sourceLength = source.runs.reduce(
+      (total, run) => total + run.text.length,
+      0,
+    );
     const mergedParagraph = buildParagraphFromRuns(
       paragraph,
-      [
-        ...beforeRuns,
-        ...source.runs.map(cloneRun),
-        ...afterRuns,
-      ],
+      [...beforeRuns, ...source.runs.map(cloneRun), ...afterRuns],
       getStyleAtOffset(paragraph, offset),
     );
-    mergedParagraph.style = paragraph.style ? { ...paragraph.style } : source.style ? { ...source.style } : undefined;
-    mergedParagraph.list = paragraph.list ? { ...paragraph.list } : source.list ? { ...source.list } : undefined;
+    mergedParagraph.style = paragraph.style
+      ? { ...paragraph.style }
+      : source.style
+        ? { ...source.style }
+        : undefined;
+    mergedParagraph.list = paragraph.list
+      ? { ...paragraph.list }
+      : source.list
+        ? { ...source.list }
+        : undefined;
     nextParagraphs = [
       ...cloneParagraphs(paragraphs.slice(0, index)),
       mergedParagraph,
       ...cloneParagraphs(paragraphs.slice(index + 1)),
     ];
     nextSelection = withSelection(
-      paragraphOffsetToPosition(mergedParagraph, beforeRuns.reduce((total, run) => total + run.text.length, 0) + sourceLength),
+      paragraphOffsetToPosition(
+        mergedParagraph,
+        beforeRuns.reduce((total, run) => total + run.text.length, 0) +
+          sourceLength,
+      ),
     );
   } else {
     const firstSource = pastedParagraphs[0]!;
     const lastSource = pastedParagraphs[pastedParagraphs.length - 1]!;
-    const lastSourceLength = lastSource.runs.reduce((total, run) => total + run.text.length, 0);
+    const lastSourceLength = lastSource.runs.reduce(
+      (total, run) => total + run.text.length,
+      0,
+    );
     const firstParagraph = buildParagraphFromRuns(
       paragraph,
-      [
-        ...beforeRuns,
-        ...firstSource.runs.map(cloneRun),
-      ],
+      [...beforeRuns, ...firstSource.runs.map(cloneRun)],
       getStyleAtOffset(paragraph, offset),
     );
-    firstParagraph.style = paragraph.style ? { ...paragraph.style } : firstSource.style ? { ...firstSource.style } : undefined;
-    firstParagraph.list = paragraph.list ? { ...paragraph.list } : firstSource.list ? { ...firstSource.list } : undefined;
+    firstParagraph.style = paragraph.style
+      ? { ...paragraph.style }
+      : firstSource.style
+        ? { ...firstSource.style }
+        : undefined;
+    firstParagraph.list = paragraph.list
+      ? { ...paragraph.list }
+      : firstSource.list
+        ? { ...firstSource.list }
+        : undefined;
 
     const middleParagraphs = pastedParagraphs.slice(1, -1).map(cloneParagraph);
 
     const lastParagraph = buildParagraphFromRuns(
       lastSource,
-      [
-        ...lastSource.runs.map(cloneRun),
-        ...afterRuns,
-      ],
+      [...lastSource.runs.map(cloneRun), ...afterRuns],
       undefined,
     );
     lastParagraph.list = lastSource.list ? { ...lastSource.list } : undefined;
@@ -144,8 +201,14 @@ export function insertClipboardParagraphsAtSelection(
       lastParagraph,
       ...cloneParagraphs(paragraphs.slice(index + 1)),
     ];
-    nextSelection = withSelection(paragraphOffsetToPosition(lastParagraph, lastSourceLength));
+    nextSelection = withSelection(
+      paragraphOffsetToPosition(lastParagraph, lastSourceLength),
+    );
   }
 
-  return cloneStateWithParagraphs(collapsedState, nextParagraphs, nextSelection);
+  return cloneStateWithParagraphs(
+    collapsedState,
+    nextParagraphs,
+    nextSelection,
+  );
 }

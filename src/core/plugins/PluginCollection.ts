@@ -1,4 +1,9 @@
-import type { OasisEditor, OasisPlugin, PluginReference, Unsubscribe } from "../plugin.js";
+import type {
+  OasisEditor,
+  OasisPlugin,
+  PluginReference,
+  Unsubscribe,
+} from "../plugin.js";
 
 interface RegisteredPlugin {
   plugin: OasisPlugin;
@@ -11,7 +16,10 @@ export class PluginCollection {
   private initialized: RegisteredPlugin[] = [];
   private isInitialized = false;
 
-  constructor(private editorInstance: OasisEditor, plugins: OasisPlugin[] = []) {
+  constructor(
+    private editorInstance: OasisEditor,
+    plugins: OasisPlugin[] = [],
+  ) {
     this.plugins = this.resolvePlugins(plugins);
   }
 
@@ -34,11 +42,17 @@ export class PluginCollection {
     const visited = new Set<string>();
     const ordered: OasisPlugin[] = [];
 
-    const resolveRef = (owner: OasisPlugin, ref: PluginReference): OasisPlugin => {
+    const resolveRef = (
+      owner: OasisPlugin,
+      ref: PluginReference,
+    ): OasisPlugin => {
       if (typeof ref === "string") {
-        const found = byName.get(ref) ?? all.find((candidate) => candidate.name === ref);
+        const found =
+          byName.get(ref) ?? all.find((candidate) => candidate.name === ref);
         if (!found) {
-          throw new Error(`Plugin '${owner.name}' requires missing plugin '${ref}'.`);
+          throw new Error(
+            `Plugin '${owner.name}' requires missing plugin '${ref}'.`,
+          );
         }
         register(found);
         return found;
@@ -52,7 +66,9 @@ export class PluginCollection {
         return;
       }
       if (visiting.has(plugin.name)) {
-        throw new Error(`Cyclic plugin dependency detected at '${plugin.name}'.`);
+        throw new Error(
+          `Cyclic plugin dependency detected at '${plugin.name}'.`,
+        );
       }
       visiting.add(plugin.name);
 

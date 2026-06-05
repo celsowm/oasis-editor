@@ -17,6 +17,8 @@ export function ptToPx(value: number): number {
   return value / PX_TO_PT;
 }
 
-export function textStyleToFontSizePt(style: Required<EditorTextStyle>): number {
+export function textStyleToFontSizePt(
+  style: Required<EditorTextStyle>,
+): number {
   return pxToPt(style.fontSize ?? DEFAULT_FONT_SIZE_PX);
 }

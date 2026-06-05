@@ -40,7 +40,9 @@ function readStorageOverride(): boolean | null {
 
 function isLocalhostLike(): boolean {
   const hostname = globalThis.window?.location?.hostname ?? "";
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  return (
+    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1"
+  );
 }
 
 export function isEditorDebugEnabled(): boolean {
@@ -93,7 +95,10 @@ export function installEditorDebugControl(): void {
   };
 }
 
-function unwrapForLogging(value: unknown, seen: WeakSet<object> = new WeakSet()): unknown {
+function unwrapForLogging(
+  value: unknown,
+  seen: WeakSet<object> = new WeakSet(),
+): unknown {
   if (value === null || value === undefined) {
     return value;
   }
@@ -125,14 +130,19 @@ function unwrapForLogging(value: unknown, seen: WeakSet<object> = new WeakSet())
     ]);
   }
   if (value instanceof Set) {
-    return Array.from(value.values()).map((entry) => unwrapForLogging(entry, seen));
+    return Array.from(value.values()).map((entry) =>
+      unwrapForLogging(entry, seen),
+    );
   }
 
   // Plain object or Solid proxy - copy own keys to a fresh object so the
   // browser console renders the values inline instead of "Proxy(Object)".
   const plain: Record<string, unknown> = {};
   for (const key of Object.keys(value as object)) {
-    plain[key] = unwrapForLogging((value as Record<string, unknown>)[key], seen);
+    plain[key] = unwrapForLogging(
+      (value as Record<string, unknown>)[key],
+      seen,
+    );
   }
   return plain;
 }
@@ -193,9 +203,13 @@ export function createEditorLogger(scope: string) {
   };
 
   return {
-    debug: (message: string, payload?: unknown) => write("debug", message, payload),
-    info: (message: string, payload?: unknown) => write("info", message, payload),
-    warn: (message: string, payload?: unknown) => write("warn", message, payload),
-    error: (message: string, payload?: unknown) => write("error", message, payload),
+    debug: (message: string, payload?: unknown) =>
+      write("debug", message, payload),
+    info: (message: string, payload?: unknown) =>
+      write("info", message, payload),
+    warn: (message: string, payload?: unknown) =>
+      write("warn", message, payload),
+    error: (message: string, payload?: unknown) =>
+      write("error", message, payload),
   };
 }

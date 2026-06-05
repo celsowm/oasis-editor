@@ -15,7 +15,9 @@ import { pxToPt, textStyleToFontSizePt } from "../units.js";
 const LIST_PREFIX_OFFSET_PX = 24;
 
 const BULLET_GLYPHS = ["•", "○", "▪", "•", "○", "▪"];
-const ORDERED_DEFAULT_FORMATS: NonNullable<EditorParagraphListStyle["format"]>[] = [
+const ORDERED_DEFAULT_FORMATS: NonNullable<
+  EditorParagraphListStyle["format"]
+>[] = [
   "decimal",
   "lowerLetter",
   "lowerRoman",
@@ -43,9 +45,19 @@ function toRoman(value: number): string {
     return String(value);
   }
   const map: Array<[number, string]> = [
-    [1000, "M"], [900, "CM"], [500, "D"], [400, "CD"],
-    [100, "C"], [90, "XC"], [50, "L"], [40, "XL"],
-    [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"],
+    [1000, "M"],
+    [900, "CM"],
+    [500, "D"],
+    [400, "CD"],
+    [100, "C"],
+    [90, "XC"],
+    [50, "L"],
+    [40, "XL"],
+    [10, "X"],
+    [9, "IX"],
+    [5, "V"],
+    [4, "IV"],
+    [1, "I"],
   ];
   let remaining = value;
   let output = "";
@@ -58,7 +70,10 @@ function toRoman(value: number): string {
   return output;
 }
 
-function formatOrdinal(value: number, format: EditorParagraphListStyle["format"]): string {
+function formatOrdinal(
+  value: number,
+  format: EditorParagraphListStyle["format"],
+): string {
   switch (format) {
     case "lowerLetter":
       return toAlpha(value).toLowerCase();
@@ -98,9 +113,10 @@ export function getListOrdinals(document: EditorDocument): Map<string, number> {
     while (counters.length <= level) {
       counters.push(0);
     }
-    counters[level] = counters[level] === 0 && typeof list.startAt === "number"
-      ? list.startAt
-      : counters[level]! + 1;
+    counters[level] =
+      counters[level] === 0 && typeof list.startAt === "number"
+        ? list.startAt
+        : counters[level]! + 1;
     result.set(paragraph.id, counters[level]!);
     previousWasOrdered = true;
   }
@@ -149,7 +165,11 @@ export function drawListPrefix(
   if (!firstSlot) {
     return;
   }
-  const styles = resolveEffectiveTextStyleForParagraph(undefined, paragraph.style?.styleId, document.styles);
+  const styles = resolveEffectiveTextStyleForParagraph(
+    undefined,
+    paragraph.style?.styleId,
+    document.styles,
+  );
   const fontFace = fontRegistry.resolveFontFace({
     fontFamily: styles.fontFamily,
     bold: styles.bold,

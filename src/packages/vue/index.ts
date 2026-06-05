@@ -29,6 +29,7 @@ export const OasisEditor = defineComponent({
       }
     });
 
-    return () => h("div", { ref: root, class: props.class, style: props.style });
+    return () =>
+      h("div", { ref: root, class: props.class, style: props.style });
   },
 });

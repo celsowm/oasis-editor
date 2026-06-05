@@ -29,7 +29,12 @@ export interface UseEditorSurfaceEventsProps {
       paragraphId: string,
       paragraphOffset: number,
       event: MouseEvent,
-      pointerBounds?: { left: number; top: number; width: number; height: number },
+      pointerBounds?: {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+      },
     ) => void;
   };
   clearPendingCaretTextStyle: () => void;
@@ -41,9 +46,17 @@ export interface UseEditorSurfaceEventsProps {
     clientY: number,
     context?: { forDrag?: boolean },
   ) => SurfaceHit | null;
-  getParagraphById: (doc: EditorState["document"], id: string) => EditorParagraphNode | undefined;
-  textDrag?: { tryStartTextDrag: (event: MouseEvent, hit: SurfaceHit | null) => boolean };
-  logger: { debug: (msg: string) => void; info: (msg: string, payload?: unknown) => void };
+  getParagraphById: (
+    doc: EditorState["document"],
+    id: string,
+  ) => EditorParagraphNode | undefined;
+  textDrag?: {
+    tryStartTextDrag: (event: MouseEvent, hit: SurfaceHit | null) => boolean;
+  };
+  logger: {
+    debug: (msg: string) => void;
+    info: (msg: string, payload?: unknown) => void;
+  };
 }
 
 function resolveTripleClickParagraphRange(
@@ -51,11 +64,15 @@ function resolveTripleClickParagraphRange(
   paragraph: EditorParagraphNode,
   targetZone: EditorEditingZone,
 ): { start: EditorPosition; end: EditorPosition } {
-  const zoneParagraphs = getDocumentParagraphs(state.document).filter((candidate) => {
-    const location = findParagraphLocation(state.document, candidate.id);
-    return location !== null && location.zone === targetZone;
-  });
-  const index = zoneParagraphs.findIndex((candidate) => candidate.id === paragraph.id);
+  const zoneParagraphs = getDocumentParagraphs(state.document).filter(
+    (candidate) => {
+      const location = findParagraphLocation(state.document, candidate.id);
+      return location !== null && location.zone === targetZone;
+    },
+  );
+  const index = zoneParagraphs.findIndex(
+    (candidate) => candidate.id === paragraph.id,
+  );
   const nextParagraph = index >= 0 ? zoneParagraphs[index + 1] : undefined;
   const start = paragraphOffsetToPosition(paragraph, 0);
   const end = nextParagraph
@@ -79,14 +96,20 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
   let lastMouseDownY = 0;
 
   const scheduleFrame = (callback: () => void): number => {
-    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+    if (
+      typeof window !== "undefined" &&
+      typeof window.requestAnimationFrame === "function"
+    ) {
       return window.requestAnimationFrame(() => callback());
     }
     return globalThis.setTimeout(callback, 16) as unknown as number;
   };
 
   const cancelFrame = (handle: number) => {
-    if (typeof window !== "undefined" && typeof window.cancelAnimationFrame === "function") {
+    if (
+      typeof window !== "undefined" &&
+      typeof window.cancelAnimationFrame === "function"
+    ) {
       window.cancelAnimationFrame(handle);
       return;
     }
@@ -102,7 +125,8 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     const isZoneTransition = targetZone !== (state.activeZone ?? "main");
     const targetFootnoteId =
       targetZone === "footnote" && targetPosition
-        ? findParagraphLocation(newState.document, targetPosition.paragraphId)?.footnoteId
+        ? findParagraphLocation(newState.document, targetPosition.paragraphId)
+            ?.footnoteId
         : undefined;
     const isFootnoteTransition =
       targetZone === "footnote" && targetFootnoteId !== state.activeFootnoteId;
@@ -166,7 +190,11 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
 
     if (newHeader !== section.header || newFooter !== section.footer) {
       const newSections = [...sections];
-      newSections[activeSectionIndex] = { ...section, header: newHeader, footer: newFooter };
+      newSections[activeSectionIndex] = {
+        ...section,
+        header: newHeader,
+        footer: newFooter,
+      };
       updatedDocument = { ...updatedDocument, sections: newSections };
     }
 
@@ -182,7 +210,8 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
       selection: { anchor: zonePosition, focus: zonePosition },
       activeSectionIndex,
       activeZone: targetZone,
-      activeFootnoteId: targetZone === "footnote" ? targetFootnoteId : undefined,
+      activeFootnoteId:
+        targetZone === "footnote" ? targetFootnoteId : undefined,
     });
   };
 
@@ -190,8 +219,16 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     const state = deps.state();
     const sel = state.selection;
     const secIdx = getActiveSectionIndex(state);
-    const anchorLocInfo = findParagraphTableLocation(state.document, sel.anchor.paragraphId, secIdx);
-    const focusLocInfo = findParagraphTableLocation(state.document, sel.focus.paragraphId, secIdx);
+    const anchorLocInfo = findParagraphTableLocation(
+      state.document,
+      sel.anchor.paragraphId,
+      secIdx,
+    );
+    const focusLocInfo = findParagraphTableLocation(
+      state.document,
+      sel.focus.paragraphId,
+      secIdx,
+    );
     const anchorLoc = anchorLocInfo
       ? `b${anchorLocInfo.blockIndex}r${anchorLocInfo.rowIndex}c${anchorLocInfo.cellIndex}`
       : "";
@@ -261,8 +298,14 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
       return;
     }
     const now = Date.now();
-    const distance = Math.hypot(event.clientX - lastClickX, event.clientY - lastClickY);
-    const withinStreakWindow = now - lastClickAt <= 450 && distance <= 6 && event.button === lastClickButton;
+    const distance = Math.hypot(
+      event.clientX - lastClickX,
+      event.clientY - lastClickY,
+    );
+    const withinStreakWindow =
+      now - lastClickAt <= 450 &&
+      distance <= 6 &&
+      event.button === lastClickButton;
     clickStreak = withinStreakWindow ? clickStreak + 1 : 1;
     lastClickAt = now;
     lastClickX = event.clientX;
@@ -330,15 +373,24 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     }
 
     if (hit.image) {
-      const imageParagraph = deps.getParagraphById(state.document, hit.image.paragraphId);
+      const imageParagraph = deps.getParagraphById(
+        state.document,
+        hit.image.paragraphId,
+      );
       if (!imageParagraph) {
         deps.focusInputAfterPointerSelection();
         return;
       }
 
       dragAnchor = null;
-      const start = paragraphOffsetToPosition(imageParagraph, hit.image.startOffset);
-      const end = paragraphOffsetToPosition(imageParagraph, hit.image.endOffset);
+      const start = paragraphOffsetToPosition(
+        imageParagraph,
+        hit.image.startOffset,
+      );
+      const end = paragraphOffsetToPosition(
+        imageParagraph,
+        hit.image.endOffset,
+      );
       applyWithZone(
         state,
         hit.zone,
@@ -383,7 +435,11 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
 
     if (clickDetail >= 3 && paragraph) {
       dragAnchor = null;
-      const range = resolveTripleClickParagraphRange(state, paragraph, hit.zone);
+      const range = resolveTripleClickParagraphRange(
+        state,
+        paragraph,
+        hit.zone,
+      );
       applyWithZone(
         state,
         hit.zone,
@@ -397,7 +453,10 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
 
     if (clickDetail === 2 && paragraph) {
       dragAnchor = null;
-      const word = resolveWordSelection(getParagraphText(paragraph), hit.paragraphOffset);
+      const word = resolveWordSelection(
+        getParagraphText(paragraph),
+        hit.paragraphOffset,
+      );
       const startPos = paragraphOffsetToPosition(paragraph, word.start);
       const endPos = paragraphOffsetToPosition(paragraph, word.end);
       applyWithZone(
@@ -450,8 +509,12 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     }
     event.preventDefault();
     const state = deps.state();
-    const distanceFromMouseDown = Math.hypot(event.clientX - lastMouseDownX, event.clientY - lastMouseDownY);
-    const useMouseDownHit = Date.now() - lastMouseDownAt <= 600 && distanceFromMouseDown <= 8;
+    const distanceFromMouseDown = Math.hypot(
+      event.clientX - lastMouseDownX,
+      event.clientY - lastMouseDownY,
+    );
+    const useMouseDownHit =
+      Date.now() - lastMouseDownAt <= 600 && distanceFromMouseDown <= 8;
     const hit = useMouseDownHit
       ? lastMouseDownHit
       : deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY);

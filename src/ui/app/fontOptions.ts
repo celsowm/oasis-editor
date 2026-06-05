@@ -37,7 +37,11 @@ const COMMON_FONT_FAMILIES = [
   "Wingdings",
 ] as const;
 
-function addFontFamily(target: string[], seen: Set<string>, value: string | null | undefined): void {
+function addFontFamily(
+  target: string[],
+  seen: Set<string>,
+  value: string | null | undefined,
+): void {
   const family = value?.trim();
   if (!family) return;
   const key = family.toLowerCase();

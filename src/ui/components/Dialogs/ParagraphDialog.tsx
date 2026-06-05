@@ -1,9 +1,13 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { Dialog } from "./Dialog.js";
 import { t } from "../../../i18n/index.js";
-import type { EditorParagraphStyle } from "../../../core/model.js";
+import type {
+  EditorBorderStyle,
+  EditorParagraphStyle,
+} from "../../../core/model.js";
 
 type SpecialIndent = "none" | "firstLine" | "hanging";
+type BorderStyleValue = "none" | "solid" | "dashed" | "dotted";
 
 export interface ParagraphDialogInitialValues {
   align: string;
@@ -14,6 +18,21 @@ export interface ParagraphDialogInitialValues {
   spacingBefore: string;
   spacingAfter: string;
   lineHeight: string;
+  shading: string;
+  borderStyle: string;
+  borderWidth: string;
+  borderColor: string;
+  borderSideTop: boolean;
+  borderSideRight: boolean;
+  borderSideBottom: boolean;
+  borderSideLeft: boolean;
+}
+
+export interface ParagraphDialogBorders {
+  top: EditorBorderStyle | null;
+  right: EditorBorderStyle | null;
+  bottom: EditorBorderStyle | null;
+  left: EditorBorderStyle | null;
 }
 
 export interface ParagraphDialogApplyValues {
@@ -25,7 +44,16 @@ export interface ParagraphDialogApplyValues {
   spacingBefore: number | null;
   spacingAfter: number | null;
   lineHeight: number | null;
+  shading: string | null;
+  /**
+   * Per-edge paragraph borders. The dialog edits one shared style/width/color
+   * and toggles which edges carry it; each edge is the shared border or `null`.
+   */
+  borders: ParagraphDialogBorders;
 }
+
+const DEFAULT_BORDER_WIDTH_PT = 0.5;
+const DEFAULT_BORDER_COLOR = "#000000";
 
 export interface ParagraphDialogProps {
   isOpen: boolean;
@@ -52,6 +80,14 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
   const [spacingBefore, setSpacingBefore] = createSignal("");
   const [spacingAfter, setSpacingAfter] = createSignal("");
   const [lineHeight, setLineHeight] = createSignal("");
+  const [shading, setShading] = createSignal("");
+  const [borderStyle, setBorderStyle] = createSignal<BorderStyleValue>("none");
+  const [borderWidth, setBorderWidth] = createSignal("");
+  const [borderColor, setBorderColor] = createSignal("");
+  const [sideTop, setSideTop] = createSignal(false);
+  const [sideRight, setSideRight] = createSignal(false);
+  const [sideBottom, setSideBottom] = createSignal(false);
+  const [sideLeft, setSideLeft] = createSignal(false);
 
   createEffect(() => {
     if (props.isOpen) {
@@ -61,6 +97,21 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
       setSpacingBefore(props.initial.spacingBefore ?? "");
       setSpacingAfter(props.initial.spacingAfter ?? "");
       setLineHeight(props.initial.lineHeight ?? "");
+      setShading(props.initial.shading ?? "");
+      const initialBorderStyle = props.initial.borderStyle;
+      setBorderStyle(
+        initialBorderStyle === "solid" ||
+          initialBorderStyle === "dashed" ||
+          initialBorderStyle === "dotted"
+          ? initialBorderStyle
+          : "none",
+      );
+      setBorderWidth(props.initial.borderWidth ?? "");
+      setBorderColor(props.initial.borderColor ?? "");
+      setSideTop(props.initial.borderSideTop ?? false);
+      setSideRight(props.initial.borderSideRight ?? false);
+      setSideBottom(props.initial.borderSideBottom ?? false);
+      setSideLeft(props.initial.borderSideLeft ?? false);
 
       const firstLine = parseNumber(props.initial.indentFirstLine ?? "");
       const hanging = parseNumber(props.initial.indentHanging ?? "");
@@ -86,15 +137,44 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
     const hanging = special() === "hanging" ? parseNumber(specialBy()) : null;
     const textIndent =
       firstLine !== null ? firstLine : hanging !== null ? -hanging : null;
+    const borderCss =
+      borderStyle() !== "none"
+        ? `${parseNumber(borderWidth()) ?? DEFAULT_BORDER_WIDTH_PT}pt ${borderStyle()} ${
+            borderColor().trim() || DEFAULT_BORDER_COLOR
+          }`
+        : undefined;
     return {
       "text-align": align() || undefined,
       "line-height": lh !== null && lh > 0 ? String(lh) : undefined,
-      "padding-left":
-        left !== null ? `${left + (hanging ?? 0)}pt` : undefined,
+      "padding-left": left !== null ? `${left + (hanging ?? 0)}pt` : undefined,
       "padding-right": right !== null ? `${right}pt` : undefined,
       "text-indent": textIndent !== null ? `${textIndent}pt` : undefined,
+      "background-color": shading().trim() || undefined,
+      "border-top": borderCss && sideTop() ? borderCss : undefined,
+      "border-right": borderCss && sideRight() ? borderCss : undefined,
+      "border-bottom": borderCss && sideBottom() ? borderCss : undefined,
+      "border-left": borderCss && sideLeft() ? borderCss : undefined,
     } as Record<string, string | undefined>;
   });
+
+  const resolveBorders = (): ParagraphDialogBorders => {
+    const style = borderStyle();
+    if (style === "none") {
+      return { top: null, right: null, bottom: null, left: null };
+    }
+    const width = parseNumber(borderWidth());
+    const border: EditorBorderStyle = {
+      type: style,
+      width: width !== null && width > 0 ? width : DEFAULT_BORDER_WIDTH_PT,
+      color: borderColor().trim() || DEFAULT_BORDER_COLOR,
+    };
+    return {
+      top: sideTop() ? border : null,
+      right: sideRight() ? border : null,
+      bottom: sideBottom() ? border : null,
+      left: sideLeft() ? border : null,
+    };
+  };
 
   const handleApply = () => {
     const by = parseNumber(specialBy());
@@ -108,6 +188,8 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
         spacingBefore: parseNumber(spacingBefore()),
         spacingAfter: parseNumber(spacingAfter()),
         lineHeight: parseNumber(lineHeight()),
+        shading: shading().trim() || null,
+        borders: resolveBorders(),
       },
       props.initial,
     );
@@ -268,8 +350,138 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
         </div>
       </div>
 
+      <div class="oasis-editor-dialog-row">
+        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+          <label class="oasis-editor-dialog-label">
+            {t("paragraph.borderStyleLabel")}
+          </label>
+          <select
+            class="oasis-editor-dialog-input"
+            value={borderStyle()}
+            onChange={(e) => {
+              const next = e.currentTarget.value as BorderStyleValue;
+              setBorderStyle(next);
+              if (next === "none") {
+                setSideTop(false);
+                setSideRight(false);
+                setSideBottom(false);
+                setSideLeft(false);
+              } else if (
+                !sideTop() &&
+                !sideRight() &&
+                !sideBottom() &&
+                !sideLeft()
+              ) {
+                setSideTop(true);
+                setSideRight(true);
+                setSideBottom(true);
+                setSideLeft(true);
+              }
+            }}
+            data-testid="editor-paragraph-dialog-border-style"
+          >
+            <option value="none">{t("paragraph.borderNone")}</option>
+            <option value="solid">{t("paragraph.borderSolid")}</option>
+            <option value="dashed">{t("paragraph.borderDashed")}</option>
+            <option value="dotted">{t("paragraph.borderDotted")}</option>
+          </select>
+        </div>
+        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+          <label class="oasis-editor-dialog-label">
+            {t("paragraph.borderWidthLabel")}
+          </label>
+          <input
+            type="number"
+            class="oasis-editor-dialog-input"
+            min="0"
+            step="0.25"
+            disabled={borderStyle() === "none"}
+            value={borderWidth()}
+            onInput={(e) => setBorderWidth(e.currentTarget.value)}
+            data-testid="editor-paragraph-dialog-border-width"
+          />
+        </div>
+        <div class="oasis-editor-dialog-input-group">
+          <label class="oasis-editor-dialog-label">
+            {t("paragraph.borderColorLabel")}
+          </label>
+          <input
+            type="color"
+            class="oasis-editor-dialog-input"
+            disabled={borderStyle() === "none"}
+            value={borderColor() || DEFAULT_BORDER_COLOR}
+            onInput={(e) => setBorderColor(e.currentTarget.value)}
+            data-testid="editor-paragraph-dialog-border-color"
+          />
+        </div>
+        <div class="oasis-editor-dialog-input-group">
+          <label class="oasis-editor-dialog-label">
+            {t("paragraph.shadingLabel")}
+          </label>
+          <input
+            type="color"
+            class="oasis-editor-dialog-input"
+            value={shading() || "#ffffff"}
+            onInput={(e) => setShading(e.currentTarget.value)}
+            data-testid="editor-paragraph-dialog-shading"
+          />
+        </div>
+      </div>
+
+      <div class="oasis-editor-dialog-row">
+        <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+          <label class="oasis-editor-dialog-label">
+            {t("paragraph.borderSidesLabel")}
+          </label>
+          <div class="oasis-editor-dialog-style-row">
+            <label class="oasis-editor-dialog-style-toggle">
+              <input
+                type="checkbox"
+                disabled={borderStyle() === "none"}
+                checked={sideTop()}
+                onChange={(e) => setSideTop(e.currentTarget.checked)}
+                data-testid="editor-paragraph-dialog-border-side-top"
+              />
+              {t("paragraph.borderSideTop")}
+            </label>
+            <label class="oasis-editor-dialog-style-toggle">
+              <input
+                type="checkbox"
+                disabled={borderStyle() === "none"}
+                checked={sideRight()}
+                onChange={(e) => setSideRight(e.currentTarget.checked)}
+                data-testid="editor-paragraph-dialog-border-side-right"
+              />
+              {t("paragraph.borderSideRight")}
+            </label>
+            <label class="oasis-editor-dialog-style-toggle">
+              <input
+                type="checkbox"
+                disabled={borderStyle() === "none"}
+                checked={sideBottom()}
+                onChange={(e) => setSideBottom(e.currentTarget.checked)}
+                data-testid="editor-paragraph-dialog-border-side-bottom"
+              />
+              {t("paragraph.borderSideBottom")}
+            </label>
+            <label class="oasis-editor-dialog-style-toggle">
+              <input
+                type="checkbox"
+                disabled={borderStyle() === "none"}
+                checked={sideLeft()}
+                onChange={(e) => setSideLeft(e.currentTarget.checked)}
+                data-testid="editor-paragraph-dialog-border-side-left"
+              />
+              {t("paragraph.borderSideLeft")}
+            </label>
+          </div>
+        </div>
+      </div>
+
       <div class="oasis-editor-dialog-input-group">
-        <label class="oasis-editor-dialog-label">{t("paragraph.preview")}</label>
+        <label class="oasis-editor-dialog-label">
+          {t("paragraph.preview")}
+        </label>
         <div
           class="oasis-editor-dialog-preview"
           data-testid="editor-paragraph-dialog-preview"

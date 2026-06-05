@@ -35,9 +35,31 @@ export async function parseHeaderFooterXml(
     }
     const element = node as XmlElement;
     if (element.localName === "p" && element.namespaceURI === WORD_NS) {
-      blocks.push(await parseParagraphNode(element, numberingMaps, zip, relsMap, assets, themeFonts));
-    } else if (element.localName === "tbl" && element.namespaceURI === WORD_NS) {
-      blocks.push(await parseTableNode(element, numberingMaps, zip, relsMap, assets, themeFonts, styles));
+      blocks.push(
+        await parseParagraphNode(
+          element,
+          numberingMaps,
+          zip,
+          relsMap,
+          assets,
+          themeFonts,
+        ),
+      );
+    } else if (
+      element.localName === "tbl" &&
+      element.namespaceURI === WORD_NS
+    ) {
+      blocks.push(
+        await parseTableNode(
+          element,
+          numberingMaps,
+          zip,
+          relsMap,
+          assets,
+          themeFonts,
+          styles,
+        ),
+      );
     }
   }
   return blocks;

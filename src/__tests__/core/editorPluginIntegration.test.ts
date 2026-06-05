@@ -36,7 +36,9 @@ describe("Editor plugin integration", () => {
     const editor = await Editor.create({ plugins: [plugin] });
 
     expect(editor.canExecute("blocked")).toBe(false);
-    expect(() => editor.execute("blocked")).toThrow("Command disabled: blocked");
+    expect(() => editor.execute("blocked")).toThrow(
+      "Command disabled: blocked",
+    );
 
     await editor.destroy();
   });
@@ -59,7 +61,9 @@ describe("Editor plugin integration", () => {
     expect(editor.canExecute("positive", 2)).toBe(true);
     expect(editor.canExecute("positive", -1)).toBe(false);
     expect(editor.execute("positive", 2)).toBe(2);
-    expect(() => editor.execute("positive", -1)).toThrow("Command disabled: positive");
+    expect(() => editor.execute("positive", -1)).toThrow(
+      "Command disabled: positive",
+    );
 
     await editor.destroy();
   });
@@ -101,6 +105,8 @@ describe("Editor plugin integration", () => {
       name: "Sync",
     };
 
-    expect(() => new Editor({ plugins: [plugin] })).toThrow("Editor plugins must be initialized with Editor.create(...)");
+    expect(() => new Editor({ plugins: [plugin] })).toThrow(
+      "Editor plugins must be initialized with Editor.create(...)",
+    );
   });
 });

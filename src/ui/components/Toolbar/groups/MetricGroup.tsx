@@ -42,7 +42,10 @@ export function MetricGroup(props: { api: ToolbarActionApi }) {
       </div>
 
       <div class="oasis-editor-toolbar-panel-grid">
-        <label class="oasis-editor-tool-metric" title={t("metric.spacingAfter")}>
+        <label
+          class="oasis-editor-tool-metric"
+          title={t("metric.spacingAfter")}
+        >
           <span>{t("metric.after")}</span>
           <input
             type="number"
@@ -68,7 +71,10 @@ export function MetricGroup(props: { api: ToolbarActionApi }) {
           />
         </label>
 
-        <label class="oasis-editor-tool-metric" title={t("metric.firstLineIndent")}>
+        <label
+          class="oasis-editor-tool-metric"
+          title={t("metric.firstLineIndent")}
+        >
           <span>{t("metric.first")}</span>
           <input
             type="number"
@@ -80,7 +86,10 @@ export function MetricGroup(props: { api: ToolbarActionApi }) {
           />
         </label>
 
-        <label class="oasis-editor-tool-metric" title={t("metric.hangingIndent")}>
+        <label
+          class="oasis-editor-tool-metric"
+          title={t("metric.hangingIndent")}
+        >
           <span>{t("metric.hang")}</span>
           <input
             type="number"
@@ -93,7 +102,10 @@ export function MetricGroup(props: { api: ToolbarActionApi }) {
           />
         </label>
 
-        <label class="oasis-editor-tool-color" title={t("metric.paragraphBgColor")}>
+        <label
+          class="oasis-editor-tool-color"
+          title={t("metric.paragraphBgColor")}
+        >
           <span>{t("metric.paraBg")}</span>
           <input
             type="color"
@@ -101,7 +113,10 @@ export function MetricGroup(props: { api: ToolbarActionApi }) {
             data-testid="editor-toolbar-paragraph-shading"
             value={numValue(api, "setParagraphShading") || "#ffffff"}
             onInput={(event) =>
-              api.commands.execute("setParagraphShading", event.currentTarget.value)
+              api.commands.execute(
+                "setParagraphShading",
+                event.currentTarget.value,
+              )
             }
           />
         </label>

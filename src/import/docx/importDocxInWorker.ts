@@ -44,9 +44,12 @@ export function importDocxInWorker(
   nextRequestId += 1;
 
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL("./importDocxWorker.ts", import.meta.url), {
-      type: "module",
-    });
+    const worker = new Worker(
+      new URL("./importDocxWorker.ts", import.meta.url),
+      {
+        type: "module",
+      },
+    );
 
     const cleanup = () => {
       worker.removeEventListener("message", handleMessage);
@@ -56,7 +59,9 @@ export function importDocxInWorker(
 
     const handleError = (event: ErrorEvent) => {
       cleanup();
-      reject(event.error instanceof Error ? event.error : new Error(event.message));
+      reject(
+        event.error instanceof Error ? event.error : new Error(event.message),
+      );
     };
 
     const handleMessage = (event: MessageEvent<WorkerResponse>) => {
@@ -80,6 +85,8 @@ export function importDocxInWorker(
 
     worker.addEventListener("message", handleMessage);
     worker.addEventListener("error", handleError);
-    worker.postMessage({ type: "import-docx", id: requestId, buffer }, [buffer]);
+    worker.postMessage({ type: "import-docx", id: requestId, buffer }, [
+      buffer,
+    ]);
   });
 }

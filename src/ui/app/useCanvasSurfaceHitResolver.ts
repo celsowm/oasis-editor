@@ -1,8 +1,14 @@
 import type { Accessor } from "solid-js";
 import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
-import { resolveCanvasSurfaceHitAtPoint, type SurfaceHit } from "../canvas/CanvasHitTestService.js";
+import {
+  resolveCanvasSurfaceHitAtPoint,
+  type SurfaceHit,
+} from "../canvas/CanvasHitTestService.js";
 import { buildCanvasLayoutSnapshot } from "../canvas/CanvasLayoutSnapshot.js";
-import { recordCanvasDebugHit, recordCanvasDebugLayoutSnapshot } from "../canvas/CanvasDebug.js";
+import {
+  recordCanvasDebugHit,
+  recordCanvasDebugLayoutSnapshot,
+} from "../canvas/CanvasDebug.js";
 
 type CanvasSnapshotCache = {
   snapshot: ReturnType<typeof buildCanvasLayoutSnapshot>;
@@ -49,14 +55,18 @@ export function createCanvasSurfaceHitResolver(deps: {
     const shouldReuseSnapshot =
       canvasSnapshotCache &&
       canvasSnapshotCache.documentRef === currentState.document &&
-      canvasSnapshotCache.measuredBlockHeightsRef === currentMeasuredBlockHeights &&
-      canvasSnapshotCache.measuredParagraphLayoutsRef === currentMeasuredParagraphLayouts &&
+      canvasSnapshotCache.measuredBlockHeightsRef ===
+        currentMeasuredBlockHeights &&
+      canvasSnapshotCache.measuredParagraphLayoutsRef ===
+        currentMeasuredParagraphLayouts &&
       canvasSnapshotCache.layoutModeValue === currentLayoutMode &&
       canvasSnapshotCache.surfaceRef === currentSurfaceRef &&
       canvasSnapshotCache.viewportScrollTop === viewportScrollTop &&
       canvasSnapshotCache.viewportScrollLeft === viewportScrollLeft &&
-      canvasSnapshotCache.surfaceClientWidth === currentSurfaceRef.clientWidth &&
-      canvasSnapshotCache.surfaceClientHeight === currentSurfaceRef.clientHeight &&
+      canvasSnapshotCache.surfaceClientWidth ===
+        currentSurfaceRef.clientWidth &&
+      canvasSnapshotCache.surfaceClientHeight ===
+        currentSurfaceRef.clientHeight &&
       canvasSnapshotCache.windowWidth === windowWidth &&
       canvasSnapshotCache.windowHeight === windowHeight;
     const snapshot = shouldReuseSnapshot

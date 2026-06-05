@@ -68,7 +68,9 @@ export interface OasisPdfImageOptions {
   height: number;
 }
 
-export type OasisPdfFontResource = OasisPdfBase14FontResource | OasisPdfUnicodeFontResource;
+export type OasisPdfFontResource =
+  | OasisPdfBase14FontResource
+  | OasisPdfUnicodeFontResource;
 
 export interface OasisPdfBase14FontResource {
   kind: "base14";
@@ -125,10 +127,17 @@ function bytesToHex(bytes: Uint8Array): string {
 }
 
 function toHex16(value: number): string {
-  return Math.max(0, value).toString(16).padStart(4, "0").slice(-4).toUpperCase();
+  return Math.max(0, value)
+    .toString(16)
+    .padStart(4, "0")
+    .slice(-4)
+    .toUpperCase();
 }
 
-function colorToRgb(color: string | undefined, fallback: [number, number, number]): [number, number, number] {
+function colorToRgb(
+  color: string | undefined,
+  fallback: [number, number, number],
+): [number, number, number] {
   if (!color) {
     return fallback;
   }
@@ -154,7 +163,9 @@ function colorCommand(
   return `${formatNumber(r)} ${formatNumber(g)} ${formatNumber(b)} ${operator}`;
 }
 
-function resolveFontName(options: Pick<OasisPdfTextOptions, "bold" | "italic" | "fontResourceName">): string {
+function resolveFontName(
+  options: Pick<OasisPdfTextOptions, "bold" | "italic" | "fontResourceName">,
+): string {
   if (options.fontResourceName) {
     return options.fontResourceName;
   }
@@ -180,7 +191,9 @@ function fontResourceObjectBody(resource: OasisPdfFontResource): string {
 }
 
 function sanitizePdfName(value: string | undefined, fallback: string): string {
-  const normalized = (value && value.trim().length > 0 ? value : fallback).replaceAll(" ", "_");
+  const normalized = (
+    value && value.trim().length > 0 ? value : fallback
+  ).replaceAll(" ", "_");
   return normalized.replace(/[^A-Za-z0-9_.+-]/g, "");
 }
 
@@ -216,7 +229,10 @@ const WIN_ANSI_OVERRIDES = new Map<number, number>([
 
 function encodeWinAnsiByte(char: string): number {
   const codePoint = char.codePointAt(0) ?? 0x3f;
-  if ((codePoint >= 0x20 && codePoint <= 0x7e) || (codePoint >= 0xa0 && codePoint <= 0xff)) {
+  if (
+    (codePoint >= 0x20 && codePoint <= 0x7e) ||
+    (codePoint >= 0xa0 && codePoint <= 0xff)
+  ) {
     return codePoint;
   }
   return WIN_ANSI_OVERRIDES.get(codePoint) ?? 0x3f;
@@ -224,7 +240,9 @@ function encodeWinAnsiByte(char: string): number {
 
 function encodePdfHexString(value: string): string {
   return Array.from(value)
-    .map((char) => encodeWinAnsiByte(char).toString(16).padStart(2, "0").toUpperCase())
+    .map((char) =>
+      encodeWinAnsiByte(char).toString(16).padStart(2, "0").toUpperCase(),
+    )
     .join("");
 }
 
@@ -243,7 +261,9 @@ function encodePdfUtf16Hex(codePoints: number[]): string {
 }
 
 function buildToUnicodeCMap(unicode: number[][]): string {
-  const entries = unicode.map((codePoints) => `<${encodePdfUtf16Hex(codePoints)}>`).filter((entry) => entry !== "<>");
+  const entries = unicode
+    .map((codePoints) => `<${encodePdfUtf16Hex(codePoints)}>`)
+    .filter((entry) => entry !== "<>");
   if (entries.length === 0) {
     entries.push("<0000>");
   }
@@ -252,7 +272,9 @@ function buildToUnicodeCMap(unicode: number[][]): string {
   const chunkSize = 256;
   for (let start = 0; start < entries.length; start += chunkSize) {
     const end = Math.min(start + chunkSize, entries.length);
-    ranges.push(`<${toHex16(start)}> <${toHex16(end - 1)}> [${entries.slice(start, end).join(" ")}]`);
+    ranges.push(
+      `<${toHex16(start)}> <${toHex16(end - 1)}> [${entries.slice(start, end).join(" ")}]`,
+    );
   }
 
   return [
@@ -281,17 +303,27 @@ function buildToUnicodeCMap(unicode: number[][]): string {
 }
 
 function streamObjectBody(stream: string, extraDictionary = ""): string {
-  const dictionary = extraDictionary ? ` /${extraDictionary.trim().replace(/^\/+/, "")}` : "";
+  const dictionary = extraDictionary
+    ? ` /${extraDictionary.trim().replace(/^\/+/, "")}`
+    : "";
   return `<< /Length ${byteLength(stream)}${dictionary} >>\nstream\n${stream}endstream`;
 }
 
-function asciiHexStreamObjectBody(bytes: Uint8Array, extraDictionary = ""): string {
+function asciiHexStreamObjectBody(
+  bytes: Uint8Array,
+  extraDictionary = "",
+): string {
   const stream = `${bytesToHex(bytes)}>`;
-  const dictionary = extraDictionary ? ` /${extraDictionary.trim().replace(/^\/+/, "")}` : "";
+  const dictionary = extraDictionary
+    ? ` /${extraDictionary.trim().replace(/^\/+/, "")}`
+    : "";
   return `<< /Length ${byteLength(stream)} /Filter /ASCIIHexDecode${dictionary} >>\nstream\n${stream}\nendstream`;
 }
 
-function asciiHexImageStreamObjectBody(bytes: Uint8Array, dictionaryEntries: string[]): string {
+function asciiHexImageStreamObjectBody(
+  bytes: Uint8Array,
+  dictionaryEntries: string[],
+): string {
   const stream = `${bytesToHex(bytes)}>`;
   return [
     `<< /Length ${byteLength(stream)}`,
@@ -309,18 +341,25 @@ function encodeGlyphHex(glyphId: number): string {
 }
 
 function textMarkerComment(value: string): string {
-  const codePoints = Array.from(value).map((char) => char.codePointAt(0) ?? 0xfffd);
+  const codePoints = Array.from(value).map(
+    (char) => char.codePointAt(0) ?? 0xfffd,
+  );
   return `% OasisText ${encodePdfUtf16Hex(codePoints)}`;
 }
 
 export class OasisPdfWriter {
   private readonly pages: OasisPdfPage[] = [];
   private readonly fontResources = new Map<string, OasisPdfFontResource>();
-  private readonly unicodeFontStates = new Map<string, OasisPdfUnicodeFontState>();
+  private readonly unicodeFontStates = new Map<
+    string,
+    OasisPdfUnicodeFontState
+  >();
   private readonly usedFontResourceNames = new Set<string>();
   private readonly imageResources = new Map<string, OasisPdfImageResource>();
 
-  constructor(fontResources: OasisPdfFontResource[] = DEFAULT_PDF_FONT_RESOURCES) {
+  constructor(
+    fontResources: OasisPdfFontResource[] = DEFAULT_PDF_FONT_RESOURCES,
+  ) {
     for (const resource of fontResources) {
       this.registerFontResource(resource);
     }
@@ -328,7 +367,10 @@ export class OasisPdfWriter {
 
   registerFontResource(resource: OasisPdfFontResource): void {
     this.fontResources.set(resource.resourceName, resource);
-    if (resource.kind === "unicode" && !this.unicodeFontStates.has(resource.resourceName)) {
+    if (
+      resource.kind === "unicode" &&
+      !this.unicodeFontStates.has(resource.resourceName)
+    ) {
       const font = fontkit.create(resource.fontData, resource.postscriptName);
       const subset = font.createSubset();
       const scale = 1000 / font.unitsPerEm;
@@ -373,13 +415,15 @@ export class OasisPdfWriter {
       commands.push(`${formatNumber(options.lineWidth ?? 1)} w`);
     }
 
-    commands.push([
-      formatNumber(options.x),
-      formatNumber(page.height - options.y - options.height),
-      formatNumber(options.width),
-      formatNumber(options.height),
-      "re",
-    ].join(" "));
+    commands.push(
+      [
+        formatNumber(options.x),
+        formatNumber(page.height - options.y - options.height),
+        formatNumber(options.width),
+        formatNumber(options.height),
+        "re",
+      ].join(" "),
+    );
 
     if (options.fill && options.stroke) {
       commands.push("B");
@@ -403,7 +447,10 @@ export class OasisPdfWriter {
         ? `[${options.dashArray.map((value) => formatNumber(value)).join(" ")}] 0 d`
         : null;
 
-    const commands: string[] = ["q", colorCommand(options.stroke, "RG", [0, 0, 0])];
+    const commands: string[] = [
+      "q",
+      colorCommand(options.stroke, "RG", [0, 0, 0]),
+    ];
     if (dashCommand) {
       commands.push(dashCommand);
     }
@@ -431,25 +478,34 @@ export class OasisPdfWriter {
       return;
     }
 
-    page.commands.push([
-      textMarkerComment(options.text),
-      "BT",
-      colorCommand(options.color, "rg", [0, 0, 0]),
-      `/${fontResourceName} ${formatNumber(options.fontSize ?? 12)} Tf`,
-      ...(options.horizontalScale && options.horizontalScale > 0 && options.horizontalScale !== 100
-        ? [`${formatNumber(options.horizontalScale)} Tz`]
-        : []),
-      ...(options.characterSpacing && options.characterSpacing !== 0
-        ? [`${formatNumber(options.characterSpacing)} Tc`]
-        : []),
-      `${formatNumber(options.x)} ${formatNumber(page.height - options.y)} Td`,
-      `<${encodePdfHexString(options.text)}> Tj`,
-      "ET",
-    ].join("\n"));
+    page.commands.push(
+      [
+        textMarkerComment(options.text),
+        "BT",
+        colorCommand(options.color, "rg", [0, 0, 0]),
+        `/${fontResourceName} ${formatNumber(options.fontSize ?? 12)} Tf`,
+        ...(options.horizontalScale &&
+        options.horizontalScale > 0 &&
+        options.horizontalScale !== 100
+          ? [`${formatNumber(options.horizontalScale)} Tz`]
+          : []),
+        ...(options.characterSpacing && options.characterSpacing !== 0
+          ? [`${formatNumber(options.characterSpacing)} Tc`]
+          : []),
+        `${formatNumber(options.x)} ${formatNumber(page.height - options.y)} Td`,
+        `<${encodePdfHexString(options.text)}> Tj`,
+        "ET",
+      ].join("\n"),
+    );
   }
 
-  registerImageResource(resource: Omit<OasisPdfImageResource, "resourceName"> & { resourceName?: string }): string {
-    const resourceName = resource.resourceName ?? `Im${this.imageResources.size + 1}`;
+  registerImageResource(
+    resource: Omit<OasisPdfImageResource, "resourceName"> & {
+      resourceName?: string;
+    },
+  ): string {
+    const resourceName =
+      resource.resourceName ?? `Im${this.imageResources.size + 1}`;
     if (!this.imageResources.has(resourceName)) {
       this.imageResources.set(resourceName, {
         resourceName,
@@ -464,28 +520,38 @@ export class OasisPdfWriter {
 
   drawImage(pageIndex: number, options: OasisPdfImageOptions): void {
     const page = this.pages[pageIndex];
-    if (!page || options.width <= 0 || options.height <= 0 || !this.imageResources.has(options.resourceName)) {
+    if (
+      !page ||
+      options.width <= 0 ||
+      options.height <= 0 ||
+      !this.imageResources.has(options.resourceName)
+    ) {
       return;
     }
 
     page.imageResourceNames.add(options.resourceName);
-    page.commands.push([
-      "q",
+    page.commands.push(
       [
-        formatNumber(options.width),
-        "0",
-        "0",
-        formatNumber(options.height),
-        formatNumber(options.x),
-        formatNumber(page.height - options.y - options.height),
-        "cm",
-      ].join(" "),
-      `/${options.resourceName} Do`,
-      "Q",
-    ].join("\n"));
+        "q",
+        [
+          formatNumber(options.width),
+          "0",
+          "0",
+          formatNumber(options.height),
+          formatNumber(options.x),
+          formatNumber(page.height - options.y - options.height),
+          "cm",
+        ].join(" "),
+        `/${options.resourceName} Do`,
+        "Q",
+      ].join("\n"),
+    );
   }
 
-  private layoutUnicodeText(state: OasisPdfUnicodeFontState, text: string): FontkitGlyphRun {
+  private layoutUnicodeText(
+    state: OasisPdfUnicodeFontState,
+    text: string,
+  ): FontkitGlyphRun {
     const cached = state.layoutCache.get(text);
     if (cached) {
       return cached;
@@ -503,25 +569,33 @@ export class OasisPdfWriter {
       const subsetGlyphId = state.subset.includeGlyph(glyph.id);
       const position: FontkitPosition | undefined = run.positions[index];
       const nominalWidth = glyph.advanceWidth * state.scale;
-      const desiredAdvance = (position?.xAdvance ?? glyph.advanceWidth) * state.scale;
+      const desiredAdvance =
+        (position?.xAdvance ?? glyph.advanceWidth) * state.scale;
       if (state.widths[subsetGlyphId] == null) {
         state.widths[subsetGlyphId] = nominalWidth;
       }
       if (state.unicode[subsetGlyphId] == null) {
-        state.unicode[subsetGlyphId] = glyph.codePoints.length > 0 ? glyph.codePoints : [0xfffd];
+        state.unicode[subsetGlyphId] =
+          glyph.codePoints.length > 0 ? glyph.codePoints : [0xfffd];
       }
       return { glyphId: subsetGlyphId, nominalWidth, desiredAdvance };
     });
   }
 
-  private drawUnicodeText(page: OasisPdfPage, state: OasisPdfUnicodeFontState, options: OasisPdfTextOptions): void {
+  private drawUnicodeText(
+    page: OasisPdfPage,
+    state: OasisPdfUnicodeFontState,
+    options: OasisPdfTextOptions,
+  ): void {
     const run = this.layoutUnicodeText(state, options.text);
     const encoded = this.encodeUnicodeGlyphRun(state, run);
     if (encoded.length === 0) {
       return;
     }
 
-    const usesAdjustments = encoded.some((glyph) => Math.abs(glyph.nominalWidth - glyph.desiredAdvance) > 0.01);
+    const usesAdjustments = encoded.some(
+      (glyph) => Math.abs(glyph.nominalWidth - glyph.desiredAdvance) > 0.01,
+    );
     const textCommand = usesAdjustments
       ? `[${encoded
           .map((glyph) => {
@@ -533,21 +607,25 @@ export class OasisPdfWriter {
           .join(" ")}] TJ`
       : `<${encoded.map((glyph) => encodeGlyphHex(glyph.glyphId)).join("")}> Tj`;
 
-    page.commands.push([
-      textMarkerComment(options.text),
-      "BT",
-      colorCommand(options.color, "rg", [0, 0, 0]),
-      `/${state.resource.resourceName} ${formatNumber(options.fontSize ?? 12)} Tf`,
-      ...(options.horizontalScale && options.horizontalScale > 0 && options.horizontalScale !== 100
-        ? [`${formatNumber(options.horizontalScale)} Tz`]
-        : []),
-      ...(options.characterSpacing && options.characterSpacing !== 0
-        ? [`${formatNumber(options.characterSpacing)} Tc`]
-        : []),
-      `${formatNumber(options.x)} ${formatNumber(page.height - options.y)} Td`,
-      textCommand,
-      "ET",
-    ].join("\n"));
+    page.commands.push(
+      [
+        textMarkerComment(options.text),
+        "BT",
+        colorCommand(options.color, "rg", [0, 0, 0]),
+        `/${state.resource.resourceName} ${formatNumber(options.fontSize ?? 12)} Tf`,
+        ...(options.horizontalScale &&
+        options.horizontalScale > 0 &&
+        options.horizontalScale !== 100
+          ? [`${formatNumber(options.horizontalScale)} Tz`]
+          : []),
+        ...(options.characterSpacing && options.characterSpacing !== 0
+          ? [`${formatNumber(options.characterSpacing)} Tc`]
+          : []),
+        `${formatNumber(options.x)} ${formatNumber(page.height - options.y)} Td`,
+        textCommand,
+        "ET",
+      ].join("\n"),
+    );
   }
 
   toArrayBuffer(): ArrayBuffer {
@@ -574,7 +652,9 @@ export class OasisPdfWriter {
     const catalogObjectId = addObject("");
     const pagesObjectId = addObject("");
     const fontResourceEntries = Array.from(this.fontResources.values()).filter(
-      (resource) => resource.kind === "base14" || this.usedFontResourceNames.has(resource.resourceName),
+      (resource) =>
+        resource.kind === "base14" ||
+        this.usedFontResourceNames.has(resource.resourceName),
     );
     const fontObjectIds = fontResourceEntries.map((font) => {
       if (font.kind === "unicode") {
@@ -590,13 +670,18 @@ export class OasisPdfWriter {
       .join(" ");
     const imageObjectIds = new Map<string, number>();
     for (const image of this.imageResources.values()) {
-      imageObjectIds.set(image.resourceName, this.addImageObject(image, addObject));
+      imageObjectIds.set(
+        image.resourceName,
+        this.addImageObject(image, addObject),
+      );
     }
     const pageObjectIds: number[] = [];
 
     for (const page of this.pages) {
       const stream = `${page.commands.join("\n")}\n`;
-      const contentObjectId = addObject(`<< /Length ${byteLength(stream)} >>\nstream\n${stream}endstream`);
+      const contentObjectId = addObject(
+        `<< /Length ${byteLength(stream)} >>\nstream\n${stream}endstream`,
+      );
       const imageResourceXml = Array.from(page.imageResourceNames)
         .map((resourceName) => {
           const objectId = imageObjectIds.get(resourceName);
@@ -604,19 +689,24 @@ export class OasisPdfWriter {
         })
         .filter(Boolean)
         .join(" ");
-      const xObjectResourceXml = imageResourceXml ? ` /XObject << ${imageResourceXml} >>` : "";
-      const pageObjectId = addObject([
-        "<< /Type /Page",
-        `/Parent ${pagesObjectId} 0 R`,
-        `/MediaBox [0 0 ${formatNumber(page.width)} ${formatNumber(page.height)}]`,
-        `/Resources << /Font << ${fontResourceXml} >>${xObjectResourceXml} >>`,
-        `/Contents ${contentObjectId} 0 R`,
-        ">>",
-      ].join("\n"));
+      const xObjectResourceXml = imageResourceXml
+        ? ` /XObject << ${imageResourceXml} >>`
+        : "";
+      const pageObjectId = addObject(
+        [
+          "<< /Type /Page",
+          `/Parent ${pagesObjectId} 0 R`,
+          `/MediaBox [0 0 ${formatNumber(page.width)} ${formatNumber(page.height)}]`,
+          `/Resources << /Font << ${fontResourceXml} >>${xObjectResourceXml} >>`,
+          `/Contents ${contentObjectId} 0 R`,
+          ">>",
+        ].join("\n"),
+      );
       pageObjectIds.push(pageObjectId);
     }
 
-    objects[catalogObjectId - 1]!.body = `<< /Type /Catalog /Pages ${pagesObjectId} 0 R >>`;
+    objects[catalogObjectId - 1]!.body =
+      `<< /Type /Catalog /Pages ${pagesObjectId} 0 R >>`;
     objects[pagesObjectId - 1]!.body = [
       "<< /Type /Pages",
       `/Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(" ")}]`,
@@ -649,25 +739,36 @@ export class OasisPdfWriter {
     return new TextEncoder().encode(body);
   }
 
-  private addImageObject(resource: OasisPdfImageResource, addObject: (body: string) => number): number {
-    return addObject(asciiHexImageStreamObjectBody(resource.data, [
-      "/Type /XObject",
-      "/Subtype /Image",
-      `/Width ${resource.width}`,
-      `/Height ${resource.height}`,
-      "/ColorSpace /DeviceRGB",
-      "/BitsPerComponent 8",
-    ]));
+  private addImageObject(
+    resource: OasisPdfImageResource,
+    addObject: (body: string) => number,
+  ): number {
+    return addObject(
+      asciiHexImageStreamObjectBody(resource.data, [
+        "/Type /XObject",
+        "/Subtype /Image",
+        `/Width ${resource.width}`,
+        `/Height ${resource.height}`,
+        "/ColorSpace /DeviceRGB",
+        "/BitsPerComponent 8",
+      ]),
+    );
   }
 
-  private addUnicodeFontObjects(state: OasisPdfUnicodeFontState, addObject: (body: string) => number): number {
+  private addUnicodeFontObjects(
+    state: OasisPdfUnicodeFontState,
+    addObject: (body: string) => number,
+  ): number {
     const subsetBytes = state.subset.encode();
     const isCff = state.subset.cff != null;
     const fontFileObjectId = addObject(
-      asciiHexStreamObjectBody(subsetBytes, isCff ? "Subtype /CIDFontType0C" : ""),
+      asciiHexStreamObjectBody(
+        subsetBytes,
+        isCff ? "Subtype /CIDFontType0C" : "",
+      ),
     );
 
-    const familyClass = ((state.font["OS/2"]?.sFamilyClass ?? 0) >> 8) || 0;
+    const familyClass = (state.font["OS/2"]?.sFamilyClass ?? 0) >> 8 || 0;
     let flags = 1 << 2;
     if (state.font.post?.isFixedPitch) {
       flags |= 1 << 0;
@@ -682,51 +783,68 @@ export class OasisPdfWriter {
       flags |= 1 << 6;
     }
 
-    const tag = sanitizePdfName(`${state.resource.resourceName}AAAAAA`, "OASISF").slice(0, 6).padEnd(6, "A");
+    const tag = sanitizePdfName(
+      `${state.resource.resourceName}AAAAAA`,
+      "OASISF",
+    )
+      .slice(0, 6)
+      .padEnd(6, "A");
     const baseFont = `${tag}+${sanitizePdfName(state.font.postscriptName, state.resource.family)}`;
     const bbox = state.font.bbox;
-    const fontDescriptorObjectId = addObject([
-      "<< /Type /FontDescriptor",
-      `/FontName /${baseFont}`,
-      `/Flags ${flags}`,
-      `/FontBBox [${[
-        bbox.minX * state.scale,
-        bbox.minY * state.scale,
-        bbox.maxX * state.scale,
-        bbox.maxY * state.scale,
-      ].map(formatNumber).join(" ")}]`,
-      `/ItalicAngle ${formatNumber(state.font.italicAngle ?? 0)}`,
-      `/Ascent ${formatNumber(state.font.ascent * state.scale)}`,
-      `/Descent ${formatNumber(state.font.descent * state.scale)}`,
-      `/CapHeight ${formatNumber((state.font.capHeight ?? state.font.ascent) * state.scale)}`,
-      `/XHeight ${formatNumber((state.font.xHeight ?? 0) * state.scale)}`,
-      "/StemV 0",
-      isCff ? `/FontFile3 ${fontFileObjectId} 0 R` : `/FontFile2 ${fontFileObjectId} 0 R`,
-      ">>",
-    ].join("\n"));
+    const fontDescriptorObjectId = addObject(
+      [
+        "<< /Type /FontDescriptor",
+        `/FontName /${baseFont}`,
+        `/Flags ${flags}`,
+        `/FontBBox [${[
+          bbox.minX * state.scale,
+          bbox.minY * state.scale,
+          bbox.maxX * state.scale,
+          bbox.maxY * state.scale,
+        ]
+          .map(formatNumber)
+          .join(" ")}]`,
+        `/ItalicAngle ${formatNumber(state.font.italicAngle ?? 0)}`,
+        `/Ascent ${formatNumber(state.font.ascent * state.scale)}`,
+        `/Descent ${formatNumber(state.font.descent * state.scale)}`,
+        `/CapHeight ${formatNumber((state.font.capHeight ?? state.font.ascent) * state.scale)}`,
+        `/XHeight ${formatNumber((state.font.xHeight ?? 0) * state.scale)}`,
+        "/StemV 0",
+        isCff
+          ? `/FontFile3 ${fontFileObjectId} 0 R`
+          : `/FontFile2 ${fontFileObjectId} 0 R`,
+        ">>",
+      ].join("\n"),
+    );
 
-    const descendantFontObjectId = addObject([
-      "<< /Type /Font",
-      `/Subtype /${isCff ? "CIDFontType0" : "CIDFontType2"}`,
-      `/BaseFont /${baseFont}`,
-      "/CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >>",
-      `/FontDescriptor ${fontDescriptorObjectId} 0 R`,
-      `/W [0 [${state.widths.map((width) => formatNumber(width ?? 0)).join(" ")}]]`,
-      isCff ? "" : "/CIDToGIDMap /Identity",
-      ">>",
-    ].filter(Boolean).join("\n"));
+    const descendantFontObjectId = addObject(
+      [
+        "<< /Type /Font",
+        `/Subtype /${isCff ? "CIDFontType0" : "CIDFontType2"}`,
+        `/BaseFont /${baseFont}`,
+        "/CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >>",
+        `/FontDescriptor ${fontDescriptorObjectId} 0 R`,
+        `/W [0 [${state.widths.map((width) => formatNumber(width ?? 0)).join(" ")}]]`,
+        isCff ? "" : "/CIDToGIDMap /Identity",
+        ">>",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    );
 
     const toUnicodeStream = buildToUnicodeCMap(state.unicode);
     const toUnicodeObjectId = addObject(streamObjectBody(toUnicodeStream));
 
-    return addObject([
-      "<< /Type /Font",
-      "/Subtype /Type0",
-      `/BaseFont /${baseFont}`,
-      "/Encoding /Identity-H",
-      `/DescendantFonts [${descendantFontObjectId} 0 R]`,
-      `/ToUnicode ${toUnicodeObjectId} 0 R`,
-      ">>",
-    ].join("\n"));
+    return addObject(
+      [
+        "<< /Type /Font",
+        "/Subtype /Type0",
+        `/BaseFont /${baseFont}`,
+        "/Encoding /Identity-H",
+        `/DescendantFonts [${descendantFontObjectId} 0 R]`,
+        `/ToUnicode ${toUnicodeObjectId} 0 R`,
+        ">>",
+      ].join("\n"),
+    );
   }
 }

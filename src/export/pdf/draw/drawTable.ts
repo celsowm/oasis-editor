@@ -12,6 +12,7 @@ import {
 import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
 import { OasisPdfWriter } from "../OasisPdfWriter.js";
 import { pxToPt } from "../units.js";
+import { borderDashArray } from "./borderDash.js";
 import { drawParagraph } from "./drawParagraph.js";
 
 function drawCellEdge(
@@ -26,9 +27,6 @@ function drawCellEdge(
   if (border.type === "none" || border.width <= 0) {
     return;
   }
-  // Dashed/dotted borders fall back to solid strokes — the underlying writer
-  // does not yet expose a dash-pattern option. The visual difference is
-  // acceptable for document fidelity and avoids leaking PDF state.
   writer.drawLine(pageIndex, {
     x1: pxToPt(x1),
     y1: pxToPt(y1),
@@ -36,6 +34,7 @@ function drawCellEdge(
     y2: pxToPt(y2),
     stroke: border.color,
     lineWidth: pxToPt(border.width),
+    dashArray: borderDashArray(border.type),
   });
 }
 
@@ -51,8 +50,24 @@ function drawCellBorders(
   const right = left + cell.width;
   const bottom = top + cell.height;
   drawCellEdge(writer, pageIndex, cell.borders.top, left, top, right, top);
-  drawCellEdge(writer, pageIndex, cell.borders.right, right, top, right, bottom);
-  drawCellEdge(writer, pageIndex, cell.borders.bottom, left, bottom, right, bottom);
+  drawCellEdge(
+    writer,
+    pageIndex,
+    cell.borders.right,
+    right,
+    top,
+    right,
+    bottom,
+  );
+  drawCellEdge(
+    writer,
+    pageIndex,
+    cell.borders.bottom,
+    left,
+    bottom,
+    right,
+    bottom,
+  );
   drawCellEdge(writer, pageIndex, cell.borders.left, left, top, left, bottom);
 }
 
@@ -71,7 +86,9 @@ export async function drawTableBlock(
     return;
   }
   const sourceTable = block.sourceBlock;
-  const segmentTable = block.tableSegment ? buildSegmentTable(sourceTable, block.tableSegment) : sourceTable;
+  const segmentTable = block.tableSegment
+    ? buildSegmentTable(sourceTable, block.tableSegment)
+    : sourceTable;
   if (segmentTable.rows.length === 0) {
     return;
   }

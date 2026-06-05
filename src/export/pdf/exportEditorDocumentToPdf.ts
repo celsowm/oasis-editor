@@ -6,7 +6,10 @@ import {
   getPageHeaderZoneTop,
 } from "../../core/model.js";
 import { findFootnoteReference } from "../../core/footnotes.js";
-import { FOOTNOTE_MARKER_GUTTER_PX, projectDocumentLayout } from "../../layoutProjection/index.js";
+import {
+  FOOTNOTE_MARKER_GUTTER_PX,
+  projectDocumentLayout,
+} from "../../layoutProjection/index.js";
 import { drawBlockList } from "./draw/drawBlockList.js";
 import { drawPageBackground } from "./draw/drawPageBackground.js";
 import { getListOrdinals } from "./draw/lists.js";
@@ -17,11 +20,21 @@ import { pxToPt, textStyleToFontSizePt } from "./units.js";
 
 const FOOTNOTE_BLOCK_GAP_PX = 2;
 
-export async function exportEditorDocumentToPdf(document: EditorDocument): Promise<ArrayBuffer> {
+export async function exportEditorDocumentToPdf(
+  document: EditorDocument,
+): Promise<ArrayBuffer> {
   const fontRegistry = new PdfFontRegistry();
-  await fontRegistry.loadBundledUnicodeFaces({ families: collectPdfFontFamilies(document) });
+  await fontRegistry.loadBundledUnicodeFaces({
+    families: collectPdfFontFamilies(document),
+  });
   const writer = new OasisPdfWriter(fontRegistry.getPdfFontResources());
-  const layout = projectDocumentLayout(document, undefined, undefined, undefined, { layoutMode: "wordParity" });
+  const layout = projectDocumentLayout(
+    document,
+    undefined,
+    undefined,
+    undefined,
+    { layoutMode: "wordParity" },
+  );
   const listOrdinals = getListOrdinals(document);
 
   for (const page of layout.pages) {
@@ -30,7 +43,8 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
     const pageIndex = writer.addPage({ width, height });
     drawPageBackground(writer, pageIndex, width, height);
 
-    const originX = page.pageSettings.margins.left + page.pageSettings.margins.gutter;
+    const originX =
+      page.pageSettings.margins.left + page.pageSettings.margins.gutter;
     const contentWidth = getPageContentWidth(page.pageSettings);
     await drawBlockList(
       writer,
@@ -65,7 +79,11 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
       fontRegistry,
       listOrdinals,
     );
-    if (page.footnoteBlocks && page.footnoteBlocks.length > 0 && page.footnoteTop !== undefined) {
+    if (
+      page.footnoteBlocks &&
+      page.footnoteBlocks.length > 0 &&
+      page.footnoteTop !== undefined
+    ) {
       if (page.footnoteSeparatorTop !== undefined) {
         writer.drawLine(pageIndex, {
           x1: pxToPt(originX),
@@ -99,7 +117,9 @@ export async function exportEditorDocumentToPdf(document: EditorDocument): Promi
   return writer.toArrayBuffer();
 }
 
-export async function exportEditorDocumentToPdfBlob(document: EditorDocument): Promise<Blob> {
+export async function exportEditorDocumentToPdfBlob(
+  document: EditorDocument,
+): Promise<Blob> {
   const buffer = await exportEditorDocumentToPdf(document);
   return new Blob([buffer], { type: "application/pdf" });
 }
@@ -107,7 +127,9 @@ export async function exportEditorDocumentToPdfBlob(document: EditorDocument): P
 async function drawFootnoteBlockList(
   writer: OasisPdfWriter,
   pageIndex: number,
-  blocks: NonNullable<ReturnType<typeof projectDocumentLayout>["pages"][number]["footnoteBlocks"]>,
+  blocks: NonNullable<
+    ReturnType<typeof projectDocumentLayout>["pages"][number]["footnoteBlocks"]
+  >,
   footnoteReferenceIds: string[],
   document: EditorDocument,
   originX: number,
@@ -132,7 +154,10 @@ async function drawFootnoteBlockList(
     if (owningFootnoteId && !markerDrawn.has(owningFootnoteId)) {
       const marker = markerByFootnoteId.get(owningFootnoteId);
       if (marker) {
-        const firstParagraph = block.sourceBlock.type === "paragraph" ? block.sourceBlock : undefined;
+        const firstParagraph =
+          block.sourceBlock.type === "paragraph"
+            ? block.sourceBlock
+            : undefined;
         const styles = resolveEffectiveTextStyleForParagraph(
           undefined,
           firstParagraph?.style?.styleId,

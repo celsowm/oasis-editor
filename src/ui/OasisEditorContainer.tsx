@@ -1,6 +1,9 @@
 import { OasisEditorApp, type OasisEditorAppProps } from "./OasisEditorApp.js";
 
-export interface OasisEditorContainerProps extends Omit<OasisEditorAppProps, "ui"> {
+export interface OasisEditorContainerProps extends Omit<
+  OasisEditorAppProps,
+  "ui"
+> {
   ui?: Omit<NonNullable<OasisEditorAppProps["ui"]>, "showChrome">;
 }
 

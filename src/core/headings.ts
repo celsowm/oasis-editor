@@ -1,4 +1,4 @@
-import type { EditorDocument, EditorParagraphNode } from "./model.js";
+import type { EditorDocument } from "./model.js";
 import { getDocumentParagraphs, getParagraphText } from "./model.js";
 
 export interface OutlineItem {

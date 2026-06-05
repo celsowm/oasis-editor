@@ -8,12 +8,18 @@ export function getParagraphLength(paragraph: EditorParagraphNode): number {
   return getParagraphText(paragraph).length;
 }
 
-export function getRunIndex(paragraph: EditorParagraphNode, runId: string): number {
+export function getRunIndex(
+  paragraph: EditorParagraphNode,
+  runId: string,
+): number {
   const index = paragraph.runs.findIndex((run) => run.id === runId);
   return index === -1 ? 0 : index;
 }
 
-export function getRunStartOffset(paragraph: EditorParagraphNode, runId: string): number {
+export function getRunStartOffset(
+  paragraph: EditorParagraphNode,
+  runId: string,
+): number {
   let offset = 0;
   for (const run of paragraph.runs) {
     if (run.id === runId) {
@@ -28,7 +34,10 @@ export function paragraphOffsetToPosition(
   paragraph: EditorParagraphNode,
   paragraphOffset: number,
 ): EditorPosition {
-  const maxOffset = Math.max(0, Math.min(paragraphOffset, getParagraphLength(paragraph)));
+  const maxOffset = Math.max(
+    0,
+    Math.min(paragraphOffset, getParagraphLength(paragraph)),
+  );
   let consumed = 0;
 
   for (const run of paragraph.runs) {
@@ -63,5 +72,7 @@ export function positionToParagraphOffset(
   }
 
   const activeRun = paragraph.runs[runIndex];
-  return offset + Math.max(0, Math.min(position.offset, activeRun?.text.length ?? 0));
+  return (
+    offset + Math.max(0, Math.min(position.offset, activeRun?.text.length ?? 0))
+  );
 }

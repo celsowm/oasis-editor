@@ -17,7 +17,12 @@ export type EditorUnderlineStyle =
   | "wavyDouble"
   | "words";
 
-export type EditorLigatures = "none" | "standard" | "contextual" | "historical" | "standardContextual";
+export type EditorLigatures =
+  | "none"
+  | "standard"
+  | "contextual"
+  | "historical"
+  | "standardContextual";
 export type EditorNumberSpacing = "default" | "proportional" | "tabular";
 export type EditorNumberForm = "default" | "lining" | "oldStyle";
 
@@ -96,7 +101,13 @@ export interface EditorNamedStyle {
 export interface EditorParagraphListStyle {
   kind: "bullet" | "ordered";
   level?: number;
-  format?: "decimal" | "lowerLetter" | "upperLetter" | "lowerRoman" | "upperRoman" | "bullet";
+  format?:
+    | "decimal"
+    | "lowerLetter"
+    | "upperLetter"
+    | "lowerRoman"
+    | "upperRoman"
+    | "bullet";
   startAt?: number;
 }
 
@@ -316,7 +327,7 @@ export interface EditorDocument {
   footnotes?: EditorFootnotes;
   metadata?: {
     title?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -354,12 +365,18 @@ export function resolveImageSrc(
  * - `null` in `local` → reset to system default (key is included as `null` for the caller to handle)
  * - any other value in `local` → override `resolved`
  */
-function mergeTextStyles(resolved: EditorTextStyle, local: EditorTextStyle | undefined): EditorTextStyle {
+function mergeTextStyles(
+  resolved: EditorTextStyle,
+  local: EditorTextStyle | undefined,
+): EditorTextStyle {
   if (!local) {
     return { ...resolved };
   }
   const result = { ...resolved };
-  for (const [key, value] of Object.entries(local) as [keyof EditorTextStyle, unknown][]) {
+  for (const [key, value] of Object.entries(local) as [
+    keyof EditorTextStyle,
+    unknown,
+  ][]) {
     if (value !== undefined) {
       (result as Record<string, unknown>)[key] = value;
     }
@@ -375,7 +392,10 @@ function mergeParagraphStyles(
     return { ...resolved };
   }
   const result = { ...resolved };
-  for (const [key, value] of Object.entries(local) as [keyof EditorParagraphStyle, unknown][]) {
+  for (const [key, value] of Object.entries(local) as [
+    keyof EditorParagraphStyle,
+    unknown,
+  ][]) {
     if (value !== undefined) {
       (result as Record<string, unknown>)[key] = value;
     }
@@ -417,7 +437,8 @@ const DEFAULT_TEXT_STYLE: Required<EditorTextStyle> = {
   link: null as unknown as string | null,
 };
 
-export const EFFECTIVE_TEXT_STYLE_DEFAULTS: Required<EditorTextStyle> = DEFAULT_TEXT_STYLE;
+export const EFFECTIVE_TEXT_STYLE_DEFAULTS: Required<EditorTextStyle> =
+  DEFAULT_TEXT_STYLE;
 
 const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> = {
   styleId: undefined as unknown as string,
@@ -426,7 +447,12 @@ const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> = {
   spacingAfter: 8,
   lineHeight: 1.15,
   lineGridPitch: null as unknown as number | null,
-  lineGridType: null as unknown as "lines" | "linesAndChars" | "snapToChars" | "implicit" | null,
+  lineGridType: null as unknown as
+    | "lines"
+    | "linesAndChars"
+    | "snapToChars"
+    | "implicit"
+    | null,
   snapToGrid: true,
   indentLeft: 0,
   indentRight: 0,
@@ -444,7 +470,8 @@ const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> = {
   widowControl: true,
 };
 
-export const EFFECTIVE_PARAGRAPH_STYLE_DEFAULTS: Required<EditorParagraphStyle> = DEFAULT_PARAGRAPH_STYLE;
+export const EFFECTIVE_PARAGRAPH_STYLE_DEFAULTS: Required<EditorParagraphStyle> =
+  DEFAULT_PARAGRAPH_STYLE;
 
 function resolveDefaultParagraphStyleId(
   styles: Record<string, EditorNamedStyle> | undefined,
@@ -454,14 +481,16 @@ function resolveDefaultParagraphStyleId(
   }
 
   const exactNormal = Object.values(styles).find(
-    (style) => style.type === "paragraph" && style.id.toLowerCase() === "normal",
+    (style) =>
+      style.type === "paragraph" && style.id.toLowerCase() === "normal",
   );
   if (exactNormal) {
     return exactNormal.id;
   }
 
   const namedNormal = Object.values(styles).find(
-    (style) => style.type === "paragraph" && style.name.toLowerCase() === "normal",
+    (style) =>
+      style.type === "paragraph" && style.name.toLowerCase() === "normal",
   );
   if (namedNormal) {
     return namedNormal.id;
@@ -479,8 +508,10 @@ export function resolveNamedTextStyle(
   }
 
   const namedStyle = styles[styleId];
-  const baseStyle = namedStyle.basedOn ? resolveNamedTextStyle(namedStyle.basedOn, styles) : {};
-  
+  const baseStyle = namedStyle.basedOn
+    ? resolveNamedTextStyle(namedStyle.basedOn, styles)
+    : {};
+
   return {
     ...baseStyle,
     ...(namedStyle.textStyle ?? {}),
@@ -496,7 +527,9 @@ export function resolveNamedParagraphStyle(
   }
 
   const namedStyle = styles[styleId];
-  const baseStyle = namedStyle.basedOn ? resolveNamedParagraphStyle(namedStyle.basedOn, styles) : {};
+  const baseStyle = namedStyle.basedOn
+    ? resolveNamedParagraphStyle(namedStyle.basedOn, styles)
+    : {};
 
   return {
     ...baseStyle,
@@ -530,7 +563,10 @@ export function resolveEffectiveTextStyleForParagraph(
 ): Required<EditorTextStyle> {
   const effectiveParagraphStyleId =
     paragraphStyleId ?? resolveDefaultParagraphStyleId(styles);
-  const paragraphNamed = resolveNamedTextStyle(effectiveParagraphStyleId, styles);
+  const paragraphNamed = resolveNamedTextStyle(
+    effectiveParagraphStyleId,
+    styles,
+  );
   const runNamed = resolveNamedTextStyle(style?.styleId, styles);
   const inherited = mergeTextStyles(paragraphNamed, runNamed);
   const merged = mergeTextStyles(inherited, style);
@@ -547,7 +583,8 @@ export function resolveEffectiveParagraphStyle(
   style: EditorParagraphStyle | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
 ): Required<EditorParagraphStyle> {
-  const effectiveStyleId = style?.styleId ?? resolveDefaultParagraphStyleId(styles);
+  const effectiveStyleId =
+    style?.styleId ?? resolveDefaultParagraphStyleId(styles);
   const named = resolveNamedParagraphStyle(effectiveStyleId, styles);
   const merged = mergeParagraphStyles(named, {
     ...style,
@@ -685,12 +722,19 @@ export const DEFAULT_EDITOR_PAGE_SETTINGS: EditorPageSettings = {
   },
 };
 
-function inferPageOrientation(width: number, height: number): "portrait" | "landscape" {
+function inferPageOrientation(
+  width: number,
+  height: number,
+): "portrait" | "landscape" {
   return width > height ? "landscape" : "portrait";
 }
 
-export function normalizePageSettings(pageSettings: EditorPageSettings): EditorPageSettings {
-  const orientation = pageSettings.orientation ?? inferPageOrientation(pageSettings.width, pageSettings.height);
+export function normalizePageSettings(
+  pageSettings: EditorPageSettings,
+): EditorPageSettings {
+  const orientation =
+    pageSettings.orientation ??
+    inferPageOrientation(pageSettings.width, pageSettings.height);
   const shouldSwap =
     (orientation === "landscape" && pageSettings.width < pageSettings.height) ||
     (orientation === "portrait" && pageSettings.width > pageSettings.height);
@@ -713,20 +757,35 @@ export function normalizePageSettings(pageSettings: EditorPageSettings): EditorP
   };
 }
 
-export function getDocumentPageSettings(document: EditorDocument): EditorPageSettings {
+export function getDocumentPageSettings(
+  document: EditorDocument,
+): EditorPageSettings {
   const pageSettings = document.pageSettings;
   return normalizePageSettings({
     width: pageSettings?.width ?? DEFAULT_EDITOR_PAGE_SETTINGS.width,
     height: pageSettings?.height ?? DEFAULT_EDITOR_PAGE_SETTINGS.height,
-    orientation: pageSettings?.orientation ?? DEFAULT_EDITOR_PAGE_SETTINGS.orientation,
+    orientation:
+      pageSettings?.orientation ?? DEFAULT_EDITOR_PAGE_SETTINGS.orientation,
     margins: {
-      top: pageSettings?.margins.top ?? DEFAULT_EDITOR_PAGE_SETTINGS.margins.top,
-      right: pageSettings?.margins.right ?? DEFAULT_EDITOR_PAGE_SETTINGS.margins.right,
-      bottom: pageSettings?.margins.bottom ?? DEFAULT_EDITOR_PAGE_SETTINGS.margins.bottom,
-      left: pageSettings?.margins.left ?? DEFAULT_EDITOR_PAGE_SETTINGS.margins.left,
-      header: pageSettings?.margins.header ?? DEFAULT_EDITOR_PAGE_SETTINGS.margins.header,
-      footer: pageSettings?.margins.footer ?? DEFAULT_EDITOR_PAGE_SETTINGS.margins.footer,
-      gutter: pageSettings?.margins.gutter ?? DEFAULT_EDITOR_PAGE_SETTINGS.margins.gutter,
+      top:
+        pageSettings?.margins.top ?? DEFAULT_EDITOR_PAGE_SETTINGS.margins.top,
+      right:
+        pageSettings?.margins.right ??
+        DEFAULT_EDITOR_PAGE_SETTINGS.margins.right,
+      bottom:
+        pageSettings?.margins.bottom ??
+        DEFAULT_EDITOR_PAGE_SETTINGS.margins.bottom,
+      left:
+        pageSettings?.margins.left ?? DEFAULT_EDITOR_PAGE_SETTINGS.margins.left,
+      header:
+        pageSettings?.margins.header ??
+        DEFAULT_EDITOR_PAGE_SETTINGS.margins.header,
+      footer:
+        pageSettings?.margins.footer ??
+        DEFAULT_EDITOR_PAGE_SETTINGS.margins.footer,
+      gutter:
+        pageSettings?.margins.gutter ??
+        DEFAULT_EDITOR_PAGE_SETTINGS.margins.gutter,
     },
   });
 }
@@ -734,7 +793,12 @@ export function getDocumentPageSettings(document: EditorDocument): EditorPageSet
 export function getPageContentWidth(pageSettings: EditorPageSettings): number {
   return Math.max(
     24,
-    Math.floor(pageSettings.width - pageSettings.margins.left - pageSettings.margins.right - pageSettings.margins.gutter),
+    Math.floor(
+      pageSettings.width -
+        pageSettings.margins.left -
+        pageSettings.margins.right -
+        pageSettings.margins.gutter,
+    ),
   );
 }
 
@@ -756,27 +820,44 @@ export function getPageBodyTop(pageSettings: EditorPageSettings): number {
   );
 }
 
-export function getPageFooterReferenceTop(pageSettings: EditorPageSettings): number {
-  return pageSettings.height - clampPageOffset(pageSettings.margins.footer, pageSettings.height);
-}
-
-export function getPageBodyBottom(pageSettings: EditorPageSettings): number {
-  const marginBottomTop = pageSettings.height - clampPageOffset(pageSettings.margins.bottom, pageSettings.height);
-  return Math.min(
-    pageSettings.height,
-    Math.max(getPageBodyTop(pageSettings), Math.min(marginBottomTop, getPageFooterReferenceTop(pageSettings))),
+export function getPageFooterReferenceTop(
+  pageSettings: EditorPageSettings,
+): number {
+  return (
+    pageSettings.height -
+    clampPageOffset(pageSettings.margins.footer, pageSettings.height)
   );
 }
 
-export function getPageHeaderZoneHeight(pageSettings: EditorPageSettings): number {
-  return Math.max(0, getPageBodyTop(pageSettings) - getPageHeaderZoneTop(pageSettings));
+export function getPageBodyBottom(pageSettings: EditorPageSettings): number {
+  const marginBottomTop =
+    pageSettings.height -
+    clampPageOffset(pageSettings.margins.bottom, pageSettings.height);
+  return Math.min(
+    pageSettings.height,
+    Math.max(
+      getPageBodyTop(pageSettings),
+      Math.min(marginBottomTop, getPageFooterReferenceTop(pageSettings)),
+    ),
+  );
+}
+
+export function getPageHeaderZoneHeight(
+  pageSettings: EditorPageSettings,
+): number {
+  return Math.max(
+    0,
+    getPageBodyTop(pageSettings) - getPageHeaderZoneTop(pageSettings),
+  );
 }
 
 export function getPageFooterZoneTop(pageSettings: EditorPageSettings): number {
   return getPageBodyBottom(pageSettings);
 }
 
-export function getPageFooterZoneHeight(pageSettings: EditorPageSettings): number {
+export function getPageFooterZoneHeight(
+  pageSettings: EditorPageSettings,
+): number {
   return Math.max(0, pageSettings.height - getPageFooterZoneTop(pageSettings));
 }
 
@@ -787,7 +868,9 @@ export function getPageContentHeight(pageSettings: EditorPageSettings): number {
   );
 }
 
-export function getDocumentSectionsCanonical(document: EditorDocument): EditorSection[] {
+export function getDocumentSectionsCanonical(
+  document: EditorDocument,
+): EditorSection[] {
   if (document.sections && document.sections.length > 0) {
     return document.sections.map((section) => ({
       ...section,
@@ -842,7 +925,9 @@ export function getActiveSectionBlocks(state: EditorState): EditorBlockNode[] {
   return getEditableBlocksForZone(state, "main");
 }
 
-export function getBlockParagraphs(block: EditorBlockNode): EditorParagraphNode[] {
+export function getBlockParagraphs(
+  block: EditorBlockNode,
+): EditorParagraphNode[] {
   if (block.type === "paragraph") {
     return [block];
   }
@@ -850,7 +935,9 @@ export function getBlockParagraphs(block: EditorBlockNode): EditorParagraphNode[
   return block.rows.flatMap((row) => row.cells.flatMap((cell) => cell.blocks));
 }
 
-export function getDocumentParagraphsCanonical(document: EditorDocument): EditorParagraphNode[] {
+export function getDocumentParagraphsCanonical(
+  document: EditorDocument,
+): EditorParagraphNode[] {
   let paragraphs = documentParagraphsCache.get(document);
   if (paragraphs) {
     return paragraphs;
@@ -869,7 +956,9 @@ export function getDocumentParagraphsCanonical(document: EditorDocument): Editor
 
   const footnoteItems = document.footnotes?.items;
   const footnoteParagraphs: EditorParagraphNode[] = footnoteItems
-    ? Object.values(footnoteItems).flatMap((footnote) => footnote.blocks.flatMap(getBlockParagraphs))
+    ? Object.values(footnoteItems).flatMap((footnote) =>
+        footnote.blocks.flatMap(getBlockParagraphs),
+      )
     : [];
 
   paragraphs = [...sectionParagraphs, ...footnoteParagraphs];
@@ -878,12 +967,16 @@ export function getDocumentParagraphsCanonical(document: EditorDocument): Editor
   return paragraphs;
 }
 
-export function getDocumentParagraphs(document: EditorDocument): EditorParagraphNode[] {
+export function getDocumentParagraphs(
+  document: EditorDocument,
+): EditorParagraphNode[] {
   return getDocumentParagraphsCanonical(document);
 }
 
 export function getParagraphs(state: EditorState): EditorParagraphNode[] {
-  return getEditableBlocksForZone(state, getActiveZone(state)).flatMap(getBlockParagraphs);
+  return getEditableBlocksForZone(state, getActiveZone(state)).flatMap(
+    getBlockParagraphs,
+  );
 }
 
 export function getActiveSectionIndex(state: EditorState): number {
@@ -913,44 +1006,81 @@ export interface DocumentParagraphIndexEntry {
   } | null;
 }
 
-const documentIndexCache = new WeakMap<EditorDocument, Map<string, DocumentParagraphIndexEntry>>();
-const documentParagraphsCache = new WeakMap<EditorDocument, EditorParagraphNode[]>();
+const documentIndexCache = new WeakMap<
+  EditorDocument,
+  Map<string, DocumentParagraphIndexEntry>
+>();
+const documentParagraphsCache = new WeakMap<
+  EditorDocument,
+  EditorParagraphNode[]
+>();
 
-export function getDocumentParagraphIndex(document: EditorDocument): Map<string, DocumentParagraphIndexEntry> {
+export function getDocumentParagraphIndex(
+  document: EditorDocument,
+): Map<string, DocumentParagraphIndexEntry> {
   let index = documentIndexCache.get(document);
   if (index) {
     return index;
   }
-  
+
   index = new Map();
   const sections = getDocumentSections(document);
-  
-  for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex += 1) {
+
+  for (
+    let sectionIndex = 0;
+    sectionIndex < sections.length;
+    sectionIndex += 1
+  ) {
     const section = sections[sectionIndex];
-    
+
     // Header
     if (section.header) {
       let paraIndex = 0;
-      for (let blockIndex = 0; blockIndex < section.header.length; blockIndex += 1) {
+      for (
+        let blockIndex = 0;
+        blockIndex < section.header.length;
+        blockIndex += 1
+      ) {
         const block = section.header[blockIndex];
         if (block.type === "paragraph") {
           index.set(block.id, {
             paragraph: block,
-            location: { sectionIndex, zone: "header", paragraphIndexInSection: paraIndex },
+            location: {
+              sectionIndex,
+              zone: "header",
+              paragraphIndexInSection: paraIndex,
+            },
             tableLocation: null,
           });
           paraIndex += 1;
         } else if (block.type === "table") {
           for (let rowIndex = 0; rowIndex < block.rows.length; rowIndex += 1) {
             const row = block.rows[rowIndex];
-            for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+            for (
+              let cellIndex = 0;
+              cellIndex < row.cells.length;
+              cellIndex += 1
+            ) {
               const cell = row.cells[cellIndex];
-              for (let cpIndex = 0; cpIndex < cell.blocks.length; cpIndex += 1) {
+              for (
+                let cpIndex = 0;
+                cpIndex < cell.blocks.length;
+                cpIndex += 1
+              ) {
                 const cp = cell.blocks[cpIndex];
                 index.set(cp.id, {
                   paragraph: cp,
-                  location: { sectionIndex, zone: "header", paragraphIndexInSection: paraIndex },
-                  tableLocation: { blockIndex, rowIndex, cellIndex, paragraphIndex: cpIndex },
+                  location: {
+                    sectionIndex,
+                    zone: "header",
+                    paragraphIndexInSection: paraIndex,
+                  },
+                  tableLocation: {
+                    blockIndex,
+                    rowIndex,
+                    cellIndex,
+                    paragraphIndex: cpIndex,
+                  },
                 });
                 paraIndex += 1;
               }
@@ -959,29 +1089,50 @@ export function getDocumentParagraphIndex(document: EditorDocument): Map<string,
         }
       }
     }
-    
+
     // Main blocks
     let paraIndex = 0;
-    for (let blockIndex = 0; blockIndex < section.blocks.length; blockIndex += 1) {
+    for (
+      let blockIndex = 0;
+      blockIndex < section.blocks.length;
+      blockIndex += 1
+    ) {
       const block = section.blocks[blockIndex];
       if (block.type === "paragraph") {
         index.set(block.id, {
           paragraph: block,
-          location: { sectionIndex, zone: "main", paragraphIndexInSection: paraIndex },
+          location: {
+            sectionIndex,
+            zone: "main",
+            paragraphIndexInSection: paraIndex,
+          },
           tableLocation: null,
         });
         paraIndex += 1;
       } else if (block.type === "table") {
         for (let rowIndex = 0; rowIndex < block.rows.length; rowIndex += 1) {
           const row = block.rows[rowIndex];
-          for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+          for (
+            let cellIndex = 0;
+            cellIndex < row.cells.length;
+            cellIndex += 1
+          ) {
             const cell = row.cells[cellIndex];
             for (let cpIndex = 0; cpIndex < cell.blocks.length; cpIndex += 1) {
               const cp = cell.blocks[cpIndex];
               index.set(cp.id, {
                 paragraph: cp,
-                location: { sectionIndex, zone: "main", paragraphIndexInSection: paraIndex },
-                tableLocation: { blockIndex, rowIndex, cellIndex, paragraphIndex: cpIndex },
+                location: {
+                  sectionIndex,
+                  zone: "main",
+                  paragraphIndexInSection: paraIndex,
+                },
+                tableLocation: {
+                  blockIndex,
+                  rowIndex,
+                  cellIndex,
+                  paragraphIndex: cpIndex,
+                },
               });
               paraIndex += 1;
             }
@@ -989,30 +1140,55 @@ export function getDocumentParagraphIndex(document: EditorDocument): Map<string,
         }
       }
     }
-    
+
     // Footer
     if (section.footer) {
       let paraIndex = 0;
-      for (let blockIndex = 0; blockIndex < section.footer.length; blockIndex += 1) {
+      for (
+        let blockIndex = 0;
+        blockIndex < section.footer.length;
+        blockIndex += 1
+      ) {
         const block = section.footer[blockIndex];
         if (block.type === "paragraph") {
           index.set(block.id, {
             paragraph: block,
-            location: { sectionIndex, zone: "footer", paragraphIndexInSection: paraIndex },
+            location: {
+              sectionIndex,
+              zone: "footer",
+              paragraphIndexInSection: paraIndex,
+            },
             tableLocation: null,
           });
           paraIndex += 1;
         } else if (block.type === "table") {
           for (let rowIndex = 0; rowIndex < block.rows.length; rowIndex += 1) {
             const row = block.rows[rowIndex];
-            for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+            for (
+              let cellIndex = 0;
+              cellIndex < row.cells.length;
+              cellIndex += 1
+            ) {
               const cell = row.cells[cellIndex];
-              for (let cpIndex = 0; cpIndex < cell.blocks.length; cpIndex += 1) {
+              for (
+                let cpIndex = 0;
+                cpIndex < cell.blocks.length;
+                cpIndex += 1
+              ) {
                 const cp = cell.blocks[cpIndex];
                 index.set(cp.id, {
                   paragraph: cp,
-                  location: { sectionIndex, zone: "footer", paragraphIndexInSection: paraIndex },
-                  tableLocation: { blockIndex, rowIndex, cellIndex, paragraphIndex: cpIndex },
+                  location: {
+                    sectionIndex,
+                    zone: "footer",
+                    paragraphIndexInSection: paraIndex,
+                  },
+                  tableLocation: {
+                    blockIndex,
+                    rowIndex,
+                    cellIndex,
+                    paragraphIndex: cpIndex,
+                  },
                 });
                 paraIndex += 1;
               }
@@ -1030,26 +1206,53 @@ export function getDocumentParagraphIndex(document: EditorDocument): Map<string,
       const footnote = footnoteItems[footnoteId];
       if (!footnote) continue;
       let paraIndex = 0;
-      for (let blockIndex = 0; blockIndex < footnote.blocks.length; blockIndex += 1) {
+      for (
+        let blockIndex = 0;
+        blockIndex < footnote.blocks.length;
+        blockIndex += 1
+      ) {
         const block = footnote.blocks[blockIndex];
         if (block.type === "paragraph") {
           index.set(block.id, {
             paragraph: block,
-            location: { sectionIndex: 0, zone: "footnote", paragraphIndexInSection: paraIndex, footnoteId },
+            location: {
+              sectionIndex: 0,
+              zone: "footnote",
+              paragraphIndexInSection: paraIndex,
+              footnoteId,
+            },
             tableLocation: null,
           });
           paraIndex += 1;
         } else if (block.type === "table") {
           for (let rowIndex = 0; rowIndex < block.rows.length; rowIndex += 1) {
             const row = block.rows[rowIndex];
-            for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
+            for (
+              let cellIndex = 0;
+              cellIndex < row.cells.length;
+              cellIndex += 1
+            ) {
               const cell = row.cells[cellIndex];
-              for (let cpIndex = 0; cpIndex < cell.blocks.length; cpIndex += 1) {
+              for (
+                let cpIndex = 0;
+                cpIndex < cell.blocks.length;
+                cpIndex += 1
+              ) {
                 const cp = cell.blocks[cpIndex];
                 index.set(cp.id, {
                   paragraph: cp,
-                  location: { sectionIndex: 0, zone: "footnote", paragraphIndexInSection: paraIndex, footnoteId },
-                  tableLocation: { blockIndex, rowIndex, cellIndex, paragraphIndex: cpIndex },
+                  location: {
+                    sectionIndex: 0,
+                    zone: "footnote",
+                    paragraphIndexInSection: paraIndex,
+                    footnoteId,
+                  },
+                  tableLocation: {
+                    blockIndex,
+                    rowIndex,
+                    cellIndex,
+                    paragraphIndex: cpIndex,
+                  },
                 });
                 paraIndex += 1;
               }
@@ -1064,7 +1267,10 @@ export function getDocumentParagraphIndex(document: EditorDocument): Map<string,
   return index;
 }
 
-export function getParagraphById(document: EditorDocument, paragraphId: string): EditorParagraphNode | undefined {
+export function getParagraphById(
+  document: EditorDocument,
+  paragraphId: string,
+): EditorParagraphNode | undefined {
   return getDocumentParagraphIndex(document).get(paragraphId)?.paragraph;
 }
 
@@ -1080,13 +1286,19 @@ export function findParagraphTableLocation(
   document: EditorDocument,
   paragraphId: string,
   activeSectionIndex: number = 0,
-): { blockIndex: number; rowIndex: number; cellIndex: number; paragraphIndex: number; zone: EditorEditingZone } | null {
+): {
+  blockIndex: number;
+  rowIndex: number;
+  cellIndex: number;
+  paragraphIndex: number;
+  zone: EditorEditingZone;
+} | null {
   const entry = getDocumentParagraphIndex(document).get(paragraphId);
   if (!entry || !entry.tableLocation) return null;
-  
+
   if (document.sections && document.sections.length > 0) {
     if (entry.location.sectionIndex !== activeSectionIndex) return null;
   }
-  
+
   return { ...entry.tableLocation, zone: entry.location.zone };
 }

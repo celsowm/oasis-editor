@@ -87,7 +87,8 @@ export const ptBR = {
   "lineSpacing.spacingBeforeLabel": "Antes (pt)",
   "lineSpacing.spacingAfterLabel": "Depois (pt)",
   "lineSpacing.preview": "Pré-visualização",
-  "lineSpacing.previewText": "O espaçamento de linha define a distância vertical entre as linhas de texto dentro de um parágrafo.",
+  "lineSpacing.previewText":
+    "O espaçamento de linha define a distância vertical entre as linhas de texto dentro de um parágrafo.",
 
   // Paragraph dialog
   "paragraph.title": "Parágrafo",
@@ -109,8 +110,23 @@ export const ptBR = {
   "paragraph.spacingBeforeLabel": "Antes (pt)",
   "paragraph.spacingAfterLabel": "Depois (pt)",
   "paragraph.lineSpacingLabel": "Espaçamento entre linhas",
+  "paragraph.bordersSection": "Bordas e sombreamento",
+  "paragraph.borderStyleLabel": "Borda",
+  "paragraph.borderWidthLabel": "Largura (pt)",
+  "paragraph.borderColorLabel": "Cor da borda",
+  "paragraph.shadingLabel": "Sombreamento",
+  "paragraph.borderNone": "(nenhuma)",
+  "paragraph.borderSolid": "Sólida",
+  "paragraph.borderDashed": "Tracejada",
+  "paragraph.borderDotted": "Pontilhada",
+  "paragraph.borderSidesLabel": "Lados",
+  "paragraph.borderSideTop": "Superior",
+  "paragraph.borderSideRight": "Direita",
+  "paragraph.borderSideBottom": "Inferior",
+  "paragraph.borderSideLeft": "Esquerda",
   "paragraph.preview": "Pré-visualização",
-  "paragraph.previewText": "Texto de Exemplo Texto de Exemplo Texto de Exemplo Texto de Exemplo Texto de Exemplo Texto de Exemplo.",
+  "paragraph.previewText":
+    "Texto de Exemplo Texto de Exemplo Texto de Exemplo Texto de Exemplo Texto de Exemplo Texto de Exemplo.",
 
   // Section
   "section.orient": "Orient",
@@ -218,13 +234,18 @@ export const ptBR = {
   "dialog.font.advancedNumberFormOldStyle": "Estilo antigo",
   "dialog.font.advancedStylisticSet": "Conjuntos estilísticos",
   "dialog.font.advancedContextualAlternates": "Usar Alternativas Contextuais",
-  "dialog.font.advancedScaleInvalid": "A escala deve ser um número maior que 0.",
+  "dialog.font.advancedScaleInvalid":
+    "A escala deve ser um número maior que 0.",
   "dialog.font.advancedAmountInvalid": "O valor deve ser 0 ou maior.",
-  "dialog.font.advancedKerningInvalid": "O limite de kerning deve ser 0 ou maior.",
-  "dialog.font.advancedStylisticSetInvalid": "O conjunto estilístico deve estar entre 1 e 20.",
-  "dialog.font.advancedPlaceholder": "Valores em pontos; Normal limpa overrides de espaçamento e posição.",
+  "dialog.font.advancedKerningInvalid":
+    "O limite de kerning deve ser 0 ou maior.",
+  "dialog.font.advancedStylisticSetInvalid":
+    "O conjunto estilístico deve estar entre 1 e 20.",
+  "dialog.font.advancedPlaceholder":
+    "Valores em pontos; Normal limpa overrides de espaçamento e posição.",
   "dialog.font.preview": "Pré-visualização",
-  "dialog.font.previewText": "O rápido cão marrom salta sobre a raposa preguiçosa",
+  "dialog.font.previewText":
+    "O rápido cão marrom salta sobre a raposa preguiçosa",
 
   // Context menu
   "contextmenu.cut": "Recortar",

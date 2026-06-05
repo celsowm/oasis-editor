@@ -20,7 +20,7 @@ export interface FindOptions {
 export function findMatchesInDocument(
   doc: EditorDocument,
   searchTerm: string,
-  options: FindOptions = {}
+  options: FindOptions = {},
 ): FindReplaceMatch[] {
   if (!searchTerm) return [];
 

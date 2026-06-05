@@ -42,10 +42,7 @@ export function Tabs(props: TabsProps) {
   const baseId = createUniqueId();
   const items = createMemo(() => props.items);
   const firstEnabledId = createMemo(
-    () =>
-      items().find((item) => !item.disabled)?.id ??
-      items()[0]?.id ??
-      "",
+    () => items().find((item) => !item.disabled)?.id ?? items()[0]?.id ?? "",
   );
   const [internalValue, setInternalValue] = createSignal(
     props.defaultValue ?? firstEnabledId(),
@@ -95,10 +92,7 @@ export function Tabs(props: TabsProps) {
     if (event.key === "Home")
       return selectItem(findEnabledItem(items(), 0, 1), true);
     if (event.key === "End")
-      return selectItem(
-        findEnabledItem(items(), items().length - 1, -1),
-        true,
-      );
+      return selectItem(findEnabledItem(items(), items().length - 1, -1), true);
     const direction = event.key === "ArrowRight" ? 1 : -1;
     selectItem(
       findEnabledItem(items(), currentIndex + direction, direction),

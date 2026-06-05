@@ -1,23 +1,8 @@
-import {
-  createEffect,
-  createSignal,
-  onCleanup,
-  onMount,
-  Show,
-} from "solid-js";
-import {
-  type BooleanStyleKey,
-} from "./toolbarStyleState.js";
-import {
-  getSelectedImageRun,
-} from "../core/editorCommands.js";
-import {
-  createEditorStateFromDocument,
-} from "../core/editorState.js";
-import {
-  type EditorPosition,
-  type EditorState,
-} from "../core/model.js";
+import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
+import { type BooleanStyleKey } from "./toolbarStyleState.js";
+import { getSelectedImageRun } from "../core/editorCommands.js";
+import { createEditorStateFromDocument } from "../core/editorState.js";
+import { type EditorPosition, type EditorState } from "../core/model.js";
 import { isSelectionCollapsed } from "../core/selection.js";
 
 import { createEditorLogger } from "../utils/logger.js";
@@ -28,9 +13,7 @@ import {
   installGlobalReport,
   registerDomStatsSurface,
 } from "../utils/performanceMetrics.js";
-import {
-  cloneEditorState,
-} from "../core/cloneState.js";
+import { cloneEditorState } from "../core/cloneState.js";
 import { Toolbar } from "./components/Toolbar/Toolbar.js";
 import { createEditorCommandsController } from "../app/controllers/EditorCommandsController.js";
 import { createEditorKeyboardController } from "../app/controllers/useEditorKeyboard.js";
@@ -88,11 +71,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setLocale(ui().locale ?? "pt-BR");
   });
   const logger = createEditorLogger("app");
-  const {
-    state,
-    commitState,
-    getStateSnapshot,
-  } = createEditorAppState({
+  const { state, commitState, getStateSnapshot } = createEditorAppState({
     initialDocument: documentOptions().initialDocument,
     initialState: documentOptions().initialState,
   });
@@ -119,8 +98,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const focused = focusController.focused;
   const setFocused = focusController.setFocused;
   const focusInput = focusController.focusInput;
-  const focusInputAfterPointerSelection = focusController.focusInputAfterPointerSelection;
-  const [initialLoading, setInitialLoading] = createSignal(ui().loading !== false);
+  const focusInputAfterPointerSelection =
+    focusController.focusInputAfterPointerSelection;
+  const [initialLoading, setInitialLoading] = createSignal(
+    ui().loading !== false,
+  );
 
   const {
     linkDialog,
@@ -142,7 +124,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const docIO = createEditorDocumentIO({
     state: () => state,
     applyState,
-    applyTransactionalState: (producer, options) => applyTransactionalState(producer, options),
+    applyTransactionalState: (producer, options) =>
+      applyTransactionalState(producer, options),
     isReadOnly,
     surfaceRef: () => surfaceRef() ?? null,
     stabilizeLayoutAfterImport: async () => {
@@ -269,7 +252,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     applyTransactionalState,
     applySelectionToStatePreservingStructure: (current, nextSelection) => ({
       ...current,
-      document: cloneEditorState(current).document, 
+      document: cloneEditorState(current).document,
       selection: nextSelection,
     }),
     focusInput,
@@ -446,21 +429,24 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     },
     moveSelectionByWord: navigation.moveSelectionByWord,
     moveSelectionToDocumentBoundary: navigation.moveSelectionToDocumentBoundary,
-    moveSelectionToParagraphBoundary: navigation.moveSelectionToParagraphBoundary,
+    moveSelectionToParagraphBoundary:
+      navigation.moveSelectionToParagraphBoundary,
     moveSelectedImageByParagraph: historyActions.moveSelectedImageByParagraph,
     performUndo: historyActions.performUndo,
     performRedo: historyActions.performRedo,
     moveVerticalSelection: navigation.moveVerticalSelection,
     moveVerticalByBlock: navigation.moveVerticalByBlock,
     resolveAdjacentTableCellPosition: tableOps.resolveAdjacentTableCellPosition,
-    applySelectionPreservingStructure: historyActions.applySelectionPreservingStructure,
+    applySelectionPreservingStructure:
+      historyActions.applySelectionPreservingStructure,
     toggleFindReplace: (open) => {
       fr.setIsOpen(open ?? !fr.isOpen());
     },
     toggleReplace: (open) => {
       fr.setIsOpen(open ?? !fr.isOpen());
     },
-    executeCommand: (commandName, payload) => runtimeEditor().execute(commandName, payload),
+    executeCommand: (commandName, payload) =>
+      runtimeEditor().execute(commandName, payload),
     canExecuteCommand: (commandName) => runtimeEditor().canExecute(commandName),
   });
 
@@ -538,7 +524,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     focusInput,
   });
   const openParagraphDialog = paragraphDialogBridge.openParagraphDialog;
-  const applyParagraphDialogValues = paragraphDialogBridge.applyParagraphDialogValues;
+  const applyParagraphDialogValues =
+    paragraphDialogBridge.applyParagraphDialogValues;
 
   const contextMenuClipboard = createEditorContextMenuClipboard({
     state: () => state,
@@ -631,7 +618,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       }}
     >
       <Show when={!useComposedShell() && showChrome() && showToolbar()}>
-        <Toolbar host={toolbarHost} registry={toolbarRegistry} layout={toolbarLayout()} />
+        <Toolbar
+          host={toolbarHost}
+          registry={toolbarRegistry}
+          layout={toolbarLayout()}
+        />
       </Show>
 
       <EditorDialogsLayer

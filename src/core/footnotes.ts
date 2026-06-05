@@ -28,7 +28,11 @@ export function createFootnoteId(): string {
  */
 export function* iterateFootnoteReferenceRuns(
   document: EditorDocument,
-): Generator<{ paragraph: EditorParagraphNode; run: EditorTextRun }, void, void> {
+): Generator<
+  { paragraph: EditorParagraphNode; run: EditorTextRun },
+  void,
+  void
+> {
   const sections = getDocumentSectionsCanonical(document);
   for (const section of sections) {
     const zones: EditorBlockNode[][] = [
@@ -132,7 +136,9 @@ export function getFootnoteDisplayMarker(
   }
 }
 
-export function getFootnotes(document: EditorDocument): EditorFootnotes | undefined {
+export function getFootnotes(
+  document: EditorDocument,
+): EditorFootnotes | undefined {
   return document.footnotes;
 }
 
@@ -186,7 +192,9 @@ export interface FootnoteReferenceInfo {
   index: number;
 }
 
-export function listReferencedFootnotes(document: EditorDocument): FootnoteReferenceInfo[] {
+export function listReferencedFootnotes(
+  document: EditorDocument,
+): FootnoteReferenceInfo[] {
   const seen = new Set<string>();
   const result: FootnoteReferenceInfo[] = [];
   let counter = 0;
@@ -235,14 +243,19 @@ export function renumberFootnotes(document: EditorDocument): EditorDocument {
     }
     if (!markerByFootnoteId.has(ref.footnoteId)) {
       autoCounter += 1;
-      markerByFootnoteId.set(ref.footnoteId, getFootnoteDisplayMarker(autoCounter, format));
+      markerByFootnoteId.set(
+        ref.footnoteId,
+        getFootnoteDisplayMarker(autoCounter, format),
+      );
     }
   }
 
   // Second pass: rewrite run.text for reference markers when they differ.
   let mutatedSections = false;
   const sections = getDocumentSectionsCanonical(document).map((section) => {
-    const rewriteBlocks = (blocks: EditorBlockNode[] | undefined): EditorBlockNode[] | undefined => {
+    const rewriteBlocks = (
+      blocks: EditorBlockNode[] | undefined,
+    ): EditorBlockNode[] | undefined => {
       if (!blocks) return blocks;
       let blockChanged = false;
       const nextBlocks = blocks.map((block) => {

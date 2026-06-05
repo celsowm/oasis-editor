@@ -5,7 +5,12 @@ import { describe, expect, it } from "vitest";
 import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditorDocument.js";
 import { projectDocumentLayout } from "../../layoutProjection/index.js";
 
-const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "word-parity", "fixtures");
+const FIXTURES_DIR = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "word-parity",
+  "fixtures",
+);
 const COMPLEX_DOCX = join(FIXTURES_DIR, "documento_complexo.docx");
 
 async function readComplexDocx(): Promise<ArrayBuffer> {
@@ -20,8 +25,12 @@ describe("DOCX complex document smoke test", () => {
   it("imports and projects the complex document without dropping document structure", async () => {
     const document = await importDocxToEditorDocument(await readComplexDocx());
     const layout = projectDocumentLayout(document);
-    const blocks = document.sections?.flatMap((section) => section.blocks) ?? [];
-    const projectedBlocks = layout.pages.reduce((sum, page) => sum + page.blocks.length, 0);
+    const blocks =
+      document.sections?.flatMap((section) => section.blocks) ?? [];
+    const projectedBlocks = layout.pages.reduce(
+      (sum, page) => sum + page.blocks.length,
+      0,
+    );
 
     expect(document.sections).toHaveLength(1);
     expect(blocks.length).toBeGreaterThan(250);

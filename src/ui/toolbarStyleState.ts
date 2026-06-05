@@ -100,6 +100,13 @@ export interface ToolbarStyleState {
   indentFirstLine: string;
   indentHanging: string;
   shading: string;
+  borderStyle: string;
+  borderWidth: string;
+  borderColor: string;
+  borderSideTop: boolean;
+  borderSideRight: boolean;
+  borderSideBottom: boolean;
+  borderSideLeft: boolean;
   listKind: string;
   pageBreakBefore: boolean;
   keepWithNext: boolean;
@@ -125,7 +132,10 @@ function getSelectedRunStyles(
     if (!paragraph) {
       return [];
     }
-    const style = getCollapsedRunStyle(paragraph, clampPosition(state, state.selection.focus));
+    const style = getCollapsedRunStyle(
+      paragraph,
+      clampPosition(state, state.selection.focus),
+    );
     return [
       resolveEffectiveTextStyleForParagraph(
         style,
@@ -137,20 +147,31 @@ function getSelectedRunStyles(
 
   const styles: EditorTextStyle[] = [];
 
-  for (let paragraphIndex = normalized.startIndex; paragraphIndex <= normalized.endIndex; paragraphIndex += 1) {
+  for (
+    let paragraphIndex = normalized.startIndex;
+    paragraphIndex <= normalized.endIndex;
+    paragraphIndex += 1
+  ) {
     const paragraph = paragraphs[paragraphIndex];
     if (!paragraph) {
       continue;
     }
 
-    const selectionStart = paragraphIndex === normalized.startIndex ? normalized.startParagraphOffset : 0;
+    const selectionStart =
+      paragraphIndex === normalized.startIndex
+        ? normalized.startParagraphOffset
+        : 0;
     const selectionEnd =
-      paragraphIndex === normalized.endIndex ? normalized.endParagraphOffset : getParagraphText(paragraph).length;
+      paragraphIndex === normalized.endIndex
+        ? normalized.endParagraphOffset
+        : getParagraphText(paragraph).length;
 
     let runStart = 0;
     for (const run of paragraph.runs) {
       const runEnd = runStart + run.text.length;
-      if (selectionOverlapsRun(runStart, runEnd, selectionStart, selectionEnd)) {
+      if (
+        selectionOverlapsRun(runStart, runEnd, selectionStart, selectionEnd)
+      ) {
         styles.push(
           resolveEffectiveTextStyleForParagraph(
             run.styles,
@@ -196,7 +217,10 @@ function getCollapsedRunStyle(
   return paragraph.runs[paragraph.runs.length - 1]?.styles ?? undefined;
 }
 
-function areAllBooleanStylesEnabled(styles: EditorTextStyle[], key: BooleanStyleKey): boolean {
+function areAllBooleanStylesEnabled(
+  styles: EditorTextStyle[],
+  key: BooleanStyleKey,
+): boolean {
   return styles.length > 0 && styles.every((style) => Boolean(style[key]));
 }
 
@@ -214,7 +238,9 @@ function resolveUniformStyleValue<K extends ValueStyleKey>(
   }
 
   const serialized = String(first);
-  return styles.every((style) => String(style[key] ?? "") === serialized) ? serialized : "";
+  return styles.every((style) => String(style[key] ?? "") === serialized)
+    ? serialized
+    : "";
 }
 
 function getSelectedParagraphStyles(
@@ -225,7 +251,9 @@ function getSelectedParagraphStyles(
   const { styles: docStyles } = state.document;
   return paragraphs
     .slice(normalized.startIndex, normalized.endIndex + 1)
-    .map((paragraph) => resolveEffectiveParagraphStyle(paragraph.style, docStyles));
+    .map((paragraph) =>
+      resolveEffectiveParagraphStyle(paragraph.style, docStyles),
+    );
 }
 
 function resolveUniformParagraphStyleValue<K extends ParagraphStyleKey>(
@@ -242,7 +270,9 @@ function resolveUniformParagraphStyleValue<K extends ParagraphStyleKey>(
   }
 
   const serialized = String(first);
-  return styles.every((style) => String(style[key] ?? "") === serialized) ? serialized : "";
+  return styles.every((style) => String(style[key] ?? "") === serialized)
+    ? serialized
+    : "";
 }
 
 function resolveUniformParagraphFlag(
@@ -252,7 +282,69 @@ function resolveUniformParagraphFlag(
   return styles.length > 0 && styles.every((style) => style[key] === true);
 }
 
-function resolveUniformListKind(paragraphs: ReturnType<typeof getParagraphs>): string {
+const BORDER_EDGE_KEYS = [
+  "borderTop",
+  "borderRight",
+  "borderBottom",
+  "borderLeft",
+] as const;
+
+type BorderEdgeKey = (typeof BORDER_EDGE_KEYS)[number];
+
+interface ResolvedBoxBorder {
+  /** Shared style/width/color of the present edges, or null when none/mixed. */
+  shared: EditorParagraphStyle["borderTop"];
+  /** Which edges carry a visible border across the whole selection. */
+  sides: Record<BorderEdgeKey, boolean>;
+}
+
+function isVisibleBorder(border: EditorParagraphStyle["borderTop"]): boolean {
+  return !!border && border.type !== "none" && border.width > 0;
+}
+
+/**
+ * Surfaces paragraph borders for the dialog's "shared style + side toggles"
+ * model: a side is on only when every selected paragraph has a visible border
+ * there, and `shared` carries the common style/width/color of the present edges
+ * (null when nothing is present or the present edges disagree).
+ */
+function resolveBoxBorder(styles: EditorParagraphStyle[]): ResolvedBoxBorder {
+  const sides = {
+    borderTop: false,
+    borderRight: false,
+    borderBottom: false,
+    borderLeft: false,
+  } as Record<BorderEdgeKey, boolean>;
+
+  if (styles.length === 0) {
+    return { shared: null, sides };
+  }
+
+  for (const key of BORDER_EDGE_KEYS) {
+    sides[key] = styles.every((style) => isVisibleBorder(style[key]));
+  }
+
+  const present: EditorParagraphStyle["borderTop"][] = [];
+  for (const style of styles) {
+    for (const key of BORDER_EDGE_KEYS) {
+      if (isVisibleBorder(style[key])) {
+        present.push(style[key]);
+      }
+    }
+  }
+  if (present.length === 0) {
+    return { shared: null, sides };
+  }
+  const reference = JSON.stringify(present[0]);
+  const uniform = present.every(
+    (border) => JSON.stringify(border) === reference,
+  );
+  return { shared: uniform ? (present[0] ?? null) : null, sides };
+}
+
+function resolveUniformListKind(
+  paragraphs: ReturnType<typeof getParagraphs>,
+): string {
   if (paragraphs.length === 0) {
     return "";
   }
@@ -262,18 +354,25 @@ function resolveUniformListKind(paragraphs: ReturnType<typeof getParagraphs>): s
     return "";
   }
 
-  return paragraphs.every((paragraph) => paragraph.list?.kind === firstKind) ? firstKind : "";
+  return paragraphs.every((paragraph) => paragraph.list?.kind === firstKind)
+    ? firstKind
+    : "";
 }
 
 export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
   const paragraphs = getParagraphs(state);
   const normalized = normalizeSelection(state, paragraphs);
   const styles = getSelectedRunStyles(state, paragraphs, normalized);
-  const paragraphStyles = getSelectedParagraphStyles(state, paragraphs, normalized);
+  const paragraphStyles = getSelectedParagraphStyles(
+    state,
+    paragraphs,
+    normalized,
+  );
   const selectedParagraphs = paragraphs.slice(
     normalized.startIndex,
     normalized.endIndex + 1,
   );
+  const boxBorder = resolveBoxBorder(paragraphStyles);
 
   return {
     bold: areAllBooleanStylesEnabled(styles, "bold"),
@@ -296,7 +395,10 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     numberSpacing: resolveUniformStyleValue(styles, "numberSpacing"),
     numberForm: resolveUniformStyleValue(styles, "numberForm"),
     stylisticSet: resolveUniformStyleValue(styles, "stylisticSet"),
-    contextualAlternates: areAllBooleanStylesEnabled(styles, "contextualAlternates"),
+    contextualAlternates: areAllBooleanStylesEnabled(
+      styles,
+      "contextualAlternates",
+    ),
     fontFamily: resolveUniformStyleValue(styles, "fontFamily"),
     fontSize: resolveUniformStyleValue(styles, "fontSize"),
     color: resolveUniformStyleValue(styles, "color"),
@@ -304,16 +406,47 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     link: resolveUniformStyleValue(styles, "link"),
     styleId: resolveUniformParagraphStyleValue(paragraphStyles, "styleId"),
     align: resolveUniformParagraphStyleValue(paragraphStyles, "align"),
-    lineHeight: resolveUniformParagraphStyleValue(paragraphStyles, "lineHeight"),
-    spacingBefore: resolveUniformParagraphStyleValue(paragraphStyles, "spacingBefore"),
-    spacingAfter: resolveUniformParagraphStyleValue(paragraphStyles, "spacingAfter"),
-    indentLeft: resolveUniformParagraphStyleValue(paragraphStyles, "indentLeft"),
-    indentRight: resolveUniformParagraphStyleValue(paragraphStyles, "indentRight"),
-    indentFirstLine: resolveUniformParagraphStyleValue(paragraphStyles, "indentFirstLine"),
-    indentHanging: resolveUniformParagraphStyleValue(paragraphStyles, "indentHanging"),
+    lineHeight: resolveUniformParagraphStyleValue(
+      paragraphStyles,
+      "lineHeight",
+    ),
+    spacingBefore: resolveUniformParagraphStyleValue(
+      paragraphStyles,
+      "spacingBefore",
+    ),
+    spacingAfter: resolveUniformParagraphStyleValue(
+      paragraphStyles,
+      "spacingAfter",
+    ),
+    indentLeft: resolveUniformParagraphStyleValue(
+      paragraphStyles,
+      "indentLeft",
+    ),
+    indentRight: resolveUniformParagraphStyleValue(
+      paragraphStyles,
+      "indentRight",
+    ),
+    indentFirstLine: resolveUniformParagraphStyleValue(
+      paragraphStyles,
+      "indentFirstLine",
+    ),
+    indentHanging: resolveUniformParagraphStyleValue(
+      paragraphStyles,
+      "indentHanging",
+    ),
     shading: resolveUniformParagraphStyleValue(paragraphStyles, "shading"),
+    borderStyle: boxBorder.shared ? boxBorder.shared.type : "",
+    borderWidth: boxBorder.shared ? String(boxBorder.shared.width) : "",
+    borderColor: boxBorder.shared ? boxBorder.shared.color : "",
+    borderSideTop: boxBorder.sides.borderTop,
+    borderSideRight: boxBorder.sides.borderRight,
+    borderSideBottom: boxBorder.sides.borderBottom,
+    borderSideLeft: boxBorder.sides.borderLeft,
     listKind: resolveUniformListKind(selectedParagraphs),
-    pageBreakBefore: resolveUniformParagraphFlag(paragraphStyles, "pageBreakBefore"),
+    pageBreakBefore: resolveUniformParagraphFlag(
+      paragraphStyles,
+      "pageBreakBefore",
+    ),
     keepWithNext: resolveUniformParagraphFlag(paragraphStyles, "keepWithNext"),
   };
 }

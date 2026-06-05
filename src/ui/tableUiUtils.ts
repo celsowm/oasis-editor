@@ -14,7 +14,11 @@ export function resolveClickOffset(
     0,
     Math.min(
       layoutParagraph.text.length,
-      resolveClosestOffsetInMeasuredLayout(layoutParagraph, event.clientX, event.clientY),
+      resolveClosestOffsetInMeasuredLayout(
+        layoutParagraph,
+        event.clientX,
+        event.clientY,
+      ),
     ),
   );
 }

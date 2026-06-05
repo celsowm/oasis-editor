@@ -25,11 +25,19 @@ import {
 import { updateBlocksInCurrentSection } from "./tableOpsMutationCommands.js";
 
 interface TableRowColumnOperationsDeps {
-  getTargetBlocks: (state: EditorState, zone: EditorEditingZone) => EditorBlockNode[];
+  getTargetBlocks: (
+    state: EditorState,
+    zone: EditorEditingZone,
+  ) => EditorBlockNode[];
 }
 
-export function createTableRowColumnOperations(deps: TableRowColumnOperationsDeps) {
-  const insertSelectedTableRow = (current: EditorState, direction: -1 | 1): EditorState => {
+export function createTableRowColumnOperations(
+  deps: TableRowColumnOperationsDeps,
+) {
+  const insertSelectedTableRow = (
+    current: EditorState,
+    direction: -1 | 1,
+  ): EditorState => {
     const location = findParagraphTableLocation(
       current.document,
       current.selection.focus.paragraphId,
@@ -39,7 +47,9 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
       return current;
     }
 
-    const targetBlocks = deps.getTargetBlocks(current, location.zone).map(cloneBlock);
+    const targetBlocks = deps
+      .getTargetBlocks(current, location.zone)
+      .map(cloneBlock);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -52,11 +62,17 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
 
     const insertIndex = Math.max(
       0,
-      Math.min(tableBlock.rows.length, location.rowIndex + (direction > 0 ? 1 : 0)),
+      Math.min(
+        tableBlock.rows.length,
+        location.rowIndex + (direction > 0 ? 1 : 0),
+      ),
     );
 
     const hasVerticalSpansInTable = tableBlock.rows.some((row) =>
-      row.cells.some((cell) => Math.max(1, cell.rowSpan ?? 1) > 1 || cell.vMerge !== undefined),
+      row.cells.some(
+        (cell) =>
+          Math.max(1, cell.rowSpan ?? 1) > 1 || cell.vMerge !== undefined,
+      ),
     );
 
     let blankRow: EditorTableRowNode;
@@ -74,7 +90,8 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
         sourceEntries.length > 0
           ? sourceEntries
           : tableLayout.filter(
-              (layoutEntry) => layoutEntry.rowIndex === Math.max(0, location.rowIndex - 1),
+              (layoutEntry) =>
+                layoutEntry.rowIndex === Math.max(0, location.rowIndex - 1),
             );
       blankRow = createEditorTableRow(
         templateEntries.map((layoutEntry) => {
@@ -85,7 +102,8 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
               candidate.visualRowIndex + candidate.rowSpan > insertIndex,
           );
           if (spanningEntry) {
-            spanningEntry.cell.rowSpan = Math.max(1, spanningEntry.cell.rowSpan ?? 1) + 1;
+            spanningEntry.cell.rowSpan =
+              Math.max(1, spanningEntry.cell.rowSpan ?? 1) + 1;
             spanningEntry.cell.vMerge = "restart";
             const placeholder = createEditorTableCell(
               [createEditorParagraph("")],
@@ -96,22 +114,36 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
             return placeholder;
           }
 
-          return createEditorTableCell([createEditorParagraph("")], layoutEntry.colSpan);
+          return createEditorTableCell(
+            [createEditorParagraph("")],
+            layoutEntry.colSpan,
+          );
         }),
       );
       tableBlock.rows.splice(insertIndex, 0, blankRow);
 
-      const targetVisualColumn = selectedEntry?.visualColumnIndex ?? location.cellIndex;
+      const targetVisualColumn =
+        selectedEntry?.visualColumnIndex ?? location.cellIndex;
       const targetCell = findCellAtVisualColumn(blankRow, targetVisualColumn);
       const nextParagraph =
         targetCell?.blocks[0] ??
-        blankRow.cells.find((cell) => cell.vMerge !== "continue" && cell.blocks[0])?.blocks[0] ??
+        blankRow.cells.find(
+          (cell) => cell.vMerge !== "continue" && cell.blocks[0],
+        )?.blocks[0] ??
         findFirstNavigableParagraphInTable(tableBlock);
       if (!nextParagraph) {
-        return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
+        return updateBlocksInCurrentSection(
+          current,
+          targetBlocks,
+          location.zone,
+        );
       }
 
-      const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
+      const nextState = updateBlocksInCurrentSection(
+        current,
+        targetBlocks,
+        location.zone,
+      );
       return {
         ...nextState,
         selection: {
@@ -131,16 +163,23 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
     );
     tableBlock.rows.splice(insertIndex, 0, blankRow);
 
-    const targetCell = blankRow.cells[Math.min(location.cellIndex, blankRow.cells.length - 1)];
+    const targetCell =
+      blankRow.cells[Math.min(location.cellIndex, blankRow.cells.length - 1)];
     const nextParagraph =
       targetCell?.blocks[0] ??
-      blankRow.cells.find((cell) => cell.vMerge !== "continue" && cell.blocks[0])?.blocks[0] ??
+      blankRow.cells.find(
+        (cell) => cell.vMerge !== "continue" && cell.blocks[0],
+      )?.blocks[0] ??
       findFirstNavigableParagraphInTable(tableBlock);
     if (!nextParagraph) {
       return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     }
 
-    const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
+    const nextState = updateBlocksInCurrentSection(
+      current,
+      targetBlocks,
+      location.zone,
+    );
     return {
       ...nextState,
       selection: {
@@ -160,7 +199,9 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
       return current;
     }
 
-    const targetBlocks = deps.getTargetBlocks(current, location.zone).map(cloneBlock);
+    const targetBlocks = deps
+      .getTargetBlocks(current, location.zone)
+      .map(cloneBlock);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -176,14 +217,18 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
     }
 
     const blockedByRestartCell = rowToDelete.cells.some(
-      (cell) => cell.vMerge !== "continue" && Math.max(1, cell.rowSpan ?? 1) > 1,
+      (cell) =>
+        cell.vMerge !== "continue" && Math.max(1, cell.rowSpan ?? 1) > 1,
     );
     if (blockedByRestartCell) {
       return current;
     }
 
     const hasVerticalSpansInTable = tableBlock.rows.some((row) =>
-      row.cells.some((cell) => Math.max(1, cell.rowSpan ?? 1) > 1 || cell.vMerge !== undefined),
+      row.cells.some(
+        (cell) =>
+          Math.max(1, cell.rowSpan ?? 1) > 1 || cell.vMerge !== undefined,
+      ),
     );
 
     const selectedEntry = hasVerticalSpansInTable
@@ -214,7 +259,8 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
 
     tableBlock.rows.splice(location.rowIndex, 1);
 
-    const nextRow = tableBlock.rows[Math.min(location.rowIndex, tableBlock.rows.length - 1)];
+    const nextRow =
+      tableBlock.rows[Math.min(location.rowIndex, tableBlock.rows.length - 1)];
     const targetCell = nextRow
       ? findCellAtVisualColumn(
           nextRow,
@@ -224,12 +270,17 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
           ),
         )
       : null;
-    const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+    const nextParagraph =
+      targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
     if (!nextParagraph) {
       return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     }
 
-    const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
+    const nextState = updateBlocksInCurrentSection(
+      current,
+      targetBlocks,
+      location.zone,
+    );
     return {
       ...nextState,
       selection: {
@@ -239,7 +290,10 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
     };
   };
 
-  const insertSelectedTableColumn = (current: EditorState, direction: -1 | 1): EditorState => {
+  const insertSelectedTableColumn = (
+    current: EditorState,
+    direction: -1 | 1,
+  ): EditorState => {
     const location = findParagraphTableLocation(
       current.document,
       current.selection.focus.paragraphId,
@@ -249,7 +303,9 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
       return current;
     }
 
-    const targetBlocks = deps.getTargetBlocks(current, location.zone).map(cloneBlock);
+    const targetBlocks = deps
+      .getTargetBlocks(current, location.zone)
+      .map(cloneBlock);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -263,7 +319,8 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
       const tableLayout = buildTableCellLayout(tableBlock);
       const selectedEntry = tableLayout.find(
         (entry) =>
-          entry.rowIndex === location.rowIndex && entry.cellIndex === location.cellIndex,
+          entry.rowIndex === location.rowIndex &&
+          entry.cellIndex === location.cellIndex,
       );
       const insertVisualColumn =
         (selectedEntry?.visualColumnIndex ?? location.cellIndex) +
@@ -281,7 +338,11 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
             inserted = true;
           }
 
-          if (!inserted && visualCursor < insertVisualColumn && insertVisualColumn < visualCursor + span) {
+          if (
+            !inserted &&
+            visualCursor < insertVisualColumn &&
+            insertVisualColumn < visualCursor + span
+          ) {
             nextCells.push({
               ...cell,
               colSpan: span + 1,
@@ -302,13 +363,24 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
       }
 
       const targetRow = tableBlock.rows[location.rowIndex];
-      const targetCell = targetRow ? findCellAtVisualColumn(targetRow, insertVisualColumn) : null;
-      const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+      const targetCell = targetRow
+        ? findCellAtVisualColumn(targetRow, insertVisualColumn)
+        : null;
+      const nextParagraph =
+        targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
       if (!nextParagraph) {
-        return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
+        return updateBlocksInCurrentSection(
+          current,
+          targetBlocks,
+          location.zone,
+        );
       }
 
-      const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
+      const nextState = updateBlocksInCurrentSection(
+        current,
+        targetBlocks,
+        location.zone,
+      );
       return {
         ...nextState,
         selection: {
@@ -320,7 +392,10 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
 
     const insertIndex = Math.max(
       0,
-      Math.min(tableBlock.rows[0]?.cells.length ?? 0, location.cellIndex + (direction > 0 ? 1 : 0)),
+      Math.min(
+        tableBlock.rows[0]?.cells.length ?? 0,
+        location.cellIndex + (direction > 0 ? 1 : 0),
+      ),
     );
 
     for (const row of tableBlock.rows) {
@@ -333,12 +408,17 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
 
     const targetRow = tableBlock.rows[location.rowIndex];
     const targetCell = targetRow?.cells[insertIndex];
-    const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+    const nextParagraph =
+      targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
     if (!nextParagraph) {
       return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     }
 
-    const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
+    const nextState = updateBlocksInCurrentSection(
+      current,
+      targetBlocks,
+      location.zone,
+    );
     return {
       ...nextState,
       selection: {
@@ -358,7 +438,9 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
       return current;
     }
 
-    const targetBlocks = deps.getTargetBlocks(current, location.zone).map(cloneBlock);
+    const targetBlocks = deps
+      .getTargetBlocks(current, location.zone)
+      .map(cloneBlock);
     const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
@@ -376,9 +458,11 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
       const tableLayout = buildTableCellLayout(tableBlock);
       const selectedEntry = tableLayout.find(
         (entry) =>
-          entry.rowIndex === location.rowIndex && entry.cellIndex === location.cellIndex,
+          entry.rowIndex === location.rowIndex &&
+          entry.cellIndex === location.cellIndex,
       );
-      const deleteVisualColumn = selectedEntry?.visualColumnIndex ?? location.cellIndex;
+      const deleteVisualColumn =
+        selectedEntry?.visualColumnIndex ?? location.cellIndex;
 
       for (const row of tableBlock.rows) {
         const nextCells: EditorTableCellNode[] = [];
@@ -386,7 +470,10 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
 
         for (const cell of row.cells) {
           const span = Math.max(1, cell.colSpan ?? 1);
-          if (deleteVisualColumn >= visualCursor && deleteVisualColumn < visualCursor + span) {
+          if (
+            deleteVisualColumn >= visualCursor &&
+            deleteVisualColumn < visualCursor + span
+          ) {
             if (span > 1) {
               nextCells.push({
                 ...cell,
@@ -408,14 +495,26 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
         targetRow &&
         findCellAtVisualColumn(
           targetRow,
-          Math.min(deleteVisualColumn, Math.max(0, getRowVisualWidth(targetRow) - 1)),
+          Math.min(
+            deleteVisualColumn,
+            Math.max(0, getRowVisualWidth(targetRow) - 1),
+          ),
         );
-      const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+      const nextParagraph =
+        targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
       if (!nextParagraph) {
-        return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
+        return updateBlocksInCurrentSection(
+          current,
+          targetBlocks,
+          location.zone,
+        );
       }
 
-      const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
+      const nextState = updateBlocksInCurrentSection(
+        current,
+        targetBlocks,
+        location.zone,
+      );
       return {
         ...nextState,
         selection: {
@@ -434,13 +533,21 @@ export function createTableRowColumnOperations(deps: TableRowColumnOperationsDep
     }
 
     const targetRow = tableBlock.rows[location.rowIndex];
-    const targetCell = targetRow?.cells[Math.min(location.cellIndex, targetRow.cells.length - 1)];
-    const nextParagraph = targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
+    const targetCell =
+      targetRow?.cells[
+        Math.min(location.cellIndex, targetRow.cells.length - 1)
+      ];
+    const nextParagraph =
+      targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
     if (!nextParagraph) {
       return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     }
 
-    const nextState = updateBlocksInCurrentSection(current, targetBlocks, location.zone);
+    const nextState = updateBlocksInCurrentSection(
+      current,
+      targetBlocks,
+      location.zone,
+    );
     return {
       ...nextState,
       selection: {

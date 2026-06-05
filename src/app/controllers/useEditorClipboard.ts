@@ -26,12 +26,20 @@ export interface EditorClipboardDeps {
     edit: (state: EditorState) => EditorState,
   ) => EditorState;
   focusInput: () => void;
-  insertImageFromFile: (file: File, position?: EditorPosition | null) => Promise<void>;
-  resolvePositionAtSurfacePoint: (clientX: number, clientY: number) => EditorPosition | null;
+  insertImageFromFile: (
+    file: File,
+    position?: EditorPosition | null,
+  ) => Promise<void>;
+  resolvePositionAtSurfacePoint: (
+    clientX: number,
+    clientY: number,
+  ) => EditorPosition | null;
 }
 
 export function createEditorClipboardController(deps: EditorClipboardDeps) {
-  const handleCopy = (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => {
+  const handleCopy = (
+    event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
+  ) => {
     const text = getSelectedText(deps.state());
     if (text.length === 0) {
       return;
@@ -39,10 +47,15 @@ export function createEditorClipboardController(deps: EditorClipboardDeps) {
 
     event.preventDefault();
     event.clipboardData?.setData("text/plain", text);
-    event.clipboardData?.setData("text/html", serializeEditorSelectionToHtml(deps.state()));
+    event.clipboardData?.setData(
+      "text/html",
+      serializeEditorSelectionToHtml(deps.state()),
+    );
   };
 
-  const handleCut = (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => {
+  const handleCut = (
+    event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
+  ) => {
     if (deps.isReadOnly()) {
       event.preventDefault();
       return;
@@ -54,16 +67,23 @@ export function createEditorClipboardController(deps: EditorClipboardDeps) {
 
     event.preventDefault();
     event.clipboardData?.setData("text/plain", text);
-    event.clipboardData?.setData("text/html", serializeEditorSelectionToHtml(deps.state()));
+    event.clipboardData?.setData(
+      "text/html",
+      serializeEditorSelectionToHtml(deps.state()),
+    );
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
     deps.applyTransactionalState((current) =>
-      deps.applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)),
+      deps.applyTableAwareParagraphEdit(current, (temp) =>
+        deleteBackward(temp),
+      ),
     );
     deps.focusInput();
   };
 
-  const handlePaste = (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => {
+  const handlePaste = (
+    event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
+  ) => {
     if (deps.isReadOnly()) {
       event.preventDefault();
       return;

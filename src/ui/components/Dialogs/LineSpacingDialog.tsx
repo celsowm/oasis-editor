@@ -18,7 +18,10 @@ export interface LineSpacingDialogProps {
   isOpen: boolean;
   initial: LineSpacingDialogInitialValues;
   onClose: () => void;
-  onApply: (values: LineSpacingDialogApplyValues, original: LineSpacingDialogInitialValues) => void;
+  onApply: (
+    values: LineSpacingDialogApplyValues,
+    original: LineSpacingDialogInitialValues,
+  ) => void;
 }
 
 export function LineSpacingDialog(props: LineSpacingDialogProps) {
@@ -85,7 +88,9 @@ export function LineSpacingDialog(props: LineSpacingDialogProps) {
     >
       <div class="oasis-editor-dialog-row">
         <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">{t("lineSpacing.lineSpacingLabel")}</label>
+          <label class="oasis-editor-dialog-label">
+            {t("lineSpacing.lineSpacingLabel")}
+          </label>
           <input
             type="number"
             class="oasis-editor-dialog-input"
@@ -100,7 +105,9 @@ export function LineSpacingDialog(props: LineSpacingDialogProps) {
 
       <div class="oasis-editor-dialog-row">
         <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">{t("lineSpacing.spacingBeforeLabel")}</label>
+          <label class="oasis-editor-dialog-label">
+            {t("lineSpacing.spacingBeforeLabel")}
+          </label>
           <input
             type="number"
             class="oasis-editor-dialog-input"
@@ -112,7 +119,9 @@ export function LineSpacingDialog(props: LineSpacingDialogProps) {
           />
         </div>
         <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
-          <label class="oasis-editor-dialog-label">{t("lineSpacing.spacingAfterLabel")}</label>
+          <label class="oasis-editor-dialog-label">
+            {t("lineSpacing.spacingAfterLabel")}
+          </label>
           <input
             type="number"
             class="oasis-editor-dialog-input"
@@ -126,7 +135,9 @@ export function LineSpacingDialog(props: LineSpacingDialogProps) {
       </div>
 
       <div class="oasis-editor-dialog-input-group">
-        <label class="oasis-editor-dialog-label">{t("lineSpacing.preview")}</label>
+        <label class="oasis-editor-dialog-label">
+          {t("lineSpacing.preview")}
+        </label>
         <div
           class="oasis-editor-dialog-preview"
           data-testid="editor-line-spacing-dialog-preview"

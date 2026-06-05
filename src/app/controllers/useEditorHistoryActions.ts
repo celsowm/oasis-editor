@@ -1,38 +1,36 @@
 import {
   takeEditorUndoStep,
   takeEditorRedoStep,
-  resetEditorHistoryGrouping,
   type EditorHistoryState,
 } from "../../ui/editorHistory.js";
-import type { EditorState, EditorPosition } from "../../core/model.js";
-import { 
+import type { EditorState } from "../../core/model.js";
+import {
   getActiveSectionIndex,
   getActiveZone,
   getDocumentSectionsCanonical,
-  getParagraphs, 
-  getParagraphLength, 
+  getParagraphs,
+  getParagraphLength,
   paragraphOffsetToPosition,
 } from "../../core/model.js";
-import { 
-  createEditorParagraph 
-} from "../../core/editorState.js";
-import { 
-  moveSelectedImageToPosition 
-} from "../../core/editorCommands.js";
-import {
-  cloneSection,
-} from "../../core/cloneState.js";
+import { createEditorParagraph } from "../../core/editorState.js";
+import { moveSelectedImageToPosition } from "../../core/editorCommands.js";
+import { cloneSection } from "../../core/cloneState.js";
 import type { createEditorImageOperations } from "./useEditorImageOperations.js";
 
 export interface UseEditorHistoryActionsProps {
   state: () => EditorState;
   stateSnapshot: () => EditorState;
   applyHistoryState: (state: EditorState) => void;
-  applyTransactionalState: (producer: (current: EditorState) => EditorState, options?: any) => void;
+  applyTransactionalState: (
+    producer: (current: EditorState) => EditorState,
+    options?: { mergeKey?: string },
+  ) => void;
   focusInput: () => void;
   clearPreferredColumn: () => void;
   imageOps: () => ReturnType<typeof createEditorImageOperations>;
-  updateHistoryState: (updater: (current: EditorHistoryState) => EditorHistoryState) => void;
+  updateHistoryState: (
+    updater: (current: EditorHistoryState) => EditorHistoryState,
+  ) => void;
   getHistoryState: () => EditorHistoryState;
 }
 
@@ -93,7 +91,10 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
   };
 
   const performUndo = () => {
-    const step = takeEditorUndoStep(deps.getHistoryState(), deps.stateSnapshot());
+    const step = takeEditorUndoStep(
+      deps.getHistoryState(),
+      deps.stateSnapshot(),
+    );
     if (!step) {
       return;
     }
@@ -105,7 +106,10 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
   };
 
   const performRedo = () => {
-    const step = takeEditorRedoStep(deps.getHistoryState(), deps.stateSnapshot());
+    const step = takeEditorRedoStep(
+      deps.getHistoryState(),
+      deps.stateSnapshot(),
+    );
     if (!step) {
       return;
     }
@@ -136,7 +140,9 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
       const nextState = insertParagraphAtZoneBoundary(currentState, direction);
       const nextParagraphs = getParagraphs(nextState);
       const insertedParagraph =
-        direction < 0 ? nextParagraphs[0] : nextParagraphs[nextParagraphs.length - 1];
+        direction < 0
+          ? nextParagraphs[0]
+          : nextParagraphs[nextParagraphs.length - 1];
       if (!insertedParagraph) {
         return false;
       }

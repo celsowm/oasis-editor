@@ -7,7 +7,11 @@ import {
   type JSX,
 } from "solid-js";
 import { t, type TranslationKey } from "../../../i18n/index.js";
-import { type MenuItem, type MenubarHost, defaultMenuRegistry } from "./menuRegistry.js";
+import {
+  type MenuItem,
+  type MenubarHost,
+  defaultMenuRegistry,
+} from "./menuRegistry.js";
 import { ToolIcon } from "../../utils/customIcons.js";
 import "./defaultMenuItems.js";
 
@@ -94,10 +98,7 @@ export function Menubar(props: MenubarProps) {
   const topLevelItems = pruneTree(menuTree);
 
   return (
-    <div
-      class="oasis-menubar"
-      role="menubar"
-    >
+    <div class="oasis-menubar" role="menubar">
       <For each={topLevelItems}>
         {(topLevel) => (
           <div
@@ -110,7 +111,9 @@ export function Menubar(props: MenubarProps) {
           >
             <div
               class="oasis-menubar-button"
-              classList={{ "oasis-menubar-button-active": activeMenu() === topLevel.id }}
+              classList={{
+                "oasis-menubar-button-active": activeMenu() === topLevel.id,
+              }}
               onClick={(e) => {
                 e.stopPropagation();
                 if (activeMenu() === topLevel.id) {
@@ -128,10 +131,7 @@ export function Menubar(props: MenubarProps) {
             </div>
 
             <Show when={activeMenu() === topLevel.id}>
-              <div
-                class="oasis-menubar-dropdown"
-                role="menu"
-              >
+              <div class="oasis-menubar-dropdown" role="menu">
                 <For each={topLevel.children}>
                   {(child) => (
                     <MenuNode
@@ -159,12 +159,7 @@ function MenuNode(props: {
   const isSeparator = node.item?.separator;
 
   if (isSeparator) {
-    return (
-      <div
-        class="oasis-menubar-separator"
-        role="separator"
-      />
-    );
+    return <div class="oasis-menubar-separator" role="separator" />;
   }
 
   const hasChildren = node.children.length > 0;
@@ -176,7 +171,8 @@ function MenuNode(props: {
     label = t(node.item.labelKey) || node.label;
   }
   const rawIcon = node.item?.icon;
-  const icon = () => typeof rawIcon === "function" ? rawIcon(props.host()) : rawIcon;
+  const icon = () =>
+    typeof rawIcon === "function" ? rawIcon(props.host()) : rawIcon;
 
   const handleClick = (e: MouseEvent) => {
     e.stopPropagation();
@@ -212,19 +208,14 @@ function MenuNode(props: {
         <span>{label}</span>
       </span>
       <Show when={node.item?.shortcut}>
-        <span class="oasis-menubar-shortcut">
-          {node.item!.shortcut}
-        </span>
+        <span class="oasis-menubar-shortcut">{node.item!.shortcut}</span>
       </Show>
       <Show when={hasChildren}>
         <i class="oasis-menubar-submenu-icon" data-lucide="chevron-right" />
       </Show>
 
       <Show when={showSub() && hasChildren}>
-        <div
-          class="oasis-menubar-submenu"
-          role="menu"
-        >
+        <div class="oasis-menubar-submenu" role="menu">
           <For each={node.children}>
             {(child) => (
               <MenuNode node={child} host={props.host} onClose={onClose} />

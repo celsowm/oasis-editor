@@ -8,9 +8,7 @@ export function TitleBar(props: TitleBarProps) {
   return (
     <div class="oasis-titlebar">
       <div class="oasis-titlebar-left">
-        <div class="oasis-titlebar-menubar-slot">
-          {props.children}
-        </div>
+        <div class="oasis-titlebar-menubar-slot">{props.children}</div>
       </div>
     </div>
   );

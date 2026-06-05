@@ -11,7 +11,7 @@ export interface OasisMountInstance {
  */
 export function mount(
   target: HTMLElement,
-  props: OasisEditorAppProps = {}
+  props: OasisEditorAppProps = {},
 ): OasisMountInstance {
   const dispose = render(() => OasisEditorApp(props), target);
 

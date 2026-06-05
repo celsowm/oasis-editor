@@ -59,7 +59,9 @@ export interface EditorInteractionWiring {
   navigation: ReturnType<typeof createEditorNavigation>;
   handleCopy: ReturnType<typeof createEditorClipboardController>["handleCopy"];
   handleCut: ReturnType<typeof createEditorClipboardController>["handleCut"];
-  handlePaste: ReturnType<typeof createEditorClipboardController>["handlePaste"];
+  handlePaste: ReturnType<
+    typeof createEditorClipboardController
+  >["handlePaste"];
   handleDrop: ReturnType<typeof createEditorClipboardController>["handleDrop"];
 }
 

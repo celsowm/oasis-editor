@@ -35,8 +35,17 @@ export interface ShellProps {
   measuredParagraphLayouts: Accessor<Record<string, EditorLayoutParagraph>>;
   viewportHeight: Accessor<number | string | undefined>;
   showFloatingTableToolbar: Accessor<boolean>;
-  layout: Omit<OasisEditorEditorLayoutProps, "measuredBlockHeights" | "measuredParagraphLayouts" | "viewportHeight" | "readOnly">;
-  overlays: Omit<OasisEditorEditorOverlayProps, "toolbarHost" | "persistenceStatus" | "showFloatingTableToolbar">;
+  layout: Omit<
+    OasisEditorEditorLayoutProps,
+    | "measuredBlockHeights"
+    | "measuredParagraphLayouts"
+    | "viewportHeight"
+    | "readOnly"
+  >;
+  overlays: Omit<
+    OasisEditorEditorOverlayProps,
+    "toolbarHost" | "persistenceStatus" | "showFloatingTableToolbar"
+  >;
   refs: OasisEditorEditorRefProps;
   surfaceHandlers: OasisEditorEditorSurfaceHandlers;
   inputHandlers: OasisEditorEditorInputHandlers;
@@ -83,7 +92,14 @@ export function DocumentShell(props: ShellProps) {
   return (
     <>
       <Show when={props.showChrome}>
-        <Show when={props.showTitleBar} fallback={<Show when={props.showMenubar}><Menubar host={props.toolbarHost} /></Show>}>
+        <Show
+          when={props.showTitleBar}
+          fallback={
+            <Show when={props.showMenubar}>
+              <Menubar host={props.toolbarHost} />
+            </Show>
+          }
+        >
           <TitleBar>
             <Show when={props.showMenubar}>
               <Menubar host={props.toolbarHost} />

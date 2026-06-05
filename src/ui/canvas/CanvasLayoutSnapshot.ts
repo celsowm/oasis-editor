@@ -15,7 +15,10 @@ import {
 import { buildSegmentTable } from "../../core/tableLayout.js";
 import { projectDocumentLayout } from "../../layoutProjection/index.js";
 import { FOOTNOTE_MARKER_GUTTER_PX } from "../../layoutProjection/index.js";
-import { buildCanvasTableLayout, type CanvasUnsupportedReason } from "./CanvasTableLayout.js";
+import {
+  buildCanvasTableLayout,
+  type CanvasUnsupportedReason,
+} from "./CanvasTableLayout.js";
 
 export interface CanvasSnapshotSlot {
   offset: number;
@@ -116,7 +119,9 @@ export interface BuildCanvasLayoutSnapshotOptions {
 
 function getCanvasPageElements(surface: HTMLElement): HTMLElement[] {
   const pages = Array.from(
-    surface.querySelectorAll<HTMLElement>('[data-renderer="canvas"][data-page-index]'),
+    surface.querySelectorAll<HTMLElement>(
+      '[data-renderer="canvas"][data-page-index]',
+    ),
   );
   return pages.sort((a, b) => {
     const left = Number(a.dataset.pageIndex ?? "0");
@@ -152,7 +157,9 @@ function collectInlineImagesFromLines(options: {
       }
       const imageStartOffset = fragment.startOffset;
       const imageEndOffset =
-        fragment.endOffset > imageStartOffset ? fragment.endOffset : imageStartOffset + 1;
+        fragment.endOffset > imageStartOffset
+          ? fragment.endOffset
+          : imageStartOffset + 1;
       const slot =
         line.slots.find((candidate) => candidate.offset === imageStartOffset) ??
         line.slots.find((candidate) => candidate.offset >= imageStartOffset);
@@ -168,7 +175,11 @@ function collectInlineImagesFromLines(options: {
         startOffset: imageStartOffset,
         endOffset: imageEndOffset,
         left: options.lineLeftOffset + slot.left,
-        top: options.lineTopOffset + line.top + line.height - fragment.image.height,
+        top:
+          options.lineTopOffset +
+          line.top +
+          line.height -
+          fragment.image.height,
         width: fragment.image.width,
         height: fragment.image.height,
       });
@@ -207,7 +218,8 @@ export function buildCanvasLayoutSnapshot(
   for (const page of documentLayout.pages) {
     const pageElement =
       canvasPages.find(
-        (candidate) => Number(candidate.dataset.pageIndex ?? "-1") === page.index,
+        (candidate) =>
+          Number(candidate.dataset.pageIndex ?? "-1") === page.index,
       ) ?? null;
     if (!pageElement) {
       continue;
@@ -217,7 +229,8 @@ export function buildCanvasLayoutSnapshot(
     const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
     const bodyBottom = page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
     const headerTop = page.headerTop ?? getPageHeaderZoneTop(page.pageSettings);
-    const footerTop = page.footerTop ?? page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
+    const footerTop =
+      page.footerTop ?? page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
     const snapshotPage: CanvasSnapshotPage = {
       index: page.index,
       left: pageRect.left,
@@ -233,7 +246,9 @@ export function buildCanvasLayoutSnapshot(
     snapshotPages.push(snapshotPage);
 
     const contentLeft =
-      pageRect.left + page.pageSettings.margins.left + page.pageSettings.margins.gutter;
+      pageRect.left +
+      page.pageSettings.margins.left +
+      page.pageSettings.margins.gutter;
     const contentWidth = getPageContentWidth(page.pageSettings);
 
     const collectParagraphBlock = (
@@ -242,7 +257,9 @@ export function buildCanvasLayoutSnapshot(
       startTop: number,
       options: {
         footnoteId?: string;
-        footnoteIdForBlock?: (block: (typeof page.blocks)[number]) => string | undefined;
+        footnoteIdForBlock?: (
+          block: (typeof page.blocks)[number],
+        ) => string | undefined;
         contentLeft?: number;
         contentWidth?: number;
         blockGap?: number;
@@ -252,13 +269,20 @@ export function buildCanvasLayoutSnapshot(
       const blockContentLeft = options.contentLeft ?? contentLeft;
       const blockContentWidth = options.contentWidth ?? contentWidth;
       for (const block of blocks) {
-        const blockFootnoteId = options.footnoteIdForBlock?.(block) ?? options.footnoteId;
+        const blockFootnoteId =
+          options.footnoteIdForBlock?.(block) ?? options.footnoteId;
         if (block.sourceBlock.type === "paragraph" && block.layout) {
           const paragraphNode = block.sourceBlock;
           const paragraphId = paragraphNode.id;
           const paragraphIndex = paragraphIndexById.get(paragraphId) ?? 0;
-          const paragraphStyle = resolveEffectiveParagraphStyle(paragraphNode.style, state.document.styles);
-          const spacingBefore = block.layout.startOffset === 0 ? (paragraphStyle.spacingBefore ?? 0) : 0;
+          const paragraphStyle = resolveEffectiveParagraphStyle(
+            paragraphNode.style,
+            state.document.styles,
+          );
+          const spacingBefore =
+            block.layout.startOffset === 0
+              ? (paragraphStyle.spacingBefore ?? 0)
+              : 0;
           const lineTopOffset = cursorY + spacingBefore;
           snapshotParagraphs.push({
             paragraph: paragraphNode,
@@ -268,7 +292,8 @@ export function buildCanvasLayoutSnapshot(
             footnoteId: blockFootnoteId,
             pageIndex: page.index,
             startOffset: block.layout.startOffset ?? 0,
-            endOffset: block.layout.endOffset ?? getParagraphText(paragraphNode).length,
+            endOffset:
+              block.layout.endOffset ?? getParagraphText(paragraphNode).length,
             textLength: getParagraphText(paragraphNode).length,
             left: blockContentLeft,
             top: cursorY,
@@ -345,43 +370,45 @@ export function buildCanvasLayoutSnapshot(
             for (const paragraphLayout of cell.paragraphs) {
               const paragraphId = paragraphLayout.paragraph.id;
               const paragraphIndex = paragraphIndexById.get(paragraphId) ?? 0;
-              const textLength = getParagraphText(paragraphLayout.paragraph).length;
+              const textLength = getParagraphText(
+                paragraphLayout.paragraph,
+              ).length;
               snapshotParagraphs.push({
                 paragraph: paragraphLayout.paragraph,
-              paragraphId,
-              paragraphIndex,
-              zone,
-              footnoteId: blockFootnoteId,
-              pageIndex: page.index,
-              startOffset: 0,
-              endOffset: textLength,
-              textLength,
-              left: paragraphLayout.originX,
-              top: paragraphLayout.originY,
-              width: paragraphLayout.width,
-              height: paragraphLayout.height,
-              lines: paragraphLayout.lines.map((line) => ({
-                startOffset: line.startOffset,
-                endOffset: line.endOffset,
-                top: paragraphLayout.originY + line.top,
-                height: line.height,
-                slots: line.slots.map((slot) => ({
-                  offset: slot.offset,
-                  left: paragraphLayout.originX + slot.left,
-                  top: paragraphLayout.originY + slot.top,
-                  height: slot.height,
+                paragraphId,
+                paragraphIndex,
+                zone,
+                footnoteId: blockFootnoteId,
+                pageIndex: page.index,
+                startOffset: 0,
+                endOffset: textLength,
+                textLength,
+                left: paragraphLayout.originX,
+                top: paragraphLayout.originY,
+                width: paragraphLayout.width,
+                height: paragraphLayout.height,
+                lines: paragraphLayout.lines.map((line) => ({
+                  startOffset: line.startOffset,
+                  endOffset: line.endOffset,
+                  top: paragraphLayout.originY + line.top,
+                  height: line.height,
+                  slots: line.slots.map((slot) => ({
+                    offset: slot.offset,
+                    left: paragraphLayout.originX + slot.left,
+                    top: paragraphLayout.originY + slot.top,
+                    height: slot.height,
+                  })),
                 })),
-              })),
-              tableCell: {
-                tableId: cell.tableId,
-                rowIndex: toDocumentRowIndex(cell.rowIndex),
-                cellIndex: cell.cellIndex,
-                left: cell.left,
-                top: cell.top,
-                width: cell.width,
-                height: cell.height,
-                anchorPosition: cell.anchorPosition,
-              },
+                tableCell: {
+                  tableId: cell.tableId,
+                  rowIndex: toDocumentRowIndex(cell.rowIndex),
+                  cellIndex: cell.cellIndex,
+                  left: cell.left,
+                  top: cell.top,
+                  width: cell.width,
+                  height: cell.height,
+                  anchorPosition: cell.anchorPosition,
+                },
               });
               inlineImages.push(
                 ...collectInlineImagesFromLines({
@@ -402,19 +429,34 @@ export function buildCanvasLayoutSnapshot(
       }
     };
 
-    collectParagraphBlock("header", page.headerBlocks ?? [], pageRect.top + headerTop);
+    collectParagraphBlock(
+      "header",
+      page.headerBlocks ?? [],
+      pageRect.top + headerTop,
+    );
     collectParagraphBlock("main", page.blocks, pageRect.top + bodyTop);
     if (page.footnoteBlocks && page.footnoteTop !== undefined) {
       const footnoteReferenceIds = page.footnoteReferenceIds ?? [];
-      collectParagraphBlock("footnote", page.footnoteBlocks, pageRect.top + page.footnoteTop, {
-        footnoteIdForBlock: (block) =>
-          footnoteReferenceIds.find((footnoteId) => block.blockId.startsWith(`${footnoteId}:`)),
-        contentLeft: contentLeft + FOOTNOTE_MARKER_GUTTER_PX,
-        contentWidth: Math.max(24, contentWidth - FOOTNOTE_MARKER_GUTTER_PX),
-        blockGap: 2,
-      });
+      collectParagraphBlock(
+        "footnote",
+        page.footnoteBlocks,
+        pageRect.top + page.footnoteTop,
+        {
+          footnoteIdForBlock: (block) =>
+            footnoteReferenceIds.find((footnoteId) =>
+              block.blockId.startsWith(`${footnoteId}:`),
+            ),
+          contentLeft: contentLeft + FOOTNOTE_MARKER_GUTTER_PX,
+          contentWidth: Math.max(24, contentWidth - FOOTNOTE_MARKER_GUTTER_PX),
+          blockGap: 2,
+        },
+      );
     }
-    collectParagraphBlock("footer", page.footerBlocks ?? [], pageRect.top + footerTop);
+    collectParagraphBlock(
+      "footer",
+      page.footerBlocks ?? [],
+      pageRect.top + footerTop,
+    );
   }
 
   const paragraphsById = new Map<string, CanvasSnapshotParagraph[]>();
@@ -425,8 +467,10 @@ export function buildCanvasLayoutSnapshot(
   }
   for (const [paragraphId, entries] of paragraphsById.entries()) {
     entries.sort((left, right) => {
-      if (left.pageIndex !== right.pageIndex) return left.pageIndex - right.pageIndex;
-      if (left.startOffset !== right.startOffset) return left.startOffset - right.startOffset;
+      if (left.pageIndex !== right.pageIndex)
+        return left.pageIndex - right.pageIndex;
+      if (left.startOffset !== right.startOffset)
+        return left.startOffset - right.startOffset;
       return left.top - right.top;
     });
     paragraphsById.set(paragraphId, entries);

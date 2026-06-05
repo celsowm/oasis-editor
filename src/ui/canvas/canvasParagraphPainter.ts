@@ -1,5 +1,13 @@
-import type { EditorLayoutLine, EditorParagraphNode, EditorState } from "../../core/model.js";
-import { resolveEffectiveParagraphStyle, resolveEffectiveTextStyleForParagraph, resolveImageSrc } from "../../core/model.js";
+import type {
+  EditorLayoutLine,
+  EditorParagraphNode,
+  EditorState,
+} from "../../core/model.js";
+import {
+  resolveEffectiveParagraphStyle,
+  resolveEffectiveTextStyleForParagraph,
+  resolveImageSrc,
+} from "../../core/model.js";
 import { getCachedCanvasImage } from "./canvasImageCache.js";
 import { resolveListPrefix } from "./listNumbering.js";
 import {
@@ -13,12 +21,14 @@ import {
 const PX_PER_POINT = 96 / 72;
 
 export function resolveCanvasTextRenderMetrics(
-  styles: {
-    superscript?: boolean;
-    subscript?: boolean;
-    smallCaps?: boolean;
-    baselineShift?: number | null;
-  } | undefined,
+  styles:
+    | {
+        superscript?: boolean;
+        subscript?: boolean;
+        smallCaps?: boolean;
+        baselineShift?: number | null;
+      }
+    | undefined,
   fontSize: number,
 ) {
   const explicitBaselineShift = (styles?.baselineShift ?? 0) * PX_PER_POINT;
@@ -63,7 +73,8 @@ export function drawParagraph(
     }
     const baselineY = originY + line.top + line.height * 0.8;
 
-    const listPrefix = line.index === 0 ? resolveListPrefix(paragraph, state.document) : "";
+    const listPrefix =
+      line.index === 0 ? resolveListPrefix(paragraph, state.document) : "";
     if (listPrefix) {
       ctx.save();
       ctx.font = "400 14.6667px Calibri";
@@ -91,7 +102,14 @@ export function drawParagraph(
       ctx.font = `${fontStyle} ${fontWeight} ${renderMetrics.fontSize}px ${fontFamily}`;
       ctx.fillStyle = styles.color ?? "#000000";
       if (styles.highlight) {
-        drawFragmentHighlight(ctx, line, fragment, originX, originY, styles.highlight);
+        drawFragmentHighlight(
+          ctx,
+          line,
+          fragment,
+          originX,
+          originY,
+          styles.highlight,
+        );
       }
       if (fragment.image) {
         const slot = slotByOffset.get(fragment.startOffset);
@@ -113,8 +131,13 @@ export function drawParagraph(
           if (char.char === "\n" || char.char === "\t") continue;
           const slot = slotByOffset.get(char.paragraphOffset);
           if (!slot) continue;
-          const renderedChar = styles.allCaps ? char.char.toUpperCase() : char.char;
-          const scale = styles.characterScale && styles.characterScale > 0 ? styles.characterScale / 100 : 1;
+          const renderedChar = styles.allCaps
+            ? char.char.toUpperCase()
+            : char.char;
+          const scale =
+            styles.characterScale && styles.characterScale > 0
+              ? styles.characterScale / 100
+              : 1;
           if (scale !== 1) {
             const x = originX + slot.left;
             ctx.save();
@@ -123,7 +146,11 @@ export function drawParagraph(
             ctx.fillText(renderedChar, 0, 0);
             ctx.restore();
           } else {
-            ctx.fillText(renderedChar, originX + slot.left, baselineY + renderMetrics.baselineOffset);
+            ctx.fillText(
+              renderedChar,
+              originX + slot.left,
+              baselineY + renderMetrics.baselineOffset,
+            );
           }
         }
       }
@@ -143,7 +170,14 @@ export function drawParagraph(
         drawTextDecoration(ctx, line, fragment, originX, originY, "strike");
       }
       if (styles.doubleStrike) {
-        drawTextDecoration(ctx, line, fragment, originX, originY, "doubleStrike");
+        drawTextDecoration(
+          ctx,
+          line,
+          fragment,
+          originX,
+          originY,
+          "doubleStrike",
+        );
       }
       ctx.restore();
     }
@@ -151,7 +185,8 @@ export function drawParagraph(
     const isLastLine = line.index === lines.length - 1;
     if (state.showParagraphMarks && isLastLine) {
       const lastSlot = line.slots[line.slots.length - 1];
-      const markSlot = line.slots.find((slot) => slot.offset === line.endOffset) ?? lastSlot;
+      const markSlot =
+        line.slots.find((slot) => slot.offset === line.endOffset) ?? lastSlot;
       if (markSlot) {
         ctx.save();
         ctx.font = "400 13px Calibri";
@@ -173,7 +208,9 @@ function drawFragmentHighlight(
   color: string,
 ) {
   const slots = fragment.chars
-    .map((char) => line.slots.find((slot) => slot.offset === char.paragraphOffset))
+    .map((char) =>
+      line.slots.find((slot) => slot.offset === char.paragraphOffset),
+    )
     .filter((slot): slot is NonNullable<typeof slot> => Boolean(slot));
   if (slots.length === 0) return;
   const left = slots[0]!.left;
@@ -181,7 +218,12 @@ function drawFragmentHighlight(
   ctx.save();
   ctx.globalAlpha = 0.35;
   ctx.fillStyle = color;
-  ctx.fillRect(originX + left, originY + line.top + 2, Math.max(0, right - left), Math.max(2, line.height - 4));
+  ctx.fillRect(
+    originX + left,
+    originY + line.top + 2,
+    Math.max(0, right - left),
+    Math.max(2, line.height - 4),
+  );
   ctx.restore();
 }
 
@@ -196,16 +238,19 @@ function drawTextDecoration(
   underlineColor?: string,
 ) {
   const slots = fragment.chars
-    .map((char) => line.slots.find((slot) => slot.offset === char.paragraphOffset))
+    .map((char) =>
+      line.slots.find((slot) => slot.offset === char.paragraphOffset),
+    )
     .filter((slot): slot is NonNullable<typeof slot> => Boolean(slot));
   if (slots.length === 0) return;
   const left = slots[0]!.left;
   const right = slots[slots.length - 1]!.left + 8;
-  const y = kind === "underline"
-    ? originY + line.top + line.height - 2
-    : kind === "doubleStrike"
-      ? originY + line.top + line.height * 0.5
-      : originY + line.top + line.height * 0.52;
+  const y =
+    kind === "underline"
+      ? originY + line.top + line.height - 2
+      : kind === "doubleStrike"
+        ? originY + line.top + line.height * 0.5
+        : originY + line.top + line.height * 0.52;
   const x1 = originX + left;
   const x2 = originX + right;
   ctx.save();

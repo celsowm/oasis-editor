@@ -19,7 +19,10 @@ function toPx(valuePt: number): number {
   return valuePt * POINT_TO_PX;
 }
 
-function resolveTableWidthPx(table: EditorTableNode, pageContentWidthPx: number): number {
+function resolveTableWidthPx(
+  table: EditorTableNode,
+  pageContentWidthPx: number,
+): number {
   const raw = table.style?.width;
   if (typeof raw === "number" && Number.isFinite(raw)) {
     return Math.max(24, raw);
@@ -34,7 +37,10 @@ function resolveTableWidthPx(table: EditorTableNode, pageContentWidthPx: number)
 }
 
 function resolveHorizontalCellPaddingPx(cell: EditorTableCellNode): number {
-  if (typeof cell.style?.padding === "number" && Number.isFinite(cell.style.padding)) {
+  if (
+    typeof cell.style?.padding === "number" &&
+    Number.isFinite(cell.style.padding)
+  ) {
     return Math.max(0, toPx(cell.style.padding)) * 2;
   }
   const left =
@@ -69,7 +75,9 @@ export function resolveTableColumnWidthsPx(
   const cellEntries = buildTableCellLayout(table);
   const visualColumnCount = Math.max(
     1,
-    ...cellEntries.map((entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan)),
+    ...cellEntries.map(
+      (entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan),
+    ),
   );
 
   if (table.gridCols && table.gridCols.length >= visualColumnCount) {
@@ -92,19 +100,26 @@ export function getTableCellContentWidthForParagraph(
   paragraphId: string,
   activeSectionIndex: number,
 ): number | null {
-  const tableLocation = findParagraphTableLocation(document, paragraphId, activeSectionIndex);
+  const tableLocation = findParagraphTableLocation(
+    document,
+    paragraphId,
+    activeSectionIndex,
+  );
   if (!tableLocation) return null;
 
   const sections = getDocumentSections(document);
-  const sectionIndex = Math.max(0, Math.min(activeSectionIndex, sections.length - 1));
+  const sectionIndex = Math.max(
+    0,
+    Math.min(activeSectionIndex, sections.length - 1),
+  );
   const section = sections[sectionIndex];
   if (!section) return null;
 
   const zoneBlocks =
     tableLocation.zone === "header"
-      ? section.header ?? []
+      ? (section.header ?? [])
       : tableLocation.zone === "footer"
-        ? section.footer ?? []
+        ? (section.footer ?? [])
         : section.blocks;
   const table = zoneBlocks[tableLocation.blockIndex];
   if (!table || table.type !== "table") return null;
@@ -114,19 +129,26 @@ export function getTableCellContentWidthForParagraph(
   const cell = row.cells[tableLocation.cellIndex];
   if (!cell) return null;
 
-  const pageContentWidthPx = getPageContentWidth(getDocumentPageSettings(document));
+  const pageContentWidthPx = getPageContentWidth(
+    getDocumentPageSettings(document),
+  );
   const columnWidths = resolveTableColumnWidthsPx(table, pageContentWidthPx);
 
   const entries = buildTableCellLayout(table);
   const matched = entries.find(
     (entry) =>
-      entry.rowIndex === tableLocation.rowIndex && entry.cellIndex === tableLocation.cellIndex,
+      entry.rowIndex === tableLocation.rowIndex &&
+      entry.cellIndex === tableLocation.cellIndex,
   );
   const visualCol = matched?.visualColumnIndex ?? 0;
   const colSpan = Math.max(1, matched?.colSpan ?? cell.colSpan ?? 1);
 
   let cellWidth = 0;
-  for (let i = visualCol; i < Math.min(visualCol + colSpan, columnWidths.length); i += 1) {
+  for (
+    let i = visualCol;
+    i < Math.min(visualCol + colSpan, columnWidths.length);
+    i += 1
+  ) {
     cellWidth += columnWidths[i] ?? 0;
   }
   if (cellWidth <= 0) return null;
@@ -134,7 +156,10 @@ export function getTableCellContentWidthForParagraph(
   const horizontalChrome =
     resolveHorizontalCellBordersPx(cell) + resolveHorizontalCellPaddingPx(cell);
 
-  return Math.max(MIN_TABLE_CELL_CONTENT_WIDTH_PX, cellWidth - horizontalChrome);
+  return Math.max(
+    MIN_TABLE_CELL_CONTENT_WIDTH_PX,
+    cellWidth - horizontalChrome,
+  );
 }
 
 export function getTableCellContentWidthForParagraphInState(

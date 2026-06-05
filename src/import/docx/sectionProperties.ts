@@ -4,6 +4,7 @@ import type {
   EditorNamedStyle,
   EditorPageSettings,
   EditorParagraphNode,
+  EditorParagraphStyle,
 } from "../../core/model.js";
 import { resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
 import {
@@ -58,7 +59,9 @@ export function parseSectionProperties(sectPr: XmlElement): SectionProperties {
     };
   }
 
-  const parseSectionReferences = (localName: "headerReference" | "footerReference") => {
+  const parseSectionReferences = (
+    localName: "headerReference" | "footerReference",
+  ) => {
     const refs: Partial<Record<"default" | "first" | "even", string>> = {};
     for (const ref of getChildrenByTagNameNS(sectPr, WORD_NS, localName)) {
       const type = getAttributeValue(ref, "type") ?? "default";
@@ -79,7 +82,10 @@ export function parseSectionProperties(sectPr: XmlElement): SectionProperties {
   const footerRIds = parseSectionReferences("footerReference");
   const docGrid = getFirstChildByTagNameNS(sectPr, WORD_NS, "docGrid");
   const docGridType = getAttributeValue(docGrid, "type");
-  const docGridLinePitchPx = twipsToPx(getAttributeValue(docGrid, "linePitch"), Number.NaN);
+  const docGridLinePitchPx = twipsToPx(
+    getAttributeValue(docGrid, "linePitch"),
+    Number.NaN,
+  );
 
   return {
     pageSettings,
@@ -101,7 +107,9 @@ export function parseSectionProperties(sectPr: XmlElement): SectionProperties {
   };
 }
 
-export function parsePageSettings(body: XmlElement | undefined): EditorPageSettings | undefined {
+export function parsePageSettings(
+  body: XmlElement | undefined,
+): EditorPageSettings | undefined {
   if (!body) {
     return undefined;
   }
@@ -112,7 +120,11 @@ export function parsePageSettings(body: XmlElement | undefined): EditorPageSetti
   }
 
   const pageSize = getFirstChildByTagNameNS(sectionProperties, WORD_NS, "pgSz");
-  const pageMargins = getFirstChildByTagNameNS(sectionProperties, WORD_NS, "pgMar");
+  const pageMargins = getFirstChildByTagNameNS(
+    sectionProperties,
+    WORD_NS,
+    "pgMar",
+  );
   if (!pageSize && !pageMargins) {
     return undefined;
   }
@@ -177,13 +189,17 @@ export function applyDocGridLinePitch(
 
   for (const block of blocks) {
     if (block.type === "paragraph") {
-      const isHeading = block.style?.styleId && /heading/i.test(block.style.styleId);
+      const isHeading =
+        block.style?.styleId && /heading/i.test(block.style.styleId);
       if (
         block.style?.lineHeight === undefined &&
         block.style?.snapToGrid !== false &&
         !isHeading
       ) {
-        const lineGridType = mode === "implicit" ? "implicit" : (docGridType as any);
+        const lineGridType =
+          mode === "implicit"
+            ? "implicit"
+            : (docGridType as EditorParagraphStyle["lineGridType"]);
         block.style = {
           ...(block.style ?? {}),
           lineGridPitch: linePitchPx,
@@ -196,7 +212,13 @@ export function applyDocGridLinePitch(
     if (settings.adjustLineHeightInTable) {
       for (const row of block.rows) {
         for (const cell of row.cells) {
-          applyDocGridLinePitch(cell.blocks, linePitchPx, mode, docGridType, settings);
+          applyDocGridLinePitch(
+            cell.blocks,
+            linePitchPx,
+            mode,
+            docGridType,
+            settings,
+          );
         }
       }
     }

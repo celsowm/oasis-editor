@@ -71,22 +71,32 @@ export function buildCoreFormattingCommands({
     selectAll: command("selectAll", formatting.selectAll),
     insertFootnote: command("insertFootnote", formatting.insertFootnote),
     pastePlainText: command("pastePlainText", formatting.pastePlainText),
-    bold: command("bold", formatting.bold, () => ({ isActive: Boolean(s().bold) })),
-    italic: command("italic", formatting.italic, () => ({ isActive: Boolean(s().italic) })),
+    bold: command("bold", formatting.bold, () => ({
+      isActive: Boolean(s().bold),
+    })),
+    italic: command("italic", formatting.italic, () => ({
+      isActive: Boolean(s().italic),
+    })),
     underline: command("underline", formatting.underline, () => ({
       isActive: Boolean(s().underline),
     })),
-    strike: command("strike", formatting.strike, () => ({ isActive: Boolean(s().strike) })),
+    strike: command("strike", formatting.strike, () => ({
+      isActive: Boolean(s().strike),
+    })),
     superscript: command("superscript", formatting.superscript, () => ({
       isActive: Boolean(s().superscript),
     })),
     subscript: command("subscript", formatting.subscript, () => ({
       isActive: Boolean(s().subscript),
     })),
-    link: command("link", () => (link.prompt(), true), () => ({
-      isEnabled: gate.isCommandEnabled("link") && link.canPrompt(),
-      isActive: Boolean(s().link),
-    })),
+    link: command(
+      "link",
+      () => (link.prompt(), true),
+      () => ({
+        isEnabled: gate.isCommandEnabled("link") && link.canPrompt(),
+        isActive: Boolean(s().link),
+      }),
+    ),
     alignLeft: command("alignLeft", formatting.alignLeft, () => ({
       isActive: s().align === "left",
     })),
@@ -107,10 +117,16 @@ export function buildCoreFormattingCommands({
     })),
     find: command("find", formatting.find),
     replace: command("replace", formatting.replace),
-    toggleTrackChanges: command("toggleTrackChanges", formatting.toggleTrackChanges),
+    toggleTrackChanges: command(
+      "toggleTrackChanges",
+      formatting.toggleTrackChanges,
+    ),
     acceptRevisions: command("acceptRevisions", formatting.acceptRevisions),
     rejectRevisions: command("rejectRevisions", formatting.rejectRevisions),
-    toggleShowMargins: command("toggleShowMargins", formatting.toggleShowMargins),
+    toggleShowMargins: command(
+      "toggleShowMargins",
+      formatting.toggleShowMargins,
+    ),
     toggleShowParagraphMarks: command(
       "toggleShowParagraphMarks",
       formatting.toggleShowParagraphMarks,
@@ -132,7 +148,10 @@ export function buildCoreFormattingCommands({
     setFontSize: valueCommand(
       "setFontSize",
       // The UI speaks points; the model stores pixels.
-      (p) => formatting.setFontSize(p != null && p !== "" ? parseFontSizePtToPx(p as string) : null),
+      (p) =>
+        formatting.setFontSize(
+          p != null && p !== "" ? parseFontSizePtToPx(p as string) : null,
+        ),
       () => formatFontSizePt(s().fontSize),
     ),
     setColor: valueCommand(
@@ -169,24 +188,44 @@ export function buildDocumentAndBrowserCommands({
 }: DocumentAndBrowserGroupDeps): NonNullable<OasisPlugin["commands"]> {
   const s = style.state;
   return {
-    documentStyles: actionCommand("documentStyles", () => {}, () => ({
-      isEnabled: true,
-      value: document.documentStyles(),
-    })),
-    print: actionCommand("print", () => browser.print(), () => ({ isEnabled: true })),
-    copy: actionCommand("copy", () => browser.copy(), () => ({ isEnabled: true })),
+    documentStyles: actionCommand(
+      "documentStyles",
+      () => {},
+      () => ({
+        isEnabled: true,
+        value: document.documentStyles(),
+      }),
+    ),
+    print: actionCommand(
+      "print",
+      () => browser.print(),
+      () => ({ isEnabled: true }),
+    ),
+    copy: actionCommand(
+      "copy",
+      () => browser.copy(),
+      () => ({ isEnabled: true }),
+    ),
     exportDocx: actionCommand("exportDocx", () => document.exportDocx()),
     exportPdf: actionCommand("exportPdf", () => document.exportPdf()),
     importDocx: actionCommand("importDocx", () => document.importDocx()),
     insertImage: actionCommand("insertImage", () => document.insertImage()),
-    unlink: actionCommand("unlink", () => link.remove(), () => ({
-      isEnabled: gate.isCommandEnabled("unlink") && Boolean(s().link),
-      isActive: Boolean(s().link),
-    })),
-    editImageAlt: actionCommand("editImageAlt", () => image.promptAlt(), () => ({
-      isEnabled: image.isSelected(),
-      isActive: image.isSelected(),
-    })),
+    unlink: actionCommand(
+      "unlink",
+      () => link.remove(),
+      () => ({
+        isEnabled: gate.isCommandEnabled("unlink") && Boolean(s().link),
+        isActive: Boolean(s().link),
+      }),
+    ),
+    editImageAlt: actionCommand(
+      "editImageAlt",
+      () => image.promptAlt(),
+      () => ({
+        isEnabled: image.isSelected(),
+        isActive: image.isSelected(),
+      }),
+    ),
   };
 }
 
@@ -246,16 +285,17 @@ export function buildParagraphAndSectionCommands({
       (p) => (paragraph.setShading((p as string) ?? null), true),
       () => s().shading || "#ffffff",
     ),
-    applyParagraphBorders: actionCommand(
-      "applyParagraphBorders",
-      () => paragraph.applyBorders(),
+    applyParagraphBorders: actionCommand("applyParagraphBorders", () =>
+      paragraph.applyBorders(),
     ),
     setLineHeight: valueCommand(
       "setLineHeight",
       (p) => (paragraph.setLineHeight(numOrNull(p)), true),
       () => s().lineHeight,
     ),
-    setListFormat: actionCommand("setListFormat", (p) => paragraph.setListFormat(String(p))),
+    setListFormat: actionCommand("setListFormat", (p) =>
+      paragraph.setListFormat(String(p)),
+    ),
     setListStartAt: actionCommand("setListStartAt", (p) =>
       paragraph.setListStartAt(numOrNull(p)),
     ),
@@ -264,7 +304,9 @@ export function buildParagraphAndSectionCommands({
       () => section.toggleOrientation(),
       () => ({ isActive: section.isLandscape() }),
     ),
-    sectionBreakNextPage: actionCommand("sectionBreakNextPage", () => section.breakNextPage()),
+    sectionBreakNextPage: actionCommand("sectionBreakNextPage", () =>
+      section.breakNextPage(),
+    ),
     sectionBreakContinuous: actionCommand("sectionBreakContinuous", () =>
       section.breakContinuous(),
     ),
@@ -280,55 +322,93 @@ export function buildTableCommands({
   actionCommand,
 }: TableGroupDeps): NonNullable<OasisPlugin["commands"]> {
   return {
-    tableContext: actionCommand("tableContext", () => {}, () => ({
-      isEnabled: table.insideTable(),
-      isActive: table.insideTable(),
-      value: table.selectionLabel(),
-    })),
-    tableMerge: actionCommand("tableMerge", () => table.merge(), () => ({
-      isEnabled: gate.isCommandEnabled("tableMerge") && table.canMerge(),
-    })),
-    tableSplit: actionCommand("tableSplit", () => table.split(), () => ({
-      isEnabled: gate.isCommandEnabled("tableSplit") && table.canSplit(),
-    })),
+    tableContext: actionCommand(
+      "tableContext",
+      () => {},
+      () => ({
+        isEnabled: table.insideTable(),
+        isActive: table.insideTable(),
+        value: table.selectionLabel(),
+      }),
+    ),
+    tableMerge: actionCommand(
+      "tableMerge",
+      () => table.merge(),
+      () => ({
+        isEnabled: gate.isCommandEnabled("tableMerge") && table.canMerge(),
+      }),
+    ),
+    tableSplit: actionCommand(
+      "tableSplit",
+      () => table.split(),
+      () => ({
+        isEnabled: gate.isCommandEnabled("tableSplit") && table.canSplit(),
+      }),
+    ),
     tableInsertColumnBefore: actionCommand(
       "tableInsertColumnBefore",
       () => table.insertColumnBefore(),
-      () => ({ isEnabled: gate.isCommandEnabled("tableInsertColumnBefore") && table.canEditColumn() }),
+      () => ({
+        isEnabled:
+          gate.isCommandEnabled("tableInsertColumnBefore") &&
+          table.canEditColumn(),
+      }),
     ),
     tableInsertColumnAfter: actionCommand(
       "tableInsertColumnAfter",
       () => table.insertColumnAfter(),
-      () => ({ isEnabled: gate.isCommandEnabled("tableInsertColumnAfter") && table.canEditColumn() }),
+      () => ({
+        isEnabled:
+          gate.isCommandEnabled("tableInsertColumnAfter") &&
+          table.canEditColumn(),
+      }),
     ),
     tableDeleteColumn: actionCommand(
       "tableDeleteColumn",
       () => table.deleteColumn(),
-      () => ({ isEnabled: gate.isCommandEnabled("tableDeleteColumn") && table.canEditColumn() }),
+      () => ({
+        isEnabled:
+          gate.isCommandEnabled("tableDeleteColumn") && table.canEditColumn(),
+      }),
     ),
     tableInsertRowBefore: actionCommand(
       "tableInsertRowBefore",
       () => table.insertRowBefore(),
-      () => ({ isEnabled: gate.isCommandEnabled("tableInsertRowBefore") && table.canEditRow() }),
+      () => ({
+        isEnabled:
+          gate.isCommandEnabled("tableInsertRowBefore") && table.canEditRow(),
+      }),
     ),
     tableInsertRowAfter: actionCommand(
       "tableInsertRowAfter",
       () => table.insertRowAfter(),
-      () => ({ isEnabled: gate.isCommandEnabled("tableInsertRowAfter") && table.canEditRow() }),
+      () => ({
+        isEnabled:
+          gate.isCommandEnabled("tableInsertRowAfter") && table.canEditRow(),
+      }),
     ),
     tableDeleteRow: actionCommand(
       "tableDeleteRow",
       () => table.deleteRow(),
-      () => ({ isEnabled: gate.isCommandEnabled("tableDeleteRow") && table.canEditRow() }),
+      () => ({
+        isEnabled:
+          gate.isCommandEnabled("tableDeleteRow") && table.canEditRow(),
+      }),
     ),
     tableCellShading: actionCommand("tableCellShading", (p) =>
       table.cellShading((p as string) ?? null),
     ),
-    tableCellBorders: actionCommand("tableCellBorders", () => table.cellBorders()),
-    tableCellNoBorders: actionCommand("tableCellNoBorders", () => table.cellNoBorders()),
+    tableCellBorders: actionCommand("tableCellBorders", () =>
+      table.cellBorders(),
+    ),
+    tableCellNoBorders: actionCommand("tableCellNoBorders", () =>
+      table.cellNoBorders(),
+    ),
     tableWidth100: actionCommand("tableWidth100", () => table.width100()),
     tableAlignLeft: actionCommand("tableAlignLeft", () => table.alignLeft()),
-    tableAlignCenter: actionCommand("tableAlignCenter", () => table.alignCenter()),
+    tableAlignCenter: actionCommand("tableAlignCenter", () =>
+      table.alignCenter(),
+    ),
     tableAlignRight: actionCommand("tableAlignRight", () => table.alignRight()),
     tableSetCellWidth: actionCommand("tableSetCellWidth", (p) =>
       table.setCellWidth(String(p)),

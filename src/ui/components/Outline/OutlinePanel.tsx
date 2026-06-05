@@ -1,6 +1,13 @@
-import { createSignal, createEffect, For, Show, onMount, onCleanup } from "solid-js";
+import {
+  createSignal,
+  createEffect,
+  For,
+  Show,
+  onMount,
+  onCleanup,
+} from "solid-js";
 import { outlineFrom, type OutlineItem } from "../../../core/headings.js";
-import type { EditorState } from "../../../core/model.js";
+import type { EditorDocument, EditorState } from "../../../core/model.js";
 import { t } from "../../../i18n/index.js";
 import { debounce } from "../../../utils/throttle.js";
 import { buildCanvasLayoutSnapshot } from "../../canvas/CanvasLayoutSnapshot.js";
@@ -15,7 +22,9 @@ export interface OutlinePanelProps {
 }
 
 export function OutlinePanel(props: OutlinePanelProps) {
-  const [collapsed, setCollapsed] = createSignal(props.defaultCollapsed ?? false);
+  const [collapsed, setCollapsed] = createSignal(
+    props.defaultCollapsed ?? false,
+  );
   const [items, setItems] = createSignal<OutlineItem[]>([]);
   const [activeId, setActiveId] = createSignal<string | null>(null);
 
@@ -33,7 +42,7 @@ export function OutlinePanel(props: OutlinePanelProps) {
     localStorage.setItem("oasis-outline-collapsed", String(next));
   };
 
-  const updateOutline = debounce((doc) => {
+  const updateOutline = debounce((doc: EditorDocument) => {
     setItems(outlineFrom(doc));
   }, 100);
 
@@ -77,7 +86,9 @@ export function OutlinePanel(props: OutlinePanelProps) {
 
   onMount(() => {
     scrollTarget = props.viewportRef?.() ?? window;
-    scrollTarget.addEventListener("scroll", recomputeActiveDebounced, { passive: true });
+    scrollTarget.addEventListener("scroll", recomputeActiveDebounced, {
+      passive: true,
+    });
     recomputeActive();
 
     createEffect(() => {
@@ -111,7 +122,9 @@ export function OutlinePanel(props: OutlinePanelProps) {
           class="oasis-outline-toggle"
           aria-label={t("outline.toggle")}
         >
-          <i data-lucide={collapsed() ? "panel-left-open" : "panel-left-close"} />
+          <i
+            data-lucide={collapsed() ? "panel-left-open" : "panel-left-close"}
+          />
         </button>
       </div>
 
@@ -120,9 +133,7 @@ export function OutlinePanel(props: OutlinePanelProps) {
           <Show
             when={items().length > 0}
             fallback={
-              <div class="oasis-outline-empty">
-                {t("outline.empty")}
-              </div>
+              <div class="oasis-outline-empty">{t("outline.empty")}</div>
             }
           >
             <For each={items()}>
@@ -130,7 +141,9 @@ export function OutlinePanel(props: OutlinePanelProps) {
                 <div
                   onClick={() => props.onNavigate(item.anchor)}
                   class="oasis-outline-item"
-                  classList={{ "oasis-outline-item-active": activeId() === item.id }}
+                  classList={{
+                    "oasis-outline-item-active": activeId() === item.id,
+                  }}
                   style={{ "--oasis-outline-level": String(item.level - 1) }}
                   title={item.text}
                 >

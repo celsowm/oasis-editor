@@ -18,8 +18,16 @@ import {
 import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
 import { registerPdfImageRun } from "../images.js";
 import { OasisPdfWriter } from "../OasisPdfWriter.js";
-import { DEFAULT_FONT_SIZE_PX, pxToPt, textStyleToFontSizePt } from "../units.js";
-import { resolveFragmentBounds, resolveFragmentSlots, type FragmentSlot } from "./fragmentGeometry.js";
+import {
+  DEFAULT_FONT_SIZE_PX,
+  pxToPt,
+  textStyleToFontSizePt,
+} from "../units.js";
+import {
+  resolveFragmentBounds,
+  resolveFragmentSlots,
+  type FragmentSlot,
+} from "./fragmentGeometry.js";
 
 const PX_PER_POINT = 96 / 72;
 
@@ -35,7 +43,11 @@ export function drawFragmentHighlight(
   if (!styles.highlight) {
     return;
   }
-  const bounds = resolveFragmentBounds(line, fragment, styles.fontSize ?? DEFAULT_FONT_SIZE_PX);
+  const bounds = resolveFragmentBounds(
+    line,
+    fragment,
+    styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
+  );
   if (!bounds) {
     return;
   }
@@ -58,20 +70,26 @@ export function drawFragmentDecoration(
   styles: Required<EditorTextStyle>,
   kind: "underline" | "strike" | "doubleStrike",
 ): void {
-  const bounds = resolveFragmentBounds(line, fragment, styles.fontSize ?? DEFAULT_FONT_SIZE_PX);
+  const bounds = resolveFragmentBounds(
+    line,
+    fragment,
+    styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
+  );
   if (!bounds) {
     return;
   }
-  const y = kind === "underline"
-    ? originY + line.top + line.height - 2
-    : kind === "doubleStrike"
-      ? originY + line.top + line.height * 0.5
-      : originY + line.top + line.height * 0.52;
+  const y =
+    kind === "underline"
+      ? originY + line.top + line.height - 2
+      : kind === "doubleStrike"
+        ? originY + line.top + line.height * 0.5
+        : originY + line.top + line.height * 0.52;
   const x1 = originX + bounds.left;
   const x2 = originX + bounds.right;
-  const stroke = kind === "underline"
-    ? (styles.underlineColor ?? styles.color ?? "#000000")
-    : (styles.color ?? "#000000");
+  const stroke =
+    kind === "underline"
+      ? (styles.underlineColor ?? styles.color ?? "#000000")
+      : (styles.color ?? "#000000");
 
   if (kind === "strike") {
     writer.drawLine(pageIndex, {
@@ -105,7 +123,15 @@ export function drawFragmentDecoration(
     return;
   }
 
-  drawUnderlineWithStyle(writer, pageIndex, x1, x2, y, stroke, styles.underlineStyle);
+  drawUnderlineWithStyle(
+    writer,
+    pageIndex,
+    x1,
+    x2,
+    y,
+    stroke,
+    styles.underlineStyle,
+  );
 }
 
 function drawUnderlineWithStyle(
@@ -206,12 +232,18 @@ export async function drawFragmentText(
 ): Promise<void> {
   if (fragment.image) {
     const slot =
-      line.slots.find((candidate) => candidate.offset === fragment.startOffset) ??
+      line.slots.find(
+        (candidate) => candidate.offset === fragment.startOffset,
+      ) ??
       line.slots.find((candidate) => candidate.offset >= fragment.startOffset);
     if (!slot) {
       return;
     }
-    const resourceName = await registerPdfImageRun(writer, document, fragment.image);
+    const resourceName = await registerPdfImageRun(
+      writer,
+      document,
+      fragment.image,
+    );
     if (!resourceName) {
       return;
     }
@@ -238,28 +270,44 @@ export async function drawFragmentText(
     bold: styles.bold,
     italic: styles.italic,
   });
-  const fontSizePt = styles.smallCaps ? textStyleToFontSizePt(styles) * 0.8 : textStyleToFontSizePt(styles);
+  const fontSizePt = styles.smallCaps
+    ? textStyleToFontSizePt(styles) * 0.8
+    : textStyleToFontSizePt(styles);
   const baselineShiftPx = (styles.baselineShift ?? 0) * PX_PER_POINT;
   const baselineY = originY + line.top + line.height * 0.8 - baselineShiftPx;
   const chars = resolveFragmentSlots(line, fragment);
-  const text = chars.map((char) => (styles.allCaps ? char.char.toUpperCase() : char.char)).join("");
+  const text = chars
+    .map((char) => (styles.allCaps ? char.char.toUpperCase() : char.char))
+    .join("");
   const firstChar = chars[0];
   if (!firstChar || text.length === 0) {
     return;
   }
 
-  drawFragmentHighlight(writer, pageIndex, line, fragment, originX, originY, styles);
+  drawFragmentHighlight(
+    writer,
+    pageIndex,
+    line,
+    fragment,
+    originX,
+    originY,
+    styles,
+  );
 
   // When the paragraph is justified, the layout shifts the `left` of each
   // character that follows a space so the line fills the available width.
   // Drawing the whole fragment as a single PDF text run would ignore those
   // per-word shifts (the PDF would use the font's natural space width), so we
   // emit one text command per whitespace-separated chunk in that case.
-  const paragraphAlign = resolveEffectiveParagraphStyle(paragraph.style, document.styles).align ?? "left";
+  const paragraphAlign =
+    resolveEffectiveParagraphStyle(paragraph.style, document.styles).align ??
+    "left";
   if (paragraphAlign === "justify") {
     const chunks = groupSlotChunksByWhitespace(chars);
     for (const chunk of chunks) {
-      const chunkText = chunk.map((c) => (styles.allCaps ? c.char.toUpperCase() : c.char)).join("");
+      const chunkText = chunk
+        .map((c) => (styles.allCaps ? c.char.toUpperCase() : c.char))
+        .join("");
       if (chunkText.length === 0) continue;
       writer.drawText(pageIndex, {
         x: pxToPt(originX + chunk[0]!.left),
@@ -289,12 +337,39 @@ export async function drawFragmentText(
     });
   }
   if (styles.underline) {
-    drawFragmentDecoration(writer, pageIndex, line, fragment, originX, originY, styles, "underline");
+    drawFragmentDecoration(
+      writer,
+      pageIndex,
+      line,
+      fragment,
+      originX,
+      originY,
+      styles,
+      "underline",
+    );
   }
   if (styles.strike) {
-    drawFragmentDecoration(writer, pageIndex, line, fragment, originX, originY, styles, "strike");
+    drawFragmentDecoration(
+      writer,
+      pageIndex,
+      line,
+      fragment,
+      originX,
+      originY,
+      styles,
+      "strike",
+    );
   }
   if (styles.doubleStrike) {
-    drawFragmentDecoration(writer, pageIndex, line, fragment, originX, originY, styles, "doubleStrike");
+    drawFragmentDecoration(
+      writer,
+      pageIndex,
+      line,
+      fragment,
+      originX,
+      originY,
+      styles,
+      "doubleStrike",
+    );
   }
 }

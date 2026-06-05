@@ -5,9 +5,15 @@ import {
   createEditorStateFromDocument,
 } from "../../core/editorState.js";
 import { collectFootnoteReferences } from "../../core/footnotes.js";
-import { paragraphOffsetToPosition, type EditorState } from "../../core/model.js";
+import {
+  paragraphOffsetToPosition,
+  type EditorState,
+} from "../../core/model.js";
 import { createEditorCommandsController } from "../../app/controllers/EditorCommandsController.js";
-import { EditorCommandRegistry, defaultEditorKeyBindings } from "../../app/controllers/EditorCommandRegistry.js";
+import {
+  EditorCommandRegistry,
+  defaultEditorKeyBindings,
+} from "../../app/controllers/EditorCommandRegistry.js";
 import { defaultMenuItems } from "../../ui/components/Menubar/defaultMenuItems.js";
 
 function createControllerHarness(initialState: EditorState) {
@@ -109,7 +115,9 @@ describe("footnote UI commands", () => {
   });
 
   it("exposes footnote insertion in the Insert menu", () => {
-    const item = defaultMenuItems.find((candidate) => candidate.id === "insert_footnote");
+    const item = defaultMenuItems.find(
+      (candidate) => candidate.id === "insert_footnote",
+    );
 
     expect(item?.path).toBe("Insert/Footnote");
     expect(item?.labelKey).toBe("toolbar.footnote");

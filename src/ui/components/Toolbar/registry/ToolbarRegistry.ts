@@ -107,10 +107,16 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
     return () => this.listeners.delete(callback);
   }
 
-  private spliceRelative(targetId: string, item: ToolbarItem, offset: 0 | 1): void {
+  private spliceRelative(
+    targetId: string,
+    item: ToolbarItem,
+    offset: 0 | 1,
+  ): void {
     // Drop any pre-existing item with the same id so position is unambiguous.
     this.entries = this.entries.filter((entry) => entry.id !== item.id);
-    const targetIndex = this.entries.findIndex((entry) => entry.id === targetId);
+    const targetIndex = this.entries.findIndex(
+      (entry) => entry.id === targetId,
+    );
     if (targetIndex < 0) {
       this.entries.push(item);
     } else {
@@ -124,7 +130,9 @@ class ToolbarRegistryImpl implements ToolbarRegistry {
       return target;
     }
     if ("before" in target) {
-      const index = this.entries.findIndex((entry) => entry.id === target.before);
+      const index = this.entries.findIndex(
+        (entry) => entry.id === target.before,
+      );
       return index >= 0 ? index : null;
     }
     const index = this.entries.findIndex((entry) => entry.id === target.after);

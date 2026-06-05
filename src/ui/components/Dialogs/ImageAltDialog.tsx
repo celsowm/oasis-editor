@@ -48,7 +48,9 @@ export function ImageAltDialog(props: ImageAltDialogProps) {
       }
     >
       <div class="oasis-editor-dialog-input-group">
-        <label class="oasis-editor-dialog-label">{t("dialog.imageAlt.label")}</label>
+        <label class="oasis-editor-dialog-label">
+          {t("dialog.imageAlt.label")}
+        </label>
         <input
           ref={inputRef}
           type="text"

@@ -19,7 +19,7 @@ export function getLocale(): Locale {
   return currentLocale;
 }
 
-export function t(key: TranslationKey, params: any[] = []): string {
+export function t(key: TranslationKey, params: unknown[] = []): string {
   const localeStrings = locales[currentLocale] || locales["en"];
   let template = localeStrings[key] || en[key] || key;
 

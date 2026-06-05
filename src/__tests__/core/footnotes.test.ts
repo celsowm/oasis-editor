@@ -72,8 +72,11 @@ describe("insertFootnote", () => {
     // The state's active zone must be footnote and the caret must be
     // inside the footnote body.
     expect(next.activeZone).toBe("footnote");
-    expect(next.activeFootnoteId).toBe(refs[0].run.footnoteReference?.footnoteId);
-    const bodyParagraphs = next.document.footnotes!.items[next.activeFootnoteId!].blocks;
+    expect(next.activeFootnoteId).toBe(
+      refs[0].run.footnoteReference?.footnoteId,
+    );
+    const bodyParagraphs =
+      next.document.footnotes!.items[next.activeFootnoteId!].blocks;
     expect(bodyParagraphs.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -94,7 +97,10 @@ describe("insertFootnote", () => {
 
     // Return to main zone before inserting another footnote
     const refs1 = collectFootnoteReferences(after1.document);
-    const back1 = goToFootnoteReference(after1, refs1[0].run.footnoteReference!.footnoteId);
+    const back1 = goToFootnoteReference(
+      after1,
+      refs1[0].run.footnoteReference!.footnoteId,
+    );
 
     // Re-fetch paragraph and place caret at offset 1 (before "B")
     const mainParagraph = getDocumentParagraphs(back1.document).find((p) =>
@@ -133,17 +139,28 @@ describe("deleteFootnote", () => {
     const s1 = insertFootnote(atOne);
     const mainPara = getDocumentParagraphs(s1.document)[0];
     const atEnd = {
-      ...goToFootnoteReference(s1, collectFootnoteReferences(s1.document)[0].run.footnoteReference!.footnoteId),
+      ...goToFootnoteReference(
+        s1,
+        collectFootnoteReferences(s1.document)[0].run.footnoteReference!
+          .footnoteId,
+      ),
       selection: {
-        anchor: paragraphOffsetToPosition(mainPara, mainPara.runs.reduce((s, r) => s + r.text.length, 0)),
-        focus: paragraphOffsetToPosition(mainPara, mainPara.runs.reduce((s, r) => s + r.text.length, 0)),
+        anchor: paragraphOffsetToPosition(
+          mainPara,
+          mainPara.runs.reduce((s, r) => s + r.text.length, 0),
+        ),
+        focus: paragraphOffsetToPosition(
+          mainPara,
+          mainPara.runs.reduce((s, r) => s + r.text.length, 0),
+        ),
       },
     };
     const s2 = insertFootnote(atEnd);
 
     expect(collectFootnoteReferences(s2.document)).toHaveLength(2);
 
-    const firstFootnoteId = collectFootnoteReferences(s2.document)[0].run.footnoteReference!.footnoteId;
+    const firstFootnoteId = collectFootnoteReferences(s2.document)[0].run
+      .footnoteReference!.footnoteId;
     const s3 = deleteFootnote(s2, firstFootnoteId);
 
     const refsAfter = collectFootnoteReferences(s3.document);
@@ -271,7 +288,9 @@ describe("cloneEditorState", () => {
 
     const cloned = cloneEditorState(inserted);
     expect(cloned.document.footnotes).not.toBe(inserted.document.footnotes);
-    expect(cloned.document.footnotes!.items).not.toBe(inserted.document.footnotes!.items);
+    expect(cloned.document.footnotes!.items).not.toBe(
+      inserted.document.footnotes!.items,
+    );
     const footnoteId = inserted.activeFootnoteId!;
     expect(cloned.document.footnotes!.items[footnoteId]).not.toBe(
       inserted.document.footnotes!.items[footnoteId],

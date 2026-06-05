@@ -29,7 +29,9 @@ export function underlineStyleToCssDecorationStyle(
   }
 }
 
-export function isDoubleUnderlineStyle(underlineStyle: UnderlineStyle): boolean {
+export function isDoubleUnderlineStyle(
+  underlineStyle: UnderlineStyle,
+): boolean {
   return underlineStyle === "double" || underlineStyle === "wavyDouble";
 }
 
@@ -37,7 +39,9 @@ export function isWavyUnderlineStyle(underlineStyle: UnderlineStyle): boolean {
   return underlineStyle === "wave" || underlineStyle === "wavyHeavy";
 }
 
-export function underlineStyleLineWidthPx(underlineStyle: UnderlineStyle): number {
+export function underlineStyleLineWidthPx(
+  underlineStyle: UnderlineStyle,
+): number {
   switch (underlineStyle) {
     case "thick":
     case "dashedHeavy":
@@ -52,7 +56,9 @@ export function underlineStyleLineWidthPx(underlineStyle: UnderlineStyle): numbe
   }
 }
 
-export function underlineStyleDashArray(underlineStyle: UnderlineStyle): number[] | undefined {
+export function underlineStyleDashArray(
+  underlineStyle: UnderlineStyle,
+): number[] | undefined {
   switch (underlineStyle) {
     case "dotted":
     case "dottedHeavy":

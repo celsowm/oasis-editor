@@ -1,12 +1,15 @@
 import type {
-  EditorBlockNode,
   EditorDocument,
   EditorFootnote,
   EditorFootnotes,
   EditorState,
   EditorTextRun,
 } from "../model.js";
-import { findParagraphLocation, getBlockParagraphs, paragraphOffsetToPosition } from "../model.js";
+import {
+  findParagraphLocation,
+  getBlockParagraphs,
+  paragraphOffsetToPosition,
+} from "../model.js";
 import {
   createEditorFootnote,
   createFootnoteReferenceRun,
@@ -17,7 +20,10 @@ import {
   iterateFootnoteReferenceRuns,
   renumberFootnotes,
 } from "../footnotes.js";
-import { createCollapsedSelection, isSelectionCollapsed } from "../selection.js";
+import {
+  createCollapsedSelection,
+  isSelectionCollapsed,
+} from "../selection.js";
 import { deleteSelectionRange } from "./utils.js";
 import { setSelection } from "./selection.js";
 import {
@@ -27,7 +33,9 @@ import {
 } from "./utils.js";
 import { getParagraphs } from "../model.js";
 
-function ensureFootnotes(footnotes: EditorFootnotes | undefined): EditorFootnotes {
+function ensureFootnotes(
+  footnotes: EditorFootnotes | undefined,
+): EditorFootnotes {
   if (footnotes) return footnotes;
   return { items: {} };
 }
@@ -61,7 +69,9 @@ export function insertFootnote(state: EditorState): EditorState {
     return state;
   }
 
-  const baseState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+  const baseState = isSelectionCollapsed(state.selection)
+    ? state
+    : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(baseState);
 
   // Reserve the new footnote id and marker.
@@ -70,13 +80,18 @@ export function insertFootnote(state: EditorState): EditorState {
   const referenceRun = createFootnoteReferenceRun(footnote.id, marker);
 
   // Insert the reference run inline at the caret position.
-  const updatedParagraph = insertRunsAtOffset(paragraph, offset, [referenceRun]);
+  const updatedParagraph = insertRunsAtOffset(paragraph, offset, [
+    referenceRun,
+  ]);
   const paragraphs = getParagraphs(baseState);
   const nextParagraphs = paragraphs.map((candidate, candidateIndex) =>
     candidateIndex === index ? updatedParagraph : candidate,
   );
 
-  const caretAfterMarker = paragraphOffsetToPosition(updatedParagraph, offset + marker.length);
+  const caretAfterMarker = paragraphOffsetToPosition(
+    updatedParagraph,
+    offset + marker.length,
+  );
 
   // Apply the paragraph change first (still in main zone), then attach footnote body.
   const stateAfterInsert = cloneStateWithParagraphs(
@@ -115,7 +130,9 @@ export function insertFootnote(state: EditorState): EditorState {
   return {
     ...stateAfterInsert,
     document: documentWithRenumber,
-    selection: createCollapsedSelection(paragraphOffsetToPosition(bodyFirstParagraph, 0)),
+    selection: createCollapsedSelection(
+      paragraphOffsetToPosition(bodyFirstParagraph, 0),
+    ),
     activeZone: "footnote",
     activeFootnoteId: footnote.id,
   };
@@ -125,7 +142,10 @@ export function insertFootnote(state: EditorState): EditorState {
  * Remove a footnote: deletes the inline reference run and the body. Other
  * notes are renumbered.
  */
-export function deleteFootnote(state: EditorState, footnoteId: string): EditorState {
+export function deleteFootnote(
+  state: EditorState,
+  footnoteId: string,
+): EditorState {
   const ref = findFootnoteReference(state.document, footnoteId);
   if (!ref) {
     // No inline reference — just drop the body from the registry.
@@ -142,7 +162,10 @@ export function deleteFootnote(state: EditorState, footnoteId: string): EditorSt
 
   const targetParagraphId = ref.paragraph.id;
   const filteredRuns: EditorTextRun[] = ref.paragraph.runs.filter(
-    (run) => !(run.footnoteReference && run.footnoteReference.footnoteId === footnoteId),
+    (run) =>
+      !(
+        run.footnoteReference && run.footnoteReference.footnoteId === footnoteId
+      ),
   );
   const fallbackRuns: EditorTextRun[] =
     filteredRuns.length > 0
@@ -163,7 +186,9 @@ export function deleteFootnote(state: EditorState, footnoteId: string): EditorSt
   };
 
   const zoneParagraphs = getParagraphs(navState);
-  const nextZoneParagraphs = zoneParagraphs.map((p) => (p.id === targetParagraphId ? updatedParagraph : p));
+  const nextZoneParagraphs = zoneParagraphs.map((p) =>
+    p.id === targetParagraphId ? updatedParagraph : p,
+  );
 
   const intermediate = cloneStateWithParagraphs(
     navState,
@@ -175,13 +200,21 @@ export function deleteFootnote(state: EditorState, footnoteId: string): EditorSt
   return {
     ...removedRegistry,
     document: renumberFootnotes(removedRegistry.document),
-    activeZone: savedZone === "footnote" && savedFootnoteId === footnoteId ? "main" : savedZone,
+    activeZone:
+      savedZone === "footnote" && savedFootnoteId === footnoteId
+        ? "main"
+        : savedZone,
     activeFootnoteId:
-      savedZone === "footnote" && savedFootnoteId === footnoteId ? undefined : savedFootnoteId,
+      savedZone === "footnote" && savedFootnoteId === footnoteId
+        ? undefined
+        : savedFootnoteId,
   };
 }
 
-function removeFootnoteFromRegistry(state: EditorState, footnoteId: string): EditorState {
+function removeFootnoteFromRegistry(
+  state: EditorState,
+  footnoteId: string,
+): EditorState {
   const footnotes = state.document.footnotes;
   if (!footnotes || !footnotes.items[footnoteId]) {
     return state;
@@ -194,7 +227,10 @@ function removeFootnoteFromRegistry(state: EditorState, footnoteId: string): Edi
       ...state.document,
       footnotes: { ...footnotes, items: rest },
     },
-    activeFootnoteId: state.activeFootnoteId === footnoteId ? undefined : state.activeFootnoteId,
+    activeFootnoteId:
+      state.activeFootnoteId === footnoteId
+        ? undefined
+        : state.activeFootnoteId,
     activeZone:
       state.activeZone === "footnote" && state.activeFootnoteId === footnoteId
         ? "main"
@@ -206,10 +242,15 @@ function removeFootnoteFromRegistry(state: EditorState, footnoteId: string): Edi
  * Move the selection into the body of the given footnote, switching the
  * active zone. Does nothing if the footnote does not exist or has no body.
  */
-export function goToFootnoteBody(state: EditorState, footnoteId: string): EditorState {
+export function goToFootnoteBody(
+  state: EditorState,
+  footnoteId: string,
+): EditorState {
   const footnote = state.document.footnotes?.items?.[footnoteId];
   if (!footnote) return state;
-  const firstParagraph = footnote.blocks.flatMap(getBlockParagraphs).find(Boolean);
+  const firstParagraph = footnote.blocks
+    .flatMap(getBlockParagraphs)
+    .find(Boolean);
   if (!firstParagraph) return state;
   return setSelection(
     {
@@ -224,7 +265,10 @@ export function goToFootnoteBody(state: EditorState, footnoteId: string): Editor
 /**
  * Move the selection back to the inline reference of the given footnote.
  */
-export function goToFootnoteReference(state: EditorState, footnoteId: string): EditorState {
+export function goToFootnoteReference(
+  state: EditorState,
+  footnoteId: string,
+): EditorState {
   const ref = findFootnoteReference(state.document, footnoteId);
   if (!ref) return state;
   const location = findParagraphLocation(state.document, ref.paragraph.id);

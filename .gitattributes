@@ -1,0 +1,23 @@
+# Normalize line endings: store text as LF in the repo and check it out as LF
+# on every platform, so Prettier (endOfLine: lf) and Windows checkouts agree.
+* text=auto eol=lf
+
+# Binary assets must never be normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.svg text eol=lf
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.eot binary
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.pptx binary
+*.wasm binary
+*.zip binary

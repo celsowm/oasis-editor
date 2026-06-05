@@ -31,7 +31,9 @@ export function createCommandBuilder(isCommandEnabled: CommandEnabledResolver) {
   });
 }
 
-export function createValueCommandBuilder(isCommandEnabled: CommandEnabledResolver) {
+export function createValueCommandBuilder(
+  isCommandEnabled: CommandEnabledResolver,
+) {
   return (
     name: string,
     execute: (payload?: unknown) => boolean,
@@ -45,7 +47,9 @@ export function createValueCommandBuilder(isCommandEnabled: CommandEnabledResolv
   });
 }
 
-export function createActionCommandBuilder(isCommandEnabled: CommandEnabledResolver) {
+export function createActionCommandBuilder(
+  isCommandEnabled: CommandEnabledResolver,
+) {
   return (
     name: string,
     execute: (payload?: unknown) => void,

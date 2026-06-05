@@ -1,4 +1,8 @@
-import type { EditorLayoutBlock, EditorTableCellNode, EditorTableNode } from "./model.js";
+import type {
+  EditorLayoutBlock,
+  EditorTableCellNode,
+  EditorTableNode,
+} from "./model.js";
 
 export interface TableCellLayoutEntry {
   rowIndex: number;
@@ -10,7 +14,9 @@ export interface TableCellLayoutEntry {
   cell: EditorTableCellNode;
 }
 
-export function buildTableCellLayout(table: EditorTableNode): TableCellLayoutEntry[] {
+export function buildTableCellLayout(
+  table: EditorTableNode,
+): TableCellLayoutEntry[] {
   const occupiedColumns: number[] = [];
   const entries: TableCellLayoutEntry[] = [];
 
@@ -50,7 +56,11 @@ export function buildTableCellLayout(table: EditorTableNode): TableCellLayoutEnt
       visualColumnIndex += colSpan;
     }
 
-    for (let columnIndex = 0; columnIndex < occupiedColumns.length; columnIndex += 1) {
+    for (
+      let columnIndex = 0;
+      columnIndex < occupiedColumns.length;
+      columnIndex += 1
+    ) {
       if (occupiedColumns[columnIndex] > 0) {
         occupiedColumns[columnIndex] -= 1;
       }

@@ -1,8 +1,38 @@
-import type { EditorBlockNode, EditorParagraphStyle, EditorPosition, EditorState, EditorSection, EditorTabStop } from "../model.js";
-import { getBlockParagraphs, getDocumentSections, getParagraphLength, getParagraphs, paragraphOffsetToPosition, getActiveSectionIndex, getActiveZone } from "../model.js";
+import type {
+  EditorBlockNode,
+  EditorParagraphStyle,
+  EditorPosition,
+  EditorState,
+  EditorSection,
+  EditorTabStop,
+} from "../model.js";
+import {
+  getBlockParagraphs,
+  getDocumentSections,
+  getParagraphLength,
+  getParagraphs,
+  paragraphOffsetToPosition,
+  getActiveSectionIndex,
+  getActiveZone,
+} from "../model.js";
 import { createEditorParagraph } from "../editorState.js";
 import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
-import { deleteSelectionRange, getFocusParagraph, buildParagraphFromRuns, sliceRuns, getStyleAtOffset, createParagraphFromRunsLike, cloneParagraphs, cloneStateWithParagraphs, withSelection, cloneBlocks, ValueParagraphStyleKey, cloneParagraph, setParagraphStyleValue, preserveSelectionByParagraphOffsets } from "./utils.js";
+import {
+  deleteSelectionRange,
+  getFocusParagraph,
+  buildParagraphFromRuns,
+  sliceRuns,
+  getStyleAtOffset,
+  createParagraphFromRunsLike,
+  cloneParagraphs,
+  cloneStateWithParagraphs,
+  withSelection,
+  cloneBlocks,
+  ValueParagraphStyleKey,
+  cloneParagraph,
+  setParagraphStyleValue,
+  preserveSelectionByParagraphOffsets,
+} from "./utils.js";
 
 export function moveBlockToPosition(
   state: EditorState,
@@ -11,9 +41,9 @@ export function moveBlockToPosition(
 ): EditorState {
   // 1. Find and remove the block from its current location
   let movedBlock: EditorBlockNode | undefined;
-  
+
   const removeFromBlocks = (blocks: EditorBlockNode[]): EditorBlockNode[] => {
-    const idx = blocks.findIndex(b => b.id === blockId);
+    const idx = blocks.findIndex((b) => b.id === blockId);
     if (idx >= 0) {
       movedBlock = blocks[idx];
       return [...blocks.slice(0, idx), ...blocks.slice(idx + 1)];
@@ -22,7 +52,7 @@ export function moveBlockToPosition(
   };
 
   const removeFromSections = (sections: EditorSection[]): EditorSection[] => {
-    return sections.map(s => ({
+    return sections.map((s) => ({
       ...s,
       blocks: removeFromBlocks(s.blocks),
       header: s.header ? removeFromBlocks(s.header) : undefined,
@@ -30,7 +60,7 @@ export function moveBlockToPosition(
     }));
   };
 
-  let nextDocument = { ...state.document };
+  const nextDocument = { ...state.document };
   if (nextDocument.sections && nextDocument.sections.length > 0) {
     nextDocument.sections = removeFromSections(nextDocument.sections);
   }
@@ -41,34 +71,41 @@ export function moveBlockToPosition(
 
   // 2. Identify the target block and zone
   const targetId = targetPosition.paragraphId;
-  
+
   // Check if target is inside the moved block itself
   if (movedBlock.type === "table") {
-      const internalParagraphs = getBlockParagraphs(movedBlock);
-      if (internalParagraphs.some(p => p.id === targetId)) {
-          return state;
-      }
+    const internalParagraphs = getBlockParagraphs(movedBlock);
+    if (internalParagraphs.some((p) => p.id === targetId)) {
+      return state;
+    }
   }
 
-  const insertIntoBlocks = (blocks: EditorBlockNode[]): { nextBlocks: EditorBlockNode[]; found: boolean } => {
-    const idx = blocks.findIndex(b => {
-        if (b.id === targetId) return true;
-        if (b.type === "table") {
-            return getBlockParagraphs(b).some(p => p.id === targetId);
-        }
-        return false;
+  const insertIntoBlocks = (
+    blocks: EditorBlockNode[],
+  ): { nextBlocks: EditorBlockNode[]; found: boolean } => {
+    const idx = blocks.findIndex((b) => {
+      if (b.id === targetId) return true;
+      if (b.type === "table") {
+        return getBlockParagraphs(b).some((p) => p.id === targetId);
+      }
+      return false;
     });
 
     if (idx < 0) return { nextBlocks: blocks, found: false };
 
     // Insert BEFORE the block containing the target paragraph
-    const nextBlocks = [...blocks.slice(0, idx), movedBlock!, ...blocks.slice(idx)];
+    const nextBlocks = [
+      ...blocks.slice(0, idx),
+      movedBlock!,
+      ...blocks.slice(idx),
+    ];
     return { nextBlocks, found: true };
   };
 
   const activeIdx = getActiveSectionIndex(state);
   const zone = getActiveZone(state);
-  const section = { ...nextDocument.sections?.[activeIdx]! };
+  const activeSection = nextDocument.sections?.[activeIdx];
+  const section = { ...activeSection! };
   let found = false;
 
   if (zone === "header") {
@@ -99,17 +136,34 @@ export function moveBlockToPosition(
 }
 
 export function splitBlockAtSelection(state: EditorState): EditorState {
-  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+  const collapsedState = isSelectionCollapsed(state.selection)
+    ? state
+    : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
-  const firstParagraph = buildParagraphFromRuns(paragraph, sliceRuns(paragraph, 0, offset), getStyleAtOffset(paragraph, offset));
-  const secondRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
+  const firstParagraph = buildParagraphFromRuns(
+    paragraph,
+    sliceRuns(paragraph, 0, offset),
+    getStyleAtOffset(paragraph, offset),
+  );
+  const secondRuns = sliceRuns(
+    paragraph,
+    offset,
+    getParagraphLength(paragraph),
+  );
   const nextParagraph =
     secondRuns.length > 0
-      ? createParagraphFromRunsLike(paragraph, secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
+      ? createParagraphFromRunsLike(
+          paragraph,
+          secondRuns.map((run) => ({ text: run.text, styles: run.styles })),
+        )
       : (() => {
           const emptyParagraph = createEditorParagraph("");
-          emptyParagraph.style = paragraph.style ? { ...paragraph.style } : undefined;
-          emptyParagraph.list = paragraph.list ? { ...paragraph.list } : undefined;
+          emptyParagraph.style = paragraph.style
+            ? { ...paragraph.style }
+            : undefined;
+          emptyParagraph.list = paragraph.list
+            ? { ...paragraph.list }
+            : undefined;
           return emptyParagraph;
         })();
   const paragraphs = getParagraphs(collapsedState);
@@ -128,21 +182,34 @@ export function splitBlockAtSelection(state: EditorState): EditorState {
 }
 
 export function insertPageBreakAtSelection(state: EditorState): EditorState {
-  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
+  const collapsedState = isSelectionCollapsed(state.selection)
+    ? state
+    : deleteSelectionRange(state);
   const { paragraph, index, offset } = getFocusParagraph(collapsedState);
   const firstParagraph = buildParagraphFromRuns(
     paragraph,
     sliceRuns(paragraph, 0, offset),
     getStyleAtOffset(paragraph, offset),
   );
-  const secondRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
+  const secondRuns = sliceRuns(
+    paragraph,
+    offset,
+    getParagraphLength(paragraph),
+  );
   const nextParagraph =
     secondRuns.length > 0
-      ? createParagraphFromRunsLike(paragraph, secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
+      ? createParagraphFromRunsLike(
+          paragraph,
+          secondRuns.map((run) => ({ text: run.text, styles: run.styles })),
+        )
       : (() => {
           const emptyParagraph = createEditorParagraph("");
-          emptyParagraph.style = paragraph.style ? { ...paragraph.style } : undefined;
-          emptyParagraph.list = paragraph.list ? { ...paragraph.list } : undefined;
+          emptyParagraph.style = paragraph.style
+            ? { ...paragraph.style }
+            : undefined;
+          emptyParagraph.list = paragraph.list
+            ? { ...paragraph.list }
+            : undefined;
           return emptyParagraph;
         })();
 
@@ -170,8 +237,10 @@ export function insertSectionBreakAtSelection(
   state: EditorState,
   breakType: "nextPage" | "continuous",
 ): EditorState {
-  const collapsedState = isSelectionCollapsed(state.selection) ? state : deleteSelectionRange(state);
-  const { paragraph, index, offset } = getFocusParagraph(collapsedState);
+  const collapsedState = isSelectionCollapsed(state.selection)
+    ? state
+    : deleteSelectionRange(state);
+  const { paragraph, offset } = getFocusParagraph(collapsedState);
   const sections = getDocumentSections(collapsedState.document);
   const activeSectionIndex = getActiveSectionIndex(collapsedState);
   const zone = getActiveZone(collapsedState);
@@ -206,14 +275,25 @@ export function insertSectionBreakAtSelection(
     sliceRuns(paragraph, 0, offset),
     getStyleAtOffset(paragraph, offset),
   );
-  const secondRuns = sliceRuns(paragraph, offset, getParagraphLength(paragraph));
+  const secondRuns = sliceRuns(
+    paragraph,
+    offset,
+    getParagraphLength(paragraph),
+  );
   const secondParagraph =
     secondRuns.length > 0
-      ? createParagraphFromRunsLike(paragraph, secondRuns.map((run) => ({ text: run.text, styles: run.styles })))
+      ? createParagraphFromRunsLike(
+          paragraph,
+          secondRuns.map((run) => ({ text: run.text, styles: run.styles })),
+        )
       : (() => {
           const emptyParagraph = createEditorParagraph("");
-          emptyParagraph.style = paragraph.style ? { ...paragraph.style } : undefined;
-          emptyParagraph.list = paragraph.list ? { ...paragraph.list } : undefined;
+          emptyParagraph.style = paragraph.style
+            ? { ...paragraph.style }
+            : undefined;
+          emptyParagraph.list = paragraph.list
+            ? { ...paragraph.list }
+            : undefined;
           return emptyParagraph;
         })();
 
@@ -283,7 +363,10 @@ export function updateSectionSettings(
   };
 }
 
-export function setParagraphNamedStyle(state: EditorState, styleId: string | null): EditorState {
+export function setParagraphNamedStyle(
+  state: EditorState,
+  styleId: string | null,
+): EditorState {
   return setParagraphStyle(state, "styleId", styleId);
 }
 

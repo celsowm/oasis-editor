@@ -15,7 +15,12 @@ import type {
   ToolbarItem,
   ToolbarItemType,
 } from "../schema/items.js";
-import { bindItem, resolveLabel, resolveTooltip, runItem } from "../state/bindItem.js";
+import {
+  bindItem,
+  resolveLabel,
+  resolveTooltip,
+  runItem,
+} from "../state/bindItem.js";
 import { Button } from "../primitives/Button.js";
 import { Menu } from "../primitives/Menu.js";
 import { Select } from "../primitives/Select.js";
@@ -31,7 +36,10 @@ export interface RendererProps<I extends ToolbarItem = ToolbarItem> {
   api: ToolbarActionApi;
 }
 
-function renderMenuContent(content: MenuContent, api: ToolbarActionApi): JSX.Element {
+function renderMenuContent(
+  content: MenuContent,
+  api: ToolbarActionApi,
+): JSX.Element {
   if (content.kind === "custom") {
     return content.render(api);
   }
@@ -105,7 +113,9 @@ function RenderSplit(props: RendererProps<SplitItem>): JSX.Element {
       mainTestId={props.item.testId}
       mainPressed={b.active()}
       onMain={() => runItem(props.item, props.api)}
-      menuTestId={props.item.testId ? `${props.item.testId}-dropdown` : undefined}
+      menuTestId={
+        props.item.testId ? `${props.item.testId}-dropdown` : undefined
+      }
       panelClass="oasis-editor-color-menu"
       panelRole="menu"
       mainContent={<i data-lucide={props.item.iconName} />}
@@ -150,7 +160,10 @@ function RenderColorPicker(props: RendererProps<ColorPickerItem>): JSX.Element {
   return (
     <ColorPicker
       kind={props.item.kind}
-      icon={props.item.iconName ?? (props.item.kind === "highlight" ? "highlighter" : "type")}
+      icon={
+        props.item.iconName ??
+        (props.item.kind === "highlight" ? "highlighter" : "type")
+      }
       value={(b.value() as string | null | undefined) ?? null}
       defaultValue={props.item.defaultValue}
       lastValue={lastValue()}
@@ -199,7 +212,10 @@ function RenderCustom(props: RendererProps<CustomItem>): JSX.Element {
   return props.item.render(props.api);
 }
 
-export const TOOLBAR_RENDERERS: Record<ToolbarItemType, Component<RendererProps>> = {
+export const TOOLBAR_RENDERERS: Record<
+  ToolbarItemType,
+  Component<RendererProps>
+> = {
   button: RenderButton as Component<RendererProps>,
   toggle: RenderToggle as Component<RendererProps>,
   split: RenderSplit as Component<RendererProps>,
@@ -226,6 +242,10 @@ export function registerToolbarRenderer(
   customRenderers.set(type, component);
 }
 
-export function resolveRenderer(type: string): Component<RendererProps> | undefined {
-  return TOOLBAR_RENDERERS[type as ToolbarItemType] ?? customRenderers.get(type);
+export function resolveRenderer(
+  type: string,
+): Component<RendererProps> | undefined {
+  return (
+    TOOLBAR_RENDERERS[type as ToolbarItemType] ?? customRenderers.get(type)
+  );
 }

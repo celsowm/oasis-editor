@@ -158,7 +158,9 @@ export interface EssentialsPluginDeps {
   table: EssentialsTableCapability;
 }
 
-export function createEssentialsPlugin(deps: EssentialsPluginDeps): OasisPlugin {
+export function createEssentialsPlugin(
+  deps: EssentialsPluginDeps,
+): OasisPlugin {
   const command = createCommandBuilder(deps.gate.isCommandEnabled);
   const valueCommand = createValueCommandBuilder(deps.gate.isCommandEnabled);
   const actionCommand = createActionCommandBuilder(deps.gate.isCommandEnabled);

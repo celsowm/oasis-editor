@@ -61,7 +61,10 @@ function scoreRectDistance(
   return verticalDelta * 1000 + horizontalDelta;
 }
 
-function resolveZoneFromPage(page: CanvasSnapshotPage, clientY: number): EditorEditingZone {
+function resolveZoneFromPage(
+  page: CanvasSnapshotPage,
+  clientY: number,
+): EditorEditingZone {
   const localY = clientY - page.top;
   if (localY < page.bodyTop) return "header";
   if (
@@ -104,7 +107,13 @@ function resolveClosestOffsetInLine(
   line: CanvasSnapshotLine,
   clientX: number,
   clientY: number,
-): { offset: number; score: number; slotLeft?: number; slotTop?: number; slotHeight?: number } {
+): {
+  offset: number;
+  score: number;
+  slotLeft?: number;
+  slotTop?: number;
+  slotHeight?: number;
+} {
   if (line.slots.length === 0) {
     return { offset: line.startOffset, score: Number.POSITIVE_INFINITY };
   }
@@ -147,13 +156,20 @@ function resolveClosestOffsetInParagraph(
   let bestOffset = paragraph.startOffset;
   let bestScore = Number.POSITIVE_INFINITY;
   for (const line of paragraph.lines) {
-    const { offset, score } = resolveClosestOffsetInLine(line, clientX, clientY);
+    const { offset, score } = resolveClosestOffsetInLine(
+      line,
+      clientX,
+      clientY,
+    );
     if (score < bestScore) {
       bestScore = score;
       bestOffset = offset;
     }
   }
-  return Math.max(paragraph.startOffset, Math.min(bestOffset, paragraph.endOffset));
+  return Math.max(
+    paragraph.startOffset,
+    Math.min(bestOffset, paragraph.endOffset),
+  );
 }
 
 function resolveParagraphHit(
@@ -179,18 +195,17 @@ function resolveParagraphHit(
       const lineTop = line.top - 2;
       const lineBottom = line.top + line.height + 2;
       if (clientY < lineTop || clientY > lineBottom) continue;
-      const { offset, score, slotLeft, slotTop, slotHeight } = resolveClosestOffsetInLine(
-        line,
-        clientX,
-        clientY,
-      );
+      const { offset, score, slotLeft, slotTop, slotHeight } =
+        resolveClosestOffsetInLine(line, clientX, clientY);
       if (!bestLineHit || score < bestLineHit.score) {
         bestLineHit = {
           paragraph,
           offset,
           score,
           caretViewport:
-            slotLeft !== undefined && slotTop !== undefined && slotHeight !== undefined
+            slotLeft !== undefined &&
+            slotTop !== undefined &&
+            slotHeight !== undefined
               ? { left: slotLeft, top: slotTop, height: slotHeight }
               : undefined,
         };
@@ -296,9 +311,16 @@ export function resolveCanvasSurfaceHitAtPoint(
   }
 
   const zone = resolveZoneFromPage(page, clientY);
-  const imageHit = resolveImageAtPoint(snapshot, page.index, zone, clientX, clientY);
+  const imageHit = resolveImageAtPoint(
+    snapshot,
+    page.index,
+    zone,
+    clientX,
+    clientY,
+  );
   if (imageHit) {
-    const paragraphSegments = snapshot.paragraphsById.get(imageHit.paragraphId) ?? [];
+    const paragraphSegments =
+      snapshot.paragraphsById.get(imageHit.paragraphId) ?? [];
     const paragraphSegment =
       paragraphSegments.find(
         (segment) =>
@@ -312,7 +334,10 @@ export function resolveCanvasSurfaceHitAtPoint(
         paragraphSegment.startOffset,
         Math.min(imageHit.startOffset, paragraphSegment.endOffset),
       );
-      const position = paragraphOffsetToPosition(paragraphSegment.paragraph, paragraphOffset);
+      const position = paragraphOffsetToPosition(
+        paragraphSegment.paragraph,
+        paragraphOffset,
+      );
       return {
         zone,
         footnoteId: paragraphSegment.footnoteId,
@@ -342,7 +367,8 @@ export function resolveCanvasSurfaceHitAtPoint(
   }
 
   const zoneParagraphs = snapshot.paragraphs.filter(
-    (paragraph) => paragraph.pageIndex === page.index && paragraph.zone === zone,
+    (paragraph) =>
+      paragraph.pageIndex === page.index && paragraph.zone === zone,
   );
   const paragraphHit = resolveParagraphHit(zoneParagraphs, clientX, clientY);
   if (!paragraphHit) {
@@ -367,7 +393,10 @@ export function resolveCanvasSurfaceHitAtPoint(
   }
 
   const paragraph = paragraphHit.paragraph;
-  const offset = Math.max(0, Math.min(paragraphHit.offset, paragraph.textLength));
+  const offset = Math.max(
+    0,
+    Math.min(paragraphHit.offset, paragraph.textLength),
+  );
   const position = paragraphOffsetToPosition(paragraph.paragraph, offset);
   return {
     zone,
@@ -381,4 +410,3 @@ export function resolveCanvasSurfaceHitAtPoint(
     caretViewport: paragraphHit.caretViewport,
   };
 }
-

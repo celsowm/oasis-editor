@@ -2,7 +2,11 @@ import { createEffect, createSignal, onCleanup } from "solid-js";
 import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
 import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
 import { computeCanvasSelectionGeometry } from "../../ui/canvas/CanvasSelectionGeometry.js";
-import type { CaretBox, InputBox, SelectionBox } from "../../ui/editorUiTypes.js";
+import type {
+  CaretBox,
+  InputBox,
+  SelectionBox,
+} from "../../ui/editorUiTypes.js";
 import type { SelectedImageSelectionBox } from "../../ui/canvas/CanvasSelectionGeometry.js";
 
 interface UseEditorLayoutProps {
@@ -27,7 +31,10 @@ export interface LayoutInvalidation {
 }
 
 function scheduleFrame(callback: () => void): number {
-  if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+  if (
+    typeof window !== "undefined" &&
+    typeof window.requestAnimationFrame === "function"
+  ) {
     return window.requestAnimationFrame(() => callback());
   }
   return globalThis.setTimeout(callback, 16) as unknown as number;
@@ -48,18 +55,29 @@ function normalizeParagraphLayouts(
 }
 
 export function useEditorLayout(props: UseEditorLayoutProps) {
-  const [measuredBlockHeights, setMeasuredBlockHeights] = createSignal<Record<string, number>>({});
-  const [measuredParagraphLayouts, setMeasuredParagraphLayouts] = createSignal<Record<string, EditorLayoutParagraph>>({});
-  const [inputBox, setInputBox] = createSignal<InputBox>({ left: 0, top: 0, height: 28 });
+  const [measuredBlockHeights, setMeasuredBlockHeights] = createSignal<
+    Record<string, number>
+  >({});
+  const [measuredParagraphLayouts, setMeasuredParagraphLayouts] = createSignal<
+    Record<string, EditorLayoutParagraph>
+  >({});
+  const [inputBox, setInputBox] = createSignal<InputBox>({
+    left: 0,
+    top: 0,
+    height: 28,
+  });
   const [selectionBoxes, setSelectionBoxes] = createSignal<SelectionBox[]>([]);
-  const [selectedImageBox, setSelectedImageBox] = createSignal<SelectedImageSelectionBox | null>(null);
+  const [selectedImageBox, setSelectedImageBox] =
+    createSignal<SelectedImageSelectionBox | null>(null);
   const [caretBox, setCaretBox] = createSignal<CaretBox>({
     left: 0,
     top: 0,
     height: 28,
     visible: false,
   });
-  const [preferredColumnX, setPreferredColumnX] = createSignal<number | null>(null);
+  const [preferredColumnX, setPreferredColumnX] = createSignal<number | null>(
+    null,
+  );
 
   let syncRequestId = 0;
 
@@ -103,7 +121,9 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     });
   };
 
-  const syncMeasuredLayoutMetrics = (reason: LayoutSyncReason = "content-change"): boolean => {
+  const syncMeasuredLayoutMetrics = (
+    reason: LayoutSyncReason = "content-change",
+  ): boolean => {
     requestInputBoxSync(reason);
     return false;
   };
@@ -135,7 +155,9 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       setMeasuredParagraphLayouts({});
     } else if ((invalidation.dirtyParagraphIds?.length ?? 0) > 0) {
       const dirtyIds = invalidation.dirtyParagraphIds ?? [];
-      setMeasuredParagraphLayouts((current) => normalizeParagraphLayouts(current, dirtyIds));
+      setMeasuredParagraphLayouts((current) =>
+        normalizeParagraphLayouts(current, dirtyIds),
+      );
     }
 
     requestInputBoxSync("content-change");
@@ -185,7 +207,9 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       requestInputBoxSync("resize");
     };
 
-    viewport.addEventListener("scroll", handleViewportScroll, { passive: true });
+    viewport.addEventListener("scroll", handleViewportScroll, {
+      passive: true,
+    });
     window.addEventListener("resize", handleWindowResize);
 
     onCleanup(() => {

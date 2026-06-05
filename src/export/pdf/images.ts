@@ -8,9 +8,14 @@ interface PreparedPdfImage {
   data: Uint8Array;
 }
 
-const imageResourceCache = new WeakMap<OasisPdfWriter, Map<string, Promise<string | null>>>();
+const imageResourceCache = new WeakMap<
+  OasisPdfWriter,
+  Map<string, Promise<string | null>>
+>();
 
-function parseDataUrl(src: string): { mediaType: string; data: Uint8Array } | null {
+function parseDataUrl(
+  src: string,
+): { mediaType: string; data: Uint8Array } | null {
   const match = /^data:([^;,]+)(;base64)?,(.*)$/i.exec(src);
   if (!match) {
     return null;
@@ -19,11 +24,15 @@ function parseDataUrl(src: string): { mediaType: string; data: Uint8Array } | nu
   const isBase64 = Boolean(match[2]);
   const payload = match[3] ?? "";
   if (!isBase64) {
-    return { mediaType, data: new TextEncoder().encode(decodeURIComponent(payload)) };
+    return {
+      mediaType,
+      data: new TextEncoder().encode(decodeURIComponent(payload)),
+    };
   }
-  const binary = typeof atob === "function"
-    ? atob(payload)
-    : Buffer.from(payload, "base64").toString("binary");
+  const binary =
+    typeof atob === "function"
+      ? atob(payload)
+      : Buffer.from(payload, "base64").toString("binary");
   return {
     mediaType,
     data: Uint8Array.from(binary, (char) => char.charCodeAt(0)),
@@ -40,10 +49,13 @@ async function fetchAsDataUrl(src: string): Promise<string | null> {
   }
   const blob = await response.blob();
   const bytes = new Uint8Array(await blob.arrayBuffer());
-  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
-  const base64 = typeof btoa === "function"
-    ? btoa(binary)
-    : Buffer.from(bytes).toString("base64");
+  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join(
+    "",
+  );
+  const base64 =
+    typeof btoa === "function"
+      ? btoa(binary)
+      : Buffer.from(bytes).toString("base64");
   return `data:${blob.type || "application/octet-stream"};base64,${base64}`;
 }
 
@@ -132,7 +144,11 @@ export async function registerPdfImageRun(
     return cached;
   }
 
-  const preparedPromise = preparePdfImage(resolvedSrc, image.width, image.height).then((prepared) => {
+  const preparedPromise = preparePdfImage(
+    resolvedSrc,
+    image.width,
+    image.height,
+  ).then((prepared) => {
     if (!prepared) {
       return null;
     }

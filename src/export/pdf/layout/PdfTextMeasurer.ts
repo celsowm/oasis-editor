@@ -30,7 +30,7 @@ const HELVETICA_WIDTHS: Record<string, number> = {
   "!": 278,
   '"': 355,
   "#": 556,
-  "$": 556,
+  $: 556,
   "%": 889,
   "&": 667,
   "'": 191,
@@ -148,7 +148,11 @@ function fallbackGlyphWidthUnits(char: string): number {
 }
 
 function glyphWidthUnits(char: string): number {
-  return HELVETICA_WIDTHS[char] ?? SYMBOL_WIDTHS[char] ?? fallbackGlyphWidthUnits(char);
+  return (
+    HELVETICA_WIDTHS[char] ??
+    SYMBOL_WIDTHS[char] ??
+    fallbackGlyphWidthUnits(char)
+  );
 }
 
 function cacheKey(options: PdfTextMeasureOptions): string {
@@ -178,7 +182,8 @@ export class PdfTextMeasurer {
     let x = 0;
     const glyphs: PdfGlyphMeasurement[] = [];
     for (const char of options.text) {
-      const width = (glyphWidthUnits(char) / WIDTH_UNITS_PER_EM) * options.fontSize;
+      const width =
+        (glyphWidthUnits(char) / WIDTH_UNITS_PER_EM) * options.fontSize;
       const glyph: PdfGlyphMeasurement = {
         char,
         codePoint: char.codePointAt(0) ?? 0,

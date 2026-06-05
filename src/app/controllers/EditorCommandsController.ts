@@ -31,7 +31,6 @@ import {
   type EditorParagraphStyle,
   type EditorSection,
   type EditorState,
-  type EditorPosition,
   type EditorTextStyle,
 } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
@@ -52,8 +51,12 @@ export interface EditorCommandsControllerDeps {
     producer: (current: EditorState) => EditorState,
     options?: EditorTransactionOptions,
   ) => void;
-  applySelectionAwareTextCommand: (command: (current: EditorState) => EditorState) => void;
-  applySelectionAwareParagraphCommand: (command: (current: EditorState) => EditorState) => void;
+  applySelectionAwareTextCommand: (
+    command: (current: EditorState) => EditorState,
+  ) => void;
+  applySelectionAwareParagraphCommand: (
+    command: (current: EditorState) => EditorState,
+  ) => void;
   applyTableAwareParagraphEdit: (
     current: EditorState,
     edit: (tempState: EditorState) => EditorState,
@@ -68,7 +71,9 @@ export interface EditorCommandsControllerDeps {
   openImageAltDialog: (initialAlt: string) => void;
 }
 
-export function createEditorCommandsController(deps: EditorCommandsControllerDeps) {
+export function createEditorCommandsController(
+  deps: EditorCommandsControllerDeps,
+) {
   const {
     state,
     logger,
@@ -87,7 +92,10 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
 
   const getSelectedParagraphRange = () => {
     const normalized = normalizeSelection(state);
-    return getParagraphs(state).slice(normalized.startIndex, normalized.endIndex + 1);
+    return getParagraphs(state).slice(
+      normalized.startIndex,
+      normalized.endIndex + 1,
+    );
   };
 
   const selectionTouchesList = () =>
@@ -95,7 +103,11 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
 
   const focusedParagraph = () => {
     const focusParagraphId = state.selection.focus.paragraphId;
-    return getParagraphs(state).find((paragraph) => paragraph.id === focusParagraphId) ?? null;
+    return (
+      getParagraphs(state).find(
+        (paragraph) => paragraph.id === focusParagraphId,
+      ) ?? null
+    );
   };
 
   const handleListTab = (direction: "indent" | "outdent") => {
@@ -116,7 +128,9 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
     clearPreferredColumn();
     resetTransactionGrouping();
     applySelectionAwareParagraphCommand((current) =>
-      direction === "indent" ? indentParagraphList(current) : outdentParagraphList(current),
+      direction === "indent"
+        ? indentParagraphList(current)
+        : outdentParagraphList(current),
     );
     focusInput();
     return true;
@@ -131,10 +145,15 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
     clearPreferredColumn();
     resetTransactionGrouping();
     if (selectionCollapsed() && getParagraphText(paragraph).length === 0) {
-      applySelectionAwareParagraphCommand((current) => clearParagraphListAtSelection(current));
+      applySelectionAwareParagraphCommand((current) =>
+        clearParagraphListAtSelection(current),
+      );
     } else {
       applyTransactionalState(
-        (current) => applyTableAwareParagraphEdit(current, (temp) => splitListItemAtSelection(temp)),
+        (current) =>
+          applyTableAwareParagraphEdit(current, (temp) =>
+            splitListItemAtSelection(temp),
+          ),
         { mergeKey: "splitListItem" },
       );
     }
@@ -150,14 +169,19 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
       return false;
     }
 
-    const paragraphOffset = positionToParagraphOffset(paragraph, state.selection.focus);
+    const paragraphOffset = positionToParagraphOffset(
+      paragraph,
+      state.selection.focus,
+    );
     if (paragraphOffset !== 0) {
       return false;
     }
 
     clearPreferredColumn();
     resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) => outdentParagraphList(current));
+    applySelectionAwareParagraphCommand((current) =>
+      outdentParagraphList(current),
+    );
     event.currentTarget.value = "";
     focusInput();
     return true;
@@ -166,8 +190,16 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
   const selectionTableLocation = () => {
     const sel = state.selection;
     const secIdx = getActiveSectionIndex(state);
-    const anchorLoc = findParagraphTableLocation(state.document, sel.anchor.paragraphId, secIdx);
-    const focusLoc = findParagraphTableLocation(state.document, sel.focus.paragraphId, secIdx);
+    const anchorLoc = findParagraphTableLocation(
+      state.document,
+      sel.anchor.paragraphId,
+      secIdx,
+    );
+    const focusLoc = findParagraphTableLocation(
+      state.document,
+      sel.focus.paragraphId,
+      secIdx,
+    );
     if (anchorLoc && focusLoc && anchorLoc.blockIndex === focusLoc.blockIndex) {
       return ` [table b${anchorLoc.blockIndex} r${anchorLoc.rowIndex}:c${anchorLoc.cellIndex}→r${focusLoc.rowIndex}:c${focusLoc.cellIndex}]`;
     }
@@ -179,14 +211,24 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
       return;
     }
     const sel = state.selection;
-    logger.info(`toggleStyle:${key} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}..${sel.focus.offset}]${selectionTableLocation()}`);
+    logger.info(
+      `toggleStyle:${key} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}..${sel.focus.offset}]${selectionTableLocation()}`,
+    );
     clearPreferredColumn();
     resetTransactionGrouping();
     applySelectionAwareTextCommand((current) => toggleTextStyle(current, key));
     focusInput();
   };
 
-  const applyValueStyleCommand = <K extends "fontFamily" | "fontSize" | "color" | "highlight" | "link" | "underlineStyle">(
+  const applyValueStyleCommand = <
+    K extends
+      | "fontFamily"
+      | "fontSize"
+      | "color"
+      | "highlight"
+      | "link"
+      | "underlineStyle",
+  >(
     key: K,
     value: EditorTextStyle[K] | null,
   ) => {
@@ -194,10 +236,14 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
       return;
     }
     const sel = state.selection;
-    logger.info(`setStyle:${key}=${JSON.stringify(value)} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}..${sel.focus.offset}]${selectionTableLocation()}`);
+    logger.info(
+      `setStyle:${key}=${JSON.stringify(value)} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}..${sel.focus.offset}]${selectionTableLocation()}`,
+    );
     clearPreferredColumn();
     resetTransactionGrouping();
-    applySelectionAwareTextCommand((current) => setTextStyleValue(current, key, value));
+    applySelectionAwareTextCommand((current) =>
+      setTextStyleValue(current, key, value),
+    );
     focusInput();
   };
 
@@ -207,37 +253,53 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
   ) => {
     clearPreferredColumn();
     resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) => setParagraphStyle(current, key, value));
+    applySelectionAwareParagraphCommand((current) =>
+      setParagraphStyle(current, key, value),
+    );
     focusInput();
   };
 
-  const toggleParagraphFlagCommand = (key: "pageBreakBefore" | "keepWithNext") => {
+  const toggleParagraphFlagCommand = (
+    key: "pageBreakBefore" | "keepWithNext",
+  ) => {
     const nextValue = !toolbarStyleState()[key];
     applyParagraphStyleCommand(key, nextValue ? true : null);
   };
 
-  const applyParagraphListCommand = (kind: NonNullable<EditorParagraphListStyle["kind"]>) => {
+  const applyParagraphListCommand = (
+    kind: NonNullable<EditorParagraphListStyle["kind"]>,
+  ) => {
     clearPreferredColumn();
     resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) => toggleParagraphList(current, kind));
+    applySelectionAwareParagraphCommand((current) =>
+      toggleParagraphList(current, kind),
+    );
     focusInput();
   };
 
-  const handleListFormatChange = (format: EditorParagraphListStyle["format"]) => {
+  const handleListFormatChange = (
+    format: EditorParagraphListStyle["format"],
+  ) => {
     clearPreferredColumn();
     resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) => setParagraphListFormat(current, format));
+    applySelectionAwareParagraphCommand((current) =>
+      setParagraphListFormat(current, format),
+    );
     focusInput();
   };
 
   const handleListStartAtChange = (startAt: number | null) => {
     clearPreferredColumn();
     resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) => setParagraphListStartAt(current, startAt));
+    applySelectionAwareParagraphCommand((current) =>
+      setParagraphListStartAt(current, startAt),
+    );
     focusInput();
   };
 
-  const applyInsertSectionBreakCommand = (breakType: "nextPage" | "continuous") => {
+  const applyInsertSectionBreakCommand = (
+    breakType: "nextPage" | "continuous",
+  ) => {
     clearPreferredColumn();
     resetTransactionGrouping();
     applyState(insertSectionBreakAtSelection(state, breakType));
@@ -247,11 +309,16 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
   const applyInsertPageBreakCommand = () => {
     clearPreferredColumn();
     resetTransactionGrouping();
-    applyTransactionalState((current) => applyTableAwareParagraphEdit(current, (temp) => insertPageBreakAtSelection(temp)));
+    applyTransactionalState((current) =>
+      applyTableAwareParagraphEdit(current, (temp) =>
+        insertPageBreakAtSelection(temp),
+      ),
+    );
     focusInput();
   };
 
-  const canInsertFootnoteCommand = () => (state.activeZone ?? "main") === "main";
+  const canInsertFootnoteCommand = () =>
+    (state.activeZone ?? "main") === "main";
 
   const applyInsertFootnoteCommand = () => {
     if (!canInsertFootnoteCommand()) {
@@ -320,7 +387,9 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
     }
     clearPreferredColumn();
     resetTransactionGrouping();
-    applyTransactionalState((current) => setLinkAtSelection(current, href), { mergeKey: "link" });
+    applyTransactionalState((current) => setLinkAtSelection(current, href), {
+      mergeKey: "link",
+    });
     focusInput();
   };
 
@@ -343,7 +412,9 @@ export function createEditorCommandsController(deps: EditorCommandsControllerDep
     }
     clearPreferredColumn();
     resetTransactionGrouping();
-    applyTransactionalState((current) => setSelectedImageAlt(current, alt), { mergeKey: "imageAlt" });
+    applyTransactionalState((current) => setSelectedImageAlt(current, alt), {
+      mergeKey: "imageAlt",
+    });
     focusInput();
   };
 

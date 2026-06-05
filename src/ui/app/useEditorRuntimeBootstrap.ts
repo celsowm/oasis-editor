@@ -3,7 +3,9 @@ import { createEditorEssentialsRuntimePlugin } from "./createEditorEssentialsPlu
 import { useEditorRuntimePlugins } from "./useEditorRuntimePlugins.js";
 import { createRuntimeCommandHost } from "./createRuntimeCommandHost.js";
 
-type EssentialsPluginDeps = Parameters<typeof createEditorEssentialsRuntimePlugin>[0];
+type EssentialsPluginDeps = Parameters<
+  typeof createEditorEssentialsRuntimePlugin
+>[0];
 type RuntimePluginsConfig = Parameters<typeof useEditorRuntimePlugins>[0];
 type RuntimeCommandHostConfig = Parameters<typeof createRuntimeCommandHost>[0];
 type RuntimeCommandHost = ReturnType<typeof createRuntimeCommandHost>;
@@ -26,7 +28,9 @@ export interface EditorRuntimeBootstrapContext {
 }
 
 export interface EditorRuntimeBootstrap {
-  toolbarRegistry: ReturnType<typeof useEditorRuntimePlugins>["toolbarRegistry"];
+  toolbarRegistry: ReturnType<
+    typeof useEditorRuntimePlugins
+  >["toolbarRegistry"];
   runtimeReady: RuntimeCommandHost["runtimeReady"];
   runtimeEditor: RuntimeCommandHost["runtimeEditor"];
   commandStateOf: RuntimeCommandHost["commandStateOf"];
@@ -38,12 +42,15 @@ export function useEditorRuntimeBootstrap(
 ): EditorRuntimeBootstrap {
   const essentialsPlugin = createEditorEssentialsRuntimePlugin(ctx.essentials);
 
-  const { runtimePlugins, toolbarRegistry, dispose: disposeRuntimePlugins } =
-    useEditorRuntimePlugins({
-      essentialsPlugin,
-      externalPlugins: ctx.externalPlugins,
-      customizeToolbar: ctx.customizeToolbar,
-    });
+  const {
+    runtimePlugins,
+    toolbarRegistry,
+    dispose: disposeRuntimePlugins,
+  } = useEditorRuntimePlugins({
+    essentialsPlugin,
+    externalPlugins: ctx.externalPlugins,
+    customizeToolbar: ctx.customizeToolbar,
+  });
 
   const runtimeCommandHost = createRuntimeCommandHost({
     initialDocument: ctx.initialDocument,

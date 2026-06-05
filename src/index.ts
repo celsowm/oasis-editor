@@ -10,7 +10,10 @@ export { OasisEditorContainer } from "./ui/OasisEditorContainer.js";
 export type { OasisEditorContainerProps } from "./ui/OasisEditorContainer.js";
 export { Editor } from "./core/Editor.js";
 export { CommandRegistry } from "./core/commands/CommandRegistry.js";
-export { commandRefName, resolveCommandRef } from "./core/commands/CommandRef.js";
+export {
+  commandRefName,
+  resolveCommandRef,
+} from "./core/commands/CommandRef.js";
 export { createEditorCommandBus } from "./core/commands/CommandBus.js";
 export { PluginCollection } from "./core/plugins/PluginCollection.js";
 export { mount } from "./ui/mount.js";
@@ -30,13 +33,19 @@ export type {
   PluginReference,
   Unsubscribe,
 } from "./core/plugin.js";
-export type { CommandRef, ResolvedCommandRef } from "./core/commands/CommandRef.js";
+export type {
+  CommandRef,
+  ResolvedCommandRef,
+} from "./core/commands/CommandRef.js";
 export type { CommandBus } from "./core/commands/CommandBus.js";
 
 // ---------------------------------------------------------------------------
 // Toolbar subsystem — public, client-extensible API
 // ---------------------------------------------------------------------------
-export type { OasisEditorAppProps, ToolbarLayoutMode } from "./ui/OasisEditorApp.js";
+export type {
+  OasisEditorAppProps,
+  ToolbarLayoutMode,
+} from "./ui/OasisEditorApp.js";
 
 export type {
   ToolbarItem,
@@ -63,9 +72,7 @@ export type {
   ThemeColor,
 } from "./ui/components/Toolbar/schema/palette.js";
 
-export {
-  createToolbarRegistry,
-} from "./ui/components/Toolbar/registry/ToolbarRegistry.js";
+export { createToolbarRegistry } from "./ui/components/Toolbar/registry/ToolbarRegistry.js";
 export type {
   ToolbarMoveTarget,
   ToolbarRegistry,
@@ -77,9 +84,7 @@ export { createDefaultToolbarPreset } from "./ui/components/Toolbar/presets/defa
 export { Toolbar } from "./ui/components/Toolbar/Toolbar.js";
 export type { ToolbarProps } from "./ui/components/Toolbar/Toolbar.js";
 
-export {
-  registerToolbarRenderer,
-} from "./ui/components/Toolbar/renderers/renderers.js";
+export { registerToolbarRenderer } from "./ui/components/Toolbar/renderers/renderers.js";
 export type { RendererProps } from "./ui/components/Toolbar/renderers/renderers.js";
 
 // Toolbar UI primitives — for building custom controls consistent with built-ins.

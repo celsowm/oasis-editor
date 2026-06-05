@@ -13,7 +13,7 @@ export function PageBreak(props: PageBreakProps) {
         display: "flex",
         "align-items": "center",
         "justify-content": "center",
-        "margin": "16px 0",
+        margin: "16px 0",
         position: "relative",
         "user-select": "none",
       }}

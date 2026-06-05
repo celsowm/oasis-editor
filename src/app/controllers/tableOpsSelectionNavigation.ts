@@ -50,11 +50,17 @@ export const resolveAdjacentTableCellPosition = (
 ): EditorPosition | null => {
   const sections = getDocumentSections(document);
   for (const section of sections) {
-    const allBlocks = [...(section.header || []), ...section.blocks, ...(section.footer || [])];
+    const allBlocks = [
+      ...(section.header || []),
+      ...section.blocks,
+      ...(section.footer || []),
+    ];
     for (const block of allBlocks) {
       if (block.type !== "table") continue;
       const cells = block.rows.flatMap((row) =>
-        row.cells.filter((cell) => cell.vMerge !== "continue" && cell.blocks.length > 0),
+        row.cells.filter(
+          (cell) => cell.vMerge !== "continue" && cell.blocks.length > 0,
+        ),
       );
       const currentCellIndex = cells.findIndex((cell) =>
         cell.blocks.some((paragraph) => paragraph.id === paragraphId),
@@ -62,7 +68,9 @@ export const resolveAdjacentTableCellPosition = (
       if (currentCellIndex === -1) continue;
       const nextCell = cells[currentCellIndex + delta];
       const targetParagraph = nextCell?.blocks[0];
-      return targetParagraph ? paragraphOffsetToPosition(targetParagraph, 0) : null;
+      return targetParagraph
+        ? paragraphOffsetToPosition(targetParagraph, 0)
+        : null;
     }
   }
   return null;

@@ -18,11 +18,21 @@ export function startIconObserver(root: HTMLElement = document.body): void {
     if (needsScan && observer) {
       observer.disconnect();
       createIcons({ icons, nameAttr: "data-lucide", root });
-      observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-lucide"] });
+      observer.observe(root, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["data-lucide"],
+      });
     }
   });
 
-  observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-lucide"] });
+  observer.observe(root, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["data-lucide"],
+  });
 }
 
 export function stopIconObserver(): void {

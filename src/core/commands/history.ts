@@ -1,7 +1,12 @@
 import type { EditorState } from "../model.js";
 import { getParagraphLength, getParagraphs } from "../model.js";
 import { normalizeSelection } from "../selection.js";
-import { buildParagraphFromRuns, cloneStateWithParagraphs, preserveSelectionByParagraphOffsets, sliceRuns } from "./utils.js";
+import {
+  buildParagraphFromRuns,
+  cloneStateWithParagraphs,
+  preserveSelectionByParagraphOffsets,
+  sliceRuns,
+} from "./utils.js";
 
 export function toggleTrackChanges(state: EditorState): EditorState {
   return {
@@ -10,11 +15,17 @@ export function toggleTrackChanges(state: EditorState): EditorState {
   };
 }
 
-export function acceptRevision(state: EditorState, revisionId: string): EditorState {
+export function acceptRevision(
+  state: EditorState,
+  revisionId: string,
+): EditorState {
   const paragraphs = getParagraphs(state);
   const nextParagraphs = paragraphs.map((paragraph) => {
     const nextRuns = paragraph.runs
-      .filter((run) => !(run.revision?.id === revisionId && run.revision.type === "delete"))
+      .filter(
+        (run) =>
+          !(run.revision?.id === revisionId && run.revision.type === "delete"),
+      )
       .map((run) => {
         if (run.revision?.id === revisionId && run.revision.type === "insert") {
           const nextRun = { ...run };
@@ -24,7 +35,10 @@ export function acceptRevision(state: EditorState, revisionId: string): EditorSt
         return run;
       });
 
-    if (nextRuns.length === paragraph.runs.length && nextRuns.every((run, i) => run === paragraph.runs[i])) {
+    if (
+      nextRuns.length === paragraph.runs.length &&
+      nextRuns.every((run, i) => run === paragraph.runs[i])
+    ) {
       return paragraph;
     }
 
@@ -34,15 +48,24 @@ export function acceptRevision(state: EditorState, revisionId: string): EditorSt
   return cloneStateWithParagraphs(
     state,
     nextParagraphs,
-    preserveSelectionByParagraphOffsets(nextParagraphs, normalizeSelection(state)),
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
   );
 }
 
-export function rejectRevision(state: EditorState, revisionId: string): EditorState {
+export function rejectRevision(
+  state: EditorState,
+  revisionId: string,
+): EditorState {
   const paragraphs = getParagraphs(state);
   const nextParagraphs = paragraphs.map((paragraph) => {
     const nextRuns = paragraph.runs
-      .filter((run) => !(run.revision?.id === revisionId && run.revision.type === "insert"))
+      .filter(
+        (run) =>
+          !(run.revision?.id === revisionId && run.revision.type === "insert"),
+      )
       .map((run) => {
         if (run.revision?.id === revisionId && run.revision.type === "delete") {
           const nextRun = { ...run };
@@ -52,7 +75,10 @@ export function rejectRevision(state: EditorState, revisionId: string): EditorSt
         return run;
       });
 
-    if (nextRuns.length === paragraph.runs.length && nextRuns.every((run, i) => run === paragraph.runs[i])) {
+    if (
+      nextRuns.length === paragraph.runs.length &&
+      nextRuns.every((run, i) => run === paragraph.runs[i])
+    ) {
       return paragraph;
     }
 
@@ -62,7 +88,10 @@ export function rejectRevision(state: EditorState, revisionId: string): EditorSt
   return cloneStateWithParagraphs(
     state,
     nextParagraphs,
-    preserveSelectionByParagraphOffsets(nextParagraphs, normalizeSelection(state)),
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
   );
 }
 
@@ -73,8 +102,12 @@ export function acceptRevisionsInSelection(state: EditorState): EditorState {
 
   for (let i = normalized.startIndex; i <= normalized.endIndex; i += 1) {
     const paragraph = paragraphs[i];
-    const startOffset = i === normalized.startIndex ? normalized.startParagraphOffset : 0;
-    const endOffset = i === normalized.endIndex ? normalized.endParagraphOffset : getParagraphLength(paragraph);
+    const startOffset =
+      i === normalized.startIndex ? normalized.startParagraphOffset : 0;
+    const endOffset =
+      i === normalized.endIndex
+        ? normalized.endParagraphOffset
+        : getParagraphLength(paragraph);
     const runs = sliceRuns(paragraph, startOffset, endOffset);
     for (const run of runs) {
       if (run.revision?.id) {
@@ -98,8 +131,12 @@ export function rejectRevisionsInSelection(state: EditorState): EditorState {
 
   for (let i = normalized.startIndex; i <= normalized.endIndex; i += 1) {
     const paragraph = paragraphs[i];
-    const startOffset = i === normalized.startIndex ? normalized.startParagraphOffset : 0;
-    const endOffset = i === normalized.endIndex ? normalized.endParagraphOffset : getParagraphLength(paragraph);
+    const startOffset =
+      i === normalized.startIndex ? normalized.startParagraphOffset : 0;
+    const endOffset =
+      i === normalized.endIndex
+        ? normalized.endParagraphOffset
+        : getParagraphLength(paragraph);
     const runs = sliceRuns(paragraph, startOffset, endOffset);
     for (const run of runs) {
       if (run.revision?.id) {

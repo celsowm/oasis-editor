@@ -15,10 +15,12 @@ import {
   getParagraphText,
   paragraphOffsetToPosition,
   type EditorBorderStyle,
-  type EditorDocument,
   type EditorState,
 } from "../../core/model.js";
-import { isSelectionCollapsed, normalizeSelection } from "../../core/selection.js";
+import {
+  isSelectionCollapsed,
+  normalizeSelection,
+} from "../../core/selection.js";
 import { createEssentialsPlugin } from "../../plugins/internal/createEssentialsPlugin.js";
 import type { SelectedImageRun } from "../../core/commands/image.js";
 import type { createEditorCommandsController } from "../../app/controllers/EditorCommandsController.js";
@@ -36,8 +38,12 @@ interface CreateEditorEssentialsPluginOptions {
   undoStack: () => EditorState[];
   redoStack: () => EditorState[];
   commandsController: ReturnType<typeof createEditorCommandsController>;
-  keyboardCommandsController: ReturnType<typeof createEditorCommandsController> & {
-    applyBooleanStyleCommand: ReturnType<typeof createEditorStyleController>["applyToolbarBooleanStyleCommand"];
+  keyboardCommandsController: ReturnType<
+    typeof createEditorCommandsController
+  > & {
+    applyBooleanStyleCommand: ReturnType<
+      typeof createEditorStyleController
+    >["applyToolbarBooleanStyleCommand"];
   };
   historyActions: ReturnType<typeof createEditorHistoryActions>;
   styleController: ReturnType<typeof createEditorStyleController>;
@@ -67,7 +73,8 @@ export function createEditorEssentialsRuntimePlugin(
   const essentialsGate = {
     isCommandEnabled: (commandName: string) =>
       !options.isReadOnly() &&
-      (commandName !== "insertFootnote" || options.commandsController.canInsertFootnoteCommand()),
+      (commandName !== "insertFootnote" ||
+        options.commandsController.canInsertFootnoteCommand()),
   };
 
   const essentialsStyle = {
@@ -91,48 +98,110 @@ export function createEditorEssentialsRuntimePlugin(
         ...options.state(),
         selection: {
           anchor: paragraphOffsetToPosition(firstParagraph, 0),
-          focus: paragraphOffsetToPosition(lastParagraph, getParagraphText(lastParagraph).length),
+          focus: paragraphOffsetToPosition(
+            lastParagraph,
+            getParagraphText(lastParagraph).length,
+          ),
         },
       });
       options.focusInput();
       return true;
     },
-    insertFootnote: () => (options.commandsController.applyInsertFootnoteCommand(), true),
+    insertFootnote: () => (
+      options.commandsController.applyInsertFootnoteCommand(),
+      true
+    ),
     pastePlainText: () => {
       options.forcePlainTextPaste.set(true);
       options.focusInput();
       return true;
     },
-    bold: () => (options.keyboardCommandsController.applyBooleanStyleCommand("bold"), true),
-    italic: () => (options.keyboardCommandsController.applyBooleanStyleCommand("italic"), true),
-    underline: () => (options.keyboardCommandsController.applyBooleanStyleCommand("underline"), true),
-    strike: () => (options.keyboardCommandsController.applyBooleanStyleCommand("strike"), true),
-    superscript: () => (options.keyboardCommandsController.applyBooleanStyleCommand("superscript"), true),
-    subscript: () => (options.keyboardCommandsController.applyBooleanStyleCommand("subscript"), true),
-    alignLeft: () => (options.commandsController.applyParagraphStyleCommand("align", "left"), true),
-    alignCenter: () => (options.commandsController.applyParagraphStyleCommand("align", "center"), true),
-    alignRight: () => (options.commandsController.applyParagraphStyleCommand("align", "right"), true),
-    alignJustify: () => (options.commandsController.applyParagraphStyleCommand("align", "justify"), true),
-    orderedList: () => (options.commandsController.applyParagraphListCommand("ordered"), true),
-    bulletList: () => (options.commandsController.applyParagraphListCommand("bullet"), true),
+    bold: () => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("bold"),
+      true
+    ),
+    italic: () => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("italic"),
+      true
+    ),
+    underline: () => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("underline"),
+      true
+    ),
+    strike: () => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("strike"),
+      true
+    ),
+    superscript: () => (
+      options.keyboardCommandsController.applyBooleanStyleCommand(
+        "superscript",
+      ),
+      true
+    ),
+    subscript: () => (
+      options.keyboardCommandsController.applyBooleanStyleCommand("subscript"),
+      true
+    ),
+    alignLeft: () => (
+      options.commandsController.applyParagraphStyleCommand("align", "left"),
+      true
+    ),
+    alignCenter: () => (
+      options.commandsController.applyParagraphStyleCommand("align", "center"),
+      true
+    ),
+    alignRight: () => (
+      options.commandsController.applyParagraphStyleCommand("align", "right"),
+      true
+    ),
+    alignJustify: () => (
+      options.commandsController.applyParagraphStyleCommand("align", "justify"),
+      true
+    ),
+    orderedList: () => (
+      options.commandsController.applyParagraphListCommand("ordered"),
+      true
+    ),
+    bulletList: () => (
+      options.commandsController.applyParagraphListCommand("bullet"),
+      true
+    ),
     find: () => (options.findReplace.setIsOpen(true), true),
     replace: () => (options.findReplace.setIsOpen(true), true),
-    toggleTrackChanges: () => (options.commandsController.applyToggleTrackChangesCommand(), true),
-    acceptRevisions: () => (options.commandsController.applyAcceptRevisionsCommand(), true),
-    rejectRevisions: () => (options.commandsController.applyRejectRevisionsCommand(), true),
-    toggleShowMargins: () => (options.commandsController.applyToggleShowMarginsCommand(), true),
-    toggleShowParagraphMarks: () =>
-      (options.commandsController.applyToggleShowParagraphMarksCommand(), true),
+    toggleTrackChanges: () => (
+      options.commandsController.applyToggleTrackChangesCommand(),
+      true
+    ),
+    acceptRevisions: () => (
+      options.commandsController.applyAcceptRevisionsCommand(),
+      true
+    ),
+    rejectRevisions: () => (
+      options.commandsController.applyRejectRevisionsCommand(),
+      true
+    ),
+    toggleShowMargins: () => (
+      options.commandsController.applyToggleShowMarginsCommand(),
+      true
+    ),
+    toggleShowParagraphMarks: () => (
+      options.commandsController.applyToggleShowParagraphMarksCommand(),
+      true
+    ),
     pageBreak: () => {
       options.applyTransactionalState((current) =>
-        options.tableOps.applyTableAwareParagraphEdit(current, (temp) => insertPageBreakAtSelection(temp)),
+        options.tableOps.applyTableAwareParagraphEdit(current, (temp) =>
+          insertPageBreakAtSelection(temp),
+        ),
       );
       options.focusInput();
       return true;
     },
     lineBreak: () => {
       options.applyTransactionalState((current) =>
-        options.tableOps.applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, "\n")),
+        options.tableOps.applyTableAwareParagraphEdit(current, (temp) =>
+          insertTextAtSelection(temp, "\n"),
+        ),
       );
       options.focusInput();
       return true;
@@ -140,24 +209,36 @@ export function createEditorEssentialsRuntimePlugin(
     splitBlock: () => {
       if (options.commandsController.handleListEnter()) return true;
       options.applyTransactionalState((current) =>
-        options.tableOps.applyTableAwareParagraphEdit(current, (temp) => splitBlockAtSelection(temp)),
+        options.tableOps.applyTableAwareParagraphEdit(current, (temp) =>
+          splitBlockAtSelection(temp),
+        ),
       );
       options.focusInput();
       return true;
     },
     setFontFamily: (value: string | null) => (
-      options.styleController.applyToolbarValueStyleCommand("fontFamily", value), true
+      options.styleController.applyToolbarValueStyleCommand(
+        "fontFamily",
+        value,
+      ),
+      true
     ),
     setFontSize: (value: number | null) => (
-      options.styleController.applyToolbarValueStyleCommand("fontSize", value), true
+      options.styleController.applyToolbarValueStyleCommand("fontSize", value),
+      true
     ),
     setColor: (value: string | null) => (
-      options.styleController.applyToolbarValueStyleCommand("color", value), true
+      options.styleController.applyToolbarValueStyleCommand("color", value),
+      true
     ),
     setHighlight: (value: string | null) => (
-      options.styleController.applyToolbarValueStyleCommand("highlight", value), true
+      options.styleController.applyToolbarValueStyleCommand("highlight", value),
+      true
     ),
-    setStyleId: (value: string) => (options.commandsController.handleStyleChange(value), true),
+    setStyleId: (value: string) => (
+      options.commandsController.handleStyleChange(value),
+      true
+    ),
     setUnderlineStyle: (value: string | null) =>
       (
         options.styleController.applyToolbarValueStyleCommand as (
@@ -174,7 +255,9 @@ export function createEditorEssentialsRuntimePlugin(
         name: style.name,
         fontFamily: style.textStyle?.fontFamily?.trim() || undefined,
         fontSize:
-          typeof style.textStyle?.fontSize === "number" ? style.textStyle.fontSize : undefined,
+          typeof style.textStyle?.fontSize === "number"
+            ? style.textStyle.fontSize
+            : undefined,
       })),
     exportDocx: () => void options.docIO.handleExportDocx(),
     exportPdf: () => void options.docIO.handleExportPdf(),
@@ -205,23 +288,46 @@ export function createEditorEssentialsRuntimePlugin(
   const essentialsParagraph = {
     togglePageBreakBefore: () =>
       options.commandsController.toggleParagraphFlagCommand("pageBreakBefore"),
-    toggleKeepWithNext: () => options.commandsController.toggleParagraphFlagCommand("keepWithNext"),
+    toggleKeepWithNext: () =>
+      options.commandsController.toggleParagraphFlagCommand("keepWithNext"),
     setSpacingAfter: (value: number | null) =>
-      options.commandsController.applyParagraphStyleCommand("spacingAfter", value),
+      options.commandsController.applyParagraphStyleCommand(
+        "spacingAfter",
+        value,
+      ),
     setSpacingBefore: (value: number | null) =>
-      options.commandsController.applyParagraphStyleCommand("spacingBefore", value),
+      options.commandsController.applyParagraphStyleCommand(
+        "spacingBefore",
+        value,
+      ),
     setIndentLeft: (value: number | null) =>
-      options.commandsController.applyParagraphStyleCommand("indentLeft", value),
+      options.commandsController.applyParagraphStyleCommand(
+        "indentLeft",
+        value,
+      ),
     setIndentRight: (value: number | null) =>
-      options.commandsController.applyParagraphStyleCommand("indentRight", value),
+      options.commandsController.applyParagraphStyleCommand(
+        "indentRight",
+        value,
+      ),
     setIndentFirstLine: (value: number | null) =>
-      options.commandsController.applyParagraphStyleCommand("indentFirstLine", value),
+      options.commandsController.applyParagraphStyleCommand(
+        "indentFirstLine",
+        value,
+      ),
     setIndentHanging: (value: number | null) =>
-      options.commandsController.applyParagraphStyleCommand("indentHanging", value),
+      options.commandsController.applyParagraphStyleCommand(
+        "indentHanging",
+        value,
+      ),
     setShading: (value: string | null) =>
       options.commandsController.applyParagraphStyleCommand("shading", value),
     applyBorders: () => {
-      const border: EditorBorderStyle = { width: 1, type: "solid", color: "#000000" };
+      const border: EditorBorderStyle = {
+        width: 1,
+        type: "solid",
+        color: "#000000",
+      };
       options.applyTransactionalState(
         (current) => {
           let next = setParagraphStyle(current, "borderTop", border);
@@ -235,12 +341,18 @@ export function createEditorEssentialsRuntimePlugin(
       options.focusInput();
     },
     setLineHeight: (value: number | null) =>
-      options.commandsController.applyParagraphStyleCommand("lineHeight", value),
+      options.commandsController.applyParagraphStyleCommand(
+        "lineHeight",
+        value,
+      ),
     setListFormat: (format: string) =>
       options.commandsController.handleListFormatChange(
-        format as Parameters<typeof options.commandsController.handleListFormatChange>[0],
+        format as Parameters<
+          typeof options.commandsController.handleListFormatChange
+        >[0],
       ),
-    setListStartAt: (value: number | null) => options.commandsController.handleListStartAtChange(value),
+    setListStartAt: (value: number | null) =>
+      options.commandsController.handleListStartAtChange(value),
     outdent: () => void options.commandsController.handleListTab("outdent"),
     indent: () => void options.commandsController.handleListTab("indent"),
   };
@@ -248,12 +360,14 @@ export function createEditorEssentialsRuntimePlugin(
   const essentialsSection = {
     isLandscape: () => {
       const idx = getActiveSectionIndex(options.state());
-      const section = options.state().document.sections?.[idx] ?? options.state().document;
+      const section =
+        options.state().document.sections?.[idx] ?? options.state().document;
       return section?.pageSettings?.orientation === "landscape";
     },
     toggleOrientation: () => {
       const idx = getActiveSectionIndex(options.state());
-      const section = options.state().document.sections?.[idx] ?? options.state().document;
+      const section =
+        options.state().document.sections?.[idx] ?? options.state().document;
       if (!section) return;
       const current = section.pageSettings?.orientation ?? "portrait";
       options.commandsController.applyUpdateSectionSettingsCommand(idx, {
@@ -263,11 +377,14 @@ export function createEditorEssentialsRuntimePlugin(
         },
       });
     },
-    breakNextPage: () => options.commandsController.applyInsertSectionBreakCommand("nextPage"),
-    breakContinuous: () => options.commandsController.applyInsertSectionBreakCommand("continuous"),
+    breakNextPage: () =>
+      options.commandsController.applyInsertSectionBreakCommand("nextPage"),
+    breakContinuous: () =>
+      options.commandsController.applyInsertSectionBreakCommand("continuous"),
     setPageMargins: (margins: { left?: number; right?: number }) => {
       const idx = getActiveSectionIndex(options.state());
-      const section = options.state().document.sections?.[idx] ?? options.state().document;
+      const section =
+        options.state().document.sections?.[idx] ?? options.state().document;
       if (!section?.pageSettings) return;
       options.commandsController.applyUpdateSectionSettingsCommand(idx, {
         pageSettings: {
@@ -315,7 +432,8 @@ export function createEditorEssentialsRuntimePlugin(
         !anchorLoc ||
         !focusLoc ||
         anchorLoc.blockIndex !== focusLoc.blockIndex ||
-        (anchorLoc.rowIndex === focusLoc.rowIndex && anchorLoc.cellIndex === focusLoc.cellIndex)
+        (anchorLoc.rowIndex === focusLoc.rowIndex &&
+          anchorLoc.cellIndex === focusLoc.cellIndex)
       ) {
         return null;
       }
@@ -328,43 +446,103 @@ export function createEditorEssentialsRuntimePlugin(
       selectionLabel,
       canMerge: () => options.tableOps.canMergeSelectedTable(options.state()),
       canSplit: () => options.tableOps.canSplitSelectedTable(options.state()),
-      canEditColumn: () => options.tableOps.canEditSelectedTableColumn(options.state()),
-      canEditRow: () => options.tableOps.canEditSelectedTableRow(options.state()),
-      merge: () => apply((current) => options.tableOps.mergeSelectedTable(current), "mergeTable"),
-      split: () => apply((current) => options.tableOps.splitSelectedTable(current), "splitTable"),
+      canEditColumn: () =>
+        options.tableOps.canEditSelectedTableColumn(options.state()),
+      canEditRow: () =>
+        options.tableOps.canEditSelectedTableRow(options.state()),
+      merge: () =>
+        apply(
+          (current) => options.tableOps.mergeSelectedTable(current),
+          "mergeTable",
+        ),
+      split: () =>
+        apply(
+          (current) => options.tableOps.splitSelectedTable(current),
+          "splitTable",
+        ),
       insertColumnBefore: () =>
-        apply((current) => options.tableOps.insertSelectedTableColumn(current, -1), "insertTableColumn"),
+        apply(
+          (current) => options.tableOps.insertSelectedTableColumn(current, -1),
+          "insertTableColumn",
+        ),
       insertColumnAfter: () =>
-        apply((current) => options.tableOps.insertSelectedTableColumn(current, 1), "insertTableColumn"),
+        apply(
+          (current) => options.tableOps.insertSelectedTableColumn(current, 1),
+          "insertTableColumn",
+        ),
       deleteColumn: () =>
-        apply((current) => options.tableOps.deleteSelectedTableColumn(current), "deleteTableColumn"),
+        apply(
+          (current) => options.tableOps.deleteSelectedTableColumn(current),
+          "deleteTableColumn",
+        ),
       insertRowBefore: () =>
-        apply((current) => options.tableOps.insertSelectedTableRow(current, -1), "insertTableRow"),
+        apply(
+          (current) => options.tableOps.insertSelectedTableRow(current, -1),
+          "insertTableRow",
+        ),
       insertRowAfter: () =>
-        apply((current) => options.tableOps.insertSelectedTableRow(current, 1), "insertTableRow"),
-      deleteRow: () => apply((current) => options.tableOps.deleteSelectedTableRow(current), "deleteTableRow"),
+        apply(
+          (current) => options.tableOps.insertSelectedTableRow(current, 1),
+          "insertTableRow",
+        ),
+      deleteRow: () =>
+        apply(
+          (current) => options.tableOps.deleteSelectedTableRow(current),
+          "deleteTableRow",
+        ),
       cellShading: (color: string | null) =>
-        apply((current) => setTableCellStyleValue(current, "shading", color || null), "tableShading"),
+        apply(
+          (current) =>
+            setTableCellStyleValue(current, "shading", color || null),
+          "tableShading",
+        ),
       cellBorders: () =>
         apply(
-          (current) => setTableCellBorders(current, { width: 1, type: "solid", color: "#64748b" }),
+          (current) =>
+            setTableCellBorders(current, {
+              width: 1,
+              type: "solid",
+              color: "#64748b",
+            }),
           "tableBorders",
         ),
       cellNoBorders: () =>
         apply(
-          (current) => setTableCellBorders(current, { width: 0, type: "none", color: "transparent" }),
+          (current) =>
+            setTableCellBorders(current, {
+              width: 0,
+              type: "none",
+              color: "transparent",
+            }),
           "tableBorders",
         ),
-      width100: () => apply((current) => setTableStyleValue(current, "width", "100%"), "tableWidth"),
+      width100: () =>
+        apply(
+          (current) => setTableStyleValue(current, "width", "100%"),
+          "tableWidth",
+        ),
       alignLeft: () =>
-        apply((current) => setTableCellStyleValue(current, "horizontalAlign", "left"), "tableAlign"),
+        apply(
+          (current) =>
+            setTableCellStyleValue(current, "horizontalAlign", "left"),
+          "tableAlign",
+        ),
       alignCenter: () =>
-        apply((current) => setTableCellStyleValue(current, "horizontalAlign", "center"), "tableAlign"),
+        apply(
+          (current) =>
+            setTableCellStyleValue(current, "horizontalAlign", "center"),
+          "tableAlign",
+        ),
       alignRight: () =>
-        apply((current) => setTableCellStyleValue(current, "horizontalAlign", "right"), "tableAlign"),
+        apply(
+          (current) =>
+            setTableCellStyleValue(current, "horizontalAlign", "right"),
+          "tableAlign",
+        ),
       setCellWidth: (width: string) =>
         apply((current) => setTableCellWidth(current, width), "tableCellWidth"),
-      insert: (rows: number, cols: number) => options.tableOps.insertTableCommand(rows, cols),
+      insert: (rows: number, cols: number) =>
+        options.tableOps.insertTableCommand(rows, cols),
     };
   })();
 

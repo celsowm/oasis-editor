@@ -28,7 +28,8 @@ export function EditorDragLayers(props: EditorDragLayersProps) {
           <div
             class="oasis-editor-table-resize-guide"
             classList={{
-              "oasis-editor-table-resize-guide-column": resizing().type === "column",
+              "oasis-editor-table-resize-guide-column":
+                resizing().type === "column",
               "oasis-editor-table-resize-guide-row": resizing().type === "row",
             }}
             style={{
@@ -50,7 +51,9 @@ export function EditorDragLayers(props: EditorDragLayersProps) {
         )}
       </Show>
 
-      <Show when={props.imageOps.dragging() && props.imageOps.draggedImageInfo()}>
+      <Show
+        when={props.imageOps.dragging() && props.imageOps.draggedImageInfo()}
+      >
         {(info) => (
           <img
             src={info().src}
@@ -65,7 +68,9 @@ export function EditorDragLayers(props: EditorDragLayersProps) {
         )}
       </Show>
 
-      <Show when={props.tableDrag.dragging() && props.tableDrag.draggedTableInfo()}>
+      <Show
+        when={props.tableDrag.dragging() && props.tableDrag.draggedTableInfo()}
+      >
         {(info) => (
           <div
             class="oasis-editor-table-ghost"
@@ -79,7 +84,9 @@ export function EditorDragLayers(props: EditorDragLayersProps) {
         )}
       </Show>
 
-      <Show when={props.tableDrag.dragging() && props.tableDrag.dropTargetPos()}>
+      <Show
+        when={props.tableDrag.dragging() && props.tableDrag.dropTargetPos()}
+      >
         {(pos) => (
           <DropCaret
             surfaceRef={props.surfaceRef}

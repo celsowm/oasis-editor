@@ -17,7 +17,9 @@ export interface EditorFontOptionsContext {
  * permission probe and its cache signal out of the composition root.
  */
 export function createEditorFontOptions(ctx: EditorFontOptionsContext) {
-  const [localFontFamilyOptions, setLocalFontFamilyOptions] = createSignal<string[]>([]);
+  const [localFontFamilyOptions, setLocalFontFamilyOptions] = createSignal<
+    string[]
+  >([]);
 
   const computeFontFamilyOptions = (): string[] =>
     collectFontFamilyOptions(
@@ -30,9 +32,13 @@ export function createEditorFontOptions(ctx: EditorFontOptionsContext) {
     collectFontSizeOptions(ctx.state().document, ctx.toolbarStyleState());
 
   const loadLocalFontFamilyOptions = async () => {
-    const maybeQueryLocalFonts = (globalThis as {
-      queryLocalFonts?: () => Promise<Array<{ family?: string; fullName?: string }>>;
-    }).queryLocalFonts;
+    const maybeQueryLocalFonts = (
+      globalThis as {
+        queryLocalFonts?: () => Promise<
+          Array<{ family?: string; fullName?: string }>
+        >;
+      }
+    ).queryLocalFonts;
     if (!maybeQueryLocalFonts || localFontFamilyOptions().length > 0) {
       return;
     }

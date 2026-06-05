@@ -154,5 +154,12 @@ export function buildEditorViewProps(
     onPaste: ctx.handlePaste,
   };
 
-  return { layout, overlays, refs, surfaceHandlers, inputHandlers, fileHandlers };
+  return {
+    layout,
+    overlays,
+    refs,
+    surfaceHandlers,
+    inputHandlers,
+    fileHandlers,
+  };
 }

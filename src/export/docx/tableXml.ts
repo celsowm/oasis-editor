@@ -6,6 +6,7 @@ import type {
 } from "../../core/model.js";
 import { buildTableCellLayout } from "../../core/tableLayout.js";
 import { escapeXml, normalizeDocxColor, pointsToTwips } from "./xmlUtils.js";
+import { serializeDocxBorderAttrs } from "./borders.js";
 
 const DEFAULT_TABLE_BORDER_COLOR = "6F6F6F";
 const DEFAULT_TABLE_BORDER_WIDTH_PT = 0.75;
@@ -65,20 +66,7 @@ function serializeBorder(border: EditorBorderStyle | undefined): string {
     type: "solid" as const,
     color: `#${DEFAULT_TABLE_BORDER_COLOR}`,
   };
-  if (resolved.type === "none" || resolved.width <= 0) {
-    return 'w:val="nil"/>';
-  }
-  const val =
-    resolved.type === "dotted"
-      ? "dotted"
-      : resolved.type === "dashed"
-        ? "dashed"
-        : "single";
-  const size = Math.max(1, Math.round(resolved.width * 8));
-  return `w:val="${val}" w:sz="${size}" w:space="0" w:color="${normalizeDocxColor(
-    resolved.color,
-    DEFAULT_TABLE_BORDER_COLOR,
-  )}"/>`;
+  return serializeDocxBorderAttrs(resolved, DEFAULT_TABLE_BORDER_COLOR);
 }
 
 function serializeTableCellBorders(cell: EditorTableCellNode): string {

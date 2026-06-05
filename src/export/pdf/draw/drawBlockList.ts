@@ -1,11 +1,9 @@
-import type {
-  EditorDocument,
-  EditorLayoutBlock,
-} from "../../../core/model.js";
+import type { EditorDocument, EditorLayoutBlock } from "../../../core/model.js";
 import { resolveEffectiveParagraphStyle } from "../../../core/model.js";
+import { getParagraphBorderInsets } from "../../../layoutProjection/index.js";
 import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
 import { OasisPdfWriter } from "../OasisPdfWriter.js";
-import { drawParagraph } from "./drawParagraph.js";
+import { drawParagraph, drawParagraphDecorations } from "./drawParagraph.js";
 import { drawTableBlock } from "./drawTable.js";
 
 export async function drawBlockList(
@@ -26,9 +24,25 @@ export async function drawBlockList(
   let cursorY = originY;
   for (const block of blocks) {
     if (block.sourceBlock.type === "paragraph" && block.layout) {
-      const paragraphStyle = resolveEffectiveParagraphStyle(block.sourceBlock.style, document.styles);
+      const paragraphStyle = resolveEffectiveParagraphStyle(
+        block.sourceBlock.style,
+        document.styles,
+      );
       const spacingBefore =
-        block.layout.startOffset === 0 && cursorY > originY ? paragraphStyle.spacingBefore ?? 0 : 0;
+        block.layout.startOffset === 0 && cursorY > originY
+          ? (paragraphStyle.spacingBefore ?? 0)
+          : 0;
+      const boxTop = cursorY + spacingBefore;
+      const textTop = boxTop + getParagraphBorderInsets(paragraphStyle).top;
+      drawParagraphDecorations(
+        writer,
+        pageIndex,
+        paragraphStyle,
+        block.layout.lines,
+        originX,
+        boxTop,
+        contentWidth,
+      );
       await drawParagraph(
         writer,
         pageIndex,
@@ -36,7 +50,7 @@ export async function drawBlockList(
         block.layout.lines,
         document,
         originX,
-        cursorY + spacingBefore,
+        textTop,
         fontRegistry,
         listOrdinals,
       );

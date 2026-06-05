@@ -1,5 +1,9 @@
 import type { EditorState } from "../model.js";
-import { getParagraphLength, getParagraphs, paragraphOffsetToPosition } from "../model.js";
+import {
+  getParagraphLength,
+  getParagraphs,
+  paragraphOffsetToPosition,
+} from "../model.js";
 import { normalizeSelection } from "../selection.js";
 import { expandLinkRangeInParagraph, sliceRuns } from "./utils.js";
 import { setTextStyleValue } from "./text.js";
@@ -14,14 +18,20 @@ export function getLinkAtSelection(state: EditorState): string | null {
     if (!paragraph) {
       return null;
     }
-    return expandLinkRangeInParagraph(paragraph, normalized.startParagraphOffset)?.href ?? null;
+    return (
+      expandLinkRangeInParagraph(paragraph, normalized.startParagraphOffset)
+        ?.href ?? null
+    );
   }
 
   const touchedRuns = paragraphs
     .slice(normalized.startIndex, normalized.endIndex + 1)
     .flatMap((paragraph, relativeIndex) => {
       const paragraphIndex = normalized.startIndex + relativeIndex;
-      const startOffset = paragraphIndex === normalized.startIndex ? normalized.startParagraphOffset : 0;
+      const startOffset =
+        paragraphIndex === normalized.startIndex
+          ? normalized.startParagraphOffset
+          : 0;
       const endOffset =
         paragraphIndex === normalized.endIndex
           ? normalized.endParagraphOffset
@@ -57,7 +67,10 @@ export function setLinkAtSelection(
     return state;
   }
 
-  const linkRange = expandLinkRangeInParagraph(paragraph, normalized.startParagraphOffset);
+  const linkRange = expandLinkRangeInParagraph(
+    paragraph,
+    normalized.startParagraphOffset,
+  );
   if (!linkRange) {
     return state;
   }

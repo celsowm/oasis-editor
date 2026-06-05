@@ -76,7 +76,9 @@ export function createEditorContextMenuClipboard(
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
     deps.applyTransactionalState((current) =>
-      deps.applyTableAwareParagraphEdit(current, (temp) => deleteBackward(temp)),
+      deps.applyTableAwareParagraphEdit(current, (temp) =>
+        deleteBackward(temp),
+      ),
     );
     deps.focusInput();
   };

@@ -11,8 +11,14 @@ export interface UseEditorTextInputProps {
   logger: { debug: (msg: string) => void; info: (msg: string) => void };
   clearPreferredColumn: () => void;
   pendingCaretTextStyle: () => EditorTextStyle | undefined;
-  applyTransactionalState: (producer: (current: EditorState) => EditorState, options?: { mergeKey?: string }) => void;
-  applyTableAwareParagraphEdit: (state: EditorState, edit: (temp: EditorState) => EditorState) => EditorState;
+  applyTransactionalState: (
+    producer: (current: EditorState) => EditorState,
+    options?: { mergeKey?: string },
+  ) => void;
+  applyTableAwareParagraphEdit: (
+    state: EditorState,
+    edit: (temp: EditorState) => EditorState,
+  ) => EditorState;
   focusInput: () => void;
 }
 

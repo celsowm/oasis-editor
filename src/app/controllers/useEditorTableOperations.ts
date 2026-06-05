@@ -2,15 +2,9 @@ import {
   getActiveSectionIndex,
   getDocumentSectionsCanonical,
   type EditorBlockNode,
-  type EditorDocument,
-  type EditorLayoutParagraph,
-  type EditorParagraphListStyle,
-  type EditorParagraphStyle,
-  type EditorPosition,
   type EditorState,
   type EditorEditingZone,
 } from "../../core/model.js";
-import { normalizeSelection } from "../../core/selection.js";
 import { insertTableAtSelection } from "../../core/editorCommands.js";
 import type { EditorLogger } from "../../utils/logger.js";
 import {
@@ -24,9 +18,7 @@ import {
   applyTableAwareParagraphEdit as applyTableAwareParagraphEditInternal,
   updateBlocksInCurrentSection,
 } from "./tableOpsMutationCommands.js";
-import {
-  createTableOpsGuards,
-} from "./tableOpsGuards.js";
+import { createTableOpsGuards } from "./tableOpsGuards.js";
 import { createTableSelectionResolvers } from "./tableOpsSelectionRanges.js";
 import { createTableCellSpanOperations } from "./tableOpsCellSpanCommands.js";
 import { createTableRowColumnOperations } from "./tableOpsRowColumnCommands.js";
@@ -46,10 +38,14 @@ export interface EditorTableOperationsDeps {
 }
 
 export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
-  const getTargetBlocks = (state: EditorState, zone: EditorEditingZone): EditorBlockNode[] => {
+  const getTargetBlocks = (
+    state: EditorState,
+    zone: EditorEditingZone,
+  ): EditorBlockNode[] => {
     const sections = getDocumentSectionsCanonical(state.document);
     const activeSectionIndex = getActiveSectionIndex(state);
-    const section = sections[Math.max(0, Math.min(activeSectionIndex, sections.length - 1))];
+    const section =
+      sections[Math.max(0, Math.min(activeSectionIndex, sections.length - 1))];
     if (!section) {
       return [];
     }
@@ -112,7 +108,8 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
   const applyTableAwareParagraphEdit = (
     current: EditorState,
     edit: (tempState: EditorState) => EditorState,
-  ): EditorState => applyTableAwareParagraphEditInternal(current, getTargetBlocks, edit);
+  ): EditorState =>
+    applyTableAwareParagraphEditInternal(current, getTargetBlocks, edit);
 
   const {
     withExpandedTableCellSelection,
@@ -120,7 +117,8 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
     applySelectionAwareParagraphCommand,
   } = createTableSelectionAwareCommands({
     applyTransactionalState: deps.applyTransactionalState,
-    applySelectionToStatePreservingStructure: deps.applySelectionToStatePreservingStructure,
+    applySelectionToStatePreservingStructure:
+      deps.applySelectionToStatePreservingStructure,
     getTargetBlocks,
     resolveTableCellRangeSelection,
     resolveSelectedTableCells,
@@ -129,9 +127,12 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
 
   const insertTableCommand = (rows: number, cols: number) => {
     deps.logger?.info(`insertTableCommand: ${rows}x${cols}`);
-    deps.applyTransactionalState((current) => insertTableAtSelection(current, rows, cols), {
-      mergeKey: "insertTable",
-    });
+    deps.applyTransactionalState(
+      (current) => insertTableAtSelection(current, rows, cols),
+      {
+        mergeKey: "insertTable",
+      },
+    );
     deps.focusInput();
   };
 

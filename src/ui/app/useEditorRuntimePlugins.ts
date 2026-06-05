@@ -1,7 +1,10 @@
 import type { OasisPlugin } from "../../core/plugin.js";
 import { defaultMenuRegistry } from "../components/Menubar/menuRegistry.js";
 import { createDefaultToolbarPreset } from "../components/Toolbar/presets/defaultToolbar.js";
-import { createToolbarRegistry, type ToolbarRegistry } from "../components/Toolbar/registry/ToolbarRegistry.js";
+import {
+  createToolbarRegistry,
+  type ToolbarRegistry,
+} from "../components/Toolbar/registry/ToolbarRegistry.js";
 import type { ToolbarItem } from "../components/Toolbar/schema/items.js";
 
 export interface EditorRuntimePluginsOptions {
@@ -16,8 +19,13 @@ export interface EditorRuntimePlugins {
   dispose: () => void;
 }
 
-export function useEditorRuntimePlugins(options: EditorRuntimePluginsOptions): EditorRuntimePlugins {
-  const runtimePlugins = [options.essentialsPlugin, ...(options.externalPlugins ?? [])];
+export function useEditorRuntimePlugins(
+  options: EditorRuntimePluginsOptions,
+): EditorRuntimePlugins {
+  const runtimePlugins = [
+    options.essentialsPlugin,
+    ...(options.externalPlugins ?? []),
+  ];
   const contributedToolbarIds: string[] = [];
   const contributedMenuIds: string[] = [];
   const toolbarRegistry = createToolbarRegistry();

@@ -1,7 +1,6 @@
 import { createEffect, splitProps, type JSX } from "solid-js";
 
-export interface ToolbarSelectProps
-  extends JSX.SelectHTMLAttributes<HTMLSelectElement> {
+export interface ToolbarSelectProps extends JSX.SelectHTMLAttributes<HTMLSelectElement> {
   wide?: boolean;
   small?: boolean;
   tooltip?: string;

@@ -15,7 +15,10 @@ const itemCommand = (item: ToolbarItem): CommandRef | undefined =>
  * Resolves an item's reactive display state. Per-item overrides win; otherwise
  * the bound command's state is used (DIP — controls never read editor internals).
  */
-export function bindItem(item: ToolbarItem, api: ToolbarActionApi): ItemBinding {
+export function bindItem(
+  item: ToolbarItem,
+  api: ToolbarActionApi,
+): ItemBinding {
   const command = itemCommand(item);
   const cmdState = () =>
     command
@@ -33,7 +36,10 @@ export function bindItem(item: ToolbarItem, api: ToolbarActionApi): ItemBinding 
 }
 
 /** Unified action dispatch through the command registry. */
-export function runItem(item: { command: CommandRef }, api: ToolbarActionApi): void {
+export function runItem(
+  item: { command: CommandRef },
+  api: ToolbarActionApi,
+): void {
   if (api.commands.canExecute(item.command)) {
     api.commands.execute(item.command);
   }

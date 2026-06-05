@@ -45,7 +45,10 @@ export function projectDocumentLayout(
   maxPageHeightOverride?: number,
   measuredHeights?: Record<string, number>,
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>,
-  options: { layoutMode?: "fast" | "wordParity"; measurer?: ITextMeasurer } = {},
+  options: {
+    layoutMode?: "fast" | "wordParity";
+    measurer?: ITextMeasurer;
+  } = {},
 ): EditorLayoutDocument {
   const layoutMode = options.layoutMode ?? "fast";
   const measurer = options.measurer ?? domTextMeasurer;
@@ -65,8 +68,13 @@ export function projectDocumentLayout(
     projectHeaderFooterBlocks,
   };
 
-  let { pages, totalPages } = projectDocumentSections(sectionContext);
-  if (!document.footnotes || Object.keys(document.footnotes.items).length === 0) {
+  const projectedSections = projectDocumentSections(sectionContext);
+  let pages = projectedSections.pages;
+  const totalPages = projectedSections.totalPages;
+  if (
+    !document.footnotes ||
+    Object.keys(document.footnotes.items).length === 0
+  ) {
     return { pages };
   }
 
@@ -81,7 +89,11 @@ export function projectDocumentLayout(
   };
   let reservations = buildFootnoteReservations(pages, footnoteContext);
   let previousSignature = "";
-  for (let iteration = 0; iteration < MAX_FOOTNOTE_LAYOUT_ITERATIONS; iteration += 1) {
+  for (
+    let iteration = 0;
+    iteration < MAX_FOOTNOTE_LAYOUT_ITERATIONS;
+    iteration += 1
+  ) {
     const signature = reservationSignature(reservations);
     if (signature === previousSignature) {
       break;

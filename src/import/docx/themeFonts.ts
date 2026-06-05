@@ -22,22 +22,46 @@ export function parseThemeFonts(themeXml: string | null): ThemeFontMap {
 
   const document = new DOMParser().parseFromString(themeXml, "application/xml");
   const root = document.documentElement;
-  const themeElements = root ? getChildrenByTagNameNS(root, DRAWINGML_NS, "themeElements")[0] : null;
-  const fontScheme = getFirstChildByTagNameNS(themeElements, DRAWINGML_NS, "fontScheme");
-  const majorFont = getFirstChildByTagNameNS(fontScheme, DRAWINGML_NS, "majorFont");
-  const minorFont = getFirstChildByTagNameNS(fontScheme, DRAWINGML_NS, "minorFont");
+  const themeElements = root
+    ? getChildrenByTagNameNS(root, DRAWINGML_NS, "themeElements")[0]
+    : null;
+  const fontScheme = getFirstChildByTagNameNS(
+    themeElements,
+    DRAWINGML_NS,
+    "fontScheme",
+  );
+  const majorFont = getFirstChildByTagNameNS(
+    fontScheme,
+    DRAWINGML_NS,
+    "majorFont",
+  );
+  const minorFont = getFirstChildByTagNameNS(
+    fontScheme,
+    DRAWINGML_NS,
+    "minorFont",
+  );
 
-  const latinTypeface = (fontElement: XmlElement | null): string | undefined => {
+  const latinTypeface = (
+    fontElement: XmlElement | null,
+  ): string | undefined => {
     const latin = getFirstChildByTagNameNS(fontElement, DRAWINGML_NS, "latin");
     const typeface = latin?.getAttribute("typeface")?.trim();
     return typeface || undefined;
   };
-  const complexScriptTypeface = (fontElement: XmlElement | null): string | undefined => {
-    const complexScript = getFirstChildByTagNameNS(fontElement, DRAWINGML_NS, "cs");
+  const complexScriptTypeface = (
+    fontElement: XmlElement | null,
+  ): string | undefined => {
+    const complexScript = getFirstChildByTagNameNS(
+      fontElement,
+      DRAWINGML_NS,
+      "cs",
+    );
     const typeface = complexScript?.getAttribute("typeface")?.trim();
     return typeface || latinTypeface(fontElement);
   };
-  const eastAsiaTypeface = (fontElement: XmlElement | null): string | undefined => {
+  const eastAsiaTypeface = (
+    fontElement: XmlElement | null,
+  ): string | undefined => {
     const eastAsia = getFirstChildByTagNameNS(fontElement, DRAWINGML_NS, "ea");
     const typeface = eastAsia?.getAttribute("typeface")?.trim();
     return typeface || latinTypeface(fontElement);
@@ -53,7 +77,10 @@ export function parseThemeFonts(themeXml: string | null): ThemeFontMap {
   };
 }
 
-export function resolveThemeFont(fonts: XmlElement | null, themeFonts: ThemeFontMap): string | undefined {
+export function resolveThemeFont(
+  fonts: XmlElement | null,
+  themeFonts: ThemeFontMap,
+): string | undefined {
   const themeKey =
     getAttributeValue(fonts, "asciiTheme") ??
     getAttributeValue(fonts, "hAnsiTheme") ??

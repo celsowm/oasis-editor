@@ -22,7 +22,9 @@ export function fontSizePtToPx(pt: number): number {
 }
 
 /** Format a model pixel size as a point display string ("" when invalid/≤0). */
-export function formatFontSizePt(px: string | number | null | undefined): string {
+export function formatFontSizePt(
+  px: string | number | null | undefined,
+): string {
   const value = Number(px);
   if (!Number.isFinite(value) || value <= 0) {
     return "";
@@ -31,7 +33,9 @@ export function formatFontSizePt(px: string | number | null | undefined): string
 }
 
 /** Parse a user-facing point string into a model pixel size (null when invalid/≤0). */
-export function parseFontSizePtToPx(pt: string | number | null | undefined): number | null {
+export function parseFontSizePtToPx(
+  pt: string | number | null | undefined,
+): number | null {
   const value = Number(pt);
   if (!Number.isFinite(value) || value <= 0) {
     return null;

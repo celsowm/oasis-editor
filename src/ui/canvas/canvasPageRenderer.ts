@@ -9,7 +9,10 @@ import {
   getPageContentWidth,
   getPageHeaderZoneTop,
 } from "../../core/model.js";
-import { renderBlockList, renderFootnoteBlockList } from "./canvasBlockPainter.js";
+import {
+  renderBlockList,
+  renderFootnoteBlockList,
+} from "./canvasBlockPainter.js";
 
 export function resolveCanvasFooterZoneTop(
   page: Pick<EditorLayoutPage, "pageSettings" | "bodyTop" | "footerTop">,
@@ -107,10 +110,12 @@ export function createCanvasPageRenderer(options: {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, width, height);
 
-    const marginX = page.pageSettings.margins.left + page.pageSettings.margins.gutter;
+    const marginX =
+      page.pageSettings.margins.left + page.pageSettings.margins.gutter;
     const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
     const headerTop = page.headerTop ?? getPageHeaderZoneTop(page.pageSettings);
-    const footerTop = page.footerTop ?? page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
+    const footerTop =
+      page.footerTop ?? page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
     const footerZoneTop = resolveCanvasFooterZoneTop(page);
     const bodyWidth = getPageContentWidth(page.pageSettings);
     const zoneBodyBottom = page.bodyBottom ?? height;
@@ -141,23 +146,49 @@ export function createCanvasPageRenderer(options: {
       ctx.restore();
     }
 
-    const inHeaderFooterMode = activeZone === "header" || activeZone === "footer";
+    const inHeaderFooterMode =
+      activeZone === "header" || activeZone === "footer";
     const bodyAlpha = inHeaderFooterMode || activeZone === "footnote" ? 0.5 : 1;
-    const headerAlpha = activeZone === "main" ? 0.42 : activeZone === "header" ? 1 : 0.42;
-    const footerAlpha = activeZone === "main" ? 0.42 : activeZone === "footer" ? 1 : 0.42;
-    const footnoteAlpha = activeZone === "footnote" ? 1 : activeZone === "main" ? 0.86 : 0.42;
+    const headerAlpha =
+      activeZone === "main" ? 0.42 : activeZone === "header" ? 1 : 0.42;
+    const footerAlpha =
+      activeZone === "main" ? 0.42 : activeZone === "footer" ? 1 : 0.42;
+    const footnoteAlpha =
+      activeZone === "footnote" ? 1 : activeZone === "main" ? 0.86 : 0.42;
 
     ctx.save();
     ctx.globalAlpha = headerAlpha;
-    renderBlockList(ctx, state, page.headerBlocks ?? [], marginX, headerTop, bodyWidth, page.index, onUpdate);
+    renderBlockList(
+      ctx,
+      state,
+      page.headerBlocks ?? [],
+      marginX,
+      headerTop,
+      bodyWidth,
+      page.index,
+      onUpdate,
+    );
     ctx.restore();
 
     ctx.save();
     ctx.globalAlpha = bodyAlpha;
-    renderBlockList(ctx, state, page.blocks, marginX, bodyTop, bodyWidth, page.index, onUpdate);
+    renderBlockList(
+      ctx,
+      state,
+      page.blocks,
+      marginX,
+      bodyTop,
+      bodyWidth,
+      page.index,
+      onUpdate,
+    );
     ctx.restore();
 
-    if (page.footnoteBlocks && page.footnoteBlocks.length > 0 && page.footnoteTop !== undefined) {
+    if (
+      page.footnoteBlocks &&
+      page.footnoteBlocks.length > 0 &&
+      page.footnoteTop !== undefined
+    ) {
       ctx.save();
       ctx.globalAlpha = footnoteAlpha;
       const clipTop = page.footnoteSeparatorTop ?? page.footnoteTop;
@@ -170,7 +201,10 @@ export function createCanvasPageRenderer(options: {
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(marginX, page.footnoteSeparatorTop + 0.5);
-        ctx.lineTo(marginX + Math.min(180, bodyWidth * 0.35), page.footnoteSeparatorTop + 0.5);
+        ctx.lineTo(
+          marginX + Math.min(180, bodyWidth * 0.35),
+          page.footnoteSeparatorTop + 0.5,
+        );
         ctx.stroke();
       }
       renderFootnoteBlockList(
@@ -190,7 +224,16 @@ export function createCanvasPageRenderer(options: {
     if (page.bodyBottom !== undefined) {
       ctx.save();
       ctx.globalAlpha = footerAlpha;
-      renderBlockList(ctx, state, page.footerBlocks ?? [], marginX, footerTop, bodyWidth, page.index, onUpdate);
+      renderBlockList(
+        ctx,
+        state,
+        page.footerBlocks ?? [],
+        marginX,
+        footerTop,
+        bodyWidth,
+        page.index,
+        onUpdate,
+      );
       ctx.restore();
     }
 

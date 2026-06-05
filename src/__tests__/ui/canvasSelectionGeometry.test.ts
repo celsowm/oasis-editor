@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 import {
   createEditorDocument,
   createEditorParagraph,
@@ -7,12 +7,23 @@ import {
   createEditorTableCell,
   createEditorTableRow,
   createEditorTable,
-} from '../../core/editorState.js';
-import { getParagraphs, paragraphOffsetToPosition, type EditorParagraphNode } from '../../core/model.js';
-import { computeCanvasSelectionGeometry } from '../../ui/canvas/CanvasSelectionGeometry.js';
-import type { CanvasLayoutSnapshot, CanvasSnapshotParagraph } from '../../ui/canvas/CanvasLayoutSnapshot.js';
+} from "../../core/editorState.js";
+import {
+  getParagraphs,
+  paragraphOffsetToPosition,
+  type EditorParagraphNode,
+} from "../../core/model.js";
+import { computeCanvasSelectionGeometry } from "../../ui/canvas/CanvasSelectionGeometry.js";
+import type {
+  CanvasLayoutSnapshot,
+  CanvasSnapshotParagraph,
+} from "../../ui/canvas/CanvasLayoutSnapshot.js";
 
-function createMockSnapshot(paragraph: EditorParagraphNode, textLength: number, paragraphIndex: number): CanvasLayoutSnapshot {
+function createMockSnapshot(
+  paragraph: EditorParagraphNode,
+  textLength: number,
+  paragraphIndex: number,
+): CanvasLayoutSnapshot {
   const left = 120;
   const top = 200;
   const slotStep = 12;
@@ -27,7 +38,7 @@ function createMockSnapshot(paragraph: EditorParagraphNode, textLength: number, 
     paragraph,
     paragraphId: paragraph.id,
     paragraphIndex,
-    zone: 'main' as const,
+    zone: "main" as const,
     pageIndex: 0,
     startOffset: 0,
     endOffset: textLength,
@@ -50,19 +61,21 @@ function createMockSnapshot(paragraph: EditorParagraphNode, textLength: number, 
   return {
     surfaceRect: { left: 0, top: 0, width: 900, height: 700 } as DOMRect,
     pages: [],
-    paragraphs: [
-      snapshotParagraph,
-    ],
-    paragraphsById: new Map([[snapshotParagraph.paragraphId, [snapshotParagraph]]]),
+    paragraphs: [snapshotParagraph],
+    paragraphsById: new Map([
+      [snapshotParagraph.paragraphId, [snapshotParagraph]],
+    ]),
     inlineImages: [],
     unsupportedRegions: [],
   } as unknown as CanvasLayoutSnapshot;
 }
 
-describe('canvas selection geometry', () => {
-  it('extends first-line selection and caret over spacingBefore like Word', () => {
-    const sourceParagraph = createEditorParagraph('Capítulo 1');
-    const state = createEditorStateFromDocument(createEditorDocument([sourceParagraph]));
+describe("canvas selection geometry", () => {
+  it("extends first-line selection and caret over spacingBefore like Word", () => {
+    const sourceParagraph = createEditorParagraph("Capítulo 1");
+    const state = createEditorStateFromDocument(
+      createEditorDocument([sourceParagraph]),
+    );
     const paragraph = getParagraphs(state)[0]!;
     const paragraphTop = 200;
     const lineTop = 232;
@@ -76,7 +89,7 @@ describe('canvas selection geometry', () => {
       paragraph,
       paragraphId: paragraph.id,
       paragraphIndex: 0,
-      zone: 'main',
+      zone: "main",
       pageIndex: 0,
       startOffset: 0,
       endOffset: 10,
@@ -129,9 +142,11 @@ describe('canvas selection geometry', () => {
     });
   });
 
-  it('renders selection boxes using local paragraph order even when snapshot paragraphIndex is globally shifted', () => {
-    const sourceParagraph = createEditorParagraph('abcdef');
-    const state = createEditorStateFromDocument(createEditorDocument([sourceParagraph]));
+  it("renders selection boxes using local paragraph order even when snapshot paragraphIndex is globally shifted", () => {
+    const sourceParagraph = createEditorParagraph("abcdef");
+    const state = createEditorStateFromDocument(
+      createEditorDocument([sourceParagraph]),
+    );
     const paragraph = getParagraphs(state)[0]!;
     const anchor = paragraphOffsetToPosition(paragraph, 1);
     const focus = paragraphOffsetToPosition(paragraph, 4);
@@ -155,7 +170,9 @@ describe('canvas selection geometry', () => {
 
   it("does not paint leading whitespace at a visual selection edge", () => {
     const sourceParagraph = createEditorParagraph("aaaa bbbb");
-    const state = createEditorStateFromDocument(createEditorDocument([sourceParagraph]));
+    const state = createEditorStateFromDocument(
+      createEditorDocument([sourceParagraph]),
+    );
     const paragraph = getParagraphs(state)[0]!;
     const selectedState = {
       ...state,
@@ -174,9 +191,9 @@ describe('canvas selection geometry', () => {
     });
   });
 
-  it('correctly calculates geometry and hides caret when multi-cell table selection is active', () => {
-    const pCell1 = createEditorParagraph('cell1');
-    const pCell2 = createEditorParagraph('cell2');
+  it("correctly calculates geometry and hides caret when multi-cell table selection is active", () => {
+    const pCell1 = createEditorParagraph("cell1");
+    const pCell2 = createEditorParagraph("cell2");
 
     const cell1 = createEditorTableCell([pCell1]);
     const cell2 = createEditorTableCell([pCell2]);
@@ -197,12 +214,17 @@ describe('canvas selection geometry', () => {
     };
 
     // Mock a snapshot with paragraphs inside table cells
-    const surfaceRect = { left: 0, top: 0, width: 1000, height: 800 } as DOMRect;
+    const surfaceRect = {
+      left: 0,
+      top: 0,
+      width: 1000,
+      height: 800,
+    } as DOMRect;
     const snapP1: CanvasSnapshotParagraph = {
       paragraph: pCell1,
       paragraphId: pCell1.id,
       paragraphIndex: 0,
-      zone: 'main',
+      zone: "main",
       pageIndex: 0,
       startOffset: 0,
       endOffset: 5,
@@ -228,7 +250,7 @@ describe('canvas selection geometry', () => {
       paragraph: pCell2,
       paragraphId: pCell2.id,
       paragraphIndex: 1,
-      zone: 'main',
+      zone: "main",
       pageIndex: 0,
       startOffset: 0,
       endOffset: 5,
@@ -294,7 +316,9 @@ describe('canvas selection geometry', () => {
         },
       },
     ]);
-    const state = createEditorStateFromDocument(createEditorDocument([paragraph]));
+    const state = createEditorStateFromDocument(
+      createEditorDocument([paragraph]),
+    );
     const imageParagraph = getParagraphs(state)[0]!;
     const selectedState = {
       ...state,

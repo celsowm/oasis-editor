@@ -23,7 +23,9 @@ function escapeXml(text: string): string {
     .replace(/>/g, "&gt;");
 }
 
-function buildBodyParagraph(tokens: Array<string | { footnoteId: number }>): string {
+function buildBodyParagraph(
+  tokens: Array<string | { footnoteId: number }>,
+): string {
   const runs = tokens
     .map((token) => {
       if (typeof token === "string") {

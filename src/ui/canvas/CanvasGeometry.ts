@@ -2,9 +2,7 @@
  * Canvas-native geometry helpers built on top of {@link CanvasLayoutSnapshot}.
  * They are pure functions over snapshot data and do not require DOM mirrors.
  */
-import type {
-  EditorPosition,
-} from "../../core/model.js";
+import type { EditorPosition } from "../../core/model.js";
 import type {
   CanvasLayoutSnapshot,
   CanvasSnapshotLine,
@@ -28,7 +26,12 @@ export interface CanvasCharRect {
   height: number;
 }
 
-function rectFromBox(left: number, top: number, width: number, height: number): CanvasRectLike {
+function rectFromBox(
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+): CanvasRectLike {
   return {
     left,
     top,

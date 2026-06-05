@@ -55,7 +55,10 @@ export function Menu(props: MenuProps): JSX.Element {
               <span class="oasis-editor-tool-button-label">{props.label}</span>
             </Show>
             <Show when={!props.hideChevron}>
-              <i data-lucide="chevron-down" class="oasis-editor-dropdown-chevron" />
+              <i
+                data-lucide="chevron-down"
+                class="oasis-editor-dropdown-chevron"
+              />
             </Show>
           </button>
         )}

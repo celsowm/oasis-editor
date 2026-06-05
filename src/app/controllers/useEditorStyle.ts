@@ -2,10 +2,19 @@ import { createSignal, createEffect } from "solid-js";
 import type { EditorState, EditorTextStyle } from "../../core/model.js";
 import { isSelectionCollapsed } from "../../core/selection.js";
 import { getToolbarStyleState } from "../../ui/toolbarStyleState.js";
-import type { ToolbarStyleState, BooleanStyleKey } from "../../ui/toolbarStyleState.js";
+import type {
+  ToolbarStyleState,
+  BooleanStyleKey,
+} from "../../ui/toolbarStyleState.js";
 import type { createEditorCommandsController } from "./EditorCommandsController.js";
 
-type ValueStyleKey = "fontFamily" | "fontSize" | "color" | "highlight" | "link" | "underlineStyle";
+type ValueStyleKey =
+  | "fontFamily"
+  | "fontSize"
+  | "color"
+  | "highlight"
+  | "link"
+  | "underlineStyle";
 
 export interface UseEditorStyleProps {
   state: () => EditorState;
@@ -17,7 +26,9 @@ export interface UseEditorStyleProps {
 }
 
 export function createEditorStyleController(deps: UseEditorStyleProps) {
-  const [pendingCaretTextStyle, setPendingCaretTextStyle] = createSignal<EditorTextStyle | undefined>(undefined);
+  const [pendingCaretTextStyle, setPendingCaretTextStyle] = createSignal<
+    EditorTextStyle | undefined
+  >(undefined);
 
   const clearPendingCaretTextStyle = () => {
     setPendingCaretTextStyle(undefined);
@@ -40,7 +51,9 @@ export function createEditorStyleController(deps: UseEditorStyleProps) {
       } else {
         next[key] = value;
       }
-      return Object.keys(next).length > 0 ? (next as EditorTextStyle) : undefined;
+      return Object.keys(next).length > 0
+        ? (next as EditorTextStyle)
+        : undefined;
     });
   };
 

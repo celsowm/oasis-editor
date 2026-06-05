@@ -364,7 +364,10 @@ export function buildCanvasTableLayout(options: {
         );
         const spacingBefore = paragraphStyle.spacingBefore ?? 0;
         const spacingAfter = paragraphStyle.spacingAfter ?? 0;
-        const paragraphHeight = Math.max(1, spacingBefore + linesBottom + spacingAfter);
+        const paragraphHeight = Math.max(
+          1,
+          spacingBefore + linesBottom + spacingAfter,
+        );
         projectedParagraphs.push({
           paragraph,
           lines: projected.lines,
@@ -448,7 +451,6 @@ export function buildCanvasTableLayout(options: {
       cellIndex,
       cell,
       visualCol,
-      colSpan,
       rowSpan,
       width,
       padding,

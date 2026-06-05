@@ -87,7 +87,8 @@ export const en = {
   "lineSpacing.spacingBeforeLabel": "Before (pt)",
   "lineSpacing.spacingAfterLabel": "After (pt)",
   "lineSpacing.preview": "Preview",
-  "lineSpacing.previewText": "Line spacing controls the vertical distance between lines of text inside a paragraph.",
+  "lineSpacing.previewText":
+    "Line spacing controls the vertical distance between lines of text inside a paragraph.",
 
   // Paragraph dialog
   "paragraph.title": "Paragraph",
@@ -109,8 +110,23 @@ export const en = {
   "paragraph.spacingBeforeLabel": "Before (pt)",
   "paragraph.spacingAfterLabel": "After (pt)",
   "paragraph.lineSpacingLabel": "Line spacing",
+  "paragraph.bordersSection": "Borders and shading",
+  "paragraph.borderStyleLabel": "Border",
+  "paragraph.borderWidthLabel": "Width (pt)",
+  "paragraph.borderColorLabel": "Border color",
+  "paragraph.shadingLabel": "Shading",
+  "paragraph.borderNone": "(none)",
+  "paragraph.borderSolid": "Solid",
+  "paragraph.borderDashed": "Dashed",
+  "paragraph.borderDotted": "Dotted",
+  "paragraph.borderSidesLabel": "Sides",
+  "paragraph.borderSideTop": "Top",
+  "paragraph.borderSideRight": "Right",
+  "paragraph.borderSideBottom": "Bottom",
+  "paragraph.borderSideLeft": "Left",
   "paragraph.preview": "Preview",
-  "paragraph.previewText": "The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog.",
+  "paragraph.previewText":
+    "The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog.",
 
   // Section
   "section.orient": "Orient",
@@ -220,9 +236,12 @@ export const en = {
   "dialog.font.advancedContextualAlternates": "Use Contextual Alternates",
   "dialog.font.advancedScaleInvalid": "Scale must be a number greater than 0.",
   "dialog.font.advancedAmountInvalid": "Amount must be 0 or greater.",
-  "dialog.font.advancedKerningInvalid": "Kerning threshold must be 0 or greater.",
-  "dialog.font.advancedStylisticSetInvalid": "Stylistic set must be between 1 and 20.",
-  "dialog.font.advancedPlaceholder": "Values use points; Normal clears spacing and position overrides.",
+  "dialog.font.advancedKerningInvalid":
+    "Kerning threshold must be 0 or greater.",
+  "dialog.font.advancedStylisticSetInvalid":
+    "Stylistic set must be between 1 and 20.",
+  "dialog.font.advancedPlaceholder":
+    "Values use points; Normal clears spacing and position overrides.",
   "dialog.font.preview": "Preview",
   "dialog.font.previewText": "The quick brown fox jumps over the lazy dog",
 

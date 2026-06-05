@@ -18,17 +18,25 @@ export function parseNonNegativeNumber(value: string): number | null {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
-export function formatNullableNumber(value: string | number | null | undefined): string {
-  return value === undefined || value === null || value === "" ? "" : String(value);
+export function formatNullableNumber(
+  value: string | number | null | undefined,
+): string {
+  return value === undefined || value === null || value === ""
+    ? ""
+    : String(value);
 }
 
-export function resolveSpacingMode(value: string | number | null | undefined): FontDialogSpacingMode {
+export function resolveSpacingMode(
+  value: string | number | null | undefined,
+): FontDialogSpacingMode {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed === 0) return "normal";
   return parsed > 0 ? "expanded" : "condensed";
 }
 
-export function resolvePositionMode(value: string | number | null | undefined): FontDialogPositionMode {
+export function resolvePositionMode(
+  value: string | number | null | undefined,
+): FontDialogPositionMode {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed === 0) return "normal";
   return parsed > 0 ? "raised" : "lowered";
@@ -37,10 +45,14 @@ export function resolvePositionMode(value: string | number | null | undefined): 
 export function parseStylisticSet(value: string): number | null {
   if (!value.trim()) return null;
   const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed >= 1 && parsed <= 20 ? parsed : null;
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= 20
+    ? parsed
+    : null;
 }
 
-export function ligaturesToCss(value: EditorLigatures | ""): string | undefined {
+export function ligaturesToCss(
+  value: EditorLigatures | "",
+): string | undefined {
   switch (value) {
     case "none":
       return "none";
@@ -84,7 +96,10 @@ export function featureSettingsToCss(
   return parts.join(", ") || undefined;
 }
 
-export function resolveFontFaceStyle(bold: boolean, italic: boolean): FontFaceStyle {
+export function resolveFontFaceStyle(
+  bold: boolean,
+  italic: boolean,
+): FontFaceStyle {
   if (bold && italic) return "boldItalic";
   if (bold) return "bold";
   if (italic) return "italic";

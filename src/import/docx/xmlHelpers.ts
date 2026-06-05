@@ -1,8 +1,11 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
 
-export const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
-export const DRAWINGML_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
-export const OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+export const WORD_NS =
+  "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+export const DRAWINGML_NS =
+  "http://schemas.openxmlformats.org/drawingml/2006/main";
+export const OFFICE_REL_NS =
+  "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 export const WORD14_NS = "http://schemas.microsoft.com/office/word/2010/wordml";
 
 export function getChildrenByTagNameNS(
@@ -36,7 +39,10 @@ export function getFirstChildByTagNameNS(
   return getChildrenByTagNameNS(element, namespace, localName)[0] ?? null;
 }
 
-export function getAttributeValue(element: XmlElement | null, localName: string): string | null {
+export function getAttributeValue(
+  element: XmlElement | null,
+  localName: string,
+): string | null {
   if (!element) {
     return null;
   }
@@ -49,7 +55,10 @@ export function getAttributeValue(element: XmlElement | null, localName: string)
   );
 }
 
-export function findElementDeep(element: XmlElement, localName: string): XmlElement | null {
+export function findElementDeep(
+  element: XmlElement,
+  localName: string,
+): XmlElement | null {
   for (let index = 0; index < element.childNodes.length; index += 1) {
     const node = element.childNodes[index];
     if (node?.nodeType === 1) {
@@ -62,7 +71,10 @@ export function findElementDeep(element: XmlElement, localName: string): XmlElem
   return null;
 }
 
-export function parseBooleanProperty(parent: XmlElement, localName: string): boolean {
+export function parseBooleanProperty(
+  parent: XmlElement,
+  localName: string,
+): boolean {
   return getFirstChildByTagNameNS(parent, WORD_NS, localName) !== null;
 }
 
@@ -70,7 +82,10 @@ export function isWordTrue(value: string | null | undefined): boolean {
   return value === "1" || value === "true" || value === "on";
 }
 
-export function parseOnOffProperty(parent: XmlElement, localName: string): boolean | undefined {
+export function parseOnOffProperty(
+  parent: XmlElement,
+  localName: string,
+): boolean | undefined {
   const element = getFirstChildByTagNameNS(parent, WORD_NS, localName);
   if (!element) {
     return undefined;
@@ -94,7 +109,10 @@ export function parseStyleIdProperty(
   return getAttributeValue(styleElement, "val") ?? undefined;
 }
 
-export async function yieldToEventLoop(every: number, counter: number): Promise<void> {
+export async function yieldToEventLoop(
+  every: number,
+  counter: number,
+): Promise<void> {
   if (counter > 0 && counter % every === 0) {
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
   }

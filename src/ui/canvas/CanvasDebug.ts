@@ -53,7 +53,12 @@ export interface CanvasDebugLayoutSnapshot {
       endOffset: number;
       top: number;
       height: number;
-      slots: Array<{ offset: number; left: number; top: number; height: number }>;
+      slots: Array<{
+        offset: number;
+        left: number;
+        top: number;
+        height: number;
+      }>;
     }>;
     tableCell?: {
       tableId: string;
@@ -154,7 +159,9 @@ function clonePages(pages: CanvasSnapshotPage[]) {
   }));
 }
 
-function cloneLayoutSnapshot(snapshot: CanvasLayoutSnapshot): CanvasDebugLayoutSnapshot {
+function cloneLayoutSnapshot(
+  snapshot: CanvasLayoutSnapshot,
+): CanvasDebugLayoutSnapshot {
   return {
     surfaceRect: {
       left: snapshot.surfaceRect.left,
@@ -200,13 +207,19 @@ function cloneLayoutSnapshot(snapshot: CanvasLayoutSnapshot): CanvasDebugLayoutS
       width: image.width,
       height: image.height,
     })),
-    unsupportedRegions: snapshot.unsupportedRegions.map((region) => ({ ...region })),
+    unsupportedRegions: snapshot.unsupportedRegions.map((region) => ({
+      ...region,
+    })),
   };
 }
 
 function isCanvasDebugEnabled(): boolean {
-  const viteEnv = (import.meta as { env?: Record<string, string | boolean | undefined> }).env ?? {};
-  const processEnv = (globalThis as any)?.process?.env ?? {};
+  const viteEnv =
+    (import.meta as { env?: Record<string, string | boolean | undefined> })
+      .env ?? {};
+  const processEnv =
+    (globalThis as { process?: { env?: Record<string, string | undefined> } })
+      .process?.env ?? {};
   return (
     viteEnv.DEV === true ||
     viteEnv.MODE === "test" ||
@@ -230,12 +243,18 @@ function buildApi(): OasisCanvasDebugApi {
                 ...line,
                 slots: line.slots.map((slot) => ({ ...slot })),
               })),
-              tableCell: paragraph.tableCell ? { ...paragraph.tableCell } : undefined,
+              tableCell: paragraph.tableCell
+                ? { ...paragraph.tableCell }
+                : undefined,
             })),
-            inlineImages: lastLayoutSnapshot.inlineImages.map((image) => ({ ...image })),
-            unsupportedRegions: lastLayoutSnapshot.unsupportedRegions.map((region) => ({
-              ...region,
+            inlineImages: lastLayoutSnapshot.inlineImages.map((image) => ({
+              ...image,
             })),
+            unsupportedRegions: lastLayoutSnapshot.unsupportedRegions.map(
+              (region) => ({
+                ...region,
+              }),
+            ),
           }
         : null,
     getSelection: () =>
@@ -286,7 +305,9 @@ export function recordCanvasDebugHit(hit: SurfaceHit | null): void {
   };
 }
 
-export function recordCanvasDebugLayoutSnapshot(snapshot: CanvasLayoutSnapshot | null): void {
+export function recordCanvasDebugLayoutSnapshot(
+  snapshot: CanvasLayoutSnapshot | null,
+): void {
   if (!installed) {
     return;
   }
@@ -313,7 +334,10 @@ export function recordCanvasDebugSelection(state: EditorState): void {
   };
 }
 
-export function recordCanvasDebugMissEvent(reason: string, details: { clientX: number; clientY: number }): void {
+export function recordCanvasDebugMissEvent(
+  reason: string,
+  details: { clientX: number; clientY: number },
+): void {
   if (!installed) {
     return;
   }

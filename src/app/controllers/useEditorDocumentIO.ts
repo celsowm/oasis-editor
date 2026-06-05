@@ -1,8 +1,5 @@
 import { createSignal } from "solid-js";
-import type {
-  EditorState,
-  EditorPosition,
-} from "../../core/model.js";
+import type { EditorState, EditorPosition } from "../../core/model.js";
 import type { DocxImportStage } from "../../import/docx/importDocxToEditorDocument.js";
 import type { EditorLogger } from "../../utils/logger.js";
 import { createDocumentExporter } from "./documentIO/DocumentExporter.js";
@@ -37,7 +34,10 @@ const PHASE_RANGES: Record<ImportProgressPhase, [number, number]> = {
 export interface UseEditorDocumentIOProps {
   state: () => EditorState;
   applyState: (state: EditorState) => void;
-  applyTransactionalState: (producer: (current: EditorState) => EditorState, options?: { mergeKey?: string }) => void;
+  applyTransactionalState: (
+    producer: (current: EditorState) => EditorState,
+    options?: { mergeKey?: string },
+  ) => void;
   isReadOnly: () => boolean;
   surfaceRef: () => HTMLDivElement | null;
   stabilizeLayoutAfterImport: () => Promise<void>;
@@ -47,12 +47,20 @@ export interface UseEditorDocumentIOProps {
 }
 
 export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
-  const [importProgress, setImportProgress] = createSignal<ImportProgressState | null>(null);
+  const [importProgress, setImportProgress] =
+    createSignal<ImportProgressState | null>(null);
 
-  const computeProgress = (phase: ImportProgressPhase, subProgress?: number): number => {
+  const computeProgress = (
+    phase: ImportProgressPhase,
+    subProgress?: number,
+  ): number => {
     const [min, max] = PHASE_RANGES[phase];
     if (subProgress !== undefined && Number.isFinite(subProgress)) {
-      return Math.round((min + (max - min) * Math.min(1, Math.max(0, subProgress))) * 10) / 10;
+      return (
+        Math.round(
+          (min + (max - min) * Math.min(1, Math.max(0, subProgress))) * 10,
+        ) / 10
+      );
     }
     return max;
   };
@@ -68,7 +76,9 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
   const clearImportProgressSoon = () => {
     globalThis.setTimeout(() => {
       setImportProgress((current) =>
-        current?.phase === "done" || current?.phase === "error" ? null : current,
+        current?.phase === "done" || current?.phase === "error"
+          ? null
+          : current,
       );
     }, 1200);
   };

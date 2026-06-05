@@ -124,7 +124,9 @@ export function perfTimer<T>(label: string, fn: () => T, minMs = 1): T {
  * Walk a surface element and report DOM-size statistics.
  * Call from devtools as `window.__OASIS_DOM_STATS()`.
  */
-export function snapshotEditorDomStats(surface: HTMLElement | null | undefined): {
+export function snapshotEditorDomStats(
+  surface: HTMLElement | null | undefined,
+): {
   totalNodes: number;
   pages: number;
   blocks: number;
@@ -153,7 +155,8 @@ export function snapshotEditorDomStats(surface: HTMLElement | null | undefined):
   // 0 — they live inside the canvas paint, not as DOM nodes.
   return {
     totalNodes,
-    pages: surface.querySelectorAll('[data-renderer="canvas"][data-page-index]').length,
+    pages: surface.querySelectorAll('[data-renderer="canvas"][data-page-index]')
+      .length,
     blocks: 0,
     paragraphs: 0,
     lines: 0,
@@ -163,8 +166,11 @@ export function snapshotEditorDomStats(surface: HTMLElement | null | undefined):
   };
 }
 
-let domStatsSurfaceProvider: (() => HTMLElement | null | undefined) | null = null;
-export function registerDomStatsSurface(getSurface: () => HTMLElement | null | undefined): void {
+let domStatsSurfaceProvider: (() => HTMLElement | null | undefined) | null =
+  null;
+export function registerDomStatsSurface(
+  getSurface: () => HTMLElement | null | undefined,
+): void {
   domStatsSurfaceProvider = getSurface;
 }
 
@@ -239,7 +245,7 @@ export function computePercentiles(durations: number[]): {
 // --- Global report (on-demand) ---
 
 export function installGlobalReport(): void {
-  (window as any).__OASIS_PERF_REPORT = () => {
+  (window as unknown as Record<string, unknown>).__OASIS_PERF_REPORT = () => {
     const layoutDurations = marks
       .filter((m) => m.name.startsWith("layout:"))
       .map((m) => m.duration);
@@ -259,10 +265,7 @@ export function installGlobalReport(): void {
     const longtaskP = computePercentiles(longtaskDurations);
 
     // eslint-disable-next-line no-console
-    console.group(
-      "%c[perf] Summary",
-      "color: #f59e0b; font-weight: bold;",
-    );
+    console.group("%c[perf] Summary", "color: #f59e0b; font-weight: bold;");
     // eslint-disable-next-line no-console
     console.info(
       `input:text  → p50=${inputTextP.p50}ms p95=${inputTextP.p95}ms p99=${inputTextP.p99}ms max=${inputTextP.max}ms (n=${inputTextP.count})`,
@@ -283,11 +286,15 @@ export function installGlobalReport(): void {
     console.groupEnd();
   };
 
-  (window as any).__OASIS_DOM_STATS = () => {
+  (window as unknown as Record<string, unknown>).__OASIS_DOM_STATS = () => {
     const surface = domStatsSurfaceProvider?.() ?? null;
     const stats = snapshotEditorDomStats(surface);
     // eslint-disable-next-line no-console
-    console.info("%c[perf] DOM stats", "color: #f59e0b; font-weight: bold;", stats);
+    console.info(
+      "%c[perf] DOM stats",
+      "color: #f59e0b; font-weight: bold;",
+      stats,
+    );
     return stats;
   };
 }

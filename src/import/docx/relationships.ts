@@ -1,7 +1,9 @@
 import JSZip from "jszip";
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 
-export function parseRelationshipsXml(xml: string | null | undefined): Map<string, string> {
+export function parseRelationshipsXml(
+  xml: string | null | undefined,
+): Map<string, string> {
   const relsMap = new Map<string, string>();
   if (!xml) {
     return relsMap;
@@ -30,10 +32,15 @@ export function parseRelationshipsXml(xml: string | null | undefined): Map<strin
   return relsMap;
 }
 
-export async function loadPartRelationships(zip: JSZip, partPath: string): Promise<Map<string, string>> {
+export async function loadPartRelationships(
+  zip: JSZip,
+  partPath: string,
+): Promise<Map<string, string>> {
   const slashIndex = partPath.lastIndexOf("/");
   const directory = slashIndex >= 0 ? partPath.slice(0, slashIndex) : "";
   const fileName = slashIndex >= 0 ? partPath.slice(slashIndex + 1) : partPath;
-  const relsPath = directory ? `${directory}/_rels/${fileName}.rels` : `_rels/${fileName}.rels`;
+  const relsPath = directory
+    ? `${directory}/_rels/${fileName}.rels`
+    : `_rels/${fileName}.rels`;
   return parseRelationshipsXml(await zip.file(relsPath)?.async("string"));
 }

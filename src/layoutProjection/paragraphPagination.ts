@@ -12,8 +12,12 @@ import {
   resolveEffectiveTextStyleForParagraph,
 } from "../core/model.js";
 import { measureLinesFromRects, type CharRect } from "../ui/caretGeometry.js";
+import { getParagraphBorderInsets } from "./paragraphBorders.js";
 import type { ITextMeasurer } from "../core/engine.js";
-import { domTextMeasurer, resolveRenderedLineHeightPx } from "../ui/textMeasurement.js";
+import {
+  domTextMeasurer,
+  resolveRenderedLineHeightPx,
+} from "../ui/textMeasurement.js";
 import { perfTimer } from "../utils/performanceMetrics.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
@@ -48,7 +52,10 @@ function sliceFragmentToRange(
   };
 }
 
-const paragraphLayoutCache = new WeakMap<EditorParagraphNode, Map<string, EditorLayoutParagraph>>();
+const paragraphLayoutCache = new WeakMap<
+  EditorParagraphNode,
+  Map<string, EditorLayoutParagraph>
+>();
 const paragraphFieldDependenceCache = new WeakMap<
   EditorParagraphNode,
   { dependsOnPageIndex: boolean; dependsOnTotalPages: boolean }
@@ -81,9 +88,10 @@ export function projectParagraphLayout(
   layoutMode: "fast" | "wordParity" = "fast",
   measurer: ITextMeasurer = domTextMeasurer,
 ): EditorLayoutParagraph {
-  const { dependsOnPageIndex, dependsOnTotalPages } = getParagraphFieldDependence(paragraph);
-  const cacheKey = `${dependsOnPageIndex ? pageIndex ?? "" : ""}:${
-    dependsOnTotalPages ? totalPages ?? "" : ""
+  const { dependsOnPageIndex, dependsOnTotalPages } =
+    getParagraphFieldDependence(paragraph);
+  const cacheKey = `${dependsOnPageIndex ? (pageIndex ?? "") : ""}:${
+    dependsOnTotalPages ? (totalPages ?? "") : ""
   }:${contentWidth ?? ""}:${layoutMode}`;
   let cacheForParagraph = paragraphLayoutCache.get(paragraph);
   if (cacheForParagraph) {
@@ -93,66 +101,85 @@ export function projectParagraphLayout(
     }
   }
 
-  const result = perfTimer("layout:projectParagraphLayout", () => {
-    let paragraphOffset = 0;
-    const fragments: EditorLayoutFragment[] = paragraph.runs.map((run) => {
-      let resolvedText = run.text;
-      if (run.field) {
-        if (run.field.type === "PAGE") {
-          resolvedText = typeof pageIndex === "number" ? String(pageIndex + 1) : "1";
-        } else if (run.field.type === "NUMPAGES") {
-          resolvedText = typeof totalPages === "number" ? String(totalPages) : "1";
+  const result = perfTimer(
+    "layout:projectParagraphLayout",
+    () => {
+      let paragraphOffset = 0;
+      const fragments: EditorLayoutFragment[] = paragraph.runs.map((run) => {
+        let resolvedText = run.text;
+        if (run.field) {
+          if (run.field.type === "PAGE") {
+            resolvedText =
+              typeof pageIndex === "number" ? String(pageIndex + 1) : "1";
+          } else if (run.field.type === "NUMPAGES") {
+            resolvedText =
+              typeof totalPages === "number" ? String(totalPages) : "1";
+          }
         }
-      }
 
-      const chars: EditorLayoutFragmentChar[] = Array.from(resolvedText).map((char, index) => ({
-        char,
-        paragraphOffset: paragraphOffset + index,
-        runOffset: index,
-      }));
+        const chars: EditorLayoutFragmentChar[] = Array.from(resolvedText).map(
+          (char, index) => ({
+            char,
+            paragraphOffset: paragraphOffset + index,
+            runOffset: index,
+          }),
+        );
 
-      const fragment: EditorLayoutFragment = {
+        const fragment: EditorLayoutFragment = {
+          paragraphId: paragraph.id,
+          runId: run.id,
+          startOffset: paragraphOffset,
+          endOffset: paragraphOffset + resolvedText.length,
+          text: resolvedText,
+          styles: run.styles ? { ...run.styles } : undefined,
+          image: run.image ? { ...run.image } : undefined,
+          revision: run.revision ? { ...run.revision } : undefined,
+          chars,
+        };
+
+        paragraphOffset += resolvedText.length;
+        return fragment;
+      });
+
+      const fontSize = estimateParagraphFontSize(paragraph, styles);
+      const lineHeight = estimateParagraphLineHeight(
+        paragraph,
+        fontSize,
+        styles,
+        layoutMode,
+      );
+      const lines = measurer
+        .composeMeasuredParagraphLines({
+          paragraph,
+          fragments,
+          styles,
+          contentWidth,
+          layoutMode,
+        })
+        .map((line) => ({
+          ...line,
+          height: line.height || lineHeight,
+          fragments: fragments
+            .map((fragment) =>
+              sliceFragmentToRange(fragment, line.startOffset, line.endOffset),
+            )
+            .filter(
+              (fragment): fragment is EditorLayoutFragment => fragment !== null,
+            ),
+        }));
+
+      return {
         paragraphId: paragraph.id,
-        runId: run.id,
-        startOffset: paragraphOffset,
-        endOffset: paragraphOffset + resolvedText.length,
-        text: resolvedText,
-        styles: run.styles ? { ...run.styles } : undefined,
-        image: run.image ? { ...run.image } : undefined,
-        revision: run.revision ? { ...run.revision } : undefined,
-        chars,
+        text: fragments.map((fragment) => fragment.text).join(""),
+        fragments,
+        lines,
+        startOffset: 0,
+        endOffset: paragraphOffset,
+        contentWidth,
       };
-
-      paragraphOffset += resolvedText.length;
-      return fragment;
-    });
-
-    const fontSize = estimateParagraphFontSize(paragraph, styles);
-    const lineHeight = estimateParagraphLineHeight(paragraph, fontSize, styles, layoutMode);
-    const lines = measurer.composeMeasuredParagraphLines({
-      paragraph,
-      fragments,
-      styles,
-      contentWidth,
-      layoutMode,
-    }).map((line) => ({
-      ...line,
-      height: line.height || lineHeight,
-      fragments: fragments
-        .map((fragment) => sliceFragmentToRange(fragment, line.startOffset, line.endOffset))
-        .filter((fragment): fragment is EditorLayoutFragment => fragment !== null),
-    }));
-
-    return {
-      paragraphId: paragraph.id,
-      text: fragments.map((fragment) => fragment.text).join(""),
-      fragments,
-      lines,
-      startOffset: 0,
-      endOffset: paragraphOffset,
-      contentWidth,
-    };
-  }, 0);
+    },
+    0,
+  );
 
   if (!cacheForParagraph) {
     cacheForParagraph = new Map();
@@ -169,7 +196,14 @@ export function measureParagraphLayoutFromRects(
   styles?: Record<string, EditorNamedStyle>,
   layoutMode: "fast" | "wordParity" = "fast",
 ): EditorLayoutParagraph {
-  const projected = projectParagraphLayout(paragraph, undefined, undefined, styles, undefined, layoutMode);
+  const projected = projectParagraphLayout(
+    paragraph,
+    undefined,
+    undefined,
+    styles,
+    undefined,
+    layoutMode,
+  );
   const measuredLines = measureLinesFromRects(charRects);
 
   return {
@@ -192,8 +226,12 @@ export function measureParagraphLayoutFromRects(
         height: line.height,
         slots,
         fragments: projected.fragments
-          .map((fragment) => sliceFragmentToRange(fragment, line.startOffset, line.endOffset))
-          .filter((fragment): fragment is EditorLayoutFragment => fragment !== null),
+          .map((fragment) =>
+            sliceFragmentToRange(fragment, line.startOffset, line.endOffset),
+          )
+          .filter(
+            (fragment): fragment is EditorLayoutFragment => fragment !== null,
+          ),
       };
     }),
     contentWidth: projected.contentWidth,
@@ -223,8 +261,12 @@ export function applyMeasuredLineGeometry(
         height: slot.height,
       })),
       fragments: projected.fragments
-        .map((fragment) => sliceFragmentToRange(fragment, line.startOffset, line.endOffset))
-        .filter((fragment): fragment is EditorLayoutFragment => fragment !== null),
+        .map((fragment) =>
+          sliceFragmentToRange(fragment, line.startOffset, line.endOffset),
+        )
+        .filter(
+          (fragment): fragment is EditorLayoutFragment => fragment !== null,
+        ),
     })),
   };
 }
@@ -272,7 +314,11 @@ export function resolveClosestOffsetInMeasuredLayout(
 
   for (const slot of slots) {
     const verticalDelta =
-      clientY < slot.top ? slot.top - clientY : clientY > slot.top + slot.height ? clientY - (slot.top + slot.height) : 0;
+      clientY < slot.top
+        ? slot.top - clientY
+        : clientY > slot.top + slot.height
+          ? clientY - (slot.top + slot.height)
+          : 0;
     const horizontalDelta = Math.abs(clientX - slot.left);
     const score = verticalDelta * 1000 + horizontalDelta;
 
@@ -297,16 +343,22 @@ function estimateParagraphFontSize(
   styles: Record<string, EditorNamedStyle> | undefined,
 ): number {
   const runFontSizes = paragraph.runs
-    .map((run) =>
-      resolveEffectiveTextStyleForParagraph(
-        run.styles,
-        paragraph.style?.styleId,
-        styles,
-      ).fontSize,
+    .map(
+      (run) =>
+        resolveEffectiveTextStyleForParagraph(
+          run.styles,
+          paragraph.style?.styleId,
+          styles,
+        ).fontSize,
     )
-    .filter((fontSize): fontSize is number => typeof fontSize === "number" && Number.isFinite(fontSize));
+    .filter(
+      (fontSize): fontSize is number =>
+        typeof fontSize === "number" && Number.isFinite(fontSize),
+    );
 
-  return runFontSizes.length > 0 ? Math.max(...runFontSizes) : DEFAULT_FONT_SIZE;
+  return runFontSizes.length > 0
+    ? Math.max(...runFontSizes)
+    : DEFAULT_FONT_SIZE;
 }
 
 function estimateParagraphLineHeight(
@@ -336,7 +388,9 @@ function estimateParagraphLineHeight(
   if (lineGridPitch && lineGridPitch > 0 && snapToGrid) {
     if (paragraphStyle.lineGridType === "implicit") {
       const pitch =
-        layoutMode === "wordParity" ? lineGridPitch : lineGridPitch * FAST_IMPLICIT_DOC_GRID_RATIO;
+        layoutMode === "wordParity"
+          ? lineGridPitch
+          : lineGridPitch * FAST_IMPLICIT_DOC_GRID_RATIO;
       return Math.max(renderedLineHeight, pitch);
     }
     return Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch;
@@ -354,9 +408,15 @@ export function getParagraphSegmentHeight(
 ): number {
   const lineHeights = lines.reduce((sum, line) => sum + line.height, 0);
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
-  const spacingBefore = isFirstSegment && allowSpacingBefore ? (paragraphStyle.spacingBefore ?? 0) : 0;
+  const spacingBefore =
+    isFirstSegment && allowSpacingBefore
+      ? (paragraphStyle.spacingBefore ?? 0)
+      : 0;
   const spacingAfter = isLastSegment ? (paragraphStyle.spacingAfter ?? 0) : 0;
-  return spacingBefore + spacingAfter + lineHeights;
+  const insets = getParagraphBorderInsets(paragraphStyle);
+  const borderTop = isFirstSegment ? insets.top : 0;
+  const borderBottom = isLastSegment ? insets.bottom : 0;
+  return spacingBefore + spacingAfter + lineHeights + borderTop + borderBottom;
 }
 
 export function getParagraphSegmentFitHeight(
@@ -408,9 +468,13 @@ export function createParagraphSegmentLayout(
   startLineIndex: number,
   endLineIndexExclusive: number,
 ): EditorLayoutParagraph {
-  const segmentLines = layout.lines.slice(startLineIndex, endLineIndexExclusive);
+  const segmentLines = layout.lines.slice(
+    startLineIndex,
+    endLineIndexExclusive,
+  );
   const startOffset = segmentLines[0]?.startOffset ?? 0;
-  const endOffset = segmentLines[segmentLines.length - 1]?.endOffset ?? startOffset;
+  const endOffset =
+    segmentLines[segmentLines.length - 1]?.endOffset ?? startOffset;
   const topOffset = segmentLines[0]?.top ?? 0;
 
   return {
@@ -418,7 +482,9 @@ export function createParagraphSegmentLayout(
     text: layout.text.slice(startOffset, endOffset),
     fragments: layout.fragments
       .map((fragment) => sliceFragmentToRange(fragment, startOffset, endOffset))
-      .filter((fragment): fragment is EditorLayoutFragment => fragment !== null),
+      .filter(
+        (fragment): fragment is EditorLayoutFragment => fragment !== null,
+      ),
     lines: segmentLines.map((line, index) => ({
       ...line,
       index,
@@ -485,11 +551,22 @@ export function estimateParagraphBlockHeight(
   layoutMode: "fast" | "wordParity" = "fast",
   measurer: ITextMeasurer = domTextMeasurer,
 ): number {
-  const layout = projectParagraphLayout(paragraph, undefined, undefined, styles, contentWidth, layoutMode, measurer);
+  const layout = projectParagraphLayout(
+    paragraph,
+    undefined,
+    undefined,
+    styles,
+    contentWidth,
+    layoutMode,
+    measurer,
+  );
   const lineHeightPx = layout.lines.reduce((sum, line) => sum + line.height, 0);
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
   const spacingBefore = paragraphStyle.spacingBefore ?? 0;
   const spacingAfter = paragraphStyle.spacingAfter ?? 0;
+  const insets = getParagraphBorderInsets(paragraphStyle);
 
-  return spacingBefore + spacingAfter + lineHeightPx;
+  return (
+    spacingBefore + spacingAfter + lineHeightPx + insets.top + insets.bottom
+  );
 }

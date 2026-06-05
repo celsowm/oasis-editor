@@ -36,7 +36,10 @@ const describeWordParity = support.supported ? describe : describe.skip;
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const WORD_AUTHORED_LOREM_DOCX = join(FIXTURES_DIR, "word-authored-lorem.docx");
 const COMPLEX_DOCX = join(FIXTURES_DIR, "documento_complexo.docx");
-const LOREM_COMPLEX_DOCX = join(FIXTURES_DIR, "lorem_ipsum_complex_document.docx");
+const LOREM_COMPLEX_DOCX = join(
+  FIXTURES_DIR,
+  "lorem_ipsum_complex_document.docx",
+);
 const STRICT_WORD_PARITY_ENABLED = process.env.OASIS_WORD_PARITY_STRICT === "1";
 const CALIBRI_11PX = 14.6667;
 const TRANSPARENT_1X1_PNG =
@@ -47,14 +50,25 @@ async function expectNoWordLayoutMismatches(
   verify: () => Promise<{ mismatches: string[] }>,
 ): Promise<void> {
   const result = await verify();
-  expect(result.mismatches, `${name} mismatches:\n${result.mismatches.join("\n")}`).toEqual([]);
+  expect(
+    result.mismatches,
+    `${name} mismatches:\n${result.mismatches.join("\n")}`,
+  ).toEqual([]);
 }
 
-function wordPageLines(page: { lines: Array<{ text: string }> } | undefined): string {
-  return page?.lines.map((line) => line.text.replace(/\s+/g, " ").trim()).join(" ") ?? "";
+function wordPageLines(
+  page: { lines: Array<{ text: string }> } | undefined,
+): string {
+  return (
+    page?.lines
+      .map((line) => line.text.replace(/\s+/g, " ").trim())
+      .join(" ") ?? ""
+  );
 }
 
-function normalizeWordPageLines(page: { lines: Array<{ text: string }> } | undefined): string[] {
+function normalizeWordPageLines(
+  page: { lines: Array<{ text: string }> } | undefined,
+): string[] {
   return (
     page?.lines
       .map((line) => line.text.trim())
@@ -125,9 +139,10 @@ function createMergedTableParityDocument(): EditorDocument {
           return cell;
         })(),
         (() => {
-          const cell = createEditorTableCell([
-            createWordLikeParagraph("Merged B and C"),
-          ], 2);
+          const cell = createEditorTableCell(
+            [createWordLikeParagraph("Merged B and C")],
+            2,
+          );
           cell.style = { shading: "#d9eaf7" };
           return cell;
         })(),
@@ -136,7 +151,10 @@ function createMergedTableParityDocument(): EditorDocument {
     ),
     createEditorTableRow([
       (() => {
-        const cell = createEditorTableCell([], 1, { rowSpan: 2, vMerge: "restart" });
+        const cell = createEditorTableCell([], 1, {
+          rowSpan: 2,
+          vMerge: "restart",
+        });
         cell.blocks = [createWordLikeParagraph("Row span anchor")];
         cell.style = { shading: "#eef6fb" };
         return cell;
@@ -173,9 +191,14 @@ function createMergedTableParityDocument(): EditorDocument {
   const outro = createWordLikeParagraph("Merged table parity footer");
   outro.style = { ...(outro.style ?? {}), spacingBefore: 8 };
 
-  return createEditorDocument([intro, mergedTable, outro], undefined, undefined, {
-    ...DEFAULT_EDITOR_STYLES,
-  });
+  return createEditorDocument(
+    [intro, mergedTable, outro],
+    undefined,
+    undefined,
+    {
+      ...DEFAULT_EDITOR_STYLES,
+    },
+  );
 }
 
 function createMultilevelListParityDocument(): EditorDocument {
@@ -329,193 +352,189 @@ function createStyleInheritanceParityDocument(): EditorDocument {
 }
 
 describeWordParity("word layout parity", () => {
-  it(
-    "matches Word for A4 Calibri lorem on a single page",
-    async () => {
-      await expectNoWordLayoutMismatches("a4-calibri-lorem-single-page", () =>
-        verifyWordLayoutParity(createA4CalibriLoremSinglePageDocument(), {
+  it("matches Word for A4 Calibri lorem on a single page", async () => {
+    await expectNoWordLayoutMismatches("a4-calibri-lorem-single-page", () =>
+      verifyWordLayoutParity(createA4CalibriLoremSinglePageDocument(), {
+        layoutMode: "wordParity",
+      }),
+    );
+  }, 300_000);
+
+  it("matches Word page count and line breaks for A4 Calibri lorem across pages", async () => {
+    await expectNoWordLayoutMismatches("a4-calibri-lorem-multipage", () =>
+      verifyWordLayoutParity(createA4CalibriLoremMultipageDocument(), {
+        layoutMode: "wordParity",
+      }),
+    );
+  }, 300_000);
+
+  it("matches Word when header and footer constrain the body area", async () => {
+    await expectNoWordLayoutMismatches("a4-lorem-header-footer", () =>
+      verifyWordLayoutParity(createA4LoremHeaderFooterDocument(), {
+        layoutMode: "wordParity",
+      }),
+    );
+  }, 300_000);
+
+  it("matches Word layout when importing a Word-authored A4 lorem DOCX", async () => {
+    expect(
+      existsSync(WORD_AUTHORED_LOREM_DOCX),
+      "missing Word-authored DOCX fixture",
+    ).toBe(true);
+    await expectNoWordLayoutMismatches("word-authored-lorem-import", () =>
+      verifyImportedDocxWordLayoutParity(WORD_AUTHORED_LOREM_DOCX, {
+        layoutMode: "wordParity",
+      }),
+    );
+  }, 300_000);
+
+  it("matches Word pagination for the complex lorem DOCX on page 1 and page 2 tail line", async () => {
+    expect(
+      existsSync(LOREM_COMPLEX_DOCX),
+      "missing complex lorem DOCX fixture",
+    ).toBe(true);
+    const result = await verifyImportedDocxWordLayoutParity(
+      LOREM_COMPLEX_DOCX,
+      {
+        layoutMode: "wordParity",
+      },
+    );
+    const editorPage1Lines = result.editor.pages[0]?.bodyLineTexts ?? [];
+    const wordPage1Lines =
+      result.word.pages[0]?.lines
+        .map((line) => line.text.trim())
+        .filter((line) => line.length > 0 && line !== "Página") ?? [];
+    const editorPage2Lines = result.editor.pages[1]?.bodyLineTexts ?? [];
+    const wordPage2Lines = normalizeWordPageLines(result.word.pages[1]);
+
+    expect(editorPage1Lines.length).toBeGreaterThanOrEqual(
+      wordPage1Lines.length - 5,
+    );
+    expect(editorPage1Lines.length).toBeLessThanOrEqual(
+      wordPage1Lines.length + 1,
+    );
+    expect(editorPage2Lines.at(-1)).toBe(wordPage2Lines.at(-1));
+    expect(editorPage2Lines.at(-1)).toBe(
+      "Vestibulum viverra massa ut turpis cursus, at fermentum nulla hendrerit. Sed dictum, lorem nec",
+    );
+  }, 300_000);
+
+  it("matches Word manual page breaks in the complex document", async () => {
+    expect(existsSync(COMPLEX_DOCX), "missing complex DOCX fixture").toBe(true);
+    const result = await verifyImportedDocxWordLayoutParity(COMPLEX_DOCX, {
+      layoutMode: "wordParity",
+    });
+    const editorPage1Lines = result.editor.pages[0]?.bodyLineTexts ?? [];
+    const editorPage2Lines = result.editor.pages[1]?.bodyLineTexts ?? [];
+    const wordPage1Lines =
+      result.word.pages[0]?.lines.map((line) => line.text.trim()) ?? [];
+    const wordPage2Lines =
+      result.word.pages[1]?.lines.map((line) => line.text.trim()) ?? [];
+
+    expect(wordPage1Lines).not.toContain("Sumário");
+    expect(wordPage2Lines).toContain("Sumário");
+    expect(editorPage1Lines).not.toContain("Sumário");
+    expect(editorPage2Lines).toContain("Sumário");
+
+    const expectedPage3Tail =
+      "2.2.2. O Safari utiliza tecnologias e ferramentas próprias do ecossistema Apple, e a Apple disponibiliza recursos específicos de inspeção, depuração e teste de conteúdo web em Safari, aplicativos no Mac,";
+    const expectedPage4Marker = "2.2.2. O Safari";
+    const wordPage3Text = wordPageLines(result.word.pages[2]);
+    const editorPage3Text =
+      result.editor.pages[2]?.bodyLineTexts.join(" ") ?? "";
+    const editorPage4Text =
+      result.editor.pages[3]?.bodyLineTexts.join(" ") ?? "";
+    const wordPage3Lines =
+      result.word.pages[2]?.lines
+        .map((line) => line.text.trim())
+        .filter(Boolean) ?? [];
+
+    expect(wordPage3Text).toContain(expectedPage3Tail);
+    expect(editorPage3Text).not.toContain(expectedPage4Marker);
+    expect(editorPage4Text).toContain(expectedPage4Marker);
+    expect(wordPage3Lines.some((line) => line.includes("Safari"))).toBe(true);
+    expect(result.editor.pages[2]?.footerLineTexts).toEqual(["3"]);
+  }, 300_000);
+
+  it("matches Word table layout parity for complex tables with merged cells", async () => {
+    const result = await verifyWordLayoutParity(
+      createMergedTableParityDocument(),
+      {
+        layoutMode: "wordParity",
+      },
+    );
+
+    expect(result.mismatches.length).toBeLessThanOrEqual(2);
+    expect(result.editor.pages[0]?.bodyLineTexts.join(" ")).toContain(
+      "Merged table parity coverage",
+    );
+  }, 300_000);
+
+  it("matches Word multilevel list parity with numbering formats", async () => {
+    const result = await verifyWordLayoutParity(
+      createMultilevelListParityDocument(),
+      {
+        layoutMode: "wordParity",
+      },
+    );
+
+    expect(result.mismatches.length).toBeLessThanOrEqual(2);
+    const editorText = result.editor.pages[0]?.bodyLineTexts.join(" ") ?? "";
+    expect(editorText).toContain("Top level one");
+    expect(editorText).toContain("Sub level a");
+    expect(editorText).toContain("Sub level i");
+    expect(editorText).toContain("Top level two");
+  }, 300_000);
+
+  it("matches Word embedded image parity for inline image runs", async () => {
+    const result = await verifyWordLayoutParity(
+      createInlineImageParityDocument(),
+      {
+        layoutMode: "wordParity",
+      },
+    );
+
+    expect(result.mismatches.length).toBeLessThanOrEqual(2);
+    expect(result.editor.pages[0]?.bodyLineTexts.join(" ")).toContain(
+      "Image before",
+    );
+    expect(result.editor.pages[0]?.bodyLineTexts.join(" ")).toContain("after");
+  }, 300_000);
+
+  it("matches Word advanced named style inheritance parity", async () => {
+    const result = await verifyWordLayoutParity(
+      createStyleInheritanceParityDocument(),
+      {
+        layoutMode: "wordParity",
+      },
+    );
+
+    expect(result.mismatches.length).toBeLessThanOrEqual(1);
+    expect(result.editor.pages[0]?.bodyLineTexts.join(" ")).toContain(
+      "Inherited style chain",
+    );
+  }, 300_000);
+
+  it("runs strict corpus parity checks when explicitly enabled", async () => {
+    if (!STRICT_WORD_PARITY_ENABLED) {
+      return;
+    }
+
+    for (const entry of WORD_PARITY_CORPUS) {
+      const path = join(FIXTURES_DIR, entry.fileName);
+      expect(
+        existsSync(path),
+        `missing corpus fixture: ${entry.fileName}`,
+      ).toBe(true);
+      await expectNoWordLayoutMismatches(`strict-corpus:${entry.id}`, () =>
+        verifyImportedDocxWordLayoutParity(path, {
+          strictTextAndGeometry: true,
+          geometryTolerancePoints: 0.5,
           layoutMode: "wordParity",
         }),
       );
-    },
-    300_000,
-  );
-
-  it(
-    "matches Word page count and line breaks for A4 Calibri lorem across pages",
-    async () => {
-      await expectNoWordLayoutMismatches("a4-calibri-lorem-multipage", () =>
-        verifyWordLayoutParity(createA4CalibriLoremMultipageDocument(), {
-          layoutMode: "wordParity",
-        }),
-      );
-    },
-    300_000,
-  );
-
-  it(
-    "matches Word when header and footer constrain the body area",
-    async () => {
-      await expectNoWordLayoutMismatches("a4-lorem-header-footer", () =>
-        verifyWordLayoutParity(createA4LoremHeaderFooterDocument(), {
-          layoutMode: "wordParity",
-        }),
-      );
-    },
-    300_000,
-  );
-
-  it(
-    "matches Word layout when importing a Word-authored A4 lorem DOCX",
-    async () => {
-      expect(existsSync(WORD_AUTHORED_LOREM_DOCX), "missing Word-authored DOCX fixture").toBe(true);
-      await expectNoWordLayoutMismatches("word-authored-lorem-import", () =>
-        verifyImportedDocxWordLayoutParity(WORD_AUTHORED_LOREM_DOCX, {
-          layoutMode: "wordParity",
-        }),
-      );
-    },
-    300_000,
-  );
-
-  it(
-    "matches Word pagination for the complex lorem DOCX on page 1 and page 2 tail line",
-    async () => {
-      expect(existsSync(LOREM_COMPLEX_DOCX), "missing complex lorem DOCX fixture").toBe(true);
-      const result = await verifyImportedDocxWordLayoutParity(LOREM_COMPLEX_DOCX, {
-        layoutMode: "wordParity",
-      });
-      const editorPage1Lines = result.editor.pages[0]?.bodyLineTexts ?? [];
-      const wordPage1Lines =
-        result.word.pages[0]?.lines
-          .map((line) => line.text.trim())
-          .filter((line) => line.length > 0 && line !== "Página") ?? [];
-      const editorPage2Lines = result.editor.pages[1]?.bodyLineTexts ?? [];
-      const wordPage2Lines = normalizeWordPageLines(result.word.pages[1]);
-
-      expect(editorPage1Lines.length).toBeGreaterThanOrEqual(wordPage1Lines.length - 5);
-      expect(editorPage1Lines.length).toBeLessThanOrEqual(wordPage1Lines.length + 1);
-      expect(editorPage2Lines.at(-1)).toBe(wordPage2Lines.at(-1));
-      expect(editorPage2Lines.at(-1)).toBe(
-        "Vestibulum viverra massa ut turpis cursus, at fermentum nulla hendrerit. Sed dictum, lorem nec",
-      );
-    },
-    300_000,
-  );
-
-  it(
-    "matches Word manual page breaks in the complex document",
-    async () => {
-      expect(existsSync(COMPLEX_DOCX), "missing complex DOCX fixture").toBe(true);
-      const result = await verifyImportedDocxWordLayoutParity(COMPLEX_DOCX, {
-        layoutMode: "wordParity",
-      });
-      const editorPage1Lines = result.editor.pages[0]?.bodyLineTexts ?? [];
-      const editorPage2Lines = result.editor.pages[1]?.bodyLineTexts ?? [];
-      const wordPage1Lines = result.word.pages[0]?.lines.map((line) => line.text.trim()) ?? [];
-      const wordPage2Lines = result.word.pages[1]?.lines.map((line) => line.text.trim()) ?? [];
-
-      expect(wordPage1Lines).not.toContain("Sumário");
-      expect(wordPage2Lines).toContain("Sumário");
-      expect(editorPage1Lines).not.toContain("Sumário");
-      expect(editorPage2Lines).toContain("Sumário");
-
-      const expectedPage3Tail =
-        "2.2.2. O Safari utiliza tecnologias e ferramentas próprias do ecossistema Apple, e a Apple disponibiliza recursos específicos de inspeção, depuração e teste de conteúdo web em Safari, aplicativos no Mac,";
-      const expectedPage4Marker = "2.2.2. O Safari";
-      const wordPage3Text = wordPageLines(result.word.pages[2]);
-      const editorPage3Text = result.editor.pages[2]?.bodyLineTexts.join(" ") ?? "";
-      const editorPage4Text = result.editor.pages[3]?.bodyLineTexts.join(" ") ?? "";
-      const wordPage3Lines = result.word.pages[2]?.lines.map((line) => line.text.trim()).filter(Boolean) ?? [];
-
-      expect(wordPage3Text).toContain(expectedPage3Tail);
-      expect(editorPage3Text).not.toContain(expectedPage4Marker);
-      expect(editorPage4Text).toContain(expectedPage4Marker);
-      expect(wordPage3Lines.some((line) => line.includes("Safari"))).toBe(true);
-      expect(result.editor.pages[2]?.footerLineTexts).toEqual(["3"]);
-
-    },
-    300_000,
-  );
-
-  it(
-    "matches Word table layout parity for complex tables with merged cells",
-    async () => {
-      const result = await verifyWordLayoutParity(createMergedTableParityDocument(), {
-        layoutMode: "wordParity",
-      });
-
-      expect(result.mismatches.length).toBeLessThanOrEqual(2);
-      expect(result.editor.pages[0]?.bodyLineTexts.join(" ")).toContain("Merged table parity coverage");
-    },
-    300_000,
-  );
-
-  it(
-    "matches Word multilevel list parity with numbering formats",
-    async () => {
-      const result = await verifyWordLayoutParity(createMultilevelListParityDocument(), {
-        layoutMode: "wordParity",
-      });
-
-      expect(result.mismatches.length).toBeLessThanOrEqual(2);
-      const editorText = result.editor.pages[0]?.bodyLineTexts.join(" ") ?? "";
-      expect(editorText).toContain("Top level one");
-      expect(editorText).toContain("Sub level a");
-      expect(editorText).toContain("Sub level i");
-      expect(editorText).toContain("Top level two");
-    },
-    300_000,
-  );
-
-  it(
-    "matches Word embedded image parity for inline image runs",
-    async () => {
-      const result = await verifyWordLayoutParity(createInlineImageParityDocument(), {
-        layoutMode: "wordParity",
-      });
-
-      expect(result.mismatches.length).toBeLessThanOrEqual(2);
-      expect(result.editor.pages[0]?.bodyLineTexts.join(" ")).toContain("Image before");
-      expect(result.editor.pages[0]?.bodyLineTexts.join(" ")).toContain("after");
-    },
-    300_000,
-  );
-
-  it(
-    "matches Word advanced named style inheritance parity",
-    async () => {
-      const result = await verifyWordLayoutParity(createStyleInheritanceParityDocument(), {
-        layoutMode: "wordParity",
-      });
-
-      expect(result.mismatches.length).toBeLessThanOrEqual(1);
-      expect(result.editor.pages[0]?.bodyLineTexts.join(" ")).toContain("Inherited style chain");
-    },
-    300_000,
-  );
-
-  it(
-    "runs strict corpus parity checks when explicitly enabled",
-    async () => {
-      if (!STRICT_WORD_PARITY_ENABLED) {
-        return;
-      }
-
-      for (const entry of WORD_PARITY_CORPUS) {
-        const path = join(FIXTURES_DIR, entry.fileName);
-        expect(existsSync(path), `missing corpus fixture: ${entry.fileName}`).toBe(true);
-        await expectNoWordLayoutMismatches(`strict-corpus:${entry.id}`, () =>
-          verifyImportedDocxWordLayoutParity(path, {
-            strictTextAndGeometry: true,
-            geometryTolerancePoints: 0.5,
-            layoutMode: "wordParity",
-          }),
-        );
-      }
-    },
-    600_000,
-  );
+    }
+  }, 600_000);
 });
 
 if (!support.supported) {

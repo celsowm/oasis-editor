@@ -36,11 +36,17 @@ export interface SelectedTableCells {
 }
 
 interface TableSelectionResolversDeps {
-  getTargetBlocks: (state: EditorState, zone: EditorEditingZone) => EditorBlockNode[];
+  getTargetBlocks: (
+    state: EditorState,
+    zone: EditorEditingZone,
+  ) => EditorBlockNode[];
   logger?: EditorLogger;
 }
 
-function compareCellLocations(left: TableCellLayoutEntry, right: TableCellLayoutEntry) {
+function compareCellLocations(
+  left: TableCellLayoutEntry,
+  right: TableCellLayoutEntry,
+) {
   if (left.visualRowIndex !== right.visualRowIndex) {
     return left.visualRowIndex - right.visualRowIndex;
   }
@@ -50,7 +56,10 @@ function compareCellLocations(left: TableCellLayoutEntry, right: TableCellLayout
   return 0;
 }
 
-function getSelectionTableContext(current: EditorState, deps: TableSelectionResolversDeps) {
+function getSelectionTableContext(
+  current: EditorState,
+  deps: TableSelectionResolversDeps,
+) {
   const selection = current.selection;
   const activeSectionIndex = getActiveSectionIndex(current);
   const anchorLocation = findParagraphTableLocation(
@@ -104,7 +113,9 @@ function getSelectionTableContext(current: EditorState, deps: TableSelectionReso
   };
 }
 
-export function createTableSelectionResolvers(deps: TableSelectionResolversDeps) {
+export function createTableSelectionResolvers(
+  deps: TableSelectionResolversDeps,
+) {
   const resolveTableCellRangeSelection = (
     current: EditorState,
   ): EditorState["selection"] | null => {
@@ -121,8 +132,14 @@ export function createTableSelectionResolvers(deps: TableSelectionResolversDeps)
       return null;
     }
 
-    const rangeStartRow = Math.min(context.anchorLocation.rowIndex, context.focusLocation.rowIndex);
-    const rangeEndRow = Math.max(context.anchorLocation.rowIndex, context.focusLocation.rowIndex);
+    const rangeStartRow = Math.min(
+      context.anchorLocation.rowIndex,
+      context.focusLocation.rowIndex,
+    );
+    const rangeEndRow = Math.max(
+      context.anchorLocation.rowIndex,
+      context.focusLocation.rowIndex,
+    );
     const rangeStartCell = Math.min(
       context.anchorLocation.cellIndex,
       context.focusLocation.cellIndex,
@@ -145,9 +162,13 @@ export function createTableSelectionResolvers(deps: TableSelectionResolversDeps)
         : context.anchorLocation;
 
     const startParagraph =
-      context.tableBlock.rows[startLocation.rowIndex]?.cells[startLocation.cellIndex]?.blocks[0];
+      context.tableBlock.rows[startLocation.rowIndex]?.cells[
+        startLocation.cellIndex
+      ]?.blocks[0];
     const endCell =
-      context.tableBlock.rows[endLocation.rowIndex]?.cells[endLocation.cellIndex];
+      context.tableBlock.rows[endLocation.rowIndex]?.cells[
+        endLocation.cellIndex
+      ];
     const endParagraph = endCell?.blocks[endCell.blocks.length - 1];
     if (!startParagraph || !endParagraph) {
       return null;
@@ -155,17 +176,25 @@ export function createTableSelectionResolvers(deps: TableSelectionResolversDeps)
 
     return {
       anchor: paragraphOffsetToPosition(startParagraph, 0),
-      focus: paragraphOffsetToPosition(endParagraph, getParagraphText(endParagraph).length),
+      focus: paragraphOffsetToPosition(
+        endParagraph,
+        getParagraphText(endParagraph).length,
+      ),
     };
   };
 
-  const resolveSelectedTableCells = (current: EditorState): SelectedTableCells | null => {
+  const resolveSelectedTableCells = (
+    current: EditorState,
+  ): SelectedTableCells | null => {
     const context = getSelectionTableContext(current, deps);
     if (!context) {
       return null;
     }
 
-    const startRow = Math.min(context.anchorCell.visualRowIndex, context.focusCell.visualRowIndex);
+    const startRow = Math.min(
+      context.anchorCell.visualRowIndex,
+      context.focusCell.visualRowIndex,
+    );
     const endRow = Math.max(
       context.anchorCell.visualRowIndex + context.anchorCell.rowSpan - 1,
       context.focusCell.visualRowIndex + context.focusCell.rowSpan - 1,
@@ -199,11 +228,17 @@ export function createTableSelectionResolvers(deps: TableSelectionResolversDeps)
     current: EditorState,
   ): HorizontalTableCellRange | null => {
     const context = getSelectionTableContext(current, deps);
-    if (!context || context.anchorCell.visualRowIndex !== context.focusCell.visualRowIndex) {
+    if (
+      !context ||
+      context.anchorCell.visualRowIndex !== context.focusCell.visualRowIndex
+    ) {
       return null;
     }
 
-    const comparison = compareCellLocations(context.anchorCell, context.focusCell);
+    const comparison = compareCellLocations(
+      context.anchorCell,
+      context.focusCell,
+    );
     if (comparison === 0) {
       return null;
     }

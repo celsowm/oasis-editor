@@ -1,10 +1,22 @@
-import { setSelection, insertPageBreakAtSelection, insertTextAtSelection, splitBlockAtSelection } from "../../core/editorCommands.js";
-import { getParagraphs, getParagraphText, paragraphOffsetToPosition } from "../../core/model.js";
+import {
+  setSelection,
+  insertPageBreakAtSelection,
+  insertTextAtSelection,
+  splitBlockAtSelection,
+} from "../../core/editorCommands.js";
+import {
+  getParagraphs,
+  getParagraphText,
+  paragraphOffsetToPosition,
+} from "../../core/model.js";
 import type { EditorKeyboardDeps } from "./useEditorKeyboard.js";
 
 export interface EditorCommandExecutor {
   executeCommand: (commandName: string, payload?: unknown) => unknown;
-  canExecuteCommand?: (commandName: string, payload?: unknown) => boolean | undefined;
+  canExecuteCommand?: (
+    commandName: string,
+    payload?: unknown,
+  ) => boolean | undefined;
 }
 
 export interface EditorKeyBinding {
@@ -32,7 +44,11 @@ export class EditorCommandRegistry {
     return Array.from(this.bindings.values());
   }
 
-  execute(event: KeyboardEvent, deps: EditorKeyboardDeps, commandExecutor?: EditorCommandExecutor): boolean {
+  execute(
+    event: KeyboardEvent,
+    deps: EditorKeyboardDeps,
+    commandExecutor?: EditorCommandExecutor,
+  ): boolean {
     const isCtrlOrMeta = event.ctrlKey || event.metaKey;
     const lowerKey = event.key.toLowerCase();
 
@@ -44,7 +60,8 @@ export class EditorCommandRegistry {
         Boolean(binding.alt) === event.altKey
       ) {
         if (binding.command && commandExecutor) {
-          const canExecute = commandExecutor.canExecuteCommand?.(binding.command) ?? true;
+          const canExecute =
+            commandExecutor.canExecuteCommand?.(binding.command) ?? true;
           if (canExecute) {
             commandExecutor.executeCommand(binding.command);
             event.preventDefault();
@@ -78,8 +95,11 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
       deps.applyState(
         setSelection(currentState, {
           anchor: paragraphOffsetToPosition(firstParagraph, 0),
-          focus: paragraphOffsetToPosition(lastParagraph, getParagraphText(lastParagraph).length),
-        })
+          focus: paragraphOffsetToPosition(
+            lastParagraph,
+            getParagraphText(lastParagraph).length,
+          ),
+        }),
       );
       deps.focusInput();
       return true;
@@ -245,7 +265,9 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
       deps.applyTransactionalState((current) =>
-        deps.applyTableAwareParagraphEdit(current, (temp) => insertPageBreakAtSelection(temp))
+        deps.applyTableAwareParagraphEdit(current, (temp) =>
+          insertPageBreakAtSelection(temp),
+        ),
       );
       deps.focusInput();
       return true;
@@ -260,7 +282,9 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
       deps.applyTransactionalState((current) =>
-        deps.applyTableAwareParagraphEdit(current, (temp) => insertTextAtSelection(temp, "\n"))
+        deps.applyTableAwareParagraphEdit(current, (temp) =>
+          insertTextAtSelection(temp, "\n"),
+        ),
       );
       deps.focusInput();
       return true;
@@ -277,7 +301,9 @@ export const defaultEditorKeyBindings: EditorKeyBinding[] = [
       deps.clearPreferredColumn();
       deps.resetTransactionGrouping();
       deps.applyTransactionalState((current) =>
-        deps.applyTableAwareParagraphEdit(current, (temp) => splitBlockAtSelection(temp))
+        deps.applyTableAwareParagraphEdit(current, (temp) =>
+          splitBlockAtSelection(temp),
+        ),
       );
       deps.focusInput();
       return true;

@@ -13,7 +13,12 @@ import {
 import { projectDocumentLayout } from "../../layoutProjection/index.js";
 import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
 
-function createRect(left: number, top: number, width: number, height: number): DOMRect {
+function createRect(
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+): DOMRect {
   return {
     left,
     top,
@@ -27,7 +32,10 @@ function createRect(left: number, top: number, width: number, height: number): D
   } as DOMRect;
 }
 
-function createSurfaceWithSinglePage(pageIndex = 0): { surface: HTMLDivElement; page: HTMLDivElement } {
+function createSurfaceWithSinglePage(pageIndex = 0): {
+  surface: HTMLDivElement;
+  page: HTMLDivElement;
+} {
   const surface = document.createElement("div");
   const page = document.createElement("div");
   page.dataset.renderer = "canvas";
@@ -36,7 +44,10 @@ function createSurfaceWithSinglePage(pageIndex = 0): { surface: HTMLDivElement; 
   return { surface, page };
 }
 
-function createSurfaceWithPages(pageCount: number): { surface: HTMLDivElement; pages: HTMLDivElement[] } {
+function createSurfaceWithPages(pageCount: number): {
+  surface: HTMLDivElement;
+  pages: HTMLDivElement[];
+} {
   const surface = document.createElement("div");
   const pages = Array.from({ length: pageCount }, (_, pageIndex) => {
     const page = document.createElement("div");
@@ -54,9 +65,15 @@ describe("buildCanvasLayoutSnapshot", () => {
     heading.style = { spacingBefore: 32, spacingAfter: 0 };
     const document = createEditorDocument([heading]);
     const state = createEditorStateFromDocument(document);
-    const projected = projectDocumentLayout(document, undefined, undefined, undefined, {
-      layoutMode: "wordParity",
-    });
+    const projected = projectDocumentLayout(
+      document,
+      undefined,
+      undefined,
+      undefined,
+      {
+        layoutMode: "wordParity",
+      },
+    );
     const projectedPage = projected.pages[0];
     if (!projectedPage) {
       throw new Error("missing projected page");
@@ -72,14 +89,17 @@ describe("buildCanvasLayoutSnapshot", () => {
       layoutMode: "wordParity",
     });
     const headingParagraph = snapshot!.paragraphs.find(
-      (paragraph) => paragraph.zone === "main" && paragraph.paragraphId === heading.id,
+      (paragraph) =>
+        paragraph.zone === "main" && paragraph.paragraphId === heading.id,
     );
     const expectedParagraphTop = 200 + (projectedPage.bodyTop ?? 0);
 
     expect(headingParagraph).toBeDefined();
     expect(headingParagraph!.top).toBe(expectedParagraphTop);
     expect(headingParagraph!.lines[0]?.top).toBe(expectedParagraphTop + 32);
-    expect(headingParagraph!.lines[0]?.slots[0]?.top).toBe(expectedParagraphTop + 32);
+    expect(headingParagraph!.lines[0]?.slots[0]?.top).toBe(
+      expectedParagraphTop + 32,
+    );
   });
 
   it("uses projected headerTop/footerTop offsets for header/footer paragraph geometry", () => {
@@ -104,9 +124,15 @@ describe("buildCanvasLayoutSnapshot", () => {
     ];
 
     const state = createEditorStateFromDocument(document);
-    const projected = projectDocumentLayout(document, undefined, undefined, undefined, {
-      layoutMode: "wordParity",
-    });
+    const projected = projectDocumentLayout(
+      document,
+      undefined,
+      undefined,
+      undefined,
+      {
+        layoutMode: "wordParity",
+      },
+    );
     const projectedPage = projected.pages[0];
     if (!projectedPage) {
       throw new Error("missing projected page");
@@ -123,16 +149,19 @@ describe("buildCanvasLayoutSnapshot", () => {
     });
     expect(snapshot).not.toBeNull();
     const headerParagraph = snapshot!.paragraphs.find(
-      (paragraph) => paragraph.zone === "header" && paragraph.paragraphId === header.id,
+      (paragraph) =>
+        paragraph.zone === "header" && paragraph.paragraphId === header.id,
     );
     const footerParagraph = snapshot!.paragraphs.find(
-      (paragraph) => paragraph.zone === "footer" && paragraph.paragraphId === footer.id,
+      (paragraph) =>
+        paragraph.zone === "footer" && paragraph.paragraphId === footer.id,
     );
     expect(headerParagraph).toBeDefined();
     expect(footerParagraph).toBeDefined();
 
     const expectedHeaderTop = 200 + (projectedPage.headerTop ?? 0);
-    const expectedFooterTop = 200 + (projectedPage.footerTop ?? projectedPage.bodyBottom ?? 0);
+    const expectedFooterTop =
+      200 + (projectedPage.footerTop ?? projectedPage.bodyBottom ?? 0);
     expect(headerParagraph!.top).toBe(expectedHeaderTop);
     expect(footerParagraph!.top).toBe(expectedFooterTop);
 
@@ -152,9 +181,15 @@ describe("buildCanvasLayoutSnapshot", () => {
     const document = createEditorDocument([body]);
     document.footnotes = { items: { [footnote.id]: footnote } };
     const state = createEditorStateFromDocument(document);
-    const projected = projectDocumentLayout(document, undefined, undefined, undefined, {
-      layoutMode: "wordParity",
-    });
+    const projected = projectDocumentLayout(
+      document,
+      undefined,
+      undefined,
+      undefined,
+      {
+        layoutMode: "wordParity",
+      },
+    );
     const projectedPage = projected.pages[0];
     if (!projectedPage) {
       throw new Error("missing projected page");
@@ -172,10 +207,12 @@ describe("buildCanvasLayoutSnapshot", () => {
 
     expect(snapshot).not.toBeNull();
     const footnoteParagraph = snapshot!.paragraphs.find(
-      (paragraph) => paragraph.zone === "footnote" && paragraph.footnoteId === footnote.id,
+      (paragraph) =>
+        paragraph.zone === "footnote" && paragraph.footnoteId === footnote.id,
     );
     const bodyParagraph = snapshot!.paragraphs.find(
-      (paragraph) => paragraph.zone === "main" && paragraph.paragraphId === body.id,
+      (paragraph) =>
+        paragraph.zone === "main" && paragraph.paragraphId === body.id,
     );
     const snapshotPage = snapshot!.pages[0]!;
 
@@ -184,9 +221,9 @@ describe("buildCanvasLayoutSnapshot", () => {
     expect(footnoteParagraph!.top).toBeGreaterThan(
       page.getBoundingClientRect().top + snapshotPage.footnoteSeparatorTop!,
     );
-    expect(footnoteParagraph!.top + footnoteParagraph!.height).toBeLessThanOrEqual(
-      page.getBoundingClientRect().bottom,
-    );
+    expect(
+      footnoteParagraph!.top + footnoteParagraph!.height,
+    ).toBeLessThanOrEqual(page.getBoundingClientRect().bottom);
     expect(bodyParagraph!.top + bodyParagraph!.height).toBeLessThanOrEqual(
       page.getBoundingClientRect().top + snapshotPage.footnoteSeparatorTop!,
     );
@@ -221,15 +258,22 @@ describe("buildCanvasLayoutSnapshot", () => {
     ];
 
     const state = createEditorStateFromDocument(document);
-    const projected = projectDocumentLayout(document, undefined, undefined, undefined, {
-      layoutMode: "wordParity",
-    });
+    const projected = projectDocumentLayout(
+      document,
+      undefined,
+      undefined,
+      undefined,
+      {
+        layoutMode: "wordParity",
+      },
+    );
     expect(projected.pages.length).toBeGreaterThan(1);
 
     const { surface, pages } = createSurfaceWithPages(projected.pages.length);
     surface.getBoundingClientRect = () => createRect(0, 0, 940, 2000);
     pages.forEach((page, index) => {
-      page.getBoundingClientRect = () => createRect(100, 200 + index * 200, 816, 180);
+      page.getBoundingClientRect = () =>
+        createRect(100, 200 + index * 200, 816, 180);
     });
 
     const snapshot = buildCanvasLayoutSnapshot({
@@ -240,8 +284,12 @@ describe("buildCanvasLayoutSnapshot", () => {
 
     expect(snapshot).not.toBeNull();
     const firstPageRowTexts = snapshot!.paragraphs
-      .filter((paragraph) => paragraph.zone === "main" && paragraph.pageIndex === 0)
-      .map((paragraph) => paragraph.paragraph.runs.map((run) => run.text).join(""));
+      .filter(
+        (paragraph) => paragraph.zone === "main" && paragraph.pageIndex === 0,
+      )
+      .map((paragraph) =>
+        paragraph.paragraph.runs.map((run) => run.text).join(""),
+      );
 
     expect(firstPageRowTexts).toContain("Row 1");
     expect(firstPageRowTexts).not.toContain("Row 24");

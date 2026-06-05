@@ -13,7 +13,9 @@ const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
 const DEFAULT_TABLE_SEGMENT_VERTICAL_SPACING = 0;
 const DEFAULT_TABLE_ROW_VERTICAL_SPACING = 0;
 
-function getCellHorizontalChromePx(cell: EditorTableNode["rows"][number]["cells"][number]): number {
+function getCellHorizontalChromePx(
+  cell: EditorTableNode["rows"][number]["cells"][number],
+): number {
   const padLeft =
     cell.style?.padding !== undefined
       ? cell.style.padding * POINT_TO_PX
@@ -35,7 +37,9 @@ function getCellHorizontalChromePx(cell: EditorTableNode["rows"][number]["cells"
   return Math.max(0, padLeft + padRight + borderLeft + borderRight);
 }
 
-function getCellVerticalChromePx(cell: EditorTableNode["rows"][number]["cells"][number]): number {
+function getCellVerticalChromePx(
+  cell: EditorTableNode["rows"][number]["cells"][number],
+): number {
   const padTop =
     cell.style?.padding !== undefined
       ? cell.style.padding * POINT_TO_PX
@@ -62,7 +66,11 @@ function getTableCellContentWidth(
   fallbackContentWidth?: number,
   columnWidthPx?: number,
 ): number | undefined {
-  if (typeof columnWidthPx === "number" && Number.isFinite(columnWidthPx) && columnWidthPx > 0) {
+  if (
+    typeof columnWidthPx === "number" &&
+    Number.isFinite(columnWidthPx) &&
+    columnWidthPx > 0
+  ) {
     return Math.max(
       MIN_TABLE_CELL_CONTENT_WIDTH_PX,
       columnWidthPx - getCellHorizontalChromePx(cell),
@@ -78,10 +86,15 @@ function getTableCellContentWidth(
       ? cell.style.padding * POINT_TO_PX * 2
       : DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX;
 
-  return Math.max(MIN_TABLE_CELL_CONTENT_WIDTH_PX, widthPx - horizontalPaddingPx);
+  return Math.max(
+    MIN_TABLE_CELL_CONTENT_WIDTH_PX,
+    widthPx - horizontalPaddingPx,
+  );
 }
 
-function parseTableRowHeightToPx(height: number | string | undefined): number | null {
+function parseTableRowHeightToPx(
+  height: number | string | undefined,
+): number | null {
   if (typeof height === "number" && Number.isFinite(height)) {
     return Math.max(0, height * POINT_TO_PX);
   }
@@ -137,7 +150,8 @@ function getCachedTableColumnGeometry(
     let total = 0;
     for (
       let index = entry.visualColumnIndex;
-      index < Math.min(entry.visualColumnIndex + entry.colSpan, columnWidths.length);
+      index <
+      Math.min(entry.visualColumnIndex + entry.colSpan, columnWidths.length);
       index += 1
     ) {
       total += columnWidths[index] ?? 0;
@@ -163,44 +177,57 @@ function estimateTableRowHeight(
       ? getCachedTableColumnGeometry(table, contentWidth)
       : null;
 
-  const cellHeights = row.cells
-    .map((cell, cellIndex) => {
-      if (cell.vMerge === "continue") return 0;
-      let columnWidthPx: number | undefined;
-      if (geometry && typeof rowIndex === "number") {
-        const total = geometry.cellColumnWidth.get(`${rowIndex}:${cellIndex}`);
-        if (total !== undefined && total > 0) columnWidthPx = total;
-      }
-      const cellContentWidth = getTableCellContentWidth(cell, contentWidth, columnWidthPx);
-      let blockHeights = 0;
-      for (const paragraph of cell.blocks) {
-        blockHeights += estimateParagraphBlockHeight(
-          paragraph,
-          styles,
-          cellContentWidth,
-          layoutMode,
-        );
-      }
-      let largestImageHeight = 0;
-      for (const paragraph of cell.blocks) {
-        for (const run of paragraph.runs) {
-          if (run.image && run.image.height > largestImageHeight) {
-            const fitted =
-              cellContentWidth !== undefined && run.image.width > cellContentWidth
-                ? Math.floor(run.image.height * (cellContentWidth / run.image.width))
-                : run.image.height;
-            if (fitted > largestImageHeight) {
-              largestImageHeight = fitted;
-            }
+  const cellHeights = row.cells.map((cell, cellIndex) => {
+    if (cell.vMerge === "continue") return 0;
+    let columnWidthPx: number | undefined;
+    if (geometry && typeof rowIndex === "number") {
+      const total = geometry.cellColumnWidth.get(`${rowIndex}:${cellIndex}`);
+      if (total !== undefined && total > 0) columnWidthPx = total;
+    }
+    const cellContentWidth = getTableCellContentWidth(
+      cell,
+      contentWidth,
+      columnWidthPx,
+    );
+    let blockHeights = 0;
+    for (const paragraph of cell.blocks) {
+      blockHeights += estimateParagraphBlockHeight(
+        paragraph,
+        styles,
+        cellContentWidth,
+        layoutMode,
+      );
+    }
+    let largestImageHeight = 0;
+    for (const paragraph of cell.blocks) {
+      for (const run of paragraph.runs) {
+        if (run.image && run.image.height > largestImageHeight) {
+          const fitted =
+            cellContentWidth !== undefined && run.image.width > cellContentWidth
+              ? Math.floor(
+                  run.image.height * (cellContentWidth / run.image.width),
+                )
+              : run.image.height;
+          if (fitted > largestImageHeight) {
+            largestImageHeight = fitted;
           }
         }
       }
-      return Math.max(blockHeights, largestImageHeight) + getCellVerticalChromePx(cell);
-    });
+    }
+    return (
+      Math.max(blockHeights, largestImageHeight) + getCellVerticalChromePx(cell)
+    );
+  });
 
-  const contentHeight = Math.max(...cellHeights, DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT);
+  const contentHeight = Math.max(
+    ...cellHeights,
+    DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT,
+  );
   const explicitHeight = parseTableRowHeightToPx(row.style?.height);
-  return Math.max(contentHeight, explicitHeight ?? 0) + DEFAULT_TABLE_ROW_VERTICAL_SPACING;
+  return (
+    Math.max(contentHeight, explicitHeight ?? 0) +
+    DEFAULT_TABLE_ROW_VERTICAL_SPACING
+  );
 }
 
 export function getTableHeaderRowCount(table: EditorTableNode): number {
@@ -214,7 +241,10 @@ export function getTableHeaderRowCount(table: EditorTableNode): number {
   return count;
 }
 
-function getTableRowGroupEndExclusive(table: EditorTableNode, rowIndex: number): number {
+function getTableRowGroupEndExclusive(
+  table: EditorTableNode,
+  rowIndex: number,
+): number {
   const row = table.rows[rowIndex];
   if (!row) {
     return rowIndex + 1;
@@ -222,15 +252,21 @@ function getTableRowGroupEndExclusive(table: EditorTableNode, rowIndex: number):
 
   let endExclusive = rowIndex + 1;
   for (const cell of row.cells) {
-    const rowSpan = Math.max(1, cell.rowSpan ?? (cell.vMerge === "restart" ? 1 : 1));
+    const rowSpan = Math.max(
+      1,
+      cell.rowSpan ?? (cell.vMerge === "restart" ? 1 : 1),
+    );
     endExclusive = Math.max(endExclusive, rowIndex + rowSpan);
   }
 
   return Math.min(table.rows.length, endExclusive);
 }
 
-export function getTableRowGroups(table: EditorTableNode): Array<{ startRowIndex: number; endRowIndexExclusive: number }> {
-  const groups: Array<{ startRowIndex: number; endRowIndexExclusive: number }> = [];
+export function getTableRowGroups(
+  table: EditorTableNode,
+): Array<{ startRowIndex: number; endRowIndexExclusive: number }> {
+  const groups: Array<{ startRowIndex: number; endRowIndexExclusive: number }> =
+    [];
   let groupStart = 0;
   let groupEndExclusive = 0;
 
@@ -240,7 +276,10 @@ export function getTableRowGroups(table: EditorTableNode): Array<{ startRowIndex
       groupEndExclusive = rowIndex + 1;
     }
 
-    groupEndExclusive = Math.max(groupEndExclusive, getTableRowGroupEndExclusive(table, rowIndex));
+    groupEndExclusive = Math.max(
+      groupEndExclusive,
+      getTableRowGroupEndExclusive(table, rowIndex),
+    );
     if (rowIndex === groupEndExclusive - 1) {
       groups.push({
         startRowIndex: groupStart,
@@ -285,7 +324,15 @@ export function getTableSegmentHeight(
           .slice(0, repeatedHeaderRowCount)
           .reduce(
             (sum, row, index) =>
-              sum + estimateTableRowHeight(row, styles, layoutMode, contentWidth, table, index),
+              sum +
+              estimateTableRowHeight(
+                row,
+                styles,
+                layoutMode,
+                contentWidth,
+                table,
+                index,
+              ),
             0,
           )
       : 0;
@@ -314,5 +361,14 @@ export function estimateTableBlockHeight(
   layoutMode: "fast" | "wordParity" = "fast",
   measurer: ITextMeasurer = domTextMeasurer,
 ): number {
-  return getTableSegmentHeight(table, 0, table.rows.length, 0, styles, layoutMode, contentWidth, measurer);
+  return getTableSegmentHeight(
+    table,
+    0,
+    table.rows.length,
+    0,
+    styles,
+    layoutMode,
+    contentWidth,
+    measurer,
+  );
 }

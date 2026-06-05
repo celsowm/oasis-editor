@@ -7,7 +7,10 @@ import {
 import type { CanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
 import { resolveCanvasSurfaceHitAtPoint } from "../../ui/canvas/CanvasHitTestService.js";
 
-function createSnapshotWithInlineImage(): { snapshot: CanvasLayoutSnapshot; state: ReturnType<typeof createEditorStateFromDocument> } {
+function createSnapshotWithInlineImage(): {
+  snapshot: CanvasLayoutSnapshot;
+  state: ReturnType<typeof createEditorStateFromDocument>;
+} {
   const paragraph = createEditorParagraphFromRuns([
     {
       text: "\uFFFC",
@@ -19,7 +22,9 @@ function createSnapshotWithInlineImage(): { snapshot: CanvasLayoutSnapshot; stat
     },
     { text: "x" },
   ]);
-  const state = createEditorStateFromDocument(createEditorDocument([paragraph]));
+  const state = createEditorStateFromDocument(
+    createEditorDocument([paragraph]),
+  );
   const snapshot: CanvasLayoutSnapshot = {
     surfaceRect: { left: 0, top: 0, width: 900, height: 700 } as DOMRect,
     pages: [
@@ -118,7 +123,9 @@ describe("canvas hit-test service image hit", () => {
 describe("canvas hit-test service footnote zone", () => {
   it("returns footnote zone when pointer is inside a footnote paragraph", () => {
     const paragraph = createEditorParagraphFromRuns([{ text: "note" }]);
-    const state = createEditorStateFromDocument(createEditorDocument([paragraph]));
+    const state = createEditorStateFromDocument(
+      createEditorDocument([paragraph]),
+    );
     const snapshot: CanvasLayoutSnapshot = {
       surfaceRect: { left: 0, top: 0, width: 900, height: 1100 } as DOMRect,
       pages: [
@@ -187,7 +194,9 @@ describe("canvas hit-test service footnote zone", () => {
 
   it("keeps main zone above the footnote separator", () => {
     const paragraph = createEditorParagraphFromRuns([{ text: "body" }]);
-    const state = createEditorStateFromDocument(createEditorDocument([paragraph]));
+    const state = createEditorStateFromDocument(
+      createEditorDocument([paragraph]),
+    );
     const snapshot: CanvasLayoutSnapshot = {
       surfaceRect: { left: 0, top: 0, width: 900, height: 1100 } as DOMRect,
       pages: [

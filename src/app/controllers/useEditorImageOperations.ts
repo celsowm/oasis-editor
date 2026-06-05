@@ -1,8 +1,18 @@
-
 import { createSignal } from "solid-js";
-import { getDocumentParagraphs, getParagraphs, paragraphOffsetToPosition, resolveImageSrc, type EditorPosition, type EditorState } from "../../core/model.js";
-import { normalizeSelection, isSelectionCollapsed } from "../../core/selection.js";
-import { moveSelectedImageToPosition, setSelection, resizeSelectedImage } from "../../core/editorCommands.js";
+import {
+  getDocumentParagraphs,
+  getParagraphs,
+  paragraphOffsetToPosition,
+  resolveImageSrc,
+  type EditorPosition,
+  type EditorState,
+} from "../../core/model.js";
+import { normalizeSelection } from "../../core/selection.js";
+import {
+  moveSelectedImageToPosition,
+  setSelection,
+  resizeSelectedImage,
+} from "../../core/editorCommands.js";
 import { getMaxInlineImageWidth } from "../../ui/imageGeometry.js";
 import type { ImageResizeHandleDirection } from "../../ui/editorUiTypes.js";
 import type { EditorLogger } from "../../utils/logger.js";
@@ -52,13 +62,18 @@ interface PendingImagePointer {
 export interface EditorImageOperationsDeps {
   state: EditorState;
   surfaceRef: () => HTMLDivElement | undefined;
-  resolvePositionAtSurfacePoint: (clientX: number, clientY: number) => EditorPosition | null;
+  resolvePositionAtSurfacePoint: (
+    clientX: number,
+    clientY: number,
+  ) => EditorPosition | null;
   applyState: (next: EditorState) => void;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
     options?: { mergeKey?: string },
   ) => void;
-  updateHistoryState: (updater: (current: EditorHistoryState) => EditorHistoryState) => void;
+  updateHistoryState: (
+    updater: (current: EditorHistoryState) => EditorHistoryState,
+  ) => void;
   focusInput: () => void;
   focusInputAfterPointerSelection: () => void;
   cloneState: (source: EditorState) => EditorState;
@@ -67,9 +82,12 @@ export interface EditorImageOperationsDeps {
 
 export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
   const [dragging, setDragging] = createSignal(false);
-  const [draggedImageInfo, setDraggedImageInfo] = createSignal<ActiveImageDrag | null>(null);
+  const [draggedImageInfo, setDraggedImageInfo] =
+    createSignal<ActiveImageDrag | null>(null);
   const [mousePos, setMousePos] = createSignal({ x: 0, y: 0 });
-  const [dropTargetPos, setDropTargetPos] = createSignal<EditorPosition | null>(null);
+  const [dropTargetPos, setDropTargetPos] = createSignal<EditorPosition | null>(
+    null,
+  );
 
   let activeImageDrag: ActiveImageDrag | null = null;
   let activeImageResize: ActiveImageResize | null = null;
@@ -192,7 +210,10 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     return null;
   };
 
-  const resolvePositionAtSurfacePoint = (clientX: number, clientY: number): EditorPosition | null => {
+  const resolvePositionAtSurfacePoint = (
+    clientX: number,
+    clientY: number,
+  ): EditorPosition | null => {
     return deps.resolvePositionAtSurfacePoint(clientX, clientY);
   };
 
@@ -200,7 +221,8 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     if (imageDragCursorStyle) return;
     imageDragCursorStyle = document.createElement("style");
     imageDragCursorStyle.setAttribute("data-oasis-image-drag-cursor", "");
-    imageDragCursorStyle.textContent = "*, *::before, *::after { cursor: grabbing !important; }";
+    imageDragCursorStyle.textContent =
+      "*, *::before, *::after { cursor: grabbing !important; }";
     document.head.appendChild(imageDragCursorStyle);
   };
 
@@ -267,7 +289,9 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
 
     setMousePos({ x: event.clientX, y: event.clientY });
     setDraggedImageInfo({ ...dragState });
-    setDropTargetPos(resolvePositionAtSurfacePoint(event.clientX, event.clientY));
+    setDropTargetPos(
+      resolvePositionAtSurfacePoint(event.clientX, event.clientY),
+    );
   };
 
   const handleImageDragMouseUp = (event: MouseEvent) => {
@@ -279,15 +303,22 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     }
 
     if (dragState) {
-      const position = resolvePositionAtSurfacePoint(event.clientX, event.clientY);
+      const position = resolvePositionAtSurfacePoint(
+        event.clientX,
+        event.clientY,
+      );
       if (position) {
-        deps.logger.info(`image drag:done ${dragState.paragraphId} -> ${position.paragraphId}:${position.runId}[${position.offset}]`);
+        deps.logger.info(
+          `image drag:done ${dragState.paragraphId} -> ${position.paragraphId}:${position.runId}[${position.offset}]`,
+        );
         deps.applyTransactionalState(
           (current) => moveSelectedImageToPosition(current, position),
           { mergeKey: "moveImage" },
         );
       } else {
-        deps.logger.warn(`image drag:cancel ${dragState.paragraphId} no target at (${event.clientX},${event.clientY})`);
+        deps.logger.warn(
+          `image drag:cancel ${dragState.paragraphId} no target at (${event.clientX},${event.clientY})`,
+        );
       }
     }
 
@@ -316,7 +347,9 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
       event.shiftKey,
       maxWidth,
     );
-    const paragraph = getParagraphs(deps.state).find((candidate) => candidate.id === resizeState.paragraphId);
+    const paragraph = getParagraphs(deps.state).find(
+      (candidate) => candidate.id === resizeState.paragraphId,
+    );
     if (!paragraph) {
       deps.logger.warn("image resize:missing paragraph", resizeState);
       return;
@@ -332,23 +365,29 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
       maxWidth,
       preserveAspectRatio: event.shiftKey,
     });
-    
+
     const applySelectionToStatePreservingStructure = (
-        current: EditorState,
-        nextSelection: EditorState["selection"],
-      ): EditorState => ({
-        ...current,
-        selection: {
-          anchor: { ...nextSelection.anchor },
-          focus: { ...nextSelection.focus },
-        },
-      });
+      current: EditorState,
+      nextSelection: EditorState["selection"],
+    ): EditorState => ({
+      ...current,
+      selection: {
+        anchor: { ...nextSelection.anchor },
+        focus: { ...nextSelection.focus },
+      },
+    });
 
     deps.applyState(
       resizeSelectedImage(
         applySelectionToStatePreservingStructure(deps.state, {
-          anchor: paragraphOffsetToPosition(paragraph, resizeState.paragraphOffset),
-          focus: paragraphOffsetToPosition(paragraph, resizeState.paragraphOffset + 1),
+          anchor: paragraphOffsetToPosition(
+            paragraph,
+            resizeState.paragraphOffset,
+          ),
+          focus: paragraphOffsetToPosition(
+            paragraph,
+            resizeState.paragraphOffset + 1,
+          ),
         }),
         nextWidth,
         nextHeight,
@@ -371,10 +410,13 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
             }
           : null,
       });
-      
+
       deps.updateHistoryState((current) => ({
         ...current,
-        undoStack: [...current.undoStack, deps.cloneState(resizeState.initialState)],
+        undoStack: [
+          ...current.undoStack,
+          deps.cloneState(resizeState.initialState),
+        ],
         redoStack: [],
       }));
     }
@@ -431,19 +473,21 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     event: MouseEvent,
     initialState: EditorState,
   ) => {
-    const paragraph = getParagraphs(initialState).find((p) => p.id === paragraphId);
+    const paragraph = getParagraphs(initialState).find(
+      (p) => p.id === paragraphId,
+    );
     if (!paragraph) return;
 
     const applySelectionToStatePreservingStructure = (
-        current: EditorState,
-        nextSelection: EditorState["selection"],
-      ): EditorState => ({
-        ...current,
-        selection: {
-          anchor: { ...nextSelection.anchor },
-          focus: { ...nextSelection.focus },
-        },
-      });
+      current: EditorState,
+      nextSelection: EditorState["selection"],
+    ): EditorState => ({
+      ...current,
+      selection: {
+        anchor: { ...nextSelection.anchor },
+        focus: { ...nextSelection.focus },
+      },
+    });
 
     const selectedImage = getSelectedImageInfo(
       applySelectionToStatePreservingStructure(initialState, {
@@ -476,7 +520,9 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     event.preventDefault();
     event.stopPropagation();
 
-    const paragraph = getDocumentParagraphs(deps.state.document).find((p) => p.id === paragraphId);
+    const paragraph = getDocumentParagraphs(deps.state.document).find(
+      (p) => p.id === paragraphId,
+    );
     if (paragraph) {
       deps.applyState(
         setSelection(deps.state, {
@@ -498,7 +544,13 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
   ) => {
     event.preventDefault();
     event.stopPropagation();
-    startImageResize(paragraphId, paragraphOffset, direction, event, deps.state);
+    startImageResize(
+      paragraphId,
+      paragraphOffset,
+      direction,
+      event,
+      deps.state,
+    );
   };
 
   return {

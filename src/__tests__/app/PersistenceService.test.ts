@@ -1,7 +1,10 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createEditorParagraph } from "../../core/editorState.js";
-import { DEFAULT_EDITOR_PAGE_SETTINGS, type EditorDocument } from "../../core/model.js";
+import {
+  DEFAULT_EDITOR_PAGE_SETTINGS,
+  type EditorDocument,
+} from "../../core/model.js";
 import { PersistenceService } from "../../app/services/PersistenceService.js";
 
 const DB_NAME = "oasis-editor-db";

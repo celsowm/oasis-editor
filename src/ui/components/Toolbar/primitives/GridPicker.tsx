@@ -14,7 +14,10 @@ export interface GridPickerProps {
 /** Hover/keyboard grid size picker (table insertion). Size is configurable. */
 export function GridPicker(props: GridPickerProps): JSX.Element {
   const [isOpen, setIsOpen] = createSignal(false);
-  const [hover, setHover] = createSignal<{ row: number; col: number }>({ row: 0, col: 0 });
+  const [hover, setHover] = createSignal<{ row: number; col: number }>({
+    row: 0,
+    col: 0,
+  });
 
   const maxRows = () => props.maxRows ?? 10;
   const maxCols = () => props.maxCols ?? 10;
@@ -75,7 +78,9 @@ export function GridPicker(props: GridPickerProps): JSX.Element {
   const cols = () => Array.from({ length: maxCols() }, (_, i) => i + 1);
   const statusLabel = () => {
     const h = hover();
-    return h.row === 0 || h.col === 0 ? t("toolbar.table") : `${h.row} × ${h.col}`;
+    return h.row === 0 || h.col === 0
+      ? t("toolbar.table")
+      : `${h.row} × ${h.col}`;
   };
 
   return (

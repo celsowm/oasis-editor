@@ -23,20 +23,34 @@ interface TableSelectionAwareCommandsDeps {
     current: EditorState,
     nextSelection: EditorState["selection"],
   ) => EditorState;
-  getTargetBlocks: (state: EditorState, zone: EditorEditingZone) => EditorBlockNode[];
-  resolveTableCellRangeSelection: (current: EditorState) => EditorState["selection"] | null;
-  resolveSelectedTableCells: (current: EditorState) => SelectedTableCells | null;
+  getTargetBlocks: (
+    state: EditorState,
+    zone: EditorEditingZone,
+  ) => EditorBlockNode[];
+  resolveTableCellRangeSelection: (
+    current: EditorState,
+  ) => EditorState["selection"] | null;
+  resolveSelectedTableCells: (
+    current: EditorState,
+  ) => SelectedTableCells | null;
   logger?: EditorLogger;
 }
 
-export function createTableSelectionAwareCommands(deps: TableSelectionAwareCommandsDeps) {
-  const withExpandedTableCellSelection = (current: EditorState): EditorState => {
+export function createTableSelectionAwareCommands(
+  deps: TableSelectionAwareCommandsDeps,
+) {
+  const withExpandedTableCellSelection = (
+    current: EditorState,
+  ): EditorState => {
     const expandedSelection = deps.resolveTableCellRangeSelection(current);
     if (!expandedSelection) {
       return current;
     }
 
-    return deps.applySelectionToStatePreservingStructure(current, expandedSelection);
+    return deps.applySelectionToStatePreservingStructure(
+      current,
+      expandedSelection,
+    );
   };
 
   const applySelectionAwareCommand = (
@@ -103,10 +117,14 @@ export function createTableSelectionAwareCommands(deps: TableSelectionAwareComma
       for (let index = 0; index < cells.length; index += 1) {
         const entry = cells[index];
         const count = cellParagraphCounts[index];
-        const cellParagraphs = resultParagraphs.slice(paragraphIndex, paragraphIndex + count);
+        const cellParagraphs = resultParagraphs.slice(
+          paragraphIndex,
+          paragraphIndex + count,
+        );
         paragraphIndex += count;
 
-        const targetCell = tableBlock.rows[entry.rowIndex]?.cells[entry.cellIndex];
+        const targetCell =
+          tableBlock.rows[entry.rowIndex]?.cells[entry.cellIndex];
         if (targetCell) {
           targetCell.blocks = cellParagraphs;
         }
@@ -116,11 +134,15 @@ export function createTableSelectionAwareCommands(deps: TableSelectionAwareComma
     });
   };
 
-  const applySelectionAwareTextCommand = (command: (current: EditorState) => EditorState) => {
+  const applySelectionAwareTextCommand = (
+    command: (current: EditorState) => EditorState,
+  ) => {
     applySelectionAwareCommand(command, "applySelectionAwareTextCommand");
   };
 
-  const applySelectionAwareParagraphCommand = (command: (current: EditorState) => EditorState) => {
+  const applySelectionAwareParagraphCommand = (
+    command: (current: EditorState) => EditorState,
+  ) => {
     applySelectionAwareCommand(command, "applySelectionAwareParagraphCommand");
   };
 

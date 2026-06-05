@@ -9,7 +9,8 @@ export interface UseEditorRevisionProps {
 }
 
 export function createEditorRevisionController(deps: UseEditorRevisionProps) {
-  const [hoveredRevision, setHoveredRevision] = createSignal<RevisionBox | null>(null);
+  const [hoveredRevision, setHoveredRevision] =
+    createSignal<RevisionBox | null>(null);
 
   const handleRevisionMouseEnter = (revisionId: string, event: MouseEvent) => {
     const paragraphs = getParagraphs(deps.state());

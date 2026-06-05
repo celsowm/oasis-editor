@@ -1,6 +1,9 @@
-import { createStore } from "solid-js/store";
+import { createStore, type SetStoreFunction } from "solid-js/store";
 import type { EditorState, EditorDocument } from "./model.js";
-import { createInitialEditorState, createEditorStateFromDocument } from "./editorState.js";
+import {
+  createInitialEditorState,
+  createEditorStateFromDocument,
+} from "./editorState.js";
 import { PluginCollection } from "./plugins/PluginCollection.js";
 import { CommandRegistry } from "./commands/CommandRegistry.js";
 import type { OasisCommand, OasisEditor, OasisPlugin } from "./plugin.js";
@@ -13,14 +16,16 @@ export interface EditorOptions {
 
 export class Editor implements OasisEditor {
   private stateStore!: EditorState;
-  private setState: any;
+  private setState!: SetStoreFunction<EditorState>;
   private pluginCollection!: PluginCollection;
   private listeners = new Map<string, Set<(...args: unknown[]) => void>>();
   readonly commands = new CommandRegistry();
 
   constructor(options: EditorOptions = {}) {
     if (options.plugins && options.plugins.length > 0) {
-      throw new Error("Editor plugins must be initialized with Editor.create(...).");
+      throw new Error(
+        "Editor plugins must be initialized with Editor.create(...).",
+      );
     }
     this.initializeState(options);
     this.pluginCollection = new PluginCollection(this, []);
@@ -28,16 +33,19 @@ export class Editor implements OasisEditor {
 
   static async create(options: EditorOptions = {}): Promise<Editor> {
     const editor = new Editor({ ...options, plugins: [] });
-    editor.pluginCollection = new PluginCollection(editor, options.plugins ?? []);
+    editor.pluginCollection = new PluginCollection(
+      editor,
+      options.plugins ?? [],
+    );
     await editor.pluginCollection.initializeAll();
     return editor;
   }
 
   private initializeState(options: EditorOptions) {
-    const initialState = options.doc 
+    const initialState = options.doc
       ? createEditorStateFromDocument(options.doc)
       : createInitialEditorState();
-    
+
     const [state, setState] = createStore(initialState);
     this.stateStore = state;
     this.setState = setState;
@@ -56,7 +64,7 @@ export class Editor implements OasisEditor {
 
   registerCommand<TPayload = unknown, TResult = unknown>(
     name: string,
-    command: OasisCommand<TPayload, TResult>
+    command: OasisCommand<TPayload, TResult>,
   ) {
     this.commands.register(name, command);
   }
@@ -65,7 +73,10 @@ export class Editor implements OasisEditor {
     this.commands.unregister(name);
   }
 
-  execute<TPayload = unknown, TResult = unknown>(name: string, payload?: TPayload): TResult {
+  execute<TPayload = unknown, TResult = unknown>(
+    name: string,
+    payload?: TPayload,
+  ): TResult {
     const command = this.commands.get(name);
     if (!command) {
       throw new Error(`Unknown command: ${name}`);

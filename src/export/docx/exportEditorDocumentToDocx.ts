@@ -39,10 +39,6 @@ const DOCUMENT_XMLNS =
   'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" ' +
   `xmlns:r="${OFFICE_REL_NS}"`;
 
-function serializeSectionProperties(pageSettings: EditorPageSettings): string {
-  return serializeSectionPropertiesWithReferences(pageSettings);
-}
-
 function serializeSectionPropertiesWithReferences(
   pageSettings: EditorPageSettings,
   references?: SectionReferenceDefinition,
@@ -73,7 +69,9 @@ function serializeSectionPropertiesWithReferences(
       : "",
   ].join("");
   const titlePageXml =
-    references?.header?.first || references?.footer?.first ? "<w:titlePg/>" : "";
+    references?.header?.first || references?.footer?.first
+      ? "<w:titlePg/>"
+      : "";
 
   return `<w:sectPr>${referencesXml}${titlePageXml}<w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/></w:sectPr>`;
 }
@@ -271,10 +269,13 @@ function serializeBlocksXml(
         const pageBreakXml = block.style?.pageBreakBefore
           ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
           : "";
-        return pageBreakXml + serializeTableXml(block, (paragraph, cell) =>
-          serializeParagraphXml(paragraph, context, styles, {
-            align: cell.style?.horizontalAlign,
-          }),
+        return (
+          pageBreakXml +
+          serializeTableXml(block, (paragraph, cell) =>
+            serializeParagraphXml(paragraph, context, styles, {
+              align: cell.style?.horizontalAlign,
+            }),
+          )
         );
       }
       return serializeParagraphXml(block, context, styles);
@@ -499,7 +500,8 @@ export async function exportEditorDocumentToDocx(
         referencedFootnotes,
         numberingContext,
         buildState,
-        (blocks) => buildPartContext(blocks, numberingContext, buildState, document),
+        (blocks) =>
+          buildPartContext(blocks, numberingContext, buildState, document),
         document.styles,
         footnoteIdMap,
       )

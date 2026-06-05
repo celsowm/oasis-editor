@@ -21,8 +21,13 @@ export interface NormalizedEditorSelection {
   isCollapsed: boolean;
 }
 
-export function findParagraphIndex(paragraphs: EditorParagraphNode[], paragraphId: string): number {
-  const index = paragraphs.findIndex((paragraph) => paragraph.id === paragraphId);
+export function findParagraphIndex(
+  paragraphs: EditorParagraphNode[],
+  paragraphId: string,
+): number {
+  const index = paragraphs.findIndex(
+    (paragraph) => paragraph.id === paragraphId,
+  );
   return index === -1 ? 0 : index;
 }
 
@@ -33,11 +38,17 @@ export function findParagraphById(
   return paragraphs[findParagraphIndex(paragraphs, paragraphId)];
 }
 
-export function clampOffset(offset: number, paragraph: EditorParagraphNode): number {
+export function clampOffset(
+  offset: number,
+  paragraph: EditorParagraphNode,
+): number {
   return Math.max(0, Math.min(offset, getParagraphLength(paragraph)));
 }
 
-export function clampPosition(state: EditorState, position: EditorPosition): EditorPosition {
+export function clampPosition(
+  state: EditorState,
+  position: EditorPosition,
+): EditorPosition {
   const paragraphs = getParagraphs(state);
   const paragraph = findParagraphById(paragraphs, position.paragraphId);
   return clampPositionInParagraph(position, paragraph);
@@ -48,7 +59,10 @@ function clampPositionInParagraph(
   paragraph: EditorParagraphNode,
 ): EditorPosition {
   const paragraphOffset = positionToParagraphOffset(paragraph, position);
-  return paragraphOffsetToPosition(paragraph, clampOffset(paragraphOffset, paragraph));
+  return paragraphOffsetToPosition(
+    paragraph,
+    clampOffset(paragraphOffset, paragraph),
+  );
 }
 
 export function comparePositions(
@@ -64,10 +78,15 @@ export function comparePositions(
   }
 
   const paragraph = paragraphs[leftIndex];
-  return positionToParagraphOffset(paragraph, left) - positionToParagraphOffset(paragraph, right);
+  return (
+    positionToParagraphOffset(paragraph, left) -
+    positionToParagraphOffset(paragraph, right)
+  );
 }
 
-export function createCollapsedSelection(position: EditorPosition): EditorSelection {
+export function createCollapsedSelection(
+  position: EditorPosition,
+): EditorSelection {
   return {
     anchor: position,
     focus: position,
@@ -87,12 +106,17 @@ export function normalizeSelection(
   providedParagraphs?: EditorParagraphNode[],
 ): NormalizedEditorSelection {
   const paragraphs = providedParagraphs ?? getParagraphs(state);
-  const indexById = new Map(paragraphs.map((paragraph, index) => [paragraph.id, index] as const));
+  const indexById = new Map(
+    paragraphs.map((paragraph, index) => [paragraph.id, index] as const),
+  );
   const rawAnchorIndex = indexById.get(state.selection.anchor.paragraphId) ?? 0;
   const rawFocusIndex = indexById.get(state.selection.focus.paragraphId) ?? 0;
   const anchorParagraph = paragraphs[rawAnchorIndex] ?? paragraphs[0];
   const focusParagraph = paragraphs[rawFocusIndex] ?? paragraphs[0];
-  const anchor = clampPositionInParagraph(state.selection.anchor, anchorParagraph);
+  const anchor = clampPositionInParagraph(
+    state.selection.anchor,
+    anchorParagraph,
+  );
   const focus = clampPositionInParagraph(state.selection.focus, focusParagraph);
   const anchorIndex = indexById.get(anchor.paragraphId) ?? rawAnchorIndex;
   const focusIndex = indexById.get(focus.paragraphId) ?? rawFocusIndex;

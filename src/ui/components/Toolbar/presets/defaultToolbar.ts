@@ -1,5 +1,8 @@
 import { t } from "../../../../i18n/index.js";
-import { STANDARD_FONT_SIZES_PT, fontSizePxToPt } from "../../../fontSizeUnits.js";
+import {
+  STANDARD_FONT_SIZES_PT,
+  fontSizePxToPt,
+} from "../../../fontSizeUnits.js";
 import type {
   SelectOption,
   ToolbarActionApi,
@@ -17,7 +20,9 @@ const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 
 /** Document's named styles, read through the uniform command-state channel. */
 const documentStyles = (api: ToolbarActionApi): ToolbarDocumentStyle[] =>
-  (api.commands.state("documentStyles").value as ToolbarDocumentStyle[] | undefined) ?? [];
+  (api.commands.state("documentStyles").value as
+    | ToolbarDocumentStyle[]
+    | undefined) ?? [];
 
 const fontFamilyOptions = (api: ToolbarActionApi): SelectOption[] => {
   const values = new Set<string>([
@@ -32,7 +37,9 @@ const fontFamilyOptions = (api: ToolbarActionApi): SelectOption[] => {
   for (const s of documentStyles(api)) {
     if (s.fontFamily) values.add(s.fontFamily);
   }
-  const current = String(api.commands.state("setFontFamily").value ?? "").trim();
+  const current = String(
+    api.commands.state("setFontFamily").value ?? "",
+  ).trim();
   if (current) values.add(current);
   return Array.from(values)
     .sort((a, b) => a.localeCompare(b))
@@ -62,12 +69,36 @@ const ALIGN_BUTTONS: Array<{
   command: string;
   icon: string;
   testId: string;
-  tooltipKey: "toolbar.alignLeft" | "toolbar.alignCenter" | "toolbar.alignRight" | "toolbar.justify";
+  tooltipKey:
+    | "toolbar.alignLeft"
+    | "toolbar.alignCenter"
+    | "toolbar.alignRight"
+    | "toolbar.justify";
 }> = [
-  { command: "alignLeft", icon: "align-left", testId: "editor-toolbar-align-left", tooltipKey: "toolbar.alignLeft" },
-  { command: "alignCenter", icon: "align-center", testId: "editor-toolbar-align-center", tooltipKey: "toolbar.alignCenter" },
-  { command: "alignRight", icon: "align-right", testId: "editor-toolbar-align-right", tooltipKey: "toolbar.alignRight" },
-  { command: "alignJustify", icon: "align-justify", testId: "editor-toolbar-align-justify", tooltipKey: "toolbar.justify" },
+  {
+    command: "alignLeft",
+    icon: "align-left",
+    testId: "editor-toolbar-align-left",
+    tooltipKey: "toolbar.alignLeft",
+  },
+  {
+    command: "alignCenter",
+    icon: "align-center",
+    testId: "editor-toolbar-align-center",
+    tooltipKey: "toolbar.alignCenter",
+  },
+  {
+    command: "alignRight",
+    icon: "align-right",
+    testId: "editor-toolbar-align-right",
+    tooltipKey: "toolbar.alignRight",
+  },
+  {
+    command: "alignJustify",
+    icon: "align-justify",
+    testId: "editor-toolbar-align-justify",
+    tooltipKey: "toolbar.justify",
+  },
 ];
 
 const LIST_BUTTONS: Array<{
@@ -76,8 +107,18 @@ const LIST_BUTTONS: Array<{
   testId: string;
   tooltipKey: "toolbar.bulletList" | "toolbar.numberedList";
 }> = [
-  { command: "bulletList", icon: "list", testId: "editor-toolbar-list-bullet", tooltipKey: "toolbar.bulletList" },
-  { command: "orderedList", icon: "list-ordered", testId: "editor-toolbar-list-ordered", tooltipKey: "toolbar.numberedList" },
+  {
+    command: "bulletList",
+    icon: "list",
+    testId: "editor-toolbar-list-bullet",
+    tooltipKey: "toolbar.bulletList",
+  },
+  {
+    command: "orderedList",
+    icon: "list-ordered",
+    testId: "editor-toolbar-list-ordered",
+    tooltipKey: "toolbar.numberedList",
+  },
 ];
 
 /**

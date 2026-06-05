@@ -1,4 +1,12 @@
-import { Show, createEffect, createMemo, createSignal, onCleanup, type Accessor, type JSX } from "solid-js";
+import {
+  Show,
+  createEffect,
+  createMemo,
+  createSignal,
+  onCleanup,
+  type Accessor,
+  type JSX,
+} from "solid-js";
 import { CanvasEditorSurface } from "./components/CanvasEditorSurface.js";
 import { HorizontalRuler } from "./components/Ruler/HorizontalRuler.js";
 import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
@@ -13,8 +21,17 @@ import {
   type EditorLayoutParagraph,
   type EditorState,
 } from "../core/model.js";
-import { getDocumentCharacterCount, getDocumentWordCount } from "../core/editorState.js";
-import type { CaretBox, InputBox, RevisionBox, SelectedImageBox, SelectionBox } from "./editorUiTypes.js";
+import {
+  getDocumentCharacterCount,
+  getDocumentWordCount,
+} from "../core/editorState.js";
+import type {
+  CaretBox,
+  InputBox,
+  RevisionBox,
+  SelectedImageBox,
+  SelectionBox,
+} from "./editorUiTypes.js";
 import type { ImageResizeHandleDirection } from "./editorUiTypes.js";
 import { projectDocumentLayout } from "../layoutProjection/index.js";
 
@@ -97,18 +114,32 @@ export interface OasisEditorEditorSurfaceHandlers {
 export interface OasisEditorEditorInputHandlers {
   onInputBlur: () => void;
   onInputFocus: () => void;
-  onCompositionEnd: (event: CompositionEvent & { currentTarget: HTMLTextAreaElement }) => void;
+  onCompositionEnd: (
+    event: CompositionEvent & { currentTarget: HTMLTextAreaElement },
+  ) => void;
   onCompositionStart: () => void;
-  onCopy: (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => void;
-  onCut: (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => void;
+  onCopy: (
+    event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
+  ) => void;
+  onCut: (
+    event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
+  ) => void;
   onInput: (event: InputEvent & { currentTarget: HTMLTextAreaElement }) => void;
-  onKeyDown: (event: KeyboardEvent & { currentTarget: HTMLTextAreaElement }) => void;
-  onPaste: (event: ClipboardEvent & { currentTarget: HTMLTextAreaElement }) => void;
+  onKeyDown: (
+    event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
+  ) => void;
+  onPaste: (
+    event: ClipboardEvent & { currentTarget: HTMLTextAreaElement },
+  ) => void;
 }
 
 export interface OasisEditorEditorFileHandlers {
-  onImportInputChange: (event: Event & { currentTarget: HTMLInputElement }) => void;
-  onImageInputChange: (event: Event & { currentTarget: HTMLInputElement }) => void;
+  onImportInputChange: (
+    event: Event & { currentTarget: HTMLInputElement },
+  ) => void;
+  onImageInputChange: (
+    event: Event & { currentTarget: HTMLInputElement },
+  ) => void;
 }
 
 export interface OasisEditorEditorProps {
@@ -130,7 +161,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   const fileHandlers = () => props.fileHandlers;
   let scrollContentRef: HTMLDivElement | undefined;
   let viewportElement: HTMLDivElement | undefined;
-  const [viewportRef, setViewportRef] = createSignal<HTMLDivElement | undefined>();
+  const [viewportRef, setViewportRef] = createSignal<
+    HTMLDivElement | undefined
+  >();
   const pageSettings = () => getDocumentPageSettings(props.state().document);
   const viewportHeight = (): string => {
     const rawViewportHeight = layout().viewportHeight;
@@ -146,7 +179,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
     ...(layout().style ?? {}),
   }));
   const documentForStats = createMemo(() => props.state().document);
-  const characterCount = createMemo(() => getDocumentCharacterCount(documentForStats()));
+  const characterCount = createMemo(() =>
+    getDocumentCharacterCount(documentForStats()),
+  );
   const wordCount = createMemo(() => getDocumentWordCount(documentForStats()));
 
   const statusDocumentLayout = createMemo(() =>
@@ -162,7 +197,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   );
 
   const totalPages = () => Math.max(1, statusDocumentLayout().pages.length);
-  const [viewportPageIndex, setViewportPageIndex] = createSignal<number | null>(null);
+  const [viewportPageIndex, setViewportPageIndex] = createSignal<number | null>(
+    null,
+  );
 
   const recomputeViewportPageIndex = () => {
     const viewport = viewportElement;
@@ -171,7 +208,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
       return;
     }
     const pageElements = Array.from(
-      viewport.querySelectorAll<HTMLElement>(".oasis-editor-paper[data-page-index]"),
+      viewport.querySelectorAll<HTMLElement>(
+        ".oasis-editor-paper[data-page-index]",
+      ),
     );
     if (pageElements.length === 0) {
       setViewportPageIndex(null);
@@ -286,8 +325,12 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
             onSurfaceDblClick={surfaceHandlers().onSurfaceDblClick}
             onParagraphMouseDown={surfaceHandlers().onParagraphMouseDown}
             onImageMouseDown={surfaceHandlers().onImageMouseDown}
-            onImageResizeHandleMouseDown={surfaceHandlers().onImageResizeHandleMouseDown}
-            onTableDragHandleMouseDown={surfaceHandlers().onTableDragHandleMouseDown}
+            onImageResizeHandleMouseDown={
+              surfaceHandlers().onImageResizeHandleMouseDown
+            }
+            onTableDragHandleMouseDown={
+              surfaceHandlers().onTableDragHandleMouseDown
+            }
             onRevisionMouseEnter={surfaceHandlers().onRevisionMouseEnter}
             onRevisionMouseLeave={surfaceHandlers().onRevisionMouseLeave}
           />
@@ -309,7 +352,8 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
               top: `${selectedImage()?.top ?? 0}px`,
               width: `${selectedImage()?.width ?? 0}px`,
               height: `${selectedImage()?.height ?? 0}px`,
-              "pointer-events": !layout().readOnly && selectedImage() ? "auto" : "none",
+              "pointer-events":
+                !layout().readOnly && selectedImage() ? "auto" : "none",
             }}
             onMouseDown={(event) => {
               const image = selectedImage();
@@ -458,7 +502,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
             )}
           </div>
 
-          <Show when={overlays().toolbarHost && overlays().showFloatingTableToolbar}>
+          <Show
+            when={overlays().toolbarHost && overlays().showFloatingTableToolbar}
+          >
             <FloatingTableToolbar
               host={overlays().toolbarHost!}
               selectionBoxes={overlays().selectionBoxes}
@@ -537,7 +583,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
               aria-busy={!isDone && !isError}
             >
               <div class="oasis-editor-import-card">
-                <div class="oasis-editor-import-title">{t("import.overlay.title")}</div>
+                <div class="oasis-editor-import-title">
+                  {t("import.overlay.title")}
+                </div>
                 <div
                   class="oasis-editor-import-phase"
                   data-testid="editor-import-phase"
@@ -560,9 +608,13 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
                 </div>
                 <div class="oasis-editor-import-progress-label">
                   {isDone ? (
-                    <span class="oasis-editor-import-done-icon">{t("import.phase.done")}</span>
+                    <span class="oasis-editor-import-done-icon">
+                      {t("import.phase.done")}
+                    </span>
                   ) : isError ? (
-                    <span class="oasis-editor-import-error-icon">{t("import.phase.error")}</span>
+                    <span class="oasis-editor-import-error-icon">
+                      {t("import.phase.error")}
+                    </span>
                   ) : (
                     <>{Math.round(progress().progress)}%</>
                   )}
@@ -572,10 +624,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
           );
         }}
       </Show>
-      <div
-        class="oasis-editor-statusbar"
-        data-testid="editor-statusbar"
-      >
+      <div class="oasis-editor-statusbar" data-testid="editor-statusbar">
         <span
           class="oasis-editor-statusbar-item"
           data-testid="editor-statusbar-word-count"

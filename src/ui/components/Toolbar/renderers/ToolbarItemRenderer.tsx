@@ -26,7 +26,9 @@ export function ToolbarItemRenderer(props: {
       }}
     >
       <Show when={component()}>
-        {(comp) => <Dynamic component={comp()} item={props.item} api={props.api} />}
+        {(comp) => (
+          <Dynamic component={comp()} item={props.item} api={props.api} />
+        )}
       </Show>
     </div>
   );

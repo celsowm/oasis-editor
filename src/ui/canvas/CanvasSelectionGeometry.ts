@@ -9,7 +9,10 @@ import {
 } from "../../core/model.js";
 import { buildTableCellLayout } from "../../core/tableLayout.js";
 import type { CaretBox, InputBox, SelectionBox } from "../editorUiTypes.js";
-import type { CanvasLayoutSnapshot, CanvasSnapshotParagraph } from "./CanvasLayoutSnapshot.js";
+import type {
+  CanvasLayoutSnapshot,
+  CanvasSnapshotParagraph,
+} from "./CanvasLayoutSnapshot.js";
 
 export interface SelectedImageSelectionBox {
   paragraphId: string;
@@ -31,7 +34,10 @@ export interface CanvasSelectionGeometryResult {
 const TEXT_SELECTION_ANTIALIAS_OVERSCAN_PX = 1;
 const TEXT_SELECTION_LEADING_BEARING_INSET_PX = 1;
 
-function getParagraphTextAtOffset(paragraph: CanvasSnapshotParagraph, offset: number): string {
+function getParagraphTextAtOffset(
+  paragraph: CanvasSnapshotParagraph,
+  offset: number,
+): string {
   return paragraph.paragraph.runs.map((run) => run.text).join("")[offset] ?? "";
 }
 
@@ -51,7 +57,10 @@ function getParagraphSelectionRange(
   if (paragraphIndex === undefined) {
     return null;
   }
-  if (paragraphIndex < normalized.startIndex || paragraphIndex > normalized.endIndex) {
+  if (
+    paragraphIndex < normalized.startIndex ||
+    paragraphIndex > normalized.endIndex
+  ) {
     return null;
   }
 
@@ -89,7 +98,9 @@ function resolveCaretSlot(
   if (paragraphs.length === 0) return null;
   const containingSegment =
     paragraphs.find(
-      (paragraph) => focusOffset >= paragraph.startOffset && focusOffset <= paragraph.endOffset,
+      (paragraph) =>
+        focusOffset >= paragraph.startOffset &&
+        focusOffset <= paragraph.endOffset,
     ) ?? paragraphs[paragraphs.length - 1]!;
   const slots = containingSegment.lines.flatMap((line) => line.slots);
   if (slots.length === 0) {
@@ -138,7 +149,9 @@ export function computeCanvasSelectionGeometry(
   const selectionBoxes: SelectionBox[] = [];
   const surfaceRect = snapshot.surfaceRect;
   const paragraphIndexById = new Map(
-    getParagraphs(state).map((paragraph, index) => [paragraph.id, index] as const),
+    getParagraphs(state).map(
+      (paragraph, index) => [paragraph.id, index] as const,
+    ),
   );
   let selectedImageBox: SelectedImageSelectionBox | null = null;
 
@@ -168,8 +181,16 @@ export function computeCanvasSelectionGeometry(
 
   // Check if we have a table-cell selection across multiple cells
   const activeSectionIndex = getActiveSectionIndex(state);
-  const anchorLoc = findParagraphTableLocation(state.document, state.selection.anchor.paragraphId, activeSectionIndex);
-  const focusLoc = findParagraphTableLocation(state.document, state.selection.focus.paragraphId, activeSectionIndex);
+  const anchorLoc = findParagraphTableLocation(
+    state.document,
+    state.selection.anchor.paragraphId,
+    activeSectionIndex,
+  );
+  const focusLoc = findParagraphTableLocation(
+    state.document,
+    state.selection.focus.paragraphId,
+    activeSectionIndex,
+  );
 
   let isMultiCellSelection = false;
 
@@ -178,7 +199,8 @@ export function computeCanvasSelectionGeometry(
     focusLoc &&
     anchorLoc.blockIndex === focusLoc.blockIndex &&
     anchorLoc.zone === focusLoc.zone &&
-    (anchorLoc.rowIndex !== focusLoc.rowIndex || anchorLoc.cellIndex !== focusLoc.cellIndex)
+    (anchorLoc.rowIndex !== focusLoc.rowIndex ||
+      anchorLoc.cellIndex !== focusLoc.cellIndex)
   ) {
     const sections = getDocumentSections(state.document);
     const section = sections[activeSectionIndex];
@@ -196,20 +218,28 @@ export function computeCanvasSelectionGeometry(
       const tableLayout = buildTableCellLayout(tableBlock);
       const anchorCell = tableLayout.find(
         (entry) =>
-          entry.rowIndex === anchorLoc.rowIndex && entry.cellIndex === anchorLoc.cellIndex,
+          entry.rowIndex === anchorLoc.rowIndex &&
+          entry.cellIndex === anchorLoc.cellIndex,
       );
       const focusCell = tableLayout.find(
         (entry) =>
-          entry.rowIndex === focusLoc.rowIndex && entry.cellIndex === focusLoc.cellIndex,
+          entry.rowIndex === focusLoc.rowIndex &&
+          entry.cellIndex === focusLoc.cellIndex,
       );
 
       if (anchorCell && focusCell) {
-        const startRow = Math.min(anchorCell.visualRowIndex, focusCell.visualRowIndex);
+        const startRow = Math.min(
+          anchorCell.visualRowIndex,
+          focusCell.visualRowIndex,
+        );
         const endRow = Math.max(
           anchorCell.visualRowIndex + anchorCell.rowSpan - 1,
           focusCell.visualRowIndex + focusCell.rowSpan - 1,
         );
-        const startCol = Math.min(anchorCell.visualColumnIndex, focusCell.visualColumnIndex);
+        const startCol = Math.min(
+          anchorCell.visualColumnIndex,
+          focusCell.visualColumnIndex,
+        );
         const endCol = Math.max(
           anchorCell.visualColumnIndex + anchorCell.colSpan - 1,
           focusCell.visualColumnIndex + focusCell.colSpan - 1,
@@ -218,7 +248,10 @@ export function computeCanvasSelectionGeometry(
         const uniqueCells = new Set<string>();
 
         for (const paragraph of snapshot.paragraphs) {
-          if (paragraph.tableCell && paragraph.tableCell.tableId === tableBlock.id) {
+          if (
+            paragraph.tableCell &&
+            paragraph.tableCell.tableId === tableBlock.id
+          ) {
             const cell = tableLayout.find(
               (c) =>
                 c.rowIndex === paragraph.tableCell!.rowIndex &&
@@ -258,17 +291,33 @@ export function computeCanvasSelectionGeometry(
         normalized,
       );
       if (!selectedRange) continue;
-      const paragraphSelectionStart = Math.max(selectedRange.start, paragraph.startOffset);
-      const paragraphSelectionEnd = Math.min(selectedRange.end, paragraph.endOffset);
+      const paragraphSelectionStart = Math.max(
+        selectedRange.start,
+        paragraph.startOffset,
+      );
+      const paragraphSelectionEnd = Math.min(
+        selectedRange.end,
+        paragraph.endOffset,
+      );
       if (paragraphSelectionStart >= paragraphSelectionEnd) continue;
 
       for (const line of paragraph.lines) {
         let lineStart = Math.max(paragraphSelectionStart, line.startOffset);
         let lineEnd = Math.min(paragraphSelectionEnd, line.endOffset);
-        while (lineStart < lineEnd && isSelectionEdgeWhitespace(getParagraphTextAtOffset(paragraph, lineStart))) {
+        while (
+          lineStart < lineEnd &&
+          isSelectionEdgeWhitespace(
+            getParagraphTextAtOffset(paragraph, lineStart),
+          )
+        ) {
           lineStart += 1;
         }
-        while (lineEnd > lineStart && isSelectionEdgeWhitespace(getParagraphTextAtOffset(paragraph, lineEnd - 1))) {
+        while (
+          lineEnd > lineStart &&
+          isSelectionEdgeWhitespace(
+            getParagraphTextAtOffset(paragraph, lineEnd - 1),
+          )
+        ) {
           lineEnd -= 1;
         }
         if (lineStart >= lineEnd) continue;
@@ -283,10 +332,15 @@ export function computeCanvasSelectionGeometry(
           line.startOffset === paragraph.startOffset &&
           line.top > paragraph.top;
         const boxTop = shouldIncludeSpacingBefore ? paragraph.top : line.top;
-        const boxHeight = shouldIncludeSpacingBefore ? line.top + line.height - paragraph.top : line.height;
+        const boxHeight = shouldIncludeSpacingBefore
+          ? line.top + line.height - paragraph.top
+          : line.height;
 
         selectionBoxes.push({
-          left: startSlot.left - surfaceRect.left + TEXT_SELECTION_LEADING_BEARING_INSET_PX,
+          left:
+            startSlot.left -
+            surfaceRect.left +
+            TEXT_SELECTION_LEADING_BEARING_INSET_PX,
           top: boxTop - surfaceRect.top,
           width: Math.max(
             1,
@@ -302,7 +356,8 @@ export function computeCanvasSelectionGeometry(
   }
 
   const focusParagraphId = state.selection.focus.paragraphId;
-  const focusParagraphSegments = snapshot.paragraphsById.get(focusParagraphId) ?? [];
+  const focusParagraphSegments =
+    snapshot.paragraphsById.get(focusParagraphId) ?? [];
   const focusParagraphNode = focusParagraphSegments[0]?.paragraph;
   const focusOffset = focusParagraphNode
     ? positionToParagraphOffset(focusParagraphNode, state.selection.focus)
@@ -326,4 +381,3 @@ export function computeCanvasSelectionGeometry(
     selectedImageBox,
   };
 }
-

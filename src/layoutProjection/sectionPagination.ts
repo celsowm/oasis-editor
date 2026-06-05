@@ -15,22 +15,20 @@ import {
 } from "../core/model.js";
 import type { ITextMeasurer } from "../core/engine.js";
 
-export type BlocksLayoutProjector = (
-  context: {
-    blocks: EditorBlockNode[];
-    pageSettings: EditorSection["pageSettings"];
-    maxPageHeight: number;
-    measuredHeights?: Record<string, number>;
-    measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>;
-    styles?: Record<string, EditorNamedStyle>;
-    pageOffset?: number;
-    totalPages?: number;
-    existingPages?: EditorLayoutPage[];
-    layoutMode?: "fast" | "wordParity";
-    measurer?: ITextMeasurer;
-    reservedHeightByPageIndex?: Map<number, number>;
-  },
-) => EditorLayoutPage[];
+export type BlocksLayoutProjector = (context: {
+  blocks: EditorBlockNode[];
+  pageSettings: EditorSection["pageSettings"];
+  maxPageHeight: number;
+  measuredHeights?: Record<string, number>;
+  measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>;
+  styles?: Record<string, EditorNamedStyle>;
+  pageOffset?: number;
+  totalPages?: number;
+  existingPages?: EditorLayoutPage[];
+  layoutMode?: "fast" | "wordParity";
+  measurer?: ITextMeasurer;
+  reservedHeightByPageIndex?: Map<number, number>;
+}) => EditorLayoutPage[];
 
 export type HeaderFooterBlockProjector = (
   blocks: EditorBlockNode[],
@@ -62,7 +60,9 @@ export interface SectionPaginationResult {
   totalPages?: number;
 }
 
-function getProjectedBlocksHeight(blocks: EditorLayoutBlock[] | undefined): number {
+function getProjectedBlocksHeight(
+  blocks: EditorLayoutBlock[] | undefined,
+): number {
   if (!blocks || blocks.length === 0) {
     return 0;
   }
@@ -105,23 +105,28 @@ function resolveEffectiveVerticalMetrics(
   pageSettings: EditorPageSettings,
   headerBlocks: EditorLayoutBlock[] | undefined,
   footerBlocks: EditorLayoutBlock[] | undefined,
-): { bodyTop: number; bodyBottom: number; contentHeight: number; headerTop: number; footerTop: number } {
+): {
+  bodyTop: number;
+  bodyBottom: number;
+  contentHeight: number;
+  headerTop: number;
+  footerTop: number;
+} {
   const staticBodyTop = getPageBodyTop(pageSettings);
   const staticBodyBottom = getPageBodyBottom(pageSettings);
   const headerHeight = getProjectedBlocksHeight(headerBlocks);
   const footerHeight = getProjectedBlocksHeight(footerBlocks);
 
   const headerTop = pageSettings.margins.header;
-  const footerTop = pageSettings.height - pageSettings.margins.footer - footerHeight;
+  const footerTop =
+    pageSettings.height - pageSettings.margins.footer - footerHeight;
 
   const headerOccupiedBottom =
     headerHeight > 0
       ? Math.min(pageSettings.height, headerTop + headerHeight)
       : 0;
   const footerOccupiedTop =
-    footerHeight > 0
-      ? Math.max(0, footerTop)
-      : pageSettings.height;
+    footerHeight > 0 ? Math.max(0, footerTop) : pageSettings.height;
   const bodyTop = Math.max(staticBodyTop, headerOccupiedBottom);
   const bodyBottom = Math.max(
     bodyTop,
@@ -161,42 +166,69 @@ function createHeaderFooterVariantProjector(context: SectionPaginationContext) {
 function projectTallestHeaderVariant(
   section: EditorSection,
   contentWidth: number,
-  projectHeaderFooterVariant: ReturnType<typeof createHeaderFooterVariantProjector>,
+  projectHeaderFooterVariant: ReturnType<
+    typeof createHeaderFooterVariantProjector
+  >,
 ) {
-  const variants = [section.header, section.firstPageHeader, section.evenPageHeader]
+  const variants = [
+    section.header,
+    section.firstPageHeader,
+    section.evenPageHeader,
+  ]
     .map((blocks) => projectHeaderFooterVariant(blocks, contentWidth))
     .filter((blocks): blocks is EditorLayoutBlock[] => !!blocks);
-  return variants.sort((a, b) => getProjectedBlocksHeight(b) - getProjectedBlocksHeight(a))[0];
+  return variants.sort(
+    (a, b) => getProjectedBlocksHeight(b) - getProjectedBlocksHeight(a),
+  )[0];
 }
 
 function projectTallestFooterVariant(
   section: EditorSection,
   contentWidth: number,
-  projectHeaderFooterVariant: ReturnType<typeof createHeaderFooterVariantProjector>,
+  projectHeaderFooterVariant: ReturnType<
+    typeof createHeaderFooterVariantProjector
+  >,
 ) {
-  const variants = [section.footer, section.firstPageFooter, section.evenPageFooter]
+  const variants = [
+    section.footer,
+    section.firstPageFooter,
+    section.evenPageFooter,
+  ]
     .map((blocks) => projectHeaderFooterVariant(blocks, contentWidth))
     .filter((blocks): blocks is EditorLayoutBlock[] => !!blocks);
-  return variants.sort((a, b) => getProjectedBlocksHeight(b) - getProjectedBlocksHeight(a))[0];
+  return variants.sort(
+    (a, b) => getProjectedBlocksHeight(b) - getProjectedBlocksHeight(a),
+  )[0];
 }
 
 function calculateTotalPages(
   context: SectionPaginationContext,
-  projectHeaderFooterVariant: ReturnType<typeof createHeaderFooterVariantProjector>,
+  projectHeaderFooterVariant: ReturnType<
+    typeof createHeaderFooterVariantProjector
+  >,
 ) {
   let currentTotal = 0;
-  let activePages: EditorLayoutPage[] = [];
+  const activePages: EditorLayoutPage[] = [];
   for (const section of context.sections) {
     const contentWidth = getPageContentWidth(section.pageSettings);
-    const headerBlocks = projectTallestHeaderVariant(section, contentWidth, projectHeaderFooterVariant);
-    const footerBlocks = projectTallestFooterVariant(section, contentWidth, projectHeaderFooterVariant);
+    const headerBlocks = projectTallestHeaderVariant(
+      section,
+      contentWidth,
+      projectHeaderFooterVariant,
+    );
+    const footerBlocks = projectTallestFooterVariant(
+      section,
+      contentWidth,
+      projectHeaderFooterVariant,
+    );
     const metrics = resolveEffectiveVerticalMetrics(
       section.pageSettings,
       headerBlocks,
       footerBlocks,
     );
     const pageHeight = context.maxPageHeightOverride ?? metrics.contentHeight;
-    const isContinuous = section.breakType === "continuous" && activePages.length > 0;
+    const isContinuous =
+      section.breakType === "continuous" && activePages.length > 0;
 
     const sectionPages = context.projectBlocks({
       blocks: section.blocks,
@@ -225,23 +257,37 @@ function calculateTotalPages(
 function projectAllPages(
   context: SectionPaginationContext,
   totalPages: number | undefined,
-  projectHeaderFooterVariant: ReturnType<typeof createHeaderFooterVariantProjector>,
+  projectHeaderFooterVariant: ReturnType<
+    typeof createHeaderFooterVariantProjector
+  >,
   reservedHeightByPageIndex?: Map<number, number>,
 ) {
   const allPages: EditorLayoutPage[] = [];
 
   for (const section of context.sections) {
     const contentWidth = getPageContentWidth(section.pageSettings);
-    const sectionHeaderBlocks = projectTallestHeaderVariant(section, contentWidth, projectHeaderFooterVariant);
-    const sectionFooterBlocks = projectTallestFooterVariant(section, contentWidth, projectHeaderFooterVariant);
+    const sectionHeaderBlocks = projectTallestHeaderVariant(
+      section,
+      contentWidth,
+      projectHeaderFooterVariant,
+    );
+    const sectionFooterBlocks = projectTallestFooterVariant(
+      section,
+      contentWidth,
+      projectHeaderFooterVariant,
+    );
     const sectionMetrics = resolveEffectiveVerticalMetrics(
       section.pageSettings,
       sectionHeaderBlocks,
       sectionFooterBlocks,
     );
-    const pageHeight = context.maxPageHeightOverride ?? sectionMetrics.contentHeight;
-    const isContinuous = section.breakType === "continuous" && allPages.length > 0;
-    const sectionPageOffset = isContinuous ? allPages.length - 1 : allPages.length;
+    const pageHeight =
+      context.maxPageHeightOverride ?? sectionMetrics.contentHeight;
+    const isContinuous =
+      section.breakType === "continuous" && allPages.length > 0;
+    const sectionPageOffset = isContinuous
+      ? allPages.length - 1
+      : allPages.length;
 
     const sectionPages = context.projectBlocks({
       blocks: section.blocks,
@@ -267,14 +313,22 @@ function projectAllPages(
       const pageContentWidth = getPageContentWidth(page.pageSettings);
       const headerBlocks =
         projectHeaderFooterVariant(
-          selectSectionHeaderBlocks(section, Math.max(0, pageIndexInSection), page.index),
+          selectSectionHeaderBlocks(
+            section,
+            Math.max(0, pageIndexInSection),
+            page.index,
+          ),
           pageContentWidth,
           page.index,
           totalPages,
         ) ?? page.headerBlocks;
       const footerBlocks =
         projectHeaderFooterVariant(
-          selectSectionFooterBlocks(section, Math.max(0, pageIndexInSection), page.index),
+          selectSectionFooterBlocks(
+            section,
+            Math.max(0, pageIndexInSection),
+            page.index,
+          ),
           pageContentWidth,
           page.index,
           totalPages,
@@ -289,12 +343,16 @@ function projectAllPages(
       page.headerBlocks = headerBlocks;
       page.footerBlocks = footerBlocks;
       page.bodyTop = pageMetrics.bodyTop;
-      page.bodyBottom = Math.max(pageMetrics.bodyTop, pageMetrics.bodyBottom - reservedHeight);
+      page.bodyBottom = Math.max(
+        pageMetrics.bodyTop,
+        pageMetrics.bodyBottom - reservedHeight,
+      );
       page.headerTop = pageMetrics.headerTop;
       page.footerTop = pageMetrics.footerTop;
       page.maxHeight = Math.max(
         24,
-        (context.maxPageHeightOverride ?? pageMetrics.contentHeight) - reservedHeight,
+        (context.maxPageHeightOverride ?? pageMetrics.contentHeight) -
+          reservedHeight,
       );
       allPages.push(page);
     }
@@ -307,7 +365,8 @@ export function projectDocumentSections(
   context: SectionPaginationContext,
   reservedHeightByPageIndex?: Map<number, number>,
 ): SectionPaginationResult {
-  const projectHeaderFooterVariant = createHeaderFooterVariantProjector(context);
+  const projectHeaderFooterVariant =
+    createHeaderFooterVariantProjector(context);
   const totalPages = context.needsTotalPages
     ? calculateTotalPages(context, projectHeaderFooterVariant)
     : undefined;

@@ -70,6 +70,14 @@ export function createEditorDialogs() {
       spacingBefore: "",
       spacingAfter: "",
       lineHeight: "",
+      shading: "",
+      borderStyle: "",
+      borderWidth: "",
+      borderColor: "",
+      borderSideTop: false,
+      borderSideRight: false,
+      borderSideBottom: false,
+      borderSideLeft: false,
     },
   });
 

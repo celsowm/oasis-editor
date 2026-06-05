@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { EditorDocument } from "../../core/model.js";
+import type { EditorDocument, EditorLayoutLine } from "../../core/model.js";
 import {
   createEditorFootnote,
   createEditorParagraph,
@@ -837,6 +837,54 @@ describe("OasisPdfWriter", () => {
     expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThan(18);
   });
 
+  it("strokes a dashed paragraph border with a real PDF dash pattern", async () => {
+    const document: EditorDocument = {
+      id: "pdf-paragraph-border-document",
+      sections: [
+        {
+          id: "section-1",
+          pageSettings: {
+            width: 480,
+            height: 480,
+            orientation: "portrait",
+            margins: {
+              top: 48,
+              right: 48,
+              bottom: 48,
+              left: 48,
+              header: 24,
+              footer: 24,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: "boxed-paragraph",
+              type: "paragraph",
+              style: {
+                shading: "#fef3c7",
+                borderTop: { width: 1, type: "dashed", color: "#111827" },
+                borderRight: { width: 1, type: "dashed", color: "#111827" },
+                borderBottom: { width: 1, type: "dashed", color: "#111827" },
+                borderLeft: { width: 1, type: "dashed", color: "#111827" },
+              },
+              runs: [{ id: "boxed-run", text: "Dashed boxed paragraph" }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+
+    expectPdfText(pdf, "Dashed boxed paragraph");
+    // Shading fill rectangle in the paragraph's shading color (#fef3c7).
+    expect(pdf).toContain("0.996 0.953 0.78 rg");
+    // Dashed edges emit a PDF dash pattern ([pxToPt(5) pxToPt(3)] = [3.75 2.25]).
+    expect(pdf).toContain("[3.75 2.25] 0 d");
+  });
+
   it("wraps long paragraphs and creates additional pages when lines overflow the section content area", async () => {
     const document: EditorDocument = {
       id: "pdf-overflow-document",
@@ -1293,9 +1341,11 @@ describe("OasisPdfWriter", () => {
       { layoutMode: "wordParity" },
     );
     const page = layout.pages[0]!;
-    const headerLine = page.headerBlocks?.[0]?.layout?.lines[0]!;
-    const bodyLine = page.blocks[0]?.layout?.lines[0]!;
-    const footerLine = page.footerBlocks?.[0]?.layout?.lines[0]!;
+    const headerLine = page.headerBlocks?.[0]?.layout
+      ?.lines[0] as EditorLayoutLine;
+    const bodyLine = page.blocks[0]?.layout?.lines[0] as EditorLayoutLine;
+    const footerLine = page.footerBlocks?.[0]?.layout
+      ?.lines[0] as EditorLayoutLine;
 
     expect(findTextTopY(pdf, pageHeight, "HeaderOnly")).toBeCloseTo(
       pxToPt((page.headerTop ?? 0) + headerLine.top + headerLine.height * 0.8),
@@ -1379,8 +1429,10 @@ describe("OasisPdfWriter", () => {
       { layoutMode: "wordParity" },
     );
     const firstPage = layout.pages[0]!;
-    const headerLine = firstPage.headerBlocks?.[0]?.layout?.lines[0]!;
-    const footerLine = firstPage.footerBlocks?.[0]?.layout?.lines[0]!;
+    const headerLine = firstPage.headerBlocks?.[0]?.layout
+      ?.lines[0] as EditorLayoutLine;
+    const footerLine = firstPage.footerBlocks?.[0]?.layout
+      ?.lines[0] as EditorLayoutLine;
     expect(findTextTopY(pdf, pageHeight, "RepeatHeader")).toBeCloseTo(
       pxToPt(
         (firstPage.headerTop ?? 0) + headerLine.top + headerLine.height * 0.8,

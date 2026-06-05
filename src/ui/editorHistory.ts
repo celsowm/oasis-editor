@@ -38,11 +38,15 @@ export function applyEditorHistoryTransaction(
   return {
     undoStack: canMerge ? history.undoStack : [...history.undoStack, previous],
     redoStack: [],
-    lastTransactionMeta: options?.mergeKey ? { mergeKey: options.mergeKey, timestamp: now } : null,
+    lastTransactionMeta: options?.mergeKey
+      ? { mergeKey: options.mergeKey, timestamp: now }
+      : null,
   };
 }
 
-export function resetEditorHistoryGrouping(history: EditorHistoryState): EditorHistoryState {
+export function resetEditorHistoryGrouping(
+  history: EditorHistoryState,
+): EditorHistoryState {
   return {
     ...history,
     lastTransactionMeta: null,

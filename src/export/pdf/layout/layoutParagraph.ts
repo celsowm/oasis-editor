@@ -1,4 +1,7 @@
-import type { EditorParagraphNode, EditorTextRun } from "../../../core/model.js";
+import type {
+  EditorParagraphNode,
+  EditorTextRun,
+} from "../../../core/model.js";
 import type { PdfTextMeasurer } from "./PdfTextMeasurer.js";
 
 export interface PdfParagraphTextContext {
@@ -46,9 +49,14 @@ interface PdfTextToken {
 
 const TOKEN_PATTERN = /\n|\S+\s*|\s+/gu;
 
-export function resolvePdfRunText(run: EditorTextRun, context: PdfParagraphTextContext): string {
+export function resolvePdfRunText(
+  run: EditorTextRun,
+  context: PdfParagraphTextContext,
+): string {
   if (run.field) {
-    return run.field.type === "NUMPAGES" ? String(context.totalPages) : String(context.pageNumber);
+    return run.field.type === "NUMPAGES"
+      ? String(context.totalPages)
+      : String(context.pageNumber);
   }
   if (run.image) {
     return "";
@@ -88,7 +96,11 @@ function tokenizeRun(
   options: LayoutPdfParagraphOptions,
 ): PdfTextToken[] {
   const tokens: PdfTextToken[] = [];
-  const fontSize = pdfRunFontSizePt(run, options.defaultFontSize, options.pxToPt);
+  const fontSize = pdfRunFontSizePt(
+    run,
+    options.defaultFontSize,
+    options.pxToPt,
+  );
 
   for (const match of text.matchAll(TOKEN_PATTERN)) {
     const tokenText = match[0];
@@ -103,7 +115,13 @@ function tokenizeRun(
     tokens.push({
       run,
       text: tokenText,
-      width: measurePdfRunTextWidthPt(run, tokenText, options.context, options.defaultFontSize, options.pxToPt),
+      width: measurePdfRunTextWidthPt(
+        run,
+        tokenText,
+        options.context,
+        options.defaultFontSize,
+        options.pxToPt,
+      ),
       fontSize,
     });
   }
@@ -115,7 +133,10 @@ function tokenCreatesVisibleText(token: PdfTextToken): boolean {
   return token.text.trim().length > 0;
 }
 
-function createLine(tokens: PdfTextToken[], defaultLineHeight: number): PdfParagraphLine {
+function createLine(
+  tokens: PdfTextToken[],
+  defaultLineHeight: number,
+): PdfParagraphLine {
   let x = 0;
   let width = 0;
   let maxFontSize = 0;
@@ -144,16 +165,25 @@ function createLine(tokens: PdfTextToken[], defaultLineHeight: number): PdfParag
   };
 }
 
-function pushLine(lines: PdfParagraphLine[], tokens: PdfTextToken[], defaultLineHeight: number): void {
+function pushLine(
+  lines: PdfParagraphLine[],
+  tokens: PdfTextToken[],
+  defaultLineHeight: number,
+): void {
   const withoutLeadingWhitespace = tokens.slice();
-  while (withoutLeadingWhitespace.length > 0 && !tokenCreatesVisibleText(withoutLeadingWhitespace[0]!)) {
+  while (
+    withoutLeadingWhitespace.length > 0 &&
+    !tokenCreatesVisibleText(withoutLeadingWhitespace[0]!)
+  ) {
     withoutLeadingWhitespace.shift();
   }
 
   const withoutTrailingWhitespace = withoutLeadingWhitespace;
   while (
     withoutTrailingWhitespace.length > 0 &&
-    !tokenCreatesVisibleText(withoutTrailingWhitespace[withoutTrailingWhitespace.length - 1]!)
+    !tokenCreatesVisibleText(
+      withoutTrailingWhitespace[withoutTrailingWhitespace.length - 1]!,
+    )
   ) {
     withoutTrailingWhitespace.pop();
   }
@@ -161,7 +191,9 @@ function pushLine(lines: PdfParagraphLine[], tokens: PdfTextToken[], defaultLine
   lines.push(createLine(withoutTrailingWhitespace, defaultLineHeight));
 }
 
-export function layoutPdfParagraph(options: LayoutPdfParagraphOptions): PdfParagraphLayout {
+export function layoutPdfParagraph(
+  options: LayoutPdfParagraphOptions,
+): PdfParagraphLayout {
   const maxWidth = Math.max(1, options.maxWidth);
   const tokens: PdfTextToken[] = [];
 

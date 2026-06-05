@@ -1,6 +1,9 @@
 import { Show, type JSX } from "solid-js";
 import { Portal } from "solid-js/web";
-import { usePopoverPosition, type PopoverPlacement } from "./usePopoverPosition.js";
+import {
+  usePopoverPosition,
+  type PopoverPlacement,
+} from "./usePopoverPosition.js";
 import { useDismiss } from "./useDismiss.js";
 
 export interface PopoverTriggerApi {

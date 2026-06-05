@@ -7,7 +7,10 @@ import type {
 import type { ITextMeasurer } from "../core/engine.js";
 import { domTextMeasurer } from "../ui/textMeasurement.js";
 import { projectHeaderFooterBlocksWithDependencies } from "./headerFooterProjection.js";
-import { getProjectedParagraphBlockHeight, projectParagraphLayout } from "./paragraphPagination.js";
+import {
+  getProjectedParagraphBlockHeight,
+  projectParagraphLayout,
+} from "./paragraphPagination.js";
 import { estimateTableBlockHeight } from "./tablePagination.js";
 
 export function projectHeaderFooterBlocks(

@@ -1,16 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { createEditorParagraph } from "../../core/editorState.js";
-import type { EditorLayoutFragment, EditorLayoutFragmentChar, EditorParagraphNode } from "../../core/model.js";
+import type {
+  EditorLayoutFragment,
+  EditorLayoutFragmentChar,
+  EditorParagraphNode,
+} from "../../core/model.js";
 import { composeMeasuredParagraphLines } from "../../ui/textMeasurement.js";
 
-function createFragments(paragraph: EditorParagraphNode): EditorLayoutFragment[] {
+function createFragments(
+  paragraph: EditorParagraphNode,
+): EditorLayoutFragment[] {
   let paragraphOffset = 0;
   return paragraph.runs.map((run) => {
-    const chars: EditorLayoutFragmentChar[] = Array.from(run.text).map((char, index) => ({
-      char,
-      paragraphOffset: paragraphOffset + index,
-      runOffset: index,
-    }));
+    const chars: EditorLayoutFragmentChar[] = Array.from(run.text).map(
+      (char, index) => ({
+        char,
+        paragraphOffset: paragraphOffset + index,
+        runOffset: index,
+      }),
+    );
     const fragment: EditorLayoutFragment = {
       paragraphId: paragraph.id,
       runId: run.id,
@@ -144,7 +152,10 @@ describe("composeMeasuredParagraphLines alignment", () => {
     const leftLine = leftLines[0]!;
     const justifiedLine = justifiedLines[0]!;
     const firstOffset = justifiedLine.startOffset;
-    const lineText = text.slice(justifiedLine.startOffset, justifiedLine.endOffset);
+    const lineText = text.slice(
+      justifiedLine.startOffset,
+      justifiedLine.endOffset,
+    );
     const firstSpaceIndex = lineText.indexOf(" ");
     const secondSpaceIndex = lineText.indexOf(" ", firstSpaceIndex + 1);
     expect(firstSpaceIndex).toBeGreaterThanOrEqual(0);
@@ -152,8 +163,12 @@ describe("composeMeasuredParagraphLines alignment", () => {
 
     const firstOffsetAfterFirstSpace = firstOffset + firstSpaceIndex + 1;
     const firstOffsetAfterSecondSpace = firstOffset + secondSpaceIndex + 1;
-    const leftAfterFirst = leftLine.slots.find((slot) => slot.offset === firstOffsetAfterFirstSpace)!;
-    const leftAfterSecond = leftLine.slots.find((slot) => slot.offset === firstOffsetAfterSecondSpace)!;
+    const leftAfterFirst = leftLine.slots.find(
+      (slot) => slot.offset === firstOffsetAfterFirstSpace,
+    )!;
+    const leftAfterSecond = leftLine.slots.find(
+      (slot) => slot.offset === firstOffsetAfterSecondSpace,
+    )!;
     const justifiedAfterFirst = justifiedLine.slots.find(
       (slot) => slot.offset === firstOffsetAfterFirstSpace,
     )!;

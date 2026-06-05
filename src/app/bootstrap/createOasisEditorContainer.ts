@@ -1,5 +1,8 @@
 import { render } from "solid-js/web";
-import { OasisEditorContainer, type OasisEditorContainerProps } from "../../ui/OasisEditorContainer.js";
+import {
+  OasisEditorContainer,
+  type OasisEditorContainerProps,
+} from "../../ui/OasisEditorContainer.js";
 
 export interface OasisEditorContainerInstance {
   dispose: () => void;

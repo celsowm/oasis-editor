@@ -50,7 +50,9 @@ export function LinkDialog(props: LinkDialogProps) {
       }
     >
       <div class="oasis-editor-dialog-input-group">
-        <label class="oasis-editor-dialog-label">{t("dialog.link.label")}</label>
+        <label class="oasis-editor-dialog-label">
+          {t("dialog.link.label")}
+        </label>
         <input
           ref={inputRef}
           type="text"

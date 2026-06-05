@@ -13,14 +13,17 @@ const TEST_ID = "editor-toolbar-underline";
  * Underline split-button control — toggle plus a style picker, dispatching only
  * through the `underline` and `setUnderlineStyle` commands.
  */
-export function UnderlineControl(props: { api: ToolbarActionApi }): JSX.Element {
+export function UnderlineControl(props: {
+  api: ToolbarActionApi;
+}): JSX.Element {
   const api = props.api;
   const [lastUnderlineStyle, setLastUnderlineStyle] =
     createSignal<EditorUnderlineStyle>("single");
   const [open, setOpen] = createSignal(false);
 
   const active = () => api.commands.state("underline").isActive;
-  const currentStyle = () => String(api.commands.state("setUnderlineStyle").value ?? "");
+  const currentStyle = () =>
+    String(api.commands.state("setUnderlineStyle").value ?? "");
 
   const toggleUnderline = () => {
     if (!active()) {
@@ -35,7 +38,10 @@ export function UnderlineControl(props: { api: ToolbarActionApi }): JSX.Element 
   const applyUnderlineStyle = (style: EditorUnderlineStyle) => {
     setLastUnderlineStyle(style);
     const wasActive = active();
-    api.commands.execute("setUnderlineStyle", style === "single" ? null : style);
+    api.commands.execute(
+      "setUnderlineStyle",
+      style === "single" ? null : style,
+    );
     if (!wasActive) api.commands.execute("underline");
   };
 
@@ -97,7 +103,9 @@ export function UnderlineControl(props: { api: ToolbarActionApi }): JSX.Element 
               <button
                 type="button"
                 class="oasis-editor-underline-menu-item"
-                classList={{ "oasis-editor-underline-menu-item-active": isActive() }}
+                classList={{
+                  "oasis-editor-underline-menu-item-active": isActive(),
+                }}
                 role="menuitemradio"
                 aria-checked={isActive()}
                 data-testid={`${TEST_ID}-style-${option.value}`}
@@ -117,7 +125,8 @@ export function UnderlineControl(props: { api: ToolbarActionApi }): JSX.Element 
                           option.preview.borderStyle === "wavy"
                             ? undefined
                             : {
-                                "border-bottom-style": option.preview.borderStyle,
+                                "border-bottom-style":
+                                  option.preview.borderStyle,
                                 "border-bottom-width":
                                   option.preview.borderBottomWidth ?? "1px",
                               }
@@ -131,7 +140,9 @@ export function UnderlineControl(props: { api: ToolbarActionApi }): JSX.Element 
                     />
                   </Show>
                 </span>
-                <span class="oasis-editor-underline-menu-label">{option.label}</span>
+                <span class="oasis-editor-underline-menu-label">
+                  {option.label}
+                </span>
               </button>
             );
           }}

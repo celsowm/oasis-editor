@@ -21,7 +21,11 @@ export function createEditorCommandBus(editor: OasisEditor): CommandBus {
     state(command) {
       const resolved = resolveCommandRef(command);
       const registered = editor.commands.get(resolved.name);
-      return registered?.refresh?.(resolved.payload) ?? { isEnabled: editor.commands.has(resolved.name) };
+      return (
+        registered?.refresh?.(resolved.payload) ?? {
+          isEnabled: editor.commands.has(resolved.name),
+        }
+      );
     },
   };
 }

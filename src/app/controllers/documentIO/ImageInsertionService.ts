@@ -1,5 +1,8 @@
 import type { EditorPosition, EditorState } from "../../../core/model.js";
-import { insertImageAtSelection, setSelection } from "../../../core/editorCommands.js";
+import {
+  insertImageAtSelection,
+  setSelection,
+} from "../../../core/editorCommands.js";
 import { getMaxInlineImageWidth } from "../../../ui/imageGeometry.js";
 import { readFileBuffer } from "../../../ui/clipboardImage.js";
 import type { EditorLogger } from "../../../utils/logger.js";

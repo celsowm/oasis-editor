@@ -12,7 +12,9 @@ import {
   parseParagraphStyle,
 } from "../../core/commands/utils.js";
 
-export function parseEditorClipboardHtmlWithDom(html: string): EditorClipboardParagraphSpec[] {
+export function parseEditorClipboardHtmlWithDom(
+  html: string,
+): EditorClipboardParagraphSpec[] {
   if (typeof document === "undefined" || html.trim().length === 0) {
     return [];
   }
@@ -46,7 +48,9 @@ export function parseEditorClipboardHtmlWithDom(html: string): EditorClipboardPa
   ): EditorTextRun[] => {
     if (node.nodeType === Node.TEXT_NODE) {
       const text = node.textContent ?? "";
-      return text.length > 0 ? [createEditorStyledRun(text, inheritedStyle)] : [];
+      return text.length > 0
+        ? [createEditorStyledRun(text, inheritedStyle)]
+        : [];
     }
 
     if (node.nodeType !== Node.ELEMENT_NODE) {
@@ -74,12 +78,18 @@ export function parseEditorClipboardHtmlWithDom(html: string): EditorClipboardPa
     return childRuns;
   };
 
-  const processList = (element: Element, kind: EditorParagraphListStyle["kind"]) => {
+  const processList = (
+    element: Element,
+    kind: EditorParagraphListStyle["kind"],
+  ) => {
     for (const child of Array.from(element.children)) {
       if (child.tagName !== "LI") {
         continue;
       }
-      appendParagraph(child, collectInlineRuns(child, undefined), { kind, level: 0 });
+      appendParagraph(child, collectInlineRuns(child, undefined), {
+        kind,
+        level: 0,
+      });
     }
   };
 

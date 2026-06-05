@@ -58,6 +58,8 @@ describe("layout identity stabilization", () => {
     const secondPage = secondLayout.pages[0]!;
 
     expect(secondPage).not.toBe(firstPage);
-    expect(secondPage.footnoteBlocks?.[0]).not.toBe(firstPage.footnoteBlocks?.[0]);
+    expect(secondPage.footnoteBlocks?.[0]).not.toBe(
+      firstPage.footnoteBlocks?.[0],
+    );
   });
 });

@@ -24,14 +24,11 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
 
   return (
     <Show when={fr.isOpen()}>
-      <div 
-        class="oasis-editor-find-replace-dialog"
-        onKeyDown={handleKeyDown}
-      >
+      <div class="oasis-editor-find-replace-dialog" onKeyDown={handleKeyDown}>
         <div class="oasis-editor-fr-header">
           <span>{t("find.title")}</span>
-          <button 
-            class="oasis-editor-fr-close" 
+          <button
+            class="oasis-editor-fr-close"
             onClick={() => fr.setIsOpen(false)}
             aria-label={t("generic.close")}
           >
@@ -51,20 +48,22 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
                 class="oasis-editor-fr-input"
               />
               <span class="oasis-editor-fr-counter">
-                {fr.matches().length > 0 ? `${fr.currentIndex() + 1} / ${fr.matches().length}` : t("find.noMatches")}
+                {fr.matches().length > 0
+                  ? `${fr.currentIndex() + 1} / ${fr.matches().length}`
+                  : t("find.noMatches")}
               </span>
             </div>
-            
+
             <div class="oasis-editor-fr-actions">
-              <button 
-                onClick={fr.findPrevious} 
+              <button
+                onClick={fr.findPrevious}
                 disabled={fr.matches().length === 0}
                 title={t("find.prevTooltip")}
               >
                 <i data-lucide="chevron-up" />
               </button>
-              <button 
-                onClick={fr.findNext} 
+              <button
+                onClick={fr.findNext}
                 disabled={fr.matches().length === 0}
                 title={t("find.nextTooltip")}
               >
@@ -82,15 +81,15 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
               class="oasis-editor-fr-input"
             />
             <div class="oasis-editor-fr-actions">
-              <button 
-                class="oasis-editor-fr-btn-text" 
+              <button
+                class="oasis-editor-fr-btn-text"
                 onClick={fr.replace}
                 disabled={fr.matches().length === 0}
               >
                 {t("replace.one")}
               </button>
-              <button 
-                class="oasis-editor-fr-btn-text" 
+              <button
+                class="oasis-editor-fr-btn-text"
                 onClick={fr.replaceAll}
                 disabled={fr.matches().length === 0}
               >
@@ -104,7 +103,12 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
               <input
                 type="checkbox"
                 checked={fr.findOptions().matchCase}
-                onChange={(e) => fr.setFindOptions({ ...fr.findOptions(), matchCase: e.currentTarget.checked })}
+                onChange={(e) =>
+                  fr.setFindOptions({
+                    ...fr.findOptions(),
+                    matchCase: e.currentTarget.checked,
+                  })
+                }
               />
               <span>{t("find.matchCase")}</span>
             </label>
@@ -112,7 +116,12 @@ export function FindReplaceDialog(props: FindReplaceDialogProps) {
               <input
                 type="checkbox"
                 checked={fr.findOptions().wholeWord}
-                onChange={(e) => fr.setFindOptions({ ...fr.findOptions(), wholeWord: e.currentTarget.checked })}
+                onChange={(e) =>
+                  fr.setFindOptions({
+                    ...fr.findOptions(),
+                    wholeWord: e.currentTarget.checked,
+                  })
+                }
               />
               <span>{t("find.wholeWord")}</span>
             </label>

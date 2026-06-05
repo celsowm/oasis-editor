@@ -11,7 +11,10 @@ function createEditorStub() {
     commands,
     registerCommand: commands.register.bind(commands),
     unregisterCommand: commands.unregister.bind(commands),
-    execute: <TPayload = unknown, TResult = unknown>(name: string, payload?: TPayload): TResult => {
+    execute: <TPayload = unknown, TResult = unknown>(
+      name: string,
+      payload?: TPayload,
+    ): TResult => {
       const command = commands.get(name);
       if (!command) throw new Error(`Unknown command: ${name}`);
       return command.execute(payload) as TResult;
@@ -62,7 +65,12 @@ describe("PluginCollection", () => {
     const plugins = new PluginCollection(editor, [feature, base]);
     await plugins.initializeAll();
 
-    expect(events).toEqual(["init:base", "init:feature", "after:base", "after:feature"]);
+    expect(events).toEqual([
+      "init:base",
+      "init:feature",
+      "after:base",
+      "after:feature",
+    ]);
 
     await plugins.destroy();
 
@@ -79,13 +87,14 @@ describe("PluginCollection", () => {
   it("throws on missing dependencies", () => {
     const editor = createEditorStub();
 
-    expect(() =>
-      new PluginCollection(editor, [
-        {
-          name: "Feature",
-          requires: ["Missing"],
-        },
-      ]),
+    expect(
+      () =>
+        new PluginCollection(editor, [
+          {
+            name: "Feature",
+            requires: ["Missing"],
+          },
+        ]),
     ).toThrow("requires missing plugin 'Missing'");
   });
 
@@ -94,7 +103,9 @@ describe("PluginCollection", () => {
     const a: OasisPlugin = { name: "A", requires: ["B"] };
     const b: OasisPlugin = { name: "B", requires: ["A"] };
 
-    expect(() => new PluginCollection(editor, [a, b])).toThrow("Cyclic plugin dependency");
+    expect(() => new PluginCollection(editor, [a, b])).toThrow(
+      "Cyclic plugin dependency",
+    );
   });
 
   it("deduplicates by plugin name", async () => {
@@ -187,5 +198,4 @@ describe("PluginCollection", () => {
       "destroy:end",
     ]);
   });
-
 });
