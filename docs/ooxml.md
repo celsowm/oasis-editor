@@ -207,7 +207,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Run properties | `w:b` / `w:bCs` | `w:rPr` | `w:val` | Bold for Latin / complex script. | Either variant sets the model's bold flag on import; export emits both `w:b` and `w:bCs` so bold applies to every script. | P0 | Supported |
 | Run properties | `w:i` / `w:iCs` | `w:rPr` | `w:val` | Italic for Latin / complex script. | Either variant sets the model's italic flag on import; export emits both `w:i` and `w:iCs`. | P0 | Supported |
 | Run properties | `w:sz` / `w:szCs` | `w:rPr` | `w:val` | Font size in half-points. | Falls back to `w:szCs` on import when `w:sz` is absent; export emits both. | P0 | Supported |
-| Run properties | `w:color` | `w:rPr` | `w:val`, `w:themeColor`, `w:themeTint`, `w:themeShade` | Text color. | Resolve theme and auto color; preserve original attrs. | P0 | Partial |
+| Run properties | `w:color` | `w:rPr` | `w:val`, `w:themeColor`, `w:themeTint`, `w:themeShade` | Text color. | Literal `w:val` and `w:themeColor` are both resolved on import: theme tokens map to the `theme1.xml` color scheme (with `w:themeTint`/`w:themeShade` applied) and flatten to a concrete hex on export; `auto` resolves to the default. The non-default `w:clrSchemeMapping` override (settings.xml) is not honored. | P0 | Supported |
 | Run properties | `w:u` | `w:rPr` | `w:val`, `w:color`, theme attrs | Underline. | Many styles beyond single; supports underline color. | P1 | Supported |
 | Run properties | `w:strike` / `w:dstrike` | `w:rPr` | `w:val` | Single/double strikethrough. | Visible formatting. Explicit `w:val="0"` is honored so a run can switch the toggle off against an inherited style. | P1 | Supported |
 | Run properties | `w:vertAlign` | `w:rPr` | `w:val` | Superscript/subscript/baseline. | Affects baseline and line height. | P1 | Supported |
@@ -292,7 +292,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 
 | Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
 |---|---|---|---|---|---|---|---|
-| Links/fields | `w:hyperlink` | Paragraph inline context | `r:id`, `w:anchor`, `w:docLocation`, `w:history`, `w:tgtFrame`, `w:tooltip` | Hyperlink wrapper. | External link via relationship or internal bookmark via `anchor`. | P1 | Partial |
+| Links/fields | `w:hyperlink` | Paragraph inline context | `r:id`, `w:anchor`, `w:docLocation`, `w:history`, `w:tgtFrame`, `w:tooltip` | Hyperlink wrapper. | External link via relationship or internal bookmark via `anchor`. | P1 | Supported |
 | Links/fields | `w:fldSimple` | Paragraph inline context | `w:instr`, `w:fldLock`, `w:dirty` | Simple field. | Can keep current result or implement evaluator. | P1 | Partial |
 | Links/fields | `w:fldChar` | Run | `w:fldCharType`, `w:fldLock`, `w:dirty` | Complex field delimiter. | Maintain parser stack for begin/separate/end. | P1 | Partial |
 | Links/fields | `w:instrText` | Run | `xml:space` | Complex field instruction text. | Concatenate across runs between field begin and separate/end. | P1 | Partial |
@@ -610,8 +610,8 @@ This pass fills the practical gaps left after the broad matrix above. It still a
 | Fields | `INCLUDETEXT` / `INCLUDEPICTURE` | field instruction stream | external target | Include external content. | Security-sensitive; do not auto-fetch without explicit policy. | P3 | Not supported |
 | Fields | `MERGEFIELD` / `ADDRESSBLOCK` / `GREETINGLINE` | field instruction stream | merge field name/switches | Mail merge fields. | Preserve or bind through a merge-data pipeline. | P2 | Not supported |
 | Fields | `FORMTEXT` / `FORMCHECKBOX` / `FORMDROPDOWN` | field instruction stream | legacy form field backing | Legacy form controls. | Combine with `w:ffData`. | P2 | Not supported |
-| References | `w:hyperlink` without `r:id` | inline context | `w:anchor` | Internal bookmark hyperlink. | Resolve within document; do not require external relationship. | P1 | Partial |
-| References | `w:hyperlink` with both target hints | inline context | `r:id`, `w:anchor`, `w:docLocation` | External document location with optional anchor. | Preserve all parts; UI target may combine relationship target and fragment. | P2 | Partial |
+| References | `w:hyperlink` without `r:id` | inline context | `w:anchor` | Internal bookmark hyperlink. | Stored as `#anchor` in the model; exported as `w:anchor` attribute with no relationship. | P1 | Supported |
+| References | `w:hyperlink` with both target hints | inline context | `r:id`, `w:anchor`, `w:docLocation` | External document location with optional anchor. | `r:id` target is resolved and stored; `w:anchor` is treated as the fragment. | P2 | Partial |
 
 ## Additional content-control / SDT coverage
 
@@ -962,7 +962,8 @@ This section condenses the per-table Status column into a high-level capability 
 | Footnotes | Full pipeline: `word/footnotes.xml` is parsed and exported; user notes are renumbered by document order; `w:type` in {`separator`, `continuationSeparator`, `continuationNotice`} are skipped; `w:footnoteRef` inside a footnote story is rendered as the auto glyph. |
 | Headers/footers | `w:hdr`/`w:ftr` parts are parsed, re-rendered with the normal paragraph/run/table pipeline, and linked from the right section references. First-page (`w:titlePg`) and even/odd headers are supported on export. |
 | Fields | `PAGE` and `NUMPAGES` round-trip as `w:fldSimple`; cached result text is preserved in the editor model. |
-| Theme | `a:fontScheme` (major/minor, latin/ea/cs) is read and applied to run-level fonts that do not override it. |
+| Hyperlinks | External `w:hyperlink` (resolved via `r:id` relationship) and internal anchor hyperlinks (`w:anchor`, stored as `#name`, exported as `w:anchor` with no relationship) both round-trip. |
+| Theme | `a:fontScheme` (major/minor, latin/ea/cs) is read and applied to run-level fonts that do not override it. `a:clrScheme` color slots are resolved on import; `themeColor`/`themeTint`/`themeShade` are flattened to concrete hex. |
 | Settings | `w:adjustLineHeightInTable` is read from `w:compat` and controls table-cell line height. `w:defaultTabStop` drives default tab layout and round-trips through `settings.xml`. `w:evenAndOddHeaders` is exported and applied to the document. |
 | Style cascade | Style `basedOn` chain is walked; style cycle detection prevents infinite loops. |
 
@@ -970,13 +971,12 @@ This section condenses the per-table Status column into a high-level capability 
 
 | Area | What's partial | Why |
 |---|---|---|
-| `w:hyperlink` | External relationships via `r:id` are kept; `w:anchor` is preserved but the document model has no native link concept. | The editor renders links but does not store them as a first-class node yet. |
 | `w:fldSimple` / `w:fldChar` | PAGE and NUMPAGES are full round-trip; other instructions are stored as static text and re-emitted as plain runs. | The editor has no field type registry beyond these two. |
 | Numbering | Only the first `w:lvl`'s `w:numFmt` is read (bullet vs ordered) and the paragraph list kind is preserved. | `lvlText`, multi-level, picture bullets, `lvlRestart`, `suff`, `isLgl`, `multiLevelType`, `nsid`, `tmpl` are dropped. Export regenerates a fresh `numbering.xml` from the paragraph's bullet/ordered + level. |
 | Images | Inline pictures only, no transforms, crop, rotation, or `wp:anchor`. | `pic:spPr`, `a:srcRect`, `a:xfrm`/`a:off`/`a:ext` are not parsed. |
 | `w:rFonts` | `ascii`/`hAnsi`/`cs` and `asciiTheme`/`hAnsiTheme`/`cstheme` with `w:hint` are read; `eastAsia`/`eastAsiaTheme` are not exported. | Run font resolution is partial. |
-| `w:b` / `w:i` / `w:bCs` / `w:iCs` | All four are parsed, but only `w:b`/`w:i` are written on export. | Complex-script bold/italic is not propagated. |
-| `w:color` | Hex `w:val` is parsed; theme colors (`a:schemeClr`, `themeColor`, `themeTint`/`themeShade`) are not resolved. | Theme color registry is missing. |
+| `w:b` / `w:i` / `w:bCs` / `w:iCs` | All four are parsed; only `w:b`/`w:i` are written on export. | Complex-script bold/italic is not propagated. |
+| `w:color` | Hex `w:val` and theme colors (`themeColor`/`themeTint`/`themeShade` against `a:clrScheme`) are resolved to concrete hex on import; export writes the resolved value. `clrSchemeMapping` overrides in the document settings are not applied. | Full theme → concrete-hex pipeline is in place; per-document scheme remapping is not. |
 | `w:rStyle` | Read on import (so style-based run properties cascade) but the editor does not export a `w:rStyle` reference. | Style-cascade identity is lost in export. |
 | `w:ind` character units | `w:leftChars`/`w:rightChars`/`w:firstLineChars`/`w:hangingChars` are dropped; twip values are used. | Char-unit indentation is not normalized. |
 | `w:drawing` | Only `wp:inline` + `pic:pic` survives. Floating drawings, `wp:anchor`, shapes, charts, SmartArt, OLE, VML are dropped. | No drawing model beyond the inline image. |

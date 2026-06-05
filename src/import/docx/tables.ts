@@ -22,13 +22,13 @@ import {
 import { parseDocxBoxBorders } from "./borders.js";
 import { twipsToPoints, normalizeImportedHexColor } from "./units.js";
 import { type AssetRegistry } from "./assetRegistry.js";
-import { type ThemeFontMap } from "./themeFonts.js";
+import { type DocxImportTheme } from "./theme.js";
 import { type NumberingMaps } from "./numbering.js";
 import { parseParagraphNode } from "./paragraphs.js";
 import {
   parseAutospacingFlags,
   type ParagraphAutospacingFlags,
-} from "./styles.js";
+} from "./paragraphStyle.js";
 
 function getTableCellColSpan(cellProperties: XmlElement | null): number {
   if (!cellProperties) {
@@ -219,7 +219,7 @@ export async function parseTableNode(
   zip: JSZip,
   relsMap: Map<string, string>,
   assets: AssetRegistry,
-  themeFonts: ThemeFontMap,
+  theme: DocxImportTheme,
   styles?: Record<string, EditorNamedStyle>,
 ): Promise<EditorTableNode> {
   const gridCols: number[] = [];
@@ -267,7 +267,7 @@ export async function parseTableNode(
             zip,
             relsMap,
             assets,
-            themeFonts,
+            theme,
             inheritedParagraphStyle,
           ),
         );

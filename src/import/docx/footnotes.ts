@@ -12,7 +12,7 @@ import {
   getAttributeValue,
 } from "./xmlHelpers.js";
 import { type AssetRegistry } from "./assetRegistry.js";
-import { type ThemeFontMap } from "./themeFonts.js";
+import { type DocxImportTheme } from "./theme.js";
 import { type NumberingMaps } from "./numbering.js";
 import { parseParagraphNode } from "./paragraphs.js";
 import { parseTableNode } from "./tables.js";
@@ -40,7 +40,7 @@ export async function parseFootnotesXml(
   zip: JSZip,
   relsMap: Map<string, string>,
   assets: AssetRegistry,
-  themeFonts: ThemeFontMap,
+  theme: DocxImportTheme,
   styles?: Record<string, EditorNamedStyle>,
 ): Promise<ParsedFootnotes> {
   const empty: ParsedFootnotes = {
@@ -83,7 +83,7 @@ export async function parseFootnotesXml(
             zip,
             relsMap,
             assets,
-            themeFonts,
+            theme,
           ),
         );
       } else if (element.localName === "tbl") {
@@ -94,7 +94,7 @@ export async function parseFootnotesXml(
             zip,
             relsMap,
             assets,
-            themeFonts,
+            theme,
             styles,
           ),
         );

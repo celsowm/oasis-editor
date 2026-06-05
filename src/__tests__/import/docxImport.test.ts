@@ -305,10 +305,8 @@ async function buildDocxWithTypedHeaders(): Promise<ArrayBuffer> {
   <Relationship Id="rIdEvenFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer2.xml"/>
   <Relationship Id="rIdDefaultFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer3.xml"/>
 </Relationships>`;
-  const partXml = (
-    tag: "hdr" | "ftr",
-    text: string,
-  ) => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  const partXml = (tag: "hdr" | "ftr", text: string): string =>
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:${tag} xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>${text}</w:t></w:r></w:p></w:${tag}>`;
 
   zip.file("word/document.xml", documentXml);
@@ -468,9 +466,7 @@ describe("DOCX import", () => {
 
   it("does not enable DOCX contextual spacing when the value is off", async () => {
     const document = await importDocxToEditorDocument(
-      await buildDocxWithContextualSpacing(
-        '<w:contextualSpacing w:val="0"/>',
-      ),
+      await buildDocxWithContextualSpacing('<w:contextualSpacing w:val="0"/>'),
     );
     const paragraph = getDocumentParagraphs(document)[0]!;
     const effectiveStyle = resolveEffectiveParagraphStyle(
@@ -513,11 +509,7 @@ describe("DOCX import", () => {
   <w:defaultTabStop w:val="480"/>
 </w:settings>`;
     const document = await importDocxToEditorDocument(
-      await buildDocxWithContextualSpacing(
-        "",
-        undefined,
-        settingsXml,
-      ),
+      await buildDocxWithContextualSpacing("", undefined, settingsXml),
     );
     const paragraph = getDocumentParagraphs(document)[0]!;
     paragraph.runs[0]!.text = "a\tb";
@@ -564,7 +556,9 @@ describe("DOCX import", () => {
     );
     const paragraph = getDocumentParagraphs(document)[0]!;
 
-    expect(getParagraphText(paragraph)).toBe("non\u2011breaking soft\u00ADhyphen");
+    expect(getParagraphText(paragraph)).toBe(
+      "non\u2011breaking soft\u00ADhyphen",
+    );
   });
 
   it("preserves first-line indentation from DOCX in projected layout slots", async () => {
@@ -741,6 +735,108 @@ describe("DOCX import", () => {
     expect(reexported).toContain("<w:b/><w:bCs/>");
     expect(reexported).toContain("<w:i/><w:iCs/>");
     expect(reexported).toContain('<w:sz w:val="28"/><w:szCs w:val="28"/>');
+  });
+
+  const THEME1_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office">
+  <a:themeElements>
+    <a:clrScheme name="Office">
+      <a:dk1><a:sysClr val="windowText" lastClr="1A1A1A"/></a:dk1>
+      <a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1>
+      <a:dk2><a:srgbClr val="44546A"/></a:dk2>
+      <a:lt2><a:srgbClr val="E7E6E6"/></a:lt2>
+      <a:accent1><a:srgbClr val="4472C4"/></a:accent1>
+      <a:accent2><a:srgbClr val="ED7D31"/></a:accent2>
+      <a:accent3><a:srgbClr val="A5A5A5"/></a:accent3>
+      <a:accent4><a:srgbClr val="FFC000"/></a:accent4>
+      <a:accent5><a:srgbClr val="5B9BD5"/></a:accent5>
+      <a:accent6><a:srgbClr val="70AD47"/></a:accent6>
+      <a:hlink><a:srgbClr val="0563C1"/></a:hlink>
+      <a:folHlink><a:srgbClr val="954F72"/></a:folHlink>
+    </a:clrScheme>
+  </a:themeElements>
+</a:theme>`;
+
+  function buildThemeColorDocx(colorXml: string): Promise<ArrayBuffer> {
+    const zip = new JSZip();
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:rPr>${colorXml}</w:rPr>
+        <w:t>Themed</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+    zip.file("word/theme/theme1.xml", THEME1_XML);
+    return zip.generateAsync({ type: "arraybuffer" });
+  }
+
+  it("resolves w:themeColor against the document color scheme", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildThemeColorDocx('<w:color w:themeColor="accent1"/>'),
+    );
+    const run = getDocumentParagraphs(document)[0]!.runs[0]!;
+    expect(run.styles?.color).toBe("#4472C4");
+  });
+
+  it("applies w:themeShade to a resolved theme color", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildThemeColorDocx(
+        '<w:color w:themeColor="accent1" w:themeShade="BF"/>',
+      ),
+    );
+    const run = getDocumentParagraphs(document)[0]!.runs[0]!;
+    // 0xBF/0xFF ≈ 0.749 darkening applied per channel to #4472C4.
+    expect(run.styles?.color).toBe("#335593");
+  });
+
+  it("maps the text1 theme token to dk1 (reading sysClr lastClr)", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildThemeColorDocx('<w:color w:themeColor="text1"/>'),
+    );
+    const run = getDocumentParagraphs(document)[0]!.runs[0]!;
+    expect(run.styles?.color).toBe("#1A1A1A");
+  });
+
+  it("prefers a literal w:val over w:themeColor and drops auto", async () => {
+    const explicit = await importDocxToEditorDocument(
+      await buildThemeColorDocx(
+        '<w:color w:val="FF0000" w:themeColor="accent1"/>',
+      ),
+    );
+    expect(getDocumentParagraphs(explicit)[0]!.runs[0]!.styles?.color).toBe(
+      "#FF0000",
+    );
+
+    const auto = await importDocxToEditorDocument(
+      await buildThemeColorDocx(
+        '<w:color w:val="auto" w:themeColor="accent1"/>',
+      ),
+    );
+    expect(
+      getDocumentParagraphs(auto)[0]!.runs[0]!.styles?.color,
+    ).toBeUndefined();
+  });
+
+  it("re-exports a resolved theme color as a concrete hex value", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildThemeColorDocx('<w:color w:themeColor="accent1"/>'),
+    );
+    const reexportedZip = await JSZip.loadAsync(
+      await exportEditorDocumentToDocx(document),
+    );
+    const reexported = await reexportedZip
+      .file("word/document.xml")
+      ?.async("string");
+    expect(reexported).toContain('<w:color w:val="4472C4"/>');
   });
 
   it("honors explicit w:b w:val='0' overriding a bold character style", async () => {
@@ -1296,5 +1392,134 @@ describe("DOCX import", () => {
     expect(
       layout.lines[0]!.fragments.map((fragment) => fragment.text).join(""),
     ).not.toContain("rápido");
+  });
+});
+
+describe("hyperlink round-trip", () => {
+  async function buildHyperlinkDocx(
+    bodyXml: string,
+    relsXml?: string,
+  ): Promise<ArrayBuffer> {
+    const zip = new JSZip();
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <w:body>${bodyXml}
+    <w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    if (relsXml) {
+      zip.file(
+        "word/_rels/document.xml.rels",
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relsXml}</Relationships>`,
+      );
+    }
+    return zip.generateAsync({ type: "arraybuffer" });
+  }
+
+  it("imports external hyperlink and re-exports as External relationship", async () => {
+    const docx = await buildHyperlinkDocx(
+      `<w:p>
+        <w:hyperlink r:id="rId1">
+          <w:r><w:rPr><w:u w:val="single"/></w:rPr><w:t>Click here</w:t></w:r>
+        </w:hyperlink>
+      </w:p>`,
+      `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com" TargetMode="External"/>`,
+    );
+    const document = await importDocxToEditorDocument(docx);
+    const paragraphs = getDocumentParagraphs(document);
+    const run = paragraphs[0]!.runs[0]!;
+
+    expect(run.styles?.link).toBe("https://example.com");
+
+    const exportedZip = await JSZip.loadAsync(
+      await exportEditorDocumentToDocx(document),
+    );
+    const docXml = await exportedZip.file("word/document.xml")?.async("string");
+    const relsXml = await exportedZip
+      .file("word/_rels/document.xml.rels")
+      ?.async("string");
+
+    expect(docXml).toMatch(/w:hyperlink r:id="[^"]+"/);
+    expect(relsXml).toContain('Target="https://example.com"');
+    expect(relsXml).toContain('TargetMode="External"');
+  });
+
+  it("imports anchor-only hyperlink as #-prefixed link", async () => {
+    const docx = await buildHyperlinkDocx(
+      `<w:p>
+        <w:hyperlink w:anchor="Chapter1">
+          <w:r><w:t>Jump to chapter</w:t></w:r>
+        </w:hyperlink>
+      </w:p>`,
+    );
+    const document = await importDocxToEditorDocument(docx);
+    const run = getDocumentParagraphs(document)[0]!.runs[0]!;
+
+    expect(run.styles?.link).toBe("#Chapter1");
+  });
+
+  it("re-exports anchor hyperlink as w:anchor attribute with no External relationship", async () => {
+    const docx = await buildHyperlinkDocx(
+      `<w:p>
+        <w:hyperlink w:anchor="Chapter1">
+          <w:r><w:t>Jump to chapter</w:t></w:r>
+        </w:hyperlink>
+      </w:p>`,
+    );
+    const document = await importDocxToEditorDocument(docx);
+
+    const exportedZip = await JSZip.loadAsync(
+      await exportEditorDocumentToDocx(document),
+    );
+    const docXml = await exportedZip.file("word/document.xml")?.async("string");
+    const relsXml = await exportedZip
+      .file("word/_rels/document.xml.rels")
+      ?.async("string");
+
+    expect(docXml).toContain('w:anchor="Chapter1"');
+    expect(docXml).not.toMatch(/w:hyperlink r:id=/);
+    expect(relsXml ?? "").not.toContain("Chapter1");
+    expect(relsXml ?? "").not.toContain('TargetMode="External"');
+  });
+
+  it("does not mix anchor links into the External relationships part", async () => {
+    const docx = await buildHyperlinkDocx(
+      `<w:p>
+        <w:hyperlink w:anchor="Section2">
+          <w:r><w:t>Internal</w:t></w:r>
+        </w:hyperlink>
+      </w:p>
+      <w:p>
+        <w:hyperlink r:id="rId1">
+          <w:r><w:t>External</w:t></w:r>
+        </w:hyperlink>
+      </w:p>`,
+      `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com" TargetMode="External"/>`,
+    );
+    const document = await importDocxToEditorDocument(docx);
+    const paragraphs = getDocumentParagraphs(document);
+
+    expect(paragraphs[0]!.runs[0]!.styles?.link).toBe("#Section2");
+    expect(paragraphs[1]!.runs[0]!.styles?.link).toBe("https://example.com");
+
+    const exportedZip = await JSZip.loadAsync(
+      await exportEditorDocumentToDocx(document),
+    );
+    const docXml = await exportedZip.file("word/document.xml")?.async("string");
+    const relsXml = await exportedZip
+      .file("word/_rels/document.xml.rels")
+      ?.async("string");
+
+    expect(docXml).toContain('w:anchor="Section2"');
+    expect(docXml).toMatch(/w:hyperlink r:id="[^"]+"/);
+    expect(relsXml).toContain('Target="https://example.com"');
+    expect(relsXml).not.toContain("Section2");
+    // Only one External relationship (for the URL, not the anchor)
+    expect((relsXml?.match(/TargetMode="External"/g) ?? []).length).toBe(1);
   });
 });

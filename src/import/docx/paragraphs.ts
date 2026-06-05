@@ -11,14 +11,13 @@ import { createEditorParagraphFromRuns } from "../../core/editorState.js";
 import { WORD_NS, getFirstChildByTagNameNS } from "./xmlHelpers.js";
 import { PAGE_BREAK_MARKER } from "./units.js";
 import { type AssetRegistry } from "./assetRegistry.js";
-import { type ThemeFontMap } from "./themeFonts.js";
+import { type DocxImportTheme } from "./theme.js";
+import { parseRunStyle, normalizeImportedRunStyle } from "./runStyle.js";
 import {
   parseParagraphStyle,
-  parseRunStyle,
   normalizeImportedParagraphStyle,
-  normalizeImportedRunStyle,
   withDocxImplicitSingleLineHeight,
-} from "./styles.js";
+} from "./paragraphStyle.js";
 import { type NumberingMaps, parseParagraphList } from "./numbering.js";
 import { type ImportedRun, parseRunsContainer } from "./runs.js";
 
@@ -117,7 +116,7 @@ export async function parseParagraphNodes(
   zip: JSZip,
   relsMap: Map<string, string>,
   assets: AssetRegistry,
-  themeFonts: ThemeFontMap,
+  theme: DocxImportTheme,
   inheritedStyle?: EditorParagraphStyle,
 ): Promise<{ paragraphs: EditorParagraphNode[]; pageBreakAfter: boolean }> {
   const paragraphProperties = getFirstChildByTagNameNS(
@@ -131,7 +130,7 @@ export async function parseParagraphNodes(
     zip,
     relsMap,
     assets,
-    themeFonts,
+    theme,
   );
   const parsedStyle = withDocxImplicitSingleLineHeight(
     parseParagraphStyle(paragraphProperties),
@@ -145,7 +144,7 @@ export async function parseParagraphNodes(
   // of an empty paragraph (and to its trailing mark).
   const markRunStyle = parseRunStyle(
     getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "rPr"),
-    themeFonts,
+    theme,
   );
   const list = parseParagraphList(paragraphProperties, numberingMaps);
   const { segments, hasPageBreak } = splitRunsAtPageBreaks(runs);
@@ -191,7 +190,7 @@ export async function parseParagraphNode(
   zip: JSZip,
   relsMap: Map<string, string>,
   assets: AssetRegistry,
-  themeFonts: ThemeFontMap,
+  theme: DocxImportTheme,
   inheritedStyle?: EditorParagraphStyle,
 ): Promise<EditorParagraphNode> {
   const parsed = await parseParagraphNodes(
@@ -200,7 +199,7 @@ export async function parseParagraphNode(
     zip,
     relsMap,
     assets,
-    themeFonts,
+    theme,
     inheritedStyle,
   );
   return parsed.paragraphs[0] ?? createEditorParagraphFromRuns([{ text: "" }]);

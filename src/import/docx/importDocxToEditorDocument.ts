@@ -21,10 +21,10 @@ import {
   parseRelationshipsXml,
   loadPartRelationships,
 } from "./relationships.js";
-import { parseThemeFonts } from "./themeFonts.js";
+import { parseDocxTheme } from "./theme.js";
 import { parseSettings } from "./settings.js";
 import { parseNumbering } from "./numbering.js";
-import { parseImportedStyles } from "./styles.js";
+import { parseImportedStyles } from "./stylesXml.js";
 import {
   type SectionProperties,
   parseSectionProperties,
@@ -72,8 +72,8 @@ export async function importDocxToEditorDocument(
     (await zip.file("word/styles.xml")?.async("string")) ?? null;
   const themeXml =
     (await zip.file("word/theme/theme1.xml")?.async("string")) ?? null;
-  const themeFonts = parseThemeFonts(themeXml);
-  const importedStyles = parseImportedStyles(stylesXml, themeFonts);
+  const theme = parseDocxTheme(themeXml);
+  const importedStyles = parseImportedStyles(stylesXml, theme);
   options.onProgress?.("parsing-document");
   const document = new DOMParser().parseFromString(
     documentXml,
@@ -150,7 +150,7 @@ export async function importDocxToEditorDocument(
         zip,
         relsMap,
         assets,
-        themeFonts,
+        theme,
       );
       for (const paragraph of parsedParagraph.paragraphs) {
         appendBodyBlock(paragraph);
@@ -167,7 +167,7 @@ export async function importDocxToEditorDocument(
           zip,
           relsMap,
           assets,
-          themeFonts,
+          theme,
           importedStyles,
         ),
       );
@@ -246,7 +246,7 @@ export async function importDocxToEditorDocument(
         zip,
         partRelsMap,
         assets,
-        themeFonts,
+        theme,
         importedStyles,
       );
       applyDocGridLinePitch(
@@ -323,7 +323,7 @@ export async function importDocxToEditorDocument(
     zip,
     footnotesPartRels,
     assets,
-    themeFonts,
+    theme,
     importedStyles,
   );
   const editorFootnotes =

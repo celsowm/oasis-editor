@@ -10,8 +10,8 @@ import {
 } from "./xmlHelpers.js";
 import { PAGE_BREAK_MARKER } from "./units.js";
 import { type AssetRegistry, registerImageAsset } from "./assetRegistry.js";
-import { type ThemeFontMap } from "./themeFonts.js";
-import { parseRunStyle } from "./styles.js";
+import { type DocxImportTheme } from "./theme.js";
+import { parseRunStyle } from "./runStyle.js";
 import type { NumberingMaps } from "./numbering.js";
 
 export interface ImportedRun {
@@ -160,7 +160,7 @@ export async function parseRunsContainer(
   zip: JSZip,
   relsMap: Map<string, string>,
   assets: AssetRegistry,
-  themeFonts: ThemeFontMap,
+  theme: DocxImportTheme,
   inheritedLink?: string | null,
 ): Promise<ImportedRun[]> {
   const runs: ImportedRun[] = [];
@@ -250,7 +250,7 @@ export async function parseRunsContainer(
         );
         let styles = parseRunStyle(
           getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
-          themeFonts,
+          theme,
         );
         // Default to superscript marker styling when the run does not specify it.
         (styles ??= {}).styleId ??= "footnoteReference";
@@ -284,7 +284,7 @@ export async function parseRunsContainer(
 
       let styles = parseRunStyle(
         getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
-        themeFonts,
+        theme,
       );
       if (inheritedLink) {
         (styles ??= {}).link = inheritedLink;
@@ -315,7 +315,7 @@ export async function parseRunsContainer(
         zip,
         relsMap,
         assets,
-        themeFonts,
+        theme,
         inheritedLink,
       );
       const displayText = fieldRuns.map((run) => run.text).join("") || "1";
@@ -339,7 +339,10 @@ export async function parseRunsContainer(
             "",
         ) ?? null;
 
-      href ??= element.getAttribute("w:anchor");
+      if (!href) {
+        const anchor = getAttributeValue(element, "anchor");
+        if (anchor) href = `#${anchor}`;
+      }
       runs.push(
         ...(await parseRunsContainer(
           element,
@@ -347,7 +350,7 @@ export async function parseRunsContainer(
           zip,
           relsMap,
           assets,
-          themeFonts,
+          theme,
           href,
         )),
       );

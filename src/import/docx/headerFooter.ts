@@ -3,7 +3,7 @@ import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorBlockNode, EditorNamedStyle } from "../../core/model.js";
 import { WORD_NS } from "./xmlHelpers.js";
 import { type AssetRegistry } from "./assetRegistry.js";
-import { type ThemeFontMap } from "./themeFonts.js";
+import { type DocxImportTheme } from "./theme.js";
 import { type NumberingMaps } from "./numbering.js";
 import { parseParagraphNode } from "./paragraphs.js";
 import { parseTableNode } from "./tables.js";
@@ -14,7 +14,7 @@ export async function parseHeaderFooterXml(
   zip: JSZip,
   relsMap: Map<string, string>,
   assets: AssetRegistry,
-  themeFonts: ThemeFontMap,
+  theme: DocxImportTheme,
   styles?: Record<string, EditorNamedStyle>,
 ): Promise<EditorBlockNode[]> {
   if (!xmlContent) {
@@ -42,7 +42,7 @@ export async function parseHeaderFooterXml(
           zip,
           relsMap,
           assets,
-          themeFonts,
+          theme,
         ),
       );
     } else if (
@@ -56,7 +56,7 @@ export async function parseHeaderFooterXml(
           zip,
           relsMap,
           assets,
-          themeFonts,
+          theme,
           styles,
         ),
       );

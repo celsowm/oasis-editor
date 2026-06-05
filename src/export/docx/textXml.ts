@@ -478,6 +478,10 @@ function serializeRunWithRelationships(
     return runXml;
   }
 
+  if (href.startsWith("#")) {
+    return `<w:hyperlink w:anchor="${escapeXml(href.slice(1))}">${runXml}</w:hyperlink>`;
+  }
+
   const rId = context.hyperlinkMap.get(href);
   if (!rId) {
     return runXml;

@@ -179,10 +179,11 @@ function buildPartContext(
 
   visitBlocks(blocks, (paragraph) => {
     for (const run of paragraph.runs) {
-      if (run.styles?.link && !hyperlinkMap.has(run.styles.link)) {
+      const link = run.styles?.link;
+      if (link && !link.startsWith("#") && !hyperlinkMap.has(link)) {
         const rId = `rIdLink${hyperlinks.length + 1}`;
-        hyperlinkMap.set(run.styles.link, rId);
-        hyperlinks.push({ rId, href: run.styles.link });
+        hyperlinkMap.set(link, rId);
+        hyperlinks.push({ rId, href: link });
       }
 
       if (!run.image) {
@@ -570,10 +571,7 @@ export async function exportEditorDocumentToDocx(
   if (hasDocumentSettings) {
     zip.file(
       "word/settings.xml",
-      buildSettingsXml(
-        hasEvenAndOddHeaders,
-        document.settings?.defaultTabStop,
-      ),
+      buildSettingsXml(hasEvenAndOddHeaders, document.settings?.defaultTabStop),
     );
   }
 
