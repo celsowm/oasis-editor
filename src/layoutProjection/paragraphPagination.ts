@@ -6,6 +6,7 @@ import type {
   EditorLayoutParagraph,
   EditorNamedStyle,
   EditorParagraphNode,
+  EditorParagraphStyle,
 } from "../core/model.js";
 import {
   resolveEffectiveParagraphStyle,
@@ -23,6 +24,43 @@ import { perfTimer } from "../utils/performanceMetrics.js";
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
 const DEFAULT_LINE_HEIGHT = 1.15;
 const FAST_IMPLICIT_DOC_GRID_RATIO = 0.86;
+
+function paragraphStyleComparableKey(
+  style: Required<EditorParagraphStyle>,
+): string {
+  const {
+    spacingBefore: _spacingBefore,
+    spacingAfter: _spacingAfter,
+    contextualSpacing: _contextualSpacing,
+    ...comparable
+  } = style;
+  return JSON.stringify(comparable);
+}
+
+export function shouldCollapseContextualSpacing(
+  previous: EditorParagraphNode | undefined,
+  next: EditorParagraphNode | undefined,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): boolean {
+  if (!previous || !next) {
+    return false;
+  }
+  const previousStyle = resolveEffectiveParagraphStyle(previous.style, styles);
+  const nextStyle = resolveEffectiveParagraphStyle(next.style, styles);
+  if (!previousStyle.contextualSpacing && !nextStyle.contextualSpacing) {
+    return false;
+  }
+  if (previousStyle.styleId || nextStyle.styleId) {
+    return (
+      previousStyle.styleId !== undefined &&
+      previousStyle.styleId === nextStyle.styleId
+    );
+  }
+  return (
+    paragraphStyleComparableKey(previousStyle) ===
+    paragraphStyleComparableKey(nextStyle)
+  );
+}
 
 function sliceFragmentToRange(
   fragment: EditorLayoutFragment,
@@ -87,12 +125,13 @@ export function projectParagraphLayout(
   contentWidth?: number,
   layoutMode: "fast" | "wordParity" = "fast",
   measurer: ITextMeasurer = domTextMeasurer,
+  defaultTabStop?: number,
 ): EditorLayoutParagraph {
   const { dependsOnPageIndex, dependsOnTotalPages } =
     getParagraphFieldDependence(paragraph);
   const cacheKey = `${dependsOnPageIndex ? (pageIndex ?? "") : ""}:${
     dependsOnTotalPages ? (totalPages ?? "") : ""
-  }:${contentWidth ?? ""}:${layoutMode}`;
+  }:${contentWidth ?? ""}:${layoutMode}:${defaultTabStop ?? ""}`;
   let cacheForParagraph = paragraphLayoutCache.get(paragraph);
   if (cacheForParagraph) {
     const cached = cacheForParagraph.get(cacheKey);
@@ -155,6 +194,7 @@ export function projectParagraphLayout(
           styles,
           contentWidth,
           layoutMode,
+          defaultTabStop,
         })
         .map((line) => ({
           ...line,
@@ -405,6 +445,7 @@ export function getParagraphSegmentHeight(
   isLastSegment: boolean,
   styles: Record<string, EditorNamedStyle> | undefined,
   allowSpacingBefore = true,
+  allowSpacingAfter = true,
 ): number {
   const lineHeights = lines.reduce((sum, line) => sum + line.height, 0);
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
@@ -412,7 +453,8 @@ export function getParagraphSegmentHeight(
     isFirstSegment && allowSpacingBefore
       ? (paragraphStyle.spacingBefore ?? 0)
       : 0;
-  const spacingAfter = isLastSegment ? (paragraphStyle.spacingAfter ?? 0) : 0;
+  const spacingAfter =
+    isLastSegment && allowSpacingAfter ? (paragraphStyle.spacingAfter ?? 0) : 0;
   const insets = getParagraphBorderInsets(paragraphStyle);
   const borderTop = isFirstSegment ? insets.top : 0;
   const borderBottom = isLastSegment ? insets.bottom : 0;
@@ -425,8 +467,9 @@ export function getParagraphSegmentFitHeight(
   isLastSegment: boolean,
   styles: Record<string, EditorNamedStyle> | undefined,
   _layoutMode: "fast" | "wordParity",
+  allowSpacingAfter = true,
 ): number {
-  if (!isLastSegment) {
+  if (!isLastSegment || !allowSpacingAfter) {
     return segmentHeight;
   }
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
@@ -438,6 +481,7 @@ export function getProjectedParagraphBlockHeight(
   layout: EditorLayoutParagraph,
   styles: Record<string, EditorNamedStyle> | undefined,
   allowSpacingBefore = true,
+  allowSpacingAfter = true,
 ): number {
   return getParagraphSegmentHeight(
     paragraph,
@@ -446,6 +490,7 @@ export function getProjectedParagraphBlockHeight(
     true,
     styles,
     allowSpacingBefore,
+    allowSpacingAfter,
   );
 }
 
@@ -507,6 +552,7 @@ export function applyWidowOrphanControl(
   endLineIndexExclusive: number,
   styles: Record<string, EditorNamedStyle> | undefined,
   allowSpacingBefore = true,
+  allowSpacingAfter = true,
 ): { endLineIndexExclusive: number; height: number } {
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
   if (paragraphStyle.widowControl === false) {
@@ -519,6 +565,7 @@ export function applyWidowOrphanControl(
         endLineIndexExclusive === lines.length,
         styles,
         allowSpacingBefore,
+        allowSpacingAfter,
       ),
     };
   }
@@ -540,8 +587,14 @@ export function applyWidowOrphanControl(
       adjustedEnd === lines.length,
       styles,
       allowSpacingBefore,
+      allowSpacingAfter,
     ),
   };
+}
+
+export interface EstimateParagraphBlockHeightOptions {
+  allowSpacingBefore?: boolean;
+  allowSpacingAfter?: boolean;
 }
 
 export function estimateParagraphBlockHeight(
@@ -550,6 +603,8 @@ export function estimateParagraphBlockHeight(
   contentWidth?: number,
   layoutMode: "fast" | "wordParity" = "fast",
   measurer: ITextMeasurer = domTextMeasurer,
+  options: EstimateParagraphBlockHeightOptions = {},
+  defaultTabStop?: number,
 ): number {
   const layout = projectParagraphLayout(
     paragraph,
@@ -559,11 +614,16 @@ export function estimateParagraphBlockHeight(
     contentWidth,
     layoutMode,
     measurer,
+    defaultTabStop,
   );
   const lineHeightPx = layout.lines.reduce((sum, line) => sum + line.height, 0);
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
-  const spacingBefore = paragraphStyle.spacingBefore ?? 0;
-  const spacingAfter = paragraphStyle.spacingAfter ?? 0;
+  const spacingBefore =
+    options.allowSpacingBefore === false
+      ? 0
+      : (paragraphStyle.spacingBefore ?? 0);
+  const spacingAfter =
+    options.allowSpacingAfter === false ? 0 : (paragraphStyle.spacingAfter ?? 0);
   const insets = getParagraphBorderInsets(paragraphStyle);
 
   return (

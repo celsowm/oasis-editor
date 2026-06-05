@@ -15,6 +15,7 @@ type ProjectParagraphLayoutFn = (
   contentWidth?: number,
   layoutMode?: "fast" | "wordParity",
   measurer?: ITextMeasurer,
+  defaultTabStop?: number,
 ) => EditorLayoutParagraph;
 
 type EstimateTableBlockHeightFn = (
@@ -23,6 +24,7 @@ type EstimateTableBlockHeightFn = (
   contentWidth?: number,
   layoutMode?: "fast" | "wordParity",
   measurer?: ITextMeasurer,
+  defaultTabStop?: number,
 ) => number;
 type GetProjectedParagraphBlockHeightFn = (
   paragraph: EditorParagraphNode,
@@ -45,6 +47,7 @@ export function projectHeaderFooterBlocksWithDependencies(
   contentWidth?: number,
   layoutMode: "fast" | "wordParity" = "fast",
   measurer?: ITextMeasurer,
+  defaultTabStop?: number,
 ): EditorLayoutBlock[] {
   return blocks.map((block, index) => {
     if (block.type === "paragraph") {
@@ -56,6 +59,7 @@ export function projectHeaderFooterBlocksWithDependencies(
         contentWidth,
         layoutMode,
         measurer,
+        defaultTabStop,
       );
       return {
         blockId: block.id,
@@ -83,6 +87,7 @@ export function projectHeaderFooterBlocksWithDependencies(
           contentWidth,
           layoutMode,
           measurer,
+          defaultTabStop,
         ),
       sourceBlock: block,
     };

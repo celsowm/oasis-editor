@@ -4,7 +4,12 @@ import {
   projectBlocksLayout,
   estimateParagraphBlockHeight,
 } from "../../layoutProjection/index.js";
-import { createEditorParagraph } from "../../core/editorState.js";
+import {
+  createEditorParagraph,
+  createEditorTable,
+  createEditorTableCell,
+  createEditorTableRow,
+} from "../../core/editorState.js";
 import type { EditorPageSettings } from "../../core/model.js";
 
 const A4: EditorPageSettings = {
@@ -194,6 +199,120 @@ describe("layout projection", () => {
       expect(pages[0]!.blocks).toHaveLength(29);
       expect(pages[0]!.blocks.at(-1)?.layout?.text).toBe("Das");
       expect(pages[1]!.blocks[0]?.layout?.text).toBe("sd");
+    });
+
+    it("collapses contextual spacing between adjacent same-style paragraphs", () => {
+      const first = createEditorParagraph("first");
+      first.style = {
+        spacingBefore: 0,
+        spacingAfter: 20,
+        contextualSpacing: true,
+      };
+      const second = createEditorParagraph("second");
+      second.style = {
+        spacingBefore: 10,
+        spacingAfter: 0,
+        contextualSpacing: true,
+      };
+
+      const pages = projectBlocksLayout({
+        blocks: [first, second],
+        pageSettings: A4,
+        maxPageHeight: 800,
+      });
+      const firstBlock = pages[0]!.blocks[0]!;
+      const secondBlock = pages[0]!.blocks[1]!;
+      const firstLineHeights = firstBlock.layout!.lines.reduce(
+        (sum, line) => sum + line.height,
+        0,
+      );
+      const secondLineHeights = secondBlock.layout!.lines.reduce(
+        (sum, line) => sum + line.height,
+        0,
+      );
+
+      expect(firstBlock.estimatedHeight).toBeCloseTo(firstLineHeights, 4);
+      expect(secondBlock.estimatedHeight).toBeCloseTo(secondLineHeights, 4);
+    });
+
+    it("preserves contextual spacing between different paragraph styles", () => {
+      const first = createEditorParagraph("first");
+      first.style = {
+        spacingBefore: 0,
+        spacingAfter: 20,
+        contextualSpacing: true,
+      };
+      const second = createEditorParagraph("second");
+      second.style = {
+        align: "center",
+        spacingBefore: 10,
+        spacingAfter: 0,
+        contextualSpacing: true,
+      };
+
+      const pages = projectBlocksLayout({
+        blocks: [first, second],
+        pageSettings: A4,
+        maxPageHeight: 800,
+      });
+      const firstBlock = pages[0]!.blocks[0]!;
+      const secondBlock = pages[0]!.blocks[1]!;
+      const firstLineHeights = firstBlock.layout!.lines.reduce(
+        (sum, line) => sum + line.height,
+        0,
+      );
+      const secondLineHeights = secondBlock.layout!.lines.reduce(
+        (sum, line) => sum + line.height,
+        0,
+      );
+
+      expect(firstBlock.estimatedHeight).toBeCloseTo(firstLineHeights + 20, 4);
+      expect(secondBlock.estimatedHeight).toBeCloseTo(
+        secondLineHeights + 10,
+        4,
+      );
+    });
+
+    it("does not collapse contextual paragraph spacing across a table boundary", () => {
+      const first = createEditorParagraph("first");
+      first.style = {
+        spacingBefore: 0,
+        spacingAfter: 20,
+        contextualSpacing: true,
+      };
+      const second = createEditorParagraph("second");
+      second.style = {
+        spacingBefore: 10,
+        spacingAfter: 0,
+        contextualSpacing: true,
+      };
+      const table = createEditorTable([
+        createEditorTableRow([
+          createEditorTableCell([createEditorParagraph("cell")]),
+        ]),
+      ]);
+
+      const pages = projectBlocksLayout({
+        blocks: [first, table, second],
+        pageSettings: A4,
+        maxPageHeight: 800,
+      });
+      const firstBlock = pages[0]!.blocks[0]!;
+      const secondBlock = pages[0]!.blocks[2]!;
+      const firstLineHeights = firstBlock.layout!.lines.reduce(
+        (sum, line) => sum + line.height,
+        0,
+      );
+      const secondLineHeights = secondBlock.layout!.lines.reduce(
+        (sum, line) => sum + line.height,
+        0,
+      );
+
+      expect(firstBlock.estimatedHeight).toBeCloseTo(firstLineHeights + 20, 4);
+      expect(secondBlock.estimatedHeight).toBeCloseTo(
+        secondLineHeights + 10,
+        4,
+      );
     });
   });
 

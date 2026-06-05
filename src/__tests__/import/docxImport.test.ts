@@ -120,6 +120,35 @@ async function buildDocxWithSingleParagraph(
   return zip.generateAsync({ type: "arraybuffer" });
 }
 
+async function buildDocxWithContextualSpacing(
+  paragraphProperties: string,
+  stylesXml?: string,
+  settingsXml?: string,
+): Promise<ArrayBuffer> {
+  const zip = new JSZip();
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:pPr>${paragraphProperties}</w:pPr>
+      <w:r><w:t>Contextual spacing</w:t></w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+  zip.file("word/document.xml", documentXml);
+  if (stylesXml) {
+    zip.file("word/styles.xml", stylesXml);
+  }
+  if (settingsXml) {
+    zip.file("word/settings.xml", settingsXml);
+  }
+  return zip.generateAsync({ type: "arraybuffer" });
+}
+
 async function buildDocxWithNormalFirstLineAndExplicitZero(): Promise<ArrayBuffer> {
   const zip = new JSZip();
   const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -394,6 +423,146 @@ describe("DOCX import", () => {
     expect(firstBlock.sourceBlockId).toBe(firstChapter.id);
     expect(firstBlock.layout?.startOffset).toBe(0);
     expect(firstBlock.estimatedHeight).toBeCloseTo(lineHeights + 32, 4);
+  });
+
+  it("imports direct DOCX contextual paragraph spacing", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithContextualSpacing("<w:contextualSpacing/>"),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+    const effectiveStyle = resolveEffectiveParagraphStyle(
+      paragraph.style,
+      document.styles,
+    );
+
+    expect(paragraph.style?.contextualSpacing).toBe(true);
+    expect(effectiveStyle.contextualSpacing).toBe(true);
+  });
+
+  it("inherits DOCX contextual paragraph spacing from a named paragraph style", async () => {
+    const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:style w:type="paragraph" w:styleId="SameStyle">
+    <w:name w:val="Same Style"/>
+    <w:pPr><w:contextualSpacing/></w:pPr>
+  </w:style>
+</w:styles>`;
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithContextualSpacing(
+        '<w:pStyle w:val="SameStyle"/>',
+        stylesXml,
+      ),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+    const effectiveStyle = resolveEffectiveParagraphStyle(
+      paragraph.style,
+      document.styles,
+    );
+
+    expect(paragraph.style?.styleId).toBe("SameStyle");
+    expect(document.styles?.SameStyle?.paragraphStyle?.contextualSpacing).toBe(
+      true,
+    );
+    expect(effectiveStyle.contextualSpacing).toBe(true);
+  });
+
+  it("does not enable DOCX contextual spacing when the value is off", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithContextualSpacing(
+        '<w:contextualSpacing w:val="0"/>',
+      ),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+    const effectiveStyle = resolveEffectiveParagraphStyle(
+      paragraph.style,
+      document.styles,
+    );
+
+    expect(paragraph.style?.contextualSpacing).toBeUndefined();
+    expect(effectiveStyle.contextualSpacing).toBe(false);
+  });
+
+  it("imports DOCX paragraph tab stops", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithContextualSpacing(`
+        <w:tabs>
+          <w:tab w:val="left" w:pos="720"/>
+          <w:tab w:val="right" w:pos="1440" w:leader="dot"/>
+          <w:tab w:val="decimal" w:pos="2160" w:leader="hyphen"/>
+          <w:tab w:val="bar" w:pos="2880"/>
+          <w:tab w:val="clear" w:pos="3600"/>
+        </w:tabs>
+      `),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+
+    expect(paragraph.style?.tabs).toEqual([
+      { position: 36, type: "left" },
+      { position: 72, type: "right", leader: "dot" },
+      { position: 108, type: "decimal", leader: "hyphen" },
+      { position: 144, type: "bar" },
+      { position: 180, type: "clear" },
+    ]);
+  });
+
+  it("imports DOCX default tab stop from settings and uses it for tab layout", async () => {
+    const settingsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:defaultTabStop w:val="480"/>
+</w:settings>`;
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithContextualSpacing(
+        "",
+        undefined,
+        settingsXml,
+      ),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+    paragraph.runs[0]!.text = "a\tb";
+    const layout = projectParagraphLayout(
+      paragraph,
+      undefined,
+      undefined,
+      document.styles,
+      600,
+      "wordParity",
+      undefined,
+      document.settings?.defaultTabStop,
+    );
+    const afterTab = layout.lines[0]!.slots.find((slot) => slot.offset === 2);
+
+    expect(document.settings?.defaultTabStop).toBe(24);
+    expect(afterTab?.left).toBeCloseTo(32, 4);
+  });
+
+  it("imports DOCX no-break and soft hyphen run content", async () => {
+    const zip = new JSZip();
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:t>non</w:t>
+        <w:noBreakHyphen/>
+        <w:t>breaking soft</w:t>
+        <w:softHyphen/>
+        <w:t>hyphen</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+
+    expect(getParagraphText(paragraph)).toBe("non\u2011breaking soft\u00ADhyphen");
   });
 
   it("preserves first-line indentation from DOCX in projected layout slots", async () => {

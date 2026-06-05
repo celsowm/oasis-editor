@@ -219,6 +219,92 @@ function groupSlotChunksByWhitespace(chars: FragmentSlot[]): FragmentSlot[][] {
   return chunks;
 }
 
+function groupSlotChunksByOffsetGaps(chars: FragmentSlot[]): FragmentSlot[][] {
+  const chunks: FragmentSlot[][] = [];
+  let currentChunk: FragmentSlot[] = [];
+  for (const char of chars) {
+    const previous = currentChunk[currentChunk.length - 1];
+    if (previous && char.offset > previous.offset + 1) {
+      chunks.push(currentChunk);
+      currentChunk = [];
+    }
+    currentChunk.push(char);
+  }
+  if (currentChunk.length > 0) {
+    chunks.push(currentChunk);
+  }
+  return chunks;
+}
+
+function resolveTabLeader(
+  paragraph: EditorParagraphNode,
+  line: EditorLayoutLine,
+  tabLeft: number,
+  document: EditorDocument,
+): "dot" | "hyphen" | "underscore" | "heavy" | "middleDot" | undefined {
+  const paragraphStyle = resolveEffectiveParagraphStyle(
+    paragraph.style,
+    document.styles,
+  );
+  const tabs = paragraphStyle.tabs ?? [];
+  if (tabs.length === 0) {
+    return undefined;
+  }
+  const lineStart = line.slots[0]?.left ?? 0;
+  const relativeLeft = tabLeft - lineStart;
+  const stop = tabs
+    .filter((tab) => tab.type !== "clear")
+    .map((tab) => ({ ...tab, positionPx: tab.position * PX_PER_POINT }))
+    .filter((tab) => tab.positionPx > relativeLeft + 0.01)
+    .sort((a, b) => a.positionPx - b.positionPx)[0];
+  return stop?.leader && stop.leader !== "none" ? stop.leader : undefined;
+}
+
+function drawTabLeaders(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  paragraph: EditorParagraphNode,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+  document: EditorDocument,
+  originX: number,
+  baselineY: number,
+  color: string,
+): void {
+  const slotByOffset = new Map(
+    line.slots.map((slot) => [slot.offset, slot] as const),
+  );
+  for (const char of fragment.chars) {
+    if (char.char !== "\t") {
+      continue;
+    }
+    const slot = slotByOffset.get(char.paragraphOffset);
+    const nextSlot = slotByOffset.get(char.paragraphOffset + 1);
+    if (!slot || !nextSlot) {
+      continue;
+    }
+    const leader = resolveTabLeader(paragraph, line, slot.left, document);
+    if (!leader) {
+      continue;
+    }
+    const y = leader === "underscore" ? baselineY + 2 : baselineY;
+    writer.drawLine(pageIndex, {
+      x1: pxToPt(originX + slot.left),
+      y1: pxToPt(y),
+      x2: pxToPt(originX + nextSlot.left),
+      y2: pxToPt(y),
+      stroke: color,
+      lineWidth: pxToPt(leader === "heavy" ? 1.5 : 1),
+      dashArray:
+        leader === "dot" || leader === "middleDot"
+          ? [1, 3]
+          : leader === "hyphen"
+            ? [5, 3]
+            : undefined,
+    });
+  }
+}
+
 export async function drawFragmentText(
   writer: OasisPdfWriter,
   pageIndex: number,
@@ -293,6 +379,17 @@ export async function drawFragmentText(
     originY,
     styles,
   );
+  drawTabLeaders(
+    writer,
+    pageIndex,
+    paragraph,
+    line,
+    fragment,
+    document,
+    originX,
+    baselineY,
+    styles.color ?? "#000000",
+  );
 
   // When the paragraph is justified, the layout shifts the `left` of each
   // character that follows a space so the line fills the available width.
@@ -323,18 +420,25 @@ export async function drawFragmentText(
       });
     }
   } else {
-    writer.drawText(pageIndex, {
-      x: pxToPt(originX + firstChar.left),
-      y: pxToPt(baselineY),
-      text,
-      fontSize: fontSizePt,
-      color: styles.color ?? "#000000",
-      bold: styles.bold,
-      italic: styles.italic,
-      fontResourceName: fontFace.writerResourceName,
-      characterSpacing: styles.characterSpacing ?? 0,
-      horizontalScale: styles.characterScale ?? 100,
-    });
+    const chunks = groupSlotChunksByOffsetGaps(chars);
+    for (const chunk of chunks) {
+      const chunkText = chunk
+        .map((c) => (styles.allCaps ? c.char.toUpperCase() : c.char))
+        .join("");
+      if (chunkText.length === 0) continue;
+      writer.drawText(pageIndex, {
+        x: pxToPt(originX + chunk[0]!.left),
+        y: pxToPt(baselineY),
+        text: chunkText,
+        fontSize: fontSizePt,
+        color: styles.color ?? "#000000",
+        bold: styles.bold,
+        italic: styles.italic,
+        fontResourceName: fontFace.writerResourceName,
+        characterSpacing: styles.characterSpacing ?? 0,
+        horizontalScale: styles.characterScale ?? 100,
+      });
+    }
   }
   if (styles.underline) {
     drawFragmentDecoration(

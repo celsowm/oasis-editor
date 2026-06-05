@@ -4,9 +4,11 @@ import {
   getFirstChildByTagNameNS,
   getAttributeValue,
 } from "./xmlHelpers.js";
+import { twipsToPoints } from "./units.js";
 
 export interface DocxSettings {
   adjustLineHeightInTable: boolean;
+  defaultTabStop?: number;
 }
 
 export function parseSettings(xml: string | null): DocxSettings {
@@ -18,6 +20,15 @@ export function parseSettings(xml: string | null): DocxSettings {
   }
 
   const doc = new DOMParser().parseFromString(xml, "application/xml");
+  const defaultTabStop = twipsToPoints(
+    getAttributeValue(
+      getFirstChildByTagNameNS(doc.documentElement, WORD_NS, "defaultTabStop"),
+      "val",
+    ),
+  );
+  if (defaultTabStop !== undefined) {
+    settings.defaultTabStop = defaultTabStop;
+  }
   const compat = getFirstChildByTagNameNS(
     doc.documentElement,
     WORD_NS,

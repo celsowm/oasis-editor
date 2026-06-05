@@ -29,6 +29,7 @@ const TAB_SIZE = 4;
 const DEFAULT_WORD_SINGLE_LINE_RATIO = 1.223;
 const FAST_IMPLICIT_DOC_GRID_RATIO = 0.86;
 const PX_PER_POINT = 96 / 72;
+const DEFAULT_TAB_STOP_POINTS = 36;
 
 // Calibração para paridade com MS Word
 // O Word usa DirectWrite/GDI que tem métricas ligeiramente diferentes do Canvas 2D
@@ -59,12 +60,78 @@ interface MeasuredToken {
   width: number;
 }
 
+function resolveTabAdvancePx(
+  paragraph: EditorParagraphNode,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  defaultTabStop: number | undefined,
+  lineStartInset: number,
+  lineWidth: number,
+  tabOffset: number,
+  measuredChars: MeasuredChar[],
+): number {
+  const paragraphStyle = resolveEffectiveParagraphStyle(
+    paragraph.style,
+    styles,
+  );
+  const currentLeft = lineStartInset + lineWidth;
+  const tabOrigin = lineStartInset;
+  const explicitStops = (paragraphStyle.tabs ?? [])
+    .filter((tab) => tab.type !== "clear" && Number.isFinite(tab.position))
+    .map((tab) => ({ ...tab, positionPx: tabOrigin + tab.position * PX_PER_POINT }))
+    .filter((tab) => tab.positionPx > currentLeft + 0.01)
+    .sort((a, b) => a.positionPx - b.positionPx);
+  const explicitStop = explicitStops[0];
+  const nextStop =
+    explicitStop?.positionPx ??
+    tabOrigin +
+      Math.ceil(
+        (currentLeft - tabOrigin + 0.01) /
+          ((defaultTabStop ?? DEFAULT_TAB_STOP_POINTS) * PX_PER_POINT),
+      ) *
+        ((defaultTabStop ?? DEFAULT_TAB_STOP_POINTS) * PX_PER_POINT);
+  let alignmentAdjustment = 0;
+  if (explicitStop?.type === "right" || explicitStop?.type === "center") {
+    const followingWidth = measureTabAlignedTextWidth(tabOffset, measuredChars);
+    alignmentAdjustment =
+      explicitStop.type === "center" ? followingWidth / 2 : followingWidth;
+  } else if (explicitStop?.type === "decimal") {
+    alignmentAdjustment = measureTabAlignedTextWidth(
+      tabOffset,
+      measuredChars,
+      true,
+    );
+  }
+  return Math.max(1, nextStop - currentLeft - alignmentAdjustment);
+}
+
+function measureTabAlignedTextWidth(
+  tabOffset: number,
+  measuredChars: MeasuredChar[],
+  stopAtDecimal = false,
+): number {
+  let width = 0;
+  for (const char of measuredChars) {
+    if (char.offset <= tabOffset) {
+      continue;
+    }
+    if (char.char === "\t" || char.char === "\n") {
+      break;
+    }
+    if (stopAtDecimal && (char.char === "." || char.char === ",")) {
+      break;
+    }
+    width += char.width;
+  }
+  return width;
+}
+
 export interface TextMeasureOptions {
   paragraph: EditorParagraphNode;
   fragments: EditorLayoutFragment[];
   styles?: Record<string, EditorNamedStyle>;
   contentWidth?: number;
   layoutMode?: "fast" | "wordParity";
+  defaultTabStop?: number;
 }
 
 // ... existing code down to composeMeasuredParagraphLines
@@ -731,6 +798,7 @@ export function composeMeasuredParagraphLines(
     styles,
     contentWidth,
     layoutMode = "fast",
+    defaultTabStop,
   } = options;
   const measuredChars = buildMeasuredChars(
     paragraph,
@@ -824,9 +892,47 @@ export function composeMeasuredParagraphLines(
     lineSlotLefts = [lineStartInset];
   };
 
+  const measureCharsAt = (
+    chars: MeasuredChar[],
+    startLineWidth: number,
+  ): number => {
+    let widthAt = startLineWidth;
+    for (const char of chars) {
+      widthAt +=
+        char.char === "\t"
+          ? resolveTabAdvancePx(
+              paragraph,
+              styles,
+              defaultTabStop,
+              lineStartInset,
+              widthAt,
+              char.offset,
+              measuredChars,
+            )
+          : char.width;
+    }
+    return widthAt - startLineWidth;
+  };
+
+  const measureTokenAt = (token: MeasuredToken): number =>
+    token.chars.some((char) => char.char === "\t")
+      ? measureCharsAt(token.chars, lineWidth)
+      : token.width;
+
   const appendChars = (chars: MeasuredChar[]) => {
     for (const char of chars) {
-      lineWidth += char.width;
+      lineWidth +=
+        char.char === "\t"
+          ? resolveTabAdvancePx(
+              paragraph,
+              styles,
+              defaultTabStop,
+              lineStartInset,
+              lineWidth,
+              char.offset,
+              measuredChars,
+            )
+          : char.width;
       lineEndOffset = char.offset + 1;
       lineSlotLefts.push(lineStartInset + lineWidth);
     }
@@ -846,7 +952,8 @@ export function composeMeasuredParagraphLines(
       width,
       isFirstLine,
     );
-    const fitsCurrentLine = lineWidth + token.width <= availableWidth;
+    const tokenWidth = measureTokenAt(token);
+    const fitsCurrentLine = lineWidth + tokenWidth <= availableWidth;
     const isEmptyLine = lineStartOffset === lineEndOffset;
     if (
       fitsCurrentLine ||
@@ -882,9 +989,21 @@ export function composeMeasuredParagraphLines(
     let currentChunkWidth = 0;
 
     for (const char of token.chars) {
+      const charWidth =
+        char.char === "\t"
+          ? resolveTabAdvancePx(
+              paragraph,
+              styles,
+              defaultTabStop,
+              lineStartInset,
+              currentChunkWidth,
+              char.offset,
+              measuredChars,
+            )
+          : char.width;
       if (
         currentChunk.length > 0 &&
-        currentChunkWidth + char.width > nextLineWidth
+        currentChunkWidth + charWidth > nextLineWidth
       ) {
         appendChars(currentChunk);
         flushLine();
@@ -900,7 +1019,7 @@ export function composeMeasuredParagraphLines(
       }
 
       currentChunk.push(char);
-      currentChunkWidth += char.width;
+      currentChunkWidth += charWidth;
     }
 
     if (currentChunk.length > 0) {

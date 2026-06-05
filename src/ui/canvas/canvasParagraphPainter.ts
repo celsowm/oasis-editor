@@ -20,6 +20,58 @@ import {
 
 const PX_PER_POINT = 96 / 72;
 
+function resolveTabLeader(
+  paragraph: EditorParagraphNode,
+  line: EditorLayoutLine,
+  tabLeft: number,
+  state: EditorState,
+): "dot" | "hyphen" | "underscore" | "heavy" | "middleDot" | undefined {
+  const paragraphStyle = resolveEffectiveParagraphStyle(
+    paragraph.style,
+    state.document.styles,
+  );
+  const tabs = paragraphStyle.tabs ?? [];
+  if (tabs.length === 0) {
+    return undefined;
+  }
+  const lineStart = line.slots[0]?.left ?? 0;
+  const relativeLeft = tabLeft - lineStart;
+  const stop = tabs
+    .filter((tab) => tab.type !== "clear")
+    .map((tab) => ({ ...tab, positionPx: tab.position * PX_PER_POINT }))
+    .filter((tab) => tab.positionPx > relativeLeft + 0.01)
+    .sort((a, b) => a.positionPx - b.positionPx)[0];
+  return stop?.leader && stop.leader !== "none" ? stop.leader : undefined;
+}
+
+function drawTabLeader(
+  ctx: CanvasRenderingContext2D,
+  leader: NonNullable<ReturnType<typeof resolveTabLeader>>,
+  x1: number,
+  x2: number,
+  y: number,
+) {
+  if (x2 <= x1 + 2) {
+    return;
+  }
+  ctx.save();
+  ctx.lineWidth = leader === "heavy" ? 1.5 : 1;
+  ctx.strokeStyle = ctx.fillStyle as string;
+  if (leader === "dot" || leader === "middleDot") {
+    ctx.setLineDash([1, 3]);
+  } else if (leader === "hyphen") {
+    ctx.setLineDash([5, 3]);
+  } else {
+    ctx.setLineDash([]);
+  }
+  const leaderY = leader === "underscore" ? y + 2 : y;
+  ctx.beginPath();
+  ctx.moveTo(x1, leaderY);
+  ctx.lineTo(x2, leaderY);
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function resolveCanvasTextRenderMetrics(
   styles:
     | {
@@ -65,7 +117,6 @@ export function drawParagraph(
   originY: number,
   onUpdate: () => void,
 ) {
-  resolveEffectiveParagraphStyle(paragraph.style, state.document.styles);
   for (const line of lines) {
     const slotByOffset = new Map<number, (typeof line.slots)[number]>();
     for (const slot of line.slots) {
@@ -128,9 +179,23 @@ export function drawParagraph(
         }
       } else {
         for (const char of fragment.chars) {
-          if (char.char === "\n" || char.char === "\t") continue;
+          if (char.char === "\n") continue;
           const slot = slotByOffset.get(char.paragraphOffset);
           if (!slot) continue;
+          if (char.char === "\t") {
+            const nextSlot = slotByOffset.get(char.paragraphOffset + 1);
+            const leader = resolveTabLeader(paragraph, line, slot.left, state);
+            if (nextSlot && leader) {
+              drawTabLeader(
+                ctx,
+                leader,
+                originX + slot.left,
+                originX + nextSlot.left,
+                baselineY + renderMetrics.baselineOffset,
+              );
+            }
+            continue;
+          }
           const renderedChar = styles.allCaps
             ? char.char.toUpperCase()
             : char.char;

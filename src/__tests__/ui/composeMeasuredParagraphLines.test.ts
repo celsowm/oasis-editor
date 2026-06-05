@@ -35,12 +35,17 @@ function createFragments(
   });
 }
 
-function measure(paragraph: EditorParagraphNode, contentWidth: number) {
+function measure(
+  paragraph: EditorParagraphNode,
+  contentWidth: number,
+  defaultTabStop?: number,
+) {
   return composeMeasuredParagraphLines({
     paragraph,
     fragments: createFragments(paragraph),
     contentWidth,
     layoutMode: "wordParity",
+    defaultTabStop,
   });
 }
 
@@ -93,6 +98,70 @@ describe("composeMeasuredParagraphLines alignment", () => {
     for (let i = 1; i < lines.length; i++) {
       expect(lineStart(lines[i])).toBe(20);
     }
+  });
+
+  it("advances tab characters to explicit paragraph tab stops", () => {
+    const paragraph = createEditorParagraph("a\tb");
+    paragraph.style = {
+      tabs: [{ position: 72, type: "left" }],
+    };
+    const lines = measure(paragraph, 600);
+    const line = lines[0]!;
+    const afterTab = line.slots.find((slot) => slot.offset === 2);
+
+    expect(afterTab?.left).toBeCloseTo(96, 4);
+  });
+
+  it("advances tab characters to the next default stop without explicit tabs", () => {
+    const paragraph = createEditorParagraph("a\tb");
+    const lines = measure(paragraph, 600);
+    const line = lines[0]!;
+    const afterTab = line.slots.find((slot) => slot.offset === 2);
+
+    expect(afterTab?.left).toBeCloseTo(48, 4);
+  });
+
+  it("uses the document default tab stop when provided", () => {
+    const paragraph = createEditorParagraph("a\tb");
+    const lines = measure(paragraph, 600, 24);
+    const line = lines[0]!;
+    const afterTab = line.slots.find((slot) => slot.offset === 2);
+
+    expect(afterTab?.left).toBeCloseTo(32, 4);
+  });
+
+  it("right-aligns following text at right tab stops", () => {
+    const paragraph = createEditorParagraph("a\tbc");
+    paragraph.style = {
+      tabs: [{ position: 72, type: "right" }],
+    };
+    const line = measure(paragraph, 600)[0]!;
+    const afterText = line.slots.find((slot) => slot.offset === 4);
+
+    expect(afterText?.left).toBeCloseTo(96, 4);
+  });
+
+  it("center-aligns following text around center tab stops", () => {
+    const paragraph = createEditorParagraph("a\tbc");
+    paragraph.style = {
+      tabs: [{ position: 72, type: "center" }],
+    };
+    const line = measure(paragraph, 600)[0]!;
+    const afterTab = line.slots.find((slot) => slot.offset === 2)!;
+    const afterText = line.slots.find((slot) => slot.offset === 4)!;
+
+    expect((afterTab.left + afterText.left) / 2).toBeCloseTo(96, 4);
+  });
+
+  it("aligns decimal separators at decimal tab stops", () => {
+    const paragraph = createEditorParagraph("a\t12.34");
+    paragraph.style = {
+      tabs: [{ position: 72, type: "decimal" }],
+    };
+    const line = measure(paragraph, 600)[0]!;
+    const decimalSlot = line.slots.find((slot) => slot.offset === 4);
+
+    expect(decimalSlot?.left).toBeCloseTo(96, 4);
   });
 
   it("applies center alignment as half of remaining width", () => {

@@ -132,6 +132,72 @@ describe("DOCX export", () => {
     );
   });
 
+  it("serializes contextual paragraph spacing", async () => {
+    const paragraph = createEditorParagraph("Contextual spacing");
+    paragraph.style = { contextualSpacing: true };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+
+    expect(xml).toContain("<w:contextualSpacing/>");
+  });
+
+  it("serializes paragraph tab stops", async () => {
+    const paragraph = createEditorParagraph("One\ttwo");
+    paragraph.style = {
+      tabs: [
+        { position: 36, type: "left" },
+        { position: 72, type: "right", leader: "dot" },
+        { position: 108, type: "decimal", leader: "hyphen" },
+        { position: 144, type: "bar" },
+        { position: 180, type: "clear" },
+      ],
+    };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+
+    expect(xml).toContain("<w:tabs>");
+    expect(xml).toContain('<w:tab w:val="left" w:pos="720"/>');
+    expect(xml).toContain(
+      '<w:tab w:val="right" w:pos="1440" w:leader="dot"/>',
+    );
+    expect(xml).toContain(
+      '<w:tab w:val="decimal" w:pos="2160" w:leader="hyphen"/>',
+    );
+    expect(xml).toContain('<w:tab w:val="bar" w:pos="2880"/>');
+    expect(xml).toContain('<w:tab w:val="clear" w:pos="3600"/>');
+    expect(xml).toContain("<w:tab/>");
+  });
+
+  it("serializes the document default tab stop in settings", async () => {
+    const document = createEditorDocument([createEditorParagraph("Tabs")]);
+    document.settings = { defaultTabStop: 24 };
+
+    const settingsXml = await readZipText(
+      await exportEditorDocumentToDocx(document),
+      "word/settings.xml",
+    );
+
+    expect(settingsXml).toContain('<w:defaultTabStop w:val="480"/>');
+  });
+
+  it("serializes no-break and soft hyphen run content", async () => {
+    const paragraph = createEditorParagraph("non\u2011breaking soft\u00ADhyphen");
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+
+    expect(xml).toContain("<w:noBreakHyphen/>");
+    expect(xml).toContain("<w:softHyphen/>");
+    expect(xml).toContain("<w:t>non</w:t>");
+    expect(xml).toContain("<w:t>breaking soft</w:t>");
+    expect(xml).toContain("<w:t>hyphen</w:t>");
+  });
+
   it("serializes only the edges that have a border (bottom-only box)", async () => {
     const paragraph = createEditorParagraph("Bottom rule only");
     paragraph.style = {

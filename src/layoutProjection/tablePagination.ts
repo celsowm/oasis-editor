@@ -3,7 +3,10 @@ import type { ITextMeasurer } from "../core/engine.js";
 import { domTextMeasurer } from "../ui/textMeasurement.js";
 import { resolveTableColumnWidthsPx } from "../ui/tableGeometry.js";
 import { buildTableCellLayout } from "../core/tableLayout.js";
-import { estimateParagraphBlockHeight } from "./paragraphPagination.js";
+import {
+  estimateParagraphBlockHeight,
+  shouldCollapseContextualSpacing,
+} from "./paragraphPagination.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
 const DEFAULT_LINE_HEIGHT = 1.15;
@@ -168,6 +171,8 @@ function estimateTableRowHeight(
   row: EditorTableNode["rows"][number],
   styles: Record<string, EditorNamedStyle> | undefined,
   layoutMode: "fast" | "wordParity",
+  measurer: ITextMeasurer,
+  defaultTabStop: number | undefined,
   contentWidth?: number,
   table?: EditorTableNode,
   rowIndex?: number,
@@ -190,12 +195,29 @@ function estimateTableRowHeight(
       columnWidthPx,
     );
     let blockHeights = 0;
-    for (const paragraph of cell.blocks) {
+    for (let blockIndex = 0; blockIndex < cell.blocks.length; blockIndex += 1) {
+      const paragraph = cell.blocks[blockIndex]!;
+      const previousParagraph = cell.blocks[blockIndex - 1];
+      const nextParagraph = cell.blocks[blockIndex + 1];
       blockHeights += estimateParagraphBlockHeight(
         paragraph,
         styles,
         cellContentWidth,
         layoutMode,
+        measurer,
+        {
+          allowSpacingBefore: !shouldCollapseContextualSpacing(
+            previousParagraph,
+            paragraph,
+            styles,
+          ),
+          allowSpacingAfter: !shouldCollapseContextualSpacing(
+            paragraph,
+            nextParagraph,
+            styles,
+          ),
+        },
+        defaultTabStop,
       );
     }
     let largestImageHeight = 0;
@@ -316,7 +338,8 @@ export function getTableSegmentHeight(
   styles: Record<string, EditorNamedStyle> | undefined,
   layoutMode: "fast" | "wordParity",
   contentWidth?: number,
-  _measurer: ITextMeasurer = domTextMeasurer,
+  measurer: ITextMeasurer = domTextMeasurer,
+  defaultTabStop?: number,
 ): number {
   const headerHeight =
     repeatedHeaderRowCount > 0
@@ -329,6 +352,8 @@ export function getTableSegmentHeight(
                 row,
                 styles,
                 layoutMode,
+                measurer,
+                defaultTabStop,
                 contentWidth,
                 table,
                 index,
@@ -345,6 +370,8 @@ export function getTableSegmentHeight(
           row,
           styles,
           layoutMode,
+          measurer,
+          defaultTabStop,
           contentWidth,
           table,
           rowStartIndex + indexOffset,
@@ -360,6 +387,7 @@ export function estimateTableBlockHeight(
   contentWidth?: number,
   layoutMode: "fast" | "wordParity" = "fast",
   measurer: ITextMeasurer = domTextMeasurer,
+  defaultTabStop?: number,
 ): number {
   return getTableSegmentHeight(
     table,
@@ -370,5 +398,6 @@ export function estimateTableBlockHeight(
     layoutMode,
     contentWidth,
     measurer,
+    defaultTabStop,
   );
 }

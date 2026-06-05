@@ -138,10 +138,10 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Paragraph | `w:pPr` | `w:p`, styles, numbering levels | — | Paragraph property set. | Resolve cascade: defaults → style → numbering level → direct formatting. | P0 | Supported |
 | Paragraph | `w:pStyle` | `w:pPr` | `w:val` | Paragraph style reference. | Resolve style ID from `styles.xml`. | P0 | Supported |
 | Paragraph | `w:jc` | `w:pPr` | `w:val` | Paragraph alignment. | Values include left, right, center, both, distribute, start/end variants. | P0 | Supported |
-| Paragraph | `w:spacing` | `w:pPr` | `w:before`, `w:after`, `w:line`, `w:lineRule`, `w:beforeAutospacing`, `w:afterAutospacing`, `w:contextualSpacing` | Paragraph spacing and line spacing. | Critical for Word-like vertical layout; handle auto spacing and contextual suppression. | P0 | Supported |
+| Paragraph | `w:spacing` | `w:pPr` | `w:before`, `w:after`, `w:line`, `w:lineRule`, `w:beforeAutospacing`, `w:afterAutospacing` | Paragraph spacing and line spacing. | Critical for Word-like vertical layout; handle auto spacing and contextual suppression. | P0 | Supported |
 | Paragraph | `w:ind` | `w:pPr` | `w:left`, `w:right`, `w:firstLine`, `w:hanging`, `w:start`, `w:end`, `w:firstLineChars`, `w:hangingChars` | Paragraph indentation. | Bidi-aware start/end supersede left/right in newer docs. | P0 | Partial |
-| Paragraph | `w:tabs` | `w:pPr` | — | Tab stop collection. | Needed for legal templates, TOCs and aligned signature blocks. | P1 | Not supported |
-| Paragraph | `w:tab` | `w:tabs` | `w:val`, `w:pos`, `w:leader` | Single tab stop. | Render tab expansion with leader dots/dashes/underscores when present. | P1 | Not supported |
+| Paragraph | `w:tabs` | `w:pPr` | — | Tab stop collection. | Needed for legal templates, TOCs and aligned signature blocks. | P1 | Supported |
+| Paragraph | `w:tab` | `w:tabs` | `w:val`, `w:pos`, `w:leader` | Single tab stop. | Explicit stops round-trip in the paragraph model and drive tab advance/leader rendering. | P1 | Supported |
 | Paragraph | `w:numPr` | `w:pPr` | — | Numbering properties. | Contains `ilvl` and `numId`; list layout cannot be correct without it. | P0 | Supported |
 | Paragraph | `w:ilvl` | `w:numPr` | `w:val` | List level. | Map to `abstractNum/lvl`. | P0 | Supported |
 | Paragraph | `w:numId` | `w:numPr` | `w:val` | List instance id. | Map to `num` and then `abstractNum`. | P0 | Supported |
@@ -179,11 +179,11 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Run/content | `w:r` | `w:p`, `w:hyperlink`, revision containers, SDT content | `w:rsidR`, `w:rsidRPr`, `w:rsidDel` | Run: inline content sharing common properties. | Core inline unit; contains optional `rPr` then text/control/drawing children. | P0 | Supported |
 | Run/content | `w:rPr` | `w:r`, `w:pPr`, styles, numbering levels | — | Run property set. | Resolve style/default cascade before direct formatting. | P0 | Supported |
 | Run/content | `w:t` | `w:r` | `xml:space` | Text node. | Preserve leading/trailing spaces with `xml:space='preserve'`; concatenate only with care. | P0 | Supported |
-| Run/content | `w:tab` | `w:r` | — | Tab character. | Requires paragraph tab-stop resolution; do not render as plain spaces blindly. | P0 | Partial |
+| Run/content | `w:tab` | `w:r` | — | Tab character. | Uses paragraph tab-stop resolution, including explicit stops and default stops. | P0 | Supported |
 | Run/content | `w:br` | `w:r` | `w:type`, `w:clear` | Line/page/column break. | `type='page'` and `type='column'` affect pagination/columns. | P0 | Supported |
 | Run/content | `w:cr` | `w:r` | — | Carriage return. | Similar visual effect to line break in many cases. | P1 | Supported |
-| Run/content | `w:noBreakHyphen` | `w:r` | — | Non-breaking hyphen. | Text extraction and line breaking. | P1 | Not supported |
-| Run/content | `w:softHyphen` | `w:r` | — | Optional hyphen. | Important for accurate line breaking but usually invisible until break point. | P2 | Not supported |
+| Run/content | `w:noBreakHyphen` | `w:r` | — | Non-breaking hyphen. | Imported as U+2011 and exported back as `w:noBreakHyphen`. | P1 | Supported |
+| Run/content | `w:softHyphen` | `w:r` | — | Optional hyphen. | Imported as U+00AD and exported back as `w:softHyphen`. | P2 | Supported |
 | Run/content | `w:sym` | `w:r` | `w:font`, `w:char` | Symbol character from a font. | Map legacy symbol fonts when possible; otherwise preserve. | P1 | Not supported |
 | Run/content | `w:ptab` | `w:r` | `w:alignment`, `w:relativeTo`, `w:leader` | Positioned tab. | Used in headers/footers and page-number layouts. | P2 | Not supported |
 | Run/content | `w:object` | `w:r` | children/relationship attrs | Embedded OLE/VML object. | Usually preserve/placeholder unless OLE rendering is in scope. | P4 | Not supported |
@@ -438,7 +438,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Settings | `w:displayProofErr` | `w:settings` | `w:val` | Display proofing errors. | UI only. | P4 | N/A |
 | Settings | `w:displayHorizontalDrawingGridEvery` / `w:displayVerticalDrawingGridEvery` | `w:settings` | `w:val` | Drawing grid display. | UI/editor behavior. | P4 | N/A |
 | Settings | `w:characterSpacingControl` | `w:settings` | `w:val` | Character spacing control mode. | Can affect East Asian layout. | P3 | Not supported |
-| Settings | `w:defaultTabStop` | `w:settings` | `w:val` | Default tab width. | Core for tab layout when no explicit tab stop exists. | P1 | Not supported |
+| Settings | `w:defaultTabStop` | `w:settings` | `w:val` | Default tab width. | Core for tab layout when no explicit tab stop exists. | P1 | Supported |
 | Settings | `w:autoHyphenation` / `w:consecutiveHyphenLimit` / `w:hyphenationZone` / `w:doNotHyphenateCaps` | `w:settings` | `w:val` | Hyphenation settings. | Line breaking/page fidelity. | P2 | Not supported |
 | Settings | `w:evenAndOddHeaders` | `w:settings` | `w:val` | Even/odd headers enabled. | Used with section header/footer refs. | P1 | Partial |
 | Settings | `w:bookFoldRevPrinting` / `w:bookFoldPrinting` / `w:bookFoldPrintingSheets` | `w:settings` | `w:val` | Booklet printing settings. | Print layout; usually preserve. | P4 | Not supported |
@@ -561,7 +561,7 @@ This pass fills the practical gaps left after the broad matrix above. It still a
 
 | Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
 |---|---|---|---|---|---|---|---|
-| Paragraph | `w:contextualSpacing` | `w:pPr` | `w:val` | Suppress spacing between paragraphs of the same style. | This is a standalone paragraph property, not an attribute of `w:spacing`; it can explain vertical spacing differences. | P1 | Not supported |
+| Paragraph | `w:contextualSpacing` | `w:pPr` | `w:val` | Suppress spacing between paragraphs of the same style. | This is a standalone paragraph property, not an attribute of `w:spacing`; it can explain vertical spacing differences. | P1 | Supported |
 | Paragraph | `w:adjustRightInd` | `w:pPr` | `w:val` | Auto-adjust right indent. | Compatibility-sensitive line layout; preserve/approximate. | P3 | Not supported |
 | Paragraph | `w:ind` character attrs | `w:pPr` | `w:leftChars`, `w:rightChars`, `w:firstLineChars`, `w:hangingChars` | Character-count based indents. | Prefer twip values when both exist unless compatibility requires char units. | P3 | Not supported |
 | Paragraph | `w:pageBreakBefore` with empty paragraphs | `w:pPr` | `w:val` | Page break before paragraph. | Empty paragraphs with this flag still affect pagination. | P1 | Supported |
@@ -953,8 +953,8 @@ This section condenses the per-table Status column into a high-level capability 
 |---|---|
 | Package | `[Content_Types].xml`, `_rels/.rels`, per-part `.rels`; resolves main document, styles, numbering, settings, fontTable, theme, footnotes, headers/footers, and embedded images. |
 | Sections | Page size (`w:pgSz`), page margins (`w:pgMar`), header/footer references (default/even/first) and the section `docGrid`. |
-| Paragraphs | `w:jc`, `w:spacing`, `w:ind` (left/right/start/end/firstLine/hanging), `w:numPr` (ilvl + numId), `w:keepNext`, `w:keepLines`, `w:pageBreakBefore`, `w:widowControl`, paragraph mark `rPr`, and inline `w:sectPr` in `pPr`. |
-| Run content | `w:r`, `w:t`, `w:br` (page break → `pageBreakBefore`), `w:cr`, `w:tab` (kept as `\t`), `w:lastRenderedPageBreak` (skipped), `w:separator` / `w:continuationSeparator` (correctly skipped in footnotes/headers), `w:instrText`, `w:fldChar` begin/separate/end (parsed into a stack; PAGE/NUMPAGES survive round-trip). |
+| Paragraphs | `w:jc`, `w:spacing`, standalone `w:contextualSpacing`, `w:ind` (left/right/start/end/firstLine/hanging), `w:tabs`/`w:tab` stops with leaders, `w:numPr` (ilvl + numId), `w:keepNext`, `w:keepLines`, `w:pageBreakBefore`, `w:widowControl`, paragraph mark `rPr`, and inline `w:sectPr` in `pPr`. |
+| Run content | `w:r`, `w:t`, `w:br` (page break → `pageBreakBefore`), `w:cr`, `w:tab` (kept as `\t` and laid out against paragraph tab stops), `w:lastRenderedPageBreak` (skipped), `w:separator` / `w:continuationSeparator` (correctly skipped in footnotes/headers), `w:instrText`, `w:fldChar` begin/separate/end (parsed into a stack; PAGE/NUMPAGES survive round-trip). |
 | Inline images | `wp:inline` + `pic:pic` + `pic:blipFill` + `a:blip` with embedded relationship; image bytes are deduped via `assetRegistry.ts` and exposed through the editor asset layer. |
 | Run properties | `w:sz`, `w:u` (style + color), `w:strike`/`w:dstrike`, `w:vertAlign` (superscript/subscript), `w:highlight`, `w:caps`/`w:smallCaps`, `w:vanish`, `w:kern`, `w:spacing`, `w:w`, `w:position`. |
 | Styles | `w:docDefaults`, paragraph/character/table style types, `basedOn`/`next`/`link`/`default`; table style `w:tblPr` is read and `w:tblInd` is extracted; style cycle detection; the `default` style per type is applied by category. |
@@ -963,7 +963,7 @@ This section condenses the per-table Status column into a high-level capability 
 | Headers/footers | `w:hdr`/`w:ftr` parts are parsed, re-rendered with the normal paragraph/run/table pipeline, and linked from the right section references. First-page (`w:titlePg`) and even/odd headers are supported on export. |
 | Fields | `PAGE` and `NUMPAGES` round-trip as `w:fldSimple`; cached result text is preserved in the editor model. |
 | Theme | `a:fontScheme` (major/minor, latin/ea/cs) is read and applied to run-level fonts that do not override it. |
-| Settings | `w:adjustLineHeightInTable` is read from `w:compat` and controls table-cell line height. `w:evenAndOddHeaders` is exported and applied to the document. |
+| Settings | `w:adjustLineHeightInTable` is read from `w:compat` and controls table-cell line height. `w:defaultTabStop` drives default tab layout and round-trips through `settings.xml`. `w:evenAndOddHeaders` is exported and applied to the document. |
 | Style cascade | Style `basedOn` chain is walked; style cycle detection prevents infinite loops. |
 
 ### Partial (one side of the round-trip or a documented subset)
@@ -1004,13 +1004,13 @@ This section condenses the per-table Status column into a high-level capability 
 | Bidi/RTL/Complex script | `w:bidi` (paragraph/section), `w:rtl`, `w:cs`, `w:bdo`/`w:dir`, `w:lang`, `w:bidiVisual`, `w:noColumnBalance`. |
 | East Asian / CJK | `w:eastAsianLayout`, `w:vertAlign` for CJK, `w:ruby`/`w:rt`/`w:rubyBase`, `w:doNotUseEastAsianBreakRules`, `w:useWord97LineBreakRules`, `w:useAltKinsokuLineBreakRules`. |
 | Hyphenation | `w:autoHyphenation`, `w:consecutiveHyphenLimit`, `w:hyphenationZone`, `w:doNotHyphenateCaps`. |
-| Most `w:settings` | All of `w:zoom`, `w:view`, `w:displayBackgroundShape`, `w:displayProofErr`, `w:displayHorizontalDrawingGridEvery`/`w:displayVerticalDrawingGridEvery`, `w:characterSpacingControl`, `w:defaultTabStop`, `w:mirrorMargins`, `w:bordersDoNotSurroundHeader`/`Footer`, `w:formsDesign`, `w:attachedTemplate`, `w:linkStyles`, `w:stylePaneFormatFilter`/`w:stylePaneSortMethod`, `w:documentProtection`, `w:trackRevisions`, `w:doNotTrackMoves`/`w:doNotTrackFormatting`, `w:mailMerge`, `w:writeProtection`, `w:shapeDefaults`, `w:decimalSymbol`/`w:listSeparator`, `w:docVars`/`w:docVar`, `w:hdrShapeDefaults`, `w:footnotePr`/`w:endnotePr` (numStart/numRestart/numFmt/pos), `w:displayHiddenText`, `w:showXMLTags`, `w:savePreviewPicture`, `w:embedTrueTypeFonts`/`w:embedSystemFonts`/`w:saveSubsetFonts`, `w:themeFontLang`, `w:clrSchemeMapping`, the full `w:compat` block except `adjustLineHeightInTable`. |
+| Most `w:settings` | All of `w:zoom`, `w:view`, `w:displayBackgroundShape`, `w:displayProofErr`, `w:displayHorizontalDrawingGridEvery`/`w:displayVerticalDrawingGridEvery`, `w:characterSpacingControl`, `w:mirrorMargins`, `w:bordersDoNotSurroundHeader`/`Footer`, `w:formsDesign`, `w:attachedTemplate`, `w:linkStyles`, `w:stylePaneFormatFilter`/`w:stylePaneSortMethod`, `w:documentProtection`, `w:trackRevisions`, `w:doNotTrackMoves`/`w:doNotTrackFormatting`, `w:mailMerge`, `w:writeProtection`, `w:shapeDefaults`, `w:decimalSymbol`/`w:listSeparator`, `w:docVars`/`w:docVar`, `w:hdrShapeDefaults`, `w:footnotePr`/`w:endnotePr` (numStart/numRestart/numFmt/pos), `w:displayHiddenText`, `w:showXMLTags`, `w:savePreviewPicture`, `w:embedTrueTypeFonts`/`w:embedSystemFonts`/`w:saveSubsetFonts`, `w:themeFontLang`, `w:clrSchemeMapping`, the full `w:compat` block except `adjustLineHeightInTable`. |
 | Font table | `word/fontTable.xml` is not read; `w:font`, `w:altName`, `w:family`, `w:pitch`, `w:charset`, `w:panose1`, `w:sig`, embedded font references are all dropped. |
 | Web settings | `word/webSettings.xml` is not consumed. |
 | Columns / page borders / text direction | `w:cols`, `w:type`, `w:pgNumType`, `w:pageBorders`, `w:textDirection` (cell/section), `w:vAlign` (`both`), `w:lnNumType`, `w:paperSrc`, `w:formProt`, `w:noEndnote`, `w:printerSettings`. |
-| Paragraph decorations | `w:tabs`, `w:outlineLvl`, `w:suppressLineNumbers`, `w:pBdr`, paragraph-level `w:shd`, `w:framePr`, `w:bidi`, `w:kinsoku`, `w:wordWrap`, `w:overflowPunct`, `w:topLinePunct`, `w:autoSpaceDE`/`DN`, `w:textAlignment`, `w:textboxTightWrap`, `w:divId`, `w:cnfStyle`, `w:contextualSpacing`, `w:adjustRightInd`. |
+| Paragraph decorations | `w:outlineLvl`, `w:suppressLineNumbers`, `w:pBdr`, paragraph-level `w:shd`, `w:framePr`, `w:bidi`, `w:kinsoku`, `w:wordWrap`, `w:overflowPunct`, `w:topLinePunct`, `w:autoSpaceDE`/`DN`, `w:textAlignment`, `w:textboxTightWrap`, `w:divId`, `w:cnfStyle`, `w:adjustRightInd`. |
 | Run decorations | Run-level `w:shd`, `w:webHidden`, `w:rtl`, `w:cs`, `w:lang`, `w:fitText`, `w:effect`, `w:em`, `w:bdr`, `w:imprint`/`w:outline`/`w:shadow`, `w:emboss`, `w:snapToGrid` (run), `w:noProof`, `w:oMath`, `w:specVanish`, `w:stylePaneFormatFilter`/`w:stylePaneSortMethod`, `w:rPrChange`. |
-| Run content (special glyphs) | `w:noBreakHyphen`, `w:softHyphen`, `w:sym`, `w:ptab`, `w:object`, `w:pict`, `w:delText`, `w:dayShort`/`w:monthLong`, `w:dir`/`w:bdo`, `w:smartTag`, `w:permStart`/`End` (in runs), `w:delInstrText`, `w:fldData`. |
+| Run content (special glyphs) | `w:sym`, `w:ptab`, `w:object`, `w:pict`, `w:delText`, `w:dayShort`/`w:monthLong`, `w:dir`/`w:bdo`, `w:smartTag`, `w:permStart`/`End` (in runs), `w:delInstrText`, `w:fldData`. |
 | OPC extensions | `customXml/*`, `word/embeddings/*`, `word/activeX/*`, `word/printerSettings/*`, `word/commentsExtended.xml`, `word/commentsIds.xml`, `word/people.xml`, `word/bibliography.xml`, `word/charts/*`, `word/diagrams/*`, `word/theme/themeOverride*.xml`, `docProps/thumbnail.*`, `vbaProject.bin`, encrypted packages, digital signatures, external relationships, `word/comments.xml`. |
 | Latent styles / SDT/control UX | `w:latentStyles`/`w:lsdException`, `w:appearance`/`w:color`/`w:showingPlcHdr`/`w:temporary`/`w:lock` on SDT, `w:equation`/`w:citation`/`w:bibliography`/`w:group`/`w:repeatingSectionItem`. |
 | Modern (w14/w15/w16) typography | `w14:ligatures`, `w14:numForm`, `w14:numSpacing`, `w14:stylisticSets`/`w14:stylisticSet`, `w14:cntxtAlts`, `w14:textFill`, `w14:textOutline`, `w14:textShadow`, `w14:glow`/`w14:reflection`, `w14:scene3d`/`w14:props3d`, `w15:collapsed`, `w16du:dateUtc`. |

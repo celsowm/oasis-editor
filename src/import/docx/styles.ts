@@ -2,6 +2,7 @@ import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type {
   EditorNamedStyle,
   EditorParagraphStyle,
+  EditorTabStop,
   EditorTableStyle,
   EditorTextStyle,
 } from "../../core/model.js";
@@ -71,6 +72,10 @@ export function normalizeImportedParagraphStyle(
       effective.spacingAfter !== defaultEffective.spacingAfter
         ? effective.spacingAfter
         : undefined,
+    contextualSpacing:
+      effective.contextualSpacing !== defaultEffective.contextualSpacing
+        ? effective.contextualSpacing
+        : undefined,
     lineHeight:
       effective.lineHeight !== defaultEffective.lineHeight
         ? effective.lineHeight
@@ -121,6 +126,7 @@ export function normalizeImportedParagraphStyle(
     borderRight: style.borderRight ?? undefined,
     borderBottom: style.borderBottom ?? undefined,
     borderLeft: style.borderLeft ?? undefined,
+    tabs: style.tabs ?? undefined,
   });
 
   return normalized;
@@ -525,6 +531,13 @@ export function parseParagraphStyle(
       style.lineHeight = parsedLineHeight;
     }
   }
+  const contextualSpacing = parseOnOffProperty(
+    paragraphProperties,
+    "contextualSpacing",
+  );
+  if (contextualSpacing !== undefined) {
+    style.contextualSpacing = contextualSpacing;
+  }
 
   const snapToGrid = parseOnOffProperty(paragraphProperties, "snapToGrid");
   if (snapToGrid !== undefined) {
@@ -552,6 +565,11 @@ export function parseParagraphStyle(
     style.indentFirstLine = undefined;
   } else if (firstLine) {
     style.indentFirstLine = twipsToPx(firstLine, 0);
+  }
+
+  const tabs = parseParagraphTabs(paragraphProperties);
+  if (tabs.length > 0) {
+    style.tabs = tabs;
   }
 
   if (parseBooleanProperty(paragraphProperties, "pageBreakBefore")) {
@@ -591,6 +609,60 @@ export function parseParagraphStyle(
   }
 
   return Object.keys(style).length > 0 ? style : undefined;
+}
+
+function parseParagraphTabs(
+  paragraphProperties: XmlElement,
+): EditorTabStop[] {
+  const tabsElement = getFirstChildByTagNameNS(
+    paragraphProperties,
+    WORD_NS,
+    "tabs",
+  );
+  if (!tabsElement) {
+    return [];
+  }
+
+  const tabs: EditorTabStop[] = [];
+  for (const tabElement of getChildrenByTagNameNS(
+    tabsElement,
+    WORD_NS,
+    "tab",
+  )) {
+    const position = twipsToPoints(getAttributeValue(tabElement, "pos"));
+    if (position === undefined) {
+      continue;
+    }
+
+    const typeValue = getAttributeValue(tabElement, "val");
+    const type =
+      typeValue === "center" ||
+      typeValue === "right" ||
+      typeValue === "decimal" ||
+      typeValue === "bar" ||
+      typeValue === "clear"
+        ? typeValue
+        : "left";
+    const leaderValue = getAttributeValue(tabElement, "leader");
+    const leader =
+      leaderValue === "dot" ||
+      leaderValue === "hyphen" ||
+      leaderValue === "underscore" ||
+      leaderValue === "heavy" ||
+      leaderValue === "middleDot"
+        ? leaderValue
+        : leaderValue === "none"
+          ? "none"
+          : undefined;
+
+    tabs.push({
+      position,
+      type,
+      ...(leader !== undefined ? { leader } : {}),
+    });
+  }
+
+  return tabs;
 }
 
 export interface ParagraphAutospacingFlags {

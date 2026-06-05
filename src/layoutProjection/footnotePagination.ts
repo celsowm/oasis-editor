@@ -30,6 +30,7 @@ export type HeaderFooterBlockProjector = (
   contentWidth?: number,
   layoutMode?: "fast" | "wordParity",
   measurer?: ITextMeasurer,
+  defaultTabStop?: number,
 ) => EditorLayoutBlock[];
 
 function getProjectedBlocksHeight(
@@ -123,6 +124,7 @@ function projectFootnoteBlocksForPage(
       contentWidth,
       layoutMode,
       measurer,
+      document.settings?.defaultTabStop,
     );
     for (const block of projected) {
       blocks.push({

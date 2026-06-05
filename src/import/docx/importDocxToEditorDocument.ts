@@ -350,6 +350,12 @@ export async function importDocxToEditorDocument(
   const hasAssets = Object.keys(assets.assets).length > 0;
 
   const finalize = (doc: EditorDocument): EditorDocument => {
+    if (docSettings.defaultTabStop !== undefined) {
+      doc.settings = {
+        ...(doc.settings ?? {}),
+        defaultTabStop: docSettings.defaultTabStop,
+      };
+    }
     if (editorFootnotes) {
       doc.footnotes = editorFootnotes;
       // Materialize markers ("1", "2", ...) from references in document order

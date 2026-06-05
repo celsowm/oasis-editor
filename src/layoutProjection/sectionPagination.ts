@@ -28,6 +28,7 @@ export type BlocksLayoutProjector = (context: {
   layoutMode?: "fast" | "wordParity";
   measurer?: ITextMeasurer;
   reservedHeightByPageIndex?: Map<number, number>;
+  defaultTabStop?: number;
 }) => EditorLayoutPage[];
 
 export type HeaderFooterBlockProjector = (
@@ -40,6 +41,7 @@ export type HeaderFooterBlockProjector = (
   contentWidth?: number,
   layoutMode?: "fast" | "wordParity",
   measurer?: ITextMeasurer,
+  defaultTabStop?: number,
 ) => EditorLayoutBlock[];
 
 export interface SectionPaginationContext {
@@ -50,6 +52,7 @@ export interface SectionPaginationContext {
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>;
   layoutMode: "fast" | "wordParity";
   measurer: ITextMeasurer;
+  defaultTabStop?: number;
   needsTotalPages: boolean;
   projectBlocks: BlocksLayoutProjector;
   projectHeaderFooterBlocks: HeaderFooterBlockProjector;
@@ -159,6 +162,7 @@ function createHeaderFooterVariantProjector(context: SectionPaginationContext) {
           contentWidth,
           context.layoutMode,
           context.measurer,
+          context.defaultTabStop,
         )
       : undefined;
 }
@@ -240,6 +244,7 @@ function calculateTotalPages(
       existingPages: isContinuous ? [activePages[activePages.length - 1]] : [],
       layoutMode: context.layoutMode,
       measurer: context.measurer,
+      defaultTabStop: context.defaultTabStop,
     });
 
     if (isContinuous) {
@@ -302,6 +307,7 @@ function projectAllPages(
       layoutMode: context.layoutMode,
       measurer: context.measurer,
       reservedHeightByPageIndex,
+      defaultTabStop: context.defaultTabStop,
     });
 
     if (isContinuous) {

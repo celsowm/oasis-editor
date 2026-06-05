@@ -23,6 +23,7 @@ export function projectHeaderFooterBlocks(
   contentWidth?: number,
   layoutMode: "fast" | "wordParity" = "fast",
   measurer: ITextMeasurer = domTextMeasurer,
+  defaultTabStop?: number,
 ): EditorLayoutBlock[] {
   return projectHeaderFooterBlocksWithDependencies(
     blocks,
@@ -39,5 +40,6 @@ export function projectHeaderFooterBlocks(
     contentWidth,
     layoutMode,
     measurer,
+    defaultTabStop,
   );
 }

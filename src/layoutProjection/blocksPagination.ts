@@ -21,6 +21,7 @@ import {
   getProjectedParagraphBlockHeight,
   isMeasuredLayoutCurrent,
   projectParagraphLayout,
+  shouldCollapseContextualSpacing,
 } from "./paragraphPagination.js";
 import {
   estimateTableBlockHeight,
@@ -43,6 +44,7 @@ export interface ProjectBlocksLayoutContext {
   layoutMode?: "fast" | "wordParity";
   measurer?: ITextMeasurer;
   reservedHeightByPageIndex?: Map<number, number>;
+  defaultTabStop?: number;
 }
 
 export function projectBlocksLayout(
@@ -61,6 +63,7 @@ export function projectBlocksLayout(
     layoutMode = "fast",
     measurer = domTextMeasurer,
     reservedHeightByPageIndex,
+    defaultTabStop,
   } = context;
   const contentWidth = getPageContentWidth(pageSettings);
   const pages: EditorLayoutPage[] = [...existingPages];
@@ -123,6 +126,7 @@ export function projectBlocksLayout(
         contentWidth,
         layoutMode,
         measurer,
+        defaultTabStop,
       );
       const measuredParagraphLayout =
         measuredParagraphLayouts?.[sourceBlock.id];
@@ -137,7 +141,10 @@ export function projectBlocksLayout(
               measuredParagraphLayout,
             )
           : projectedParagraphLayout;
-      const paragraphTotalHeight =
+      let collapseWithPrevious = false;
+      let contextualAdjustedPreviousBlock: EditorLayoutBlock | undefined;
+      let contextualAdjustedAmount = 0;
+      let paragraphTotalHeight =
         measuredHeights?.[sourceBlock.id] ??
         getProjectedParagraphBlockHeight(sourceBlock, paragraphLayout, styles);
       const paragraphStyle = getEffectiveParagraphStyle(sourceBlock, styles);
@@ -149,6 +156,15 @@ export function projectBlocksLayout(
               styles,
               contentWidth,
               layoutMode,
+              measurer,
+              {
+                allowSpacingBefore: !shouldCollapseContextualSpacing(
+                  sourceBlock,
+                  nextBlock,
+                  styles,
+                ),
+              },
+              defaultTabStop,
             ))
           : nextBlock
             ? (measuredHeights?.[nextBlock.id] ??
@@ -157,6 +173,8 @@ export function projectBlocksLayout(
                 styles,
                 contentWidth,
                 layoutMode,
+                measurer,
+                defaultTabStop,
               ))
             : 0;
       if (
@@ -168,6 +186,40 @@ export function projectBlocksLayout(
           getMaxHeightForPage(getCurrentPageIndex())
       ) {
         flushPage();
+      }
+
+      const previousBlock = currentBlocks.at(-1);
+      const previousParagraph =
+        previousBlock?.blockType === "paragraph" &&
+        previousBlock.sourceBlock?.type === "paragraph"
+          ? previousBlock.sourceBlock
+          : undefined;
+      collapseWithPrevious =
+        currentBlocks.length > 0 &&
+        shouldCollapseContextualSpacing(previousParagraph, sourceBlock, styles);
+      if (collapseWithPrevious && previousBlock && previousParagraph) {
+        const previousStyle = getEffectiveParagraphStyle(
+          previousParagraph,
+          styles,
+        );
+        const collapsedSpacingAfter = previousStyle.spacingAfter ?? 0;
+        if (collapsedSpacingAfter > 0) {
+          previousBlock.estimatedHeight = Math.max(
+            0,
+            previousBlock.estimatedHeight - collapsedSpacingAfter,
+          );
+          currentHeight = Math.max(0, currentHeight - collapsedSpacingAfter);
+          contextualAdjustedPreviousBlock = previousBlock;
+          contextualAdjustedAmount = collapsedSpacingAfter;
+        }
+        paragraphTotalHeight =
+          measuredHeights?.[sourceBlock.id] ??
+          getProjectedParagraphBlockHeight(
+            sourceBlock,
+            paragraphLayout,
+            styles,
+            false,
+          );
       }
 
       if (
@@ -182,13 +234,22 @@ export function projectBlocksLayout(
           flushPage();
         }
         const segmentId = `${sourceBlock.id}:segment:0`;
-        const measuredHeight = getParagraphMeasuredHeight(
+        const rawMeasuredHeight = getParagraphMeasuredHeight(
           measuredHeights,
           sourceBlock.id,
           segmentId,
           true,
           paragraphTotalHeight,
         );
+        const hasMeasuredHeight =
+          measuredHeights?.[segmentId] !== undefined ||
+          measuredHeights?.[sourceBlock.id] !== undefined;
+        const measuredHeight = collapseWithPrevious && hasMeasuredHeight
+          ? Math.max(
+              0,
+              rawMeasuredHeight - (paragraphStyle.spacingBefore ?? 0),
+            )
+          : rawMeasuredHeight;
         currentBlocks.push({
           blockId: segmentId,
           sourceBlockId: sourceBlock.id,
@@ -222,6 +283,7 @@ export function projectBlocksLayout(
             startLineIndex === 0,
             lineEndIndex === paragraphLayout.lines.length - 1,
             styles,
+            !collapseWithPrevious,
           );
           const candidateFitHeight = getParagraphSegmentFitHeight(
             sourceBlock,
@@ -249,6 +311,14 @@ export function projectBlocksLayout(
         }
 
         if (lineEndIndex === startLineIndex && currentBlocks.length > 0) {
+          if (contextualAdjustedPreviousBlock && contextualAdjustedAmount > 0) {
+            contextualAdjustedPreviousBlock.estimatedHeight +=
+              contextualAdjustedAmount;
+            currentHeight += contextualAdjustedAmount;
+            contextualAdjustedPreviousBlock = undefined;
+            contextualAdjustedAmount = 0;
+          }
+          collapseWithPrevious = false;
           flushPage();
           continue;
         }
@@ -264,6 +334,7 @@ export function projectBlocksLayout(
             startLineIndex === 0,
             lineEndIndex === paragraphLayout.lines.length,
             styles,
+            !collapseWithPrevious,
           );
         }
 
@@ -274,6 +345,7 @@ export function projectBlocksLayout(
             startLineIndex,
             lineEndIndex,
             styles,
+            !collapseWithPrevious,
           );
           lineEndIndex = widowOrphanAdjusted.endLineIndexExclusive;
           segmentHeight = widowOrphanAdjusted.height;
@@ -287,13 +359,24 @@ export function projectBlocksLayout(
         const segmentId = `${sourceBlock.id}:segment:${segmentIndex}`;
         const isWholeParagraphSegment =
           startLineIndex === 0 && lineEndIndex === paragraphLayout.lines.length;
-        const measuredHeight = getParagraphMeasuredHeight(
+        const rawMeasuredHeight = getParagraphMeasuredHeight(
           measuredHeights,
           sourceBlock.id,
           segmentId,
           isWholeParagraphSegment,
           segmentHeight,
         );
+        const hasMeasuredHeight =
+          measuredHeights?.[segmentId] !== undefined ||
+          (isWholeParagraphSegment &&
+            measuredHeights?.[sourceBlock.id] !== undefined);
+        const measuredHeight =
+          collapseWithPrevious && startLineIndex === 0 && hasMeasuredHeight
+            ? Math.max(
+                0,
+                rawMeasuredHeight - (paragraphStyle.spacingBefore ?? 0),
+              )
+            : rawMeasuredHeight;
         currentBlocks.push({
           blockId: segmentId,
           sourceBlockId: sourceBlock.id,
@@ -317,7 +400,14 @@ export function projectBlocksLayout(
 
     const tableHeight =
       measuredHeights?.[sourceBlock.id] ??
-      estimateTableBlockHeight(sourceBlock, styles, contentWidth, layoutMode);
+      estimateTableBlockHeight(
+        sourceBlock,
+        styles,
+        contentWidth,
+        layoutMode,
+        measurer,
+        defaultTabStop,
+      );
     const maxHeightForCurrentPage = getMaxHeightForPage(getCurrentPageIndex());
     if (
       sourceBlock.rows.length <= 1 ||

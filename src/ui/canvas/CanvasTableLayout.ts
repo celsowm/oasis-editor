@@ -353,6 +353,8 @@ export function buildCanvasTableLayout(options: {
           state.document.styles,
           contentWidthPx,
           layoutMode,
+          undefined,
+          state.document.settings?.defaultTabStop,
         );
         const linesBottom =
           projected.lines.length > 0

@@ -27,6 +27,7 @@ import {
   escapeXml,
   OFFICE_REL_NS,
   PACKAGE_REL_NS,
+  pointsToTwips,
   pxToTwips,
   WORD14_NS,
   WORD_NS,
@@ -386,10 +387,19 @@ function buildDocumentRelationshipsXml(
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${PACKAGE_REL_NS}">${rels}</Relationships>`;
 }
 
-function buildSettingsXml(hasEvenAndOddHeaders: boolean): string {
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="${WORD_NS}">${
-    hasEvenAndOddHeaders ? "<w:evenAndOddHeaders/>" : ""
-  }</w:settings>`;
+function buildSettingsXml(
+  hasEvenAndOddHeaders: boolean,
+  defaultTabStop?: number,
+): string {
+  const parts: string[] = [];
+  const defaultTabStopTwips = pointsToTwips(defaultTabStop);
+  if (defaultTabStopTwips !== null) {
+    parts.push(`<w:defaultTabStop w:val="${defaultTabStopTwips}"/>`);
+  }
+  if (hasEvenAndOddHeaders) {
+    parts.push("<w:evenAndOddHeaders/>");
+  }
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="${WORD_NS}">${parts.join("")}</w:settings>`;
 }
 
 function buildPartRelationshipsXml(
@@ -488,6 +498,8 @@ export async function exportEditorDocumentToDocx(
       (section.evenPageHeader?.length ?? 0) > 0 ||
       (section.evenPageFooter?.length ?? 0) > 0,
   );
+  const hasDocumentSettings =
+    hasEvenAndOddHeaders || document.settings?.defaultTabStop !== undefined;
   const allImages = [
     ...bodyContext.images,
     ...parts.flatMap((part) => part.context.images),
@@ -516,7 +528,7 @@ export async function exportEditorDocumentToDocx(
     buildContentTypesXml(
       hasNumbering,
       hasImagesIncludingFootnotes,
-      hasEvenAndOddHeaders,
+      hasDocumentSettings,
       parts,
       hasFootnotes,
     ),
@@ -536,7 +548,7 @@ export async function exportEditorDocumentToDocx(
 
   if (
     hasNumbering ||
-    hasEvenAndOddHeaders ||
+    hasDocumentSettings ||
     bodyContext.images.length > 0 ||
     bodyContext.hyperlinks.length > 0 ||
     parts.length > 0 ||
@@ -546,7 +558,7 @@ export async function exportEditorDocumentToDocx(
       "word/_rels/document.xml.rels",
       buildDocumentRelationshipsXml(
         hasNumbering,
-        hasEvenAndOddHeaders,
+        hasDocumentSettings,
         bodyContext.images,
         bodyContext.hyperlinks,
         parts,
@@ -555,8 +567,14 @@ export async function exportEditorDocumentToDocx(
     );
   }
 
-  if (hasEvenAndOddHeaders) {
-    zip.file("word/settings.xml", buildSettingsXml(hasEvenAndOddHeaders));
+  if (hasDocumentSettings) {
+    zip.file(
+      "word/settings.xml",
+      buildSettingsXml(
+        hasEvenAndOddHeaders,
+        document.settings?.defaultTabStop,
+      ),
+    );
   }
 
   for (const part of parts) {

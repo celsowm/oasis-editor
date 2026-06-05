@@ -63,6 +63,7 @@ export function projectDocumentLayout(
     measuredParagraphLayouts,
     layoutMode,
     measurer,
+    defaultTabStop: document.settings?.defaultTabStop,
     needsTotalPages,
     projectBlocks: projectBlocksLayout,
     projectHeaderFooterBlocks,

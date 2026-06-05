@@ -54,6 +54,10 @@ export async function parseRunElement(
         textParts.push(element.textContent ?? "");
       } else if (element.localName === "tab") {
         textParts.push("\t");
+      } else if (element.localName === "noBreakHyphen") {
+        textParts.push("\u2011");
+      } else if (element.localName === "softHyphen") {
+        textParts.push("\u00AD");
       } else if (element.localName === "br") {
         textParts.push(
           getAttributeValue(element, "type") === "page"

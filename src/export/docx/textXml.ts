@@ -2,6 +2,7 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
   EditorParagraphStyle,
+  EditorTabStop,
   EditorTextRun,
   EditorTextStyle,
 } from "../../core/model.js";
@@ -14,6 +15,7 @@ import {
   escapeXml,
   normalizeDocxColor,
   OFFICE_REL_NS,
+  pointsToTwips,
   toHalfPoints,
   toTwips,
 } from "./xmlUtils.js";
@@ -181,6 +183,18 @@ function serializeRunText(text: string): string {
       result += "<w:tab/>";
       continue;
     }
+    if (char === "\u2011") {
+      result += serializeTextSegment(buffer);
+      buffer = "";
+      result += "<w:noBreakHyphen/>";
+      continue;
+    }
+    if (char === "\u00AD") {
+      result += serializeTextSegment(buffer);
+      buffer = "";
+      result += "<w:softHyphen/>";
+      continue;
+    }
     buffer += char;
   }
 
@@ -296,6 +310,7 @@ function materializeParagraphStyle(
     align: effective.align,
     spacingBefore: effective.spacingBefore,
     spacingAfter: effective.spacingAfter,
+    contextualSpacing: effective.contextualSpacing,
     lineHeight: effective.lineHeight,
     indentLeft: effective.indentLeft,
     indentRight: effective.indentRight,
@@ -310,7 +325,34 @@ function materializeParagraphStyle(
     borderRight: effective.borderRight,
     borderBottom: effective.borderBottom,
     borderLeft: effective.borderLeft,
+    tabs: effective.tabs,
   };
+}
+
+function serializeParagraphTabs(
+  tabs: EditorTabStop[] | null | undefined,
+): string {
+  if (!tabs || tabs.length === 0) {
+    return "";
+  }
+
+  const parts = tabs
+    .map((tab) => {
+      const position = pointsToTwips(tab.position);
+      if (position === null) {
+        return "";
+      }
+      const attrs = [`w:val="${escapeXml(tab.type)}"`, `w:pos="${position}"`];
+      if (tab.leader && tab.leader !== "none") {
+        attrs.push(`w:leader="${escapeXml(tab.leader)}"`);
+      } else if (tab.leader === "none") {
+        attrs.push('w:leader="none"');
+      }
+      return `<w:tab ${attrs.join(" ")}/>`;
+    })
+    .filter(Boolean);
+
+  return parts.length > 0 ? `<w:tabs>${parts.join("")}</w:tabs>` : "";
 }
 
 function materializeRunStyle(
@@ -492,10 +534,16 @@ function serializeParagraphProperties(
     if (attrs.length > 0) parts.push(`<w:ind ${attrs.join(" ")}/>`);
   }
 
+  const tabs = serializeParagraphTabs(style.tabs);
+  if (tabs) {
+    parts.push(tabs);
+  }
+
   if (style.pageBreakBefore) parts.push("<w:pageBreakBefore/>");
   if (style.keepWithNext) parts.push("<w:keepNext/>");
   if (style.keepLinesTogether) parts.push("<w:keepLines/>");
   if (style.widowControl === false) parts.push('<w:widowControl w:val="0"/>');
+  if (style.contextualSpacing) parts.push("<w:contextualSpacing/>");
 
   const paragraphBorders = serializeParagraphBorders(style);
   if (paragraphBorders) {

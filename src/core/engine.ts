@@ -12,6 +12,7 @@ export interface TextMeasureOptions {
   styles?: Record<string, EditorNamedStyle>;
   contentWidth?: number;
   layoutMode?: "fast" | "wordParity";
+  defaultTabStop?: number;
 }
 
 export interface ITextMeasurer {

@@ -67,6 +67,7 @@ export interface EditorParagraphStyle {
   align?: "left" | "center" | "right" | "justify";
   spacingBefore?: number | null;
   spacingAfter?: number | null;
+  contextualSpacing?: boolean;
   lineHeight?: number | null;
   lineGridPitch?: number | null;
   lineGridType?: "lines" | "linesAndChars" | "snapToChars" | "implicit" | null;
@@ -313,6 +314,9 @@ export interface EditorDocument {
   pageSettings?: EditorPageSettings;
   sections?: EditorSection[];
   styles?: Record<string, EditorNamedStyle>;
+  settings?: {
+    defaultTabStop?: number;
+  };
   /**
    * Out-of-band asset registry. Image runs reference entries here using
    * `src = "asset:<id>"`. The map itself is treated as append-only and is
@@ -445,6 +449,7 @@ const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> = {
   align: "left",
   spacingBefore: 0,
   spacingAfter: 8,
+  contextualSpacing: false,
   lineHeight: 1.15,
   lineGridPitch: null as unknown as number | null,
   lineGridType: null as unknown as
