@@ -258,22 +258,51 @@ export function replaceParagraphsInBlocks(blocks: EditorBlockNode[], newParagrap
 
   let index = 0;
   const processBlocks = (nodes: EditorBlockNode[]): EditorBlockNode[] => {
-    return nodes.map(node => {
+    let arrayHasChanges = false;
+    const nextNodes: EditorBlockNode[] = [];
+
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
       if (node.type === "paragraph") {
-        return newParagraphs[index++] ?? node;
+        const nextNode = newParagraphs[index++] ?? node;
+        if (nextNode !== node) arrayHasChanges = true;
+        nextNodes.push(nextNode);
+      } else {
+        let tableHasChanges = false;
+        const nextRows = [];
+        for (let j = 0; j < node.rows.length; j++) {
+          const row = node.rows[j];
+          let rowHasChanges = false;
+          const nextCells = [];
+          for (let k = 0; k < row.cells.length; k++) {
+            const cell = row.cells[k];
+            const nextCellBlocks = processBlocks(cell.blocks) as EditorParagraphNode[];
+            if (nextCellBlocks !== cell.blocks) {
+              rowHasChanges = true;
+              nextCells.push({ ...cell, blocks: nextCellBlocks });
+            } else {
+              nextCells.push(cell);
+            }
+          }
+          if (rowHasChanges) {
+            tableHasChanges = true;
+            nextRows.push({ ...row, cells: nextCells });
+          } else {
+            nextRows.push(row);
+          }
+        }
+        if (tableHasChanges) {
+          arrayHasChanges = true;
+          nextNodes.push({ ...node, rows: nextRows });
+        } else {
+          nextNodes.push(node);
+        }
       }
-      return {
-        ...node,
-        rows: node.rows.map(row => ({
-          ...row,
-          cells: row.cells.map(cell => ({
-            ...cell,
-            blocks: processBlocks(cell.blocks) as EditorParagraphNode[]
-          }))
-        }))
-      };
-    });
+    }
+
+    return arrayHasChanges ? nextNodes : nodes;
   };
+
   return processBlocks(blocks);
 }
 
