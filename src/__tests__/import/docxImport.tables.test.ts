@@ -454,3 +454,137 @@ describe("DOCX table import", () => {
     expect(r1c1?.borderRight?.color).toBe("#AAAA00");
   });
 });
+
+async function buildDocxWithTableProps(): Promise<ArrayBuffer> {
+  const zip = new JSZip();
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblStyle w:val="TableGrid"/>
+        <w:tblW w:w="2500" w:type="pct"/>
+        <w:jc w:val="center"/>
+        <w:tblCellSpacing w:w="120" w:type="dxa"/>
+        <w:tblInd w:w="720" w:type="dxa"/>
+        <w:tblLayout w:type="autofit"/>
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="2880"/>
+        <w:gridCol w:w="2880"/>
+      </w:tblGrid>
+      <w:tr>
+        <w:tblPrEx>
+          <w:tblCellSpacing w:w="80" w:type="dxa"/>
+          <w:tblLayout w:type="fixed"/>
+        </w:tblPrEx>
+        <w:trPr>
+          <w:gridBefore w:val="1"/>
+          <w:gridAfter w:val="2"/>
+          <w:wBefore w:w="600" w:type="dxa"/>
+          <w:wAfter w:w="500" w:type="pct"/>
+          <w:trHeight w:val="480" w:hRule="exact"/>
+          <w:tblHeader/>
+        </w:trPr>
+        <w:tc><w:p><w:r><w:t>Cell</w:t></w:r></w:p></w:tc>
+      </w:tr>
+      <w:tr>
+        <w:trPr>
+          <w:wBefore w:w="0" w:type="auto"/>
+        </w:trPr>
+        <w:tc><w:p><w:r><w:t>Cell 2</w:t></w:r></w:p></w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+  zip.file("word/document.xml", documentXml);
+  return zip.generateAsync({ type: "arraybuffer" });
+}
+
+async function readExportedDocumentXml(buffer: ArrayBuffer): Promise<string> {
+  const zip = await JSZip.loadAsync(buffer);
+  const xml = await zip.file("word/document.xml")?.async("string");
+  if (!xml) {
+    throw new Error("Missing word/document.xml");
+  }
+  return xml;
+}
+
+describe("DOCX table property round-trip", () => {
+  it("imports table-level and row-level properties", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithTableProps(),
+    );
+    const table = getDocumentTables(document)[0]!;
+
+    expect(table.style?.styleId).toBe("TableGrid");
+    expect(table.style?.width).toBe("50%");
+    expect(table.style?.align).toBe("center");
+    expect(table.style?.cellSpacing).toBe(6);
+    expect(table.style?.indentLeft).toBe(36);
+    expect(table.style?.layout).toBe("autofit");
+
+    const row = table.rows[0]!;
+    expect(row.style?.gridBefore).toBe(1);
+    expect(row.style?.gridAfter).toBe(2);
+    expect(row.style?.widthBefore).toBe(30);
+    expect(row.style?.widthAfter).toBe("10%");
+    expect(row.style?.height).toBe(24);
+    expect(row.style?.heightRule).toBe("exact");
+    expect(row.isHeader).toBe(true);
+    expect(row.tblPrExXml).toContain("tblPrEx");
+    expect(row.tblPrExXml).toContain("tblCellSpacing");
+
+    expect(table.rows[1]!.style?.widthBefore).toBe("auto");
+  });
+
+  it("round-trips table properties through export", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithTableProps(),
+    );
+    const xml = await readExportedDocumentXml(
+      await exportEditorDocumentToDocx(document),
+    );
+
+    expect(xml).toContain('<w:tblStyle w:val="TableGrid"/>');
+    expect(xml).toContain('<w:tblW w:w="2500" w:type="pct"/>');
+    expect(xml).toContain('<w:jc w:val="center"/>');
+    expect(xml).toContain('<w:tblCellSpacing w:w="120" w:type="dxa"/>');
+    expect(xml).toContain('<w:tblInd w:w="720" w:type="dxa"/>');
+    expect(xml).toContain('<w:tblLayout w:type="autofit"/>');
+    expect(xml).toContain('<w:gridBefore w:val="1"/>');
+    expect(xml).toContain('<w:gridAfter w:val="2"/>');
+    expect(xml).toContain('<w:wBefore w:w="600" w:type="dxa"/>');
+    expect(xml).toContain('<w:wAfter w:w="500" w:type="pct"/>');
+    expect(xml).toContain('<w:trHeight w:val="480" w:hRule="exact"/>');
+    expect(xml).toContain("<w:tblHeader/>");
+    expect(xml).toContain('<w:wBefore w:w="0" w:type="auto"/>');
+    expect(xml).toContain("tblPrEx");
+
+    // tblPr child ordering: tblW < jc < tblCellSpacing < tblInd < tblLayout
+    expect(xml.indexOf("<w:tblW")).toBeLessThan(xml.indexOf("<w:jc"));
+    expect(xml.indexOf("<w:jc")).toBeLessThan(xml.indexOf("<w:tblCellSpacing"));
+    expect(xml.indexOf("<w:tblCellSpacing")).toBeLessThan(
+      xml.indexOf("<w:tblInd"),
+    );
+    expect(xml.indexOf("<w:tblInd")).toBeLessThan(xml.indexOf("<w:tblLayout"));
+
+    // trPr child ordering: gridBefore < gridAfter < wBefore < wAfter < trHeight < tblHeader
+    expect(xml.indexOf("<w:gridBefore")).toBeLessThan(
+      xml.indexOf("<w:gridAfter"),
+    );
+    expect(xml.indexOf("<w:gridAfter")).toBeLessThan(xml.indexOf("<w:wBefore"));
+    expect(xml.indexOf("<w:wBefore")).toBeLessThan(xml.indexOf("<w:wAfter"));
+    expect(xml.indexOf("<w:wAfter")).toBeLessThan(xml.indexOf("<w:trHeight"));
+    expect(xml.indexOf("<w:trHeight")).toBeLessThan(
+      xml.indexOf("<w:tblHeader"),
+    );
+
+    // tblPrEx must precede trPr inside the row.
+    expect(xml.indexOf("tblPrEx")).toBeLessThan(xml.indexOf("<w:trPr"));
+  });
+});

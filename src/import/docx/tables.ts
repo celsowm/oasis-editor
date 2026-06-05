@@ -1,11 +1,15 @@
 import JSZip from "jszip";
-import { type Element as XmlElement } from "@xmldom/xmldom";
+import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
 import type {
+  EditorDocxWidthValue,
   EditorNamedStyle,
   EditorParagraphNode,
   EditorTableCellStyle,
+  EditorTableLayout,
   EditorTableNode,
   EditorTableRowNode,
+  EditorTableRowStyle,
+  EditorTableStyle,
 } from "../../core/model.js";
 import {
   createEditorParagraphFromRuns,
@@ -34,6 +38,156 @@ import {
   parseAutospacingFlags,
   type ParagraphAutospacingFlags,
 } from "./paragraphStyle.js";
+
+/**
+ * Parses a DOCX width-like element (e.g. w:tblW, w:tblInd, w:tblCellSpacing,
+ * w:wBefore, w:wAfter) into an editor width value:
+ * - type="dxa" (or missing type) -> points (number)
+ * - type="pct" -> "NN%" string
+ * - type="auto" -> "auto"
+ */
+function parseDocxWidthValue(
+  element: XmlElement | null,
+): EditorDocxWidthValue | undefined {
+  if (!element) {
+    return undefined;
+  }
+
+  const type = getAttributeValue(element, "type");
+  const raw = getAttributeValue(element, "w");
+
+  if (type === "auto") {
+    return "auto";
+  }
+
+  if (type === "pct") {
+    if (!raw) {
+      return undefined;
+    }
+    const pct = raw.trim().endsWith("%")
+      ? Number.parseFloat(raw)
+      : Number(raw) / 50;
+    return Number.isFinite(pct)
+      ? `${Math.round(pct * 10000) / 10000}%`
+      : undefined;
+  }
+
+  // Missing or "dxa" type is treated as twips.
+  return twipsToPoints(raw);
+}
+
+function parsePositiveIntegerProperty(
+  parent: XmlElement | null,
+  localName: string,
+): number | undefined {
+  const element = getFirstChildByTagNameNS(parent, WORD_NS, localName);
+  const raw = getAttributeValue(element, "val");
+  const parsed = raw ? Number(raw) : Number.NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined;
+}
+
+function parseTableLayout(
+  tblPr: XmlElement | null,
+): EditorTableLayout | undefined {
+  const value = getAttributeValue(
+    getFirstChildByTagNameNS(tblPr, WORD_NS, "tblLayout"),
+    "type",
+  );
+  return value === "fixed" || value === "autofit" ? value : undefined;
+}
+
+function parseTableStyle(
+  tblPr: XmlElement | null,
+  tableStyleId?: string,
+): EditorTableStyle | undefined {
+  const style: EditorTableStyle = {};
+
+  if (tableStyleId) {
+    style.styleId = tableStyleId;
+  }
+
+  const width = parseDocxWidthValue(
+    getFirstChildByTagNameNS(tblPr, WORD_NS, "tblW"),
+  );
+  if (width !== undefined) {
+    style.width = width;
+  }
+
+  const indentLeft = parseDocxWidthValue(
+    getFirstChildByTagNameNS(tblPr, WORD_NS, "tblInd"),
+  );
+  if (indentLeft !== undefined) {
+    style.indentLeft = indentLeft;
+  }
+
+  const jc = getAttributeValue(
+    getFirstChildByTagNameNS(tblPr, WORD_NS, "jc"),
+    "val",
+  );
+  if (jc === "left" || jc === "center" || jc === "right") {
+    style.align = jc;
+  }
+
+  const layout = parseTableLayout(tblPr);
+  if (layout) {
+    style.layout = layout;
+  }
+
+  const cellSpacing = parseDocxWidthValue(
+    getFirstChildByTagNameNS(tblPr, WORD_NS, "tblCellSpacing"),
+  );
+  if (cellSpacing !== undefined) {
+    style.cellSpacing = cellSpacing;
+  }
+
+  return Object.keys(style).length > 0 ? style : undefined;
+}
+
+function parseTableRowStyle(
+  rowProperties: XmlElement | null,
+): EditorTableRowStyle | undefined {
+  if (!rowProperties) {
+    return undefined;
+  }
+
+  const style: EditorTableRowStyle = {};
+
+  const gridBefore = parsePositiveIntegerProperty(rowProperties, "gridBefore");
+  if (gridBefore !== undefined) {
+    style.gridBefore = gridBefore;
+  }
+
+  const gridAfter = parsePositiveIntegerProperty(rowProperties, "gridAfter");
+  if (gridAfter !== undefined) {
+    style.gridAfter = gridAfter;
+  }
+
+  const widthBefore = parseDocxWidthValue(
+    getFirstChildByTagNameNS(rowProperties, WORD_NS, "wBefore"),
+  );
+  if (widthBefore !== undefined) {
+    style.widthBefore = widthBefore;
+  }
+
+  const widthAfter = parseDocxWidthValue(
+    getFirstChildByTagNameNS(rowProperties, WORD_NS, "wAfter"),
+  );
+  if (widthAfter !== undefined) {
+    style.widthAfter = widthAfter;
+  }
+
+  const trHeight = getFirstChildByTagNameNS(rowProperties, WORD_NS, "trHeight");
+  const height = twipsToPoints(getAttributeValue(trHeight, "val"));
+  if (height !== undefined) {
+    style.height = height;
+  }
+  const hRule = getAttributeValue(trHeight, "hRule");
+  if (hRule === "auto" || hRule === "exact" || hRule === "atLeast") {
+    style.heightRule = hRule;
+  }
+
+  return Object.keys(style).length > 0 ? style : undefined;
+}
 
 function getTableCellColSpan(cellProperties: XmlElement | null): number {
   if (!cellProperties) {
@@ -374,12 +528,20 @@ export async function parseTableNode(
       }
       cells.push(cell);
     }
-    rows.push(
-      createEditorTableRow(
-        cells,
-        isTableHeaderRow(rowNode) ? { isHeader: true } : undefined,
-      ),
+    const rowProperties = getFirstChildByTagNameNS(rowNode, WORD_NS, "trPr");
+    const row = createEditorTableRow(
+      cells,
+      isTableHeaderRow(rowNode) ? { isHeader: true } : undefined,
     );
+    const rowStyle = parseTableRowStyle(rowProperties);
+    if (rowStyle) {
+      row.style = rowStyle;
+    }
+    const tblPrEx = getFirstChildByTagNameNS(rowNode, WORD_NS, "tblPrEx");
+    if (tblPrEx) {
+      row.tblPrExXml = new XMLSerializer().serializeToString(tblPrEx);
+    }
+    rows.push(row);
   }
 
   applyTableBordersToRows(rows, tblBorders);
@@ -411,5 +573,13 @@ export async function parseTableNode(
     }
   }
 
-  return createEditorTable(rows, gridCols.length > 0 ? gridCols : undefined);
+  const table = createEditorTable(
+    rows,
+    gridCols.length > 0 ? gridCols : undefined,
+  );
+  const tableStyle = parseTableStyle(tblPr, tableStyleId ?? undefined);
+  if (tableStyle) {
+    table.style = tableStyle;
+  }
+  return table;
 }

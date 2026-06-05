@@ -22,7 +22,9 @@ export function buildTableCellLayout(
 
   for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
     const row = table.rows[rowIndex];
-    let visualColumnIndex = 0;
+    // w:gridBefore: the row's cells start after a number of skipped leading
+    // grid columns (ragged tables).
+    let visualColumnIndex = Math.max(0, Math.floor(row.style?.gridBefore ?? 0));
 
     for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
       while (occupiedColumns[visualColumnIndex] > 0) {

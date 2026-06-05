@@ -17,47 +17,57 @@ export type SerializeTableParagraphXml = (
   cell: EditorTableCellNode,
 ) => string;
 
+type DocxWidthTag =
+  | "tblW"
+  | "tcW"
+  | "tblInd"
+  | "tblCellSpacing"
+  | "wBefore"
+  | "wAfter";
+
+/**
+ * Serializes a DOCX width-like element from an editor width value:
+ * - number -> w:type="dxa" (points converted to twips)
+ * - "NN%" -> w:type="pct"
+ * - "auto" -> w:type="auto" w:w="0"
+ * - numeric string -> w:type="dxa" (raw twips, legacy behavior)
+ */
+function serializeDocxWidthElement(
+  tag: DocxWidthTag,
+  value: number | string | undefined,
+  options: { fallbackAuto?: boolean } = {},
+): string {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return `<w:${tag} w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "auto") {
+      return `<w:${tag} w:w="0" w:type="auto"/>`;
+    }
+    if (trimmed.endsWith("%")) {
+      const parsed = Number.parseFloat(trimmed.slice(0, -1));
+      if (Number.isFinite(parsed)) {
+        return `<w:${tag} w:w="${Math.round(parsed * 50)}" w:type="pct"/>`;
+      }
+    }
+    const parsed = Number.parseFloat(trimmed);
+    if (Number.isFinite(parsed)) {
+      return `<w:${tag} w:w="${Math.round(parsed)}" w:type="dxa"/>`;
+    }
+  }
+  return options.fallbackAuto ? `<w:${tag} w:w="0" w:type="auto"/>` : "";
+}
+
 function serializeTableWidth(
   value: number | string | undefined,
   fallbackAuto = true,
 ): string {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return `<w:tblW w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`;
-  }
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (trimmed.endsWith("%")) {
-      const parsed = Number.parseFloat(trimmed.slice(0, -1));
-      if (Number.isFinite(parsed)) {
-        return `<w:tblW w:w="${Math.round(parsed * 50)}" w:type="pct"/>`;
-      }
-    }
-    const parsed = Number.parseFloat(trimmed);
-    if (Number.isFinite(parsed)) {
-      return `<w:tblW w:w="${Math.round(parsed)}" w:type="dxa"/>`;
-    }
-  }
-  return fallbackAuto ? '<w:tblW w:w="0" w:type="auto"/>' : "";
+  return serializeDocxWidthElement("tblW", value, { fallbackAuto });
 }
 
 function serializeCellWidth(value: number | string | undefined): string {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return `<w:tcW w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`;
-  }
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (trimmed.endsWith("%")) {
-      const parsed = Number.parseFloat(trimmed.slice(0, -1));
-      if (Number.isFinite(parsed)) {
-        return `<w:tcW w:w="${Math.round(parsed * 50)}" w:type="pct"/>`;
-      }
-    }
-    const parsed = Number.parseFloat(trimmed);
-    if (Number.isFinite(parsed)) {
-      return `<w:tcW w:w="${Math.round(parsed)}" w:type="dxa"/>`;
-    }
-  }
-  return "";
+  return serializeDocxWidthElement("tcW", value);
 }
 
 function serializeBorder(border: EditorBorderStyle | undefined): string {
@@ -136,23 +146,69 @@ function serializeTableCellProperties(
   return parts.length > 0 ? `<w:tcPr>${parts.join("")}</w:tcPr>` : "";
 }
 
+function serializeGridSkip(
+  tag: "gridBefore" | "gridAfter",
+  value: number | undefined,
+): string {
+  if (value === undefined || !Number.isFinite(value)) {
+    return "";
+  }
+  const normalized = Math.floor(value);
+  return normalized > 0 ? `<w:${tag} w:val="${normalized}"/>` : "";
+}
+
+function serializeTableRowHeight(row: EditorTableNode["rows"][number]): string {
+  const heightValue = row.style?.height;
+  const heightRule = row.style?.heightRule;
+  const height =
+    typeof heightValue === "number"
+      ? pointsToTwips(heightValue)
+      : typeof heightValue === "string"
+        ? Number.parseFloat(heightValue)
+        : null;
+  const hasHeight = height !== null && Number.isFinite(height);
+  if (!hasHeight && !heightRule) {
+    return "";
+  }
+  const attrs: string[] = [];
+  if (hasHeight) {
+    attrs.push(`w:val="${Math.round(height!)}"`);
+  }
+  // Preserve imported rule when present; otherwise default to atLeast for
+  // editor-created heights (legacy behavior).
+  attrs.push(`w:hRule="${heightRule ?? "atLeast"}"`);
+  return `<w:trHeight ${attrs.join(" ")}/>`;
+}
+
 function serializeTableRowProperties(
   row: EditorTableNode["rows"][number],
 ): string {
   const parts: string[] = [];
+  const gridBefore = serializeGridSkip("gridBefore", row.style?.gridBefore);
+  if (gridBefore) {
+    parts.push(gridBefore);
+  }
+  const gridAfter = serializeGridSkip("gridAfter", row.style?.gridAfter);
+  if (gridAfter) {
+    parts.push(gridAfter);
+  }
+  const widthBefore = serializeDocxWidthElement(
+    "wBefore",
+    row.style?.widthBefore,
+  );
+  if (widthBefore) {
+    parts.push(widthBefore);
+  }
+  const widthAfter = serializeDocxWidthElement("wAfter", row.style?.widthAfter);
+  if (widthAfter) {
+    parts.push(widthAfter);
+  }
+  const height = serializeTableRowHeight(row);
+  if (height) {
+    parts.push(height);
+  }
   if (row.isHeader) {
     parts.push("<w:tblHeader/>");
-  }
-  if (row.style?.height !== undefined) {
-    const height =
-      typeof row.style.height === "number"
-        ? pointsToTwips(row.style.height)
-        : Number.parseFloat(row.style.height);
-    if (height !== null && Number.isFinite(height)) {
-      parts.push(
-        `<w:trHeight w:val="${Math.round(height)}" w:hRule="atLeast"/>`,
-      );
-    }
   }
   return parts.length > 0 ? `<w:trPr>${parts.join("")}</w:trPr>` : "";
 }
@@ -167,18 +223,24 @@ function serializeTableProperties(table: EditorTableNode): string {
       ? table.gridCols.reduce((sum, width) => sum + width, 0)
       : undefined;
   parts.push(serializeTableWidth(table.style?.width ?? gridWidth));
-  if (
-    typeof table.style?.indentLeft === "number" &&
-    Number.isFinite(table.style.indentLeft)
-  ) {
-    parts.push(
-      `<w:tblInd w:w="${pointsToTwips(table.style.indentLeft) ?? 0}" w:type="dxa"/>`,
-    );
-  }
   if (table.style?.align) {
     parts.push(`<w:jc w:val="${table.style.align}"/>`);
   }
-  parts.push('<w:tblLayout w:type="fixed"/>');
+  const cellSpacingXml = serializeDocxWidthElement(
+    "tblCellSpacing",
+    table.style?.cellSpacing,
+  );
+  if (cellSpacingXml) {
+    parts.push(cellSpacingXml);
+  }
+  const indentXml = serializeDocxWidthElement(
+    "tblInd",
+    table.style?.indentLeft,
+  );
+  if (indentXml) {
+    parts.push(indentXml);
+  }
+  parts.push(`<w:tblLayout w:type="${table.style?.layout ?? "fixed"}"/>`);
   return `<w:tblPr>${parts.join("")}</w:tblPr>`;
 }
 
@@ -224,7 +286,7 @@ export function serializeTableXml(
           return `<w:tc>${serializeTableCellProperties(cell, fallbackWidthPt)}${contentXml}</w:tc>`;
         })
         .join("");
-      return `<w:tr>${serializeTableRowProperties(row)}${cellsXml}</w:tr>`;
+      return `<w:tr>${row.tblPrExXml ?? ""}${serializeTableRowProperties(row)}${cellsXml}</w:tr>`;
     })
     .join("");
   const gridXml = table.gridCols

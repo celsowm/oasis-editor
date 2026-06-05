@@ -198,8 +198,24 @@ export interface EditorTableCellNode {
   style?: EditorTableCellStyle;
 }
 
+/**
+ * A DOCX width-like value.
+ * - number: points, serialized as w:type="dxa"
+ * - "NN%": percentage, serialized as w:type="pct"
+ * - "auto": serialized as w:type="auto" w:w="0"
+ */
+export type EditorDocxWidthValue = number | string;
+
+export type EditorTableLayout = "fixed" | "autofit";
+export type EditorTableRowHeightRule = "auto" | "exact" | "atLeast";
+
 export interface EditorTableRowStyle {
   height?: number | string; // row height in pt
+  heightRule?: EditorTableRowHeightRule; // w:trHeight/@w:hRule
+  gridBefore?: number; // w:trPr/w:gridBefore (skipped leading grid columns)
+  gridAfter?: number; // w:trPr/w:gridAfter (skipped trailing grid columns)
+  widthBefore?: EditorDocxWidthValue; // w:trPr/w:wBefore
+  widthAfter?: EditorDocxWidthValue; // w:trPr/w:wAfter
 }
 
 export interface EditorTableRowNode {
@@ -207,13 +223,20 @@ export interface EditorTableRowNode {
   cells: EditorTableCellNode[];
   isHeader?: boolean;
   style?: EditorTableRowStyle;
+  /**
+   * Raw w:tblPrEx XML (per-row table property exceptions), serialized verbatim
+   * before w:trPr. Preserved for DOCX round-trip fidelity only; not editable.
+   */
+  tblPrExXml?: string;
 }
 
 export interface EditorTableStyle {
   styleId?: string; // ID of the named table style (e.g., "TableGrid")
-  width?: number | string; // table width in pt or percentage
+  width?: EditorDocxWidthValue; // table width in pt or percentage (tblW)
   align?: "left" | "center" | "right";
-  indentLeft?: number; // pt (tblInd)
+  indentLeft?: EditorDocxWidthValue; // pt (tblInd)
+  layout?: EditorTableLayout; // w:tblLayout
+  cellSpacing?: EditorDocxWidthValue; // w:tblCellSpacing
   pageBreakBefore?: boolean;
 }
 
