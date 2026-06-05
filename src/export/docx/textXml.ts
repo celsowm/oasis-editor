@@ -208,8 +208,10 @@ function serializeRunProperties(styles?: EditorTextStyle): string {
   }
 
   const parts: string[] = [];
-  if (styles.bold) parts.push("<w:b/>");
-  if (styles.italic) parts.push("<w:i/>");
+  // Emit the complex-script twins alongside the Latin flags so bold/italic
+  // applies to every script (RTL, CJK) and round-trips through Word.
+  if (styles.bold) parts.push("<w:b/>", "<w:bCs/>");
+  if (styles.italic) parts.push("<w:i/>", "<w:iCs/>");
   if (styles.underline) {
     const underlineVal = styles.underlineStyle ?? "single";
     const underlineColor = styles.underlineColor
@@ -285,7 +287,9 @@ function serializeRunProperties(styles?: EditorTextStyle): string {
   }
   if (styles.fontSize !== undefined && styles.fontSize !== null) {
     const size = toHalfPoints(styles.fontSize);
-    if (size !== null) parts.push(`<w:sz w:val="${size}"/>`);
+    if (size !== null) {
+      parts.push(`<w:sz w:val="${size}"/>`, `<w:szCs w:val="${size}"/>`);
+    }
   }
   if (styles.color) {
     parts.push(

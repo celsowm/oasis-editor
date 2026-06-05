@@ -478,7 +478,9 @@ describe("DOCX import", () => {
       document.styles,
     );
 
-    expect(paragraph.style?.contextualSpacing).toBeUndefined();
+    // Explicit `w:val="0"` is retained as `false` so it can override an
+    // inherited style that turns contextual spacing on.
+    expect(paragraph.style?.contextualSpacing).toBe(false);
     expect(effectiveStyle.contextualSpacing).toBe(false);
   });
 
@@ -669,6 +671,175 @@ describe("DOCX import", () => {
     expect(reexported).toContain(
       '<w:shd w:val="clear" w:color="auto" w:fill="FEF3C7"/>',
     );
+  });
+
+  it("imports bold/italic/size declared only on complex-script run properties", async () => {
+    const zip = new JSZip();
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:rPr>
+          <w:bCs/>
+          <w:iCs/>
+          <w:szCs w:val="28"/>
+        </w:rPr>
+        <w:t>Complex script</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+    const buffer = await zip.generateAsync({ type: "arraybuffer" });
+
+    const document = await importDocxToEditorDocument(buffer);
+    const run = getDocumentParagraphs(document)[0]!.runs[0]!;
+
+    expect(run.styles?.bold).toBe(true);
+    expect(run.styles?.italic).toBe(true);
+    expect(run.styles?.fontSize).toBeCloseTo(18.6667, 3);
+  });
+
+  it("exports bold/italic/size with their complex-script twins", async () => {
+    const zip = new JSZip();
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:rPr>
+          <w:b/>
+          <w:i/>
+          <w:sz w:val="28"/>
+        </w:rPr>
+        <w:t>Bold italic</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+
+    const reexportedZip = await JSZip.loadAsync(
+      await exportEditorDocumentToDocx(document),
+    );
+    const reexported = await reexportedZip
+      .file("word/document.xml")
+      ?.async("string");
+
+    expect(reexported).toContain("<w:b/><w:bCs/>");
+    expect(reexported).toContain("<w:i/><w:iCs/>");
+    expect(reexported).toContain('<w:sz w:val="28"/><w:szCs w:val="28"/>');
+  });
+
+  it("honors explicit w:b w:val='0' overriding a bold character style", async () => {
+    const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:style w:type="character" w:styleId="StrongRef">
+    <w:name w:val="Strong Ref"/>
+    <w:rPr><w:b/></w:rPr>
+  </w:style>
+</w:styles>`;
+    const zip = new JSZip();
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:rPr>
+          <w:rStyle w:val="StrongRef"/>
+          <w:b w:val="0"/>
+        </w:rPr>
+        <w:t>Not bold</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+    zip.file("word/styles.xml", stylesXml);
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+    const run = paragraph.runs[0]!;
+
+    // The explicit-off must survive import and override the bold style.
+    expect(run.styles?.bold).toBe(false);
+    const effective = resolveEffectiveTextStyleForParagraph(
+      run.styles,
+      paragraph.style?.styleId,
+      document.styles,
+    );
+    expect(effective.bold).toBe(false);
+
+    const reexportedZip = await JSZip.loadAsync(
+      await exportEditorDocumentToDocx(document),
+    );
+    const reexported = await reexportedZip
+      .file("word/document.xml")
+      ?.async("string");
+    expect(reexported).not.toContain("<w:b/>");
+  });
+
+  it("does not treat a bare w:b w:val='0' run as bold", async () => {
+    const zip = new JSZip();
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r><w:rPr><w:b w:val="0"/></w:rPr><w:t>Plain</w:t></w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const run = getDocumentParagraphs(document)[0]!.runs[0]!;
+
+    expect(run.styles?.bold).not.toBe(true);
+  });
+
+  it("honors explicit w:keepNext w:val='0' overriding a paragraph style", async () => {
+    const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:style w:type="paragraph" w:styleId="Sticky">
+    <w:name w:val="Sticky"/>
+    <w:pPr><w:keepNext/></w:pPr>
+  </w:style>
+</w:styles>`;
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithContextualSpacing(
+        '<w:pStyle w:val="Sticky"/><w:keepNext w:val="0"/>',
+        stylesXml,
+      ),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+
+    expect(paragraph.style?.keepWithNext).toBe(false);
+    expect(
+      resolveEffectiveParagraphStyle(paragraph.style, document.styles)
+        .keepWithNext,
+    ).toBe(false);
   });
 
   it("maps OOXML start/end indents and applies hanging precedence over firstLine", async () => {

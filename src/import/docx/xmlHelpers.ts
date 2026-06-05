@@ -71,13 +71,6 @@ export function findElementDeep(
   return null;
 }
 
-export function parseBooleanProperty(
-  parent: XmlElement,
-  localName: string,
-): boolean {
-  return getFirstChildByTagNameNS(parent, WORD_NS, localName) !== null;
-}
-
 export function isWordTrue(value: string | null | undefined): boolean {
   return value === "1" || value === "true" || value === "on";
 }

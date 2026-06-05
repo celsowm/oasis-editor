@@ -17,7 +17,6 @@ import {
   getChildrenByTagNameNS,
   getFirstChildByTagNameNS,
   getAttributeValue,
-  parseBooleanProperty,
   parseOnOffProperty,
   parseStyleIdProperty,
   isWordTrue,
@@ -73,6 +72,7 @@ export function normalizeImportedParagraphStyle(
         ? effective.spacingAfter
         : undefined,
     contextualSpacing:
+      style.contextualSpacing !== undefined ||
       effective.contextualSpacing !== defaultEffective.contextualSpacing
         ? effective.contextualSpacing
         : undefined,
@@ -82,6 +82,7 @@ export function normalizeImportedParagraphStyle(
         : undefined,
     lineGridPitch: style.lineGridPitch ?? undefined,
     snapToGrid:
+      style.snapToGrid !== undefined ||
       effective.snapToGrid !== defaultEffective.snapToGrid
         ? effective.snapToGrid
         : undefined,
@@ -106,18 +107,22 @@ export function normalizeImportedParagraphStyle(
         ? effective.indentHanging
         : undefined,
     pageBreakBefore:
+      style.pageBreakBefore !== undefined ||
       effective.pageBreakBefore !== defaultEffective.pageBreakBefore
         ? effective.pageBreakBefore
         : undefined,
     keepWithNext:
+      style.keepWithNext !== undefined ||
       effective.keepWithNext !== defaultEffective.keepWithNext
         ? effective.keepWithNext
         : undefined,
     keepLinesTogether:
+      style.keepLinesTogether !== undefined ||
       effective.keepLinesTogether !== defaultEffective.keepLinesTogether
         ? effective.keepLinesTogether
         : undefined,
     widowControl:
+      style.widowControl !== undefined ||
       effective.widowControl !== defaultEffective.widowControl
         ? effective.widowControl
         : undefined,
@@ -165,11 +170,21 @@ export function normalizeImportedRunStyle(
 
   return stripUndefined({
     styleId: style.styleId,
-    bold: effective.bold !== defaultEffective.bold ? effective.bold : undefined,
+    // Prefer an explicitly-imported toggle (true OR false) so an explicit-off
+    // survives and overrides an inherited style; otherwise dedup against the
+    // editor default. Mirrors the fontSize/indent handling below.
+    bold:
+      style.bold !== undefined
+        ? style.bold
+        : effective.bold !== defaultEffective.bold
+          ? effective.bold
+          : undefined,
     italic:
-      effective.italic !== defaultEffective.italic
-        ? effective.italic
-        : undefined,
+      style.italic !== undefined
+        ? style.italic
+        : effective.italic !== defaultEffective.italic
+          ? effective.italic
+          : undefined,
     underline:
       effective.underline !== defaultEffective.underline
         ? effective.underline
@@ -183,13 +198,17 @@ export function normalizeImportedRunStyle(
         ? effective.underlineColor
         : undefined,
     strike:
-      effective.strike !== defaultEffective.strike
-        ? effective.strike
-        : undefined,
+      style.strike !== undefined
+        ? style.strike
+        : effective.strike !== defaultEffective.strike
+          ? effective.strike
+          : undefined,
     doubleStrike:
-      effective.doubleStrike !== defaultEffective.doubleStrike
-        ? effective.doubleStrike
-        : undefined,
+      style.doubleStrike !== undefined
+        ? style.doubleStrike
+        : effective.doubleStrike !== defaultEffective.doubleStrike
+          ? effective.doubleStrike
+          : undefined,
     superscript:
       effective.superscript !== defaultEffective.superscript
         ? effective.superscript
@@ -199,17 +218,23 @@ export function normalizeImportedRunStyle(
         ? effective.subscript
         : undefined,
     smallCaps:
-      effective.smallCaps !== defaultEffective.smallCaps
-        ? effective.smallCaps
-        : undefined,
+      style.smallCaps !== undefined
+        ? style.smallCaps
+        : effective.smallCaps !== defaultEffective.smallCaps
+          ? effective.smallCaps
+          : undefined,
     allCaps:
-      effective.allCaps !== defaultEffective.allCaps
-        ? effective.allCaps
-        : undefined,
+      style.allCaps !== undefined
+        ? style.allCaps
+        : effective.allCaps !== defaultEffective.allCaps
+          ? effective.allCaps
+          : undefined,
     hidden:
-      effective.hidden !== defaultEffective.hidden
-        ? effective.hidden
-        : undefined,
+      style.hidden !== undefined
+        ? style.hidden
+        : effective.hidden !== defaultEffective.hidden
+          ? effective.hidden
+          : undefined,
     characterScale:
       effective.characterScale !== defaultEffective.characterScale
         ? effective.characterScale
@@ -281,26 +306,44 @@ export function parseRunStyle(
   if (styleId) {
     styles.styleId = styleId;
   }
-  if (parseBooleanProperty(runProperties, "b")) {
-    styles.bold = true;
+  // OOXML toggles default to "on" when present but can be explicitly turned off
+  // with `w:val="0"`. Honor that, because direct run formatting overrides an
+  // inherited character/paragraph style (e.g. a run in a bold style with
+  // `<w:b w:val="0"/>` must render not-bold).
+  //
+  // `w:b`/`w:i` apply to Latin text while `w:bCs`/`w:iCs` apply to complex
+  // script (RTL, etc.). The editor model has a single bold/italic flag, so the
+  // run is bold/italic if either variant is on, explicitly off when either is
+  // off, and untouched when both are absent.
+  const bold = parseOnOffProperty(runProperties, "b");
+  const boldCs = parseOnOffProperty(runProperties, "bCs");
+  if (bold !== undefined || boldCs !== undefined) {
+    styles.bold = bold === true || boldCs === true;
   }
-  if (parseBooleanProperty(runProperties, "i")) {
-    styles.italic = true;
+  const italic = parseOnOffProperty(runProperties, "i");
+  const italicCs = parseOnOffProperty(runProperties, "iCs");
+  if (italic !== undefined || italicCs !== undefined) {
+    styles.italic = italic === true || italicCs === true;
   }
-  if (parseBooleanProperty(runProperties, "strike")) {
-    styles.strike = true;
+  const strike = parseOnOffProperty(runProperties, "strike");
+  if (strike !== undefined) {
+    styles.strike = strike;
   }
-  if (parseBooleanProperty(runProperties, "dstrike")) {
-    styles.doubleStrike = true;
+  const doubleStrike = parseOnOffProperty(runProperties, "dstrike");
+  if (doubleStrike !== undefined) {
+    styles.doubleStrike = doubleStrike;
   }
-  if (parseBooleanProperty(runProperties, "smallCaps")) {
-    styles.smallCaps = true;
+  const smallCaps = parseOnOffProperty(runProperties, "smallCaps");
+  if (smallCaps !== undefined) {
+    styles.smallCaps = smallCaps;
   }
-  if (parseBooleanProperty(runProperties, "caps")) {
-    styles.allCaps = true;
+  const allCaps = parseOnOffProperty(runProperties, "caps");
+  if (allCaps !== undefined) {
+    styles.allCaps = allCaps;
   }
-  if (parseBooleanProperty(runProperties, "vanish")) {
-    styles.hidden = true;
+  const hidden = parseOnOffProperty(runProperties, "vanish");
+  if (hidden !== undefined) {
+    styles.hidden = hidden;
   }
   const characterScale = getAttributeValue(
     getFirstChildByTagNameNS(runProperties, WORD_NS, "w"),
@@ -439,7 +482,9 @@ export function parseRunStyle(
     styles.fontFamily = normalizeImportedFontFamily(fontFamily);
   }
 
-  const size = getFirstChildByTagNameNS(runProperties, WORD_NS, "sz");
+  const size =
+    getFirstChildByTagNameNS(runProperties, WORD_NS, "sz") ??
+    getFirstChildByTagNameNS(runProperties, WORD_NS, "szCs");
   const sizeValue = getAttributeValue(size, "val");
   if (sizeValue) {
     const parsed = halfPointsToPx(sizeValue);
@@ -572,14 +617,20 @@ export function parseParagraphStyle(
     style.tabs = tabs;
   }
 
-  if (parseBooleanProperty(paragraphProperties, "pageBreakBefore")) {
-    style.pageBreakBefore = true;
+  const pageBreakBefore = parseOnOffProperty(
+    paragraphProperties,
+    "pageBreakBefore",
+  );
+  if (pageBreakBefore !== undefined) {
+    style.pageBreakBefore = pageBreakBefore;
   }
-  if (parseBooleanProperty(paragraphProperties, "keepNext")) {
-    style.keepWithNext = true;
+  const keepNext = parseOnOffProperty(paragraphProperties, "keepNext");
+  if (keepNext !== undefined) {
+    style.keepWithNext = keepNext;
   }
-  if (parseBooleanProperty(paragraphProperties, "keepLines")) {
-    style.keepLinesTogether = true;
+  const keepLines = parseOnOffProperty(paragraphProperties, "keepLines");
+  if (keepLines !== undefined) {
+    style.keepLinesTogether = keepLines;
   }
   const widowControl = parseOnOffProperty(paragraphProperties, "widowControl");
   if (widowControl !== undefined) {

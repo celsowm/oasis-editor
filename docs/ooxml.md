@@ -146,9 +146,9 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Paragraph | `w:ilvl` | `w:numPr` | `w:val` | List level. | Map to `abstractNum/lvl`. | P0 | Supported |
 | Paragraph | `w:numId` | `w:numPr` | `w:val` | List instance id. | Map to `num` and then `abstractNum`. | P0 | Supported |
 | Paragraph | `w:outlineLvl` | `w:pPr` | `w:val` | Outline level. | Needed for headings, navigation and generated TOC structure. | P1 | Not supported |
-| Paragraph | `w:keepNext` | `w:pPr` | `w:val` | Keep paragraph with next paragraph. | Pagination fidelity. | P1 | Supported |
-| Paragraph | `w:keepLines` | `w:pPr` | `w:val` | Keep lines together. | Avoids splitting paragraph across pages. | P1 | Supported |
-| Paragraph | `w:pageBreakBefore` | `w:pPr` | `w:val` | Start paragraph on new page. | Core for pagination. | P1 | Supported |
+| Paragraph | `w:keepNext` | `w:pPr` | `w:val` | Keep paragraph with next paragraph. | Pagination fidelity. Explicit `w:val="0"` is honored. | P1 | Supported |
+| Paragraph | `w:keepLines` | `w:pPr` | `w:val` | Keep lines together. | Avoids splitting paragraph across pages. Explicit `w:val="0"` is honored. | P1 | Supported |
+| Paragraph | `w:pageBreakBefore` | `w:pPr` | `w:val` | Start paragraph on new page. | Core for pagination. Explicit `w:val="0"` is honored. | P1 | Supported |
 | Paragraph | `w:widowControl` | `w:pPr` | `w:val` | Widow/orphan control. | Can change page breaks in Word. | P2 | Supported |
 | Paragraph | `w:suppressLineNumbers` | `w:pPr` | `w:val` | Suppress line numbering for paragraph. | Relevant when section line numbering is enabled. | P3 | Not supported |
 | Paragraph | `w:pBdr` | `w:pPr` | — | Paragraph border container. | Includes top/left/bottom/right/between/bar border edges. | P1 | Partial |
@@ -204,17 +204,17 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 |---|---|---|---|---|---|---|---|
 | Run properties | `w:rStyle` | `w:rPr` | `w:val` | Character style reference. | Resolve to `style[type='character']`. | P0 | Partial |
 | Run properties | `w:rFonts` | `w:rPr` | `w:ascii`, `w:hAnsi`, `w:eastAsia`, `w:cs`, `w:asciiTheme`, `w:hAnsiTheme`, `w:eastAsiaTheme`, `w:cstheme`, `w:hint` | Run font family selection. | Resolve theme font slots and script-specific fonts. | P0 | Partial |
-| Run properties | `w:b` / `w:bCs` | `w:rPr` | `w:val` | Bold for Latin / complex script. | On/off value; complex-script variant may differ. | P0 | Partial |
-| Run properties | `w:i` / `w:iCs` | `w:rPr` | `w:val` | Italic for Latin / complex script. | On/off value. | P0 | Partial |
-| Run properties | `w:sz` / `w:szCs` | `w:rPr` | `w:val` | Font size in half-points. | Core text measurement property. | P0 | Supported |
+| Run properties | `w:b` / `w:bCs` | `w:rPr` | `w:val` | Bold for Latin / complex script. | Either variant sets the model's bold flag on import; export emits both `w:b` and `w:bCs` so bold applies to every script. | P0 | Supported |
+| Run properties | `w:i` / `w:iCs` | `w:rPr` | `w:val` | Italic for Latin / complex script. | Either variant sets the model's italic flag on import; export emits both `w:i` and `w:iCs`. | P0 | Supported |
+| Run properties | `w:sz` / `w:szCs` | `w:rPr` | `w:val` | Font size in half-points. | Falls back to `w:szCs` on import when `w:sz` is absent; export emits both. | P0 | Supported |
 | Run properties | `w:color` | `w:rPr` | `w:val`, `w:themeColor`, `w:themeTint`, `w:themeShade` | Text color. | Resolve theme and auto color; preserve original attrs. | P0 | Partial |
 | Run properties | `w:u` | `w:rPr` | `w:val`, `w:color`, theme attrs | Underline. | Many styles beyond single; supports underline color. | P1 | Supported |
-| Run properties | `w:strike` / `w:dstrike` | `w:rPr` | `w:val` | Single/double strikethrough. | Visible formatting. | P1 | Supported |
+| Run properties | `w:strike` / `w:dstrike` | `w:rPr` | `w:val` | Single/double strikethrough. | Visible formatting. Explicit `w:val="0"` is honored so a run can switch the toggle off against an inherited style. | P1 | Supported |
 | Run properties | `w:vertAlign` | `w:rPr` | `w:val` | Superscript/subscript/baseline. | Affects baseline and line height. | P1 | Supported |
 | Run properties | `w:highlight` | `w:rPr` | `w:val` | Highlight color. | Limited named colors; distinct from `shd`. | P1 | Supported |
 | Run properties | `w:shd` | `w:rPr` | `w:val`, `w:color`, `w:fill`, theme attrs | Run shading. | Background shading behind text. | P1 | Not supported |
-| Run properties | `w:caps` / `w:smallCaps` | `w:rPr` | `w:val` | All caps / small caps. | Text transform affects measurement. | P1 | Supported |
-| Run properties | `w:vanish` | `w:rPr` | `w:val` | Hidden text. | Obey `settings/displayHiddenText` or importer mode. | P1 | Supported |
+| Run properties | `w:caps` / `w:smallCaps` | `w:rPr` | `w:val` | All caps / small caps. | Text transform affects measurement. Explicit `w:val="0"` is honored. | P1 | Supported |
+| Run properties | `w:vanish` | `w:rPr` | `w:val` | Hidden text. | Obey `settings/displayHiddenText` or importer mode. Explicit `w:val="0"` is honored. | P1 | Supported |
 | Run properties | `w:webHidden` | `w:rPr` | `w:val` | Hidden in web view. | Usually preserve; may not affect print layout. | P3 | Not supported |
 | Run properties | `w:rtl` | `w:rPr` | `w:val` | Right-to-left run. | Bidi text shaping and ordering. | P1 | Not supported |
 | Run properties | `w:cs` | `w:rPr` | `w:val` | Complex-script formatting flag. | Affects font selection and shaping. | P2 | Not supported |

@@ -17,7 +17,7 @@ import {
   getChildrenByTagNameNS,
   getFirstChildByTagNameNS,
   getAttributeValue,
-  parseBooleanProperty,
+  parseOnOffProperty,
 } from "./xmlHelpers.js";
 import { parseDocxBoxBorders } from "./borders.js";
 import { twipsToPoints, normalizeImportedHexColor } from "./units.js";
@@ -163,7 +163,7 @@ function parseTableCellStyle(
 function isTableHeaderRow(rowNode: XmlElement): boolean {
   const rowProperties = getFirstChildByTagNameNS(rowNode, WORD_NS, "trPr");
   return rowProperties
-    ? parseBooleanProperty(rowProperties, "tblHeader")
+    ? parseOnOffProperty(rowProperties, "tblHeader") === true
     : false;
 }
 
