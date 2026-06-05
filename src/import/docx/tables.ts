@@ -5,6 +5,7 @@ import type {
   EditorParagraphNode,
   EditorTableCellStyle,
   EditorTableNode,
+  EditorTableRowNode,
 } from "../../core/model.js";
 import {
   createEditorParagraphFromRuns,
@@ -19,7 +20,11 @@ import {
   getAttributeValue,
   parseOnOffProperty,
 } from "./xmlHelpers.js";
-import { parseDocxBoxBorders } from "./borders.js";
+import {
+  type EditorTableBorders,
+  parseDocxBoxBorders,
+  parseDocxTableBorders,
+} from "./borders.js";
 import { twipsToPoints, normalizeImportedHexColor } from "./units.js";
 import { type AssetRegistry } from "./assetRegistry.js";
 import { type DocxImportTheme } from "./theme.js";
@@ -213,6 +218,72 @@ function collapseCellAutospacing(
   }
 }
 
+function applyTableBordersToRows(
+  rows: EditorTableRowNode[],
+  tblBorders: EditorTableBorders,
+): void {
+  if (Object.keys(tblBorders).length === 0) {
+    return;
+  }
+
+  const lastRowIndex = rows.length - 1;
+  for (let rowIndex = 0; rowIndex <= lastRowIndex; rowIndex += 1) {
+    const row = rows[rowIndex]!;
+    const lastColIndex = row.cells.length - 1;
+    for (let colIndex = 0; colIndex <= lastColIndex; colIndex += 1) {
+      const cell = row.cells[colIndex]!;
+      const style: EditorTableCellStyle = cell.style ?? {};
+
+      if (
+        rowIndex === 0 &&
+        style.borderTop === undefined &&
+        tblBorders.borderTop
+      ) {
+        style.borderTop = tblBorders.borderTop;
+      }
+      if (
+        rowIndex === lastRowIndex &&
+        style.borderBottom === undefined &&
+        tblBorders.borderBottom
+      ) {
+        style.borderBottom = tblBorders.borderBottom;
+      }
+      if (
+        colIndex === 0 &&
+        style.borderLeft === undefined &&
+        tblBorders.borderLeft
+      ) {
+        style.borderLeft = tblBorders.borderLeft;
+      }
+      if (
+        colIndex === lastColIndex &&
+        style.borderRight === undefined &&
+        tblBorders.borderRight
+      ) {
+        style.borderRight = tblBorders.borderRight;
+      }
+      if (
+        rowIndex < lastRowIndex &&
+        style.borderBottom === undefined &&
+        tblBorders.borderInsideH
+      ) {
+        style.borderBottom = tblBorders.borderInsideH;
+      }
+      if (
+        colIndex < lastColIndex &&
+        style.borderRight === undefined &&
+        tblBorders.borderInsideV
+      ) {
+        style.borderRight = tblBorders.borderInsideV;
+      }
+
+      if (Object.keys(style).length > 0 && cell.style !== style) {
+        cell.style = style;
+      }
+    }
+  }
+}
+
 export async function parseTableNode(
   tableNode: XmlElement,
   numberingMaps: NumberingMaps,
@@ -243,6 +314,9 @@ export async function parseTableNode(
     tableStyleId && styles?.[tableStyleId]?.paragraphStyle
       ? styles[tableStyleId]!.paragraphStyle
       : undefined;
+  const tblBorders = parseDocxTableBorders(
+    getFirstChildByTagNameNS(tblPr, WORD_NS, "tblBorders"),
+  );
 
   const rows = [];
   for (const rowNode of getChildrenByTagNameNS(tableNode, WORD_NS, "tr")) {
@@ -307,6 +381,8 @@ export async function parseTableNode(
       ),
     );
   }
+
+  applyTableBordersToRows(rows, tblBorders);
 
   // Infer rowSpan from restart/continue sequences.
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {

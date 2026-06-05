@@ -53,6 +53,11 @@ export interface EditorBoxBorders {
   borderLeft?: EditorBorderStyle;
 }
 
+export interface EditorTableBorders extends EditorBoxBorders {
+  borderInsideH?: EditorBorderStyle;
+  borderInsideV?: EditorBorderStyle;
+}
+
 /**
  * Parses the four edges of a border container (`w:tcBorders` for cells or
  * `w:pBdr` for paragraphs) into the editor's four `border*` fields.
@@ -76,6 +81,29 @@ export function parseDocxBoxBorders(
     ),
     borderLeft: parseDocxBorder(
       getFirstChildByTagNameNS(container, WORD_NS, "left"),
+    ),
+  };
+}
+
+/**
+ * Parses `w:tblBorders` (6 edges: top/right/bottom/left + insideH/insideV)
+ * into `EditorTableBorders`. Used to propagate table-level border defaults to
+ * cells that have no explicit `w:tcBorders` override for that edge.
+ */
+export function parseDocxTableBorders(
+  container: XmlElement | null,
+): EditorTableBorders {
+  if (!container) {
+    return {};
+  }
+
+  return {
+    ...parseDocxBoxBorders(container),
+    borderInsideH: parseDocxBorder(
+      getFirstChildByTagNameNS(container, WORD_NS, "insideH"),
+    ),
+    borderInsideV: parseDocxBorder(
+      getFirstChildByTagNameNS(container, WORD_NS, "insideV"),
     ),
   };
 }

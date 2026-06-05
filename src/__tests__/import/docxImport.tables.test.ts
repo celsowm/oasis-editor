@@ -365,4 +365,92 @@ describe("DOCX table import", () => {
       layout.lines[0]!.fragments.map((fragment) => fragment.text).join(""),
     ).not.toContain("rápido");
   });
+
+  it("propagates w:tblBorders to outer and inner cell edges, with cell-level override winning", async () => {
+    const zip = new JSZip();
+    // 2×2 table: tblBorders defines all 6 edges with distinct colors.
+    // Cell (0,0) also sets an explicit tcBorder top to a different color.
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblBorders>
+          <w:top    w:val="single" w:sz="8"  w:space="0" w:color="AA0000"/>
+          <w:left   w:val="single" w:sz="8"  w:space="0" w:color="00AA00"/>
+          <w:bottom w:val="single" w:sz="8"  w:space="0" w:color="0000AA"/>
+          <w:right  w:val="single" w:sz="8"  w:space="0" w:color="AAAA00"/>
+          <w:insideH w:val="single" w:sz="6" w:space="0" w:color="AA00AA"/>
+          <w:insideV w:val="single" w:sz="6" w:space="0" w:color="00AAAA"/>
+        </w:tblBorders>
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="2400"/>
+        <w:gridCol w:w="2400"/>
+      </w:tblGrid>
+      <w:tr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:w="2400" w:type="dxa"/>
+            <w:tcBorders>
+              <w:top w:val="single" w:sz="16" w:space="0" w:color="FF0000"/>
+            </w:tcBorders>
+          </w:tcPr>
+          <w:p><w:r><w:t>R0C0</w:t></w:r></w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr><w:tcW w:w="2400" w:type="dxa"/></w:tcPr>
+          <w:p><w:r><w:t>R0C1</w:t></w:r></w:p>
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc>
+          <w:tcPr><w:tcW w:w="2400" w:type="dxa"/></w:tcPr>
+          <w:p><w:r><w:t>R1C0</w:t></w:r></w:p>
+        </w:tc>
+        <w:tc>
+          <w:tcPr><w:tcW w:w="2400" w:type="dxa"/></w:tcPr>
+          <w:p><w:r><w:t>R1C1</w:t></w:r></w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const rows = getDocumentTables(document)[0]!.rows;
+    const r0c0 = rows[0]!.cells[0]!.style;
+    const r0c1 = rows[0]!.cells[1]!.style;
+    const r1c0 = rows[1]!.cells[0]!.style;
+    const r1c1 = rows[1]!.cells[1]!.style;
+
+    // Cell-level tcBorder top overrides tblBorder top for R0C0.
+    expect(r0c0?.borderTop?.color).toBe("#FF0000");
+
+    // Table outer borders on first row.
+    expect(r0c1?.borderTop?.color).toBe("#AA0000");
+    // Table left border on first column.
+    expect(r0c0?.borderLeft?.color).toBe("#00AA00");
+    // Table right border on last column.
+    expect(r0c1?.borderRight?.color).toBe("#AAAA00");
+
+    // insideH → bottom edge of non-last rows.
+    expect(r0c0?.borderBottom?.color).toBe("#AA00AA");
+    expect(r0c1?.borderBottom?.color).toBe("#AA00AA");
+
+    // insideV → right edge of non-last columns.
+    expect(r0c0?.borderRight?.color).toBe("#00AAAA");
+    expect(r1c0?.borderRight?.color).toBe("#00AAAA");
+
+    // Table outer borders on last row.
+    expect(r1c0?.borderBottom?.color).toBe("#0000AA");
+    expect(r1c1?.borderBottom?.color).toBe("#0000AA");
+
+    // Table left/right on last row.
+    expect(r1c0?.borderLeft?.color).toBe("#00AA00");
+    expect(r1c1?.borderRight?.color).toBe("#AAAA00");
+  });
 });
