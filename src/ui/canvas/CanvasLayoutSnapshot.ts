@@ -114,7 +114,6 @@ export interface BuildCanvasLayoutSnapshotOptions {
   state: EditorState;
   measuredBlockHeights?: Record<string, number>;
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>;
-  layoutMode?: "fast" | "wordParity";
 }
 
 function getCanvasPageElements(surface: HTMLElement): HTMLElement[] {
@@ -192,13 +191,11 @@ export function buildCanvasLayoutSnapshot(
   options: BuildCanvasLayoutSnapshotOptions,
 ): CanvasLayoutSnapshot | null {
   const { surface, state } = options;
-  const layoutMode = options.layoutMode ?? "wordParity";
   const documentLayout = projectDocumentLayout(
     state.document,
     undefined,
     options.measuredBlockHeights,
     options.measuredParagraphLayouts,
-    { layoutMode },
   );
   const canvasPages = getCanvasPageElements(surface);
   if (documentLayout.pages.length === 0 || canvasPages.length === 0) {
@@ -332,7 +329,6 @@ export function buildCanvasLayoutSnapshot(
             table: segmentTable,
             state,
             pageIndex: page.index,
-            layoutMode,
             originX: blockContentLeft,
             originY: cursorY,
             contentWidth: blockContentWidth,

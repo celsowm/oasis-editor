@@ -33,7 +33,6 @@ type ImportProgress = NonNullable<
  */
 export interface EditorViewPropsContext {
   // layout
-  layoutMode: NonNullable<OasisEditorEditorLayoutProps["layoutMode"]>;
   viewportHeight: number | string | undefined;
   className: string | undefined;
   style: JSX.CSSProperties | undefined;
@@ -83,7 +82,6 @@ export function buildEditorViewProps(
   ctx: EditorViewPropsContext,
 ): EditorViewProps {
   const layout: OasisEditorEditorLayoutProps = {
-    layoutMode: ctx.layoutMode,
     viewportHeight: ctx.viewportHeight,
     class: ctx.className,
     style: ctx.style,

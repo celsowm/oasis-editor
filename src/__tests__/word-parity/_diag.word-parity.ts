@@ -24,5 +24,5 @@ d("diag", () => {
     console.log("editor firstBodyLineGeometry:", ep.firstBodyLineGeometry);
     console.log("editor bodyTop(px):", ep.bodyTop);
     console.log("mismatches:", res.mismatches);
-  });
+  }, 60_000);
 });

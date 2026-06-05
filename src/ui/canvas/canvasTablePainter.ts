@@ -27,7 +27,6 @@ export function drawTable(
     table: segmentTable,
     state,
     pageIndex,
-    layoutMode: resolveCanvasLayoutMode(),
     originX,
     originY,
     contentWidth,
@@ -67,14 +66,4 @@ export function drawTable(
       reasons: tableLayout.unsupported,
     });
   }
-}
-
-function resolveCanvasLayoutMode(): "fast" | "wordParity" {
-  const viteEnv =
-    (import.meta as { env?: Record<string, string | boolean | undefined> })
-      .env ?? {};
-  if (viteEnv.VITE_OASIS_WORD_PARITY_STRICT === "1") {
-    return "wordParity";
-  }
-  return "wordParity";
 }

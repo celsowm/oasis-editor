@@ -21,7 +21,6 @@ export function projectHeaderFooterBlocks(
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>,
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
-  layoutMode: "fast" | "wordParity" = "fast",
   measurer: ITextMeasurer = domTextMeasurer,
   defaultTabStop?: number,
 ): EditorLayoutBlock[] {
@@ -38,7 +37,6 @@ export function projectHeaderFooterBlocks(
     measuredParagraphLayouts,
     styles,
     contentWidth,
-    layoutMode,
     measurer,
     defaultTabStop,
   );

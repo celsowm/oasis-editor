@@ -23,7 +23,6 @@ export function DropCaret(props: {
     const snapshot = buildCanvasLayoutSnapshot({
       surface: surfaceRef,
       state: props.state,
-      layoutMode: "wordParity",
     });
 
     let viewportLeft = 0;

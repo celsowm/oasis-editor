@@ -41,7 +41,6 @@ export interface ProjectBlocksLayoutContext {
   pageOffset?: number;
   totalPages?: number;
   existingPages?: EditorLayoutPage[];
-  layoutMode?: "fast" | "wordParity";
   measurer?: ITextMeasurer;
   reservedHeightByPageIndex?: Map<number, number>;
   defaultTabStop?: number;
@@ -60,7 +59,6 @@ export function projectBlocksLayout(
     pageOffset = 0,
     totalPages,
     existingPages = [],
-    layoutMode = "fast",
     measurer = domTextMeasurer,
     reservedHeightByPageIndex,
     defaultTabStop,
@@ -124,7 +122,6 @@ export function projectBlocksLayout(
         totalPages,
         styles,
         contentWidth,
-        layoutMode,
         measurer,
         defaultTabStop,
       );
@@ -155,7 +152,6 @@ export function projectBlocksLayout(
               nextBlock,
               styles,
               contentWidth,
-              layoutMode,
               measurer,
               {
                 allowSpacingBefore: !shouldCollapseContextualSpacing(
@@ -172,7 +168,6 @@ export function projectBlocksLayout(
                 nextBlock,
                 styles,
                 contentWidth,
-                layoutMode,
                 measurer,
                 defaultTabStop,
               ))
@@ -290,9 +285,8 @@ export function projectBlocksLayout(
             candidateHeight,
             lineEndIndex === paragraphLayout.lines.length - 1,
             styles,
-            layoutMode,
           );
-          const tolerance = layoutMode === "wordParity" ? 1.5 : 0;
+          const tolerance = 1.5;
           if (
             candidateFitHeight > remainingHeight + tolerance &&
             lineEndIndex === startLineIndex &&
@@ -346,9 +340,29 @@ export function projectBlocksLayout(
             lineEndIndex,
             styles,
             !collapseWithPrevious,
+            true,
+            currentBlocks.length > 0,
           );
           lineEndIndex = widowOrphanAdjusted.endLineIndexExclusive;
           segmentHeight = widowOrphanAdjusted.height;
+
+          if (lineEndIndex === startLineIndex) {
+            // Orphan control pulled the paragraph's lone first line back; move
+            // the whole paragraph to the next page.
+            if (
+              contextualAdjustedPreviousBlock &&
+              contextualAdjustedAmount > 0
+            ) {
+              contextualAdjustedPreviousBlock.estimatedHeight +=
+                contextualAdjustedAmount;
+              currentHeight += contextualAdjustedAmount;
+              contextualAdjustedPreviousBlock = undefined;
+              contextualAdjustedAmount = 0;
+            }
+            collapseWithPrevious = false;
+            flushPage();
+            continue;
+          }
         }
 
         const segmentLayout = createParagraphSegmentLayout(
@@ -404,7 +418,6 @@ export function projectBlocksLayout(
         sourceBlock,
         styles,
         contentWidth,
-        layoutMode,
         measurer,
         defaultTabStop,
       );
@@ -458,7 +471,6 @@ export function projectBlocksLayout(
           candidateEnd,
           repeatedHeaderRowCount,
           styles,
-          layoutMode,
           contentWidth,
         );
         if (
@@ -492,7 +504,6 @@ export function projectBlocksLayout(
           endRowIndex,
           repeatedHeaderRowCount,
           styles,
-          layoutMode,
           contentWidth,
         );
       }

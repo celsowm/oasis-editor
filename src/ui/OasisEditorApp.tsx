@@ -86,7 +86,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     showToolbar,
     showOutline,
     toolbarLayout,
-    layoutMode,
     isReadOnly,
     useComposedShell,
     loadingOptions,
@@ -160,7 +159,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     surfaceRef,
     viewportRef,
     isImporting: isImportInProgress,
-    layoutMode: layoutMode(),
   });
 
   const { status: persistenceStatus } = useEditorPersistence(
@@ -230,7 +228,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     viewportRef: () => viewportRef() ?? null,
     measuredBlockHeights,
     measuredParagraphLayouts,
-    layoutMode,
   });
   const resolveSurfaceHitAtPoint = canvasHitResolver.resolveSurfaceHitAtPoint;
 
@@ -553,7 +550,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     inputHandlers: editorInputHandlers,
     fileHandlers: editorFileHandlers,
   } = buildEditorViewProps({
-    layoutMode: layoutMode(),
     viewportHeight: ui().viewportHeight,
     className: ui().class,
     style: ui().style,

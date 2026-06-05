@@ -62,7 +62,6 @@ export interface EditorSurfaceProps {
   state: Accessor<EditorState>;
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
-  layoutMode?: "fast" | "wordParity";
   /**
    * Phase 4: scroll viewport accessor for page virtualization.
    * When provided, only pages within (or near) the viewport are rendered with

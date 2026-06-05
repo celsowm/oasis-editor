@@ -1,4 +1,10 @@
 import type { OasisPdfFontResource } from "../OasisPdfWriter.js";
+import {
+  loadFontAsset,
+  normalizeFamily,
+  OFFICE_COMPAT_FONT_FAMILIES,
+  ROBOTO_FONT_FILES,
+} from "./officeFontAssets.js";
 
 export interface PdfFontResolveOptions {
   fontFamily?: string | null;
@@ -66,138 +72,8 @@ const BASE14_HELVETICA_FACES: PdfRegisteredFontFace[] = [
   },
 ];
 
-const ROBOTO_FONT_FILES = {
-  regular: "Roboto-Regular.ttf",
-  bold: "Roboto-Medium.ttf",
-  italic: "Roboto-Italic.ttf",
-  bolditalic: "Roboto-MediumItalic.ttf",
-};
-
-const OFFICE_COMPAT_FONT_FAMILIES = [
-  {
-    family: "Carlito",
-    aliases: [
-      "Calibri",
-      "Calibri Light",
-      "Aptos",
-      "Aptos Display",
-      "Aptos Narrow",
-    ],
-    files: {
-      regular: "Carlito-Regular.ttf",
-      bold: "Carlito-Bold.ttf",
-      italic: "Carlito-Italic.ttf",
-      bolditalic: "Carlito-BoldItalic.ttf",
-    },
-  },
-  {
-    family: "Arimo",
-    aliases: ["Arial"],
-    files: {
-      regular: "Arimo-Regular.ttf",
-      bold: "Arimo-Bold.ttf",
-      italic: "Arimo-Italic.ttf",
-      bolditalic: "Arimo-BoldItalic.ttf",
-    },
-  },
-  {
-    family: "Tinos",
-    aliases: ["Times New Roman", "Times"],
-    files: {
-      regular: "Tinos-Regular.ttf",
-      bold: "Tinos-Bold.ttf",
-      italic: "Tinos-Italic.ttf",
-      bolditalic: "Tinos-BoldItalic.ttf",
-    },
-  },
-];
-
-function normalizeFamily(fontFamily: string | null | undefined): string {
-  const firstFamily = (fontFamily ?? "Helvetica")
-    .split(",")[0]
-    ?.trim()
-    .replace(/^['"]|['"]$/g, "");
-  return firstFamily && firstFamily.length > 0 ? firstFamily : "Helvetica";
-}
-
 function faceKey(family: string, bold: boolean, italic: boolean): string {
   return `${family.toLowerCase()}:${bold ? "bold" : "regular"}${italic ? "italic" : ""}`;
-}
-
-function resolveFontAssetUrl(fileName: string): string {
-  return `${import.meta.url.replace(/[^/]*$/, "")}assets/${encodeURIComponent(fileName)}`;
-}
-
-const fontAssetCache = new Map<string, Promise<Uint8Array | null>>();
-
-function loadFontAsset(fileName: string): Promise<Uint8Array | null> {
-  const cachedFontAsset = fontAssetCache.get(fileName);
-  if (cachedFontAsset) {
-    return cachedFontAsset;
-  }
-
-  const fontAsset = readFontAsset(fileName);
-  fontAssetCache.set(fileName, fontAsset);
-  return fontAsset;
-}
-
-async function readFontAsset(fileName: string): Promise<Uint8Array | null> {
-  const assetUrl = resolveFontAssetUrl(fileName);
-  try {
-    if (assetUrl.startsWith("file:")) {
-      const processObject = new Function(
-        "return typeof process === 'object' ? process : undefined",
-      )() as
-        | {
-            getBuiltinModule?(id: string): unknown;
-          }
-        | undefined;
-      const dynamicRequire = new Function(
-        "return typeof require === 'function' ? require : undefined",
-      )() as ((id: string) => unknown) | undefined;
-      const getBuiltin = (id: string): unknown =>
-        processObject?.getBuiltinModule?.(id) ?? dynamicRequire?.(id);
-      const fs = getBuiltin("node:fs") as
-        | { readFileSync(path: URL): Uint8Array }
-        | undefined;
-      return fs?.readFileSync(new URL(assetUrl)) ?? null;
-    }
-
-    if (typeof fetch === "function") {
-      const response = await fetch(assetUrl);
-      if (!response.ok) {
-        return null;
-      }
-      return new Uint8Array(await response.arrayBuffer());
-    }
-
-    const processObject = new Function(
-      "return typeof process === 'object' ? process : undefined",
-    )() as
-      | {
-          getBuiltinModule?(id: string): unknown;
-        }
-      | undefined;
-    const dynamicRequire = new Function(
-      "return typeof require === 'function' ? require : undefined",
-    )() as ((id: string) => unknown) | undefined;
-    const getBuiltin = (id: string): unknown =>
-      processObject?.getBuiltinModule?.(id) ?? dynamicRequire?.(id);
-    const fs = getBuiltin("node:fs") as
-      | { readFileSync(path: string): Uint8Array }
-      | undefined;
-    const fileURLToPath = (
-      getBuiltin("node:url") as
-        | { fileURLToPath(url: string): string }
-        | undefined
-    )?.fileURLToPath;
-    if (!fs || !fileURLToPath) {
-      return null;
-    }
-    return fs.readFileSync(fileURLToPath(assetUrl));
-  } catch {
-    return null;
-  }
 }
 
 export class PdfFontRegistry {

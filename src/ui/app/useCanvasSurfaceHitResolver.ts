@@ -15,7 +15,6 @@ type CanvasSnapshotCache = {
   documentRef: EditorState["document"];
   measuredBlockHeightsRef: Record<string, number>;
   measuredParagraphLayoutsRef: Record<string, EditorLayoutParagraph>;
-  layoutModeValue: "fast" | "wordParity";
   surfaceRef: HTMLDivElement;
   viewportScrollTop: number;
   viewportScrollLeft: number;
@@ -31,7 +30,6 @@ export function createCanvasSurfaceHitResolver(deps: {
   viewportRef: Accessor<HTMLElement | null>;
   measuredBlockHeights: Accessor<Record<string, number>>;
   measuredParagraphLayouts: Accessor<Record<string, EditorLayoutParagraph>>;
-  layoutMode: Accessor<"fast" | "wordParity">;
 }) {
   let canvasSnapshotCache: CanvasSnapshotCache | null = null;
 
@@ -46,7 +44,6 @@ export function createCanvasSurfaceHitResolver(deps: {
 
     const currentMeasuredBlockHeights = deps.measuredBlockHeights();
     const currentMeasuredParagraphLayouts = deps.measuredParagraphLayouts();
-    const currentLayoutMode = deps.layoutMode();
     const currentState = deps.state();
     const viewportScrollTop = currentViewportRef?.scrollTop ?? 0;
     const viewportScrollLeft = currentViewportRef?.scrollLeft ?? 0;
@@ -59,7 +56,6 @@ export function createCanvasSurfaceHitResolver(deps: {
         currentMeasuredBlockHeights &&
       canvasSnapshotCache.measuredParagraphLayoutsRef ===
         currentMeasuredParagraphLayouts &&
-      canvasSnapshotCache.layoutModeValue === currentLayoutMode &&
       canvasSnapshotCache.surfaceRef === currentSurfaceRef &&
       canvasSnapshotCache.viewportScrollTop === viewportScrollTop &&
       canvasSnapshotCache.viewportScrollLeft === viewportScrollLeft &&
@@ -76,7 +72,6 @@ export function createCanvasSurfaceHitResolver(deps: {
           state: currentState,
           measuredBlockHeights: currentMeasuredBlockHeights,
           measuredParagraphLayouts: currentMeasuredParagraphLayouts,
-          layoutMode: currentLayoutMode,
         });
     if (!shouldReuseSnapshot) {
       canvasSnapshotCache = {
@@ -84,7 +79,6 @@ export function createCanvasSurfaceHitResolver(deps: {
         documentRef: currentState.document,
         measuredBlockHeightsRef: currentMeasuredBlockHeights,
         measuredParagraphLayoutsRef: currentMeasuredParagraphLayouts,
-        layoutModeValue: currentLayoutMode,
         surfaceRef: currentSurfaceRef,
         viewportScrollTop,
         viewportScrollLeft,

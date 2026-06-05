@@ -23,7 +23,6 @@ import { perfTimer } from "../utils/performanceMetrics.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
 const DEFAULT_LINE_HEIGHT = 1.15;
-const FAST_IMPLICIT_DOC_GRID_RATIO = 0.86;
 
 function paragraphStyleComparableKey(
   style: Required<EditorParagraphStyle>,
@@ -123,7 +122,6 @@ export function projectParagraphLayout(
   totalPages?: number,
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
-  layoutMode: "fast" | "wordParity" = "fast",
   measurer: ITextMeasurer = domTextMeasurer,
   defaultTabStop?: number,
 ): EditorLayoutParagraph {
@@ -131,7 +129,7 @@ export function projectParagraphLayout(
     getParagraphFieldDependence(paragraph);
   const cacheKey = `${dependsOnPageIndex ? (pageIndex ?? "") : ""}:${
     dependsOnTotalPages ? (totalPages ?? "") : ""
-  }:${contentWidth ?? ""}:${layoutMode}:${defaultTabStop ?? ""}`;
+  }:${contentWidth ?? ""}:${defaultTabStop ?? ""}`;
   let cacheForParagraph = paragraphLayoutCache.get(paragraph);
   if (cacheForParagraph) {
     const cached = cacheForParagraph.get(cacheKey);
@@ -185,7 +183,6 @@ export function projectParagraphLayout(
         paragraph,
         fontSize,
         styles,
-        layoutMode,
       );
       const lines = measurer
         .composeMeasuredParagraphLines({
@@ -193,7 +190,6 @@ export function projectParagraphLayout(
           fragments,
           styles,
           contentWidth,
-          layoutMode,
           defaultTabStop,
         })
         .map((line) => ({
@@ -234,7 +230,6 @@ export function measureParagraphLayoutFromRects(
   paragraph: EditorParagraphNode,
   charRects: CharRect[],
   styles?: Record<string, EditorNamedStyle>,
-  layoutMode: "fast" | "wordParity" = "fast",
 ): EditorLayoutParagraph {
   const projected = projectParagraphLayout(
     paragraph,
@@ -242,7 +237,6 @@ export function measureParagraphLayoutFromRects(
     undefined,
     styles,
     undefined,
-    layoutMode,
   );
   const measuredLines = measureLinesFromRects(charRects);
 
@@ -405,7 +399,6 @@ function estimateParagraphLineHeight(
   paragraph: EditorParagraphNode,
   fontSize: number,
   styles: Record<string, EditorNamedStyle> | undefined,
-  layoutMode: "fast" | "wordParity",
 ): number {
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
   const lineHeight = paragraphStyle.lineHeight ?? DEFAULT_LINE_HEIGHT;
@@ -427,11 +420,7 @@ function estimateParagraphLineHeight(
 
   if (lineGridPitch && lineGridPitch > 0 && snapToGrid) {
     if (paragraphStyle.lineGridType === "implicit") {
-      const pitch =
-        layoutMode === "wordParity"
-          ? lineGridPitch
-          : lineGridPitch * FAST_IMPLICIT_DOC_GRID_RATIO;
-      return Math.max(renderedLineHeight, pitch);
+      return Math.max(renderedLineHeight, lineGridPitch);
     }
     return Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch;
   }
@@ -466,7 +455,6 @@ export function getParagraphSegmentFitHeight(
   segmentHeight: number,
   isLastSegment: boolean,
   styles: Record<string, EditorNamedStyle> | undefined,
-  _layoutMode: "fast" | "wordParity",
   allowSpacingAfter = true,
 ): number {
   if (!isLastSegment || !allowSpacingAfter) {
@@ -553,42 +541,53 @@ export function applyWidowOrphanControl(
   styles: Record<string, EditorNamedStyle> | undefined,
   allowSpacingBefore = true,
   allowSpacingAfter = true,
+  // When true, a lone first line of a multi-line paragraph at the bottom of a
+  // page (an orphan) is pushed to the next page instead of being placed. Gated
+  // so it never fires on a fresh page, which would loop forever.
+  allowOrphanControl = false,
 ): { endLineIndexExclusive: number; height: number } {
+  const heightFor = (end: number): number =>
+    getParagraphSegmentHeight(
+      paragraph,
+      lines.slice(startLineIndex, end),
+      startLineIndex === 0,
+      end === lines.length,
+      styles,
+      allowSpacingBefore,
+      allowSpacingAfter,
+    );
+
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
   if (paragraphStyle.widowControl === false) {
     return {
       endLineIndexExclusive,
-      height: getParagraphSegmentHeight(
-        paragraph,
-        lines.slice(startLineIndex, endLineIndexExclusive),
-        startLineIndex === 0,
-        endLineIndexExclusive === lines.length,
-        styles,
-        allowSpacingBefore,
-        allowSpacingAfter,
-      ),
+      height: heightFor(endLineIndexExclusive),
     };
   }
 
   let adjustedEnd = endLineIndexExclusive;
-  const segmentLineCount = adjustedEnd - startLineIndex;
   const remainingLineCount = lines.length - adjustedEnd;
 
-  if (remainingLineCount === 1 && segmentLineCount > 1) {
+  // Widow control: never carry a single trailing line to the next page.
+  if (remainingLineCount === 1 && adjustedEnd - startLineIndex > 1) {
     adjustedEnd -= 1;
+  }
+
+  // Orphan control: never leave the lone first line of a multi-line paragraph
+  // at the bottom of a page. Signal the caller (height 0, no lines) to move the
+  // whole paragraph to the next page. Word keeps at least two lines together.
+  if (
+    allowOrphanControl &&
+    startLineIndex === 0 &&
+    adjustedEnd - startLineIndex === 1 &&
+    lines.length > 1
+  ) {
+    return { endLineIndexExclusive: startLineIndex, height: 0 };
   }
 
   return {
     endLineIndexExclusive: adjustedEnd,
-    height: getParagraphSegmentHeight(
-      paragraph,
-      lines.slice(startLineIndex, adjustedEnd),
-      startLineIndex === 0,
-      adjustedEnd === lines.length,
-      styles,
-      allowSpacingBefore,
-      allowSpacingAfter,
-    ),
+    height: heightFor(adjustedEnd),
   };
 }
 
@@ -601,7 +600,6 @@ export function estimateParagraphBlockHeight(
   paragraph: EditorParagraphNode,
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
-  layoutMode: "fast" | "wordParity" = "fast",
   measurer: ITextMeasurer = domTextMeasurer,
   options: EstimateParagraphBlockHeightOptions = {},
   defaultTabStop?: number,
@@ -612,7 +610,6 @@ export function estimateParagraphBlockHeight(
     undefined,
     styles,
     contentWidth,
-    layoutMode,
     measurer,
     defaultTabStop,
   );

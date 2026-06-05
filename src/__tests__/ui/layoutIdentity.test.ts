@@ -29,7 +29,6 @@ describe("layout identity stabilization", () => {
 
     const firstLayout = stabilize(
       projectDocumentLayout(document, undefined, undefined, undefined, {
-        layoutMode: "wordParity",
       }),
     );
     const firstPage = firstLayout.pages[0]!;
@@ -52,7 +51,6 @@ describe("layout identity stabilization", () => {
 
     const secondLayout = stabilize(
       projectDocumentLayout(updatedDocument, undefined, undefined, undefined, {
-        layoutMode: "wordParity",
       }),
     );
     const secondPage = secondLayout.pages[0]!;

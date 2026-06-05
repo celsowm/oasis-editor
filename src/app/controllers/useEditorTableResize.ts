@@ -174,7 +174,6 @@ function buildTableGeometries(
   const snapshot = buildCanvasLayoutSnapshot({
     surface,
     state,
-    layoutMode: "wordParity",
   });
   if (!snapshot) {
     return [];
@@ -436,11 +435,7 @@ function resolveMinColumnWidthsPx(
     const minContentWidth = cell.blocks.reduce((largest, paragraph) => {
       return Math.max(
         largest,
-        measureParagraphMinContentWidthPx(
-          paragraph,
-          state.document.styles,
-          "wordParity",
-        ),
+        measureParagraphMinContentWidthPx(paragraph, state.document.styles),
       );
     }, 1);
     result[visualCol] = Math.max(

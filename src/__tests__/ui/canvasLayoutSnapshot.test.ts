@@ -71,7 +71,6 @@ describe("buildCanvasLayoutSnapshot", () => {
       undefined,
       undefined,
       {
-        layoutMode: "wordParity",
       },
     );
     const projectedPage = projected.pages[0];
@@ -86,7 +85,6 @@ describe("buildCanvasLayoutSnapshot", () => {
     const snapshot = buildCanvasLayoutSnapshot({
       surface,
       state,
-      layoutMode: "wordParity",
     });
     const headingParagraph = snapshot!.paragraphs.find(
       (paragraph) =>
@@ -130,7 +128,6 @@ describe("buildCanvasLayoutSnapshot", () => {
       undefined,
       undefined,
       {
-        layoutMode: "wordParity",
       },
     );
     const projectedPage = projected.pages[0];
@@ -145,7 +142,6 @@ describe("buildCanvasLayoutSnapshot", () => {
     const snapshot = buildCanvasLayoutSnapshot({
       surface,
       state,
-      layoutMode: "wordParity",
     });
     expect(snapshot).not.toBeNull();
     const headerParagraph = snapshot!.paragraphs.find(
@@ -187,7 +183,6 @@ describe("buildCanvasLayoutSnapshot", () => {
       undefined,
       undefined,
       {
-        layoutMode: "wordParity",
       },
     );
     const projectedPage = projected.pages[0];
@@ -202,7 +197,6 @@ describe("buildCanvasLayoutSnapshot", () => {
     const snapshot = buildCanvasLayoutSnapshot({
       surface,
       state,
-      layoutMode: "wordParity",
     });
 
     expect(snapshot).not.toBeNull();
@@ -264,7 +258,6 @@ describe("buildCanvasLayoutSnapshot", () => {
       undefined,
       undefined,
       {
-        layoutMode: "wordParity",
       },
     );
     expect(projected.pages.length).toBeGreaterThan(1);
@@ -279,7 +272,6 @@ describe("buildCanvasLayoutSnapshot", () => {
     const snapshot = buildCanvasLayoutSnapshot({
       surface,
       state,
-      layoutMode: "wordParity",
     });
 
     expect(snapshot).not.toBeNull();

@@ -57,7 +57,6 @@ export function OutlinePanel(props: OutlinePanelProps) {
     const snapshot = buildCanvasLayoutSnapshot({
       surface,
       state: props.state,
-      layoutMode: "wordParity",
     });
     if (!snapshot) return;
     const viewport = props.viewportRef?.();

@@ -45,7 +45,6 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       undefined,
       {
-        layoutMode: "wordParity",
       },
     );
     const page = layout.pages[0]!;
@@ -78,7 +77,6 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       undefined,
       {
-        layoutMode: "wordParity",
       },
     );
     const page = layout.pages[0]!;
@@ -120,7 +118,6 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       undefined,
       undefined,
-      { layoutMode: "wordParity" },
     ).pages[0]!;
     const page = projectDocumentLayout(
       document,
@@ -128,7 +125,6 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       undefined,
       {
-        layoutMode: "wordParity",
       },
     ).pages[0]!;
 
@@ -159,7 +155,6 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       undefined,
       {
-        layoutMode: "wordParity",
       },
     );
 
@@ -177,7 +172,6 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       undefined,
       {
-        layoutMode: "wordParity",
       },
     );
 
@@ -204,7 +198,6 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       undefined,
       {
-        layoutMode: "wordParity",
       },
     );
 

@@ -150,7 +150,6 @@ describe("layout projection", () => {
         blocks: [...blocks, nextPage],
         pageSettings,
         maxPageHeight: 935,
-        layoutMode: "wordParity",
       });
 
       expect(pages).toHaveLength(2);
@@ -192,7 +191,6 @@ describe("layout projection", () => {
         blocks: [...blocks, nextPage],
         pageSettings,
         maxPageHeight: 935,
-        layoutMode: "fast",
       });
 
       expect(pages).toHaveLength(2);

@@ -100,7 +100,6 @@ export async function drawTableBlock(
     table: segmentTable,
     state: stateStub,
     pageIndex: 0,
-    layoutMode: "wordParity",
     originX: 0,
     originY: 0,
     contentWidth,

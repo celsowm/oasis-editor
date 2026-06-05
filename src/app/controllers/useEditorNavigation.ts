@@ -184,7 +184,6 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
       ? buildCanvasLayoutSnapshot({
           surface: surfaceRef,
           state,
-          layoutMode: "wordParity",
         })
       : null;
     let targetIndex = currentIndex + direction;

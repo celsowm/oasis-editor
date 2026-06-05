@@ -205,7 +205,6 @@ describe("DOCX paragraph import", () => {
       undefined,
       undefined,
       undefined,
-      { layoutMode: "wordParity" },
     );
     const firstBlock = layout.pages[0]!.blocks[0]!;
     const lineHeights = firstBlock.layout!.lines.reduce(
@@ -316,7 +315,6 @@ describe("DOCX paragraph import", () => {
       undefined,
       document.styles,
       600,
-      "wordParity",
       undefined,
       document.settings?.defaultTabStop,
     );

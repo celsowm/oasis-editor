@@ -37,7 +37,6 @@ export interface OasisEditorAppDocumentProps {
   readOnly?: boolean;
   persistenceEnabled?: boolean;
   persistence?: DocumentPersistence;
-  layoutMode?: "fast" | "wordParity";
 }
 
 export interface OasisEditorAppRuntimeProps {

@@ -14,7 +14,6 @@ interface UseEditorLayoutProps {
   surfaceRef: () => HTMLDivElement | undefined;
   viewportRef: () => HTMLDivElement | undefined;
   isImporting?: () => boolean;
-  layoutMode?: "fast" | "wordParity";
 }
 
 type LayoutSyncReason =
@@ -95,7 +94,6 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       state: props.state,
       measuredBlockHeights: measuredBlockHeights(),
       measuredParagraphLayouts: measuredParagraphLayouts(),
-      layoutMode: props.layoutMode ?? "wordParity",
     });
     if (!snapshot) {
       setSelectionBoxes([]);

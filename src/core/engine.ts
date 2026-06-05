@@ -11,7 +11,6 @@ export interface TextMeasureOptions {
   fragments: EditorLayoutFragment[];
   styles?: Record<string, EditorNamedStyle>;
   contentWidth?: number;
-  layoutMode?: "fast" | "wordParity";
   defaultTabStop?: number;
 }
 

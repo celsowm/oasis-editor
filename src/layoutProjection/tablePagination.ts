@@ -170,7 +170,6 @@ function getCachedTableColumnGeometry(
 function estimateTableRowHeight(
   row: EditorTableNode["rows"][number],
   styles: Record<string, EditorNamedStyle> | undefined,
-  layoutMode: "fast" | "wordParity",
   measurer: ITextMeasurer,
   defaultTabStop: number | undefined,
   contentWidth?: number,
@@ -203,7 +202,6 @@ function estimateTableRowHeight(
         paragraph,
         styles,
         cellContentWidth,
-        layoutMode,
         measurer,
         {
           allowSpacingBefore: !shouldCollapseContextualSpacing(
@@ -336,7 +334,6 @@ export function getTableSegmentHeight(
   rowEndIndexExclusive: number,
   repeatedHeaderRowCount: number,
   styles: Record<string, EditorNamedStyle> | undefined,
-  layoutMode: "fast" | "wordParity",
   contentWidth?: number,
   measurer: ITextMeasurer = domTextMeasurer,
   defaultTabStop?: number,
@@ -351,7 +348,6 @@ export function getTableSegmentHeight(
               estimateTableRowHeight(
                 row,
                 styles,
-                layoutMode,
                 measurer,
                 defaultTabStop,
                 contentWidth,
@@ -369,7 +365,6 @@ export function getTableSegmentHeight(
         estimateTableRowHeight(
           row,
           styles,
-          layoutMode,
           measurer,
           defaultTabStop,
           contentWidth,
@@ -385,7 +380,6 @@ export function estimateTableBlockHeight(
   table: EditorTableNode,
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
-  layoutMode: "fast" | "wordParity" = "fast",
   measurer: ITextMeasurer = domTextMeasurer,
   defaultTabStop?: number,
 ): number {
@@ -395,7 +389,6 @@ export function estimateTableBlockHeight(
     table.rows.length,
     0,
     styles,
-    layoutMode,
     contentWidth,
     measurer,
     defaultTabStop,

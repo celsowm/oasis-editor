@@ -9,6 +9,7 @@ import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
 } from "../core/model.js";
+import { getFontMetricsProvider } from "../text/fonts/FontMetricsProvider.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
 const DEFAULT_LINE_HEIGHT = 1.15;
@@ -27,26 +28,8 @@ function getListIndentPx(paragraph: EditorParagraphNode): number {
 const MIN_CONTENT_WIDTH = 120;
 const TAB_SIZE = 4;
 const DEFAULT_WORD_SINGLE_LINE_RATIO = 1.223;
-const FAST_IMPLICIT_DOC_GRID_RATIO = 0.86;
 const PX_PER_POINT = 96 / 72;
 const DEFAULT_TAB_STOP_POINTS = 36;
-
-// Calibração para paridade com MS Word
-// O Word usa DirectWrite/GDI que tem métricas ligeiramente diferentes do Canvas 2D
-// Fator calibrado comparando medições de Canvas 2D vs Word para fontes comuns
-const WORD_CALIBRATION_FACTOR = 1.0; // Desativado temporariamente: causava quebra prematura de palavras na borda (ex: "neque.")
-const CALIBRATED_FONTS = new Set([
-  "calibri",
-  "times new roman",
-  "arial",
-  "cambria",
-  "courier new",
-  "georgia",
-  "verdana",
-]);
-const WORD_COMPAT_SHORT_TOKEN_OVERFLOW_PX = 0; // Removido para impedir que o texto atravesse a margem direita quebrando a justificação
-const WORD_COMPAT_SHORT_TOKEN_MIN_CHARS = 4;
-const WORD_COMPAT_SHORT_TOKEN_MAX_CHARS = 6;
 
 interface MeasuredChar {
   char: string;
@@ -77,7 +60,10 @@ function resolveTabAdvancePx(
   const tabOrigin = lineStartInset;
   const explicitStops = (paragraphStyle.tabs ?? [])
     .filter((tab) => tab.type !== "clear" && Number.isFinite(tab.position))
-    .map((tab) => ({ ...tab, positionPx: tabOrigin + tab.position * PX_PER_POINT }))
+    .map((tab) => ({
+      ...tab,
+      positionPx: tabOrigin + tab.position * PX_PER_POINT,
+    }))
     .filter((tab) => tab.positionPx > currentLeft + 0.01)
     .sort((a, b) => a.positionPx - b.positionPx);
   const explicitStop = explicitStops[0];
@@ -130,13 +116,21 @@ export interface TextMeasureOptions {
   fragments: EditorLayoutFragment[];
   styles?: Record<string, EditorNamedStyle>;
   contentWidth?: number;
-  layoutMode?: "fast" | "wordParity";
   defaultTabStop?: number;
 }
 
 // ... existing code down to composeMeasuredParagraphLines
 
 const textMeasureCache = new Map<string, number>();
+
+/**
+ * Clears the per-character width cache. Call this after font metrics become
+ * available asynchronously (browser preload), so cached heuristic widths are
+ * recomputed from the real TrueType metrics.
+ */
+export function clearTextMeasureCache(): void {
+  textMeasureCache.clear();
+}
 
 let sharedCanvasContext: CanvasRenderingContext2D | null | undefined;
 
@@ -232,6 +226,12 @@ export function resolveRenderedLineHeightPx(
   return normalLineHeight * lineHeightMultiple;
 }
 
+/**
+ * Last-ditch advance-width heuristic, used only when no bundled metric face can
+ * supply a glyph (e.g. an unbundled family whose CJK/emoji/symbol glyphs even
+ * the Roboto fallback lacks). The Calibri/Arial/Times corpus never reaches this
+ * path — those go through real TrueType metrics in {@link measureBaseCharacterWidth}.
+ */
 function measureFallbackCharacterWidth(char: string, fontSize: number): number {
   if (char === " ") {
     return fontSize * 0.35;
@@ -262,17 +262,61 @@ function measureFallbackCharacterWidth(char: string, fontSize: number): number {
   return fontSize * 0.66;
 }
 
+/**
+ * Resolves the raw advance width (px) of a single rendered character from the
+ * bundled TrueType metrics, falling back to the heuristic only when no metric
+ * face can supply the glyph.
+ */
+function measureBaseCharacterWidth(
+  renderedChar: string,
+  styles: EditorTextStyle | undefined,
+  fontSize: number,
+): number {
+  const provider = getFontMetricsProvider();
+  const bold = Boolean(styles?.bold);
+  const italic = Boolean(styles?.italic);
+
+  if (renderedChar === "\t") {
+    // A tab renders as TAB_SIZE spaces; measure one space and scale.
+    const space = provider.getAdvanceWidthPx(
+      styles?.fontFamily,
+      bold,
+      italic,
+      0x20,
+      fontSize,
+    );
+    return space !== null
+      ? space * TAB_SIZE
+      : measureFallbackCharacterWidth("\t", fontSize);
+  }
+
+  const codePoint = renderedChar.codePointAt(0);
+  if (codePoint !== undefined) {
+    const advance = provider.getAdvanceWidthPx(
+      styles?.fontFamily,
+      bold,
+      italic,
+      codePoint,
+      fontSize,
+    );
+    if (advance !== null) {
+      return advance;
+    }
+  }
+
+  return measureFallbackCharacterWidth(renderedChar, fontSize);
+}
+
 function measureCharacterWidth(
   char: string,
   styles: EditorTextStyle | undefined,
   fallbackFontSize: number,
-  layoutMode: "fast" | "wordParity",
 ): number {
   if (char === "\n") {
     return 0;
   }
 
-  const fontSize = styles?.fontSize ?? fallbackFontSize;
+  const fontSize = getMeasuredFontSize(styles, fallbackFontSize);
   const font = buildCanvasFont(styles, fallbackFontSize);
   const renderedChar = getRenderedMeasureChar(char, styles);
   const scale =
@@ -286,28 +330,7 @@ function measureCharacterWidth(
     return cached;
   }
 
-  const context = getCanvasContext();
-  let width: number;
-  if (context) {
-    context.font = font;
-    const target = renderedChar === "\t" ? " ".repeat(TAB_SIZE) : renderedChar;
-    width = context.measureText(target).width;
-  } else {
-    width = measureFallbackCharacterWidth(renderedChar, fontSize);
-  }
-
-  // Fast mode keeps calibrated width heuristics; wordParity mode uses raw canvas metrics.
-  if (layoutMode !== "wordParity" && styles?.fontFamily) {
-    const fontFamilyNormalized = styles.fontFamily
-      .toLowerCase()
-      .replace(/['"]/g, "")
-      .split(",")[0]
-      ?.trim();
-    if (fontFamilyNormalized && CALIBRATED_FONTS.has(fontFamilyNormalized)) {
-      width *= WORD_CALIBRATION_FACTOR;
-    }
-  }
-
+  let width = measureBaseCharacterWidth(renderedChar, styles, fontSize);
   width = Math.max(0, width * scale + spacing);
   textMeasureCache.set(cacheKey, width);
   return width;
@@ -357,7 +380,6 @@ function getParagraphLineHeight(
   paragraph: EditorParagraphNode,
   styles: Record<string, EditorNamedStyle> | undefined,
   fallbackFontSize: number,
-  layoutMode: "fast" | "wordParity",
 ): number {
   const paragraphStyle = resolveEffectiveParagraphStyle(
     paragraph.style,
@@ -403,11 +425,7 @@ function getParagraphLineHeight(
 
   if (lineGridPitch && lineGridPitch > 0 && snapToGrid) {
     if (paragraphStyle.lineGridType === "implicit") {
-      const pitch =
-        layoutMode === "wordParity"
-          ? lineGridPitch
-          : lineGridPitch * FAST_IMPLICIT_DOC_GRID_RATIO;
-      return Math.max(renderedLineHeight, pitch);
+      return Math.max(renderedLineHeight, lineGridPitch);
     }
     return Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch;
   }
@@ -418,7 +436,6 @@ function buildMeasuredChars(
   paragraph: EditorParagraphNode,
   fragments: EditorLayoutFragment[],
   styles: Record<string, EditorNamedStyle> | undefined,
-  layoutMode: "fast" | "wordParity",
 ): MeasuredChar[] {
   const measured: MeasuredChar[] = [];
   const runsById = new Map(paragraph.runs.map((run) => [run.id, run] as const));
@@ -446,12 +463,7 @@ function buildMeasuredChars(
       const width =
         char.char === "\uFFFC" && fragment.image
           ? fragment.image.width
-          : measureCharacterWidth(
-              char.char,
-              effectiveStyles,
-              fallbackFontSize,
-              layoutMode,
-            );
+          : measureCharacterWidth(char.char, effectiveStyles, fallbackFontSize);
       measured.push({
         char: char.char,
         offset: char.paragraphOffset,
@@ -710,27 +722,6 @@ function applyParagraphAlignment(
   });
 }
 
-function canApplyWordShortTokenFit(
-  token: MeasuredToken,
-  lineWidth: number,
-  availableWidth: number,
-  isEmptyLine: boolean,
-): boolean {
-  if (isEmptyLine || token.kind !== "text") {
-    return false;
-  }
-  const text = token.chars.map((char) => char.char).join("");
-  if (
-    text.length < WORD_COMPAT_SHORT_TOKEN_MIN_CHARS ||
-    text.length > WORD_COMPAT_SHORT_TOKEN_MAX_CHARS ||
-    !/^[A-Za-z]+$/.test(text)
-  ) {
-    return false;
-  }
-  const overflow = lineWidth + token.width - availableWidth;
-  return overflow > 0 && overflow <= WORD_COMPAT_SHORT_TOKEN_OVERFLOW_PX;
-}
-
 function buildParagraphFragments(
   paragraph: EditorParagraphNode,
 ): EditorLayoutFragment[] {
@@ -760,15 +751,9 @@ function buildParagraphFragments(
 export function measureParagraphMinContentWidthPx(
   paragraph: EditorParagraphNode,
   styles?: Record<string, EditorNamedStyle>,
-  layoutMode: "fast" | "wordParity" = "wordParity",
 ): number {
   const fragments = buildParagraphFragments(paragraph);
-  const measuredChars = buildMeasuredChars(
-    paragraph,
-    fragments,
-    styles,
-    layoutMode,
-  );
+  const measuredChars = buildMeasuredChars(paragraph, fragments, styles);
   const tokens = tokenizeMeasuredChars(measuredChars);
   const firstLineInset = Math.max(
     0,
@@ -792,20 +777,9 @@ export function measureParagraphMinContentWidthPx(
 export function composeMeasuredParagraphLines(
   options: TextMeasureOptions,
 ): EditorLayoutLine[] {
-  const {
-    paragraph,
-    fragments,
-    styles,
-    contentWidth,
-    layoutMode = "fast",
-    defaultTabStop,
-  } = options;
-  const measuredChars = buildMeasuredChars(
-    paragraph,
-    fragments,
-    styles,
-    layoutMode,
-  );
+  const { paragraph, fragments, styles, contentWidth, defaultTabStop } =
+    options;
+  const measuredChars = buildMeasuredChars(paragraph, fragments, styles);
   const tokens = tokenizeMeasuredChars(measuredChars);
   const charByOffset = new Map<number, string>(
     measuredChars.map((char) => [char.offset, char.char] as const),
@@ -825,7 +799,6 @@ export function composeMeasuredParagraphLines(
     paragraph,
     styles,
     fallbackFontSize,
-    layoutMode,
   );
   const width =
     contentWidth === undefined
@@ -955,17 +928,7 @@ export function composeMeasuredParagraphLines(
     const tokenWidth = measureTokenAt(token);
     const fitsCurrentLine = lineWidth + tokenWidth <= availableWidth;
     const isEmptyLine = lineStartOffset === lineEndOffset;
-    if (
-      fitsCurrentLine ||
-      (isEmptyLine && token.kind === "whitespace") ||
-      (layoutMode !== "wordParity" &&
-        canApplyWordShortTokenFit(
-          token,
-          lineWidth,
-          availableWidth,
-          isEmptyLine,
-        ))
-    ) {
+    if (fitsCurrentLine || (isEmptyLine && token.kind === "whitespace")) {
       appendChars(token.chars);
       continue;
     }

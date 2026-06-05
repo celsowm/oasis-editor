@@ -11,7 +11,7 @@
  *
  * The script:
  *   1. Converts the DOCX to PDF via Word (cached in test-results/calibration/).
- *   2. Extracts Word's page-1 line layout (text + bbox) using PyMuPDF.
+ *   2. Extracts Word's page-1 text positions from the PDF text matrices.
  *   3. For each candidate ratio, re-imports the DOCX with that
  *      `implicitDocGridRatio` and projects the layout in Node, dumping page-1
  *      line count + last-line text + bodyTop / footerTop / page-1 last-line
@@ -90,22 +90,6 @@ function findWordExe() {
   ];
   return candidates.find((c) => existsSync(c)) ?? null;
 }
-function findPython() {
-  const candidates = [
-    { command: "C:\\Python\\python.exe", args: [] },
-    { command: "python", args: [] },
-    { command: "py", args: ["-3"] },
-  ];
-  for (const candidate of candidates) {
-    const r = spawnSync(candidate.command, [...candidate.args, "-c", "import fitz"], {
-      encoding: "utf8",
-      windowsHide: true,
-    });
-    if (r.status === 0) return candidate;
-  }
-  return null;
-}
-
 function ensurePdf() {
   if (skipPdf) return null;
   const docxStat = statSync(docxPath);
@@ -143,13 +127,8 @@ function ensurePdf() {
 
 function extractWordPage1(pdf) {
   if (!pdf) return null;
-  const py = findPython();
-  if (!py) {
-    console.warn("Python with PyMuPDF not found; skipping Word PDF parsing.");
-    return null;
-  }
-  const extractScript = join(PROJECT_ROOT, "scripts", "extract-pdf-lines.py");
-  const r = spawnSync(py.command, [...py.args, extractScript, pdf], {
+  const extractScript = join(PROJECT_ROOT, "scripts", "extract-pdf-lines.mjs");
+  const r = spawnSync(process.execPath, [extractScript, pdf], {
     encoding: "utf8",
     windowsHide: true,
     maxBuffer: 16 * 1024 * 1024,

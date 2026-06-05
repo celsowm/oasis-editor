@@ -1,8 +1,18 @@
-import { createEffect, createMemo, Index, onCleanup, Show } from "solid-js";
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  Index,
+  onCleanup,
+  onMount,
+  Show,
+} from "solid-js";
 import type { ITextMeasurer } from "../../core/engine.js";
 import type { EditorSurfaceProps } from "../editorUiTypes.js";
 import { type EditorLayoutPage, type EditorState } from "../../core/model.js";
-import { domTextMeasurer } from "../textMeasurement.js";
+import { clearTextMeasureCache, domTextMeasurer } from "../textMeasurement.js";
+import { preloadLayoutFonts } from "../../text/fonts/FontMetricsProvider.js";
+import { collectPdfFontFamilies } from "../../export/pdf/fonts/collectPdfFontFamilies.js";
 import { projectDocumentLayout } from "../../layoutProjection/index.js";
 import { createLayoutIdentityStabilizer } from "../layoutIdentity.js";
 import { PageBreak } from "../components/PageBreak.js";
@@ -25,20 +35,33 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
   // Without this, every state change produces brand-new page objects and every
   // CanvasPage repaints — even pages the user did not touch.
   const stabilize = createLayoutIdentityStabilizer();
-  const documentLayout = createMemo(() =>
-    stabilize(
+  // In the browser, font advance-width metrics load asynchronously. Until they
+  // resolve, measurement falls back to a heuristic; once they do, recompute the
+  // layout with real metrics. In Node/tests metrics load synchronously, so this
+  // simply settles to true on mount with no visible change.
+  const [fontsReady, setFontsReady] = createSignal(false);
+  onMount(() => {
+    void preloadLayoutFonts(
+      collectPdfFontFamilies(props.state().document),
+    ).then(() => {
+      clearTextMeasureCache();
+      setFontsReady(true);
+    });
+  });
+  const documentLayout = createMemo(() => {
+    fontsReady(); // recompute once real font metrics become available
+    return stabilize(
       projectDocumentLayout(
         props.state().document,
         undefined,
         props.measuredBlockHeights?.(),
         props.measuredParagraphLayouts?.(),
         {
-          layoutMode: props.layoutMode ?? "wordParity",
           measurer: canvasTextMeasurer,
         },
       ),
-    ),
-  );
+    );
+  });
 
   return (
     <div

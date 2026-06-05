@@ -44,7 +44,6 @@ function measure(
     paragraph,
     fragments: createFragments(paragraph),
     contentWidth,
-    layoutMode: "wordParity",
     defaultTabStop,
   });
 }

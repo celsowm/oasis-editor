@@ -13,7 +13,6 @@ type ProjectParagraphLayoutFn = (
   totalPages?: number,
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
-  layoutMode?: "fast" | "wordParity",
   measurer?: ITextMeasurer,
   defaultTabStop?: number,
 ) => EditorLayoutParagraph;
@@ -22,7 +21,6 @@ type EstimateTableBlockHeightFn = (
   block: Extract<EditorBlockNode, { type: "table" }>,
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
-  layoutMode?: "fast" | "wordParity",
   measurer?: ITextMeasurer,
   defaultTabStop?: number,
 ) => number;
@@ -45,7 +43,6 @@ export function projectHeaderFooterBlocksWithDependencies(
   _measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>,
   styles?: Record<string, EditorNamedStyle>,
   contentWidth?: number,
-  layoutMode: "fast" | "wordParity" = "fast",
   measurer?: ITextMeasurer,
   defaultTabStop?: number,
 ): EditorLayoutBlock[] {
@@ -57,7 +54,6 @@ export function projectHeaderFooterBlocksWithDependencies(
         totalPages,
         styles,
         contentWidth,
-        layoutMode,
         measurer,
         defaultTabStop,
       );
@@ -85,7 +81,6 @@ export function projectHeaderFooterBlocksWithDependencies(
           block,
           styles,
           contentWidth,
-          layoutMode,
           measurer,
           defaultTabStop,
         ),

@@ -46,11 +46,9 @@ export function projectDocumentLayout(
   measuredHeights?: Record<string, number>,
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>,
   options: {
-    layoutMode?: "fast" | "wordParity";
     measurer?: ITextMeasurer;
   } = {},
 ): EditorLayoutDocument {
-  const layoutMode = options.layoutMode ?? "fast";
   const measurer = options.measurer ?? domTextMeasurer;
   const sections = getDocumentSections(document);
   const needsTotalPages = documentContainsNumPagesField(document);
@@ -61,7 +59,6 @@ export function projectDocumentLayout(
     maxPageHeightOverride,
     measuredHeights,
     measuredParagraphLayouts,
-    layoutMode,
     measurer,
     defaultTabStop: document.settings?.defaultTabStop,
     needsTotalPages,
@@ -84,7 +81,6 @@ export function projectDocumentLayout(
     totalPages,
     measuredHeights,
     measuredParagraphLayouts,
-    layoutMode,
     measurer,
     projectBlocks: projectHeaderFooterBlocks,
   };

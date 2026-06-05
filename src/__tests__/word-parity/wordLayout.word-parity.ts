@@ -355,7 +355,6 @@ describeWordParity("word layout parity", () => {
   it("matches Word for A4 Calibri lorem on a single page", async () => {
     await expectNoWordLayoutMismatches("a4-calibri-lorem-single-page", () =>
       verifyWordLayoutParity(createA4CalibriLoremSinglePageDocument(), {
-        layoutMode: "wordParity",
       }),
     );
   }, 300_000);
@@ -363,7 +362,6 @@ describeWordParity("word layout parity", () => {
   it("matches Word page count and line breaks for A4 Calibri lorem across pages", async () => {
     await expectNoWordLayoutMismatches("a4-calibri-lorem-multipage", () =>
       verifyWordLayoutParity(createA4CalibriLoremMultipageDocument(), {
-        layoutMode: "wordParity",
       }),
     );
   }, 300_000);
@@ -371,7 +369,6 @@ describeWordParity("word layout parity", () => {
   it("matches Word when header and footer constrain the body area", async () => {
     await expectNoWordLayoutMismatches("a4-lorem-header-footer", () =>
       verifyWordLayoutParity(createA4LoremHeaderFooterDocument(), {
-        layoutMode: "wordParity",
       }),
     );
   }, 300_000);
@@ -383,7 +380,6 @@ describeWordParity("word layout parity", () => {
     ).toBe(true);
     await expectNoWordLayoutMismatches("word-authored-lorem-import", () =>
       verifyImportedDocxWordLayoutParity(WORD_AUTHORED_LOREM_DOCX, {
-        layoutMode: "wordParity",
       }),
     );
   }, 300_000);
@@ -396,7 +392,6 @@ describeWordParity("word layout parity", () => {
     const result = await verifyImportedDocxWordLayoutParity(
       LOREM_COMPLEX_DOCX,
       {
-        layoutMode: "wordParity",
       },
     );
     const editorPage1Lines = result.editor.pages[0]?.bodyLineTexts ?? [];
@@ -422,7 +417,6 @@ describeWordParity("word layout parity", () => {
   it("matches Word manual page breaks in the complex document", async () => {
     expect(existsSync(COMPLEX_DOCX), "missing complex DOCX fixture").toBe(true);
     const result = await verifyImportedDocxWordLayoutParity(COMPLEX_DOCX, {
-      layoutMode: "wordParity",
     });
     const editorPage1Lines = result.editor.pages[0]?.bodyLineTexts ?? [];
     const editorPage2Lines = result.editor.pages[1]?.bodyLineTexts ?? [];
@@ -460,7 +454,6 @@ describeWordParity("word layout parity", () => {
     const result = await verifyWordLayoutParity(
       createMergedTableParityDocument(),
       {
-        layoutMode: "wordParity",
       },
     );
 
@@ -474,7 +467,6 @@ describeWordParity("word layout parity", () => {
     const result = await verifyWordLayoutParity(
       createMultilevelListParityDocument(),
       {
-        layoutMode: "wordParity",
       },
     );
 
@@ -490,7 +482,6 @@ describeWordParity("word layout parity", () => {
     const result = await verifyWordLayoutParity(
       createInlineImageParityDocument(),
       {
-        layoutMode: "wordParity",
       },
     );
 
@@ -505,7 +496,6 @@ describeWordParity("word layout parity", () => {
     const result = await verifyWordLayoutParity(
       createStyleInheritanceParityDocument(),
       {
-        layoutMode: "wordParity",
       },
     );
 
@@ -530,7 +520,6 @@ describeWordParity("word layout parity", () => {
         verifyImportedDocxWordLayoutParity(path, {
           strictTextAndGeometry: true,
           geometryTolerancePoints: 0.5,
-          layoutMode: "wordParity",
         }),
       );
     }

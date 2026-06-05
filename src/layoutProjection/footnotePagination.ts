@@ -28,7 +28,6 @@ export type HeaderFooterBlockProjector = (
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>,
   styles?: EditorDocument["styles"],
   contentWidth?: number,
-  layoutMode?: "fast" | "wordParity",
   measurer?: ITextMeasurer,
   defaultTabStop?: number,
 ) => EditorLayoutBlock[];
@@ -102,7 +101,6 @@ function projectFootnoteBlocksForPage(
   totalPages: number | undefined,
   measuredHeights: Record<string, number> | undefined,
   measuredParagraphLayouts: Record<string, EditorLayoutParagraph> | undefined,
-  layoutMode: "fast" | "wordParity",
   measurer: ITextMeasurer,
   projectBlocks: HeaderFooterBlockProjector,
 ): EditorLayoutBlock[] {
@@ -122,7 +120,6 @@ function projectFootnoteBlocksForPage(
       measuredParagraphLayouts,
       document.styles,
       contentWidth,
-      layoutMode,
       measurer,
       document.settings?.defaultTabStop,
     );
@@ -141,7 +138,6 @@ export interface FootnotePaginationContext {
   totalPages?: number;
   measuredHeights?: Record<string, number>;
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>;
-  layoutMode: "fast" | "wordParity";
   measurer: ITextMeasurer;
   projectBlocks: HeaderFooterBlockProjector;
 }
@@ -161,7 +157,6 @@ export function buildFootnoteReservations(
       context.totalPages,
       context.measuredHeights,
       context.measuredParagraphLayouts,
-      context.layoutMode,
       context.measurer,
       context.projectBlocks,
     );
@@ -209,7 +204,6 @@ export function applyFootnotesToPages(
       context.totalPages,
       context.measuredHeights,
       context.measuredParagraphLayouts,
-      context.layoutMode,
       context.measurer,
       context.projectBlocks,
     );

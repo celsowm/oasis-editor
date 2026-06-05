@@ -52,7 +52,6 @@ type ImportProgress = {
 export interface OasisEditorEditorLayoutProps {
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
-  layoutMode?: "fast" | "wordParity";
   viewportHeight?: number | string;
   class?: string;
   style?: JSX.CSSProperties;
@@ -185,15 +184,12 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   const wordCount = createMemo(() => getDocumentWordCount(documentForStats()));
 
   const statusDocumentLayout = createMemo(() =>
-    layout().layoutMode === "wordParity"
-      ? projectDocumentLayout(
-          documentForStats(),
-          undefined,
-          layout().measuredBlockHeights?.(),
-          layout().measuredParagraphLayouts?.(),
-          { layoutMode: "wordParity" },
-        )
-      : projectDocumentLayout(documentForStats()),
+    projectDocumentLayout(
+      documentForStats(),
+      undefined,
+      layout().measuredBlockHeights?.(),
+      layout().measuredParagraphLayouts?.(),
+    ),
   );
 
   const totalPages = () => Math.max(1, statusDocumentLayout().pages.length);
@@ -317,7 +313,6 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
             state={props.state}
             measuredBlockHeights={layout().measuredBlockHeights}
             measuredParagraphLayouts={layout().measuredParagraphLayouts}
-            layoutMode={layout().layoutMode}
             viewportRef={() => viewportElement ?? undefined}
             onSurfaceMouseDown={surfaceHandlers().onSurfaceMouseDown}
             onSurfaceClick={surfaceHandlers().onSurfaceClick}

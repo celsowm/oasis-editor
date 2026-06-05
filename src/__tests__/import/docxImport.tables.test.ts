@@ -141,7 +141,6 @@ describe("DOCX table import", () => {
       table,
       state: createEditorStateFromDocument(document),
       pageIndex: 0,
-      layoutMode: "fast",
       originX: 0,
       originY: 0,
       contentWidth,

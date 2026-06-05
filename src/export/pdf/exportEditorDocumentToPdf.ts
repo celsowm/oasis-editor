@@ -28,13 +28,7 @@ export async function exportEditorDocumentToPdf(
     families: collectPdfFontFamilies(document),
   });
   const writer = new OasisPdfWriter(fontRegistry.getPdfFontResources());
-  const layout = projectDocumentLayout(
-    document,
-    undefined,
-    undefined,
-    undefined,
-    { layoutMode: "wordParity" },
-  );
+  const layout = projectDocumentLayout(document);
   const listOrdinals = getListOrdinals(document);
 
   for (const page of layout.pages) {

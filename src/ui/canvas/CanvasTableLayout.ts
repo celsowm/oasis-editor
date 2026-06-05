@@ -221,7 +221,6 @@ export function buildCanvasTableLayout(options: {
   table: EditorTableNode;
   state: EditorState;
   pageIndex: number;
-  layoutMode: "fast" | "wordParity";
   originX: number;
   originY: number;
   contentWidth: number;
@@ -231,7 +230,6 @@ export function buildCanvasTableLayout(options: {
     table,
     state,
     pageIndex,
-    layoutMode,
     originX,
     originY,
     contentWidth,
@@ -352,7 +350,6 @@ export function buildCanvasTableLayout(options: {
           undefined,
           state.document.styles,
           contentWidthPx,
-          layoutMode,
           undefined,
           state.document.settings?.defaultTabStop,
         );

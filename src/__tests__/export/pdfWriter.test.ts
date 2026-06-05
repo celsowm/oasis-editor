@@ -548,8 +548,8 @@ describe("OasisPdfWriter", () => {
     expect(pdf).toContain("/CarlitoItalic 15 Tf");
     expect(pdf).toContain("1 0 0 rg");
     expect(pdf).toContain("1 1 0 rg");
-    expect(pdf).toContain("278.17 659.055 Td");
-    expect(pdf).toContain("463.77 637.584 Td");
+    expect(pdf).toContain("285.319 659.055 Td");
+    expect(pdf).toContain("481.847 637.584 Td");
     expect(pdf).toContain("126 610.114 Td");
     expect(pdf).toContain("90 582.643 Td");
     expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(2);
@@ -602,7 +602,6 @@ describe("OasisPdfWriter", () => {
       undefined,
       undefined,
       undefined,
-      { layoutMode: "wordParity" },
     );
     const page = layout.pages[0]!;
     const blob = await exportEditorDocumentToPdfBlob(document);
@@ -684,7 +683,6 @@ describe("OasisPdfWriter", () => {
       undefined,
       undefined,
       undefined,
-      { layoutMode: "wordParity" },
     );
     const blob = await exportEditorDocumentToPdfBlob(document);
     const pdf = await blob.text();
@@ -1096,7 +1094,6 @@ describe("OasisPdfWriter", () => {
       undefined,
       undefined,
       undefined,
-      { layoutMode: "wordParity" },
     );
     const page = layout.pages[0]!;
     const paragraphLayout = page.blocks[0]!.layout!;
@@ -1178,7 +1175,6 @@ describe("OasisPdfWriter", () => {
       undefined,
       undefined,
       undefined,
-      { layoutMode: "wordParity" },
     ).pages.length;
 
     expect(pageCount).toBe(projectedPageCount);
@@ -1338,7 +1334,6 @@ describe("OasisPdfWriter", () => {
       undefined,
       undefined,
       undefined,
-      { layoutMode: "wordParity" },
     );
     const page = layout.pages[0]!;
     const headerLine = page.headerBlocks?.[0]?.layout
@@ -1426,7 +1421,6 @@ describe("OasisPdfWriter", () => {
       undefined,
       undefined,
       undefined,
-      { layoutMode: "wordParity" },
     );
     const firstPage = layout.pages[0]!;
     const headerLine = firstPage.headerBlocks?.[0]?.layout
@@ -1605,7 +1599,6 @@ describe("OasisPdfWriter", () => {
       undefined,
       undefined,
       undefined,
-      { layoutMode: "wordParity" },
     );
     const page = projected.pages[0]!;
     const tableBlock = page.blocks[0]!;
@@ -1616,7 +1609,6 @@ describe("OasisPdfWriter", () => {
       table: tableBlock.sourceBlock,
       state: createEditorStateFromDocument(document),
       pageIndex: 0,
-      layoutMode: "wordParity",
       originX: 0,
       originY: 0,
       contentWidth:
@@ -1702,7 +1694,6 @@ describe("OasisPdfWriter", () => {
       undefined,
       undefined,
       undefined,
-      { layoutMode: "wordParity" },
     );
     const page = layout.pages[0]!;
     const line = page.blocks[0]!.layout!.lines[0]!;

@@ -68,7 +68,6 @@ export function DocumentShell(props: ShellProps) {
     const snapshot = buildCanvasLayoutSnapshot({
       surface: surfaceEl,
       state: props.state,
-      layoutMode: props.layout.layoutMode ?? "wordParity",
     });
     if (!snapshot) return;
     const entries = getParagraphEntries(snapshot, id);
