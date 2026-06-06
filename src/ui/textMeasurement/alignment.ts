@@ -4,15 +4,31 @@ import type {
   EditorParagraphNode,
 } from "../../core/model.js";
 import { resolveEffectiveParagraphStyle } from "../../core/model.js";
-import { createEditorLogger } from "../../utils/logger.js";
 import { getAvailableWidth } from "./indentation.js";
 import { shiftLine } from "./layoutLine.js";
 
-const MAX_JUSTIFY_EXTRA_PER_SPACE_PX = 6;
-const MAX_JUSTIFY_DIAGNOSTIC_LOGS = 80;
-const textLayoutLogger = createEditorLogger("text-layout");
-let justifyDiagnosticCount = 0;
+/**
+ * Offset of the last non-whitespace character on the line, or `null` when the
+ * line has no visible content (only spaces/tabs/newlines).
+ */
+function lastContentOffset(
+  line: EditorLayoutLine,
+  charByOffset: Map<number, string>,
+): number | null {
+  for (let offset = line.endOffset - 1; offset >= line.startOffset; offset -= 1) {
+    const char = charByOffset.get(offset);
+    if (char && char !== " " && char !== "\t" && char !== "\n") {
+      return offset;
+    }
+  }
+  return null;
+}
 
+/**
+ * Rendered width of the line's visible content: from the first slot up to the
+ * trailing edge of the last non-whitespace character. Trailing whitespace is
+ * excluded so alignment fills to the real content edge.
+ */
 function getLineContentWidth(
   line: EditorLayoutLine,
   charByOffset: Map<number, string>,
@@ -21,71 +37,40 @@ function getLineContentWidth(
   if (!firstSlot) {
     return 0;
   }
-
-  let endSlotIndex = line.slots.length - 1;
-  while (endSlotIndex > 0) {
-    const slot = line.slots[endSlotIndex];
-    if (!slot) break;
-    const charIndex = slot.offset - 1;
-    const char = charByOffset.get(charIndex);
-    if (char === " " || char === "\t" || char === "\n") {
-      endSlotIndex--;
-    } else {
-      break;
-    }
+  const contentOffset = lastContentOffset(line, charByOffset);
+  if (contentOffset === null) {
+    return 0;
   }
-
-  const lastContentSlot = line.slots[endSlotIndex];
-  if (!lastContentSlot) return 0;
-
-  const slotAfterLastContent = line.slots[endSlotIndex + 1];
-  let width = Math.max(
-    0,
-    (slotAfterLastContent ?? lastContentSlot).left - firstSlot.left,
-  );
-
-  if (endSlotIndex > 0) {
-    const charIndex = lastContentSlot.offset - 1;
-    const char = charByOffset.get(charIndex);
-    if (char && /^[.,;:?!'"\-)\]]$/.test(char)) {
-      const prevSlot = line.slots[endSlotIndex - 1];
-      if (prevSlot) {
-        const charWidth = lastContentSlot.left - prevSlot.left;
-        width -= charWidth * 0.5;
-      }
-    }
+  // Slot positions are keyed by offset; the slot after the last content char
+  // marks that character's trailing edge.
+  const trailingSlot =
+    line.slots.find((slot) => slot.offset === contentOffset + 1) ??
+    line.slots.find((slot) => slot.offset === contentOffset);
+  if (!trailingSlot) {
+    return 0;
   }
-
-  return width;
+  return Math.max(0, trailingSlot.left - firstSlot.left);
 }
 
+/**
+ * Word-like justification: expand the inter-word spaces of an already-broken
+ * line so its content fills `extraSpace`. Each slot positioned after the i-th
+ * justifiable space is shifted right by `i * gap`.
+ */
 function justifyLineBySpaces(
   line: EditorLayoutLine,
   extraSpace: number,
   charByOffset: Map<number, string>,
 ): EditorLayoutLine {
-  if (extraSpace <= 0 || line.endOffset <= line.startOffset) {
+  const contentOffset = lastContentOffset(line, charByOffset);
+  if (extraSpace <= 0 || contentOffset === null) {
     return line;
   }
 
-  let lastContentOffset = line.endOffset - 1;
-  while (lastContentOffset >= line.startOffset) {
-    const char = charByOffset.get(lastContentOffset);
-    if (char && char !== " " && char !== "\t" && char !== "\n") {
-      break;
-    }
-    lastContentOffset -= 1;
-  }
-  if (lastContentOffset < line.startOffset) {
-    return line;
-  }
-
+  // Justifiable spaces sit strictly before the last visible character; spaces
+  // trailing the content are not expanded.
   const spaceOffsets: number[] = [];
-  for (
-    let offset = line.startOffset;
-    offset <= lastContentOffset;
-    offset += 1
-  ) {
+  for (let offset = line.startOffset; offset < contentOffset; offset += 1) {
     if (charByOffset.get(offset) === " ") {
       spaceOffsets.push(offset);
     }
@@ -113,20 +98,6 @@ function justifyLineBySpaces(
       };
     }),
   };
-}
-
-function buildLineTextSample(
-  line: EditorLayoutLine,
-  charByOffset: Map<number, string>,
-) {
-  let text = "";
-  for (let offset = line.startOffset; offset < line.endOffset; offset += 1) {
-    text += charByOffset.get(offset) ?? "";
-    if (text.length >= 140) {
-      return `${text.slice(0, 137)}...`;
-    }
-  }
-  return text;
 }
 
 export function applyParagraphAlignment(
@@ -167,38 +138,11 @@ export function applyParagraphAlignment(
     if (align === "right") {
       return shiftLine(line, extraSpace);
     }
+    // Justify: the last line and lines terminated by a hard break keep their
+    // natural (left) spacing, matching Word's `w:jc="both"` behavior.
     const isLastLine = lineIndex === lines.length - 1;
     const endsWithHardBreak = lineHardBreaks[lineIndex] === true;
     if (align === "justify" && !isLastLine && !endsWithHardBreak) {
-      const spaceCount = Array.from(
-        { length: Math.max(0, line.endOffset - line.startOffset) },
-        (_, index) => charByOffset.get(line.startOffset + index),
-      ).filter((char) => char === " ").length;
-      const extraPerSpace = spaceCount > 0 ? extraSpace / spaceCount : null;
-      if (justifyDiagnosticCount < MAX_JUSTIFY_DIAGNOSTIC_LOGS) {
-        justifyDiagnosticCount += 1;
-        textLayoutLogger.debug("justify:line", {
-          paragraphId: paragraph.id,
-          lineIndex,
-          startOffset: line.startOffset,
-          endOffset: line.endOffset,
-          availableWidth,
-          lineWidth,
-          extraSpace,
-          spaceCount,
-          extraPerSpace,
-          skipped:
-            extraPerSpace !== null &&
-            extraPerSpace > MAX_JUSTIFY_EXTRA_PER_SPACE_PX,
-          sample: buildLineTextSample(line, charByOffset),
-        });
-      }
-      if (
-        extraPerSpace !== null &&
-        extraPerSpace > MAX_JUSTIFY_EXTRA_PER_SPACE_PX
-      ) {
-        return line;
-      }
       return justifyLineBySpaces(line, extraSpace, charByOffset);
     }
     return line;

@@ -3,10 +3,7 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
 } from "../../core/model.js";
-import {
-  resolveEffectiveParagraphStyle,
-  resolveEffectiveTextStyleForParagraph,
-} from "../../core/model.js";
+import { resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
 import type {
   MeasuredChar,
@@ -21,7 +18,6 @@ import {
 import { getAvailableWidth, getLineStartInset } from "./indentation.js";
 import { getParagraphLineHeight } from "./paragraphLineHeight.js";
 import { resolveTabAdvancePx } from "./tabStops.js";
-import { computeKnuthPlassBreaks } from "./knuthPlass.js";
 import { commitLine } from "./layoutLine.js";
 import { applyParagraphAlignment } from "./alignment.js";
 
@@ -109,30 +105,6 @@ export function composeMeasuredParagraphLines(
     ];
   }
 
-  const paragraphAlign = resolveEffectiveParagraphStyle(
-    paragraph.style,
-    styles,
-  ).align;
-  const isJustified = paragraphAlign === "justify";
-
-  // Knuth-Plass break points (only for justified paragraphs)
-  let knuthPlassBreaks: Set<number> | null = null;
-  if (isJustified && tokens.length > 0) {
-    const bodyLineWidth = getAvailableWidth(paragraph, styles, width, false);
-    knuthPlassBreaks = new Set<number>();
-    let segStart = 0;
-    for (let t = 0; t <= tokens.length; t++) {
-      if (t === tokens.length || tokens[t]!.kind === "newline") {
-        const segment = tokens.slice(segStart, t);
-        const breaks = computeKnuthPlassBreaks(segment, bodyLineWidth);
-        for (const localIdx of breaks) {
-          knuthPlassBreaks.add(segStart + localIdx);
-        }
-        segStart = t + 1;
-      }
-    }
-  }
-
   const lines: EditorLayoutLine[] = [];
   const lineHardBreaks: boolean[] = [];
   let lineStartOffset =
@@ -215,8 +187,7 @@ export function composeMeasuredParagraphLines(
     }
   };
 
-  for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex += 1) {
-    const token = tokens[tokenIndex]!;
+  for (const token of tokens) {
     if (token.kind === "newline") {
       flushLine(true);
       resetLine(token.chars[0]!.offset + 1);
@@ -234,14 +205,6 @@ export function composeMeasuredParagraphLines(
     const isEmptyLine = lineStartOffset === lineEndOffset;
 
     if (token.kind === "whitespace") {
-      // K-P break: flush even if the whitespace still fits on the current line
-      const isKPBreak =
-        knuthPlassBreaks !== null && knuthPlassBreaks.has(tokenIndex);
-      if (isKPBreak && !isEmptyLine) {
-        flushLine();
-        resetLine(token.chars[token.chars.length - 1]!.offset + 1);
-        continue;
-      }
       // Greedy: whitespace fits or line is empty → place it; otherwise flush
       if (fitsCurrentLine || isEmptyLine) {
         appendChars(token.chars);

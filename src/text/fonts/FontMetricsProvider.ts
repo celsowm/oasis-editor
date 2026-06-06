@@ -165,7 +165,10 @@ class BundledFontMetricsProvider implements FontMetricsProvider {
 
   /** Parses and caches already-loaded bytes (used by the browser preloader). */
   ingest(fileName: string, bytes: Uint8Array): void {
-    if (this.parsedFonts.has(fileName)) {
+    // A prior synchronous load may have cached `null` (no sync brotli in the
+    // browser). Only skip when a successful parse is already cached, so the
+    // preloaded bytes actually replace that failed attempt.
+    if (this.parsedFonts.get(fileName)) {
       return;
     }
     this.parsedFonts.set(fileName, tryParse(bytes));

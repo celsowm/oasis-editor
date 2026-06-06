@@ -146,7 +146,12 @@ function decodeBase64(base64: string): Uint8Array {
 }
 
 const originalFontCache = new Map<string, Uint8Array | null>();
-const decodedFontCache = new Map<string, Uint8Array | null>();
+// Only successful decodes are memoised here, shared by the sync and async
+// loaders. Sync failures are tracked separately (see `syncDecodeFailed`) so a
+// failed *synchronous* decode — expected in the browser, which has no Node
+// zlib brotli — never blocks the async preloader from decoding the same face.
+const decodedFontCache = new Map<string, Uint8Array>();
+const syncDecodeFailed = new Set<string>();
 
 function getOriginalFontBytes(fileName: string): Uint8Array | null {
   const cached = originalFontCache.get(fileName);
@@ -169,10 +174,11 @@ export function readOriginalFontAsset(fileName: string): Uint8Array | null {
 
 export function readFontAssetSync(fileName: string): Uint8Array | null {
   const cached = decodedFontCache.get(fileName);
-  if (cached !== undefined) return cached;
+  if (cached) return cached;
+  if (syncDecodeFailed.has(fileName)) return null;
   const original = getOriginalFontBytes(fileName);
   if (!original) {
-    decodedFontCache.set(fileName, null);
+    syncDecodeFailed.add(fileName);
     return null;
   }
   try {
@@ -180,7 +186,9 @@ export function readFontAssetSync(fileName: string): Uint8Array | null {
     decodedFontCache.set(fileName, decoded);
     return decoded;
   } catch {
-    decodedFontCache.set(fileName, null);
+    // No synchronous brotli (e.g. the browser). The async preloader can still
+    // decode this face — do not poison the shared cache with a failure.
+    syncDecodeFailed.add(fileName);
     return null;
   }
 }
@@ -189,13 +197,18 @@ export async function loadFontAsset(
   fileName: string,
 ): Promise<Uint8Array | null> {
   const cached = decodedFontCache.get(fileName);
-  if (cached !== undefined) return cached;
+  if (cached) return cached;
   const original = getOriginalFontBytes(fileName);
   if (!original) {
-    decodedFontCache.set(fileName, null);
     return null;
   }
-  const decoded = await defaultFontDecoderRegistry.decode(original);
-  decodedFontCache.set(fileName, decoded);
-  return decoded;
+  try {
+    const decoded = await defaultFontDecoderRegistry.decode(original);
+    decodedFontCache.set(fileName, decoded);
+    return decoded;
+  } catch {
+    // A single face failing to decode must not reject the whole preload batch
+    // (Promise.all), which would prevent the post-preload layout recompute.
+    return null;
+  }
 }

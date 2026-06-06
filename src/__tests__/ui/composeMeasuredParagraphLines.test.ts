@@ -268,6 +268,75 @@ describe("composeMeasuredParagraphLines alignment", () => {
     );
   });
 
+  it("fills interior justified lines to the available width with a first-line indent", () => {
+    const text =
+      "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega";
+    const contentWidth = 300;
+    const indentFirstLine = 40;
+    const paragraph = createEditorParagraph(text);
+    paragraph.style = { align: "justify", indentFirstLine };
+    const lines = measure(paragraph, contentWidth);
+    expect(lines.length).toBeGreaterThan(2);
+
+    // Content edge of a line, ignoring any trailing whitespace slot.
+    const contentEdge = (line: ReturnType<typeof measure>[number]) => {
+      const first = line.slots[0]!.left;
+      for (let i = line.endOffset - 1; i >= line.startOffset; i--) {
+        const char = text[i];
+        if (char && char !== " ") {
+          const trailing =
+            line.slots.find((slot) => slot.offset === i + 1) ??
+            line.slots.find((slot) => slot.offset === i)!;
+          return trailing.left - first;
+        }
+      }
+      return 0;
+    };
+
+    // Every interior (non-last) justified line must fill to its available
+    // width — no degenerate short lines from a stale paragraph-wide breaker.
+    for (let i = 0; i < lines.length - 1; i++) {
+      const availableWidth = contentWidth - (i === 0 ? indentFirstLine : 0);
+      expect(contentEdge(lines[i]!)).toBeCloseTo(availableWidth, 4);
+    }
+  });
+
+  it("expands justified spaces by a constant per-space gap", () => {
+    const text = "alpha beta gamma delta epsilon zeta eta theta iota";
+    const paragraphLeft = createEditorParagraph(text);
+    paragraphLeft.style = { align: "left" };
+    const leftLine = measure(paragraphLeft, 210)[0]!;
+
+    const paragraphJustify = createEditorParagraph(text);
+    paragraphJustify.style = { align: "justify" };
+    const justifiedLines = measure(paragraphJustify, 210);
+    expect(justifiedLines.length).toBeGreaterThan(1);
+    const justifiedLine = justifiedLines[0]!;
+
+    const lineText = text.slice(
+      justifiedLine.startOffset,
+      justifiedLine.endOffset,
+    );
+    const firstSpace = lineText.indexOf(" ");
+    const secondSpace = lineText.indexOf(" ", firstSpace + 1);
+    const thirdSpace = lineText.indexOf(" ", secondSpace + 1);
+    expect(thirdSpace).toBeGreaterThan(secondSpace);
+
+    const shiftAt = (spaceIndexInText: number) => {
+      const offset = justifiedLine.startOffset + spaceIndexInText + 1;
+      const left = leftLine.slots.find((slot) => slot.offset === offset)!.left;
+      const justified = justifiedLine.slots.find(
+        (slot) => slot.offset === offset,
+      )!.left;
+      return justified - left;
+    };
+
+    const gap = shiftAt(firstSpace);
+    expect(gap).toBeGreaterThan(0);
+    expect(shiftAt(secondSpace)).toBeCloseTo(2 * gap, 4);
+    expect(shiftAt(thirdSpace)).toBeCloseTo(3 * gap, 4);
+  });
+
   it("does not justify lines terminated by hard break", () => {
     const text = "alpha beta gamma\ndelta epsilon";
     const paragraphLeft = createEditorParagraph(text);
