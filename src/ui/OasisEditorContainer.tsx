@@ -1,4 +1,5 @@
-import { OasisEditorApp, type OasisEditorAppProps } from "./OasisEditorApp.js";
+import { OasisEditorAppLazy } from "./OasisEditorAppLazy.js";
+import type { OasisEditorAppProps } from "./OasisEditorApp.js";
 
 export interface OasisEditorContainerProps extends Omit<
   OasisEditorAppProps,
@@ -8,5 +9,7 @@ export interface OasisEditorContainerProps extends Omit<
 }
 
 export function OasisEditorContainer(props: OasisEditorContainerProps) {
-  return <OasisEditorApp {...props} ui={{ ...props.ui, showChrome: false }} />;
+  return (
+    <OasisEditorAppLazy {...props} ui={{ ...props.ui, showChrome: false }} />
+  );
 }

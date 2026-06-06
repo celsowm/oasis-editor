@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  clearProjectedParagraphLayoutCache,
   projectParagraphLayout,
   projectBlocksLayout,
   estimateParagraphBlockHeight,
@@ -11,6 +12,7 @@ import {
   createEditorTableRow,
 } from "../../core/editorState.js";
 import type { EditorPageSettings } from "../../core/model.js";
+import type { ITextMeasurer, TextMeasureOptions } from "../../core/engine.js";
 
 const A4: EditorPageSettings = {
   width: 816,
@@ -29,6 +31,34 @@ const A4: EditorPageSettings = {
 
 describe("layout projection", () => {
   describe("projectParagraphLayout", () => {
+    function createFixedWidthMeasurer(charWidth: number): ITextMeasurer {
+      return {
+        composeMeasuredParagraphLines(options: TextMeasureOptions) {
+          const text = options.fragments.map((fragment) => fragment.text).join("");
+          const slots = Array.from({ length: text.length + 1 }, (_, offset) => ({
+            paragraphId: options.paragraph.id,
+            offset,
+            left: offset * charWidth,
+            top: 0,
+            height: 16,
+          }));
+          return [
+            {
+              paragraphId: options.paragraph.id,
+              index: 0,
+              startOffset: 0,
+              endOffset: text.length,
+              top: 0,
+              height: 16,
+              slots,
+              fragments: [],
+            },
+          ];
+        },
+        resolveRenderedLineHeightPx: () => 16,
+      };
+    }
+
     it("projects a simple paragraph into a single line", () => {
       const p = createEditorParagraph("hello");
       const layout = projectParagraphLayout(p, 0, 1, undefined, 600);
@@ -48,6 +78,42 @@ describe("layout projection", () => {
       const layout = projectParagraphLayout(p, 0, 1, undefined, 50);
 
       expect(layout.lines.length).toBeGreaterThan(1);
+    });
+
+    it("can clear cached paragraph geometry after async font metrics load", () => {
+      const p = createEditorParagraph("font");
+      const wide = projectParagraphLayout(
+        p,
+        0,
+        1,
+        undefined,
+        600,
+        createFixedWidthMeasurer(10),
+      );
+      const stillCached = projectParagraphLayout(
+        p,
+        0,
+        1,
+        undefined,
+        600,
+        createFixedWidthMeasurer(5),
+      );
+
+      expect(stillCached.lines[0]!.slots.at(-1)?.left).toBe(
+        wide.lines[0]!.slots.at(-1)?.left,
+      );
+
+      clearProjectedParagraphLayoutCache();
+      const recalculated = projectParagraphLayout(
+        p,
+        0,
+        1,
+        undefined,
+        600,
+        createFixedWidthMeasurer(5),
+      );
+
+      expect(recalculated.lines[0]!.slots.at(-1)?.left).toBe(20);
     });
   });
 

@@ -8,6 +8,10 @@ export type { OasisEditorContainerInstance } from "./app/bootstrap/createOasisEd
 
 export { OasisEditorContainer } from "./ui/OasisEditorContainer.js";
 export type { OasisEditorContainerProps } from "./ui/OasisEditorContainer.js";
+
+export { OasisEditorAppLazy } from "./ui/OasisEditorAppLazy.js";
+export { OasisEditorLoading } from "./ui/OasisEditorLoading.js";
+export type { OasisEditorLoadingProps } from "./ui/OasisEditorLoading.js";
 export { Editor } from "./core/Editor.js";
 export { CommandRegistry } from "./core/commands/CommandRegistry.js";
 export {

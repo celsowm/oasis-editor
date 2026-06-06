@@ -307,18 +307,27 @@
 }
 
 .oasis-editor-loading {
-  position: absolute;
-  inset: 0;
-  z-index: 1000;
   display: grid;
   place-items: center;
-  gap: 12px;
+  align-content: center;
+  gap: 16px;
   background: var(--oasis-bg);
 }
 
-.oasis-editor-loading-text {
-  font-size: 14px;
-  color: var(--oasis-text-muted);
+/* In-editor overlay: covers the already-mounted, positioned editor shell. */
+.oasis-editor-loading--overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+}
+
+/* Suspense fallback: fills its container in normal flow (the editor shell does
+   not exist yet, so absolute positioning would escape to the viewport). */
+.oasis-editor-loading--fill {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
 }
 
 @keyframes oasis-editor-blink {

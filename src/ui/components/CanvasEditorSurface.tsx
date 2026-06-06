@@ -3,8 +3,8 @@ import {
   createMemo,
   createSignal,
   Index,
+  on,
   onCleanup,
-  onMount,
   Show,
 } from "solid-js";
 import type { ITextMeasurer } from "../../core/engine.js";
@@ -13,7 +13,12 @@ import { type EditorLayoutPage, type EditorState } from "../../core/model.js";
 import { clearTextMeasureCache, domTextMeasurer } from "../textMeasurement.js";
 import { preloadLayoutFonts } from "../../text/fonts/FontMetricsProvider.js";
 import { collectPdfFontFamilies } from "../../export/pdf/fonts/collectPdfFontFamilies.js";
-import { projectDocumentLayout } from "../../layoutProjection/index.js";
+import { resolveMetricCompatibleFamily } from "../../export/pdf/fonts/officeFontAssets.js";
+import {
+  clearProjectedParagraphLayoutCache,
+  projectDocumentLayout,
+} from "../../layoutProjection/index.js";
+import { createEditorLogger } from "../../utils/logger.js";
 import { createLayoutIdentityStabilizer } from "../layoutIdentity.js";
 import { PageBreak } from "../components/PageBreak.js";
 import {
@@ -29,6 +34,28 @@ const canvasTextMeasurer: ITextMeasurer = {
   resolveRenderedLineHeightPx: (styles, lineHeightMultiple) =>
     domTextMeasurer.resolveRenderedLineHeightPx(styles, lineHeightMultiple),
 };
+const surfaceLogger = createEditorLogger("canvas-surface");
+
+function checkBrowserFonts(families: Array<string | null | undefined>) {
+  if (typeof document === "undefined" || !document.fonts) {
+    return { status: "unavailable", checks: [] };
+  }
+  return {
+    status: document.fonts.status,
+    checks: families.map((family) => {
+      const requested = family ?? null;
+      const metricFamily = resolveMetricCompatibleFamily(family);
+      return {
+        requested,
+        metricFamily,
+        normal: document.fonts.check(`400 14px "${metricFamily}"`),
+        bold: document.fonts.check(`700 14px "${metricFamily}"`),
+        italic: document.fonts.check(`400 italic 14px "${metricFamily}"`),
+        boldItalic: document.fonts.check(`700 italic 14px "${metricFamily}"`),
+      };
+    }),
+  };
+}
 
 export function CanvasEditorSurface(props: EditorSurfaceProps) {
   // Preserves object identity for unchanged pages/blocks across re-projections.
@@ -37,20 +64,44 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
   const stabilize = createLayoutIdentityStabilizer();
   // In the browser, font advance-width metrics load asynchronously. Until they
   // resolve, measurement falls back to a heuristic; once they do, recompute the
-  // layout with real metrics. In Node/tests metrics load synchronously, so this
-  // simply settles to true on mount with no visible change.
-  const [fontsReady, setFontsReady] = createSignal(false);
-  onMount(() => {
-    void preloadLayoutFonts(
-      collectPdfFontFamilies(props.state().document),
-    ).then(() => {
-      clearTextMeasureCache();
-      setFontsReady(true);
-    });
-  });
+  // layout with real metrics. This must react to the *current* document's font
+  // set — not just the one present at mount — so that fonts introduced later
+  // (e.g. Times New Roman from a DOCX import) get their metric bytes ingested
+  // and their FontFace registered. In Node/tests metrics load synchronously, so
+  // this simply settles with no visible change.
+  const [fontsGeneration, setFontsGeneration] = createSignal(0);
+  // The set of families used by the document. collectPdfFontFamilies walks every
+  // paragraph/run, so we gate the preload effect on a stable key derived from it
+  // to avoid re-preloading on unrelated edits (e.g. typing).
+  const documentFontFamilies = createMemo(() =>
+    Array.from(collectPdfFontFamilies(props.state().document)),
+  );
+  const fontFamiliesKey = createMemo(() =>
+    documentFontFamilies()
+      .map((family) => family ?? "<default>")
+      .join("|"),
+  );
+  createEffect(
+    on(fontFamiliesKey, () => {
+      const families = documentFontFamilies();
+      surfaceLogger.info("fonts:collect", {
+        families,
+        checksBefore: checkBrowserFonts(families),
+      });
+      void preloadLayoutFonts(families).then(() => {
+        clearTextMeasureCache();
+        clearProjectedParagraphLayoutCache();
+        surfaceLogger.info("fonts:ready", {
+          families,
+          checksAfter: checkBrowserFonts(families),
+        });
+        setFontsGeneration((generation) => generation + 1);
+      });
+    }),
+  );
   const documentLayout = createMemo(() => {
-    fontsReady(); // recompute once real font metrics become available
-    return stabilize(
+    const generation = fontsGeneration(); // recompute once real font metrics become available
+    const layout = stabilize(
       projectDocumentLayout(
         props.state().document,
         undefined,
@@ -61,6 +112,14 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
         },
       ),
     );
+    surfaceLogger.debug("layout:projected", {
+      fontsGeneration: generation,
+      pages: layout.pages.length,
+      firstPageBlocks: layout.pages[0]?.blocks.length ?? 0,
+      firstPageBodyTop: layout.pages[0]?.bodyTop,
+      firstPageBodyBottom: layout.pages[0]?.bodyBottom,
+    });
+    return layout;
   });
 
   return (
@@ -86,6 +145,7 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
               page={page()}
               index={index}
               state={props.state()}
+              paintGeneration={fontsGeneration()}
               onSurfaceMouseDown={props.onSurfaceMouseDown}
               onSurfaceClick={props.onSurfaceClick}
               onSurfaceMouseMove={props.onSurfaceMouseMove}
@@ -102,6 +162,7 @@ function CanvasPage(props: {
   page: EditorLayoutPage;
   index: number;
   state: EditorState;
+  paintGeneration: number;
   onSurfaceMouseDown: (event: MouseEvent) => void;
   onSurfaceClick?: (event: MouseEvent) => void;
   onSurfaceMouseMove?: (event: MouseEvent) => void;
@@ -117,6 +178,8 @@ function CanvasPage(props: {
   createEffect(() => {
     props.page;
     props.state.document;
+    props.paintGeneration;
+    renderer.invalidatePage();
     renderer.schedulePaint();
   });
 

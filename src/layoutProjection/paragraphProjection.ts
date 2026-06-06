@@ -1,4 +1,5 @@
 export {
+  clearProjectedParagraphLayoutCache,
   measureParagraphLayoutFromRects,
   projectParagraphLayout,
   resolveClosestOffsetInMeasuredLayout,

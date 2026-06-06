@@ -89,7 +89,7 @@ function sliceFragmentToRange(
   };
 }
 
-const paragraphLayoutCache = new WeakMap<
+let paragraphLayoutCache = new WeakMap<
   EditorParagraphNode,
   Map<string, EditorLayoutParagraph>
 >();
@@ -97,6 +97,13 @@ const paragraphFieldDependenceCache = new WeakMap<
   EditorParagraphNode,
   { dependsOnPageIndex: boolean; dependsOnTotalPages: boolean }
 >();
+
+export function clearProjectedParagraphLayoutCache(): void {
+  paragraphLayoutCache = new WeakMap<
+    EditorParagraphNode,
+    Map<string, EditorLayoutParagraph>
+  >();
+}
 
 function getParagraphFieldDependence(paragraph: EditorParagraphNode): {
   dependsOnPageIndex: boolean;

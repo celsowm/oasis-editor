@@ -1,21 +1,20 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { TrueTypeFont } from "../../text/truetype/TrueTypeFont.js";
+import {
+  OFFICE_COMPAT_FONT_FAMILIES,
+  readFontAssetSync,
+  ROBOTO_FONT_FILES,
+} from "../../export/pdf/fonts/officeFontAssets.js";
+import { SfntFontProgram } from "../../text/fonts/sfnt/SfntFontProgram.js";
 
-const ASSET_DIR = new URL(
-  "../../export/pdf/fonts/assets/",
-  import.meta.url,
-);
-
-function loadFont(fileName: string): TrueTypeFont {
-  const bytes = readFileSync(fileURLToPath(new URL(fileName, ASSET_DIR)));
-  return TrueTypeFont.parse(new Uint8Array(bytes));
+function loadFont(fileName: string): SfntFontProgram {
+  const bytes = readFontAssetSync(fileName);
+  expect(bytes).not.toBeNull();
+  return SfntFontProgram.parse(bytes!);
 }
 
 describe("TrueTypeFont", () => {
-  const carlito = loadFont("Carlito-Regular.ttf");
+  const carlito = loadFont("Carlito-Regular.woff2");
 
   it("reads unitsPerEm from the head table", () => {
     expect(carlito.unitsPerEm).toBe(2048);
@@ -44,12 +43,34 @@ describe("TrueTypeFont", () => {
 
   it("parses the other bundled metric-compatible faces", () => {
     for (const file of [
-      "Arimo-Regular.ttf",
-      "Tinos-Regular.ttf",
-      "Carlito-Bold.ttf",
+      "Arimo-Regular.woff2",
+      "Tinos-Regular.woff2",
+      "Carlito-Bold.woff2",
     ]) {
       const font = loadFont(file);
       expect(font.unitsPerEm).toBeGreaterThan(0);
+      expect(font.advanceWidthForCodePoint("A".codePointAt(0)!)).toBeGreaterThan(
+        0,
+      );
+    }
+  });
+
+  it("decodes every bundled WOFF2 face into a valid sfnt font", () => {
+    const files = new Set<string>();
+    for (const definition of OFFICE_COMPAT_FONT_FAMILIES) {
+      for (const fileName of Object.values(definition.files)) {
+        files.add(fileName);
+      }
+    }
+    for (const fileName of Object.values(ROBOTO_FONT_FILES)) {
+      files.add(fileName);
+    }
+
+    expect(files.size).toBe(16);
+    for (const fileName of files) {
+      const font = loadFont(fileName);
+      expect(font.unitsPerEm).toBeGreaterThan(0);
+      expect(font.hasGlyphForCodePoint("A".codePointAt(0)!)).toBe(true);
       expect(font.advanceWidthForCodePoint("A".codePointAt(0)!)).toBeGreaterThan(
         0,
       );

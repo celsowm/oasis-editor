@@ -10,6 +10,7 @@ import {
   resolveEffectiveTextStyleForParagraph,
 } from "../core/model.js";
 import { getFontMetricsProvider } from "../text/fonts/FontMetricsProvider.js";
+import { createEditorLogger } from "../utils/logger.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
 const DEFAULT_LINE_HEIGHT = 1.15;
@@ -30,6 +31,10 @@ const TAB_SIZE = 4;
 const DEFAULT_WORD_SINGLE_LINE_RATIO = 1.223;
 const PX_PER_POINT = 96 / 72;
 const DEFAULT_TAB_STOP_POINTS = 36;
+const MAX_JUSTIFY_EXTRA_PER_SPACE_PX = 7;
+const textLayoutLogger = createEditorLogger("text-layout");
+let justifyDiagnosticCount = 0;
+const MAX_JUSTIFY_DIAGNOSTIC_LOGS = 80;
 
 interface MeasuredChar {
   char: string;
@@ -275,11 +280,12 @@ function measureBaseCharacterWidth(
   const provider = getFontMetricsProvider();
   const bold = Boolean(styles?.bold);
   const italic = Boolean(styles?.italic);
+  const fontFamily = styles?.fontFamily ?? "Calibri";
 
   if (renderedChar === "\t") {
     // A tab renders as TAB_SIZE spaces; measure one space and scale.
     const space = provider.getAdvanceWidthPx(
-      styles?.fontFamily,
+      fontFamily,
       bold,
       italic,
       0x20,
@@ -293,7 +299,7 @@ function measureBaseCharacterWidth(
   const codePoint = renderedChar.codePointAt(0);
   if (codePoint !== undefined) {
     const advance = provider.getAdvanceWidthPx(
-      styles?.fontFamily,
+      fontFamily,
       bold,
       italic,
       codePoint,
@@ -675,6 +681,20 @@ function justifyLineBySpaces(
   };
 }
 
+function buildLineTextSample(
+  line: EditorLayoutLine,
+  charByOffset: Map<number, string>,
+) {
+  let text = "";
+  for (let offset = line.startOffset; offset < line.endOffset; offset += 1) {
+    text += charByOffset.get(offset) ?? "";
+    if (text.length >= 140) {
+      return `${text.slice(0, 137)}...`;
+    }
+  }
+  return text;
+}
+
 function applyParagraphAlignment(
   paragraph: EditorParagraphNode,
   styles: Record<string, EditorNamedStyle> | undefined,
@@ -716,6 +736,35 @@ function applyParagraphAlignment(
     const isLastLine = lineIndex === lines.length - 1;
     const endsWithHardBreak = lineHardBreaks[lineIndex] === true;
     if (align === "justify" && !isLastLine && !endsWithHardBreak) {
+      const spaceCount = Array.from(
+        { length: Math.max(0, line.endOffset - line.startOffset) },
+        (_, index) => charByOffset.get(line.startOffset + index),
+      ).filter((char) => char === " ").length;
+      const extraPerSpace = spaceCount > 0 ? extraSpace / spaceCount : null;
+      if (justifyDiagnosticCount < MAX_JUSTIFY_DIAGNOSTIC_LOGS) {
+        justifyDiagnosticCount += 1;
+        textLayoutLogger.debug("justify:line", {
+          paragraphId: paragraph.id,
+          lineIndex,
+          startOffset: line.startOffset,
+          endOffset: line.endOffset,
+          availableWidth,
+          lineWidth,
+          extraSpace,
+          spaceCount,
+          extraPerSpace,
+          skipped:
+            extraPerSpace !== null &&
+            extraPerSpace > MAX_JUSTIFY_EXTRA_PER_SPACE_PX,
+          sample: buildLineTextSample(line, charByOffset),
+        });
+      }
+      if (
+        extraPerSpace !== null &&
+        extraPerSpace > MAX_JUSTIFY_EXTRA_PER_SPACE_PX
+      ) {
+        return line;
+      }
       return justifyLineBySpaces(line, extraSpace, charByOffset);
     }
     return line;

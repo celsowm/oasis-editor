@@ -1,5 +1,5 @@
 import { For, Match, Show, Switch, createMemo, createSignal, onCleanup, onMount } from "solid-js";
-import { OasisEditorApp } from "../src/ui/OasisEditorApp.js";
+import { OasisEditorAppLazy } from "../src/ui/OasisEditorAppLazy.js";
 import type { OasisEditorAppProps } from "../src/ui/OasisEditorApp.js";
 
 type RouteId = "editor" | "about" | "api" | "plugins";
@@ -513,7 +513,7 @@ function EditorPage(props: { language: Language }) {
       </aside>
       <div class="oasis-site-editor-col">
         <div class="oasis-site-editor-host">
-          <OasisEditorApp
+          <OasisEditorAppLazy
             ui={{
               ...testProps().ui,
               shell: getRequestedShell(),

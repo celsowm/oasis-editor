@@ -10,6 +10,7 @@ export {
 export { estimateParagraphBlockHeight } from "./blockHeights.js";
 export { estimateTableBlockHeight } from "./tableProjection.js";
 export {
+  clearProjectedParagraphLayoutCache,
   measureParagraphLayoutFromRects,
   projectParagraphLayout,
   resolveClosestOffsetInMeasuredLayout,

@@ -1,13 +1,26 @@
 /**
- * Shared registry of the bundled, metric-compatible font assets and the helpers
- * that load their bytes. These fonts ship in `./assets/` and are reused by both
- * the PDF exporter (glyph embedding) and the layout engine (advance-width
- * metrics), so the alias map and loader live here as the single source of truth.
- *
- * Asset URLs are resolved relative to *this* module's location, which is why
- * this file is co-located with `assets/`: the same `import.meta.url` math then
- * works in both the unbundled source tree and the flat built library.
+ * Shared registry of bundled, metric-compatible WOFF2 assets. The compressed
+ * bytes are embedded as base64 and decoded through the internal font pipeline:
+ * browsers receive WOFF2 for FontFace, while layout/PDF receive cached sfnt
+ * bytes reconstructed from the same source.
  */
+import { defaultFontDecoderRegistry } from "../../../text/fonts/decoders/FontDecoderRegistry.js";
+import ArimoRegular from "./assets/Arimo-Regular.woff2?base64";
+import ArimoBold from "./assets/Arimo-Bold.woff2?base64";
+import ArimoItalic from "./assets/Arimo-Italic.woff2?base64";
+import ArimoBoldItalic from "./assets/Arimo-BoldItalic.woff2?base64";
+import CarlitoRegular from "./assets/Carlito-Regular.woff2?base64";
+import CarlitoBold from "./assets/Carlito-Bold.woff2?base64";
+import CarlitoItalic from "./assets/Carlito-Italic.woff2?base64";
+import CarlitoBoldItalic from "./assets/Carlito-BoldItalic.woff2?base64";
+import TinosRegular from "./assets/Tinos-Regular.woff2?base64";
+import TinosBold from "./assets/Tinos-Bold.woff2?base64";
+import TinosItalic from "./assets/Tinos-Italic.woff2?base64";
+import TinosBoldItalic from "./assets/Tinos-BoldItalic.woff2?base64";
+import RobotoRegular from "./assets/Roboto-Regular.woff2?base64";
+import RobotoMedium from "./assets/Roboto-Medium.woff2?base64";
+import RobotoItalic from "./assets/Roboto-Italic.woff2?base64";
+import RobotoMediumItalic from "./assets/Roboto-MediumItalic.woff2?base64";
 
 export interface FontFaceFiles {
   regular: string;
@@ -23,10 +36,10 @@ export interface OfficeFontFamilyDef {
 }
 
 export const ROBOTO_FONT_FILES: FontFaceFiles = {
-  regular: "Roboto-Regular.ttf",
-  bold: "Roboto-Medium.ttf",
-  italic: "Roboto-Italic.ttf",
-  bolditalic: "Roboto-MediumItalic.ttf",
+  regular: "Roboto-Regular.woff2",
+  bold: "Roboto-Medium.woff2",
+  italic: "Roboto-Italic.woff2",
+  bolditalic: "Roboto-MediumItalic.woff2",
 };
 
 export const OFFICE_COMPAT_FONT_FAMILIES: OfficeFontFamilyDef[] = [
@@ -40,30 +53,30 @@ export const OFFICE_COMPAT_FONT_FAMILIES: OfficeFontFamilyDef[] = [
       "Aptos Narrow",
     ],
     files: {
-      regular: "Carlito-Regular.ttf",
-      bold: "Carlito-Bold.ttf",
-      italic: "Carlito-Italic.ttf",
-      bolditalic: "Carlito-BoldItalic.ttf",
+      regular: "Carlito-Regular.woff2",
+      bold: "Carlito-Bold.woff2",
+      italic: "Carlito-Italic.woff2",
+      bolditalic: "Carlito-BoldItalic.woff2",
     },
   },
   {
     family: "Arimo",
     aliases: ["Arial"],
     files: {
-      regular: "Arimo-Regular.ttf",
-      bold: "Arimo-Bold.ttf",
-      italic: "Arimo-Italic.ttf",
-      bolditalic: "Arimo-BoldItalic.ttf",
+      regular: "Arimo-Regular.woff2",
+      bold: "Arimo-Bold.woff2",
+      italic: "Arimo-Italic.woff2",
+      bolditalic: "Arimo-BoldItalic.woff2",
     },
   },
   {
     family: "Tinos",
     aliases: ["Times New Roman", "Times"],
     files: {
-      regular: "Tinos-Regular.ttf",
-      bold: "Tinos-Bold.ttf",
-      italic: "Tinos-Italic.ttf",
-      bolditalic: "Tinos-BoldItalic.ttf",
+      regular: "Tinos-Regular.woff2",
+      bold: "Tinos-Bold.woff2",
+      italic: "Tinos-Italic.woff2",
+      bolditalic: "Tinos-BoldItalic.woff2",
     },
   },
 ];
@@ -74,6 +87,21 @@ export function normalizeFamily(fontFamily: string | null | undefined): string {
     ?.trim()
     .replace(/^['"]|['"]$/g, "");
   return firstFamily && firstFamily.length > 0 ? firstFamily : "Helvetica";
+}
+
+export function resolveMetricCompatibleFamily(
+  fontFamily: string | null | undefined,
+): string {
+  const normalized = normalizeFamily(fontFamily).toLowerCase();
+  for (const definition of OFFICE_COMPAT_FONT_FAMILIES) {
+    const names = [definition.family, ...definition.aliases].map((name) =>
+      name.toLowerCase(),
+    );
+    if (names.includes(normalized)) {
+      return definition.family;
+    }
+  }
+  return "Roboto";
 }
 
 /** Maps a bold/italic combination to the corresponding {@link FontFaceFiles} key. */
@@ -87,86 +115,87 @@ export function faceStyleKey(
   return "regular";
 }
 
-export function resolveFontAssetUrl(fileName: string): string {
-  return `${import.meta.url.replace(/[^/]*$/, "")}assets/${encodeURIComponent(fileName)}`;
+/** File name → embedded WOFF2 base64 string, inlined via the Vite plugin. */
+const EMBEDDED_FONT_BASE64: Record<string, string> = {
+  "Arimo-Regular.woff2": ArimoRegular,
+  "Arimo-Bold.woff2": ArimoBold,
+  "Arimo-Italic.woff2": ArimoItalic,
+  "Arimo-BoldItalic.woff2": ArimoBoldItalic,
+  "Carlito-Regular.woff2": CarlitoRegular,
+  "Carlito-Bold.woff2": CarlitoBold,
+  "Carlito-Italic.woff2": CarlitoItalic,
+  "Carlito-BoldItalic.woff2": CarlitoBoldItalic,
+  "Tinos-Regular.woff2": TinosRegular,
+  "Tinos-Bold.woff2": TinosBold,
+  "Tinos-Italic.woff2": TinosItalic,
+  "Tinos-BoldItalic.woff2": TinosBoldItalic,
+  "Roboto-Regular.woff2": RobotoRegular,
+  "Roboto-Medium.woff2": RobotoMedium,
+  "Roboto-Italic.woff2": RobotoItalic,
+  "Roboto-MediumItalic.woff2": RobotoMediumItalic,
+};
+
+function decodeBase64(base64: string): Uint8Array {
+  // `atob` is a global in browsers, jsdom, and modern Node (used by vitest).
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
 }
 
-interface NodeBuiltins {
-  fs?: {
-    readFileSync(path: string | URL): Uint8Array;
-  };
-  fileURLToPath?: (url: string) => string;
-}
+const originalFontCache = new Map<string, Uint8Array | null>();
+const decodedFontCache = new Map<string, Uint8Array | null>();
 
-function getNodeBuiltins(): NodeBuiltins {
-  const processObject = new Function(
-    "return typeof process === 'object' ? process : undefined",
-  )() as { getBuiltinModule?(id: string): unknown } | undefined;
-  const dynamicRequire = new Function(
-    "return typeof require === 'function' ? require : undefined",
-  )() as ((id: string) => unknown) | undefined;
-  const getBuiltin = (id: string): unknown =>
-    processObject?.getBuiltinModule?.(id) ?? dynamicRequire?.(id);
-  const fs = getBuiltin("node:fs") as NodeBuiltins["fs"];
-  const fileURLToPath = (
-    getBuiltin("node:url") as { fileURLToPath(url: string): string } | undefined
-  )?.fileURLToPath;
-  return { fs, fileURLToPath };
+function getOriginalFontBytes(fileName: string): Uint8Array | null {
+  const cached = originalFontCache.get(fileName);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const base64 = EMBEDDED_FONT_BASE64[fileName];
+  const bytes = base64 ? decodeBase64(base64) : null;
+  originalFontCache.set(fileName, bytes);
+  return bytes;
 }
 
 /**
- * Synchronously reads a bundled font asset. Only works under Node (via
- * `fs.readFileSync`); returns `null` in the browser, where callers must
- * pre-warm the cache through {@link loadFontAsset} instead.
+ * Returns the original compressed WOFF2 bytes, used for browser FontFace
+ * registration.
  */
+export function readOriginalFontAsset(fileName: string): Uint8Array | null {
+  return getOriginalFontBytes(fileName);
+}
+
 export function readFontAssetSync(fileName: string): Uint8Array | null {
-  const assetUrl = resolveFontAssetUrl(fileName);
+  const cached = decodedFontCache.get(fileName);
+  if (cached !== undefined) return cached;
+  const original = getOriginalFontBytes(fileName);
+  if (!original) {
+    decodedFontCache.set(fileName, null);
+    return null;
+  }
   try {
-    const { fs, fileURLToPath } = getNodeBuiltins();
-    if (!fs) return null;
-    if (assetUrl.startsWith("file:")) {
-      return fs.readFileSync(new URL(assetUrl));
-    }
-    return fileURLToPath ? fs.readFileSync(fileURLToPath(assetUrl)) : null;
+    const decoded = defaultFontDecoderRegistry.decodeSync(original);
+    decodedFontCache.set(fileName, decoded);
+    return decoded;
   } catch {
+    decodedFontCache.set(fileName, null);
     return null;
   }
 }
 
-const fontAssetCache = new Map<string, Promise<Uint8Array | null>>();
-
-export function loadFontAsset(fileName: string): Promise<Uint8Array | null> {
-  const cachedFontAsset = fontAssetCache.get(fileName);
-  if (cachedFontAsset) {
-    return cachedFontAsset;
-  }
-  const fontAsset = readFontAsset(fileName);
-  fontAssetCache.set(fileName, fontAsset);
-  return fontAsset;
-}
-
-async function readFontAsset(fileName: string): Promise<Uint8Array | null> {
-  const assetUrl = resolveFontAssetUrl(fileName);
-  try {
-    if (assetUrl.startsWith("file:")) {
-      const { fs } = getNodeBuiltins();
-      return fs?.readFileSync(new URL(assetUrl)) ?? null;
-    }
-
-    if (typeof fetch === "function") {
-      const response = await fetch(assetUrl);
-      if (!response.ok) {
-        return null;
-      }
-      return new Uint8Array(await response.arrayBuffer());
-    }
-
-    const { fs, fileURLToPath } = getNodeBuiltins();
-    if (!fs || !fileURLToPath) {
-      return null;
-    }
-    return fs.readFileSync(fileURLToPath(assetUrl));
-  } catch {
+export async function loadFontAsset(
+  fileName: string,
+): Promise<Uint8Array | null> {
+  const cached = decodedFontCache.get(fileName);
+  if (cached !== undefined) return cached;
+  const original = getOriginalFontBytes(fileName);
+  if (!original) {
+    decodedFontCache.set(fileName, null);
     return null;
   }
+  const decoded = await defaultFontDecoderRegistry.decode(original);
+  decodedFontCache.set(fileName, decoded);
+  return decoded;
 }

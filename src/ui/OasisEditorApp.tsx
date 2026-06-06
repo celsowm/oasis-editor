@@ -51,6 +51,7 @@ import { buildEditorViewProps } from "./app/buildEditorViewProps.js";
 import { EditorWorkspace } from "./app/EditorWorkspace.js";
 import { useEditorTransactions } from "./app/useEditorTransactions.js";
 import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
+import { OasisEditorLoading } from "./OasisEditorLoading.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 export type {
@@ -684,16 +685,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       />
 
       <Show when={initialLoading() || !runtimeReady()}>
-        <div
-          class={["oasis-editor-loading", loadingOptions()?.class]
-            .filter(Boolean)
-            .join(" ")}
+        <OasisEditorLoading
+          label={loadingLabel()}
+          class={loadingOptions()?.class}
           style={loadingOptions()?.style}
-          role="status"
-          aria-live="polite"
-        >
-          <div class="oasis-editor-loading-text">{loadingLabel()}</div>
-        </div>
+        />
       </Show>
     </div>
   );

@@ -1,5 +1,6 @@
 import { render } from "solid-js/web";
-import { OasisEditorApp, type OasisEditorAppProps } from "./OasisEditorApp.js";
+import { OasisEditorAppLazy } from "./OasisEditorAppLazy.js";
+import type { OasisEditorAppProps } from "./OasisEditorApp.js";
 
 export interface OasisMountInstance {
   unmount: () => void;
@@ -13,7 +14,7 @@ export function mount(
   target: HTMLElement,
   props: OasisEditorAppProps = {},
 ): OasisMountInstance {
-  const dispose = render(() => OasisEditorApp(props), target);
+  const dispose = render(() => OasisEditorAppLazy(props), target);
 
   return {
     unmount: () => {

@@ -8,6 +8,11 @@ import {
   resolveEffectiveTextStyleForParagraph,
   resolveImageSrc,
 } from "../../core/model.js";
+import {
+  normalizeFamily,
+  resolveMetricCompatibleFamily,
+} from "../../export/pdf/fonts/officeFontAssets.js";
+import { createEditorLogger } from "../../utils/logger.js";
 import { getCachedCanvasImage } from "./canvasImageCache.js";
 import { resolveListPrefix } from "./listNumbering.js";
 import {
@@ -19,6 +24,67 @@ import {
 } from "../../core/textStyleMappings.js";
 
 const PX_PER_POINT = 96 / 72;
+const canvasTextLogger = createEditorLogger("canvas-text");
+const loggedCanvasFontKeys = new Set<string>();
+const MAX_CANVAS_FONT_LOGS = 40;
+
+function quoteFontFamily(family: string): string {
+  return /[\s,]/.test(family) ? `"${family.replace(/"/g, '\\"')}"` : family;
+}
+
+function resolveCanvasFontFamily(
+  fontFamily: string | null | undefined,
+): string {
+  const requested = normalizeFamily(fontFamily ?? "Calibri");
+  const metric = resolveMetricCompatibleFamily(fontFamily ?? "Calibri");
+  const families =
+    requested.toLowerCase() === metric.toLowerCase()
+      ? [metric]
+      : [requested, metric];
+  const generic = /serif/i.test(fontFamily ?? "") ? "serif" : "sans-serif";
+  return [...families.map(quoteFontFamily), generic].join(", ");
+}
+
+function logCanvasFontUse(options: {
+  requestedFamily: string | null | undefined;
+  metricFamily: string;
+  cssFont: string;
+  fontSize: number;
+  bold: boolean;
+  italic: boolean;
+  sample: string;
+}) {
+  if (loggedCanvasFontKeys.size >= MAX_CANVAS_FONT_LOGS) {
+    return;
+  }
+  const key = [
+    options.requestedFamily ?? "",
+    options.metricFamily,
+    options.fontSize,
+    options.bold,
+    options.italic,
+  ].join("|");
+  if (loggedCanvasFontKeys.has(key)) {
+    return;
+  }
+  loggedCanvasFontKeys.add(key);
+  const style = options.italic ? "italic " : "";
+  const weight = options.bold ? "700" : "400";
+  const fontCheck =
+    typeof document !== "undefined" && document.fonts
+      ? document.fonts.check(
+          `${style}${weight} ${options.fontSize}px "${options.metricFamily}"`,
+        )
+      : "unavailable";
+  canvasTextLogger.info("font:use", {
+    ...options,
+    fontCheck,
+    documentFontsStatus:
+      typeof document !== "undefined" && document.fonts
+        ? document.fonts.status
+        : "unavailable",
+  });
+}
 
 function resolveTabLeader(
   paragraph: EditorParagraphNode,
@@ -145,12 +211,24 @@ export function drawParagraph(
         continue;
       }
       const fontSize = styles.fontSize ?? 14.6667;
-      const fontFamily = styles.fontFamily ?? "Calibri, sans-serif";
+      const metricFamily = resolveMetricCompatibleFamily(
+        styles.fontFamily ?? "Calibri",
+      );
+      const fontFamily = resolveCanvasFontFamily(styles.fontFamily);
       const fontWeight = styles.bold ? "700" : "400";
       const fontStyle = styles.italic ? "italic" : "normal";
       const renderMetrics = resolveCanvasTextRenderMetrics(styles, fontSize);
       ctx.save();
       ctx.font = `${fontStyle} ${fontWeight} ${renderMetrics.fontSize}px ${fontFamily}`;
+      logCanvasFontUse({
+        requestedFamily: styles.fontFamily,
+        metricFamily,
+        cssFont: ctx.font,
+        fontSize: renderMetrics.fontSize,
+        bold: Boolean(styles.bold),
+        italic: Boolean(styles.italic),
+        sample: fragment.text.slice(0, 80),
+      });
       ctx.fillStyle = styles.color ?? "#000000";
       if (styles.highlight) {
         drawFragmentHighlight(
@@ -178,46 +256,17 @@ export function drawParagraph(
           }
         }
       } else {
-        for (const char of fragment.chars) {
-          if (char.char === "\n") continue;
-          const slot = slotByOffset.get(char.paragraphOffset);
-          if (!slot) continue;
-          if (char.char === "\t") {
-            const nextSlot = slotByOffset.get(char.paragraphOffset + 1);
-            const leader = resolveTabLeader(paragraph, line, slot.left, state);
-            if (nextSlot && leader) {
-              drawTabLeader(
-                ctx,
-                leader,
-                originX + slot.left,
-                originX + nextSlot.left,
-                baselineY + renderMetrics.baselineOffset,
-              );
-            }
-            continue;
-          }
-          const renderedChar = styles.allCaps
-            ? char.char.toUpperCase()
-            : char.char;
-          const scale =
-            styles.characterScale && styles.characterScale > 0
-              ? styles.characterScale / 100
-              : 1;
-          if (scale !== 1) {
-            const x = originX + slot.left;
-            ctx.save();
-            ctx.translate(x, baselineY + renderMetrics.baselineOffset);
-            ctx.scale(scale, 1);
-            ctx.fillText(renderedChar, 0, 0);
-            ctx.restore();
-          } else {
-            ctx.fillText(
-              renderedChar,
-              originX + slot.left,
-              baselineY + renderMetrics.baselineOffset,
-            );
-          }
-        }
+        drawTextFragment(
+          ctx,
+          paragraph,
+          line,
+          fragment,
+          slotByOffset,
+          state,
+          styles,
+          originX,
+          baselineY + renderMetrics.baselineOffset,
+        );
       }
       if (styles.underline) {
         drawTextDecoration(
@@ -290,6 +339,104 @@ function drawFragmentHighlight(
     Math.max(2, line.height - 4),
   );
   ctx.restore();
+}
+
+function getRenderedChar(char: string, styles: { allCaps?: boolean }): string {
+  return styles.allCaps ? char.toUpperCase() : char;
+}
+
+function drawScaledText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  scale: number,
+) {
+  if (scale === 1) {
+    ctx.fillText(text, x, y);
+    return;
+  }
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, 1);
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
+}
+
+function drawTextFragment(
+  ctx: CanvasRenderingContext2D,
+  paragraph: EditorParagraphNode,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutLine["fragments"][number],
+  slotByOffset: Map<number, EditorLayoutLine["slots"][number]>,
+  state: EditorState,
+  styles: ReturnType<typeof resolveEffectiveTextStyleForParagraph>,
+  originX: number,
+  baselineY: number,
+) {
+  const scale =
+    styles.characterScale && styles.characterScale > 0
+      ? styles.characterScale / 100
+      : 1;
+  const hasManualCharacterSpacing =
+    styles.characterSpacing !== undefined &&
+    styles.characterSpacing !== null &&
+    styles.characterSpacing !== 0;
+
+  let segmentText = "";
+  let segmentLeft: number | null = null;
+
+  const flushSegment = () => {
+    if (!segmentText || segmentLeft === null) {
+      segmentText = "";
+      segmentLeft = null;
+      return;
+    }
+    drawScaledText(ctx, segmentText, originX + segmentLeft, baselineY, scale);
+    segmentText = "";
+    segmentLeft = null;
+  };
+
+  for (const char of fragment.chars) {
+    if (char.char === "\n") {
+      flushSegment();
+      continue;
+    }
+    const slot = slotByOffset.get(char.paragraphOffset);
+    if (!slot) {
+      flushSegment();
+      continue;
+    }
+    if (char.char === "\t") {
+      flushSegment();
+      const nextSlot = slotByOffset.get(char.paragraphOffset + 1);
+      const leader = resolveTabLeader(paragraph, line, slot.left, state);
+      if (nextSlot && leader) {
+        drawTabLeader(
+          ctx,
+          leader,
+          originX + slot.left,
+          originX + nextSlot.left,
+          baselineY,
+        );
+      }
+      continue;
+    }
+
+    const renderedChar = getRenderedChar(char.char, styles);
+    if (hasManualCharacterSpacing) {
+      flushSegment();
+      drawScaledText(ctx, renderedChar, originX + slot.left, baselineY, scale);
+      continue;
+    }
+
+    if (segmentLeft === null) {
+      segmentLeft = slot.left;
+    }
+    segmentText += renderedChar;
+  }
+
+  flushSegment();
 }
 
 function drawTextDecoration(

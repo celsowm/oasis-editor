@@ -1,7 +1,11 @@
 import type { EditorState } from "../../../core/model.js";
 import {
+  getDocumentParagraphs,
   getDocumentParagraphsCanonical,
   getDocumentSectionsCanonical,
+  getParagraphText,
+  resolveEffectiveParagraphStyle,
+  resolveEffectiveTextStyleForParagraph,
 } from "../../../core/model.js";
 import { createEditorStateFromDocument } from "../../../core/editorState.js";
 import { importDocxInWorker } from "../../../import/docx/importDocxInWorker.js";
@@ -9,6 +13,76 @@ import type { DocxImportStage } from "../../../import/docx/importDocxToEditorDoc
 import { readFileBuffer } from "../../../ui/clipboardImage.js";
 import type { EditorLogger } from "../../../utils/logger.js";
 import type { ImportProgressPhase } from "../useEditorDocumentIO.js";
+
+function buildImportedDocumentDiagnostics(
+  document: Parameters<typeof getDocumentParagraphs>[0],
+) {
+  const paragraphs = getDocumentParagraphs(document);
+  const fontCounts = new Map<string, number>();
+  const alignCounts = new Map<string, number>();
+  let characterSpacingRuns = 0;
+  let characterScaleRuns = 0;
+  for (const paragraph of paragraphs) {
+    const paragraphStyle = resolveEffectiveParagraphStyle(
+      paragraph.style,
+      document.styles,
+    );
+    alignCounts.set(
+      paragraphStyle.align,
+      (alignCounts.get(paragraphStyle.align) ?? 0) + 1,
+    );
+    for (const run of paragraph.runs) {
+      const textStyle = resolveEffectiveTextStyleForParagraph(
+        run.styles,
+        paragraph.style?.styleId,
+        document.styles,
+      );
+      const fontFamily = textStyle.fontFamily ?? "<null>";
+      fontCounts.set(fontFamily, (fontCounts.get(fontFamily) ?? 0) + 1);
+      if (textStyle.characterSpacing !== null) {
+        characterSpacingRuns += 1;
+      }
+      if (textStyle.characterScale !== null) {
+        characterScaleRuns += 1;
+      }
+    }
+  }
+
+  return {
+    paragraphCount: paragraphs.length,
+    alignCounts: Array.from(alignCounts.entries()),
+    fontCounts: Array.from(fontCounts.entries()),
+    characterSpacingRuns,
+    characterScaleRuns,
+    firstParagraphs: paragraphs.slice(0, 30).map((paragraph, index) => {
+      const paragraphStyle = resolveEffectiveParagraphStyle(
+        paragraph.style,
+        document.styles,
+      );
+      const firstRun = paragraph.runs[0];
+      const textStyle = resolveEffectiveTextStyleForParagraph(
+        firstRun?.styles,
+        paragraph.style?.styleId,
+        document.styles,
+      );
+      return {
+        index,
+        text: getParagraphText(paragraph).slice(0, 160),
+        runCount: paragraph.runs.length,
+        rawParagraphStyle: paragraph.style,
+        align: paragraphStyle.align,
+        indentFirstLine: paragraphStyle.indentFirstLine,
+        lineGridPitch: paragraphStyle.lineGridPitch,
+        lineGridType: paragraphStyle.lineGridType,
+        fontFamily: textStyle.fontFamily,
+        fontSize: textStyle.fontSize,
+        characterSpacing: textStyle.characterSpacing,
+        characterScale: textStyle.characterScale,
+        firstRunStyle: firstRun?.styles,
+      };
+    }),
+  };
+}
 
 export interface DocumentImporterDeps {
   applyState: (state: EditorState) => void;
@@ -68,6 +142,10 @@ export function createDocumentImporter(deps: DocumentImporterDeps) {
           }
         },
       });
+      deps.logger.info(
+        "import docx:document-diagnostics",
+        buildImportedDocumentDiagnostics(document),
+      );
 
       deps.setImportPhase("applying-editor-state");
       deps.resetEditorChromeState();

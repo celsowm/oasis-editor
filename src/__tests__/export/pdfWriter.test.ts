@@ -1228,11 +1228,11 @@ describe("OasisPdfWriter", () => {
     expect(pdf).toContain("/Encoding /Identity-H");
     expect(pdf).toContain("/ToUnicode");
     expect(pdf).toContain("/FontFile2");
-    expect(pdf).toContain("<0050> <00E1>");
+    expect(pdf).toContain("<00E1>");
     expect(pdf).not.toContain(`<${pdfHex("Página Capítulo ação não")}> Tj`);
   });
 
-  it("applies fontkit kerning advances with TJ adjustments for embedded Unicode text", async () => {
+  it("uses simple glyph advances for embedded Unicode text without shaping", async () => {
     const registry = new PdfFontRegistry();
     await registry.loadBundledUnicodeFaces();
     const writer = new OasisPdfWriter(registry.getPdfFontResources());
@@ -1252,10 +1252,11 @@ describe("OasisPdfWriter", () => {
     expectPdfText(pdf, "AV");
     expect(pdf).toContain("/Subtype /Type0");
     expect(pdf).toContain("/Encoding /Identity-H");
-    expect(pdf).toMatch(/\[[^\]]*<0001>[^\]]+<0002>[^\]]*\] TJ/);
+    expect(pdf).toContain(" Tj");
+    expect(pdf).not.toContain(" TJ");
   });
 
-  it("maps shaped ligature clusters back through ToUnicode", async () => {
+  it("maps simple glyphs back through ToUnicode", async () => {
     const registry = new PdfFontRegistry();
     await registry.loadBundledUnicodeFaces();
     const writer = new OasisPdfWriter(registry.getPdfFontResources());
@@ -1275,7 +1276,8 @@ describe("OasisPdfWriter", () => {
     expectPdfText(pdf, "office");
     expect(pdf).toContain("/ToUnicode");
     expect(pdf).toContain("<006F>");
-    expect(pdf).toContain("<006600660069>");
+    expect(pdf).toContain("<0066>");
+    expect(pdf).toContain("<0069>");
   });
 
   it("positions header, body, and footer from real section margins instead of fixed PDF offsets", async () => {
