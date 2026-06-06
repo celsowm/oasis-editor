@@ -44,7 +44,7 @@ function resolveTableWidth(
   contentWidth: number,
 ): number {
   const raw = table.style?.width;
-  if (typeof raw === "number") return Math.max(24, raw);
+  if (typeof raw === "number") return Math.max(24, toPx(raw));
   if (typeof raw === "string" && raw.trim().endsWith("%")) {
     const value = Number.parseFloat(raw.trim().slice(0, -1));
     if (Number.isFinite(value))

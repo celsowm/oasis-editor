@@ -70,7 +70,7 @@ describe("buildCanvasTableLayout", () => {
 
     expect(layout.left).toBeCloseTo(132, 6);
     expect(layout.cells[0]!.left).toBeCloseTo(132, 6);
-    expect(layout.cells[1]!.left).toBeCloseTo(212, 6);
+    expect(layout.cells[1]!.left).toBeCloseTo(238.67, 1);
   });
 
   it("positions cell paragraphs using vertical alignment within explicit row height", () => {
