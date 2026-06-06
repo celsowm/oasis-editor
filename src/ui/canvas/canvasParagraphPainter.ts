@@ -430,6 +430,14 @@ function drawTextFragment(
       continue;
     }
 
+    if (char.char === " ") {
+      flushSegment();
+      segmentLeft = slot.left;
+      segmentText = renderedChar;
+      flushSegment();
+      continue;
+    }
+
     if (segmentLeft === null) {
       segmentLeft = slot.left;
     }
