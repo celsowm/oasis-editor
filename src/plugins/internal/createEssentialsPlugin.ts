@@ -58,6 +58,7 @@ export interface EssentialsFormattingCapability {
   setFontSize: (value: number | null) => boolean;
   setColor: (value: string | null) => boolean;
   setHighlight: (value: string | null) => boolean;
+  setTextShading: (value: string | null) => boolean;
   setStyleId: (value: string) => boolean;
   setUnderlineStyle: (value: string | null) => void;
 }

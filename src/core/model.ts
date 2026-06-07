@@ -53,6 +53,7 @@ export interface EditorTextStyle {
   fontSize?: number | null;
   color?: string | null;
   highlight?: string | null;
+  shading?: string | null; // run background fill (w:shd), hex e.g. #f0f0f0
   link?: string | null;
 }
 
@@ -461,6 +462,7 @@ const DEFAULT_TEXT_STYLE: Required<EditorTextStyle> = {
   fontSize: 14.6667, // 11pt
   color: "#000000",
   highlight: null as unknown as string | null,
+  shading: null as unknown as string | null,
   link: null as unknown as string | null,
 };
 

@@ -60,6 +60,37 @@ export function drawFragmentHighlight(
   });
 }
 
+// Run shading (w:shd): a solid background fill behind the run's text, drawn
+// underneath the (semi-transparent) highlighter handled above.
+export function drawFragmentShading(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+  originX: number,
+  originY: number,
+  styles: Required<EditorTextStyle>,
+): void {
+  if (!styles.shading) {
+    return;
+  }
+  const bounds = resolveFragmentBounds(
+    line,
+    fragment,
+    styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
+  );
+  if (!bounds) {
+    return;
+  }
+  writer.drawRect(pageIndex, {
+    x: pxToPt(originX + bounds.left),
+    y: pxToPt(originY + line.top + 2),
+    width: pxToPt(Math.max(0, bounds.right - bounds.left)),
+    height: pxToPt(Math.max(2, line.height - 4)),
+    fill: styles.shading,
+  });
+}
+
 export function drawFragmentDecoration(
   writer: OasisPdfWriter,
   pageIndex: number,
@@ -370,6 +401,15 @@ export async function drawFragmentText(
     return;
   }
 
+  drawFragmentShading(
+    writer,
+    pageIndex,
+    line,
+    fragment,
+    originX,
+    originY,
+    styles,
+  );
   drawFragmentHighlight(
     writer,
     pageIndex,

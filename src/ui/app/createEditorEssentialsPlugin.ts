@@ -237,6 +237,10 @@ export function createEditorEssentialsRuntimePlugin(
       options.styleController.applyToolbarValueStyleCommand("highlight", value),
       true
     ),
+    setTextShading: (value: string | null) => (
+      options.styleController.applyToolbarValueStyleCommand("shading", value),
+      true
+    ),
     setStyleId: (value: string) => (
       options.commandsController.handleStyleChange(value),
       true

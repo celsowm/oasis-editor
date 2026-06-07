@@ -251,6 +251,16 @@ export function drawParagraph(
         sample: fragment.text.slice(0, 80),
       });
       ctx.fillStyle = styles.color ?? "#000000";
+      if (styles.shading) {
+        drawFragmentShading(
+          ctx,
+          line,
+          fragment,
+          originX,
+          originY,
+          styles.shading,
+        );
+      }
       if (styles.highlight) {
         drawFragmentHighlight(
           ctx,
@@ -342,21 +352,69 @@ function drawFragmentHighlight(
   originY: number,
   color: string,
 ) {
-  const slots = fragment.chars
-    .map((char) =>
-      line.slots.find((slot) => slot.offset === char.paragraphOffset),
-    )
-    .filter((slot): slot is NonNullable<typeof slot> => Boolean(slot));
-  if (slots.length === 0) return;
-  const left = slots[0]!.left;
-  const right = slots[slots.length - 1]!.left + 8;
+  const bounds = resolveFragmentPaintBounds(line, fragment);
+  if (!bounds) return;
   ctx.save();
   ctx.globalAlpha = 0.35;
   ctx.fillStyle = color;
   ctx.fillRect(
-    originX + left,
+    originX + bounds.left,
     originY + line.top + 2,
-    Math.max(0, right - left),
+    Math.max(0, bounds.right - bounds.left),
+    Math.max(2, line.height - 4),
+  );
+  ctx.restore();
+}
+
+export function resolveFragmentPaintBounds(
+  line: EditorLayoutLine,
+  fragment: EditorLayoutLine["fragments"][number],
+): { left: number; right: number } | null {
+  const slotByOffset = new Map(
+    line.slots.map((slot) => [slot.offset, slot] as const),
+  );
+  const slots = fragment.chars
+    .filter((char) => char.char !== "\n")
+    .map((char) => slotByOffset.get(char.paragraphOffset))
+    .filter((slot): slot is NonNullable<typeof slot> => Boolean(slot));
+  if (slots.length === 0) return null;
+
+  const first = slots[0]!;
+  const last = slots[slots.length - 1]!;
+  const nextSlot = slotByOffset.get(last.offset + 1);
+  if (nextSlot) {
+    return { left: first.left, right: nextSlot.left };
+  }
+
+  const lastSlotIndex = line.slots.findIndex(
+    (slot) => slot.offset === last.offset,
+  );
+  const followingSlot =
+    lastSlotIndex >= 0 ? line.slots[lastSlotIndex + 1] : undefined;
+  return {
+    left: first.left,
+    right: followingSlot?.left ?? last.left + Math.max(8, line.height * 0.45),
+  };
+}
+
+// Run shading (w:shd) is a solid background fill behind the text, unlike the
+// semi-transparent highlighter pen handled by drawFragmentHighlight.
+function drawFragmentShading(
+  ctx: CanvasRenderingContext2D,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutLine["fragments"][number],
+  originX: number,
+  originY: number,
+  color: string,
+) {
+  const bounds = resolveFragmentPaintBounds(line, fragment);
+  if (!bounds) return;
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.fillRect(
+    originX + bounds.left,
+    originY + line.top + 2,
+    Math.max(0, bounds.right - bounds.left),
     Math.max(2, line.height - 4),
   );
   ctx.restore();
@@ -478,22 +536,16 @@ function drawTextDecoration(
   underlineStyle?: UnderlineStyle,
   underlineColor?: string,
 ) {
-  const slots = fragment.chars
-    .map((char) =>
-      line.slots.find((slot) => slot.offset === char.paragraphOffset),
-    )
-    .filter((slot): slot is NonNullable<typeof slot> => Boolean(slot));
-  if (slots.length === 0) return;
-  const left = slots[0]!.left;
-  const right = slots[slots.length - 1]!.left + 8;
+  const bounds = resolveFragmentPaintBounds(line, fragment);
+  if (!bounds) return;
   const y =
     kind === "underline"
       ? originY + line.top + line.height - 2
       : kind === "doubleStrike"
         ? originY + line.top + line.height * 0.5
         : originY + line.top + line.height * 0.52;
-  const x1 = originX + left;
-  const x2 = originX + right;
+  const x1 = originX + bounds.left;
+  const x2 = originX + bounds.right;
   ctx.save();
   ctx.strokeStyle = underlineColor || (ctx.fillStyle as string);
 

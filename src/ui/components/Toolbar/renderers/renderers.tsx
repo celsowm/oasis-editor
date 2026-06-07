@@ -162,7 +162,11 @@ function RenderColorPicker(props: RendererProps<ColorPickerItem>): JSX.Element {
       kind={props.item.kind}
       icon={
         props.item.iconName ??
-        (props.item.kind === "highlight" ? "highlighter" : "type")
+        (props.item.kind === "color"
+          ? "type"
+          : props.item.kind === "shading"
+            ? "paint-bucket"
+            : "highlighter")
       }
       value={(b.value() as string | null | undefined) ?? null}
       defaultValue={props.item.defaultValue}
@@ -171,7 +175,11 @@ function RenderColorPicker(props: RendererProps<ColorPickerItem>): JSX.Element {
       testId={props.item.testId ?? props.item.id}
       palette={props.item.palette ?? DEFAULT_PALETTE}
       automaticLabel={props.api.t("toolbar.colorAutomatic")}
-      noColorLabel={props.api.t("toolbar.noHighlight")}
+      noColorLabel={props.api.t(
+        props.item.kind === "shading"
+          ? "toolbar.noTextShading"
+          : "toolbar.noHighlight",
+      )}
       themeColorsLabel={props.api.t("toolbar.themeColors")}
       standardColorsLabel={props.api.t("toolbar.standardColors")}
       moreColorsLabel={props.api.t("toolbar.moreColors")}

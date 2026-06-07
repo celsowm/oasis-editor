@@ -178,6 +178,11 @@ export function buildCoreFormattingCommands({
       (p) => formatting.setHighlight((p as string) ?? null),
       () => s().highlight || null,
     ),
+    setTextShading: valueCommand(
+      "setTextShading",
+      (p) => formatting.setTextShading((p as string) ?? null),
+      () => s().textShading || null,
+    ),
     setStyleId: valueCommand(
       "setStyleId",
       (p) => formatting.setStyleId(String(p)),

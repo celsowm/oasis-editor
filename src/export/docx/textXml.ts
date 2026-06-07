@@ -301,6 +301,11 @@ function serializeRunProperties(styles?: EditorTextStyle): string {
       `<w:highlight w:val="${escapeXml(normalizeHighlightForDocx(styles.highlight))}"/>`,
     );
   }
+  if (styles.shading) {
+    parts.push(
+      `<w:shd w:val="clear" w:color="auto" w:fill="${normalizeDocxColor(styles.shading, "FFFFFF")}"/>`,
+    );
+  }
 
   return parts.length > 0 ? `<w:rPr>${parts.join("")}</w:rPr>` : "";
 }
@@ -396,6 +401,7 @@ function materializeRunStyle(
     fontSize: effective.fontSize,
     color: effective.color,
     highlight: effective.highlight,
+    shading: effective.shading,
   };
 
   if (run.styles?.link) {

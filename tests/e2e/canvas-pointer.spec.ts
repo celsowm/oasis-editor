@@ -348,6 +348,29 @@ test("toolbar color split buttons separate direct apply from palette selection",
   await page.getByTestId("editor-toolbar-highlight-dropdown").click();
   await page.getByTestId("editor-toolbar-highlight-clear").click();
   await expect(page.locator(".oasis-editor-color-menu")).toHaveCount(0);
+
+  await selectFirstSeedWord(page);
+  await page.getByTestId("editor-toolbar-text-shading-dropdown").click();
+  await expect(page.locator(".oasis-editor-color-menu")).toBeVisible();
+  await expect(
+    page.getByTestId("editor-toolbar-text-shading-clear"),
+  ).toBeVisible();
+  await page
+    .getByTestId("editor-toolbar-text-shading-standard-swatch-ffc000")
+    .click();
+  await expect(page.locator(".oasis-editor-color-menu")).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page
+        .getByTestId("editor-toolbar-text-shading")
+        .locator(".oasis-editor-color-split-indicator")
+        .evaluate((element) => getComputedStyle(element).backgroundColor),
+    )
+    .toBe("rgb(255, 192, 0)");
+
+  await page.getByTestId("editor-toolbar-text-shading-dropdown").click();
+  await page.getByTestId("editor-toolbar-text-shading-clear").click();
+  await expect(page.locator(".oasis-editor-color-menu")).toHaveCount(0);
 });
 
 test("underline split button matches text color split button dimensions", async ({ page }) => {

@@ -31,6 +31,7 @@ export interface FontDialogInitialValues {
   color: string;
   colorMode: "automatic" | "custom";
   highlight: string;
+  shading: string;
   bold: boolean;
   italic: boolean;
   underline: boolean;
@@ -60,6 +61,7 @@ export interface FontDialogApplyValues {
   color: string | null;
   colorMode: "automatic" | "custom";
   highlight: string | null;
+  shading: string | null;
   bold: boolean;
   italic: boolean;
   underline: boolean;
@@ -97,6 +99,7 @@ export interface FontDialogProps {
 
 const DEFAULT_COLOR = "#111827";
 const DEFAULT_HIGHLIGHT = "#fef08a";
+const DEFAULT_SHADING = "#fef3c7";
 const WORD_FONT_SIZES = [
   8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72,
 ];
@@ -112,6 +115,7 @@ interface FontTabValues {
   colorMode: "automatic" | "custom";
   color: string;
   highlight: string;
+  shading: string;
   bold: boolean;
   italic: boolean;
   underline: boolean;
@@ -149,7 +153,8 @@ export function FontDialog(props: FontDialogProps) {
     fontSize: "",
     colorMode: "custom",
     color: DEFAULT_COLOR,
-    highlight: DEFAULT_HIGHLIGHT,
+    highlight: "",
+    shading: "",
     bold: false,
     italic: false,
     underline: false,
@@ -188,7 +193,8 @@ export function FontDialog(props: FontDialogProps) {
         fontSize: props.initial.fontSize ?? "",
         colorMode: props.initial.colorMode,
         color: props.initial.color || DEFAULT_COLOR,
-        highlight: props.initial.highlight || DEFAULT_HIGHLIGHT,
+        highlight: props.initial.highlight || "",
+        shading: props.initial.shading || "",
         bold: Boolean(props.initial.bold),
         italic: Boolean(props.initial.italic),
         underline: Boolean(props.initial.underline),
@@ -321,7 +327,7 @@ export function FontDialog(props: FontDialogProps) {
       "font-style": fontTab.italic ? "italic" : "normal",
       "text-decoration": textDecorations.join(" ") || "none",
       color: fontTab.colorMode === "automatic" ? "inherit" : fontTab.color,
-      "background-color": fontTab.highlight,
+      "background-color": fontTab.highlight || fontTab.shading || undefined,
       "vertical-align":
         baselineShift ??
         (fontTab.superscript
@@ -387,6 +393,7 @@ export function FontDialog(props: FontDialogProps) {
         colorMode: fontTab.colorMode,
         color: fontTab.colorMode === "automatic" ? null : fontTab.color || null,
         highlight: fontTab.highlight || null,
+        shading: fontTab.shading || null,
         bold: fontTab.bold,
         italic: fontTab.italic,
         underline,
@@ -628,6 +635,23 @@ export function FontDialog(props: FontDialogProps) {
                         }))
                       }
                       data-testid="editor-font-dialog-highlight"
+                    />
+                  </div>
+                  <div class="oasis-editor-dialog-input-group">
+                    <label class="oasis-editor-dialog-label">
+                      {t("dialog.font.shading")}
+                    </label>
+                    <input
+                      type="color"
+                      class="oasis-editor-dialog-color"
+                      value={fontTabValues().shading || DEFAULT_SHADING}
+                      onInput={(e) =>
+                        setFontTabValues((current) => ({
+                          ...current,
+                          shading: e.currentTarget.value,
+                        }))
+                      }
+                      data-testid="editor-font-dialog-shading"
                     />
                   </div>
                 </div>

@@ -41,6 +41,7 @@ function createInitialValues(
     color: styleState.color ?? "",
     colorMode: styleState.color ? "custom" : "automatic",
     highlight: styleState.highlight ?? "",
+    shading: styleState.textShading ?? "",
     bold: Boolean(styleState.bold),
     italic: Boolean(styleState.italic),
     underline: Boolean(styleState.underline),
@@ -117,6 +118,9 @@ export function createFontDialogBridge(deps: FontDialogBridgeDeps) {
         }
         if ((values.highlight ?? "") !== (original.highlight ?? "")) {
           next = setTextStyleValue(next, "highlight", values.highlight);
+        }
+        if ((values.shading ?? "") !== (original.shading ?? "")) {
+          next = setTextStyleValue(next, "shading", values.shading);
         }
         if (values.bold !== Boolean(original.bold)) {
           next = toggleTextStyle(next, "bold");

@@ -242,6 +242,16 @@ export function createDefaultToolbarPreset(): ToolbarItem[] {
     tooltipKey: "toolbar.highlight",
     command: "setHighlight",
   });
+  items.push({
+    type: "colorPicker",
+    id: "editor-toolbar-text-shading",
+    testId: "editor-toolbar-text-shading",
+    kind: "shading",
+    iconName: "paint-bucket",
+    defaultValue: "#fef3c7",
+    tooltipKey: "toolbar.textShading",
+    command: "setTextShading",
+  });
   items.push({ type: "separator", id: "sep-style" });
 
   // --- Format ---

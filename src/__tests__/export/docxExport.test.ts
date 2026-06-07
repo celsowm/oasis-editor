@@ -132,6 +132,20 @@ describe("DOCX export", () => {
     );
   });
 
+  it("serializes run shading", async () => {
+    const paragraph = createEditorParagraph("Shaded run");
+    paragraph.runs[0]!.styles = { shading: "#FEF3C7" };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+
+    expect(xml).toContain("<w:rPr>");
+    expect(xml).toContain(
+      '<w:shd w:val="clear" w:color="auto" w:fill="FEF3C7"/>',
+    );
+  });
+
   it("serializes contextual paragraph spacing", async () => {
     const paragraph = createEditorParagraph("Contextual spacing");
     paragraph.style = { contextualSpacing: true };

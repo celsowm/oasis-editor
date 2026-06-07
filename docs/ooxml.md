@@ -212,7 +212,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Run properties | `w:strike` / `w:dstrike` | `w:rPr` | `w:val` | Single/double strikethrough. | Visible formatting. Explicit `w:val="0"` is honored so a run can switch the toggle off against an inherited style. | P1 | Supported |
 | Run properties | `w:vertAlign` | `w:rPr` | `w:val` | Superscript/subscript/baseline. | Affects baseline and line height. | P1 | Supported |
 | Run properties | `w:highlight` | `w:rPr` | `w:val` | Highlight color. | Limited named colors; distinct from `shd`. | P1 | Supported |
-| Run properties | `w:shd` | `w:rPr` | `w:val`, `w:color`, `w:fill`, theme attrs | Run shading. | Background shading behind text. | P1 | Not supported |
+| Run properties | `w:shd` | `w:rPr` | `w:val`, `w:color`, `w:fill`, theme attrs | Run shading. | Literal `w:fill` is imported as solid run background, rendered in canvas/PDF, and exported as `w:shd`; theme fills are not resolved yet. | P1 | Partial |
 | Run properties | `w:caps` / `w:smallCaps` | `w:rPr` | `w:val` | All caps / small caps. | Text transform affects measurement. Explicit `w:val="0"` is honored. | P1 | Supported |
 | Run properties | `w:vanish` | `w:rPr` | `w:val` | Hidden text. | Obey `settings/displayHiddenText` or importer mode. Explicit `w:val="0"` is honored. | P1 | Supported |
 | Run properties | `w:webHidden` | `w:rPr` | `w:val` | Hidden in web view. | Usually preserve; may not affect print layout. | P3 | Not supported |

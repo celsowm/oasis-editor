@@ -2,7 +2,7 @@ import { For, Show, createSignal, type JSX } from "solid-js";
 import { SplitButton } from "./SplitButton.js";
 import type { ColorPalette } from "../schema/palette.js";
 
-export type ColorPickerKind = "color" | "highlight";
+export type ColorPickerKind = "color" | "highlight" | "shading";
 
 export interface ColorPickerProps {
   kind: ColorPickerKind;
@@ -35,7 +35,7 @@ export function ColorPicker(props: ColorPickerProps): JSX.Element {
   const directApplyColor = () =>
     props.lastValue || props.value || props.defaultValue;
   const clearLabel = () =>
-    props.kind === "highlight" ? props.noColorLabel : props.automaticLabel;
+    props.kind === "color" ? props.automaticLabel : props.noColorLabel;
 
   const close = () => {
     setIsOpen(false);

@@ -111,7 +111,7 @@ export interface SelectItem extends ToolbarItemBase {
 
 export interface ColorPickerItem extends ToolbarItemBase {
   type: "colorPicker";
-  kind: "color" | "highlight";
+  kind: "color" | "highlight" | "shading";
   /** Command dispatched with the chosen color (or null) as payload. */
   command: CommandRef;
   palette?: ColorPalette;

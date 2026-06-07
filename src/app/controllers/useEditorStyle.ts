@@ -13,6 +13,7 @@ type ValueStyleKey =
   | "fontSize"
   | "color"
   | "highlight"
+  | "shading"
   | "link"
   | "underlineStyle";
 
@@ -100,6 +101,7 @@ export function createEditorStyleController(deps: UseEditorStyleProps) {
           : resolved.fontSize,
       color: pending.color ?? resolved.color,
       highlight: pending.highlight ?? resolved.highlight,
+      textShading: pending.shading ?? resolved.textShading,
       link: pending.link ?? resolved.link,
     };
   };

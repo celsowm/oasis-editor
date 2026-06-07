@@ -15,6 +15,7 @@ import {
   twipsToPoints,
   halfPointsToPx,
   normalizeImportedFontFamily,
+  normalizeImportedHexColor,
 } from "./units.js";
 import { resolveThemeFont } from "./themeFonts.js";
 import { resolveThemeColor } from "./themeColors.js";
@@ -168,6 +169,10 @@ export function normalizeImportedRunStyle(
     highlight:
       effective.highlight !== defaultEffective.highlight
         ? effective.highlight
+        : undefined,
+    shading:
+      effective.shading !== defaultEffective.shading
+        ? effective.shading
         : undefined,
     link: effective.link !== defaultEffective.link ? effective.link : undefined,
   });
@@ -402,6 +407,14 @@ export function parseRunStyle(
   const highlightValue = getAttributeValue(highlight, "val");
   if (highlightValue && highlightValue !== "none") {
     styles.highlight = highlightValue;
+  }
+
+  // Run shading (w:shd): solid background fill behind the run's text. Only the
+  // literal `w:fill` hex is resolved here; theme fills are a follow-up.
+  const shd = getFirstChildByTagNameNS(runProperties, WORD_NS, "shd");
+  const shdFill = normalizeImportedHexColor(getAttributeValue(shd, "fill"));
+  if (shdFill) {
+    styles.shading = shdFill;
   }
 
   return Object.keys(styles).length > 0 ? styles : undefined;

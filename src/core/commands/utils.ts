@@ -55,6 +55,7 @@ export type ValueTextStyleKey =
   | "fontSize"
   | "color"
   | "highlight"
+  | "shading"
   | "link"
   | "underlineStyle"
   | "underlineColor"
@@ -776,6 +777,8 @@ export function textRunStylesToCss(style?: EditorTextStyle): string {
   }
   if (style.highlight) {
     parts.push(`background-color:${style.highlight}`);
+  } else if (style.shading) {
+    parts.push(`background-color:${style.shading}`);
   }
   if (style.superscript) {
     parts.push("vertical-align:super");

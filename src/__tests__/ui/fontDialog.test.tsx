@@ -23,6 +23,7 @@ function mountDialog(
     color: "#111827",
     colorMode: "custom",
     highlight: "#fef08a",
+    shading: "",
     bold: false,
     italic: false,
     underline: false,
@@ -155,6 +156,64 @@ describe("FontDialog", () => {
     expect(values.underline).toBe(false);
     expect(values.underlineStyle).toBeNull();
     expect(values.color).toBeNull();
+    expect(original).toEqual(initial);
+    dispose();
+  });
+
+  it("applies text shading from the font tab", () => {
+    setLocale("en");
+    const onApply = vi.fn();
+    const customInitial: FontDialogInitialValues = {
+      fontFamily: "Arial",
+      fontSize: "12",
+      color: "#111827",
+      colorMode: "custom",
+      highlight: "",
+      shading: "#fef3c7",
+      bold: false,
+      italic: false,
+      underline: false,
+      underlineStyle: null,
+      underlineColor: "#111827",
+      strike: false,
+      doubleStrike: false,
+      superscript: false,
+      subscript: false,
+      smallCaps: false,
+      allCaps: false,
+      hidden: false,
+      characterScale: "",
+      characterSpacing: "",
+      baselineShift: "",
+      kerningThreshold: "",
+      ligatures: "",
+      numberSpacing: "",
+      numberForm: "",
+      stylisticSet: "",
+      contextualAlternates: false,
+    };
+    const { host, initial, dispose } = mountDialog({
+      onApply,
+      initial: customInitial,
+    });
+
+    const shading = host.querySelector(
+      "[data-testid='editor-font-dialog-shading']",
+    ) as HTMLInputElement;
+    expect(shading.value).toBe("#fef3c7");
+    shading.value = "#dbeafe";
+    shading.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const applyButton = host.querySelector(
+      "[data-testid='editor-font-dialog-apply']",
+    ) as HTMLButtonElement;
+    applyButton.click();
+
+    const [values, original] = onApply.mock.calls[0] as [
+      FontDialogApplyValues,
+      FontDialogInitialValues,
+    ];
+    expect(values.shading).toBe("#dbeafe");
     expect(original).toEqual(initial);
     dispose();
   });

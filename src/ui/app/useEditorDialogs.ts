@@ -33,6 +33,7 @@ export function createEditorDialogs() {
       color: "",
       colorMode: "automatic",
       highlight: "",
+      shading: "",
       bold: false,
       italic: false,
       underline: false,

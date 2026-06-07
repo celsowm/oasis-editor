@@ -226,6 +226,7 @@ export function createEditorCommandsController(
       | "fontSize"
       | "color"
       | "highlight"
+      | "shading"
       | "link"
       | "underlineStyle",
   >(
