@@ -50,6 +50,7 @@ export type ToggleableTextStyleKey =
   | "hidden"
   | "noProof"
   | "webHidden"
+  | "specVanish"
   | "contextualAlternates";
 
 export type ValueTextStyleKey =
@@ -59,6 +60,7 @@ export type ValueTextStyleKey =
   | "highlight"
   | "shading"
   | "language"
+  | "textEffect"
   | "link"
   | "underlineStyle"
   | "underlineColor"

@@ -232,7 +232,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Run properties | `w:snapToGrid` | `w:rPr` | `w:val` | Snap run to document grid. | May affect line height in CJK layouts. | P3 | Not supported |
 | Run properties | `w:noProof` | `w:rPr` | `w:val` | Do not check spelling/grammar. | Imported into run style metadata, available through toggle-style commands, and exported back as `w:noProof` when enabled. | P3 | Supported |
 | Run properties | `w:oMath` | `w:rPr` | `w:val` | Run contains Office Math. | Use with MathML/OMML parsing. | P2 | Not supported |
-| Run properties | `w:specVanish` | `w:rPr` | `w:val` | Special hidden placeholder behavior. | Mainly for field/numbering internals. | P4 | Not supported |
+| Run properties | `w:specVanish` | `w:rPr` | `w:val` | Special hidden placeholder behavior. | Imported into run style metadata, available through toggle-style commands, and exported back as `w:specVanish` when enabled; it is preserved for field/numbering internals without changing normal canvas rendering. | P4 | Supported |
 | Run properties | `w:stylePaneFormatFilter` / `w:stylePaneSortMethod` | settings/style UI | `w:val` | Style pane UI settings. | Not layout-relevant. | P4 | Not supported |
 | Run properties | `w:rPrChange` | `w:rPr` | `w:id`, `w:author`, `w:date` | Tracked run property change. | Revision-aware rendering or preserve. | P3 | Not supported |
 

@@ -183,6 +183,17 @@ describe("DOCX export", () => {
     expect(xml).toContain("<w:webHidden/>");
   });
 
+  it("serializes specVanish run metadata", async () => {
+    const paragraph = createEditorParagraph("Special placeholder");
+    paragraph.runs[0]!.styles = { specVanish: true };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+
+    expect(xml).toContain("<w:specVanish/>");
+  });
+
   it("serializes contextual paragraph spacing", async () => {
     const paragraph = createEditorParagraph("Contextual spacing");
     paragraph.style = { contextualSpacing: true };

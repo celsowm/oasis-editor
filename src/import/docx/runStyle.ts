@@ -128,6 +128,12 @@ export function normalizeImportedRunStyle(
         : effective.webHidden !== defaultEffective.webHidden
           ? effective.webHidden
           : undefined,
+    specVanish:
+      style.specVanish !== undefined
+        ? style.specVanish
+        : effective.specVanish !== defaultEffective.specVanish
+          ? effective.specVanish
+          : undefined,
     characterScale:
       effective.characterScale !== defaultEffective.characterScale
         ? effective.characterScale
@@ -261,6 +267,10 @@ export function parseRunStyle(
   const webHidden = parseOnOffProperty(runProperties, "webHidden");
   if (webHidden !== undefined) {
     styles.webHidden = webHidden;
+  }
+  const specVanish = parseOnOffProperty(runProperties, "specVanish");
+  if (specVanish !== undefined) {
+    styles.specVanish = specVanish;
   }
   const characterScale = getAttributeValue(
     getFirstChildByTagNameNS(runProperties, WORD_NS, "w"),

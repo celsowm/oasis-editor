@@ -226,6 +226,7 @@ function serializeRunProperties(styles?: EditorTextStyle): string {
   if (styles.hidden) parts.push("<w:vanish/>");
   if (styles.noProof) parts.push("<w:noProof/>");
   if (styles.webHidden) parts.push("<w:webHidden/>");
+  if (styles.specVanish) parts.push("<w:specVanish/>");
   if (
     styles.characterScale !== undefined &&
     styles.characterScale !== null &&
@@ -407,6 +408,7 @@ function materializeRunStyle(
     hidden: effective.hidden,
     noProof: effective.noProof,
     webHidden: effective.webHidden,
+    specVanish: effective.specVanish,
     characterScale: effective.characterScale,
     characterSpacing: effective.characterSpacing,
     baselineShift: effective.baselineShift,

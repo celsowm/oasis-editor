@@ -48,6 +48,8 @@ export interface EditorTextStyle {
   hidden?: boolean;
   noProof?: boolean;
   webHidden?: boolean;
+  specVanish?: boolean;
+  textEffect?: string | null;
   characterScale?: number | null;
   characterSpacing?: number | null;
   baselineShift?: number | null;
@@ -460,6 +462,8 @@ const DEFAULT_TEXT_STYLE: Required<EditorTextStyle> = {
   hidden: false,
   noProof: false,
   webHidden: false,
+  specVanish: false,
+  textEffect: null as unknown as string | null,
   characterScale: null as unknown as number | null,
   characterSpacing: null as unknown as number | null,
   baselineShift: null as unknown as number | null,
