@@ -215,7 +215,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Run properties | `w:shd` | `w:rPr` | `w:val`, `w:color`, `w:fill`, theme attrs | Run shading. | Literal `w:fill` is imported as solid run background, rendered in canvas/PDF, and exported as `w:shd`; theme fills are not resolved yet. | P1 | Partial |
 | Run properties | `w:caps` / `w:smallCaps` | `w:rPr` | `w:val` | All caps / small caps. | Text transform affects measurement. Explicit `w:val="0"` is honored. | P1 | Supported |
 | Run properties | `w:vanish` | `w:rPr` | `w:val` | Hidden text. | Obey `settings/displayHiddenText` or importer mode. Explicit `w:val="0"` is honored. | P1 | Supported |
-| Run properties | `w:webHidden` | `w:rPr` | `w:val` | Hidden in web view. | Usually preserve; may not affect print layout. | P3 | Not supported |
+| Run properties | `w:webHidden` | `w:rPr` | `w:val` | Hidden in web view. | Imported into run style metadata, available through toggle-style commands, and exported back as `w:webHidden` when enabled; it does not alter the normal print/canvas view. | P3 | Supported |
 | Run properties | `w:rtl` | `w:rPr` | `w:val` | Right-to-left run. | Bidi text shaping and ordering. | P1 | Not supported |
 | Run properties | `w:cs` | `w:rPr` | `w:val` | Complex-script formatting flag. | Affects font selection and shaping. | P2 | Not supported |
 | Run properties | `w:lang` | `w:rPr` | `w:val`, `w:eastAsia`, `w:bidi` | Language tags. | Imported into run style language metadata, available to style commands, preserved in HTML serialization, and exported back with concrete `val`, `eastAsia`, and `bidi` attributes when present. | P1 | Supported |

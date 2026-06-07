@@ -225,6 +225,7 @@ function serializeRunProperties(styles?: EditorTextStyle): string {
   if (styles.allCaps) parts.push("<w:caps/>");
   if (styles.hidden) parts.push("<w:vanish/>");
   if (styles.noProof) parts.push("<w:noProof/>");
+  if (styles.webHidden) parts.push("<w:webHidden/>");
   if (
     styles.characterScale !== undefined &&
     styles.characterScale !== null &&
@@ -405,6 +406,7 @@ function materializeRunStyle(
     allCaps: effective.allCaps,
     hidden: effective.hidden,
     noProof: effective.noProof,
+    webHidden: effective.webHidden,
     characterScale: effective.characterScale,
     characterSpacing: effective.characterSpacing,
     baselineShift: effective.baselineShift,

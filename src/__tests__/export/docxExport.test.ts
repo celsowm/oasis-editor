@@ -172,6 +172,17 @@ describe("DOCX export", () => {
     expect(xml).toContain("<w:noProof/>");
   });
 
+  it("serializes webHidden run metadata", async () => {
+    const paragraph = createEditorParagraph("Hidden in web view");
+    paragraph.runs[0]!.styles = { webHidden: true };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+
+    expect(xml).toContain("<w:webHidden/>");
+  });
+
   it("serializes contextual paragraph spacing", async () => {
     const paragraph = createEditorParagraph("Contextual spacing");
     paragraph.style = { contextualSpacing: true };

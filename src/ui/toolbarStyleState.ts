@@ -27,6 +27,7 @@ export type BooleanStyleKey =
   | "allCaps"
   | "hidden"
   | "noProof"
+  | "webHidden"
   | "contextualAlternates";
 
 export type ValueStyleKey =
@@ -80,6 +81,7 @@ export interface ToolbarStyleState {
   allCaps: boolean;
   hidden: boolean;
   noProof: boolean;
+  webHidden: boolean;
   characterScale: string;
   characterSpacing: string;
   baselineShift: string;
@@ -393,6 +395,7 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     allCaps: areAllBooleanStylesEnabled(styles, "allCaps"),
     hidden: areAllBooleanStylesEnabled(styles, "hidden"),
     noProof: areAllBooleanStylesEnabled(styles, "noProof"),
+    webHidden: areAllBooleanStylesEnabled(styles, "webHidden"),
     characterScale: resolveUniformStyleValue(styles, "characterScale"),
     characterSpacing: resolveUniformStyleValue(styles, "characterSpacing"),
     baselineShift: resolveUniformStyleValue(styles, "baselineShift"),
