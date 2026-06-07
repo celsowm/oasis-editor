@@ -12,6 +12,10 @@ import {
   normalizeFamily,
   resolveMetricCompatibleFamily,
 } from "../../export/pdf/fonts/officeFontAssets.js";
+import {
+  isLocalFontFamilyAvailable,
+  isPreciseFontModeEnabled,
+} from "../../text/fonts/preciseFontMode.js";
 import { createEditorLogger } from "../../utils/logger.js";
 import { getCachedCanvasImage } from "./canvasImageCache.js";
 import { resolveListPrefix } from "./listNumbering.js";
@@ -42,10 +46,22 @@ function resolveCanvasFontFamily(
   // Render it FIRST so glyph advances on screen match the measured slot
   // positions exactly; the requested system family is only a fallback for when
   // the bundled face has not registered yet.
+  //
+  // Precise font mode flips that order when the requested family is actually
+  // installed locally — but only for genuine metric-compatible pairs (metric is
+  // Carlito/Arimo/Tinos, not the Roboto catch-all). The real font shares the
+  // substitute's metrics, so advances still match the measured slots; unmapped
+  // families keep the substitute-first order to avoid layout drift.
+  const preciseFirst =
+    isPreciseFontModeEnabled() &&
+    metric.toLowerCase() !== "roboto" &&
+    isLocalFontFamilyAvailable(requested);
   const families =
     requested.toLowerCase() === metric.toLowerCase()
       ? [metric]
-      : [metric, requested];
+      : preciseFirst
+        ? [requested, metric]
+        : [metric, requested];
   const generic = /serif/i.test(fontFamily ?? "") ? "serif" : "sans-serif";
   return [...families.map(quoteFontFamily), generic].join(", ");
 }

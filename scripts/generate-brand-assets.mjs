@@ -23,7 +23,7 @@ mkdirSync(publicBrandingDir, { recursive: true });
 
 const wipeDirectory = (directory) => {
   if (!existsSync(directory)) return;
-  for (const entry of ["apple-touch-icon.png", "favicon-16x16.png", "favicon-32x32.png", "favicon.ico", "github-pages-icon.png", "icon-192.png", "icon-512.png", "logo-full.png", "logo-mark-square.png", "social-card.png"]) {
+  for (const entry of ["apple-touch-icon.png", "favicon-16x16.png", "favicon-32x32.png", "favicon.ico", "github-pages-icon.png", "icon-192.png", "icon-512.png", "logo-full.png", "logo-mark-square.png", "social-card.png", "brand-mark.webp"]) {
     rmSync(resolve(directory, entry), { force: true });
   }
 };
@@ -54,6 +54,10 @@ runMagick([output("logo-mark-square.png"), "-filter", "Lanczos", "-resize", "180
 runMagick([output("logo-mark-square.png"), "-filter", "Lanczos", "-resize", "192x192", output("icon-192.png")]);
 runMagick([output("logo-mark-square.png"), "-filter", "Lanczos", "-resize", "512x512", output("icon-512.png")]);
 cpSync(output("logo-mark-square.png"), output("github-pages-icon.png"));
+// Compact WebP mark embedded (as base64) in the editor bundle for the loading,
+// import, and welcome surfaces. Rendered from the vector source at 256px tall;
+// tiny vs. PNG.
+runMagick([fullLogoSvg, "-background", "none", "-resize", "x256", "-quality", "90", output("brand-mark.webp")]);
 runMagick([
   fullLogoSvg,
   "-background",
@@ -142,6 +146,7 @@ for (const file of [
   "logo-full.png",
   "logo-mark-square.png",
   "social-card.png",
+  "brand-mark.webp",
 ]) {
   cpSync(resolve(generatedDir, file), resolve(publicBrandingDir, file));
 }

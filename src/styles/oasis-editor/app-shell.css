@@ -314,6 +314,18 @@
   background: var(--oasis-bg);
 }
 
+/* Centers the brand mark and title within the loading/import cards (the
+   progress label keeps its own right alignment). */
+.oasis-editor-loading .oasis-editor-import-card,
+.oasis-editor-import-overlay .oasis-editor-import-card {
+  text-align: center;
+}
+
+.oasis-editor-loading-mark {
+  display: block;
+  margin: 0 auto 12px;
+}
+
 /* In-editor overlay: covers the already-mounted, positioned editor shell. */
 .oasis-editor-loading--overlay {
   position: absolute;
@@ -328,6 +340,63 @@
   width: 100%;
   height: 100%;
   min-height: 240px;
+}
+
+/* First-use welcome: an overlay that covers the mounted editor shell (sits above
+   the loading overlay), with the Oasis brand mark and the precise-fonts offer. */
+.oasis-editor-welcome-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1001;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.32);
+  backdrop-filter: blur(2px);
+}
+
+.oasis-editor-welcome-card {
+  width: min(420px, 100%);
+  padding: 28px 28px 24px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.24);
+  text-align: center;
+  animation: oasis-pop 0.22s cubic-bezier(0.34, 1.36, 0.64, 1);
+}
+
+.oasis-editor-welcome-mark {
+  display: block;
+  margin: 0 auto 14px;
+  border-radius: 16px;
+}
+
+.oasis-editor-welcome-title {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--oasis-text);
+}
+
+.oasis-editor-welcome-body {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--oasis-text);
+}
+
+.oasis-editor-welcome-note {
+  margin: 0 0 20px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--oasis-text-muted);
+}
+
+.oasis-editor-welcome-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
 }
 
 @keyframes oasis-editor-blink {

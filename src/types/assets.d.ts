@@ -4,3 +4,8 @@ declare module "*.woff2?base64" {
   const base64: string;
   export default base64;
 }
+
+declare module "*.webp?base64" {
+  const base64: string;
+  export default base64;
+}

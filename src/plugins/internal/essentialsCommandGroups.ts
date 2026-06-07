@@ -9,6 +9,10 @@ import {
   formatFontSizePt,
   parseFontSizePtToPx,
 } from "../../ui/fontSizeUnits.js";
+import {
+  isPreciseFontModeEnabled,
+  preciseFontModeVersion,
+} from "../../text/fonts/preciseFontMode.js";
 import type {
   EssentialsBrowserCapability,
   EssentialsDocumentCapability,
@@ -130,6 +134,16 @@ export function buildCoreFormattingCommands({
     toggleShowParagraphMarks: command(
       "toggleShowParagraphMarks",
       formatting.toggleShowParagraphMarks,
+    ),
+    togglePreciseFonts: command(
+      "togglePreciseFonts",
+      formatting.togglePreciseFonts,
+      () => {
+        // Subscribe to the precise-mode version signal so the menu check state
+        // tracks toggles made from anywhere (menu, welcome dialog, startup).
+        preciseFontModeVersion();
+        return { isActive: isPreciseFontModeEnabled() };
+      },
     ),
     undo: command("undo", history.undo, () => ({
       isEnabled: gate.isCommandEnabled("undo") && history.canUndo(),

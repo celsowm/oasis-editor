@@ -1,5 +1,7 @@
 import { Show } from "solid-js";
 import type { JSX } from "solid-js";
+import { t } from "../i18n/index.js";
+import { OasisBrandMark } from "./components/OasisBrandMark.js";
 
 export interface OasisEditorLoadingProps {
   label?: string;
@@ -18,10 +20,11 @@ export interface OasisEditorLoadingProps {
 }
 
 /**
- * Oasis-owned loading state. Dependency-light (solid-js only) so it lives in
- * the main chunk and paints from the first JS tick. Reuses the docx-import card
- * styles for visual consistency. When `progress` is provided, renders a
- * deterministic fill bar; otherwise animates indeterminate.
+ * Oasis-owned loading state. Lightweight (solid-js plus the inline ~6 KB WebP
+ * brand mark) so it lives in the main chunk and paints from the first JS tick
+ * without pulling the editor/font graph. Reuses the docx-import card styles for
+ * visual consistency. When `progress` is provided, renders a deterministic fill
+ * bar; otherwise animates indeterminate.
  */
 export function OasisEditorLoading(props: OasisEditorLoadingProps) {
   const variant = () => props.variant ?? "overlay";
@@ -46,8 +49,9 @@ export function OasisEditorLoading(props: OasisEditorLoadingProps) {
       aria-busy={!isDone()}
     >
       <div class="oasis-editor-import-card">
+        <OasisBrandMark height={40} class="oasis-editor-loading-mark" />
         <div class="oasis-editor-import-title">
-          {props.label ?? "Loading oasis-editor..."}
+          {props.label ?? t("loading.title")}
         </div>
         <div class="oasis-editor-import-progress-track">
           <div
@@ -61,7 +65,9 @@ export function OasisEditorLoading(props: OasisEditorLoadingProps) {
             ]
               .filter(Boolean)
               .join(" ")}
-            style={pct() != null && !isDone() ? { width: `${pct()}%` } : undefined}
+            style={
+              pct() != null && !isDone() ? { width: `${pct()}%` } : undefined
+            }
           />
         </div>
         <Show when={pct() != null}>

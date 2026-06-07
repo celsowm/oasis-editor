@@ -5,6 +5,7 @@ import {
   computeFontFamilyOptions as collectFontFamilyOptions,
   computeFontSizeOptions as collectFontSizeOptions,
 } from "./fontOptions.js";
+import { probeLocalFontFamilies } from "./localFontAccess.js";
 
 export interface EditorFontOptionsContext {
   state: () => EditorState;
@@ -32,28 +33,14 @@ export function createEditorFontOptions(ctx: EditorFontOptionsContext) {
     collectFontSizeOptions(ctx.state().document, ctx.toolbarStyleState());
 
   const loadLocalFontFamilyOptions = async () => {
-    const maybeQueryLocalFonts = (
-      globalThis as {
-        queryLocalFonts?: () => Promise<
-          Array<{ family?: string; fullName?: string }>
-        >;
-      }
-    ).queryLocalFonts;
-    if (!maybeQueryLocalFonts || localFontFamilyOptions().length > 0) {
+    if (localFontFamilyOptions().length > 0) {
       return;
     }
-    try {
-      const fonts = await maybeQueryLocalFonts();
-      const families = Array.from(
-        new Set(
-          fonts
-            .map((font) => font.family?.trim() || font.fullName?.trim() || "")
-            .filter(Boolean),
-        ),
-      ).sort((a, b) => a.localeCompare(b));
+    // Shares the single cached `queryLocalFonts` probe with precise font mode;
+    // returns [] (and the fallback list stays) when unsupported or denied.
+    const families = await probeLocalFontFamilies();
+    if (families.length > 0) {
       setLocalFontFamilyOptions(families);
-    } catch {
-      // Local font access is permission-gated; the fallback list remains available.
     }
   };
 

@@ -298,6 +298,7 @@ export const en = {
   "menu.view": "View",
   "menu.view.margins": "Show Margins",
   "menu.view.paragraphMarks": "Show ¶",
+  "menu.view.preciseFonts": "Precise fonts",
   "menu.view.outline": "Show Outline",
   "menu.view.fullscreen": "Full Screen",
   "menu.insert": "Insert",
@@ -310,6 +311,14 @@ export const en = {
   "menu.help": "Help",
   "menu.help.shortcuts": "Keyboard shortcuts",
   "menu.help.about": "About",
+  "loading.title": "Loading oasis-editor...",
+  "welcome.title": "Welcome to oasis-editor",
+  "welcome.body":
+    "Enable precise font mode to render with the real fonts installed on your device (like Calibri or Times New Roman) instead of bundled look-alikes. Layout stays identical — only on-screen text gets sharper.",
+  "welcome.note":
+    "We only read your installed font list locally to match document fonts. Nothing is uploaded.",
+  "welcome.enable": "Enable precise fonts",
+  "welcome.skip": "Not now",
   "outline.toggle": "Toggle outline",
   "outline.empty": "Headings you add to the document will appear here.",
   "ruler.horizontal": "Horizontal ruler",

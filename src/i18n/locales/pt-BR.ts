@@ -300,6 +300,7 @@ export const ptBR = {
   "menu.view": "Ver",
   "menu.view.margins": "Mostrar Margens",
   "menu.view.paragraphMarks": "Mostrar ¶",
+  "menu.view.preciseFonts": "Fontes precisas",
   "menu.view.outline": "Mostrar Estrutura",
   "menu.view.fullscreen": "Tela Inteira",
   "menu.insert": "Inserir",
@@ -312,6 +313,14 @@ export const ptBR = {
   "menu.help": "Ajuda",
   "menu.help.shortcuts": "Atalhos de teclado",
   "menu.help.about": "Sobre",
+  "loading.title": "Carregando o oasis-editor...",
+  "welcome.title": "Bem-vindo ao oasis-editor",
+  "welcome.body":
+    "Ative o modo de fontes precisas para renderizar com as fontes reais instaladas no seu dispositivo (como Calibri ou Times New Roman) em vez das fontes equivalentes embutidas. O layout permanece idêntico — apenas o texto na tela fica mais nítido.",
+  "welcome.note":
+    "Lemos sua lista de fontes instaladas apenas localmente para combinar com as fontes do documento. Nada é enviado.",
+  "welcome.enable": "Ativar fontes precisas",
+  "welcome.skip": "Agora não",
   "outline.toggle": "Alternar estrutura",
   "outline.empty": "Os títulos adicionados ao documento aparecerão aqui.",
   "ruler.horizontal": "Régua horizontal",

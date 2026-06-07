@@ -50,6 +50,7 @@ export interface EssentialsFormattingCapability {
   rejectRevisions: () => boolean;
   toggleShowMargins: () => boolean;
   toggleShowParagraphMarks: () => boolean;
+  togglePreciseFonts: () => boolean;
   pageBreak: () => boolean;
   lineBreak: () => boolean;
   splitBlock: () => boolean;

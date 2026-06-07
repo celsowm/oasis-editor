@@ -34,6 +34,11 @@ import {
   syncCanvasDebugApiVisibility,
 } from "./canvas/CanvasDebug.js";
 import { createEditorFontOptions } from "./app/useEditorFontOptions.js";
+import {
+  applyStoredPreciseFontPreference,
+  isLocalFontAccessSupported,
+} from "./app/localFontAccess.js";
+import { getWelcomeSeen } from "../app/services/userPreferences.js";
 import { createEditorFocusController } from "./app/useEditorFocus.js";
 import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
@@ -52,6 +57,7 @@ import { EditorWorkspace } from "./app/EditorWorkspace.js";
 import { useEditorTransactions } from "./app/useEditorTransactions.js";
 import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
 import { OasisEditorLoading } from "./OasisEditorLoading.js";
+import { WelcomeOverlay } from "./components/WelcomeOverlay.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 export type {
@@ -116,6 +122,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     paragraphDialog,
     setParagraphDialog,
   } = createEditorDialogs();
+
+  // First-use precise-fonts welcome overlay (rendered inside the editor shell).
+  const [welcomeOpen, setWelcomeOpen] = createSignal(false);
 
   const viewportRef = () => focusController.viewportRef;
   const surfaceRef = () => focusController.surfaceRef;
@@ -587,6 +596,14 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     startLongTaskObserver();
     installGlobalReport();
     registerDomStatsSurface(() => surfaceRef() ?? null);
+
+    // Re-apply a previously granted precise-font preference silently (no prompt),
+    // otherwise offer it once via the welcome dialog when the browser supports
+    // the Local Font Access API.
+    void applyStoredPreciseFontPreference();
+    if (!getWelcomeSeen() && isLocalFontAccessSupported()) {
+      setWelcomeOpen(true);
+    }
   });
 
   onCleanup(() => {
@@ -691,6 +708,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           style={loadingOptions()?.style}
         />
       </Show>
+
+      <WelcomeOverlay
+        isOpen={welcomeOpen() && !initialLoading() && runtimeReady()}
+        onClose={() => setWelcomeOpen(false)}
+      />
     </div>
   );
 }

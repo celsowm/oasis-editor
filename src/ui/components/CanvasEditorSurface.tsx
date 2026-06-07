@@ -12,6 +12,7 @@ import type { EditorSurfaceProps } from "../editorUiTypes.js";
 import { type EditorLayoutPage, type EditorState } from "../../core/model.js";
 import { clearTextMeasureCache, domTextMeasurer } from "../textMeasurement.js";
 import { preloadLayoutFonts } from "../../text/fonts/FontMetricsProvider.js";
+import { preciseFontModeVersion } from "../../text/fonts/preciseFontMode.js";
 import { collectPdfFontFamilies } from "../../export/pdf/fonts/collectPdfFontFamilies.js";
 import { resolveMetricCompatibleFamily } from "../../export/pdf/fonts/officeFontAssets.js";
 import {
@@ -179,6 +180,9 @@ function CanvasPage(props: {
     props.page;
     props.state.document;
     props.paintGeneration;
+    // Repaint glyphs when precise font mode toggles (real font vs. substitute).
+    // Metrics are identical, so no relayout is needed — only a page repaint.
+    preciseFontModeVersion();
     renderer.invalidatePage();
     renderer.schedulePaint();
   });

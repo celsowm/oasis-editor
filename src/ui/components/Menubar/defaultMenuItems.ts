@@ -139,6 +139,16 @@ export const defaultMenuItems: MenuItem[] = [
         : "square",
   },
   {
+    id: "view_precise_fonts",
+    path: "View/Precise Fonts",
+    labelKey: "menu.view.preciseFonts",
+    command: "togglePreciseFonts",
+    icon: (host) =>
+      host.commands.state("togglePreciseFonts").isActive
+        ? "check-square"
+        : "square",
+  },
+  {
     id: "view_fullscreen",
     path: "View/Full Screen",
     labelKey: "menu.view.fullscreen",

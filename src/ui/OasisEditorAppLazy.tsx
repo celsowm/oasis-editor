@@ -2,6 +2,7 @@ import { createSignal, onCleanup, onMount, Show } from "solid-js";
 import { OasisEditorLoading } from "./OasisEditorLoading.js";
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 import type { Component } from "solid-js";
+import { setLocale } from "../i18n/index.js";
 
 /**
  * Code-splitting boundary for the editor. Loads `OasisEditorApp` (and the
@@ -17,8 +18,16 @@ import type { Component } from "solid-js";
  * Must not statically import anything that pulls the editor/font graph.
  */
 export function OasisEditorAppLazy(props: OasisEditorAppProps = {}) {
+  // Set the locale before the loading card paints (OasisEditorApp re-asserts it
+  // once mounted) so the download-phase label is localized. The i18n module only
+  // imports the two locale string maps — no editor/font graph — so it is safe in
+  // this lightweight chunk.
+  setLocale(props.ui?.locale ?? "pt-BR");
+
   const [progress, setProgress] = createSignal(0);
-  const [App, setApp] = createSignal<Component<OasisEditorAppProps> | null>(null);
+  const [App, setApp] = createSignal<Component<OasisEditorAppProps> | null>(
+    null,
+  );
 
   const loadingOptions = () => {
     const value = props.ui?.loading;

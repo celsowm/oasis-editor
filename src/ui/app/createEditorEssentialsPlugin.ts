@@ -22,6 +22,7 @@ import {
   normalizeSelection,
 } from "../../core/selection.js";
 import { createEssentialsPlugin } from "../../plugins/internal/createEssentialsPlugin.js";
+import { togglePreciseFontMode } from "./localFontAccess.js";
 import type { SelectedImageRun } from "../../core/commands/image.js";
 import type { createEditorCommandsController } from "../../app/controllers/EditorCommandsController.js";
 import type { createEditorHistoryActions } from "../../app/controllers/useEditorHistoryActions.js";
@@ -188,6 +189,7 @@ export function createEditorEssentialsRuntimePlugin(
       options.commandsController.applyToggleShowParagraphMarksCommand(),
       true
     ),
+    togglePreciseFonts: () => (void togglePreciseFontMode(), true),
     pageBreak: () => {
       options.applyTransactionalState((current) =>
         options.tableOps.applyTableAwareParagraphEdit(current, (temp) =>

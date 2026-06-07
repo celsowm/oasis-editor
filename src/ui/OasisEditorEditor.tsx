@@ -8,6 +8,7 @@ import {
   type JSX,
 } from "solid-js";
 import { CanvasEditorSurface } from "./components/CanvasEditorSurface.js";
+import { OasisBrandMark } from "./components/OasisBrandMark.js";
 import { HorizontalRuler } from "./components/Ruler/HorizontalRuler.js";
 import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
@@ -578,6 +579,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
               aria-busy={!isDone && !isError}
             >
               <div class="oasis-editor-import-card">
+                <OasisBrandMark height={40} class="oasis-editor-loading-mark" />
                 <div class="oasis-editor-import-title">
                   {t("import.overlay.title")}
                 </div>
