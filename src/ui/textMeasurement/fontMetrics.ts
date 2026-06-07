@@ -1,4 +1,5 @@
 import type { EditorTextStyle } from "../../core/model.js";
+import { getFontMetricsProvider } from "../../text/fonts/FontMetricsProvider.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
 
 const DEFAULT_WORD_SINGLE_LINE_RATIO = 1.223;
@@ -68,6 +69,25 @@ function measureNormalLineHeight(
   }
 
   const fontSize = getMeasuredFontSize(styles, fallbackFontSize);
+
+  // Prefer the deterministic per-font natural line height (ascender − descender
+  // + lineGap) from the bundled metric-compatible faces. This is the value Word
+  // uses and what the PDF export path already relies on; the canvas "Hg"
+  // bounding box plus the 1.223 floor below over-estimates the single-line
+  // height for fonts like Times New Roman (~1.15em), inflating line spacing and
+  // pushing content onto later pages than Word. The fallback path runs only
+  // when no metric face is available (CJK/emoji, or fonts not yet preloaded).
+  const metricLineHeight = getFontMetricsProvider().getNaturalLineHeightPx(
+    styles?.fontFamily,
+    styles?.bold ?? false,
+    styles?.italic ?? false,
+    fontSize,
+  );
+  if (metricLineHeight != null && metricLineHeight > 0) {
+    normalLineHeightCache.set(font, metricLineHeight);
+    return metricLineHeight;
+  }
+
   const minimumWordLineHeight = fontSize * DEFAULT_WORD_SINGLE_LINE_RATIO;
   const context = getCanvasContext();
   let measured = minimumWordLineHeight;

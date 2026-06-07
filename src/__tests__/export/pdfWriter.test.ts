@@ -548,10 +548,10 @@ describe("OasisPdfWriter", () => {
     expect(pdf).toContain("/CarlitoItalic 15 Tf");
     expect(pdf).toContain("1 0 0 rg");
     expect(pdf).toContain("1 1 0 rg");
-    expect(pdf).toContain("285.319 659.055 Td");
-    expect(pdf).toContain("481.847 637.584 Td");
-    expect(pdf).toContain("126 610.114 Td");
-    expect(pdf).toContain("90 582.643 Td");
+    expect(pdf).toContain("285.319 659.147 Td");
+    expect(pdf).toContain("481.847 637.705 Td");
+    expect(pdf).toContain("126 610.264 Td");
+    expect(pdf).toContain("90 582.822 Td");
     expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 

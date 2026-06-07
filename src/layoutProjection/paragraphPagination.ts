@@ -426,9 +426,6 @@ function estimateParagraphLineHeight(
   );
 
   if (lineGridPitch && lineGridPitch > 0 && snapToGrid) {
-    if (paragraphStyle.lineGridType === "implicit") {
-      return Math.max(renderedLineHeight, lineGridPitch);
-    }
     return Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch;
   }
   return renderedLineHeight;

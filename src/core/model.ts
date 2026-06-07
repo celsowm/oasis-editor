@@ -70,7 +70,7 @@ export interface EditorParagraphStyle {
   contextualSpacing?: boolean;
   lineHeight?: number | null;
   lineGridPitch?: number | null;
-  lineGridType?: "lines" | "linesAndChars" | "snapToChars" | "implicit" | null;
+  lineGridType?: "lines" | "linesAndChars" | "snapToChars" | null;
   snapToGrid?: boolean;
   indentLeft?: number | null;
   indentRight?: number | null;
@@ -479,7 +479,6 @@ const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> = {
     | "lines"
     | "linesAndChars"
     | "snapToChars"
-    | "implicit"
     | null,
   snapToGrid: true,
   indentLeft: 0,

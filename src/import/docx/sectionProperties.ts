@@ -22,7 +22,7 @@ export interface SectionProperties {
   headerRIds: Partial<Record<"default" | "first" | "even", string>>;
   footerRIds: Partial<Record<"default" | "first" | "even", string>>;
   docGridLinePitchPx?: number;
-  docGridMode?: "explicit" | "implicit";
+  docGridMode?: "explicit";
   docGridType?: string | null;
 }
 
@@ -95,14 +95,15 @@ export function parseSectionProperties(sectPr: XmlElement): SectionProperties {
       Number.isFinite(docGridLinePitchPx) && docGridLinePitchPx > 0
         ? docGridLinePitchPx
         : undefined,
+    // Only a "lines"/"linesAndChars" grid snaps line height to the pitch. A
+    // "default" grid (type omitted) — which Word writes into virtually every
+    // document's sectPr as a leftover of the Normal template — must NOT affect
+    // Latin line height; treating it as a grid floored every body line to the
+    // pitch (e.g. 360 twips = 24px), inflating spacing well beyond Word.
     docGridMode:
-      docGridType === "lines" ||
-      docGridType === "linesAndChars" ||
-      docGridType === "snapToChars"
+      docGridType === "lines" || docGridType === "linesAndChars"
         ? "explicit"
-        : docGrid && docGridType === null
-          ? "implicit"
-          : undefined,
+        : undefined,
     docGridType,
   };
 }
@@ -196,14 +197,10 @@ export function applyDocGridLinePitch(
         block.style?.snapToGrid !== false &&
         !isHeading
       ) {
-        const lineGridType =
-          mode === "implicit"
-            ? "implicit"
-            : (docGridType as EditorParagraphStyle["lineGridType"]);
         block.style = {
           ...(block.style ?? {}),
           lineGridPitch: linePitchPx,
-          lineGridType,
+          lineGridType: docGridType as EditorParagraphStyle["lineGridType"],
         };
       }
       continue;
