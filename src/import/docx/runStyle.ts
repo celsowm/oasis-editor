@@ -116,6 +116,12 @@ export function normalizeImportedRunStyle(
         : effective.hidden !== defaultEffective.hidden
           ? effective.hidden
           : undefined,
+    noProof:
+      style.noProof !== undefined
+        ? style.noProof
+        : effective.noProof !== defaultEffective.noProof
+          ? effective.noProof
+          : undefined,
     characterScale:
       effective.characterScale !== defaultEffective.characterScale
         ? effective.characterScale
@@ -241,6 +247,10 @@ export function parseRunStyle(
   const hidden = parseOnOffProperty(runProperties, "vanish");
   if (hidden !== undefined) {
     styles.hidden = hidden;
+  }
+  const noProof = parseOnOffProperty(runProperties, "noProof");
+  if (noProof !== undefined) {
+    styles.noProof = noProof;
   }
   const characterScale = getAttributeValue(
     getFirstChildByTagNameNS(runProperties, WORD_NS, "w"),

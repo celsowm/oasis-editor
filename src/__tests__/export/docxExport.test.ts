@@ -161,6 +161,17 @@ describe("DOCX export", () => {
     );
   });
 
+  it("serializes noProof run metadata", async () => {
+    const paragraph = createEditorParagraph("CodeIdentifier");
+    paragraph.runs[0]!.styles = { noProof: true };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+
+    expect(xml).toContain("<w:noProof/>");
+  });
+
   it("serializes contextual paragraph spacing", async () => {
     const paragraph = createEditorParagraph("Contextual spacing");
     paragraph.style = { contextualSpacing: true };

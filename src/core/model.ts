@@ -46,6 +46,7 @@ export interface EditorTextStyle {
   smallCaps?: boolean;
   allCaps?: boolean;
   hidden?: boolean;
+  noProof?: boolean;
   characterScale?: number | null;
   characterSpacing?: number | null;
   baselineShift?: number | null;
@@ -456,6 +457,7 @@ const DEFAULT_TEXT_STYLE: Required<EditorTextStyle> = {
   smallCaps: false,
   allCaps: false,
   hidden: false,
+  noProof: false,
   characterScale: null as unknown as number | null,
   characterSpacing: null as unknown as number | null,
   baselineShift: null as unknown as number | null,

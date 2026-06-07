@@ -48,6 +48,7 @@ export type ToggleableTextStyleKey =
   | "smallCaps"
   | "allCaps"
   | "hidden"
+  | "noProof"
   | "contextualAlternates";
 
 export type ValueTextStyleKey =

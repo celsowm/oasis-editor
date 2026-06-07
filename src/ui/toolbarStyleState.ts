@@ -26,6 +26,7 @@ export type BooleanStyleKey =
   | "smallCaps"
   | "allCaps"
   | "hidden"
+  | "noProof"
   | "contextualAlternates";
 
 export type ValueStyleKey =
@@ -78,6 +79,7 @@ export interface ToolbarStyleState {
   smallCaps: boolean;
   allCaps: boolean;
   hidden: boolean;
+  noProof: boolean;
   characterScale: string;
   characterSpacing: string;
   baselineShift: string;
@@ -390,6 +392,7 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     smallCaps: areAllBooleanStylesEnabled(styles, "smallCaps"),
     allCaps: areAllBooleanStylesEnabled(styles, "allCaps"),
     hidden: areAllBooleanStylesEnabled(styles, "hidden"),
+    noProof: areAllBooleanStylesEnabled(styles, "noProof"),
     characterScale: resolveUniformStyleValue(styles, "characterScale"),
     characterSpacing: resolveUniformStyleValue(styles, "characterSpacing"),
     baselineShift: resolveUniformStyleValue(styles, "baselineShift"),

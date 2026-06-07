@@ -224,6 +224,7 @@ function serializeRunProperties(styles?: EditorTextStyle): string {
   if (styles.smallCaps) parts.push("<w:smallCaps/>");
   if (styles.allCaps) parts.push("<w:caps/>");
   if (styles.hidden) parts.push("<w:vanish/>");
+  if (styles.noProof) parts.push("<w:noProof/>");
   if (
     styles.characterScale !== undefined &&
     styles.characterScale !== null &&
@@ -403,6 +404,7 @@ function materializeRunStyle(
     smallCaps: effective.smallCaps,
     allCaps: effective.allCaps,
     hidden: effective.hidden,
+    noProof: effective.noProof,
     characterScale: effective.characterScale,
     characterSpacing: effective.characterSpacing,
     baselineShift: effective.baselineShift,
