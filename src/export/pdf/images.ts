@@ -72,12 +72,8 @@ async function loadBrowserImage(src: string): Promise<HTMLImageElement | null> {
   });
 }
 
-async function rasterizeToJpegDataUrl(src: string): Promise<string | null> {
+function rasterizeImageToJpegDataUrl(image: HTMLImageElement): string | null {
   if (typeof document === "undefined") {
-    return null;
-  }
-  const image = await loadBrowserImage(src);
-  if (!image || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
     return null;
   }
   const canvas = document.createElement("canvas");
@@ -108,17 +104,33 @@ async function preparePdfImage(
     return null;
   }
 
+  // The PDF image XObject's /Width and /Height must equal the real pixel
+  // resolution of the embedded stream, not the on-page display size (which is
+  // applied separately via the drawImage transform). Decode the bitmap so we
+  // can report its natural dimensions; without a DOM we fall back to the
+  // caller-provided display dimensions.
+  const image =
+    typeof Image !== "undefined" ? await loadBrowserImage(resolvedSrc) : null;
+  const hasNaturalSize =
+    image != null && image.naturalWidth > 0 && image.naturalHeight > 0;
+
   if (parsed.mediaType !== "image/jpeg" && parsed.mediaType !== "image/jpg") {
-    const jpegDataUrl = await rasterizeToJpegDataUrl(resolvedSrc);
+    if (!hasNaturalSize) {
+      return null;
+    }
+    const jpegDataUrl = rasterizeImageToJpegDataUrl(image);
     parsed = jpegDataUrl ? parseDataUrl(jpegDataUrl) : null;
     if (!parsed) {
       return null;
     }
   }
 
+  const width = hasNaturalSize ? image.naturalWidth : fallbackWidth;
+  const height = hasNaturalSize ? image.naturalHeight : fallbackHeight;
+
   return {
-    width: Math.max(1, Math.round(fallbackWidth)),
-    height: Math.max(1, Math.round(fallbackHeight)),
+    width: Math.max(1, Math.round(width)),
+    height: Math.max(1, Math.round(height)),
     data: parsed.data,
   };
 }
