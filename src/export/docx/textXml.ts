@@ -306,6 +306,21 @@ function serializeRunProperties(styles?: EditorTextStyle): string {
       `<w:shd w:val="clear" w:color="auto" w:fill="${normalizeDocxColor(styles.shading, "FFFFFF")}"/>`,
     );
   }
+  if (styles.language) {
+    const attrs: string[] = [];
+    if (styles.language.value) {
+      attrs.push(`w:val="${escapeXml(styles.language.value)}"`);
+    }
+    if (styles.language.eastAsia) {
+      attrs.push(`w:eastAsia="${escapeXml(styles.language.eastAsia)}"`);
+    }
+    if (styles.language.bidi) {
+      attrs.push(`w:bidi="${escapeXml(styles.language.bidi)}"`);
+    }
+    if (attrs.length > 0) {
+      parts.push(`<w:lang ${attrs.join(" ")}/>`);
+    }
+  }
 
   return parts.length > 0 ? `<w:rPr>${parts.join("")}</w:rPr>` : "";
 }
@@ -402,6 +417,7 @@ function materializeRunStyle(
     color: effective.color,
     highlight: effective.highlight,
     shading: effective.shading,
+    language: effective.language,
   };
 
   if (run.styles?.link) {

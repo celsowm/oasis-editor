@@ -218,7 +218,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Run properties | `w:webHidden` | `w:rPr` | `w:val` | Hidden in web view. | Usually preserve; may not affect print layout. | P3 | Not supported |
 | Run properties | `w:rtl` | `w:rPr` | `w:val` | Right-to-left run. | Bidi text shaping and ordering. | P1 | Not supported |
 | Run properties | `w:cs` | `w:rPr` | `w:val` | Complex-script formatting flag. | Affects font selection and shaping. | P2 | Not supported |
-| Run properties | `w:lang` | `w:rPr` | `w:val`, `w:eastAsia`, `w:bidi` | Language tags. | Needed for spellcheck, hyphenation, font fallback and shaping. | P1 | Not supported |
+| Run properties | `w:lang` | `w:rPr` | `w:val`, `w:eastAsia`, `w:bidi` | Language tags. | Imported into run style language metadata, available to style commands, preserved in HTML serialization, and exported back with concrete `val`, `eastAsia`, and `bidi` attributes when present. | P1 | Supported |
 | Run properties | `w:kern` | `w:rPr` | `w:val` | Kerning threshold. | Text measurement fidelity. | P2 | Supported |
 | Run properties | `w:spacing` | `w:rPr` | `w:val` | Character spacing. | Twips; affects text width. | P1 | Supported |
 | Run properties | `w:w` | `w:rPr` | `w:val` | Character scaling percentage. | Affects text width; do not confuse with width attrs elsewhere. | P2 | Supported |

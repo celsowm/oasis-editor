@@ -174,6 +174,10 @@ export function normalizeImportedRunStyle(
       effective.shading !== defaultEffective.shading
         ? effective.shading
         : undefined,
+    language:
+      effective.language !== defaultEffective.language
+        ? effective.language
+        : undefined,
     link: effective.link !== defaultEffective.link ? effective.link : undefined,
   });
 }
@@ -415,6 +419,20 @@ export function parseRunStyle(
   const shdFill = normalizeImportedHexColor(getAttributeValue(shd, "fill"));
   if (shdFill) {
     styles.shading = shdFill;
+  }
+
+  const language = getFirstChildByTagNameNS(runProperties, WORD_NS, "lang");
+  if (language) {
+    const value = getAttributeValue(language, "val");
+    const eastAsia = getAttributeValue(language, "eastAsia");
+    const bidi = getAttributeValue(language, "bidi");
+    const parsedLanguage: NonNullable<EditorTextStyle["language"]> = {};
+    if (value) parsedLanguage.value = value;
+    if (eastAsia) parsedLanguage.eastAsia = eastAsia;
+    if (bidi) parsedLanguage.bidi = bidi;
+    if (Object.keys(parsedLanguage).length > 0) {
+      styles.language = parsedLanguage;
+    }
   }
 
   return Object.keys(styles).length > 0 ? styles : undefined;

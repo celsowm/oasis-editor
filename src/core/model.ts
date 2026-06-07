@@ -26,6 +26,12 @@ export type EditorLigatures =
 export type EditorNumberSpacing = "default" | "proportional" | "tabular";
 export type EditorNumberForm = "default" | "lining" | "oldStyle";
 
+export interface EditorTextLanguage {
+  value?: string | null;
+  eastAsia?: string | null;
+  bidi?: string | null;
+}
+
 export interface EditorTextStyle {
   styleId?: string; // ID of the named character style
   bold?: boolean;
@@ -54,6 +60,7 @@ export interface EditorTextStyle {
   color?: string | null;
   highlight?: string | null;
   shading?: string | null; // run background fill (w:shd), hex e.g. #f0f0f0
+  language?: EditorTextLanguage | null;
   link?: string | null;
 }
 
@@ -463,6 +470,7 @@ const DEFAULT_TEXT_STYLE: Required<EditorTextStyle> = {
   color: "#000000",
   highlight: null as unknown as string | null,
   shading: null as unknown as string | null,
+  language: null as unknown as EditorTextLanguage | null,
   link: null as unknown as string | null,
 };
 

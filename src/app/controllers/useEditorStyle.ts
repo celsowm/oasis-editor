@@ -14,6 +14,7 @@ type ValueStyleKey =
   | "color"
   | "highlight"
   | "shading"
+  | "language"
   | "link"
   | "underlineStyle";
 

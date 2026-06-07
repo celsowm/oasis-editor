@@ -146,6 +146,21 @@ describe("DOCX export", () => {
     );
   });
 
+  it("serializes run language tags", async () => {
+    const paragraph = createEditorParagraph("Idioma");
+    paragraph.runs[0]!.styles = {
+      language: { value: "pt-BR", eastAsia: "ja-JP", bidi: "ar-SA" },
+    };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+
+    expect(xml).toContain(
+      '<w:lang w:val="pt-BR" w:eastAsia="ja-JP" w:bidi="ar-SA"/>',
+    );
+  });
+
   it("serializes contextual paragraph spacing", async () => {
     const paragraph = createEditorParagraph("Contextual spacing");
     paragraph.style = { contextualSpacing: true };

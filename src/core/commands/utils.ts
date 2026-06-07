@@ -56,6 +56,7 @@ export type ValueTextStyleKey =
   | "color"
   | "highlight"
   | "shading"
+  | "language"
   | "link"
   | "underlineStyle"
   | "underlineColor"
@@ -808,6 +809,9 @@ export function textRunStylesToCss(style?: EditorTextStyle): string {
   if (style.characterSpacing !== undefined && style.characterSpacing !== null) {
     parts.push(`letter-spacing:${style.characterSpacing}pt`);
   }
+  if (getPrimaryTextLanguage(style.language)) {
+    parts.push("hyphens:auto");
+  }
   if (style.baselineShift !== undefined && style.baselineShift !== null) {
     parts.push(`vertical-align:${style.baselineShift}pt`);
   }
@@ -852,6 +856,35 @@ export function textRunStylesToCss(style?: EditorTextStyle): string {
   }
 
   return parts.join(";");
+}
+
+function getPrimaryTextLanguage(
+  language: EditorTextStyle["language"],
+): string | null {
+  return language?.value ?? language?.bidi ?? language?.eastAsia ?? null;
+}
+
+function textLanguageToHtmlAttributes(
+  language: EditorTextStyle["language"],
+): string {
+  if (!language) {
+    return "";
+  }
+  const attrs: string[] = [];
+  const primary = getPrimaryTextLanguage(language);
+  if (primary) {
+    attrs.push(`lang="${escapeHtml(primary)}"`);
+  }
+  if (language.value) {
+    attrs.push(`data-oasis-lang-value="${escapeHtml(language.value)}"`);
+  }
+  if (language.eastAsia) {
+    attrs.push(`data-oasis-lang-east-asia="${escapeHtml(language.eastAsia)}"`);
+  }
+  if (language.bidi) {
+    attrs.push(`data-oasis-lang-bidi="${escapeHtml(language.bidi)}"`);
+  }
+  return attrs.length > 0 ? ` ${attrs.join(" ")}` : "";
 }
 
 function ligaturesToCss(
@@ -984,8 +1017,10 @@ export function serializeTextRunToHtml(
   }
 
   const css = textRunStylesToCss(style);
-  if (css.length > 0) {
-    html = `<span style="${css}">${html}</span>`;
+  const languageAttrs = textLanguageToHtmlAttributes(style?.language);
+  if (css.length > 0 || languageAttrs.length > 0) {
+    const styleAttr = css.length > 0 ? ` style="${css}"` : "";
+    html = `<span${styleAttr}${languageAttrs}>${html}</span>`;
   }
   if (style?.link) {
     html = `<a href="${escapeHtml(style.link)}">${html}</a>`;
@@ -1029,6 +1064,18 @@ export function parseInlineStyles(
   const backgroundColor = style.backgroundColor.trim();
   if (backgroundColor) {
     result.highlight = backgroundColor;
+  }
+
+  const langValue =
+    element.getAttribute("data-oasis-lang-value") ??
+    element.getAttribute("lang");
+  const langEastAsia = element.getAttribute("data-oasis-lang-east-asia");
+  const langBidi = element.getAttribute("data-oasis-lang-bidi");
+  if (langValue || langEastAsia || langBidi) {
+    result.language = {};
+    if (langValue) result.language.value = langValue;
+    if (langEastAsia) result.language.eastAsia = langEastAsia;
+    if (langBidi) result.language.bidi = langBidi;
   }
 
   const textDecoration = style.textDecoration.toLowerCase();
