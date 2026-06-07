@@ -13,25 +13,33 @@ import {
 } from "../model.js";
 import { createEditorStyledRun } from "../editorState.js";
 import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
+import type {
+  ToggleableTextStyleKey,
+  ValueTextStyleKey,
+} from "../textStyle/textStyleKeys.js";
 import {
-  deleteSelectionRange,
-  getFocusParagraph,
+  setBooleanStyle,
+  setValueStyle,
+} from "../textStyle/textStyleMutations.js";
+import {
   getStyleAtOffset,
   insertRunsAtOffset,
-  cloneStateWithParagraphs,
-  withSelection,
   sliceRuns,
   buildParagraphFromRuns,
   createParagraphFromRuns,
+} from "../document/paragraphRuns.js";
+import {
   cloneRun,
   cloneParagraph,
-  ToggleableTextStyleKey,
+} from "../document/clone.js";
+import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+import {
+  deleteSelectionRange,
+  getFocusParagraph,
   mapRunsInRange,
-  setBooleanStyle,
   preserveSelectionByParagraphOffsets,
-  ValueTextStyleKey,
-  setValueStyle,
-} from "./utils.js";
+  withSelection,
+} from "../selection/rangeEditing.js";
 
 interface SelectionFragment {
   paragraphTemplate: EditorParagraphNode;

@@ -17,22 +17,26 @@ import {
 } from "../model.js";
 import { createEditorParagraph } from "../editorState.js";
 import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
+import type { ValueParagraphStyleKey } from "../textStyle/textStyleKeys.js";
+import { setParagraphStyleValue } from "../textStyle/textStyleMutations.js";
 import {
-  deleteSelectionRange,
-  getFocusParagraph,
   buildParagraphFromRuns,
   sliceRuns,
   getStyleAtOffset,
   createParagraphFromRunsLike,
+} from "../document/paragraphRuns.js";
+import {
   cloneParagraphs,
-  cloneStateWithParagraphs,
-  withSelection,
   cloneBlocks,
-  ValueParagraphStyleKey,
   cloneParagraph,
-  setParagraphStyleValue,
+} from "../document/clone.js";
+import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+import {
+  deleteSelectionRange,
+  getFocusParagraph,
   preserveSelectionByParagraphOffsets,
-} from "./utils.js";
+  withSelection,
+} from "../selection/rangeEditing.js";
 
 export function moveBlockToPosition(
   state: EditorState,

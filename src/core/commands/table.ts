@@ -26,7 +26,8 @@ import {
 } from "../editorState.js";
 import { clampPosition, normalizeSelection } from "../selection.js";
 import { buildTableCellLayout } from "../tableLayout.js";
-import { updateTableCellsInBlocks, withSelection } from "./utils.js";
+import { updateTableCellsInBlocks } from "../document/blockReplacement.js";
+import { withSelection } from "../selection/rangeEditing.js";
 
 export function setTableCellStyleValue<K extends keyof EditorTableCellStyle>(
   state: EditorState,

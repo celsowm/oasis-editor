@@ -14,10 +14,12 @@ import {
   collapseToBoundary,
   getFocusParagraph,
   withSelection,
+} from "../selection/rangeEditing.js";
+import {
   moveVertical,
   moveFocusHorizontally,
   moveFocusVertical,
-} from "./utils.js";
+} from "../selection/navigation.js";
 
 export function getSelectedText(state: EditorState): string {
   const normalized = normalizeSelection(state);

@@ -396,6 +396,137 @@ describe("DOCX paragraph import", () => {
     expect(document.assets?.[assetId]?.url).toMatch(/^data:image\/png;base64,/);
   });
 
+  it("imports inline image crop (a:srcRect) and transform (a:xfrm)", async () => {
+    const pngBase64 =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const zip = new JSZip();
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:drawing>
+          <wp:inline distT="0" distB="0" distL="0" distR="0">
+            <wp:extent cx="952500" cy="476250"/>
+            <wp:docPr id="1" name="Picture" descr="alt text"/>
+            <a:graphic>
+              <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                <pic:pic>
+                  <pic:nvPicPr><pic:cNvPr id="0" name="Picture"/><pic:cNvPicPr/></pic:nvPicPr>
+                  <pic:blipFill>
+                    <a:blip r:embed="rId1"/>
+                    <a:srcRect l="10000" t="5000" r="20000" b="0"/>
+                    <a:stretch><a:fillRect/></a:stretch>
+                  </pic:blipFill>
+                  <pic:spPr>
+                    <a:xfrm rot="5400000" flipH="1">
+                      <a:off x="0" y="0"/>
+                      <a:ext cx="952500" cy="476250"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+                  </pic:spPr>
+                </pic:pic>
+              </a:graphicData>
+            </a:graphic>
+          </wp:inline>
+        </w:drawing>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    zip.file(
+      "word/_rels/document.xml.rels",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.png"/>
+</Relationships>`,
+    );
+    zip.file("word/media/image1.png", pngBase64, { base64: true });
+
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+    const imageRun = paragraph.runs.find((r) => r.image)!;
+
+    expect(imageRun.image?.width).toBe(100);
+    expect(imageRun.image?.height).toBe(50);
+    expect(imageRun.image?.alt).toBe("alt text");
+    expect(imageRun.image?.crop).toEqual({
+      left: 0.1,
+      top: 0.05,
+      right: 0.2,
+      bottom: undefined,
+    });
+    expect(imageRun.image?.rotation).toBe(90);
+    expect(imageRun.image?.flipH).toBe(true);
+    expect(imageRun.image?.flipV).toBeUndefined();
+    expect(imageRun.image?.fillMode).toBeUndefined();
+  });
+
+  it("imports inline image tile fill mode (a:tile)", async () => {
+    const pngBase64 =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const zip = new JSZip();
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:drawing>
+          <wp:inline distT="0" distB="0" distL="0" distR="0">
+            <wp:extent cx="952500" cy="476250"/>
+            <wp:docPr id="1" name="Picture"/>
+            <a:graphic>
+              <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                <pic:pic>
+                  <pic:nvPicPr><pic:cNvPr id="0" name="Picture"/><pic:cNvPicPr/></pic:nvPicPr>
+                  <pic:blipFill>
+                    <a:blip r:embed="rId1"/>
+                    <a:tile/>
+                  </pic:blipFill>
+                  <pic:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>
+                </pic:pic>
+              </a:graphicData>
+            </a:graphic>
+          </wp:inline>
+        </w:drawing>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    zip.file(
+      "word/_rels/document.xml.rels",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.png"/>
+</Relationships>`,
+    );
+    zip.file("word/media/image1.png", pngBase64, { base64: true });
+
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+    const imageRun = paragraph.runs.find((r) => r.image)!;
+
+    expect(imageRun.image?.fillMode).toBe("tile");
+  });
+
   it("imports paragraph borders and shading, round-tripping back to DOCX", async () => {
     const zip = new JSZip();
     const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

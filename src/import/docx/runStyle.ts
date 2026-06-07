@@ -134,6 +134,10 @@ export function normalizeImportedRunStyle(
         : effective.specVanish !== defaultEffective.specVanish
           ? effective.specVanish
           : undefined,
+    textEffect:
+      effective.textEffect !== defaultEffective.textEffect
+        ? effective.textEffect
+        : undefined,
     characterScale:
       effective.characterScale !== defaultEffective.characterScale
         ? effective.characterScale
@@ -271,6 +275,13 @@ export function parseRunStyle(
   const specVanish = parseOnOffProperty(runProperties, "specVanish");
   if (specVanish !== undefined) {
     styles.specVanish = specVanish;
+  }
+  const textEffect = getAttributeValue(
+    getFirstChildByTagNameNS(runProperties, WORD_NS, "effect"),
+    "val",
+  );
+  if (textEffect) {
+    styles.textEffect = textEffect;
   }
   const characterScale = getAttributeValue(
     getFirstChildByTagNameNS(runProperties, WORD_NS, "w"),

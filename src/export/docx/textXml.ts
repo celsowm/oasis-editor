@@ -227,6 +227,9 @@ function serializeRunProperties(styles?: EditorTextStyle): string {
   if (styles.noProof) parts.push("<w:noProof/>");
   if (styles.webHidden) parts.push("<w:webHidden/>");
   if (styles.specVanish) parts.push("<w:specVanish/>");
+  if (styles.textEffect) {
+    parts.push(`<w:effect w:val="${escapeXml(styles.textEffect)}"/>`);
+  }
   if (
     styles.characterScale !== undefined &&
     styles.characterScale !== null &&
@@ -409,6 +412,7 @@ function materializeRunStyle(
     noProof: effective.noProof,
     webHidden: effective.webHidden,
     specVanish: effective.specVanish,
+    textEffect: effective.textEffect,
     characterScale: effective.characterScale,
     characterSpacing: effective.characterSpacing,
     baselineShift: effective.baselineShift,
@@ -431,6 +435,44 @@ function materializeRunStyle(
   }
 
   return materialized;
+}
+
+const OOXML_PERCENT_DENOMINATOR = 100000;
+const OOXML_ROTATION_UNITS = 60000;
+
+/** Build the attribute string for `a:xfrm` (rotation/flip), empty if none. */
+function buildXfrmAttrs(img: DocContext["images"][number]): string {
+  let attrs = "";
+  if (img.rotation) {
+    const rot = Math.round(img.rotation * OOXML_ROTATION_UNITS);
+    if (rot !== 0) {
+      attrs += ` rot="${rot}"`;
+    }
+  }
+  if (img.flipH) {
+    attrs += ` flipH="1"`;
+  }
+  if (img.flipV) {
+    attrs += ` flipV="1"`;
+  }
+  return attrs;
+}
+
+/** Build an `a:srcRect` element from crop fractions, empty string if none. */
+function buildSrcRect(crop: DocContext["images"][number]["crop"]): string {
+  if (!crop) {
+    return "";
+  }
+  const toUnits = (value: number | undefined): number =>
+    value ? Math.round(value * OOXML_PERCENT_DENOMINATOR) : 0;
+  const l = toUnits(crop.left);
+  const t = toUnits(crop.top);
+  const r = toUnits(crop.right);
+  const b = toUnits(crop.bottom);
+  if (l === 0 && t === 0 && r === 0 && b === 0) {
+    return "";
+  }
+  return `<a:srcRect l="${l}" t="${t}" r="${r}" b="${b}"/>`;
 }
 
 function serializeRun(
@@ -481,12 +523,20 @@ function serializeRun(
     if (rId) {
       const img = context.images.find((i) => i.rId === rId);
       if (img) {
-        const docPrId = Math.floor(Math.random() * 10000) + 1;
+        // Deterministic id derived from the image's relationship id
+        // (`rIdImg<N>`) so exports are stable and diff-friendly.
+        const docPrId = (parseInt(rId.replace(/\D+/g, ""), 10) || 0) + 1;
         const altAttr =
           img.alt !== undefined
             ? ` descr="${escapeXml(img.alt)}" title="${escapeXml(img.alt)}"`
             : "";
-        const drawing = `<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${img.cx}" cy="${img.cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${docPrId}" name="Picture"${altAttr}/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="Picture"${altAttr}/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rId}" xmlns:r="${OFFICE_REL_NS}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${img.cx}" cy="${img.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>`;
+        const xfrmAttrs = buildXfrmAttrs(img);
+        const srcRect = buildSrcRect(img.crop);
+        const fill =
+          img.fillMode === "tile"
+            ? "<a:tile/>"
+            : "<a:stretch><a:fillRect/></a:stretch>";
+        const drawing = `<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${img.cx}" cy="${img.cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${docPrId}" name="Picture"${altAttr}/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="Picture"${altAttr}/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rId}" xmlns:r="${OFFICE_REL_NS}"/>${srcRect}${fill}</pic:blipFill><pic:spPr><a:xfrm${xfrmAttrs}><a:off x="0" y="0"/><a:ext cx="${img.cx}" cy="${img.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>`;
         return `<w:r>${serializeRunProperties(materializedRunStyle)}${drawing}</w:r>`;
       }
     }

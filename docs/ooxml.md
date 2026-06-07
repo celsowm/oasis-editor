@@ -224,7 +224,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Run properties | `w:w` | `w:rPr` | `w:val` | Character scaling percentage. | Affects text width; do not confuse with width attrs elsewhere. | P2 | Supported |
 | Run properties | `w:position` | `w:rPr` | `w:val` | Raised/lowered text position. | Half-points; affects baseline but not semantic subscript. | P2 | Supported |
 | Run properties | `w:fitText` | `w:rPr` | `w:val`, `w:id` | Fit text into fixed width. | Word compresses/expands run; preserve or approximate. | P3 | Not supported |
-| Run properties | `w:effect` | `w:rPr` | `w:val` | Legacy animated text effect. | Mostly obsolete; preserve. | P4 | Not supported |
+| Run properties | `w:effect` | `w:rPr` | `w:val` | Legacy animated text effect. | Imported into run style metadata, available through value-style commands, and exported back as `w:effect`; obsolete animation behavior is preserved as metadata rather than rendered in the normal canvas view. | P4 | Supported |
 | Run properties | `w:em` | `w:rPr` | `w:val` | Emphasis mark. | East Asian typography. | P3 | Not supported |
 | Run properties | `w:bdr` | `w:rPr` | border attrs | Run border. | Visible in some templates; use common border parser. | P2 | Not supported |
 | Run properties | `w:imprint` / `w:outline` / `w:shadow` | `w:rPr` | `w:val` | Legacy text effects. | Preserve/approximate with CSS when possible. | P3 | Not supported |
@@ -372,11 +372,11 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Pictures | `pic:nvPicPr` / `pic:cNvPr` / `pic:cNvPicPr` | `pic:pic` | `id`, `name`, `descr`, `title` | Picture non-visual properties. | Alt text/name metadata. | P2 | Partial |
 | Pictures | `pic:blipFill` | `pic:pic` | — | Picture fill container. | Find `a:blip` relationship. | P1 | Supported |
 | Pictures | `a:blip` | `pic:blipFill`, other fills | `r:embed`, `r:link`, `cstate` | Image binary reference. | Resolve embedded or linked images; preserve external link. | P1 | Supported |
-| Pictures | `a:srcRect` | `pic:blipFill` | `l`, `t`, `r`, `b` | Image crop rectangle. | Percent thousandths; affects displayed crop. | P2 | Not supported |
-| Pictures | `a:stretch` / `a:tile` | `pic:blipFill` | children/attrs | Image fill mode. | Commonly stretch to shape bounds. | P2 | Not supported |
-| Pictures | `pic:spPr` | `pic:pic` | — | Picture shape properties. | Contains transform, geometry, line/effects. | P1 | Not supported |
-| DrawingML shape | `a:xfrm` | Shape properties | `rot`, `flipH`, `flipV` | Transform container. | Child `a:off` and `a:ext` define object coordinates/size. | P1 | Not supported |
-| DrawingML shape | `a:off` / `a:ext` | `a:xfrm` | `x`, `y`, `cx`, `cy` | Position/size values in EMUs. | Core for drawing geometry. | P1 | Not supported |
+| Pictures | `a:srcRect` | `pic:blipFill` | `l`, `t`, `r`, `b` | Image crop rectangle. | Percent thousandths; affects displayed crop. | P2 | Supported |
+| Pictures | `a:stretch` / `a:tile` | `pic:blipFill` | children/attrs | Image fill mode. | Commonly stretch to shape bounds. | P2 | Partial |
+| Pictures | `pic:spPr` | `pic:pic` | — | Picture shape properties. | Contains transform, geometry, line/effects. | P1 | Partial |
+| DrawingML shape | `a:xfrm` | Shape properties | `rot`, `flipH`, `flipV` | Transform container. | Child `a:off` and `a:ext` define object coordinates/size. | P1 | Partial |
+| DrawingML shape | `a:off` / `a:ext` | `a:xfrm` | `x`, `y`, `cx`, `cy` | Position/size values in EMUs. | Core for drawing geometry. | P1 | Partial |
 | DrawingML shape | `a:prstGeom` / `a:custGeom` | Shape properties | `prst` | Preset/custom geometry. | Approximate common shapes; preserve custom geometry if unsupported. | P2 | Not supported |
 | DrawingML shape | `a:solidFill` / `a:gradFill` / `a:pattFill` / `a:noFill` / `a:blipFill` | Shape properties/text props | color/fill children | Fill definitions. | Resolve colors through scheme/theme where needed. | P2 | Not supported |
 | DrawingML shape | `a:ln` | Shape properties | `w`, `cap`, `cmpd`, `algn` | Line/stroke definition. | Contains fill, dash, join, head/tail arrow settings. | P2 | Not supported |

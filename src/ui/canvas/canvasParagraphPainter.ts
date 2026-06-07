@@ -1,4 +1,5 @@
 import type {
+  EditorImageRunData,
   EditorLayoutLine,
   EditorParagraphNode,
   EditorState,
@@ -195,6 +196,89 @@ export function resolveCanvasTextRenderMetrics(
   };
 }
 
+/**
+ * Draw an inline image fragment, honoring crop (`a:srcRect`), rotation
+ * (`a:xfrm/@rot`) and horizontal/vertical flips (`a:xfrm/@flipH`/`@flipV`).
+ *
+ * The inline layout box (`x`, `y`, `width`, `height`) is preserved as-is;
+ * rotation may visually extend beyond the line box, which matches the simple
+ * inline rendering model (hit-testing still uses the unrotated box).
+ */
+function drawImageFragment(
+  ctx: CanvasRenderingContext2D,
+  img: CanvasImageSource & { naturalWidth: number; naturalHeight: number },
+  image: EditorImageRunData,
+  x: number,
+  y: number,
+): void {
+  const { width, height, crop, fillMode, rotation, flipH, flipV } = image;
+  const hasTransform = Boolean(rotation) || Boolean(flipH) || Boolean(flipV);
+
+  // Tiled fill: repeat the image at its natural size across the display box.
+  // Crop is not applied in tile mode (matches the simple inline model).
+  if (fillMode === "tile") {
+    const pattern = ctx.createPattern(img, "repeat");
+    if (!pattern) {
+      ctx.drawImage(img, x, y, width, height);
+      return;
+    }
+    ctx.save();
+    if (hasTransform) {
+      ctx.translate(x + width / 2, y + height / 2);
+      if (rotation) {
+        ctx.rotate((rotation * Math.PI) / 180);
+      }
+      ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+      ctx.translate(-(x + width / 2), -(y + height / 2));
+    }
+    ctx.translate(x, y);
+    ctx.fillStyle = pattern;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+    return;
+  }
+
+  // Resolve the source rectangle from the crop fractions, clamped so we never
+  // produce a zero/negative source region.
+  let sx = 0;
+  let sy = 0;
+  let sw = img.naturalWidth;
+  let sh = img.naturalHeight;
+  if (crop) {
+    const left = clamp01(crop.left ?? 0);
+    const top = clamp01(crop.top ?? 0);
+    const right = clamp01(crop.right ?? 0);
+    const bottom = clamp01(crop.bottom ?? 0);
+    if (left + right < 1 && top + bottom < 1) {
+      sx = left * img.naturalWidth;
+      sy = top * img.naturalHeight;
+      sw = (1 - left - right) * img.naturalWidth;
+      sh = (1 - top - bottom) * img.naturalHeight;
+    }
+  }
+
+  if (!hasTransform) {
+    ctx.drawImage(img, sx, sy, sw, sh, x, y, width, height);
+    return;
+  }
+
+  ctx.save();
+  ctx.translate(x + width / 2, y + height / 2);
+  if (rotation) {
+    ctx.rotate((rotation * Math.PI) / 180);
+  }
+  ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+  ctx.drawImage(img, sx, sy, sw, sh, -width / 2, -height / 2, width, height);
+  ctx.restore();
+}
+
+function clamp01(value: number): number {
+  if (!Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+  return value > 1 ? 1 : value;
+}
+
 export function drawParagraph(
   ctx: CanvasRenderingContext2D,
   paragraph: EditorParagraphNode,
@@ -277,12 +361,12 @@ export function drawParagraph(
           const src = resolveImageSrc(state.document, fragment.image.src);
           const img = getCachedCanvasImage(src, onUpdate);
           if (img.complete && img.naturalWidth > 0) {
-            ctx.drawImage(
+            drawImageFragment(
+              ctx,
               img,
+              fragment.image,
               originX + slot.left,
               originY + line.top + line.height - fragment.image.height,
-              fragment.image.width,
-              fragment.image.height,
             );
           }
         }

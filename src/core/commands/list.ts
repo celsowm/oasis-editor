@@ -6,23 +6,27 @@ import {
 } from "../model.js";
 import { createEditorParagraph } from "../editorState.js";
 import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
+import type { ParagraphListKind } from "../textStyle/textStyleKeys.js";
 import {
-  deleteSelectionRange,
-  getFocusParagraph,
   buildParagraphFromRuns,
   sliceRuns,
   getStyleAtOffset,
   createParagraphFromRunsLike,
+  clearParagraphList,
+  cloneParagraphWithListLevel,
+} from "../document/paragraphRuns.js";
+import {
   cloneParagraphList,
   cloneParagraphs,
-  cloneStateWithParagraphs,
-  withSelection,
   cloneParagraph,
-  clearParagraphList,
+} from "../document/clone.js";
+import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+import {
+  deleteSelectionRange,
+  getFocusParagraph,
   preserveSelectionByParagraphOffsets,
-  cloneParagraphWithListLevel,
-  ParagraphListKind,
-} from "./utils.js";
+  withSelection,
+} from "../selection/rangeEditing.js";
 
 export function splitListItemAtSelection(state: EditorState): EditorState {
   const collapsedState = isSelectionCollapsed(state.selection)

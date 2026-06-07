@@ -38,6 +38,7 @@ export type ValueStyleKey =
   | "highlight"
   | "shading"
   | "language"
+  | "textEffect"
   | "link"
   | "underlineStyle"
   | "underlineColor"
@@ -98,6 +99,7 @@ export interface ToolbarStyleState {
   color: string;
   highlight: string;
   textShading: string;
+  textEffect: string;
   link: string;
   styleId: string;
   align: string;
@@ -416,6 +418,7 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     color: resolveUniformStyleValue(styles, "color"),
     highlight: resolveUniformStyleValue(styles, "highlight"),
     textShading: resolveUniformStyleValue(styles, "shading"),
+    textEffect: resolveUniformStyleValue(styles, "textEffect"),
     link: resolveUniformStyleValue(styles, "link"),
     styleId: resolveUniformParagraphStyleValue(paragraphStyles, "styleId"),
     align: resolveUniformParagraphStyleValue(paragraphStyles, "align"),

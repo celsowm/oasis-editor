@@ -24,13 +24,13 @@ import {
   createCollapsedSelection,
   isSelectionCollapsed,
 } from "../selection.js";
-import { deleteSelectionRange } from "./utils.js";
 import { setSelection } from "./selection.js";
+import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+import { insertRunsAtOffset } from "../document/paragraphRuns.js";
 import {
-  cloneStateWithParagraphs,
+  deleteSelectionRange,
   getFocusParagraph,
-  insertRunsAtOffset,
-} from "./utils.js";
+} from "../selection/rangeEditing.js";
 import { getParagraphs } from "../model.js";
 
 function ensureFootnotes(

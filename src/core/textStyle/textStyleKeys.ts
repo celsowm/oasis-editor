@@ -1,0 +1,58 @@
+import type { EditorParagraphListStyle } from "../model.js";
+
+export type ToggleableTextStyleKey =
+  | "bold"
+  | "italic"
+  | "underline"
+  | "strike"
+  | "doubleStrike"
+  | "superscript"
+  | "subscript"
+  | "smallCaps"
+  | "allCaps"
+  | "hidden"
+  | "noProof"
+  | "webHidden"
+  | "specVanish"
+  | "contextualAlternates";
+
+export type ValueTextStyleKey =
+  | "fontFamily"
+  | "fontSize"
+  | "color"
+  | "highlight"
+  | "shading"
+  | "language"
+  | "textEffect"
+  | "link"
+  | "underlineStyle"
+  | "underlineColor"
+  | "characterScale"
+  | "characterSpacing"
+  | "baselineShift"
+  | "kerningThreshold"
+  | "ligatures"
+  | "numberSpacing"
+  | "numberForm"
+  | "stylisticSet";
+
+export type ValueParagraphStyleKey =
+  | "styleId"
+  | "align"
+  | "spacingBefore"
+  | "spacingAfter"
+  | "lineHeight"
+  | "indentLeft"
+  | "indentRight"
+  | "indentFirstLine"
+  | "indentHanging"
+  | "shading"
+  | "borderTop"
+  | "borderRight"
+  | "borderBottom"
+  | "borderLeft"
+  | "tabs"
+  | "pageBreakBefore"
+  | "keepWithNext";
+
+export type ParagraphListKind = EditorParagraphListStyle["kind"];

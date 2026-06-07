@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { type Element as XmlElement } from "@xmldom/xmldom";
-import type { EditorTextStyle } from "../../core/model.js";
+import type { EditorTextStyle, EditorImageRunData } from "../../core/model.js";
+import { imageMimeFromPath } from "../../utils/imageFormats.js";
 import {
   WORD_NS,
   getChildrenByTagNameNS,
@@ -14,9 +15,84 @@ import { type DocxImportTheme } from "./theme.js";
 import { parseRunStyle } from "./runStyle.js";
 import type { NumberingMaps } from "./numbering.js";
 
+const EMU_PER_PX = 9525;
+const OOXML_PERCENT_DENOMINATOR = 100000;
+const OOXML_ROTATION_UNITS = 60000;
+
+/** Parse a DrawingML `a:srcRect` crop into normalized 0..1 fractions. */
+function parseSrcRect(picPic: XmlElement): EditorImageRunData["crop"] {
+  const srcRect = findElementDeep(picPic, "srcRect");
+  if (!srcRect) {
+    return undefined;
+  }
+  const toFraction = (name: string): number | undefined => {
+    const raw = srcRect.getAttribute(name);
+    if (raw === null || raw === "") {
+      return undefined;
+    }
+    const value = parseInt(raw, 10);
+    if (!Number.isFinite(value) || value === 0) {
+      return undefined;
+    }
+    return value / OOXML_PERCENT_DENOMINATOR;
+  };
+  const crop = {
+    left: toFraction("l"),
+    top: toFraction("t"),
+    right: toFraction("r"),
+    bottom: toFraction("b"),
+  };
+  if (
+    crop.left === undefined &&
+    crop.top === undefined &&
+    crop.right === undefined &&
+    crop.bottom === undefined
+  ) {
+    return undefined;
+  }
+  return crop;
+}
+
+/** Parse the picture fill mode from `pic:blipFill` (`a:tile` vs `a:stretch`). */
+function parseFillMode(picPic: XmlElement): EditorImageRunData["fillMode"] {
+  if (findElementDeep(picPic, "tile")) {
+    return "tile";
+  }
+  return undefined;
+}
+
+/** Parse a DrawingML `a:xfrm` transform (rotation/flip) from `pic:spPr`. */
+function parseXfrm(picPic: XmlElement): {
+  rotation?: number;
+  flipH?: boolean;
+  flipV?: boolean;
+} {
+  const xfrm = findElementDeep(picPic, "xfrm");
+  if (!xfrm) {
+    return {};
+  }
+  const result: { rotation?: number; flipH?: boolean; flipV?: boolean } = {};
+  const rot = xfrm.getAttribute("rot");
+  if (rot) {
+    const value = parseInt(rot, 10);
+    if (Number.isFinite(value) && value !== 0) {
+      result.rotation = value / OOXML_ROTATION_UNITS;
+    }
+  }
+  const flipH = xfrm.getAttribute("flipH");
+  if (flipH === "1" || flipH === "true") {
+    result.flipH = true;
+  }
+  const flipV = xfrm.getAttribute("flipV");
+  if (flipV === "1" || flipV === "true") {
+    result.flipV = true;
+  }
+  return result;
+}
+
 export interface ImportedRun {
   text: string;
-  image?: { src: string; width: number; height: number; alt?: string };
+  image?: EditorImageRunData;
   styles?: EditorTextStyle;
   field?: { type: "PAGE" | "NUMPAGES" };
   /**
@@ -34,12 +110,10 @@ export async function parseRunElement(
   assets: AssetRegistry,
 ): Promise<{
   text: string;
-  image?: { src: string; width: number; height: number; alt?: string };
+  image?: EditorImageRunData;
 }> {
   const textParts: string[] = [];
-  let image:
-    | { src: string; width: number; height: number; alt?: string }
-    | undefined;
+  let image: EditorImageRunData | undefined;
 
   const children = runElement.childNodes;
   for (let index = 0; index < children.length; index += 1) {
@@ -93,13 +167,9 @@ export async function parseRunElement(
               if (zipPath.startsWith("/")) zipPath = zipPath.slice(1);
               if (!zipPath.startsWith("word/")) zipPath = "word/" + target;
               const file = zip.file(zipPath);
-              const ext = target.split(".").pop()?.toLowerCase();
-              const mime =
-                ext === "png"
-                  ? "image/png"
-                  : ext === "jpeg" || ext === "jpg"
-                    ? "image/jpeg"
-                    : "image/png";
+              // Unknown extensions fall back to PNG so the data URL stays
+              // loadable; preserving the original binary still round-trips.
+              const mime = imageMimeFromPath(target) ?? "image/png";
               const base64 = await file?.async("base64");
               if (base64) {
                 textParts.push("\uFFFC");
@@ -110,13 +180,16 @@ export async function parseRunElement(
                 if (extent) {
                   const cx = extent.getAttribute("cx");
                   const cy = extent.getAttribute("cy");
-                  if (cx) width = Math.round(parseInt(cx, 10) / 9525);
-                  if (cy) height = Math.round(parseInt(cy, 10) / 9525);
+                  if (cx) width = Math.round(parseInt(cx, 10) / EMU_PER_PX);
+                  if (cy) height = Math.round(parseInt(cy, 10) / EMU_PER_PX);
                 }
                 const alt = docPr
                   ? (getAttributeValue(docPr, "descr") ??
                     getAttributeValue(docPr, "title"))
                   : null;
+                const crop = parseSrcRect(element);
+                const fillMode = parseFillMode(element);
+                const xfrm = parseXfrm(element);
                 // Store the heavy base64 payload in the document's asset
                 // registry exactly once and reference it from the run.
                 // Without this, every clone/equality check/signature pass
@@ -131,6 +204,13 @@ export async function parseRunElement(
                   width,
                   height,
                   ...(alt !== null ? { alt } : {}),
+                  ...(crop ? { crop } : {}),
+                  ...(fillMode ? { fillMode } : {}),
+                  ...(xfrm.rotation !== undefined
+                    ? { rotation: xfrm.rotation }
+                    : {}),
+                  ...(xfrm.flipH ? { flipH: true } : {}),
+                  ...(xfrm.flipV ? { flipV: true } : {}),
                 };
               }
             }

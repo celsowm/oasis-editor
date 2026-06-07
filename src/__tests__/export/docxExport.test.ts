@@ -3,11 +3,14 @@ import JSZip from "jszip";
 import {
   createEditorDocument,
   createEditorParagraph,
+  createEditorParagraphFromRuns,
   createEditorTable,
   createEditorTableCell,
   createEditorTableRow,
 } from "../../core/editorState.js";
 import { exportEditorDocumentToDocx } from "../../export/docx/exportEditorDocumentToDocx.js";
+import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditorDocument.js";
+import { getDocumentParagraphs } from "../../core/model.js";
 import type { EditorDocument } from "../../core/model.js";
 
 async function readDocumentXml(buffer: ArrayBuffer): Promise<string> {
@@ -194,6 +197,17 @@ describe("DOCX export", () => {
     expect(xml).toContain("<w:specVanish/>");
   });
 
+  it("serializes legacy text effect metadata", async () => {
+    const paragraph = createEditorParagraph("Legacy effect");
+    paragraph.runs[0]!.styles = { textEffect: "blinkBackground" };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+
+    expect(xml).toContain('<w:effect w:val="blinkBackground"/>');
+  });
+
   it("serializes contextual paragraph spacing", async () => {
     const paragraph = createEditorParagraph("Contextual spacing");
     paragraph.style = { contextualSpacing: true };
@@ -300,6 +314,146 @@ describe("DOCX export", () => {
 
     expect(breakIndex).toBeGreaterThan(-1);
     expect(tableIndex).toBeGreaterThan(breakIndex);
+  });
+
+  it("serializes inline image crop (a:srcRect) and transform (a:xfrm)", async () => {
+    const pngDataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "\uFFFC",
+        image: {
+          src: pngDataUrl,
+          width: 100,
+          height: 50,
+          alt: "alt text",
+          crop: { left: 0.1, top: 0.05, right: 0.2 },
+          rotation: 90,
+          flipH: true,
+        },
+      },
+    ]);
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+
+    expect(xml).toContain('<a:srcRect l="10000" t="5000" r="20000" b="0"/>');
+    expect(xml).toContain('<a:xfrm rot="5400000" flipH="1">');
+    expect(xml).toContain('descr="alt text"');
+    // docPrId is deterministic (derived from rIdImg1), not random.
+    expect(xml).toContain('<wp:docPr id="2"');
+  });
+
+  it("round-trips inline image crop and transform through DOCX", async () => {
+    const pngDataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "\uFFFC",
+        image: {
+          src: pngDataUrl,
+          width: 100,
+          height: 50,
+          crop: { left: 0.1, top: 0.05, right: 0.2 },
+          rotation: 90,
+          flipV: true,
+        },
+      },
+    ]);
+
+    const buffer = await exportEditorDocumentToDocx(
+      createEditorDocument([paragraph]),
+    );
+    const document = await importDocxToEditorDocument(buffer);
+    const reimported = getDocumentParagraphs(document)[0]!;
+    const imageRun = reimported.runs.find((r) => r.image)!;
+
+    expect(imageRun.image?.crop).toEqual({
+      left: 0.1,
+      top: 0.05,
+      right: 0.2,
+      bottom: undefined,
+    });
+    expect(imageRun.image?.rotation).toBe(90);
+    expect(imageRun.image?.flipV).toBe(true);
+    expect(imageRun.image?.flipH).toBeUndefined();
+  });
+
+  it("serializes and round-trips tile fill mode (a:tile)", async () => {
+    const pngDataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "\uFFFC",
+        image: {
+          src: pngDataUrl,
+          width: 100,
+          height: 50,
+          fillMode: "tile",
+        },
+      },
+    ]);
+
+    const buffer = await exportEditorDocumentToDocx(
+      createEditorDocument([paragraph]),
+    );
+    const xml = await readDocumentXml(buffer);
+    expect(xml).toContain("<a:tile/>");
+    expect(xml).not.toContain("<a:stretch>");
+
+    const document = await importDocxToEditorDocument(buffer);
+    const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
+      (r) => r.image,
+    )!;
+    expect(imageRun.image?.fillMode).toBe("tile");
+  });
+
+  it("exports gif images with correct content type and media extension", async () => {
+    // 1x1 transparent GIF.
+    const gifDataUrl =
+      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "\uFFFC",
+        image: { src: gifDataUrl, width: 10, height: 10 },
+      },
+    ]);
+
+    const buffer = await exportEditorDocumentToDocx(
+      createEditorDocument([paragraph]),
+    );
+    const zip = await JSZip.loadAsync(buffer);
+    const contentTypes = await zip
+      .file("[Content_Types].xml")
+      ?.async("string");
+
+    expect(contentTypes).toContain(
+      '<Default Extension="gif" ContentType="image/gif"/>',
+    );
+    expect(contentTypes).not.toContain('Extension="png"');
+    expect(zip.file("word/media/image1.gif")).not.toBeNull();
+  });
+
+  it("round-trips a gif image through DOCX", async () => {
+    const gifDataUrl =
+      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "\uFFFC",
+        image: { src: gifDataUrl, width: 10, height: 10 },
+      },
+    ]);
+
+    const buffer = await exportEditorDocumentToDocx(
+      createEditorDocument([paragraph]),
+    );
+    const document = await importDocxToEditorDocument(buffer);
+    const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
+      (r) => r.image,
+    )!;
+    const assetId = imageRun.image!.src.split(":")[1]!;
+    expect(document.assets?.[assetId]?.url).toMatch(/^data:image\/gif;base64,/);
   });
 
   it("serializes first, even, and default header/footer references", async () => {

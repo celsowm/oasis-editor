@@ -369,6 +369,41 @@ describe("DOCX run style import", () => {
     expect(reexported).toContain("<w:specVanish/>");
   });
 
+  it("imports legacy text effect and round-trips it as w:effect", async () => {
+    const zip = new JSZip();
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:rPr><w:effect w:val="blinkBackground"/></w:rPr>
+        <w:t>Legacy effect</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const run = getDocumentParagraphs(document)[0]!.runs[0]!;
+
+    expect(run.styles?.textEffect).toBe("blinkBackground");
+
+    const reexportedZip = await JSZip.loadAsync(
+      await exportEditorDocumentToDocx(document),
+    );
+    const reexported = await reexportedZip
+      .file("word/document.xml")
+      ?.async("string");
+    expect(reexported).toContain('<w:effect w:val="blinkBackground"/>');
+  });
+
   it("honors explicit w:b w:val='0' overriding a bold character style", async () => {
     const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">

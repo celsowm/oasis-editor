@@ -18,19 +18,23 @@ import {
   normalizeSelection,
 } from "../selection.js";
 import {
-  deleteSelectionRange,
-  getFocusParagraph,
   getStyleAtOffset,
   insertRunsAtOffset,
-  cloneParagraph,
-  cloneStateWithParagraphs,
-  withSelection,
-  cloneRun,
-  preserveSelectionByParagraphOffsets,
   buildParagraphFromRuns,
   sliceRuns,
+} from "../document/paragraphRuns.js";
+import {
+  cloneParagraph,
+  cloneRun,
   cloneParagraphs,
-} from "./utils.js";
+} from "../document/clone.js";
+import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+import {
+  deleteSelectionRange,
+  getFocusParagraph,
+  preserveSelectionByParagraphOffsets,
+  withSelection,
+} from "../selection/rangeEditing.js";
 
 export interface SelectedImageRun {
   paragraph: EditorParagraphNode;

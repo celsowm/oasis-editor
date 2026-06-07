@@ -5,7 +5,10 @@ import {
   paragraphOffsetToPosition,
 } from "../model.js";
 import { normalizeSelection } from "../selection.js";
-import { expandLinkRangeInParagraph, sliceRuns } from "./utils.js";
+import {
+  expandLinkRangeInParagraph,
+  sliceRuns,
+} from "../document/paragraphRuns.js";
 import { setTextStyleValue } from "./text.js";
 import { setSelection } from "./selection.js";
 

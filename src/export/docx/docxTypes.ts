@@ -1,5 +1,7 @@
 import type {
   EditorBlockNode,
+  EditorImageCrop,
+  EditorImageFillMode,
   EditorParagraphListStyle,
 } from "../../core/model.js";
 
@@ -19,6 +21,11 @@ export interface DocContext {
     cx: number;
     cy: number;
     alt?: string;
+    crop?: EditorImageCrop;
+    fillMode?: EditorImageFillMode;
+    rotation?: number;
+    flipH?: boolean;
+    flipV?: boolean;
   }>;
   imageMap: Map<string, string>;
   hyperlinks: Array<{ rId: string; href: string }>;

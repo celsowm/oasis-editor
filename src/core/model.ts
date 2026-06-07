@@ -124,11 +124,39 @@ export interface EditorParagraphListStyle {
   startAt?: number;
 }
 
+/**
+ * Image crop, mapped from DrawingML `a:srcRect`. Values are fractions of the
+ * source image (0..1), where OOXML's thousandths-of-a-percent (`100000` = 100%)
+ * have already been normalized. Each side is the amount trimmed from that edge.
+ */
+export interface EditorImageCrop {
+  left?: number;
+  top?: number;
+  right?: number;
+  bottom?: number;
+}
+
+/**
+ * Picture fill mode, mapped from DrawingML `a:stretch` / `a:tile`. `stretch`
+ * (the default) scales the image to the display box; `tile` repeats it.
+ */
+export type EditorImageFillMode = "stretch" | "tile";
+
 export interface EditorImageRunData {
   src: string;
   width: number;
   height: number;
   alt?: string;
+  /** Crop rectangle from `a:srcRect` (fractions of the source image). */
+  crop?: EditorImageCrop;
+  /** Fill mode from `a:stretch`/`a:tile`; omitted means `stretch`. */
+  fillMode?: EditorImageFillMode;
+  /** Clockwise rotation in degrees, from `a:xfrm/@rot` (OOXML rot = deg * 60000). */
+  rotation?: number;
+  /** Horizontal flip, from `a:xfrm/@flipH`. */
+  flipH?: boolean;
+  /** Vertical flip, from `a:xfrm/@flipV`. */
+  flipV?: boolean;
 }
 
 export interface EditorFieldData {

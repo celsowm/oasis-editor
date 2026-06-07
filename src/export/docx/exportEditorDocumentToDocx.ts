@@ -8,6 +8,10 @@ import type {
   EditorParagraphNode,
 } from "../../core/model.js";
 import { getDocumentSections, resolveImageSrc } from "../../core/model.js";
+import {
+  imageContentTypeDefaults,
+  imageExtensionFromMime,
+} from "../../utils/imageFormats.js";
 import type {
   DocContext,
   ExportBuildState,
@@ -164,15 +168,7 @@ function buildPartContext(
   state: ExportBuildState,
   document: EditorDocument,
 ): DocContext {
-  const images: Array<{
-    rId: string;
-    target: string;
-    base64: string;
-    runId: string;
-    cx: number;
-    cy: number;
-    alt?: string;
-  }> = [];
+  const images: DocContext["images"] = [];
   const imageMap = new Map<string, string>();
   const hyperlinks: Array<{ rId: string; href: string }> = [];
   const hyperlinkMap = new Map<string, string>();
@@ -193,15 +189,17 @@ function buildPartContext(
       // Image src may be an "asset:<id>" reference into the document's
       // asset registry — resolve it to the actual data URL before parsing.
       const resolvedSrc = resolveImageSrc(document, run.image.src);
-      const match = resolvedSrc.match(
-        /^data:image\/(png|jpeg|jpg);base64,(.*)$/,
-      );
+      const match = resolvedSrc.match(/^data:([^;,]+);base64,(.*)$/);
       if (!match) {
+        continue;
+      }
+      const ext = imageExtensionFromMime(match[1]!);
+      if (!ext) {
+        // Unsupported image MIME type: skip rather than emit an invalid part.
         continue;
       }
 
       const imageNumber = state.nextImageId;
-      const ext = match[1] === "jpeg" ? "jpg" : match[1];
       const base64 = match[2];
       const target = `media/image${imageNumber}.${ext}`;
       const rId = `rIdImg${imageNumber}`;
@@ -213,6 +211,11 @@ function buildPartContext(
         cx: Math.round(run.image.width * 9525),
         cy: Math.round(run.image.height * 9525),
         alt: run.image.alt,
+        crop: run.image.crop,
+        fillMode: run.image.fillMode,
+        rotation: run.image.rotation,
+        flipH: run.image.flipH,
+        flipV: run.image.flipV,
       });
       imageMap.set(run.id, rId);
       state.nextImageId += 1;
@@ -322,7 +325,7 @@ function buildHeaderFooterXml(
 
 function buildContentTypesXml(
   hasNumbering: boolean,
-  hasImages: boolean,
+  imageExtensions: Iterable<string>,
   hasSettings: boolean,
   parts: PartDefinition[],
   hasFootnotes: boolean,
@@ -336,11 +339,9 @@ function buildContentTypesXml(
       return `<Override PartName="/word/${part.path}" ContentType="${contentType}"/>`;
     })
     .join("");
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${
-    hasImages
-      ? '<Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="jpeg" ContentType="image/jpeg"/>'
-      : ""
-  }<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>${
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${imageContentTypeDefaults(
+    imageExtensions,
+  )}<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>${
     hasNumbering
       ? '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>'
       : ""
@@ -522,13 +523,15 @@ export async function exportEditorDocumentToDocx(
   if (footnotesPart) {
     allImages.push(...footnotesPart.partContext.images);
   }
-  const hasImagesIncludingFootnotes = allImages.length > 0;
+  const imageExtensions = allImages
+    .map((img) => img.target.split(".").pop()?.toLowerCase())
+    .filter((ext): ext is string => Boolean(ext));
 
   zip.file(
     "[Content_Types].xml",
     buildContentTypesXml(
       hasNumbering,
-      hasImagesIncludingFootnotes,
+      imageExtensions,
       hasDocumentSettings,
       parts,
       hasFootnotes,

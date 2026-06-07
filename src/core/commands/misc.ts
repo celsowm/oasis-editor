@@ -6,15 +6,17 @@ import {
 } from "../model.js";
 import { isSelectionCollapsed } from "../selection.js";
 import {
-  deleteSelectionRange,
-  getFocusParagraph,
   sliceRuns,
   getStyleAtOffset,
   buildParagraphFromRuns,
-  cloneParagraphs,
-  cloneStateWithParagraphs,
+} from "../document/paragraphRuns.js";
+import { cloneParagraphs } from "../document/clone.js";
+import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+import {
+  deleteSelectionRange,
+  getFocusParagraph,
   withSelection,
-} from "./utils.js";
+} from "../selection/rangeEditing.js";
 
 export function insertFieldAtSelection(
   state: EditorState,

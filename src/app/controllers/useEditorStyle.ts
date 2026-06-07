@@ -15,6 +15,7 @@ type ValueStyleKey =
   | "highlight"
   | "shading"
   | "language"
+  | "textEffect"
   | "link"
   | "underlineStyle";
 

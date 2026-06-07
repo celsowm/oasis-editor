@@ -5,12 +5,12 @@ import type {
   EditorTextStyle,
 } from "../../core/model.js";
 import type { EditorClipboardParagraphSpec } from "../../core/commands/clipboard.js";
+import { cloneStyle } from "../../core/textStyle/textStyleMutations.js";
 import {
-  cloneStyle,
   parseInlineImage,
   parseInlineStyles,
   parseParagraphStyle,
-} from "../../core/commands/utils.js";
+} from "../../core/html/htmlStyleParser.js";
 
 export function parseEditorClipboardHtmlWithDom(
   html: string,

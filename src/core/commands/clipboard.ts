@@ -14,20 +14,26 @@ import {
 import { createEditorParagraphFromRuns } from "../editorState.js";
 import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
 import {
-  sliceRuns,
   paragraphStyleToCssText,
-  serializeParagraphRunsToHtml,
-  cloneStyle,
+} from "../html/styleCss.js";
+import { serializeParagraphRunsToHtml } from "../html/htmlTextSerializer.js";
+import { cloneStyle } from "../textStyle/textStyleMutations.js";
+import {
+  sliceRuns,
+  buildParagraphFromRuns,
+  getStyleAtOffset,
+} from "../document/paragraphRuns.js";
+import {
+  cloneRun,
+  cloneParagraphs,
+  cloneParagraph,
+} from "../document/clone.js";
+import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+import {
   deleteSelectionRange,
   getFocusParagraph,
   withSelection,
-  buildParagraphFromRuns,
-  cloneRun,
-  getStyleAtOffset,
-  cloneParagraphs,
-  cloneParagraph,
-  cloneStateWithParagraphs,
-} from "./utils.js";
+} from "../selection/rangeEditing.js";
 
 export interface EditorClipboardParagraphSpec {
   runs: Array<{

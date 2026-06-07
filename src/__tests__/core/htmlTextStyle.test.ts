@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { serializeTextRunToHtml } from "../../core/commands/utils.js";
+import { serializeTextRunToHtml } from "../../core/html/htmlTextSerializer.js";
 
 describe("HTML text style serialization", () => {
   it("serializes run language metadata as HTML lang and Oasis data attributes", () => {
