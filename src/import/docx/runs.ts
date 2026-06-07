@@ -143,11 +143,6 @@ export async function parseRunElement(
   return { text: textParts.join(""), image };
 }
 
-export function getRunFieldCharType(runElement: XmlElement): string | null {
-  const fieldChar = getFirstChildByTagNameNS(runElement, WORD_NS, "fldChar");
-  return fieldChar ? getAttributeValue(fieldChar, "fldCharType") : null;
-}
-
 export function getRunInstructionText(runElement: XmlElement): string {
   return getChildrenByTagNameNS(runElement, WORD_NS, "instrText")
     .map((element) => element.textContent ?? "")
@@ -168,6 +163,7 @@ export async function parseRunsContainer(
     instruction: string;
     resultRuns: ImportedRun[];
     collectingResult: boolean;
+    fallbackStyles?: EditorTextStyle;
   } | null = null;
 
   const flushActiveField = () => {
@@ -182,7 +178,9 @@ export async function parseRunsContainer(
         : null;
     const displayText =
       activeField.resultRuns.map((run) => run.text).join("") || "1";
-    const styles = activeField.resultRuns.find((run) => run.styles)?.styles;
+    const styles =
+      activeField.resultRuns.find((run) => run.styles)?.styles ??
+      activeField.fallbackStyles;
     runs.push({
       text: displayText,
       styles,
@@ -203,14 +201,49 @@ export async function parseRunsContainer(
     }
 
     if (element.localName === "r") {
-      const fieldCharType = getRunFieldCharType(element);
-      if (fieldCharType === "begin") {
-        flushActiveField();
-        activeField = {
-          instruction: "",
-          resultRuns: [],
-          collectingResult: false,
-        };
+      // A single <w:r> can carry several field-control children at once — some
+      // generators emit begin + instrText + end inside one run instead of one
+      // run per role. Walk the field children in document order so every
+      // transition is observed; reading only the first fldChar would drop the
+      // instruction (e.g. PAGE) and leave the field unrecognized.
+      const fieldChars = getChildrenByTagNameNS(element, WORD_NS, "fldChar");
+      if (fieldChars.length > 0) {
+        const runStyles = parseRunStyle(
+          getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
+          theme,
+        );
+        for (let child = 0; child < element.childNodes.length; child += 1) {
+          const childNode = element.childNodes[child];
+          if (childNode?.nodeType !== childNode.ELEMENT_NODE) {
+            continue;
+          }
+          const childElement = childNode as XmlElement;
+          if (childElement.namespaceURI !== WORD_NS) {
+            continue;
+          }
+          if (childElement.localName === "fldChar") {
+            const fldCharType = getAttributeValue(childElement, "fldCharType");
+            if (fldCharType === "begin") {
+              flushActiveField();
+              activeField = {
+                instruction: "",
+                resultRuns: [],
+                collectingResult: false,
+                ...(runStyles ? { fallbackStyles: runStyles } : {}),
+              };
+            } else if (fldCharType === "separate") {
+              if (activeField) {
+                activeField.collectingResult = true;
+              }
+            } else if (fldCharType === "end") {
+              flushActiveField();
+            }
+          } else if (childElement.localName === "instrText") {
+            if (activeField && !activeField.collectingResult) {
+              activeField.instruction += childElement.textContent ?? "";
+            }
+          }
+        }
         continue;
       }
 
@@ -218,16 +251,6 @@ export async function parseRunsContainer(
         const instructionText = getRunInstructionText(element);
         if (instructionText) {
           activeField.instruction += instructionText;
-          continue;
-        }
-
-        if (fieldCharType === "separate") {
-          activeField.collectingResult = true;
-          continue;
-        }
-
-        if (fieldCharType === "end") {
-          flushActiveField();
           continue;
         }
       }

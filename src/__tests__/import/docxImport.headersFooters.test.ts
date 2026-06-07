@@ -104,6 +104,45 @@ async function buildDocxWithTypedHeaders(): Promise<ArrayBuffer> {
   return zip.generateAsync({ type: "arraybuffer" });
 }
 
+async function buildDocxWithCompactFooterPageField(): Promise<ArrayBuffer> {
+  const zip = new JSZip();
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Page one</w:t></w:r></w:p>
+    <w:p><w:r><w:br w:type="page"/></w:r></w:p>
+    <w:p><w:r><w:t>Page two</w:t></w:r></w:p>
+    <w:sectPr>
+      <w:footerReference w:type="default" r:id="rIdFooter"/>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+  const documentRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rIdFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
+</Relationships>`;
+  // The whole PAGE field lives inside a single <w:r> (begin + instrText + end),
+  // the compact encoding some generators emit instead of one run per role.
+  const footerXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:p>
+    <w:pPr><w:jc w:val="center"/></w:pPr>
+    <w:r>
+      <w:fldChar w:fldCharType="begin"/>
+      <w:instrText xml:space="preserve">PAGE</w:instrText>
+      <w:fldChar w:fldCharType="end"/>
+    </w:r>
+  </w:p>
+</w:ftr>`;
+
+  zip.file("word/document.xml", documentXml);
+  zip.file("word/_rels/document.xml.rels", documentRelsXml);
+  zip.file("word/footer1.xml", footerXml);
+  return zip.generateAsync({ type: "arraybuffer" });
+}
+
 describe("DOCX headers and footers import", () => {
   it("loads images from header-specific relationships", async () => {
     const document = await importDocxToEditorDocument(
@@ -154,5 +193,22 @@ describe("DOCX headers and footers import", () => {
       "EVEN FOOTER",
       "DEFAULT FOOTER",
     ]);
+  });
+
+  it("recognizes a PAGE field encoded inside a single run and paginates it", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithCompactFooterPageField(),
+    );
+    const footerRun = document.sections?.[0]?.footer
+      ?.flatMap((block) => (block.type === "paragraph" ? block.runs : []))
+      .find((run) => run.field);
+
+    expect(footerRun?.field?.type).toBe("PAGE");
+
+    const layout = projectDocumentLayout(document);
+    const footerTexts = layout.pages
+      .slice(0, 2)
+      .map((page) => page.footerBlocks?.[0]?.layout?.text);
+    expect(footerTexts).toEqual(["1", "2"]);
   });
 });
