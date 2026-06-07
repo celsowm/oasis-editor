@@ -142,11 +142,40 @@ export interface EditorImageCrop {
  */
 export type EditorImageFillMode = "stretch" | "tile";
 
+export interface EditorImageFloatingPosition {
+  relativeFrom?: string;
+  align?: string;
+  offset?: number;
+}
+
+export interface EditorImageFloatingLayout {
+  type: "floating";
+  distT?: number;
+  distB?: number;
+  distL?: number;
+  distR?: number;
+  simplePos?: boolean;
+  relativeHeight?: number;
+  behindDoc?: boolean;
+  locked?: boolean;
+  layoutInCell?: boolean;
+  allowOverlap?: boolean;
+  positionH?: EditorImageFloatingPosition;
+  positionV?: EditorImageFloatingPosition;
+  wrap?: "none" | "square" | "tight" | "through" | "topAndBottom";
+}
+
 export interface EditorImageRunData {
   src: string;
   width: number;
   height: number;
   alt?: string;
+  /**
+   * External (linked) image URL, from `a:blip/@r:link` with a relationship of
+   * `TargetMode="External"`. The binary is NOT embedded in the package; the
+   * importer never fetches it automatically. When set, `src` is empty.
+   */
+  linkedSrc?: string;
   /** Crop rectangle from `a:srcRect` (fractions of the source image). */
   crop?: EditorImageCrop;
   /** Fill mode from `a:stretch`/`a:tile`; omitted means `stretch`. */
@@ -157,6 +186,11 @@ export interface EditorImageRunData {
   flipH?: boolean;
   /** Vertical flip, from `a:xfrm/@flipV`. */
   flipV?: boolean;
+  /**
+   * Floating `wp:anchor` metadata. The editor currently renders this as an
+   * inline fallback, but DOCX import/export preserves the anchor shape.
+   */
+  floating?: EditorImageFloatingLayout;
 }
 
 export interface EditorFieldData {

@@ -188,7 +188,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Run/content | `w:ptab` | `w:r` | `w:alignment`, `w:relativeTo`, `w:leader` | Positioned tab. | Used in headers/footers and page-number layouts. | P2 | Not supported |
 | Run/content | `w:object` | `w:r` | children/relationship attrs | Embedded OLE/VML object. | Usually preserve/placeholder unless OLE rendering is in scope. | P4 | Not supported |
 | Run/content | `w:drawing` | `w:r` | DrawingML children | Modern drawing/image/chart container. | Parse `wp:inline`/`wp:anchor`; resolve image relationships. | P1 | Partial |
-| Run/content | `w:pict` | `w:r` | VML children | Legacy VML picture/shape container. | Common in old DOCX/templates; support at least image extraction and text boxes. | P2 | Not supported |
+| Run/content | `w:pict` | `w:r` | VML children | Legacy VML picture/shape container. | Common in old DOCX/templates; support at least image extraction and text boxes. | P2 | Partial |
 | Run/content | `w:lastRenderedPageBreak` | `w:r` | — | Producer-saved rendered page break marker. | Useful debug hint but not normative for a new layout engine. | P3 | Supported |
 | Run/content | `w:instrText` | `w:r` | `xml:space` | Field instruction text. | Needed for complex fields like PAGE, NUMPAGES, TOC, REF, HYPERLINK. | P1 | Supported |
 | Run/content | `w:fldChar` | `w:r` | `w:fldCharType`, `w:fldLock`, `w:dirty` | Complex field delimiter. | Track begin/separate/end state to reconstruct field instructions and result. | P1 | Partial |
@@ -358,14 +358,14 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 |---|---|---|---|---|---|---|---|
 | DrawingML | `w:drawing` | Run | — | Drawing object wrapper. | Contains `wp:inline` or `wp:anchor`. | P1 | Partial |
 | DrawingML | `wp:inline` | `w:drawing` | `distT`, `distB`, `distL`, `distR` | Inline drawing. | Occupies inline layout box; easiest image case. | P1 | Supported |
-| DrawingML | `wp:anchor` | `w:drawing` | `simplePos`, `relativeHeight`, `behindDoc`, `locked`, `layoutInCell`, `allowOverlap`, distances | Floating drawing. | Requires positioning, wrapping and z-order handling. | P2 | Not supported |
+| DrawingML | `wp:anchor` | `w:drawing` | `simplePos`, `relativeHeight`, `behindDoc`, `locked`, `layoutInCell`, `allowOverlap`, distances | Floating drawing. | Requires positioning, wrapping and z-order handling. | P2 | Partial |
 | DrawingML | `wp:extent` | `wp:inline`, `wp:anchor` | `cx`, `cy` | Drawing size in EMUs. | Convert EMUs to pixels/points/twips. | P1 | Supported |
 | DrawingML | `wp:effectExtent` | `wp:inline`, `wp:anchor` | `l`, `t`, `r`, `b` | Visual effect extents. | Shadows/glows may extend layout bounds. | P3 | Not supported |
 | DrawingML | `wp:docPr` | `wp:inline`, `wp:anchor` | `id`, `name`, `descr`, `title` | Non-visual drawing properties. | Alt text/accessibility and stable IDs. | P2 | Supported |
 | DrawingML | `wp:cNvGraphicFramePr` | `wp:inline`, `wp:anchor` | children | Non-visual frame properties. | Preserve locks. | P3 | Not supported |
-| DrawingML | `wp:positionH` / `wp:positionV` | `wp:anchor` | `relativeFrom` | Horizontal/vertical positioning. | Contains `align` or `posOffset`; relative to page/margin/column/character/etc. | P2 | Not supported |
-| DrawingML | `wp:wrapNone` / `wp:wrapSquare` / `wp:wrapTight` / `wp:wrapThrough` / `wp:wrapTopAndBottom` | `wp:anchor` | wrap-specific attrs | Text wrapping mode around object. | Major impact on paragraph layout. | P2 | Not supported |
-| DrawingML | `wp:simplePos` | `wp:anchor` | `x`, `y` | Simple absolute position. | Used when `simplePos='1'`. | P2 | Not supported |
+| DrawingML | `wp:positionH` / `wp:positionV` | `wp:anchor` | `relativeFrom` | Horizontal/vertical positioning. | Contains `align` or `posOffset`; relative to page/margin/column/character/etc. | P2 | Partial |
+| DrawingML | `wp:wrapNone` / `wp:wrapSquare` / `wp:wrapTight` / `wp:wrapThrough` / `wp:wrapTopAndBottom` | `wp:anchor` | wrap-specific attrs | Text wrapping mode around object. | Major impact on paragraph layout. | P2 | Partial |
+| DrawingML | `wp:simplePos` | `wp:anchor` | `x`, `y` | Simple absolute position. | Used when `simplePos='1'`. | P2 | Partial |
 | DrawingML | `a:graphic` | `wp:inline`, `wp:anchor` | — | DrawingML graphic root. | Dispatch by child `a:graphicData/@uri`. | P1 | Supported |
 | DrawingML | `a:graphicData` | `a:graphic` | `uri` | Graphic payload container. | Common URIs for pictures, charts, diagrams, WPS shapes. | P1 | Supported |
 | Pictures | `pic:pic` | `a:graphicData` | — | DrawingML picture object. | Core image representation. | P1 | Supported |
@@ -383,9 +383,9 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | DrawingML color | `a:srgbClr` / `a:schemeClr` / `a:sysClr` / `a:prstClr` | Color contexts | `val`, transformations | Color choices. | Theme resolution is mandatory for accurate colors. | P1 | Not supported |
 | Charts | `c:chart` | Drawing relationship target | `r:id` | Chart reference. | Requires chart part; can render placeholder or parse chart data. | P3 | Not supported |
 | Diagrams | SmartArt/diagram parts | Drawing relationships | varies | SmartArt diagrams. | Usually preserve or render preview if available. | P4 | Not supported |
-| VML | `w:pict` | Run | VML children | Legacy VML container. | Still appears in older Word docs and some templates. | P2 | Not supported |
-| VML | `v:shape` | `w:pict`, VML group | `id`, `type`, `style`, `fillcolor`, `strokecolor`, `coordsize`, `path` | Legacy shape. | Parse CSS-like style for position/size; preserve unsupported geometry. | P2 | Not supported |
-| VML | `v:imagedata` | `v:shape` | `r:id`, `o:title`, `croptop`, `cropright`, `cropbottom`, `cropleft` | Legacy image data. | Resolve image relationship. | P2 | Not supported |
+| VML | `w:pict` | Run | VML children | Legacy VML container. | Still appears in older Word docs and some templates. | P2 | Partial |
+| VML | `v:shape` | `w:pict`, VML group | `id`, `type`, `style`, `fillcolor`, `strokecolor`, `coordsize`, `path` | Legacy shape. | Parse CSS-like style for position/size; preserve unsupported geometry. | P2 | Partial |
+| VML | `v:imagedata` | `v:shape` | `r:id`, `o:title`, `croptop`, `cropright`, `cropbottom`, `cropleft` | Legacy image data. | Resolve image relationship. | P2 | Partial |
 | VML | `v:textbox` | `v:shape` | `style`, `inset` | Legacy text box. | Contains `w:txbxContent` with normal WordprocessingML. | P2 | Not supported |
 | VML | `v:group` | VML contexts | `style`, `coordorigin`, `coordsize` | Grouped legacy shapes. | Transform children coordinates. | P3 | Not supported |
 | VML | `v:rect` / `v:oval` / `v:line` / `v:polyline` / `v:roundrect` | VML contexts | style/fill/stroke attrs | Common legacy shapes. | Approximate to SVG/CSS if rendering. | P3 | Not supported |
@@ -523,7 +523,7 @@ This pass fills the practical gaps left after the broad matrix above. It still a
 | Area | Element / tag / part | Parent / context | Key attributes | Meaning | Importer notes | Priority | Status |
 |---|---|---|---|---|---|---|---|
 | Package / OPC | Relationship base URI | Any `.rels` part | source part path, `Target` | Relationship targets are resolved relative to the owning part. | Do not resolve all targets relative to package root; `../media/image1.png` style targets are normal. | P0 | Supported |
-| Package / OPC | External relationship | `pr:Relationship` | `TargetMode="External"`, `Target` | Link to external URL or file. | Never dereference blindly; keep as link metadata and sanitize in UI/export. | P0 | Not supported |
+| Package / OPC | External relationship | `pr:Relationship` | `TargetMode="External"`, `Target` | Link to external URL or file. | Never dereference blindly; keep as link metadata and sanitize in UI/export. | P0 | Partial |
 | Package / OPC | `word/media/*` | Image relationships | content type by extension or override | Embedded image binaries. | Support at least png/jpeg/gif/bmp/tiff/emf/wmf/svg fallback policy depending renderer. | P1 | Supported |
 | Package / OPC | `word/embeddings/*` | OLE/package relationships | binary part name/content type | Embedded OLE package or object. | Usually render placeholder; preserve binary and relationship for round-trip. | P3 | Not supported |
 | Package / OPC | `word/activeX/*` | ActiveX relationship | binary/XML controls | ActiveX controls. | Treat as unsafe active content; preserve or strip according to security policy. | P4 | Not supported |
@@ -973,13 +973,13 @@ This section condenses the per-table Status column into a high-level capability 
 |---|---|---|
 | `w:fldSimple` / `w:fldChar` | PAGE and NUMPAGES are full round-trip; other instructions are stored as static text and re-emitted as plain runs. | The editor has no field type registry beyond these two. |
 | Numbering | Only the first `w:lvl`'s `w:numFmt` is read (bullet vs ordered) and the paragraph list kind is preserved. | `lvlText`, multi-level, picture bullets, `lvlRestart`, `suff`, `isLgl`, `multiLevelType`, `nsid`, `tmpl` are dropped. Export regenerates a fresh `numbering.xml` from the paragraph's bullet/ordered + level. |
-| Images | Inline pictures only, no transforms, crop, rotation, or `wp:anchor`. | `pic:spPr`, `a:srcRect`, `a:xfrm`/`a:off`/`a:ext` are not parsed. |
+| Images | Inline pictures plus floating anchor metadata; crop, fill mode, rotation/flip, embedded binaries, external `a:blip/@r:link`, and simple VML `w:pict/v:imagedata` fallback are supported. | Floating images render with inline fallback in the editor; VML shapes/text boxes, effects, recolor, charts, SmartArt, and OLE are still outside the image model. |
 | `w:rFonts` | `ascii`/`hAnsi`/`cs` and `asciiTheme`/`hAnsiTheme`/`cstheme` with `w:hint` are read; `eastAsia`/`eastAsiaTheme` are not exported. | Run font resolution is partial. |
 | `w:b` / `w:i` / `w:bCs` / `w:iCs` | All four are parsed; only `w:b`/`w:i` are written on export. | Complex-script bold/italic is not propagated. |
 | `w:color` | Hex `w:val` and theme colors (`themeColor`/`themeTint`/`themeShade` against `a:clrScheme`) are resolved to concrete hex on import; export writes the resolved value. `clrSchemeMapping` overrides in the document settings are not applied. | Full theme → concrete-hex pipeline is in place; per-document scheme remapping is not. |
 | `w:rStyle` | Read on import (so style-based run properties cascade) but the editor does not export a `w:rStyle` reference. | Style-cascade identity is lost in export. |
 | `w:ind` character units | `w:leftChars`/`w:rightChars`/`w:firstLineChars`/`w:hangingChars` are dropped; twip values are used. | Char-unit indentation is not normalized. |
-| `w:drawing` | Only `wp:inline` + `pic:pic` survives. Floating drawings, `wp:anchor`, shapes, charts, SmartArt, OLE, VML are dropped. | No drawing model beyond the inline image. |
+| `w:drawing` | `wp:inline` + `pic:pic` round-trip; `wp:anchor` metadata round-trips for image anchors, but the editor layout uses inline fallback. Shapes, charts, SmartArt, and OLE are dropped; simple VML images are converted to modern inline DrawingML. | No floating layout engine beyond metadata preservation. |
 | `w:tblPr` / `w:trPr` | `w:tblW`, `w:tblInd`, `w:trHeight`, `w:tblHeader` round-trip; `w:tblPrEx`, `w:tblCellSpacing`, `w:tblLayout` on cell, `w:gridBefore`/`w:gridAfter`, `w:wBefore`/`w:wAfter` are dropped. | Only the subset exposed by the editor model is written. |
 | `w:tcBorders` | `top`/`right`/`bottom`/`left` with `val`/`sz`/`color` round-trip; `start`/`end`/`insideH`/`insideV`/`tl2br`/`tr2bl` are not. | Bidi borders and diagonals are not in the model. |
 | `w:tblStyle` | `styleId` is read so the table style cascade can apply, but the `w:tblStylePr` conditional buckets and `cnfStyle`/`tblLook` masks are not. | Conditional formatting is not applied. |
@@ -998,8 +998,8 @@ This section condenses the per-table Status column into a high-level capability 
 | Bookmarks | `w:bookmarkStart` / `w:bookmarkEnd`. |
 | Legacy forms | `w:ffData`, `w:textInput`, `w:checkBox`, `w:ddList`, `FORMTEXT`/`FORMCHECKBOX`/`FORMDROPDOWN`. |
 | Office Math | `m:oMath`, `m:oMathPara`, all child equations. |
-| Drawings beyond inline images | `wp:anchor`, all shape families (`wps:wsp`, `wpg:wgp`, `v:shape`, `v:rect`, `v:oval`, `v:group`, `v:textbox`), `v:imagedata`, `pic:spPr`, transforms, crop, recolor, alpha. |
-| Charts / diagrams / OLE | `c:chart*`, `dgm:*`, `lc:lockedCanvas`, `o:OLEObject`, `w:object`, `w:pict`. |
+| Drawings beyond inline/simple VML images | `wp:anchor`, all shape families (`wps:wsp`, `wpg:wgp`, `v:shape`, `v:rect`, `v:oval`, `v:group`, `v:textbox`), `pic:spPr` effects beyond transform/crop, recolor, alpha. |
+| Charts / diagrams / OLE | `c:chart*`, `dgm:*`, `lc:lockedCanvas`, `o:OLEObject`, `w:object`, non-image `w:pict`. |
 | AltChunk | `w:altChunk`. |
 | Bidi/RTL/Complex script | `w:bidi` (paragraph/section), `w:rtl`, `w:cs`, `w:bdo`/`w:dir`, `w:lang`, `w:bidiVisual`, `w:noColumnBalance`. |
 | East Asian / CJK | `w:eastAsianLayout`, `w:vertAlign` for CJK, `w:ruby`/`w:rt`/`w:rubyBase`, `w:doNotUseEastAsianBreakRules`, `w:useWord97LineBreakRules`, `w:useAltKinsokuLineBreakRules`. |
@@ -1034,6 +1034,6 @@ This section condenses the per-table Status column into a high-level capability 
 - The pipeline is centered on a fixed editor model (`EditorTextStyle`, `EditorParagraphStyle`, table grid/cell properties, list kinds, footnote references, image assets, headers/footers). Anything that cannot be expressed in that model is dropped on import and not regenerated on export.
 - The export is a regeneration, not a round-trip: footnotes are renumbered, numbering definitions are rebuilt from paragraph list kind, and theme/styles are re-emitted with only the properties oasis tracks.
 - Theme/font resolution is the largest single gap relative to "Word-like" fidelity: only `a:fontScheme` is read; theme colors and full `word/fontTable.xml` are not.
-- Image and drawing support stops at inline pictures; everything floating, shaped, charted, or VML is dropped silently.
+- Image and drawing support stops at inline pictures plus simple VML image fallback; everything floating, shaped, charted, or OLE-backed is dropped silently.
 - No comment, content control (SDT), bookmark, endnote, or tracked-change story is parsed. If a document relies on any of these, the editor sees only the visible text and loses the structure.
 - Most of `word/settings.xml`, `word/webSettings.xml`, and `word/fontTable.xml` are not consumed; the editor relies on its own runtime state.

@@ -237,9 +237,7 @@ describe("DOCX export", () => {
 
     expect(xml).toContain("<w:tabs>");
     expect(xml).toContain('<w:tab w:val="left" w:pos="720"/>');
-    expect(xml).toContain(
-      '<w:tab w:val="right" w:pos="1440" w:leader="dot"/>',
-    );
+    expect(xml).toContain('<w:tab w:val="right" w:pos="1440" w:leader="dot"/>');
     expect(xml).toContain(
       '<w:tab w:val="decimal" w:pos="2160" w:leader="hyphen"/>',
     );
@@ -261,7 +259,9 @@ describe("DOCX export", () => {
   });
 
   it("serializes no-break and soft hyphen run content", async () => {
-    const paragraph = createEditorParagraph("non\u2011breaking soft\u00ADhyphen");
+    const paragraph = createEditorParagraph(
+      "non\u2011breaking soft\u00ADhyphen",
+    );
 
     const xml = await readDocumentXml(
       await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
@@ -409,6 +409,74 @@ describe("DOCX export", () => {
     expect(imageRun.image?.fillMode).toBe("tile");
   });
 
+  it("serializes and round-trips floating image anchors (wp:anchor)", async () => {
+    const pngDataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "\uFFFC",
+        image: {
+          src: pngDataUrl,
+          width: 100,
+          height: 50,
+          floating: {
+            type: "floating",
+            distT: 0,
+            distB: 0,
+            distL: 114300,
+            distR: 114300,
+            relativeHeight: 251659264,
+            behindDoc: false,
+            locked: false,
+            layoutInCell: true,
+            allowOverlap: true,
+            positionH: { relativeFrom: "margin", align: "center" },
+            positionV: { relativeFrom: "paragraph", offset: 190500 },
+            wrap: "square",
+          },
+        },
+      },
+    ]);
+
+    const buffer = await exportEditorDocumentToDocx(
+      createEditorDocument([paragraph]),
+    );
+    const xml = await readDocumentXml(buffer);
+
+    expect(xml).toContain("<wp:anchor ");
+    expect(xml).not.toContain("<wp:inline ");
+    expect(xml).toContain('distL="114300"');
+    expect(xml).toContain('relativeHeight="251659264"');
+    expect(xml).toContain(
+      '<wp:positionH relativeFrom="margin"><wp:align>center</wp:align></wp:positionH>',
+    );
+    expect(xml).toContain(
+      '<wp:positionV relativeFrom="paragraph"><wp:posOffset>190500</wp:posOffset></wp:positionV>',
+    );
+    expect(xml).toContain('<wp:wrapSquare wrapText="bothSides"/>');
+
+    const document = await importDocxToEditorDocument(buffer);
+    const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
+      (r) => r.image,
+    )!;
+    expect(imageRun.image?.floating).toEqual({
+      type: "floating",
+      distT: 0,
+      distB: 0,
+      distL: 114300,
+      distR: 114300,
+      simplePos: false,
+      relativeHeight: 251659264,
+      behindDoc: false,
+      locked: false,
+      layoutInCell: true,
+      allowOverlap: true,
+      positionH: { relativeFrom: "margin", align: "center" },
+      positionV: { relativeFrom: "paragraph", offset: 190500 },
+      wrap: "square",
+    });
+  });
+
   it("exports gif images with correct content type and media extension", async () => {
     // 1x1 transparent GIF.
     const gifDataUrl =
@@ -424,9 +492,7 @@ describe("DOCX export", () => {
       createEditorDocument([paragraph]),
     );
     const zip = await JSZip.loadAsync(buffer);
-    const contentTypes = await zip
-      .file("[Content_Types].xml")
-      ?.async("string");
+    const contentTypes = await zip.file("[Content_Types].xml")?.async("string");
 
     expect(contentTypes).toContain(
       '<Default Extension="gif" ContentType="image/gif"/>',
@@ -454,6 +520,65 @@ describe("DOCX export", () => {
     )!;
     const assetId = imageRun.image!.src.split(":")[1]!;
     expect(document.assets?.[assetId]?.url).toMatch(/^data:image\/gif;base64,/);
+  });
+
+  it("exports linked images as external relationships without embedded media", async () => {
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "\uFFFC",
+        image: {
+          src: "",
+          linkedSrc: "https://example.com/image.png",
+          width: 100,
+          height: 50,
+          alt: "linked alt",
+        },
+      },
+    ]);
+
+    const buffer = await exportEditorDocumentToDocx(
+      createEditorDocument([paragraph]),
+    );
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await readZipText(buffer, "word/document.xml");
+    const relsXml = await readZipText(buffer, "word/_rels/document.xml.rels");
+    const contentTypes = await readZipText(buffer, "[Content_Types].xml");
+
+    expect(documentXml).toContain('r:link="rIdImg1"');
+    expect(documentXml).not.toContain('r:embed="rIdImg1"');
+    expect(relsXml).toContain(
+      '<Relationship Id="rIdImg1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="https://example.com/image.png" TargetMode="External"/>',
+    );
+    expect(contentTypes).not.toContain('ContentType="image/png"');
+    expect(zip.file("word/media/image1.png")).toBeNull();
+  });
+
+  it("round-trips linked images through DOCX without embedding binaries", async () => {
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "\uFFFC",
+        image: {
+          src: "",
+          linkedSrc: "https://example.com/image.png",
+          width: 100,
+          height: 50,
+        },
+      },
+    ]);
+
+    const buffer = await exportEditorDocumentToDocx(
+      createEditorDocument([paragraph]),
+    );
+    const document = await importDocxToEditorDocument(buffer);
+    const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
+      (r) => r.image,
+    )!;
+
+    expect(imageRun.image?.src).toBe("");
+    expect(imageRun.image?.linkedSrc).toBe("https://example.com/image.png");
+    expect(imageRun.image?.width).toBe(100);
+    expect(imageRun.image?.height).toBe(50);
+    expect(document.assets).toBeUndefined();
   });
 
   it("serializes first, even, and default header/footer references", async () => {

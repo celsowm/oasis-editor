@@ -2,6 +2,7 @@ import type {
   EditorBlockNode,
   EditorImageCrop,
   EditorImageFillMode,
+  EditorImageFloatingLayout,
   EditorParagraphListStyle,
 } from "../../core/model.js";
 
@@ -16,7 +17,8 @@ export interface DocContext {
   images: Array<{
     rId: string;
     target: string;
-    base64: string;
+    kind: "embedded" | "linked";
+    base64?: string;
     runId: string;
     cx: number;
     cy: number;
@@ -26,6 +28,7 @@ export interface DocContext {
     rotation?: number;
     flipH?: boolean;
     flipV?: boolean;
+    floating?: EditorImageFloatingLayout;
   }>;
   imageMap: Map<string, string>;
   hyperlinks: Array<{ rId: string; href: string }>;

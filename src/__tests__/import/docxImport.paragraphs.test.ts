@@ -527,6 +527,126 @@ describe("DOCX paragraph import", () => {
     expect(imageRun.image?.fillMode).toBe("tile");
   });
 
+  it("imports linked inline images without fetching external targets", async () => {
+    const zip = new JSZip();
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:drawing>
+          <wp:inline distT="0" distB="0" distL="0" distR="0">
+            <wp:extent cx="952500" cy="476250"/>
+            <wp:docPr id="1" name="Picture" descr="linked alt"/>
+            <a:graphic>
+              <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                <pic:pic>
+                  <pic:nvPicPr><pic:cNvPr id="0" name="Picture"/><pic:cNvPicPr/></pic:nvPicPr>
+                  <pic:blipFill>
+                    <a:blip r:link="rId1"/>
+                    <a:stretch><a:fillRect/></a:stretch>
+                  </pic:blipFill>
+                  <pic:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>
+                </pic:pic>
+              </a:graphicData>
+            </a:graphic>
+          </wp:inline>
+        </w:drawing>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    zip.file(
+      "word/_rels/document.xml.rels",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="https://example.com/image.png" TargetMode="External"/>
+</Relationships>`,
+    );
+
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+    const imageRun = paragraph.runs.find((r) => r.image)!;
+
+    expect(imageRun.text).toBe("￼");
+    expect(imageRun.image?.src).toBe("");
+    expect(imageRun.image?.linkedSrc).toBe("https://example.com/image.png");
+    expect(imageRun.image?.width).toBe(100);
+    expect(imageRun.image?.height).toBe(50);
+    expect(imageRun.image?.alt).toBe("linked alt");
+    expect(document.assets).toBeUndefined();
+  });
+
+  it("imports VML w:pict image data as an inline image", async () => {
+    const pngBase64 =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const zip = new JSZip();
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:pict>
+          <v:shape id="Picture 1" type="#_x0000_t75" style="width:72pt;height:36pt">
+            <v:imagedata r:id="rId1" o:title="legacy alt" cropleft="6554f" croptop="3277f"/>
+          </v:shape>
+        </w:pict>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    zip.file(
+      "word/_rels/document.xml.rels",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.png"/>
+</Relationships>`,
+    );
+    zip.file("word/media/image1.png", pngBase64, { base64: true });
+
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+    const imageRun = paragraph.runs.find((r) => r.image)!;
+    const assetId = imageRun.image!.src.split(":")[1]!;
+
+    expect(imageRun.text).toBe("￼");
+    expect(imageRun.image?.width).toBe(96);
+    expect(imageRun.image?.height).toBe(48);
+    expect(imageRun.image?.alt).toBe("legacy alt");
+    expect(imageRun.image?.crop?.left).toBeCloseTo(0.1, 4);
+    expect(imageRun.image?.crop?.top).toBeCloseTo(0.05, 4);
+    expect(document.assets?.[assetId]?.url).toMatch(/^data:image\/png;base64,/);
+
+    const exported = await exportEditorDocumentToDocx(document);
+    const exportedZip = await JSZip.loadAsync(exported);
+    const exportedXml = await exportedZip
+      .file("word/document.xml")
+      ?.async("string");
+    expect(exportedXml).toContain("<w:drawing>");
+    expect(exportedXml).not.toContain("<w:pict>");
+    expect(exportedXml).toContain(
+      '<a:srcRect l="10001" t="5000" r="0" b="0"/>',
+    );
+  });
+
   it("imports paragraph borders and shading, round-tripping back to DOCX", async () => {
     const zip = new JSZip();
     const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

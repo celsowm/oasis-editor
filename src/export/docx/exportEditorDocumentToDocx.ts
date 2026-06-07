@@ -186,6 +186,33 @@ function buildPartContext(
         continue;
       }
 
+      const imageNumber = state.nextImageId;
+      const rId = `rIdImg${imageNumber}`;
+      const common = {
+        rId,
+        runId: run.id,
+        cx: Math.round(run.image.width * 9525),
+        cy: Math.round(run.image.height * 9525),
+        alt: run.image.alt,
+        crop: run.image.crop,
+        fillMode: run.image.fillMode,
+        rotation: run.image.rotation,
+        flipH: run.image.flipH,
+        flipV: run.image.flipV,
+        floating: run.image.floating,
+      };
+
+      if (run.image.linkedSrc) {
+        images.push({
+          ...common,
+          kind: "linked",
+          target: run.image.linkedSrc,
+        });
+        imageMap.set(run.id, rId);
+        state.nextImageId += 1;
+        continue;
+      }
+
       // Image src may be an "asset:<id>" reference into the document's
       // asset registry — resolve it to the actual data URL before parsing.
       const resolvedSrc = resolveImageSrc(document, run.image.src);
@@ -199,23 +226,13 @@ function buildPartContext(
         continue;
       }
 
-      const imageNumber = state.nextImageId;
       const base64 = match[2];
       const target = `media/image${imageNumber}.${ext}`;
-      const rId = `rIdImg${imageNumber}`;
       images.push({
-        rId,
+        ...common,
+        kind: "embedded",
         target,
         base64,
-        runId: run.id,
-        cx: Math.round(run.image.width * 9525),
-        cy: Math.round(run.image.height * 9525),
-        alt: run.image.alt,
-        crop: run.image.crop,
-        fillMode: run.image.fillMode,
-        rotation: run.image.rotation,
-        flipH: run.image.flipH,
-        flipV: run.image.flipV,
       });
       imageMap.set(run.id, rId);
       state.nextImageId += 1;
@@ -377,7 +394,8 @@ function buildDocumentRelationshipsXml(
     rels += `<Relationship Id="${hyperlink.rId}" Type="${OFFICE_REL_NS}/hyperlink" Target="${escapeXml(hyperlink.href)}" TargetMode="External"/>`;
   }
   for (const img of images) {
-    rels += `<Relationship Id="${img.rId}" Type="${OFFICE_REL_NS}/image" Target="${img.target}"/>`;
+    const targetMode = img.kind === "linked" ? ' TargetMode="External"' : "";
+    rels += `<Relationship Id="${img.rId}" Type="${OFFICE_REL_NS}/image" Target="${escapeXml(img.target)}"${targetMode}/>`;
   }
   for (const part of parts) {
     const relType = part.kind === "header" ? "header" : "footer";
@@ -413,7 +431,8 @@ function buildPartRelationshipsXml(
     rels += `<Relationship Id="${hyperlink.rId}" Type="${OFFICE_REL_NS}/hyperlink" Target="${escapeXml(hyperlink.href)}" TargetMode="External"/>`;
   }
   for (const img of images) {
-    rels += `<Relationship Id="${img.rId}" Type="${OFFICE_REL_NS}/image" Target="${img.target}"/>`;
+    const targetMode = img.kind === "linked" ? ' TargetMode="External"' : "";
+    rels += `<Relationship Id="${img.rId}" Type="${OFFICE_REL_NS}/image" Target="${escapeXml(img.target)}"${targetMode}/>`;
   }
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${PACKAGE_REL_NS}">${rels}</Relationships>`;
 }
@@ -524,6 +543,7 @@ export async function exportEditorDocumentToDocx(
     allImages.push(...footnotesPart.partContext.images);
   }
   const imageExtensions = allImages
+    .filter((img) => img.kind === "embedded")
     .map((img) => img.target.split(".").pop()?.toLowerCase())
     .filter((ext): ext is string => Boolean(ext));
 
@@ -613,7 +633,9 @@ export async function exportEditorDocumentToDocx(
   }
 
   for (const img of allImages) {
-    zip.file(`word/${img.target}`, img.base64, { base64: true });
+    if (img.kind === "embedded" && img.base64) {
+      zip.file(`word/${img.target}`, img.base64, { base64: true });
+    }
   }
 
   return zip.generateAsync({ type: "arraybuffer" });

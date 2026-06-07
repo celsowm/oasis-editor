@@ -1,6 +1,11 @@
 import JSZip from "jszip";
 import { type Element as XmlElement } from "@xmldom/xmldom";
-import type { EditorTextStyle, EditorImageRunData } from "../../core/model.js";
+import type {
+  EditorTextStyle,
+  EditorImageFloatingLayout,
+  EditorImageFloatingPosition,
+  EditorImageRunData,
+} from "../../core/model.js";
 import { imageMimeFromPath } from "../../utils/imageFormats.js";
 import {
   WORD_NS,
@@ -18,6 +23,9 @@ import type { NumberingMaps } from "./numbering.js";
 const EMU_PER_PX = 9525;
 const OOXML_PERCENT_DENOMINATOR = 100000;
 const OOXML_ROTATION_UNITS = 60000;
+const VML_FRACTION_DENOMINATOR = 65536;
+const PX_PER_INCH = 96;
+const PX_PER_POINT = PX_PER_INCH / 72;
 
 /** Parse a DrawingML `a:srcRect` crop into normalized 0..1 fractions. */
 function parseSrcRect(picPic: XmlElement): EditorImageRunData["crop"] {
@@ -41,6 +49,256 @@ function parseSrcRect(picPic: XmlElement): EditorImageRunData["crop"] {
     top: toFraction("t"),
     right: toFraction("r"),
     bottom: toFraction("b"),
+  };
+  if (
+    crop.left === undefined &&
+    crop.top === undefined &&
+    crop.right === undefined &&
+    crop.bottom === undefined
+  ) {
+    return undefined;
+  }
+  return crop;
+}
+
+/** Extract the `r:embed` and `r:link` relationship ids from an `a:blip`. */
+function parseBlipRels(blip: XmlElement): { embed?: string; link?: string } {
+  const result: { embed?: string; link?: string } = {};
+  for (let i = 0; i < blip.attributes.length; i += 1) {
+    const attr = blip.attributes[i];
+    if (!attr) {
+      continue;
+    }
+    if (attr.localName === "embed" || attr.name === "r:embed") {
+      result.embed = attr.value;
+    } else if (attr.localName === "link" || attr.name === "r:link") {
+      result.link = attr.value;
+    }
+  }
+  return result;
+}
+
+/** True when a relationship target is an absolute URI (external link). */
+function isAbsoluteUri(target: string): boolean {
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(target) || target.startsWith("//");
+}
+
+function parseRelationshipId(element: XmlElement): string | undefined {
+  for (let i = 0; i < element.attributes.length; i += 1) {
+    const attr = element.attributes[i];
+    if (!attr) {
+      continue;
+    }
+    if (attr.localName === "id" || attr.name === "r:id") {
+      return attr.value;
+    }
+  }
+  return undefined;
+}
+
+function findDrawingContainer(
+  drawing: XmlElement,
+): { element: XmlElement; kind: "inline" | "anchor" } | undefined {
+  for (let index = 0; index < drawing.childNodes.length; index += 1) {
+    const node = drawing.childNodes[index];
+    if (node?.nodeType !== node.ELEMENT_NODE) {
+      continue;
+    }
+    const element = node as XmlElement;
+    if (element.localName === "inline" || element.localName === "anchor") {
+      return { element, kind: element.localName };
+    }
+  }
+  return undefined;
+}
+
+function parseOptionalInt(
+  value: string | null | undefined,
+): number | undefined {
+  if (value === null || value === undefined || value === "") {
+    return undefined;
+  }
+  const parsed = parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseAnchorBoolean(
+  value: string | null | undefined,
+): boolean | undefined {
+  if (value === "1" || value === "true") {
+    return true;
+  }
+  if (value === "0" || value === "false") {
+    return false;
+  }
+  return undefined;
+}
+
+function parseAnchorPosition(
+  anchor: XmlElement,
+  localName: "positionH" | "positionV",
+): EditorImageFloatingPosition | undefined {
+  const element = findElementDeep(anchor, localName);
+  if (!element) {
+    return undefined;
+  }
+  const align = findElementDeep(element, "align")?.textContent?.trim();
+  const offsetText = findElementDeep(element, "posOffset")?.textContent?.trim();
+  const offset = parseOptionalInt(offsetText);
+  const position = {
+    relativeFrom: element.getAttribute("relativeFrom") ?? undefined,
+    ...(align ? { align } : {}),
+    ...(offset !== undefined ? { offset } : {}),
+  };
+  if (
+    position.relativeFrom === undefined &&
+    position.align === undefined &&
+    position.offset === undefined
+  ) {
+    return undefined;
+  }
+  return position;
+}
+
+function parseAnchorWrap(
+  anchor: XmlElement,
+): EditorImageFloatingLayout["wrap"] {
+  if (findElementDeep(anchor, "wrapSquare")) return "square";
+  if (findElementDeep(anchor, "wrapTight")) return "tight";
+  if (findElementDeep(anchor, "wrapThrough")) return "through";
+  if (findElementDeep(anchor, "wrapTopAndBottom")) return "topAndBottom";
+  if (findElementDeep(anchor, "wrapNone")) return "none";
+  return undefined;
+}
+
+function parseFloatingLayout(
+  anchor: XmlElement,
+): EditorImageFloatingLayout | undefined {
+  const positionH = parseAnchorPosition(anchor, "positionH");
+  const positionV = parseAnchorPosition(anchor, "positionV");
+  const wrap = parseAnchorWrap(anchor);
+  const distT = parseOptionalInt(anchor.getAttribute("distT"));
+  const distB = parseOptionalInt(anchor.getAttribute("distB"));
+  const distL = parseOptionalInt(anchor.getAttribute("distL"));
+  const distR = parseOptionalInt(anchor.getAttribute("distR"));
+  const simplePos = parseAnchorBoolean(anchor.getAttribute("simplePos"));
+  const relativeHeight = parseOptionalInt(
+    anchor.getAttribute("relativeHeight"),
+  );
+  const behindDoc = parseAnchorBoolean(anchor.getAttribute("behindDoc"));
+  const locked = parseAnchorBoolean(anchor.getAttribute("locked"));
+  const layoutInCell = parseAnchorBoolean(anchor.getAttribute("layoutInCell"));
+  const allowOverlap = parseAnchorBoolean(anchor.getAttribute("allowOverlap"));
+  return {
+    type: "floating",
+    ...(distT !== undefined ? { distT } : {}),
+    ...(distB !== undefined ? { distB } : {}),
+    ...(distL !== undefined ? { distL } : {}),
+    ...(distR !== undefined ? { distR } : {}),
+    ...(simplePos !== undefined ? { simplePos } : {}),
+    ...(relativeHeight !== undefined ? { relativeHeight } : {}),
+    ...(behindDoc !== undefined ? { behindDoc } : {}),
+    ...(locked !== undefined ? { locked } : {}),
+    ...(layoutInCell !== undefined ? { layoutInCell } : {}),
+    ...(allowOverlap !== undefined ? { allowOverlap } : {}),
+    ...(positionH ? { positionH } : {}),
+    ...(positionV ? { positionV } : {}),
+    ...(wrap ? { wrap } : {}),
+  };
+}
+
+function parseCssLengthToPx(value: string | null | undefined): number | null {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const match = trimmed.match(/^(-?\d+(?:\.\d+)?)(pt|px|in|cm|mm|pc)?$/i);
+  if (!match) {
+    return null;
+  }
+  const amount = Number(match[1]);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return null;
+  }
+  const unit = (match[2] ?? "px").toLowerCase();
+  switch (unit) {
+    case "pt":
+      return Math.round(amount * PX_PER_POINT);
+    case "in":
+      return Math.round(amount * PX_PER_INCH);
+    case "cm":
+      return Math.round((amount / 2.54) * PX_PER_INCH);
+    case "mm":
+      return Math.round((amount / 25.4) * PX_PER_INCH);
+    case "pc":
+      return Math.round(amount * 12 * PX_PER_POINT);
+    case "px":
+    default:
+      return Math.round(amount);
+  }
+}
+
+function parseVmlStyleDimensions(style: string | null | undefined): {
+  width?: number;
+  height?: number;
+} {
+  const result: { width?: number; height?: number } = {};
+  if (!style) {
+    return result;
+  }
+  for (const declaration of style.split(";")) {
+    const colon = declaration.indexOf(":");
+    if (colon < 0) {
+      continue;
+    }
+    const property = declaration.slice(0, colon).trim().toLowerCase();
+    const value = declaration.slice(colon + 1).trim();
+    if (property === "width") {
+      const width = parseCssLengthToPx(value);
+      if (width !== null) {
+        result.width = width;
+      }
+    } else if (property === "height") {
+      const height = parseCssLengthToPx(value);
+      if (height !== null) {
+        result.height = height;
+      }
+    }
+  }
+  return result;
+}
+
+function parseVmlCropValue(
+  value: string | null | undefined,
+): number | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  if (trimmed.endsWith("%")) {
+    const percent = Number(trimmed.slice(0, -1));
+    return Number.isFinite(percent) && percent !== 0
+      ? percent / 100
+      : undefined;
+  }
+  if (/f$/i.test(trimmed)) {
+    const fraction = Number(trimmed.slice(0, -1));
+    return Number.isFinite(fraction) && fraction !== 0
+      ? fraction / VML_FRACTION_DENOMINATOR
+      : undefined;
+  }
+  const numeric = Number(trimmed);
+  return Number.isFinite(numeric) && numeric !== 0
+    ? numeric / VML_FRACTION_DENOMINATOR
+    : undefined;
+}
+
+function parseVmlCrop(imageData: XmlElement): EditorImageRunData["crop"] {
+  const crop = {
+    left: parseVmlCropValue(getAttributeValue(imageData, "cropleft")),
+    top: parseVmlCropValue(getAttributeValue(imageData, "croptop")),
+    right: parseVmlCropValue(getAttributeValue(imageData, "cropright")),
+    bottom: parseVmlCropValue(getAttributeValue(imageData, "cropbottom")),
   };
   if (
     crop.left === undefined &&
@@ -88,6 +346,25 @@ function parseXfrm(picPic: XmlElement): {
     result.flipV = true;
   }
   return result;
+}
+
+async function loadEmbeddedImage(
+  zip: JSZip,
+  assets: AssetRegistry,
+  target: string,
+): Promise<string | undefined> {
+  let zipPath = target;
+  if (zipPath.startsWith("/")) zipPath = zipPath.slice(1);
+  if (!zipPath.startsWith("word/")) zipPath = "word/" + target;
+  const file = zip.file(zipPath);
+  // Unknown extensions fall back to PNG so the data URL stays loadable;
+  // preserving the original binary still round-trips through asset storage.
+  const mime = imageMimeFromPath(target) ?? "image/png";
+  const base64 = await file?.async("base64");
+  if (!base64) {
+    return undefined;
+  }
+  return registerImageAsset(assets, zipPath, `data:${mime};base64,${base64}`);
 }
 
 export interface ImportedRun {
@@ -147,72 +424,87 @@ export async function parseRunElement(
       } else if (element.localName === "drawing") {
         const blip = findElementDeep(element, "blip");
         if (blip) {
-          let embed = null;
-          for (let i = 0; i < blip.attributes.length; i++) {
-            const attr = blip.attributes[i];
-            if (
-              attr &&
-              (attr.localName === "embed" ||
-                attr.name === "r:embed" ||
-                attr.name === "embed")
-            ) {
-              embed = attr.value;
-              break;
+          const { embed, link } = parseBlipRels(blip);
+          const container = findDrawingContainer(element);
+          const drawingBox = container?.element ?? element;
+          // Shared geometry/metadata, parsed once for both embedded and linked.
+          const extent = findElementDeep(drawingBox, "extent");
+          const docPr = findElementDeep(drawingBox, "docPr");
+          let width = 300;
+          let height = 300;
+          if (extent) {
+            const cx = extent.getAttribute("cx");
+            const cy = extent.getAttribute("cy");
+            if (cx) width = Math.round(parseInt(cx, 10) / EMU_PER_PX);
+            if (cy) height = Math.round(parseInt(cy, 10) / EMU_PER_PX);
+          }
+          const alt = docPr
+            ? (getAttributeValue(docPr, "descr") ??
+              getAttributeValue(docPr, "title"))
+            : null;
+          const crop = parseSrcRect(element);
+          const fillMode = parseFillMode(element);
+          const xfrm = parseXfrm(element);
+          const floating =
+            container?.kind === "anchor"
+              ? parseFloatingLayout(container.element)
+              : undefined;
+          const common = {
+            width,
+            height,
+            ...(alt !== null ? { alt } : {}),
+            ...(crop ? { crop } : {}),
+            ...(fillMode ? { fillMode } : {}),
+            ...(xfrm.rotation !== undefined ? { rotation: xfrm.rotation } : {}),
+            ...(xfrm.flipH ? { flipH: true } : {}),
+            ...(xfrm.flipV ? { flipV: true } : {}),
+            ...(floating ? { floating } : {}),
+          };
+
+          const embedTarget = embed ? relsMap.get(embed) : undefined;
+          const linkTarget = link ? relsMap.get(link) : undefined;
+
+          if (linkTarget && isAbsoluteUri(linkTarget)) {
+            // External linked image: preserve the URL, never auto-fetch it.
+            textParts.push("\uFFFC");
+            image = { src: "", linkedSrc: linkTarget, ...common };
+          } else {
+            // Embedded image (or rare internal r:link pointing inside the
+            // package): read the binary and register it as an asset.
+            const target = embedTarget ?? linkTarget;
+            if (target) {
+              const assetSrc = await loadEmbeddedImage(zip, assets, target);
+              if (assetSrc) {
+                textParts.push("\uFFFC");
+                image = { src: assetSrc, ...common };
+              }
             }
           }
-          if (embed) {
-            const target = relsMap.get(embed);
-            if (target) {
-              let zipPath = target;
-              if (zipPath.startsWith("/")) zipPath = zipPath.slice(1);
-              if (!zipPath.startsWith("word/")) zipPath = "word/" + target;
-              const file = zip.file(zipPath);
-              // Unknown extensions fall back to PNG so the data URL stays
-              // loadable; preserving the original binary still round-trips.
-              const mime = imageMimeFromPath(target) ?? "image/png";
-              const base64 = await file?.async("base64");
-              if (base64) {
-                textParts.push("\uFFFC");
-                const extent = findElementDeep(element, "extent");
-                const docPr = findElementDeep(element, "docPr");
-                let width = 300;
-                let height = 300;
-                if (extent) {
-                  const cx = extent.getAttribute("cx");
-                  const cy = extent.getAttribute("cy");
-                  if (cx) width = Math.round(parseInt(cx, 10) / EMU_PER_PX);
-                  if (cy) height = Math.round(parseInt(cy, 10) / EMU_PER_PX);
-                }
-                const alt = docPr
-                  ? (getAttributeValue(docPr, "descr") ??
-                    getAttributeValue(docPr, "title"))
-                  : null;
-                const crop = parseSrcRect(element);
-                const fillMode = parseFillMode(element);
-                const xfrm = parseXfrm(element);
-                // Store the heavy base64 payload in the document's asset
-                // registry exactly once and reference it from the run.
-                // Without this, every clone/equality check/signature pass
-                // would have to walk a multi-hundred-KB string per keystroke.
-                const assetSrc = registerImageAsset(
-                  assets,
-                  zipPath,
-                  `data:${mime};base64,${base64}`,
-                );
-                image = {
-                  src: assetSrc,
-                  width,
-                  height,
-                  ...(alt !== null ? { alt } : {}),
-                  ...(crop ? { crop } : {}),
-                  ...(fillMode ? { fillMode } : {}),
-                  ...(xfrm.rotation !== undefined
-                    ? { rotation: xfrm.rotation }
-                    : {}),
-                  ...(xfrm.flipH ? { flipH: true } : {}),
-                  ...(xfrm.flipV ? { flipV: true } : {}),
-                };
-              }
+        }
+      } else if (element.localName === "pict") {
+        const imageData = findElementDeep(element, "imagedata");
+        if (imageData) {
+          const relId = parseRelationshipId(imageData);
+          const target = relId ? relsMap.get(relId) : undefined;
+          if (target) {
+            const shape = findElementDeep(element, "shape");
+            const dimensions = parseVmlStyleDimensions(
+              shape?.getAttribute("style"),
+            );
+            const crop = parseVmlCrop(imageData);
+            const alt =
+              getAttributeValue(imageData, "title") ??
+              imageData.getAttribute("o:title");
+            const assetSrc = await loadEmbeddedImage(zip, assets, target);
+            if (assetSrc) {
+              textParts.push("\uFFFC");
+              image = {
+                src: assetSrc,
+                width: dimensions.width ?? 300,
+                height: dimensions.height ?? 300,
+                ...(alt ? { alt } : {}),
+                ...(crop ? { crop } : {}),
+              };
             }
           }
         }

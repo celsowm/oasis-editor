@@ -475,6 +475,75 @@ function buildSrcRect(crop: DocContext["images"][number]["crop"]): string {
   return `<a:srcRect l="${l}" t="${t}" r="${r}" b="${b}"/>`;
 }
 
+function buildAnchorBool(
+  value: boolean | undefined,
+  fallback: boolean,
+): string {
+  return (value ?? fallback) ? "1" : "0";
+}
+
+function buildAnchorPositionXml(
+  tagName: "positionH" | "positionV",
+  position: NonNullable<DocContext["images"][number]["floating"]>["positionH"],
+  fallbackRelativeFrom: string,
+): string {
+  const relativeFrom = escapeXml(
+    position?.relativeFrom ?? fallbackRelativeFrom,
+  );
+  if (position?.align) {
+    return `<wp:${tagName} relativeFrom="${relativeFrom}"><wp:align>${escapeXml(position.align)}</wp:align></wp:${tagName}>`;
+  }
+  const offset = position?.offset ?? 0;
+  return `<wp:${tagName} relativeFrom="${relativeFrom}"><wp:posOffset>${offset}</wp:posOffset></wp:${tagName}>`;
+}
+
+function buildAnchorWrapXml(
+  wrap: NonNullable<DocContext["images"][number]["floating"]>["wrap"],
+): string {
+  switch (wrap) {
+    case "square":
+      return '<wp:wrapSquare wrapText="bothSides"/>';
+    case "tight":
+      return '<wp:wrapTight wrapText="bothSides"/>';
+    case "through":
+      return '<wp:wrapThrough wrapText="bothSides"/>';
+    case "topAndBottom":
+      return "<wp:wrapTopAndBottom/>";
+    case "none":
+    default:
+      return "<wp:wrapNone/>";
+  }
+}
+
+function buildDrawingXml(
+  img: DocContext["images"][number],
+  docPrId: number,
+  altAttr: string,
+  picXml: string,
+): string {
+  const floating = img.floating;
+  if (!floating) {
+    return `<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${img.cx}" cy="${img.cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${docPrId}" name="Picture"${altAttr}/>${picXml}</wp:inline></w:drawing>`;
+  }
+
+  const distT = floating.distT ?? 0;
+  const distB = floating.distB ?? 0;
+  const distL = floating.distL ?? 0;
+  const distR = floating.distR ?? 0;
+  const positionH = buildAnchorPositionXml(
+    "positionH",
+    floating.positionH,
+    "column",
+  );
+  const positionV = buildAnchorPositionXml(
+    "positionV",
+    floating.positionV,
+    "paragraph",
+  );
+  const wrap = buildAnchorWrapXml(floating.wrap);
+  return `<w:drawing><wp:anchor distT="${distT}" distB="${distB}" distL="${distL}" distR="${distR}" simplePos="${buildAnchorBool(floating.simplePos, false)}" relativeHeight="${floating.relativeHeight ?? 0}" behindDoc="${buildAnchorBool(floating.behindDoc, false)}" locked="${buildAnchorBool(floating.locked, false)}" layoutInCell="${buildAnchorBool(floating.layoutInCell, true)}" allowOverlap="${buildAnchorBool(floating.allowOverlap, true)}"><wp:simplePos x="0" y="0"/>${positionH}${positionV}<wp:extent cx="${img.cx}" cy="${img.cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>${wrap}<wp:docPr id="${docPrId}" name="Picture"${altAttr}/>${picXml}</wp:anchor></w:drawing>`;
+}
+
 function serializeRun(
   run: EditorTextRun,
   context: DocContext,
@@ -536,7 +605,10 @@ function serializeRun(
           img.fillMode === "tile"
             ? "<a:tile/>"
             : "<a:stretch><a:fillRect/></a:stretch>";
-        const drawing = `<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${img.cx}" cy="${img.cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${docPrId}" name="Picture"${altAttr}/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="Picture"${altAttr}/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rId}" xmlns:r="${OFFICE_REL_NS}"/>${srcRect}${fill}</pic:blipFill><pic:spPr><a:xfrm${xfrmAttrs}><a:off x="0" y="0"/><a:ext cx="${img.cx}" cy="${img.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>`;
+        const blipRelAttr =
+          img.kind === "linked" ? `r:link="${rId}"` : `r:embed="${rId}"`;
+        const picXml = `<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="Picture"${altAttr}/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip ${blipRelAttr} xmlns:r="${OFFICE_REL_NS}"/>${srcRect}${fill}</pic:blipFill><pic:spPr><a:xfrm${xfrmAttrs}><a:off x="0" y="0"/><a:ext cx="${img.cx}" cy="${img.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic>`;
+        const drawing = buildDrawingXml(img, docPrId, altAttr, picXml);
         return `<w:r>${serializeRunProperties(materializedRunStyle)}${drawing}</w:r>`;
       }
     }
