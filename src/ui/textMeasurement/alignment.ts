@@ -15,7 +15,11 @@ function lastContentOffset(
   line: EditorLayoutLine,
   charByOffset: Map<number, string>,
 ): number | null {
-  for (let offset = line.endOffset - 1; offset >= line.startOffset; offset -= 1) {
+  for (
+    let offset = line.endOffset - 1;
+    offset >= line.startOffset;
+    offset -= 1
+  ) {
     const char = charByOffset.get(offset);
     if (char && char !== " " && char !== "\t" && char !== "\n") {
       return offset;

@@ -37,10 +37,15 @@ function resolveCanvasFontFamily(
 ): string {
   const requested = normalizeFamily(fontFamily ?? "Calibri");
   const metric = resolveMetricCompatibleFamily(fontFamily ?? "Calibri");
+  // The metric-compatible face (Tinos/Carlito/Arimo/Roboto) is bundled and
+  // registered as a FontFace, and it is what the layout engine measures with.
+  // Render it FIRST so glyph advances on screen match the measured slot
+  // positions exactly; the requested system family is only a fallback for when
+  // the bundled face has not registered yet.
   const families =
     requested.toLowerCase() === metric.toLowerCase()
       ? [metric]
-      : [requested, metric];
+      : [metric, requested];
   const generic = /serif/i.test(fontFamily ?? "") ? "serif" : "sans-serif";
   return [...families.map(quoteFontFamily), generic].join(", ");
 }

@@ -250,6 +250,43 @@ describe("composeMeasuredParagraphLines alignment", () => {
     expect(deltaAfterSecond).toBeGreaterThan(deltaAfterFirst);
   });
 
+  it("keeps justify well-behaved in a very narrow column", () => {
+    // A long token wider than the column must not break justification: every
+    // line should stay within the column and slot positions stay finite and
+    // monotonic (no negative gaps, no NaN from dividing by zero spaces).
+    const text = "antidisestablishmentarianism a b c de fgh ijkl mnop qrst";
+    const contentWidth = 45;
+    const paragraph = createEditorParagraph(text);
+    paragraph.style = { align: "justify" };
+    const lines = measure(paragraph, contentWidth);
+    expect(lines.length).toBeGreaterThan(1);
+
+    const contentEdge = (line: ReturnType<typeof measure>[number]) => {
+      const first = line.slots[0]!.left;
+      for (let i = line.endOffset - 1; i >= line.startOffset; i--) {
+        if (text[i] && text[i] !== " ") {
+          const trailing =
+            line.slots.find((slot) => slot.offset === i + 1) ??
+            line.slots.find((slot) => slot.offset === i)!;
+          return trailing.left - first;
+        }
+      }
+      return 0;
+    };
+
+    for (const line of lines) {
+      const lefts = line.slots.map((slot) => slot.left);
+      for (const left of lefts) {
+        expect(Number.isFinite(left)).toBe(true);
+      }
+      for (let i = 1; i < lefts.length; i++) {
+        expect(lefts[i]!).toBeGreaterThanOrEqual(lefts[i - 1]!);
+      }
+      // Visible content never spills past the column (sub-pixel tolerance).
+      expect(contentEdge(line)).toBeLessThanOrEqual(contentWidth + 0.5);
+    }
+  });
+
   it("does not justify the last line", () => {
     const text = "alpha beta gamma delta epsilon zeta eta theta iota";
     const paragraphLeft = createEditorParagraph(text);
