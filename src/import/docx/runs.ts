@@ -595,6 +595,19 @@ export async function parseRunElement(
         // Word writes this as cached layout information. It is not an authored
         // hard page break and should not become pageBreakBefore on import.
         continue;
+      } else if (
+        element.localName === "proofErr" ||
+        element.localName === "bookmarkStart" ||
+        element.localName === "bookmarkEnd" ||
+        element.localName === "commentRangeStart" ||
+        element.localName === "commentRangeEnd" ||
+        element.localName === "commentReference" ||
+        element.localName === "permStart" ||
+        element.localName === "permEnd"
+      ) {
+        // Metadata/sync markers emitted by Word inside runs. None of them
+        // carry authored text; treating them as text would corrupt the run.
+        continue;
       } else if (element.localName === "cr") {
         textParts.push("\n");
       } else if (element.localName === "drawing") {
