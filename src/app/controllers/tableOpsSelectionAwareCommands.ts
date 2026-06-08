@@ -107,11 +107,14 @@ export function createTableSelectionAwareCommands(
 
       const tempResult = command(tempState);
       const resultParagraphs = getParagraphs(tempResult);
-      const targetBlocks = deps.getTargetBlocks(current, zone).map(cloneBlock);
-      const tableBlock = targetBlocks[blockIndex] as EditorTableNode;
-      if (!tableBlock) {
+      const targetBlocks = [...deps.getTargetBlocks(current, zone)];
+      let tableBlock = targetBlocks[blockIndex] as EditorTableNode;
+      if (!tableBlock || tableBlock.type !== "table") {
         return current;
       }
+
+      tableBlock = cloneBlock(tableBlock) as EditorTableNode;
+      targetBlocks[blockIndex] = tableBlock;
 
       let paragraphIndex = 0;
       for (let index = 0; index < cells.length; index += 1) {
