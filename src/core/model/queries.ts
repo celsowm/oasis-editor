@@ -1,4 +1,9 @@
-import type { EditorParagraphNode, EditorPosition } from "../model.js";
+/**
+ * Paragraph-local queries: text/length/offset conversions that operate on a
+ * single paragraph node. Document-wide queries live in `documentIndex.ts`.
+ */
+import type { EditorParagraphNode } from "./types/nodes.js";
+import type { EditorPosition } from "./types/selection.js";
 
 export function getParagraphText(paragraph: EditorParagraphNode): string {
   return paragraph.runs.map((run) => run.text).join("");
