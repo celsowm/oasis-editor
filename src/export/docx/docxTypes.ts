@@ -31,6 +31,12 @@ export interface DocContext {
     floating?: EditorImageFloatingLayout;
   }>;
   imageMap: Map<string, string>;
+  /**
+   * Maps a text-box run id to the unique `wp:docPr/@id` assigned to its
+   * drawing. Text boxes carry no relationship (unlike images), so their docPr
+   * ids come from a dedicated counter to stay globally unique.
+   */
+  textBoxDocPrIds: Map<string, number>;
   hyperlinks: Array<{ rId: string; href: string }>;
   hyperlinkMap: Map<string, string>;
   /**
@@ -53,6 +59,12 @@ export interface NumberingContext {
 
 export interface ExportBuildState {
   nextImageId: number;
+  /**
+   * Next `wp:docPr/@id` for a text-box drawing. Starts in a high range so it
+   * never collides with image docPr ids (which are derived from small image
+   * relationship numbers).
+   */
+  nextTextBoxDocPrId: number;
 }
 
 export interface PartDefinition {

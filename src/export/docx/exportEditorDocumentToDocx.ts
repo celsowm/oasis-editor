@@ -19,8 +19,7 @@ import type {
   PartDefinition,
   SectionReferenceDefinition,
 } from "./docxTypes.js";
-import { serializeTableXml } from "./tableXml.js";
-import { serializeParagraphXml } from "./textXml.js";
+import { serializeBlocksXml } from "./textXml.js";
 import {
   buildFootnoteIdMap,
   buildFootnotesXml,
@@ -42,6 +41,7 @@ const DOCUMENT_XMLNS =
   'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" ' +
   'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
   'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" ' +
+  'xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" ' +
   `xmlns:r="${OFFICE_REL_NS}"`;
 
 function serializeSectionPropertiesWithReferences(
@@ -81,20 +81,34 @@ function serializeSectionPropertiesWithReferences(
   return `<w:sectPr>${referencesXml}${titlePageXml}<w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/></w:sectPr>`;
 }
 
+function visitParagraphDeep(
+  paragraph: EditorParagraphNode,
+  callback: (paragraph: EditorParagraphNode) => void,
+): void {
+  callback(paragraph);
+  // Recurse into text-box bodies so their inner content participates in
+  // numbering definitions and image/hyperlink relationship registration.
+  for (const run of paragraph.runs) {
+    if (run.textBox) {
+      visitBlocks(run.textBox.blocks, callback);
+    }
+  }
+}
+
 function visitBlocks(
   blocks: EditorBlockNode[],
   callback: (paragraph: EditorParagraphNode) => void,
 ): void {
   for (const block of blocks) {
     if (block.type === "paragraph") {
-      callback(block);
+      visitParagraphDeep(block, callback);
       continue;
     }
 
     for (const row of block.rows) {
       for (const cell of row.cells) {
         for (const paragraph of cell.blocks) {
-          callback(paragraph);
+          visitParagraphDeep(paragraph, callback);
         }
       }
     }
@@ -170,6 +184,7 @@ function buildPartContext(
 ): DocContext {
   const images: DocContext["images"] = [];
   const imageMap = new Map<string, string>();
+  const textBoxDocPrIds = new Map<string, number>();
   const hyperlinks: Array<{ rId: string; href: string }> = [];
   const hyperlinkMap = new Map<string, string>();
 
@@ -180,6 +195,11 @@ function buildPartContext(
         const rId = `rIdLink${hyperlinks.length + 1}`;
         hyperlinkMap.set(link, rId);
         hyperlinks.push({ rId, href: link });
+      }
+
+      if (run.textBox && !textBoxDocPrIds.has(run.id)) {
+        textBoxDocPrIds.set(run.id, state.nextTextBoxDocPrId);
+        state.nextTextBoxDocPrId += 1;
       }
 
       if (!run.image) {
@@ -244,6 +264,7 @@ function buildPartContext(
     definitions: numberingContext.definitions,
     images,
     imageMap,
+    textBoxDocPrIds,
     hyperlinks,
     hyperlinkMap,
   };
@@ -278,31 +299,6 @@ function buildNumberingXml(
     .join("");
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:numbering xmlns:w="${WORD_NS}">${abstractNums}${nums}</w:numbering>`;
-}
-
-function serializeBlocksXml(
-  blocks: EditorBlockNode[],
-  context: DocContext,
-  styles: Record<string, EditorNamedStyle> | undefined,
-): string {
-  return blocks
-    .map((block) => {
-      if (block.type === "table") {
-        const pageBreakXml = block.style?.pageBreakBefore
-          ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
-          : "";
-        return (
-          pageBreakXml +
-          serializeTableXml(block, (paragraph, cell) =>
-            serializeParagraphXml(paragraph, context, styles, {
-              align: cell.style?.horizontalAlign,
-            }),
-          )
-        );
-      }
-      return serializeParagraphXml(block, context, styles);
-    })
-    .join("");
 }
 
 function buildDocumentXml(
@@ -442,7 +438,11 @@ export async function exportEditorDocumentToDocx(
 ): Promise<ArrayBuffer> {
   const zip = new JSZip();
   const numberingContext = buildNumberingContext(document);
-  const buildState: ExportBuildState = { nextImageId: 1 };
+  const buildState: ExportBuildState = {
+    nextImageId: 1,
+    // High base so text-box docPr ids never collide with image docPr ids.
+    nextTextBoxDocPrId: 1000001,
+  };
   const sections = getDocumentSections(document);
 
   // Footnotes: assign DOCX `w:id` values in reading order so reference runs

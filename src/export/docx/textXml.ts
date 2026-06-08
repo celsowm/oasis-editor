@@ -1,8 +1,11 @@
 import type {
+  EditorBlockNode,
+  EditorImageFloatingLayout,
   EditorNamedStyle,
   EditorParagraphNode,
   EditorParagraphStyle,
   EditorTabStop,
+  EditorTextBoxData,
   EditorTextRun,
   EditorTextStyle,
 } from "../../core/model.js";
@@ -20,6 +23,10 @@ import {
   toTwips,
 } from "./xmlUtils.js";
 import { serializeParagraphBorders } from "./borders.js";
+import { serializeTableXml } from "./tableXml.js";
+
+const EMU_PER_PX = 9525;
+const EMU_PER_PT = 12700;
 
 const DOCX_HIGHLIGHT_COLORS: Record<string, [number, number, number]> = {
   black: [0, 0, 0],
@@ -484,7 +491,7 @@ function buildAnchorBool(
 
 function buildAnchorPositionXml(
   tagName: "positionH" | "positionV",
-  position: NonNullable<DocContext["images"][number]["floating"]>["positionH"],
+  position: EditorImageFloatingLayout["positionH"],
   fallbackRelativeFrom: string,
 ): string {
   const relativeFrom = escapeXml(
@@ -497,9 +504,7 @@ function buildAnchorPositionXml(
   return `<wp:${tagName} relativeFrom="${relativeFrom}"><wp:posOffset>${offset}</wp:posOffset></wp:${tagName}>`;
 }
 
-function buildAnchorWrapXml(
-  wrap: NonNullable<DocContext["images"][number]["floating"]>["wrap"],
-): string {
+function buildAnchorWrapXml(wrap: EditorImageFloatingLayout["wrap"]): string {
   switch (wrap) {
     case "square":
       return '<wp:wrapSquare wrapText="bothSides"/>';
@@ -515,15 +520,24 @@ function buildAnchorWrapXml(
   }
 }
 
-function buildDrawingXml(
-  img: DocContext["images"][number],
-  docPrId: number,
-  altAttr: string,
-  picXml: string,
-): string {
-  const floating = img.floating;
+/**
+ * Build a `w:drawing` wrapper (inline or anchored) around an arbitrary
+ * DrawingML graphic (`graphicXml`). Shared by images (`pic:pic`) and text boxes
+ * (`wps:wsp`).
+ */
+function buildDrawingContainerXml(options: {
+  cx: number;
+  cy: number;
+  floating: EditorImageFloatingLayout | undefined;
+  docPrId: number;
+  docPrName: string;
+  altAttr: string;
+  graphicXml: string;
+}): string {
+  const { cx, cy, floating, docPrId, docPrName, altAttr, graphicXml } = options;
+  const name = escapeXml(docPrName);
   if (!floating) {
-    return `<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${img.cx}" cy="${img.cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${docPrId}" name="Picture"${altAttr}/>${picXml}</wp:inline></w:drawing>`;
+    return `<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${docPrId}" name="${name}"${altAttr}/>${graphicXml}</wp:inline></w:drawing>`;
   }
 
   const distT = floating.distT ?? 0;
@@ -541,7 +555,145 @@ function buildDrawingXml(
     "paragraph",
   );
   const wrap = buildAnchorWrapXml(floating.wrap);
-  return `<w:drawing><wp:anchor distT="${distT}" distB="${distB}" distL="${distL}" distR="${distR}" simplePos="${buildAnchorBool(floating.simplePos, false)}" relativeHeight="${floating.relativeHeight ?? 0}" behindDoc="${buildAnchorBool(floating.behindDoc, false)}" locked="${buildAnchorBool(floating.locked, false)}" layoutInCell="${buildAnchorBool(floating.layoutInCell, true)}" allowOverlap="${buildAnchorBool(floating.allowOverlap, true)}"><wp:simplePos x="0" y="0"/>${positionH}${positionV}<wp:extent cx="${img.cx}" cy="${img.cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>${wrap}<wp:docPr id="${docPrId}" name="Picture"${altAttr}/>${picXml}</wp:anchor></w:drawing>`;
+  return `<w:drawing><wp:anchor distT="${distT}" distB="${distB}" distL="${distL}" distR="${distR}" simplePos="${buildAnchorBool(floating.simplePos, false)}" relativeHeight="${floating.relativeHeight ?? 0}" behindDoc="${buildAnchorBool(floating.behindDoc, false)}" locked="${buildAnchorBool(floating.locked, false)}" layoutInCell="${buildAnchorBool(floating.layoutInCell, true)}" allowOverlap="${buildAnchorBool(floating.allowOverlap, true)}"><wp:simplePos x="0" y="0"/>${positionH}${positionV}<wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>${wrap}<wp:docPr id="${docPrId}" name="${name}"${altAttr}/>${graphicXml}</wp:anchor></w:drawing>`;
+}
+
+function buildDrawingXml(
+  img: DocContext["images"][number],
+  docPrId: number,
+  altAttr: string,
+  picXml: string,
+): string {
+  return buildDrawingContainerXml({
+    cx: img.cx,
+    cy: img.cy,
+    floating: img.floating,
+    docPrId,
+    docPrName: "Picture",
+    altAttr,
+    graphicXml: picXml,
+  });
+}
+
+/** Serialize a list of block nodes (paragraphs/tables), e.g. a text box body. */
+export function serializeBlocksXml(
+  blocks: EditorBlockNode[],
+  context: DocContext,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): string {
+  return blocks
+    .map((block) => {
+      if (block.type === "table") {
+        const pageBreakXml = block.style?.pageBreakBefore
+          ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
+          : "";
+        return (
+          pageBreakXml +
+          serializeTableXml(block, (paragraph, cell) =>
+            serializeParagraphXml(paragraph, context, styles, {
+              align: cell.style?.horizontalAlign,
+            }),
+          )
+        );
+      }
+      return serializeParagraphXml(block, context, styles);
+    })
+    .join("");
+}
+
+/** Build the `wps:wsp` graphic XML (geometry, fill, outline, body) for a text box. */
+function buildTextBoxGraphicXml(
+  textBox: EditorTextBoxData,
+  cx: number,
+  cy: number,
+  context: DocContext,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): string {
+  const shape = textBox.shape;
+  const preset = escapeXml(shape?.preset ?? "rect");
+
+  const fillXml = shape?.fill
+    ? `<a:solidFill><a:srgbClr val="${escapeXml(shape.fill.replace(/^#/, ""))}"/></a:solidFill>`
+    : "";
+  let lnXml = "";
+  if (shape?.borderColor || shape?.borderWidthPt !== undefined) {
+    const widthAttr =
+      shape?.borderWidthPt !== undefined
+        ? ` w="${Math.round(shape.borderWidthPt * EMU_PER_PT)}"`
+        : "";
+    const colorXml = shape?.borderColor
+      ? `<a:solidFill><a:srgbClr val="${escapeXml(shape.borderColor.replace(/^#/, ""))}"/></a:solidFill>`
+      : "";
+    lnXml = `<a:ln${widthAttr}>${colorXml}<a:miter lim="800000"/></a:ln>`;
+  }
+
+  const body = textBox.body;
+  const bodyAttrs: string[] = ['rot="0"', 'vert="horz"'];
+  bodyAttrs.push(`wrap="${escapeXml(body?.wrap ?? "square")}"`);
+  if (body?.paddingLeft !== undefined) {
+    bodyAttrs.push(`lIns="${Math.round(body.paddingLeft * EMU_PER_PX)}"`);
+  }
+  if (body?.paddingTop !== undefined) {
+    bodyAttrs.push(`tIns="${Math.round(body.paddingTop * EMU_PER_PX)}"`);
+  }
+  if (body?.paddingRight !== undefined) {
+    bodyAttrs.push(`rIns="${Math.round(body.paddingRight * EMU_PER_PX)}"`);
+  }
+  if (body?.paddingBottom !== undefined) {
+    bodyAttrs.push(`bIns="${Math.round(body.paddingBottom * EMU_PER_PX)}"`);
+  }
+  bodyAttrs.push(`anchor="${escapeXml(body?.anchor ?? "t")}"`);
+  bodyAttrs.push('anchorCtr="0"');
+  const autoFitXml = body?.autoFit ? "<a:spAutoFit/>" : "";
+
+  const innerXml = serializeBlocksXml(textBox.blocks, context, styles);
+
+  return (
+    '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">' +
+    '<a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">' +
+    "<wps:wsp>" +
+    '<wps:cNvSpPr txBox="1"><a:spLocks noChangeArrowheads="1"/></wps:cNvSpPr>' +
+    '<wps:spPr bwMode="auto">' +
+    `<a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
+    `<a:prstGeom prst="${preset}"><a:avLst/></a:prstGeom>` +
+    fillXml +
+    lnXml +
+    "</wps:spPr>" +
+    `<wps:txbx><w:txbxContent>${innerXml}</w:txbxContent></wps:txbx>` +
+    `<wps:bodyPr ${bodyAttrs.join(" ")}>${autoFitXml}</wps:bodyPr>` +
+    "</wps:wsp>" +
+    "</a:graphicData>" +
+    "</a:graphic>"
+  );
+}
+
+/** Serialize a text-box run (`run.textBox`) to a `w:drawing` inside `w:r`. */
+function serializeTextBoxRun(
+  run: EditorTextRun,
+  textBox: EditorTextBoxData,
+  context: DocContext,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  rPrXml: string,
+): string {
+  const cx = Math.round(textBox.width * EMU_PER_PX);
+  const cy = Math.round(textBox.height * EMU_PER_PX);
+  const docPrId = context.textBoxDocPrIds.get(run.id) ?? 1;
+  const docPrName = textBox.name ?? "Text Box";
+  const altAttr =
+    textBox.alt !== undefined
+      ? ` descr="${escapeXml(textBox.alt)}" title="${escapeXml(textBox.alt)}"`
+      : "";
+  const graphicXml = buildTextBoxGraphicXml(textBox, cx, cy, context, styles);
+  const drawing = buildDrawingContainerXml({
+    cx,
+    cy,
+    floating: textBox.floating,
+    docPrId,
+    docPrName,
+    altAttr,
+    graphicXml,
+  });
+  return `<w:r>${rPrXml}${drawing}</w:r>`;
 }
 
 function serializeRun(
@@ -586,6 +738,15 @@ function serializeRun(
   if (run.field) {
     const instr = run.field.type === "PAGE" ? " PAGE " : " NUMPAGES ";
     return `<w:fldSimple w:instr="${instr}"><w:r>${serializeRunProperties(materializedRunStyle)}<w:t>1</w:t></w:r></w:fldSimple>`;
+  }
+  if (run.textBox) {
+    return serializeTextBoxRun(
+      run,
+      run.textBox,
+      context,
+      styles,
+      serializeRunProperties(materializedRunStyle),
+    );
   }
   if (run.image) {
     const rId = context.imageMap.get(run.id);

@@ -1,10 +1,14 @@
 import JSZip from "jszip";
 import { type Element as XmlElement } from "@xmldom/xmldom";
 import type {
+  EditorBlockNode,
   EditorTextStyle,
   EditorImageFloatingLayout,
   EditorImageFloatingPosition,
   EditorImageRunData,
+  EditorTextBoxBody,
+  EditorTextBoxData,
+  EditorTextBoxShape,
 } from "../../core/model.js";
 import { imageMimeFromPath } from "../../utils/imageFormats.js";
 import {
@@ -21,6 +25,7 @@ import { parseRunStyle } from "./runStyle.js";
 import type { NumberingMaps } from "./numbering.js";
 
 const EMU_PER_PX = 9525;
+const EMU_PER_PT = 12700;
 const OOXML_PERCENT_DENOMINATOR = 100000;
 const OOXML_ROTATION_UNITS = 60000;
 const VML_FRACTION_DENOMINATOR = 65536;
@@ -367,9 +372,177 @@ async function loadEmbeddedImage(
   return registerImageAsset(assets, zipPath, `data:${mime};base64,${base64}`);
 }
 
+/**
+ * Callback that parses the block content of a `w:txbxContent` (text box body).
+ * Supplied by the caller (see `nestedBlocks.ts`) so that `runs.ts` does not have
+ * to import the paragraph/table parsers directly, which would create an import
+ * cycle.
+ */
+export type ParseNestedBlocks = (
+  container: XmlElement,
+) => Promise<EditorBlockNode[]>;
+
+const EMU_DEFAULT_TEXTBOX_SIZE_PX = 300;
+
+function emuToPx(value: string | null | undefined): number | undefined {
+  const emu = parseOptionalInt(value);
+  return emu === undefined ? undefined : Math.round(emu / EMU_PER_PX);
+}
+
+function normalizeHexColor(
+  value: string | null | undefined,
+): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed || !/^[0-9a-fA-F]{6}$/.test(trimmed)) {
+    return undefined;
+  }
+  return `#${trimmed.toUpperCase()}`;
+}
+
+/** Parse `wps:spPr` geometry/fill/outline into an `EditorTextBoxShape`. */
+function parseTextBoxShape(wsp: XmlElement): EditorTextBoxShape | undefined {
+  const spPr = findElementDeep(wsp, "spPr");
+  if (!spPr) {
+    return undefined;
+  }
+  const shape: EditorTextBoxShape = {};
+  const prstGeom = findElementDeep(spPr, "prstGeom");
+  const preset = prstGeom?.getAttribute("prst");
+  if (preset) {
+    shape.preset = preset;
+  }
+  // Fill: a:solidFill/a:srgbClr directly under spPr (not inside a:ln).
+  for (let i = 0; i < spPr.childNodes.length; i += 1) {
+    const child = spPr.childNodes[i];
+    if (child?.nodeType !== child.ELEMENT_NODE) continue;
+    const el = child as XmlElement;
+    if (el.localName === "solidFill") {
+      const fill = normalizeHexColor(
+        findElementDeep(el, "srgbClr")?.getAttribute("val"),
+      );
+      if (fill) shape.fill = fill;
+    } else if (el.localName === "ln") {
+      const width = parseOptionalInt(el.getAttribute("w"));
+      if (width !== undefined) {
+        shape.borderWidthPt = Math.round((width / EMU_PER_PT) * 100) / 100;
+      }
+      const color = normalizeHexColor(
+        findElementDeep(el, "srgbClr")?.getAttribute("val"),
+      );
+      if (color) shape.borderColor = color;
+    }
+  }
+  return Object.keys(shape).length > 0 ? shape : undefined;
+}
+
+/** Parse `wps:bodyPr` insets/anchor/wrap into an `EditorTextBoxBody`. */
+function parseTextBoxBody(wsp: XmlElement): EditorTextBoxBody | undefined {
+  const bodyPr = findElementDeep(wsp, "bodyPr");
+  if (!bodyPr) {
+    return undefined;
+  }
+  const body: EditorTextBoxBody = {};
+  const left = emuToPx(bodyPr.getAttribute("lIns"));
+  const top = emuToPx(bodyPr.getAttribute("tIns"));
+  const right = emuToPx(bodyPr.getAttribute("rIns"));
+  const bottom = emuToPx(bodyPr.getAttribute("bIns"));
+  if (left !== undefined) body.paddingLeft = left;
+  if (top !== undefined) body.paddingTop = top;
+  if (right !== undefined) body.paddingRight = right;
+  if (bottom !== undefined) body.paddingBottom = bottom;
+  const anchor = bodyPr.getAttribute("anchor");
+  if (anchor) body.anchor = anchor;
+  const wrap = bodyPr.getAttribute("wrap");
+  if (wrap) body.wrap = wrap;
+  if (findElementDeep(bodyPr, "spAutoFit")) body.autoFit = true;
+  return Object.keys(body).length > 0 ? body : undefined;
+}
+
+/**
+ * Parse a `w:drawing` that wraps a WordprocessingShape text box
+ * (`wps:wsp/wps:txbx/w:txbxContent`). Returns undefined when the drawing is not
+ * a text box (e.g. an image, or an unsupported shape with no text content).
+ */
+async function parseTextBox(
+  drawing: XmlElement,
+  parseNestedBlocks: ParseNestedBlocks | undefined,
+): Promise<EditorTextBoxData | undefined> {
+  const wsp = findElementDeep(drawing, "wsp");
+  if (!wsp) {
+    return undefined;
+  }
+  const txbxContent = findElementDeep(wsp, "txbxContent");
+  if (!txbxContent) {
+    return undefined;
+  }
+
+  const container = findDrawingContainer(drawing);
+  const drawingBox = container?.element ?? drawing;
+  const extent = findElementDeep(drawingBox, "extent");
+  const width =
+    emuToPx(extent?.getAttribute("cx")) ?? EMU_DEFAULT_TEXTBOX_SIZE_PX;
+  const height =
+    emuToPx(extent?.getAttribute("cy")) ?? EMU_DEFAULT_TEXTBOX_SIZE_PX;
+
+  const docPr = findElementDeep(drawingBox, "docPr");
+  const name = docPr ? getAttributeValue(docPr, "name") : null;
+  const alt = docPr
+    ? (getAttributeValue(docPr, "descr") ?? getAttributeValue(docPr, "title"))
+    : null;
+
+  const floating =
+    container?.kind === "anchor"
+      ? parseFloatingLayout(container.element)
+      : undefined;
+
+  const blocks = parseNestedBlocks ? await parseNestedBlocks(txbxContent) : [];
+  const shape = parseTextBoxShape(wsp);
+  const body = parseTextBoxBody(wsp);
+
+  return {
+    width,
+    height,
+    blocks,
+    ...(floating ? { floating } : {}),
+    ...(name ? { name } : {}),
+    ...(alt ? { alt } : {}),
+    ...(shape ? { shape } : {}),
+    ...(body ? { body } : {}),
+  };
+}
+
+/**
+ * Resolve an `mc:AlternateContent` to the preferred `w:drawing` element: the
+ * `mc:Choice` whose `Requires` lists `wps` (modern DrawingML text box). Returns
+ * undefined when no supported Choice carries a drawing. The VML `mc:Fallback`
+ * is intentionally not parsed here to avoid duplicating the text box content.
+ */
+function resolveAlternateContentDrawing(
+  alternateContent: XmlElement,
+): XmlElement | undefined {
+  let firstChoiceDrawing: XmlElement | undefined;
+  for (let i = 0; i < alternateContent.childNodes.length; i += 1) {
+    const node = alternateContent.childNodes[i];
+    if (node?.nodeType !== node.ELEMENT_NODE) continue;
+    const el = node as XmlElement;
+    if (el.localName !== "Choice") continue;
+    const drawing = findElementDeep(el, "drawing");
+    if (!drawing) continue;
+    if (firstChoiceDrawing === undefined) {
+      firstChoiceDrawing = drawing;
+    }
+    const requires = el.getAttribute("Requires") ?? "";
+    if (/\bwps\b/.test(requires)) {
+      return drawing;
+    }
+  }
+  return firstChoiceDrawing;
+}
+
 export interface ImportedRun {
   text: string;
   image?: EditorImageRunData;
+  textBox?: EditorTextBoxData;
   styles?: EditorTextStyle;
   field?: { type: "PAGE" | "NUMPAGES" };
   /**
@@ -385,12 +558,15 @@ export async function parseRunElement(
   zip: JSZip,
   relsMap: Map<string, string>,
   assets: AssetRegistry,
+  parseNestedBlocks?: ParseNestedBlocks,
 ): Promise<{
   text: string;
   image?: EditorImageRunData;
+  textBox?: EditorTextBoxData;
 }> {
   const textParts: string[] = [];
   let image: EditorImageRunData | undefined;
+  let textBox: EditorTextBoxData | undefined;
 
   const children = runElement.childNodes;
   for (let index = 0; index < children.length; index += 1) {
@@ -423,6 +599,14 @@ export async function parseRunElement(
         textParts.push("\n");
       } else if (element.localName === "drawing") {
         const blip = findElementDeep(element, "blip");
+        if (!blip) {
+          const parsedTextBox = await parseTextBox(element, parseNestedBlocks);
+          if (parsedTextBox) {
+            textParts.push("\uFFFC");
+            textBox = parsedTextBox;
+          }
+          continue;
+        }
         if (blip) {
           const { embed, link } = parseBlipRels(blip);
           const container = findDrawingContainer(element);
@@ -509,10 +693,27 @@ export async function parseRunElement(
           }
         }
       }
+    } else if (element.localName === "AlternateContent") {
+      // Text boxes are commonly wrapped in `mc:AlternateContent`, with the
+      // modern DrawingML shape in `mc:Choice Requires="wps"` and a VML
+      // `mc:Fallback`. Parse only the chosen drawing so content is not
+      // duplicated.
+      const drawing = resolveAlternateContentDrawing(element);
+      if (drawing) {
+        const parsedTextBox = await parseTextBox(drawing, parseNestedBlocks);
+        if (parsedTextBox) {
+          textParts.push("\uFFFC");
+          textBox = parsedTextBox;
+        }
+      }
     }
   }
 
-  return { text: textParts.join(""), image };
+  return {
+    text: textParts.join(""),
+    image,
+    ...(textBox ? { textBox } : {}),
+  };
 }
 
 export function getRunInstructionText(runElement: XmlElement): string {
@@ -529,6 +730,7 @@ export async function parseRunsContainer(
   assets: AssetRegistry,
   theme: DocxImportTheme,
   inheritedLink?: string | null,
+  parseNestedBlocks?: ParseNestedBlocks,
 ): Promise<ImportedRun[]> {
   const runs: ImportedRun[] = [];
   let activeField: {
@@ -667,11 +869,12 @@ export async function parseRunsContainer(
         continue;
       }
 
-      const { text, image } = await parseRunElement(
+      const { text, image, textBox } = await parseRunElement(
         element,
         zip,
         relsMap,
         assets,
+        parseNestedBlocks,
       );
       if (text.length === 0) {
         continue;
@@ -684,7 +887,12 @@ export async function parseRunsContainer(
       if (inheritedLink) {
         (styles ??= {}).link = inheritedLink;
       }
-      const importedRun = { text, image, styles };
+      const importedRun: ImportedRun = {
+        text,
+        ...(image ? { image } : {}),
+        ...(textBox ? { textBox } : {}),
+        ...(styles ? { styles } : {}),
+      };
       if (activeField?.collectingResult) {
         activeField.resultRuns.push(importedRun);
       } else {
@@ -712,6 +920,7 @@ export async function parseRunsContainer(
         assets,
         theme,
         inheritedLink,
+        parseNestedBlocks,
       );
       const displayText = fieldRuns.map((run) => run.text).join("") || "1";
       const styles = fieldRuns.find((run) => run.styles)?.styles;
@@ -747,6 +956,7 @@ export async function parseRunsContainer(
           assets,
           theme,
           href,
+          parseNestedBlocks,
         )),
       );
     }

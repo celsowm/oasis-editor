@@ -42,6 +42,9 @@ export type {
 
 export type {
   EditorTextRun,
+  EditorTextBoxShape,
+  EditorTextBoxBody,
+  EditorTextBoxData,
   EditorParagraphNode,
   EditorTableCellStyle,
   EditorTableCellNode,

@@ -7,6 +7,7 @@ import type {
   EditorDocxWidthValue,
   EditorFieldData,
   EditorFootnoteReferenceData,
+  EditorImageFloatingLayout,
   EditorImageRunData,
   EditorParagraphListStyle,
   EditorRevision,
@@ -19,11 +20,68 @@ import type {
   EditorTextStyle,
 } from "./styles.js";
 
+/**
+ * Geometry/appearance of a text box shape (`wps:spPr`). All values are
+ * optional; an unset field means "inherit Word's default / leave as-is".
+ */
+export interface EditorTextBoxShape {
+  /** `a:prstGeom/@prst` preset geometry, e.g. "rect". */
+  preset?: string;
+  /** Solid fill color (`a:solidFill/a:srgbClr`) as `#RRGGBB`. */
+  fill?: string;
+  /** Outline color (`a:ln/a:solidFill/a:srgbClr`) as `#RRGGBB`. */
+  borderColor?: string;
+  /** Outline width in points (`a:ln/@w`, originally EMU). */
+  borderWidthPt?: number;
+}
+
+/**
+ * Text body properties of a text box (`wps:bodyPr`): internal padding (insets),
+ * vertical anchoring and wrap behaviour.
+ */
+export interface EditorTextBoxBody {
+  /** Internal insets in px (`@lIns/@tIns/@rIns/@bIns`, originally EMU). */
+  paddingLeft?: number;
+  paddingTop?: number;
+  paddingRight?: number;
+  paddingBottom?: number;
+  /** `@anchor`: vertical anchor of the text (t/ctr/b). */
+  anchor?: string;
+  /** `@wrap`: text wrap mode inside the box (e.g. "square"). */
+  wrap?: string;
+  /** True when `a:spAutoFit` is present (auto-resize box to text). */
+  autoFit?: boolean;
+}
+
+/**
+ * A Word text box (`w:drawing` containing a `wps:wsp` WordprocessingShape with
+ * `wps:txbx/w:txbxContent`). Modeled as inline run content (analogous to
+ * `EditorImageRunData`): the owning run's text is the object replacement
+ * character `\uFFFC`. The text box's own content is a list of block nodes.
+ */
+export interface EditorTextBoxData {
+  /** Box width in px (`wp:extent/@cx`, originally EMU). */
+  width: number;
+  /** Box height in px (`wp:extent/@cy`, originally EMU). */
+  height: number;
+  /** Block content of `w:txbxContent` (paragraphs and/or tables). */
+  blocks: EditorBlockNode[];
+  /** Floating/anchor layout when the drawing is a `wp:anchor`. */
+  floating?: EditorImageFloatingLayout;
+  /** `wp:docPr/@name`. */
+  name?: string;
+  /** `wp:docPr/@descr` or `@title`. */
+  alt?: string;
+  shape?: EditorTextBoxShape;
+  body?: EditorTextBoxBody;
+}
+
 export interface EditorTextRun {
   id: string;
   text: string;
   styles?: EditorTextStyle;
   image?: EditorImageRunData;
+  textBox?: EditorTextBoxData;
   field?: EditorFieldData;
   revision?: EditorRevision;
   /**

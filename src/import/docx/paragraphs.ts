@@ -20,6 +20,7 @@ import {
 } from "./paragraphStyle.js";
 import { type NumberingMaps, parseParagraphList } from "./numbering.js";
 import { type ImportedRun, parseRunsContainer } from "./runs.js";
+import { parseTxbxContentBlocks } from "./nestedBlocks.js";
 
 function createImportedParagraph(
   runs: ImportedRun[],
@@ -42,6 +43,9 @@ function createImportedParagraph(
   runs.forEach((run, index) => {
     if (run.field) {
       paragraph.runs[index]!.field = { ...run.field };
+    }
+    if (run.textBox) {
+      paragraph.runs[index]!.textBox = run.textBox;
     }
     if (run.footnoteReference) {
       // Store a transient marker on the run; the import driver remaps the
@@ -76,7 +80,7 @@ function splitRunsAtPageBreaks(runs: ImportedRun[]): {
   let hasPageBreak = false;
 
   const appendRun = (run: ImportedRun, text: string) => {
-    if (text.length === 0 && !run.image && !run.field) {
+    if (text.length === 0 && !run.image && !run.textBox && !run.field) {
       return;
     }
     segments[segments.length - 1]!.push({
@@ -106,7 +110,11 @@ function splitRunsAtPageBreaks(runs: ImportedRun[]): {
 
 function paragraphHasVisibleContent(runs: ImportedRun[]): boolean {
   return runs.some(
-    (run) => run.image || run.field || run.text.replace(/\s/g, "").length > 0,
+    (run) =>
+      run.image ||
+      run.textBox ||
+      run.field ||
+      run.text.replace(/\s/g, "").length > 0,
   );
 }
 
@@ -131,6 +139,16 @@ export async function parseParagraphNodes(
     relsMap,
     assets,
     theme,
+    undefined,
+    (container) =>
+      parseTxbxContentBlocks(
+        container,
+        numberingMaps,
+        zip,
+        relsMap,
+        assets,
+        theme,
+      ),
   );
   const parsedStyle = withDocxImplicitSingleLineHeight(
     parseParagraphStyle(paragraphProperties),
