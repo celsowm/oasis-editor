@@ -2,15 +2,37 @@ import type {
   EditorBlockNode,
   EditorParagraphListStyle,
   EditorParagraphNode,
+  EditorTextBoxData,
   EditorTextRun,
 } from "../model.js";
 import { cloneStyle } from "../textStyle/textStyleMutations.js";
+
+export function cloneTextBox(textBox: EditorTextBoxData): EditorTextBoxData {
+  return {
+    ...textBox,
+    floating: textBox.floating
+      ? {
+          ...textBox.floating,
+          positionH: textBox.floating.positionH
+            ? { ...textBox.floating.positionH }
+            : undefined,
+          positionV: textBox.floating.positionV
+            ? { ...textBox.floating.positionV }
+            : undefined,
+        }
+      : undefined,
+    shape: textBox.shape ? { ...textBox.shape } : undefined,
+    body: textBox.body ? { ...textBox.body } : undefined,
+    blocks: cloneBlocks(textBox.blocks),
+  };
+}
 
 export function cloneRun(run: EditorTextRun): EditorTextRun {
   return {
     ...run,
     styles: cloneStyle(run.styles),
     image: run.image ? { ...run.image } : undefined,
+    textBox: run.textBox ? cloneTextBox(run.textBox) : undefined,
     field: run.field ? { ...run.field } : undefined,
     revision: run.revision ? { ...run.revision } : undefined,
     footnoteReference: run.footnoteReference

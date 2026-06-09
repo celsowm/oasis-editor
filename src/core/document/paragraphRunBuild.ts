@@ -16,6 +16,10 @@ import {
   stylesEqual,
 } from "../textStyle/textStyleMutations.js";
 
+function isObjectRun(run: EditorTextRun): boolean {
+  return Boolean(run.image || run.textBox);
+}
+
 export function normalizeRuns(
   runs: EditorTextRun[],
   fallbackStyles?: EditorTextStyle,
@@ -30,8 +34,8 @@ export function normalizeRuns(
     const previous = merged[merged.length - 1];
     if (
       previous &&
-      !run.image &&
-      !previous.image &&
+      !isObjectRun(run) &&
+      !isObjectRun(previous) &&
       stylesEqual(previous.styles, run.styles)
     ) {
       previous.text += run.text;

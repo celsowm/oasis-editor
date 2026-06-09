@@ -5,6 +5,7 @@ import type {
 } from "../model.js";
 import { getParagraphLength } from "../model.js";
 import { cloneStyle } from "../textStyle/textStyleMutations.js";
+import { cloneTextBox } from "./clone.js";
 
 export function getStyleAtOffset(
   paragraph: EditorParagraphNode,
@@ -140,9 +141,11 @@ export function sliceRuns(
     const overlapEnd = Math.min(end, runEnd);
 
     if (overlapStart < overlapEnd) {
+      const isObjectRun = Boolean(run.image || run.textBox);
+
       const piece: EditorTextRun = {
         id: `run:${Math.random().toString(36).slice(2, 9)}`,
-        text: run.image
+        text: isObjectRun
           ? "\uFFFC"
           : run.text.slice(overlapStart - runStart, overlapEnd - runStart),
       };
@@ -151,6 +154,9 @@ export function sliceRuns(
       }
       if (run.image) {
         piece.image = { ...run.image };
+      }
+      if (run.textBox) {
+        piece.textBox = cloneTextBox(run.textBox);
       }
       if (run.revision) {
         piece.revision = { ...run.revision };
