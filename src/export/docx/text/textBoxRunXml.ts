@@ -1,0 +1,105 @@
+import type {
+  EditorBlockNode,
+  EditorNamedStyle,
+  EditorTextBoxData,
+  EditorTextRun,
+} from "../../../core/model.js";
+import type { DocContext } from "../docxTypes.js";
+import { escapeXml } from "../xmlUtils.js";
+import { EMU_PER_PX, EMU_PER_PT } from "./constants.js";
+import { buildDrawingContainerXml } from "./drawingContainerXml.js";
+import { serializeRunProperties } from "./runPropertiesXml.js";
+import { serializeBlocksXml } from "./blocksXml.js";
+
+function buildTextBoxGraphicXml(
+  textBox: EditorTextBoxData,
+  cx: number,
+  cy: number,
+  context: DocContext,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): string {
+  const shape = textBox.shape;
+  const preset = escapeXml(shape?.preset ?? "rect");
+
+  const fillXml = shape?.fill
+    ? `<a:solidFill><a:srgbClr val="${escapeXml(shape.fill.replace(/^#/, ""))}"/></a:solidFill>`
+    : "";
+  let lnXml = "";
+  if (shape?.borderColor || shape?.borderWidthPt !== undefined) {
+    const widthAttr =
+      shape?.borderWidthPt !== undefined
+        ? ` w="${Math.round(shape.borderWidthPt * EMU_PER_PT)}"`
+        : "";
+    const colorXml = shape?.borderColor
+      ? `<a:solidFill><a:srgbClr val="${escapeXml(shape.borderColor.replace(/^#/, ""))}"/></a:solidFill>`
+      : "";
+    lnXml = `<a:ln${widthAttr}>${colorXml}<a:miter lim="800000"/></a:ln>`;
+  }
+
+  const body = textBox.body;
+  const bodyAttrs: string[] = ['rot="0"', 'vert="horz"'];
+  bodyAttrs.push(`wrap="${escapeXml(body?.wrap ?? "square")}"`);
+  if (body?.paddingLeft !== undefined) {
+    bodyAttrs.push(`lIns="${Math.round(body.paddingLeft * EMU_PER_PX)}"`);
+  }
+  if (body?.paddingTop !== undefined) {
+    bodyAttrs.push(`tIns="${Math.round(body.paddingTop * EMU_PER_PX)}"`);
+  }
+  if (body?.paddingRight !== undefined) {
+    bodyAttrs.push(`rIns="${Math.round(body.paddingRight * EMU_PER_PX)}"`);
+  }
+  if (body?.paddingBottom !== undefined) {
+    bodyAttrs.push(`bIns="${Math.round(body.paddingBottom * EMU_PER_PX)}"`);
+  }
+  bodyAttrs.push(`anchor="${escapeXml(body?.anchor ?? "t")}"`);
+  bodyAttrs.push('anchorCtr="0"');
+  const autoFitXml = body?.autoFit ? "<a:spAutoFit/>" : "";
+
+  const innerXml = serializeBlocksXml(textBox.blocks, context, styles);
+
+  return (
+    '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">' +
+    '<a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">' +
+    "<wps:wsp>" +
+    '<wps:cNvSpPr txBox="1"><a:spLocks noChangeArrowheads="1"/></wps:cNvSpPr>' +
+    '<wps:spPr bwMode="auto">' +
+    `<a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
+    `<a:prstGeom prst="${preset}"><a:avLst/></a:prstGeom>` +
+    fillXml +
+    lnXml +
+    "</wps:spPr>" +
+    `<wps:txbx><w:txbxContent>${innerXml}</w:txbxContent></wps:txbx>` +
+    `<wps:bodyPr ${bodyAttrs.join(" ")}>${autoFitXml}</wps:bodyPr>` +
+    "</wps:wsp>" +
+    "</a:graphicData>" +
+    "</a:graphic>"
+  );
+}
+
+export function serializeTextBoxRun(
+  run: EditorTextRun,
+  textBox: EditorTextBoxData,
+  context: DocContext,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  rPrXml: string,
+): string {
+  const cx = Math.round(textBox.width * EMU_PER_PX);
+  const cy = Math.round(textBox.height * EMU_PER_PX);
+  const docPrId = context.textBoxDocPrIds.get(run.id) ?? 1;
+  const docPrName = textBox.name ?? "Text Box";
+  const altAttr =
+    textBox.alt !== undefined
+      ? ` descr="${escapeXml(textBox.alt)}" title="${escapeXml(textBox.alt)}"`
+      : "";
+  const graphicXml = buildTextBoxGraphicXml(textBox, cx, cy, context, styles);
+  const drawing = buildDrawingContainerXml({
+    cx,
+    cy,
+    floating: textBox.floating,
+    docPrId,
+    docPrName,
+    altAttr,
+    graphicXml,
+  });
+  return `<w:r>${rPrXml}${drawing}</w:r>`;
+}
