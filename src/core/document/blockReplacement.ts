@@ -33,21 +33,44 @@ export function replaceParagraphsInBlocks(
 
   let index = 0;
   const processBlocks = (nodes: EditorBlockNode[]): EditorBlockNode[] => {
-    return nodes.map((node) => {
+    let changed = false;
+    const result = nodes.map((node) => {
       if (node.type === "paragraph") {
-        return newParagraphs[index++] ?? node;
+        const next = newParagraphs[index++];
+        if (next && next !== node) {
+          changed = true;
+          return next;
+        }
+        return node;
       }
-      return {
-        ...node,
-        rows: node.rows.map((row) => ({
-          ...row,
-          cells: row.cells.map((cell) => ({
-            ...cell,
-            blocks: processBlocks(cell.blocks) as EditorParagraphNode[],
-          })),
-        })),
-      };
+
+      let tableChanged = false;
+      const nextRows = node.rows.map((row) => {
+        let rowChanged = false;
+        const nextCells = row.cells.map((cell) => {
+          const nextBlocks = processBlocks(cell.blocks) as EditorParagraphNode[];
+          if (nextBlocks !== cell.blocks) {
+            rowChanged = true;
+            return { ...cell, blocks: nextBlocks };
+          }
+          return cell;
+        });
+
+        if (rowChanged) {
+          tableChanged = true;
+          return { ...row, cells: nextCells };
+        }
+        return row;
+      });
+
+      if (tableChanged) {
+        changed = true;
+        return { ...node, rows: nextRows };
+      }
+      return node;
     });
+
+    return changed ? result : nodes;
   };
   return processBlocks(blocks);
 }
@@ -139,20 +162,41 @@ export function updateTableCellsInBlocks(
   selectedParagraphIds: Set<string>,
   updateCell: (cell: EditorTableCellNode) => EditorTableCellNode,
 ): EditorBlockNode[] {
-  return blocks.map((block) => {
+  let blocksChanged = false;
+  const result = blocks.map((block) => {
     if (block.type === "paragraph") return block;
 
-    return {
-      ...block,
-      rows: block.rows.map((row) => ({
-        ...row,
-        cells: row.cells.map((cell) => {
-          const isSelected = cell.blocks.some((paragraph) =>
-            selectedParagraphIds.has(paragraph.id),
-          );
-          return isSelected ? updateCell(cell) : cell;
-        }),
-      })),
-    };
+    let tableChanged = false;
+    const nextRows = block.rows.map((row) => {
+      let rowChanged = false;
+      const nextCells = row.cells.map((cell) => {
+        const isSelected = cell.blocks.some((paragraph) =>
+          selectedParagraphIds.has(paragraph.id),
+        );
+
+        if (isSelected) {
+          const nextCell = updateCell(cell);
+          if (nextCell !== cell) {
+            rowChanged = true;
+            return nextCell;
+          }
+        }
+        return cell;
+      });
+
+      if (rowChanged) {
+        tableChanged = true;
+        return { ...row, cells: nextCells };
+      }
+      return row;
+    });
+
+    if (tableChanged) {
+      blocksChanged = true;
+      return { ...block, rows: nextRows };
+    }
+    return block;
   });
+
+  return blocksChanged ? result : blocks;
 }

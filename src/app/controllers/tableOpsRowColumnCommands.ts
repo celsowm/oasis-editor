@@ -47,13 +47,13 @@ export function createTableRowColumnOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const targetBlocks = [...deps.getTargetBlocks(current, location.zone)];
+    const originalTableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
+    if (!originalTableBlock || originalTableBlock.type !== "table") {
       return current;
     }
+    const tableBlock = cloneBlock(originalTableBlock) as EditorTableNode;
+    targetBlocks[location.blockIndex] = tableBlock;
 
     const sourceRow = tableBlock.rows[location.rowIndex];
     if (!sourceRow) {
@@ -199,13 +199,13 @@ export function createTableRowColumnOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const targetBlocks = [...deps.getTargetBlocks(current, location.zone)];
+    const originalTableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
+    if (!originalTableBlock || originalTableBlock.type !== "table") {
       return current;
     }
+    const tableBlock = cloneBlock(originalTableBlock) as EditorTableNode;
+    targetBlocks[location.blockIndex] = tableBlock;
 
     if (tableBlock.rows.length <= 1) {
       return current;
@@ -303,13 +303,13 @@ export function createTableRowColumnOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const targetBlocks = [...deps.getTargetBlocks(current, location.zone)];
+    const originalTableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
+    if (!originalTableBlock || originalTableBlock.type !== "table") {
       return current;
     }
+    const tableBlock = cloneBlock(originalTableBlock) as EditorTableNode;
+    targetBlocks[location.blockIndex] = tableBlock;
 
     const hasHorizontalSpansInTable = tableBlock.rows.some((row) =>
       row.cells.some((cell) => Math.max(1, cell.colSpan ?? 1) > 1),
@@ -438,13 +438,13 @@ export function createTableRowColumnOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const targetBlocks = [...deps.getTargetBlocks(current, location.zone)];
+    const originalTableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
+    if (!originalTableBlock || originalTableBlock.type !== "table") {
       return current;
     }
+    const tableBlock = cloneBlock(originalTableBlock) as EditorTableNode;
+    targetBlocks[location.blockIndex] = tableBlock;
 
     if (getTableVisualWidth(tableBlock) <= 1) {
       return current;
