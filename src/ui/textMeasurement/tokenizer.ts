@@ -26,6 +26,7 @@ export function buildParagraphFragments(
       text: run.text,
       styles: run.styles ? { ...run.styles } : undefined,
       image: run.image ? { ...run.image } : undefined,
+      textBox: run.textBox ? { ...run.textBox } : undefined,
       revision: run.revision ? { ...run.revision } : undefined,
       chars,
     };
@@ -62,10 +63,16 @@ export function buildMeasuredChars(
     );
 
     for (const char of fragment.chars) {
-      const width =
-        char.char === "\uFFFC" && fragment.image
-          ? fragment.image.width
-          : measureCharacterWidth(char.char, effectiveStyles, fallbackFontSize);
+      let width: number;
+
+      if (char.char === "\uFFFC" && fragment.image) {
+        width = fragment.image.floating ? 0 : fragment.image.width;
+      } else if (char.char === "\uFFFC" && fragment.textBox) {
+        width = fragment.textBox.floating ? 0 : fragment.textBox.width;
+      } else {
+        width = measureCharacterWidth(char.char, effectiveStyles, fallbackFontSize);
+      }
+
       measured.push({
         char: char.char,
         offset: char.paragraphOffset,

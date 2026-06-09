@@ -372,6 +372,44 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
       return;
     }
 
+    if (hit.textBox) {
+      const textBoxParagraph = deps.getParagraphById(
+        state.document,
+        hit.textBox.paragraphId,
+      );
+
+      if (!textBoxParagraph) {
+        deps.focusInputAfterPointerSelection();
+        return;
+      }
+
+      dragAnchor = null;
+
+      const start = paragraphOffsetToPosition(
+        textBoxParagraph,
+        hit.textBox.startOffset,
+      );
+
+      const end = paragraphOffsetToPosition(
+        textBoxParagraph,
+        hit.textBox.endOffset,
+      );
+
+      applyWithZone(
+        state,
+        hit.zone,
+        setSelection(state, {
+          anchor: start,
+          focus: end,
+        }),
+        start,
+      );
+
+      stopDragging();
+      deps.focusInputAfterPointerSelection();
+      return;
+    }
+
     if (hit.image) {
       const imageParagraph = deps.getParagraphById(
         state.document,

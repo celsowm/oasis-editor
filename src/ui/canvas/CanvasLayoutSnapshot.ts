@@ -78,6 +78,20 @@ export interface CanvasSnapshotInlineImage {
   height: number;
 }
 
+export interface CanvasSnapshotFloatingTextBox {
+  paragraphId: string;
+  paragraphIndex: number;
+  zone: EditorEditingZone;
+  footnoteId?: string;
+  pageIndex: number;
+  startOffset: number;
+  endOffset: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export interface CanvasSnapshotPage {
   index: number;
   left: number;
@@ -97,6 +111,7 @@ export interface CanvasLayoutSnapshot {
   paragraphs: CanvasSnapshotParagraph[];
   paragraphsById: Map<string, CanvasSnapshotParagraph[]>;
   inlineImages: CanvasSnapshotInlineImage[];
+  floatingTextBoxes: CanvasSnapshotFloatingTextBox[];
   unsupportedRegions: Array<{
     pageIndex: number;
     zone: EditorEditingZone;
@@ -187,6 +202,100 @@ function collectInlineImagesFromLines(options: {
   return inlineImages;
 }
 
+function collectFloatingTextBoxesFromLines(options: {
+  lines: Array<{
+    top: number;
+    height: number;
+    slots: Array<{ offset: number; left: number; top: number; height: number }>;
+    fragments: Array<{
+      startOffset: number;
+      endOffset: number;
+      textBox?: {
+        width: number;
+        height: number;
+        floating?: {
+          positionH?: { relativeFrom?: string; offset?: number; align?: string };
+          positionV?: { relativeFrom?: string; offset?: number; align?: string };
+        };
+      };
+    }>;
+  }>;
+  paragraphId: string;
+  paragraphIndex: number;
+  zone: EditorEditingZone;
+  footnoteId?: string;
+  pageIndex: number;
+  pageLeft: number;
+  pageTop: number;
+  contentLeft: number;
+  contentTop: number;
+  contentWidth: number;
+  paragraphTop: number;
+  lineTopOffset: number;
+  lineLeftOffset: number;
+}): CanvasSnapshotFloatingTextBox[] {
+  const result: CanvasSnapshotFloatingTextBox[] = [];
+
+  const emuToPx = (value: number | undefined) =>
+    value === undefined ? 0 : value / 9525;
+
+  for (const line of options.lines) {
+    for (const fragment of line.fragments) {
+      const textBox = fragment.textBox;
+
+      if (!textBox?.floating) {
+        continue;
+      }
+
+      const slot =
+        line.slots.find((candidate) => candidate.offset === fragment.startOffset) ??
+        line.slots.find((candidate) => candidate.offset >= fragment.startOffset);
+
+      if (!slot) {
+        continue;
+      }
+
+      const h = textBox.floating.positionH;
+      const v = textBox.floating.positionV;
+
+      const hBase =
+        h?.relativeFrom === "page"
+          ? options.pageLeft
+          : h?.relativeFrom === "character"
+            ? options.lineLeftOffset + slot.left
+            : options.contentLeft;
+
+      const vBase =
+        v?.relativeFrom === "page"
+          ? options.pageTop
+          : v?.relativeFrom === "line"
+            ? options.lineTopOffset + line.top
+            : v?.relativeFrom === "margin"
+              ? options.contentTop
+              : options.paragraphTop;
+
+      result.push({
+        paragraphId: options.paragraphId,
+        paragraphIndex: options.paragraphIndex,
+        zone: options.zone,
+        footnoteId: options.footnoteId,
+        pageIndex: options.pageIndex,
+        startOffset: fragment.startOffset,
+        endOffset:
+          fragment.endOffset > fragment.startOffset
+            ? fragment.endOffset
+            : fragment.startOffset + 1,
+        left: hBase + emuToPx(h?.offset),
+        top: vBase + emuToPx(v?.offset),
+        width: textBox.width,
+        height: textBox.height,
+      });
+    }
+  }
+
+  return result;
+}
+
 export function buildCanvasLayoutSnapshot(
   options: BuildCanvasLayoutSnapshotOptions,
 ): CanvasLayoutSnapshot | null {
@@ -210,6 +319,7 @@ export function buildCanvasLayoutSnapshot(
   const snapshotPages: CanvasSnapshotPage[] = [];
   const snapshotParagraphs: CanvasSnapshotParagraph[] = [];
   const inlineImages: CanvasSnapshotInlineImage[] = [];
+  const floatingTextBoxes: CanvasSnapshotFloatingTextBox[] = [];
   const unsupportedRegions: CanvasLayoutSnapshot["unsupportedRegions"] = [];
 
   for (const page of documentLayout.pages) {
@@ -321,6 +431,24 @@ export function buildCanvasLayoutSnapshot(
               lineLeftOffset: blockContentLeft,
             }),
           );
+          floatingTextBoxes.push(
+            ...collectFloatingTextBoxesFromLines({
+              lines: block.layout.lines,
+              paragraphId,
+              paragraphIndex,
+              zone,
+              footnoteId: blockFootnoteId,
+              pageIndex: page.index,
+              pageLeft: pageRect.left,
+              pageTop: pageRect.top,
+              contentLeft: blockContentLeft,
+              contentTop: startTop,
+              contentWidth: blockContentWidth,
+              paragraphTop: lineTopOffset,
+              lineTopOffset,
+              lineLeftOffset: blockContentLeft,
+            }),
+          );
         } else if (block.sourceBlock.type === "table") {
           const segmentTable = block.tableSegment
             ? buildSegmentTable(block.sourceBlock, block.tableSegment)
@@ -418,6 +546,24 @@ export function buildCanvasLayoutSnapshot(
                   lineLeftOffset: paragraphLayout.originX,
                 }),
               );
+              floatingTextBoxes.push(
+                ...collectFloatingTextBoxesFromLines({
+                  lines: paragraphLayout.lines,
+                  paragraphId,
+                  paragraphIndex,
+                  zone,
+                  footnoteId: blockFootnoteId,
+                  pageIndex: page.index,
+                  pageLeft: pageRect.left,
+                  pageTop: pageRect.top,
+                  contentLeft: paragraphLayout.originX,
+                  contentTop: paragraphLayout.originY,
+                  contentWidth: paragraphLayout.width,
+                  paragraphTop: paragraphLayout.originY,
+                  lineTopOffset: paragraphLayout.originY,
+                  lineLeftOffset: paragraphLayout.originX,
+                }),
+              );
             }
           }
         }
@@ -478,6 +624,7 @@ export function buildCanvasLayoutSnapshot(
     paragraphs: snapshotParagraphs,
     paragraphsById,
     inlineImages,
+    floatingTextBoxes,
     unsupportedRegions,
   };
 }

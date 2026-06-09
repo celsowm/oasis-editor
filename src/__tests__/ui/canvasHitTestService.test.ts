@@ -5,6 +5,7 @@ import {
   createEditorStateFromDocument,
 } from "../../core/editorState.js";
 import type { CanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
+import type { EditorParagraphNode } from "../../core/model.js";
 import { resolveCanvasSurfaceHitAtPoint } from "../../ui/canvas/CanvasHitTestService.js";
 
 function createSnapshotWithInlineImage(): {
@@ -82,6 +83,7 @@ function createSnapshotWithInlineImage(): {
         height: 72,
       },
     ],
+    floatingTextBoxes: [],
     unsupportedRegions: [],
   } as unknown as CanvasLayoutSnapshot;
   snapshot.paragraphsById.set(paragraph.id, [snapshot.paragraphs[0]!]);
@@ -176,6 +178,7 @@ describe("canvas hit-test service footnote zone", () => {
       ],
       paragraphsById: new Map(),
       inlineImages: [],
+      floatingTextBoxes: [],
       unsupportedRegions: [],
     };
     snapshot.paragraphsById.set(paragraph.id, [snapshot.paragraphs[0]!]);
@@ -246,6 +249,7 @@ describe("canvas hit-test service footnote zone", () => {
       ],
       paragraphsById: new Map(),
       inlineImages: [],
+      floatingTextBoxes: [],
       unsupportedRegions: [],
     };
     snapshot.paragraphsById.set(paragraph.id, [snapshot.paragraphs[0]!]);
@@ -259,5 +263,105 @@ describe("canvas hit-test service footnote zone", () => {
 
     expect(hit?.zone).toBe("main");
     expect(hit?.paragraphId).toBe(paragraph.id);
+  });
+});
+
+describe("canvas hit-test service floating text box", () => {
+  it("hit-tests a floating text box as an anchored object", () => {
+    const paragraph: EditorParagraphNode = createEditorParagraphFromRuns([
+      {
+        text: "\uFFFC",
+        textBox: {
+          width: 248,
+          height: 147,
+          blocks: [],
+          floating: {
+            type: "floating",
+            wrap: "square",
+            positionH: { relativeFrom: "column", offset: -275590 },
+            positionV: { relativeFrom: "paragraph", offset: 87630 },
+          },
+        },
+      },
+      { text: "x" },
+    ]);
+    const state = createEditorStateFromDocument(
+      createEditorDocument([paragraph]),
+    );
+
+    const textBoxLeft = 113 - 275590 / 9525;
+    const textBoxTop = 120 + 87630 / 9525;
+
+    const snapshot: CanvasLayoutSnapshot = {
+      surfaceRect: { left: 0, top: 0, width: 1000, height: 1000 } as DOMRect,
+      pages: [
+        {
+          index: 0,
+          left: 0,
+          top: 0,
+          width: 794,
+          height: 1123,
+          bodyTop: 96,
+          bodyBottom: 1027,
+        },
+      ],
+      paragraphs: [
+        {
+          paragraph,
+          paragraphId: paragraph.id,
+          paragraphIndex: 0,
+          zone: "main",
+          pageIndex: 0,
+          startOffset: 0,
+          endOffset: 2,
+          textLength: 2,
+          left: 113,
+          top: 120,
+          width: 568,
+          height: 24,
+          lines: [
+            {
+              startOffset: 0,
+              endOffset: 2,
+              top: 120,
+              height: 24,
+              slots: [
+                { offset: 0, left: 113, top: 120, height: 24 },
+                { offset: 1, left: 125, top: 120, height: 24 },
+                { offset: 2, left: 137, top: 120, height: 24 },
+              ],
+            },
+          ],
+        },
+      ],
+      paragraphsById: new Map(),
+      inlineImages: [],
+      floatingTextBoxes: [
+        {
+          paragraphId: paragraph.id,
+          paragraphIndex: 0,
+          zone: "main",
+          pageIndex: 0,
+          startOffset: 0,
+          endOffset: 1,
+          left: textBoxLeft,
+          top: textBoxTop,
+          width: 248,
+          height: 147,
+        },
+      ],
+      unsupportedRegions: [],
+    } as unknown as CanvasLayoutSnapshot;
+    snapshot.paragraphsById.set(paragraph.id, [snapshot.paragraphs[0]!]);
+
+    const hit = resolveCanvasSurfaceHitAtPoint({
+      snapshot,
+      state,
+      clientX: textBoxLeft + 10,
+      clientY: textBoxTop + 10,
+    });
+
+    expect(hit?.textBox).toBeDefined();
+    expect(hit?.paragraphOffset).toBe(0);
   });
 });

@@ -154,6 +154,7 @@ export function computeCanvasSelectionGeometry(
     ),
   );
   let selectedImageBox: SelectedImageSelectionBox | null = null;
+  let selectedFloatingTextBox = false;
 
   if (
     !normalized.isCollapsed &&
@@ -176,6 +177,19 @@ export function computeCanvasSelectionGeometry(
         width: selectedImage.width,
         height: selectedImage.height,
       };
+    }
+
+    if (!selectedImageBox) {
+      const selectedTextBox = snapshot.floatingTextBoxes.find(
+        (box) =>
+          box.paragraphId === normalized.start.paragraphId &&
+          box.startOffset === normalized.startParagraphOffset &&
+          box.endOffset === normalized.endParagraphOffset,
+      );
+
+      if (selectedTextBox) {
+        selectedFloatingTextBox = true;
+      }
     }
   }
 
@@ -371,7 +385,11 @@ export function computeCanvasSelectionGeometry(
     left: caretLeft,
     top: caretTop,
     height: caretHeight,
-    visible: focusParagraphSegments.length > 0 && !isMultiCellSelection,
+    visible:
+      focusParagraphSegments.length > 0 &&
+      !isMultiCellSelection &&
+      !selectedImageBox &&
+      !selectedFloatingTextBox,
   };
 
   return {

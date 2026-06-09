@@ -23,6 +23,17 @@ export interface SurfaceHitImage {
   height: number;
 }
 
+export interface SurfaceHitTextBox {
+  paragraphId: string;
+  paragraphOffset: number;
+  startOffset: number;
+  endOffset: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export interface SurfaceHit {
   zone: EditorEditingZone;
   footnoteId?: string;
@@ -35,6 +46,7 @@ export interface SurfaceHit {
   tableCellAnchorPosition?: EditorPosition;
   caretViewport?: { left: number; top: number; height: number };
   image?: SurfaceHitImage;
+  textBox?: SurfaceHitTextBox;
 }
 
 export interface ResolveCanvasHitOptions {
@@ -283,6 +295,33 @@ function isPointInsideRect(
   );
 }
 
+function resolveTextBoxAtPoint(
+  snapshot: CanvasLayoutSnapshot,
+  pageIndex: number,
+  zone: EditorEditingZone,
+  clientX: number,
+  clientY: number,
+): CanvasLayoutSnapshot["floatingTextBoxes"][number] | null {
+  for (let i = snapshot.floatingTextBoxes.length - 1; i >= 0; i -= 1) {
+    const box = snapshot.floatingTextBoxes[i]!;
+
+    if (box.pageIndex !== pageIndex || box.zone !== zone) {
+      continue;
+    }
+
+    if (
+      clientX >= box.left &&
+      clientX <= box.left + box.width &&
+      clientY >= box.top &&
+      clientY <= box.top + box.height
+    ) {
+      return box;
+    }
+  }
+
+  return null;
+}
+
 function resolveImageAtPoint(
   snapshot: CanvasLayoutSnapshot,
   pageIndex: number,
@@ -311,6 +350,65 @@ export function resolveCanvasSurfaceHitAtPoint(
   }
 
   const zone = resolveZoneFromPage(page, clientY);
+  const textBoxHit = resolveTextBoxAtPoint(
+    snapshot,
+    page.index,
+    zone,
+    clientX,
+    clientY,
+  );
+  if (textBoxHit) {
+    const paragraphSegments =
+      snapshot.paragraphsById.get(textBoxHit.paragraphId) ?? [];
+
+    const paragraphSegment =
+      paragraphSegments.find(
+        (segment) =>
+          segment.pageIndex === page.index &&
+          segment.zone === zone &&
+          textBoxHit.startOffset >= segment.startOffset &&
+          textBoxHit.startOffset <= segment.endOffset,
+      ) ?? paragraphSegments[0];
+
+    if (paragraphSegment) {
+      const paragraphOffset = Math.max(
+        paragraphSegment.startOffset,
+        Math.min(textBoxHit.startOffset, paragraphSegment.endOffset),
+      );
+
+      const position = paragraphOffsetToPosition(
+        paragraphSegment.paragraph,
+        paragraphOffset,
+      );
+
+      return {
+        zone,
+        footnoteId: paragraphSegment.footnoteId,
+        paragraphId: textBoxHit.paragraphId,
+        paragraphOffset,
+        position,
+        source: "canvas-layout",
+        resolvedFromParagraph: true,
+        tableCellAnchorPosition: paragraphSegment.tableCell?.anchorPosition,
+        caretViewport: {
+          left: textBoxHit.left,
+          top: textBoxHit.top,
+          height: textBoxHit.height,
+        },
+        textBox: {
+          paragraphId: textBoxHit.paragraphId,
+          paragraphOffset,
+          startOffset: textBoxHit.startOffset,
+          endOffset: textBoxHit.endOffset,
+          left: textBoxHit.left,
+          top: textBoxHit.top,
+          width: textBoxHit.width,
+          height: textBoxHit.height,
+        },
+      };
+    }
+  }
+
   const imageHit = resolveImageAtPoint(
     snapshot,
     page.index,

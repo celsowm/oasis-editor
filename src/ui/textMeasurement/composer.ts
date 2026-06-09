@@ -44,10 +44,15 @@ export function measureParagraphMinContentWidthPx(
     if (token.kind !== "text") return largest;
     return Math.max(largest, token.width);
   }, 0);
-  const largestImage = paragraph.runs.reduce((largest, run) => {
-    return Math.max(largest, run.image?.width ?? 0);
+  const largestInlineObject = paragraph.runs.reduce((largest, run) => {
+    const imageWidth = run.image && !run.image.floating ? run.image.width : 0;
+    const textBoxWidth =
+      run.textBox && !run.textBox.floating ? run.textBox.width : 0;
+
+    return Math.max(largest, imageWidth, textBoxWidth);
   }, 0);
-  return Math.max(1, inset + largestUnbreakableToken, largestImage);
+
+  return Math.max(1, inset + largestUnbreakableToken, largestInlineObject);
 }
 
 export function composeMeasuredParagraphLines(

@@ -15,6 +15,7 @@ import type {
   EditorTableRowNode,
   EditorTextRun,
   EditorTextStyle,
+  EditorTextBoxData,
   EditorImageRunData,
   EditorNamedStyle,
 } from "./model.js";
@@ -61,6 +62,7 @@ export function createEditorStyledRun(
   text = "",
   styles?: EditorTextStyle,
   image?: EditorImageRunData,
+  textBox?: EditorTextBoxData,
 ): EditorTextRun {
   const run = createEditorRun(text);
   if (styles) {
@@ -68,6 +70,9 @@ export function createEditorStyledRun(
   }
   if (image) {
     run.image = { ...image };
+  }
+  if (textBox) {
+    run.textBox = textBox;
   }
   return run;
 }
@@ -87,6 +92,7 @@ export function createEditorParagraphFromRuns(
     text: string;
     styles?: EditorTextStyle;
     image?: EditorImageRunData;
+    textBox?: EditorTextBoxData;
   }>,
 ): EditorParagraphNode {
   const paragraph: EditorParagraphNode = {
@@ -95,7 +101,7 @@ export function createEditorParagraphFromRuns(
     runs:
       runs.length > 0
         ? runs.map((run) =>
-            createEditorStyledRun(run.text, run.styles, run.image),
+            createEditorStyledRun(run.text, run.styles, run.image, run.textBox),
           )
         : [createEditorRun("")],
   };

@@ -167,6 +167,7 @@ export function createCanvasPageRenderer(options: {
       bodyWidth,
       page.index,
       onUpdate,
+      page.pageSettings,
     );
     ctx.restore();
 
@@ -181,6 +182,7 @@ export function createCanvasPageRenderer(options: {
       bodyWidth,
       page.index,
       onUpdate,
+      page.pageSettings,
     );
     ctx.restore();
 
@@ -233,6 +235,7 @@ export function createCanvasPageRenderer(options: {
         bodyWidth,
         page.index,
         onUpdate,
+        page.pageSettings,
       );
       ctx.restore();
     }

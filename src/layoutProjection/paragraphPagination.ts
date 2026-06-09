@@ -84,6 +84,7 @@ function sliceFragmentToRange(
     text: chars.map((char) => char.char).join(""),
     styles: fragment.styles ? { ...fragment.styles } : undefined,
     image: fragment.image ? { ...fragment.image } : undefined,
+    textBox: fragment.textBox ? { ...fragment.textBox } : undefined,
     revision: fragment.revision ? { ...fragment.revision } : undefined,
     chars,
   };
@@ -177,6 +178,7 @@ export function projectParagraphLayout(
           text: resolvedText,
           styles: run.styles ? { ...run.styles } : undefined,
           image: run.image ? { ...run.image } : undefined,
+          textBox: run.textBox ? { ...run.textBox } : undefined,
           revision: run.revision ? { ...run.revision } : undefined,
           chars,
         };

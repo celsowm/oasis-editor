@@ -1,6 +1,7 @@
 import type {
   EditorLayoutLine,
   EditorLayoutBlock,
+  EditorPageSettings,
   EditorParagraphStyle,
   EditorState,
 } from "../../core/model.js";
@@ -17,6 +18,7 @@ import {
 } from "./canvasParagraphPainter.js";
 import { drawBorderBox, type CanvasBorderEdge } from "./canvasBorders.js";
 import { drawTable } from "./canvasTablePainter.js";
+import { drawFloatingTextBoxesForParagraph } from "./canvasTextBoxPainter.js";
 
 function toCanvasEdge(
   border: EditorParagraphStyle["borderTop"],
@@ -94,6 +96,7 @@ export function renderBlockList(
   contentWidth: number,
   pageIndex: number,
   onUpdate: () => void,
+  pageSettings?: EditorPageSettings,
 ) {
   let cursorY = originY;
   for (const block of blocks) {
@@ -116,6 +119,23 @@ export function renderBlockList(
         boxTop,
         contentWidth,
       );
+
+      if (pageSettings) {
+        drawFloatingTextBoxesForParagraph({
+          ctx,
+          paragraphLines: block.layout.lines,
+          state,
+          pageSettings,
+          contentLeft: originX,
+          contentTop: originY,
+          contentWidth,
+          paragraphTop: textTop,
+          pageIndex,
+          onUpdate,
+          layer: "behind",
+        });
+      }
+
       drawParagraph(
         ctx,
         block.sourceBlock,
@@ -125,6 +145,22 @@ export function renderBlockList(
         textTop,
         onUpdate,
       );
+
+      if (pageSettings) {
+        drawFloatingTextBoxesForParagraph({
+          ctx,
+          paragraphLines: block.layout.lines,
+          state,
+          pageSettings,
+          contentLeft: originX,
+          contentTop: originY,
+          contentWidth,
+          paragraphTop: textTop,
+          pageIndex,
+          onUpdate,
+          layer: "front",
+        });
+      }
     } else if (block.sourceBlock.type === "table") {
       drawTable(
         ctx,
