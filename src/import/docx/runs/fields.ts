@@ -1,0 +1,8 @@
+import { type Element as XmlElement } from "@xmldom/xmldom";
+import { WORD_NS, getChildrenByTagNameNS } from "../xmlHelpers.js";
+
+export function getRunInstructionText(runElement: XmlElement): string {
+  return getChildrenByTagNameNS(runElement, WORD_NS, "instrText")
+    .map((element) => element.textContent ?? "")
+    .join("");
+}
