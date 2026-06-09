@@ -5,122 +5,12 @@ import type {
   EditorTextBoxData,
 } from "../../core/model.js";
 import { projectBlocksLayout } from "../../layoutProjection/blocksPagination.js";
+import {
+  getTextBoxFloatingGeometry,
+  resolveFloatingObjectRect,
+} from "../../layoutProjection/floatingObjects.js";
 import { drawParagraph } from "./canvasParagraphPainter.js";
 import { drawTable } from "./canvasTablePainter.js";
-
-const EMU_PER_PX = 9525;
-
-function emuToPx(value: number | undefined): number {
-  return value === undefined ? 0 : value / EMU_PER_PX;
-}
-
-function clampFinite(value: number, fallback: number): number {
-  return Number.isFinite(value) ? value : fallback;
-}
-
-function resolveAlignedOffset(
-  align: string | undefined,
-  containerSize: number,
-  boxSize: number,
-): number | null {
-  switch (align) {
-    case "left":
-    case "top":
-      return 0;
-    case "center":
-    case "ctr":
-      return (containerSize - boxSize) / 2;
-    case "right":
-    case "bottom":
-      return containerSize - boxSize;
-    default:
-      return null;
-  }
-}
-
-export interface FloatingTextBoxRectContext {
-  textBox: EditorTextBoxData;
-  pageSettings: EditorPageSettings;
-  contentLeft: number;
-  contentTop: number;
-  contentWidth: number;
-  paragraphTop: number;
-  lineTop: number;
-  anchorLeft: number;
-}
-
-export function resolveFloatingTextBoxRect(
-  context: FloatingTextBoxRectContext,
-): { x: number; y: number; width: number; height: number } {
-  const {
-    textBox,
-    pageSettings,
-    contentLeft,
-    contentTop,
-    contentWidth,
-    paragraphTop,
-    lineTop,
-    anchorLeft,
-  } = context;
-
-  const width = Math.max(1, textBox.width);
-  const height = Math.max(1, textBox.height);
-  const floating = textBox.floating;
-
-  const h = floating?.positionH;
-  const hRelativeFrom = h?.relativeFrom ?? "column";
-
-  let hBase = contentLeft;
-  let hContainerWidth = contentWidth;
-
-  if (hRelativeFrom === "page") {
-    hBase = 0;
-    hContainerWidth = pageSettings.width;
-  } else if (hRelativeFrom === "character") {
-    hBase = anchorLeft;
-    hContainerWidth = Math.max(1, pageSettings.width - anchorLeft);
-  } else if (hRelativeFrom === "margin" || hRelativeFrom === "column") {
-    hBase = contentLeft;
-    hContainerWidth = contentWidth;
-  }
-
-  const alignedX = resolveAlignedOffset(h?.align, hContainerWidth, width);
-  const x =
-    hBase +
-    (alignedX !== null ? alignedX : emuToPx(h?.offset));
-
-  const v = floating?.positionV;
-  const vRelativeFrom = v?.relativeFrom ?? "paragraph";
-
-  let vBase = paragraphTop;
-  let vContainerHeight = pageSettings.height;
-
-  if (vRelativeFrom === "page") {
-    vBase = 0;
-    vContainerHeight = pageSettings.height;
-  } else if (vRelativeFrom === "margin") {
-    vBase = contentTop;
-    vContainerHeight = Math.max(1, pageSettings.height - contentTop);
-  } else if (vRelativeFrom === "line") {
-    vBase = lineTop;
-    vContainerHeight = Math.max(1, pageSettings.height - lineTop);
-  } else if (vRelativeFrom === "paragraph") {
-    vBase = paragraphTop;
-    vContainerHeight = Math.max(1, pageSettings.height - paragraphTop);
-  }
-
-  const alignedY = resolveAlignedOffset(v?.align, vContainerHeight, height);
-  const y =
-    vBase +
-    (alignedY !== null ? alignedY : emuToPx(v?.offset));
-
-  return {
-    x: clampFinite(x, contentLeft),
-    y: clampFinite(y, paragraphTop),
-    width,
-    height,
-  };
-}
 
 function getPadding(textBox: EditorTextBoxData) {
   return {
@@ -290,8 +180,8 @@ export function drawFloatingTextBoxesForParagraph(options: {
       const anchorLeft = contentLeft + (slot?.left ?? 0);
       const lineTop = paragraphTop + line.top;
 
-      const rect = resolveFloatingTextBoxRect({
-        textBox,
+      const rect = resolveFloatingObjectRect({
+        object: getTextBoxFloatingGeometry(textBox),
         pageSettings,
         contentLeft,
         contentTop,

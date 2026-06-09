@@ -21,6 +21,7 @@ import {
   getProjectedParagraphBlockHeight,
   isMeasuredLayoutCurrent,
   projectParagraphLayout,
+  projectParagraphLayoutWithExclusions,
   shouldCollapseContextualSpacing,
 } from "./paragraphPagination.js";
 import {
@@ -116,13 +117,14 @@ export function projectBlocksLayout(
 
     if (sourceBlock.type === "paragraph") {
       const pageIndex = pageOffset + pages.length;
-      const projectedParagraphLayout = projectParagraphLayout(
+      const projectedParagraphLayout = projectParagraphLayoutWithExclusions(
         sourceBlock,
+        pageSettings,
+        contentWidth,
+        measurer,
         pageIndex,
         totalPages,
         styles,
-        contentWidth,
-        measurer,
         defaultTabStop,
       );
       const measuredParagraphLayout =

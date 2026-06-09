@@ -3,6 +3,7 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
 } from "../../core/model.js";
+import type { FloatingExclusionRect } from "../../core/engine.js";
 import { resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
 import type {
@@ -23,6 +24,134 @@ import { applyParagraphAlignment } from "./alignment.js";
 
 const DEFAULT_CONTENT_WIDTH = 624;
 const MIN_CONTENT_WIDTH = 120;
+
+function intersectsVertically(
+  aTop: number,
+  aBottom: number,
+  bTop: number,
+  bBottom: number,
+): boolean {
+  return aTop < bBottom && aBottom > bTop;
+}
+
+function subtractInterval(
+  segments: Array<{ left: number; right: number }>,
+  cutLeft: number,
+  cutRight: number,
+): Array<{ left: number; right: number }> {
+  const result: Array<{ left: number; right: number }> = [];
+
+  for (const segment of segments) {
+    if (cutRight <= segment.left || cutLeft >= segment.right) {
+      result.push(segment);
+      continue;
+    }
+
+    if (cutLeft > segment.left) {
+      result.push({
+        left: segment.left,
+        right: Math.max(segment.left, cutLeft),
+      });
+    }
+
+    if (cutRight < segment.right) {
+      result.push({
+        left: Math.min(segment.right, cutRight),
+        right: segment.right,
+      });
+    }
+  }
+
+  return result.filter((segment) => segment.right - segment.left > 1);
+}
+
+interface LineFlowBox {
+  left: number;
+  width: number;
+  forcedTop?: number;
+}
+
+function resolveLineFlowBox(options: {
+  paragraph: EditorParagraphNode;
+  styles?: Record<string, EditorNamedStyle>;
+  contentWidth: number;
+  isFirstLine: boolean;
+  lineTop: number;
+  lineHeight: number;
+  exclusions?: FloatingExclusionRect[];
+}): LineFlowBox {
+  const {
+    paragraph,
+    styles,
+    contentWidth,
+    isFirstLine,
+    lineTop,
+    lineHeight,
+    exclusions = [],
+  } = options;
+
+  const baseLeft = getLineStartInset(paragraph, styles, isFirstLine);
+  const baseWidth = getAvailableWidth(
+    paragraph,
+    styles,
+    contentWidth,
+    isFirstLine,
+  );
+
+  const lineBottom = lineTop + lineHeight;
+
+  let segments = [
+    {
+      left: baseLeft,
+      right: baseLeft + baseWidth,
+    },
+  ];
+
+  for (const exclusion of exclusions) {
+    const exclusionBottom = exclusion.y + exclusion.height;
+
+    if (
+      !intersectsVertically(
+        lineTop,
+        lineBottom,
+        exclusion.y,
+        exclusionBottom,
+      )
+    ) {
+      continue;
+    }
+
+    if (exclusion.wrap === "topAndBottom") {
+      return {
+        left: baseLeft,
+        width: baseWidth,
+        forcedTop: exclusionBottom,
+      };
+    }
+
+    segments = subtractInterval(
+      segments,
+      exclusion.x,
+      exclusion.x + exclusion.width,
+    );
+  }
+
+  if (segments.length === 0) {
+    return {
+      left: baseLeft,
+      width: Math.max(1, baseWidth),
+    };
+  }
+
+  const widest = segments.reduce((best, current) =>
+    current.right - current.left > best.right - best.left ? current : best,
+  );
+
+  return {
+    left: widest.left,
+    width: Math.max(1, widest.right - widest.left),
+  };
+}
 
 export function measureParagraphMinContentWidthPx(
   paragraph: EditorParagraphNode,
@@ -60,6 +189,7 @@ export function composeMeasuredParagraphLines(
 ): EditorLayoutLine[] {
   const { paragraph, fragments, styles, contentWidth, defaultTabStop } =
     options;
+  const exclusions = options.exclusions ?? [];
   const measuredChars = buildMeasuredChars(paragraph, fragments, styles);
   const tokens = tokenizeMeasuredChars(measuredChars);
   const charByOffset = new Map<number, string>(
@@ -88,26 +218,46 @@ export function composeMeasuredParagraphLines(
 
   if (tokens.length === 0) {
     const firstLineInset = getLineStartInset(paragraph, styles, true);
-    return [
-      {
-        paragraphId: paragraph.id,
-        index: 0,
-        startOffset: 0,
-        endOffset: 0,
-        top: 0,
-        height: lineHeight,
-        slots: [
-          {
-            paragraphId: paragraph.id,
-            offset: 0,
-            left: firstLineInset,
-            top: 0,
-            height: lineHeight,
-          },
-        ],
-        fragments: [],
-      },
-    ];
+    const emptyLine: EditorLayoutLine = {
+      paragraphId: paragraph.id,
+      index: 0,
+      startOffset: 0,
+      endOffset: 0,
+      top: 0,
+      height: lineHeight,
+      slots: [
+        {
+          paragraphId: paragraph.id,
+          offset: 0,
+          left: firstLineInset,
+          top: 0,
+          height: lineHeight,
+        },
+      ],
+      fragments: [],
+    };
+
+    if (exclusions.length > 0) {
+      const flow = resolveLineFlowBox({
+        paragraph,
+        styles,
+        contentWidth: width,
+        isFirstLine: true,
+        lineTop: 0,
+        lineHeight,
+        exclusions,
+      });
+      if (flow.forcedTop !== undefined && flow.forcedTop > 0) {
+        emptyLine.top = flow.forcedTop;
+        emptyLine.slots[0]!.left = flow.left;
+        emptyLine.slots[0]!.top = flow.forcedTop;
+      } else {
+        emptyLine.slots[0]!.left = flow.left;
+      }
+      emptyLine.availableWidth = flow.width;
+    }
+
+    return [emptyLine];
   }
 
   const lines: EditorLayoutLine[] = [];
@@ -117,11 +267,25 @@ export function composeMeasuredParagraphLines(
       ? tokens[0]!.chars[0]!.offset + 1
       : tokens[0]!.chars[0]!.offset;
   let lineWidth = 0;
-  let lineStartInset = getLineStartInset(paragraph, styles, true);
-  let lineSlotLefts = [lineStartInset];
   let lineEndOffset = lineStartOffset;
   let top = 0;
   let isFirstLine = true;
+
+  const computeFlow = (): LineFlowBox =>
+    resolveLineFlowBox({
+      paragraph,
+      styles,
+      contentWidth: width,
+      isFirstLine,
+      lineTop: top,
+      lineHeight,
+      exclusions,
+    });
+
+  let currentFlow = computeFlow();
+  let lineStartInset = currentFlow.left;
+  let lineAvailableWidth = currentFlow.width;
+  let lineSlotLefts = [lineStartInset];
 
   const flushLine = (hardBreak = false) => {
     commitLine(
@@ -132,6 +296,7 @@ export function composeMeasuredParagraphLines(
       lineSlotLefts,
       top,
       lineHeight,
+      lineAvailableWidth,
     );
     lineHardBreaks.push(hardBreak);
     top += lineHeight;
@@ -142,7 +307,9 @@ export function composeMeasuredParagraphLines(
     lineStartOffset = nextOffset;
     lineEndOffset = nextOffset;
     lineWidth = 0;
-    lineStartInset = getLineStartInset(paragraph, styles, isFirstLine);
+    currentFlow = computeFlow();
+    lineStartInset = currentFlow.left;
+    lineAvailableWidth = currentFlow.width;
     lineSlotLefts = [lineStartInset];
   };
 
@@ -199,18 +366,11 @@ export function composeMeasuredParagraphLines(
       continue;
     }
 
-    const availableWidth = getAvailableWidth(
-      paragraph,
-      styles,
-      width,
-      isFirstLine,
-    );
     const tokenWidth = measureTokenAt(token);
-    const fitsCurrentLine = lineWidth + tokenWidth <= availableWidth;
+    const fitsCurrentLine = lineWidth + tokenWidth <= lineAvailableWidth;
     const isEmptyLine = lineStartOffset === lineEndOffset;
 
     if (token.kind === "whitespace") {
-      // Greedy: whitespace fits or line is empty → place it; otherwise flush
       if (fitsCurrentLine || isEmptyLine) {
         appendChars(token.chars);
       } else {
@@ -228,12 +388,6 @@ export function composeMeasuredParagraphLines(
     flushLine();
     resetLine(token.chars[0]!.offset);
 
-    let nextLineWidth = getAvailableWidth(
-      paragraph,
-      styles,
-      width,
-      isFirstLine,
-    );
     let currentChunk: MeasuredChar[] = [];
     let currentChunkWidth = 0;
 
@@ -252,17 +406,11 @@ export function composeMeasuredParagraphLines(
           : char.width;
       if (
         currentChunk.length > 0 &&
-        currentChunkWidth + charWidth > nextLineWidth
+        currentChunkWidth + charWidth > lineAvailableWidth
       ) {
         appendChars(currentChunk);
         flushLine();
         resetLine(char.offset);
-        nextLineWidth = getAvailableWidth(
-          paragraph,
-          styles,
-          width,
-          isFirstLine,
-        );
         currentChunk = [];
         currentChunkWidth = 0;
       }

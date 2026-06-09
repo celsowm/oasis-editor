@@ -13,8 +13,17 @@ export {
   clearProjectedParagraphLayoutCache,
   measureParagraphLayoutFromRects,
   projectParagraphLayout,
+  projectParagraphLayoutWithExclusions,
   resolveClosestOffsetInMeasuredLayout,
 } from "./paragraphProjection.js";
 export { projectHeaderFooterBlocks } from "./headerFooterFootnotes.js";
+export {
+  collectParagraphFloatingExclusions,
+  getImageFloatingGeometry,
+  getTextBoxFloatingGeometry,
+  resolveFloatingObjectRect,
+  type FloatingExclusionRect,
+  type FloatingObjectRect,
+} from "./floatingObjects.js";
 export { projectBlocksLayout } from "./blocksPagination.js";
 export { projectDocumentLayout } from "./documentLayout.js";

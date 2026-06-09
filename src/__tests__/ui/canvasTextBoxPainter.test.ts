@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { EditorTextBoxData, EditorPageSettings } from "../../core/model.js";
-import { resolveFloatingTextBoxRect } from "../../ui/canvas/canvasTextBoxPainter.js";
+import {
+  getTextBoxFloatingGeometry,
+  resolveFloatingObjectRect,
+} from "../../layoutProjection/floatingObjects.js";
 
 describe("canvas text box painter", () => {
   it("resolves caixa_texto.docx anchored text box offsets from EMU to canvas px", () => {
@@ -44,8 +47,8 @@ describe("canvas text box painter", () => {
       },
     };
 
-    const rect = resolveFloatingTextBoxRect({
-      textBox,
+    const rect = resolveFloatingObjectRect({
+      object: getTextBoxFloatingGeometry(textBox),
       pageSettings,
       contentLeft: 113,
       contentTop: 96,

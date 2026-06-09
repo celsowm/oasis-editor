@@ -6,12 +6,22 @@ import type {
   EditorTextStyle,
 } from "./model.js";
 
+export interface FloatingExclusionRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  wrap: "none" | "square" | "tight" | "through" | "topAndBottom";
+  sourceRunId: string;
+}
+
 export interface TextMeasureOptions {
   paragraph: EditorParagraphNode;
   fragments: EditorLayoutFragment[];
   styles?: Record<string, EditorNamedStyle>;
   contentWidth?: number;
   defaultTabStop?: number;
+  exclusions?: FloatingExclusionRect[];
 }
 
 export interface ITextMeasurer {

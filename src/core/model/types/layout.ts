@@ -44,6 +44,7 @@ export interface EditorLayoutLine {
   height: number;
   slots: EditorCaretSlot[];
   fragments: EditorLayoutFragment[];
+  availableWidth?: number;
 }
 
 export interface EditorLayoutParagraph {

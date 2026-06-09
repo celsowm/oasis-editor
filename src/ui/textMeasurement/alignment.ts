@@ -125,12 +125,14 @@ export function applyParagraphAlignment(
   }
 
   return lines.map((line, lineIndex) => {
-    const availableWidth = getAvailableWidth(
-      paragraph,
-      styles,
-      contentWidth,
-      lineIndex === 0,
-    );
+    const availableWidth =
+      line.availableWidth ??
+      getAvailableWidth(
+        paragraph,
+        styles,
+        contentWidth,
+        lineIndex === 0,
+      );
     const lineWidth = getLineContentWidth(line, charByOffset);
     const extraSpace = Math.max(0, availableWidth - lineWidth);
     if (extraSpace <= 0) {

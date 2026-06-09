@@ -5,6 +5,7 @@ import type {
   EditorLayoutLine,
   EditorLayoutParagraph,
   EditorNamedStyle,
+  EditorPageSettings,
   EditorParagraphNode,
   EditorParagraphStyle,
 } from "../core/model.js";
@@ -20,6 +21,7 @@ import {
   resolveRenderedLineHeightPx,
 } from "../ui/textMeasurement.js";
 import { perfTimer } from "../utils/performanceMetrics.js";
+import { collectParagraphFloatingExclusions } from "./floatingObjects.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
 const DEFAULT_LINE_HEIGHT = 1.15;
@@ -233,6 +235,87 @@ export function projectParagraphLayout(
   cacheForParagraph.set(cacheKey, result);
 
   return result;
+}
+
+export function projectParagraphLayoutWithExclusions(
+  paragraph: EditorParagraphNode,
+  pageSettings: EditorPageSettings | undefined,
+  contentWidth: number | undefined,
+  measurer: ITextMeasurer = domTextMeasurer,
+  pageIndex?: number,
+  totalPages?: number,
+  styles?: Record<string, EditorNamedStyle>,
+  defaultTabStop?: number,
+): EditorLayoutParagraph {
+  const preliminary = projectParagraphLayout(
+    paragraph,
+    pageIndex,
+    totalPages,
+    styles,
+    contentWidth,
+    measurer,
+    defaultTabStop,
+  );
+
+  if (!pageSettings || !contentWidth) {
+    return preliminary;
+  }
+
+  const hasFloatingObject = preliminary.fragments.some(
+    (f) =>
+      (f.textBox?.floating ?? f.image?.floating) !== undefined,
+  );
+  if (!hasFloatingObject) {
+    return preliminary;
+  }
+
+  const exclusions = collectParagraphFloatingExclusions({
+    fragments: preliminary.fragments,
+    preliminaryLines: preliminary.lines,
+    pageSettings,
+    contentWidth,
+  });
+
+  if (exclusions.length === 0) {
+    return preliminary;
+  }
+
+  const fontSize = estimateParagraphFontSize(paragraph, styles);
+  const lineHeight = estimateParagraphLineHeight(
+    paragraph,
+    fontSize,
+    styles,
+  );
+  const lines = measurer
+    .composeMeasuredParagraphLines({
+      paragraph,
+      fragments: preliminary.fragments,
+      styles,
+      contentWidth,
+      defaultTabStop,
+      exclusions,
+    })
+    .map((line) => ({
+      ...line,
+      height: line.height || lineHeight,
+      fragments: preliminary.fragments
+        .map((fragment) =>
+          sliceFragmentToRange(fragment, line.startOffset, line.endOffset),
+        )
+        .filter(
+          (fragment): fragment is EditorLayoutFragment => fragment !== null,
+        ),
+    }));
+
+  return {
+    paragraphId: paragraph.id,
+    text: preliminary.text,
+    fragments: preliminary.fragments,
+    lines,
+    startOffset: preliminary.startOffset,
+    endOffset: preliminary.endOffset,
+    contentWidth,
+  };
 }
 
 export function measureParagraphLayoutFromRects(
@@ -602,6 +685,12 @@ export interface EstimateParagraphBlockHeightOptions {
   allowSpacingAfter?: boolean;
 }
 
+/**
+ * TODO: Floating wrap exclusions are intentionally ignored in this estimate.
+ * If pagination issues appear with large floating objects affecting nearby
+ * paragraphs, introduce a dedicated estimation path using an
+ * exclusionSignature, not raw pageSettings.
+ */
 export function estimateParagraphBlockHeight(
   paragraph: EditorParagraphNode,
   styles?: Record<string, EditorNamedStyle>,

@@ -27,6 +27,7 @@ export function commitLine(
   slotLefts: number[],
   top: number,
   height: number,
+  availableWidth?: number,
 ) {
   lines.push({
     paragraphId,
@@ -35,6 +36,7 @@ export function commitLine(
     endOffset,
     top,
     height,
+    availableWidth,
     slots: buildSlots(startOffset, endOffset, slotLefts, top, height).map(
       (slot) => ({
         ...slot,

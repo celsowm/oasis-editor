@@ -3,6 +3,7 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
 } from "../../core/model.js";
+import type { FloatingExclusionRect } from "../../core/engine.js";
 
 export interface MeasuredChar {
   char: string;
@@ -22,4 +23,5 @@ export interface TextMeasureOptions {
   styles?: Record<string, EditorNamedStyle>;
   contentWidth?: number;
   defaultTabStop?: number;
+  exclusions?: FloatingExclusionRect[];
 }
