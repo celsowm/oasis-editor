@@ -12,6 +12,9 @@ import {
 import { drawParagraph } from "./canvasParagraphPainter.js";
 import { drawTable } from "./canvasTablePainter.js";
 
+const TEXT_BOX_AUTOFIT_MEASURE_HEIGHT = 100_000;
+const TEXT_BOX_AUTOFIT_SAFETY_PX = 2;
+
 function getPadding(textBox: EditorTextBoxData) {
   return {
     left: textBox.body?.paddingLeft ?? 0,
@@ -19,6 +22,75 @@ function getPadding(textBox: EditorTextBoxData) {
     right: textBox.body?.paddingRight ?? 0,
     bottom: textBox.body?.paddingBottom ?? 0,
   };
+}
+
+function measureTextBoxNaturalHeight(
+  textBox: EditorTextBoxData,
+  state: EditorState,
+  pageIndex: number,
+): number {
+  const padding = getPadding(textBox);
+
+  const innerWidth = Math.max(
+    1,
+    textBox.width - padding.left - padding.right,
+  );
+
+  const fakePageSettings = {
+    width: innerWidth,
+    height: TEXT_BOX_AUTOFIT_MEASURE_HEIGHT,
+    orientation: "portrait" as const,
+    margins: {
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      header: 0,
+      footer: 0,
+      gutter: 0,
+    },
+  };
+
+  const pages = projectBlocksLayout({
+    blocks: textBox.blocks,
+    pageSettings: fakePageSettings,
+    maxPageHeight: TEXT_BOX_AUTOFIT_MEASURE_HEIGHT,
+    styles: state.document.styles,
+    pageOffset: pageIndex,
+    totalPages: undefined,
+  });
+
+  const contentHeight = pages.reduce((sum, page) => {
+    return (
+      sum +
+      page.blocks.reduce(
+        (blockSum, block) => blockSum + Math.max(0, block.estimatedHeight),
+        0,
+      )
+    );
+  }, 0);
+
+  return Math.max(
+    1,
+    Math.ceil(
+      contentHeight +
+        padding.top +
+        padding.bottom +
+        TEXT_BOX_AUTOFIT_SAFETY_PX,
+    ),
+  );
+}
+
+function resolveTextBoxRenderHeight(
+  textBox: EditorTextBoxData,
+  state: EditorState,
+  pageIndex: number,
+): number {
+  if (!textBox.body?.autoFit) {
+    return textBox.height;
+  }
+
+  return measureTextBoxNaturalHeight(textBox, state, pageIndex);
 }
 
 function drawTextBoxShape(
@@ -180,8 +252,14 @@ export function drawFloatingTextBoxesForParagraph(options: {
       const anchorLeft = contentLeft + (slot?.left ?? 0);
       const lineTop = paragraphTop + line.top;
 
+      const effectiveHeight = resolveTextBoxRenderHeight(
+        textBox,
+        state,
+        pageIndex,
+      );
+
       const rect = resolveFloatingObjectRect({
-        object: getTextBoxFloatingGeometry(textBox),
+        object: getTextBoxFloatingGeometry(textBox, effectiveHeight),
         pageSettings,
         contentLeft,
         contentTop,

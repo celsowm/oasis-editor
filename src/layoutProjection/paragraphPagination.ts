@@ -21,7 +21,10 @@ import {
   resolveRenderedLineHeightPx,
 } from "../ui/textMeasurement.js";
 import { perfTimer } from "../utils/performanceMetrics.js";
-import { collectParagraphFloatingExclusions } from "./floatingObjects.js";
+import {
+  collectParagraphFloatingExclusions,
+  type ResolveTextBoxHeight,
+} from "./floatingObjects.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
 const DEFAULT_LINE_HEIGHT = 1.15;
@@ -246,6 +249,7 @@ export function projectParagraphLayoutWithExclusions(
   totalPages?: number,
   styles?: Record<string, EditorNamedStyle>,
   defaultTabStop?: number,
+  resolveTextBoxHeight?: ResolveTextBoxHeight,
 ): EditorLayoutParagraph {
   const preliminary = projectParagraphLayout(
     paragraph,
@@ -274,6 +278,7 @@ export function projectParagraphLayoutWithExclusions(
     preliminaryLines: preliminary.lines,
     pageSettings,
     contentWidth,
+    resolveTextBoxHeight,
   });
 
   if (exclusions.length === 0) {

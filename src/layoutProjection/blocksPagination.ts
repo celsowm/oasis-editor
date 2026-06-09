@@ -5,6 +5,7 @@ import type {
   EditorLayoutParagraph,
   EditorNamedStyle,
   EditorPageSettings,
+  EditorTextBoxData,
 } from "../core/model.js";
 import { getPageContentWidth } from "../core/model.js";
 import type { ITextMeasurer } from "../core/engine.js";
@@ -31,6 +32,74 @@ import {
   getTableRowGroups,
   getTableSegmentHeight,
 } from "./tablePagination.js";
+
+const TEXT_BOX_AUTOFIT_SAFETY_PX = 2;
+
+function estimateTextBoxAutoFitHeight(
+  textBox: EditorTextBoxData,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  measurer: ITextMeasurer,
+  pageIndex: number | undefined,
+  totalPages: number | undefined,
+  defaultTabStop: number | undefined,
+): number {
+  if (!textBox.body?.autoFit) {
+    return textBox.height;
+  }
+
+  const padding = {
+    left: textBox.body?.paddingLeft ?? 0,
+    top: textBox.body?.paddingTop ?? 0,
+    right: textBox.body?.paddingRight ?? 0,
+    bottom: textBox.body?.paddingBottom ?? 0,
+  };
+
+  const innerWidth = Math.max(
+    1,
+    textBox.width - padding.left - padding.right,
+  );
+
+  const contentHeight = textBox.blocks.reduce((sum, block) => {
+    if (block.type === "paragraph") {
+      const layout = projectParagraphLayout(
+        block,
+        pageIndex,
+        totalPages,
+        styles,
+        innerWidth,
+        measurer,
+        defaultTabStop,
+      );
+
+      return sum + getProjectedParagraphBlockHeight(block, layout, styles);
+    }
+
+    if (block.type === "table") {
+      return (
+        sum +
+        estimateTableBlockHeight(
+          block,
+          styles,
+          innerWidth,
+          measurer,
+          defaultTabStop,
+        )
+      );
+    }
+
+    return sum;
+  }, 0);
+
+  return Math.max(
+    1,
+    Math.ceil(
+      contentHeight +
+        padding.top +
+        padding.bottom +
+        TEXT_BOX_AUTOFIT_SAFETY_PX,
+    ),
+  );
+}
 
 export interface ProjectBlocksLayoutContext {
   blocks: EditorBlockNode[];
@@ -126,6 +195,15 @@ export function projectBlocksLayout(
         totalPages,
         styles,
         defaultTabStop,
+        (textBox) =>
+          estimateTextBoxAutoFitHeight(
+            textBox,
+            styles,
+            measurer,
+            pageIndex,
+            totalPages,
+            defaultTabStop,
+          ),
       );
       const measuredParagraphLayout =
         measuredParagraphLayouts?.[sourceBlock.id];

@@ -55,12 +55,15 @@ function resolveAlignedOffset(
   }
 }
 
+export type ResolveTextBoxHeight = (textBox: EditorTextBoxData) => number;
+
 export function getTextBoxFloatingGeometry(
   textBox: EditorTextBoxData,
+  heightOverride?: number,
 ): FloatingObjectGeometry {
   return {
     width: textBox.width,
-    height: textBox.height,
+    height: Math.max(1, heightOverride ?? textBox.height),
     floating: textBox.floating!,
   };
 }
@@ -182,8 +185,15 @@ export function collectParagraphFloatingExclusions(options: {
   preliminaryLines: EditorLayoutLine[];
   pageSettings: EditorPageSettings;
   contentWidth: number;
+  resolveTextBoxHeight?: ResolveTextBoxHeight;
 }): FloatingExclusionRect[] {
-  const { fragments, preliminaryLines, pageSettings, contentWidth } = options;
+  const {
+    fragments,
+    preliminaryLines,
+    pageSettings,
+    contentWidth,
+    resolveTextBoxHeight,
+  } = options;
 
   const slotByOffset = new Map<number, { left: number; top: number }>();
 
@@ -208,7 +218,10 @@ export function collectParagraphFloatingExclusions(options: {
     }
 
     const geom: FloatingObjectGeometry = textBox
-      ? getTextBoxFloatingGeometry(textBox)
+      ? getTextBoxFloatingGeometry(
+          textBox,
+          resolveTextBoxHeight?.(textBox),
+        )
       : getImageFloatingGeometry(image!);
 
     const anchorSlot = slotByOffset.get(fragment.startOffset);
