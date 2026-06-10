@@ -335,9 +335,9 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Footnotes | `w:footnotes` | `word/footnotes.xml` root | — | Footnotes part root. | Contains special separator notes and user notes. | P1 | Supported |
 | Footnotes | `w:footnote` | `w:footnotes` | `w:id`, `w:type` | Single footnote story. | Contains block content; types include separator/continuationSeparator. | P1 | Supported |
 | Footnotes | `w:footnoteReference` | Run | `w:id`, `w:customMarkFollows` | Footnote anchor marker. | Resolve note and counter style. | P1 | Supported |
-| Endnotes | `w:endnotes` | `word/endnotes.xml` root | — | Endnotes part root. | Similar to footnotes but end-of-section/document placement. | P1 | Not supported |
-| Endnotes | `w:endnote` | `w:endnotes` | `w:id`, `w:type` | Single endnote story. | Contains block content. | P1 | Not supported |
-| Endnotes | `w:endnoteReference` | Run | `w:id`, `w:customMarkFollows` | Endnote anchor marker. | Resolve note and numbering. | P1 | Not supported |
+| Endnotes | `w:endnotes` | `word/endnotes.xml` root | — | Endnotes part root. | Parsed on import and written on export, mirroring the footnotes pipeline; special separator/continuationSeparator entries are recognized. | P1 | Supported |
+| Endnotes | `w:endnote` | `w:endnotes` | `w:id`, `w:type` | Single endnote story. | Block content (paragraphs/tables) round-trips; bodies render appended to the end of the document flow. | P1 | Supported |
+| Endnotes | `w:endnoteReference` | Run | `w:id`, `w:customMarkFollows` | Endnote anchor marker. | Imported into `run.endnoteReference`, renumbered in reading order, exported back with the resolved `w:id`; `customMarkFollows` preserved. | P1 | Supported |
 | Annotations | `w:annotationRef` | Run in comment/note | — | Annotation reference glyph. | Special reference marker. | P3 | Not supported |
 
 ## Headers, footers, glossary, and secondary stories
@@ -571,7 +571,7 @@ This pass fills the practical gaps left after the broad matrix above. It still a
 | Run/content | `w:delInstrText` | `w:r` in deletion/revision context | `xml:space` | Deleted field instruction text. | Needed for original/revision view of fields. | P3 | Not supported |
 | Run/content | `w:fldData` | `w:r` / field context | base64 or opaque text | Field private data. | Preserve for round-trip; rarely interpreted by importers. | P4 | Not supported |
 | Run/content | `w:footnoteRef` | Footnote content run | — | Auto footnote reference mark inside footnote text. | Distinct from `w:footnoteReference` in the main story. | P2 | Supported |
-| Run/content | `w:endnoteRef` | Endnote content run | — | Auto endnote reference mark inside endnote text. | Distinct from `w:endnoteReference` in the main story. | P2 | Not supported |
+| Run/content | `w:endnoteRef` | Endnote content run | — | Auto endnote reference mark inside endnote text. | Distinct from `w:endnoteReference` in the main story. Re-injected at export time at the start of each endnote body (not stored in the model); dropped on import. | P2 | Supported |
 | Run/content | `w:ruby` | Run-level content | children | East Asian ruby annotation. | Parse `rubyPr`, `rt`, and `rubyBase` for correct CJK annotation layout. | P3 | Not supported |
 | Run/content | `w:rubyPr` | `w:ruby` | child settings | Ruby layout properties. | Position, alignment and size can affect line height. | P3 | Not supported |
 | Run/content | `w:rt` / `w:rubyBase` | `w:ruby` | run children | Ruby text and base text. | Render as annotation or preserve if not supported. | P3 | Not supported |

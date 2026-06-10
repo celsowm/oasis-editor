@@ -17,4 +17,5 @@ export interface ImportedRun {
   styles?: EditorTextStyle;
   field?: { type: "PAGE" | "NUMPAGES" };
   footnoteReference?: { docxId: string; customMark?: string };
+  endnoteReference?: { docxId: string; customMark?: string };
 }

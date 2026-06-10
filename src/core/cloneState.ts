@@ -1,5 +1,7 @@
 import type {
   EditorBlockNode,
+  EditorEndnote,
+  EditorEndnotes,
   EditorFootnote,
   EditorFootnotes,
   EditorSection,
@@ -18,6 +20,9 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
           revision: run.revision ? { ...run.revision } : undefined,
           footnoteReference: run.footnoteReference
             ? { ...run.footnoteReference }
+            : undefined,
+          endnoteReference: run.endnoteReference
+            ? { ...run.endnoteReference }
             : undefined,
         })),
         style: block.style ? { ...block.style } : undefined,
@@ -42,6 +47,9 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
                 revision: run.revision ? { ...run.revision } : undefined,
                 footnoteReference: run.footnoteReference
                   ? { ...run.footnoteReference }
+                  : undefined,
+                endnoteReference: run.endnoteReference
+                  ? { ...run.endnoteReference }
                   : undefined,
               })),
               style: paragraph.style ? { ...paragraph.style } : undefined,
@@ -90,6 +98,29 @@ export function cloneFootnotes(
   };
 }
 
+export function cloneEndnote(endnote: EditorEndnote): EditorEndnote {
+  return {
+    ...endnote,
+    blocks: endnote.blocks.map(cloneBlock),
+  };
+}
+
+export function cloneEndnotes(
+  endnotes: EditorEndnotes | undefined,
+): EditorEndnotes | undefined {
+  if (!endnotes) return undefined;
+  const nextItems: Record<string, EditorEndnote> = {};
+  for (const [id, endnote] of Object.entries(endnotes.items)) {
+    nextItems[id] = cloneEndnote(endnote);
+  }
+  return {
+    items: nextItems,
+    settings: endnotes.settings ? { ...endnotes.settings } : undefined,
+    separator: endnotes.separator?.map(cloneBlock),
+    continuationSeparator: endnotes.continuationSeparator?.map(cloneBlock),
+  };
+}
+
 export function cloneEditorState(source: EditorState): EditorState {
   return {
     ...source,
@@ -97,6 +128,7 @@ export function cloneEditorState(source: EditorState): EditorState {
       ...source.document,
       sections: source.document.sections?.map(cloneSection),
       footnotes: cloneFootnotes(source.document.footnotes),
+      endnotes: cloneEndnotes(source.document.endnotes),
     },
     selection: {
       anchor: { ...source.selection.anchor },

@@ -256,6 +256,42 @@ export async function parseRunsContainer(
         continue;
       }
 
+      const endnoteRefEl = getFirstChildByTagNameNS(
+        element,
+        WORD_NS,
+        "endnoteReference",
+      );
+      if (endnoteRefEl) {
+        const docxId = getAttributeValue(endnoteRefEl, "id");
+        if (!docxId) {
+          continue;
+        }
+        const customMark = getAttributeValue(
+          endnoteRefEl,
+          "customMarkFollows",
+        );
+        let styles = parseRunStyle(
+          getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
+          theme,
+        );
+        (styles ??= {}).styleId ??= "endnoteReference";
+        if (styles.superscript === undefined) styles.superscript = true;
+        const importedRun: ImportedRun = {
+          text: "?",
+          styles,
+          endnoteReference: {
+            docxId,
+            ...(customMark ? { customMark } : {}),
+          },
+        };
+        if (activeField?.collectingResult) {
+          activeField.resultRuns.push(importedRun);
+        } else {
+          runs.push(importedRun);
+        }
+        continue;
+      }
+
       const { text, image, textBox } = await parseRunElement(
         element,
         zip,

@@ -62,6 +62,17 @@ function createImportedParagraph(
         ...run.footnoteReference,
       };
     }
+    if (run.endnoteReference) {
+      // Transient marker remapped to the document-local endnote id by the
+      // import driver after `word/endnotes.xml` has been parsed.
+      (
+        paragraph.runs[index]! as EditorTextRun & {
+          __importedEndnoteRef?: { docxId: string; customMark?: string };
+        }
+      ).__importedEndnoteRef = {
+        ...run.endnoteReference,
+      };
+    }
   });
   paragraph.style = paragraphStyle ? { ...paragraphStyle } : undefined;
   for (const run of paragraph.runs) {

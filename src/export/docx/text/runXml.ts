@@ -10,6 +10,10 @@ import {
   serializeFootnoteRefMarker,
   serializeFootnoteReference,
 } from "./footnoteRunXml.js";
+import {
+  serializeEndnoteRefMarker,
+  serializeEndnoteReference,
+} from "./endnoteRunXml.js";
 import { wrapRunWithHyperlink } from "./hyperlinkXml.js";
 
 export function serializeRun(
@@ -21,6 +25,9 @@ export function serializeRun(
   if ((run as { __isFootnoteRefMarker?: boolean }).__isFootnoteRefMarker) {
     return serializeFootnoteRefMarker();
   }
+  if ((run as { __isEndnoteRefMarker?: boolean }).__isEndnoteRefMarker) {
+    return serializeEndnoteRefMarker();
+  }
 
   const materializedRunStyle = materializeRunStyle(
     run,
@@ -29,6 +36,16 @@ export function serializeRun(
   );
   if (run.footnoteReference) {
     const result = serializeFootnoteReference(
+      run,
+      materializedRunStyle,
+      context,
+    );
+    if (result !== null) {
+      return result;
+    }
+  }
+  if (run.endnoteReference) {
+    const result = serializeEndnoteReference(
       run,
       materializedRunStyle,
       context,

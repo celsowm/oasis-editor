@@ -45,6 +45,12 @@ export interface DocContext {
    * document has no footnotes.
    */
   footnoteIdMap?: Map<string, number>;
+  /**
+   * Maps `EditorEndnote.id` to the numeric `w:id` value used when emitting
+   * `<w:endnoteReference w:id="N"/>` in the document body. Empty when the
+   * document has no endnotes.
+   */
+  endnoteIdMap?: Map<string, number>;
 }
 
 export interface NumberingContext {

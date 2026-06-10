@@ -36,7 +36,9 @@ import { parseParagraphNodes } from "./paragraphs.js";
 import { parseTableNode } from "./tables.js";
 import { parseHeaderFooterXml } from "./headerFooter.js";
 import { parseFootnotesXml } from "./footnotes.js";
+import { parseEndnotesXml } from "./endnotes.js";
 import { renumberFootnotes } from "../../core/footnotes.js";
+import { renumberEndnotes } from "../../core/endnotes.js";
 
 export type DocxImportStage =
   | "opening-docx"
@@ -344,6 +346,30 @@ export async function importDocxToEditorDocument(
 
   remapImportedFootnoteRefsInSections(sections, parsedFootnotes.byDocxId);
 
+  // Endnotes: parse `word/endnotes.xml` (if present) and remap inline
+  // references from the transient `__importedEndnoteRef` marker to the
+  // editor's `run.endnoteReference`.
+  const endnotesXml =
+    (await zip.file("word/endnotes.xml")?.async("string")) ?? null;
+  const endnotesPartRels = endnotesXml
+    ? await loadPartRelationships(zip, "word/endnotes.xml")
+    : new Map<string, string>();
+  const parsedEndnotes = await parseEndnotesXml(
+    endnotesXml,
+    numberingMaps,
+    zip,
+    endnotesPartRels,
+    assets,
+    theme,
+    importedStyles,
+  );
+  const editorEndnotes =
+    Object.keys(parsedEndnotes.endnotes.items).length > 0
+      ? parsedEndnotes.endnotes
+      : undefined;
+
+  remapImportedEndnoteRefsInSections(sections, parsedEndnotes.byDocxId);
+
   const shouldPreserveSections =
     sections.length > 1 ||
     sections.some(
@@ -365,13 +391,18 @@ export async function importDocxToEditorDocument(
         defaultTabStop: docSettings.defaultTabStop,
       };
     }
+    let result = doc;
     if (editorFootnotes) {
-      doc.footnotes = editorFootnotes;
+      result.footnotes = editorFootnotes;
       // Materialize markers ("1", "2", ...) from references in document order
       // and prune any footnote body that ends up unreferenced.
-      return renumberFootnotes(doc);
+      result = renumberFootnotes(result);
     }
-    return doc;
+    if (editorEndnotes) {
+      result.endnotes = editorEndnotes;
+      result = renumberEndnotes(result);
+    }
+    return result;
   };
 
   if (shouldPreserveSections) {
@@ -435,6 +466,56 @@ function remapImportedFootnoteRefsInSections(
         }
         run.footnoteReference = {
           footnoteId: footnote.id,
+          ...(transient.customMark ? { customMark: transient.customMark } : {}),
+        };
+      }
+      return;
+    }
+    for (const row of block.rows) {
+      for (const cell of row.cells) {
+        for (const p of cell.blocks) {
+          remapBlock(p);
+        }
+      }
+    }
+  };
+
+  for (const section of sections) {
+    section.blocks.forEach(remapBlock);
+    section.header?.forEach(remapBlock);
+    section.firstPageHeader?.forEach(remapBlock);
+    section.evenPageHeader?.forEach(remapBlock);
+    section.footer?.forEach(remapBlock);
+    section.firstPageFooter?.forEach(remapBlock);
+    section.evenPageFooter?.forEach(remapBlock);
+  }
+}
+
+/**
+ * Endnote counterpart of {@link remapImportedFootnoteRefsInSections}: converts
+ * the transient `__importedEndnoteRef` markers into proper
+ * `run.endnoteReference` fields pointing to the local endnote ids.
+ */
+function remapImportedEndnoteRefsInSections(
+  sections: EditorSection[],
+  byDocxId: Map<string, import("../../core/model.js").EditorEndnote>,
+): void {
+  const remapBlock = (block: EditorBlockNode): void => {
+    if (block.type === "paragraph") {
+      for (const run of block.runs) {
+        const runWithRef = run as EditorTextRun & {
+          __importedEndnoteRef?: { docxId: string; customMark?: string };
+        };
+        const transient = runWithRef.__importedEndnoteRef;
+        if (!transient) continue;
+        delete runWithRef.__importedEndnoteRef;
+        const endnote = byDocxId.get(transient.docxId);
+        if (!endnote) {
+          // Dangling reference (unknown id). Drop the marker.
+          continue;
+        }
+        run.endnoteReference = {
+          endnoteId: endnote.id,
           ...(transient.customMark ? { customMark: transient.customMark } : {}),
         };
       }

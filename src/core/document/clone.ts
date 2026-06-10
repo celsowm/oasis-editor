@@ -38,6 +38,9 @@ export function cloneRun(run: EditorTextRun): EditorTextRun {
     footnoteReference: run.footnoteReference
       ? { ...run.footnoteReference }
       : undefined,
+    endnoteReference: run.endnoteReference
+      ? { ...run.endnoteReference }
+      : undefined,
   };
 }
 

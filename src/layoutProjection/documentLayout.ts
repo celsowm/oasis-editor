@@ -16,6 +16,7 @@ import {
 import { projectBlocksLayout } from "./blocksPagination.js";
 import { projectHeaderFooterBlocks } from "./headerFooterFootnotes.js";
 import { projectDocumentSections } from "./sectionPagination.js";
+import { injectEndnotesIntoDocument } from "./endnotePagination.js";
 
 function blockContainsNumPagesField(block: EditorBlockNode): boolean {
   if (block.type === "paragraph") {
@@ -50,8 +51,12 @@ export function projectDocumentLayout(
   } = {},
 ): EditorLayoutDocument {
   const measurer = options.measurer ?? domTextMeasurer;
-  const sections = getDocumentSections(document);
-  const needsTotalPages = documentContainsNumPagesField(document);
+  // Endnotes render at the end of the document: append their bodies to the last
+  // section's flow so normal pagination lays them out. This derived document is
+  // used only for layout; the persisted model is untouched.
+  const layoutDocument = injectEndnotesIntoDocument(document);
+  const sections = getDocumentSections(layoutDocument);
+  const needsTotalPages = documentContainsNumPagesField(layoutDocument);
 
   const sectionContext = {
     sections,

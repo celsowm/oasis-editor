@@ -6,6 +6,7 @@
 import type { EditorAsset, EditorFootnoteNumberFormat, EditorFootnoteRestart } from "./primitives.js";
 import type { EditorBlockNode } from "./nodes.js";
 import type { EditorFootnote } from "./documentFootnotes.js";
+import type { EditorEndnote } from "./documentEndnotes.js";
 import type { EditorNamedStyle } from "./styles.js";
 
 export interface EditorPageMargins {
@@ -51,6 +52,23 @@ export interface EditorFootnotes {
   continuationSeparator?: EditorBlockNode[];
 }
 
+/**
+ * Endnote settings. Reuses the note number-format/restart vocabulary shared
+ * with footnotes (both are just "notes" in OOXML terms).
+ */
+export interface EditorEndnoteSettings {
+  numberFormat?: EditorFootnoteNumberFormat;
+  restart?: EditorFootnoteRestart;
+  startAt?: number;
+}
+
+export interface EditorEndnotes {
+  items: Record<string, EditorEndnote>;
+  settings?: EditorEndnoteSettings;
+  separator?: EditorBlockNode[];
+  continuationSeparator?: EditorBlockNode[];
+}
+
 export interface EditorDocument {
   id: string;
   pageSettings?: EditorPageSettings;
@@ -66,6 +84,7 @@ export interface EditorDocument {
    */
   assets?: Record<string, EditorAsset>;
   footnotes?: EditorFootnotes;
+  endnotes?: EditorEndnotes;
   metadata?: {
     title?: string;
     [key: string]: unknown;

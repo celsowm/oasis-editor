@@ -125,6 +125,11 @@ export interface EditorFootnoteReferenceData {
   customMark?: string;
 }
 
+export interface EditorEndnoteReferenceData {
+  endnoteId: string;
+  customMark?: string;
+}
+
 export interface EditorRevision {
   id: string;
   type: "insert" | "delete";

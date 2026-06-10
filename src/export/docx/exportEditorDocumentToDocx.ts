@@ -27,6 +27,12 @@ import {
   type ReferencedFootnote,
 } from "./footnotesXml.js";
 import {
+  buildEndnoteIdMap,
+  buildEndnotesXml,
+  collectReferencedEndnotesForExport,
+  type ReferencedEndnote,
+} from "./endnotesXml.js";
+import {
   escapeXml,
   OFFICE_REL_NS,
   PACKAGE_REL_NS,
@@ -342,6 +348,7 @@ function buildContentTypesXml(
   hasSettings: boolean,
   parts: PartDefinition[],
   hasFootnotes: boolean,
+  hasEndnotes: boolean,
 ): string {
   const overrides = parts
     .map((part) => {
@@ -366,6 +373,10 @@ function buildContentTypesXml(
     hasFootnotes
       ? '<Override PartName="/word/footnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"/>'
       : ""
+  }${
+    hasEndnotes
+      ? '<Override PartName="/word/endnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml"/>'
+      : ""
   }${overrides}</Types>`;
 }
 
@@ -380,6 +391,7 @@ function buildDocumentRelationshipsXml(
   hyperlinks: DocContext["hyperlinks"],
   parts: PartDefinition[],
   hasFootnotes: boolean,
+  hasEndnotes: boolean,
 ): string {
   let rels = "";
   if (hasNumbering)
@@ -399,6 +411,9 @@ function buildDocumentRelationshipsXml(
   }
   if (hasFootnotes) {
     rels += `<Relationship Id="rIdFootnotes" Type="${OFFICE_REL_NS}/footnotes" Target="footnotes.xml"/>`;
+  }
+  if (hasEndnotes) {
+    rels += `<Relationship Id="rIdEndnotes" Type="${OFFICE_REL_NS}/endnotes" Target="endnotes.xml"/>`;
   }
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${PACKAGE_REL_NS}">${rels}</Relationships>`;
 }
@@ -452,6 +467,13 @@ export async function exportEditorDocumentToDocx(
   const footnoteIdMap = buildFootnoteIdMap(referencedFootnotes);
   const hasFootnotes = referencedFootnotes.length > 0;
 
+  // Endnotes: same id-assignment discipline as footnotes, but written to a
+  // separate `word/endnotes.xml` part.
+  const referencedEndnotes: ReferencedEndnote[] =
+    collectReferencedEndnotesForExport(document);
+  const endnoteIdMap = buildEndnoteIdMap(referencedEndnotes);
+  const hasEndnotes = referencedEndnotes.length > 0;
+
   const bodyContext = buildPartContext(
     sections.flatMap((section) => section.blocks),
     numberingContext,
@@ -459,6 +481,7 @@ export async function exportEditorDocumentToDocx(
     document,
   );
   bodyContext.footnoteIdMap = footnoteIdMap;
+  bodyContext.endnoteIdMap = endnoteIdMap;
   const parts: PartDefinition[] = [];
   const sectionReferences: SectionReferenceDefinition[] = sections.map(
     () => ({}),
@@ -485,9 +508,10 @@ export async function exportEditorDocumentToDocx(
         buildState,
         document,
       );
-      // Footnote references in headers/footers must use the same numeric ids
-      // as the body so the references resolve to the correct footnote bodies.
+      // Footnote/endnote references in headers/footers must use the same
+      // numeric ids as the body so they resolve to the correct note bodies.
       context.footnoteIdMap = footnoteIdMap;
+      context.endnoteIdMap = endnoteIdMap;
       parts.push({
         kind,
         type,
@@ -542,6 +566,21 @@ export async function exportEditorDocumentToDocx(
   if (footnotesPart) {
     allImages.push(...footnotesPart.partContext.images);
   }
+  const endnotesPart = hasEndnotes
+    ? buildEndnotesXml(
+        document,
+        referencedEndnotes,
+        numberingContext,
+        buildState,
+        (blocks) =>
+          buildPartContext(blocks, numberingContext, buildState, document),
+        document.styles,
+        endnoteIdMap,
+      )
+    : null;
+  if (endnotesPart) {
+    allImages.push(...endnotesPart.partContext.images);
+  }
   const imageExtensions = allImages
     .filter((img) => img.kind === "embedded")
     .map((img) => img.target.split(".").pop()?.toLowerCase())
@@ -555,6 +594,7 @@ export async function exportEditorDocumentToDocx(
       hasDocumentSettings,
       parts,
       hasFootnotes,
+      hasEndnotes,
     ),
   );
   zip.file("_rels/.rels", buildRootRelationshipsXml());
@@ -576,7 +616,8 @@ export async function exportEditorDocumentToDocx(
     bodyContext.images.length > 0 ||
     bodyContext.hyperlinks.length > 0 ||
     parts.length > 0 ||
-    hasFootnotes
+    hasFootnotes ||
+    hasEndnotes
   ) {
     zip.file(
       "word/_rels/document.xml.rels",
@@ -587,6 +628,7 @@ export async function exportEditorDocumentToDocx(
         bodyContext.hyperlinks,
         parts,
         hasFootnotes,
+        hasEndnotes,
       ),
     );
   }
@@ -627,6 +669,22 @@ export async function exportEditorDocumentToDocx(
         buildPartRelationshipsXml(
           footnotesPart.partContext.images,
           footnotesPart.partContext.hyperlinks,
+        ),
+      );
+    }
+  }
+
+  if (endnotesPart) {
+    zip.file("word/endnotes.xml", endnotesPart.xml);
+    if (
+      endnotesPart.partContext.images.length > 0 ||
+      endnotesPart.partContext.hyperlinks.length > 0
+    ) {
+      zip.file(
+        "word/_rels/endnotes.xml.rels",
+        buildPartRelationshipsXml(
+          endnotesPart.partContext.images,
+          endnotesPart.partContext.hyperlinks,
         ),
       );
     }

@@ -167,6 +167,9 @@ export function sliceRuns(
       if (run.footnoteReference) {
         piece.footnoteReference = { ...run.footnoteReference };
       }
+      if (run.endnoteReference) {
+        piece.endnoteReference = { ...run.endnoteReference };
+      }
       pieces.push(piece);
     }
 

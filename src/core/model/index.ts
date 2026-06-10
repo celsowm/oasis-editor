@@ -24,6 +24,7 @@ export type {
   EditorImageRunData,
   EditorFieldData,
   EditorFootnoteReferenceData,
+  EditorEndnoteReferenceData,
   EditorRevision,
   EditorAsset,
   EditorFootnoteNumberFormat,
@@ -56,6 +57,7 @@ export type {
 } from "./types/nodes.js";
 
 export type { EditorFootnote } from "./types/documentFootnotes.js";
+export type { EditorEndnote } from "./types/documentEndnotes.js";
 
 export type {
   EditorPageMargins,
@@ -63,6 +65,8 @@ export type {
   EditorSection,
   EditorFootnoteSettings,
   EditorFootnotes,
+  EditorEndnoteSettings,
+  EditorEndnotes,
   EditorDocument,
 } from "./types/document.js";
 

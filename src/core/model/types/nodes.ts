@@ -5,6 +5,7 @@
 import type {
   EditorBorderStyle,
   EditorDocxWidthValue,
+  EditorEndnoteReferenceData,
   EditorFieldData,
   EditorFootnoteReferenceData,
   EditorImageFloatingLayout,
@@ -91,6 +92,11 @@ export interface EditorTextRun {
    * `EditorDocument.footnotes.items[footnoteReference.footnoteId]`.
    */
   footnoteReference?: EditorFootnoteReferenceData;
+  /**
+   * Inline marker of an endnote whose body lives in
+   * `EditorDocument.endnotes.items[endnoteReference.endnoteId]`.
+   */
+  endnoteReference?: EditorEndnoteReferenceData;
 }
 
 /**
