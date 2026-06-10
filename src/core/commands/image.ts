@@ -2,9 +2,12 @@ import type {
   EditorParagraphNode,
   EditorPosition,
   EditorState,
-  EditorTextRun,
   EditorImageRunData,
 } from "../model.js";
+import {
+  getSelectedObjectRun,
+  type SelectedObjectRun,
+} from "./selectedObjectRun.js";
 import {
   getParagraphLength,
   getParagraphs,
@@ -36,53 +39,12 @@ import {
   withSelection,
 } from "../selection/rangeEditing.js";
 
-export interface SelectedImageRun {
-  paragraph: EditorParagraphNode;
-  paragraphIndex: number;
-  run: EditorTextRun;
-  runIndex: number;
-  offset: number;
-}
+export type SelectedImageRun = SelectedObjectRun;
 
 export function getSelectedImageRun(
   state: EditorState,
 ): SelectedImageRun | null {
-  const normalized = normalizeSelection(state);
-  if (
-    normalized.isCollapsed ||
-    normalized.startIndex !== normalized.endIndex ||
-    normalized.endParagraphOffset - normalized.startParagraphOffset !== 1
-  ) {
-    return null;
-  }
-
-  const paragraphs = getParagraphs(state);
-  const paragraph = paragraphs[normalized.startIndex];
-  if (!paragraph) {
-    return null;
-  }
-
-  let consumed = 0;
-  for (let index = 0; index < paragraph.runs.length; index += 1) {
-    const run = paragraph.runs[index]!;
-    const startOffset = consumed;
-    consumed += run.text.length;
-    if (
-      run.image &&
-      run.text.length === 1 &&
-      startOffset === normalized.startParagraphOffset
-    ) {
-      return {
-        paragraph,
-        paragraphIndex: normalized.startIndex,
-        run,
-        runIndex: index,
-        offset: startOffset,
-      };
-    }
-  }
-
-  return null;
+  return getSelectedObjectRun(state, (run) => Boolean(run.image));
 }
 
 export function insertImageAtSelection(

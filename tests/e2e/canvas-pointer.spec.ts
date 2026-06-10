@@ -1265,7 +1265,9 @@ test("canvas image click selects object and resize handle changes image dimensio
   await expectLastHitFromCanvas(page);
   await expect(page.locator(".oasis-editor-image-selection-overlay")).toBeVisible();
 
-  const handle = page.locator('.oasis-editor-image-resize-handle[data-direction="se"]');
+  const handle = page.locator(
+    '.oasis-editor-image-selection-overlay .oasis-editor-resize-handle[data-direction="se"]',
+  );
   await expect(handle).toBeVisible();
   const handleBox = await handle.boundingBox();
   if (!handleBox) {

@@ -3,6 +3,7 @@
  */
 
 export * from "./commands/image.js";
+export * from "./commands/textBox.js";
 export * from "./commands/text.js";
 export * from "./commands/block.js";
 export * from "./commands/list.js";

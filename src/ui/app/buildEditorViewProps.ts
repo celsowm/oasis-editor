@@ -4,6 +4,7 @@ import type {
   InputBox,
   RevisionBox,
   SelectedImageBox,
+  SelectedTextBoxBox,
   SelectionBox,
 } from "../editorUiTypes.js";
 import type {
@@ -39,6 +40,7 @@ export interface EditorViewPropsContext {
   // overlays
   selectionBoxes: Accessor<SelectionBox[]>;
   selectedImageBox: Accessor<SelectedImageBox | null>;
+  selectedTextBoxBox: Accessor<SelectedTextBoxBox | null>;
   caretBox: Accessor<CaretBox>;
   inputBox: Accessor<InputBox>;
   hoveredRevision: Accessor<RevisionBox | null>;
@@ -59,6 +61,7 @@ export interface EditorViewPropsContext {
   onEditorMouseDown: OasisEditorEditorSurfaceHandlers["onEditorMouseDown"];
   handleImageMouseDown: OasisEditorEditorSurfaceHandlers["onImageMouseDown"];
   handleImageResizeHandleMouseDown: OasisEditorEditorSurfaceHandlers["onImageResizeHandleMouseDown"];
+  handleTextBoxResizeHandleMouseDown: OasisEditorEditorSurfaceHandlers["onTextBoxResizeHandleMouseDown"];
   handleEditorContextMenu: (event: MouseEvent) => void;
   // input handlers
   textInput: ReturnType<typeof createEditorTextInput>;
@@ -90,6 +93,7 @@ export function buildEditorViewProps(
   const overlays: OasisEditorEditorOverlayProps = {
     selectionBoxes: ctx.selectionBoxes,
     selectedImageBox: ctx.selectedImageBox,
+    selectedTextBoxBox: ctx.selectedTextBoxBox,
     caretBox: ctx.caretBox,
     inputBox: ctx.inputBox,
     hoveredRevision: ctx.hoveredRevision,
@@ -134,6 +138,7 @@ export function buildEditorViewProps(
     onParagraphMouseDown: ctx.surfaceEvents.handleParagraphMouseDown,
     onImageMouseDown: ctx.handleImageMouseDown,
     onImageResizeHandleMouseDown: ctx.handleImageResizeHandleMouseDown,
+    onTextBoxResizeHandleMouseDown: ctx.handleTextBoxResizeHandleMouseDown,
     onTableDragHandleMouseDown: ctx.tableDrag.handleMouseDown,
     onRevisionMouseEnter: ctx.revisionController.handleRevisionMouseEnter,
     onRevisionMouseLeave: ctx.revisionController.handleRevisionMouseLeave,

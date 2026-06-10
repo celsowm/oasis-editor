@@ -31,9 +31,11 @@ import type {
   InputBox,
   RevisionBox,
   SelectedImageBox,
+  SelectedTextBoxBox,
   SelectionBox,
 } from "./editorUiTypes.js";
-import type { ImageResizeHandleDirection } from "./editorUiTypes.js";
+import type { ResizeHandleDirection } from "./resizeGeometry.js";
+import { ResizeHandlesOverlay } from "./overlays/ResizeHandlesOverlay.js";
 import { projectDocumentLayout } from "../layoutProjection/index.js";
 
 type ImportProgress = {
@@ -63,6 +65,7 @@ export interface OasisEditorEditorLayoutProps {
 export interface OasisEditorEditorOverlayProps {
   selectionBoxes: Accessor<SelectionBox[]>;
   selectedImageBox: Accessor<SelectedImageBox | null>;
+  selectedTextBoxBox: Accessor<SelectedTextBoxBox | null>;
   caretBox: Accessor<CaretBox>;
   inputBox: Accessor<InputBox>;
   hoveredRevision: Accessor<RevisionBox | null>;
@@ -102,7 +105,13 @@ export interface OasisEditorEditorSurfaceHandlers {
   onImageResizeHandleMouseDown: (
     paragraphId: string,
     paragraphOffset: number,
-    direction: ImageResizeHandleDirection,
+    direction: ResizeHandleDirection,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ) => void;
+  onTextBoxResizeHandleMouseDown: (
+    paragraphId: string,
+    paragraphOffset: number,
+    direction: ResizeHandleDirection,
     event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
   onTableDragHandleMouseDown: (tableId: string, event: MouseEvent) => void;
@@ -246,26 +255,12 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   };
 
   const selectedImage = createMemo(() => overlays().selectedImageBox());
+  const selectedTextBox = createMemo(() => overlays().selectedTextBoxBox());
 
   createEffect(() => {
     statusDocumentLayout();
     queueMicrotask(recomputeViewportPageIndex);
   });
-
-  const handleResizeHandleMouseDown = (
-    direction: ImageResizeHandleDirection,
-    image: SelectedImageBox,
-    event: MouseEvent & { currentTarget: HTMLElement },
-  ) => {
-    event.preventDefault();
-    event.stopPropagation();
-    surfaceHandlers().onImageResizeHandleMouseDown(
-      image.paragraphId,
-      image.startOffset,
-      direction,
-      event,
-    );
-  };
 
   return (
     <div
@@ -324,6 +319,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
             onImageResizeHandleMouseDown={
               surfaceHandlers().onImageResizeHandleMouseDown
             }
+            onTextBoxResizeHandleMouseDown={
+              surfaceHandlers().onTextBoxResizeHandleMouseDown
+            }
             onTableDragHandleMouseDown={
               surfaceHandlers().onTableDragHandleMouseDown
             }
@@ -339,164 +337,50 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
             <SelectionOverlay boxes={overlays().selectionBoxes()} />
           </Show>
 
-          <div
-            aria-hidden="true"
-            class="oasis-editor-image-selection-overlay"
-            style={{
-              display: selectedImage() ? undefined : "none",
-              left: `${selectedImage()?.left ?? 0}px`,
-              top: `${selectedImage()?.top ?? 0}px`,
-              width: `${selectedImage()?.width ?? 0}px`,
-              height: `${selectedImage()?.height ?? 0}px`,
-              "pointer-events":
-                !layout().readOnly && selectedImage() ? "auto" : "none",
-            }}
-            onMouseDown={(event) => {
+          <ResizeHandlesOverlay
+            box={selectedImage}
+            readOnly={Boolean(layout().readOnly)}
+            variantClass="oasis-editor-image-selection-overlay"
+            onResizeStart={(direction, event) => {
               const image = selectedImage();
-              if (layout().readOnly || !image) {
-                return;
-              }
+              if (!image) return;
               event.preventDefault();
+              event.stopPropagation();
+              surfaceHandlers().onImageResizeHandleMouseDown(
+                image.paragraphId,
+                image.startOffset,
+                direction,
+                event,
+              );
+            }}
+            onBodyMouseDown={(event) => {
+              const image = selectedImage();
+              if (!image) return;
               surfaceHandlers().onImageMouseDown(
                 image.paragraphId,
                 image.startOffset,
-                event as MouseEvent & { currentTarget: HTMLElement },
+                event,
               );
             }}
-          >
-            {!layout().readOnly && (
-              <>
-                <button
-                  aria-hidden="true"
-                  class="oasis-editor-image-resize-handle"
-                  data-direction="nw"
-                  tabIndex={-1}
-                  type="button"
-                  onMouseDown={(event) => {
-                    const image = selectedImage();
-                    if (!image) return;
-                    handleResizeHandleMouseDown(
-                      "nw",
-                      image,
-                      event as MouseEvent & { currentTarget: HTMLElement },
-                    );
-                  }}
-                />
-                <button
-                  aria-hidden="true"
-                  class="oasis-editor-image-resize-handle"
-                  data-direction="n"
-                  tabIndex={-1}
-                  type="button"
-                  onMouseDown={(event) => {
-                    const image = selectedImage();
-                    if (!image) return;
-                    handleResizeHandleMouseDown(
-                      "n",
-                      image,
-                      event as MouseEvent & { currentTarget: HTMLElement },
-                    );
-                  }}
-                />
-                <button
-                  aria-hidden="true"
-                  class="oasis-editor-image-resize-handle"
-                  data-direction="ne"
-                  tabIndex={-1}
-                  type="button"
-                  onMouseDown={(event) => {
-                    const image = selectedImage();
-                    if (!image) return;
-                    handleResizeHandleMouseDown(
-                      "ne",
-                      image,
-                      event as MouseEvent & { currentTarget: HTMLElement },
-                    );
-                  }}
-                />
-                <button
-                  aria-hidden="true"
-                  class="oasis-editor-image-resize-handle"
-                  data-direction="e"
-                  tabIndex={-1}
-                  type="button"
-                  onMouseDown={(event) => {
-                    const image = selectedImage();
-                    if (!image) return;
-                    handleResizeHandleMouseDown(
-                      "e",
-                      image,
-                      event as MouseEvent & { currentTarget: HTMLElement },
-                    );
-                  }}
-                />
-                <button
-                  aria-hidden="true"
-                  class="oasis-editor-image-resize-handle"
-                  data-direction="se"
-                  tabIndex={-1}
-                  type="button"
-                  onMouseDown={(event) => {
-                    const image = selectedImage();
-                    if (!image) return;
-                    handleResizeHandleMouseDown(
-                      "se",
-                      image,
-                      event as MouseEvent & { currentTarget: HTMLElement },
-                    );
-                  }}
-                />
-                <button
-                  aria-hidden="true"
-                  class="oasis-editor-image-resize-handle"
-                  data-direction="s"
-                  tabIndex={-1}
-                  type="button"
-                  onMouseDown={(event) => {
-                    const image = selectedImage();
-                    if (!image) return;
-                    handleResizeHandleMouseDown(
-                      "s",
-                      image,
-                      event as MouseEvent & { currentTarget: HTMLElement },
-                    );
-                  }}
-                />
-                <button
-                  aria-hidden="true"
-                  class="oasis-editor-image-resize-handle"
-                  data-direction="sw"
-                  tabIndex={-1}
-                  type="button"
-                  onMouseDown={(event) => {
-                    const image = selectedImage();
-                    if (!image) return;
-                    handleResizeHandleMouseDown(
-                      "sw",
-                      image,
-                      event as MouseEvent & { currentTarget: HTMLElement },
-                    );
-                  }}
-                />
-                <button
-                  aria-hidden="true"
-                  class="oasis-editor-image-resize-handle"
-                  data-direction="w"
-                  tabIndex={-1}
-                  type="button"
-                  onMouseDown={(event) => {
-                    const image = selectedImage();
-                    if (!image) return;
-                    handleResizeHandleMouseDown(
-                      "w",
-                      image,
-                      event as MouseEvent & { currentTarget: HTMLElement },
-                    );
-                  }}
-                />
-              </>
-            )}
-          </div>
+          />
+
+          <ResizeHandlesOverlay
+            box={selectedTextBox}
+            readOnly={Boolean(layout().readOnly)}
+            variantClass="oasis-editor-textbox-selection-overlay"
+            onResizeStart={(direction, event) => {
+              const textBox = selectedTextBox();
+              if (!textBox) return;
+              event.preventDefault();
+              event.stopPropagation();
+              surfaceHandlers().onTextBoxResizeHandleMouseDown(
+                textBox.paragraphId,
+                textBox.startOffset,
+                direction,
+                event,
+              );
+            }}
+          />
 
           <Show
             when={overlays().toolbarHost && overlays().showFloatingTableToolbar}

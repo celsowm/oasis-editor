@@ -205,7 +205,7 @@
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
 }
 
-.oasis-editor-image-selection-overlay {
+.oasis-editor-selection-overlay {
   position: absolute;
   box-sizing: border-box;
   border: 2px solid rgba(37, 99, 235, 0.9);
@@ -241,7 +241,7 @@
   border-radius: 0;
 }
 
-.oasis-editor-image-resize-handle {
+.oasis-editor-resize-handle {
   position: absolute;
   width: 14px;
   height: 14px;
@@ -253,49 +253,49 @@
   pointer-events: auto;
 }
 
-.oasis-editor-image-resize-handle[data-direction="nw"] {
+.oasis-editor-resize-handle[data-direction="nw"] {
   top: -7px;
   left: -7px;
   cursor: nwse-resize;
 }
 
-.oasis-editor-image-resize-handle[data-direction="n"] {
+.oasis-editor-resize-handle[data-direction="n"] {
   top: -7px;
   left: calc(50% - 7px);
   cursor: ns-resize;
 }
 
-.oasis-editor-image-resize-handle[data-direction="ne"] {
+.oasis-editor-resize-handle[data-direction="ne"] {
   top: -7px;
   right: -7px;
   cursor: nesw-resize;
 }
 
-.oasis-editor-image-resize-handle[data-direction="e"] {
+.oasis-editor-resize-handle[data-direction="e"] {
   top: calc(50% - 7px);
   right: -7px;
   cursor: ew-resize;
 }
 
-.oasis-editor-image-resize-handle[data-direction="se"] {
+.oasis-editor-resize-handle[data-direction="se"] {
   right: -7px;
   bottom: -7px;
   cursor: nwse-resize;
 }
 
-.oasis-editor-image-resize-handle[data-direction="s"] {
+.oasis-editor-resize-handle[data-direction="s"] {
   bottom: -7px;
   left: calc(50% - 7px);
   cursor: ns-resize;
 }
 
-.oasis-editor-image-resize-handle[data-direction="sw"] {
+.oasis-editor-resize-handle[data-direction="sw"] {
   bottom: -7px;
   left: -7px;
   cursor: nesw-resize;
 }
 
-.oasis-editor-image-resize-handle[data-direction="w"] {
+.oasis-editor-resize-handle[data-direction="w"] {
   top: calc(50% - 7px);
   left: -7px;
   cursor: ew-resize;

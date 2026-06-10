@@ -1,0 +1,156 @@
+import type {
+  EditorImageFloatingLayout,
+  EditorState,
+  EditorTextBoxData,
+} from "../model.js";
+import { getParagraphs } from "../model.js";
+import { normalizeSelection } from "../selection.js";
+import { cloneParagraph, cloneRun } from "../document/clone.js";
+import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+import { preserveSelectionByParagraphOffsets } from "../selection/rangeEditing.js";
+import {
+  getSelectedObjectRun,
+  type SelectedObjectRun,
+} from "./selectedObjectRun.js";
+
+/** EMU per CSS pixel (`wp:extent` and floating offsets are stored in EMU). */
+const EMU_PER_PX = 9525;
+
+/** Minimum size (px) a text box may shrink to — matches image resize. */
+const MIN_TEXT_BOX_SIZE_PX = 24;
+
+export type SelectedTextBoxRun = SelectedObjectRun;
+
+export function getSelectedTextBoxRun(
+  state: EditorState,
+): SelectedTextBoxRun | null {
+  return getSelectedObjectRun(state, (run) => Boolean(run.textBox));
+}
+
+export interface ResizeTextBoxOptions {
+  /**
+   * The handle that was dragged (one of the 8 compass directions). Determines
+   * which edges move: a west/north drag must shift the floating anchor offset so
+   * the opposite (east/south) edge stays fixed, and a height-changing drag
+   * disables auto-fit so the manual height sticks.
+   */
+  handleDirection?: string;
+}
+
+/**
+ * For a floating text box, keep the edge opposite the dragged handle fixed by
+ * shifting the anchor offset. The rendered top-left is `base + emuToPx(offset)`,
+ * so growing the box from the west/north means decreasing the offset by the
+ * size delta (in EMU). Only applies to offset-based positions: when an axis is
+ * `align`-anchored, the alignment already fixes an edge, so the offset is left
+ * untouched.
+ */
+function shiftFloatingForResize(
+  floating: EditorImageFloatingLayout,
+  widthDelta: number,
+  heightDelta: number,
+  growsFromWest: boolean,
+  growsFromNorth: boolean,
+): EditorImageFloatingLayout {
+  let next = floating;
+
+  if (growsFromWest && widthDelta !== 0) {
+    const h = floating.positionH;
+    if (!h?.align) {
+      next = {
+        ...next,
+        positionH: {
+          ...(h ?? {}),
+          offset: (h?.offset ?? 0) - widthDelta * EMU_PER_PX,
+        },
+      };
+    }
+  }
+
+  if (growsFromNorth && heightDelta !== 0) {
+    const v = next.positionV;
+    if (!v?.align) {
+      next = {
+        ...next,
+        positionV: {
+          ...(v ?? {}),
+          offset: (v?.offset ?? 0) - heightDelta * EMU_PER_PX,
+        },
+      };
+    }
+  }
+
+  return next;
+}
+
+export function resizeSelectedTextBox(
+  state: EditorState,
+  width: number,
+  height: number,
+  options: ResizeTextBoxOptions = {},
+): EditorState {
+  const selected = getSelectedTextBoxRun(state);
+  if (!selected || !selected.run.textBox) {
+    return state;
+  }
+
+  const direction = options.handleDirection ?? "se";
+  const changesHeight = direction.includes("n") || direction.includes("s");
+  const growsFromWest = direction.includes("w");
+  const growsFromNorth = direction.includes("n");
+
+  const nextWidth = Math.max(MIN_TEXT_BOX_SIZE_PX, Math.round(width));
+  const nextHeight = Math.max(MIN_TEXT_BOX_SIZE_PX, Math.round(height));
+
+  const { paragraphIndex, run: targetRun } = selected;
+  const widthDelta = nextWidth - selected.run.textBox.width;
+  const heightDelta = nextHeight - selected.run.textBox.height;
+
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map((candidate, candidateIndex) => {
+    if (candidateIndex !== paragraphIndex) {
+      return cloneParagraph(candidate);
+    }
+
+    return {
+      ...cloneParagraph(candidate),
+      runs: candidate.runs.map((run) => {
+        if (run.id !== targetRun.id || !run.textBox) {
+          return cloneRun(run);
+        }
+
+        const textBox = run.textBox;
+        const nextTextBox: EditorTextBoxData = {
+          ...textBox,
+          width: nextWidth,
+          height: nextHeight,
+        };
+
+        if (changesHeight && textBox.body?.autoFit) {
+          nextTextBox.body = { ...textBox.body, autoFit: false };
+        }
+
+        if (textBox.floating) {
+          nextTextBox.floating = shiftFloatingForResize(
+            textBox.floating,
+            widthDelta,
+            heightDelta,
+            growsFromWest,
+            growsFromNorth,
+          );
+        }
+
+        return { ...run, textBox: nextTextBox };
+      }),
+    };
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
+  );
+}

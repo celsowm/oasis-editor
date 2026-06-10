@@ -23,6 +23,7 @@ import { persistenceService } from "../app/services/PersistenceService.js";
 import { useEditorFindReplace } from "../app/controllers/useEditorFindReplace.js";
 import { createEditorTableOperations } from "../app/controllers/useEditorTableOperations.js";
 import { createEditorImageOperations } from "../app/controllers/useEditorImageOperations.js";
+import { createEditorTextBoxOperations } from "../app/controllers/useEditorTextBoxOperations.js";
 import { createEditorDocumentIO } from "../app/controllers/useEditorDocumentIO.js";
 import { createEditorStyleController } from "../app/controllers/useEditorStyle.js";
 import { createEditorHistoryActions } from "../app/controllers/useEditorHistoryActions.js";
@@ -155,6 +156,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     inputBox,
     selectionBoxes,
     selectedImageBox,
+    selectedTextBoxBox,
     caretBox,
     preferredColumnX,
     setPreferredColumnX,
@@ -282,6 +284,16 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     updateHistoryState,
     focusInput,
     focusInputAfterPointerSelection,
+    cloneState,
+    logger,
+  });
+
+  const textBoxOps = createEditorTextBoxOperations({
+    state,
+    surfaceRef,
+    applyState,
+    updateHistoryState,
+    focusInput,
     cloneState,
     logger,
   });
@@ -565,6 +577,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     style: ui().style,
     selectionBoxes,
     selectedImageBox,
+    selectedTextBoxBox,
     caretBox,
     inputBox,
     hoveredRevision: revisionController.hoveredRevision,
@@ -582,6 +595,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     onEditorMouseDown,
     handleImageMouseDown: imageOps.handleImageMouseDown,
     handleImageResizeHandleMouseDown: imageOps.handleImageResizeHandleMouseDown,
+    handleTextBoxResizeHandleMouseDown:
+      textBoxOps.handleTextBoxResizeHandleMouseDown,
     handleEditorContextMenu,
     textInput,
     setFocused,
@@ -612,6 +627,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     textDrag.stopDrag();
     imageOps.stopImageDrag();
     imageOps.stopImageResize();
+    textBoxOps.stopTextBoxResize();
     stopIconObserver();
   });
 

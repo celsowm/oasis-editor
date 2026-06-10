@@ -178,6 +178,7 @@ describe("canvas hit-test service footnote zone", () => {
       ],
       paragraphsById: new Map(),
       inlineImages: [],
+      inlineTextBoxes: [],
       floatingTextBoxes: [],
       unsupportedRegions: [],
     };
@@ -249,6 +250,7 @@ describe("canvas hit-test service footnote zone", () => {
       ],
       paragraphsById: new Map(),
       inlineImages: [],
+      inlineTextBoxes: [],
       floatingTextBoxes: [],
       unsupportedRegions: [],
     };
@@ -336,6 +338,7 @@ describe("canvas hit-test service floating text box", () => {
       ],
       paragraphsById: new Map(),
       inlineImages: [],
+      inlineTextBoxes: [],
       floatingTextBoxes: [
         {
           paragraphId: paragraph.id,

@@ -25,6 +25,18 @@ export interface SelectedImageBox {
   height: number;
 }
 
+export interface SelectedTextBoxBox {
+  paragraphId: string;
+  startOffset: number;
+  endOffset: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  /** True when the text box is a floating (anchored) drawing. */
+  floating: boolean;
+}
+
 export interface RevisionBox {
   revisionId: string;
   author: string;
@@ -34,29 +46,9 @@ export interface RevisionBox {
   top: number;
 }
 
-export type ImageResizeHandleDirection =
-  | "n"
-  | "ne"
-  | "e"
-  | "se"
-  | "s"
-  | "sw"
-  | "w"
-  | "nw";
-
-export const IMAGE_RESIZE_HANDLE_DIRECTIONS: ImageResizeHandleDirection[] = [
-  "nw",
-  "n",
-  "ne",
-  "e",
-  "se",
-  "s",
-  "sw",
-  "w",
-];
-
 import type { Accessor } from "solid-js";
 import type { EditorState, EditorLayoutParagraph } from "../core/model.js";
+import type { ResizeHandleDirection } from "./resizeGeometry.js";
 
 export interface EditorSurfaceProps {
   state: Accessor<EditorState>;
@@ -86,7 +78,13 @@ export interface EditorSurfaceProps {
   onImageResizeHandleMouseDown: (
     paragraphId: string,
     paragraphOffset: number,
-    direction: ImageResizeHandleDirection,
+    direction: ResizeHandleDirection,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ) => void;
+  onTextBoxResizeHandleMouseDown: (
+    paragraphId: string,
+    paragraphOffset: number,
+    direction: ResizeHandleDirection,
     event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
   onTableDragHandleMouseDown: (tableId: string, event: MouseEvent) => void;

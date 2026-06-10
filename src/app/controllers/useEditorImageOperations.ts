@@ -14,21 +14,10 @@ import {
   resizeSelectedImage,
 } from "../../core/editorCommands.js";
 import { getMaxInlineImageWidth } from "../../ui/imageGeometry.js";
-import type { ImageResizeHandleDirection } from "../../ui/editorUiTypes.js";
+import type { ResizeHandleDirection } from "../../ui/resizeGeometry.js";
 import type { EditorLogger } from "../../utils/logger.js";
 import type { EditorHistoryState } from "../../ui/editorHistory.js";
-
-export interface ActiveImageResize {
-  paragraphId: string;
-  paragraphOffset: number;
-  handleDirection: ImageResizeHandleDirection;
-  startClientX: number;
-  startClientY: number;
-  startWidth: number;
-  startHeight: number;
-  aspectRatio: number;
-  initialState: EditorState;
-}
+import { createResizeSession } from "./createResizeSession.js";
 
 export interface ActiveImageDrag {
   paragraphId: string;
@@ -90,85 +79,8 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
   );
 
   let activeImageDrag: ActiveImageDrag | null = null;
-  let activeImageResize: ActiveImageResize | null = null;
   let pendingImagePointer: PendingImagePointer | null = null;
   let imageDragCursorStyle: HTMLStyleElement | null = null;
-
-  const clamp = (value: number, min: number, max?: number): number => {
-    const lowerBound = Math.max(min, value);
-    if (max === undefined) {
-      return lowerBound;
-    }
-    return Math.min(max, lowerBound);
-  };
-
-  const axisSignForDirection = (
-    direction: ImageResizeHandleDirection,
-    axis: "x" | "y",
-  ): -1 | 0 | 1 => {
-    if (axis === "x") {
-      if (direction.includes("e")) return 1;
-      if (direction.includes("w")) return -1;
-      return 0;
-    }
-
-    if (direction.includes("s")) return 1;
-    if (direction.includes("n")) return -1;
-    return 0;
-  };
-
-  const resolveResizedDimensions = (
-    resizeState: ActiveImageResize,
-    deltaX: number,
-    deltaY: number,
-    preserveAspectRatio: boolean,
-    maxWidth: number,
-  ) => {
-    const widthSign = axisSignForDirection(resizeState.handleDirection, "x");
-    const heightSign = axisSignForDirection(resizeState.handleDirection, "y");
-    const rawWidth =
-      widthSign === 0
-        ? resizeState.startWidth
-        : resizeState.startWidth + deltaX * widthSign;
-    const rawHeight =
-      heightSign === 0
-        ? resizeState.startHeight
-        : resizeState.startHeight + deltaY * heightSign;
-
-    let nextWidth = clamp(rawWidth, 24, maxWidth);
-    let nextHeight = clamp(rawHeight, 24);
-
-    if (!preserveAspectRatio) {
-      return { width: nextWidth, height: nextHeight };
-    }
-
-    const aspectRatio = resizeState.aspectRatio || 1;
-    const hasHorizontalHandle = widthSign !== 0;
-    const hasVerticalHandle = heightSign !== 0;
-
-    if (hasHorizontalHandle && hasVerticalHandle) {
-      const widthScale = nextWidth / resizeState.startWidth;
-      const heightScale = nextHeight / resizeState.startHeight;
-      const dominantScale =
-        Math.abs(widthScale - 1) >= Math.abs(heightScale - 1)
-          ? widthScale
-          : heightScale;
-      nextWidth = clamp(resizeState.startWidth * dominantScale, 24, maxWidth);
-      nextHeight = clamp(nextWidth / aspectRatio, 24);
-      return { width: nextWidth, height: nextHeight };
-    }
-
-    if (hasHorizontalHandle) {
-      nextWidth = clamp(nextWidth, 24, maxWidth);
-      nextHeight = clamp(nextWidth / aspectRatio, 24);
-      return { width: nextWidth, height: nextHeight };
-    }
-
-    nextHeight = clamp(nextHeight, 24);
-    nextWidth = clamp(nextHeight * aspectRatio, 24, maxWidth);
-    nextHeight = clamp(nextWidth / aspectRatio, 24);
-    return { width: nextWidth, height: nextHeight };
-  };
 
   const getSelectedImageInfo = (current: EditorState) => {
     const normalized = normalizeSelection(current);
@@ -249,11 +161,29 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     clearImagePointerTracking();
   };
 
-  const stopImageResize = () => {
-    activeImageResize = null;
-    window.removeEventListener("mousemove", handleImageResizeMouseMove);
-    window.removeEventListener("mouseup", handleImageResizeMouseUp);
-  };
+  const imageResizeSession = createResizeSession(
+    {
+      label: "image",
+      getSelected: (current) => getSelectedImageInfo(current),
+      applyResize: (current, width, height) =>
+        resizeSelectedImage(current, width, height),
+      getMaxWidth: (current, paragraphId) =>
+        getMaxInlineImageWidth(
+          deps.surfaceRef(),
+          current.document,
+          paragraphId,
+          current.activeSectionIndex ?? 0,
+        ),
+    },
+    {
+      state: deps.state,
+      applyState: deps.applyState,
+      updateHistoryState: deps.updateHistoryState,
+      cloneState: deps.cloneState,
+      focusInput: deps.focusInput,
+      logger: deps.logger,
+    },
+  );
 
   const handleImageDragMouseMove = (event: MouseEvent) => {
     let dragState = activeImageDrag;
@@ -326,105 +256,6 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     deps.focusInput();
   };
 
-  const handleImageResizeMouseMove = (event: MouseEvent) => {
-    const resizeState = activeImageResize;
-    if (!resizeState) {
-      return;
-    }
-
-    const deltaX = event.clientX - resizeState.startClientX;
-    const deltaY = event.clientY - resizeState.startClientY;
-    const maxWidth = getMaxInlineImageWidth(
-      deps.surfaceRef(),
-      deps.state.document,
-      resizeState.paragraphId,
-      deps.state.activeSectionIndex ?? 0,
-    );
-    const { width: nextWidth, height: nextHeight } = resolveResizedDimensions(
-      resizeState,
-      deltaX,
-      deltaY,
-      event.shiftKey,
-      maxWidth,
-    );
-    const paragraph = getParagraphs(deps.state).find(
-      (candidate) => candidate.id === resizeState.paragraphId,
-    );
-    if (!paragraph) {
-      deps.logger.warn("image resize:missing paragraph", resizeState);
-      return;
-    }
-    deps.logger.debug("image resize:move", {
-      paragraphId: resizeState.paragraphId,
-      paragraphOffset: resizeState.paragraphOffset,
-      handleDirection: resizeState.handleDirection,
-      deltaX,
-      deltaY,
-      nextWidth,
-      nextHeight,
-      maxWidth,
-      preserveAspectRatio: event.shiftKey,
-    });
-
-    const applySelectionToStatePreservingStructure = (
-      current: EditorState,
-      nextSelection: EditorState["selection"],
-    ): EditorState => ({
-      ...current,
-      selection: {
-        anchor: { ...nextSelection.anchor },
-        focus: { ...nextSelection.focus },
-      },
-    });
-
-    deps.applyState(
-      resizeSelectedImage(
-        applySelectionToStatePreservingStructure(deps.state, {
-          anchor: paragraphOffsetToPosition(
-            paragraph,
-            resizeState.paragraphOffset,
-          ),
-          focus: paragraphOffsetToPosition(
-            paragraph,
-            resizeState.paragraphOffset + 1,
-          ),
-        }),
-        nextWidth,
-        nextHeight,
-      ),
-    );
-  };
-
-  const handleImageResizeMouseUp = () => {
-    const resizeState = activeImageResize;
-    if (resizeState) {
-      const selectedImage = getSelectedImageInfo(deps.state);
-      deps.logger.info("image resize:done", {
-        paragraphId: resizeState.paragraphId,
-        startWidth: resizeState.startWidth,
-        startHeight: resizeState.startHeight,
-        current: selectedImage
-          ? {
-              width: selectedImage.width,
-              height: selectedImage.height,
-            }
-          : null,
-      });
-
-      deps.updateHistoryState((current) => ({
-        ...current,
-        undoStack: [
-          ...current.undoStack,
-          deps.cloneState(resizeState.initialState),
-        ],
-        redoStack: [],
-      }));
-    }
-
-    stopImageResize();
-    deps.focusInput();
-  };
-
   const startImageDrag = (
     paragraphId: string,
     paragraphOffset: number,
@@ -466,52 +297,6 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     window.addEventListener("mouseup", handleImageDragMouseUp);
   };
 
-  const startImageResize = (
-    paragraphId: string,
-    paragraphOffset: number,
-    handleDirection: ImageResizeHandleDirection,
-    event: MouseEvent,
-    initialState: EditorState,
-  ) => {
-    const paragraph = getParagraphs(initialState).find(
-      (p) => p.id === paragraphId,
-    );
-    if (!paragraph) return;
-
-    const applySelectionToStatePreservingStructure = (
-      current: EditorState,
-      nextSelection: EditorState["selection"],
-    ): EditorState => ({
-      ...current,
-      selection: {
-        anchor: { ...nextSelection.anchor },
-        focus: { ...nextSelection.focus },
-      },
-    });
-
-    const selectedImage = getSelectedImageInfo(
-      applySelectionToStatePreservingStructure(initialState, {
-        anchor: paragraphOffsetToPosition(paragraph, paragraphOffset),
-        focus: paragraphOffsetToPosition(paragraph, paragraphOffset + 1),
-      }),
-    );
-    if (!selectedImage) return;
-
-    activeImageResize = {
-      paragraphId,
-      paragraphOffset,
-      handleDirection,
-      startClientX: event.clientX,
-      startClientY: event.clientY,
-      startWidth: selectedImage.width,
-      startHeight: selectedImage.height,
-      aspectRatio: selectedImage.width / selectedImage.height,
-      initialState: deps.cloneState(initialState),
-    };
-    window.addEventListener("mousemove", handleImageResizeMouseMove);
-    window.addEventListener("mouseup", handleImageResizeMouseUp);
-  };
-
   const handleImageMouseDown = (
     paragraphId: string,
     paragraphOffset: number,
@@ -539,12 +324,12 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
   const handleImageResizeHandleMouseDown = (
     paragraphId: string,
     paragraphOffset: number,
-    direction: ImageResizeHandleDirection,
+    direction: ResizeHandleDirection,
     event: MouseEvent & { currentTarget: HTMLElement },
   ) => {
     event.preventDefault();
     event.stopPropagation();
-    startImageResize(
+    imageResizeSession.start(
       paragraphId,
       paragraphOffset,
       direction,
@@ -560,9 +345,8 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     dropTargetPos,
     getSelectedImageInfo,
     startImageDrag,
-    startImageResize,
     stopImageDrag,
-    stopImageResize,
+    stopImageResize: imageResizeSession.stop,
     handleImageMouseDown,
     handleImageResizeHandleMouseDown,
   };

@@ -7,7 +7,10 @@ import type {
   InputBox,
   SelectionBox,
 } from "../../ui/editorUiTypes.js";
-import type { SelectedImageSelectionBox } from "../../ui/canvas/CanvasSelectionGeometry.js";
+import type {
+  SelectedImageSelectionBox,
+  SelectedTextBoxSelectionBox,
+} from "../../ui/canvas/CanvasSelectionGeometry.js";
 
 interface UseEditorLayoutProps {
   state: EditorState;
@@ -68,6 +71,8 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
   const [selectionBoxes, setSelectionBoxes] = createSignal<SelectionBox[]>([]);
   const [selectedImageBox, setSelectedImageBox] =
     createSignal<SelectedImageSelectionBox | null>(null);
+  const [selectedTextBoxBox, setSelectedTextBoxBox] =
+    createSignal<SelectedTextBoxSelectionBox | null>(null);
   const [caretBox, setCaretBox] = createSignal<CaretBox>({
     left: 0,
     top: 0,
@@ -85,6 +90,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     if (!surface) {
       setSelectionBoxes([]);
       setSelectedImageBox(null);
+      setSelectedTextBoxBox(null);
       setCaretBox((current) => ({ ...current, visible: false }));
       return;
     }
@@ -98,6 +104,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     if (!snapshot) {
       setSelectionBoxes([]);
       setSelectedImageBox(null);
+      setSelectedTextBoxBox(null);
       setCaretBox((current) => ({ ...current, visible: false }));
       return;
     }
@@ -105,6 +112,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     const geometry = computeCanvasSelectionGeometry(snapshot, props.state);
     setSelectionBoxes(geometry.selectionBoxes);
     setSelectedImageBox(geometry.selectedImageBox);
+    setSelectedTextBoxBox(geometry.selectedTextBoxBox);
     setInputBox(geometry.inputBox);
     setCaretBox(geometry.caretBox);
   };
@@ -228,6 +236,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     inputBox,
     selectionBoxes,
     selectedImageBox,
+    selectedTextBoxBox,
     caretBox,
     preferredColumnX,
     setPreferredColumnX,

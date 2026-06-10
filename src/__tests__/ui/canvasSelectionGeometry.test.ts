@@ -390,4 +390,85 @@ describe("canvas selection geometry", () => {
       height: 80,
     });
   });
+
+  const buildTextBoxGeometry = (kind: "floating" | "inline") => {
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "￼",
+        textBox: {
+          width: 160,
+          height: 90,
+          blocks: [createEditorParagraphFromRuns([{ text: "box" }])],
+          ...(kind === "floating"
+            ? {
+                floating: {
+                  type: "floating" as const,
+                  wrap: "square" as const,
+                },
+              }
+            : {}),
+        },
+      },
+    ]);
+    const state = createEditorStateFromDocument(
+      createEditorDocument([paragraph]),
+    );
+    const textParagraph = getParagraphs(state)[0]!;
+    const selectedState = {
+      ...state,
+      selection: {
+        anchor: paragraphOffsetToPosition(textParagraph, 0),
+        focus: paragraphOffsetToPosition(textParagraph, 1),
+      },
+    };
+    const box = {
+      paragraphId: textParagraph.id,
+      paragraphIndex: 0,
+      zone: "main" as const,
+      pageIndex: 0,
+      startOffset: 0,
+      endOffset: 1,
+      left: 130,
+      top: 240,
+      width: 160,
+      height: 90,
+    };
+    const snapshot: CanvasLayoutSnapshot = {
+      surfaceRect: { left: 0, top: 0, width: 900, height: 700 } as DOMRect,
+      pages: [],
+      paragraphs: [],
+      paragraphsById: new Map(),
+      inlineImages: [],
+      inlineTextBoxes: kind === "inline" ? [box] : [],
+      floatingTextBoxes: kind === "floating" ? [box] : [],
+      unsupportedRegions: [],
+    } as unknown as CanvasLayoutSnapshot;
+
+    return computeCanvasSelectionGeometry(snapshot, selectedState);
+  };
+
+  it("exposes a floating text box box and hides the caret", () => {
+    const geometry = buildTextBoxGeometry("floating");
+
+    expect(geometry.selectedTextBoxBox).toEqual({
+      paragraphId: expect.any(String),
+      startOffset: 0,
+      endOffset: 1,
+      left: 130,
+      top: 240,
+      width: 160,
+      height: 90,
+      floating: true,
+    });
+    expect(geometry.selectionBoxes).toEqual([]);
+    expect(geometry.caretBox.visible).toBe(false);
+  });
+
+  it("exposes an inline text box box (floating false)", () => {
+    const geometry = buildTextBoxGeometry("inline");
+
+    expect(geometry.selectedTextBoxBox?.floating).toBe(false);
+    expect(geometry.selectedTextBoxBox?.width).toBe(160);
+    expect(geometry.selectionBoxes).toEqual([]);
+  });
 });

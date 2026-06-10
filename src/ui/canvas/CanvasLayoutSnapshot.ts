@@ -11,6 +11,7 @@ import {
   type EditorParagraphNode,
   type EditorPosition,
   type EditorState,
+  type EditorTextBoxData,
 } from "../../core/model.js";
 import { buildSegmentTable } from "../../core/tableLayout.js";
 import { projectDocumentLayout } from "../../layoutProjection/index.js";
@@ -19,6 +20,9 @@ import {
   buildCanvasTableLayout,
   type CanvasUnsupportedReason,
 } from "./CanvasTableLayout.js";
+import { resolveTextBoxRenderHeight } from "./textBoxRenderHeight.js";
+
+type ResolveTextBoxRenderHeight = (textBox: EditorTextBoxData) => number;
 
 export interface CanvasSnapshotSlot {
   offset: number;
@@ -92,6 +96,20 @@ export interface CanvasSnapshotFloatingTextBox {
   height: number;
 }
 
+export interface CanvasSnapshotInlineTextBox {
+  paragraphId: string;
+  paragraphIndex: number;
+  zone: EditorEditingZone;
+  footnoteId?: string;
+  pageIndex: number;
+  startOffset: number;
+  endOffset: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export interface CanvasSnapshotPage {
   index: number;
   left: number;
@@ -111,6 +129,7 @@ export interface CanvasLayoutSnapshot {
   paragraphs: CanvasSnapshotParagraph[];
   paragraphsById: Map<string, CanvasSnapshotParagraph[]>;
   inlineImages: CanvasSnapshotInlineImage[];
+  inlineTextBoxes: CanvasSnapshotInlineTextBox[];
   floatingTextBoxes: CanvasSnapshotFloatingTextBox[];
   unsupportedRegions: Array<{
     pageIndex: number;
@@ -202,6 +221,66 @@ function collectInlineImagesFromLines(options: {
   return inlineImages;
 }
 
+function collectInlineTextBoxesFromLines(options: {
+  lines: Array<{
+    top: number;
+    height: number;
+    slots: Array<{ offset: number; left: number; top: number; height: number }>;
+    fragments: Array<{
+      startOffset: number;
+      endOffset: number;
+      textBox?: { width: number; height: number; floating?: unknown };
+    }>;
+  }>;
+  paragraphId: string;
+  paragraphIndex: number;
+  zone: EditorEditingZone;
+  footnoteId?: string;
+  pageIndex: number;
+  lineTopOffset: number;
+  lineLeftOffset: number;
+  resolveHeight: ResolveTextBoxRenderHeight;
+}): CanvasSnapshotInlineTextBox[] {
+  const inlineTextBoxes: CanvasSnapshotInlineTextBox[] = [];
+  for (const line of options.lines) {
+    for (const fragment of line.fragments) {
+      // Floating text boxes are tracked separately; here we only collect
+      // text boxes that flow inline (occupy a slot like an inline image).
+      if (!fragment.textBox || fragment.textBox.floating) {
+        continue;
+      }
+      const startOffset = fragment.startOffset;
+      const endOffset =
+        fragment.endOffset > startOffset ? fragment.endOffset : startOffset + 1;
+      const slot =
+        line.slots.find((candidate) => candidate.offset === startOffset) ??
+        line.slots.find((candidate) => candidate.offset >= startOffset);
+      if (!slot) {
+        continue;
+      }
+      // Match the painter: an auto-fit box renders at its content height, not
+      // its stored height, so the selection overlay must use the same value.
+      const height = options.resolveHeight(
+        fragment.textBox as unknown as EditorTextBoxData,
+      );
+      inlineTextBoxes.push({
+        paragraphId: options.paragraphId,
+        paragraphIndex: options.paragraphIndex,
+        zone: options.zone,
+        footnoteId: options.footnoteId,
+        pageIndex: options.pageIndex,
+        startOffset,
+        endOffset,
+        left: options.lineLeftOffset + slot.left,
+        top: options.lineTopOffset + line.top + line.height - height,
+        width: fragment.textBox.width,
+        height,
+      });
+    }
+  }
+  return inlineTextBoxes;
+}
+
 function collectFloatingTextBoxesFromLines(options: {
   lines: Array<{
     top: number;
@@ -214,8 +293,16 @@ function collectFloatingTextBoxesFromLines(options: {
         width: number;
         height: number;
         floating?: {
-          positionH?: { relativeFrom?: string; offset?: number; align?: string };
-          positionV?: { relativeFrom?: string; offset?: number; align?: string };
+          positionH?: {
+            relativeFrom?: string;
+            offset?: number;
+            align?: string;
+          };
+          positionV?: {
+            relativeFrom?: string;
+            offset?: number;
+            align?: string;
+          };
         };
       };
     }>;
@@ -233,6 +320,7 @@ function collectFloatingTextBoxesFromLines(options: {
   paragraphTop: number;
   lineTopOffset: number;
   lineLeftOffset: number;
+  resolveHeight: ResolveTextBoxRenderHeight;
 }): CanvasSnapshotFloatingTextBox[] {
   const result: CanvasSnapshotFloatingTextBox[] = [];
 
@@ -248,8 +336,12 @@ function collectFloatingTextBoxesFromLines(options: {
       }
 
       const slot =
-        line.slots.find((candidate) => candidate.offset === fragment.startOffset) ??
-        line.slots.find((candidate) => candidate.offset >= fragment.startOffset);
+        line.slots.find(
+          (candidate) => candidate.offset === fragment.startOffset,
+        ) ??
+        line.slots.find(
+          (candidate) => candidate.offset >= fragment.startOffset,
+        );
 
       if (!slot) {
         continue;
@@ -288,7 +380,8 @@ function collectFloatingTextBoxesFromLines(options: {
         left: hBase + emuToPx(h?.offset),
         top: vBase + emuToPx(v?.offset),
         width: textBox.width,
-        height: textBox.height,
+        // Match the painter's auto-fit height so the overlay tracks the box.
+        height: options.resolveHeight(textBox as unknown as EditorTextBoxData),
       });
     }
   }
@@ -319,6 +412,7 @@ export function buildCanvasLayoutSnapshot(
   const snapshotPages: CanvasSnapshotPage[] = [];
   const snapshotParagraphs: CanvasSnapshotParagraph[] = [];
   const inlineImages: CanvasSnapshotInlineImage[] = [];
+  const inlineTextBoxes: CanvasSnapshotInlineTextBox[] = [];
   const floatingTextBoxes: CanvasSnapshotFloatingTextBox[] = [];
   const unsupportedRegions: CanvasLayoutSnapshot["unsupportedRegions"] = [];
 
@@ -431,6 +525,20 @@ export function buildCanvasLayoutSnapshot(
               lineLeftOffset: blockContentLeft,
             }),
           );
+          inlineTextBoxes.push(
+            ...collectInlineTextBoxesFromLines({
+              lines: block.layout.lines,
+              paragraphId,
+              paragraphIndex,
+              zone,
+              footnoteId: blockFootnoteId,
+              pageIndex: page.index,
+              lineTopOffset,
+              lineLeftOffset: blockContentLeft,
+              resolveHeight: (textBox) =>
+                resolveTextBoxRenderHeight(textBox, state, page.index),
+            }),
+          );
           floatingTextBoxes.push(
             ...collectFloatingTextBoxesFromLines({
               lines: block.layout.lines,
@@ -447,6 +555,8 @@ export function buildCanvasLayoutSnapshot(
               paragraphTop: lineTopOffset,
               lineTopOffset,
               lineLeftOffset: blockContentLeft,
+              resolveHeight: (textBox) =>
+                resolveTextBoxRenderHeight(textBox, state, page.index),
             }),
           );
         } else if (block.sourceBlock.type === "table") {
@@ -546,6 +656,20 @@ export function buildCanvasLayoutSnapshot(
                   lineLeftOffset: paragraphLayout.originX,
                 }),
               );
+              inlineTextBoxes.push(
+                ...collectInlineTextBoxesFromLines({
+                  lines: paragraphLayout.lines,
+                  paragraphId,
+                  paragraphIndex,
+                  zone,
+                  footnoteId: blockFootnoteId,
+                  pageIndex: page.index,
+                  lineTopOffset: paragraphLayout.originY,
+                  lineLeftOffset: paragraphLayout.originX,
+                  resolveHeight: (textBox) =>
+                    resolveTextBoxRenderHeight(textBox, state, page.index),
+                }),
+              );
               floatingTextBoxes.push(
                 ...collectFloatingTextBoxesFromLines({
                   lines: paragraphLayout.lines,
@@ -562,6 +686,8 @@ export function buildCanvasLayoutSnapshot(
                   paragraphTop: paragraphLayout.originY,
                   lineTopOffset: paragraphLayout.originY,
                   lineLeftOffset: paragraphLayout.originX,
+                  resolveHeight: (textBox) =>
+                    resolveTextBoxRenderHeight(textBox, state, page.index),
                 }),
               );
             }
@@ -624,6 +750,7 @@ export function buildCanvasLayoutSnapshot(
     paragraphs: snapshotParagraphs,
     paragraphsById,
     inlineImages,
+    inlineTextBoxes,
     floatingTextBoxes,
     unsupportedRegions,
   };

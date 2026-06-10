@@ -3,6 +3,7 @@ import {
   createEditorDocument,
   createEditorFootnote,
   createEditorParagraph,
+  createEditorParagraphFromRuns,
   createEditorRun,
   createEditorStateFromDocument,
   createEditorTable,
@@ -10,8 +11,10 @@ import {
   createEditorTableRow,
   createFootnoteReferenceRun,
 } from "../../core/editorState.js";
+import type { EditorTextBoxData } from "../../core/model.js";
 import { projectDocumentLayout } from "../../layoutProjection/index.js";
 import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
+import { resolveTextBoxRenderHeight } from "../../ui/canvas/textBoxRenderHeight.js";
 
 function createRect(
   left: number,
@@ -70,8 +73,7 @@ describe("buildCanvasLayoutSnapshot", () => {
       undefined,
       undefined,
       undefined,
-      {
-      },
+      {},
     );
     const projectedPage = projected.pages[0];
     if (!projectedPage) {
@@ -127,8 +129,7 @@ describe("buildCanvasLayoutSnapshot", () => {
       undefined,
       undefined,
       undefined,
-      {
-      },
+      {},
     );
     const projectedPage = projected.pages[0];
     if (!projectedPage) {
@@ -182,8 +183,7 @@ describe("buildCanvasLayoutSnapshot", () => {
       undefined,
       undefined,
       undefined,
-      {
-      },
+      {},
     );
     const projectedPage = projected.pages[0];
     if (!projectedPage) {
@@ -223,6 +223,42 @@ describe("buildCanvasLayoutSnapshot", () => {
     );
   });
 
+  it("sizes a floating auto-fit text box overlay to its rendered height, not the stored height", () => {
+    const storedHeight = 400;
+    const textBox: EditorTextBoxData = {
+      width: 200,
+      height: storedHeight,
+      blocks: [createEditorParagraphFromRuns([{ text: "one line" }])],
+      floating: {
+        type: "floating",
+        wrap: "square",
+        positionH: { relativeFrom: "column", offset: 0 },
+        positionV: { relativeFrom: "paragraph", offset: 0 },
+      },
+      body: { autoFit: true },
+    };
+    const paragraph = createEditorParagraphFromRuns([
+      { text: "￼", textBox },
+      { text: "after" },
+    ]);
+    const document = createEditorDocument([paragraph]);
+    const state = createEditorStateFromDocument(document);
+
+    const { surface, page } = createSurfaceWithSinglePage(0);
+    surface.getBoundingClientRect = () => createRect(0, 0, 940, 1200);
+    page.getBoundingClientRect = () => createRect(100, 200, 816, 1056);
+
+    const snapshot = buildCanvasLayoutSnapshot({ surface, state });
+    expect(snapshot).not.toBeNull();
+
+    const expectedHeight = resolveTextBoxRenderHeight(textBox, state, 0);
+    expect(expectedHeight).toBeLessThan(storedHeight);
+
+    const floating = snapshot!.floatingTextBoxes[0];
+    expect(floating).toBeDefined();
+    expect(floating!.height).toBe(expectedHeight);
+  });
+
   it("uses the paginated table segment for snapshot geometry instead of the full table", () => {
     const rows = Array.from({ length: 24 }, (_, index) =>
       createEditorTableRow([
@@ -257,8 +293,7 @@ describe("buildCanvasLayoutSnapshot", () => {
       undefined,
       undefined,
       undefined,
-      {
-      },
+      {},
     );
     expect(projected.pages.length).toBeGreaterThan(1);
 

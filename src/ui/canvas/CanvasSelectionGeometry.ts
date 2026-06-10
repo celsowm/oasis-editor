@@ -24,11 +24,24 @@ export interface SelectedImageSelectionBox {
   height: number;
 }
 
+export interface SelectedTextBoxSelectionBox {
+  paragraphId: string;
+  startOffset: number;
+  endOffset: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  /** True when the selected text box is a floating (anchored) drawing. */
+  floating: boolean;
+}
+
 export interface CanvasSelectionGeometryResult {
   selectionBoxes: SelectionBox[];
   caretBox: CaretBox;
   inputBox: InputBox;
   selectedImageBox: SelectedImageSelectionBox | null;
+  selectedTextBoxBox: SelectedTextBoxSelectionBox | null;
 }
 
 const TEXT_SELECTION_ANTIALIAS_OVERSCAN_PX = 1;
@@ -154,7 +167,7 @@ export function computeCanvasSelectionGeometry(
     ),
   );
   let selectedImageBox: SelectedImageSelectionBox | null = null;
-  let selectedFloatingTextBox = false;
+  let selectedTextBoxBox: SelectedTextBoxSelectionBox | null = null;
 
   if (
     !normalized.isCollapsed &&
@@ -180,15 +193,33 @@ export function computeCanvasSelectionGeometry(
     }
 
     if (!selectedImageBox) {
-      const selectedTextBox = snapshot.floatingTextBoxes.find(
-        (box) =>
-          box.paragraphId === normalized.start.paragraphId &&
-          box.startOffset === normalized.startParagraphOffset &&
-          box.endOffset === normalized.endParagraphOffset,
-      );
+      const matchesSelection = (box: {
+        paragraphId: string;
+        startOffset: number;
+        endOffset: number;
+      }) =>
+        box.paragraphId === normalized.start.paragraphId &&
+        box.startOffset === normalized.startParagraphOffset &&
+        box.endOffset === normalized.endParagraphOffset;
+
+      const selectedFloating =
+        snapshot.floatingTextBoxes.find(matchesSelection);
+      const selectedInline = selectedFloating
+        ? undefined
+        : snapshot.inlineTextBoxes.find(matchesSelection);
+      const selectedTextBox = selectedFloating ?? selectedInline;
 
       if (selectedTextBox) {
-        selectedFloatingTextBox = true;
+        selectedTextBoxBox = {
+          paragraphId: selectedTextBox.paragraphId,
+          startOffset: selectedTextBox.startOffset,
+          endOffset: selectedTextBox.endOffset,
+          left: selectedTextBox.left - surfaceRect.left,
+          top: selectedTextBox.top - surfaceRect.top,
+          width: selectedTextBox.width,
+          height: selectedTextBox.height,
+          floating: Boolean(selectedFloating),
+        };
       }
     }
   }
@@ -297,7 +328,12 @@ export function computeCanvasSelectionGeometry(
     }
   }
 
-  if (!isMultiCellSelection && !normalized.isCollapsed && !selectedImageBox) {
+  if (
+    !isMultiCellSelection &&
+    !normalized.isCollapsed &&
+    !selectedImageBox &&
+    !selectedTextBoxBox
+  ) {
     for (const paragraph of snapshot.paragraphs) {
       const selectedRange = getParagraphSelectionRange(
         paragraph.paragraphId,
@@ -389,7 +425,7 @@ export function computeCanvasSelectionGeometry(
       focusParagraphSegments.length > 0 &&
       !isMultiCellSelection &&
       !selectedImageBox &&
-      !selectedFloatingTextBox,
+      !selectedTextBoxBox,
   };
 
   return {
@@ -397,5 +433,6 @@ export function computeCanvasSelectionGeometry(
     inputBox: { left: caretLeft, top: caretTop, height: caretHeight },
     caretBox,
     selectedImageBox,
+    selectedTextBoxBox,
   };
 }
