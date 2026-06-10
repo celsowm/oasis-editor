@@ -15,6 +15,11 @@ import {
   getTextBoxPadding as getPadding,
   resolveTextBoxRenderHeight,
 } from "./textBoxRenderHeight.js";
+import {
+  drawStackedParagraph,
+  resolveVerticalMode,
+  withRotatedBox,
+} from "./verticalText.js";
 
 function drawTextBoxShape(
   ctx: CanvasRenderingContext2D,
@@ -62,9 +67,41 @@ function renderTextBoxContent(
   const innerWidth = Math.max(1, width - padding.left - padding.right);
   const innerHeight = Math.max(1, height - padding.top - padding.bottom);
 
+  const mode = resolveVerticalMode(textBox.body?.vert);
+
+  // Stacked (East-Asian upright) text does not flow through the horizontal
+  // layout engine; paint each paragraph glyph-by-glyph instead.
+  if (mode === "stack") {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(innerX, innerY, innerWidth, innerHeight);
+    ctx.clip();
+    let columnRight = innerX + innerWidth;
+    for (const block of textBox.blocks) {
+      if (block.type !== "paragraph") {
+        continue;
+      }
+      columnRight = drawStackedParagraph(
+        ctx,
+        block,
+        state,
+        { x: innerX, y: innerY, width: innerWidth, height: innerHeight },
+        columnRight,
+      );
+    }
+    ctx.restore();
+    return;
+  }
+
+  // For rotated text the content is laid out in a width/height-swapped box so
+  // the long axis runs vertically once rotated.
+  const rotated = mode === "rotate-cw" || mode === "rotate-ccw";
+  const layoutWidth = rotated ? innerHeight : innerWidth;
+  const layoutHeight = rotated ? innerWidth : innerHeight;
+
   const fakePageSettings = {
-    width: innerWidth,
-    height: innerHeight,
+    width: layoutWidth,
+    height: layoutHeight,
     orientation: "portrait" as const,
     margins: {
       top: 0,
@@ -80,7 +117,7 @@ function renderTextBoxContent(
   const pages = projectBlocksLayout({
     blocks: textBox.blocks,
     pageSettings: fakePageSettings,
-    maxPageHeight: innerHeight,
+    maxPageHeight: layoutHeight,
     styles: state.document.styles,
     pageOffset: pageIndex,
     totalPages: undefined,
@@ -88,42 +125,52 @@ function renderTextBoxContent(
 
   const blocks = pages[0]?.blocks ?? [];
 
+  const paintBlocks = (originX: number, originY: number, blockWidth: number) => {
+    let cursorY = originY;
+    for (const block of blocks) {
+      if (block.sourceBlock.type === "paragraph" && block.layout) {
+        drawParagraph(
+          ctx,
+          block.sourceBlock,
+          block.layout.lines,
+          state,
+          originX,
+          cursorY,
+          onUpdate,
+        );
+      } else if (block.sourceBlock.type === "table") {
+        drawTable(
+          ctx,
+          block.sourceBlock,
+          block.tableSegment,
+          state,
+          originX,
+          cursorY,
+          blockWidth,
+          block.estimatedHeight,
+          pageIndex,
+          onUpdate,
+        );
+      }
+      cursorY += Math.max(0, block.estimatedHeight);
+    }
+  };
+
+  if (rotated) {
+    withRotatedBox(
+      ctx,
+      { x: innerX, y: innerY, width: innerWidth, height: innerHeight },
+      mode,
+      (lw) => paintBlocks(0, 0, lw),
+    );
+    return;
+  }
+
   ctx.save();
   ctx.beginPath();
   ctx.rect(innerX, innerY, innerWidth, innerHeight);
   ctx.clip();
-
-  let cursorY = innerY;
-
-  for (const block of blocks) {
-    if (block.sourceBlock.type === "paragraph" && block.layout) {
-      drawParagraph(
-        ctx,
-        block.sourceBlock,
-        block.layout.lines,
-        state,
-        innerX,
-        cursorY,
-        onUpdate,
-      );
-    } else if (block.sourceBlock.type === "table") {
-      drawTable(
-        ctx,
-        block.sourceBlock,
-        block.tableSegment,
-        state,
-        innerX,
-        cursorY,
-        innerWidth,
-        block.estimatedHeight,
-        pageIndex,
-        onUpdate,
-      );
-    }
-
-    cursorY += Math.max(0, block.estimatedHeight);
-  }
-
+  paintBlocks(innerX, innerY, innerWidth);
   ctx.restore();
 }
 

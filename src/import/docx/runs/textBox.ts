@@ -165,6 +165,10 @@ function parseTextBoxBody(wsp: XmlElement): EditorTextBoxBody | undefined {
   if (anchor) body.anchor = anchor;
   const wrap = bodyPr.getAttribute("wrap");
   if (wrap) body.wrap = wrap;
+  const vert = bodyPr.getAttribute("vert");
+  if (vert === "vert" || vert === "vert270" || vert === "wordArtVert") {
+    body.vert = vert;
+  }
   if (findElementDeep(bodyPr, "spAutoFit")) body.autoFit = true;
   return Object.keys(body).length > 0 ? body : undefined;
 }

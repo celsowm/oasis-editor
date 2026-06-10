@@ -11,6 +11,24 @@ import {
 } from "../../core/model.js";
 import { buildTableCellLayout } from "../../core/tableLayout.js";
 import { projectParagraphLayout } from "../../layoutProjection/index.js";
+import {
+  estimateStackedParagraphHeight,
+  resolveVerticalMode,
+  type VerticalRenderMode,
+} from "./verticalText.js";
+
+const NO_WRAP_WIDTH_PX = 100000;
+
+/** Effective vertical text direction of a cell: explicit cell direction, else
+ * the direction of its first paragraph. */
+function resolveCellVerticalMode(
+  cell: EditorTableCellNode,
+): VerticalRenderMode {
+  const direction =
+    cell.style?.textDirection ?? cell.blocks[0]?.style?.textDirection ?? null;
+  return resolveVerticalMode(direction);
+}
+
 
 const DEFAULT_TABLE_ROW_HEIGHT = 14;
 const DEFAULT_CELL_PADDING_TOP_BOTTOM_PX = 0;
@@ -102,6 +120,8 @@ export interface CanvasTableCellLayoutEntry {
     left: CanvasTableBorderSpec;
   };
   paragraphs: CanvasTableParagraphLayoutEntry[];
+  /** Vertical text flow inside this cell (`horizontal` when not rotated). */
+  verticalMode: VerticalRenderMode;
 }
 
 export interface CanvasTableLayoutResult {
@@ -284,6 +304,7 @@ export function buildCanvasTableLayout(options: {
       spacingBefore: number;
     }>;
     contentNaturalHeightPx: number;
+    verticalMode: VerticalRenderMode;
   }
 
   const cellEntriesByKey = new Map(
@@ -338,18 +359,69 @@ export function buildCanvasTableLayout(options: {
           padding.right,
       );
 
-      // Project paragraphs at the actual cell content width, after shrinking
-      // any oversized inline image so it never exceeds the cell width.
+      const verticalMode = resolveCellVerticalMode(cell);
+      const isRotated =
+        verticalMode === "rotate-cw" || verticalMode === "rotate-ccw";
+      const isStacked = verticalMode === "stack";
+
+      // For rotated cells, text flows along the cell's vertical (long) axis, so
+      // wrap against the available content height rather than the column width.
+      // Cells carry explicit row heights in real documents; fall back to no-wrap
+      // when the height is auto so the flow axis is driven by content length.
+      const explicitRowHeightPx = parseDimensionToPx(row.style?.height);
+      const wrapWidth = isRotated
+        ? explicitRowHeightPx !== null && explicitRowHeightPx > 0
+          ? Math.max(
+              MIN_TABLE_CELL_CONTENT_WIDTH_PX,
+              explicitRowHeightPx -
+                borders.top.width -
+                borders.bottom.width -
+                padding.top -
+                padding.bottom,
+            )
+          : NO_WRAP_WIDTH_PX
+        : contentWidthPx;
+
+      // Project paragraphs at the resolved flow width, after shrinking any
+      // oversized inline image so it never exceeds the cell width.
       const projectedParagraphs: PreparedCell["projectedParagraphs"] = [];
       let contentNaturalHeightPx = 0;
       for (const original of cell.blocks) {
         const paragraph = fitImagesToCellWidth(original, contentWidthPx);
+        const paragraphStyle = resolveEffectiveParagraphStyle(
+          paragraph.style,
+          state.document.styles,
+        );
+        const spacingBefore = paragraphStyle.spacingBefore ?? 0;
+        const spacingAfter = paragraphStyle.spacingAfter ?? 0;
+
+        if (isStacked) {
+          // Stacked glyphs are painted directly (not via the line layout). Rows
+          // are sized from the imported (explicit) row height; stacked text
+          // wraps into additional columns within that height, so we only
+          // contribute a single line so auto-height rows do not fully collapse.
+          const stackLength = estimateStackedParagraphHeight(paragraph, state);
+          projectedParagraphs.push({
+            paragraph,
+            lines: [],
+            height: stackLength,
+            spacingBefore,
+          });
+          const paragraphStyleSize =
+            paragraph.runs[0]?.styles?.fontSize ?? 14.6667;
+          contentNaturalHeightPx = Math.max(
+            contentNaturalHeightPx,
+            paragraphStyleSize * 1.25,
+          );
+          continue;
+        }
+
         const projected = projectParagraphLayout(
           paragraph,
           pageIndex,
           undefined,
           state.document.styles,
-          contentWidthPx,
+          wrapWidth,
           undefined,
           state.document.settings?.defaultTabStop,
         );
@@ -357,12 +429,6 @@ export function buildCanvasTableLayout(options: {
           projected.lines.length > 0
             ? Math.max(...projected.lines.map((line) => line.top + line.height))
             : 1;
-        const paragraphStyle = resolveEffectiveParagraphStyle(
-          paragraph.style,
-          state.document.styles,
-        );
-        const spacingBefore = paragraphStyle.spacingBefore ?? 0;
-        const spacingAfter = paragraphStyle.spacingAfter ?? 0;
         const paragraphHeight = Math.max(
           1,
           spacingBefore + linesBottom + spacingAfter,
@@ -373,7 +439,21 @@ export function buildCanvasTableLayout(options: {
           height: paragraphHeight,
           spacingBefore,
         });
-        contentNaturalHeightPx += paragraphHeight;
+        if (isRotated) {
+          // Rotated columns sit side by side; the cell's vertical extent is the
+          // imported (explicit) row height, and text wraps to fit within it.
+          // Contribute only the line thickness so auto rows do not collapse.
+          const lineThickness =
+            projected.lines.length > 0
+              ? Math.max(...projected.lines.map((line) => line.height))
+              : paragraphHeight;
+          contentNaturalHeightPx = Math.max(
+            contentNaturalHeightPx,
+            lineThickness,
+          );
+        } else {
+          contentNaturalHeightPx += paragraphHeight;
+        }
       }
 
       prepared.push({
@@ -389,6 +469,7 @@ export function buildCanvasTableLayout(options: {
         contentWidthPx,
         projectedParagraphs,
         contentNaturalHeightPx,
+        verticalMode,
       });
     }
   }
@@ -490,11 +571,16 @@ export function buildCanvasTableLayout(options: {
         );
 
     let paragraphCursorY = 0;
-    const verticalContentOffset = resolveVerticalContentOffset(
-      cell,
-      contentHeightPx,
-      cellEntry.contentNaturalHeightPx,
-    );
+    // Vertical-flow cells are painted via a rotation/stack transform that owns
+    // its own anchoring; the horizontal vertical-align offset does not apply.
+    const verticalContentOffset =
+      cellEntry.verticalMode === "horizontal"
+        ? resolveVerticalContentOffset(
+            cell,
+            contentHeightPx,
+            cellEntry.contentNaturalHeightPx,
+          )
+        : 0;
     const paragraphs: CanvasTableParagraphLayoutEntry[] = [];
     for (const projected of cellEntry.projectedParagraphs) {
       paragraphs.push({
@@ -529,6 +615,7 @@ export function buildCanvasTableLayout(options: {
       padding,
       borders,
       paragraphs,
+      verticalMode: cellEntry.verticalMode,
     });
   }
 

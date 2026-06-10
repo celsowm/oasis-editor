@@ -73,6 +73,8 @@ export interface EditorParagraphStyle {
   keepWithNext?: boolean;
   keepLinesTogether?: boolean;
   widowControl?: boolean;
+  /** `w:textDirection/@w:val`: paragraph flow direction (vertical text). */
+  textDirection?: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV" | null;
 }
 
 export interface EditorTableStyle {

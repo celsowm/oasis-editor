@@ -9,6 +9,7 @@ import {
   getAttributeValue,
   parseOnOffProperty,
   parseStyleIdProperty,
+  parseTextDirection,
   isWordTrue,
 } from "./xmlHelpers.js";
 import {
@@ -117,6 +118,7 @@ export function normalizeImportedParagraphStyle(
     borderBottom: style.borderBottom ?? undefined,
     borderLeft: style.borderLeft ?? undefined,
     tabs: style.tabs ?? undefined,
+    textDirection: style.textDirection ?? undefined,
   });
 
   return normalized;
@@ -365,6 +367,16 @@ export function parseParagraphStyle(
   );
   if (shadingFill) {
     style.shading = shadingFill;
+  }
+
+  const textDirection = parseTextDirection(
+    getAttributeValue(
+      getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "textDirection"),
+      "val",
+    ),
+  );
+  if (textDirection) {
+    style.textDirection = textDirection;
   }
 
   return Object.keys(style).length > 0 ? style : undefined;

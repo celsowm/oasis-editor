@@ -51,6 +51,8 @@ export interface EditorTextBoxBody {
   wrap?: string;
   /** True when `a:spAutoFit` is present (auto-resize box to text). */
   autoFit?: boolean;
+  /** `@vert`: text flow direction inside the box (DrawingML vertical text). */
+  vert?: "horz" | "vert" | "vert270" | "wordArtVert" | null;
 }
 
 /**
@@ -132,6 +134,8 @@ export interface EditorTableCellStyle {
   paddingLeft?: number;
   verticalAlign?: "top" | "middle" | "bottom";
   horizontalAlign?: "left" | "center" | "right" | "justify";
+  /** `w:tcPr/w:textDirection/@w:val`: cell text flow direction (vertical text). */
+  textDirection?: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV" | null;
 }
 
 export interface EditorTableCellNode {

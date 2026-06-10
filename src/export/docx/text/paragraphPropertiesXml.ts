@@ -106,6 +106,9 @@ export function serializeParagraphProperties(
       `<w:shd w:val="clear" w:color="auto" w:fill="${normalizeDocxColor(style.shading, "FFFFFF")}"/>`,
     );
   }
+  if (style.textDirection) {
+    parts.push(`<w:textDirection w:val="${style.textDirection}"/>`);
+  }
 
   const numbering = numberingInfo.get(paragraph.id);
   if (numbering) {

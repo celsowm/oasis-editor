@@ -35,6 +35,7 @@ export function materializeParagraphStyle(
     borderBottom: effective.borderBottom,
     borderLeft: effective.borderLeft,
     tabs: effective.tabs,
+    textDirection: effective.textDirection,
   };
 }
 

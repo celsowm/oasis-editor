@@ -140,6 +140,9 @@ function serializeTableCellProperties(
         : cell.style.verticalAlign;
     parts.push(`<w:vAlign w:val="${value}"/>`);
   }
+  if (cell.style?.textDirection) {
+    parts.push(`<w:textDirection w:val="${cell.style.textDirection}"/>`);
+  }
   parts.push(serializeTableCellMargins(cell));
   parts.push(serializeTableCellBorders(cell));
 

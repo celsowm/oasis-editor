@@ -91,6 +91,13 @@ export const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> = asRequire
   keepWithNext: false,
   keepLinesTogether: false,
   widowControl: true,
+  textDirection: null as unknown as
+    | "lrTb"
+    | "tbRl"
+    | "btLr"
+    | "lrTbV"
+    | "tbRlV"
+    | null,
 });
 
 export const EFFECTIVE_PARAGRAPH_STYLE_DEFAULTS: Required<EditorParagraphStyle> =

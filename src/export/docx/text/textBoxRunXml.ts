@@ -37,7 +37,7 @@ function buildTextBoxGraphicXml(
   }
 
   const body = textBox.body;
-  const bodyAttrs: string[] = ['rot="0"', 'vert="horz"'];
+  const bodyAttrs: string[] = ['rot="0"', `vert="${escapeXml(body?.vert ?? "horz")}"`];
   bodyAttrs.push(`wrap="${escapeXml(body?.wrap ?? "square")}"`);
   if (body?.paddingLeft !== undefined) {
     bodyAttrs.push(`lIns="${Math.round(body.paddingLeft * EMU_PER_PX)}"`);

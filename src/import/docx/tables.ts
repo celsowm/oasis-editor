@@ -23,6 +23,7 @@ import {
   getFirstChildByTagNameNS,
   getAttributeValue,
   parseOnOffProperty,
+  parseTextDirection,
 } from "./xmlHelpers.js";
 import {
   type EditorTableBorders,
@@ -306,6 +307,16 @@ function parseTableCellStyle(
   const verticalAlign = parseTableCellVerticalAlign(cellProperties);
   if (verticalAlign) {
     style.verticalAlign = verticalAlign;
+  }
+
+  const textDirection = parseTextDirection(
+    getAttributeValue(
+      getFirstChildByTagNameNS(cellProperties, WORD_NS, "textDirection"),
+      "val",
+    ),
+  );
+  if (textDirection) {
+    style.textDirection = textDirection;
   }
 
   for (const [key, border] of Object.entries(

@@ -31,6 +31,25 @@ export function getChildrenByTagNameNS(
   return result;
 }
 
+export type DocxTextDirection = "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV";
+
+const DOCX_TEXT_DIRECTIONS: readonly DocxTextDirection[] = [
+  "lrTb",
+  "tbRl",
+  "btLr",
+  "lrTbV",
+  "tbRlV",
+];
+
+/** Validate a raw `w:textDirection/@w:val` token, or return undefined. */
+export function parseTextDirection(
+  value: string | null | undefined,
+): DocxTextDirection | undefined {
+  return DOCX_TEXT_DIRECTIONS.includes(value as DocxTextDirection)
+    ? (value as DocxTextDirection)
+    : undefined;
+}
+
 export function getFirstChildByTagNameNS(
   element: XmlElement | null | undefined,
   namespace: string,

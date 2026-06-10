@@ -4,9 +4,70 @@ import type {
   EditorTableNode,
 } from "../../core/model.js";
 import { buildSegmentTable } from "../../core/tableLayout.js";
-import { buildCanvasTableLayout } from "./CanvasTableLayout.js";
+import {
+  buildCanvasTableLayout,
+  type CanvasTableCellLayoutEntry,
+} from "./CanvasTableLayout.js";
 import { drawBorderBox } from "./canvasBorders.js";
 import { drawParagraph } from "./canvasParagraphPainter.js";
+import {
+  drawStackedParagraph,
+  withRotatedBox,
+} from "./verticalText.js";
+
+/**
+ * Paint a cell whose text flows vertically: rotated (90° cw/ccw) content reuses
+ * the horizontal line layout under a canvas transform, while stacked content is
+ * painted glyph-by-glyph.
+ */
+function drawVerticalCell(
+  ctx: CanvasRenderingContext2D,
+  cell: CanvasTableCellLayoutEntry,
+  state: EditorState,
+  onUpdate: () => void,
+): void {
+  const box = {
+    x: cell.contentLeft,
+    y: cell.contentTop,
+    width: cell.contentWidth,
+    height: cell.contentHeight,
+  };
+
+  if (cell.verticalMode === "stack") {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(box.x, box.y, box.width, box.height);
+    ctx.clip();
+    let columnRight = box.x + box.width;
+    for (const paragraphLayout of cell.paragraphs) {
+      columnRight = drawStackedParagraph(
+        ctx,
+        paragraphLayout.paragraph,
+        state,
+        box,
+        columnRight,
+      );
+    }
+    ctx.restore();
+    return;
+  }
+
+  withRotatedBox(ctx, box, cell.verticalMode as "rotate-cw" | "rotate-ccw", () => {
+    let cursorY = 0;
+    for (const paragraphLayout of cell.paragraphs) {
+      drawParagraph(
+        ctx,
+        paragraphLayout.paragraph,
+        paragraphLayout.lines,
+        state,
+        0,
+        cursorY,
+        onUpdate,
+      );
+      cursorY += Math.max(0, paragraphLayout.height);
+    }
+  });
+}
 
 export function drawTable(
   ctx: CanvasRenderingContext2D,
@@ -45,16 +106,20 @@ export function drawTable(
       cell.height,
       cell.borders,
     );
-    for (const paragraphLayout of cell.paragraphs) {
-      drawParagraph(
-        ctx,
-        paragraphLayout.paragraph,
-        paragraphLayout.lines,
-        state,
-        paragraphLayout.originX,
-        paragraphLayout.originY,
-        onUpdate,
-      );
+    if (cell.verticalMode === "horizontal") {
+      for (const paragraphLayout of cell.paragraphs) {
+        drawParagraph(
+          ctx,
+          paragraphLayout.paragraph,
+          paragraphLayout.lines,
+          state,
+          paragraphLayout.originX,
+          paragraphLayout.originY,
+          onUpdate,
+        );
+      }
+    } else {
+      drawVerticalCell(ctx, cell, state, onUpdate);
     }
   }
   const viteEnv =
