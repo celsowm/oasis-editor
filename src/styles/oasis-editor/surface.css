@@ -219,6 +219,14 @@
   pointer-events: none;
 }
 
+.oasis-editor-image-selection-overlay {
+  cursor: grab;
+}
+
+.oasis-editor-image-selection-overlay:active {
+  cursor: grabbing;
+}
+
 .oasis-editor-caret {
   position: absolute;
   width: 0;
