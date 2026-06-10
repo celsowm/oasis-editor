@@ -12,6 +12,7 @@ import {
 import { buildTableCellLayout } from "../../core/tableLayout.js";
 import { projectParagraphLayout } from "../../layoutProjection/index.js";
 import {
+  estimateStackedColumnWidth,
   estimateStackedParagraphHeight,
   resolveVerticalMode,
   type VerticalRenderMode,
@@ -275,6 +276,31 @@ export function buildCanvasTableLayout(options: {
   } else {
     const baseCellWidth = tableWidth / visualColumnCount;
     resolvedColumnWidths = Array(visualColumnCount).fill(baseCellWidth);
+    // Without an explicit grid, grow any column that holds a stacked (upright)
+    // cell so a single vertical column of glyphs is not clipped. Rotated cells
+    // flow along the row height and are handled by the row-height pass instead.
+    for (const entry of tableEntries) {
+      if (Math.max(1, entry.colSpan) !== 1) continue;
+      const cell = table.rows[entry.rowIndex]?.cells[entry.cellIndex];
+      if (!cell || resolveCellVerticalMode(cell) !== "stack") continue;
+      let glyphWidth = 0;
+      for (const block of cell.blocks) {
+        if (block.type !== "paragraph") continue;
+        glyphWidth = Math.max(glyphWidth, estimateStackedColumnWidth(block, state));
+      }
+      if (glyphWidth <= 0) continue;
+      const padding = resolveCellPadding(cell);
+      const needed =
+        glyphWidth +
+        padding.left +
+        padding.right +
+        resolveBorder(cell.style?.borderLeft).width +
+        resolveBorder(cell.style?.borderRight).width;
+      const col = entry.visualColumnIndex;
+      if (needed > (resolvedColumnWidths[col] ?? 0)) {
+        resolvedColumnWidths[col] = needed;
+      }
+    }
   }
 
   const columnOffsets: number[] = [0];
@@ -396,10 +422,11 @@ export function buildCanvasTableLayout(options: {
         const spacingAfter = paragraphStyle.spacingAfter ?? 0;
 
         if (isStacked) {
-          // Stacked glyphs are painted directly (not via the line layout). Rows
-          // are sized from the imported (explicit) row height; stacked text
-          // wraps into additional columns within that height, so we only
-          // contribute a single line so auto-height rows do not fully collapse.
+          // Stacked glyphs are painted directly (not via the line layout). When
+          // the row carries an explicit height, stacked text wraps into extra
+          // columns within it, so we only contribute a single line (avoids
+          // collapse without overriding the imported height). When the row is
+          // auto, grow it to the full stack length so the column is not clipped.
           const stackLength = estimateStackedParagraphHeight(paragraph, state);
           projectedParagraphs.push({
             paragraph,
@@ -407,11 +434,13 @@ export function buildCanvasTableLayout(options: {
             height: stackLength,
             spacingBefore,
           });
+          const hasExplicitRowHeight =
+            explicitRowHeightPx !== null && explicitRowHeightPx > 0;
           const paragraphStyleSize =
             paragraph.runs[0]?.styles?.fontSize ?? 14.6667;
           contentNaturalHeightPx = Math.max(
             contentNaturalHeightPx,
-            paragraphStyleSize * 1.25,
+            hasExplicitRowHeight ? paragraphStyleSize * 1.25 : stackLength,
           );
           continue;
         }
@@ -440,16 +469,28 @@ export function buildCanvasTableLayout(options: {
           spacingBefore,
         });
         if (isRotated) {
-          // Rotated columns sit side by side; the cell's vertical extent is the
-          // imported (explicit) row height, and text wraps to fit within it.
-          // Contribute only the line thickness so auto rows do not collapse.
+          // Rotated columns sit side by side; the cell's vertical extent equals
+          // the text's flow length once rotated. With an explicit row height the
+          // text wraps to fit, so we contribute only the line thickness. When the
+          // row is auto (no-wrap projection), grow it to the longest line's flow
+          // length so the rotated text is not clipped.
           const lineThickness =
             projected.lines.length > 0
               ? Math.max(...projected.lines.map((line) => line.height))
               : paragraphHeight;
+          const hasExplicitRowHeight =
+            explicitRowHeightPx !== null && explicitRowHeightPx > 0;
+          const flowLength = projected.lines.length
+            ? Math.max(
+                ...projected.lines.map((line) => {
+                  const last = line.slots[line.slots.length - 1];
+                  return last ? last.left : 0;
+                }),
+              )
+            : paragraphHeight;
           contentNaturalHeightPx = Math.max(
             contentNaturalHeightPx,
-            lineThickness,
+            hasExplicitRowHeight ? lineThickness : Math.max(lineThickness, flowLength),
           );
         } else {
           contentNaturalHeightPx += paragraphHeight;

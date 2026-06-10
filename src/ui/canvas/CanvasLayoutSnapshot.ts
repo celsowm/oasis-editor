@@ -18,9 +18,15 @@ import { projectDocumentLayout } from "../../layoutProjection/index.js";
 import { FOOTNOTE_MARKER_GUTTER_PX } from "../../layoutProjection/index.js";
 import {
   buildCanvasTableLayout,
+  type CanvasTableCellLayoutEntry,
   type CanvasUnsupportedReason,
 } from "./CanvasTableLayout.js";
 import { resolveTextBoxRenderHeight } from "./textBoxRenderHeight.js";
+import {
+  layoutStackedGlyphs,
+  projectRotatedSlot,
+  type VerticalRenderMode,
+} from "./verticalText.js";
 
 type ResolveTextBoxRenderHeight = (textBox: EditorTextBoxData) => number;
 
@@ -66,6 +72,8 @@ export interface CanvasSnapshotParagraph {
   height: number;
   lines: CanvasSnapshotLine[];
   tableCell?: CanvasSnapshotTableCellInfo;
+  /** Set when the paragraph is painted with a vertical-text transform. */
+  verticalMode?: VerticalRenderMode;
 }
 
 export interface CanvasSnapshotInlineImage {
@@ -389,6 +397,118 @@ function collectFloatingTextBoxesFromLines(options: {
   return result;
 }
 
+/**
+ * Build absolute-coordinate snapshot lines for a vertical-flow table-cell
+ * paragraph, so click-to-caret and selection land on the painted glyph. Rotated
+ * cells reuse the horizontal line layout under the same affine transform the
+ * painter applies; stacked cells synthesize one slot per upright glyph via the
+ * shared `layoutStackedGlyphs`. Returns a single synthesized line whose
+ * bounding box covers all slots, so the generic line-band hit test passes.
+ */
+function buildVerticalCellSnapshotLines(options: {
+  paragraph: EditorParagraphNode;
+  paragraphLines: Array<{
+    startOffset: number;
+    endOffset: number;
+    top: number;
+    height: number;
+    slots: Array<{ offset: number; left: number; top: number; height: number }>;
+  }>;
+  paragraphHeight: number;
+  textLength: number;
+  cell: CanvasTableCellLayoutEntry;
+  verticalMode: VerticalRenderMode;
+  state: EditorState;
+  carry: { stackColumnRight: number; rotatedCursorY: number };
+}): CanvasSnapshotLine[] {
+  const box = {
+    x: options.cell.contentLeft,
+    y: options.cell.contentTop,
+    width: options.cell.contentWidth,
+    height: options.cell.contentHeight,
+  };
+  const slots: CanvasSnapshotSlot[] = [];
+
+  if (options.verticalMode === "stack") {
+    const { glyphs, endColumnRight } = layoutStackedGlyphs(
+      options.paragraph,
+      options.state,
+      box,
+      options.carry.stackColumnRight,
+    );
+    for (const glyph of glyphs) {
+      slots.push({
+        offset: glyph.offset,
+        left: glyph.centerX,
+        top: glyph.top,
+        height: glyph.height,
+      });
+    }
+    const last = glyphs[glyphs.length - 1];
+    slots.push({
+      offset: options.textLength,
+      left: last ? last.centerX : box.x + box.width,
+      top: last ? last.top + last.height : box.y,
+      height: last ? last.height : 16,
+    });
+    options.carry.stackColumnRight = endColumnRight;
+  } else {
+    const mode = options.verticalMode as "rotate-cw" | "rotate-ccw";
+    for (const line of options.paragraphLines) {
+      let lastAdvance = 8;
+      for (let i = 0; i < line.slots.length; i += 1) {
+        const slot = line.slots[i]!;
+        const next = line.slots[i + 1];
+        const advance = next
+          ? Math.max(1, next.left - slot.left)
+          : lastAdvance;
+        lastAdvance = advance;
+        const projected = projectRotatedSlot(
+          box,
+          mode,
+          slot.left,
+          options.carry.rotatedCursorY + slot.top,
+          advance,
+          slot.height,
+        );
+        slots.push({
+          offset: slot.offset,
+          left: projected.left,
+          top: projected.top,
+          height: projected.height,
+        });
+      }
+    }
+    options.carry.rotatedCursorY += options.paragraphHeight;
+  }
+
+  if (slots.length === 0) {
+    slots.push({
+      offset: 0,
+      left: box.x + box.width,
+      top: box.y,
+      height: 16,
+    });
+  }
+
+  let top = Number.POSITIVE_INFINITY;
+  let bottom = Number.NEGATIVE_INFINITY;
+  for (const slot of slots) {
+    top = Math.min(top, slot.top);
+    bottom = Math.max(bottom, slot.top + slot.height);
+  }
+
+  return [
+    {
+      startOffset: 0,
+      endOffset: options.textLength,
+      top,
+      height: Math.max(1, bottom - top),
+      slots,
+    },
+  ];
+}
+
 export function buildCanvasLayoutSnapshot(
   options: BuildCanvasLayoutSnapshotOptions,
 ): CanvasLayoutSnapshot | null {
@@ -601,12 +721,42 @@ export function buildCanvasLayoutSnapshot(
             );
           };
           for (const cell of tableLayout.cells) {
+            const isVerticalCell = cell.verticalMode !== "horizontal";
+            // Carry shared across the cell's paragraphs: stacked columns and
+            // rotated paragraphs both advance along the cell's long axis.
+            const verticalCarry = {
+              stackColumnRight: cell.contentLeft + cell.contentWidth,
+              rotatedCursorY: 0,
+            };
             for (const paragraphLayout of cell.paragraphs) {
               const paragraphId = paragraphLayout.paragraph.id;
               const paragraphIndex = paragraphIndexById.get(paragraphId) ?? 0;
               const textLength = getParagraphText(
                 paragraphLayout.paragraph,
               ).length;
+              const lines: CanvasSnapshotLine[] = isVerticalCell
+                ? buildVerticalCellSnapshotLines({
+                    paragraph: paragraphLayout.paragraph,
+                    paragraphLines: paragraphLayout.lines,
+                    paragraphHeight: paragraphLayout.height,
+                    textLength,
+                    cell,
+                    verticalMode: cell.verticalMode,
+                    state,
+                    carry: verticalCarry,
+                  })
+                : paragraphLayout.lines.map((line) => ({
+                    startOffset: line.startOffset,
+                    endOffset: line.endOffset,
+                    top: paragraphLayout.originY + line.top,
+                    height: line.height,
+                    slots: line.slots.map((slot) => ({
+                      offset: slot.offset,
+                      left: paragraphLayout.originX + slot.left,
+                      top: paragraphLayout.originY + slot.top,
+                      height: slot.height,
+                    })),
+                  }));
               snapshotParagraphs.push({
                 paragraph: paragraphLayout.paragraph,
                 paragraphId,
@@ -621,18 +771,8 @@ export function buildCanvasLayoutSnapshot(
                 top: paragraphLayout.originY,
                 width: paragraphLayout.width,
                 height: paragraphLayout.height,
-                lines: paragraphLayout.lines.map((line) => ({
-                  startOffset: line.startOffset,
-                  endOffset: line.endOffset,
-                  top: paragraphLayout.originY + line.top,
-                  height: line.height,
-                  slots: line.slots.map((slot) => ({
-                    offset: slot.offset,
-                    left: paragraphLayout.originX + slot.left,
-                    top: paragraphLayout.originY + slot.top,
-                    height: slot.height,
-                  })),
-                })),
+                lines,
+                verticalMode: isVerticalCell ? cell.verticalMode : undefined,
                 tableCell: {
                   tableId: cell.tableId,
                   rowIndex: toDocumentRowIndex(cell.rowIndex),

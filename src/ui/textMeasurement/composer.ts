@@ -268,6 +268,7 @@ export function composeMeasuredParagraphLines(
       : tokens[0]!.chars[0]!.offset;
   let lineWidth = 0;
   let lineEndOffset = lineStartOffset;
+  let lineMaxObjectHeight = 0;
   let top = 0;
   let isFirstLine = true;
 
@@ -288,6 +289,9 @@ export function composeMeasuredParagraphLines(
   let lineSlotLefts = [lineStartInset];
 
   const flushLine = (hardBreak = false) => {
+    // An inline image/text box grows the line so it does not overlap adjacent
+    // lines; normal text lines keep their font-derived height.
+    const effectiveHeight = Math.max(lineHeight, lineMaxObjectHeight);
     commitLine(
       lines,
       paragraph.id,
@@ -295,11 +299,11 @@ export function composeMeasuredParagraphLines(
       lineEndOffset,
       lineSlotLefts,
       top,
-      lineHeight,
+      effectiveHeight,
       lineAvailableWidth,
     );
     lineHardBreaks.push(hardBreak);
-    top += lineHeight;
+    top += effectiveHeight;
     isFirstLine = false;
   };
 
@@ -307,6 +311,7 @@ export function composeMeasuredParagraphLines(
     lineStartOffset = nextOffset;
     lineEndOffset = nextOffset;
     lineWidth = 0;
+    lineMaxObjectHeight = 0;
     currentFlow = computeFlow();
     lineStartInset = currentFlow.left;
     lineAvailableWidth = currentFlow.width;
@@ -354,6 +359,9 @@ export function composeMeasuredParagraphLines(
               measuredChars,
             )
           : char.width;
+      if (char.objectHeight !== undefined) {
+        lineMaxObjectHeight = Math.max(lineMaxObjectHeight, char.objectHeight);
+      }
       lineEndOffset = char.offset + 1;
       lineSlotLefts.push(lineStartInset + lineWidth);
     }

@@ -24,6 +24,7 @@ function drawVerticalCell(
   ctx: CanvasRenderingContext2D,
   cell: CanvasTableCellLayoutEntry,
   state: EditorState,
+  pageIndex: number,
   onUpdate: () => void,
 ): void {
   const box = {
@@ -63,6 +64,7 @@ function drawVerticalCell(
         0,
         cursorY,
         onUpdate,
+        pageIndex,
       );
       cursorY += Math.max(0, paragraphLayout.height);
     }
@@ -116,10 +118,11 @@ export function drawTable(
           paragraphLayout.originX,
           paragraphLayout.originY,
           onUpdate,
+          pageIndex,
         );
       }
     } else {
-      drawVerticalCell(ctx, cell, state, onUpdate);
+      drawVerticalCell(ctx, cell, state, pageIndex, onUpdate);
     }
   }
   const viteEnv =

@@ -21,6 +21,11 @@ import { createEditorLogger } from "../../utils/logger.js";
 import { getCachedCanvasImage } from "./canvasImageCache.js";
 import { resolveListPrefix } from "./listNumbering.js";
 import {
+  drawTextBoxShape,
+  renderTextBoxContent,
+} from "./canvasTextBoxPainter.js";
+import { resolveTextBoxRenderHeight } from "./textBoxRenderHeight.js";
+import {
   isDoubleUnderlineStyle,
   isWavyUnderlineStyle,
   type UnderlineStyle,
@@ -287,6 +292,7 @@ export function drawParagraph(
   originX: number,
   originY: number,
   onUpdate: () => void,
+  pageIndex = 0,
 ) {
   for (const line of lines) {
     const slotByOffset = new Map<number, (typeof line.slots)[number]>();
@@ -369,6 +375,29 @@ export function drawParagraph(
               originY + line.top + line.height - fragment.image.height,
             );
           }
+        }
+      } else if (fragment.textBox && !fragment.textBox.floating) {
+        const slot = slotByOffset.get(fragment.startOffset);
+        if (slot) {
+          // Geometry mirrors collectInlineTextBoxesFromLines in
+          // CanvasLayoutSnapshot.ts so paint and hit-testing stay aligned.
+          const textBox = fragment.textBox;
+          const height = resolveTextBoxRenderHeight(textBox, state, pageIndex);
+          const x = originX + slot.left;
+          const y = originY + line.top + line.height - height;
+          const width = textBox.width;
+          drawTextBoxShape(ctx, textBox, x, y, width, height);
+          renderTextBoxContent(
+            ctx,
+            textBox,
+            state,
+            x,
+            y,
+            width,
+            height,
+            pageIndex,
+            onUpdate,
+          );
         }
       } else {
         drawTextFragment(

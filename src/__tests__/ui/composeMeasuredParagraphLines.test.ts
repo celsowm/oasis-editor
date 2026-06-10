@@ -27,6 +27,7 @@ function createFragments(
       text: run.text,
       styles: run.styles ? { ...run.styles } : undefined,
       image: run.image ? { ...run.image } : undefined,
+      textBox: run.textBox ? { ...run.textBox } : undefined,
       revision: run.revision ? { ...run.revision } : undefined,
       chars,
     };
@@ -388,5 +389,34 @@ describe("composeMeasuredParagraphLines alignment", () => {
     expect(justifiedLines[0]!.slots.map((slot) => slot.left)).toEqual(
       leftLines[0]!.slots.map((slot) => slot.left),
     );
+  });
+});
+
+describe("composeMeasuredParagraphLines inline objects", () => {
+  it("grows the line height to fit an inline text box", () => {
+    // A single object-replacement char standing in for a 120px-tall text box.
+    const paragraph = createEditorParagraph("￼");
+    paragraph.runs[0]!.textBox = { width: 200, height: 120, blocks: [] };
+
+    const textLine = measure(createEditorParagraph("plain"), 600)[0]!;
+    const lines = measure(paragraph, 600);
+
+    expect(lines).toHaveLength(1);
+    expect(lines[0]!.height).toBeGreaterThanOrEqual(120);
+    // The grown line must be taller than a normal text line.
+    expect(lines[0]!.height).toBeGreaterThan(textLine.height);
+  });
+
+  it("does not grow the line for a floating text box (out of flow)", () => {
+    const paragraph = createEditorParagraph("￼");
+    paragraph.runs[0]!.textBox = {
+      width: 200,
+      height: 120,
+      blocks: [],
+      floating: { type: "floating" },
+    };
+
+    const lines = measure(paragraph, 600);
+    expect(lines[0]!.height).toBeLessThan(120);
   });
 });

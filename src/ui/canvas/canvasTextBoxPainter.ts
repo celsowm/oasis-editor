@@ -21,7 +21,7 @@ import {
   withRotatedBox,
 } from "./verticalText.js";
 
-function drawTextBoxShape(
+export function drawTextBoxShape(
   ctx: CanvasRenderingContext2D,
   textBox: EditorTextBoxData,
   x: number,
@@ -49,7 +49,7 @@ function drawTextBoxShape(
   ctx.restore();
 }
 
-function renderTextBoxContent(
+export function renderTextBoxContent(
   ctx: CanvasRenderingContext2D,
   textBox: EditorTextBoxData,
   state: EditorState,
@@ -72,21 +72,24 @@ function renderTextBoxContent(
   // Stacked (East-Asian upright) text does not flow through the horizontal
   // layout engine; paint each paragraph glyph-by-glyph instead.
   if (mode === "stack") {
+    // `wordArtVert` is Word's "Stacked" Latin text: upright glyphs reading
+    // top→bottom, with columns advancing left→right from the box's left edge.
     ctx.save();
     ctx.beginPath();
     ctx.rect(innerX, innerY, innerWidth, innerHeight);
     ctx.clip();
-    let columnRight = innerX + innerWidth;
+    let columnLeft = innerX;
     for (const block of textBox.blocks) {
       if (block.type !== "paragraph") {
         continue;
       }
-      columnRight = drawStackedParagraph(
+      columnLeft = drawStackedParagraph(
         ctx,
         block,
         state,
         { x: innerX, y: innerY, width: innerWidth, height: innerHeight },
-        columnRight,
+        columnLeft,
+        false,
       );
     }
     ctx.restore();
@@ -137,6 +140,7 @@ function renderTextBoxContent(
           originX,
           cursorY,
           onUpdate,
+          pageIndex,
         );
       } else if (block.sourceBlock.type === "table") {
         drawTable(

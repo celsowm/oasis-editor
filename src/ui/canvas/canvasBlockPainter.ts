@@ -145,6 +145,7 @@ export function renderBlockList(
         originX,
         textTop,
         onUpdate,
+        pageIndex,
       );
 
       if (block.sourceBlock.dropCap) {
@@ -259,6 +260,7 @@ export function renderFootnoteBlockList(
         originX + FOOTNOTE_MARKER_GUTTER_PX,
         textTop,
         onUpdate,
+        pageIndex,
       );
     } else if (block.sourceBlock.type === "table") {
       drawTable(
