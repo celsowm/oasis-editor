@@ -37,7 +37,7 @@ function quoteFontFamily(family: string): string {
   return /[\s,]/.test(family) ? `"${family.replace(/"/g, '\\"')}"` : family;
 }
 
-function resolveCanvasFontFamily(
+export function resolveCanvasFontFamily(
   fontFamily: string | null | undefined,
 ): string {
   const requested = normalizeFamily(fontFamily ?? "Calibri");

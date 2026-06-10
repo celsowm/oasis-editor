@@ -3,6 +3,7 @@ import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type {
   EditorBlockNode,
   EditorDocument,
+  EditorDropCap,
   EditorSection,
   EditorTextRun,
 } from "../../core/model.js";
@@ -95,11 +96,16 @@ export async function importDocxToEditorDocument(
   const sectionProps: SectionProperties[] = [];
   const sectionBlocks: EditorBlockNode[][] = [[]];
   let pendingPageBreakBefore = false;
+  let pendingDropCap: EditorDropCap | null = null;
 
   const appendBodyBlock = (block: EditorBlockNode) => {
     if (pendingPageBreakBefore) {
       block.style = { ...(block.style ?? {}), pageBreakBefore: true };
       pendingPageBreakBefore = false;
+    }
+    if (pendingDropCap && block.type === "paragraph") {
+      block.dropCap = pendingDropCap;
+      pendingDropCap = null;
     }
     sectionBlocks[sectionBlocks.length - 1]!.push(block);
   };
@@ -154,6 +160,9 @@ export async function importDocxToEditorDocument(
       );
       for (const paragraph of parsedParagraph.paragraphs) {
         appendBodyBlock(paragraph);
+      }
+      if (parsedParagraph.dropCapFrame) {
+        pendingDropCap = parsedParagraph.dropCapFrame;
       }
       if (parsedParagraph.pageBreakAfter) {
         pendingPageBreakBefore = true;

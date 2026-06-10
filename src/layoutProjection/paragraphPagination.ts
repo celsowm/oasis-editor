@@ -23,8 +23,10 @@ import {
 import { perfTimer } from "../utils/performanceMetrics.js";
 import {
   collectParagraphFloatingExclusions,
+  type FloatingExclusionRect,
   type ResolveTextBoxHeight,
 } from "./floatingObjects.js";
+import { resolveDropCapExclusion } from "./dropCapExclusion.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
 const DEFAULT_LINE_HEIGHT = 1.15;
@@ -266,31 +268,38 @@ export function projectParagraphLayoutWithExclusions(
   }
 
   const hasFloatingObject = preliminary.fragments.some(
-    (f) =>
-      (f.textBox?.floating ?? f.image?.floating) !== undefined,
+    (f) => (f.textBox?.floating ?? f.image?.floating) !== undefined,
   );
-  if (!hasFloatingObject) {
-    return preliminary;
-  }
-
-  const exclusions = collectParagraphFloatingExclusions({
-    fragments: preliminary.fragments,
-    preliminaryLines: preliminary.lines,
-    pageSettings,
-    contentWidth,
-    resolveTextBoxHeight,
-  });
-
-  if (exclusions.length === 0) {
+  if (!hasFloatingObject && !paragraph.dropCap) {
     return preliminary;
   }
 
   const fontSize = estimateParagraphFontSize(paragraph, styles);
-  const lineHeight = estimateParagraphLineHeight(
-    paragraph,
-    fontSize,
-    styles,
-  );
+  const lineHeight = estimateParagraphLineHeight(paragraph, fontSize, styles);
+
+  const exclusions: FloatingExclusionRect[] = hasFloatingObject
+    ? collectParagraphFloatingExclusions({
+        fragments: preliminary.fragments,
+        preliminaryLines: preliminary.lines,
+        pageSettings,
+        contentWidth,
+        resolveTextBoxHeight,
+      })
+    : [];
+
+  if (paragraph.dropCap) {
+    const dropCapExclusion = resolveDropCapExclusion({
+      dropCap: paragraph.dropCap,
+      bodyLineHeight: lineHeight,
+    });
+    if (dropCapExclusion) {
+      exclusions.push(dropCapExclusion);
+    }
+  }
+
+  if (exclusions.length === 0) {
+    return preliminary;
+  }
   const lines = measurer
     .composeMeasuredParagraphLines({
       paragraph,
@@ -720,7 +729,9 @@ export function estimateParagraphBlockHeight(
       ? 0
       : (paragraphStyle.spacingBefore ?? 0);
   const spacingAfter =
-    options.allowSpacingAfter === false ? 0 : (paragraphStyle.spacingAfter ?? 0);
+    options.allowSpacingAfter === false
+      ? 0
+      : (paragraphStyle.spacingAfter ?? 0);
   const insets = getParagraphBorderInsets(paragraphStyle);
 
   return (

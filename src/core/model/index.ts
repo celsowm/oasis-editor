@@ -45,6 +45,7 @@ export type {
   EditorTextBoxShape,
   EditorTextBoxBody,
   EditorTextBoxData,
+  EditorDropCap,
   EditorParagraphNode,
   EditorTableCellStyle,
   EditorTableCellNode,

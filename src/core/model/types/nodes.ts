@@ -91,12 +91,31 @@ export interface EditorTextRun {
   footnoteReference?: EditorFootnoteReferenceData;
 }
 
+/**
+ * A drop cap (Word's `w:framePr/@dropCap`): a large initial letter sunk into
+ * the first lines of the paragraph, with body text wrapping around it. In OOXML
+ * the cap lives in a separate preceding frame paragraph; we attach it to the
+ * wrapping paragraph so the per-paragraph layout owns its own exclusion + glyph.
+ */
+export interface EditorDropCap {
+  /** Cap letter(s), e.g. "L". */
+  text: string;
+  /** `w:framePr/@lines` — number of body lines the cap spans (default 3). */
+  lines: number;
+  /** `w:framePr/@dropCap`: "drop" (in text) or "margin" (in the left margin). */
+  type: "drop" | "margin";
+  /** Cap run style: fontSize (`w:sz`), font, color, baselineShift (`w:position`). */
+  style?: EditorTextStyle;
+}
+
 export interface EditorParagraphNode {
   id: string;
   type: "paragraph";
   runs: EditorTextRun[];
   style?: EditorParagraphStyle;
   list?: EditorParagraphListStyle;
+  /** Drop cap that body text in this paragraph wraps around, when present. */
+  dropCap?: EditorDropCap;
 }
 
 export interface EditorTableCellStyle {

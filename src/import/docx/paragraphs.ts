@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { type Element as XmlElement } from "@xmldom/xmldom";
 import type {
+  EditorDropCap,
   EditorParagraphListStyle,
   EditorParagraphNode,
   EditorParagraphStyle,
@@ -21,6 +22,7 @@ import {
 import { type NumberingMaps, parseParagraphList } from "./numbering.js";
 import { type ImportedRun, parseRunsContainer } from "./runs.js";
 import { parseTxbxContentBlocks } from "./nestedBlocks.js";
+import { parseDropCapFrame } from "./dropCap.js";
 
 function createImportedParagraph(
   runs: ImportedRun[],
@@ -126,7 +128,11 @@ export async function parseParagraphNodes(
   assets: AssetRegistry,
   theme: DocxImportTheme,
   inheritedStyle?: EditorParagraphStyle,
-): Promise<{ paragraphs: EditorParagraphNode[]; pageBreakAfter: boolean }> {
+): Promise<{
+  paragraphs: EditorParagraphNode[];
+  pageBreakAfter: boolean;
+  dropCapFrame?: EditorDropCap;
+}> {
   const paragraphProperties = getFirstChildByTagNameNS(
     paragraphNode,
     WORD_NS,
@@ -165,6 +171,15 @@ export async function parseParagraphNodes(
     theme,
   );
   const list = parseParagraphList(paragraphProperties, numberingMaps);
+
+  // A drop cap frame paragraph (`w:framePr/@dropCap`) is not emitted as a block;
+  // its cap rides out to the import driver, which attaches it to the next
+  // paragraph (the body text that wraps around the cap).
+  const dropCapFrame = parseDropCapFrame(paragraphProperties, runs);
+  if (dropCapFrame) {
+    return { paragraphs: [], pageBreakAfter: false, dropCapFrame };
+  }
+
   const { segments, hasPageBreak } = splitRunsAtPageBreaks(runs);
 
   if (!hasPageBreak) {

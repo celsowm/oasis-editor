@@ -8,6 +8,7 @@ import type { DocContext } from "../docxTypes.js";
 import { serializeTableXml } from "../tableXml.js";
 import { serializeParagraphProperties } from "./paragraphPropertiesXml.js";
 import { serializeRunWithRelationships } from "./runXml.js";
+import { serializeDropCapFrameParagraph } from "./dropCapXml.js";
 
 export function serializeBlocksXml(
   blocks: EditorBlockNode[],
@@ -42,7 +43,12 @@ export function serializeParagraphXml(
 ): string {
   const runs =
     paragraph.runs.length > 0 ? paragraph.runs : [{ id: "", text: "" }];
-  return `<w:p>${serializeParagraphProperties(
+  // A drop cap is emitted as a preceding standalone frame paragraph (Word's
+  // representation); the body paragraph itself serializes unchanged.
+  const dropCapFrame = paragraph.dropCap
+    ? serializeDropCapFrameParagraph(paragraph.dropCap)
+    : "";
+  return `${dropCapFrame}<w:p>${serializeParagraphProperties(
     paragraph,
     context.numberingInfo,
     styles,

@@ -19,6 +19,7 @@ import {
 import { drawBorderBox, type CanvasBorderEdge } from "./canvasBorders.js";
 import { drawTable } from "./canvasTablePainter.js";
 import { drawFloatingTextBoxesForParagraph } from "./canvasTextBoxPainter.js";
+import { drawDropCapForParagraph } from "./canvasDropCapPainter.js";
 
 function toCanvasEdge(
   border: EditorParagraphStyle["borderTop"],
@@ -145,6 +146,16 @@ export function renderBlockList(
         textTop,
         onUpdate,
       );
+
+      if (block.sourceBlock.dropCap) {
+        drawDropCapForParagraph({
+          ctx,
+          paragraph: block.sourceBlock,
+          lines: block.layout.lines,
+          originX,
+          paragraphTop: textTop,
+        });
+      }
 
       if (pageSettings) {
         drawFloatingTextBoxesForParagraph({
