@@ -63,11 +63,15 @@ export const applyTableAwareParagraphEdit = (
   }
 
   const zone = location.zone;
-  const nextBlocks = getTargetBlocks(current, zone).map(cloneBlock);
-  const tableBlock = nextBlocks[location.blockIndex] as EditorTableNode;
-  if (!tableBlock || tableBlock.type !== "table") {
+  const currentBlocks = getTargetBlocks(current, zone);
+  const clonedTable = cloneBlock(currentBlocks[location.blockIndex]) as EditorTableNode;
+  if (!clonedTable || clonedTable.type !== "table") {
     return edit(current);
   }
+  const nextBlocks = currentBlocks.map((block, i) =>
+    i === location.blockIndex ? clonedTable : block,
+  );
+  const tableBlock = clonedTable;
 
   const targetCell =
     tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];

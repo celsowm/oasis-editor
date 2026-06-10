@@ -33,21 +33,31 @@ export function replaceParagraphsInBlocks(
 
   let index = 0;
   const processBlocks = (nodes: EditorBlockNode[]): EditorBlockNode[] => {
-    return nodes.map((node) => {
+    let changed = false;
+    const result = nodes.map((node) => {
       if (node.type === "paragraph") {
-        return newParagraphs[index++] ?? node;
+        const next = newParagraphs[index++] ?? node;
+        if (next !== node) changed = true;
+        return next;
       }
-      return {
-        ...node,
-        rows: node.rows.map((row) => ({
-          ...row,
-          cells: row.cells.map((cell) => ({
-            ...cell,
-            blocks: processBlocks(cell.blocks) as EditorParagraphNode[],
-          })),
-        })),
-      };
+      let tableChanged = false;
+      const newRows = node.rows.map((row) => {
+        let rowChanged = false;
+        const newCells = row.cells.map((cell) => {
+          const newBlocks = processBlocks(cell.blocks) as EditorParagraphNode[];
+          if (newBlocks === cell.blocks) return cell;
+          rowChanged = true;
+          return { ...cell, blocks: newBlocks };
+        });
+        if (!rowChanged) return row;
+        tableChanged = true;
+        return { ...row, cells: newCells };
+      });
+      if (!tableChanged) return node;
+      changed = true;
+      return { ...node, rows: newRows };
     });
+    return changed ? result : nodes;
   };
   return processBlocks(blocks);
 }
@@ -139,20 +149,29 @@ export function updateTableCellsInBlocks(
   selectedParagraphIds: Set<string>,
   updateCell: (cell: EditorTableCellNode) => EditorTableCellNode,
 ): EditorBlockNode[] {
-  return blocks.map((block) => {
+  let changed = false;
+  const result = blocks.map((block) => {
     if (block.type === "paragraph") return block;
 
-    return {
-      ...block,
-      rows: block.rows.map((row) => ({
-        ...row,
-        cells: row.cells.map((cell) => {
-          const isSelected = cell.blocks.some((paragraph) =>
-            selectedParagraphIds.has(paragraph.id),
-          );
-          return isSelected ? updateCell(cell) : cell;
-        }),
-      })),
-    };
+    let tableChanged = false;
+    const newRows = block.rows.map((row) => {
+      let rowChanged = false;
+      const newCells = row.cells.map((cell) => {
+        const isSelected = cell.blocks.some((paragraph) =>
+          selectedParagraphIds.has(paragraph.id),
+        );
+        if (!isSelected) return cell;
+        const newCell = updateCell(cell);
+        if (newCell !== cell) rowChanged = true;
+        return newCell;
+      });
+      if (!rowChanged) return row;
+      tableChanged = true;
+      return { ...row, cells: newCells };
+    });
+    if (!tableChanged) return block;
+    changed = true;
+    return { ...block, rows: newRows };
   });
+  return changed ? result : blocks;
 }
