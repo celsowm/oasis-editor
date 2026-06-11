@@ -128,7 +128,11 @@ export function renderTextBoxContent(
 
   const blocks = pages[0]?.blocks ?? [];
 
-  const paintBlocks = (originX: number, originY: number, blockWidth: number) => {
+  const paintBlocks = (
+    originX: number,
+    originY: number,
+    blockWidth: number,
+  ) => {
     let cursorY = originY;
     for (const block of blocks) {
       if (block.sourceBlock.type === "paragraph" && block.layout) {
@@ -176,6 +180,49 @@ export function renderTextBoxContent(
   ctx.clip();
   paintBlocks(innerX, innerY, innerWidth);
   ctx.restore();
+}
+
+/**
+ * Paint a text box (shape + content) at the given box, honoring
+ * `textBox.rotation`. Rotation pivots around the box center so the painted
+ * result lines up with the selection overlay (which rotates the same way).
+ * Shared by inline and floating text box rendering.
+ */
+export function paintTextBox(
+  ctx: CanvasRenderingContext2D,
+  textBox: EditorTextBoxData,
+  state: EditorState,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  pageIndex: number,
+  onUpdate: () => void,
+): void {
+  const rotation = textBox.rotation;
+  if (rotation) {
+    ctx.save();
+    ctx.translate(x + width / 2, y + height / 2);
+    ctx.rotate((rotation * Math.PI) / 180);
+    ctx.translate(-(x + width / 2), -(y + height / 2));
+  }
+
+  drawTextBoxShape(ctx, textBox, x, y, width, height);
+  renderTextBoxContent(
+    ctx,
+    textBox,
+    state,
+    x,
+    y,
+    width,
+    height,
+    pageIndex,
+    onUpdate,
+  );
+
+  if (rotation) {
+    ctx.restore();
+  }
 }
 
 export function drawFloatingTextBoxesForParagraph(options: {
@@ -243,8 +290,7 @@ export function drawFloatingTextBoxesForParagraph(options: {
         anchorLeft,
       });
 
-      drawTextBoxShape(ctx, textBox, rect.x, rect.y, rect.width, rect.height);
-      renderTextBoxContent(
+      paintTextBox(
         ctx,
         textBox,
         state,

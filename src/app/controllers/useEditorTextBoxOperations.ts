@@ -2,6 +2,7 @@ import { type EditorState } from "../../core/model.js";
 import {
   getSelectedTextBoxRun,
   resizeSelectedTextBox,
+  rotateSelectedTextBox,
 } from "../../core/editorCommands.js";
 import { getMaxInlineImageWidth } from "../../ui/imageGeometry.js";
 import { resolveTextBoxRenderHeight } from "../../ui/canvas/textBoxRenderHeight.js";
@@ -9,6 +10,7 @@ import type { ResizeHandleDirection } from "../../ui/resizeGeometry.js";
 import type { EditorLogger } from "../../utils/logger.js";
 import type { EditorHistoryState } from "../../ui/editorHistory.js";
 import { createResizeSession } from "./createResizeSession.js";
+import { createRotateSession } from "./createRotateSession.js";
 
 export interface EditorTextBoxOperationsDeps {
   state: EditorState;
@@ -73,6 +75,22 @@ export function createEditorTextBoxOperations(
     },
   );
 
+  const rotateSession = createRotateSession(
+    {
+      label: "text box",
+      applyRotate: (current, rotation) =>
+        rotateSelectedTextBox(current, rotation),
+    },
+    {
+      state: deps.state,
+      applyState: deps.applyState,
+      updateHistoryState: deps.updateHistoryState,
+      cloneState: deps.cloneState,
+      focusInput: deps.focusInput,
+      logger: deps.logger,
+    },
+  );
+
   const handleTextBoxResizeHandleMouseDown = (
     paragraphId: string,
     paragraphOffset: number,
@@ -90,8 +108,20 @@ export function createEditorTextBoxOperations(
     );
   };
 
+  const handleTextBoxRotateHandleMouseDown = (
+    paragraphId: string,
+    paragraphOffset: number,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    rotateSession.start(paragraphId, paragraphOffset, event, deps.state);
+  };
+
   return {
     handleTextBoxResizeHandleMouseDown,
+    handleTextBoxRotateHandleMouseDown,
     stopTextBoxResize: resizeSession.stop,
+    stopTextBoxRotate: rotateSession.stop,
   };
 }

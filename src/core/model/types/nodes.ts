@@ -71,6 +71,8 @@ export interface EditorTextBoxData {
   blocks: EditorBlockNode[];
   /** Floating/anchor layout when the drawing is a `wp:anchor`. */
   floating?: EditorImageFloatingLayout;
+  /** Shape rotation in degrees (`wps:spPr/a:xfrm/@rot`, originally 1/60000°). */
+  rotation?: number;
   /** `wp:docPr/@name`. */
   name?: string;
   /** `wp:docPr/@descr` or `@title`. */

@@ -6,7 +6,7 @@ import type {
 } from "../../../core/model.js";
 import type { DocContext } from "../docxTypes.js";
 import { escapeXml } from "../xmlUtils.js";
-import { EMU_PER_PX, EMU_PER_PT } from "./constants.js";
+import { EMU_PER_PX, EMU_PER_PT, OOXML_ROTATION_UNITS } from "./constants.js";
 import { buildDrawingContainerXml } from "./drawingContainerXml.js";
 import { serializeRunProperties } from "./runPropertiesXml.js";
 import { serializeBlocksXml } from "./blocksXml.js";
@@ -20,6 +20,10 @@ function buildTextBoxGraphicXml(
 ): string {
   const shape = textBox.shape;
   const preset = escapeXml(shape?.preset ?? "rect");
+  const rotValue = textBox.rotation
+    ? Math.round(textBox.rotation * OOXML_ROTATION_UNITS)
+    : 0;
+  const xfrmRotAttr = rotValue !== 0 ? ` rot="${rotValue}"` : "";
 
   const fillXml = shape?.fill
     ? `<a:solidFill><a:srgbClr val="${escapeXml(shape.fill.replace(/^#/, ""))}"/></a:solidFill>`
@@ -37,7 +41,10 @@ function buildTextBoxGraphicXml(
   }
 
   const body = textBox.body;
-  const bodyAttrs: string[] = ['rot="0"', `vert="${escapeXml(body?.vert ?? "horz")}"`];
+  const bodyAttrs: string[] = [
+    'rot="0"',
+    `vert="${escapeXml(body?.vert ?? "horz")}"`,
+  ];
   bodyAttrs.push(`wrap="${escapeXml(body?.wrap ?? "square")}"`);
   if (body?.paddingLeft !== undefined) {
     bodyAttrs.push(`lIns="${Math.round(body.paddingLeft * EMU_PER_PX)}"`);
@@ -63,7 +70,7 @@ function buildTextBoxGraphicXml(
     "<wps:wsp>" +
     '<wps:cNvSpPr txBox="1"><a:spLocks noChangeArrowheads="1"/></wps:cNvSpPr>' +
     '<wps:spPr bwMode="auto">' +
-    `<a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
+    `<a:xfrm${xfrmRotAttr}><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
     `<a:prstGeom prst="${preset}"><a:avLst/></a:prstGeom>` +
     fillXml +
     lnXml +

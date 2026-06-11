@@ -20,10 +20,7 @@ import {
 import { createEditorLogger } from "../../utils/logger.js";
 import { getCachedCanvasImage } from "./canvasImageCache.js";
 import { resolveListPrefix } from "./listNumbering.js";
-import {
-  drawTextBoxShape,
-  renderTextBoxContent,
-} from "./canvasTextBoxPainter.js";
+import { paintTextBox } from "./canvasTextBoxPainter.js";
 import { resolveTextBoxRenderHeight } from "./textBoxRenderHeight.js";
 import {
   isDoubleUnderlineStyle,
@@ -386,8 +383,7 @@ export function drawParagraph(
           const x = originX + slot.left;
           const y = originY + line.top + line.height - height;
           const width = textBox.width;
-          drawTextBoxShape(ctx, textBox, x, y, width, height);
-          renderTextBoxContent(
+          paintTextBox(
             ctx,
             textBox,
             state,

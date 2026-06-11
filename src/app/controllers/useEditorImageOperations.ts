@@ -12,12 +12,14 @@ import {
   moveSelectedImageToPosition,
   setSelection,
   resizeSelectedImage,
+  rotateSelectedImage,
 } from "../../core/editorCommands.js";
 import { getMaxInlineImageWidth } from "../../ui/imageGeometry.js";
 import type { ResizeHandleDirection } from "../../ui/resizeGeometry.js";
 import type { EditorLogger } from "../../utils/logger.js";
 import type { EditorHistoryState } from "../../ui/editorHistory.js";
 import { createResizeSession } from "./createResizeSession.js";
+import { createRotateSession } from "./createRotateSession.js";
 
 export interface ActiveImageDrag {
   paragraphId: string;
@@ -185,6 +187,22 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     },
   );
 
+  const imageRotateSession = createRotateSession(
+    {
+      label: "image",
+      applyRotate: (current, rotation) =>
+        rotateSelectedImage(current, rotation),
+    },
+    {
+      state: deps.state,
+      applyState: deps.applyState,
+      updateHistoryState: deps.updateHistoryState,
+      cloneState: deps.cloneState,
+      focusInput: deps.focusInput,
+      logger: deps.logger,
+    },
+  );
+
   const handleImageDragMouseMove = (event: MouseEvent) => {
     let dragState = activeImageDrag;
     if (!dragState) {
@@ -338,6 +356,16 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     );
   };
 
+  const handleImageRotateHandleMouseDown = (
+    paragraphId: string,
+    paragraphOffset: number,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    imageRotateSession.start(paragraphId, paragraphOffset, event, deps.state);
+  };
+
   return {
     dragging,
     draggedImageInfo,
@@ -347,7 +375,9 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
     startImageDrag,
     stopImageDrag,
     stopImageResize: imageResizeSession.stop,
+    stopImageRotate: imageRotateSession.stop,
     handleImageMouseDown,
     handleImageResizeHandleMouseDown,
+    handleImageRotateHandleMouseDown,
   };
 }

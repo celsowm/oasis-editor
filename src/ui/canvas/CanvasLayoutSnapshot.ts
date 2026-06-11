@@ -88,6 +88,8 @@ export interface CanvasSnapshotInlineImage {
   top: number;
   width: number;
   height: number;
+  /** Shape rotation in degrees, when rotated. */
+  rotation?: number;
 }
 
 export interface CanvasSnapshotFloatingTextBox {
@@ -102,6 +104,8 @@ export interface CanvasSnapshotFloatingTextBox {
   top: number;
   width: number;
   height: number;
+  /** Shape rotation in degrees, when rotated. */
+  rotation?: number;
 }
 
 export interface CanvasSnapshotInlineTextBox {
@@ -116,6 +120,8 @@ export interface CanvasSnapshotInlineTextBox {
   top: number;
   width: number;
   height: number;
+  /** Shape rotation in degrees, when rotated. */
+  rotation?: number;
 }
 
 export interface CanvasSnapshotPage {
@@ -179,7 +185,7 @@ function collectInlineImagesFromLines(options: {
     fragments: Array<{
       startOffset: number;
       endOffset: number;
-      image?: { width: number; height: number };
+      image?: { width: number; height: number; rotation?: number };
     }>;
   }>;
   paragraphId: string;
@@ -223,6 +229,7 @@ function collectInlineImagesFromLines(options: {
           fragment.image.height,
         width: fragment.image.width,
         height: fragment.image.height,
+        rotation: fragment.image.rotation,
       });
     }
   }
@@ -237,7 +244,12 @@ function collectInlineTextBoxesFromLines(options: {
     fragments: Array<{
       startOffset: number;
       endOffset: number;
-      textBox?: { width: number; height: number; floating?: unknown };
+      textBox?: {
+        width: number;
+        height: number;
+        rotation?: number;
+        floating?: unknown;
+      };
     }>;
   }>;
   paragraphId: string;
@@ -283,6 +295,7 @@ function collectInlineTextBoxesFromLines(options: {
         top: options.lineTopOffset + line.top + line.height - height,
         width: fragment.textBox.width,
         height,
+        rotation: fragment.textBox.rotation,
       });
     }
   }
@@ -300,6 +313,7 @@ function collectFloatingTextBoxesFromLines(options: {
       textBox?: {
         width: number;
         height: number;
+        rotation?: number;
         floating?: {
           positionH?: {
             relativeFrom?: string;
@@ -390,6 +404,7 @@ function collectFloatingTextBoxesFromLines(options: {
         width: textBox.width,
         // Match the painter's auto-fit height so the overlay tracks the box.
         height: options.resolveHeight(textBox as unknown as EditorTextBoxData),
+        rotation: textBox.rotation,
       });
     }
   }
@@ -459,9 +474,7 @@ function buildVerticalCellSnapshotLines(options: {
       for (let i = 0; i < line.slots.length; i += 1) {
         const slot = line.slots[i]!;
         const next = line.slots[i + 1];
-        const advance = next
-          ? Math.max(1, next.left - slot.left)
-          : lastAdvance;
+        const advance = next ? Math.max(1, next.left - slot.left) : lastAdvance;
         lastAdvance = advance;
         const projected = projectRotatedSlot(
           box,

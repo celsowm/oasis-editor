@@ -8,7 +8,13 @@ import type {
 } from "../../../core/model.js";
 import { getAttributeValue, findElementDeep } from "../xmlHelpers.js";
 import type { ParseNestedBlocks } from "./types.js";
-import { EMU_PER_PT, emuToPx, parseOptionalInt, normalizeHexColor } from "./units.js";
+import {
+  EMU_PER_PT,
+  OOXML_ROTATION_UNITS,
+  emuToPx,
+  parseOptionalInt,
+  normalizeHexColor,
+} from "./units.js";
 
 const EMU_DEFAULT_TEXTBOX_SIZE_PX = 300;
 
@@ -147,6 +153,22 @@ function parseTextBoxShape(wsp: XmlElement): EditorTextBoxShape | undefined {
   return Object.keys(shape).length > 0 ? shape : undefined;
 }
 
+/** Read shape rotation from `wps:spPr/a:xfrm/@rot` (1/60000°), in degrees. */
+function parseTextBoxRotation(wsp: XmlElement): number | undefined {
+  const spPr = findElementDeep(wsp, "spPr");
+  if (!spPr) {
+    return undefined;
+  }
+  const xfrm = findElementDeep(spPr, "xfrm");
+  const rot = parseOptionalInt(xfrm?.getAttribute("rot"));
+  if (rot === undefined || rot === 0) {
+    return undefined;
+  }
+  return (
+    ((Math.round(rot / OOXML_ROTATION_UNITS) % 360) + 360) % 360 || undefined
+  );
+}
+
 function parseTextBoxBody(wsp: XmlElement): EditorTextBoxBody | undefined {
   const bodyPr = findElementDeep(wsp, "bodyPr");
   if (!bodyPr) {
@@ -208,12 +230,14 @@ export async function parseTextBox(
   const blocks = parseNestedBlocks ? await parseNestedBlocks(txbxContent) : [];
   const shape = parseTextBoxShape(wsp);
   const body = parseTextBoxBody(wsp);
+  const rotation = parseTextBoxRotation(wsp);
 
   return {
     width,
     height,
     blocks,
     ...(floating ? { floating } : {}),
+    ...(rotation !== undefined ? { rotation } : {}),
     ...(name ? { name } : {}),
     ...(alt ? { alt } : {}),
     ...(shape ? { shape } : {}),

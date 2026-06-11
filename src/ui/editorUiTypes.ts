@@ -23,6 +23,8 @@ export interface SelectedImageBox {
   top: number;
   width: number;
   height: number;
+  /** Shape rotation in degrees (0 when not rotated). */
+  rotation: number;
 }
 
 export interface SelectedTextBoxBox {
@@ -33,6 +35,8 @@ export interface SelectedTextBoxBox {
   top: number;
   width: number;
   height: number;
+  /** Shape rotation in degrees (0 when not rotated). */
+  rotation: number;
   /** True when the text box is a floating (anchored) drawing. */
   floating: boolean;
 }

@@ -114,6 +114,16 @@ export interface OasisEditorEditorSurfaceHandlers {
     direction: ResizeHandleDirection,
     event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
+  onImageRotateHandleMouseDown: (
+    paragraphId: string,
+    paragraphOffset: number,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ) => void;
+  onTextBoxRotateHandleMouseDown: (
+    paragraphId: string,
+    paragraphOffset: number,
+    event: MouseEvent & { currentTarget: HTMLElement },
+  ) => void;
   onTableDragHandleMouseDown: (tableId: string, event: MouseEvent) => void;
   onRevisionMouseEnter: (revisionId: string, event: MouseEvent) => void;
   onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
@@ -341,6 +351,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
             box={selectedImage}
             readOnly={Boolean(layout().readOnly)}
             variantClass="oasis-editor-image-selection-overlay"
+            rotation={() => selectedImage()?.rotation ?? 0}
             onResizeStart={(direction, event) => {
               const image = selectedImage();
               if (!image) return;
@@ -350,6 +361,15 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
                 image.paragraphId,
                 image.startOffset,
                 direction,
+                event,
+              );
+            }}
+            onRotateStart={(event) => {
+              const image = selectedImage();
+              if (!image) return;
+              surfaceHandlers().onImageRotateHandleMouseDown(
+                image.paragraphId,
+                image.startOffset,
                 event,
               );
             }}
@@ -368,6 +388,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
             box={selectedTextBox}
             readOnly={Boolean(layout().readOnly)}
             variantClass="oasis-editor-textbox-selection-overlay"
+            rotation={() => selectedTextBox()?.rotation ?? 0}
             onResizeStart={(direction, event) => {
               const textBox = selectedTextBox();
               if (!textBox) return;
@@ -377,6 +398,15 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
                 textBox.paragraphId,
                 textBox.startOffset,
                 direction,
+                event,
+              );
+            }}
+            onRotateStart={(event) => {
+              const textBox = selectedTextBox();
+              if (!textBox) return;
+              surfaceHandlers().onTextBoxRotateHandleMouseDown(
+                textBox.paragraphId,
+                textBox.startOffset,
                 event,
               );
             }}

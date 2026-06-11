@@ -112,7 +112,8 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
       createEditorDocument([paragraph]),
     );
     const archive = await JSZip.loadAsync(buffer);
-    const xml = (await archive.file("word/document.xml")?.async("string")) ?? "";
+    const xml =
+      (await archive.file("word/document.xml")?.async("string")) ?? "";
 
     // wp:anchor wrapper with the original offset values.
     expect(xml).toContain('distL="114300"');
@@ -194,15 +195,54 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
     expect(innerText.match(/insidebox/g)?.length ?? 0).toBe(1);
   });
 
+  it("serializes and round-trips text box rotation (wps:spPr/a:xfrm/@rot)", async () => {
+    const textBoxRun = createEditorRun("￼");
+    textBoxRun.textBox = makeTextBox({
+      width: 200,
+      height: 100,
+      rotation: 45,
+      blocks: [
+        {
+          id: "p1",
+          type: "paragraph",
+          runs: [{ id: "r1", text: "rotated box" }],
+        },
+      ],
+      shape: { preset: "rect", fill: "#FFFFFF" },
+    });
+
+    const paragraph = createEditorParagraph("");
+    paragraph.runs = [textBoxRun];
+
+    const buffer = await exportEditorDocumentToDocx(
+      createEditorDocument([paragraph]),
+    );
+    const archive = await JSZip.loadAsync(buffer);
+    const xml =
+      (await archive.file("word/document.xml")?.async("string")) ?? "";
+
+    // 45° * 60000 = 2700000, written on the shape transform (not bodyPr).
+    expect(xml).toContain('<a:xfrm rot="2700000">');
+
+    const doc2 = await importDocxToEditorDocument(buffer);
+    const reimported = findTextBoxRun(getDocumentParagraphs(doc2));
+    expect(reimported?.textBox?.rotation).toBe(45);
+  });
+
   it("round-trips the real caixa_texto.docx fixture", async () => {
     const original = await loadRealCaixaTextoDocx();
     const doc1 = await importDocxToEditorDocument(original);
     const paragraphs1 = getDocumentParagraphs(doc1);
     const textBoxRun1 = findTextBoxRun(paragraphs1);
-    expect(textBoxRun1, "real fixture must contain a text box run").toBeDefined();
+    expect(
+      textBoxRun1,
+      "real fixture must contain a text box run",
+    ).toBeDefined();
     expect(textBoxRun1!.text).toBe("\uFFFC");
-    const inner1 = (textBoxRun1!.textBox!.blocks[0]! as EditorParagraphNode)
-      .runs.map((r) => r.text)
+    const inner1 = (
+      textBoxRun1!.textBox!.blocks[0]! as EditorParagraphNode
+    ).runs
+      .map((r) => r.text)
       .join("");
     expect(inner1).toBe("insidebox");
     // The sibling body text "normaltext" must survive the import.
@@ -215,8 +255,10 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
     const textBoxRun2 = findTextBoxRun(paragraphs2);
     expect(textBoxRun2).toBeDefined();
     expect(textBoxRun2!.text).toBe("\uFFFC");
-    const inner2 = (textBoxRun2!.textBox!.blocks[0]! as EditorParagraphNode)
-      .runs.map((r) => r.text)
+    const inner2 = (
+      textBoxRun2!.textBox!.blocks[0]! as EditorParagraphNode
+    ).runs
+      .map((r) => r.text)
       .join("");
     expect(inner2).toBe("insidebox");
     expect(findRunWithText(paragraphs2, "normaltext")).toBeDefined();

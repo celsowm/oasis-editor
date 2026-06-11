@@ -22,6 +22,8 @@ export interface SelectedImageSelectionBox {
   top: number;
   width: number;
   height: number;
+  /** Shape rotation in degrees (0 when not rotated). */
+  rotation: number;
 }
 
 export interface SelectedTextBoxSelectionBox {
@@ -32,6 +34,8 @@ export interface SelectedTextBoxSelectionBox {
   top: number;
   width: number;
   height: number;
+  /** Shape rotation in degrees (0 when not rotated). */
+  rotation: number;
   /** True when the selected text box is a floating (anchored) drawing. */
   floating: boolean;
 }
@@ -189,6 +193,7 @@ export function computeCanvasSelectionGeometry(
         top: selectedImage.top - surfaceRect.top,
         width: selectedImage.width,
         height: selectedImage.height,
+        rotation: selectedImage.rotation ?? 0,
       };
     }
 
@@ -218,6 +223,7 @@ export function computeCanvasSelectionGeometry(
           top: selectedTextBox.top - surfaceRect.top,
           width: selectedTextBox.width,
           height: selectedTextBox.height,
+          rotation: selectedTextBox.rotation ?? 0,
           floating: Boolean(selectedFloating),
         };
       }

@@ -388,6 +388,7 @@ describe("canvas selection geometry", () => {
       top: 220,
       width: 140,
       height: 80,
+      rotation: 0,
     });
   });
 
@@ -458,6 +459,7 @@ describe("canvas selection geometry", () => {
       top: 240,
       width: 160,
       height: 90,
+      rotation: 0,
       floating: true,
     });
     expect(geometry.selectionBoxes).toEqual([]);

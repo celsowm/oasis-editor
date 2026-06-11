@@ -17,6 +17,8 @@ export interface ResizeHandlesOverlayProps {
   readOnly: boolean;
   /** Variant class appended to the shared overlay class (image vs text box). */
   variantClass: string;
+  /** Current rotation in degrees, applied as a CSS transform on the overlay. */
+  rotation?: () => number;
   onResizeStart: (
     direction: ResizeHandleDirection,
     event: MouseEvent & { currentTarget: HTMLElement },
@@ -25,6 +27,8 @@ export interface ResizeHandlesOverlayProps {
   onBodyMouseDown?: (
     event: MouseEvent & { currentTarget: HTMLElement },
   ) => void;
+  /** Optional handler for pressing the rotation knob. */
+  onRotateStart?: (event: MouseEvent & { currentTarget: HTMLElement }) => void;
 }
 
 /**
@@ -43,6 +47,10 @@ export function ResizeHandlesOverlay(props: ResizeHandlesOverlayProps) {
         top: `${props.box()?.top ?? 0}px`,
         width: `${props.box()?.width ?? 0}px`,
         height: `${props.box()?.height ?? 0}px`,
+        transform: props.rotation?.()
+          ? `rotate(${props.rotation()}deg)`
+          : undefined,
+        "transform-origin": "center",
         "pointer-events": !props.readOnly && props.box() ? "auto" : "none",
       }}
       onMouseDown={(event) => {
@@ -76,6 +84,24 @@ export function ResizeHandlesOverlay(props: ResizeHandlesOverlayProps) {
             />
           )}
         </For>
+        <Show when={props.onRotateStart}>
+          <button
+            aria-hidden="true"
+            class="oasis-editor-rotate-handle"
+            tabIndex={-1}
+            type="button"
+            onMouseDown={(event) => {
+              if (!props.box()) {
+                return;
+              }
+              event.preventDefault();
+              event.stopPropagation();
+              props.onRotateStart?.(
+                event as MouseEvent & { currentTarget: HTMLElement },
+              );
+            }}
+          />
+        </Show>
       </Show>
     </div>
   );

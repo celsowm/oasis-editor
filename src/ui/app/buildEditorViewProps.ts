@@ -62,6 +62,8 @@ export interface EditorViewPropsContext {
   handleImageMouseDown: OasisEditorEditorSurfaceHandlers["onImageMouseDown"];
   handleImageResizeHandleMouseDown: OasisEditorEditorSurfaceHandlers["onImageResizeHandleMouseDown"];
   handleTextBoxResizeHandleMouseDown: OasisEditorEditorSurfaceHandlers["onTextBoxResizeHandleMouseDown"];
+  handleImageRotateHandleMouseDown: OasisEditorEditorSurfaceHandlers["onImageRotateHandleMouseDown"];
+  handleTextBoxRotateHandleMouseDown: OasisEditorEditorSurfaceHandlers["onTextBoxRotateHandleMouseDown"];
   handleEditorContextMenu: (event: MouseEvent) => void;
   // input handlers
   textInput: ReturnType<typeof createEditorTextInput>;
@@ -139,6 +141,8 @@ export function buildEditorViewProps(
     onImageMouseDown: ctx.handleImageMouseDown,
     onImageResizeHandleMouseDown: ctx.handleImageResizeHandleMouseDown,
     onTextBoxResizeHandleMouseDown: ctx.handleTextBoxResizeHandleMouseDown,
+    onImageRotateHandleMouseDown: ctx.handleImageRotateHandleMouseDown,
+    onTextBoxRotateHandleMouseDown: ctx.handleTextBoxRotateHandleMouseDown,
     onTableDragHandleMouseDown: ctx.tableDrag.handleMouseDown,
     onRevisionMouseEnter: ctx.revisionController.handleRevisionMouseEnter,
     onRevisionMouseLeave: ctx.revisionController.handleRevisionMouseLeave,

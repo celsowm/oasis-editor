@@ -597,6 +597,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     handleImageResizeHandleMouseDown: imageOps.handleImageResizeHandleMouseDown,
     handleTextBoxResizeHandleMouseDown:
       textBoxOps.handleTextBoxResizeHandleMouseDown,
+    handleImageRotateHandleMouseDown: imageOps.handleImageRotateHandleMouseDown,
+    handleTextBoxRotateHandleMouseDown:
+      textBoxOps.handleTextBoxRotateHandleMouseDown,
     handleEditorContextMenu,
     textInput,
     setFocused,

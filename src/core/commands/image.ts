@@ -119,6 +119,59 @@ export function resizeSelectedImage(
   );
 }
 
+/** Normalize an angle to the [0, 360) range; `0` collapses to `undefined`. */
+function normalizeRotation(rotation: number): number | undefined {
+  if (!Number.isFinite(rotation)) {
+    return undefined;
+  }
+  const normalized = ((Math.round(rotation) % 360) + 360) % 360;
+  return normalized === 0 ? undefined : normalized;
+}
+
+export function rotateSelectedImage(
+  state: EditorState,
+  rotation: number,
+): EditorState {
+  const selectedImage = getSelectedImageRun(state);
+  if (!selectedImage) {
+    return state;
+  }
+
+  const nextRotation = normalizeRotation(rotation);
+  const paragraphs = getParagraphs(state);
+  const { paragraphIndex, run: targetRun } = selectedImage;
+
+  const nextParagraphs = paragraphs.map((candidate, candidateIndex) => {
+    if (candidateIndex !== paragraphIndex) {
+      return cloneParagraph(candidate);
+    }
+
+    return {
+      ...cloneParagraph(candidate),
+      runs: candidate.runs.map((run) =>
+        run.id === targetRun.id && run.image
+          ? {
+              ...run,
+              image: {
+                ...run.image,
+                rotation: nextRotation,
+              },
+            }
+          : cloneRun(run),
+      ),
+    };
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
+  );
+}
+
 export function getSelectedImageAlt(state: EditorState): string | null {
   const selectedImage = getSelectedImageRun(state);
   if (!selectedImage?.run.image) {

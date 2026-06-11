@@ -309,6 +309,36 @@
   cursor: ew-resize;
 }
 
+/* Rotation knob: sits above the top-center edge, connected by a short stem. */
+.oasis-editor-rotate-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  top: -28px;
+  left: calc(50% - 7px);
+  border: 2px solid var(--oasis-paper);
+  border-radius: 999px;
+  background: var(--oasis-caret-color);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.oasis-editor-rotate-handle:active {
+  cursor: grabbing;
+}
+
+.oasis-editor-rotate-handle::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: calc(50% - 1px);
+  width: 2px;
+  height: 14px;
+  background: rgba(37, 99, 235, 0.9);
+}
+
 .oasis-editor-input {
   position: absolute;
   width: 1.4ch;
