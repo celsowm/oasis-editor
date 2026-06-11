@@ -1,9 +1,14 @@
 import type {
   EditorImageRunData,
   EditorLayoutLine,
+  EditorPageSettings,
   EditorParagraphNode,
   EditorState,
 } from "../../core/model.js";
+import {
+  getImageFloatingGeometry,
+  resolveFloatingObjectRect,
+} from "../../layoutProjection/floatingObjects.js";
 import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
@@ -281,6 +286,76 @@ function clamp01(value: number): number {
   return value > 1 ? 1 : value;
 }
 
+/**
+ * Paints the floating images anchored within a paragraph, mirroring
+ * `drawFloatingTextBoxesForParagraph`. Split into `behind`/`front` layers so a
+ * `behindDoc` image renders under the text and others render over it.
+ */
+export function drawFloatingImagesForParagraph(options: {
+  ctx: CanvasRenderingContext2D;
+  paragraphLines: EditorLayoutLine[];
+  state: EditorState;
+  pageSettings: EditorPageSettings;
+  contentLeft: number;
+  contentTop: number;
+  contentWidth: number;
+  paragraphTop: number;
+  onUpdate: () => void;
+  layer: "behind" | "front";
+}): void {
+  const {
+    ctx,
+    paragraphLines,
+    state,
+    pageSettings,
+    contentLeft,
+    contentTop,
+    contentWidth,
+    paragraphTop,
+    onUpdate,
+    layer,
+  } = options;
+
+  for (const line of paragraphLines) {
+    const slotByOffset = new Map(
+      line.slots.map((slot) => [slot.offset, slot] as const),
+    );
+
+    for (const fragment of line.fragments) {
+      const image = fragment.image;
+      if (!image?.floating) {
+        continue;
+      }
+
+      const isBehind = Boolean(image.floating.behindDoc);
+      if ((layer === "behind") !== isBehind) {
+        continue;
+      }
+
+      const slot = slotByOffset.get(fragment.startOffset);
+      const anchorLeft = contentLeft + (slot?.left ?? 0);
+      const lineTop = paragraphTop + line.top;
+
+      const rect = resolveFloatingObjectRect({
+        object: getImageFloatingGeometry(image),
+        pageSettings,
+        contentLeft,
+        contentTop,
+        contentWidth,
+        paragraphTop,
+        lineTop,
+        anchorLeft,
+      });
+
+      const src = resolveImageSrc(state.document, image.src);
+      const img = getCachedCanvasImage(src, onUpdate);
+      if (img.complete && img.naturalWidth > 0) {
+        drawImageFragment(ctx, img, image, rect.x, rect.y);
+      }
+    }
+  }
+}
+
 export function drawParagraph(
   ctx: CanvasRenderingContext2D,
   paragraph: EditorParagraphNode,
@@ -358,7 +433,7 @@ export function drawParagraph(
           styles.highlight,
         );
       }
-      if (fragment.image) {
+      if (fragment.image && !fragment.image.floating) {
         const slot = slotByOffset.get(fragment.startOffset);
         if (slot) {
           const src = resolveImageSrc(state.document, fragment.image.src);

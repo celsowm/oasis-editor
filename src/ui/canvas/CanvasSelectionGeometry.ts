@@ -178,12 +178,17 @@ export function computeCanvasSelectionGeometry(
     normalized.startIndex === normalized.endIndex &&
     normalized.endParagraphOffset - normalized.startParagraphOffset === 1
   ) {
-    const selectedImage = snapshot.inlineImages.find(
-      (image) =>
-        image.paragraphId === normalized.start.paragraphId &&
-        image.startOffset === normalized.startParagraphOffset &&
-        image.endOffset === normalized.endParagraphOffset,
-    );
+    const matchesImage = (image: {
+      paragraphId: string;
+      startOffset: number;
+      endOffset: number;
+    }) =>
+      image.paragraphId === normalized.start.paragraphId &&
+      image.startOffset === normalized.startParagraphOffset &&
+      image.endOffset === normalized.endParagraphOffset;
+    const selectedImage =
+      snapshot.inlineImages.find(matchesImage) ??
+      snapshot.floatingImages.find(matchesImage);
     if (selectedImage) {
       selectedImageBox = {
         paragraphId: selectedImage.paragraphId,

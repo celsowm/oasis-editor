@@ -4,13 +4,19 @@ import {
   createEditorDocument,
   createEditorParagraph,
   createEditorParagraphFromRuns,
+  createEditorStateFromDocument,
   createEditorTable,
   createEditorTableCell,
   createEditorTableRow,
 } from "../../core/editorState.js";
 import { exportEditorDocumentToDocx } from "../../export/docx/exportEditorDocumentToDocx.js";
 import { importDocxToEditorDocument } from "../../import/docx/importDocxToEditorDocument.js";
-import { getDocumentParagraphs } from "../../core/model.js";
+import { setSelectedImageWrapPreset } from "../../core/commands/image.js";
+import type { WrapPreset } from "../../core/commands/floatingLayout.js";
+import {
+  getDocumentParagraphs,
+  paragraphOffsetToPosition,
+} from "../../core/model.js";
 import type { EditorDocument } from "../../core/model.js";
 
 async function readDocumentXml(buffer: ArrayBuffer): Promise<string> {
@@ -378,6 +384,71 @@ describe("DOCX export", () => {
     expect(imageRun.image?.rotation).toBe(90);
     expect(imageRun.image?.flipV).toBe(true);
     expect(imageRun.image?.flipH).toBeUndefined();
+  });
+
+  it("exports the wrap element for each Layout Options preset", async () => {
+    const pngDataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
+    const cases: Array<{ preset: WrapPreset; expect: string }> = [
+      { preset: "square", expect: "<wp:wrapSquare" },
+      { preset: "tight", expect: "<wp:wrapTight" },
+      { preset: "through", expect: "<wp:wrapThrough" },
+      { preset: "topAndBottom", expect: "<wp:wrapTopAndBottom" },
+      { preset: "behind", expect: 'behindDoc="1"' },
+      { preset: "front", expect: "<wp:wrapNone" },
+    ];
+
+    for (const testCase of cases) {
+      const paragraph = createEditorParagraphFromRuns([
+        { text: "￼", image: { src: pngDataUrl, width: 100, height: 50 } },
+        { text: "around the image" },
+      ]);
+      let state = createEditorStateFromDocument(
+        createEditorDocument([paragraph]),
+      );
+      state = {
+        ...state,
+        selection: {
+          anchor: paragraphOffsetToPosition(paragraph, 0),
+          focus: paragraphOffsetToPosition(paragraph, 1),
+        },
+      };
+      const next = setSelectedImageWrapPreset(state, testCase.preset);
+      const xml = await readDocumentXml(
+        await exportEditorDocumentToDocx(next.document),
+      );
+      expect(xml, `preset ${testCase.preset}`).toContain("<wp:anchor");
+      expect(xml, `preset ${testCase.preset}`).toContain(testCase.expect);
+    }
+  });
+
+  it("round-trips a wrapped (square) image applied via the command", async () => {
+    const pngDataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const paragraph = createEditorParagraphFromRuns([
+      { text: "￼", image: { src: pngDataUrl, width: 100, height: 50 } },
+    ]);
+    let state = createEditorStateFromDocument(
+      createEditorDocument([paragraph]),
+    );
+    state = {
+      ...state,
+      selection: {
+        anchor: paragraphOffsetToPosition(paragraph, 0),
+        focus: paragraphOffsetToPosition(paragraph, 1),
+      },
+    };
+    const next = setSelectedImageWrapPreset(state, "square");
+
+    const buffer = await exportEditorDocumentToDocx(next.document);
+    const document = await importDocxToEditorDocument(buffer);
+    const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
+      (r) => r.image,
+    )!;
+
+    expect(imageRun.image?.floating?.wrap).toBe("square");
+    expect(imageRun.image?.floating?.behindDoc).toBeFalsy();
   });
 
   it("serializes and round-trips tile fill mode (a:tile)", async () => {

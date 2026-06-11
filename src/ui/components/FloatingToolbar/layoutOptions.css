@@ -1,0 +1,135 @@
+.oasis-editor-layout-options-anchor {
+  position: fixed;
+  z-index: 2147483600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+  color: #444746;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.oasis-editor-layout-options-anchor:hover {
+  background: #f1f5f9;
+}
+
+.oasis-editor-layout-options-anchor svg {
+  width: 18px;
+  height: 18px;
+}
+
+.oasis-editor-layout-options-popup {
+  position: fixed;
+  z-index: 2147483601;
+  width: 248px;
+  padding: 10px 12px 12px;
+  background: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 10px;
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, 0.18),
+    0 2px 6px rgba(15, 23, 42, 0.08);
+  pointer-events: auto;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  animation: oasis-editor-floating-toolbar-fade 0.12s ease-out;
+}
+
+.oasis-editor-layout-options-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.oasis-editor-layout-options-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #5f6368;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.oasis-editor-layout-options-close {
+  border: none;
+  background: transparent;
+  color: #5f6368;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.oasis-editor-layout-options-close:hover {
+  background: #f1f5f9;
+}
+
+.oasis-editor-layout-options-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #5f6368;
+  margin: 8px 0 4px;
+}
+
+.oasis-editor-layout-options-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.oasis-editor-layout-options-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #3c4043;
+  cursor: pointer;
+}
+
+.oasis-editor-layout-options-cell:hover {
+  background: #f1f5f9;
+}
+
+.oasis-editor-layout-options-cell.oasis-editor-layout-options-cell-active {
+  border-color: #1a73e8;
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+
+.oasis-editor-layout-options-cell svg {
+  width: 34px;
+  height: 28px;
+}
+
+.oasis-editor-layout-options-radios {
+  margin-top: 10px;
+  border-top: 1px solid #ececec;
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.oasis-editor-layout-options-radio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #3c4043;
+  cursor: pointer;
+}
+
+.oasis-editor-layout-options-radio[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: default;
+}

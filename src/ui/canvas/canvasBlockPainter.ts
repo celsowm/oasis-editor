@@ -13,6 +13,7 @@ import {
   getParagraphBorderInsets,
 } from "../../layoutProjection/index.js";
 import {
+  drawFloatingImagesForParagraph,
   drawParagraph,
   resolveCanvasTextRenderMetrics,
 } from "./canvasParagraphPainter.js";
@@ -135,6 +136,18 @@ export function renderBlockList(
           onUpdate,
           layer: "behind",
         });
+        drawFloatingImagesForParagraph({
+          ctx,
+          paragraphLines: block.layout.lines,
+          state,
+          pageSettings,
+          contentLeft: originX,
+          contentTop: originY,
+          contentWidth,
+          paragraphTop: textTop,
+          onUpdate,
+          layer: "behind",
+        });
       }
 
       drawParagraph(
@@ -169,6 +182,18 @@ export function renderBlockList(
           contentWidth,
           paragraphTop: textTop,
           pageIndex,
+          onUpdate,
+          layer: "front",
+        });
+        drawFloatingImagesForParagraph({
+          ctx,
+          paragraphLines: block.layout.lines,
+          state,
+          pageSettings,
+          contentLeft: originX,
+          contentTop: originY,
+          contentWidth,
+          paragraphTop: textTop,
           onUpdate,
           layer: "front",
         });

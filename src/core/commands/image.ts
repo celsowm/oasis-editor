@@ -9,6 +9,13 @@ import {
   type SelectedObjectRun,
 } from "./selectedObjectRun.js";
 import {
+  applyMoveWithText,
+  floatingToWrapPreset,
+  isFloatingFixedPosition,
+  wrapPresetToFloating,
+  type WrapPreset,
+} from "./floatingLayout.js";
+import {
   getParagraphLength,
   getParagraphs,
   paragraphOffsetToPosition,
@@ -169,6 +176,87 @@ export function rotateSelectedImage(
       nextParagraphs,
       normalizeSelection(state),
     ),
+  );
+}
+
+export function getSelectedImageWrapPreset(
+  state: EditorState,
+): WrapPreset | null {
+  const selectedImage = getSelectedImageRun(state);
+  if (!selectedImage?.run.image) {
+    return null;
+  }
+  return floatingToWrapPreset(selectedImage.run.image.floating);
+}
+
+export function isSelectedImageFixedPosition(state: EditorState): boolean {
+  const selectedImage = getSelectedImageRun(state);
+  return isFloatingFixedPosition(selectedImage?.run.image?.floating);
+}
+
+/** Patches the selected image's `floating` field (or removes it for inline). */
+function patchSelectedImageFloating(
+  state: EditorState,
+  next: (
+    floating: EditorImageRunData["floating"],
+  ) => EditorImageRunData["floating"],
+): EditorState {
+  const selectedImage = getSelectedImageRun(state);
+  if (!selectedImage?.run.image) {
+    return state;
+  }
+
+  const paragraphs = getParagraphs(state);
+  const { paragraphIndex, run: targetRun } = selectedImage;
+
+  const nextParagraphs = paragraphs.map((candidate, candidateIndex) => {
+    if (candidateIndex !== paragraphIndex) {
+      return cloneParagraph(candidate);
+    }
+
+    return {
+      ...cloneParagraph(candidate),
+      runs: candidate.runs.map((run) => {
+        if (run.id !== targetRun.id || !run.image) {
+          return cloneRun(run);
+        }
+        const floating = next(run.image.floating);
+        const image: EditorImageRunData = { ...run.image };
+        if (floating) {
+          image.floating = floating;
+        } else {
+          delete image.floating;
+        }
+        return { ...run, image };
+      }),
+    };
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
+  );
+}
+
+export function setSelectedImageWrapPreset(
+  state: EditorState,
+  preset: WrapPreset,
+): EditorState {
+  return patchSelectedImageFloating(state, (floating) =>
+    wrapPresetToFloating(floating, preset),
+  );
+}
+
+export function setSelectedImageFixedPosition(
+  state: EditorState,
+  fixed: boolean,
+): EditorState {
+  return patchSelectedImageFloating(state, (floating) =>
+    floating ? applyMoveWithText(floating, fixed) : floating,
   );
 }
 

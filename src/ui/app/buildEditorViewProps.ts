@@ -2,6 +2,7 @@ import type { Accessor, JSX } from "solid-js";
 import type {
   CaretBox,
   InputBox,
+  LayoutOptionsOverlay,
   RevisionBox,
   SelectedImageBox,
   SelectedTextBoxBox,
@@ -41,6 +42,7 @@ export interface EditorViewPropsContext {
   selectionBoxes: Accessor<SelectionBox[]>;
   selectedImageBox: Accessor<SelectedImageBox | null>;
   selectedTextBoxBox: Accessor<SelectedTextBoxBox | null>;
+  layoutOptions: LayoutOptionsOverlay;
   caretBox: Accessor<CaretBox>;
   inputBox: Accessor<InputBox>;
   hoveredRevision: Accessor<RevisionBox | null>;
@@ -96,6 +98,7 @@ export function buildEditorViewProps(
     selectionBoxes: ctx.selectionBoxes,
     selectedImageBox: ctx.selectedImageBox,
     selectedTextBoxBox: ctx.selectedTextBoxBox,
+    layoutOptions: ctx.layoutOptions,
     caretBox: ctx.caretBox,
     inputBox: ctx.inputBox,
     hoveredRevision: ctx.hoveredRevision,

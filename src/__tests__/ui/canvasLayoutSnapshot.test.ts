@@ -259,6 +259,42 @@ describe("buildCanvasLayoutSnapshot", () => {
     expect(floating!.height).toBe(expectedHeight);
   });
 
+  it("collects a floating image into floatingImages (not inlineImages)", () => {
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "￼",
+        image: {
+          src: "asset:1",
+          width: 120,
+          height: 90,
+          floating: {
+            type: "floating",
+            wrap: "square",
+            behindDoc: true,
+            positionH: { relativeFrom: "column", offset: 0 },
+            positionV: { relativeFrom: "paragraph", offset: 0 },
+          },
+        },
+      },
+      { text: "wrapped text" },
+    ]);
+    const document = createEditorDocument([paragraph]);
+    const state = createEditorStateFromDocument(document);
+
+    const { surface, page } = createSurfaceWithSinglePage(0);
+    surface.getBoundingClientRect = () => createRect(0, 0, 940, 1200);
+    page.getBoundingClientRect = () => createRect(100, 200, 816, 1056);
+
+    const snapshot = buildCanvasLayoutSnapshot({ surface, state });
+    expect(snapshot).not.toBeNull();
+    expect(snapshot!.inlineImages).toHaveLength(0);
+    expect(snapshot!.floatingImages).toHaveLength(1);
+    const floating = snapshot!.floatingImages[0]!;
+    expect(floating.width).toBe(120);
+    expect(floating.height).toBe(90);
+    expect(floating.behindDoc).toBe(true);
+  });
+
   it("uses the paginated table segment for snapshot geometry instead of the full table", () => {
     const rows = Array.from({ length: 24 }, (_, index) =>
       createEditorTableRow([

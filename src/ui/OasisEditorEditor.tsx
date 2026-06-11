@@ -15,6 +15,7 @@ import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { RevisionOverlay } from "./components/RevisionOverlay.js";
 import { FloatingTableToolbar } from "./components/FloatingToolbar/FloatingTableToolbar.js";
+import { FloatingLayoutOptions } from "./components/FloatingToolbar/FloatingLayoutOptions.js";
 import type { ToolbarHost } from "./components/Toolbar/state/createToolbarApi.js";
 import { t } from "../i18n/index.js";
 import {
@@ -29,6 +30,7 @@ import {
 import type {
   CaretBox,
   InputBox,
+  LayoutOptionsOverlay,
   RevisionBox,
   SelectedImageBox,
   SelectedTextBoxBox,
@@ -75,6 +77,7 @@ export interface OasisEditorEditorOverlayProps {
   toolbarHost?: () => ToolbarHost;
   persistenceStatus?: () => string;
   showFloatingTableToolbar?: Accessor<boolean>;
+  layoutOptions?: LayoutOptionsOverlay;
 }
 
 export interface OasisEditorEditorRefProps {
@@ -421,6 +424,17 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
               visible={overlays().showFloatingTableToolbar!}
               surfaceRef={() => scrollContentRef}
             />
+          </Show>
+
+          <Show when={overlays().layoutOptions}>
+            {(layoutOptions) => (
+              <FloatingLayoutOptions
+                box={() => selectedImage() ?? selectedTextBox()}
+                layoutOptions={layoutOptions()}
+                surfaceRef={() => scrollContentRef}
+                readOnly={Boolean(layout().readOnly)}
+              />
+            )}
           </Show>
 
           <Show when={overlays().showCaret()}>

@@ -165,6 +165,20 @@ export const en = {
   "table.cellBgColorPrompt": "Cell Background Color:",
   "table.cellWidthPrompt": "Cell Width (e.g. 50% or 200pt):",
 
+  // Layout Options (image / text box text wrapping)
+  "layoutOptions.title": "Layout Options",
+  "layoutOptions.inLineGroup": "In Line with Text",
+  "layoutOptions.wrapGroup": "With Text Wrapping",
+  "layoutOptions.inline": "In Line with Text",
+  "layoutOptions.square": "Square",
+  "layoutOptions.tight": "Tight",
+  "layoutOptions.through": "Through",
+  "layoutOptions.topAndBottom": "Top and Bottom",
+  "layoutOptions.behind": "Behind Text",
+  "layoutOptions.front": "In Front of Text",
+  "layoutOptions.moveWithText": "Move with text",
+  "layoutOptions.fixPosition": "Fix position on page",
+
   // Generic
   "generic.close": "Close",
   "generic.cancel": "Cancel",

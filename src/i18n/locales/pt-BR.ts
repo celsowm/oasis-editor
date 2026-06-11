@@ -165,6 +165,20 @@ export const ptBR = {
   "table.cellBgColorPrompt": "Cor de Fundo da Célula:",
   "table.cellWidthPrompt": "Largura da Célula (ex: 50% ou 200pt):",
 
+  // Layout Options (disposição de texto de imagem / caixa de texto)
+  "layoutOptions.title": "Opções de Layout",
+  "layoutOptions.inLineGroup": "Alinhado com o Texto",
+  "layoutOptions.wrapGroup": "Com Disposição do Texto",
+  "layoutOptions.inline": "Alinhado com o Texto",
+  "layoutOptions.square": "Quadrado",
+  "layoutOptions.tight": "Comprimido",
+  "layoutOptions.through": "Através",
+  "layoutOptions.topAndBottom": "Acima e Abaixo",
+  "layoutOptions.behind": "Atrás do Texto",
+  "layoutOptions.front": "Em Frente ao Texto",
+  "layoutOptions.moveWithText": "Mover com o texto",
+  "layoutOptions.fixPosition": "Corrigir a posição na página",
+
   // Generic
   "generic.close": "Fechar",
   "generic.cancel": "Cancelar",

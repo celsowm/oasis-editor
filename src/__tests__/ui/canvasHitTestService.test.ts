@@ -84,6 +84,7 @@ function createSnapshotWithInlineImage(): {
       },
     ],
     floatingTextBoxes: [],
+    floatingImages: [],
     unsupportedRegions: [],
   } as unknown as CanvasLayoutSnapshot;
   snapshot.paragraphsById.set(paragraph.id, [snapshot.paragraphs[0]!]);
@@ -178,6 +179,7 @@ describe("canvas hit-test service footnote zone", () => {
       ],
       paragraphsById: new Map(),
       inlineImages: [],
+      floatingImages: [],
       inlineTextBoxes: [],
       floatingTextBoxes: [],
       unsupportedRegions: [],
@@ -250,6 +252,7 @@ describe("canvas hit-test service footnote zone", () => {
       ],
       paragraphsById: new Map(),
       inlineImages: [],
+      floatingImages: [],
       inlineTextBoxes: [],
       floatingTextBoxes: [],
       unsupportedRegions: [],
@@ -338,6 +341,7 @@ describe("canvas hit-test service floating text box", () => {
       ],
       paragraphsById: new Map(),
       inlineImages: [],
+      floatingImages: [],
       inlineTextBoxes: [],
       floatingTextBoxes: [
         {

@@ -12,6 +12,13 @@ import {
   getSelectedObjectRun,
   type SelectedObjectRun,
 } from "./selectedObjectRun.js";
+import {
+  applyMoveWithText,
+  floatingToWrapPreset,
+  isFloatingFixedPosition,
+  wrapPresetToFloating,
+  type WrapPreset,
+} from "./floatingLayout.js";
 
 /** EMU per CSS pixel (`wp:extent` and floating offsets are stored in EMU). */
 const EMU_PER_PX = 9525;
@@ -130,6 +137,86 @@ export function rotateSelectedTextBox(
       nextParagraphs,
       normalizeSelection(state),
     ),
+  );
+}
+
+export function getSelectedTextBoxWrapPreset(
+  state: EditorState,
+): WrapPreset | null {
+  const selected = getSelectedTextBoxRun(state);
+  if (!selected?.run.textBox) {
+    return null;
+  }
+  return floatingToWrapPreset(selected.run.textBox.floating);
+}
+
+export function isSelectedTextBoxFixedPosition(state: EditorState): boolean {
+  const selected = getSelectedTextBoxRun(state);
+  return isFloatingFixedPosition(selected?.run.textBox?.floating);
+}
+
+/** Patches the selected text box's `floating` field (or removes it for inline). */
+function patchSelectedTextBoxFloating(
+  state: EditorState,
+  next: (
+    floating: EditorTextBoxData["floating"],
+  ) => EditorTextBoxData["floating"],
+): EditorState {
+  const selected = getSelectedTextBoxRun(state);
+  if (!selected?.run.textBox) {
+    return state;
+  }
+
+  const { paragraphIndex, run: targetRun } = selected;
+  const paragraphs = getParagraphs(state);
+  const nextParagraphs = paragraphs.map((candidate, candidateIndex) => {
+    if (candidateIndex !== paragraphIndex) {
+      return cloneParagraph(candidate);
+    }
+
+    return {
+      ...cloneParagraph(candidate),
+      runs: candidate.runs.map((run) => {
+        if (run.id !== targetRun.id || !run.textBox) {
+          return cloneRun(run);
+        }
+        const floating = next(run.textBox.floating);
+        const textBox: EditorTextBoxData = { ...run.textBox };
+        if (floating) {
+          textBox.floating = floating;
+        } else {
+          delete textBox.floating;
+        }
+        return { ...run, textBox };
+      }),
+    };
+  });
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
+  );
+}
+
+export function setSelectedTextBoxWrapPreset(
+  state: EditorState,
+  preset: WrapPreset,
+): EditorState {
+  return patchSelectedTextBoxFloating(state, (floating) =>
+    wrapPresetToFloating(floating, preset),
+  );
+}
+
+export function setSelectedTextBoxFixedPosition(
+  state: EditorState,
+  fixed: boolean,
+): EditorState {
+  return patchSelectedTextBoxFloating(state, (floating) =>
+    floating ? applyMoveWithText(floating, fixed) : floating,
   );
 }
 

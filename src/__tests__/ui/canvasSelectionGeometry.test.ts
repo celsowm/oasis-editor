@@ -440,6 +440,7 @@ describe("canvas selection geometry", () => {
       paragraphs: [],
       paragraphsById: new Map(),
       inlineImages: [],
+      floatingImages: [],
       inlineTextBoxes: kind === "inline" ? [box] : [],
       floatingTextBoxes: kind === "floating" ? [box] : [],
       unsupportedRegions: [],

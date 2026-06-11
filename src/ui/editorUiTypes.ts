@@ -52,7 +52,23 @@ export interface RevisionBox {
 
 import type { Accessor } from "solid-js";
 import type { EditorState, EditorLayoutParagraph } from "../core/model.js";
+import type { WrapPreset } from "../core/commands/floatingLayout.js";
 import type { ResizeHandleDirection } from "./resizeGeometry.js";
+
+/**
+ * State and actions backing the Word-style "Layout Options" popup for the
+ * selected image or text box.
+ */
+export interface LayoutOptionsOverlay {
+  /** Which kind of object is currently selected (`null` when none qualifies). */
+  target: Accessor<"image" | "textBox" | null>;
+  /** Active wrap preset for the selected object (`null` when none). */
+  preset: Accessor<WrapPreset | null>;
+  /** True when the selected object is pinned to the page. */
+  fixedPosition: Accessor<boolean>;
+  setPreset: (preset: WrapPreset) => void;
+  setFixedPosition: (fixed: boolean) => void;
+}
 
 export interface EditorSurfaceProps {
   state: Accessor<EditorState>;

@@ -329,6 +329,21 @@ function resolveImageAtPoint(
   clientX: number,
   clientY: number,
 ): CanvasSnapshotInlineImage | null {
+  // Front floating images sit above the text, so they win clicks (top-most
+  // first). Behind-text images are skipped here so clicks fall through to the
+  // text painted on top of them.
+  for (let i = snapshot.floatingImages.length - 1; i >= 0; i -= 1) {
+    const image = snapshot.floatingImages[i]!;
+    if (image.pageIndex !== pageIndex || image.zone !== zone) {
+      continue;
+    }
+    if (image.behindDoc) {
+      continue;
+    }
+    if (isPointInsideRect(clientX, clientY, image)) {
+      return image;
+    }
+  }
   for (const image of snapshot.inlineImages) {
     if (image.pageIndex !== pageIndex || image.zone !== zone) {
       continue;

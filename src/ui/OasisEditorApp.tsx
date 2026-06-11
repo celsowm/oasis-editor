@@ -1,6 +1,19 @@
 import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { type BooleanStyleKey } from "./toolbarStyleState.js";
-import { getSelectedImageRun } from "../core/editorCommands.js";
+import {
+  getSelectedImageRun,
+  getSelectedImageWrapPreset,
+  getSelectedTextBoxRun,
+  getSelectedTextBoxWrapPreset,
+  isSelectedImageFixedPosition,
+  isSelectedTextBoxFixedPosition,
+  setSelectedImageFixedPosition,
+  setSelectedImageWrapPreset,
+  setSelectedTextBoxFixedPosition,
+  setSelectedTextBoxWrapPreset,
+} from "../core/editorCommands.js";
+import type { WrapPreset } from "../core/commands/floatingLayout.js";
+import type { LayoutOptionsOverlay } from "./editorUiTypes.js";
 import { createEditorStateFromDocument } from "../core/editorState.js";
 import { type EditorPosition, type EditorState } from "../core/model.js";
 import { isSelectionCollapsed } from "../core/selection.js";
@@ -233,6 +246,52 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   });
 
   const selectedImageRun = () => getSelectedImageRun(state);
+  const selectedTextBoxRun = () => getSelectedTextBoxRun(state);
+
+  const layoutOptionsTarget = (): "image" | "textBox" | null => {
+    if (selectedImageRun()) return "image";
+    if (selectedTextBoxRun()) return "textBox";
+    return null;
+  };
+
+  const applyLayoutOptionPatch = (
+    mergeKey: string,
+    apply: (current: EditorState, target: "image" | "textBox") => EditorState,
+  ) => {
+    const target = layoutOptionsTarget();
+    if (!target) return;
+    resetTransactionGrouping();
+    applyTransactionalState((current) => apply(current, target), { mergeKey });
+    focusInput();
+  };
+
+  const layoutOptionsOverlay: LayoutOptionsOverlay = {
+    target: layoutOptionsTarget,
+    preset: () => {
+      const target = layoutOptionsTarget();
+      if (target === "image") return getSelectedImageWrapPreset(state);
+      if (target === "textBox") return getSelectedTextBoxWrapPreset(state);
+      return null;
+    },
+    fixedPosition: () => {
+      const target = layoutOptionsTarget();
+      if (target === "image") return isSelectedImageFixedPosition(state);
+      if (target === "textBox") return isSelectedTextBoxFixedPosition(state);
+      return false;
+    },
+    setPreset: (preset: WrapPreset) =>
+      applyLayoutOptionPatch("layoutWrapPreset", (current, target) =>
+        target === "image"
+          ? setSelectedImageWrapPreset(current, preset)
+          : setSelectedTextBoxWrapPreset(current, preset),
+      ),
+    setFixedPosition: (fixed: boolean) =>
+      applyLayoutOptionPatch("layoutFixedPosition", (current, target) =>
+        target === "image"
+          ? setSelectedImageFixedPosition(current, fixed)
+          : setSelectedTextBoxFixedPosition(current, fixed),
+      ),
+  };
 
   const canvasHitResolver = createCanvasSurfaceHitResolver({
     state: () => state as EditorState,
@@ -578,6 +637,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     selectionBoxes,
     selectedImageBox,
     selectedTextBoxBox,
+    layoutOptions: layoutOptionsOverlay,
     caretBox,
     inputBox,
     hoveredRevision: revisionController.hoveredRevision,

@@ -106,6 +106,26 @@ export interface CanvasSnapshotFloatingTextBox {
   height: number;
   /** Shape rotation in degrees, when rotated. */
   rotation?: number;
+  /** True when the object is painted behind the text (`behindDoc`). */
+  behindDoc?: boolean;
+}
+
+export interface CanvasSnapshotFloatingImage {
+  paragraphId: string;
+  paragraphIndex: number;
+  zone: EditorEditingZone;
+  footnoteId?: string;
+  pageIndex: number;
+  startOffset: number;
+  endOffset: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  /** Shape rotation in degrees, when rotated. */
+  rotation?: number;
+  /** True when the object is painted behind the text (`behindDoc`). */
+  behindDoc?: boolean;
 }
 
 export interface CanvasSnapshotInlineTextBox {
@@ -143,6 +163,7 @@ export interface CanvasLayoutSnapshot {
   paragraphs: CanvasSnapshotParagraph[];
   paragraphsById: Map<string, CanvasSnapshotParagraph[]>;
   inlineImages: CanvasSnapshotInlineImage[];
+  floatingImages: CanvasSnapshotFloatingImage[];
   inlineTextBoxes: CanvasSnapshotInlineTextBox[];
   floatingTextBoxes: CanvasSnapshotFloatingTextBox[];
   unsupportedRegions: Array<{
@@ -185,7 +206,12 @@ function collectInlineImagesFromLines(options: {
     fragments: Array<{
       startOffset: number;
       endOffset: number;
-      image?: { width: number; height: number; rotation?: number };
+      image?: {
+        width: number;
+        height: number;
+        rotation?: number;
+        floating?: unknown;
+      };
     }>;
   }>;
   paragraphId: string;
@@ -199,7 +225,9 @@ function collectInlineImagesFromLines(options: {
   const inlineImages: CanvasSnapshotInlineImage[] = [];
   for (const line of options.lines) {
     for (const fragment of line.fragments) {
-      if (!fragment.image) {
+      // Floating images are tracked separately; here we only collect images
+      // that flow inline (occupy a slot in the line).
+      if (!fragment.image || fragment.image.floating) {
         continue;
       }
       const imageStartOffset = fragment.startOffset;
@@ -302,6 +330,145 @@ function collectInlineTextBoxesFromLines(options: {
   return inlineTextBoxes;
 }
 
+interface FloatingPositionInfo {
+  behindDoc?: boolean;
+  positionH?: { relativeFrom?: string; offset?: number; align?: string };
+  positionV?: { relativeFrom?: string; offset?: number; align?: string };
+}
+
+interface FloatingTopLeftOptions {
+  pageLeft: number;
+  pageTop: number;
+  contentLeft: number;
+  contentTop: number;
+  paragraphTop: number;
+  lineTopOffset: number;
+  lineLeftOffset: number;
+  lineTop: number;
+  slotLeft: number;
+}
+
+/**
+ * Resolves the painted top-left of a floating object from its `positionH/V`,
+ * mirroring the offsets the painter applies via `resolveFloatingObjectRect`.
+ */
+function resolveFloatingTopLeft(
+  floating: FloatingPositionInfo,
+  opts: FloatingTopLeftOptions,
+): { left: number; top: number } {
+  const emuToPx = (value: number | undefined) =>
+    value === undefined ? 0 : value / 9525;
+
+  const h = floating.positionH;
+  const v = floating.positionV;
+
+  const hBase =
+    h?.relativeFrom === "page"
+      ? opts.pageLeft
+      : h?.relativeFrom === "character"
+        ? opts.lineLeftOffset + opts.slotLeft
+        : opts.contentLeft;
+
+  const vBase =
+    v?.relativeFrom === "page"
+      ? opts.pageTop
+      : v?.relativeFrom === "line"
+        ? opts.lineTopOffset + opts.lineTop
+        : v?.relativeFrom === "margin"
+          ? opts.contentTop
+          : opts.paragraphTop;
+
+  return {
+    left: hBase + emuToPx(h?.offset),
+    top: vBase + emuToPx(v?.offset),
+  };
+}
+
+function collectFloatingImagesFromLines(options: {
+  lines: Array<{
+    top: number;
+    height: number;
+    slots: Array<{ offset: number; left: number; top: number; height: number }>;
+    fragments: Array<{
+      startOffset: number;
+      endOffset: number;
+      image?: {
+        width: number;
+        height: number;
+        rotation?: number;
+        floating?: FloatingPositionInfo;
+      };
+    }>;
+  }>;
+  paragraphId: string;
+  paragraphIndex: number;
+  zone: EditorEditingZone;
+  footnoteId?: string;
+  pageIndex: number;
+  pageLeft: number;
+  pageTop: number;
+  contentLeft: number;
+  contentTop: number;
+  paragraphTop: number;
+  lineTopOffset: number;
+  lineLeftOffset: number;
+}): CanvasSnapshotFloatingImage[] {
+  const result: CanvasSnapshotFloatingImage[] = [];
+
+  for (const line of options.lines) {
+    for (const fragment of line.fragments) {
+      const image = fragment.image;
+      if (!image?.floating) {
+        continue;
+      }
+
+      const slot =
+        line.slots.find(
+          (candidate) => candidate.offset === fragment.startOffset,
+        ) ??
+        line.slots.find(
+          (candidate) => candidate.offset >= fragment.startOffset,
+        );
+      if (!slot) {
+        continue;
+      }
+
+      const { left, top } = resolveFloatingTopLeft(image.floating, {
+        pageLeft: options.pageLeft,
+        pageTop: options.pageTop,
+        contentLeft: options.contentLeft,
+        contentTop: options.contentTop,
+        paragraphTop: options.paragraphTop,
+        lineTopOffset: options.lineTopOffset,
+        lineLeftOffset: options.lineLeftOffset,
+        lineTop: line.top,
+        slotLeft: slot.left,
+      });
+
+      result.push({
+        paragraphId: options.paragraphId,
+        paragraphIndex: options.paragraphIndex,
+        zone: options.zone,
+        footnoteId: options.footnoteId,
+        pageIndex: options.pageIndex,
+        startOffset: fragment.startOffset,
+        endOffset:
+          fragment.endOffset > fragment.startOffset
+            ? fragment.endOffset
+            : fragment.startOffset + 1,
+        left,
+        top,
+        width: image.width,
+        height: image.height,
+        rotation: image.rotation,
+        behindDoc: image.floating.behindDoc,
+      });
+    }
+  }
+
+  return result;
+}
+
 function collectFloatingTextBoxesFromLines(options: {
   lines: Array<{
     top: number;
@@ -314,18 +481,7 @@ function collectFloatingTextBoxesFromLines(options: {
         width: number;
         height: number;
         rotation?: number;
-        floating?: {
-          positionH?: {
-            relativeFrom?: string;
-            offset?: number;
-            align?: string;
-          };
-          positionV?: {
-            relativeFrom?: string;
-            offset?: number;
-            align?: string;
-          };
-        };
+        floating?: FloatingPositionInfo;
       };
     }>;
   }>;
@@ -345,9 +501,6 @@ function collectFloatingTextBoxesFromLines(options: {
   resolveHeight: ResolveTextBoxRenderHeight;
 }): CanvasSnapshotFloatingTextBox[] {
   const result: CanvasSnapshotFloatingTextBox[] = [];
-
-  const emuToPx = (value: number | undefined) =>
-    value === undefined ? 0 : value / 9525;
 
   for (const line of options.lines) {
     for (const fragment of line.fragments) {
@@ -369,24 +522,17 @@ function collectFloatingTextBoxesFromLines(options: {
         continue;
       }
 
-      const h = textBox.floating.positionH;
-      const v = textBox.floating.positionV;
-
-      const hBase =
-        h?.relativeFrom === "page"
-          ? options.pageLeft
-          : h?.relativeFrom === "character"
-            ? options.lineLeftOffset + slot.left
-            : options.contentLeft;
-
-      const vBase =
-        v?.relativeFrom === "page"
-          ? options.pageTop
-          : v?.relativeFrom === "line"
-            ? options.lineTopOffset + line.top
-            : v?.relativeFrom === "margin"
-              ? options.contentTop
-              : options.paragraphTop;
+      const { left, top } = resolveFloatingTopLeft(textBox.floating, {
+        pageLeft: options.pageLeft,
+        pageTop: options.pageTop,
+        contentLeft: options.contentLeft,
+        contentTop: options.contentTop,
+        paragraphTop: options.paragraphTop,
+        lineTopOffset: options.lineTopOffset,
+        lineLeftOffset: options.lineLeftOffset,
+        lineTop: line.top,
+        slotLeft: slot.left,
+      });
 
       result.push({
         paragraphId: options.paragraphId,
@@ -399,12 +545,13 @@ function collectFloatingTextBoxesFromLines(options: {
           fragment.endOffset > fragment.startOffset
             ? fragment.endOffset
             : fragment.startOffset + 1,
-        left: hBase + emuToPx(h?.offset),
-        top: vBase + emuToPx(v?.offset),
+        left,
+        top,
         width: textBox.width,
         // Match the painter's auto-fit height so the overlay tracks the box.
         height: options.resolveHeight(textBox as unknown as EditorTextBoxData),
         rotation: textBox.rotation,
+        behindDoc: textBox.floating.behindDoc,
       });
     }
   }
@@ -545,6 +692,7 @@ export function buildCanvasLayoutSnapshot(
   const snapshotPages: CanvasSnapshotPage[] = [];
   const snapshotParagraphs: CanvasSnapshotParagraph[] = [];
   const inlineImages: CanvasSnapshotInlineImage[] = [];
+  const floatingImages: CanvasSnapshotFloatingImage[] = [];
   const inlineTextBoxes: CanvasSnapshotInlineTextBox[] = [];
   const floatingTextBoxes: CanvasSnapshotFloatingTextBox[] = [];
   const unsupportedRegions: CanvasLayoutSnapshot["unsupportedRegions"] = [];
@@ -654,6 +802,23 @@ export function buildCanvasLayoutSnapshot(
               zone,
               footnoteId: blockFootnoteId,
               pageIndex: page.index,
+              lineTopOffset,
+              lineLeftOffset: blockContentLeft,
+            }),
+          );
+          floatingImages.push(
+            ...collectFloatingImagesFromLines({
+              lines: block.layout.lines,
+              paragraphId,
+              paragraphIndex,
+              zone,
+              footnoteId: blockFootnoteId,
+              pageIndex: page.index,
+              pageLeft: pageRect.left,
+              pageTop: pageRect.top,
+              contentLeft: blockContentLeft,
+              contentTop: startTop,
+              paragraphTop: lineTopOffset,
               lineTopOffset,
               lineLeftOffset: blockContentLeft,
             }),
@@ -809,6 +974,23 @@ export function buildCanvasLayoutSnapshot(
                   lineLeftOffset: paragraphLayout.originX,
                 }),
               );
+              floatingImages.push(
+                ...collectFloatingImagesFromLines({
+                  lines: paragraphLayout.lines,
+                  paragraphId,
+                  paragraphIndex,
+                  zone,
+                  footnoteId: blockFootnoteId,
+                  pageIndex: page.index,
+                  pageLeft: pageRect.left,
+                  pageTop: pageRect.top,
+                  contentLeft: paragraphLayout.originX,
+                  contentTop: paragraphLayout.originY,
+                  paragraphTop: paragraphLayout.originY,
+                  lineTopOffset: paragraphLayout.originY,
+                  lineLeftOffset: paragraphLayout.originX,
+                }),
+              );
               inlineTextBoxes.push(
                 ...collectInlineTextBoxesFromLines({
                   lines: paragraphLayout.lines,
@@ -903,6 +1085,7 @@ export function buildCanvasLayoutSnapshot(
     paragraphs: snapshotParagraphs,
     paragraphsById,
     inlineImages,
+    floatingImages,
     inlineTextBoxes,
     floatingTextBoxes,
     unsupportedRegions,
