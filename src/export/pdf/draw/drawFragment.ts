@@ -370,6 +370,7 @@ export async function drawFragmentText(
       y: pxToPt(originY + line.top + line.height - fragment.image.height),
       width: pxToPt(fragment.image.width),
       height: pxToPt(fragment.image.height),
+      rotation: fragment.image.rotation,
     });
     return;
   }

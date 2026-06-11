@@ -68,6 +68,7 @@ export interface OasisPdfImageOptions {
   y: number;
   width: number;
   height: number;
+  rotation?: number;
 }
 
 export type OasisPdfFontResource =
@@ -534,16 +535,50 @@ export class OasisPdfWriter {
     }
 
     page.imageResourceNames.add(options.resourceName);
+    const bottom = page.height - options.y - options.height;
+    const rotation = Number.isFinite(options.rotation) ? options.rotation ?? 0 : 0;
+    if (rotation === 0) {
+      page.commands.push(
+        [
+          "q",
+          [
+            formatNumber(options.width),
+            "0",
+            "0",
+            formatNumber(options.height),
+            formatNumber(options.x),
+            formatNumber(bottom),
+            "cm",
+          ].join(" "),
+          `/${options.resourceName} Do`,
+          "Q",
+        ].join("\n"),
+      );
+      return;
+    }
+
+    // Match the canvas/editor model: positive degrees rotate the image
+    // clockwise visually around the box center, while PDF's math-space uses
+    // counter-clockwise positive angles.
+    const radians = (-rotation * Math.PI) / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    const a = options.width * cos;
+    const b = options.width * sin;
+    const c = -options.height * sin;
+    const d = options.height * cos;
+    const e = options.x + options.width / 2 - 0.5 * a - 0.5 * c;
+    const f = bottom + options.height / 2 - 0.5 * b - 0.5 * d;
     page.commands.push(
       [
         "q",
         [
-          formatNumber(options.width),
-          "0",
-          "0",
-          formatNumber(options.height),
-          formatNumber(options.x),
-          formatNumber(page.height - options.y - options.height),
+          formatNumber(a),
+          formatNumber(b),
+          formatNumber(c),
+          formatNumber(d),
+          formatNumber(e),
+          formatNumber(f),
           "cm",
         ].join(" "),
         `/${options.resourceName} Do`,

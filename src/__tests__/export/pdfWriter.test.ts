@@ -105,22 +105,101 @@ function findTextX(pdf: string, text: string): number {
   return Number(match[1]);
 }
 
-function findImageDraw(pdf: string): {
-  width: number;
-  height: number;
-  x: number;
-  y: number;
-} {
-  const match =
-    /\nq\n([\d.]+) 0 0 ([\d.]+) ([\d.]+) ([\d.]+) cm\n\/Im\d+ Do\nQ/.exec(pdf);
-  if (!match) {
+interface PdfImageDraw {
+  a: number;
+  b: number;
+  c: number;
+  d: number;
+  e: number;
+  f: number;
+}
+
+function findImageDraws(pdf: string): PdfImageDraw[] {
+  const matches = pdf.matchAll(
+    /\nq\n([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+) cm\n\/Im\d+ Do\nQ/g,
+  );
+  const draws = Array.from(matches, (match) => ({
+    a: Number(match[1]),
+    b: Number(match[2]),
+    c: Number(match[3]),
+    d: Number(match[4]),
+    e: Number(match[5]),
+    f: Number(match[6]),
+  }));
+  if (draws.length === 0) {
     throw new Error("Unable to find PDF image draw command");
   }
+  return draws;
+}
+
+function findImageDraw(pdf: string): PdfImageDraw {
+  return findImageDraws(pdf)[0]!;
+}
+
+function resolveImageDrawCenter(draw: PdfImageDraw): { x: number; y: number } {
   return {
-    width: Number(match[1]),
-    height: Number(match[2]),
-    x: Number(match[3]),
-    y: Number(match[4]),
+    x: draw.e + 0.5 * draw.a + 0.5 * draw.c,
+    y: draw.f + 0.5 * draw.b + 0.5 * draw.d,
+  };
+}
+
+function createInlineImageDocument(options?: {
+  id?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  rotation?: number;
+}): EditorDocument {
+  const imageWidth = options?.imageWidth ?? 32;
+  const imageHeight = options?.imageHeight ?? 24;
+  return {
+    id: options?.id ?? "pdf-inline-image-document",
+    assets: {
+      tiny: {
+        id: "tiny",
+        url: "data:image/jpeg;base64,/9j/2Q==",
+      },
+    },
+    sections: [
+      {
+        id: "section-1",
+        pageSettings: {
+          width: 240,
+          height: 240,
+          orientation: "portrait",
+          margins: {
+            top: 48,
+            right: 48,
+            bottom: 48,
+            left: 48,
+            header: 24,
+            footer: 24,
+            gutter: 0,
+          },
+        },
+        blocks: [
+          {
+            id: "image-paragraph",
+            type: "paragraph",
+            style: { spacingAfter: 0, indentLeft: 16 },
+            runs: [
+              { id: "before-run", text: "A" },
+              {
+                id: "image-run",
+                text: "\uFFFC",
+                image: {
+                  src: "asset:tiny",
+                  width: imageWidth,
+                  height: imageHeight,
+                  alt: "Tiny image",
+                  rotation: options?.rotation,
+                },
+              },
+              { id: "after-run", text: "B" },
+            ],
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -1639,55 +1718,7 @@ describe("OasisPdfWriter", () => {
   it("embeds and positions inline images using the projected layout geometry", async () => {
     const imageWidth = 32;
     const imageHeight = 24;
-    const document: EditorDocument = {
-      id: "pdf-inline-image-document",
-      assets: {
-        tiny: {
-          id: "tiny",
-          url: "data:image/jpeg;base64,/9j/2Q==",
-        },
-      },
-      sections: [
-        {
-          id: "section-1",
-          pageSettings: {
-            width: 240,
-            height: 240,
-            orientation: "portrait",
-            margins: {
-              top: 48,
-              right: 48,
-              bottom: 48,
-              left: 48,
-              header: 24,
-              footer: 24,
-              gutter: 0,
-            },
-          },
-          blocks: [
-            {
-              id: "image-paragraph",
-              type: "paragraph",
-              style: { spacingAfter: 0, indentLeft: 16 },
-              runs: [
-                { id: "before-run", text: "A" },
-                {
-                  id: "image-run",
-                  text: "\uFFFC",
-                  image: {
-                    src: "asset:tiny",
-                    width: imageWidth,
-                    height: imageHeight,
-                    alt: "Tiny image",
-                  },
-                },
-                { id: "after-run", text: "B" },
-              ],
-            },
-          ],
-        },
-      ],
-    };
+    const document = createInlineImageDocument({ imageWidth, imageHeight });
 
     const blob = await exportEditorDocumentToPdfBlob(document);
     const pdf = await blob.text();
@@ -1711,13 +1742,15 @@ describe("OasisPdfWriter", () => {
     expect(pdf).toContain("/XObject << /Im1");
     expect(pdf).toContain("/Filter [/ASCIIHexDecode /DCTDecode]");
     expect(pdf).toContain("/Im1 Do");
-    expect(drawnImage.width).toBeCloseTo(pxToPt(imageWidth), 3);
-    expect(drawnImage.height).toBeCloseTo(pxToPt(imageHeight), 3);
-    expect(drawnImage.x).toBeCloseTo(
+    expect(drawnImage.a).toBeCloseTo(pxToPt(imageWidth), 3);
+    expect(drawnImage.b).toBeCloseTo(0, 3);
+    expect(drawnImage.c).toBeCloseTo(0, 3);
+    expect(drawnImage.d).toBeCloseTo(pxToPt(imageHeight), 3);
+    expect(drawnImage.e).toBeCloseTo(
       pxToPt(page.pageSettings.margins.left + imageSlot.left),
       3,
     );
-    expect(pageHeightPt - drawnImage.y - drawnImage.height).toBeCloseTo(
+    expect(pageHeightPt - drawnImage.f - drawnImage.d).toBeCloseTo(
       pxToPt(
         (page.bodyTop ?? page.pageSettings.margins.top) +
           line.top +
@@ -1726,5 +1759,83 @@ describe("OasisPdfWriter", () => {
       ),
       3,
     );
+  });
+
+  it("rotates inline images 90 degrees around the projected box center", async () => {
+    const imageWidth = 32;
+    const imageHeight = 24;
+    const document = createInlineImageDocument({
+      id: "pdf-inline-image-rotated-90-document",
+      imageWidth,
+      imageHeight,
+      rotation: 90,
+    });
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+    const layout = projectDocumentLayout(
+      document,
+      undefined,
+      undefined,
+      undefined,
+    );
+    const page = layout.pages[0]!;
+    const line = page.blocks[0]!.layout!.lines[0]!;
+    const imageFragment = line.fragments.find((fragment) => fragment.image)!;
+    const imageSlot = line.slots.find(
+      (slot) => slot.offset === imageFragment.startOffset,
+    )!;
+    const drawnImages = findImageDraws(pdf);
+    const drawnImage = drawnImages[0]!;
+    const pageHeightPt = pxToPt(page.pageSettings.height);
+    const center = resolveImageDrawCenter(drawnImage);
+    const expectedCenterX = pxToPt(
+      page.pageSettings.margins.left + imageSlot.left + imageWidth / 2,
+    );
+    const expectedTop = pxToPt(
+      (page.bodyTop ?? page.pageSettings.margins.top) +
+        line.top +
+        line.height -
+        imageHeight,
+    );
+    const expectedCenterY =
+      pageHeightPt - expectedTop - pxToPt(imageHeight) / 2;
+
+    expect(drawnImages).toHaveLength(1);
+    expect(pdf).toContain("/Im1 Do");
+    expect(pdf).not.toContain(
+      `${pxToPt(imageWidth)} 0 0 ${pxToPt(imageHeight)}`,
+    );
+    expect(drawnImage.a).toBeCloseTo(0, 3);
+    expect(drawnImage.b).toBeCloseTo(-pxToPt(imageWidth), 3);
+    expect(drawnImage.c).toBeCloseTo(pxToPt(imageHeight), 3);
+    expect(drawnImage.d).toBeCloseTo(0, 3);
+    expect(center.x).toBeCloseTo(expectedCenterX, 3);
+    expect(center.y).toBeCloseTo(expectedCenterY, 3);
+  });
+
+  it("rotates inline images by arbitrary angles with a single transformed draw", async () => {
+    const imageWidth = 32;
+    const imageHeight = 24;
+    const rotation = 30;
+    const document = createInlineImageDocument({
+      id: "pdf-inline-image-rotated-30-document",
+      imageWidth,
+      imageHeight,
+      rotation,
+    });
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+    const draws = findImageDraws(pdf);
+    const draw = draws[0]!;
+    const radians = (-rotation * Math.PI) / 180;
+
+    expect(draws).toHaveLength(1);
+    expect(pdf).toContain("/Im1 Do");
+    expect(draw.a).toBeCloseTo(pxToPt(imageWidth) * Math.cos(radians), 3);
+    expect(draw.b).toBeCloseTo(pxToPt(imageWidth) * Math.sin(radians), 3);
+    expect(draw.c).toBeCloseTo(-pxToPt(imageHeight) * Math.sin(radians), 3);
+    expect(draw.d).toBeCloseTo(pxToPt(imageHeight) * Math.cos(radians), 3);
   });
 });
