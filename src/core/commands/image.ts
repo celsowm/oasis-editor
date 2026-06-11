@@ -260,6 +260,57 @@ export function setSelectedImageFixedPosition(
   );
 }
 
+/**
+ * Sets the tight/through wrap contour for the image run identified by `runId`.
+ * Matches by run id (not the current selection) because the polygon is traced
+ * asynchronously and applied after the alpha decode resolves. Passing an empty
+ * polygon removes the contour. Selection is preserved.
+ */
+export function setImageWrapPolygon(
+  state: EditorState,
+  runId: string,
+  polygon: EditorImageRunData["wrapPolygon"],
+): EditorState {
+  const paragraphs = getParagraphs(state);
+  let matched = false;
+
+  const nextParagraphs = paragraphs.map((candidate) => {
+    if (!candidate.runs.some((run) => run.id === runId && run.image)) {
+      return cloneParagraph(candidate);
+    }
+
+    return {
+      ...cloneParagraph(candidate),
+      runs: candidate.runs.map((run) => {
+        if (run.id !== runId || !run.image) {
+          return cloneRun(run);
+        }
+        matched = true;
+        const image: EditorImageRunData = { ...run.image };
+        if (polygon && polygon.length > 0) {
+          image.wrapPolygon = polygon;
+        } else {
+          delete image.wrapPolygon;
+        }
+        return { ...run, image };
+      }),
+    };
+  });
+
+  if (!matched) {
+    return state;
+  }
+
+  return cloneStateWithParagraphs(
+    state,
+    nextParagraphs,
+    preserveSelectionByParagraphOffsets(
+      nextParagraphs,
+      normalizeSelection(state),
+    ),
+  );
+}
+
 export function getSelectedImageAlt(state: EditorState): string | null {
   const selectedImage = getSelectedImageRun(state);
   if (!selectedImage?.run.image) {

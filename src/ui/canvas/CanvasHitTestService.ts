@@ -54,6 +54,12 @@ export interface ResolveCanvasHitOptions {
   state: EditorState;
   clientX: number;
   clientY: number;
+  /**
+   * "Pierce" mode (Alt+click): select the floating object directly under the
+   * cursor even when it is painted behind the text (behindDoc). When false,
+   * behind-text objects are skipped so clicks fall through to the text on top.
+   */
+  pierce?: boolean;
 }
 
 function scoreRectDistance(
@@ -301,11 +307,18 @@ function resolveTextBoxAtPoint(
   zone: EditorEditingZone,
   clientX: number,
   clientY: number,
+  pierce: boolean,
 ): CanvasLayoutSnapshot["floatingTextBoxes"][number] | null {
   for (let i = snapshot.floatingTextBoxes.length - 1; i >= 0; i -= 1) {
     const box = snapshot.floatingTextBoxes[i]!;
 
     if (box.pageIndex !== pageIndex || box.zone !== zone) {
+      continue;
+    }
+
+    // Behind-text boxes let clicks fall through to the text painted on top,
+    // unless the user is piercing (Alt+click) to grab the object directly.
+    if (box.behindDoc && !pierce) {
       continue;
     }
 
@@ -328,16 +341,17 @@ function resolveImageAtPoint(
   zone: EditorEditingZone,
   clientX: number,
   clientY: number,
+  pierce: boolean,
 ): CanvasSnapshotInlineImage | null {
   // Front floating images sit above the text, so they win clicks (top-most
-  // first). Behind-text images are skipped here so clicks fall through to the
-  // text painted on top of them.
+  // first). Behind-text images are normally skipped so clicks fall through to
+  // the text painted on top — unless piercing (Alt+click) to grab them.
   for (let i = snapshot.floatingImages.length - 1; i >= 0; i -= 1) {
     const image = snapshot.floatingImages[i]!;
     if (image.pageIndex !== pageIndex || image.zone !== zone) {
       continue;
     }
-    if (image.behindDoc) {
+    if (image.behindDoc && !pierce) {
       continue;
     }
     if (isPointInsideRect(clientX, clientY, image)) {
@@ -359,6 +373,7 @@ export function resolveCanvasSurfaceHitAtPoint(
   options: ResolveCanvasHitOptions,
 ): SurfaceHit | null {
   const { snapshot, state, clientX, clientY } = options;
+  const pierce = options.pierce ?? false;
   const page = resolveNearestPage(snapshot.pages, clientX, clientY);
   if (!page) {
     return null;
@@ -371,6 +386,7 @@ export function resolveCanvasSurfaceHitAtPoint(
     zone,
     clientX,
     clientY,
+    pierce,
   );
   if (textBoxHit) {
     const paragraphSegments =
@@ -430,6 +446,7 @@ export function resolveCanvasSurfaceHitAtPoint(
     zone,
     clientX,
     clientY,
+    pierce,
   );
   if (imageHit) {
     const paragraphSegments =

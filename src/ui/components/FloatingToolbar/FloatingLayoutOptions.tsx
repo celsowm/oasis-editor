@@ -290,7 +290,11 @@ export function FloatingLayoutOptions(
                           props.layoutOptions.preset() === option.preset,
                       }}
                       data-testid={`editor-layout-options-${option.preset}`}
-                      title={t(option.labelKey)}
+                      title={
+                        option.preset === "behind"
+                          ? `${t(option.labelKey)} — ${t("layoutOptions.behindHint")}`
+                          : t(option.labelKey)
+                      }
                       aria-label={t(option.labelKey)}
                       onClick={() => select(option.preset)}
                     >

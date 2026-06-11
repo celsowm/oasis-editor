@@ -102,6 +102,13 @@ export interface EditorImageFloatingLayout {
   wrap?: "none" | "square" | "tight" | "through" | "topAndBottom";
 }
 
+/** A point on the tight/through wrap contour, fractional (0..1) relative to the
+ * image bounding box with origin at the top-left corner. */
+export interface EditorWrapPolygonPoint {
+  x: number;
+  y: number;
+}
+
 export interface EditorImageRunData {
   src: string;
   width: number;
@@ -114,6 +121,9 @@ export interface EditorImageRunData {
   flipH?: boolean;
   flipV?: boolean;
   floating?: EditorImageFloatingLayout;
+  /** Tight/through wrap outline (fractional 0..1). Auto-traced from the image
+   * alpha or round-tripped from OOXML <wp:wrapPolygon>. Absent ⇒ rectangular. */
+  wrapPolygon?: EditorWrapPolygonPoint[];
 }
 
 export interface EditorFieldData {

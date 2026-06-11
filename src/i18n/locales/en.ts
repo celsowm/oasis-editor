@@ -178,6 +178,7 @@ export const en = {
   "layoutOptions.front": "In Front of Text",
   "layoutOptions.moveWithText": "Move with text",
   "layoutOptions.fixPosition": "Fix position on page",
+  "layoutOptions.behindHint": "Tip: Alt+click to select an object behind text",
 
   // Generic
   "generic.close": "Close",

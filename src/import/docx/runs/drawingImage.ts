@@ -12,7 +12,11 @@ import {
   OOXML_PERCENT_DENOMINATOR,
   OOXML_ROTATION_UNITS,
 } from "./units.js";
-import { isAbsoluteUri, parseBlipRels, loadEmbeddedImage } from "./relationships.js";
+import {
+  isAbsoluteUri,
+  parseBlipRels,
+  loadEmbeddedImage,
+} from "./relationships.js";
 
 function parseSrcRect(picPic: XmlElement): EditorImageRunData["crop"] {
   const srcRect = findElementDeep(picPic, "srcRect");
@@ -120,6 +124,44 @@ function parseAnchorWrap(
   if (findElementDeep(anchor, "wrapTopAndBottom")) return "topAndBottom";
   if (findElementDeep(anchor, "wrapNone")) return "none";
   return undefined;
+}
+
+/** OOXML wrap polygons use a 0..21600 normalized coordinate space. */
+const WRAP_POLYGON_DENOMINATOR = 21600;
+
+function parseWrapPolygon(
+  anchor: XmlElement,
+): EditorImageRunData["wrapPolygon"] | undefined {
+  const polygon = findElementDeep(anchor, "wrapPolygon");
+  if (!polygon) {
+    return undefined;
+  }
+  const points: Array<{ x: number; y: number }> = [];
+  for (let index = 0; index < polygon.childNodes.length; index += 1) {
+    const node = polygon.childNodes[index];
+    if (node?.nodeType !== 1) continue;
+    const el = node as XmlElement;
+    if (el.localName !== "start" && el.localName !== "lineTo") continue;
+    const x = parseOptionalInt(el.getAttribute("x"));
+    const y = parseOptionalInt(el.getAttribute("y"));
+    if (x === undefined || y === undefined) continue;
+    points.push({
+      x: x / WRAP_POLYGON_DENOMINATOR,
+      y: y / WRAP_POLYGON_DENOMINATOR,
+    });
+  }
+  // OOXML closes the loop by repeating the start point as the final lineTo.
+  if (points.length >= 2) {
+    const first = points[0]!;
+    const last = points[points.length - 1]!;
+    if (
+      Math.abs(first.x - last.x) < 1e-6 &&
+      Math.abs(first.y - last.y) < 1e-6
+    ) {
+      points.pop();
+    }
+  }
+  return points.length >= 3 ? points : undefined;
 }
 
 function parseFloatingLayout(
@@ -233,6 +275,10 @@ export async function parseDrawingImage(
     container?.kind === "anchor"
       ? parseFloatingLayout(container.element)
       : undefined;
+  const wrapPolygon =
+    container?.kind === "anchor"
+      ? parseWrapPolygon(container.element)
+      : undefined;
 
   const common = {
     width,
@@ -244,6 +290,7 @@ export async function parseDrawingImage(
     ...(xfrm.flipH ? { flipH: true } : {}),
     ...(xfrm.flipV ? { flipV: true } : {}),
     ...(floating ? { floating } : {}),
+    ...(wrapPolygon ? { wrapPolygon } : {}),
   };
 
   const embedTarget = embed ? relsMap.get(embed) : undefined;

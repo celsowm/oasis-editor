@@ -13,6 +13,9 @@ export interface FloatingExclusionRect {
   height: number;
   wrap: "none" | "square" | "tight" | "through" | "topAndBottom";
   sourceRunId: string;
+  /** Absolute-layout-coordinate tight/through contour. When present, the
+   * composer carves per-line intervals from this outline instead of the rect. */
+  polygon?: Array<{ x: number; y: number }>;
 }
 
 export interface TextMeasureOptions {

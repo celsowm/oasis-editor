@@ -372,3 +372,130 @@ describe("canvas hit-test service floating text box", () => {
     expect(hit?.paragraphOffset).toBe(0);
   });
 });
+
+describe("canvas hit-test service behindDoc + pierce", () => {
+  // A paragraph with text, plus a behind-text floating object overlapping it.
+  function createBehindSnapshot(
+    kind: "image" | "textBox",
+  ): {
+    snapshot: CanvasLayoutSnapshot;
+    state: ReturnType<typeof createEditorStateFromDocument>;
+  } {
+    const paragraph = createEditorParagraphFromRuns([{ text: "behind text" }]);
+    const state = createEditorStateFromDocument(
+      createEditorDocument([paragraph]),
+    );
+    const floatingObject = {
+      paragraphId: paragraph.id,
+      paragraphIndex: 0,
+      zone: "main" as const,
+      pageIndex: 0,
+      startOffset: 0,
+      endOffset: 1,
+      left: 110,
+      top: 195,
+      width: 200,
+      height: 100,
+      behindDoc: true,
+    };
+    const snapshot: CanvasLayoutSnapshot = {
+      surfaceRect: { left: 0, top: 0, width: 900, height: 700 } as DOMRect,
+      pages: [
+        {
+          index: 0,
+          left: 0,
+          top: 0,
+          width: 800,
+          height: 1000,
+          bodyTop: 90,
+          bodyBottom: 910,
+        },
+      ],
+      paragraphs: [
+        {
+          paragraph,
+          paragraphId: paragraph.id,
+          paragraphIndex: 0,
+          zone: "main",
+          pageIndex: 0,
+          startOffset: 0,
+          endOffset: 11,
+          textLength: 11,
+          left: 120,
+          top: 200,
+          width: 300,
+          height: 24,
+          lines: [
+            {
+              startOffset: 0,
+              endOffset: 11,
+              top: 200,
+              height: 24,
+              slots: [
+                { offset: 0, left: 120, top: 200, height: 24 },
+                { offset: 1, left: 132, top: 200, height: 24 },
+              ],
+            },
+          ],
+        },
+      ],
+      paragraphsById: new Map(),
+      inlineImages: [],
+      floatingImages: kind === "image" ? [floatingObject] : [],
+      inlineTextBoxes: [],
+      floatingTextBoxes: kind === "textBox" ? [floatingObject] : [],
+      unsupportedRegions: [],
+    } as unknown as CanvasLayoutSnapshot;
+    snapshot.paragraphsById.set(paragraph.id, [snapshot.paragraphs[0]!]);
+    return { snapshot, state };
+  }
+
+  it("falls through behindDoc image to the text on top without pierce", () => {
+    const { snapshot, state } = createBehindSnapshot("image");
+    const hit = resolveCanvasSurfaceHitAtPoint({
+      snapshot,
+      state,
+      clientX: 130,
+      clientY: 205,
+    });
+    expect(hit?.image).toBeUndefined();
+    expect(hit?.resolvedFromParagraph).toBe(true);
+  });
+
+  it("selects the behindDoc image when piercing (Alt+click)", () => {
+    const { snapshot, state } = createBehindSnapshot("image");
+    const hit = resolveCanvasSurfaceHitAtPoint({
+      snapshot,
+      state,
+      clientX: 130,
+      clientY: 205,
+      pierce: true,
+    });
+    expect(hit?.image).toBeDefined();
+    expect(hit?.image?.startOffset).toBe(0);
+  });
+
+  it("falls through behindDoc text box to the text on top without pierce", () => {
+    const { snapshot, state } = createBehindSnapshot("textBox");
+    const hit = resolveCanvasSurfaceHitAtPoint({
+      snapshot,
+      state,
+      clientX: 130,
+      clientY: 205,
+    });
+    expect(hit?.textBox).toBeUndefined();
+    expect(hit?.resolvedFromParagraph).toBe(true);
+  });
+
+  it("selects the behindDoc text box when piercing (Alt+click)", () => {
+    const { snapshot, state } = createBehindSnapshot("textBox");
+    const hit = resolveCanvasSurfaceHitAtPoint({
+      snapshot,
+      state,
+      clientX: 130,
+      clientY: 205,
+      pierce: true,
+    });
+    expect(hit?.textBox).toBeDefined();
+  });
+});

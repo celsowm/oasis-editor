@@ -226,6 +226,7 @@ function buildPartContext(
         flipH: run.image.flipH,
         flipV: run.image.flipV,
         floating: run.image.floating,
+        wrapPolygon: run.image.wrapPolygon,
       };
 
       if (run.image.linkedSrc) {

@@ -6,6 +6,7 @@ import type {
   EditorParagraphNode,
 } from "../../core/model.js";
 import { composeMeasuredParagraphLines } from "../../ui/textMeasurement.js";
+import type { FloatingExclusionRect } from "../../core/engine.js";
 
 function createFragments(
   paragraph: EditorParagraphNode,
@@ -418,5 +419,78 @@ describe("composeMeasuredParagraphLines inline objects", () => {
 
     const lines = measure(paragraph, 600);
     expect(lines[0]!.height).toBeLessThan(120);
+  });
+});
+
+describe("composeMeasuredParagraphLines polygon wrapping", () => {
+  // A centered vertical bar (x in [80,120]) spanning the whole paragraph
+  // height, expressed as an absolute-coordinate wrap polygon.
+  const centeredBar = (
+    wrap: "tight" | "through",
+  ): FloatingExclusionRect => ({
+    x: 80,
+    y: 0,
+    width: 40,
+    height: 1000,
+    wrap,
+    sourceRunId: "img-1",
+    polygon: [
+      { x: 80, y: 0 },
+      { x: 120, y: 0 },
+      { x: 120, y: 1000 },
+      { x: 80, y: 1000 },
+    ],
+  });
+
+  const longText =
+    "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu " +
+    "nu xi omicron pi rho sigma tau upsilon phi chi psi omega one two three";
+
+  const measureWithExclusion = (exclusion: FloatingExclusionRect) =>
+    composeMeasuredParagraphLines({
+      paragraph: createEditorParagraph(longText),
+      fragments: createFragments(createEditorParagraph(longText)),
+      contentWidth: 200,
+      exclusions: [exclusion],
+    });
+
+  it("keeps tight-wrapped text in a single gap (widest side only)", () => {
+    const lines = measureWithExclusion(centeredBar("tight"));
+    expect(lines.length).toBeGreaterThan(1);
+
+    // No text starts in the right gap (x >= 120); a single side is used.
+    for (const line of lines) {
+      expect(line.slots[0]!.left).toBeLessThan(120);
+    }
+    // No two lines share the same vertical band.
+    const tops = lines.map((line) => line.top);
+    expect(new Set(tops).size).toBe(tops.length);
+  });
+
+  it("flows through-wrapped text into both gaps on the same band", () => {
+    const lines = measureWithExclusion(centeredBar("through"));
+    expect(lines.length).toBeGreaterThan(1);
+
+    // Some band carries two segment-lines: one in the left gap, one in the
+    // right gap, sharing the same `top`.
+    const byTop = new Map<number, typeof lines>();
+    for (const line of lines) {
+      const bucket = byTop.get(line.top) ?? [];
+      bucket.push(line);
+      byTop.set(line.top, bucket);
+    }
+    const sharedBand = [...byTop.values()].find((bucket) => bucket.length >= 2);
+    expect(sharedBand).toBeDefined();
+
+    const startsInRightGap = lines.some((line) => line.slots[0]!.left >= 120);
+    expect(startsInRightGap).toBe(true);
+
+    // Content never overlaps the bar: every slot is outside [80,120].
+    for (const line of lines) {
+      for (const slot of line.slots) {
+        const inBar = slot.left > 80 && slot.left < 120;
+        expect(inBar).toBe(false);
+      }
+    }
   });
 });

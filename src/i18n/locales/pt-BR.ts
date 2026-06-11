@@ -178,6 +178,8 @@ export const ptBR = {
   "layoutOptions.front": "Em Frente ao Texto",
   "layoutOptions.moveWithText": "Mover com o texto",
   "layoutOptions.fixPosition": "Corrigir a posição na página",
+  "layoutOptions.behindHint":
+    "Dica: Alt+clique para selecionar um objeto atrás do texto",
 
   // Generic
   "generic.close": "Fechar",

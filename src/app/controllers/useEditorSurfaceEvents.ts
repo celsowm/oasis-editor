@@ -44,7 +44,7 @@ export interface UseEditorSurfaceEventsProps {
   resolveSurfaceHitAtPoint: (
     clientX: number,
     clientY: number,
-    context?: { forDrag?: boolean },
+    context?: { forDrag?: boolean; pierce?: boolean },
   ) => SurfaceHit | null;
   getParagraphById: (
     doc: EditorState["document"],
@@ -323,7 +323,9 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
     deps.clearPreferredColumn();
     deps.resetTransactionGrouping();
 
-    const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY);
+    const hit = deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY, {
+      pierce: event.altKey,
+    });
     lastMouseDownHit = hit;
     lastMouseDownAt = now;
     lastMouseDownX = event.clientX;

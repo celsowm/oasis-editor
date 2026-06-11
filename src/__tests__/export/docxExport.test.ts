@@ -451,6 +451,53 @@ describe("DOCX export", () => {
     expect(imageRun.image?.floating?.behindDoc).toBeFalsy();
   });
 
+  it("serializes and round-trips a tight wrap polygon (wp:wrapPolygon)", async () => {
+    const pngDataUrl =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const paragraph = createEditorParagraphFromRuns([
+      {
+        text: "￼",
+        image: {
+          src: pngDataUrl,
+          width: 100,
+          height: 50,
+          floating: {
+            type: "floating",
+            wrap: "tight",
+            positionH: { relativeFrom: "column", offset: 0 },
+            positionV: { relativeFrom: "paragraph", offset: 0 },
+          },
+          wrapPolygon: [
+            { x: 0, y: 0 },
+            { x: 1, y: 0 },
+            { x: 0.5, y: 1 },
+          ],
+        },
+      },
+    ]);
+
+    const buffer = await exportEditorDocumentToDocx(
+      createEditorDocument([paragraph]),
+    );
+    const xml = await readDocumentXml(buffer);
+    expect(xml).toContain("<wp:wrapTight");
+    expect(xml).toContain("<wp:wrapPolygon");
+    expect(xml).toContain('<wp:start x="0" y="0"/>');
+    expect(xml).toContain('<wp:lineTo x="21600" y="0"/>');
+    expect(xml).toContain('<wp:lineTo x="10800" y="21600"/>');
+
+    const document = await importDocxToEditorDocument(buffer);
+    const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
+      (r) => r.image,
+    )!;
+    expect(imageRun.image?.floating?.wrap).toBe("tight");
+    expect(imageRun.image?.wrapPolygon).toEqual([
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 0.5, y: 1 },
+    ]);
+  });
+
   it("serializes and round-trips tile fill mode (a:tile)", async () => {
     const pngDataUrl =
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";

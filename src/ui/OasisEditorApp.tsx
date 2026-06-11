@@ -8,11 +8,15 @@ import {
   isSelectedImageFixedPosition,
   isSelectedTextBoxFixedPosition,
   setSelectedImageFixedPosition,
+  setImageWrapPolygon,
   setSelectedImageWrapPreset,
   setSelectedTextBoxFixedPosition,
   setSelectedTextBoxWrapPreset,
 } from "../core/editorCommands.js";
 import type { WrapPreset } from "../core/commands/floatingLayout.js";
+import { resolveImageSrc } from "../core/model.js";
+import { getCachedCanvasImage } from "./canvas/canvasImageCache.js";
+import { traceImageAlphaContour } from "./canvas/imageContour.js";
 import type { LayoutOptionsOverlay } from "./editorUiTypes.js";
 import { createEditorStateFromDocument } from "../core/editorState.js";
 import { type EditorPosition, type EditorState } from "../core/model.js";
@@ -265,6 +269,25 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     focusInput();
   };
 
+  // After switching an image to tight/through, auto-trace its alpha contour (if
+  // it has none yet) and store it. Mirrors the async-font → relayout pattern.
+  const ensureImageWrapContour = (runId: string, src: string) => {
+    const resolved = resolveImageSrc(state.document, src);
+    const applyContour = (img: HTMLImageElement) => {
+      const polygon = traceImageAlphaContour(img);
+      applyTransactionalState(
+        (current) => setImageWrapPolygon(current, runId, polygon),
+        { mergeKey: "layoutWrapPolygon" },
+      );
+    };
+    const img = getCachedCanvasImage(resolved, () => {
+      if (img.naturalWidth > 0) applyContour(img);
+    });
+    if (img.complete && img.naturalWidth > 0) {
+      applyContour(img);
+    }
+  };
+
   const layoutOptionsOverlay: LayoutOptionsOverlay = {
     target: layoutOptionsTarget,
     preset: () => {
@@ -279,12 +302,20 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       if (target === "textBox") return isSelectedTextBoxFixedPosition(state);
       return false;
     },
-    setPreset: (preset: WrapPreset) =>
+    setPreset: (preset: WrapPreset) => {
       applyLayoutOptionPatch("layoutWrapPreset", (current, target) =>
         target === "image"
           ? setSelectedImageWrapPreset(current, preset)
           : setSelectedTextBoxWrapPreset(current, preset),
-      ),
+      );
+      if (preset === "tight" || preset === "through") {
+        const selected = getSelectedImageRun(state);
+        const image = selected?.run.image;
+        if (image && !image.wrapPolygon) {
+          ensureImageWrapContour(selected!.run.id, image.src);
+        }
+      }
+    },
     setFixedPosition: (fixed: boolean) =>
       applyLayoutOptionPatch("layoutFixedPosition", (current, target) =>
         target === "image"

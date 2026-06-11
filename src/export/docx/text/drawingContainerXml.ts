@@ -1,7 +1,13 @@
-import type { EditorImageFloatingLayout } from "../../../core/model.js";
+import type {
+  EditorImageFloatingLayout,
+  EditorWrapPolygonPoint,
+} from "../../../core/model.js";
 import type { DocContext } from "../docxTypes.js";
 import { escapeXml } from "../xmlUtils.js";
-import { OOXML_PERCENT_DENOMINATOR, OOXML_ROTATION_UNITS } from "./constants.js";
+import {
+  OOXML_PERCENT_DENOMINATOR,
+  OOXML_ROTATION_UNITS,
+} from "./constants.js";
 
 export function buildXfrmAttrs(img: DocContext["images"][number]): string {
   let attrs = "";
@@ -20,7 +26,9 @@ export function buildXfrmAttrs(img: DocContext["images"][number]): string {
   return attrs;
 }
 
-export function buildSrcRect(crop: DocContext["images"][number]["crop"]): string {
+export function buildSrcRect(
+  crop: DocContext["images"][number]["crop"],
+): string {
   if (!crop) {
     return "";
   }
@@ -58,14 +66,48 @@ function buildAnchorPositionXml(
   return `<wp:${tagName} relativeFrom="${relativeFrom}"><wp:posOffset>${offset}</wp:posOffset></wp:${tagName}>`;
 }
 
-function buildAnchorWrapXml(wrap: EditorImageFloatingLayout["wrap"]): string {
+/** OOXML wrap polygons use a 0..21600 normalized coordinate space. */
+const WRAP_POLYGON_DENOMINATOR = 21600;
+
+function buildWrapPolygonXml(
+  wrapPolygon: EditorWrapPolygonPoint[] | undefined,
+): string {
+  if (!wrapPolygon || wrapPolygon.length < 3) {
+    return "";
+  }
+  const toUnit = (value: number): number =>
+    Math.round(Math.min(1, Math.max(0, value)) * WRAP_POLYGON_DENOMINATOR);
+  const point = (p: EditorWrapPolygonPoint, tag: "start" | "lineTo"): string =>
+    `<wp:${tag} x="${toUnit(p.x)}" y="${toUnit(p.y)}"/>`;
+  const first = wrapPolygon[0]!;
+  const body = [
+    point(first, "start"),
+    ...wrapPolygon.slice(1).map((p) => point(p, "lineTo")),
+    // Close the loop back to the start point.
+    point(first, "lineTo"),
+  ].join("");
+  return `<wp:wrapPolygon edited="0">${body}</wp:wrapPolygon>`;
+}
+
+function buildAnchorWrapXml(
+  wrap: EditorImageFloatingLayout["wrap"],
+  wrapPolygon?: EditorWrapPolygonPoint[],
+): string {
   switch (wrap) {
     case "square":
       return '<wp:wrapSquare wrapText="bothSides"/>';
-    case "tight":
-      return '<wp:wrapTight wrapText="bothSides"/>';
-    case "through":
-      return '<wp:wrapThrough wrapText="bothSides"/>';
+    case "tight": {
+      const polygon = buildWrapPolygonXml(wrapPolygon);
+      return polygon
+        ? `<wp:wrapTight wrapText="bothSides">${polygon}</wp:wrapTight>`
+        : '<wp:wrapTight wrapText="bothSides"/>';
+    }
+    case "through": {
+      const polygon = buildWrapPolygonXml(wrapPolygon);
+      return polygon
+        ? `<wp:wrapThrough wrapText="bothSides">${polygon}</wp:wrapThrough>`
+        : '<wp:wrapThrough wrapText="bothSides"/>';
+    }
     case "topAndBottom":
       return "<wp:wrapTopAndBottom/>";
     case "none":
@@ -82,6 +124,7 @@ export function buildDrawingContainerXml(options: {
   docPrName: string;
   altAttr: string;
   graphicXml: string;
+  wrapPolygon?: EditorWrapPolygonPoint[];
 }): string {
   const { cx, cy, floating, docPrId, docPrName, altAttr, graphicXml } = options;
   const name = escapeXml(docPrName);
@@ -103,7 +146,7 @@ export function buildDrawingContainerXml(options: {
     floating.positionV,
     "paragraph",
   );
-  const wrap = buildAnchorWrapXml(floating.wrap);
+  const wrap = buildAnchorWrapXml(floating.wrap, options.wrapPolygon);
   return `<w:drawing><wp:anchor distT="${distT}" distB="${distB}" distL="${distL}" distR="${distR}" simplePos="${buildAnchorBool(floating.simplePos, false)}" relativeHeight="${floating.relativeHeight ?? 0}" behindDoc="${buildAnchorBool(floating.behindDoc, false)}" locked="${buildAnchorBool(floating.locked, false)}" layoutInCell="${buildAnchorBool(floating.layoutInCell, true)}" allowOverlap="${buildAnchorBool(floating.allowOverlap, true)}"><wp:simplePos x="0" y="0"/>${positionH}${positionV}<wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>${wrap}<wp:docPr id="${docPrId}" name="${name}"${altAttr}/>${graphicXml}</wp:anchor></w:drawing>`;
 }
 
@@ -121,5 +164,6 @@ export function buildDrawingXml(
     docPrName: "Picture",
     altAttr,
     graphicXml: picXml,
+    wrapPolygon: img.wrapPolygon,
   });
 }

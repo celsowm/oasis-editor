@@ -68,7 +68,12 @@ export function computeLayoutInvalidationFromTransaction(
       if (
         Boolean(a.image) !== Boolean(b.image) ||
         (a.image?.width ?? -1) !== (b.image?.width ?? -1) ||
-        (a.image?.height ?? -1) !== (b.image?.height ?? -1)
+        (a.image?.height ?? -1) !== (b.image?.height ?? -1) ||
+        (a.image?.floating?.wrap ?? "") !== (b.image?.floating?.wrap ?? "") ||
+        Boolean(a.image?.floating?.behindDoc) !==
+          Boolean(b.image?.floating?.behindDoc) ||
+        (a.image?.wrapPolygon?.length ?? -1) !==
+          (b.image?.wrapPolygon?.length ?? -1)
       ) {
         changed = true;
         break;

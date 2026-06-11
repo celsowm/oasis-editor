@@ -65,10 +65,79 @@ function subtractInterval(
   return result.filter((segment) => segment.right - segment.left > 1);
 }
 
+interface LineSegment {
+  left: number;
+  width: number;
+}
+
 interface LineFlowBox {
+  /** Widest writable segment (kept for callers that ignore multi-interval). */
   left: number;
   width: number;
   forcedTop?: number;
+  /** All writable segments on this line, ordered left→right. For non-through
+   * wrapping this collapses to the single widest segment. */
+  segments: LineSegment[];
+}
+
+function mergeIntervals(
+  intervals: Array<{ left: number; right: number }>,
+): Array<{ left: number; right: number }> {
+  if (intervals.length <= 1) return intervals.slice();
+  const sorted = intervals
+    .filter((interval) => interval.right > interval.left)
+    .sort((a, b) => a.left - b.left);
+  const merged: Array<{ left: number; right: number }> = [];
+  for (const interval of sorted) {
+    const last = merged[merged.length - 1];
+    if (last && interval.left <= last.right) {
+      last.right = Math.max(last.right, interval.right);
+    } else {
+      merged.push({ ...interval });
+    }
+  }
+  return merged;
+}
+
+/** x-intervals covered by the polygon at a single horizontal scanline. */
+function coveredIntervalsAtScanline(
+  polygon: ReadonlyArray<{ x: number; y: number }>,
+  y: number,
+): Array<{ left: number; right: number }> {
+  const xs: number[] = [];
+  for (let i = 0; i < polygon.length; i += 1) {
+    const a = polygon[i]!;
+    const b = polygon[(i + 1) % polygon.length]!;
+    const crosses = (a.y <= y && b.y > y) || (b.y <= y && a.y > y);
+    if (!crosses) continue;
+    const t = (y - a.y) / (b.y - a.y);
+    xs.push(a.x + t * (b.x - a.x));
+  }
+  xs.sort((p, q) => p - q);
+  const intervals: Array<{ left: number; right: number }> = [];
+  for (let k = 0; k + 1 < xs.length; k += 2) {
+    intervals.push({ left: xs[k]!, right: xs[k + 1]! });
+  }
+  return intervals;
+}
+
+/**
+ * Conservative union of x-intervals the polygon covers across the band
+ * [top, bottom]. Sampling several scanlines and unioning ensures text never
+ * overlaps the shape anywhere inside the line's vertical extent.
+ */
+function polygonCoveredIntervals(
+  polygon: ReadonlyArray<{ x: number; y: number }>,
+  top: number,
+  bottom: number,
+): Array<{ left: number; right: number }> {
+  const samples = 5;
+  const collected: Array<{ left: number; right: number }> = [];
+  for (let s = 0; s < samples; s += 1) {
+    const y = bottom === top ? top : top + ((bottom - top) * s) / (samples - 1);
+    collected.push(...coveredIntervalsAtScanline(polygon, y));
+  }
+  return mergeIntervals(collected);
 }
 
 function resolveLineFlowBox(options: {
@@ -107,16 +176,13 @@ function resolveLineFlowBox(options: {
     },
   ];
 
+  let hasThrough = false;
+
   for (const exclusion of exclusions) {
     const exclusionBottom = exclusion.y + exclusion.height;
 
     if (
-      !intersectsVertically(
-        lineTop,
-        lineBottom,
-        exclusion.y,
-        exclusionBottom,
-      )
+      !intersectsVertically(lineTop, lineBottom, exclusion.y, exclusionBottom)
     ) {
       continue;
     }
@@ -126,30 +192,57 @@ function resolveLineFlowBox(options: {
         left: baseLeft,
         width: baseWidth,
         forcedTop: exclusionBottom,
+        segments: [{ left: baseLeft, width: baseWidth }],
       };
     }
 
-    segments = subtractInterval(
-      segments,
-      exclusion.x,
-      exclusion.x + exclusion.width,
-    );
+    if (exclusion.polygon) {
+      if (exclusion.wrap === "through") {
+        hasThrough = true;
+      }
+      for (const interval of polygonCoveredIntervals(
+        exclusion.polygon,
+        lineTop,
+        lineBottom,
+      )) {
+        segments = subtractInterval(segments, interval.left, interval.right);
+      }
+    } else {
+      segments = subtractInterval(
+        segments,
+        exclusion.x,
+        exclusion.x + exclusion.width,
+      );
+    }
   }
 
   if (segments.length === 0) {
+    const fallbackWidth = Math.max(1, baseWidth);
     return {
       left: baseLeft,
-      width: Math.max(1, baseWidth),
+      width: fallbackWidth,
+      segments: [{ left: baseLeft, width: fallbackWidth }],
     };
   }
 
-  const widest = segments.reduce((best, current) =>
-    current.right - current.left > best.right - best.left ? current : best,
+  const ordered = segments
+    .slice()
+    .sort((a, b) => a.left - b.left)
+    .map((segment) => ({
+      left: segment.left,
+      width: Math.max(1, segment.right - segment.left),
+    }));
+
+  const widest = ordered.reduce((best, current) =>
+    current.width > best.width ? current : best,
   );
 
   return {
     left: widest.left,
-    width: Math.max(1, widest.right - widest.left),
+    width: widest.width,
+    // Only "through" wrapping flows text across multiple gaps; every other mode
+    // keeps text on the single widest side.
+    segments: hasThrough ? ordered : [widest],
   };
 }
 
@@ -283,11 +376,30 @@ export function composeMeasuredParagraphLines(
       exclusions,
     });
 
+  // A visual "band" at vertical position `top` may expose several writable
+  // segments (gaps) when wrapping is "through". We fill the leftmost gap first,
+  // then jump to the next gap on the SAME band before advancing `top`.
   let currentFlow = computeFlow();
-  let lineStartInset = currentFlow.left;
-  let lineAvailableWidth = currentFlow.width;
+  let segmentIndex = 0;
+  let bandHeight = 0;
+  let lineStartInset = currentFlow.segments[0]!.left;
+  let lineAvailableWidth = currentFlow.segments[0]!.width;
   let lineSlotLefts = [lineStartInset];
 
+  const applySegment = (nextOffset: number) => {
+    lineStartOffset = nextOffset;
+    lineEndOffset = nextOffset;
+    lineWidth = 0;
+    lineMaxObjectHeight = 0;
+    const segment =
+      currentFlow.segments[segmentIndex] ?? currentFlow.segments[0]!;
+    lineStartInset = segment.left;
+    lineAvailableWidth = segment.width;
+    lineSlotLefts = [lineStartInset];
+  };
+
+  // Commit the current segment as a layout line. Does not advance `top`; that
+  // happens once per band in `advanceRegion`.
   const flushLine = (hardBreak = false) => {
     // An inline image/text box grows the line so it does not overlap adjacent
     // lines; normal text lines keep their font-derived height.
@@ -303,19 +415,24 @@ export function composeMeasuredParagraphLines(
       lineAvailableWidth,
     );
     lineHardBreaks.push(hardBreak);
-    top += effectiveHeight;
-    isFirstLine = false;
+    bandHeight = Math.max(bandHeight, effectiveHeight);
   };
 
-  const resetLine = (nextOffset: number) => {
-    lineStartOffset = nextOffset;
-    lineEndOffset = nextOffset;
-    lineWidth = 0;
-    lineMaxObjectHeight = 0;
+  // Move to the next writable region after a wrap. A soft wrap first tries the
+  // next gap on the current band (same `top`); a hard break, or an exhausted
+  // band, advances `top` to a fresh band and recomputes its segments.
+  const resetLine = (nextOffset: number, softWrap = true) => {
+    if (softWrap && segmentIndex + 1 < currentFlow.segments.length) {
+      segmentIndex += 1;
+      applySegment(nextOffset);
+      return;
+    }
+    top += bandHeight > 0 ? bandHeight : lineHeight;
+    bandHeight = 0;
+    segmentIndex = 0;
+    isFirstLine = false;
     currentFlow = computeFlow();
-    lineStartInset = currentFlow.left;
-    lineAvailableWidth = currentFlow.width;
-    lineSlotLefts = [lineStartInset];
+    applySegment(nextOffset);
   };
 
   const measureCharsAt = (
@@ -370,7 +487,7 @@ export function composeMeasuredParagraphLines(
   for (const token of tokens) {
     if (token.kind === "newline") {
       flushLine(true);
-      resetLine(token.chars[0]!.offset + 1);
+      resetLine(token.chars[0]!.offset + 1, false);
       continue;
     }
 

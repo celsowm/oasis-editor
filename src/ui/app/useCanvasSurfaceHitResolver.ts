@@ -36,7 +36,7 @@ export function createCanvasSurfaceHitResolver(deps: {
   const resolveSurfaceHitAtPoint = (
     clientX: number,
     clientY: number,
-    _context: { forDrag?: boolean } = {},
+    context: { forDrag?: boolean; pierce?: boolean } = {},
   ): SurfaceHit | null => {
     const currentSurfaceRef = deps.surfaceRef();
     const currentViewportRef = deps.viewportRef();
@@ -99,6 +99,7 @@ export function createCanvasSurfaceHitResolver(deps: {
       state: currentState,
       clientX,
       clientY,
+      pierce: context.pierce ?? false,
     });
     recordCanvasDebugHit(hit);
     return hit;

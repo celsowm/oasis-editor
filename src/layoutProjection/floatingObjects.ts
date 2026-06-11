@@ -16,9 +16,18 @@ export interface FloatingObjectRect {
   height: number;
 }
 
+export interface ExclusionPolygonPoint {
+  x: number;
+  y: number;
+}
+
 export interface FloatingExclusionRect extends FloatingObjectRect {
   wrap: NonNullable<EditorImageFloatingLayout["wrap"]>;
   sourceRunId: string;
+  /** Absolute-layout-coordinate tight/through contour. When present (images
+   * with a wrapPolygon and wrap tight/through), the composer carves per-line
+   * intervals from this outline instead of the bounding rect. */
+  polygon?: ExclusionPolygonPoint[];
 }
 
 export interface FloatingObjectGeometry {
@@ -218,10 +227,7 @@ export function collectParagraphFloatingExclusions(options: {
     }
 
     const geom: FloatingObjectGeometry = textBox
-      ? getTextBoxFloatingGeometry(
-          textBox,
-          resolveTextBoxHeight?.(textBox),
-        )
+      ? getTextBoxFloatingGeometry(textBox, resolveTextBoxHeight?.(textBox))
       : getImageFloatingGeometry(image!);
 
     const anchorSlot = slotByOffset.get(fragment.startOffset);
@@ -241,10 +247,24 @@ export function collectParagraphFloatingExclusions(options: {
 
     const expanded = expandForWrap(rawRect, floating);
 
+    const wrap = floating.wrap ?? "square";
+    const polygon =
+      image &&
+      image.wrapPolygon &&
+      image.wrapPolygon.length >= 3 &&
+      (wrap === "tight" || wrap === "through") &&
+      !image.rotation
+        ? image.wrapPolygon.map((point) => ({
+            x: rawRect.x + point.x * rawRect.width,
+            y: rawRect.y + point.y * rawRect.height,
+          }))
+        : undefined;
+
     exclusions.push({
       ...expanded,
-      wrap: floating.wrap ?? "square",
+      wrap,
       sourceRunId: fragment.runId,
+      ...(polygon ? { polygon } : {}),
     });
   }
 

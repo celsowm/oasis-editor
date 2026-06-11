@@ -12,8 +12,10 @@ import {
   type WrapPreset,
 } from "../../core/commands/floatingLayout.js";
 import {
+  getSelectedImageRun,
   getSelectedImageWrapPreset,
   isSelectedImageFixedPosition,
+  setImageWrapPolygon,
   setSelectedImageFixedPosition,
   setSelectedImageWrapPreset,
 } from "../../core/commands/image.js";
@@ -149,6 +151,35 @@ describe("image wrap-preset commands", () => {
     expect(isSelectedImageFixedPosition(floating)).toBe(false);
     const fixed = setSelectedImageFixedPosition(floating, true);
     expect(isSelectedImageFixedPosition(fixed)).toBe(true);
+  });
+});
+
+describe("setImageWrapPolygon", () => {
+  it("stores and clears a wrap polygon by run id, preserving selection", () => {
+    const state = buildImageState(baseImage);
+    const runId = getSelectedImageRun(state)!.run.id;
+    const polygon = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 0.5, y: 1 },
+    ];
+
+    const withPolygon = setImageWrapPolygon(state, runId, polygon);
+    expect(getSelectedImageRun(withPolygon)!.run.image?.wrapPolygon).toEqual(
+      polygon,
+    );
+    // Selection is unchanged so the layout-options popup stays anchored.
+    expect(withPolygon.selection).toEqual(state.selection);
+
+    const cleared = setImageWrapPolygon(withPolygon, runId, []);
+    expect(getSelectedImageRun(cleared)!.run.image?.wrapPolygon).toBeUndefined();
+  });
+
+  it("is a no-op for an unknown run id", () => {
+    const state = buildImageState(baseImage);
+    expect(setImageWrapPolygon(state, "does-not-exist", [{ x: 0, y: 0 }])).toBe(
+      state,
+    );
   });
 });
 

@@ -4,6 +4,7 @@ import type {
   EditorImageFillMode,
   EditorImageFloatingLayout,
   EditorParagraphListStyle,
+  EditorWrapPolygonPoint,
 } from "../../core/model.js";
 
 export interface DocContext {
@@ -29,6 +30,7 @@ export interface DocContext {
     flipH?: boolean;
     flipV?: boolean;
     floating?: EditorImageFloatingLayout;
+    wrapPolygon?: EditorWrapPolygonPoint[];
   }>;
   imageMap: Map<string, string>;
   /**

@@ -22,6 +22,7 @@ export type {
   EditorImageFloatingPosition,
   EditorImageFloatingLayout,
   EditorImageRunData,
+  EditorWrapPolygonPoint,
   EditorFieldData,
   EditorFootnoteReferenceData,
   EditorEndnoteReferenceData,
