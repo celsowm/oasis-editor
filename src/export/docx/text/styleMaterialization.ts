@@ -21,6 +21,7 @@ export function materializeParagraphStyle(
     spacingAfter: effective.spacingAfter,
     contextualSpacing: effective.contextualSpacing,
     lineHeight: effective.lineHeight,
+    lineRule: effective.lineRule,
     indentLeft: effective.indentLeft,
     indentRight: effective.indentRight,
     indentFirstLine: effective.indentFirstLine,

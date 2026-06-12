@@ -2,21 +2,29 @@ import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorParagraphListStyle } from "../../core/model.js";
 import {
   WORD_NS,
+  getChildrenByTagNameNS,
   getFirstChildByTagNameNS,
   getAttributeValue,
 } from "./xmlHelpers.js";
+import { twipsToPx } from "./units.js";
 
 export interface NumberingMaps {
   abstractKinds: Map<string, EditorParagraphListStyle["kind"]>;
   numKinds: Map<string, EditorParagraphListStyle["kind"]>;
+  /** Indent per level, keyed by "abstractNumId:ilvl". Values in points. */
+  abstractIndents: Map<string, { left?: number; hanging?: number }>;
+  /** numId → abstractNumId */
+  numToAbstractId: Map<string, string>;
 }
 
 export function parseNumbering(numberingXml: string | null): NumberingMaps {
   const abstractKinds = new Map<string, EditorParagraphListStyle["kind"]>();
   const numKinds = new Map<string, EditorParagraphListStyle["kind"]>();
+  const abstractIndents = new Map<string, { left?: number; hanging?: number }>();
+  const numToAbstractId = new Map<string, string>();
 
   if (!numberingXml) {
-    return { abstractKinds, numKinds };
+    return { abstractKinds, numKinds, abstractIndents, numToAbstractId };
   }
 
   const document = new DOMParser().parseFromString(
@@ -25,25 +33,43 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
   );
   const numbering = document.documentElement;
   if (!numbering) {
-    return { abstractKinds, numKinds };
+    return { abstractKinds, numKinds, abstractIndents, numToAbstractId };
   }
 
   const abstractNums = numbering.getElementsByTagNameNS(WORD_NS, "abstractNum");
   for (let index = 0; index < abstractNums.length; index += 1) {
     const abstractNum = abstractNums[index]!;
     const abstractId = getAttributeValue(abstractNum, "abstractNumId");
-    const level = getFirstChildByTagNameNS(abstractNum, WORD_NS, "lvl");
-    const numFmt = getFirstChildByTagNameNS(
-      level ?? abstractNum,
-      WORD_NS,
-      "numFmt",
-    );
-    const format = getAttributeValue(numFmt, "val");
-    if (!abstractId || !format) {
-      continue;
-    }
+    if (!abstractId) continue;
 
-    abstractKinds.set(abstractId, format === "bullet" ? "bullet" : "ordered");
+    for (const level of getChildrenByTagNameNS(abstractNum, WORD_NS, "lvl")) {
+      const ilvl = getAttributeValue(level, "ilvl") ?? "0";
+      const numFmt = getFirstChildByTagNameNS(level, WORD_NS, "numFmt");
+      const format = getAttributeValue(numFmt, "val");
+      if (format) {
+        abstractKinds.set(
+          `${abstractId}:${ilvl}`,
+          format === "bullet" ? "bullet" : "ordered",
+        );
+        // Keep a level-0 fallback keyed by just abstractId for backward compat.
+        if (ilvl === "0") {
+          abstractKinds.set(abstractId, format === "bullet" ? "bullet" : "ordered");
+        }
+      }
+
+      const pPr = getFirstChildByTagNameNS(level, WORD_NS, "pPr");
+      const ind = getFirstChildByTagNameNS(pPr, WORD_NS, "ind");
+      if (ind) {
+        const leftRaw =
+          getAttributeValue(ind, "left") ?? getAttributeValue(ind, "start");
+        const hangingRaw = getAttributeValue(ind, "hanging");
+        const left = leftRaw != null ? twipsToPx(leftRaw, 0) : undefined;
+        const hanging = hangingRaw != null ? twipsToPx(hangingRaw, 0) : undefined;
+        if (left !== undefined || hanging !== undefined) {
+          abstractIndents.set(`${abstractId}:${ilvl}`, { left, hanging });
+        }
+      }
+    }
   }
 
   const nums = numbering.getElementsByTagNameNS(WORD_NS, "num");
@@ -60,16 +86,17 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
       continue;
     }
 
+    numToAbstractId.set(numId, abstractNumId);
     numKinds.set(numId, abstractKinds.get(abstractNumId) ?? "ordered");
   }
 
-  return { abstractKinds, numKinds };
+  return { abstractKinds, numKinds, abstractIndents, numToAbstractId };
 }
 
 export function parseParagraphList(
   paragraphProperties: XmlElement | null,
   numberingMaps: NumberingMaps,
-): EditorParagraphListStyle | undefined {
+): { list: EditorParagraphListStyle; indent?: { left?: number; hanging?: number } } | undefined {
   if (!paragraphProperties) {
     return undefined;
   }
@@ -90,11 +117,19 @@ export function parseParagraphList(
   const ilvlValue = getAttributeValue(
     getFirstChildByTagNameNS(numPr, WORD_NS, "ilvl"),
     "val",
-  );
-  const level = ilvlValue ? Number(ilvlValue) : 0;
+  ) ?? "0";
+  const level = Number(ilvlValue);
+
+  const abstractId = numberingMaps.numToAbstractId.get(numId);
+  const indent = abstractId
+    ? numberingMaps.abstractIndents.get(`${abstractId}:${ilvlValue}`)
+    : undefined;
 
   return {
-    kind: numberingMaps.numKinds.get(numId) ?? "ordered",
-    level: Number.isFinite(level) ? level : 0,
+    list: {
+      kind: numberingMaps.numKinds.get(numId) ?? "ordered",
+      level: Number.isFinite(level) ? level : 0,
+    },
+    indent,
   };
 }

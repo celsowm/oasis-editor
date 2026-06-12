@@ -7,7 +7,7 @@ import {
   getAttributeValue,
   isWordTrue,
 } from "./xmlHelpers.js";
-import { twipsToPoints } from "./units.js";
+import { twipsToPoints, normalizeImportedHexColor } from "./units.js";
 import { type DocxImportTheme } from "./theme.js";
 import { parseRunStyle, mergeImportedTextStyles } from "./runStyle.js";
 import {
@@ -91,9 +91,27 @@ export function parseImportedStyles(
       const tblPr = getFirstChildByTagNameNS(styleElement, WORD_NS, "tblPr");
       const tblInd = getFirstChildByTagNameNS(tblPr, WORD_NS, "tblInd");
       const indentLeft = twipsToPoints(getAttributeValue(tblInd, "w"));
+      const conditionalFormats: Record<string, { shading?: string }> = {};
+      for (const tblStylePr of getChildrenByTagNameNS(
+        styleElement,
+        WORD_NS,
+        "tblStylePr",
+      )) {
+        const condType = getAttributeValue(tblStylePr, "type");
+        if (!condType) continue;
+        const tcPr = getFirstChildByTagNameNS(tblStylePr, WORD_NS, "tcPr");
+        const shd = getFirstChildByTagNameNS(tcPr, WORD_NS, "shd");
+        const fill = normalizeImportedHexColor(getAttributeValue(shd, "fill"));
+        if (fill) {
+          conditionalFormats[condType] = { shading: fill };
+        }
+      }
       tableStyle = {
         styleId: id,
         indentLeft,
+        ...(Object.keys(conditionalFormats).length > 0
+          ? { conditionalFormats }
+          : {}),
       };
     }
 

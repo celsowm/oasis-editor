@@ -376,11 +376,21 @@ export function drawParagraph(
     const listPrefix =
       line.index === 0 ? resolveListPrefix(paragraph, state.document) : "";
     if (listPrefix) {
+      const prefixStyles = resolveEffectiveTextStyleForParagraph(
+        paragraph.runs[0]?.styles,
+        paragraph.style?.styleId,
+        state.document.styles,
+      );
+      const prefixFontSize = prefixStyles.fontSize ?? 14.6667;
+      const prefixWeight = prefixStyles.bold ? "700" : "400";
+      const prefixStyle = prefixStyles.italic ? "italic" : "normal";
+      const prefixFamily = resolveCanvasFontFamily(prefixStyles.fontFamily);
       ctx.save();
-      ctx.font = "400 14.6667px Calibri";
-      ctx.fillStyle = "#000000";
+      ctx.font = `${prefixStyle} ${prefixWeight} ${prefixFontSize}px ${prefixFamily}`;
+      ctx.fillStyle = prefixStyles.color ?? "#000000";
       const first = line.slots[0];
-      const left = first ? Math.max(0, first.left - 24) : 0;
+      const gap = ctx.measureText(`${listPrefix} `).width;
+      const left = first ? Math.max(0, first.left - gap) : 0;
       ctx.fillText(listPrefix, originX + left, baselineY);
       ctx.restore();
     }

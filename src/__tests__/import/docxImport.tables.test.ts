@@ -587,3 +587,175 @@ describe("DOCX table property round-trip", () => {
     expect(xml.indexOf("tblPrEx")).toBeLessThan(xml.indexOf("<w:trPr"));
   });
 });
+
+describe("table negative indent", () => {
+  it("imports a negative tblInd and positions the table left of the content origin", async () => {
+    const zip = new JSZip();
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblW w:w="5000" w:type="dxa"/>
+        <w:tblInd w:w="-856" w:type="dxa"/>
+      </w:tblPr>
+      <w:tr><w:tc><w:p><w:r><w:t>Cell</w:t></w:r></w:p></w:tc></w:tr>
+    </w:tbl>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const table = getDocumentTables(document)[0]!;
+
+    // -856 twips / 20 = -42.8 pt
+    expect(table.style?.indentLeft).toBeCloseTo(-42.8, 1);
+
+    // Canvas layout: originX=100, indentLeft=-42.8pt → left = 100 - 42.8*(96/72) ≈ 43
+    const { buildCanvasTableLayout } = await import(
+      "../../ui/canvas/CanvasTableLayout.js"
+    );
+    const { createEditorStateFromDocument } = await import(
+      "../../core/editorState.js"
+    );
+    const state = createEditorStateFromDocument(document);
+    const layout = buildCanvasTableLayout({
+      table,
+      state,
+      pageIndex: 0,
+      originX: 100,
+      originY: 0,
+      contentWidth: 624,
+      estimatedHeight: 20,
+    });
+    // originX + toPx(-42.8) = 100 + (-42.8 * 96/72) ≈ 43
+    expect(layout.left).toBeLessThan(100);
+  });
+});
+
+describe("table style conditional formatting", () => {
+  it("applies firstRow shading from a named table style to header row cells", async () => {
+    const zip = new JSZip();
+    zip.file(
+      "word/styles.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:style w:type="table" w:styleId="GreenHeader">
+    <w:name w:val="Green Header"/>
+    <w:tblStylePr w:type="firstRow">
+      <w:tcPr>
+        <w:shd w:val="clear" w:color="auto" w:fill="196B24"/>
+      </w:tcPr>
+    </w:tblStylePr>
+    <w:tblStylePr w:type="lastRow">
+      <w:tcPr>
+        <w:shd w:val="clear" w:color="auto" w:fill="AAAAAA"/>
+      </w:tcPr>
+    </w:tblStylePr>
+  </w:style>
+</w:styles>`,
+    );
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tblPr><w:tblStyle w:val="GreenHeader"/></w:tblPr>
+      <w:tr>
+        <w:trPr>
+          <w:cnfStyle w:val="100000000000" w:firstRow="1" w:lastRow="0"/>
+        </w:trPr>
+        <w:tc><w:p><w:r><w:t>Header A</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>Header B</w:t></w:r></w:p></w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc><w:p><w:r><w:t>Body</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>Row</w:t></w:r></w:p></w:tc>
+      </w:tr>
+      <w:tr>
+        <w:trPr>
+          <w:cnfStyle w:val="010000000000" w:firstRow="0" w:lastRow="1"/>
+        </w:trPr>
+        <w:tc><w:p><w:r><w:t>Footer</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>Row</w:t></w:r></w:p></w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const table = getDocumentTables(document)[0]!;
+
+    // First row (firstRow=1): both cells should get the green shading
+    expect(table.rows[0]!.cells[0]!.style?.shading).toBe("#196B24");
+    expect(table.rows[0]!.cells[1]!.style?.shading).toBe("#196B24");
+
+    // Middle row: no conditional shading
+    expect(table.rows[1]!.cells[0]!.style?.shading).toBeUndefined();
+
+    // Last row (lastRow=1): grey shading
+    expect(table.rows[2]!.cells[0]!.style?.shading).toBe("#AAAAAA");
+  });
+
+  it("does not overwrite explicit cell shading with the conditional format shading", async () => {
+    const zip = new JSZip();
+    zip.file(
+      "word/styles.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:style w:type="table" w:styleId="GreenHeader">
+    <w:name w:val="Green Header"/>
+    <w:tblStylePr w:type="firstRow">
+      <w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="196B24"/></w:tcPr>
+    </w:tblStylePr>
+  </w:style>
+</w:styles>`,
+    );
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tblPr><w:tblStyle w:val="GreenHeader"/></w:tblPr>
+      <w:tr>
+        <w:trPr><w:cnfStyle w:val="100000000000" w:firstRow="1"/></w:trPr>
+        <w:tc>
+          <w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="FF0000"/></w:tcPr>
+          <w:p><w:r><w:t>Red explicit</w:t></w:r></w:p>
+        </w:tc>
+        <w:tc><w:p><w:r><w:t>No explicit shading</w:t></w:r></w:p></w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const table = getDocumentTables(document)[0]!;
+
+    // Explicit red shading on the cell takes priority over the style's green
+    expect(table.rows[0]!.cells[0]!.style?.shading).toBe("#FF0000");
+    // Second cell has no explicit shading → gets the conditional green
+    expect(table.rows[0]!.cells[1]!.style?.shading).toBe("#196B24");
+  });
+});

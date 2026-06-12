@@ -233,6 +233,29 @@ describe("DOCX paragraph import", () => {
     expect(effectiveStyle.contextualSpacing).toBe(true);
   });
 
+  it("imports w:lineRule=atLeast as an absolute px line height with the rule", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithContextualSpacing(
+        '<w:spacing w:line="24" w:lineRule="atLeast"/>',
+      ),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+
+    expect(paragraph.style?.lineRule).toBe("atLeast");
+    // 24 twips = 1.2pt = 1.6px (not the 0.1 multiplier the old code produced).
+    expect(paragraph.style?.lineHeight).toBeCloseTo(1.6, 3);
+  });
+
+  it("imports w:spacing without lineRule as a multiplier", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithContextualSpacing('<w:spacing w:line="360"/>'),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+
+    expect(paragraph.style?.lineRule).toBeUndefined();
+    expect(paragraph.style?.lineHeight).toBeCloseTo(1.5, 5);
+  });
+
   it("inherits DOCX contextual paragraph spacing from a named paragraph style", async () => {
     const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -842,5 +865,86 @@ describe("DOCX paragraph import", () => {
     const pdf = await (await exportEditorDocumentToPdfBlob(document)).text();
     expect(pdf).toContain(pdfColorCommand("#112233", "RG"));
     expect(pdf).toContain(pdfColorCommand("#778899", "RG"));
+  });
+});
+
+describe("numbering level indentation import", () => {
+  async function buildDocxWithNumberedParagraph(
+    ilvl: string,
+    numId: string,
+    abstractNumId: string,
+    indLeft: string,
+    indHanging: string,
+    paragraphIndAttributes = "",
+  ): Promise<ArrayBuffer> {
+    const zip = new JSZip();
+    zip.file(
+      "word/numbering.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:abstractNum w:abstractNumId="${abstractNumId}">
+    <w:lvl w:ilvl="${ilvl}">
+      <w:numFmt w:val="decimal"/>
+      <w:pPr><w:ind w:left="${indLeft}" w:hanging="${indHanging}"/></w:pPr>
+    </w:lvl>
+  </w:abstractNum>
+  <w:num w:numId="${numId}">
+    <w:abstractNumId w:val="${abstractNumId}"/>
+  </w:num>
+</w:numbering>`,
+    );
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:pPr>
+        <w:numPr>
+          <w:ilvl w:val="${ilvl}"/>
+          <w:numId w:val="${numId}"/>
+        </w:numPr>
+        ${paragraphIndAttributes ? `<w:ind ${paragraphIndAttributes}/>` : ""}
+      </w:pPr>
+      <w:r><w:t>Numbered paragraph</w:t></w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    return zip.generateAsync({ type: "arraybuffer" });
+  }
+
+  it("applies numbering level w:ind to the paragraph when no explicit indent is set", async () => {
+    // abstractNum level 0: left=1080 twips (72px), hanging=720 twips (48px)
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithNumberedParagraph("0", "1", "0", "1080", "720"),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+
+    expect(paragraph.style?.indentLeft).toBeCloseTo(72, 1);
+    expect(paragraph.style?.indentHanging).toBeCloseTo(48, 1);
+  });
+
+  it("does not override an explicit paragraph-level indent with the numbering level indent", async () => {
+    // Paragraph has its own explicit w:ind w:left="720" — takes priority over the level's 1080
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithNumberedParagraph(
+        "0",
+        "1",
+        "0",
+        "1080",
+        "720",
+        'w:left="720" w:hanging="360"',
+      ),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+
+    // Explicit values (720 twips = 48px, 360 twips = 24px) win
+    expect(paragraph.style?.indentLeft).toBeCloseTo(48, 1);
+    expect(paragraph.style?.indentHanging).toBeCloseTo(24, 1);
   });
 });

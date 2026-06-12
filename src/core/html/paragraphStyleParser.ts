@@ -21,6 +21,11 @@ export function parseParagraphStyle(
     const parsed = Number.parseFloat(lineHeight);
     if (Number.isFinite(parsed)) {
       result.lineHeight = parsed;
+      // A px value is an absolute line height (exact); a unitless value is a
+      // multiplier of single line spacing.
+      if (lineHeight.endsWith("px")) {
+        result.lineRule = "exact";
+      }
     }
   }
 

@@ -1,6 +1,7 @@
 import type {
   EditorNamedStyle,
   EditorParagraphNode,
+  EditorParagraphStyle,
 } from "../../core/model.js";
 import {
   resolveEffectiveParagraphStyle,
@@ -11,6 +12,54 @@ import { resolveRenderedLineHeightPx } from "./fontMetrics.js";
 
 const DEFAULT_LINE_HEIGHT = 1.15;
 
+interface ResolvedLineSpacing {
+  rule: "auto" | "exact" | "atLeast";
+  /** Multiplier to use for the natural (single-line) height computation. */
+  multiplier: number;
+  /** Absolute height in px for exact/atLeast rules (0 for auto). */
+  absolutePx: number;
+}
+
+/**
+ * Interprets `lineHeight`/`lineRule`. For `exact`/`atLeast`, `lineHeight` is an
+ * absolute px height; otherwise it is a multiplier of single line spacing.
+ */
+export function resolveLineSpacing(
+  paragraphStyle: EditorParagraphStyle,
+): ResolvedLineSpacing {
+  const rule = paragraphStyle.lineRule ?? "auto";
+  if (rule === "exact" || rule === "atLeast") {
+    return {
+      rule,
+      multiplier: DEFAULT_LINE_HEIGHT,
+      absolutePx: paragraphStyle.lineHeight ?? 0,
+    };
+  }
+  return {
+    rule: "auto",
+    multiplier: paragraphStyle.lineHeight ?? DEFAULT_LINE_HEIGHT,
+    absolutePx: 0,
+  };
+}
+
+/**
+ * Applies the line rule to a naturally-computed line height: `exact` forces the
+ * absolute value, `atLeast` grows the natural height to the minimum, `auto`
+ * leaves it unchanged.
+ */
+export function applyLineRule(
+  naturalHeight: number,
+  spacing: ResolvedLineSpacing,
+): number {
+  if (spacing.rule === "exact") {
+    return spacing.absolutePx;
+  }
+  if (spacing.rule === "atLeast") {
+    return Math.max(naturalHeight, spacing.absolutePx);
+  }
+  return naturalHeight;
+}
+
 export function getParagraphLineHeight(
   paragraph: EditorParagraphNode,
   styles: Record<string, EditorNamedStyle> | undefined,
@@ -20,7 +69,8 @@ export function getParagraphLineHeight(
     paragraph.style,
     styles,
   );
-  const lineHeight = paragraphStyle.lineHeight ?? DEFAULT_LINE_HEIGHT;
+  const spacing = resolveLineSpacing(paragraphStyle);
+  const lineHeight = spacing.multiplier;
   const lineGridPitch = paragraphStyle.lineGridPitch;
   const snapToGrid = paragraphStyle.snapToGrid !== false;
 
@@ -58,8 +108,10 @@ export function getParagraphLineHeight(
     maxRunHeight,
   );
 
+  const ruledLineHeight = applyLineRule(renderedLineHeight, spacing);
+
   if (lineGridPitch && lineGridPitch > 0 && snapToGrid) {
-    return Math.ceil(renderedLineHeight / lineGridPitch) * lineGridPitch;
+    return Math.ceil(ruledLineHeight / lineGridPitch) * lineGridPitch;
   }
-  return renderedLineHeight;
+  return ruledLineHeight;
 }

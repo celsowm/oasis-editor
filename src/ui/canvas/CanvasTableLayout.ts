@@ -74,9 +74,7 @@ function resolveTableWidth(
 
 function resolveTableIndentLeft(table: EditorTableNode): number {
   const raw = table.style?.indentLeft;
-  return typeof raw === "number" && Number.isFinite(raw)
-    ? Math.max(0, toPx(raw))
-    : 0;
+  return typeof raw === "number" && Number.isFinite(raw) ? toPx(raw) : 0;
 }
 
 export type CanvasUnsupportedReason =

@@ -13,34 +13,22 @@ function getListOrdinals(document: EditorDocument): Map<string, number> {
 
   const result = new Map<string, number>();
   const paragraphs = getDocumentParagraphs(document);
-  let counters: number[] = [];
-  let prevWasOrdered = false;
+  // The exporter emits one numbering definition per `kind:level` shared across
+  // the whole document (with `w:start="1"`), so Word counts each level
+  // continuously regardless of intervening non-list paragraphs. Match that here
+  // by keeping per-level counters that persist across gaps instead of resetting.
+  const counters = new Map<number, number>();
 
   for (const paragraph of paragraphs) {
     const list = paragraph.list;
     if (!list || list.kind !== "ordered") {
-      counters = [];
-      prevWasOrdered = false;
       continue;
     }
 
     const level = list.level ?? 0;
-    if (!prevWasOrdered) {
-      counters = [];
-    }
-    if (counters.length > level + 1) {
-      counters.length = level + 1;
-    }
-    while (counters.length <= level) {
-      counters.push(0);
-    }
-    if (counters[level] === 0 && typeof list.startAt === "number") {
-      counters[level] = list.startAt;
-    } else {
-      counters[level] = counters[level] + 1;
-    }
-    result.set(paragraph.id, counters[level]);
-    prevWasOrdered = true;
+    const next = (counters.get(level) ?? 0) + 1;
+    counters.set(level, next);
+    result.set(paragraph.id, next);
   }
 
   listOrdinalsCache.set(document, result);

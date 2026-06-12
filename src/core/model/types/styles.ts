@@ -55,7 +55,14 @@ export interface EditorParagraphStyle {
   spacingBefore?: number | null;
   spacingAfter?: number | null;
   contextualSpacing?: boolean;
+  /**
+   * Line spacing value. Interpretation depends on `lineRule`:
+   * - `auto`/absent: multiplier of single line spacing (e.g. 1.15).
+   * - `exact`/`atLeast`: absolute height in px.
+   */
   lineHeight?: number | null;
+  /** `w:spacing/@w:lineRule`. Defaults to `auto` (multiplier) when absent. */
+  lineRule?: "auto" | "exact" | "atLeast" | null;
   lineGridPitch?: number | null;
   lineGridType?: "lines" | "linesAndChars" | "snapToChars" | null;
   snapToGrid?: boolean;
@@ -77,6 +84,10 @@ export interface EditorParagraphStyle {
   textDirection?: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV" | null;
 }
 
+export interface EditorTableConditionalFormat {
+  shading?: string;
+}
+
 export interface EditorTableStyle {
   styleId?: string;
   width?: EditorDocxWidthValue;
@@ -85,6 +96,8 @@ export interface EditorTableStyle {
   layout?: "fixed" | "autofit";
   cellSpacing?: EditorDocxWidthValue;
   pageBreakBefore?: boolean;
+  /** Keyed by conditional type ("firstRow", "lastRow", etc.). Applied during import; not re-exported. */
+  conditionalFormats?: Record<string, EditorTableConditionalFormat>;
 }
 
 export interface EditorNamedStyle {

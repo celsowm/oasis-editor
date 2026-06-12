@@ -17,7 +17,9 @@ import { measureLinesFromRects, type CharRect } from "../ui/caretGeometry.js";
 import { getParagraphBorderInsets } from "./paragraphBorders.js";
 import type { ITextMeasurer } from "../core/engine.js";
 import {
+  applyLineRule,
   domTextMeasurer,
+  resolveLineSpacing,
   resolveRenderedLineHeightPx,
 } from "../ui/textMeasurement.js";
 import { perfTimer } from "../utils/performanceMetrics.js";
@@ -29,7 +31,6 @@ import {
 import { resolveDropCapExclusion } from "./dropCapExclusion.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
-const DEFAULT_LINE_HEIGHT = 1.15;
 
 function paragraphStyleComparableKey(
   style: Required<EditorParagraphStyle>,
@@ -507,7 +508,7 @@ function estimateParagraphLineHeight(
   styles: Record<string, EditorNamedStyle> | undefined,
 ): number {
   const paragraphStyle = getEffectiveParagraphStyle(paragraph, styles);
-  const lineHeight = paragraphStyle.lineHeight ?? DEFAULT_LINE_HEIGHT;
+  const spacing = resolveLineSpacing(paragraphStyle);
   const lineGridPitch = paragraphStyle.lineGridPitch;
   const snapToGrid = paragraphStyle.snapToGrid !== false;
 
@@ -516,12 +517,15 @@ function estimateParagraphLineHeight(
     paragraph.style?.styleId,
     styles,
   );
-  const renderedLineHeight = resolveRenderedLineHeightPx(
-    {
-      ...effectiveTextStyle,
-      fontSize: effectiveTextStyle.fontSize ?? fontSize,
-    },
-    lineHeight,
+  const renderedLineHeight = applyLineRule(
+    resolveRenderedLineHeightPx(
+      {
+        ...effectiveTextStyle,
+        fontSize: effectiveTextStyle.fontSize ?? fontSize,
+      },
+      spacing.multiplier,
+    ),
+    spacing,
   );
 
   if (lineGridPitch && lineGridPitch > 0 && snapToGrid) {

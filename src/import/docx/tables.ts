@@ -483,8 +483,26 @@ export async function parseTableNode(
     getFirstChildByTagNameNS(tblPr, WORD_NS, "tblBorders"),
   );
 
+  const tblConditionals =
+    tableStyleId && styles?.[tableStyleId]?.tableStyle?.conditionalFormats;
+
   const rows = [];
   for (const rowNode of getChildrenByTagNameNS(tableNode, WORD_NS, "tr")) {
+    const rowProperties = getFirstChildByTagNameNS(rowNode, WORD_NS, "trPr");
+
+    // Determine which conditional format type applies to this row.
+    const cnfStyle = getFirstChildByTagNameNS(rowProperties, WORD_NS, "cnfStyle");
+    const rowCondType =
+      getAttributeValue(cnfStyle, "firstRow") === "1"
+        ? "firstRow"
+        : getAttributeValue(cnfStyle, "lastRow") === "1"
+          ? "lastRow"
+          : null;
+    const rowCondShading =
+      rowCondType && tblConditionals
+        ? tblConditionals[rowCondType]?.shading
+        : undefined;
+
     const cells = [];
     for (const cellNode of getChildrenByTagNameNS(rowNode, WORD_NS, "tc")) {
       const paragraphs = [];
@@ -531,15 +549,16 @@ export async function parseTableNode(
             ? { vMerge }
             : undefined,
       );
-      if (cellStyle) {
-        cell.style = cellStyle;
+      // Explicit cell shading takes priority; fall back to row conditional format.
+      const resolvedShading = cellStyle?.shading ?? rowCondShading;
+      if (cellStyle || resolvedShading) {
+        cell.style = { ...(cellStyle ?? {}), ...(resolvedShading ? { shading: resolvedShading } : {}) };
       }
       if (vMerge === "continue") {
         cell.blocks = [];
       }
       cells.push(cell);
     }
-    const rowProperties = getFirstChildByTagNameNS(rowNode, WORD_NS, "trPr");
     const row = createEditorTableRow(
       cells,
       isTableHeaderRow(rowNode) ? { isHeader: true } : undefined,

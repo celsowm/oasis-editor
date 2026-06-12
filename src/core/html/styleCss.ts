@@ -165,7 +165,10 @@ export function paragraphStyleToCssText(
     parts.push(`text-align:${style.align}`);
   }
   if (style.lineHeight !== undefined && style.lineHeight !== null) {
-    parts.push(`line-height:${style.lineHeight}`);
+    // exact/atLeast store an absolute px height; auto stores a unitless multiplier.
+    const isAbsoluteRule =
+      style.lineRule === "exact" || style.lineRule === "atLeast";
+    parts.push(`line-height:${style.lineHeight}${isAbsoluteRule ? "px" : ""}`);
   }
   if (style.spacingBefore !== undefined && style.spacingBefore !== null) {
     parts.push(`padding-top:${style.spacingBefore}px`);

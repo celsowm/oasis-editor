@@ -5,6 +5,10 @@ import { resolveRenderedLineHeightPx } from "./textMeasurement/fontMetrics.js";
 export { clearTextMeasureCache } from "./textMeasurement/characterWidth.js";
 export { resolveRenderedLineHeightPx } from "./textMeasurement/fontMetrics.js";
 export {
+  applyLineRule,
+  resolveLineSpacing,
+} from "./textMeasurement/paragraphLineHeight.js";
+export {
   composeMeasuredParagraphLines,
   measureParagraphMinContentWidthPx,
 } from "./textMeasurement/composer.js";

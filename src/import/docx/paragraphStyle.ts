@@ -66,6 +66,7 @@ export function normalizeImportedParagraphStyle(
       effective.lineHeight !== defaultEffective.lineHeight
         ? effective.lineHeight
         : undefined,
+    lineRule: effective.lineRule ?? undefined,
     lineGridPitch: style.lineGridPitch ?? undefined,
     snapToGrid:
       style.snapToGrid !== undefined ||
@@ -279,11 +280,15 @@ export function parseParagraphStyle(
     style.spacingAfter = twipsToPx(after, 0);
   }
   if (line) {
-    const parsedLineHeight = Number(line) / 240;
     if (lineRule === "exact" || lineRule === "atLeast") {
-      style.lineHeight = parsedLineHeight;
+      // For exact/atLeast, w:line is an absolute height in twips; store it as
+      // px (keeping sub-px precision) and remember the rule so layout treats it
+      // as an absolute height instead of a multiplier.
+      style.lineHeight = Math.round((Number(line) / 1440) * 96 * 10000) / 10000;
+      style.lineRule = lineRule;
     } else {
-      style.lineHeight = parsedLineHeight;
+      // auto (default): w:line is in 240ths of a line, i.e. a multiplier.
+      style.lineHeight = Number(line) / 240;
     }
   }
   const contextualSpacing = parseOnOffProperty(

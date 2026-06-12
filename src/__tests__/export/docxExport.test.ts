@@ -141,6 +141,36 @@ describe("DOCX export", () => {
     );
   });
 
+  it("serializes an atLeast line rule as absolute twips and round-trips it", async () => {
+    const paragraph = createEditorParagraph("At least spacing");
+    // 1.6px ≈ 24 twips, stored as an absolute height with the atLeast rule.
+    paragraph.style = { lineHeight: 1.6, lineRule: "atLeast" };
+
+    const buffer = await exportEditorDocumentToDocx(
+      createEditorDocument([paragraph]),
+    );
+    const xml = await readDocumentXml(buffer);
+    expect(xml).toContain('w:line="24"');
+    expect(xml).toContain('w:lineRule="atLeast"');
+
+    const reimported = getDocumentParagraphs(
+      await importDocxToEditorDocument(buffer),
+    )[0]!;
+    expect(reimported.style?.lineRule).toBe("atLeast");
+    expect(reimported.style?.lineHeight).toBeCloseTo(1.6, 3);
+  });
+
+  it("serializes an auto line height as a 240ths multiplier", async () => {
+    const paragraph = createEditorParagraph("Auto spacing");
+    paragraph.style = { lineHeight: 1.5 };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(createEditorDocument([paragraph])),
+    );
+    expect(xml).toContain('w:line="360"');
+    expect(xml).not.toContain("w:lineRule=");
+  });
+
   it("serializes run shading", async () => {
     const paragraph = createEditorParagraph("Shaded run");
     paragraph.runs[0]!.styles = { shading: "#FEF3C7" };

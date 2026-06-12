@@ -4,7 +4,12 @@ import type {
   EditorTabStop,
   EditorNamedStyle,
 } from "../../../core/model.js";
-import { normalizeDocxColor, pointsToTwips, toTwips } from "../xmlUtils.js";
+import {
+  normalizeDocxColor,
+  pointsToTwips,
+  pxToTwips,
+  toTwips,
+} from "../xmlUtils.js";
 import { serializeParagraphBorders } from "../borders.js";
 import { materializeParagraphStyle } from "./styleMaterialization.js";
 
@@ -56,15 +61,25 @@ export function serializeParagraphProperties(
     const attrs: string[] = [];
     const before = toTwips(style.spacingBefore);
     const after = toTwips(style.spacingAfter);
-    const line =
+    const hasLineHeight =
       style.lineHeight !== undefined &&
       style.lineHeight !== null &&
-      Number.isFinite(style.lineHeight)
-        ? Math.round(style.lineHeight * 240)
-        : null;
+      Number.isFinite(style.lineHeight);
+    const isAbsoluteRule =
+      style.lineRule === "exact" || style.lineRule === "atLeast";
+    // For exact/atLeast, lineHeight is an absolute px height → emit twips with
+    // the rule. Otherwise lineHeight is a multiplier → 240ths of a line (auto).
+    const line = hasLineHeight
+      ? isAbsoluteRule
+        ? pxToTwips(style.lineHeight as number, 0)
+        : Math.round((style.lineHeight as number) * 240)
+      : null;
     if (before !== null) attrs.push(`w:before="${before}"`);
     if (after !== null) attrs.push(`w:after="${after}"`);
     if (line !== null) attrs.push(`w:line="${line}"`);
+    if (line !== null && isAbsoluteRule) {
+      attrs.push(`w:lineRule="${style.lineRule}"`);
+    }
     if (attrs.length > 0) parts.push(`<w:spacing ${attrs.join(" ")}/>`);
   }
 

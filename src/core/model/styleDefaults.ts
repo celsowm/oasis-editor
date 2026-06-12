@@ -74,6 +74,7 @@ export const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> = asRequire
   spacingAfter: 8,
   contextualSpacing: false,
   lineHeight: 1.15,
+  lineRule: null as unknown as "auto" | "exact" | "atLeast" | null,
   lineGridPitch: null as unknown as number | null,
   lineGridType: null as unknown as "lines" | "linesAndChars" | "snapToChars" | null,
   snapToGrid: true,

@@ -170,18 +170,38 @@ export async function parseParagraphNodes(
   const parsedStyle = withDocxImplicitSingleLineHeight(
     parseParagraphStyle(paragraphProperties),
   );
-  const paragraphStyle = normalizeImportedParagraphStyle(
-    inheritedStyle
-      ? { ...inheritedStyle, ...(parsedStyle ?? {}) }
-      : parsedStyle,
-  );
   // Paragraph-mark run properties: the font/size Word applies to the blank line
   // of an empty paragraph (and to its trailing mark).
   const markRunStyle = parseRunStyle(
     getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "rPr"),
     theme,
   );
-  const list = parseParagraphList(paragraphProperties, numberingMaps);
+  const listResult = parseParagraphList(paragraphProperties, numberingMaps);
+  const list = listResult?.list;
+
+  // Apply numbering-level indentation as a fallback when the paragraph itself
+  // has no explicit indent. Word inherits list indentation from the abstractNum
+  // level definition rather than repeating it on each paragraph.
+  let styleWithListIndent = parsedStyle;
+  if (listResult?.indent) {
+    const { left, hanging } = listResult.indent;
+    const base = parsedStyle ?? {};
+    styleWithListIndent = {
+      ...base,
+      ...(base.indentLeft === undefined && left !== undefined
+        ? { indentLeft: left }
+        : {}),
+      ...(base.indentHanging === undefined && hanging !== undefined
+        ? { indentHanging: hanging }
+        : {}),
+    };
+  }
+
+  const paragraphStyle = normalizeImportedParagraphStyle(
+    inheritedStyle
+      ? { ...inheritedStyle, ...(styleWithListIndent ?? {}) }
+      : styleWithListIndent,
+  );
 
   // A drop cap frame paragraph (`w:framePr/@dropCap`) is not emitted as a block;
   // its cap rides out to the import driver, which attaches it to the next
