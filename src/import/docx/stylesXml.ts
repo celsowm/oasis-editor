@@ -7,14 +7,14 @@ import {
   getAttributeValue,
   isWordTrue,
 } from "./xmlHelpers.js";
-import { twipsToPoints, normalizeImportedHexColor } from "./units.js";
+import { twipsToPoints } from "./units.js";
 import { type DocxImportTheme } from "./theme.js";
-import { parseRunStyle, mergeImportedTextStyles } from "./runStyle.js";
+import { parseRunStyle } from "./runStyle.js";
 import {
   parseParagraphStyle,
   withDocxImplicitSingleLineHeight,
-  mergeImportedParagraphStyles,
 } from "./paragraphStyle.js";
+import { mergeStyles, emptyOrUndefined, parseShdFill } from "./styleUtils.js";
 
 export function parseImportedStyles(
   stylesXml: string | null,
@@ -101,7 +101,7 @@ export function parseImportedStyles(
         if (!condType) continue;
         const tcPr = getFirstChildByTagNameNS(tblStylePr, WORD_NS, "tcPr");
         const shd = getFirstChildByTagNameNS(tcPr, WORD_NS, "shd");
-        const fill = normalizeImportedHexColor(getAttributeValue(shd, "fill"));
+        const fill = parseShdFill(shd);
         if (fill) {
           conditionalFormats[condType] = { shading: fill };
         }
@@ -131,11 +131,11 @@ export function parseImportedStyles(
       nextStyle,
       paragraphStyle:
         type === "paragraph" && isDefaultParagraph
-          ? mergeImportedParagraphStyles(defaultParagraphStyle, paragraphStyle)
+          ? mergeStyles(defaultParagraphStyle, paragraphStyle)
           : paragraphStyle,
       textStyle:
         type === "paragraph" && isDefaultParagraph
-          ? mergeImportedTextStyles(defaultTextStyle, textStyle)
+          ? mergeStyles(defaultTextStyle, textStyle)
           : textStyle,
       tableStyle,
     };
@@ -155,5 +155,5 @@ export function parseImportedStyles(
     };
   }
 
-  return Object.keys(styles).length > 0 ? styles : undefined;
+  return emptyOrUndefined(styles);
 }

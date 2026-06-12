@@ -134,7 +134,7 @@ describe("DOCX underline style", () => {
     );
     expect(firstParagraph).toBeDefined();
     const run = firstParagraph!.runs[0]!;
-    expect(run.styles?.underlineColor).toBe("#ff0000");
+    expect(run.styles?.underlineColor).toBe("#FF0000");
     expect(run.styles?.doubleStrike).toBe(true);
     expect(run.styles?.smallCaps).toBe(true);
     expect(run.styles?.allCaps).toBe(true);

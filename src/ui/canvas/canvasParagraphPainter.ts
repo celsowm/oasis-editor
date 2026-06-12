@@ -34,8 +34,7 @@ import {
   underlineStyleDashArray,
   underlineStyleLineWidthPx,
 } from "../../core/textStyleMappings.js";
-
-const PX_PER_POINT = 96 / 72;
+import { PX_PER_POINT } from "../../layoutProjection/constants.js";
 const canvasTextLogger = createEditorLogger("canvas-text");
 const loggedCanvasFontKeys = new Set<string>();
 const MAX_CANVAS_FONT_LOGS = 40;

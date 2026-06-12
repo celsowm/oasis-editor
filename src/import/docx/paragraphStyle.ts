@@ -15,19 +15,10 @@ import {
 import {
   twipsToPx,
   twipsToPoints,
-  normalizeImportedHexColor,
   DOCX_IMPLICIT_SINGLE_LINE_HEIGHT,
 } from "./units.js";
 import { parseDocxBoxBorders } from "./borders.js";
-
-function stripUndefined<T extends Record<string, unknown>>(
-  value: T,
-): Partial<T> | undefined {
-  const entries = Object.entries(value).filter(([, v]) => v !== undefined);
-  return entries.length > 0
-    ? (Object.fromEntries(entries) as Partial<T>)
-    : undefined;
-}
+import { stripUndefined, emptyOrUndefined, parseShdFill } from "./styleUtils.js";
 
 export function normalizeImportedParagraphStyle(
   style: EditorParagraphStyle | undefined,
@@ -135,14 +126,6 @@ export function withDocxImplicitSingleLineHeight(
     ...(style ?? {}),
     lineHeight: DOCX_IMPLICIT_SINGLE_LINE_HEIGHT,
   };
-}
-
-export function mergeImportedParagraphStyles(
-  base: EditorParagraphStyle | undefined,
-  local: EditorParagraphStyle | undefined,
-): EditorParagraphStyle | undefined {
-  const merged = { ...(base ?? {}), ...(local ?? {}) };
-  return Object.keys(merged).length > 0 ? merged : undefined;
 }
 
 export interface ParagraphAutospacingFlags {
@@ -367,9 +350,7 @@ export function parseParagraphStyle(
   }
 
   const shading = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "shd");
-  const shadingFill = normalizeImportedHexColor(
-    getAttributeValue(shading, "fill"),
-  );
+  const shadingFill = parseShdFill(shading);
   if (shadingFill) {
     style.shading = shadingFill;
   }
@@ -384,5 +365,5 @@ export function parseParagraphStyle(
     style.textDirection = textDirection;
   }
 
-  return Object.keys(style).length > 0 ? style : undefined;
+  return emptyOrUndefined(style);
 }

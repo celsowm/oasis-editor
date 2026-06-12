@@ -28,8 +28,7 @@ import {
   resolveFragmentSlots,
   type FragmentSlot,
 } from "./fragmentGeometry.js";
-
-const PX_PER_POINT = 96 / 72;
+import { PX_PER_POINT } from "../../../layoutProjection/constants.js";
 
 export function drawFragmentHighlight(
   writer: OasisPdfWriter,

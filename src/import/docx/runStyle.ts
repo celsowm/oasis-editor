@@ -20,15 +20,7 @@ import {
 import { resolveThemeFont } from "./themeFonts.js";
 import { resolveThemeColor } from "./themeColors.js";
 import { type DocxImportTheme } from "./theme.js";
-
-function stripUndefined<T extends Record<string, unknown>>(
-  value: T,
-): Partial<T> | undefined {
-  const entries = Object.entries(value).filter(([, v]) => v !== undefined);
-  return entries.length > 0
-    ? (Object.fromEntries(entries) as Partial<T>)
-    : undefined;
-}
+import { stripUndefined, emptyOrUndefined, parseShdFill } from "./styleUtils.js";
 
 export function normalizeImportedRunStyle(
   style: EditorTextStyle | undefined,
@@ -49,167 +41,50 @@ export function normalizeImportedRunStyle(
     DEFAULT_EDITOR_STYLES,
   );
 
+  // Pure dedup: keep when different from default-effective, drop when equal.
+  const dd = <T>(e: T, d: T): T | undefined => (e !== d ? e : undefined);
+
+  // Hybrid dedup: honor an explicit raw import (including explicit-off) first,
+  // then fall back to pure dedup. Used for toggles where an inherited style
+  // might set the flag but a direct `w:val="0"` must override it.
+  const hd = <T>(raw: T | undefined, e: T, d: T): T | undefined =>
+    raw !== undefined ? raw : dd(e, d);
+
   return stripUndefined({
     styleId: style.styleId,
-    // Prefer an explicitly-imported toggle (true OR false) so an explicit-off
-    // survives and overrides an inherited style; otherwise dedup against the
-    // editor default. Mirrors the fontSize/indent handling below.
-    bold:
-      style.bold !== undefined
-        ? style.bold
-        : effective.bold !== defaultEffective.bold
-          ? effective.bold
-          : undefined,
-    italic:
-      style.italic !== undefined
-        ? style.italic
-        : effective.italic !== defaultEffective.italic
-          ? effective.italic
-          : undefined,
-    underline:
-      effective.underline !== defaultEffective.underline
-        ? effective.underline
-        : undefined,
-    underlineStyle:
-      effective.underlineStyle !== defaultEffective.underlineStyle
-        ? effective.underlineStyle
-        : undefined,
-    underlineColor:
-      effective.underlineColor !== defaultEffective.underlineColor
-        ? effective.underlineColor
-        : undefined,
-    strike:
-      style.strike !== undefined
-        ? style.strike
-        : effective.strike !== defaultEffective.strike
-          ? effective.strike
-          : undefined,
-    doubleStrike:
-      style.doubleStrike !== undefined
-        ? style.doubleStrike
-        : effective.doubleStrike !== defaultEffective.doubleStrike
-          ? effective.doubleStrike
-          : undefined,
-    superscript:
-      effective.superscript !== defaultEffective.superscript
-        ? effective.superscript
-        : undefined,
-    subscript:
-      effective.subscript !== defaultEffective.subscript
-        ? effective.subscript
-        : undefined,
-    smallCaps:
-      style.smallCaps !== undefined
-        ? style.smallCaps
-        : effective.smallCaps !== defaultEffective.smallCaps
-          ? effective.smallCaps
-          : undefined,
-    allCaps:
-      style.allCaps !== undefined
-        ? style.allCaps
-        : effective.allCaps !== defaultEffective.allCaps
-          ? effective.allCaps
-          : undefined,
-    hidden:
-      style.hidden !== undefined
-        ? style.hidden
-        : effective.hidden !== defaultEffective.hidden
-          ? effective.hidden
-          : undefined,
-    noProof:
-      style.noProof !== undefined
-        ? style.noProof
-        : effective.noProof !== defaultEffective.noProof
-          ? effective.noProof
-          : undefined,
-    webHidden:
-      style.webHidden !== undefined
-        ? style.webHidden
-        : effective.webHidden !== defaultEffective.webHidden
-          ? effective.webHidden
-          : undefined,
-    specVanish:
-      style.specVanish !== undefined
-        ? style.specVanish
-        : effective.specVanish !== defaultEffective.specVanish
-          ? effective.specVanish
-          : undefined,
-    textEffect:
-      effective.textEffect !== defaultEffective.textEffect
-        ? effective.textEffect
-        : undefined,
-    characterScale:
-      effective.characterScale !== defaultEffective.characterScale
-        ? effective.characterScale
-        : undefined,
-    characterSpacing:
-      effective.characterSpacing !== defaultEffective.characterSpacing
-        ? effective.characterSpacing
-        : undefined,
-    baselineShift:
-      effective.baselineShift !== defaultEffective.baselineShift
-        ? effective.baselineShift
-        : undefined,
-    kerningThreshold:
-      effective.kerningThreshold !== defaultEffective.kerningThreshold
-        ? effective.kerningThreshold
-        : undefined,
-    ligatures:
-      effective.ligatures !== defaultEffective.ligatures
-        ? effective.ligatures
-        : undefined,
-    numberSpacing:
-      effective.numberSpacing !== defaultEffective.numberSpacing
-        ? effective.numberSpacing
-        : undefined,
-    numberForm:
-      effective.numberForm !== defaultEffective.numberForm
-        ? effective.numberForm
-        : undefined,
-    stylisticSet:
-      effective.stylisticSet !== defaultEffective.stylisticSet
-        ? effective.stylisticSet
-        : undefined,
-    contextualAlternates:
-      effective.contextualAlternates !== defaultEffective.contextualAlternates
-        ? effective.contextualAlternates
-        : undefined,
-    fontFamily:
-      style.fontFamily !== undefined
-        ? style.fontFamily
-        : effective.fontFamily !== defaultEffective.fontFamily
-          ? effective.fontFamily
-          : undefined,
-    fontSize:
-      style.fontSize !== undefined
-        ? style.fontSize
-        : effective.fontSize !== defaultEffective.fontSize
-          ? effective.fontSize
-          : undefined,
-    color:
-      effective.color !== defaultEffective.color ? effective.color : undefined,
-    highlight:
-      effective.highlight !== defaultEffective.highlight
-        ? effective.highlight
-        : undefined,
-    shading:
-      effective.shading !== defaultEffective.shading
-        ? effective.shading
-        : undefined,
-    language:
-      effective.language !== defaultEffective.language
-        ? effective.language
-        : undefined,
-    link: effective.link !== defaultEffective.link ? effective.link : undefined,
+    bold: hd(style.bold, effective.bold, defaultEffective.bold),
+    italic: hd(style.italic, effective.italic, defaultEffective.italic),
+    underline: dd(effective.underline, defaultEffective.underline),
+    underlineStyle: dd(effective.underlineStyle, defaultEffective.underlineStyle),
+    underlineColor: dd(effective.underlineColor, defaultEffective.underlineColor),
+    strike: hd(style.strike, effective.strike, defaultEffective.strike),
+    doubleStrike: hd(style.doubleStrike, effective.doubleStrike, defaultEffective.doubleStrike),
+    superscript: dd(effective.superscript, defaultEffective.superscript),
+    subscript: dd(effective.subscript, defaultEffective.subscript),
+    smallCaps: hd(style.smallCaps, effective.smallCaps, defaultEffective.smallCaps),
+    allCaps: hd(style.allCaps, effective.allCaps, defaultEffective.allCaps),
+    hidden: hd(style.hidden, effective.hidden, defaultEffective.hidden),
+    noProof: hd(style.noProof, effective.noProof, defaultEffective.noProof),
+    webHidden: hd(style.webHidden, effective.webHidden, defaultEffective.webHidden),
+    specVanish: hd(style.specVanish, effective.specVanish, defaultEffective.specVanish),
+    textEffect: dd(effective.textEffect, defaultEffective.textEffect),
+    characterScale: dd(effective.characterScale, defaultEffective.characterScale),
+    characterSpacing: dd(effective.characterSpacing, defaultEffective.characterSpacing),
+    baselineShift: dd(effective.baselineShift, defaultEffective.baselineShift),
+    kerningThreshold: dd(effective.kerningThreshold, defaultEffective.kerningThreshold),
+    ligatures: dd(effective.ligatures, defaultEffective.ligatures),
+    numberSpacing: dd(effective.numberSpacing, defaultEffective.numberSpacing),
+    numberForm: dd(effective.numberForm, defaultEffective.numberForm),
+    stylisticSet: dd(effective.stylisticSet, defaultEffective.stylisticSet),
+    contextualAlternates: dd(effective.contextualAlternates, defaultEffective.contextualAlternates),
+    fontFamily: hd(style.fontFamily, effective.fontFamily, defaultEffective.fontFamily),
+    fontSize: hd(style.fontSize, effective.fontSize, defaultEffective.fontSize),
+    color: dd(effective.color, defaultEffective.color),
+    highlight: dd(effective.highlight, defaultEffective.highlight),
+    shading: dd(effective.shading, defaultEffective.shading),
+    language: dd(effective.language, defaultEffective.language),
+    link: dd(effective.link, defaultEffective.link),
   });
-}
-
-export function mergeImportedTextStyles(
-  base: EditorTextStyle | undefined,
-  local: EditorTextStyle | undefined,
-): EditorTextStyle | undefined {
-  const merged = { ...(base ?? {}), ...(local ?? {}) };
-  return Object.keys(merged).length > 0 ? merged : undefined;
 }
 
 export function parseRunStyle(
@@ -390,9 +265,7 @@ export function parseRunStyle(
     }
     const underlineColor = getAttributeValue(underline, "color");
     if (underlineColor && underlineColor !== "auto") {
-      styles.underlineColor = underlineColor.startsWith("#")
-        ? underlineColor
-        : `#${underlineColor}`;
+      styles.underlineColor = normalizeImportedHexColor(underlineColor);
     }
   }
 
@@ -434,7 +307,7 @@ export function parseRunStyle(
   const color = getFirstChildByTagNameNS(runProperties, WORD_NS, "color");
   const colorValue = getAttributeValue(color, "val");
   if (colorValue && colorValue !== "auto") {
-    styles.color = colorValue.startsWith("#") ? colorValue : `#${colorValue}`;
+    styles.color = normalizeImportedHexColor(colorValue);
   } else if (colorValue !== "auto") {
     // No literal `w:val` (or theme-only color): resolve `w:themeColor` against
     // the document theme, applying `w:themeTint`/`w:themeShade`.
@@ -457,7 +330,7 @@ export function parseRunStyle(
   // Run shading (w:shd): solid background fill behind the run's text. Only the
   // literal `w:fill` hex is resolved here; theme fills are a follow-up.
   const shd = getFirstChildByTagNameNS(runProperties, WORD_NS, "shd");
-  const shdFill = normalizeImportedHexColor(getAttributeValue(shd, "fill"));
+  const shdFill = parseShdFill(shd);
   if (shdFill) {
     styles.shading = shdFill;
   }
@@ -476,5 +349,5 @@ export function parseRunStyle(
     }
   }
 
-  return Object.keys(styles).length > 0 ? styles : undefined;
+  return emptyOrUndefined(styles);
 }

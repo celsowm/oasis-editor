@@ -30,7 +30,8 @@ import {
   parseDocxBoxBorders,
   parseDocxTableBorders,
 } from "./borders.js";
-import { twipsToPoints, normalizeImportedHexColor } from "./units.js";
+import { twipsToPoints } from "./units.js";
+import { emptyOrUndefined, parseShdFill } from "./styleUtils.js";
 import { type AssetRegistry } from "./assetRegistry.js";
 import { type DocxImportTheme } from "./theme.js";
 import { type NumberingMaps } from "./numbering.js";
@@ -141,7 +142,7 @@ function parseTableStyle(
     style.cellSpacing = cellSpacing;
   }
 
-  return Object.keys(style).length > 0 ? style : undefined;
+  return emptyOrUndefined(style);
 }
 
 function parseTableRowStyle(
@@ -187,7 +188,7 @@ function parseTableRowStyle(
     style.heightRule = hRule;
   }
 
-  return Object.keys(style).length > 0 ? style : undefined;
+  return emptyOrUndefined(style);
 }
 
 function getTableCellColSpan(cellProperties: XmlElement | null): number {
@@ -260,7 +261,7 @@ function parseTableCellStyle(
 
   const style: EditorTableCellStyle = {};
   const shading = getFirstChildByTagNameNS(cellProperties, WORD_NS, "shd");
-  const fill = normalizeImportedHexColor(getAttributeValue(shading, "fill"));
+  const fill = parseShdFill(shading);
   if (fill) {
     style.shading = fill;
   }
@@ -282,22 +283,12 @@ function parseTableCellStyle(
 
   const tcMar = getFirstChildByTagNameNS(cellProperties, WORD_NS, "tcMar");
   if (tcMar) {
-    const top = twipsToPoints(
-      getAttributeValue(getFirstChildByTagNameNS(tcMar, WORD_NS, "top"), "w"),
-    );
-    const bottom = twipsToPoints(
-      getAttributeValue(
-        getFirstChildByTagNameNS(tcMar, WORD_NS, "bottom"),
-        "w",
-      ),
-    );
-    const left = twipsToPoints(
-      getAttributeValue(getFirstChildByTagNameNS(tcMar, WORD_NS, "left"), "w"),
-    );
-    const right = twipsToPoints(
-      getAttributeValue(getFirstChildByTagNameNS(tcMar, WORD_NS, "right"), "w"),
-    );
-
+    const edgePt = (edge: string) =>
+      twipsToPoints(getAttributeValue(getFirstChildByTagNameNS(tcMar, WORD_NS, edge), "w"));
+    const top = edgePt("top");
+    const bottom = edgePt("bottom");
+    const left = edgePt("left");
+    const right = edgePt("right");
     if (top !== undefined) style.paddingTop = top;
     if (bottom !== undefined) style.paddingBottom = bottom;
     if (left !== undefined) style.paddingLeft = left;
@@ -327,7 +318,7 @@ function parseTableCellStyle(
     }
   }
 
-  return Object.keys(style).length > 0 ? style : undefined;
+  return emptyOrUndefined(style);
 }
 
 function isTableHeaderRow(rowNode: XmlElement): boolean {
