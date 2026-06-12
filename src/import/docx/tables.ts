@@ -5,11 +5,13 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
   EditorTableCellStyle,
+  EditorTableConditionalFormat,
   EditorTableLayout,
   EditorTableNode,
   EditorTableRowNode,
   EditorTableRowStyle,
   EditorTableStyle,
+  EditorTextStyle,
 } from "../../core/model.js";
 import {
   createEditorParagraphFromRuns,
@@ -22,6 +24,7 @@ import {
   getChildrenByTagNameNS,
   getFirstChildByTagNameNS,
   getAttributeValue,
+  isWordTrue,
   parseOnOffProperty,
   parseTextDirection,
 } from "./xmlHelpers.js";
@@ -440,6 +443,136 @@ function applyTableBordersToRows(
   }
 }
 
+interface TableLook {
+  firstRow: boolean;
+  lastRow: boolean;
+  firstCol: boolean;
+  lastCol: boolean;
+  noHBand: boolean;
+  noVBand: boolean;
+}
+
+/**
+ * Parses `w:tblLook`, which gates which table-style conditional formats apply.
+ * Supports both the modern individual attributes (`firstRow`, `firstColumn`,
+ * `noVBand`, ...) and the legacy hex bitmask in `@w:val`. When the element is
+ * absent we default to Word's common case: first row + first column on, banding
+ * on.
+ */
+function parseTableLook(tblPr: XmlElement | null): TableLook {
+  const element = getFirstChildByTagNameNS(tblPr, WORD_NS, "tblLook");
+  const attr = (name: string): boolean | undefined => {
+    const value = getAttributeValue(element, name);
+    return value === null || value === "" ? undefined : isWordTrue(value);
+  };
+  const rawVal = getAttributeValue(element, "val");
+  const mask = rawVal ? Number.parseInt(rawVal, 16) : Number.NaN;
+  const bit = (flag: number): boolean | undefined =>
+    Number.isFinite(mask) ? (mask & flag) !== 0 : undefined;
+
+  return {
+    firstRow: attr("firstRow") ?? bit(0x0020) ?? true,
+    lastRow: attr("lastRow") ?? bit(0x0040) ?? false,
+    firstCol: attr("firstColumn") ?? bit(0x0080) ?? true,
+    lastCol: attr("lastColumn") ?? bit(0x0100) ?? false,
+    noHBand: attr("noHBand") ?? bit(0x0200) ?? false,
+    noVBand: attr("noVBand") ?? bit(0x0400) ?? false,
+  };
+}
+
+/**
+ * Returns the table-style conditional-format keys that apply to a cell at the
+ * given position, ordered low→high precedence (later entries override earlier
+ * ones). Mirrors Word's resolution order: whole table < bands < first/last col
+ * < first/last row < corner cells. Banding and first/last row/col are gated by
+ * `tblLook`; banding parity is computed over the "body" rows/cols that remain
+ * after excluding the special first/last row/col.
+ */
+function resolveCellConditionalKeys(
+  rowIndex: number,
+  colIndex: number,
+  rowCount: number,
+  colCount: number,
+  look: TableLook,
+  rowBandSize: number,
+  colBandSize: number,
+): string[] {
+  const isFirstRow = look.firstRow && rowIndex === 0;
+  const isLastRow = look.lastRow && rowIndex === rowCount - 1 && rowIndex !== 0;
+  const isFirstCol = look.firstCol && colIndex === 0;
+  const isLastCol = look.lastCol && colIndex === colCount - 1 && colIndex !== 0;
+
+  const keys: string[] = [];
+
+  // Horizontal banding over body rows (those that are not the special first/last
+  // row). Word's first body row is band1.
+  if (!look.noHBand && !isFirstRow && !isLastRow) {
+    const bodyRow = rowIndex - (look.firstRow ? 1 : 0);
+    const band = Math.floor(bodyRow / Math.max(1, rowBandSize)) % 2;
+    keys.push(band === 0 ? "band1Horz" : "band2Horz");
+  }
+  // Vertical banding over body columns.
+  if (!look.noVBand && !isFirstCol && !isLastCol) {
+    const bodyCol = colIndex - (look.firstCol ? 1 : 0);
+    const band = Math.floor(bodyCol / Math.max(1, colBandSize)) % 2;
+    keys.push(band === 0 ? "band1Vert" : "band2Vert");
+  }
+
+  if (isLastCol) keys.push("lastCol");
+  if (isFirstCol) keys.push("firstCol");
+  if (isLastRow) keys.push("lastRow");
+  if (isFirstRow) keys.push("firstRow");
+
+  // Corner cells have the highest precedence.
+  if (isFirstRow && isFirstCol) keys.push("nwCell");
+  if (isFirstRow && isLastCol) keys.push("neCell");
+  if (isLastRow && isFirstCol) keys.push("swCell");
+  if (isLastRow && isLastCol) keys.push("seCell");
+
+  return keys;
+}
+
+/** Merges resolved conditional formats (low→high precedence) into one. */
+function mergeConditionalFormats(
+  keys: string[],
+  conditionals: Record<string, EditorTableConditionalFormat> | undefined,
+): EditorTableConditionalFormat {
+  const merged: EditorTableConditionalFormat = {};
+  if (!conditionals) {
+    return merged;
+  }
+  for (const key of keys) {
+    const cond = conditionals[key];
+    if (!cond) continue;
+    if (cond.shading) merged.shading = cond.shading;
+    if (cond.textStyle) {
+      merged.textStyle = { ...merged.textStyle, ...cond.textStyle };
+    }
+    if (cond.borders) {
+      merged.borders = { ...merged.borders, ...cond.borders };
+    }
+  }
+  return merged;
+}
+
+/**
+ * Applies a conditional run text style (bold/color from the table style)
+ * beneath each run's own style, so explicit run formatting still wins.
+ */
+function applyConditionalTextStyle(
+  paragraphs: EditorParagraphNode[],
+  textStyle: EditorTextStyle | undefined,
+): void {
+  if (!textStyle || Object.keys(textStyle).length === 0) {
+    return;
+  }
+  for (const paragraph of paragraphs) {
+    for (const run of paragraph.runs) {
+      run.styles = { ...textStyle, ...run.styles };
+    }
+  }
+}
+
 export async function parseTableNode(
   tableNode: XmlElement,
   numberingMaps: NumberingMaps,
@@ -474,28 +607,45 @@ export async function parseTableNode(
     getFirstChildByTagNameNS(tblPr, WORD_NS, "tblBorders"),
   );
 
-  const tblConditionals =
-    tableStyleId && styles?.[tableStyleId]?.tableStyle?.conditionalFormats;
+  const tableStyleDef = tableStyleId
+    ? styles?.[tableStyleId]?.tableStyle
+    : undefined;
+  const tblConditionals = tableStyleDef?.conditionalFormats ?? undefined;
+  const look = parseTableLook(tblPr);
+  const rowBandSize = tableStyleDef?.rowBandSize ?? 1;
+  const colBandSize = tableStyleDef?.colBandSize ?? 1;
+
+  const rowNodes = getChildrenByTagNameNS(tableNode, WORD_NS, "tr");
+  const rowCount = rowNodes.length;
+  const colCount =
+    gridCols.length > 0
+      ? gridCols.length
+      : rowNodes.reduce(
+          (max, node) =>
+            Math.max(max, getChildrenByTagNameNS(node, WORD_NS, "tc").length),
+          0,
+        );
 
   const rows = [];
-  for (const rowNode of getChildrenByTagNameNS(tableNode, WORD_NS, "tr")) {
+  for (let rowIndex = 0; rowIndex < rowNodes.length; rowIndex += 1) {
+    const rowNode = rowNodes[rowIndex]!;
     const rowProperties = getFirstChildByTagNameNS(rowNode, WORD_NS, "trPr");
 
-    // Determine which conditional format type applies to this row.
+    // Explicit per-row `w:cnfStyle` markers act as the highest-precedence
+    // conditional source (rare; most styled tables rely on position alone).
     const cnfStyle = getFirstChildByTagNameNS(rowProperties, WORD_NS, "cnfStyle");
-    const rowCondType =
-      getAttributeValue(cnfStyle, "firstRow") === "1"
-        ? "firstRow"
-        : getAttributeValue(cnfStyle, "lastRow") === "1"
-          ? "lastRow"
-          : null;
-    const rowCondShading =
-      rowCondType && tblConditionals
-        ? tblConditionals[rowCondType]?.shading
-        : undefined;
+    const explicitRowKeys: string[] = [];
+    if (getAttributeValue(cnfStyle, "firstRow") === "1") {
+      explicitRowKeys.push("firstRow");
+    }
+    if (getAttributeValue(cnfStyle, "lastRow") === "1") {
+      explicitRowKeys.push("lastRow");
+    }
 
+    const cellNodes = getChildrenByTagNameNS(rowNode, WORD_NS, "tc");
     const cells = [];
-    for (const cellNode of getChildrenByTagNameNS(rowNode, WORD_NS, "tc")) {
+    for (let colIndex = 0; colIndex < cellNodes.length; colIndex += 1) {
+      const cellNode = cellNodes[colIndex]!;
       const paragraphs = [];
       const autospacingFlags: ParagraphAutospacingFlags[] = [];
       const cellProperties = getFirstChildByTagNameNS(
@@ -529,6 +679,28 @@ export async function parseTableNode(
       const colSpan = getTableCellColSpan(cellProperties);
       const vMerge = getTableCellVMerge(cellProperties);
       const cellStyle = parseTableCellStyle(cellProperties);
+
+      // Resolve table-style conditional formatting from cell position + tblLook.
+      const conditional = mergeConditionalFormats(
+        [
+          ...resolveCellConditionalKeys(
+            rowIndex,
+            colIndex,
+            rowCount,
+            colCount,
+            look,
+            rowBandSize,
+            colBandSize,
+          ),
+          ...explicitRowKeys,
+        ],
+        tblConditionals,
+      );
+
+      // Conditional run text (bold/header color) sits beneath each run's own
+      // style so explicit run formatting still wins.
+      applyConditionalTextStyle(paragraphs, conditional.textStyle);
+
       const cell = createEditorTableCell(
         paragraphs.length > 0
           ? paragraphs
@@ -540,10 +712,31 @@ export async function parseTableNode(
             ? { vMerge }
             : undefined,
       );
-      // Explicit cell shading takes priority; fall back to row conditional format.
-      const resolvedShading = cellStyle?.shading ?? rowCondShading;
-      if (cellStyle || resolvedShading) {
-        cell.style = { ...(cellStyle ?? {}), ...(resolvedShading ? { shading: resolvedShading } : {}) };
+
+      // Merge styling, lowest→highest precedence: conditional < explicit cell.
+      const mergedStyle: EditorTableCellStyle = { ...(cellStyle ?? {}) };
+      // Shading: explicit cell wins, else conditional.
+      const resolvedShading = cellStyle?.shading ?? conditional.shading;
+      if (resolvedShading) {
+        mergedStyle.shading = resolvedShading;
+      }
+      // Borders: fill each edge from the conditional only where the cell has no
+      // explicit border (table-level fallback runs later, lowest precedence).
+      if (conditional.borders) {
+        for (const edge of [
+          "borderTop",
+          "borderRight",
+          "borderBottom",
+          "borderLeft",
+        ] as const) {
+          const border = conditional.borders[edge];
+          if (mergedStyle[edge] === undefined && border) {
+            mergedStyle[edge] = border;
+          }
+        }
+      }
+      if (Object.keys(mergedStyle).length > 0) {
+        cell.style = mergedStyle;
       }
       if (vMerge === "continue") {
         cell.blocks = [];

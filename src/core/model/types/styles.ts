@@ -86,6 +86,15 @@ export interface EditorParagraphStyle {
 
 export interface EditorTableConditionalFormat {
   shading?: string;
+  /** Run formatting (bold/color) from the conditional's `w:rPr`. */
+  textStyle?: EditorTextStyle;
+  /** Cell borders from the conditional's `w:tcPr/w:tcBorders`. */
+  borders?: {
+    borderTop?: EditorBorderStyle;
+    borderRight?: EditorBorderStyle;
+    borderBottom?: EditorBorderStyle;
+    borderLeft?: EditorBorderStyle;
+  };
 }
 
 export interface EditorTableStyle {
@@ -96,7 +105,11 @@ export interface EditorTableStyle {
   layout?: "fixed" | "autofit";
   cellSpacing?: EditorDocxWidthValue;
   pageBreakBefore?: boolean;
-  /** Keyed by conditional type ("firstRow", "lastRow", etc.). Applied during import; not re-exported. */
+  /** `w:tblStyleRowBandSize` — rows per horizontal band (default 1). */
+  rowBandSize?: number;
+  /** `w:tblStyleColBandSize` — columns per vertical band (default 1). */
+  colBandSize?: number;
+  /** Keyed by conditional type ("firstRow", "lastRow", "band1Horz", etc.). Applied during import; not re-exported. */
   conditionalFormats?: Record<string, EditorTableConditionalFormat>;
 }
 

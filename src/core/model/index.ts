@@ -39,6 +39,7 @@ export type {
   EditorTextStyle,
   EditorParagraphStyle,
   EditorTableStyle,
+  EditorTableConditionalFormat,
   EditorNamedStyle,
 } from "./types/styles.js";
 

@@ -1,5 +1,9 @@
 import { DOMParser } from "@xmldom/xmldom";
-import type { EditorNamedStyle, EditorTableStyle } from "../../core/model.js";
+import type {
+  EditorNamedStyle,
+  EditorTableConditionalFormat,
+  EditorTableStyle,
+} from "../../core/model.js";
 import {
   WORD_NS,
   getChildrenByTagNameNS,
@@ -15,6 +19,7 @@ import {
   withDocxImplicitSingleLineHeight,
 } from "./paragraphStyle.js";
 import { mergeStyles, emptyOrUndefined, parseShdFill } from "./styleUtils.js";
+import { parseDocxBoxBorders } from "./borders.js";
 
 export function parseImportedStyles(
   stylesXml: string | null,
@@ -91,7 +96,20 @@ export function parseImportedStyles(
       const tblPr = getFirstChildByTagNameNS(styleElement, WORD_NS, "tblPr");
       const tblInd = getFirstChildByTagNameNS(tblPr, WORD_NS, "tblInd");
       const indentLeft = twipsToPoints(getAttributeValue(tblInd, "w"));
-      const conditionalFormats: Record<string, { shading?: string }> = {};
+      const parseBandSize = (localName: string): number | undefined => {
+        const raw = getAttributeValue(
+          getFirstChildByTagNameNS(tblPr, WORD_NS, localName),
+          "val",
+        );
+        const parsed = raw ? Number(raw) : Number.NaN;
+        return Number.isFinite(parsed) && parsed > 0
+          ? Math.floor(parsed)
+          : undefined;
+      };
+      const rowBandSize = parseBandSize("tblStyleRowBandSize");
+      const colBandSize = parseBandSize("tblStyleColBandSize");
+      const conditionalFormats: Record<string, EditorTableConditionalFormat> =
+        {};
       for (const tblStylePr of getChildrenByTagNameNS(
         styleElement,
         WORD_NS,
@@ -102,13 +120,28 @@ export function parseImportedStyles(
         const tcPr = getFirstChildByTagNameNS(tblStylePr, WORD_NS, "tcPr");
         const shd = getFirstChildByTagNameNS(tcPr, WORD_NS, "shd");
         const fill = parseShdFill(shd);
-        if (fill) {
-          conditionalFormats[condType] = { shading: fill };
+        const condTextStyle = parseRunStyle(
+          getFirstChildByTagNameNS(tblStylePr, WORD_NS, "rPr"),
+          theme,
+        );
+        const condBorders = emptyOrUndefined(
+          parseDocxBoxBorders(
+            getFirstChildByTagNameNS(tcPr, WORD_NS, "tcBorders"),
+          ),
+        );
+        if (fill || condTextStyle || condBorders) {
+          conditionalFormats[condType] = {
+            ...(fill ? { shading: fill } : {}),
+            ...(condTextStyle ? { textStyle: condTextStyle } : {}),
+            ...(condBorders ? { borders: condBorders } : {}),
+          };
         }
       }
       tableStyle = {
         styleId: id,
         indentLeft,
+        ...(rowBandSize !== undefined ? { rowBandSize } : {}),
+        ...(colBandSize !== undefined ? { colBandSize } : {}),
         ...(Object.keys(conditionalFormats).length > 0
           ? { conditionalFormats }
           : {}),

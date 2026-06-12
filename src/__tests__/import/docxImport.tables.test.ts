@@ -758,4 +758,86 @@ describe("table style conditional formatting", () => {
     // Second cell has no explicit shading → gets the conditional green
     expect(table.rows[0]!.cells[1]!.style?.shading).toBe("#196B24");
   });
+
+  it("resolves position-based conditional formatting (header, bold first column, banding) gated by tblLook", async () => {
+    const zip = new JSZip();
+    // Mirrors the real-world "Table1" style: teal firstRow with white bold text,
+    // bold firstCol, light-blue band1Horz and band1Vert. tblLook="04A0" enables
+    // firstRow + firstColumn and disables vertical banding (noVBand).
+    zip.file(
+      "word/styles.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:style w:type="table" w:styleId="Table1">
+    <w:name w:val="Table1"/>
+    <w:tblPr>
+      <w:tblStyleRowBandSize w:val="1"/>
+      <w:tblStyleColBandSize w:val="1"/>
+    </w:tblPr>
+    <w:tblStylePr w:type="band1Horz">
+      <w:tcPr><w:shd w:val="clear" w:fill="dbeef3"/></w:tcPr>
+    </w:tblStylePr>
+    <w:tblStylePr w:type="band1Vert">
+      <w:tcPr><w:shd w:val="clear" w:fill="dbeef3"/></w:tcPr>
+    </w:tblStylePr>
+    <w:tblStylePr w:type="firstCol">
+      <w:rPr><w:b w:val="1"/></w:rPr>
+    </w:tblStylePr>
+    <w:tblStylePr w:type="firstRow">
+      <w:rPr><w:b w:val="1"/><w:color w:val="ffffff"/></w:rPr>
+      <w:tcPr><w:shd w:val="clear" w:fill="4bacc6"/></w:tcPr>
+    </w:tblStylePr>
+  </w:style>
+</w:styles>`,
+    );
+    // Three rows × two columns, with NO per-row w:cnfStyle markers — Word derives
+    // all formatting from cell position + tblLook.
+    const cell = (text: string) =>
+      `<w:tc><w:p><w:r><w:t>${text}</w:t></w:r></w:p></w:tc>`;
+    const row = (a: string, b: string) => `<w:tr>${cell(a)}${cell(b)}</w:tr>`;
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tblPr><w:tblStyle w:val="Table1"/><w:tblLook w:val="04A0"/></w:tblPr>
+      ${row("Head A", "Head B")}
+      ${row("Data 1", "Val 1")}
+      ${row("Data 2", "Val 2")}
+    </w:tbl>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const table = getDocumentTables(document)[0]!;
+    const firstRun = (cell: EditorTableCellNode) => cell.blocks[0]!.runs[0]!;
+
+    // Header row: teal fill on every cell, white bold run text.
+    expect(table.rows[0]!.cells[0]!.style?.shading).toBe("#4BACC6");
+    expect(table.rows[0]!.cells[1]!.style?.shading).toBe("#4BACC6");
+    expect(firstRun(table.rows[0]!.cells[0]!).styles).toMatchObject({
+      bold: true,
+      color: "#FFFFFF",
+    });
+
+    // First body row → band1Horz light blue; first column bold.
+    expect(table.rows[1]!.cells[0]!.style?.shading).toBe("#DBEEF3");
+    expect(firstRun(table.rows[1]!.cells[0]!).styles?.bold).toBe(true);
+    // Second column is NOT bold and (noVBand) has the same row banding, not a
+    // vertical band override.
+    expect(firstRun(table.rows[1]!.cells[1]!).styles?.bold).toBeUndefined();
+    expect(table.rows[1]!.cells[1]!.style?.shading).toBe("#DBEEF3");
+
+    // Second body row → band2Horz (no fill defined) = unshaded.
+    expect(table.rows[2]!.cells[0]!.style?.shading).toBeUndefined();
+    // First column still bold across body rows.
+    expect(firstRun(table.rows[2]!.cells[0]!).styles?.bold).toBe(true);
+  });
 });
