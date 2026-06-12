@@ -35,6 +35,7 @@ import {
   underlineStyleLineWidthPx,
 } from "../../core/textStyleMappings.js";
 import { PX_PER_POINT } from "../../layoutProjection/constants.js";
+import { getListLabelInset } from "../textMeasurement/indentation.js";
 const canvasTextLogger = createEditorLogger("canvas-text");
 const loggedCanvasFontKeys = new Set<string>();
 const MAX_CANVAS_FONT_LOGS = 40;
@@ -389,7 +390,15 @@ export function drawParagraph(
       ctx.fillStyle = prefixStyles.color ?? "#000000";
       const first = line.slots[0];
       const gap = ctx.measureText(`${listPrefix} `).width;
-      const left = first ? Math.max(0, first.left - gap) : 0;
+      const labelInset = getListLabelInset(paragraph, state.document.styles);
+      const labelWidth = ctx.measureText(listPrefix).width;
+      // Label sits in the hanging area; first-line text begins at the text
+      // indent (advanced to the suffix tab stop). If the label would overrun
+      // the text start, fall back to gluing it just before the text.
+      const left =
+        first !== undefined && labelInset + labelWidth > first.left
+          ? Math.max(0, first.left - gap)
+          : Math.max(0, labelInset);
       ctx.fillText(listPrefix, originX + left, baselineY);
       ctx.restore();
     }

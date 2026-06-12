@@ -11,6 +11,10 @@ import {
 } from "../../core/model.js";
 import { createEditorStateFromDocument } from "../../core/editorState.js";
 import {
+  getLineStartInset,
+  getListLabelInset,
+} from "../../ui/textMeasurement/indentation.js";
+import {
   projectDocumentLayout,
   projectParagraphLayout,
 } from "../../layoutProjection/index.js";
@@ -946,5 +950,110 @@ describe("numbering level indentation import", () => {
     // Explicit values (720 twips = 48px, 360 twips = 24px) win
     expect(paragraph.style?.indentLeft).toBeCloseTo(48, 1);
     expect(paragraph.style?.indentHanging).toBeCloseTo(24, 1);
+  });
+});
+
+describe("DOCX docDefaults spacing", () => {
+  it("does not leak the editor's 8px default after-spacing onto paragraphs when docDefaults omit it", async () => {
+    const zip = new JSZip();
+    // docDefaults set a line multiplier but NO before/after spacing; Normal is
+    // empty. Word's effective after-spacing here is 0 — oasis must not fall back
+    // to its blank-document default of 8px.
+    zip.file(
+      "word/styles.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:docDefaults>
+    <w:pPrDefault><w:pPr><w:spacing w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault>
+  </w:docDefaults>
+  <w:style w:type="paragraph" w:styleId="Normal" w:default="1"><w:name w:val="normal"/></w:style>
+</w:styles>`,
+    );
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Plain body paragraph</w:t></w:r></w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+    const effective = resolveEffectiveParagraphStyle(
+      paragraph.style,
+      document.styles,
+    );
+    expect(effective.spacingAfter).toBe(0);
+    expect(effective.spacingBefore).toBe(0);
+  });
+});
+
+describe("DOCX numbered-paragraph suffix gap", () => {
+  async function buildNumberedHeadingDocx(): Promise<ArrayBuffer> {
+    const zip = new JSZip();
+    // Level 0: "%1." with a hanging indent and NO w:suff (OOXML default "tab").
+    zip.file(
+      "word/numbering.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:abstractNum w:abstractNumId="2">
+    <w:lvl w:ilvl="0">
+      <w:numFmt w:val="decimal"/>
+      <w:lvlText w:val="%1."/>
+      <w:pPr><w:ind w:left="360" w:hanging="360"/></w:pPr>
+    </w:lvl>
+  </w:abstractNum>
+  <w:num w:numId="2"><w:abstractNumId w:val="2"/></w:num>
+</w:numbering>`,
+    );
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:pPr>
+        <w:numPr><w:ilvl w:val="0"/><w:numId w:val="2"/></w:numPr>
+        <w:tabs><w:tab w:val="left" w:pos="567"/></w:tabs>
+      </w:pPr>
+      <w:r><w:t>Identificação</w:t></w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    return zip.generateAsync({ type: "arraybuffer" });
+  }
+
+  it("advances the first-line text to the suffix tab stop and keeps the number in the hanging gutter", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildNumberedHeadingDocx(),
+    );
+    const paragraph = getDocumentParagraphs(document)[0]!;
+
+    // Default suffix is "tab" when w:suff is absent.
+    expect(paragraph.list?.suffix).toBe("tab");
+
+    // Hanging indent left=360tw=24px, hanging=360tw=24px → number at the margin.
+    const labelInset = getListLabelInset(paragraph, document.styles);
+    expect(labelInset).toBeCloseTo(0, 1);
+
+    // First-line text advances to the 567-twip (28.35pt ≈ 37.8px) tab stop,
+    // leaving a visible gap; wrapped lines stay at the text indent (24px).
+    const firstLineInset = getLineStartInset(paragraph, document.styles, true);
+    const otherLineInset = getLineStartInset(paragraph, document.styles, false);
+    expect(firstLineInset).toBeCloseTo(37.8, 0);
+    expect(otherLineInset).toBeCloseTo(24, 1);
+    expect(firstLineInset).toBeGreaterThan(otherLineInset);
   });
 });

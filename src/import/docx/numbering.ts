@@ -13,6 +13,8 @@ export interface NumberingMaps {
   numKinds: Map<string, EditorParagraphListStyle["kind"]>;
   /** Indent per level, keyed by "abstractNumId:ilvl". Values in points. */
   abstractIndents: Map<string, { left?: number; hanging?: number }>;
+  /** Suffix (`w:suff`) per level, keyed by "abstractNumId:ilvl". */
+  abstractSuffixes: Map<string, EditorParagraphListStyle["suffix"]>;
   /** numId → abstractNumId */
   numToAbstractId: Map<string, string>;
 }
@@ -21,10 +23,20 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
   const abstractKinds = new Map<string, EditorParagraphListStyle["kind"]>();
   const numKinds = new Map<string, EditorParagraphListStyle["kind"]>();
   const abstractIndents = new Map<string, { left?: number; hanging?: number }>();
+  const abstractSuffixes = new Map<
+    string,
+    EditorParagraphListStyle["suffix"]
+  >();
   const numToAbstractId = new Map<string, string>();
 
   if (!numberingXml) {
-    return { abstractKinds, numKinds, abstractIndents, numToAbstractId };
+    return {
+      abstractKinds,
+      numKinds,
+      abstractIndents,
+      abstractSuffixes,
+      numToAbstractId,
+    };
   }
 
   const document = new DOMParser().parseFromString(
@@ -33,7 +45,13 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
   );
   const numbering = document.documentElement;
   if (!numbering) {
-    return { abstractKinds, numKinds, abstractIndents, numToAbstractId };
+    return {
+      abstractKinds,
+      numKinds,
+      abstractIndents,
+      abstractSuffixes,
+      numToAbstractId,
+    };
   }
 
   const abstractNums = numbering.getElementsByTagNameNS(WORD_NS, "abstractNum");
@@ -55,6 +73,14 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
         if (ilvl === "0") {
           abstractKinds.set(abstractId, format === "bullet" ? "bullet" : "ordered");
         }
+      }
+
+      const suffRaw = getAttributeValue(
+        getFirstChildByTagNameNS(level, WORD_NS, "suff"),
+        "val",
+      );
+      if (suffRaw === "space" || suffRaw === "nothing" || suffRaw === "tab") {
+        abstractSuffixes.set(`${abstractId}:${ilvl}`, suffRaw);
       }
 
       const pPr = getFirstChildByTagNameNS(level, WORD_NS, "pPr");
@@ -90,7 +116,13 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
     numKinds.set(numId, abstractKinds.get(abstractNumId) ?? "ordered");
   }
 
-  return { abstractKinds, numKinds, abstractIndents, numToAbstractId };
+  return {
+    abstractKinds,
+    numKinds,
+    abstractIndents,
+    abstractSuffixes,
+    numToAbstractId,
+  };
 }
 
 export function parseParagraphList(
@@ -124,11 +156,17 @@ export function parseParagraphList(
   const indent = abstractId
     ? numberingMaps.abstractIndents.get(`${abstractId}:${ilvlValue}`)
     : undefined;
+  // OOXML default suffix is "tab" when w:suff is absent.
+  const suffix =
+    (abstractId
+      ? numberingMaps.abstractSuffixes.get(`${abstractId}:${ilvlValue}`)
+      : undefined) ?? "tab";
 
   return {
     list: {
       kind: numberingMaps.numKinds.get(numId) ?? "ordered",
       level: Number.isFinite(level) ? level : 0,
+      suffix,
     },
     indent,
   };

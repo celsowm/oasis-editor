@@ -63,6 +63,12 @@ export interface EditorParagraphListStyle {
     | "upperRoman"
     | "bullet";
   startAt?: number;
+  /**
+   * Separator between the list label and the paragraph text (`w:lvl/w:suff`).
+   * OOXML default is "tab"; Word renders the label, then advances to the next
+   * tab stop (or a space / nothing). Undefined is treated as "tab".
+   */
+  suffix?: "tab" | "space" | "nothing";
 }
 
 /**

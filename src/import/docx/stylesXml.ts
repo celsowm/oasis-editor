@@ -49,9 +49,18 @@ export function parseImportedStyles(
     WORD_NS,
     "rPr",
   );
-  const defaultParagraphStyle = withDocxImplicitSingleLineHeight(
-    parseParagraphStyle(pPrDefault),
-  );
+  // The docx's docDefaults establish the authoritative paragraph baseline.
+  // OOXML's true default for before/after spacing is 0 (a Word doc that wants
+  // 8pt sets it explicitly on a style). Pin them to 0 here so oasis's
+  // blank-document default (DEFAULT_PARAGRAPH_STYLE.spacingAfter = 8px) does not
+  // leak into every imported paragraph and inflate pagination.
+  const defaultParagraphStyle = pPrDefault
+    ? {
+        spacingBefore: 0,
+        spacingAfter: 0,
+        ...withDocxImplicitSingleLineHeight(parseParagraphStyle(pPrDefault)),
+      }
+    : withDocxImplicitSingleLineHeight(parseParagraphStyle(pPrDefault));
   const defaultTextStyle = parseRunStyle(rPrDefault, theme);
   const styles: Record<string, EditorNamedStyle> = {};
   let defaultParagraphStyleId: string | undefined;

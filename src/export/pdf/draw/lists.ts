@@ -11,8 +11,7 @@ import {
 import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
 import { OasisPdfWriter } from "../OasisPdfWriter.js";
 import { pxToPt, textStyleToFontSizePt } from "../units.js";
-
-const LIST_PREFIX_OFFSET_PX = 24;
+import { getListLabelInset } from "../../../ui/textMeasurement/indentation.js";
 
 const BULLET_GLYPHS = ["•", "○", "▪", "•", "○", "▪"];
 const ORDERED_DEFAULT_FORMATS: NonNullable<
@@ -175,8 +174,11 @@ export function drawListPrefix(
     bold: styles.bold,
     italic: styles.italic,
   });
+  // Label sits in the hanging area; the first-line text begins at the text
+  // indent (advanced to the suffix tab stop), leaving the gap.
+  const labelInset = getListLabelInset(paragraph, document.styles);
   writer.drawText(pageIndex, {
-    x: pxToPt(originX + Math.max(0, firstSlot.left - LIST_PREFIX_OFFSET_PX)),
+    x: pxToPt(originX + Math.max(0, labelInset)),
     y: pxToPt(originY + line.top + line.height * 0.8),
     text: prefix,
     fontSize: textStyleToFontSizePt(styles),
