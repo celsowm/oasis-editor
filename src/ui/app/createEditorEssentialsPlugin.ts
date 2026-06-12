@@ -267,7 +267,7 @@ export function createEditorEssentialsRuntimePlugin(
       })),
     exportDocx: () => void options.docIO.handleExportDocx(),
     exportPdf: () => void options.docIO.handleExportPdf(),
-    importDocx: () => options.importInputRef()?.click(),
+    importDocument: () => options.importInputRef()?.click(),
     insertImage: () => options.imageInputRef()?.click(),
   };
 

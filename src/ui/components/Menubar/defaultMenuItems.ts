@@ -15,7 +15,7 @@ export const defaultMenuItems: MenuItem[] = [
     path: "File/Import",
     labelKey: "toolbar.import",
     shortcut: "Ctrl+O",
-    command: "importDocx",
+    command: "importDocument",
     icon: "upload",
   },
   {

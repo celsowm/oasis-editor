@@ -2,15 +2,15 @@ import { createEditorStyledRun } from "../../core/editorState.js";
 import type {
   EditorParagraphListStyle,
   EditorTextRun,
-  EditorTextStyle,
 } from "../../core/model.js";
 import type { EditorClipboardParagraphSpec } from "../../core/commands/clipboard.js";
 import { cloneStyle } from "../../core/textStyle/textStyleMutations.js";
+import { parseParagraphStyle } from "../../core/html/htmlStyleParser.js";
 import {
-  parseInlineImage,
-  parseInlineStyles,
-  parseParagraphStyle,
-} from "../../core/html/htmlStyleParser.js";
+  collectInlineRuns,
+  isParagraphTag,
+  listKindForTag,
+} from "../../core/html/htmlBlockWalker.js";
 
 export function parseEditorClipboardHtmlWithDom(
   html: string,
@@ -42,42 +42,6 @@ export function parseEditorClipboardHtmlWithDom(
     });
   };
 
-  const collectInlineRuns = (
-    node: Node,
-    inheritedStyle: EditorTextStyle | undefined,
-  ): EditorTextRun[] => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent ?? "";
-      return text.length > 0
-        ? [createEditorStyledRun(text, inheritedStyle)]
-        : [];
-    }
-
-    if (node.nodeType !== Node.ELEMENT_NODE) {
-      return [];
-    }
-
-    const element = node as Element;
-    if (element.tagName === "BR") {
-      return [createEditorStyledRun("\n", inheritedStyle)];
-    }
-
-    const image = parseInlineImage(element);
-    if (image) {
-      return [createEditorStyledRun("\uFFFC", inheritedStyle, image)];
-    }
-
-    const nextStyle = {
-      ...(inheritedStyle ?? {}),
-      ...(parseInlineStyles(element) ?? {}),
-    } as EditorTextStyle;
-    const childRuns: EditorTextRun[] = [];
-    for (const child of Array.from(element.childNodes)) {
-      childRuns.push(...collectInlineRuns(child, nextStyle));
-    }
-    return childRuns;
-  };
-
   const processList = (
     element: Element,
     kind: EditorParagraphListStyle["kind"],
@@ -107,22 +71,13 @@ export function parseEditorClipboardHtmlWithDom(
     }
 
     const element = node as Element;
-    if (element.tagName === "UL") {
-      processList(element, "bullet");
+    const listKind = listKindForTag(element.tagName);
+    if (listKind) {
+      processList(element, listKind);
       continue;
     }
 
-    if (element.tagName === "OL") {
-      processList(element, "ordered");
-      continue;
-    }
-
-    if (
-      element.tagName === "P" ||
-      element.tagName === "DIV" ||
-      element.tagName === "LI" ||
-      /^H[1-6]$/.test(element.tagName)
-    ) {
+    if (isParagraphTag(element.tagName)) {
       appendParagraph(
         element,
         collectInlineRuns(element, undefined),

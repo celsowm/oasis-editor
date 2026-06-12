@@ -52,7 +52,7 @@ export interface EditorViewPropsContext {
   // refs
   focusController: ReturnType<typeof createEditorFocusController>;
   // file handlers
-  handleImportDocx: (file: File | null) => void;
+  handleImportFile: (file: File | null) => void;
   handleInsertImage: (file: File | null) => void;
   // surface handlers
   surfaceEvents: ReturnType<typeof createEditorSurfaceEvents>;
@@ -127,7 +127,7 @@ export function buildEditorViewProps(
 
   const fileHandlers: OasisEditorEditorFileHandlers = {
     onImportInputChange: (e) =>
-      ctx.handleImportDocx(e.currentTarget.files?.[0] ?? null),
+      ctx.handleImportFile(e.currentTarget.files?.[0] ?? null),
     onImageInputChange: (e) =>
       ctx.handleInsertImage(e.currentTarget.files?.[0] ?? null),
   };

@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
 import type { EditorState, EditorPosition } from "../../core/model.js";
-import type { DocxImportStage } from "../../import/docx/importDocxToEditorDocument.js";
+import type { ImportStage } from "../../import/DocumentFormatImporter.js";
 import type { EditorLogger } from "../../utils/logger.js";
 import { createDocumentExporter } from "./documentIO/DocumentExporter.js";
 import { createDocumentImporter } from "./documentIO/DocumentImporter.js";
@@ -8,7 +8,7 @@ import { createImageInsertionService } from "./documentIO/ImageInsertionService.
 
 export type ImportProgressPhase =
   | "reading-file"
-  | DocxImportStage
+  | ImportStage
   | "applying-editor-state"
   | "stabilizing-layout"
   | "done"
@@ -22,9 +22,9 @@ export interface ImportProgressState {
 
 const PHASE_RANGES: Record<ImportProgressPhase, [number, number]> = {
   "reading-file": [0, 8],
-  "opening-docx": [8, 20],
-  "parsing-document": [20, 72],
-  "parsing-headers-footers": [72, 78],
+  opening: [8, 20],
+  parsing: [20, 72],
+  finishing: [72, 78],
   "applying-editor-state": [78, 88],
   "stabilizing-layout": [88, 98],
   done: [100, 100],
@@ -106,9 +106,9 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
     focusInput: deps.focusInput,
   });
 
-  const handleImportDocx = async (file: File | null) => {
+  const handleImportFile = async (file: File | null) => {
     if (deps.isReadOnly()) return;
-    await importer.handleImportDocx(file);
+    await importer.handleImportFile(file);
   };
 
   const insertImageFromFile = async (
@@ -136,7 +136,7 @@ export function createEditorDocumentIO(deps: UseEditorDocumentIOProps) {
 
   return {
     importProgress,
-    handleImportDocx,
+    handleImportFile,
     handleExportDocx,
     handleExportPdf,
     insertImageFromFile,

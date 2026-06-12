@@ -676,7 +676,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     showCaret: shouldShowCaret,
     importProgress: docIO.importProgress,
     focusController,
-    handleImportDocx: docIO.handleImportDocx,
+    handleImportFile: docIO.handleImportFile,
     handleInsertImage: docIO.handleInsertImage,
     surfaceEvents: surfaceEventsWithTextDrag,
     tableResize,

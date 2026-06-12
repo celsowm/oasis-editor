@@ -8,8 +8,8 @@ import {
   resolveEffectiveTextStyleForParagraph,
 } from "../../../core/model.js";
 import { createEditorStateFromDocument } from "../../../core/editorState.js";
-import { importDocxInWorker } from "../../../import/docx/importDocxInWorker.js";
-import type { DocxImportStage } from "../../../import/docx/importDocxToEditorDocument.js";
+import { resolveImporterForFile } from "../../../import/documentImporterRegistry.js";
+import type { ImportStage } from "../../../import/DocumentFormatImporter.js";
 import { readFileBuffer } from "../../../ui/clipboardImage.js";
 import type { EditorLogger } from "../../../utils/logger.js";
 import type { ImportProgressPhase } from "../useEditorDocumentIO.js";
@@ -96,26 +96,42 @@ export interface DocumentImporterDeps {
 }
 
 export function createDocumentImporter(deps: DocumentImporterDeps) {
-  const handleImportDocx = async (file: File | null) => {
+  const handleImportFile = async (file: File | null) => {
     if (!file) return;
 
+    const importer = resolveImporterForFile(file);
+    if (!importer) {
+      deps.setImportPhase("error");
+      deps.logger.error("import:unsupported-format", {
+        name: file.name,
+        type: file.type,
+      });
+      deps.clearImportProgressSoon();
+      return;
+    }
+
     const startedAt = deps.now();
-    deps.logger.info("import docx:start", { name: file.name, size: file.size });
+    deps.logger.info("import:start", {
+      format: importer.id,
+      name: file.name,
+      size: file.size,
+    });
     deps.setImportPhase("reading-file");
 
     try {
       const readingStartedAt = deps.now();
       const arrayBuffer = await readFileBuffer(file);
-      deps.logger.info("import docx:phase", {
+      deps.logger.info("import:phase", {
         phase: "reading-file",
         durationMs: Math.round((deps.now() - readingStartedAt) * 100) / 100,
       });
 
-      let lastProgressStage: DocxImportStage | null = null;
+      let lastProgressStage: ImportStage | null = null;
       let lastProgressValue = -1;
       let lastProgressAt = 0;
-      const document = await importDocxInWorker(arrayBuffer, {
-        onProgress: (stage, subProgress) => {
+      const document = await importer.import(
+        arrayBuffer,
+        (stage, subProgress) => {
           const now = deps.now();
           const roundedProgress =
             subProgress === undefined || !Number.isFinite(subProgress)
@@ -136,14 +152,14 @@ export function createDocumentImporter(deps: DocumentImporterDeps) {
           deps.setImportPhase(stage, subProgress);
           const payload = { phase: stage, subProgress };
           if (stageChanged || subProgress === undefined || subProgress === 1) {
-            deps.logger.info("import docx:phase", payload);
+            deps.logger.info("import:phase", payload);
           } else {
-            deps.logger.debug("import docx:phase", payload);
+            deps.logger.debug("import:phase", payload);
           }
         },
-      });
+      );
       deps.logger.info(
-        "import docx:document-diagnostics",
+        "import:document-diagnostics",
         buildImportedDocumentDiagnostics(document),
       );
 
@@ -154,7 +170,7 @@ export function createDocumentImporter(deps: DocumentImporterDeps) {
       const stabilizationStartedAt = deps.now();
       deps.setImportPhase("stabilizing-layout");
       await deps.stabilizeLayoutAfterImport();
-      deps.logger.info("import docx:phase", {
+      deps.logger.info("import:phase", {
         phase: "stabilizing-layout",
         durationMs:
           Math.round((deps.now() - stabilizationStartedAt) * 100) / 100,
@@ -172,7 +188,8 @@ export function createDocumentImporter(deps: DocumentImporterDeps) {
       const canonicalParagraphs =
         getDocumentParagraphsCanonical(document).length;
       deps.setImportPhase("done");
-      deps.logger.info("import docx:done", {
+      deps.logger.info("import:done", {
+        format: importer.id,
         blocks: canonicalBlocks,
         paragraphs: canonicalParagraphs,
         durationMs: Math.round((deps.now() - startedAt) * 100) / 100,
@@ -180,13 +197,13 @@ export function createDocumentImporter(deps: DocumentImporterDeps) {
       deps.focusInput();
     } catch (error) {
       deps.setImportPhase("error");
-      deps.logger.error("import docx:error", error);
+      deps.logger.error("import:error", error);
     } finally {
       deps.clearImportProgressSoon();
     }
   };
 
   return {
-    handleImportDocx,
+    handleImportFile,
   };
 }

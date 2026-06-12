@@ -6,6 +6,7 @@ export function parseInlineStyles(
   const result: EditorTextStyle = {};
   const style = (element as HTMLElement).style;
 
+  parseSemanticTag(element, result);
   parseFontAndColor(style, result);
   parseLanguage(element, result);
   parseTextDecoration(style, result);
@@ -15,6 +16,36 @@ export function parseInlineStyles(
   parseLink(element, result);
 
   return Object.keys(result).length > 0 ? result : undefined;
+}
+
+/**
+ * Maps HTML semantic formatting tags to text styles. Inline CSS on the same
+ * element still wins (it is applied afterwards and only ever adds properties),
+ * so e.g. `<b style="font-weight:normal">` is an edge case we deliberately
+ * ignore in favour of the simpler, far more common semantic mapping.
+ */
+function parseSemanticTag(element: Element, result: EditorTextStyle): void {
+  switch (element.tagName) {
+    case "B":
+    case "STRONG":
+      result.bold = true;
+      break;
+    case "I":
+    case "EM":
+    case "CITE":
+    case "VAR":
+      result.italic = true;
+      break;
+    case "U":
+    case "INS":
+      result.underline = true;
+      break;
+    case "S":
+    case "STRIKE":
+    case "DEL":
+      result.strike = true;
+      break;
+  }
 }
 
 function parseFontAndColor(

@@ -27,6 +27,8 @@ import {
   getDocumentCharacterCount,
   getDocumentWordCount,
 } from "../core/editorState.js";
+import { importFileAccept } from "../import/documentImporterRegistry.js";
+import type { ImportProgressState } from "../app/controllers/useEditorDocumentIO.js";
 import type {
   CaretBox,
   InputBox,
@@ -40,19 +42,7 @@ import type { ResizeHandleDirection } from "./resizeGeometry.js";
 import { ResizeHandlesOverlay } from "./overlays/ResizeHandlesOverlay.js";
 import { projectDocumentLayout } from "../layoutProjection/index.js";
 
-type ImportProgress = {
-  phase:
-    | "reading-file"
-    | "opening-docx"
-    | "parsing-document"
-    | "parsing-headers-footers"
-    | "applying-editor-state"
-    | "stabilizing-layout"
-    | "done"
-    | "error";
-  progress: number;
-  subProgress?: number;
-};
+type ImportProgress = ImportProgressState;
 
 export interface OasisEditorEditorLayoutProps {
   measuredBlockHeights?: Accessor<Record<string, number>>;
@@ -474,7 +464,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
           />
           <input
             ref={refs().onImportInputRef}
-            accept=".docx"
+            accept={importFileAccept()}
             data-testid="editor-import-docx-input"
             style={{ display: "none" }}
             type="file"

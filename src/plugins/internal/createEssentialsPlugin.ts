@@ -74,7 +74,7 @@ export interface EssentialsDocumentCapability {
   documentStyles: () => EssentialsDocumentStyleDescriptor[];
   exportDocx: () => void;
   exportPdf: () => void;
-  importDocx: () => void;
+  importDocument: () => void;
   insertImage: () => void;
 }
 

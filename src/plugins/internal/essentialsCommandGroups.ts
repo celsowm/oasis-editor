@@ -227,7 +227,9 @@ export function buildDocumentAndBrowserCommands({
     ),
     exportDocx: actionCommand("exportDocx", () => document.exportDocx()),
     exportPdf: actionCommand("exportPdf", () => document.exportPdf()),
-    importDocx: actionCommand("importDocx", () => document.importDocx()),
+    importDocument: actionCommand("importDocument", () =>
+      document.importDocument(),
+    ),
     insertImage: actionCommand("insertImage", () => document.insertImage()),
     unlink: actionCommand(
       "unlink",
