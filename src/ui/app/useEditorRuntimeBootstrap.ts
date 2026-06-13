@@ -20,17 +20,20 @@ export interface EditorRuntimeBootstrapContext {
   essentials: EssentialsPluginDeps;
   externalPlugins: RuntimePluginsConfig["externalPlugins"];
   customizeToolbar: RuntimePluginsConfig["customizeToolbar"];
+  customizeMenubar: RuntimePluginsConfig["customizeMenubar"];
   initialDocument: RuntimeCommandHostConfig["initialDocument"];
   focusEditor: RuntimeCommandHostConfig["focusEditor"];
   logger: RuntimeCommandHostConfig["logger"];
   onReady: RuntimeCommandHostConfig["onReady"];
   onSettled: RuntimeCommandHostConfig["onSettled"];
+  onError?: RuntimeCommandHostConfig["onError"];
 }
 
 export interface EditorRuntimeBootstrap {
   toolbarRegistry: ReturnType<
     typeof useEditorRuntimePlugins
   >["toolbarRegistry"];
+  menuRegistry: ReturnType<typeof useEditorRuntimePlugins>["menuRegistry"];
   runtimeReady: RuntimeCommandHost["runtimeReady"];
   runtimeEditor: RuntimeCommandHost["runtimeEditor"];
   commandStateOf: RuntimeCommandHost["commandStateOf"];
@@ -45,11 +48,13 @@ export function useEditorRuntimeBootstrap(
   const {
     runtimePlugins,
     toolbarRegistry,
+    menuRegistry,
     dispose: disposeRuntimePlugins,
   } = useEditorRuntimePlugins({
     essentialsPlugin,
     externalPlugins: ctx.externalPlugins,
     customizeToolbar: ctx.customizeToolbar,
+    customizeMenubar: ctx.customizeMenubar,
   });
 
   const runtimeCommandHost = createRuntimeCommandHost({
@@ -59,6 +64,7 @@ export function useEditorRuntimeBootstrap(
     logger: ctx.logger,
     onReady: ctx.onReady,
     onSettled: ctx.onSettled,
+    onError: ctx.onError,
   });
 
   onMount(() => {
@@ -72,6 +78,7 @@ export function useEditorRuntimeBootstrap(
 
   return {
     toolbarRegistry,
+    menuRegistry,
     runtimeReady: runtimeCommandHost.runtimeReady,
     runtimeEditor: runtimeCommandHost.runtimeEditor,
     commandStateOf: runtimeCommandHost.commandStateOf,

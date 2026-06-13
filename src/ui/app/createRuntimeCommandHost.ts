@@ -15,8 +15,9 @@ interface CreateRuntimeCommandHostOptions {
   runtimePlugins: OasisPlugin[];
   focusEditor: () => void;
   logger: EditorLogger;
-  onReady?: () => void;
+  onReady?: (editor: Editor) => void;
   onSettled?: () => void;
+  onError?: (error: unknown) => void;
 }
 
 export function createRuntimeCommandHost(
@@ -89,10 +90,11 @@ export function createRuntimeCommandHost(
 
       requestAnimationFrame(() => {
         options.onSettled?.();
-        options.onReady?.();
+        options.onReady?.(initializedRuntimeEditor);
       });
     } catch (error) {
       options.logger.error("runtime:init failed", error);
+      options.onError?.(error);
       options.onSettled?.();
     }
   };

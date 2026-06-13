@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createToolbarRegistry } from "../../ui/components/Toolbar/registry/ToolbarRegistry.js";
 import { MenuRegistry } from "../../ui/components/Menubar/menuRegistry.js";
+import { useEditorRuntimePlugins } from "../../ui/app/useEditorRuntimePlugins.js";
 
 describe("UI registries", () => {
   it("deduplicates and orders toolbar items", () => {
@@ -92,5 +93,32 @@ describe("UI registries", () => {
 
     registry.unregister("edit");
     expect(registry.getItems().map((item) => item.id)).toEqual(["file"]);
+  });
+
+  it("keeps menubar customizations local to a runtime plugin registry", () => {
+    const first = useEditorRuntimePlugins({
+      essentialsPlugin: { name: "Essentials" },
+      customizeMenubar(registry) {
+        registry.register({
+          id: "client_custom",
+          path: "Tools/Client Custom",
+          command: "clientCustom",
+        });
+      },
+    });
+    const second = useEditorRuntimePlugins({
+      essentialsPlugin: { name: "Essentials" },
+    });
+
+    expect(
+      first.menuRegistry
+        .getItems()
+        .some((item) => item.id === "client_custom"),
+    ).toBe(true);
+    expect(
+      second.menuRegistry
+        .getItems()
+        .some((item) => item.id === "client_custom"),
+    ).toBe(false);
   });
 });

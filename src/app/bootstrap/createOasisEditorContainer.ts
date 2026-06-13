@@ -3,18 +3,30 @@ import {
   OasisEditorContainer,
   type OasisEditorContainerProps,
 } from "../../ui/OasisEditorContainer.js";
+import {
+  createOasisEditorClient,
+  type OasisEditorClient,
+} from "../client/OasisEditorClient.js";
 
-export interface OasisEditorContainerInstance {
-  dispose: () => void;
-}
+export type OasisEditorContainerInstance = OasisEditorClient;
 
 export function createOasisEditorContainer(
   container: HTMLElement,
   props: OasisEditorContainerProps = {},
 ): OasisEditorContainerInstance {
-  const dispose = render(() => OasisEditorContainer(props), container);
+  const client = createOasisEditorClient();
+  const dispose = render(
+    () =>
+      OasisEditorContainer({
+        ...props,
+        runtime: { ...props.runtime, client },
+      }),
+    container,
+  );
+  client.setDispose(() => {
+    dispose();
+    container.innerHTML = "";
+  });
 
-  return {
-    dispose,
-  };
+  return client;
 }

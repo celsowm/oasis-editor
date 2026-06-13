@@ -77,6 +77,7 @@ import { useEditorTransactions } from "./app/useEditorTransactions.js";
 import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
 import { OasisEditorLoading } from "./OasisEditorLoading.js";
 import { WelcomeOverlay } from "./components/WelcomeOverlay.js";
+import { createOasisEditorClient } from "../app/client/OasisEditorClient.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 export type {
@@ -89,6 +90,7 @@ export type {
 } from "./OasisEditorAppProps.js";
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
+  const runtimeClient = props.runtime?.client ?? createOasisEditorClient();
   const ui = () => props.ui ?? {};
   const documentOptions = () => props.document ?? {};
   const runtimeOptions = () => props.runtime ?? {};
@@ -249,7 +251,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     if (isImportInProgress()) {
       return;
     }
-    documentOptions().onStateChange?.(cloneState(getStateSnapshot()));
+    const snapshot = cloneState(getStateSnapshot());
+    documentOptions().onStateChange?.(snapshot);
+    runtimeClient.emit("change", snapshot);
   });
 
   const selectedImageRun = () => getSelectedImageRun(state);
@@ -483,6 +487,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     commandStateOf,
     toolbarHost,
     toolbarRegistry,
+    menuRegistry,
   } = useEditorRuntimeBootstrap({
     essentials: {
       state: () => state,
@@ -514,13 +519,39 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     },
     externalPlugins: runtimeOptions().plugins,
     customizeToolbar: runtimeOptions().customizeToolbar,
+    customizeMenubar: runtimeOptions().customizeMenubar,
     initialDocument: getStateSnapshot().document,
     focusEditor: focusInput,
     logger,
-    onReady: runtimeOptions().onReady,
+    onReady: (editor) => {
+      runtimeClient.resolveReady(editor);
+      runtimeOptions().onReady?.(runtimeClient);
+    },
     onSettled: () => {
       setInitialLoading(false);
     },
+    onError: (error) => runtimeClient.rejectReady(error),
+  });
+
+  runtimeClient.connectHost({
+    getRuntimeEditor: () => (runtimeReady() ? runtimeEditor() : null),
+    getState: () => cloneState(getStateSnapshot()),
+    getDocument: () => cloneState(getStateSnapshot()).document,
+    setDocument: (document) => {
+      applyState(createEditorStateFromDocument(document));
+      resetEditorChromeState();
+      focusInput();
+    },
+  });
+
+  createEffect(() => {
+    if (!runtimeReady()) return;
+    state.document;
+    state.selection;
+    state.activeSectionIndex;
+    state.activeZone;
+    const snapshot = cloneState(getStateSnapshot());
+    runtimeEditor().dispatch(() => snapshot);
   });
 
   const { handleKeyDown: rawHandleKeyDown } = createEditorKeyboardController({
@@ -858,6 +889,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         toolbarHost={toolbarHost}
         persistenceStatus={persistenceStatus}
         toolbarRegistry={toolbarRegistry}
+        menuRegistry={menuRegistry}
         showChrome={showChrome}
         showTitleBar={showTitleBar}
         showMenubar={showMenubar}

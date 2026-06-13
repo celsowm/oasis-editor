@@ -14,6 +14,7 @@ import {
 } from "../OasisEditorEditor.js";
 import type { ToolbarHost } from "../components/Toolbar/state/createToolbarApi.js";
 import type { ToolbarRegistry } from "../components/Toolbar/registry/ToolbarRegistry.js";
+import type { MenuRegistry } from "../components/Menubar/menuRegistry.js";
 import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
 import type { ToolbarLayoutMode } from "../OasisEditorAppProps.js";
 import { buildCanvasLayoutSnapshot } from "../canvas/CanvasLayoutSnapshot.js";
@@ -24,6 +25,7 @@ export interface ShellProps {
   toolbarHost: () => ToolbarHost;
   persistenceStatus: () => string;
   toolbarRegistry: ToolbarRegistry;
+  menuRegistry: MenuRegistry;
   showChrome: boolean;
   showTitleBar: boolean;
   showMenubar: boolean;
@@ -95,13 +97,13 @@ export function DocumentShell(props: ShellProps) {
           when={props.showTitleBar}
           fallback={
             <Show when={props.showMenubar}>
-              <Menubar host={props.toolbarHost} />
+              <Menubar host={props.toolbarHost} registry={props.menuRegistry} />
             </Show>
           }
         >
           <TitleBar>
             <Show when={props.showMenubar}>
-              <Menubar host={props.toolbarHost} />
+              <Menubar host={props.toolbarHost} registry={props.menuRegistry} />
             </Show>
           </TitleBar>
         </Show>

@@ -1,8 +1,15 @@
 import React, { useEffect, useRef } from "react";
 import { mount, type OasisMountInstance } from "../../ui/mount.js";
 import type { OasisEditorAppProps } from "../../ui/OasisEditorApp.js";
+import type { OasisEditorClient } from "../../app/client/OasisEditorClient.js";
 
-export type ReactOasisEditorProps = OasisEditorAppProps;
+export type ReactOasisEditorProps = OasisEditorAppProps & {
+  /**
+   * Receives the mounted Oasis client. Props are mount-only for this adapter;
+   * remount the component to apply a new editor configuration.
+   */
+  onClient?: (client: OasisEditorClient) => void;
+};
 
 export const OasisEditor: React.FC<ReactOasisEditorProps> = (props) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -11,6 +18,7 @@ export const OasisEditor: React.FC<ReactOasisEditorProps> = (props) => {
   useEffect(() => {
     if (containerRef.current) {
       instanceRef.current = mount(containerRef.current, props);
+      props.onClient?.(instanceRef.current);
     }
 
     return () => {

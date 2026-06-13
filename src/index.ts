@@ -2,6 +2,11 @@ import "./styles/oasis-editor.css";
 
 export { createOasisEditor } from "./app/bootstrap/createOasisEditorApp.js";
 export type { OasisEditorInstance } from "./app/bootstrap/createOasisEditorApp.js";
+export type {
+  OasisEditorClient,
+  OasisEditorClientEvent,
+  OasisEditorClientEventHandler,
+} from "./app/client/OasisEditorClient.js";
 
 export { createOasisEditorContainer } from "./app/bootstrap/createOasisEditorContainer.js";
 export type { OasisEditorContainerInstance } from "./app/bootstrap/createOasisEditorContainer.js";
@@ -19,6 +24,8 @@ export {
   resolveCommandRef,
 } from "./core/commands/CommandRef.js";
 export { createEditorCommandBus } from "./core/commands/CommandBus.js";
+export { OASIS_BUILTIN_COMMANDS } from "./core/commands/builtinCommands.js";
+export type { OasisBuiltinCommand } from "./core/commands/builtinCommands.js";
 export { PluginCollection } from "./core/plugins/PluginCollection.js";
 export { mount } from "./ui/mount.js";
 export { DocumentShell } from "./ui/shells/DocumentShell.js";
@@ -37,6 +44,9 @@ export type {
   PluginReference,
   Unsubscribe,
 } from "./core/plugin.js";
+export type { EditorDocument, EditorState } from "./core/model.js";
+export type { DocumentPersistence } from "./app/controllers/useEditorPersistence.js";
+export type { ImportProgressState } from "./app/controllers/useEditorDocumentIO.js";
 export type {
   CommandRef,
   ResolvedCommandRef,
@@ -81,6 +91,12 @@ export type {
   ToolbarMoveTarget,
   ToolbarRegistry,
 } from "./ui/components/Toolbar/registry/ToolbarRegistry.js";
+
+export { MenuRegistry } from "./ui/components/Menubar/menuRegistry.js";
+export type {
+  MenubarHost,
+  MenuItem as MenubarItem,
+} from "./ui/components/Menubar/menuRegistry.js";
 
 export { DEFAULT_PALETTE } from "./ui/components/Toolbar/presets/defaultPalette.js";
 export { createDefaultToolbarPreset } from "./ui/components/Toolbar/presets/defaultToolbar.js";

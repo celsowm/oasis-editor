@@ -11,7 +11,27 @@
       "import": "./dist/oasis-editor.js",
       "require": "./dist/oasis-editor.umd.cjs"
     },
-    "./style.css": "./dist/oasis-editor.css"
+    "./style.css": "./dist/oasis-editor.css",
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js"
+    }
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "vue": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
   },
   "files": [
     "dist"
@@ -19,7 +39,7 @@
   "scripts": {
     "brand:generate": "node ./scripts/generate-brand-assets.mjs",
     "dev": "vite",
-    "build:lib": "vite build --mode lib",
+    "build:lib": "vite build --mode lib && node ./scripts/build-adapters.mjs",
     "build:app": "vite build",
     "build": "npm run build:lib && npm run build:app",
     "prepack": "npm run build:lib",

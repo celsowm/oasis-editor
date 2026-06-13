@@ -28,10 +28,16 @@ describe("inspect doc pagination", () => {
       page.blocks.forEach((block, blockIdx) => {
         console.log(`Block ${blockIdx + 1}: Type = ${block.blockType}, Height = ${block.estimatedHeight}px`);
         
-        if (block.blockType === 'paragraph') {
+        if (
+          block.blockType === 'paragraph' &&
+          block.sourceBlock.type === 'paragraph'
+        ) {
           const text = getParagraphText(block.sourceBlock);
           console.log(`  Paragraph Text: "${text}"`);
-        } else if (block.blockType === 'table') {
+        } else if (
+          block.blockType === 'table' &&
+          block.sourceBlock.type === 'table'
+        ) {
           const tableNode = block.sourceBlock;
           if (block.tableSegment) {
             const { startRowIndex, endRowIndex, startRowCellBlockStarts, endRowCellBlockEnds } = block.tableSegment;
@@ -42,7 +48,11 @@ describe("inspect doc pagination", () => {
               console.log(`    Row ${r}:`);
               row.cells.forEach((cell, cellIdx) => {
                 const cellText = cell.blocks
-                  .map(b => b.type === 'paragraph' ? getParagraphText(b) : '[Nested table]')
+                  .map((b) =>
+                    b.type === 'paragraph'
+                      ? getParagraphText(b)
+                      : '[Nested table]',
+                  )
                   .join(' | ');
                 console.log(`      Cell ${cellIdx + 1}: "${cellText}"`);
               });

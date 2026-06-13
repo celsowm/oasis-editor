@@ -1,5 +1,6 @@
 import type { OasisPlugin } from "../../core/plugin.js";
-import { defaultMenuRegistry } from "../components/Menubar/menuRegistry.js";
+import { defaultMenuItems } from "../components/Menubar/defaultMenuItems.js";
+import { MenuRegistry } from "../components/Menubar/menuRegistry.js";
 import { createDefaultToolbarPreset } from "../components/Toolbar/presets/defaultToolbar.js";
 import {
   createToolbarRegistry,
@@ -11,11 +12,13 @@ export interface EditorRuntimePluginsOptions {
   essentialsPlugin: OasisPlugin;
   externalPlugins?: OasisPlugin[];
   customizeToolbar?: (registry: ToolbarRegistry) => void;
+  customizeMenubar?: (registry: MenuRegistry) => void;
 }
 
 export interface EditorRuntimePlugins {
   runtimePlugins: OasisPlugin[];
   toolbarRegistry: ToolbarRegistry;
+  menuRegistry: MenuRegistry;
   dispose: () => void;
 }
 
@@ -29,9 +32,13 @@ export function useEditorRuntimePlugins(
   const contributedToolbarIds: string[] = [];
   const contributedMenuIds: string[] = [];
   const toolbarRegistry = createToolbarRegistry();
+  const menuRegistry = new MenuRegistry();
 
   for (const item of createDefaultToolbarPreset()) {
     toolbarRegistry.register(item);
+  }
+  for (const item of defaultMenuItems) {
+    menuRegistry.register(item);
   }
 
   for (const plugin of runtimePlugins) {
@@ -49,7 +56,7 @@ export function useEditorRuntimePlugins(
     }
 
     for (const item of plugin.menubar ?? []) {
-      defaultMenuRegistry.register({
+      menuRegistry.register({
         id: item.id,
         path: item.path,
         command: item.command,
@@ -61,16 +68,18 @@ export function useEditorRuntimePlugins(
   }
 
   options.customizeToolbar?.(toolbarRegistry);
+  options.customizeMenubar?.(menuRegistry);
 
   return {
     runtimePlugins,
     toolbarRegistry,
+    menuRegistry,
     dispose: () => {
       for (const id of contributedToolbarIds) {
         toolbarRegistry.remove(id);
       }
       for (const id of contributedMenuIds) {
-        defaultMenuRegistry.unregister(id);
+        menuRegistry.unregister(id);
       }
     },
   };

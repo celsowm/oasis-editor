@@ -74,6 +74,8 @@ export default defineConfig(({ mode }) => {
       // officeFontAssets.ts), so there is no `dist/assets/*.woff2` to copy.
       isLib && dts({
         outDir: 'dist',
+        entryRoot: 'src',
+        include: ['src'],
       }),
     ].filter(Boolean),
     test: {

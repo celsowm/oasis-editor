@@ -8,6 +8,7 @@ import {
 } from "solid-js";
 import { t, type TranslationKey } from "../../../i18n/index.js";
 import {
+  MenuRegistry,
   type MenuItem,
   type MenubarHost,
   defaultMenuRegistry,
@@ -17,6 +18,7 @@ import "./defaultMenuItems.js";
 
 export interface MenubarProps {
   host: () => MenubarHost;
+  registry?: MenuRegistry;
 }
 
 interface MenuTreeItem {
@@ -30,37 +32,42 @@ interface MenuTreeItem {
 export function Menubar(props: MenubarProps) {
   const [activeMenu, setActiveMenu] = createSignal<string | null>(null);
 
-  const menuItems = defaultMenuRegistry.getItems();
-  const visibleMenuItems = menuItems.filter((item) => !item.hidden);
-  const itemByPath = new Map(visibleMenuItems.map((item) => [item.path, item]));
+  const menuItems = () => (props.registry ?? defaultMenuRegistry).getItems();
+  const visibleMenuItems = () => menuItems().filter((item) => !item.hidden);
+  const itemByPath = () =>
+    new Map(visibleMenuItems().map((item) => [item.path, item]));
 
   // Build tree from paths (e.g. "File/New")
-  const menuTree: MenuTreeItem[] = [];
+  const menuTree = () => {
+    const tree: MenuTreeItem[] = [];
+    const byPath = itemByPath();
 
-  for (const item of visibleMenuItems) {
-    const parts = item.path.split("/");
-    let currentLevel = menuTree;
-    let currentPath = "";
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      currentPath = currentPath ? `${currentPath}/${part}` : part;
-      let existingNode = currentLevel.find((n) => n.label === part);
-      if (!existingNode) {
-        existingNode = {
-          id: part,
-          path: currentPath,
-          label: part,
-          children: [],
-        };
-        currentLevel.push(existingNode);
+    for (const item of visibleMenuItems()) {
+      const parts = item.path.split("/");
+      let currentLevel = tree;
+      let currentPath = "";
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
+        let existingNode = currentLevel.find((n) => n.label === part);
+        if (!existingNode) {
+          existingNode = {
+            id: part,
+            path: currentPath,
+            label: part,
+            children: [],
+          };
+          currentLevel.push(existingNode);
+        }
+        const matchingItem = byPath.get(currentPath);
+        if (matchingItem) {
+          existingNode.item = matchingItem;
+        }
+        currentLevel = existingNode.children;
       }
-      const matchingItem = itemByPath.get(currentPath);
-      if (matchingItem) {
-        existingNode.item = matchingItem;
-      }
-      currentLevel = existingNode.children;
     }
-  }
+    return tree;
+  };
 
   const pruneTree = (nodes: MenuTreeItem[]): MenuTreeItem[] =>
     nodes.flatMap((node) => {
@@ -95,11 +102,11 @@ export function Menubar(props: MenubarProps) {
     document.removeEventListener("keydown", handleKeyDown);
   });
 
-  const topLevelItems = pruneTree(menuTree);
+  const topLevelItems = () => pruneTree(menuTree());
 
   return (
     <div class="oasis-menubar" role="menubar">
-      <For each={topLevelItems}>
+      <For each={topLevelItems()}>
         {(topLevel) => (
           <div
             class="oasis-menubar-menu"
