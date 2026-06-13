@@ -8,7 +8,9 @@ import { createEditorContextMenuClipboard } from "../../ui/app/useEditorContextM
 
 function createContextMenuHarness(insideTable: boolean) {
   const paragraph = createEditorParagraph("Body");
-  const state = createEditorStateFromDocument(createEditorDocument([paragraph]));
+  const state = createEditorStateFromDocument(
+    createEditorDocument([paragraph]),
+  );
   const tableAction = vi.fn();
   const menu = createEditorContextMenuClipboard({
     state: () => state,
@@ -49,9 +51,7 @@ describe("editor context menu table items", () => {
     const outside = createContextMenuHarness(false);
     const inside = createContextMenuHarness(true);
 
-    expect(
-      outside.some((item) => item.id === "table-properties"),
-    ).toBe(false);
+    expect(outside.some((item) => item.id === "table-properties")).toBe(false);
     expect(inside.map((item) => item.id)).toEqual(
       expect.arrayContaining([
         "table-properties",

@@ -173,7 +173,7 @@ function resolveCellPadding(cell: EditorTableCellNode): {
       ? toPx(cell.style.paddingRight)
       : cell.style?.paddingEnd !== undefined
         ? toPx(cell.style.paddingEnd)
-      : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
+        : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
   const bottom =
     cell.style?.paddingBottom !== undefined
       ? toPx(cell.style.paddingBottom)
@@ -183,7 +183,7 @@ function resolveCellPadding(cell: EditorTableCellNode): {
       ? toPx(cell.style.paddingLeft)
       : cell.style?.paddingStart !== undefined
         ? toPx(cell.style.paddingStart)
-      : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
+        : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
 
   return { top, right, bottom, left };
 }

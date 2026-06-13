@@ -101,7 +101,10 @@ function parseNumber(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function parseWidth(value: string, unit: TableWidthUnit): EditorDocxWidthValue | null {
+function parseWidth(
+  value: string,
+  unit: TableWidthUnit,
+): EditorDocxWidthValue | null {
   const parsed = parseNumber(value);
   if (parsed === null) return null;
   return unit === "percent" ? `${parsed}%` : parsed;
@@ -150,8 +153,7 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
   const [marginRight, setMarginRight] = createSignal("");
   const [marginBottom, setMarginBottom] = createSignal("");
   const [marginLeft, setMarginLeft] = createSignal("");
-  const [borderStyle, setBorderStyle] =
-    createSignal<BorderStyleValue>("none");
+  const [borderStyle, setBorderStyle] = createSignal<BorderStyleValue>("none");
   const [borderWidth, setBorderWidth] = createSignal("");
   const [borderColor, setBorderColor] = createSignal("");
   const [borderTop, setBorderTop] = createSignal(false);
@@ -349,7 +351,9 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                         class="oasis-editor-dialog-input"
                         value={tableWidthUnit()}
                         onChange={(e) =>
-                          setTableWidthUnit(e.currentTarget.value as TableWidthUnit)
+                          setTableWidthUnit(
+                            e.currentTarget.value as TableWidthUnit,
+                          )
                         }
                         data-testid="editor-table-properties-table-width-unit"
                       >
@@ -371,7 +375,9 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                           onChange={() => setTableAlign(align)}
                           data-testid={`editor-table-properties-align-${align}`}
                         />
-                        {t(`table.align${align[0]!.toUpperCase()}${align.slice(1)}` as any)}
+                        {t(
+                          `table.align${align[0]!.toUpperCase()}${align.slice(1)}` as any,
+                        )}
                       </label>
                     ))}
                   </div>
@@ -410,7 +416,8 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                     </button>
                   </div>
                   <div class="oasis-editor-dialog-help-text">
-                    {props.initial.floatingSummary || t("table.positioningReadOnly")}
+                    {props.initial.floatingSummary ||
+                      t("table.positioningReadOnly")}
                   </div>
                 </fieldset>
               </div>
@@ -438,7 +445,8 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                       value={rowHeightRule()}
                       onChange={(e) =>
                         setRowHeightRule(
-                          e.currentTarget.value as TablePropertiesDialogInitialValues["rowHeightRule"],
+                          e.currentTarget
+                            .value as TablePropertiesDialogInitialValues["rowHeightRule"],
                         )
                       }
                       data-testid="editor-table-properties-row-height-rule"
@@ -511,7 +519,8 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                       value={cellVerticalAlign()}
                       onChange={(e) =>
                         setCellVerticalAlign(
-                          e.currentTarget.value as TablePropertiesDialogInitialValues["cellVerticalAlign"],
+                          e.currentTarget
+                            .value as TablePropertiesDialogInitialValues["cellVerticalAlign"],
                         )
                       }
                       data-testid="editor-table-properties-cell-valign"
@@ -531,7 +540,8 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                       value={cellTextDirection()}
                       onChange={(e) =>
                         setCellTextDirection(
-                          e.currentTarget.value as TablePropertiesDialogInitialValues["cellTextDirection"],
+                          e.currentTarget
+                            .value as TablePropertiesDialogInitialValues["cellTextDirection"],
                         )
                       }
                       data-testid="editor-table-properties-cell-direction"
@@ -571,10 +581,30 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                 <fieldset class="oasis-editor-font-dialog-fieldset">
                   <legend>{t("table.cellMargins")}</legend>
                   <div class="oasis-editor-dialog-row">
-                    {numericInput(t("paragraph.borderSideTop"), marginTop, setMarginTop, "editor-table-properties-margin-top")}
-                    {numericInput(t("paragraph.borderSideRight"), marginRight, setMarginRight, "editor-table-properties-margin-right")}
-                    {numericInput(t("paragraph.borderSideBottom"), marginBottom, setMarginBottom, "editor-table-properties-margin-bottom")}
-                    {numericInput(t("paragraph.borderSideLeft"), marginLeft, setMarginLeft, "editor-table-properties-margin-left")}
+                    {numericInput(
+                      t("paragraph.borderSideTop"),
+                      marginTop,
+                      setMarginTop,
+                      "editor-table-properties-margin-top",
+                    )}
+                    {numericInput(
+                      t("paragraph.borderSideRight"),
+                      marginRight,
+                      setMarginRight,
+                      "editor-table-properties-margin-right",
+                    )}
+                    {numericInput(
+                      t("paragraph.borderSideBottom"),
+                      marginBottom,
+                      setMarginBottom,
+                      "editor-table-properties-margin-bottom",
+                    )}
+                    {numericInput(
+                      t("paragraph.borderSideLeft"),
+                      marginLeft,
+                      setMarginLeft,
+                      "editor-table-properties-margin-left",
+                    )}
                   </div>
                 </fieldset>
                 <fieldset class="oasis-editor-font-dialog-fieldset">
@@ -588,7 +618,8 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                         class="oasis-editor-dialog-input"
                         value={borderStyle()}
                         onChange={(e) => {
-                          const next = e.currentTarget.value as BorderStyleValue;
+                          const next = e.currentTarget
+                            .value as BorderStyleValue;
                           setBorderStyle(next);
                           if (next === "none") {
                             setBorderTop(false);
@@ -609,10 +640,18 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                         }}
                         data-testid="editor-table-properties-border-style"
                       >
-                        <option value="none">{t("paragraph.borderNone")}</option>
-                        <option value="solid">{t("paragraph.borderSolid")}</option>
-                        <option value="dashed">{t("paragraph.borderDashed")}</option>
-                        <option value="dotted">{t("paragraph.borderDotted")}</option>
+                        <option value="none">
+                          {t("paragraph.borderNone")}
+                        </option>
+                        <option value="solid">
+                          {t("paragraph.borderSolid")}
+                        </option>
+                        <option value="dashed">
+                          {t("paragraph.borderDashed")}
+                        </option>
+                        <option value="dotted">
+                          {t("paragraph.borderDotted")}
+                        </option>
                       </select>
                     </div>
                     {numericInput(
@@ -649,10 +688,34 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                     </div>
                   </div>
                   <div class="oasis-editor-dialog-style-row">
-                    {checkbox(t("paragraph.borderSideTop"), borderTop, setBorderTop, "editor-table-properties-border-top", borderStyle() === "none")}
-                    {checkbox(t("paragraph.borderSideRight"), borderRight, setBorderRight, "editor-table-properties-border-right", borderStyle() === "none")}
-                    {checkbox(t("paragraph.borderSideBottom"), borderBottom, setBorderBottom, "editor-table-properties-border-bottom", borderStyle() === "none")}
-                    {checkbox(t("paragraph.borderSideLeft"), borderLeft, setBorderLeft, "editor-table-properties-border-left", borderStyle() === "none")}
+                    {checkbox(
+                      t("paragraph.borderSideTop"),
+                      borderTop,
+                      setBorderTop,
+                      "editor-table-properties-border-top",
+                      borderStyle() === "none",
+                    )}
+                    {checkbox(
+                      t("paragraph.borderSideRight"),
+                      borderRight,
+                      setBorderRight,
+                      "editor-table-properties-border-right",
+                      borderStyle() === "none",
+                    )}
+                    {checkbox(
+                      t("paragraph.borderSideBottom"),
+                      borderBottom,
+                      setBorderBottom,
+                      "editor-table-properties-border-bottom",
+                      borderStyle() === "none",
+                    )}
+                    {checkbox(
+                      t("paragraph.borderSideLeft"),
+                      borderLeft,
+                      setBorderLeft,
+                      "editor-table-properties-border-left",
+                      borderStyle() === "none",
+                    )}
                   </div>
                   <div
                     class="oasis-editor-table-properties-cell-preview"
