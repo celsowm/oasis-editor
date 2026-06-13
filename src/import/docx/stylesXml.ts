@@ -167,12 +167,20 @@ export function parseImportedStyles(
         const condRowStyle = parseConditionalRowStyle(
           getFirstChildByTagNameNS(tblStylePr, WORD_NS, "trPr"),
         );
-        if (fill || condTextStyle || condBorders || condParagraphStyle || condRowStyle) {
+        if (
+          fill ||
+          condTextStyle ||
+          condBorders ||
+          condParagraphStyle ||
+          condRowStyle
+        ) {
           conditionalFormats[condType] = {
             ...(fill ? { shading: fill } : {}),
             ...(condTextStyle ? { textStyle: condTextStyle } : {}),
             ...(condBorders ? { borders: condBorders } : {}),
-            ...(condParagraphStyle ? { paragraphStyle: condParagraphStyle } : {}),
+            ...(condParagraphStyle
+              ? { paragraphStyle: condParagraphStyle }
+              : {}),
             ...(condRowStyle ? { rowStyle: condRowStyle } : {}),
           };
         }

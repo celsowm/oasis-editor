@@ -173,7 +173,7 @@ function resolveCellPadding(cell: EditorTableCellNode): {
       ? toPx(cell.style.paddingRight)
       : cell.style?.paddingEnd !== undefined
         ? toPx(cell.style.paddingEnd)
-      : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
+        : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
   const bottom =
     cell.style?.paddingBottom !== undefined
       ? toPx(cell.style.paddingBottom)
@@ -183,7 +183,7 @@ function resolveCellPadding(cell: EditorTableCellNode): {
       ? toPx(cell.style.paddingLeft)
       : cell.style?.paddingStart !== undefined
         ? toPx(cell.style.paddingStart)
-      : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
+        : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
 
   return { top, right, bottom, left };
 }
@@ -470,8 +470,7 @@ export function buildCanvasTableLayout(options: {
             : 1;
         let effectiveSpacingBefore = spacingBefore;
         if (!isRotated && projectedParagraphs.length > 0) {
-          const previous =
-            projectedParagraphs[projectedParagraphs.length - 1]!;
+          const previous = projectedParagraphs[projectedParagraphs.length - 1]!;
           const collapsed = Math.min(previous.spacingAfter, spacingBefore);
           if (collapsed > 0) {
             if (previous.spacingAfter >= spacingBefore) {

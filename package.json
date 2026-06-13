@@ -19,8 +19,8 @@
   "scripts": {
     "brand:generate": "node ./scripts/generate-brand-assets.mjs",
     "dev": "vite",
-    "build:lib": "vite build --mode lib",
-    "build:app": "vite build",
+    "build:lib": "npm run lint && vite build --mode lib",
+    "build:app": "npm run lint && vite build",
     "build": "npm run build:lib && npm run build:app",
     "prepack": "npm run build:lib",
     "preview": "vite preview",
@@ -30,7 +30,7 @@
     "build:all": "npm run wasm:build && npm run build",
     "test": "vitest run",
     "test:word-parity": "vitest run --config vitest.word-parity.config.js",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src --ext .ts,.tsx --quiet",
     "format": "prettier --write \"src/**/*.ts\""
   },
   "devDependencies": {

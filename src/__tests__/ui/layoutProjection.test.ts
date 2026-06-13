@@ -468,9 +468,9 @@ describe("layout projection", () => {
       const segmentTexts = pages.map((page) => {
         const segment = page.blocks[0]!.tableSegment!;
         const segmentTable = buildSegmentTable(table, segment);
-        return segmentTable.rows[0]!.cells[0]!.blocks
-          .flatMap((block) => block.runs.map((run) => run.text))
-          .join("");
+        return segmentTable.rows[0]!.cells[0]!.blocks.flatMap((block) =>
+          block.runs.map((run) => run.text),
+        ).join("");
       });
       const [firstText, secondText] = segmentTexts;
       expect(firstText.length).toBeGreaterThan(0);

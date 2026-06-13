@@ -27,10 +27,7 @@ import {
 import { createEditorLogger } from "../../utils/logger.js";
 import { createLayoutIdentityStabilizer } from "../layoutIdentity.js";
 import { PageBreak } from "../components/PageBreak.js";
-import {
-  createCanvasPageRenderer,
-  resolveCanvasFooterZoneTop,
-} from "../canvas/canvasPageRenderer.js";
+import { createCanvasPageRenderer } from "../canvas/canvasPageRenderer.js";
 export { resolveCanvasTextRenderMetrics } from "../canvas/canvasParagraphPainter.js";
 export { resolveCanvasFooterZoneTop } from "../canvas/canvasPageRenderer.js";
 

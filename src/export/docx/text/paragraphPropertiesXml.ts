@@ -46,7 +46,9 @@ function serializeParagraphTabs(
  *
  * Returns the full `<w:pPr>...</w:pPr>` string, or `""` when no properties.
  */
-export function serializeParagraphStyleXml(style: EditorParagraphStyle): string {
+export function serializeParagraphStyleXml(
+  style: EditorParagraphStyle,
+): string {
   const parts: string[] = [];
 
   if (style.align) {

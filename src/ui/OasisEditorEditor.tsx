@@ -17,7 +17,7 @@ import { RevisionOverlay } from "./components/RevisionOverlay.js";
 import { FloatingTableToolbar } from "./components/FloatingToolbar/FloatingTableToolbar.js";
 import { FloatingLayoutOptions } from "./components/FloatingToolbar/FloatingLayoutOptions.js";
 import type { ToolbarHost } from "./components/Toolbar/state/createToolbarApi.js";
-import { t } from "../i18n/index.js";
+import { t, type TranslationKey } from "../i18n/index.js";
 import {
   getDocumentPageSettings,
   type EditorLayoutParagraph,
@@ -505,7 +505,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
                   class="oasis-editor-import-phase"
                   data-testid="editor-import-phase"
                 >
-                  {t(`import.phase.${progress().phase}` as any)}
+                  {t(`import.phase.${progress().phase}` as TranslationKey)}
                 </div>
                 <div class="oasis-editor-import-progress-track">
                   <div
@@ -576,7 +576,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
                     .replace("...", "ing")
                     .replace(".", "")}`}
                 >
-                  {t(key as any)}
+                  {t(key as TranslationKey)}
                 </span>
               </Show>
             );

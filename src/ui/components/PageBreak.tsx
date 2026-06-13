@@ -1,11 +1,10 @@
-import { Show } from "solid-js";
 import { t } from "../../i18n/index.js";
 
 export interface PageBreakProps {
   pageIndex: number;
 }
 
-export function PageBreak(props: PageBreakProps) {
+export function PageBreak(_props: PageBreakProps) {
   return (
     <div
       class="oasis-editor-page-break"

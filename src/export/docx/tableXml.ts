@@ -26,7 +26,10 @@ type DocxWidthTag =
   | "wBefore"
   | "wAfter";
 
-function serializeOnOffElement(tag: string, value: boolean | undefined): string {
+function serializeOnOffElement(
+  tag: string,
+  value: boolean | undefined,
+): string {
   if (value === undefined) {
     return "";
   }
@@ -152,7 +155,9 @@ function serializeTableDefaultCellMargins(
     value: number | undefined,
   ) => {
     if (value !== undefined && Number.isFinite(value)) {
-      parts.push(`<w:${name} w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`);
+      parts.push(
+        `<w:${name} w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`,
+      );
     }
   };
   edge("top", margins.top);
@@ -161,7 +166,9 @@ function serializeTableDefaultCellMargins(
   edge("right", margins.right);
   edge("start", margins.start);
   edge("end", margins.end);
-  return parts.length > 0 ? `<w:tblCellMar>${parts.join("")}</w:tblCellMar>` : "";
+  return parts.length > 0
+    ? `<w:tblCellMar>${parts.join("")}</w:tblCellMar>`
+    : "";
 }
 
 function serializeTableCellProperties(
@@ -257,7 +264,10 @@ function serializeTableRowHeightFromStyle(
 }
 
 function serializeTableRowHeight(row: EditorTableNode["rows"][number]): string {
-  return serializeTableRowHeightFromStyle(row.style?.height, row.style?.heightRule);
+  return serializeTableRowHeightFromStyle(
+    row.style?.height,
+    row.style?.heightRule,
+  );
 }
 
 /**
@@ -278,9 +288,15 @@ export function serializeTableRowStyleXml(
   if (widthBefore) parts.push(widthBefore);
   const widthAfter = serializeDocxWidthElement("wAfter", style.widthAfter);
   if (widthAfter) parts.push(widthAfter);
-  const cellSpacingXml = serializeDocxWidthElement("tblCellSpacing", style.cellSpacing);
+  const cellSpacingXml = serializeDocxWidthElement(
+    "tblCellSpacing",
+    style.cellSpacing,
+  );
   if (cellSpacingXml) parts.push(cellSpacingXml);
-  const heightXml = serializeTableRowHeightFromStyle(style.height, style.heightRule);
+  const heightXml = serializeTableRowHeightFromStyle(
+    style.height,
+    style.heightRule,
+  );
   if (heightXml) parts.push(heightXml);
   const cantSplit = serializeOnOffElement("cantSplit", style.cantSplit);
   if (cantSplit) parts.push(cantSplit);
@@ -298,11 +314,17 @@ function serializeTableRowProperties(
   if (gridBefore) parts.push(gridBefore);
   const gridAfter = serializeGridSkip("gridAfter", row.style?.gridAfter);
   if (gridAfter) parts.push(gridAfter);
-  const widthBefore = serializeDocxWidthElement("wBefore", row.style?.widthBefore);
+  const widthBefore = serializeDocxWidthElement(
+    "wBefore",
+    row.style?.widthBefore,
+  );
   if (widthBefore) parts.push(widthBefore);
   const widthAfter = serializeDocxWidthElement("wAfter", row.style?.widthAfter);
   if (widthAfter) parts.push(widthAfter);
-  const cellSpacingXml = serializeDocxWidthElement("tblCellSpacing", row.style?.cellSpacing);
+  const cellSpacingXml = serializeDocxWidthElement(
+    "tblCellSpacing",
+    row.style?.cellSpacing,
+  );
   if (cellSpacingXml) parts.push(cellSpacingXml);
   const height = serializeTableRowHeight(row);
   if (height) parts.push(height);
@@ -379,7 +401,10 @@ function serializeTableProperties(table: EditorTableNode): string {
     parts.push(indentXml);
   }
   parts.push(`<w:tblLayout w:type="${table.style?.layout ?? "fixed"}"/>`);
-  const bidiVisual = serializeOnOffElement("bidiVisual", table.style?.bidiVisual);
+  const bidiVisual = serializeOnOffElement(
+    "bidiVisual",
+    table.style?.bidiVisual,
+  );
   if (bidiVisual) {
     parts.push(bidiVisual);
   }

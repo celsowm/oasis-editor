@@ -66,7 +66,10 @@ describe("TrueTypeFont", () => {
       files.add(fileName);
     }
 
-    expect(files.size).toBe(16);
+    expect(files.size).toBe(
+      OFFICE_COMPAT_FONT_FAMILIES.length * 4 +
+        Object.keys(ROBOTO_FONT_FILES).length,
+    );
     for (const fileName of files) {
       const font = loadFont(fileName);
       expect(font.unitsPerEm).toBeGreaterThan(0);

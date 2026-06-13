@@ -179,8 +179,9 @@ describe("buildCanvasTableLayout", () => {
       ...secondParagraph.lines.map((line) => line.top + line.height),
     );
 
-    expect(secondParagraph.originY - (firstParagraph.originY + firstLinesBottom))
-      .toBeCloseTo(16, 6);
+    expect(
+      secondParagraph.originY - (firstParagraph.originY + firstLinesBottom),
+    ).toBeCloseTo(16, 6);
     expect(renderedCell.contentHeight).toBeCloseTo(
       firstLinesBottom + 16 + secondLinesBottom,
       6,

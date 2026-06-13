@@ -2,7 +2,12 @@ import type {
   EditorNamedStyle,
   EditorTableConditionalFormat,
 } from "../../core/model.js";
-import { escapeXml, normalizeDocxColor, pointsToTwips, WORD14_NS } from "./xmlUtils.js";
+import {
+  escapeXml,
+  normalizeDocxColor,
+  pointsToTwips,
+  WORD14_NS,
+} from "./xmlUtils.js";
 import { serializeDocxBorderAttrs } from "./borders.js";
 import { serializeParagraphStyleXml } from "./text/paragraphPropertiesXml.js";
 import { serializeRunProperties } from "./text/runPropertiesXml.js";
@@ -38,7 +43,10 @@ function serializeConditionalTcPr(cond: EditorTableConditionalFormat): string {
       ["right", b.borderRight],
     ];
     const borderXml = edges
-      .filter((entry): entry is [string, NonNullable<typeof b.borderTop>] => entry[1] != null)
+      .filter(
+        (entry): entry is [string, NonNullable<typeof b.borderTop>] =>
+          entry[1] != null,
+      )
       .map(([name, border]) => `<w:${name} ${serializeDocxBorderAttrs(border)}`)
       .join("");
     if (borderXml) {
@@ -104,9 +112,7 @@ function serializeNamedStyle(style: EditorNamedStyle): string {
     }
     if (ts.indentLeft !== undefined) {
       const val =
-        typeof ts.indentLeft === "number"
-          ? pointsToTwips(ts.indentLeft)
-          : null;
+        typeof ts.indentLeft === "number" ? pointsToTwips(ts.indentLeft) : null;
       if (val !== null) {
         tblPrParts.push(`<w:tblInd w:w="${val}" w:type="dxa"/>`);
       }
@@ -132,15 +138,18 @@ function serializeNamedStyle(style: EditorNamedStyle): string {
     }
   }
 
-  const typeAttr = style.type === "character" ? "character" : style.type === "table" ? "table" : "paragraph";
+  const typeAttr =
+    style.type === "character"
+      ? "character"
+      : style.type === "table"
+        ? "table"
+        : "paragraph";
   return `<w:style w:type="${typeAttr}" w:styleId="${escapeXml(style.id)}">${parts.join("")}</w:style>`;
 }
 
 export function buildStylesXml(
   styles: Record<string, EditorNamedStyle>,
 ): string {
-  const styleElements = Object.values(styles)
-    .map(serializeNamedStyle)
-    .join("");
+  const styleElements = Object.values(styles).map(serializeNamedStyle).join("");
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="${WORD_NS}" xmlns:w14="${WORD14_NS}">${styleElements}</w:styles>`;
 }

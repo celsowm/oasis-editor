@@ -46,8 +46,7 @@ function normalizeCellStartPositions(
   legacyStarts: number[] | undefined,
 ): TableCellBlockPosition[] {
   return row.cells.map((_, cellIdx) => ({
-    blockIndex:
-      starts?.[cellIdx]?.blockIndex ?? legacyStarts?.[cellIdx] ?? 0,
+    blockIndex: starts?.[cellIdx]?.blockIndex ?? legacyStarts?.[cellIdx] ?? 0,
     offset: starts?.[cellIdx]?.offset,
   }));
 }
@@ -107,8 +106,7 @@ function sliceCellBlocksForTableSegment(
     const paragraph = blocks[index];
     if (!paragraph) continue;
     const paragraphLength = getParagraphTextLength(paragraph);
-    const startOffset =
-      index === start.blockIndex ? (start.offset ?? 0) : 0;
+    const startOffset = index === start.blockIndex ? (start.offset ?? 0) : 0;
     const endOffset =
       index === end.blockIndex
         ? (end.offset ?? paragraphLength)
@@ -804,7 +802,8 @@ export function projectBlocksLayout(
       let isLastRowSplit = false;
 
       while (groupEndIndex < rowGroups.length) {
-        const candidateEndRowIndex = rowGroups[groupEndIndex]!.endRowIndexExclusive;
+        const candidateEndRowIndex =
+          rowGroups[groupEndIndex]!.endRowIndexExclusive;
         let candidateHeight = 0;
 
         if (groupEndIndex === groupStartIndex && currentCellBlockPositions) {
@@ -856,7 +855,8 @@ export function projectBlocksLayout(
 
         const isSingleRowGroup =
           candidateEndRowIndex === rowGroups[groupEndIndex]!.startRowIndex + 1;
-        const targetRow = sourceBlock.rows[rowGroups[groupEndIndex]!.startRowIndex]!;
+        const targetRow =
+          sourceBlock.rows[rowGroups[groupEndIndex]!.startRowIndex]!;
         const isSplitCandidate =
           isSingleRowGroup && canSplitTableRow(targetRow);
 
@@ -945,7 +945,8 @@ export function projectBlocksLayout(
       if (groupEndIndex === groupStartIndex) {
         const targetRow = sourceBlock.rows[startRowIndex]!;
         const isSingleRowGroup =
-          rowGroups[groupStartIndex]!.endRowIndexExclusive === startRowIndex + 1;
+          rowGroups[groupStartIndex]!.endRowIndexExclusive ===
+          startRowIndex + 1;
         const isSplitCandidate =
           isSingleRowGroup && canSplitTableRow(targetRow);
 

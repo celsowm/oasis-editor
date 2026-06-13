@@ -140,7 +140,10 @@ function parseCellMargins(
   }
   const edgePt = (edge: string) =>
     twipsToPoints(
-      getAttributeValue(getFirstChildByTagNameNS(container, WORD_NS, edge), "w"),
+      getAttributeValue(
+        getFirstChildByTagNameNS(container, WORD_NS, edge),
+        "w",
+      ),
     );
   const margins: NonNullable<EditorTableStyle["defaultCellMargins"]> = {};
   const top = edgePt("top");
@@ -235,7 +238,9 @@ function parseTableStyle(
     style.defaultCellMargins = defaultCellMargins;
   }
 
-  const bidiVisual = tblPr ? parseOnOffProperty(tblPr, "bidiVisual") : undefined;
+  const bidiVisual = tblPr
+    ? parseOnOffProperty(tblPr, "bidiVisual")
+    : undefined;
   if (bidiVisual !== undefined) {
     style.bidiVisual = bidiVisual;
   }
@@ -747,7 +752,10 @@ function mergeConditionalFormats(
       merged.borders = { ...merged.borders, ...cond.borders };
     }
     if (cond.paragraphStyle) {
-      merged.paragraphStyle = { ...merged.paragraphStyle, ...cond.paragraphStyle };
+      merged.paragraphStyle = {
+        ...merged.paragraphStyle,
+        ...cond.paragraphStyle,
+      };
     }
     if (cond.rowStyle) {
       merged.rowStyle = { ...merged.rowStyle, ...cond.rowStyle };
@@ -890,7 +898,10 @@ export async function parseTableNode(
       collapseCellAutospacing(paragraphs, autospacingFlags);
       const colSpan = getTableCellColSpan(cellProperties);
       const vMerge = getTableCellVMerge(cellProperties);
-      const cellStyle = parseTableCellStyle(cellProperties, tableDefaultMargins);
+      const cellStyle = parseTableCellStyle(
+        cellProperties,
+        tableDefaultMargins,
+      );
 
       // Resolve table-style conditional formatting from cell position + tblLook.
       const conditional = mergeConditionalFormats(
@@ -975,9 +986,19 @@ export async function parseTableNode(
     // Merge conditional row style (firstRow/lastRow/band) beneath explicit style.
     if (tblConditionals) {
       const rowKeys = resolveCellConditionalKeys(
-        rowIndex, 0, rowCount, Math.max(1, colCount), look, rowBandSize, colBandSize,
-      ).filter((k) =>
-        k === "firstRow" || k === "lastRow" || k === "band1Horz" || k === "band2Horz",
+        rowIndex,
+        0,
+        rowCount,
+        Math.max(1, colCount),
+        look,
+        rowBandSize,
+        colBandSize,
+      ).filter(
+        (k) =>
+          k === "firstRow" ||
+          k === "lastRow" ||
+          k === "band1Horz" ||
+          k === "band2Horz",
       );
       const mergedRowConditional = mergeConditionalFormats(
         [...explicitRowKeys, ...rowKeys],
