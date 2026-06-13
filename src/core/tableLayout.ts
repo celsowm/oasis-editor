@@ -89,11 +89,46 @@ export function buildSegmentTable(
   table: EditorTableNode,
   segment: NonNullable<EditorLayoutBlock["tableSegment"]>,
 ): EditorTableNode {
-  const { startRowIndex, endRowIndex, repeatedHeaderRowCount } = segment;
+  const {
+    startRowIndex,
+    endRowIndex,
+    repeatedHeaderRowCount,
+    startRowCellBlockStarts,
+    endRowCellBlockEnds,
+  } = segment;
+
   const headerRows =
     startRowIndex > 0 && repeatedHeaderRowCount > 0
       ? table.rows.slice(0, repeatedHeaderRowCount)
       : [];
-  const bodyRows = table.rows.slice(startRowIndex, endRowIndex);
+
+  const bodyRows = table.rows
+    .slice(startRowIndex, endRowIndex)
+    .map((row, idx, arr) => {
+      const isFirstRow = idx === 0;
+      const isLastRow = idx === arr.length - 1;
+
+      if (
+        (isFirstRow && startRowCellBlockStarts) ||
+        (isLastRow && endRowCellBlockEnds)
+      ) {
+        const newCells = row.cells.map((cell, cellIdx) => {
+          let blocks = cell.blocks;
+          const startIdx =
+            isFirstRow && startRowCellBlockStarts
+              ? (startRowCellBlockStarts[cellIdx] ?? 0)
+              : 0;
+          const endIdx =
+            isLastRow && endRowCellBlockEnds
+              ? (endRowCellBlockEnds[cellIdx] ?? cell.blocks.length)
+              : cell.blocks.length;
+          blocks = cell.blocks.slice(startIdx, endIdx);
+          return { ...cell, blocks };
+        });
+        return { ...row, cells: newCells };
+      }
+      return row;
+    });
+
   return { ...table, rows: [...headerRows, ...bodyRows] };
 }

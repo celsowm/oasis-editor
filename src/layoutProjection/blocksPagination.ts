@@ -27,6 +27,7 @@ import {
 } from "./paragraphPagination.js";
 import {
   estimateTableBlockHeight,
+  estimateTableRowHeight,
   getRepeatableHeaderRowCount,
   getTableHeaderRowCount,
   getTableRowGroups,
@@ -497,8 +498,15 @@ export function projectBlocksLayout(
         defaultTabStop,
       );
     const maxHeightForCurrentPage = getMaxHeightForPage(getCurrentPageIndex());
+    const firstRow = sourceBlock.rows[0];
+    const canSplitSingleRow =
+      firstRow &&
+      !firstRow.isHeader &&
+      firstRow.style?.cantSplit !== true &&
+      firstRow.cells.some((cell) => cell.blocks.length > 1);
+
     if (
-      sourceBlock.rows.length <= 1 ||
+      (!canSplitSingleRow && sourceBlock.rows.length <= 1) ||
       currentHeight + tableHeight <= maxHeightForCurrentPage
     ) {
       if (
@@ -528,42 +536,168 @@ export function projectBlocksLayout(
     );
     let groupStartIndex = 0;
     let segmentIndex = 0;
+    let currentCellBlockStarts: number[] | undefined;
 
     while (groupStartIndex < rowGroups.length) {
       const startRowIndex = rowGroups[groupStartIndex]!.startRowIndex;
       const repeatedHeaderRowCount = startRowIndex > 0 ? headerRowCount : 0;
       const remainingHeight =
         getMaxHeightForPage(getCurrentPageIndex()) - currentHeight;
+
       let groupEndIndex = groupStartIndex;
-      let endRowIndex = startRowIndex;
       let segmentHeight = 0;
+      let splitEnds: number[] | undefined;
+      let isLastRowSplit = false;
 
       while (groupEndIndex < rowGroups.length) {
-        const candidateEnd = rowGroups[groupEndIndex]!.endRowIndexExclusive;
-        const candidateHeight = getTableSegmentHeight(
-          sourceBlock,
-          startRowIndex,
-          candidateEnd,
-          repeatedHeaderRowCount,
-          styles,
-          contentWidth,
-        );
-        if (
-          candidateHeight > remainingHeight &&
-          groupEndIndex === groupStartIndex &&
-          currentBlocks.length > 0
-        ) {
-          break;
+        const candidateEndRowIndex = rowGroups[groupEndIndex]!.endRowIndexExclusive;
+        let candidateHeight = 0;
+
+        if (groupEndIndex === groupStartIndex && currentCellBlockStarts) {
+          const firstRow = sourceBlock.rows[startRowIndex]!;
+          const slicedFirstRow = {
+            ...firstRow,
+            cells: firstRow.cells.map((cell, cellIdx) => ({
+              ...cell,
+              blocks: cell.blocks.slice(currentCellBlockStarts![cellIdx] ?? 0),
+            })),
+          };
+          candidateHeight = getTableSegmentHeight(
+            {
+              ...sourceBlock,
+              rows: [slicedFirstRow],
+            },
+            0,
+            1,
+            repeatedHeaderRowCount,
+            styles,
+            contentWidth,
+            measurer,
+            defaultTabStop,
+          );
+        } else {
+          candidateHeight = getTableSegmentHeight(
+            sourceBlock,
+            startRowIndex,
+            candidateEndRowIndex,
+            repeatedHeaderRowCount,
+            styles,
+            contentWidth,
+            measurer,
+            defaultTabStop,
+          );
         }
-        if (
-          candidateHeight > remainingHeight &&
-          groupEndIndex > groupStartIndex
-        ) {
-          break;
+
+        if (candidateHeight <= remainingHeight) {
+          segmentHeight = candidateHeight;
+          groupEndIndex += 1;
+          continue;
         }
-        segmentHeight = candidateHeight;
-        endRowIndex = candidateEnd;
-        groupEndIndex += 1;
+
+        const isSingleRowGroup =
+          candidateEndRowIndex === rowGroups[groupEndIndex]!.startRowIndex + 1;
+        const targetRow = sourceBlock.rows[rowGroups[groupEndIndex]!.startRowIndex]!;
+        const isSplitCandidate =
+          isSingleRowGroup &&
+          !targetRow.isHeader &&
+          targetRow.style?.cantSplit !== true &&
+          targetRow.cells.some((cell) => cell.blocks.length > 1);
+
+        if (isSplitCandidate) {
+          const precedingHeight =
+            groupEndIndex > groupStartIndex
+              ? getTableSegmentHeight(
+                  sourceBlock,
+                  startRowIndex,
+                  rowGroups[groupEndIndex]!.startRowIndex,
+                  repeatedHeaderRowCount,
+                  styles,
+                  contentWidth,
+                  measurer,
+                  defaultTabStop,
+                )
+              : 0;
+          const availableForSplitRow = remainingHeight - precedingHeight;
+
+          if (availableForSplitRow > 0) {
+            const starts =
+              groupEndIndex === groupStartIndex && currentCellBlockStarts
+                ? currentCellBlockStarts
+                : targetRow.cells.map(() => 0);
+
+            const ends = targetRow.cells.map((cell, cellIdx) => {
+              const startIdx = starts[cellIdx] ?? 0;
+              const limit = cell.blocks.length;
+              let endIdx = startIdx;
+
+              for (let k = startIdx + 1; k <= limit; k++) {
+                const tempRow = {
+                  ...targetRow,
+                  cells: targetRow.cells.map((c, cIdx) => ({
+                    ...c,
+                    blocks: cIdx === cellIdx ? c.blocks.slice(startIdx, k) : [],
+                  })),
+                };
+                const h = estimateTableRowHeight(
+                  tempRow,
+                  styles,
+                  measurer,
+                  defaultTabStop,
+                  contentWidth,
+                  sourceBlock,
+                  rowGroups[groupEndIndex]!.startRowIndex,
+                );
+                if (h <= availableForSplitRow) {
+                  endIdx = k;
+                } else {
+                  break;
+                }
+              }
+              return endIdx;
+            });
+
+            const canProgress = targetRow.cells.some(
+              (cell, cellIdx) => (ends[cellIdx] ?? 0) > (starts[cellIdx] ?? 0),
+            );
+
+            if (canProgress) {
+              splitEnds = ends;
+              isLastRowSplit = true;
+
+              const slicedLastRow = {
+                ...targetRow,
+                cells: targetRow.cells.map((cell, cellIdx) => ({
+                  ...cell,
+                  blocks: cell.blocks.slice(
+                    starts[cellIdx] ?? 0,
+                    ends[cellIdx] ?? 0,
+                  ),
+                })),
+              };
+              const segmentRows = [
+                ...sourceBlock.rows.slice(
+                  startRowIndex,
+                  rowGroups[groupEndIndex]!.startRowIndex,
+                ),
+                slicedLastRow,
+              ];
+              segmentHeight = getTableSegmentHeight(
+                { ...sourceBlock, rows: segmentRows },
+                0,
+                segmentRows.length,
+                repeatedHeaderRowCount,
+                styles,
+                contentWidth,
+                measurer,
+                defaultTabStop,
+              );
+              groupEndIndex += 1;
+              break;
+            }
+          }
+        }
+
+        break;
       }
 
       if (groupEndIndex === groupStartIndex && currentBlocks.length > 0) {
@@ -572,20 +706,65 @@ export function projectBlocksLayout(
       }
 
       if (groupEndIndex === groupStartIndex) {
-        endRowIndex = rowGroups[groupStartIndex]!.endRowIndexExclusive;
-        segmentHeight = getTableSegmentHeight(
-          sourceBlock,
-          startRowIndex,
-          endRowIndex,
-          repeatedHeaderRowCount,
-          styles,
-          contentWidth,
-        );
+        const targetRow = sourceBlock.rows[startRowIndex]!;
+        const isSingleRowGroup =
+          rowGroups[groupStartIndex]!.endRowIndexExclusive === startRowIndex + 1;
+        const isSplitCandidate =
+          isSingleRowGroup &&
+          !targetRow.isHeader &&
+          targetRow.style?.cantSplit !== true &&
+          targetRow.cells.some((cell) => cell.blocks.length > 1);
+
+        if (isSplitCandidate) {
+          const starts = currentCellBlockStarts ?? targetRow.cells.map(() => 0);
+          const ends = starts.map((startIdx, cellIdx) =>
+            Math.min(targetRow.cells[cellIdx]!.blocks.length, startIdx + 1),
+          );
+
+          splitEnds = ends;
+          isLastRowSplit = true;
+
+          const slicedLastRow = {
+            ...targetRow,
+            cells: targetRow.cells.map((cell, cellIdx) => ({
+              ...cell,
+              blocks: cell.blocks.slice(
+                starts[cellIdx] ?? 0,
+                ends[cellIdx] ?? 0,
+              ),
+            })),
+          };
+          segmentHeight = getTableSegmentHeight(
+            { ...sourceBlock, rows: [slicedLastRow] },
+            0,
+            1,
+            repeatedHeaderRowCount,
+            styles,
+            contentWidth,
+            measurer,
+            defaultTabStop,
+          );
+          groupEndIndex += 1;
+        } else {
+          groupEndIndex = rowGroups[groupStartIndex]!.endRowIndexExclusive;
+          segmentHeight = getTableSegmentHeight(
+            sourceBlock,
+            startRowIndex,
+            groupEndIndex,
+            repeatedHeaderRowCount,
+            styles,
+            contentWidth,
+            measurer,
+            defaultTabStop,
+          );
+        }
       }
 
       const segmentId = `${sourceBlock.id}:segment:${segmentIndex}`;
       const measuredSegmentHeight =
         measuredHeights?.[segmentId] ?? segmentHeight;
+
+      const endRowIndex = rowGroups[groupEndIndex - 1]!.endRowIndexExclusive;
 
       currentBlocks.push({
         blockId: segmentId,
@@ -595,14 +774,33 @@ export function projectBlocksLayout(
         estimatedHeight: measuredSegmentHeight,
         tableSegment: {
           startRowIndex,
-          endRowIndex: endRowIndex,
+          endRowIndex,
           repeatedHeaderRowCount,
+          startRowCellBlockStarts: currentCellBlockStarts,
+          endRowCellBlockEnds: splitEnds,
         },
         sourceBlock,
       });
       currentHeight += measuredSegmentHeight;
-      groupStartIndex = Math.max(groupStartIndex + 1, groupEndIndex);
       segmentIndex += 1;
+
+      if (isLastRowSplit) {
+        const lastRowIndex = rowGroups[groupEndIndex - 1]!.startRowIndex;
+        const lastRow = sourceBlock.rows[lastRowIndex]!;
+        const isFinished = lastRow.cells.every(
+          (cell, cellIdx) => (splitEnds![cellIdx] ?? 0) >= cell.blocks.length,
+        );
+        if (isFinished) {
+          currentCellBlockStarts = undefined;
+          groupStartIndex = groupEndIndex;
+        } else {
+          currentCellBlockStarts = splitEnds;
+          groupStartIndex = groupEndIndex - 1;
+        }
+      } else {
+        currentCellBlockStarts = undefined;
+        groupStartIndex = groupEndIndex;
+      }
 
       if (groupStartIndex < rowGroups.length) {
         flushPage();

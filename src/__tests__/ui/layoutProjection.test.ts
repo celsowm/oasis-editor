@@ -383,6 +383,58 @@ describe("layout projection", () => {
         4,
       );
     });
+
+    it("splits table rows across pages when cells contain multiple paragraphs", () => {
+      const table = createEditorTable([
+        createEditorTableRow([
+          createEditorTableCell([
+            createEditorParagraph("Paragraph 1"),
+            createEditorParagraph("Paragraph 2"),
+            createEditorParagraph("Paragraph 3"),
+            createEditorParagraph("Paragraph 4"),
+          ]),
+        ]),
+      ]);
+
+      const pages = projectBlocksLayout({
+        blocks: [table],
+        pageSettings: A4,
+        maxPageHeight: 70,
+      });
+
+      expect(pages.length).toBeGreaterThan(1);
+
+      // Page 1 should contain a table segment for row 0, starting at block index 0 and ending before the last block
+      const firstPageTable = pages[0]!.blocks[0]!;
+      expect(firstPageTable.blockType).toBe("table");
+      expect(firstPageTable.tableSegment).toBeDefined();
+      expect(firstPageTable.tableSegment!.startRowIndex).toBe(0);
+      expect(firstPageTable.tableSegment!.endRowIndex).toBe(1);
+      expect(
+        firstPageTable.tableSegment!.startRowCellBlockStarts,
+      ).toBeUndefined();
+      expect(firstPageTable.tableSegment!.endRowCellBlockEnds).toBeDefined();
+      // It should have split after paragraph 1 or 2
+      expect(
+        firstPageTable.tableSegment!.endRowCellBlockEnds![0],
+      ).toBeGreaterThan(0);
+      expect(firstPageTable.tableSegment!.endRowCellBlockEnds![0]).toBeLessThan(
+        4,
+      );
+
+      // Page 2 should contain the continuation of the table segment for row 0
+      const secondPageTable = pages[1]!.blocks[0]!;
+      expect(secondPageTable.blockType).toBe("table");
+      expect(secondPageTable.tableSegment).toBeDefined();
+      expect(secondPageTable.tableSegment!.startRowIndex).toBe(0);
+      expect(secondPageTable.tableSegment!.endRowIndex).toBe(1);
+      expect(
+        secondPageTable.tableSegment!.startRowCellBlockStarts,
+      ).toBeDefined();
+      expect(secondPageTable.tableSegment!.startRowCellBlockStarts![0]).toBe(
+        firstPageTable.tableSegment!.endRowCellBlockEnds![0],
+      );
+    });
   });
 
   describe("estimateParagraphBlockHeight", () => {

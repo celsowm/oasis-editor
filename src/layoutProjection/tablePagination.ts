@@ -26,7 +26,7 @@ function getCellHorizontalChromePx(
         ? cell.style.paddingLeft * POINT_TO_PX
         : cell.style?.paddingStart !== undefined
           ? cell.style.paddingStart * POINT_TO_PX
-        : DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX / 2;
+          : DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX / 2;
   const padRight =
     cell.style?.padding !== undefined
       ? cell.style.padding * POINT_TO_PX
@@ -34,7 +34,7 @@ function getCellHorizontalChromePx(
         ? cell.style.paddingRight * POINT_TO_PX
         : cell.style?.paddingEnd !== undefined
           ? cell.style.paddingEnd * POINT_TO_PX
-        : DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX / 2;
+          : DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX / 2;
   const leftBorder = cell.style?.borderLeft ?? cell.style?.borderStart;
   const rightBorder = cell.style?.borderRight ?? cell.style?.borderEnd;
   const borderLeft = leftBorder
@@ -173,7 +173,7 @@ function getCachedTableColumnGeometry(
   return geometry;
 }
 
-function estimateTableRowHeight(
+export function estimateTableRowHeight(
   row: EditorTableNode["rows"][number],
   styles: Record<string, EditorNamedStyle> | undefined,
   measurer: ITextMeasurer,

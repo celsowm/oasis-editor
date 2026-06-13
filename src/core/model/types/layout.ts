@@ -68,6 +68,8 @@ export interface EditorLayoutBlock {
     startRowIndex: number;
     endRowIndex: number;
     repeatedHeaderRowCount: number;
+    startRowCellBlockStarts?: number[];
+    endRowCellBlockEnds?: number[];
   };
   sourceBlockId?: string;
   sourceBlock: EditorBlockNode;
