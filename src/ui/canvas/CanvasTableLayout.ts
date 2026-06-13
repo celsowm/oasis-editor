@@ -171,6 +171,8 @@ function resolveCellPadding(cell: EditorTableCellNode): {
   const right =
     cell.style?.paddingRight !== undefined
       ? toPx(cell.style.paddingRight)
+      : cell.style?.paddingEnd !== undefined
+        ? toPx(cell.style.paddingEnd)
       : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
   const bottom =
     cell.style?.paddingBottom !== undefined
@@ -179,6 +181,8 @@ function resolveCellPadding(cell: EditorTableCellNode): {
   const left =
     cell.style?.paddingLeft !== undefined
       ? toPx(cell.style.paddingLeft)
+      : cell.style?.paddingStart !== undefined
+        ? toPx(cell.style.paddingStart)
       : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
 
   return { top, right, bottom, left };
@@ -294,8 +298,8 @@ export function buildCanvasTableLayout(options: {
         glyphWidth +
         padding.left +
         padding.right +
-        resolveBorder(cell.style?.borderLeft).width +
-        resolveBorder(cell.style?.borderRight).width;
+        resolveBorder(cell.style?.borderLeft ?? cell.style?.borderStart).width +
+        resolveBorder(cell.style?.borderRight ?? cell.style?.borderEnd).width;
       const col = entry.visualColumnIndex;
       if (needed > (resolvedColumnWidths[col] ?? 0)) {
         resolvedColumnWidths[col] = needed;
@@ -342,6 +346,9 @@ export function buildCanvasTableLayout(options: {
 
   for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
     const row = table.rows[rowIndex]!;
+    if (row.style?.hidden) {
+      continue;
+    }
     for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
       const cell = row.cells[cellIndex]!;
       const entry = cellEntriesByKey.get(`${rowIndex}:${cellIndex}`);
@@ -371,9 +378,9 @@ export function buildCanvasTableLayout(options: {
       const padding = resolveCellPadding(cell);
       const borders = {
         top: resolveBorder(cell.style?.borderTop),
-        right: resolveBorder(cell.style?.borderRight),
+        right: resolveBorder(cell.style?.borderRight ?? cell.style?.borderEnd),
         bottom: resolveBorder(cell.style?.borderBottom),
-        left: resolveBorder(cell.style?.borderLeft),
+        left: resolveBorder(cell.style?.borderLeft ?? cell.style?.borderStart),
       };
 
       const contentWidthPx = Math.max(
@@ -395,18 +402,19 @@ export function buildCanvasTableLayout(options: {
       // Cells carry explicit row heights in real documents; fall back to no-wrap
       // when the height is auto so the flow axis is driven by content length.
       const explicitRowHeightPx = parseDimensionToPx(row.style?.height);
-      const wrapWidth = isRotated
-        ? explicitRowHeightPx !== null && explicitRowHeightPx > 0
-          ? Math.max(
-              MIN_TABLE_CELL_CONTENT_WIDTH_PX,
-              explicitRowHeightPx -
-                borders.top.width -
-                borders.bottom.width -
-                padding.top -
-                padding.bottom,
-            )
-          : NO_WRAP_WIDTH_PX
-        : contentWidthPx;
+      const wrapWidth =
+        isRotated || cell.style?.noWrap
+          ? isRotated && explicitRowHeightPx !== null && explicitRowHeightPx > 0
+            ? Math.max(
+                MIN_TABLE_CELL_CONTENT_WIDTH_PX,
+                explicitRowHeightPx -
+                  borders.top.width -
+                  borders.bottom.width -
+                  padding.top -
+                  padding.bottom,
+              )
+            : NO_WRAP_WIDTH_PX
+          : contentWidthPx;
 
       // Project paragraphs at the resolved flow width, after shrinking any
       // oversized inline image so it never exceeds the cell width.
@@ -526,6 +534,9 @@ export function buildCanvasTableLayout(options: {
   // ---------------------------------------------------------------------------
   const rowCount = Math.max(1, table.rows.length);
   const explicitRowHeights = table.rows.map((row) => {
+    if (row.style?.hidden) {
+      return 0;
+    }
     const explicit = parseDimensionToPx(row.style?.height);
     return explicit !== null && explicit > 0 ? explicit : null;
   });
@@ -534,6 +545,10 @@ export function buildCanvasTableLayout(options: {
 
   const rowHeights: number[] = [];
   for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
+    if (table.rows[rowIndex]?.style?.hidden) {
+      rowHeights[rowIndex] = 0;
+      continue;
+    }
     let measured = 0;
     for (const cellEntry of prepared) {
       if (cellEntry.rowIndex !== rowIndex) continue;

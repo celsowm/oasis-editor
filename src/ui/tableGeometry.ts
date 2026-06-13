@@ -46,17 +46,21 @@ function resolveHorizontalCellPaddingPx(cell: EditorTableCellNode): number {
   const left =
     cell.style?.paddingLeft !== undefined
       ? toPx(cell.style.paddingLeft)
+      : cell.style?.paddingStart !== undefined
+        ? toPx(cell.style.paddingStart)
       : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
   const right =
     cell.style?.paddingRight !== undefined
       ? toPx(cell.style.paddingRight)
+      : cell.style?.paddingEnd !== undefined
+        ? toPx(cell.style.paddingEnd)
       : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
   return Math.max(0, left + right);
 }
 
 function resolveHorizontalCellBordersPx(cell: EditorTableCellNode): number {
-  const left = cell.style?.borderLeft;
-  const right = cell.style?.borderRight;
+  const left = cell.style?.borderLeft ?? cell.style?.borderStart;
+  const right = cell.style?.borderRight ?? cell.style?.borderEnd;
   const leftPx = left ? Math.max(0, toPx(left.width)) : 1;
   const rightPx = right ? Math.max(0, toPx(right.width)) : 1;
   return leftPx + rightPx;
@@ -128,6 +132,7 @@ export function getTableCellContentWidthForParagraph(
   if (!row) return null;
   const cell = row.cells[tableLocation.cellIndex];
   if (!cell) return null;
+  if (cell.style?.noWrap) return 100000;
 
   const pageContentWidthPx = getPageContentWidth(
     getDocumentPageSettings(document),

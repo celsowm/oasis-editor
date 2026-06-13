@@ -37,6 +37,23 @@ export interface EditorContextMenuClipboardDeps {
   promptForLink: () => void;
   openFontDialog: () => void;
   openParagraphDialog: () => void;
+  table?: {
+    isInsideTable: () => boolean;
+    canMerge: () => boolean;
+    canSplit: () => boolean;
+    canEditColumn: () => boolean;
+    canEditRow: () => boolean;
+    openProperties: () => void;
+    openBordersAndShading: () => void;
+    merge: () => void;
+    split: () => void;
+    insertColumnBefore: () => void;
+    insertColumnAfter: () => void;
+    deleteColumn: () => void;
+    insertRowBefore: () => void;
+    insertRowAfter: () => void;
+    deleteRow: () => void;
+  };
 }
 
 export function createEditorContextMenuClipboard(
@@ -140,7 +157,7 @@ export function createEditorContextMenuClipboard(
   const buildContextMenuItems = (): ContextMenuItem[] => {
     const hasSelection = !isSelectionCollapsed(deps.state().selection);
     const readOnly = deps.isReadOnly();
-    return [
+    const items: ContextMenuItem[] = [
       {
         id: "cut",
         label: t("contextmenu.cut"),
@@ -200,6 +217,93 @@ export function createEditorContextMenuClipboard(
         onSelect: deps.openParagraphDialog,
       },
     ];
+    const table = deps.table;
+    if (table?.isInsideTable()) {
+      items.push(
+        { id: "sep-table", type: "separator" },
+        {
+          id: "table-properties",
+          label: t("contextmenu.tableProperties"),
+          icon: "table-properties",
+          disabled: readOnly,
+          testId: "editor-context-menu-table-properties",
+          onSelect: table.openProperties,
+        },
+        {
+          id: "table-insert-row-above",
+          label: t("table.insertRowAbove"),
+          icon: "rows-3",
+          disabled: readOnly || !table.canEditRow(),
+          testId: "editor-context-menu-table-insert-row-above",
+          onSelect: table.insertRowBefore,
+        },
+        {
+          id: "table-insert-row-below",
+          label: t("table.insertRowBelow"),
+          icon: "rows-3",
+          disabled: readOnly || !table.canEditRow(),
+          testId: "editor-context-menu-table-insert-row-below",
+          onSelect: table.insertRowAfter,
+        },
+        {
+          id: "table-insert-column-left",
+          label: t("table.insertColumnLeft"),
+          icon: "columns-3",
+          disabled: readOnly || !table.canEditColumn(),
+          testId: "editor-context-menu-table-insert-column-left",
+          onSelect: table.insertColumnBefore,
+        },
+        {
+          id: "table-insert-column-right",
+          label: t("table.insertColumnRight"),
+          icon: "columns-3",
+          disabled: readOnly || !table.canEditColumn(),
+          testId: "editor-context-menu-table-insert-column-right",
+          onSelect: table.insertColumnAfter,
+        },
+        {
+          id: "table-delete-row",
+          label: t("table.deleteRow"),
+          icon: "trash-2",
+          disabled: readOnly || !table.canEditRow(),
+          testId: "editor-context-menu-table-delete-row",
+          onSelect: table.deleteRow,
+        },
+        {
+          id: "table-delete-column",
+          label: t("table.deleteColumn"),
+          icon: "trash-2",
+          disabled: readOnly || !table.canEditColumn(),
+          testId: "editor-context-menu-table-delete-column",
+          onSelect: table.deleteColumn,
+        },
+        {
+          id: "table-merge",
+          label: t("table.mergeTooltip"),
+          icon: "combine",
+          disabled: readOnly || !table.canMerge(),
+          testId: "editor-context-menu-table-merge",
+          onSelect: table.merge,
+        },
+        {
+          id: "table-split",
+          label: t("table.splitTooltip"),
+          icon: "split",
+          disabled: readOnly || !table.canSplit(),
+          testId: "editor-context-menu-table-split",
+          onSelect: table.split,
+        },
+        {
+          id: "table-borders-shading",
+          label: t("contextmenu.bordersAndShading"),
+          icon: "frame",
+          disabled: readOnly,
+          testId: "editor-context-menu-table-borders-shading",
+          onSelect: table.openBordersAndShading,
+        },
+      );
+    }
+    return items;
   };
 
   const handleEditorContextMenu = (event: MouseEvent) => {

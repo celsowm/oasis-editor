@@ -24,18 +24,24 @@ function getCellHorizontalChromePx(
       ? cell.style.padding * POINT_TO_PX
       : cell.style?.paddingLeft !== undefined
         ? cell.style.paddingLeft * POINT_TO_PX
+        : cell.style?.paddingStart !== undefined
+          ? cell.style.paddingStart * POINT_TO_PX
         : DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX / 2;
   const padRight =
     cell.style?.padding !== undefined
       ? cell.style.padding * POINT_TO_PX
       : cell.style?.paddingRight !== undefined
         ? cell.style.paddingRight * POINT_TO_PX
+        : cell.style?.paddingEnd !== undefined
+          ? cell.style.paddingEnd * POINT_TO_PX
         : DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX / 2;
-  const borderLeft = cell.style?.borderLeft
-    ? Math.max(0, cell.style.borderLeft.width * POINT_TO_PX)
+  const leftBorder = cell.style?.borderLeft ?? cell.style?.borderStart;
+  const rightBorder = cell.style?.borderRight ?? cell.style?.borderEnd;
+  const borderLeft = leftBorder
+    ? Math.max(0, leftBorder.width * POINT_TO_PX)
     : 1;
-  const borderRight = cell.style?.borderRight
-    ? Math.max(0, cell.style.borderRight.width * POINT_TO_PX)
+  const borderRight = rightBorder
+    ? Math.max(0, rightBorder.width * POINT_TO_PX)
     : 1;
   return Math.max(0, padLeft + padRight + borderLeft + borderRight);
 }
@@ -176,6 +182,9 @@ function estimateTableRowHeight(
   table?: EditorTableNode,
   rowIndex?: number,
 ): number {
+  if (row.style?.hidden) {
+    return 0;
+  }
   const geometry =
     table && typeof contentWidth === "number"
       ? getCachedTableColumnGeometry(table, contentWidth)
@@ -193,6 +202,9 @@ function estimateTableRowHeight(
       contentWidth,
       columnWidthPx,
     );
+    const paragraphContentWidth = cell.style?.noWrap
+      ? 100000
+      : cellContentWidth;
     let blockHeights = 0;
     for (let blockIndex = 0; blockIndex < cell.blocks.length; blockIndex += 1) {
       const paragraph = cell.blocks[blockIndex]!;
@@ -201,7 +213,7 @@ function estimateTableRowHeight(
       blockHeights += estimateParagraphBlockHeight(
         paragraph,
         styles,
-        cellContentWidth,
+        paragraphContentWidth,
         measurer,
         {
           allowSpacingBefore: !shouldCollapseContextualSpacing(
@@ -271,6 +283,9 @@ function getTableRowGroupEndExclusive(
   }
 
   let endExclusive = rowIndex + 1;
+  if (row.style?.cantSplit) {
+    endExclusive = Math.max(endExclusive, rowIndex + 1);
+  }
   for (const cell of row.cells) {
     const rowSpan = Math.max(
       1,

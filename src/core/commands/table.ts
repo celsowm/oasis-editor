@@ -238,6 +238,204 @@ export function setTableStyleValue<K extends keyof EditorTableStyle>(
   };
 }
 
+export function setActiveTableStyleValue<K extends keyof EditorTableStyle>(
+  state: EditorState,
+  tableId: string,
+  key: K,
+  value: EditorTableStyle[K] | null,
+): EditorState {
+  const updateTable = (table: EditorTableNode): EditorTableNode => {
+    if (table.id !== tableId) return table;
+    const nextStyle = { ...(table.style ?? {}) } as Record<string, unknown>;
+    if (value === null) {
+      delete nextStyle[key];
+    } else {
+      nextStyle[key] = value;
+    }
+    return {
+      ...table,
+      style:
+        Object.keys(nextStyle).length > 0
+          ? (nextStyle as EditorTableStyle)
+          : undefined,
+    };
+  };
+
+  const updateBlocks = (blocks: EditorBlockNode[]): EditorBlockNode[] =>
+    blocks.map((block) => {
+      if (block.type === "paragraph") return block;
+      return {
+        ...updateTable(block),
+        rows: block.rows.map((row) => ({
+          ...row,
+          cells: row.cells.map((cell) => ({
+            ...cell,
+            blocks: updateBlocks(cell.blocks) as EditorParagraphNode[],
+          })),
+        })),
+      };
+    });
+
+  const nextSections = getDocumentSections(state.document).map((section) => ({
+    ...section,
+    blocks: updateBlocks(section.blocks),
+    header: section.header ? updateBlocks(section.header) : undefined,
+    footer: section.footer ? updateBlocks(section.footer) : undefined,
+  }));
+  return {
+    ...state,
+    document: {
+      ...state.document,
+      sections: nextSections,
+    },
+  };
+}
+
+export function setSelectedTableRowStyleValue<
+  K extends keyof EditorTableRowStyle,
+>(
+  state: EditorState,
+  key: K,
+  value: EditorTableRowStyle[K] | null,
+): EditorState {
+  const activeSectionIndex = getActiveSectionIndex(state);
+  const loc = findParagraphTableLocation(
+    state.document,
+    state.selection.focus.paragraphId,
+    activeSectionIndex,
+  );
+  if (!loc) return state;
+
+  const updateTable = (table: EditorTableNode): EditorTableNode => {
+    const nextRows = table.rows.map((row, rowIndex) => {
+      if (rowIndex !== loc.rowIndex) return row;
+      const nextStyle = { ...(row.style ?? {}) } as Record<string, unknown>;
+      if (value === null) {
+        delete nextStyle[key];
+      } else {
+        nextStyle[key] = value;
+      }
+      return {
+        ...row,
+        style:
+          Object.keys(nextStyle).length > 0
+            ? (nextStyle as EditorTableRowStyle)
+            : undefined,
+      };
+    });
+    return { ...table, rows: nextRows };
+  };
+
+  const updateBlocks = (
+    blocks: EditorBlockNode[],
+    zone: ReturnType<typeof getActiveZone>,
+  ): EditorBlockNode[] =>
+    blocks.map((block, blockIndex) => {
+      if (
+        block.type === "table" &&
+        blockIndex === loc.blockIndex &&
+        zone === loc.zone
+      ) {
+        return updateTable(block);
+      }
+      return block;
+    });
+
+  const activeZone = getActiveZone(state);
+  const nextSections = getDocumentSections(state.document).map(
+    (section, sectionIndex) => {
+      if (sectionIndex !== activeSectionIndex) return section;
+      return {
+        ...section,
+        blocks:
+          activeZone === "main"
+            ? updateBlocks(section.blocks, "main")
+            : section.blocks,
+        header:
+          activeZone === "header" && section.header
+            ? updateBlocks(section.header, "header")
+            : section.header,
+        footer:
+          activeZone === "footer" && section.footer
+            ? updateBlocks(section.footer, "footer")
+            : section.footer,
+      };
+    },
+  );
+
+  return {
+    ...state,
+    document: {
+      ...state.document,
+      sections: nextSections,
+    },
+  };
+}
+
+export function setSelectedTableRowHeader(
+  state: EditorState,
+  value: boolean | null,
+): EditorState {
+  const activeSectionIndex = getActiveSectionIndex(state);
+  const loc = findParagraphTableLocation(
+    state.document,
+    state.selection.focus.paragraphId,
+    activeSectionIndex,
+  );
+  if (!loc) return state;
+
+  const updateTable = (table: EditorTableNode): EditorTableNode => ({
+    ...table,
+    rows: table.rows.map((row, rowIndex) =>
+      rowIndex === loc.rowIndex
+        ? { ...row, isHeader: value === null ? undefined : value }
+        : row,
+    ),
+  });
+
+  const activeZone = getActiveZone(state);
+  const updateBlocks = (
+    blocks: EditorBlockNode[],
+    zone: ReturnType<typeof getActiveZone>,
+  ): EditorBlockNode[] =>
+    blocks.map((block, blockIndex) =>
+      block.type === "table" &&
+      blockIndex === loc.blockIndex &&
+      zone === loc.zone
+        ? updateTable(block)
+        : block,
+    );
+
+  const nextSections = getDocumentSections(state.document).map(
+    (section, sectionIndex) => {
+      if (sectionIndex !== activeSectionIndex) return section;
+      return {
+        ...section,
+        blocks:
+          activeZone === "main"
+            ? updateBlocks(section.blocks, "main")
+            : section.blocks,
+        header:
+          activeZone === "header" && section.header
+            ? updateBlocks(section.header, "header")
+            : section.header,
+        footer:
+          activeZone === "footer" && section.footer
+            ? updateBlocks(section.footer, "footer")
+            : section.footer,
+      };
+    },
+  );
+
+  return {
+    ...state,
+    document: {
+      ...state.document,
+      sections: nextSections,
+    },
+  };
+}
+
 export function setTableCellWidth(
   state: EditorState,
   width: number | string | null,

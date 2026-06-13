@@ -339,6 +339,39 @@
   font-size: 18px;
 }
 
+.oasis-editor-table-properties-dialog {
+  width: min(680px, calc(100vw - 32px));
+}
+
+.oasis-editor-table-properties-body {
+  padding: 10px 12px 12px;
+}
+
+.oasis-editor-table-properties-tabs .oasis-editor-tabs-panel {
+  min-height: 360px;
+  padding: 12px 4px 0;
+  overflow: auto;
+}
+
+.oasis-editor-table-properties-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.oasis-editor-table-properties-cell-preview {
+  width: 92px;
+  height: 48px;
+  margin-top: 8px;
+  box-sizing: border-box;
+  background: #fff;
+}
+
+.oasis-editor-table-properties-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
 @media (max-width: 640px) {
   .oasis-editor-dialog-font {
     min-height: 0;

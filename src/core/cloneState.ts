@@ -30,13 +30,44 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
       }
     : {
         ...block,
+        style: block.style
+          ? {
+              ...block.style,
+              defaultCellMargins: block.style.defaultCellMargins
+                ? { ...block.style.defaultCellMargins }
+                : undefined,
+              floating: block.style.floating
+                ? { ...block.style.floating }
+                : undefined,
+              revisionXml: block.style.revisionXml
+                ? [...block.style.revisionXml]
+                : undefined,
+            }
+          : undefined,
+        tblGridChangeXml: block.tblGridChangeXml,
         rows: block.rows.map((row) => ({
           ...row,
+          style: row.style
+            ? {
+                ...row.style,
+                revisionXml: row.style.revisionXml
+                  ? [...row.style.revisionXml]
+                  : undefined,
+              }
+            : undefined,
           cells: row.cells.map((cell) => ({
             ...cell,
             colSpan: cell.colSpan ?? undefined,
             rowSpan: cell.rowSpan ?? undefined,
             vMerge: cell.vMerge ?? undefined,
+            style: cell.style
+              ? {
+                  ...cell.style,
+                  revisionXml: cell.style.revisionXml
+                    ? [...cell.style.revisionXml]
+                    : undefined,
+                }
+              : undefined,
             blocks: cell.blocks.map((paragraph) => ({
               ...paragraph,
               runs: paragraph.runs.map((run) => ({

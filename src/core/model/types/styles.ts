@@ -105,6 +105,27 @@ export interface EditorTableStyle {
   layout?: "fixed" | "autofit";
   cellSpacing?: EditorDocxWidthValue;
   pageBreakBefore?: boolean;
+  /** `w:bidiVisual`: visually order table columns right-to-left. */
+  bidiVisual?: boolean;
+  /** `w:tblOverlap/@w:val`: floating-table overlap behavior. */
+  tblOverlap?: string;
+  /** `w:tblCellMar`: default margins for cells unless overridden by `w:tcMar`. */
+  defaultCellMargins?: {
+    top?: number;
+    right?: number;
+    bottom?: number;
+    left?: number;
+    start?: number;
+    end?: number;
+  };
+  /** Raw `w:tblpPr` attributes for floating table round-trip preservation. */
+  floating?: Record<string, string>;
+  /** Table alt text title, corresponding to Word's table properties Alt Text title. */
+  altTitle?: string;
+  /** Table alt text description, corresponding to Word's table properties Alt Text description. */
+  altDescription?: string;
+  /** Preservation-only table revision/property XML children. */
+  revisionXml?: string[];
   /** `w:tblStyleRowBandSize` — rows per horizontal band (default 1). */
   rowBandSize?: number;
   /** `w:tblStyleColBandSize` — columns per vertical band (default 1). */

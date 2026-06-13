@@ -504,6 +504,74 @@ async function buildDocxWithTableProps(): Promise<ArrayBuffer> {
   return zip.generateAsync({ type: "arraybuffer" });
 }
 
+async function buildDocxWithAdvancedTableProps(): Promise<ArrayBuffer> {
+  const zip = new JSZip();
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tblPr>
+        <w:tblW w:w="5000" w:type="dxa"/>
+        <w:tblpPr w:leftFromText="120" w:rightFromText="160" w:vertAnchor="page" w:horzAnchor="margin" w:tblpX="240" w:tblpY="360"/>
+        <w:tblCellMar>
+          <w:top w:w="120" w:type="dxa"/>
+          <w:start w:w="180" w:type="dxa"/>
+          <w:end w:w="220" w:type="dxa"/>
+        </w:tblCellMar>
+        <w:bidiVisual/>
+        <w:tblOverlap w:val="never"/>
+        <w:tblPrChange w:id="1" w:author="A" w:date="2026-06-12T00:00:00Z"><w:tblPr/></w:tblPrChange>
+      </w:tblPr>
+      <w:tblGrid>
+        <w:gridCol w:w="1800"/>
+        <w:gridCol w:w="1800"/>
+        <w:tblGridChange w:id="2" w:author="A" w:date="2026-06-12T00:00:00Z"><w:tblGrid/></w:tblGridChange>
+      </w:tblGrid>
+      <w:tr>
+        <w:trPr>
+          <w:tblCellSpacing w:w="40" w:type="dxa"/>
+          <w:cantSplit/>
+          <w:trPrChange w:id="3" w:author="A" w:date="2026-06-12T00:00:00Z"><w:trPr/></w:trPrChange>
+        </w:trPr>
+        <w:tc>
+          <w:tcPr>
+            <w:tcW w:w="1800" w:type="dxa"/>
+            <w:noWrap/>
+            <w:tcFitText/>
+            <w:headers w:val="h1 h2"/>
+            <w:tcMar>
+              <w:start w:w="300" w:type="dxa"/>
+              <w:end w:w="340" w:type="dxa"/>
+            </w:tcMar>
+            <w:tcBorders>
+              <w:start w:val="single" w:sz="16" w:space="0" w:color="FF0000"/>
+              <w:end w:val="dashed" w:sz="8" w:space="0" w:color="00FF00"/>
+              <w:tl2br w:val="dotted" w:sz="4" w:space="0" w:color="0000FF"/>
+              <w:tr2bl w:val="single" w:sz="12" w:space="0" w:color="111111"/>
+            </w:tcBorders>
+            <w:textDirection w:val="tbRl"/>
+            <w:hideMark/>
+            <w:cellMerge w:id="4" w:author="A" w:date="2026-06-12T00:00:00Z" w:vMerge="cont"/>
+          </w:tcPr>
+          <w:p><w:r><w:t>Advanced cell</w:t></w:r></w:p>
+        </w:tc>
+        <w:tc><w:p><w:r><w:t>Second</w:t></w:r></w:p></w:tc>
+      </w:tr>
+      <w:tr>
+        <w:trPr><w:hidden/></w:trPr>
+        <w:tc><w:p><w:r><w:t>Hidden row</w:t></w:r></w:p></w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+  zip.file("word/document.xml", documentXml);
+  return zip.generateAsync({ type: "arraybuffer" });
+}
+
 async function readExportedDocumentXml(buffer: ArrayBuffer): Promise<string> {
   const zip = await JSZip.loadAsync(buffer);
   const xml = await zip.file("word/document.xml")?.async("string");
@@ -585,6 +653,105 @@ describe("DOCX table property round-trip", () => {
 
     // tblPrEx must precede trPr inside the row.
     expect(xml.indexOf("tblPrEx")).toBeLessThan(xml.indexOf("<w:trPr"));
+  });
+
+  it("round-trips advanced table metadata and layout-visible flags", async () => {
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithAdvancedTableProps(),
+    );
+    const table = getDocumentTables(document)[0]!;
+    const row = table.rows[0]!;
+    const cell = row.cells[0]!;
+
+    expect(table.style).toMatchObject({
+      bidiVisual: true,
+      tblOverlap: "never",
+      floating: {
+        leftFromText: "120",
+        rightFromText: "160",
+        vertAnchor: "page",
+        horzAnchor: "margin",
+        tblpX: "240",
+        tblpY: "360",
+      },
+      defaultCellMargins: {
+        top: 6,
+        start: 9,
+        end: 11,
+      },
+    });
+    expect(table.style?.revisionXml?.join("")).toContain("tblPrChange");
+    expect(table.tblGridChangeXml).toContain("tblGridChange");
+    expect(row.style).toMatchObject({
+      cellSpacing: 2,
+      cantSplit: true,
+    });
+    expect(row.style?.revisionXml?.join("")).toContain("trPrChange");
+    expect(table.rows[1]!.style?.hidden).toBe(true);
+    expect(cell.style).toMatchObject({
+      paddingTop: 6,
+      paddingStart: 15,
+      paddingEnd: 17,
+      noWrap: true,
+      fitText: true,
+      hideMark: true,
+      headers: "h1 h2",
+      textDirection: "tbRl",
+    });
+    expect(cell.style?.borderStart).toMatchObject({
+      width: 2,
+      type: "solid",
+      color: "#FF0000",
+    });
+    expect(cell.style?.borderEnd).toMatchObject({
+      width: 1,
+      type: "dashed",
+      color: "#00FF00",
+    });
+    expect(cell.style?.borderTopLeftToBottomRight).toMatchObject({
+      width: 0.5,
+      type: "dotted",
+      color: "#0000FF",
+    });
+    expect(cell.style?.revisionXml?.join("")).toContain("cellMerge");
+
+    const state = createEditorStateFromDocument(document);
+    const layout = buildCanvasTableLayout({
+      table,
+      state,
+      pageIndex: 0,
+      originX: 100,
+      originY: 50,
+      contentWidth: 624,
+      estimatedHeight: 80,
+    });
+    expect(layout.rowHeights[1]).toBe(0);
+    expect(layout.cells.length).toBe(2);
+    expect(layout.cells[0]!.left).toBeGreaterThan(layout.cells[1]!.left);
+
+    const xml = await readExportedDocumentXml(
+      await exportEditorDocumentToDocx(document),
+    );
+    expect(xml).toContain("<w:tblpPr ");
+    expect(xml).toContain('w:tblpX="240"');
+    expect(xml).toContain("<w:bidiVisual/>");
+    expect(xml).toContain('<w:tblOverlap w:val="never"/>');
+    expect(xml).toContain("<w:tblCellMar>");
+    expect(xml).toContain('<w:start w:w="180" w:type="dxa"/>');
+    expect(xml).toContain("<w:tblPrChange");
+    expect(xml).toContain("<w:tblGridChange");
+    expect(xml).toContain('<w:tblCellSpacing w:w="40" w:type="dxa"/>');
+    expect(xml).toContain("<w:cantSplit/>");
+    expect(xml).toContain("<w:trPrChange");
+    expect(xml).toContain("<w:hidden/>");
+    expect(xml).toContain("<w:noWrap/>");
+    expect(xml).toContain("<w:tcFitText/>");
+    expect(xml).toContain('<w:headers w:val="h1 h2"/>');
+    expect(xml).toContain('<w:start w:val="single" w:sz="16"');
+    expect(xml).toContain('<w:end w:val="dashed" w:sz="8"');
+    expect(xml).toContain('<w:tl2br w:val="dotted" w:sz="4"');
+    expect(xml).toContain("<w:hideMark/>");
+    expect(xml).toContain("<w:cellMerge");
   });
 });
 

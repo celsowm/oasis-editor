@@ -25,6 +25,13 @@ type DocxWidthTag =
   | "wBefore"
   | "wAfter";
 
+function serializeOnOffElement(tag: string, value: boolean | undefined): string {
+  if (value === undefined) {
+    return "";
+  }
+  return value ? `<w:${tag}/>` : `<w:${tag} w:val="0"/>`;
+}
+
 /**
  * Serializes a DOCX width-like element from an editor width value:
  * - number -> w:type="dxa" (points converted to twips)
@@ -86,6 +93,22 @@ function serializeTableCellBorders(cell: EditorTableCellNode): string {
     `<w:bottom ${serializeBorder(cell.style?.borderBottom)}`,
     `<w:right ${serializeBorder(cell.style?.borderRight)}`,
   ];
+  if (cell.style?.borderStart) {
+    borders.push(`<w:start ${serializeBorder(cell.style.borderStart)}`);
+  }
+  if (cell.style?.borderEnd) {
+    borders.push(`<w:end ${serializeBorder(cell.style.borderEnd)}`);
+  }
+  if (cell.style?.borderTopLeftToBottomRight) {
+    borders.push(
+      `<w:tl2br ${serializeBorder(cell.style.borderTopLeftToBottomRight)}`,
+    );
+  }
+  if (cell.style?.borderTopRightToBottomLeft) {
+    borders.push(
+      `<w:tr2bl ${serializeBorder(cell.style.borderTopRightToBottomLeft)}`,
+    );
+  }
   return `<w:tcBorders>${borders.join("")}</w:tcBorders>`;
 }
 
@@ -100,12 +123,44 @@ function serializeTableCellMargins(cell: EditorTableCellNode): string {
   const right = pointsToTwips(
     uniform ?? style?.paddingRight ?? DEFAULT_CELL_PADDING_LEFT_RIGHT_PT,
   );
+  const start =
+    style?.paddingStart !== undefined
+      ? `<w:start w:w="${pointsToTwips(style.paddingStart) ?? 0}" w:type="dxa"/>`
+      : "";
+  const end =
+    style?.paddingEnd !== undefined
+      ? `<w:end w:w="${pointsToTwips(style.paddingEnd) ?? 0}" w:type="dxa"/>`
+      : "";
 
   return `<w:tcMar><w:top w:w="${top ?? 0}" w:type="dxa"/><w:left w:w="${
     left ?? 0
   }" w:type="dxa"/><w:bottom w:w="${bottom ?? 0}" w:type="dxa"/><w:right w:w="${
     right ?? 0
-  }" w:type="dxa"/></w:tcMar>`;
+  }" w:type="dxa"/>${start}${end}</w:tcMar>`;
+}
+
+function serializeTableDefaultCellMargins(
+  margins: NonNullable<EditorTableNode["style"]>["defaultCellMargins"],
+): string {
+  if (!margins) {
+    return "";
+  }
+  const parts: string[] = [];
+  const edge = (
+    name: "top" | "right" | "bottom" | "left" | "start" | "end",
+    value: number | undefined,
+  ) => {
+    if (value !== undefined && Number.isFinite(value)) {
+      parts.push(`<w:${name} w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`);
+    }
+  };
+  edge("top", margins.top);
+  edge("left", margins.left);
+  edge("bottom", margins.bottom);
+  edge("right", margins.right);
+  edge("start", margins.start);
+  edge("end", margins.end);
+  return parts.length > 0 ? `<w:tblCellMar>${parts.join("")}</w:tblCellMar>` : "";
 }
 
 function serializeTableCellProperties(
@@ -133,6 +188,17 @@ function serializeTableCellProperties(
       `<w:shd w:val="clear" w:color="auto" w:fill="${normalizeDocxColor(cell.style.shading, "FFFFFF")}"/>`,
     );
   }
+  const noWrap = serializeOnOffElement("noWrap", cell.style?.noWrap);
+  if (noWrap) {
+    parts.push(noWrap);
+  }
+  const fitText = serializeOnOffElement("tcFitText", cell.style?.fitText);
+  if (fitText) {
+    parts.push(fitText);
+  }
+  if (cell.style?.headers) {
+    parts.push(`<w:headers w:val="${escapeXml(cell.style.headers)}"/>`);
+  }
   if (cell.style?.verticalAlign) {
     const value =
       cell.style.verticalAlign === "middle"
@@ -145,6 +211,13 @@ function serializeTableCellProperties(
   }
   parts.push(serializeTableCellMargins(cell));
   parts.push(serializeTableCellBorders(cell));
+  const hideMark = serializeOnOffElement("hideMark", cell.style?.hideMark);
+  if (hideMark) {
+    parts.push(hideMark);
+  }
+  if (cell.style?.revisionXml?.length) {
+    parts.push(...cell.style.revisionXml);
+  }
 
   return parts.length > 0 ? `<w:tcPr>${parts.join("")}</w:tcPr>` : "";
 }
@@ -206,20 +279,62 @@ function serializeTableRowProperties(
   if (widthAfter) {
     parts.push(widthAfter);
   }
+  const cellSpacingXml = serializeDocxWidthElement(
+    "tblCellSpacing",
+    row.style?.cellSpacing,
+  );
+  if (cellSpacingXml) {
+    parts.push(cellSpacingXml);
+  }
   const height = serializeTableRowHeight(row);
   if (height) {
     parts.push(height);
   }
+  const cantSplit = serializeOnOffElement("cantSplit", row.style?.cantSplit);
+  if (cantSplit) {
+    parts.push(cantSplit);
+  }
   if (row.isHeader) {
     parts.push("<w:tblHeader/>");
   }
+  const hidden = serializeOnOffElement("hidden", row.style?.hidden);
+  if (hidden) {
+    parts.push(hidden);
+  }
+  if (row.style?.revisionXml?.length) {
+    parts.push(...row.style.revisionXml);
+  }
   return parts.length > 0 ? `<w:trPr>${parts.join("")}</w:trPr>` : "";
+}
+
+function serializeFloatingTableProperties(
+  floating: Record<string, string> | undefined,
+): string {
+  if (!floating || Object.keys(floating).length === 0) {
+    return "";
+  }
+  const attrs = Object.entries(floating)
+    .map(([key, value]) => `w:${key}="${escapeXml(value)}"`)
+    .join(" ");
+  return `<w:tblpPr ${attrs}/>`;
 }
 
 function serializeTableProperties(table: EditorTableNode): string {
   const parts: string[] = [];
   if (table.style?.styleId) {
     parts.push(`<w:tblStyle w:val="${escapeXml(table.style.styleId)}"/>`);
+  }
+  if (table.style?.altTitle) {
+    parts.push(`<w:tblCaption w:val="${escapeXml(table.style.altTitle)}"/>`);
+  }
+  if (table.style?.altDescription) {
+    parts.push(
+      `<w:tblDescription w:val="${escapeXml(table.style.altDescription)}"/>`,
+    );
+  }
+  const floatingXml = serializeFloatingTableProperties(table.style?.floating);
+  if (floatingXml) {
+    parts.push(floatingXml);
   }
   const gridWidth =
     table.gridCols && table.gridCols.length > 0
@@ -236,6 +351,12 @@ function serializeTableProperties(table: EditorTableNode): string {
   if (cellSpacingXml) {
     parts.push(cellSpacingXml);
   }
+  const defaultMarginsXml = serializeTableDefaultCellMargins(
+    table.style?.defaultCellMargins,
+  );
+  if (defaultMarginsXml) {
+    parts.push(defaultMarginsXml);
+  }
   const indentXml = serializeDocxWidthElement(
     "tblInd",
     table.style?.indentLeft,
@@ -244,6 +365,16 @@ function serializeTableProperties(table: EditorTableNode): string {
     parts.push(indentXml);
   }
   parts.push(`<w:tblLayout w:type="${table.style?.layout ?? "fixed"}"/>`);
+  const bidiVisual = serializeOnOffElement("bidiVisual", table.style?.bidiVisual);
+  if (bidiVisual) {
+    parts.push(bidiVisual);
+  }
+  if (table.style?.tblOverlap) {
+    parts.push(`<w:tblOverlap w:val="${escapeXml(table.style.tblOverlap)}"/>`);
+  }
+  if (table.style?.revisionXml?.length) {
+    parts.push(...table.style.revisionXml);
+  }
   return `<w:tblPr>${parts.join("")}</w:tblPr>`;
 }
 
@@ -295,7 +426,7 @@ export function serializeTableXml(
   const gridXml = table.gridCols
     ? `<w:tblGrid>${table.gridCols
         .map((width) => `<w:gridCol w:w="${pointsToTwips(width) ?? 0}"/>`)
-        .join("")}</w:tblGrid>`
+        .join("")}${table.tblGridChangeXml ?? ""}</w:tblGrid>`
     : "";
   return `<w:tbl>${serializeTableProperties(table)}${gridXml}${rowsXml}</w:tbl>`;
 }

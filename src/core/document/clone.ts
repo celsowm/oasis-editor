@@ -74,10 +74,39 @@ export function cloneBlocks(blocks: EditorBlockNode[]): EditorBlockNode[] {
     }
     return {
       ...block,
+      style: block.style
+        ? {
+            ...block.style,
+            defaultCellMargins: block.style.defaultCellMargins
+              ? { ...block.style.defaultCellMargins }
+              : undefined,
+            floating: block.style.floating ? { ...block.style.floating } : undefined,
+            revisionXml: block.style.revisionXml
+              ? [...block.style.revisionXml]
+              : undefined,
+          }
+        : undefined,
+      tblGridChangeXml: block.tblGridChangeXml,
       rows: block.rows.map((row) => ({
         ...row,
+        style: row.style
+          ? {
+              ...row.style,
+              revisionXml: row.style.revisionXml
+                ? [...row.style.revisionXml]
+                : undefined,
+            }
+          : undefined,
         cells: row.cells.map((cell) => ({
           ...cell,
+          style: cell.style
+            ? {
+                ...cell.style,
+                revisionXml: cell.style.revisionXml
+                  ? [...cell.style.revisionXml]
+                  : undefined,
+              }
+            : undefined,
           blocks: cloneParagraphs(cell.blocks),
         })),
       })),

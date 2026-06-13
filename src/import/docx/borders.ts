@@ -51,6 +51,10 @@ export interface EditorBoxBorders {
   borderRight?: EditorBorderStyle;
   borderBottom?: EditorBorderStyle;
   borderLeft?: EditorBorderStyle;
+  borderStart?: EditorBorderStyle;
+  borderEnd?: EditorBorderStyle;
+  borderTopLeftToBottomRight?: EditorBorderStyle;
+  borderTopRightToBottomLeft?: EditorBorderStyle;
 }
 
 export interface EditorTableBorders extends EditorBoxBorders {
@@ -81,6 +85,18 @@ export function parseDocxBoxBorders(
     ),
     borderLeft: parseDocxBorder(
       getFirstChildByTagNameNS(container, WORD_NS, "left"),
+    ),
+    borderStart: parseDocxBorder(
+      getFirstChildByTagNameNS(container, WORD_NS, "start"),
+    ),
+    borderEnd: parseDocxBorder(
+      getFirstChildByTagNameNS(container, WORD_NS, "end"),
+    ),
+    borderTopLeftToBottomRight: parseDocxBorder(
+      getFirstChildByTagNameNS(container, WORD_NS, "tl2br"),
+    ),
+    borderTopRightToBottomLeft: parseDocxBorder(
+      getFirstChildByTagNameNS(container, WORD_NS, "tr2bl"),
     ),
   };
 }

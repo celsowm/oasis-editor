@@ -3,6 +3,7 @@ import { LinkDialog } from "../components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "../components/Dialogs/ImageAltDialog.js";
 import { FontDialog } from "../components/Dialogs/FontDialog.js";
 import { ParagraphDialog } from "../components/Dialogs/ParagraphDialog.js";
+import { TablePropertiesDialog } from "../components/Dialogs/TablePropertiesDialog.js";
 import { FindReplaceDialog } from "../components/FindReplace/FindReplaceDialog.js";
 import { ContextMenu } from "../components/ContextMenu/ContextMenu.js";
 import type { createEditorDialogs } from "./useEditorDialogs.js";
@@ -20,6 +21,9 @@ export interface EditorDialogsLayerProps {
   applyImageAltCommand: (alt: string) => void;
   applyFontDialogValues: ComponentProps<typeof FontDialog>["onApply"];
   applyParagraphDialogValues: ComponentProps<typeof ParagraphDialog>["onApply"];
+  applyTablePropertiesDialogValues: ComponentProps<
+    typeof TablePropertiesDialog
+  >["onApply"];
   closeContextMenu: () => void;
 }
 
@@ -39,6 +43,8 @@ export function EditorDialogsLayer(props: EditorDialogsLayerProps) {
     setFontDialog,
     paragraphDialog,
     setParagraphDialog,
+    tablePropertiesDialog,
+    setTablePropertiesDialog,
   } = props.dialogs;
 
   return (
@@ -85,6 +91,19 @@ export function EditorDialogsLayer(props: EditorDialogsLayerProps) {
           props.focusInput();
         }}
         onApply={props.applyParagraphDialogValues}
+      />
+
+      <TablePropertiesDialog
+        isOpen={tablePropertiesDialog().isOpen}
+        initial={tablePropertiesDialog().initial}
+        onClose={() => {
+          setTablePropertiesDialog({
+            ...tablePropertiesDialog(),
+            isOpen: false,
+          });
+          props.focusInput();
+        }}
+        onApply={props.applyTablePropertiesDialogValues}
       />
 
       <ContextMenu

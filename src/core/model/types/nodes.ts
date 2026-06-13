@@ -142,15 +142,34 @@ export interface EditorTableCellStyle {
   borderRight?: EditorBorderStyle;
   borderBottom?: EditorBorderStyle;
   borderLeft?: EditorBorderStyle;
+  /** Bidi-aware leading/trailing borders (`w:start` / `w:end`). */
+  borderStart?: EditorBorderStyle;
+  borderEnd?: EditorBorderStyle;
+  /** Diagonal cell borders (`w:tl2br` / `w:tr2bl`). */
+  borderTopLeftToBottomRight?: EditorBorderStyle;
+  borderTopRightToBottomLeft?: EditorBorderStyle;
   padding?: number;
   paddingTop?: number;
   paddingRight?: number;
   paddingBottom?: number;
   paddingLeft?: number;
+  /** Bidi-aware leading/trailing margins (`w:start` / `w:end`). */
+  paddingStart?: number;
+  paddingEnd?: number;
   verticalAlign?: "top" | "middle" | "bottom";
   horizontalAlign?: "left" | "center" | "right" | "justify";
   /** `w:tcPr/w:textDirection/@w:val`: cell text flow direction (vertical text). */
   textDirection?: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV" | null;
+  /** `w:noWrap`: prevent normal wrapping inside the cell. */
+  noWrap?: boolean;
+  /** `w:tcFitText`: request Word-style text fitting within the cell width. */
+  fitText?: boolean;
+  /** `w:hideMark`: hide the cell-end marker for layout. */
+  hideMark?: boolean;
+  /** `w:headers/@w:val`: semantic header cell references. */
+  headers?: string;
+  /** Preservation-only table-cell revision/property XML children. */
+  revisionXml?: string[];
 }
 
 export interface EditorTableCellNode {
@@ -169,6 +188,14 @@ export interface EditorTableRowStyle {
   gridAfter?: number;
   widthBefore?: EditorDocxWidthValue;
   widthAfter?: EditorDocxWidthValue;
+  /** `w:cantSplit`: keep this row together during pagination. */
+  cantSplit?: boolean;
+  /** `w:hidden`: do not display this row in normal view. */
+  hidden?: boolean;
+  /** Row-level cell spacing override (`w:trPr/w:tblCellSpacing`). */
+  cellSpacing?: EditorDocxWidthValue;
+  /** Preservation-only row revision/property XML children. */
+  revisionXml?: string[];
 }
 
 export interface EditorTableRowNode {
@@ -189,6 +216,8 @@ export interface EditorTableNode {
   rows: EditorTableRowNode[];
   gridCols?: number[];
   style?: EditorTableStyle;
+  /** Preservation-only `w:tblGridChange` XML. */
+  tblGridChangeXml?: string;
 }
 
 export type EditorBlockNode = EditorParagraphNode | EditorTableNode;

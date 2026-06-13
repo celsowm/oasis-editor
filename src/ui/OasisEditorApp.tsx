@@ -63,6 +63,7 @@ import { createEditorAppState } from "./app/useEditorAppState.js";
 import { createCanvasSurfaceHitResolver } from "./app/useCanvasSurfaceHitResolver.js";
 import { createFontDialogBridge } from "./app/useFontDialogBridge.js";
 import { createParagraphDialogBridge } from "./app/useParagraphDialogBridge.js";
+import { createTablePropertiesDialogBridge } from "./app/useTablePropertiesDialogBridge.js";
 import { createEditorContextMenuClipboard } from "./app/useEditorContextMenuClipboard.js";
 import { useEditorRuntimeBootstrap } from "./app/useEditorRuntimeBootstrap.js";
 import { createEditorUiOptions } from "./app/useEditorUiOptions.js";
@@ -139,6 +140,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setFontDialog,
     paragraphDialog,
     setParagraphDialog,
+    tablePropertiesDialog,
+    setTablePropertiesDialog,
   } = createEditorDialogs();
 
   // First-use precise-fonts welcome overlay (rendered inside the editor shell).
@@ -636,6 +639,28 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const applyParagraphDialogValues =
     paragraphDialogBridge.applyParagraphDialogValues;
 
+  const tablePropertiesDialogBridge = createTablePropertiesDialogBridge({
+    state: () => state,
+    isReadOnly,
+    setTablePropertiesDialog,
+    setContextMenu,
+    clearPreferredColumn,
+    resetTransactionGrouping,
+    applyTransactionalState,
+    focusInput,
+  });
+  const openTablePropertiesDialog =
+    tablePropertiesDialogBridge.openTablePropertiesDialog;
+  const applyTablePropertiesDialogValues =
+    tablePropertiesDialogBridge.applyTablePropertiesDialogValues;
+  const applyTableContextCommand = (
+    producer: (current: EditorState) => EditorState,
+    mergeKey: string,
+  ) => {
+    applyTransactionalState(producer, { mergeKey });
+    focusInput();
+  };
+
   const contextMenuClipboard = createEditorContextMenuClipboard({
     state: () => state,
     isReadOnly,
@@ -649,6 +674,55 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     promptForLink: commandsController.promptForLink,
     openFontDialog,
     openParagraphDialog,
+    table: {
+      isInsideTable: tablePropertiesDialogBridge.isInsideTable,
+      canMerge: () => tableOps.canMergeSelectedTable(state),
+      canSplit: () => tableOps.canSplitSelectedTable(state),
+      canEditColumn: () => tableOps.canEditSelectedTableColumn(state),
+      canEditRow: () => tableOps.canEditSelectedTableRow(state),
+      openProperties: () => openTablePropertiesDialog("table"),
+      openBordersAndShading: () => openTablePropertiesDialog("cell"),
+      merge: () =>
+        applyTableContextCommand(
+          (current) => tableOps.mergeSelectedTable(current),
+          "mergeTable",
+        ),
+      split: () =>
+        applyTableContextCommand(
+          (current) => tableOps.splitSelectedTable(current),
+          "splitTable",
+        ),
+      insertColumnBefore: () =>
+        applyTableContextCommand(
+          (current) => tableOps.insertSelectedTableColumn(current, -1),
+          "insertTableColumn",
+        ),
+      insertColumnAfter: () =>
+        applyTableContextCommand(
+          (current) => tableOps.insertSelectedTableColumn(current, 1),
+          "insertTableColumn",
+        ),
+      deleteColumn: () =>
+        applyTableContextCommand(
+          (current) => tableOps.deleteSelectedTableColumn(current),
+          "deleteTableColumn",
+        ),
+      insertRowBefore: () =>
+        applyTableContextCommand(
+          (current) => tableOps.insertSelectedTableRow(current, -1),
+          "insertTableRow",
+        ),
+      insertRowAfter: () =>
+        applyTableContextCommand(
+          (current) => tableOps.insertSelectedTableRow(current, 1),
+          "insertTableRow",
+        ),
+      deleteRow: () =>
+        applyTableContextCommand(
+          (current) => tableOps.deleteSelectedTableRow(current),
+          "deleteTableRow",
+        ),
+    },
   });
   const buildContextMenuItems = contextMenuClipboard.buildContextMenuItems;
   const handleEditorContextMenu = contextMenuClipboard.handleEditorContextMenu;
@@ -761,6 +835,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           setFontDialog,
           paragraphDialog,
           setParagraphDialog,
+          tablePropertiesDialog,
+          setTablePropertiesDialog,
         }}
         findReplace={fr}
         fontFamilyOptions={computeFontFamilyOptions}
@@ -771,6 +847,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         applyImageAltCommand={commandsController.applyImageAltCommand}
         applyFontDialogValues={applyFontDialogValues}
         applyParagraphDialogValues={applyParagraphDialogValues}
+        applyTablePropertiesDialogValues={applyTablePropertiesDialogValues}
         closeContextMenu={closeContextMenu}
       />
 

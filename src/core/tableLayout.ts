@@ -22,6 +22,9 @@ export function buildTableCellLayout(
 
   for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
     const row = table.rows[rowIndex];
+    if (row.style?.hidden) {
+      continue;
+    }
     // w:gridBefore: the row's cells start after a number of skipped leading
     // grid columns (ragged tables).
     let visualColumnIndex = Math.max(0, Math.floor(row.style?.gridBefore ?? 0));
@@ -66,6 +69,16 @@ export function buildTableCellLayout(
       if (occupiedColumns[columnIndex] > 0) {
         occupiedColumns[columnIndex] -= 1;
       }
+    }
+  }
+
+  if (table.style?.bidiVisual && entries.length > 0) {
+    const visualColumnCount = Math.max(
+      ...entries.map((entry) => entry.visualColumnIndex + entry.colSpan),
+    );
+    for (const entry of entries) {
+      entry.visualColumnIndex =
+        visualColumnCount - entry.visualColumnIndex - entry.colSpan;
     }
   }
 

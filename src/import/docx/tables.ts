@@ -91,6 +91,73 @@ function parsePositiveIntegerProperty(
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined;
 }
 
+function serializeChildXml(
+  parent: XmlElement | null,
+  localNames: string[],
+): string[] | undefined {
+  if (!parent) {
+    return undefined;
+  }
+  const names = new Set(localNames);
+  const serializer = new XMLSerializer();
+  const result: string[] = [];
+  const children = parent.childNodes;
+  for (let index = 0; index < children.length; index += 1) {
+    const node = children[index];
+    if (
+      node?.nodeType === node.ELEMENT_NODE &&
+      (node as XmlElement).namespaceURI === WORD_NS &&
+      names.has((node as XmlElement).localName ?? "")
+    ) {
+      result.push(serializer.serializeToString(node as XmlElement));
+    }
+  }
+  return result.length > 0 ? result : undefined;
+}
+
+function parseFloatingTableProperties(
+  tblPr: XmlElement | null,
+): Record<string, string> | undefined {
+  const tblpPr = getFirstChildByTagNameNS(tblPr, WORD_NS, "tblpPr");
+  if (!tblpPr || !tblpPr.attributes || tblpPr.attributes.length === 0) {
+    return undefined;
+  }
+  const floating: Record<string, string> = {};
+  for (let index = 0; index < tblpPr.attributes.length; index += 1) {
+    const attr = tblpPr.attributes.item(index);
+    if (attr?.namespaceURI === WORD_NS || attr?.prefix === "w") {
+      floating[attr.localName || attr.name.replace(/^w:/, "")] = attr.value;
+    }
+  }
+  return Object.keys(floating).length > 0 ? floating : undefined;
+}
+
+function parseCellMargins(
+  container: XmlElement | null,
+): EditorTableStyle["defaultCellMargins"] | undefined {
+  if (!container) {
+    return undefined;
+  }
+  const edgePt = (edge: string) =>
+    twipsToPoints(
+      getAttributeValue(getFirstChildByTagNameNS(container, WORD_NS, edge), "w"),
+    );
+  const margins: NonNullable<EditorTableStyle["defaultCellMargins"]> = {};
+  const top = edgePt("top");
+  const right = edgePt("right");
+  const bottom = edgePt("bottom");
+  const left = edgePt("left");
+  const start = edgePt("start");
+  const end = edgePt("end");
+  if (top !== undefined) margins.top = top;
+  if (right !== undefined) margins.right = right;
+  if (bottom !== undefined) margins.bottom = bottom;
+  if (left !== undefined) margins.left = left;
+  if (start !== undefined) margins.start = start;
+  if (end !== undefined) margins.end = end;
+  return Object.keys(margins).length > 0 ? margins : undefined;
+}
+
 function parseTableLayout(
   tblPr: XmlElement | null,
 ): EditorTableLayout | undefined {
@@ -109,6 +176,22 @@ function parseTableStyle(
 
   if (tableStyleId) {
     style.styleId = tableStyleId;
+  }
+
+  const altTitle = getAttributeValue(
+    getFirstChildByTagNameNS(tblPr, WORD_NS, "tblCaption"),
+    "val",
+  );
+  if (altTitle) {
+    style.altTitle = altTitle;
+  }
+
+  const altDescription = getAttributeValue(
+    getFirstChildByTagNameNS(tblPr, WORD_NS, "tblDescription"),
+    "val",
+  );
+  if (altDescription) {
+    style.altDescription = altDescription;
   }
 
   const width = parseDocxWidthValue(
@@ -143,6 +226,36 @@ function parseTableStyle(
   );
   if (cellSpacing !== undefined) {
     style.cellSpacing = cellSpacing;
+  }
+
+  const defaultCellMargins = parseCellMargins(
+    getFirstChildByTagNameNS(tblPr, WORD_NS, "tblCellMar"),
+  );
+  if (defaultCellMargins) {
+    style.defaultCellMargins = defaultCellMargins;
+  }
+
+  const bidiVisual = tblPr ? parseOnOffProperty(tblPr, "bidiVisual") : undefined;
+  if (bidiVisual !== undefined) {
+    style.bidiVisual = bidiVisual;
+  }
+
+  const tblOverlap = getAttributeValue(
+    getFirstChildByTagNameNS(tblPr, WORD_NS, "tblOverlap"),
+    "val",
+  );
+  if (tblOverlap) {
+    style.tblOverlap = tblOverlap;
+  }
+
+  const floating = parseFloatingTableProperties(tblPr);
+  if (floating) {
+    style.floating = floating;
+  }
+
+  const revisionXml = serializeChildXml(tblPr, ["tblPrChange"]);
+  if (revisionXml) {
+    style.revisionXml = revisionXml;
   }
 
   return emptyOrUndefined(style);
@@ -189,6 +302,31 @@ function parseTableRowStyle(
   const hRule = getAttributeValue(trHeight, "hRule");
   if (hRule === "auto" || hRule === "exact" || hRule === "atLeast") {
     style.heightRule = hRule;
+  }
+
+  const cellSpacing = parseDocxWidthValue(
+    getFirstChildByTagNameNS(rowProperties, WORD_NS, "tblCellSpacing"),
+  );
+  if (cellSpacing !== undefined) {
+    style.cellSpacing = cellSpacing;
+  }
+
+  const cantSplit = parseOnOffProperty(rowProperties, "cantSplit");
+  if (cantSplit !== undefined) {
+    style.cantSplit = cantSplit;
+  }
+  const hidden = parseOnOffProperty(rowProperties, "hidden");
+  if (hidden !== undefined) {
+    style.hidden = hidden;
+  }
+
+  const revisionXml = serializeChildXml(rowProperties, [
+    "trPrChange",
+    "ins",
+    "del",
+  ]);
+  if (revisionXml) {
+    style.revisionXml = revisionXml;
   }
 
   return emptyOrUndefined(style);
@@ -257,12 +395,42 @@ function parseTableCellBorders(
 
 function parseTableCellStyle(
   cellProperties: XmlElement | null,
+  tableDefaultMargins?: EditorTableStyle["defaultCellMargins"],
 ): EditorTableCellStyle | undefined {
   if (!cellProperties) {
-    return undefined;
+    if (!tableDefaultMargins) {
+      return undefined;
+    }
+    return emptyOrUndefined({
+      paddingTop: tableDefaultMargins.top,
+      paddingRight: tableDefaultMargins.right,
+      paddingBottom: tableDefaultMargins.bottom,
+      paddingLeft: tableDefaultMargins.left,
+      paddingStart: tableDefaultMargins.start,
+      paddingEnd: tableDefaultMargins.end,
+    });
   }
 
-  const style: EditorTableCellStyle = {};
+  const style: EditorTableCellStyle = {
+    ...(tableDefaultMargins?.top !== undefined
+      ? { paddingTop: tableDefaultMargins.top }
+      : {}),
+    ...(tableDefaultMargins?.right !== undefined
+      ? { paddingRight: tableDefaultMargins.right }
+      : {}),
+    ...(tableDefaultMargins?.bottom !== undefined
+      ? { paddingBottom: tableDefaultMargins.bottom }
+      : {}),
+    ...(tableDefaultMargins?.left !== undefined
+      ? { paddingLeft: tableDefaultMargins.left }
+      : {}),
+    ...(tableDefaultMargins?.start !== undefined
+      ? { paddingStart: tableDefaultMargins.start }
+      : {}),
+    ...(tableDefaultMargins?.end !== undefined
+      ? { paddingEnd: tableDefaultMargins.end }
+      : {}),
+  };
   const shading = getFirstChildByTagNameNS(cellProperties, WORD_NS, "shd");
   const fill = parseShdFill(shading);
   if (fill) {
@@ -284,20 +452,16 @@ function parseTableCellStyle(
     }
   }
 
-  const tcMar = getFirstChildByTagNameNS(cellProperties, WORD_NS, "tcMar");
+  const tcMar = parseCellMargins(
+    getFirstChildByTagNameNS(cellProperties, WORD_NS, "tcMar"),
+  );
   if (tcMar) {
-    const edgePt = (edge: string) =>
-      twipsToPoints(
-        getAttributeValue(getFirstChildByTagNameNS(tcMar, WORD_NS, edge), "w"),
-      );
-    const top = edgePt("top");
-    const bottom = edgePt("bottom");
-    const left = edgePt("left");
-    const right = edgePt("right");
-    if (top !== undefined) style.paddingTop = top;
-    if (bottom !== undefined) style.paddingBottom = bottom;
-    if (left !== undefined) style.paddingLeft = left;
-    if (right !== undefined) style.paddingRight = right;
+    if (tcMar.top !== undefined) style.paddingTop = tcMar.top;
+    if (tcMar.bottom !== undefined) style.paddingBottom = tcMar.bottom;
+    if (tcMar.left !== undefined) style.paddingLeft = tcMar.left;
+    if (tcMar.right !== undefined) style.paddingRight = tcMar.right;
+    if (tcMar.start !== undefined) style.paddingStart = tcMar.start;
+    if (tcMar.end !== undefined) style.paddingEnd = tcMar.end;
   }
 
   const verticalAlign = parseTableCellVerticalAlign(cellProperties);
@@ -313,6 +477,35 @@ function parseTableCellStyle(
   );
   if (textDirection) {
     style.textDirection = textDirection;
+  }
+
+  const noWrap = parseOnOffProperty(cellProperties, "noWrap");
+  if (noWrap !== undefined) {
+    style.noWrap = noWrap;
+  }
+  const fitText = parseOnOffProperty(cellProperties, "tcFitText");
+  if (fitText !== undefined) {
+    style.fitText = fitText;
+  }
+  const hideMark = parseOnOffProperty(cellProperties, "hideMark");
+  if (hideMark !== undefined) {
+    style.hideMark = hideMark;
+  }
+  const headers = getAttributeValue(
+    getFirstChildByTagNameNS(cellProperties, WORD_NS, "headers"),
+    "val",
+  );
+  if (headers) {
+    style.headers = headers;
+  }
+  const revisionXml = serializeChildXml(cellProperties, [
+    "tcPrChange",
+    "cellIns",
+    "cellDel",
+    "cellMerge",
+  ]);
+  if (revisionXml) {
+    style.revisionXml = revisionXml;
   }
 
   for (const [key, border] of Object.entries(
@@ -595,6 +788,11 @@ export async function parseTableNode(
       }
     }
   }
+  const tblGridChangeXml = getFirstChildByTagNameNS(
+    tblGrid,
+    WORD_NS,
+    "tblGridChange",
+  );
 
   const tblPr = getFirstChildByTagNameNS(tableNode, WORD_NS, "tblPr");
   const tableStyleId = getAttributeValue(
@@ -612,6 +810,8 @@ export async function parseTableNode(
   const tableStyleDef = tableStyleId
     ? styles?.[tableStyleId]?.tableStyle
     : undefined;
+  const directTableStyle = parseTableStyle(tblPr, tableStyleId ?? undefined);
+  const tableDefaultMargins = directTableStyle?.defaultCellMargins;
   const tblConditionals = tableStyleDef?.conditionalFormats ?? undefined;
   const look = parseTableLook(tblPr);
   const rowBandSize = tableStyleDef?.rowBandSize ?? 1;
@@ -684,7 +884,7 @@ export async function parseTableNode(
       collapseCellAutospacing(paragraphs, autospacingFlags);
       const colSpan = getTableCellColSpan(cellProperties);
       const vMerge = getTableCellVMerge(cellProperties);
-      const cellStyle = parseTableCellStyle(cellProperties);
+      const cellStyle = parseTableCellStyle(cellProperties, tableDefaultMargins);
 
       // Resolve table-style conditional formatting from cell position + tblLook.
       const conditional = mergeConditionalFormats(
@@ -797,9 +997,13 @@ export async function parseTableNode(
     rows,
     gridCols.length > 0 ? gridCols : undefined,
   );
-  const tableStyle = parseTableStyle(tblPr, tableStyleId ?? undefined);
-  if (tableStyle) {
-    table.style = tableStyle;
+  if (directTableStyle) {
+    table.style = directTableStyle;
+  }
+  if (tblGridChangeXml) {
+    table.tblGridChangeXml = new XMLSerializer().serializeToString(
+      tblGridChangeXml,
+    );
   }
   return table;
 }

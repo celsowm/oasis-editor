@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
 import type { FontDialogInitialValues } from "../components/Dialogs/FontDialog.js";
 import type { ParagraphDialogInitialValues } from "../components/Dialogs/ParagraphDialog.js";
+import type { TablePropertiesDialogInitialValues } from "../components/Dialogs/TablePropertiesDialog.js";
 
 export function createEditorDialogs() {
   const [linkDialog, setLinkDialog] = createSignal<{
@@ -81,6 +82,47 @@ export function createEditorDialogs() {
       borderSideLeft: false,
     },
   });
+  const [tablePropertiesDialog, setTablePropertiesDialog] = createSignal<{
+    isOpen: boolean;
+    initial: TablePropertiesDialogInitialValues;
+  }>({
+    isOpen: false,
+    initial: {
+      activeTab: "table",
+      tableWidth: "",
+      tableWidthUnit: "points",
+      tableAlign: "",
+      tableIndentLeft: "",
+      tableWrapping: "none",
+      floatingSummary: "",
+      rowHeight: "",
+      rowHeightRule: "",
+      repeatHeader: false,
+      allowBreakAcrossPages: true,
+      hiddenRow: false,
+      columnWidth: "",
+      cellWidth: "",
+      cellVerticalAlign: "",
+      cellTextDirection: "",
+      cellNoWrap: false,
+      cellFitText: false,
+      cellHideMark: false,
+      marginTop: "",
+      marginRight: "",
+      marginBottom: "",
+      marginLeft: "",
+      borderStyle: "none",
+      borderWidth: "",
+      borderColor: "",
+      borderTop: false,
+      borderRight: false,
+      borderBottom: false,
+      borderLeft: false,
+      shading: "",
+      altTitle: "",
+      altDescription: "",
+    },
+  });
 
   return {
     linkDialog,
@@ -93,5 +135,7 @@ export function createEditorDialogs() {
     setFontDialog,
     paragraphDialog,
     setParagraphDialog,
+    tablePropertiesDialog,
+    setTablePropertiesDialog,
   };
 }

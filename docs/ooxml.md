@@ -817,85 +817,85 @@ Priority legend:
 |---|---|---|---|---|---|---|---|
 | Table container | `w:tbl` | Body, cell, SDT content, headers/footers, comments, etc. | common `w:rsid*`, `mc:*`, extended attrs | Table block container | Parse as a block object; nested tables are legal inside `w:tc`. | P0 | Supported |
 | Table container | `w:tblPr` | `w:tbl`, table style, `w:tblPrChange` | — | Table property set | Merge direct formatting over table style defaults. | P0 | Partial |
-| Table container | `w:tblPrEx` | `w:tr` | — | Table property exceptions for a row | Row-level override of some table properties. Often missed by importers. | P1 | Not supported |
+| Table container | `w:tblPrEx` | `w:tr` | — | Table property exceptions for a row | Row-level override of some table properties. Preserved raw for DOCX round-trip. | P1 | Partial |
 | Table container | `w:tblGrid` | `w:tbl`, `w:tblGridChange` | — | Table grid definition | Defines logical columns and base grid widths. | P0 | Supported |
 | Table container | `w:gridCol` | `w:tblGrid` | `w:w` | Single grid column | Width in twips; may be absent or overridden by autofit behavior. | P0 | Supported |
-| Table container | `w:tblGridChange` | `w:tblGrid` | `w:id`, `w:author`, `w:date` | Revision information for grid changes | Contains previous `w:tblGrid`; preserve or use when showing revisions. | P3 | Not supported |
+| Table container | `w:tblGridChange` | `w:tblGrid` | `w:id`, `w:author`, `w:date` | Revision information for grid changes | Preserved for DOCX round-trip; revision-aware rendering is not implemented. | P3 | Partial |
 | Row container | `w:tr` | `w:tbl` | `w:rsidR`, `w:rsidTr`, `w:rsidRPr`, `w14:paraId`, `w14:textId`, `mc:*` | Table row | Main row layout unit. | P0 | Supported |
 | Row container | `w:trPr` | `w:tr`, table style, `w:trPrChange` | — | Row property set | Applies to all cells in row unless overridden by cell properties. | P0 | Partial |
 | Cell container | `w:tc` | `w:tr` | `w:id`, `mc:*`, extended attrs | Table cell | Must contain block-level content; empty cells normally contain at least `w:p`. | P0 | Supported |
 | Cell container | `w:tcPr` | `w:tc`, table style, `w:tcPrChange` | — | Cell property set | Highest priority in table formatting cascade for cell-level properties. | P0 | Supported |
 | Table style | `w:style[@w:type='table']` | `styles.xml` | `w:type`, `w:styleId`, `w:default`, `w:customStyle` | Table style definition | Required if you want Word-like table formatting. | P1 | Partial |
 | Table style | `w:tblStyle` | `w:tblPr` | `w:val` | Table style reference | Resolve style by `styleId`. | P1 | Partial |
-| Table style | `w:tblStylePr` | `w:style` | `w:type` | Conditional table style bucket | Applies to first row, last row, bands, corner cells, etc. | P2 | Not supported |
-| Table style | `w:tblStyleRowBandSize` | `w:tblPr` | `w:val` | Number of rows per horizontal band | Used with table conditional formatting. | P2 | Not supported |
-| Table style | `w:tblStyleColBandSize` | `w:tblPr` | `w:val` | Number of columns per vertical band | Used with table conditional formatting. | P2 | Not supported |
-| Conditional formatting | `w:cnfStyle` | `w:trPr`, `w:tcPr` | `w:val`, `w:firstRow`, `w:lastRow`, `w:firstColumn`, `w:lastColumn`, `w:oddVBand`, `w:evenVBand`, `w:oddHBand`, `w:evenHBand`, `w:firstRowFirstColumn`, `w:firstRowLastColumn`, `w:lastRowFirstColumn`, `w:lastRowLastColumn` | Conditional-format flags | Determines which table-style conditional buckets apply. | P2 | Not supported |
-| Conditional formatting | `w:tblLook` | `w:tblPr`, `w:tblPrEx` | `w:val`, `w:firstRow`, `w:lastRow`, `w:firstColumn`, `w:lastColumn`, `w:noHBand`, `w:noVBand` | Table-style mask | Controls whether header/last/banded formatting is active. | P2 | Not supported |
+| Table style | `w:tblStylePr` | `w:style` | `w:type` | Conditional table style bucket | Applies imported shading, run style, and cell borders for first/last rows/columns, bands, and corner cells. | P2 | Partial |
+| Table style | `w:tblStyleRowBandSize` | `w:tblPr` | `w:val` | Number of rows per horizontal band | Used when resolving imported table conditional formatting. | P2 | Supported |
+| Table style | `w:tblStyleColBandSize` | `w:tblPr` | `w:val` | Number of columns per vertical band | Used when resolving imported table conditional formatting. | P2 | Supported |
+| Conditional formatting | `w:cnfStyle` | `w:trPr`, `w:tcPr` | `w:val`, `w:firstRow`, `w:lastRow`, `w:firstColumn`, `w:lastColumn`, `w:oddVBand`, `w:evenVBand`, `w:oddHBand`, `w:evenHBand`, `w:firstRowFirstColumn`, `w:firstRowLastColumn`, `w:lastRowFirstColumn`, `w:lastRowLastColumn` | Conditional-format flags | Row first/last flags are used for conditional style resolution; full cell flag matrix is partial. | P2 | Partial |
+| Conditional formatting | `w:tblLook` | `w:tblPr`, `w:tblPrEx` | `w:val`, `w:firstRow`, `w:lastRow`, `w:firstColumn`, `w:lastColumn`, `w:noHBand`, `w:noVBand` | Table-style mask | Controls imported first/last row/column and banded formatting. | P2 | Supported |
 | Conditional formatting | `w:tblStylePr/w:pPr` | `w:tblStylePr` | — | Conditional paragraph props | Apply to matching regions. | P2 | Not supported |
-| Conditional formatting | `w:tblStylePr/w:rPr` | `w:tblStylePr` | — | Conditional run props | Apply to matching regions. | P2 | Not supported |
+| Conditional formatting | `w:tblStylePr/w:rPr` | `w:tblStylePr` | — | Conditional run props | Imported and applied beneath explicit run formatting for matching cells. | P2 | Partial |
 | Conditional formatting | `w:tblStylePr/w:tblPr` | `w:tblStylePr` | — | Conditional table props | Apply to matching regions/style conditions. | P2 | Not supported |
 | Conditional formatting | `w:tblStylePr/w:trPr` | `w:tblStylePr` | — | Conditional row props | Apply to rows matching style condition. | P2 | Not supported |
-| Conditional formatting | `w:tblStylePr/w:tcPr` | `w:tblStylePr` | — | Conditional cell props | Apply to cells matching style condition. | P2 | Not supported |
+| Conditional formatting | `w:tblStylePr/w:tcPr` | `w:tblStylePr` | — | Conditional cell props | Shading and cell borders are imported for matching cells. | P2 | Partial |
 | Widths | `w:tblW` | `w:tblPr`, `w:tblPrEx` | `w:w`, `w:type` | Preferred table width | `type` may be `auto`, `dxa`, `pct`, or `nil`; affects layout algorithm. | P0 | Supported |
 | Widths | `w:tcW` | `w:tcPr` | `w:w`, `w:type` | Preferred cell width | Interacts with table grid and autofit/fixed layout. | P0 | Supported |
 | Widths | `w:tblInd` | `w:tblPr`, `w:tblPrEx` | `w:w`, `w:type` | Table indent | Horizontal offset from leading margin. | P1 | Supported |
-| Widths | `w:tblCellSpacing` | `w:tblPr`, `w:tblPrEx`, `w:trPr` | `w:w`, `w:type` | Cell spacing | Creates space between cells; row value can override table value. | P1 | Not supported |
-| Widths | `w:wBefore` | `w:trPr` | `w:w`, `w:type` | Preferred width before row | Used with skipped grid columns before first cell. | P2 | Not supported |
-| Widths | `w:wAfter` | `w:trPr` | `w:w`, `w:type` | Preferred width after row | Used with skipped grid columns after last cell. | P2 | Not supported |
+| Widths | `w:tblCellSpacing` | `w:tblPr`, `w:tblPrEx`, `w:trPr` | `w:w`, `w:type` | Cell spacing | Imported/exported at table and row level; exact Word spacing geometry is approximate. | P1 | Partial |
+| Widths | `w:wBefore` | `w:trPr` | `w:w`, `w:type` | Preferred width before row | Round-trips with skipped grid columns before first cell. | P2 | Supported |
+| Widths | `w:wAfter` | `w:trPr` | `w:w`, `w:type` | Preferred width after row | Round-trips with skipped grid columns after last cell. | P2 | Supported |
 | Width type group | `CT_TblWidth`-based elements | `tblW`, `tcW`, `tblInd`, `tblCellSpacing`, margins, `wBefore`, `wAfter` | `w:w`, `w:type` | Table measurement | Preserve raw value; `pct` values use OOXML percentage units, not simple CSS percent strings. | P0 | Partial |
 | Alignment | `w:jc` | `w:tblPr`, `w:tblPrEx`, `w:trPr` | `w:val` | Table or row alignment | Values include left/right/center/start/end variants depending conformance/version. | P0 | Partial |
-| Floating table | `w:tblpPr` | `w:tblPr` | `w:leftFromText`, `w:rightFromText`, `w:topFromText`, `w:bottomFromText`, `w:vertAnchor`, `w:horzAnchor`, `w:tblpX`, `w:tblpY`, `w:tblpXSpec`, `w:tblpYSpec` | Floating table position | If present, table is positioned relative to page/margins/text. Hard for browser-like layout. | P2 | Not supported |
-| Floating table | `w:tblOverlap` | `w:tblPr` | `w:val` | Floating table overlap behavior | Controls whether floating tables can overlap. | P3 | Not supported |
-| Direction | `w:bidiVisual` | `w:tblPr` | `w:val` | Visual RTL table ordering | Important for RTL documents. | P2 | Not supported |
-| Borders | `w:tblBorders` | `w:tblPr`, `w:tblPrEx` | — | Table-level border set | Must be merged/conflicted with cell borders. | P1 | Not supported |
+| Floating table | `w:tblpPr` | `w:tblPr` | `w:leftFromText`, `w:rightFromText`, `w:topFromText`, `w:bottomFromText`, `w:vertAnchor`, `w:horzAnchor`, `w:tblpX`, `w:tblpY`, `w:tblpXSpec`, `w:tblpYSpec` | Floating table position | Preserved for DOCX round-trip; editor layout still uses inline table flow. | P2 | Partial |
+| Floating table | `w:tblOverlap` | `w:tblPr` | `w:val` | Floating table overlap behavior | Preserved for DOCX round-trip. | P3 | Partial |
+| Direction | `w:bidiVisual` | `w:tblPr` | `w:val` | Visual RTL table ordering | Imported/exported and applied to visual column order. | P2 | Supported |
+| Borders | `w:tblBorders` | `w:tblPr`, `w:tblPrEx` | — | Table-level border set | Imported and propagated to cell edges; export emits the resolved cell borders rather than table-level borders. | P1 | Partial |
 | Borders | `w:tcBorders` | `w:tcPr` | — | Cell-level border set | Overrides/conflicts with table borders. | P1 | Partial |
 | Borders | `w:top` | `w:tblBorders`, `w:tcBorders` | `w:val`, `w:sz`, `w:space`, `w:color`, `w:themeColor`, `w:themeTint`, `w:themeShade`, `w:frame`, `w:shadow` | Top border | Use OOXML border conflict rules for adjacent cells. | P1 | Supported |
 | Borders | `w:bottom` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Bottom border | Use OOXML border conflict rules for adjacent cells. | P1 | Supported |
 | Borders | `w:left` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Left border | Transitional/legacy; consider `start` for bidi-aware docs. | P1 | Supported |
 | Borders | `w:right` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Right border | Transitional/legacy; consider `end` for bidi-aware docs. | P1 | Supported |
-| Borders | `w:start` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Leading-edge border | Bidi-aware equivalent of left/right. | P1 | Not supported |
-| Borders | `w:end` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Trailing-edge border | Bidi-aware equivalent of left/right. | P1 | Not supported |
+| Borders | `w:start` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Leading-edge border | Imported/exported for cells and used as a physical border fallback. | P1 | Supported |
+| Borders | `w:end` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Trailing-edge border | Imported/exported for cells and used as a physical border fallback. | P1 | Supported |
 | Borders | `w:insideH` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Internal horizontal border | Table-level internal grid lines; can also appear in cell borders/style contexts. | P1 | Not supported |
 | Borders | `w:insideV` | `w:tblBorders`, `w:tcBorders` | same as border attrs | Internal vertical border | Table-level internal grid lines; can also appear in cell borders/style contexts. | P1 | Not supported |
-| Borders | `w:tl2br` | `w:tcBorders` | same as border attrs | Diagonal border top-left to bottom-right | Cell-specific diagonal. | P2 | Not supported |
-| Borders | `w:tr2bl` | `w:tcBorders` | same as border attrs | Diagonal border top-right to bottom-left | Cell-specific diagonal. | P2 | Not supported |
+| Borders | `w:tl2br` | `w:tcBorders` | same as border attrs | Diagonal border top-left to bottom-right | Imported/exported for round-trip; canvas/PDF diagonal painting is not implemented. | P2 | Partial |
+| Borders | `w:tr2bl` | `w:tcBorders` | same as border attrs | Diagonal border top-right to bottom-left | Imported/exported for round-trip; canvas/PDF diagonal painting is not implemented. | P2 | Partial |
 | Borders | Border value group | border elements | `w:val` | Border style | Values include `single`, `nil`, `none`, `dashed`, `dotted`, `double`, etc. | P1 | Supported |
 | Shading | `w:shd` | `w:tblPr`, `w:tblPrEx`, `w:tcPr`, table style props | `w:val`, `w:color`, `w:fill`, `w:themeColor`, `w:themeFill`, `w:themeTint`, `w:themeShade`, `w:themeFillTint`, `w:themeFillShade` | Table/cell shading | Resolve theme colors when possible; otherwise preserve values. | P1 | Supported |
 | Layout | `w:tblLayout` | `w:tblPr`, `w:tblPrEx` | `w:type` | Table layout algorithm | `fixed` vs autofit is essential for width computation. | P0 | Supported |
-| Margins | `w:tblCellMar` | `w:tblPr`, `w:tblPrEx` | — | Default cell margins | Defaults for cells unless overridden by `tcMar`. | P0 | Not supported |
+| Margins | `w:tblCellMar` | `w:tblPr`, `w:tblPrEx` | — | Default cell margins | Imported/exported and applied as defaults beneath cell-specific `tcMar`. | P0 | Supported |
 | Margins | `w:tcMar` | `w:tcPr` | — | Cell-specific margins | Overrides table default cell margins. | P0 | Supported |
 | Margins | `w:top` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Top cell margin | Affects text rectangle inside cells. | P0 | Supported |
 | Margins | `w:bottom` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Bottom cell margin | Affects text rectangle and vertical fit. | P0 | Supported |
 | Margins | `w:left` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Left cell margin | Transitional/legacy; consider `start`. | P0 | Supported |
 | Margins | `w:right` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Right cell margin | Transitional/legacy; consider `end`. | P0 | Supported |
-| Margins | `w:start` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Leading cell margin | Bidi-aware margin. | P1 | Not supported |
-| Margins | `w:end` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Trailing cell margin | Bidi-aware margin. | P1 | Not supported |
-| Row grid | `w:gridBefore` | `w:trPr` | `w:val` | Skipped grid columns before first cell | Needed to reconstruct irregular rows. | P1 | Not supported |
-| Row grid | `w:gridAfter` | `w:trPr` | `w:val` | Skipped grid columns after last cell | Needed to reconstruct irregular rows. | P1 | Not supported |
+| Margins | `w:start` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Leading cell margin | Imported/exported and used as a physical padding fallback. | P1 | Supported |
+| Margins | `w:end` | `w:tblCellMar`, `w:tcMar` | `w:w`, `w:type` | Trailing cell margin | Imported/exported and used as a physical padding fallback. | P1 | Supported |
+| Row grid | `w:gridBefore` | `w:trPr` | `w:val` | Skipped grid columns before first cell | Imported/exported and used by table cell layout. | P1 | Supported |
+| Row grid | `w:gridAfter` | `w:trPr` | `w:val` | Skipped grid columns after last cell | Imported/exported for round-trip; layout mostly relies on leading grid positioning. | P1 | Partial |
 | Row layout | `w:trHeight` | `w:trPr` | `w:val`, `w:hRule` | Row height | `hRule` may be `auto`, `atLeast`, or `exact`. | P0 | Supported |
-| Row layout | `w:cantSplit` | `w:trPr` | `w:val` | Do not split row across pages | Pagination fidelity. | P1 | Not supported |
+| Row layout | `w:cantSplit` | `w:trPr` | `w:val` | Do not split row across pages | Imported/exported; row groups are kept atomic during pagination. | P1 | Supported |
 | Row layout | `w:tblHeader` | `w:trPr` | `w:val` | Repeat row on each page | Needed for paginated rendering/export. | P1 | Supported |
-| Row layout | `w:hidden` | `w:trPr` | `w:val` | Hidden table row marker | Row should not be displayed in normal view. | P2 | Not supported |
+| Row layout | `w:hidden` | `w:trPr` | `w:val` | Hidden table row marker | Imported/exported and hidden rows collapse in layout. | P2 | Supported |
 | HTML/import mapping | `w:divId` | `w:trPr` | `w:val` | HTML div mapping id | Usually safe to preserve only. | P3 | Not supported |
 | Cell merge | `w:gridSpan` | `w:tcPr` | `w:val` | Horizontal cell span | Core colspan support. If span exceeds grid, grid may be augmented. | P0 | Supported |
 | Cell merge | `w:hMerge` | `w:tcPr` | `w:val` | Horizontal merge legacy marker | Older/compat representation; map to span if possible. | P1 | Not supported |
 | Cell merge | `w:vMerge` | `w:tcPr` | `w:val` | Vertical merge marker | `restart` begins merge; omitted/continue continues. Core rowspan support. | P0 | Supported |
 | Cell layout | `w:vAlign` | `w:tcPr` | `w:val` | Vertical alignment in cell | Values include top/center/bottom/both. | P0 | Supported |
-| Cell layout | `w:textDirection` | `w:tcPr` | `w:val` | Rotated/vertical text direction | Needed for vertical table text. | P2 | Not supported |
-| Cell layout | `w:noWrap` | `w:tcPr` | `w:val` | Do not wrap cell content | Affects width and line breaking. | P1 | Not supported |
-| Cell layout | `w:tcFitText` | `w:tcPr` | `w:val` | Fit text within cell width | Word visually compresses text; difficult to emulate exactly. | P3 | Not supported |
-| Cell layout | `w:hideMark` | `w:tcPr` | `w:val` | Hide cell-end marker | Affects empty-cell and bottom-spacing behavior; relevant to layout bugs. | P1 | Not supported |
-| Cell semantics | `w:headers` | `w:tcPr` | `w:val` | Header cell references | Useful for accessibility/semantic export. | P3 | Not supported |
-| Revision: table props | `w:tblPrChange` | `w:tblPr` | `w:id`, `w:author`, `w:date` | Revision of table properties | Contains previous `w:tblPr`. | P3 | Not supported |
-| Revision: row props | `w:trPrChange` | `w:trPr` | `w:id`, `w:author`, `w:date` | Revision of row properties | Contains previous `w:trPr`. | P3 | Not supported |
-| Revision: cell props | `w:tcPrChange` | `w:tcPr` | `w:id`, `w:author`, `w:date` | Revision of cell properties | Contains previous `w:tcPr`. | P3 | Not supported |
-| Revision: row insertion | `w:ins` | `w:trPr` | `w:id`, `w:author`, `w:date` | Inserted table row | Only relevant when displaying tracked changes. | P3 | Not supported |
-| Revision: row deletion | `w:del` | `w:trPr` | `w:id`, `w:author`, `w:date` | Deleted table row | Only relevant when displaying tracked changes. | P3 | Not supported |
-| Revision: cell insertion | `w:cellIns` | `w:tcPr` | `w:id`, `w:author`, `w:date` | Inserted table cell | Tracked table structure revision. | P3 | Not supported |
-| Revision: cell deletion | `w:cellDel` | `w:tcPr` | `w:id`, `w:author`, `w:date` | Deleted table cell | Tracked table structure revision. | P3 | Not supported |
-| Revision: cell merge | `w:cellMerge` | `w:tcPr` | `w:id`, `w:author`, `w:date`, `w:vMerge`, `w:vMergeOrig` | Vertically merged/split cell revision | Needed only for revision-aware rendering. | P3 | Not supported |
-| Revision: table property exception | `w:tblPrExChange` | `w:tblPrEx` | `w:id`, `w:author`, `w:date` | Revision of table property exceptions | Preserve if not rendering revisions. | P3 | Not supported |
+| Cell layout | `w:textDirection` | `w:tcPr` | `w:val` | Rotated/vertical text direction | Imported/exported and rendered in canvas/PDF through vertical text layout. | P2 | Supported |
+| Cell layout | `w:noWrap` | `w:tcPr` | `w:val` | Do not wrap cell content | Imported/exported and used by table measurement/layout. | P1 | Supported |
+| Cell layout | `w:tcFitText` | `w:tcPr` | `w:val` | Fit text within cell width | Imported/exported; Word-like text compression is not rendered. | P3 | Partial |
+| Cell layout | `w:hideMark` | `w:tcPr` | `w:val` | Hide cell-end marker | Imported/exported; marker-specific Word layout nuance is approximate. | P1 | Partial |
+| Cell semantics | `w:headers` | `w:tcPr` | `w:val` | Header cell references | Imported/exported as semantic metadata. | P3 | Supported |
+| Revision: table props | `w:tblPrChange` | `w:tblPr` | `w:id`, `w:author`, `w:date` | Revision of table properties | Preserved for DOCX round-trip; revision-aware rendering is not implemented. | P3 | Partial |
+| Revision: row props | `w:trPrChange` | `w:trPr` | `w:id`, `w:author`, `w:date` | Revision of row properties | Preserved for DOCX round-trip; revision-aware rendering is not implemented. | P3 | Partial |
+| Revision: cell props | `w:tcPrChange` | `w:tcPr` | `w:id`, `w:author`, `w:date` | Revision of cell properties | Preserved for DOCX round-trip; revision-aware rendering is not implemented. | P3 | Partial |
+| Revision: row insertion | `w:ins` | `w:trPr` | `w:id`, `w:author`, `w:date` | Inserted table row | Preserved for DOCX round-trip; revision-aware rendering is not implemented. | P3 | Partial |
+| Revision: row deletion | `w:del` | `w:trPr` | `w:id`, `w:author`, `w:date` | Deleted table row | Preserved for DOCX round-trip; revision-aware rendering is not implemented. | P3 | Partial |
+| Revision: cell insertion | `w:cellIns` | `w:tcPr` | `w:id`, `w:author`, `w:date` | Inserted table cell | Preserved for DOCX round-trip; revision-aware rendering is not implemented. | P3 | Partial |
+| Revision: cell deletion | `w:cellDel` | `w:tcPr` | `w:id`, `w:author`, `w:date` | Deleted table cell | Preserved for DOCX round-trip; revision-aware rendering is not implemented. | P3 | Partial |
+| Revision: cell merge | `w:cellMerge` | `w:tcPr` | `w:id`, `w:author`, `w:date`, `w:vMerge`, `w:vMergeOrig` | Vertically merged/split cell revision | Preserved for DOCX round-trip; revision-aware rendering is not implemented. | P3 | Partial |
+| Revision: table property exception | `w:tblPrExChange` | `w:tblPrEx` | `w:id`, `w:author`, `w:date` | Revision of table property exceptions | Preserved inside raw `tblPrEx` XML. | P3 | Partial |
 | Compatibility/settings | `w:adjustLineHeightInTable` | `settings.xml/w:compat` | `w:val` | Add document grid pitch to lines in table cells | Affects line heights in tables. | P3 | Supported |
 | Compatibility/settings | `w:doNotBreakWrappedTables` | `settings.xml/w:compat` | `w:val` | Do not allow floating tables to break across pages | Pagination/floating-table behavior. | P3 | Not supported |
 | Compatibility/settings | `w:doNotSnapToGridInCell` | `settings.xml/w:compat` | `w:val` | Do not snap objects to document grid in cells | Affects grid-based layout. | P3 | Not supported |
@@ -956,9 +956,9 @@ This section condenses the per-table Status column into a high-level capability 
 | Paragraphs | `w:jc`, `w:spacing`, standalone `w:contextualSpacing`, `w:ind` (left/right/start/end/firstLine/hanging), `w:tabs`/`w:tab` stops with leaders, `w:numPr` (ilvl + numId), `w:keepNext`, `w:keepLines`, `w:pageBreakBefore`, `w:widowControl`, paragraph mark `rPr`, and inline `w:sectPr` in `pPr`. |
 | Run content | `w:r`, `w:t`, `w:br` (page break → `pageBreakBefore`), `w:cr`, `w:tab` (kept as `\t` and laid out against paragraph tab stops), `w:lastRenderedPageBreak` (skipped), `w:separator` / `w:continuationSeparator` (correctly skipped in footnotes/headers), `w:instrText`, `w:fldChar` begin/separate/end (parsed into a stack; PAGE/NUMPAGES survive round-trip). |
 | Inline images | `wp:inline` + `pic:pic` + `pic:blipFill` + `a:blip` with embedded relationship; image bytes are deduped via `assetRegistry.ts` and exposed through the editor asset layer. |
-| Run properties | `w:sz`, `w:u` (style + color), `w:strike`/`w:dstrike`, `w:vertAlign` (superscript/subscript), `w:highlight`, `w:caps`/`w:smallCaps`, `w:vanish`, `w:kern`, `w:spacing`, `w:w`, `w:position`. |
+| Run properties | `w:b`/`w:bCs`, `w:i`/`w:iCs`, `w:sz`, `w:u` (style + color), `w:strike`/`w:dstrike`, `w:vertAlign` (superscript/subscript), `w:highlight`, `w:caps`/`w:smallCaps`, `w:vanish`, `w:kern`, `w:spacing`, `w:w`, `w:position`. |
 | Styles | `w:docDefaults`, paragraph/character/table style types, `basedOn`/`next`/`link`/`default`; table style `w:tblPr` is read and `w:tblInd` is extracted; style cycle detection; the `default` style per type is applied by category. |
-| Tables | `w:tbl`, `w:tblPr`, `w:tblGrid`/`w:gridCol`, `w:tr`/`w:trPr` (`w:trHeight`, `w:tblHeader`), `w:tc`/`w:tcPr` (`w:gridSpan`, `w:vMerge`, `w:tcW`, `w:tcMar`, `w:vAlign`, `w:shd`, `w:tcBorders` top/right/bottom/left). `w:tblBorders` (outer top/left/bottom/right + insideH/insideV) is propagated to cells on import; cell-level `w:tcBorders` always wins. `w:tblLayout` is exported and applied for fixed/autofit. |
+| Tables | `w:tbl`, `w:tblPr`, `w:tblGrid`/`w:gridCol`, `w:tr`/`w:trPr` (`w:trHeight`, `w:tblHeader`, `w:cantSplit`, `w:hidden`, `w:gridBefore`/`w:gridAfter`, `w:wBefore`/`w:wAfter`), `w:tc`/`w:tcPr` (`w:gridSpan`, `w:vMerge`, `w:tcW`, `w:tcMar`, `w:vAlign`, `w:textDirection`, `w:noWrap`, `w:shd`, `w:tcBorders`). `w:tblBorders` is propagated to cells on import; `w:tblCellMar`, `w:tblCellSpacing`, `w:tblLayout`, `w:bidiVisual`, floating metadata, and table revision metadata round-trip. |
 | Footnotes | Full pipeline: `word/footnotes.xml` is parsed and exported; user notes are renumbered by document order; `w:type` in {`separator`, `continuationSeparator`, `continuationNotice`} are skipped; `w:footnoteRef` inside a footnote story is rendered as the auto glyph. |
 | Headers/footers | `w:hdr`/`w:ftr` parts are parsed, re-rendered with the normal paragraph/run/table pipeline, and linked from the right section references. First-page (`w:titlePg`) and even/odd headers are supported on export. |
 | Fields | `PAGE` and `NUMPAGES` round-trip as `w:fldSimple`; cached result text is preserved in the editor model. |
@@ -975,14 +975,13 @@ This section condenses the per-table Status column into a high-level capability 
 | Numbering | Only the first `w:lvl`'s `w:numFmt` is read (bullet vs ordered) and the paragraph list kind is preserved. | `lvlText`, multi-level, picture bullets, `lvlRestart`, `suff`, `isLgl`, `multiLevelType`, `nsid`, `tmpl` are dropped. Export regenerates a fresh `numbering.xml` from the paragraph's bullet/ordered + level. |
 | Images | Inline pictures plus floating anchor metadata; crop, fill mode, rotation/flip, embedded binaries, external `a:blip/@r:link`, and simple VML `w:pict/v:imagedata` fallback are supported. | Floating images render with inline fallback in the editor; VML shapes/text boxes, effects, recolor, charts, SmartArt, and OLE are still outside the image model. |
 | `w:rFonts` | `ascii`/`hAnsi`/`cs` and `asciiTheme`/`hAnsiTheme`/`cstheme` with `w:hint` are read; `eastAsia`/`eastAsiaTheme` are not exported. | Run font resolution is partial. |
-| `w:b` / `w:i` / `w:bCs` / `w:iCs` | All four are parsed; only `w:b`/`w:i` are written on export. | Complex-script bold/italic is not propagated. |
 | `w:color` | Hex `w:val` and theme colors (`themeColor`/`themeTint`/`themeShade` against `a:clrScheme`) are resolved to concrete hex on import; export writes the resolved value. `clrSchemeMapping` overrides in the document settings are not applied. | Full theme → concrete-hex pipeline is in place; per-document scheme remapping is not. |
 | `w:rStyle` | Read on import (so style-based run properties cascade) but the editor does not export a `w:rStyle` reference. | Style-cascade identity is lost in export. |
 | `w:ind` character units | `w:leftChars`/`w:rightChars`/`w:firstLineChars`/`w:hangingChars` are dropped; twip values are used. | Char-unit indentation is not normalized. |
 | `w:drawing` | `wp:inline` + `pic:pic` round-trip; `wp:anchor` metadata round-trips for image anchors, but the editor layout uses inline fallback. Shapes, charts, SmartArt, and OLE are dropped; simple VML images are converted to modern inline DrawingML. | No floating layout engine beyond metadata preservation. |
-| `w:tblPr` / `w:trPr` | `w:tblW`, `w:tblInd`, `w:trHeight`, `w:tblHeader` round-trip; `w:tblPrEx`, `w:tblCellSpacing`, `w:tblLayout` on cell, `w:gridBefore`/`w:gridAfter`, `w:wBefore`/`w:wAfter` are dropped. | Only the subset exposed by the editor model is written. |
-| `w:tcBorders` | `top`/`right`/`bottom`/`left` with `val`/`sz`/`color` round-trip; `start`/`end`/`insideH`/`insideV`/`tl2br`/`tr2bl` are not. | Bidi borders and diagonals are not in the model. |
-| `w:tblStyle` | `styleId` is read so the table style cascade can apply, but the `w:tblStylePr` conditional buckets and `cnfStyle`/`tblLook` masks are not. | Conditional formatting is not applied. |
+| Table floating/revisions | Floating table positioning and table revision elements are preserved for DOCX round-trip, but the editor still renders final/current content in inline table flow. | No floating table layout engine or tracked-changes table UI. |
+| `w:tcBorders` | Edge borders including `start`/`end` and diagonal borders round-trip; diagonal borders are not drawn in canvas/PDF yet. | The renderer draws rectangular border boxes only. |
+| `w:tblStyle` | Table style id, band sizes, `tblLook`, row `cnfStyle`, and conditional shading/run-style/cell-border subsets are applied on import. | Full conditional `pPr`/`tblPr`/`trPr` materialization and style definition export are still partial. |
 | Theme color (`a:clrScheme`) | `a:fontScheme` is read; `a:clrScheme` slots (`a:dk1`, `a:lt1`, `a:accent1`...) are not. | Run color through theme is not resolved. |
 | Settings (`w:settings`) | `w:compat` is read for `adjustLineHeightInTable` only; `w:evenAndOddHeaders` is exported; everything else in `settings.xml` is dropped. | No full settings consumer. |
 | Relationship types | `officeDocument`, `theme`, `styles`, `numbering`, `settings`, `fontTable`, `footnotes`, `image`, and header/footer relationships are all resolved. Custom/less-common relationship types are not enumerated. | The relationship code uses pattern matching per part, not a full content-type registry. |
