@@ -90,7 +90,17 @@ client.commands.state("bold");
 const state = client.getState();
 const document = client.getDocument();
 
-client.setDocument(document);
+client.document.update((current) => ({
+  ...current,
+  metadata: { ...current.metadata, title: "Draft" },
+}));
+
+client.selection.get();
+client.focus.focus();
+client.history.undo();
+await client.export.docx();
+
+client.document.markClean();
 client.dispose();
 ```
 
@@ -229,6 +239,8 @@ Customize the toolbar and menubar after built-ins and plugin contributions are
 registered:
 
 ```ts
+import { createOasisEditor, OASIS_TOOLBAR_ITEMS } from "oasis-editor";
+
 createOasisEditor(root, {
   ui: {
     toolbar: {
@@ -237,9 +249,9 @@ createOasisEditor(root, {
   },
   runtime: {
     customizeToolbar(registry) {
-      registry.remove("editor-toolbar-footnote");
-      registry.move("editor-toolbar-insert-table", {
-        before: "editor-toolbar-link",
+      registry.remove(OASIS_TOOLBAR_ITEMS.footnote);
+      registry.move(OASIS_TOOLBAR_ITEMS.insertTable, {
+        before: OASIS_TOOLBAR_ITEMS.link,
       });
       registry.register({
         id: "timestamp-toolbar-button",
@@ -268,6 +280,8 @@ Toolbar registries support `register`, `insertBefore`, `insertAfter`,
 import {
   createOasisEditor,
   Editor,
+  OASIS_MENU_ITEMS,
+  OASIS_TOOLBAR_ITEMS,
   MenuRegistry,
   createToolbarRegistry,
   type EditorDocument,

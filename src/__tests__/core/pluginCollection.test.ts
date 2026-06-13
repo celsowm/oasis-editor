@@ -9,21 +9,6 @@ function createEditorStub() {
   return {
     state,
     commands,
-    registerCommand: commands.register.bind(commands),
-    unregisterCommand: commands.unregister.bind(commands),
-    execute: <TPayload = unknown, TResult = unknown>(
-      name: string,
-      payload?: TPayload,
-    ): TResult => {
-      const command = commands.get(name);
-      if (!command) throw new Error(`Unknown command: ${name}`);
-      return command.execute(payload) as TResult;
-    },
-    canExecute: (name: string, payload?: unknown) => {
-      const command = commands.get(name);
-      if (!command) return false;
-      return command.refresh?.(payload).isEnabled !== false;
-    },
     on: () => () => {},
     once: () => () => {},
     off: () => {},

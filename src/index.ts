@@ -5,7 +5,14 @@ export type { OasisEditorInstance } from "./app/bootstrap/createOasisEditorApp.j
 export type {
   OasisEditorClient,
   OasisEditorClientEvent,
+  OasisEditorClientEvents,
   OasisEditorClientEventHandler,
+  OasisEditorDocumentApi,
+  OasisEditorExportApi,
+  OasisEditorFocusApi,
+  OasisEditorHistoryApi,
+  OasisEditorImportApi,
+  OasisEditorSelectionApi,
 } from "./app/client/OasisEditorClient.js";
 
 export { createOasisEditorContainer } from "./app/bootstrap/createOasisEditorContainer.js";
@@ -26,6 +33,16 @@ export {
 export { createEditorCommandBus } from "./core/commands/CommandBus.js";
 export { OASIS_BUILTIN_COMMANDS } from "./core/commands/builtinCommands.js";
 export type { OasisBuiltinCommand } from "./core/commands/builtinCommands.js";
+export type {
+  CommandPayloadArgs,
+  InsertTablePayload,
+  OasisCommandName,
+  OasisCommandPayloads,
+  OasisCommandResults,
+  SetFontSizePayload,
+  SetPageMarginsPayload,
+  TypedCommandBus,
+} from "./core/commands/publicCommandTypes.js";
 export { PluginCollection } from "./core/plugins/PluginCollection.js";
 export { mount } from "./ui/mount.js";
 export { DocumentShell } from "./ui/shells/DocumentShell.js";
@@ -39,6 +56,7 @@ export type {
   OasisPlugin,
   OasisEditor,
   OasisCommand,
+  OasisCommandContext,
   OasisCommandRegistry,
   CommandState,
   PluginReference,
@@ -100,6 +118,10 @@ export type {
 
 export { DEFAULT_PALETTE } from "./ui/components/Toolbar/presets/defaultPalette.js";
 export { createDefaultToolbarPreset } from "./ui/components/Toolbar/presets/defaultToolbar.js";
+export { OASIS_TOOLBAR_ITEMS } from "./ui/components/Toolbar/presets/builtinToolbarIds.js";
+export type { OasisToolbarItemId } from "./ui/components/Toolbar/presets/builtinToolbarIds.js";
+export { OASIS_MENU_ITEMS } from "./ui/components/Menubar/builtinMenuIds.js";
+export type { OasisMenuItemId } from "./ui/components/Menubar/builtinMenuIds.js";
 
 export { Toolbar } from "./ui/components/Toolbar/Toolbar.js";
 export type { ToolbarProps } from "./ui/components/Toolbar/Toolbar.js";

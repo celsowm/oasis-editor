@@ -6,7 +6,7 @@ import {
 } from "./editorState.js";
 import { PluginCollection } from "./plugins/PluginCollection.js";
 import { CommandRegistry } from "./commands/CommandRegistry.js";
-import type { OasisCommand, OasisEditor, OasisPlugin } from "./plugin.js";
+import type { OasisEditor, OasisPlugin } from "./plugin.js";
 
 export interface EditorOptions {
   doc?: EditorDocument;
@@ -49,6 +49,7 @@ export class Editor implements OasisEditor {
     const [state, setState] = createStore(initialState);
     this.stateStore = state;
     this.setState = setState;
+    this.commands.setContextProvider(() => this.createCommandContext());
   }
 
   get state(): EditorState {
@@ -60,42 +61,6 @@ export class Editor implements OasisEditor {
     const next = updater(this.stateStore);
     this.setState(next);
     this.emit("change:data", this.stateStore);
-  }
-
-  registerCommand<TPayload = unknown, TResult = unknown>(
-    name: string,
-    command: OasisCommand<TPayload, TResult>,
-  ) {
-    this.commands.register(name, command);
-  }
-
-  unregisterCommand(name: string) {
-    this.commands.unregister(name);
-  }
-
-  execute<TPayload = unknown, TResult = unknown>(
-    name: string,
-    payload?: TPayload,
-  ): TResult {
-    const command = this.commands.get(name);
-    if (!command) {
-      throw new Error(`Unknown command: ${name}`);
-    }
-    if (!this.canExecute(name, payload)) {
-      throw new Error(`Command disabled: ${name}`);
-    }
-    return command.execute(payload) as TResult;
-  }
-
-  canExecute(name: string, payload?: unknown): boolean {
-    const command = this.commands.get(name);
-    if (!command) {
-      return false;
-    }
-    if (!command.refresh) {
-      return true;
-    }
-    return command.refresh(payload).isEnabled !== false;
   }
 
   async destroy() {
@@ -138,5 +103,15 @@ export class Editor implements OasisEditor {
     for (const handler of handlers) {
       handler(...args);
     }
+  }
+
+  private createCommandContext() {
+    return {
+      editor: this,
+      commands: this.commands,
+      getState: () => this.state,
+      getDocument: () => this.state.document,
+      getSelection: () => this.state.selection,
+    };
   }
 }

@@ -12,11 +12,11 @@ export function createEditorCommandBus(editor: OasisEditor): CommandBus {
   return {
     execute(command, payloadOverride) {
       const resolved = resolveCommandRef(command, payloadOverride);
-      return editor.execute(resolved.name, resolved.payload);
+      return editor.commands.execute(resolved.name, resolved.payload);
     },
     canExecute(command, payloadOverride) {
       const resolved = resolveCommandRef(command, payloadOverride);
-      return editor.canExecute(resolved.name, resolved.payload);
+      return editor.commands.canExecute(resolved.name, resolved.payload);
     },
     state(command) {
       const resolved = resolveCommandRef(command);

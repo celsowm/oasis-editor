@@ -29,10 +29,78 @@ The client exposes:
 - `commands.execute(command, payload?)`.
 - `commands.canExecute(command, payload?)`.
 - `commands.state(command)`.
-- `getState()` and `getDocument()`.
-- `setDocument(document)`.
-- `on`, `once`, `off` for `ready`, `change`, and `error`.
+- `getState()`, `getDocument()`, `setDocument(document)`.
+- `document.get/set/load/update/reset/save/isDirty/markClean`.
+- `selection.get/set`.
+- `focus.focus/blur`.
+- `history.undo/redo/canUndo/canRedo/clear`.
+- `import.docx(file)`.
+- `export.docx()` and `export.pdf()`.
+- `on`, `once`, `off` for `ready`, `change`, `documentChange`,
+  `selectionChange`, and `error`.
 - `dispose()`.
+
+## Document Lifecycle
+
+```ts
+const document = client.document.get();
+
+client.document.update((current) => ({
+  ...current,
+  metadata: {
+    ...current.metadata,
+    title: "Quarterly report",
+  },
+}));
+
+if (client.document.isDirty()) {
+  await client.document.save();
+}
+
+client.document.markClean();
+```
+
+## Selection And Focus
+
+```ts
+const selection = client.selection.get();
+
+client.selection.set({
+  anchor: selection.focus,
+  focus: selection.focus,
+});
+
+client.focus.focus();
+```
+
+## Import And Export
+
+```ts
+await client.import.docx(file);
+await client.export.docx();
+await client.export.pdf();
+```
+
+## Typed Built-In Commands
+
+```ts
+import { OASIS_TOOLBAR_ITEMS, type OasisCommandName } from "oasis-editor";
+
+const command: OasisCommandName = "insertTable";
+
+client.commands.execute(command, { rows: 3, columns: 4 });
+client.commands.execute("setFontSize", { size: 12 });
+
+createOasisEditor(root, {
+  runtime: {
+    customizeToolbar(registry) {
+      registry.move(OASIS_TOOLBAR_ITEMS.insertTable, {
+        before: OASIS_TOOLBAR_ITEMS.link,
+      });
+    },
+  },
+});
+```
 
 ## React
 
@@ -68,7 +136,9 @@ import "oasis-editor/style.css";
 <template>
   <OasisEditor
     :config="{ ui: { shell: 'document' } }"
-    :on-client="(client) => client.ready.then(() => client.commands.execute('find'))"
+    :on-client="
+      (client) => client.ready.then(() => client.commands.execute('find'))
+    "
   />
 </template>
 ```

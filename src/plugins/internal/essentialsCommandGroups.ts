@@ -162,10 +162,18 @@ export function buildCoreFormattingCommands({
     setFontSize: valueCommand(
       "setFontSize",
       // The UI speaks points; the model stores pixels.
-      (p) =>
+      (p) => {
+        const value =
+          p && typeof p === "object" && "size" in p
+            ? (p as { size?: unknown }).size
+            : p;
         formatting.setFontSize(
-          p != null && p !== "" ? parseFontSizePtToPx(p as string) : null,
-        ),
+          value != null && value !== ""
+            ? parseFontSizePtToPx(value as string)
+            : null,
+        );
+        return true;
+      },
       () => formatFontSizePt(s().fontSize),
     ),
     setColor: valueCommand(
@@ -435,9 +443,14 @@ export function buildTableCommands({
       table.setCellWidth(String(p)),
     ),
     insertTable: actionCommand("insertTable", (p) => {
-      const { rows, cols } = (p ?? {}) as { rows?: number; cols?: number };
-      if (rows && cols) {
-        table.insert(rows, cols);
+      const { rows, cols, columns } = (p ?? {}) as {
+        rows?: number;
+        cols?: number;
+        columns?: number;
+      };
+      const columnCount = cols ?? columns;
+      if (rows && columnCount) {
+        table.insert(rows, columnCount);
       }
     }),
   };

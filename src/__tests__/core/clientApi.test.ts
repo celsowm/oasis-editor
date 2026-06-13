@@ -20,7 +20,16 @@ describe("OasisEditorClient", () => {
     const state = createInitialEditorState();
     const onReady = vi.fn();
     const onChange = vi.fn();
+    const onDocumentChange = vi.fn();
+    const onSelectionChange = vi.fn();
     const dispose = vi.fn();
+    const saveDocument = vi.fn(async () => {});
+    const importDocx = vi.fn(async () => {});
+    const exportDocx = vi.fn(async () => "docx");
+    const exportPdf = vi.fn(async () => "pdf");
+    const focus = vi.fn();
+    const blur = vi.fn();
+    const clearHistory = vi.fn();
 
     client.connectHost({
       getRuntimeEditor: () => editor,
@@ -29,17 +38,37 @@ describe("OasisEditorClient", () => {
       setDocument: (document) => {
         state.document = document;
       },
+      resetDocument: () => {
+        state.document = createInitialEditorState().document;
+      },
+      saveDocument,
+      getSelection: () => state.selection,
+      setSelection: (selection) => {
+        state.selection = selection;
+      },
+      focus,
+      blur,
+      clearHistory,
+      importDocx,
+      exportDocx,
+      exportPdf,
     });
     client.setDispose(dispose);
     client.on("ready", onReady);
     client.on("change", onChange);
+    client.on("documentChange", onDocumentChange);
+    client.on("selectionChange", onSelectionChange);
 
     client.resolveReady(editor);
     client.emit("change", state);
+    client.emit("documentChange", state.document);
+    client.emit("selectionChange", state.selection);
 
     await expect(client.ready).resolves.toBe(editor);
     expect(onReady).toHaveBeenCalledWith(editor);
     expect(onChange).toHaveBeenCalledWith(state);
+    expect(onDocumentChange).toHaveBeenCalledWith(state.document);
+    expect(onSelectionChange).toHaveBeenCalledWith(state.selection);
     expect(client.commands.canExecute("ping")).toBe(true);
     expect(client.commands.execute("ping", "payload")).toBe("payload");
     expect(client.commands.state("ping")).toEqual({
@@ -49,6 +78,21 @@ describe("OasisEditorClient", () => {
     });
     expect(client.getState()).toBe(state);
     expect(client.getDocument()).toBe(state.document);
+    expect(client.getSelection()).toBe(state.selection);
+    expect(client.document.get()).toBe(state.document);
+    expect(client.document.isDirty()).toBe(true);
+    client.document.markClean();
+    expect(client.isDirty()).toBe(false);
+    await client.save();
+    expect(saveDocument).toHaveBeenCalledTimes(1);
+    client.focusEditor();
+    client.blurEditor();
+    expect(focus).toHaveBeenCalledTimes(1);
+    expect(blur).toHaveBeenCalledTimes(1);
+    client.history.clear();
+    expect(clearHistory).toHaveBeenCalledTimes(1);
+    await expect(client.export.docx()).resolves.toBe("docx");
+    await expect(client.export.pdf()).resolves.toBe("pdf");
 
     client.dispose();
     expect(dispose).toHaveBeenCalledTimes(1);

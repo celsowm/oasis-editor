@@ -4,9 +4,17 @@ import type { CommandRef } from "./commands/CommandRef.js";
 
 export type Unsubscribe = () => void;
 
+export interface OasisCommandContext {
+  editor: OasisEditor;
+  commands: OasisCommandRegistry;
+  getState(): EditorState;
+  getDocument(): EditorState["document"];
+  getSelection(): EditorState["selection"];
+}
+
 export interface OasisCommand<TPayload = unknown, TResult = unknown> {
-  execute: (payload?: TPayload) => TResult;
-  refresh?: (payload?: TPayload) => CommandState;
+  execute: (payload?: TPayload, context?: OasisCommandContext) => TResult;
+  refresh?: (payload?: TPayload, context?: OasisCommandContext) => CommandState;
 }
 
 export interface OasisCommandRegistry {
@@ -17,6 +25,12 @@ export interface OasisCommandRegistry {
   unregister: (name: string) => void;
   get: (name: string) => OasisCommand | undefined;
   has: (name: string) => boolean;
+  execute: <TPayload = unknown, TResult = unknown>(
+    name: string,
+    payload?: TPayload,
+  ) => TResult;
+  canExecute: (name: string, payload?: unknown) => boolean;
+  state: (name: string, payload?: unknown) => CommandState;
 }
 
 export interface CommandState {
@@ -28,16 +42,6 @@ export interface CommandState {
 export interface OasisEditor {
   readonly state: EditorState;
   readonly commands: OasisCommandRegistry;
-  registerCommand: <TPayload = unknown, TResult = unknown>(
-    name: string,
-    command: OasisCommand<TPayload, TResult>,
-  ) => void;
-  unregisterCommand: (name: string) => void;
-  execute: <TPayload = unknown, TResult = unknown>(
-    name: string,
-    payload?: TPayload,
-  ) => TResult;
-  canExecute: (name: string, payload?: unknown) => boolean;
   on: (event: string, callback: (...args: unknown[]) => void) => Unsubscribe;
   once: (event: string, callback: (...args: unknown[]) => void) => Unsubscribe;
   off: (event: string, callback: (...args: unknown[]) => void) => void;

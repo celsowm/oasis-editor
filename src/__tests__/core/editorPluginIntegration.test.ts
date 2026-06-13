@@ -16,8 +16,10 @@ describe("Editor plugin integration", () => {
 
     const editor = await Editor.create({ plugins: [timestampPlugin] });
 
-    expect(editor.canExecute("insertTimestamp")).toBe(true);
-    expect(editor.execute("insertTimestamp")).toBe("2026-06-01T00:00:00.000Z");
+    expect(editor.commands.canExecute("insertTimestamp")).toBe(true);
+    expect(editor.commands.execute("insertTimestamp")).toBe(
+      "2026-06-01T00:00:00.000Z",
+    );
 
     await editor.destroy();
   });
@@ -35,8 +37,8 @@ describe("Editor plugin integration", () => {
 
     const editor = await Editor.create({ plugins: [plugin] });
 
-    expect(editor.canExecute("blocked")).toBe(false);
-    expect(() => editor.execute("blocked")).toThrow(
+    expect(editor.commands.canExecute("blocked")).toBe(false);
+    expect(() => editor.commands.execute("blocked")).toThrow(
       "Command disabled: blocked",
     );
 
@@ -58,10 +60,10 @@ describe("Editor plugin integration", () => {
 
     const editor = await Editor.create({ plugins: [plugin] });
 
-    expect(editor.canExecute("positive", 2)).toBe(true);
-    expect(editor.canExecute("positive", -1)).toBe(false);
-    expect(editor.execute("positive", 2)).toBe(2);
-    expect(() => editor.execute("positive", -1)).toThrow(
+    expect(editor.commands.canExecute("positive", 2)).toBe(true);
+    expect(editor.commands.canExecute("positive", -1)).toBe(false);
+    expect(editor.commands.execute("positive", 2)).toBe(2);
+    expect(() => editor.commands.execute("positive", -1)).toThrow(
       "Command disabled: positive",
     );
 
@@ -93,7 +95,7 @@ describe("Editor plugin integration", () => {
 
     const editor = await Editor.create({ plugins: [plugin] });
 
-    expect(editor.execute("ready")).toBe("init,after");
+    expect(editor.commands.execute("ready")).toBe("init,after");
 
     await editor.destroy();
 

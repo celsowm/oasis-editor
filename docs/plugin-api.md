@@ -13,6 +13,8 @@ Plugins extend Oasis through a small runtime contract:
 
 Commands are the integration boundary. UI contributions do not receive editor
 internals or inline callbacks; they call command names or `CommandRef` objects.
+The runtime command surface is `editor.commands`; do not call command aliases
+directly on the editor instance.
 
 ```ts
 import type { OasisPlugin } from "oasis-editor";
@@ -21,14 +23,24 @@ export const ExamplePlugin: OasisPlugin = {
   name: "Example",
   commands: {
     sayHello: {
-      execute: () => "hello",
-      refresh: () => ({ isEnabled: true }),
+      execute: (_payload, context) => {
+        console.log(context?.getDocument().id);
+        return "hello";
+      },
+      refresh: (_payload, context) => ({
+        isEnabled: Boolean(context?.getSelection()),
+      }),
     },
   },
   toolbar: [{ id: "sayHello", command: "sayHello", icon: "sparkles" }],
   menubar: [{ id: "tools_hello", path: "Tools/Hello", command: "sayHello" }],
 };
 ```
+
+Command handlers receive `(payload, context)`. The context exposes the public
+editor facade needed by plugins: `editor`, `commands`, `getState()`,
+`getDocument()`, and `getSelection()`. Prefer this context over importing UI
+internals.
 
 Dependency ordering is enforced by `PluginCollection`; cycles and missing
 dependencies fail initialization. If initialization fails, already registered

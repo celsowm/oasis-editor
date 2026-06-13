@@ -18,7 +18,10 @@ import { resolveImageSrc } from "../core/model.js";
 import { getCachedCanvasImage } from "./canvas/canvasImageCache.js";
 import { traceImageAlphaContour } from "./canvas/imageContour.js";
 import type { LayoutOptionsOverlay } from "./editorUiTypes.js";
-import { createEditorStateFromDocument } from "../core/editorState.js";
+import {
+  createEditorStateFromDocument,
+  createInitialEditorState,
+} from "../core/editorState.js";
 import { type EditorPosition, type EditorState } from "../core/model.js";
 import { isSelectionCollapsed } from "../core/selection.js";
 
@@ -254,6 +257,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     const snapshot = cloneState(getStateSnapshot());
     documentOptions().onStateChange?.(snapshot);
     runtimeClient.emit("change", snapshot);
+    runtimeClient.emit("documentChange", snapshot.document);
+    runtimeClient.emit("selectionChange", snapshot.selection);
   });
 
   const selectedImageRun = () => getSelectedImageRun(state);
@@ -542,6 +547,34 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       resetEditorChromeState();
       focusInput();
     },
+    resetDocument: () => {
+      applyState(createInitialEditorState());
+      resetEditorChromeState();
+      focusInput();
+    },
+    saveDocument: async () => {
+      const persistence = documentOptions().persistence ?? persistenceService;
+      await persistence.saveDocument(cloneState(getStateSnapshot()).document);
+    },
+    getSelection: () => cloneState(getStateSnapshot()).selection,
+    setSelection: (selection) => {
+      applyState({
+        ...cloneState(getStateSnapshot()),
+        selection,
+      });
+      focusInput();
+    },
+    focus: () => focusInput(),
+    blur: () => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      setFocused(false);
+    },
+    clearHistory: () => clearHistory(),
+    importDocx: (file) => docIO.handleImportFile(file),
+    exportDocx: () => docIO.handleExportDocx(),
+    exportPdf: () => docIO.handleExportPdf(),
   });
 
   createEffect(() => {
@@ -589,8 +622,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       fr.setIsOpen(open ?? !fr.isOpen());
     },
     executeCommand: (commandName, payload) =>
-      runtimeEditor().execute(commandName, payload),
-    canExecuteCommand: (commandName) => runtimeEditor().canExecute(commandName),
+      runtimeEditor().commands.execute(commandName, payload),
+    canExecuteCommand: (commandName) =>
+      runtimeEditor().commands.canExecute(commandName),
   });
 
   const handleKeyDown = (

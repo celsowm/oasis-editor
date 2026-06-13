@@ -61,11 +61,17 @@ export function createRuntimeCommandHost(
     commands: {
       execute: (command, payload) => {
         const resolved = resolveCommandRef(command, payload);
-        return runtimeEditor().execute(resolved.name, resolved.payload);
+        return runtimeEditor().commands.execute(
+          resolved.name,
+          resolved.payload,
+        );
       },
       canExecute: (command, payload) => {
         const resolved = resolveCommandRef(command, payload);
-        return runtimeEditor().canExecute(resolved.name, resolved.payload);
+        return runtimeEditor().commands.canExecute(
+          resolved.name,
+          resolved.payload,
+        );
       },
       state: commandStateOf,
     },
