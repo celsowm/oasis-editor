@@ -42,6 +42,7 @@ import {
   WORD14_NS,
   WORD_NS,
 } from "./xmlUtils.js";
+import { buildStylesXml } from "./stylesXml.js";
 
 const DOCUMENT_XMLNS =
   `xmlns:w="${WORD_NS}" xmlns:w14="${WORD14_NS}" ` +
@@ -351,6 +352,7 @@ function buildContentTypesXml(
   parts: PartDefinition[],
   hasFootnotes: boolean,
   hasEndnotes: boolean,
+  hasStyles: boolean,
 ): string {
   const overrides = parts
     .map((part) => {
@@ -364,6 +366,10 @@ function buildContentTypesXml(
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${imageContentTypeDefaults(
     imageExtensions,
   )}<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>${
+    hasStyles
+      ? '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
+      : ""
+  }${
     hasNumbering
       ? '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>'
       : ""
@@ -394,8 +400,11 @@ function buildDocumentRelationshipsXml(
   parts: PartDefinition[],
   hasFootnotes: boolean,
   hasEndnotes: boolean,
+  hasStyles: boolean,
 ): string {
   let rels = "";
+  if (hasStyles)
+    rels += `<Relationship Id="rIdStyles" Type="${OFFICE_REL_NS}/styles" Target="styles.xml"/>`;
   if (hasNumbering)
     rels += `<Relationship Id="rIdNum" Type="${OFFICE_REL_NS}/numbering" Target="numbering.xml"/>`;
   if (hasSettings)
@@ -593,6 +602,9 @@ export async function exportEditorDocumentToDocx(
     .map((img) => img.target.split(".").pop()?.toLowerCase())
     .filter((ext): ext is string => Boolean(ext));
 
+  const hasStyles =
+    document.styles != null && Object.keys(document.styles).length > 0;
+
   zip.file(
     "[Content_Types].xml",
     buildContentTypesXml(
@@ -602,6 +614,7 @@ export async function exportEditorDocumentToDocx(
       parts,
       hasFootnotes,
       hasEndnotes,
+      hasStyles,
     ),
   );
   zip.file("_rels/.rels", buildRootRelationshipsXml());
@@ -609,6 +622,10 @@ export async function exportEditorDocumentToDocx(
     "word/document.xml",
     buildDocumentXml(document, bodyContext, sectionReferences),
   );
+
+  if (hasStyles) {
+    zip.file("word/styles.xml", buildStylesXml(document.styles!));
+  }
 
   if (hasNumbering) {
     zip.file(
@@ -618,6 +635,7 @@ export async function exportEditorDocumentToDocx(
   }
 
   if (
+    hasStyles ||
     hasNumbering ||
     hasDocumentSettings ||
     bodyContext.images.length > 0 ||
@@ -636,6 +654,7 @@ export async function exportEditorDocumentToDocx(
         parts,
         hasFootnotes,
         hasEndnotes,
+        hasStyles,
       ),
     );
   }

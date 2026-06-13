@@ -41,6 +41,7 @@ export type {
   EditorParagraphStyle,
   EditorTableStyle,
   EditorTableConditionalFormat,
+  EditorConditionalRowStyle,
   EditorNamedStyle,
 } from "./types/styles.js";
 

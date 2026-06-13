@@ -1,5 +1,6 @@
 import { DOMParser } from "@xmldom/xmldom";
 import type {
+  EditorConditionalRowStyle,
   EditorNamedStyle,
   EditorTableConditionalFormat,
   EditorTableStyle,
@@ -10,6 +11,7 @@ import {
   getFirstChildByTagNameNS,
   getAttributeValue,
   isWordTrue,
+  parseOnOffProperty,
 } from "./xmlHelpers.js";
 import { twipsToPoints } from "./units.js";
 import { type DocxImportTheme } from "./theme.js";
@@ -20,6 +22,27 @@ import {
 } from "./paragraphStyle.js";
 import { mergeStyles, emptyOrUndefined, parseShdFill } from "./styleUtils.js";
 import { parseDocxBoxBorders } from "./borders.js";
+
+function parseConditionalRowStyle(
+  trPr: ReturnType<typeof getFirstChildByTagNameNS>,
+): EditorConditionalRowStyle | undefined {
+  if (!trPr) return undefined;
+  const style: EditorConditionalRowStyle = {};
+  const trHeight = getFirstChildByTagNameNS(trPr, WORD_NS, "trHeight");
+  if (trHeight) {
+    const height = twipsToPoints(getAttributeValue(trHeight, "val"));
+    if (height !== undefined) style.height = height;
+    const hRule = getAttributeValue(trHeight, "hRule");
+    if (hRule === "auto" || hRule === "exact" || hRule === "atLeast") {
+      style.heightRule = hRule;
+    }
+  }
+  const cantSplit = parseOnOffProperty(trPr, "cantSplit");
+  if (cantSplit !== undefined) style.cantSplit = cantSplit;
+  const hidden = parseOnOffProperty(trPr, "hidden");
+  if (hidden !== undefined) style.hidden = hidden;
+  return Object.keys(style).length > 0 ? style : undefined;
+}
 
 export function parseImportedStyles(
   stylesXml: string | null,
@@ -138,11 +161,19 @@ export function parseImportedStyles(
             getFirstChildByTagNameNS(tcPr, WORD_NS, "tcBorders"),
           ),
         );
-        if (fill || condTextStyle || condBorders) {
+        const condParagraphStyle = parseParagraphStyle(
+          getFirstChildByTagNameNS(tblStylePr, WORD_NS, "pPr"),
+        );
+        const condRowStyle = parseConditionalRowStyle(
+          getFirstChildByTagNameNS(tblStylePr, WORD_NS, "trPr"),
+        );
+        if (fill || condTextStyle || condBorders || condParagraphStyle || condRowStyle) {
           conditionalFormats[condType] = {
             ...(fill ? { shading: fill } : {}),
             ...(condTextStyle ? { textStyle: condTextStyle } : {}),
             ...(condBorders ? { borders: condBorders } : {}),
+            ...(condParagraphStyle ? { paragraphStyle: condParagraphStyle } : {}),
+            ...(condRowStyle ? { rowStyle: condRowStyle } : {}),
           };
         }
       }

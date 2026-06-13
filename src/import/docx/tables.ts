@@ -746,6 +746,12 @@ function mergeConditionalFormats(
     if (cond.borders) {
       merged.borders = { ...merged.borders, ...cond.borders };
     }
+    if (cond.paragraphStyle) {
+      merged.paragraphStyle = { ...merged.paragraphStyle, ...cond.paragraphStyle };
+    }
+    if (cond.rowStyle) {
+      merged.rowStyle = { ...merged.rowStyle, ...cond.rowStyle };
+    }
   }
   return merged;
 }
@@ -907,6 +913,14 @@ export async function parseTableNode(
       // style so explicit run formatting still wins.
       applyConditionalTextStyle(paragraphs, conditional.textStyle);
 
+      // Conditional paragraph properties sit beneath each paragraph's own style.
+      if (conditional.paragraphStyle) {
+        const condPStyle = conditional.paragraphStyle;
+        for (const paragraph of paragraphs) {
+          paragraph.style = { ...condPStyle, ...paragraph.style };
+        }
+      }
+
       const cell = createEditorTableCell(
         paragraphs.length > 0
           ? paragraphs
@@ -957,6 +971,22 @@ export async function parseTableNode(
     if (rowStyle) {
       row.style = rowStyle;
     }
+
+    // Merge conditional row style (firstRow/lastRow/band) beneath explicit style.
+    if (tblConditionals) {
+      const rowKeys = resolveCellConditionalKeys(
+        rowIndex, 0, rowCount, Math.max(1, colCount), look, rowBandSize, colBandSize,
+      ).filter((k) =>
+        k === "firstRow" || k === "lastRow" || k === "band1Horz" || k === "band2Horz",
+      );
+      const mergedRowConditional = mergeConditionalFormats(
+        [...explicitRowKeys, ...rowKeys],
+        tblConditionals,
+      );
+      if (mergedRowConditional.rowStyle) {
+        row.style = { ...mergedRowConditional.rowStyle, ...row.style };
+      }
+    }
     const tblPrEx = getFirstChildByTagNameNS(rowNode, WORD_NS, "tblPrEx");
     if (tblPrEx) {
       row.tblPrExXml = new XMLSerializer().serializeToString(tblPrEx);
@@ -999,6 +1029,12 @@ export async function parseTableNode(
   );
   if (directTableStyle) {
     table.style = directTableStyle;
+  }
+  // Store tblLook on the table style for round-trip export.
+  if (table.style) {
+    table.style.tblLook = look;
+  } else if (tableStyleId) {
+    table.style = { tblLook: look };
   }
   if (tblGridChangeXml) {
     table.tblGridChangeXml = new XMLSerializer().serializeToString(

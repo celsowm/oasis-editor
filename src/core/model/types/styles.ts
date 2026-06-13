@@ -84,6 +84,14 @@ export interface EditorParagraphStyle {
   textDirection?: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV" | null;
 }
 
+/** Row properties from a conditional format's `w:trPr`. */
+export interface EditorConditionalRowStyle {
+  height?: number | string;
+  heightRule?: "auto" | "exact" | "atLeast";
+  cantSplit?: boolean;
+  hidden?: boolean;
+}
+
 export interface EditorTableConditionalFormat {
   shading?: string;
   /** Run formatting (bold/color) from the conditional's `w:rPr`. */
@@ -95,6 +103,10 @@ export interface EditorTableConditionalFormat {
     borderBottom?: EditorBorderStyle;
     borderLeft?: EditorBorderStyle;
   };
+  /** Paragraph properties from the conditional's `w:pPr`. */
+  paragraphStyle?: EditorParagraphStyle;
+  /** Row properties from the conditional's `w:trPr`. */
+  rowStyle?: EditorConditionalRowStyle;
 }
 
 export interface EditorTableStyle {
@@ -130,8 +142,17 @@ export interface EditorTableStyle {
   rowBandSize?: number;
   /** `w:tblStyleColBandSize` — columns per vertical band (default 1). */
   colBandSize?: number;
-  /** Keyed by conditional type ("firstRow", "lastRow", "band1Horz", etc.). Applied during import; not re-exported. */
+  /** Keyed by conditional type ("firstRow", "lastRow", "band1Horz", etc.). */
   conditionalFormats?: Record<string, EditorTableConditionalFormat>;
+  /** `w:tblLook` flags from the instance table; preserved for re-export. */
+  tblLook?: {
+    firstRow: boolean;
+    lastRow: boolean;
+    firstCol: boolean;
+    lastCol: boolean;
+    noHBand: boolean;
+    noVBand: boolean;
+  };
 }
 
 export interface EditorNamedStyle {

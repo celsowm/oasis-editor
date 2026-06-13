@@ -3,6 +3,7 @@ import type {
   EditorParagraphNode,
   EditorTableCellNode,
   EditorTableNode,
+  EditorTableRowStyle,
 } from "../../core/model.js";
 import { buildTableCellLayout } from "../../core/tableLayout.js";
 import { escapeXml, normalizeDocxColor, pointsToTwips } from "./xmlUtils.js";
@@ -233,9 +234,10 @@ function serializeGridSkip(
   return normalized > 0 ? `<w:${tag} w:val="${normalized}"/>` : "";
 }
 
-function serializeTableRowHeight(row: EditorTableNode["rows"][number]): string {
-  const heightValue = row.style?.height;
-  const heightRule = row.style?.heightRule;
+function serializeTableRowHeightFromStyle(
+  heightValue: number | string | undefined,
+  heightRule: EditorTableRowStyle["heightRule"] | undefined,
+): string {
   const height =
     typeof heightValue === "number"
       ? pointsToTwips(heightValue)
@@ -250,10 +252,42 @@ function serializeTableRowHeight(row: EditorTableNode["rows"][number]): string {
   if (hasHeight) {
     attrs.push(`w:val="${Math.round(height!)}"`);
   }
-  // Preserve imported rule when present; otherwise default to atLeast for
-  // editor-created heights (legacy behavior).
   attrs.push(`w:hRule="${heightRule ?? "atLeast"}"`);
   return `<w:trHeight ${attrs.join(" ")}/>`;
+}
+
+function serializeTableRowHeight(row: EditorTableNode["rows"][number]): string {
+  return serializeTableRowHeightFromStyle(row.style?.height, row.style?.heightRule);
+}
+
+/**
+ * Serializes the core row style properties into `<w:trPr>` inner XML.
+ * Used for style definitions (styles.xml) as well as per-row serialization.
+ * Returns the full `<w:trPr>...</w:trPr>` element, or `""` when empty.
+ */
+export function serializeTableRowStyleXml(
+  style: EditorTableRowStyle | undefined,
+): string {
+  if (!style) return "";
+  const parts: string[] = [];
+  const gridBefore = serializeGridSkip("gridBefore", style.gridBefore);
+  if (gridBefore) parts.push(gridBefore);
+  const gridAfter = serializeGridSkip("gridAfter", style.gridAfter);
+  if (gridAfter) parts.push(gridAfter);
+  const widthBefore = serializeDocxWidthElement("wBefore", style.widthBefore);
+  if (widthBefore) parts.push(widthBefore);
+  const widthAfter = serializeDocxWidthElement("wAfter", style.widthAfter);
+  if (widthAfter) parts.push(widthAfter);
+  const cellSpacingXml = serializeDocxWidthElement("tblCellSpacing", style.cellSpacing);
+  if (cellSpacingXml) parts.push(cellSpacingXml);
+  const heightXml = serializeTableRowHeightFromStyle(style.height, style.heightRule);
+  if (heightXml) parts.push(heightXml);
+  const cantSplit = serializeOnOffElement("cantSplit", style.cantSplit);
+  if (cantSplit) parts.push(cantSplit);
+  const hidden = serializeOnOffElement("hidden", style.hidden);
+  if (hidden) parts.push(hidden);
+  if (style.revisionXml?.length) parts.push(...style.revisionXml);
+  return parts.length > 0 ? `<w:trPr>${parts.join("")}</w:trPr>` : "";
 }
 
 function serializeTableRowProperties(
@@ -261,49 +295,23 @@ function serializeTableRowProperties(
 ): string {
   const parts: string[] = [];
   const gridBefore = serializeGridSkip("gridBefore", row.style?.gridBefore);
-  if (gridBefore) {
-    parts.push(gridBefore);
-  }
+  if (gridBefore) parts.push(gridBefore);
   const gridAfter = serializeGridSkip("gridAfter", row.style?.gridAfter);
-  if (gridAfter) {
-    parts.push(gridAfter);
-  }
-  const widthBefore = serializeDocxWidthElement(
-    "wBefore",
-    row.style?.widthBefore,
-  );
-  if (widthBefore) {
-    parts.push(widthBefore);
-  }
+  if (gridAfter) parts.push(gridAfter);
+  const widthBefore = serializeDocxWidthElement("wBefore", row.style?.widthBefore);
+  if (widthBefore) parts.push(widthBefore);
   const widthAfter = serializeDocxWidthElement("wAfter", row.style?.widthAfter);
-  if (widthAfter) {
-    parts.push(widthAfter);
-  }
-  const cellSpacingXml = serializeDocxWidthElement(
-    "tblCellSpacing",
-    row.style?.cellSpacing,
-  );
-  if (cellSpacingXml) {
-    parts.push(cellSpacingXml);
-  }
+  if (widthAfter) parts.push(widthAfter);
+  const cellSpacingXml = serializeDocxWidthElement("tblCellSpacing", row.style?.cellSpacing);
+  if (cellSpacingXml) parts.push(cellSpacingXml);
   const height = serializeTableRowHeight(row);
-  if (height) {
-    parts.push(height);
-  }
+  if (height) parts.push(height);
   const cantSplit = serializeOnOffElement("cantSplit", row.style?.cantSplit);
-  if (cantSplit) {
-    parts.push(cantSplit);
-  }
-  if (row.isHeader) {
-    parts.push("<w:tblHeader/>");
-  }
+  if (cantSplit) parts.push(cantSplit);
+  if (row.isHeader) parts.push("<w:tblHeader/>");
   const hidden = serializeOnOffElement("hidden", row.style?.hidden);
-  if (hidden) {
-    parts.push(hidden);
-  }
-  if (row.style?.revisionXml?.length) {
-    parts.push(...row.style.revisionXml);
-  }
+  if (hidden) parts.push(hidden);
+  if (row.style?.revisionXml?.length) parts.push(...row.style.revisionXml);
   return parts.length > 0 ? `<w:trPr>${parts.join("")}</w:trPr>` : "";
 }
 
@@ -323,6 +331,12 @@ function serializeTableProperties(table: EditorTableNode): string {
   const parts: string[] = [];
   if (table.style?.styleId) {
     parts.push(`<w:tblStyle w:val="${escapeXml(table.style.styleId)}"/>`);
+  }
+  if (table.style?.tblLook) {
+    const l = table.style.tblLook;
+    parts.push(
+      `<w:tblLook w:firstRow="${l.firstRow ? "1" : "0"}" w:lastRow="${l.lastRow ? "1" : "0"}" w:firstColumn="${l.firstCol ? "1" : "0"}" w:lastColumn="${l.lastCol ? "1" : "0"}" w:noHBand="${l.noHBand ? "1" : "0"}" w:noVBand="${l.noVBand ? "1" : "0"}"/>`,
+    );
   }
   if (table.style?.altTitle) {
     parts.push(`<w:tblCaption w:val="${escapeXml(table.style.altTitle)}"/>`);
