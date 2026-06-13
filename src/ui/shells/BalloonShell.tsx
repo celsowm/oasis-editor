@@ -1,4 +1,4 @@
-import { Show } from "solid-js";
+
 import { OasisEditorEditor } from "../OasisEditorEditor.js";
 import type { ShellProps } from "./DocumentShell.js";
 

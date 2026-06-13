@@ -80,7 +80,9 @@ export function cloneBlocks(blocks: EditorBlockNode[]): EditorBlockNode[] {
             defaultCellMargins: block.style.defaultCellMargins
               ? { ...block.style.defaultCellMargins }
               : undefined,
-            floating: block.style.floating ? { ...block.style.floating } : undefined,
+            floating: block.style.floating
+              ? { ...block.style.floating }
+              : undefined,
             revisionXml: block.style.revisionXml
               ? [...block.style.revisionXml]
               : undefined,

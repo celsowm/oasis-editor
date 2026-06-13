@@ -25,7 +25,10 @@ type DocxWidthTag =
   | "wBefore"
   | "wAfter";
 
-function serializeOnOffElement(tag: string, value: boolean | undefined): string {
+function serializeOnOffElement(
+  tag: string,
+  value: boolean | undefined,
+): string {
   if (value === undefined) {
     return "";
   }
@@ -151,7 +154,9 @@ function serializeTableDefaultCellMargins(
     value: number | undefined,
   ) => {
     if (value !== undefined && Number.isFinite(value)) {
-      parts.push(`<w:${name} w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`);
+      parts.push(
+        `<w:${name} w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`,
+      );
     }
   };
   edge("top", margins.top);
@@ -160,7 +165,9 @@ function serializeTableDefaultCellMargins(
   edge("right", margins.right);
   edge("start", margins.start);
   edge("end", margins.end);
-  return parts.length > 0 ? `<w:tblCellMar>${parts.join("")}</w:tblCellMar>` : "";
+  return parts.length > 0
+    ? `<w:tblCellMar>${parts.join("")}</w:tblCellMar>`
+    : "";
 }
 
 function serializeTableCellProperties(
@@ -365,7 +372,10 @@ function serializeTableProperties(table: EditorTableNode): string {
     parts.push(indentXml);
   }
   parts.push(`<w:tblLayout w:type="${table.style?.layout ?? "fixed"}"/>`);
-  const bidiVisual = serializeOnOffElement("bidiVisual", table.style?.bidiVisual);
+  const bidiVisual = serializeOnOffElement(
+    "bidiVisual",
+    table.style?.bidiVisual,
+  );
   if (bidiVisual) {
     parts.push(bidiVisual);
   }

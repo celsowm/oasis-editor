@@ -97,7 +97,8 @@ describe("createTablePropertiesDialogBridge", () => {
     };
     bridge.applyTablePropertiesDialogValues(values);
 
-    const nextTable = getDocumentSectionsCanonical(state.document)[0]!.blocks[0];
+    const nextTable = getDocumentSectionsCanonical(state.document)[0]!
+      .blocks[0];
     expect(nextTable.type).toBe("table");
     if (nextTable.type !== "table") return;
     expect(nextTable.style).toMatchObject({

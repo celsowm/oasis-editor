@@ -140,7 +140,10 @@ function parseCellMargins(
   }
   const edgePt = (edge: string) =>
     twipsToPoints(
-      getAttributeValue(getFirstChildByTagNameNS(container, WORD_NS, edge), "w"),
+      getAttributeValue(
+        getFirstChildByTagNameNS(container, WORD_NS, edge),
+        "w",
+      ),
     );
   const margins: NonNullable<EditorTableStyle["defaultCellMargins"]> = {};
   const top = edgePt("top");
@@ -235,7 +238,9 @@ function parseTableStyle(
     style.defaultCellMargins = defaultCellMargins;
   }
 
-  const bidiVisual = tblPr ? parseOnOffProperty(tblPr, "bidiVisual") : undefined;
+  const bidiVisual = tblPr
+    ? parseOnOffProperty(tblPr, "bidiVisual")
+    : undefined;
   if (bidiVisual !== undefined) {
     style.bidiVisual = bidiVisual;
   }
@@ -884,7 +889,10 @@ export async function parseTableNode(
       collapseCellAutospacing(paragraphs, autospacingFlags);
       const colSpan = getTableCellColSpan(cellProperties);
       const vMerge = getTableCellVMerge(cellProperties);
-      const cellStyle = parseTableCellStyle(cellProperties, tableDefaultMargins);
+      const cellStyle = parseTableCellStyle(
+        cellProperties,
+        tableDefaultMargins,
+      );
 
       // Resolve table-style conditional formatting from cell position + tblLook.
       const conditional = mergeConditionalFormats(
