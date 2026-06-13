@@ -10,6 +10,7 @@ import {
 } from "../../export/pdf/fonts/officeFontAssets.js";
 import { createEditorLogger } from "../../utils/logger.js";
 import { SfntFontProgram } from "./sfnt/SfntFontProgram.js";
+import { getPreciseFontProgram } from "./preciseFontMetrics.js";
 
 /**
  * Synchronous source of glyph advance widths for the layout engine, backed by
@@ -131,6 +132,13 @@ class BundledFontMetricsProvider implements FontMetricsProvider {
     codePoint: number,
     fontSizePx: number,
   ): number | null {
+    const precise = getPreciseFontProgram(family, bold, italic);
+    if (precise && precise.hasGlyphForCodePoint(codePoint)) {
+      return (
+        (precise.advanceWidthForCodePoint(codePoint) / precise.unitsPerEm) *
+        fontSizePx
+      );
+    }
     const fileName = resolveFaceFiles(family)[faceStyleKey(bold, italic)];
     const font = this.getFont(fileName);
     if (!font || !font.hasGlyphForCodePoint(codePoint)) {
@@ -147,6 +155,10 @@ class BundledFontMetricsProvider implements FontMetricsProvider {
     italic: boolean,
     fontSizePx: number,
   ): number | null {
+    const precise = getPreciseFontProgram(family, bold, italic);
+    if (precise) {
+      return precise.naturalLineHeightPx(fontSizePx);
+    }
     const fileName = resolveFaceFiles(family)[faceStyleKey(bold, italic)];
     const font = this.getFont(fileName);
     return font ? font.naturalLineHeightPx(fontSizePx) : null;
@@ -158,6 +170,10 @@ class BundledFontMetricsProvider implements FontMetricsProvider {
     italic: boolean,
     fontSizePx: number,
   ): number | null {
+    const precise = getPreciseFontProgram(family, bold, italic);
+    if (precise) {
+      return precise.wordTextTopOffsetPx(fontSizePx);
+    }
     const fileName = resolveFaceFiles(family)[faceStyleKey(bold, italic)];
     const font = this.getFont(fileName);
     return font ? font.wordTextTopOffsetPx(fontSizePx) : null;

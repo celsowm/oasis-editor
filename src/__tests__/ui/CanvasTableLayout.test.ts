@@ -148,4 +148,42 @@ describe("buildCanvasTableLayout", () => {
     expect(renderedParagraph.height).toBeCloseTo(12 + linesBottom + 8, 6);
     expect(layout.height).toBeGreaterThan(linesBottom);
   });
+
+  it("collapses adjacent paragraph spacing inside table cells", () => {
+    const first = createEditorParagraph("Primeiro paragrafo");
+    first.style = { spacingBefore: 0, spacingAfter: 16, lineHeight: 1 };
+    const second = createEditorParagraph("Segundo paragrafo");
+    second.style = { spacingBefore: 16, spacingAfter: 0, lineHeight: 1 };
+    const cell = createEditorTableCell([first, second]);
+    const table = createEditorTable([createEditorTableRow([cell])], [240]);
+    table.style = { width: 240 };
+    const state = createEditorStateFromDocument(createEditorDocument([table]));
+
+    const layout = buildCanvasTableLayout({
+      table,
+      state,
+      pageIndex: 0,
+      originX: 0,
+      originY: 0,
+      contentWidth: 624,
+      estimatedHeight: 1,
+    });
+
+    const renderedCell = layout.cells[0]!;
+    const firstParagraph = renderedCell.paragraphs[0]!;
+    const secondParagraph = renderedCell.paragraphs[1]!;
+    const firstLinesBottom = Math.max(
+      ...firstParagraph.lines.map((line) => line.top + line.height),
+    );
+    const secondLinesBottom = Math.max(
+      ...secondParagraph.lines.map((line) => line.top + line.height),
+    );
+
+    expect(secondParagraph.originY - (firstParagraph.originY + firstLinesBottom))
+      .toBeCloseTo(16, 6);
+    expect(renderedCell.contentHeight).toBeCloseTo(
+      firstLinesBottom + 16 + secondLinesBottom,
+      6,
+    );
+  });
 });

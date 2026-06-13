@@ -70,9 +70,16 @@ export interface EditorLayoutBlock {
     repeatedHeaderRowCount: number;
     startRowCellBlockStarts?: number[];
     endRowCellBlockEnds?: number[];
+    startRowCellBlockPositions?: TableCellBlockPosition[];
+    endRowCellBlockPositions?: TableCellBlockPosition[];
   };
   sourceBlockId?: string;
   sourceBlock: EditorBlockNode;
+}
+
+export interface TableCellBlockPosition {
+  blockIndex: number;
+  offset?: number;
 }
 
 export interface EditorLayoutPage {

@@ -1,7 +1,7 @@
 /**
- * Shared registry of bundled, metric-compatible WOFF2 assets. The compressed
+ * Shared registry of bundled, metric-compatible font assets. The original
  * bytes are embedded as base64 and decoded through the internal font pipeline:
- * browsers receive WOFF2 for FontFace, while layout/PDF receive cached sfnt
+ * browsers receive the original font for FontFace, while layout/PDF receive cached sfnt
  * bytes reconstructed from the same source.
  */
 import { defaultFontDecoderRegistry } from "../../../text/fonts/decoders/FontDecoderRegistry.js";
@@ -17,6 +17,10 @@ import TinosRegular from "./assets/Tinos-Regular.woff2?base64";
 import TinosBold from "./assets/Tinos-Bold.woff2?base64";
 import TinosItalic from "./assets/Tinos-Italic.woff2?base64";
 import TinosBoldItalic from "./assets/Tinos-BoldItalic.woff2?base64";
+import OpenSansRegular from "./assets/OpenSans-Regular.woff2?base64";
+import OpenSansBold from "./assets/OpenSans-Bold.woff2?base64";
+import OpenSansItalic from "./assets/OpenSans-Italic.woff2?base64";
+import OpenSansBoldItalic from "./assets/OpenSans-BoldItalic.woff2?base64";
 import RobotoRegular from "./assets/Roboto-Regular.woff2?base64";
 import RobotoMedium from "./assets/Roboto-Medium.woff2?base64";
 import RobotoItalic from "./assets/Roboto-Italic.woff2?base64";
@@ -79,6 +83,16 @@ export const OFFICE_COMPAT_FONT_FAMILIES: OfficeFontFamilyDef[] = [
       bolditalic: "Tinos-BoldItalic.woff2",
     },
   },
+  {
+    family: "Open Sans",
+    aliases: ["OpenSans"],
+    files: {
+      regular: "OpenSans-Regular.woff2",
+      bold: "OpenSans-Bold.woff2",
+      italic: "OpenSans-Italic.woff2",
+      bolditalic: "OpenSans-BoldItalic.woff2",
+    },
+  },
 ];
 
 export function normalizeFamily(fontFamily: string | null | undefined): string {
@@ -129,6 +143,10 @@ const EMBEDDED_FONT_BASE64: Record<string, string> = {
   "Tinos-Bold.woff2": TinosBold,
   "Tinos-Italic.woff2": TinosItalic,
   "Tinos-BoldItalic.woff2": TinosBoldItalic,
+  "OpenSans-Regular.woff2": OpenSansRegular,
+  "OpenSans-Bold.woff2": OpenSansBold,
+  "OpenSans-Italic.woff2": OpenSansItalic,
+  "OpenSans-BoldItalic.woff2": OpenSansBoldItalic,
   "Roboto-Regular.woff2": RobotoRegular,
   "Roboto-Medium.woff2": RobotoMedium,
   "Roboto-Italic.woff2": RobotoItalic,
@@ -165,7 +183,7 @@ function getOriginalFontBytes(fileName: string): Uint8Array | null {
 }
 
 /**
- * Returns the original compressed WOFF2 bytes, used for browser FontFace
+ * Returns the original bundled font bytes, used for browser FontFace
  * registration.
  */
 export function readOriginalFontAsset(fileName: string): Uint8Array | null {

@@ -28,6 +28,7 @@ const COMMON_FONT_FAMILIES = [
   "Inter",
   "Lucida Console, monospace",
   "Lucida Sans Unicode, sans-serif",
+  "Open Sans, sans-serif",
   "Palatino Linotype, serif",
   "Segoe UI, sans-serif",
   "Tahoma, sans-serif",

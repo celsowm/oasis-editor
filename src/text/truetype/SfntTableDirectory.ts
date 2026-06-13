@@ -19,22 +19,36 @@ export class SfntTableDirectory {
   private constructor() {}
 
   static parse(reader: BinaryReader): SfntTableDirectory {
-    reader.seek(0);
-    let sfntStart = 0;
-
-    const firstTag = reader.tag();
-    if (firstTag === TTC_TAG) {
-      reader.skip(4); // majorVersion (u16) + minorVersion (u16)
-      const numFonts = reader.u32();
-      if (numFonts === 0) {
-        throw new TrueTypeParseError("font collection contains no fonts");
-      }
-      sfntStart = reader.u32(); // offset of the first font's offset table
-      reader.seek(sfntStart);
-      reader.skip(4); // sfntVersion of the embedded font
+    const offsets = SfntTableDirectory.collectionOffsets(reader);
+    if (offsets && offsets.length === 0) {
+      throw new TrueTypeParseError("font collection contains no fonts");
     }
-    // For a plain sfnt we already consumed sfntVersion via the first tag.
+    return SfntTableDirectory.parseAt(reader, offsets ? offsets[0]! : 0);
+  }
 
+  /**
+   * Sub-font sfnt offsets when the bytes are a TrueType Collection (`ttcf`), or
+   * `null` for a plain single-face sfnt. Lets callers pick a specific face
+   * (regular/bold/italic) rather than always unwrapping to the first font.
+   */
+  static collectionOffsets(reader: BinaryReader): number[] | null {
+    reader.seek(0);
+    if (reader.tag() !== TTC_TAG) {
+      return null;
+    }
+    reader.skip(4); // majorVersion (u16) + minorVersion (u16)
+    const numFonts = reader.u32();
+    const offsets: number[] = [];
+    for (let index = 0; index < numFonts; index += 1) {
+      offsets.push(reader.u32());
+    }
+    return offsets;
+  }
+
+  /** Parses the table directory whose offset table begins at `sfntOffset`. */
+  static parseAt(reader: BinaryReader, sfntOffset: number): SfntTableDirectory {
+    reader.seek(sfntOffset);
+    reader.skip(4); // sfntVersion
     const numTables = reader.u16();
     reader.skip(6); // searchRange (u16) + entrySelector (u16) + rangeShift (u16)
 

@@ -332,6 +332,7 @@ export function buildCanvasTableLayout(options: {
       lines: ReturnType<typeof projectParagraphLayout>["lines"];
       height: number;
       spacingBefore: number;
+      spacingAfter: number;
     }>;
     contentNaturalHeightPx: number;
     verticalMode: VerticalRenderMode;
@@ -441,6 +442,7 @@ export function buildCanvasTableLayout(options: {
             lines: [],
             height: stackLength,
             spacingBefore,
+            spacingAfter,
           });
           const hasExplicitRowHeight =
             explicitRowHeightPx !== null && explicitRowHeightPx > 0;
@@ -466,15 +468,34 @@ export function buildCanvasTableLayout(options: {
           projected.lines.length > 0
             ? Math.max(...projected.lines.map((line) => line.top + line.height))
             : 1;
+        let effectiveSpacingBefore = spacingBefore;
+        if (!isRotated && projectedParagraphs.length > 0) {
+          const previous =
+            projectedParagraphs[projectedParagraphs.length - 1]!;
+          const collapsed = Math.min(previous.spacingAfter, spacingBefore);
+          if (collapsed > 0) {
+            if (previous.spacingAfter >= spacingBefore) {
+              effectiveSpacingBefore = 0;
+            } else {
+              const previousHeight = previous.height;
+              previous.height = Math.max(1, previous.height - collapsed);
+              contentNaturalHeightPx = Math.max(
+                0,
+                contentNaturalHeightPx - (previousHeight - previous.height),
+              );
+            }
+          }
+        }
         const paragraphHeight = Math.max(
           1,
-          spacingBefore + linesBottom + spacingAfter,
+          effectiveSpacingBefore + linesBottom + spacingAfter,
         );
         projectedParagraphs.push({
           paragraph,
           lines: projected.lines,
           height: paragraphHeight,
-          spacingBefore,
+          spacingBefore: effectiveSpacingBefore,
+          spacingAfter,
         });
         if (isRotated) {
           // Rotated columns sit side by side; the cell's vertical extent equals

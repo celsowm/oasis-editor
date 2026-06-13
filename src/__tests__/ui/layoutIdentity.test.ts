@@ -8,7 +8,11 @@ import {
   resetEditorIds,
 } from "../../core/editorState.js";
 import { projectDocumentLayout } from "../../layoutProjection/index.js";
-import { createLayoutIdentityStabilizer } from "../../ui/layoutIdentity.js";
+import {
+  canReuseLayoutBlock,
+  createLayoutIdentityStabilizer,
+} from "../../ui/layoutIdentity.js";
+import type { EditorLayoutBlock } from "../../core/model.js";
 
 beforeEach(() => {
   resetEditorIds();
@@ -63,5 +67,41 @@ describe("layout identity stabilization", () => {
     expect(secondPage.footnoteBlocks?.[0]).not.toBe(
       firstPage.footnoteBlocks?.[0],
     );
+  });
+
+  it("does not reuse table blocks when partial cell segment offsets change", () => {
+    const paragraph = createEditorParagraph("cell text");
+    const block: EditorLayoutBlock = {
+      blockId: "table:1:segment:0",
+      sourceBlockId: "table:1",
+      blockType: "table",
+      globalIndex: 0,
+      estimatedHeight: 40,
+      sourceBlock: {
+        id: "table:1",
+        type: "table",
+        rows: [
+          {
+            id: "row:1",
+            cells: [{ id: "cell:1", blocks: [paragraph] }],
+          },
+        ],
+      },
+      tableSegment: {
+        startRowIndex: 0,
+        endRowIndex: 1,
+        repeatedHeaderRowCount: 0,
+        endRowCellBlockPositions: [{ blockIndex: 0, offset: 12 }],
+      },
+    };
+    const changed: EditorLayoutBlock = {
+      ...block,
+      tableSegment: {
+        ...block.tableSegment!,
+        endRowCellBlockPositions: [{ blockIndex: 0, offset: 18 }],
+      },
+    };
+
+    expect(canReuseLayoutBlock(block, changed)).toBe(false);
   });
 });

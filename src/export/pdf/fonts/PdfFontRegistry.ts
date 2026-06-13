@@ -76,6 +76,10 @@ function faceKey(family: string, bold: boolean, italic: boolean): string {
   return `${family.toLowerCase()}:${bold ? "bold" : "regular"}${italic ? "italic" : ""}`;
 }
 
+function pdfResourceNamePrefix(family: string): string {
+  return family.replace(/[^A-Za-z0-9_]/g, "");
+}
+
 export class PdfFontRegistry {
   private readonly faces = new Map<string, PdfRegisteredFontFace>();
   private fallbackFamily = "Helvetica";
@@ -186,7 +190,7 @@ export class PdfFontRegistry {
         }
         const bold = style === "bold" || style === "bolditalic";
         const italic = style === "italic" || style === "bolditalic";
-        const resourceName = `${familyDefinition.family}${style[0]!.toUpperCase()}${style.slice(1)}`;
+        const resourceName = `${pdfResourceNamePrefix(familyDefinition.family)}${style[0]!.toUpperCase()}${style.slice(1)}`;
         const face: PdfRegisteredFontFace = {
           key: `${familyDefinition.family.toLowerCase()}:${style}`,
           family: familyDefinition.family,

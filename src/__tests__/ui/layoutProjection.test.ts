@@ -11,6 +11,7 @@ import {
   createEditorTableCell,
   createEditorTableRow,
 } from "../../core/editorState.js";
+import { buildSegmentTable } from "../../core/tableLayout.js";
 import type { EditorPageSettings } from "../../core/model.js";
 import type { ITextMeasurer, TextMeasureOptions } from "../../core/engine.js";
 
@@ -434,6 +435,67 @@ describe("layout projection", () => {
       expect(secondPageTable.tableSegment!.startRowCellBlockStarts![0]).toBe(
         firstPageTable.tableSegment!.endRowCellBlockEnds![0],
       );
+    });
+
+    it("splits a long table-cell paragraph across pages when the row can split", () => {
+      const paragraph = createEditorParagraph(
+        Array.from({ length: 80 }, (_, index) => `word${index}`).join(" "),
+      );
+      paragraph.style = { spacingBefore: 0, spacingAfter: 0, lineHeight: 1 };
+      const table = createEditorTable([
+        createEditorTableRow([createEditorTableCell([paragraph])]),
+      ]);
+
+      const pages = projectBlocksLayout({
+        blocks: [table],
+        pageSettings: A4,
+        maxPageHeight: 70,
+      });
+
+      expect(pages.length).toBeGreaterThan(1);
+      const firstPageTable = pages[0]!.blocks[0]!;
+      const secondPageTable = pages[1]!.blocks[0]!;
+      expect(
+        firstPageTable.tableSegment?.endRowCellBlockPositions?.[0],
+      ).toBeDefined();
+      expect(
+        firstPageTable.tableSegment!.endRowCellBlockPositions![0]!.offset,
+      ).toBeGreaterThan(0);
+      expect(
+        secondPageTable.tableSegment!.startRowCellBlockPositions![0],
+      ).toEqual(firstPageTable.tableSegment!.endRowCellBlockPositions![0]);
+
+      const segmentTexts = pages.map((page) => {
+        const segment = page.blocks[0]!.tableSegment!;
+        const segmentTable = buildSegmentTable(table, segment);
+        return segmentTable.rows[0]!.cells[0]!.blocks
+          .flatMap((block) => block.runs.map((run) => run.text))
+          .join("");
+      });
+      const [firstText, secondText] = segmentTexts;
+      expect(firstText.length).toBeGreaterThan(0);
+      expect(secondText!.length).toBeGreaterThan(0);
+      expect(segmentTexts.join("")).toBe(
+        paragraph.runs.map((run) => run.text).join(""),
+      );
+    });
+
+    it("keeps a long single-paragraph table row together when cantSplit is true", () => {
+      const paragraph = createEditorParagraph(
+        Array.from({ length: 80 }, (_, index) => `word${index}`).join(" "),
+      );
+      const row = createEditorTableRow([createEditorTableCell([paragraph])]);
+      row.style = { cantSplit: true };
+      const table = createEditorTable([row]);
+
+      const pages = projectBlocksLayout({
+        blocks: [table],
+        pageSettings: A4,
+        maxPageHeight: 70,
+      });
+
+      expect(pages).toHaveLength(1);
+      expect(pages[0]!.blocks[0]!.tableSegment).toBeUndefined();
     });
   });
 

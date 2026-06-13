@@ -93,7 +93,10 @@ export function getParagraphLineHeight(
       { ...runTextStyle, fontSize },
       lineHeight,
     );
-    const imageHeight = run.image?.height ?? 0;
+    // Floating images are painted outside the text flow, so they must not grow
+    // the line height (matches the tokenizer and min-content-width measurement).
+    const imageHeight =
+      run.image && !run.image.floating ? run.image.height : 0;
     return Math.max(largest, runLineHeight + baselineShiftPx, imageHeight);
   }, 0);
 

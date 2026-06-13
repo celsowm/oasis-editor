@@ -4,9 +4,18 @@ import {
   setPreciseFontModeEnabled,
 } from "../../text/fonts/preciseFontMode.js";
 import {
+  hasPreciseFontFace,
+  registerPreciseFont,
+} from "../../text/fonts/preciseFontMetrics.js";
+import { SfntFontProgram } from "../../text/fonts/sfnt/SfntFontProgram.js";
+import { normalizeFamily } from "../../export/pdf/fonts/officeFontAssets.js";
+import {
   getPreciseFontPreference,
   setPreciseFontPreference,
 } from "../../app/services/userPreferences.js";
+import { createEditorLogger } from "../../utils/logger.js";
+
+const fontLogger = createEditorLogger("fonts");
 
 /**
  * Single entry point for the Local Font Access API (`queryLocalFonts`). Owns one
@@ -17,6 +26,9 @@ import {
 interface LocalFont {
   family?: string;
   fullName?: string;
+  style?: string;
+  postscriptName?: string;
+  blob?: () => Promise<Blob>;
 }
 
 function getQueryLocalFonts(): (() => Promise<LocalFont[]>) | undefined {
@@ -68,6 +80,125 @@ export function probeLocalFontFamilies(): Promise<string[]> {
   })();
 
   return inFlight;
+}
+
+function classifyFaceStyle(font: LocalFont): {
+  bold: boolean;
+  italic: boolean;
+} {
+  const descriptor = `${font.style ?? ""} ${font.fullName ?? ""}`.toLowerCase();
+  return {
+    bold: /\bbold\b/.test(descriptor),
+    italic: /\b(italic|oblique)\b/.test(descriptor),
+  };
+}
+
+/**
+ * Picks the program for the exact face the {@link LocalFont} describes. A plain
+ * sfnt yields a single program; a TrueType Collection (`ttcf`) yields one per
+ * sub-font, so we match by PostScript name first (most reliable), then by the
+ * macStyle bold/italic bits, and only then fall back to the first face.
+ */
+function selectFaceProgram(
+  bytes: Uint8Array,
+  font: LocalFont,
+): SfntFontProgram {
+  const programs = SfntFontProgram.parseCollection(bytes);
+  if (programs.length === 1) {
+    return programs[0]!;
+  }
+  const targetPs = (font.postscriptName ?? "").trim().toLowerCase();
+  if (targetPs) {
+    const byName = programs.find(
+      (program) => program.metadata.postscriptName.toLowerCase() === targetPs,
+    );
+    if (byName) return byName;
+  }
+  const { bold, italic } = classifyFaceStyle(font);
+  const byStyle = programs.find(
+    (program) =>
+      program.metadata.macStyleBold === bold &&
+      program.metadata.macStyleItalic === italic,
+  );
+  return byStyle ?? programs[0]!;
+}
+
+/**
+ * Loads the real, locally-installed font programs for the given document
+ * families and registers them for precise-mode measurement. No-op unless precise
+ * mode is enabled and the Local Font Access API is available (and previously
+ * granted). Returns whether any new face was registered, so the caller can clear
+ * layout caches and re-project only when something actually changed.
+ */
+export async function loadPreciseFontProgramsForFamilies(
+  families: Iterable<string | null | undefined>,
+): Promise<boolean> {
+  if (!isPreciseFontModeEnabled()) return false;
+  const queryLocalFonts = getQueryLocalFonts();
+  if (!queryLocalFonts) return false;
+
+  const wanted = new Set(
+    Array.from(families, (family) => normalizeFamily(family).toLowerCase()),
+  );
+  wanted.delete("helvetica"); // normalizeFamily's empty-input fallback
+  if (wanted.size === 0) return false;
+
+  let fonts: LocalFont[];
+  try {
+    fonts = await queryLocalFonts();
+  } catch {
+    return false;
+  }
+
+  let changed = false;
+  const registered: string[] = [];
+  const failed: string[] = [];
+  let matchedAny = false;
+  for (const font of fonts) {
+    const family = (font.family ?? "").trim();
+    if (!family || !wanted.has(family.toLowerCase())) continue;
+    matchedAny = true;
+    if (typeof font.blob !== "function") {
+      failed.push(`${family} (${font.style ?? "?"}): no blob()`);
+      continue;
+    }
+    const { bold, italic } = classifyFaceStyle(font);
+    if (hasPreciseFontFace(family, bold, italic)) continue;
+    try {
+      const buffer = await font.blob().then((blob) => blob.arrayBuffer());
+      const program = selectFaceProgram(new Uint8Array(buffer), font);
+      registerPreciseFont(family, bold, italic, program);
+      registered.push(`${family} ${bold ? "B" : ""}${italic ? "I" : ""}`.trim());
+      changed = true;
+    } catch (error) {
+      failed.push(`${family} (${font.style ?? "?"}): ${String(error)}`);
+    }
+  }
+  // Diagnostic: for any wanted family that matched nothing, surface the local
+  // families whose name contains a wanted token, so a mismatched/renamed install
+  // (e.g. "Aptos Display" instead of "Aptos", or an Office cloud font that the
+  // browser cannot enumerate at all) is visible instead of failing silently.
+  const localFamilies = Array.from(
+    new Set(fonts.map((font) => (font.family ?? "").trim()).filter(Boolean)),
+  );
+  const unmatched = Array.from(wanted).filter(
+    (token) => !localFamilies.some((name) => name.toLowerCase() === token),
+  );
+  const nearMatches = unmatched.flatMap((token) => {
+    const stem = token.split(" ")[0]!;
+    return localFamilies.filter((name) => name.toLowerCase().includes(stem));
+  });
+  fontLogger.info("precise:load", {
+    wanted: Array.from(wanted),
+    matchedAny,
+    registered,
+    failed,
+    changed,
+    localFamilyCount: localFamilies.length,
+    unmatched,
+    nearMatches,
+  });
+  return changed;
 }
 
 /** Whether the browser already granted local-fonts permission (never prompts). */

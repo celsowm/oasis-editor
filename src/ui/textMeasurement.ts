@@ -3,7 +3,10 @@ import { composeMeasuredParagraphLines } from "./textMeasurement/composer.js";
 import { resolveRenderedLineHeightPx } from "./textMeasurement/fontMetrics.js";
 
 export { clearTextMeasureCache } from "./textMeasurement/characterWidth.js";
-export { resolveRenderedLineHeightPx } from "./textMeasurement/fontMetrics.js";
+export {
+  clearNormalLineHeightCache,
+  resolveRenderedLineHeightPx,
+} from "./textMeasurement/fontMetrics.js";
 export {
   applyLineRule,
   resolveLineSpacing,

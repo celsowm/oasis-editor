@@ -112,6 +112,27 @@ export class SfntFontProgram implements ParsedFontProgram {
     return new SfntFontProgram(sfntBytes, SfntTableDirectory.parse(reader));
   }
 
+  /**
+   * Every face in the bytes: one program for a plain sfnt, or one per sub-font
+   * for a TrueType Collection (`ttcf`). Lets the caller select the exact
+   * bold/italic face by its name/macStyle instead of taking the first font.
+   */
+  static parseCollection(sfntBytes: Uint8Array): SfntFontProgram[] {
+    const offsets = SfntTableDirectory.collectionOffsets(
+      new BinaryReader(sfntBytes),
+    );
+    if (!offsets) {
+      return [SfntFontProgram.parse(sfntBytes)];
+    }
+    return offsets.map(
+      (offset) =>
+        new SfntFontProgram(
+          sfntBytes,
+          SfntTableDirectory.parseAt(new BinaryReader(sfntBytes), offset),
+        ),
+    );
+  }
+
   glyphForCodePoint(codePoint: number): number {
     return this.cmap.glyphForCodePoint(codePoint);
   }
@@ -202,6 +223,7 @@ export class SfntFontProgram implements ParsedFontProgram {
       xHeight,
       italicAngle,
       isFixedPitch,
+      macStyleBold: (macStyle & 0x01) !== 0,
       macStyleItalic: (macStyle & 0x02) !== 0,
       familyClass,
     };

@@ -10,9 +10,14 @@ import {
 import type { ITextMeasurer } from "../../core/engine.js";
 import type { EditorSurfaceProps } from "../editorUiTypes.js";
 import { type EditorLayoutPage, type EditorState } from "../../core/model.js";
-import { clearTextMeasureCache, domTextMeasurer } from "../textMeasurement.js";
+import {
+  clearNormalLineHeightCache,
+  clearTextMeasureCache,
+  domTextMeasurer,
+} from "../textMeasurement.js";
 import { preloadLayoutFonts } from "../../text/fonts/FontMetricsProvider.js";
 import { preciseFontModeVersion } from "../../text/fonts/preciseFontMode.js";
+import { loadPreciseFontProgramsForFamilies } from "../app/localFontAccess.js";
 import { collectPdfFontFamilies } from "../../export/pdf/fonts/collectPdfFontFamilies.js";
 import { resolveMetricCompatibleFamily } from "../../export/pdf/fonts/officeFontAssets.js";
 import {
@@ -83,21 +88,28 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
       .join("|"),
   );
   createEffect(
-    on(fontFamiliesKey, () => {
+    on([fontFamiliesKey, preciseFontModeVersion], () => {
       const families = documentFontFamilies();
       surfaceLogger.info("fonts:collect", {
         families,
         checksBefore: checkBrowserFonts(families),
       });
-      void preloadLayoutFonts(families).then(() => {
+      void (async () => {
+        await preloadLayoutFonts(families);
+        // In precise font mode, also pull the real installed faces so the layout
+        // engine measures with them (not just paints them) — this is what makes
+        // page breaks match Word for fonts whose substitute is not actually
+        // metric-compatible (e.g. Aptos).
+        await loadPreciseFontProgramsForFamilies(families);
         clearTextMeasureCache();
+        clearNormalLineHeightCache();
         clearProjectedParagraphLayoutCache();
         surfaceLogger.info("fonts:ready", {
           families,
           checksAfter: checkBrowserFonts(families),
         });
         setFontsGeneration((generation) => generation + 1);
-      });
+      })();
     }),
   );
   const documentLayout = createMemo(() => {
@@ -181,7 +193,9 @@ function CanvasPage(props: {
     props.state.document;
     props.paintGeneration;
     // Repaint glyphs when precise font mode toggles (real font vs. substitute).
-    // Metrics are identical, so no relayout is needed — only a page repaint.
+    // Any relayout (when real metrics differ from the substitute) is driven by
+    // the surface-level fonts effect bumping fontsGeneration; this just ensures
+    // the page repaints even when the layout object is unchanged.
     preciseFontModeVersion();
     renderer.invalidatePage();
     renderer.schedulePaint();

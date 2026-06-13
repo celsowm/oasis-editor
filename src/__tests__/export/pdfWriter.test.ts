@@ -7,6 +7,7 @@ import {
   createFootnoteReferenceRun,
 } from "../../core/editorState.js";
 import { PdfFontRegistry } from "../../export/pdf/fonts/PdfFontRegistry.js";
+import { resolveMetricCompatibleFamily } from "../../export/pdf/fonts/officeFontAssets.js";
 import { layoutPdfParagraph } from "../../export/pdf/layout/layoutParagraph.js";
 import { PdfTextMeasurer } from "../../export/pdf/layout/PdfTextMeasurer.js";
 import { OasisPdfWriter } from "../../export/pdf/OasisPdfWriter.js";
@@ -204,6 +205,36 @@ function createInlineImageDocument(options?: {
 }
 
 describe("PdfFontRegistry", () => {
+  it("resolves Open Sans to its bundled family", () => {
+    expect(resolveMetricCompatibleFamily("Open Sans")).toBe("Open Sans");
+    expect(resolveMetricCompatibleFamily("OpenSans")).toBe("Open Sans");
+    expect(resolveMetricCompatibleFamily("Open Sans, sans-serif")).toBe(
+      "Open Sans",
+    );
+  });
+
+  it("loads Open Sans as a requested bundled Unicode family without falling back to Roboto", async () => {
+    const registry = new PdfFontRegistry();
+    await registry.loadBundledUnicodeFaces({ families: ["Open Sans"] });
+
+    expect(
+      registry.resolveFontFace({ fontFamily: "Open Sans", bold: true })
+        .writerResourceName,
+    ).toBe("OpenSansBold");
+    expect(
+      registry.getPdfFontResources().map((resource) => resource.resourceName),
+    ).toEqual([
+      "F1",
+      "F2",
+      "F3",
+      "F4",
+      "OpenSansRegular",
+      "OpenSansBold",
+      "OpenSansItalic",
+      "OpenSansBolditalic",
+    ]);
+  });
+
   it("resolves bundled Unicode faces and keeps built-in Helvetica fallbacks", async () => {
     const registry = new PdfFontRegistry();
     await registry.loadBundledUnicodeFaces();
@@ -245,6 +276,13 @@ describe("PdfFontRegistry", () => {
       }).writerResourceName,
     ).toBe("TinosBolditalic");
     expect(
+      registry.resolveFontFace({ fontFamily: "Open Sans" }).writerResourceName,
+    ).toBe("OpenSansRegular");
+    expect(
+      registry.resolveFontFace({ fontFamily: "OpenSans", bold: true })
+        .writerResourceName,
+    ).toBe("OpenSansBold");
+    expect(
       registry.getPdfFontResources().map((resource) => resource.resourceName),
     ).toEqual([
       "F1",
@@ -263,6 +301,10 @@ describe("PdfFontRegistry", () => {
       "TinosBold",
       "TinosItalic",
       "TinosBolditalic",
+      "OpenSansRegular",
+      "OpenSansBold",
+      "OpenSansItalic",
+      "OpenSansBolditalic",
       "RobotoRegular",
       "RobotoBold",
       "RobotoItalic",
@@ -340,6 +382,17 @@ describe("PdfFontRegistry", () => {
                 },
               ],
             },
+            {
+              id: "open-sans",
+              type: "paragraph",
+              runs: [
+                {
+                  id: "open-sans-run",
+                  text: "Open Sans sample",
+                  styles: { fontFamily: "Open Sans", bold: true },
+                },
+              ],
+            },
           ],
         },
       ],
@@ -353,10 +406,12 @@ describe("PdfFontRegistry", () => {
     expect(pdf).toContain("/CarlitoBold");
     expect(pdf).toContain("/ArimoItalic");
     expect(pdf).toContain("/TinosBolditalic");
+    expect(pdf).toContain("/OpenSansBold");
     expectPdfText(pdf, "Calibri sample");
     expectPdfText(pdf, "Aptos sample");
     expectPdfText(pdf, "Arial sample");
     expectPdfText(pdf, "Times sample");
+    expectPdfText(pdf, "Open Sans sample");
   });
 });
 

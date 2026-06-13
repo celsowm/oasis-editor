@@ -5,7 +5,11 @@ import type {
   EditorLayoutParagraph,
   EditorNamedStyle,
   EditorPageSettings,
+  EditorParagraphNode,
+  EditorTableNode,
+  EditorTableRowNode,
   EditorTextBoxData,
+  TableCellBlockPosition,
 } from "../core/model.js";
 import { getPageContentWidth } from "../core/model.js";
 import type { ITextMeasurer } from "../core/engine.js";
@@ -35,6 +39,259 @@ import {
 } from "./tablePagination.js";
 
 const TEXT_BOX_AUTOFIT_SAFETY_PX = 2;
+
+function normalizeCellStartPositions(
+  row: EditorTableRowNode,
+  starts: TableCellBlockPosition[] | undefined,
+  legacyStarts: number[] | undefined,
+): TableCellBlockPosition[] {
+  return row.cells.map((_, cellIdx) => ({
+    blockIndex:
+      starts?.[cellIdx]?.blockIndex ?? legacyStarts?.[cellIdx] ?? 0,
+    offset: starts?.[cellIdx]?.offset,
+  }));
+}
+
+function positionsToBlockIndexes(
+  positions: TableCellBlockPosition[] | undefined,
+): number[] | undefined {
+  return positions?.map((position) => position.blockIndex);
+}
+
+function hasPartialPositions(
+  positions: TableCellBlockPosition[] | undefined,
+): boolean {
+  return positions?.some((position) => (position.offset ?? 0) > 0) ?? false;
+}
+
+function getParagraphTextLength(paragraph: EditorParagraphNode): number {
+  return paragraph.runs.reduce((sum, run) => sum + run.text.length, 0);
+}
+
+function sliceParagraphForTableSegment(
+  paragraph: EditorParagraphNode,
+  startOffset: number,
+  endOffset: number,
+): EditorParagraphNode {
+  let cursor = 0;
+  const runs = paragraph.runs.flatMap((run) => {
+    const runStart = cursor;
+    const runEnd = runStart + run.text.length;
+    cursor = runEnd;
+    const sliceStart = Math.max(startOffset, runStart);
+    const sliceEnd = Math.min(endOffset, runEnd);
+    if (sliceEnd <= sliceStart) return [];
+    return [
+      {
+        ...run,
+        id: `${run.id}:slice:${sliceStart - runStart}:${sliceEnd - runStart}`,
+        text: run.text.slice(sliceStart - runStart, sliceEnd - runStart),
+      },
+    ];
+  });
+  return {
+    ...paragraph,
+    runs: runs.length > 0 ? runs : [{ id: `${paragraph.id}:empty`, text: "" }],
+  };
+}
+
+function sliceCellBlocksForTableSegment(
+  blocks: EditorParagraphNode[],
+  start: TableCellBlockPosition,
+  end: TableCellBlockPosition,
+): EditorParagraphNode[] {
+  const result: EditorParagraphNode[] = [];
+  const endExclusive =
+    end.offset !== undefined ? end.blockIndex + 1 : end.blockIndex;
+  for (let index = start.blockIndex; index < endExclusive; index += 1) {
+    const paragraph = blocks[index];
+    if (!paragraph) continue;
+    const paragraphLength = getParagraphTextLength(paragraph);
+    const startOffset =
+      index === start.blockIndex ? (start.offset ?? 0) : 0;
+    const endOffset =
+      index === end.blockIndex
+        ? (end.offset ?? paragraphLength)
+        : paragraphLength;
+    if (startOffset <= 0 && endOffset >= paragraphLength) {
+      result.push(paragraph);
+    } else if (endOffset > startOffset) {
+      result.push(
+        sliceParagraphForTableSegment(paragraph, startOffset, endOffset),
+      );
+    }
+  }
+  return result;
+}
+
+function buildRowSliceFromPositions(
+  row: EditorTableRowNode,
+  starts: TableCellBlockPosition[],
+  ends: TableCellBlockPosition[],
+): EditorTableRowNode {
+  return {
+    ...row,
+    cells: row.cells.map((cell, cellIdx) => ({
+      ...cell,
+      blocks: sliceCellBlocksForTableSegment(
+        cell.blocks,
+        starts[cellIdx] ?? { blockIndex: 0 },
+        ends[cellIdx] ?? { blockIndex: cell.blocks.length },
+      ),
+    })),
+  };
+}
+
+function estimateSingleCellRowSliceHeight(
+  row: EditorTableRowNode,
+  cellIndex: number,
+  start: TableCellBlockPosition,
+  end: TableCellBlockPosition,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  measurer: ITextMeasurer,
+  defaultTabStop: number | undefined,
+  contentWidth: number | undefined,
+  table: EditorTableNode,
+  rowIndex: number,
+): number {
+  const starts = row.cells.map((_, idx) =>
+    idx === cellIndex ? start : { blockIndex: 0 },
+  );
+  const ends = row.cells.map((cell, idx) =>
+    idx === cellIndex ? end : { blockIndex: 0 },
+  );
+  return estimateTableRowHeight(
+    buildRowSliceFromPositions(row, starts, ends),
+    styles,
+    measurer,
+    defaultTabStop,
+    contentWidth,
+    table,
+    rowIndex,
+  );
+}
+
+function findCellSplitEndPosition(
+  row: EditorTableRowNode,
+  cellIndex: number,
+  start: TableCellBlockPosition,
+  availableHeight: number,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  measurer: ITextMeasurer,
+  defaultTabStop: number | undefined,
+  contentWidth: number | undefined,
+  table: EditorTableNode,
+  rowIndex: number,
+): TableCellBlockPosition {
+  const cell = row.cells[cellIndex];
+  if (!cell) return start;
+  const limit = cell.blocks.length;
+  let best: TableCellBlockPosition = { blockIndex: start.blockIndex };
+
+  for (
+    let blockIndex = start.blockIndex + 1;
+    blockIndex <= limit;
+    blockIndex += 1
+  ) {
+    const end = { blockIndex };
+    const height = estimateSingleCellRowSliceHeight(
+      row,
+      cellIndex,
+      start,
+      end,
+      styles,
+      measurer,
+      defaultTabStop,
+      contentWidth,
+      table,
+      rowIndex,
+    );
+    if (height <= availableHeight) {
+      best = end;
+    } else {
+      break;
+    }
+  }
+
+  if (best.blockIndex > start.blockIndex) {
+    return best;
+  }
+
+  const paragraph = cell.blocks[start.blockIndex];
+  if (!paragraph) return best;
+  const paragraphLength = getParagraphTextLength(paragraph);
+  const startOffset = start.offset ?? 0;
+  const layout = projectParagraphLayout(
+    paragraph,
+    undefined,
+    undefined,
+    styles,
+    contentWidth,
+    measurer,
+    defaultTabStop,
+  );
+  for (const line of layout.lines) {
+    if (line.endOffset <= startOffset || line.endOffset >= paragraphLength) {
+      continue;
+    }
+    const end = { blockIndex: start.blockIndex, offset: line.endOffset };
+    const height = estimateSingleCellRowSliceHeight(
+      row,
+      cellIndex,
+      start,
+      end,
+      styles,
+      measurer,
+      defaultTabStop,
+      contentWidth,
+      table,
+      rowIndex,
+    );
+    if (height <= availableHeight) {
+      best = end;
+    } else {
+      break;
+    }
+  }
+  return best;
+}
+
+function canSplitTableRow(row: EditorTableRowNode | undefined): boolean {
+  if (!row || row.isHeader || row.style?.cantSplit === true) {
+    return false;
+  }
+  return row.cells.some((cell) => {
+    if (cell.vMerge || (cell.rowSpan ?? 1) > 1) return false;
+    if (cell.style?.textDirection) return false;
+    return cell.blocks.some((paragraph) => {
+      if (paragraph.style?.textDirection) return false;
+      return getParagraphTextLength(paragraph) > 0;
+    });
+  });
+}
+
+function positionsProgressed(
+  starts: TableCellBlockPosition[],
+  ends: TableCellBlockPosition[],
+): boolean {
+  return ends.some((end, index) => {
+    const start = starts[index] ?? { blockIndex: 0 };
+    return (
+      end.blockIndex > start.blockIndex ||
+      (end.blockIndex === start.blockIndex &&
+        (end.offset ?? 0) > (start.offset ?? 0))
+    );
+  });
+}
+
+function positionsFinishedRow(
+  row: EditorTableRowNode,
+  ends: TableCellBlockPosition[],
+): boolean {
+  return row.cells.every(
+    (cell, cellIdx) => (ends[cellIdx]?.blockIndex ?? 0) >= cell.blocks.length,
+  );
+}
 
 function estimateTextBoxAutoFitHeight(
   textBox: EditorTextBoxData,
@@ -499,11 +756,7 @@ export function projectBlocksLayout(
       );
     const maxHeightForCurrentPage = getMaxHeightForPage(getCurrentPageIndex());
     const firstRow = sourceBlock.rows[0];
-    const canSplitSingleRow =
-      firstRow &&
-      !firstRow.isHeader &&
-      firstRow.style?.cantSplit !== true &&
-      firstRow.cells.some((cell) => cell.blocks.length > 1);
+    const canSplitSingleRow = canSplitTableRow(firstRow);
 
     if (
       (!canSplitSingleRow && sourceBlock.rows.length <= 1) ||
@@ -536,7 +789,7 @@ export function projectBlocksLayout(
     );
     let groupStartIndex = 0;
     let segmentIndex = 0;
-    let currentCellBlockStarts: number[] | undefined;
+    let currentCellBlockPositions: TableCellBlockPosition[] | undefined;
 
     while (groupStartIndex < rowGroups.length) {
       const startRowIndex = rowGroups[groupStartIndex]!.startRowIndex;
@@ -547,21 +800,28 @@ export function projectBlocksLayout(
       let groupEndIndex = groupStartIndex;
       let segmentHeight = 0;
       let splitEnds: number[] | undefined;
+      let splitEndPositions: TableCellBlockPosition[] | undefined;
       let isLastRowSplit = false;
 
       while (groupEndIndex < rowGroups.length) {
         const candidateEndRowIndex = rowGroups[groupEndIndex]!.endRowIndexExclusive;
         let candidateHeight = 0;
 
-        if (groupEndIndex === groupStartIndex && currentCellBlockStarts) {
+        if (groupEndIndex === groupStartIndex && currentCellBlockPositions) {
           const firstRow = sourceBlock.rows[startRowIndex]!;
-          const slicedFirstRow = {
-            ...firstRow,
-            cells: firstRow.cells.map((cell, cellIdx) => ({
-              ...cell,
-              blocks: cell.blocks.slice(currentCellBlockStarts![cellIdx] ?? 0),
-            })),
-          };
+          const starts = normalizeCellStartPositions(
+            firstRow,
+            currentCellBlockPositions,
+            undefined,
+          );
+          const ends = firstRow.cells.map((cell) => ({
+            blockIndex: cell.blocks.length,
+          }));
+          const slicedFirstRow = buildRowSliceFromPositions(
+            firstRow,
+            starts,
+            ends,
+          );
           candidateHeight = getTableSegmentHeight(
             {
               ...sourceBlock,
@@ -598,10 +858,7 @@ export function projectBlocksLayout(
           candidateEndRowIndex === rowGroups[groupEndIndex]!.startRowIndex + 1;
         const targetRow = sourceBlock.rows[rowGroups[groupEndIndex]!.startRowIndex]!;
         const isSplitCandidate =
-          isSingleRowGroup &&
-          !targetRow.isHeader &&
-          targetRow.style?.cantSplit !== true &&
-          targetRow.cells.some((cell) => cell.blocks.length > 1);
+          isSingleRowGroup && canSplitTableRow(targetRow);
 
         if (isSplitCandidate) {
           const precedingHeight =
@@ -620,60 +877,39 @@ export function projectBlocksLayout(
           const availableForSplitRow = remainingHeight - precedingHeight;
 
           if (availableForSplitRow > 0) {
-            const starts =
-              groupEndIndex === groupStartIndex && currentCellBlockStarts
-                ? currentCellBlockStarts
-                : targetRow.cells.map(() => 0);
-
-            const ends = targetRow.cells.map((cell, cellIdx) => {
-              const startIdx = starts[cellIdx] ?? 0;
-              const limit = cell.blocks.length;
-              let endIdx = startIdx;
-
-              for (let k = startIdx + 1; k <= limit; k++) {
-                const tempRow = {
-                  ...targetRow,
-                  cells: targetRow.cells.map((c, cIdx) => ({
-                    ...c,
-                    blocks: cIdx === cellIdx ? c.blocks.slice(startIdx, k) : [],
-                  })),
-                };
-                const h = estimateTableRowHeight(
-                  tempRow,
-                  styles,
-                  measurer,
-                  defaultTabStop,
-                  contentWidth,
-                  sourceBlock,
-                  rowGroups[groupEndIndex]!.startRowIndex,
-                );
-                if (h <= availableForSplitRow) {
-                  endIdx = k;
-                } else {
-                  break;
-                }
-              }
-              return endIdx;
-            });
-
-            const canProgress = targetRow.cells.some(
-              (cell, cellIdx) => (ends[cellIdx] ?? 0) > (starts[cellIdx] ?? 0),
+            const starts = normalizeCellStartPositions(
+              targetRow,
+              groupEndIndex === groupStartIndex
+                ? currentCellBlockPositions
+                : undefined,
+              undefined,
+            );
+            const ends = targetRow.cells.map((_, cellIdx) =>
+              findCellSplitEndPosition(
+                targetRow,
+                cellIdx,
+                starts[cellIdx] ?? { blockIndex: 0 },
+                availableForSplitRow,
+                styles,
+                measurer,
+                defaultTabStop,
+                contentWidth,
+                sourceBlock,
+                rowGroups[groupEndIndex]!.startRowIndex,
+              ),
             );
 
+            const canProgress = positionsProgressed(starts, ends);
+
             if (canProgress) {
-              splitEnds = ends;
+              splitEnds = positionsToBlockIndexes(ends);
               isLastRowSplit = true;
 
-              const slicedLastRow = {
-                ...targetRow,
-                cells: targetRow.cells.map((cell, cellIdx) => ({
-                  ...cell,
-                  blocks: cell.blocks.slice(
-                    starts[cellIdx] ?? 0,
-                    ends[cellIdx] ?? 0,
-                  ),
-                })),
-              };
+              const slicedLastRow = buildRowSliceFromPositions(
+                targetRow,
+                starts,
+                ends,
+              );
               const segmentRows = [
                 ...sourceBlock.rows.slice(
                   startRowIndex,
@@ -691,6 +927,7 @@ export function projectBlocksLayout(
                 measurer,
                 defaultTabStop,
               );
+              splitEndPositions = ends;
               groupEndIndex += 1;
               break;
             }
@@ -710,30 +947,46 @@ export function projectBlocksLayout(
         const isSingleRowGroup =
           rowGroups[groupStartIndex]!.endRowIndexExclusive === startRowIndex + 1;
         const isSplitCandidate =
-          isSingleRowGroup &&
-          !targetRow.isHeader &&
-          targetRow.style?.cantSplit !== true &&
-          targetRow.cells.some((cell) => cell.blocks.length > 1);
+          isSingleRowGroup && canSplitTableRow(targetRow);
 
         if (isSplitCandidate) {
-          const starts = currentCellBlockStarts ?? targetRow.cells.map(() => 0);
-          const ends = starts.map((startIdx, cellIdx) =>
-            Math.min(targetRow.cells[cellIdx]!.blocks.length, startIdx + 1),
+          const starts = normalizeCellStartPositions(
+            targetRow,
+            currentCellBlockPositions,
+            undefined,
           );
+          let ends = starts.map((start, cellIdx) =>
+            findCellSplitEndPosition(
+              targetRow,
+              cellIdx,
+              start,
+              getMaxHeightForPage(getCurrentPageIndex()),
+              styles,
+              measurer,
+              defaultTabStop,
+              contentWidth,
+              sourceBlock,
+              startRowIndex,
+            ),
+          );
+          if (!positionsProgressed(starts, ends)) {
+            ends = starts.map((start, cellIdx) => ({
+              blockIndex: Math.min(
+                targetRow.cells[cellIdx]!.blocks.length,
+                start.blockIndex + 1,
+              ),
+            }));
+          }
 
-          splitEnds = ends;
+          splitEnds = positionsToBlockIndexes(ends);
+          splitEndPositions = ends;
           isLastRowSplit = true;
 
-          const slicedLastRow = {
-            ...targetRow,
-            cells: targetRow.cells.map((cell, cellIdx) => ({
-              ...cell,
-              blocks: cell.blocks.slice(
-                starts[cellIdx] ?? 0,
-                ends[cellIdx] ?? 0,
-              ),
-            })),
-          };
+          const slicedLastRow = buildRowSliceFromPositions(
+            targetRow,
+            starts,
+            ends,
+          );
           segmentHeight = getTableSegmentHeight(
             { ...sourceBlock, rows: [slicedLastRow] },
             0,
@@ -776,8 +1029,18 @@ export function projectBlocksLayout(
           startRowIndex,
           endRowIndex,
           repeatedHeaderRowCount,
-          startRowCellBlockStarts: currentCellBlockStarts,
+          startRowCellBlockStarts: positionsToBlockIndexes(
+            currentCellBlockPositions,
+          ),
           endRowCellBlockEnds: splitEnds,
+          startRowCellBlockPositions: hasPartialPositions(
+            currentCellBlockPositions,
+          )
+            ? currentCellBlockPositions
+            : undefined,
+          endRowCellBlockPositions: hasPartialPositions(splitEndPositions)
+            ? splitEndPositions
+            : undefined,
         },
         sourceBlock,
       });
@@ -787,18 +1050,20 @@ export function projectBlocksLayout(
       if (isLastRowSplit) {
         const lastRowIndex = rowGroups[groupEndIndex - 1]!.startRowIndex;
         const lastRow = sourceBlock.rows[lastRowIndex]!;
-        const isFinished = lastRow.cells.every(
-          (cell, cellIdx) => (splitEnds![cellIdx] ?? 0) >= cell.blocks.length,
-        );
+        const ends =
+          splitEndPositions ??
+          splitEnds?.map((blockIndex) => ({ blockIndex })) ??
+          [];
+        const isFinished = positionsFinishedRow(lastRow, ends);
         if (isFinished) {
-          currentCellBlockStarts = undefined;
+          currentCellBlockPositions = undefined;
           groupStartIndex = groupEndIndex;
         } else {
-          currentCellBlockStarts = splitEnds;
+          currentCellBlockPositions = ends;
           groupStartIndex = groupEndIndex - 1;
         }
       } else {
-        currentCellBlockStarts = undefined;
+        currentCellBlockPositions = undefined;
         groupStartIndex = groupEndIndex;
       }
 

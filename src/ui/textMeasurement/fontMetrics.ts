@@ -58,6 +58,15 @@ export function buildCanvasFont(
 
 const normalLineHeightCache = new Map<string, number>();
 
+/**
+ * Clears the cached natural line heights. Required after the metric source for a
+ * family changes (precise font mode toggling, or real metrics arriving), since
+ * the cache is keyed only by the CSS font string, not by which face supplied it.
+ */
+export function clearNormalLineHeightCache(): void {
+  normalLineHeightCache.clear();
+}
+
 function measureNormalLineHeight(
   styles: EditorTextStyle | undefined,
   fallbackFontSize: number,

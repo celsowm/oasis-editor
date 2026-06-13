@@ -42,6 +42,7 @@ export interface FontMetadata {
   readonly xHeight: number;
   readonly italicAngle: number;
   readonly isFixedPitch: boolean;
+  readonly macStyleBold: boolean;
   readonly macStyleItalic: boolean;
   readonly familyClass: number;
 }

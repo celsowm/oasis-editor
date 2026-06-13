@@ -3,6 +3,7 @@ import type {
   EditorLayoutDocument,
   EditorLayoutPage,
   EditorLayoutParagraph,
+  TableCellBlockPosition,
 } from "../core/model.js";
 
 /**
@@ -54,8 +55,46 @@ export function canReuseLayoutBlock(
     previous.tableSegment?.endRowIndex === next.tableSegment?.endRowIndex &&
     previous.tableSegment?.repeatedHeaderRowCount ===
       next.tableSegment?.repeatedHeaderRowCount &&
+    sameNumberArray(
+      previous.tableSegment?.startRowCellBlockStarts,
+      next.tableSegment?.startRowCellBlockStarts,
+    ) &&
+    sameNumberArray(
+      previous.tableSegment?.endRowCellBlockEnds,
+      next.tableSegment?.endRowCellBlockEnds,
+    ) &&
+    sameTableCellBlockPositions(
+      previous.tableSegment?.startRowCellBlockPositions,
+      next.tableSegment?.startRowCellBlockPositions,
+    ) &&
+    sameTableCellBlockPositions(
+      previous.tableSegment?.endRowCellBlockPositions,
+      next.tableSegment?.endRowCellBlockPositions,
+    ) &&
     areLayoutParagraphsEquivalentForRender(previous.layout, next.layout),
   );
+}
+
+function sameNumberArray(
+  left: number[] | undefined,
+  right: number[] | undefined,
+): boolean {
+  if ((left?.length ?? 0) !== (right?.length ?? 0)) return false;
+  return (right ?? []).every((value, index) => left?.[index] === value);
+}
+
+function sameTableCellBlockPositions(
+  left: TableCellBlockPosition[] | undefined,
+  right: TableCellBlockPosition[] | undefined,
+): boolean {
+  if ((left?.length ?? 0) !== (right?.length ?? 0)) return false;
+  return (right ?? []).every((value, index) => {
+    const previous = left?.[index];
+    return (
+      previous?.blockIndex === value.blockIndex &&
+      previous?.offset === value.offset
+    );
+  });
 }
 
 export function canReuseLayoutPage(

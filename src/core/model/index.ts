@@ -92,6 +92,7 @@ export type {
   EditorLayoutLine,
   EditorLayoutParagraph,
   EditorLayoutBlock,
+  TableCellBlockPosition,
   EditorLayoutPage,
   EditorLayoutDocument,
 } from "./types/layout.js";

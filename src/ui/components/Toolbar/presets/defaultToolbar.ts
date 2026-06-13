@@ -31,6 +31,7 @@ const fontFamilyOptions = (api: ToolbarActionApi): SelectOption[] => {
     "Calibri Light, sans-serif",
     "Georgia",
     "Inter",
+    "Open Sans, sans-serif",
     "Times New Roman",
     "Courier New",
   ]);

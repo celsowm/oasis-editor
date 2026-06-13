@@ -1,7 +1,9 @@
 import type {
   EditorLayoutBlock,
+  EditorParagraphNode,
   EditorTableCellNode,
   EditorTableNode,
+  TableCellBlockPosition,
 } from "./model.js";
 
 export interface TableCellLayoutEntry {
@@ -95,6 +97,8 @@ export function buildSegmentTable(
     repeatedHeaderRowCount,
     startRowCellBlockStarts,
     endRowCellBlockEnds,
+    startRowCellBlockPositions,
+    endRowCellBlockPositions,
   } = segment;
 
   const headerRows =
@@ -109,20 +113,30 @@ export function buildSegmentTable(
       const isLastRow = idx === arr.length - 1;
 
       if (
-        (isFirstRow && startRowCellBlockStarts) ||
-        (isLastRow && endRowCellBlockEnds)
+        (isFirstRow &&
+          (startRowCellBlockStarts || startRowCellBlockPositions)) ||
+        (isLastRow && (endRowCellBlockEnds || endRowCellBlockPositions))
       ) {
         const newCells = row.cells.map((cell, cellIdx) => {
-          let blocks = cell.blocks;
+          const start =
+            isFirstRow && startRowCellBlockPositions
+              ? startRowCellBlockPositions[cellIdx]
+              : undefined;
+          const end =
+            isLastRow && endRowCellBlockPositions
+              ? endRowCellBlockPositions[cellIdx]
+              : undefined;
           const startIdx =
-            isFirstRow && startRowCellBlockStarts
+            start?.blockIndex ??
+            (isFirstRow && startRowCellBlockStarts
               ? (startRowCellBlockStarts[cellIdx] ?? 0)
-              : 0;
+              : 0);
           const endIdx =
-            isLastRow && endRowCellBlockEnds
+            end?.blockIndex ??
+            (isLastRow && endRowCellBlockEnds
               ? (endRowCellBlockEnds[cellIdx] ?? cell.blocks.length)
-              : cell.blocks.length;
-          blocks = cell.blocks.slice(startIdx, endIdx);
+              : cell.blocks.length);
+          const blocks = sliceCellBlocks(cell, startIdx, start, endIdx, end);
           return { ...cell, blocks };
         });
         return { ...row, cells: newCells };
@@ -131,4 +145,62 @@ export function buildSegmentTable(
     });
 
   return { ...table, rows: [...headerRows, ...bodyRows] };
+}
+
+function sliceCellBlocks(
+  cell: EditorTableCellNode,
+  startIndex: number,
+  start: TableCellBlockPosition | undefined,
+  endIndex: number,
+  end: TableCellBlockPosition | undefined,
+): EditorParagraphNode[] {
+  const blocks: EditorParagraphNode[] = [];
+  const endExclusive = end?.offset !== undefined ? endIndex + 1 : endIndex;
+  for (let index = startIndex; index < endExclusive; index += 1) {
+    const paragraph = cell.blocks[index];
+    if (!paragraph) continue;
+    const startOffset =
+      start && start.blockIndex === index ? (start.offset ?? 0) : 0;
+    const endOffset =
+      end && end.blockIndex === index
+        ? (end.offset ?? getParagraphTextLength(paragraph))
+        : getParagraphTextLength(paragraph);
+    if (startOffset <= 0 && endOffset >= getParagraphTextLength(paragraph)) {
+      blocks.push(paragraph);
+    } else if (endOffset > startOffset) {
+      blocks.push(sliceParagraph(paragraph, startOffset, endOffset));
+    }
+  }
+  return blocks;
+}
+
+function getParagraphTextLength(paragraph: EditorParagraphNode): number {
+  return paragraph.runs.reduce((sum, run) => sum + run.text.length, 0);
+}
+
+function sliceParagraph(
+  paragraph: EditorParagraphNode,
+  startOffset: number,
+  endOffset: number,
+): EditorParagraphNode {
+  let cursor = 0;
+  const runs = paragraph.runs.flatMap((run) => {
+    const runStart = cursor;
+    const runEnd = runStart + run.text.length;
+    cursor = runEnd;
+    const sliceStart = Math.max(startOffset, runStart);
+    const sliceEnd = Math.min(endOffset, runEnd);
+    if (sliceEnd <= sliceStart) return [];
+    return [
+      {
+        ...run,
+        id: `${run.id}:slice:${sliceStart - runStart}:${sliceEnd - runStart}`,
+        text: run.text.slice(sliceStart - runStart, sliceEnd - runStart),
+      },
+    ];
+  });
+  return {
+    ...paragraph,
+    runs: runs.length > 0 ? runs : [{ id: `${paragraph.id}:empty`, text: "" }],
+  };
 }

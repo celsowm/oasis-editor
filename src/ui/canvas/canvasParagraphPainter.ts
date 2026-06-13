@@ -22,6 +22,7 @@ import {
   isLocalFontFamilyAvailable,
   isPreciseFontModeEnabled,
 } from "../../text/fonts/preciseFontMode.js";
+import { hasPreciseFont } from "../../text/fonts/preciseFontMetrics.js";
 import { createEditorLogger } from "../../utils/logger.js";
 import { getCachedCanvasImage } from "./canvasImageCache.js";
 import { resolveListPrefix } from "./listNumbering.js";
@@ -56,14 +57,15 @@ export function resolveCanvasFontFamily(
   // the bundled face has not registered yet.
   //
   // Precise font mode flips that order when the requested family is actually
-  // installed locally — but only for genuine metric-compatible pairs (metric is
-  // Carlito/Arimo/Tinos, not the Roboto catch-all). The real font shares the
-  // substitute's metrics, so advances still match the measured slots; unmapped
-  // families keep the substitute-first order to avoid layout drift.
+  // installed locally AND its real face has been loaded for measurement
+  // ({@link hasPreciseFont}). Gating on the loaded face keeps paint and
+  // measurement in lockstep: the layout engine measures advances/line heights
+  // from the very same real font, so on-screen glyph advances still match the
+  // measured slots even when the substitute was not metric-compatible (Aptos).
   const preciseFirst =
     isPreciseFontModeEnabled() &&
-    metric.toLowerCase() !== "roboto" &&
-    isLocalFontFamilyAvailable(requested);
+    isLocalFontFamilyAvailable(requested) &&
+    hasPreciseFont(requested);
   const families =
     requested.toLowerCase() === metric.toLowerCase()
       ? [metric]
