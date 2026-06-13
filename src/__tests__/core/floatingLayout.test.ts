@@ -172,7 +172,9 @@ describe("setImageWrapPolygon", () => {
     expect(withPolygon.selection).toEqual(state.selection);
 
     const cleared = setImageWrapPolygon(withPolygon, runId, []);
-    expect(getSelectedImageRun(cleared)!.run.image?.wrapPolygon).toBeUndefined();
+    expect(
+      getSelectedImageRun(cleared)!.run.image?.wrapPolygon,
+    ).toBeUndefined();
   });
 
   it("is a no-op for an unknown run id", () => {

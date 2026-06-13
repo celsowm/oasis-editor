@@ -8,7 +8,7 @@ export const GLYF_FLAGS = {
   REPEAT: 1 << 3,
   X_SAME: 1 << 4,
   Y_SAME: 1 << 5,
-  OVERLAP_SIMPLE: 1 << 6
+  OVERLAP_SIMPLE: 1 << 6,
 };
 
 export const COMPOSITE_FLAGS = {
@@ -17,7 +17,7 @@ export const COMPOSITE_FLAGS = {
   MORE_COMPONENTS: 1 << 5,
   WE_HAVE_AN_XY_SCALE: 1 << 6,
   WE_HAVE_A_TWO_BY_TWO: 1 << 7,
-  WE_HAVE_INSTRUCTIONS: 1 << 8
+  WE_HAVE_INSTRUCTIONS: 1 << 8,
 };
 
 export interface GlyfReconstruction {
@@ -31,24 +31,24 @@ export interface GlyfReconstruction {
 }
 
 export function withSign(flag: number, base: number): number {
-  return (flag & 1) ? base : -base;
+  return flag & 1 ? base : -base;
 }
 
 export function tripletDecode(
   flagsIn: Uint8Array,
   data: Uint8Array,
-  nPoints: number
+  nPoints: number,
 ): { points: { x: number; y: number; onCurve: boolean }[]; consumed: number } {
   let x = 0;
   let y = 0;
   let tripletIndex = 0;
   const points: { x: number; y: number; onCurve: boolean }[] = new Array(
-    nPoints
+    nPoints,
   );
 
   for (let i = 0; i < nPoints; i++) {
     let flag = flagsIn[i];
-    const onCurve = (flag >> 7) === 0;
+    const onCurve = flag >> 7 === 0;
     flag &= 0x7f;
     let nDataBytes = 1;
     if (flag >= 84 && flag < 120) nDataBytes = 2;
@@ -77,7 +77,7 @@ export function tripletDecode(
       dx = withSign(flag, 1 + ((b0 / 12) << 8) + data[tripletIndex]);
       dy = withSign(
         flag >> 1,
-        1 + (((b0 % 12) >> 2) << 8) + data[tripletIndex + 1]
+        1 + (((b0 % 12) >> 2) << 8) + data[tripletIndex + 1],
       );
     } else if (flag < 124) {
       const b2 = data[tripletIndex + 1];
@@ -87,7 +87,7 @@ export function tripletDecode(
       dx = withSign(flag, (data[tripletIndex] << 8) + data[tripletIndex + 1]);
       dy = withSign(
         flag >> 1,
-        (data[tripletIndex + 2] << 8) + data[tripletIndex + 3]
+        (data[tripletIndex + 2] << 8) + data[tripletIndex + 3],
       );
     }
     tripletIndex += nDataBytes;
@@ -103,7 +103,7 @@ export function storePoints(
   points: { x: number; y: number; onCurve: boolean }[],
   nContours: number,
   instructionLength: number,
-  hasOverlap: boolean
+  hasOverlap: boolean,
 ): Uint8Array {
   const nPoints = points.length;
   const xBytes: number[] = [];
@@ -163,7 +163,8 @@ export function storePoints(
     flagsOut.push(repeatCount);
   }
 
-  const totalSize = flagOffset + flagsOut.length + xBytes.length + yBytes.length;
+  const totalSize =
+    flagOffset + flagsOut.length + xBytes.length + yBytes.length;
   const out = new Uint8Array(totalSize);
   let offset = flagOffset;
   for (const f of flagsOut) out[offset++] = f;
@@ -172,7 +173,9 @@ export function storePoints(
   return out;
 }
 
-export function computeBBox(points: { x: number; y: number }[]): [number, number, number, number] {
+export function computeBBox(
+  points: { x: number; y: number }[],
+): [number, number, number, number] {
   if (points.length === 0) {
     return [0, 0, 0, 0];
   }
@@ -190,7 +193,10 @@ export function computeBBox(points: { x: number; y: number }[]): [number, number
   return [xMin, yMin, xMax, yMax];
 }
 
-export function sizeOfComposite(stream: Buf): { size: number; haveInstructions: boolean } {
+export function sizeOfComposite(stream: Buf): {
+  size: number;
+  haveInstructions: boolean;
+} {
   const start = stream.offset;
   let flags = COMPOSITE_FLAGS.MORE_COMPONENTS;
   let haveInstructions = false;
@@ -214,7 +220,7 @@ export function sizeOfComposite(stream: Buf): { size: number; haveInstructions: 
 
 export function storeLoca(
   locaValues: number[],
-  indexFormat: number
+  indexFormat: number,
 ): { data: Uint8Array; checksum: number } {
   const offsetSize = indexFormat ? 4 : 2;
   const buffer = new Uint8Array(locaValues.length * offsetSize);
@@ -231,7 +237,7 @@ export function storeLoca(
 
 export function reconstructGlyfTable(
   transformed: Uint8Array,
-  locaDstLength: number
+  locaDstLength: number,
 ): GlyfReconstruction {
   const stream = new Buf(transformed);
   /* const version = */ stream.readU16();
@@ -289,14 +295,13 @@ export function reconstructGlyfTable(
     if (nContours === 0xffff) {
       // Composite
       const { size: compositeSize, haveInstructions } = sizeOfComposite(
-        new Buf(compositeStream.peekRemaining())
+        new Buf(compositeStream.peekRemaining()),
       );
       let instructionSize = 0;
       if (haveInstructions) {
         instructionSize = read255UShort(glyphStream);
       }
-      const total =
-        12 + compositeSize + instructionSize; // nContours + bbox + composite + instructions
+      const total = 12 + compositeSize + instructionSize; // nContours + bbox + composite + instructions
       const out = new Uint8Array(total);
       let off = 0;
       off = store16(nContours, out, off);
@@ -328,7 +333,7 @@ export function reconstructGlyfTable(
       const { points, consumed } = tripletDecode(
         flagData,
         tripletsView,
-        totalPoints
+        totalPoints,
       );
       glyphStream.offset += consumed;
       const instructionSize = read255UShort(glyphStream);
@@ -339,7 +344,7 @@ export function reconstructGlyfTable(
         points,
         nContours,
         instructionSize,
-        !!(overlapBitmap && (overlapBitmap[i >> 3] & (0x80 >> (i & 7))))
+        !!(overlapBitmap && overlapBitmap[i >> 3] & (0x80 >> (i & 7))),
       );
       const glyphBuf = new Uint8Array(ptsBuf.length);
       glyphBuf.set(ptsBuf);
@@ -411,6 +416,6 @@ export function reconstructGlyfTable(
     locaChecksum: loca.checksum,
     numGlyphs,
     indexFormat,
-    xMins
+    xMins,
   };
 }

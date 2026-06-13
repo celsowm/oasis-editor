@@ -67,39 +67,44 @@ export const DEFAULT_TEXT_STYLE: Required<EditorTextStyle> = asRequired({
 export const EFFECTIVE_TEXT_STYLE_DEFAULTS: Required<EditorTextStyle> =
   DEFAULT_TEXT_STYLE;
 
-export const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> = asRequired({
-  styleId: undefined as unknown as string,
-  align: "left",
-  spacingBefore: 0,
-  spacingAfter: 8,
-  contextualSpacing: false,
-  lineHeight: 1.15,
-  lineRule: null as unknown as "auto" | "exact" | "atLeast" | null,
-  lineGridPitch: null as unknown as number | null,
-  lineGridType: null as unknown as "lines" | "linesAndChars" | "snapToChars" | null,
-  snapToGrid: true,
-  indentLeft: 0,
-  indentRight: 0,
-  indentFirstLine: 0,
-  indentHanging: 0,
-  shading: null as unknown as string | null,
-  borderTop: null as unknown as EditorBorderStyle | null,
-  borderRight: null as unknown as EditorBorderStyle | null,
-  borderBottom: null as unknown as EditorBorderStyle | null,
-  borderLeft: null as unknown as EditorBorderStyle | null,
-  tabs: null as unknown as EditorTabStop[] | null,
-  pageBreakBefore: false,
-  keepWithNext: false,
-  keepLinesTogether: false,
-  widowControl: true,
-  textDirection: null as unknown as
-    | "lrTb"
-    | "tbRl"
-    | "btLr"
-    | "lrTbV"
-    | "tbRlV"
-    | null,
-});
+export const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> =
+  asRequired({
+    styleId: undefined as unknown as string,
+    align: "left",
+    spacingBefore: 0,
+    spacingAfter: 8,
+    contextualSpacing: false,
+    lineHeight: 1.15,
+    lineRule: null as unknown as "auto" | "exact" | "atLeast" | null,
+    lineGridPitch: null as unknown as number | null,
+    lineGridType: null as unknown as
+      | "lines"
+      | "linesAndChars"
+      | "snapToChars"
+      | null,
+    snapToGrid: true,
+    indentLeft: 0,
+    indentRight: 0,
+    indentFirstLine: 0,
+    indentHanging: 0,
+    shading: null as unknown as string | null,
+    borderTop: null as unknown as EditorBorderStyle | null,
+    borderRight: null as unknown as EditorBorderStyle | null,
+    borderBottom: null as unknown as EditorBorderStyle | null,
+    borderLeft: null as unknown as EditorBorderStyle | null,
+    tabs: null as unknown as EditorTabStop[] | null,
+    pageBreakBefore: false,
+    keepWithNext: false,
+    keepLinesTogether: false,
+    widowControl: true,
+    textDirection: null as unknown as
+      | "lrTb"
+      | "tbRl"
+      | "btLr"
+      | "lrTbV"
+      | "tbRlV"
+      | null,
+  });
 
 export const EFFECTIVE_PARAGRAPH_STYLE_DEFAULTS: Required<EditorParagraphStyle> =
   DEFAULT_PARAGRAPH_STYLE;

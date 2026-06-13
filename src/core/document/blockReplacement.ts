@@ -10,7 +10,9 @@ import {
   getActiveSectionIndex,
   getActiveZone,
   getDocumentSections,
+  getParagraphs,
 } from "../model.js";
+import { transformBookmarksAcrossParagraphEdit } from "./bookmarkAnchors.js";
 
 export function blocksContainTables(nodes: EditorBlockNode[]): boolean {
   for (const node of nodes) {
@@ -134,11 +136,23 @@ export function cloneStateWithParagraphs(
   const updatedSections = [...sections];
   updatedSections[sectionIndex] = updatedSection;
 
+  // Keep bookmark anchors pointing at the right text as paragraphs mutate.
+  const bookmarks = state.document.bookmarks;
+  const nextBookmarks =
+    bookmarks && bookmarks.order.length > 0
+      ? transformBookmarksAcrossParagraphEdit(
+          bookmarks,
+          getParagraphs(state),
+          paragraphs,
+        )
+      : bookmarks;
+
   return {
     ...state,
     document: {
       ...state.document,
       sections: updatedSections,
+      ...(nextBookmarks !== bookmarks ? { bookmarks: nextBookmarks } : {}),
     },
     selection,
   };

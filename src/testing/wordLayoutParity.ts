@@ -300,9 +300,7 @@ async function convertDocxToPdfWithWord(
   }
 }
 
-function extractPdfLayout(
-  pdfPath: string,
-): WordPdfLayout {
+function extractPdfLayout(pdfPath: string): WordPdfLayout {
   const result = spawnSync(
     process.execPath,
     [PDF_EXTRACT_SCRIPT_PATH, pdfPath],

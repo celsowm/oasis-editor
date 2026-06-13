@@ -3,10 +3,15 @@
  * registry. The layout model (EditorLayout*) lives in a sibling file so
  * importers and editors can depend on data without pulling rendering types.
  */
-import type { EditorAsset, EditorFootnoteNumberFormat, EditorFootnoteRestart } from "./primitives.js";
+import type {
+  EditorAsset,
+  EditorFootnoteNumberFormat,
+  EditorFootnoteRestart,
+} from "./primitives.js";
 import type { EditorBlockNode } from "./nodes.js";
 import type { EditorFootnote } from "./documentFootnotes.js";
 import type { EditorEndnote } from "./documentEndnotes.js";
+import type { EditorBookmarks } from "./documentBookmarks.js";
 import type { EditorNamedStyle } from "./styles.js";
 
 export interface EditorPageMargins {
@@ -85,6 +90,11 @@ export interface EditorDocument {
   assets?: Record<string, EditorAsset>;
   footnotes?: EditorFootnotes;
   endnotes?: EditorEndnotes;
+  /**
+   * Bookmark registry (`w:bookmarkStart`/`w:bookmarkEnd`). Targets for internal
+   * hyperlinks (`#name`) and cross-references.
+   */
+  bookmarks?: EditorBookmarks;
   metadata?: {
     title?: string;
     [key: string]: unknown;

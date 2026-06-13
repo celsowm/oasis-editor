@@ -6,13 +6,13 @@ import type {
   EditorBorderStyle,
   EditorDocxWidthValue,
   EditorEndnoteReferenceData,
+  EditorFieldChar,
   EditorFieldData,
   EditorFootnoteReferenceData,
   EditorImageFloatingLayout,
   EditorImageRunData,
   EditorParagraphListStyle,
   EditorRevision,
-  EditorTableLayout,
   EditorTableRowHeightRule,
 } from "./primitives.js";
 import type {
@@ -88,6 +88,13 @@ export interface EditorTextRun {
   image?: EditorImageRunData;
   textBox?: EditorTextBoxData;
   field?: EditorFieldData;
+  /**
+   * Preserved complex-field control char (`w:fldChar`). Zero-length marker run;
+   * see {@link EditorFieldChar}.
+   */
+  fieldChar?: EditorFieldChar;
+  /** Preserved field instruction text (`w:instrText`). Zero-length marker run. */
+  fieldInstruction?: string;
   revision?: EditorRevision;
   /**
    * Inline marker of a footnote whose body lives in

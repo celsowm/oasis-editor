@@ -24,6 +24,7 @@ export type {
   EditorImageRunData,
   EditorWrapPolygonPoint,
   EditorFieldData,
+  EditorFieldChar,
   EditorFootnoteReferenceData,
   EditorEndnoteReferenceData,
   EditorRevision,
@@ -60,6 +61,11 @@ export type {
 
 export type { EditorFootnote } from "./types/documentFootnotes.js";
 export type { EditorEndnote } from "./types/documentEndnotes.js";
+export type {
+  EditorBookmark,
+  EditorBookmarkAnchor,
+  EditorBookmarks,
+} from "./types/documentBookmarks.js";
 
 export type {
   EditorPageMargins,
@@ -169,7 +175,10 @@ export type {
 } from "./documentIndex.js";
 
 // ---- Paragraph walker ----
-export { getBlockParagraphs, collectSectionParagraphs } from "./paragraphWalker.js";
+export {
+  getBlockParagraphs,
+  collectSectionParagraphs,
+} from "./paragraphWalker.js";
 
 // ---- Editing zones (LSP via tryGet* variant) ----
 export {

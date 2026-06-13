@@ -18,7 +18,11 @@ import {
   DOCX_IMPLICIT_SINGLE_LINE_HEIGHT,
 } from "./units.js";
 import { parseDocxBoxBorders } from "./borders.js";
-import { stripUndefined, emptyOrUndefined, parseShdFill } from "./styleUtils.js";
+import {
+  stripUndefined,
+  emptyOrUndefined,
+  parseShdFill,
+} from "./styleUtils.js";
 
 export function normalizeImportedParagraphStyle(
   style: EditorParagraphStyle | undefined,

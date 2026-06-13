@@ -10,7 +10,9 @@ export function ptToPx(pt: number): number {
   return pt * PIXELS_PER_POINT;
 }
 
-export function parseSizeToPt(value: number | string | undefined): number | null {
+export function parseSizeToPt(
+  value: number | string | undefined,
+): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }

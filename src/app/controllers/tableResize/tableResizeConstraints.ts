@@ -1,7 +1,15 @@
 import type { EditorTableNode, EditorState } from "../../../core/model.js";
-import { buildTableCellLayout, type TableCellLayoutEntry } from "../../../core/tableLayout.js";
+import {
+  buildTableCellLayout,
+  type TableCellLayoutEntry,
+} from "../../../core/tableLayout.js";
 import { measureParagraphMinContentWidthPx } from "../../../ui/textMeasurement.js";
-import { ptToPx, pxToPt, MIN_TABLE_SIZE_PT, parseSizeToPt } from "./tableResizeUnits.js";
+import {
+  ptToPx,
+  pxToPt,
+  MIN_TABLE_SIZE_PT,
+  parseSizeToPt,
+} from "./tableResizeUnits.js";
 import type { TableGeometry } from "./tableResizeTypes.js";
 
 const CONTENT_MIN_WIDTH_GUARD_PX = 12;

@@ -49,7 +49,8 @@ function parseNameTable(bytes: Uint8Array, fallback: string): string {
     const end = start + length;
     if (end > bytes.byteLength) continue;
     const raw = bytes.subarray(start, end);
-    const value = platform === 0 || platform === 3 ? readUtf16Be(raw) : readAscii(raw);
+    const value =
+      platform === 0 || platform === 3 ? readUtf16Be(raw) : readAscii(raw);
     if (value.trim()) {
       selected = value.trim();
       if (platform === 3) break;
@@ -59,7 +60,11 @@ function parseNameTable(bytes: Uint8Array, fallback: string): string {
   return selected ?? fallback;
 }
 
-function tableSlice(bytes: Uint8Array, offset: number, length: number): Uint8Array {
+function tableSlice(
+  bytes: Uint8Array,
+  offset: number,
+  length: number,
+): Uint8Array {
   return bytes.slice(offset, offset + length);
 }
 
@@ -125,7 +130,9 @@ export class SfntFontProgram implements ParsedFontProgram {
 
   getRawTableData(tag: string): Uint8Array | null {
     const record = this.directory.getTable(tag);
-    return record ? tableSlice(this.sfntBytes, record.offset, record.length) : null;
+    return record
+      ? tableSlice(this.sfntBytes, record.offset, record.length)
+      : null;
   }
 
   naturalLineHeightPx(fontSizePx: number): number {
@@ -169,7 +176,8 @@ export class SfntFontProgram implements ParsedFontProgram {
         ((post[12]! << 24) |
           (post[13]! << 16) |
           (post[14]! << 8) |
-          post[15]!) !== 0;
+          post[15]!) !==
+        0;
     }
 
     let familyClass = 0;

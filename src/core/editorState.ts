@@ -38,6 +38,7 @@ let nextTableId = 1;
 let nextTableRowId = 1;
 let nextTableCellId = 1;
 let nextFootnoteId = 1;
+let nextBookmarkId = 1;
 
 export function resetEditorIds(): void {
   nextDocumentId = 1;
@@ -47,6 +48,13 @@ export function resetEditorIds(): void {
   nextTableRowId = 1;
   nextTableCellId = 1;
   nextFootnoteId = 1;
+  nextBookmarkId = 1;
+}
+
+export function createEditorBookmarkId(): string {
+  const id = `bookmark:${nextBookmarkId}`;
+  nextBookmarkId += 1;
+  return id;
 }
 
 export function createEditorRun(text = ""): EditorTextRun {

@@ -20,7 +20,10 @@ export function parseRelationshipId(element: XmlElement): string | undefined {
   return undefined;
 }
 
-export function parseBlipRels(blip: XmlElement): { embed?: string; link?: string } {
+export function parseBlipRels(blip: XmlElement): {
+  embed?: string;
+  link?: string;
+} {
   const result: { embed?: string; link?: string } = {};
   for (let i = 0; i < blip.attributes.length; i += 1) {
     const attr = blip.attributes[i];

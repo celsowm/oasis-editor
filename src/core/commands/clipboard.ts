@@ -13,9 +13,7 @@ import {
 } from "../model.js";
 import { createEditorParagraphFromRuns } from "../editorState.js";
 import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
-import {
-  paragraphStyleToCssText,
-} from "../html/styleCss.js";
+import { paragraphStyleToCssText } from "../html/styleCss.js";
 import { serializeParagraphRunsToHtml } from "../html/htmlTextSerializer.js";
 import { cloneStyle } from "../textStyle/textStyleMutations.js";
 import {

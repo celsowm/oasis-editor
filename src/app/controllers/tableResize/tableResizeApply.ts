@@ -3,7 +3,12 @@ import {
   setTableRowHeight,
   setTableColumnWidths,
 } from "../../../core/editorCommands.js";
-import { parseSizeToPt, pxToPt, MIN_TABLE_SIZE_PT, ptToPx } from "./tableResizeUnits.js";
+import {
+  parseSizeToPt,
+  pxToPt,
+  MIN_TABLE_SIZE_PT,
+  ptToPx,
+} from "./tableResizeUnits.js";
 import { getTableById } from "./tableResizeGeometry.js";
 import type { TableResizeState } from "./tableResizeTypes.js";
 
@@ -13,9 +18,7 @@ export function applyRowResize(
   delta: number,
 ): EditorState {
   if (resize.type !== "row") return state;
-  const deltaPt = pxToPt(delta);
-  const basePx =
-    resize.initialRowHeightPx ?? ptToPx(MIN_TABLE_SIZE_PT);
+  const basePx = resize.initialRowHeightPx ?? ptToPx(MIN_TABLE_SIZE_PT);
   const minRowHeightPx = Math.max(
     ptToPx(MIN_TABLE_SIZE_PT),
     resize.minRowHeightPx ?? ptToPx(MIN_TABLE_SIZE_PT),
@@ -24,12 +27,7 @@ export function applyRowResize(
     MIN_TABLE_SIZE_PT,
     pxToPt(Math.max(minRowHeightPx, basePx + delta)),
   );
-  return setTableRowHeight(
-    state,
-    resize.tableId,
-    resize.index,
-    newSizePt,
-  );
+  return setTableRowHeight(state, resize.tableId, resize.index, newSizePt);
 }
 
 export function applyColumnResize(
@@ -40,8 +38,7 @@ export function applyColumnResize(
   if (resize.type !== "column") return state;
   const deltaPt = pxToPt(delta);
 
-  const maxColumnIndex =
-    resize.maxColumnIndex ?? resize.index;
+  const maxColumnIndex = resize.maxColumnIndex ?? resize.index;
   const baseWidths = { ...(resize.columnWidthsPt ?? {}) };
   for (let i = 0; i <= maxColumnIndex; i += 1) {
     if (baseWidths[i] === undefined) {
@@ -53,10 +50,7 @@ export function applyColumnResize(
   const oldWidth = baseWidths[resize.index] ?? MIN_TABLE_SIZE_PT;
   const minWidthPt = Math.max(
     MIN_TABLE_SIZE_PT,
-    pxToPt(
-      minColumnWidthsPx[resize.index] ??
-        ptToPx(MIN_TABLE_SIZE_PT),
-    ),
+    pxToPt(minColumnWidthsPx[resize.index] ?? ptToPx(MIN_TABLE_SIZE_PT)),
   );
   if (resize.resizeFromLeftEdge) {
     const initialIndentLeftPt = Math.max(
@@ -76,10 +70,7 @@ export function applyColumnResize(
       (sum, value) => sum + value,
       0,
     );
-    const nextIndentLeftPt = Math.max(
-      0,
-      initialIndentLeftPt + appliedDeltaPt,
-    );
+    const nextIndentLeftPt = Math.max(0, initialIndentLeftPt + appliedDeltaPt);
     return setTableColumnWidths(
       state,
       resize.tableId,

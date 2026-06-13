@@ -30,7 +30,6 @@ function resolveCellVerticalMode(
   return resolveVerticalMode(direction);
 }
 
-
 const DEFAULT_TABLE_ROW_HEIGHT = 14;
 const DEFAULT_CELL_PADDING_TOP_BOTTOM_PX = 0;
 const DEFAULT_CELL_PADDING_LEFT_RIGHT_PX = 7.2; // ~5.4pt
@@ -284,7 +283,10 @@ export function buildCanvasTableLayout(options: {
       let glyphWidth = 0;
       for (const block of cell.blocks) {
         if (block.type !== "paragraph") continue;
-        glyphWidth = Math.max(glyphWidth, estimateStackedColumnWidth(block, state));
+        glyphWidth = Math.max(
+          glyphWidth,
+          estimateStackedColumnWidth(block, state),
+        );
       }
       if (glyphWidth <= 0) continue;
       const padding = resolveCellPadding(cell);
@@ -488,7 +490,9 @@ export function buildCanvasTableLayout(options: {
             : paragraphHeight;
           contentNaturalHeightPx = Math.max(
             contentNaturalHeightPx,
-            hasExplicitRowHeight ? lineThickness : Math.max(lineThickness, flowLength),
+            hasExplicitRowHeight
+              ? lineThickness
+              : Math.max(lineThickness, flowLength),
           );
         } else {
           contentNaturalHeightPx += paragraphHeight;

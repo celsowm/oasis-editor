@@ -375,9 +375,7 @@ describe("canvas hit-test service floating text box", () => {
 
 describe("canvas hit-test service behindDoc + pierce", () => {
   // A paragraph with text, plus a behind-text floating object overlapping it.
-  function createBehindSnapshot(
-    kind: "image" | "textBox",
-  ): {
+  function createBehindSnapshot(kind: "image" | "textBox"): {
     snapshot: CanvasLayoutSnapshot;
     state: ReturnType<typeof createEditorStateFromDocument>;
   } {

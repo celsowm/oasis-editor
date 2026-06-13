@@ -39,6 +39,7 @@ import { parseFootnotesXml } from "./footnotes.js";
 import { parseEndnotesXml } from "./endnotes.js";
 import { renumberFootnotes } from "../../core/footnotes.js";
 import { renumberEndnotes } from "../../core/endnotes.js";
+import { extractBookmarksFromSections } from "./bookmarks.js";
 
 export type DocxImportStage =
   | "opening-docx"
@@ -370,6 +371,11 @@ export async function importDocxToEditorDocument(
 
   remapImportedEndnoteRefsInSections(sections, parsedEndnotes.byDocxId);
 
+  // Bookmarks: extract the transient `__importedBookmark` markers into a
+  // document-level registry and strip the zero-length marker runs. Must run
+  // after section paragraphs exist (anchors reference paragraph ids).
+  const editorBookmarks = extractBookmarksFromSections(sections);
+
   const shouldPreserveSections =
     sections.length > 1 ||
     sections.some(
@@ -401,6 +407,9 @@ export async function importDocxToEditorDocument(
     if (editorEndnotes) {
       result.endnotes = editorEndnotes;
       result = renumberEndnotes(result);
+    }
+    if (editorBookmarks) {
+      result.bookmarks = editorBookmarks;
     }
     return result;
   };

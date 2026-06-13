@@ -13,7 +13,7 @@ export const CHECKSUM_ADJUSTMENT_OFFSET = 8;
 
 export function buildSfnt(
   flavor: number,
-  tableData: Map<number, Uint8Array>
+  tableData: Map<number, Uint8Array>,
 ): { ttf: Uint8Array; tables: Record<string, Uint8Array> } {
   const entries = Array.from(tableData.entries()).sort((a, b) => a[0] - b[0]);
   const numTables = entries.length;
@@ -34,7 +34,7 @@ export function buildSfnt(
       checksum: computeULongSum(data),
       offset,
       length: data.length,
-      data
+      data,
     });
     offset += paddedLen;
   }
@@ -44,7 +44,7 @@ export function buildSfnt(
   off = store32(flavor >>> 0, ttf, off);
   off = store16(numTables, ttf, off);
   let maxPow2 = 0;
-  while ((1 << (maxPow2 + 1)) <= numTables) maxPow2++;
+  while (1 << (maxPow2 + 1) <= numTables) maxPow2++;
   const searchRange = (1 << maxPow2) * 16;
   off = store16(searchRange, ttf, off);
   off = store16(maxPow2, ttf, off);

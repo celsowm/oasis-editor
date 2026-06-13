@@ -389,7 +389,7 @@ export function drawParagraph(
       ctx.font = `${prefixStyle} ${prefixWeight} ${prefixFontSize}px ${prefixFamily}`;
       ctx.fillStyle = prefixStyles.color ?? "#000000";
       const first = line.slots[0];
-      const gap = ctx.measureText(`${listPrefix} `).width;
+      const gap = ctx.measureText(`${listPrefix} `).width;
       const labelInset = getListLabelInset(paragraph, state.document.styles);
       const labelWidth = ctx.measureText(listPrefix).width;
       // Label sits in the hanging area; first-line text begins at the text

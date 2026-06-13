@@ -1,7 +1,4 @@
-import type {
-  EditorParagraphNode,
-  EditorState,
-} from "../../core/model.js";
+import type { EditorParagraphNode, EditorState } from "../../core/model.js";
 import { resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
 import {
   resolveCanvasFontFamily,

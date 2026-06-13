@@ -34,14 +34,19 @@ describe("layout projection", () => {
     function createFixedWidthMeasurer(charWidth: number): ITextMeasurer {
       return {
         composeMeasuredParagraphLines(options: TextMeasureOptions) {
-          const text = options.fragments.map((fragment) => fragment.text).join("");
-          const slots = Array.from({ length: text.length + 1 }, (_, offset) => ({
-            paragraphId: options.paragraph.id,
-            offset,
-            left: offset * charWidth,
-            top: 0,
-            height: 16,
-          }));
+          const text = options.fragments
+            .map((fragment) => fragment.text)
+            .join("");
+          const slots = Array.from(
+            { length: text.length + 1 },
+            (_, offset) => ({
+              paragraphId: options.paragraph.id,
+              offset,
+              left: offset * charWidth,
+              top: 0,
+              height: 16,
+            }),
+          );
           return [
             {
               paragraphId: options.paragraph.id,

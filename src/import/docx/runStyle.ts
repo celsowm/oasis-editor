@@ -20,7 +20,11 @@ import {
 import { resolveThemeFont } from "./themeFonts.js";
 import { resolveThemeColor } from "./themeColors.js";
 import { type DocxImportTheme } from "./theme.js";
-import { stripUndefined, emptyOrUndefined, parseShdFill } from "./styleUtils.js";
+import {
+  stripUndefined,
+  emptyOrUndefined,
+  parseShdFill,
+} from "./styleUtils.js";
 
 export function normalizeImportedRunStyle(
   style: EditorTextStyle | undefined,
@@ -55,29 +59,67 @@ export function normalizeImportedRunStyle(
     bold: hd(style.bold, effective.bold, defaultEffective.bold),
     italic: hd(style.italic, effective.italic, defaultEffective.italic),
     underline: dd(effective.underline, defaultEffective.underline),
-    underlineStyle: dd(effective.underlineStyle, defaultEffective.underlineStyle),
-    underlineColor: dd(effective.underlineColor, defaultEffective.underlineColor),
+    underlineStyle: dd(
+      effective.underlineStyle,
+      defaultEffective.underlineStyle,
+    ),
+    underlineColor: dd(
+      effective.underlineColor,
+      defaultEffective.underlineColor,
+    ),
     strike: hd(style.strike, effective.strike, defaultEffective.strike),
-    doubleStrike: hd(style.doubleStrike, effective.doubleStrike, defaultEffective.doubleStrike),
+    doubleStrike: hd(
+      style.doubleStrike,
+      effective.doubleStrike,
+      defaultEffective.doubleStrike,
+    ),
     superscript: dd(effective.superscript, defaultEffective.superscript),
     subscript: dd(effective.subscript, defaultEffective.subscript),
-    smallCaps: hd(style.smallCaps, effective.smallCaps, defaultEffective.smallCaps),
+    smallCaps: hd(
+      style.smallCaps,
+      effective.smallCaps,
+      defaultEffective.smallCaps,
+    ),
     allCaps: hd(style.allCaps, effective.allCaps, defaultEffective.allCaps),
     hidden: hd(style.hidden, effective.hidden, defaultEffective.hidden),
     noProof: hd(style.noProof, effective.noProof, defaultEffective.noProof),
-    webHidden: hd(style.webHidden, effective.webHidden, defaultEffective.webHidden),
-    specVanish: hd(style.specVanish, effective.specVanish, defaultEffective.specVanish),
+    webHidden: hd(
+      style.webHidden,
+      effective.webHidden,
+      defaultEffective.webHidden,
+    ),
+    specVanish: hd(
+      style.specVanish,
+      effective.specVanish,
+      defaultEffective.specVanish,
+    ),
     textEffect: dd(effective.textEffect, defaultEffective.textEffect),
-    characterScale: dd(effective.characterScale, defaultEffective.characterScale),
-    characterSpacing: dd(effective.characterSpacing, defaultEffective.characterSpacing),
+    characterScale: dd(
+      effective.characterScale,
+      defaultEffective.characterScale,
+    ),
+    characterSpacing: dd(
+      effective.characterSpacing,
+      defaultEffective.characterSpacing,
+    ),
     baselineShift: dd(effective.baselineShift, defaultEffective.baselineShift),
-    kerningThreshold: dd(effective.kerningThreshold, defaultEffective.kerningThreshold),
+    kerningThreshold: dd(
+      effective.kerningThreshold,
+      defaultEffective.kerningThreshold,
+    ),
     ligatures: dd(effective.ligatures, defaultEffective.ligatures),
     numberSpacing: dd(effective.numberSpacing, defaultEffective.numberSpacing),
     numberForm: dd(effective.numberForm, defaultEffective.numberForm),
     stylisticSet: dd(effective.stylisticSet, defaultEffective.stylisticSet),
-    contextualAlternates: dd(effective.contextualAlternates, defaultEffective.contextualAlternates),
-    fontFamily: hd(style.fontFamily, effective.fontFamily, defaultEffective.fontFamily),
+    contextualAlternates: dd(
+      effective.contextualAlternates,
+      defaultEffective.contextualAlternates,
+    ),
+    fontFamily: hd(
+      style.fontFamily,
+      effective.fontFamily,
+      defaultEffective.fontFamily,
+    ),
     fontSize: hd(style.fontSize, effective.fontSize, defaultEffective.fontSize),
     color: dd(effective.color, defaultEffective.color),
     highlight: dd(effective.highlight, defaultEffective.highlight),

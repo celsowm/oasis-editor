@@ -5,7 +5,11 @@ import { serializeRunProperties } from "./runPropertiesXml.js";
 import { serializeRunText } from "./runTextXml.js";
 import { serializeImageRun } from "./imageRunXml.js";
 import { serializeTextBoxRun } from "./textBoxRunXml.js";
-import { serializeFieldRun } from "./fieldRunXml.js";
+import {
+  serializeFieldRun,
+  serializeFieldCharRun,
+  serializeInstrTextRun,
+} from "./fieldRunXml.js";
 import {
   serializeFootnoteRefMarker,
   serializeFootnoteReference,
@@ -53,6 +57,18 @@ export function serializeRun(
     if (result !== null) {
       return result;
     }
+  }
+  if (run.fieldChar) {
+    return serializeFieldCharRun(
+      run.fieldChar,
+      serializeRunProperties(materializedRunStyle),
+    );
+  }
+  if (run.fieldInstruction !== undefined) {
+    return serializeInstrTextRun(
+      run.fieldInstruction,
+      serializeRunProperties(materializedRunStyle),
+    );
   }
   if (run.field) {
     return serializeFieldRun(

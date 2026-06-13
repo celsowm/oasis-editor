@@ -44,8 +44,7 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       undefined,
       undefined,
-      {
-      },
+      {},
     );
     const page = layout.pages[0]!;
 
@@ -76,8 +75,7 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       undefined,
       undefined,
-      {
-      },
+      {},
     );
     const page = layout.pages[0]!;
 
@@ -124,8 +122,7 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       undefined,
       undefined,
-      {
-      },
+      {},
     ).pages[0]!;
 
     const reservedHeight = Math.max(
@@ -154,8 +151,7 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       undefined,
       undefined,
-      {
-      },
+      {},
     );
 
     expect(layout.pages.length).toBeGreaterThanOrEqual(2);
@@ -171,8 +167,7 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       undefined,
       undefined,
-      {
-      },
+      {},
     );
 
     expect(layout.pages[0]!.footnoteReferenceIds).toEqual([
@@ -197,8 +192,7 @@ describe("projectDocumentLayout footnotes", () => {
       undefined,
       undefined,
       undefined,
-      {
-      },
+      {},
     );
 
     expect(layout.pages[0]!.footnoteBlocks).toBeUndefined();

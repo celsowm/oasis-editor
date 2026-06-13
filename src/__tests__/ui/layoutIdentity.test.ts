@@ -28,8 +28,7 @@ describe("layout identity stabilization", () => {
     const stabilize = createLayoutIdentityStabilizer();
 
     const firstLayout = stabilize(
-      projectDocumentLayout(document, undefined, undefined, undefined, {
-      }),
+      projectDocumentLayout(document, undefined, undefined, undefined, {}),
     );
     const firstPage = firstLayout.pages[0]!;
 
@@ -50,8 +49,13 @@ describe("layout identity stabilization", () => {
     };
 
     const secondLayout = stabilize(
-      projectDocumentLayout(updatedDocument, undefined, undefined, undefined, {
-      }),
+      projectDocumentLayout(
+        updatedDocument,
+        undefined,
+        undefined,
+        undefined,
+        {},
+      ),
     );
     const secondPage = secondLayout.pages[0]!;
 

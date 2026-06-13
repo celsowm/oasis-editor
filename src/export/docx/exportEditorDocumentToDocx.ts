@@ -20,6 +20,7 @@ import type {
   SectionReferenceDefinition,
 } from "./docxTypes.js";
 import { serializeBlocksXml } from "./textXml.js";
+import { buildBookmarkExportPlan } from "./bookmarksXml.js";
 import {
   buildFootnoteIdMap,
   buildFootnotesXml,
@@ -483,6 +484,10 @@ export async function exportEditorDocumentToDocx(
   );
   bodyContext.footnoteIdMap = footnoteIdMap;
   bodyContext.endnoteIdMap = endnoteIdMap;
+  // Bookmarks: assign deterministic w:ids once and share the per-paragraph
+  // event map across body and header/footer contexts (paragraph ids are unique).
+  const bookmarkEvents = buildBookmarkExportPlan(document);
+  bodyContext.bookmarkEventsByParagraph = bookmarkEvents;
   const parts: PartDefinition[] = [];
   const sectionReferences: SectionReferenceDefinition[] = sections.map(
     () => ({}),
@@ -513,6 +518,7 @@ export async function exportEditorDocumentToDocx(
       // numeric ids as the body so they resolve to the correct note bodies.
       context.footnoteIdMap = footnoteIdMap;
       context.endnoteIdMap = endnoteIdMap;
+      context.bookmarkEventsByParagraph = bookmarkEvents;
       parts.push({
         kind,
         type,

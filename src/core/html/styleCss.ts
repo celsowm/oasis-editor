@@ -153,9 +153,7 @@ function fontFeatureSettingsToCss(
   return parts.join(", ") || null;
 }
 
-export function paragraphStyleToCssText(
-  style?: EditorParagraphStyle,
-): string {
+export function paragraphStyleToCssText(style?: EditorParagraphStyle): string {
   if (!style) {
     return "";
   }

@@ -93,7 +93,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Main document | `w:sectPr` | `w:body`, `w:pPr` | `w:rsidR`, `w:rsidSect` | Section properties. | Can appear at end of body or inside a paragraph's `pPr` to end a section. | P0 | Partial |
 | Main document | `w:proofErr` | Body or run-level context | `w:type` | Proofing error range marker. | Usually invisible; preserve or ignore for display. | P3 | Not supported |
 | Main document | `w:permStart` / `w:permEnd` | Block/inline contexts | `w:id`, `w:edGrp`, `w:ed` | Editable range permissions. | Important when importing protected forms/templates. | P3 | Not supported |
-| Main document | `w:bookmarkStart` / `w:bookmarkEnd` | Block/inline contexts | `w:id`, `w:name`, `w:colFirst`, `w:colLast` | Bookmark range. | Needed for cross-references, hyperlinks and legal-document anchors. | P1 | Not supported |
+| Main document | `w:bookmarkStart` / `w:bookmarkEnd` | Block/inline contexts | `w:id`, `w:name`, `w:colFirst`, `w:colLast` | Bookmark range. | Needed for cross-references, hyperlinks and legal-document anchors. | P1 | Partial |
 | Main document | `w:moveFromRangeStart` / `w:moveFromRangeEnd` | Block/inline contexts | `w:id`, `w:name`, `w:author`, `w:date` | Tracked moved-from range. | Revision-aware rendering; otherwise preserve/accept-final behavior. | P3 | Not supported |
 | Main document | `w:moveToRangeStart` / `w:moveToRangeEnd` | Block/inline contexts | `w:id`, `w:name`, `w:author`, `w:date` | Tracked moved-to range. | Revision-aware rendering. | P3 | Not supported |
 | Main document | `w:customXml` | Block or run context | `w:element`, `w:uri` | Custom XML wrapper around content. | Unwrap for display; preserve metadata for round-trip and template semantics. | P2 | Not supported |
@@ -294,14 +294,14 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 |---|---|---|---|---|---|---|---|
 | Links/fields | `w:hyperlink` | Paragraph inline context | `r:id`, `w:anchor`, `w:docLocation`, `w:history`, `w:tgtFrame`, `w:tooltip` | Hyperlink wrapper. | External link via relationship or internal bookmark via `anchor`. | P1 | Supported |
 | Links/fields | `w:fldSimple` | Paragraph inline context | `w:instr`, `w:fldLock`, `w:dirty` | Simple field. | Can keep current result or implement evaluator. | P1 | Partial |
-| Links/fields | `w:fldChar` | Run | `w:fldCharType`, `w:fldLock`, `w:dirty` | Complex field delimiter. | Maintain parser stack for begin/separate/end. | P1 | Partial |
-| Links/fields | `w:instrText` | Run | `xml:space` | Complex field instruction text. | Concatenate across runs between field begin and separate/end. | P1 | Partial |
+| Links/fields | `w:fldChar` | Run | `w:fldCharType`, `w:fldLock`, `w:dirty` | Complex field delimiter. | Begin/separate/end preserved as zero-length marker runs (`EditorTextRun.fieldChar`), so REF/PAGEREF/TOC/unknown fields round-trip 1:1 — including TOCs whose begin/end span multiple `w:p`. Complete single-paragraph PAGE/NUMPAGES still collapse to a `field` run. | P1 | Partial |
+| Links/fields | `w:instrText` | Run | `xml:space` | Complex field instruction text. | Preserved verbatim per run (`EditorTextRun.fieldInstruction`); not concatenated/evaluated. | P1 | Partial |
 | Links/fields | `w:ffData` | `w:fldChar` | children | Legacy form field data. | Important for old protected forms. | P2 | Not supported |
 | Links/fields | `w:name` / `w:enabled` / `w:calcOnExit` / `w:entryMacro` / `w:exitMacro` | `w:ffData` | `w:val` | Form field metadata. | Preserve; may map to UI controls. | P3 | Not supported |
 | Links/fields | `w:textInput` | `w:ffData` | `w:type`, `w:default`, `w:maxLength`, `w:format` | Legacy text form field. | Map to editable input if forms are supported. | P2 | Not supported |
 | Links/fields | `w:checkBox` | `w:ffData` | `w:size`, `w:sizeAuto`, `w:default`, `w:checked` | Legacy checkbox field. | Common in forms/templates. | P2 | Not supported |
 | Links/fields | `w:ddList` | `w:ffData` | `w:result`, `w:default`, `w:listEntry` | Legacy dropdown list field. | Map entries and selected index. | P2 | Not supported |
-| Links/fields | `w:bookmarkStart` / `w:bookmarkEnd` | Block/inline contexts | `w:id`, `w:name` | Bookmark range. | Target for REF/PAGEREF/hyperlinks. | P1 | Not supported |
+| Links/fields | `w:bookmarkStart` / `w:bookmarkEnd` | Block/inline contexts | `w:id`, `w:name` | Bookmark range. | Target for REF/PAGEREF/hyperlinks. | P1 | Partial |
 | Links/fields | Common fields | Field instruction stream | PAGE, NUMPAGES, SECTION, DATE, TIME, REF, PAGEREF, HYPERLINK, TOC, INCLUDEPICTURE, SEQ | Dynamic fields. | Minimal renderer can show stored result; pagination export must compute PAGE/NUMPAGES. | P1 | Partial |
 | Links/fields | `w:dirty` | Field elements | `w:val` | Field requires update. | Signal stored result may be stale. | P2 | Not supported |
 | Links/fields | `w:fldLock` | Field elements | `w:val` | Locked field. | Do not update in editor mode unless user requests. | P3 | Not supported |
@@ -603,8 +603,8 @@ This pass fills the practical gaps left after the broad matrix above. It still a
 |---|---|---|---|---|---|---|---|
 | Fields | Complex field state machine | runs between `fldChar` begin/separate/end | `fldCharType` | Field instruction/result boundary model. | Build a stack; nested fields are legal and common in TOC/REF/PAGEREF constructs. | P1 | Partial |
 | Fields | Field result runs | runs after `separate` before `end` | normal run props | Cached display result. | A display-only importer can show cached result and mark as stale if `dirty`. | P1 | Supported |
-| Fields | `TOC` field switches | `w:instrText` stream | `\o`, `\h`, `\z`, `\u`, etc. | Table of contents generation instructions. | Show cached result or regenerate only if you implement heading/outline pagination. | P2 | Not supported |
-| Fields | `REF` / `PAGEREF` / `NOTEREF` | field instruction stream | bookmark name, switches | Cross-reference fields. | Requires bookmark resolution and page-number context for PAGEREF. | P2 | Not supported |
+| Fields | `TOC` field switches | `w:instrText` stream | `\o`, `\h`, `\z`, `\u`, etc. | Table of contents generation instructions. | Instruction + cached result (entry paragraphs, internal hyperlinks) preserved 1:1; regeneration from headings/pagination not implemented. | P2 | Partial |
+| Fields | `REF` / `PAGEREF` / `NOTEREF` | field instruction stream | bookmark name, switches | Cross-reference fields. | Instruction + cached result preserved 1:1 as complex-field marker runs; not resolved/evaluated (no live REF text or PAGEREF page numbers). | P2 | Partial |
 | Fields | `SEQ` | field instruction stream | sequence id/switches | Sequence numbering field. | Common for figures, clauses and legal templates. | P2 | Not supported |
 | Fields | `STYLEREF` | field instruction stream | style name/id | Reference text from nearest style. | Common in headers/footers. | P3 | Not supported |
 | Fields | `INCLUDETEXT` / `INCLUDEPICTURE` | field instruction stream | external target | Include external content. | Security-sensitive; do not auto-fetch without explicit policy. | P3 | Not supported |
@@ -986,6 +986,7 @@ This section condenses the per-table Status column into a high-level capability 
 | Theme color (`a:clrScheme`) | `a:fontScheme` is read; `a:clrScheme` slots (`a:dk1`, `a:lt1`, `a:accent1`...) are not. | Run color through theme is not resolved. |
 | Settings (`w:settings`) | `w:compat` is read for `adjustLineHeightInTable` only; `w:evenAndOddHeaders` is exported; everything else in `settings.xml` is dropped. | No full settings consumer. |
 | Relationship types | `officeDocument`, `theme`, `styles`, `numbering`, `settings`, `fontTable`, `footnotes`, `image`, and header/footer relationships are all resolved. Custom/less-common relationship types are not enumerated. | The relationship code uses pattern matching per part, not a full content-type registry. |
+| Bookmarks | `w:bookmarkStart`/`w:bookmarkEnd` round-trip into a document-level registry (`EditorDocument.bookmarks`): paragraph+offset anchors, deterministic `w:id` remap (preferring the imported hint), hidden (`_`) bookmarks and table `w:colFirst`/`w:colLast` preserved, `_GoBack` dropped — so internal hyperlinks (`#name`) resolve to real targets. Anchors are kept valid across live edits (typing, deleting, splitting, merging, pasting) by an operation-agnostic offset remap at the paragraph-mutation chokepoint (`transformBookmarksAcrossParagraphEdit`). Bookmarks nested *inside* a `w:r` (between its children) are captured on import via per-run offsets and re-emitted at paragraph level. REF/PAGEREF/TOC and unknown complex fields round-trip 1:1 as preserved `w:fldChar`/`w:instrText` marker runs (no evaluation/regeneration). | Field markers are not yet transformed across live edits (round-trip-only); fields are preserved, not evaluated (no REF text resolution, PAGEREF page numbers, or TOC regeneration). |
 
 ### Not supported (silently dropped or not parsed)
 
@@ -995,7 +996,6 @@ This section condenses the per-table Status column into a high-level capability 
 | Comments | `w:comments` part, `w:comment`, `w:commentRangeStart`/`End`, `w:commentReference`, `w15:commentsEx`, `w16cid:commentsIds`, `w:people.xml`. |
 | Endnotes | The `endnotes.xml` part is not consumed; `w:endnoteReference` and `w:endnoteRef` are dropped. |
 | Content controls | `w:sdt` and all subtypes (text, richText, picture, comboBox, dropDownList, date, checkbox, repeatingSection) plus `w:dataBinding` and `w:customXml`. |
-| Bookmarks | `w:bookmarkStart` / `w:bookmarkEnd`. |
 | Legacy forms | `w:ffData`, `w:textInput`, `w:checkBox`, `w:ddList`, `FORMTEXT`/`FORMCHECKBOX`/`FORMDROPDOWN`. |
 | Office Math | `m:oMath`, `m:oMathPara`, all child equations. |
 | Drawings beyond inline/simple VML images | `wp:anchor`, all shape families (`wps:wsp`, `wpg:wgp`, `v:shape`, `v:rect`, `v:oval`, `v:group`, `v:textbox`), `pic:spPr` effects beyond transform/crop, recolor, alpha. |

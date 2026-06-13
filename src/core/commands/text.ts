@@ -28,10 +28,7 @@ import {
   buildParagraphFromRuns,
   createParagraphFromRuns,
 } from "../document/paragraphRuns.js";
-import {
-  cloneRun,
-  cloneParagraph,
-} from "../document/clone.js";
+import { cloneRun, cloneParagraph } from "../document/clone.js";
 import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
 import {
   deleteSelectionRange,

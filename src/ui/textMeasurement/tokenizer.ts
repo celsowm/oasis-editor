@@ -68,14 +68,20 @@ export function buildMeasuredChars(
 
       if (char.char === "\uFFFC" && fragment.image) {
         width = fragment.image.floating ? 0 : fragment.image.width;
-        objectHeight = fragment.image.floating ? undefined : fragment.image.height;
+        objectHeight = fragment.image.floating
+          ? undefined
+          : fragment.image.height;
       } else if (char.char === "\uFFFC" && fragment.textBox) {
         width = fragment.textBox.floating ? 0 : fragment.textBox.width;
         objectHeight = fragment.textBox.floating
           ? undefined
           : fragment.textBox.height;
       } else {
-        width = measureCharacterWidth(char.char, effectiveStyles, fallbackFontSize);
+        width = measureCharacterWidth(
+          char.char,
+          effectiveStyles,
+          fallbackFontSize,
+        );
       }
 
       measured.push({

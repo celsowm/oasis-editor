@@ -1,8 +1,10 @@
 import type { DocContext } from "../docxTypes.js";
 import { escapeXml, OFFICE_REL_NS } from "../xmlUtils.js";
-import { buildDrawingXml, buildSrcRect, buildXfrmAttrs } from "./drawingContainerXml.js";
-import { serializeRunProperties } from "./runPropertiesXml.js";
-
+import {
+  buildDrawingXml,
+  buildSrcRect,
+  buildXfrmAttrs,
+} from "./drawingContainerXml.js";
 export function serializeImageRun(
   runId: string,
   rId: string,

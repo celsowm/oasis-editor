@@ -2,7 +2,10 @@
  * Lightweight byte reader with bounds checks used by the WOFF2 decoder.
  */
 export class Buf {
-  constructor(private readonly data: Uint8Array, public offset = 0) {}
+  constructor(
+    private readonly data: Uint8Array,
+    public offset = 0,
+  ) {}
 
   get length(): number {
     return this.data.length;
@@ -23,7 +26,8 @@ export class Buf {
     if (this.offset + 2 > this.data.length) {
       throw new Error("Unexpected EOF");
     }
-    const v = (this.data[this.offset] << 8) | (this.data[this.offset + 1] & 0xff);
+    const v =
+      (this.data[this.offset] << 8) | (this.data[this.offset + 1] & 0xff);
     this.offset += 2;
     return v;
   }

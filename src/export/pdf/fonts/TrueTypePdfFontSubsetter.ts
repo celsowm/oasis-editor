@@ -210,15 +210,18 @@ export class TrueTypePdfFontSubsetter implements FontSubsetter {
 
     const glyphIds = subsetClosure(font, initialGlyphs);
     const tables = buildSubsetTables(font, glyphIds);
-    const fontFile = buildSfnt(0x00010000, new Map(
-      Object.entries(tables).map(([tag, data]) => [
-        (tag.charCodeAt(0) << 24) |
-          (tag.charCodeAt(1) << 16) |
-          (tag.charCodeAt(2) << 8) |
-          tag.charCodeAt(3),
-        data,
-      ]),
-    )).ttf;
+    const fontFile = buildSfnt(
+      0x00010000,
+      new Map(
+        Object.entries(tables).map(([tag, data]) => [
+          (tag.charCodeAt(0) << 24) |
+            (tag.charCodeAt(1) << 16) |
+            (tag.charCodeAt(2) << 8) |
+            tag.charCodeAt(3),
+          data,
+        ]),
+      ),
+    ).ttf;
     const maxGlyphId = Math.max(0, ...glyphIds);
     const widths: number[] = [];
     const unicode: number[][] = [];

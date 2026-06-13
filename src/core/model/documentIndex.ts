@@ -13,7 +13,10 @@ import type { EditorBlockNode, EditorParagraphNode } from "./types/nodes.js";
 import type { EditorDocument } from "./types/document.js";
 import type { EditorEditingZone } from "./types/selection.js";
 import { getDocumentSections } from "./documentSections.js";
-import { collectSectionParagraphs, getBlockParagraphs } from "./paragraphWalker.js";
+import {
+  collectSectionParagraphs,
+  getBlockParagraphs,
+} from "./paragraphWalker.js";
 
 export interface EditorParagraphLocation {
   sectionIndex: number;
@@ -266,9 +269,7 @@ export function findParagraphTableLocation(
   document: EditorDocument,
   paragraphId: string,
   activeSectionIndex: number = 0,
-):
-  | (TableLocation & { zone: EditorEditingZone })
-  | null {
+): (TableLocation & { zone: EditorEditingZone }) | null {
   const entry = getDocumentParagraphIndex(document).get(paragraphId);
   if (!entry || !entry.tableLocation) return null;
 

@@ -1,7 +1,12 @@
 import type { EditorState } from "../../../core/model.js";
 import { buildTableCellLayout } from "../../../core/tableLayout.js";
 import { getTableById, buildTableGeometries } from "./tableResizeGeometry.js";
-import type { ResizeSide, ResizeHoverInfo, SnapshotCellRect, TableGeometry } from "./tableResizeTypes.js";
+import type {
+  ResizeSide,
+  ResizeHoverInfo,
+  SnapshotCellRect,
+  TableGeometry,
+} from "./tableResizeTypes.js";
 
 const EDGE_THRESHOLD_COLUMN_PX = 4;
 const EDGE_THRESHOLD_ROW_PX = 4;

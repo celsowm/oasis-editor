@@ -11,7 +11,7 @@ export function reconstructTransformedHmtx(
   transformed: Uint8Array,
   numGlyphs: number,
   numHMetrics: number,
-  xMins: Int16Array
+  xMins: Int16Array,
 ): { data: Uint8Array; checksum: number } {
   const buf = new Buf(transformed);
   const flags = buf.readU8();

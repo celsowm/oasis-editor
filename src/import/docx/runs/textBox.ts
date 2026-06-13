@@ -1,6 +1,5 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
 import type {
-  EditorBlockNode,
   EditorImageFloatingLayout,
   EditorTextBoxBody,
   EditorTextBoxData,

@@ -1,14 +1,8 @@
-import type {
-  EditorParagraphNode,
-  EditorTextRun,
-} from "../model.js";
+import type { EditorParagraphNode, EditorTextRun } from "../model.js";
 import { getParagraphLength } from "../model.js";
 import { cloneStyle } from "../textStyle/textStyleMutations.js";
 import { buildParagraphFromRuns } from "./paragraphRunBuild.js";
-import {
-  getStyleAtOffset,
-  sliceRuns,
-} from "./paragraphRunQuery.js";
+import { getStyleAtOffset, sliceRuns } from "./paragraphRunQuery.js";
 
 export function insertRunsAtOffset(
   paragraph: EditorParagraphNode,

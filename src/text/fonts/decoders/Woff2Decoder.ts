@@ -7,7 +7,6 @@ import {
 } from "./Brotli.js";
 import { Buf, readBase128 } from "../vendor/woff2/buffer.js";
 import {
-  TAG,
   TAG_GLYF,
   TAG_LOCA,
   TAG_HMTX,
@@ -48,7 +47,9 @@ const WOFF2_HEADER_SIZE = 48;
 const WOFF2_FLAG_TRANSFORM = 1 << 8;
 const MAX_PLAUSIBLE_COMPRESSION_RATIO = 100;
 
-function resolveDependencies(deps?: Partial<Woff2Dependencies>): ResolvedWoff2Dependencies {
+function resolveDependencies(
+  deps?: Partial<Woff2Dependencies>,
+): ResolvedWoff2Dependencies {
   return {
     decompress: deps?.decompress ?? decompressBrotli,
     decompressSync: deps?.decompressSync ?? decompressBrotliSync,
@@ -88,7 +89,11 @@ interface TransformContext {
   state: TransformState;
 }
 
-type Woff2Transform = (table: Woff2Table, srcData: Uint8Array, context: TransformContext) => void;
+type Woff2Transform = (
+  table: Woff2Table,
+  srcData: Uint8Array,
+  context: TransformContext,
+) => void;
 
 // --- Table directory parsing ------------------------------------------------
 
@@ -120,7 +125,9 @@ function readTableDirectory(buf: Buf, numTables: number): Woff2Table[] {
     if (flags & WOFF2_FLAG_TRANSFORM) {
       transformLength = readBase128(buf);
       if (tag === TAG_LOCA && transformLength !== 0) {
-        throw new Error("Invalid WOFF2: transformed loca must have zero length");
+        throw new Error(
+          "Invalid WOFF2: transformed loca must have zero length",
+        );
       }
     }
 
@@ -130,7 +137,7 @@ function readTableDirectory(buf: Buf, numTables: number): Woff2Table[] {
       srcOffset,
       srcLength: transformLength,
       transformLength,
-      dstLength
+      dstLength,
     });
 
     srcOffset += transformLength;
@@ -204,7 +211,7 @@ function parseHeader(fontData: Uint8Array): Woff2Header {
     compressedOffset,
     compressedLength,
     uncompressedSize,
-    tables
+    tables,
   };
 }
 
@@ -248,7 +255,7 @@ function transformHmtxTable(
     srcData,
     glyfInfo.numGlyphs,
     context.state.numHMetrics,
-    glyfInfo.xMins
+    glyfInfo.xMins,
   );
   context.tableMap.set(TAG_HMTX, hmtx.data);
 }
@@ -266,7 +273,7 @@ function createDefaultTransformers(): Map<number, Woff2Transform> {
 function rebuildFont(
   header: Woff2Header,
   transformed: Uint8Array,
-  deps: ResolvedWoff2Dependencies
+  deps: ResolvedWoff2Dependencies,
 ): { ttf: Uint8Array; tables: Record<string, Uint8Array> } {
   const tableMap = new Map<number, Uint8Array>();
   const tablesByTag = new Map(header.tables.map((t) => [t.tag, t]));
@@ -302,7 +309,9 @@ function rebuildFont(
 
     const transformer = transformers.get(table.tag);
     if (!transformer) {
-      throw new Error(`Unsupported WOFF2 transform for ${tagToString(table.tag)}`);
+      throw new Error(
+        `Unsupported WOFF2 transform for ${tagToString(table.tag)}`,
+      );
     }
     transformer(table, srcData, context);
   }
@@ -314,13 +323,13 @@ function rebuildFont(
 
 export async function decodeWoff2(
   fontData: Uint8Array,
-  deps?: Partial<Woff2Dependencies>
+  deps?: Partial<Woff2Dependencies>,
 ): Promise<Uint8Array> {
   const resolvedDeps = resolveDependencies(deps);
   const header = parseHeader(fontData);
   const compressed = fontData.subarray(
     header.compressedOffset,
-    header.compressedOffset + header.compressedLength
+    header.compressedOffset + header.compressedLength,
   );
 
   const decompressed = await resolvedDeps.decompress(compressed);
@@ -334,13 +343,13 @@ export async function decodeWoff2(
 
 export function decodeWoff2Sync(
   fontData: Uint8Array,
-  deps?: Partial<Woff2Dependencies>
+  deps?: Partial<Woff2Dependencies>,
 ): Uint8Array {
   const resolvedDeps = resolveDependencies(deps);
   const header = parseHeader(fontData);
   const compressed = fontData.subarray(
     header.compressedOffset,
-    header.compressedOffset + header.compressedLength
+    header.compressedOffset + header.compressedLength,
   );
 
   const decompressed = resolvedDeps.decompressSync(compressed);

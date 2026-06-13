@@ -536,7 +536,9 @@ export class OasisPdfWriter {
 
     page.imageResourceNames.add(options.resourceName);
     const bottom = page.height - options.y - options.height;
-    const rotation = Number.isFinite(options.rotation) ? options.rotation ?? 0 : 0;
+    const rotation = Number.isFinite(options.rotation)
+      ? (options.rotation ?? 0)
+      : 0;
     if (rotation === 0) {
       page.commands.push(
         [
@@ -798,9 +800,7 @@ export class OasisPdfWriter {
       state.usedGlyphs.values(),
     );
     const subsetBytes = subset.fontFile;
-    const fontFileObjectId = addObject(
-      asciiHexStreamObjectBody(subsetBytes),
-    );
+    const fontFileObjectId = addObject(asciiHexStreamObjectBody(subsetBytes));
 
     const metadata = state.font.program.metadata;
     const familyClass = metadata.familyClass >> 8 || 0;

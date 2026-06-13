@@ -3,11 +3,7 @@ import { type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorImageRunData } from "../../../core/model.js";
 import { getAttributeValue, findElementDeep } from "../xmlHelpers.js";
 import { type AssetRegistry } from "../assetRegistry.js";
-import {
-  VML_FRACTION_DENOMINATOR,
-  parseCssLengthToPx,
-  parseOptionalInt,
-} from "./units.js";
+import { VML_FRACTION_DENOMINATOR, parseCssLengthToPx } from "./units.js";
 import { parseRelationshipId, loadEmbeddedImage } from "./relationships.js";
 
 function parseVmlStyleDimensions(style: string | null | undefined): {
@@ -99,13 +95,10 @@ export async function parseVmlImage(
     return undefined;
   }
   const shape = findElementDeep(pictElement, "shape");
-  const dimensions = parseVmlStyleDimensions(
-    shape?.getAttribute("style"),
-  );
+  const dimensions = parseVmlStyleDimensions(shape?.getAttribute("style"));
   const crop = parseVmlCrop(imageData);
   const alt =
-    getAttributeValue(imageData, "title") ??
-    imageData.getAttribute("o:title");
+    getAttributeValue(imageData, "title") ?? imageData.getAttribute("o:title");
   const assetSrc = await loadEmbeddedImage(zip, assets, target);
   if (!assetSrc) {
     return undefined;

@@ -10,10 +10,7 @@ import {
 } from "./CanvasTableLayout.js";
 import { drawBorderBox } from "./canvasBorders.js";
 import { drawParagraph } from "./canvasParagraphPainter.js";
-import {
-  drawStackedParagraph,
-  withRotatedBox,
-} from "./verticalText.js";
+import { drawStackedParagraph, withRotatedBox } from "./verticalText.js";
 
 /**
  * Paint a cell whose text flows vertically: rotated (90° cw/ccw) content reuses
@@ -53,22 +50,27 @@ function drawVerticalCell(
     return;
   }
 
-  withRotatedBox(ctx, box, cell.verticalMode as "rotate-cw" | "rotate-ccw", () => {
-    let cursorY = 0;
-    for (const paragraphLayout of cell.paragraphs) {
-      drawParagraph(
-        ctx,
-        paragraphLayout.paragraph,
-        paragraphLayout.lines,
-        state,
-        0,
-        cursorY,
-        onUpdate,
-        pageIndex,
-      );
-      cursorY += Math.max(0, paragraphLayout.height);
-    }
-  });
+  withRotatedBox(
+    ctx,
+    box,
+    cell.verticalMode as "rotate-cw" | "rotate-ccw",
+    () => {
+      let cursorY = 0;
+      for (const paragraphLayout of cell.paragraphs) {
+        drawParagraph(
+          ctx,
+          paragraphLayout.paragraph,
+          paragraphLayout.lines,
+          state,
+          0,
+          cursorY,
+          onUpdate,
+          pageIndex,
+        );
+        cursorY += Math.max(0, paragraphLayout.height);
+      }
+    },
+  );
 }
 
 export function drawTable(

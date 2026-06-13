@@ -21,6 +21,7 @@ import {
 } from "./paragraphStyle.js";
 import { type NumberingMaps, parseParagraphList } from "./numbering.js";
 import { type ImportedRun, parseRunsContainer } from "./runs.js";
+import type { ImportedBookmarkMarker } from "./runs/types.js";
 import { parseTxbxContentBlocks } from "./nestedBlocks.js";
 import { parseDropCapFrame } from "./dropCap.js";
 
@@ -45,6 +46,12 @@ function createImportedParagraph(
   runs.forEach((run, index) => {
     if (run.field) {
       paragraph.runs[index]!.field = { ...run.field };
+    }
+    if (run.fieldChar) {
+      paragraph.runs[index]!.fieldChar = { ...run.fieldChar };
+    }
+    if (run.fieldInstruction !== undefined) {
+      paragraph.runs[index]!.fieldInstruction = run.fieldInstruction;
     }
     if (run.textBox) {
       paragraph.runs[index]!.textBox = run.textBox;
@@ -73,6 +80,15 @@ function createImportedParagraph(
         ...run.endnoteReference,
       };
     }
+    if (run.bookmark) {
+      // Transient marker extracted into the document-level bookmark registry by
+      // the import driver, which knows each paragraph's id + text offset.
+      (
+        paragraph.runs[index]! as EditorTextRun & {
+          __importedBookmark?: ImportedBookmarkMarker;
+        }
+      ).__importedBookmark = { ...run.bookmark };
+    }
   });
   paragraph.style = paragraphStyle ? { ...paragraphStyle } : undefined;
   for (const run of paragraph.runs) {
@@ -92,8 +108,16 @@ function splitRunsAtPageBreaks(runs: ImportedRun[]): {
   const segments: ImportedRun[][] = [[]];
   let hasPageBreak = false;
 
-  const appendRun = (run: ImportedRun, text: string) => {
-    if (text.length === 0 && !run.image && !run.textBox && !run.field) {
+  const appendRun = (run: ImportedRun, text: string): void => {
+    if (
+      text.length === 0 &&
+      !run.image &&
+      !run.textBox &&
+      !run.field &&
+      !run.fieldChar &&
+      run.fieldInstruction === undefined &&
+      !run.bookmark
+    ) {
       return;
     }
     segments[segments.length - 1]!.push({
@@ -127,6 +151,9 @@ function paragraphHasVisibleContent(runs: ImportedRun[]): boolean {
       run.image ||
       run.textBox ||
       run.field ||
+      run.fieldChar ||
+      run.fieldInstruction !== undefined ||
+      run.bookmark ||
       run.text.replace(/\s/g, "").length > 0,
   );
 }

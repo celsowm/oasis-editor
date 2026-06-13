@@ -12,9 +12,17 @@ import {
   resolveMinRowHeightPx,
   resolveMinColumnWidthsPx,
 } from "./tableResize/tableResizeConstraints.js";
-import { applyRowResize, applyColumnResize } from "./tableResize/tableResizeApply.js";
+import {
+  applyRowResize,
+  applyColumnResize,
+} from "./tableResize/tableResizeApply.js";
 import { parseSizeToPt } from "./tableResize/tableResizeUnits.js";
-import { getGuideBounds, clearResizeCursorClasses, setHoverCursorClass, setActiveCursorClass } from "./tableResize/tableResizeDom.js";
+import {
+  getGuideBounds,
+  clearResizeCursorClasses,
+  setHoverCursorClass,
+  setActiveCursorClass,
+} from "./tableResize/tableResizeDom.js";
 
 export { type TableResizeOps } from "./tableResize/tableResizeTypes.js";
 

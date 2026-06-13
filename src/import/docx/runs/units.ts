@@ -21,7 +21,9 @@ export function parseOptionalInt(
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-export function parseCssLengthToPx(value: string | null | undefined): number | null {
+export function parseCssLengthToPx(
+  value: string | null | undefined,
+): number | null {
   const trimmed = value?.trim();
   if (!trimmed) {
     return null;

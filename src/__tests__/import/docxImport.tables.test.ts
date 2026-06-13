@@ -619,12 +619,10 @@ describe("table negative indent", () => {
     expect(table.style?.indentLeft).toBeCloseTo(-42.8, 1);
 
     // Canvas layout: originX=100, indentLeft=-42.8pt → left = 100 - 42.8*(96/72) ≈ 43
-    const { buildCanvasTableLayout } = await import(
-      "../../ui/canvas/CanvasTableLayout.js"
-    );
-    const { createEditorStateFromDocument } = await import(
-      "../../core/editorState.js"
-    );
+    const { buildCanvasTableLayout } =
+      await import("../../ui/canvas/CanvasTableLayout.js");
+    const { createEditorStateFromDocument } =
+      await import("../../core/editorState.js");
     const state = createEditorStateFromDocument(document);
     const layout = buildCanvasTableLayout({
       table,

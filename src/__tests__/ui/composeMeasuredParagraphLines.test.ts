@@ -425,9 +425,7 @@ describe("composeMeasuredParagraphLines inline objects", () => {
 describe("composeMeasuredParagraphLines polygon wrapping", () => {
   // A centered vertical bar (x in [80,120]) spanning the whole paragraph
   // height, expressed as an absolute-coordinate wrap polygon.
-  const centeredBar = (
-    wrap: "tight" | "through",
-  ): FloatingExclusionRect => ({
+  const centeredBar = (wrap: "tight" | "through"): FloatingExclusionRect => ({
     x: 80,
     y: 0,
     width: 40,

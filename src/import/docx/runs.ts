@@ -16,16 +16,52 @@ import { type AssetRegistry } from "./assetRegistry.js";
 import { type DocxImportTheme } from "./theme.js";
 import { parseRunStyle } from "./runStyle.js";
 import type { NumberingMaps } from "./numbering.js";
-import { getRunInstructionText } from "./runs/fields.js";
 import { parseDrawingImage } from "./runs/drawingImage.js";
 import { parseVmlImage } from "./runs/vmlImage.js";
-import { parseTextBox, resolveAlternateContentDrawing } from "./runs/textBox.js";
-import type { ImportedRun, ParseNestedBlocks } from "./runs/types.js";
+import {
+  parseTextBox,
+  resolveAlternateContentDrawing,
+} from "./runs/textBox.js";
+import type {
+  ImportedBookmarkMarker,
+  ImportedRun,
+  ParseNestedBlocks,
+} from "./runs/types.js";
 
 // Re-export public API — keeps paragraph.ts import compatible
 export type { ImportedRun } from "./runs/types.js";
 export type { ParseNestedBlocks } from "./runs/types.js";
 export { getRunInstructionText } from "./runs/fields.js";
+
+/**
+ * Parse a `w:bookmarkStart` / `w:bookmarkEnd` element into a transient marker.
+ * Returns `undefined` when the element has no usable `w:id`.
+ */
+function parseBookmarkMarker(
+  element: XmlElement,
+): ImportedBookmarkMarker | undefined {
+  const docxId = getAttributeValue(element, "id");
+  if (!docxId) {
+    return undefined;
+  }
+  if (element.localName === "bookmarkEnd") {
+    return { kind: "end", docxId };
+  }
+  const name = getAttributeValue(element, "name") ?? undefined;
+  const colFirstRaw = getAttributeValue(element, "colFirst");
+  const colLastRaw = getAttributeValue(element, "colLast");
+  const colFirst =
+    colFirstRaw !== null ? Number.parseInt(colFirstRaw, 10) : undefined;
+  const colLast =
+    colLastRaw !== null ? Number.parseInt(colLastRaw, 10) : undefined;
+  return {
+    kind: "start",
+    docxId,
+    ...(name !== undefined ? { name } : {}),
+    ...(colFirst !== undefined && !Number.isNaN(colFirst) ? { colFirst } : {}),
+    ...(colLast !== undefined && !Number.isNaN(colLast) ? { colLast } : {}),
+  };
+}
 
 export async function parseRunElement(
   runElement: XmlElement,
@@ -37,10 +73,20 @@ export async function parseRunElement(
   text: string;
   image?: EditorImageRunData;
   textBox?: EditorTextBoxData;
+  innerBookmarks?: Array<{ offset: number; marker: ImportedBookmarkMarker }>;
 }> {
   const textParts: string[] = [];
   let image: EditorImageRunData | undefined;
   let textBox: EditorTextBoxData | undefined;
+  let textLength = 0;
+  const innerBookmarks: Array<{
+    offset: number;
+    marker: ImportedBookmarkMarker;
+  }> = [];
+  const pushText = (value: string): void => {
+    textParts.push(value);
+    textLength += value.length;
+  };
 
   const children = runElement.childNodes;
   for (let index = 0; index < children.length; index += 1) {
@@ -52,15 +98,15 @@ export async function parseRunElement(
     const element = node as XmlElement;
     if (element.namespaceURI === WORD_NS) {
       if (element.localName === "t") {
-        textParts.push(element.textContent ?? "");
+        pushText(element.textContent ?? "");
       } else if (element.localName === "tab") {
-        textParts.push("\t");
+        pushText("\t");
       } else if (element.localName === "noBreakHyphen") {
-        textParts.push("\u2011");
+        pushText("\u2011");
       } else if (element.localName === "softHyphen") {
-        textParts.push("\u00AD");
+        pushText("\u00AD");
       } else if (element.localName === "br") {
-        textParts.push(
+        pushText(
           getAttributeValue(element, "type") === "page"
             ? PAGE_BREAK_MARKER
             : "\n",
@@ -68,9 +114,19 @@ export async function parseRunElement(
       } else if (element.localName === "lastRenderedPageBreak") {
         continue;
       } else if (
-        element.localName === "proofErr" ||
         element.localName === "bookmarkStart" ||
-        element.localName === "bookmarkEnd" ||
+        element.localName === "bookmarkEnd"
+      ) {
+        // A bookmark marker nested *inside* a run, between its children. Capture
+        // it with its intra-run character offset so the container can splice it
+        // back into the run stream at the right boundary.
+        const marker = parseBookmarkMarker(element);
+        if (marker) {
+          innerBookmarks.push({ offset: textLength, marker });
+        }
+        continue;
+      } else if (
+        element.localName === "proofErr" ||
         element.localName === "commentRangeStart" ||
         element.localName === "commentRangeEnd" ||
         element.localName === "commentReference" ||
@@ -79,23 +135,28 @@ export async function parseRunElement(
       ) {
         continue;
       } else if (element.localName === "cr") {
-        textParts.push("\n");
+        pushText("\n");
       } else if (element.localName === "drawing") {
-        const drawingResult = await parseDrawingImage(element, zip, relsMap, assets);
+        const drawingResult = await parseDrawingImage(
+          element,
+          zip,
+          relsMap,
+          assets,
+        );
         if (drawingResult.image) {
-          textParts.push(drawingResult.text);
+          pushText(drawingResult.text);
           image = drawingResult.image;
         } else {
           const parsedTextBox = await parseTextBox(element, parseNestedBlocks);
           if (parsedTextBox) {
-            textParts.push("\uFFFC");
+            pushText("\uFFFC");
             textBox = parsedTextBox;
           }
         }
       } else if (element.localName === "pict") {
         const vmlResult = await parseVmlImage(element, zip, relsMap, assets);
         if (vmlResult) {
-          textParts.push("\uFFFC");
+          pushText("\uFFFC");
           image = vmlResult;
         }
       }
@@ -104,7 +165,7 @@ export async function parseRunElement(
       if (drawing) {
         const parsedTextBox = await parseTextBox(drawing, parseNestedBlocks);
         if (parsedTextBox) {
-          textParts.push("\uFFFC");
+          pushText("\uFFFC");
           textBox = parsedTextBox;
         }
       }
@@ -115,6 +176,7 @@ export async function parseRunElement(
     text: textParts.join(""),
     image,
     ...(textBox ? { textBox } : {}),
+    ...(innerBookmarks.length > 0 ? { innerBookmarks } : {}),
   };
 }
 
@@ -129,34 +191,100 @@ export async function parseRunsContainer(
   parseNestedBlocks?: ParseNestedBlocks,
 ): Promise<ImportedRun[]> {
   const runs: ImportedRun[] = [];
-  let activeField: {
+  // Complex fields (`w:fldChar` begin/separate/end + `w:instrText`) are
+  // preserved structurally as zero-length marker runs that ride the run stream,
+  // so arbitrary fields — including TOCs whose begin/end span multiple `w:p` —
+  // round-trip 1:1 without cross-paragraph pairing. As a backward-compatible
+  // optimization, a *complete, single-paragraph* PAGE/NUMPAGES field collapses
+  // to one `field` run (the representation the layout/paginator understands).
+  const fieldStack: Array<{
+    beginIndex: number;
     instruction: string;
-    resultRuns: ImportedRun[];
-    collectingResult: boolean;
-    fallbackStyles?: EditorTextStyle;
-  } | null = null;
+    beginStyles?: EditorTextStyle;
+  }> = [];
 
-  const flushActiveField = () => {
-    if (!activeField) {
-      return;
-    }
-    const instruction = activeField.instruction;
-    const fieldType = /\bNUMPAGES\b/i.test(instruction)
+  const collapseFieldIfSimple = (entry: {
+    beginIndex: number;
+    instruction: string;
+    beginStyles?: EditorTextStyle;
+  }): void => {
+    const fieldType = /\bNUMPAGES\b/i.test(entry.instruction)
       ? "NUMPAGES"
-      : /\bPAGE\b/i.test(instruction)
+      : /\bPAGE\b/i.test(entry.instruction)
         ? "PAGE"
         : null;
-    const displayText =
-      activeField.resultRuns.map((run) => run.text).join("") || "1";
+    if (!fieldType) {
+      return; // REF/PAGEREF/TOC/unknown: keep the preserved marker structure.
+    }
+    const span = runs.slice(entry.beginIndex); // begin..end inclusive
+    if (span.some((run) => run.bookmark)) {
+      return; // never swallow a bookmark marker into a collapsed field.
+    }
+    const resultRuns = span.filter(
+      (run) => !run.fieldChar && run.fieldInstruction === undefined,
+    );
+    const displayText = resultRuns.map((run) => run.text).join("") || "1";
     const styles =
-      activeField.resultRuns.find((run) => run.styles)?.styles ??
-      activeField.fallbackStyles;
+      resultRuns.find((run) => run.styles)?.styles ?? entry.beginStyles;
+    runs.length = entry.beginIndex;
     runs.push({
       text: displayText,
-      styles,
-      ...(fieldType ? { field: { type: fieldType } } : {}),
+      ...(styles ? { styles } : {}),
+      field: { type: fieldType },
     });
-    activeField = null;
+  };
+
+  const onFldChar = (el: XmlElement, runStyles?: EditorTextStyle): void => {
+    const fldCharType = getAttributeValue(el, "fldCharType");
+    const lock = getAttributeValue(el, "fldLock");
+    const dirty = getAttributeValue(el, "dirty");
+    const fieldLock = lock === "true" || lock === "1";
+    const isDirty = dirty === "true" || dirty === "1";
+    if (fldCharType === "begin") {
+      runs.push({
+        text: "",
+        fieldChar: {
+          kind: "begin",
+          ...(fieldLock ? { fieldLock: true } : {}),
+          ...(isDirty ? { dirty: true } : {}),
+        },
+        ...(runStyles ? { styles: runStyles } : {}),
+      });
+      fieldStack.push({
+        beginIndex: runs.length - 1,
+        instruction: "",
+        ...(runStyles ? { beginStyles: runStyles } : {}),
+      });
+    } else if (fldCharType === "separate") {
+      runs.push({
+        text: "",
+        fieldChar: { kind: "separate" },
+        ...(runStyles ? { styles: runStyles } : {}),
+      });
+    } else if (fldCharType === "end") {
+      runs.push({
+        text: "",
+        fieldChar: { kind: "end" },
+        ...(runStyles ? { styles: runStyles } : {}),
+      });
+      const entry = fieldStack.pop();
+      if (entry) {
+        collapseFieldIfSimple(entry);
+      }
+    }
+  };
+
+  const onInstrText = (el: XmlElement, runStyles?: EditorTextStyle): void => {
+    const text = el.textContent ?? "";
+    runs.push({
+      text: "",
+      fieldInstruction: text,
+      ...(runStyles ? { styles: runStyles } : {}),
+    });
+    const top = fieldStack[fieldStack.length - 1];
+    if (top) {
+      top.instruction += text;
+    }
   };
 
   for (let index = 0; index < container.childNodes.length; index += 1) {
@@ -170,13 +298,29 @@ export async function parseRunsContainer(
       continue;
     }
 
+    if (
+      element.localName === "bookmarkStart" ||
+      element.localName === "bookmarkEnd"
+    ) {
+      const marker = parseBookmarkMarker(element);
+      if (!marker) {
+        continue;
+      }
+      runs.push({ text: "", bookmark: marker });
+      continue;
+    }
+
     if (element.localName === "r") {
-      const fieldChars = getChildrenByTagNameNS(element, WORD_NS, "fldChar");
-      if (fieldChars.length > 0) {
-        const runStyles = parseRunStyle(
-          getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
-          theme,
-        );
+      const runStyles = parseRunStyle(
+        getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
+        theme,
+      );
+
+      // Field-control run: emit preserved fldChar / instrText markers in order.
+      const hasFieldControl =
+        getChildrenByTagNameNS(element, WORD_NS, "fldChar").length > 0 ||
+        getChildrenByTagNameNS(element, WORD_NS, "instrText").length > 0;
+      if (hasFieldControl) {
         for (let child = 0; child < element.childNodes.length; child += 1) {
           const childNode = element.childNodes[child];
           if (childNode?.nodeType !== childNode.ELEMENT_NODE) {
@@ -187,37 +331,12 @@ export async function parseRunsContainer(
             continue;
           }
           if (childElement.localName === "fldChar") {
-            const fldCharType = getAttributeValue(childElement, "fldCharType");
-            if (fldCharType === "begin") {
-              flushActiveField();
-              activeField = {
-                instruction: "",
-                resultRuns: [],
-                collectingResult: false,
-                ...(runStyles ? { fallbackStyles: runStyles } : {}),
-              };
-            } else if (fldCharType === "separate") {
-              if (activeField) {
-                activeField.collectingResult = true;
-              }
-            } else if (fldCharType === "end") {
-              flushActiveField();
-            }
+            onFldChar(childElement, runStyles);
           } else if (childElement.localName === "instrText") {
-            if (activeField && !activeField.collectingResult) {
-              activeField.instruction += childElement.textContent ?? "";
-            }
+            onInstrText(childElement, runStyles);
           }
         }
         continue;
-      }
-
-      if (activeField) {
-        const instructionText = getRunInstructionText(element);
-        if (instructionText) {
-          activeField.instruction += instructionText;
-          continue;
-        }
       }
 
       const footnoteRefEl = getFirstChildByTagNameNS(
@@ -234,25 +353,17 @@ export async function parseRunsContainer(
           footnoteRefEl,
           "customMarkFollows",
         );
-        let styles = parseRunStyle(
-          getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
-          theme,
-        );
+        let styles = runStyles;
         (styles ??= {}).styleId ??= "footnoteReference";
         if (styles.superscript === undefined) styles.superscript = true;
-        const importedRun: ImportedRun = {
+        runs.push({
           text: "?",
           styles,
           footnoteReference: {
             docxId,
             ...(customMark ? { customMark } : {}),
           },
-        };
-        if (activeField?.collectingResult) {
-          activeField.resultRuns.push(importedRun);
-        } else {
-          runs.push(importedRun);
-        }
+        });
         continue;
       }
 
@@ -266,60 +377,67 @@ export async function parseRunsContainer(
         if (!docxId) {
           continue;
         }
-        const customMark = getAttributeValue(
-          endnoteRefEl,
-          "customMarkFollows",
-        );
-        let styles = parseRunStyle(
-          getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
-          theme,
-        );
+        const customMark = getAttributeValue(endnoteRefEl, "customMarkFollows");
+        let styles = runStyles;
         (styles ??= {}).styleId ??= "endnoteReference";
         if (styles.superscript === undefined) styles.superscript = true;
-        const importedRun: ImportedRun = {
+        runs.push({
           text: "?",
           styles,
           endnoteReference: {
             docxId,
             ...(customMark ? { customMark } : {}),
           },
-        };
-        if (activeField?.collectingResult) {
-          activeField.resultRuns.push(importedRun);
-        } else {
-          runs.push(importedRun);
-        }
+        });
         continue;
       }
 
-      const { text, image, textBox } = await parseRunElement(
+      const { text, image, textBox, innerBookmarks } = await parseRunElement(
         element,
         zip,
         relsMap,
         assets,
         parseNestedBlocks,
       );
-      if (text.length === 0) {
-        continue;
-      }
 
-      let styles = parseRunStyle(
-        getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
-        theme,
-      );
+      let styles = runStyles;
       if (inheritedLink) {
         (styles ??= {}).link = inheritedLink;
       }
-      const importedRun: ImportedRun = {
+
+      // Bookmarks nested between this run's children split it into segments.
+      // (Only plain-text runs are split; image/textbox runs are pathological
+      // here and fall through to emit their markers around the whole run.)
+      if (innerBookmarks && innerBookmarks.length > 0 && !image && !textBox) {
+        let cursor = 0;
+        for (const inner of innerBookmarks) {
+          const segment = text.slice(cursor, inner.offset);
+          if (segment.length > 0) {
+            runs.push({ text: segment, ...(styles ? { styles } : {}) });
+          }
+          runs.push({ text: "", bookmark: inner.marker });
+          cursor = inner.offset;
+        }
+        const tail = text.slice(cursor);
+        if (tail.length > 0) {
+          runs.push({ text: tail, ...(styles ? { styles } : {}) });
+        }
+        continue;
+      }
+
+      if (text.length === 0 && !image && !textBox) {
+        continue;
+      }
+      runs.push({
         text,
         ...(image ? { image } : {}),
         ...(textBox ? { textBox } : {}),
         ...(styles ? { styles } : {}),
-      };
-      if (activeField?.collectingResult) {
-        activeField.resultRuns.push(importedRun);
-      } else {
-        runs.push(importedRun);
+      });
+      if (innerBookmarks) {
+        for (const inner of innerBookmarks) {
+          runs.push({ text: "", bookmark: inner.marker });
+        }
       }
       continue;
     }
@@ -345,13 +463,23 @@ export async function parseRunsContainer(
         inheritedLink,
         parseNestedBlocks,
       );
-      const displayText = fieldRuns.map((run) => run.text).join("") || "1";
-      const styles = fieldRuns.find((run) => run.styles)?.styles;
-      runs.push({
-        text: displayText,
-        styles,
-        ...(fieldType ? { field: { type: fieldType } } : {}),
-      });
+      if (fieldType) {
+        const displayText = fieldRuns.map((run) => run.text).join("") || "1";
+        const styles = fieldRuns.find((run) => run.styles)?.styles;
+        runs.push({
+          text: displayText,
+          styles,
+          field: { type: fieldType },
+        });
+      } else {
+        // Preserve other simple fields (REF/PAGEREF/etc.) faithfully by
+        // promoting them to the equivalent complex-field marker structure.
+        runs.push({ text: "", fieldChar: { kind: "begin" } });
+        runs.push({ text: "", fieldInstruction: instr });
+        runs.push({ text: "", fieldChar: { kind: "separate" } });
+        runs.push(...fieldRuns);
+        runs.push({ text: "", fieldChar: { kind: "end" } });
+      }
       continue;
     }
 
@@ -384,8 +512,6 @@ export async function parseRunsContainer(
       );
     }
   }
-
-  flushActiveField();
 
   return runs;
 }

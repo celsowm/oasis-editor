@@ -7,14 +7,8 @@ import {
   createEditorParagraphFromRuns,
   createEditorStyledRun,
 } from "../editorState.js";
-import {
-  cloneParagraph,
-  cloneParagraphList,
-} from "./clone.js";
-import {
-  cloneStyle,
-  stylesEqual,
-} from "../textStyle/textStyleMutations.js";
+import { cloneParagraph, cloneParagraphList } from "./clone.js";
+import { cloneStyle, stylesEqual } from "../textStyle/textStyleMutations.js";
 
 function isObjectRun(run: EditorTextRun): boolean {
   return Boolean(run.image || run.textBox);

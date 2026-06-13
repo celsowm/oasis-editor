@@ -1,5 +1,4 @@
 import type {
-  EditorBlockNode,
   EditorNamedStyle,
   EditorTextBoxData,
   EditorTextRun,
@@ -8,7 +7,6 @@ import type { DocContext } from "../docxTypes.js";
 import { escapeXml } from "../xmlUtils.js";
 import { EMU_PER_PX, EMU_PER_PT, OOXML_ROTATION_UNITS } from "./constants.js";
 import { buildDrawingContainerXml } from "./drawingContainerXml.js";
-import { serializeRunProperties } from "./runPropertiesXml.js";
 import { serializeBlocksXml } from "./blocksXml.js";
 
 function buildTextBoxGraphicXml(

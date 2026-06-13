@@ -49,9 +49,9 @@ describe("TrueTypeFont", () => {
     ]) {
       const font = loadFont(file);
       expect(font.unitsPerEm).toBeGreaterThan(0);
-      expect(font.advanceWidthForCodePoint("A".codePointAt(0)!)).toBeGreaterThan(
-        0,
-      );
+      expect(
+        font.advanceWidthForCodePoint("A".codePointAt(0)!),
+      ).toBeGreaterThan(0);
     }
   });
 
@@ -71,9 +71,9 @@ describe("TrueTypeFont", () => {
       const font = loadFont(fileName);
       expect(font.unitsPerEm).toBeGreaterThan(0);
       expect(font.hasGlyphForCodePoint("A".codePointAt(0)!)).toBe(true);
-      expect(font.advanceWidthForCodePoint("A".codePointAt(0)!)).toBeGreaterThan(
-        0,
-      );
+      expect(
+        font.advanceWidthForCodePoint("A".codePointAt(0)!),
+      ).toBeGreaterThan(0);
     }
   });
 

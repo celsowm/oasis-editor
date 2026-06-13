@@ -136,6 +136,22 @@ export interface EditorFieldData {
   type: "PAGE" | "NUMPAGES";
 }
 
+/**
+ * A preserved complex-field control character (`w:fldChar`). Carried on a
+ * zero-length run so that fields the editor does not evaluate (REF, PAGEREF,
+ * TOC, and unknown fields) round-trip 1:1. The instruction text between a
+ * `begin` and `separate` is carried on sibling runs via
+ * {@link EditorTextRun.fieldInstruction}. A field may span multiple paragraphs
+ * (e.g. a TOC); document order reconstructs the structure on export.
+ */
+export interface EditorFieldChar {
+  kind: "begin" | "separate" | "end";
+  /** `w:fldChar/@w:fldLock`. */
+  fieldLock?: boolean;
+  /** `w:fldChar/@w:dirty`. */
+  dirty?: boolean;
+}
+
 export interface EditorFootnoteReferenceData {
   footnoteId: string;
   customMark?: string;

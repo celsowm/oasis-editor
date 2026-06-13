@@ -54,10 +54,7 @@ function estimateTextBoxAutoFitHeight(
     bottom: textBox.body?.paddingBottom ?? 0,
   };
 
-  const innerWidth = Math.max(
-    1,
-    textBox.width - padding.left - padding.right,
-  );
+  const innerWidth = Math.max(1, textBox.width - padding.left - padding.right);
 
   const contentHeight = textBox.blocks.reduce((sum, block) => {
     if (block.type === "paragraph") {
@@ -93,10 +90,7 @@ function estimateTextBoxAutoFitHeight(
   return Math.max(
     1,
     Math.ceil(
-      contentHeight +
-        padding.top +
-        padding.bottom +
-        TEXT_BOX_AUTOFIT_SAFETY_PX,
+      contentHeight + padding.top + padding.bottom + TEXT_BOX_AUTOFIT_SAFETY_PX,
     ),
   );
 }
@@ -319,12 +313,13 @@ export function projectBlocksLayout(
         const hasMeasuredHeight =
           measuredHeights?.[segmentId] !== undefined ||
           measuredHeights?.[sourceBlock.id] !== undefined;
-        const measuredHeight = collapseWithPrevious && hasMeasuredHeight
-          ? Math.max(
-              0,
-              rawMeasuredHeight - (paragraphStyle.spacingBefore ?? 0),
-            )
-          : rawMeasuredHeight;
+        const measuredHeight =
+          collapseWithPrevious && hasMeasuredHeight
+            ? Math.max(
+                0,
+                rawMeasuredHeight - (paragraphStyle.spacingBefore ?? 0),
+              )
+            : rawMeasuredHeight;
         currentBlocks.push({
           blockId: segmentId,
           sourceBlockId: sourceBlock.id,

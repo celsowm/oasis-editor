@@ -1,9 +1,5 @@
 import type { EditorTextStyle } from "../../../core/model.js";
-import {
-  escapeXml,
-  normalizeDocxColor,
-  toHalfPoints,
-} from "../xmlUtils.js";
+import { escapeXml, normalizeDocxColor, toHalfPoints } from "../xmlUtils.js";
 import {
   DOCX_HIGHLIGHT_COLORS,
   DOCX_HIGHLIGHT_HEX_ALIASES,

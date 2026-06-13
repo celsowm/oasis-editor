@@ -11,7 +11,9 @@ export async function parseEmbeddedFont(
   return SfntFontProgram.parse(sfntBytes);
 }
 
-export function parseEmbeddedFontSync(sourceBytes: Uint8Array): SfntFontProgram {
+export function parseEmbeddedFontSync(
+  sourceBytes: Uint8Array,
+): SfntFontProgram {
   const sfntBytes = defaultFontDecoderRegistry.decodeSync(sourceBytes);
   return SfntFontProgram.parse(sfntBytes);
 }

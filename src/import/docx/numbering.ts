@@ -22,7 +22,10 @@ export interface NumberingMaps {
 export function parseNumbering(numberingXml: string | null): NumberingMaps {
   const abstractKinds = new Map<string, EditorParagraphListStyle["kind"]>();
   const numKinds = new Map<string, EditorParagraphListStyle["kind"]>();
-  const abstractIndents = new Map<string, { left?: number; hanging?: number }>();
+  const abstractIndents = new Map<
+    string,
+    { left?: number; hanging?: number }
+  >();
   const abstractSuffixes = new Map<
     string,
     EditorParagraphListStyle["suffix"]
@@ -71,7 +74,10 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
         );
         // Keep a level-0 fallback keyed by just abstractId for backward compat.
         if (ilvl === "0") {
-          abstractKinds.set(abstractId, format === "bullet" ? "bullet" : "ordered");
+          abstractKinds.set(
+            abstractId,
+            format === "bullet" ? "bullet" : "ordered",
+          );
         }
       }
 
@@ -90,7 +96,8 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
           getAttributeValue(ind, "left") ?? getAttributeValue(ind, "start");
         const hangingRaw = getAttributeValue(ind, "hanging");
         const left = leftRaw != null ? twipsToPx(leftRaw, 0) : undefined;
-        const hanging = hangingRaw != null ? twipsToPx(hangingRaw, 0) : undefined;
+        const hanging =
+          hangingRaw != null ? twipsToPx(hangingRaw, 0) : undefined;
         if (left !== undefined || hanging !== undefined) {
           abstractIndents.set(`${abstractId}:${ilvl}`, { left, hanging });
         }
@@ -128,7 +135,12 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
 export function parseParagraphList(
   paragraphProperties: XmlElement | null,
   numberingMaps: NumberingMaps,
-): { list: EditorParagraphListStyle; indent?: { left?: number; hanging?: number } } | undefined {
+):
+  | {
+      list: EditorParagraphListStyle;
+      indent?: { left?: number; hanging?: number };
+    }
+  | undefined {
   if (!paragraphProperties) {
     return undefined;
   }
@@ -146,10 +158,11 @@ export function parseParagraphList(
     return undefined;
   }
 
-  const ilvlValue = getAttributeValue(
-    getFirstChildByTagNameNS(numPr, WORD_NS, "ilvl"),
-    "val",
-  ) ?? "0";
+  const ilvlValue =
+    getAttributeValue(
+      getFirstChildByTagNameNS(numPr, WORD_NS, "ilvl"),
+      "val",
+    ) ?? "0";
   const level = Number(ilvlValue);
 
   const abstractId = numberingMaps.numToAbstractId.get(numId);

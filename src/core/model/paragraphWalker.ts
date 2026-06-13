@@ -5,7 +5,6 @@
  */
 import type { EditorBlockNode, EditorParagraphNode } from "./types/nodes.js";
 import type { EditorSection } from "./types/document.js";
-import type { EditorDocument } from "./types/document.js";
 
 export function getBlockParagraphs(
   block: EditorBlockNode,

@@ -6,6 +6,7 @@ import type {
   EditorParagraphListStyle,
   EditorWrapPolygonPoint,
 } from "../../core/model.js";
+import type { BookmarkEventsByParagraph } from "./bookmarksXml.js";
 
 export interface DocContext {
   numberingInfo: Map<string, { numId: number; level: number }>;
@@ -53,6 +54,12 @@ export interface DocContext {
    * document has no endnotes.
    */
   endnoteIdMap?: Map<string, number>;
+  /**
+   * Per-paragraph bookmark boundary events (`w:bookmarkStart`/`w:bookmarkEnd`),
+   * keyed by `EditorParagraphNode.id`. Shared across all part contexts since
+   * paragraph ids are globally unique.
+   */
+  bookmarkEventsByParagraph?: BookmarkEventsByParagraph;
 }
 
 export interface NumberingContext {

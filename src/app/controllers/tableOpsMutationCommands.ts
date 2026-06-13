@@ -64,7 +64,9 @@ export const applyTableAwareParagraphEdit = (
 
   const zone = location.zone;
   const currentBlocks = getTargetBlocks(current, zone);
-  const clonedTable = cloneBlock(currentBlocks[location.blockIndex]) as EditorTableNode;
+  const clonedTable = cloneBlock(
+    currentBlocks[location.blockIndex],
+  ) as EditorTableNode;
   if (!clonedTable || clonedTable.type !== "table") {
     return edit(current);
   }

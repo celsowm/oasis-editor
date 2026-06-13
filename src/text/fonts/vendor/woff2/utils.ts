@@ -74,7 +74,7 @@ export const KNOWN_TAGS: number[] = [
   TAG("Glat"),
   TAG("Gloc"),
   TAG("Feat"),
-  TAG("Sill")
+  TAG("Sill"),
 ];
 
 export function tagToString(tag: number): string {
@@ -82,7 +82,7 @@ export function tagToString(tag: number): string {
     (tag >> 24) & 0xff,
     (tag >> 16) & 0xff,
     (tag >> 8) & 0xff,
-    tag & 0xff
+    tag & 0xff,
   );
 }
 
@@ -93,10 +93,7 @@ export function computeULongSum(data: Uint8Array): number {
   const aligned = data.length & ~3;
   for (let i = 0; i < aligned; i += 4) {
     const value =
-      (data[i] << 24) |
-      (data[i + 1] << 16) |
-      (data[i + 2] << 8) |
-      data[i + 3];
+      (data[i] << 24) | (data[i + 1] << 16) | (data[i + 2] << 8) | data[i + 3];
     checksum = (checksum + value) >>> 0;
   }
 
@@ -110,14 +107,22 @@ export function computeULongSum(data: Uint8Array): number {
   return checksum >>> 0;
 }
 
-export function store16(value: number, out: Uint8Array, offset: number): number {
+export function store16(
+  value: number,
+  out: Uint8Array,
+  offset: number,
+): number {
   const v = value & 0xffff;
   out[offset] = (v >> 8) & 0xff;
   out[offset + 1] = v & 0xff;
   return offset + 2;
 }
 
-export function store32(value: number, out: Uint8Array, offset: number): number {
+export function store32(
+  value: number,
+  out: Uint8Array,
+  offset: number,
+): number {
   out[offset] = (value >>> 24) & 0xff;
   out[offset + 1] = (value >>> 16) & 0xff;
   out[offset + 2] = (value >>> 8) & 0xff;

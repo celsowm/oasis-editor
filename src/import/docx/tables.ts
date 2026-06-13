@@ -287,7 +287,9 @@ function parseTableCellStyle(
   const tcMar = getFirstChildByTagNameNS(cellProperties, WORD_NS, "tcMar");
   if (tcMar) {
     const edgePt = (edge: string) =>
-      twipsToPoints(getAttributeValue(getFirstChildByTagNameNS(tcMar, WORD_NS, edge), "w"));
+      twipsToPoints(
+        getAttributeValue(getFirstChildByTagNameNS(tcMar, WORD_NS, edge), "w"),
+      );
     const top = edgePt("top");
     const bottom = edgePt("bottom");
     const left = edgePt("left");
@@ -633,7 +635,11 @@ export async function parseTableNode(
 
     // Explicit per-row `w:cnfStyle` markers act as the highest-precedence
     // conditional source (rare; most styled tables rely on position alone).
-    const cnfStyle = getFirstChildByTagNameNS(rowProperties, WORD_NS, "cnfStyle");
+    const cnfStyle = getFirstChildByTagNameNS(
+      rowProperties,
+      WORD_NS,
+      "cnfStyle",
+    );
     const explicitRowKeys: string[] = [];
     if (getAttributeValue(cnfStyle, "firstRow") === "1") {
       explicitRowKeys.push("firstRow");
