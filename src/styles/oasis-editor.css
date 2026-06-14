@@ -1,6 +1,7 @@
 @import "./oasis-editor/tokens.css";
 @import "./oasis-editor/app-shell.css";
 @import "./oasis-editor/toolbar.css";
+@import "./oasis-editor/plugin-ui.css";
 @import "./oasis-editor/surface.css";
 @import "./oasis-editor/ruler.css";
 @import "./oasis-editor/table-interactions.css";

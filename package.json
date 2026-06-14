@@ -12,6 +12,10 @@
       "require": "./dist/oasis-editor.umd.cjs"
     },
     "./style.css": "./dist/oasis-editor.css",
+    "./ui": {
+      "types": "./dist/ui.d.ts",
+      "import": "./dist/ui.js"
+    },
     "./react": {
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"

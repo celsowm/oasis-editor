@@ -233,6 +233,31 @@ createOasisEditor(root, {
 
 See [docs/plugin-api.md](docs/plugin-api.md) for the plugin contract.
 
+## Plugin UI
+
+Native Oasis plugin UI uses Solid primitives from `oasis-editor/ui`:
+
+```tsx
+import { Button, Dialog, DialogFooter, TextField } from "oasis-editor/ui";
+
+export function PluginDialog(props: { open: boolean; onClose: () => void }) {
+  return (
+    <Dialog
+      isOpen={props.open}
+      title="Plugin"
+      onClose={props.onClose}
+      footer={
+        <DialogFooter>
+          <Button variant="primary">Apply</Button>
+        </DialogFooter>
+      }
+    >
+      <TextField label="Name" onChange={(value) => console.log(value)} />
+    </Dialog>
+  );
+}
+```
+
 ## Toolbar And Menubar Customization
 
 Customize the toolbar and menubar after built-ins and plugin contributions are
@@ -300,6 +325,7 @@ Published subpaths:
 - `oasis-editor`: vanilla embed API, headless runtime, public types, plugins,
   commands, and UI primitives.
 - `oasis-editor/style.css`: packaged editor stylesheet.
+- `oasis-editor/ui`: Solid UI primitives for plugin authors.
 - `oasis-editor/react`: React adapter.
 - `oasis-editor/vue`: Vue adapter.
 

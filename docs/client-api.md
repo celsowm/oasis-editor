@@ -212,3 +212,29 @@ createOasisEditor(root, {
 
 Toolbar items dispatch exclusively through commands. Menubar items should do the
 same.
+
+## Plugin UI Primitives
+
+Plugin UI should import Solid primitives from `oasis-editor/ui` rather than
+internal component paths.
+
+```tsx
+import { Button, Dialog, DialogFooter, TextField } from "oasis-editor/ui";
+
+export function PluginDialog(props: { open: boolean; onClose: () => void }) {
+  return (
+    <Dialog
+      isOpen={props.open}
+      title="Plugin"
+      onClose={props.onClose}
+      footer={
+        <DialogFooter>
+          <Button onClick={props.onClose}>Close</Button>
+        </DialogFooter>
+      }
+    >
+      <TextField label="Name" onChange={(value) => console.log(value)} />
+    </Dialog>
+  );
+}
+```

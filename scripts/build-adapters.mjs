@@ -6,6 +6,77 @@ const distDir = "dist";
 await mkdir(distDir, { recursive: true });
 
 await writeFile(
+  join(distDir, "ui.js"),
+  `export {
+  Button,
+  Checkbox,
+  ColorPicker,
+  ColorPicker as ToolbarColorPicker,
+  Dialog,
+  DialogFooter,
+  GridPicker,
+  IconButton,
+  Menu,
+  Popover,
+  Select,
+  SelectField,
+  Separator,
+  SplitButton,
+  Tabs,
+  TextField,
+  ToolbarButton,
+} from "oasis-editor";
+`,
+);
+
+await writeFile(
+  join(distDir, "ui.d.ts"),
+  `export {
+  Button,
+  Checkbox,
+  ColorPicker,
+  Dialog,
+  DialogFooter,
+  GridPicker,
+  IconButton,
+  Menu,
+  Popover,
+  Select,
+  SelectField,
+  Separator,
+  SplitButton,
+  Tabs,
+  TextField,
+  ToolbarButton,
+  ToolbarColorPicker,
+} from "oasis-editor";
+
+export type {
+  ButtonProps,
+  CheckboxProps,
+  ColorPickerKind,
+  ColorPickerProps,
+  DialogFooterProps,
+  DialogProps,
+  GridPickerProps,
+  IconButtonProps,
+  MenuProps,
+  PopoverProps,
+  PopoverTriggerApi,
+  SelectFieldOption,
+  SelectFieldProps,
+  SeparatorProps,
+  SplitButtonProps,
+  TabsItem,
+  TabsProps,
+  TextFieldProps,
+  ToolbarButtonProps,
+  ToolbarSelectProps,
+} from "oasis-editor";
+`,
+);
+
+await writeFile(
   join(distDir, "react.js"),
   `import React, { useEffect, useRef } from "react";
 import { mount } from "oasis-editor";

@@ -52,6 +52,23 @@ export { Dialog } from "./ui/components/Dialogs/Dialog.js";
 export type { DialogProps } from "./ui/components/Dialogs/Dialog.js";
 export { Tabs } from "./ui/components/Tabs/Tabs.js";
 export type { TabsItem, TabsProps } from "./ui/components/Tabs/Tabs.js";
+export {
+  Button,
+  Checkbox,
+  DialogFooter,
+  IconButton,
+  SelectField,
+  TextField,
+} from "./ui/public/index.js";
+export type {
+  ButtonProps,
+  CheckboxProps,
+  DialogFooterProps,
+  IconButtonProps,
+  SelectFieldOption,
+  SelectFieldProps,
+  TextFieldProps,
+} from "./ui/public/index.js";
 export type {
   OasisPlugin,
   OasisEditor,
@@ -131,11 +148,42 @@ export type { RendererProps } from "./ui/components/Toolbar/renderers/renderers.
 
 // Toolbar UI primitives — for building custom controls consistent with built-ins.
 export { Popover } from "./ui/components/Toolbar/primitives/Popover.js";
-export type { PopoverProps } from "./ui/components/Toolbar/primitives/Popover.js";
-export { Menu as ToolbarMenu } from "./ui/components/Toolbar/primitives/Menu.js";
+export type {
+  PopoverProps,
+  PopoverTriggerApi,
+} from "./ui/components/Toolbar/primitives/Popover.js";
+export {
+  Menu,
+  Menu as ToolbarMenu,
+} from "./ui/components/Toolbar/primitives/Menu.js";
+export type { MenuProps } from "./ui/components/Toolbar/primitives/Menu.js";
 export { Button as ToolbarButton } from "./ui/components/Toolbar/primitives/Button.js";
-export { Select as ToolbarSelect } from "./ui/components/Toolbar/primitives/Select.js";
-export { Separator as ToolbarSeparator } from "./ui/components/Toolbar/primitives/Separator.js";
-export { SplitButton as ToolbarSplitButton } from "./ui/components/Toolbar/primitives/SplitButton.js";
-export { ColorPicker as ToolbarColorPicker } from "./ui/components/Toolbar/primitives/ColorPicker.js";
-export { GridPicker as ToolbarGridPicker } from "./ui/components/Toolbar/primitives/GridPicker.js";
+export type { ToolbarButtonProps } from "./ui/components/Toolbar/primitives/Button.js";
+export {
+  Select,
+  Select as ToolbarSelect,
+} from "./ui/components/Toolbar/primitives/Select.js";
+export type { ToolbarSelectProps } from "./ui/components/Toolbar/primitives/Select.js";
+export {
+  Separator,
+  Separator as ToolbarSeparator,
+} from "./ui/components/Toolbar/primitives/Separator.js";
+export type { SeparatorProps } from "./ui/components/Toolbar/primitives/Separator.js";
+export {
+  SplitButton,
+  SplitButton as ToolbarSplitButton,
+} from "./ui/components/Toolbar/primitives/SplitButton.js";
+export type { SplitButtonProps } from "./ui/components/Toolbar/primitives/SplitButton.js";
+export {
+  ColorPicker,
+  ColorPicker as ToolbarColorPicker,
+} from "./ui/components/Toolbar/primitives/ColorPicker.js";
+export type {
+  ColorPickerKind,
+  ColorPickerProps,
+} from "./ui/components/Toolbar/primitives/ColorPicker.js";
+export {
+  GridPicker,
+  GridPicker as ToolbarGridPicker,
+} from "./ui/components/Toolbar/primitives/GridPicker.js";
+export type { GridPickerProps } from "./ui/components/Toolbar/primitives/GridPicker.js";

@@ -1,0 +1,189 @@
+.oasis-editor-ui-button,
+.oasis-editor-ui-icon-button,
+.oasis-editor-ui-input,
+.oasis-editor-ui-select {
+  font: inherit;
+  color: var(--oasis-text);
+}
+
+.oasis-editor-ui-button,
+.oasis-editor-ui-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--oasis-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.oasis-editor-ui-button-sm,
+.oasis-editor-ui-icon-button-sm {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.oasis-editor-ui-button-md {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.oasis-editor-ui-icon-button-md {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+}
+
+.oasis-editor-ui-button-full {
+  width: 100%;
+}
+
+.oasis-editor-ui-button-primary {
+  background: var(--oasis-accent);
+  color: #fff;
+}
+
+.oasis-editor-ui-button-secondary,
+.oasis-editor-ui-icon-button-secondary {
+  border-color: var(--oasis-border-color);
+  background: var(--oasis-paper);
+}
+
+.oasis-editor-ui-button-ghost,
+.oasis-editor-ui-icon-button-ghost {
+  background: transparent;
+}
+
+.oasis-editor-ui-button-danger {
+  background: var(--oasis-danger);
+  color: #fff;
+}
+
+.oasis-editor-ui-button:hover:not(:disabled),
+.oasis-editor-ui-icon-button:hover:not(:disabled) {
+  background: var(--oasis-hover-bg);
+  border-color: rgba(148, 163, 184, 0.32);
+}
+
+.oasis-editor-ui-button-primary:hover:not(:disabled) {
+  background: #1557b0;
+  border-color: transparent;
+}
+
+.oasis-editor-ui-button-danger:hover:not(:disabled) {
+  background: #991b1b;
+  border-color: transparent;
+}
+
+.oasis-editor-ui-button:focus-visible,
+.oasis-editor-ui-icon-button:focus-visible,
+.oasis-editor-ui-input:focus-visible,
+.oasis-editor-ui-select:focus-visible,
+.oasis-editor-ui-checkbox-input:focus-visible {
+  outline: none;
+  box-shadow: var(--oasis-focus-ring);
+}
+
+.oasis-editor-ui-button:disabled,
+.oasis-editor-ui-icon-button:disabled,
+.oasis-editor-ui-input:disabled,
+.oasis-editor-ui-select:disabled,
+.oasis-editor-ui-checkbox-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.oasis-editor-ui-icon-button.is-active {
+  background: var(--oasis-accent-active);
+  color: var(--oasis-accent-active-text);
+}
+
+.oasis-editor-ui-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.oasis-editor-ui-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--oasis-text);
+}
+
+.oasis-editor-ui-field-description {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--oasis-text-muted);
+}
+
+.oasis-editor-ui-field-error {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--oasis-danger);
+}
+
+.oasis-editor-ui-input,
+.oasis-editor-ui-select {
+  min-height: 34px;
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: var(--oasis-radius);
+  background: var(--oasis-paper);
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.oasis-editor-ui-input[aria-invalid="true"],
+.oasis-editor-ui-select[aria-invalid="true"] {
+  border-color: rgba(185, 28, 28, 0.65);
+}
+
+.oasis-editor-ui-checkbox {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  color: var(--oasis-text);
+}
+
+.oasis-editor-ui-checkbox-input {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--oasis-accent);
+}
+
+.oasis-editor-ui-checkbox-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.oasis-editor-ui-dialog-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.oasis-editor-ui-dialog-footer-start {
+  justify-content: flex-start;
+}
+
+.oasis-editor-ui-dialog-footer-end {
+  justify-content: flex-end;
+}
+
+.oasis-editor-ui-dialog-footer-between {
+  justify-content: space-between;
+}

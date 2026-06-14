@@ -42,6 +42,64 @@ editor facade needed by plugins: `editor`, `commands`, `getState()`,
 `getDocument()`, and `getSelection()`. Prefer this context over importing UI
 internals.
 
+## Plugin UI
+
+Native Oasis plugin UI uses Solid primitives from `oasis-editor/ui`.
+
+```tsx
+import type { OasisPlugin } from "oasis-editor";
+import { Button, Dialog, DialogFooter, Tabs, TextField } from "oasis-editor/ui";
+
+export const SettingsPlugin: OasisPlugin = {
+  name: "Settings",
+  commands: {
+    openSettings: {
+      execute: () => {
+        // App-level UI state can render <SettingsDialog />.
+      },
+    },
+  },
+  toolbar: [
+    {
+      id: "settings",
+      command: "openSettings",
+      icon: "settings",
+    },
+  ],
+};
+
+export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
+  return (
+    <Dialog
+      isOpen={props.open}
+      title="Plugin settings"
+      onClose={props.onClose}
+      footer={
+        <DialogFooter>
+          <Button onClick={props.onClose}>Cancel</Button>
+          <Button variant="primary">Apply</Button>
+        </DialogFooter>
+      }
+    >
+      <Tabs
+        items={[
+          {
+            id: "main",
+            label: "Main",
+            panel: <TextField label="Name" onChange={() => {}} />,
+          },
+        ]}
+      />
+    </Dialog>
+  );
+}
+```
+
+The UI subpath exports `Dialog`, `Tabs`, `Button`, `IconButton`, `TextField`,
+`Checkbox`, `SelectField`, `DialogFooter`, and the lower-level toolbar
+primitives. React and Vue wrappers for these primitives are not part of this
+SDK layer.
+
 Dependency ordering is enforced by `PluginCollection`; cycles and missing
 dependencies fail initialization. If initialization fails, already registered
 plugin commands are cleaned up.
