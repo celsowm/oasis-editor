@@ -13,10 +13,14 @@ function getListOrdinals(document: EditorDocument): Map<string, number> {
 
   const result = new Map<string, number>();
   const paragraphs = getDocumentParagraphs(document);
-  // The exporter emits one numbering definition per `kind:level` shared across
-  // the whole document (with `w:start="1"`), so Word counts each level
-  // continuously regardless of intervening non-list paragraphs. Match that here
-  // by keeping per-level counters that persist across gaps instead of resetting.
+  // The exporter emits one numbering definition per `kind:level:glyph` shared
+  // across the whole document, so Word counts each level continuously regardless
+  // of intervening non-list paragraphs. Match that here by keeping per-level
+  // counters that persist across gaps instead of resetting.
+  //
+  // `startAt` is only set on the first paragraph of each numId+ilvl group
+  // (enforced by the importer's seenInstances tracking), so it acts as a
+  // one-shot seed without resetting subsequent paragraphs' counters.
   const counters = new Map<number, number>();
 
   for (const paragraph of paragraphs) {
@@ -26,7 +30,8 @@ function getListOrdinals(document: EditorDocument): Map<string, number> {
     }
 
     const level = list.level ?? 0;
-    const next = (counters.get(level) ?? 0) + 1;
+    const prev = counters.get(level);
+    const next = prev !== undefined ? prev + 1 : (list.startAt ?? 1);
     counters.set(level, next);
     result.set(paragraph.id, next);
   }
@@ -94,10 +99,30 @@ function toRoman(value: number): string {
   return out;
 }
 
+// Common Symbol/Wingdings Private-Use-Area code points → nearest Unicode char.
+// Word stores bullet glyphs in the range 0xF000–0xF0FF when using legacy
+// symbol fonts; these are not standard Unicode and need mapping for display.
+const PUA_BULLET_MAP: Record<number, string> = {
+  0xf0b7: "•", // Symbol: filled circle bullet
+  0xf06c: "·", // Wingdings: medium bullet
+  0xf0a7: "▪", // Wingdings 2: black small square
+  0xf0d8: "➢", // Wingdings: arrowhead
+  0xf077: "✓", // Wingdings: check mark
+  0xf0fc: "✓", // Wingdings: check mark (alt)
+  0xf0e7: "⚡", // Wingdings: lightning
+  0xf020: " ", // Symbol/Wingdings: space
+};
+
+function normalizeBulletGlyph(glyph: string): string {
+  const code = glyph.codePointAt(0);
+  if (code !== undefined && code >= 0xe000 && code <= 0xf8ff) {
+    return PUA_BULLET_MAP[code] ?? "•";
+  }
+  return glyph;
+}
+
 const BULLET_GLYPHS = ["•", "○", "▪", "•", "○", "▪"];
-const ORDERED_DEFAULT_FORMATS: NonNullable<
-  EditorParagraphListStyle["format"]
->[] = [
+const ORDERED_DEFAULT_FORMATS: NonNullable<EditorParagraphListStyle["format"]>[] = [
   "decimal",
   "lowerLetter",
   "lowerRoman",
@@ -113,6 +138,8 @@ export function resolveListPrefix(
   if (!paragraph.list) return "";
   const level = paragraph.list.level ?? 0;
   if (paragraph.list.kind === "bullet") {
+    const raw = paragraph.list.bulletGlyph;
+    if (raw) return normalizeBulletGlyph(raw);
     return BULLET_GLYPHS[level % BULLET_GLYPHS.length] ?? "•";
   }
 

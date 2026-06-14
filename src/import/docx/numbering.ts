@@ -15,9 +15,35 @@ export interface NumberingMaps {
   abstractIndents: Map<string, { left?: number; hanging?: number }>;
   /** Suffix (`w:suff`) per level, keyed by "abstractNumId:ilvl". */
   abstractSuffixes: Map<string, EditorParagraphListStyle["suffix"]>;
+  /** numFmt mapped to editor format, keyed by "abstractNumId:ilvl". */
+  abstractFormats: Map<string, NonNullable<EditorParagraphListStyle["format"]>>;
+  /** Starting number from `w:start`, keyed by "abstractNumId:ilvl". OOXML default is 1. */
+  abstractStarts: Map<string, number>;
+  /** Literal bullet glyph from `w:lvlText`, keyed by "abstractNumId:ilvl". */
+  abstractBulletGlyphs: Map<string, string>;
+  /** Font name from `w:lvl/w:rPr/w:rFonts`, keyed by "abstractNumId:ilvl". */
+  abstractBulletFonts: Map<string, string>;
+  /** `w:startOverride` values from `w:num/w:lvlOverride`, keyed by "numId:ilvl". */
+  numStartOverrides: Map<string, number>;
   /** numId → abstractNumId */
   numToAbstractId: Map<string, string>;
+  /**
+   * Tracks which "numId:ilvl" pairs have been seen during paragraph parsing.
+   * The first paragraph for each pair carries the level's `startAt` value;
+   * subsequent paragraphs in the same list instance do not, so the counter
+   * continues from the previous ordinal instead of resetting.
+   */
+  seenInstances: Set<string>;
 }
+
+const FORMAT_MAP: Record<string, NonNullable<EditorParagraphListStyle["format"]>> = {
+  decimal: "decimal",
+  lowerLetter: "lowerLetter",
+  upperLetter: "upperLetter",
+  lowerRoman: "lowerRoman",
+  upperRoman: "upperRoman",
+  bullet: "bullet",
+};
 
 export function parseNumbering(numberingXml: string | null): NumberingMaps {
   const abstractKinds = new Map<string, EditorParagraphListStyle["kind"]>();
@@ -30,32 +56,39 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
     string,
     EditorParagraphListStyle["suffix"]
   >();
+  const abstractFormats = new Map<
+    string,
+    NonNullable<EditorParagraphListStyle["format"]>
+  >();
+  const abstractStarts = new Map<string, number>();
+  const abstractBulletGlyphs = new Map<string, string>();
+  const abstractBulletFonts = new Map<string, string>();
+  const numStartOverrides = new Map<string, number>();
   const numToAbstractId = new Map<string, string>();
+  const seenInstances = new Set<string>();
 
-  if (!numberingXml) {
-    return {
-      abstractKinds,
-      numKinds,
-      abstractIndents,
-      abstractSuffixes,
-      numToAbstractId,
-    };
-  }
+  const emptyResult = (): NumberingMaps => ({
+    abstractKinds,
+    numKinds,
+    abstractIndents,
+    abstractSuffixes,
+    abstractFormats,
+    abstractStarts,
+    abstractBulletGlyphs,
+    abstractBulletFonts,
+    numStartOverrides,
+    numToAbstractId,
+    seenInstances,
+  });
+
+  if (!numberingXml) return emptyResult();
 
   const document = new DOMParser().parseFromString(
     numberingXml,
     "application/xml",
   );
   const numbering = document.documentElement;
-  if (!numbering) {
-    return {
-      abstractKinds,
-      numKinds,
-      abstractIndents,
-      abstractSuffixes,
-      numToAbstractId,
-    };
-  }
+  if (!numbering) return emptyResult();
 
   const abstractNums = numbering.getElementsByTagNameNS(WORD_NS, "abstractNum");
   for (let index = 0; index < abstractNums.length; index += 1) {
@@ -65,11 +98,13 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
 
     for (const level of getChildrenByTagNameNS(abstractNum, WORD_NS, "lvl")) {
       const ilvl = getAttributeValue(level, "ilvl") ?? "0";
+      const levelKey = `${abstractId}:${ilvl}`;
+
       const numFmt = getFirstChildByTagNameNS(level, WORD_NS, "numFmt");
       const format = getAttributeValue(numFmt, "val");
       if (format) {
         abstractKinds.set(
-          `${abstractId}:${ilvl}`,
+          levelKey,
           format === "bullet" ? "bullet" : "ordered",
         );
         // Keep a level-0 fallback keyed by just abstractId for backward compat.
@@ -79,6 +114,8 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
             format === "bullet" ? "bullet" : "ordered",
           );
         }
+        const editorFormat = FORMAT_MAP[format];
+        if (editorFormat) abstractFormats.set(levelKey, editorFormat);
       }
 
       const suffRaw = getAttributeValue(
@@ -86,8 +123,32 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
         "val",
       );
       if (suffRaw === "space" || suffRaw === "nothing" || suffRaw === "tab") {
-        abstractSuffixes.set(`${abstractId}:${ilvl}`, suffRaw);
+        abstractSuffixes.set(levelKey, suffRaw);
       }
+
+      const startRaw = getAttributeValue(
+        getFirstChildByTagNameNS(level, WORD_NS, "start"),
+        "val",
+      );
+      if (startRaw != null) {
+        const n = parseInt(startRaw, 10);
+        if (!isNaN(n)) abstractStarts.set(levelKey, n);
+      }
+
+      // Bullet glyph from w:lvlText (only meaningful when numFmt is "bullet").
+      if (format === "bullet") {
+        const lvlTextEl = getFirstChildByTagNameNS(level, WORD_NS, "lvlText");
+        const glyph = getAttributeValue(lvlTextEl, "val");
+        if (glyph) abstractBulletGlyphs.set(levelKey, glyph);
+      }
+
+      // Font used to render the bullet glyph (w:lvl/w:rPr/w:rFonts).
+      const rPr = getFirstChildByTagNameNS(level, WORD_NS, "rPr");
+      const rFonts = getFirstChildByTagNameNS(rPr, WORD_NS, "rFonts");
+      const fontName =
+        getAttributeValue(rFonts, "ascii") ??
+        getAttributeValue(rFonts, "hAnsi");
+      if (fontName) abstractBulletFonts.set(levelKey, fontName);
 
       const pPr = getFirstChildByTagNameNS(level, WORD_NS, "pPr");
       const ind = getFirstChildByTagNameNS(pPr, WORD_NS, "ind");
@@ -99,7 +160,7 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
         const hanging =
           hangingRaw != null ? twipsToPx(hangingRaw, 0) : undefined;
         if (left !== undefined || hanging !== undefined) {
-          abstractIndents.set(`${abstractId}:${ilvl}`, { left, hanging });
+          abstractIndents.set(levelKey, { left, hanging });
         }
       }
     }
@@ -121,6 +182,22 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
 
     numToAbstractId.set(numId, abstractNumId);
     numKinds.set(numId, abstractKinds.get(abstractNumId) ?? "ordered");
+
+    // Parse w:lvlOverride/w:startOverride for per-instance starting number.
+    for (const override of getChildrenByTagNameNS(num, WORD_NS, "lvlOverride")) {
+      const overrideIlvl = getAttributeValue(override, "ilvl");
+      if (!overrideIlvl) continue;
+      const startOverrideEl = getFirstChildByTagNameNS(
+        override,
+        WORD_NS,
+        "startOverride",
+      );
+      const startOverrideRaw = getAttributeValue(startOverrideEl, "val");
+      if (startOverrideRaw != null) {
+        const n = parseInt(startOverrideRaw, 10);
+        if (!isNaN(n)) numStartOverrides.set(`${numId}:${overrideIlvl}`, n);
+      }
+    }
   }
 
   return {
@@ -128,7 +205,13 @@ export function parseNumbering(numberingXml: string | null): NumberingMaps {
     numKinds,
     abstractIndents,
     abstractSuffixes,
+    abstractFormats,
+    abstractStarts,
+    abstractBulletGlyphs,
+    abstractBulletFonts,
+    numStartOverrides,
     numToAbstractId,
+    seenInstances,
   };
 }
 
@@ -166,20 +249,59 @@ export function parseParagraphList(
   const level = Number(ilvlValue);
 
   const abstractId = numberingMaps.numToAbstractId.get(numId);
-  const indent = abstractId
-    ? numberingMaps.abstractIndents.get(`${abstractId}:${ilvlValue}`)
+  const levelKey = abstractId ? `${abstractId}:${ilvlValue}` : undefined;
+
+  const indent = levelKey
+    ? numberingMaps.abstractIndents.get(levelKey)
     : undefined;
+
   // OOXML default suffix is "tab" when w:suff is absent.
   const suffix =
-    (abstractId
-      ? numberingMaps.abstractSuffixes.get(`${abstractId}:${ilvlValue}`)
+    (levelKey
+      ? numberingMaps.abstractSuffixes.get(levelKey)
       : undefined) ?? "tab";
+
+  const format = levelKey
+    ? numberingMaps.abstractFormats.get(levelKey)
+    : undefined;
+
+  const bulletGlyph = levelKey
+    ? numberingMaps.abstractBulletGlyphs.get(levelKey)
+    : undefined;
+
+  const bulletFont = levelKey
+    ? numberingMaps.abstractBulletFonts.get(levelKey)
+    : undefined;
+
+  // Determine effective startAt: w:startOverride takes precedence over w:start.
+  // Only include it on the FIRST paragraph of each numId+ilvl group so that
+  // subsequent paragraphs in the same list instance keep incrementing instead
+  // of resetting.
+  const instanceKey = `${numId}:${ilvlValue}`;
+  const isFirstInInstance = !numberingMaps.seenInstances.has(instanceKey);
+  numberingMaps.seenInstances.add(instanceKey);
+
+  let startAt: number | undefined;
+  if (isFirstInInstance) {
+    const override = numberingMaps.numStartOverrides.get(instanceKey);
+    const abstractStart = levelKey
+      ? numberingMaps.abstractStarts.get(levelKey)
+      : undefined;
+    const effectiveStart = override ?? abstractStart ?? 1;
+    // Only store it when it differs from the OOXML default (1) to keep the
+    // model lean for the common case.
+    if (effectiveStart !== 1) startAt = effectiveStart;
+  }
 
   return {
     list: {
       kind: numberingMaps.numKinds.get(numId) ?? "ordered",
       level: Number.isFinite(level) ? level : 0,
       suffix,
+      ...(format !== undefined && { format }),
+      ...(startAt !== undefined && { startAt }),
+      ...(bulletGlyph !== undefined && { bulletGlyph }),
+      ...(bulletFont !== undefined && { bulletFont }),
     },
     indent,
   };

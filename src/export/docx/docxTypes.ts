@@ -8,14 +8,20 @@ import type {
 } from "../../core/model.js";
 import type { BookmarkEventsByParagraph } from "./bookmarksXml.js";
 
+export interface NumberingDefinition {
+  kind: EditorParagraphListStyle["kind"];
+  level: number;
+  abstractNumId: number;
+  numId: number;
+  format?: NonNullable<EditorParagraphListStyle["format"]>;
+  startAt?: number;
+  bulletGlyph?: string;
+  bulletFont?: string;
+}
+
 export interface DocContext {
   numberingInfo: Map<string, { numId: number; level: number }>;
-  definitions: Array<{
-    kind: EditorParagraphListStyle["kind"];
-    level: number;
-    abstractNumId: number;
-    numId: number;
-  }>;
+  definitions: NumberingDefinition[];
   images: Array<{
     rId: string;
     target: string;
@@ -64,12 +70,7 @@ export interface DocContext {
 
 export interface NumberingContext {
   numberingInfo: Map<string, { numId: number; level: number }>;
-  definitions: Array<{
-    kind: EditorParagraphListStyle["kind"];
-    level: number;
-    abstractNumId: number;
-    numId: number;
-  }>;
+  definitions: NumberingDefinition[];
 }
 
 export interface ExportBuildState {

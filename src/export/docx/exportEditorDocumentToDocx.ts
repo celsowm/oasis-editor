@@ -16,6 +16,7 @@ import type {
   DocContext,
   ExportBuildState,
   NumberingContext,
+  NumberingDefinition,
   PartDefinition,
   SectionReferenceDefinition,
 } from "./docxTypes.js";
@@ -129,12 +130,7 @@ function buildNumberingContext(document: EditorDocument): NumberingContext {
     string,
     { abstractNumId: number; numId: number }
   >();
-  const definitions: Array<{
-    kind: EditorParagraphListStyle["kind"];
-    level: number;
-    abstractNumId: number;
-    numId: number;
-  }> = [];
+  const definitions: NumberingDefinition[] = [];
   let nextAbstractNumId = 1;
   let nextNumId = 1;
 
@@ -144,7 +140,10 @@ function buildNumberingContext(document: EditorDocument): NumberingContext {
     }
 
     const level = Math.max(0, paragraph.list.level ?? 0);
-    const key = `${paragraph.list.kind}:${level}`;
+    // Include bulletGlyph in the key so distinct bullet styles get separate
+    // numbering definitions rather than sharing a single one.
+    const bulletGlyph = paragraph.list.bulletGlyph ?? "";
+    const key = `${paragraph.list.kind}:${level}:${bulletGlyph}`;
     let definition = definitionMap.get(key);
     if (!definition) {
       definition = { abstractNumId: nextAbstractNumId++, numId: nextNumId++ };
@@ -154,6 +153,10 @@ function buildNumberingContext(document: EditorDocument): NumberingContext {
         level,
         abstractNumId: definition.abstractNumId,
         numId: definition.numId,
+        format: paragraph.list.format,
+        startAt: paragraph.list.startAt,
+        bulletGlyph: paragraph.list.bulletGlyph,
+        bulletFont: paragraph.list.bulletFont,
       });
     }
     numberingInfo.set(paragraph.id, { numId: definition.numId, level });
@@ -279,24 +282,21 @@ function buildPartContext(
   };
 }
 
-function buildNumberingXml(
-  definitions: Array<{
-    kind: EditorParagraphListStyle["kind"];
-    level: number;
-    abstractNumId: number;
-    numId: number;
-  }>,
-): string {
+function buildNumberingXml(definitions: NumberingDefinition[]): string {
   const abstractNums = definitions
-    .map(({ kind, level, abstractNumId }) => {
-      const format = kind === "bullet" ? "bullet" : "decimal";
-      const levelText = kind === "bullet" ? "\uF0B7" : `%${level + 1}.`;
-      const runFonts =
+    .map(({ kind, level, abstractNumId, format, startAt, bulletGlyph, bulletFont }) => {
+      const numFmtVal = kind === "bullet" ? "bullet" : (format ?? "decimal");
+      const levelText =
         kind === "bullet"
-          ? '<w:rPr><w:rFonts w:ascii="Symbol" w:hAnsi="Symbol" w:hint="default"/></w:rPr>'
-          : "";
+          ? (bulletGlyph ?? "\uF0B7")
+          : `%${level + 1}.`;
+      const startVal = startAt ?? 1;
+      const fontName = kind === "bullet" ? (bulletFont ?? "Symbol") : undefined;
+      const runFonts = fontName
+        ? `<w:rPr><w:rFonts w:ascii="${escapeXml(fontName)}" w:hAnsi="${escapeXml(fontName)}" w:hint="default"/></w:rPr>`
+        : "";
 
-      return `<w:abstractNum w:abstractNumId="${abstractNumId}"><w:lvl w:ilvl="${level}"><w:start w:val="1"/><w:numFmt w:val="${format}"/><w:lvlText w:val="${escapeXml(levelText)}"/><w:lvlJc w:val="left"/>${runFonts}</w:lvl></w:abstractNum>`;
+      return `<w:abstractNum w:abstractNumId="${abstractNumId}"><w:lvl w:ilvl="${level}"><w:start w:val="${startVal}"/><w:numFmt w:val="${numFmtVal}"/><w:lvlText w:val="${escapeXml(levelText)}"/><w:lvlJc w:val="left"/>${runFonts}</w:lvl></w:abstractNum>`;
     })
     .join("");
 

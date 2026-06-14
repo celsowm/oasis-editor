@@ -69,6 +69,10 @@ export interface EditorParagraphListStyle {
    * tab stop (or a space / nothing). Undefined is treated as "tab".
    */
   suffix?: "tab" | "space" | "nothing";
+  /** Literal bullet character from `w:lvlText` (bullet lists only). */
+  bulletGlyph?: string;
+  /** Font family used to render the bullet glyph (e.g. "Symbol", "Wingdings"). */
+  bulletFont?: string;
 }
 
 /**
