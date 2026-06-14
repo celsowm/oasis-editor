@@ -105,6 +105,24 @@ describe("DOCX export: footnotes", () => {
     expect(rels!).toContain("/footnotes");
   });
 
+  it("serializes footnote numbering settings in settings.xml", async () => {
+    const doc = buildDocWithTwoFootnotes();
+    doc.footnotes!.settings = {
+      numberFormat: "lowerRoman",
+      startAt: 4,
+      restart: "eachSection",
+    };
+    const buffer = await exportEditorDocumentToDocx(doc);
+    const zip = await exportAndOpen(buffer);
+
+    const settingsXml = await readPart(zip, "word/settings.xml");
+    expect(settingsXml).not.toBeNull();
+    expect(settingsXml!).toContain("<w:footnotePr>");
+    expect(settingsXml!).toContain('<w:numFmt w:val="lowerRoman"/>');
+    expect(settingsXml!).toContain('<w:numStart w:val="4"/>');
+    expect(settingsXml!).toContain('<w:numRestart w:val="eachSect"/>');
+  });
+
   it("emits <w:footnoteReference> in document.xml that points to the right ids", async () => {
     const doc = buildDocWithTwoFootnotes();
     const buffer = await exportEditorDocumentToDocx(doc);

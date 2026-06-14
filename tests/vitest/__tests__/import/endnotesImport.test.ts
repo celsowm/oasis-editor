@@ -13,6 +13,8 @@ interface BuildOptions {
   endnotes: Record<number, string>;
   /** Whether to emit separator/continuationSeparator entries. Default true. */
   includeSeparators?: boolean;
+  /** Optional word/settings.xml content. */
+  settingsXml?: string;
 }
 
 function escapeXml(text: string): string {
@@ -48,6 +50,7 @@ async function buildDocxFixture(options: BuildOptions): Promise<ArrayBuffer> {
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
   <Override PartName="/word/endnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml"/>
+  ${options.settingsXml ? '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>' : ""}
 </Types>`,
   );
 
@@ -104,6 +107,9 @@ async function buildDocxFixture(options: BuildOptions): Promise<ArrayBuffer> {
   ${endnoteEntries}
 </w:endnotes>`,
   );
+  if (options.settingsXml) {
+    zip.file("word/settings.xml", options.settingsXml);
+  }
 
   const buffer = await zip.generateAsync({ type: "arraybuffer" });
   return buffer;
@@ -155,6 +161,34 @@ describe("DOCX import: endnotes", () => {
     const refs = collectEndnoteReferences(doc);
     expect(refs.map((r) => r.run.text)).toEqual(["1", "2", "3"]);
     expect(Object.keys(doc.endnotes!.items)).toHaveLength(3);
+  });
+
+  it("imports endnote numbering settings from settings.xml", async () => {
+    const buffer = await buildDocxFixture({
+      body: [["alpha", { endnoteId: 10 }, " beta", { endnoteId: 11 }]],
+      endnotes: {
+        10: "First.",
+        11: "Second.",
+      },
+      settingsXml: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:endnotePr>
+    <w:numFmt w:val="upperLetter"/>
+    <w:numStart w:val="3"/>
+    <w:numRestart w:val="continuous"/>
+  </w:endnotePr>
+</w:settings>`,
+    });
+
+    const doc = await importDocxToEditorDocument(buffer);
+    const refs = collectEndnoteReferences(doc);
+
+    expect(doc.endnotes?.settings).toEqual({
+      numberFormat: "upperLetter",
+      startAt: 3,
+      restart: "continuous",
+    });
+    expect(refs.map((r) => r.run.text)).toEqual(["C", "D"]);
   });
 
   it("ignores the separator and continuationSeparator special endnotes", async () => {

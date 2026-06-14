@@ -338,10 +338,14 @@ export async function importDocxToEditorDocument(
     theme,
     importedStyles,
   );
+  if (docSettings.footnoteSettings) {
+    parsedFootnotes.footnotes.settings = docSettings.footnoteSettings;
+  }
   const editorFootnotes =
     Object.keys(parsedFootnotes.footnotes.items).length > 0 ||
     parsedFootnotes.footnotes.separator ||
-    parsedFootnotes.footnotes.continuationSeparator
+    parsedFootnotes.footnotes.continuationSeparator ||
+    parsedFootnotes.footnotes.settings
       ? parsedFootnotes.footnotes
       : undefined;
 
@@ -364,8 +368,14 @@ export async function importDocxToEditorDocument(
     theme,
     importedStyles,
   );
+  if (docSettings.endnoteSettings) {
+    parsedEndnotes.endnotes.settings = docSettings.endnoteSettings;
+  }
   const editorEndnotes =
-    Object.keys(parsedEndnotes.endnotes.items).length > 0
+    Object.keys(parsedEndnotes.endnotes.items).length > 0 ||
+    parsedEndnotes.endnotes.separator ||
+    parsedEndnotes.endnotes.continuationSeparator ||
+    parsedEndnotes.endnotes.settings
       ? parsedEndnotes.endnotes
       : undefined;
 

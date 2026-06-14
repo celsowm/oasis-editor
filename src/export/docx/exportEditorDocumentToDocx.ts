@@ -2,6 +2,7 @@ import JSZip from "jszip";
 import type {
   EditorBlockNode,
   EditorDocument,
+  EditorFootnoteSettings,
   EditorNamedStyle,
   EditorPageSettings,
   EditorParagraphListStyle,
@@ -432,16 +433,68 @@ function buildDocumentRelationshipsXml(
 function buildSettingsXml(
   hasEvenAndOddHeaders: boolean,
   defaultTabStop?: number,
+  footnoteSettings?: EditorFootnoteSettings,
+  endnoteSettings?: EditorFootnoteSettings,
 ): string {
   const parts: string[] = [];
   const defaultTabStopTwips = pointsToTwips(defaultTabStop);
   if (defaultTabStopTwips !== null) {
     parts.push(`<w:defaultTabStop w:val="${defaultTabStopTwips}"/>`);
   }
+  const footnotePr = serializeNoteSettings("footnotePr", footnoteSettings);
+  if (footnotePr) {
+    parts.push(footnotePr);
+  }
+  const endnotePr = serializeNoteSettings("endnotePr", endnoteSettings);
+  if (endnotePr) {
+    parts.push(endnotePr);
+  }
   if (hasEvenAndOddHeaders) {
     parts.push("<w:evenAndOddHeaders/>");
   }
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="${WORD_NS}">${parts.join("")}</w:settings>`;
+}
+
+const NOTE_NUMBER_FORMATS: Record<
+  NonNullable<EditorFootnoteSettings["numberFormat"]>,
+  string
+> = {
+  decimal: "decimal",
+  lowerRoman: "lowerRoman",
+  upperRoman: "upperRoman",
+  lowerLetter: "lowerLetter",
+  upperLetter: "upperLetter",
+  symbol: "symbol",
+};
+
+const NOTE_RESTARTS: Record<
+  NonNullable<EditorFootnoteSettings["restart"]>,
+  string
+> = {
+  continuous: "continuous",
+  eachSection: "eachSect",
+};
+
+function serializeNoteSettings(
+  tagName: "footnotePr" | "endnotePr",
+  settings: EditorFootnoteSettings | undefined,
+): string | null {
+  if (!settings) return null;
+  const parts: string[] = [];
+  if (settings.numberFormat) {
+    parts.push(
+      `<w:numFmt w:val="${NOTE_NUMBER_FORMATS[settings.numberFormat]}"/>`,
+    );
+  }
+  if (settings.startAt !== undefined) {
+    parts.push(`<w:numStart w:val="${Math.max(1, settings.startAt)}"/>`);
+  }
+  if (settings.restart) {
+    parts.push(`<w:numRestart w:val="${NOTE_RESTARTS[settings.restart]}"/>`);
+  }
+  return parts.length > 0
+    ? `<w:${tagName}>${parts.join("")}</w:${tagName}>`
+    : null;
 }
 
 function buildPartRelationshipsXml(
@@ -560,7 +613,10 @@ export async function exportEditorDocumentToDocx(
       (section.evenPageFooter?.length ?? 0) > 0,
   );
   const hasDocumentSettings =
-    hasEvenAndOddHeaders || document.settings?.defaultTabStop !== undefined;
+    hasEvenAndOddHeaders ||
+    document.settings?.defaultTabStop !== undefined ||
+    document.footnotes?.settings !== undefined ||
+    document.endnotes?.settings !== undefined;
   const allImages = [
     ...bodyContext.images,
     ...parts.flatMap((part) => part.context.images),
@@ -662,7 +718,12 @@ export async function exportEditorDocumentToDocx(
   if (hasDocumentSettings) {
     zip.file(
       "word/settings.xml",
-      buildSettingsXml(hasEvenAndOddHeaders, document.settings?.defaultTabStop),
+      buildSettingsXml(
+        hasEvenAndOddHeaders,
+        document.settings?.defaultTabStop,
+        document.footnotes?.settings,
+        document.endnotes?.settings,
+      ),
     );
   }
 

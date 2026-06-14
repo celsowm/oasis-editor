@@ -14,6 +14,8 @@ interface BuildOptions {
   footnotes: Record<number, string>;
   /** Whether to emit separator/continuationSeparator entries. Default true. */
   includeSeparators?: boolean;
+  /** Optional word/settings.xml content. */
+  settingsXml?: string;
 }
 
 function escapeXml(text: string): string {
@@ -49,6 +51,7 @@ async function buildDocxFixture(options: BuildOptions): Promise<ArrayBuffer> {
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
   <Override PartName="/word/footnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"/>
+  ${options.settingsXml ? '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>' : ""}
 </Types>`,
   );
 
@@ -105,6 +108,9 @@ async function buildDocxFixture(options: BuildOptions): Promise<ArrayBuffer> {
   ${footnoteEntries}
 </w:footnotes>`,
   );
+  if (options.settingsXml) {
+    zip.file("word/settings.xml", options.settingsXml);
+  }
 
   const buffer = await zip.generateAsync({ type: "arraybuffer" });
   return buffer;
@@ -160,6 +166,34 @@ describe("DOCX import: footnotes", () => {
     const refs = collectFootnoteReferences(doc);
     expect(refs.map((r) => r.run.text)).toEqual(["1", "2", "3"]);
     expect(Object.keys(doc.footnotes!.items)).toHaveLength(3);
+  });
+
+  it("imports footnote numbering settings from settings.xml", async () => {
+    const buffer = await buildDocxFixture({
+      body: [["alpha", { footnoteId: 10 }, " beta", { footnoteId: 11 }]],
+      footnotes: {
+        10: "First.",
+        11: "Second.",
+      },
+      settingsXml: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:footnotePr>
+    <w:numFmt w:val="lowerRoman"/>
+    <w:numStart w:val="4"/>
+    <w:numRestart w:val="eachSect"/>
+  </w:footnotePr>
+</w:settings>`,
+    });
+
+    const doc = await importDocxToEditorDocument(buffer);
+    const refs = collectFootnoteReferences(doc);
+
+    expect(doc.footnotes?.settings).toEqual({
+      numberFormat: "lowerRoman",
+      startAt: 4,
+      restart: "eachSection",
+    });
+    expect(refs.map((r) => r.run.text)).toEqual(["iv", "v"]);
   });
 
   it("ignores the separator and continuationSeparator special footnotes", async () => {

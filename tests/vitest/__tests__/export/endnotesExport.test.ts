@@ -105,6 +105,24 @@ describe("DOCX export: endnotes", () => {
     expect(rels!).toContain("/endnotes");
   });
 
+  it("serializes endnote numbering settings in settings.xml", async () => {
+    const doc = buildDocWithTwoEndnotes();
+    doc.endnotes!.settings = {
+      numberFormat: "upperLetter",
+      startAt: 3,
+      restart: "continuous",
+    };
+    const buffer = await exportEditorDocumentToDocx(doc);
+    const zip = await exportAndOpen(buffer);
+
+    const settingsXml = await readPart(zip, "word/settings.xml");
+    expect(settingsXml).not.toBeNull();
+    expect(settingsXml!).toContain("<w:endnotePr>");
+    expect(settingsXml!).toContain('<w:numFmt w:val="upperLetter"/>');
+    expect(settingsXml!).toContain('<w:numStart w:val="3"/>');
+    expect(settingsXml!).toContain('<w:numRestart w:val="continuous"/>');
+  });
+
   it("emits <w:endnoteReference> in document.xml that points to the right ids", async () => {
     const doc = buildDocWithTwoEndnotes();
     const buffer = await exportEditorDocumentToDocx(doc);
