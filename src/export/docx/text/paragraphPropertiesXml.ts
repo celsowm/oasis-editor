@@ -122,6 +122,9 @@ export function serializeParagraphStyleXml(style: EditorParagraphStyle): string 
   if (style.textDirection) {
     parts.push(`<w:textDirection w:val="${style.textDirection}"/>`);
   }
+  if (style.outlineLevel != null) {
+    parts.push(`<w:outlineLvl w:val="${style.outlineLevel}"/>`);
+  }
 
   return parts.length > 0 ? `<w:pPr>${parts.join("")}</w:pPr>` : "";
 }
@@ -210,6 +213,9 @@ export function serializeParagraphProperties(
   }
   if (style.textDirection) {
     parts.push(`<w:textDirection w:val="${style.textDirection}"/>`);
+  }
+  if (style.outlineLevel != null) {
+    parts.push(`<w:outlineLvl w:val="${style.outlineLevel}"/>`);
   }
 
   const numbering = numberingInfo.get(paragraph.id);

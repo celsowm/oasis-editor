@@ -82,6 +82,8 @@ export interface EditorParagraphStyle {
   widowControl?: boolean;
   /** `w:textDirection/@w:val`: paragraph flow direction (vertical text). */
   textDirection?: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV" | null;
+  /** `w:outlineLvl/@w:val`: outline level 0–8 (0 = Heading 1 … 8 = Heading 9). */
+  outlineLevel?: number | null;
 }
 
 /** Row properties from a conditional format's `w:trPr`. */

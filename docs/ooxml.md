@@ -145,7 +145,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Paragraph | `w:numPr` | `w:pPr` | — | Numbering properties. | Contains `ilvl` and `numId`; list layout cannot be correct without it. | P0 | Supported |
 | Paragraph | `w:ilvl` | `w:numPr` | `w:val` | List level. | Map to `abstractNum/lvl`. | P0 | Supported |
 | Paragraph | `w:numId` | `w:numPr` | `w:val` | List instance id. | Map to `num` and then `abstractNum`. | P0 | Supported |
-| Paragraph | `w:outlineLvl` | `w:pPr` | `w:val` | Outline level. | Needed for headings, navigation and generated TOC structure. | P1 | Not supported |
+| Paragraph | `w:outlineLvl` | `w:pPr` | `w:val` | Outline level. | Needed for headings, navigation and generated TOC structure. | P1 | Supported |
 | Paragraph | `w:keepNext` | `w:pPr` | `w:val` | Keep paragraph with next paragraph. | Pagination fidelity. Explicit `w:val="0"` is honored. | P1 | Supported |
 | Paragraph | `w:keepLines` | `w:pPr` | `w:val` | Keep lines together. | Avoids splitting paragraph across pages. Explicit `w:val="0"` is honored. | P1 | Supported |
 | Paragraph | `w:pageBreakBefore` | `w:pPr` | `w:val` | Start paragraph on new page. | Core for pagination. Explicit `w:val="0"` is honored. | P1 | Supported |

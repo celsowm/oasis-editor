@@ -104,6 +104,7 @@ export const DEFAULT_PARAGRAPH_STYLE: Required<EditorParagraphStyle> =
       | "lrTbV"
       | "tbRlV"
       | null,
+    outlineLevel: null as unknown as number | null,
   });
 
 export const EFFECTIVE_PARAGRAPH_STYLE_DEFAULTS: Required<EditorParagraphStyle> =

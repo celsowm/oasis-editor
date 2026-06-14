@@ -115,6 +115,7 @@ export function normalizeImportedParagraphStyle(
     borderLeft: style.borderLeft ?? undefined,
     tabs: style.tabs ?? undefined,
     textDirection: style.textDirection ?? undefined,
+    outlineLevel: style.outlineLevel ?? undefined,
   });
 
   return normalized;
@@ -367,6 +368,19 @@ export function parseParagraphStyle(
   );
   if (textDirection) {
     style.textDirection = textDirection;
+  }
+
+  const outlineLvlEl = getFirstChildByTagNameNS(
+    paragraphProperties,
+    WORD_NS,
+    "outlineLvl",
+  );
+  const outlineLvlVal = getAttributeValue(outlineLvlEl, "val");
+  if (outlineLvlVal !== undefined) {
+    const level = Number(outlineLvlVal);
+    if (Number.isFinite(level) && level >= 0 && level <= 8) {
+      style.outlineLevel = level;
+    }
   }
 
   return emptyOrUndefined(style);
