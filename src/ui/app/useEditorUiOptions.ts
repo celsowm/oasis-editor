@@ -32,6 +32,7 @@ export function createEditorUiOptions(ctx: EditorUiOptionsContext) {
     showMenubar: () => ui().showMenubar ?? true,
     showToolbar: () => ui().showToolbar ?? true,
     showOutline: () => ui().showOutline ?? true,
+    toolbarView: () => ui().toolbar?.view ?? "ribbon",
     toolbarLayout: () => ui().toolbar?.layout ?? "overflow",
     isReadOnly: () => documentOptions().readOnly ?? false,
     useComposedShell: () =>

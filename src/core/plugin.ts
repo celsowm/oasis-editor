@@ -2,6 +2,7 @@ import type { JSX } from "solid-js";
 import type { EditorState } from "./model.js";
 import type { Editor } from "./Editor.js";
 import type { CommandRef } from "./commands/CommandRef.js";
+import type { RibbonRow, RibbonTabId } from "../ui/components/Toolbar/schema/items.js";
 
 export type Unsubscribe = () => void;
 
@@ -59,7 +60,10 @@ export interface PluginAction {
   id: string;
   command: CommandRef;
   icon?: string;
+  tab?: RibbonTabId;
   group?: string; // e.g. "insert", "format"
+  row?: RibbonRow;
+  order?: number;
 }
 
 export interface PluginMenuItem extends PluginAction {

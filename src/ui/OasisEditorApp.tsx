@@ -90,6 +90,7 @@ export type {
   OasisEditorAppRuntimeProps,
   OasisEditorAppProps,
   ToolbarLayoutMode,
+  ToolbarViewMode,
 } from "./OasisEditorAppProps.js";
 
 export function OasisEditorApp(props: OasisEditorAppProps = {}) {
@@ -116,6 +117,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     showMenubar,
     showToolbar,
     showOutline,
+    toolbarView,
     toolbarLayout,
     isReadOnly,
     useComposedShell,
@@ -884,6 +886,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         <Toolbar
           host={toolbarHost}
           registry={toolbarRegistry}
+          view={toolbarView()}
           layout={toolbarLayout()}
         />
       </Show>
@@ -930,6 +933,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         showMenubar={showMenubar}
         showToolbar={showToolbar}
         showOutline={showOutline}
+        toolbarView={toolbarView}
         toolbarLayout={toolbarLayout}
         isReadOnly={isReadOnly}
         viewportHeight={() => ui().viewportHeight}

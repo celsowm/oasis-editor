@@ -17,7 +17,12 @@ export function InlineShell(props: ShellProps) {
       }}
     >
       <Show when={props.showChrome && props.showToolbar}>
-        <Toolbar host={props.toolbarHost} registry={props.toolbarRegistry} />
+        <Toolbar
+          host={props.toolbarHost}
+          registry={props.toolbarRegistry}
+          view={props.toolbarView}
+          layout={props.toolbarLayout}
+        />
       </Show>
       <PluginUiHost editor={props.runtimeEditor}>
         <div class="oasis-editor-main-container">

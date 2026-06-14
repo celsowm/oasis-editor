@@ -49,7 +49,10 @@ export function useEditorRuntimePlugins(
         testId: item.id,
         command: item.command,
         iconName: item.icon,
-        group: item.group,
+        tab: item.tab ?? "plugins",
+        group: item.group ?? "general",
+        row: item.row ?? 1,
+        order: item.order,
       };
       toolbarRegistry.register(contributed);
       contributedToolbarIds.push(item.id);

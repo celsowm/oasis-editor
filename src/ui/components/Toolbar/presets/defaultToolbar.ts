@@ -4,6 +4,8 @@ import {
   fontSizePxToPt,
 } from "../../../fontSizeUnits.js";
 import type {
+  RibbonRow,
+  RibbonTabId,
   SelectOption,
   ToolbarActionApi,
   ToolbarDocumentStyle,
@@ -121,6 +123,74 @@ const LIST_BUTTONS: Array<{
     tooltipKey: "toolbar.numberedList",
   },
 ];
+
+interface RibbonPlacement {
+  tab: RibbonTabId;
+  group: string;
+  row: RibbonRow;
+}
+
+const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
+  "editor-toolbar-file-dropdown": { tab: "file", group: "document", row: 1 },
+  "sep-file": { tab: "file", group: "document", row: 1 },
+  "editor-toolbar-undo": { tab: "home", group: "clipboard", row: 1 },
+  "editor-toolbar-redo": { tab: "home", group: "clipboard", row: 2 },
+  "sep-history": { tab: "home", group: "clipboard", row: 2 },
+  "editor-toolbar-style": { tab: "home", group: "styles", row: 1 },
+  "editor-toolbar-font-family": { tab: "home", group: "font", row: 1 },
+  "editor-toolbar-font-size": { tab: "home", group: "font", row: 1 },
+  "editor-toolbar-color": { tab: "home", group: "font", row: 2 },
+  "editor-toolbar-highlight": { tab: "home", group: "font", row: 2 },
+  "editor-toolbar-text-shading": { tab: "home", group: "font", row: 2 },
+  "sep-style": { tab: "home", group: "font", row: 2 },
+  "editor-toolbar-bold": { tab: "home", group: "text", row: 1 },
+  "editor-toolbar-italic": { tab: "home", group: "text", row: 1 },
+  "editor-toolbar-underline-control": { tab: "home", group: "text", row: 1 },
+  "editor-toolbar-strike": { tab: "home", group: "text", row: 1 },
+  "editor-toolbar-superscript": { tab: "home", group: "text", row: 2 },
+  "editor-toolbar-subscript": { tab: "home", group: "text", row: 2 },
+  "sep-format": { tab: "home", group: "text", row: 2 },
+  "editor-toolbar-insert-image": { tab: "insert", group: "illustrations", row: 1 },
+  "editor-toolbar-insert-table": { tab: "insert", group: "tables", row: 1 },
+  "editor-toolbar-link": { tab: "insert", group: "links", row: 1 },
+  "editor-toolbar-unlink": { tab: "insert", group: "links", row: 2 },
+  "editor-toolbar-footnote": { tab: "references", group: "footnotes", row: 1 },
+  "editor-toolbar-image-alt": { tab: "insert", group: "accessibility", row: 2 },
+  "sep-insert": { tab: "insert", group: "accessibility", row: 2 },
+  "editor-toolbar-align-left": { tab: "home", group: "paragraph", row: 1 },
+  "editor-toolbar-align-center": { tab: "home", group: "paragraph", row: 1 },
+  "editor-toolbar-align-right": { tab: "home", group: "paragraph", row: 1 },
+  "editor-toolbar-align-justify": { tab: "home", group: "paragraph", row: 1 },
+  "editor-toolbar-list-bullet": { tab: "home", group: "paragraph", row: 2 },
+  "editor-toolbar-list-ordered": { tab: "home", group: "paragraph", row: 2 },
+  "editor-toolbar-list-outdent": { tab: "home", group: "paragraph", row: 2 },
+  "editor-toolbar-list-indent": { tab: "home", group: "paragraph", row: 2 },
+  "editor-toolbar-list-options": { tab: "home", group: "paragraph", row: 2 },
+  "editor-toolbar-line-spacing-control": { tab: "home", group: "paragraph", row: 2 },
+  "sep-paragraph": { tab: "home", group: "paragraph", row: 2 },
+  "editor-toolbar-metrics": { tab: "layout", group: "paragraph", row: 1 },
+  "sep-metrics": { tab: "layout", group: "paragraph", row: 2 },
+  "editor-toolbar-table": { tab: "layout", group: "table", row: 1 },
+  "sep-table": { tab: "layout", group: "table", row: 2 },
+  "editor-toolbar-section": { tab: "layout", group: "section", row: 1 },
+};
+
+function withDefaultRibbonPlacement(items: ToolbarItem[]): ToolbarItem[] {
+  return items.map((item, index) => {
+    const placement = RIBBON_PLACEMENTS[item.id] ?? {
+      tab: "plugins" as const,
+      group: item.group ?? "general",
+      row: 1 as const,
+    };
+    return {
+      ...item,
+      tab: item.tab ?? placement.tab,
+      group: placement.group,
+      row: item.row ?? placement.row,
+      order: item.order ?? index,
+    };
+  });
+}
 
 /**
  * The built-in toolbar, expressed as data. Every item dispatches through the
@@ -433,5 +503,5 @@ export function createDefaultToolbarPreset(): ToolbarItem[] {
     render: (api) => SectionGroup({ api }),
   });
 
-  return items;
+  return withDefaultRibbonPlacement(items);
 }

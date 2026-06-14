@@ -14,7 +14,13 @@ import {
   type ToolbarHost,
 } from "./state/createToolbarApi.js";
 import type { ToolbarRegistry } from "./registry/ToolbarRegistry.js";
-import type { ToolbarLayoutMode } from "../../OasisEditorAppProps.js";
+import type {
+  ToolbarLayoutMode,
+  ToolbarViewMode,
+} from "../../OasisEditorAppProps.js";
+import { RibbonTabs } from "./ribbon/RibbonTabs.js";
+import { RibbonPanel } from "./ribbon/RibbonPanel.js";
+import type { RibbonTabId } from "./schema/items.js";
 
 const shouldAllowNativeMouseDown = (target: EventTarget | null): boolean =>
   target instanceof Element &&
@@ -24,6 +30,7 @@ export interface ToolbarProps {
   host: () => ToolbarHost;
   registry: ToolbarRegistry;
   showFileGroup?: boolean;
+  view?: ToolbarViewMode;
   layout?: ToolbarLayoutMode;
 }
 
@@ -35,6 +42,7 @@ export interface ToolbarProps {
 export function Toolbar(props: ToolbarProps): JSX.Element {
   const api = createToolbarApi(props.host);
   const [version, setVersion] = createSignal(0);
+  const [activeTab, setActiveTab] = createSignal<RibbonTabId>("home");
 
   onMount(() => {
     const unsubscribe = props.registry.onChange(() => setVersion((v) => v + 1));
@@ -50,6 +58,7 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
     return ordered;
   });
 
+  const view = () => props.view ?? "ribbon";
   const layout = () => props.layout ?? "overflow";
   const renderItems = () => (
     <For each={items()}>
@@ -61,6 +70,8 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
     <section
       class="oasis-editor-toolbar"
       classList={{
+        "oasis-editor-toolbar-view-ribbon": view() === "ribbon",
+        "oasis-editor-toolbar-view-compact": view() === "compact",
         "oasis-editor-toolbar-layout-overflow": layout() === "overflow",
         "oasis-editor-toolbar-layout-wrap": layout() === "wrap",
       }}
@@ -71,7 +82,12 @@ export function Toolbar(props: ToolbarProps): JSX.Element {
         event.preventDefault();
       }}
     >
-      {layout() === "overflow" ? (
+      {view() === "ribbon" ? (
+        <>
+          <RibbonTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+          <RibbonPanel activeTab={activeTab} items={items} api={api} />
+        </>
+      ) : layout() === "overflow" ? (
         <ToolbarOverflowManager>{renderItems()}</ToolbarOverflowManager>
       ) : (
         <div class="oasis-editor-toolbar-wrap-strip">{renderItems()}</div>

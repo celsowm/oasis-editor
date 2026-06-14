@@ -13,7 +13,10 @@ import type { ToolbarHost } from "../components/Toolbar/state/createToolbarApi.j
 import type { ToolbarRegistry } from "../components/Toolbar/registry/ToolbarRegistry.js";
 import type { MenuRegistry } from "../components/Menubar/menuRegistry.js";
 import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
-import type { ToolbarLayoutMode } from "../OasisEditorAppProps.js";
+import type {
+  ToolbarLayoutMode,
+  ToolbarViewMode,
+} from "../OasisEditorAppProps.js";
 import type { OasisEditor } from "../../core/plugin.js";
 import { PluginUiHost } from "../components/PluginUi/PluginUiHost.js";
 
@@ -33,6 +36,7 @@ export interface EditorWorkspaceProps {
   showMenubar: () => boolean;
   showToolbar: () => boolean;
   showOutline: () => boolean;
+  toolbarView: () => ToolbarViewMode;
   toolbarLayout: () => ToolbarLayoutMode;
   isReadOnly: () => boolean;
   viewportHeight: () => number | string | undefined;
@@ -68,6 +72,7 @@ export function EditorWorkspace(props: EditorWorkspaceProps) {
         showMenubar={props.showMenubar()}
         showToolbar={props.showToolbar()}
         showOutline={props.showOutline()}
+        toolbarView={props.toolbarView()}
         toolbarLayout={props.toolbarLayout()}
         isReadOnly={props.isReadOnly()}
         measuredBlockHeights={props.measuredBlockHeights}

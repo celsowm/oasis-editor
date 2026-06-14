@@ -30,6 +30,15 @@
 .oasis-editor-docs .oasis-editor-toolbar {
   width: 100%;
   max-width: none;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.oasis-editor-docs .oasis-editor-toolbar-view-compact {
+  width: 100%;
+  max-width: none;
   min-height: 42px;
   margin: 0;
   padding: 6px 20px 6px 14px;
@@ -38,6 +47,16 @@
   box-shadow: none;
   backdrop-filter: none;
   background: rgba(255, 255, 255, 0.94);
+}
+
+.oasis-editor-docs .oasis-editor-toolbar-view-ribbon {
+  height: 118px;
+  min-height: 118px;
+  padding: 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: #f4f4f4;
+  overflow: hidden;
 }
 
 .oasis-editor-docs .oasis-editor-toolbar-group {
@@ -58,23 +77,23 @@
   background: rgba(95, 99, 104, 0.22);
 }
 
-.oasis-editor-docs .oasis-editor-tool-button,
-.oasis-editor-docs .oasis-editor-tool-select,
-.oasis-editor-docs .oasis-editor-tool-color,
-.oasis-editor-docs .oasis-editor-tool-metric {
+.oasis-editor-docs .oasis-editor-toolbar-view-compact .oasis-editor-tool-button,
+.oasis-editor-docs .oasis-editor-toolbar-view-compact .oasis-editor-tool-select,
+.oasis-editor-docs .oasis-editor-toolbar-view-compact .oasis-editor-tool-color,
+.oasis-editor-docs .oasis-editor-toolbar-view-compact .oasis-editor-tool-metric {
   height: 32px;
   min-height: 32px;
 }
 
-.oasis-editor-docs .oasis-editor-tool-button i,
-.oasis-editor-docs .oasis-editor-tool-button svg {
+.oasis-editor-docs .oasis-editor-toolbar-view-compact .oasis-editor-tool-button i,
+.oasis-editor-docs .oasis-editor-toolbar-view-compact .oasis-editor-tool-button svg {
   width: 18px;
   height: 18px;
 }
 
-.oasis-editor-docs .oasis-editor-tool-button:disabled,
-.oasis-editor-docs .oasis-editor-tool-select:disabled,
-.oasis-editor-docs .oasis-editor-tool-color:has(input:disabled) {
+.oasis-editor-docs .oasis-editor-toolbar-view-compact .oasis-editor-tool-button:disabled,
+.oasis-editor-docs .oasis-editor-toolbar-view-compact .oasis-editor-tool-select:disabled,
+.oasis-editor-docs .oasis-editor-toolbar-view-compact .oasis-editor-tool-color:has(input:disabled) {
   opacity: 0.56;
 }
 

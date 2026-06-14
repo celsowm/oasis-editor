@@ -9,6 +9,7 @@ import type {
   OasisEditorClientController,
 } from "../app/client/OasisEditorClient.js";
 
+export type ToolbarViewMode = "ribbon" | "compact";
 export type ToolbarLayoutMode = "overflow" | "wrap";
 
 export interface OasisEditorLoadingOptions {
@@ -22,6 +23,7 @@ export interface OasisEditorAppUiProps {
   shell?: "document" | "inline" | "balloon";
   uiVariant?: "classic" | "docs";
   toolbar?: {
+    view?: ToolbarViewMode;
     layout?: ToolbarLayoutMode;
   };
   showTitleBar?: boolean;

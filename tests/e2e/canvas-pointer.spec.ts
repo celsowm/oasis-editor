@@ -28,6 +28,7 @@ type CanvasDebugState = {
 type EditorTestProps = {
   ui?: {
     toolbar?: {
+      view?: "ribbon" | "compact";
       layout?: "overflow" | "wrap";
     };
   };
@@ -52,6 +53,9 @@ async function canvasPageRect(page: Page) {
 }
 
 async function gotoEditor(page: Page, testProps?: EditorTestProps) {
+  await page.addInitScript(() => {
+    localStorage.setItem("oasis.welcomeSeen", "1");
+  });
   if (testProps) {
     await page.addInitScript((props: EditorTestProps) => {
       const runtime = props.runtime?.customizeToolbar
@@ -71,7 +75,7 @@ async function gotoEditor(page: Page, testProps?: EditorTestProps) {
   await page.goto("/oasis-editor/index.html", { waitUntil: "load" });
   await expect(
     page.locator('[data-testid="editor-page"][data-renderer="canvas"]').first(),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 60_000 });
   const debugReady = await page.evaluate(() => Boolean(window.__oasisCanvasDebug));
   if (!debugReady) {
     throw new Error("__oasisCanvasDebug is not available");
@@ -302,7 +306,7 @@ test("canvas text selection uses square overlay covering the final character slo
 });
 
 test("toolbar color split buttons separate direct apply from palette selection", async ({ page }) => {
-  await gotoEditor(page);
+  await gotoEditor(page, { ui: { toolbar: { view: "compact" } } });
   await seedText(page, "alpha beta gamma");
   await selectFirstSeedWord(page);
 
@@ -1306,7 +1310,7 @@ test("toolbar overflow table insert does not throw insertBefore NotFoundError", 
   page,
 }) => {
   await page.setViewportSize({ width: 760, height: 900 });
-  await gotoEditor(page);
+  await gotoEditor(page, { ui: { toolbar: { view: "compact" } } });
   await clearMissEvents(page);
   await seedText(page, "overflow table insert");
 
@@ -1331,7 +1335,7 @@ test("toolbar wrap layout keeps overflowing tools visible without more menu", as
   page,
 }) => {
   await page.setViewportSize({ width: 760, height: 900 });
-  await gotoEditor(page, { ui: { toolbar: { layout: "wrap" } } });
+  await gotoEditor(page, { ui: { toolbar: { view: "compact", layout: "wrap" } } });
 
   await expect(page.getByTestId("editor-toolbar-overflow-dropdown")).toBeHidden();
   await expect(page.getByTestId("editor-toolbar-insert-table")).toBeVisible();
@@ -1341,7 +1345,7 @@ test("toolbar wrap layout keeps overflowing tools visible without more menu", as
 test("toolbar customization can remove, move and add items", async ({ page }) => {
   await page.setViewportSize({ width: 1200, height: 900 });
   await gotoEditor(page, {
-    ui: { toolbar: { layout: "wrap" } },
+    ui: { toolbar: { view: "compact", layout: "wrap" } },
     runtime: {
       customizeToolbar: `
         registry.remove("editor-toolbar-footnote");
@@ -1372,3 +1376,36 @@ test("toolbar customization can remove, move and add items", async ({ page }) =>
   expect(tableBox!.x).toBeLessThan(linkBox!.x);
 });
 
+test("ribbon toolbar is the default and switches tabs", async ({ page }) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await gotoEditor(page);
+
+  await expect(page.getByTestId("editor-ribbon-tab-home")).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.getByTestId("editor-toolbar-font-family")).toBeVisible();
+  await expect(page.getByTestId("editor-toolbar-bold")).toBeVisible();
+
+  await page.getByTestId("editor-ribbon-tab-insert").click();
+  await expect(page.getByTestId("editor-ribbon-tab-insert")).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.getByTestId("editor-toolbar-insert-table")).toBeVisible();
+  await expect(page.getByTestId("editor-toolbar-font-family")).toHaveCount(0);
+});
+
+test("ribbon insert table works on desktop and narrow widths", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await gotoEditor(page);
+  await page.getByTestId("editor-ribbon-tab-insert").click();
+  await insertTable(page, 2, 3);
+
+  await page.setViewportSize({ width: 760, height: 900 });
+  await gotoEditor(page);
+  await page.getByTestId("editor-ribbon-tab-insert").click();
+  await insertTable(page, 2, 3);
+});

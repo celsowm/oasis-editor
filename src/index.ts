@@ -111,9 +111,12 @@ export type { CommandBus } from "./core/commands/CommandBus.js";
 export type {
   OasisEditorAppProps,
   ToolbarLayoutMode,
+  ToolbarViewMode,
 } from "./ui/OasisEditorApp.js";
 
 export type {
+  RibbonRow,
+  RibbonTabId,
   ToolbarItem,
   ToolbarItemType,
   ButtonItem,
@@ -132,6 +135,7 @@ export type {
   ToolbarCommandState,
   ItemReactiveOverrides,
 } from "./ui/components/Toolbar/schema/items.js";
+export { RIBBON_TABS } from "./ui/components/Toolbar/schema/items.js";
 export type {
   ColorPalette,
   ColorSwatch,
@@ -159,6 +163,11 @@ export type { OasisMenuItemId } from "./ui/components/Menubar/builtinMenuIds.js"
 
 export { Toolbar } from "./ui/components/Toolbar/Toolbar.js";
 export type { ToolbarProps } from "./ui/components/Toolbar/Toolbar.js";
+export { RIBBON_TAB_DEFINITIONS } from "./ui/components/Toolbar/ribbon/ribbonModel.js";
+export type {
+  RibbonGroupModel,
+  RibbonTabDefinition,
+} from "./ui/components/Toolbar/ribbon/ribbonModel.js";
 
 export { registerToolbarRenderer } from "./ui/components/Toolbar/renderers/renderers.js";
 export type { RendererProps } from "./ui/components/Toolbar/renderers/renderers.js";

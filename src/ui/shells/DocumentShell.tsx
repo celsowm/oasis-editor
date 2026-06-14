@@ -16,7 +16,10 @@ import type { ToolbarHost } from "../components/Toolbar/state/createToolbarApi.j
 import type { ToolbarRegistry } from "../components/Toolbar/registry/ToolbarRegistry.js";
 import type { MenuRegistry } from "../components/Menubar/menuRegistry.js";
 import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
-import type { ToolbarLayoutMode } from "../OasisEditorAppProps.js";
+import type {
+  ToolbarLayoutMode,
+  ToolbarViewMode,
+} from "../OasisEditorAppProps.js";
 import { buildCanvasLayoutSnapshot } from "../canvas/CanvasLayoutSnapshot.js";
 import { getParagraphEntries } from "../canvas/CanvasGeometry.js";
 import type { OasisEditor } from "../../core/plugin.js";
@@ -34,6 +37,7 @@ export interface ShellProps {
   showMenubar: boolean;
   showToolbar: boolean;
   showOutline: boolean;
+  toolbarView: ToolbarViewMode;
   toolbarLayout: ToolbarLayoutMode;
   isReadOnly: boolean;
   measuredBlockHeights: Accessor<Record<string, number>>;
@@ -96,25 +100,36 @@ export function DocumentShell(props: ShellProps) {
   return (
     <>
       <Show when={props.showChrome}>
-        <Show
-          when={props.showTitleBar}
-          fallback={
-            <Show when={props.showMenubar}>
-              <Menubar host={props.toolbarHost} registry={props.menuRegistry} />
-            </Show>
-          }
-        >
-          <TitleBar>
-            <Show when={props.showMenubar}>
-              <Menubar host={props.toolbarHost} registry={props.menuRegistry} />
-            </Show>
-          </TitleBar>
+        <Show when={props.toolbarView === "compact"}>
+          <Show
+            when={props.showTitleBar}
+            fallback={
+              <Show when={props.showMenubar}>
+                <Menubar
+                  host={props.toolbarHost}
+                  registry={props.menuRegistry}
+                />
+              </Show>
+            }
+          >
+            <TitleBar>
+              <Show when={props.showMenubar}>
+                <Menubar
+                  host={props.toolbarHost}
+                  registry={props.menuRegistry}
+                />
+              </Show>
+            </TitleBar>
+          </Show>
         </Show>
         <Show when={props.showToolbar}>
           <Toolbar
             host={props.toolbarHost}
             registry={props.toolbarRegistry}
-            showFileGroup={!props.showMenubar}
+            showFileGroup={
+              props.toolbarView === "ribbon" ? true : !props.showMenubar
+            }
+            view={props.toolbarView}
             layout={props.toolbarLayout}
           />
         </Show>

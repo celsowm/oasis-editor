@@ -4,6 +4,23 @@ import type { CommandRef } from "../../../../core/commands/CommandRef.js";
 import type { TranslationKey } from "../../../../i18n/index.js";
 import type { ColorPalette } from "./palette.js";
 
+export const RIBBON_TABS = [
+  "file",
+  "home",
+  "insert",
+  "draw",
+  "layout",
+  "references",
+  "collaboration",
+  "protection",
+  "view",
+  "plugins",
+  "ai",
+] as const;
+
+export type RibbonTabId = (typeof RIBBON_TABS)[number];
+export type RibbonRow = 1 | 2;
+
 /** Reactive snapshot of a command's state, as consumed by toolbar items. */
 export interface ToolbarCommandState {
   isEnabled: boolean;
@@ -45,8 +62,12 @@ export interface ItemReactiveOverrides {
 interface ToolbarItemBase extends ItemReactiveOverrides {
   id: string;
   order?: number;
+  /** Office-style ribbon tab placement. Missing values default to Plugins. */
+  tab?: RibbonTabId;
   /** Logical section id (used for grouping/ordering, not rendering layout). */
   group?: string;
+  /** Two-row ribbon placement. Missing values default to row 1. */
+  row?: RibbonRow;
   testId?: string;
   tooltipKey?: TranslationKey;
   tooltip?: string;
@@ -130,7 +151,9 @@ export interface SeparatorItem {
   type: "separator";
   id: string;
   order?: number;
+  tab?: RibbonTabId;
   group?: string;
+  row?: RibbonRow;
   isVisible?: (api: ToolbarActionApi) => boolean;
 }
 

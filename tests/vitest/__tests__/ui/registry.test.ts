@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { createToolbarRegistry } from "../../../../src/ui/components/Toolbar/registry/ToolbarRegistry.js";
 import { MenuRegistry } from "../../../../src/ui/components/Menubar/menuRegistry.js";
 import { useEditorRuntimePlugins } from "../../../../src/ui/app/useEditorRuntimePlugins.js";
+import { createDefaultToolbarPreset } from "../../../../src/ui/components/Toolbar/presets/defaultToolbar.js";
+import { OASIS_TOOLBAR_ITEMS } from "../../../../src/ui/components/Toolbar/presets/builtinToolbarIds.js";
+import { RIBBON_TABS } from "../../../../src/ui/components/Toolbar/schema/items.js";
 
 describe("UI registries", () => {
   it("deduplicates and orders toolbar items", () => {
@@ -73,6 +76,71 @@ describe("UI registries", () => {
     ]);
   });
 
+  it("preserves ribbon placement metadata through toolbar registry operations", () => {
+    const registry = createToolbarRegistry();
+    registry.register({
+      id: "font",
+      type: "button",
+      command: "font",
+      tab: "home",
+      group: "font",
+      row: 1,
+    });
+    registry.insertAfter("font", {
+      id: "ai",
+      type: "button",
+      command: "ai",
+      tab: "ai",
+      group: "assistant",
+      row: 2,
+    });
+
+    expect(registry.get("ai")).toMatchObject({
+      tab: "ai",
+      group: "assistant",
+      row: 2,
+    });
+
+    registry.replace("font", {
+      id: "font",
+      type: "button",
+      command: "font2",
+      tab: "home",
+      group: "text",
+      row: 2,
+    });
+    registry.move("ai", { before: "font" });
+
+    expect(registry.getOrdered().map((item) => item.id)).toEqual([
+      "ai",
+      "font",
+    ]);
+    expect(registry.get("font")).toMatchObject({
+      tab: "home",
+      group: "text",
+      row: 2,
+    });
+  });
+
+  it("assigns every default toolbar item to a known ribbon tab, group and row", () => {
+    const knownTabs = new Set<string>(RIBBON_TABS);
+    const items = createDefaultToolbarPreset();
+
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) {
+      expect(knownTabs.has(item.tab ?? "")).toBe(true);
+      expect(item.group).toBeTruthy();
+      expect([1, 2]).toContain(item.row);
+    }
+
+    expect(
+      items.find((item) => item.id === OASIS_TOOLBAR_ITEMS.fontFamily),
+    ).toMatchObject({ tab: "home", group: "font", row: 1 });
+    expect(
+      items.find((item) => item.id === OASIS_TOOLBAR_ITEMS.insertTable),
+    ).toMatchObject({ tab: "insert", group: "tables", row: 1 });
+  });
+
   it("deduplicates and unregisters menu items", () => {
     const registry = new MenuRegistry();
 
@@ -120,5 +188,23 @@ describe("UI registries", () => {
         .getItems()
         .some((item) => item.id === "client_custom"),
     ).toBe(false);
+  });
+
+  it("places plugin toolbar items without explicit placement in Plugins General", () => {
+    const runtime = useEditorRuntimePlugins({
+      essentialsPlugin: { name: "Essentials" },
+      externalPlugins: [
+        {
+          name: "Plugin",
+          toolbar: [{ id: "plugin_action", command: "pluginAction" }],
+        },
+      ],
+    });
+
+    expect(runtime.toolbarRegistry.get("plugin_action")).toMatchObject({
+      tab: "plugins",
+      group: "general",
+      row: 1,
+    });
   });
 });
