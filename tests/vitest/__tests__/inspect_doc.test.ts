@@ -4,7 +4,7 @@ import { importDocxToEditorDocument } from "../../../src/import/docx/importDocxT
 import { projectDocumentLayout } from "../../../src/layoutProjection/documentLayout.js";
 import { getParagraphText } from "../../../src/core/model.js";
 
-describe("inspect doc pagination", () => {
+describe.skip("inspect doc pagination", () => {
   it("paginates and logs content", async () => {
     const docxPath = 'C:\\Users\\celso\\Downloads\\HU - Criar relatório diário de comunicações processuais do DJE não recebidas no PGE Digital.docx';
     
