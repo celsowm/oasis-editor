@@ -47,9 +47,8 @@ const RIBBON_GROUP_ORDER: Partial<Record<RibbonTabId, Record<string, number>>> =
     home: {
       clipboard: 10,
       font: 20,
-      text: 30,
-      paragraph: 40,
-      styles: 50,
+      paragraph: 30,
+      styles: 40,
     },
     insert: {
       illustrations: 10,

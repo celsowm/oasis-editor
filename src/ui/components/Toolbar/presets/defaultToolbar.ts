@@ -143,13 +143,13 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-highlight": { tab: "home", group: "font", row: 2 },
   "editor-toolbar-text-shading": { tab: "home", group: "font", row: 2 },
   "sep-style": { tab: "home", group: "font", row: 2 },
-  "editor-toolbar-bold": { tab: "home", group: "text", row: 1 },
-  "editor-toolbar-italic": { tab: "home", group: "text", row: 1 },
-  "editor-toolbar-underline-control": { tab: "home", group: "text", row: 1 },
-  "editor-toolbar-strike": { tab: "home", group: "text", row: 1 },
-  "editor-toolbar-superscript": { tab: "home", group: "text", row: 2 },
-  "editor-toolbar-subscript": { tab: "home", group: "text", row: 2 },
-  "sep-format": { tab: "home", group: "text", row: 2 },
+  "editor-toolbar-bold": { tab: "home", group: "font", row: 2 },
+  "editor-toolbar-italic": { tab: "home", group: "font", row: 2 },
+  "editor-toolbar-underline-control": { tab: "home", group: "font", row: 2 },
+  "editor-toolbar-strike": { tab: "home", group: "font", row: 2 },
+  "editor-toolbar-superscript": { tab: "home", group: "font", row: 2 },
+  "editor-toolbar-subscript": { tab: "home", group: "font", row: 2 },
+  "sep-format": { tab: "home", group: "font", row: 2 },
   "editor-toolbar-insert-image": { tab: "insert", group: "illustrations", row: 1 },
   "editor-toolbar-insert-table": { tab: "insert", group: "tables", row: 1 },
   "editor-toolbar-link": { tab: "insert", group: "links", row: 1 },
@@ -157,15 +157,15 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-footnote": { tab: "references", group: "footnotes", row: 1 },
   "editor-toolbar-image-alt": { tab: "insert", group: "accessibility", row: 2 },
   "sep-insert": { tab: "insert", group: "accessibility", row: 2 },
-  "editor-toolbar-align-left": { tab: "home", group: "paragraph", row: 1 },
-  "editor-toolbar-align-center": { tab: "home", group: "paragraph", row: 1 },
-  "editor-toolbar-align-right": { tab: "home", group: "paragraph", row: 1 },
-  "editor-toolbar-align-justify": { tab: "home", group: "paragraph", row: 1 },
-  "editor-toolbar-list-bullet": { tab: "home", group: "paragraph", row: 2 },
-  "editor-toolbar-list-ordered": { tab: "home", group: "paragraph", row: 2 },
-  "editor-toolbar-list-outdent": { tab: "home", group: "paragraph", row: 2 },
-  "editor-toolbar-list-indent": { tab: "home", group: "paragraph", row: 2 },
-  "editor-toolbar-list-options": { tab: "home", group: "paragraph", row: 2 },
+  "editor-toolbar-align-left": { tab: "home", group: "paragraph", row: 2 },
+  "editor-toolbar-align-center": { tab: "home", group: "paragraph", row: 2 },
+  "editor-toolbar-align-right": { tab: "home", group: "paragraph", row: 2 },
+  "editor-toolbar-align-justify": { tab: "home", group: "paragraph", row: 2 },
+  "editor-toolbar-list-bullet": { tab: "home", group: "paragraph", row: 1 },
+  "editor-toolbar-list-ordered": { tab: "home", group: "paragraph", row: 1 },
+  "editor-toolbar-list-outdent": { tab: "home", group: "paragraph", row: 1 },
+  "editor-toolbar-list-indent": { tab: "home", group: "paragraph", row: 1 },
+  "editor-toolbar-list-options": { tab: "home", group: "paragraph", row: 1 },
   "editor-toolbar-line-spacing-control": { tab: "home", group: "paragraph", row: 2 },
   "sep-paragraph": { tab: "home", group: "paragraph", row: 2 },
   "editor-toolbar-metrics": { tab: "layout", group: "paragraph", row: 1 },
@@ -293,39 +293,8 @@ export function createDefaultToolbarPreset(): ToolbarItem[] {
     command: "setFontSize",
     options: fontSizeOptions,
   });
-  items.push({
-    type: "colorPicker",
-    id: "editor-toolbar-color",
-    testId: "editor-toolbar-color",
-    kind: "color",
-    iconName: "type",
-    defaultValue: "#111827",
-    tooltipKey: "toolbar.color",
-    command: "setColor",
-  });
-  items.push({
-    type: "colorPicker",
-    id: "editor-toolbar-highlight",
-    testId: "editor-toolbar-highlight",
-    kind: "highlight",
-    iconName: "highlighter",
-    defaultValue: "#fef08a",
-    tooltipKey: "toolbar.highlight",
-    command: "setHighlight",
-  });
-  items.push({
-    type: "colorPicker",
-    id: "editor-toolbar-text-shading",
-    testId: "editor-toolbar-text-shading",
-    kind: "shading",
-    iconName: "paint-bucket",
-    defaultValue: "#fef3c7",
-    tooltipKey: "toolbar.textShading",
-    command: "setTextShading",
-  });
-  items.push({ type: "separator", id: "sep-style" });
 
-  // --- Format ---
+  // --- Font formatting ---
   items.push({
     type: "toggle",
     id: "editor-toolbar-bold",
@@ -357,21 +326,52 @@ export function createDefaultToolbarPreset(): ToolbarItem[] {
   });
   items.push({
     type: "toggle",
-    id: "editor-toolbar-superscript",
-    testId: "editor-toolbar-superscript",
-    iconName: "superscript",
-    command: "superscript",
-    tooltipKey: "toolbar.superscript",
-  });
-  items.push({
-    type: "toggle",
     id: "editor-toolbar-subscript",
     testId: "editor-toolbar-subscript",
     iconName: "subscript",
     command: "subscript",
     tooltipKey: "toolbar.subscript",
   });
+  items.push({
+    type: "toggle",
+    id: "editor-toolbar-superscript",
+    testId: "editor-toolbar-superscript",
+    iconName: "superscript",
+    command: "superscript",
+    tooltipKey: "toolbar.superscript",
+  });
   items.push({ type: "separator", id: "sep-format" });
+  items.push({
+    type: "colorPicker",
+    id: "editor-toolbar-color",
+    testId: "editor-toolbar-color",
+    kind: "color",
+    iconName: "type",
+    defaultValue: "#111827",
+    tooltipKey: "toolbar.color",
+    command: "setColor",
+  });
+  items.push({
+    type: "colorPicker",
+    id: "editor-toolbar-highlight",
+    testId: "editor-toolbar-highlight",
+    kind: "highlight",
+    iconName: "highlighter",
+    defaultValue: "#fef08a",
+    tooltipKey: "toolbar.highlight",
+    command: "setHighlight",
+  });
+  items.push({
+    type: "colorPicker",
+    id: "editor-toolbar-text-shading",
+    testId: "editor-toolbar-text-shading",
+    kind: "shading",
+    iconName: "paint-bucket",
+    defaultValue: "#fef3c7",
+    tooltipKey: "toolbar.textShading",
+    command: "setTextShading",
+  });
+  items.push({ type: "separator", id: "sep-style" });
 
   // --- Insert ---
   items.push({
