@@ -1,5 +1,6 @@
 import type { EditorNamedStyle, EditorTextRun } from "../../../core/model.js";
 import type { DocContext } from "../docxTypes.js";
+import { escapeXml } from "../xmlUtils.js";
 import { materializeRunStyle } from "./styleMaterialization.js";
 import { serializeRunProperties } from "./runPropertiesXml.js";
 import { serializeRunText } from "./runTextXml.js";
@@ -98,6 +99,10 @@ export function serializeRun(
         return result;
       }
     }
+  }
+  if (run.sym) {
+    const { font, char } = run.sym;
+    return `<w:r>${serializeRunProperties(materializedRunStyle)}<w:sym w:font="${escapeXml(font)}" w:char="${char}"/></w:r>`;
   }
   return `<w:r>${serializeRunProperties(materializedRunStyle)}${serializeRunText(run.text)}</w:r>`;
 }

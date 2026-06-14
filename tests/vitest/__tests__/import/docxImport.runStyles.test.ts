@@ -505,3 +505,61 @@ describe("DOCX run style import", () => {
     );
   });
 });
+
+describe("w:sym symbol characters", () => {
+  function buildSymDocx(runXml: string): Promise<ArrayBuffer> {
+    const zip = new JSZip();
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>${runXml}</w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    return zip.generateAsync({ type: "arraybuffer" });
+  }
+
+  it("imports w:sym with rPr font into sym metadata and text", async () => {
+    const docx = await buildSymDocx(`
+      <w:r>
+        <w:rPr><w:rFonts w:ascii="Symbol" w:hAnsi="Symbol"/></w:rPr>
+        <w:sym w:font="Symbol" w:char="F0B7"/>
+      </w:r>`);
+    const doc = await importDocxToEditorDocument(docx);
+    const run = getDocumentParagraphs(doc)[0]!.runs[0]!;
+    expect(run.sym).toEqual({ font: "Symbol", char: "F0B7" });
+    expect(run.text).toBe(String.fromCodePoint(0xf0b7));
+  });
+
+  it("applies sym font to styles.fontFamily when w:rPr has no rFonts", async () => {
+    const docx = await buildSymDocx(`
+      <w:r>
+        <w:sym w:font="Wingdings" w:char="F077"/>
+      </w:r>`);
+    const doc = await importDocxToEditorDocument(docx);
+    const run = getDocumentParagraphs(doc)[0]!.runs[0]!;
+    expect(run.sym).toEqual({ font: "Wingdings", char: "F077" });
+    expect(run.styles?.fontFamily).toBe("Wingdings");
+  });
+
+  it("exports sym run as w:sym element (not w:t)", async () => {
+    const docx = await buildSymDocx(`
+      <w:r>
+        <w:rPr><w:rFonts w:ascii="Symbol" w:hAnsi="Symbol"/></w:rPr>
+        <w:sym w:font="Symbol" w:char="F0B7"/>
+      </w:r>`);
+    const doc = await importDocxToEditorDocument(docx);
+    const exported = await exportEditorDocumentToDocx(doc);
+    const outZip = await JSZip.loadAsync(exported);
+    const xml = await outZip.file("word/document.xml")!.async("string");
+    expect(xml).toContain('w:sym w:font="Symbol" w:char="F0B7"');
+    // The sym character must not be emitted as plain w:t content
+    expect(xml).not.toContain(`<w:t>${String.fromCodePoint(0xf0b7)}</w:t>`);
+  });
+});

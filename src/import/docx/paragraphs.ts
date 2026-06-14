@@ -89,6 +89,9 @@ function createImportedParagraph(
         }
       ).__importedBookmark = { ...run.bookmark };
     }
+    if (run.sym) {
+      paragraph.runs[index]!.sym = { ...run.sym };
+    }
   });
   paragraph.style = paragraphStyle ? { ...paragraphStyle } : undefined;
   for (const run of paragraph.runs) {

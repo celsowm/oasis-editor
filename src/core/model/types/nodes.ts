@@ -106,6 +106,12 @@ export interface EditorTextRun {
    * `EditorDocument.endnotes.items[endnoteReference.endnoteId]`.
    */
   endnoteReference?: EditorEndnoteReferenceData;
+  /**
+   * Round-trip metadata for `w:sym` — a glyph from a named font.
+   * `font` is the `w:font` attribute value; `char` is the 4-digit hex `w:char` value.
+   * The character is also stored in `text` so the canvas can render it.
+   */
+  sym?: { font: string; char: string };
 }
 
 /**

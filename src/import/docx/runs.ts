@@ -74,10 +74,12 @@ export async function parseRunElement(
   image?: EditorImageRunData;
   textBox?: EditorTextBoxData;
   innerBookmarks?: Array<{ offset: number; marker: ImportedBookmarkMarker }>;
+  sym?: { font: string; char: string };
 }> {
   const textParts: string[] = [];
   let image: EditorImageRunData | undefined;
   let textBox: EditorTextBoxData | undefined;
+  let sym: { font: string; char: string } | undefined;
   let textLength = 0;
   const innerBookmarks: Array<{
     offset: number;
@@ -159,6 +161,16 @@ export async function parseRunElement(
           pushText("\uFFFC");
           image = vmlResult;
         }
+      } else if (element.localName === "sym") {
+        const font = getAttributeValue(element, "font") ?? "";
+        const charHex = getAttributeValue(element, "char") ?? "";
+        const codePoint = parseInt(charHex, 16);
+        const ch =
+          Number.isFinite(codePoint) && codePoint > 0
+            ? String.fromCodePoint(codePoint)
+            : "?";
+        pushText(ch);
+        sym = { font, char: charHex };
       }
     } else if (element.localName === "AlternateContent") {
       const drawing = resolveAlternateContentDrawing(element);
@@ -177,6 +189,7 @@ export async function parseRunElement(
     image,
     ...(textBox ? { textBox } : {}),
     ...(innerBookmarks.length > 0 ? { innerBookmarks } : {}),
+    ...(sym ? { sym } : {}),
   };
 }
 
@@ -392,7 +405,7 @@ export async function parseRunsContainer(
         continue;
       }
 
-      const { text, image, textBox, innerBookmarks } = await parseRunElement(
+      const { text, image, textBox, innerBookmarks, sym } = await parseRunElement(
         element,
         zip,
         relsMap,
@@ -401,6 +414,11 @@ export async function parseRunsContainer(
       );
 
       let styles = runStyles;
+      if (sym && !styles?.fontFamily) {
+        // Apply the sym font so the canvas renders the PUA/legacy code point
+        // correctly when w:rPr did not already specify w:rFonts.
+        (styles ??= {}).fontFamily = sym.font;
+      }
       if (inheritedLink) {
         (styles ??= {}).link = inheritedLink;
       }
@@ -432,6 +450,7 @@ export async function parseRunsContainer(
         text,
         ...(image ? { image } : {}),
         ...(textBox ? { textBox } : {}),
+        ...(sym ? { sym } : {}),
         ...(styles ? { styles } : {}),
       });
       if (innerBookmarks) {

@@ -40,4 +40,5 @@ export interface ImportedRun {
   footnoteReference?: { docxId: string; customMark?: string };
   endnoteReference?: { docxId: string; customMark?: string };
   bookmark?: ImportedBookmarkMarker;
+  sym?: { font: string; char: string };
 }
