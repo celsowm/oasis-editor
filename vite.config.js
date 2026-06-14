@@ -79,11 +79,11 @@ export default defineConfig(({ mode }) => {
       }),
     ].filter(Boolean),
     test: {
-      include: ['src/**/*.{test,spec}.{ts,tsx}'],
-      exclude: ['node_modules', 'dist', 'dist-app', 'e2e/**'],
+      include: ['tests/vitest/**/*.{test,spec}.{ts,tsx}'],
+      exclude: ['node_modules', 'dist', 'dist-app'],
       environment: 'node',
       environmentMatchGlobs: [
-        ['src/__tests__/ui/**', 'jsdom'],
+        ['tests/vitest/__tests__/ui/**', 'jsdom'],
       ],
     },
   };
