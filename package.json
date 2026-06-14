@@ -2,6 +2,10 @@
   "name": "oasis-editor",
   "version": "0.0.1",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/celsowm/oasis-editor.git"
+  },
   "main": "./dist/oasis-editor.umd.cjs",
   "module": "./dist/oasis-editor.js",
   "types": "./dist/index.d.ts",
