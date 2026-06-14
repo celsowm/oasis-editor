@@ -1,5 +1,6 @@
 import type { CommandRef } from "./CommandRef.js";
 import type { EditorPageMargins } from "../model.js";
+import type { TextCaseMode } from "./text.js";
 
 export interface InsertTablePayload {
   rows: number;
@@ -45,6 +46,10 @@ export interface OasisCommandPayloads {
   splitBlock: undefined;
   setFontFamily: string | null;
   setFontSize: SetFontSizePayload | number | string | null;
+  increaseFontSize: undefined;
+  decreaseFontSize: undefined;
+  changeTextCase: TextCaseMode;
+  clearFormatting: undefined;
   setColor: string | null;
   setHighlight: string | null;
   setTextShading: string | null;

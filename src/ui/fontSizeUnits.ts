@@ -11,6 +11,27 @@ export const STANDARD_FONT_SIZES_PT = [
   8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72,
 ];
 
+/** Next larger standard point size (Word's "Grow Font"). */
+export function nextFontSizePt(currentPt: number): number {
+  for (const size of STANDARD_FONT_SIZES_PT) {
+    if (size > currentPt + 1e-6) {
+      return size;
+    }
+  }
+  return Math.round(currentPt) + 10;
+}
+
+/** Next smaller standard point size (Word's "Shrink Font"). */
+export function previousFontSizePt(currentPt: number): number {
+  for (let index = STANDARD_FONT_SIZES_PT.length - 1; index >= 0; index -= 1) {
+    const size = STANDARD_FONT_SIZES_PT[index]!;
+    if (size < currentPt - 1e-6) {
+      return size;
+    }
+  }
+  return Math.max(1, Math.round(currentPt) - 1);
+}
+
 /** Convert a model pixel size to a point value, rounded to 2 decimals. */
 export function fontSizePxToPt(px: number): number {
   return Math.round(pxToPt(px) * 100) / 100;

@@ -1,4 +1,5 @@
 import type { OasisPlugin } from "../../core/plugin.js";
+import type { TextCaseMode } from "../../core/commands/text.js";
 import type { ToolbarStyleState } from "../../ui/toolbarStyleState.js";
 import {
   createActionCommandBuilder,
@@ -18,6 +19,10 @@ export interface EssentialsFeatureGate {
 
 export interface EssentialsStyleCapability {
   state: () => ToolbarStyleState;
+}
+
+export interface EssentialsSelectionCapability {
+  isCollapsed: () => boolean;
 }
 
 export interface EssentialsHistoryCapability {
@@ -56,6 +61,10 @@ export interface EssentialsFormattingCapability {
   splitBlock: () => boolean;
   setFontFamily: (value: string | null) => boolean;
   setFontSize: (value: number | null) => boolean;
+  increaseFontSize: () => boolean;
+  decreaseFontSize: () => boolean;
+  changeTextCase: (mode: TextCaseMode) => boolean;
+  clearFormatting: () => boolean;
   setColor: (value: string | null) => boolean;
   setHighlight: (value: string | null) => boolean;
   setTextShading: (value: string | null) => boolean;
@@ -149,6 +158,7 @@ export interface EssentialsTableCapability {
 export interface EssentialsPluginDeps {
   gate: EssentialsFeatureGate;
   style: EssentialsStyleCapability;
+  selection: EssentialsSelectionCapability;
   history: EssentialsHistoryCapability;
   formatting: EssentialsFormattingCapability;
   document: EssentialsDocumentCapability;
@@ -173,11 +183,13 @@ export function createEssentialsPlugin(
       ...buildCoreFormattingCommands({
         gate: deps.gate,
         style: deps.style,
+        selection: deps.selection,
         history: deps.history,
         formatting: deps.formatting,
         link: deps.link,
         command,
         valueCommand,
+        actionCommand,
       }),
       ...buildDocumentAndBrowserCommands({
         gate: deps.gate,

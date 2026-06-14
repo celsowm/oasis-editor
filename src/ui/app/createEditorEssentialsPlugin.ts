@@ -23,6 +23,13 @@ import {
 } from "../../core/selection.js";
 import { createEssentialsPlugin } from "../../plugins/internal/createEssentialsPlugin.js";
 import { togglePreciseFontMode } from "./localFontAccess.js";
+import {
+  fontSizePtToPx,
+  fontSizePxToPt,
+  nextFontSizePt,
+  previousFontSizePt,
+} from "../fontSizeUnits.js";
+import type { TextCaseMode } from "../../core/commands/text.js";
 import type { SelectedImageRun } from "../../core/commands/image.js";
 import type { createEditorCommandsController } from "../../app/controllers/EditorCommandsController.js";
 import type { createEditorHistoryActions } from "../../app/controllers/useEditorHistoryActions.js";
@@ -80,6 +87,29 @@ export function createEditorEssentialsRuntimePlugin(
 
   const essentialsStyle = {
     state: () => options.styleController.toolbarStyleState(),
+  };
+
+  const essentialsSelection = {
+    isCollapsed: () => isSelectionCollapsed(options.state().selection),
+  };
+
+  const stepFontSize = (direction: "increase" | "decrease") => {
+    const currentPx = Number(
+      options.styleController.toolbarStyleState().fontSize,
+    );
+    const currentPt =
+      Number.isFinite(currentPx) && currentPx > 0
+        ? fontSizePxToPt(currentPx)
+        : 11;
+    const nextPt =
+      direction === "increase"
+        ? nextFontSizePt(currentPt)
+        : previousFontSizePt(currentPt);
+    options.styleController.applyToolbarValueStyleCommand(
+      "fontSize",
+      fontSizePtToPx(nextPt),
+    );
+    return true;
   };
 
   const essentialsHistory = {
@@ -229,6 +259,21 @@ export function createEditorEssentialsRuntimePlugin(
       options.styleController.applyToolbarValueStyleCommand("fontSize", value),
       true
     ),
+    increaseFontSize: () => stepFontSize("increase"),
+    decreaseFontSize: () => stepFontSize("decrease"),
+    changeTextCase: (mode: TextCaseMode) => (
+      options.commandsController.applyChangeTextCaseCommand(mode),
+      true
+    ),
+    clearFormatting: () => {
+      if (isSelectionCollapsed(options.state().selection)) {
+        options.styleController.clearPendingCaretTextStyle();
+        options.focusInput();
+        return true;
+      }
+      options.commandsController.applyClearFormattingCommand();
+      return true;
+    },
     setColor: (value: string | null) => (
       options.styleController.applyToolbarValueStyleCommand("color", value),
       true
@@ -555,6 +600,7 @@ export function createEditorEssentialsRuntimePlugin(
   return createEssentialsPlugin({
     gate: essentialsGate,
     style: essentialsStyle,
+    selection: essentialsSelection,
     history: essentialsHistory,
     formatting: essentialsFormatting,
     document: essentialsDocument,

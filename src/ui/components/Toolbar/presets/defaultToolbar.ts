@@ -139,6 +139,10 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-style": { tab: "home", group: "styles", row: 1 },
   "editor-toolbar-font-family": { tab: "home", group: "font", row: 1 },
   "editor-toolbar-font-size": { tab: "home", group: "font", row: 1 },
+  "editor-toolbar-font-increase": { tab: "home", group: "font", row: 1 },
+  "editor-toolbar-font-decrease": { tab: "home", group: "font", row: 1 },
+  "editor-toolbar-change-case": { tab: "home", group: "font", row: 1 },
+  "editor-toolbar-clear-formatting": { tab: "home", group: "font", row: 1 },
   "editor-toolbar-color": { tab: "home", group: "font", row: 2 },
   "editor-toolbar-highlight": { tab: "home", group: "font", row: 2 },
   "editor-toolbar-text-shading": { tab: "home", group: "font", row: 2 },
@@ -292,6 +296,89 @@ export function createDefaultToolbarPreset(): ToolbarItem[] {
     tooltipKey: "toolbar.fontSize",
     command: "setFontSize",
     options: fontSizeOptions,
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-font-increase",
+    testId: "editor-toolbar-font-increase",
+    iconName: "a-arrow-up",
+    command: "increaseFontSize",
+    tooltipKey: "toolbar.increaseFontSize",
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-font-decrease",
+    testId: "editor-toolbar-font-decrease",
+    iconName: "a-arrow-down",
+    command: "decreaseFontSize",
+    tooltipKey: "toolbar.decreaseFontSize",
+  });
+  items.push({
+    type: "menu",
+    id: "editor-toolbar-change-case",
+    testId: "editor-toolbar-change-case",
+    iconName: "case-sensitive",
+    tooltipKey: "toolbar.changeCase",
+    isDisabled: (api) =>
+      !api.commands.state({ name: "changeTextCase" }).isEnabled,
+    content: {
+      kind: "items",
+      items: [
+        {
+          type: "button",
+          id: "editor-toolbar-case-sentence",
+          testId: "editor-toolbar-case-sentence",
+          labelKey: "toolbar.caseSentence",
+          wide: true,
+          tooltipKey: "toolbar.caseSentence",
+          command: { name: "changeTextCase", payload: "sentence" },
+        },
+        {
+          type: "button",
+          id: "editor-toolbar-case-lower",
+          testId: "editor-toolbar-case-lower",
+          labelKey: "toolbar.caseLower",
+          wide: true,
+          tooltipKey: "toolbar.caseLower",
+          command: { name: "changeTextCase", payload: "lower" },
+        },
+        {
+          type: "button",
+          id: "editor-toolbar-case-upper",
+          testId: "editor-toolbar-case-upper",
+          labelKey: "toolbar.caseUpper",
+          wide: true,
+          tooltipKey: "toolbar.caseUpper",
+          command: { name: "changeTextCase", payload: "upper" },
+        },
+        {
+          type: "button",
+          id: "editor-toolbar-case-capitalize",
+          testId: "editor-toolbar-case-capitalize",
+          labelKey: "toolbar.caseCapitalize",
+          wide: true,
+          tooltipKey: "toolbar.caseCapitalize",
+          command: { name: "changeTextCase", payload: "capitalize" },
+        },
+        {
+          type: "button",
+          id: "editor-toolbar-case-toggle",
+          testId: "editor-toolbar-case-toggle",
+          labelKey: "toolbar.caseToggle",
+          wide: true,
+          tooltipKey: "toolbar.caseToggle",
+          command: { name: "changeTextCase", payload: "toggle" },
+        },
+      ],
+    },
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-clear-formatting",
+    testId: "editor-toolbar-clear-formatting",
+    iconName: "remove-formatting",
+    command: "clearFormatting",
+    tooltipKey: "toolbar.clearFormatting",
   });
 
   // --- Font formatting ---

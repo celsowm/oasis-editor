@@ -1,6 +1,8 @@
 import {
   acceptRevisionsInSelection,
+  changeSelectedTextCase,
   clearParagraphListAtSelection,
+  clearSelectedTextFormatting,
   getLinkAtSelection,
   indentParagraphList,
   insertPageBreakAtSelection,
@@ -34,6 +36,7 @@ import {
   type EditorTextStyle,
 } from "../../core/model.js";
 import { normalizeSelection } from "../../core/selection.js";
+import type { TextCaseMode } from "../../core/commands/text.js";
 import type { EditorTransactionOptions } from "../../ui/editorHistory.js";
 import type {
   BooleanStyleKey,
@@ -250,6 +253,30 @@ export function createEditorCommandsController(
     focusInput();
   };
 
+  const applyChangeTextCaseCommand = (mode: TextCaseMode) => {
+    if (selectionCollapsed()) {
+      return;
+    }
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applySelectionAwareTextCommand((current) =>
+      changeSelectedTextCase(current, mode),
+    );
+    focusInput();
+  };
+
+  const applyClearFormattingCommand = () => {
+    if (selectionCollapsed()) {
+      return;
+    }
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applySelectionAwareTextCommand((current) =>
+      clearSelectedTextFormatting(current),
+    );
+    focusInput();
+  };
+
   const applyParagraphStyleCommand = <K extends ParagraphStyleKey>(
     key: K,
     value: EditorParagraphStyle[K] | null,
@@ -433,6 +460,8 @@ export function createEditorCommandsController(
   return {
     applyBooleanStyleCommand,
     applyValueStyleCommand,
+    applyChangeTextCaseCommand,
+    applyClearFormattingCommand,
     applyParagraphStyleCommand,
     toggleParagraphFlagCommand,
     applyParagraphListCommand,

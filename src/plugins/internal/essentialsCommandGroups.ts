@@ -1,4 +1,5 @@
 import type { OasisPlugin } from "../../core/plugin.js";
+import type { TextCaseMode } from "../../core/commands/text.js";
 import type {
   ActionCommandBuilder,
   CommandBuilder,
@@ -23,6 +24,7 @@ import type {
   EssentialsLinkCapability,
   EssentialsParagraphCapability,
   EssentialsSectionCapability,
+  EssentialsSelectionCapability,
   EssentialsStyleCapability,
   EssentialsTableCapability,
 } from "./createEssentialsPlugin.js";
@@ -30,11 +32,13 @@ import type {
 interface CoreFormattingGroupDeps {
   gate: EssentialsFeatureGate;
   style: EssentialsStyleCapability;
+  selection: EssentialsSelectionCapability;
   history: EssentialsHistoryCapability;
   formatting: EssentialsFormattingCapability;
   link: EssentialsLinkCapability;
   command: CommandBuilder;
   valueCommand: ValueCommandBuilder;
+  actionCommand: ActionCommandBuilder;
 }
 
 interface DocumentAndBrowserGroupDeps {
@@ -64,11 +68,13 @@ interface TableGroupDeps {
 export function buildCoreFormattingCommands({
   gate,
   style,
+  selection,
   history,
   formatting,
   link,
   command,
   valueCommand,
+  actionCommand,
 }: CoreFormattingGroupDeps): NonNullable<OasisPlugin["commands"]> {
   const s = style.state;
   return {
@@ -176,6 +182,19 @@ export function buildCoreFormattingCommands({
       },
       () => formatFontSizePt(s().fontSize),
     ),
+    increaseFontSize: command("increaseFontSize", formatting.increaseFontSize),
+    decreaseFontSize: command("decreaseFontSize", formatting.decreaseFontSize),
+    changeTextCase: actionCommand(
+      "changeTextCase",
+      (p) => {
+        formatting.changeTextCase((p as TextCaseMode) ?? "sentence");
+      },
+      () => ({
+        isEnabled:
+          gate.isCommandEnabled("changeTextCase") && !selection.isCollapsed(),
+      }),
+    ),
+    clearFormatting: command("clearFormatting", formatting.clearFormatting),
     setColor: valueCommand(
       "setColor",
       (p) => formatting.setColor((p as string) ?? null),
