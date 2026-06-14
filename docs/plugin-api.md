@@ -8,6 +8,7 @@ Plugins extend Oasis through a small runtime contract:
 - `toolbar`: toolbar buttons that dispatch registered commands.
 - `menubar`: menu entries that dispatch registered commands.
 - `keymaps`: keyboard shortcuts that dispatch registered commands.
+- `ui`: persistent plugin UI contributions such as floating actions and side panels.
 - `init`, `afterInit`, `destroy`: async lifecycle hooks.
 - `install`: optional setup hook that can return an unsubscribe cleanup.
 
@@ -96,9 +97,67 @@ export function SettingsDialog(props: { open: boolean; onClose: () => void }) {
 ```
 
 The UI subpath exports `Dialog`, `Tabs`, `Button`, `IconButton`, `TextField`,
-`Checkbox`, `SelectField`, `DialogFooter`, and the lower-level toolbar
-primitives. React and Vue wrappers for these primitives are not part of this
-SDK layer.
+`Checkbox`, `SelectField`, `DialogFooter`, `FloatingActionButton`, `SidePanel`,
+`SidePanelHeader`, `SidePanelBody`, `SidePanelFooter`, and the lower-level
+toolbar primitives. React and Vue wrappers for these primitives are not part of
+this SDK layer.
+
+## Floating Actions And Side Panels
+
+Plugins can contribute persistent UI declaratively through `ui`, or register it
+dynamically from lifecycle hooks through `editor.ui`.
+
+```tsx
+import type { OasisPlugin } from "oasis-editor";
+import { Button, TextField } from "oasis-editor/ui";
+
+export const AssistantPlugin: OasisPlugin = {
+  name: "Assistant",
+  commands: {
+    toggleAssistant: {
+      execute: (_payload, context) => {
+        context?.ui.toggleSidePanel("assistant");
+      },
+    },
+  },
+  ui: {
+    floatingActions: [
+      {
+        id: "assistant-floating-action",
+        command: "toggleAssistant",
+        icon: "sparkles",
+        tooltip: "Assistant",
+        scope: "container",
+        placement: "bottom-right",
+      },
+    ],
+    sidePanels: [
+      {
+        id: "assistant",
+        title: "Assistant",
+        icon: "sparkles",
+        mode: "dock",
+        width: 360,
+        render: ({ closePanel }) => (
+          <>
+            <TextField
+              label="Instruction"
+              placeholder="Describe what you want to edit"
+              onChange={() => {}}
+            />
+            <Button onClick={closePanel}>Close</Button>
+          </>
+        ),
+      },
+    ],
+  },
+};
+```
+
+Floating actions default to `scope: "container"` and `placement:
+"bottom-right"`. Side panels default to `mode: "dock"` and render on the right;
+use `mode: "overlay"` when the panel should cover the editor without changing
+the document area. Plugin UI is not stored in the document.
 
 Dependency ordering is enforced by `PluginCollection`; cycles and missing
 dependencies fail initialization. If initialization fails, already registered

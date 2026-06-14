@@ -921,6 +921,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         shellComponent={shellComponent}
         state={() => state}
         toolbarHost={toolbarHost}
+        runtimeEditor={runtimeEditor}
         persistenceStatus={persistenceStatus}
         toolbarRegistry={toolbarRegistry}
         menuRegistry={menuRegistry}

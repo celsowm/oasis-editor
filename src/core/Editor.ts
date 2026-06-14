@@ -6,6 +6,7 @@ import {
 } from "./editorState.js";
 import { PluginCollection } from "./plugins/PluginCollection.js";
 import { CommandRegistry } from "./commands/CommandRegistry.js";
+import { PluginUiRegistry } from "./plugins/PluginUiRegistry.js";
 import type { OasisEditor, OasisPlugin } from "./plugin.js";
 
 export interface EditorOptions {
@@ -20,6 +21,7 @@ export class Editor implements OasisEditor {
   private pluginCollection!: PluginCollection;
   private listeners = new Map<string, Set<(...args: unknown[]) => void>>();
   readonly commands = new CommandRegistry();
+  readonly ui = new PluginUiRegistry();
 
   constructor(options: EditorOptions = {}) {
     if (options.plugins && options.plugins.length > 0) {
@@ -66,6 +68,7 @@ export class Editor implements OasisEditor {
   async destroy() {
     await this.pluginCollection.destroy();
     this.commands.clear();
+    this.ui.clear();
     this.listeners.clear();
   }
 
@@ -109,6 +112,7 @@ export class Editor implements OasisEditor {
     return {
       editor: this,
       commands: this.commands,
+      ui: this.ui,
       getState: () => this.state,
       getDocument: () => this.state.document,
       getSelection: () => this.state.selection,

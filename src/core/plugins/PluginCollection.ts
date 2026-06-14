@@ -8,6 +8,7 @@ import type {
 interface RegisteredPlugin {
   plugin: OasisPlugin;
   commandNames: string[];
+  uiCleanups: Unsubscribe[];
 }
 
 export class PluginCollection {
@@ -109,9 +110,11 @@ export class PluginCollection {
 
   private async initializePlugin(plugin: OasisPlugin) {
     const commandNames: string[] = [];
+    const uiCleanups: Unsubscribe[] = [];
 
     this.registerPluginCommands(plugin, commandNames);
-    this.initialized.push({ plugin, commandNames });
+    this.registerPluginUi(plugin, uiCleanups);
+    this.initialized.push({ plugin, commandNames, uiCleanups });
 
     await plugin.init?.(this.editorInstance);
 
@@ -134,6 +137,15 @@ export class PluginCollection {
     }
   }
 
+  private registerPluginUi(plugin: OasisPlugin, uiCleanups: Unsubscribe[]) {
+    for (const action of plugin.ui?.floatingActions ?? []) {
+      uiCleanups.push(this.editorInstance.ui.registerFloatingAction(action));
+    }
+    for (const panel of plugin.ui?.sidePanels ?? []) {
+      uiCleanups.push(this.editorInstance.ui.registerSidePanel(panel));
+    }
+  }
+
   async destroy() {
     for (const cleanup of this.cleanups) {
       cleanup();
@@ -142,6 +154,9 @@ export class PluginCollection {
     for (let index = this.initialized.length - 1; index >= 0; index -= 1) {
       const entry = this.initialized[index]!;
       await entry.plugin.destroy?.(this.editorInstance);
+      for (const cleanup of entry.uiCleanups) {
+        cleanup();
+      }
       for (const commandName of entry.commandNames) {
         this.editorInstance.commands.unregister(commandName);
       }

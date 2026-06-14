@@ -102,6 +102,75 @@ describe("Editor plugin integration", () => {
     expect(events).toEqual(["init", "after", "destroy"]);
   });
 
+  it("registers declarative plugin UI and cleans it up on destroy", async () => {
+    const plugin: OasisPlugin = {
+      name: "Assistant",
+      commands: {
+        toggleAssistant: {
+          execute: (_payload, context) => {
+            context?.ui.toggleSidePanel("assistant");
+          },
+        },
+      },
+      ui: {
+        floatingActions: [
+          {
+            id: "assistant-button",
+            command: "toggleAssistant",
+            icon: "sparkles",
+          },
+        ],
+        sidePanels: [
+          {
+            id: "assistant",
+            title: "Assistant",
+            render: () => "Assistant panel",
+          },
+        ],
+      },
+    };
+
+    const editor = await Editor.create({ plugins: [plugin] });
+
+    expect(editor.ui.getSnapshot().floatingActions).toHaveLength(1);
+    expect(editor.ui.getSnapshot().sidePanels).toHaveLength(1);
+
+    editor.commands.execute("toggleAssistant");
+    expect(editor.ui.getSnapshot().activeSidePanelId).toBe("assistant");
+
+    await editor.destroy();
+
+    expect(editor.ui.getSnapshot().floatingActions).toHaveLength(0);
+    expect(editor.ui.getSnapshot().sidePanels).toHaveLength(0);
+    expect(editor.ui.getSnapshot().activeSidePanelId).toBeNull();
+  });
+
+  it("supports dynamic plugin UI registration cleanup", async () => {
+    const editor = await Editor.create();
+
+    const cleanupPanel = editor.ui.registerSidePanel({
+      id: "dynamic",
+      title: "Dynamic",
+      render: () => "Dynamic panel",
+    });
+    const cleanupAction = editor.ui.registerFloatingAction({
+      id: "dynamic-action",
+      command: "noop",
+      icon: "sparkles",
+    });
+
+    expect(editor.ui.getSnapshot().sidePanels).toHaveLength(1);
+    expect(editor.ui.getSnapshot().floatingActions).toHaveLength(1);
+
+    cleanupPanel();
+    cleanupAction();
+
+    expect(editor.ui.getSnapshot().sidePanels).toHaveLength(0);
+    expect(editor.ui.getSnapshot().floatingActions).toHaveLength(0);
+
+    await editor.destroy();
+  });
+
   it("rejects plugins passed to the constructor", () => {
     const plugin: OasisPlugin = {
       name: "Sync",

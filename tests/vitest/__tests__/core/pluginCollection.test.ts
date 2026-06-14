@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PluginCollection } from "../../../../src/core/plugins/PluginCollection.js";
 import { CommandRegistry } from "../../../../src/core/commands/CommandRegistry.js";
+import { PluginUiRegistry } from "../../../../src/core/plugins/PluginUiRegistry.js";
 import type { OasisEditor, OasisPlugin } from "../../../../src/core/plugin.js";
 
 function createEditorStub() {
@@ -9,6 +10,7 @@ function createEditorStub() {
   return {
     state,
     commands,
+    ui: new PluginUiRegistry(),
     on: () => () => {},
     once: () => () => {},
     off: () => {},

@@ -19,10 +19,13 @@ import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
 import type { ToolbarLayoutMode } from "../OasisEditorAppProps.js";
 import { buildCanvasLayoutSnapshot } from "../canvas/CanvasLayoutSnapshot.js";
 import { getParagraphEntries } from "../canvas/CanvasGeometry.js";
+import type { OasisEditor } from "../../core/plugin.js";
+import { PluginUiHost } from "../components/PluginUi/PluginUiHost.js";
 
 export interface ShellProps {
   state: EditorState;
   toolbarHost: () => ToolbarHost;
+  runtimeEditor: Accessor<OasisEditor>;
   persistenceStatus: () => string;
   toolbarRegistry: ToolbarRegistry;
   menuRegistry: MenuRegistry;
@@ -117,43 +120,47 @@ export function DocumentShell(props: ShellProps) {
         </Show>
       </Show>
 
-      <div class="oasis-editor-main-container">
-        <Show when={props.showChrome && props.showOutline}>
-          <OutlinePanel
-            state={props.state}
-            onNavigate={handleOutlineNavigate}
-            surfaceRef={() => surfaceEl}
-            viewportRef={() => viewportEl}
-          />
-        </Show>
-        <section class="oasis-editor-stage">
-          <OasisEditorEditor
-            state={() => props.state}
-            layout={{
-              ...props.layout,
-              showHorizontalRuler: props.showChrome,
-              measuredBlockHeights: () => props.measuredBlockHeights(),
-              measuredParagraphLayouts: () => props.measuredParagraphLayouts(),
-              viewportHeight: props.viewportHeight(),
-              readOnly: props.isReadOnly,
-            }}
-            overlays={{
-              ...props.overlays,
-              toolbarHost: props.toolbarHost,
-              persistenceStatus: () => props.persistenceStatus(),
-              showFloatingTableToolbar: () => props.showFloatingTableToolbar(),
-            }}
-            refs={{
-              ...props.refs,
-              onViewportRef: captureViewportRef,
-              onSurfaceRef: captureSurfaceRef,
-            }}
-            surfaceHandlers={props.surfaceHandlers}
-            inputHandlers={props.inputHandlers}
-            fileHandlers={props.fileHandlers}
-          />
-        </section>
-      </div>
+      <PluginUiHost editor={props.runtimeEditor}>
+        <div class="oasis-editor-main-container">
+          <Show when={props.showChrome && props.showOutline}>
+            <OutlinePanel
+              state={props.state}
+              onNavigate={handleOutlineNavigate}
+              surfaceRef={() => surfaceEl}
+              viewportRef={() => viewportEl}
+            />
+          </Show>
+          <section class="oasis-editor-stage">
+            <OasisEditorEditor
+              state={() => props.state}
+              layout={{
+                ...props.layout,
+                showHorizontalRuler: props.showChrome,
+                measuredBlockHeights: () => props.measuredBlockHeights(),
+                measuredParagraphLayouts: () =>
+                  props.measuredParagraphLayouts(),
+                viewportHeight: props.viewportHeight(),
+                readOnly: props.isReadOnly,
+              }}
+              overlays={{
+                ...props.overlays,
+                toolbarHost: props.toolbarHost,
+                persistenceStatus: () => props.persistenceStatus(),
+                showFloatingTableToolbar: () =>
+                  props.showFloatingTableToolbar(),
+              }}
+              refs={{
+                ...props.refs,
+                onViewportRef: captureViewportRef,
+                onSurfaceRef: captureSurfaceRef,
+              }}
+              surfaceHandlers={props.surfaceHandlers}
+              inputHandlers={props.inputHandlers}
+              fileHandlers={props.fileHandlers}
+            />
+          </section>
+        </div>
+      </PluginUiHost>
     </>
   );
 }

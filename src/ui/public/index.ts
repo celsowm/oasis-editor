@@ -15,6 +15,15 @@ export { SelectField } from "./SelectField.js";
 export type { SelectFieldOption, SelectFieldProps } from "./SelectField.js";
 export { DialogFooter } from "./DialogFooter.js";
 export type { DialogFooterProps } from "./DialogFooter.js";
+export { FloatingActionButton } from "./FloatingActionButton.js";
+export type { FloatingActionButtonProps } from "./FloatingActionButton.js";
+export {
+  SidePanel,
+  SidePanelBody,
+  SidePanelFooter,
+  SidePanelHeader,
+} from "./SidePanel.js";
+export type { SidePanelProps, SidePanelSectionProps } from "./SidePanel.js";
 
 export { Popover } from "../components/Toolbar/primitives/Popover.js";
 export type {

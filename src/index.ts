@@ -56,17 +56,25 @@ export {
   Button,
   Checkbox,
   DialogFooter,
+  FloatingActionButton,
   IconButton,
   SelectField,
+  SidePanel,
+  SidePanelBody,
+  SidePanelFooter,
+  SidePanelHeader,
   TextField,
 } from "./ui/public/index.js";
 export type {
   ButtonProps,
   CheckboxProps,
   DialogFooterProps,
+  FloatingActionButtonProps,
   IconButtonProps,
   SelectFieldOption,
   SelectFieldProps,
+  SidePanelProps,
+  SidePanelSectionProps,
   TextFieldProps,
 } from "./ui/public/index.js";
 export type {
@@ -76,7 +84,16 @@ export type {
   OasisCommandContext,
   OasisCommandRegistry,
   CommandState,
+  FloatingActionContribution,
+  FloatingActionPlacement,
+  FloatingActionScope,
+  OasisPluginUiContributions,
+  OasisPluginUiRegistry,
+  OasisPluginUiSnapshot,
+  PluginUiRenderContext,
   PluginReference,
+  SidePanelContribution,
+  SidePanelMode,
   Unsubscribe,
 } from "./core/plugin.js";
 export type { EditorDocument, EditorState } from "./core/model.js";

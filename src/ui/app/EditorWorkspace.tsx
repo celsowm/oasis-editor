@@ -14,6 +14,8 @@ import type { ToolbarRegistry } from "../components/Toolbar/registry/ToolbarRegi
 import type { MenuRegistry } from "../components/Menubar/menuRegistry.js";
 import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
 import type { ToolbarLayoutMode } from "../OasisEditorAppProps.js";
+import type { OasisEditor } from "../../core/plugin.js";
+import { PluginUiHost } from "../components/PluginUi/PluginUiHost.js";
 
 export interface EditorWorkspaceProps {
   useComposedShell: () => boolean;
@@ -22,6 +24,7 @@ export interface EditorWorkspaceProps {
   ) => ReturnType<typeof OasisEditorEditor>;
   state: Accessor<EditorState>;
   toolbarHost: () => ToolbarHost;
+  runtimeEditor: Accessor<OasisEditor>;
   persistenceStatus: () => string;
   toolbarRegistry: ToolbarRegistry;
   menuRegistry: MenuRegistry;
@@ -56,6 +59,7 @@ export function EditorWorkspace(props: EditorWorkspaceProps) {
       <Shell
         state={props.state()}
         toolbarHost={props.toolbarHost}
+        runtimeEditor={props.runtimeEditor}
         persistenceStatus={props.persistenceStatus}
         toolbarRegistry={props.toolbarRegistry}
         menuRegistry={props.menuRegistry}
@@ -85,29 +89,31 @@ export function EditorWorkspace(props: EditorWorkspaceProps) {
       <Show when={props.useComposedShell()}>{renderComposedShell()}</Show>
 
       <Show when={!props.useComposedShell()}>
-        <div class="oasis-editor-main-container">
-          <section class="oasis-editor-stage">
-            <OasisEditorEditor
-              state={props.state}
-              layout={{
-                ...props.layout,
-                measuredBlockHeights: props.measuredBlockHeights,
-                measuredParagraphLayouts: props.measuredParagraphLayouts,
-                readOnly: props.isReadOnly(),
-              }}
-              overlays={{
-                ...props.overlays,
-                toolbarHost: props.toolbarHost,
-                persistenceStatus: props.persistenceStatus,
-                showFloatingTableToolbar: props.showFloatingTableToolbar,
-              }}
-              refs={props.refs}
-              surfaceHandlers={props.surfaceHandlers}
-              inputHandlers={props.inputHandlers}
-              fileHandlers={props.fileHandlers}
-            />
-          </section>
-        </div>
+        <PluginUiHost editor={props.runtimeEditor}>
+          <div class="oasis-editor-main-container">
+            <section class="oasis-editor-stage">
+              <OasisEditorEditor
+                state={props.state}
+                layout={{
+                  ...props.layout,
+                  measuredBlockHeights: props.measuredBlockHeights,
+                  measuredParagraphLayouts: props.measuredParagraphLayouts,
+                  readOnly: props.isReadOnly(),
+                }}
+                overlays={{
+                  ...props.overlays,
+                  toolbarHost: props.toolbarHost,
+                  persistenceStatus: props.persistenceStatus,
+                  showFloatingTableToolbar: props.showFloatingTableToolbar,
+                }}
+                refs={props.refs}
+                surfaceHandlers={props.surfaceHandlers}
+                inputHandlers={props.inputHandlers}
+                fileHandlers={props.fileHandlers}
+              />
+            </section>
+          </div>
+        </PluginUiHost>
       </Show>
     </>
   );

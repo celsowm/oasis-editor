@@ -5,8 +5,13 @@ import {
   Checkbox,
   Dialog,
   DialogFooter,
+  FloatingActionButton,
   IconButton,
   SelectField,
+  SidePanel,
+  SidePanelBody,
+  SidePanelFooter,
+  SidePanelHeader,
   Tabs,
   TextField,
 } from "../../../../src/ui/public/index.js";
@@ -143,6 +148,40 @@ describe("plugin UI primitives", () => {
 
     const button = host.querySelector("button") as HTMLButtonElement;
     expect(button.type).toBe("submit");
+    dispose();
+  });
+
+  it("renders floating action and side panel primitives", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const onAction = vi.fn();
+    const dispose = render(
+      () => (
+        <>
+          <FloatingActionButton
+            icon="sparkles"
+            label="Assistant"
+            onClick={onAction}
+          />
+          <SidePanel mode="dock" width={320}>
+            <SidePanelHeader>Assistant</SidePanelHeader>
+            <SidePanelBody>Panel body</SidePanelBody>
+            <SidePanelFooter>Footer</SidePanelFooter>
+          </SidePanel>
+        </>
+      ),
+      host,
+    );
+
+    const action = host.querySelector(
+      ".oasis-editor-plugin-floating-action",
+    ) as HTMLButtonElement;
+    action.click();
+
+    expect(onAction).toHaveBeenCalledOnce();
+    expect(host.textContent).toContain("Assistant");
+    expect(host.textContent).toContain("Panel body");
+    expect(host.querySelector(".oasis-editor-plugin-side-panel")).toBeTruthy();
     dispose();
   });
 });

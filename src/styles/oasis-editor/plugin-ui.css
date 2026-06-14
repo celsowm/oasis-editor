@@ -187,3 +187,153 @@
 .oasis-editor-ui-dialog-footer-between {
   justify-content: space-between;
 }
+
+.oasis-editor-plugin-ui-host {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.oasis-editor-plugin-ui-main {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.oasis-editor-plugin-ui-main > .oasis-editor-main-container {
+  flex: 1 1 auto;
+}
+
+.oasis-editor-plugin-side-panel {
+  display: flex;
+  width: var(--oasis-plugin-side-panel-width, 360px);
+  min-width: min(var(--oasis-plugin-side-panel-width, 360px), 100%);
+  max-width: min(var(--oasis-plugin-side-panel-width, 360px), 100%);
+  min-height: 0;
+  flex: 0 0 var(--oasis-plugin-side-panel-width, 360px);
+  flex-direction: column;
+  border-left: 1px solid var(--oasis-border-color);
+  background: var(--oasis-surface, var(--oasis-paper));
+  color: var(--oasis-text);
+  box-shadow: -8px 0 24px rgba(15, 23, 42, 0.12);
+  z-index: 30;
+}
+
+.oasis-editor-plugin-side-panel-overlay {
+  position: absolute;
+  inset: 0 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.oasis-editor-plugin-side-panel-overlay .oasis-editor-plugin-side-panel {
+  pointer-events: auto;
+  height: 100%;
+}
+
+.oasis-editor-plugin-side-panel-header,
+.oasis-editor-plugin-side-panel-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--oasis-border-color);
+}
+
+.oasis-editor-plugin-side-panel-footer {
+  border-top: 1px solid var(--oasis-border-color);
+  border-bottom: 0;
+}
+
+.oasis-editor-plugin-side-panel-title {
+  display: inline-flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.oasis-editor-plugin-side-panel-title span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.oasis-editor-plugin-side-panel-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 12px;
+}
+
+.oasis-editor-plugin-floating-actions {
+  position: absolute;
+  display: flex;
+  gap: 8px;
+  z-index: 45;
+}
+
+.oasis-editor-plugin-floating-actions-viewport {
+  position: fixed;
+}
+
+.oasis-editor-plugin-floating-actions-bottom-right {
+  right: 18px;
+  bottom: 18px;
+}
+
+.oasis-editor-plugin-floating-actions-bottom-left {
+  bottom: 18px;
+  left: 18px;
+}
+
+.oasis-editor-plugin-floating-actions-top-right {
+  top: 18px;
+  right: 18px;
+}
+
+.oasis-editor-plugin-floating-actions-top-left {
+  top: 18px;
+  left: 18px;
+}
+
+.oasis-editor-plugin-floating-action {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  border-radius: 999px;
+  background: var(--oasis-accent);
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.24);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.oasis-editor-plugin-floating-action:hover:not(:disabled) {
+  background: #1557b0;
+  transform: translateY(-1px);
+}
+
+.oasis-editor-plugin-floating-action:focus-visible {
+  outline: none;
+  box-shadow: var(--oasis-focus-ring), 0 12px 30px rgba(15, 23, 42, 0.24);
+}
+
+.oasis-editor-plugin-floating-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
