@@ -64,15 +64,13 @@ export const applyTableAwareParagraphEdit = (
 
   const zone = location.zone;
   const currentBlocks = getTargetBlocks(current, zone);
-  const clonedTable = cloneBlock(
-    currentBlocks[location.blockIndex],
-  ) as EditorTableNode;
-  if (!clonedTable || clonedTable.type !== "table") {
+  const originalTable = currentBlocks[location.blockIndex];
+  if (!originalTable || originalTable.type !== "table") {
     return edit(current);
   }
-  const nextBlocks = currentBlocks.map((block, i) =>
-    i === location.blockIndex ? clonedTable : block,
-  );
+  const clonedTable = cloneBlock(originalTable) as EditorTableNode;
+  const nextBlocks = [...currentBlocks];
+  nextBlocks[location.blockIndex] = clonedTable;
   const tableBlock = clonedTable;
 
   const targetCell =
