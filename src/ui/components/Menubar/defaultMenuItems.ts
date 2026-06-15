@@ -171,6 +171,13 @@ export const defaultMenuItems: MenuItem[] = [
     icon: "image",
   },
   {
+    id: "insert_image_caption",
+    path: "Insert/Image Caption",
+    labelKey: "toolbar.imageCaption",
+    command: "insertImageCaption",
+    icon: "subtitles",
+  },
+  {
     id: "insert_table",
     path: "Insert/Table",
     labelKey: "toolbar.table",

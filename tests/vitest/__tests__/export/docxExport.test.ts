@@ -12,6 +12,7 @@ import {
 import { exportEditorDocumentToDocx } from "../../../../src/export/docx/exportEditorDocumentToDocx.js";
 import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
 import { setSelectedImageWrapPreset } from "../../../../src/core/commands/image.js";
+import { createImageCaptionParagraph } from "../../../../src/core/document/imageCaptions.js";
 import type { WrapPreset } from "../../../../src/core/commands/floatingLayout.js";
 import {
   getDocumentParagraphs,
@@ -38,6 +39,35 @@ async function readZipText(buffer: ArrayBuffer, path: string): Promise<string> {
 }
 
 describe("DOCX export", () => {
+  it("serializes image captions as Word SEQ fields", async () => {
+    const imageParagraph = createEditorParagraphFromRuns([
+      {
+        text: "\uFFFC",
+        image: {
+          src: "data:image/png;base64,AAAA",
+          width: 120,
+          height: 80,
+        },
+      },
+    ]);
+    const caption = createImageCaptionParagraph("Vista geral", "Figura", 1);
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(
+        createEditorDocument([imageParagraph, caption]),
+      ),
+    );
+
+    expect(xml).toContain('<w:pStyle w:val="Caption"/>');
+    expect(xml).toContain('<w:fldChar w:fldCharType="begin"/>');
+    expect(xml).toContain(
+      '<w:instrText xml:space="preserve"> SEQ Figure \\* ARABIC </w:instrText>',
+    );
+    expect(xml).toContain('<w:fldChar w:fldCharType="separate"/>');
+    expect(xml).toContain("<w:t>1</w:t>");
+    expect(xml).toContain('<w:fldChar w:fldCharType="end"/>');
+    expect(xml).toContain("<w:t>: Vista geral</w:t>");
+  });
+
   it("serializes table geometry and cell styling details", async () => {
     const firstCell = createEditorTableCell([
       createEditorParagraph("Linha 1 Col 1"),

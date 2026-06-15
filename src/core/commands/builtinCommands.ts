@@ -48,6 +48,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "importDocument",
   "insertImage",
   "editImageAlt",
+  "insertImageCaption",
   "outdent",
   "indent",
   "togglePageBreakBefore",

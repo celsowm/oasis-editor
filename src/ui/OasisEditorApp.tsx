@@ -141,6 +141,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setLinkDialog,
     imageAltDialog,
     setImageAltDialog,
+    imageCaptionDialog,
+    setImageCaptionDialog,
     contextMenu,
     setContextMenu,
     fontDialog,
@@ -480,6 +482,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       setLinkDialog({ isOpen: true, initialHref }),
     openImageAltDialog: (initialAlt) =>
       setImageAltDialog({ isOpen: true, initialAlt }),
+    openImageCaptionDialog: (initialCaption) =>
+      setImageCaptionDialog({ isOpen: true, initialCaption }),
+    imageCaptionLabel: () =>
+      (ui().locale ?? "pt-BR").startsWith("en") ? "Figure" : "Figura",
   });
 
   const keyboardCommandsController = {
@@ -897,6 +903,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
           setLinkDialog,
           imageAltDialog,
           setImageAltDialog,
+          imageCaptionDialog,
+          setImageCaptionDialog,
           contextMenu,
           setContextMenu,
           fontDialog,
@@ -913,6 +921,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         focusInput={focusInput}
         applyLinkCommand={commandsController.applyLinkCommand}
         applyImageAltCommand={commandsController.applyImageAltCommand}
+        applyImageCaptionCommand={commandsController.applyImageCaptionCommand}
         applyFontDialogValues={applyFontDialogValues}
         applyParagraphDialogValues={applyParagraphDialogValues}
         applyTablePropertiesDialogValues={applyTablePropertiesDialogValues}

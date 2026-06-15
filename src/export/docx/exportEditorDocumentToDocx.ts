@@ -45,6 +45,7 @@ import {
   WORD_NS,
 } from "./xmlUtils.js";
 import { buildStylesXml } from "./stylesXml.js";
+import { renumberImageCaptionsInDocument } from "../../core/document/imageCaptions.js";
 
 const DOCUMENT_XMLNS =
   `xmlns:w="${WORD_NS}" xmlns:w14="${WORD14_NS}" ` +
@@ -285,20 +286,29 @@ function buildPartContext(
 
 function buildNumberingXml(definitions: NumberingDefinition[]): string {
   const abstractNums = definitions
-    .map(({ kind, level, abstractNumId, format, startAt, bulletGlyph, bulletFont }) => {
-      const numFmtVal = kind === "bullet" ? "bullet" : (format ?? "decimal");
-      const levelText =
-        kind === "bullet"
-          ? (bulletGlyph ?? "\uF0B7")
-          : `%${level + 1}.`;
-      const startVal = startAt ?? 1;
-      const fontName = kind === "bullet" ? (bulletFont ?? "Symbol") : undefined;
-      const runFonts = fontName
-        ? `<w:rPr><w:rFonts w:ascii="${escapeXml(fontName)}" w:hAnsi="${escapeXml(fontName)}" w:hint="default"/></w:rPr>`
-        : "";
+    .map(
+      ({
+        kind,
+        level,
+        abstractNumId,
+        format,
+        startAt,
+        bulletGlyph,
+        bulletFont,
+      }) => {
+        const numFmtVal = kind === "bullet" ? "bullet" : (format ?? "decimal");
+        const levelText =
+          kind === "bullet" ? (bulletGlyph ?? "\uF0B7") : `%${level + 1}.`;
+        const startVal = startAt ?? 1;
+        const fontName =
+          kind === "bullet" ? (bulletFont ?? "Symbol") : undefined;
+        const runFonts = fontName
+          ? `<w:rPr><w:rFonts w:ascii="${escapeXml(fontName)}" w:hAnsi="${escapeXml(fontName)}" w:hint="default"/></w:rPr>`
+          : "";
 
-      return `<w:abstractNum w:abstractNumId="${abstractNumId}"><w:lvl w:ilvl="${level}"><w:start w:val="${startVal}"/><w:numFmt w:val="${numFmtVal}"/><w:lvlText w:val="${escapeXml(levelText)}"/><w:lvlJc w:val="left"/>${runFonts}</w:lvl></w:abstractNum>`;
-    })
+        return `<w:abstractNum w:abstractNumId="${abstractNumId}"><w:lvl w:ilvl="${level}"><w:start w:val="${startVal}"/><w:numFmt w:val="${numFmtVal}"/><w:lvlText w:val="${escapeXml(levelText)}"/><w:lvlJc w:val="left"/>${runFonts}</w:lvl></w:abstractNum>`;
+      },
+    )
     .join("");
 
   const nums = definitions
@@ -515,6 +525,7 @@ function buildPartRelationshipsXml(
 export async function exportEditorDocumentToDocx(
   document: EditorDocument,
 ): Promise<ArrayBuffer> {
+  document = renumberImageCaptionsInDocument(document);
   const zip = new JSZip();
   const numberingContext = buildNumberingContext(document);
   const buildState: ExportBuildState = {

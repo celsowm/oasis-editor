@@ -277,6 +277,14 @@ export function buildDocumentAndBrowserCommands({
         isActive: image.isSelected(),
       }),
     ),
+    insertImageCaption: actionCommand(
+      "insertImageCaption",
+      () => image.promptCaption(),
+      () => ({
+        isEnabled: image.isSelected(),
+        isActive: image.isSelected(),
+      }),
+    ),
   };
 }
 

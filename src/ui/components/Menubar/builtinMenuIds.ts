@@ -15,6 +15,7 @@ export const OASIS_MENU_ITEMS = {
   viewParagraphMarks: "view_paragraph_marks",
   viewPreciseFonts: "view_precise_fonts",
   insertImage: "insert_image",
+  insertImageCaption: "insert_image_caption",
   insertTable: "insert_table",
   insertLink: "insert_link",
   insertFootnote: "insert_footnote",

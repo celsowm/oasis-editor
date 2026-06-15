@@ -154,13 +154,26 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-superscript": { tab: "home", group: "font", row: 2 },
   "editor-toolbar-subscript": { tab: "home", group: "font", row: 2 },
   "sep-format": { tab: "home", group: "font", row: 2 },
-  "editor-toolbar-insert-image": { tab: "insert", group: "illustrations", row: 1 },
-  "editor-toolbar-insert-shape": { tab: "insert", group: "illustrations", row: 2 },
+  "editor-toolbar-insert-image": {
+    tab: "insert",
+    group: "illustrations",
+    row: 1,
+  },
+  "editor-toolbar-insert-shape": {
+    tab: "insert",
+    group: "illustrations",
+    row: 2,
+  },
   "editor-toolbar-insert-table": { tab: "insert", group: "tables", row: 1 },
   "editor-toolbar-link": { tab: "insert", group: "links", row: 1 },
   "editor-toolbar-unlink": { tab: "insert", group: "links", row: 2 },
   "editor-toolbar-footnote": { tab: "references", group: "footnotes", row: 1 },
   "editor-toolbar-image-alt": { tab: "insert", group: "accessibility", row: 2 },
+  "editor-toolbar-image-caption": {
+    tab: "insert",
+    group: "accessibility",
+    row: 1,
+  },
   "sep-insert": { tab: "insert", group: "accessibility", row: 2 },
   "editor-toolbar-align-left": { tab: "home", group: "paragraph", row: 2 },
   "editor-toolbar-align-center": { tab: "home", group: "paragraph", row: 2 },
@@ -171,7 +184,11 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-list-outdent": { tab: "home", group: "paragraph", row: 1 },
   "editor-toolbar-list-indent": { tab: "home", group: "paragraph", row: 1 },
   "editor-toolbar-list-options": { tab: "home", group: "paragraph", row: 1 },
-  "editor-toolbar-line-spacing-control": { tab: "home", group: "paragraph", row: 2 },
+  "editor-toolbar-line-spacing-control": {
+    tab: "home",
+    group: "paragraph",
+    row: 2,
+  },
   "sep-paragraph": { tab: "home", group: "paragraph", row: 2 },
   "editor-toolbar-metrics": { tab: "layout", group: "paragraph", row: 1 },
   "sep-metrics": { tab: "layout", group: "paragraph", row: 2 },
@@ -575,6 +592,15 @@ export function createDefaultToolbarPreset(): ToolbarItem[] {
     tooltipKey: "toolbar.alt",
     command: "editImageAlt",
     isVisible: (api) => api.commands.state("editImageAlt").isEnabled,
+  });
+  items.push({
+    type: "button",
+    id: "editor-toolbar-image-caption",
+    testId: "editor-toolbar-image-caption",
+    iconName: "subtitles",
+    tooltipKey: "toolbar.imageCaption",
+    command: "insertImageCaption",
+    isVisible: (api) => api.commands.state("insertImageCaption").isEnabled,
   });
   items.push({ type: "separator", id: "sep-insert" });
 

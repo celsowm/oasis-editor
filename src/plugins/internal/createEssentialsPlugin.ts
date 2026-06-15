@@ -96,6 +96,7 @@ export interface EssentialsLinkCapability {
 
 export interface EssentialsImageCapability {
   promptAlt: () => void;
+  promptCaption: () => void;
   isSelected: () => boolean;
 }
 

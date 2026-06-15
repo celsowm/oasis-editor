@@ -23,6 +23,7 @@ export const OASIS_TOOLBAR_ITEMS = {
   unlink: "editor-toolbar-unlink",
   footnote: "editor-toolbar-footnote",
   imageAlt: "editor-toolbar-image-alt",
+  imageCaption: "editor-toolbar-image-caption",
   alignLeft: "editor-toolbar-align-left",
   alignCenter: "editor-toolbar-align-center",
   alignRight: "editor-toolbar-align-right",

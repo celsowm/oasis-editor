@@ -34,6 +34,7 @@ export function cloneRun(run: EditorTextRun): EditorTextRun {
     image: run.image ? { ...run.image } : undefined,
     textBox: run.textBox ? cloneTextBox(run.textBox) : undefined,
     field: run.field ? { ...run.field } : undefined,
+    fieldChar: run.fieldChar ? { ...run.fieldChar } : undefined,
     revision: run.revision ? { ...run.revision } : undefined,
     footnoteReference: run.footnoteReference
       ? { ...run.footnoteReference }
@@ -80,7 +81,9 @@ export function cloneBlocks(blocks: EditorBlockNode[]): EditorBlockNode[] {
             defaultCellMargins: block.style.defaultCellMargins
               ? { ...block.style.defaultCellMargins }
               : undefined,
-            floating: block.style.floating ? { ...block.style.floating } : undefined,
+            floating: block.style.floating
+              ? { ...block.style.floating }
+              : undefined,
             revisionXml: block.style.revisionXml
               ? [...block.style.revisionXml]
               : undefined,

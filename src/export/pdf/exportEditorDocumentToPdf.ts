@@ -1,4 +1,5 @@
 import type { EditorDocument } from "../../core/model.js";
+import { renumberImageCaptionsInDocument } from "../../core/document/imageCaptions.js";
 import {
   resolveEffectiveTextStyleForParagraph,
   getPageBodyTop,
@@ -23,6 +24,7 @@ const FOOTNOTE_BLOCK_GAP_PX = 2;
 export async function exportEditorDocumentToPdf(
   document: EditorDocument,
 ): Promise<ArrayBuffer> {
+  document = renumberImageCaptionsInDocument(document);
   const fontRegistry = new PdfFontRegistry();
   await fontRegistry.loadBundledUnicodeFaces({
     families: collectPdfFontFamilies(document),

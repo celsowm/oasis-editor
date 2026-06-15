@@ -325,6 +325,23 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
       superscript: true,
     },
   },
+  Caption: {
+    id: "Caption",
+    name: "Caption",
+    type: "paragraph",
+    basedOn: "normal",
+    nextStyle: "normal",
+    paragraphStyle: {
+      align: "center",
+      spacingBefore: 4,
+      spacingAfter: 8,
+    },
+    textStyle: {
+      fontFamily: "Calibri, sans-serif",
+      fontSize: 12,
+      italic: true,
+    },
+  },
 };
 
 export function createEditorDocument(

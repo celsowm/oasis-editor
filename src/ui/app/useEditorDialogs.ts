@@ -18,6 +18,13 @@ export function createEditorDialogs() {
     isOpen: false,
     initialAlt: "",
   });
+  const [imageCaptionDialog, setImageCaptionDialog] = createSignal<{
+    isOpen: boolean;
+    initialCaption: string;
+  }>({
+    isOpen: false,
+    initialCaption: "",
+  });
   const [contextMenu, setContextMenu] = createSignal<{
     isOpen: boolean;
     x: number;
@@ -129,6 +136,8 @@ export function createEditorDialogs() {
     setLinkDialog,
     imageAltDialog,
     setImageAltDialog,
+    imageCaptionDialog,
+    setImageCaptionDialog,
     contextMenu,
     setContextMenu,
     fontDialog,

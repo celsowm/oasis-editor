@@ -1,6 +1,7 @@
 import type { ComponentProps } from "solid-js";
 import { LinkDialog } from "../components/Dialogs/LinkDialog.js";
 import { ImageAltDialog } from "../components/Dialogs/ImageAltDialog.js";
+import { ImageCaptionDialog } from "../components/Dialogs/ImageCaptionDialog.js";
 import { FontDialog } from "../components/Dialogs/FontDialog.js";
 import { ParagraphDialog } from "../components/Dialogs/ParagraphDialog.js";
 import { TablePropertiesDialog } from "../components/Dialogs/TablePropertiesDialog.js";
@@ -19,6 +20,7 @@ export interface EditorDialogsLayerProps {
   focusInput: () => void;
   applyLinkCommand: (href: string | null) => void;
   applyImageAltCommand: (alt: string) => void;
+  applyImageCaptionCommand: (caption: string) => void;
   applyFontDialogValues: ComponentProps<typeof FontDialog>["onApply"];
   applyParagraphDialogValues: ComponentProps<typeof ParagraphDialog>["onApply"];
   applyTablePropertiesDialogValues: ComponentProps<
@@ -38,6 +40,8 @@ export function EditorDialogsLayer(props: EditorDialogsLayerProps) {
     setLinkDialog,
     imageAltDialog,
     setImageAltDialog,
+    imageCaptionDialog,
+    setImageCaptionDialog,
     contextMenu,
     fontDialog,
     setFontDialog,
@@ -67,6 +71,16 @@ export function EditorDialogsLayer(props: EditorDialogsLayerProps) {
           props.focusInput();
         }}
         onConfirm={(alt) => props.applyImageAltCommand(alt.trim())}
+      />
+
+      <ImageCaptionDialog
+        isOpen={imageCaptionDialog().isOpen}
+        initialCaption={imageCaptionDialog().initialCaption}
+        onClose={() => {
+          setImageCaptionDialog({ ...imageCaptionDialog(), isOpen: false });
+          props.focusInput();
+        }}
+        onConfirm={(caption) => props.applyImageCaptionCommand(caption.trim())}
       />
 
       <FindReplaceDialog fr={props.findReplace} />

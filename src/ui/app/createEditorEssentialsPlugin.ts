@@ -331,6 +331,7 @@ export function createEditorEssentialsRuntimePlugin(
 
   const essentialsImage = {
     promptAlt: () => options.commandsController.promptForImageAlt(),
+    promptCaption: () => options.commandsController.promptForImageCaption(),
     isSelected: () => Boolean(options.selectedImageRun()),
   };
 

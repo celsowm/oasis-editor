@@ -10,7 +10,9 @@ import {
   insertSectionBreakAtSelection,
   outdentParagraphList,
   rejectRevisionsInSelection,
+  getSelectedImageCaption,
   setLinkAtSelection,
+  setSelectedImageCaption,
   setParagraphNamedStyle,
   setParagraphStyle,
   setParagraphListFormat,
@@ -72,6 +74,8 @@ export interface EditorCommandsControllerDeps {
   selectedImageRun: () => SelectedImageRun | null;
   openLinkDialog: (initialHref: string) => void;
   openImageAltDialog: (initialAlt: string) => void;
+  openImageCaptionDialog: (initialCaption: string) => void;
+  imageCaptionLabel: () => string;
 }
 
 export function createEditorCommandsController(
@@ -457,6 +461,29 @@ export function createEditorCommandsController(
     deps.openImageAltDialog(currentAlt);
   };
 
+  const applyImageCaptionCommand = (caption: string) => {
+    const run = selectedImageRun();
+    if (!run) {
+      return;
+    }
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyTransactionalState(
+      (current) =>
+        setSelectedImageCaption(current, caption, deps.imageCaptionLabel()),
+      { mergeKey: "imageCaption" },
+    );
+    focusInput();
+  };
+
+  const promptForImageCaption = () => {
+    const run = selectedImageRun();
+    if (!run) {
+      return;
+    }
+    deps.openImageCaptionDialog(getSelectedImageCaption(state) ?? "");
+  };
+
   return {
     applyBooleanStyleCommand,
     applyValueStyleCommand,
@@ -483,6 +510,8 @@ export function createEditorCommandsController(
     removeLinkCommand,
     applyImageAltCommand,
     promptForImageAlt,
+    applyImageCaptionCommand,
+    promptForImageCaption,
     handleListTab,
     handleListEnter,
     handleListBoundaryBackspace,

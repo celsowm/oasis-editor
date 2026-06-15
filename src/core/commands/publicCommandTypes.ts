@@ -63,6 +63,7 @@ export interface OasisCommandPayloads {
   importDocument: undefined;
   insertImage: undefined;
   editImageAlt: undefined;
+  insertImageCaption: undefined;
   outdent: undefined;
   indent: undefined;
   togglePageBreakBefore: undefined;

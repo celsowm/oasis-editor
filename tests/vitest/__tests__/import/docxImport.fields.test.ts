@@ -4,7 +4,10 @@ import { importDocxToEditorDocument } from "../../../../src/import/docx/importDo
 import { exportEditorDocumentToDocx } from "../../../../src/export/docx/exportEditorDocumentToDocx.js";
 import { resetEditorIds } from "../../../../src/core/editorState.js";
 import { getDocumentParagraphs } from "./docxTestHelpers.js";
-import type { EditorDocument, EditorTextRun } from "../../../../src/core/model.js";
+import type {
+  EditorDocument,
+  EditorTextRun,
+} from "../../../../src/core/model.js";
 
 beforeEach(() => {
   resetEditorIds();
@@ -63,6 +66,28 @@ async function roundTrip(bodyXml: string): Promise<{
 }
 
 describe("DOCX import: complex fields (REF / PAGEREF / TOC)", () => {
+  it("preserves a SEQ Figure caption field", async () => {
+    const { imported, xml } = await roundTrip(
+      `<w:p>
+        <w:pPr><w:pStyle w:val="Caption"/></w:pPr>
+        <w:r><w:t>Figure </w:t></w:r>
+        <w:r><w:fldChar w:fldCharType="begin"/></w:r>
+        <w:r><w:instrText xml:space="preserve"> SEQ Figure \\* ARABIC </w:instrText></w:r>
+        <w:r><w:fldChar w:fldCharType="separate"/></w:r>
+        <w:r><w:t>4</w:t></w:r>
+        <w:r><w:fldChar w:fldCharType="end"/></w:r>
+        <w:r><w:t>: Imported caption</w:t></w:r>
+      </w:p>`,
+    );
+
+    expect(getDocumentParagraphs(imported)[0]?.style?.styleId).toBe("Caption");
+    expect(fieldCharKinds(imported)).toEqual(["begin", "separate", "end"]);
+    expect(instructions(imported)).toEqual([" SEQ Figure \\* ARABIC "]);
+    expect(xml).toContain(
+      '<w:instrText xml:space="preserve"> SEQ Figure \\* ARABIC </w:instrText>',
+    );
+  });
+
   it("preserves a REF cross-reference field with its instruction and cached result", async () => {
     const { imported, xml, reimported } = await roundTrip(
       `<w:p>

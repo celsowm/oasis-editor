@@ -5,6 +5,7 @@ import type {
   EditorNamedStyle,
 } from "../../../core/model.js";
 import {
+  escapeXml,
   normalizeDocxColor,
   pointsToTwips,
   pxToTwips,
@@ -46,7 +47,9 @@ function serializeParagraphTabs(
  *
  * Returns the full `<w:pPr>...</w:pPr>` string, or `""` when no properties.
  */
-export function serializeParagraphStyleXml(style: EditorParagraphStyle): string {
+export function serializeParagraphStyleXml(
+  style: EditorParagraphStyle,
+): string {
   const parts: string[] = [];
 
   if (style.align) {
@@ -138,6 +141,10 @@ export function serializeParagraphProperties(
   const parts: string[] = [];
   const style = materializeParagraphStyle(paragraph, styles);
   const align = paragraph.style?.align ?? overrides?.align ?? style.align;
+
+  if (paragraph.style?.styleId) {
+    parts.push(`<w:pStyle w:val="${escapeXml(paragraph.style.styleId)}"/>`);
+  }
 
   if (align) {
     parts.push(`<w:jc w:val="${align}"/>`);

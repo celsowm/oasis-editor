@@ -23,6 +23,14 @@ import {
 } from "../model.js";
 import { createEditorStyledRun } from "../editorState.js";
 import {
+  createImageCaptionParagraph,
+  getCaptionSelectionOffset,
+  getImageCaptionText,
+  isImageCaptionParagraph,
+  renumberImageCaptionParagraphs,
+  updateImageCaptionParagraph,
+} from "../document/imageCaptions.js";
+import {
   findParagraphIndex,
   isSelectionCollapsed,
   normalizeSelection,
@@ -357,6 +365,66 @@ export function setSelectedImageAlt(
     preserveSelectionByParagraphOffsets(
       nextParagraphs,
       normalizeSelection(state),
+    ),
+  );
+}
+
+export function getSelectedImageCaption(state: EditorState): string | null {
+  const selectedImage = getSelectedImageRun(state);
+  if (!selectedImage?.run.image) {
+    return null;
+  }
+
+  const paragraphs = getParagraphs(state);
+  return getImageCaptionText(paragraphs[selectedImage.paragraphIndex + 1]);
+}
+
+export function setSelectedImageCaption(
+  state: EditorState,
+  captionText: string,
+  label: string,
+): EditorState {
+  const selectedImage = getSelectedImageRun(state);
+  if (!selectedImage?.run.image) {
+    return state;
+  }
+
+  const paragraphs = getParagraphs(state);
+  const captionIndex = selectedImage.paragraphIndex + 1;
+  const nextParagraph =
+    captionIndex < paragraphs.length &&
+    isImageCaptionParagraph(paragraphs[captionIndex])
+      ? updateImageCaptionParagraph(
+          paragraphs[captionIndex]!,
+          captionText,
+          label,
+        )
+      : createImageCaptionParagraph(captionText, label, 1);
+
+  const nextParagraphs =
+    captionIndex < paragraphs.length &&
+    isImageCaptionParagraph(paragraphs[captionIndex])
+      ? [
+          ...cloneParagraphs(paragraphs.slice(0, captionIndex)),
+          nextParagraph,
+          ...cloneParagraphs(paragraphs.slice(captionIndex + 1)),
+        ]
+      : [
+          ...cloneParagraphs(paragraphs.slice(0, captionIndex)),
+          nextParagraph,
+          ...cloneParagraphs(paragraphs.slice(captionIndex)),
+        ];
+  const renumberedParagraphs = renumberImageCaptionParagraphs(nextParagraphs);
+  const insertedCaption = renumberedParagraphs[captionIndex] ?? nextParagraph;
+
+  return cloneStateWithParagraphs(
+    state,
+    renumberedParagraphs,
+    withSelection(
+      paragraphOffsetToPosition(
+        insertedCaption,
+        getCaptionSelectionOffset(insertedCaption),
+      ),
     ),
   );
 }
