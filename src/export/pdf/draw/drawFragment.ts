@@ -16,6 +16,7 @@ import {
   underlineStyleLineWidthPx,
 } from "../../../core/textStyleMappings.js";
 import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
+import { paintTextBox } from "./drawTextBoxShape.js";
 import { registerPdfImageRun } from "../images.js";
 import { OasisPdfWriter } from "../OasisPdfWriter.js";
 import {
@@ -335,6 +336,40 @@ function drawTabLeaders(
   }
 }
 
+// Paints an inline (non-floating) shape / text box at its anchor slot. Floating
+// boxes are positioned separately via drawFloatingTextBoxesForParagraph.
+async function drawInlineTextBoxFragment(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+  document: EditorDocument,
+  originX: number,
+  originY: number,
+  fontRegistry: PdfFontRegistry,
+): Promise<void> {
+  const textBox = fragment.textBox;
+  if (!textBox || textBox.floating) {
+    return;
+  }
+  const slot =
+    line.slots.find((candidate) => candidate.offset === fragment.startOffset) ??
+    line.slots.find((candidate) => candidate.offset >= fragment.startOffset);
+  if (!slot) {
+    return;
+  }
+
+  await paintTextBox(
+    writer,
+    textBox,
+    { document, fontRegistry, pageIndex },
+    originX + slot.left,
+    originY + line.top + line.height - textBox.height,
+    textBox.width,
+    textBox.height,
+  );
+}
+
 export async function drawFragmentText(
   writer: OasisPdfWriter,
   pageIndex: number,
@@ -371,6 +406,20 @@ export async function drawFragmentText(
       height: pxToPt(fragment.image.height),
       rotation: fragment.image.rotation,
     });
+    return;
+  }
+
+  if (fragment.textBox) {
+    await drawInlineTextBoxFragment(
+      writer,
+      pageIndex,
+      line,
+      fragment,
+      document,
+      originX,
+      originY,
+      fontRegistry,
+    );
     return;
   }
 

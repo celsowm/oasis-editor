@@ -4,6 +4,7 @@
 
 export * from "./commands/image.js";
 export * from "./commands/textBox.js";
+export * from "./commands/shape.js";
 export * from "./commands/floatingLayout.js";
 export * from "./commands/text.js";
 export * from "./commands/block.js";

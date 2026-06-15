@@ -11,6 +11,7 @@ import {
 } from "../../layoutProjection/floatingObjects.js";
 import { drawParagraph } from "./canvasParagraphPainter.js";
 import { drawTable } from "./canvasTablePainter.js";
+import { buildPresetPath } from "./presetGeometry.js";
 import {
   getTextBoxPadding as getPadding,
   resolveTextBoxRenderHeight,
@@ -33,17 +34,19 @@ export function drawTextBoxShape(
   const borderColor = textBox.shape?.borderColor;
   const borderWidth = textBox.shape?.borderWidthPt ?? (borderColor ? 0.75 : 0);
 
+  const path = buildPresetPath(textBox.shape?.preset, x, y, width, height);
+
   ctx.save();
 
   if (fill) {
     ctx.fillStyle = fill;
-    ctx.fillRect(x, y, width, height);
+    ctx.fill(path);
   }
 
   if (borderColor && borderWidth > 0) {
     ctx.strokeStyle = borderColor;
     ctx.lineWidth = Math.max(1, borderWidth * (96 / 72));
-    ctx.strokeRect(x, y, width, height);
+    ctx.stroke(path);
   }
 
   ctx.restore();

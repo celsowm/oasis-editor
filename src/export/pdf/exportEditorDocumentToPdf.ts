@@ -50,6 +50,7 @@ export async function exportEditorDocumentToPdf(
       contentWidth,
       fontRegistry,
       listOrdinals,
+      page.pageSettings,
     );
     await drawBlockList(
       writer,
@@ -61,6 +62,7 @@ export async function exportEditorDocumentToPdf(
       contentWidth,
       fontRegistry,
       listOrdinals,
+      page.pageSettings,
     );
     await drawBlockList(
       writer,
@@ -72,6 +74,7 @@ export async function exportEditorDocumentToPdf(
       contentWidth,
       fontRegistry,
       listOrdinals,
+      page.pageSettings,
     );
     if (
       page.footnoteBlocks &&

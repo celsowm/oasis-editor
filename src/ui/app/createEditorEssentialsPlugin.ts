@@ -1,5 +1,6 @@
 import {
   insertPageBreakAtSelection,
+  insertShapeAtSelection,
   insertTextAtSelection,
   setParagraphStyle,
   setTableCellBorders,
@@ -314,6 +315,10 @@ export function createEditorEssentialsRuntimePlugin(
     exportPdf: () => void options.docIO.handleExportPdf(),
     importDocument: () => options.importInputRef()?.click(),
     insertImage: () => options.imageInputRef()?.click(),
+    insertShape: (preset: string) =>
+      options.applyTransactionalState((current) =>
+        insertShapeAtSelection(current, preset),
+      ),
   };
 
   const essentialsLink = {

@@ -258,6 +258,9 @@ export function buildDocumentAndBrowserCommands({
       document.importDocument(),
     ),
     insertImage: actionCommand("insertImage", () => document.insertImage()),
+    insertShape: actionCommand("insertShape", (p) =>
+      document.insertShape(String(p)),
+    ),
     unlink: actionCommand(
       "unlink",
       () => link.remove(),

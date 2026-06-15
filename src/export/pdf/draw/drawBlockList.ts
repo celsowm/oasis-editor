@@ -1,10 +1,15 @@
-import type { EditorDocument, EditorLayoutBlock } from "../../../core/model.js";
+import type {
+  EditorDocument,
+  EditorLayoutBlock,
+  EditorPageSettings,
+} from "../../../core/model.js";
 import { resolveEffectiveParagraphStyle } from "../../../core/model.js";
 import { getParagraphBorderInsets } from "../../../layoutProjection/index.js";
 import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
 import { OasisPdfWriter } from "../OasisPdfWriter.js";
 import { drawParagraph, drawParagraphDecorations } from "./drawParagraph.js";
 import { drawTableBlock } from "./drawTable.js";
+import { drawFloatingTextBoxesForParagraph } from "./drawTextBoxShape.js";
 
 export async function drawBlockList(
   writer: OasisPdfWriter,
@@ -16,11 +21,13 @@ export async function drawBlockList(
   contentWidth: number,
   fontRegistry: PdfFontRegistry,
   listOrdinals: Map<string, number>,
+  pageSettings?: EditorPageSettings,
 ): Promise<void> {
   if (!blocks || blocks.length === 0) {
     return;
   }
 
+  const contentTop = originY;
   let cursorY = originY;
   for (const block of blocks) {
     if (block.sourceBlock.type === "paragraph" && block.layout) {
@@ -54,6 +61,20 @@ export async function drawBlockList(
         fontRegistry,
         listOrdinals,
       );
+      if (pageSettings) {
+        await drawFloatingTextBoxesForParagraph({
+          writer,
+          document,
+          fontRegistry,
+          pageIndex,
+          lines: block.layout.lines,
+          pageSettings,
+          contentLeft: originX,
+          contentTop,
+          contentWidth,
+          paragraphTop: boxTop,
+        });
+      }
     } else if (block.sourceBlock.type === "table") {
       await drawTableBlock(
         writer,

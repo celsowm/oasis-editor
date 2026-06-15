@@ -41,6 +41,27 @@ export interface OasisPdfLineOptions {
   dashArray?: number[];
 }
 
+export type OasisPdfPathSegment =
+  | { type: "move"; x: number; y: number }
+  | { type: "line"; x: number; y: number }
+  | {
+      type: "cubic";
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      x: number;
+      y: number;
+    }
+  | { type: "close" };
+
+export interface OasisPdfPathOptions {
+  segments: OasisPdfPathSegment[];
+  fill?: string;
+  stroke?: string;
+  lineWidth?: number;
+}
+
 export interface OasisPdfTextOptions {
   x: number;
   y: number;
@@ -467,6 +488,126 @@ export class OasisPdfWriter {
       "Q",
     );
     page.commands.push(commands.join("\n"));
+  }
+
+  // Fills/strokes an arbitrary path. Segment coordinates are in points with a
+  // top-left origin (callers convert px→pt, like drawRect/drawLine); the y axis
+  // is flipped here to the PDF bottom-left origin.
+  drawPath(pageIndex: number, options: OasisPdfPathOptions): void {
+    const page = this.pages[pageIndex];
+    if (!page || options.segments.length === 0) {
+      return;
+    }
+    if (!options.fill && !options.stroke) {
+      return;
+    }
+
+    const flip = (yy: number): number => page.height - yy;
+    const commands = ["q"];
+    if (options.fill) {
+      commands.push(colorCommand(options.fill, "rg", [1, 1, 1]));
+    }
+    if (options.stroke) {
+      commands.push(colorCommand(options.stroke, "RG", [0, 0, 0]));
+      commands.push(`${formatNumber(options.lineWidth ?? 1)} w`);
+    }
+
+    for (const segment of options.segments) {
+      switch (segment.type) {
+        case "move":
+          commands.push(
+            `${formatNumber(segment.x)} ${formatNumber(flip(segment.y))} m`,
+          );
+          break;
+        case "line":
+          commands.push(
+            `${formatNumber(segment.x)} ${formatNumber(flip(segment.y))} l`,
+          );
+          break;
+        case "cubic":
+          commands.push(
+            `${formatNumber(segment.x1)} ${formatNumber(flip(segment.y1))} ` +
+              `${formatNumber(segment.x2)} ${formatNumber(flip(segment.y2))} ` +
+              `${formatNumber(segment.x)} ${formatNumber(flip(segment.y))} c`,
+          );
+          break;
+        case "close":
+          commands.push("h");
+          break;
+      }
+    }
+
+    if (options.fill && options.stroke) {
+      commands.push("B");
+    } else if (options.fill) {
+      commands.push("f");
+    } else {
+      commands.push("S");
+    }
+    commands.push("Q");
+    page.commands.push(commands.join("\n"));
+  }
+
+  // Saves the graphics state (`q`). Pair with restoreGraphicsState. Any draw
+  // commands emitted in between inherit the current transform/clip.
+  saveGraphicsState(pageIndex: number): void {
+    const page = this.pages[pageIndex];
+    if (page) {
+      page.commands.push("q");
+    }
+  }
+
+  restoreGraphicsState(pageIndex: number): void {
+    const page = this.pages[pageIndex];
+    if (page) {
+      page.commands.push("Q");
+    }
+  }
+
+  // Concatenates a clockwise rotation (in degrees, matching the canvas/editor
+  // convention) about a top-left-origin point onto the current CTM. Must sit
+  // inside a saveGraphicsState/restoreGraphicsState pair.
+  rotateAbout(
+    pageIndex: number,
+    centerX: number,
+    centerY: number,
+    degrees: number,
+  ): void {
+    const page = this.pages[pageIndex];
+    if (!page || !degrees) {
+      return;
+    }
+    const cyf = page.height - centerY;
+    const radians = (-degrees * Math.PI) / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    const e = centerX - centerX * cos + cyf * sin;
+    const f = cyf - centerX * sin - cyf * cos;
+    page.commands.push(
+      `${formatNumber(cos)} ${formatNumber(sin)} ${formatNumber(-sin)} ` +
+        `${formatNumber(cos)} ${formatNumber(e)} ${formatNumber(f)} cm`,
+    );
+  }
+
+  // Intersects the clip path with a rectangle (top-left origin). Must sit inside
+  // a saveGraphicsState/restoreGraphicsState pair so the clip can be undone.
+  clipRect(
+    pageIndex: number,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ): void {
+    const page = this.pages[pageIndex];
+    if (!page || width <= 0 || height <= 0) {
+      return;
+    }
+    page.commands.push(
+      `${formatNumber(x)} ${formatNumber(page.height - y - height)} ` +
+        `${formatNumber(width)} ${formatNumber(height)} re`,
+      "W",
+      "n",
+    );
   }
 
   drawText(pageIndex: number, options: OasisPdfTextOptions): void {

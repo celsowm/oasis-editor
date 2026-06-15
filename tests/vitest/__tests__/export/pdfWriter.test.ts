@@ -1869,6 +1869,265 @@ describe("OasisPdfWriter", () => {
     expect(center.y).toBeCloseTo(expectedCenterY, 3);
   });
 
+  it("renders an inline shape's geometry and fill instead of the object-replacement glyph", async () => {
+    const document: EditorDocument = {
+      id: "pdf-inline-shape-document",
+      sections: [
+        {
+          id: "section-1",
+          pageSettings: {
+            width: 240,
+            height: 240,
+            orientation: "portrait",
+            margins: {
+              top: 48,
+              right: 48,
+              bottom: 48,
+              left: 48,
+              header: 24,
+              footer: 24,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: "shape-paragraph",
+              type: "paragraph",
+              runs: [
+                {
+                  id: "shape-run",
+                  text: "￼",
+                  textBox: {
+                    width: 80,
+                    height: 60,
+                    blocks: [],
+                    shape: {
+                      preset: "diamond",
+                      fill: "#4472C4",
+                      borderColor: "#2F528F",
+                      borderWidthPt: 1,
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+
+    // Fill color #4472C4 → rgb fill command, and a filled+stroked path (B).
+    expect(pdf).toContain("0.267 0.447 0.769 rg");
+    expect(pdf).toMatch(
+      /\d+(\.\d+)? \d+(\.\d+)? m\n(\d+(\.\d+)? \d+(\.\d+)? l\n)+h\nB/,
+    );
+    // The object-replacement character is not drawn as text.
+    expect(pdf).not.toContain(`<${pdfHex("￼")}> Tj`);
+  });
+
+  it("positions a floating shape at its anchor instead of overflowing above the body", async () => {
+    const shapeHeight = 200;
+    const document: EditorDocument = {
+      id: "pdf-floating-shape-document",
+      sections: [
+        {
+          id: "section-1",
+          pageSettings: {
+            width: 480,
+            height: 600,
+            orientation: "portrait",
+            margins: {
+              top: 96,
+              right: 48,
+              bottom: 48,
+              left: 48,
+              header: 48,
+              footer: 24,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: "shape-paragraph",
+              type: "paragraph",
+              runs: [
+                {
+                  id: "shape-run",
+                  text: "￼",
+                  textBox: {
+                    width: 240,
+                    height: shapeHeight,
+                    blocks: [],
+                    shape: {
+                      preset: "rect",
+                      fill: "#4472C4",
+                      borderColor: "#2F528F",
+                      borderWidthPt: 1,
+                    },
+                    floating: {
+                      type: "floating",
+                      wrap: "none",
+                      behindDoc: false,
+                      allowOverlap: true,
+                      positionH: { relativeFrom: "column", offset: 0 },
+                      positionV: { relativeFrom: "paragraph", offset: 0 },
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+    const layout = projectDocumentLayout(document, undefined, undefined, undefined);
+    const page = layout.pages[0]!;
+    const pageHeightPt = pxToPt(page.pageSettings.height);
+    const bodyTop = page.bodyTop ?? page.pageSettings.margins.top;
+
+    // The shape's rectangle path starts at its top-left corner (anchor = body
+    // top, offset 0). In PDF (bottom-left origin) that y is pageHeight - bodyTop.
+    const move = new RegExp(
+      "0\\.267 0\\.447 0\\.769 rg\\n[^\\n]*RG\\n[^\\n]*w\\n([\\d.]+) ([\\d.]+) m",
+    ).exec(pdf);
+    expect(move).not.toBeNull();
+    const topEdgeY = Number(move![2]);
+    expect(topEdgeY).toBeCloseTo(pageHeightPt - pxToPt(bodyTop), 1);
+    // The top edge must stay within the page body, not up in the header band.
+    expect(pageHeightPt - topEdgeY).toBeGreaterThanOrEqual(pxToPt(bodyTop) - 0.5);
+  });
+
+  it("renders a shape's inner text content inside the box", async () => {
+    const document: EditorDocument = {
+      id: "pdf-shape-inner-text-document",
+      sections: [
+        {
+          id: "section-1",
+          pageSettings: {
+            width: 480,
+            height: 480,
+            orientation: "portrait",
+            margins: {
+              top: 48,
+              right: 48,
+              bottom: 48,
+              left: 48,
+              header: 24,
+              footer: 24,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: "shape-paragraph",
+              type: "paragraph",
+              runs: [
+                {
+                  id: "shape-run",
+                  text: "￼",
+                  textBox: {
+                    width: 200,
+                    height: 120,
+                    blocks: [
+                      {
+                        id: "inner-paragraph",
+                        type: "paragraph",
+                        runs: [{ id: "inner-run", text: "InsideShape" }],
+                      },
+                    ],
+                    shape: { preset: "rect", fill: "#4472C4" },
+                    floating: {
+                      type: "floating",
+                      wrap: "none",
+                      positionH: { relativeFrom: "column", offset: 0 },
+                      positionV: { relativeFrom: "paragraph", offset: 0 },
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+
+    expectPdfText(pdf, "InsideShape");
+    // The inner content is clipped to the box (W n clip operator emitted).
+    expect(pdf).toContain("W\nn");
+  });
+
+  it("rotates a shape about its center using a cm transform", async () => {
+    const rotation = 30;
+    const document: EditorDocument = {
+      id: "pdf-shape-rotation-document",
+      sections: [
+        {
+          id: "section-1",
+          pageSettings: {
+            width: 480,
+            height: 480,
+            orientation: "portrait",
+            margins: {
+              top: 48,
+              right: 48,
+              bottom: 48,
+              left: 48,
+              header: 24,
+              footer: 24,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: "shape-paragraph",
+              type: "paragraph",
+              runs: [
+                {
+                  id: "shape-run",
+                  text: "￼",
+                  textBox: {
+                    width: 200,
+                    height: 120,
+                    blocks: [],
+                    rotation,
+                    shape: { preset: "rect", fill: "#4472C4" },
+                    floating: {
+                      type: "floating",
+                      wrap: "none",
+                      positionH: { relativeFrom: "column", offset: 0 },
+                      positionV: { relativeFrom: "paragraph", offset: 0 },
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+
+    // Clockwise 30° → PDF math angle -30°: cos(30°)=0.866, sin(-30°)=-0.5.
+    const cos = Number((Math.cos((-rotation * Math.PI) / 180)).toFixed(3));
+    const sin = Number((Math.sin((-rotation * Math.PI) / 180)).toFixed(3));
+    const matrix = new RegExp(
+      `${cos} ${sin} ${-sin} ${cos} [-\\d.]+ [-\\d.]+ cm`,
+    );
+    expect(pdf).toMatch(matrix);
+    expect(pdf).toContain("0.267 0.447 0.769 rg");
+  });
+
   it("rotates inline images by arbitrary angles with a single transformed draw", async () => {
     const imageWidth = 32;
     const imageHeight = 24;

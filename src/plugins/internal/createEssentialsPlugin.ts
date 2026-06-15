@@ -85,6 +85,7 @@ export interface EssentialsDocumentCapability {
   exportPdf: () => void;
   importDocument: () => void;
   insertImage: () => void;
+  insertShape: (preset: string) => void;
 }
 
 export interface EssentialsLinkCapability {
