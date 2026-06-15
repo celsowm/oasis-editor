@@ -28,6 +28,9 @@
   --oasis-active-bg: #e2e8f0;
   --oasis-selection-bg: rgba(37, 99, 235, 0.22);
   --oasis-caret-color: #2563eb;
+  --oasis-comment-bg: rgba(245, 158, 11, 0.28);
+  --oasis-comment-bg-active: rgba(245, 158, 11, 0.48);
+  --oasis-comment-underline: rgba(217, 119, 6, 0.7);
 
   --oasis-success: #15803d;
   --oasis-warning: #a16207;

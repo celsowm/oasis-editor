@@ -1,6 +1,7 @@
 import type { Accessor, JSX } from "solid-js";
 import type {
   CaretBox,
+  CommentHighlightBox,
   InputBox,
   LayoutOptionsOverlay,
   RevisionBox,
@@ -40,6 +41,7 @@ export interface EditorViewPropsContext {
   style: JSX.CSSProperties | undefined;
   // overlays
   selectionBoxes: Accessor<SelectionBox[]>;
+  commentHighlights: Accessor<CommentHighlightBox[]>;
   selectedImageBox: Accessor<SelectedImageBox | null>;
   selectedTextBoxBox: Accessor<SelectedTextBoxBox | null>;
   layoutOptions: LayoutOptionsOverlay;
@@ -96,6 +98,7 @@ export function buildEditorViewProps(
 
   const overlays: OasisEditorEditorOverlayProps = {
     selectionBoxes: ctx.selectionBoxes,
+    commentHighlights: ctx.commentHighlights,
     selectedImageBox: ctx.selectedImageBox,
     selectedTextBoxBox: ctx.selectedTextBoxBox,
     layoutOptions: ctx.layoutOptions,

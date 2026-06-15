@@ -23,6 +23,16 @@ export interface ImportedBookmarkMarker {
   colLast?: number;
 }
 
+/**
+ * A `w:commentRangeStart` / `w:commentRangeEnd` marker carried through the run
+ * stream as a zero-length transient run. The import driver extracts these into
+ * the document-level comment registry once paragraph ids and offsets are known.
+ */
+export interface ImportedCommentMarker {
+  kind: "start" | "end";
+  docxId: string;
+}
+
 export interface ImportedRun {
   text: string;
   image?: EditorImageRunData;
@@ -40,5 +50,6 @@ export interface ImportedRun {
   footnoteReference?: { docxId: string; customMark?: string };
   endnoteReference?: { docxId: string; customMark?: string };
   bookmark?: ImportedBookmarkMarker;
+  comment?: ImportedCommentMarker;
   sym?: { font: string; char: string };
 }

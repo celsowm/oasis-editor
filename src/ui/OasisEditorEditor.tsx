@@ -14,6 +14,7 @@ import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { RevisionOverlay } from "./components/RevisionOverlay.js";
+import { CommentHighlightOverlay } from "./components/CommentHighlightOverlay.js";
 import { FloatingTableToolbar } from "./components/FloatingToolbar/FloatingTableToolbar.js";
 import { FloatingLayoutOptions } from "./components/FloatingToolbar/FloatingLayoutOptions.js";
 import type { ToolbarHost } from "./components/Toolbar/state/createToolbarApi.js";
@@ -31,6 +32,7 @@ import { importFileAccept } from "../import/documentImporterRegistry.js";
 import type { ImportProgressState } from "../app/controllers/useEditorDocumentIO.js";
 import type {
   CaretBox,
+  CommentHighlightBox,
   InputBox,
   LayoutOptionsOverlay,
   RevisionBox,
@@ -38,6 +40,7 @@ import type {
   SelectedTextBoxBox,
   SelectionBox,
 } from "./editorUiTypes.js";
+import type { EditorComment } from "../core/model.js";
 import type { ResizeHandleDirection } from "./resizeGeometry.js";
 import { ResizeHandlesOverlay } from "./overlays/ResizeHandlesOverlay.js";
 import { projectDocumentLayout } from "../layoutProjection/index.js";
@@ -56,6 +59,7 @@ export interface OasisEditorEditorLayoutProps {
 
 export interface OasisEditorEditorOverlayProps {
   selectionBoxes: Accessor<SelectionBox[]>;
+  commentHighlights: Accessor<CommentHighlightBox[]>;
   selectedImageBox: Accessor<SelectedImageBox | null>;
   selectedTextBoxBox: Accessor<SelectedTextBoxBox | null>;
   caretBox: Accessor<CaretBox>;
@@ -259,6 +263,9 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
 
   const selectedImage = createMemo(() => overlays().selectedImageBox());
   const selectedTextBox = createMemo(() => overlays().selectedTextBoxBox());
+  const commentsById = createMemo<Record<string, EditorComment>>(
+    () => props.state().document.comments?.items ?? {},
+  );
 
   createEffect(() => {
     statusDocumentLayout();
@@ -338,6 +345,13 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
 
           <Show when={overlays().selectionBoxes().length > 0}>
             <SelectionOverlay boxes={overlays().selectionBoxes()} />
+          </Show>
+
+          <Show when={overlays().commentHighlights().length > 0}>
+            <CommentHighlightOverlay
+              boxes={overlays().commentHighlights}
+              commentsById={commentsById}
+            />
           </Show>
 
           <ResizeHandlesOverlay

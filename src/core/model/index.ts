@@ -67,6 +67,11 @@ export type {
   EditorBookmarkAnchor,
   EditorBookmarks,
 } from "./types/documentBookmarks.js";
+export type {
+  EditorComment,
+  EditorCommentAnchor,
+  EditorComments,
+} from "./types/documentComments.js";
 
 export type {
   EditorPageMargins,

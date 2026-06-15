@@ -7,6 +7,7 @@ import type {
   EditorWrapPolygonPoint,
 } from "../../core/model.js";
 import type { BookmarkEventsByParagraph } from "./bookmarksXml.js";
+import type { CommentEventsByParagraph } from "./commentsXml.js";
 
 export interface NumberingDefinition {
   kind: EditorParagraphListStyle["kind"];
@@ -66,6 +67,12 @@ export interface DocContext {
    * paragraph ids are globally unique.
    */
   bookmarkEventsByParagraph?: BookmarkEventsByParagraph;
+  /**
+   * Per-paragraph comment boundary events (`w:commentRangeStart`/`End` +
+   * `w:commentReference`), keyed by `EditorParagraphNode.id`. Shared across all
+   * part contexts since paragraph ids are globally unique.
+   */
+  commentEventsByParagraph?: CommentEventsByParagraph;
 }
 
 export interface NumberingContext {

@@ -40,6 +40,10 @@ import { parseEndnotesXml } from "./endnotes.js";
 import { renumberFootnotes } from "../../core/footnotes.js";
 import { renumberEndnotes } from "../../core/endnotes.js";
 import { extractBookmarksFromSections } from "./bookmarks.js";
+import { extractCommentRangesFromSections } from "./comments.js";
+import { parseCommentsXml } from "./commentsXml.js";
+import { createEditorCommentId } from "../../core/editorState.js";
+import type { EditorComments } from "../../core/model.js";
 
 export type DocxImportStage =
   | "opening-docx"
@@ -386,6 +390,17 @@ export async function importDocxToEditorDocument(
   // after section paragraphs exist (anchors reference paragraph ids).
   const editorBookmarks = extractBookmarksFromSections(sections);
 
+  // Comments: pair the `__importedComment` range markers (start/end anchors)
+  // with the comment bodies in `word/comments.xml` (+ resolved flags in
+  // `word/commentsExtended.xml`) into a document-level registry.
+  const commentRanges = extractCommentRangesFromSections(sections);
+  const commentsXml =
+    (await zip.file("word/comments.xml")?.async("string")) ?? null;
+  const commentsExtendedXml =
+    (await zip.file("word/commentsExtended.xml")?.async("string")) ?? null;
+  const commentBodies = parseCommentsXml(commentsXml, commentsExtendedXml);
+  const editorComments = buildEditorComments(commentRanges, commentBodies);
+
   const shouldPreserveSections =
     sections.length > 1 ||
     sections.some(
@@ -421,6 +436,9 @@ export async function importDocxToEditorDocument(
     if (editorBookmarks) {
       result.bookmarks = editorBookmarks;
     }
+    if (editorComments) {
+      result.comments = editorComments;
+    }
     return result;
   };
 
@@ -454,6 +472,57 @@ export async function importDocxToEditorDocument(
     doc.styles = importedStyles;
   }
   return finalize(doc);
+}
+
+/**
+ * Join comment range anchors (keyed by DOCX id) with the parsed comment bodies
+ * into a document-level {@link EditorComments} registry. Comments are emitted in
+ * DOCX-id numeric order for a deterministic registry. A comment with neither a
+ * range nor a body is skipped; one with a body but no range is still kept so its
+ * text survives the round-trip (Word tolerates a body-only comment).
+ */
+function buildEditorComments(
+  ranges: Map<string, import("./comments.js").CommentRange>,
+  bodies: Map<string, import("./commentsXml.js").ParsedCommentBody>,
+): EditorComments | undefined {
+  const docxIds = new Set<string>([...ranges.keys(), ...bodies.keys()]);
+  if (docxIds.size === 0) {
+    return undefined;
+  }
+  const sorted = [...docxIds].sort((a, b) => {
+    const na = Number.parseInt(a, 10);
+    const nb = Number.parseInt(b, 10);
+    if (Number.isNaN(na) || Number.isNaN(nb)) {
+      return a.localeCompare(b);
+    }
+    return na - nb;
+  });
+
+  const items: EditorComments["items"] = {};
+  const order: string[] = [];
+  for (const docxId of sorted) {
+    const range = ranges.get(docxId);
+    const body = bodies.get(docxId);
+    if (!range && !body) {
+      continue;
+    }
+    const id = createEditorCommentId();
+    const docxIdNum = Number.parseInt(docxId, 10);
+    items[id] = {
+      id,
+      author: body?.author ?? "",
+      ...(body?.initials ? { initials: body.initials } : {}),
+      ...(body?.date !== undefined ? { date: body.date } : {}),
+      ...(body?.resolved ? { resolved: body.resolved } : {}),
+      text: body?.text ?? "",
+      ...(range?.start ? { start: range.start } : {}),
+      ...(range?.end ? { end: range.end } : {}),
+      ...(Number.isNaN(docxIdNum) ? {} : { docxIdHint: docxIdNum }),
+    };
+    order.push(id);
+  }
+
+  return order.length > 0 ? { items, order } : undefined;
 }
 
 /**

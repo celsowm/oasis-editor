@@ -24,6 +24,7 @@ import {
 } from "./runs/textBox.js";
 import type {
   ImportedBookmarkMarker,
+  ImportedCommentMarker,
   ImportedRun,
   ParseNestedBlocks,
 } from "./runs/types.js";
@@ -63,6 +64,23 @@ function parseBookmarkMarker(
   };
 }
 
+/**
+ * Parse a `w:commentRangeStart` / `w:commentRangeEnd` element into a transient
+ * marker. Returns `undefined` when the element has no usable `w:id`.
+ */
+function parseCommentMarker(
+  element: XmlElement,
+): ImportedCommentMarker | undefined {
+  const docxId = getAttributeValue(element, "id");
+  if (!docxId) {
+    return undefined;
+  }
+  return {
+    kind: element.localName === "commentRangeEnd" ? "end" : "start",
+    docxId,
+  };
+}
+
 export async function parseRunElement(
   runElement: XmlElement,
   zip: JSZip,
@@ -74,6 +92,7 @@ export async function parseRunElement(
   image?: EditorImageRunData;
   textBox?: EditorTextBoxData;
   innerBookmarks?: Array<{ offset: number; marker: ImportedBookmarkMarker }>;
+  innerComments?: Array<{ offset: number; marker: ImportedCommentMarker }>;
   sym?: { font: string; char: string };
 }> {
   const textParts: string[] = [];
@@ -84,6 +103,10 @@ export async function parseRunElement(
   const innerBookmarks: Array<{
     offset: number;
     marker: ImportedBookmarkMarker;
+  }> = [];
+  const innerComments: Array<{
+    offset: number;
+    marker: ImportedCommentMarker;
   }> = [];
   const pushText = (value: string): void => {
     textParts.push(value);
@@ -128,9 +151,19 @@ export async function parseRunElement(
         }
         continue;
       } else if (
-        element.localName === "proofErr" ||
         element.localName === "commentRangeStart" ||
-        element.localName === "commentRangeEnd" ||
+        element.localName === "commentRangeEnd"
+      ) {
+        // A comment range marker nested *inside* a run, between its children.
+        // Capture it with its intra-run offset so the container can splice it
+        // back into the run stream at the right boundary.
+        const marker = parseCommentMarker(element);
+        if (marker) {
+          innerComments.push({ offset: textLength, marker });
+        }
+        continue;
+      } else if (
+        element.localName === "proofErr" ||
         element.localName === "commentReference" ||
         element.localName === "permStart" ||
         element.localName === "permEnd"
@@ -189,6 +222,7 @@ export async function parseRunElement(
     image,
     ...(textBox ? { textBox } : {}),
     ...(innerBookmarks.length > 0 ? { innerBookmarks } : {}),
+    ...(innerComments.length > 0 ? { innerComments } : {}),
     ...(sym ? { sym } : {}),
   };
 }
@@ -323,6 +357,18 @@ export async function parseRunsContainer(
       continue;
     }
 
+    if (
+      element.localName === "commentRangeStart" ||
+      element.localName === "commentRangeEnd"
+    ) {
+      const marker = parseCommentMarker(element);
+      if (!marker) {
+        continue;
+      }
+      runs.push({ text: "", comment: marker });
+      continue;
+    }
+
     if (element.localName === "r") {
       const runStyles = parseRunStyle(
         getFirstChildByTagNameNS(element, WORD_NS, "rPr"),
@@ -405,13 +451,8 @@ export async function parseRunsContainer(
         continue;
       }
 
-      const { text, image, textBox, innerBookmarks, sym } = await parseRunElement(
-        element,
-        zip,
-        relsMap,
-        assets,
-        parseNestedBlocks,
-      );
+      const { text, image, textBox, innerBookmarks, innerComments, sym } =
+        await parseRunElement(element, zip, relsMap, assets, parseNestedBlocks);
 
       let styles = runStyles;
       if (sym && !styles?.fontFamily) {
@@ -423,17 +464,31 @@ export async function parseRunsContainer(
         (styles ??= {}).link = inheritedLink;
       }
 
-      // Bookmarks nested between this run's children split it into segments.
-      // (Only plain-text runs are split; image/textbox runs are pathological
-      // here and fall through to emit their markers around the whole run.)
-      if (innerBookmarks && innerBookmarks.length > 0 && !image && !textBox) {
+      // Bookmark/comment markers nested between this run's children split it
+      // into segments. (Only plain-text runs are split; image/textbox runs are
+      // pathological here and fall through to emit their markers around the
+      // whole run.)
+      const innerMarkers: Array<{ offset: number; run: ImportedRun }> = [
+        ...(innerBookmarks ?? []).map((m) => ({
+          offset: m.offset,
+          run: { text: "", bookmark: m.marker } as ImportedRun,
+        })),
+        ...(innerComments ?? []).map((m) => ({
+          offset: m.offset,
+          run: { text: "", comment: m.marker } as ImportedRun,
+        })),
+      ];
+      if (innerMarkers.length > 0 && !image && !textBox) {
+        // Stable sort by offset preserves document order for markers sharing one
+        // offset (Array.prototype.sort is stable in modern engines).
+        innerMarkers.sort((a, b) => a.offset - b.offset);
         let cursor = 0;
-        for (const inner of innerBookmarks) {
+        for (const inner of innerMarkers) {
           const segment = text.slice(cursor, inner.offset);
           if (segment.length > 0) {
             runs.push({ text: segment, ...(styles ? { styles } : {}) });
           }
-          runs.push({ text: "", bookmark: inner.marker });
+          runs.push(inner.run);
           cursor = inner.offset;
         }
         const tail = text.slice(cursor);

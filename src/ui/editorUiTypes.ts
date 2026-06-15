@@ -50,6 +50,15 @@ export interface RevisionBox {
   top: number;
 }
 
+/** One highlight rectangle over a commented text range, tagged with its id. */
+export interface CommentHighlightBox {
+  commentId: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 import type { Accessor } from "solid-js";
 import type { EditorState, EditorLayoutParagraph } from "../core/model.js";
 import type { WrapPreset } from "../core/commands/floatingLayout.js";

@@ -12,6 +12,7 @@ import type { EditorBlockNode } from "./nodes.js";
 import type { EditorFootnote } from "./documentFootnotes.js";
 import type { EditorEndnote } from "./documentEndnotes.js";
 import type { EditorBookmarks } from "./documentBookmarks.js";
+import type { EditorComments } from "./documentComments.js";
 import type { EditorNamedStyle } from "./styles.js";
 
 export interface EditorPageMargins {
@@ -95,6 +96,12 @@ export interface EditorDocument {
    * hyperlinks (`#name`) and cross-references.
    */
   bookmarks?: EditorBookmarks;
+  /**
+   * Comment registry (`w:commentRangeStart`/`w:commentRangeEnd` +
+   * `word/comments.xml` bodies). Each comment owns a highlighted range and a
+   * body shown in a hover/click popup.
+   */
+  comments?: EditorComments;
   metadata?: {
     title?: string;
     [key: string]: unknown;

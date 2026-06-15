@@ -8,6 +8,8 @@ import type {
 import type { DocContext } from "../docxTypes.js";
 import type { BookmarkBoundaryEvent } from "../bookmarksXml.js";
 import { serializeBookmarkEvent } from "../bookmarksXml.js";
+import type { CommentBoundaryEvent } from "../commentsXml.js";
+import { serializeCommentRangeEvent } from "../commentsXml.js";
 import { serializeTableXml } from "../tableXml.js";
 import { serializeParagraphProperties } from "./paragraphPropertiesXml.js";
 import { serializeRunWithRelationships } from "./runXml.js";
@@ -30,19 +32,30 @@ function isSplittableTextRun(run: EditorTextRun): boolean {
 }
 
 /**
- * Serialize a paragraph's runs, interleaving bookmark start/end markers at
+ * A pre-serialized zero-width insertion (a bookmark/comment range marker, or the
+ * standalone `w:commentReference` run) to splice into the run stream at
+ * `offset`. `seq` breaks ties between boundaries that share an offset.
+ */
+interface BoundaryToken {
+  offset: number;
+  seq: number;
+  xml: string;
+}
+
+/**
+ * Serialize a paragraph's runs, interleaving bookmark/comment boundary tokens at
  * their character offsets. Splittable text runs are virtually sliced so a
  * boundary can land mid-run; other runs stay atomic (boundaries inside them are
  * emitted just before the run).
  */
-function serializeRunsWithBookmarks(
+function serializeRunsWithBoundaries(
   runs: EditorTextRun[],
-  events: BookmarkBoundaryEvent[],
+  tokens: BoundaryToken[],
   context: DocContext,
   paragraphStyleId: string | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
 ): string {
-  const sorted = [...events].sort(
+  const sorted = [...tokens].sort(
     (a, b) => a.offset - b.offset || a.seq - b.seq,
   );
   let ei = 0;
@@ -51,7 +64,7 @@ function serializeRunsWithBookmarks(
 
   const flushUpTo = (limit: number): void => {
     while (ei < sorted.length && sorted[ei]!.offset <= limit) {
-      out += serializeBookmarkEvent(sorted[ei]!);
+      out += sorted[ei]!.xml;
       ei += 1;
     }
   };
@@ -65,21 +78,21 @@ function serializeRunsWithBookmarks(
     if (isSplittableTextRun(run) && run.text.length > 0) {
       let cursor = runStart;
       while (ei < sorted.length && sorted[ei]!.offset < runEnd) {
-        const event = sorted[ei]!;
-        if (event.offset > cursor) {
+        const token = sorted[ei]!;
+        if (token.offset > cursor) {
           out += serializeRunWithRelationships(
             {
               ...run,
-              text: run.text.slice(cursor - runStart, event.offset - runStart),
+              text: run.text.slice(cursor - runStart, token.offset - runStart),
             },
             context,
             paragraphStyleId,
             styles,
           );
         }
-        out += serializeBookmarkEvent(event);
+        out += token.xml;
         ei += 1;
-        cursor = event.offset;
+        cursor = token.offset;
       }
       if (cursor < runEnd) {
         out += serializeRunWithRelationships(
@@ -144,11 +157,24 @@ export function serializeParagraphXml(
     ? serializeDropCapFrameParagraph(paragraph.dropCap)
     : "";
   const bookmarkEvents = context.bookmarkEventsByParagraph?.get(paragraph.id);
+  const commentEvents = context.commentEventsByParagraph?.get(paragraph.id);
+  const boundaryTokens: BoundaryToken[] = [
+    ...(bookmarkEvents ?? []).map((e: BookmarkBoundaryEvent) => ({
+      offset: e.offset,
+      seq: e.seq,
+      xml: serializeBookmarkEvent(e),
+    })),
+    ...(commentEvents ?? []).map((e: CommentBoundaryEvent) => ({
+      offset: e.offset,
+      seq: e.seq,
+      xml: serializeCommentRangeEvent(e),
+    })),
+  ];
   const runsXml =
-    bookmarkEvents && bookmarkEvents.length > 0
-      ? serializeRunsWithBookmarks(
+    boundaryTokens.length > 0
+      ? serializeRunsWithBoundaries(
           runs as EditorTextRun[],
-          bookmarkEvents,
+          boundaryTokens,
           context,
           paragraph.style?.styleId,
           styles,

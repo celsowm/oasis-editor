@@ -21,7 +21,10 @@ import {
 } from "./paragraphStyle.js";
 import { type NumberingMaps, parseParagraphList } from "./numbering.js";
 import { type ImportedRun, parseRunsContainer } from "./runs.js";
-import type { ImportedBookmarkMarker } from "./runs/types.js";
+import type {
+  ImportedBookmarkMarker,
+  ImportedCommentMarker,
+} from "./runs/types.js";
 import { parseTxbxContentBlocks } from "./nestedBlocks.js";
 import { parseDropCapFrame } from "./dropCap.js";
 
@@ -89,6 +92,15 @@ function createImportedParagraph(
         }
       ).__importedBookmark = { ...run.bookmark };
     }
+    if (run.comment) {
+      // Transient marker extracted into the document-level comment registry by
+      // the import driver, which knows each paragraph's id + text offset.
+      (
+        paragraph.runs[index]! as EditorTextRun & {
+          __importedComment?: ImportedCommentMarker;
+        }
+      ).__importedComment = { ...run.comment };
+    }
     if (run.sym) {
       paragraph.runs[index]!.sym = { ...run.sym };
     }
@@ -119,7 +131,8 @@ function splitRunsAtPageBreaks(runs: ImportedRun[]): {
       !run.field &&
       !run.fieldChar &&
       run.fieldInstruction === undefined &&
-      !run.bookmark
+      !run.bookmark &&
+      !run.comment
     ) {
       return;
     }
@@ -157,6 +170,7 @@ function paragraphHasVisibleContent(runs: ImportedRun[]): boolean {
       run.fieldChar ||
       run.fieldInstruction !== undefined ||
       run.bookmark ||
+      run.comment ||
       run.text.replace(/\s/g, "").length > 0,
   );
 }

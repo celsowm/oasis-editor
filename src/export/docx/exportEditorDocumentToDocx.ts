@@ -24,6 +24,11 @@ import type {
 import { serializeBlocksXml } from "./textXml.js";
 import { buildBookmarkExportPlan } from "./bookmarksXml.js";
 import {
+  buildCommentExportPlan,
+  buildCommentsPartXml,
+  buildCommentsExtendedPartXml,
+} from "./commentsXml.js";
+import {
   buildFootnoteIdMap,
   buildFootnotesXml,
   collectReferencedFootnotesForExport,
@@ -364,6 +369,7 @@ function buildContentTypesXml(
   hasFootnotes: boolean,
   hasEndnotes: boolean,
   hasStyles: boolean,
+  hasComments: boolean,
 ): string {
   const overrides = parts
     .map((part) => {
@@ -396,6 +402,11 @@ function buildContentTypesXml(
     hasEndnotes
       ? '<Override PartName="/word/endnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml"/>'
       : ""
+  }${
+    hasComments
+      ? '<Override PartName="/word/comments.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/>' +
+        '<Override PartName="/word/commentsExtended.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.commentsExtended+xml"/>'
+      : ""
   }${overrides}</Types>`;
 }
 
@@ -412,6 +423,7 @@ function buildDocumentRelationshipsXml(
   hasFootnotes: boolean,
   hasEndnotes: boolean,
   hasStyles: boolean,
+  hasComments: boolean,
 ): string {
   let rels = "";
   if (hasStyles)
@@ -436,6 +448,10 @@ function buildDocumentRelationshipsXml(
   }
   if (hasEndnotes) {
     rels += `<Relationship Id="rIdEndnotes" Type="${OFFICE_REL_NS}/endnotes" Target="endnotes.xml"/>`;
+  }
+  if (hasComments) {
+    rels += `<Relationship Id="rIdComments" Type="${OFFICE_REL_NS}/comments" Target="comments.xml"/>`;
+    rels += `<Relationship Id="rIdCommentsExtended" Type="http://schemas.microsoft.com/office/2011/relationships/commentsExtended" Target="commentsExtended.xml"/>`;
   }
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${PACKAGE_REL_NS}">${rels}</Relationships>`;
 }
@@ -561,6 +577,10 @@ export async function exportEditorDocumentToDocx(
   // event map across body and header/footer contexts (paragraph ids are unique).
   const bookmarkEvents = buildBookmarkExportPlan(document);
   bodyContext.bookmarkEventsByParagraph = bookmarkEvents;
+  // Comments: same id-assignment + per-paragraph event sharing as bookmarks.
+  const commentPlan = buildCommentExportPlan(document);
+  bodyContext.commentEventsByParagraph = commentPlan?.eventsByParagraph;
+  const hasComments = commentPlan !== undefined;
   const parts: PartDefinition[] = [];
   const sectionReferences: SectionReferenceDefinition[] = sections.map(
     () => ({}),
@@ -592,6 +612,7 @@ export async function exportEditorDocumentToDocx(
       context.footnoteIdMap = footnoteIdMap;
       context.endnoteIdMap = endnoteIdMap;
       context.bookmarkEventsByParagraph = bookmarkEvents;
+      context.commentEventsByParagraph = commentPlan?.eventsByParagraph;
       parts.push({
         kind,
         type,
@@ -682,6 +703,7 @@ export async function exportEditorDocumentToDocx(
       hasFootnotes,
       hasEndnotes,
       hasStyles,
+      hasComments,
     ),
   );
   zip.file("_rels/.rels", buildRootRelationshipsXml());
@@ -709,7 +731,8 @@ export async function exportEditorDocumentToDocx(
     bodyContext.hyperlinks.length > 0 ||
     parts.length > 0 ||
     hasFootnotes ||
-    hasEndnotes
+    hasEndnotes ||
+    hasComments
   ) {
     zip.file(
       "word/_rels/document.xml.rels",
@@ -722,6 +745,7 @@ export async function exportEditorDocumentToDocx(
         hasFootnotes,
         hasEndnotes,
         hasStyles,
+        hasComments,
       ),
     );
   }
@@ -786,6 +810,14 @@ export async function exportEditorDocumentToDocx(
         ),
       );
     }
+  }
+
+  if (commentPlan) {
+    zip.file("word/comments.xml", buildCommentsPartXml(commentPlan));
+    zip.file(
+      "word/commentsExtended.xml",
+      buildCommentsExtendedPartXml(commentPlan),
+    );
   }
 
   for (const img of allImages) {

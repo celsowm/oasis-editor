@@ -2,8 +2,10 @@ import { createEffect, createSignal, onCleanup } from "solid-js";
 import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
 import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
 import { computeCanvasSelectionGeometry } from "../../ui/canvas/CanvasSelectionGeometry.js";
+import { computeCommentHighlights } from "../../ui/canvas/CanvasCommentGeometry.js";
 import type {
   CaretBox,
+  CommentHighlightBox,
   InputBox,
   SelectionBox,
 } from "../../ui/editorUiTypes.js";
@@ -69,6 +71,9 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     height: 28,
   });
   const [selectionBoxes, setSelectionBoxes] = createSignal<SelectionBox[]>([]);
+  const [commentHighlights, setCommentHighlights] = createSignal<
+    CommentHighlightBox[]
+  >([]);
   const [selectedImageBox, setSelectedImageBox] =
     createSignal<SelectedImageSelectionBox | null>(null);
   const [selectedTextBoxBox, setSelectedTextBoxBox] =
@@ -89,6 +94,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     const surface = props.surfaceRef();
     if (!surface) {
       setSelectionBoxes([]);
+      setCommentHighlights([]);
       setSelectedImageBox(null);
       setSelectedTextBoxBox(null);
       setCaretBox((current) => ({ ...current, visible: false }));
@@ -103,6 +109,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     });
     if (!snapshot) {
       setSelectionBoxes([]);
+      setCommentHighlights([]);
       setSelectedImageBox(null);
       setSelectedTextBoxBox(null);
       setCaretBox((current) => ({ ...current, visible: false }));
@@ -111,6 +118,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
 
     const geometry = computeCanvasSelectionGeometry(snapshot, props.state);
     setSelectionBoxes(geometry.selectionBoxes);
+    setCommentHighlights(computeCommentHighlights(snapshot, props.state));
     setSelectedImageBox(geometry.selectedImageBox);
     setSelectedTextBoxBox(geometry.selectedTextBoxBox);
     setInputBox(geometry.inputBox);
@@ -235,6 +243,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     measuredParagraphLayouts,
     inputBox,
     selectionBoxes,
+    commentHighlights,
     selectedImageBox,
     selectedTextBoxBox,
     caretBox,

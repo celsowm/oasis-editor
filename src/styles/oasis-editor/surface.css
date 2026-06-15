@@ -249,6 +249,63 @@
   border-radius: 0;
 }
 
+.oasis-editor-comment-overlay-root {
+  pointer-events: none;
+}
+
+.oasis-editor-comment-highlight {
+  position: absolute;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 1;
+  background: var(--oasis-comment-bg);
+  border-bottom: 1px solid var(--oasis-comment-underline);
+}
+
+.oasis-editor-comment-highlight-active {
+  background: var(--oasis-comment-bg-active);
+}
+
+.oasis-editor-comment-popup {
+  position: absolute;
+  z-index: 1000;
+  max-width: 260px;
+  pointer-events: auto;
+  background: var(--oasis-paper);
+  border: 1px solid var(--oasis-border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--oasis-text);
+  filter: drop-shadow(0 4px 6px -1px rgb(0 0 0 / 0.1));
+}
+
+.oasis-editor-comment-popup-header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.oasis-editor-comment-popup-author {
+  font-weight: 500;
+}
+
+.oasis-editor-comment-popup-date {
+  color: var(--oasis-text-muted);
+  font-size: 11px;
+}
+
+.oasis-editor-comment-popup-resolved {
+  color: var(--oasis-revision-insert);
+  margin-left: auto;
+}
+
+.oasis-editor-comment-popup-body {
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
 .oasis-editor-resize-handle {
   position: absolute;
   width: 14px;
