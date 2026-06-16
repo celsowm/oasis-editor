@@ -114,6 +114,10 @@ export interface EssentialsParagraphCapability {
   setIndentRight: (value: number | null) => void;
   setIndentFirstLine: (value: number | null) => void;
   setIndentHanging: (value: number | null) => void;
+  setSpecialIndent: (
+    kind: "none" | "firstLine" | "hanging",
+    value?: number | null,
+  ) => void;
   setShading: (value: string | null) => void;
   applyBorders: () => void;
   setLineHeight: (value: number | null) => void;

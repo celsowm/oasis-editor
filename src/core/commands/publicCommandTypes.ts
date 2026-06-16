@@ -13,6 +13,11 @@ export interface SetFontSizePayload {
 
 export interface SetPageMarginsPayload extends Partial<EditorPageMargins> {}
 
+export interface SetSpecialIndentPayload {
+  kind: "none" | "firstLine" | "hanging";
+  value?: number | null;
+}
+
 export interface OasisCommandPayloads {
   selectAll: undefined;
   insertFootnote: undefined;
@@ -74,6 +79,7 @@ export interface OasisCommandPayloads {
   setIndentRight: number | null;
   setIndentFirstLine: number | null;
   setIndentHanging: number | null;
+  setSpecialIndent: SetSpecialIndentPayload;
   setParagraphShading: string | null;
   applyParagraphBorders: undefined;
   setLineHeight: number | null;

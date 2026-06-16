@@ -377,6 +377,26 @@ export function createEditorEssentialsRuntimePlugin(
         "indentHanging",
         value,
       ),
+    setSpecialIndent: (
+      kind: "none" | "firstLine" | "hanging",
+      value?: number | null,
+    ) => {
+      const resolvedValue = value ?? 48;
+      options.applyTransactionalState(
+        (current) => {
+          let next = setParagraphStyle(current, "indentFirstLine", null);
+          next = setParagraphStyle(next, "indentHanging", null);
+          if (kind === "firstLine") {
+            next = setParagraphStyle(next, "indentFirstLine", resolvedValue);
+          } else if (kind === "hanging") {
+            next = setParagraphStyle(next, "indentHanging", resolvedValue);
+          }
+          return next;
+        },
+        { mergeKey: "specialIndent" },
+      );
+      options.focusInput();
+    },
     setShading: (value: string | null) =>
       options.commandsController.applyParagraphStyleCommand("shading", value),
     applyBorders: () => {

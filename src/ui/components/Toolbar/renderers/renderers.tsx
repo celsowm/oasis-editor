@@ -30,6 +30,7 @@ import { GridPicker } from "../primitives/GridPicker.js";
 import { SplitButton } from "../primitives/SplitButton.js";
 import { DEFAULT_PALETTE } from "../presets/defaultPalette.js";
 import { ToolbarItemRenderer } from "./ToolbarItemRenderer.js";
+import { ToolIcon } from "../../../utils/customIcons.js";
 
 export interface RendererProps<I extends ToolbarItem = ToolbarItem> {
   item: I;
@@ -116,9 +117,11 @@ function RenderSplit(props: RendererProps<SplitItem>): JSX.Element {
       menuTestId={
         props.item.testId ? `${props.item.testId}-dropdown` : undefined
       }
-      panelClass="oasis-editor-color-menu"
+      panelClass={props.item.panelClass ?? "oasis-editor-color-menu"}
       panelRole="menu"
-      mainContent={<i data-lucide={props.item.iconName} />}
+      mainContent={
+        props.item.iconName ? <ToolIcon name={props.item.iconName} /> : <></>
+      }
     >
       {renderMenuContent(props.item.menu, props.api)}
     </SplitButton>

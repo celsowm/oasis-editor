@@ -102,6 +102,8 @@ export interface SplitItem extends ToolbarItemBase {
   command: CommandRef;
   /** Chevron-opened content. */
   menu: MenuContent;
+  /** Extra class applied to the popover panel. */
+  panelClass?: string;
 }
 
 export interface MenuItem extends ToolbarItemBase {

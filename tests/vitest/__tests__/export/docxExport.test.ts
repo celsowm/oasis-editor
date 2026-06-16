@@ -171,6 +171,23 @@ describe("DOCX export", () => {
     );
   });
 
+  it("serializes special paragraph indentation as mutually exclusive w:ind attributes", async () => {
+    const firstLine = createEditorParagraph("First line indent");
+    firstLine.style = { indentFirstLine: 48, indentHanging: null };
+    const hanging = createEditorParagraph("Hanging indent");
+    hanging.style = { indentFirstLine: null, indentHanging: 48 };
+
+    const xml = await readDocumentXml(
+      await exportEditorDocumentToDocx(
+        createEditorDocument([firstLine, hanging]),
+      ),
+    );
+
+    expect(xml).toMatch(/<w:ind\b[^>]*w:firstLine="720"[^>]*\/>/);
+    expect(xml).toMatch(/<w:ind\b[^>]*w:hanging="720"[^>]*\/>/);
+    expect(xml).not.toContain('w:firstLine="720" w:hanging="720"');
+  });
+
   it("serializes an atLeast line rule as absolute twips and round-trips it", async () => {
     const paragraph = createEditorParagraph("At least spacing");
     // 1.6px ≈ 24 twips, stored as an absolute height with the atLeast rule.

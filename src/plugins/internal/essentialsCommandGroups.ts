@@ -339,6 +339,33 @@ export function buildParagraphAndSectionCommands({
       (p) => (paragraph.setIndentHanging(numOrNull(p)), true),
       () => s().indentHanging,
     ),
+    setSpecialIndent: actionCommand(
+      "setSpecialIndent",
+      (p) => {
+        const payload = (p ?? {}) as {
+          kind?: "none" | "firstLine" | "hanging";
+          value?: unknown;
+        };
+        paragraph.setSpecialIndent(
+          payload.kind ?? "none",
+          numOrNull(payload.value),
+        );
+      },
+      () => {
+        const firstLine = Number(s().indentFirstLine);
+        const hanging = Number(s().indentHanging);
+        const kind =
+          Number.isFinite(hanging) && hanging > 0
+            ? "hanging"
+            : Number.isFinite(firstLine) && firstLine > 0
+              ? "firstLine"
+              : "none";
+        return {
+          isActive: kind !== "none",
+          value: kind,
+        };
+      },
+    ),
     setParagraphShading: valueCommand(
       "setParagraphShading",
       (p) => (paragraph.setShading((p as string) ?? null), true),

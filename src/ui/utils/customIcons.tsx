@@ -44,8 +44,27 @@ const FootnoteIcon: CustomIconRenderer = () => (
   </svg>
 );
 
+/** Word-like first-line indent glyph: a simple ">" on the first line. */
+const SpecialIndentFirstLineIcon: CustomIconRenderer = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <g fill="currentColor">
+      <path d="M3.375 4.875 L7.125 8.625 L3.375 12.375 L2.25 11.25 L4.875 8.625 L2.25 6 Z" />
+      <rect x="10.125" y="6" width="9" height="1.6875" rx="0.25" />
+      <rect x="5.625" y="10.875" width="13.5" height="1.6875" rx="0.25" />
+      <rect x="5.625" y="15.75" width="13.5" height="1.6875" rx="0.25" />
+    </g>
+  </svg>
+);
+
 const CUSTOM_ICONS: Record<string, CustomIconRenderer> = {
   footnote: FootnoteIcon,
+  specialIndentFirstLine: SpecialIndentFirstLineIcon,
 };
 
 export function getCustomIcon(name?: string): CustomIconRenderer | undefined {

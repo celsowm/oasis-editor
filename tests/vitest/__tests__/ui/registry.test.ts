@@ -139,6 +139,9 @@ describe("UI registries", () => {
     expect(
       items.find((item) => item.id === OASIS_TOOLBAR_ITEMS.insertTable),
     ).toMatchObject({ tab: "insert", group: "tables", row: 1 });
+    expect(
+      items.find((item) => item.id === OASIS_TOOLBAR_ITEMS.specialIndent),
+    ).toMatchObject({ tab: "home", group: "paragraph", row: 1 });
   });
 
   it("deduplicates and unregisters menu items", () => {

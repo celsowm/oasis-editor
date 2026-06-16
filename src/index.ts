@@ -41,6 +41,7 @@ export type {
   OasisCommandResults,
   SetFontSizePayload,
   SetPageMarginsPayload,
+  SetSpecialIndentPayload,
   TypedCommandBus,
 } from "./core/commands/publicCommandTypes.js";
 export { PluginCollection } from "./core/plugins/PluginCollection.js";

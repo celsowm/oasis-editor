@@ -33,6 +33,7 @@ export const OASIS_TOOLBAR_ITEMS = {
   outdent: "editor-toolbar-list-outdent",
   indent: "editor-toolbar-list-indent",
   listOptions: "editor-toolbar-list-options",
+  specialIndent: "editor-toolbar-special-indent",
   lineSpacing: "editor-toolbar-line-spacing-control",
   metrics: "editor-toolbar-metrics",
   table: "editor-toolbar-table",

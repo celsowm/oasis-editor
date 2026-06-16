@@ -59,6 +59,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setIndentRight",
   "setIndentFirstLine",
   "setIndentHanging",
+  "setSpecialIndent",
   "setParagraphShading",
   "applyParagraphBorders",
   "setLineHeight",

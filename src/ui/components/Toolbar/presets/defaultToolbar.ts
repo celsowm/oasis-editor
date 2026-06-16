@@ -184,6 +184,11 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "editor-toolbar-list-outdent": { tab: "home", group: "paragraph", row: 1 },
   "editor-toolbar-list-indent": { tab: "home", group: "paragraph", row: 1 },
   "editor-toolbar-list-options": { tab: "home", group: "paragraph", row: 1 },
+  "editor-toolbar-special-indent": {
+    tab: "home",
+    group: "paragraph",
+    row: 1,
+  },
   "editor-toolbar-line-spacing-control": {
     tab: "home",
     group: "paragraph",
@@ -645,6 +650,55 @@ export function createDefaultToolbarPreset(): ToolbarItem[] {
     type: "custom",
     id: "editor-toolbar-list-options",
     render: (api) => ListOptionsControl({ api }),
+  });
+  items.push({
+    type: "split",
+    id: "editor-toolbar-special-indent",
+    testId: "editor-toolbar-special-indent",
+    iconName: "specialIndentFirstLine",
+    tooltipKey: "toolbar.specialIndent",
+    command: { name: "setSpecialIndent", payload: { kind: "firstLine" } },
+    isActive: () => false,
+    panelClass:
+      "oasis-editor-toolbar-dropdown-menu oasis-editor-special-indent-menu",
+    menu: {
+      kind: "items",
+      items: [
+        {
+          type: "button",
+          id: "editor-toolbar-special-indent-none",
+          testId: "editor-toolbar-special-indent-none",
+          iconName: "minus",
+          labelKey: "toolbar.specialIndentNone",
+          tooltipKey: "toolbar.specialIndentNone",
+          command: { name: "setSpecialIndent", payload: { kind: "none" } },
+          wide: true,
+        },
+        {
+          type: "button",
+          id: "editor-toolbar-special-indent-first-line",
+          testId: "editor-toolbar-special-indent-first-line",
+          iconName: "list-collapse",
+          labelKey: "toolbar.specialIndentFirstLine",
+          tooltipKey: "toolbar.specialIndentFirstLine",
+          command: {
+            name: "setSpecialIndent",
+            payload: { kind: "firstLine" },
+          },
+          wide: true,
+        },
+        {
+          type: "button",
+          id: "editor-toolbar-special-indent-hanging",
+          testId: "editor-toolbar-special-indent-hanging",
+          iconName: "list-indent-increase",
+          labelKey: "toolbar.specialIndentHanging",
+          tooltipKey: "toolbar.specialIndentHanging",
+          command: { name: "setSpecialIndent", payload: { kind: "hanging" } },
+          wide: true,
+        },
+      ],
+    },
   });
 
   // --- Line spacing ---
