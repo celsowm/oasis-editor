@@ -390,6 +390,9 @@ export function buildParagraphAndSectionCommands({
       () => section.toggleOrientation(),
       () => ({ isActive: section.isLandscape() }),
     ),
+    setOrientation: actionCommand("setOrientation", (p) =>
+      section.setOrientation(p as "portrait" | "landscape"),
+    ),
     sectionBreakNextPage: actionCommand("sectionBreakNextPage", () =>
       section.breakNextPage(),
     ),

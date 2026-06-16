@@ -130,6 +130,7 @@ export interface EssentialsParagraphCapability {
 export interface EssentialsSectionCapability {
   isLandscape: () => boolean;
   toggleOrientation: () => void;
+  setOrientation: (orientation: "portrait" | "landscape") => void;
   breakNextPage: () => void;
   breakContinuous: () => void;
   setPageMargins: (margins: { left?: number; right?: number }) => void;

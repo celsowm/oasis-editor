@@ -95,6 +95,13 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+  /* Always reserve the vertical-scrollbar track so the fixed-width page never
+     collides with it (which would force a horizontal scrollbar, most visibly in
+     landscape). The shell width adds EDITOR_SCROLLBAR_RESERVE_PX to match this
+     reserved gutter, keeping the paper exactly pageWidth — see
+     OasisEditorEditor.tsx / editorLayoutConstants.ts. Keep the
+     ::-webkit-scrollbar width below in sync with that constant (10px). */
+  scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: rgba(95, 99, 104, 0.42) transparent;
 }

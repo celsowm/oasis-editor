@@ -18,11 +18,25 @@ export function SectionGroup(props: { api: ToolbarActionApi }) {
     >
       <div class="oasis-editor-toolbar-panel-section oasis-editor-toolbar-panel-actions">
         <Button
-          icon="layout"
+          icon="rectangle-vertical"
+          active={!api.commands.state("toggleOrientation").isActive}
+          data-testid="editor-toolbar-orientation-portrait"
+          onClick={() =>
+            api.commands.execute({ name: "setOrientation", payload: "portrait" })
+          }
+          tooltip={t("section.portrait")}
+        />
+        <Button
+          icon="rectangle-horizontal"
           active={api.commands.state("toggleOrientation").isActive}
-          data-testid="editor-toolbar-orientation"
-          onClick={() => api.commands.execute("toggleOrientation")}
-          tooltip={t("section.toggleOrientation")}
+          data-testid="editor-toolbar-orientation-landscape"
+          onClick={() =>
+            api.commands.execute({
+              name: "setOrientation",
+              payload: "landscape",
+            })
+          }
+          tooltip={t("section.landscape")}
         />
       </div>
 

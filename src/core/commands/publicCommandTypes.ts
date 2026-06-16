@@ -86,6 +86,7 @@ export interface OasisCommandPayloads {
   setListFormat: string;
   setListStartAt: number | null;
   toggleOrientation: undefined;
+  setOrientation: "portrait" | "landscape";
   sectionBreakNextPage: undefined;
   sectionBreakContinuous: undefined;
   setPageMargins: SetPageMarginsPayload;

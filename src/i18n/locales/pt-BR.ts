@@ -153,6 +153,9 @@ export const ptBR = {
 
   // Section
   "section.orient": "Orient",
+  "section.orientation": "Orientação",
+  "section.portrait": "Retrato",
+  "section.landscape": "Paisagem",
   "section.pageSetup": "Configurações de Página",
   "section.toggleOrientation": "Alternar Orientação",
   "section.margins": "Margens",
@@ -390,6 +393,7 @@ export const ptBR = {
   "menu.view.outline": "Mostrar Estrutura",
   "menu.view.fullscreen": "Tela Inteira",
   "menu.insert": "Inserir",
+  "menu.layout": "Layout",
   "menu.format": "Formatar",
   "menu.format.align": "Alinhar",
   "menu.format.text": "Texto",

@@ -441,18 +441,27 @@ export function createEditorEssentialsRuntimePlugin(
         options.state().document.sections?.[idx] ?? options.state().document;
       return section?.pageSettings?.orientation === "landscape";
     },
+    setOrientation: (orientation: "portrait" | "landscape") => {
+      const idx = getActiveSectionIndex(options.state());
+      const section =
+        options.state().document.sections?.[idx] ?? options.state().document;
+      if (!section) return;
+      options.commandsController.applyUpdateSectionSettingsCommand(idx, {
+        pageSettings: {
+          ...section.pageSettings!,
+          orientation,
+        },
+      });
+    },
     toggleOrientation: () => {
       const idx = getActiveSectionIndex(options.state());
       const section =
         options.state().document.sections?.[idx] ?? options.state().document;
       if (!section) return;
       const current = section.pageSettings?.orientation ?? "portrait";
-      options.commandsController.applyUpdateSectionSettingsCommand(idx, {
-        pageSettings: {
-          ...section.pageSettings!,
-          orientation: current === "portrait" ? "landscape" : "portrait",
-        },
-      });
+      essentialsSection.setOrientation(
+        current === "portrait" ? "landscape" : "portrait",
+      );
     },
     breakNextPage: () =>
       options.commandsController.applyInsertSectionBreakCommand("nextPage"),

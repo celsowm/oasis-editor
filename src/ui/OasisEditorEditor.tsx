@@ -10,7 +10,10 @@ import {
 import { CanvasEditorSurface } from "./components/CanvasEditorSurface.js";
 import { OasisBrandMark } from "./components/OasisBrandMark.js";
 import { HorizontalRuler } from "./components/Ruler/HorizontalRuler.js";
-import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
+import {
+  EDITOR_SCROLL_PADDING_PX,
+  EDITOR_SCROLLBAR_RESERVE_PX,
+} from "./editorLayoutConstants.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { RevisionOverlay } from "./components/RevisionOverlay.js";
@@ -21,6 +24,7 @@ import type { ToolbarHost } from "./components/Toolbar/state/createToolbarApi.js
 import { t } from "../i18n/index.js";
 import {
   getDocumentPageSettings,
+  getDocumentSections,
   type EditorLayoutParagraph,
   type EditorState,
 } from "../core/model.js";
@@ -181,6 +185,15 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
     HTMLDivElement | undefined
   >();
   const pageSettings = () => getDocumentPageSettings(props.state().document);
+  // The widest page across all sections drives the shell width. Orientation is a
+  // per-section setting, so a landscape section must be able to widen the editor
+  // even when the document-level page settings stay portrait — otherwise the
+  // wider page overflows and forces a horizontal scrollbar.
+  const widestPageWidth = () =>
+    getDocumentSections(props.state().document).reduce(
+      (max, section) => Math.max(max, section.pageSettings.width),
+      0,
+    ) || pageSettings().width;
   const viewportHeight = (): string => {
     const rawViewportHeight = layout().viewportHeight;
     if (typeof rawViewportHeight === "number") {
@@ -189,7 +202,17 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
     return rawViewportHeight ?? "min(72vh, 920px)";
   };
   const shellStyle = createMemo<JSX.CSSProperties>(() => ({
-    width: `min(${pageSettings().width + EDITOR_SCROLL_PADDING_PX * 2}px, 100%)`,
+    // pageWidth + both horizontal gutters + the reserved vertical-scrollbar
+    // gutter. The paper is width:100% of the scroll content and
+    // `.oasis-editor-editor` reserves the scrollbar via `scrollbar-gutter:
+    // stable`, so this keeps the paper exactly `pageWidth` while leaving room for
+    // the scrollbar — preventing a spurious horizontal scrollbar (notably in
+    // landscape) and letting the editor area grow to fit a wider page.
+    width: `min(${
+      widestPageWidth() +
+      EDITOR_SCROLL_PADDING_PX * 2 +
+      EDITOR_SCROLLBAR_RESERVE_PX
+    }px, 100%)`,
     height: "100%",
     "max-height": viewportHeight(),
     ...(layout().style ?? {}),

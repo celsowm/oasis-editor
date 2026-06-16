@@ -311,6 +311,30 @@ export const defaultMenuItems: MenuItem[] = [
   },
   { id: "format_clear", path: "Format/Clear formatting", hidden: true },
 
+  // Layout
+  {
+    id: "layout_orientation",
+    path: "Layout/Orientation",
+    labelKey: "section.orientation",
+    icon: "layout",
+  },
+  {
+    id: "layout_orientation_portrait",
+    path: "Layout/Orientation/Portrait",
+    labelKey: "section.portrait",
+    command: { name: "setOrientation", payload: "portrait" },
+    icon: (host) =>
+      host.commands.state("toggleOrientation").isActive ? "" : "check",
+  },
+  {
+    id: "layout_orientation_landscape",
+    path: "Layout/Orientation/Landscape",
+    labelKey: "section.landscape",
+    command: { name: "setOrientation", payload: "landscape" },
+    icon: (host) =>
+      host.commands.state("toggleOrientation").isActive ? "check" : "",
+  },
+
   // Tools
   {
     id: "tools_wordcount",

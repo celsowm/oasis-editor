@@ -153,6 +153,9 @@ export const en = {
 
   // Section
   "section.orient": "Orient",
+  "section.orientation": "Orientation",
+  "section.portrait": "Portrait",
+  "section.landscape": "Landscape",
   "section.pageSetup": "Page Setup",
   "section.toggleOrientation": "Toggle Orientation",
   "section.margins": "Margins",
@@ -387,6 +390,7 @@ export const en = {
   "menu.view.outline": "Show Outline",
   "menu.view.fullscreen": "Full Screen",
   "menu.insert": "Insert",
+  "menu.layout": "Layout",
   "menu.format": "Format",
   "menu.format.align": "Align",
   "menu.format.text": "Text",
