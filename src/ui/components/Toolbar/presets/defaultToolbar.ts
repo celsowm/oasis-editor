@@ -243,9 +243,9 @@ export function createDefaultToolbarPreset(): ToolbarItem[] {
           id: "editor-toolbar-export-docx",
           testId: "editor-toolbar-export-docx",
           iconName: "file-text",
-          label: "Export DOCX",
+          labelKey: "toolbar.exportDocx",
           wide: true,
-          tooltip: "Export DOCX",
+          tooltipKey: "toolbar.exportDocx",
           command: "exportDocx",
         },
         {
@@ -253,9 +253,9 @@ export function createDefaultToolbarPreset(): ToolbarItem[] {
           id: "editor-toolbar-export-pdf",
           testId: "editor-toolbar-export-pdf",
           iconName: "file-down",
-          label: "Export PDF",
+          labelKey: "toolbar.exportPdf",
           wide: true,
-          tooltip: "Export PDF",
+          tooltipKey: "toolbar.exportPdf",
           command: "exportPdf",
         },
         {

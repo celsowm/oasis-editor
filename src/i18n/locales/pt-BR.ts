@@ -284,6 +284,38 @@ export const ptBR = {
   "dialog.font.styleItalic": "Itálico",
   "dialog.font.styleBold": "Negrito",
   "dialog.font.styleBoldItalic": "Negrito Itálico",
+  // Ribbon tabs
+  "ribbon.tab.file": "Arquivo",
+  "ribbon.tab.home": "Início",
+  "ribbon.tab.insert": "Inserir",
+  "ribbon.tab.draw": "Desenhar",
+  "ribbon.tab.layout": "Layout",
+  "ribbon.tab.references": "Referências",
+  "ribbon.tab.collaboration": "Colaboração",
+  "ribbon.tab.protection": "Proteção",
+  "ribbon.tab.view": "Exibir",
+  "ribbon.tab.plugins": "Plugins",
+  "ribbon.tab.ai": "IA",
+
+  // Ribbon groups
+  "ribbon.group.clipboard": "Área de Transferência",
+  "ribbon.group.font": "Fonte",
+  "ribbon.group.paragraph": "Parágrafo",
+  "ribbon.group.styles": "Estilos",
+  "ribbon.group.illustrations": "Ilustrações",
+  "ribbon.group.tables": "Tabelas",
+  "ribbon.group.links": "Links",
+  "ribbon.group.footnotes": "Notas de Rodapé",
+  "ribbon.group.accessibility": "Acessibilidade",
+  "ribbon.group.document": "Documento",
+  "ribbon.group.table": "Tabela",
+  "ribbon.group.section": "Seção",
+  "ribbon.group.general": "Geral",
+
+  // Export
+  "toolbar.exportDocx": "Exportar DOCX",
+  "toolbar.exportPdf": "Exportar PDF",
+
   "underline.style.single": "Simples",
   "underline.style.double": "Duplo",
   "underline.style.thick": "Espesso",

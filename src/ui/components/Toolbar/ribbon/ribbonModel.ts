@@ -4,6 +4,7 @@ import type {
   ToolbarItem,
 } from "../schema/items.js";
 import { RIBBON_TABS } from "../schema/items.js";
+import { t } from "../../../../i18n/index.js";
 
 export interface RibbonTabDefinition {
   id: RibbonTabId;
@@ -17,22 +18,38 @@ export interface RibbonGroupModel {
   order: number;
 }
 
-const TAB_LABELS: Record<RibbonTabId, string> = {
-  file: "File",
-  home: "Home",
-  insert: "Insert",
-  draw: "Draw",
-  layout: "Layout",
-  references: "References",
-  collaboration: "Collaboration",
-  protection: "Protection",
-  view: "View",
-  plugins: "Plugins",
-  ai: "AI",
+const TAB_LABEL_KEYS: Record<RibbonTabId, string> = {
+  file: "ribbon.tab.file",
+  home: "ribbon.tab.home",
+  insert: "ribbon.tab.insert",
+  draw: "ribbon.tab.draw",
+  layout: "ribbon.tab.layout",
+  references: "ribbon.tab.references",
+  collaboration: "ribbon.tab.collaboration",
+  protection: "ribbon.tab.protection",
+  view: "ribbon.tab.view",
+  plugins: "ribbon.tab.plugins",
+  ai: "ribbon.tab.ai",
+};
+
+const GROUP_LABEL_KEYS: Record<string, string> = {
+  clipboard: "ribbon.group.clipboard",
+  font: "ribbon.group.font",
+  paragraph: "ribbon.group.paragraph",
+  styles: "ribbon.group.styles",
+  illustrations: "ribbon.group.illustrations",
+  tables: "ribbon.group.tables",
+  links: "ribbon.group.links",
+  footnotes: "ribbon.group.footnotes",
+  accessibility: "ribbon.group.accessibility",
+  document: "ribbon.group.document",
+  table: "ribbon.group.table",
+  section: "ribbon.group.section",
+  general: "ribbon.group.general",
 };
 
 export const RIBBON_TAB_DEFINITIONS: RibbonTabDefinition[] = RIBBON_TABS.map(
-  (id) => ({ id, label: TAB_LABELS[id] }),
+  (id) => ({ id, label: t(TAB_LABEL_KEYS[id] as any) }),
 );
 
 export const DEFAULT_RIBBON_TAB: RibbonTabId = "plugins";
@@ -83,11 +100,7 @@ export function normalizeRibbonRow(row: ToolbarItem["row"]): RibbonRow {
 }
 
 export function ribbonGroupLabel(group: string): string {
-  return group
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  return t((GROUP_LABEL_KEYS[group] ?? group) as any);
 }
 
 export function buildRibbonGroups(

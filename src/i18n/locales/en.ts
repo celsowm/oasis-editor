@@ -283,6 +283,38 @@ export const en = {
   "dialog.font.styleItalic": "Italic",
   "dialog.font.styleBold": "Bold",
   "dialog.font.styleBoldItalic": "Bold Italic",
+  // Ribbon tabs
+  "ribbon.tab.file": "File",
+  "ribbon.tab.home": "Home",
+  "ribbon.tab.insert": "Insert",
+  "ribbon.tab.draw": "Draw",
+  "ribbon.tab.layout": "Layout",
+  "ribbon.tab.references": "References",
+  "ribbon.tab.collaboration": "Collaboration",
+  "ribbon.tab.protection": "Protection",
+  "ribbon.tab.view": "View",
+  "ribbon.tab.plugins": "Plugins",
+  "ribbon.tab.ai": "AI",
+
+  // Ribbon groups
+  "ribbon.group.clipboard": "Clipboard",
+  "ribbon.group.font": "Font",
+  "ribbon.group.paragraph": "Paragraph",
+  "ribbon.group.styles": "Styles",
+  "ribbon.group.illustrations": "Illustrations",
+  "ribbon.group.tables": "Tables",
+  "ribbon.group.links": "Links",
+  "ribbon.group.footnotes": "Footnotes",
+  "ribbon.group.accessibility": "Accessibility",
+  "ribbon.group.document": "Document",
+  "ribbon.group.table": "Table",
+  "ribbon.group.section": "Section",
+  "ribbon.group.general": "General",
+
+  // Export
+  "toolbar.exportDocx": "Export DOCX",
+  "toolbar.exportPdf": "Export PDF",
+
   "underline.style.single": "Single",
   "underline.style.double": "Double",
   "underline.style.thick": "Thick",
