@@ -4,11 +4,11 @@ import type {
   EditorLayoutLine,
   EditorParagraphNode,
   EditorParagraphStyle,
-} from "../../../core/model.js";
-import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
-import { OasisPdfWriter } from "../OasisPdfWriter.js";
-import { getParagraphBorderInsets } from "../../../layoutProjection/index.js";
-import { pxToPt } from "../units.js";
+} from "@/core/model.js";
+import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
+import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
+import { getParagraphBorderInsets } from "@/layoutProjection/index.js";
+import { pxToPt } from "@/export/pdf/units.js";
 import { borderDashArray } from "./borderDash.js";
 import { drawFragmentText } from "./drawFragment.js";
 import { drawListPrefix } from "./lists.js";

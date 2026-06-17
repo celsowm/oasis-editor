@@ -2,13 +2,13 @@ import {
   getParagraphs,
   paragraphOffsetToPosition,
   type EditorState,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   resolveResizedDimensions,
   type ResizeHandleDirection,
-} from "../../ui/resizeGeometry.js";
-import type { EditorHistoryState } from "../../ui/editorHistory.js";
-import type { EditorLogger } from "../../utils/logger.js";
+} from "@/ui/resizeGeometry.js";
+import type { EditorHistoryState } from "@/ui/editorHistory.js";
+import type { EditorLogger } from "@/utils/logger.js";
 
 export interface ResizeSessionSelection {
   width: number;

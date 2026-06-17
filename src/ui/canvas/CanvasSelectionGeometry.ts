@@ -1,4 +1,4 @@
-import { normalizeSelection } from "../../core/selection.js";
+import { normalizeSelection } from "@/core/selection.js";
 import {
   getParagraphs,
   positionToParagraphOffset,
@@ -6,9 +6,9 @@ import {
   findParagraphTableLocation,
   getActiveSectionIndex,
   getDocumentSections,
-} from "../../core/model.js";
-import { buildTableCellLayout } from "../../core/tableLayout.js";
-import type { CaretBox, InputBox, SelectionBox } from "../editorUiTypes.js";
+} from "@/core/model.js";
+import { buildTableCellLayout } from "@/core/tableLayout.js";
+import type { CaretBox, InputBox, SelectionBox } from "@/ui/editorUiTypes.js";
 import type {
   CanvasLayoutSnapshot,
   CanvasSnapshotParagraph,

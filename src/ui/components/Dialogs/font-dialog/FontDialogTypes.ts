@@ -3,11 +3,11 @@ import type {
   EditorNumberForm,
   EditorNumberSpacing,
   EditorUnderlineStyle,
-} from "../../../../core/model.js";
+} from "@/core/model.js";
 import type {
   FontDialogSpacingMode,
   FontDialogPositionMode,
-} from "../FontDialogModel.js";
+} from "@/ui/components/Dialogs/FontDialogModel.js";
 
 export const DEFAULT_COLOR = "#111827";
 export const DEFAULT_HIGHLIGHT = "#fef08a";

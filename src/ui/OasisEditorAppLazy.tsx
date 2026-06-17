@@ -2,7 +2,7 @@ import { createSignal, onCleanup, onMount, Show } from "solid-js";
 import { OasisEditorLoading } from "./OasisEditorLoading.js";
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 import type { Component } from "solid-js";
-import { setLocale } from "../i18n/index.js";
+import { setLocale } from "@/i18n/index.js";
 
 /**
  * Code-splitting boundary for the editor. Loads `OasisEditorApp` (and the

@@ -3,16 +3,16 @@ import type {
   EditorState,
   EditorTableCellNode,
   EditorTableCellStyle,
-} from "../../model.js";
+} from "@/core/model.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
   getDocumentSections,
   getParagraphs,
-} from "../../model.js";
-import { normalizeSelection } from "../../selection.js";
-import { buildTableCellLayout } from "../../tableLayout.js";
-import { updateTableCellsInBlocks } from "../../document/blockReplacement.js";
+} from "@/core/model.js";
+import { normalizeSelection } from "@/core/selection.js";
+import { buildTableCellLayout } from "@/core/tableLayout.js";
+import { updateTableCellsInBlocks } from "@/core/document/blockReplacement.js";
 import { getBlocksForZone, patchStyleValue } from "./tableCommandUtils.js";
 
 function collectTableSelectedParagraphIds(state: EditorState): Set<string> {

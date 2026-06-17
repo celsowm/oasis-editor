@@ -1,5 +1,5 @@
 import { For, type Accessor, type Setter } from "solid-js";
-import type { RibbonTabId } from "../schema/items.js";
+import type { RibbonTabId } from "@/ui/components/Toolbar/schema/items.js";
 import { RIBBON_TAB_DEFINITIONS } from "./ribbonModel.js";
 
 export interface RibbonTabsProps {

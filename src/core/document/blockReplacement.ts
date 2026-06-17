@@ -5,13 +5,13 @@ import type {
   EditorSelection,
   EditorState,
   EditorTableCellNode,
-} from "../model.js";
+} from "@/core/model.js";
 import {
   getActiveSectionIndex,
   getActiveZone,
   getDocumentSections,
   getParagraphs,
-} from "../model.js";
+} from "@/core/model.js";
 import { transformBookmarksAcrossParagraphEdit } from "./bookmarkAnchors.js";
 
 export function blocksContainTables(nodes: EditorBlockNode[]): boolean {

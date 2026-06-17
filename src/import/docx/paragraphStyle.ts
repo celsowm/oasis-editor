@@ -1,7 +1,7 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
-import type { EditorParagraphStyle, EditorTabStop } from "../../core/model.js";
-import { DEFAULT_EDITOR_STYLES } from "../../core/editorState.js";
-import { resolveEffectiveParagraphStyle } from "../../core/model.js";
+import type { EditorParagraphStyle, EditorTabStop } from "@/core/model.js";
+import { DEFAULT_EDITOR_STYLES } from "@/core/editorState.js";
+import { resolveEffectiveParagraphStyle } from "@/core/model.js";
 import {
   WORD_NS,
   getChildrenByTagNameNS,

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
-import { exportEditorDocumentToDocx } from "../../../../src/export/docx/exportEditorDocumentToDocx.js";
-import { resolveEffectiveTextStyleForParagraph } from "../../../../src/core/model.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
 import {
   getDocumentParagraphs,
   importComplexDocument,

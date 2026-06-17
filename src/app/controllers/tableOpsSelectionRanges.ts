@@ -6,12 +6,12 @@ import {
   type EditorBlockNode,
   type EditorEditingZone,
   type EditorState,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   buildTableCellLayout,
   type TableCellLayoutEntry,
-} from "../../core/tableLayout.js";
-import type { EditorLogger } from "../../utils/logger.js";
+} from "@/core/tableLayout.js";
+import type { EditorLogger } from "@/utils/logger.js";
 
 export interface HorizontalTableCellRange {
   blockIndex: number;

@@ -1,5 +1,5 @@
-import type { EditorUnderlineStyle } from "../../../core/model.js";
-import type { TranslationKey } from "../../../i18n/index.js";
+import type { EditorUnderlineStyle } from "@/core/model.js";
+import type { TranslationKey } from "@/i18n/index.js";
 
 export interface UnderlineStyleOption {
   /** Word-style underline value (e.g. "single", "double", "dotted"). */

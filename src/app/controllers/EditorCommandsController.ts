@@ -24,7 +24,7 @@ import {
   toggleTextStyle,
   toggleTrackChanges,
   updateSectionSettings,
-} from "../../core/editorCommands.js";
+} from "@/core/editorCommands.js";
 import {
   getActiveSectionIndex,
   findParagraphTableLocation,
@@ -36,17 +36,17 @@ import {
   type EditorSection,
   type EditorState,
   type EditorTextStyle,
-} from "../../core/model.js";
-import { normalizeSelection } from "../../core/selection.js";
-import type { TextCaseMode } from "../../core/commands/text.js";
-import type { EditorTransactionOptions } from "../../ui/editorHistory.js";
+} from "@/core/model.js";
+import { normalizeSelection } from "@/core/selection.js";
+import type { TextCaseMode } from "@/core/commands/text.js";
+import type { EditorTransactionOptions } from "@/ui/editorHistory.js";
 import type {
   BooleanStyleKey,
   ParagraphStyleKey,
   ToolbarStyleState,
-} from "../../ui/toolbarStyleState.js";
-import type { EditorLogger } from "../../utils/logger.js";
-import type { SelectedImageRun } from "../../core/commands/image.js";
+} from "@/ui/toolbarStyleState.js";
+import type { EditorLogger } from "@/utils/logger.js";
+import type { SelectedImageRun } from "@/core/commands/image.js";
 
 export interface EditorCommandsControllerDeps {
   state: EditorState;

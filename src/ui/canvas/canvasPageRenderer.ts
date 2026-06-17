@@ -2,13 +2,13 @@ import type {
   EditorEditingZone,
   EditorLayoutPage,
   EditorState,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   getPageBodyBottom,
   getPageBodyTop,
   getPageContentWidth,
   getPageHeaderZoneTop,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   renderBlockList,
   renderFootnoteBlockList,

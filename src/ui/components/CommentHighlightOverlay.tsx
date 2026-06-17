@@ -1,7 +1,7 @@
 import { For, Show, createMemo, createSignal } from "solid-js";
 import type { Accessor } from "solid-js";
-import type { EditorComment } from "../../core/model.js";
-import type { CommentHighlightBox } from "../editorUiTypes.js";
+import type { EditorComment } from "@/core/model.js";
+import type { CommentHighlightBox } from "@/ui/editorUiTypes.js";
 
 export interface CommentHighlightOverlayProps {
   boxes: Accessor<CommentHighlightBox[]>;

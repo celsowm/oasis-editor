@@ -1,14 +1,14 @@
-import { type EditorState } from "../../core/model.js";
+import { type EditorState } from "@/core/model.js";
 import {
   getSelectedTextBoxRun,
   resizeSelectedTextBox,
   rotateSelectedTextBox,
-} from "../../core/editorCommands.js";
-import { getMaxInlineImageWidth } from "../../ui/imageGeometry.js";
-import { resolveTextBoxRenderHeight } from "../../ui/canvas/textBoxRenderHeight.js";
-import type { ResizeHandleDirection } from "../../ui/resizeGeometry.js";
-import type { EditorLogger } from "../../utils/logger.js";
-import type { EditorHistoryState } from "../../ui/editorHistory.js";
+} from "@/core/editorCommands.js";
+import { getMaxInlineImageWidth } from "@/ui/imageGeometry.js";
+import { resolveTextBoxRenderHeight } from "@/ui/canvas/textBoxRenderHeight.js";
+import type { ResizeHandleDirection } from "@/ui/resizeGeometry.js";
+import type { EditorLogger } from "@/utils/logger.js";
+import type { EditorHistoryState } from "@/ui/editorHistory.js";
 import { createResizeSession } from "./createResizeSession.js";
 import { createRotateSession } from "./createRotateSession.js";
 

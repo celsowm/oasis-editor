@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
-import { Dialog } from "../../../../src/ui/components/Dialogs/Dialog.js";
+import { Dialog } from "@/ui/components/Dialogs/Dialog.js";
 
 function mountDialog(
   overrides: Partial<{

@@ -1,15 +1,15 @@
 import { createSignal } from "solid-js";
-import type { EditorState } from "../../core/model.js";
+import type { EditorState } from "@/core/model.js";
 import {
   applyEditorHistoryTransaction,
   createEmptyEditorHistoryState,
   resetEditorHistoryGrouping,
   type EditorHistoryState,
   type EditorTransactionOptions,
-} from "../editorHistory.js";
-import { computeLayoutInvalidationFromTransaction } from "../layoutInvalidation.js";
-import type { LayoutInvalidation } from "../../app/controllers/useEditorLayout.js";
-import { perfTimer } from "../../utils/performanceMetrics.js";
+} from "@/ui/editorHistory.js";
+import { computeLayoutInvalidationFromTransaction } from "@/ui/layoutInvalidation.js";
+import type { LayoutInvalidation } from "@/app/controllers/useEditorLayout.js";
+import { perfTimer } from "@/utils/performanceMetrics.js";
 
 export interface EditorTransactionsContext {
   stateSnapshot: () => EditorState;

@@ -3,11 +3,11 @@ import type {
   GlyphPosition,
   GlyphRun,
   PdfEmbeddableFont,
-} from "../../text/fonts/core/types.js";
+} from "@/text/fonts/core/types.js";
 import {
   createPdfEmbeddableFont,
   parseEmbeddedFontSync,
-} from "../../text/fonts/FontProgramFactory.js";
+} from "@/text/fonts/FontProgramFactory.js";
 
 export interface OasisPdfPageSize {
   width: number;

@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
-import type { EditorState } from "../../core/model.js";
-import type { ToolbarStyleState } from "../toolbarStyleState.js";
+import type { EditorState } from "@/core/model.js";
+import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 import {
   computeFontFamilyOptions as collectFontFamilyOptions,
   computeFontSizeOptions as collectFontSizeOptions,

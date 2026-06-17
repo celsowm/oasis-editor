@@ -3,12 +3,12 @@ import {
   createEditorDocument,
   createEditorParagraphFromRuns,
   createEditorStateFromDocument,
-} from "../../../../src/core/editorState.js";
-import { insertShapeAtSelection } from "../../../../src/core/commands/shape.js";
+} from "@/core/editorState.js";
+import { insertShapeAtSelection } from "@/core/commands/shape.js";
 import {
   getParagraphs,
   paragraphOffsetToPosition,
-} from "../../../../src/core/model.js";
+} from "@/core/model.js";
 
 function stateWithCaret() {
   const paragraph = createEditorParagraphFromRuns([{ text: "ab" }]);

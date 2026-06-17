@@ -4,9 +4,9 @@ import type {
   EditorState,
   EditorTableNode,
   EditorTableStyle,
-} from "../../model.js";
-import { getBlockParagraphs, getParagraphs } from "../../model.js";
-import { normalizeSelection } from "../../selection.js";
+} from "@/core/model.js";
+import { getBlockParagraphs, getParagraphs } from "@/core/model.js";
+import { normalizeSelection } from "@/core/selection.js";
 import {
   patchStyleValue,
   updateNestedTablesInBlocks,

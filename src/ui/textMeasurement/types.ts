@@ -2,8 +2,8 @@ import type {
   EditorLayoutFragment,
   EditorNamedStyle,
   EditorParagraphNode,
-} from "../../core/model.js";
-import type { FloatingExclusionRect } from "../../core/engine.js";
+} from "@/core/model.js";
+import type { FloatingExclusionRect } from "@/core/engine.js";
 
 export interface MeasuredChar {
   char: string;

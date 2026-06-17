@@ -1,6 +1,6 @@
-import type { EditorNamedStyle, EditorTextRun } from "../../../core/model.js";
-import type { DocContext } from "../docxTypes.js";
-import { escapeXml } from "../xmlUtils.js";
+import type { EditorNamedStyle, EditorTextRun } from "@/core/model.js";
+import type { DocContext } from "@/export/docx/docxTypes.js";
+import { escapeXml } from "@/export/docx/xmlUtils.js";
 import { materializeRunStyle } from "./styleMaterialization.js";
 import { serializeRunProperties } from "./runPropertiesXml.js";
 import { serializeRunText } from "./runTextXml.js";

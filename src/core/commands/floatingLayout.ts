@@ -1,4 +1,4 @@
-import type { EditorImageFloatingLayout } from "../model.js";
+import type { EditorImageFloatingLayout } from "@/core/model.js";
 
 /**
  * The text-wrapping presets exposed by the Word-style "Layout Options" popup.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { Editor } from "../../../../src/core/Editor.js";
-import type { OasisPlugin } from "../../../../src/core/plugin.js";
+import { Editor } from "@/core/Editor.js";
+import type { OasisPlugin } from "@/core/plugin.js";
 
 describe("Editor plugin integration", () => {
   it("executes a plugin command through public API", async () => {

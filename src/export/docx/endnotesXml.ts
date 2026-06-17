@@ -4,8 +4,8 @@ import type {
   EditorEndnote,
   EditorNamedStyle,
   EditorParagraphNode,
-} from "../../core/model.js";
-import { iterateEndnoteReferenceRuns } from "../../core/endnotes.js";
+} from "@/core/model.js";
+import { iterateEndnoteReferenceRuns } from "@/core/endnotes.js";
 import type {
   DocContext,
   ExportBuildState,

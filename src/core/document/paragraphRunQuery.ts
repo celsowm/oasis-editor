@@ -2,9 +2,9 @@ import type {
   EditorParagraphNode,
   EditorTextRun,
   EditorTextStyle,
-} from "../model.js";
-import { getParagraphLength } from "../model.js";
-import { cloneStyle } from "../textStyle/textStyleMutations.js";
+} from "@/core/model.js";
+import { getParagraphLength } from "@/core/model.js";
+import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
 import { cloneTextBox } from "./clone.js";
 
 export function getStyleAtOffset(

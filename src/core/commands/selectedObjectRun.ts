@@ -2,9 +2,9 @@ import type {
   EditorParagraphNode,
   EditorState,
   EditorTextRun,
-} from "../model.js";
-import { getParagraphs } from "../model.js";
-import { normalizeSelection } from "../selection.js";
+} from "@/core/model.js";
+import { getParagraphs } from "@/core/model.js";
+import { normalizeSelection } from "@/core/selection.js";
 
 /**
  * A run holding an inline object (image or text box) that is the sole content

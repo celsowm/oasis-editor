@@ -8,9 +8,9 @@ import {
   type EditorTableCellNode,
   type EditorTableNode,
   type EditorTextRun,
-} from "../../core/model.js";
-import { buildTableCellLayout } from "../../core/tableLayout.js";
-import { projectParagraphLayout } from "../../layoutProjection/index.js";
+} from "@/core/model.js";
+import { buildTableCellLayout } from "@/core/tableLayout.js";
+import { projectParagraphLayout } from "@/layoutProjection/index.js";
 import {
   estimateStackedColumnWidth,
   estimateStackedParagraphHeight,

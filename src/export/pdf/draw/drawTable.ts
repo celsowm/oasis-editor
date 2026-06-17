@@ -2,16 +2,16 @@ import type {
   EditorDocument,
   EditorLayoutBlock,
   EditorState,
-} from "../../../core/model.js";
-import { buildSegmentTable } from "../../../core/tableLayout.js";
+} from "@/core/model.js";
+import { buildSegmentTable } from "@/core/tableLayout.js";
 import {
   buildCanvasTableLayout,
   type CanvasTableBorderSpec,
   type CanvasTableCellLayoutEntry,
-} from "../../../ui/canvas/CanvasTableLayout.js";
-import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
-import { OasisPdfWriter } from "../OasisPdfWriter.js";
-import { pxToPt } from "../units.js";
+} from "@/ui/canvas/CanvasTableLayout.js";
+import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
+import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
+import { pxToPt } from "@/export/pdf/units.js";
 import { borderDashArray } from "./borderDash.js";
 import { drawParagraph } from "./drawParagraph.js";
 

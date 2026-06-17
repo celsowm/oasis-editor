@@ -1,5 +1,5 @@
-import type { EditorAsset } from "../../core/model.js";
-import { EDITOR_ASSET_REF_PREFIX } from "../../core/model.js";
+import type { EditorAsset } from "@/core/model.js";
+import { EDITOR_ASSET_REF_PREFIX } from "@/core/model.js";
 
 /**
  * Mutable registry that collects unique image payloads encountered during

@@ -2,7 +2,7 @@ import {
   getDocumentPageSettings,
   getPageContentWidth,
   type EditorDocument,
-} from "../core/model.js";
+} from "@/core/model.js";
 import { getTableCellContentWidthForParagraph } from "./tableGeometry.js";
 
 export const DEFAULT_MAX_INSERTED_IMAGE_WIDTH = 624;

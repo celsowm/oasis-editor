@@ -1,4 +1,4 @@
-import type { FontDecoder } from "../core/types.js";
+import type { FontDecoder } from "@/text/fonts/core/types.js";
 import { TtfDecoder } from "./TtfDecoder.js";
 import { Woff2Decoder } from "./Woff2Decoder.js";
 

@@ -3,7 +3,7 @@ import type {
   OasisCommand,
   OasisCommandContext,
   OasisCommandRegistry,
-} from "../plugin.js";
+} from "@/core/plugin.js";
 
 export class CommandRegistry implements OasisCommandRegistry {
   private commands = new Map<string, OasisCommand>();

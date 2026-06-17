@@ -21,19 +21,19 @@ import { CommentHighlightOverlay } from "./components/CommentHighlightOverlay.js
 import { FloatingTableToolbar } from "./components/FloatingToolbar/FloatingTableToolbar.js";
 import { FloatingLayoutOptions } from "./components/FloatingToolbar/FloatingLayoutOptions.js";
 import type { ToolbarHost } from "./components/Toolbar/state/createToolbarApi.js";
-import { t } from "../i18n/index.js";
+import { t } from "@/i18n/index.js";
 import {
   getDocumentPageSettings,
   getDocumentSections,
   type EditorLayoutParagraph,
   type EditorState,
-} from "../core/model.js";
+} from "@/core/model.js";
 import {
   getDocumentCharacterCount,
   getDocumentWordCount,
-} from "../core/editorState.js";
-import { importFileAccept } from "../import/documentImporterRegistry.js";
-import type { ImportProgressState } from "../app/controllers/useEditorDocumentIO.js";
+} from "@/core/editorState.js";
+import { importFileAccept } from "@/import/documentImporterRegistry.js";
+import type { ImportProgressState } from "@/app/controllers/useEditorDocumentIO.js";
 import type {
   CaretBox,
   CommentHighlightBox,
@@ -44,10 +44,10 @@ import type {
   SelectedTextBoxBox,
   SelectionBox,
 } from "./editorUiTypes.js";
-import type { EditorComment } from "../core/model.js";
+import type { EditorComment } from "@/core/model.js";
 import type { ResizeHandleDirection } from "./resizeGeometry.js";
 import { ResizeHandlesOverlay } from "./overlays/ResizeHandlesOverlay.js";
-import { projectDocumentLayout } from "../layoutProjection/index.js";
+import { projectDocumentLayout } from "@/layoutProjection/index.js";
 
 type ImportProgress = ImportProgressState;
 

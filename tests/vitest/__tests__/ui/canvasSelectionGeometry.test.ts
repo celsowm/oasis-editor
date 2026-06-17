@@ -7,17 +7,17 @@ import {
   createEditorTableCell,
   createEditorTableRow,
   createEditorTable,
-} from "../../../../src/core/editorState.js";
+} from "@/core/editorState.js";
 import {
   getParagraphs,
   paragraphOffsetToPosition,
   type EditorParagraphNode,
-} from "../../../../src/core/model.js";
-import { computeCanvasSelectionGeometry } from "../../../../src/ui/canvas/CanvasSelectionGeometry.js";
+} from "@/core/model.js";
+import { computeCanvasSelectionGeometry } from "@/ui/canvas/CanvasSelectionGeometry.js";
 import type {
   CanvasLayoutSnapshot,
   CanvasSnapshotParagraph,
-} from "../../../../src/ui/canvas/CanvasLayoutSnapshot.js";
+} from "@/ui/canvas/CanvasLayoutSnapshot.js";
 
 function createMockSnapshot(
   paragraph: EditorParagraphNode,

@@ -5,7 +5,7 @@ import {
   createEditorTable,
   createEditorTableCell,
   createEditorTableRow,
-} from "../../core/editorState.js";
+} from "@/core/editorState.js";
 import type {
   EditorBlockNode,
   EditorDocument,
@@ -14,13 +14,13 @@ import type {
   EditorTableCellNode,
   EditorTableRowNode,
   EditorTextRun,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   collectInlineRuns,
   isParagraphTag,
   listKindForTag,
-} from "../../core/html/htmlBlockWalker.js";
-import { parseParagraphStyle } from "../../core/html/htmlStyleParser.js";
+} from "@/core/html/htmlBlockWalker.js";
+import { parseParagraphStyle } from "@/core/html/htmlStyleParser.js";
 
 const HEADING_STYLE_IDS: Record<string, string> = {
   H1: "heading1",

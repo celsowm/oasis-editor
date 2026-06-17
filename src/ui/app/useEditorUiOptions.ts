@@ -1,11 +1,11 @@
-import { DocumentShell } from "../shells/DocumentShell.js";
-import { InlineShell } from "../shells/InlineShell.js";
-import { BalloonShell } from "../shells/BalloonShell.js";
+import { DocumentShell } from "@/ui/shells/DocumentShell.js";
+import { InlineShell } from "@/ui/shells/InlineShell.js";
+import { BalloonShell } from "@/ui/shells/BalloonShell.js";
 import type {
   OasisEditorAppDocumentProps,
   OasisEditorAppUiProps,
   OasisEditorLoadingOptions,
-} from "../OasisEditorAppProps.js";
+} from "@/ui/OasisEditorAppProps.js";
 
 export interface EditorUiOptionsContext {
   ui: () => OasisEditorAppUiProps;

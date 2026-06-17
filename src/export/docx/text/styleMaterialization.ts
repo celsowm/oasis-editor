@@ -4,11 +4,11 @@ import type {
   EditorParagraphStyle,
   EditorTextRun,
   EditorTextStyle,
-} from "../../../core/model.js";
+} from "@/core/model.js";
 import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
-} from "../../../core/model.js";
+} from "@/core/model.js";
 
 export function materializeParagraphStyle(
   paragraph: EditorParagraphNode,

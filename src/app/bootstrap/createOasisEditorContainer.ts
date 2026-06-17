@@ -2,11 +2,11 @@ import { render } from "solid-js/web";
 import {
   OasisEditorContainer,
   type OasisEditorContainerProps,
-} from "../../ui/OasisEditorContainer.js";
+} from "@/ui/OasisEditorContainer.js";
 import {
   createOasisEditorClient,
   type OasisEditorClient,
-} from "../client/OasisEditorClient.js";
+} from "@/app/client/OasisEditorClient.js";
 
 export type OasisEditorContainerInstance = OasisEditorClient;
 

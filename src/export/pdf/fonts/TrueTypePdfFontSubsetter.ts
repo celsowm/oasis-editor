@@ -3,8 +3,8 @@ import type {
   FontSubsetter,
   GlyphInfo,
   ParsedFontProgram,
-} from "../../../text/fonts/core/types.js";
-import { buildSfnt } from "../../../text/fonts/vendor/woff2/sfnt-builder.js";
+} from "@/text/fonts/core/types.js";
+import { buildSfnt } from "@/text/fonts/vendor/woff2/sfnt-builder.js";
 
 interface GlyphRange {
   start: number;

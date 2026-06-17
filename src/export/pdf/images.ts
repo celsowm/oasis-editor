@@ -1,5 +1,5 @@
-import type { EditorDocument, EditorImageRunData } from "../../core/model.js";
-import { resolveImageSrc } from "../../core/model.js";
+import type { EditorDocument, EditorImageRunData } from "@/core/model.js";
+import { resolveImageSrc } from "@/core/model.js";
 import { OasisPdfWriter } from "./OasisPdfWriter.js";
 
 interface PreparedPdfImage {

@@ -1,5 +1,5 @@
 import { Show } from "solid-js";
-import { t } from "../../i18n/index.js";
+import { t } from "@/i18n/index.js";
 
 export interface PageBreakProps {
   pageIndex: number;

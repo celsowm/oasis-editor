@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   createEditorStateFromTexts,
   resetEditorIds,
-} from "../../../../src/core/editorState.js";
+} from "@/core/editorState.js";
 import {
   insertTextAtSelection,
   deleteBackward,
@@ -10,13 +10,13 @@ import {
   toggleTextStyle,
   moveOrCopySelectionToPosition,
   setTextStyleValue,
-} from "../../../../src/core/commands/text.js";
+} from "@/core/commands/text.js";
 import {
   paragraphOffsetToPosition,
   type EditorState,
   type EditorUnderlineStyle,
-} from "../../../../src/core/model.js";
-import { getParagraphs } from "../../../../src/core/model.js";
+} from "@/core/model.js";
+import { getParagraphs } from "@/core/model.js";
 
 beforeEach(() => {
   resetEditorIds();

@@ -3,14 +3,14 @@ import {
   createEditorDocument,
   createEditorParagraphFromRuns,
   createEditorStateFromDocument,
-} from "../../../../src/core/editorState.js";
+} from "@/core/editorState.js";
 import {
   applyMoveWithText,
   floatingToWrapPreset,
   isFloatingFixedPosition,
   wrapPresetToFloating,
   type WrapPreset,
-} from "../../../../src/core/commands/floatingLayout.js";
+} from "@/core/commands/floatingLayout.js";
 import {
   getSelectedImageRun,
   getSelectedImageWrapPreset,
@@ -18,17 +18,17 @@ import {
   setImageWrapPolygon,
   setSelectedImageFixedPosition,
   setSelectedImageWrapPreset,
-} from "../../../../src/core/commands/image.js";
+} from "@/core/commands/image.js";
 import {
   getSelectedTextBoxWrapPreset,
   setSelectedTextBoxWrapPreset,
-} from "../../../../src/core/commands/textBox.js";
+} from "@/core/commands/textBox.js";
 import {
   paragraphOffsetToPosition,
   type EditorImageRunData,
   type EditorState,
   type EditorTextBoxData,
-} from "../../../../src/core/model.js";
+} from "@/core/model.js";
 
 const PRESETS: WrapPreset[] = [
   "square",

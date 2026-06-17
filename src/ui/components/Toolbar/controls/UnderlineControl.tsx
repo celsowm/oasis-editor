@@ -1,9 +1,9 @@
 import { For, Show, createSignal, type JSX } from "solid-js";
-import type { EditorUnderlineStyle } from "../../../../core/model.js";
-import { SplitButton } from "../primitives/SplitButton.js";
-import { UNDERLINE_STYLE_OPTIONS } from "../underlineStyles.js";
-import { t } from "../../../../i18n/index.js";
-import type { ToolbarActionApi } from "../schema/items.js";
+import type { EditorUnderlineStyle } from "@/core/model.js";
+import { SplitButton } from "@/ui/components/Toolbar/primitives/SplitButton.js";
+import { UNDERLINE_STYLE_OPTIONS } from "@/ui/components/Toolbar/underlineStyles.js";
+import { t } from "@/i18n/index.js";
+import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
 const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 const UNDERLINE_BUTTON_TOOLTIP = `${t("toolbar.underline")} (${mod}+U)`;

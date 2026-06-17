@@ -1,11 +1,11 @@
 import { createSignal, createEffect } from "solid-js";
-import type { EditorState, EditorTextStyle } from "../../core/model.js";
-import { isSelectionCollapsed } from "../../core/selection.js";
-import { getToolbarStyleState } from "../../ui/toolbarStyleState.js";
+import type { EditorState, EditorTextStyle } from "@/core/model.js";
+import { isSelectionCollapsed } from "@/core/selection.js";
+import { getToolbarStyleState } from "@/ui/toolbarStyleState.js";
 import type {
   ToolbarStyleState,
   BooleanStyleKey,
-} from "../../ui/toolbarStyleState.js";
+} from "@/ui/toolbarStyleState.js";
 import type { createEditorCommandsController } from "./EditorCommandsController.js";
 
 type ValueStyleKey =

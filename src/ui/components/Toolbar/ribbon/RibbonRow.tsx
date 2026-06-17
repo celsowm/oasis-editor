@@ -1,6 +1,6 @@
 import { For } from "solid-js";
-import { ToolbarItemRenderer } from "../renderers/ToolbarItemRenderer.js";
-import type { ToolbarActionApi, ToolbarItem } from "../schema/items.js";
+import { ToolbarItemRenderer } from "@/ui/components/Toolbar/renderers/ToolbarItemRenderer.js";
+import type { ToolbarActionApi, ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
 
 export interface RibbonRowProps {
   items: ToolbarItem[];

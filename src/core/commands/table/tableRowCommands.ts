@@ -2,7 +2,7 @@ import type {
   EditorState,
   EditorTableNode,
   EditorTableRowStyle,
-} from "../../model.js";
+} from "@/core/model.js";
 import {
   patchStyleValue,
   resolveActiveTableLocation,

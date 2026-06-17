@@ -1,7 +1,7 @@
 import type {
   EditorLayoutFragment,
   EditorLayoutLine,
-} from "../../../core/model.js";
+} from "@/core/model.js";
 
 export interface FragmentSlot {
   char: string;

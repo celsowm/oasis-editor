@@ -1,5 +1,5 @@
 import type { JSX } from "solid-js";
-import oasisMarkBase64 from "../../../branding/generated/brand-mark.webp?base64";
+import oasisMarkBase64 from "@/../branding/generated/brand-mark.webp?base64";
 
 /**
  * The Oasis Editor brand mark, embedded as a base64 data URI through the same

@@ -1,6 +1,6 @@
 import { For, Show, createSignal, type JSX } from "solid-js";
 import { SplitButton } from "./SplitButton.js";
-import type { ColorPalette } from "../schema/palette.js";
+import type { ColorPalette } from "@/ui/components/Toolbar/schema/palette.js";
 
 export type ColorPickerKind = "color" | "highlight" | "shading";
 

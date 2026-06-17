@@ -1,7 +1,7 @@
 import type {
   EditorParagraphNode,
   EditorTextRun,
-} from "../../../core/model.js";
+} from "@/core/model.js";
 import type { PdfTextMeasurer } from "./PdfTextMeasurer.js";
 
 export interface PdfParagraphTextContext {

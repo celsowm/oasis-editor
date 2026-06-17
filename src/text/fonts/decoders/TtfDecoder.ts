@@ -1,4 +1,4 @@
-import type { FontDecoder } from "../core/types.js";
+import type { FontDecoder } from "@/text/fonts/core/types.js";
 
 export class TtfDecoder implements FontDecoder {
   readonly format = "ttf" as const;

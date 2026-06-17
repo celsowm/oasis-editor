@@ -1,5 +1,5 @@
-import type { OasisPlugin } from "../../core/plugin.js";
-import type { TextCaseMode } from "../../core/commands/text.js";
+import type { OasisPlugin } from "@/core/plugin.js";
+import type { TextCaseMode } from "@/core/commands/text.js";
 import type {
   ActionCommandBuilder,
   CommandBuilder,
@@ -9,11 +9,11 @@ import { numOrNull } from "./essentialsCommandBuilders.js";
 import {
   formatFontSizePt,
   parseFontSizePtToPx,
-} from "../../ui/fontSizeUnits.js";
+} from "@/ui/fontSizeUnits.js";
 import {
   isPreciseFontModeEnabled,
   preciseFontModeVersion,
-} from "../../text/fonts/preciseFontMode.js";
+} from "@/text/fonts/preciseFontMode.js";
 import type {
   EssentialsBrowserCapability,
   EssentialsDocumentCapability,

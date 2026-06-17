@@ -2,18 +2,18 @@ import {
   isPreciseFontModeEnabled,
   setAvailableLocalFontFamilies,
   setPreciseFontModeEnabled,
-} from "../../text/fonts/preciseFontMode.js";
+} from "@/text/fonts/preciseFontMode.js";
 import {
   hasPreciseFontFace,
   registerPreciseFont,
-} from "../../text/fonts/preciseFontMetrics.js";
-import { SfntFontProgram } from "../../text/fonts/sfnt/SfntFontProgram.js";
-import { normalizeFamily } from "../../export/pdf/fonts/officeFontAssets.js";
+} from "@/text/fonts/preciseFontMetrics.js";
+import { SfntFontProgram } from "@/text/fonts/sfnt/SfntFontProgram.js";
+import { normalizeFamily } from "@/export/pdf/fonts/officeFontAssets.js";
 import {
   getPreciseFontPreference,
   setPreciseFontPreference,
-} from "../../app/services/userPreferences.js";
-import { createEditorLogger } from "../../utils/logger.js";
+} from "@/app/services/userPreferences.js";
+import { createEditorLogger } from "@/utils/logger.js";
 
 const fontLogger = createEditorLogger("fonts");
 

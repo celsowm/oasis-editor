@@ -1,6 +1,6 @@
-import type { EditorDocument } from "../../../core/model.js";
-import { exportEditorDocumentToDocxBlob } from "../../../export/docx/exportEditorDocumentToDocx.js";
-import { exportEditorDocumentToPdfBlob } from "../../../export/pdf/exportEditorDocumentToPdf.js";
+import type { EditorDocument } from "@/core/model.js";
+import { exportEditorDocumentToDocxBlob } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { exportEditorDocumentToPdfBlob } from "@/export/pdf/exportEditorDocumentToPdf.js";
 import { downloadBlob } from "./downloadBlob.js";
 
 export interface DocumentExporterDeps {

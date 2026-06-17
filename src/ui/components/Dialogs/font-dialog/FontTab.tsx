@@ -1,6 +1,6 @@
 import { For } from "solid-js";
-import { t } from "../../../../i18n/index.js";
-import { UNDERLINE_STYLE_OPTIONS } from "../../Toolbar/underlineStyles.js";
+import { t } from "@/i18n/index.js";
+import { UNDERLINE_STYLE_OPTIONS } from "@/ui/components/Toolbar/underlineStyles.js";
 import {
   DEFAULT_COLOR,
   DEFAULT_HIGHLIGHT,

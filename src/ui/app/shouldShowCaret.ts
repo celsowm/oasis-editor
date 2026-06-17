@@ -2,9 +2,9 @@ import {
   findParagraphTableLocation,
   getActiveSectionIndex,
   type EditorState,
-} from "../../core/model.js";
-import { isSelectionCollapsed } from "../../core/selection.js";
-import type { CaretBox } from "../editorUiTypes.js";
+} from "@/core/model.js";
+import { isSelectionCollapsed } from "@/core/selection.js";
+import type { CaretBox } from "@/ui/editorUiTypes.js";
 
 /**
  * Decides whether the text caret should be painted: only for a visible, collapsed

@@ -1,15 +1,15 @@
 import {
   createEditorParagraphFromRuns,
   createEditorRun,
-} from "../editorState.js";
+} from "@/core/editorState.js";
 import type {
   EditorBlockNode,
   EditorDocument,
   EditorParagraphNode,
   EditorSection,
   EditorTextRun,
-} from "../model.js";
-import { getDocumentSections, getParagraphLength } from "../model.js";
+} from "@/core/model.js";
+import { getDocumentSections, getParagraphLength } from "@/core/model.js";
 import { cloneBlocks, cloneParagraph, cloneParagraphs } from "./clone.js";
 
 export const IMAGE_CAPTION_STYLE_ID = "Caption";

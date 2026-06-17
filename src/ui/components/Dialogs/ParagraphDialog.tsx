@@ -1,10 +1,10 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { Dialog } from "./Dialog.js";
-import { t } from "../../../i18n/index.js";
+import { t } from "@/i18n/index.js";
 import type {
   EditorBorderStyle,
   EditorParagraphStyle,
-} from "../../../core/model.js";
+} from "@/core/model.js";
 
 type SpecialIndent = "none" | "firstLine" | "hanging";
 type BorderStyleValue = "none" | "solid" | "dashed" | "dotted";

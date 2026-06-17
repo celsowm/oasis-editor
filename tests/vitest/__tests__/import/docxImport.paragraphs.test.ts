@@ -1,23 +1,23 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
-import { exportEditorDocumentToDocx } from "../../../../src/export/docx/exportEditorDocumentToDocx.js";
-import { exportEditorDocumentToPdfBlob } from "../../../../src/export/pdf/exportEditorDocumentToPdf.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { exportEditorDocumentToPdfBlob } from "@/export/pdf/exportEditorDocumentToPdf.js";
 import {
   getPageContentWidth,
   getParagraphText,
   getParagraphById,
   resolveEffectiveParagraphStyle,
-} from "../../../../src/core/model.js";
-import { createEditorStateFromDocument } from "../../../../src/core/editorState.js";
+} from "@/core/model.js";
+import { createEditorStateFromDocument } from "@/core/editorState.js";
 import {
   getLineStartInset,
   getListLabelInset,
-} from "../../../../src/ui/textMeasurement/indentation.js";
+} from "@/ui/textMeasurement/indentation.js";
 import {
   projectDocumentLayout,
   projectParagraphLayout,
-} from "../../../../src/layoutProjection/index.js";
+} from "@/layoutProjection/index.js";
 import {
   getDocumentParagraphs,
   importComplexDocument,

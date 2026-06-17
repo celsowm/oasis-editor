@@ -1,4 +1,4 @@
-import type { EditorState, EditorBlockNode } from "../../core/model.js";
+import type { EditorState, EditorBlockNode } from "@/core/model.js";
 import {
   getEditableBlocksForZone,
   getParagraphs,
@@ -7,21 +7,21 @@ import {
   positionToParagraphOffset,
   getActiveSectionIndex,
   findParagraphTableLocation,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   setSelection,
   moveSelectionLeft,
   moveSelectionRight,
-} from "../../core/editorCommands.js";
-import { isSelectionCollapsed } from "../../core/selection.js";
+} from "@/core/editorCommands.js";
+import { isSelectionCollapsed } from "@/core/selection.js";
 import {
   findPreviousWordBoundary,
   findNextWordBoundary,
-} from "../../core/wordBoundaries.js";
-import { buildTableCellLayout } from "../../core/tableLayout.js";
-import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
-import { getParagraphEntries } from "../../ui/canvas/CanvasGeometry.js";
-import type { CaretBox } from "../../ui/editorUiTypes.js";
+} from "@/core/wordBoundaries.js";
+import { buildTableCellLayout } from "@/core/tableLayout.js";
+import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
+import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
+import type { CaretBox } from "@/ui/editorUiTypes.js";
 
 export interface UseEditorNavigationProps {
   state: () => EditorState;

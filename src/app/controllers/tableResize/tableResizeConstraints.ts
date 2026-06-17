@@ -1,9 +1,9 @@
-import type { EditorTableNode, EditorState } from "../../../core/model.js";
+import type { EditorTableNode, EditorState } from "@/core/model.js";
 import {
   buildTableCellLayout,
   type TableCellLayoutEntry,
-} from "../../../core/tableLayout.js";
-import { measureParagraphMinContentWidthPx } from "../../../ui/textMeasurement.js";
+} from "@/core/tableLayout.js";
+import { measureParagraphMinContentWidthPx } from "@/ui/textMeasurement.js";
 import {
   ptToPx,
   pxToPt,

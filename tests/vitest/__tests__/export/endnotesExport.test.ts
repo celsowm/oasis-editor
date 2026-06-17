@@ -1,22 +1,22 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import JSZip from "jszip";
-import { exportEditorDocumentToDocx } from "../../../../src/export/docx/exportEditorDocumentToDocx.js";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
+import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 import {
   createEditorDocument,
   createEditorParagraph,
   createEditorParagraphFromRuns,
   resetEditorIds,
-} from "../../../../src/core/editorState.js";
+} from "@/core/editorState.js";
 import {
   collectEndnoteReferences,
   renumberEndnotes,
-} from "../../../../src/core/endnotes.js";
+} from "@/core/endnotes.js";
 import type {
   EditorDocument,
   EditorParagraphNode,
   EditorTextRun,
-} from "../../../../src/core/model.js";
+} from "@/core/model.js";
 
 beforeEach(() => {
   resetEditorIds();

@@ -35,6 +35,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: './',
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, 'src'),
+      },
+    },
     build: {
       outDir: isLib ? 'dist' : 'dist-app',
       assetsInlineLimit: isLib ? 0 : undefined,

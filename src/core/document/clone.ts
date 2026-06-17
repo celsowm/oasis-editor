@@ -4,8 +4,8 @@ import type {
   EditorParagraphNode,
   EditorTextBoxData,
   EditorTextRun,
-} from "../model.js";
-import { cloneStyle } from "../textStyle/textStyleMutations.js";
+} from "@/core/model.js";
+import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
 
 export function cloneTextBox(textBox: EditorTextBoxData): EditorTextBoxData {
   return {

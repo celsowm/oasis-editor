@@ -1,4 +1,4 @@
-import type { EditorParagraphListStyle } from "../model.js";
+import type { EditorParagraphListStyle } from "@/core/model.js";
 
 export type ToggleableTextStyleKey =
   | "bold"

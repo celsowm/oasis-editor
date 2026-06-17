@@ -1,7 +1,7 @@
-import type { CommandBus } from "../../../core/commands/CommandBus.js";
-import type { CommandRef } from "../../../core/commands/CommandRef.js";
-import type { TranslationKey } from "../../../i18n/index.js";
-import type { ToolbarCommandState } from "../Toolbar/schema/items.js";
+import type { CommandBus } from "@/core/commands/CommandBus.js";
+import type { CommandRef } from "@/core/commands/CommandRef.js";
+import type { TranslationKey } from "@/i18n/index.js";
+import type { ToolbarCommandState } from "@/ui/components/Toolbar/schema/items.js";
 
 /** Narrow host the menubar dispatches through — the command registry. */
 export interface MenubarHost {

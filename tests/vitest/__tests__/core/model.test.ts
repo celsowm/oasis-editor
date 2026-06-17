@@ -16,8 +16,8 @@ import {
   getBlockParagraphs,
   EFFECTIVE_TEXT_STYLE_DEFAULTS,
   EFFECTIVE_PARAGRAPH_STYLE_DEFAULTS,
-} from "../../../../src/core/model.js";
-import type { EditorNamedStyle, EditorPageSettings } from "../../../../src/core/model.js";
+} from "@/core/model.js";
+import type { EditorNamedStyle, EditorPageSettings } from "@/core/model.js";
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -1,13 +1,13 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import JSZip from "jszip";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
-import { exportEditorDocumentToDocx } from "../../../../src/export/docx/exportEditorDocumentToDocx.js";
-import { resetEditorIds } from "../../../../src/core/editorState.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { resetEditorIds } from "@/core/editorState.js";
 import { getDocumentParagraphs } from "./docxTestHelpers.js";
 import type {
   EditorDocument,
   EditorTextRun,
-} from "../../../../src/core/model.js";
+} from "@/core/model.js";
 
 beforeEach(() => {
   resetEditorIds();

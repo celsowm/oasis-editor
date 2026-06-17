@@ -5,8 +5,8 @@ import type {
   EditorDocument,
   EditorParagraphNode,
   EditorTableNode,
-} from "../../../../src/core/model.js";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
+} from "@/core/model.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 
 const FIXTURES_DIR = join(
   dirname(fileURLToPath(import.meta.url)),

@@ -2,8 +2,8 @@ import type {
   EditorLayoutLine,
   EditorNamedStyle,
   EditorParagraphNode,
-} from "../../core/model.js";
-import { resolveEffectiveParagraphStyle } from "../../core/model.js";
+} from "@/core/model.js";
+import { resolveEffectiveParagraphStyle } from "@/core/model.js";
 import { getAvailableWidth } from "./indentation.js";
 import { shiftLine } from "./layoutLine.js";
 

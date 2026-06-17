@@ -4,8 +4,8 @@ import {
   OFFICE_COMPAT_FONT_FAMILIES,
   readFontAssetSync,
   ROBOTO_FONT_FILES,
-} from "../../../../src/export/pdf/fonts/officeFontAssets.js";
-import { SfntFontProgram } from "../../../../src/text/fonts/sfnt/SfntFontProgram.js";
+} from "@/export/pdf/fonts/officeFontAssets.js";
+import { SfntFontProgram } from "@/text/fonts/sfnt/SfntFontProgram.js";
 
 function loadFont(fileName: string): SfntFontProgram {
   const bytes = readFontAssetSync(fileName);

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { PluginCollection } from "../../../../src/core/plugins/PluginCollection.js";
-import { CommandRegistry } from "../../../../src/core/commands/CommandRegistry.js";
-import { PluginUiRegistry } from "../../../../src/core/plugins/PluginUiRegistry.js";
-import type { OasisEditor, OasisPlugin } from "../../../../src/core/plugin.js";
+import { PluginCollection } from "@/core/plugins/PluginCollection.js";
+import { CommandRegistry } from "@/core/commands/CommandRegistry.js";
+import { PluginUiRegistry } from "@/core/plugins/PluginUiRegistry.js";
+import type { OasisEditor, OasisPlugin } from "@/core/plugin.js";
 
 function createEditorStub() {
   const commands = new CommandRegistry();

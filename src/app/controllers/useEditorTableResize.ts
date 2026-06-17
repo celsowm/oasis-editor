@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
-import type { EditorState } from "../../core/model.js";
-import { buildTableCellLayout } from "../../core/tableLayout.js";
+import type { EditorState } from "@/core/model.js";
+import { buildTableCellLayout } from "@/core/tableLayout.js";
 import type {
   TableResizeOps,
   TableResizeState,

@@ -1,7 +1,7 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
-import type { EditorTextStyle } from "../../core/model.js";
-import { DEFAULT_EDITOR_STYLES } from "../../core/editorState.js";
-import { resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
+import type { EditorTextStyle } from "@/core/model.js";
+import { DEFAULT_EDITOR_STYLES } from "@/core/editorState.js";
+import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
 import {
   WORD_NS,
   WORD14_NS,

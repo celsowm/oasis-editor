@@ -6,18 +6,18 @@ import {
   resolveImageSrc,
   type EditorPosition,
   type EditorState,
-} from "../../core/model.js";
-import { normalizeSelection } from "../../core/selection.js";
+} from "@/core/model.js";
+import { normalizeSelection } from "@/core/selection.js";
 import {
   moveSelectedImageToPosition,
   setSelection,
   resizeSelectedImage,
   rotateSelectedImage,
-} from "../../core/editorCommands.js";
-import { getMaxInlineImageWidth } from "../../ui/imageGeometry.js";
-import type { ResizeHandleDirection } from "../../ui/resizeGeometry.js";
-import type { EditorLogger } from "../../utils/logger.js";
-import type { EditorHistoryState } from "../../ui/editorHistory.js";
+} from "@/core/editorCommands.js";
+import { getMaxInlineImageWidth } from "@/ui/imageGeometry.js";
+import type { ResizeHandleDirection } from "@/ui/resizeGeometry.js";
+import type { EditorLogger } from "@/utils/logger.js";
+import type { EditorHistoryState } from "@/ui/editorHistory.js";
 import { createResizeSession } from "./createResizeSession.js";
 import { createRotateSession } from "./createRotateSession.js";
 

@@ -1,5 +1,5 @@
 import { createSignal } from "solid-js";
-import { normalizeFamily } from "../../export/pdf/fonts/officeFontAssets.js";
+import { normalizeFamily } from "@/export/pdf/fonts/officeFontAssets.js";
 
 /**
  * Opt-in "precise font mode". When enabled and the document's requested family

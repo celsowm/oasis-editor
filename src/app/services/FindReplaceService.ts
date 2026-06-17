@@ -4,7 +4,7 @@ import {
   paragraphOffsetToPosition,
   type EditorDocument,
   type EditorPosition,
-} from "../../core/model.js";
+} from "@/core/model.js";
 
 export interface FindReplaceMatch {
   anchor: EditorPosition;

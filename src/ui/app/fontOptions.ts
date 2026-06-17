@@ -1,6 +1,6 @@
-import type { EditorDocument } from "../../core/model.js";
-import type { ToolbarStyleState } from "../toolbarStyleState.js";
-import { STANDARD_FONT_SIZES_PT, fontSizePxToPt } from "../fontSizeUnits.js";
+import type { EditorDocument } from "@/core/model.js";
+import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
+import { STANDARD_FONT_SIZES_PT, fontSizePxToPt } from "@/ui/fontSizeUnits.js";
 
 const COMMON_FONT_FAMILIES = [
   "Aptos, sans-serif",

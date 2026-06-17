@@ -1,7 +1,7 @@
-import { Button } from "../primitives/Button.js";
-import { Menu } from "../primitives/Menu.js";
-import { t } from "../../../../i18n/index.js";
-import type { ToolbarActionApi } from "../schema/items.js";
+import { Button } from "@/ui/components/Toolbar/primitives/Button.js";
+import { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
+import { t } from "@/i18n/index.js";
+import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
 /** Section page-setup panel (orientation, section breaks) — command-driven. */
 export function SectionGroup(props: { api: ToolbarActionApi }) {

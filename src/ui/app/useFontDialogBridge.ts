@@ -1,15 +1,15 @@
-import { isSelectionCollapsed } from "../../core/selection.js";
+import { isSelectionCollapsed } from "@/core/selection.js";
 import {
   setTextStyleValue,
   toggleTextStyle,
-} from "../../core/editorCommands.js";
-import type { EditorSelection, EditorState } from "../../core/model.js";
+} from "@/core/editorCommands.js";
+import type { EditorSelection, EditorState } from "@/core/model.js";
 import type {
   FontDialogApplyValues,
   FontDialogInitialValues,
-} from "../components/Dialogs/FontDialog.js";
-import type { ToolbarStyleState } from "../toolbarStyleState.js";
-import { formatFontSizePt, parseFontSizePtToPx } from "../fontSizeUnits.js";
+} from "@/ui/components/Dialogs/FontDialog.js";
+import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
+import { formatFontSizePt, parseFontSizePtToPx } from "@/ui/fontSizeUnits.js";
 
 interface FontDialogState {
   isOpen: boolean;

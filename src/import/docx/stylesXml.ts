@@ -4,7 +4,7 @@ import type {
   EditorNamedStyle,
   EditorTableConditionalFormat,
   EditorTableStyle,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   WORD_NS,
   getChildrenByTagNameNS,

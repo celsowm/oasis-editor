@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   nextFontSizePt,
   previousFontSizePt,
-} from "../../../../src/ui/fontSizeUnits.js";
+} from "@/ui/fontSizeUnits.js";
 
 describe("font size stepping", () => {
   it("grows to the next standard size", () => {

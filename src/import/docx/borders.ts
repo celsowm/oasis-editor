@@ -1,5 +1,5 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
-import type { EditorBorderStyle } from "../../core/model.js";
+import type { EditorBorderStyle } from "@/core/model.js";
 import {
   WORD_NS,
   getAttributeValue,

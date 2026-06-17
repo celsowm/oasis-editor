@@ -1,6 +1,6 @@
-import type { EditorDropCap } from "../core/model.js";
+import type { EditorDropCap } from "@/core/model.js";
 import type { FloatingExclusionRect } from "./floatingObjects.js";
-import { measureCharacterWidth } from "../ui/textMeasurement/characterWidth.js";
+import { measureCharacterWidth } from "@/ui/textMeasurement/characterWidth.js";
 
 /** Synthetic run id used for the drop-cap exclusion rect. */
 export const DROP_CAP_EXCLUSION_RUN_ID = "dropcap";

@@ -4,8 +4,8 @@ import {
   ParagraphDialog,
   type ParagraphDialogApplyValues,
   type ParagraphDialogInitialValues,
-} from "../../../../src/ui/components/Dialogs/ParagraphDialog.js";
-import { setLocale } from "../../../../src/i18n/index.js";
+} from "@/ui/components/Dialogs/ParagraphDialog.js";
+import { setLocale } from "@/i18n/index.js";
 
 function mountDialog(
   overrides: Partial<{

@@ -17,7 +17,7 @@ import type { ToolbarRegistry } from "./registry/ToolbarRegistry.js";
 import type {
   ToolbarLayoutMode,
   ToolbarViewMode,
-} from "../../OasisEditorAppProps.js";
+} from "@/ui/OasisEditorAppProps.js";
 import { RibbonTabs } from "./ribbon/RibbonTabs.js";
 import { RibbonPanel } from "./ribbon/RibbonPanel.js";
 import type { RibbonTabId } from "./schema/items.js";

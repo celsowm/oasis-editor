@@ -1,8 +1,8 @@
-import { cloneBlock } from "../../core/cloneState.js";
+import { cloneBlock } from "@/core/cloneState.js";
 import {
   createEditorParagraph,
   createEditorTableCell,
-} from "../../core/editorState.js";
+} from "@/core/editorState.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
@@ -12,7 +12,7 @@ import {
   type EditorParagraphNode,
   type EditorState,
   type EditorTableNode,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import { updateBlocksInCurrentSection } from "./tableOpsMutationCommands.js";
 import type {
   HorizontalTableCellRange,

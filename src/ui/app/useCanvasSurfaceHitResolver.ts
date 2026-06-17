@@ -1,14 +1,14 @@
 import type { Accessor } from "solid-js";
-import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
+import type { EditorLayoutParagraph, EditorState } from "@/core/model.js";
 import {
   resolveCanvasSurfaceHitAtPoint,
   type SurfaceHit,
-} from "../canvas/CanvasHitTestService.js";
-import { buildCanvasLayoutSnapshot } from "../canvas/CanvasLayoutSnapshot.js";
+} from "@/ui/canvas/CanvasHitTestService.js";
+import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
 import {
   recordCanvasDebugHit,
   recordCanvasDebugLayoutSnapshot,
-} from "../canvas/CanvasDebug.js";
+} from "@/ui/canvas/CanvasDebug.js";
 
 type CanvasSnapshotCache = {
   snapshot: ReturnType<typeof buildCanvasLayoutSnapshot>;

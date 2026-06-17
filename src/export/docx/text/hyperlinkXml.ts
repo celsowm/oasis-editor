@@ -1,5 +1,5 @@
-import type { DocContext } from "../docxTypes.js";
-import { escapeXml } from "../xmlUtils.js";
+import type { DocContext } from "@/export/docx/docxTypes.js";
+import { escapeXml } from "@/export/docx/xmlUtils.js";
 
 export function wrapRunWithHyperlink(
   runXml: string,

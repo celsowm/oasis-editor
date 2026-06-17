@@ -1,12 +1,12 @@
 import type { ComponentProps } from "solid-js";
-import { LinkDialog } from "../components/Dialogs/LinkDialog.js";
-import { ImageAltDialog } from "../components/Dialogs/ImageAltDialog.js";
-import { ImageCaptionDialog } from "../components/Dialogs/ImageCaptionDialog.js";
-import { FontDialog } from "../components/Dialogs/FontDialog.js";
-import { ParagraphDialog } from "../components/Dialogs/ParagraphDialog.js";
-import { TablePropertiesDialog } from "../components/Dialogs/TablePropertiesDialog.js";
-import { FindReplaceDialog } from "../components/FindReplace/FindReplaceDialog.js";
-import { ContextMenu } from "../components/ContextMenu/ContextMenu.js";
+import { LinkDialog } from "@/ui/components/Dialogs/LinkDialog.js";
+import { ImageAltDialog } from "@/ui/components/Dialogs/ImageAltDialog.js";
+import { ImageCaptionDialog } from "@/ui/components/Dialogs/ImageCaptionDialog.js";
+import { FontDialog } from "@/ui/components/Dialogs/FontDialog.js";
+import { ParagraphDialog } from "@/ui/components/Dialogs/ParagraphDialog.js";
+import { TablePropertiesDialog } from "@/ui/components/Dialogs/TablePropertiesDialog.js";
+import { FindReplaceDialog } from "@/ui/components/FindReplace/FindReplaceDialog.js";
+import { ContextMenu } from "@/ui/components/ContextMenu/ContextMenu.js";
 import type { createEditorDialogs } from "./useEditorDialogs.js";
 
 type EditorDialogsState = ReturnType<typeof createEditorDialogs>;

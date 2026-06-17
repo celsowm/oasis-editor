@@ -1,4 +1,4 @@
-import type { ToolbarItem } from "../schema/items.js";
+import type { ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
 
 export type ToolbarMoveTarget = number | { before: string } | { after: string };
 

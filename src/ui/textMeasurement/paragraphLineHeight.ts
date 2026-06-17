@@ -2,11 +2,11 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
   EditorParagraphStyle,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import { PX_PER_POINT } from "./constants.js";
 import { resolveRenderedLineHeightPx } from "./fontMetrics.js";
 

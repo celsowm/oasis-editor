@@ -1,25 +1,25 @@
-import type { EditorSelection, EditorState } from "../model.js";
+import type { EditorSelection, EditorState } from "@/core/model.js";
 import {
   getParagraphLength,
   getParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
-} from "../model.js";
+} from "@/core/model.js";
 import {
   clampPosition,
   isSelectionCollapsed,
   normalizeSelection,
-} from "../selection.js";
+} from "@/core/selection.js";
 import {
   collapseToBoundary,
   getFocusParagraph,
   withSelection,
-} from "../selection/rangeEditing.js";
+} from "@/core/selection/rangeEditing.js";
 import {
   moveVertical,
   moveFocusHorizontally,
   moveFocusVertical,
-} from "../selection/navigation.js";
+} from "@/core/selection/navigation.js";
 
 export function getSelectedText(state: EditorState): string {
   const normalized = normalizeSelection(state);

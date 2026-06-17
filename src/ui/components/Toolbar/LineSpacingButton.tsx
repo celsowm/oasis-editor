@@ -1,11 +1,11 @@
 import { For, Show, createMemo, createSignal } from "solid-js";
 import { Portal } from "solid-js/web";
-import { t } from "../../../i18n/index.js";
+import { t } from "@/i18n/index.js";
 import {
   LineSpacingDialog,
   type LineSpacingDialogApplyValues,
   type LineSpacingDialogInitialValues,
-} from "../Dialogs/LineSpacingDialog.js";
+} from "@/ui/components/Dialogs/LineSpacingDialog.js";
 import { Popover } from "./primitives/Popover.js";
 import type { ToolbarActionApi } from "./schema/items.js";
 

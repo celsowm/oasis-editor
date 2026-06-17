@@ -1,8 +1,8 @@
 import { type JSX } from "solid-js";
-import { Menu } from "../primitives/Menu.js";
-import { Select } from "../primitives/Select.js";
-import { t } from "../../../../i18n/index.js";
-import type { ToolbarActionApi } from "../schema/items.js";
+import { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
+import { Select } from "@/ui/components/Toolbar/primitives/Select.js";
+import { t } from "@/i18n/index.js";
+import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
 /** List format + start-at options dropdown — command-driven. */
 export function ListOptionsControl(props: {

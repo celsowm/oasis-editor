@@ -1,4 +1,4 @@
-import type { EditorTextStyle } from "../../core/model.js";
+import type { EditorTextStyle } from "@/core/model.js";
 
 export const PX_TO_PT = 72 / 96;
 export const DEFAULT_FONT_SIZE_PX = 14.6667; // 11pt (Calibri default)

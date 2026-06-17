@@ -1,4 +1,4 @@
-import type { EditorBorderStyle } from "../../core/model.js";
+import type { EditorBorderStyle } from "@/core/model.js";
 import { normalizeDocxColor } from "./xmlUtils.js";
 
 /**

@@ -1,4 +1,4 @@
-import { pxToPt } from "../units.js";
+import { pxToPt } from "@/export/pdf/units.js";
 
 type BorderType = "solid" | "dashed" | "dotted" | "none";
 

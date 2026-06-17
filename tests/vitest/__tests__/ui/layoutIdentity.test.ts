@@ -6,13 +6,13 @@ import {
   createEditorRun,
   createFootnoteReferenceRun,
   resetEditorIds,
-} from "../../../../src/core/editorState.js";
-import { projectDocumentLayout } from "../../../../src/layoutProjection/index.js";
+} from "@/core/editorState.js";
+import { projectDocumentLayout } from "@/layoutProjection/index.js";
 import {
   canReuseLayoutBlock,
   createLayoutIdentityStabilizer,
-} from "../../../../src/ui/layoutIdentity.js";
-import type { EditorLayoutBlock } from "../../../../src/core/model.js";
+} from "@/ui/layoutIdentity.js";
+import type { EditorLayoutBlock } from "@/core/model.js";
 
 beforeEach(() => {
   resetEditorIds();

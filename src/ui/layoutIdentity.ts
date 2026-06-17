@@ -4,7 +4,7 @@ import type {
   EditorLayoutPage,
   EditorLayoutParagraph,
   TableCellBlockPosition,
-} from "../core/model.js";
+} from "@/core/model.js";
 
 /**
  * Returns true when two projected paragraph layouts produce visually identical

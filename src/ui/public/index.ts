@@ -1,7 +1,7 @@
-export { Dialog } from "../components/Dialogs/Dialog.js";
-export type { DialogProps } from "../components/Dialogs/Dialog.js";
-export { Tabs } from "../components/Tabs/Tabs.js";
-export type { TabsItem, TabsProps } from "../components/Tabs/Tabs.js";
+export { Dialog } from "@/ui/components/Dialogs/Dialog.js";
+export type { DialogProps } from "@/ui/components/Dialogs/Dialog.js";
+export { Tabs } from "@/ui/components/Tabs/Tabs.js";
+export type { TabsItem, TabsProps } from "@/ui/components/Tabs/Tabs.js";
 
 export { Button } from "./Button.js";
 export type { ButtonProps } from "./Button.js";
@@ -25,25 +25,25 @@ export {
 } from "./SidePanel.js";
 export type { SidePanelProps, SidePanelSectionProps } from "./SidePanel.js";
 
-export { Popover } from "../components/Toolbar/primitives/Popover.js";
+export { Popover } from "@/ui/components/Toolbar/primitives/Popover.js";
 export type {
   PopoverProps,
   PopoverTriggerApi,
-} from "../components/Toolbar/primitives/Popover.js";
-export { Menu } from "../components/Toolbar/primitives/Menu.js";
-export type { MenuProps } from "../components/Toolbar/primitives/Menu.js";
-export { Select } from "../components/Toolbar/primitives/Select.js";
-export type { ToolbarSelectProps } from "../components/Toolbar/primitives/Select.js";
-export { Separator } from "../components/Toolbar/primitives/Separator.js";
-export type { SeparatorProps } from "../components/Toolbar/primitives/Separator.js";
-export { SplitButton } from "../components/Toolbar/primitives/SplitButton.js";
-export type { SplitButtonProps } from "../components/Toolbar/primitives/SplitButton.js";
-export { ColorPicker } from "../components/Toolbar/primitives/ColorPicker.js";
+} from "@/ui/components/Toolbar/primitives/Popover.js";
+export { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
+export type { MenuProps } from "@/ui/components/Toolbar/primitives/Menu.js";
+export { Select } from "@/ui/components/Toolbar/primitives/Select.js";
+export type { ToolbarSelectProps } from "@/ui/components/Toolbar/primitives/Select.js";
+export { Separator } from "@/ui/components/Toolbar/primitives/Separator.js";
+export type { SeparatorProps } from "@/ui/components/Toolbar/primitives/Separator.js";
+export { SplitButton } from "@/ui/components/Toolbar/primitives/SplitButton.js";
+export type { SplitButtonProps } from "@/ui/components/Toolbar/primitives/SplitButton.js";
+export { ColorPicker } from "@/ui/components/Toolbar/primitives/ColorPicker.js";
 export type {
   ColorPickerKind,
   ColorPickerProps,
-} from "../components/Toolbar/primitives/ColorPicker.js";
-export { GridPicker } from "../components/Toolbar/primitives/GridPicker.js";
-export type { GridPickerProps } from "../components/Toolbar/primitives/GridPicker.js";
-export { Button as ToolbarButton } from "../components/Toolbar/primitives/Button.js";
-export type { ToolbarButtonProps } from "../components/Toolbar/primitives/Button.js";
+} from "@/ui/components/Toolbar/primitives/ColorPicker.js";
+export { GridPicker } from "@/ui/components/Toolbar/primitives/GridPicker.js";
+export type { GridPickerProps } from "@/ui/components/Toolbar/primitives/GridPicker.js";
+export { Button as ToolbarButton } from "@/ui/components/Toolbar/primitives/Button.js";
+export type { ToolbarButtonProps } from "@/ui/components/Toolbar/primitives/Button.js";

@@ -4,11 +4,11 @@ import {
   insertClipboardParagraphsAtSelection,
   insertPlainTextAtSelection,
   serializeEditorSelectionToHtml,
-} from "../../core/editorCommands.js";
-import type { EditorPosition, EditorState } from "../../core/model.js";
-import { parseEditorClipboardHtmlWithDom } from "../clipboard/htmlClipboardParser.js";
-import { findImageFileFromTransfer } from "../../ui/clipboardImage.js";
-import type { EditorTransactionOptions } from "../../ui/editorHistory.js";
+} from "@/core/editorCommands.js";
+import type { EditorPosition, EditorState } from "@/core/model.js";
+import { parseEditorClipboardHtmlWithDom } from "@/app/clipboard/htmlClipboardParser.js";
+import { findImageFileFromTransfer } from "@/ui/clipboardImage.js";
+import type { EditorTransactionOptions } from "@/ui/editorHistory.js";
 
 export interface EditorClipboardDeps {
   state: () => EditorState;

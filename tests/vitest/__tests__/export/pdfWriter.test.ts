@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
-import type { EditorDocument, EditorLayoutLine } from "../../../../src/core/model.js";
+import type { EditorDocument, EditorLayoutLine } from "@/core/model.js";
 import {
   createEditorFootnote,
   createEditorParagraph,
   createEditorStateFromDocument,
   createFootnoteReferenceRun,
-} from "../../../../src/core/editorState.js";
-import { PdfFontRegistry } from "../../../../src/export/pdf/fonts/PdfFontRegistry.js";
-import { resolveMetricCompatibleFamily } from "../../../../src/export/pdf/fonts/officeFontAssets.js";
-import { layoutPdfParagraph } from "../../../../src/export/pdf/layout/layoutParagraph.js";
-import { PdfTextMeasurer } from "../../../../src/export/pdf/layout/PdfTextMeasurer.js";
-import { OasisPdfWriter } from "../../../../src/export/pdf/OasisPdfWriter.js";
-import { exportEditorDocumentToPdfBlob } from "../../../../src/export/pdf/exportEditorDocumentToPdf.js";
-import { buildCanvasTableLayout } from "../../../../src/ui/canvas/CanvasTableLayout.js";
-import { projectDocumentLayout } from "../../../../src/layoutProjection/index.js";
+} from "@/core/editorState.js";
+import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
+import { resolveMetricCompatibleFamily } from "@/export/pdf/fonts/officeFontAssets.js";
+import { layoutPdfParagraph } from "@/export/pdf/layout/layoutParagraph.js";
+import { PdfTextMeasurer } from "@/export/pdf/layout/PdfTextMeasurer.js";
+import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
+import { exportEditorDocumentToPdfBlob } from "@/export/pdf/exportEditorDocumentToPdf.js";
+import { buildCanvasTableLayout } from "@/ui/canvas/CanvasTableLayout.js";
+import { projectDocumentLayout } from "@/layoutProjection/index.js";
 
 function decodePdf(buffer: ArrayBuffer): string {
   return new TextDecoder().decode(buffer);

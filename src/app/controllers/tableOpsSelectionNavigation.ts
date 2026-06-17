@@ -7,7 +7,7 @@ import {
   type EditorTableCellNode,
   type EditorTableNode,
   type EditorTableRowNode,
-} from "../../core/model.js";
+} from "@/core/model.js";
 
 export const getRowVisualWidth = (row: EditorTableRowNode): number =>
   row.cells.reduce((sum, cell) => sum + Math.max(1, cell.colSpan ?? 1), 0);

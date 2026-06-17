@@ -4,16 +4,16 @@ import {
   projectParagraphLayout,
   projectBlocksLayout,
   estimateParagraphBlockHeight,
-} from "../../../../src/layoutProjection/index.js";
+} from "@/layoutProjection/index.js";
 import {
   createEditorParagraph,
   createEditorTable,
   createEditorTableCell,
   createEditorTableRow,
-} from "../../../../src/core/editorState.js";
-import { buildSegmentTable } from "../../../../src/core/tableLayout.js";
-import type { EditorPageSettings } from "../../../../src/core/model.js";
-import type { ITextMeasurer, TextMeasureOptions } from "../../../../src/core/engine.js";
+} from "@/core/editorState.js";
+import { buildSegmentTable } from "@/core/tableLayout.js";
+import type { EditorPageSettings } from "@/core/model.js";
+import type { ITextMeasurer, TextMeasureOptions } from "@/core/engine.js";
 
 const A4: EditorPageSettings = {
   width: 816,

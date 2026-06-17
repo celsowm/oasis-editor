@@ -2,8 +2,8 @@ import {
   takeEditorUndoStep,
   takeEditorRedoStep,
   type EditorHistoryState,
-} from "../../ui/editorHistory.js";
-import type { EditorState } from "../../core/model.js";
+} from "@/ui/editorHistory.js";
+import type { EditorState } from "@/core/model.js";
 import {
   getActiveSectionIndex,
   getActiveZone,
@@ -11,10 +11,10 @@ import {
   getParagraphs,
   getParagraphLength,
   paragraphOffsetToPosition,
-} from "../../core/model.js";
-import { createEditorParagraph } from "../../core/editorState.js";
-import { moveSelectedImageToPosition } from "../../core/editorCommands.js";
-import { cloneSection } from "../../core/cloneState.js";
+} from "@/core/model.js";
+import { createEditorParagraph } from "@/core/editorState.js";
+import { moveSelectedImageToPosition } from "@/core/editorCommands.js";
+import { cloneSection } from "@/core/cloneState.js";
 import type { createEditorImageOperations } from "./useEditorImageOperations.js";
 
 export interface UseEditorHistoryActionsProps {

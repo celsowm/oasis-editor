@@ -1,4 +1,4 @@
-import { type RevisionBox } from "../editorUiTypes.js";
+import { type RevisionBox } from "@/ui/editorUiTypes.js";
 
 export interface RevisionOverlayProps {
   box: RevisionBox;

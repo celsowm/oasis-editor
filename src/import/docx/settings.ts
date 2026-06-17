@@ -10,7 +10,7 @@ import type {
   EditorFootnoteRestart,
   EditorFootnoteSettings,
   EditorEndnoteSettings,
-} from "../../core/model.js";
+} from "@/core/model.js";
 
 export interface DocxSettings {
   adjustLineHeightInTable: boolean;

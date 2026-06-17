@@ -6,12 +6,12 @@ import {
   onMount,
   onCleanup,
 } from "solid-js";
-import { outlineFrom, type OutlineItem } from "../../../core/headings.js";
-import type { EditorDocument, EditorState } from "../../../core/model.js";
-import { t } from "../../../i18n/index.js";
-import { debounce } from "../../../utils/throttle.js";
-import { buildCanvasLayoutSnapshot } from "../../canvas/CanvasLayoutSnapshot.js";
-import { getParagraphEntries } from "../../canvas/CanvasGeometry.js";
+import { outlineFrom, type OutlineItem } from "@/core/headings.js";
+import type { EditorDocument, EditorState } from "@/core/model.js";
+import { t } from "@/i18n/index.js";
+import { debounce } from "@/utils/throttle.js";
+import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
+import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
 
 export interface OutlinePanelProps {
   state: EditorState;

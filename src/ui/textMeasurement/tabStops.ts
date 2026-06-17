@@ -1,8 +1,8 @@
 import type {
   EditorNamedStyle,
   EditorParagraphNode,
-} from "../../core/model.js";
-import { resolveEffectiveParagraphStyle } from "../../core/model.js";
+} from "@/core/model.js";
+import { resolveEffectiveParagraphStyle } from "@/core/model.js";
 import { PX_PER_POINT } from "./constants.js";
 import type { MeasuredChar } from "./types.js";
 

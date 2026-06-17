@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { createOasisEditorClient } from "../../../../src/app/client/OasisEditorClient.js";
-import { createInitialEditorState } from "../../../../src/core/editorState.js";
-import { Editor } from "../../../../src/core/Editor.js";
-import type { OasisPlugin } from "../../../../src/core/plugin.js";
+import { createOasisEditorClient } from "@/app/client/OasisEditorClient.js";
+import { createInitialEditorState } from "@/core/editorState.js";
+import { Editor } from "@/core/Editor.js";
+import type { OasisPlugin } from "@/core/plugin.js";
 
 describe("OasisEditorClient", () => {
   it("exposes commands, state, document and lifecycle events", async () => {

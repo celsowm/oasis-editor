@@ -1,12 +1,12 @@
-import type { OasisPlugin } from "../../core/plugin.js";
-import { defaultMenuItems } from "../components/Menubar/defaultMenuItems.js";
-import { MenuRegistry } from "../components/Menubar/menuRegistry.js";
-import { createDefaultToolbarPreset } from "../components/Toolbar/presets/defaultToolbar.js";
+import type { OasisPlugin } from "@/core/plugin.js";
+import { defaultMenuItems } from "@/ui/components/Menubar/defaultMenuItems.js";
+import { MenuRegistry } from "@/ui/components/Menubar/menuRegistry.js";
+import { createDefaultToolbarPreset } from "@/ui/components/Toolbar/presets/defaultToolbar.js";
 import {
   createToolbarRegistry,
   type ToolbarRegistry,
-} from "../components/Toolbar/registry/ToolbarRegistry.js";
-import type { ToolbarItem } from "../components/Toolbar/schema/items.js";
+} from "@/ui/components/Toolbar/registry/ToolbarRegistry.js";
+import type { ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
 
 export interface EditorRuntimePluginsOptions {
   essentialsPlugin: OasisPlugin;

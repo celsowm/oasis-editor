@@ -7,8 +7,8 @@ import {
   readFontAssetSync,
   resolveMetricCompatibleFamily,
   type FontFaceFiles,
-} from "../../export/pdf/fonts/officeFontAssets.js";
-import { createEditorLogger } from "../../utils/logger.js";
+} from "@/export/pdf/fonts/officeFontAssets.js";
+import { createEditorLogger } from "@/utils/logger.js";
 import { SfntFontProgram } from "./sfnt/SfntFontProgram.js";
 import { getPreciseFontProgram } from "./preciseFontMetrics.js";
 

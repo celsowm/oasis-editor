@@ -1,6 +1,6 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { Dialog } from "./Dialog.js";
-import { t } from "../../../i18n/index.js";
+import { t } from "@/i18n/index.js";
 
 export interface LineSpacingDialogInitialValues {
   lineHeight: string;

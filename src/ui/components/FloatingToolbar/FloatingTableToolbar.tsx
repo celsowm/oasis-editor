@@ -9,11 +9,11 @@ import {
 } from "solid-js";
 import { Portal } from "solid-js/web";
 import "./floatingToolbar.css";
-import type { SelectionBox } from "../../editorUiTypes.js";
-import { Button } from "../Toolbar/primitives/Button.js";
-import { Separator } from "../Toolbar/primitives/Separator.js";
-import type { ToolbarHost } from "../Toolbar/state/createToolbarApi.js";
-import { t } from "../../../i18n/index.js";
+import type { SelectionBox } from "@/ui/editorUiTypes.js";
+import { Button } from "@/ui/components/Toolbar/primitives/Button.js";
+import { Separator } from "@/ui/components/Toolbar/primitives/Separator.js";
+import type { ToolbarHost } from "@/ui/components/Toolbar/state/createToolbarApi.js";
+import { t } from "@/i18n/index.js";
 
 export interface FloatingTableToolbarProps {
   host: () => ToolbarHost;

@@ -3,8 +3,8 @@ import type {
   EditorState,
   EditorTableNode,
   EditorTableStyle,
-} from "../../model.js";
-import { buildTableCellLayout } from "../../tableLayout.js";
+} from "@/core/model.js";
+import { buildTableCellLayout } from "@/core/tableLayout.js";
 import {
   updateStateSections,
   updateTablesInBlocks,

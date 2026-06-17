@@ -8,7 +8,7 @@ import {
   setTableCellWidth,
   setTableStyleValue,
   splitBlockAtSelection,
-} from "../../core/editorCommands.js";
+} from "@/core/editorCommands.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
@@ -17,25 +17,25 @@ import {
   paragraphOffsetToPosition,
   type EditorBorderStyle,
   type EditorState,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   isSelectionCollapsed,
   normalizeSelection,
-} from "../../core/selection.js";
-import { createEssentialsPlugin } from "../../plugins/internal/createEssentialsPlugin.js";
+} from "@/core/selection.js";
+import { createEssentialsPlugin } from "@/plugins/internal/createEssentialsPlugin.js";
 import { togglePreciseFontMode } from "./localFontAccess.js";
 import {
   fontSizePtToPx,
   fontSizePxToPt,
   nextFontSizePt,
   previousFontSizePt,
-} from "../fontSizeUnits.js";
-import type { TextCaseMode } from "../../core/commands/text.js";
-import type { SelectedImageRun } from "../../core/commands/image.js";
-import type { createEditorCommandsController } from "../../app/controllers/EditorCommandsController.js";
-import type { createEditorHistoryActions } from "../../app/controllers/useEditorHistoryActions.js";
-import type { createEditorStyleController } from "../../app/controllers/useEditorStyle.js";
-import type { createEditorTableOperations } from "../../app/controllers/useEditorTableOperations.js";
+} from "@/ui/fontSizeUnits.js";
+import type { TextCaseMode } from "@/core/commands/text.js";
+import type { SelectedImageRun } from "@/core/commands/image.js";
+import type { createEditorCommandsController } from "@/app/controllers/EditorCommandsController.js";
+import type { createEditorHistoryActions } from "@/app/controllers/useEditorHistoryActions.js";
+import type { createEditorStyleController } from "@/app/controllers/useEditorStyle.js";
+import type { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
 
 interface CreateEditorEssentialsPluginOptions {
   state: () => EditorState;

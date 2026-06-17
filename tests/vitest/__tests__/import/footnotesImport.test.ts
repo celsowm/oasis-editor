@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
-import { collectFootnoteReferences } from "../../../../src/core/footnotes.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { collectFootnoteReferences } from "@/core/footnotes.js";
 
 interface BuildOptions {
   /**

@@ -2,11 +2,11 @@ import type {
   EditorDocument,
   EditorLayoutBlock,
   EditorPageSettings,
-} from "../../../core/model.js";
-import { resolveEffectiveParagraphStyle } from "../../../core/model.js";
-import { getParagraphBorderInsets } from "../../../layoutProjection/index.js";
-import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
-import { OasisPdfWriter } from "../OasisPdfWriter.js";
+} from "@/core/model.js";
+import { resolveEffectiveParagraphStyle } from "@/core/model.js";
+import { getParagraphBorderInsets } from "@/layoutProjection/index.js";
+import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
+import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import { drawParagraph, drawParagraphDecorations } from "./drawParagraph.js";
 import { drawTableBlock } from "./drawTable.js";
 import { drawFloatingTextBoxesForParagraph } from "./drawTextBoxShape.js";

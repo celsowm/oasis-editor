@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { createEditorParagraph } from "../../../../src/core/editorState.js";
+import { createEditorParagraph } from "@/core/editorState.js";
 import type {
   EditorLayoutFragment,
   EditorLayoutFragmentChar,
   EditorParagraphNode,
-} from "../../../../src/core/model.js";
-import { composeMeasuredParagraphLines } from "../../../../src/ui/textMeasurement.js";
-import type { FloatingExclusionRect } from "../../../../src/core/engine.js";
+} from "@/core/model.js";
+import { composeMeasuredParagraphLines } from "@/ui/textMeasurement.js";
+import type { FloatingExclusionRect } from "@/core/engine.js";
 
 function createFragments(
   paragraph: EditorParagraphNode,

@@ -4,14 +4,14 @@ import type {
   EditorPageSettings,
   EditorParagraphStyle,
   EditorState,
-} from "../../core/model.js";
-import { resolveEffectiveParagraphStyle } from "../../core/model.js";
-import { findFootnoteReference } from "../../core/footnotes.js";
+} from "@/core/model.js";
+import { resolveEffectiveParagraphStyle } from "@/core/model.js";
+import { findFootnoteReference } from "@/core/footnotes.js";
 import {
   FOOTNOTE_MARKER_GUTTER_PX,
   PX_PER_POINT,
   getParagraphBorderInsets,
-} from "../../layoutProjection/index.js";
+} from "@/layoutProjection/index.js";
 import {
   drawFloatingImagesForParagraph,
   drawParagraph,

@@ -1,4 +1,4 @@
-import type { EditorWrapPolygonPoint } from "../../core/model.js";
+import type { EditorWrapPolygonPoint } from "@/core/model.js";
 
 /**
  * Auto-traces a tight/through wrap contour from an image's alpha channel.

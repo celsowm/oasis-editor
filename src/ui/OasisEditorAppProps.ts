@@ -1,13 +1,13 @@
 import type { JSX } from "solid-js";
-import type { EditorDocument, EditorState } from "../core/model.js";
+import type { EditorDocument, EditorState } from "@/core/model.js";
 import type { ToolbarRegistry } from "./components/Toolbar/registry/ToolbarRegistry.js";
 import type { MenuRegistry } from "./components/Menubar/menuRegistry.js";
-import type { DocumentPersistence } from "../app/controllers/useEditorPersistence.js";
-import type { OasisPlugin } from "../core/plugin.js";
+import type { DocumentPersistence } from "@/app/controllers/useEditorPersistence.js";
+import type { OasisPlugin } from "@/core/plugin.js";
 import type {
   OasisEditorClient,
   OasisEditorClientController,
-} from "../app/client/OasisEditorClient.js";
+} from "@/app/client/OasisEditorClient.js";
 
 export type ToolbarViewMode = "ribbon" | "compact";
 export type ToolbarLayoutMode = "overflow" | "wrap";

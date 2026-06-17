@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_EDITOR_PAGE_SETTINGS } from "../../../../src/core/model.js";
+import { DEFAULT_EDITOR_PAGE_SETTINGS } from "@/core/model.js";
 import {
   resolveCanvasFooterZoneTop,
   resolveCanvasTextRenderMetrics,
-} from "../../../../src/ui/components/CanvasEditorSurface.js";
-import { resolveFragmentPaintBounds } from "../../../../src/ui/canvas/canvasParagraphPainter.js";
+} from "@/ui/components/CanvasEditorSurface.js";
+import { resolveFragmentPaintBounds } from "@/ui/canvas/canvasParagraphPainter.js";
 
 describe("canvas text rendering metrics", () => {
   it("renders superscript smaller and above the normal baseline", () => {

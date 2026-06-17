@@ -1,6 +1,6 @@
-import { BinaryReader } from "../../truetype/BinaryReader.js";
-import { parseCmap, type CmapSubtable } from "../../truetype/CmapParser.js";
-import { SfntTableDirectory } from "../../truetype/SfntTableDirectory.js";
+import { BinaryReader } from "@/text/truetype/BinaryReader.js";
+import { parseCmap, type CmapSubtable } from "@/text/truetype/CmapParser.js";
+import { SfntTableDirectory } from "@/text/truetype/SfntTableDirectory.js";
 import {
   parseHeadUnitsPerEm,
   parseHheaNumberOfHMetrics,
@@ -8,8 +8,8 @@ import {
   parseHmtxAdvances,
   parseMaxpNumGlyphs,
   parseOs2VerticalMetrics,
-} from "../../truetype/tableParsers.js";
-import type { FontMetadata, ParsedFontProgram } from "../core/types.js";
+} from "@/text/truetype/tableParsers.js";
+import type { FontMetadata, ParsedFontProgram } from "@/text/fonts/core/types.js";
 
 function readSignedFixed16_16(reader: BinaryReader, offset: number): number {
   const integer = reader.u16At(offset);

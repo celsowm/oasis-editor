@@ -1,10 +1,10 @@
 import { createSignal } from "solid-js";
-import type { EditorDocument, EditorState } from "../../core/model.js";
+import type { EditorDocument, EditorState } from "@/core/model.js";
 import {
   createEditorStateFromDocument,
   createInitialEditorState,
-} from "../../core/editorState.js";
-import { cloneEditorState } from "../../core/cloneState.js";
+} from "@/core/editorState.js";
+import { cloneEditorState } from "@/core/cloneState.js";
 
 export function createEditorAppState(options: {
   initialDocument?: EditorDocument;

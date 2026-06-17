@@ -3,12 +3,12 @@ import {
   insertPageBreakAtSelection,
   insertTextAtSelection,
   splitBlockAtSelection,
-} from "../../core/editorCommands.js";
+} from "@/core/editorCommands.js";
 import {
   getParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import type { EditorKeyboardDeps } from "./useEditorKeyboard.js";
 
 export interface EditorCommandExecutor {

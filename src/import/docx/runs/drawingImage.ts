@@ -4,9 +4,9 @@ import type {
   EditorImageRunData,
   EditorImageFloatingLayout,
   EditorImageFloatingPosition,
-} from "../../../core/model.js";
-import { getAttributeValue, findElementDeep } from "../xmlHelpers.js";
-import { type AssetRegistry } from "../assetRegistry.js";
+} from "@/core/model.js";
+import { getAttributeValue, findElementDeep } from "@/import/docx/xmlHelpers.js";
+import { type AssetRegistry } from "@/import/docx/assetRegistry.js";
 import {
   EMU_PER_PX,
   OOXML_PERCENT_DENOMINATOR,

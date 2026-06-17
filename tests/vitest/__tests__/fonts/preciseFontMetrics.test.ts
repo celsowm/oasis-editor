@@ -1,17 +1,17 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getFontMetricsProvider } from "../../../../src/text/fonts/FontMetricsProvider.js";
+import { getFontMetricsProvider } from "@/text/fonts/FontMetricsProvider.js";
 import {
   clearPreciseFonts,
   getPreciseFontProgram,
   hasPreciseFont,
   registerPreciseFont,
-} from "../../../../src/text/fonts/preciseFontMetrics.js";
+} from "@/text/fonts/preciseFontMetrics.js";
 import {
   isPreciseFontModeEnabled,
   setPreciseFontModeEnabled,
-} from "../../../../src/text/fonts/preciseFontMode.js";
-import { SfntFontProgram } from "../../../../src/text/fonts/sfnt/SfntFontProgram.js";
-import { readFontAssetSync } from "../../../../src/export/pdf/fonts/officeFontAssets.js";
+} from "@/text/fonts/preciseFontMode.js";
+import { SfntFontProgram } from "@/text/fonts/sfnt/SfntFontProgram.js";
+import { readFontAssetSync } from "@/export/pdf/fonts/officeFontAssets.js";
 
 const CODEPOINT = "W".codePointAt(0)!;
 const SIZE = 100;

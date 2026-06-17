@@ -1,4 +1,4 @@
-import type { EditorBorderStyle, EditorParagraphStyle } from "../core/model.js";
+import type { EditorBorderStyle, EditorParagraphStyle } from "@/core/model.js";
 import { PARAGRAPH_BORDER_PADDING_PX, PX_PER_POINT } from "./constants.js";
 
 export interface ParagraphBorderInsets {

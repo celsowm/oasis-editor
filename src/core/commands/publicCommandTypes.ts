@@ -1,5 +1,5 @@
 import type { CommandRef } from "./CommandRef.js";
-import type { EditorPageMargins } from "../model.js";
+import type { EditorPageMargins } from "@/core/model.js";
 import type { TextCaseMode } from "./text.js";
 
 export interface InsertTablePayload {

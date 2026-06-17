@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { type Element as XmlElement } from "@xmldom/xmldom";
-import type { EditorBlockNode } from "../../core/model.js";
+import type { EditorBlockNode } from "@/core/model.js";
 import { WORD_NS } from "./xmlHelpers.js";
 import { type AssetRegistry } from "./assetRegistry.js";
 import { type DocxImportTheme } from "./theme.js";

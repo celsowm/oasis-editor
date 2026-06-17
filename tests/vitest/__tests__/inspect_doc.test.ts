@@ -1,8 +1,8 @@
 import { describe, it } from "vitest";
 import fs from 'fs';
-import { importDocxToEditorDocument } from "../../../src/import/docx/importDocxToEditorDocument.js";
-import { projectDocumentLayout } from "../../../src/layoutProjection/documentLayout.js";
-import { getParagraphText } from "../../../src/core/model.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { projectDocumentLayout } from "@/layoutProjection/documentLayout.js";
+import { getParagraphText } from "@/core/model.js";
 
 describe.skip("inspect doc pagination", () => {
   it("paginates and logs content", async () => {

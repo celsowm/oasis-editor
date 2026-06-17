@@ -1,4 +1,4 @@
-import type { ToolbarActionApi } from "../schema/items.js";
+import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 import type { RibbonGroupModel } from "./ribbonModel.js";
 import { RibbonRow } from "./RibbonRow.js";
 

@@ -1,6 +1,6 @@
 import { Show } from "solid-js";
 import type { JSX } from "solid-js";
-import { t } from "../i18n/index.js";
+import { t } from "@/i18n/index.js";
 import { OasisBrandMark } from "./components/OasisBrandMark.js";
 
 export interface OasisEditorLoadingProps {

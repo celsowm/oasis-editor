@@ -8,17 +8,17 @@ import {
   createEditorTable,
   createEditorTableCell,
   createEditorTableRow,
-} from "../../../../src/core/editorState.js";
-import { exportEditorDocumentToDocx } from "../../../../src/export/docx/exportEditorDocumentToDocx.js";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
-import { setSelectedImageWrapPreset } from "../../../../src/core/commands/image.js";
-import { createImageCaptionParagraph } from "../../../../src/core/document/imageCaptions.js";
-import type { WrapPreset } from "../../../../src/core/commands/floatingLayout.js";
+} from "@/core/editorState.js";
+import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { setSelectedImageWrapPreset } from "@/core/commands/image.js";
+import { createImageCaptionParagraph } from "@/core/document/imageCaptions.js";
+import type { WrapPreset } from "@/core/commands/floatingLayout.js";
 import {
   getDocumentParagraphs,
   paragraphOffsetToPosition,
-} from "../../../../src/core/model.js";
-import type { EditorDocument } from "../../../../src/core/model.js";
+} from "@/core/model.js";
+import type { EditorDocument } from "@/core/model.js";
 
 async function readDocumentXml(buffer: ArrayBuffer): Promise<string> {
   const zip = await JSZip.loadAsync(buffer);

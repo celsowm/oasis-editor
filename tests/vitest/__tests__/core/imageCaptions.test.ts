@@ -5,18 +5,18 @@ import {
   createEditorParagraphFromRuns,
   createEditorStateFromDocument,
   resetEditorIds,
-} from "../../../../src/core/editorState.js";
+} from "@/core/editorState.js";
 import {
   getSelectedImageCaption,
   setSelectedImageCaption,
-} from "../../../../src/core/commands/image.js";
+} from "@/core/commands/image.js";
 import {
   getParagraphs,
   paragraphOffsetToPosition,
   type EditorImageRunData,
   type EditorParagraphNode,
   type EditorState,
-} from "../../../../src/core/model.js";
+} from "@/core/model.js";
 
 const image: EditorImageRunData = {
   src: "data:image/png;base64,AAAA",

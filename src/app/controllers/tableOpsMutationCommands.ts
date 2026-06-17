@@ -1,5 +1,5 @@
-import { cloneBlock } from "../../core/cloneState.js";
-import { createEditorDocument } from "../../core/editorState.js";
+import { cloneBlock } from "@/core/cloneState.js";
+import { createEditorDocument } from "@/core/editorState.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
@@ -10,7 +10,7 @@ import {
   type EditorParagraphNode,
   type EditorState,
   type EditorTableNode,
-} from "../../core/model.js";
+} from "@/core/model.js";
 
 export const updateBlocksInCurrentSection = (
   current: EditorState,

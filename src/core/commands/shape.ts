@@ -1,22 +1,22 @@
-import type { EditorState, EditorTextBoxData } from "../model.js";
+import type { EditorState, EditorTextBoxData } from "@/core/model.js";
 import { wrapPresetToFloating } from "./floatingLayout.js";
-import { getParagraphs, paragraphOffsetToPosition } from "../model.js";
+import { getParagraphs, paragraphOffsetToPosition } from "@/core/model.js";
 import {
   createEditorParagraph,
   createEditorStyledRun,
-} from "../editorState.js";
-import { isSelectionCollapsed } from "../selection.js";
+} from "@/core/editorState.js";
+import { isSelectionCollapsed } from "@/core/selection.js";
 import {
   getStyleAtOffset,
   insertRunsAtOffset,
-} from "../document/paragraphRuns.js";
-import { cloneParagraph } from "../document/clone.js";
-import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+} from "@/core/document/paragraphRuns.js";
+import { cloneParagraph } from "@/core/document/clone.js";
+import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import {
   deleteSelectionRange,
   getFocusParagraph,
   withSelection,
-} from "../selection/rangeEditing.js";
+} from "@/core/selection/rangeEditing.js";
 
 const SHAPE_DEFAULT_WIDTH = 150;
 const SHAPE_DEFAULT_HEIGHT = 100;

@@ -1,5 +1,5 @@
 import { For } from "solid-js";
-import { t } from "../../../../i18n/index.js";
+import { t } from "@/i18n/index.js";
 import { WORD_CHARACTER_SCALES } from "./FontDialogTypes.js";
 import type { FontDialogController } from "./FontDialogController.js";
 import type { AdvancedTabValues } from "./FontDialogTypes.js";
@@ -7,7 +7,7 @@ import type {
   EditorLigatures,
   EditorNumberSpacing,
   EditorNumberForm,
-} from "../../../../core/model.js";
+} from "@/core/model.js";
 import { FontPreview } from "./FontPreview.js";
 
 export interface AdvancedFontTabProps {

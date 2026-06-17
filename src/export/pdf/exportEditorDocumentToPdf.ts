@@ -1,16 +1,16 @@
-import type { EditorDocument } from "../../core/model.js";
-import { renumberImageCaptionsInDocument } from "../../core/document/imageCaptions.js";
+import type { EditorDocument } from "@/core/model.js";
+import { renumberImageCaptionsInDocument } from "@/core/document/imageCaptions.js";
 import {
   resolveEffectiveTextStyleForParagraph,
   getPageBodyTop,
   getPageContentWidth,
   getPageHeaderZoneTop,
-} from "../../core/model.js";
-import { findFootnoteReference } from "../../core/footnotes.js";
+} from "@/core/model.js";
+import { findFootnoteReference } from "@/core/footnotes.js";
 import {
   FOOTNOTE_MARKER_GUTTER_PX,
   projectDocumentLayout,
-} from "../../layoutProjection/index.js";
+} from "@/layoutProjection/index.js";
 import { drawBlockList } from "./draw/drawBlockList.js";
 import { drawPageBackground } from "./draw/drawPageBackground.js";
 import { getListOrdinals } from "./draw/lists.js";

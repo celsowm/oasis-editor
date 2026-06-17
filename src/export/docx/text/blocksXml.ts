@@ -4,13 +4,13 @@ import type {
   EditorParagraphNode,
   EditorParagraphStyle,
   EditorTextRun,
-} from "../../../core/model.js";
-import type { DocContext } from "../docxTypes.js";
-import type { BookmarkBoundaryEvent } from "../bookmarksXml.js";
-import { serializeBookmarkEvent } from "../bookmarksXml.js";
-import type { CommentBoundaryEvent } from "../commentsXml.js";
-import { serializeCommentRangeEvent } from "../commentsXml.js";
-import { serializeTableXml } from "../tableXml.js";
+} from "@/core/model.js";
+import type { DocContext } from "@/export/docx/docxTypes.js";
+import type { BookmarkBoundaryEvent } from "@/export/docx/bookmarksXml.js";
+import { serializeBookmarkEvent } from "@/export/docx/bookmarksXml.js";
+import type { CommentBoundaryEvent } from "@/export/docx/commentsXml.js";
+import { serializeCommentRangeEvent } from "@/export/docx/commentsXml.js";
+import { serializeTableXml } from "@/export/docx/tableXml.js";
 import { serializeParagraphProperties } from "./paragraphPropertiesXml.js";
 import { serializeRunWithRelationships } from "./runXml.js";
 import { serializeDropCapFrameParagraph } from "./dropCapXml.js";

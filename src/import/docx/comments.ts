@@ -17,8 +17,8 @@ import type {
   EditorCommentAnchor,
   EditorSection,
   EditorTextRun,
-} from "../../core/model.js";
-import { createEditorRun } from "../../core/editorState.js";
+} from "@/core/model.js";
+import { createEditorRun } from "@/core/editorState.js";
 import type { ImportedCommentMarker } from "./runs/types.js";
 
 type RunWithComment = EditorTextRun & {

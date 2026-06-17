@@ -5,33 +5,33 @@ import type {
   EditorState,
   EditorTextStyle,
   EditorImageRunData,
-} from "../model.js";
+} from "@/core/model.js";
 import {
   getParagraphLength,
   getParagraphs,
   paragraphOffsetToPosition,
-} from "../model.js";
-import { createEditorParagraphFromRuns } from "../editorState.js";
-import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
-import { paragraphStyleToCssText } from "../html/styleCss.js";
-import { serializeParagraphRunsToHtml } from "../html/htmlTextSerializer.js";
-import { cloneStyle } from "../textStyle/textStyleMutations.js";
+} from "@/core/model.js";
+import { createEditorParagraphFromRuns } from "@/core/editorState.js";
+import { isSelectionCollapsed, normalizeSelection } from "@/core/selection.js";
+import { paragraphStyleToCssText } from "@/core/html/styleCss.js";
+import { serializeParagraphRunsToHtml } from "@/core/html/htmlTextSerializer.js";
+import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
 import {
   sliceRuns,
   buildParagraphFromRuns,
   getStyleAtOffset,
-} from "../document/paragraphRuns.js";
+} from "@/core/document/paragraphRuns.js";
 import {
   cloneRun,
   cloneParagraphs,
   cloneParagraph,
-} from "../document/clone.js";
-import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+} from "@/core/document/clone.js";
+import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import {
   deleteSelectionRange,
   getFocusParagraph,
   withSelection,
-} from "../selection/rangeEditing.js";
+} from "@/core/selection/rangeEditing.js";
 
 export interface EditorClipboardParagraphSpec {
   runs: Array<{

@@ -1,6 +1,6 @@
 import { Dialog } from "./Dialog.js";
-import { Tabs } from "../Tabs/Tabs.js";
-import { t } from "../../../i18n/index.js";
+import { Tabs } from "@/ui/components/Tabs/Tabs.js";
+import { t } from "@/i18n/index.js";
 import { useFontDialogController } from "./font-dialog/useFontDialogController.js";
 import { FontTab } from "./font-dialog/FontTab.js";
 import { AdvancedFontTab } from "./font-dialog/AdvancedFontTab.js";

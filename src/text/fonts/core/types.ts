@@ -1,7 +1,7 @@
 import type {
   Os2VerticalMetrics,
   VerticalMetrics,
-} from "../../truetype/tableParsers.js";
+} from "@/text/truetype/tableParsers.js";
 
 export type FontFormat = "ttf" | "woff2";
 

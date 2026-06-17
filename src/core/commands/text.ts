@@ -4,39 +4,39 @@ import type {
   EditorState,
   EditorTextRun,
   EditorTextStyle,
-} from "../model.js";
+} from "@/core/model.js";
 import {
   getParagraphLength,
   getParagraphs,
   paragraphOffsetToPosition,
   positionToParagraphOffset,
-} from "../model.js";
-import { createEditorStyledRun } from "../editorState.js";
-import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
+} from "@/core/model.js";
+import { createEditorStyledRun } from "@/core/editorState.js";
+import { isSelectionCollapsed, normalizeSelection } from "@/core/selection.js";
 import type {
   ToggleableTextStyleKey,
   ValueTextStyleKey,
-} from "../textStyle/textStyleKeys.js";
+} from "@/core/textStyle/textStyleKeys.js";
 import {
   setBooleanStyle,
   setValueStyle,
-} from "../textStyle/textStyleMutations.js";
+} from "@/core/textStyle/textStyleMutations.js";
 import {
   getStyleAtOffset,
   insertRunsAtOffset,
   sliceRuns,
   buildParagraphFromRuns,
   createParagraphFromRuns,
-} from "../document/paragraphRuns.js";
-import { cloneRun, cloneParagraph } from "../document/clone.js";
-import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+} from "@/core/document/paragraphRuns.js";
+import { cloneRun, cloneParagraph } from "@/core/document/clone.js";
+import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import {
   deleteSelectionRange,
   getFocusParagraph,
   mapRunsInRange,
   preserveSelectionByParagraphOffsets,
   withSelection,
-} from "../selection/rangeEditing.js";
+} from "@/core/selection/rangeEditing.js";
 
 interface SelectionFragment {
   paragraphTemplate: EditorParagraphNode;

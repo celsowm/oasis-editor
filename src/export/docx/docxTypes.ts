@@ -5,7 +5,7 @@ import type {
   EditorImageFloatingLayout,
   EditorParagraphListStyle,
   EditorWrapPolygonPoint,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import type { BookmarkEventsByParagraph } from "./bookmarksXml.js";
 import type { CommentEventsByParagraph } from "./commentsXml.js";
 

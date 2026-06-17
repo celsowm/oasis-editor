@@ -3,15 +3,15 @@ import type {
   EditorParagraphStyle,
   EditorTabStop,
   EditorNamedStyle,
-} from "../../../core/model.js";
+} from "@/core/model.js";
 import {
   escapeXml,
   normalizeDocxColor,
   pointsToTwips,
   pxToTwips,
   toTwips,
-} from "../xmlUtils.js";
-import { serializeParagraphBorders } from "../borders.js";
+} from "@/export/docx/xmlUtils.js";
+import { serializeParagraphBorders } from "@/export/docx/borders.js";
 import { materializeParagraphStyle } from "./styleMaterialization.js";
 
 function serializeParagraphTabs(

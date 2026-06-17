@@ -7,18 +7,18 @@ import {
   type OasisEditorEditorOverlayProps,
   type OasisEditorEditorRefProps,
   type OasisEditorEditorSurfaceHandlers,
-} from "../OasisEditorEditor.js";
-import type { ShellProps } from "../shells/DocumentShell.js";
-import type { ToolbarHost } from "../components/Toolbar/state/createToolbarApi.js";
-import type { ToolbarRegistry } from "../components/Toolbar/registry/ToolbarRegistry.js";
-import type { MenuRegistry } from "../components/Menubar/menuRegistry.js";
-import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
+} from "@/ui/OasisEditorEditor.js";
+import type { ShellProps } from "@/ui/shells/DocumentShell.js";
+import type { ToolbarHost } from "@/ui/components/Toolbar/state/createToolbarApi.js";
+import type { ToolbarRegistry } from "@/ui/components/Toolbar/registry/ToolbarRegistry.js";
+import type { MenuRegistry } from "@/ui/components/Menubar/menuRegistry.js";
+import type { EditorLayoutParagraph, EditorState } from "@/core/model.js";
 import type {
   ToolbarLayoutMode,
   ToolbarViewMode,
-} from "../OasisEditorAppProps.js";
-import type { OasisEditor } from "../../core/plugin.js";
-import { PluginUiHost } from "../components/PluginUi/PluginUiHost.js";
+} from "@/ui/OasisEditorAppProps.js";
+import type { OasisEditor } from "@/core/plugin.js";
+import { PluginUiHost } from "@/ui/components/PluginUi/PluginUiHost.js";
 
 export interface EditorWorkspaceProps {
   useComposedShell: () => boolean;

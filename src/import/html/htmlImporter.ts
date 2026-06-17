@@ -1,9 +1,9 @@
-import type { EditorDocument } from "../../core/model.js";
+import type { EditorDocument } from "@/core/model.js";
 import {
   fileExtension,
   type DocumentFormatImporter,
   type ImportProgressReporter,
-} from "../DocumentFormatImporter.js";
+} from "@/import/DocumentFormatImporter.js";
 import { importHtmlToEditorDocument } from "./importHtmlToEditorDocument.js";
 
 /**

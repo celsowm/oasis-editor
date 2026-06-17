@@ -2,7 +2,7 @@ import { describe, it } from "vitest";
 import {
   detectWordLayoutParitySupport,
   verifyWordLayoutParity,
-} from "../../../../src/testing/wordLayoutParity.js";
+} from "@/testing/wordLayoutParity.js";
 import { createA4CalibriLoremSinglePageDocument } from "./fixtures/loremFixtures.js";
 
 const support = detectWordLayoutParitySupport();

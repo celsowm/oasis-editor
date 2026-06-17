@@ -1,4 +1,4 @@
-import type { EditorImageRunData } from "../model.js";
+import type { EditorImageRunData } from "@/core/model.js";
 
 export function parseInlineImage(
   element: Element,

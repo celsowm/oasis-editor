@@ -4,7 +4,7 @@
  * browsers receive the original font for FontFace, while layout/PDF receive cached sfnt
  * bytes reconstructed from the same source.
  */
-import { defaultFontDecoderRegistry } from "../../../text/fonts/decoders/FontDecoderRegistry.js";
+import { defaultFontDecoderRegistry } from "@/text/fonts/decoders/FontDecoderRegistry.js";
 import ArimoRegular from "./assets/Arimo-Regular.woff2?base64";
 import ArimoBold from "./assets/Arimo-Bold.woff2?base64";
 import ArimoItalic from "./assets/Arimo-Italic.woff2?base64";

@@ -1,5 +1,5 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
-import { t } from "../../../../i18n/index.js";
+import { t } from "@/i18n/index.js";
 import {
   parseNonNegativeNumber,
   parsePositiveNumber,
@@ -9,7 +9,7 @@ import {
   createAdvancedTabValuesFromInitial,
   buildFontDialogPreviewStyle,
   buildFontDialogApplyValues,
-} from "../FontDialogModel.js";
+} from "@/ui/components/Dialogs/FontDialogModel.js";
 import { WORD_FONT_SIZES } from "./FontDialogTypes.js";
 import type {
   FontDialogProps,

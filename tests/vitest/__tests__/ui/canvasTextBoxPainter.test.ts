@@ -4,12 +4,12 @@ import type {
   EditorLayoutLine,
   EditorPageSettings,
   EditorTextBoxData,
-} from "../../../../src/core/model.js";
+} from "@/core/model.js";
 import {
   collectParagraphFloatingExclusions,
   getTextBoxFloatingGeometry,
   resolveFloatingObjectRect,
-} from "../../../../src/layoutProjection/floatingObjects.js";
+} from "@/layoutProjection/floatingObjects.js";
 
 describe("canvas text box painter", () => {
   it("resolves caixa_texto.docx anchored text box offsets from EMU to canvas px", () => {

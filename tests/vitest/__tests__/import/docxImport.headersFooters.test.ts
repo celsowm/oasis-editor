@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
-import { projectDocumentLayout } from "../../../../src/layoutProjection/index.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { projectDocumentLayout } from "@/layoutProjection/index.js";
 
 async function buildDocxWithHeaderImage(): Promise<ArrayBuffer> {
   const zip = new JSZip();

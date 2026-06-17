@@ -5,7 +5,7 @@ import type {
   EditorLayoutLine,
   EditorPageSettings,
   EditorTextBoxData,
-} from "../core/model.js";
+} from "@/core/model.js";
 
 const EMU_PER_PX = 9525;
 

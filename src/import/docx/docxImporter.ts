@@ -1,10 +1,10 @@
-import type { EditorDocument } from "../../core/model.js";
+import type { EditorDocument } from "@/core/model.js";
 import {
   fileExtension,
   type DocumentFormatImporter,
   type ImportProgressReporter,
   type ImportStage,
-} from "../DocumentFormatImporter.js";
+} from "@/import/DocumentFormatImporter.js";
 import { importDocxInWorker } from "./importDocxInWorker.js";
 import type { DocxImportStage } from "./importDocxToEditorDocument.js";
 

@@ -1,8 +1,8 @@
 import { Show, type Accessor } from "solid-js";
-import { Menubar } from "../components/Menubar/Menubar.js";
-import { TitleBar } from "../components/TitleBar/TitleBar.js";
-import { OutlinePanel } from "../components/Outline/OutlinePanel.js";
-import { Toolbar } from "../components/Toolbar/Toolbar.js";
+import { Menubar } from "@/ui/components/Menubar/Menubar.js";
+import { TitleBar } from "@/ui/components/TitleBar/TitleBar.js";
+import { OutlinePanel } from "@/ui/components/Outline/OutlinePanel.js";
+import { Toolbar } from "@/ui/components/Toolbar/Toolbar.js";
 import {
   OasisEditorEditor,
   type OasisEditorEditorFileHandlers,
@@ -11,19 +11,19 @@ import {
   type OasisEditorEditorOverlayProps,
   type OasisEditorEditorRefProps,
   type OasisEditorEditorSurfaceHandlers,
-} from "../OasisEditorEditor.js";
-import type { ToolbarHost } from "../components/Toolbar/state/createToolbarApi.js";
-import type { ToolbarRegistry } from "../components/Toolbar/registry/ToolbarRegistry.js";
-import type { MenuRegistry } from "../components/Menubar/menuRegistry.js";
-import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
+} from "@/ui/OasisEditorEditor.js";
+import type { ToolbarHost } from "@/ui/components/Toolbar/state/createToolbarApi.js";
+import type { ToolbarRegistry } from "@/ui/components/Toolbar/registry/ToolbarRegistry.js";
+import type { MenuRegistry } from "@/ui/components/Menubar/menuRegistry.js";
+import type { EditorLayoutParagraph, EditorState } from "@/core/model.js";
 import type {
   ToolbarLayoutMode,
   ToolbarViewMode,
-} from "../OasisEditorAppProps.js";
-import { buildCanvasLayoutSnapshot } from "../canvas/CanvasLayoutSnapshot.js";
-import { getParagraphEntries } from "../canvas/CanvasGeometry.js";
-import type { OasisEditor } from "../../core/plugin.js";
-import { PluginUiHost } from "../components/PluginUi/PluginUiHost.js";
+} from "@/ui/OasisEditorAppProps.js";
+import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
+import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
+import type { OasisEditor } from "@/core/plugin.js";
+import { PluginUiHost } from "@/ui/components/PluginUi/PluginUiHost.js";
 
 export interface ShellProps {
   state: EditorState;

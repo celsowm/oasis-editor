@@ -1,4 +1,4 @@
-import { escapeXml } from "../xmlUtils.js";
+import { escapeXml } from "@/export/docx/xmlUtils.js";
 
 function needsPreserveSpace(text: string): boolean {
   return /^\s|\s$/.test(text) || text.includes("  ");

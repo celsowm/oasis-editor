@@ -12,13 +12,13 @@ import type {
   EditorTableRowStyle,
   EditorTableStyle,
   EditorTextStyle,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   createEditorParagraphFromRuns,
   createEditorTable,
   createEditorTableCell,
   createEditorTableRow,
-} from "../../core/editorState.js";
+} from "@/core/editorState.js";
 import {
   WORD_NS,
   getChildrenByTagNameNS,

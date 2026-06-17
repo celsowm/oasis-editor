@@ -1,5 +1,5 @@
-import { getParagraphs, type EditorState } from "../../core/model.js";
-import type { CommentHighlightBox } from "../editorUiTypes.js";
+import { getParagraphs, type EditorState } from "@/core/model.js";
+import type { CommentHighlightBox } from "@/ui/editorUiTypes.js";
 import type { CanvasLayoutSnapshot } from "./CanvasLayoutSnapshot.js";
 
 /**

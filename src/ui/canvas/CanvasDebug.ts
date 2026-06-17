@@ -6,7 +6,7 @@ import type {
   CanvasSnapshotParagraph,
   CanvasSnapshotSlot,
 } from "./CanvasLayoutSnapshot.js";
-import type { EditorEditingZone, EditorState } from "../../core/model.js";
+import type { EditorEditingZone, EditorState } from "@/core/model.js";
 
 export interface CanvasDebugMissEvent {
   timestamp: number;

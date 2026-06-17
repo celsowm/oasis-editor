@@ -3,18 +3,18 @@ import {
   createEditorDocument,
   createEditorParagraph,
   createEditorStateFromDocument,
-} from "../../../../src/core/editorState.js";
-import { collectFootnoteReferences } from "../../../../src/core/footnotes.js";
+} from "@/core/editorState.js";
+import { collectFootnoteReferences } from "@/core/footnotes.js";
 import {
   paragraphOffsetToPosition,
   type EditorState,
-} from "../../../../src/core/model.js";
-import { createEditorCommandsController } from "../../../../src/app/controllers/EditorCommandsController.js";
+} from "@/core/model.js";
+import { createEditorCommandsController } from "@/app/controllers/EditorCommandsController.js";
 import {
   EditorCommandRegistry,
   defaultEditorKeyBindings,
-} from "../../../../src/app/controllers/EditorCommandRegistry.js";
-import { defaultMenuItems } from "../../../../src/ui/components/Menubar/defaultMenuItems.js";
+} from "@/app/controllers/EditorCommandRegistry.js";
+import { defaultMenuItems } from "@/ui/components/Menubar/defaultMenuItems.js";
 
 function createControllerHarness(initialState: EditorState) {
   let state = initialState;

@@ -1,5 +1,5 @@
-import type { EditorTextStyle } from "../../core/model.js";
-import { getFontMetricsProvider } from "../../text/fonts/FontMetricsProvider.js";
+import type { EditorTextStyle } from "@/core/model.js";
+import { getFontMetricsProvider } from "@/text/fonts/FontMetricsProvider.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
 
 const DEFAULT_WORD_SINGLE_LINE_RATIO = 1.223;

@@ -1,10 +1,10 @@
 import { Show } from "solid-js";
-import { DropCaret } from "../components/DropCaret.js";
-import type { EditorState } from "../../core/model.js";
-import type { createEditorImageOperations } from "../../app/controllers/useEditorImageOperations.js";
-import type { createEditorTableResize } from "../../app/controllers/useEditorTableResize.js";
-import type { createEditorTableDrag } from "../../app/controllers/useEditorTableDrag.js";
-import type { createEditorTextDrag } from "../../app/controllers/useEditorTextDrag.js";
+import { DropCaret } from "@/ui/components/DropCaret.js";
+import type { EditorState } from "@/core/model.js";
+import type { createEditorImageOperations } from "@/app/controllers/useEditorImageOperations.js";
+import type { createEditorTableResize } from "@/app/controllers/useEditorTableResize.js";
+import type { createEditorTableDrag } from "@/app/controllers/useEditorTableDrag.js";
+import type { createEditorTextDrag } from "@/app/controllers/useEditorTextDrag.js";
 
 export interface EditorDragLayersProps {
   state: EditorState;

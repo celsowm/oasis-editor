@@ -1,6 +1,6 @@
 import { createEffect, createSignal } from "solid-js";
 import { Dialog } from "./Dialog.js";
-import { t } from "../../../i18n/index.js";
+import { t } from "@/i18n/index.js";
 
 interface ImageCaptionDialogProps {
   isOpen: boolean;

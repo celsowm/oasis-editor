@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { traceAlphaMaskContour } from "../../../../src/ui/canvas/imageContour.js";
+import { traceAlphaMaskContour } from "@/ui/canvas/imageContour.js";
 
 function makeMask(
   width: number,

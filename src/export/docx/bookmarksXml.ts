@@ -4,7 +4,7 @@
  * events that the paragraph serializer emits as `w:bookmarkStart` /
  * `w:bookmarkEnd`.
  */
-import type { EditorDocument } from "../../core/model.js";
+import type { EditorDocument } from "@/core/model.js";
 import { escapeXml } from "./xmlUtils.js";
 
 export interface BookmarkBoundaryEvent {

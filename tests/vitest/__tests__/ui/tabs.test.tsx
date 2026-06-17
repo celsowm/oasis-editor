@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createSignal } from "solid-js";
 import { render } from "solid-js/web";
-import { Tabs } from "../../../../src/ui/components/Tabs/Tabs.js";
+import { Tabs } from "@/ui/components/Tabs/Tabs.js";
 
 afterEach(() => {
   document.body.innerHTML = "";

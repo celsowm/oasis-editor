@@ -1,4 +1,4 @@
-import type { CommandState, OasisEditor } from "../plugin.js";
+import type { CommandState, OasisEditor } from "@/core/plugin.js";
 import type { CommandRef } from "./CommandRef.js";
 import { resolveCommandRef } from "./CommandRef.js";
 

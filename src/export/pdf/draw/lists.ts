@@ -3,15 +3,15 @@ import type {
   EditorLayoutLine,
   EditorParagraphListStyle,
   EditorParagraphNode,
-} from "../../../core/model.js";
+} from "@/core/model.js";
 import {
   getDocumentParagraphs,
   resolveEffectiveTextStyleForParagraph,
-} from "../../../core/model.js";
-import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
-import { OasisPdfWriter } from "../OasisPdfWriter.js";
-import { pxToPt, textStyleToFontSizePt } from "../units.js";
-import { getListLabelInset } from "../../../ui/textMeasurement/indentation.js";
+} from "@/core/model.js";
+import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
+import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
+import { pxToPt, textStyleToFontSizePt } from "@/export/pdf/units.js";
+import { getListLabelInset } from "@/ui/textMeasurement/indentation.js";
 
 const BULLET_GLYPHS = ["•", "○", "▪", "•", "○", "▪"];
 const ORDERED_DEFAULT_FORMATS: NonNullable<

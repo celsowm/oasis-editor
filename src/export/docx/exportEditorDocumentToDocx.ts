@@ -7,12 +7,12 @@ import type {
   EditorPageSettings,
   EditorParagraphListStyle,
   EditorParagraphNode,
-} from "../../core/model.js";
-import { getDocumentSections, resolveImageSrc } from "../../core/model.js";
+} from "@/core/model.js";
+import { getDocumentSections, resolveImageSrc } from "@/core/model.js";
 import {
   imageContentTypeDefaults,
   imageExtensionFromMime,
-} from "../../utils/imageFormats.js";
+} from "@/utils/imageFormats.js";
 import type {
   DocContext,
   ExportBuildState,
@@ -50,7 +50,7 @@ import {
   WORD_NS,
 } from "./xmlUtils.js";
 import { buildStylesXml } from "./stylesXml.js";
-import { renumberImageCaptionsInDocument } from "../../core/document/imageCaptions.js";
+import { renumberImageCaptionsInDocument } from "@/core/document/imageCaptions.js";
 
 const DOCUMENT_XMLNS =
   `xmlns:w="${WORD_NS}" xmlns:w14="${WORD14_NS}" ` +

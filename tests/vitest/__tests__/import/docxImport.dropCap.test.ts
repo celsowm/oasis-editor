@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import JSZip from "jszip";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
-import { exportEditorDocumentToDocx } from "../../../../src/export/docx/exportEditorDocumentToDocx.js";
-import { parseDropCapFrame } from "../../../../src/import/docx/dropCap.js";
-import { resolveDropCapExclusion } from "../../../../src/layoutProjection/dropCapExclusion.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { parseDropCapFrame } from "@/import/docx/dropCap.js";
+import { resolveDropCapExclusion } from "@/layoutProjection/dropCapExclusion.js";
 import { getDocumentParagraphs } from "./docxTestHelpers.js";
 
 /** Loads the real `letra_capitular.docx` fixture shipped at the repo root. */

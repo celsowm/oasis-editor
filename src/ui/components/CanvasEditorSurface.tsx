@@ -7,32 +7,32 @@ import {
   onCleanup,
   Show,
 } from "solid-js";
-import type { ITextMeasurer } from "../../core/engine.js";
-import type { EditorSurfaceProps } from "../editorUiTypes.js";
-import { type EditorLayoutPage, type EditorState } from "../../core/model.js";
+import type { ITextMeasurer } from "@/core/engine.js";
+import type { EditorSurfaceProps } from "@/ui/editorUiTypes.js";
+import { type EditorLayoutPage, type EditorState } from "@/core/model.js";
 import {
   clearNormalLineHeightCache,
   clearTextMeasureCache,
   domTextMeasurer,
-} from "../textMeasurement.js";
-import { preloadLayoutFonts } from "../../text/fonts/FontMetricsProvider.js";
-import { preciseFontModeVersion } from "../../text/fonts/preciseFontMode.js";
-import { loadPreciseFontProgramsForFamilies } from "../app/localFontAccess.js";
-import { collectPdfFontFamilies } from "../../export/pdf/fonts/collectPdfFontFamilies.js";
-import { resolveMetricCompatibleFamily } from "../../export/pdf/fonts/officeFontAssets.js";
+} from "@/ui/textMeasurement.js";
+import { preloadLayoutFonts } from "@/text/fonts/FontMetricsProvider.js";
+import { preciseFontModeVersion } from "@/text/fonts/preciseFontMode.js";
+import { loadPreciseFontProgramsForFamilies } from "@/ui/app/localFontAccess.js";
+import { collectPdfFontFamilies } from "@/export/pdf/fonts/collectPdfFontFamilies.js";
+import { resolveMetricCompatibleFamily } from "@/export/pdf/fonts/officeFontAssets.js";
 import {
   clearProjectedParagraphLayoutCache,
   projectDocumentLayout,
-} from "../../layoutProjection/index.js";
-import { createEditorLogger } from "../../utils/logger.js";
-import { createLayoutIdentityStabilizer } from "../layoutIdentity.js";
-import { PageBreak } from "../components/PageBreak.js";
+} from "@/layoutProjection/index.js";
+import { createEditorLogger } from "@/utils/logger.js";
+import { createLayoutIdentityStabilizer } from "@/ui/layoutIdentity.js";
+import { PageBreak } from "@/ui/components/PageBreak.js";
 import {
   createCanvasPageRenderer,
   resolveCanvasFooterZoneTop,
-} from "../canvas/canvasPageRenderer.js";
-export { resolveCanvasTextRenderMetrics } from "../canvas/canvasParagraphPainter.js";
-export { resolveCanvasFooterZoneTop } from "../canvas/canvasPageRenderer.js";
+} from "@/ui/canvas/canvasPageRenderer.js";
+export { resolveCanvasTextRenderMetrics } from "@/ui/canvas/canvasParagraphPainter.js";
+export { resolveCanvasFooterZoneTop } from "@/ui/canvas/canvasPageRenderer.js";
 
 const canvasTextMeasurer: ITextMeasurer = {
   composeMeasuredParagraphLines: (options) =>

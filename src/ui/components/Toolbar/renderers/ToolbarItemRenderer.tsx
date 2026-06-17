@@ -1,7 +1,7 @@
 import { Dynamic } from "solid-js/web";
 import { Show, type JSX } from "solid-js";
-import type { ToolbarActionApi, ToolbarItem } from "../schema/items.js";
-import { bindItem } from "../state/bindItem.js";
+import type { ToolbarActionApi, ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
+import { bindItem } from "@/ui/components/Toolbar/state/bindItem.js";
 import { resolveRenderer } from "./renderers.js";
 
 /**

@@ -2,9 +2,9 @@ import type {
   EditorLayoutLine,
   EditorNamedStyle,
   EditorParagraphNode,
-} from "../../core/model.js";
-import type { FloatingExclusionRect } from "../../core/engine.js";
-import { resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
+} from "@/core/model.js";
+import type { FloatingExclusionRect } from "@/core/engine.js";
+import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
 import type {
   MeasuredChar,

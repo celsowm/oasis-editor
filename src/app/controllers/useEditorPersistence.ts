@@ -1,8 +1,8 @@
 import { createEffect, createSignal, onMount, on } from "solid-js";
 import { unwrap } from "solid-js/store";
-import { debounce } from "../../utils/throttle.js";
-import type { EditorDocument, EditorState } from "../../core/model.js";
-import type { EditorLogger } from "../../utils/logger.js";
+import { debounce } from "@/utils/throttle.js";
+import type { EditorDocument, EditorState } from "@/core/model.js";
+import type { EditorLogger } from "@/utils/logger.js";
 
 export type PersistenceStatus = "Saved" | "Saving..." | "Error" | "Initial";
 

@@ -1,18 +1,18 @@
-import type { CommandBus } from "../../core/commands/CommandBus.js";
-import type { CommandRef } from "../../core/commands/CommandRef.js";
-import { resolveCommandRef } from "../../core/commands/CommandRef.js";
+import type { CommandBus } from "@/core/commands/CommandBus.js";
+import type { CommandRef } from "@/core/commands/CommandRef.js";
+import { resolveCommandRef } from "@/core/commands/CommandRef.js";
 import type {
   EditorDocument,
   EditorSelection,
   EditorState,
-} from "../../core/model.js";
-import type { Editor } from "../../core/Editor.js";
-import type { ToolbarCommandState } from "../../ui/components/Toolbar/schema/items.js";
+} from "@/core/model.js";
+import type { Editor } from "@/core/Editor.js";
+import type { ToolbarCommandState } from "@/ui/components/Toolbar/schema/items.js";
 import type {
   InsertTablePayload,
   SetFontSizePayload,
   TypedCommandBus,
-} from "../../core/commands/publicCommandTypes.js";
+} from "@/core/commands/publicCommandTypes.js";
 
 export type OasisEditorClientEvent =
   | "ready"

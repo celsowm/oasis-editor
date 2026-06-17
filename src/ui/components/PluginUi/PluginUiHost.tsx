@@ -15,17 +15,17 @@ import type {
   OasisEditor,
   OasisPluginUiSnapshot,
   SidePanelContribution,
-} from "../../../core/plugin.js";
-import { resolveCommandRef } from "../../../core/commands/CommandRef.js";
-import { FloatingActionButton } from "../../public/FloatingActionButton.js";
+} from "@/core/plugin.js";
+import { resolveCommandRef } from "@/core/commands/CommandRef.js";
+import { FloatingActionButton } from "@/ui/public/FloatingActionButton.js";
 import {
   SidePanel,
   SidePanelBody,
   SidePanelHeader,
-} from "../../public/SidePanel.js";
-import { IconButton } from "../../public/IconButton.js";
-import { ToolIcon } from "../../utils/customIcons.js";
-import { t, type TranslationKey } from "../../../i18n/index.js";
+} from "@/ui/public/SidePanel.js";
+import { IconButton } from "@/ui/public/IconButton.js";
+import { ToolIcon } from "@/ui/utils/customIcons.js";
+import { t, type TranslationKey } from "@/i18n/index.js";
 
 export interface PluginUiHostProps {
   editor: Accessor<OasisEditor>;

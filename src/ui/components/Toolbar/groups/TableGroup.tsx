@@ -1,8 +1,8 @@
 import { Show } from "solid-js";
-import { Button } from "../primitives/Button.js";
-import { Menu } from "../primitives/Menu.js";
-import { t } from "../../../../i18n/index.js";
-import type { ToolbarActionApi } from "../schema/items.js";
+import { Button } from "@/ui/components/Toolbar/primitives/Button.js";
+import { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
+import { t } from "@/i18n/index.js";
+import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
 /** Table tools panel — command-driven; enablement derives from command state. */
 export function TableGroup(props: { api: ToolbarActionApi }) {

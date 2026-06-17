@@ -1,6 +1,6 @@
 import { For, createEffect, createSignal, onCleanup, type JSX } from "solid-js";
 import { Popover } from "./Popover.js";
-import { t } from "../../../../i18n/index.js";
+import { t } from "@/i18n/index.js";
 
 export interface GridPickerProps {
   onSelect: (rows: number, cols: number) => void;

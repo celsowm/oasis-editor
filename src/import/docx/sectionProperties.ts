@@ -5,8 +5,8 @@ import type {
   EditorPageSettings,
   EditorParagraphNode,
   EditorParagraphStyle,
-} from "../../core/model.js";
-import { resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
+} from "@/core/model.js";
+import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
 import {
   WORD_NS,
   OFFICE_REL_NS,

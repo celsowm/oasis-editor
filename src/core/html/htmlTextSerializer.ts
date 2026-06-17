@@ -2,8 +2,8 @@ import type {
   EditorDocument,
   EditorTextRun,
   EditorTextStyle,
-} from "../model.js";
-import { resolveImageSrc } from "../model.js";
+} from "@/core/model.js";
+import { resolveImageSrc } from "@/core/model.js";
 import { escapeHtml } from "./htmlEscape.js";
 import { getPrimaryTextLanguage, textRunStylesToCss } from "./styleCss.js";
 

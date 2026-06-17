@@ -1,16 +1,16 @@
-import { createEditorStyledRun } from "../../core/editorState.js";
+import { createEditorStyledRun } from "@/core/editorState.js";
 import type {
   EditorParagraphListStyle,
   EditorTextRun,
-} from "../../core/model.js";
-import type { EditorClipboardParagraphSpec } from "../../core/commands/clipboard.js";
-import { cloneStyle } from "../../core/textStyle/textStyleMutations.js";
-import { parseParagraphStyle } from "../../core/html/htmlStyleParser.js";
+} from "@/core/model.js";
+import type { EditorClipboardParagraphSpec } from "@/core/commands/clipboard.js";
+import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
+import { parseParagraphStyle } from "@/core/html/htmlStyleParser.js";
 import {
   collectInlineRuns,
   isParagraphTag,
   listKindForTag,
-} from "../../core/html/htmlBlockWalker.js";
+} from "@/core/html/htmlBlockWalker.js";
 
 export function parseEditorClipboardHtmlWithDom(
   html: string,

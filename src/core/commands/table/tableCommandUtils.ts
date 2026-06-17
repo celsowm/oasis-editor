@@ -6,13 +6,13 @@ import type {
   EditorState,
   EditorTableNode,
   TableLocation,
-} from "../../model.js";
+} from "@/core/model.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
   getActiveZone,
   getDocumentSections,
-} from "../../model.js";
+} from "@/core/model.js";
 
 export type StylePatchValue<T, K extends keyof T> = T[K] | null;
 

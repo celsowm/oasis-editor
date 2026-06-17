@@ -1,4 +1,4 @@
-import { normalizeFamily } from "../../export/pdf/fonts/officeFontAssets.js";
+import { normalizeFamily } from "@/export/pdf/fonts/officeFontAssets.js";
 import { isPreciseFontModeEnabled } from "./preciseFontMode.js";
 import type { SfntFontProgram } from "./sfnt/SfntFontProgram.js";
 

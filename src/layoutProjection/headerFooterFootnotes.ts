@@ -3,9 +3,9 @@ import type {
   EditorLayoutBlock,
   EditorLayoutParagraph,
   EditorNamedStyle,
-} from "../core/model.js";
-import type { ITextMeasurer } from "../core/engine.js";
-import { domTextMeasurer } from "../ui/textMeasurement.js";
+} from "@/core/model.js";
+import type { ITextMeasurer } from "@/core/engine.js";
+import { domTextMeasurer } from "@/ui/textMeasurement.js";
 import { projectHeaderFooterBlocksWithDependencies } from "./headerFooterProjection.js";
 import {
   getProjectedParagraphBlockHeight,

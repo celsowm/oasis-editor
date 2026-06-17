@@ -3,16 +3,16 @@ import type {
   EditorLayoutLine,
   EditorPageSettings,
   EditorTextBoxData,
-} from "../../../core/model.js";
-import { projectBlocksLayout } from "../../../layoutProjection/blocksPagination.js";
+} from "@/core/model.js";
+import { projectBlocksLayout } from "@/layoutProjection/blocksPagination.js";
 import {
   getTextBoxFloatingGeometry,
   resolveFloatingObjectRect,
-} from "../../../layoutProjection/floatingObjects.js";
-import { getPresetPathSegments } from "../../../layoutProjection/presetGeometry.js";
-import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
-import { OasisPdfWriter } from "../OasisPdfWriter.js";
-import { pxToPt } from "../units.js";
+} from "@/layoutProjection/floatingObjects.js";
+import { getPresetPathSegments } from "@/layoutProjection/presetGeometry.js";
+import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
+import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
+import { pxToPt } from "@/export/pdf/units.js";
 import { drawParagraph } from "./drawParagraph.js";
 import { drawTableBlock } from "./drawTable.js";
 

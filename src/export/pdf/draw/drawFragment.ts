@@ -4,32 +4,32 @@ import type {
   EditorLayoutLine,
   EditorParagraphNode,
   EditorTextStyle,
-} from "../../../core/model.js";
+} from "@/core/model.js";
 import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
-} from "../../../core/model.js";
+} from "@/core/model.js";
 import {
   isDoubleUnderlineStyle,
   isWavyUnderlineStyle,
   underlineStyleDashArray,
   underlineStyleLineWidthPx,
-} from "../../../core/textStyleMappings.js";
-import { PdfFontRegistry } from "../fonts/PdfFontRegistry.js";
+} from "@/core/textStyleMappings.js";
+import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { paintTextBox } from "./drawTextBoxShape.js";
-import { registerPdfImageRun } from "../images.js";
-import { OasisPdfWriter } from "../OasisPdfWriter.js";
+import { registerPdfImageRun } from "@/export/pdf/images.js";
+import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import {
   DEFAULT_FONT_SIZE_PX,
   pxToPt,
   textStyleToFontSizePt,
-} from "../units.js";
+} from "@/export/pdf/units.js";
 import {
   resolveFragmentBounds,
   resolveFragmentSlots,
   type FragmentSlot,
 } from "./fragmentGeometry.js";
-import { PX_PER_POINT } from "../../../layoutProjection/constants.js";
+import { PX_PER_POINT } from "@/layoutProjection/constants.js";
 
 export function drawFragmentHighlight(
   writer: OasisPdfWriter,

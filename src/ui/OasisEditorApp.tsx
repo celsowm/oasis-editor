@@ -12,43 +12,43 @@ import {
   setSelectedImageWrapPreset,
   setSelectedTextBoxFixedPosition,
   setSelectedTextBoxWrapPreset,
-} from "../core/editorCommands.js";
-import type { WrapPreset } from "../core/commands/floatingLayout.js";
-import { resolveImageSrc } from "../core/model.js";
+} from "@/core/editorCommands.js";
+import type { WrapPreset } from "@/core/commands/floatingLayout.js";
+import { resolveImageSrc } from "@/core/model.js";
 import { getCachedCanvasImage } from "./canvas/canvasImageCache.js";
 import { traceImageAlphaContour } from "./canvas/imageContour.js";
 import type { LayoutOptionsOverlay } from "./editorUiTypes.js";
 import {
   createEditorStateFromDocument,
   createInitialEditorState,
-} from "../core/editorState.js";
-import { type EditorPosition, type EditorState } from "../core/model.js";
-import { isSelectionCollapsed } from "../core/selection.js";
+} from "@/core/editorState.js";
+import { type EditorPosition, type EditorState } from "@/core/model.js";
+import { isSelectionCollapsed } from "@/core/selection.js";
 
-import { createEditorLogger } from "../utils/logger.js";
+import { createEditorLogger } from "@/utils/logger.js";
 import {
   markEnd,
   markStart,
   startLongTaskObserver,
   installGlobalReport,
   registerDomStatsSurface,
-} from "../utils/performanceMetrics.js";
-import { cloneEditorState } from "../core/cloneState.js";
+} from "@/utils/performanceMetrics.js";
+import { cloneEditorState } from "@/core/cloneState.js";
 import { Toolbar } from "./components/Toolbar/Toolbar.js";
-import { createEditorCommandsController } from "../app/controllers/EditorCommandsController.js";
-import { createEditorKeyboardController } from "../app/controllers/useEditorKeyboard.js";
-import { useEditorLayout } from "../app/controllers/useEditorLayout.js";
-import { useEditorPersistence } from "../app/controllers/useEditorPersistence.js";
-import { persistenceService } from "../app/services/PersistenceService.js";
-import { useEditorFindReplace } from "../app/controllers/useEditorFindReplace.js";
-import { createEditorTableOperations } from "../app/controllers/useEditorTableOperations.js";
-import { createEditorImageOperations } from "../app/controllers/useEditorImageOperations.js";
-import { createEditorTextBoxOperations } from "../app/controllers/useEditorTextBoxOperations.js";
-import { createEditorDocumentIO } from "../app/controllers/useEditorDocumentIO.js";
-import { createEditorStyleController } from "../app/controllers/useEditorStyle.js";
-import { createEditorHistoryActions } from "../app/controllers/useEditorHistoryActions.js";
+import { createEditorCommandsController } from "@/app/controllers/EditorCommandsController.js";
+import { createEditorKeyboardController } from "@/app/controllers/useEditorKeyboard.js";
+import { useEditorLayout } from "@/app/controllers/useEditorLayout.js";
+import { useEditorPersistence } from "@/app/controllers/useEditorPersistence.js";
+import { persistenceService } from "@/app/services/PersistenceService.js";
+import { useEditorFindReplace } from "@/app/controllers/useEditorFindReplace.js";
+import { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
+import { createEditorImageOperations } from "@/app/controllers/useEditorImageOperations.js";
+import { createEditorTextBoxOperations } from "@/app/controllers/useEditorTextBoxOperations.js";
+import { createEditorDocumentIO } from "@/app/controllers/useEditorDocumentIO.js";
+import { createEditorStyleController } from "@/app/controllers/useEditorStyle.js";
+import { createEditorHistoryActions } from "@/app/controllers/useEditorHistoryActions.js";
 import "./components/FindReplace/findReplace.css";
-import { setLocale } from "../i18n/index.js";
+import { setLocale } from "@/i18n/index.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import {
   recordCanvasDebugSelection,
@@ -59,7 +59,7 @@ import {
   applyStoredPreciseFontPreference,
   isLocalFontAccessSupported,
 } from "./app/localFontAccess.js";
-import { getWelcomeSeen } from "../app/services/userPreferences.js";
+import { getWelcomeSeen } from "@/app/services/userPreferences.js";
 import { createEditorFocusController } from "./app/useEditorFocus.js";
 import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
@@ -80,7 +80,7 @@ import { useEditorTransactions } from "./app/useEditorTransactions.js";
 import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
 import { OasisEditorLoading } from "./OasisEditorLoading.js";
 import { WelcomeOverlay } from "./components/WelcomeOverlay.js";
-import { createOasisEditorClient } from "../app/client/OasisEditorClient.js";
+import { createOasisEditorClient } from "@/app/client/OasisEditorClient.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 export type {

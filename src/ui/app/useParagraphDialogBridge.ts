@@ -1,10 +1,10 @@
-import { setParagraphStyle } from "../../core/editorCommands.js";
-import type { EditorBorderStyle, EditorState } from "../../core/model.js";
+import { setParagraphStyle } from "@/core/editorCommands.js";
+import type { EditorBorderStyle, EditorState } from "@/core/model.js";
 import type {
   ParagraphDialogApplyValues,
   ParagraphDialogInitialValues,
-} from "../components/Dialogs/ParagraphDialog.js";
-import type { ToolbarStyleState } from "../toolbarStyleState.js";
+} from "@/ui/components/Dialogs/ParagraphDialog.js";
+import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 
 interface ParagraphDialogState {
   isOpen: boolean;

@@ -1,7 +1,7 @@
 import {
   measureParagraphLayoutFromRects,
   resolveClosestOffsetInMeasuredLayout,
-} from "../layoutProjection/index.js";
+} from "@/layoutProjection/index.js";
 
 export function resolveClickOffset(
   event: MouseEvent & { currentTarget: HTMLParagraphElement },

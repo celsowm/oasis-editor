@@ -1,4 +1,4 @@
-import type { EditorDropCap } from "../../../core/model.js";
+import type { EditorDropCap } from "@/core/model.js";
 import { serializeRunProperties } from "./runPropertiesXml.js";
 import { serializeRunText } from "./runTextXml.js";
 

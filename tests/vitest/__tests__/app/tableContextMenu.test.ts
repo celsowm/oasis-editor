@@ -3,8 +3,8 @@ import {
   createEditorDocument,
   createEditorParagraph,
   createEditorStateFromDocument,
-} from "../../../../src/core/editorState.js";
-import { createEditorContextMenuClipboard } from "../../../../src/ui/app/useEditorContextMenuClipboard.js";
+} from "@/core/editorState.js";
+import { createEditorContextMenuClipboard } from "@/ui/app/useEditorContextMenuClipboard.js";
 
 function createContextMenuHarness(insideTable: boolean) {
   const paragraph = createEditorParagraph("Body");

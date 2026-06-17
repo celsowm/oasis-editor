@@ -1,4 +1,4 @@
-import type { EditorState } from "../core/model.js";
+import type { EditorState } from "@/core/model.js";
 
 export interface EditorTransactionOptions {
   mergeKey?: string;

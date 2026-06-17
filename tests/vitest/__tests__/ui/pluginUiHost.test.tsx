@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { render } from "solid-js/web";
-import { Editor } from "../../../../src/core/Editor.js";
-import type { OasisPlugin } from "../../../../src/core/plugin.js";
-import { PluginUiHost } from "../../../../src/ui/components/PluginUi/PluginUiHost.js";
+import { Editor } from "@/core/Editor.js";
+import type { OasisPlugin } from "@/core/plugin.js";
+import { PluginUiHost } from "@/ui/components/PluginUi/PluginUiHost.js";
 
 afterEach(() => {
   document.body.innerHTML = "";

@@ -4,25 +4,25 @@ import type {
   EditorSelection,
   EditorState,
   EditorTextRun,
-} from "../model.js";
+} from "@/core/model.js";
 import {
   getParagraphLength,
   getParagraphs,
   paragraphOffsetToPosition,
   positionToParagraphOffset,
-} from "../model.js";
+} from "@/core/model.js";
 import {
   clampPosition,
   createCollapsedSelection,
   findParagraphIndex,
   normalizeSelection,
-} from "../selection.js";
-import { cloneParagraph, cloneParagraphs } from "../document/clone.js";
-import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+} from "@/core/selection.js";
+import { cloneParagraph, cloneParagraphs } from "@/core/document/clone.js";
+import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import {
   buildParagraphFromRuns,
   sliceRuns,
-} from "../document/paragraphRuns.js";
+} from "@/core/document/paragraphRuns.js";
 
 export function withSelection(position: EditorPosition): EditorSelection {
   return createCollapsedSelection(position);

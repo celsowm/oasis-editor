@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
-import { exportEditorDocumentToDocx } from "../../../../src/export/docx/exportEditorDocumentToDocx.js";
-import { exportEditorDocumentToPdfBlob } from "../../../../src/export/pdf/exportEditorDocumentToPdf.js";
-import type { EditorTableCellNode } from "../../../../src/core/model.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { exportEditorDocumentToPdfBlob } from "@/export/pdf/exportEditorDocumentToPdf.js";
+import type { EditorTableCellNode } from "@/core/model.js";
 import {
   getPageContentWidth,
   resolveEffectiveTextStyleForParagraph,
-} from "../../../../src/core/model.js";
-import { createEditorStateFromDocument } from "../../../../src/core/editorState.js";
+} from "@/core/model.js";
+import { createEditorStateFromDocument } from "@/core/editorState.js";
 import {
   estimateTableBlockHeight,
   projectDocumentLayout,
-} from "../../../../src/layoutProjection/index.js";
-import { buildCanvasTableLayout } from "../../../../src/ui/canvas/CanvasTableLayout.js";
+} from "@/layoutProjection/index.js";
+import { buildCanvasTableLayout } from "@/ui/canvas/CanvasTableLayout.js";
 import {
   getDocumentTables,
   importComplexDocument,
@@ -349,7 +349,7 @@ describe("DOCX table import", () => {
       ),
     )!.cells[1]!;
     const paragraph = storageSpecCell.blocks[0]!;
-    const layout = await import("../../../../src/layoutProjection/index.js").then((m) =>
+    const layout = await import("@/layoutProjection/index.js").then((m) =>
       m.projectParagraphLayout(
         paragraph,
         undefined,
@@ -787,9 +787,9 @@ describe("table negative indent", () => {
 
     // Canvas layout: originX=100, indentLeft=-42.8pt → left = 100 - 42.8*(96/72) ≈ 43
     const { buildCanvasTableLayout } =
-      await import("../../../../src/ui/canvas/CanvasTableLayout.js");
+      await import("@/ui/canvas/CanvasTableLayout.js");
     const { createEditorStateFromDocument } =
-      await import("../../../../src/core/editorState.js");
+      await import("@/core/editorState.js");
     const state = createEditorStateFromDocument(document);
     const layout = buildCanvasTableLayout({
       table,

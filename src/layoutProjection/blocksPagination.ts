@@ -10,10 +10,10 @@ import type {
   EditorTableRowNode,
   EditorTextBoxData,
   TableCellBlockPosition,
-} from "../core/model.js";
-import { getPageContentWidth } from "../core/model.js";
-import type { ITextMeasurer } from "../core/engine.js";
-import { domTextMeasurer } from "../ui/textMeasurement.js";
+} from "@/core/model.js";
+import { getPageContentWidth } from "@/core/model.js";
+import type { ITextMeasurer } from "@/core/engine.js";
+import { domTextMeasurer } from "@/ui/textMeasurement.js";
 import {
   applyMeasuredLineGeometry,
   applyWidowOrphanControl,

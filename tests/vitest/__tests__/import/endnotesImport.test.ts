@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
-import { collectEndnoteReferences } from "../../../../src/core/endnotes.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { collectEndnoteReferences } from "@/core/endnotes.js";
 
 interface BuildOptions {
   /**

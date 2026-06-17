@@ -4,8 +4,8 @@ import {
   computeRulerTicks,
   resolveFirstLineOffset,
   PX_PER_INCH,
-} from "../../../../src/ui/components/Ruler/rulerGeometry.js";
-import type { EditorPageSettings } from "../../../../src/core/model.js";
+} from "@/ui/components/Ruler/rulerGeometry.js";
+import type { EditorPageSettings } from "@/core/model.js";
 
 const LETTER: EditorPageSettings = {
   width: 816,

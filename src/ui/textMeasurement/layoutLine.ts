@@ -1,4 +1,4 @@
-import type { EditorLayoutLine } from "../../core/model.js";
+import type { EditorLayoutLine } from "@/core/model.js";
 
 function buildSlots(
   startOffset: number,

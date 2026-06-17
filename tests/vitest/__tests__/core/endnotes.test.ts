@@ -3,17 +3,17 @@ import {
   createEditorDocument,
   createEditorParagraph,
   resetEditorIds,
-} from "../../../../src/core/editorState.js";
+} from "@/core/editorState.js";
 import {
   collectEndnoteReferences,
   listReferencedEndnotes,
   renumberEndnotes,
-} from "../../../../src/core/endnotes.js";
+} from "@/core/endnotes.js";
 import type {
   EditorDocument,
   EditorParagraphNode,
   EditorTextRun,
-} from "../../../../src/core/model.js";
+} from "@/core/model.js";
 
 beforeEach(() => {
   resetEditorIds();

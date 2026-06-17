@@ -1,22 +1,22 @@
-import type { EditorState, EditorTextRun } from "../model.js";
+import type { EditorState, EditorTextRun } from "@/core/model.js";
 import {
   getParagraphLength,
   getParagraphs,
   paragraphOffsetToPosition,
-} from "../model.js";
-import { isSelectionCollapsed } from "../selection.js";
+} from "@/core/model.js";
+import { isSelectionCollapsed } from "@/core/selection.js";
 import {
   sliceRuns,
   getStyleAtOffset,
   buildParagraphFromRuns,
-} from "../document/paragraphRuns.js";
-import { cloneParagraphs } from "../document/clone.js";
-import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+} from "@/core/document/paragraphRuns.js";
+import { cloneParagraphs } from "@/core/document/clone.js";
+import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import {
   deleteSelectionRange,
   getFocusParagraph,
   withSelection,
-} from "../selection/rangeEditing.js";
+} from "@/core/selection/rangeEditing.js";
 
 export function insertFieldAtSelection(
   state: EditorState,

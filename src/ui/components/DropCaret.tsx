@@ -1,11 +1,11 @@
 import { createMemo, Show } from "solid-js";
-import type { EditorState, EditorPosition } from "../../core/model.js";
-import { getParagraphs, positionToParagraphOffset } from "../../core/model.js";
-import { buildCanvasLayoutSnapshot } from "../canvas/CanvasLayoutSnapshot.js";
+import type { EditorState, EditorPosition } from "@/core/model.js";
+import { getParagraphs, positionToParagraphOffset } from "@/core/model.js";
+import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
 import {
   getCaretRectFromSnapshot,
   getParagraphRectFromSnapshot,
-} from "../canvas/CanvasGeometry.js";
+} from "@/ui/canvas/CanvasGeometry.js";
 import { CaretOverlay } from "./CaretOverlay.js";
 
 export function DropCaret(props: {

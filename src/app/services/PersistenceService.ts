@@ -1,5 +1,5 @@
-import { openDB, putItem, getItem, deleteItem } from "../../utils/indexeddb.js";
-import type { EditorDocument } from "../../core/model.js";
+import { openDB, putItem, getItem, deleteItem } from "@/utils/indexeddb.js";
+import type { EditorDocument } from "@/core/model.js";
 
 const DB_NAME = "oasis-editor-db";
 const STORE_NAME = "documents";

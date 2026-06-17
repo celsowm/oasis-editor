@@ -14,7 +14,7 @@ import {
   SidePanelHeader,
   Tabs,
   TextField,
-} from "../../../../src/ui/public/index.js";
+} from "@/ui/public/index.js";
 
 afterEach(() => {
   document.body.innerHTML = "";

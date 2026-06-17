@@ -1,7 +1,7 @@
 import type {
   EditorNamedStyle,
   EditorTableConditionalFormat,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import { escapeXml, normalizeDocxColor, pointsToTwips, WORD14_NS } from "./xmlUtils.js";
 import { serializeDocxBorderAttrs } from "./borders.js";
 import { serializeParagraphStyleXml } from "./text/paragraphPropertiesXml.js";

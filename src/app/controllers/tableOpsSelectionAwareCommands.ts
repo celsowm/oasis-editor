@@ -1,5 +1,5 @@
-import { cloneBlock } from "../../core/cloneState.js";
-import { createEditorDocument } from "../../core/editorState.js";
+import { cloneBlock } from "@/core/cloneState.js";
+import { createEditorDocument } from "@/core/editorState.js";
 import {
   getParagraphs,
   getParagraphText,
@@ -9,8 +9,8 @@ import {
   type EditorParagraphNode,
   type EditorState,
   type EditorTableNode,
-} from "../../core/model.js";
-import type { EditorLogger } from "../../utils/logger.js";
+} from "@/core/model.js";
+import type { EditorLogger } from "@/utils/logger.js";
 import { updateBlocksInCurrentSection } from "./tableOpsMutationCommands.js";
 import type { SelectedTableCells } from "./tableOpsSelectionRanges.js";
 

@@ -1,4 +1,4 @@
-import type { CommandState, OasisCommand } from "../../core/plugin.js";
+import type { CommandState, OasisCommand } from "@/core/plugin.js";
 
 export type CommandEnabledResolver = (commandName: string) => boolean;
 export type CommandBuilder = (

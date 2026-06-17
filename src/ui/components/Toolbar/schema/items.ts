@@ -1,7 +1,7 @@
 import type { JSX } from "solid-js";
-import type { CommandBus } from "../../../../core/commands/CommandBus.js";
-import type { CommandRef } from "../../../../core/commands/CommandRef.js";
-import type { TranslationKey } from "../../../../i18n/index.js";
+import type { CommandBus } from "@/core/commands/CommandBus.js";
+import type { CommandRef } from "@/core/commands/CommandRef.js";
+import type { TranslationKey } from "@/i18n/index.js";
 import type { ColorPalette } from "./palette.js";
 
 export const RIBBON_TABS = [

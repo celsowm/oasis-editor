@@ -1,4 +1,4 @@
-import type { EditorPageSettings } from "../../../core/model.js";
+import type { EditorPageSettings } from "@/core/model.js";
 
 /**
  * Horizontal ruler geometry. The editor stores page dimensions, margins and

@@ -6,14 +6,14 @@ import {
   createEditorTable,
   createEditorTableCell,
   createEditorTableRow,
-} from "../../../../src/core/editorState.js";
+} from "@/core/editorState.js";
 import {
   getDocumentSectionsCanonical,
   paragraphOffsetToPosition,
   type EditorState,
-} from "../../../../src/core/model.js";
-import { createTablePropertiesDialogBridge } from "../../../../src/ui/app/useTablePropertiesDialogBridge.js";
-import type { TablePropertiesDialogApplyValues } from "../../../../src/ui/components/Dialogs/TablePropertiesDialog.js";
+} from "@/core/model.js";
+import { createTablePropertiesDialogBridge } from "@/ui/app/useTablePropertiesDialogBridge.js";
+import type { TablePropertiesDialogApplyValues } from "@/ui/components/Dialogs/TablePropertiesDialog.js";
 
 function createTableState() {
   const p00 = createEditorParagraph("A");

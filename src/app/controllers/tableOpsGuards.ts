@@ -4,7 +4,7 @@ import {
   type EditorBlockNode,
   type EditorEditingZone,
   type EditorState,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import { getTableVisualWidth } from "./tableOpsSelectionNavigation.js";
 import type {
   HorizontalTableCellRange,

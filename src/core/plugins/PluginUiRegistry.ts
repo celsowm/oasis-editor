@@ -4,7 +4,7 @@ import type {
   OasisPluginUiSnapshot,
   SidePanelContribution,
   Unsubscribe,
-} from "../plugin.js";
+} from "@/core/plugin.js";
 
 const MAX_ORDER = Number.MAX_SAFE_INTEGER;
 

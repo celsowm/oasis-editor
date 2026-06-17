@@ -1,5 +1,5 @@
-import type { EditorFieldChar } from "../../../core/model.js";
-import { escapeXml } from "../xmlUtils.js";
+import type { EditorFieldChar } from "@/core/model.js";
+import { escapeXml } from "@/export/docx/xmlUtils.js";
 
 export function serializeFieldRun(
   fieldType: "PAGE" | "NUMPAGES",

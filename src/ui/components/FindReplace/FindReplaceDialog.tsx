@@ -1,6 +1,6 @@
 import { Show, type JSX } from "solid-js";
-import type { UseEditorFindReplaceResult } from "../../../app/controllers/useEditorFindReplace.js";
-import { t } from "../../../i18n/index.js";
+import type { UseEditorFindReplaceResult } from "@/app/controllers/useEditorFindReplace.js";
+import { t } from "@/i18n/index.js";
 
 export interface FindReplaceDialogProps {
   fr: UseEditorFindReplaceResult;

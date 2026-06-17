@@ -2,7 +2,7 @@ import type {
   ColorPalette,
   ColorSwatch,
   ThemeColor,
-} from "../schema/palette.js";
+} from "@/ui/components/Toolbar/schema/palette.js";
 
 const THEME_COLORS: ThemeColor[] = [
   {

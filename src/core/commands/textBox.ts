@@ -2,12 +2,12 @@ import type {
   EditorImageFloatingLayout,
   EditorState,
   EditorTextBoxData,
-} from "../model.js";
-import { getParagraphs } from "../model.js";
-import { normalizeSelection } from "../selection.js";
-import { cloneParagraph, cloneRun } from "../document/clone.js";
-import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
-import { preserveSelectionByParagraphOffsets } from "../selection/rangeEditing.js";
+} from "@/core/model.js";
+import { getParagraphs } from "@/core/model.js";
+import { normalizeSelection } from "@/core/selection.js";
+import { cloneParagraph, cloneRun } from "@/core/document/clone.js";
+import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
+import { preserveSelectionByParagraphOffsets } from "@/core/selection/rangeEditing.js";
 import {
   getSelectedObjectRun,
   type SelectedObjectRun,

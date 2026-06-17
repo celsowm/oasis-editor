@@ -2,8 +2,8 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
-import { projectDocumentLayout } from "../../../../src/layoutProjection/index.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { projectDocumentLayout } from "@/layoutProjection/index.js";
 
 const FIXTURES_DIR = join(
   dirname(fileURLToPath(import.meta.url)),

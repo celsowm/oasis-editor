@@ -2,12 +2,12 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   createEditorStateFromParagraphRuns,
   resetEditorIds,
-} from "../../../../src/core/editorState.js";
+} from "@/core/editorState.js";
 import {
   changeSelectedTextCase,
   clearSelectedTextFormatting,
-} from "../../../../src/core/commands/text.js";
-import { getParagraphs } from "../../../../src/core/model.js";
+} from "@/core/commands/text.js";
+import { getParagraphs } from "@/core/model.js";
 
 beforeEach(() => {
   resetEditorIds();

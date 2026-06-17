@@ -4,26 +4,26 @@ import type {
   EditorPageSettings,
   EditorParagraphNode,
   EditorState,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   getImageFloatingGeometry,
   resolveFloatingObjectRect,
-} from "../../layoutProjection/floatingObjects.js";
+} from "@/layoutProjection/floatingObjects.js";
 import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
   resolveImageSrc,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   normalizeFamily,
   resolveMetricCompatibleFamily,
-} from "../../export/pdf/fonts/officeFontAssets.js";
+} from "@/export/pdf/fonts/officeFontAssets.js";
 import {
   isLocalFontFamilyAvailable,
   isPreciseFontModeEnabled,
-} from "../../text/fonts/preciseFontMode.js";
-import { hasPreciseFont } from "../../text/fonts/preciseFontMetrics.js";
-import { createEditorLogger } from "../../utils/logger.js";
+} from "@/text/fonts/preciseFontMode.js";
+import { hasPreciseFont } from "@/text/fonts/preciseFontMetrics.js";
+import { createEditorLogger } from "@/utils/logger.js";
 import { getCachedCanvasImage } from "./canvasImageCache.js";
 import { resolveListPrefix } from "./listNumbering.js";
 import { paintTextBox } from "./canvasTextBoxPainter.js";
@@ -34,9 +34,9 @@ import {
   type UnderlineStyle,
   underlineStyleDashArray,
   underlineStyleLineWidthPx,
-} from "../../core/textStyleMappings.js";
-import { PX_PER_POINT } from "../../layoutProjection/constants.js";
-import { getListLabelInset } from "../textMeasurement/indentation.js";
+} from "@/core/textStyleMappings.js";
+import { PX_PER_POINT } from "@/layoutProjection/constants.js";
+import { getListLabelInset } from "@/ui/textMeasurement/indentation.js";
 const canvasTextLogger = createEditorLogger("canvas-text");
 const loggedCanvasFontKeys = new Set<string>();
 const MAX_CANVAS_FONT_LOGS = 40;

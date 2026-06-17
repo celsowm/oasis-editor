@@ -1,4 +1,4 @@
-import type { EditorDocument } from "../../core/model.js";
+import type { EditorDocument } from "@/core/model.js";
 import {
   importDocxToEditorDocument,
   type DocxImportStage,

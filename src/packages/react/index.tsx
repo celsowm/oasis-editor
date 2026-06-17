@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { mount, type OasisMountInstance } from "../../ui/mount.js";
-import type { OasisEditorAppProps } from "../../ui/OasisEditorApp.js";
-import type { OasisEditorClient } from "../../app/client/OasisEditorClient.js";
+import { mount, type OasisMountInstance } from "@/ui/mount.js";
+import type { OasisEditorAppProps } from "@/ui/OasisEditorApp.js";
+import type { OasisEditorClient } from "@/app/client/OasisEditorClient.js";
 
 export type ReactOasisEditorProps = OasisEditorAppProps & {
   /**

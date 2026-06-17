@@ -1,4 +1,4 @@
-import type { OasisPdfFontResource } from "../OasisPdfWriter.js";
+import type { OasisPdfFontResource } from "@/export/pdf/OasisPdfWriter.js";
 import {
   loadFontAsset,
   normalizeFamily,

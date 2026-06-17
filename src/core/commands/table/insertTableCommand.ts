@@ -1,19 +1,19 @@
-import type { EditorBlockNode, EditorState } from "../../model.js";
+import type { EditorBlockNode, EditorState } from "@/core/model.js";
 import {
   getActiveSectionIndex,
   getActiveZone,
   getBlockParagraphs,
   getDocumentSections,
   paragraphOffsetToPosition,
-} from "../../model.js";
+} from "@/core/model.js";
 import {
   createEditorParagraph,
   createEditorTable,
   createEditorTableCell,
   createEditorTableRow,
-} from "../../editorState.js";
-import { clampPosition } from "../../selection.js";
-import { withSelection } from "../../selection/rangeEditing.js";
+} from "@/core/editorState.js";
+import { clampPosition } from "@/core/selection.js";
+import { withSelection } from "@/core/selection/rangeEditing.js";
 
 export function insertTableAtSelection(
   state: EditorState,

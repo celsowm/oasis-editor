@@ -1,12 +1,12 @@
-import type { EditorState } from "../model.js";
-import { getParagraphLength, getParagraphs } from "../model.js";
-import { normalizeSelection } from "../selection.js";
+import type { EditorState } from "@/core/model.js";
+import { getParagraphLength, getParagraphs } from "@/core/model.js";
+import { normalizeSelection } from "@/core/selection.js";
 import {
   buildParagraphFromRuns,
   sliceRuns,
-} from "../document/paragraphRuns.js";
-import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
-import { preserveSelectionByParagraphOffsets } from "../selection/rangeEditing.js";
+} from "@/core/document/paragraphRuns.js";
+import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
+import { preserveSelectionByParagraphOffsets } from "@/core/selection/rangeEditing.js";
 
 export function toggleTrackChanges(state: EditorState): EditorState {
   return {

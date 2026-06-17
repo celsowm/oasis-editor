@@ -2,8 +2,8 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
   EditorParagraphStyle,
-} from "../../core/model.js";
-import { resolveEffectiveParagraphStyle } from "../../core/model.js";
+} from "@/core/model.js";
+import { resolveEffectiveParagraphStyle } from "@/core/model.js";
 import { PX_PER_POINT } from "./constants.js";
 
 const DEFAULT_LIST_GUTTER = 24;

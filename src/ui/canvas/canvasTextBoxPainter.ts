@@ -3,12 +3,12 @@ import type {
   EditorPageSettings,
   EditorState,
   EditorTextBoxData,
-} from "../../core/model.js";
-import { projectBlocksLayout } from "../../layoutProjection/blocksPagination.js";
+} from "@/core/model.js";
+import { projectBlocksLayout } from "@/layoutProjection/blocksPagination.js";
 import {
   getTextBoxFloatingGeometry,
   resolveFloatingObjectRect,
-} from "../../layoutProjection/floatingObjects.js";
+} from "@/layoutProjection/floatingObjects.js";
 import { drawParagraph } from "./canvasParagraphPainter.js";
 import { drawTable } from "./canvasTablePainter.js";
 import { buildPresetPath } from "./presetGeometry.js";

@@ -2,8 +2,8 @@ import type {
   EditorLayoutBlock,
   EditorState,
   EditorTableNode,
-} from "../../core/model.js";
-import { buildSegmentTable } from "../../core/tableLayout.js";
+} from "@/core/model.js";
+import { buildSegmentTable } from "@/core/tableLayout.js";
 import {
   buildCanvasTableLayout,
   type CanvasTableCellLayoutEntry,

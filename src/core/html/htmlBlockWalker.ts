@@ -1,9 +1,9 @@
-import { createEditorStyledRun } from "../editorState.js";
+import { createEditorStyledRun } from "@/core/editorState.js";
 import type {
   EditorParagraphListStyle,
   EditorTextRun,
   EditorTextStyle,
-} from "../model.js";
+} from "@/core/model.js";
 import { parseInlineImage } from "./inlineImageParser.js";
 import { parseInlineStyles } from "./inlineStyleParser.js";
 

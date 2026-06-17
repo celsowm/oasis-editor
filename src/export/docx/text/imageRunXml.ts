@@ -1,5 +1,5 @@
-import type { DocContext } from "../docxTypes.js";
-import { escapeXml, OFFICE_REL_NS } from "../xmlUtils.js";
+import type { DocContext } from "@/export/docx/docxTypes.js";
+import { escapeXml, OFFICE_REL_NS } from "@/export/docx/xmlUtils.js";
 import {
   buildDrawingXml,
   buildSrcRect,

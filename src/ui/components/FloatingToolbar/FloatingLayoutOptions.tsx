@@ -10,9 +10,9 @@ import {
 } from "solid-js";
 import { Portal } from "solid-js/web";
 import "./layoutOptions.css";
-import type { WrapPreset } from "../../../core/commands/floatingLayout.js";
-import type { LayoutOptionsOverlay } from "../../editorUiTypes.js";
-import { t, type TranslationKey } from "../../../i18n/index.js";
+import type { WrapPreset } from "@/core/commands/floatingLayout.js";
+import type { LayoutOptionsOverlay } from "@/ui/editorUiTypes.js";
+import { t, type TranslationKey } from "@/i18n/index.js";
 
 /** Minimal box geometry (surface-relative) used to anchor the popup. */
 export interface LayoutOptionsAnchorBox {

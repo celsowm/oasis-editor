@@ -11,7 +11,7 @@ import {
   moveSelectionUp,
   outdentParagraphList,
   setSelection,
-} from "../../core/editorCommands.js";
+} from "@/core/editorCommands.js";
 import {
   getParagraphs,
   getParagraphText,
@@ -20,15 +20,15 @@ import {
   type EditorDocument,
   type EditorPosition,
   type EditorState,
-} from "../../core/model.js";
-import { isSelectionCollapsed } from "../../core/selection.js";
-import type { BooleanStyleKey } from "../../ui/toolbarStyleState.js";
-import { resolveWordSelection } from "../../core/wordBoundaries.js";
+} from "@/core/model.js";
+import { isSelectionCollapsed } from "@/core/selection.js";
+import type { BooleanStyleKey } from "@/ui/toolbarStyleState.js";
+import { resolveWordSelection } from "@/core/wordBoundaries.js";
 import {
   defaultEditorKeyBindings,
   EditorCommandRegistry,
 } from "./EditorCommandRegistry.js";
-import type { SelectedImageRun } from "../../core/commands/image.js";
+import type { SelectedImageRun } from "@/core/commands/image.js";
 
 export interface EditorKeyboardDeps {
   state: () => EditorState;

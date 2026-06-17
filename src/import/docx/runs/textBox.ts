@@ -4,8 +4,8 @@ import type {
   EditorTextBoxBody,
   EditorTextBoxData,
   EditorTextBoxShape,
-} from "../../../core/model.js";
-import { getAttributeValue, findElementDeep } from "../xmlHelpers.js";
+} from "@/core/model.js";
+import { getAttributeValue, findElementDeep } from "@/import/docx/xmlHelpers.js";
 import type { ParseNestedBlocks } from "./types.js";
 import {
   EMU_PER_PT,

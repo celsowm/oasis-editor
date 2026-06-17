@@ -3,19 +3,19 @@ import {
   createEditorDocument,
   createEditorParagraphFromRuns,
   createEditorStateFromDocument,
-} from "../../../../src/core/editorState.js";
-import { insertTextAtSelection } from "../../../../src/core/commands/text.js";
+} from "@/core/editorState.js";
+import { insertTextAtSelection } from "@/core/commands/text.js";
 import {
   getSelectedTextBoxRun,
   resizeSelectedTextBox,
-} from "../../../../src/core/commands/textBox.js";
+} from "@/core/commands/textBox.js";
 import {
   paragraphOffsetToPosition,
   type EditorParagraphNode,
   type EditorState,
   type EditorTextBoxData,
-} from "../../../../src/core/model.js";
-import { normalizeSelection } from "../../../../src/core/selection.js";
+} from "@/core/model.js";
+import { normalizeSelection } from "@/core/selection.js";
 
 const EMU_PER_PX = 9525;
 

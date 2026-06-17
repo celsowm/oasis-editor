@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   importFileAccept,
   resolveImporterForFile,
-} from "../../../../src/import/documentImporterRegistry.js";
+} from "@/import/documentImporterRegistry.js";
 
 describe("document importer registry", () => {
   it("resolves importers by file extension", () => {

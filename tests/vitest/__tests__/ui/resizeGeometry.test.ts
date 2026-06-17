@@ -4,7 +4,7 @@ import {
   clamp,
   resolveResizedDimensions,
   type ResizeSessionGeometry,
-} from "../../../../src/ui/resizeGeometry.js";
+} from "@/ui/resizeGeometry.js";
 
 const geometry = (
   handleDirection: ResizeSessionGeometry["handleDirection"],

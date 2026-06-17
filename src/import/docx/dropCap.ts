@@ -1,5 +1,5 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
-import type { EditorDropCap } from "../../core/model.js";
+import type { EditorDropCap } from "@/core/model.js";
 import {
   WORD_NS,
   getFirstChildByTagNameNS,

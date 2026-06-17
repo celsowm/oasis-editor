@@ -1,8 +1,8 @@
-import type { EditorNamedStyle, EditorTableNode } from "../core/model.js";
-import type { ITextMeasurer } from "../core/engine.js";
-import { domTextMeasurer } from "../ui/textMeasurement.js";
-import { resolveTableColumnWidthsPx } from "../ui/tableGeometry.js";
-import { buildTableCellLayout } from "../core/tableLayout.js";
+import type { EditorNamedStyle, EditorTableNode } from "@/core/model.js";
+import type { ITextMeasurer } from "@/core/engine.js";
+import { domTextMeasurer } from "@/ui/textMeasurement.js";
+import { resolveTableColumnWidthsPx } from "@/ui/tableGeometry.js";
+import { buildTableCellLayout } from "@/core/tableLayout.js";
 import {
   estimateParagraphBlockHeight,
   shouldCollapseContextualSpacing,

@@ -6,12 +6,12 @@ import type {
   EditorDropCap,
   EditorSection,
   EditorTextRun,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   createEditorDocument,
   createEditorParagraphFromRuns,
-} from "../../core/editorState.js";
-import { normalizePageSettings } from "../../core/model.js";
+} from "@/core/editorState.js";
+import { normalizePageSettings } from "@/core/model.js";
 import {
   WORD_NS,
   getFirstChildByTagNameNS,
@@ -37,13 +37,13 @@ import { parseTableNode } from "./tables.js";
 import { parseHeaderFooterXml } from "./headerFooter.js";
 import { parseFootnotesXml } from "./footnotes.js";
 import { parseEndnotesXml } from "./endnotes.js";
-import { renumberFootnotes } from "../../core/footnotes.js";
-import { renumberEndnotes } from "../../core/endnotes.js";
+import { renumberFootnotes } from "@/core/footnotes.js";
+import { renumberEndnotes } from "@/core/endnotes.js";
 import { extractBookmarksFromSections } from "./bookmarks.js";
 import { extractCommentRangesFromSections } from "./comments.js";
 import { parseCommentsXml } from "./commentsXml.js";
-import { createEditorCommentId } from "../../core/editorState.js";
-import type { EditorComments } from "../../core/model.js";
+import { createEditorCommentId } from "@/core/editorState.js";
+import type { EditorComments } from "@/core/model.js";
 
 export type DocxImportStage =
   | "opening-docx"
@@ -535,7 +535,7 @@ function buildEditorComments(
  */
 function remapImportedFootnoteRefsInSections(
   sections: EditorSection[],
-  byDocxId: Map<string, import("../../core/model.js").EditorFootnote>,
+  byDocxId: Map<string, import("@/core/model.js").EditorFootnote>,
 ): void {
   const remapBlock = (block: EditorBlockNode): void => {
     if (block.type === "paragraph") {
@@ -586,7 +586,7 @@ function remapImportedFootnoteRefsInSections(
  */
 function remapImportedEndnoteRefsInSections(
   sections: EditorSection[],
-  byDocxId: Map<string, import("../../core/model.js").EditorEndnote>,
+  byDocxId: Map<string, import("@/core/model.js").EditorEndnote>,
 ): void {
   const remapBlock = (block: EditorBlockNode): void => {
     if (block.type === "paragraph") {

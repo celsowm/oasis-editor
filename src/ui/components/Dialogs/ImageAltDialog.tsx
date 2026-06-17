@@ -1,6 +1,6 @@
 import { createSignal, createEffect } from "solid-js";
 import { Dialog } from "./Dialog.js";
-import { t } from "../../../i18n/index.js";
+import { t } from "@/i18n/index.js";
 
 interface ImageAltDialogProps {
   isOpen: boolean;

@@ -5,7 +5,7 @@ import type {
   EditorState,
   EditorSection,
   EditorTabStop,
-} from "../model.js";
+} from "@/core/model.js";
 import {
   getBlockParagraphs,
   getDocumentSections,
@@ -14,29 +14,29 @@ import {
   paragraphOffsetToPosition,
   getActiveSectionIndex,
   getActiveZone,
-} from "../model.js";
-import { createEditorParagraph } from "../editorState.js";
-import { isSelectionCollapsed, normalizeSelection } from "../selection.js";
-import type { ValueParagraphStyleKey } from "../textStyle/textStyleKeys.js";
-import { setParagraphStyleValue } from "../textStyle/textStyleMutations.js";
+} from "@/core/model.js";
+import { createEditorParagraph } from "@/core/editorState.js";
+import { isSelectionCollapsed, normalizeSelection } from "@/core/selection.js";
+import type { ValueParagraphStyleKey } from "@/core/textStyle/textStyleKeys.js";
+import { setParagraphStyleValue } from "@/core/textStyle/textStyleMutations.js";
 import {
   buildParagraphFromRuns,
   sliceRuns,
   getStyleAtOffset,
   createParagraphFromRunsLike,
-} from "../document/paragraphRuns.js";
+} from "@/core/document/paragraphRuns.js";
 import {
   cloneParagraphs,
   cloneBlocks,
   cloneParagraph,
-} from "../document/clone.js";
-import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+} from "@/core/document/clone.js";
+import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import {
   deleteSelectionRange,
   getFocusParagraph,
   preserveSelectionByParagraphOffsets,
   withSelection,
-} from "../selection/rangeEditing.js";
+} from "@/core/selection/rangeEditing.js";
 
 export function moveBlockToPosition(
   state: EditorState,

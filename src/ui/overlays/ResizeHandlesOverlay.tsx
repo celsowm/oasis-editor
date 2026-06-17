@@ -2,7 +2,7 @@ import { For, Show } from "solid-js";
 import {
   RESIZE_HANDLE_DIRECTIONS,
   type ResizeHandleDirection,
-} from "../resizeGeometry.js";
+} from "@/ui/resizeGeometry.js";
 
 export interface ResizeHandlesOverlayBox {
   left: number;

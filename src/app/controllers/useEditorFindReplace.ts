@@ -3,12 +3,12 @@ import {
   findMatchesInDocument,
   type FindOptions,
   type FindReplaceMatch,
-} from "../services/FindReplaceService.js";
-import type { EditorState } from "../../core/model.js";
+} from "@/app/services/FindReplaceService.js";
+import type { EditorState } from "@/core/model.js";
 import {
   setSelection,
   insertTextAtSelection,
-} from "../../core/editorCommands.js";
+} from "@/core/editorCommands.js";
 
 export interface UseEditorFindReplaceResult {
   searchTerm: () => string;

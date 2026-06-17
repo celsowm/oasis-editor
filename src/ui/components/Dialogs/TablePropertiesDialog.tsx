@@ -1,12 +1,12 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { Dialog } from "./Dialog.js";
-import { Tabs } from "../Tabs/Tabs.js";
-import { t } from "../../../i18n/index.js";
+import { Tabs } from "@/ui/components/Tabs/Tabs.js";
+import { t } from "@/i18n/index.js";
 import type {
   EditorBorderStyle,
   EditorDocxWidthValue,
   EditorTableRowHeightRule,
-} from "../../../core/model.js";
+} from "@/core/model.js";
 
 type TableWidthUnit = "points" | "percent";
 type BorderStyleValue = "none" | "solid" | "dashed" | "dotted";

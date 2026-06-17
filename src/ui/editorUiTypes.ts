@@ -60,8 +60,8 @@ export interface CommentHighlightBox {
 }
 
 import type { Accessor } from "solid-js";
-import type { EditorState, EditorLayoutParagraph } from "../core/model.js";
-import type { WrapPreset } from "../core/commands/floatingLayout.js";
+import type { EditorState, EditorLayoutParagraph } from "@/core/model.js";
+import type { WrapPreset } from "@/core/commands/floatingLayout.js";
 import type { ResizeHandleDirection } from "./resizeGeometry.js";
 
 /**

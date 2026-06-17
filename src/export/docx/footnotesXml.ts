@@ -4,9 +4,9 @@ import type {
   EditorFootnote,
   EditorNamedStyle,
   EditorParagraphNode,
-} from "../../core/model.js";
-import { getDocumentSections } from "../../core/model.js";
-import { iterateFootnoteReferenceRuns } from "../../core/footnotes.js";
+} from "@/core/model.js";
+import { getDocumentSections } from "@/core/model.js";
+import { iterateFootnoteReferenceRuns } from "@/core/footnotes.js";
 import type {
   DocContext,
   ExportBuildState,

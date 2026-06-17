@@ -3,14 +3,14 @@ import {
   createEditorDocument,
   createEditorParagraph,
   createEditorStateFromDocument,
-} from "../../../../src/core/editorState.js";
+} from "@/core/editorState.js";
 import {
   estimateStackedColumnWidth,
   layoutStackedGlyphs,
   projectRotatedPoint,
   projectRotatedSlot,
   resolveVerticalMode,
-} from "../../../../src/ui/canvas/verticalText.js";
+} from "@/ui/canvas/verticalText.js";
 
 function stateWith(text: string) {
   const paragraph = createEditorParagraph(text);

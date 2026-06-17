@@ -8,9 +8,9 @@ import {
   createEditorStateFromDocument,
   createInitialEditorState,
   DEFAULT_EDITOR_STYLES,
-} from "../../../../src/core/editorState.js";
-import { DEFAULT_EDITOR_PAGE_SETTINGS } from "../../../../src/core/model.js";
-import { getParagraphs } from "../../../../src/core/model.js";
+} from "@/core/editorState.js";
+import { DEFAULT_EDITOR_PAGE_SETTINGS } from "@/core/model.js";
+import { getParagraphs } from "@/core/model.js";
 
 beforeEach(() => {
   resetEditorIds();

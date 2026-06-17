@@ -3,10 +3,10 @@ import {
   createEditorDocument,
   createEditorParagraphFromRuns,
   createEditorStateFromDocument,
-} from "../../../../src/core/editorState.js";
-import type { CanvasLayoutSnapshot } from "../../../../src/ui/canvas/CanvasLayoutSnapshot.js";
-import type { EditorParagraphNode } from "../../../../src/core/model.js";
-import { resolveCanvasSurfaceHitAtPoint } from "../../../../src/ui/canvas/CanvasHitTestService.js";
+} from "@/core/editorState.js";
+import type { CanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
+import type { EditorParagraphNode } from "@/core/model.js";
+import { resolveCanvasSurfaceHitAtPoint } from "@/ui/canvas/CanvasHitTestService.js";
 
 function createSnapshotWithInlineImage(): {
   snapshot: CanvasLayoutSnapshot;

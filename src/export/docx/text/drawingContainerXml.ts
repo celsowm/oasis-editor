@@ -1,9 +1,9 @@
 import type {
   EditorImageFloatingLayout,
   EditorWrapPolygonPoint,
-} from "../../../core/model.js";
-import type { DocContext } from "../docxTypes.js";
-import { escapeXml } from "../xmlUtils.js";
+} from "@/core/model.js";
+import type { DocContext } from "@/export/docx/docxTypes.js";
+import { escapeXml } from "@/export/docx/xmlUtils.js";
 import {
   OOXML_PERCENT_DENOMINATOR,
   OOXML_ROTATION_UNITS,

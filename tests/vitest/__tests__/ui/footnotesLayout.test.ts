@@ -6,9 +6,9 @@ import {
   createEditorRun,
   createFootnoteReferenceRun,
   resetEditorIds,
-} from "../../../../src/core/editorState.js";
-import { getPageBodyBottom } from "../../../../src/core/model.js";
-import { projectDocumentLayout } from "../../../../src/layoutProjection/index.js";
+} from "@/core/editorState.js";
+import { getPageBodyBottom } from "@/core/model.js";
+import { projectDocumentLayout } from "@/layoutProjection/index.js";
 
 beforeEach(() => {
   resetEditorIds();

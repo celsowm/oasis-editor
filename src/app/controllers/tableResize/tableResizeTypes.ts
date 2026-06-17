@@ -1,5 +1,5 @@
-import type { EditorTableNode } from "../../../core/model.js";
-import type { TableCellLayoutEntry } from "../../../core/tableLayout.js";
+import type { EditorTableNode } from "@/core/model.js";
+import type { TableCellLayoutEntry } from "@/core/tableLayout.js";
 
 export type ResizeSide = "left" | "right" | "top" | "bottom";
 

@@ -10,11 +10,11 @@ import {
   createEditorTableCell,
   createEditorTableRow,
   createFootnoteReferenceRun,
-} from "../../../../src/core/editorState.js";
-import type { EditorTextBoxData } from "../../../../src/core/model.js";
-import { projectDocumentLayout } from "../../../../src/layoutProjection/index.js";
-import { buildCanvasLayoutSnapshot } from "../../../../src/ui/canvas/CanvasLayoutSnapshot.js";
-import { resolveTextBoxRenderHeight } from "../../../../src/ui/canvas/textBoxRenderHeight.js";
+} from "@/core/editorState.js";
+import type { EditorTextBoxData } from "@/core/model.js";
+import { projectDocumentLayout } from "@/layoutProjection/index.js";
+import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
+import { resolveTextBoxRenderHeight } from "@/ui/canvas/textBoxRenderHeight.js";
 
 function createRect(
   left: number,

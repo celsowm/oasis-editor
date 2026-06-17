@@ -4,7 +4,7 @@ import {
   setSelectedTableRowStyleValue,
   setTableCellStyleValue,
   setTableColumnWidths,
-} from "../../core/editorCommands.js";
+} from "@/core/editorCommands.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
@@ -15,12 +15,12 @@ import {
   type EditorState,
   type EditorTableCellStyle,
   type EditorTableNode,
-} from "../../core/model.js";
-import { buildTableCellLayout } from "../../core/tableLayout.js";
+} from "@/core/model.js";
+import { buildTableCellLayout } from "@/core/tableLayout.js";
 import type {
   TablePropertiesDialogApplyValues,
   TablePropertiesDialogInitialValues,
-} from "../components/Dialogs/TablePropertiesDialog.js";
+} from "@/ui/components/Dialogs/TablePropertiesDialog.js";
 
 interface TablePropertiesDialogState {
   isOpen: boolean;

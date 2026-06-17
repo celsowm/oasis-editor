@@ -1,8 +1,8 @@
-import { t } from "../../../../i18n/index.js";
+import { t } from "@/i18n/index.js";
 import {
   STANDARD_FONT_SIZES_PT,
   fontSizePxToPt,
-} from "../../../fontSizeUnits.js";
+} from "@/ui/fontSizeUnits.js";
 import type {
   RibbonRow,
   RibbonTabId,
@@ -10,13 +10,13 @@ import type {
   ToolbarActionApi,
   ToolbarDocumentStyle,
   ToolbarItem,
-} from "../schema/items.js";
-import { UnderlineControl } from "../controls/UnderlineControl.js";
-import { ListOptionsControl } from "../controls/ListOptionsControl.js";
-import { LineSpacingButton } from "../LineSpacingButton.js";
-import { MetricGroup } from "../groups/MetricGroup.js";
-import { TableGroup } from "../groups/TableGroup.js";
-import { SectionGroup } from "../groups/SectionGroup.js";
+} from "@/ui/components/Toolbar/schema/items.js";
+import { UnderlineControl } from "@/ui/components/Toolbar/controls/UnderlineControl.js";
+import { ListOptionsControl } from "@/ui/components/Toolbar/controls/ListOptionsControl.js";
+import { LineSpacingButton } from "@/ui/components/Toolbar/LineSpacingButton.js";
+import { MetricGroup } from "@/ui/components/Toolbar/groups/MetricGroup.js";
+import { TableGroup } from "@/ui/components/Toolbar/groups/TableGroup.js";
+import { SectionGroup } from "@/ui/components/Toolbar/groups/SectionGroup.js";
 
 const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 

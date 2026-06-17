@@ -1,4 +1,4 @@
-import { getPresetPathSegments } from "../../layoutProjection/presetGeometry.js";
+import { getPresetPathSegments } from "@/layoutProjection/presetGeometry.js";
 
 /**
  * Builds a canvas {@link Path2D} for a DrawingML preset shape from its

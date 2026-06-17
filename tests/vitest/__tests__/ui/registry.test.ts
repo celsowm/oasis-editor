@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createToolbarRegistry } from "../../../../src/ui/components/Toolbar/registry/ToolbarRegistry.js";
-import { MenuRegistry } from "../../../../src/ui/components/Menubar/menuRegistry.js";
-import { useEditorRuntimePlugins } from "../../../../src/ui/app/useEditorRuntimePlugins.js";
-import { createDefaultToolbarPreset } from "../../../../src/ui/components/Toolbar/presets/defaultToolbar.js";
-import { OASIS_TOOLBAR_ITEMS } from "../../../../src/ui/components/Toolbar/presets/builtinToolbarIds.js";
-import { RIBBON_TABS } from "../../../../src/ui/components/Toolbar/schema/items.js";
+import { createToolbarRegistry } from "@/ui/components/Toolbar/registry/ToolbarRegistry.js";
+import { MenuRegistry } from "@/ui/components/Menubar/menuRegistry.js";
+import { useEditorRuntimePlugins } from "@/ui/app/useEditorRuntimePlugins.js";
+import { createDefaultToolbarPreset } from "@/ui/components/Toolbar/presets/defaultToolbar.js";
+import { OASIS_TOOLBAR_ITEMS } from "@/ui/components/Toolbar/presets/builtinToolbarIds.js";
+import { RIBBON_TABS } from "@/ui/components/Toolbar/schema/items.js";
 
 describe("UI registries", () => {
   it("deduplicates and orders toolbar items", () => {

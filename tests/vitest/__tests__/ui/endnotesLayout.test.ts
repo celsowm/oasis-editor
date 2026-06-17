@@ -3,14 +3,14 @@ import {
   createEditorDocument,
   createEditorParagraph,
   resetEditorIds,
-} from "../../../../src/core/editorState.js";
-import { renumberEndnotes } from "../../../../src/core/endnotes.js";
-import { projectDocumentLayout } from "../../../../src/layoutProjection/index.js";
+} from "@/core/editorState.js";
+import { renumberEndnotes } from "@/core/endnotes.js";
+import { projectDocumentLayout } from "@/layoutProjection/index.js";
 import type {
   EditorDocument,
   EditorParagraphNode,
   EditorTextRun,
-} from "../../../../src/core/model.js";
+} from "@/core/model.js";
 
 beforeEach(() => {
   resetEditorIds();

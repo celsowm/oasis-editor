@@ -8,7 +8,7 @@ import type {
   SelectedImageBox,
   SelectedTextBoxBox,
   SelectionBox,
-} from "../editorUiTypes.js";
+} from "@/ui/editorUiTypes.js";
 import type {
   OasisEditorEditorFileHandlers,
   OasisEditorEditorInputHandlers,
@@ -16,13 +16,13 @@ import type {
   OasisEditorEditorOverlayProps,
   OasisEditorEditorRefProps,
   OasisEditorEditorSurfaceHandlers,
-} from "../OasisEditorEditor.js";
+} from "@/ui/OasisEditorEditor.js";
 import type { createEditorFocusController } from "./useEditorFocus.js";
-import type { createEditorSurfaceEvents } from "../../app/controllers/useEditorSurfaceEvents.js";
-import type { createEditorTableResize } from "../../app/controllers/useEditorTableResize.js";
-import type { createEditorTableDrag } from "../../app/controllers/useEditorTableDrag.js";
-import type { createEditorTextInput } from "../../app/controllers/useEditorTextInput.js";
-import type { createEditorRevisionController } from "../../app/controllers/useEditorRevision.js";
+import type { createEditorSurfaceEvents } from "@/app/controllers/useEditorSurfaceEvents.js";
+import type { createEditorTableResize } from "@/app/controllers/useEditorTableResize.js";
+import type { createEditorTableDrag } from "@/app/controllers/useEditorTableDrag.js";
+import type { createEditorTextInput } from "@/app/controllers/useEditorTextInput.js";
+import type { createEditorRevisionController } from "@/app/controllers/useEditorRevision.js";
 
 type ImportProgress = NonNullable<
   ReturnType<NonNullable<OasisEditorEditorOverlayProps["importProgress"]>>

@@ -21,8 +21,8 @@ import type {
   EditorBookmarkAnchor,
   EditorBookmarks,
   EditorParagraphNode,
-} from "../model.js";
-import { getParagraphText } from "../model.js";
+} from "@/core/model.js";
+import { getParagraphText } from "@/core/model.js";
 
 /** One paragraph's placement inside the linearized stream. */
 interface ParaSpan {

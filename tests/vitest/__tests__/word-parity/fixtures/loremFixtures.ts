@@ -1,12 +1,12 @@
 import type {
   EditorDocument,
   EditorPageSettings,
-} from "../../../../../src/core/model.js";
+} from "@/core/model.js";
 import {
   createEditorDocument,
   createEditorParagraph,
   createEditorParagraphFromRuns,
-} from "../../../../../src/core/editorState.js";
+} from "@/core/editorState.js";
 
 export const A4_PAGE_SETTINGS: EditorPageSettings = {
   width: 794,

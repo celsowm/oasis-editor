@@ -1,6 +1,6 @@
-import type { EditorTextStyle, EditorTextRun } from "../../../core/model.js";
-import type { DocContext } from "../docxTypes.js";
-import { escapeXml } from "../xmlUtils.js";
+import type { EditorTextStyle, EditorTextRun } from "@/core/model.js";
+import type { DocContext } from "@/export/docx/docxTypes.js";
+import { escapeXml } from "@/export/docx/xmlUtils.js";
 import { serializeRunProperties } from "./runPropertiesXml.js";
 
 export function serializeEndnoteRefMarker(): string {

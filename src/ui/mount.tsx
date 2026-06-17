@@ -4,7 +4,7 @@ import type { OasisEditorAppProps } from "./OasisEditorApp.js";
 import {
   createOasisEditorClient,
   type OasisEditorClient,
-} from "../app/client/OasisEditorClient.js";
+} from "@/app/client/OasisEditorClient.js";
 
 export interface OasisMountInstance extends OasisEditorClient {
   unmount: () => void;

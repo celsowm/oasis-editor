@@ -4,34 +4,34 @@ import type {
   EditorFootnotes,
   EditorState,
   EditorTextRun,
-} from "../model.js";
+} from "@/core/model.js";
 import {
   findParagraphLocation,
   getBlockParagraphs,
   paragraphOffsetToPosition,
-} from "../model.js";
+} from "@/core/model.js";
 import {
   createEditorFootnote,
   createFootnoteReferenceRun,
-} from "../editorState.js";
+} from "@/core/editorState.js";
 import {
   findFootnoteReference,
   getFootnoteDisplayMarker,
   iterateFootnoteReferenceRuns,
   renumberFootnotes,
-} from "../footnotes.js";
+} from "@/core/footnotes.js";
 import {
   createCollapsedSelection,
   isSelectionCollapsed,
-} from "../selection.js";
+} from "@/core/selection.js";
 import { setSelection } from "./selection.js";
-import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
-import { insertRunsAtOffset } from "../document/paragraphRuns.js";
+import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
+import { insertRunsAtOffset } from "@/core/document/paragraphRuns.js";
 import {
   deleteSelectionRange,
   getFocusParagraph,
-} from "../selection/rangeEditing.js";
-import { getParagraphs } from "../model.js";
+} from "@/core/selection/rangeEditing.js";
+import { getParagraphs } from "@/core/model.js";
 
 function ensureFootnotes(
   footnotes: EditorFootnotes | undefined,

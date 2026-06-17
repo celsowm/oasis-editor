@@ -1,5 +1,5 @@
-import type { EditorTextStyle } from "../../core/model.js";
-import { getFontMetricsProvider } from "../../text/fonts/FontMetricsProvider.js";
+import type { EditorTextStyle } from "@/core/model.js";
+import { getFontMetricsProvider } from "@/text/fonts/FontMetricsProvider.js";
 import { PX_PER_POINT } from "./constants.js";
 import {
   buildCanvasFont,

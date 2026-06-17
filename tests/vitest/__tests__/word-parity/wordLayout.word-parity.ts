@@ -6,7 +6,7 @@ import {
   detectWordLayoutParitySupport,
   verifyImportedDocxWordLayoutParity,
   verifyWordLayoutParity,
-} from "../../../../src/testing/wordLayoutParity.js";
+} from "@/testing/wordLayoutParity.js";
 import {
   createA4CalibriLoremMultipageDocument,
   createA4CalibriLoremSinglePageDocument,
@@ -21,7 +21,7 @@ import {
   createEditorTableCell,
   createEditorTableRow,
   DEFAULT_EDITOR_STYLES,
-} from "../../../../src/core/editorState.js";
+} from "@/core/editorState.js";
 import type {
   EditorDocument,
   EditorNamedStyle,
@@ -29,7 +29,7 @@ import type {
   EditorParagraphListStyle,
   EditorParagraphNode,
   EditorTextStyle,
-} from "../../../../src/core/model.js";
+} from "@/core/model.js";
 
 const support = detectWordLayoutParitySupport();
 const describeWordParity = support.supported ? describe : describe.skip;

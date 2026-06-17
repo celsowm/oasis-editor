@@ -2,8 +2,8 @@ import type {
   EditorDocument,
   EditorParagraphListStyle,
   EditorParagraphNode,
-} from "../../core/model.js";
-import { getDocumentParagraphs } from "../../core/model.js";
+} from "@/core/model.js";
+import { getDocumentParagraphs } from "@/core/model.js";
 
 const listOrdinalsCache = new WeakMap<EditorDocument, Map<string, number>>();
 

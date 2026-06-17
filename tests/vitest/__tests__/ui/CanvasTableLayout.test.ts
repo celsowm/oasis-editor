@@ -6,8 +6,8 @@ import {
   createEditorTable,
   createEditorTableCell,
   createEditorTableRow,
-} from "../../../../src/core/editorState.js";
-import { buildCanvasTableLayout } from "../../../../src/ui/canvas/CanvasTableLayout.js";
+} from "@/core/editorState.js";
+import { buildCanvasTableLayout } from "@/ui/canvas/CanvasTableLayout.js";
 
 function lineWidth(line: { slots: Array<{ left: number }> }): number {
   const first = line.slots[0]?.left ?? 0;

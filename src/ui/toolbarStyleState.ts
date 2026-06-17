@@ -4,16 +4,16 @@ import type {
   EditorPosition,
   EditorState,
   EditorTextStyle,
-} from "../core/model.js";
+} from "@/core/model.js";
 import {
   getParagraphText,
   getParagraphs,
   positionToParagraphOffset,
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
-} from "../core/model.js";
-import { clampPosition, normalizeSelection } from "../core/selection.js";
-import type { NormalizedEditorSelection } from "../core/selection.js";
+} from "@/core/model.js";
+import { clampPosition, normalizeSelection } from "@/core/selection.js";
+import type { NormalizedEditorSelection } from "@/core/selection.js";
 
 export type BooleanStyleKey =
   | "bold"

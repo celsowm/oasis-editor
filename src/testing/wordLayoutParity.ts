@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { EditorDocument } from "../core/model.js";
+import type { EditorDocument } from "@/core/model.js";
 import {
   getPageBodyTop,
   getPageContentHeight,
@@ -13,11 +13,11 @@ import {
   getPageHeaderZoneTop,
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
-} from "../core/model.js";
-import { getFontMetricsProvider } from "../text/fonts/FontMetricsProvider.js";
-import { exportEditorDocumentToDocx } from "../export/docx/exportEditorDocumentToDocx.js";
-import { importDocxToEditorDocument } from "../import/docx/importDocxToEditorDocument.js";
-import { projectDocumentLayout } from "../layoutProjection/index.js";
+} from "@/core/model.js";
+import { getFontMetricsProvider } from "@/text/fonts/FontMetricsProvider.js";
+import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { projectDocumentLayout } from "@/layoutProjection/index.js";
 
 const WORD_CANDIDATE_PATHS = [
   "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",

@@ -1,5 +1,5 @@
-import type { EditorParagraphStyle, EditorTextStyle } from "../model.js";
-import { underlineStyleToCssDecorationStyle } from "../textStyleMappings.js";
+import type { EditorParagraphStyle, EditorTextStyle } from "@/core/model.js";
+import { underlineStyleToCssDecorationStyle } from "@/core/textStyleMappings.js";
 
 export function textRunStylesToCss(style?: EditorTextStyle): string {
   if (!style) {

@@ -1,11 +1,11 @@
-import type { FontDecoder } from "../core/types.js";
+import type { FontDecoder } from "@/text/fonts/core/types.js";
 import {
   decompressBrotli,
   decompressBrotliSync,
   type BrotliDecompress,
   type BrotliDecompressSync,
 } from "./Brotli.js";
-import { Buf, readBase128 } from "../vendor/woff2/buffer.js";
+import { Buf, readBase128 } from "@/text/fonts/vendor/woff2/buffer.js";
 import {
   TAG_GLYF,
   TAG_LOCA,
@@ -14,19 +14,19 @@ import {
   TAG_HEAD,
   KNOWN_TAGS,
   tagToString,
-} from "../vendor/woff2/utils.js";
+} from "@/text/fonts/vendor/woff2/utils.js";
 import {
   buildSfnt,
   CHECKSUM_ADJUSTMENT_OFFSET,
-} from "../vendor/woff2/sfnt-builder.js";
+} from "@/text/fonts/vendor/woff2/sfnt-builder.js";
 import {
   type GlyfReconstruction,
   reconstructGlyfTable,
-} from "../vendor/woff2/glyf-reconstructor.js";
+} from "@/text/fonts/vendor/woff2/glyf-reconstructor.js";
 import {
   readNumHMetrics,
   reconstructTransformedHmtx,
-} from "../vendor/woff2/hmtx-reconstructor.js";
+} from "@/text/fonts/vendor/woff2/hmtx-reconstructor.js";
 
 export interface Woff2Dependencies {
   decompress?: BrotliDecompress;

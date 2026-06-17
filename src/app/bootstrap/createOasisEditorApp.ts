@@ -1,10 +1,10 @@
 import { render } from "solid-js/web";
-import { OasisEditorAppLazy } from "../../ui/OasisEditorAppLazy.js";
-import type { OasisEditorAppProps } from "../../ui/OasisEditorApp.js";
+import { OasisEditorAppLazy } from "@/ui/OasisEditorAppLazy.js";
+import type { OasisEditorAppProps } from "@/ui/OasisEditorApp.js";
 import {
   createOasisEditorClient,
   type OasisEditorClient,
-} from "../client/OasisEditorClient.js";
+} from "@/app/client/OasisEditorClient.js";
 
 export type OasisEditorInstance = OasisEditorClient;
 

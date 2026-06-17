@@ -1,15 +1,15 @@
-import type { EditorSelection, EditorState } from "../model.js";
+import type { EditorSelection, EditorState } from "@/core/model.js";
 import {
   getParagraphLength,
   getParagraphs,
   paragraphOffsetToPosition,
   positionToParagraphOffset,
-} from "../model.js";
+} from "@/core/model.js";
 import {
   clampPosition,
   findParagraphIndex,
   isSelectionCollapsed,
-} from "../selection.js";
+} from "@/core/selection.js";
 import {
   collapseToBoundary,
   getFocusParagraph,

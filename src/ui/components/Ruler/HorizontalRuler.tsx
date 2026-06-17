@@ -12,11 +12,11 @@ import {
   normalizePageSettings,
   type EditorPageSettings,
   type EditorState,
-} from "../../../core/model.js";
-import { getToolbarStyleState } from "../../toolbarStyleState.js";
-import type { ToolbarHost } from "../Toolbar/state/createToolbarApi.js";
-import { t } from "../../../i18n/index.js";
-import { EDITOR_SCROLL_PADDING_PX } from "../../editorLayoutConstants.js";
+} from "@/core/model.js";
+import { getToolbarStyleState } from "@/ui/toolbarStyleState.js";
+import type { ToolbarHost } from "@/ui/components/Toolbar/state/createToolbarApi.js";
+import { t } from "@/i18n/index.js";
+import { EDITOR_SCROLL_PADDING_PX } from "@/ui/editorLayoutConstants.js";
 import {
   clamp,
   computeRulerGeometry,

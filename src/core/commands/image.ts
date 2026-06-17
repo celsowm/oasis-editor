@@ -3,7 +3,7 @@ import type {
   EditorPosition,
   EditorState,
   EditorImageRunData,
-} from "../model.js";
+} from "@/core/model.js";
 import {
   getSelectedObjectRun,
   type SelectedObjectRun,
@@ -20,8 +20,8 @@ import {
   getParagraphs,
   paragraphOffsetToPosition,
   positionToParagraphOffset,
-} from "../model.js";
-import { createEditorStyledRun } from "../editorState.js";
+} from "@/core/model.js";
+import { createEditorStyledRun } from "@/core/editorState.js";
 import {
   createImageCaptionParagraph,
   getCaptionSelectionOffset,
@@ -29,30 +29,30 @@ import {
   isImageCaptionParagraph,
   renumberImageCaptionParagraphs,
   updateImageCaptionParagraph,
-} from "../document/imageCaptions.js";
+} from "@/core/document/imageCaptions.js";
 import {
   findParagraphIndex,
   isSelectionCollapsed,
   normalizeSelection,
-} from "../selection.js";
+} from "@/core/selection.js";
 import {
   getStyleAtOffset,
   insertRunsAtOffset,
   buildParagraphFromRuns,
   sliceRuns,
-} from "../document/paragraphRuns.js";
+} from "@/core/document/paragraphRuns.js";
 import {
   cloneParagraph,
   cloneRun,
   cloneParagraphs,
-} from "../document/clone.js";
-import { cloneStateWithParagraphs } from "../document/blockReplacement.js";
+} from "@/core/document/clone.js";
+import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
 import {
   deleteSelectionRange,
   getFocusParagraph,
   preserveSelectionByParagraphOffsets,
   withSelection,
-} from "../selection/rangeEditing.js";
+} from "@/core/selection/rangeEditing.js";
 
 export type SelectedImageRun = SelectedObjectRun;
 

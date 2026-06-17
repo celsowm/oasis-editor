@@ -8,21 +8,21 @@ import type {
   EditorPageSettings,
   EditorParagraphNode,
   EditorParagraphStyle,
-} from "../core/model.js";
+} from "@/core/model.js";
 import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
-} from "../core/model.js";
-import { measureLinesFromRects, type CharRect } from "../ui/caretGeometry.js";
+} from "@/core/model.js";
+import { measureLinesFromRects, type CharRect } from "@/ui/caretGeometry.js";
 import { getParagraphBorderInsets } from "./paragraphBorders.js";
-import type { ITextMeasurer } from "../core/engine.js";
+import type { ITextMeasurer } from "@/core/engine.js";
 import {
   applyLineRule,
   domTextMeasurer,
   resolveLineSpacing,
   resolveRenderedLineHeightPx,
-} from "../ui/textMeasurement.js";
-import { perfTimer } from "../utils/performanceMetrics.js";
+} from "@/ui/textMeasurement.js";
+import { perfTimer } from "@/utils/performanceMetrics.js";
 import {
   collectParagraphFloatingExclusions,
   type FloatingExclusionRect,

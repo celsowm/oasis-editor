@@ -2,8 +2,8 @@ import {
   getDocumentSectionsCanonical,
   type EditorState,
   type EditorTableNode,
-} from "../../../core/model.js";
-import { buildCanvasLayoutSnapshot } from "../../../ui/canvas/CanvasLayoutSnapshot.js";
+} from "@/core/model.js";
+import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
 import type { SnapshotCellRect, TableGeometry } from "./tableResizeTypes.js";
 
 function getAllBlocks(state: EditorState) {

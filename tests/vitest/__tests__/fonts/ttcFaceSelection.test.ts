@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { SfntFontProgram } from "../../../../src/text/fonts/sfnt/SfntFontProgram.js";
-import { readFontAssetSync } from "../../../../src/export/pdf/fonts/officeFontAssets.js";
+import { SfntFontProgram } from "@/text/fonts/sfnt/SfntFontProgram.js";
+import { readFontAssetSync } from "@/export/pdf/fonts/officeFontAssets.js";
 
 interface TableRecord {
   tag: string;

@@ -6,15 +6,15 @@ import {
   createEditorDocument,
   createEditorParagraph,
   createEditorRun,
-} from "../../../../src/core/editorState.js";
-import { exportEditorDocumentToDocx } from "../../../../src/export/docx/exportEditorDocumentToDocx.js";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
+} from "@/core/editorState.js";
+import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 import {
   getDocumentParagraphs,
   type EditorParagraphNode,
   type EditorTextBoxData,
   type EditorTextRun,
-} from "../../../../src/core/model.js";
+} from "@/core/model.js";
 
 /**
  * Loads the real `caixa_texto.docx` fixture shipped at the repo root. Used by

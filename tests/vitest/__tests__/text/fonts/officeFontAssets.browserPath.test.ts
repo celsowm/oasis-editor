@@ -39,7 +39,7 @@ describe("synchronous font metrics without native brotli (browser path)", () => 
 
   it("decodes a bundled WOFF2 face synchronously", async () => {
     const { readFontAssetSync } =
-      await import("../../../../../src/export/pdf/fonts/officeFontAssets.js");
+      await import("@/export/pdf/fonts/officeFontAssets.js");
     const bytes = readFontAssetSync("Tinos-Regular.woff2");
     expect(bytes).toBeInstanceOf(Uint8Array);
     expect((bytes as Uint8Array).byteLength).toBeGreaterThan(1000);
@@ -47,7 +47,7 @@ describe("synchronous font metrics without native brotli (browser path)", () => 
 
   it("yields real Times New Roman advances synchronously (no preload)", async () => {
     const { getFontMetricsProvider } =
-      await import("../../../../../src/text/fonts/FontMetricsProvider.js");
+      await import("@/text/fonts/FontMetricsProvider.js");
     const provider = getFontMetricsProvider();
     const advance = provider.getAdvanceWidthPx(
       "Times New Roman",

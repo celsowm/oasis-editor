@@ -1,4 +1,4 @@
-import { OasisPdfWriter } from "../OasisPdfWriter.js";
+import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 
 export function drawPageBackground(
   writer: OasisPdfWriter,

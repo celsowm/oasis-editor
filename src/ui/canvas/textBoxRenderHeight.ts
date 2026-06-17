@@ -1,5 +1,5 @@
-import { type EditorState, type EditorTextBoxData } from "../../core/model.js";
-import { projectBlocksLayout } from "../../layoutProjection/blocksPagination.js";
+import { type EditorState, type EditorTextBoxData } from "@/core/model.js";
+import { projectBlocksLayout } from "@/layoutProjection/blocksPagination.js";
 
 const TEXT_BOX_AUTOFIT_MEASURE_HEIGHT = 100_000;
 const TEXT_BOX_AUTOFIT_SAFETY_PX = 2;

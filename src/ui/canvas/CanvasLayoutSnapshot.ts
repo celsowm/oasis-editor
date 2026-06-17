@@ -12,10 +12,10 @@ import {
   type EditorPosition,
   type EditorState,
   type EditorTextBoxData,
-} from "../../core/model.js";
-import { buildSegmentTable } from "../../core/tableLayout.js";
-import { projectDocumentLayout } from "../../layoutProjection/index.js";
-import { FOOTNOTE_MARKER_GUTTER_PX } from "../../layoutProjection/index.js";
+} from "@/core/model.js";
+import { buildSegmentTable } from "@/core/tableLayout.js";
+import { projectDocumentLayout } from "@/layoutProjection/index.js";
+import { FOOTNOTE_MARKER_GUTTER_PX } from "@/layoutProjection/index.js";
 import {
   buildCanvasTableLayout,
   type CanvasTableCellLayoutEntry,

@@ -3,7 +3,7 @@ import {
   type EditorEditingZone,
   type EditorPosition,
   type EditorState,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import type {
   CanvasLayoutSnapshot,
   CanvasSnapshotInlineImage,

@@ -4,7 +4,7 @@ import type {
   EditorTextStyle,
   EditorImageRunData,
   EditorTextBoxData,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   WORD_NS,
   getChildrenByTagNameNS,

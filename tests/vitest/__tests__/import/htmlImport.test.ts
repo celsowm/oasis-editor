@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { importHtmlToEditorDocument } from "../../../../src/import/html/importHtmlToEditorDocument.js";
-import { htmlImporter } from "../../../../src/import/html/htmlImporter.js";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
-import { exportEditorDocumentToDocx } from "../../../../src/export/docx/exportEditorDocumentToDocx.js";
-import { getDocumentParagraphs, getParagraphText } from "../../../../src/core/model.js";
+import { importHtmlToEditorDocument } from "@/import/html/importHtmlToEditorDocument.js";
+import { htmlImporter } from "@/import/html/htmlImporter.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { getDocumentParagraphs, getParagraphText } from "@/core/model.js";
 import { getDocumentTables } from "./docxTestHelpers.js";
 
 describe("HTML import — paragraphs and inline formatting", () => {

@@ -2,9 +2,9 @@ import type {
   EditorNamedStyle,
   EditorTextBoxData,
   EditorTextRun,
-} from "../../../core/model.js";
-import type { DocContext } from "../docxTypes.js";
-import { escapeXml } from "../xmlUtils.js";
+} from "@/core/model.js";
+import type { DocContext } from "@/export/docx/docxTypes.js";
+import { escapeXml } from "@/export/docx/xmlUtils.js";
 import { EMU_PER_PX, EMU_PER_PT, OOXML_ROTATION_UNITS } from "./constants.js";
 import { buildDrawingContainerXml } from "./drawingContainerXml.js";
 import { serializeBlocksXml } from "./blocksXml.js";

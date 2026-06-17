@@ -1,12 +1,12 @@
 import { createSignal } from "solid-js";
-import type { EditorState } from "../../core/model.js";
-import { moveBlockToPosition } from "../../core/editorCommands.js";
+import type { EditorState } from "@/core/model.js";
+import { moveBlockToPosition } from "@/core/editorCommands.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
   getEditableBlocksForZone,
   type EditorPosition,
-} from "../../core/model.js";
+} from "@/core/model.js";
 
 export interface TableDragOps {
   dragging: () => boolean;

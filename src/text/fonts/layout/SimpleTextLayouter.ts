@@ -4,7 +4,7 @@ import type {
   GlyphRun,
   ParsedFontProgram,
   TextLayouter,
-} from "../core/types.js";
+} from "@/text/fonts/core/types.js";
 
 export class SimpleTextLayouter implements TextLayouter {
   constructor(private readonly font: ParsedFontProgram) {}

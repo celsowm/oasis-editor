@@ -6,14 +6,14 @@ import {
   Show,
   type JSX,
 } from "solid-js";
-import { t, type TranslationKey } from "../../../i18n/index.js";
+import { t, type TranslationKey } from "@/i18n/index.js";
 import {
   MenuRegistry,
   type MenuItem,
   type MenubarHost,
   defaultMenuRegistry,
 } from "./menuRegistry.js";
-import { ToolIcon } from "../../utils/customIcons.js";
+import { ToolIcon } from "@/ui/utils/customIcons.js";
 import "./defaultMenuItems.js";
 
 export interface MenubarProps {

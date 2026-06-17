@@ -2,8 +2,8 @@ import type {
   EditorLayoutFragment,
   EditorNamedStyle,
   EditorParagraphNode,
-} from "../../core/model.js";
-import { resolveEffectiveTextStyleForParagraph } from "../../core/model.js";
+} from "@/core/model.js";
+import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
 import { measureCharacterWidth } from "./characterWidth.js";
 import type { MeasuredChar, MeasuredToken } from "./types.js";

@@ -1,4 +1,4 @@
-import type { EditorTextStyle } from "../model.js";
+import type { EditorTextStyle } from "@/core/model.js";
 
 export function parseInlineStyles(
   element: Element,

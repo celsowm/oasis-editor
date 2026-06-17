@@ -6,9 +6,9 @@ import {
   createEditorTable,
   createEditorTableCell,
   createEditorTableRow,
-} from "../../../../src/core/editorState.js";
-import { setTableColumnWidths } from "../../../../src/core/editorCommands.js";
-import { getDocumentSectionsCanonical } from "../../../../src/core/model.js";
+} from "@/core/editorState.js";
+import { setTableColumnWidths } from "@/core/editorCommands.js";
+import { getDocumentSectionsCanonical } from "@/core/model.js";
 
 describe("table commands", () => {
   it("persists left indent when resizing the table left edge", () => {

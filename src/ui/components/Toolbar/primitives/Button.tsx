@@ -1,5 +1,5 @@
 import { Show, splitProps, type JSX } from "solid-js";
-import { ToolIcon } from "../../../utils/customIcons.js";
+import { ToolIcon } from "@/ui/utils/customIcons.js";
 
 export interface ToolbarButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: string;

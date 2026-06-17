@@ -2,11 +2,11 @@ import { createSignal } from "solid-js";
 import {
   moveOrCopySelectionToPosition,
   setSelection,
-} from "../../core/editorCommands.js";
-import type { EditorPosition, EditorState } from "../../core/model.js";
-import { getParagraphs, positionToParagraphOffset } from "../../core/model.js";
-import { normalizeSelection } from "../../core/selection.js";
-import type { SurfaceHit } from "../../ui/canvas/CanvasHitTestService.js";
+} from "@/core/editorCommands.js";
+import type { EditorPosition, EditorState } from "@/core/model.js";
+import { getParagraphs, positionToParagraphOffset } from "@/core/model.js";
+import { normalizeSelection } from "@/core/selection.js";
+import type { SurfaceHit } from "@/ui/canvas/CanvasHitTestService.js";
 
 const WORD_LIKE_DRAG_CURSOR =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M6 3.5 6 22.5 10.7 17.9 14.1 26.6 17.2 25.4 13.8 16.9 20.4 16.9Z' fill='white' stroke='white' stroke-width='4'/%3E%3Cpath d='M6 3.5 6 22.5 10.7 17.9 14.1 26.6 17.2 25.4 13.8 16.9 20.4 16.9Z' fill='white' stroke='black' stroke-width='1.4'/%3E%3Cpath d='M7.5 7.1 7.5 19.1 10.9 15.8 14.7 24.4' stroke='white' stroke-width='1.15' opacity='.95'/%3E%3Crect x='22' y='23' width='8.5' height='6.5' rx='.5' fill='white' stroke='white' stroke-width='3'/%3E%3Crect x='22' y='23' width='8.5' height='6.5' rx='.5' stroke='black' stroke-width='1.25' stroke-dasharray='2 2'/%3E%3C/g%3E%3C/svg%3E\") 6 4, auto";

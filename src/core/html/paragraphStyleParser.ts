@@ -1,4 +1,4 @@
-import type { EditorParagraphStyle } from "../model.js";
+import type { EditorParagraphStyle } from "@/core/model.js";
 
 export function parseParagraphStyle(
   element: Element,

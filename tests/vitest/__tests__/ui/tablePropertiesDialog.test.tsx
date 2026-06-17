@@ -4,8 +4,8 @@ import {
   TablePropertiesDialog,
   type TablePropertiesDialogApplyValues,
   type TablePropertiesDialogInitialValues,
-} from "../../../../src/ui/components/Dialogs/TablePropertiesDialog.js";
-import { setLocale } from "../../../../src/i18n/index.js";
+} from "@/ui/components/Dialogs/TablePropertiesDialog.js";
+import { setLocale } from "@/i18n/index.js";
 
 const initial: TablePropertiesDialogInitialValues = {
   activeTab: "table",

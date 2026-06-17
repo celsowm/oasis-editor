@@ -1,9 +1,9 @@
-import { cloneBlock } from "../../core/cloneState.js";
+import { cloneBlock } from "@/core/cloneState.js";
 import {
   createEditorParagraph,
   createEditorTableCell,
   createEditorTableRow,
-} from "../../core/editorState.js";
+} from "@/core/editorState.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
@@ -14,8 +14,8 @@ import {
   type EditorTableCellNode,
   type EditorTableNode,
   type EditorTableRowNode,
-} from "../../core/model.js";
-import { buildTableCellLayout } from "../../core/tableLayout.js";
+} from "@/core/model.js";
+import { buildTableCellLayout } from "@/core/tableLayout.js";
 import {
   findCellAtVisualColumn,
   findFirstNavigableParagraphInTable,

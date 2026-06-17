@@ -7,8 +7,8 @@ import type {
   EditorParagraphStyle,
   EditorTextRun,
   EditorTextStyle,
-} from "../../core/model.js";
-import { createEditorParagraphFromRuns } from "../../core/editorState.js";
+} from "@/core/model.js";
+import { createEditorParagraphFromRuns } from "@/core/editorState.js";
 import { WORD_NS, getFirstChildByTagNameNS } from "./xmlHelpers.js";
 import { PAGE_BREAK_MARKER } from "./units.js";
 import { type AssetRegistry } from "./assetRegistry.js";

@@ -2,20 +2,20 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   createEditorStateFromTexts,
   resetEditorIds,
-} from "../../../../src/core/editorState.js";
+} from "@/core/editorState.js";
 import {
   insertTextAtSelection,
   insertPlainTextAtSelection,
   deleteBackward,
   deleteForward,
-} from "../../../../src/core/commands/text.js";
-import { splitBlockAtSelection } from "../../../../src/core/commands/block.js";
+} from "@/core/commands/text.js";
+import { splitBlockAtSelection } from "@/core/commands/block.js";
 import {
   getParagraphs,
   getParagraphText,
   type EditorBookmarks,
   type EditorState,
-} from "../../../../src/core/model.js";
+} from "@/core/model.js";
 
 beforeEach(() => {
   resetEditorIds();

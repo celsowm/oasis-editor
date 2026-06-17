@@ -1,9 +1,9 @@
-import type { EditorDocument } from "../../../core/model.js";
+import type { EditorDocument } from "@/core/model.js";
 import {
   EFFECTIVE_TEXT_STYLE_DEFAULTS,
   getDocumentParagraphs,
   resolveEffectiveTextStyleForParagraph,
-} from "../../../core/model.js";
+} from "@/core/model.js";
 
 export function collectPdfFontFamilies(
   document: EditorDocument,

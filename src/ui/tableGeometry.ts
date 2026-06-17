@@ -8,8 +8,8 @@ import {
   type EditorState,
   type EditorTableCellNode,
   type EditorTableNode,
-} from "../core/model.js";
-import { buildTableCellLayout } from "../core/tableLayout.js";
+} from "@/core/model.js";
+import { buildTableCellLayout } from "@/core/tableLayout.js";
 
 const POINT_TO_PX = 96 / 72;
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;

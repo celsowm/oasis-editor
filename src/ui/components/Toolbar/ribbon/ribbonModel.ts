@@ -2,9 +2,9 @@ import type {
   RibbonRow,
   RibbonTabId,
   ToolbarItem,
-} from "../schema/items.js";
-import { RIBBON_TABS } from "../schema/items.js";
-import { t } from "../../../../i18n/index.js";
+} from "@/ui/components/Toolbar/schema/items.js";
+import { RIBBON_TABS } from "@/ui/components/Toolbar/schema/items.js";
+import { t } from "@/i18n/index.js";
 
 export interface RibbonTabDefinition {
   id: RibbonTabId;

@@ -8,7 +8,7 @@ import {
   children,
   createEffect,
 } from "solid-js";
-import { t } from "../../../i18n/index.js";
+import { t } from "@/i18n/index.js";
 
 /**
  * Manages toolbar overflow by imperatively moving DOM nodes between

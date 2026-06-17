@@ -3,14 +3,14 @@ import JSZip from "jszip";
 import {
   createEditorDocument,
   createEditorParagraphFromRuns,
-} from "../../../../src/core/editorState.js";
-import { exportEditorDocumentToDocx } from "../../../../src/export/docx/exportEditorDocumentToDocx.js";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
+} from "@/core/editorState.js";
+import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 import type {
   EditorParagraphNode,
   EditorUnderlineStyle,
-} from "../../../../src/core/model.js";
-import { UNDERLINE_STYLE_OPTIONS } from "../../../../src/ui/components/Toolbar/underlineStyles.js";
+} from "@/core/model.js";
+import { UNDERLINE_STYLE_OPTIONS } from "@/ui/components/Toolbar/underlineStyles.js";
 
 async function readDocumentXml(buffer: ArrayBuffer): Promise<string> {
   const zip = await JSZip.loadAsync(buffer);

@@ -3,7 +3,7 @@ import type {
   EditorNumberForm,
   EditorNumberSpacing,
   EditorUnderlineStyle,
-} from "../../../core/model.js";
+} from "@/core/model.js";
 import type {
   FontTabValues,
   AdvancedTabValues,

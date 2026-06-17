@@ -7,7 +7,7 @@ import {
   type JSX,
 } from "solid-js";
 import "./Dialog.css";
-import { t } from "../../../i18n/index.js";
+import { t } from "@/i18n/index.js";
 
 export interface DialogProps {
   isOpen: boolean;

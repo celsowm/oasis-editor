@@ -1,4 +1,4 @@
-import type { ITextMeasurer } from "../core/engine.js";
+import type { ITextMeasurer } from "@/core/engine.js";
 import { composeMeasuredParagraphLines } from "./textMeasurement/composer.js";
 import { resolveRenderedLineHeightPx } from "./textMeasurement/fontMetrics.js";
 

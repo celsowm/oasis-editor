@@ -4,8 +4,8 @@ import type {
   EditorTableCellNode,
   EditorTableNode,
   EditorTableRowStyle,
-} from "../../core/model.js";
-import { buildTableCellLayout } from "../../core/tableLayout.js";
+} from "@/core/model.js";
+import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { escapeXml, normalizeDocxColor, pointsToTwips } from "./xmlUtils.js";
 import { serializeDocxBorderAttrs } from "./borders.js";
 

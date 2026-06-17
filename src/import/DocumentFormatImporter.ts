@@ -1,4 +1,4 @@
-import type { EditorDocument } from "../core/model.js";
+import type { EditorDocument } from "@/core/model.js";
 
 /**
  * Coarse, format-agnostic import stages. Each concrete importer maps its own

@@ -3,7 +3,7 @@ import type {
   RibbonTabId,
   ToolbarActionApi,
   ToolbarItem,
-} from "../schema/items.js";
+} from "@/ui/components/Toolbar/schema/items.js";
 import { buildRibbonGroups } from "./ribbonModel.js";
 import { RibbonGroup } from "./RibbonGroup.js";
 

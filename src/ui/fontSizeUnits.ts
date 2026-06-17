@@ -1,4 +1,4 @@
-import { ptToPx, pxToPt } from "../export/pdf/units.js";
+import { ptToPx, pxToPt } from "@/export/pdf/units.js";
 
 /**
  * Font sizes are stored in the model — and rendered on the canvas — in pixels,

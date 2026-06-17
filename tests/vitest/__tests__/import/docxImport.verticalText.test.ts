@@ -6,9 +6,9 @@ import type {
   EditorBlockNode,
   EditorDocument,
   EditorParagraphNode,
-} from "../../../../src/core/model.js";
-import { importDocxToEditorDocument } from "../../../../src/import/docx/importDocxToEditorDocument.js";
-import { exportEditorDocumentToDocx } from "../../../../src/export/docx/exportEditorDocumentToDocx.js";
+} from "@/core/model.js";
+import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
+import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
 
 /** Loads the real `ooxml_vertical_text_examples.docx` fixture at the repo root. */
 async function loadVerticalDocx(): Promise<ArrayBuffer> {

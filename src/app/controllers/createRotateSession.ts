@@ -2,9 +2,9 @@ import {
   getParagraphs,
   paragraphOffsetToPosition,
   type EditorState,
-} from "../../core/model.js";
-import type { EditorHistoryState } from "../../ui/editorHistory.js";
-import type { EditorLogger } from "../../utils/logger.js";
+} from "@/core/model.js";
+import type { EditorHistoryState } from "@/ui/editorHistory.js";
+import type { EditorLogger } from "@/utils/logger.js";
 
 /** Snap increment (degrees) applied while the Shift key is held. */
 const ROTATION_SNAP_DEGREES = 15;

@@ -1,6 +1,6 @@
-import type { EditorState, EditorParagraphNode } from "../core/model.js";
-import { getDocumentSectionsCanonical, getParagraphs } from "../core/model.js";
-import type { LayoutInvalidation } from "../app/controllers/useEditorLayout.js";
+import type { EditorState, EditorParagraphNode } from "@/core/model.js";
+import { getDocumentSectionsCanonical, getParagraphs } from "@/core/model.js";
+import type { LayoutInvalidation } from "@/app/controllers/useEditorLayout.js";
 
 /**
  * Cheap diff between two editor states. Produces an explicit

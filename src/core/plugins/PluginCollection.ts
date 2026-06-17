@@ -3,7 +3,7 @@ import type {
   OasisPlugin,
   PluginReference,
   Unsubscribe,
-} from "../plugin.js";
+} from "@/core/plugin.js";
 
 interface RegisteredPlugin {
   plugin: OasisPlugin;

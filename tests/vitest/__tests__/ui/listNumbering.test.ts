@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   createEditorDocument,
   createEditorParagraph,
-} from "../../../../src/core/editorState.js";
-import { resolveListPrefix } from "../../../../src/ui/canvas/listNumbering.js";
+} from "@/core/editorState.js";
+import { resolveListPrefix } from "@/ui/canvas/listNumbering.js";
 
 function orderedParagraph(text: string, level = 0) {
   const paragraph = createEditorParagraph(text);

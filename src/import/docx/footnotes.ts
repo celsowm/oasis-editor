@@ -5,7 +5,7 @@ import type {
   EditorFootnotes,
   EditorFootnote,
   EditorNamedStyle,
-} from "../../core/model.js";
+} from "@/core/model.js";
 import {
   WORD_NS,
   getChildrenByTagNameNS,

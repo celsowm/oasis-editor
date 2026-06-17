@@ -1,14 +1,14 @@
-import type { EditorState } from "../model.js";
+import type { EditorState } from "@/core/model.js";
 import {
   getParagraphLength,
   getParagraphs,
   paragraphOffsetToPosition,
-} from "../model.js";
-import { normalizeSelection } from "../selection.js";
+} from "@/core/model.js";
+import { normalizeSelection } from "@/core/selection.js";
 import {
   expandLinkRangeInParagraph,
   sliceRuns,
-} from "../document/paragraphRuns.js";
+} from "@/core/document/paragraphRuns.js";
 import { setTextStyleValue } from "./text.js";
 import { setSelection } from "./selection.js";
 

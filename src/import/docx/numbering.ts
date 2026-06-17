@@ -1,5 +1,5 @@
 import { DOMParser, type Element as XmlElement } from "@xmldom/xmldom";
-import type { EditorParagraphListStyle } from "../../core/model.js";
+import type { EditorParagraphListStyle } from "@/core/model.js";
 import {
   WORD_NS,
   getChildrenByTagNameNS,

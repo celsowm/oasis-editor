@@ -4,8 +4,8 @@ import {
   FontDialog,
   type FontDialogApplyValues,
   type FontDialogInitialValues,
-} from "../../../../src/ui/components/Dialogs/FontDialog.js";
-import { setLocale } from "../../../../src/i18n/index.js";
+} from "@/ui/components/Dialogs/FontDialog.js";
+import { setLocale } from "@/i18n/index.js";
 
 function mountDialog(
   overrides: Partial<{

@@ -1,4 +1,4 @@
-import type { EditorParagraphStyle, EditorTextStyle } from "../model.js";
+import type { EditorParagraphStyle, EditorTextStyle } from "@/core/model.js";
 import type {
   ToggleableTextStyleKey,
   ValueParagraphStyleKey,

@@ -1,7 +1,7 @@
 import { createSignal } from "solid-js";
-import type { EditorState, EditorRevision } from "../../core/model.js";
-import { getParagraphs } from "../../core/model.js";
-import type { RevisionBox } from "../../ui/editorUiTypes.js";
+import type { EditorState, EditorRevision } from "@/core/model.js";
+import { getParagraphs } from "@/core/model.js";
+import type { RevisionBox } from "@/ui/editorUiTypes.js";
 
 export interface UseEditorRevisionProps {
   state: () => EditorState;

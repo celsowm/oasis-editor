@@ -4,26 +4,26 @@ import {
   createEditorParagraph,
   createEditorStateFromDocument,
   resetEditorIds,
-} from "../../../../src/core/editorState.js";
+} from "@/core/editorState.js";
 import {
   collectFootnoteReferences,
   findFootnoteByParagraphId,
   findFootnoteReference,
   getFootnoteDisplayMarker,
   renumberFootnotes,
-} from "../../../../src/core/footnotes.js";
+} from "@/core/footnotes.js";
 import {
   deleteFootnote,
   goToFootnoteBody,
   goToFootnoteReference,
   insertFootnote,
-} from "../../../../src/core/commands/footnotes.js";
+} from "@/core/commands/footnotes.js";
 import {
   findParagraphLocation,
   getDocumentParagraphs,
   paragraphOffsetToPosition,
-} from "../../../../src/core/model.js";
-import { cloneEditorState } from "../../../../src/core/cloneState.js";
+} from "@/core/model.js";
+import { cloneEditorState } from "@/core/cloneState.js";
 
 beforeEach(() => {
   resetEditorIds();

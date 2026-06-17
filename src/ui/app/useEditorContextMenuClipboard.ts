@@ -1,16 +1,16 @@
-import type { EditorState } from "../../core/model.js";
-import { isSelectionCollapsed } from "../../core/selection.js";
+import type { EditorState } from "@/core/model.js";
+import { isSelectionCollapsed } from "@/core/selection.js";
 import {
   deleteBackward,
   getSelectedText as getEditorSelectedText,
   insertClipboardParagraphsAtSelection,
   insertPlainTextAtSelection,
   serializeEditorSelectionToHtml,
-} from "../../core/editorCommands.js";
-import { parseEditorClipboardHtmlWithDom } from "../../app/clipboard/htmlClipboardParser.js";
-import { t } from "../../i18n/index.js";
-import type { ContextMenuItem } from "../components/ContextMenu/ContextMenu.js";
-import type { EditorLogger } from "../../utils/logger.js";
+} from "@/core/editorCommands.js";
+import { parseEditorClipboardHtmlWithDom } from "@/app/clipboard/htmlClipboardParser.js";
+import { t } from "@/i18n/index.js";
+import type { ContextMenuItem } from "@/ui/components/ContextMenu/ContextMenu.js";
+import type { EditorLogger } from "@/utils/logger.js";
 
 interface ContextMenuState {
   isOpen: boolean;

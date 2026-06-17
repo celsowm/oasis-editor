@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createEditorParagraph } from "../../../../src/core/editorState.js";
+import { createEditorParagraph } from "@/core/editorState.js";
 import {
   projectParagraphLayout,
   resolveClosestOffsetInMeasuredLayout,
-} from "../../../../src/layoutProjection/index.js";
+} from "@/layoutProjection/index.js";
 
 describe("text measurement alignment geometry", () => {
   it("applies center alignment to line slots", () => {

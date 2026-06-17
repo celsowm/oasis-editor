@@ -1,6 +1,6 @@
-import type { OasisPlugin } from "../../core/plugin.js";
-import type { TextCaseMode } from "../../core/commands/text.js";
-import type { ToolbarStyleState } from "../../ui/toolbarStyleState.js";
+import type { OasisPlugin } from "@/core/plugin.js";
+import type { TextCaseMode } from "@/core/commands/text.js";
+import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 import {
   createActionCommandBuilder,
   createCommandBuilder,

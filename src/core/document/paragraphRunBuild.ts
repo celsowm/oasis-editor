@@ -2,13 +2,13 @@ import type {
   EditorParagraphNode,
   EditorTextRun,
   EditorTextStyle,
-} from "../model.js";
+} from "@/core/model.js";
 import {
   createEditorParagraphFromRuns,
   createEditorStyledRun,
-} from "../editorState.js";
+} from "@/core/editorState.js";
 import { cloneParagraph, cloneParagraphList } from "./clone.js";
-import { cloneStyle, stylesEqual } from "../textStyle/textStyleMutations.js";
+import { cloneStyle, stylesEqual } from "@/core/textStyle/textStyleMutations.js";
 
 function isObjectRun(run: EditorTextRun): boolean {
   return Boolean(run.image || run.textBox);

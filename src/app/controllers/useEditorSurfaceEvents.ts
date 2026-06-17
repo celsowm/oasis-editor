@@ -12,11 +12,11 @@ import {
   getBlockParagraphs,
   normalizePageSettings,
   DEFAULT_EDITOR_PAGE_SETTINGS,
-} from "../../core/model.js";
-import { resolveWordSelection } from "../../core/wordBoundaries.js";
-import { setSelection } from "../../core/editorCommands.js";
-import { createSectionBoundaryParagraph } from "../../core/editorState.js";
-import type { SurfaceHit } from "../../ui/canvas/CanvasHitTestService.js";
+} from "@/core/model.js";
+import { resolveWordSelection } from "@/core/wordBoundaries.js";
+import { setSelection } from "@/core/editorCommands.js";
+import { createSectionBoundaryParagraph } from "@/core/editorState.js";
+import type { SurfaceHit } from "@/ui/canvas/CanvasHitTestService.js";
 
 export interface UseEditorSurfaceEventsProps {
   state: () => EditorState;

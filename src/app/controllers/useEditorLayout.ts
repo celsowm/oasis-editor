@@ -1,18 +1,18 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
-import type { EditorLayoutParagraph, EditorState } from "../../core/model.js";
-import { buildCanvasLayoutSnapshot } from "../../ui/canvas/CanvasLayoutSnapshot.js";
-import { computeCanvasSelectionGeometry } from "../../ui/canvas/CanvasSelectionGeometry.js";
-import { computeCommentHighlights } from "../../ui/canvas/CanvasCommentGeometry.js";
+import type { EditorLayoutParagraph, EditorState } from "@/core/model.js";
+import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
+import { computeCanvasSelectionGeometry } from "@/ui/canvas/CanvasSelectionGeometry.js";
+import { computeCommentHighlights } from "@/ui/canvas/CanvasCommentGeometry.js";
 import type {
   CaretBox,
   CommentHighlightBox,
   InputBox,
   SelectionBox,
-} from "../../ui/editorUiTypes.js";
+} from "@/ui/editorUiTypes.js";
 import type {
   SelectedImageSelectionBox,
   SelectedTextBoxSelectionBox,
-} from "../../ui/canvas/CanvasSelectionGeometry.js";
+} from "@/ui/canvas/CanvasSelectionGeometry.js";
 
 interface UseEditorLayoutProps {
   state: EditorState;

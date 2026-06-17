@@ -4,9 +4,9 @@ import {
   type EditorBlockNode,
   type EditorState,
   type EditorEditingZone,
-} from "../../core/model.js";
-import { insertTableAtSelection } from "../../core/editorCommands.js";
-import type { EditorLogger } from "../../utils/logger.js";
+} from "@/core/model.js";
+import { insertTableAtSelection } from "@/core/editorCommands.js";
+import type { EditorLogger } from "@/utils/logger.js";
 import {
   findCellAtVisualColumn,
   findFirstNavigableParagraphInTable,

@@ -14,9 +14,9 @@ import type {
   EditorDocument,
   EditorParagraphNode,
   EditorSection,
-} from "../core/model.js";
-import { getFootnoteDisplayMarker } from "../core/footnotes.js";
-import { listReferencedEndnotes } from "../core/endnotes.js";
+} from "@/core/model.js";
+import { getFootnoteDisplayMarker } from "@/core/footnotes.js";
+import { listReferencedEndnotes } from "@/core/endnotes.js";
 
 const FLOW_ID_PREFIX = "endnote-flow";
 

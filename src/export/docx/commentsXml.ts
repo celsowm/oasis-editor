@@ -8,7 +8,7 @@
  * Mirrors `bookmarksXml.ts` for the range half and the footnote body builders
  * for the part half.
  */
-import type { EditorComment, EditorDocument } from "../../core/model.js";
+import type { EditorComment, EditorDocument } from "@/core/model.js";
 import { escapeXml, WORD_NS, WORD14_NS } from "./xmlUtils.js";
 
 const WORD15_NS = "http://schemas.microsoft.com/office/word/2012/wordml";

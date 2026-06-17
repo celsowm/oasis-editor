@@ -1,11 +1,11 @@
 import { Show } from "solid-js";
-import { t } from "../../i18n/index.js";
+import { t } from "@/i18n/index.js";
 import { OasisBrandMark } from "./OasisBrandMark.js";
-import { enablePreciseFontMode } from "../app/localFontAccess.js";
+import { enablePreciseFontMode } from "@/ui/app/localFontAccess.js";
 import {
   setPreciseFontPreference,
   setWelcomeSeen,
-} from "../../app/services/userPreferences.js";
+} from "@/app/services/userPreferences.js";
 
 interface WelcomeOverlayProps {
   isOpen: boolean;

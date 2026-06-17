@@ -1,7 +1,7 @@
 import { createSignal } from "solid-js";
-import type { FontDialogInitialValues } from "../components/Dialogs/FontDialog.js";
-import type { ParagraphDialogInitialValues } from "../components/Dialogs/ParagraphDialog.js";
-import type { TablePropertiesDialogInitialValues } from "../components/Dialogs/TablePropertiesDialog.js";
+import type { FontDialogInitialValues } from "@/ui/components/Dialogs/FontDialog.js";
+import type { ParagraphDialogInitialValues } from "@/ui/components/Dialogs/ParagraphDialog.js";
+import type { TablePropertiesDialogInitialValues } from "@/ui/components/Dialogs/TablePropertiesDialog.js";
 
 export function createEditorDialogs() {
   const [linkDialog, setLinkDialog] = createSignal<{

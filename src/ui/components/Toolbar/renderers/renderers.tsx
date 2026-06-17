@@ -14,23 +14,23 @@ import type {
   ToolbarActionApi,
   ToolbarItem,
   ToolbarItemType,
-} from "../schema/items.js";
+} from "@/ui/components/Toolbar/schema/items.js";
 import {
   bindItem,
   resolveLabel,
   resolveTooltip,
   runItem,
-} from "../state/bindItem.js";
-import { Button } from "../primitives/Button.js";
-import { Menu } from "../primitives/Menu.js";
-import { Select } from "../primitives/Select.js";
-import { Separator } from "../primitives/Separator.js";
-import { ColorPicker } from "../primitives/ColorPicker.js";
-import { GridPicker } from "../primitives/GridPicker.js";
-import { SplitButton } from "../primitives/SplitButton.js";
-import { DEFAULT_PALETTE } from "../presets/defaultPalette.js";
+} from "@/ui/components/Toolbar/state/bindItem.js";
+import { Button } from "@/ui/components/Toolbar/primitives/Button.js";
+import { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
+import { Select } from "@/ui/components/Toolbar/primitives/Select.js";
+import { Separator } from "@/ui/components/Toolbar/primitives/Separator.js";
+import { ColorPicker } from "@/ui/components/Toolbar/primitives/ColorPicker.js";
+import { GridPicker } from "@/ui/components/Toolbar/primitives/GridPicker.js";
+import { SplitButton } from "@/ui/components/Toolbar/primitives/SplitButton.js";
+import { DEFAULT_PALETTE } from "@/ui/components/Toolbar/presets/defaultPalette.js";
 import { ToolbarItemRenderer } from "./ToolbarItemRenderer.js";
-import { ToolIcon } from "../../../utils/customIcons.js";
+import { ToolIcon } from "@/ui/utils/customIcons.js";
 
 export interface RendererProps<I extends ToolbarItem = ToolbarItem> {
   item: I;
