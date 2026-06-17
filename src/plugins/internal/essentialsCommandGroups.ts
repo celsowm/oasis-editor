@@ -1,4 +1,5 @@
 import type { OasisPlugin } from "@/core/plugin.js";
+import type { EditorPageMargins } from "@/core/model.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
 import type {
   ActionCommandBuilder,
@@ -399,9 +400,13 @@ export function buildParagraphAndSectionCommands({
     sectionBreakContinuous: actionCommand("sectionBreakContinuous", () =>
       section.breakContinuous(),
     ),
-    setPageMargins: actionCommand("setPageMargins", (p) => {
-      section.setPageMargins((p ?? {}) as { left?: number; right?: number });
-    }),
+    setPageMargins: actionCommand(
+      "setPageMargins",
+      (p) => {
+        section.setPageMargins((p ?? {}) as Partial<EditorPageMargins>);
+      },
+      () => ({ value: section.getMargins() }),
+    ),
   };
 }
 

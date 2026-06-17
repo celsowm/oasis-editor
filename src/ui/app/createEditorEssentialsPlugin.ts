@@ -16,6 +16,7 @@ import {
   getParagraphText,
   paragraphOffsetToPosition,
   type EditorBorderStyle,
+  type EditorPageMargins,
   type EditorState,
 } from "@/core/model.js";
 import {
@@ -467,7 +468,13 @@ export function createEditorEssentialsRuntimePlugin(
       options.commandsController.applyInsertSectionBreakCommand("nextPage"),
     breakContinuous: () =>
       options.commandsController.applyInsertSectionBreakCommand("continuous"),
-    setPageMargins: (margins: { left?: number; right?: number }) => {
+    getMargins: (): EditorPageMargins | undefined => {
+      const idx = getActiveSectionIndex(options.state());
+      const section =
+        options.state().document.sections?.[idx] ?? options.state().document;
+      return section?.pageSettings?.margins;
+    },
+    setPageMargins: (margins: Partial<EditorPageMargins>) => {
       const idx = getActiveSectionIndex(options.state());
       const section =
         options.state().document.sections?.[idx] ?? options.state().document;

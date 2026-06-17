@@ -17,6 +17,7 @@ import { LineSpacingButton } from "@/ui/components/Toolbar/LineSpacingButton.js"
 import { MetricGroup } from "@/ui/components/Toolbar/groups/MetricGroup.js";
 import { TableGroup } from "@/ui/components/Toolbar/groups/TableGroup.js";
 import { SectionGroup } from "@/ui/components/Toolbar/groups/SectionGroup.js";
+import { MarginsGroup } from "@/ui/components/Toolbar/groups/MarginsGroup.js";
 
 const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 
@@ -199,6 +200,7 @@ const RIBBON_PLACEMENTS: Record<string, RibbonPlacement> = {
   "sep-metrics": { tab: "layout", group: "paragraph", row: 2 },
   "editor-toolbar-table": { tab: "layout", group: "table", row: 1 },
   "sep-table": { tab: "layout", group: "table", row: 2 },
+  "editor-toolbar-margins": { tab: "layout", group: "section", row: 1 },
   "editor-toolbar-section": { tab: "layout", group: "section", row: 1 },
 };
 
@@ -731,6 +733,11 @@ export function createDefaultToolbarPreset(): ToolbarItem[] {
   });
 
   // --- Section ---
+  items.push({
+    type: "custom",
+    id: "editor-toolbar-margins",
+    render: (api) => MarginsGroup({ api }),
+  });
   items.push({
     type: "custom",
     id: "editor-toolbar-section",

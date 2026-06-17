@@ -1,4 +1,5 @@
 import type { OasisPlugin } from "@/core/plugin.js";
+import type { EditorPageMargins } from "@/core/model.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
 import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 import {
@@ -133,7 +134,8 @@ export interface EssentialsSectionCapability {
   setOrientation: (orientation: "portrait" | "landscape") => void;
   breakNextPage: () => void;
   breakContinuous: () => void;
-  setPageMargins: (margins: { left?: number; right?: number }) => void;
+  getMargins: () => EditorPageMargins | undefined;
+  setPageMargins: (margins: Partial<EditorPageMargins>) => void;
 }
 
 export interface EssentialsTableCapability {
