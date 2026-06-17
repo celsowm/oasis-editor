@@ -199,7 +199,7 @@ export function FontTab(props: FontTabProps) {
           >
             <option value="none">{t("toolbar.underlineRemove")}</option>
             <For each={UNDERLINE_STYLE_OPTIONS}>
-              {(option) => <option value={option.value}>{option.label}</option>}
+              {(option) => <option value={option.value}>{t(option.labelKey)}</option>}
             </For>
           </select>
         </div>

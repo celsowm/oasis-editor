@@ -6,7 +6,7 @@ import { t } from "../../../../i18n/index.js";
 import type { ToolbarActionApi } from "../schema/items.js";
 
 const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
-const UNDERLINE_BUTTON_TOOLTIP = `Underline (${mod}+U)`;
+const UNDERLINE_BUTTON_TOOLTIP = `${t("toolbar.underline")} (${mod}+U)`;
 const TEST_ID = "editor-toolbar-underline";
 
 /**
@@ -113,7 +113,7 @@ export function UnderlineControl(props: {
                   applyUnderlineStyle(option.value);
                   setOpen(false);
                 }}
-                title={option.label}
+                title={t(option.labelKey)}
               >
                 <span class="oasis-editor-underline-menu-preview">
                   <Show
@@ -141,7 +141,7 @@ export function UnderlineControl(props: {
                   </Show>
                 </span>
                 <span class="oasis-editor-underline-menu-label">
-                  {option.label}
+                  {t(option.labelKey)}
                 </span>
               </button>
             );
