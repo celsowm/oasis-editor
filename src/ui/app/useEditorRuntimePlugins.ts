@@ -52,6 +52,7 @@ export function useEditorRuntimePlugins(
         tab: item.tab ?? "plugins",
         group: item.group ?? "general",
         row: item.row ?? 1,
+        ribbonSize: item.ribbonSize,
         order: item.order,
       };
       toolbarRegistry.register(contributed);
@@ -77,7 +78,7 @@ export function useEditorRuntimePlugins(
     runtimePlugins,
     toolbarRegistry,
     menuRegistry,
-    dispose: () => {
+    dispose: (): void => {
       for (const id of contributedToolbarIds) {
         toolbarRegistry.remove(id);
       }

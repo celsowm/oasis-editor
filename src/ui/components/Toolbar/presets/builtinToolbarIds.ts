@@ -37,6 +37,7 @@ export const OASIS_TOOLBAR_ITEMS = {
   lineSpacing: "editor-toolbar-line-spacing-control",
   metrics: "editor-toolbar-metrics",
   table: "editor-toolbar-table",
+  margins: "editor-toolbar-margins",
   section: "editor-toolbar-section",
 } as const;
 

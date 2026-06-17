@@ -4,7 +4,7 @@ import type {
   ToolbarItem,
 } from "@/ui/components/Toolbar/schema/items.js";
 import { RIBBON_TABS } from "@/ui/components/Toolbar/schema/items.js";
-import { t } from "@/i18n/index.js";
+import { t, type TranslationKey } from "@/i18n/index.js";
 
 export interface RibbonTabDefinition {
   id: RibbonTabId;
@@ -14,11 +14,12 @@ export interface RibbonTabDefinition {
 export interface RibbonGroupModel {
   id: string;
   label: string;
+  largeItems: ToolbarItem[];
   rows: Record<RibbonRow, ToolbarItem[]>;
   order: number;
 }
 
-const TAB_LABEL_KEYS: Record<RibbonTabId, string> = {
+const TAB_LABEL_KEYS: Record<RibbonTabId, TranslationKey> = {
   file: "ribbon.tab.file",
   home: "ribbon.tab.home",
   insert: "ribbon.tab.insert",
@@ -32,7 +33,7 @@ const TAB_LABEL_KEYS: Record<RibbonTabId, string> = {
   ai: "ribbon.tab.ai",
 };
 
-const GROUP_LABEL_KEYS: Record<string, string> = {
+const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
   clipboard: "ribbon.group.clipboard",
   font: "ribbon.group.font",
   paragraph: "ribbon.group.paragraph",
@@ -49,7 +50,7 @@ const GROUP_LABEL_KEYS: Record<string, string> = {
 };
 
 export const RIBBON_TAB_DEFINITIONS: RibbonTabDefinition[] = RIBBON_TABS.map(
-  (id) => ({ id, label: t(TAB_LABEL_KEYS[id] as any) }),
+  (id) => ({ id, label: t(TAB_LABEL_KEYS[id]) }),
 );
 
 export const DEFAULT_RIBBON_TAB: RibbonTabId = "plugins";
@@ -99,8 +100,13 @@ export function normalizeRibbonRow(row: ToolbarItem["row"]): RibbonRow {
   return row === 2 ? 2 : DEFAULT_RIBBON_ROW;
 }
 
+export function isLargeRibbonItem(item: ToolbarItem): boolean {
+  return "ribbonSize" in item && item.ribbonSize === "large";
+}
+
 export function ribbonGroupLabel(group: string): string {
-  return t((GROUP_LABEL_KEYS[group] ?? group) as any);
+  const key = GROUP_LABEL_KEYS[group];
+  return key ? t(key) : group;
 }
 
 export function buildRibbonGroups(
@@ -122,13 +128,18 @@ export function buildRibbonGroups(
       group = {
         id: groupId,
         label: ribbonGroupLabel(groupId),
+        largeItems: [],
         rows: { 1: [], 2: [] },
         order: groupOrder,
       };
       groups.set(groupId, group);
     }
     group.order = Math.min(group.order, groupOrder);
-    group.rows[row].push(item);
+    if (isLargeRibbonItem(item)) {
+      group.largeItems.push(item);
+    } else {
+      group.rows[row].push(item);
+    }
   });
 
   return Array.from(groups.values()).sort((a, b) => a.order - b.order);

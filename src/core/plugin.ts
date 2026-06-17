@@ -2,7 +2,11 @@ import type { JSX } from "solid-js";
 import type { EditorState } from "./model.js";
 import type { Editor } from "./Editor.js";
 import type { CommandRef } from "./commands/CommandRef.js";
-import type { RibbonRow, RibbonTabId } from "@/ui/components/Toolbar/schema/items.js";
+import type {
+  RibbonRow,
+  RibbonSize,
+  RibbonTabId,
+} from "@/ui/components/Toolbar/schema/items.js";
 
 export type Unsubscribe = () => void;
 
@@ -63,6 +67,7 @@ export interface PluginAction {
   tab?: RibbonTabId;
   group?: string; // e.g. "insert", "format"
   row?: RibbonRow;
+  ribbonSize?: RibbonSize;
   order?: number;
 }
 
@@ -119,9 +124,7 @@ export interface OasisPluginUiSnapshot {
 }
 
 export interface OasisPluginUiRegistry {
-  registerFloatingAction(
-    contribution: FloatingActionContribution,
-  ): Unsubscribe;
+  registerFloatingAction(contribution: FloatingActionContribution): Unsubscribe;
   registerSidePanel(contribution: SidePanelContribution): Unsubscribe;
   openSidePanel(id: string): void;
   closeSidePanel(id?: string): void;

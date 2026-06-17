@@ -20,6 +20,7 @@ export const RIBBON_TABS = [
 
 export type RibbonTabId = (typeof RIBBON_TABS)[number];
 export type RibbonRow = 1 | 2;
+export type RibbonSize = "normal" | "large";
 
 /** Reactive snapshot of a command's state, as consumed by toolbar items. */
 export interface ToolbarCommandState {
@@ -68,6 +69,8 @@ interface ToolbarItemBase extends ItemReactiveOverrides {
   group?: string;
   /** Two-row ribbon placement. Missing values default to row 1. */
   row?: RibbonRow;
+  /** Ribbon-only visual scale. Large items span both toolbar rows. */
+  ribbonSize?: RibbonSize;
   testId?: string;
   tooltipKey?: TranslationKey;
   tooltip?: string;

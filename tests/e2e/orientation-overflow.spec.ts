@@ -52,3 +52,36 @@ test("landscape does not force horizontal scroll on a 16:9 viewport", async ({
   // horizontal scrollbar (allow 1px for sub-pixel rounding).
   expect(landscape!.overflowX).toBeLessThanOrEqual(1);
 });
+
+test("layout ribbon renders margins and orientation as full-height buttons", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await gotoEditor(page);
+
+  await page.getByTestId("editor-ribbon-tab-layout").click();
+
+  const normalBox = await page
+    .getByTestId("editor-toolbar-metrics-dropdown")
+    .boundingBox();
+  const marginsBox = await page
+    .getByTestId("editor-toolbar-margins-dropdown")
+    .boundingBox();
+  const orientationBox = await page
+    .getByTestId("editor-toolbar-section-dropdown")
+    .boundingBox();
+
+  expect(normalBox).not.toBeNull();
+  expect(marginsBox).not.toBeNull();
+  expect(orientationBox).not.toBeNull();
+  expect(marginsBox!.height).toBeGreaterThan(normalBox!.height + 20);
+  expect(orientationBox!.height).toBeGreaterThan(normalBox!.height + 20);
+
+  await page.getByTestId("editor-toolbar-margins-dropdown").click();
+  await expect(page.getByTestId("editor-toolbar-margins-custom")).toBeVisible();
+
+  await page.getByTestId("editor-toolbar-section-dropdown").click();
+  await expect(
+    page.getByTestId("editor-toolbar-orientation-landscape"),
+  ).toBeVisible();
+});

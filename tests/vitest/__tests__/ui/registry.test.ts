@@ -5,6 +5,7 @@ import { useEditorRuntimePlugins } from "@/ui/app/useEditorRuntimePlugins.js";
 import { createDefaultToolbarPreset } from "@/ui/components/Toolbar/presets/defaultToolbar.js";
 import { OASIS_TOOLBAR_ITEMS } from "@/ui/components/Toolbar/presets/builtinToolbarIds.js";
 import { RIBBON_TABS } from "@/ui/components/Toolbar/schema/items.js";
+import { buildRibbonGroups } from "@/ui/components/Toolbar/ribbon/ribbonModel.js";
 
 describe("UI registries", () => {
   it("deduplicates and orders toolbar items", () => {
@@ -85,6 +86,7 @@ describe("UI registries", () => {
       tab: "home",
       group: "font",
       row: 1,
+      ribbonSize: "large",
     });
     registry.insertAfter("font", {
       id: "ai",
@@ -100,6 +102,7 @@ describe("UI registries", () => {
       group: "assistant",
       row: 2,
     });
+    expect(registry.get("font")).toMatchObject({ ribbonSize: "large" });
 
     registry.replace("font", {
       id: "font",
@@ -108,6 +111,7 @@ describe("UI registries", () => {
       tab: "home",
       group: "text",
       row: 2,
+      ribbonSize: "large",
     });
     registry.move("ai", { before: "font" });
 
@@ -119,6 +123,7 @@ describe("UI registries", () => {
       tab: "home",
       group: "text",
       row: 2,
+      ribbonSize: "large",
     });
   });
 
@@ -142,6 +147,62 @@ describe("UI registries", () => {
     expect(
       items.find((item) => item.id === OASIS_TOOLBAR_ITEMS.specialIndent),
     ).toMatchObject({ tab: "home", group: "paragraph", row: 1 });
+    expect(
+      items.find((item) => item.id === OASIS_TOOLBAR_ITEMS.margins),
+    ).toMatchObject({ tab: "layout", group: "section", ribbonSize: "large" });
+    expect(
+      items.find((item) => item.id === OASIS_TOOLBAR_ITEMS.section),
+    ).toMatchObject({ tab: "layout", group: "section", ribbonSize: "large" });
+  });
+
+  it("separates large ribbon items from normal two-row items", () => {
+    const groups = buildRibbonGroups(
+      [
+        {
+          id: "large-a",
+          type: "button",
+          command: "largeA",
+          tab: "layout",
+          group: "section",
+          row: 1,
+          ribbonSize: "large",
+        },
+        {
+          id: "row-one",
+          type: "button",
+          command: "rowOne",
+          tab: "layout",
+          group: "section",
+          row: 1,
+        },
+        {
+          id: "large-b",
+          type: "menu",
+          tab: "layout",
+          group: "section",
+          row: 2,
+          ribbonSize: "large",
+          content: { kind: "items", items: [] },
+        },
+        {
+          id: "row-two",
+          type: "button",
+          command: "rowTwo",
+          tab: "layout",
+          group: "section",
+          row: 2,
+        },
+      ],
+      "layout",
+    );
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.largeItems.map((item) => item.id)).toEqual([
+      "large-a",
+      "large-b",
+    ]);
+    expect(groups[0]!.rows[1].map((item) => item.id)).toEqual(["row-one"]);
+    expect(groups[0]!.rows[2].map((item) => item.id)).toEqual(["row-two"]);
   });
 
   it("deduplicates and unregisters menu items", () => {
@@ -182,9 +243,7 @@ describe("UI registries", () => {
     });
 
     expect(
-      first.menuRegistry
-        .getItems()
-        .some((item) => item.id === "client_custom"),
+      first.menuRegistry.getItems().some((item) => item.id === "client_custom"),
     ).toBe(true);
     expect(
       second.menuRegistry
@@ -208,6 +267,31 @@ describe("UI registries", () => {
       tab: "plugins",
       group: "general",
       row: 1,
+    });
+  });
+
+  it("preserves plugin-contributed large ribbon items", () => {
+    const runtime = useEditorRuntimePlugins({
+      essentialsPlugin: { name: "Essentials" },
+      externalPlugins: [
+        {
+          name: "Plugin",
+          toolbar: [
+            {
+              id: "plugin_large_action",
+              command: "pluginLargeAction",
+              ribbonSize: "large",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(runtime.toolbarRegistry.get("plugin_large_action")).toMatchObject({
+      tab: "plugins",
+      group: "general",
+      row: 1,
+      ribbonSize: "large",
     });
   });
 });

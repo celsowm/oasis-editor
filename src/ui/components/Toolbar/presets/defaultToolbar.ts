@@ -1,8 +1,5 @@
 import { t } from "@/i18n/index.js";
-import {
-  STANDARD_FONT_SIZES_PT,
-  fontSizePxToPt,
-} from "@/ui/fontSizeUnits.js";
+import { STANDARD_FONT_SIZES_PT, fontSizePxToPt } from "@/ui/fontSizeUnits.js";
 import type {
   RibbonRow,
   RibbonTabId,
@@ -736,11 +733,13 @@ export function createDefaultToolbarPreset(): ToolbarItem[] {
   items.push({
     type: "custom",
     id: "editor-toolbar-margins",
+    ribbonSize: "large",
     render: (api) => MarginsGroup({ api }),
   });
   items.push({
     type: "custom",
     id: "editor-toolbar-section",
+    ribbonSize: "large",
     render: (api) => SectionGroup({ api }),
   });
 

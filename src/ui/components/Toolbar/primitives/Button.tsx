@@ -7,6 +7,7 @@ export interface ToolbarButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonE
   active?: boolean;
   tooltip?: string;
   wide?: boolean;
+  ribbonSize?: "normal" | "large";
 }
 
 /** Generic toolbar button primitive (icon and/or label, active/disabled). */
@@ -17,12 +18,13 @@ export function Button(props: ToolbarButtonProps): JSX.Element {
     "active",
     "tooltip",
     "wide",
+    "ribbonSize",
     "aria-label",
     "class",
     "classList",
   ]);
 
-  const ariaLabel = () =>
+  const ariaLabel = (): string =>
     local["aria-label"] || local.tooltip || local.label || "";
 
   return (
@@ -32,6 +34,7 @@ export function Button(props: ToolbarButtonProps): JSX.Element {
       classList={{
         "oasis-editor-tool-button-active": local.active,
         "oasis-editor-tool-button-wide": local.wide,
+        "oasis-editor-tool-button-ribbon-large": local.ribbonSize === "large",
         ...local.classList,
       }}
       title={local.tooltip}

@@ -108,11 +108,25 @@
 }
 
 .oasis-editor-ribbon-group-rows {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 63px;
+}
+
+.oasis-editor-ribbon-normal-rows {
   display: grid;
   grid-template-rows: 30px 30px;
   align-content: start;
   gap: 3px;
   min-height: 63px;
+}
+
+.oasis-editor-ribbon-large-items {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 63px;
 }
 
 .oasis-editor-ribbon-row {
@@ -138,6 +152,19 @@
   flex-shrink: 0;
 }
 
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-toolbar-item-ribbon-large {
+  align-items: stretch !important;
+  height: 63px;
+}
+
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-toolbar-item-ribbon-large
+  .oasis-editor-toolbar-dropdown {
+  display: flex;
+  height: 100%;
+}
+
 .oasis-editor-toolbar-view-ribbon .oasis-editor-tool-button,
 .oasis-editor-toolbar-view-ribbon .oasis-editor-tool-select,
 .oasis-editor-toolbar-view-ribbon .oasis-editor-color-split {
@@ -150,6 +177,51 @@
   min-width: 30px;
   padding: 4px 7px;
   border-radius: 3px;
+}
+
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-toolbar-item-ribbon-large
+  .oasis-editor-tool-button,
+.oasis-editor-toolbar-view-ribbon .oasis-editor-tool-button-ribbon-large {
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 64px;
+  width: 64px;
+  max-width: 72px;
+  min-height: 63px;
+  height: 63px;
+  padding: 5px 4px 3px;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-toolbar-item-ribbon-large
+  .oasis-editor-tool-button
+  span,
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-tool-button-ribbon-large
+  span {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 11px;
+}
+
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-toolbar-item-ribbon-large
+  .oasis-editor-dropdown-chevron,
+.oasis-editor-toolbar-view-ribbon
+  .oasis-editor-tool-button-ribbon-large
+  .oasis-editor-dropdown-chevron {
+  width: 12px;
+  height: 12px;
+  margin-left: 0;
 }
 
 .oasis-editor-toolbar-view-ribbon .oasis-editor-tool-select {

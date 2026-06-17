@@ -1,18 +1,19 @@
 import { Button } from "@/ui/components/Toolbar/primitives/Button.js";
 import { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
 import { t } from "@/i18n/index.js";
+import type { JSX } from "solid-js";
 import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
 /** Section page-setup panel (orientation, section breaks) — command-driven. */
-export function SectionGroup(props: { api: ToolbarActionApi }) {
+export function SectionGroup(props: { api: ToolbarActionApi }): JSX.Element {
   const api = props.api;
 
   return (
     <Menu
       icon="layout-template"
+      label={t("section.orientation")}
       testId="editor-toolbar-section-dropdown"
       tooltip={t("section.pageSetup")}
-      hideChevron
       panelClass="oasis-editor-toolbar-panel"
       keepMounted
     >
@@ -22,7 +23,10 @@ export function SectionGroup(props: { api: ToolbarActionApi }) {
           active={!api.commands.state("toggleOrientation").isActive}
           data-testid="editor-toolbar-orientation-portrait"
           onClick={() =>
-            api.commands.execute({ name: "setOrientation", payload: "portrait" })
+            api.commands.execute({
+              name: "setOrientation",
+              payload: "portrait",
+            })
           }
           tooltip={t("section.portrait")}
         />

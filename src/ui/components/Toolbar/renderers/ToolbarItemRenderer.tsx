@@ -1,6 +1,9 @@
 import { Dynamic } from "solid-js/web";
 import { Show, type JSX } from "solid-js";
-import type { ToolbarActionApi, ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
+import type {
+  ToolbarActionApi,
+  ToolbarItem,
+} from "@/ui/components/Toolbar/schema/items.js";
 import { bindItem } from "@/ui/components/Toolbar/state/bindItem.js";
 import { resolveRenderer } from "./renderers.js";
 
@@ -15,11 +18,16 @@ export function ToolbarItemRenderer(props: {
   api: ToolbarActionApi;
 }): JSX.Element {
   const binding = bindItem(props.item, props.api);
-  const component = () => resolveRenderer(props.item.type);
+  const component = (): ReturnType<typeof resolveRenderer> =>
+    resolveRenderer(props.item.type);
 
   return (
     <div
       class="oasis-editor-toolbar-item"
+      classList={{
+        "oasis-editor-toolbar-item-ribbon-large":
+          "ribbonSize" in props.item && props.item.ribbonSize === "large",
+      }}
       style={{
         display: binding.visible() ? "flex" : "none",
         "align-items": "center",

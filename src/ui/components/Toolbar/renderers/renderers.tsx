@@ -58,6 +58,7 @@ function RenderButton(props: RendererProps<ButtonItem>): JSX.Element {
       icon={props.item.iconName}
       label={resolveLabel(props.item, props.api)}
       wide={props.item.wide}
+      ribbonSize={props.item.ribbonSize}
       active={b.active()}
       disabled={b.disabled()}
       data-testid={props.item.testId}
@@ -74,6 +75,7 @@ function RenderToggle(props: RendererProps<ToggleItem>): JSX.Element {
       icon={props.item.iconName}
       label={resolveLabel(props.item, props.api)}
       wide={props.item.wide}
+      ribbonSize={props.item.ribbonSize}
       active={b.active()}
       disabled={b.disabled()}
       data-testid={props.item.testId}
@@ -94,6 +96,7 @@ function RenderMenu(props: RendererProps<MenuItem>): JSX.Element {
       active={b.active()}
       disabled={b.disabled()}
       hideChevron={props.item.hideChevron}
+      ribbonSize={props.item.ribbonSize}
       panelClass={props.item.panelClass}
       keepMounted={props.item.keepMounted}
     >
@@ -156,7 +159,7 @@ function RenderSelect(props: RendererProps<SelectItem>): JSX.Element {
 function RenderColorPicker(props: RendererProps<ColorPickerItem>): JSX.Element {
   const [lastValue, setLastValue] = createSignal(props.item.defaultValue);
   const b = bindItem(props.item, props.api);
-  const apply = (value: string | null) => {
+  const apply = (value: string | null): void => {
     if (value) setLastValue(value);
     props.api.commands.execute(props.item.command, value);
   };
@@ -192,7 +195,7 @@ function RenderColorPicker(props: RendererProps<ColorPickerItem>): JSX.Element {
 }
 
 function RenderGridPicker(props: RendererProps<GridPickerItem>): JSX.Element {
-  const onSelect = (rows: number, cols: number) => {
+  const onSelect = (rows: number, cols: number): void => {
     props.api.commands.execute(props.item.command, { rows, cols });
   };
   return (

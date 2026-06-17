@@ -9,6 +9,7 @@ export interface MenuProps {
   active?: boolean;
   disabled?: boolean;
   hideChevron?: boolean;
+  ribbonSize?: "normal" | "large";
   /** Extra class for the popover panel. */
   panelClass?: string;
   keepMounted?: boolean;
@@ -21,7 +22,7 @@ export interface MenuProps {
  */
 export function Menu(props: MenuProps): JSX.Element {
   const [open, setOpen] = createSignal(false);
-  const ariaLabel = () => props.tooltip || props.label || "";
+  const ariaLabel = (): string => props.tooltip || props.label || "";
 
   return (
     <div class="oasis-editor-toolbar-dropdown">
@@ -39,6 +40,8 @@ export function Menu(props: MenuProps): JSX.Element {
             class="oasis-editor-tool-button oasis-editor-tool-button-dropdown"
             classList={{
               "oasis-editor-tool-button-active": props.active || api.open,
+              "oasis-editor-tool-button-ribbon-large":
+                props.ribbonSize === "large",
             }}
             onClick={() => api.toggle()}
             disabled={props.disabled}
