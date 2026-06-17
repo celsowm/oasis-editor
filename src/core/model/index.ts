@@ -76,6 +76,7 @@ export type {
 export type {
   EditorPageMargins,
   EditorPageSettings,
+  EditorColumnsSettings,
   EditorSection,
   EditorFootnoteSettings,
   EditorFootnotes,
@@ -147,6 +148,7 @@ export {
   normalizePageSettings,
   getDocumentPageSettings,
   getPageContentWidth,
+  getPageColumnRects,
   getPageHeaderZoneTop,
   getPageBodyTop,
   getPageFooterReferenceTop,

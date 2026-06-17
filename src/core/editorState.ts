@@ -367,6 +367,7 @@ export function createEditorDocument(
           height: pageSettings.height,
           orientation: pageSettings.orientation,
           margins: { ...pageSettings.margins },
+          ...(pageSettings.columns ? { columns: pageSettings.columns } : {}),
         }
       : {
           width: DEFAULT_EDITOR_PAGE_SETTINGS.width,

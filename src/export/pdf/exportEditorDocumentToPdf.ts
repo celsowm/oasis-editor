@@ -4,6 +4,7 @@ import {
   resolveEffectiveTextStyleForParagraph,
   getPageBodyTop,
   getPageContentWidth,
+  getPageColumnRects,
   getPageHeaderZoneTop,
 } from "@/core/model.js";
 import { findFootnoteReference } from "@/core/footnotes.js";
@@ -54,18 +55,48 @@ export async function exportEditorDocumentToPdf(
       listOrdinals,
       page.pageSettings,
     );
-    await drawBlockList(
-      writer,
-      pageIndex,
-      page.blocks,
-      document,
-      originX,
-      page.bodyTop ?? getPageBodyTop(page.pageSettings),
-      contentWidth,
-      fontRegistry,
-      listOrdinals,
-      page.pageSettings,
+    const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
+    const hasColumns = page.blocks.some(
+      (block) => block.columnIndex !== undefined,
     );
+    if (hasColumns) {
+      const columnRects = getPageColumnRects(page.pageSettings);
+      const byColumn = new Map<number, typeof page.blocks>();
+      for (const block of page.blocks) {
+        const column = block.columnIndex ?? 0;
+        const bucket = byColumn.get(column) ?? [];
+        bucket.push(block);
+        byColumn.set(column, bucket);
+      }
+      for (const [column, columnBlocks] of byColumn) {
+        const rect = columnRects[column] ?? columnRects[0]!;
+        await drawBlockList(
+          writer,
+          pageIndex,
+          columnBlocks,
+          document,
+          rect.left,
+          bodyTop,
+          rect.width,
+          fontRegistry,
+          listOrdinals,
+          page.pageSettings,
+        );
+      }
+    } else {
+      await drawBlockList(
+        writer,
+        pageIndex,
+        page.blocks,
+        document,
+        originX,
+        bodyTop,
+        contentWidth,
+        fontRegistry,
+        listOrdinals,
+        page.pageSettings,
+      );
+    }
     await drawBlockList(
       writer,
       pageIndex,

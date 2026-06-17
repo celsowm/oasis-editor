@@ -75,6 +75,11 @@ export interface EditorLayoutBlock {
   };
   sourceBlockId?: string;
   sourceBlock: EditorBlockNode;
+  /**
+   * For newspaper multi-column sections: which text column (0-based) this block
+   * was flowed into on its physical page. Undefined for single-column pages.
+   */
+  columnIndex?: number;
 }
 
 export interface TableCellBlockPosition {

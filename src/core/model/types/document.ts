@@ -25,11 +25,29 @@ export interface EditorPageMargins {
   gutter: number;
 }
 
+/**
+ * Newspaper-style multi-column section layout (`w:cols`). Absent for ordinary
+ * single-column documents.
+ */
+export interface EditorColumnsSettings {
+  /** `w:num` — number of columns (only meaningful when > 1). */
+  count: number;
+  /** `w:space` — uniform gap between columns, in px. */
+  space: number;
+  /** `w:sep` — draw a vertical rule between columns. */
+  separator?: boolean;
+  /** `w:equalWidth` — defaults to true. */
+  equalWidth?: boolean;
+  /** Explicit per-column widths/spacing (`<w:col>`); only when unequal. */
+  columns?: { width: number; space: number }[];
+}
+
 export interface EditorPageSettings {
   width: number;
   height: number;
   orientation?: "portrait" | "landscape";
   margins: EditorPageMargins;
+  columns?: EditorColumnsSettings;
 }
 
 export interface EditorSection {

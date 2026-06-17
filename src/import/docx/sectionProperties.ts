@@ -1,6 +1,7 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
 import type {
   EditorBlockNode,
+  EditorColumnsSettings,
   EditorNamedStyle,
   EditorPageSettings,
   EditorParagraphNode,
@@ -26,12 +27,47 @@ export interface SectionProperties {
   docGridType?: string | null;
 }
 
+function isXmlTrue(value: string | null | undefined): boolean {
+  return value === "1" || value === "true" || value === "on";
+}
+
+function parseColumns(sectPr: XmlElement): EditorColumnsSettings | undefined {
+  const cols = getFirstChildByTagNameNS(sectPr, WORD_NS, "cols");
+  if (!cols) {
+    return undefined;
+  }
+  const count = Number.parseInt(getAttributeValue(cols, "num") ?? "1", 10);
+  if (!Number.isFinite(count) || count <= 1) {
+    return undefined;
+  }
+  const space = twipsToPx(getAttributeValue(cols, "space"), 0);
+  const sepAttr = getAttributeValue(cols, "sep");
+  const equalWidthAttr = getAttributeValue(cols, "equalWidth");
+  const colChildren = getChildrenByTagNameNS(cols, WORD_NS, "col");
+  const explicit = colChildren.map((col) => ({
+    width: twipsToPx(getAttributeValue(col, "w"), 0),
+    space: twipsToPx(getAttributeValue(col, "space"), space),
+  }));
+  // `w:equalWidth` defaults to true; explicit per-column widths only matter
+  // when the section is declared unequal.
+  const equalWidth = equalWidthAttr == null ? true : isXmlTrue(equalWidthAttr);
+
+  return {
+    count,
+    space,
+    ...(isXmlTrue(sepAttr) ? { separator: true } : {}),
+    ...(equalWidth ? {} : { equalWidth: false }),
+    ...(!equalWidth && explicit.length > 0 ? { columns: explicit } : {}),
+  };
+}
+
 export function parseSectionProperties(sectPr: XmlElement): SectionProperties {
   const pageSize = getFirstChildByTagNameNS(sectPr, WORD_NS, "pgSz");
   const pageMargins = getFirstChildByTagNameNS(sectPr, WORD_NS, "pgMar");
+  const columns = parseColumns(sectPr);
 
   let pageSettings: EditorPageSettings | undefined;
-  if (pageSize || pageMargins) {
+  if (pageSize || pageMargins || columns) {
     const width = twipsToPx(getAttributeValue(pageSize, "w"), 816);
     const height = twipsToPx(getAttributeValue(pageSize, "h"), 1056);
     const orientationValue = getAttributeValue(pageSize, "orient");
@@ -56,6 +92,7 @@ export function parseSectionProperties(sectPr: XmlElement): SectionProperties {
         footer: twipsToPx(getAttributeValue(pageMargins, "footer"), 48),
         gutter: twipsToPx(getAttributeValue(pageMargins, "gutter"), 0),
       },
+      ...(columns ? { columns } : {}),
     };
   }
 
@@ -126,7 +163,8 @@ export function parsePageSettings(
     WORD_NS,
     "pgMar",
   );
-  if (!pageSize && !pageMargins) {
+  const columns = parseColumns(sectionProperties);
+  if (!pageSize && !pageMargins && !columns) {
     return undefined;
   }
 
@@ -154,6 +192,7 @@ export function parsePageSettings(
       footer: twipsToPx(getAttributeValue(pageMargins, "footer"), 48),
       gutter: twipsToPx(getAttributeValue(pageMargins, "gutter"), 0),
     },
+    ...(columns ? { columns } : {}),
   };
 }
 

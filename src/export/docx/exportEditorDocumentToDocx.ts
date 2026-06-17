@@ -94,7 +94,25 @@ function serializeSectionPropertiesWithReferences(
       ? "<w:titlePg/>"
       : "";
 
-  return `<w:sectPr>${referencesXml}${titlePageXml}<w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/></w:sectPr>`;
+  const columns = pageSettings.columns;
+  let columnsXml = "";
+  if (columns && columns.count > 1) {
+    const space = pxToTwips(columns.space, 0);
+    const sepAttr = columns.separator ? ' w:sep="1"' : "";
+    if (columns.equalWidth === false && columns.columns?.length) {
+      const colsXml = columns.columns
+        .map(
+          (col) =>
+            `<w:col w:w="${pxToTwips(col.width, 0)}" w:space="${pxToTwips(col.space, 0)}"/>`,
+        )
+        .join("");
+      columnsXml = `<w:cols w:num="${columns.count}" w:space="${space}" w:equalWidth="0"${sepAttr}>${colsXml}</w:cols>`;
+    } else {
+      columnsXml = `<w:cols w:num="${columns.count}" w:space="${space}"${sepAttr}/>`;
+    }
+  }
+
+  return `<w:sectPr>${referencesXml}${titlePageXml}<w:pgSz w:w="${width}" w:h="${height}"${orientationAttr}/><w:pgMar w:top="${pxToTwips(margins.top, 1440)}" w:right="${pxToTwips(margins.right, 1440)}" w:bottom="${pxToTwips(margins.bottom, 1440)}" w:left="${pxToTwips(margins.left, 1440)}" w:header="${pxToTwips(margins.header, 720)}" w:footer="${pxToTwips(margins.footer, 720)}" w:gutter="${pxToTwips(margins.gutter, 0)}"/>${columnsXml}</w:sectPr>`;
 }
 
 function visitParagraphDeep(

@@ -7,6 +7,7 @@ import {
   getPageBodyBottom,
   getPageBodyTop,
   getPageContentWidth,
+  getPageColumnRects,
   getPageHeaderZoneTop,
 } from "@/core/model.js";
 import {
@@ -136,13 +137,43 @@ export function createCanvasPageRenderer(options: {
       ctx.restore();
     }
 
+    const columns = page.pageSettings.columns;
+    const columnRects =
+      columns && columns.count > 1
+        ? getPageColumnRects(page.pageSettings)
+        : null;
+
     if (state.showMargins) {
       const contentHeight = Math.max(24, Math.floor(zoneBodyBottom - bodyTop));
       ctx.save();
       ctx.strokeStyle = "#d1d5db";
       ctx.lineWidth = 1;
       ctx.setLineDash([5, 5]);
-      ctx.strokeRect(marginX, bodyTop, bodyWidth, contentHeight);
+      if (columnRects) {
+        for (const rect of columnRects) {
+          ctx.strokeRect(rect.left, bodyTop, rect.width, contentHeight);
+        }
+      } else {
+        ctx.strokeRect(marginX, bodyTop, bodyWidth, contentHeight);
+      }
+      ctx.restore();
+    }
+
+    // Vertical rule between columns (`w:sep`).
+    if (columnRects && columns?.separator) {
+      const contentHeight = Math.max(24, Math.floor(zoneBodyBottom - bodyTop));
+      ctx.save();
+      ctx.strokeStyle = "#9ca3af";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < columnRects.length - 1; i += 1) {
+        const rect = columnRects[i]!;
+        const next = columnRects[i + 1]!;
+        const ruleX = Math.round((rect.left + rect.width + next.left) / 2) + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(ruleX, bodyTop);
+        ctx.lineTo(ruleX, bodyTop + contentHeight);
+        ctx.stroke();
+      }
       ctx.restore();
     }
 
@@ -173,17 +204,44 @@ export function createCanvasPageRenderer(options: {
 
     ctx.save();
     ctx.globalAlpha = bodyAlpha;
-    renderBlockList(
-      ctx,
-      state,
-      page.blocks,
-      marginX,
-      bodyTop,
-      bodyWidth,
-      page.index,
-      onUpdate,
-      page.pageSettings,
-    );
+    if (columnRects && page.blocks.some((b) => b.columnIndex !== undefined)) {
+      // Newspaper columns: paint each column's blocks from the body top at its
+      // own X/width. renderBlockList accumulates its cursor from originY per
+      // call, so per-column invocation restarts each column at the top.
+      const byColumn = new Map<number, typeof page.blocks>();
+      for (const block of page.blocks) {
+        const column = block.columnIndex ?? 0;
+        const bucket = byColumn.get(column) ?? [];
+        bucket.push(block);
+        byColumn.set(column, bucket);
+      }
+      for (const [column, columnBlocks] of byColumn) {
+        const rect = columnRects[column] ?? columnRects[0]!;
+        renderBlockList(
+          ctx,
+          state,
+          columnBlocks,
+          rect.left,
+          bodyTop,
+          rect.width,
+          page.index,
+          onUpdate,
+          page.pageSettings,
+        );
+      }
+    } else {
+      renderBlockList(
+        ctx,
+        state,
+        page.blocks,
+        marginX,
+        bodyTop,
+        bodyWidth,
+        page.index,
+        onUpdate,
+        page.pageSettings,
+      );
+    }
     ctx.restore();
 
     if (

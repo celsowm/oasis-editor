@@ -52,6 +52,7 @@ export function normalizePageSettings(
       footer: pageSettings.margins.footer,
       gutter: pageSettings.margins.gutter,
     },
+    ...(pageSettings.columns ? { columns: pageSettings.columns } : {}),
   };
 }
 
@@ -85,6 +86,7 @@ export function getDocumentPageSettings(
         pageSettings?.margins.gutter ??
         DEFAULT_EDITOR_PAGE_SETTINGS.margins.gutter,
     },
+    ...(pageSettings?.columns ? { columns: pageSettings.columns } : {}),
   });
 }
 
@@ -98,6 +100,56 @@ export function getPageContentWidth(pageSettings: EditorPageSettings): number {
         pageSettings.margins.gutter,
     ),
   );
+}
+
+export interface PageColumnRect {
+  /** Page-relative left edge of the column's content. */
+  left: number;
+  /** Column content width. */
+  width: number;
+}
+
+/**
+ * Page-relative left/width for each text column. A single-column page (no
+ * `columns` or `count <= 1`) yields one rect spanning the full content width,
+ * so existing callers are unaffected. Unequal `<w:col>` widths are honored when
+ * present; otherwise columns are equal with a uniform `space` gap.
+ */
+export function getPageColumnRects(
+  pageSettings: EditorPageSettings,
+): PageColumnRect[] {
+  const contentLeft = pageSettings.margins.left + pageSettings.margins.gutter;
+  const contentWidth = getPageContentWidth(pageSettings);
+  const columns = pageSettings.columns;
+  const count = columns?.count ?? 1;
+  if (!columns || count <= 1) {
+    return [{ left: contentLeft, width: contentWidth }];
+  }
+
+  // Explicit unequal columns: lay out using each column's own width and the
+  // trailing space that follows it.
+  if (columns.equalWidth === false && columns.columns?.length) {
+    const rects: PageColumnRect[] = [];
+    let cursor = contentLeft;
+    for (let i = 0; i < count; i += 1) {
+      const col = columns.columns[i];
+      const width = Math.max(1, col?.width ?? 0);
+      rects.push({ left: cursor, width });
+      cursor += width + (col?.space ?? columns.space);
+    }
+    return rects;
+  }
+
+  const space = columns.space;
+  const colWidth = Math.max(
+    1,
+    Math.floor((contentWidth - space * (count - 1)) / count),
+  );
+  const rects: PageColumnRect[] = [];
+  for (let i = 0; i < count; i += 1) {
+    rects.push({ left: contentLeft + i * (colWidth + space), width: colWidth });
+  }
+  return rects;
 }
 
 function clampPageOffset(value: number, limit: number): number {

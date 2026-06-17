@@ -3,6 +3,7 @@ import {
   getPageBodyBottom,
   getPageBodyTop,
   getPageContentWidth,
+  getPageColumnRects,
   getPageHeaderZoneTop,
   getParagraphText,
   resolveEffectiveParagraphStyle,
@@ -748,9 +749,26 @@ export function buildCanvasLayoutSnapshot(
       } = {},
     ) => {
       let cursorY = startTop;
-      const blockContentLeft = options.contentLeft ?? contentLeft;
-      const blockContentWidth = options.contentWidth ?? contentWidth;
+      let blockContentLeft = options.contentLeft ?? contentLeft;
+      let blockContentWidth = options.contentWidth ?? contentWidth;
+      // Multi-column body: each block carries its column index; when it changes
+      // we restart the vertical cursor at the body top and shift X to that
+      // column's rect. All downstream geometry (caret slots, hit-testing,
+      // images, tables) is derived from blockContentLeft/Width, so columns work
+      // through this single placement change.
+      const columnRects = getPageColumnRects(page.pageSettings);
+      let lastColumnIndex: number | undefined;
       for (const block of blocks) {
+        if (
+          block.columnIndex !== undefined &&
+          block.columnIndex !== lastColumnIndex
+        ) {
+          lastColumnIndex = block.columnIndex;
+          const rect = columnRects[block.columnIndex] ?? columnRects[0]!;
+          blockContentLeft = pageRect.left + rect.left;
+          blockContentWidth = rect.width;
+          cursorY = startTop;
+        }
         const blockFootnoteId =
           options.footnoteIdForBlock?.(block) ?? options.footnoteId;
         if (block.sourceBlock.type === "paragraph" && block.layout) {
