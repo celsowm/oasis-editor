@@ -246,6 +246,12 @@
   color: var(--oasis-danger);
 }
 
+.oasis-editor-editor-zoom-sizer {
+  position: relative;
+  min-height: 100%;
+  cursor: text;
+}
+
 .oasis-editor-editor-scroll-content {
   position: relative;
   min-height: 100%;
@@ -253,6 +259,7 @@
     var(--oasis-editor-gutter-bottom);
   box-sizing: border-box;
   cursor: text;
+  will-change: transform;
 }
 
 .oasis-editor-import-overlay {

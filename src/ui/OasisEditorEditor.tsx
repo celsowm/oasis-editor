@@ -236,6 +236,37 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   const adjustZoom = (delta: number) => {
     setZoomPercent((current) => clampZoom(current + delta));
   };
+  // z = zoomFactor(): visual scale applied to the shared document layer
+  // (.oasis-editor-editor-scroll-content). Because the canvas AND every overlay
+  // live inside that layer, scaling it keeps them aligned automatically. Layout
+  // stays in unscaled CSS px; the surrounding ".oasis-editor-editor-zoom-sizer"
+  // reserves the *scaled* visual size so the scrollbars can reach every edge
+  // (CSS transforms don't change layout box size).
+  const zoomFactor = createMemo(() => clampZoom(zoomPercent()) / 100);
+
+  const [measuredContentHeight, setMeasuredContentHeight] = createSignal(0);
+  const [viewportSize, setViewportSize] = createSignal({
+    width: 0,
+    height: 0,
+  });
+
+  const unscaledContentWidth = () =>
+    widestPageWidth() + EDITOR_SCROLL_PADDING_PX * 2;
+
+  const zoomSizerWidth = createMemo(() =>
+    Math.max(unscaledContentWidth() * zoomFactor(), viewportSize().width),
+  );
+  const zoomSizerHeight = createMemo(() =>
+    Math.max(measuredContentHeight() * zoomFactor(), viewportSize().height),
+  );
+  // transform-origin is top-left, so the scaled box spans [left, left + w*z].
+  // Center it horizontally within the sizer.
+  const zoomLayerLeft = createMemo(() =>
+    Math.max(
+      0,
+      (zoomSizerWidth() - unscaledContentWidth() * zoomFactor()) / 2,
+    ),
+  );
 
   const statusDocumentLayout = createMemo(() =>
     projectDocumentLayout(
@@ -333,8 +364,18 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
           };
           el.addEventListener("scroll", onScroll, { passive: true });
           queueMicrotask(recomputeViewportPageIndex);
+          const updateViewportSize = () => {
+            setViewportSize({ width: el.clientWidth, height: el.clientHeight });
+          };
+          updateViewportSize();
+          let viewportObserver: ResizeObserver | undefined;
+          if (typeof ResizeObserver !== "undefined") {
+            viewportObserver = new ResizeObserver(updateViewportSize);
+            viewportObserver.observe(el);
+          }
           onCleanup(() => {
             el.removeEventListener("scroll", onScroll);
+            viewportObserver?.disconnect();
           });
         }}
         class="oasis-editor-editor"
@@ -345,12 +386,41 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
         onContextMenu={surfaceHandlers().onEditorContextMenu}
       >
         <div
+          class="oasis-editor-editor-zoom-sizer"
+          style={{
+            width: `${zoomSizerWidth()}px`,
+            height: `${zoomSizerHeight()}px`,
+          }}
+        >
+        <div
           ref={(el) => {
             scrollContentRef = el;
             refs().onSurfaceRef?.(el);
+            const updateContentHeight = () => {
+              setMeasuredContentHeight(el.offsetHeight);
+            };
+            updateContentHeight();
+            queueMicrotask(updateContentHeight);
+            let contentObserver: ResizeObserver | undefined;
+            if (typeof ResizeObserver !== "undefined") {
+              contentObserver = new ResizeObserver(updateContentHeight);
+              contentObserver.observe(el);
+            }
+            onCleanup(() => contentObserver?.disconnect());
           }}
           class="oasis-editor-editor-scroll-content"
           data-testid="editor-editor-scroll-content"
+          style={{
+            position: "absolute",
+            top: "0px",
+            left: `${zoomLayerLeft()}px`,
+            width: `${unscaledContentWidth()}px`,
+            // Fill at least the viewport (in unscaled px) without feeding back
+            // into the sizer height (which is derived from measured content).
+            "min-height": `${viewportSize().height / zoomFactor()}px`,
+            transform: `scale(${zoomFactor()})`,
+            "transform-origin": "top left",
+          }}
         >
           <CanvasEditorSurface
             state={props.state}
@@ -529,6 +599,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
             type="file"
             onChange={fileHandlers().onImageInputChange}
           />
+        </div>
         </div>
       </div>
       <Show when={overlays().importProgress?.()}>
