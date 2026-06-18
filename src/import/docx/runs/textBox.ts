@@ -5,7 +5,10 @@ import type {
   EditorTextBoxData,
   EditorTextBoxShape,
 } from "@/core/model.js";
-import { getAttributeValue, findElementDeep } from "@/import/docx/xmlHelpers.js";
+import {
+  getAttributeValue,
+  findElementDeep,
+} from "@/import/docx/xmlHelpers.js";
 import type { ParseNestedBlocks } from "./types.js";
 import {
   EMU_PER_PT,
@@ -202,10 +205,6 @@ export async function parseTextBox(
   if (!wsp) {
     return undefined;
   }
-  const txbxContent = findElementDeep(wsp, "txbxContent");
-  if (!txbxContent) {
-    return undefined;
-  }
 
   const container = findDrawingContainer(drawing);
   const drawingBox = container?.element ?? drawing;
@@ -226,7 +225,11 @@ export async function parseTextBox(
       ? parseFloatingLayout(container.element)
       : undefined;
 
-  const blocks = parseNestedBlocks ? await parseNestedBlocks(txbxContent) : [];
+  const txbxContent = findElementDeep(wsp, "txbxContent");
+  const blocks =
+    txbxContent && parseNestedBlocks
+      ? await parseNestedBlocks(txbxContent)
+      : [];
   const shape = parseTextBoxShape(wsp);
   const body = parseTextBoxBody(wsp);
   const rotation = parseTextBoxRotation(wsp);

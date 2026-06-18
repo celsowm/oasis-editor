@@ -60,20 +60,29 @@ function buildTextBoxGraphicXml(
   bodyAttrs.push('anchorCtr="0"');
   const autoFitXml = body?.autoFit ? "<a:spAutoFit/>" : "";
 
-  const innerXml = serializeBlocksXml(textBox.blocks, context, styles);
+  const hasTextBoxContent = textBox.blocks.length > 0;
+  const innerXml = hasTextBoxContent
+    ? serializeBlocksXml(textBox.blocks, context, styles)
+    : "";
+  const cNvSpPrXml = hasTextBoxContent
+    ? '<wps:cNvSpPr txBox="1"><a:spLocks noChangeArrowheads="1"/></wps:cNvSpPr>'
+    : "<wps:cNvSpPr/>";
+  const txbxXml = hasTextBoxContent
+    ? `<wps:txbx><w:txbxContent>${innerXml}</w:txbxContent></wps:txbx>`
+    : "";
 
   return (
     '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">' +
     '<a:graphicData uri="http://schemas.microsoft.com/office/word/2010/wordprocessingShape">' +
     "<wps:wsp>" +
-    '<wps:cNvSpPr txBox="1"><a:spLocks noChangeArrowheads="1"/></wps:cNvSpPr>' +
+    cNvSpPrXml +
     '<wps:spPr bwMode="auto">' +
     `<a:xfrm${xfrmRotAttr}><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
     `<a:prstGeom prst="${preset}"><a:avLst/></a:prstGeom>` +
     fillXml +
     lnXml +
     "</wps:spPr>" +
-    `<wps:txbx><w:txbxContent>${innerXml}</w:txbxContent></wps:txbx>` +
+    txbxXml +
     `<wps:bodyPr ${bodyAttrs.join(" ")}>${autoFitXml}</wps:bodyPr>` +
     "</wps:wsp>" +
     "</a:graphicData>" +
