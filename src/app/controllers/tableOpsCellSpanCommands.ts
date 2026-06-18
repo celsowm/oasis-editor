@@ -45,13 +45,14 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, range.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const currentBlocks = deps.getTargetBlocks(current, range.zone);
+    const originalTable = currentBlocks[range.blockIndex];
+    if (!originalTable || originalTable.type !== "table") {
       return current;
     }
+    const targetBlocks = [...currentBlocks];
+    const tableBlock = cloneBlock(originalTable) as EditorTableNode;
+    targetBlocks[range.blockIndex] = tableBlock;
 
     const row = tableBlock.rows[range.rowIndex];
     if (!row) {
@@ -104,13 +105,14 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, range.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const currentBlocks = deps.getTargetBlocks(current, range.zone);
+    const originalTable = currentBlocks[range.blockIndex];
+    if (!originalTable || originalTable.type !== "table") {
       return current;
     }
+    const targetBlocks = [...currentBlocks];
+    const tableBlock = cloneBlock(originalTable) as EditorTableNode;
+    targetBlocks[range.blockIndex] = tableBlock;
 
     const selectedCells: Array<
       NonNullable<(typeof tableBlock.rows)[number]["cells"][number]>
@@ -213,13 +215,14 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const currentBlocks = deps.getTargetBlocks(current, location.zone);
+    const originalTable = currentBlocks[location.blockIndex];
+    if (!originalTable || originalTable.type !== "table") {
       return current;
     }
+    const targetBlocks = [...currentBlocks];
+    const tableBlock = cloneBlock(originalTable) as EditorTableNode;
+    targetBlocks[location.blockIndex] = tableBlock;
 
     const cell = tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
     const span = Math.max(1, cell?.rowSpan ?? 1);
@@ -273,13 +276,14 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const currentBlocks = deps.getTargetBlocks(current, location.zone);
+    const originalTable = currentBlocks[location.blockIndex];
+    if (!originalTable || originalTable.type !== "table") {
       return current;
     }
+    const targetBlocks = [...currentBlocks];
+    const tableBlock = cloneBlock(originalTable) as EditorTableNode;
+    targetBlocks[location.blockIndex] = tableBlock;
 
     const row = tableBlock.rows[location.rowIndex];
     const cell = row?.cells[location.cellIndex];
