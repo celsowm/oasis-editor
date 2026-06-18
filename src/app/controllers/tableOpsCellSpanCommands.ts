@@ -45,14 +45,16 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, range.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const sourceBlocks = deps.getTargetBlocks(current, range.zone);
+    const originalTableBlock = sourceBlocks[
+      range.blockIndex
+    ] as EditorTableNode;
+    if (!originalTableBlock || originalTableBlock.type !== "table") {
       return current;
     }
-
+    const targetBlocks = [...sourceBlocks];
+    const tableBlock = cloneBlock(originalTableBlock) as EditorTableNode;
+    targetBlocks[range.blockIndex] = tableBlock;
     const row = tableBlock.rows[range.rowIndex];
     if (!row) {
       return current;
@@ -104,14 +106,16 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, range.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const sourceBlocks = deps.getTargetBlocks(current, range.zone);
+    const originalTableBlock = sourceBlocks[
+      range.blockIndex
+    ] as EditorTableNode;
+    if (!originalTableBlock || originalTableBlock.type !== "table") {
       return current;
     }
-
+    const targetBlocks = [...sourceBlocks];
+    const tableBlock = cloneBlock(originalTableBlock) as EditorTableNode;
+    targetBlocks[range.blockIndex] = tableBlock;
     const selectedCells: Array<
       NonNullable<(typeof tableBlock.rows)[number]["cells"][number]>
     > = [];
@@ -213,14 +217,16 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const sourceBlocks = deps.getTargetBlocks(current, location.zone);
+    const originalTableBlock = sourceBlocks[
+      location.blockIndex
+    ] as EditorTableNode;
+    if (!originalTableBlock || originalTableBlock.type !== "table") {
       return current;
     }
-
+    const targetBlocks = [...sourceBlocks];
+    const tableBlock = cloneBlock(originalTableBlock) as EditorTableNode;
+    targetBlocks[location.blockIndex] = tableBlock;
     const cell = tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
     const span = Math.max(1, cell?.rowSpan ?? 1);
     if (!cell || span <= 1 || cell.vMerge !== "restart") {
@@ -273,14 +279,16 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
+    const sourceBlocks = deps.getTargetBlocks(current, location.zone);
+    const originalTableBlock = sourceBlocks[
+      location.blockIndex
+    ] as EditorTableNode;
+    if (!originalTableBlock || originalTableBlock.type !== "table") {
       return current;
     }
-
+    const targetBlocks = [...sourceBlocks];
+    const tableBlock = cloneBlock(originalTableBlock) as EditorTableNode;
+    targetBlocks[location.blockIndex] = tableBlock;
     const row = tableBlock.rows[location.rowIndex];
     const cell = row?.cells[location.cellIndex];
     const span = Math.max(1, cell?.colSpan ?? 1);
