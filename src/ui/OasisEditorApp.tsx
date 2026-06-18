@@ -64,6 +64,7 @@ import { createEditorFocusController } from "./app/useEditorFocus.js";
 import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
 import { createCanvasSurfaceHitResolver } from "./app/useCanvasSurfaceHitResolver.js";
+import { createEditorZoom } from "./app/editorZoom.js";
 import { createFontDialogBridge } from "./app/useFontDialogBridge.js";
 import { createParagraphDialogBridge } from "./app/useParagraphDialogBridge.js";
 import { createTablePropertiesDialogBridge } from "./app/useTablePropertiesDialogBridge.js";
@@ -136,6 +137,11 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     ui().loading !== false,
   );
 
+  // Single source of truth for document zoom. The factor scales the shared
+  // document layer (canvas + overlays) via CSS transform and feeds the geometry
+  // controllers so hit-testing/navigation stay correct off 100%.
+  const zoom = createEditorZoom();
+
   const {
     linkDialog,
     setLinkDialog,
@@ -201,6 +207,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     surfaceRef,
     viewportRef,
     isImporting: isImportInProgress,
+    zoomFactor: zoom.zoomFactor,
   });
 
   const { status: persistenceStatus } = useEditorPersistence(
@@ -347,6 +354,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     viewportRef: () => viewportRef() ?? null,
     measuredBlockHeights,
     measuredParagraphLayouts,
+    zoomFactor: zoom.zoomFactor,
   });
   const resolveSurfaceHitAtPoint = canvasHitResolver.resolveSurfaceHitAtPoint;
 
@@ -441,6 +449,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     caretBox: () => caretBox(),
     preferredColumnX: () => preferredColumnX(),
     setPreferredColumnX,
+    zoomFactor: zoom.zoomFactor,
     resolveSurfaceHitAtPoint,
     resolvePositionAtSurfacePoint,
     tableOps,
@@ -813,6 +822,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     viewportHeight: ui().viewportHeight,
     className: ui().class,
     style: ui().style,
+    zoomPercent: zoom.zoomPercent,
+    setZoomPercent: zoom.setZoomPercent,
+    zoomFactor: zoom.zoomFactor,
     selectionBoxes,
     commentHighlights,
     selectedImageBox,

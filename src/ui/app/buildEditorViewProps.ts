@@ -39,6 +39,9 @@ export interface EditorViewPropsContext {
   viewportHeight: number | string | undefined;
   className: string | undefined;
   style: JSX.CSSProperties | undefined;
+  zoomPercent: Accessor<number>;
+  setZoomPercent: (value: number) => void;
+  zoomFactor: Accessor<number>;
   // overlays
   selectionBoxes: Accessor<SelectionBox[]>;
   commentHighlights: Accessor<CommentHighlightBox[]>;
@@ -94,6 +97,9 @@ export function buildEditorViewProps(
     viewportHeight: ctx.viewportHeight,
     class: ctx.className,
     style: ctx.style,
+    zoomPercent: ctx.zoomPercent,
+    setZoomPercent: ctx.setZoomPercent,
+    zoomFactor: ctx.zoomFactor,
   };
 
   const overlays: OasisEditorEditorOverlayProps = {

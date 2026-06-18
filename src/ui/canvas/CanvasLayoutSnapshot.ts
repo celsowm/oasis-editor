@@ -184,6 +184,13 @@ export interface BuildCanvasLayoutSnapshotOptions {
   state: EditorState;
   measuredBlockHeights?: Record<string, number>;
   measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>;
+  /**
+   * Visual zoom factor (CSS `transform: scale(z)`) applied to the surface. The
+   * snapshot is built in "screen-anchored local" space so it is invariant under
+   * zoom — see the coordinate contract documented on buildCanvasLayoutSnapshot.
+   * Defaults to 1 (no zoom).
+   */
+  zoomFactor?: number;
 }
 
 function getCanvasPageElements(surface: HTMLElement): HTMLElement[] {
@@ -670,10 +677,34 @@ function buildVerticalCellSnapshotLines(options: {
   ];
 }
 
+/**
+ * Coordinate contract ("screen-anchored local" space)
+ * ----------------------------------------------------
+ * The document layer (`.oasis-editor-editor-scroll-content`) is scaled with a
+ * CSS `transform: scale(z)` and `transform-origin: top left`, so the layer's
+ * local origin (0,0) maps to `surfaceRect.{left,top}` on screen and a child at
+ * screen distance `d` from that origin sits at local `d / z`.
+ *
+ * Every coordinate in this snapshot is emitted as `surfaceRect.origin +
+ * offsetLocal`, where `offsetLocal` is in unscaled (pre-transform) CSS px — the
+ * same units the canvas draws in and the same units overlays use inside the
+ * scaled layer. To achieve this we divide the only zoom-affected input (the page
+ * element's `getBoundingClientRect`, which already reflects the transform) by
+ * `z` relative to the surface origin; the model offsets added on top are already
+ * unscaled. The result is invariant under zoom.
+ *
+ * Consumers:
+ *  - Overlays (children of the scaled layer) use `value - surfaceRect` to get
+ *    `offsetLocal` and let the transform do the visual scaling — no change.
+ *  - Hit-testing receives screen-space pointer coords and converts them into
+ *    this space at the single entry point (resolveCanvasSurfaceHitAtPoint).
+ */
 export function buildCanvasLayoutSnapshot(
   options: BuildCanvasLayoutSnapshotOptions,
 ): CanvasLayoutSnapshot | null {
   const { surface, state } = options;
+  const zoomFactor =
+    options.zoomFactor && options.zoomFactor > 0 ? options.zoomFactor : 1;
   const documentLayout = projectDocumentLayout(
     state.document,
     undefined,
@@ -708,7 +739,17 @@ export function buildCanvasLayoutSnapshot(
       continue;
     }
 
-    const pageRect = pageElement.getBoundingClientRect();
+    // The DOM rect already reflects the CSS `transform: scale(z)`. Re-express it
+    // in unscaled local space anchored at the surface origin so the model offsets
+    // added downstream (which are unscaled) compose correctly. At z=1 this is a
+    // no-op; see the coordinate contract above.
+    const rawPageRect = pageElement.getBoundingClientRect();
+    const pageRect = {
+      left: surfaceRect.left + (rawPageRect.left - surfaceRect.left) / zoomFactor,
+      top: surfaceRect.top + (rawPageRect.top - surfaceRect.top) / zoomFactor,
+      width: rawPageRect.width / zoomFactor,
+      height: rawPageRect.height / zoomFactor,
+    };
     const bodyTop = page.bodyTop ?? getPageBodyTop(page.pageSettings);
     const bodyBottom = page.bodyBottom ?? getPageBodyBottom(page.pageSettings);
     const headerTop = page.headerTop ?? getPageHeaderZoneTop(page.pageSettings);

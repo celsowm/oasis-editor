@@ -36,6 +36,12 @@ export interface UseEditorNavigationProps {
   clearPreferredColumn: () => void;
   resetTransactionGrouping: () => void;
   focusInput: () => void;
+  /**
+   * Current visual zoom factor. `desiredX` and the snapshot slots both live in
+   * "screen-anchored local" space, so the comparison stays correct once the
+   * snapshot is built zoom-aware.
+   */
+  zoomFactor?: () => number;
 }
 
 export function createEditorNavigation(deps: UseEditorNavigationProps) {
@@ -184,6 +190,7 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
       ? buildCanvasLayoutSnapshot({
           surface: surfaceRef,
           state,
+          zoomFactor: deps.zoomFactor?.(),
         })
       : null;
     let targetIndex = currentIndex + direction;

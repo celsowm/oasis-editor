@@ -19,6 +19,8 @@ interface UseEditorLayoutProps {
   surfaceRef: () => HTMLDivElement | undefined;
   viewportRef: () => HTMLDivElement | undefined;
   isImporting?: () => boolean;
+  /** Current visual zoom factor; the snapshot stays zoom-invariant. */
+  zoomFactor?: () => number;
 }
 
 type LayoutSyncReason =
@@ -106,6 +108,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       state: props.state,
       measuredBlockHeights: measuredBlockHeights(),
       measuredParagraphLayouts: measuredParagraphLayouts(),
+      zoomFactor: props.zoomFactor?.(),
     });
     if (!snapshot) {
       setSelectionBoxes([]);

@@ -55,6 +55,12 @@ export interface ResolveCanvasHitOptions {
   clientX: number;
   clientY: number;
   /**
+   * Visual zoom factor (CSS `transform: scale(z)`). Screen-space pointer coords
+   * are mapped into the snapshot's unscaled space by dividing the distance from
+   * the surface origin by `z`. Defaults to 1 (no zoom).
+   */
+  zoomFactor?: number;
+  /**
    * "Pierce" mode (Alt+click): select the floating object directly under the
    * cursor even when it is painted behind the text (behindDoc). When false,
    * behind-text objects are skipped so clicks fall through to the text on top.
@@ -372,8 +378,18 @@ function resolveImageAtPoint(
 export function resolveCanvasSurfaceHitAtPoint(
   options: ResolveCanvasHitOptions,
 ): SurfaceHit | null {
-  const { snapshot, state, clientX, clientY } = options;
+  const { snapshot, state } = options;
   const pierce = options.pierce ?? false;
+  // Map the screen-space pointer into the snapshot's "screen-anchored local"
+  // space: distance from the surface origin shrinks by the zoom factor. At z=1
+  // this is the identity. See the coordinate contract in CanvasLayoutSnapshot.ts.
+  const zoomFactor =
+    options.zoomFactor && options.zoomFactor > 0 ? options.zoomFactor : 1;
+  const surfaceRect = snapshot.surfaceRect;
+  const clientX =
+    surfaceRect.left + (options.clientX - surfaceRect.left) / zoomFactor;
+  const clientY =
+    surfaceRect.top + (options.clientY - surfaceRect.top) / zoomFactor;
   const page = resolveNearestPage(snapshot.pages, clientX, clientY);
   if (!page) {
     return null;

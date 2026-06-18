@@ -22,6 +22,7 @@ type CanvasSnapshotCache = {
   surfaceClientHeight: number;
   windowWidth: number;
   windowHeight: number;
+  zoomFactor: number;
 };
 
 export function createCanvasSurfaceHitResolver(deps: {
@@ -30,6 +31,7 @@ export function createCanvasSurfaceHitResolver(deps: {
   viewportRef: Accessor<HTMLElement | null>;
   measuredBlockHeights: Accessor<Record<string, number>>;
   measuredParagraphLayouts: Accessor<Record<string, EditorLayoutParagraph>>;
+  zoomFactor: Accessor<number>;
 }) {
   let canvasSnapshotCache: CanvasSnapshotCache | null = null;
 
@@ -49,6 +51,7 @@ export function createCanvasSurfaceHitResolver(deps: {
     const viewportScrollLeft = currentViewportRef?.scrollLeft ?? 0;
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
+    const zoomFactor = deps.zoomFactor();
     const shouldReuseSnapshot =
       canvasSnapshotCache &&
       canvasSnapshotCache.documentRef === currentState.document &&
@@ -64,7 +67,8 @@ export function createCanvasSurfaceHitResolver(deps: {
       canvasSnapshotCache.surfaceClientHeight ===
         currentSurfaceRef.clientHeight &&
       canvasSnapshotCache.windowWidth === windowWidth &&
-      canvasSnapshotCache.windowHeight === windowHeight;
+      canvasSnapshotCache.windowHeight === windowHeight &&
+      canvasSnapshotCache.zoomFactor === zoomFactor;
     const snapshot = shouldReuseSnapshot
       ? canvasSnapshotCache!.snapshot
       : buildCanvasLayoutSnapshot({
@@ -72,6 +76,7 @@ export function createCanvasSurfaceHitResolver(deps: {
           state: currentState,
           measuredBlockHeights: currentMeasuredBlockHeights,
           measuredParagraphLayouts: currentMeasuredParagraphLayouts,
+          zoomFactor,
         });
     if (!shouldReuseSnapshot) {
       canvasSnapshotCache = {
@@ -86,6 +91,7 @@ export function createCanvasSurfaceHitResolver(deps: {
         surfaceClientHeight: currentSurfaceRef.clientHeight,
         windowWidth,
         windowHeight,
+        zoomFactor,
       };
     }
     recordCanvasDebugLayoutSnapshot(snapshot);
@@ -100,6 +106,7 @@ export function createCanvasSurfaceHitResolver(deps: {
       clientX,
       clientY,
       pierce: context.pierce ?? false,
+      zoomFactor,
     });
     recordCanvasDebugHit(hit);
     return hit;

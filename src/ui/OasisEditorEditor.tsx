@@ -48,17 +48,14 @@ import type { EditorComment } from "@/core/model.js";
 import type { ResizeHandleDirection } from "./resizeGeometry.js";
 import { ResizeHandlesOverlay } from "./overlays/ResizeHandlesOverlay.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
+import {
+  ZOOM_MIN,
+  ZOOM_MAX,
+  ZOOM_STEP,
+  clampZoom,
+} from "./app/editorZoom.js";
 
 type ImportProgress = ImportProgressState;
-
-const ZOOM_MIN = 50;
-const ZOOM_MAX = 200;
-const ZOOM_STEP = 10;
-
-function clampZoom(value: number): number {
-  if (!Number.isFinite(value)) return 100;
-  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value)));
-}
 
 export interface OasisEditorEditorLayoutProps {
   measuredBlockHeights?: Accessor<Record<string, number>>;
@@ -68,6 +65,11 @@ export interface OasisEditorEditorLayoutProps {
   style?: JSX.CSSProperties;
   readOnly?: boolean;
   showHorizontalRuler?: boolean;
+  // Lifted zoom state (owned by OasisEditorApp). When absent the editor falls
+  // back to a local signal so it still works when rendered standalone.
+  zoomPercent?: Accessor<number>;
+  setZoomPercent?: (value: number) => void;
+  zoomFactor?: Accessor<number>;
 }
 
 export interface OasisEditorEditorOverlayProps {
@@ -232,17 +234,26 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   );
   const wordCount = createMemo(() => getDocumentWordCount(documentForStats()));
 
-  const [zoomPercent, setZoomPercent] = createSignal(100);
-  const adjustZoom = (delta: number) => {
-    setZoomPercent((current) => clampZoom(current + delta));
+  // Zoom state is owned by OasisEditorApp (so the geometry controllers can read
+  // it) and threaded in via the layout props. When rendered standalone we fall
+  // back to a local signal so the control still works.
+  const [localZoomPercent, setLocalZoomPercent] = createSignal(100);
+  const zoomPercent = () => layout().zoomPercent?.() ?? localZoomPercent();
+  const setZoomPercent = (value: number) => {
+    const clamped = clampZoom(value);
+    const lift = layout().setZoomPercent;
+    if (lift) lift(clamped);
+    else setLocalZoomPercent(clamped);
   };
+  const adjustZoom = (delta: number) => setZoomPercent(zoomPercent() + delta);
   // z = zoomFactor(): visual scale applied to the shared document layer
   // (.oasis-editor-editor-scroll-content). Because the canvas AND every overlay
   // live inside that layer, scaling it keeps them aligned automatically. Layout
   // stays in unscaled CSS px; the surrounding ".oasis-editor-editor-zoom-sizer"
   // reserves the *scaled* visual size so the scrollbars can reach every edge
   // (CSS transforms don't change layout box size).
-  const zoomFactor = createMemo(() => clampZoom(zoomPercent()) / 100);
+  const fallbackZoomFactor = createMemo(() => clampZoom(zoomPercent()) / 100);
+  const zoomFactor = () => layout().zoomFactor?.() ?? fallbackZoomFactor();
 
   const [measuredContentHeight, setMeasuredContentHeight] = createSignal(0);
   const [viewportSize, setViewportSize] = createSignal({

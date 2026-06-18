@@ -39,6 +39,7 @@ export interface EditorInteractionWiringContext {
   caretBox: NavigationParams["caretBox"];
   preferredColumnX: NavigationParams["preferredColumnX"];
   setPreferredColumnX: NavigationParams["setPreferredColumnX"];
+  zoomFactor: NavigationParams["zoomFactor"];
   resolveSurfaceHitAtPoint: TextDragParams["resolveSurfaceHitAtPoint"];
   resolvePositionAtSurfacePoint: TableDragParams["resolvePositionAtSurfacePoint"];
   tableOps: ReturnType<typeof createEditorTableOperations>;
@@ -140,6 +141,7 @@ export function useEditorInteractionWiring(
     clearPreferredColumn: ctx.clearPreferredColumn,
     resetTransactionGrouping: ctx.resetTransactionGrouping,
     focusInput: ctx.focusInput,
+    zoomFactor: ctx.zoomFactor,
   });
 
   const { handleCopy, handleCut, handlePaste, handleDrop } =
