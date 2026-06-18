@@ -129,6 +129,8 @@
 
 .oasis-editor-statusbar {
   flex: 0 0 auto;
+  box-sizing: border-box;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -143,6 +145,84 @@
 .oasis-editor-statusbar-item {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+.oasis-editor-statusbar-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.oasis-editor-zoom-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--oasis-text-muted);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.oasis-editor-zoom-button:hover:not(:disabled) {
+  background: rgba(95, 99, 104, 0.1);
+  color: var(--oasis-text);
+}
+
+.oasis-editor-zoom-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.oasis-editor-zoom-slider {
+  width: 96px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  border-radius: 999px;
+  background: rgba(95, 99, 104, 0.28);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.oasis-editor-zoom-slider::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--oasis-text-muted);
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.28);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.oasis-editor-zoom-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--oasis-text-muted);
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.28);
+}
+
+.oasis-editor-zoom-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(95, 99, 104, 0.28);
+}
+
+.oasis-editor-zoom-value {
+  min-width: 4ch;
+  text-align: right;
 }
 
 .oasis-editor-persistence-status {

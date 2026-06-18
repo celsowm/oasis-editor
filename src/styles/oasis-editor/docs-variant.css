@@ -124,13 +124,15 @@
 }
 
 .oasis-editor-docs .oasis-editor-statusbar {
-  min-height: 28px;
-  margin-top: 8px;
-  padding: 4px 22px;
+  width: 100%;
+  min-height: 32px;
+  margin-top: 0;
+  padding: 4px 24px;
   border: 0;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  align-self: flex-end;
-  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.10);
+  border-top: 1px solid rgba(218, 220, 224, 0.92);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.94);
+  align-self: stretch;
+  box-shadow: none;
 }
 

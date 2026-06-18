@@ -51,6 +51,15 @@ import { projectDocumentLayout } from "@/layoutProjection/index.js";
 
 type ImportProgress = ImportProgressState;
 
+const ZOOM_MIN = 50;
+const ZOOM_MAX = 200;
+const ZOOM_STEP = 10;
+
+function clampZoom(value: number): number {
+  if (!Number.isFinite(value)) return 100;
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value)));
+}
+
 export interface OasisEditorEditorLayoutProps {
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
@@ -222,6 +231,11 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
     getDocumentCharacterCount(documentForStats()),
   );
   const wordCount = createMemo(() => getDocumentWordCount(documentForStats()));
+
+  const [zoomPercent, setZoomPercent] = createSignal(100);
+  const adjustZoom = (delta: number) => {
+    setZoomPercent((current) => clampZoom(current + delta));
+  };
 
   const statusDocumentLayout = createMemo(() =>
     projectDocumentLayout(
@@ -592,9 +606,49 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
         <span class="oasis-editor-statusbar-item">
           {t("status.page", [currentPage(), totalPages()])}
         </span>
-        <span class="oasis-editor-statusbar-item">
-          {t("status.zoom")}: 100%
-        </span>
+        <div
+          class="oasis-editor-statusbar-zoom"
+          data-testid="editor-statusbar-zoom-control"
+          aria-label={t("status.zoom")}
+        >
+          <button
+            type="button"
+            class="oasis-editor-zoom-button"
+            aria-label={`${t("status.zoom")} -`}
+            disabled={zoomPercent() <= ZOOM_MIN}
+            onClick={() => adjustZoom(-ZOOM_STEP)}
+          >
+            −
+          </button>
+          <input
+            class="oasis-editor-zoom-slider"
+            type="range"
+            min={ZOOM_MIN}
+            max={ZOOM_MAX}
+            step={ZOOM_STEP}
+            value={zoomPercent()}
+            aria-label={t("status.zoom")}
+            aria-valuetext={`${zoomPercent()}%`}
+            onInput={(event) =>
+              setZoomPercent(clampZoom(event.currentTarget.valueAsNumber))
+            }
+          />
+          <button
+            type="button"
+            class="oasis-editor-zoom-button"
+            aria-label={`${t("status.zoom")} +`}
+            disabled={zoomPercent() >= ZOOM_MAX}
+            onClick={() => adjustZoom(ZOOM_STEP)}
+          >
+            +
+          </button>
+          <span
+            class="oasis-editor-statusbar-item oasis-editor-zoom-value"
+            data-testid="editor-statusbar-zoom"
+          >
+            {zoomPercent()}%
+          </span>
+        </div>
         <Show when={overlays().persistenceStatus}>
           {(() => {
             const rawStatus = overlays().persistenceStatus!();
