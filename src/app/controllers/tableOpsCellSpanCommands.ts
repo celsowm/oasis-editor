@@ -45,10 +45,13 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, range.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
+    const originalBlocks = deps.getTargetBlocks(current, range.zone);
+    const targetBlocks = [...originalBlocks];
+
+    const tableBlock = cloneBlock(
+      targetBlocks[range.blockIndex],
+    ) as EditorTableNode;
+    targetBlocks[range.blockIndex] = tableBlock;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -104,10 +107,13 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, range.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[range.blockIndex] as EditorTableNode;
+    const originalBlocks = deps.getTargetBlocks(current, range.zone);
+    const targetBlocks = [...originalBlocks];
+
+    const tableBlock = cloneBlock(
+      targetBlocks[range.blockIndex],
+    ) as EditorTableNode;
+    targetBlocks[range.blockIndex] = tableBlock;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -213,10 +219,13 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
+    const originalBlocks = deps.getTargetBlocks(current, location.zone);
+    const targetBlocks = [...originalBlocks];
+
+    const tableBlock = cloneBlock(
+      targetBlocks[location.blockIndex],
+    ) as EditorTableNode;
+    targetBlocks[location.blockIndex] = tableBlock;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
@@ -273,10 +282,13 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
+    const originalBlocks = deps.getTargetBlocks(current, location.zone);
+    const targetBlocks = [...originalBlocks];
+
+    const tableBlock = cloneBlock(
+      targetBlocks[location.blockIndex],
+    ) as EditorTableNode;
+    targetBlocks[location.blockIndex] = tableBlock;
     if (!tableBlock || tableBlock.type !== "table") {
       return current;
     }
