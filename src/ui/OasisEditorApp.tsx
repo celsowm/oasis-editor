@@ -368,7 +368,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     applyTransactionalState,
     applySelectionToStatePreservingStructure: (current, nextSelection) => ({
       ...current,
-      document: cloneEditorState(current).document,
+      document: current.document,
       selection: nextSelection,
     }),
     focusInput,
