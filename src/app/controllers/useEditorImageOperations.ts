@@ -69,6 +69,8 @@ export interface EditorImageOperationsDeps {
   focusInputAfterPointerSelection: () => void;
   cloneState: (source: EditorState) => EditorState;
   logger: EditorLogger;
+  /** Visual zoom factor `z`; resize pointer deltas are divided by it. */
+  zoomFactor?: () => number;
 }
 
 export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
@@ -184,6 +186,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
       cloneState: deps.cloneState,
       focusInput: deps.focusInput,
       logger: deps.logger,
+      zoomFactor: deps.zoomFactor,
     },
   );
 

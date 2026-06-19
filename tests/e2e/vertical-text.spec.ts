@@ -55,7 +55,9 @@ test("imported vertical cells carry a vertical render mode", async ({
       new Set(
         snapshot.paragraphs
           .map((entry) => entry.verticalMode)
-          .filter((mode): mode is string => Boolean(mode)),
+          .filter((mode): mode is Exclude<typeof mode, undefined> =>
+            Boolean(mode),
+          ),
       ),
     ).sort();
   });

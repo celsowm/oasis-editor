@@ -6,6 +6,8 @@ import type { RevisionBox } from "@/ui/editorUiTypes.js";
 export interface UseEditorRevisionProps {
   state: () => EditorState;
   surfaceRef: () => HTMLDivElement | null;
+  /** Visual zoom factor `z`; screen-px offsets are divided by it for px-local. */
+  zoomFactor?: () => number;
 }
 
 export function createEditorRevisionController(deps: UseEditorRevisionProps) {
@@ -32,13 +34,16 @@ export function createEditorRevisionController(deps: UseEditorRevisionProps) {
 
     if (!surfaceRect) return;
 
+    // Both rects come from getBoundingClientRect() (already scaled by `z`); the
+    // overlay lives inside the scaled layer, so express the offset in px-local.
+    const z = deps.zoomFactor?.() ?? 1;
     setHoveredRevision({
       revisionId: foundRevision.id,
       author: foundRevision.author,
       date: foundRevision.date,
       type: foundRevision.type,
-      left: rect.left - surfaceRect.left,
-      top: rect.top - surfaceRect.top,
+      left: (rect.left - surfaceRect.left) / z,
+      top: (rect.top - surfaceRect.top) / z,
     });
   };
 

@@ -401,6 +401,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     focusInputAfterPointerSelection,
     cloneState,
     logger,
+    zoomFactor: zoom.zoomFactor,
   });
 
   const textBoxOps = createEditorTextBoxOperations({
@@ -411,6 +412,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     focusInput,
     cloneState,
     logger,
+    zoomFactor: zoom.zoomFactor,
   });
 
   const styleController = createEditorStyleController({

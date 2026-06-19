@@ -45,6 +45,8 @@ export interface ResizeSessionDeps {
   cloneState: (source: EditorState) => EditorState;
   focusInput: () => void;
   logger: EditorLogger;
+  /** Visual zoom factor `z`; pointer deltas (screen px) are divided by it. */
+  zoomFactor?: () => number;
 }
 
 interface ActiveResize {
@@ -104,8 +106,9 @@ export function createResizeSession(
       return;
     }
 
-    const deltaX = event.clientX - resize.startClientX;
-    const deltaY = event.clientY - resize.startClientY;
+    const z = deps.zoomFactor?.() ?? 1;
+    const deltaX = (event.clientX - resize.startClientX) / z;
+    const deltaY = (event.clientY - resize.startClientY) / z;
     const maxWidth = adapter.getMaxWidth(deps.state, resize.paragraphId);
     const { width, height } = resolveResizedDimensions(
       resize,

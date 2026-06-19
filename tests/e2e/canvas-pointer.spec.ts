@@ -1,28 +1,19 @@
 import { expect, test, type ConsoleMessage, type Page } from "@playwright/test";
 import { resolve } from "node:path";
+import type {
+  CanvasDebugHitSnapshot,
+  CanvasDebugMissEvent,
+  CanvasDebugSelectionSnapshot,
+} from "@/ui/canvas/CanvasDebug.js";
 
 const SIMPLE_LOREM_DOCX = resolve("src/__tests__/word-parity/fixtures/word-authored-lorem.docx");
 const COMPLEX_DOCX = resolve("src/__tests__/word-parity/fixtures/documento_complexo.docx");
 test.describe.configure({ timeout: 180_000 });
 
-type CanvasDebugHit = {
-  source: "canvas-layout";
-  zone: "main" | "header" | "footer";
-  paragraphId: string;
-  paragraphOffset: number;
-  resolvedFromParagraph: boolean;
-  missReason?: string;
-};
-
 type CanvasDebugState = {
-  lastHit: CanvasDebugHit | null;
-  selection: {
-    anchor: { paragraphId: string; runId: string; offset: number };
-    focus: { paragraphId: string; runId: string; offset: number };
-    activeZone: "main" | "header" | "footer";
-    activeSectionIndex: number;
-  } | null;
-  missEvents: Array<{ reason: string; clientX: number; clientY: number }>;
+  lastHit: CanvasDebugHitSnapshot | null;
+  selection: CanvasDebugSelectionSnapshot | null;
+  missEvents: CanvasDebugMissEvent[];
 };
 
 type EditorTestProps = {
@@ -36,12 +27,6 @@ type EditorTestProps = {
     customizeToolbar?: string;
   };
 };
-
-declare global {
-  interface Window {
-    __oasisEditorTestProps?: unknown;
-  }
-}
 
 async function canvasPageRect(page: Page) {
   const rect = await page
@@ -100,7 +85,7 @@ async function expectLastHitFromCanvas(page: Page) {
   const state = await getCanvasDebugState(page);
   expect(state.lastHit).not.toBeNull();
   expect(state.lastHit?.source).toBe("canvas-layout");
-  return state.lastHit;
+  return state.lastHit!;
 }
 
 async function expectNoMissEvents(page: Page) {

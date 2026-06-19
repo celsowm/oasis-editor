@@ -1,6 +1,7 @@
 import type { SurfaceHit } from "./CanvasHitTestService.js";
 import type {
   CanvasLayoutSnapshot,
+  CanvasSnapshotInlineTextBox,
   CanvasSnapshotLine,
   CanvasSnapshotPage,
   CanvasSnapshotParagraph,
@@ -69,6 +70,8 @@ export interface CanvasDebugLayoutSnapshot {
       width: number;
       height: number;
     };
+    /** Set when the paragraph/cell is painted with a vertical-text transform. */
+    verticalMode?: CanvasSnapshotParagraph["verticalMode"];
   }>;
   inlineImages: Array<{
     paragraphId: string;
@@ -81,6 +84,19 @@ export interface CanvasDebugLayoutSnapshot {
     top: number;
     width: number;
     height: number;
+  }>;
+  inlineTextBoxes: Array<{
+    paragraphId: string;
+    paragraphIndex: number;
+    zone: EditorEditingZone;
+    pageIndex: number;
+    startOffset: number;
+    endOffset: number;
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    rotation?: number;
   }>;
   unsupportedRegions: Array<{
     pageIndex: number;
@@ -194,6 +210,7 @@ function cloneLayoutSnapshot(
             height: paragraph.tableCell.height,
           }
         : undefined,
+      verticalMode: paragraph.verticalMode,
     })),
     inlineImages: snapshot.inlineImages.map((image) => ({
       paragraphId: image.paragraphId,
@@ -207,6 +224,21 @@ function cloneLayoutSnapshot(
       width: image.width,
       height: image.height,
     })),
+    inlineTextBoxes: snapshot.inlineTextBoxes.map(
+      (box: CanvasSnapshotInlineTextBox) => ({
+        paragraphId: box.paragraphId,
+        paragraphIndex: box.paragraphIndex,
+        zone: box.zone,
+        pageIndex: box.pageIndex,
+        startOffset: box.startOffset,
+        endOffset: box.endOffset,
+        left: box.left,
+        top: box.top,
+        width: box.width,
+        height: box.height,
+        rotation: box.rotation,
+      }),
+    ),
     unsupportedRegions: snapshot.unsupportedRegions.map((region) => ({
       ...region,
     })),
@@ -249,6 +281,9 @@ function buildApi(): OasisCanvasDebugApi {
             })),
             inlineImages: lastLayoutSnapshot.inlineImages.map((image) => ({
               ...image,
+            })),
+            inlineTextBoxes: lastLayoutSnapshot.inlineTextBoxes.map((box) => ({
+              ...box,
             })),
             unsupportedRegions: lastLayoutSnapshot.unsupportedRegions.map(
               (region) => ({

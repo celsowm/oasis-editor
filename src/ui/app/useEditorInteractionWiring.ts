@@ -76,6 +76,7 @@ export function useEditorInteractionWiring(
     applyTransactionalState: ctx.applyTransactionalState,
     surfaceRef: ctx.surfaceRef,
     viewportRef: ctx.viewportRef,
+    zoomFactor: ctx.zoomFactor,
   });
 
   const tableDrag = createEditorTableDrag({
@@ -88,6 +89,7 @@ export function useEditorInteractionWiring(
   const revisionController = createEditorRevisionController({
     state,
     surfaceRef: () => ctx.surfaceRef() ?? null,
+    zoomFactor: ctx.zoomFactor,
   });
 
   const textDrag = createEditorTextDrag({

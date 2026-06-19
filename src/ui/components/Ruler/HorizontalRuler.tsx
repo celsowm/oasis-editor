@@ -33,6 +33,13 @@ export interface HorizontalRulerProps {
   toolbarHost: () => ToolbarHost;
   viewportRef: Accessor<HTMLDivElement | undefined>;
   readOnly: Accessor<boolean>;
+  /**
+   * Visual zoom factor `z`. The ruler lives *outside* the scaled document
+   * layer, so model-derived positions/sizes are rendered in screen px (× z) and
+   * pointer coordinates are mapped back to document px (÷ z). `pageLeft` is
+   * already measured in screen px from the scaled paper, so it is not scaled.
+   */
+  zoomFactor: Accessor<number>;
 }
 
 type DragType =
@@ -165,12 +172,17 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
     computeRulerTicks(pageSettings().width, baseGeometry().contentLeft, unit()),
   );
 
-  const trackWidth = createMemo(() => pageLeft() * 2 + pageSettings().width);
+  // Scale a document-px value into the screen-px space the ruler renders in.
+  const z = () => props.zoomFactor();
+  const sx = (value: number): number => value * z();
+
+  const trackWidth = createMemo(() => pageLeft() * 2 + sx(pageSettings().width));
 
   const pageXFromClient = (clientX: number): number => {
     const rect = pageRef?.getBoundingClientRect();
     if (!rect) return 0;
-    return clamp(clientX - rect.left, 0, pageSettings().width);
+    // rect is the scaled page element; map the screen offset back to document px.
+    return clamp((clientX - rect.left) / z(), 0, pageSettings().width);
   };
 
   const beginDrag = (type: DragType, event: PointerEvent) => {
@@ -308,27 +320,27 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
           class="oasis-editor-horizontal-ruler-page"
           style={{
             left: `${pageLeft()}px`,
-            width: `${pageSettings().width}px`,
+            width: `${sx(pageSettings().width)}px`,
           }}
         >
           {/* Margin (gray) zones */}
           <div
             class="oasis-editor-horizontal-ruler-margin"
-            style={{ left: "0px", width: `${geometry().contentLeft}px` }}
+            style={{ left: "0px", width: `${sx(geometry().contentLeft)}px` }}
           />
           <div
             class="oasis-editor-horizontal-ruler-margin"
             style={{
-              left: `${geometry().contentRight}px`,
-              width: `${Math.max(0, pageSettings().width - geometry().contentRight)}px`,
+              left: `${sx(geometry().contentRight)}px`,
+              width: `${sx(Math.max(0, pageSettings().width - geometry().contentRight))}px`,
             }}
           />
           {/* Content (white) zone */}
           <div
             class="oasis-editor-horizontal-ruler-content"
             style={{
-              left: `${geometry().contentLeft}px`,
-              width: `${Math.max(0, geometry().contentRight - geometry().contentLeft)}px`,
+              left: `${sx(geometry().contentLeft)}px`,
+              width: `${sx(Math.max(0, geometry().contentRight - geometry().contentLeft))}px`,
             }}
           />
 
@@ -338,12 +350,12 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
               <>
                 <div
                   class={`oasis-editor-horizontal-ruler-tick oasis-editor-horizontal-ruler-tick-${tick.kind}`}
-                  style={{ left: `${tick.x}px` }}
+                  style={{ left: `${sx(tick.x)}px` }}
                 />
                 {tick.label && (
                   <div
                     class="oasis-editor-horizontal-ruler-label"
-                    style={{ left: `${tick.x}px` }}
+                    style={{ left: `${sx(tick.x)}px` }}
                   >
                     {tick.label}
                   </div>
@@ -356,7 +368,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
           <button
             type="button"
             class="oasis-editor-horizontal-ruler-margin-handle"
-            style={{ left: `${geometry().contentLeft}px` }}
+            style={{ left: `${sx(geometry().contentLeft)}px` }}
             title={t("ruler.leftMargin")}
             aria-label={t("ruler.leftMargin")}
             onPointerDown={(event) => beginDrag("leftMargin", event)}
@@ -364,7 +376,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
           <button
             type="button"
             class="oasis-editor-horizontal-ruler-margin-handle"
-            style={{ left: `${geometry().contentRight}px` }}
+            style={{ left: `${sx(geometry().contentRight)}px` }}
             title={t("ruler.rightMargin")}
             aria-label={t("ruler.rightMargin")}
             onPointerDown={(event) => beginDrag("rightMargin", event)}
@@ -374,7 +386,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
           <button
             type="button"
             class="oasis-editor-ruler-marker oasis-editor-ruler-marker-first-line"
-            style={{ left: `${geometry().firstLineX}px` }}
+            style={{ left: `${sx(geometry().firstLineX)}px` }}
             title={t("ruler.firstLineIndent")}
             aria-label={t("ruler.firstLineIndent")}
             onPointerDown={(event) => beginDrag("firstLine", event)}
@@ -382,7 +394,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
           <button
             type="button"
             class="oasis-editor-ruler-marker oasis-editor-ruler-marker-hanging"
-            style={{ left: `${geometry().leftIndentX}px` }}
+            style={{ left: `${sx(geometry().leftIndentX)}px` }}
             title={t("ruler.hangingIndent")}
             aria-label={t("ruler.hangingIndent")}
             onPointerDown={(event) => beginDrag("hanging", event)}
@@ -390,7 +402,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
           <button
             type="button"
             class="oasis-editor-ruler-marker oasis-editor-ruler-marker-left-box"
-            style={{ left: `${geometry().leftIndentX}px` }}
+            style={{ left: `${sx(geometry().leftIndentX)}px` }}
             title={t("ruler.leftIndent")}
             aria-label={t("ruler.leftIndent")}
             onPointerDown={(event) => beginDrag("leftIndent", event)}
@@ -398,7 +410,7 @@ export function HorizontalRuler(props: HorizontalRulerProps) {
           <button
             type="button"
             class="oasis-editor-ruler-marker oasis-editor-ruler-marker-right-indent"
-            style={{ left: `${geometry().rightIndentX}px` }}
+            style={{ left: `${sx(geometry().rightIndentX)}px` }}
             title={t("ruler.rightIndent")}
             aria-label={t("ruler.rightIndent")}
             onPointerDown={(event) => beginDrag("rightIndent", event)}

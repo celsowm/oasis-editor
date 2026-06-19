@@ -35,6 +35,8 @@ export function createEditorTableResize(deps: {
   ) => void;
   surfaceRef: () => HTMLElement | undefined;
   viewportRef: () => HTMLElement | undefined;
+  /** Visual zoom factor `z`; resize pointer deltas are divided by it. */
+  zoomFactor?: () => number;
 }): TableResizeOps {
   const [resizing, setResizing] = createSignal<TableResizeState | null>(null);
 
@@ -177,9 +179,11 @@ export function createEditorTableResize(deps: {
     const currentResizing = resizing();
     if (!currentResizing) return;
 
+    const z = deps.zoomFactor?.() ?? 1;
     const delta =
-      (currentResizing.type === "column" ? event.clientX : event.clientY) -
-      currentResizing.initialPos;
+      ((currentResizing.type === "column" ? event.clientX : event.clientY) -
+        currentResizing.initialPos) /
+      z;
 
     if (Math.abs(delta) >= DRAG_THRESHOLD_PX) {
       deps.applyTransactionalState((current) => {

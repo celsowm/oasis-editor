@@ -22,6 +22,8 @@ export interface EditorTextBoxOperationsDeps {
   focusInput: () => void;
   cloneState: (source: EditorState) => EditorState;
   logger: EditorLogger;
+  /** Visual zoom factor `z`; resize pointer deltas are divided by it. */
+  zoomFactor?: () => number;
 }
 
 export function createEditorTextBoxOperations(
@@ -72,6 +74,7 @@ export function createEditorTextBoxOperations(
       cloneState: deps.cloneState,
       focusInput: deps.focusInput,
       logger: deps.logger,
+      zoomFactor: deps.zoomFactor,
     },
   );
 

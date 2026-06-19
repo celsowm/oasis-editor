@@ -279,6 +279,28 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
     ),
   );
 
+  // Keep the point at the viewport center stable when the zoom changes, so
+  // zooming feels anchored instead of jumping to the top-left origin.
+  let prevZoomFactor = zoomFactor();
+  createEffect(() => {
+    const next = zoomFactor();
+    const prev = prevZoomFactor;
+    prevZoomFactor = next;
+    if (next === prev || prev <= 0) return;
+    const el = viewportElement;
+    if (!el) return;
+    const ratio = next / prev;
+    const halfW = el.clientWidth / 2;
+    const halfH = el.clientHeight / 2;
+    const targetLeft = (el.scrollLeft + halfW) * ratio - halfW;
+    const targetTop = (el.scrollTop + halfH) * ratio - halfH;
+    // Apply after the zoom-sizer has resized so the new scroll range exists.
+    requestAnimationFrame(() => {
+      el.scrollLeft = targetLeft;
+      el.scrollTop = targetTop;
+    });
+  });
+
   const statusDocumentLayout = createMemo(() =>
     projectDocumentLayout(
       documentForStats(),
@@ -363,6 +385,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
           toolbarHost={overlays().toolbarHost!}
           viewportRef={viewportRef}
           readOnly={() => Boolean(layout().readOnly)}
+          zoomFactor={zoomFactor}
         />
       </Show>
       <div
