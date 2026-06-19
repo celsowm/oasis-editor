@@ -15,8 +15,8 @@
 
   .oasis-editor-app {
     padding: 20px 14px 20px;
-    /* Tighter vertical gutters on small screens; horizontal gutter stays in
-       sync with the shell-width constant so the page remains centered. */
+    /* Tighter vertical gutters on small screens. The shared horizontal gutter
+       continues to center the page inside the full-width scroll viewport. */
     --oasis-editor-gutter-top: 18px;
     --oasis-editor-gutter-bottom: 18px;
   }

@@ -10,10 +10,7 @@ import {
 import { CanvasEditorSurface } from "./components/CanvasEditorSurface.js";
 import { OasisBrandMark } from "./components/OasisBrandMark.js";
 import { HorizontalRuler } from "./components/Ruler/HorizontalRuler.js";
-import {
-  EDITOR_SCROLL_PADDING_PX,
-  EDITOR_SCROLLBAR_RESERVE_PX,
-} from "./editorLayoutConstants.js";
+import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
 import { CaretOverlay } from "./components/CaretOverlay.js";
 import { SelectionOverlay } from "./components/SelectionOverlay.js";
 import { RevisionOverlay } from "./components/RevisionOverlay.js";
@@ -21,7 +18,7 @@ import { CommentHighlightOverlay } from "./components/CommentHighlightOverlay.js
 import { FloatingTableToolbar } from "./components/FloatingToolbar/FloatingTableToolbar.js";
 import { FloatingLayoutOptions } from "./components/FloatingToolbar/FloatingLayoutOptions.js";
 import type { ToolbarHost } from "./components/Toolbar/state/createToolbarApi.js";
-import { t } from "@/i18n/index.js";
+import { t, type TranslationKey } from "@/i18n/index.js";
 import {
   getDocumentPageSettings,
   getDocumentSections,
@@ -48,12 +45,7 @@ import type { EditorComment } from "@/core/model.js";
 import type { ResizeHandleDirection } from "./resizeGeometry.js";
 import { ResizeHandlesOverlay } from "./overlays/ResizeHandlesOverlay.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
-import {
-  ZOOM_MIN,
-  ZOOM_MAX,
-  ZOOM_STEP,
-  clampZoom,
-} from "./app/editorZoom.js";
+import { ZOOM_MIN, ZOOM_MAX, ZOOM_STEP, clampZoom } from "./app/editorZoom.js";
 
 type ImportProgress = ImportProgressState;
 
@@ -213,17 +205,11 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
     return rawViewportHeight ?? "min(72vh, 920px)";
   };
   const shellStyle = createMemo<JSX.CSSProperties>(() => ({
-    // pageWidth + both horizontal gutters + the reserved vertical-scrollbar
-    // gutter. The paper is width:100% of the scroll content and
-    // `.oasis-editor-editor` reserves the scrollbar via `scrollbar-gutter:
-    // stable`, so this keeps the paper exactly `pageWidth` while leaving room for
-    // the scrollbar — preventing a spurious horizontal scrollbar (notably in
-    // landscape) and letting the editor area grow to fit a wider page.
-    width: `min(${
-      widestPageWidth() +
-      EDITOR_SCROLL_PADDING_PX * 2 +
-      EDITOR_SCROLLBAR_RESERVE_PX
-    }px, 100%)`,
+    // Word-like chrome spans the whole stage. The page remains centered by the
+    // zoom-sizer/scroll-content layer, while pages wider than the available
+    // stage continue to overflow inside the viewport instead of widening the
+    // shell and pulling the ruler, scrollbar and status bar inward.
+    width: "100%",
     height: "100%",
     "max-height": viewportHeight(),
     ...(layout().style ?? {}),
@@ -273,10 +259,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   // transform-origin is top-left, so the scaled box spans [left, left + w*z].
   // Center it horizontally within the sizer.
   const zoomLayerLeft = createMemo(() =>
-    Math.max(
-      0,
-      (zoomSizerWidth() - unscaledContentWidth() * zoomFactor()) / 2,
-    ),
+    Math.max(0, (zoomSizerWidth() - unscaledContentWidth() * zoomFactor()) / 2),
   );
 
   // Keep the point at the viewport center stable when the zoom changes, so
@@ -426,214 +409,216 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
             height: `${zoomSizerHeight()}px`,
           }}
         >
-        <div
-          ref={(el) => {
-            scrollContentRef = el;
-            refs().onSurfaceRef?.(el);
-            const updateContentHeight = () => {
-              setMeasuredContentHeight(el.offsetHeight);
-            };
-            updateContentHeight();
-            queueMicrotask(updateContentHeight);
-            let contentObserver: ResizeObserver | undefined;
-            if (typeof ResizeObserver !== "undefined") {
-              contentObserver = new ResizeObserver(updateContentHeight);
-              contentObserver.observe(el);
-            }
-            onCleanup(() => contentObserver?.disconnect());
-          }}
-          class="oasis-editor-editor-scroll-content"
-          data-testid="editor-editor-scroll-content"
-          style={{
-            position: "absolute",
-            top: "0px",
-            left: `${zoomLayerLeft()}px`,
-            width: `${unscaledContentWidth()}px`,
-            // Fill at least the viewport (in unscaled px) without feeding back
-            // into the sizer height (which is derived from measured content).
-            "min-height": `${viewportSize().height / zoomFactor()}px`,
-            transform: `scale(${zoomFactor()})`,
-            "transform-origin": "top left",
-          }}
-        >
-          <CanvasEditorSurface
-            state={props.state}
-            measuredBlockHeights={layout().measuredBlockHeights}
-            measuredParagraphLayouts={layout().measuredParagraphLayouts}
-            viewportRef={() => viewportElement ?? undefined}
-            onSurfaceMouseDown={surfaceHandlers().onSurfaceMouseDown}
-            onSurfaceClick={surfaceHandlers().onSurfaceClick}
-            onSurfaceMouseMove={surfaceHandlers().onSurfaceMouseMove}
-            onSurfaceDblClick={surfaceHandlers().onSurfaceDblClick}
-            onParagraphMouseDown={surfaceHandlers().onParagraphMouseDown}
-            onImageMouseDown={surfaceHandlers().onImageMouseDown}
-            onImageResizeHandleMouseDown={
-              surfaceHandlers().onImageResizeHandleMouseDown
-            }
-            onTextBoxResizeHandleMouseDown={
-              surfaceHandlers().onTextBoxResizeHandleMouseDown
-            }
-            onTableDragHandleMouseDown={
-              surfaceHandlers().onTableDragHandleMouseDown
-            }
-            onRevisionMouseEnter={surfaceHandlers().onRevisionMouseEnter}
-            onRevisionMouseLeave={surfaceHandlers().onRevisionMouseLeave}
-          />
-
-          <Show when={overlays().hoveredRevision()}>
-            {(revision) => <RevisionOverlay box={revision()} />}
-          </Show>
-
-          <Show when={overlays().selectionBoxes().length > 0}>
-            <SelectionOverlay boxes={overlays().selectionBoxes()} />
-          </Show>
-
-          <Show when={overlays().commentHighlights().length > 0}>
-            <CommentHighlightOverlay
-              boxes={overlays().commentHighlights}
-              commentsById={commentsById}
-            />
-          </Show>
-
-          <ResizeHandlesOverlay
-            box={selectedImage}
-            readOnly={Boolean(layout().readOnly)}
-            variantClass="oasis-editor-image-selection-overlay"
-            rotation={() => selectedImage()?.rotation ?? 0}
-            onResizeStart={(direction, event) => {
-              const image = selectedImage();
-              if (!image) return;
-              event.preventDefault();
-              event.stopPropagation();
-              surfaceHandlers().onImageResizeHandleMouseDown(
-                image.paragraphId,
-                image.startOffset,
-                direction,
-                event,
-              );
+          <div
+            ref={(el) => {
+              scrollContentRef = el;
+              refs().onSurfaceRef?.(el);
+              const updateContentHeight = () => {
+                setMeasuredContentHeight(el.offsetHeight);
+              };
+              updateContentHeight();
+              queueMicrotask(updateContentHeight);
+              let contentObserver: ResizeObserver | undefined;
+              if (typeof ResizeObserver !== "undefined") {
+                contentObserver = new ResizeObserver(updateContentHeight);
+                contentObserver.observe(el);
+              }
+              onCleanup(() => contentObserver?.disconnect());
             }}
-            onRotateStart={(event) => {
-              const image = selectedImage();
-              if (!image) return;
-              surfaceHandlers().onImageRotateHandleMouseDown(
-                image.paragraphId,
-                image.startOffset,
-                event,
-              );
-            }}
-            onBodyMouseDown={(event) => {
-              const image = selectedImage();
-              if (!image) return;
-              surfaceHandlers().onImageMouseDown(
-                image.paragraphId,
-                image.startOffset,
-                event,
-              );
-            }}
-          />
-
-          <ResizeHandlesOverlay
-            box={selectedTextBox}
-            readOnly={Boolean(layout().readOnly)}
-            variantClass="oasis-editor-textbox-selection-overlay"
-            rotation={() => selectedTextBox()?.rotation ?? 0}
-            onResizeStart={(direction, event) => {
-              const textBox = selectedTextBox();
-              if (!textBox) return;
-              event.preventDefault();
-              event.stopPropagation();
-              surfaceHandlers().onTextBoxResizeHandleMouseDown(
-                textBox.paragraphId,
-                textBox.startOffset,
-                direction,
-                event,
-              );
-            }}
-            onRotateStart={(event) => {
-              const textBox = selectedTextBox();
-              if (!textBox) return;
-              surfaceHandlers().onTextBoxRotateHandleMouseDown(
-                textBox.paragraphId,
-                textBox.startOffset,
-                event,
-              );
-            }}
-          />
-
-          <Show
-            when={overlays().toolbarHost && overlays().showFloatingTableToolbar}
-          >
-            <FloatingTableToolbar
-              host={overlays().toolbarHost!}
-              selectionBoxes={overlays().selectionBoxes}
-              visible={overlays().showFloatingTableToolbar!}
-              surfaceRef={() => scrollContentRef}
-            />
-          </Show>
-
-          <Show when={overlays().layoutOptions}>
-            {(layoutOptions) => (
-              <FloatingLayoutOptions
-                box={() => selectedImage() ?? selectedTextBox()}
-                layoutOptions={layoutOptions()}
-                surfaceRef={() => scrollContentRef}
-                readOnly={Boolean(layout().readOnly)}
-              />
-            )}
-          </Show>
-
-          <Show when={overlays().showCaret()}>
-            <CaretOverlay
-              active={overlays().focused()}
-              left={overlays().caretBox().left}
-              top={overlays().caretBox().top}
-              height={overlays().caretBox().height}
-            />
-          </Show>
-
-          <textarea
-            ref={refs().onTextareaRef}
-            aria-label="Editor input"
-            autocomplete="off"
-            autocapitalize="off"
-            class="oasis-editor-input"
-            data-testid="editor-input"
-            readOnly={layout().readOnly}
-            spellcheck={false}
-            value=""
+            class="oasis-editor-editor-scroll-content"
+            data-testid="editor-editor-scroll-content"
             style={{
-              left: `${overlays().inputBox().left}px`,
-              top: `${overlays().inputBox().top}px`,
-              height: `${overlays().inputBox().height}px`,
-              "pointer-events": "none",
+              position: "absolute",
+              top: "0px",
+              left: `${zoomLayerLeft()}px`,
+              width: `${unscaledContentWidth()}px`,
+              // Fill at least the viewport (in unscaled px) without feeding back
+              // into the sizer height (which is derived from measured content).
+              "min-height": `${viewportSize().height / zoomFactor()}px`,
+              transform: `scale(${zoomFactor()})`,
+              "transform-origin": "top left",
             }}
-            onBlur={inputHandlers().onInputBlur}
-            onCompositionEnd={inputHandlers().onCompositionEnd}
-            onCompositionStart={inputHandlers().onCompositionStart}
-            onCopy={inputHandlers().onCopy}
-            onCut={inputHandlers().onCut}
-            onFocus={inputHandlers().onInputFocus}
-            onInput={inputHandlers().onInput}
-            onKeyDown={inputHandlers().onKeyDown}
-            onPaste={inputHandlers().onPaste}
-          />
-          <input
-            ref={refs().onImportInputRef}
-            accept={importFileAccept()}
-            data-testid="editor-import-docx-input"
-            style={{ display: "none" }}
-            type="file"
-            onChange={fileHandlers().onImportInputChange}
-          />
-          <input
-            ref={refs().onImageInputRef}
-            accept="image/png, image/jpeg, image/gif"
-            data-testid="editor-insert-image-input"
-            style={{ display: "none" }}
-            type="file"
-            onChange={fileHandlers().onImageInputChange}
-          />
-        </div>
+          >
+            <CanvasEditorSurface
+              state={props.state}
+              measuredBlockHeights={layout().measuredBlockHeights}
+              measuredParagraphLayouts={layout().measuredParagraphLayouts}
+              viewportRef={() => viewportElement ?? undefined}
+              onSurfaceMouseDown={surfaceHandlers().onSurfaceMouseDown}
+              onSurfaceClick={surfaceHandlers().onSurfaceClick}
+              onSurfaceMouseMove={surfaceHandlers().onSurfaceMouseMove}
+              onSurfaceDblClick={surfaceHandlers().onSurfaceDblClick}
+              onParagraphMouseDown={surfaceHandlers().onParagraphMouseDown}
+              onImageMouseDown={surfaceHandlers().onImageMouseDown}
+              onImageResizeHandleMouseDown={
+                surfaceHandlers().onImageResizeHandleMouseDown
+              }
+              onTextBoxResizeHandleMouseDown={
+                surfaceHandlers().onTextBoxResizeHandleMouseDown
+              }
+              onTableDragHandleMouseDown={
+                surfaceHandlers().onTableDragHandleMouseDown
+              }
+              onRevisionMouseEnter={surfaceHandlers().onRevisionMouseEnter}
+              onRevisionMouseLeave={surfaceHandlers().onRevisionMouseLeave}
+            />
+
+            <Show when={overlays().hoveredRevision()}>
+              {(revision) => <RevisionOverlay box={revision()} />}
+            </Show>
+
+            <Show when={overlays().selectionBoxes().length > 0}>
+              <SelectionOverlay boxes={overlays().selectionBoxes()} />
+            </Show>
+
+            <Show when={overlays().commentHighlights().length > 0}>
+              <CommentHighlightOverlay
+                boxes={overlays().commentHighlights}
+                commentsById={commentsById}
+              />
+            </Show>
+
+            <ResizeHandlesOverlay
+              box={selectedImage}
+              readOnly={Boolean(layout().readOnly)}
+              variantClass="oasis-editor-image-selection-overlay"
+              rotation={() => selectedImage()?.rotation ?? 0}
+              onResizeStart={(direction, event) => {
+                const image = selectedImage();
+                if (!image) return;
+                event.preventDefault();
+                event.stopPropagation();
+                surfaceHandlers().onImageResizeHandleMouseDown(
+                  image.paragraphId,
+                  image.startOffset,
+                  direction,
+                  event,
+                );
+              }}
+              onRotateStart={(event) => {
+                const image = selectedImage();
+                if (!image) return;
+                surfaceHandlers().onImageRotateHandleMouseDown(
+                  image.paragraphId,
+                  image.startOffset,
+                  event,
+                );
+              }}
+              onBodyMouseDown={(event) => {
+                const image = selectedImage();
+                if (!image) return;
+                surfaceHandlers().onImageMouseDown(
+                  image.paragraphId,
+                  image.startOffset,
+                  event,
+                );
+              }}
+            />
+
+            <ResizeHandlesOverlay
+              box={selectedTextBox}
+              readOnly={Boolean(layout().readOnly)}
+              variantClass="oasis-editor-textbox-selection-overlay"
+              rotation={() => selectedTextBox()?.rotation ?? 0}
+              onResizeStart={(direction, event) => {
+                const textBox = selectedTextBox();
+                if (!textBox) return;
+                event.preventDefault();
+                event.stopPropagation();
+                surfaceHandlers().onTextBoxResizeHandleMouseDown(
+                  textBox.paragraphId,
+                  textBox.startOffset,
+                  direction,
+                  event,
+                );
+              }}
+              onRotateStart={(event) => {
+                const textBox = selectedTextBox();
+                if (!textBox) return;
+                surfaceHandlers().onTextBoxRotateHandleMouseDown(
+                  textBox.paragraphId,
+                  textBox.startOffset,
+                  event,
+                );
+              }}
+            />
+
+            <Show
+              when={
+                overlays().toolbarHost && overlays().showFloatingTableToolbar
+              }
+            >
+              <FloatingTableToolbar
+                host={overlays().toolbarHost!}
+                selectionBoxes={overlays().selectionBoxes}
+                visible={overlays().showFloatingTableToolbar!}
+                surfaceRef={() => scrollContentRef}
+              />
+            </Show>
+
+            <Show when={overlays().layoutOptions}>
+              {(layoutOptions) => (
+                <FloatingLayoutOptions
+                  box={() => selectedImage() ?? selectedTextBox()}
+                  layoutOptions={layoutOptions()}
+                  surfaceRef={() => scrollContentRef}
+                  readOnly={Boolean(layout().readOnly)}
+                />
+              )}
+            </Show>
+
+            <Show when={overlays().showCaret()}>
+              <CaretOverlay
+                active={overlays().focused()}
+                left={overlays().caretBox().left}
+                top={overlays().caretBox().top}
+                height={overlays().caretBox().height}
+              />
+            </Show>
+
+            <textarea
+              ref={refs().onTextareaRef}
+              aria-label="Editor input"
+              autocomplete="off"
+              autocapitalize="off"
+              class="oasis-editor-input"
+              data-testid="editor-input"
+              readOnly={layout().readOnly}
+              spellcheck={false}
+              value=""
+              style={{
+                left: `${overlays().inputBox().left}px`,
+                top: `${overlays().inputBox().top}px`,
+                height: `${overlays().inputBox().height}px`,
+                "pointer-events": "none",
+              }}
+              onBlur={inputHandlers().onInputBlur}
+              onCompositionEnd={inputHandlers().onCompositionEnd}
+              onCompositionStart={inputHandlers().onCompositionStart}
+              onCopy={inputHandlers().onCopy}
+              onCut={inputHandlers().onCut}
+              onFocus={inputHandlers().onInputFocus}
+              onInput={inputHandlers().onInput}
+              onKeyDown={inputHandlers().onKeyDown}
+              onPaste={inputHandlers().onPaste}
+            />
+            <input
+              ref={refs().onImportInputRef}
+              accept={importFileAccept()}
+              data-testid="editor-import-docx-input"
+              style={{ display: "none" }}
+              type="file"
+              onChange={fileHandlers().onImportInputChange}
+            />
+            <input
+              ref={refs().onImageInputRef}
+              accept="image/png, image/jpeg, image/gif"
+              data-testid="editor-insert-image-input"
+              style={{ display: "none" }}
+              type="file"
+              onChange={fileHandlers().onImageInputChange}
+            />
+          </div>
         </div>
       </div>
       <Show when={overlays().importProgress?.()}>
@@ -661,7 +646,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
                   class="oasis-editor-import-phase"
                   data-testid="editor-import-phase"
                 >
-                  {t(`import.phase.${progress().phase}` as any)}
+                  {t(`import.phase.${progress().phase}` as TranslationKey)}
                 </div>
                 <div class="oasis-editor-import-progress-track">
                   <div
@@ -696,88 +681,92 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
         }}
       </Show>
       <div class="oasis-editor-statusbar" data-testid="editor-statusbar">
-        <span
-          class="oasis-editor-statusbar-item"
-          data-testid="editor-statusbar-word-count"
-        >
-          {t("status.words", [wordCount()])}
-        </span>
-        <span
-          class="oasis-editor-statusbar-item"
-          data-testid="editor-statusbar-character-count"
-        >
-          {t("status.characters", [characterCount()])}
-        </span>
-        <span class="oasis-editor-statusbar-item">
-          {t("status.page", [currentPage(), totalPages()])}
-        </span>
-        <div
-          class="oasis-editor-statusbar-zoom"
-          data-testid="editor-statusbar-zoom-control"
-          aria-label={t("status.zoom")}
-        >
-          <button
-            type="button"
-            class="oasis-editor-zoom-button"
-            aria-label={`${t("status.zoom")} -`}
-            disabled={zoomPercent() <= ZOOM_MIN}
-            onClick={() => adjustZoom(-ZOOM_STEP)}
-          >
-            −
-          </button>
-          <input
-            class="oasis-editor-zoom-slider"
-            type="range"
-            min={ZOOM_MIN}
-            max={ZOOM_MAX}
-            step={ZOOM_STEP}
-            value={zoomPercent()}
-            aria-label={t("status.zoom")}
-            aria-valuetext={`${zoomPercent()}%`}
-            onInput={(event) =>
-              setZoomPercent(clampZoom(event.currentTarget.valueAsNumber))
-            }
-          />
-          <button
-            type="button"
-            class="oasis-editor-zoom-button"
-            aria-label={`${t("status.zoom")} +`}
-            disabled={zoomPercent() >= ZOOM_MAX}
-            onClick={() => adjustZoom(ZOOM_STEP)}
-          >
-            +
-          </button>
+        <div class="oasis-editor-statusbar-group oasis-editor-statusbar-start">
           <span
-            class="oasis-editor-statusbar-item oasis-editor-zoom-value"
-            data-testid="editor-statusbar-zoom"
+            class="oasis-editor-statusbar-item"
+            data-testid="editor-statusbar-word-count"
           >
-            {zoomPercent()}%
+            {t("status.words", [wordCount()])}
+          </span>
+          <span
+            class="oasis-editor-statusbar-item"
+            data-testid="editor-statusbar-character-count"
+          >
+            {t("status.characters", [characterCount()])}
+          </span>
+          <span class="oasis-editor-statusbar-item">
+            {t("status.page", [currentPage(), totalPages()])}
           </span>
         </div>
-        <Show when={overlays().persistenceStatus}>
-          {(() => {
-            const rawStatus = overlays().persistenceStatus!();
-            const status = rawStatus.toLowerCase();
-            const key = status.includes("saved")
-              ? "status.saved"
-              : status.includes("saving")
-                ? "status.saving"
-                : status.includes("error")
-                  ? "status.error"
-                  : null;
-            return (
-              <Show when={key}>
-                <span
-                  class={`oasis-editor-statusbar-item oasis-editor-persistence-status oasis-editor-status-${status
-                    .replace("...", "ing")
-                    .replace(".", "")}`}
-                >
-                  {t(key as any)}
-                </span>
-              </Show>
-            );
-          })()}
-        </Show>
+        <div class="oasis-editor-statusbar-group oasis-editor-statusbar-end">
+          <div
+            class="oasis-editor-statusbar-zoom"
+            data-testid="editor-statusbar-zoom-control"
+            aria-label={t("status.zoom")}
+          >
+            <button
+              type="button"
+              class="oasis-editor-zoom-button"
+              aria-label={`${t("status.zoom")} -`}
+              disabled={zoomPercent() <= ZOOM_MIN}
+              onClick={() => adjustZoom(-ZOOM_STEP)}
+            >
+              −
+            </button>
+            <input
+              class="oasis-editor-zoom-slider"
+              type="range"
+              min={ZOOM_MIN}
+              max={ZOOM_MAX}
+              step={ZOOM_STEP}
+              value={zoomPercent()}
+              aria-label={t("status.zoom")}
+              aria-valuetext={`${zoomPercent()}%`}
+              onInput={(event) =>
+                setZoomPercent(clampZoom(event.currentTarget.valueAsNumber))
+              }
+            />
+            <button
+              type="button"
+              class="oasis-editor-zoom-button"
+              aria-label={`${t("status.zoom")} +`}
+              disabled={zoomPercent() >= ZOOM_MAX}
+              onClick={() => adjustZoom(ZOOM_STEP)}
+            >
+              +
+            </button>
+            <span
+              class="oasis-editor-statusbar-item oasis-editor-zoom-value"
+              data-testid="editor-statusbar-zoom"
+            >
+              {zoomPercent()}%
+            </span>
+          </div>
+          <Show when={overlays().persistenceStatus}>
+            {(() => {
+              const rawStatus = overlays().persistenceStatus!();
+              const status = rawStatus.toLowerCase();
+              const key = status.includes("saved")
+                ? "status.saved"
+                : status.includes("saving")
+                  ? "status.saving"
+                  : status.includes("error")
+                    ? "status.error"
+                    : null;
+              return (
+                <Show when={key}>
+                  <span
+                    class={`oasis-editor-statusbar-item oasis-editor-persistence-status oasis-editor-status-${status
+                      .replace("...", "ing")
+                      .replace(".", "")}`}
+                  >
+                    {t(key as TranslationKey)}
+                  </span>
+                </Show>
+              );
+            })()}
+          </Show>
+        </div>
       </div>
     </div>
   );

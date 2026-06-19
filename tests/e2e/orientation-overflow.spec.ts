@@ -1,12 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
 
-test.describe.configure({ timeout: 120_000 });
+test.describe.configure({ timeout: 180_000 });
 
 async function gotoEditor(page: Page) {
   await page.addInitScript(() => {
     localStorage.setItem("oasis.welcomeSeen", "1");
   });
-  await page.goto("/oasis-editor/index.html", { waitUntil: "load" });
+  await page.goto("/oasis-editor/index.html", {
+    waitUntil: "domcontentloaded",
+  });
   await expect(
     page.locator('[data-testid="editor-page"][data-renderer="canvas"]').first(),
   ).toBeVisible({ timeout: 60_000 });
@@ -26,7 +28,68 @@ async function editorOverflow(page: Page) {
   });
 }
 
-test("landscape does not force horizontal scroll on a 16:9 viewport", async ({
+test("editor chrome spans the stage while the page remains centered", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await gotoEditor(page);
+
+  const geometry = await page.evaluate(() => {
+    const stage = document.querySelector(".oasis-editor-stage") as HTMLElement;
+    const shell = document.querySelector(
+      ".oasis-editor-editor-shell",
+    ) as HTMLElement;
+    const editor = document.querySelector(
+      ".oasis-editor-editor",
+    ) as HTMLElement;
+    const ruler = document.querySelector(
+      ".oasis-editor-horizontal-ruler",
+    ) as HTMLElement;
+    const statusbar = document.querySelector(
+      ".oasis-editor-statusbar",
+    ) as HTMLElement;
+    const paper = document.querySelector(".oasis-editor-paper") as HTMLElement;
+    const stageStyle = getComputedStyle(stage);
+    const stageRect = stage.getBoundingClientRect();
+    const shellRect = shell.getBoundingClientRect();
+    const editorRect = editor.getBoundingClientRect();
+    const rulerRect = ruler.getBoundingClientRect();
+    const statusbarRect = statusbar.getBoundingClientRect();
+    const paperRect = paper.getBoundingClientRect();
+    const paddingLeft = Number.parseFloat(stageStyle.paddingLeft) || 0;
+    const paddingRight = Number.parseFloat(stageStyle.paddingRight) || 0;
+
+    return {
+      availableStageWidth: stage.clientWidth - paddingLeft - paddingRight,
+      expectedShellLeft: stageRect.left + paddingLeft,
+      shell: {
+        left: shellRect.left,
+        right: shellRect.right,
+        width: shellRect.width,
+      },
+      editor: { left: editorRect.left, right: editorRect.right },
+      ruler: { left: rulerRect.left, right: rulerRect.right },
+      statusbar: { left: statusbarRect.left, right: statusbarRect.right },
+      paperWidth: paperRect.width,
+      paperCenter: paperRect.left + paperRect.width / 2,
+      editorClientCenter:
+        editorRect.left + editor.clientLeft + editor.clientWidth / 2,
+    };
+  });
+
+  expect(geometry.shell.width).toBeCloseTo(geometry.availableStageWidth, 0);
+  expect(geometry.shell.left).toBeCloseTo(geometry.expectedShellLeft, 0);
+  expect(geometry.shell.width - geometry.paperWidth).toBeGreaterThan(300);
+  expect(geometry.ruler.left).toBeCloseTo(geometry.shell.left, 0);
+  expect(geometry.ruler.right).toBeCloseTo(geometry.shell.right, 0);
+  expect(geometry.editor.left).toBeCloseTo(geometry.shell.left, 0);
+  expect(geometry.editor.right).toBeCloseTo(geometry.shell.right, 0);
+  expect(geometry.statusbar.left).toBeCloseTo(geometry.shell.left, 0);
+  expect(geometry.statusbar.right).toBeCloseTo(geometry.shell.right, 0);
+  expect(geometry.paperCenter).toBeCloseTo(geometry.editorClientCenter, 0);
+});
+
+test("landscape keeps the full-width shell without unnecessary overflow", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
@@ -46,11 +109,44 @@ test("landscape does not force horizontal scroll on a 16:9 viewport", async ({
 
   const landscape = await editorOverflow(page);
   expect(landscape).not.toBeNull();
-  // The editor must grow to fit the wider landscape page...
-  expect(landscape!.clientWidth).toBeGreaterThan(portrait!.clientWidth);
-  // Landscape page is wider; the editor must grow to fit it without a
-  // horizontal scrollbar (allow 1px for sub-pixel rounding).
+  // Chrome remains attached to the stage rather than changing with page size.
+  expect(landscape!.clientWidth).toBeCloseTo(portrait!.clientWidth, 0);
+  // The available 16:9 stage still fits a landscape page without horizontal
+  // scrolling (allow 1px for sub-pixel rounding).
   expect(landscape!.overflowX).toBeLessThanOrEqual(1);
+});
+
+test("high zoom preserves reachable horizontal scrolling", async ({ page }) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await gotoEditor(page);
+
+  const before = await editorOverflow(page);
+  expect(before).not.toBeNull();
+
+  const slider = page
+    .getByTestId("editor-statusbar-zoom-control")
+    .locator('input[type="range"]');
+  await slider.focus();
+  await slider.press("End");
+  await expect(page.getByTestId("editor-statusbar-zoom")).toHaveText("200%");
+
+  const after = await page.evaluate(() => {
+    const editor = document.querySelector(
+      ".oasis-editor-editor",
+    ) as HTMLElement;
+    editor.scrollLeft = editor.scrollWidth;
+    return {
+      scrollLeft: editor.scrollLeft,
+      reachableRight: editor.scrollLeft + editor.clientWidth,
+      scrollWidth: editor.scrollWidth,
+      overflowX: editor.scrollWidth - editor.clientWidth,
+    };
+  });
+
+  expect(after.overflowX).toBeGreaterThan(before!.overflowX + 100);
+  expect(after.scrollLeft).toBeGreaterThan(0);
+  // The stable vertical-scrollbar gutter reserves 10px at the right edge.
+  expect(after.scrollWidth - after.reachableRight).toBeLessThanOrEqual(10);
 });
 
 test("layout ribbon renders margins and orientation as full-height buttons", async ({

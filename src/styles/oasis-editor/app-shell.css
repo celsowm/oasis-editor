@@ -14,7 +14,7 @@
   /* Vertical gutters between the page and the scroll-content edges; variants
      tweak these for visual rhythm. The horizontal gutter
      (--oasis-editor-gutter-x) is injected from TS (EDITOR_SCROLL_PADDING_PX) so
-     it stays in lockstep with the shell-width math — see OasisEditorApp.tsx. */
+     the scroll-content and page-centering geometry share one value. */
   --oasis-editor-gutter-top: 34px;
   --oasis-editor-gutter-bottom: 34px;
 }
@@ -95,12 +95,9 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-  /* Always reserve the vertical-scrollbar track so the fixed-width page never
-     collides with it (which would force a horizontal scrollbar, most visibly in
-     landscape). The shell width adds EDITOR_SCROLLBAR_RESERVE_PX to match this
-     reserved gutter, keeping the paper exactly pageWidth — see
-     OasisEditorEditor.tsx / editorLayoutConstants.ts. Keep the
-     ::-webkit-scrollbar width below in sync with that constant (10px). */
+  /* Always reserve the vertical-scrollbar track. This keeps page centering
+     stable as content starts overflowing and places the track at the far edge
+     of the full-width shell. */
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: rgba(95, 99, 104, 0.42) transparent;
@@ -133,13 +130,25 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
   padding: 6px 16px;
   font-size: 12px;
   color: var(--oasis-text-muted);
   background: rgba(248, 250, 252, 0.85);
   border-top: 1px solid var(--oasis-border-color);
+}
+
+.oasis-editor-statusbar-group {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.oasis-editor-statusbar-end {
+  margin-left: auto;
+  justify-content: flex-end;
 }
 
 .oasis-editor-statusbar-item {
@@ -367,8 +376,10 @@
   height: 14px;
   border-radius: 50%;
   background: #059669;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") center / contain no-repeat;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
   animation: oasis-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -387,8 +398,10 @@
   height: 14px;
   border-radius: 50%;
   background: #dc2626;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z'/%3E%3C/svg%3E") center / contain no-repeat;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
 }
 
 @keyframes oasis-pop {
@@ -504,4 +517,3 @@
     opacity: 0;
   }
 }
-
