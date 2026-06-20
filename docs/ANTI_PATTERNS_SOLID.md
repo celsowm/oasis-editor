@@ -30,8 +30,8 @@ criando ou conectando a maior parte dos controllers do produto.
 | --- | ------------------------------------------------------------------- | ---------: | ---------------------: | ------: |
 | G1  | ~~Locale global compartilhado por todas as instâncias~~ ✅ resolvido |          — |                      — |       — |
 | G2  | ~~Três geradores globais e independentes de IDs~~ ✅ resolvido       |          — |                      — |       — |
-| D1  | `core/plugin.ts` depende de UI e participa de ciclo de 7 módulos    |       Alta |                   Alto |       M |
-| D2  | Ciclos nos pipelines canvas, PDF, DOCX export e DOCX import         |       Alta |                   Alto |       L |
+| D1  | ~~`core/plugin.ts` depende de UI e ciclo de 7 módulos~~ ✅ resolvido |          — |                      — |       — |
+| D2  | ~~Ciclos nos pipelines canvas, PDF, DOCX export e DOCX import~~ ✅ resolvido |     — |                      — |       — |
 | S1  | `OasisEditorApp` ainda é composition root com lógica operacional    |       Alta |                   Alto |       L |
 | D3  | ~~Persistência default é singleton com chave fixa~~ ✅ resolvido     |          — |                      — |       — |
 | C1  | Contratos de command bus têm tipagem e `refresh` inconsistentes     |      Média |                   Alto |       M |
@@ -218,6 +218,18 @@ ser tornada arquitetural e coberta por testes de import.
 
 #### D1. Contrato de plugins do core depende da toolbar concreta
 
+> **✅ Resolvido na Onda 2 (2026-06-20).** O vocabulário neutro de contribuição
+> (`RIBBON_TABS`, `RibbonTabId`, `RibbonRow`, `RibbonSize`) foi movido para
+> `src/core/pluginUiTypes.ts`; `core/plugin.ts` importa de lá e não importa mais
+> nada de `src/ui`. A toolbar (`schema/items.ts`) re-exporta os tipos no mesmo
+> entrypoint, preservando identidade estrutural para consumidores. O alias
+> concreto morto `OasisEditorRuntime = Editor` foi removido (sem consumidores,
+> fora do barrel público). Adicionado o gate determinístico
+> `scripts/check-import-graph.mjs` (`npm run check:imports`), que falha em
+> qualquer import `src/core -> src/ui` e em ciclos fora da allowlist.
+>
+> Gates: `check:imports` ok, `tsc` limpo, suíte 577✓/1 skip, `build:lib` ok.
+
 `src/core/plugin.ts:5-9` importa `RibbonRow`, `RibbonSize` e `RibbonTabId` de
 `src/ui/components/Toolbar/schema/items.ts`. O mesmo arquivo importa a classe
 concreta `Editor` (`:3`) apenas para publicar `OasisEditorRuntime = Editor`
@@ -242,6 +254,27 @@ para `core/pluginUiTypes.ts`, consumidos pela toolbar. Remover o alias concreto
 depender apenas de contratos do core.
 
 #### D2. Pipelines recursivos dependem circularmente de implementações
+
+> **✅ Resolvido na Onda 2 (2026-06-20).** Todos os nove SCCs foram eliminados;
+> `npm run check:imports` reporta **0 ciclos** em `src/` com allowlist vazia.
+>
+> - **Ciclos type-only (font dialog, teclado, document IO, essentials):** tipos
+>   compartilhados extraídos para módulos folha (`FontDialogTypes`,
+>   `EditorKeyboardDeps.ts`, `documentIO/importProgress.ts`,
+>   `essentialsCapabilities.ts`), re-exportados dos entrypoints antigos.
+> - **Toolbar renderers:** `ToolbarItemRenderer` co-locado em `renderers.tsx`
+>   (recursão intra-módulo); `ToolbarItemRenderer.tsx` virou re-export.
+> - **Pipelines de recursão de documento (DOCX export/import, PDF, canvas):**
+>   orchestrator por pipeline com callbacks estreitos injetados nos handlers de
+>   paragraph/table/textbox — `SerializeBlocksXml` (blocksXml), `ParseNestedBlocks`
+>   via `createNestedBlockParser` (nestedBlocks), `BlockDrawers` (drawBlockList) e
+>   `CanvasBlockPainters` (canvasBlockPainter). No canvas, os helpers de fonte
+>   puros saíram para `canvasFontResolution.ts` para cortar
+>   `verticalText -> canvasParagraphPainter`. Output DOCX/PDF e render canvas
+>   inalterados (suíte de snapshots/round-trip verde).
+>
+> Gates por commit: `check:imports`, `tsc`, suíte 577✓/1 skip; `build:lib` ao
+> final.
 
 Foram confirmados os seguintes SCCs:
 
@@ -507,7 +540,13 @@ footnotes/endnotes e fixtures que não dependam de IDs numéricos.
 
 **Rollback:** quatro commits independentes (locale, IDs, persistence, menu).
 
-### Onda 2 — Corrigir fronteiras e ciclos
+### Onda 2 — Corrigir fronteiras e ciclos — ✅ CONCLUÍDA (2026-06-20)
+
+> Concluída: `D1` e `D2` resolvidos. O checker `scripts/check-import-graph.mjs`
+> (`npm run check:imports`) reporta **0 ciclos** em `src/` (allowlist vazia) e
+> **nenhum import `src/core -> src/ui`**. Detalhes nas seções D1/D2. Cada SCC foi
+> um commit independente; gates verdes a cada passo (`check:imports`, `tsc`,
+> 577✓/1 skip) e `build:lib` ok ao final.
 
 **Pré-requisito:** adicionar um checker determinístico do grafo de imports com
 allowlist inicialmente vazia para os módulos corrigidos.
