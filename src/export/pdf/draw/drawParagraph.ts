@@ -100,7 +100,7 @@ export async function drawParagraph(
   originX: number,
   originY: number,
   fontRegistry: PdfFontRegistry,
-  listOrdinals: Map<string, number>,
+  listOrdinals: Map<string, string>,
 ): Promise<void> {
   for (const line of lines) {
     drawListPrefix(

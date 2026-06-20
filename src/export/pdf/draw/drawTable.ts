@@ -80,7 +80,7 @@ export async function drawTableBlock(
   originY: number,
   contentWidth: number,
   fontRegistry: PdfFontRegistry,
-  listOrdinals: Map<string, number>,
+  listOrdinals: Map<string, string>,
 ): Promise<void> {
   if (block.sourceBlock.type !== "table") {
     return;

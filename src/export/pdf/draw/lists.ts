@@ -1,145 +1,23 @@
 import type {
   EditorDocument,
   EditorLayoutLine,
-  EditorParagraphListStyle,
   EditorParagraphNode,
 } from "@/core/model.js";
 import {
-  getDocumentParagraphs,
+  buildListLabels,
+  resolveListLabel,
   resolveEffectiveTextStyleForParagraph,
 } from "@/core/model.js";
 import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import { pxToPt, textStyleToFontSizePt } from "@/export/pdf/units.js";
-import { getListLabelInset } from "@/ui/textMeasurement/indentation.js";
+import {
+  getAlignedListLabelInset,
+  getListLabelInset,
+} from "@/ui/textMeasurement/indentation.js";
 
-const BULLET_GLYPHS = ["•", "○", "▪", "•", "○", "▪"];
-const ORDERED_DEFAULT_FORMATS: NonNullable<
-  EditorParagraphListStyle["format"]
->[] = [
-  "decimal",
-  "lowerLetter",
-  "lowerRoman",
-  "decimal",
-  "lowerLetter",
-  "lowerRoman",
-];
-
-function toAlpha(value: number): string {
-  if (value <= 0) {
-    return String(value);
-  }
-  let remaining = value;
-  let output = "";
-  while (remaining > 0) {
-    const rem = (remaining - 1) % 26;
-    output = String.fromCharCode(65 + rem) + output;
-    remaining = Math.floor((remaining - 1) / 26);
-  }
-  return output;
-}
-
-function toRoman(value: number): string {
-  if (value <= 0 || value >= 4000) {
-    return String(value);
-  }
-  const map: Array<[number, string]> = [
-    [1000, "M"],
-    [900, "CM"],
-    [500, "D"],
-    [400, "CD"],
-    [100, "C"],
-    [90, "XC"],
-    [50, "L"],
-    [40, "XL"],
-    [10, "X"],
-    [9, "IX"],
-    [5, "V"],
-    [4, "IV"],
-    [1, "I"],
-  ];
-  let remaining = value;
-  let output = "";
-  for (const [amount, text] of map) {
-    while (remaining >= amount) {
-      output += text;
-      remaining -= amount;
-    }
-  }
-  return output;
-}
-
-function formatOrdinal(
-  value: number,
-  format: EditorParagraphListStyle["format"],
-): string {
-  switch (format) {
-    case "lowerLetter":
-      return toAlpha(value).toLowerCase();
-    case "upperLetter":
-      return toAlpha(value).toUpperCase();
-    case "lowerRoman":
-      return toRoman(value).toLowerCase();
-    case "upperRoman":
-      return toRoman(value).toUpperCase();
-    case "decimal":
-    default:
-      return String(value);
-  }
-}
-
-export function getListOrdinals(document: EditorDocument): Map<string, number> {
-  const result = new Map<string, number>();
-  const paragraphs = getDocumentParagraphs(document);
-  let counters: number[] = [];
-  let previousWasOrdered = false;
-
-  for (const paragraph of paragraphs) {
-    const list = paragraph.list;
-    if (!list || list.kind !== "ordered") {
-      counters = [];
-      previousWasOrdered = false;
-      continue;
-    }
-
-    const level = list.level ?? 0;
-    if (!previousWasOrdered) {
-      counters = [];
-    }
-    if (counters.length > level + 1) {
-      counters.length = level + 1;
-    }
-    while (counters.length <= level) {
-      counters.push(0);
-    }
-    counters[level] =
-      counters[level] === 0 && typeof list.startAt === "number"
-        ? list.startAt
-        : counters[level]! + 1;
-    result.set(paragraph.id, counters[level]!);
-    previousWasOrdered = true;
-  }
-
-  return result;
-}
-
-function resolveListPrefix(
-  paragraph: EditorParagraphNode,
-  listOrdinals: Map<string, number>,
-): string {
-  if (!paragraph.list) {
-    return "";
-  }
-  const level = Math.max(0, paragraph.list.level ?? 0);
-  if (paragraph.list.kind === "bullet") {
-    return BULLET_GLYPHS[level % BULLET_GLYPHS.length]!;
-  }
-  const value = listOrdinals.get(paragraph.id) ?? paragraph.list.startAt ?? 1;
-  const format =
-    paragraph.list.format && paragraph.list.format !== "bullet"
-      ? paragraph.list.format
-      : ORDERED_DEFAULT_FORMATS[level % ORDERED_DEFAULT_FORMATS.length];
-  return `${formatOrdinal(value, format)}.`;
+export function getListOrdinals(document: EditorDocument): Map<string, string> {
+  return buildListLabels(document);
 }
 
 export function drawListPrefix(
@@ -151,12 +29,12 @@ export function drawListPrefix(
   originX: number,
   originY: number,
   fontRegistry: PdfFontRegistry,
-  listOrdinals: Map<string, number>,
+  listOrdinals: Map<string, string>,
 ): void {
   if (line.index !== 0) {
     return;
   }
-  const prefix = resolveListPrefix(paragraph, listOrdinals);
+  const prefix = resolveListLabel(paragraph, listOrdinals);
   if (!prefix) {
     return;
   }
@@ -177,11 +55,19 @@ export function drawListPrefix(
   // Label sits in the hanging area; the first-line text begins at the text
   // indent (advanced to the suffix tab stop), leaving the gap.
   const labelInset = getListLabelInset(paragraph, document.styles);
+  const fontSizePt = textStyleToFontSizePt(styles);
+  const estimatedLabelWidthPx = prefix.length * fontSizePt * 0.62 * (96 / 72);
+  const alignedInset = getAlignedListLabelInset(
+    paragraph,
+    document.styles,
+    firstSlot.left,
+    estimatedLabelWidthPx,
+  );
   writer.drawText(pageIndex, {
-    x: pxToPt(originX + Math.max(0, labelInset)),
+    x: pxToPt(originX + Math.max(0, alignedInset || labelInset)),
     y: pxToPt(originY + line.top + line.height * 0.8),
     text: prefix,
-    fontSize: textStyleToFontSizePt(styles),
+    fontSize: fontSizePt,
     color: styles.color ?? "#000000",
     bold: styles.bold,
     italic: styles.italic,

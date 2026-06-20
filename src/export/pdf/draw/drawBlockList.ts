@@ -20,7 +20,7 @@ export async function drawBlockList(
   originY: number,
   contentWidth: number,
   fontRegistry: PdfFontRegistry,
-  listOrdinals: Map<string, number>,
+  listOrdinals: Map<string, string>,
   pageSettings?: EditorPageSettings,
 ): Promise<void> {
   if (!blocks || blocks.length === 0) {

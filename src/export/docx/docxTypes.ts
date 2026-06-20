@@ -9,15 +9,23 @@ import type {
 import type { BookmarkEventsByParagraph } from "./bookmarksXml.js";
 import type { CommentEventsByParagraph } from "./commentsXml.js";
 
-export interface NumberingDefinition {
+export interface NumberingLevelDefinition {
   kind: EditorParagraphListStyle["kind"];
   level: number;
-  abstractNumId: number;
-  numId: number;
   format?: NonNullable<EditorParagraphListStyle["format"]>;
   startAt?: number;
+  levelText?: string;
+  suffix?: EditorParagraphListStyle["suffix"];
+  alignment?: EditorParagraphListStyle["alignment"];
+  legal?: boolean;
   bulletGlyph?: string;
   bulletFont?: string;
+}
+
+export interface NumberingDefinition {
+  abstractNumId: number;
+  numId: number;
+  levels: NumberingLevelDefinition[];
 }
 
 export interface DocContext {

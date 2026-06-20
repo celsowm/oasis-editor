@@ -82,6 +82,25 @@ export function getListLabelInset(
   return baseInset - Math.abs(paragraphStyle.indentHanging ?? 0);
 }
 
+/** Positions a measured list label inside the hanging-indent marker box. */
+export function getAlignedListLabelInset(
+  paragraph: EditorParagraphNode,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  textStart: number,
+  labelWidth: number,
+): number {
+  const start = Math.max(0, getListLabelInset(paragraph, styles));
+  const width = Math.max(0, textStart - start);
+  switch (paragraph.list?.alignment) {
+    case "center":
+      return start + Math.max(0, (width - labelWidth) / 2);
+    case "right":
+      return start + Math.max(0, width - labelWidth);
+    default:
+      return start;
+  }
+}
+
 export function getAvailableWidth(
   paragraph: EditorParagraphNode,
   styles: Record<string, EditorNamedStyle> | undefined,

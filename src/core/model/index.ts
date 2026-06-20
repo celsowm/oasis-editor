@@ -189,6 +189,9 @@ export {
   collectSectionParagraphs,
 } from "./paragraphWalker.js";
 
+// ---- List numbering ----
+export { buildListLabels, resolveListLabel } from "./listNumbering.js";
+
 // ---- Editing zones (LSP via tryGet* variant) ----
 export {
   getActiveSectionIndex,

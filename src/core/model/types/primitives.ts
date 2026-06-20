@@ -55,6 +55,8 @@ export interface EditorTabStop {
 export interface EditorParagraphListStyle {
   kind: "bullet" | "ordered";
   level?: number;
+  /** Imported OOXML `w:numId`; paragraphs sharing it use the same counters. */
+  instanceId?: string;
   format?:
     | "decimal"
     | "lowerLetter"
@@ -63,6 +65,21 @@ export interface EditorParagraphListStyle {
     | "upperRoman"
     | "bullet";
   startAt?: number;
+  /** Effective `w:lvlText` pattern, for example `%1.%2.`. */
+  levelText?: string;
+  /** Effective formats for referenced levels in a multilevel label. */
+  levelFormats?: Array<
+    | "decimal"
+    | "lowerLetter"
+    | "upperLetter"
+    | "lowerRoman"
+    | "upperRoman"
+    | "bullet"
+  >;
+  /** `w:lvlJc`: alignment of the label inside its hanging-indent area. */
+  alignment?: "left" | "center" | "right";
+  /** `w:isLgl`: render referenced ordered levels with decimal digits. */
+  legal?: boolean;
   /**
    * Separator between the list label and the paragraph text (`w:lvl/w:suff`).
    * OOXML default is "tab"; Word renders the label, then advances to the next

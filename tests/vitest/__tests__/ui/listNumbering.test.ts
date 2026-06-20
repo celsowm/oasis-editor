@@ -5,6 +5,7 @@ import {
   createEditorParagraph,
 } from "@/core/editorState.js";
 import { resolveListPrefix } from "@/ui/canvas/listNumbering.js";
+import { getAlignedListLabelInset } from "@/ui/textMeasurement/indentation.js";
 
 function orderedParagraph(text: string, level = 0) {
   const paragraph = createEditorParagraph(text);
@@ -37,5 +38,56 @@ describe("list numbering", () => {
     expect(resolveListPrefix(l1a, document)).toBe("a.");
     expect(resolveListPrefix(l1b, document)).toBe("b.");
     expect(resolveListPrefix(l0b, document)).toBe("2.");
+  });
+
+  it("resolves composite labels per OOXML list instance", () => {
+    const first = orderedParagraph("First", 0);
+    first.list = {
+      kind: "ordered",
+      level: 0,
+      instanceId: "7",
+      format: "upperRoman",
+      levelFormats: ["upperRoman", "lowerLetter"],
+      levelText: "%1.",
+    };
+    const child = orderedParagraph("Child", 1);
+    child.list = {
+      kind: "ordered",
+      level: 1,
+      instanceId: "7",
+      format: "lowerLetter",
+      levelFormats: ["upperRoman", "lowerLetter"],
+      levelText: "%1.%2)",
+    };
+    const restarted = orderedParagraph("Restarted", 0);
+    restarted.list = { ...first.list, instanceId: "8", startAt: 4 };
+    const document = createEditorDocument([first, child, restarted]);
+
+    expect(resolveListPrefix(first, document)).toBe("I.");
+    expect(resolveListPrefix(child, document)).toBe("I.a)");
+    expect(resolveListPrefix(restarted, document)).toBe("IV.");
+  });
+
+  it("uses decimal digits for legal numbering and aligns the marker box", () => {
+    const paragraph = orderedParagraph("Legal", 1);
+    paragraph.style = { indentLeft: 40, indentHanging: 40 };
+    paragraph.list = {
+      kind: "ordered",
+      level: 1,
+      instanceId: "9",
+      format: "lowerLetter",
+      levelFormats: ["upperRoman", "lowerLetter"],
+      levelText: "%1.%2.",
+      legal: true,
+      alignment: "right",
+    };
+    const parent = orderedParagraph("Parent", 0);
+    parent.list = { ...paragraph.list, level: 0, format: "upperRoman" };
+    const document = createEditorDocument([parent, paragraph]);
+
+    expect(resolveListPrefix(paragraph, document)).toBe("1.1.");
+    expect(getAlignedListLabelInset(paragraph, undefined, 40, 12)).toBe(28);
+    paragraph.list.alignment = "center";
+    expect(getAlignedListLabelInset(paragraph, undefined, 40, 12)).toBe(14);
   });
 });

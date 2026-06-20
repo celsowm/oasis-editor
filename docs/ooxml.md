@@ -6,6 +6,7 @@ It is intentionally not a raw dump of every XSD production in ECMA-376 / ISO/IEC
 
 Generated/expanded: 2026-06-04
 Completion pass added: 2026-06-04
+Last source audit: 2026-06-20
 
 ## What was missing from the previous file
 
@@ -112,8 +113,8 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 |---|---|---|---|---|---|---|---|
 | Section/page | `w:pgSz` | `w:sectPr` | `w:w`, `w:h`, `w:orient`, `w:code` | Page size and orientation. | Core for pagination, PDF export and layout width. | P0 | Supported |
 | Section/page | `w:pgMar` | `w:sectPr` | `w:top`, `w:right`, `w:bottom`, `w:left`, `w:header`, `w:footer`, `w:gutter` | Page margins. | Twips; header/footer distances affect vertical layout. | P0 | Supported |
-| Section/page | `w:cols` | `w:sectPr` | `w:num`, `w:space`, `w:sep`, `w:equalWidth` | Column layout settings. | If unequal columns, parse child `w:col` elements. | P1 | Not supported |
-| Section/page | `w:col` | `w:cols` | `w:w`, `w:space` | Single section column. | Important for multi-column legal/publication layouts. | P1 | Not supported |
+| Section/page | `w:cols` | `w:sectPr` | `w:num`, `w:space`, `w:sep`, `w:equalWidth` | Column layout settings. | Equal/unequal columns, gaps, separators, balanced final pages, canvas/PDF layout, and DOCX export are implemented. | P1 | Supported |
+| Section/page | `w:col` | `w:cols` | `w:w`, `w:space` | Single section column. | Explicit unequal column widths and spacing import/export through section page settings. | P1 | Supported |
 | Section/page | `w:type` | `w:sectPr` | `w:val` | Section break type. | Values include nextPage, continuous, evenPage, oddPage, nextColumn. | P1 | Not supported |
 | Section/page | `w:docGrid` | `w:sectPr` | `w:type`, `w:linePitch`, `w:charSpace` | Document grid. | Affects East Asian and grid-snapped layout; can affect table line heights. | P2 | Partial |
 | Section/page | `w:pgNumType` | `w:sectPr` | `w:start`, `w:fmt`, `w:chapStyle`, `w:chapSep` | Page numbering format. | Needed for generated page numbers and fields. | P2 | Not supported |
@@ -268,23 +269,23 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 |---|---|---|---|---|---|---|---|
 | Numbering | `w:numbering` | `word/numbering.xml` root | — | Numbering definitions root. | Parse before laying out paragraphs with `numPr`. | P0 | Partial |
 | Numbering | `w:abstractNum` | `w:numbering` | `w:abstractNumId`, `w15:restartNumberingAfterBreak` | Abstract list template. | Contains levels shared by concrete numbering instances. | P0 | Partial |
-| Numbering | `w:num` | `w:numbering` | `w:numId` | Concrete numbering instance. | Maps document paragraphs to an abstract numbering template. | P0 | Partial |
+| Numbering | `w:num` | `w:numbering` | `w:numId` | Concrete numbering instance. | Distinct instances keep independent counters and remain distinct on export. | P0 | Supported |
 | Numbering | `w:abstractNumId` | `w:num` | `w:val` | Reference to abstract numbering. | Resolve before rendering list label. | P0 | Supported |
 | Numbering | `w:lvl` | `w:abstractNum`, `w:lvlOverride` | `w:ilvl`, `w:tplc`, `w:tentative` | Numbering level definition. | Contains format, text, indentation and style info per level. | P0 | Partial |
-| Numbering | `w:start` | `w:lvl` | `w:val` | Starting number for level. | Counter initialization. | P0 | Not supported |
+| Numbering | `w:start` | `w:lvl` | `w:val` | Starting number for level. | Counter initialization is imported, rendered, and exported. | P0 | Supported |
 | Numbering | `w:numFmt` | `w:lvl` | `w:val`, `w:format` | Number format. | Decimal, bullet, roman, letter, ordinal, etc. | P0 | Partial |
-| Numbering | `w:lvlText` | `w:lvl` | `w:val`, `w:null` | Label text pattern. | Patterns like `%1.`, `%1.%2.`; bullet glyphs too. | P0 | Partial |
-| Numbering | `w:lvlJc` | `w:lvl` | `w:val` | Number label alignment. | Combine with paragraph indentation. | P1 | Not supported |
-| Numbering | `w:pPr` / `w:rPr` | `w:lvl` | property children | Level paragraph/run formatting. | Applies to list paragraphs and labels. | P0 | Not supported |
+| Numbering | `w:lvlText` | `w:lvl` | `w:val`, `w:null` | Label text pattern. | Literal text and `%1`…`%9` multilevel placeholders render and round-trip; `w:null` is not modeled. | P0 | Partial |
+| Numbering | `w:lvlJc` | `w:lvl` | `w:val` | Number label alignment. | Left/center/right alignment drives canvas/PDF marker placement and round-trips. | P1 | Supported |
+| Numbering | `w:pPr` / `w:rPr` | `w:lvl` | property children | Level paragraph/run formatting. | Level indentation and bullet font are applied; the remaining property subsets are not. | P0 | Partial |
 | Numbering | `w:pStyle` | `w:lvl` | `w:val` | Paragraph style associated with level. | A style may imply a numbering level. | P1 | Not supported |
-| Numbering | `w:isLgl` | `w:lvl` | `w:val` | Legal numbering format. | Important for legal documents. | P1 | Not supported |
-| Numbering | `w:suff` | `w:lvl` | `w:val` | Suffix after number. | Values tab/space/nothing. | P1 | Not supported |
+| Numbering | `w:isLgl` | `w:lvl` | `w:val` | Legal numbering format. | Referenced levels render as decimal and round-trip. | P1 | Supported |
+| Numbering | `w:suff` | `w:lvl` | `w:val` | Suffix after number. | Tab/space/nothing affect marker spacing and round-trip. | P1 | Supported |
 | Numbering | `w:lvlRestart` | `w:lvl` | `w:val` | Restart behavior after higher level. | Nested counter behavior. | P2 | Not supported |
 | Numbering | `w:legacy` | `w:lvl` | `w:legacy`, `w:legacySpace`, `w:legacyIndent` | Legacy numbering metrics. | Preserve/approximate for old documents. | P3 | Not supported |
 | Numbering | `w:lvlPicBulletId` | `w:lvl` | `w:val` | Picture bullet reference. | Resolve `numPicBullet`. | P2 | Not supported |
 | Numbering | `w:numPicBullet` | `w:numbering` | `w:numPicBulletId` | Picture bullet definition. | May contain VML/Drawing picture. | P2 | Not supported |
-| Numbering | `w:lvlOverride` | `w:num` | `w:ilvl` | Override for one list level. | Can override start or entire level definition. | P1 | Not supported |
-| Numbering | `w:startOverride` | `w:lvlOverride` | `w:val` | Concrete restart value. | Needed for restarted lists. | P1 | Not supported |
+| Numbering | `w:lvlOverride` | `w:num` | `w:ilvl` | Override for one list level. | Effective replacement levels are imported; export materializes the effective level in an instance-specific abstract definition. | P1 | Partial |
+| Numbering | `w:startOverride` | `w:lvlOverride` | `w:val` | Concrete restart value. | Imported as the instance-level start and preserved semantically on export. | P1 | Supported |
 | Numbering | `w:multiLevelType` | `w:abstractNum` | `w:val` | List type. | singleLevel, multilevel, hybridMultilevel. | P2 | Not supported |
 | Numbering | `w:nsid` / `w:tmpl` | `w:abstractNum` | `w:val` | List identity/template metadata. | Preserve; not needed for rendering. | P4 | Not supported |
 
@@ -605,7 +606,7 @@ This pass fills the practical gaps left after the broad matrix above. It still a
 | Fields | Field result runs | runs after `separate` before `end` | normal run props | Cached display result. | A display-only importer can show cached result and mark as stale if `dirty`. | P1 | Supported |
 | Fields | `TOC` field switches | `w:instrText` stream | `\o`, `\h`, `\z`, `\u`, etc. | Table of contents generation instructions. | Instruction + cached result (entry paragraphs, internal hyperlinks) preserved 1:1; regeneration from headings/pagination not implemented. | P2 | Partial |
 | Fields | `REF` / `PAGEREF` / `NOTEREF` | field instruction stream | bookmark name, switches | Cross-reference fields. | Instruction + cached result preserved 1:1 as complex-field marker runs; not resolved/evaluated (no live REF text or PAGEREF page numbers). | P2 | Partial |
-| Fields | `SEQ` | field instruction stream | sequence id/switches | Sequence numbering field. | Common for figures, clauses and legal templates. | P2 | Not supported |
+| Fields | `SEQ` | field instruction stream | sequence id/switches | Sequence numbering field. | Image captions generate and round-trip `SEQ Figure` fields; arbitrary sequence identifiers and switches are preserved as field markers but are not evaluated. | P2 | Partial |
 | Fields | `STYLEREF` | field instruction stream | style name/id | Reference text from nearest style. | Common in headers/footers. | P3 | Not supported |
 | Fields | `INCLUDETEXT` / `INCLUDEPICTURE` | field instruction stream | external target | Include external content. | Security-sensitive; do not auto-fetch without explicit policy. | P3 | Not supported |
 | Fields | `MERGEFIELD` / `ADDRESSBLOCK` / `GREETINGLINE` | field instruction stream | merge field name/switches | Mail merge fields. | Preserve or bind through a merge-data pipeline. | P2 | Not supported |
@@ -680,9 +681,9 @@ This pass fills the practical gaps left after the broad matrix above. It still a
 |---|---|---|---|---|---|---|---|
 | Numbering | `w:numStyleLink` | `w:abstractNum` | `w:val` | Link numbering to numbering style. | Needed when numbering definitions delegate through styles. | P2 | Not supported |
 | Numbering | `w:styleLink` | `w:abstractNum` | `w:val` | Link to paragraph style. | Resolve to avoid missing list definitions. | P2 | Not supported |
-| Numbering | `w:lvlText` literal escaping | `w:lvl` | `%1`, `%2`, literal text | Label format string. | Treat `%` placeholders carefully; bullets can be literal glyphs. | P1 | Not supported |
-| Numbering | Level `w:rPr/w:rFonts` | `w:lvl` | symbol fonts | Bullet font/glyph. | Do not render bullet glyph with paragraph font if level specifies Symbol/Wingdings. | P1 | Not supported |
-| Numbering | Counter restart by paragraph style | list state | style/level changes | List continuity/restart heuristics. | Word behavior depends on `numId`, overrides and sometimes section/compat settings. | P2 | Not supported |
+| Numbering | `w:lvlText` literal escaping | `w:lvl` | `%1`, `%2`, literal text | Label format string. | Literal text and level placeholders are resolved without discarding punctuation. | P1 | Supported |
+| Numbering | Level `w:rPr/w:rFonts` | `w:lvl` | symbol fonts | Bullet font/glyph. | Bullet glyph and font are imported and re-emitted, and legacy PUA glyphs are normalized; canvas/PDF still use the paragraph font for the normalized glyph. | P1 | Partial |
+| Numbering | Counter restart by paragraph style | list state | style/level changes | List continuity/restart heuristics. | `numId`, level starts, and start overrides are handled; style-implied restarts are not. | P2 | Partial |
 | Styles | Default style per type | `w:style` | `w:default="1"` | Default paragraph/character/table/numbering style. | Apply by style type, not globally. | P0 | Supported |
 | Styles | Style cycle handling | `w:basedOn` chain | style ids | Defensive style inheritance. | Detect cycles and missing base styles; do not crash. | P1 | Supported |
 | Theme fonts | `a:majorFont` / `a:minorFont` | `a:fontScheme` | script-specific children | Theme font groups. | `+mj-lt`, `+mn-lt`, etc. map through these. | P1 | Supported |
@@ -972,7 +973,7 @@ This section condenses the per-table Status column into a high-level capability 
 | Area | What's partial | Why |
 |---|---|---|
 | `w:fldSimple` / `w:fldChar` | PAGE and NUMPAGES are full round-trip; other instructions are stored as static text and re-emitted as plain runs. | The editor has no field type registry beyond these two. |
-| Numbering | Only the first `w:lvl`'s `w:numFmt` is read (bullet vs ordered) and the paragraph list kind is preserved. | `lvlText`, multi-level, picture bullets, `lvlRestart`, `suff`, `isLgl`, `multiLevelType`, `nsid`, `tmpl` are dropped. Export regenerates a fresh `numbering.xml` from the paragraph's bullet/ordered + level. |
+| Numbering | Numbering instances, multilevel formats/patterns, starts/overrides, suffixes, legal numbering, marker alignment, bullet metadata, and level indentation are imported and regenerated semantically. | Picture bullets, `lvlRestart`, style-linked numbering, `multiLevelType`, `nsid`, and `tmpl` remain unsupported. |
 | Images | Inline pictures plus floating anchor metadata; crop, fill mode, rotation/flip, embedded binaries, external `a:blip/@r:link`, and simple VML `w:pict/v:imagedata` fallback are supported. | Floating images render with inline fallback in the editor; VML shapes/text boxes, effects, recolor, charts, SmartArt, and OLE are still outside the image model. |
 | `w:rFonts` | `ascii`/`hAnsi`/`cs` and `asciiTheme`/`hAnsiTheme`/`cstheme` with `w:hint` are read; `eastAsia`/`eastAsiaTheme` are not exported. | Run font resolution is partial. |
 | `w:color` | Hex `w:val` and theme colors (`themeColor`/`themeTint`/`themeShade` against `a:clrScheme`) are resolved to concrete hex on import; export writes the resolved value. `clrSchemeMapping` overrides in the document settings are not applied. | Full theme → concrete-hex pipeline is in place; per-document scheme remapping is not. |
@@ -992,12 +993,12 @@ This section condenses the per-table Status column into a high-level capability 
 | Area | What is missing |
 |---|---|
 | Tracked changes | `w:ins`, `w:del`, `w:moveFrom`, `w:moveTo`, `w:pPrChange`, `w:rPrChange`, `w:sectPrChange`, `w:numberingChange`, `w:tblPrChange`, `w:trPrChange`, `w:tcPrChange`, `w:cellIns`, `w:cellDel`, `w:cellMerge`, `w:tblPrExChange`, `w:tblGridChange`. |
-| Comments | `w:comments` part, `w:comment`, `w:commentRangeStart`/`End`, `w:commentReference`, `w15:commentsEx`, `w16cid:commentsIds`, `w:people.xml`. |
+| Modern comments metadata | Base comments, ranges, references, authors, dates, initials, bodies, and comments-part round-trip are supported; `w15:commentsEx`, `w16cid:commentsIds`, threaded/resolved state, and `w:people.xml` remain unsupported. |
 | Endnotes | Endnote bodies and reference markers are supported; section-level endnote suppression/placement and advanced note settings beyond document-level numbering are not. |
 | Content controls | `w:sdt` and all subtypes (text, richText, picture, comboBox, dropDownList, date, checkbox, repeatingSection) plus `w:dataBinding` and `w:customXml`. |
 | Legacy forms | `w:ffData`, `w:textInput`, `w:checkBox`, `w:ddList`, `FORMTEXT`/`FORMCHECKBOX`/`FORMDROPDOWN`. |
 | Office Math | `m:oMath`, `m:oMathPara`, all child equations. |
-| Drawings beyond inline/simple VML images | `wp:anchor`, all shape families (`wps:wsp`, `wpg:wgp`, `v:shape`, `v:rect`, `v:oval`, `v:group`, `v:textbox`), `pic:spPr` effects beyond transform/crop, recolor, alpha. |
+| Drawings beyond the modeled subset | Inline images, floating-anchor metadata, text boxes, preset text-box geometry, transform/crop, and simple VML images are supported; grouped shapes, arbitrary custom geometry, advanced effects, recolor, and alpha remain unsupported. |
 | Charts / diagrams / OLE | `c:chart*`, `dgm:*`, `lc:lockedCanvas`, `o:OLEObject`, `w:object`, non-image `w:pict`. |
 | AltChunk | `w:altChunk`. |
 | Bidi/RTL/Complex script | `w:bidi` (paragraph/section), `w:rtl`, `w:cs`, `w:bdo`/`w:dir`, `w:lang`, `w:bidiVisual`, `w:noColumnBalance`. |
@@ -1010,7 +1011,7 @@ This section condenses the per-table Status column into a high-level capability 
 | Paragraph decorations | `w:outlineLvl`, `w:suppressLineNumbers`, `w:pBdr`, paragraph-level `w:shd`, `w:framePr`, `w:bidi`, `w:kinsoku`, `w:wordWrap`, `w:overflowPunct`, `w:topLinePunct`, `w:autoSpaceDE`/`DN`, `w:textAlignment`, `w:textboxTightWrap`, `w:divId`, `w:cnfStyle`, `w:adjustRightInd`. |
 | Run decorations | Run-level `w:shd`, `w:webHidden`, `w:rtl`, `w:cs`, `w:lang`, `w:fitText`, `w:effect`, `w:em`, `w:bdr`, `w:imprint`/`w:outline`/`w:shadow`, `w:emboss`, `w:snapToGrid` (run), `w:noProof`, `w:oMath`, `w:specVanish`, `w:stylePaneFormatFilter`/`w:stylePaneSortMethod`, `w:rPrChange`. |
 | Run content (special glyphs) | `w:sym`, `w:ptab`, `w:object`, `w:pict`, `w:delText`, `w:dayShort`/`w:monthLong`, `w:dir`/`w:bdo`, `w:smartTag`, `w:permStart`/`End` (in runs), `w:delInstrText`, `w:fldData`. |
-| OPC extensions | `customXml/*`, `word/embeddings/*`, `word/activeX/*`, `word/printerSettings/*`, `word/commentsExtended.xml`, `word/commentsIds.xml`, `word/people.xml`, `word/bibliography.xml`, `word/charts/*`, `word/diagrams/*`, `word/theme/themeOverride*.xml`, `docProps/thumbnail.*`, `vbaProject.bin`, encrypted packages, digital signatures, external relationships, `word/comments.xml`. |
+| OPC extensions | `customXml/*`, `word/embeddings/*`, `word/activeX/*`, `word/printerSettings/*`, `word/commentsExtended.xml`, `word/commentsIds.xml`, `word/people.xml`, `word/bibliography.xml`, `word/charts/*`, `word/diagrams/*`, `word/theme/themeOverride*.xml`, `docProps/thumbnail.*`, `vbaProject.bin`, encrypted packages, and digital signatures. |
 | Latent styles / SDT/control UX | `w:latentStyles`/`w:lsdException`, `w:appearance`/`w:color`/`w:showingPlcHdr`/`w:temporary`/`w:lock` on SDT, `w:equation`/`w:citation`/`w:bibliography`/`w:group`/`w:repeatingSectionItem`. |
 | Modern (w14/w15/w16) typography | `w14:ligatures`, `w14:numForm`, `w14:numSpacing`, `w14:stylisticSets`/`w14:stylisticSet`, `w14:cntxtAlts`, `w14:textFill`, `w14:textOutline`, `w14:textShadow`, `w14:glow`/`w14:reflection`, `w14:scene3d`/`w14:props3d`, `w15:collapsed`, `w16du:dateUtc`. |
 
@@ -1031,8 +1032,8 @@ This section condenses the per-table Status column into a high-level capability 
 ### High-level takeaways
 
 - The pipeline is centered on a fixed editor model (`EditorTextStyle`, `EditorParagraphStyle`, table grid/cell properties, list kinds, footnote references, image assets, headers/footers). Anything that cannot be expressed in that model is dropped on import and not regenerated on export.
-- The export is a regeneration, not a round-trip: footnotes are renumbered, numbering definitions are rebuilt from paragraph list kind, and theme/styles are re-emitted with only the properties oasis tracks.
-- Theme/font resolution is the largest single gap relative to "Word-like" fidelity: only `a:fontScheme` is read; theme colors and full `word/fontTable.xml` are not.
-- Image and drawing support stops at inline pictures plus simple VML image fallback; everything floating, shaped, charted, or OLE-backed is dropped silently.
-- No comment, content control (SDT), bookmark, endnote, or tracked-change story is parsed. If a document relies on any of these, the editor sees only the visible text and loses the structure.
+- The export is a semantic regeneration rather than byte-for-byte preservation: footnotes are renumbered; numbering definitions are rebuilt from instance, level, format, pattern, start/override, suffix, legal mode, alignment, and bullet metadata; theme/styles are re-emitted with only the properties oasis tracks.
+- Font metadata remains a major fidelity gap: theme fonts and theme colors resolve, but `word/fontTable.xml`, font aliases/charset metadata, and embedded fonts are not consumed.
+- Images support inline rendering plus floating-anchor metadata; text boxes, preset text-box shapes, transforms/crop, and simple VML image fallback are modeled. Charts, SmartArt, OLE, grouped shapes, and advanced effects remain outside the renderer.
+- Comments, bookmarks, footnotes, and endnotes have document-level models and DOCX round-trip paths. Content controls, custom XML bindings, Office Math, and a revision-aware tracked-changes view remain unsupported.
 - Most of `word/settings.xml`, `word/webSettings.xml`, and `word/fontTable.xml` are not consumed; the editor relies on its own runtime state.

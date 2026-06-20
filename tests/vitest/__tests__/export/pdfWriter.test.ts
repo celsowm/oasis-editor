@@ -1986,7 +1986,12 @@ describe("OasisPdfWriter", () => {
 
     const blob = await exportEditorDocumentToPdfBlob(document);
     const pdf = await blob.text();
-    const layout = projectDocumentLayout(document, undefined, undefined, undefined);
+    const layout = projectDocumentLayout(
+      document,
+      undefined,
+      undefined,
+      undefined,
+    );
     const page = layout.pages[0]!;
     const pageHeightPt = pxToPt(page.pageSettings.height);
     const bodyTop = page.bodyTop ?? page.pageSettings.margins.top;
@@ -2000,7 +2005,9 @@ describe("OasisPdfWriter", () => {
     const topEdgeY = Number(move![2]);
     expect(topEdgeY).toBeCloseTo(pageHeightPt - pxToPt(bodyTop), 1);
     // The top edge must stay within the page body, not up in the header band.
-    expect(pageHeightPt - topEdgeY).toBeGreaterThanOrEqual(pxToPt(bodyTop) - 0.5);
+    expect(pageHeightPt - topEdgeY).toBeGreaterThanOrEqual(
+      pxToPt(bodyTop) - 0.5,
+    );
   });
 
   it("renders a shape's inner text content inside the box", async () => {
@@ -2119,8 +2126,8 @@ describe("OasisPdfWriter", () => {
     const pdf = await blob.text();
 
     // Clockwise 30° → PDF math angle -30°: cos(30°)=0.866, sin(-30°)=-0.5.
-    const cos = Number((Math.cos((-rotation * Math.PI) / 180)).toFixed(3));
-    const sin = Number((Math.sin((-rotation * Math.PI) / 180)).toFixed(3));
+    const cos = Number(Math.cos((-rotation * Math.PI) / 180).toFixed(3));
+    const sin = Number(Math.sin((-rotation * Math.PI) / 180).toFixed(3));
     const matrix = new RegExp(
       `${cos} ${sin} ${-sin} ${cos} [-\\d.]+ [-\\d.]+ cm`,
     );
@@ -2151,5 +2158,54 @@ describe("OasisPdfWriter", () => {
     expect(draw.b).toBeCloseTo(pxToPt(imageWidth) * Math.sin(radians), 3);
     expect(draw.c).toBeCloseTo(-pxToPt(imageHeight) * Math.sin(radians), 3);
     expect(draw.d).toBeCloseTo(pxToPt(imageHeight) * Math.cos(radians), 3);
+  });
+
+  it("renders composite and legal list labels through the shared numbering path", async () => {
+    const parent = createEditorParagraph("Parent");
+    parent.list = {
+      kind: "ordered",
+      level: 0,
+      instanceId: "pdf-list",
+      format: "upperRoman",
+      levelFormats: ["upperRoman", "lowerLetter"],
+      levelText: "%1.",
+    };
+    const child = createEditorParagraph("Child");
+    child.list = {
+      kind: "ordered",
+      level: 1,
+      instanceId: "pdf-list",
+      format: "lowerLetter",
+      levelFormats: ["upperRoman", "lowerLetter"],
+      levelText: "%1.%2)",
+      legal: true,
+      alignment: "right",
+    };
+    const document: EditorDocument = {
+      id: "pdf-advanced-numbering",
+      sections: [
+        {
+          id: "section-1",
+          pageSettings: {
+            width: 816,
+            height: 1056,
+            margins: {
+              top: 96,
+              right: 96,
+              bottom: 96,
+              left: 96,
+              header: 48,
+              footer: 48,
+              gutter: 0,
+            },
+          },
+          blocks: [parent, child],
+        },
+      ],
+    };
+
+    const pdf = await (await exportEditorDocumentToPdfBlob(document)).text();
+    expectPdfText(pdf, "I.");
+    expectPdfText(pdf, "1.1)");
   });
 });

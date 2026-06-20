@@ -4,6 +4,7 @@ import type {
   EditorPageSettings,
   EditorTextBoxData,
 } from "@/core/model.js";
+import { buildListLabels } from "@/core/model.js";
 import { projectBlocksLayout } from "@/layoutProjection/blocksPagination.js";
 import {
   getTextBoxFloatingGeometry,
@@ -115,7 +116,7 @@ async function drawTextBoxContent(
     return;
   }
 
-  const listOrdinals = new Map<string, number>();
+  const listOrdinals = buildListLabels(ctx.document);
   writer.saveGraphicsState(ctx.pageIndex);
   writer.clipRect(
     ctx.pageIndex,

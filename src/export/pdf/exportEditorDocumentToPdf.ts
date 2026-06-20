@@ -166,7 +166,7 @@ async function drawFootnoteBlockList(
   originY: number,
   contentWidth: number,
   fontRegistry: PdfFontRegistry,
-  listOrdinals: Map<string, number>,
+  listOrdinals: Map<string, string>,
 ): Promise<void> {
   let cursorY = originY;
   const markerDrawn = new Set<string>();

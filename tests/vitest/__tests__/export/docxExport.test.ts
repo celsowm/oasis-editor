@@ -813,4 +813,57 @@ describe("DOCX export", () => {
     expect(relsXml.match(/relationships\/header/g)).toHaveLength(3);
     expect(relsXml.match(/relationships\/footer/g)).toHaveLength(3);
   });
+
+  it("round-trips independent multilevel numbering instances", async () => {
+    const parent = createEditorParagraph("Parent");
+    parent.list = {
+      kind: "ordered",
+      level: 0,
+      instanceId: "source-7",
+      format: "upperRoman",
+      levelFormats: ["upperRoman", "lowerLetter"],
+      levelText: "%1.",
+      alignment: "right",
+    };
+    const child = createEditorParagraph("Child");
+    child.list = {
+      kind: "ordered",
+      level: 1,
+      instanceId: "source-7",
+      format: "lowerLetter",
+      levelFormats: ["upperRoman", "lowerLetter"],
+      levelText: "%1.%2)",
+      alignment: "center",
+      legal: true,
+      suffix: "space",
+    };
+    const restarted = createEditorParagraph("Restarted");
+    restarted.list = { ...parent.list, instanceId: "source-8", startAt: 4 };
+
+    const buffer = await exportEditorDocumentToDocx(
+      createEditorDocument([parent, child, restarted]),
+    );
+    const numberingXml = await readZipText(buffer, "word/numbering.xml");
+    expect(numberingXml.match(/<w:num w:numId=/g)).toHaveLength(2);
+    expect(numberingXml).toContain('<w:lvlText w:val="%1.%2)"/>');
+    expect(numberingXml).toContain('<w:lvlJc w:val="center"/>');
+    expect(numberingXml).toContain('<w:suff w:val="space"/>');
+    expect(numberingXml).toContain("<w:isLgl/>");
+    expect(numberingXml).toContain('<w:start w:val="4"/>');
+
+    const reimported = await importDocxToEditorDocument(buffer);
+    const [roundParent, roundChild, roundRestarted] =
+      getDocumentParagraphs(reimported);
+    expect(roundParent!.list?.instanceId).toBe(roundChild!.list?.instanceId);
+    expect(roundRestarted!.list?.instanceId).not.toBe(
+      roundParent!.list?.instanceId,
+    );
+    expect(roundChild!.list).toMatchObject({
+      levelText: "%1.%2)",
+      alignment: "center",
+      legal: true,
+      suffix: "space",
+    });
+    expect(roundRestarted!.list?.startAt).toBe(4);
+  });
 });
