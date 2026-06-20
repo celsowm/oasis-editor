@@ -16,6 +16,7 @@ import {
 } from "@/core/model.js";
 import { buildSegmentTable } from "@/core/tableLayout.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
+import { EMU_PER_PX } from "@/core/units.js";
 import { FOOTNOTE_MARKER_GUTTER_PX } from "@/layoutProjection/index.js";
 import {
   buildCanvasTableLayout,
@@ -365,7 +366,7 @@ function resolveFloatingTopLeft(
   opts: FloatingTopLeftOptions,
 ): { left: number; top: number } {
   const emuToPx = (value: number | undefined) =>
-    value === undefined ? 0 : value / 9525;
+    value === undefined ? 0 : value / EMU_PER_PX;
 
   const h = floating.positionH;
   const v = floating.positionV;

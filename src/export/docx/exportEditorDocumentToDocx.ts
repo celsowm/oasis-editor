@@ -8,6 +8,7 @@ import type {
   EditorParagraphNode,
 } from "@/core/model.js";
 import { getDocumentSections, resolveImageSrc } from "@/core/model.js";
+import { EMU_PER_PX } from "@/core/units.js";
 import {
   imageContentTypeDefaults,
   imageExtensionFromMime,
@@ -254,8 +255,8 @@ function buildPartContext(
       const common = {
         rId,
         runId: run.id,
-        cx: Math.round(run.image.width * 9525),
-        cy: Math.round(run.image.height * 9525),
+        cx: Math.round(run.image.width * EMU_PER_PX),
+        cy: Math.round(run.image.height * EMU_PER_PX),
         alt: run.image.alt,
         crop: run.image.crop,
         fillMode: run.image.fillMode,

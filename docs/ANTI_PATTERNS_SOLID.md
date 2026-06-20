@@ -41,7 +41,7 @@ criando ou conectando a maior parte dos controllers do produto.
 | B1  | Barrel `editorCommands.ts` está deprecated, mas tem 22 consumidores |      Média |                  Médio |     S/M |
 | F1  | Bridge de propriedades de tabela conhece e transforma o domínio     |      Média |                  Médio |       M |
 | P1  | IDs, nomes de comando e merge keys são `string` intercambiáveis     |      Baixa |                  Médio |       M |
-| U1  | Constantes de unidade estão duplicadas entre camadas                |      Baixa |                  Médio |       S |
+| U1  | ~~Constantes de unidade duplicadas entre camadas~~ ✅ resolvido      |          — |                      — |       — |
 | N1  | Footnotes e endnotes repetem aproximadamente 76% da estrutura       |      Baixa |                  Médio |       M |
 
 ## Metodologia e limites
@@ -455,7 +455,14 @@ adapter.
 
 ### Números mágicos
 
-Achados confirmados são conversões duplicadas, por exemplo EMU por pixel em
+> **✅ U1 resolvido na Onda 3 (2026-06-20).** As conversões de unidade duplicadas
+> (EMU/px, EMU/pt, px/pt, px/inch, twips, px/cm) foram centralizadas em
+> `src/core/units.ts`; os módulos de layout, canvas, import e export passaram a
+> re-exportar/importar de lá e os literais `9525`/`12700`/`96 / 72`/`72 / 96`/
+> `96 / 2.54` inline foram trocados pelas constantes nomeadas. Constantes
+> específicas de formato (OOXML/VML/DOCX) permanecem nos seus módulos.
+
+Achados confirmados eram conversões duplicadas, por exemplo EMU por pixel em
 `floatingObjects.ts:10`, `CanvasLayoutSnapshot.ts:368`,
 `exportEditorDocumentToDocx.ts:257-258` e `commands/textBox.ts:24`.
 
