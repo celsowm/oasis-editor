@@ -5,7 +5,10 @@ import { materializeRunStyle } from "./styleMaterialization.js";
 import { serializeRunProperties } from "./runPropertiesXml.js";
 import { serializeRunText } from "./runTextXml.js";
 import { serializeImageRun } from "./imageRunXml.js";
-import { serializeTextBoxRun } from "./textBoxRunXml.js";
+import {
+  serializeTextBoxRun,
+  type SerializeBlocksXml,
+} from "./textBoxRunXml.js";
 import {
   serializeFieldRun,
   serializeFieldCharRun,
@@ -26,6 +29,7 @@ export function serializeRun(
   context: DocContext,
   paragraphStyleId: string | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
+  serializeBlocksXml: SerializeBlocksXml,
 ): string {
   if ((run as { __isFootnoteRefMarker?: boolean }).__isFootnoteRefMarker) {
     return serializeFootnoteRefMarker();
@@ -84,6 +88,7 @@ export function serializeRun(
       context,
       styles,
       serializeRunProperties(materializedRunStyle),
+      serializeBlocksXml,
     );
   }
   if (run.image) {
@@ -112,8 +117,15 @@ export function serializeRunWithRelationships(
   context: DocContext,
   paragraphStyleId: string | undefined,
   styles: Record<string, EditorNamedStyle> | undefined,
+  serializeBlocksXml: SerializeBlocksXml,
 ): string {
-  const runXml = serializeRun(run, context, paragraphStyleId, styles);
+  const runXml = serializeRun(
+    run,
+    context,
+    paragraphStyleId,
+    styles,
+    serializeBlocksXml,
+  );
   const href = run.styles?.link;
   if (!href) {
     return runXml;

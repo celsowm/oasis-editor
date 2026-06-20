@@ -88,6 +88,7 @@ function serializeRunsWithBoundaries(
             context,
             paragraphStyleId,
             styles,
+            serializeBlocksXml,
           );
         }
         out += token.xml;
@@ -100,6 +101,7 @@ function serializeRunsWithBoundaries(
           context,
           paragraphStyleId,
           styles,
+          serializeBlocksXml,
         );
       }
     } else {
@@ -108,6 +110,7 @@ function serializeRunsWithBoundaries(
         context,
         paragraphStyleId,
         styles,
+        serializeBlocksXml,
       );
     }
     pos = runEnd;
@@ -186,6 +189,7 @@ export function serializeParagraphXml(
               context,
               paragraph.style?.styleId,
               styles,
+              serializeBlocksXml,
             ),
           )
           .join("");

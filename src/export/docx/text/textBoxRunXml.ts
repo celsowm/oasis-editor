@@ -1,4 +1,5 @@
 import type {
+  EditorBlockNode,
   EditorNamedStyle,
   EditorTextBoxData,
   EditorTextRun,
@@ -7,7 +8,18 @@ import type { DocContext } from "@/export/docx/docxTypes.js";
 import { escapeXml } from "@/export/docx/xmlUtils.js";
 import { EMU_PER_PX, EMU_PER_PT, OOXML_ROTATION_UNITS } from "./constants.js";
 import { buildDrawingContainerXml } from "./drawingContainerXml.js";
-import { serializeBlocksXml } from "./blocksXml.js";
+
+/**
+ * Serializes a list of blocks (paragraphs/tables) to `w:p`/`w:tbl` XML. A text
+ * box's body recurses into this. Injected as a callback by the orchestrator
+ * (`blocksXml`) rather than imported, so this module does not import back into
+ * `blocksXml` (which serializes runs through `runXml` -> here).
+ */
+export type SerializeBlocksXml = (
+  blocks: EditorBlockNode[],
+  context: DocContext,
+  styles: Record<string, EditorNamedStyle> | undefined,
+) => string;
 
 function buildTextBoxGraphicXml(
   textBox: EditorTextBoxData,
@@ -15,6 +27,7 @@ function buildTextBoxGraphicXml(
   cy: number,
   context: DocContext,
   styles: Record<string, EditorNamedStyle> | undefined,
+  serializeBlocksXml: SerializeBlocksXml,
 ): string {
   const shape = textBox.shape;
   const preset = escapeXml(shape?.preset ?? "rect");
@@ -96,6 +109,7 @@ export function serializeTextBoxRun(
   context: DocContext,
   styles: Record<string, EditorNamedStyle> | undefined,
   rPrXml: string,
+  serializeBlocksXml: SerializeBlocksXml,
 ): string {
   const cx = Math.round(textBox.width * EMU_PER_PX);
   const cy = Math.round(textBox.height * EMU_PER_PX);
@@ -105,7 +119,14 @@ export function serializeTextBoxRun(
     textBox.alt !== undefined
       ? ` descr="${escapeXml(textBox.alt)}" title="${escapeXml(textBox.alt)}"`
       : "";
-  const graphicXml = buildTextBoxGraphicXml(textBox, cx, cy, context, styles);
+  const graphicXml = buildTextBoxGraphicXml(
+    textBox,
+    cx,
+    cy,
+    context,
+    styles,
+    serializeBlocksXml,
+  );
   const drawing = buildDrawingContainerXml({
     cx,
     cy,
