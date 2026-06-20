@@ -2,22 +2,8 @@ import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { type BooleanStyleKey } from "./toolbarStyleState.js";
 import {
   getSelectedImageRun,
-  getSelectedImageWrapPreset,
   getSelectedTextBoxRun,
-  getSelectedTextBoxWrapPreset,
-  isSelectedImageFixedPosition,
-  isSelectedTextBoxFixedPosition,
-  setSelectedImageFixedPosition,
-  setImageWrapPolygon,
-  setSelectedImageWrapPreset,
-  setSelectedTextBoxFixedPosition,
-  setSelectedTextBoxWrapPreset,
 } from "@/core/editorCommands.js";
-import type { WrapPreset } from "@/core/commands/floatingLayout.js";
-import { resolveImageSrc } from "@/core/model.js";
-import { getCachedCanvasImage } from "./canvas/canvasImageCache.js";
-import { traceImageAlphaContour } from "./canvas/imageContour.js";
-import type { LayoutOptionsOverlay } from "./editorUiTypes.js";
 import {
   createEditorStateFromDocument,
   createInitialEditorState,
@@ -71,6 +57,7 @@ import { createParagraphDialogBridge } from "./app/useParagraphDialogBridge.js";
 import { createTablePropertiesDialogBridge } from "./app/useTablePropertiesDialogBridge.js";
 import { createEditorContextMenuClipboard } from "./app/useEditorContextMenuClipboard.js";
 import { createEditorTableContextMenuActions } from "./app/createEditorTableContextMenuActions.js";
+import { createEditorLayoutOptionsController } from "./app/createEditorLayoutOptionsController.js";
 import { useEditorRuntimeBootstrap } from "./app/useEditorRuntimeBootstrap.js";
 import { createEditorUiOptions } from "./app/useEditorUiOptions.js";
 import { computeShouldShowCaret } from "./app/shouldShowCaret.js";
@@ -285,77 +272,12 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const selectedImageRun = () => getSelectedImageRun(state);
   const selectedTextBoxRun = () => getSelectedTextBoxRun(state);
 
-  const layoutOptionsTarget = (): "image" | "textBox" | null => {
-    if (selectedImageRun()) return "image";
-    if (selectedTextBoxRun()) return "textBox";
-    return null;
-  };
-
-  const applyLayoutOptionPatch = (
-    mergeKey: string,
-    apply: (current: EditorState, target: "image" | "textBox") => EditorState,
-  ) => {
-    const target = layoutOptionsTarget();
-    if (!target) return;
-    resetTransactionGrouping();
-    applyTransactionalState((current) => apply(current, target), { mergeKey });
-    focusInput();
-  };
-
-  // After switching an image to tight/through, auto-trace its alpha contour (if
-  // it has none yet) and store it. Mirrors the async-font → relayout pattern.
-  const ensureImageWrapContour = (runId: string, src: string) => {
-    const resolved = resolveImageSrc(state.document, src);
-    const applyContour = (img: HTMLImageElement) => {
-      const polygon = traceImageAlphaContour(img);
-      applyTransactionalState(
-        (current) => setImageWrapPolygon(current, runId, polygon),
-        { mergeKey: "layoutWrapPolygon" },
-      );
-    };
-    const img = getCachedCanvasImage(resolved, () => {
-      if (img.naturalWidth > 0) applyContour(img);
-    });
-    if (img.complete && img.naturalWidth > 0) {
-      applyContour(img);
-    }
-  };
-
-  const layoutOptionsOverlay: LayoutOptionsOverlay = {
-    target: layoutOptionsTarget,
-    preset: () => {
-      const target = layoutOptionsTarget();
-      if (target === "image") return getSelectedImageWrapPreset(state);
-      if (target === "textBox") return getSelectedTextBoxWrapPreset(state);
-      return null;
-    },
-    fixedPosition: () => {
-      const target = layoutOptionsTarget();
-      if (target === "image") return isSelectedImageFixedPosition(state);
-      if (target === "textBox") return isSelectedTextBoxFixedPosition(state);
-      return false;
-    },
-    setPreset: (preset: WrapPreset) => {
-      applyLayoutOptionPatch("layoutWrapPreset", (current, target) =>
-        target === "image"
-          ? setSelectedImageWrapPreset(current, preset)
-          : setSelectedTextBoxWrapPreset(current, preset),
-      );
-      if (preset === "tight" || preset === "through") {
-        const selected = getSelectedImageRun(state);
-        const image = selected?.run.image;
-        if (image && !image.wrapPolygon) {
-          ensureImageWrapContour(selected!.run.id, image.src);
-        }
-      }
-    },
-    setFixedPosition: (fixed: boolean) =>
-      applyLayoutOptionPatch("layoutFixedPosition", (current, target) =>
-        target === "image"
-          ? setSelectedImageFixedPosition(current, fixed)
-          : setSelectedTextBoxFixedPosition(current, fixed),
-      ),
-  };
+  const layoutOptionsOverlay = createEditorLayoutOptionsController({
+    state: () => state,
+    resetTransactionGrouping,
+    applyTransactionalState,
+    focusInput,
+  });
 
   const canvasHitResolver = createCanvasSurfaceHitResolver({
     state: () => state as EditorState,
