@@ -1,7 +1,8 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import { Dialog } from "./Dialog.js";
 import { Tabs } from "@/ui/components/Tabs/Tabs.js";
-import { t } from "@/i18n/index.js";
+
 import type {
   EditorBorderStyle,
   EditorDocxWidthValue,
@@ -122,6 +123,7 @@ function resolveBorder(
 }
 
 export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
+  const t = useI18n();
   const [activeTab, setActiveTab] = createSignal("table");
   const [tableWidth, setTableWidth] = createSignal("");
   const [tableWidthUnit, setTableWidthUnit] =

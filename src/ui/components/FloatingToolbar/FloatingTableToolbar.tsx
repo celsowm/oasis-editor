@@ -8,12 +8,12 @@ import {
   type JSX,
 } from "solid-js";
 import { Portal } from "solid-js/web";
+import { useI18n } from "@/i18n/I18nContext.js";
 import "./floatingToolbar.css";
 import type { SelectionBox } from "@/ui/editorUiTypes.js";
 import { Button } from "@/ui/components/Toolbar/primitives/Button.js";
 import { Separator } from "@/ui/components/Toolbar/primitives/Separator.js";
 import type { ToolbarHost } from "@/ui/components/Toolbar/state/createToolbarApi.js";
-import { t } from "@/i18n/index.js";
 
 export interface FloatingTableToolbarProps {
   host: () => ToolbarHost;
@@ -25,6 +25,7 @@ export interface FloatingTableToolbarProps {
 export function FloatingTableToolbar(
   props: FloatingTableToolbarProps,
 ): JSX.Element {
+  const t = useI18n();
   const host = () => props.host();
   const run = (command: string, payload?: unknown) =>
     host().commands.execute(command, payload);

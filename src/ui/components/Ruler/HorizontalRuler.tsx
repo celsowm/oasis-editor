@@ -14,8 +14,9 @@ import {
   type EditorState,
 } from "@/core/model.js";
 import { getToolbarStyleState } from "@/ui/toolbarStyleState.js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import type { ToolbarHost } from "@/ui/components/Toolbar/state/createToolbarApi.js";
-import { t } from "@/i18n/index.js";
+
 import { EDITOR_SCROLL_PADDING_PX } from "@/ui/editorLayoutConstants.js";
 import {
   clamp,
@@ -72,6 +73,7 @@ function numFromStyle(value: string | undefined): number {
 }
 
 export function HorizontalRuler(props: HorizontalRulerProps) {
+  const t = useI18n();
   let pageRef: HTMLDivElement | undefined;
   const [scrollLeft, setScrollLeft] = createSignal(0);
   // Left offset of the page (paper) inside the scrollable content, measured

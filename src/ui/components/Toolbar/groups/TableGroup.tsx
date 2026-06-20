@@ -1,11 +1,13 @@
 import { Show } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import { Button } from "@/ui/components/Toolbar/primitives/Button.js";
 import { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
-import { t } from "@/i18n/index.js";
+
 import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
 /** Table tools panel — command-driven; enablement derives from command state. */
 export function TableGroup(props: { api: ToolbarActionApi }) {
+  const t = useI18n();
   const api = props.api;
   const disabled = (command: string) => !api.commands.state(command).isEnabled;
   const selectionLabel = () =>

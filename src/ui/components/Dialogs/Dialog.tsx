@@ -7,7 +7,7 @@ import {
   type JSX,
 } from "solid-js";
 import "./Dialog.css";
-import { t } from "@/i18n/index.js";
+import { useI18n } from "@/i18n/I18nContext.js";
 
 export interface DialogProps {
   isOpen: boolean;
@@ -25,6 +25,7 @@ export interface DialogProps {
 }
 
 export function Dialog(props: DialogProps) {
+  const t = useI18n();
   let dialogRef: HTMLDivElement | undefined;
   const fallbackTitleId = createUniqueId();
   const titleId = createMemo(() => props.titleId ?? fallbackTitleId);

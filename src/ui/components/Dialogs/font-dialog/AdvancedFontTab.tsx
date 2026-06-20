@@ -1,5 +1,6 @@
 import { For } from "solid-js";
-import { t } from "@/i18n/index.js";
+import { useI18n } from "@/i18n/I18nContext.js";
+
 import { WORD_CHARACTER_SCALES } from "./FontDialogTypes.js";
 import type { FontDialogController } from "./FontDialogController.js";
 import type { AdvancedTabValues } from "./FontDialogTypes.js";
@@ -15,6 +16,7 @@ export interface AdvancedFontTabProps {
 }
 
 export function AdvancedFontTab(props: AdvancedFontTabProps) {
+  const t = useI18n();
   const { ctrl } = props;
 
   return (

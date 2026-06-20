@@ -1,6 +1,6 @@
 import { createSignal, createEffect } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import { Dialog } from "./Dialog.js";
-import { t } from "@/i18n/index.js";
 
 interface LinkDialogProps {
   isOpen: boolean;
@@ -10,6 +10,7 @@ interface LinkDialogProps {
 }
 
 export function LinkDialog(props: LinkDialogProps) {
+  const t = useI18n();
   const [href, setHref] = createSignal(props.initialHref);
   let inputRef: HTMLInputElement | undefined;
 

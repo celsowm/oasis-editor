@@ -7,8 +7,9 @@ import {
   onCleanup,
 } from "solid-js";
 import { outlineFrom, type OutlineItem } from "@/core/headings.js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import type { EditorDocument, EditorState } from "@/core/model.js";
-import { t } from "@/i18n/index.js";
+
 import { debounce } from "@/utils/throttle.js";
 import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
 import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
@@ -22,6 +23,7 @@ export interface OutlinePanelProps {
 }
 
 export function OutlinePanel(props: OutlinePanelProps) {
+  const t = useI18n();
   const [collapsed, setCollapsed] = createSignal(
     props.defaultCollapsed ?? false,
   );

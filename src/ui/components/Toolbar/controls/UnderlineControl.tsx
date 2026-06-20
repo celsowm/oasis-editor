@@ -1,12 +1,12 @@
 import { For, Show, createSignal, type JSX } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import type { EditorUnderlineStyle } from "@/core/model.js";
 import { SplitButton } from "@/ui/components/Toolbar/primitives/SplitButton.js";
 import { UNDERLINE_STYLE_OPTIONS } from "@/ui/components/Toolbar/underlineStyles.js";
-import { t } from "@/i18n/index.js";
+
 import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
 const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
-const UNDERLINE_BUTTON_TOOLTIP = `${t("toolbar.underline")} (${mod}+U)`;
 const TEST_ID = "editor-toolbar-underline";
 
 /**
@@ -16,6 +16,8 @@ const TEST_ID = "editor-toolbar-underline";
 export function UnderlineControl(props: {
   api: ToolbarActionApi;
 }): JSX.Element {
+  const t = useI18n();
+  const underlineButtonTooltip = `${t("toolbar.underline")} (${mod}+U)`;
   const api = props.api;
   const [lastUnderlineStyle, setLastUnderlineStyle] =
     createSignal<EditorUnderlineStyle>("single");
@@ -59,7 +61,7 @@ export function UnderlineControl(props: {
     <SplitButton
       open={open()}
       onOpenChange={setOpen}
-      tooltip={UNDERLINE_BUTTON_TOOLTIP}
+      tooltip={underlineButtonTooltip}
       rootActive={open() || active()}
       mainTestId={TEST_ID}
       mainPressed={active()}

@@ -1,12 +1,13 @@
 import { Show, type JSX } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import type { UseEditorFindReplaceResult } from "@/app/controllers/useEditorFindReplace.js";
-import { t } from "@/i18n/index.js";
 
 export interface FindReplaceDialogProps {
   fr: UseEditorFindReplaceResult;
 }
 
 export function FindReplaceDialog(props: FindReplaceDialogProps) {
+  const t = useI18n();
   const { fr } = props;
 
   const handleKeyDown = (e: KeyboardEvent) => {

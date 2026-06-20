@@ -1,6 +1,7 @@
 import { For, Show, createMemo, createSignal } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import { Portal } from "solid-js/web";
-import { t } from "@/i18n/index.js";
+
 import {
   LineSpacingDialog,
   type LineSpacingDialogApplyValues,
@@ -28,6 +29,7 @@ export interface LineSpacingButtonProps {
 }
 
 export function LineSpacingButton(props: LineSpacingButtonProps) {
+  const t = useI18n();
   const api = props.api;
   const [isOpen, setIsOpen] = createSignal(false);
   const [dialogOpen, setDialogOpen] = createSignal(false);

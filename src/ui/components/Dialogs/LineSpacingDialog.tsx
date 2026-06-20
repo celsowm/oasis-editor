@@ -1,6 +1,6 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import { Dialog } from "./Dialog.js";
-import { t } from "@/i18n/index.js";
 
 export interface LineSpacingDialogInitialValues {
   lineHeight: string;
@@ -25,6 +25,7 @@ export interface LineSpacingDialogProps {
 }
 
 export function LineSpacingDialog(props: LineSpacingDialogProps) {
+  const t = useI18n();
   const [lineHeight, setLineHeight] = createSignal("");
   const [spacingBefore, setSpacingBefore] = createSignal("");
   const [spacingAfter, setSpacingAfter] = createSignal("");

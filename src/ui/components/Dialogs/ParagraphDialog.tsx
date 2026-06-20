@@ -1,6 +1,7 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import { Dialog } from "./Dialog.js";
-import { t } from "@/i18n/index.js";
+
 import type {
   EditorBorderStyle,
   EditorParagraphStyle,
@@ -72,6 +73,7 @@ function parseNumber(value: string): number | null {
 }
 
 export function ParagraphDialog(props: ParagraphDialogProps) {
+  const t = useI18n();
   const [align, setAlign] = createSignal("");
   const [indentLeft, setIndentLeft] = createSignal("");
   const [indentRight, setIndentRight] = createSignal("");

@@ -9,10 +9,11 @@ import {
   type JSX,
 } from "solid-js";
 import { Portal } from "solid-js/web";
+import { useI18n } from "@/i18n/I18nContext.js";
 import "./layoutOptions.css";
 import type { WrapPreset } from "@/core/commands/floatingLayout.js";
 import type { LayoutOptionsOverlay } from "@/ui/editorUiTypes.js";
-import { t, type TranslationKey } from "@/i18n/index.js";
+import { type TranslationKey } from "@/i18n/index.js";
 
 /** Minimal box geometry (surface-relative) used to anchor the popup. */
 export interface LayoutOptionsAnchorBox {
@@ -43,6 +44,7 @@ const WRAP_OPTIONS: ReadonlyArray<{
 
 /** Lines-around-a-box pictograms approximating Word's layout-option glyphs. */
 function WrapIcon(props: { preset: WrapPreset }): JSX.Element {
+  const t = useI18n();
   const line = (x: number, y: number, w: number) => (
     <rect x={x} y={y} width={w} height="2" rx="1" fill="#9aa0a6" />
   );
@@ -101,6 +103,7 @@ function WrapIcon(props: { preset: WrapPreset }): JSX.Element {
 export function FloatingLayoutOptions(
   props: FloatingLayoutOptionsProps,
 ): JSX.Element {
+  const t = useI18n();
   const [open, setOpen] = createSignal(false);
   const [surfaceRect, setSurfaceRect] = createSignal<DOMRect | null>(null);
   const [tick, setTick] = createSignal(0);

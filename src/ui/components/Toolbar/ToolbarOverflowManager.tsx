@@ -8,7 +8,7 @@ import {
   children,
   createEffect,
 } from "solid-js";
-import { t } from "@/i18n/index.js";
+import { useI18n } from "@/i18n/I18nContext.js";
 
 /**
  * Manages toolbar overflow by imperatively moving DOM nodes between
@@ -19,6 +19,7 @@ import { t } from "@/i18n/index.js";
  * triggering unmount/remount cycles.
  */
 export function ToolbarOverflowManager(props: { children: JSX.Element }) {
+  const t = useI18n();
   const [overflowCount, setOverflowCount] = createSignal(0);
   const [menuOpen, setMenuOpen] = createSignal(false);
   const [panelWidth, setPanelWidth] = createSignal<number | null>(null);

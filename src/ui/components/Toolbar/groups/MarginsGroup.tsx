@@ -1,4 +1,5 @@
 import { For, Show, createMemo, createSignal, type JSX } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import type { EditorPageMargins } from "@/core/model.js";
 import { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
 import {
@@ -9,7 +10,7 @@ import {
   pxToCm,
   type MarginPreset,
 } from "@/ui/components/Toolbar/marginPresets.js";
-import { t } from "@/i18n/index.js";
+
 import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
 const FIELDS = [
@@ -19,14 +20,13 @@ const FIELDS = [
   { key: "right", labelKey: "section.marginField.right" },
 ] as const;
 
-function formatCm(cm: number): string {
-  return t("section.marginValue", [
-    String(cm).replace(".", t("number.decimalSeparator")),
-  ]);
-}
-
 /** Word-style page-margin presets dropdown plus an inline custom form. */
 export function MarginsGroup(props: { api: ToolbarActionApi }): JSX.Element {
+  const t = useI18n();
+  const formatCm = (cm: number): string =>
+    t("section.marginValue", [
+      String(cm).replace(".", t("number.decimalSeparator")),
+    ]);
   const api = props.api;
   const [showCustom, setShowCustom] = createSignal(false);
   const [draft, setDraft] = createSignal<Record<string, string>>({});

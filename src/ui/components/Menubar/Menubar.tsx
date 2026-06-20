@@ -6,7 +6,8 @@ import {
   Show,
   type JSX,
 } from "solid-js";
-import { t, type TranslationKey } from "@/i18n/index.js";
+import { type TranslationKey } from "@/i18n/index.js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import {
   MenuRegistry,
   type MenuItem,
@@ -28,6 +29,7 @@ interface MenuTreeItem {
 }
 
 export function Menubar(props: MenubarProps) {
+  const t = useI18n();
   const [activeMenu, setActiveMenu] = createSignal<string | null>(null);
 
   const menuItems = () => props.registry.getItems();
@@ -160,6 +162,7 @@ function MenuNode(props: {
   host: () => MenubarHost;
   onClose: () => void;
 }) {
+  const t = useI18n();
   const { node, onClose } = props;
   const isSeparator = node.item?.separator;
 

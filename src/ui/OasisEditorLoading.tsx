@@ -1,6 +1,7 @@
 import { Show } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import type { JSX } from "solid-js";
-import { t } from "@/i18n/index.js";
+
 import { OasisBrandMark } from "./components/OasisBrandMark.js";
 
 export interface OasisEditorLoadingProps {
@@ -27,6 +28,7 @@ export interface OasisEditorLoadingProps {
  * bar; otherwise animates indeterminate.
  */
 export function OasisEditorLoading(props: OasisEditorLoadingProps) {
+  const t = useI18n();
   const variant = () => props.variant ?? "overlay";
   const pct = () => {
     const p = props.progress;

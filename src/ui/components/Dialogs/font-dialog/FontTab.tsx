@@ -1,5 +1,6 @@
 import { For } from "solid-js";
-import { t } from "@/i18n/index.js";
+import { useI18n } from "@/i18n/I18nContext.js";
+
 import { UNDERLINE_STYLE_OPTIONS } from "@/ui/components/Toolbar/underlineStyles.js";
 import {
   DEFAULT_COLOR,
@@ -18,6 +19,7 @@ export interface FontTabProps {
 }
 
 export function FontTab(props: FontTabProps) {
+  const t = useI18n();
   const { ctrl } = props;
 
   return (

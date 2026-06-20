@@ -1,6 +1,6 @@
 import { For, createEffect, createSignal, onCleanup, type JSX } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import { Popover } from "./Popover.js";
-import { t } from "@/i18n/index.js";
 
 export interface GridPickerProps {
   onSelect: (rows: number, cols: number) => void;
@@ -13,6 +13,7 @@ export interface GridPickerProps {
 
 /** Hover/keyboard grid size picker (table insertion). Size is configurable. */
 export function GridPicker(props: GridPickerProps): JSX.Element {
+  const t = useI18n();
   const [isOpen, setIsOpen] = createSignal(false);
   const [hover, setHover] = createSignal<{ row: number; col: number }>({
     row: 0,

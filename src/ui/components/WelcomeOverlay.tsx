@@ -1,5 +1,6 @@
 import { Show } from "solid-js";
-import { t } from "@/i18n/index.js";
+import { useI18n } from "@/i18n/I18nContext.js";
+
 import { OasisBrandMark } from "./OasisBrandMark.js";
 import { enablePreciseFontMode } from "@/ui/app/localFontAccess.js";
 import {
@@ -20,6 +21,7 @@ interface WelcomeOverlayProps {
  * `welcomeSeen` in user preferences).
  */
 export function WelcomeOverlay(props: WelcomeOverlayProps) {
+  const t = useI18n();
   const handleEnable = () => {
     void enablePreciseFontMode();
     setWelcomeSeen();

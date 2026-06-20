@@ -1,6 +1,6 @@
 import { createEffect, createSignal } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import { Dialog } from "./Dialog.js";
-import { t } from "@/i18n/index.js";
 
 interface ImageCaptionDialogProps {
   isOpen: boolean;
@@ -10,6 +10,7 @@ interface ImageCaptionDialogProps {
 }
 
 export function ImageCaptionDialog(props: ImageCaptionDialogProps) {
+  const t = useI18n();
   const [caption, setCaption] = createSignal(props.initialCaption);
   let inputRef: HTMLInputElement | undefined;
 

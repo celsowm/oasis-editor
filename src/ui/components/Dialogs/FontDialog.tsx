@@ -1,6 +1,7 @@
 import { Dialog } from "./Dialog.js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import { Tabs } from "@/ui/components/Tabs/Tabs.js";
-import { t } from "@/i18n/index.js";
+
 import { useFontDialogController } from "./font-dialog/useFontDialogController.js";
 import { FontTab } from "./font-dialog/FontTab.js";
 import { AdvancedFontTab } from "./font-dialog/AdvancedFontTab.js";
@@ -13,6 +14,7 @@ export type {
 } from "./font-dialog/FontDialogTypes.js";
 
 export function FontDialog(props: FontDialogProps) {
+  const t = useI18n();
   const ctrl = useFontDialogController(props);
 
   return (

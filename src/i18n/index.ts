@@ -9,23 +9,37 @@ const locales: Record<Locale, Record<string, string>> = {
   "pt-BR": ptBR,
 };
 
+export type TranslateFn = (key: TranslationKey, params?: unknown[]) => string;
+
+/**
+ * Build a translator bound to a locale accessor. The accessor is read on every
+ * call, so when it reads a Solid signal the translation tracks locale changes
+ * reactively. No module-level mutable locale is involved.
+ */
+export function createTranslator(getLocale: () => Locale): TranslateFn {
+  return (key, params = []) => {
+    const localeStrings = locales[getLocale()] || locales["en"];
+    let template = localeStrings[key] || en[key] || key;
+
+    params.forEach((param, index) => {
+      template = template.replace(`{${index}}`, String(param));
+    });
+
+    return template;
+  };
+}
+
 let currentLocale: Locale = "pt-BR";
 
+/** @deprecated Global locale. Being removed in favour of per-instance I18nProvider. */
 export function setLocale(locale: Locale) {
   currentLocale = locale;
 }
 
+/** @deprecated Global locale. Being removed in favour of per-instance I18nProvider. */
 export function getLocale(): Locale {
   return currentLocale;
 }
 
-export function t(key: TranslationKey, params: unknown[] = []): string {
-  const localeStrings = locales[currentLocale] || locales["en"];
-  let template = localeStrings[key] || en[key] || key;
-
-  params.forEach((param, index) => {
-    template = template.replace(`{${index}}`, String(param));
-  });
-
-  return template;
-}
+/** @deprecated Global translator. Migrate components to `useI18n()`. */
+export const t: TranslateFn = createTranslator(getLocale);

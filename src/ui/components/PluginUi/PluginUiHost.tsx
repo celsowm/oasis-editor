@@ -10,6 +10,7 @@ import {
   type JSX,
 } from "solid-js";
 import { Portal } from "solid-js/web";
+import { useI18n } from "@/i18n/I18nContext.js";
 import type {
   FloatingActionContribution,
   OasisEditor,
@@ -25,7 +26,7 @@ import {
 } from "@/ui/public/SidePanel.js";
 import { IconButton } from "@/ui/public/IconButton.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
-import { t, type TranslationKey } from "@/i18n/index.js";
+import { type TranslationKey, type TranslateFn } from "@/i18n/index.js";
 
 export interface PluginUiHostProps {
   editor: Accessor<OasisEditor>;
@@ -39,6 +40,7 @@ const EMPTY_SNAPSHOT: OasisPluginUiSnapshot = {
 };
 
 export function PluginUiHost(props: PluginUiHostProps): JSX.Element {
+  const t = useI18n();
   const resolvedChildren = children(() => props.children);
   const [snapshot, setSnapshot] =
     createSignal<OasisPluginUiSnapshot>(EMPTY_SNAPSHOT);
@@ -85,7 +87,7 @@ export function PluginUiHost(props: PluginUiHostProps): JSX.Element {
             {(action) => (
               <FloatingActionButton
                 icon={action.icon ?? "sparkles"}
-                label={actionLabel(action)}
+                label={actionLabel(action, t)}
                 disabled={!canExecuteAction(props.editor(), action)}
                 data-testid={`plugin-floating-action-${action.id}`}
                 onClick={() => executeAction(props.editor(), action)}
@@ -106,12 +108,12 @@ export function PluginUiHost(props: PluginUiHostProps): JSX.Element {
     >
       <div class="oasis-editor-plugin-ui-main">{resolvedChildren()}</div>
       <Show when={dockPanel()}>
-        {(panel) => renderPanel(props.editor, panel())}
+        {(panel) => renderPanel(props.editor, panel(), t)}
       </Show>
       <Show when={overlayPanel()}>
         {(panel) => (
           <div class="oasis-editor-plugin-side-panel-overlay">
-            {renderPanel(props.editor, panel())}
+            {renderPanel(props.editor, panel(), t)}
           </div>
         )}
       </Show>
@@ -139,7 +141,10 @@ function canExecuteAction(
   return editor.commands.canExecute(resolved.name, resolved.payload);
 }
 
-function actionLabel(action: FloatingActionContribution): string {
+function actionLabel(
+  action: FloatingActionContribution,
+  t: TranslateFn,
+): string {
   if (action.tooltip) return action.tooltip;
   if (action.labelKey) return t(action.labelKey as TranslationKey);
   return action.label ?? action.id;
@@ -148,6 +153,7 @@ function actionLabel(action: FloatingActionContribution): string {
 function renderPanel(
   editor: Accessor<OasisEditor>,
   panel: SidePanelContribution,
+  t: TranslateFn,
 ): JSX.Element {
   const close = () => editor().ui.closeSidePanel(panel.id);
   return (

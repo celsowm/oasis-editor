@@ -1,13 +1,15 @@
 import { type JSX } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import { Menu } from "@/ui/components/Toolbar/primitives/Menu.js";
 import { Select } from "@/ui/components/Toolbar/primitives/Select.js";
-import { t } from "@/i18n/index.js";
+
 import type { ToolbarActionApi } from "@/ui/components/Toolbar/schema/items.js";
 
 /** List format + start-at options dropdown — command-driven. */
 export function ListOptionsControl(props: {
   api: ToolbarActionApi;
 }): JSX.Element {
+  const t = useI18n();
   const api = props.api;
   return (
     <Menu

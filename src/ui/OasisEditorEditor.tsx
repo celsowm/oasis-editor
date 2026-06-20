@@ -8,6 +8,7 @@ import {
   type JSX,
 } from "solid-js";
 import { CanvasEditorSurface } from "./components/CanvasEditorSurface.js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import { OasisBrandMark } from "./components/OasisBrandMark.js";
 import { HorizontalRuler } from "./components/Ruler/HorizontalRuler.js";
 import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
@@ -18,7 +19,7 @@ import { CommentHighlightOverlay } from "./components/CommentHighlightOverlay.js
 import { FloatingTableToolbar } from "./components/FloatingToolbar/FloatingTableToolbar.js";
 import { FloatingLayoutOptions } from "./components/FloatingToolbar/FloatingLayoutOptions.js";
 import type { ToolbarHost } from "./components/Toolbar/state/createToolbarApi.js";
-import { t, type TranslationKey } from "@/i18n/index.js";
+import { type TranslationKey } from "@/i18n/index.js";
 import {
   getDocumentPageSettings,
   getDocumentSections,
@@ -176,6 +177,7 @@ export interface OasisEditorEditorProps {
 }
 
 export function OasisEditorEditor(props: OasisEditorEditorProps) {
+  const t = useI18n();
   const layout = () => props.layout ?? {};
   const overlays = () => props.overlays;
   const refs = () => props.refs ?? {};

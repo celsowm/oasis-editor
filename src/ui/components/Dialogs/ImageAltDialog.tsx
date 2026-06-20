@@ -1,6 +1,6 @@
 import { createSignal, createEffect } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import { Dialog } from "./Dialog.js";
-import { t } from "@/i18n/index.js";
 
 interface ImageAltDialogProps {
   isOpen: boolean;
@@ -10,6 +10,7 @@ interface ImageAltDialogProps {
 }
 
 export function ImageAltDialog(props: ImageAltDialogProps) {
+  const t = useI18n();
   const [alt, setAlt] = createSignal(props.initialAlt);
   let inputRef: HTMLInputElement | undefined;
 

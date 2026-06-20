@@ -48,7 +48,8 @@ import { createEditorDocumentIO } from "@/app/controllers/useEditorDocumentIO.js
 import { createEditorStyleController } from "@/app/controllers/useEditorStyle.js";
 import { createEditorHistoryActions } from "@/app/controllers/useEditorHistoryActions.js";
 import "./components/FindReplace/findReplace.css";
-import { setLocale } from "@/i18n/index.js";
+import { setLocale, createTranslator } from "@/i18n/index.js";
+import { I18nProvider } from "@/i18n/I18nContext.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
 import {
   recordCanvasDebugSelection,
@@ -100,6 +101,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const documentOptions = () => props.document ?? {};
   const runtimeOptions = () => props.runtime ?? {};
   syncCanvasDebugApiVisibility();
+  // Per-instance translator: reads this editor's locale signal, so two editors
+  // on the same page translate independently. setLocale is kept temporarily to
+  // feed the deprecated global `t` until every caller moves to useI18n().
+  const translator = createTranslator(() => ui().locale ?? "pt-BR");
   createEffect(() => {
     setLocale(ui().locale ?? "pt-BR");
   });
@@ -896,6 +901,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   });
 
   return (
+    <I18nProvider translator={translator}>
     <div
       classList={{
         "oasis-editor-shell": true,
@@ -1004,5 +1010,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
         onClose={() => setWelcomeOpen(false)}
       />
     </div>
+    </I18nProvider>
   );
 }
