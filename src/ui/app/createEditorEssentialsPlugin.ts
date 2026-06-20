@@ -1,14 +1,16 @@
 import {
   insertPageBreakAtSelection,
-  insertShapeAtSelection,
-  insertTextAtSelection,
   setParagraphStyle,
+  splitBlockAtSelection,
+} from "@/core/commands/block.js";
+import { insertShapeAtSelection } from "@/core/commands/shape.js";
+import {
   setTableCellBorders,
   setTableCellStyleValue,
   setTableCellWidth,
   setTableStyleValue,
-  splitBlockAtSelection,
-} from "@/core/editorCommands.js";
+} from "@/core/commands/table.js";
+import { insertTextAtSelection } from "@/core/commands/text.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,

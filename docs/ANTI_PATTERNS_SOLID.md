@@ -38,7 +38,7 @@ criando ou conectando a maior parte dos controllers do produto.
 | I1  | Dependency bags de 17–38 membros e props drilling                   |      Média |             Médio/alto |       M |
 | O1  | Runs são um optional-property bag; 227 decisões por variante        |      Média |             Médio/alto |       L |
 | S2  | Hotspots de paginação, DOCX, texto e snapshot acumulam papéis       |      Média |             Médio/alto |    L/XL |
-| B1  | Barrel `editorCommands.ts` está deprecated, mas tem 22 consumidores |      Média |                  Médio |     S/M |
+| B1  | ~~Barrel `editorCommands.ts` deprecated com 22 consumidores~~ ✅ resolvido |     — |                  — |       — |
 | F1  | Bridge de propriedades de tabela conhece e transforma o domínio     |      Média |                  Médio |       M |
 | P1  | IDs, nomes de comando e merge keys são `string` intercambiáveis     |      Baixa |                  Médio |       M |
 | U1  | ~~Constantes de unidade duplicadas entre camadas~~ ✅ resolvido      |          — |                      — |       — |
@@ -382,6 +382,13 @@ O runtime principal já criava `new MenuRegistry()` por app e copiava os default
 instâncias; isto apenas elimina o singleton morto restante.
 
 ### Barrels e dependência excessiva
+
+> **✅ B1 resolvido na Onda 3 (2026-06-20).** O barrel deprecated
+> `src/core/editorCommands.ts` foi removido. Os 24 consumidores internos tiveram
+> os imports reescritos (via codemod com mapa símbolo→módulo determinístico, 0
+> colisões) para os módulos de domínio reais em `@/core/commands/*`. Não estava
+> no barrel público (`src/index.ts`). Gates: `tsc` limpo, `check:imports` 0
+> ciclos, suíte 577✓/1 skip, `build:lib` ok.
 
 - `src/index.ts` tem fan-out 70 e mistura bootstrap, core, plugin API, shells,
   UI pública e primitivas de toolbar (`src/index.ts:3-216`). Como é o entrypoint

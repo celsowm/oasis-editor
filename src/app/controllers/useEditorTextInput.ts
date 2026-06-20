@@ -1,7 +1,7 @@
 import { createSignal } from "solid-js";
 import type { EditorState, EditorTextStyle } from "@/core/model.js";
 import { getParagraphs } from "@/core/model.js";
-import { insertTextAtSelection } from "@/core/editorCommands.js";
+import { insertTextAtSelection } from "@/core/commands/text.js";
 import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
 import { markStart, markEnd } from "@/utils/performanceMetrics.js";
 

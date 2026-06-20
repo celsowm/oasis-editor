@@ -1,4 +1,4 @@
-import { setParagraphStyle } from "@/core/editorCommands.js";
+import { setParagraphStyle } from "@/core/commands/block.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
 import type {
   ParagraphDialogApplyValues,

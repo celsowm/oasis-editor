@@ -1,30 +1,40 @@
 import {
-  acceptRevisionsInSelection,
-  changeSelectedTextCase,
-  clearParagraphListAtSelection,
-  clearSelectedTextFormatting,
-  getLinkAtSelection,
-  indentParagraphList,
   insertPageBreakAtSelection,
-  insertFootnote,
   insertSectionBreakAtSelection,
-  outdentParagraphList,
-  rejectRevisionsInSelection,
-  getSelectedImageCaption,
-  setLinkAtSelection,
-  setSelectedImageCaption,
   setParagraphNamedStyle,
   setParagraphStyle,
+  updateSectionSettings,
+} from "@/core/commands/block.js";
+import { insertFootnote } from "@/core/commands/footnotes.js";
+import {
+  acceptRevisionsInSelection,
+  rejectRevisionsInSelection,
+  toggleTrackChanges,
+} from "@/core/commands/history.js";
+import {
+  getSelectedImageCaption,
+  setSelectedImageCaption,
+  setSelectedImageAlt,
+} from "@/core/commands/image.js";
+import {
+  getLinkAtSelection,
+  setLinkAtSelection,
+} from "@/core/commands/link.js";
+import {
+  clearParagraphListAtSelection,
+  indentParagraphList,
+  outdentParagraphList,
   setParagraphListFormat,
   setParagraphListStartAt,
-  setSelectedImageAlt,
-  setTextStyleValue,
   splitListItemAtSelection,
   toggleParagraphList,
+} from "@/core/commands/list.js";
+import {
+  changeSelectedTextCase,
+  clearSelectedTextFormatting,
+  setTextStyleValue,
   toggleTextStyle,
-  toggleTrackChanges,
-  updateSectionSettings,
-} from "@/core/editorCommands.js";
+} from "@/core/commands/text.js";
 import {
   getActiveSectionIndex,
   findParagraphTableLocation,

@@ -5,10 +5,8 @@ import {
   type FindReplaceMatch,
 } from "@/app/services/FindReplaceService.js";
 import type { EditorState } from "@/core/model.js";
-import {
-  setSelection,
-  insertTextAtSelection,
-} from "@/core/editorCommands.js";
+import { setSelection } from "@/core/commands/selection.js";
+import { insertTextAtSelection } from "@/core/commands/text.js";
 
 export interface UseEditorFindReplaceResult {
   searchTerm: () => string;

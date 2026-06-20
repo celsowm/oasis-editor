@@ -1,8 +1,5 @@
 import { isSelectionCollapsed } from "@/core/selection.js";
-import {
-  setTextStyleValue,
-  toggleTextStyle,
-} from "@/core/editorCommands.js";
+import { setTextStyleValue, toggleTextStyle } from "@/core/commands/text.js";
 import type { EditorSelection, EditorState } from "@/core/model.js";
 import type {
   FontDialogApplyValues,

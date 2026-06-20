@@ -3,7 +3,7 @@ import {
   getSelectedTextBoxRun,
   resizeSelectedTextBox,
   rotateSelectedTextBox,
-} from "@/core/editorCommands.js";
+} from "@/core/commands/textBox.js";
 import { getMaxInlineImageWidth } from "@/ui/imageGeometry.js";
 import { resolveTextBoxRenderHeight } from "@/ui/canvas/textBoxRenderHeight.js";
 import type { ResizeHandleDirection } from "@/ui/resizeGeometry.js";

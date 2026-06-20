@@ -3,16 +3,18 @@ import { resolveImageSrc } from "@/core/model.js";
 import {
   getSelectedImageRun,
   getSelectedImageWrapPreset,
-  getSelectedTextBoxRun,
-  getSelectedTextBoxWrapPreset,
   isSelectedImageFixedPosition,
-  isSelectedTextBoxFixedPosition,
   setSelectedImageFixedPosition,
   setImageWrapPolygon,
   setSelectedImageWrapPreset,
+} from "@/core/commands/image.js";
+import {
+  getSelectedTextBoxRun,
+  getSelectedTextBoxWrapPreset,
+  isSelectedTextBoxFixedPosition,
   setSelectedTextBoxFixedPosition,
   setSelectedTextBoxWrapPreset,
-} from "@/core/editorCommands.js";
+} from "@/core/commands/textBox.js";
 import type { WrapPreset } from "@/core/commands/floatingLayout.js";
 import { getCachedCanvasImage } from "@/ui/canvas/canvasImageCache.js";
 import { traceImageAlphaContour } from "@/ui/canvas/imageContour.js";
@@ -37,8 +39,12 @@ export interface EditorLayoutOptionsControllerDeps {
 export function createEditorLayoutOptionsController(
   deps: EditorLayoutOptionsControllerDeps,
 ): LayoutOptionsOverlay {
-  const { state, resetTransactionGrouping, applyTransactionalState, focusInput } =
-    deps;
+  const {
+    state,
+    resetTransactionGrouping,
+    applyTransactionalState,
+    focusInput,
+  } = deps;
 
   const layoutOptionsTarget = (): "image" | "textBox" | null => {
     if (getSelectedImageRun(state())) return "image";

@@ -1,8 +1,6 @@
 import { createSignal } from "solid-js";
-import {
-  moveOrCopySelectionToPosition,
-  setSelection,
-} from "@/core/editorCommands.js";
+import { setSelection } from "@/core/commands/selection.js";
+import { moveOrCopySelectionToPosition } from "@/core/commands/text.js";
 import type { EditorPosition, EditorState } from "@/core/model.js";
 import { getParagraphs, positionToParagraphOffset } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";

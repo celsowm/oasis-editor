@@ -1,10 +1,12 @@
 import {
-  deleteBackward,
-  getSelectedText,
   insertClipboardParagraphsAtSelection,
-  insertPlainTextAtSelection,
   serializeEditorSelectionToHtml,
-} from "@/core/editorCommands.js";
+} from "@/core/commands/clipboard.js";
+import { getSelectedText } from "@/core/commands/selection.js";
+import {
+  deleteBackward,
+  insertPlainTextAtSelection,
+} from "@/core/commands/text.js";
 import type { EditorPosition, EditorState } from "@/core/model.js";
 import { parseEditorClipboardHtmlWithDom } from "@/app/clipboard/htmlClipboardParser.js";
 import { findImageFileFromTransfer } from "@/ui/clipboardImage.js";

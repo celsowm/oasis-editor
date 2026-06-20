@@ -1,9 +1,9 @@
 import {
-  setSelection,
   insertPageBreakAtSelection,
-  insertTextAtSelection,
   splitBlockAtSelection,
-} from "@/core/editorCommands.js";
+} from "@/core/commands/block.js";
+import { setSelection } from "@/core/commands/selection.js";
+import { insertTextAtSelection } from "@/core/commands/text.js";
 import {
   getParagraphs,
   getParagraphText,

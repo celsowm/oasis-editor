@@ -1,12 +1,14 @@
 import type { EditorState } from "@/core/model.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
 import {
-  deleteBackward,
-  getSelectedText as getEditorSelectedText,
   insertClipboardParagraphsAtSelection,
-  insertPlainTextAtSelection,
   serializeEditorSelectionToHtml,
-} from "@/core/editorCommands.js";
+} from "@/core/commands/clipboard.js";
+import { getSelectedText as getEditorSelectedText } from "@/core/commands/selection.js";
+import {
+  deleteBackward,
+  insertPlainTextAtSelection,
+} from "@/core/commands/text.js";
 import { parseEditorClipboardHtmlWithDom } from "@/app/clipboard/htmlClipboardParser.js";
 import type { TranslateFn } from "@/i18n/index.js";
 import type { ContextMenuItem } from "@/ui/components/ContextMenu/ContextMenu.js";

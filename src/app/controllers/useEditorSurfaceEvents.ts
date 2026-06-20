@@ -14,7 +14,7 @@ import {
   DEFAULT_EDITOR_PAGE_SETTINGS,
 } from "@/core/model.js";
 import { resolveWordSelection } from "@/core/wordBoundaries.js";
-import { setSelection } from "@/core/editorCommands.js";
+import { setSelection } from "@/core/commands/selection.js";
 import { createSectionBoundaryParagraph } from "@/core/editorState.js";
 import type { SurfaceHit } from "@/ui/canvas/CanvasHitTestService.js";
 

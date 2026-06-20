@@ -10,10 +10,10 @@ import {
 import { normalizeSelection } from "@/core/selection.js";
 import {
   moveSelectedImageToPosition,
-  setSelection,
   resizeSelectedImage,
   rotateSelectedImage,
-} from "@/core/editorCommands.js";
+} from "@/core/commands/image.js";
+import { setSelection } from "@/core/commands/selection.js";
 import { getMaxInlineImageWidth } from "@/ui/imageGeometry.js";
 import type { ResizeHandleDirection } from "@/ui/resizeGeometry.js";
 import type { EditorLogger } from "@/utils/logger.js";

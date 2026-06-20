@@ -5,7 +5,7 @@ import {
   type EditorState,
   type EditorEditingZone,
 } from "@/core/model.js";
-import { insertTableAtSelection } from "@/core/editorCommands.js";
+import { insertTableAtSelection } from "@/core/commands/table.js";
 import type { EditorLogger } from "@/utils/logger.js";
 import {
   findCellAtVisualColumn,

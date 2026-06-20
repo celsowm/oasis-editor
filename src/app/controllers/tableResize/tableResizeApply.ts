@@ -2,7 +2,7 @@ import type { EditorState } from "@/core/model.js";
 import {
   setTableRowHeight,
   setTableColumnWidths,
-} from "@/core/editorCommands.js";
+} from "@/core/commands/table.js";
 import {
   parseSizeToPt,
   pxToPt,

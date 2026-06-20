@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
 import type { EditorState } from "@/core/model.js";
-import { moveBlockToPosition } from "@/core/editorCommands.js";
+import { moveBlockToPosition } from "@/core/commands/block.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,

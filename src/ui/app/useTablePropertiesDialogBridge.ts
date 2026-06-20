@@ -4,7 +4,7 @@ import {
   setSelectedTableRowStyleValue,
   setTableCellStyleValue,
   setTableColumnWidths,
-} from "@/core/editorCommands.js";
+} from "@/core/commands/table.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
@@ -91,15 +91,22 @@ const EMPTY_INITIAL: TablePropertiesDialogInitialValues = {
   altDescription: "",
 };
 
-function getZoneBlocks(state: EditorState, zone: ReturnType<typeof getActiveZone>) {
-  const section = getDocumentSections(state.document)[getActiveSectionIndex(state)];
+function getZoneBlocks(
+  state: EditorState,
+  zone: ReturnType<typeof getActiveZone>,
+) {
+  const section = getDocumentSections(state.document)[
+    getActiveSectionIndex(state)
+  ];
   if (!section) return [];
   if (zone === "header") return section.header ?? [];
   if (zone === "footer") return section.footer ?? [];
   return section.blocks;
 }
 
-function resolveActiveTableContext(state: EditorState): ActiveTableContext | null {
+function resolveActiveTableContext(
+  state: EditorState,
+): ActiveTableContext | null {
   const activeSectionIndex = getActiveSectionIndex(state);
   const loc = findParagraphTableLocation(
     state.document,
@@ -197,7 +204,8 @@ function buildInitialValues(
     cellHideMark: style.hideMark === true,
     marginTop: style.paddingTop != null ? String(style.paddingTop) : "",
     marginRight: style.paddingRight != null ? String(style.paddingRight) : "",
-    marginBottom: style.paddingBottom != null ? String(style.paddingBottom) : "",
+    marginBottom:
+      style.paddingBottom != null ? String(style.paddingBottom) : "",
     marginLeft: style.paddingLeft != null ? String(style.paddingLeft) : "",
     borderStyle: sharedBorder?.type ?? "none",
     borderWidth: sharedBorder ? String(sharedBorder.width) : "",
@@ -294,11 +302,9 @@ export function createTablePropertiesDialogBridge(
         );
         next = setSelectedTableRowStyleValue(next, "hidden", values.hiddenRow);
         if (values.columnWidth !== null) {
-          next = setTableColumnWidths(
-            next,
-            currentCtx.tableId,
-            { [currentCtx.visualColumnIndex]: values.columnWidth },
-          );
+          next = setTableColumnWidths(next, currentCtx.tableId, {
+            [currentCtx.visualColumnIndex]: values.columnWidth,
+          });
         }
         next = setCellStyle(next, "width", values.cellWidth);
         next = setCellStyle(next, "verticalAlign", values.cellVerticalAlign);

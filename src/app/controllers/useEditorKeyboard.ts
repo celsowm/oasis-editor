@@ -1,6 +1,5 @@
+import { outdentParagraphList } from "@/core/commands/list.js";
 import {
-  deleteBackward,
-  deleteForward,
   extendSelectionDown,
   extendSelectionLeft,
   extendSelectionRight,
@@ -9,9 +8,9 @@ import {
   moveSelectionLeft,
   moveSelectionRight,
   moveSelectionUp,
-  outdentParagraphList,
   setSelection,
-} from "@/core/editorCommands.js";
+} from "@/core/commands/selection.js";
+import { deleteBackward, deleteForward } from "@/core/commands/text.js";
 import {
   getParagraphs,
   getParagraphText,

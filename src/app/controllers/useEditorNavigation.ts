@@ -12,7 +12,7 @@ import {
   setSelection,
   moveSelectionLeft,
   moveSelectionRight,
-} from "@/core/editorCommands.js";
+} from "@/core/commands/selection.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
 import {
   findPreviousWordBoundary,

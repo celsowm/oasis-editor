@@ -1,9 +1,7 @@
 import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { type BooleanStyleKey } from "./toolbarStyleState.js";
-import {
-  getSelectedImageRun,
-  getSelectedTextBoxRun,
-} from "@/core/editorCommands.js";
+import { getSelectedImageRun } from "@/core/commands/image.js";
+import { getSelectedTextBoxRun } from "@/core/commands/textBox.js";
 import {
   createEditorStateFromDocument,
   createInitialEditorState,

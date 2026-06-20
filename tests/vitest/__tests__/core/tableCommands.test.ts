@@ -7,7 +7,7 @@ import {
   createEditorTableCell,
   createEditorTableRow,
 } from "@/core/editorState.js";
-import { setTableColumnWidths } from "@/core/editorCommands.js";
+import { setTableColumnWidths } from "@/core/commands/table.js";
 import { getDocumentSectionsCanonical } from "@/core/model.js";
 
 describe("table commands", () => {

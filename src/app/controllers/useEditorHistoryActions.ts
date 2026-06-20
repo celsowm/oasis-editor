@@ -13,7 +13,7 @@ import {
   paragraphOffsetToPosition,
 } from "@/core/model.js";
 import { createEditorParagraph } from "@/core/editorState.js";
-import { moveSelectedImageToPosition } from "@/core/editorCommands.js";
+import { moveSelectedImageToPosition } from "@/core/commands/image.js";
 import { cloneSection } from "@/core/cloneState.js";
 import type { createEditorImageOperations } from "./useEditorImageOperations.js";
 
