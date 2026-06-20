@@ -447,6 +447,19 @@ tipadas para merge keys. O wire format continua string e não muda.
 
 ### Duplicação
 
+> **N1 parcialmente resolvido na Onda 6 (2026-06-20).** Os dois pares
+> footnote/endnote que eram **byte-idênticos** modulo o nome "footnote/endnote"
+> foram deduplicados para parsers/serializadores parametrizados por `kind`:
+> `import/docx/notes.ts` (`parseDocxNotesXml`) e
+> `export/docx/text/noteRunXml.ts` (`serializeNoteReference`/`serializeNoteRefMarker`);
+> os 4 módulos viraram wrappers finos. **Pendente:** os pares
+> `export/docx/{footnotesXml,endnotesXml}.ts`, `core/{footnotes,endnotes}.ts` e
+> `layoutProjection/{footnotePagination,endnotePagination}.ts` divergem em
+> comportamento (a versão de footnote trata casos extras — tabela no primeiro
+> slot, scan de seções — que a de endnote não). Deduplicá-los exige primeiro
+> reconciliar esse comportamento e validar contra o Word, então fica para um
+> lote dedicado, não como refactor mecânico.
+
 - `footnotes.ts` e `endnotes.ts` têm cerca de 76% de linhas normalizadas em
   comum após trocar “footnote/endnote” por “note”; iteradores, marker lookup,
   remoção e renumeração têm a mesma estrutura.
