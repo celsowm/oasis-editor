@@ -9,11 +9,11 @@ import type {
   AdvancedTabValues,
   FontDialogInitialValues,
   FontDialogApplyValues,
+  FontDialogSpacingMode,
+  FontDialogPositionMode,
 } from "./font-dialog/FontDialogTypes.js";
 import { DEFAULT_COLOR } from "./font-dialog/FontDialogTypes.js";
 
-export type FontDialogSpacingMode = "normal" | "expanded" | "condensed";
-export type FontDialogPositionMode = "normal" | "raised" | "lowered";
 export type FontFaceStyle = "regular" | "italic" | "bold" | "boldItalic";
 
 export function parsePositiveNumber(value: string): number | null {

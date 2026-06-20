@@ -28,7 +28,7 @@ import type {
   EssentialsSelectionCapability,
   EssentialsStyleCapability,
   EssentialsTableCapability,
-} from "./createEssentialsPlugin.js";
+} from "./essentialsCapabilities.js";
 
 interface CoreFormattingGroupDeps {
   gate: EssentialsFeatureGate;

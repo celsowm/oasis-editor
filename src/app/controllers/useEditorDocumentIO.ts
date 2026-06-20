@@ -5,20 +5,15 @@ import type { EditorLogger } from "@/utils/logger.js";
 import { createDocumentExporter } from "./documentIO/DocumentExporter.js";
 import { createDocumentImporter } from "./documentIO/DocumentImporter.js";
 import { createImageInsertionService } from "./documentIO/ImageInsertionService.js";
+import type {
+  ImportProgressPhase,
+  ImportProgressState,
+} from "./documentIO/importProgress.js";
 
-export type ImportProgressPhase =
-  | "reading-file"
-  | ImportStage
-  | "applying-editor-state"
-  | "stabilizing-layout"
-  | "done"
-  | "error";
-
-export interface ImportProgressState {
-  phase: ImportProgressPhase;
-  progress: number;
-  subProgress?: number;
-}
+export type {
+  ImportProgressPhase,
+  ImportProgressState,
+} from "./documentIO/importProgress.js";
 
 const PHASE_RANGES: Record<ImportProgressPhase, [number, number]> = {
   "reading-file": [0, 8],

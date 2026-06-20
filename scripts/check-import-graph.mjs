@@ -54,26 +54,6 @@ const SCC_ALLOWLIST = [
     "ui/components/Toolbar/renderers/renderers.tsx",
     "ui/components/Toolbar/renderers/ToolbarItemRenderer.tsx",
   ],
-  // Keyboard
-  [
-    "app/controllers/EditorCommandRegistry.ts",
-    "app/controllers/useEditorKeyboard.ts",
-  ],
-  // Document IO
-  [
-    "app/controllers/documentIO/DocumentImporter.ts",
-    "app/controllers/useEditorDocumentIO.ts",
-  ],
-  // Font dialog
-  [
-    "ui/components/Dialogs/FontDialogModel.ts",
-    "ui/components/Dialogs/font-dialog/FontDialogTypes.ts",
-  ],
-  // Essentials plugin
-  [
-    "plugins/internal/createEssentialsPlugin.ts",
-    "plugins/internal/essentialsCommandGroups.ts",
-  ],
 ];
 
 const EXTENSIONS = [".ts", ".tsx"];

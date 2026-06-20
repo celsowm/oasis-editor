@@ -12,7 +12,7 @@ import { resolveImporterForFile } from "@/import/documentImporterRegistry.js";
 import type { ImportStage } from "@/import/DocumentFormatImporter.js";
 import { readFileBuffer } from "@/ui/clipboardImage.js";
 import type { EditorLogger } from "@/utils/logger.js";
-import type { ImportProgressPhase } from "@/app/controllers/useEditorDocumentIO.js";
+import type { ImportProgressPhase } from "./importProgress.js";
 
 function buildImportedDocumentDiagnostics(
   document: Parameters<typeof getDocumentParagraphs>[0],

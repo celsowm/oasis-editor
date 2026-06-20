@@ -9,7 +9,7 @@ import {
   getParagraphText,
   paragraphOffsetToPosition,
 } from "@/core/model.js";
-import type { EditorKeyboardDeps } from "./useEditorKeyboard.js";
+import type { EditorKeyboardDeps } from "./EditorKeyboardDeps.js";
 
 export interface EditorCommandExecutor {
   executeCommand: (commandName: string, payload?: unknown) => unknown;
