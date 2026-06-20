@@ -4,6 +4,7 @@ import type {
   EditorDocxWidthValue,
   EditorNamedStyle,
   EditorParagraphNode,
+  EditorParagraphStyle,
   EditorTableCellStyle,
   EditorTableConditionalFormat,
   EditorTableLayout,
@@ -12,6 +13,10 @@ import type {
   EditorTableRowStyle,
   EditorTableStyle,
   EditorTextStyle,
+} from "@/core/model.js";
+import {
+  resolveDefaultParagraphStyleId,
+  resolveNamedParagraphStyle,
 } from "@/core/model.js";
 import {
   createEditorParagraphFromRuns,
@@ -774,6 +779,42 @@ function applyConditionalTextStyle(
   }
 }
 
+/**
+ * Filter a table style's paragraph properties (its `<w:pPr>`) so they sit at the
+ * correct OOXML precedence for a given cell paragraph.
+ *
+ * Per ECMA-376 §17.7.2 the order (low → high) is:
+ *   docDefaults < table style < paragraph style < direct formatting.
+ * So any property the paragraph's own (named) style explicitly defines must win
+ * over the table style. We strip those keys from the inherited table-style pPr;
+ * what remains only fills gaps the paragraph style leaves open. Without this, a
+ * table style like `TableGrid` (which sets `spacing after="0"`) would wrongly
+ * override Normal's `after="120"` and collapse cell row height vs Word.
+ */
+function tableStyleParagraphInheritance(
+  tableStylePPr: EditorParagraphStyle | undefined,
+  paragraphStyleId: string | undefined,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): EditorParagraphStyle | undefined {
+  if (!tableStylePPr) {
+    return undefined;
+  }
+  const effectiveStyleId =
+    paragraphStyleId ?? resolveDefaultParagraphStyleId(styles);
+  const paragraphStyleDelta = resolveNamedParagraphStyle(
+    effectiveStyleId,
+    styles,
+  );
+  const definedByParagraphStyle = new Set(Object.keys(paragraphStyleDelta));
+  const filtered: EditorParagraphStyle = {};
+  for (const [key, value] of Object.entries(tableStylePPr)) {
+    if (!definedByParagraphStyle.has(key)) {
+      (filtered as Record<string, unknown>)[key] = value;
+    }
+  }
+  return emptyOrUndefined(filtered);
+}
+
 export async function parseTableNode(
   tableNode: XmlElement,
   numberingMaps: NumberingMaps,
@@ -870,6 +911,24 @@ export async function parseTableNode(
         WORD_NS,
         "p",
       )) {
+        // The table style's paragraph properties are the lowest layer above
+        // docDefaults; the paragraph's own style outranks them. Strip the keys
+        // its style defines so e.g. Normal's after-spacing isn't lost to the
+        // table style's `after="0"` (which would collapse cell row height).
+        const paragraphStyleId =
+          getAttributeValue(
+            getFirstChildByTagNameNS(
+              getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr"),
+              WORD_NS,
+              "pStyle",
+            ),
+            "val",
+          ) ?? undefined;
+        const cellInheritedStyle = tableStyleParagraphInheritance(
+          inheritedParagraphStyle,
+          paragraphStyleId,
+          styles,
+        );
         paragraphs.push(
           await parseParagraphNode(
             paragraphNode,
@@ -878,7 +937,7 @@ export async function parseTableNode(
             relsMap,
             assets,
             theme,
-            inheritedParagraphStyle,
+            cellInheritedStyle,
           ),
         );
         autospacingFlags.push(
