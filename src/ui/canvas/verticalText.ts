@@ -3,7 +3,7 @@ import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
 import {
   resolveCanvasFontFamily,
   resolveCanvasTextRenderMetrics,
-} from "./canvasParagraphPainter.js";
+} from "./canvasFontResolution.js";
 
 /**
  * How a block of text should be painted given its OOXML flow direction.

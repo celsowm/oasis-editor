@@ -21,6 +21,15 @@ import { drawBorderBox, type CanvasBorderEdge } from "./canvasBorders.js";
 import { drawTable } from "./canvasTablePainter.js";
 import { drawFloatingTextBoxesForParagraph } from "./canvasTextBoxPainter.js";
 import { drawDropCapForParagraph } from "./canvasDropCapPainter.js";
+import type { CanvasBlockPainters } from "./canvasBlockPainters.js";
+
+/**
+ * The concrete block painters threaded through the canvas paint pipeline so
+ * text-box content can recurse into paragraphs/tables without those modules
+ * importing each other. `canvasBlockPainter` is the orchestrator that owns this
+ * wiring.
+ */
+const canvasBlockPainters: CanvasBlockPainters = { drawParagraph, drawTable };
 
 function toCanvasEdge(
   border: EditorParagraphStyle["borderTop"],
@@ -135,6 +144,7 @@ export function renderBlockList(
           pageIndex,
           onUpdate,
           layer: "behind",
+          painters: canvasBlockPainters,
         });
         drawFloatingImagesForParagraph({
           ctx,
@@ -158,6 +168,7 @@ export function renderBlockList(
         originX,
         textTop,
         onUpdate,
+        canvasBlockPainters,
         pageIndex,
       );
 
@@ -184,6 +195,7 @@ export function renderBlockList(
           pageIndex,
           onUpdate,
           layer: "front",
+          painters: canvasBlockPainters,
         });
         drawFloatingImagesForParagraph({
           ctx,
@@ -210,6 +222,7 @@ export function renderBlockList(
         block.estimatedHeight,
         pageIndex,
         onUpdate,
+        canvasBlockPainters,
       );
     }
     cursorY += Math.max(0, block.estimatedHeight);
@@ -285,6 +298,7 @@ export function renderFootnoteBlockList(
         originX + FOOTNOTE_MARKER_GUTTER_PX,
         textTop,
         onUpdate,
+        canvasBlockPainters,
         pageIndex,
       );
     } else if (block.sourceBlock.type === "table") {
@@ -299,6 +313,7 @@ export function renderFootnoteBlockList(
         block.estimatedHeight,
         pageIndex,
         onUpdate,
+        canvasBlockPainters,
       );
     }
     cursorY += Math.max(0, block.estimatedHeight) + 2;

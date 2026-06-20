@@ -9,8 +9,6 @@ import {
   getTextBoxFloatingGeometry,
   resolveFloatingObjectRect,
 } from "@/layoutProjection/floatingObjects.js";
-import { drawParagraph } from "./canvasParagraphPainter.js";
-import { drawTable } from "./canvasTablePainter.js";
 import { buildPresetPath } from "./presetGeometry.js";
 import {
   getTextBoxPadding as getPadding,
@@ -21,6 +19,7 @@ import {
   resolveVerticalMode,
   withRotatedBox,
 } from "./verticalText.js";
+import type { CanvasBlockPainters } from "./canvasBlockPainters.js";
 
 export function drawTextBoxShape(
   ctx: CanvasRenderingContext2D,
@@ -62,6 +61,7 @@ export function renderTextBoxContent(
   height: number,
   pageIndex: number,
   onUpdate: () => void,
+  painters: CanvasBlockPainters,
 ): void {
   const padding = getPadding(textBox);
 
@@ -139,7 +139,7 @@ export function renderTextBoxContent(
     let cursorY = originY;
     for (const block of blocks) {
       if (block.sourceBlock.type === "paragraph" && block.layout) {
-        drawParagraph(
+        painters.drawParagraph(
           ctx,
           block.sourceBlock,
           block.layout.lines,
@@ -147,10 +147,11 @@ export function renderTextBoxContent(
           originX,
           cursorY,
           onUpdate,
+          painters,
           pageIndex,
         );
       } else if (block.sourceBlock.type === "table") {
-        drawTable(
+        painters.drawTable(
           ctx,
           block.sourceBlock,
           block.tableSegment,
@@ -161,6 +162,7 @@ export function renderTextBoxContent(
           block.estimatedHeight,
           pageIndex,
           onUpdate,
+          painters,
         );
       }
       cursorY += Math.max(0, block.estimatedHeight);
@@ -201,6 +203,7 @@ export function paintTextBox(
   height: number,
   pageIndex: number,
   onUpdate: () => void,
+  painters: CanvasBlockPainters,
 ): void {
   const rotation = textBox.rotation;
   if (rotation) {
@@ -221,6 +224,7 @@ export function paintTextBox(
     height,
     pageIndex,
     onUpdate,
+    painters,
   );
 
   if (rotation) {
@@ -240,6 +244,7 @@ export function drawFloatingTextBoxesForParagraph(options: {
   pageIndex: number;
   onUpdate: () => void;
   layer: "behind" | "front";
+  painters: CanvasBlockPainters;
 }): void {
   const {
     ctx,
@@ -253,6 +258,7 @@ export function drawFloatingTextBoxesForParagraph(options: {
     pageIndex,
     onUpdate,
     layer,
+    painters,
   } = options;
 
   for (const line of paragraphLines) {
@@ -303,6 +309,7 @@ export function drawFloatingTextBoxesForParagraph(options: {
         rect.height,
         pageIndex,
         onUpdate,
+        painters,
       );
     }
   }

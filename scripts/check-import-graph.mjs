@@ -20,17 +20,9 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = join(ROOT, "src");
 
 // Known cycles (SCCs) not yet broken. Each entry is the sorted list of
-// src-relative module ids forming the cycle. Shrink this to empty over Onda 2.
-const SCC_ALLOWLIST = [
-  // Canvas painters recursion
-  [
-    "ui/canvas/CanvasTableLayout.ts",
-    "ui/canvas/canvasParagraphPainter.ts",
-    "ui/canvas/canvasTablePainter.ts",
-    "ui/canvas/canvasTextBoxPainter.ts",
-    "ui/canvas/verticalText.ts",
-  ],
-];
+// src-relative module ids forming the cycle. Onda 2 drove this to empty — keep
+// it empty: any new entry means a regression to fix, not to allowlist.
+const SCC_ALLOWLIST = [];
 
 const EXTENSIONS = [".ts", ".tsx"];
 

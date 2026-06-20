@@ -11,6 +11,7 @@ import {
 import { drawBorderBox } from "./canvasBorders.js";
 import { drawParagraph } from "./canvasParagraphPainter.js";
 import { drawStackedParagraph, withRotatedBox } from "./verticalText.js";
+import type { CanvasBlockPainters } from "./canvasBlockPainters.js";
 
 /**
  * Paint a cell whose text flows vertically: rotated (90° cw/ccw) content reuses
@@ -23,6 +24,7 @@ function drawVerticalCell(
   state: EditorState,
   pageIndex: number,
   onUpdate: () => void,
+  painters: CanvasBlockPainters,
 ): void {
   const box = {
     x: cell.contentLeft,
@@ -65,6 +67,7 @@ function drawVerticalCell(
           0,
           cursorY,
           onUpdate,
+          painters,
           pageIndex,
         );
         cursorY += Math.max(0, paragraphLayout.height);
@@ -84,6 +87,7 @@ export function drawTable(
   estimatedHeight: number,
   pageIndex: number,
   onUpdate: () => void,
+  painters: CanvasBlockPainters,
 ) {
   const segmentTable = tableSegment
     ? buildSegmentTable(table, tableSegment)
@@ -120,11 +124,12 @@ export function drawTable(
           paragraphLayout.originX,
           paragraphLayout.originY,
           onUpdate,
+          painters,
           pageIndex,
         );
       }
     } else {
-      drawVerticalCell(ctx, cell, state, pageIndex, onUpdate);
+      drawVerticalCell(ctx, cell, state, pageIndex, onUpdate, painters);
     }
   }
   const viteEnv =
