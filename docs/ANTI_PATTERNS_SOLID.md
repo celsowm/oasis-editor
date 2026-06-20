@@ -28,7 +28,7 @@ criando ou conectando a maior parte dos controllers do produto.
 
 | ID  | Achado confirmado                                                   | Prioridade |                Impacto | Esforço |
 | --- | ------------------------------------------------------------------- | ---------: | ---------------------: | ------: |
-| G1  | Locale global compartilhado por todas as instâncias                 |       Alta |                   Alto |       M |
+| G1  | ~~Locale global compartilhado por todas as instâncias~~ ✅ resolvido |          — |                      — |       — |
 | G2  | ~~Três geradores globais e independentes de IDs~~ ✅ resolvido       |          — |                      — |       — |
 | D1  | `core/plugin.ts` depende de UI e participa de ciclo de 7 módulos    |       Alta |                   Alto |       M |
 | D2  | Ciclos nos pipelines canvas, PDF, DOCX export e DOCX import         |       Alta |                   Alto |       L |
@@ -471,12 +471,21 @@ Cada onda deve ser entregue em lotes pequenos. Um lote só avança depois de
 testes focados, `npx tsc --noEmit` e `npm test`; `npm run build:lib` é obrigatório
 quando tipos ou exports públicos mudarem.
 
-### Onda 1 — Isolar estado por instância
+### Onda 1 — Isolar estado por instância — ✅ CONCLUÍDA (2026-06-20)
 
-**Pré-requisito:** testes com dois editores montados simultaneamente.
+Todos os itens (G1 locale, G2 IDs, G3 menu, D3 persistência) foram entregues em
+commits independentes no branch `refactor/onda1-instance-state`, cada um com
+`tsc` limpo, suíte 577✓ e `build:lib` quando aplicável. O estado de módulo que
+vazava entre instâncias (locale, geradores de ID, persistência default) deixou de
+existir. Resta como item futuro o erro de configuração para `persistenceEnabled`
+sem key/adapter (ver D3), endereçável no próximo breaking release.
 
-1. **Locale:** criar translator/context por app; migrar `t()` em componentes,
-   toolbar preset e plugins; remover `currentLocale`/`setLocale`.
+**Pré-requisito (registro histórico):** testes com dois editores montados
+simultaneamente.
+
+1. ~~**Locale:** criar translator/context por app; migrar `t()` em componentes,
+   toolbar preset e plugins; remover `currentLocale`/`setLocale`.~~ ✅ feito
+   (`createTranslator` + `I18nProvider`/`useI18n`; builders recebem `t`).
 2. ~~**IDs:** introduzir gerador stateless único por kind; migrar
    `editorState`, footnotes e endnotes; remover os três resets.~~ ✅ feito
    (`createEditorNodeId(kind)` com `crypto.randomUUID()`).
