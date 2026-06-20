@@ -1,43 +1,4 @@
-import { Dynamic } from "solid-js/web";
-import { Show, type JSX } from "solid-js";
-import type {
-  ToolbarActionApi,
-  ToolbarItem,
-} from "@/ui/components/Toolbar/schema/items.js";
-import { bindItem } from "@/ui/components/Toolbar/state/bindItem.js";
-import { resolveRenderer } from "./renderers.js";
-
-/**
- * Renders a single toolbar item by dispatching on its `type` to the renderer
- * map. Wraps each item so contextual visibility toggles `display` instead of
- * unmounting — required by the imperative OverflowManager (DOM moves break if
- * the child count changes).
- */
-export function ToolbarItemRenderer(props: {
-  item: ToolbarItem;
-  api: ToolbarActionApi;
-}): JSX.Element {
-  const binding = bindItem(props.item, props.api);
-  const component = (): ReturnType<typeof resolveRenderer> =>
-    resolveRenderer(props.item.type);
-
-  return (
-    <div
-      class="oasis-editor-toolbar-item"
-      classList={{
-        "oasis-editor-toolbar-item-ribbon-large":
-          "ribbonSize" in props.item && props.item.ribbonSize === "large",
-      }}
-      style={{
-        display: binding.visible() ? "flex" : "none",
-        "align-items": "center",
-      }}
-    >
-      <Show when={component()}>
-        {(comp) => (
-          <Dynamic component={comp()} item={props.item} api={props.api} />
-        )}
-      </Show>
-    </div>
-  );
-}
+// `ToolbarItemRenderer` is defined in `renderers.tsx` because it is mutually
+// recursive with the per-type renderers (menus/groups render child items
+// through it). Re-exported here so existing importers keep their path.
+export { ToolbarItemRenderer } from "./renderers.js";

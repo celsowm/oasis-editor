@@ -1,4 +1,5 @@
 import { For, Show, createSignal, type Component, type JSX } from "solid-js";
+import { Dynamic } from "solid-js/web";
 import type {
   ButtonItem,
   ColorPickerItem,
@@ -29,7 +30,6 @@ import { ColorPicker } from "@/ui/components/Toolbar/primitives/ColorPicker.js";
 import { GridPicker } from "@/ui/components/Toolbar/primitives/GridPicker.js";
 import { SplitButton } from "@/ui/components/Toolbar/primitives/SplitButton.js";
 import { DEFAULT_PALETTE } from "@/ui/components/Toolbar/presets/defaultPalette.js";
-import { ToolbarItemRenderer } from "./ToolbarItemRenderer.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
 
 export interface RendererProps<I extends ToolbarItem = ToolbarItem> {
@@ -261,5 +261,45 @@ export function resolveRenderer(
 ): Component<RendererProps> | undefined {
   return (
     TOOLBAR_RENDERERS[type as ToolbarItemType] ?? customRenderers.get(type)
+  );
+}
+
+/**
+ * Renders a single toolbar item by dispatching on its `type` to the renderer
+ * map. Wraps each item so contextual visibility toggles `display` instead of
+ * unmounting — required by the imperative OverflowManager (DOM moves break if
+ * the child count changes).
+ *
+ * Defined here (alongside the renderers it dispatches to) because the two are
+ * mutually recursive: menu/group renderers render child items through this
+ * component, which in turn resolves them back to those renderers. Keeping the
+ * recursion intra-module avoids an import cycle.
+ */
+export function ToolbarItemRenderer(props: {
+  item: ToolbarItem;
+  api: ToolbarActionApi;
+}): JSX.Element {
+  const binding = bindItem(props.item, props.api);
+  const component = (): ReturnType<typeof resolveRenderer> =>
+    resolveRenderer(props.item.type);
+
+  return (
+    <div
+      class="oasis-editor-toolbar-item"
+      classList={{
+        "oasis-editor-toolbar-item-ribbon-large":
+          "ribbonSize" in props.item && props.item.ribbonSize === "large",
+      }}
+      style={{
+        display: binding.visible() ? "flex" : "none",
+        "align-items": "center",
+      }}
+    >
+      <Show when={component()}>
+        {(comp) => (
+          <Dynamic component={comp()} item={props.item} api={props.api} />
+        )}
+      </Show>
+    </div>
   );
 }

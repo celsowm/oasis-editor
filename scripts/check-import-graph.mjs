@@ -49,11 +49,6 @@ const SCC_ALLOWLIST = [
     "import/docx/paragraphs.ts",
     "import/docx/tables.ts",
   ],
-  // Toolbar renderers
-  [
-    "ui/components/Toolbar/renderers/renderers.tsx",
-    "ui/components/Toolbar/renderers/ToolbarItemRenderer.tsx",
-  ],
 ];
 
 const EXTENSIONS = [".ts", ".tsx"];
