@@ -5,6 +5,7 @@ import type {
   EditorTableStyle,
 } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
+import { PT_PER_PX } from "@/core/units.js";
 import {
   updateStateSections,
   updateTablesInBlocks,
@@ -27,7 +28,7 @@ function parseWidthToPt(value: number | string | undefined): number | null {
   }
   if (trimmed.endsWith("px")) {
     const parsed = Number.parseFloat(trimmed.slice(0, -2));
-    return Number.isFinite(parsed) ? parsed * (72 / 96) : null;
+    return Number.isFinite(parsed) ? parsed * PT_PER_PX : null;
   }
   if (!/^[+-]?\d+(\.\d+)?$/.test(trimmed)) {
     return null;

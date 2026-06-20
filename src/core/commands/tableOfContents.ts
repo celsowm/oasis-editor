@@ -15,6 +15,11 @@ import {
   getParagraphText,
   paragraphOffsetToPosition,
 } from "@/core/model.js";
+import {
+  PT_PER_PX as PX_TO_PT,
+  TWIPS_PER_INCH,
+  PX_PER_INCH,
+} from "@/core/units.js";
 import { getHeadingLevel } from "@/core/headings.js";
 import { createEditorParagraph, createEditorRun } from "@/core/editorState.js";
 import { clampPosition } from "@/core/selection.js";
@@ -25,11 +30,6 @@ export const DEFAULT_TOC_MAX_LEVEL = 3;
 
 /** Field instruction emitted for a generated table of contents. */
 const TOC_INSTRUCTION = ' TOC \\o "1-3" \\h \\z \\u ';
-
-/** Right tab stop where the page number aligns, derived from page width. */
-const PX_TO_PT = 72 / 96;
-const TWIPS_PER_INCH = 1440;
-const PX_PER_INCH = 96;
 
 const twipsToPx = (twips: number): number =>
   Math.round((twips / TWIPS_PER_INCH) * PX_PER_INCH);

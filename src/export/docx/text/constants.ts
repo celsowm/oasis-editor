@@ -1,5 +1,4 @@
-export const EMU_PER_PX = 9525;
-export const EMU_PER_PT = 12700;
+export { EMU_PER_PX, EMU_PER_PT } from "@/core/units.js";
 
 export const DOCX_HIGHLIGHT_COLORS: Record<string, [number, number, number]> = {
   black: [0, 0, 0],

@@ -10,8 +10,7 @@ import {
   type EditorTableNode,
 } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
-
-const POINT_TO_PX = 96 / 72;
+import { PX_PER_POINT as POINT_TO_PX } from "@/core/units.js";
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
 const DEFAULT_CELL_PADDING_LEFT_RIGHT_PX = 7.2;
 

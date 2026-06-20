@@ -1,5 +1,5 @@
-export const TWIPS_PER_INCH = 1440;
-export const PX_PER_INCH = 96;
+import { TWIPS_PER_INCH, PX_PER_INCH } from "@/core/units.js";
+export { TWIPS_PER_INCH, PX_PER_INCH };
 export const PAGE_BREAK_MARKER = "\f";
 export const DOCX_IMPLICIT_SINGLE_LINE_HEIGHT = 1.1;
 

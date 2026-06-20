@@ -1,4 +1,5 @@
 import type { EditorPageSettings } from "@/core/model.js";
+import { PX_PER_INCH, PX_PER_CM } from "@/core/units.js";
 
 /**
  * Horizontal ruler geometry. The editor stores page dimensions, margins and
@@ -7,8 +8,7 @@ import type { EditorPageSettings } from "@/core/model.js";
  * tick labels convert pixels to inches/centimeters for display.
  */
 
-export const PX_PER_INCH = 96;
-export const PX_PER_CM = PX_PER_INCH / 2.54; // ~37.795
+export { PX_PER_INCH, PX_PER_CM };
 
 /** Minimum content width (px) the editor guarantees; mirrors getPageContentWidth. */
 export const MIN_CONTENT_WIDTH_PX = 24;

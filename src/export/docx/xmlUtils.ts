@@ -1,3 +1,9 @@
+import {
+  TWIPS_PER_INCH,
+  PX_PER_INCH,
+  TWIPS_PER_POINT,
+} from "@/core/units.js";
+
 export const WORD_NS =
   "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 export const PACKAGE_REL_NS =
@@ -5,10 +11,6 @@ export const PACKAGE_REL_NS =
 export const OFFICE_REL_NS =
   "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 export const WORD14_NS = "http://schemas.microsoft.com/office/word/2010/wordml";
-
-const TWIPS_PER_INCH = 1440;
-const PX_PER_INCH = 96;
-const TWIPS_PER_POINT = 20;
 
 export function escapeXml(text: string): string {
   return text

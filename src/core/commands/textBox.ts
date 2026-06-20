@@ -4,6 +4,7 @@ import type {
   EditorTextBoxData,
 } from "@/core/model.js";
 import { getParagraphs } from "@/core/model.js";
+import { EMU_PER_PX } from "@/core/units.js";
 import { normalizeSelection } from "@/core/selection.js";
 import { cloneParagraph, cloneRun } from "@/core/document/clone.js";
 import { cloneStateWithParagraphs } from "@/core/document/blockReplacement.js";
@@ -19,9 +20,6 @@ import {
   wrapPresetToFloating,
   type WrapPreset,
 } from "./floatingLayout.js";
-
-/** EMU per CSS pixel (`wp:extent` and floating offsets are stored in EMU). */
-const EMU_PER_PX = 9525;
 
 /** Minimum size (px) a text box may shrink to — matches image resize. */
 const MIN_TEXT_BOX_SIZE_PX = 24;

@@ -1,10 +1,13 @@
-export const EMU_PER_PX = 9525;
-export const EMU_PER_PT = 12700;
+import {
+  EMU_PER_PX,
+  EMU_PER_PT,
+  PX_PER_INCH,
+  PX_PER_POINT,
+} from "@/core/units.js";
+export { EMU_PER_PX, EMU_PER_PT, PX_PER_INCH, PX_PER_POINT };
 export const OOXML_PERCENT_DENOMINATOR = 100000;
 export const OOXML_ROTATION_UNITS = 60000;
 export const VML_FRACTION_DENOMINATOR = 65536;
-export const PX_PER_INCH = 96;
-export const PX_PER_POINT = PX_PER_INCH / 72;
 
 export function emuToPx(value: string | null | undefined): number | undefined {
   const emu = parseOptionalInt(value);

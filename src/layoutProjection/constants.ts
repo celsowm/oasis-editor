@@ -1,7 +1,6 @@
 export { FOOTNOTE_MARKER_GUTTER_PX } from "./footnotePagination.js";
 
-/** CSS reference: 96 device pixels per inch, 72 points per inch. */
-export const PX_PER_POINT = 96 / 72;
+export { PX_PER_POINT } from "@/core/units.js";
 
 /**
  * Extra gap (px) inserted between a paragraph border and its text, on top of

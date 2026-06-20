@@ -1,7 +1,5 @@
 import type { TranslationKey } from "@/i18n/index.js";
-
-/** CSS pixels per centimetre at 96 DPI. */
-const CM_TO_PX = 96 / 2.54;
+import { PX_PER_CM as CM_TO_PX } from "@/core/units.js";
 
 /** Convert a centimetre measurement to a rounded pixel value. */
 export function cmToPx(cm: number): number {

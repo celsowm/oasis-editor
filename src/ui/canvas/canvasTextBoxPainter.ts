@@ -5,6 +5,7 @@ import type {
   EditorTextBoxData,
 } from "@/core/model.js";
 import { projectBlocksLayout } from "@/layoutProjection/blocksPagination.js";
+import { PX_PER_POINT } from "@/core/units.js";
 import {
   getTextBoxFloatingGeometry,
   resolveFloatingObjectRect,
@@ -44,7 +45,7 @@ export function drawTextBoxShape(
 
   if (borderColor && borderWidth > 0) {
     ctx.strokeStyle = borderColor;
-    ctx.lineWidth = Math.max(1, borderWidth * (96 / 72));
+    ctx.lineWidth = Math.max(1, borderWidth * PX_PER_POINT);
     ctx.stroke(path);
   }
 

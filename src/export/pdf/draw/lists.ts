@@ -11,6 +11,7 @@ import {
 import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import { pxToPt, textStyleToFontSizePt } from "@/export/pdf/units.js";
+import { PX_PER_POINT } from "@/core/units.js";
 import {
   getAlignedListLabelInset,
   getListLabelInset,
@@ -56,7 +57,8 @@ export function drawListPrefix(
   // indent (advanced to the suffix tab stop), leaving the gap.
   const labelInset = getListLabelInset(paragraph, document.styles);
   const fontSizePt = textStyleToFontSizePt(styles);
-  const estimatedLabelWidthPx = prefix.length * fontSizePt * 0.62 * (96 / 72);
+  const estimatedLabelWidthPx =
+    prefix.length * fontSizePt * 0.62 * PX_PER_POINT;
   const alignedInset = getAlignedListLabelInset(
     paragraph,
     document.styles,

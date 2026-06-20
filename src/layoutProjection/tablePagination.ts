@@ -7,10 +7,10 @@ import {
   estimateParagraphBlockHeight,
   shouldCollapseContextualSpacing,
 } from "./paragraphPagination.js";
+import { PX_PER_POINT as POINT_TO_PX } from "@/core/units.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
 const DEFAULT_LINE_HEIGHT = 1.15;
-const POINT_TO_PX = 96 / 72;
 const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 14.4;
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
 const DEFAULT_TABLE_SEGMENT_VERTICAL_SPACING = 0;

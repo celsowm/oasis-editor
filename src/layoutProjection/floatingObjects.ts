@@ -6,8 +6,7 @@ import type {
   EditorPageSettings,
   EditorTextBoxData,
 } from "@/core/model.js";
-
-const EMU_PER_PX = 9525;
+import { EMU_PER_PX } from "@/core/units.js";
 
 export interface FloatingObjectRect {
   x: number;

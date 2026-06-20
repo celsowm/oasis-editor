@@ -11,6 +11,7 @@ import {
 } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { projectParagraphLayout } from "@/layoutProjection/index.js";
+import { PX_PER_POINT as POINT_TO_PX } from "@/core/units.js";
 import {
   estimateStackedColumnWidth,
   estimateStackedParagraphHeight,
@@ -35,7 +36,6 @@ const DEFAULT_CELL_PADDING_TOP_BOTTOM_PX = 0;
 const DEFAULT_CELL_PADDING_LEFT_RIGHT_PX = 7.2; // ~5.4pt
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
 const MIN_TABLE_CELL_CONTENT_HEIGHT_PX = 1;
-const POINT_TO_PX = 96 / 72;
 
 function toPx(value: number): number {
   return value * POINT_TO_PX;
