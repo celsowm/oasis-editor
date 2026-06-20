@@ -449,6 +449,8 @@ export const en = {
   "menu.view.outline": "Show Outline",
   "menu.view.fullscreen": "Full Screen",
   "menu.insert": "Insert",
+  "menu.insert.toc": "Table of Contents",
+  "menu.insert.updateToc": "Update Table of Contents",
   "menu.layout": "Layout",
   "menu.format": "Format",
   "menu.format.align": "Align",

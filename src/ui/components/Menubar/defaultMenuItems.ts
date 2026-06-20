@@ -199,6 +199,20 @@ export const defaultMenuItems: MenuItem[] = [
     command: "insertFootnote",
     icon: "footnote",
   },
+  {
+    id: "insert_toc",
+    path: "Insert/Table of Contents",
+    labelKey: "menu.insert.toc",
+    command: "insertTableOfContents",
+    icon: "list",
+  },
+  {
+    id: "insert_toc_update",
+    path: "Insert/Update Table of Contents",
+    labelKey: "menu.insert.updateToc",
+    command: "updateTableOfContents",
+    icon: "refresh-cw",
+  },
   { id: "insert_hr", path: "Insert/Horizontal Rule", hidden: true },
   {
     id: "insert_pageBreak",

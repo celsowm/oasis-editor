@@ -1,6 +1,8 @@
 export const OASIS_BUILTIN_COMMANDS = [
   "selectAll",
   "insertFootnote",
+  "insertTableOfContents",
+  "updateTableOfContents",
   "pastePlainText",
   "bold",
   "italic",

@@ -452,6 +452,8 @@ export const ptBR = {
   "menu.view.outline": "Mostrar Estrutura",
   "menu.view.fullscreen": "Tela Inteira",
   "menu.insert": "Inserir",
+  "menu.insert.toc": "Sumário",
+  "menu.insert.updateToc": "Atualizar Sumário",
   "menu.layout": "Layout",
   "menu.format": "Formatar",
   "menu.format.align": "Alinhar",

@@ -19,10 +19,13 @@ import {
   type EditorPageMargins,
   type EditorState,
 } from "@/core/model.js";
+import { isSelectionCollapsed, normalizeSelection } from "@/core/selection.js";
 import {
-  isSelectionCollapsed,
-  normalizeSelection,
-} from "@/core/selection.js";
+  insertTableOfContents,
+  updateTableOfContents,
+  type TocPageNumberResolver,
+} from "@/core/commands/tableOfContents.js";
+import { projectDocumentLayout } from "@/layoutProjection/index.js";
 import { createEssentialsPlugin } from "@/plugins/internal/createEssentialsPlugin.js";
 import { togglePreciseFontMode } from "./localFontAccess.js";
 import {
@@ -121,6 +124,22 @@ export function createEditorEssentialsRuntimePlugin(
     redo: () => (options.historyActions.performRedo(), true),
   };
 
+  // Resolve each heading paragraph's printed page number by paginating the
+  // current document, mirroring how PAGE fields resolve (page index + 1).
+  const buildTocPageResolver = (state: EditorState): TocPageNumberResolver => {
+    const layout = projectDocumentLayout(state.document);
+    const pageByParagraph = new Map<string, number>();
+    for (const page of layout.pages) {
+      for (const block of page.blocks) {
+        const paragraphId = block.paragraphId;
+        if (paragraphId && !pageByParagraph.has(paragraphId)) {
+          pageByParagraph.set(paragraphId, page.index + 1);
+        }
+      }
+    }
+    return (headingId: string) => pageByParagraph.get(headingId);
+  };
+
   const essentialsFormatting = {
     selectAll: () => {
       const paragraphs = getDocumentParagraphs(options.state().document);
@@ -144,6 +163,20 @@ export function createEditorEssentialsRuntimePlugin(
       options.commandsController.applyInsertFootnoteCommand(),
       true
     ),
+    insertTableOfContents: () => {
+      options.applyTransactionalState((current) =>
+        insertTableOfContents(current, buildTocPageResolver(current)),
+      );
+      options.focusInput();
+      return true;
+    },
+    updateTableOfContents: () => {
+      options.applyTransactionalState((current) =>
+        updateTableOfContents(current, buildTocPageResolver(current)),
+      );
+      options.focusInput();
+      return true;
+    },
     pastePlainText: () => {
       options.forcePlainTextPaste.set(true);
       options.focusInput();

@@ -1,7 +1,4 @@
-import type {
-  EditorNamedStyle,
-  EditorParagraphNode,
-} from "@/core/model.js";
+import type { EditorNamedStyle, EditorParagraphNode } from "@/core/model.js";
 import { resolveEffectiveParagraphStyle } from "@/core/model.js";
 import { PX_PER_POINT } from "./constants.js";
 import type { MeasuredChar } from "./types.js";
@@ -43,7 +40,13 @@ export function resolveTabAdvancePx(
     styles,
   );
   const currentLeft = lineStartInset + lineWidth;
-  const tabOrigin = lineStartInset;
+  // OOXML tab stops are measured from the column's text margin, not from the
+  // paragraph's (possibly indented) line start. The composer works in
+  // column-relative coordinates (0 = column left), so the tab origin is 0; for
+  // unindented paragraphs `lineStartInset` is already 0, so behavior is
+  // unchanged. This keeps indented entries (e.g. TOC sub-levels) aligned to a
+  // single right tab column, matching Word.
+  const tabOrigin = 0;
   const explicitStops = (paragraphStyle.tabs ?? [])
     .filter((tab) => tab.type !== "clear" && Number.isFinite(tab.position))
     .map((tab) => ({

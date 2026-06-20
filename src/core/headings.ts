@@ -8,25 +8,34 @@ export interface OutlineItem {
   anchor: string;
 }
 
+/**
+ * Resolve the heading level (1-9) of a paragraph style id, or null if the style
+ * is not a heading. Case-insensitive and tolerant of an optional space, so it
+ * matches both the editor's own convention (`heading1`) and Word's imported
+ * style ids (`Heading1`, `Heading 1`). Keeping detection here means imported
+ * `styleId`s round-trip unchanged on export.
+ */
+export function getHeadingLevel(styleId: string | undefined): number | null {
+  if (!styleId) return null;
+  const match = /^heading\s*([1-9])$/i.exec(styleId.trim());
+  return match ? parseInt(match[1]!, 10) : null;
+}
+
 export function outlineFrom(doc: EditorDocument): OutlineItem[] {
   const paragraphs = getDocumentParagraphs(doc);
   const items: OutlineItem[] = [];
 
   for (const p of paragraphs) {
-    const styleId = p.style?.styleId;
-    if (styleId && styleId.startsWith("heading")) {
-      const levelStr = styleId.replace("heading", "");
-      const level = parseInt(levelStr, 10);
-      if (!isNaN(level) && level >= 1 && level <= 6) {
-        const text = getParagraphText(p).trim();
-        if (text) {
-          items.push({
-            id: p.id,
-            level,
-            text,
-            anchor: p.id, // Using paragraph ID as the anchor
-          });
-        }
+    const level = getHeadingLevel(p.style?.styleId);
+    if (level !== null && level <= 6) {
+      const text = getParagraphText(p).trim();
+      if (text) {
+        items.push({
+          id: p.id,
+          level,
+          text,
+          anchor: p.id, // Using paragraph ID as the anchor
+        });
       }
     }
   }
