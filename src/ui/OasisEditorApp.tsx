@@ -39,7 +39,7 @@ import { createEditorCommandsController } from "@/app/controllers/EditorCommands
 import { createEditorKeyboardController } from "@/app/controllers/useEditorKeyboard.js";
 import { useEditorLayout } from "@/app/controllers/useEditorLayout.js";
 import { useEditorPersistence } from "@/app/controllers/useEditorPersistence.js";
-import { persistenceService } from "@/app/services/PersistenceService.js";
+import { createIndexedDbPersistence } from "@/app/services/indexedDbPersistence.js";
 import { useEditorFindReplace } from "@/app/controllers/useEditorFindReplace.js";
 import { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
 import { createEditorImageOperations } from "@/app/controllers/useEditorImageOperations.js";
@@ -210,6 +210,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     zoomFactor: zoom.zoomFactor,
   });
 
+  // Default persistence is created once per editor instance, keyed so two
+  // editors on the same page never share IndexedDB storage. The connection
+  // stays lazy until the first save/load.
+  const fallbackPersistence = createIndexedDbPersistence({
+    key: documentOptions().persistenceKey,
+  });
+
   const { status: persistenceStatus } = useEditorPersistence(
     state,
     (loadedDoc) => {
@@ -220,7 +227,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     },
     {
       enabled: documentOptions().persistenceEnabled ?? false,
-      persistence: documentOptions().persistence ?? persistenceService,
+      persistence: documentOptions().persistence ?? fallbackPersistence,
       logger,
     },
   );
@@ -573,7 +580,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       focusInput();
     },
     saveDocument: async () => {
-      const persistence = documentOptions().persistence ?? persistenceService;
+      const persistence = documentOptions().persistence ?? fallbackPersistence;
       await persistence.saveDocument(cloneState(getStateSnapshot()).document);
     },
     getSelection: () => cloneState(getStateSnapshot()).selection,

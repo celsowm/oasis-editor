@@ -44,6 +44,12 @@ export interface OasisEditorAppDocumentProps {
   readOnly?: boolean;
   persistenceEnabled?: boolean;
   persistence?: DocumentPersistence;
+  /**
+   * Storage key for the built-in IndexedDB persistence. Two editors on the same
+   * page must use distinct keys to avoid overwriting each other's document.
+   * Ignored when a custom `persistence` is provided.
+   */
+  persistenceKey?: string;
 }
 
 export interface OasisEditorAppRuntimeProps {

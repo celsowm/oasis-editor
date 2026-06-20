@@ -33,7 +33,7 @@ criando ou conectando a maior parte dos controllers do produto.
 | D1  | `core/plugin.ts` depende de UI e participa de ciclo de 7 módulos    |       Alta |                   Alto |       M |
 | D2  | Ciclos nos pipelines canvas, PDF, DOCX export e DOCX import         |       Alta |                   Alto |       L |
 | S1  | `OasisEditorApp` ainda é composition root com lógica operacional    |       Alta |                   Alto |       L |
-| G3  | Persistência default é singleton com chave fixa                     |       Alta | Alto quando habilitada |       M |
+| D3  | ~~Persistência default é singleton com chave fixa~~ ✅ resolvido     |          — |                      — |       — |
 | C1  | Contratos de command bus têm tipagem e `refresh` inconsistentes     |      Média |                   Alto |       M |
 | I1  | Dependency bags de 17–38 membros e props drilling                   |      Média |             Médio/alto |       M |
 | O1  | Runs são um optional-property bag; 227 decisões por variante        |      Média |             Médio/alto |       L |
@@ -268,19 +268,20 @@ helpers compartilhados para um terceiro módulo folha.
 
 #### D3. Persistência default é concreta e global
 
-`PersistenceService` mantém conexão IndexedDB em estado interno e exporta uma
-instância global (`src/app/services/PersistenceService.ts:9-53`). Todas as
-instâncias usam database, store e chave fixos (`:4-7`). O app injeta essa
-instância quando o integrador não fornece outra (`src/ui/OasisEditorApp.tsx:213-225`)
-e também no comando de save (`:575-577`).
-
-**Consequência:** dois editores com persistência habilitada disputam
-`current-document`; fechar a conexão por uma instância afeta a outra.
-
-**Refactor:** substituir o singleton por `createIndexedDbPersistence({ key })` e
-adicionar `document.persistenceKey`. No próximo breaking release,
-`persistenceEnabled: true` sem `persistence` ou `persistenceKey` deve ser erro de
-configuração em vez de escolher uma chave compartilhada silenciosamente.
+> **✅ Resolvido na Onda 1 (2026-06-20).** O singleton `persistenceService` e a
+> classe `PersistenceService` foram substituídos por uma factory stateless
+> `createIndexedDbPersistence({ key, dbName, storeName })`
+> (`src/app/services/indexedDbPersistence.ts`), sem instância de módulo. O app
+> cria um default **por instância**, chaveado por `documentOptions().persistenceKey`,
+> e o reusa no fallback do effect de persistência e no comando de save
+> (`src/ui/OasisEditorApp.tsx`). Foi adicionado `persistenceKey?: string` em
+> `OasisEditorAppDocumentProps`. Teste de isolamento por chave incluído.
+>
+> Gates: `tsc` limpo, suíte 577✓/1 skip, `build:lib` ok.
+>
+> **Pendente (próximo breaking release):** tornar `persistenceEnabled: true` sem
+> `persistence` nem `persistenceKey` um erro de configuração, em vez de cair na
+> chave default `current-document` compartilhada.
 
 ## Catálogo de anti-patterns
 
@@ -460,8 +461,9 @@ quando tipos ou exports públicos mudarem.
 2. ~~**IDs:** introduzir gerador stateless único por kind; migrar
    `editorState`, footnotes e endnotes; remover os três resets.~~ ✅ feito
    (`createEditorNodeId(kind)` com `crypto.randomUUID()`).
-3. **Persistência:** criar factory IndexedDB por chave, adicionar
-   `document.persistenceKey` e eliminar `persistenceService` exportado.
+3. ~~**Persistência:** criar factory IndexedDB por chave, adicionar
+   `document.persistenceKey` e eliminar `persistenceService` exportado.~~ ✅ feito
+   (`createIndexedDbPersistence({ key })`; default por instância).
 4. **Menu fallback:** remover `defaultMenuRegistry`; `Menubar` deve receber um
    registry ou construir uma cópia local dos defaults.
 
