@@ -58,6 +58,7 @@
     "build:all": "npm run wasm:build && npm run build",
     "test": "vitest run",
     "test:word-parity": "vitest run --config vitest.word-parity.config.js",
+    "check:imports": "node ./scripts/check-import-graph.mjs",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\""
   },

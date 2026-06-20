@@ -4,23 +4,19 @@ import type { CommandRef } from "@/core/commands/CommandRef.js";
 import type { TranslationKey } from "@/i18n/index.js";
 import type { ColorPalette } from "./palette.js";
 
-export const RIBBON_TABS = [
-  "file",
-  "home",
-  "insert",
-  "draw",
-  "layout",
-  "references",
-  "collaboration",
-  "protection",
-  "view",
-  "plugins",
-  "ai",
-] as const;
-
-export type RibbonTabId = (typeof RIBBON_TABS)[number];
-export type RibbonRow = 1 | 2;
-export type RibbonSize = "normal" | "large";
+// The ribbon-placement vocabulary lives in the core (UI-agnostic). Re-exported
+// here so existing toolbar consumers keep importing from the schema entrypoint.
+export {
+  RIBBON_TABS,
+  type RibbonTabId,
+  type RibbonRow,
+  type RibbonSize,
+} from "@/core/pluginUiTypes.js";
+import type {
+  RibbonTabId,
+  RibbonRow,
+  RibbonSize,
+} from "@/core/pluginUiTypes.js";
 
 /** Reactive snapshot of a command's state, as consumed by toolbar items. */
 export interface ToolbarCommandState {
