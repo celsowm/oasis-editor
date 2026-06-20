@@ -97,7 +97,7 @@ Arquivos grandes que foram confirmados como mais que catálogos de dados:
 | `ui/canvas/CanvasLayoutSnapshot.ts` (1.152)           | lê DOM (`:196`), coleta imagens/textboxes (`:209-577`), recompõe linhas verticais (`:578`) e monta o snapshot (`:702`)              | separar readers por objeto e um assembler sem DOM                                               |
 | `import/docx/tables.ts` (1.104)                       | widths/floating/layout (`:59-268`), rows/cells/borders (`:269-579`), conditional styles (`:662-817`) e parsing recursivo (`:818`)   | separar property parsers, conditional style resolver e tree builder                             |
 | `export/docx/exportEditorDocumentToDocx.ts` (880)     | traversal/context (`:117-316`), XML de documento (`:317-404`), package relationships/settings (`:405-581`) e ZIP/media (`:582-879`) | separar package builder, part builders e media collector                                        |
-| `core/commands/text.ts` (889)                         | move/copy, insert, delete, estilo e transformação de case (`:46-889`)                                                               | separar editing, deletion, formatting e case; reexportar da façade de texto                     |
+| ~~`core/commands/text.ts` (889)~~ ✅ resolvido        | ~~move/copy, insert, delete, estilo e case~~ → `textEditing`/`textDeletion`/`textFormatting`/`textCase`; `text.ts` virou façade de 23 linhas | feito (Onda 6, 2026-06-20)                                                                       |
 
 `OasisPdfWriter.ts` (1.024 linhas) não foi classificado automaticamente como god
 object: ele é um writer de baixo nível e a maior parte das funções serve ao mesmo
