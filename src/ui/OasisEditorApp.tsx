@@ -70,6 +70,7 @@ import { createFontDialogBridge } from "./app/useFontDialogBridge.js";
 import { createParagraphDialogBridge } from "./app/useParagraphDialogBridge.js";
 import { createTablePropertiesDialogBridge } from "./app/useTablePropertiesDialogBridge.js";
 import { createEditorContextMenuClipboard } from "./app/useEditorContextMenuClipboard.js";
+import { createEditorTableContextMenuActions } from "./app/createEditorTableContextMenuActions.js";
 import { useEditorRuntimeBootstrap } from "./app/useEditorRuntimeBootstrap.js";
 import { createEditorUiOptions } from "./app/useEditorUiOptions.js";
 import { computeShouldShowCaret } from "./app/shouldShowCaret.js";
@@ -769,55 +770,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     promptForLink: commandsController.promptForLink,
     openFontDialog,
     openParagraphDialog,
-    table: {
+    table: createEditorTableContextMenuActions({
+      state: () => state,
+      tableOps,
       isInsideTable: tablePropertiesDialogBridge.isInsideTable,
-      canMerge: () => tableOps.canMergeSelectedTable(state),
-      canSplit: () => tableOps.canSplitSelectedTable(state),
-      canEditColumn: () => tableOps.canEditSelectedTableColumn(state),
-      canEditRow: () => tableOps.canEditSelectedTableRow(state),
-      openProperties: () => openTablePropertiesDialog("table"),
-      openBordersAndShading: () => openTablePropertiesDialog("cell"),
-      merge: () =>
-        applyTableContextCommand(
-          (current) => tableOps.mergeSelectedTable(current),
-          "mergeTable",
-        ),
-      split: () =>
-        applyTableContextCommand(
-          (current) => tableOps.splitSelectedTable(current),
-          "splitTable",
-        ),
-      insertColumnBefore: () =>
-        applyTableContextCommand(
-          (current) => tableOps.insertSelectedTableColumn(current, -1),
-          "insertTableColumn",
-        ),
-      insertColumnAfter: () =>
-        applyTableContextCommand(
-          (current) => tableOps.insertSelectedTableColumn(current, 1),
-          "insertTableColumn",
-        ),
-      deleteColumn: () =>
-        applyTableContextCommand(
-          (current) => tableOps.deleteSelectedTableColumn(current),
-          "deleteTableColumn",
-        ),
-      insertRowBefore: () =>
-        applyTableContextCommand(
-          (current) => tableOps.insertSelectedTableRow(current, -1),
-          "insertTableRow",
-        ),
-      insertRowAfter: () =>
-        applyTableContextCommand(
-          (current) => tableOps.insertSelectedTableRow(current, 1),
-          "insertTableRow",
-        ),
-      deleteRow: () =>
-        applyTableContextCommand(
-          (current) => tableOps.deleteSelectedTableRow(current),
-          "deleteTableRow",
-        ),
-    },
+      openTablePropertiesDialog,
+      applyTableContextCommand,
+    }),
   });
   const buildContextMenuItems = contextMenuClipboard.buildContextMenuItems;
   const handleEditorContextMenu = contextMenuClipboard.handleEditorContextMenu;

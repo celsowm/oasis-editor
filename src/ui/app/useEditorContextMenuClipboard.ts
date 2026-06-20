@@ -38,23 +38,30 @@ export interface EditorContextMenuClipboardDeps {
   promptForLink: () => void;
   openFontDialog: () => void;
   openParagraphDialog: () => void;
-  table?: {
-    isInsideTable: () => boolean;
-    canMerge: () => boolean;
-    canSplit: () => boolean;
-    canEditColumn: () => boolean;
-    canEditRow: () => boolean;
-    openProperties: () => void;
-    openBordersAndShading: () => void;
-    merge: () => void;
-    split: () => void;
-    insertColumnBefore: () => void;
-    insertColumnAfter: () => void;
-    deleteColumn: () => void;
-    insertRowBefore: () => void;
-    insertRowAfter: () => void;
-    deleteRow: () => void;
-  };
+  table?: EditorTableContextMenuActions;
+}
+
+/**
+ * The table-aware actions the context menu invokes when the selection is inside
+ * a table. Built by `createEditorTableContextMenuActions` from the table
+ * operations and dialog openers.
+ */
+export interface EditorTableContextMenuActions {
+  isInsideTable: () => boolean;
+  canMerge: () => boolean;
+  canSplit: () => boolean;
+  canEditColumn: () => boolean;
+  canEditRow: () => boolean;
+  openProperties: () => void;
+  openBordersAndShading: () => void;
+  merge: () => void;
+  split: () => void;
+  insertColumnBefore: () => void;
+  insertColumnAfter: () => void;
+  deleteColumn: () => void;
+  insertRowBefore: () => void;
+  insertRowAfter: () => void;
+  deleteRow: () => void;
 }
 
 export function createEditorContextMenuClipboard(
