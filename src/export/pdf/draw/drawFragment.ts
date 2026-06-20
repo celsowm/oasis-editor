@@ -17,6 +17,7 @@ import {
 } from "@/core/textStyleMappings.js";
 import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { paintTextBox } from "./drawTextBoxShape.js";
+import type { BlockDrawers } from "./blockDrawers.js";
 import { registerPdfImageRun } from "@/export/pdf/images.js";
 import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import {
@@ -347,6 +348,7 @@ async function drawInlineTextBoxFragment(
   originX: number,
   originY: number,
   fontRegistry: PdfFontRegistry,
+  drawers: BlockDrawers,
 ): Promise<void> {
   const textBox = fragment.textBox;
   if (!textBox || textBox.floating) {
@@ -367,6 +369,7 @@ async function drawInlineTextBoxFragment(
     originY + line.top + line.height - textBox.height,
     textBox.width,
     textBox.height,
+    drawers,
   );
 }
 
@@ -380,6 +383,7 @@ export async function drawFragmentText(
   originX: number,
   originY: number,
   fontRegistry: PdfFontRegistry,
+  drawers: BlockDrawers,
 ): Promise<void> {
   if (fragment.image) {
     const slot =
@@ -419,6 +423,7 @@ export async function drawFragmentText(
       originX,
       originY,
       fontRegistry,
+      drawers,
     );
     return;
   }

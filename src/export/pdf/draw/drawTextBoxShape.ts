@@ -14,8 +14,7 @@ import { getPresetPathSegments } from "@/layoutProjection/presetGeometry.js";
 import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import { pxToPt } from "@/export/pdf/units.js";
-import { drawParagraph } from "./drawParagraph.js";
-import { drawTableBlock } from "./drawTable.js";
+import type { BlockDrawers } from "./blockDrawers.js";
 
 interface TextBoxPaintContext {
   document: EditorDocument;
@@ -81,6 +80,7 @@ async function drawTextBoxContent(
   yPx: number,
   widthPx: number,
   heightPx: number,
+  drawers: BlockDrawers,
 ): Promise<void> {
   if (textBox.blocks.length === 0) {
     return;
@@ -128,7 +128,7 @@ async function drawTextBoxContent(
   let cursorY = innerY;
   for (const block of blocks) {
     if (block.sourceBlock.type === "paragraph" && block.layout) {
-      await drawParagraph(
+      await drawers.drawParagraph(
         writer,
         ctx.pageIndex,
         block.sourceBlock,
@@ -138,9 +138,10 @@ async function drawTextBoxContent(
         cursorY,
         ctx.fontRegistry,
         listOrdinals,
+        drawers,
       );
     } else if (block.sourceBlock.type === "table") {
-      await drawTableBlock(
+      await drawers.drawTableBlock(
         writer,
         ctx.pageIndex,
         block,
@@ -150,6 +151,7 @@ async function drawTextBoxContent(
         innerWidth,
         ctx.fontRegistry,
         listOrdinals,
+        drawers,
       );
     }
     cursorY += Math.max(0, block.estimatedHeight);
@@ -170,6 +172,7 @@ export async function paintTextBox(
   yPx: number,
   widthPx: number,
   heightPx: number,
+  drawers: BlockDrawers,
 ): Promise<void> {
   const rotation = textBox.rotation;
   if (rotation) {
@@ -191,7 +194,16 @@ export async function paintTextBox(
     widthPx,
     heightPx,
   );
-  await drawTextBoxContent(writer, textBox, ctx, xPx, yPx, widthPx, heightPx);
+  await drawTextBoxContent(
+    writer,
+    textBox,
+    ctx,
+    xPx,
+    yPx,
+    widthPx,
+    heightPx,
+    drawers,
+  );
 
   if (rotation) {
     writer.restoreGraphicsState(ctx.pageIndex);
@@ -215,6 +227,7 @@ export async function drawFloatingTextBoxesForParagraph(options: {
   contentTop: number;
   contentWidth: number;
   paragraphTop: number;
+  drawers: BlockDrawers;
 }): Promise<void> {
   const {
     writer,
@@ -227,6 +240,7 @@ export async function drawFloatingTextBoxesForParagraph(options: {
     contentTop,
     contentWidth,
     paragraphTop,
+    drawers,
   } = options;
 
   for (const line of lines) {
@@ -261,6 +275,7 @@ export async function drawFloatingTextBoxesForParagraph(options: {
         rect.y,
         rect.width,
         rect.height,
+        drawers,
       );
     }
   }

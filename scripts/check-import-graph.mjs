@@ -30,13 +30,6 @@ const SCC_ALLOWLIST = [
     "ui/canvas/canvasTextBoxPainter.ts",
     "ui/canvas/verticalText.ts",
   ],
-  // PDF draw recursion
-  [
-    "export/pdf/draw/drawFragment.ts",
-    "export/pdf/draw/drawParagraph.ts",
-    "export/pdf/draw/drawTable.ts",
-    "export/pdf/draw/drawTextBoxShape.ts",
-  ],
 ];
 
 const EXTENSIONS = [".ts", ".tsx"];

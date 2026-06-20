@@ -12,6 +12,7 @@ import { pxToPt } from "@/export/pdf/units.js";
 import { borderDashArray } from "./borderDash.js";
 import { drawFragmentText } from "./drawFragment.js";
 import { drawListPrefix } from "./lists.js";
+import type { BlockDrawers } from "./blockDrawers.js";
 
 /**
  * Paints paragraph shading (`w:shd`) and borders (`w:pBdr`) for PDF export,
@@ -101,6 +102,7 @@ export async function drawParagraph(
   originY: number,
   fontRegistry: PdfFontRegistry,
   listOrdinals: Map<string, string>,
+  drawers: BlockDrawers,
 ): Promise<void> {
   for (const line of lines) {
     drawListPrefix(
@@ -125,6 +127,7 @@ export async function drawParagraph(
         originX,
         originY,
         fontRegistry,
+        drawers,
       );
     }
   }

@@ -14,6 +14,7 @@ import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import { pxToPt } from "@/export/pdf/units.js";
 import { borderDashArray } from "./borderDash.js";
 import { drawParagraph } from "./drawParagraph.js";
+import type { BlockDrawers } from "./blockDrawers.js";
 
 function drawCellEdge(
   writer: OasisPdfWriter,
@@ -81,6 +82,7 @@ export async function drawTableBlock(
   contentWidth: number,
   fontRegistry: PdfFontRegistry,
   listOrdinals: Map<string, string>,
+  drawers: BlockDrawers,
 ): Promise<void> {
   if (block.sourceBlock.type !== "table") {
     return;
@@ -136,6 +138,7 @@ export async function drawTableBlock(
         originY + paragraphLayout.originY,
         fontRegistry,
         listOrdinals,
+        drawers,
       );
     }
   }

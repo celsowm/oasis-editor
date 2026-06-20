@@ -10,6 +10,14 @@ import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import { drawParagraph, drawParagraphDecorations } from "./drawParagraph.js";
 import { drawTableBlock } from "./drawTable.js";
 import { drawFloatingTextBoxesForParagraph } from "./drawTextBoxShape.js";
+import type { BlockDrawers } from "./blockDrawers.js";
+
+/**
+ * The concrete block drawers threaded through the PDF draw pipeline so text-box
+ * content can recurse into paragraphs/tables without those modules importing
+ * each other. `drawBlockList` is the orchestrator that owns this wiring.
+ */
+const blockDrawers: BlockDrawers = { drawParagraph, drawTableBlock };
 
 export async function drawBlockList(
   writer: OasisPdfWriter,
@@ -60,6 +68,7 @@ export async function drawBlockList(
         textTop,
         fontRegistry,
         listOrdinals,
+        blockDrawers,
       );
       if (pageSettings) {
         await drawFloatingTextBoxesForParagraph({
@@ -73,6 +82,7 @@ export async function drawBlockList(
           contentTop,
           contentWidth,
           paragraphTop: boxTop,
+          drawers: blockDrawers,
         });
       }
     } else if (block.sourceBlock.type === "table") {
@@ -86,6 +96,7 @@ export async function drawBlockList(
         contentWidth,
         fontRegistry,
         listOrdinals,
+        blockDrawers,
       );
     }
     cursorY += Math.max(0, block.estimatedHeight);
