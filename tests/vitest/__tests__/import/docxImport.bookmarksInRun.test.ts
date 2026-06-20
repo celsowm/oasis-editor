@@ -1,13 +1,8 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
-import { resetEditorIds } from "@/core/editorState.js";
 import type { EditorBookmark, EditorDocument } from "@/core/model.js";
-
-beforeEach(() => {
-  resetEditorIds();
-});
 
 async function buildDocx(bodyXml: string): Promise<ArrayBuffer> {
   const zip = new JSZip();

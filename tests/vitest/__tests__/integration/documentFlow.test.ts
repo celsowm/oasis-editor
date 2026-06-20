@@ -1,17 +1,12 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   createInitialEditorState,
-  resetEditorIds,
 } from "@/core/editorState.js";
 import {
   insertTextAtSelection,
   deleteBackward,
 } from "@/core/commands/text.js";
 import { getParagraphs } from "@/core/model.js";
-
-beforeEach(() => {
-  resetEditorIds();
-});
 
 describe("document flow integration", () => {
   it("performs a sequence of edits correctly", () => {

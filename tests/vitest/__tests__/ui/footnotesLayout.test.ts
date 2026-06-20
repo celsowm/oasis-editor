@@ -1,18 +1,13 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   createEditorDocument,
   createEditorFootnote,
   createEditorParagraph,
   createEditorRun,
   createFootnoteReferenceRun,
-  resetEditorIds,
 } from "@/core/editorState.js";
 import { getPageBodyBottom } from "@/core/model.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
-
-beforeEach(() => {
-  resetEditorIds();
-});
 
 function buildDocumentWithFootnotes(count = 1) {
   const paragraph = createEditorParagraph("");

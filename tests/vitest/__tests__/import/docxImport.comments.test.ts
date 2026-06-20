@@ -1,14 +1,9 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
-import { resetEditorIds } from "@/core/editorState.js";
 import { getDocumentParagraphs } from "./docxTestHelpers.js";
 import type { EditorComment, EditorDocument } from "@/core/model.js";
-
-beforeEach(() => {
-  resetEditorIds();
-});
 
 /**
  * Build a minimal .docx with a body plus optional `word/comments.xml` and

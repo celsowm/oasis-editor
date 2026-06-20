@@ -31,46 +31,39 @@ import {
 } from "./model.js";
 import { createCollapsedSelection } from "./selection.js";
 
-let nextDocumentId = 1;
-let nextParagraphId = 1;
-let nextRunId = 1;
-let nextTableId = 1;
-let nextTableRowId = 1;
-let nextTableCellId = 1;
-let nextFootnoteId = 1;
-let nextBookmarkId = 1;
-let nextCommentId = 1;
+export type EditorNodeKind =
+  | "document"
+  | "paragraph"
+  | "run"
+  | "table"
+  | "table-row"
+  | "table-cell"
+  | "footnote"
+  | "bookmark"
+  | "comment";
 
-export function resetEditorIds(): void {
-  nextDocumentId = 1;
-  nextParagraphId = 1;
-  nextRunId = 1;
-  nextTableId = 1;
-  nextTableRowId = 1;
-  nextTableCellId = 1;
-  nextFootnoteId = 1;
-  nextBookmarkId = 1;
-  nextCommentId = 1;
+/**
+ * Single authority for editor node IDs. Stateless and globally unique, so two
+ * editors mounted on the same page never share a sequence. The `kind` prefix is
+ * kept purely for debuggability; no code parses it for ordering or numbering.
+ */
+export function createEditorNodeId(kind: EditorNodeKind): string {
+  return `${kind}:${crypto.randomUUID()}`;
 }
 
 export function createEditorBookmarkId(): string {
-  const id = `bookmark:${nextBookmarkId}`;
-  nextBookmarkId += 1;
-  return id;
+  return createEditorNodeId("bookmark");
 }
 
 export function createEditorCommentId(): string {
-  const id = `comment:${nextCommentId}`;
-  nextCommentId += 1;
-  return id;
+  return createEditorNodeId("comment");
 }
 
 export function createEditorRun(text = ""): EditorTextRun {
   const run: EditorTextRun = {
-    id: `run:${nextRunId}`,
+    id: createEditorNodeId("run"),
     text,
   };
-  nextRunId += 1;
   return run;
 }
 
@@ -95,11 +88,10 @@ export function createEditorStyledRun(
 
 export function createEditorParagraph(text = ""): EditorParagraphNode {
   const paragraph: EditorParagraphNode = {
-    id: `paragraph:${nextParagraphId}`,
+    id: createEditorNodeId("paragraph"),
     type: "paragraph",
     runs: [createEditorRun(text)],
   };
-  nextParagraphId += 1;
   return paragraph;
 }
 
@@ -112,7 +104,7 @@ export function createEditorParagraphFromRuns(
   }>,
 ): EditorParagraphNode {
   const paragraph: EditorParagraphNode = {
-    id: `paragraph:${nextParagraphId}`,
+    id: createEditorNodeId("paragraph"),
     type: "paragraph",
     runs:
       runs.length > 0
@@ -121,7 +113,6 @@ export function createEditorParagraphFromRuns(
           )
         : [createEditorRun("")],
   };
-  nextParagraphId += 1;
   return paragraph;
 }
 
@@ -134,7 +125,7 @@ export function createEditorTableCell(
   },
 ): EditorTableCellNode {
   const cell: EditorTableCellNode = {
-    id: `table-cell:${nextTableCellId}`,
+    id: createEditorNodeId("table-cell"),
     blocks: paragraphs.length > 0 ? paragraphs : [createEditorParagraph("")],
   };
   if (colSpan > 1) {
@@ -146,7 +137,6 @@ export function createEditorTableCell(
   if (options?.vMerge) {
     cell.vMerge = options.vMerge;
   }
-  nextTableCellId += 1;
   return cell;
 }
 
@@ -155,13 +145,12 @@ export function createEditorTableRow(
   options?: { isHeader?: boolean },
 ): EditorTableRowNode {
   const row: EditorTableRowNode = {
-    id: `table-row:${nextTableRowId}`,
+    id: createEditorNodeId("table-row"),
     cells,
   };
   if (options?.isHeader) {
     row.isHeader = true;
   }
-  nextTableRowId += 1;
   return row;
 }
 
@@ -170,19 +159,16 @@ export function createEditorTable(
   gridCols?: number[],
 ): EditorTableNode {
   const table: EditorTableNode = {
-    id: `table:${nextTableId}`,
+    id: createEditorNodeId("table"),
     type: "table",
     rows,
     gridCols,
   };
-  nextTableId += 1;
   return table;
 }
 
 export function createEditorFootnoteId(): string {
-  const id = `footnote:${nextFootnoteId}`;
-  nextFootnoteId += 1;
-  return id;
+  return createEditorNodeId("footnote");
 }
 
 export function createEditorFootnote(
@@ -377,7 +363,7 @@ export function createEditorDocument(
         },
   );
   const document: EditorDocument = {
-    id: `document:${nextDocumentId}`,
+    id: createEditorNodeId("document"),
     pageSettings: normalizedPageSettings,
     sections: sections ?? [
       {
@@ -394,7 +380,6 @@ export function createEditorDocument(
     // "asset:img-1" as a URL.
     assets: assets ?? undefined,
   };
-  nextDocumentId += 1;
   return document;
 }
 

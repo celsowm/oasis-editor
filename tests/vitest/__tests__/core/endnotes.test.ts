@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   createEditorDocument,
   createEditorParagraph,
-  resetEditorIds,
 } from "@/core/editorState.js";
 import {
   collectEndnoteReferences,
@@ -14,10 +13,6 @@ import type {
   EditorParagraphNode,
   EditorTextRun,
 } from "@/core/model.js";
-
-beforeEach(() => {
-  resetEditorIds();
-});
 
 function refRun(endnoteId: string): EditorTextRun {
   return {

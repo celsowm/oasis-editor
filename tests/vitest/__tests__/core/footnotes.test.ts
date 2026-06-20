@@ -1,9 +1,8 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   createEditorDocument,
   createEditorParagraph,
   createEditorStateFromDocument,
-  resetEditorIds,
 } from "@/core/editorState.js";
 import {
   collectFootnoteReferences,
@@ -24,10 +23,6 @@ import {
   paragraphOffsetToPosition,
 } from "@/core/model.js";
 import { cloneEditorState } from "@/core/cloneState.js";
-
-beforeEach(() => {
-  resetEditorIds();
-});
 
 describe("footnote helpers", () => {
   it("getFootnoteDisplayMarker formats different numbering schemes", () => {

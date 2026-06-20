@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   createEditorStateFromTexts,
-  resetEditorIds,
 } from "@/core/editorState.js";
 import {
   insertTextAtSelection,
@@ -17,10 +16,6 @@ import {
   type EditorUnderlineStyle,
 } from "@/core/model.js";
 import { getParagraphs } from "@/core/model.js";
-
-beforeEach(() => {
-  resetEditorIds();
-});
 
 describe("text commands", () => {
   describe("insertTextAtSelection", () => {

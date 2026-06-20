@@ -1,11 +1,10 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   createEditorDocument,
   createEditorFootnote,
   createEditorParagraph,
   createEditorRun,
   createFootnoteReferenceRun,
-  resetEditorIds,
 } from "@/core/editorState.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
 import {
@@ -13,10 +12,6 @@ import {
   createLayoutIdentityStabilizer,
 } from "@/ui/layoutIdentity.js";
 import type { EditorLayoutBlock } from "@/core/model.js";
-
-beforeEach(() => {
-  resetEditorIds();
-});
 
 describe("layout identity stabilization", () => {
   it("does not reuse a page when only footnote text changes", () => {

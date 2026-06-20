@@ -9,18 +9,6 @@ import type {
 import { getBlockParagraphs, getDocumentSectionsCanonical } from "./model.js";
 import { getFootnoteDisplayMarker } from "./footnotes.js";
 
-let nextEndnoteId = 1;
-
-export function resetEndnoteIds(): void {
-  nextEndnoteId = 1;
-}
-
-export function createEndnoteId(): string {
-  const id = `endnote:${nextEndnoteId}`;
-  nextEndnoteId += 1;
-  return id;
-}
-
 /**
  * Iterate every paragraph in document order (endnote bodies excluded), yielding
  * each endnote reference run with its owning paragraph. Order matches reading

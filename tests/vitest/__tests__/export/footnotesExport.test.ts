@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
@@ -7,7 +7,6 @@ import {
   createEditorParagraph,
   createEditorParagraphFromRuns,
   createEditorStateFromDocument,
-  resetEditorIds,
 } from "@/core/editorState.js";
 import {
   insertFootnote,
@@ -19,10 +18,6 @@ import {
   getDocumentParagraphs,
   type EditorParagraphNode,
 } from "@/core/model.js";
-
-beforeEach(() => {
-  resetEditorIds();
-});
 
 async function exportAndOpen(buffer: ArrayBuffer): Promise<JSZip> {
   return JSZip.loadAsync(buffer);

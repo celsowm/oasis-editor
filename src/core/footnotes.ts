@@ -9,18 +9,6 @@ import type {
 } from "./model.js";
 import { getBlockParagraphs, getDocumentSectionsCanonical } from "./model.js";
 
-let nextFootnoteId = 1;
-
-export function resetFootnoteIds(): void {
-  nextFootnoteId = 1;
-}
-
-export function createFootnoteId(): string {
-  const id = `footnote:${nextFootnoteId}`;
-  nextFootnoteId += 1;
-  return id;
-}
-
 /**
  * Iterate every paragraph in document order (sections + footnotes excluded),
  * yielding each footnote reference run along with the owning paragraph. Order

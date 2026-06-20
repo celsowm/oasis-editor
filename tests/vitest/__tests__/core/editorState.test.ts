@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
-  resetEditorIds,
   createEditorParagraph,
   createEditorDocument,
   createEditorStateFromTexts,
@@ -12,20 +11,17 @@ import {
 import { DEFAULT_EDITOR_PAGE_SETTINGS } from "@/core/model.js";
 import { getParagraphs } from "@/core/model.js";
 
-beforeEach(() => {
-  resetEditorIds();
-});
-
 // ---------------------------------------------------------------------------
 // createEditorParagraph
 // ---------------------------------------------------------------------------
 
 describe("createEditorParagraph", () => {
-  it("creates paragraph with incremental id", () => {
+  it("creates paragraph with a unique prefixed id", () => {
     const p1 = createEditorParagraph("hello");
     const p2 = createEditorParagraph("world");
-    expect(p1.id).toBe("paragraph:1");
-    expect(p2.id).toBe("paragraph:2");
+    expect(p1.id).toMatch(/^paragraph:/);
+    expect(p2.id).toMatch(/^paragraph:/);
+    expect(p1.id).not.toBe(p2.id);
   });
 
   it("creates a single run with the given text", () => {

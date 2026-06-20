@@ -1,10 +1,9 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   createEditorDocument,
   createEditorParagraph,
   createEditorParagraphFromRuns,
   createEditorStateFromDocument,
-  resetEditorIds,
 } from "@/core/editorState.js";
 import {
   getSelectedImageCaption,
@@ -45,10 +44,6 @@ function stateWithSelectedImage() {
 function textOf(paragraph: EditorParagraphNode) {
   return paragraph.runs.map((run) => run.text).join("");
 }
-
-beforeEach(() => {
-  resetEditorIds();
-});
 
 describe("image captions", () => {
   it("inserts a visible Caption paragraph with a Word SEQ field", () => {

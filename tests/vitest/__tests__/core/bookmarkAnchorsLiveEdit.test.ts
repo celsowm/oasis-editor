@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   createEditorStateFromTexts,
-  resetEditorIds,
 } from "@/core/editorState.js";
 import {
   insertTextAtSelection,
@@ -16,10 +15,6 @@ import {
   type EditorBookmarks,
   type EditorState,
 } from "@/core/model.js";
-
-beforeEach(() => {
-  resetEditorIds();
-});
 
 /**
  * Attach a single bookmark spanning [start, end] of the given paragraph(s).

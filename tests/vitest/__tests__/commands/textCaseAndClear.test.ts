@@ -1,17 +1,12 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   createEditorStateFromParagraphRuns,
-  resetEditorIds,
 } from "@/core/editorState.js";
 import {
   changeSelectedTextCase,
   clearSelectedTextFormatting,
 } from "@/core/commands/text.js";
 import { getParagraphs } from "@/core/model.js";
-
-beforeEach(() => {
-  resetEditorIds();
-});
 
 const fullSelection = (text: string) => ({
   anchor: { blockIndex: 0, offset: 0 },
