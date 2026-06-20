@@ -44,6 +44,7 @@ import { type AssetRegistry } from "./assetRegistry.js";
 import { type DocxImportTheme } from "./theme.js";
 import { type NumberingMaps } from "./numbering.js";
 import { parseParagraphNode } from "./paragraphs.js";
+import type { ParseNestedBlocks } from "./runs/types.js";
 import {
   parseAutospacingFlags,
   type ParagraphAutospacingFlags,
@@ -822,6 +823,7 @@ export async function parseTableNode(
   relsMap: Map<string, string>,
   assets: AssetRegistry,
   theme: DocxImportTheme,
+  parseNestedBlocks: ParseNestedBlocks,
   styles?: Record<string, EditorNamedStyle>,
 ): Promise<EditorTableNode> {
   const gridCols: number[] = [];
@@ -937,6 +939,7 @@ export async function parseTableNode(
             relsMap,
             assets,
             theme,
+            parseNestedBlocks,
             cellInheritedStyle,
           ),
         );

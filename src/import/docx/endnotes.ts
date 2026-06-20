@@ -16,6 +16,7 @@ import { type DocxImportTheme } from "./theme.js";
 import { type NumberingMaps } from "./numbering.js";
 import { parseParagraphNode } from "./paragraphs.js";
 import { parseTableNode } from "./tables.js";
+import { createNestedBlockParser } from "./nestedBlocks.js";
 
 export interface ParsedEndnotes {
   /** Map from DOCX `w:id` (string) to the parsed endnote. */
@@ -65,6 +66,14 @@ export async function parseEndnotesXml(
   const endnoteElements = getChildrenByTagNameNS(root, WORD_NS, "endnote");
   let counter = 0;
 
+  const parseNestedBlocks = createNestedBlockParser(
+    numberingMaps,
+    zip,
+    relsMap,
+    assets,
+    theme,
+  );
+
   for (const endnoteEl of endnoteElements) {
     const idAttr = getAttributeValue(endnoteEl, "id") ?? "";
     const type = getAttributeValue(endnoteEl, "type") ?? "";
@@ -84,6 +93,7 @@ export async function parseEndnotesXml(
             relsMap,
             assets,
             theme,
+            parseNestedBlocks,
           ),
         );
       } else if (element.localName === "tbl") {
@@ -95,6 +105,7 @@ export async function parseEndnotesXml(
             relsMap,
             assets,
             theme,
+            parseNestedBlocks,
             styles,
           ),
         );

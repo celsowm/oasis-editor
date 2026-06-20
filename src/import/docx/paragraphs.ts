@@ -24,8 +24,8 @@ import { type ImportedRun, parseRunsContainer } from "./runs.js";
 import type {
   ImportedBookmarkMarker,
   ImportedCommentMarker,
+  ParseNestedBlocks,
 } from "./runs/types.js";
-import { parseTxbxContentBlocks } from "./nestedBlocks.js";
 import { parseDropCapFrame } from "./dropCap.js";
 
 function createImportedParagraph(
@@ -182,6 +182,7 @@ export async function parseParagraphNodes(
   relsMap: Map<string, string>,
   assets: AssetRegistry,
   theme: DocxImportTheme,
+  parseNestedBlocks: ParseNestedBlocks,
   inheritedStyle?: EditorParagraphStyle,
 ): Promise<{
   paragraphs: EditorParagraphNode[];
@@ -201,15 +202,7 @@ export async function parseParagraphNodes(
     assets,
     theme,
     undefined,
-    (container) =>
-      parseTxbxContentBlocks(
-        container,
-        numberingMaps,
-        zip,
-        relsMap,
-        assets,
-        theme,
-      ),
+    parseNestedBlocks,
   );
   const parsedStyle = withDocxImplicitSingleLineHeight(
     parseParagraphStyle(paragraphProperties),
@@ -299,6 +292,7 @@ export async function parseParagraphNode(
   relsMap: Map<string, string>,
   assets: AssetRegistry,
   theme: DocxImportTheme,
+  parseNestedBlocks: ParseNestedBlocks,
   inheritedStyle?: EditorParagraphStyle,
 ): Promise<EditorParagraphNode> {
   const parsed = await parseParagraphNodes(
@@ -308,6 +302,7 @@ export async function parseParagraphNode(
     relsMap,
     assets,
     theme,
+    parseNestedBlocks,
     inheritedStyle,
   );
   return parsed.paragraphs[0] ?? createEditorParagraphFromRuns([{ text: "" }]);

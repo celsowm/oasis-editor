@@ -37,12 +37,6 @@ const SCC_ALLOWLIST = [
     "export/pdf/draw/drawTable.ts",
     "export/pdf/draw/drawTextBoxShape.ts",
   ],
-  // DOCX import recursion
-  [
-    "import/docx/nestedBlocks.ts",
-    "import/docx/paragraphs.ts",
-    "import/docx/tables.ts",
-  ],
 ];
 
 const EXTENSIONS = [".ts", ".tsx"];

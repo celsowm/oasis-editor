@@ -7,6 +7,7 @@ import { type DocxImportTheme } from "./theme.js";
 import { type NumberingMaps } from "./numbering.js";
 import { parseParagraphNode } from "./paragraphs.js";
 import { parseTableNode } from "./tables.js";
+import { createNestedBlockParser } from "./nestedBlocks.js";
 
 export async function parseHeaderFooterXml(
   xmlContent: string | null,
@@ -27,6 +28,14 @@ export async function parseHeaderFooterXml(
     return [];
   }
 
+  const parseNestedBlocks = createNestedBlockParser(
+    numberingMaps,
+    zip,
+    relsMap,
+    assets,
+    theme,
+  );
+
   const blocks: EditorBlockNode[] = [];
   for (let index = 0; index < root.childNodes.length; index += 1) {
     const node = root.childNodes[index];
@@ -43,6 +52,7 @@ export async function parseHeaderFooterXml(
           relsMap,
           assets,
           theme,
+          parseNestedBlocks,
         ),
       );
     } else if (
@@ -57,6 +67,7 @@ export async function parseHeaderFooterXml(
           relsMap,
           assets,
           theme,
+          parseNestedBlocks,
           styles,
         ),
       );

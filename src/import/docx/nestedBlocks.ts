@@ -7,6 +7,31 @@ import { type DocxImportTheme } from "./theme.js";
 import { type NumberingMaps } from "./numbering.js";
 import { parseParagraphNodes } from "./paragraphs.js";
 import { parseTableNode } from "./tables.js";
+import type { ParseNestedBlocks } from "./runs/types.js";
+
+/**
+ * Build a `ParseNestedBlocks` callback bound to an import context. The paragraph
+ * and table parsers receive this so a text-box run can recurse into block-level
+ * content without importing this module (which imports them) — keeping the
+ * recursion acyclic with `nestedBlocks` as the orchestrator.
+ */
+export function createNestedBlockParser(
+  numberingMaps: NumberingMaps,
+  zip: JSZip,
+  relsMap: Map<string, string>,
+  assets: AssetRegistry,
+  theme: DocxImportTheme,
+): ParseNestedBlocks {
+  return (container) =>
+    parseTxbxContentBlocks(
+      container,
+      numberingMaps,
+      zip,
+      relsMap,
+      assets,
+      theme,
+    );
+}
 
 /**
  * Parse the block-level content of a `w:txbxContent` (text box body) into the
@@ -23,6 +48,13 @@ export async function parseTxbxContentBlocks(
   assets: AssetRegistry,
   theme: DocxImportTheme,
 ): Promise<EditorBlockNode[]> {
+  const parseNestedBlocks = createNestedBlockParser(
+    numberingMaps,
+    zip,
+    relsMap,
+    assets,
+    theme,
+  );
   const blocks: EditorBlockNode[] = [];
   for (let index = 0; index < container.childNodes.length; index += 1) {
     const node = container.childNodes[index];
@@ -41,6 +73,7 @@ export async function parseTxbxContentBlocks(
         relsMap,
         assets,
         theme,
+        parseNestedBlocks,
       );
       for (const paragraph of parsed.paragraphs) {
         blocks.push(paragraph);
@@ -54,6 +87,7 @@ export async function parseTxbxContentBlocks(
           relsMap,
           assets,
           theme,
+          parseNestedBlocks,
         ),
       );
     }

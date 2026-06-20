@@ -16,6 +16,7 @@ import { type DocxImportTheme } from "./theme.js";
 import { type NumberingMaps } from "./numbering.js";
 import { parseParagraphNode } from "./paragraphs.js";
 import { parseTableNode } from "./tables.js";
+import { createNestedBlockParser } from "./nestedBlocks.js";
 
 export interface ParsedFootnotes {
   /** Map from DOCX `w:id` (string) to the parsed footnote. */
@@ -65,6 +66,14 @@ export async function parseFootnotesXml(
   const footnoteElements = getChildrenByTagNameNS(root, WORD_NS, "footnote");
   let counter = 0;
 
+  const parseNestedBlocks = createNestedBlockParser(
+    numberingMaps,
+    zip,
+    relsMap,
+    assets,
+    theme,
+  );
+
   for (const footnoteEl of footnoteElements) {
     const idAttr = getAttributeValue(footnoteEl, "id") ?? "";
     const type = getAttributeValue(footnoteEl, "type") ?? "";
@@ -84,6 +93,7 @@ export async function parseFootnotesXml(
             relsMap,
             assets,
             theme,
+            parseNestedBlocks,
           ),
         );
       } else if (element.localName === "tbl") {
@@ -95,6 +105,7 @@ export async function parseFootnotesXml(
             relsMap,
             assets,
             theme,
+            parseNestedBlocks,
             styles,
           ),
         );

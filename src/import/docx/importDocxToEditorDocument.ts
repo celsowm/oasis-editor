@@ -34,6 +34,7 @@ import {
 } from "./sectionProperties.js";
 import { parseParagraphNodes } from "./paragraphs.js";
 import { parseTableNode } from "./tables.js";
+import { createNestedBlockParser } from "./nestedBlocks.js";
 import { parseHeaderFooterXml } from "./headerFooter.js";
 import { parseFootnotesXml } from "./footnotes.js";
 import { parseEndnotesXml } from "./endnotes.js";
@@ -140,6 +141,14 @@ export async function importDocxToEditorDocument(
     }
   };
 
+  const parseNestedBlocks = createNestedBlockParser(
+    numberingMaps,
+    zip,
+    relsMap,
+    assets,
+    theme,
+  );
+
   for (let index = 0; index < body.childNodes.length; index += 1) {
     const node = body.childNodes[index];
     if (node?.nodeType !== node.ELEMENT_NODE) {
@@ -164,6 +173,7 @@ export async function importDocxToEditorDocument(
         relsMap,
         assets,
         theme,
+        parseNestedBlocks,
       );
       for (const paragraph of parsedParagraph.paragraphs) {
         appendBodyBlock(paragraph);
@@ -184,6 +194,7 @@ export async function importDocxToEditorDocument(
           relsMap,
           assets,
           theme,
+          parseNestedBlocks,
           importedStyles,
         ),
       );
