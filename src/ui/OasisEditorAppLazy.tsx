@@ -2,7 +2,8 @@ import { createSignal, onCleanup, onMount, Show } from "solid-js";
 import { OasisEditorLoading } from "./OasisEditorLoading.js";
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 import type { Component } from "solid-js";
-import { setLocale } from "@/i18n/index.js";
+import { createTranslator } from "@/i18n/index.js";
+import { I18nProvider } from "@/i18n/I18nContext.js";
 
 /**
  * Code-splitting boundary for the editor. Loads `OasisEditorApp` (and the
@@ -18,11 +19,11 @@ import { setLocale } from "@/i18n/index.js";
  * Must not statically import anything that pulls the editor/font graph.
  */
 export function OasisEditorAppLazy(props: OasisEditorAppProps = {}) {
-  // Set the locale before the loading card paints (OasisEditorApp re-asserts it
-  // once mounted) so the download-phase label is localized. The i18n module only
-  // imports the two locale string maps — no editor/font graph — so it is safe in
-  // this lightweight chunk.
-  setLocale(props.ui?.locale ?? "pt-BR");
+  // Localize the download-phase loading card via a provider bound to this
+  // instance's locale. OasisEditorApp nests its own provider once mounted. The
+  // i18n module only imports the two locale string maps — no editor/font graph —
+  // so it is safe in this lightweight chunk.
+  const translator = createTranslator(() => props.ui?.locale ?? "pt-BR");
 
   const [progress, setProgress] = createSignal(0);
   const [App, setApp] = createSignal<Component<OasisEditorAppProps> | null>(
@@ -67,22 +68,24 @@ export function OasisEditorAppLazy(props: OasisEditorAppProps = {}) {
   });
 
   return (
-    <Show
-      when={App()}
-      fallback={
-        <OasisEditorLoading
-          variant="fill"
-          progress={progress()}
-          label={loadingOptions()?.label}
-          class={loadingOptions()?.class}
-          style={loadingOptions()?.style}
-        />
-      }
-    >
-      {(getApp) => {
-        const C = getApp();
-        return <C {...props} />;
-      }}
-    </Show>
+    <I18nProvider translator={translator}>
+      <Show
+        when={App()}
+        fallback={
+          <OasisEditorLoading
+            variant="fill"
+            progress={progress()}
+            label={loadingOptions()?.label}
+            class={loadingOptions()?.class}
+            style={loadingOptions()?.style}
+          />
+        }
+      >
+        {(getApp) => {
+          const C = getApp();
+          return <C {...props} />;
+        }}
+      </Show>
+    </I18nProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { t } from "@/i18n/index.js";
+import type { TranslateFn } from "@/i18n/index.js";
 import { STANDARD_FONT_SIZES_PT, fontSizePxToPt } from "@/ui/fontSizeUnits.js";
 import type {
   RibbonRow,
@@ -224,7 +224,7 @@ function withDefaultRibbonPlacement(items: ToolbarItem[]): ToolbarItem[] {
  * public contribution API clients use. Load each item into a registry via
  * `registry.register` (see Toolbar bootstrap).
  */
-export function createDefaultToolbarPreset(): ToolbarItem[] {
+export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
   const items: ToolbarItem[] = [];
 
   // --- File ---

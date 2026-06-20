@@ -289,14 +289,29 @@ helpers compartilhados para um terceiro módulo folha.
 
 #### G1. Locale global
 
-`currentLocale` é uma variável de módulo (`src/i18n/index.ts:12-23`). Cada
-`OasisEditorApp` executa `setLocale` em effect (`src/ui/OasisEditorApp.tsx:97-105`)
-e dezenas de componentes chamam `t()` diretamente. A última instância que rodar
-o effect define o idioma de todas.
-
-**Refactor:** `createTranslator(localeAccessor)` mais um `I18nProvider` Solid por
-editor. Toolbar, dialogs e plugins recebem `t` pelo contexto/capability. Remover
-`setLocale` e o fallback mutável; `OasisEditorAppLazy` deve apenas passar locale.
+> **✅ Resolvido na Onda 1 (2026-06-20).** Eliminado o estado de locale global:
+>
+> 1. `i18n/index.ts` agora expõe `createTranslator(localeAccessor)` e
+>    `TranslateFn`; `currentLocale`, `setLocale`, `getLocale` e o `t` global foram
+>    removidos. Novo `i18n/I18nContext.tsx` com `I18nProvider`/`useI18n` e um
+>    translator default imutável (pt-BR) para componentes renderizados sem
+>    provider (testes isolados).
+> 2. `OasisEditorApp` cria um translator por instância (lendo o signal de locale)
+>    e o fornece via `I18nProvider`; `OasisEditorAppLazy` tem seu próprio provider
+>    para o card de loading. Reatividade de troca de locale melhora, pois o
+>    translator lê o signal.
+> 3. Os 31 componentes `.tsx` migraram de `t()` global para `useI18n()`. Os
+>    builders/hooks não-componentes recebem o translator por parâmetro:
+>    `createToolbarApi(host, t)`, `createDefaultToolbarPreset(t)`,
+>    `buildRibbonGroups(items, tab, t)`, `ribbonGroupLabel(group, t)`,
+>    `createEditorContextMenuClipboard({ t })`; `useFontDialogController` usa
+>    `useI18n()`.
+> 4. **API pública:** `RIBBON_TAB_DEFINITIONS` (const avaliada no import) foi
+>    substituída por `buildRibbonTabDefinitions(t)` — mudança incompatível
+>    deliberada, sem alias.
+>
+> Gates: `tsc` limpo, suíte 577✓/1 skip, `build:lib` ok. Testes de dialog passaram
+> a renderizar dentro de `I18nProvider` com translator `en`.
 
 #### G2. IDs globais e duplicados
 

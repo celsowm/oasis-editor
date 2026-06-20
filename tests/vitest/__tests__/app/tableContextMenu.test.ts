@@ -5,6 +5,9 @@ import {
   createEditorStateFromDocument,
 } from "@/core/editorState.js";
 import { createEditorContextMenuClipboard } from "@/ui/app/useEditorContextMenuClipboard.js";
+import { createTranslator } from "@/i18n/index.js";
+
+const t = createTranslator(() => "pt-BR");
 
 function createContextMenuHarness(insideTable: boolean) {
   const paragraph = createEditorParagraph("Body");
@@ -13,6 +16,7 @@ function createContextMenuHarness(insideTable: boolean) {
   const menu = createEditorContextMenuClipboard({
     state: () => state,
     isReadOnly: () => false,
+    t,
     logger: { warn: vi.fn() } as any,
     setContextMenu: vi.fn(),
     clearPreferredColumn: vi.fn(),

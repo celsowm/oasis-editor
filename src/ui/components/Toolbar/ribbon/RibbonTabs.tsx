@@ -1,6 +1,7 @@
 import { For, type Accessor, type Setter } from "solid-js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import type { RibbonTabId } from "@/ui/components/Toolbar/schema/items.js";
-import { RIBBON_TAB_DEFINITIONS } from "./ribbonModel.js";
+import { buildRibbonTabDefinitions } from "./ribbonModel.js";
 
 export interface RibbonTabsProps {
   activeTab: Accessor<RibbonTabId>;
@@ -8,7 +9,7 @@ export interface RibbonTabsProps {
 }
 
 export function RibbonTabs(props: RibbonTabsProps) {
-  const tabs = RIBBON_TAB_DEFINITIONS;
+  const tabs = buildRibbonTabDefinitions(useI18n());
 
   const moveTab = (current: RibbonTabId, delta: number) => {
     const index = tabs.findIndex((tab) => tab.id === current);

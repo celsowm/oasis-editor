@@ -1,4 +1,5 @@
 import type { OasisPlugin } from "@/core/plugin.js";
+import type { TranslateFn } from "@/i18n/index.js";
 import { defaultMenuItems } from "@/ui/components/Menubar/defaultMenuItems.js";
 import { MenuRegistry } from "@/ui/components/Menubar/menuRegistry.js";
 import { createDefaultToolbarPreset } from "@/ui/components/Toolbar/presets/defaultToolbar.js";
@@ -11,6 +12,7 @@ import type { ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
 export interface EditorRuntimePluginsOptions {
   essentialsPlugin: OasisPlugin;
   externalPlugins?: OasisPlugin[];
+  t: TranslateFn;
   customizeToolbar?: (registry: ToolbarRegistry) => void;
   customizeMenubar?: (registry: MenuRegistry) => void;
 }
@@ -34,7 +36,7 @@ export function useEditorRuntimePlugins(
   const toolbarRegistry = createToolbarRegistry();
   const menuRegistry = new MenuRegistry();
 
-  for (const item of createDefaultToolbarPreset()) {
+  for (const item of createDefaultToolbarPreset(options.t)) {
     toolbarRegistry.register(item);
   }
   for (const item of defaultMenuItems) {

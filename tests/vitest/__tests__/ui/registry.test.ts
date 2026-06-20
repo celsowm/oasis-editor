@@ -6,6 +6,9 @@ import { createDefaultToolbarPreset } from "@/ui/components/Toolbar/presets/defa
 import { OASIS_TOOLBAR_ITEMS } from "@/ui/components/Toolbar/presets/builtinToolbarIds.js";
 import { RIBBON_TABS } from "@/ui/components/Toolbar/schema/items.js";
 import { buildRibbonGroups } from "@/ui/components/Toolbar/ribbon/ribbonModel.js";
+import { createTranslator } from "@/i18n/index.js";
+
+const t = createTranslator(() => "pt-BR");
 
 describe("UI registries", () => {
   it("deduplicates and orders toolbar items", () => {
@@ -129,7 +132,7 @@ describe("UI registries", () => {
 
   it("assigns every default toolbar item to a known ribbon tab, group and row", () => {
     const knownTabs = new Set<string>(RIBBON_TABS);
-    const items = createDefaultToolbarPreset();
+    const items = createDefaultToolbarPreset(t);
 
     expect(items.length).toBeGreaterThan(0);
     for (const item of items) {
@@ -194,6 +197,7 @@ describe("UI registries", () => {
         },
       ],
       "layout",
+      t,
     );
 
     expect(groups).toHaveLength(1);
@@ -230,6 +234,7 @@ describe("UI registries", () => {
   it("keeps menubar customizations local to a runtime plugin registry", () => {
     const first = useEditorRuntimePlugins({
       essentialsPlugin: { name: "Essentials" },
+      t,
       customizeMenubar(registry) {
         registry.register({
           id: "client_custom",
@@ -240,6 +245,7 @@ describe("UI registries", () => {
     });
     const second = useEditorRuntimePlugins({
       essentialsPlugin: { name: "Essentials" },
+      t,
     });
 
     expect(
@@ -255,6 +261,7 @@ describe("UI registries", () => {
   it("places plugin toolbar items without explicit placement in Plugins General", () => {
     const runtime = useEditorRuntimePlugins({
       essentialsPlugin: { name: "Essentials" },
+      t,
       externalPlugins: [
         {
           name: "Plugin",
@@ -273,6 +280,7 @@ describe("UI registries", () => {
   it("preserves plugin-contributed large ribbon items", () => {
     const runtime = useEditorRuntimePlugins({
       essentialsPlugin: { name: "Essentials" },
+      t,
       externalPlugins: [
         {
           name: "Plugin",

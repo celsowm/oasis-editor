@@ -29,17 +29,3 @@ export function createTranslator(getLocale: () => Locale): TranslateFn {
   };
 }
 
-let currentLocale: Locale = "pt-BR";
-
-/** @deprecated Global locale. Being removed in favour of per-instance I18nProvider. */
-export function setLocale(locale: Locale) {
-  currentLocale = locale;
-}
-
-/** @deprecated Global locale. Being removed in favour of per-instance I18nProvider. */
-export function getLocale(): Locale {
-  return currentLocale;
-}
-
-/** @deprecated Global translator. Migrate components to `useI18n()`. */
-export const t: TranslateFn = createTranslator(getLocale);

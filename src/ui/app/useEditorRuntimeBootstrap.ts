@@ -19,6 +19,7 @@ type RuntimeCommandHost = ReturnType<typeof createRuntimeCommandHost>;
 export interface EditorRuntimeBootstrapContext {
   essentials: EssentialsPluginDeps;
   externalPlugins: RuntimePluginsConfig["externalPlugins"];
+  t: RuntimePluginsConfig["t"];
   customizeToolbar: RuntimePluginsConfig["customizeToolbar"];
   customizeMenubar: RuntimePluginsConfig["customizeMenubar"];
   initialDocument: RuntimeCommandHostConfig["initialDocument"];
@@ -53,6 +54,7 @@ export function useEditorRuntimeBootstrap(
   } = useEditorRuntimePlugins({
     essentialsPlugin,
     externalPlugins: ctx.externalPlugins,
+    t: ctx.t,
     customizeToolbar: ctx.customizeToolbar,
     customizeMenubar: ctx.customizeMenubar,
   });

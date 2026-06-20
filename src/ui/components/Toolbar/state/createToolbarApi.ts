@@ -1,4 +1,4 @@
-import { t } from "@/i18n/index.js";
+import type { TranslateFn } from "@/i18n/index.js";
 import type { CommandBus } from "@/core/commands/CommandBus.js";
 import type { ToolbarActionApi, ToolbarCommandState } from "@/ui/components/Toolbar/schema/items.js";
 
@@ -13,7 +13,10 @@ export interface ToolbarHost {
 }
 
 /** Builds the {@link ToolbarActionApi} from the narrow {@link ToolbarHost}. */
-export function createToolbarApi(host: () => ToolbarHost): ToolbarActionApi {
+export function createToolbarApi(
+  host: () => ToolbarHost,
+  t: TranslateFn,
+): ToolbarActionApi {
   return {
     commands: host().commands,
     t,

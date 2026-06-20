@@ -14,7 +14,8 @@ export interface RibbonPanelProps {
 }
 
 export function RibbonPanel(props: RibbonPanelProps) {
-  const groups = () => buildRibbonGroups(props.items(), props.activeTab());
+  const groups = () =>
+    buildRibbonGroups(props.items(), props.activeTab(), props.api.t);
 
   return (
     <div

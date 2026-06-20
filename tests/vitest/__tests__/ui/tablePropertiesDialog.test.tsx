@@ -5,7 +5,10 @@ import {
   type TablePropertiesDialogApplyValues,
   type TablePropertiesDialogInitialValues,
 } from "@/ui/components/Dialogs/TablePropertiesDialog.js";
-import { setLocale } from "@/i18n/index.js";
+import { createTranslator } from "@/i18n/index.js";
+import { I18nProvider } from "@/i18n/I18nContext.js";
+
+const enTranslator = createTranslator(() => "en");
 
 const initial: TablePropertiesDialogInitialValues = {
   activeTab: "table",
@@ -60,12 +63,14 @@ function mountDialog(
   const resolvedInitial = overrides.initial ?? initial;
   const dispose = render(
     () => (
-      <TablePropertiesDialog
-        isOpen
-        initial={resolvedInitial}
-        onClose={onClose}
-        onApply={onApply}
-      />
+      <I18nProvider translator={enTranslator}>
+        <TablePropertiesDialog
+          isOpen
+          initial={resolvedInitial}
+          onClose={onClose}
+          onApply={onApply}
+        />
+      </I18nProvider>
     ),
     host,
   );
@@ -78,7 +83,6 @@ afterEach(() => {
 
 describe("TablePropertiesDialog", () => {
   it("emits table, row, column, cell, border and alt text values", () => {
-    setLocale("en");
     const onApply = vi.fn();
     const { host, dispose } = mountDialog({ onApply });
 

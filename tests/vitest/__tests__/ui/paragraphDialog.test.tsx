@@ -5,7 +5,10 @@ import {
   type ParagraphDialogApplyValues,
   type ParagraphDialogInitialValues,
 } from "@/ui/components/Dialogs/ParagraphDialog.js";
-import { setLocale } from "@/i18n/index.js";
+import { createTranslator } from "@/i18n/index.js";
+import { I18nProvider } from "@/i18n/I18nContext.js";
+
+const enTranslator = createTranslator(() => "en");
 
 function mountDialog(
   overrides: Partial<{
@@ -41,12 +44,14 @@ function mountDialog(
   document.body.appendChild(host);
   const dispose = render(
     () => (
-      <ParagraphDialog
-        isOpen
-        initial={initial}
-        onClose={onClose}
-        onApply={onApply}
-      />
+      <I18nProvider translator={enTranslator}>
+        <ParagraphDialog
+          isOpen
+          initial={initial}
+          onClose={onClose}
+          onApply={onApply}
+        />
+      </I18nProvider>
     ),
     host,
   );
@@ -59,7 +64,6 @@ afterEach(() => {
 
 describe("ParagraphDialog", () => {
   it("applies alignment, indent and spacing changes", () => {
-    setLocale("en");
     const onApply = vi.fn();
     const { host, initial, dispose } = mountDialog({ onApply });
 
@@ -101,7 +105,6 @@ describe("ParagraphDialog", () => {
   });
 
   it("derives first-line indent from the special selector", () => {
-    setLocale("en");
     const onApply = vi.fn();
     const { host, dispose } = mountDialog({ onApply });
 
@@ -132,7 +135,6 @@ describe("ParagraphDialog", () => {
   });
 
   it("infers the hanging special option from initial values", () => {
-    setLocale("en");
     const onApply = vi.fn();
     const { host, dispose } = mountDialog({
       onApply,
@@ -176,7 +178,6 @@ describe("ParagraphDialog", () => {
   });
 
   it("applies a border only to the selected edges", () => {
-    setLocale("en");
     const onApply = vi.fn();
     const { host, dispose } = mountDialog({ onApply });
 

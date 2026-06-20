@@ -4,7 +4,7 @@ import type {
   ToolbarItem,
 } from "@/ui/components/Toolbar/schema/items.js";
 import { RIBBON_TABS } from "@/ui/components/Toolbar/schema/items.js";
-import { t, type TranslationKey } from "@/i18n/index.js";
+import type { TranslateFn, TranslationKey } from "@/i18n/index.js";
 
 export interface RibbonTabDefinition {
   id: RibbonTabId;
@@ -49,9 +49,11 @@ const GROUP_LABEL_KEYS: Record<string, TranslationKey> = {
   general: "ribbon.group.general",
 };
 
-export const RIBBON_TAB_DEFINITIONS: RibbonTabDefinition[] = RIBBON_TABS.map(
-  (id) => ({ id, label: t(TAB_LABEL_KEYS[id]) }),
-);
+export function buildRibbonTabDefinitions(
+  t: TranslateFn,
+): RibbonTabDefinition[] {
+  return RIBBON_TABS.map((id) => ({ id, label: t(TAB_LABEL_KEYS[id]) }));
+}
 
 export const DEFAULT_RIBBON_TAB: RibbonTabId = "plugins";
 export const DEFAULT_RIBBON_GROUP = "general";
@@ -104,7 +106,7 @@ export function isLargeRibbonItem(item: ToolbarItem): boolean {
   return "ribbonSize" in item && item.ribbonSize === "large";
 }
 
-export function ribbonGroupLabel(group: string): string {
+export function ribbonGroupLabel(group: string, t: TranslateFn): string {
   const key = GROUP_LABEL_KEYS[group];
   return key ? t(key) : group;
 }
@@ -112,6 +114,7 @@ export function ribbonGroupLabel(group: string): string {
 export function buildRibbonGroups(
   items: ToolbarItem[],
   tab: RibbonTabId,
+  t: TranslateFn,
 ): RibbonGroupModel[] {
   const groups = new Map<string, RibbonGroupModel>();
   const tabGroupOrder = RIBBON_GROUP_ORDER[tab] ?? {};
@@ -127,7 +130,7 @@ export function buildRibbonGroups(
     if (!group) {
       group = {
         id: groupId,
-        label: ribbonGroupLabel(groupId),
+        label: ribbonGroupLabel(groupId, t),
         largeItems: [],
         rows: { 1: [], 2: [] },
         order: groupOrder,

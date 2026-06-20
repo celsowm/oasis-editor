@@ -7,6 +7,7 @@ import {
   type JSX,
 } from "solid-js";
 import "./toolbar.css";
+import { useI18n } from "@/i18n/I18nContext.js";
 import { ToolbarOverflowManager } from "./ToolbarOverflowManager.js";
 import { ToolbarItemRenderer } from "./renderers/ToolbarItemRenderer.js";
 import {
@@ -40,7 +41,7 @@ export interface ToolbarProps {
  * data; there is no hardcoded group composition here.
  */
 export function Toolbar(props: ToolbarProps): JSX.Element {
-  const api = createToolbarApi(props.host);
+  const api = createToolbarApi(props.host, useI18n());
   const [version, setVersion] = createSignal(0);
   const [activeTab, setActiveTab] = createSignal<RibbonTabId>("home");
 

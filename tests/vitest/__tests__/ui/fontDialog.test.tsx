@@ -5,7 +5,10 @@ import {
   type FontDialogApplyValues,
   type FontDialogInitialValues,
 } from "@/ui/components/Dialogs/FontDialog.js";
-import { setLocale } from "@/i18n/index.js";
+import { createTranslator } from "@/i18n/index.js";
+import { I18nProvider } from "@/i18n/I18nContext.js";
+
+const enTranslator = createTranslator(() => "en");
 
 function mountDialog(
   overrides: Partial<{
@@ -52,14 +55,16 @@ function mountDialog(
   document.body.appendChild(host);
   const dispose = render(
     () => (
-      <FontDialog
-        isOpen
-        initial={initial}
-        familyOptions={["Arial", "Calibri", "Courier New"]}
-        sizeOptions={[12, 14, 18]}
-        onClose={onClose}
-        onApply={onApply}
-      />
+      <I18nProvider translator={enTranslator}>
+        <FontDialog
+          isOpen
+          initial={initial}
+          familyOptions={["Arial", "Calibri", "Courier New"]}
+          sizeOptions={[12, 14, 18]}
+          onClose={onClose}
+          onApply={onApply}
+        />
+      </I18nProvider>
     ),
     host,
   );
@@ -72,7 +77,6 @@ afterEach(() => {
 
 describe("FontDialog", () => {
   it("switches tabs with keyboard navigation", () => {
-    setLocale("en");
     const { host, dispose } = mountDialog();
     const tablist = host.querySelector("[role='tablist']") as HTMLDivElement;
     tablist.dispatchEvent(
@@ -86,7 +90,6 @@ describe("FontDialog", () => {
   });
 
   it("keeps style list and bold/italic checkboxes in sync", () => {
-    setLocale("en");
     const { host, dispose } = mountDialog();
     const styleList = host.querySelector(
       "[data-testid='editor-font-dialog-style-list']",
@@ -106,7 +109,6 @@ describe("FontDialog", () => {
   });
 
   it("enforces superscript/subscript mutual exclusion", () => {
-    setLocale("en");
     const { host, dispose } = mountDialog();
     const superInput = host.querySelector(
       "[data-testid='editor-font-dialog-superscript']",
@@ -127,7 +129,6 @@ describe("FontDialog", () => {
   });
 
   it("maps no underline + automatic color to null on apply", () => {
-    setLocale("en");
     const onApply = vi.fn();
     const { host, initial, dispose } = mountDialog({ onApply });
 
@@ -161,7 +162,6 @@ describe("FontDialog", () => {
   });
 
   it("applies text shading from the font tab", () => {
-    setLocale("en");
     const onApply = vi.fn();
     const customInitial: FontDialogInitialValues = {
       fontFamily: "Arial",
@@ -219,7 +219,6 @@ describe("FontDialog", () => {
   });
 
   it("shows a validation message for invalid custom size", () => {
-    setLocale("en");
     const { host, dispose } = mountDialog();
     const sizeInput = host.querySelector(
       "[data-testid='editor-font-dialog-custom-size']",
@@ -233,7 +232,6 @@ describe("FontDialog", () => {
   });
 
   it("applies phase-4 effects and keeps strike/double-strike exclusive", () => {
-    setLocale("en");
     const onApply = vi.fn();
     const { host, dispose } = mountDialog({ onApply });
     const strike = host.querySelector(
@@ -289,7 +287,6 @@ describe("FontDialog", () => {
   });
 
   it("applies advanced spacing, position, scale and kerning values", () => {
-    setLocale("en");
     const onApply = vi.fn();
     const { host, dispose } = mountDialog({ onApply });
     const advancedTab = host.querySelector(
@@ -350,7 +347,6 @@ describe("FontDialog", () => {
   });
 
   it("applies OpenType values and keeps the apply test id with OK label", () => {
-    setLocale("en");
     const onApply = vi.fn();
     const { host, dispose } = mountDialog({ onApply });
     const advancedTab = host.querySelector(

@@ -1,5 +1,5 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
-import { t } from "@/i18n/index.js";
+import { useI18n } from "@/i18n/I18nContext.js";
 import {
   parseNonNegativeNumber,
   parsePositiveNumber,
@@ -23,6 +23,7 @@ import type { FontDialogController } from "./FontDialogController.js";
 export function useFontDialogController(
   props: FontDialogProps,
 ): FontDialogController {
+  const t = useI18n();
   const [activeTab, setActiveTab] = createSignal<FontDialogTab>("font");
   const [fontTabValues, setFontTabValues] = createSignal<FontTabValues>(
     createFontTabValuesFromInitial(props.initial),

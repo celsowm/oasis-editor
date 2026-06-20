@@ -164,7 +164,7 @@ export type { OasisMenuItemId } from "./ui/components/Menubar/builtinMenuIds.js"
 
 export { Toolbar } from "./ui/components/Toolbar/Toolbar.js";
 export type { ToolbarProps } from "./ui/components/Toolbar/Toolbar.js";
-export { RIBBON_TAB_DEFINITIONS } from "./ui/components/Toolbar/ribbon/ribbonModel.js";
+export { buildRibbonTabDefinitions } from "./ui/components/Toolbar/ribbon/ribbonModel.js";
 export type {
   RibbonGroupModel,
   RibbonTabDefinition,

@@ -8,7 +8,7 @@ import {
   serializeEditorSelectionToHtml,
 } from "@/core/editorCommands.js";
 import { parseEditorClipboardHtmlWithDom } from "@/app/clipboard/htmlClipboardParser.js";
-import { t } from "@/i18n/index.js";
+import type { TranslateFn } from "@/i18n/index.js";
 import type { ContextMenuItem } from "@/ui/components/ContextMenu/ContextMenu.js";
 import type { EditorLogger } from "@/utils/logger.js";
 
@@ -21,6 +21,7 @@ interface ContextMenuState {
 export interface EditorContextMenuClipboardDeps {
   state: () => EditorState;
   isReadOnly: () => boolean;
+  t: TranslateFn;
   logger: EditorLogger;
   setContextMenu: (state: ContextMenuState) => void;
   clearPreferredColumn: () => void;
@@ -59,6 +60,7 @@ export interface EditorContextMenuClipboardDeps {
 export function createEditorContextMenuClipboard(
   deps: EditorContextMenuClipboardDeps,
 ) {
+  const t = deps.t;
   const programmaticCopy = async () => {
     const state = deps.state();
     const text = getEditorSelectedText(state);
