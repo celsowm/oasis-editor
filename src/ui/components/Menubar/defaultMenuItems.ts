@@ -1,4 +1,4 @@
-import { defaultMenuRegistry, type MenuItem } from "./menuRegistry.js";
+import type { MenuItem } from "./menuRegistry.js";
 
 export const defaultMenuItems: MenuItem[] = [
   // File
@@ -373,5 +373,3 @@ export const defaultMenuItems: MenuItem[] = [
     hidden: true,
   },
 ];
-
-defaultMenuItems.forEach((item) => defaultMenuRegistry.register(item));

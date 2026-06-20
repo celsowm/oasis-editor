@@ -11,14 +11,12 @@ import {
   MenuRegistry,
   type MenuItem,
   type MenubarHost,
-  defaultMenuRegistry,
 } from "./menuRegistry.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
-import "./defaultMenuItems.js";
 
 export interface MenubarProps {
   host: () => MenubarHost;
-  registry?: MenuRegistry;
+  registry: MenuRegistry;
 }
 
 interface MenuTreeItem {
@@ -32,7 +30,7 @@ interface MenuTreeItem {
 export function Menubar(props: MenubarProps) {
   const [activeMenu, setActiveMenu] = createSignal<string | null>(null);
 
-  const menuItems = () => (props.registry ?? defaultMenuRegistry).getItems();
+  const menuItems = () => props.registry.getItems();
   const visibleMenuItems = () => menuItems().filter((item) => !item.hidden);
   const itemByPath = () =>
     new Map(visibleMenuItems().map((item) => [item.path, item]));

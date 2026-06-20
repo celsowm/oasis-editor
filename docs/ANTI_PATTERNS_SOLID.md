@@ -322,12 +322,16 @@ editor. Toolbar, dialogs e plugins recebem `t` pelo contexto/capability. Remover
 
 #### G3. Registry default global — risco residual, não caminho principal
 
-`defaultMenuRegistry` ainda é singleton e é populado no import do módulo
-(`menuRegistry.ts:50`, `defaultMenuItems.ts:377`). Entretanto, o runtime principal
-já cria `new MenuRegistry()` por app e copia os defaults
-(`useEditorRuntimePlugins.ts:34-42`). Logo, não é correto afirmar que toda
-customização de menubar vaza entre instâncias. O singleton deve ser removido do
-fallback de `Menubar`, mas sua prioridade é baixa.
+> **✅ Resolvido na Onda 1 (2026-06-20).** O singleton `defaultMenuRegistry` e a
+> populagem por side-effect no import (`defaultMenuItems.forEach(... register)`)
+> foram removidos. `Menubar` agora exige `registry` (prop obrigatória); os dois
+> usos no `DocumentShell` já passavam o registry por instância criado em
+> `useEditorRuntimePlugins`. Removido também o `import "./defaultMenuItems.js"`
+> só-por-efeito no `Menubar`. Gates: `tsc` limpo, suíte 577✓/1 skip.
+
+O runtime principal já criava `new MenuRegistry()` por app e copiava os defaults
+(`useEditorRuntimePlugins`), então não havia vazamento real de customização entre
+instâncias; isto apenas elimina o singleton morto restante.
 
 ### Barrels e dependência excessiva
 

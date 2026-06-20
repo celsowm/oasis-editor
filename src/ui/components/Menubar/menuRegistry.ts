@@ -46,5 +46,3 @@ export class MenuRegistry {
     return [...this.items];
   }
 }
-
-export const defaultMenuRegistry = new MenuRegistry();
