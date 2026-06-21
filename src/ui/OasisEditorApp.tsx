@@ -416,32 +416,37 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
       <EditorWorkspace
         useComposedShell={useComposedShell}
         shellComponent={shellComponent}
-        state={() => state}
-        toolbarHost={toolbarHost}
-        runtimeEditor={runtimeEditor}
-        persistenceStatus={persistenceStatus}
-        toolbarRegistry={toolbarRegistry}
-        menuRegistry={menuRegistry}
-        showChrome={showChrome}
-        showTitleBar={showTitleBar}
-        showMenubar={showMenubar}
-        showToolbar={showToolbar}
-        showOutline={showOutline}
-        toolbarView={toolbarView}
-        toolbarLayout={toolbarLayout}
-        isReadOnly={isReadOnly}
-        viewportHeight={() => ui().viewportHeight}
-        measuredBlockHeights={measuredBlockHeights}
-        measuredParagraphLayouts={measuredParagraphLayouts}
-        showFloatingTableToolbar={() =>
-          !isReadOnly() && commandStateOf("tableContext").value !== null
-        }
-        layout={editorLayoutProps}
-        overlays={editorOverlayProps}
-        refs={editorRefs}
-        surfaceHandlers={editorSurfaceHandlers}
-        inputHandlers={editorInputHandlers}
-        fileHandlers={editorFileHandlers}
+        runtime={{
+          state: () => state,
+          toolbarHost,
+          runtimeEditor,
+          persistenceStatus,
+          toolbarRegistry,
+          menuRegistry,
+          showFloatingTableToolbar: () =>
+            !isReadOnly() && commandStateOf("tableContext").value !== null,
+        }}
+        chrome={{
+          showChrome,
+          showTitleBar,
+          showMenubar,
+          showToolbar,
+          showOutline,
+          toolbarView,
+          toolbarLayout,
+        }}
+        view={{
+          isReadOnly,
+          viewportHeight: () => ui().viewportHeight,
+          measuredBlockHeights,
+          measuredParagraphLayouts,
+          layout: editorLayoutProps,
+          overlays: editorOverlayProps,
+          refs: editorRefs,
+          surfaceHandlers: editorSurfaceHandlers,
+          inputHandlers: editorInputHandlers,
+          fileHandlers: editorFileHandlers,
+        }}
       />
 
       <EditorDragLayers

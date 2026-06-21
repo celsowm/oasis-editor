@@ -20,17 +20,19 @@ import type {
 import type { OasisEditor } from "@/core/plugin.js";
 import { PluginUiHost } from "@/ui/components/PluginUi/PluginUiHost.js";
 
-export interface EditorWorkspaceProps {
-  useComposedShell: () => boolean;
-  shellComponent: () => (
-    props: ShellProps,
-  ) => ReturnType<typeof OasisEditorEditor>;
+/** Runtime facade the workspace forwards to the editor surface and shell. */
+export interface EditorWorkspaceRuntime {
   state: Accessor<EditorState>;
   toolbarHost: () => ToolbarHost;
   runtimeEditor: Accessor<OasisEditor>;
   persistenceStatus: () => string;
   toolbarRegistry: ToolbarRegistry;
   menuRegistry: MenuRegistry;
+  showFloatingTableToolbar: Accessor<boolean>;
+}
+
+/** Chrome visibility / toolbar-mode flags. */
+export interface EditorWorkspaceChrome {
   showChrome: () => boolean;
   showTitleBar: () => boolean;
   showMenubar: () => boolean;
@@ -38,17 +40,30 @@ export interface EditorWorkspaceProps {
   showOutline: () => boolean;
   toolbarView: () => ToolbarViewMode;
   toolbarLayout: () => ToolbarLayoutMode;
+}
+
+/** The document-view props: read-only/sizing plus the assembled prop bundles. */
+export interface EditorWorkspaceView {
   isReadOnly: () => boolean;
   viewportHeight: () => number | string | undefined;
   measuredBlockHeights: Accessor<Record<string, number>>;
   measuredParagraphLayouts: Accessor<Record<string, EditorLayoutParagraph>>;
-  showFloatingTableToolbar: Accessor<boolean>;
   layout: OasisEditorEditorLayoutProps;
   overlays: OasisEditorEditorOverlayProps;
   refs: OasisEditorEditorRefProps;
   surfaceHandlers: OasisEditorEditorSurfaceHandlers;
   inputHandlers: OasisEditorEditorInputHandlers;
   fileHandlers: OasisEditorEditorFileHandlers;
+}
+
+export interface EditorWorkspaceProps {
+  useComposedShell: () => boolean;
+  shellComponent: () => (
+    props: ShellProps,
+  ) => ReturnType<typeof OasisEditorEditor>;
+  runtime: EditorWorkspaceRuntime;
+  chrome: EditorWorkspaceChrome;
+  view: EditorWorkspaceView;
 }
 
 /**
@@ -59,32 +74,33 @@ export interface EditorWorkspaceProps {
 export function EditorWorkspace(props: EditorWorkspaceProps) {
   const renderComposedShell = () => {
     const Shell = props.shellComponent();
+    const { runtime, chrome, view } = props;
     return (
       <Shell
-        state={props.state()}
-        toolbarHost={props.toolbarHost}
-        runtimeEditor={props.runtimeEditor}
-        persistenceStatus={props.persistenceStatus}
-        toolbarRegistry={props.toolbarRegistry}
-        menuRegistry={props.menuRegistry}
-        showChrome={props.showChrome()}
-        showTitleBar={props.showTitleBar()}
-        showMenubar={props.showMenubar()}
-        showToolbar={props.showToolbar()}
-        showOutline={props.showOutline()}
-        toolbarView={props.toolbarView()}
-        toolbarLayout={props.toolbarLayout()}
-        isReadOnly={props.isReadOnly()}
-        measuredBlockHeights={props.measuredBlockHeights}
-        measuredParagraphLayouts={props.measuredParagraphLayouts}
-        viewportHeight={props.viewportHeight}
-        showFloatingTableToolbar={props.showFloatingTableToolbar}
-        layout={props.layout}
-        overlays={props.overlays}
-        refs={props.refs}
-        surfaceHandlers={props.surfaceHandlers}
-        inputHandlers={props.inputHandlers}
-        fileHandlers={props.fileHandlers}
+        state={runtime.state()}
+        toolbarHost={runtime.toolbarHost}
+        runtimeEditor={runtime.runtimeEditor}
+        persistenceStatus={runtime.persistenceStatus}
+        toolbarRegistry={runtime.toolbarRegistry}
+        menuRegistry={runtime.menuRegistry}
+        showChrome={chrome.showChrome()}
+        showTitleBar={chrome.showTitleBar()}
+        showMenubar={chrome.showMenubar()}
+        showToolbar={chrome.showToolbar()}
+        showOutline={chrome.showOutline()}
+        toolbarView={chrome.toolbarView()}
+        toolbarLayout={chrome.toolbarLayout()}
+        isReadOnly={view.isReadOnly()}
+        measuredBlockHeights={view.measuredBlockHeights}
+        measuredParagraphLayouts={view.measuredParagraphLayouts}
+        viewportHeight={view.viewportHeight}
+        showFloatingTableToolbar={runtime.showFloatingTableToolbar}
+        layout={view.layout}
+        overlays={view.overlays}
+        refs={view.refs}
+        surfaceHandlers={view.surfaceHandlers}
+        inputHandlers={view.inputHandlers}
+        fileHandlers={view.fileHandlers}
       />
     );
   };
@@ -94,27 +110,27 @@ export function EditorWorkspace(props: EditorWorkspaceProps) {
       <Show when={props.useComposedShell()}>{renderComposedShell()}</Show>
 
       <Show when={!props.useComposedShell()}>
-        <PluginUiHost editor={props.runtimeEditor}>
+        <PluginUiHost editor={props.runtime.runtimeEditor}>
           <div class="oasis-editor-main-container">
             <section class="oasis-editor-stage">
               <OasisEditorEditor
-                state={props.state}
+                state={props.runtime.state}
                 layout={{
-                  ...props.layout,
-                  measuredBlockHeights: props.measuredBlockHeights,
-                  measuredParagraphLayouts: props.measuredParagraphLayouts,
-                  readOnly: props.isReadOnly(),
+                  ...props.view.layout,
+                  measuredBlockHeights: props.view.measuredBlockHeights,
+                  measuredParagraphLayouts: props.view.measuredParagraphLayouts,
+                  readOnly: props.view.isReadOnly(),
                 }}
                 overlays={{
-                  ...props.overlays,
-                  toolbarHost: props.toolbarHost,
-                  persistenceStatus: props.persistenceStatus,
-                  showFloatingTableToolbar: props.showFloatingTableToolbar,
+                  ...props.view.overlays,
+                  toolbarHost: props.runtime.toolbarHost,
+                  persistenceStatus: props.runtime.persistenceStatus,
+                  showFloatingTableToolbar: props.runtime.showFloatingTableToolbar,
                 }}
-                refs={props.refs}
-                surfaceHandlers={props.surfaceHandlers}
-                inputHandlers={props.inputHandlers}
-                fileHandlers={props.fileHandlers}
+                refs={props.view.refs}
+                surfaceHandlers={props.view.surfaceHandlers}
+                inputHandlers={props.view.inputHandlers}
+                fileHandlers={props.view.fileHandlers}
               />
             </section>
           </div>
