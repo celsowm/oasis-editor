@@ -14,16 +14,11 @@ import { cloneEditorState } from "@/core/cloneState.js";
 import { Toolbar } from "./components/Toolbar/Toolbar.js";
 import { createAppCommandsController } from "./app/createAppCommandsController.js";
 import { createEditorKeyboardBinding } from "./app/createEditorKeyboardBinding.js";
-import { useEditorLayout } from "@/app/controllers/useEditorLayout.js";
-import { useEditorPersistence } from "@/app/controllers/useEditorPersistence.js";
-import { createIndexedDbPersistence } from "@/app/services/indexedDbPersistence.js";
 import { useEditorFindReplace } from "@/app/controllers/useEditorFindReplace.js";
 import { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
 import { createEditorImageOperations } from "@/app/controllers/useEditorImageOperations.js";
 import { createEditorTextBoxOperations } from "@/app/controllers/useEditorTextBoxOperations.js";
-import { createEditorDocumentIO } from "@/app/controllers/useEditorDocumentIO.js";
 import { createEditorStyleController } from "@/app/controllers/useEditorStyle.js";
-import { createEditorHistoryActions } from "@/app/controllers/useEditorHistoryActions.js";
 import "./components/FindReplace/findReplace.css";
 import { createTranslator } from "@/i18n/index.js";
 import { I18nProvider } from "@/i18n/I18nContext.js";
@@ -49,13 +44,12 @@ import { EditorDialogsLayer } from "./app/EditorDialogsLayer.js";
 import { useEditorInteractionWiring } from "./app/useEditorInteractionWiring.js";
 import { buildEditorViewProps } from "./app/buildEditorViewProps.js";
 import { EditorWorkspace } from "./app/EditorWorkspace.js";
-import { useEditorTransactions } from "./app/useEditorTransactions.js";
 import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
 import { OasisEditorLoading } from "./OasisEditorLoading.js";
 import { WelcomeOverlay } from "./components/WelcomeOverlay.js";
 import { createOasisEditorClient } from "@/app/client/OasisEditorClient.js";
 import { connectEditorClientHost } from "./app/connectEditorClientHost.js";
-import { createEditorChangeBroadcast } from "./app/createEditorChangeBroadcast.js";
+import { createEditorDocumentRuntime } from "./app/createEditorDocumentRuntime.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 export type {
@@ -85,6 +79,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const applyState = (nextState: EditorState) => {
     commitState(nextState);
   };
+  const cloneState = cloneEditorState;
+  let forcePlainTextPaste = false;
 
   const {
     showChrome,
@@ -140,26 +136,9 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const surfaceRef = () => focusController.surfaceRef;
   const importInputRef = () => focusController.importInputRef;
   const imageInputRef = () => focusController.imageInputRef;
-  const docIO = createEditorDocumentIO({
-    state: () => state,
-    applyState,
-    applyTransactionalState: (producer, options) =>
-      applyTransactionalState(producer, options),
-    isReadOnly,
-    surfaceRef: () => surfaceRef() ?? null,
-    stabilizeLayoutAfterImport: async () => {
-      await stabilizeLayoutAfterImport();
-    },
-    resetEditorChromeState: () => resetEditorChromeState(),
-    focusInput,
-    logger,
-  });
-  const isImportInProgress = () =>
-    docIO.importProgress()?.phase !== "done" &&
-    docIO.importProgress()?.phase !== "error" &&
-    docIO.importProgress() !== null;
-
   const {
+    docIO,
+    isImportInProgress,
     measuredBlockHeights,
     measuredParagraphLayouts,
     inputBox,
@@ -174,48 +153,10 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     stabilizeLayoutAfterImport,
     setMeasuredBlockHeights,
     setMeasuredParagraphLayouts,
-    applyInvalidation: applyLayoutInvalidation,
-    onCleanupHook,
-  } = useEditorLayout({
-    state,
-    surfaceRef,
-    viewportRef,
-    isImporting: isImportInProgress,
-    zoomFactor: zoom.zoomFactor,
-  });
-
-  // Default persistence is created once per editor instance, keyed so two
-  // editors on the same page never share IndexedDB storage. The connection
-  // stays lazy until the first save/load.
-  const fallbackPersistence = createIndexedDbPersistence({
-    key: documentOptions().persistenceKey,
-  });
-
-  const { status: persistenceStatus } = useEditorPersistence(
-    state,
-    (loadedDoc) => {
-      logger.info("persistence:loaded", { docId: loadedDoc.id });
-      const nextState = createEditorStateFromDocument(loadedDoc);
-      commitState(nextState);
-      resetEditorChromeState();
-    },
-    {
-      enabled: documentOptions().persistenceEnabled ?? false,
-      persistence: documentOptions().persistence ?? fallbackPersistence,
-      logger,
-    },
-  );
-
-  let forcePlainTextPaste = false;
-  const cloneState = cloneEditorState;
-
-  const transactions = useEditorTransactions({
-    stateSnapshot: getStateSnapshot,
-    commitState,
-    cloneState,
     applyLayoutInvalidation,
-  });
-  const {
+    onCleanupHook,
+    fallbackPersistence,
+    persistenceStatus,
     undoStack,
     redoStack,
     applyTransactionalState,
@@ -224,27 +165,23 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     updateHistoryState,
     getHistoryState,
     clearHistory,
-  } = transactions;
-
-  const historyActions = createEditorHistoryActions({
-    state: () => state,
-    stateSnapshot: getStateSnapshot,
-    applyHistoryState,
-    applyTransactionalState,
-    focusInput,
-    clearPreferredColumn,
-    imageOps: () => imageOps,
-    updateHistoryState,
-    getHistoryState,
-  });
-
-  createEditorChangeBroadcast({
-    state: state as EditorState,
-    isImportInProgress,
-    cloneState,
+    historyActions,
+    resetEditorChromeState,
+  } = createEditorDocumentRuntime({
+    documentOptions,
+    logger,
+    runtimeClient,
+    state,
+    commitState,
     getStateSnapshot,
-    getOnStateChange: () => documentOptions().onStateChange,
-    emit: runtimeClient.emit,
+    applyState,
+    cloneState,
+    isReadOnly,
+    focusInput,
+    surfaceRef,
+    viewportRef,
+    zoomFactor: zoom.zoomFactor,
+    getImageOps: () => imageOps,
   });
 
   const selectedImageRun = () => getSelectedImageRun(state);
@@ -273,13 +210,6 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     applyTransactionalState,
     focusInput,
   });
-
-  const resetEditorChromeState = () => {
-    clearPreferredColumn();
-    setMeasuredBlockHeights({});
-    setMeasuredParagraphLayouts({});
-    clearHistory();
-  };
 
   const tableOps = createEditorTableOperations({
     applyTransactionalState,
