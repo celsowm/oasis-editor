@@ -6,6 +6,7 @@ import type {
   EditorTextRun,
 } from "@/core/model.js";
 import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
+import { assertNever } from "@/core/assertNever.js";
 
 export function cloneTextBox(textBox: EditorTextBoxData): EditorTextBoxData {
   return {
@@ -70,49 +71,53 @@ export function cloneParagraphs(
 
 export function cloneBlocks(blocks: EditorBlockNode[]): EditorBlockNode[] {
   return blocks.map((block) => {
-    if (block.type === "paragraph") {
-      return cloneParagraph(block);
-    }
-    return {
-      ...block,
-      style: block.style
-        ? {
-            ...block.style,
-            defaultCellMargins: block.style.defaultCellMargins
-              ? { ...block.style.defaultCellMargins }
-              : undefined,
-            floating: block.style.floating
-              ? { ...block.style.floating }
-              : undefined,
-            revisionXml: block.style.revisionXml
-              ? [...block.style.revisionXml]
-              : undefined,
-          }
-        : undefined,
-      tblGridChangeXml: block.tblGridChangeXml,
-      rows: block.rows.map((row) => ({
-        ...row,
-        style: row.style
-          ? {
-              ...row.style,
-              revisionXml: row.style.revisionXml
-                ? [...row.style.revisionXml]
-                : undefined,
-            }
-          : undefined,
-        cells: row.cells.map((cell) => ({
-          ...cell,
-          style: cell.style
+    switch (block.type) {
+      case "paragraph":
+        return cloneParagraph(block);
+      case "table":
+        return {
+          ...block,
+          style: block.style
             ? {
-                ...cell.style,
-                revisionXml: cell.style.revisionXml
-                  ? [...cell.style.revisionXml]
+                ...block.style,
+                defaultCellMargins: block.style.defaultCellMargins
+                  ? { ...block.style.defaultCellMargins }
+                  : undefined,
+                floating: block.style.floating
+                  ? { ...block.style.floating }
+                  : undefined,
+                revisionXml: block.style.revisionXml
+                  ? [...block.style.revisionXml]
                   : undefined,
               }
             : undefined,
-          blocks: cloneParagraphs(cell.blocks),
-        })),
-      })),
-    };
+          tblGridChangeXml: block.tblGridChangeXml,
+          rows: block.rows.map((row) => ({
+            ...row,
+            style: row.style
+              ? {
+                  ...row.style,
+                  revisionXml: row.style.revisionXml
+                    ? [...row.style.revisionXml]
+                    : undefined,
+                }
+              : undefined,
+            cells: row.cells.map((cell) => ({
+              ...cell,
+              style: cell.style
+                ? {
+                    ...cell.style,
+                    revisionXml: cell.style.revisionXml
+                      ? [...cell.style.revisionXml]
+                      : undefined,
+                  }
+                : undefined,
+              blocks: cloneParagraphs(cell.blocks),
+            })),
+          })),
+        };
+      default:
+        return assertNever(block, "block");
+    }
   });
 }

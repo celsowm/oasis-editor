@@ -10,6 +10,7 @@ import type {
   EditorTextRun,
 } from "@/core/model.js";
 import { getDocumentSections, getParagraphLength } from "@/core/model.js";
+import { assertNever } from "@/core/assertNever.js";
 import { cloneBlocks, cloneParagraph, cloneParagraphs } from "./clone.js";
 
 export const IMAGE_CAPTION_STYLE_ID = "Caption";
@@ -162,25 +163,28 @@ function renumberBlocks(
   sequence: { next: number },
 ): EditorBlockNode[] {
   return blocks.map((block) => {
-    if (block.type === "paragraph") {
-      if (!isImageCaptionParagraph(block)) {
-        return cloneParagraph(block);
-      }
-      return renumberCaptionParagraph(block, sequence.next++);
+    switch (block.type) {
+      case "paragraph":
+        return isImageCaptionParagraph(block)
+          ? renumberCaptionParagraph(block, sequence.next++)
+          : cloneParagraph(block);
+      case "table":
+        return {
+          ...block,
+          rows: block.rows.map((row) => ({
+            ...row,
+            cells: row.cells.map((cell) => ({
+              ...cell,
+              blocks: renumberBlocks(
+                cell.blocks,
+                sequence,
+              ) as EditorParagraphNode[],
+            })),
+          })),
+        };
+      default:
+        return assertNever(block, "block");
     }
-    return {
-      ...block,
-      rows: block.rows.map((row) => ({
-        ...row,
-        cells: row.cells.map((cell) => ({
-          ...cell,
-          blocks: renumberBlocks(
-            cell.blocks,
-            sequence,
-          ) as EditorParagraphNode[],
-        })),
-      })),
-    };
   });
 }
 

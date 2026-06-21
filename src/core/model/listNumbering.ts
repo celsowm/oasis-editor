@@ -2,6 +2,7 @@ import type { EditorDocument } from "./types/document.js";
 import type { EditorBlockNode, EditorParagraphNode } from "./types/nodes.js";
 import type { EditorParagraphListStyle } from "./types/primitives.js";
 import { getDocumentParagraphs } from "./documentIndex.js";
+import { assertNever } from "../assertNever.js";
 
 const BULLET_GLYPHS = ["•", "○", "▪", "•", "○", "▪"];
 const ORDERED_DEFAULT_FORMATS: NonNullable<
@@ -106,13 +107,18 @@ function collectNumberingParagraphs(
   };
   const collectBlocks = (blocks: EditorBlockNode[]): void => {
     for (const block of blocks) {
-      if (block.type === "paragraph") {
-        result.push(block);
-        collectTextBoxes(block);
-      } else {
-        for (const row of block.rows) {
-          for (const cell of row.cells) collectBlocks(cell.blocks);
-        }
+      switch (block.type) {
+        case "paragraph":
+          result.push(block);
+          collectTextBoxes(block);
+          break;
+        case "table":
+          for (const row of block.rows) {
+            for (const cell of row.cells) collectBlocks(cell.blocks);
+          }
+          break;
+        default:
+          assertNever(block, "block");
       }
     }
   };

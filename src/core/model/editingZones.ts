@@ -12,6 +12,7 @@ import type { EditorBlockNode, EditorParagraphNode } from "./types/nodes.js";
 import type { EditorState } from "./editorState.js";
 import type { EditorEditingZone } from "./types/selection.js";
 import { getDocumentSections } from "./documentSections.js";
+import { getBlockParagraphs } from "./paragraphWalker.js";
 
 export function getActiveSectionIndex(state: EditorState): number {
   return state.activeSectionIndex ?? 0;
@@ -87,9 +88,6 @@ export function getActiveSectionBlocks(state: EditorState): EditorBlockNode[] {
  */
 export function getParagraphs(state: EditorState): EditorParagraphNode[] {
   return getEditableBlocksForZone(state, getActiveZone(state)).flatMap(
-    (block) =>
-      block.type === "paragraph"
-        ? [block]
-        : block.rows.flatMap((row) => row.cells.flatMap((cell) => cell.blocks)),
+    getBlockParagraphs,
   );
 }
