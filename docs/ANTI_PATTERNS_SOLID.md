@@ -148,17 +148,22 @@ ser feita como alteração pública deliberada, com migração de fixtures e doc
 
 #### O2. Dispatch de blocos permanece distribuído
 
-> **🟡 Parcial (Onda 6, 2026-06-21).** Introduzido o guard de exaustividade
-> `src/core/assertNever.ts` (helper local, _não_ um registry global). Convertidos
-> para `switch (block.type)` com `default: assertNever(block)` os visitors que
-> antes assumiam "tabela" no `else` — onde uma variante esquecida causaria perda
-> silenciosa: `cloneState.cloneBlock`, `paragraphWalker.getBlockParagraphs`,
+> **✅ Visitors exaustivos (Onda 6, 2026-06-21).** Introduzido o guard de
+> exaustividade `src/core/assertNever.ts` (helper local, _não_ um registry
+> global). Todos os visitors que antes assumiam "tabela" no `else` — onde uma
+> variante esquecida causaria perda silenciosa — agora são `switch (block.type)`
+> com `default: assertNever(block)`:
+> `cloneState.cloneBlock`, `paragraphWalker.getBlockParagraphs`,
 > `documentIndex.indexBlock`, `docxBlockVisitor.visitBlocks`,
-> `blocksXml.serializeBlocksXml`, o driver de `blocksPagination` e
-> `drawBlockList` (PDF). Adicionar um terceiro tipo de bloco agora é erro de
-> compilação nesses pipelines. Restam os
-> sites de dispatch puramente predicativos (filtros booleanos), que não precisam
-> de exaustividade. Gates: `tsc` limpo, `check:imports` ok, suíte 579✓ + 2 novos.
+> `blocksXml.serializeBlocksXml`, o driver de `blocksPagination`,
+> `listNumbering.collectBlocks`, `imageCaptions.renumberBlocks`,
+> `document/clone.cloneBlocks`, `endnotes`/`footnotes` (rewrite de marcadores) e
+> os loops de PDF `drawBlockList` / `drawTextBoxShape`. Também deduplicado
+> `editingZones.getParagraphs` para reusar `getBlockParagraphs`. Adicionar um
+> terceiro tipo de bloco é erro de compilação nesses pipelines. Restam apenas os
+> sites de dispatch puramente predicativos (filtros booleanos) e a _construção_
+> de runs no import, que não precisam de exaustividade. Gates: `tsc` limpo,
+> `check:imports` ok, suíte 586✓/1 skip, `build:lib` ok.
 
 O modelo de blocos **já** é uma união discriminada correta
 (`src/core/model/types/nodes.ts:134-142`, `:219-229`). O problema não é o tipo,
