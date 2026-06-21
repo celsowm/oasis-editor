@@ -20,12 +20,10 @@ export function createEditorCommandBus(editor: OasisEditor): CommandBus {
     },
     state(command) {
       const resolved = resolveCommandRef(command);
-      const registered = editor.commands.get(resolved.name);
-      return (
-        registered?.refresh?.(resolved.payload) ?? {
-          isEnabled: editor.commands.has(resolved.name),
-        }
-      );
+      // Delegate to the registry so `refresh` receives the command context the
+      // same way `execute`/`canExecute` do — calling `refresh` here directly
+      // would drop the context and diverge from CommandRegistry.state (L2).
+      return editor.commands.state(resolved.name, resolved.payload);
     },
   };
 }

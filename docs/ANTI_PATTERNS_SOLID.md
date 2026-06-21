@@ -168,6 +168,16 @@ mas torna a pré-condição explícita.
 
 #### L2. Implementações de command bus não avaliam estado da mesma forma
 
+> **✅ Divergência de runtime resolvida (Onda 6, 2026-06-21).**
+> `createEditorCommandBus().state` agora delega a `editor.commands.state(name,
+> payload)` em vez de chamar `refresh` direto, igualando os três métodos do bus
+> (`execute`/`canExecute`/`state`) e garantindo que `refresh` recebe o
+> `OasisCommandContext`. Coberto por `tests/.../core/commandBus.test.ts`.
+> Resta a parte de _tipagem_ (genéricos de `execute` por command map), que se
+> sobrepõe a **C1** e segue pendente como mudança de tipos pública.
+>
+> Gates: `tsc` limpo, `check:imports` ok, suíte 580✓/1 skip.
+
 `CommandRegistry.state` passa payload e contexto para `refresh`
 (`src/core/commands/CommandRegistry.ts:62-67`). Já
 `createEditorCommandBus().state` chama `refresh` diretamente apenas com payload
