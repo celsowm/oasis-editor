@@ -4,6 +4,7 @@ import type {
   EditorPageSettings,
 } from "@/core/model.js";
 import { resolveEffectiveParagraphStyle } from "@/core/model.js";
+import { assertNever } from "@/core/assertNever.js";
 import { getParagraphBorderInsets } from "@/layoutProjection/index.js";
 import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
@@ -38,66 +39,75 @@ export async function drawBlockList(
   const contentTop = originY;
   let cursorY = originY;
   for (const block of blocks) {
-    if (block.sourceBlock.type === "paragraph" && block.layout) {
-      const paragraphStyle = resolveEffectiveParagraphStyle(
-        block.sourceBlock.style,
-        document.styles,
-      );
-      const spacingBefore =
-        block.layout.startOffset === 0 && cursorY > originY
-          ? (paragraphStyle.spacingBefore ?? 0)
-          : 0;
-      const boxTop = cursorY + spacingBefore;
-      const textTop = boxTop + getParagraphBorderInsets(paragraphStyle).top;
-      drawParagraphDecorations(
-        writer,
-        pageIndex,
-        paragraphStyle,
-        block.layout.lines,
-        originX,
-        boxTop,
-        contentWidth,
-      );
-      await drawParagraph(
-        writer,
-        pageIndex,
-        block.sourceBlock,
-        block.layout.lines,
-        document,
-        originX,
-        textTop,
-        fontRegistry,
-        listOrdinals,
-        blockDrawers,
-      );
-      if (pageSettings) {
-        await drawFloatingTextBoxesForParagraph({
+    switch (block.sourceBlock.type) {
+      case "paragraph": {
+        if (!block.layout) {
+          break;
+        }
+        const paragraphStyle = resolveEffectiveParagraphStyle(
+          block.sourceBlock.style,
+          document.styles,
+        );
+        const spacingBefore =
+          block.layout.startOffset === 0 && cursorY > originY
+            ? (paragraphStyle.spacingBefore ?? 0)
+            : 0;
+        const boxTop = cursorY + spacingBefore;
+        const textTop = boxTop + getParagraphBorderInsets(paragraphStyle).top;
+        drawParagraphDecorations(
           writer,
-          document,
-          fontRegistry,
           pageIndex,
-          lines: block.layout.lines,
-          pageSettings,
-          contentLeft: originX,
-          contentTop,
+          paragraphStyle,
+          block.layout.lines,
+          originX,
+          boxTop,
           contentWidth,
-          paragraphTop: boxTop,
-          drawers: blockDrawers,
-        });
+        );
+        await drawParagraph(
+          writer,
+          pageIndex,
+          block.sourceBlock,
+          block.layout.lines,
+          document,
+          originX,
+          textTop,
+          fontRegistry,
+          listOrdinals,
+          blockDrawers,
+        );
+        if (pageSettings) {
+          await drawFloatingTextBoxesForParagraph({
+            writer,
+            document,
+            fontRegistry,
+            pageIndex,
+            lines: block.layout.lines,
+            pageSettings,
+            contentLeft: originX,
+            contentTop,
+            contentWidth,
+            paragraphTop: boxTop,
+            drawers: blockDrawers,
+          });
+        }
+        break;
       }
-    } else if (block.sourceBlock.type === "table") {
-      await drawTableBlock(
-        writer,
-        pageIndex,
-        block,
-        document,
-        originX,
-        cursorY,
-        contentWidth,
-        fontRegistry,
-        listOrdinals,
-        blockDrawers,
-      );
+      case "table":
+        await drawTableBlock(
+          writer,
+          pageIndex,
+          block,
+          document,
+          originX,
+          cursorY,
+          contentWidth,
+          fontRegistry,
+          listOrdinals,
+          blockDrawers,
+        );
+        break;
+      default:
+        assertNever(block.sourceBlock, "block");
     }
     cursorY += Math.max(0, block.estimatedHeight);
   }
