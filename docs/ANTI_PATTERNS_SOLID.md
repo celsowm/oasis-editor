@@ -32,7 +32,7 @@ criando ou conectando a maior parte dos controllers do produto.
 | G2  | ~~Três geradores globais e independentes de IDs~~ ✅ resolvido       |          — |                      — |       — |
 | D1  | ~~`core/plugin.ts` depende de UI e ciclo de 7 módulos~~ ✅ resolvido |          — |                      — |       — |
 | D2  | ~~Ciclos nos pipelines canvas, PDF, DOCX export e DOCX import~~ ✅ resolvido |     — |                      — |       — |
-| S1  | `OasisEditorApp` ainda é composition root com lógica operacional    |       Alta |                   Alto |       L |
+| S1  | Composition root com lógica operacional 🟢 lógica extraída em 4 fases (892→471); falta só bundles de view (ver I1) | Baixa | Médio | M |
 | D3  | ~~Persistência default é singleton com chave fixa~~ ✅ resolvido     |          — |                      — |       — |
 | C1  | ~~Contratos de command bus têm tipagem e `refresh` inconsistentes~~ ✅ resolvido (L2 runtime + `TypedCommandBus`) | — |        — |       — |
 | I1  | Dependency bags de 17–38 membros e props drilling                   |      Média |             Médio/alto |       M |
@@ -103,17 +103,35 @@ criando ou conectando a maior parte dos controllers do produto.
 > importados no app. `OasisEditorApp.tsx` 747→733 linhas, 51→49 imports. Gates:
 > `tsc` limpo, `check:imports` 0 ciclos, suíte 586✓/1 skip, `build:lib` ok.
 >
-> Pendente: extrair bootstrap de documento, interaction runtime e o runtime
-> bootstrap/dispatch effect; agrupar `EditorWorkspaceProps`/
-> `buildEditorViewProps` em bundles; meta de ~400 linhas.
+> **🟢 Runtime decomposto em fases (Onda 3, 2026-06-21).** O restante da lógica
+> operacional foi extraído em quatro fases que rodam síncronas no owner do
+> componente, **sem reordenar nenhum signal/effect** (a store é criada no app e
+> passada às fases; back-edges entre fases resolvidas por getters tipados):
+> `createEditorChangeBroadcast` (effect de mirror de estado, 5a),
+> `createEditorDocumentRuntime` (state IO + layout + persistência + transações/
+> histórico, 5b), `createEditorInteractionRuntime` (hit/find-replace/table/image/
+> textbox ops + style + interaction wiring, 5c) e `createEditorCommandRuntime`
+> (command controller + runtime bootstrap + client host + dispatch effect +
+> keyboard binding, 5d). As únicas forward-edges (`history→imageOps`,
+> `style→commands`) são lazy e explícitas. `OasisEditorApp.tsx` **733→471 linhas**
+> (−47% do baseline de 892), **32 imports internos**. Gates por lote: `tsc` limpo,
+> `check:imports` 0 ciclos, suíte 586✓/1 skip, `build:lib` ok.
+>
+> **Container único (5e) deliberadamente adiado.** Juntar as quatro fases num
+> `EditorRuntimeContext` exigiria um bag plano de ~50 campos (tudo que
+> `buildEditorViewProps` + JSX consomem), pioraria a legibilidade frente aos três
+> bags nomeados atuais e renderia só ~60 linhas — sem cruzar <400 (JSX ~110 +
+> `buildEditorViewProps` ~50 são intrínsecos do composition root). O caminho que
+> de fato reduz e melhora ISP é agrupar `EditorWorkspaceProps`/
+> `buildEditorViewProps` em bundles (`runtime`/`chrome`/`view`), que é **I1**.
+> S1 considerado substancialmente concluído: a lógica operacional saiu do root.
 
-**Evidência:** `src/ui/OasisEditorApp.tsx:84-220` inicializa client, i18n, estado,
-opções, foco, zoom, dialogs e IO. O mesmo componente instancia histórico,
+**Evidência (baseline, commit `8faf07e`):** `OasisEditorApp.tsx` inicializava
+client, i18n, estado, opções, foco, zoom, dialogs e IO, instanciava histórico,
 hit-testing, operações de tabela/imagem/textbox, estilo, comandos, teclado e
-bridges (`src/ui/OasisEditorApp.tsx:225-703`), monta o context menu de tabela
-(`src/ui/OasisEditorApp.tsx:679-703`) e forma 38 entradas para
-`buildEditorViewProps` (`src/ui/OasisEditorApp.tsx:705-753`). O arquivo tem 892
-linhas e 55 dependências internas.
+bridges, montava o context menu de tabela e formava 38 entradas para
+`buildEditorViewProps`. O arquivo tinha 892 linhas e 55 dependências internas.
+Após a Onda 3 são 471 linhas / 32 imports (ver nota acima).
 
 **Por que é violação:** composition root pode conhecer implementações, mas não
 deveria também conter regras operacionais, adaptações de payload, callbacks de
