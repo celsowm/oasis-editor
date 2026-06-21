@@ -1,0 +1,395 @@
+import type {
+  EditorBlockNode,
+  EditorLayoutBlock,
+  EditorNamedStyle,
+  EditorParagraphNode,
+  EditorTextBoxData,
+} from "@/core/model.js";
+import type { ITextMeasurer } from "@/core/engine.js";
+import {
+  applyMeasuredLineGeometry,
+  applyWidowOrphanControl,
+  createParagraphSegmentLayout,
+  estimateParagraphBlockHeight,
+  getEffectiveParagraphStyle,
+  getParagraphMeasuredHeight,
+  getParagraphSegmentFitHeight,
+  getParagraphSegmentHeight,
+  getProjectedParagraphBlockHeight,
+  isMeasuredLayoutCurrent,
+  projectParagraphLayout,
+  projectParagraphLayoutWithExclusions,
+  shouldCollapseContextualSpacing,
+} from "./paragraphPagination.js";
+import { estimateTableBlockHeight } from "./tablePagination.js";
+import type { PaginationTrack, TrackLayoutParams } from "./paginationTrack.js";
+
+const TEXT_BOX_AUTOFIT_SAFETY_PX = 2;
+
+function estimateTextBoxAutoFitHeight(
+  textBox: EditorTextBoxData,
+  styles: Record<string, EditorNamedStyle> | undefined,
+  measurer: ITextMeasurer,
+  pageIndex: number | undefined,
+  totalPages: number | undefined,
+  defaultTabStop: number | undefined,
+): number {
+  if (!textBox.body?.autoFit) {
+    return textBox.height;
+  }
+
+  const padding = {
+    left: textBox.body?.paddingLeft ?? 0,
+    top: textBox.body?.paddingTop ?? 0,
+    right: textBox.body?.paddingRight ?? 0,
+    bottom: textBox.body?.paddingBottom ?? 0,
+  };
+
+  const innerWidth = Math.max(1, textBox.width - padding.left - padding.right);
+
+  const contentHeight = textBox.blocks.reduce((sum, block) => {
+    if (block.type === "paragraph") {
+      const layout = projectParagraphLayout(
+        block,
+        pageIndex,
+        totalPages,
+        styles,
+        innerWidth,
+        measurer,
+        defaultTabStop,
+      );
+
+      return sum + getProjectedParagraphBlockHeight(block, layout, styles);
+    }
+
+    if (block.type === "table") {
+      return (
+        sum +
+        estimateTableBlockHeight(
+          block,
+          styles,
+          innerWidth,
+          measurer,
+          defaultTabStop,
+        )
+      );
+    }
+
+    return sum;
+  }, 0);
+
+  return Math.max(
+    1,
+    Math.ceil(
+      contentHeight + padding.top + padding.bottom + TEXT_BOX_AUTOFIT_SAFETY_PX,
+    ),
+  );
+}
+
+/**
+ * Lays a single paragraph block into the track, splitting it across page
+ * breaks as needed (keep-lines-together, keep-with-next, widow/orphan control
+ * and contextual-spacing collapse). Extracted from projectColumnTrackLayout.
+ */
+export function paginateParagraphBlock(
+  track: PaginationTrack,
+  params: TrackLayoutParams,
+  sourceBlock: EditorParagraphNode,
+  nextBlock: EditorBlockNode | undefined,
+  index: number,
+): void {
+  const {
+    pageSettings,
+    contentWidth,
+    measurer,
+    styles,
+    totalPages,
+    defaultTabStop,
+    measuredHeights,
+    measuredParagraphLayouts,
+  } = params;
+
+  const pageIndex = track.pageIndex;
+  const projectedParagraphLayout = projectParagraphLayoutWithExclusions(
+    sourceBlock,
+    pageSettings,
+    contentWidth,
+    measurer,
+    pageIndex,
+    totalPages,
+    styles,
+    defaultTabStop,
+    (textBox) =>
+      estimateTextBoxAutoFitHeight(
+        textBox,
+        styles,
+        measurer,
+        pageIndex,
+        totalPages,
+        defaultTabStop,
+      ),
+  );
+  const measuredParagraphLayout = measuredParagraphLayouts?.[sourceBlock.id];
+  const paragraphLayout =
+    measuredParagraphLayout &&
+    isMeasuredLayoutCurrent(projectedParagraphLayout, measuredParagraphLayout)
+      ? applyMeasuredLineGeometry(
+          projectedParagraphLayout,
+          measuredParagraphLayout,
+        )
+      : projectedParagraphLayout;
+  let collapseWithPrevious = false;
+  let contextualAdjustedPreviousBlock: EditorLayoutBlock | undefined;
+  let contextualAdjustedAmount = 0;
+  let paragraphTotalHeight =
+    measuredHeights?.[sourceBlock.id] ??
+    getProjectedParagraphBlockHeight(sourceBlock, paragraphLayout, styles);
+  const paragraphStyle = getEffectiveParagraphStyle(sourceBlock, styles);
+  const nextBlockHeight =
+    nextBlock?.type === "paragraph"
+      ? (measuredHeights?.[nextBlock.id] ??
+        estimateParagraphBlockHeight(
+          nextBlock,
+          styles,
+          contentWidth,
+          measurer,
+          {
+            allowSpacingBefore: !shouldCollapseContextualSpacing(
+              sourceBlock,
+              nextBlock,
+              styles,
+            ),
+          },
+          defaultTabStop,
+        ))
+      : nextBlock
+        ? (measuredHeights?.[nextBlock.id] ??
+          estimateTableBlockHeight(
+            nextBlock,
+            styles,
+            contentWidth,
+            measurer,
+            defaultTabStop,
+          ))
+        : 0;
+  if (
+    paragraphStyle.keepWithNext &&
+    track.blocks.length > 0 &&
+    track.height + paragraphTotalHeight + nextBlockHeight >
+      track.currentMaxHeight &&
+    paragraphTotalHeight + nextBlockHeight <= track.currentMaxHeight
+  ) {
+    track.flush();
+  }
+
+  const previousBlock = track.blocks.at(-1);
+  const previousParagraph =
+    previousBlock?.blockType === "paragraph" &&
+    previousBlock.sourceBlock?.type === "paragraph"
+      ? previousBlock.sourceBlock
+      : undefined;
+  collapseWithPrevious =
+    track.blocks.length > 0 &&
+    shouldCollapseContextualSpacing(previousParagraph, sourceBlock, styles);
+  if (collapseWithPrevious && previousBlock && previousParagraph) {
+    const previousStyle = getEffectiveParagraphStyle(previousParagraph, styles);
+    const collapsedSpacingAfter = previousStyle.spacingAfter ?? 0;
+    if (collapsedSpacingAfter > 0) {
+      previousBlock.estimatedHeight = Math.max(
+        0,
+        previousBlock.estimatedHeight - collapsedSpacingAfter,
+      );
+      track.height = Math.max(0, track.height - collapsedSpacingAfter);
+      contextualAdjustedPreviousBlock = previousBlock;
+      contextualAdjustedAmount = collapsedSpacingAfter;
+    }
+    paragraphTotalHeight =
+      measuredHeights?.[sourceBlock.id] ??
+      getProjectedParagraphBlockHeight(
+        sourceBlock,
+        paragraphLayout,
+        styles,
+        false,
+      );
+  }
+
+  if (
+    paragraphStyle.keepLinesTogether &&
+    paragraphTotalHeight <= track.currentMaxHeight
+  ) {
+    if (
+      track.blocks.length > 0 &&
+      track.height + paragraphTotalHeight > track.currentMaxHeight
+    ) {
+      track.flush();
+    }
+    const segmentId = `${sourceBlock.id}:segment:0`;
+    const rawMeasuredHeight = getParagraphMeasuredHeight(
+      measuredHeights,
+      sourceBlock.id,
+      segmentId,
+      true,
+      paragraphTotalHeight,
+    );
+    const hasMeasuredHeight =
+      measuredHeights?.[segmentId] !== undefined ||
+      measuredHeights?.[sourceBlock.id] !== undefined;
+    const measuredHeight =
+      collapseWithPrevious && hasMeasuredHeight
+        ? Math.max(0, rawMeasuredHeight - (paragraphStyle.spacingBefore ?? 0))
+        : rawMeasuredHeight;
+    track.blocks.push({
+      blockId: segmentId,
+      sourceBlockId: sourceBlock.id,
+      blockType: sourceBlock.type,
+      paragraphId: sourceBlock.id,
+      globalIndex: index,
+      estimatedHeight: measuredHeight,
+      layout: paragraphLayout,
+      sourceBlock,
+    });
+    track.height += measuredHeight;
+    return;
+  }
+
+  let startLineIndex = 0;
+  let segmentIndex = 0;
+  while (startLineIndex < paragraphLayout.lines.length) {
+    const remainingHeight = track.currentMaxHeight - track.height;
+    let lineEndIndex = startLineIndex;
+    let segmentHeight = 0;
+
+    while (lineEndIndex < paragraphLayout.lines.length) {
+      const candidateLines = paragraphLayout.lines.slice(
+        startLineIndex,
+        lineEndIndex + 1,
+      );
+      const candidateHeight = getParagraphSegmentHeight(
+        sourceBlock,
+        candidateLines,
+        startLineIndex === 0,
+        lineEndIndex === paragraphLayout.lines.length - 1,
+        styles,
+        !collapseWithPrevious,
+      );
+      const candidateFitHeight = getParagraphSegmentFitHeight(
+        sourceBlock,
+        candidateHeight,
+        lineEndIndex === paragraphLayout.lines.length - 1,
+        styles,
+      );
+      const tolerance = 1.5;
+      if (
+        candidateFitHeight > remainingHeight + tolerance &&
+        lineEndIndex === startLineIndex &&
+        track.blocks.length > 0
+      ) {
+        break;
+      }
+      if (
+        candidateFitHeight > remainingHeight + tolerance &&
+        lineEndIndex > startLineIndex
+      ) {
+        break;
+      }
+      segmentHeight = candidateHeight;
+      lineEndIndex += 1;
+    }
+
+    if (lineEndIndex === startLineIndex && track.blocks.length > 0) {
+      if (contextualAdjustedPreviousBlock && contextualAdjustedAmount > 0) {
+        contextualAdjustedPreviousBlock.estimatedHeight +=
+          contextualAdjustedAmount;
+        track.height += contextualAdjustedAmount;
+        contextualAdjustedPreviousBlock = undefined;
+        contextualAdjustedAmount = 0;
+      }
+      collapseWithPrevious = false;
+      track.flush();
+      continue;
+    }
+
+    if (lineEndIndex === startLineIndex) {
+      lineEndIndex = Math.min(paragraphLayout.lines.length, startLineIndex + 1);
+      segmentHeight = getParagraphSegmentHeight(
+        sourceBlock,
+        paragraphLayout.lines.slice(startLineIndex, lineEndIndex),
+        startLineIndex === 0,
+        lineEndIndex === paragraphLayout.lines.length,
+        styles,
+        !collapseWithPrevious,
+      );
+    }
+
+    if (lineEndIndex < paragraphLayout.lines.length) {
+      const widowOrphanAdjusted = applyWidowOrphanControl(
+        sourceBlock,
+        paragraphLayout.lines,
+        startLineIndex,
+        lineEndIndex,
+        styles,
+        !collapseWithPrevious,
+        true,
+        track.blocks.length > 0,
+      );
+      lineEndIndex = widowOrphanAdjusted.endLineIndexExclusive;
+      segmentHeight = widowOrphanAdjusted.height;
+
+      if (lineEndIndex === startLineIndex) {
+        // Orphan control pulled the paragraph's lone first line back; move
+        // the whole paragraph to the next page.
+        if (contextualAdjustedPreviousBlock && contextualAdjustedAmount > 0) {
+          contextualAdjustedPreviousBlock.estimatedHeight +=
+            contextualAdjustedAmount;
+          track.height += contextualAdjustedAmount;
+          contextualAdjustedPreviousBlock = undefined;
+          contextualAdjustedAmount = 0;
+        }
+        collapseWithPrevious = false;
+        track.flush();
+        continue;
+      }
+    }
+
+    const segmentLayout = createParagraphSegmentLayout(
+      paragraphLayout,
+      startLineIndex,
+      lineEndIndex,
+    );
+    const segmentId = `${sourceBlock.id}:segment:${segmentIndex}`;
+    const isWholeParagraphSegment =
+      startLineIndex === 0 && lineEndIndex === paragraphLayout.lines.length;
+    const rawMeasuredHeight = getParagraphMeasuredHeight(
+      measuredHeights,
+      sourceBlock.id,
+      segmentId,
+      isWholeParagraphSegment,
+      segmentHeight,
+    );
+    const hasMeasuredHeight =
+      measuredHeights?.[segmentId] !== undefined ||
+      (isWholeParagraphSegment &&
+        measuredHeights?.[sourceBlock.id] !== undefined);
+    const measuredHeight =
+      collapseWithPrevious && startLineIndex === 0 && hasMeasuredHeight
+        ? Math.max(0, rawMeasuredHeight - (paragraphStyle.spacingBefore ?? 0))
+        : rawMeasuredHeight;
+    track.blocks.push({
+      blockId: segmentId,
+      sourceBlockId: sourceBlock.id,
+      blockType: sourceBlock.type,
+      paragraphId: sourceBlock.id,
+      globalIndex: index,
+      estimatedHeight: measuredHeight,
+      layout: segmentLayout,
+      sourceBlock,
+    });
+    track.height += measuredHeight;
+    startLineIndex = lineEndIndex;
+    segmentIndex += 1;
+
+    if (startLineIndex < paragraphLayout.lines.length) {
+      track.flush();
+    }
+  }
+}
