@@ -1,26 +1,19 @@
 import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
-import { type BooleanStyleKey } from "./toolbarStyleState.js";
 import { getSelectedImageRun } from "@/core/commands/image.js";
 import { getSelectedTextBoxRun } from "@/core/commands/textBox.js";
-import {
-  createEditorStateFromDocument,
-  createInitialEditorState,
-} from "@/core/editorState.js";
+import { createEditorStateFromDocument } from "@/core/editorState.js";
 import { type EditorPosition, type EditorState } from "@/core/model.js";
-import { isSelectionCollapsed } from "@/core/selection.js";
 
 import { createEditorLogger } from "@/utils/logger.js";
 import {
-  markEnd,
-  markStart,
   startLongTaskObserver,
   installGlobalReport,
   registerDomStatsSurface,
 } from "@/utils/performanceMetrics.js";
 import { cloneEditorState } from "@/core/cloneState.js";
 import { Toolbar } from "./components/Toolbar/Toolbar.js";
-import { createEditorCommandsController } from "@/app/controllers/EditorCommandsController.js";
-import { createEditorKeyboardController } from "@/app/controllers/useEditorKeyboard.js";
+import { createAppCommandsController } from "./app/createAppCommandsController.js";
+import { createEditorKeyboardBinding } from "./app/createEditorKeyboardBinding.js";
 import { useEditorLayout } from "@/app/controllers/useEditorLayout.js";
 import { useEditorPersistence } from "@/app/controllers/useEditorPersistence.js";
 import { createIndexedDbPersistence } from "@/app/services/indexedDbPersistence.js";
@@ -39,7 +32,6 @@ import {
   recordCanvasDebugSelection,
   syncCanvasDebugApiVisibility,
 } from "./canvas/CanvasDebug.js";
-import { createEditorFontOptions } from "./app/useEditorFontOptions.js";
 import {
   applyStoredPreciseFontPreference,
   isLocalFontAccessSupported,
@@ -50,11 +42,7 @@ import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
 import { createCanvasSurfaceHitResolver } from "./app/useCanvasSurfaceHitResolver.js";
 import { createEditorZoom } from "./app/editorZoom.js";
-import { createFontDialogBridge } from "./app/useFontDialogBridge.js";
-import { createParagraphDialogBridge } from "./app/useParagraphDialogBridge.js";
-import { createTablePropertiesDialogBridge } from "./app/useTablePropertiesDialogBridge.js";
-import { createEditorContextMenuClipboard } from "./app/useEditorContextMenuClipboard.js";
-import { createEditorTableContextMenuActions } from "./app/createEditorTableContextMenuActions.js";
+import { createEditorChrome } from "./app/createEditorChrome.js";
 import { createEditorLayoutOptionsController } from "./app/createEditorLayoutOptionsController.js";
 import { useEditorRuntimeBootstrap } from "./app/useEditorRuntimeBootstrap.js";
 import { createEditorUiOptions } from "./app/useEditorUiOptions.js";
@@ -69,6 +57,7 @@ import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
 import { OasisEditorLoading } from "./OasisEditorLoading.js";
 import { WelcomeOverlay } from "./components/WelcomeOverlay.js";
 import { createOasisEditorClient } from "@/app/client/OasisEditorClient.js";
+import { connectEditorClientHost } from "./app/connectEditorClientHost.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 export type {
@@ -404,36 +393,24 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     focusInput();
   };
 
-  const commandsController = createEditorCommandsController({
-    state,
-    logger,
-    applyState,
-    applyTransactionalState,
-    applySelectionAwareTextCommand: tableOps.applySelectionAwareTextCommand,
-    applySelectionAwareParagraphCommand:
-      tableOps.applySelectionAwareParagraphCommand,
-    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
-    focusInput,
-    clearPreferredColumn,
-    resetTransactionGrouping,
-    toolbarStyleState: styleController.toolbarStyleState,
-    selectionCollapsed: () => isSelectionCollapsed(state.selection),
-    selectedImageRun,
-    openLinkDialog: (initialHref) =>
-      setLinkDialog({ isOpen: true, initialHref }),
-    openImageAltDialog: (initialAlt) =>
-      setImageAltDialog({ isOpen: true, initialAlt }),
-    openImageCaptionDialog: (initialCaption) =>
-      setImageCaptionDialog({ isOpen: true, initialCaption }),
-    imageCaptionLabel: () =>
-      (ui().locale ?? "pt-BR").startsWith("en") ? "Figure" : "Figura",
-  });
-
-  const keyboardCommandsController = {
-    ...commandsController,
-    applyBooleanStyleCommand: (style: BooleanStyleKey) =>
-      styleController.applyToolbarBooleanStyleCommand(style),
-  };
+  const { commandsController, keyboardCommandsController } =
+    createAppCommandsController({
+      state,
+      logger,
+      applyState,
+      applyTransactionalState,
+      clearPreferredColumn,
+      resetTransactionGrouping,
+      focusInput,
+      selectedImageRun,
+      tableOps,
+      toolbarStyleState: styleController.toolbarStyleState,
+      applyBooleanStyleCommand: styleController.applyToolbarBooleanStyleCommand,
+      locale: () => ui().locale ?? "pt-BR",
+      setLinkDialog,
+      setImageAltDialog,
+      setImageCaptionDialog,
+    });
 
   const {
     runtimeReady,
@@ -488,43 +465,18 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     onError: (error) => runtimeClient.rejectReady(error),
   });
 
-  runtimeClient.connectHost({
-    getRuntimeEditor: () => (runtimeReady() ? runtimeEditor() : null),
-    getState: () => cloneState(getStateSnapshot()),
-    getDocument: () => cloneState(getStateSnapshot()).document,
-    setDocument: (document) => {
-      applyState(createEditorStateFromDocument(document));
-      resetEditorChromeState();
-      focusInput();
-    },
-    resetDocument: () => {
-      applyState(createInitialEditorState());
-      resetEditorChromeState();
-      focusInput();
-    },
-    saveDocument: async () => {
-      const persistence = documentOptions().persistence ?? fallbackPersistence;
-      await persistence.saveDocument(cloneState(getStateSnapshot()).document);
-    },
-    getSelection: () => cloneState(getStateSnapshot()).selection,
-    setSelection: (selection) => {
-      applyState({
-        ...cloneState(getStateSnapshot()),
-        selection,
-      });
-      focusInput();
-    },
-    focus: () => focusInput(),
-    blur: () => {
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
-      setFocused(false);
-    },
-    clearHistory: () => clearHistory(),
-    importDocx: (file) => docIO.handleImportFile(file),
-    exportDocx: () => docIO.handleExportDocx(),
-    exportPdf: () => docIO.handleExportPdf(),
+  connectEditorClientHost(runtimeClient, {
+    runtimeReady,
+    runtimeEditor,
+    getStateSnapshot,
+    cloneState,
+    applyState,
+    resetEditorChromeState,
+    focusInput,
+    setFocused,
+    clearHistory,
+    getPersistence: () => documentOptions().persistence ?? fallbackPersistence,
+    docIO,
   });
 
   createEffect(() => {
@@ -537,81 +489,27 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     runtimeEditor().dispatch(() => snapshot);
   });
 
-  const { handleKeyDown: rawHandleKeyDown } = createEditorKeyboardController({
+  const { handleKeyDown } = createEditorKeyboardBinding({
     state: () => state,
     isReadOnly,
+    logger,
+    focusInput,
     clearPreferredColumn,
     resetTransactionGrouping,
     applyState,
     applyTransactionalState,
-    applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
-    applySelectionAwareParagraphCommand:
-      tableOps.applySelectionAwareParagraphCommand,
-    focusInput,
-    commandsController: keyboardCommandsController,
-    selectedImageRun,
     setForcePlainTextPaste: (value) => {
       forcePlainTextPaste = value;
     },
-    moveSelectionByWord: navigation.moveSelectionByWord,
-    moveSelectionToDocumentBoundary: navigation.moveSelectionToDocumentBoundary,
-    moveSelectionToParagraphBoundary:
-      navigation.moveSelectionToParagraphBoundary,
-    moveSelectedImageByParagraph: historyActions.moveSelectedImageByParagraph,
-    performUndo: historyActions.performUndo,
-    performRedo: historyActions.performRedo,
-    moveVerticalSelection: navigation.moveVerticalSelection,
-    moveVerticalByBlock: navigation.moveVerticalByBlock,
-    resolveAdjacentTableCellPosition: tableOps.resolveAdjacentTableCellPosition,
-    applySelectionPreservingStructure:
-      historyActions.applySelectionPreservingStructure,
-    toggleFindReplace: (open) => {
-      fr.setIsOpen(open ?? !fr.isOpen());
-    },
-    toggleReplace: (open) => {
-      fr.setIsOpen(open ?? !fr.isOpen());
-    },
-    executeCommand: (commandName, payload) =>
-      runtimeEditor().commands.execute(commandName, payload),
-    canExecuteCommand: (commandName) =>
-      runtimeEditor().commands.canExecute(commandName),
+    selectedImageRun,
+    commandsController: keyboardCommandsController,
+    tableOps,
+    navigation,
+    historyActions,
+    styleController,
+    findReplace: fr,
+    runtimeEditor,
   });
-
-  const handleKeyDown = (
-    event: KeyboardEvent & { currentTarget: HTMLTextAreaElement },
-  ) => {
-    if (
-      [
-        "ArrowLeft",
-        "ArrowRight",
-        "ArrowUp",
-        "ArrowDown",
-        "Home",
-        "End",
-        "PageUp",
-        "PageDown",
-        "Escape",
-      ].includes(event.key)
-    ) {
-      styleController.clearPendingCaretTextStyle();
-    }
-    const mods = [
-      event.ctrlKey ? "Ctrl" : null,
-      event.metaKey ? "Meta" : null,
-      event.altKey ? "Alt" : null,
-      event.shiftKey ? "Shift" : null,
-    ]
-      .filter(Boolean)
-      .join("+");
-    const combo = mods ? `${mods}+${event.key}` : event.key;
-    const sel = state.selection;
-    logger.debug(
-      `key:down ${combo} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}]`,
-    );
-    markStart("input-to-layout");
-    rawHandleKeyDown(event);
-    markEnd("input-to-layout");
-  };
 
   const shouldShowCaret = () =>
     computeShouldShowCaret(state as EditorState, caretBox());
@@ -619,68 +517,22 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const {
     computeFontFamilyOptions,
     computeFontSizeOptions,
-    loadLocalFontFamilyOptions,
-  } = createEditorFontOptions({
+    applyFontDialogValues,
+    applyParagraphDialogValues,
+    applyTablePropertiesDialogValues,
+    buildContextMenuItems,
+    handleEditorContextMenu,
+    closeContextMenu,
+  } = createEditorChrome({
     state: () => state,
-    toolbarStyleState: styleController.toolbarStyleState,
-  });
-
-  const fontDialogBridge = createFontDialogBridge({
-    toolbarStyleState: styleController.toolbarStyleState,
     selection: () => state.selection,
-    isReadOnly,
-    loadLocalFontFamilyOptions,
-    setFontDialog,
-    setContextMenu,
-    clearPreferredColumn,
-    resetTransactionGrouping,
-    applyTransactionalState,
-    focusInput,
-  });
-  const openFontDialog = fontDialogBridge.openFontDialog;
-  const applyFontDialogValues = fontDialogBridge.applyFontDialogValues;
-
-  const paragraphDialogBridge = createParagraphDialogBridge({
     toolbarStyleState: styleController.toolbarStyleState,
-    isReadOnly,
-    setParagraphDialog,
-    setContextMenu,
-    clearPreferredColumn,
-    resetTransactionGrouping,
-    applyTransactionalState,
-    focusInput,
-  });
-  const openParagraphDialog = paragraphDialogBridge.openParagraphDialog;
-  const applyParagraphDialogValues =
-    paragraphDialogBridge.applyParagraphDialogValues;
-
-  const tablePropertiesDialogBridge = createTablePropertiesDialogBridge({
-    state: () => state,
-    isReadOnly,
-    setTablePropertiesDialog,
-    setContextMenu,
-    clearPreferredColumn,
-    resetTransactionGrouping,
-    applyTransactionalState,
-    focusInput,
-  });
-  const openTablePropertiesDialog =
-    tablePropertiesDialogBridge.openTablePropertiesDialog;
-  const applyTablePropertiesDialogValues =
-    tablePropertiesDialogBridge.applyTablePropertiesDialogValues;
-  const applyTableContextCommand = (
-    producer: (current: EditorState) => EditorState,
-    mergeKey: string,
-  ) => {
-    applyTransactionalState(producer, { mergeKey });
-    focusInput();
-  };
-
-  const contextMenuClipboard = createEditorContextMenuClipboard({
-    state: () => state,
     isReadOnly,
     t: translator,
     logger,
+    setFontDialog,
+    setParagraphDialog,
+    setTablePropertiesDialog,
     setContextMenu,
     clearPreferredColumn,
     resetTransactionGrouping,
@@ -688,19 +540,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     applyTableAwareParagraphEdit: tableOps.applyTableAwareParagraphEdit,
     focusInput,
     promptForLink: commandsController.promptForLink,
-    openFontDialog,
-    openParagraphDialog,
-    table: createEditorTableContextMenuActions({
-      state: () => state,
-      tableOps,
-      isInsideTable: tablePropertiesDialogBridge.isInsideTable,
-      openTablePropertiesDialog,
-      applyTableContextCommand,
-    }),
+    tableOps,
   });
-  const buildContextMenuItems = contextMenuClipboard.buildContextMenuItems;
-  const handleEditorContextMenu = contextMenuClipboard.handleEditorContextMenu;
-  const closeContextMenu = contextMenuClipboard.closeContextMenu;
 
   const {
     layout: editorLayoutProps,
