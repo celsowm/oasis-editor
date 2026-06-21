@@ -8,6 +8,7 @@ import type {
   EditorTextRun,
 } from "./model.js";
 import { getBlockParagraphs, getDocumentSectionsCanonical } from "./model.js";
+import { assertNever } from "./assertNever.js";
 
 /**
  * Iterate every paragraph in document order (sections + footnotes excluded),
@@ -247,32 +248,41 @@ export function renumberFootnotes(document: EditorDocument): EditorDocument {
       if (!blocks) return blocks;
       let blockChanged = false;
       const nextBlocks = blocks.map((block) => {
-        if (block.type === "paragraph") {
-          const updated = rewriteParagraphMarkers(block, markerByFootnoteId);
-          if (updated !== block) blockChanged = true;
-          return updated;
-        }
-        let tableChanged = false;
-        const nextRows = block.rows.map((row) => {
-          let rowChanged = false;
-          const nextCells = row.cells.map((cell) => {
-            let cellChanged = false;
-            const nextCellBlocks = cell.blocks.map((p) => {
-              const updated = rewriteParagraphMarkers(p, markerByFootnoteId);
-              if (updated !== p) cellChanged = true;
-              return updated;
+        switch (block.type) {
+          case "paragraph": {
+            const updated = rewriteParagraphMarkers(block, markerByFootnoteId);
+            if (updated !== block) blockChanged = true;
+            return updated;
+          }
+          case "table": {
+            let tableChanged = false;
+            const nextRows = block.rows.map((row) => {
+              let rowChanged = false;
+              const nextCells = row.cells.map((cell) => {
+                let cellChanged = false;
+                const nextCellBlocks = cell.blocks.map((p) => {
+                  const updated = rewriteParagraphMarkers(
+                    p,
+                    markerByFootnoteId,
+                  );
+                  if (updated !== p) cellChanged = true;
+                  return updated;
+                });
+                if (!cellChanged) return cell;
+                rowChanged = true;
+                return { ...cell, blocks: nextCellBlocks };
+              });
+              if (!rowChanged) return row;
+              tableChanged = true;
+              return { ...row, cells: nextCells };
             });
-            if (!cellChanged) return cell;
-            rowChanged = true;
-            return { ...cell, blocks: nextCellBlocks };
-          });
-          if (!rowChanged) return row;
-          tableChanged = true;
-          return { ...row, cells: nextCells };
-        });
-        if (!tableChanged) return block;
-        blockChanged = true;
-        return { ...block, rows: nextRows };
+            if (!tableChanged) return block;
+            blockChanged = true;
+            return { ...block, rows: nextRows };
+          }
+          default:
+            return assertNever(block, "block");
+        }
       });
       if (!blockChanged) return blocks;
       mutatedSections = true;

@@ -5,6 +5,7 @@ import type {
   EditorTextBoxData,
 } from "@/core/model.js";
 import { buildListLabels } from "@/core/model.js";
+import { assertNever } from "@/core/assertNever.js";
 import { projectBlocksLayout } from "@/layoutProjection/blocksPagination.js";
 import {
   getTextBoxFloatingGeometry,
@@ -127,32 +128,39 @@ async function drawTextBoxContent(
   );
   let cursorY = innerY;
   for (const block of blocks) {
-    if (block.sourceBlock.type === "paragraph" && block.layout) {
-      await drawers.drawParagraph(
-        writer,
-        ctx.pageIndex,
-        block.sourceBlock,
-        block.layout.lines,
-        ctx.document,
-        innerX,
-        cursorY,
-        ctx.fontRegistry,
-        listOrdinals,
-        drawers,
-      );
-    } else if (block.sourceBlock.type === "table") {
-      await drawers.drawTableBlock(
-        writer,
-        ctx.pageIndex,
-        block,
-        ctx.document,
-        innerX,
-        cursorY,
-        innerWidth,
-        ctx.fontRegistry,
-        listOrdinals,
-        drawers,
-      );
+    switch (block.sourceBlock.type) {
+      case "paragraph":
+        if (block.layout) {
+          await drawers.drawParagraph(
+            writer,
+            ctx.pageIndex,
+            block.sourceBlock,
+            block.layout.lines,
+            ctx.document,
+            innerX,
+            cursorY,
+            ctx.fontRegistry,
+            listOrdinals,
+            drawers,
+          );
+        }
+        break;
+      case "table":
+        await drawers.drawTableBlock(
+          writer,
+          ctx.pageIndex,
+          block,
+          ctx.document,
+          innerX,
+          cursorY,
+          innerWidth,
+          ctx.fontRegistry,
+          listOrdinals,
+          drawers,
+        );
+        break;
+      default:
+        assertNever(block.sourceBlock, "block");
     }
     cursorY += Math.max(0, block.estimatedHeight);
   }
