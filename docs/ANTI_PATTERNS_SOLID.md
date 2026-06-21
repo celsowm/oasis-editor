@@ -108,6 +108,17 @@ antes de dividi-lo.
 
 #### O1. Extensão de tipos de run exige shotgun surgery
 
+> **🟡 Base segura feita (Onda 6, 2026-06-21).** Introduzido
+> `src/core/model/runKind.ts` com `RunKind`, `getRunKind`, `isInlineObjectRun`,
+> `RunVisitor` e `visitRun` (dispatch exaustivo com `assertNever`). A precedência
+> de `getRunKind` espelha `serializeRun` (footnote → endnote → fieldChar →
+> fieldInstruction → field → textBox → image → sym → text). É **derivado** dos
+> campos atuais — _não_ muda o wire shape. Primeiro consumidor migrado:
+> `paragraphRunQuery` (`isObjectRun` → `isInlineObjectRun`). Coberto por
+> `runKind.test.ts`. Pendente: migrar os demais sites para `visitRun` e, por fim,
+> a união discriminada (mudança pública incompatível). Gates: `tsc` limpo,
+> `check:imports` ok, suíte 586✓/1 skip, `build:lib` ok.
+
 **Evidência:** `EditorTextRun` armazena `image`, `textBox`, `field`, `fieldChar`,
 `fieldInstruction`, `revision`, `footnoteReference` e `endnoteReference` como
 campos opcionais (`src/core/model/types/nodes.ts:75-114`). Não existe discriminante

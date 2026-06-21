@@ -3,7 +3,7 @@ import type {
   EditorTextRun,
   EditorTextStyle,
 } from "@/core/model.js";
-import { getParagraphLength } from "@/core/model.js";
+import { getParagraphLength, isInlineObjectRun } from "@/core/model.js";
 import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
 import { cloneTextBox } from "./clone.js";
 
@@ -141,7 +141,7 @@ export function sliceRuns(
     const overlapEnd = Math.min(end, runEnd);
 
     if (overlapStart < overlapEnd) {
-      const isObjectRun = Boolean(run.image || run.textBox);
+      const isObjectRun = isInlineObjectRun(run);
 
       const piece: EditorTextRun = {
         id: `run:${Math.random().toString(36).slice(2, 9)}`,
