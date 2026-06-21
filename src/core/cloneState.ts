@@ -7,10 +7,12 @@ import type {
   EditorSection,
   EditorState,
 } from "./model.js";
+import { assertNever } from "./assertNever.js";
 
 export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
-  return block.type === "paragraph"
-    ? {
+  switch (block.type) {
+    case "paragraph":
+      return {
         ...block,
         runs: block.runs.map((run) => ({
           ...run,
@@ -27,8 +29,9 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
         })),
         style: block.style ? { ...block.style } : undefined,
         list: block.list ? { ...block.list } : undefined,
-      }
-    : {
+      };
+    case "table":
+      return {
         ...block,
         style: block.style
           ? {
@@ -89,6 +92,9 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
           })),
         })),
       };
+    default:
+      return assertNever(block, "block");
+  }
 }
 
 export const cloneDocumentBlock = cloneBlock;

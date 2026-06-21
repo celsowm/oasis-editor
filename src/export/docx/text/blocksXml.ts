@@ -11,6 +11,7 @@ import { serializeBookmarkEvent } from "@/export/docx/bookmarksXml.js";
 import type { CommentBoundaryEvent } from "@/export/docx/commentsXml.js";
 import { serializeCommentRangeEvent } from "@/export/docx/commentsXml.js";
 import { serializeTableXml } from "@/export/docx/tableXml.js";
+import { assertNever } from "@/core/assertNever.js";
 import { serializeParagraphProperties } from "./paragraphPropertiesXml.js";
 import { serializeRunWithRelationships } from "./runXml.js";
 import { serializeDropCapFrameParagraph } from "./dropCapXml.js";
@@ -128,20 +129,25 @@ export function serializeBlocksXml(
 ): string {
   return blocks
     .map((block) => {
-      if (block.type === "table") {
-        const pageBreakXml = block.style?.pageBreakBefore
-          ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
-          : "";
-        return (
-          pageBreakXml +
-          serializeTableXml(block, (paragraph, cell) =>
-            serializeParagraphXml(paragraph, context, styles, {
-              align: cell.style?.horizontalAlign,
-            }),
-          )
-        );
+      switch (block.type) {
+        case "paragraph":
+          return serializeParagraphXml(block, context, styles);
+        case "table": {
+          const pageBreakXml = block.style?.pageBreakBefore
+            ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
+            : "";
+          return (
+            pageBreakXml +
+            serializeTableXml(block, (paragraph, cell) =>
+              serializeParagraphXml(paragraph, context, styles, {
+                align: cell.style?.horizontalAlign,
+              }),
+            )
+          );
+        }
+        default:
+          return assertNever(block, "block");
       }
-      return serializeParagraphXml(block, context, styles);
     })
     .join("");
 }

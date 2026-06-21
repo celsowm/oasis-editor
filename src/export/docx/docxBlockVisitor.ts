@@ -1,4 +1,5 @@
 import type { EditorBlockNode, EditorParagraphNode } from "@/core/model.js";
+import { assertNever } from "@/core/assertNever.js";
 
 /**
  * Depth-first paragraph traversal used by the DOCX export to register numbering
@@ -23,17 +24,21 @@ export function visitBlocks(
   callback: (paragraph: EditorParagraphNode) => void,
 ): void {
   for (const block of blocks) {
-    if (block.type === "paragraph") {
-      visitParagraphDeep(block, callback);
-      continue;
-    }
-
-    for (const row of block.rows) {
-      for (const cell of row.cells) {
-        for (const paragraph of cell.blocks) {
-          visitParagraphDeep(paragraph, callback);
+    switch (block.type) {
+      case "paragraph":
+        visitParagraphDeep(block, callback);
+        break;
+      case "table":
+        for (const row of block.rows) {
+          for (const cell of row.cells) {
+            for (const paragraph of cell.blocks) {
+              visitParagraphDeep(paragraph, callback);
+            }
+          }
         }
-      }
+        break;
+      default:
+        assertNever(block, "block");
     }
   }
 }

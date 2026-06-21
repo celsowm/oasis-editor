@@ -17,6 +17,7 @@ import {
   collectSectionParagraphs,
   getBlockParagraphs,
 } from "./paragraphWalker.js";
+import { assertNever } from "../assertNever.js";
 
 export interface EditorParagraphLocation {
   sectionIndex: number;
@@ -103,37 +104,41 @@ export class DocumentIndexBuilder {
     ctx: IndexBlockContext,
   ): number {
     let paraIndex = ctx.startIndex;
-    if (block.type === "paragraph") {
-      this.recordParagraph(
-        block,
-        {
-          sectionIndex: ctx.sectionIndex,
-          zone: ctx.zone,
-          paragraphIndexInSection: paraIndex,
-          footnoteId: ctx.footnoteId,
-        },
-        null,
-      );
-      return paraIndex + 1;
-    }
-    block.rows.forEach((row, rowIndex) => {
-      row.cells.forEach((cell, cellIndex) => {
-        cell.blocks.forEach((cp, cpIndex) => {
-          this.recordParagraph(
-            cp,
-            {
-              sectionIndex: ctx.sectionIndex,
-              zone: ctx.zone,
-              paragraphIndexInSection: paraIndex,
-              footnoteId: ctx.footnoteId,
-            },
-            { blockIndex, rowIndex, cellIndex, paragraphIndex: cpIndex },
-          );
-          paraIndex += 1;
+    switch (block.type) {
+      case "paragraph":
+        this.recordParagraph(
+          block,
+          {
+            sectionIndex: ctx.sectionIndex,
+            zone: ctx.zone,
+            paragraphIndexInSection: paraIndex,
+            footnoteId: ctx.footnoteId,
+          },
+          null,
+        );
+        return paraIndex + 1;
+      case "table":
+        block.rows.forEach((row, rowIndex) => {
+          row.cells.forEach((cell, cellIndex) => {
+            cell.blocks.forEach((cp, cpIndex) => {
+              this.recordParagraph(
+                cp,
+                {
+                  sectionIndex: ctx.sectionIndex,
+                  zone: ctx.zone,
+                  paragraphIndexInSection: paraIndex,
+                  footnoteId: ctx.footnoteId,
+                },
+                { blockIndex, rowIndex, cellIndex, paragraphIndex: cpIndex },
+              );
+              paraIndex += 1;
+            });
+          });
         });
-      });
-    });
-    return paraIndex;
+        return paraIndex;
+      default:
+        return assertNever(block, "block");
+    }
   }
 
   private recordParagraph(

@@ -5,15 +5,21 @@
  */
 import type { EditorBlockNode, EditorParagraphNode } from "./types/nodes.js";
 import type { EditorSection } from "./types/document.js";
+import { assertNever } from "../assertNever.js";
 
 export function getBlockParagraphs(
   block: EditorBlockNode,
 ): EditorParagraphNode[] {
-  if (block.type === "paragraph") {
-    return [block];
+  switch (block.type) {
+    case "paragraph":
+      return [block];
+    case "table":
+      return block.rows.flatMap((row) =>
+        row.cells.flatMap((cell) => cell.blocks),
+      );
+    default:
+      return assertNever(block, "block");
   }
-
-  return block.rows.flatMap((row) => row.cells.flatMap((cell) => cell.blocks));
 }
 
 function flattenSectionZone(

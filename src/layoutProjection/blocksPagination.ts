@@ -1,5 +1,6 @@
 import type { EditorLayoutPage } from "@/core/model.js";
 import { getPageContentWidth } from "@/core/model.js";
+import { assertNever } from "@/core/assertNever.js";
 import { domTextMeasurer } from "@/ui/textMeasurement.js";
 import { getEffectiveParagraphStyle } from "./paragraphPagination.js";
 import type { ProjectBlocksLayoutContext } from "./blocksPaginationTypes.js";
@@ -92,12 +93,16 @@ function projectColumnTrackLayout(
       track.flush();
     }
 
-    if (sourceBlock.type === "paragraph") {
-      paginateParagraphBlock(track, params, sourceBlock, nextBlock, index);
-      continue;
+    switch (sourceBlock.type) {
+      case "paragraph":
+        paginateParagraphBlock(track, params, sourceBlock, nextBlock, index);
+        break;
+      case "table":
+        paginateTableBlock(track, params, sourceBlock, index);
+        break;
+      default:
+        assertNever(sourceBlock, "block");
     }
-
-    paginateTableBlock(track, params, sourceBlock, index);
   }
 
   return track.finalize();
