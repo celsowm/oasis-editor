@@ -49,39 +49,29 @@ import {
 } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import type { TextCaseMode } from "@/core/commands/text.js";
-import type { EditorTransactionOptions } from "@/ui/editorHistory.js";
 import type {
   BooleanStyleKey,
   ParagraphStyleKey,
   ToolbarStyleState,
 } from "@/ui/toolbarStyleState.js";
 import type { EditorLogger } from "@/utils/logger.js";
-import type { SelectedImageRun } from "@/core/commands/image.js";
+import type {
+  EditorTransactionPort,
+  FocusInputPort,
+  SelectedImageQueryPort,
+} from "./controllerPorts.js";
 
-export interface EditorCommandsControllerDeps {
+export interface EditorCommandsControllerDeps
+  extends EditorTransactionPort,
+    FocusInputPort,
+    SelectedImageQueryPort {
   state: EditorState;
   logger: EditorLogger;
-  applyState: (next: EditorState) => void;
-  applyTransactionalState: (
-    producer: (current: EditorState) => EditorState,
-    options?: EditorTransactionOptions,
-  ) => void;
   applySelectionAwareTextCommand: (
     command: (current: EditorState) => EditorState,
   ) => void;
-  applySelectionAwareParagraphCommand: (
-    command: (current: EditorState) => EditorState,
-  ) => void;
-  applyTableAwareParagraphEdit: (
-    current: EditorState,
-    edit: (tempState: EditorState) => EditorState,
-  ) => EditorState;
-  focusInput: () => void;
-  clearPreferredColumn: () => void;
-  resetTransactionGrouping: () => void;
   toolbarStyleState: () => ToolbarStyleState;
   selectionCollapsed: () => boolean;
-  selectedImageRun: () => SelectedImageRun | null;
   openLinkDialog: (initialHref: string) => void;
   openImageAltDialog: (initialAlt: string) => void;
   openImageCaptionDialog: (initialCaption: string) => void;

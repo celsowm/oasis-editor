@@ -4,31 +4,27 @@ import type {
   EditorState,
 } from "@/core/model.js";
 import type { BooleanStyleKey } from "@/ui/toolbarStyleState.js";
-import type { SelectedImageRun } from "@/core/commands/image.js";
+import type {
+  EditorTransactionPort,
+  FocusInputPort,
+  SelectedImageQueryPort,
+} from "./controllerPorts.js";
 
 /**
  * The capability surface the keyboard controller and key bindings operate on.
  * Extracted to its own leaf module so `EditorCommandRegistry` (which references
  * it from key-binding signatures) and `useEditorKeyboard` (which implements the
  * controller) can both depend on it without forming an import cycle.
+ *
+ * Shared transaction/focus/image-selection members come from the capability
+ * ports in `controllerPorts.ts`; only keyboard-specific members live here (I1).
  */
-export interface EditorKeyboardDeps {
+export interface EditorKeyboardDeps
+  extends EditorTransactionPort,
+    FocusInputPort,
+    SelectedImageQueryPort {
   state: () => EditorState;
   isReadOnly: () => boolean;
-  clearPreferredColumn: () => void;
-  resetTransactionGrouping: () => void;
-  applyState: (state: EditorState) => void;
-  applyTransactionalState: (
-    transform: (state: EditorState) => EditorState,
-  ) => void;
-  applyTableAwareParagraphEdit: (
-    state: EditorState,
-    edit: (state: EditorState) => EditorState,
-  ) => EditorState;
-  applySelectionAwareParagraphCommand: (
-    command: (state: EditorState) => EditorState,
-  ) => void;
-  focusInput: () => void;
   commandsController: {
     promptForImageAlt: () => void;
     promptForLink: () => void;
@@ -41,7 +37,6 @@ export interface EditorKeyboardDeps {
     ) => boolean;
     handleListTab: (direction: "indent" | "outdent") => boolean;
   };
-  selectedImageRun: () => SelectedImageRun | null;
   setForcePlainTextPaste: (value: boolean) => void;
   moveSelectionByWord: (
     direction: "left" | "right",
