@@ -235,6 +235,19 @@ e tipar built-ins por command map. Comandos de plugin continuam aceitando
 
 #### I1. Controllers dependem de “sacos de callbacks”
 
+> **🟡 Base feita (Onda 6, 2026-06-21).** Criado
+> `src/app/controllers/controllerPorts.ts` com os ports de capability
+> `EditorTransactionPort`, `FocusInputPort` e `SelectedImageQueryPort`. Os dois
+> maiores sacos citados — `EditorKeyboardDeps` e `EditorCommandsControllerDeps` —
+> agora **compõem** esses ports em vez de redeclararem os mesmos ~8 membros
+> (`apply*`, `focusInput`, `clearPreferredColumn`, `resetTransactionGrouping`,
+> `selectedImageRun`); `applyTransactionalState` do teclado passou para a
+> assinatura correta com `options?`. Mudança não-quebra (shape plano preservado).
+> Pendente: ports mais finos para migrar os ~20 controllers restantes (cada um
+> usa um _subconjunto_ diferente — forçar o port inteiro pioraria a ISP) e os
+> bundles de view-props (`EditorViewPropsContext`, `EditorWorkspaceProps`).
+> Gates: `tsc` limpo, `check:imports` ok, suíte 586✓/1 skip, `build:lib` ok.
+
 - `EditorKeyboardDeps` tem 26 membros e mistura transação, navegação, histórico,
   dialogs, tabela e command bus (`src/app/controllers/useEditorKeyboard.ts:33-93`).
 - `EditorCommandsControllerDeps` tem 17 membros e mistura estado, transação,
