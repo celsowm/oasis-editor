@@ -113,8 +113,9 @@ antes de dividi-lo.
 > `RunVisitor` e `visitRun` (dispatch exaustivo com `assertNever`). A precedência
 > de `getRunKind` espelha `serializeRun` (footnote → endnote → fieldChar →
 > fieldInstruction → field → textBox → image → sym → text). É **derivado** dos
-> campos atuais — _não_ muda o wire shape. Primeiro consumidor migrado:
-> `paragraphRunQuery` (`isObjectRun` → `isInlineObjectRun`). Coberto por
+> campos atuais — _não_ muda o wire shape. Consumidores já migrados para
+> `isInlineObjectRun`: `paragraphRunQuery`, `paragraphRunBuild` (removeu o
+> `isObjectRun` local) e os 4 skip-checks de `verticalText`. Coberto por
 > `runKind.test.ts`. Pendente: migrar os demais sites para `visitRun` e, por fim,
 > a união discriminada (mudança pública incompatível). Gates: `tsc` limpo,
 > `check:imports` ok, suíte 586✓/1 skip, `build:lib` ok.
@@ -153,8 +154,9 @@ ser feita como alteração pública deliberada, com migração de fixtures e doc
 > antes assumiam "tabela" no `else` — onde uma variante esquecida causaria perda
 > silenciosa: `cloneState.cloneBlock`, `paragraphWalker.getBlockParagraphs`,
 > `documentIndex.indexBlock`, `docxBlockVisitor.visitBlocks`,
-> `blocksXml.serializeBlocksXml` e o driver de `blocksPagination`. Adicionar um
-> terceiro tipo de bloco agora é erro de compilação nesses pipelines. Restam os
+> `blocksXml.serializeBlocksXml`, o driver de `blocksPagination` e
+> `drawBlockList` (PDF). Adicionar um terceiro tipo de bloco agora é erro de
+> compilação nesses pipelines. Restam os
 > sites de dispatch puramente predicativos (filtros booleanos), que não precisam
 > de exaustividade. Gates: `tsc` limpo, `check:imports` ok, suíte 579✓ + 2 novos.
 
