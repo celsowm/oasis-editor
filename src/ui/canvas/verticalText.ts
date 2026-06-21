@@ -1,5 +1,8 @@
 import type { EditorParagraphNode, EditorState } from "@/core/model.js";
-import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
+import {
+  isInlineObjectRun,
+  resolveEffectiveTextStyleForParagraph,
+} from "@/core/model.js";
 import {
   resolveCanvasFontFamily,
   resolveCanvasTextRenderMetrics,
@@ -140,7 +143,7 @@ export function estimateStackedParagraphHeight(
   let glyphs = 0;
   let maxFontSize = 0;
   for (const run of paragraph.runs) {
-    if (run.image || run.textBox) {
+    if (isInlineObjectRun(run)) {
       continue;
     }
     const styles = resolveEffectiveTextStyleForParagraph(
@@ -172,7 +175,7 @@ export function estimateStackedColumnWidth(
 ): number {
   let columnWidth = 0;
   for (const run of paragraph.runs) {
-    if (run.image || run.textBox) continue;
+    if (isInlineObjectRun(run)) continue;
     const styles = resolveEffectiveTextStyleForParagraph(
       run.styles,
       paragraph.style?.styleId,
@@ -228,7 +231,7 @@ export function layoutStackedGlyphs(
   // Resolve the widest font so columns have a stable width.
   let columnWidth = 0;
   for (const run of paragraph.runs) {
-    if (run.image || run.textBox) continue;
+    if (isInlineObjectRun(run)) continue;
     const styles = resolveEffectiveTextStyleForParagraph(
       run.styles,
       paragraph.style?.styleId,
@@ -258,7 +261,7 @@ export function layoutStackedGlyphs(
   const glyphs: StackedGlyph[] = [];
   let offset = 0;
   for (const run of paragraph.runs) {
-    if (run.image || run.textBox) {
+    if (isInlineObjectRun(run)) {
       continue;
     }
     const styles = resolveEffectiveTextStyleForParagraph(

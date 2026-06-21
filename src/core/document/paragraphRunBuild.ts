@@ -7,12 +7,9 @@ import {
   createEditorParagraphFromRuns,
   createEditorStyledRun,
 } from "@/core/editorState.js";
+import { isInlineObjectRun } from "@/core/model.js";
 import { cloneParagraph, cloneParagraphList } from "./clone.js";
 import { cloneStyle, stylesEqual } from "@/core/textStyle/textStyleMutations.js";
-
-function isObjectRun(run: EditorTextRun): boolean {
-  return Boolean(run.image || run.textBox);
-}
 
 export function normalizeRuns(
   runs: EditorTextRun[],
@@ -28,8 +25,8 @@ export function normalizeRuns(
     const previous = merged[merged.length - 1];
     if (
       previous &&
-      !isObjectRun(run) &&
-      !isObjectRun(previous) &&
+      !isInlineObjectRun(run) &&
+      !isInlineObjectRun(previous) &&
       stylesEqual(previous.styles, run.styles)
     ) {
       previous.text += run.text;
