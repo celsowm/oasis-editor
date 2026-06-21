@@ -14,9 +14,7 @@ import type { VerticalRenderMode } from "./verticalText.js";
 // many external consumers share the types without pulling in the DOM-reading
 // assembler (S2).
 
-export type ResolveTextBoxRenderHeight = (
-  textBox: EditorTextBoxData,
-) => number;
+export type ResolveTextBoxRenderHeight = (textBox: EditorTextBoxData) => number;
 
 export interface CanvasSnapshotSlot {
   offset: number;
