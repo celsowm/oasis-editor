@@ -28,10 +28,7 @@ import "./components/FindReplace/findReplace.css";
 import { createTranslator } from "@/i18n/index.js";
 import { I18nProvider } from "@/i18n/I18nContext.js";
 import { startIconObserver, stopIconObserver } from "./utils/IconManager.js";
-import {
-  recordCanvasDebugSelection,
-  syncCanvasDebugApiVisibility,
-} from "./canvas/CanvasDebug.js";
+import { syncCanvasDebugApiVisibility } from "./canvas/CanvasDebug.js";
 import {
   applyStoredPreciseFontPreference,
   isLocalFontAccessSupported,
@@ -58,6 +55,7 @@ import { OasisEditorLoading } from "./OasisEditorLoading.js";
 import { WelcomeOverlay } from "./components/WelcomeOverlay.js";
 import { createOasisEditorClient } from "@/app/client/OasisEditorClient.js";
 import { connectEditorClientHost } from "./app/connectEditorClientHost.js";
+import { createEditorChangeBroadcast } from "./app/createEditorChangeBroadcast.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 export type {
@@ -240,20 +238,13 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     getHistoryState,
   });
 
-  createEffect(() => {
-    state.document;
-    state.selection;
-    state.activeSectionIndex;
-    state.activeZone;
-    recordCanvasDebugSelection(state as EditorState);
-    if (isImportInProgress()) {
-      return;
-    }
-    const snapshot = cloneState(getStateSnapshot());
-    documentOptions().onStateChange?.(snapshot);
-    runtimeClient.emit("change", snapshot);
-    runtimeClient.emit("documentChange", snapshot.document);
-    runtimeClient.emit("selectionChange", snapshot.selection);
+  createEditorChangeBroadcast({
+    state: state as EditorState,
+    isImportInProgress,
+    cloneState,
+    getStateSnapshot,
+    getOnStateChange: () => documentOptions().onStateChange,
+    emit: runtimeClient.emit,
   });
 
   const selectedImageRun = () => getSelectedImageRun(state);
