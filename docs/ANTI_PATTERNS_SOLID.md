@@ -304,9 +304,17 @@ e tipar built-ins por command map. Comandos de plugin continuam aceitando
 > `selectedImageRun`); `applyTransactionalState` do teclado passou para a
 > assinatura correta com `options?`. Mudança não-quebra (shape plano preservado).
 > Pendente: ports mais finos para migrar os ~20 controllers restantes (cada um
-> usa um _subconjunto_ diferente — forçar o port inteiro pioraria a ISP) e os
-> bundles de view-props (`EditorViewPropsContext`, `EditorWorkspaceProps`).
+> usa um _subconjunto_ diferente — forçar o port inteiro pioraria a ISP) e o
+> bundle de view-props `EditorViewPropsContext`.
 > Gates: `tsc` limpo, `check:imports` ok, suíte 586✓/1 skip, `build:lib` ok.
+>
+> **🟡 `EditorWorkspaceProps` agrupado (Onda 3, 2026-06-21).** Os 26 props planos
+> viraram 5 de topo (`useComposedShell`, `shellComponent`, `runtime`, `chrome`,
+> `view`) — os bundles de capability `EditorWorkspaceRuntime`/`...Chrome`/`...View`
+> no boundary do `EditorWorkspace`. O Shell composto e `OasisEditorEditor` não
+> mudaram (o workspace ainda repassa plano a eles). Pendente: `EditorViewPropsContext`
+> (38 entradas). Gates: `tsc` limpo, `check:imports` 0 ciclos, suíte 586✓/1 skip,
+> `build:lib` ok.
 
 - `EditorKeyboardDeps` tem 26 membros e mistura transação, navegação, histórico,
   dialogs, tabela e command bus (`src/app/controllers/EditorKeyboardDeps.ts:22-69`).
@@ -314,8 +322,7 @@ e tipar built-ins por command map. Comandos de plugin continuam aceitando
   foco, toolbar e dialogs (`src/app/controllers/EditorCommandsController.ts:64-80`).
 - `EditorViewPropsContext` tem 38 entradas
   (`src/ui/app/buildEditorViewProps.ts:37-82`).
-- `EditorWorkspaceProps` tem 26 entradas
-  (`src/ui/app/EditorWorkspace.tsx:23-52`).
+- ~~`EditorWorkspaceProps` tem 26 entradas~~ ✅ agrupado em 5 (runtime/chrome/view).
 
 **Consequência:** testes precisam fabricar dependências não usadas pelo cenário;
 mudanças pequenas propagam por builders e pelo app root; callbacks relacionados
