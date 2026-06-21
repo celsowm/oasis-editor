@@ -171,13 +171,7 @@ describe("Editor plugin integration", () => {
     await editor.destroy();
   });
 
-  it("rejects plugins passed to the constructor", () => {
-    const plugin: OasisPlugin = {
-      name: "Sync",
-    };
-
-    expect(() => new Editor({ plugins: [plugin] })).toThrow(
-      "Editor plugins must be initialized with Editor.create(...)",
-    );
-  });
+  // Plugins are no longer accepted by the constructor at the type level
+  // (SynchronousEditorOptions has no `plugins`), so the former runtime-throw
+  // test is obsolete — the precondition is now enforced at compile time (L1).
 });

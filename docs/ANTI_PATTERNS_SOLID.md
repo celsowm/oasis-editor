@@ -154,6 +154,14 @@ estreitos. Há, porém, duas quebras de contrato comportamental relevantes.
 
 #### L1. `EditorOptions` não é aceito igualmente pelos dois caminhos públicos
 
+> **✅ Resolvido (Onda 6, 2026-06-21).** `EditorOptions` foi removido e
+> substituído por `SynchronousEditorOptions` (sem `plugins`, aceito por
+> `new Editor(...)`) e `EditorCreateOptions extends SynchronousEditorOptions`
+> (adiciona `plugins`, aceito só por `Editor.create`). O throw de runtime no
+> construtor foi removido — a pré-condição agora é erro de compilação. O teste
+> obsoleto de `.toThrow` foi removido. Gates: `tsc` limpo, `check:imports` ok,
+> suíte 579✓/1 skip, `build:lib` ok.
+
 `EditorOptions.plugins` é válido no tipo (`src/core/Editor.ts:12-16`).
 `new Editor(options)` rejeita esse mesmo objeto em runtime
 (`src/core/Editor.ts:26-34`), enquanto `Editor.create(options)` o aceita e aguarda

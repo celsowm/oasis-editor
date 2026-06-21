@@ -9,10 +9,20 @@ import { CommandRegistry } from "./commands/CommandRegistry.js";
 import { PluginUiRegistry } from "./plugins/PluginUiRegistry.js";
 import type { OasisEditor, OasisPlugin } from "./plugin.js";
 
-export interface EditorOptions {
+/**
+ * Options accepted by the synchronous `new Editor(...)` path. Plugins are
+ * deliberately absent: they need async initialization and so are only valid via
+ * {@link Editor.create}. Encoding that in the type (rather than a runtime throw)
+ * makes the precondition checkable at compile time (L1).
+ */
+export interface SynchronousEditorOptions {
   doc?: EditorDocument;
-  plugins?: OasisPlugin[];
   keymaps?: Array<{ key: string; command: string }>;
+}
+
+/** Options accepted by the async {@link Editor.create} path, which adds plugins. */
+export interface EditorCreateOptions extends SynchronousEditorOptions {
+  plugins?: OasisPlugin[];
 }
 
 export class Editor implements OasisEditor {
@@ -23,27 +33,20 @@ export class Editor implements OasisEditor {
   readonly commands = new CommandRegistry();
   readonly ui = new PluginUiRegistry();
 
-  constructor(options: EditorOptions = {}) {
-    if (options.plugins && options.plugins.length > 0) {
-      throw new Error(
-        "Editor plugins must be initialized with Editor.create(...).",
-      );
-    }
+  constructor(options: SynchronousEditorOptions = {}) {
     this.initializeState(options);
     this.pluginCollection = new PluginCollection(this, []);
   }
 
-  static async create(options: EditorOptions = {}): Promise<Editor> {
-    const editor = new Editor({ ...options, plugins: [] });
-    editor.pluginCollection = new PluginCollection(
-      editor,
-      options.plugins ?? [],
-    );
+  static async create(options: EditorCreateOptions = {}): Promise<Editor> {
+    const { plugins = [], ...syncOptions } = options;
+    const editor = new Editor(syncOptions);
+    editor.pluginCollection = new PluginCollection(editor, plugins);
     await editor.pluginCollection.initializeAll();
     return editor;
   }
 
-  private initializeState(options: EditorOptions) {
+  private initializeState(options: SynchronousEditorOptions) {
     const initialState = options.doc
       ? createEditorStateFromDocument(options.doc)
       : createInitialEditorState();

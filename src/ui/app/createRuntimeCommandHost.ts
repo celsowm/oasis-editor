@@ -38,7 +38,6 @@ export function createRuntimeCommandHost(
   const [runtimeEditor, setRuntimeEditor] = createSignal(
     new Editor({
       doc: options.initialDocument,
-      plugins: [],
     }),
   );
   let disposed = false;
