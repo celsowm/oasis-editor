@@ -65,13 +65,55 @@ criando ou conectando a maior parte dos controllers do produto.
 
 #### S1. `OasisEditorApp` mistura composição e operação
 
-**Evidência:** `src/ui/OasisEditorApp.tsx:97-180` inicializa client, i18n, estado,
+> **🟡 Chrome extraído (Onda 3, 2026-06-21).** O bloco de _chrome_ (catálogos de
+> fonte + os 3 dialog bridges font/paragraph/table + a wiring de context-menu/
+> clipboard, ~85 linhas) saiu para `src/ui/app/createEditorChrome.ts`. O app
+> agora faz uma única chamada `createEditorChrome({...})` e expõe só as saídas
+> usadas pela view (`compute*FontOptions`, `apply*DialogValues`,
+> `buildContextMenuItems`, `handleEditorContextMenu`, `closeContextMenu`). As
+> factories continuam chamadas de forma síncrona dentro do owner reativo, então
+> não há mudança de comportamento. `OasisEditorApp.tsx` 892→830 linhas, 55→50
+> imports internos. Gates: `tsc` limpo, `check:imports` 0 ciclos, suíte
+> 586✓/1 skip, `build:lib` ok.
+>
+> **🟡 Keyboard binding extraído (Onda 3, 2026-06-21).** A montagem das 26 deps
+> do `createEditorKeyboardController` + o wrapper `handleKeyDown` (reset de
+> caret-style, log estruturado e a perf-mark `input-to-layout`) saíram para
+> `src/ui/app/createEditorKeyboardBinding.ts`, que recebe os colaboradores
+> coesos (transaction, navigation, history, table, find/replace, command
+> runtime) e devolve só `{ handleKeyDown }`. `markStart`/`markEnd` deixaram de
+> ser importados no app. `OasisEditorApp.tsx` 830→774 linhas. Gates: `tsc`
+> limpo, `check:imports` 0 ciclos, suíte 586✓/1 skip, `build:lib` ok.
+>
+> **🟡 Client host extraído (Onda 3, 2026-06-21).** A wiring imperativa do
+> `OasisEditorClient` (get/set document, selection, save, focus, import/export —
+> ~37 linhas) saiu para `src/ui/app/connectEditorClientHost.ts`
+> (`connectEditorClientHost(controller, deps)`), pura wiring de callbacks sem
+> ownership reativo. `createInitialEditorState` deixou de ser importado no app.
+> `OasisEditorApp.tsx` 774→747 linhas. Gates: `tsc` limpo, `check:imports` 0
+> ciclos, suíte 586✓/1 skip, `build:lib` ok.
+>
+> **🟡 Command controller extraído (Onda 3, 2026-06-21).** A criação do
+> `createEditorCommandsController` + o `keyboardCommandsController`, junto com os
+> dialog-openers inline (link/imageAlt/imageCaption) e o label de legenda
+> derivado do locale, saíram para `src/ui/app/createAppCommandsController.ts`,
+> que devolve `{ commandsController, keyboardCommandsController }`. `state` segue
+> sendo o store reativo (leitura de `state.selection` em `selectionCollapsed`
+> preservada). `isSelectionCollapsed` e `BooleanStyleKey` deixaram de ser
+> importados no app. `OasisEditorApp.tsx` 747→733 linhas, 51→49 imports. Gates:
+> `tsc` limpo, `check:imports` 0 ciclos, suíte 586✓/1 skip, `build:lib` ok.
+>
+> Pendente: extrair bootstrap de documento, interaction runtime e o runtime
+> bootstrap/dispatch effect; agrupar `EditorWorkspaceProps`/
+> `buildEditorViewProps` em bundles; meta de ~400 linhas.
+
+**Evidência:** `src/ui/OasisEditorApp.tsx:84-220` inicializa client, i18n, estado,
 opções, foco, zoom, dialogs e IO. O mesmo componente instancia histórico,
 hit-testing, operações de tabela/imagem/textbox, estilo, comandos, teclado e
-bridges (`src/ui/OasisEditorApp.tsx:231-749`), monta o context menu de tabela
-(`src/ui/OasisEditorApp.tsx:749-811`) e forma 38 entradas para
-`buildEditorViewProps` (`src/ui/OasisEditorApp.tsx:823-860`). O arquivo tem 1.001
-linhas e 56 dependências internas.
+bridges (`src/ui/OasisEditorApp.tsx:225-703`), monta o context menu de tabela
+(`src/ui/OasisEditorApp.tsx:679-703`) e forma 38 entradas para
+`buildEditorViewProps` (`src/ui/OasisEditorApp.tsx:705-753`). O arquivo tem 892
+linhas e 55 dependências internas.
 
 **Por que é violação:** composition root pode conhecer implementações, mas não
 deveria também conter regras operacionais, adaptações de payload, callbacks de
@@ -249,9 +291,9 @@ e tipar built-ins por command map. Comandos de plugin continuam aceitando
 > Gates: `tsc` limpo, `check:imports` ok, suíte 586✓/1 skip, `build:lib` ok.
 
 - `EditorKeyboardDeps` tem 26 membros e mistura transação, navegação, histórico,
-  dialogs, tabela e command bus (`src/app/controllers/useEditorKeyboard.ts:33-93`).
+  dialogs, tabela e command bus (`src/app/controllers/EditorKeyboardDeps.ts:22-69`).
 - `EditorCommandsControllerDeps` tem 17 membros e mistura estado, transação,
-  foco, toolbar e dialogs (`src/app/controllers/EditorCommandsController.ts:51-89`).
+  foco, toolbar e dialogs (`src/app/controllers/EditorCommandsController.ts:64-80`).
 - `EditorViewPropsContext` tem 38 entradas
   (`src/ui/app/buildEditorViewProps.ts:37-82`).
 - `EditorWorkspaceProps` tem 26 entradas
@@ -468,10 +510,10 @@ preferencialmente gerida por subentrypoints já existentes (`./ui`, `./react`,
 
 ### Feature envy
 
-`useTablePropertiesDialogBridge.ts` não apenas abre o dialog. Ele encontra a
-tabela e célula ativas (`:94-123`), serializa unidades (`:126-142`), deriva
-estado de bordas/layout (`:144-205`) e aplica mutações de tabela/célula
-(`:215-280`). A bridge conhece mais do modelo de tabelas que do dialog.
+`src/ui/app/useTablePropertiesDialogBridge.ts` não apenas abre o dialog. Ele
+encontra a tabela e célula ativas (`:107-131`), serializa unidades (`:133-149`),
+deriva estado de bordas/layout (`:151-221`) e aplica mutações de tabela/célula
+(`:248-323`). A bridge conhece mais do modelo de tabelas que do dialog.
 
 **Refactor:** mover `resolveActiveTableContext`, DTO mapping e aplicação para
 `core/tableProperties` ou um application service. A bridge fica responsável por
