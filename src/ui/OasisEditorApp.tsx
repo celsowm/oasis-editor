@@ -1,8 +1,6 @@
 import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
-import { getSelectedImageRun } from "@/core/commands/image.js";
-import { getSelectedTextBoxRun } from "@/core/commands/textBox.js";
 import { createEditorStateFromDocument } from "@/core/editorState.js";
-import { type EditorPosition, type EditorState } from "@/core/model.js";
+import { type EditorState } from "@/core/model.js";
 
 import { createEditorLogger } from "@/utils/logger.js";
 import {
@@ -14,11 +12,6 @@ import { cloneEditorState } from "@/core/cloneState.js";
 import { Toolbar } from "./components/Toolbar/Toolbar.js";
 import { createAppCommandsController } from "./app/createAppCommandsController.js";
 import { createEditorKeyboardBinding } from "./app/createEditorKeyboardBinding.js";
-import { useEditorFindReplace } from "@/app/controllers/useEditorFindReplace.js";
-import { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
-import { createEditorImageOperations } from "@/app/controllers/useEditorImageOperations.js";
-import { createEditorTextBoxOperations } from "@/app/controllers/useEditorTextBoxOperations.js";
-import { createEditorStyleController } from "@/app/controllers/useEditorStyle.js";
 import "./components/FindReplace/findReplace.css";
 import { createTranslator } from "@/i18n/index.js";
 import { I18nProvider } from "@/i18n/I18nContext.js";
@@ -32,16 +25,13 @@ import { getWelcomeSeen } from "@/app/services/userPreferences.js";
 import { createEditorFocusController } from "./app/useEditorFocus.js";
 import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
-import { createCanvasSurfaceHitResolver } from "./app/useCanvasSurfaceHitResolver.js";
 import { createEditorZoom } from "./app/editorZoom.js";
 import { createEditorChrome } from "./app/createEditorChrome.js";
-import { createEditorLayoutOptionsController } from "./app/createEditorLayoutOptionsController.js";
 import { useEditorRuntimeBootstrap } from "./app/useEditorRuntimeBootstrap.js";
 import { createEditorUiOptions } from "./app/useEditorUiOptions.js";
 import { computeShouldShowCaret } from "./app/shouldShowCaret.js";
 import { EditorDragLayers } from "./app/EditorDragLayers.js";
 import { EditorDialogsLayer } from "./app/EditorDialogsLayer.js";
-import { useEditorInteractionWiring } from "./app/useEditorInteractionWiring.js";
 import { buildEditorViewProps } from "./app/buildEditorViewProps.js";
 import { EditorWorkspace } from "./app/EditorWorkspace.js";
 import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
@@ -50,6 +40,7 @@ import { WelcomeOverlay } from "./components/WelcomeOverlay.js";
 import { createOasisEditorClient } from "@/app/client/OasisEditorClient.js";
 import { connectEditorClientHost } from "./app/connectEditorClientHost.js";
 import { createEditorDocumentRuntime } from "./app/createEditorDocumentRuntime.js";
+import { createEditorInteractionRuntime } from "./app/createEditorInteractionRuntime.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 export type {
@@ -181,138 +172,59 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     surfaceRef,
     viewportRef,
     zoomFactor: zoom.zoomFactor,
-    getImageOps: () => imageOps,
+    getImageOps: () => interaction.imageOps,
   });
 
-  const selectedImageRun = () => getSelectedImageRun(state);
-  const selectedTextBoxRun = () => getSelectedTextBoxRun(state);
-
-  const layoutOptionsOverlay = createEditorLayoutOptionsController({
-    state: () => state,
-    resetTransactionGrouping,
-    applyTransactionalState,
-    focusInput,
-  });
-
-  const canvasHitResolver = createCanvasSurfaceHitResolver({
-    state: () => state as EditorState,
-    surfaceRef: () => surfaceRef() ?? null,
-    viewportRef: () => viewportRef() ?? null,
-    measuredBlockHeights,
-    measuredParagraphLayouts,
-    zoomFactor: zoom.zoomFactor,
-  });
-  const resolveSurfaceHitAtPoint = canvasHitResolver.resolveSurfaceHitAtPoint;
-
-  const fr = useEditorFindReplace({
-    state,
-    applyState,
-    applyTransactionalState,
-    focusInput,
-  });
-
-  const tableOps = createEditorTableOperations({
-    applyTransactionalState,
-    applySelectionToStatePreservingStructure: (current, nextSelection) => ({
-      ...current,
-      document: cloneEditorState(current).document,
-      selection: nextSelection,
-    }),
-    focusInput,
+  const interaction = createEditorInteractionRuntime({
+    state: state as EditorState,
     logger,
-  });
-
-  const resolvePositionAtSurfacePoint = (
-    clientX: number,
-    clientY: number,
-  ): EditorPosition | null => {
-    return resolveSurfaceHitAtPoint(clientX, clientY)?.position ?? null;
-  };
-
-  const imageOps = createEditorImageOperations({
-    state,
-    surfaceRef,
-    resolvePositionAtSurfacePoint,
+    isReadOnly,
     applyState,
-    applyTransactionalState,
-    updateHistoryState,
+    cloneState,
     focusInput,
     focusInputAfterPointerSelection,
-    cloneState,
-    logger,
-    zoomFactor: zoom.zoomFactor,
-  });
-
-  const textBoxOps = createEditorTextBoxOperations({
-    state,
     surfaceRef,
-    applyState,
-    updateHistoryState,
-    focusInput,
-    cloneState,
-    logger,
+    viewportRef,
     zoomFactor: zoom.zoomFactor,
-  });
-
-  const styleController = createEditorStyleController({
-    state: () => state,
-    commandsController: () => commandsController,
+    insertImageFromFile: docIO.insertImageFromFile,
+    getForcePlainTextPaste: () => forcePlainTextPaste,
+    setForcePlainTextPaste: (value) => {
+      forcePlainTextPaste = value;
+    },
+    getCommandsController: () => commandsController,
+    applyTransactionalState,
     clearPreferredColumn,
     resetTransactionGrouping,
-    focusInput,
-    logger,
+    updateHistoryState,
+    caretBox,
+    preferredColumnX,
+    setPreferredColumnX,
+    measuredBlockHeights,
+    measuredParagraphLayouts,
   });
-
   const {
+    selectedImageRun,
+    layoutOptionsOverlay,
+    fr,
+    resolveSurfaceHitAtPoint,
+    resolvePositionAtSurfacePoint,
+    tableOps,
+    imageOps,
+    textBoxOps,
+    styleController,
+    onEditorMouseDown,
     tableResize,
     tableDrag,
     revisionController,
     textDrag,
-    surfaceEvents: surfaceEventsWithTextDrag,
+    surfaceEventsWithTextDrag,
     textInput,
     navigation,
     handleCopy,
     handleCut,
     handlePaste,
     handleDrop,
-  } = useEditorInteractionWiring({
-    state,
-    applyState,
-    applyTransactionalState,
-    isReadOnly,
-    logger,
-    focusInput,
-    focusInputAfterPointerSelection,
-    clearPreferredColumn,
-    resetTransactionGrouping,
-    surfaceRef,
-    viewportRef,
-    caretBox: () => caretBox(),
-    preferredColumnX: () => preferredColumnX(),
-    setPreferredColumnX,
-    zoomFactor: zoom.zoomFactor,
-    resolveSurfaceHitAtPoint,
-    resolvePositionAtSurfacePoint,
-    tableOps,
-    imageOps,
-    styleController,
-    getForcePlainTextPaste: () => forcePlainTextPaste,
-    setForcePlainTextPaste: (value) => {
-      forcePlainTextPaste = value;
-    },
-    insertImageFromFile: docIO.insertImageFromFile,
-  });
-
-  const onEditorMouseDown = (event: MouseEvent) => {
-    // Preserve the current selection on right-click so the user can copy/cut
-    // from the selected text via the context menu.
-    if (event.button !== 0) {
-      return;
-    }
-    styleController.clearPendingCaretTextStyle();
-    event.preventDefault();
-    focusInput();
-  };
+  } = interaction;
 
   const { commandsController, keyboardCommandsController } =
     createAppCommandsController({
