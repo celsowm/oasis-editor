@@ -34,10 +34,11 @@ criando ou conectando a maior parte dos controllers do produto.
 | D2  | ~~Ciclos nos pipelines canvas, PDF, DOCX export e DOCX import~~ ✅ resolvido |     — |                      — |       — |
 | S1  | `OasisEditorApp` ainda é composition root com lógica operacional    |       Alta |                   Alto |       L |
 | D3  | ~~Persistência default é singleton com chave fixa~~ ✅ resolvido     |          — |                      — |       — |
-| C1  | Contratos de command bus têm tipagem e `refresh` inconsistentes     |      Média |                   Alto |       M |
+| C1  | ~~Contratos de command bus têm tipagem e `refresh` inconsistentes~~ ✅ resolvido (L2 runtime + `TypedCommandBus`) | — |        — |       — |
 | I1  | Dependency bags de 17–38 membros e props drilling                   |      Média |             Médio/alto |       M |
-| O1  | Runs são um optional-property bag; 227 decisões por variante        |      Média |             Médio/alto |       L |
-| S2  | Hotspots de paginação, DOCX, texto e snapshot acumulam papéis       |      Média |             Médio/alto |    L/XL |
+| O1  | Runs são um optional-property bag; 227 decisões por variante 🟡 base feita (getRunKind/visitRun); falta a união discriminada |      Média | Médio/alto |       L |
+| O2  | ~~Dispatch de blocos com fallthrough silencioso~~ ✅ resolvido (visitors exaustivos + `assertNever`) | — |             — |       — |
+| S2  | ~~Hotspots de paginação, DOCX, texto e snapshot acumulam papéis~~ ✅ resolvido |      — |             — |    — |
 | B1  | ~~Barrel `editorCommands.ts` deprecated com 22 consumidores~~ ✅ resolvido |     — |                  — |       — |
 | F1  | Bridge de propriedades de tabela conhece e transforma o domínio     |      Média |                  Médio |       M |
 | P1  | IDs, nomes de comando e merge keys são `string` intercambiáveis     |      Baixa |                  Médio |       M |
