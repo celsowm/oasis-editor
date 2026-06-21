@@ -1,4 +1,4 @@
-import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
+import { createSignal, onCleanup, onMount, Show } from "solid-js";
 import { createEditorStateFromDocument } from "@/core/editorState.js";
 import { type EditorState } from "@/core/model.js";
 
@@ -10,8 +10,6 @@ import {
 } from "@/utils/performanceMetrics.js";
 import { cloneEditorState } from "@/core/cloneState.js";
 import { Toolbar } from "./components/Toolbar/Toolbar.js";
-import { createAppCommandsController } from "./app/createAppCommandsController.js";
-import { createEditorKeyboardBinding } from "./app/createEditorKeyboardBinding.js";
 import "./components/FindReplace/findReplace.css";
 import { createTranslator } from "@/i18n/index.js";
 import { I18nProvider } from "@/i18n/I18nContext.js";
@@ -27,7 +25,6 @@ import { createEditorDialogs } from "./app/useEditorDialogs.js";
 import { createEditorAppState } from "./app/useEditorAppState.js";
 import { createEditorZoom } from "./app/editorZoom.js";
 import { createEditorChrome } from "./app/createEditorChrome.js";
-import { useEditorRuntimeBootstrap } from "./app/useEditorRuntimeBootstrap.js";
 import { createEditorUiOptions } from "./app/useEditorUiOptions.js";
 import { computeShouldShowCaret } from "./app/shouldShowCaret.js";
 import { EditorDragLayers } from "./app/EditorDragLayers.js";
@@ -38,9 +35,9 @@ import { EDITOR_SCROLL_PADDING_PX } from "./editorLayoutConstants.js";
 import { OasisEditorLoading } from "./OasisEditorLoading.js";
 import { WelcomeOverlay } from "./components/WelcomeOverlay.js";
 import { createOasisEditorClient } from "@/app/client/OasisEditorClient.js";
-import { connectEditorClientHost } from "./app/connectEditorClientHost.js";
 import { createEditorDocumentRuntime } from "./app/createEditorDocumentRuntime.js";
 import { createEditorInteractionRuntime } from "./app/createEditorInteractionRuntime.js";
+import { createEditorCommandRuntime } from "./app/createEditorCommandRuntime.js";
 
 import type { OasisEditorAppProps } from "./OasisEditorAppProps.js";
 export type {
@@ -127,38 +124,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
   const surfaceRef = () => focusController.surfaceRef;
   const importInputRef = () => focusController.importInputRef;
   const imageInputRef = () => focusController.imageInputRef;
-  const {
-    docIO,
-    isImportInProgress,
-    measuredBlockHeights,
-    measuredParagraphLayouts,
-    inputBox,
-    selectionBoxes,
-    commentHighlights,
-    selectedImageBox,
-    selectedTextBoxBox,
-    caretBox,
-    preferredColumnX,
-    setPreferredColumnX,
-    clearPreferredColumn,
-    stabilizeLayoutAfterImport,
-    setMeasuredBlockHeights,
-    setMeasuredParagraphLayouts,
-    applyLayoutInvalidation,
-    onCleanupHook,
-    fallbackPersistence,
-    persistenceStatus,
-    undoStack,
-    redoStack,
-    applyTransactionalState,
-    applyHistoryState,
-    resetTransactionGrouping,
-    updateHistoryState,
-    getHistoryState,
-    clearHistory,
-    historyActions,
-    resetEditorChromeState,
-  } = createEditorDocumentRuntime({
+  const documentRuntime = createEditorDocumentRuntime({
     documentOptions,
     logger,
     runtimeClient,
@@ -174,6 +140,25 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     zoomFactor: zoom.zoomFactor,
     getImageOps: () => interaction.imageOps,
   });
+  const {
+    docIO,
+    measuredBlockHeights,
+    measuredParagraphLayouts,
+    inputBox,
+    selectionBoxes,
+    commentHighlights,
+    selectedImageBox,
+    selectedTextBoxBox,
+    caretBox,
+    preferredColumnX,
+    setPreferredColumnX,
+    clearPreferredColumn,
+    onCleanupHook,
+    persistenceStatus,
+    applyTransactionalState,
+    resetTransactionGrouping,
+    updateHistoryState,
+  } = documentRuntime;
 
   const interaction = createEditorInteractionRuntime({
     state: state as EditorState,
@@ -191,7 +176,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setForcePlainTextPaste: (value) => {
       forcePlainTextPaste = value;
     },
-    getCommandsController: () => commandsController,
+    getCommandsController: () => commandRuntime.commandsController,
     applyTransactionalState,
     clearPreferredColumn,
     resetTransactionGrouping,
@@ -226,123 +211,43 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     handleDrop,
   } = interaction;
 
-  const { commandsController, keyboardCommandsController } =
-    createAppCommandsController({
-      state,
-      logger,
-      applyState,
-      applyTransactionalState,
-      clearPreferredColumn,
-      resetTransactionGrouping,
-      focusInput,
-      selectedImageRun,
-      tableOps,
-      toolbarStyleState: styleController.toolbarStyleState,
-      applyBooleanStyleCommand: styleController.applyToolbarBooleanStyleCommand,
-      locale: () => ui().locale ?? "pt-BR",
-      setLinkDialog,
-      setImageAltDialog,
-      setImageCaptionDialog,
-    });
-
+  const commandRuntime = createEditorCommandRuntime({
+    document: documentRuntime,
+    interaction,
+    state: state as EditorState,
+    logger,
+    isReadOnly,
+    focusInput,
+    applyState,
+    getStateSnapshot,
+    cloneState,
+    setFocused,
+    setInitialLoading,
+    getForcePlainTextPaste: () => forcePlainTextPaste,
+    setForcePlainTextPaste: (value) => {
+      forcePlainTextPaste = value;
+    },
+    locale: () => ui().locale ?? "pt-BR",
+    translator,
+    runtimeClient,
+    runtimeOptions,
+    documentOptions,
+    importInputRef,
+    imageInputRef,
+    setLinkDialog,
+    setImageAltDialog,
+    setImageCaptionDialog,
+  });
   const {
+    commandsController,
     runtimeReady,
     runtimeEditor,
     commandStateOf,
     toolbarHost,
     toolbarRegistry,
     menuRegistry,
-  } = useEditorRuntimeBootstrap({
-    essentials: {
-      state: () => state,
-      isReadOnly,
-      forcePlainTextPaste: {
-        get: () => forcePlainTextPaste,
-        set: (value) => {
-          forcePlainTextPaste = value;
-        },
-      },
-      undoStack,
-      redoStack,
-      commandsController,
-      keyboardCommandsController,
-      historyActions,
-      styleController,
-      tableOps,
-      docIO,
-      importInputRef,
-      imageInputRef,
-      selectedImageRun,
-      selectionBoxes,
-      focusInput,
-      applyState,
-      applyTransactionalState,
-      findReplace: {
-        setIsOpen: fr.setIsOpen,
-      },
-    },
-    externalPlugins: runtimeOptions().plugins,
-    t: translator,
-    customizeToolbar: runtimeOptions().customizeToolbar,
-    customizeMenubar: runtimeOptions().customizeMenubar,
-    initialDocument: getStateSnapshot().document,
-    focusEditor: focusInput,
-    logger,
-    onReady: (editor) => {
-      runtimeClient.resolveReady(editor);
-      runtimeOptions().onReady?.(runtimeClient);
-    },
-    onSettled: () => {
-      setInitialLoading(false);
-    },
-    onError: (error) => runtimeClient.rejectReady(error),
-  });
-
-  connectEditorClientHost(runtimeClient, {
-    runtimeReady,
-    runtimeEditor,
-    getStateSnapshot,
-    cloneState,
-    applyState,
-    resetEditorChromeState,
-    focusInput,
-    setFocused,
-    clearHistory,
-    getPersistence: () => documentOptions().persistence ?? fallbackPersistence,
-    docIO,
-  });
-
-  createEffect(() => {
-    if (!runtimeReady()) return;
-    state.document;
-    state.selection;
-    state.activeSectionIndex;
-    state.activeZone;
-    const snapshot = cloneState(getStateSnapshot());
-    runtimeEditor().dispatch(() => snapshot);
-  });
-
-  const { handleKeyDown } = createEditorKeyboardBinding({
-    state: () => state,
-    isReadOnly,
-    logger,
-    focusInput,
-    clearPreferredColumn,
-    resetTransactionGrouping,
-    applyState,
-    applyTransactionalState,
-    setForcePlainTextPaste: (value) => {
-      forcePlainTextPaste = value;
-    },
-    selectedImageRun,
-    commandsController: keyboardCommandsController,
-    tableOps,
-    navigation,
-    historyActions,
-    styleController,
-    findReplace: fr,
-    runtimeEditor,
-  });
+    handleKeyDown,
+  } = commandRuntime;
 
   const shouldShowCaret = () =>
     computeShouldShowCaret(state as EditorState, caretBox());
