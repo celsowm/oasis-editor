@@ -535,14 +535,22 @@ preferencialmente gerida por subentrypoints já existentes (`./ui`, `./react`,
 
 ### Feature envy
 
-`src/ui/app/useTablePropertiesDialogBridge.ts` não apenas abre o dialog. Ele
-encontra a tabela e célula ativas (`:107-131`), serializa unidades (`:133-149`),
-deriva estado de bordas/layout (`:151-221`) e aplica mutações de tabela/célula
-(`:248-323`). A bridge conhece mais do modelo de tabelas que do dialog.
+> **✅ F1 resolvido (Onda 3, 2026-06-21).** A lógica de domínio saiu de
+> `useTablePropertiesDialogBridge.ts` para o application service
+> `src/app/services/tablePropertiesService.ts`: `resolveActiveTableContext`,
+> a (de)serialização de valores (`serializeWidth`/`isVisibleBorder`/
+> `buildFloatingSummary`/`buildInitialValues`) e a mutação de tabela/célula,
+> expostas como `hasActiveTable`, `readTableProperties(state, tab)` e
+> `applyTableProperties(state, values)` — funções puras sobre `EditorState`. O
+> service vive em `src/app` (não em `core`) porque depende dos tipos de DTO do
+> dialog em `@/ui/...`, e o gate proíbe `core→ui`. A bridge ficou só com
+> open/close/focus e delega ao service: **336→81 linhas**. Gates: `tsc` limpo,
+> `check:imports` 0 ciclos, suíte 586✓/1 skip, `build:lib` ok.
 
-**Refactor:** mover `resolveActiveTableContext`, DTO mapping e aplicação para
-`core/tableProperties` ou um application service. A bridge fica responsável por
-open/close/focus e chama `readTableProperties`/`applyTableProperties`.
+A bridge antiga não apenas abria o dialog: encontrava a tabela e célula ativas,
+serializava unidades, derivava estado de bordas/layout e aplicava mutações de
+tabela/célula — conhecia mais do modelo de tabelas que do dialog. Agora ela só
+chama `readTableProperties`/`applyTableProperties`.
 
 ### Long parameter lists e props drilling
 
