@@ -35,7 +35,7 @@ criando ou conectando a maior parte dos controllers do produto.
 | S1  | Composition root com lógica operacional 🟢 lógica extraída em 4 fases (892→471); falta só bundles de view (ver I1) | Baixa | Médio | M |
 | D3  | ~~Persistência default é singleton com chave fixa~~ ✅ resolvido     |          — |                      — |       — |
 | C1  | ~~Contratos de command bus têm tipagem e `refresh` inconsistentes~~ ✅ resolvido (L2 runtime + `TypedCommandBus`) | — |        — |       — |
-| I1  | Dependency bags de 17–38 membros e props drilling                   |      Média |             Médio/alto |       M |
+| I1  | ~~Dependency bags de 17–38 membros e props drilling~~ ✅ resolvido (ports + 4 sacos agrupados) |    — |    — |       — |
 | O1  | Runs são um optional-property bag; 227 decisões por variante 🟡 base feita (getRunKind/visitRun); falta a união discriminada |      Média | Médio/alto |       L |
 | O2  | ~~Dispatch de blocos com fallthrough silencioso~~ ✅ resolvido (visitors exaustivos + `assertNever`) | — |             — |       — |
 | S2  | ~~Hotspots de paginação, DOCX, texto e snapshot acumulam papéis~~ ✅ resolvido |      — |             — |    — |
@@ -308,21 +308,33 @@ e tipar built-ins por command map. Comandos de plugin continuam aceitando
 > bundle de view-props `EditorViewPropsContext`.
 > Gates: `tsc` limpo, `check:imports` ok, suíte 586✓/1 skip, `build:lib` ok.
 >
-> **🟡 `EditorWorkspaceProps` agrupado (Onda 3, 2026-06-21).** Os 26 props planos
-> viraram 5 de topo (`useComposedShell`, `shellComponent`, `runtime`, `chrome`,
-> `view`) — os bundles de capability `EditorWorkspaceRuntime`/`...Chrome`/`...View`
-> no boundary do `EditorWorkspace`. O Shell composto e `OasisEditorEditor` não
-> mudaram (o workspace ainda repassa plano a eles). Pendente: `EditorViewPropsContext`
-> (38 entradas). Gates: `tsc` limpo, `check:imports` 0 ciclos, suíte 586✓/1 skip,
-> `build:lib` ok.
+> **🟢 `EditorWorkspaceProps` e `EditorViewPropsContext` agrupados (Onda 3,
+> 2026-06-21).** `EditorWorkspaceProps` 26→5 props de topo (`useComposedShell`,
+> `shellComponent`, `runtime`, `chrome`, `view`); `EditorViewPropsContext` 38→6
+> grupos de capability (`layout`/`overlays`/`refs`/`surface`/`input`/`files`)
+> que espelham os bundles de saída. Boundary-only: Shell composto e
+> `OasisEditorEditor` intocados. Gates: `tsc` limpo, `check:imports` 0 ciclos,
+> suíte 586✓/1 skip, `build:lib` ok.
+>
+> **✅ I1 considerado resolvido (Onda 3, 2026-06-21).** Os **quatro sacos
+> confirmados** estão tratados: `EditorKeyboardDeps`/`EditorCommandsControllerDeps`
+> compõem os capability ports, e os dois bundles de view foram agrupados. Os
+> ~20 controllers restantes **não** são sacos no sentido problemático (4–12
+> membros cada) e têm shapes heterogêneos por design — `state` ora `EditorState`
+> (proxy reativo) ora `() => EditorState`; `surfaceRef` ora `|undefined` ora
+> `|null`; `logger` em 3 formas; `applyTransactionalState` ora com `options?`.
+> Forçar ports compartilhados exigiria normalizar esses shapes antes (risco) por
+> ganho marginal, e os dois maiores consumidores (`EditorKeyboardDeps`,
+> `EditorCommandsControllerDeps`) **usam todos os 6 membros** do
+> `EditorTransactionPort` (verificado) — não há "forçar membro não usado" a
+> corrigir. Continuar a varredura seria over-engineering. Novos controllers
+> devem compor os ports existentes quando os shapes baterem.
 
-- `EditorKeyboardDeps` tem 26 membros e mistura transação, navegação, histórico,
-  dialogs, tabela e command bus (`src/app/controllers/EditorKeyboardDeps.ts:22-69`).
-- `EditorCommandsControllerDeps` tem 17 membros e mistura estado, transação,
-  foco, toolbar e dialogs (`src/app/controllers/EditorCommandsController.ts:64-80`).
-- `EditorViewPropsContext` tem 38 entradas
-  (`src/ui/app/buildEditorViewProps.ts:37-82`).
-- ~~`EditorWorkspaceProps` tem 26 entradas~~ ✅ agrupado em 5 (runtime/chrome/view).
+- ~~`EditorKeyboardDeps` (26 membros)~~ ✅ compõe `EditorTransactionPort` +
+  `FocusInputPort` + `SelectedImageQueryPort` + membros keyboard-específicos.
+- ~~`EditorCommandsControllerDeps` (17 membros)~~ ✅ compõe os mesmos ports.
+- ~~`EditorViewPropsContext` (38 entradas)~~ ✅ agrupado em 6 capability bundles.
+- ~~`EditorWorkspaceProps` (26 entradas)~~ ✅ agrupado em 5 (runtime/chrome/view).
 
 **Consequência:** testes precisam fabricar dependências não usadas pelo cenário;
 mudanças pequenas propagam por builders e pelo app root; callbacks relacionados
