@@ -1,4 +1,3 @@
-import { cloneBlock } from "@/core/cloneState.js";
 import { createEditorDocument } from "@/core/editorState.js";
 import {
   findParagraphTableLocation,
@@ -64,19 +63,13 @@ export const applyTableAwareParagraphEdit = (
 
   const zone = location.zone;
   const currentBlocks = getTargetBlocks(current, zone);
-  const clonedTable = cloneBlock(
-    currentBlocks[location.blockIndex],
-  ) as EditorTableNode;
-  if (!clonedTable || clonedTable.type !== "table") {
+  const originalTable = currentBlocks[location.blockIndex];
+  if (!originalTable || originalTable.type !== "table") {
     return edit(current);
   }
-  const nextBlocks = currentBlocks.map((block, i) =>
-    i === location.blockIndex ? clonedTable : block,
-  );
-  const tableBlock = clonedTable;
 
-  const targetCell =
-    tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
+  const originalRow = originalTable.rows[location.rowIndex];
+  const targetCell = originalRow?.cells[location.cellIndex];
   if (!targetCell) {
     return edit(current);
   }
@@ -101,11 +94,29 @@ export const applyTableAwareParagraphEdit = (
     tempResult.document,
   ).filter((block): block is EditorParagraphNode => block.type === "paragraph");
 
-  targetCell.blocks.splice(
-    0,
-    targetCell.blocks.length,
-    ...replacementParagraphs,
+  const newCell = {
+    ...targetCell,
+    blocks: replacementParagraphs,
+  };
+
+  const newRow = {
+    ...originalRow,
+    cells: originalRow.cells.map((c, i) =>
+      i === location.cellIndex ? newCell : c,
+    ),
+  };
+
+  const newTable = {
+    ...originalTable,
+    rows: originalTable.rows.map((r, i) =>
+      i === location.rowIndex ? newRow : r,
+    ),
+  };
+
+  const nextBlocks = currentBlocks.map((block, i) =>
+    i === location.blockIndex ? newTable : block,
   );
+
   const nextState = updateBlocksInCurrentSection(current, nextBlocks, zone);
   return {
     ...nextState,
