@@ -41,7 +41,7 @@ criando ou conectando a maior parte dos controllers do produto.
 | S2  | ~~Hotspots de paginação, DOCX, texto e snapshot acumulam papéis~~ ✅ resolvido |      — |             — |    — |
 | B1  | ~~Barrel `editorCommands.ts` deprecated com 22 consumidores~~ ✅ resolvido |     — |                  — |       — |
 | F1  | Bridge de propriedades de tabela conhece e transforma o domínio     |      Média |                  Médio |       M |
-| P1  | IDs, nomes de comando e merge keys são `string` intercambiáveis     |      Baixa |                  Médio |       M |
+| P1  | IDs intercambiáveis ⛔ branded IDs descartados (ROI negativo, ver seção); merge-keys tipados ainda bounded |  Baixa | Médio | M |
 | U1  | ~~Constantes de unidade duplicadas entre camadas~~ ✅ resolvido      |          — |                      — |       — |
 | N1  | Footnotes e endnotes repetem aproximadamente 76% da estrutura       |      Baixa |                  Médio |       M |
 
@@ -592,6 +592,20 @@ erro; typos em command/merge keys só aparecem em runtime.
 **Refactor:** branded types (`DocumentId`, `ParagraphId`, `RunId`, `TableId`) nas
 fronteiras internas, factories de conversão para dados importados e constantes
 tipadas para merge keys. O wire format continua string e não muda.
+
+> **⛔ Branded IDs avaliados e descartados (Onda 3, 2026-06-21).** Foi feito um
+> spike: branded types em `EditorPosition` + `EditorTextRun.id`/
+> `EditorParagraphNode.id`/`EditorTableNode.id` com mint genérico
+> (`createEditorNodeId` sobrecarregado por kind). Medido com `tsc`: **168 erros**
+> de cascata — ~40 em source (boundary casts legítimos) mas **~120 em fixtures de
+> teste** que constroem documentos com `{ id: "..." }` literais inline (109 só em
+> `pdfWriter.test.ts`), sem helper compartilhado. Além das ~160 edições pontuais,
+> branded IDs impõem um **imposto de autoria permanente**: todo node/position
+> literal futuro passa a exigir cast `as*Id`. Para um achado **Baixa** prioridade
+> cuja consequência o próprio relatório classifica como teórica, o ROI é negativo.
+> A parte de **merge keys / nomes de comando tipados** (constantes) permanece um
+> candidato bounded e de baixo custo, independente do branding de IDs. Decisão:
+> não brandar IDs; revisitar só se surgir um bug real de confusão de ID.
 
 ### Duplicação
 
