@@ -1,4 +1,3 @@
-import { cloneBlock } from "@/core/cloneState.js";
 import { createEditorDocument } from "@/core/editorState.js";
 import {
   getParagraphs,
@@ -108,16 +107,16 @@ export function createTableSelectionAwareCommands(
       const tempResult = command(tempState);
       const resultParagraphs = getParagraphs(tempResult);
       const currentBlocks = deps.getTargetBlocks(current, zone);
-      const clonedTable = cloneBlock(
-        currentBlocks[blockIndex],
-      ) as EditorTableNode;
-      if (!clonedTable) {
+      const originalTable = currentBlocks[blockIndex];
+      if (!originalTable || originalTable.type !== "table") {
         return current;
       }
-      const targetBlocks = currentBlocks.map((block, i) =>
-        i === blockIndex ? clonedTable : block,
-      );
-      const tableBlock = clonedTable;
+
+      // 1. Group modified cells by their row index
+      const cellsByRow = new Map<
+        number,
+        Map<number, EditorParagraphNode[]>
+      >();
 
       let paragraphIndex = 0;
       for (let index = 0; index < cells.length; index += 1) {
@@ -129,12 +128,37 @@ export function createTableSelectionAwareCommands(
         );
         paragraphIndex += count;
 
-        const targetCell =
-          tableBlock.rows[entry.rowIndex]?.cells[entry.cellIndex];
-        if (targetCell) {
-          targetCell.blocks = cellParagraphs;
+        if (!cellsByRow.has(entry.rowIndex)) {
+          cellsByRow.set(entry.rowIndex, new Map());
         }
+        cellsByRow.get(entry.rowIndex)!.set(entry.cellIndex, cellParagraphs);
       }
+
+      // 2. Rebuild the table maintaining structural sharing
+      const newTable = {
+        ...originalTable,
+        rows: originalTable.rows.map((row, rowIndex) => {
+          const rowUpdates = cellsByRow.get(rowIndex);
+          if (!rowUpdates) return row;
+
+          return {
+            ...row,
+            cells: row.cells.map((cell, cellIndex) => {
+              const updatedBlocks = rowUpdates.get(cellIndex);
+              if (!updatedBlocks) return cell;
+
+              return {
+                ...cell,
+                blocks: updatedBlocks,
+              };
+            }),
+          };
+        }),
+      };
+
+      const targetBlocks = currentBlocks.map((block, i) =>
+        i === blockIndex ? newTable : block,
+      );
 
       return updateBlocksInCurrentSection(current, targetBlocks, zone);
     });
