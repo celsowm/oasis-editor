@@ -28,21 +28,18 @@ type ImportProgress = NonNullable<
   ReturnType<NonNullable<OasisEditorEditorOverlayProps["importProgress"]>>
 >;
 
-/**
- * Inputs needed to assemble the editor's view-prop bundles. These are already
- * built controllers, accessors and handlers owned by the composition root; this
- * module performs only the (logic-free) shaping into the prop objects consumed
- * by `OasisEditorEditor` and the composed shells.
- */
-export interface EditorViewPropsContext {
-  // layout
+/** Page sizing / zoom inputs that shape the layout prop bundle. */
+export interface EditorViewLayoutInput {
   viewportHeight: number | string | undefined;
   className: string | undefined;
   style: JSX.CSSProperties | undefined;
   zoomPercent: Accessor<number>;
   setZoomPercent: (value: number) => void;
   zoomFactor: Accessor<number>;
-  // overlays
+}
+
+/** Overlay accessors (selection, caret, boxes, progress) for the overlay bundle. */
+export interface EditorViewOverlayInput {
   selectionBoxes: Accessor<SelectionBox[]>;
   commentHighlights: Accessor<CommentHighlightBox[]>;
   selectedImageBox: Accessor<SelectedImageBox | null>;
@@ -54,12 +51,21 @@ export interface EditorViewPropsContext {
   focused: Accessor<boolean>;
   showCaret: Accessor<boolean>;
   importProgress: Accessor<ImportProgress | null>;
-  // refs
+}
+
+/** Owner of the editor element refs. */
+export interface EditorViewRefsInput {
   focusController: ReturnType<typeof createEditorFocusController>;
-  // file handlers
+}
+
+/** File-input change handlers (import / insert image). */
+export interface EditorViewFileInput {
   handleImportFile: (file: File | null) => void;
   handleInsertImage: (file: File | null) => void;
-  // surface handlers
+}
+
+/** Pointer/gesture collaborators and handlers for the surface bundle. */
+export interface EditorViewSurfaceInput {
   surfaceEvents: ReturnType<typeof createEditorSurfaceEvents>;
   tableResize: ReturnType<typeof createEditorTableResize>;
   tableDrag: ReturnType<typeof createEditorTableDrag>;
@@ -72,13 +78,32 @@ export interface EditorViewPropsContext {
   handleImageRotateHandleMouseDown: OasisEditorEditorSurfaceHandlers["onImageRotateHandleMouseDown"];
   handleTextBoxRotateHandleMouseDown: OasisEditorEditorSurfaceHandlers["onTextBoxRotateHandleMouseDown"];
   handleEditorContextMenu: (event: MouseEvent) => void;
-  // input handlers
+}
+
+/** Text-input / clipboard / keyboard handlers for the input bundle. */
+export interface EditorViewInputInput {
   textInput: ReturnType<typeof createEditorTextInput>;
   setFocused: (value: boolean) => void;
   handleCopy: OasisEditorEditorInputHandlers["onCopy"];
   handleCut: OasisEditorEditorInputHandlers["onCut"];
   handlePaste: OasisEditorEditorInputHandlers["onPaste"];
   handleKeyDown: OasisEditorEditorInputHandlers["onKeyDown"];
+}
+
+/**
+ * Inputs needed to assemble the editor's view-prop bundles, grouped by the
+ * capability they feed. These are already built controllers, accessors and
+ * handlers owned by the composition root; this module performs only the
+ * (logic-free) shaping into the prop objects consumed by `OasisEditorEditor`
+ * and the composed shells (I1).
+ */
+export interface EditorViewPropsContext {
+  layout: EditorViewLayoutInput;
+  overlays: EditorViewOverlayInput;
+  refs: EditorViewRefsInput;
+  surface: EditorViewSurfaceInput;
+  input: EditorViewInputInput;
+  files: EditorViewFileInput;
 }
 
 export interface EditorViewProps {
@@ -93,84 +118,93 @@ export interface EditorViewProps {
 export function buildEditorViewProps(
   ctx: EditorViewPropsContext,
 ): EditorViewProps {
+  const {
+    layout: layoutInput,
+    overlays: overlayInput,
+    refs: refsInput,
+    surface,
+    input,
+    files,
+  } = ctx;
+
   const layout: OasisEditorEditorLayoutProps = {
-    viewportHeight: ctx.viewportHeight,
-    class: ctx.className,
-    style: ctx.style,
-    zoomPercent: ctx.zoomPercent,
-    setZoomPercent: ctx.setZoomPercent,
-    zoomFactor: ctx.zoomFactor,
+    viewportHeight: layoutInput.viewportHeight,
+    class: layoutInput.className,
+    style: layoutInput.style,
+    zoomPercent: layoutInput.zoomPercent,
+    setZoomPercent: layoutInput.setZoomPercent,
+    zoomFactor: layoutInput.zoomFactor,
   };
 
   const overlays: OasisEditorEditorOverlayProps = {
-    selectionBoxes: ctx.selectionBoxes,
-    commentHighlights: ctx.commentHighlights,
-    selectedImageBox: ctx.selectedImageBox,
-    selectedTextBoxBox: ctx.selectedTextBoxBox,
-    layoutOptions: ctx.layoutOptions,
-    caretBox: ctx.caretBox,
-    inputBox: ctx.inputBox,
-    hoveredRevision: ctx.hoveredRevision,
-    focused: ctx.focused,
-    showCaret: ctx.showCaret,
-    importProgress: ctx.importProgress,
+    selectionBoxes: overlayInput.selectionBoxes,
+    commentHighlights: overlayInput.commentHighlights,
+    selectedImageBox: overlayInput.selectedImageBox,
+    selectedTextBoxBox: overlayInput.selectedTextBoxBox,
+    layoutOptions: overlayInput.layoutOptions,
+    caretBox: overlayInput.caretBox,
+    inputBox: overlayInput.inputBox,
+    hoveredRevision: overlayInput.hoveredRevision,
+    focused: overlayInput.focused,
+    showCaret: overlayInput.showCaret,
+    importProgress: overlayInput.importProgress,
   };
 
   const refs: OasisEditorEditorRefProps = {
     onViewportRef: (element) => {
-      ctx.focusController.viewportRef = element;
+      refsInput.focusController.viewportRef = element;
     },
     onSurfaceRef: (element) => {
-      ctx.focusController.surfaceRef = element;
+      refsInput.focusController.surfaceRef = element;
     },
     onTextareaRef: (element) => {
-      ctx.focusController.textareaRef = element;
+      refsInput.focusController.textareaRef = element;
     },
     onImportInputRef: (element) => {
-      ctx.focusController.importInputRef = element;
+      refsInput.focusController.importInputRef = element;
     },
     onImageInputRef: (element) => {
-      ctx.focusController.imageInputRef = element;
+      refsInput.focusController.imageInputRef = element;
     },
   };
 
   const fileHandlers: OasisEditorEditorFileHandlers = {
     onImportInputChange: (e) =>
-      ctx.handleImportFile(e.currentTarget.files?.[0] ?? null),
+      files.handleImportFile(e.currentTarget.files?.[0] ?? null),
     onImageInputChange: (e) =>
-      ctx.handleInsertImage(e.currentTarget.files?.[0] ?? null),
+      files.handleInsertImage(e.currentTarget.files?.[0] ?? null),
   };
 
   const surfaceHandlers: OasisEditorEditorSurfaceHandlers = {
     onDragOver: (event) => event.preventDefault(),
-    onDrop: ctx.handleDrop,
-    onEditorMouseDown: ctx.onEditorMouseDown,
-    onSurfaceMouseDown: ctx.surfaceEvents.handleSurfaceMouseDown,
-    onSurfaceClick: ctx.surfaceEvents.handleSurfaceClick,
-    onSurfaceMouseMove: ctx.tableResize.handleMouseMove,
-    onSurfaceDblClick: ctx.surfaceEvents.handleSurfaceDblClick,
-    onParagraphMouseDown: ctx.surfaceEvents.handleParagraphMouseDown,
-    onImageMouseDown: ctx.handleImageMouseDown,
-    onImageResizeHandleMouseDown: ctx.handleImageResizeHandleMouseDown,
-    onTextBoxResizeHandleMouseDown: ctx.handleTextBoxResizeHandleMouseDown,
-    onImageRotateHandleMouseDown: ctx.handleImageRotateHandleMouseDown,
-    onTextBoxRotateHandleMouseDown: ctx.handleTextBoxRotateHandleMouseDown,
-    onTableDragHandleMouseDown: ctx.tableDrag.handleMouseDown,
-    onRevisionMouseEnter: ctx.revisionController.handleRevisionMouseEnter,
-    onRevisionMouseLeave: ctx.revisionController.handleRevisionMouseLeave,
-    onEditorContextMenu: (event) => ctx.handleEditorContextMenu(event),
+    onDrop: surface.handleDrop,
+    onEditorMouseDown: surface.onEditorMouseDown,
+    onSurfaceMouseDown: surface.surfaceEvents.handleSurfaceMouseDown,
+    onSurfaceClick: surface.surfaceEvents.handleSurfaceClick,
+    onSurfaceMouseMove: surface.tableResize.handleMouseMove,
+    onSurfaceDblClick: surface.surfaceEvents.handleSurfaceDblClick,
+    onParagraphMouseDown: surface.surfaceEvents.handleParagraphMouseDown,
+    onImageMouseDown: surface.handleImageMouseDown,
+    onImageResizeHandleMouseDown: surface.handleImageResizeHandleMouseDown,
+    onTextBoxResizeHandleMouseDown: surface.handleTextBoxResizeHandleMouseDown,
+    onImageRotateHandleMouseDown: surface.handleImageRotateHandleMouseDown,
+    onTextBoxRotateHandleMouseDown: surface.handleTextBoxRotateHandleMouseDown,
+    onTableDragHandleMouseDown: surface.tableDrag.handleMouseDown,
+    onRevisionMouseEnter: surface.revisionController.handleRevisionMouseEnter,
+    onRevisionMouseLeave: surface.revisionController.handleRevisionMouseLeave,
+    onEditorContextMenu: (event) => surface.handleEditorContextMenu(event),
   };
 
   const inputHandlers: OasisEditorEditorInputHandlers = {
-    onInputBlur: () => ctx.setFocused(false),
-    onInputFocus: () => ctx.setFocused(true),
-    onCompositionEnd: ctx.textInput.handleCompositionEnd,
-    onCompositionStart: ctx.textInput.handleCompositionStart,
-    onCopy: ctx.handleCopy,
-    onCut: ctx.handleCut,
-    onInput: ctx.textInput.handleTextInput,
-    onKeyDown: ctx.handleKeyDown,
-    onPaste: ctx.handlePaste,
+    onInputBlur: () => input.setFocused(false),
+    onInputFocus: () => input.setFocused(true),
+    onCompositionEnd: input.textInput.handleCompositionEnd,
+    onCompositionStart: input.textInput.handleCompositionStart,
+    onCopy: input.handleCopy,
+    onCut: input.handleCut,
+    onInput: input.textInput.handleTextInput,
+    onKeyDown: input.handleKeyDown,
+    onPaste: input.handlePaste,
   };
 
   return {
