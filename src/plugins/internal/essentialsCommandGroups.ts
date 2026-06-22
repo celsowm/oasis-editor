@@ -7,10 +7,7 @@ import type {
   ValueCommandBuilder,
 } from "./essentialsCommandBuilders.js";
 import { numOrNull } from "./essentialsCommandBuilders.js";
-import {
-  formatFontSizePt,
-  parseFontSizePtToPx,
-} from "@/ui/fontSizeUnits.js";
+import { formatFontSizePt, parseFontSizePtToPx } from "@/ui/fontSizeUnits.js";
 import {
   isPreciseFontModeEnabled,
   preciseFontModeVersion,
@@ -215,6 +212,11 @@ export function buildCoreFormattingCommands({
       "setStyleId",
       (p) => formatting.setStyleId(String(p)),
       () => s().styleId || "normal",
+    ),
+    setCharacterStyleId: valueCommand(
+      "setCharacterStyleId",
+      (p) => formatting.setCharacterStyleId(String(p)),
+      () => s().characterStyleId || "",
     ),
     setUnderlineStyle: valueCommand(
       "setUnderlineStyle",

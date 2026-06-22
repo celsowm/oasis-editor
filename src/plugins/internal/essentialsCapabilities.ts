@@ -63,14 +63,24 @@ export interface EssentialsFormattingCapability {
   setHighlight: (value: string | null) => boolean;
   setTextShading: (value: string | null) => boolean;
   setStyleId: (value: string) => boolean;
+  setCharacterStyleId: (value: string) => boolean;
   setUnderlineStyle: (value: string | null) => void;
 }
 
 export interface EssentialsDocumentStyleDescriptor {
   id: string;
   name: string;
+  type: "paragraph" | "character" | "table";
+  qFormat?: boolean;
+  uiPriority?: number;
+  semiHidden?: boolean;
+  unhideWhenUsed?: boolean;
+  isUsed?: boolean;
   fontFamily?: string;
   fontSize?: number;
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
 }
 
 export interface EssentialsDocumentCapability {

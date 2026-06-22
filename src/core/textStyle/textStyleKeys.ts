@@ -17,6 +17,7 @@ export type ToggleableTextStyleKey =
   | "contextualAlternates";
 
 export type ValueTextStyleKey =
+  | "styleId"
   | "fontFamily"
   | "fontSize"
   | "color"

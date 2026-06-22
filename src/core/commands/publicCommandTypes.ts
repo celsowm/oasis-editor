@@ -59,6 +59,7 @@ export interface OasisCommandPayloads {
   setHighlight: string | null;
   setTextShading: string | null;
   setStyleId: string;
+  setCharacterStyleId: string;
   setUnderlineStyle: string | null;
   documentStyles: undefined;
   print: undefined;

@@ -163,6 +163,14 @@ export interface EditorNamedStyle {
   type: "paragraph" | "character" | "table";
   basedOn?: string;
   nextStyle?: string;
+  /** Word quick-style gallery metadata (`w:qFormat`). */
+  qFormat?: boolean;
+  /** Lower values appear earlier in Word's quick-style gallery. */
+  uiPriority?: number;
+  /** Hide the style from style-selection user interfaces. */
+  semiHidden?: boolean;
+  /** Reveal a semi-hidden style after it is used by document content. */
+  unhideWhenUsed?: boolean;
   paragraphStyle?: EditorParagraphStyle;
   textStyle?: EditorTextStyle;
   tableStyle?: EditorTableStyle;

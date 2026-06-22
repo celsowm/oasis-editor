@@ -32,6 +32,7 @@ export type BooleanStyleKey =
   | "contextualAlternates";
 
 export type ValueStyleKey =
+  | "styleId"
   | "fontFamily"
   | "fontSize"
   | "color"
@@ -102,6 +103,7 @@ export interface ToolbarStyleState {
   textEffect: string;
   link: string;
   styleId: string;
+  characterStyleId: string;
   align: string;
   lineHeight: string;
   spacingBefore: string;
@@ -421,6 +423,7 @@ export function getToolbarStyleState(state: EditorState): ToolbarStyleState {
     textEffect: resolveUniformStyleValue(styles, "textEffect"),
     link: resolveUniformStyleValue(styles, "link"),
     styleId: resolveUniformParagraphStyleValue(paragraphStyles, "styleId"),
+    characterStyleId: resolveUniformStyleValue(styles, "styleId"),
     align: resolveUniformParagraphStyleValue(paragraphStyles, "align"),
     lineHeight: resolveUniformParagraphStyleValue(
       paragraphStyles,

@@ -41,6 +41,7 @@ export const OASIS_BUILTIN_COMMANDS = [
   "setHighlight",
   "setTextShading",
   "setStyleId",
+  "setCharacterStyleId",
   "setUnderlineStyle",
   "documentStyles",
   "print",

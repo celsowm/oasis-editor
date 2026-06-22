@@ -227,6 +227,8 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
     id: "normal",
     name: "Normal",
     type: "paragraph",
+    qFormat: true,
+    uiPriority: 0,
     paragraphStyle: {
       spacingAfter: 8,
       lineHeight: 1.15,
@@ -240,6 +242,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
     id: "header",
     name: "Header",
     type: "paragraph",
+    semiHidden: true,
     basedOn: "normal",
     nextStyle: "header",
     paragraphStyle: {
@@ -250,6 +253,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
     id: "footer",
     name: "Footer",
     type: "paragraph",
+    semiHidden: true,
     basedOn: "normal",
     nextStyle: "footer",
     paragraphStyle: {
@@ -260,6 +264,8 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
     id: "heading1",
     name: "Heading 1",
     type: "paragraph",
+    qFormat: true,
+    uiPriority: 10,
     basedOn: "normal",
     nextStyle: "normal",
     paragraphStyle: {
@@ -276,6 +282,8 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
     id: "heading2",
     name: "Heading 2",
     type: "paragraph",
+    qFormat: true,
+    uiPriority: 11,
     basedOn: "normal",
     nextStyle: "normal",
     paragraphStyle: {
@@ -292,6 +300,8 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
     id: "heading3",
     name: "Heading 3",
     type: "paragraph",
+    qFormat: true,
+    uiPriority: 12,
     basedOn: "normal",
     nextStyle: "normal",
     paragraphStyle: {
@@ -308,6 +318,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
     id: "footnoteText",
     name: "Footnote Text",
     type: "paragraph",
+    semiHidden: true,
     basedOn: "normal",
     nextStyle: "footnoteText",
     paragraphStyle: {
@@ -322,6 +333,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
     id: "footnoteReference",
     name: "Footnote Reference",
     type: "character",
+    semiHidden: true,
     basedOn: "normal",
     textStyle: {
       superscript: true,
@@ -331,6 +343,8 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
     id: "Caption",
     name: "Caption",
     type: "paragraph",
+    qFormat: true,
+    uiPriority: 35,
     basedOn: "normal",
     nextStyle: "normal",
     paragraphStyle: {

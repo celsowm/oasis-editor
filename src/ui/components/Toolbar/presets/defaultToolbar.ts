@@ -63,9 +63,6 @@ const fontSizeOptions = (api: ToolbarActionApi): SelectOption[] => {
     .map((n) => ({ value: String(n), label: String(n) }));
 };
 
-const styleOptions = (api: ToolbarActionApi): SelectOption[] =>
-  documentStyles(api).map((s) => ({ value: s.id, label: s.name }));
-
 const ALIGN_BUTTONS: Array<{
   command: string;
   icon: string;
@@ -293,13 +290,14 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
 
   // --- Style ---
   items.push({
-    type: "select",
+    type: "styleGallery",
     id: "editor-toolbar-style",
     testId: "editor-toolbar-style",
-    width: "wide",
     tooltipKey: "toolbar.style",
-    command: "setStyleId",
-    options: styleOptions,
+    ribbonSize: "large",
+    styles: documentStyles,
+    paragraphCommand: "setStyleId",
+    characterCommand: "setCharacterStyleId",
   });
   items.push({
     type: "select",

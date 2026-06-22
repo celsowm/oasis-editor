@@ -6,7 +6,7 @@ It is intentionally not a raw dump of every XSD production in ECMA-376 / ISO/IEC
 
 Generated/expanded: 2026-06-04
 Completion pass added: 2026-06-04
-Last source audit: 2026-06-20
+Last source audit: 2026-06-22
 
 ## What was missing from the previous file
 
@@ -252,9 +252,9 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Styles | `w:next` | `w:style` | `w:val` | Next paragraph style. | Useful for editing, less for static rendering. | P3 | Partial |
 | Styles | `w:link` | `w:style` | `w:val` | Linked paragraph/character style. | Used by Word's linked style model. | P2 | Not supported |
 | Styles | `w:aliases` | `w:style` | `w:val` | Alternate style names. | UI/search metadata. | P4 | Not supported |
-| Styles | `w:uiPriority` | `w:style` | `w:val` | Style UI priority. | Preserve only. | P4 | Not supported |
-| Styles | `w:qFormat` | `w:style` | `w:val` | Primary style flag. | UI metadata. | P4 | Not supported |
-| Styles | `w:semiHidden` / `w:hidden` / `w:unhideWhenUsed` | `w:style` | `w:val` | Style visibility flags. | Preserve for round-trip. | P4 | Not supported |
+| Styles | `w:uiPriority` | `w:style` | `w:val` | Style UI priority. | Imported, exported, and used to order the quick-style gallery. | P4 | Supported |
+| Styles | `w:qFormat` | `w:style` | `w:val` | Primary style flag. | Imported, exported, and used to select quick styles. | P4 | Supported |
+| Styles | `w:semiHidden` / `w:hidden` / `w:unhideWhenUsed` | `w:style` | `w:val` | Style visibility flags. | `semiHidden` and `unhideWhenUsed` round-trip and drive gallery visibility; `hidden` remains unsupported. | P4 | Partial |
 | Styles | `w:autoRedefine` | `w:style` | `w:val` | Automatically redefine style. | Editing behavior, not layout. | P4 | Not supported |
 | Styles | `w:locked` | `w:style` | `w:val` | Style locked. | Editing/protection behavior. | P4 | Not supported |
 | Styles | `w:personal` / `w:personalCompose` / `w:personalReply` | `w:style` | `w:val` | Email/personal style metadata. | Preserve. | P4 | Not supported |

@@ -127,6 +127,8 @@ export type {
   MenuContent,
   SelectItem,
   SelectOption,
+  StyleGalleryItem,
+  ToolbarDocumentStyle,
   ColorPickerItem,
   GridPickerItem,
   SeparatorItem,
@@ -172,6 +174,8 @@ export type {
 
 export { registerToolbarRenderer } from "./ui/components/Toolbar/renderers/renderers.js";
 export type { RendererProps } from "./ui/components/Toolbar/renderers/renderers.js";
+export { StyleGallery } from "./ui/components/Toolbar/StyleGallery.js";
+export type { StyleGalleryProps } from "./ui/components/Toolbar/StyleGallery.js";
 
 // Toolbar UI primitives — for building custom controls consistent with built-ins.
 export { Popover } from "./ui/components/Toolbar/primitives/Popover.js";

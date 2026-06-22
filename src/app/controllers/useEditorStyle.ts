@@ -9,6 +9,7 @@ import type {
 import type { createEditorCommandsController } from "./EditorCommandsController.js";
 
 type ValueStyleKey =
+  | "styleId"
   | "fontFamily"
   | "fontSize"
   | "color"
@@ -105,6 +106,10 @@ export function createEditorStyleController(deps: UseEditorStyleProps) {
       highlight: pending.highlight ?? resolved.highlight,
       textShading: pending.shading ?? resolved.textShading,
       link: pending.link ?? resolved.link,
+      characterStyleId:
+        pending.styleId !== undefined && pending.styleId !== null
+          ? String(pending.styleId)
+          : resolved.characterStyleId,
     };
   };
 

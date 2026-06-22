@@ -9,6 +9,7 @@ import type {
   MenuContent,
   MenuItem,
   SelectItem,
+  StyleGalleryItem,
   SeparatorItem,
   SplitItem,
   ToggleItem,
@@ -31,6 +32,7 @@ import { GridPicker } from "@/ui/components/Toolbar/primitives/GridPicker.js";
 import { SplitButton } from "@/ui/components/Toolbar/primitives/SplitButton.js";
 import { DEFAULT_PALETTE } from "@/ui/components/Toolbar/presets/defaultPalette.js";
 import { ToolIcon } from "@/ui/utils/customIcons.js";
+import { StyleGallery } from "@/ui/components/Toolbar/StyleGallery.js";
 
 export interface RendererProps<I extends ToolbarItem = ToolbarItem> {
   item: I;
@@ -156,6 +158,12 @@ function RenderSelect(props: RendererProps<SelectItem>): JSX.Element {
   );
 }
 
+function RenderStyleGallery(
+  props: RendererProps<StyleGalleryItem>,
+): JSX.Element {
+  return <StyleGallery item={props.item} api={props.api} />;
+}
+
 function RenderColorPicker(props: RendererProps<ColorPickerItem>): JSX.Element {
   const [lastValue, setLastValue] = createSignal(props.item.defaultValue);
   const b = bindItem(props.item, props.api);
@@ -235,6 +243,7 @@ export const TOOLBAR_RENDERERS: Record<
   split: RenderSplit as Component<RendererProps>,
   menu: RenderMenu as Component<RendererProps>,
   select: RenderSelect as Component<RendererProps>,
+  styleGallery: RenderStyleGallery as Component<RendererProps>,
   colorPicker: RenderColorPicker as Component<RendererProps>,
   gridPicker: RenderGridPicker as Component<RendererProps>,
   separator: RenderSeparator as Component<RendererProps>,

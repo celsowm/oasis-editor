@@ -32,8 +32,17 @@ export interface ToolbarCommandState {
 export interface ToolbarDocumentStyle {
   id: string;
   name: string;
+  type: "paragraph" | "character" | "table";
+  qFormat?: boolean;
+  uiPriority?: number;
+  semiHidden?: boolean;
+  unhideWhenUsed?: boolean;
+  isUsed?: boolean;
   fontFamily?: string;
   fontSize?: number;
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
 }
 
 /**
@@ -131,6 +140,14 @@ export interface SelectItem extends ToolbarItemBase {
   width?: "wide" | "small" | "default";
 }
 
+export interface StyleGalleryItem extends ToolbarItemBase {
+  type: "styleGallery";
+  /** Reactive descriptors supplied through the command-state boundary. */
+  styles: (api: ToolbarActionApi) => ToolbarDocumentStyle[];
+  paragraphCommand: CommandRef;
+  characterCommand: CommandRef;
+}
+
 export interface ColorPickerItem extends ToolbarItemBase {
   type: "colorPicker";
   kind: "color" | "highlight" | "shading";
@@ -174,6 +191,7 @@ export type ToolbarItem =
   | SplitItem
   | MenuItem
   | SelectItem
+  | StyleGalleryItem
   | ColorPickerItem
   | GridPickerItem
   | SeparatorItem

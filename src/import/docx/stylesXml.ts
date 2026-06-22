@@ -113,6 +113,19 @@ export function parseImportedStyles(
         getFirstChildByTagNameNS(styleElement, WORD_NS, "next"),
         "val",
       ) ?? undefined;
+    const qFormat = parseOnOffProperty(styleElement, "qFormat");
+    const semiHidden = parseOnOffProperty(styleElement, "semiHidden");
+    const unhideWhenUsed = parseOnOffProperty(styleElement, "unhideWhenUsed");
+    const rawUiPriority = getAttributeValue(
+      getFirstChildByTagNameNS(styleElement, WORD_NS, "uiPriority"),
+      "val",
+    );
+    const parsedUiPriority =
+      rawUiPriority === null ? NaN : Number(rawUiPriority);
+    const uiPriority =
+      Number.isInteger(parsedUiPriority) && parsedUiPriority >= 0
+        ? parsedUiPriority
+        : undefined;
     const paragraphStyle = withDocxImplicitSingleLineHeight(
       parseParagraphStyle(
         getFirstChildByTagNameNS(styleElement, WORD_NS, "pPr"),
@@ -167,12 +180,20 @@ export function parseImportedStyles(
         const condRowStyle = parseConditionalRowStyle(
           getFirstChildByTagNameNS(tblStylePr, WORD_NS, "trPr"),
         );
-        if (fill || condTextStyle || condBorders || condParagraphStyle || condRowStyle) {
+        if (
+          fill ||
+          condTextStyle ||
+          condBorders ||
+          condParagraphStyle ||
+          condRowStyle
+        ) {
           conditionalFormats[condType] = {
             ...(fill ? { shading: fill } : {}),
             ...(condTextStyle ? { textStyle: condTextStyle } : {}),
             ...(condBorders ? { borders: condBorders } : {}),
-            ...(condParagraphStyle ? { paragraphStyle: condParagraphStyle } : {}),
+            ...(condParagraphStyle
+              ? { paragraphStyle: condParagraphStyle }
+              : {}),
             ...(condRowStyle ? { rowStyle: condRowStyle } : {}),
           };
         }
@@ -202,6 +223,10 @@ export function parseImportedStyles(
       type,
       basedOn,
       nextStyle,
+      qFormat,
+      uiPriority,
+      semiHidden,
+      unhideWhenUsed,
       paragraphStyle:
         type === "paragraph" && isDefaultParagraph
           ? mergeStyles(defaultParagraphStyle, paragraphStyle)

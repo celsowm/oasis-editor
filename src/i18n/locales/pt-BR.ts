@@ -56,7 +56,7 @@ export const ptBR = {
   "toolbar.moreTools": "Mais ferramentas",
 
   // Style
-  "toolbar.style": "Estilo de Parágrafo",
+  "toolbar.style": "Estilos",
   "toolbar.fontFamily": "Família da Fonte",
   "toolbar.font": "Fonte",
   "toolbar.fontSize": "Tamanho da Fonte",

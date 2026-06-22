@@ -18,6 +18,7 @@ import {
   getDocumentParagraphs,
   getParagraphText,
   paragraphOffsetToPosition,
+  resolveNamedTextStyle,
   type EditorBorderStyle,
   type EditorPageMargins,
   type EditorState,
@@ -328,6 +329,13 @@ export function createEditorEssentialsRuntimePlugin(
       options.commandsController.handleStyleChange(value),
       true
     ),
+    setCharacterStyleId: (value: string) => (
+      options.styleController.applyToolbarValueStyleCommand(
+        "styleId",
+        value || null,
+      ),
+      true
+    ),
     setUnderlineStyle: (value: string | null) =>
       (
         options.styleController.applyToolbarValueStyleCommand as (
@@ -338,16 +346,36 @@ export function createEditorEssentialsRuntimePlugin(
   };
 
   const essentialsDocument = {
-    documentStyles: () =>
-      Object.values(options.state().document?.styles ?? {}).map((style) => ({
-        id: style.id,
-        name: style.name,
-        fontFamily: style.textStyle?.fontFamily?.trim() || undefined,
-        fontSize:
-          typeof style.textStyle?.fontSize === "number"
-            ? style.textStyle.fontSize
-            : undefined,
-      })),
+    documentStyles: () => {
+      const document = options.state().document;
+      const styles = document?.styles ?? {};
+      const usedStyleIds = new Set<string>();
+      for (const paragraph of getDocumentParagraphs(document)) {
+        if (paragraph.style?.styleId) usedStyleIds.add(paragraph.style.styleId);
+        for (const run of paragraph.runs) {
+          if (run.styles?.styleId) usedStyleIds.add(run.styles.styleId);
+        }
+      }
+      return Object.values(styles).map((style) => {
+        const preview = resolveNamedTextStyle(style.id, styles);
+        return {
+          id: style.id,
+          name: style.name,
+          type: style.type,
+          qFormat: style.qFormat,
+          uiPriority: style.uiPriority,
+          semiHidden: style.semiHidden,
+          unhideWhenUsed: style.unhideWhenUsed,
+          isUsed: usedStyleIds.has(style.id),
+          fontFamily: preview.fontFamily?.trim() || undefined,
+          fontSize:
+            typeof preview.fontSize === "number" ? preview.fontSize : undefined,
+          color: preview.color ?? undefined,
+          bold: preview.bold ?? undefined,
+          italic: preview.italic ?? undefined,
+        };
+      });
+    },
     exportDocx: () => void options.docIO.handleExportDocx(),
     exportPdf: () => void options.docIO.handleExportPdf(),
     importDocument: () => options.importInputRef()?.click(),
@@ -669,7 +697,10 @@ export function createEditorEssentialsRuntimePlugin(
           MERGE_KEYS.tableAlign,
         ),
       setCellWidth: (width: string) =>
-        apply((current) => setTableCellWidth(current, width), MERGE_KEYS.tableCellWidth),
+        apply(
+          (current) => setTableCellWidth(current, width),
+          MERGE_KEYS.tableCellWidth,
+        ),
       insert: (rows: number, cols: number) =>
         options.tableOps.insertTableCommand(rows, cols),
     };

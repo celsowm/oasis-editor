@@ -517,3 +517,127 @@
   margin: 2px 0;
   background: var(--oasis-border-color-muted);
 }
+
+.oasis-editor-style-gallery {
+  display: flex;
+  min-width: 0;
+}
+
+.oasis-editor-style-gallery-compact {
+  display: none;
+}
+
+.oasis-editor-style-gallery-ribbon {
+  display: flex;
+  width: clamp(360px, 48vw, 640px);
+  height: 58px;
+  border: 1px solid #9a9a9a;
+  background: #f7f7f7;
+  box-sizing: border-box;
+}
+
+.oasis-editor-style-gallery-strip {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.oasis-editor-style-gallery-card {
+  flex: 0 0 106px;
+  min-width: 0;
+  height: 56px;
+  padding: 0 4px;
+  border: 2px solid transparent;
+  border-right-width: 6px;
+  background: #f7f7f7;
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.oasis-editor-style-gallery-card span {
+  display: block;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.oasis-editor-style-gallery-card:hover,
+.oasis-editor-style-gallery-card:focus-visible {
+  background: #e7f1fb;
+  border-color: #7aa7d3;
+  outline: none;
+}
+
+.oasis-editor-style-gallery-card-active {
+  border-color: #737373;
+  box-shadow: inset 0 0 0 1px #ffffff;
+}
+
+.oasis-editor-style-gallery-expand {
+  flex: 0 0 24px;
+  width: 24px;
+  border: 0;
+  border-left: 1px solid #9a9a9a;
+  background: #ededed;
+  color: #333333;
+  cursor: pointer;
+}
+
+.oasis-editor-style-gallery-expand:hover,
+.oasis-editor-style-gallery-expand:focus-visible {
+  background: #dcecf9;
+  outline: 2px solid #4c8bf5;
+  outline-offset: -2px;
+}
+
+.oasis-editor-style-gallery-expand i {
+  width: 14px;
+  height: 14px;
+}
+
+.oasis-editor-style-gallery-panel {
+  z-index: 1200;
+  width: min(660px, calc(100vw - 16px));
+  max-height: min(420px, calc(100vh - 88px));
+  padding: 4px;
+  border: 1px solid #777777;
+  background: #2b2b2b;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 28%);
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.oasis-editor-style-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 7px 8px;
+}
+
+.oasis-editor-style-gallery-panel .oasis-editor-style-gallery-card {
+  width: 100%;
+  height: 49px;
+  border-right-width: 2px;
+  background: #f7f7f7;
+}
+
+.oasis-editor-toolbar-view-compact .oasis-editor-style-gallery-compact {
+  display: block;
+  min-width: 120px;
+}
+
+.oasis-editor-toolbar-view-compact .oasis-editor-style-gallery-ribbon {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .oasis-editor-style-gallery-ribbon {
+    width: 330px;
+  }
+
+  .oasis-editor-style-gallery-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

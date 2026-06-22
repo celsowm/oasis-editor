@@ -64,9 +64,7 @@ import type {
 } from "./controllerPorts.js";
 
 export interface EditorCommandsControllerDeps
-  extends EditorTransactionPort,
-    FocusInputPort,
-    SelectedImageQueryPort {
+  extends EditorTransactionPort, FocusInputPort, SelectedImageQueryPort {
   state: EditorState;
   logger: EditorLogger;
   applySelectionAwareTextCommand: (
@@ -231,6 +229,7 @@ export function createEditorCommandsController(
 
   const applyValueStyleCommand = <
     K extends
+      | "styleId"
       | "fontFamily"
       | "fontSize"
       | "color"

@@ -56,7 +56,7 @@ export const en = {
   "toolbar.moreTools": "More tools",
 
   // Style
-  "toolbar.style": "Paragraph Style",
+  "toolbar.style": "Styles",
   "toolbar.fontFamily": "Font Family",
   "toolbar.font": "Font",
   "toolbar.fontSize": "Font Size",
