@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -89,7 +90,7 @@ function applyWordLikeBodyStyle(paragraph: EditorParagraphNode): void {
   };
 
   for (const run of paragraph.runs) {
-    if (run.image) {
+    if (getRunImage(run)) {
       continue;
     }
     run.styles = {

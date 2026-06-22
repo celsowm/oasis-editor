@@ -46,6 +46,7 @@ export type {
 } from "./types/styles.js";
 
 export type {
+  EditorRunBase,
   EditorTextRun,
   EditorTextBoxShape,
   EditorTextBoxBody,
@@ -60,8 +61,20 @@ export type {
   EditorBlockNode,
 } from "./types/nodes.js";
 
-export type { RunKind, RunVisitor } from "./runKind.js";
-export { getRunKind, isInlineObjectRun, visitRun } from "./runKind.js";
+export type { RunKind, RunOfKind, RunVisitor } from "./runKind.js";
+export {
+  getRunKind,
+  isInlineObjectRun,
+  visitRun,
+  getRunImage,
+  getRunTextBox,
+  getRunField,
+  getRunFieldChar,
+  getRunFieldInstruction,
+  getRunFootnoteReference,
+  getRunEndnoteReference,
+  getRunSym,
+} from "./runKind.js";
 
 export type { EditorFootnote } from "./types/documentFootnotes.js";
 export type { EditorEndnote } from "./types/documentEndnotes.js";

@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -37,7 +38,7 @@ function findTextBoxRun(
 ): EditorTextRun | undefined {
   for (const paragraph of paragraphs) {
     for (const run of paragraph.runs) {
-      if (run.textBox) return run;
+      if (getRunTextBox(run)) return run;
     }
   }
   return undefined;
@@ -64,17 +65,20 @@ function makeTextBox(overrides: Partial<EditorTextBoxData>): EditorTextBoxData {
   };
 }
 
+function makeTextBoxRun(textBox: EditorTextBoxData): EditorTextRun {
+  return { ...createEditorRun("￼"), kind: "textBox", textBox };
+}
+
 describe("DOCX export: text boxes (wps:wsp)", () => {
   it("serializes an anchored text box as a wps:wsp drawing", async () => {
-    const textBoxRun = createEditorRun("\uFFFC");
-    textBoxRun.textBox = makeTextBox({
+    const textBoxRun = makeTextBoxRun(makeTextBox({
       width: 200,
       height: 100,
       blocks: [
         {
           id: "p1",
           type: "paragraph",
-          runs: [{ id: "r1", text: "hello from a text box" }],
+          runs: [{ id: "r1", text: "hello from a text box", kind: "text" as const }],
         },
       ],
       floating: {
@@ -103,7 +107,7 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
         autoFit: true,
       },
       name: "Text Box 1",
-    });
+    }));
 
     const paragraph = createEditorParagraph("");
     paragraph.runs = [textBoxRun];
@@ -140,15 +144,14 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
   });
 
   it("round-trips a hand-built text box without duplicating its content", async () => {
-    const textBoxRun = createEditorRun("\uFFFC");
-    textBoxRun.textBox = makeTextBox({
+    const textBoxRun = makeTextBoxRun(makeTextBox({
       width: 248,
       height: 148,
       blocks: [
         {
           id: "inner",
           type: "paragraph",
-          runs: [{ id: "inner-r", text: "insidebox" }],
+          runs: [{ id: "inner-r", text: "insidebox", kind: "text" as const }],
         },
       ],
       floating: {
@@ -160,7 +163,7 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
       shape: { preset: "rect", fill: "#FFFFFF" },
       body: { anchor: "t", autoFit: true },
       name: "Caixa de Texto 2",
-    });
+    }));
     const sibling = createEditorRun("normaltext");
 
     const paragraph = createEditorParagraph("");
@@ -174,8 +177,8 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
     const reimported = findTextBoxRun(paragraphs2);
     expect(reimported).toBeDefined();
     expect(reimported!.text).toBe("\uFFFC");
-    expect(reimported!.textBox?.blocks).toHaveLength(1);
-    const inner = reimported!.textBox!.blocks[0]! as EditorParagraphNode;
+    expect(getRunTextBox(reimported!)?.blocks).toHaveLength(1);
+    const inner = getRunTextBox(reimported!)!.blocks[0]! as EditorParagraphNode;
     const innerText = inner.runs.map((r) => r.text).join("");
     expect(innerText).toBe("insidebox");
 
@@ -188,7 +191,7 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
     // and the inside textbox text contains "insidebox" once.
     const allBodyText = paragraphs2
       .flatMap((p) => p.runs)
-      .filter((r) => !r.textBox)
+      .filter((r) => !getRunTextBox(r))
       .map((r) => r.text)
       .join("");
     expect(allBodyText.match(/normaltext/g)?.length ?? 0).toBe(1);
@@ -196,8 +199,7 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
   });
 
   it("serializes and round-trips text box rotation (wps:spPr/a:xfrm/@rot)", async () => {
-    const textBoxRun = createEditorRun("￼");
-    textBoxRun.textBox = makeTextBox({
+    const textBoxRun = makeTextBoxRun(makeTextBox({
       width: 200,
       height: 100,
       rotation: 45,
@@ -205,11 +207,11 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
         {
           id: "p1",
           type: "paragraph",
-          runs: [{ id: "r1", text: "rotated box" }],
+          runs: [{ id: "r1", text: "rotated box", kind: "text" as const }],
         },
       ],
       shape: { preset: "rect", fill: "#FFFFFF" },
-    });
+    }));
 
     const paragraph = createEditorParagraph("");
     paragraph.runs = [textBoxRun];
@@ -226,7 +228,7 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
 
     const doc2 = await importDocxToEditorDocument(buffer);
     const reimported = findTextBoxRun(getDocumentParagraphs(doc2));
-    expect(reimported?.textBox?.rotation).toBe(45);
+    expect(getRunTextBox(reimported!)?.rotation).toBe(45);
   });
 
   it("round-trips the real caixa_texto.docx fixture", async () => {
@@ -240,7 +242,7 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
     ).toBeDefined();
     expect(textBoxRun1!.text).toBe("\uFFFC");
     const inner1 = (
-      textBoxRun1!.textBox!.blocks[0]! as EditorParagraphNode
+      getRunTextBox(textBoxRun1!)!.blocks[0]! as EditorParagraphNode
     ).runs
       .map((r) => r.text)
       .join("");
@@ -256,7 +258,7 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
     expect(textBoxRun2).toBeDefined();
     expect(textBoxRun2!.text).toBe("\uFFFC");
     const inner2 = (
-      textBoxRun2!.textBox!.blocks[0]! as EditorParagraphNode
+      getRunTextBox(textBoxRun2!)!.blocks[0]! as EditorParagraphNode
     ).runs
       .map((r) => r.text)
       .join("");
@@ -265,20 +267,20 @@ describe("DOCX export: text boxes (wps:wsp)", () => {
 
     // Floating offsets, shape and body properties survive (within EMU/px
     // rounding tolerance).
-    const floating = textBoxRun2!.textBox!.floating!;
+    const floating = getRunTextBox(textBoxRun2!)!.floating!;
     expect(floating.positionH?.offset).toBe(-275590);
     expect(floating.positionV?.offset).toBe(87630);
     expect(floating.wrap).toBe("square");
-    expect(textBoxRun2!.textBox!.shape?.preset).toBe("rect");
-    expect(textBoxRun2!.textBox!.shape?.fill).toBe("#FFFFFF");
-    expect(textBoxRun2!.textBox!.body?.autoFit).toBe(true);
+    expect(getRunTextBox(textBoxRun2!)!.shape?.preset).toBe("rect");
+    expect(getRunTextBox(textBoxRun2!)!.shape?.fill).toBe("#FFFFFF");
+    expect(getRunTextBox(textBoxRun2!)!.body?.autoFit).toBe(true);
 
     // No duplication: the inside text appears exactly once in the txbx body
     // and the sibling text appears exactly once in the body.
     expect(inner2.match(/insidebox/g)?.length ?? 0).toBe(1);
     const bodyText = paragraphs2
       .flatMap((p) => p.runs)
-      .filter((r) => !r.textBox)
+      .filter((r) => !getRunTextBox(r))
       .map((r) => r.text)
       .join("");
     expect(bodyText.match(/normaltext/g)?.length ?? 0).toBe(1);

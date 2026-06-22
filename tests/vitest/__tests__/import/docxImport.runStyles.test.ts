@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
@@ -533,7 +534,7 @@ describe("w:sym symbol characters", () => {
       </w:r>`);
     const doc = await importDocxToEditorDocument(docx);
     const run = getDocumentParagraphs(doc)[0]!.runs[0]!;
-    expect(run.sym).toEqual({ font: "Symbol", char: "F0B7" });
+    expect(getRunSym(run)).toEqual({ font: "Symbol", char: "F0B7" });
     expect(run.text).toBe(String.fromCodePoint(0xf0b7));
   });
 
@@ -544,7 +545,7 @@ describe("w:sym symbol characters", () => {
       </w:r>`);
     const doc = await importDocxToEditorDocument(docx);
     const run = getDocumentParagraphs(doc)[0]!.runs[0]!;
-    expect(run.sym).toEqual({ font: "Wingdings", char: "F077" });
+    expect(getRunSym(run)).toEqual({ font: "Wingdings", char: "F077" });
     expect(run.styles?.fontFamily).toBe("Wingdings");
   });
 

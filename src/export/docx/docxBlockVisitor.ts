@@ -13,7 +13,7 @@ export function visitParagraphDeep(
 ): void {
   callback(paragraph);
   for (const run of paragraph.runs) {
-    if (run.textBox) {
+    if (run.kind === "textBox") {
       visitBlocks(run.textBox.blocks, callback);
     }
   }

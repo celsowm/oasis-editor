@@ -8,25 +8,14 @@ import type {
   EditorState,
 } from "./model.js";
 import { assertNever } from "./assertNever.js";
+import { cloneRun } from "./document/clone.js";
 
 export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
   switch (block.type) {
     case "paragraph":
       return {
         ...block,
-        runs: block.runs.map((run) => ({
-          ...run,
-          styles: run.styles ? { ...run.styles } : undefined,
-          image: run.image ? { ...run.image } : undefined,
-          field: run.field ? { ...run.field } : undefined,
-          revision: run.revision ? { ...run.revision } : undefined,
-          footnoteReference: run.footnoteReference
-            ? { ...run.footnoteReference }
-            : undefined,
-          endnoteReference: run.endnoteReference
-            ? { ...run.endnoteReference }
-            : undefined,
-        })),
+        runs: block.runs.map(cloneRun),
         style: block.style ? { ...block.style } : undefined,
         list: block.list ? { ...block.list } : undefined,
       };
@@ -73,19 +62,7 @@ export function cloneBlock(block: EditorBlockNode): EditorBlockNode {
               : undefined,
             blocks: cell.blocks.map((paragraph) => ({
               ...paragraph,
-              runs: paragraph.runs.map((run) => ({
-                ...run,
-                styles: run.styles ? { ...run.styles } : undefined,
-                image: run.image ? { ...run.image } : undefined,
-                field: run.field ? { ...run.field } : undefined,
-                revision: run.revision ? { ...run.revision } : undefined,
-                footnoteReference: run.footnoteReference
-                  ? { ...run.footnoteReference }
-                  : undefined,
-                endnoteReference: run.endnoteReference
-                  ? { ...run.endnoteReference }
-                  : undefined,
-              })),
+              runs: paragraph.runs.map(cloneRun),
               style: paragraph.style ? { ...paragraph.style } : undefined,
               list: paragraph.list ? { ...paragraph.list } : undefined,
             })),

@@ -1,72 +1,100 @@
-import type { EditorTextRun } from "./types/nodes.js";
+import type { EditorTextBoxData, EditorTextRun } from "./types/nodes.js";
+import type {
+  EditorFieldChar,
+  EditorFieldData,
+  EditorImageRunData,
+  EditorFootnoteReferenceData,
+  EditorEndnoteReferenceData,
+} from "./types/primitives.js";
 import { assertNever } from "../assertNever.js";
 
 /**
- * Discriminated classification of an {@link EditorTextRun}.
- *
- * `EditorTextRun` is a flat bag of optional fields (`image`, `textBox`,
- * `field`, …) with no discriminant, so adding a new inline object means every
- * dispatch site has to remember to handle it (O1). `getRunKind` derives the
- * effective kind once, in the canonical precedence the DOCX serializer uses
- * (`export/docx/text/runXml.ts`), and `visitRun` turns that into an exhaustive
- * dispatch — a missing branch is a compile error.
- *
- * This is purely derived from the existing fields; it does not change the wire
- * shape. It is the safe first step before migrating `EditorTextRun` itself to a
- * discriminated union.
+ * Discriminant of an {@link EditorTextRun}. `EditorTextRun` is a discriminated
+ * union keyed on `kind`; `getRunKind`/`visitRun` are thin helpers over it so
+ * dispatch stays in one place and adding a variant is a compile error (O1).
  */
-export type RunKind =
-  | "footnoteReference"
-  | "endnoteReference"
-  | "fieldChar"
-  | "fieldInstruction"
-  | "field"
-  | "textBox"
-  | "image"
-  | "sym"
-  | "text";
+export type RunKind = EditorTextRun["kind"];
 
-/**
- * Classifies a run by its highest-precedence object field. The order mirrors
- * `serializeRun` so callers that switch on the kind agree with export.
- */
+/** The union member for a given run kind. */
+export type RunOfKind<K extends RunKind> = Extract<EditorTextRun, { kind: K }>;
+
+/** Returns a run's discriminant. */
 export function getRunKind(run: EditorTextRun): RunKind {
-  if (run.footnoteReference) return "footnoteReference";
-  if (run.endnoteReference) return "endnoteReference";
-  if (run.fieldChar) return "fieldChar";
-  if (run.fieldInstruction !== undefined) return "fieldInstruction";
-  if (run.field) return "field";
-  if (run.textBox) return "textBox";
-  if (run.image) return "image";
-  if (run.sym) return "sym";
-  return "text";
+  return run.kind;
 }
 
 /** True for runs that carry an inline object replacement (image or text box). */
 export function isInlineObjectRun(run: EditorTextRun): boolean {
-  const kind = getRunKind(run);
-  return kind === "image" || kind === "textBox";
+  return run.kind === "image" || run.kind === "textBox";
+}
+
+// Narrowing accessors: read a kind-specific field as `T | undefined`, replacing
+// the old optional-field reads (`run.image`, …) without forcing every call site
+// into a `switch`. The union still rejects invalid combinations at construction.
+
+export function getRunImage(run: EditorTextRun): EditorImageRunData | undefined {
+  return run.kind === "image" ? run.image : undefined;
+}
+
+export function getRunTextBox(
+  run: EditorTextRun,
+): EditorTextBoxData | undefined {
+  return run.kind === "textBox" ? run.textBox : undefined;
+}
+
+export function getRunField(run: EditorTextRun): EditorFieldData | undefined {
+  return run.kind === "field" ? run.field : undefined;
+}
+
+export function getRunFieldChar(
+  run: EditorTextRun,
+): EditorFieldChar | undefined {
+  return run.kind === "fieldChar" ? run.fieldChar : undefined;
+}
+
+export function getRunFieldInstruction(
+  run: EditorTextRun,
+): string | undefined {
+  return run.kind === "fieldInstruction" ? run.fieldInstruction : undefined;
+}
+
+export function getRunFootnoteReference(
+  run: EditorTextRun,
+): EditorFootnoteReferenceData | undefined {
+  return run.kind === "footnoteReference" ? run.footnoteReference : undefined;
+}
+
+export function getRunEndnoteReference(
+  run: EditorTextRun,
+): EditorEndnoteReferenceData | undefined {
+  return run.kind === "endnoteReference" ? run.endnoteReference : undefined;
+}
+
+export function getRunSym(
+  run: EditorTextRun,
+): { font: string; char: string } | undefined {
+  return run.kind === "sym" ? run.sym : undefined;
 }
 
 export interface RunVisitor<R> {
-  text(run: EditorTextRun): R;
-  image(run: EditorTextRun): R;
-  textBox(run: EditorTextRun): R;
-  field(run: EditorTextRun): R;
-  fieldChar(run: EditorTextRun): R;
-  fieldInstruction(run: EditorTextRun): R;
-  footnoteReference(run: EditorTextRun): R;
-  endnoteReference(run: EditorTextRun): R;
-  sym(run: EditorTextRun): R;
+  text(run: RunOfKind<"text">): R;
+  image(run: RunOfKind<"image">): R;
+  textBox(run: RunOfKind<"textBox">): R;
+  field(run: RunOfKind<"field">): R;
+  fieldChar(run: RunOfKind<"fieldChar">): R;
+  fieldInstruction(run: RunOfKind<"fieldInstruction">): R;
+  footnoteReference(run: RunOfKind<"footnoteReference">): R;
+  endnoteReference(run: RunOfKind<"endnoteReference">): R;
+  sym(run: RunOfKind<"sym">): R;
 }
 
 /**
- * Exhaustive dispatch over a run's kind. Adding a `RunKind` variant forces every
+ * Exhaustive dispatch over a run's kind, narrowing the run to the matching union
+ * member inside each visitor method. Adding a `RunKind` variant forces every
  * `RunVisitor` to grow the matching method (compile error otherwise).
  */
 export function visitRun<R>(run: EditorTextRun, visitor: RunVisitor<R>): R {
-  const kind = getRunKind(run);
-  switch (kind) {
+  switch (run.kind) {
     case "footnoteReference":
       return visitor.footnoteReference(run);
     case "endnoteReference":
@@ -86,6 +114,6 @@ export function visitRun<R>(run: EditorTextRun, visitor: RunVisitor<R>): R {
     case "text":
       return visitor.text(run);
     default:
-      return assertNever(kind, "run kind");
+      return assertNever(run, "run kind");
   }
 }

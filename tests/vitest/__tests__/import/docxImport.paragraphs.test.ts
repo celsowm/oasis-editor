@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
@@ -409,16 +410,16 @@ describe("DOCX paragraph import", () => {
   it("imports images with correct dimensions from DOCX", async () => {
     const document = await importLoremComplexDocument();
     const paragraphs = getDocumentParagraphs(document);
-    const imageParagraph = paragraphs.find((p) => p.runs.some((r) => r.image));
+    const imageParagraph = paragraphs.find((p) => p.runs.some((r) => getRunImage(r)));
 
     expect(imageParagraph).toBeDefined();
-    const imageRun = imageParagraph!.runs.find((r) => r.image)!;
+    const imageRun = imageParagraph!.runs.find((r) => getRunImage(r))!;
     expect(imageRun.text).toBe("￼");
-    expect(imageRun.image?.width).toBe(557);
-    expect(imageRun.image?.height).toBe(278);
-    expect(imageRun.image?.src).toMatch(/^asset:/);
+    expect(getRunImage(imageRun)?.width).toBe(557);
+    expect(getRunImage(imageRun)?.height).toBe(278);
+    expect(getRunImage(imageRun)?.src).toMatch(/^asset:/);
 
-    const assetId = imageRun.image!.src.split(":")[1]!;
+    const assetId = getRunImage(imageRun)!.src.split(":")[1]!;
     expect(document.assets?.[assetId]).toBeDefined();
     expect(document.assets?.[assetId]?.url).toMatch(/^data:image\/png;base64,/);
   });
@@ -481,21 +482,21 @@ describe("DOCX paragraph import", () => {
       await zip.generateAsync({ type: "arraybuffer" }),
     );
     const paragraph = getDocumentParagraphs(document)[0]!;
-    const imageRun = paragraph.runs.find((r) => r.image)!;
+    const imageRun = paragraph.runs.find((r) => getRunImage(r))!;
 
-    expect(imageRun.image?.width).toBe(100);
-    expect(imageRun.image?.height).toBe(50);
-    expect(imageRun.image?.alt).toBe("alt text");
-    expect(imageRun.image?.crop).toEqual({
+    expect(getRunImage(imageRun)?.width).toBe(100);
+    expect(getRunImage(imageRun)?.height).toBe(50);
+    expect(getRunImage(imageRun)?.alt).toBe("alt text");
+    expect(getRunImage(imageRun)?.crop).toEqual({
       left: 0.1,
       top: 0.05,
       right: 0.2,
       bottom: undefined,
     });
-    expect(imageRun.image?.rotation).toBe(90);
-    expect(imageRun.image?.flipH).toBe(true);
-    expect(imageRun.image?.flipV).toBeUndefined();
-    expect(imageRun.image?.fillMode).toBeUndefined();
+    expect(getRunImage(imageRun)?.rotation).toBe(90);
+    expect(getRunImage(imageRun)?.flipH).toBe(true);
+    expect(getRunImage(imageRun)?.flipV).toBeUndefined();
+    expect(getRunImage(imageRun)?.fillMode).toBeUndefined();
   });
 
   it("imports inline image tile fill mode (a:tile)", async () => {
@@ -549,9 +550,9 @@ describe("DOCX paragraph import", () => {
       await zip.generateAsync({ type: "arraybuffer" }),
     );
     const paragraph = getDocumentParagraphs(document)[0]!;
-    const imageRun = paragraph.runs.find((r) => r.image)!;
+    const imageRun = paragraph.runs.find((r) => getRunImage(r))!;
 
-    expect(imageRun.image?.fillMode).toBe("tile");
+    expect(getRunImage(imageRun)?.fillMode).toBe("tile");
   });
 
   it("imports linked inline images without fetching external targets", async () => {
@@ -602,14 +603,14 @@ describe("DOCX paragraph import", () => {
       await zip.generateAsync({ type: "arraybuffer" }),
     );
     const paragraph = getDocumentParagraphs(document)[0]!;
-    const imageRun = paragraph.runs.find((r) => r.image)!;
+    const imageRun = paragraph.runs.find((r) => getRunImage(r))!;
 
     expect(imageRun.text).toBe("￼");
-    expect(imageRun.image?.src).toBe("");
-    expect(imageRun.image?.linkedSrc).toBe("https://example.com/image.png");
-    expect(imageRun.image?.width).toBe(100);
-    expect(imageRun.image?.height).toBe(50);
-    expect(imageRun.image?.alt).toBe("linked alt");
+    expect(getRunImage(imageRun)?.src).toBe("");
+    expect(getRunImage(imageRun)?.linkedSrc).toBe("https://example.com/image.png");
+    expect(getRunImage(imageRun)?.width).toBe(100);
+    expect(getRunImage(imageRun)?.height).toBe(50);
+    expect(getRunImage(imageRun)?.alt).toBe("linked alt");
     expect(document.assets).toBeUndefined();
   });
 
@@ -651,15 +652,15 @@ describe("DOCX paragraph import", () => {
       await zip.generateAsync({ type: "arraybuffer" }),
     );
     const paragraph = getDocumentParagraphs(document)[0]!;
-    const imageRun = paragraph.runs.find((r) => r.image)!;
-    const assetId = imageRun.image!.src.split(":")[1]!;
+    const imageRun = paragraph.runs.find((r) => getRunImage(r))!;
+    const assetId = getRunImage(imageRun)!.src.split(":")[1]!;
 
     expect(imageRun.text).toBe("￼");
-    expect(imageRun.image?.width).toBe(96);
-    expect(imageRun.image?.height).toBe(48);
-    expect(imageRun.image?.alt).toBe("legacy alt");
-    expect(imageRun.image?.crop?.left).toBeCloseTo(0.1, 4);
-    expect(imageRun.image?.crop?.top).toBeCloseTo(0.05, 4);
+    expect(getRunImage(imageRun)?.width).toBe(96);
+    expect(getRunImage(imageRun)?.height).toBe(48);
+    expect(getRunImage(imageRun)?.alt).toBe("legacy alt");
+    expect(getRunImage(imageRun)?.crop?.left).toBeCloseTo(0.1, 4);
+    expect(getRunImage(imageRun)?.crop?.top).toBeCloseTo(0.05, 4);
     expect(document.assets?.[assetId]?.url).toMatch(/^data:image\/png;base64,/);
 
     const exported = await exportEditorDocumentToDocx(document);
@@ -815,12 +816,12 @@ describe("DOCX paragraph import", () => {
     );
     const footerPageField = document.sections?.[0]?.footer
       ?.flatMap((block) => (block.type === "paragraph" ? block.runs : []))
-      .find((run) => run.field?.type === "PAGE");
+      .find((run) => getRunField(run)?.type === "PAGE");
 
     expect(summary?.style?.pageBreakBefore).toBe(true);
     expect(secondTitle?.style?.pageBreakBefore).toBe(true);
     expect(renderedBreakContinuation?.style?.pageBreakBefore).toBeUndefined();
-    expect(footerPageField?.field?.type).toBe("PAGE");
+    expect(getRunField(footerPageField!)?.type).toBe("PAGE");
     expect(
       paragraphs.some((paragraph) =>
         paragraph.runs.some((run) => run.text.includes("\f")),

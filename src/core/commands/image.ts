@@ -18,6 +18,7 @@ import {
 import {
   getParagraphLength,
   getParagraphs,
+  getRunImage,
   paragraphOffsetToPosition,
   positionToParagraphOffset,
 } from "@/core/model.js";
@@ -59,7 +60,7 @@ export type SelectedImageRun = SelectedObjectRun;
 export function getSelectedImageRun(
   state: EditorState,
 ): SelectedImageRun | null {
-  return getSelectedObjectRun(state, (run) => Boolean(run.image));
+  return getSelectedObjectRun(state, (run) => run.kind === "image");
 }
 
 export function insertImageAtSelection(
@@ -110,7 +111,7 @@ export function resizeSelectedImage(
     return {
       ...cloneParagraph(candidate),
       runs: candidate.runs.map((run) =>
-        run.id === targetRun.id && run.image
+        run.id === targetRun.id && run.kind === "image"
           ? {
               ...run,
               image: {
@@ -164,7 +165,7 @@ export function rotateSelectedImage(
     return {
       ...cloneParagraph(candidate),
       runs: candidate.runs.map((run) =>
-        run.id === targetRun.id && run.image
+        run.id === targetRun.id && run.kind === "image"
           ? {
               ...run,
               image: {
@@ -191,15 +192,17 @@ export function getSelectedImageWrapPreset(
   state: EditorState,
 ): WrapPreset | null {
   const selectedImage = getSelectedImageRun(state);
-  if (!selectedImage?.run.image) {
+  const image = selectedImage && getRunImage(selectedImage.run);
+  if (!image) {
     return null;
   }
-  return floatingToWrapPreset(selectedImage.run.image.floating);
+  return floatingToWrapPreset(image.floating);
 }
 
 export function isSelectedImageFixedPosition(state: EditorState): boolean {
   const selectedImage = getSelectedImageRun(state);
-  return isFloatingFixedPosition(selectedImage?.run.image?.floating);
+  const image = selectedImage && getRunImage(selectedImage.run);
+  return isFloatingFixedPosition(image?.floating);
 }
 
 /** Patches the selected image's `floating` field (or removes it for inline). */
@@ -210,7 +213,7 @@ function patchSelectedImageFloating(
   ) => EditorImageRunData["floating"],
 ): EditorState {
   const selectedImage = getSelectedImageRun(state);
-  if (!selectedImage?.run.image) {
+  if (!selectedImage || !getRunImage(selectedImage.run)) {
     return state;
   }
 
@@ -225,7 +228,7 @@ function patchSelectedImageFloating(
     return {
       ...cloneParagraph(candidate),
       runs: candidate.runs.map((run) => {
-        if (run.id !== targetRun.id || !run.image) {
+        if (run.id !== targetRun.id || run.kind !== "image") {
           return cloneRun(run);
         }
         const floating = next(run.image.floating);
@@ -283,14 +286,16 @@ export function setImageWrapPolygon(
   let matched = false;
 
   const nextParagraphs = paragraphs.map((candidate) => {
-    if (!candidate.runs.some((run) => run.id === runId && run.image)) {
+    if (
+      !candidate.runs.some((run) => run.id === runId && run.kind === "image")
+    ) {
       return cloneParagraph(candidate);
     }
 
     return {
       ...cloneParagraph(candidate),
       runs: candidate.runs.map((run) => {
-        if (run.id !== runId || !run.image) {
+        if (run.id !== runId || run.kind !== "image") {
           return cloneRun(run);
         }
         matched = true;
@@ -321,11 +326,12 @@ export function setImageWrapPolygon(
 
 export function getSelectedImageAlt(state: EditorState): string | null {
   const selectedImage = getSelectedImageRun(state);
-  if (!selectedImage?.run.image) {
+  const image = selectedImage && getRunImage(selectedImage.run);
+  if (!image) {
     return null;
   }
 
-  return selectedImage.run.image.alt ?? null;
+  return image.alt ?? null;
 }
 
 export function setSelectedImageAlt(
@@ -333,7 +339,7 @@ export function setSelectedImageAlt(
   alt: string | null,
 ): EditorState {
   const selectedImage = getSelectedImageRun(state);
-  if (!selectedImage?.run.image) {
+  if (!selectedImage || !getRunImage(selectedImage.run)) {
     return state;
   }
 
@@ -346,7 +352,7 @@ export function setSelectedImageAlt(
     return {
       ...cloneParagraph(candidate),
       runs: candidate.runs.map((run) =>
-        run.id === selectedImage.run.id && run.image
+        run.id === selectedImage.run.id && run.kind === "image"
           ? {
               ...run,
               image: {
@@ -371,7 +377,7 @@ export function setSelectedImageAlt(
 
 export function getSelectedImageCaption(state: EditorState): string | null {
   const selectedImage = getSelectedImageRun(state);
-  if (!selectedImage?.run.image) {
+  if (!selectedImage || !getRunImage(selectedImage.run)) {
     return null;
   }
 
@@ -385,7 +391,7 @@ export function setSelectedImageCaption(
   label: string,
 ): EditorState {
   const selectedImage = getSelectedImageRun(state);
-  if (!selectedImage?.run.image) {
+  if (!selectedImage || !getRunImage(selectedImage.run)) {
     return state;
   }
 
@@ -486,7 +492,7 @@ export function moveSelectedImageToPosition(
         createEditorStyledRun(
           "\uFFFC",
           getStyleAtOffset(paragraph, offset),
-          imageRun.image,
+          getRunImage(imageRun),
         ),
       ],
     );

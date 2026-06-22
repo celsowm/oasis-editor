@@ -1,5 +1,9 @@
 import type { EditorState, EditorParagraphNode } from "@/core/model.js";
-import { getDocumentSectionsCanonical, getParagraphs } from "@/core/model.js";
+import {
+  getDocumentSectionsCanonical,
+  getParagraphs,
+  getRunImage,
+} from "@/core/model.js";
 import type { LayoutInvalidation } from "@/app/controllers/useEditorLayout.js";
 
 /**
@@ -65,15 +69,17 @@ export function computeLayoutInvalidationFromTransaction(
         changed = true;
         break;
       }
+      const aImage = getRunImage(a);
+      const bImage = getRunImage(b);
       if (
-        Boolean(a.image) !== Boolean(b.image) ||
-        (a.image?.width ?? -1) !== (b.image?.width ?? -1) ||
-        (a.image?.height ?? -1) !== (b.image?.height ?? -1) ||
-        (a.image?.floating?.wrap ?? "") !== (b.image?.floating?.wrap ?? "") ||
-        Boolean(a.image?.floating?.behindDoc) !==
-          Boolean(b.image?.floating?.behindDoc) ||
-        (a.image?.wrapPolygon?.length ?? -1) !==
-          (b.image?.wrapPolygon?.length ?? -1)
+        Boolean(aImage) !== Boolean(bImage) ||
+        (aImage?.width ?? -1) !== (bImage?.width ?? -1) ||
+        (aImage?.height ?? -1) !== (bImage?.height ?? -1) ||
+        (aImage?.floating?.wrap ?? "") !== (bImage?.floating?.wrap ?? "") ||
+        Boolean(aImage?.floating?.behindDoc) !==
+          Boolean(bImage?.floating?.behindDoc) ||
+        (aImage?.wrapPolygon?.length ?? -1) !==
+          (bImage?.wrapPolygon?.length ?? -1)
       ) {
         changed = true;
         break;

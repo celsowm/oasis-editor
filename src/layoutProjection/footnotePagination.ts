@@ -12,6 +12,7 @@ import {
   getPageBodyTop,
   getPageContentWidth,
   getParagraphText,
+  getRunFootnoteReference,
 } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
 
@@ -53,12 +54,9 @@ function collectFootnoteReferencesFromBlock(
     let runStart = 0;
     for (const run of paragraph.runs) {
       const runEnd = runStart + run.text.length;
-      if (
-        run.footnoteReference &&
-        runEnd > startOffset &&
-        runStart < endOffset
-      ) {
-        result.push(run.footnoteReference.footnoteId);
+      const footnoteReference = getRunFootnoteReference(run);
+      if (footnoteReference && runEnd > startOffset && runStart < endOffset) {
+        result.push(footnoteReference.footnoteId);
       }
       runStart = runEnd;
     }

@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import {
   createEditorDocument,
@@ -58,11 +59,11 @@ describe("image captions", () => {
     expect(paragraphs[1]!.style?.styleId).toBe("Caption");
     expect(textOf(paragraphs[1]!)).toBe("Figura 1: Vista geral");
     expect(
-      paragraphs[1]!.runs.map((run) => run.fieldChar?.kind).filter(Boolean),
+      paragraphs[1]!.runs.map((run) => getRunFieldChar(run)?.kind).filter(Boolean),
     ).toEqual(["begin", "separate", "end"]);
     expect(
       paragraphs[1]!.runs.some((run) =>
-        run.fieldInstruction?.includes("SEQ Figure \\* ARABIC"),
+        getRunFieldInstruction(run)?.includes("SEQ Figure \\* ARABIC"),
       ),
     ).toBe(true);
   });
@@ -128,13 +129,23 @@ describe("image captions", () => {
     const caption = createEditorParagraph("Figure 7: Old caption");
     caption.style = { styleId: "Caption" };
     caption.runs = [
-      { id: "r1", text: "Figure " },
-      { id: "r2", text: "", fieldChar: { kind: "begin" } },
-      { id: "r3", text: "", fieldInstruction: " SEQ Figure \\* ARABIC " },
-      { id: "r4", text: "", fieldChar: { kind: "separate" } },
-      { id: "r5", text: "7" },
-      { id: "r6", text: "", fieldChar: { kind: "end" } },
-      { id: "r7", text: ": Old caption" },
+      { id: "r1", text: "Figure ", kind: "text" as const },
+      { id: "r2", text: "", kind: "fieldChar", fieldChar: { kind: "begin" } },
+      {
+        id: "r3",
+        text: "",
+        kind: "fieldInstruction",
+        fieldInstruction: " SEQ Figure \\* ARABIC ",
+      },
+      {
+        id: "r4",
+        text: "",
+        kind: "fieldChar",
+        fieldChar: { kind: "separate" },
+      },
+      { id: "r5", text: "7", kind: "text" as const },
+      { id: "r6", text: "", kind: "fieldChar", fieldChar: { kind: "end" } },
+      { id: "r7", text: ": Old caption", kind: "text" as const },
     ];
     const state = selectImage(
       createEditorStateFromDocument(

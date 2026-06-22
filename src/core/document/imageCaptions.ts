@@ -9,7 +9,12 @@ import type {
   EditorSection,
   EditorTextRun,
 } from "@/core/model.js";
-import { getDocumentSections, getParagraphLength } from "@/core/model.js";
+import {
+  getDocumentSections,
+  getParagraphLength,
+  getRunFieldChar,
+  getRunFieldInstruction,
+} from "@/core/model.js";
 import { assertNever } from "@/core/assertNever.js";
 import { cloneBlocks, cloneParagraph, cloneParagraphs } from "./clone.js";
 
@@ -17,16 +22,24 @@ export const IMAGE_CAPTION_STYLE_ID = "Caption";
 export const IMAGE_CAPTION_FIELD_IDENTIFIER = "Figure";
 export const IMAGE_CAPTION_FIELD_INSTRUCTION = " SEQ Figure \\* ARABIC ";
 
-function createFieldCharRun(kind: "begin" | "separate" | "end") {
-  const run = createEditorRun("");
-  run.fieldChar = { kind };
-  return run;
+function createFieldCharRun(
+  kind: "begin" | "separate" | "end",
+): EditorTextRun {
+  return {
+    id: createEditorRun("").id,
+    text: "",
+    kind: "fieldChar",
+    fieldChar: { kind },
+  };
 }
 
-function createFieldInstructionRun(instruction: string) {
-  const run = createEditorRun("");
-  run.fieldInstruction = instruction;
-  return run;
+function createFieldInstructionRun(instruction: string): EditorTextRun {
+  return {
+    id: createEditorRun("").id,
+    text: "",
+    kind: "fieldInstruction",
+    fieldInstruction: instruction,
+  };
 }
 
 export function createImageCaptionParagraph(
@@ -62,13 +75,15 @@ export function isImageCaptionParagraph(
   if (styleId !== "caption") {
     return false;
   }
-  return paragraph.runs.some(
-    (run) =>
-      run.fieldInstruction !== undefined &&
+  return paragraph.runs.some((run) => {
+    const instruction = getRunFieldInstruction(run);
+    return (
+      instruction !== undefined &&
       new RegExp(`\\bSEQ\\s+${IMAGE_CAPTION_FIELD_IDENTIFIER}\\b`, "i").test(
-        run.fieldInstruction,
-      ),
-  );
+        instruction,
+      )
+    );
+  });
 }
 
 export function getImageCaptionText(
@@ -84,7 +99,7 @@ export function getImageCaptionText(
       value += run.text;
       continue;
     }
-    if (run.fieldChar?.kind === "end") {
+    if (getRunFieldChar(run)?.kind === "end") {
       afterField = true;
     }
   }
@@ -118,11 +133,11 @@ function renumberCaptionParagraph(
   let insideSeqResult = false;
   let changed = false;
   const nextRuns = paragraph.runs.map((run): EditorTextRun => {
-    if (run.fieldChar?.kind === "separate") {
+    if (run.kind === "fieldChar" && run.fieldChar.kind === "separate") {
       insideSeqResult = true;
       return { ...run, fieldChar: { ...run.fieldChar } };
     }
-    if (run.fieldChar?.kind === "end") {
+    if (run.kind === "fieldChar" && run.fieldChar.kind === "end") {
       insideSeqResult = false;
       return { ...run, fieldChar: { ...run.fieldChar } };
     }

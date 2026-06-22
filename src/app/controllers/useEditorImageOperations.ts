@@ -106,7 +106,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
       const startOffset = offset;
       offset += run.text.length;
       if (
-        run.image &&
+        run.kind === "image" &&
         run.text.length === 1 &&
         startOffset === normalized.startParagraphOffset
       ) {

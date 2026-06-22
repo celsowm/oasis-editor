@@ -36,7 +36,7 @@ criando ou conectando a maior parte dos controllers do produto.
 | D3  | ~~Persistência default é singleton com chave fixa~~ ✅ resolvido     |          — |                      — |       — |
 | C1  | ~~Contratos de command bus têm tipagem e `refresh` inconsistentes~~ ✅ resolvido (L2 runtime + `TypedCommandBus`) | — |        — |       — |
 | I1  | ~~Dependency bags de 17–38 membros e props drilling~~ ✅ resolvido (ports + 4 sacos agrupados) |    — |    — |       — |
-| O1  | Runs são um optional-property bag; 227 decisões por variante 🟡 base feita (getRunKind/visitRun); falta a união discriminada |      Média | Médio/alto |       L |
+| O1  | ~~Runs são um optional-property bag; 227 decisões por variante~~ ✅ resolvido (união discriminada por `kind` + `visitRun` narrowing) |      — | — |       — |
 | O2  | ~~Dispatch de blocos com fallthrough silencioso~~ ✅ resolvido (visitors exaustivos + `assertNever`) | — |             — |       — |
 | S2  | ~~Hotspots de paginação, DOCX, texto e snapshot acumulam papéis~~ ✅ resolvido |      — |             — |    — |
 | B1  | ~~Barrel `editorCommands.ts` deprecated com 22 consumidores~~ ✅ resolvido |     — |                  — |       — |
@@ -195,11 +195,23 @@ antes de dividi-lo.
 > `runKind`). `serializeRun` era o único dispatch-por-kind verdadeiro. Gates:
 > `tsc` limpo, `check:imports` 0 ciclos, suíte 586✓/1 skip, `build:lib` ok.
 >
-> **Pendente (breaking, requer release window):** converter `EditorTextRun` na
-> união discriminada. Isso muda o wire shape (mudança pública incompatível),
-> resolve a classe de bug "esqueci de copiar/serializar um campo novo" (membros
-> completos) e proíbe combinações inválidas (ex.: `image` + `textBox`). Exige
-> migração de fixtures + release note; deve ser um lote dedicado, não emendado.
+> **✅ União discriminada concluída (Onda 3, 2026-06-22).** `EditorTextRun` virou
+> uma união discriminada por `kind` (9 membros espelhando `RunKind`) sobre uma
+> base comum `EditorRunBase` (`id`/`text`/`styles?`/`revision?`). `getRunKind`
+> agora retorna `run.kind`; `visitRun` faz `switch (run.kind)` com **narrowing
+> real** por membro; adicionados accessors `getRun<Field>` para leituras opcionais.
+> Combinações inválidas (`image` + `textBox`) **não compilam** (coberto por
+> `@ts-expect-error` em `runKind.test.ts`). A classe de bug "esqueci de copiar um
+> campo" some: `cloneRun`/`cloneState` agora são spread por-membro via `visitRun`
+> (e `cloneState` reusa `cloneRun`, deduplicando + corrigindo um clone raso de
+> textBox). O boundary de import (`ImportedRun → EditorTextRun`) e o remap de
+> footnote/endnote no driver constroem o membro certo em vez de mutar.
+>
+> **Wire shape mudou (breaking, deliberado):** runs serializados ganham `kind`;
+> documentos persistidos antigos sem `kind` exigem re-import (quebra dura, sem
+> camada de retrocompat — decisão registrada). Cascata: ~455 erros de `tsc`
+> resolvidos em ~60 arquivos de source + ~26 de teste. Gates: `tsc` limpo,
+> `check:imports` 0 ciclos, suíte 590✓/1 skip, `build:lib` ok.
 
 **Evidência:** `EditorTextRun` armazena `image`, `textBox`, `field`, `fieldChar`,
 `fieldInstruction`, `revision`, `footnoteReference` e `endnoteReference` como

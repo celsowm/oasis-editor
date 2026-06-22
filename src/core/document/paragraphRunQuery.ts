@@ -5,7 +5,7 @@ import type {
 } from "@/core/model.js";
 import { getParagraphLength, isInlineObjectRun } from "@/core/model.js";
 import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
-import { cloneTextBox } from "./clone.js";
+import { cloneRun } from "./clone.js";
 
 export function getStyleAtOffset(
   paragraph: EditorParagraphNode,
@@ -79,7 +79,7 @@ export function expandLinkRangeInParagraph(
 ): { href: string; startOffset: number; endOffset: number } | null {
   const resolved = getRunAtOffset(paragraph, offset);
   const href = resolved?.run.styles?.link;
-  if (!resolved || !href || resolved.run.image) {
+  if (!resolved || !href || resolved.run.kind === "image") {
     return null;
   }
 
@@ -101,7 +101,7 @@ export function expandLinkRangeInParagraph(
 
   for (let index = runIndex - 1; index >= 0; index -= 1) {
     const run = runs[index]!;
-    if (run.image || run.styles?.link !== href) {
+    if (run.kind === "image" || run.styles?.link !== href) {
       break;
     }
     startOffset -= run.text.length;
@@ -109,7 +109,7 @@ export function expandLinkRangeInParagraph(
 
   for (let index = runIndex + 1; index < runs.length; index += 1) {
     const run = runs[index]!;
-    if (run.image || run.styles?.link !== href) {
+    if (run.kind === "image" || run.styles?.link !== href) {
       break;
     }
     endOffset += run.text.length;
@@ -141,34 +141,15 @@ export function sliceRuns(
     const overlapEnd = Math.min(end, runEnd);
 
     if (overlapStart < overlapEnd) {
-      const isObjectRun = isInlineObjectRun(run);
-
-      const piece: EditorTextRun = {
-        id: `run:${Math.random().toString(36).slice(2, 9)}`,
-        text: isObjectRun
-          ? "\uFFFC"
-          : run.text.slice(overlapStart - runStart, overlapEnd - runStart),
-      };
-      if (run.styles) {
-        piece.styles = { ...run.styles };
-      }
-      if (run.image) {
-        piece.image = { ...run.image };
-      }
-      if (run.textBox) {
-        piece.textBox = cloneTextBox(run.textBox);
-      }
-      if (run.revision) {
-        piece.revision = { ...run.revision };
-      }
-      if (run.field) {
-        piece.field = { ...run.field };
-      }
-      if (run.footnoteReference) {
-        piece.footnoteReference = { ...run.footnoteReference };
-      }
-      if (run.endnoteReference) {
-        piece.endnoteReference = { ...run.endnoteReference };
+      // Deep-clone the source run, then give the slice its own id and (for plain
+      // text/marker runs) the sliced text. Inline objects keep their \uFFFC text.
+      const piece = cloneRun(run);
+      piece.id = `run:${Math.random().toString(36).slice(2, 9)}`;
+      if (!isInlineObjectRun(run)) {
+        piece.text = run.text.slice(
+          overlapStart - runStart,
+          overlapEnd - runStart,
+        );
       }
       pieces.push(piece);
     }

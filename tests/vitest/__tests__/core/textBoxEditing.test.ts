@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import {
   createEditorDocument,
@@ -41,7 +42,7 @@ function buildStateWithSelectedTextBox(textBox: EditorTextBoxData): {
 
 function resizedTextBox(state: EditorState): EditorTextBoxData {
   const selected = getSelectedTextBoxRun(state);
-  return selected!.run.textBox!;
+  return getRunTextBox(selected!.run)!;
 }
 
 describe("text box editing preservation", () => {
@@ -102,11 +103,11 @@ describe("text box editing preservation", () => {
     const allText = nextParagraph.runs.map((run) => run.text).join("");
     expect(allText).toBe("\uFFFCnormaltextx");
 
-    const textBoxRuns = nextParagraph.runs.filter((run) => run.textBox);
+    const textBoxRuns = nextParagraph.runs.filter((run) => getRunTextBox(run));
     expect(textBoxRuns).toHaveLength(1);
     expect(textBoxRuns[0]!.text).toBe("\uFFFC");
 
-    const inner = textBoxRuns[0]!.textBox!.blocks[0] as EditorParagraphNode;
+    const inner = getRunTextBox(textBoxRuns[0]!)!.blocks[0] as EditorParagraphNode;
     expect(inner.runs.map((run) => run.text).join("")).toBe("insidebox");
   });
 });

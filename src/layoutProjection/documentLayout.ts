@@ -4,7 +4,7 @@ import type {
   EditorLayoutDocument,
   EditorLayoutParagraph,
 } from "@/core/model.js";
-import { getDocumentSections } from "@/core/model.js";
+import { getDocumentSections, getRunField } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
 import { domTextMeasurer } from "@/ui/textMeasurement.js";
 import {
@@ -20,7 +20,7 @@ import { injectEndnotesIntoDocument } from "./endnotePagination.js";
 
 function blockContainsNumPagesField(block: EditorBlockNode): boolean {
   if (block.type === "paragraph") {
-    return block.runs.some((run) => run.field?.type === "NUMPAGES");
+    return block.runs.some((run) => getRunField(run)?.type === "NUMPAGES");
   }
   return block.rows.some((row) =>
     row.cells.some((cell) => cell.blocks.some(blockContainsNumPagesField)),

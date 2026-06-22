@@ -63,7 +63,10 @@ function sliceParagraphForTableSegment(
   });
   return {
     ...paragraph,
-    runs: runs.length > 0 ? runs : [{ id: `${paragraph.id}:empty`, text: "" }],
+    runs:
+      runs.length > 0
+        ? runs
+        : [{ id: `${paragraph.id}:empty`, text: "", kind: "text" as const }],
   };
 }
 

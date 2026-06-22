@@ -53,12 +53,12 @@ export function resolvePdfRunText(
   run: EditorTextRun,
   context: PdfParagraphTextContext,
 ): string {
-  if (run.field) {
+  if (run.kind === "field") {
     return run.field.type === "NUMPAGES"
       ? String(context.totalPages)
       : String(context.pageNumber);
   }
-  if (run.image) {
+  if (run.kind === "image") {
     return "";
   }
   return run.text;

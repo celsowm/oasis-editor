@@ -1,7 +1,8 @@
 import { createEditorStyledRun } from "@/core/editorState.js";
-import type {
-  EditorParagraphListStyle,
-  EditorTextRun,
+import {
+  type EditorParagraphListStyle,
+  type EditorTextRun,
+  getRunImage,
 } from "@/core/model.js";
 import type { EditorClipboardParagraphSpec } from "@/core/commands/clipboard.js";
 import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
@@ -32,11 +33,14 @@ export function parseEditorClipboardHtmlWithDom(
   ) => {
     const fallbackRuns = runs.length > 0 ? runs : [createEditorStyledRun("")];
     paragraphs.push({
-      runs: fallbackRuns.map((run) => ({
-        text: run.text,
-        styles: cloneStyle(run.styles),
-        image: run.image ? { ...run.image } : undefined,
-      })),
+      runs: fallbackRuns.map((run) => {
+        const image = getRunImage(run);
+        return {
+          text: run.text,
+          styles: cloneStyle(run.styles),
+          image: image ? { ...image } : undefined,
+        };
+      }),
       style: element ? parseParagraphStyle(element) : undefined,
       list,
     });

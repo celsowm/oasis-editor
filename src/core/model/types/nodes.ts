@@ -81,38 +81,58 @@ export interface EditorTextBoxData {
   body?: EditorTextBoxBody;
 }
 
-export interface EditorTextRun {
+/**
+ * Fields shared by every run kind. `text` is always present (inline objects use
+ * the object-replacement character `￼`); `revision` can decorate a run of
+ * any kind (insert/delete tracking).
+ */
+export interface EditorRunBase {
   id: string;
   text: string;
   styles?: EditorTextStyle;
-  image?: EditorImageRunData;
-  textBox?: EditorTextBoxData;
-  field?: EditorFieldData;
+  revision?: EditorRevision;
+}
+
+/**
+ * A run of text, optionally carrying one inline object. Discriminated by `kind`
+ * so adding a new inline object forces every dispatch site to handle it (a
+ * missing branch is a compile error) and invalid combinations (e.g. `image` +
+ * `textBox`) are unrepresentable (O1). The `kind` values mirror {@link RunKind}.
+ */
+export type EditorTextRun =
+  | (EditorRunBase & { kind: "text" })
+  | (EditorRunBase & { kind: "image"; image: EditorImageRunData })
+  | (EditorRunBase & { kind: "textBox"; textBox: EditorTextBoxData })
+  | (EditorRunBase & { kind: "field"; field: EditorFieldData })
   /**
    * Preserved complex-field control char (`w:fldChar`). Zero-length marker run;
    * see {@link EditorFieldChar}.
    */
-  fieldChar?: EditorFieldChar;
+  | (EditorRunBase & { kind: "fieldChar"; fieldChar: EditorFieldChar })
   /** Preserved field instruction text (`w:instrText`). Zero-length marker run. */
-  fieldInstruction?: string;
-  revision?: EditorRevision;
+  | (EditorRunBase & { kind: "fieldInstruction"; fieldInstruction: string })
   /**
    * Inline marker of a footnote whose body lives in
    * `EditorDocument.footnotes.items[footnoteReference.footnoteId]`.
    */
-  footnoteReference?: EditorFootnoteReferenceData;
+  | (EditorRunBase & {
+      kind: "footnoteReference";
+      footnoteReference: EditorFootnoteReferenceData;
+    })
   /**
    * Inline marker of an endnote whose body lives in
    * `EditorDocument.endnotes.items[endnoteReference.endnoteId]`.
    */
-  endnoteReference?: EditorEndnoteReferenceData;
+  | (EditorRunBase & {
+      kind: "endnoteReference";
+      endnoteReference: EditorEndnoteReferenceData;
+    })
   /**
-   * Round-trip metadata for `w:sym` — a glyph from a named font.
-   * `font` is the `w:font` attribute value; `char` is the 4-digit hex `w:char` value.
-   * The character is also stored in `text` so the canvas can render it.
+   * Round-trip metadata for `w:sym` — a glyph from a named font. `font` is the
+   * `w:font` attribute value; `char` is the 4-digit hex `w:char` value. The
+   * character is also stored in `text` so the canvas can render it.
    */
-  sym?: { font: string; char: string };
-}
+  | (EditorRunBase & { kind: "sym"; sym: { font: string; char: string } });
 
 /**
  * A drop cap (Word's `w:framePr/@dropCap`): a large initial letter sunk into

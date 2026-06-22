@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
@@ -130,10 +131,10 @@ describe("DOCX import: endnotes", () => {
     const refs = collectEndnoteReferences(doc);
     expect(refs).toHaveLength(1);
     expect(refs[0].run.text).toBe("1");
-    expect(refs[0].run.endnoteReference).toBeDefined();
+    expect(getRunEndnoteReference(refs[0].run)).toBeDefined();
     expect(refs[0].run.styles?.superscript).toBe(true);
 
-    const endnoteId = refs[0].run.endnoteReference!.endnoteId;
+    const endnoteId = getRunEndnoteReference(refs[0].run)!.endnoteId;
     const body = doc.endnotes!.items[endnoteId].blocks;
     expect(body.length).toBeGreaterThan(0);
     const paragraph = body[0];

@@ -276,6 +276,7 @@ export function insertTextAtSelection(
     id: `run:${Math.random().toString(36).slice(2, 9)}`,
     text,
     styles,
+    kind: "text",
   };
 
   if (collapsedState.trackChangesEnabled) {

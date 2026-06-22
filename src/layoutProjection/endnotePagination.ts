@@ -28,6 +28,7 @@ function makeMarkerRun(
     id: `${FLOW_ID_PREFIX}:marker:${endnoteId}`,
     text: `${marker}. `,
     styles: { superscript: true },
+    kind: "text",
   };
 }
 
@@ -52,7 +53,7 @@ function emptyMarkerParagraph(
     type: "paragraph",
     runs: [
       makeMarkerRun(endnoteId, marker),
-      { id: `${FLOW_ID_PREFIX}:text:${endnoteId}`, text: "" },
+      { id: `${FLOW_ID_PREFIX}:text:${endnoteId}`, text: "", kind: "text" },
     ],
   };
 }
@@ -61,7 +62,7 @@ function spacerParagraph(): EditorParagraphNode {
   return {
     id: `${FLOW_ID_PREFIX}:spacer`,
     type: "paragraph",
-    runs: [{ id: `${FLOW_ID_PREFIX}:spacer:text`, text: "" }],
+    runs: [{ id: `${FLOW_ID_PREFIX}:spacer:text`, text: "", kind: "text" }],
   };
 }
 

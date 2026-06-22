@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
@@ -86,7 +87,7 @@ function findTextBoxRun(
 ): EditorTextRun | undefined {
   for (const paragraph of paragraphs) {
     for (const run of paragraph.runs) {
-      if (run.textBox) return run;
+      if (getRunTextBox(run)) return run;
     }
   }
   return undefined;
@@ -114,7 +115,7 @@ describe("DOCX import: text boxes (wps:wsp)", () => {
     const docx = await buildDocxWithTextBox();
     const document = await importDocxToEditorDocument(docx);
     const run = findTextBoxRun(getDocumentParagraphs(document))!;
-    const textBox = run.textBox!;
+    const textBox = getRunTextBox(run)!;
 
     expect(textBox.blocks).toHaveLength(1);
     const inner = textBox.blocks[0];
@@ -127,7 +128,9 @@ describe("DOCX import: text boxes (wps:wsp)", () => {
   it("parses geometry, floating layout, shape and body properties", async () => {
     const docx = await buildDocxWithTextBox();
     const document = await importDocxToEditorDocument(docx);
-    const textBox = findTextBoxRun(getDocumentParagraphs(document))!.textBox!;
+    const textBox = getRunTextBox(
+      findTextBoxRun(getDocumentParagraphs(document))!,
+    )!;
 
     // wp:extent 2360930x1404620 EMU -> px (/9525).
     expect(textBox.width).toBe(Math.round(2360930 / 9525));

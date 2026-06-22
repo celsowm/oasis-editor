@@ -33,6 +33,7 @@ export function insertFieldAtSelection(
   const fieldRun: EditorTextRun = {
     id: `run:field:${Math.random().toString(36).slice(2, 9)}`,
     text: fieldType === "PAGE" ? "1" : "1", // Placeholder, resolved during projection
+    kind: "field",
     field: { type: fieldType },
     styles: getStyleAtOffset(paragraph, offset),
   };

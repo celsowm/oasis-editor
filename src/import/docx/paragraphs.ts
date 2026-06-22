@@ -5,10 +5,14 @@ import type {
   EditorParagraphListStyle,
   EditorParagraphNode,
   EditorParagraphStyle,
+  EditorRunBase,
   EditorTextRun,
   EditorTextStyle,
 } from "@/core/model.js";
-import { createEditorParagraphFromRuns } from "@/core/editorState.js";
+import {
+  createEditorNodeId,
+  createEditorParagraphFromRuns,
+} from "@/core/editorState.js";
 import { WORD_NS, getFirstChildByTagNameNS } from "./xmlHelpers.js";
 import { PAGE_BREAK_MARKER } from "./units.js";
 import { type AssetRegistry } from "./assetRegistry.js";
@@ -28,83 +32,90 @@ import type {
 } from "./runs/types.js";
 import { parseDropCapFrame } from "./dropCap.js";
 
+/**
+ * Converts an {@link ImportedRun} (the import-only optional bag) into the final
+ * {@link EditorTextRun} discriminated union, deriving `kind` by the same
+ * precedence the model uses. Footnote/endnote references stay as transient
+ * `__imported*Ref` markers (their docxId is remapped to a document-local id by
+ * the import driver once the notes parts are parsed); bookmark/comment markers
+ * are likewise carried as transient props extracted later.
+ */
+function importedRunToEditorRun(run: ImportedRun): EditorTextRun {
+  const base: EditorRunBase = {
+    id: createEditorNodeId("run"),
+    text: run.text,
+  };
+  if (run.styles) {
+    base.styles = { ...run.styles };
+  }
+
+  let editorRun: EditorTextRun;
+  if (run.fieldChar) {
+    editorRun = { ...base, kind: "fieldChar", fieldChar: { ...run.fieldChar } };
+  } else if (run.fieldInstruction !== undefined) {
+    editorRun = {
+      ...base,
+      kind: "fieldInstruction",
+      fieldInstruction: run.fieldInstruction,
+    };
+  } else if (run.field) {
+    editorRun = { ...base, kind: "field", field: { ...run.field } };
+  } else if (run.textBox) {
+    editorRun = { ...base, kind: "textBox", textBox: run.textBox };
+  } else if (run.image) {
+    editorRun = { ...base, kind: "image", image: run.image };
+  } else if (run.sym) {
+    editorRun = { ...base, kind: "sym", sym: { ...run.sym } };
+  } else {
+    editorRun = { ...base, kind: "text" };
+  }
+
+  const withMarkers = editorRun as EditorTextRun & {
+    __importedFootnoteRef?: { docxId: string; customMark?: string };
+    __importedEndnoteRef?: { docxId: string; customMark?: string };
+    __importedBookmark?: ImportedBookmarkMarker;
+    __importedComment?: ImportedCommentMarker;
+  };
+  if (run.footnoteReference) {
+    withMarkers.__importedFootnoteRef = { ...run.footnoteReference };
+  }
+  if (run.endnoteReference) {
+    withMarkers.__importedEndnoteRef = { ...run.endnoteReference };
+  }
+  if (run.bookmark) {
+    withMarkers.__importedBookmark = { ...run.bookmark };
+  }
+  if (run.comment) {
+    withMarkers.__importedComment = { ...run.comment };
+  }
+  return withMarkers;
+}
+
 function createImportedParagraph(
   runs: ImportedRun[],
   paragraphStyle: EditorParagraphStyle | undefined,
   list: EditorParagraphListStyle | undefined,
   markRunStyle?: EditorTextStyle,
 ): EditorParagraphNode {
-  const paragraph = createEditorParagraphFromRuns(
+  const editorRuns: EditorTextRun[] =
     runs.length > 0
-      ? runs.map((run) => ({
-          text: run.text,
-          styles: run.styles,
-          image: run.image,
-        }))
+      ? runs.map(importedRunToEditorRun)
       : // An empty paragraph still carries the formatting of its paragraph mark
         // (`w:pPr/w:rPr`), which Word uses to render the blank line's font/size.
         // Apply it so empty lines match Word instead of falling back to defaults.
-        [{ text: "", styles: markRunStyle }],
-  );
-  runs.forEach((run, index) => {
-    if (run.field) {
-      paragraph.runs[index]!.field = { ...run.field };
-    }
-    if (run.fieldChar) {
-      paragraph.runs[index]!.fieldChar = { ...run.fieldChar };
-    }
-    if (run.fieldInstruction !== undefined) {
-      paragraph.runs[index]!.fieldInstruction = run.fieldInstruction;
-    }
-    if (run.textBox) {
-      paragraph.runs[index]!.textBox = run.textBox;
-    }
-    if (run.footnoteReference) {
-      // Store a transient marker on the run; the import driver remaps the
-      // docxId to the document-local footnote id after `word/footnotes.xml`
-      // has been parsed. Using a non-conflicting symbol-less property keeps
-      // existing consumers unaffected.
-      (
-        paragraph.runs[index]! as EditorTextRun & {
-          __importedFootnoteRef?: { docxId: string; customMark?: string };
-        }
-      ).__importedFootnoteRef = {
-        ...run.footnoteReference,
-      };
-    }
-    if (run.endnoteReference) {
-      // Transient marker remapped to the document-local endnote id by the
-      // import driver after `word/endnotes.xml` has been parsed.
-      (
-        paragraph.runs[index]! as EditorTextRun & {
-          __importedEndnoteRef?: { docxId: string; customMark?: string };
-        }
-      ).__importedEndnoteRef = {
-        ...run.endnoteReference,
-      };
-    }
-    if (run.bookmark) {
-      // Transient marker extracted into the document-level bookmark registry by
-      // the import driver, which knows each paragraph's id + text offset.
-      (
-        paragraph.runs[index]! as EditorTextRun & {
-          __importedBookmark?: ImportedBookmarkMarker;
-        }
-      ).__importedBookmark = { ...run.bookmark };
-    }
-    if (run.comment) {
-      // Transient marker extracted into the document-level comment registry by
-      // the import driver, which knows each paragraph's id + text offset.
-      (
-        paragraph.runs[index]! as EditorTextRun & {
-          __importedComment?: ImportedCommentMarker;
-        }
-      ).__importedComment = { ...run.comment };
-    }
-    if (run.sym) {
-      paragraph.runs[index]!.sym = { ...run.sym };
-    }
-  });
+        [
+          {
+            id: createEditorNodeId("run"),
+            text: "",
+            kind: "text",
+            ...(markRunStyle ? { styles: { ...markRunStyle } } : {}),
+          },
+        ];
+  const paragraph: EditorParagraphNode = {
+    id: createEditorNodeId("paragraph"),
+    type: "paragraph",
+    runs: editorRuns,
+  };
   paragraph.style = paragraphStyle ? { ...paragraphStyle } : undefined;
   for (const run of paragraph.runs) {
     run.styles = normalizeImportedRunStyle(

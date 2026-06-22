@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
@@ -31,14 +32,15 @@ function allRuns(document: EditorDocument): EditorTextRun[] {
 function fieldCharKinds(
   document: EditorDocument,
 ): Array<"begin" | "separate" | "end"> {
-  return allRuns(document).flatMap((r) =>
-    r.fieldChar ? [r.fieldChar.kind] : [],
-  );
+  return allRuns(document).flatMap((r) => {
+    const fc = getRunFieldChar(r);
+    return fc ? [fc.kind] : [];
+  });
 }
 
 function instructions(document: EditorDocument): string[] {
   return allRuns(document)
-    .map((r) => r.fieldInstruction)
+    .map((r) => getRunFieldInstruction(r))
     .filter((i): i is string => i !== undefined);
 }
 
@@ -124,7 +126,7 @@ describe("DOCX import: complex fields (REF / PAGEREF / TOC)", () => {
     );
     expect(instructions(imported)).toEqual([" PAGEREF _Ref1 \\h "]);
     // PAGEREF must NOT collapse into a PAGE field.
-    expect(allRuns(imported).some((r) => r.field)).toBe(false);
+    expect(allRuns(imported).some((r) => getRunField(r))).toBe(false);
     expect(xml).toContain(
       '<w:instrText xml:space="preserve"> PAGEREF _Ref1 \\h </w:instrText>',
     );
@@ -175,7 +177,7 @@ describe("DOCX import: complex fields (REF / PAGEREF / TOC)", () => {
     );
     expect(fieldCharKinds(imported)).toEqual(["begin", "separate", "end"]);
     expect(instructions(imported)).toEqual([` DATE \\@ "yyyy-MM-dd" `]);
-    expect(allRuns(imported).some((r) => r.field)).toBe(false);
+    expect(allRuns(imported).some((r) => getRunField(r))).toBe(false);
   });
 
   it("still collapses a complete single-paragraph PAGE field to a PAGE run", async () => {
@@ -188,7 +190,7 @@ describe("DOCX import: complex fields (REF / PAGEREF / TOC)", () => {
         </w:r>
       </w:p>`,
     );
-    expect(allRuns(imported).some((r) => r.field?.type === "PAGE")).toBe(true);
+    expect(allRuns(imported).some((r) => getRunField(r)?.type === "PAGE")).toBe(true);
     // Collapsed: no preserved fldChar markers for PAGE.
     expect(fieldCharKinds(imported)).toEqual([]);
   });

@@ -34,7 +34,7 @@ export function serializeImageRunToHtml(
   run: EditorTextRun,
   document?: Pick<EditorDocument, "assets">,
 ): string {
-  if (!run.image) {
+  if (run.kind !== "image") {
     return "";
   }
 
@@ -53,7 +53,7 @@ export function serializeTextRunToHtml(
   run: EditorTextRun,
   document?: Pick<EditorDocument, "assets">,
 ): string {
-  if (run.image) {
+  if (run.kind === "image") {
     return serializeImageRunToHtml(run, document);
   }
 

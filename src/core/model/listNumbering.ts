@@ -102,7 +102,7 @@ function collectNumberingParagraphs(
   const result: EditorParagraphNode[] = [];
   const collectTextBoxes = (paragraph: EditorParagraphNode): void => {
     for (const run of paragraph.runs) {
-      if (run.textBox) collectBlocks(run.textBox.blocks);
+      if (run.kind === "textBox") collectBlocks(run.textBox.blocks);
     }
   };
   const collectBlocks = (blocks: EditorBlockNode[]): void => {

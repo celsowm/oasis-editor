@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -38,7 +39,7 @@ function walkParagraph(
     out.paragraphDirections.add(paragraph.style.textDirection);
   }
   for (const run of paragraph.runs) {
-    const textBox = run.textBox;
+    const textBox = getRunTextBox(run);
     if (textBox) {
       if (textBox.body?.vert) {
         out.textBoxVerts.add(textBox.body.vert);

@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
@@ -150,15 +151,15 @@ describe("DOCX headers and footers import", () => {
     );
     const imageRun = document.sections?.[0]?.header
       ?.flatMap((block) => (block.type === "paragraph" ? block.runs : []))
-      .find((run) => run.image);
+      .find((run) => getRunImage(run));
 
     expect(imageRun?.text).toBe("￼");
-    expect(imageRun?.image?.width).toBe(2);
-    expect(imageRun?.image?.height).toBe(3);
-    expect(imageRun?.image?.alt).toBe("Logo");
-    expect(imageRun?.image?.src).toMatch(/^asset:/);
+    expect(getRunImage(imageRun!)?.width).toBe(2);
+    expect(getRunImage(imageRun!)?.height).toBe(3);
+    expect(getRunImage(imageRun!)?.alt).toBe("Logo");
+    expect(getRunImage(imageRun!)?.src).toMatch(/^asset:/);
 
-    const assetId = imageRun!.image!.src.slice("asset:".length);
+    const assetId = getRunImage(imageRun!)!.src.slice("asset:".length);
     expect(document.assets?.[assetId]?.url).toMatch(/^data:image\/png;base64,/);
   });
 
@@ -201,9 +202,9 @@ describe("DOCX headers and footers import", () => {
     );
     const footerRun = document.sections?.[0]?.footer
       ?.flatMap((block) => (block.type === "paragraph" ? block.runs : []))
-      .find((run) => run.field);
+      .find((run) => getRunField(run));
 
-    expect(footerRun?.field?.type).toBe("PAGE");
+    expect(getRunField(footerRun!)?.type).toBe("PAGE");
 
     const layout = projectDocumentLayout(document);
     const footerTexts = layout.pages

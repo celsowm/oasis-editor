@@ -5,6 +5,7 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
 } from "@/core/model.js";
+import { getRunEndnoteReference } from "@/core/model.js";
 import { iterateEndnoteReferenceRuns } from "@/core/endnotes.js";
 import type {
   DocContext,
@@ -44,7 +45,7 @@ export function collectReferencedEndnotesForExport(
   const seen = new Map<string, ReferencedEndnote>();
   let nextDocxId = FIRST_ENDNOTE_DOCX_ID;
   for (const { run } of iterateEndnoteReferenceRuns(document)) {
-    const ref = run.endnoteReference;
+    const ref = getRunEndnoteReference(run);
     if (!ref) continue;
     if (seen.has(ref.endnoteId)) continue;
     const endnote = items[ref.endnoteId];
@@ -93,7 +94,7 @@ function createEmptyEndnoteBodyParagraph(
     type: "paragraph",
     runs: [
       ...(withMarker ? [makeEndnoteRefMarkerRun()] : []),
-      { id: "synthetic:endnote-body-empty-text", text: "" },
+      { id: "synthetic:endnote-body-empty-text", text: "", kind: "text" },
     ],
     style: { styleId: "EndnoteText" },
   };
@@ -118,6 +119,7 @@ function makeEndnoteRefMarkerRun(): EditorParagraphNode["runs"][number] {
   return {
     id: "synthetic:endnoteRef",
     text: "",
+    kind: "text",
     styles: { styleId: "EndnoteReference", superscript: true },
     __isEndnoteRefMarker: true,
   } as EditorParagraphNode["runs"][number] & { __isEndnoteRefMarker: true };
@@ -178,10 +180,8 @@ export function buildEndnotesXml(
 export function hasReferencedEndnotes(document: EditorDocument): boolean {
   if (!document.endnotes?.items) return false;
   for (const { run } of iterateEndnoteReferenceRuns(document)) {
-    if (
-      run.endnoteReference &&
-      document.endnotes.items[run.endnoteReference.endnoteId]
-    ) {
+    const ref = getRunEndnoteReference(run);
+    if (ref && document.endnotes.items[ref.endnoteId]) {
       return true;
     }
   }

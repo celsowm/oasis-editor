@@ -2,9 +2,11 @@ import type {
   EditorBlockNode,
   EditorParagraphListStyle,
   EditorParagraphNode,
+  EditorRunBase,
   EditorTextBoxData,
   EditorTextRun,
 } from "@/core/model.js";
+import { visitRun } from "@/core/model.js";
 import { cloneStyle } from "@/core/textStyle/textStyleMutations.js";
 import { assertNever } from "@/core/assertNever.js";
 
@@ -29,21 +31,43 @@ export function cloneTextBox(textBox: EditorTextBoxData): EditorTextBoxData {
 }
 
 export function cloneRun(run: EditorTextRun): EditorTextRun {
-  return {
-    ...run,
+  const base: EditorRunBase = {
+    id: run.id,
+    text: run.text,
     styles: cloneStyle(run.styles),
-    image: run.image ? { ...run.image } : undefined,
-    textBox: run.textBox ? cloneTextBox(run.textBox) : undefined,
-    field: run.field ? { ...run.field } : undefined,
-    fieldChar: run.fieldChar ? { ...run.fieldChar } : undefined,
     revision: run.revision ? { ...run.revision } : undefined,
-    footnoteReference: run.footnoteReference
-      ? { ...run.footnoteReference }
-      : undefined,
-    endnoteReference: run.endnoteReference
-      ? { ...run.endnoteReference }
-      : undefined,
   };
+  return visitRun<EditorTextRun>(run, {
+    text: () => ({ ...base, kind: "text" }),
+    image: (r) => ({ ...base, kind: "image", image: { ...r.image } }),
+    textBox: (r) => ({
+      ...base,
+      kind: "textBox",
+      textBox: cloneTextBox(r.textBox),
+    }),
+    field: (r) => ({ ...base, kind: "field", field: { ...r.field } }),
+    fieldChar: (r) => ({
+      ...base,
+      kind: "fieldChar",
+      fieldChar: { ...r.fieldChar },
+    }),
+    fieldInstruction: (r) => ({
+      ...base,
+      kind: "fieldInstruction",
+      fieldInstruction: r.fieldInstruction,
+    }),
+    footnoteReference: (r) => ({
+      ...base,
+      kind: "footnoteReference",
+      footnoteReference: { ...r.footnoteReference },
+    }),
+    endnoteReference: (r) => ({
+      ...base,
+      kind: "endnoteReference",
+      endnoteReference: { ...r.endnoteReference },
+    }),
+    sym: (r) => ({ ...base, kind: "sym", sym: { ...r.sym } }),
+  });
 }
 
 export function cloneParagraph(

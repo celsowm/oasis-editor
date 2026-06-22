@@ -1,4 +1,8 @@
-import type { EditorTextStyle, EditorTextRun } from "@/core/model.js";
+import {
+  type EditorTextStyle,
+  type EditorTextRun,
+  getRunFootnoteReference,
+} from "@/core/model.js";
 import type { DocContext } from "@/export/docx/docxTypes.js";
 import {
   serializeNoteRefMarker,
@@ -14,7 +18,7 @@ export function serializeFootnoteReference(
   materializedRunStyle: EditorTextStyle | undefined,
   context: DocContext,
 ): string | null {
-  const ref = run.footnoteReference;
+  const ref = getRunFootnoteReference(run);
   return serializeNoteReference(
     "footnote",
     ref ? { noteId: ref.footnoteId, customMark: ref.customMark } : undefined,

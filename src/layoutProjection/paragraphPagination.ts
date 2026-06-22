@@ -10,6 +10,9 @@ import type {
   EditorParagraphStyle,
 } from "@/core/model.js";
 import {
+  getRunField,
+  getRunImage,
+  getRunTextBox,
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
 } from "@/core/model.js";
@@ -123,8 +126,9 @@ function getParagraphFieldDependence(paragraph: EditorParagraphNode): {
   let dependsOnPageIndex = false;
   let dependsOnTotalPages = false;
   for (const run of paragraph.runs) {
-    if (run.field?.type === "PAGE") dependsOnPageIndex = true;
-    else if (run.field?.type === "NUMPAGES") dependsOnTotalPages = true;
+    const field = getRunField(run);
+    if (field?.type === "PAGE") dependsOnPageIndex = true;
+    else if (field?.type === "NUMPAGES") dependsOnTotalPages = true;
     if (dependsOnPageIndex && dependsOnTotalPages) break;
   }
   const result = { dependsOnPageIndex, dependsOnTotalPages };
@@ -160,11 +164,12 @@ export function projectParagraphLayout(
       let paragraphOffset = 0;
       const fragments: EditorLayoutFragment[] = paragraph.runs.map((run) => {
         let resolvedText = run.text;
-        if (run.field) {
-          if (run.field.type === "PAGE") {
+        const field = getRunField(run);
+        if (field) {
+          if (field.type === "PAGE") {
             resolvedText =
               typeof pageIndex === "number" ? String(pageIndex + 1) : "1";
-          } else if (run.field.type === "NUMPAGES") {
+          } else if (field.type === "NUMPAGES") {
             resolvedText =
               typeof totalPages === "number" ? String(totalPages) : "1";
           }
@@ -178,6 +183,8 @@ export function projectParagraphLayout(
           }),
         );
 
+        const runImage = getRunImage(run);
+        const runTextBox = getRunTextBox(run);
         const fragment: EditorLayoutFragment = {
           paragraphId: paragraph.id,
           runId: run.id,
@@ -185,8 +192,8 @@ export function projectParagraphLayout(
           endOffset: paragraphOffset + resolvedText.length,
           text: resolvedText,
           styles: run.styles ? { ...run.styles } : undefined,
-          image: run.image ? { ...run.image } : undefined,
-          textBox: run.textBox ? { ...run.textBox } : undefined,
+          image: runImage ? { ...runImage } : undefined,
+          textBox: runTextBox ? { ...runTextBox } : undefined,
           revision: run.revision ? { ...run.revision } : undefined,
           chars,
         };

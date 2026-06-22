@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
@@ -133,12 +134,12 @@ describe("DOCX import: footnotes", () => {
     const refs = collectFootnoteReferences(doc);
     expect(refs).toHaveLength(1);
     expect(refs[0].run.text).toBe("1");
-    expect(refs[0].run.footnoteReference).toBeDefined();
+    expect(getRunFootnoteReference(refs[0].run)).toBeDefined();
     expect(refs[0].run.styles?.superscript).toBe(true);
 
     // The footnote body contains the user text (the imported footnoteRef
     // marker run inside the body is dropped by the importer).
-    const footnoteId = refs[0].run.footnoteReference!.footnoteId;
+    const footnoteId = getRunFootnoteReference(refs[0].run)!.footnoteId;
     const body = doc.footnotes!.items[footnoteId].blocks;
     expect(body.length).toBeGreaterThan(0);
     const paragraph = body[0];

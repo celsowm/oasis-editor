@@ -1,5 +1,6 @@
 import type {
   EditorBlockNode,
+  EditorFieldChar,
   EditorParagraphNode,
   EditorParagraphStyle,
   EditorSection,
@@ -13,6 +14,8 @@ import {
   getDocumentParagraphs,
   getDocumentSections,
   getParagraphText,
+  getRunFieldChar,
+  getRunFieldInstruction,
   paragraphOffsetToPosition,
 } from "@/core/model.js";
 import {
@@ -64,9 +67,24 @@ export function collectTocHeadings(
   return headings;
 }
 
-function makeRun(partial: Partial<EditorTextRun>): EditorTextRun {
-  const run = createEditorRun(partial.text ?? "");
-  return { ...run, ...partial, id: run.id };
+function makeRun(partial: {
+  text: string;
+  fieldChar?: EditorFieldChar;
+  fieldInstruction?: string;
+}): EditorTextRun {
+  const id = createEditorRun(partial.text).id;
+  if (partial.fieldChar) {
+    return { id, text: partial.text, kind: "fieldChar", fieldChar: partial.fieldChar };
+  }
+  if (partial.fieldInstruction !== undefined) {
+    return {
+      id,
+      text: partial.text,
+      kind: "fieldInstruction",
+      fieldInstruction: partial.fieldInstruction,
+    };
+  }
+  return { id, text: partial.text, kind: "text" };
 }
 
 function makeParagraph(
@@ -214,7 +232,9 @@ function findTocRegion(blocks: EditorBlockNode[]): TocRegion | null {
     const block = blocks[i]!;
     if (block.type !== "paragraph") continue;
     for (const run of block.runs) {
-      if (run.fieldChar?.kind === "begin") {
+      const fieldChar = getRunFieldChar(run);
+      const fieldInstruction = getRunFieldInstruction(run);
+      if (fieldChar?.kind === "begin") {
         depth += 1;
         if (depth === 1) {
           beginBlockIndex = i;
@@ -222,12 +242,12 @@ function findTocRegion(blocks: EditorBlockNode[]): TocRegion | null {
           isToc = false;
           separateBlockIndex = -1;
         }
-      } else if (depth === 1 && run.fieldInstruction !== undefined) {
-        instruction += run.fieldInstruction;
+      } else if (depth === 1 && fieldInstruction !== undefined) {
+        instruction += fieldInstruction;
         if (/\bTOC\b/i.test(instruction)) isToc = true;
-      } else if (run.fieldChar?.kind === "separate") {
+      } else if (fieldChar?.kind === "separate") {
         if (depth === 1) separateBlockIndex = i;
-      } else if (run.fieldChar?.kind === "end") {
+      } else if (fieldChar?.kind === "end") {
         if (depth === 1) {
           if (isToc) {
             return {

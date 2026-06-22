@@ -550,24 +550,34 @@ function remapImportedFootnoteRefsInSections(
 ): void {
   const remapBlock = (block: EditorBlockNode): void => {
     if (block.type === "paragraph") {
-      for (const run of block.runs) {
+      block.runs.forEach((run, index) => {
         const runWithRef = run as EditorTextRun & {
           __importedFootnoteRef?: { docxId: string; customMark?: string };
         };
         const transient = runWithRef.__importedFootnoteRef;
-        if (!transient) continue;
+        if (!transient) return;
         delete runWithRef.__importedFootnoteRef;
         const footnote = byDocxId.get(transient.docxId);
         if (!footnote) {
           // Dangling reference (unknown id). Drop the marker but keep the
           // (probably empty) run text so we don't blow up the paragraph.
-          continue;
+          return;
         }
-        run.footnoteReference = {
-          footnoteId: footnote.id,
-          ...(transient.customMark ? { customMark: transient.customMark } : {}),
+        // Replace the transient text run with a proper footnoteReference member.
+        block.runs[index] = {
+          id: run.id,
+          text: run.text,
+          styles: run.styles,
+          revision: run.revision,
+          kind: "footnoteReference",
+          footnoteReference: {
+            footnoteId: footnote.id,
+            ...(transient.customMark
+              ? { customMark: transient.customMark }
+              : {}),
+          },
         };
-      }
+      });
       return;
     }
     for (const row of block.rows) {
@@ -601,23 +611,33 @@ function remapImportedEndnoteRefsInSections(
 ): void {
   const remapBlock = (block: EditorBlockNode): void => {
     if (block.type === "paragraph") {
-      for (const run of block.runs) {
+      block.runs.forEach((run, index) => {
         const runWithRef = run as EditorTextRun & {
           __importedEndnoteRef?: { docxId: string; customMark?: string };
         };
         const transient = runWithRef.__importedEndnoteRef;
-        if (!transient) continue;
+        if (!transient) return;
         delete runWithRef.__importedEndnoteRef;
         const endnote = byDocxId.get(transient.docxId);
         if (!endnote) {
           // Dangling reference (unknown id). Drop the marker.
-          continue;
+          return;
         }
-        run.endnoteReference = {
-          endnoteId: endnote.id,
-          ...(transient.customMark ? { customMark: transient.customMark } : {}),
+        // Replace the transient text run with a proper endnoteReference member.
+        block.runs[index] = {
+          id: run.id,
+          text: run.text,
+          styles: run.styles,
+          revision: run.revision,
+          kind: "endnoteReference",
+          endnoteReference: {
+            endnoteId: endnote.id,
+            ...(transient.customMark
+              ? { customMark: transient.customMark }
+              : {}),
+          },
         };
-      }
+      });
       return;
     }
     for (const row of block.rows) {

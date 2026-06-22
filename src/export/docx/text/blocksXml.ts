@@ -21,15 +21,9 @@ import { serializeDropCapFrameParagraph } from "./dropCapXml.js";
  * it (no image/textbox/field/note reference to keep atomic).
  */
 function isSplittableTextRun(run: EditorTextRun): boolean {
-  return (
-    !run.image &&
-    !run.textBox &&
-    !run.field &&
-    !run.fieldChar &&
-    run.fieldInstruction === undefined &&
-    !run.footnoteReference &&
-    !run.endnoteReference
-  );
+  // Only plain text and `w:sym` runs may be sliced at a boundary; every other
+  // kind carries an inline object/marker that must stay atomic.
+  return run.kind === "text" || run.kind === "sym";
 }
 
 /**
@@ -159,7 +153,9 @@ export function serializeParagraphXml(
   overrides?: { align?: EditorParagraphStyle["align"] },
 ): string {
   const runs =
-    paragraph.runs.length > 0 ? paragraph.runs : [{ id: "", text: "" }];
+    paragraph.runs.length > 0
+      ? paragraph.runs
+      : [{ id: "", text: "", kind: "text" as const }];
   // A drop cap is emitted as a preceding standalone frame paragraph (Word's
   // representation); the body paragraph itself serializes unchanged.
   const dropCapFrame = paragraph.dropCap

@@ -4,7 +4,11 @@ import type {
   EditorParagraphNode,
 } from "@/core/model.js";
 import type { FloatingExclusionRect } from "@/core/engine.js";
-import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
+import {
+  getRunImage,
+  getRunTextBox,
+  resolveEffectiveTextStyleForParagraph,
+} from "@/core/model.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
 import type {
   MeasuredChar,
@@ -267,9 +271,10 @@ export function measureParagraphMinContentWidthPx(
     return Math.max(largest, token.width);
   }, 0);
   const largestInlineObject = paragraph.runs.reduce((largest, run) => {
-    const imageWidth = run.image && !run.image.floating ? run.image.width : 0;
-    const textBoxWidth =
-      run.textBox && !run.textBox.floating ? run.textBox.width : 0;
+    const image = getRunImage(run);
+    const textBox = getRunTextBox(run);
+    const imageWidth = image && !image.floating ? image.width : 0;
+    const textBoxWidth = textBox && !textBox.floating ? textBox.width : 0;
 
     return Math.max(largest, imageWidth, textBoxWidth);
   }, 0);

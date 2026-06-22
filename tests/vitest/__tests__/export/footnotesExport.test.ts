@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
@@ -42,8 +43,9 @@ function buildDocWithTwoFootnotes() {
   });
 
   // Switch back to main, then insert at end → "2".
-  const firstFootnoteId = collectFootnoteReferences(s1.document)[0].run
-    .footnoteReference!.footnoteId;
+  const firstFootnoteId = getRunFootnoteReference(
+    collectFootnoteReferences(s1.document)[0].run,
+  )!.footnoteId;
   const back = goToFootnoteReference(s1, firstFootnoteId);
   const mainParagraph = getDocumentParagraphs(back.document)[0];
   const totalLen = mainParagraph.runs.reduce(
@@ -154,8 +156,8 @@ describe("DOCX export: footnotes", () => {
   it("round-trips footnote body text and inline styles through export → import", async () => {
     const doc = buildDocWithTwoFootnotes();
     const refs = collectFootnoteReferences(doc);
-    const firstFootnoteId = refs[0].run.footnoteReference!.footnoteId;
-    const secondFootnoteId = refs[1].run.footnoteReference!.footnoteId;
+    const firstFootnoteId = getRunFootnoteReference(refs[0].run)!.footnoteId;
+    const secondFootnoteId = getRunFootnoteReference(refs[1].run)!.footnoteId;
 
     doc.footnotes!.items[firstFootnoteId] = {
       ...doc.footnotes!.items[firstFootnoteId],
@@ -176,9 +178,9 @@ describe("DOCX export: footnotes", () => {
     );
     const reimportedRefs = collectFootnoteReferences(reimported);
     const reimportedFirstId =
-      reimportedRefs[0].run.footnoteReference!.footnoteId;
+      getRunFootnoteReference(reimportedRefs[0].run)!.footnoteId;
     const reimportedSecondId =
-      reimportedRefs[1].run.footnoteReference!.footnoteId;
+      getRunFootnoteReference(reimportedRefs[1].run)!.footnoteId;
     const firstParagraph = reimported.footnotes!.items[reimportedFirstId]
       .blocks[0] as EditorParagraphNode;
     const secondParagraph = reimported.footnotes!.items[reimportedSecondId]

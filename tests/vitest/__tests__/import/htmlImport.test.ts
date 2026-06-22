@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { importHtmlToEditorDocument } from "@/import/html/importHtmlToEditorDocument.js";
@@ -91,11 +92,11 @@ describe("HTML import — images", () => {
     const doc = importHtmlToEditorDocument(
       '<p><img src="data:image/png;base64,AAAA" width="120" height="80" alt="pic"></p>',
     );
-    const run = getDocumentParagraphs(doc)[0]!.runs.find((r) => r.image);
-    expect(run?.image?.src).toBe("data:image/png;base64,AAAA");
-    expect(run?.image?.width).toBe(120);
-    expect(run?.image?.height).toBe(80);
-    expect(run?.image?.alt).toBe("pic");
+    const run = getDocumentParagraphs(doc)[0]!.runs.find((r) => getRunImage(r));
+    expect(getRunImage(run!)?.src).toBe("data:image/png;base64,AAAA");
+    expect(getRunImage(run!)?.width).toBe(120);
+    expect(getRunImage(run!)?.height).toBe(80);
+    expect(getRunImage(run!)?.alt).toBe("pic");
   });
 });
 

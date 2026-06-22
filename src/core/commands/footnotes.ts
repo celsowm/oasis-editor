@@ -8,6 +8,7 @@ import type {
 import {
   findParagraphLocation,
   getBlockParagraphs,
+  getRunFootnoteReference,
   paragraphOffsetToPosition,
 } from "@/core/model.js";
 import {
@@ -47,7 +48,7 @@ function nextAutoMarker(document: EditorDocument): string {
   let autoCount = startAt - 1;
   const seen = new Set<string>();
   for (const { run } of iterateFootnoteReferenceRuns(document)) {
-    const ref = run.footnoteReference;
+    const ref = getRunFootnoteReference(run);
     if (!ref || ref.customMark) continue;
     if (seen.has(ref.footnoteId)) continue;
     seen.add(ref.footnoteId);
@@ -162,15 +163,18 @@ export function deleteFootnote(
 
   const targetParagraphId = ref.paragraph.id;
   const filteredRuns: EditorTextRun[] = ref.paragraph.runs.filter(
-    (run) =>
-      !(
-        run.footnoteReference && run.footnoteReference.footnoteId === footnoteId
-      ),
+    (run) => getRunFootnoteReference(run)?.footnoteId !== footnoteId,
   );
   const fallbackRuns: EditorTextRun[] =
     filteredRuns.length > 0
       ? filteredRuns
-      : [{ id: ref.paragraph.runs[0]?.id ?? "run:0", text: "" }];
+      : [
+          {
+            id: ref.paragraph.runs[0]?.id ?? "run:0",
+            text: "",
+            kind: "text",
+          },
+        ];
 
   const updatedParagraph = { ...ref.paragraph, runs: fallbackRuns };
 

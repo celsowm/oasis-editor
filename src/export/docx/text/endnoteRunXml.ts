@@ -1,4 +1,8 @@
-import type { EditorTextStyle, EditorTextRun } from "@/core/model.js";
+import {
+  type EditorTextStyle,
+  type EditorTextRun,
+  getRunEndnoteReference,
+} from "@/core/model.js";
 import type { DocContext } from "@/export/docx/docxTypes.js";
 import {
   serializeNoteRefMarker,
@@ -14,7 +18,7 @@ export function serializeEndnoteReference(
   materializedRunStyle: EditorTextStyle | undefined,
   context: DocContext,
 ): string | null {
-  const ref = run.endnoteReference;
+  const ref = getRunEndnoteReference(run);
   return serializeNoteReference(
     "endnote",
     ref ? { noteId: ref.endnoteId, customMark: ref.customMark } : undefined,

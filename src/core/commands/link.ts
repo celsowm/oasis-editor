@@ -41,7 +41,7 @@ export function getLinkAtSelection(state: EditorState): string | null {
           : getParagraphLength(paragraph);
       return sliceRuns(paragraph, startOffset, endOffset);
     })
-    .filter((run) => run.text.length > 0 && !run.image);
+    .filter((run) => run.text.length > 0 && run.kind !== "image");
 
   if (touchedRuns.length === 0) {
     return null;

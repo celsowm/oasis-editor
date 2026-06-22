@@ -5,7 +5,10 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
 } from "@/core/model.js";
-import { getDocumentSections } from "@/core/model.js";
+import {
+  getDocumentSections,
+  getRunFootnoteReference,
+} from "@/core/model.js";
 import { iterateFootnoteReferenceRuns } from "@/core/footnotes.js";
 import type {
   DocContext,
@@ -48,7 +51,7 @@ export function collectReferencedFootnotesForExport(
   const seen = new Map<string, ReferencedFootnote>();
   let nextDocxId = FIRST_FOOTNOTE_DOCX_ID;
   for (const { run } of iterateFootnoteReferenceRuns(document)) {
-    const ref = run.footnoteReference;
+    const ref = getRunFootnoteReference(run);
     if (!ref) continue;
     if (seen.has(ref.footnoteId)) continue;
     const footnote = items[ref.footnoteId];
@@ -102,7 +105,7 @@ function createEmptyFootnoteBodyParagraph(
     type: "paragraph",
     runs: [
       ...(withMarker ? [makeFootnoteRefMarkerRun()] : []),
-      { id: "synthetic:footnote-body-empty-text", text: "" },
+      { id: "synthetic:footnote-body-empty-text", text: "", kind: "text" },
     ],
     style: { styleId: "FootnoteText" },
   };
@@ -129,6 +132,7 @@ function makeFootnoteRefMarkerRun(): EditorParagraphNode["runs"][number] {
   return {
     id: "synthetic:footnoteRef",
     text: "",
+    kind: "text",
     styles: { styleId: "FootnoteReference", superscript: true },
     // Tag the run so the special serializer below can intercept it.
     __isFootnoteRefMarker: true,
@@ -206,10 +210,8 @@ export function buildFootnotesXml(
 export function hasReferencedFootnotes(document: EditorDocument): boolean {
   if (!document.footnotes?.items) return false;
   for (const { run } of iterateFootnoteReferenceRuns(document)) {
-    if (
-      run.footnoteReference &&
-      document.footnotes.items[run.footnoteReference.footnoteId]
-    ) {
+    const ref = getRunFootnoteReference(run);
+    if (ref && document.footnotes.items[ref.footnoteId]) {
       return true;
     }
   }

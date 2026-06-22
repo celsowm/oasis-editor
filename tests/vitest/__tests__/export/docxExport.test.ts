@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import {
@@ -450,17 +451,17 @@ describe("DOCX export", () => {
     );
     const document = await importDocxToEditorDocument(buffer);
     const reimported = getDocumentParagraphs(document)[0]!;
-    const imageRun = reimported.runs.find((r) => r.image)!;
+    const imageRun = reimported.runs.find((r) => getRunImage(r))!;
 
-    expect(imageRun.image?.crop).toEqual({
+    expect(getRunImage(imageRun)?.crop).toEqual({
       left: 0.1,
       top: 0.05,
       right: 0.2,
       bottom: undefined,
     });
-    expect(imageRun.image?.rotation).toBe(90);
-    expect(imageRun.image?.flipV).toBe(true);
-    expect(imageRun.image?.flipH).toBeUndefined();
+    expect(getRunImage(imageRun)?.rotation).toBe(90);
+    expect(getRunImage(imageRun)?.flipV).toBe(true);
+    expect(getRunImage(imageRun)?.flipH).toBeUndefined();
   });
 
   it("exports the wrap element for each Layout Options preset", async () => {
@@ -521,11 +522,11 @@ describe("DOCX export", () => {
     const buffer = await exportEditorDocumentToDocx(next.document);
     const document = await importDocxToEditorDocument(buffer);
     const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
-      (r) => r.image,
+      (r) => getRunImage(r),
     )!;
 
-    expect(imageRun.image?.floating?.wrap).toBe("square");
-    expect(imageRun.image?.floating?.behindDoc).toBeFalsy();
+    expect(getRunImage(imageRun)?.floating?.wrap).toBe("square");
+    expect(getRunImage(imageRun)?.floating?.behindDoc).toBeFalsy();
   });
 
   it("serializes and round-trips a tight wrap polygon (wp:wrapPolygon)", async () => {
@@ -565,10 +566,10 @@ describe("DOCX export", () => {
 
     const document = await importDocxToEditorDocument(buffer);
     const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
-      (r) => r.image,
+      (r) => getRunImage(r),
     )!;
-    expect(imageRun.image?.floating?.wrap).toBe("tight");
-    expect(imageRun.image?.wrapPolygon).toEqual([
+    expect(getRunImage(imageRun)?.floating?.wrap).toBe("tight");
+    expect(getRunImage(imageRun)?.wrapPolygon).toEqual([
       { x: 0, y: 0 },
       { x: 1, y: 0 },
       { x: 0.5, y: 1 },
@@ -599,9 +600,9 @@ describe("DOCX export", () => {
 
     const document = await importDocxToEditorDocument(buffer);
     const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
-      (r) => r.image,
+      (r) => getRunImage(r),
     )!;
-    expect(imageRun.image?.fillMode).toBe("tile");
+    expect(getRunImage(imageRun)?.fillMode).toBe("tile");
   });
 
   it("serializes and round-trips floating image anchors (wp:anchor)", async () => {
@@ -652,9 +653,9 @@ describe("DOCX export", () => {
 
     const document = await importDocxToEditorDocument(buffer);
     const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
-      (r) => r.image,
+      (r) => getRunImage(r),
     )!;
-    expect(imageRun.image?.floating).toEqual({
+    expect(getRunImage(imageRun)?.floating).toEqual({
       type: "floating",
       distT: 0,
       distB: 0,
@@ -711,9 +712,9 @@ describe("DOCX export", () => {
     );
     const document = await importDocxToEditorDocument(buffer);
     const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
-      (r) => r.image,
+      (r) => getRunImage(r),
     )!;
-    const assetId = imageRun.image!.src.split(":")[1]!;
+    const assetId = getRunImage(imageRun)!.src.split(":")[1]!;
     expect(document.assets?.[assetId]?.url).toMatch(/^data:image\/gif;base64,/);
   });
 
@@ -766,13 +767,13 @@ describe("DOCX export", () => {
     );
     const document = await importDocxToEditorDocument(buffer);
     const imageRun = getDocumentParagraphs(document)[0]!.runs.find(
-      (r) => r.image,
+      (r) => getRunImage(r),
     )!;
 
-    expect(imageRun.image?.src).toBe("");
-    expect(imageRun.image?.linkedSrc).toBe("https://example.com/image.png");
-    expect(imageRun.image?.width).toBe(100);
-    expect(imageRun.image?.height).toBe(50);
+    expect(getRunImage(imageRun)?.src).toBe("");
+    expect(getRunImage(imageRun)?.linkedSrc).toBe("https://example.com/image.png");
+    expect(getRunImage(imageRun)?.width).toBe(100);
+    expect(getRunImage(imageRun)?.height).toBe(50);
     expect(document.assets).toBeUndefined();
   });
 

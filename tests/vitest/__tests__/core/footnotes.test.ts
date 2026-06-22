@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, it, expect } from "vitest";
 import {
   createEditorDocument,
@@ -61,14 +62,14 @@ describe("insertFootnote", () => {
     const refs = collectFootnoteReferences(next.document);
     expect(refs).toHaveLength(1);
     expect(refs[0].run.text).toBe("1");
-    expect(refs[0].run.footnoteReference?.footnoteId).toBeDefined();
+    expect(getRunFootnoteReference(refs[0].run)?.footnoteId).toBeDefined();
     expect(refs[0].run.styles?.superscript).toBe(true);
 
     // The state's active zone must be footnote and the caret must be
     // inside the footnote body.
     expect(next.activeZone).toBe("footnote");
     expect(next.activeFootnoteId).toBe(
-      refs[0].run.footnoteReference?.footnoteId,
+      getRunFootnoteReference(refs[0].run)?.footnoteId,
     );
     const bodyParagraphs =
       next.document.footnotes!.items[next.activeFootnoteId!].blocks;
@@ -94,7 +95,7 @@ describe("insertFootnote", () => {
     const refs1 = collectFootnoteReferences(after1.document);
     const back1 = goToFootnoteReference(
       after1,
-      refs1[0].run.footnoteReference!.footnoteId,
+      getRunFootnoteReference(refs1[0].run)!.footnoteId,
     );
 
     // Re-fetch paragraph and place caret at offset 1 (before "B")
@@ -136,7 +137,7 @@ describe("deleteFootnote", () => {
     const atEnd = {
       ...goToFootnoteReference(
         s1,
-        collectFootnoteReferences(s1.document)[0].run.footnoteReference!
+        getRunFootnoteReference(collectFootnoteReferences(s1.document)[0].run)!
           .footnoteId,
       ),
       selection: {
@@ -154,8 +155,9 @@ describe("deleteFootnote", () => {
 
     expect(collectFootnoteReferences(s2.document)).toHaveLength(2);
 
-    const firstFootnoteId = collectFootnoteReferences(s2.document)[0].run
-      .footnoteReference!.footnoteId;
+    const firstFootnoteId = getRunFootnoteReference(
+      collectFootnoteReferences(s2.document)[0].run,
+    )!.footnoteId;
     const s3 = deleteFootnote(s2, firstFootnoteId);
 
     const refsAfter = collectFootnoteReferences(s3.document);
@@ -264,7 +266,7 @@ describe("navigation", () => {
     const footnoteId = inserted.activeFootnoteId!;
     const ref = findFootnoteReference(inserted.document, footnoteId);
     expect(ref).not.toBeNull();
-    expect(ref!.run.footnoteReference?.footnoteId).toBe(footnoteId);
+    expect(getRunFootnoteReference(ref!.run)?.footnoteId).toBe(footnoteId);
   });
 });
 

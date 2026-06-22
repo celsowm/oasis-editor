@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import type { EditorDocument, EditorLayoutLine } from "@/core/model.js";
 import {
@@ -183,10 +184,11 @@ function createInlineImageDocument(options?: {
             type: "paragraph",
             style: { spacingAfter: 0, indentLeft: 16 },
             runs: [
-              { id: "before-run", text: "A" },
+              { id: "before-run", text: "A", kind: "text" as const },
               {
                 id: "image-run",
                 text: "\uFFFC",
+                kind: "image" as const,
                 image: {
                   src: "asset:tiny",
                   width: imageWidth,
@@ -195,7 +197,7 @@ function createInlineImageDocument(options?: {
                   rotation: options?.rotation,
                 },
               },
-              { id: "after-run", text: "B" },
+              { id: "after-run", text: "B", kind: "text" as const },
             ],
           },
         ],
@@ -341,6 +343,7 @@ describe("PdfFontRegistry", () => {
                 {
                   id: "calibri-run",
                   text: "Calibri sample",
+                  kind: "text" as const,
                   styles: { fontFamily: "Calibri" },
                 },
               ],
@@ -352,6 +355,7 @@ describe("PdfFontRegistry", () => {
                 {
                   id: "aptos-run",
                   text: "Aptos sample",
+                  kind: "text" as const,
                   styles: { fontFamily: "Aptos", bold: true },
                 },
               ],
@@ -363,6 +367,7 @@ describe("PdfFontRegistry", () => {
                 {
                   id: "arial-run",
                   text: "Arial sample",
+                  kind: "text" as const,
                   styles: { fontFamily: "Arial", italic: true },
                 },
               ],
@@ -374,6 +379,7 @@ describe("PdfFontRegistry", () => {
                 {
                   id: "times-run",
                   text: "Times sample",
+                  kind: "text" as const,
                   styles: {
                     fontFamily: "Times New Roman",
                     bold: true,
@@ -389,6 +395,7 @@ describe("PdfFontRegistry", () => {
                 {
                   id: "open-sans-run",
                   text: "Open Sans sample",
+                  kind: "text" as const,
                   styles: { fontFamily: "Open Sans", bold: true },
                 },
               ],
@@ -444,7 +451,7 @@ describe("layoutPdfParagraph", () => {
       paragraph: {
         id: "wrapped-paragraph",
         type: "paragraph",
-        runs: [{ id: "run-1", text: "Alpha beta gamma delta" }],
+        runs: [{ id: "run-1", text: "Alpha beta gamma delta", kind: "text" as const }],
       },
       maxWidth: 70,
       context: { pageNumber: 1, totalPages: 1, measurer },
@@ -580,7 +587,7 @@ describe("OasisPdfWriter", () => {
             {
               id: "paragraph-1",
               type: "paragraph",
-              runs: [{ id: "run-1", text: "Smoke test" }],
+              runs: [{ id: "run-1", text: "Smoke test", kind: "text" as const }],
             },
             {
               id: "paragraph-2",
@@ -589,11 +596,13 @@ describe("OasisPdfWriter", () => {
                 {
                   id: "run-2",
                   text: "Second ",
+                  kind: "text" as const,
                   styles: { bold: true, underline: true, highlight: "#ffff00" },
                 },
                 {
                   id: "run-3",
                   text: "paragraph",
+                  kind: "text" as const,
                   styles: {
                     italic: true,
                     strike: true,
@@ -607,13 +616,13 @@ describe("OasisPdfWriter", () => {
               id: "paragraph-3",
               type: "paragraph",
               style: { align: "center" },
-              runs: [{ id: "run-4", text: "Centered" }],
+              runs: [{ id: "run-4", text: "Centered", kind: "text" as const }],
             },
             {
               id: "paragraph-4",
               type: "paragraph",
               style: { align: "right" },
-              runs: [{ id: "run-5", text: "Right aligned" }],
+              runs: [{ id: "run-5", text: "Right aligned", kind: "text" as const }],
             },
             {
               id: "paragraph-5",
@@ -625,31 +634,31 @@ describe("OasisPdfWriter", () => {
                 indentRight: 24,
                 indentFirstLine: 24,
               },
-              runs: [{ id: "run-6", text: "Indented paragraph" }],
+              runs: [{ id: "run-6", text: "Indented paragraph", kind: "text" as const }],
             },
             {
               id: "paragraph-6",
               type: "paragraph",
               style: { indentLeft: 48, indentHanging: 24 },
-              runs: [{ id: "run-7", text: "Hanging paragraph" }],
+              runs: [{ id: "run-7", text: "Hanging paragraph", kind: "text" as const }],
             },
             {
               id: "paragraph-7",
               type: "paragraph",
               list: { kind: "bullet" },
-              runs: [{ id: "run-8", text: "Bullet item" }],
+              runs: [{ id: "run-8", text: "Bullet item", kind: "text" as const }],
             },
             {
               id: "paragraph-8",
               type: "paragraph",
               list: { kind: "ordered", startAt: 3 },
-              runs: [{ id: "run-9", text: "Ordered item" }],
+              runs: [{ id: "run-9", text: "Ordered item", kind: "text" as const }],
             },
             {
               id: "paragraph-9",
               type: "paragraph",
               list: { kind: "ordered", format: "upperLetter" },
-              runs: [{ id: "run-10", text: "Letter item" }],
+              runs: [{ id: "run-10", text: "Letter item", kind: "text" as const }],
             },
           ],
         },
@@ -717,7 +726,7 @@ describe("OasisPdfWriter", () => {
               id: "paragraph-main",
               type: "paragraph",
               runs: [
-                { id: "run-before", text: "Body with note" },
+                { id: "run-before", text: "Body with note", kind: "text" as const },
                 createFootnoteReferenceRun(footnote.id, "1"),
               ],
             },
@@ -787,7 +796,7 @@ describe("OasisPdfWriter", () => {
               type: "paragraph",
               style: { spacingAfter: 0 },
               runs: [
-                { id: "run-with-footnote", text: "First page owner" },
+                { id: "run-with-footnote", text: "First page owner", kind: "text" as const },
                 createFootnoteReferenceRun(footnote.id, "1"),
               ],
             },
@@ -799,6 +808,7 @@ describe("OasisPdfWriter", () => {
                 {
                   id: `spill-run-${index + 1}`,
                   text: `Later page body ${index + 1}`,
+                  kind: "text" as const,
                 },
               ],
             })),
@@ -864,6 +874,7 @@ describe("OasisPdfWriter", () => {
                 {
                   id: "run-single",
                   text: "Single underline",
+                  kind: "text" as const,
                   styles: { underline: true },
                 },
               ],
@@ -875,6 +886,7 @@ describe("OasisPdfWriter", () => {
                 {
                   id: "run-double",
                   text: "Double underline",
+                  kind: "text" as const,
                   styles: { underline: true, underlineStyle: "double" },
                 },
               ],
@@ -886,6 +898,7 @@ describe("OasisPdfWriter", () => {
                 {
                   id: "run-dotted",
                   text: "Dotted underline",
+                  kind: "text" as const,
                   styles: { underline: true, underlineStyle: "dotted" },
                 },
               ],
@@ -897,6 +910,7 @@ describe("OasisPdfWriter", () => {
                 {
                   id: "run-dash",
                   text: "Dash underline",
+                  kind: "text" as const,
                   styles: { underline: true, underlineStyle: "dash" },
                 },
               ],
@@ -908,6 +922,7 @@ describe("OasisPdfWriter", () => {
                 {
                   id: "run-dash-long",
                   text: "Long dash underline",
+                  kind: "text" as const,
                   styles: { underline: true, underlineStyle: "dashLong" },
                 },
               ],
@@ -919,6 +934,7 @@ describe("OasisPdfWriter", () => {
                 {
                   id: "run-dot-dash",
                   text: "Dot dash underline",
+                  kind: "text" as const,
                   styles: { underline: true, underlineStyle: "dotDash" },
                 },
               ],
@@ -930,6 +946,7 @@ describe("OasisPdfWriter", () => {
                 {
                   id: "run-dot-dot-dash",
                   text: "Dot dot dash underline",
+                  kind: "text" as const,
                   styles: { underline: true, underlineStyle: "dotDotDash" },
                 },
               ],
@@ -941,6 +958,7 @@ describe("OasisPdfWriter", () => {
                 {
                   id: "run-wave",
                   text: "Wave underline",
+                  kind: "text" as const,
                   styles: { underline: true, underlineStyle: "wave" },
                 },
               ],
@@ -1000,7 +1018,7 @@ describe("OasisPdfWriter", () => {
                 borderBottom: { width: 1, type: "dashed", color: "#111827" },
                 borderLeft: { width: 1, type: "dashed", color: "#111827" },
               },
-              runs: [{ id: "boxed-run", text: "Dashed boxed paragraph" }],
+              runs: [{ id: "boxed-run", text: "Dashed boxed paragraph", kind: "text" as const }],
             },
           ],
         },
@@ -1044,6 +1062,7 @@ describe("OasisPdfWriter", () => {
               runs: [
                 {
                   id: "overflow-run",
+                  kind: "text" as const,
                   text: Array.from(
                     { length: 36 },
                     (_, index) => `word${index + 1}`,
@@ -1092,7 +1111,7 @@ describe("OasisPdfWriter", () => {
             {
               id: "header-paragraph",
               type: "paragraph",
-              runs: [{ id: "header-run", text: "Document header" }],
+              runs: [{ id: "header-run", text: "Document header", kind: "text" as const }],
             },
           ],
           footer: [
@@ -1100,10 +1119,20 @@ describe("OasisPdfWriter", () => {
               id: "footer-paragraph",
               type: "paragraph",
               runs: [
-                { id: "footer-label", text: "Page " },
-                { id: "footer-page", text: "", field: { type: "PAGE" } },
-                { id: "footer-of", text: " of " },
-                { id: "footer-total", text: "", field: { type: "NUMPAGES" } },
+                { id: "footer-label", text: "Page ", kind: "text" as const },
+                {
+                  id: "footer-page",
+                  text: "",
+                  kind: "field",
+                  field: { type: "PAGE" },
+                },
+                { id: "footer-of", text: " of ", kind: "text" as const },
+                {
+                  id: "footer-total",
+                  text: "",
+                  kind: "field",
+                  field: { type: "NUMPAGES" },
+                },
               ],
             },
           ],
@@ -1114,6 +1143,7 @@ describe("OasisPdfWriter", () => {
               {
                 id: `body-run-${index + 1}`,
                 text: `Body paragraph ${index + 1}`,
+                kind: "text" as const,
               },
             ],
           })),
@@ -1169,7 +1199,7 @@ describe("OasisPdfWriter", () => {
               id: "heading-paragraph",
               type: "paragraph",
               style: { styleId: "Heading1" },
-              runs: [{ id: "heading-run", text: "Capítulo 1" }],
+              runs: [{ id: "heading-run", text: "Capítulo 1", kind: "text" as const }],
             },
           ],
         },
@@ -1212,6 +1242,7 @@ describe("OasisPdfWriter", () => {
               runs: [
                 {
                   id: "indented-run",
+                  kind: "text" as const,
                   text: "Alpha beta gamma delta epsilon zeta eta theta iota kappa",
                 },
               ],
@@ -1289,6 +1320,7 @@ describe("OasisPdfWriter", () => {
               runs: [
                 {
                   id: "lorem-run",
+                  kind: "text" as const,
                   text: Array.from(
                     { length: 20 },
                     () => `Integer luctus, orci non ${phrase}`,
@@ -1345,7 +1377,7 @@ describe("OasisPdfWriter", () => {
             {
               id: "accented-paragraph",
               type: "paragraph",
-              runs: [{ id: "accented-run", text: "Página Capítulo ação não" }],
+              runs: [{ id: "accented-run", text: "Página Capítulo ação não", kind: "text" as const }],
             },
           ],
         },
@@ -1440,7 +1472,7 @@ describe("OasisPdfWriter", () => {
               id: "small-header",
               type: "paragraph",
               style: { spacingAfter: 0 },
-              runs: [{ id: "small-header-run", text: "HeaderOnly" }],
+              runs: [{ id: "small-header-run", text: "HeaderOnly", kind: "text" as const }],
             },
           ],
           footer: [
@@ -1448,7 +1480,7 @@ describe("OasisPdfWriter", () => {
               id: "small-footer",
               type: "paragraph",
               style: { spacingAfter: 0 },
-              runs: [{ id: "small-footer-run", text: "FooterOnly" }],
+              runs: [{ id: "small-footer-run", text: "FooterOnly", kind: "text" as const }],
             },
           ],
           blocks: [
@@ -1456,7 +1488,7 @@ describe("OasisPdfWriter", () => {
               id: "body-paragraph",
               type: "paragraph",
               style: { spacingAfter: 0 },
-              runs: [{ id: "body-run", text: "BodyOnly" }],
+              runs: [{ id: "body-run", text: "BodyOnly", kind: "text" as const }],
             },
           ],
         },
@@ -1519,7 +1551,7 @@ describe("OasisPdfWriter", () => {
               id: "repeat-header",
               type: "paragraph",
               style: { spacingAfter: 0 },
-              runs: [{ id: "repeat-header-run", text: "RepeatHeader" }],
+              runs: [{ id: "repeat-header-run", text: "RepeatHeader", kind: "text" as const }],
             },
           ],
           footer: [
@@ -1527,7 +1559,7 @@ describe("OasisPdfWriter", () => {
               id: "repeat-footer",
               type: "paragraph",
               style: { spacingAfter: 0 },
-              runs: [{ id: "repeat-footer-run", text: "RepeatFooter" }],
+              runs: [{ id: "repeat-footer-run", text: "RepeatFooter", kind: "text" as const }],
             },
           ],
           blocks: Array.from({ length: 18 }, (_, index) => ({
@@ -1538,6 +1570,7 @@ describe("OasisPdfWriter", () => {
               {
                 id: `paged-body-run-${index + 1}`,
                 text: `PagedBody${index + 1}`,
+                kind: "text" as const,
               },
             ],
           })),
@@ -1614,7 +1647,7 @@ describe("OasisPdfWriter", () => {
                         {
                           id: "p-1-1",
                           type: "paragraph",
-                          runs: [{ id: "r-1-1", text: "HeaderA" }],
+                          runs: [{ id: "r-1-1", text: "HeaderA", kind: "text" as const }],
                         },
                       ],
                     },
@@ -1624,7 +1657,7 @@ describe("OasisPdfWriter", () => {
                         {
                           id: "p-1-2",
                           type: "paragraph",
-                          runs: [{ id: "r-1-2", text: "HeaderB" }],
+                          runs: [{ id: "r-1-2", text: "HeaderB", kind: "text" as const }],
                         },
                       ],
                     },
@@ -1639,7 +1672,7 @@ describe("OasisPdfWriter", () => {
                         {
                           id: "p-2-1",
                           type: "paragraph",
-                          runs: [{ id: "r-2-1", text: "BodyA" }],
+                          runs: [{ id: "r-2-1", text: "BodyA", kind: "text" as const }],
                         },
                       ],
                     },
@@ -1649,7 +1682,7 @@ describe("OasisPdfWriter", () => {
                         {
                           id: "p-2-2",
                           type: "paragraph",
-                          runs: [{ id: "r-2-2", text: "BodyB" }],
+                          runs: [{ id: "r-2-2", text: "BodyB", kind: "text" as const }],
                         },
                       ],
                     },
@@ -1715,7 +1748,7 @@ describe("OasisPdfWriter", () => {
                         {
                           id: "p-1-1",
                           type: "paragraph",
-                          runs: [{ id: "r-1-1", text: "BottomCell" }],
+                          runs: [{ id: "r-1-1", text: "BottomCell", kind: "text" as const }],
                         },
                       ],
                     },
@@ -1897,6 +1930,7 @@ describe("OasisPdfWriter", () => {
                 {
                   id: "shape-run",
                   text: "￼",
+                  kind: "textBox" as const,
                   textBox: {
                     width: 80,
                     height: 60,
@@ -1957,6 +1991,7 @@ describe("OasisPdfWriter", () => {
                 {
                   id: "shape-run",
                   text: "￼",
+                  kind: "textBox" as const,
                   textBox: {
                     width: 240,
                     height: shapeHeight,
@@ -2038,6 +2073,7 @@ describe("OasisPdfWriter", () => {
                 {
                   id: "shape-run",
                   text: "￼",
+                  kind: "textBox" as const,
                   textBox: {
                     width: 200,
                     height: 120,
@@ -2045,7 +2081,7 @@ describe("OasisPdfWriter", () => {
                       {
                         id: "inner-paragraph",
                         type: "paragraph",
-                        runs: [{ id: "inner-run", text: "InsideShape" }],
+                        runs: [{ id: "inner-run", text: "InsideShape", kind: "text" as const }],
                       },
                     ],
                     shape: { preset: "rect", fill: "#4472C4" },
@@ -2101,6 +2137,7 @@ describe("OasisPdfWriter", () => {
                 {
                   id: "shape-run",
                   text: "￼",
+                  kind: "textBox" as const,
                   textBox: {
                     width: 200,
                     height: 120,

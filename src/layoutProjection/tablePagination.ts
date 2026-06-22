@@ -233,7 +233,7 @@ export function estimateTableRowHeight(
     let largestImageHeight = 0;
     for (const paragraph of cell.blocks) {
       for (const run of paragraph.runs) {
-        if (run.image && run.image.height > largestImageHeight) {
+        if (run.kind === "image" && run.image.height > largestImageHeight) {
           const fitted =
             cellContentWidth !== undefined && run.image.width > cellContentWidth
               ? Math.floor(

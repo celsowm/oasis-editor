@@ -16,6 +16,7 @@ function refRun(endnoteId: string): EditorTextRun {
     id: `run:${endnoteId}`,
     text: "?",
     styles: { superscript: true },
+    kind: "endnoteReference",
     endnoteReference: { endnoteId },
   };
 }
@@ -24,7 +25,7 @@ function buildDoc(): EditorDocument {
   const paragraph: EditorParagraphNode = {
     id: "paragraph:body",
     type: "paragraph",
-    runs: [{ id: "run:lead", text: "body" }, refRun("endnote:a")],
+    runs: [{ id: "run:lead", text: "body", kind: "text" as const }, refRun("endnote:a")],
   };
   const doc = createEditorDocument([paragraph]);
   doc.endnotes = {

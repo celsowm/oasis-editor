@@ -3,7 +3,11 @@ import type {
   EditorNamedStyle,
   EditorParagraphNode,
 } from "@/core/model.js";
-import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
+import {
+  getRunImage,
+  getRunTextBox,
+  resolveEffectiveTextStyleForParagraph,
+} from "@/core/model.js";
 import { DEFAULT_FONT_SIZE } from "./constants.js";
 import { measureCharacterWidth } from "./characterWidth.js";
 import type { MeasuredChar, MeasuredToken } from "./types.js";
@@ -18,6 +22,8 @@ export function buildParagraphFragments(
       paragraphOffset: paragraphOffset + index,
       runOffset: index,
     }));
+    const runImage = getRunImage(run);
+    const runTextBox = getRunTextBox(run);
     const fragment: EditorLayoutFragment = {
       paragraphId: paragraph.id,
       runId: run.id,
@@ -25,8 +31,8 @@ export function buildParagraphFragments(
       endOffset: paragraphOffset + run.text.length,
       text: run.text,
       styles: run.styles ? { ...run.styles } : undefined,
-      image: run.image ? { ...run.image } : undefined,
-      textBox: run.textBox ? { ...run.textBox } : undefined,
+      image: runImage ? { ...runImage } : undefined,
+      textBox: runTextBox ? { ...runTextBox } : undefined,
       revision: run.revision ? { ...run.revision } : undefined,
       chars,
     };

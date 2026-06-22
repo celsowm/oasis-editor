@@ -66,6 +66,7 @@ export function deleteBackward(state: EditorState): EditorState {
         const deletionRun: EditorTextRun = {
           id: `run:${Math.random().toString(36).slice(2, 9)}`,
           text: charToDelete,
+          kind: "text",
           styles: { ...targetRun.styles },
           revision: {
             id: `rev:${Math.random().toString(36).slice(2, 9)}`,
@@ -186,6 +187,7 @@ export function deleteForward(state: EditorState): EditorState {
         const deletionRun: EditorTextRun = {
           id: `run:${Math.random().toString(36).slice(2, 9)}`,
           text: charToDelete,
+          kind: "text",
           styles: { ...targetRun.styles },
           revision: {
             id: `rev:${Math.random().toString(36).slice(2, 9)}`,

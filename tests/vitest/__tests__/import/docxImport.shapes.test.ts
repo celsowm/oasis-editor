@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -26,7 +27,7 @@ async function loadShapeFixture(): Promise<ArrayBuffer> {
 function collectShapeRuns(document: EditorDocument): EditorTextRun[] {
   const runs: EditorTextRun[] = [];
   const visitParagraph = (paragraph: EditorParagraphNode): void => {
-    runs.push(...paragraph.runs.filter((run) => run.textBox?.shape?.preset));
+    runs.push(...paragraph.runs.filter((run) => getRunTextBox(run)?.shape?.preset));
   };
   const visitTable = (table: EditorTableNode): void => {
     for (const row of table.rows) {
@@ -57,14 +58,14 @@ describe("DOCX import: DrawingML preset shapes (wps:wsp)", () => {
   it("imports every ST_ShapeType shape from the real fixture", async () => {
     const document = await importDocxToEditorDocument(await loadShapeFixture());
     const shapeRuns = collectShapeRuns(document);
-    const presets = shapeRuns.map((run) => run.textBox!.shape!.preset!);
+    const presets = shapeRuns.map((run) => getRunTextBox(run)!.shape!.preset!);
     const uniquePresets = new Set(presets);
 
     expect(shapeRuns).toHaveLength(187);
     expect(uniquePresets.size).toBe(187);
     expect([...uniquePresets].every(isPresetGeometrySupported)).toBe(true);
 
-    const first = shapeRuns[0]!.textBox!;
+    const first = getRunTextBox(shapeRuns[0]!)!;
     expect(shapeRuns[0]!.text).toBe("\uFFFC");
     expect(first.name).toBe("line");
     expect(first.alt).toBe("OOXML ST_ShapeType preset geometry: line");
@@ -94,13 +95,13 @@ describe("DOCX import: DrawingML preset shapes (wps:wsp)", () => {
     const reimported = await importDocxToEditorDocument(exported);
     const shapeRuns = collectShapeRuns(reimported);
     const presets = new Set(
-      shapeRuns.map((run) => run.textBox!.shape!.preset!),
+      shapeRuns.map((run) => getRunTextBox(run)!.shape!.preset!),
     );
 
     expect(shapeRuns).toHaveLength(187);
     expect(presets.size).toBe(187);
-    expect(shapeRuns[0]!.textBox!.name).toBe("line");
-    expect(shapeRuns[0]!.textBox!.shape).toMatchObject({
+    expect(getRunTextBox(shapeRuns[0]!)!.name).toBe("line");
+    expect(getRunTextBox(shapeRuns[0]!)!.shape).toMatchObject({
       preset: "line",
       fill: "#D9EAD3",
       borderColor: "#38761D",

@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
@@ -30,6 +31,7 @@ function refRun(endnoteId: string): EditorTextRun {
     id: `run:${endnoteId}`,
     text: "?",
     styles: { superscript: true },
+    kind: "endnoteReference",
     endnoteReference: { endnoteId },
   };
 }
@@ -40,9 +42,9 @@ function buildDocWithTwoEndnotes(): EditorDocument {
     id: "paragraph:body",
     type: "paragraph",
     runs: [
-      { id: "run:a", text: "A" },
+      { id: "run:a", text: "A", kind: "text" as const },
       refRun("endnote:a"),
-      { id: "run:b", text: "B" },
+      { id: "run:b", text: "B", kind: "text" as const },
       refRun("endnote:b"),
     ],
   };
@@ -151,7 +153,7 @@ describe("DOCX export: endnotes", () => {
     expect(refs.map((r) => r.run.text)).toEqual(["1", "2"]);
     expect(Object.keys(reimported.endnotes!.items)).toHaveLength(2);
 
-    const firstId = refs[0].run.endnoteReference!.endnoteId;
+    const firstId = getRunEndnoteReference(refs[0].run)!.endnoteId;
     const firstParagraph = reimported.endnotes!.items[firstId]
       .blocks[0] as EditorParagraphNode;
     const text = firstParagraph.runs.map((r) => r.text).join("");

@@ -72,12 +72,12 @@ function buildPartContext(
         hyperlinks.push({ rId, href: link });
       }
 
-      if (run.textBox && !textBoxDocPrIds.has(run.id)) {
+      if (run.kind === "textBox" && !textBoxDocPrIds.has(run.id)) {
         textBoxDocPrIds.set(run.id, state.nextTextBoxDocPrId);
         state.nextTextBoxDocPrId += 1;
       }
 
-      if (!run.image) {
+      if (run.kind !== "image") {
         continue;
       }
 

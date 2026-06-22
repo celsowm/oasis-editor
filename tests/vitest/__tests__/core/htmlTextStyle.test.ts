@@ -6,6 +6,7 @@ describe("HTML text style serialization", () => {
     const html = serializeTextRunToHtml({
       id: "run-1",
       text: "Texto",
+      kind: "text" as const,
       styles: {
         language: { value: "pt-BR", eastAsia: "ja-JP", bidi: "ar-SA" },
       },

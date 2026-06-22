@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import { createEditorParagraph } from "@/core/editorState.js";
 import type {
@@ -20,6 +21,8 @@ function createFragments(
         runOffset: index,
       }),
     );
+    const runImage = getRunImage(run);
+    const runTextBox = getRunTextBox(run);
     const fragment: EditorLayoutFragment = {
       paragraphId: paragraph.id,
       runId: run.id,
@@ -27,8 +30,8 @@ function createFragments(
       endOffset: paragraphOffset + run.text.length,
       text: run.text,
       styles: run.styles ? { ...run.styles } : undefined,
-      image: run.image ? { ...run.image } : undefined,
-      textBox: run.textBox ? { ...run.textBox } : undefined,
+      image: runImage ? { ...runImage } : undefined,
+      textBox: runTextBox ? { ...runTextBox } : undefined,
       revision: run.revision ? { ...run.revision } : undefined,
       chars,
     };
@@ -397,7 +400,11 @@ describe("composeMeasuredParagraphLines inline objects", () => {
   it("grows the line height to fit an inline text box", () => {
     // A single object-replacement char standing in for a 120px-tall text box.
     const paragraph = createEditorParagraph("￼");
-    paragraph.runs[0]!.textBox = { width: 200, height: 120, blocks: [] };
+    paragraph.runs[0] = {
+      ...paragraph.runs[0]!,
+      kind: "textBox",
+      textBox: { width: 200, height: 120, blocks: [] },
+    };
 
     const textLine = measure(createEditorParagraph("plain"), 600)[0]!;
     const lines = measure(paragraph, 600);
@@ -410,11 +417,15 @@ describe("composeMeasuredParagraphLines inline objects", () => {
 
   it("does not grow the line for a floating text box (out of flow)", () => {
     const paragraph = createEditorParagraph("￼");
-    paragraph.runs[0]!.textBox = {
-      width: 200,
-      height: 120,
-      blocks: [],
-      floating: { type: "floating" },
+    paragraph.runs[0] = {
+      ...paragraph.runs[0]!,
+      kind: "textBox",
+      textBox: {
+        width: 200,
+        height: 120,
+        blocks: [],
+        floating: { type: "floating" },
+      },
     };
 
     const lines = measure(paragraph, 600);

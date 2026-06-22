@@ -206,7 +206,7 @@ function fitImagesToCellWidth(
   }
   let changed = false;
   const runs: EditorTextRun[] = paragraph.runs.map((run) => {
-    if (!run.image) return run;
+    if (run.kind !== "image") return run;
     const { width: w, height: h } = run.image;
     if (w <= maxImageWidthPx) return run;
     const scale = maxImageWidthPx / w;
@@ -644,7 +644,7 @@ export function buildCanvasTableLayout(options: {
           {
             id: `table:${table.id}:r${rowIndex}:c${cellIndex}:empty`,
             type: "paragraph",
-            runs: [{ id: "run:empty", text: "" }],
+            runs: [{ id: "run:empty", text: "", kind: "text" as const }],
           },
           0,
         );

@@ -3,7 +3,7 @@ import type {
   EditorState,
   EditorTextBoxData,
 } from "@/core/model.js";
-import { getParagraphs } from "@/core/model.js";
+import { getParagraphs, getRunTextBox } from "@/core/model.js";
 import { EMU_PER_PX } from "@/core/units.js";
 import { normalizeSelection } from "@/core/selection.js";
 import { cloneParagraph, cloneRun } from "@/core/document/clone.js";
@@ -29,7 +29,7 @@ export type SelectedTextBoxRun = SelectedObjectRun;
 export function getSelectedTextBoxRun(
   state: EditorState,
 ): SelectedTextBoxRun | null {
-  return getSelectedObjectRun(state, (run) => Boolean(run.textBox));
+  return getSelectedObjectRun(state, (run) => run.kind === "textBox");
 }
 
 export interface ResizeTextBoxOptions {
@@ -102,7 +102,7 @@ export function rotateSelectedTextBox(
   rotation: number,
 ): EditorState {
   const selected = getSelectedTextBoxRun(state);
-  if (!selected || !selected.run.textBox) {
+  if (!selected || !getRunTextBox(selected.run)) {
     return state;
   }
 
@@ -118,7 +118,7 @@ export function rotateSelectedTextBox(
     return {
       ...cloneParagraph(candidate),
       runs: candidate.runs.map((run) =>
-        run.id === targetRun.id && run.textBox
+        run.id === targetRun.id && run.kind === "textBox"
           ? {
               ...run,
               textBox: { ...run.textBox, rotation: nextRotation },
@@ -142,15 +142,17 @@ export function getSelectedTextBoxWrapPreset(
   state: EditorState,
 ): WrapPreset | null {
   const selected = getSelectedTextBoxRun(state);
-  if (!selected?.run.textBox) {
+  const textBox = selected && getRunTextBox(selected.run);
+  if (!textBox) {
     return null;
   }
-  return floatingToWrapPreset(selected.run.textBox.floating);
+  return floatingToWrapPreset(textBox.floating);
 }
 
 export function isSelectedTextBoxFixedPosition(state: EditorState): boolean {
   const selected = getSelectedTextBoxRun(state);
-  return isFloatingFixedPosition(selected?.run.textBox?.floating);
+  const textBox = selected && getRunTextBox(selected.run);
+  return isFloatingFixedPosition(textBox?.floating);
 }
 
 /** Patches the selected text box's `floating` field (or removes it for inline). */
@@ -161,7 +163,7 @@ function patchSelectedTextBoxFloating(
   ) => EditorTextBoxData["floating"],
 ): EditorState {
   const selected = getSelectedTextBoxRun(state);
-  if (!selected?.run.textBox) {
+  if (!selected || !getRunTextBox(selected.run)) {
     return state;
   }
 
@@ -175,7 +177,7 @@ function patchSelectedTextBoxFloating(
     return {
       ...cloneParagraph(candidate),
       runs: candidate.runs.map((run) => {
-        if (run.id !== targetRun.id || !run.textBox) {
+        if (run.id !== targetRun.id || run.kind !== "textBox") {
           return cloneRun(run);
         }
         const floating = next(run.textBox.floating);
@@ -225,7 +227,8 @@ export function resizeSelectedTextBox(
   options: ResizeTextBoxOptions = {},
 ): EditorState {
   const selected = getSelectedTextBoxRun(state);
-  if (!selected || !selected.run.textBox) {
+  const selectedTextBox = selected && getRunTextBox(selected.run);
+  if (!selected || !selectedTextBox) {
     return state;
   }
 
@@ -238,8 +241,8 @@ export function resizeSelectedTextBox(
   const nextHeight = Math.max(MIN_TEXT_BOX_SIZE_PX, Math.round(height));
 
   const { paragraphIndex, run: targetRun } = selected;
-  const widthDelta = nextWidth - selected.run.textBox.width;
-  const heightDelta = nextHeight - selected.run.textBox.height;
+  const widthDelta = nextWidth - selectedTextBox.width;
+  const heightDelta = nextHeight - selectedTextBox.height;
 
   const paragraphs = getParagraphs(state);
   const nextParagraphs = paragraphs.map((candidate, candidateIndex) => {
@@ -250,7 +253,7 @@ export function resizeSelectedTextBox(
     return {
       ...cloneParagraph(candidate),
       runs: candidate.runs.map((run) => {
-        if (run.id !== targetRun.id || !run.textBox) {
+        if (run.id !== targetRun.id || run.kind !== "textBox") {
           return cloneRun(run);
         }
 

@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import {
   createEditorDocument,
@@ -28,12 +29,12 @@ describe("insertShapeAtSelection", () => {
     const next = insertShapeAtSelection(stateWithCaret(), "ellipse");
 
     const paragraph = getParagraphs(next)[0]!;
-    const shapeRun = paragraph.runs.find((run) => run.textBox);
+    const shapeRun = paragraph.runs.find((run) => getRunTextBox(run));
 
     expect(shapeRun).toBeDefined();
     expect(shapeRun!.text).toBe("￼");
 
-    const textBox = shapeRun!.textBox!;
+    const textBox = getRunTextBox(shapeRun!)!;
     expect(textBox.shape?.preset).toBe("ellipse");
     expect(textBox.shape?.fill).toBeDefined();
     expect(textBox.shape?.borderColor).toBeDefined();
@@ -48,7 +49,7 @@ describe("insertShapeAtSelection", () => {
     const next = insertShapeAtSelection(stateWithCaret(), "rect");
 
     const paragraph = getParagraphs(next)[0]!;
-    const objectIndex = paragraph.runs.findIndex((run) => run.textBox);
+    const objectIndex = paragraph.runs.findIndex((run) => getRunTextBox(run));
     // Inserted between "a" and "b" (caret was at offset 1).
     expect(objectIndex).toBeGreaterThanOrEqual(0);
     expect(next.selection.focus).toEqual(next.selection.anchor);

@@ -15,6 +15,7 @@ import type {
   EditorTableRowNode,
   EditorTextRun,
 } from "@/core/model.js";
+import { getRunImage } from "@/core/model.js";
 import {
   collectInlineRuns,
   isParagraphTag,
@@ -37,7 +38,7 @@ function runsToParagraphSpecs(
   return runs.map((run) => ({
     text: run.text,
     styles: run.styles,
-    image: run.image,
+    image: getRunImage(run),
   }));
 }
 

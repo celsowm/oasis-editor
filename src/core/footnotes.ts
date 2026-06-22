@@ -7,7 +7,11 @@ import type {
   EditorParagraphNode,
   EditorTextRun,
 } from "./model.js";
-import { getBlockParagraphs, getDocumentSectionsCanonical } from "./model.js";
+import {
+  getBlockParagraphs,
+  getDocumentSectionsCanonical,
+  getRunFootnoteReference,
+} from "./model.js";
 import { assertNever } from "./assertNever.js";
 
 /**
@@ -37,7 +41,7 @@ export function* iterateFootnoteReferenceRuns(
       for (const block of blocks) {
         for (const paragraph of getBlockParagraphs(block)) {
           for (const run of paragraph.runs) {
-            if (run.footnoteReference) {
+            if (run.kind === "footnoteReference") {
               yield { paragraph, run };
             }
           }
@@ -168,7 +172,7 @@ export function findFootnoteReference(
   footnoteId: string,
 ): { paragraph: EditorParagraphNode; run: EditorTextRun } | null {
   for (const entry of iterateFootnoteReferenceRuns(document)) {
-    if (entry.run.footnoteReference?.footnoteId === footnoteId) {
+    if (getRunFootnoteReference(entry.run)?.footnoteId === footnoteId) {
       return entry;
     }
   }
@@ -188,7 +192,7 @@ export function listReferencedFootnotes(
   const result: FootnoteReferenceInfo[] = [];
   let counter = 0;
   for (const { run } of iterateFootnoteReferenceRuns(document)) {
-    const ref = run.footnoteReference;
+    const ref = getRunFootnoteReference(run);
     if (!ref) continue;
     if (seen.has(ref.footnoteId)) continue;
     seen.add(ref.footnoteId);
@@ -223,7 +227,7 @@ export function renumberFootnotes(document: EditorDocument): EditorDocument {
   const markerByFootnoteId = new Map<string, string>();
   let autoCounter = startAt - 1;
   for (const { run } of iterateFootnoteReferenceRuns(document)) {
-    const ref = run.footnoteReference;
+    const ref = getRunFootnoteReference(run);
     if (!ref) continue;
     referenced.add(ref.footnoteId);
     if (ref.customMark) {
@@ -332,8 +336,9 @@ function rewriteParagraphMarkers(
 ): EditorParagraphNode {
   let runChanged = false;
   const nextRuns = paragraph.runs.map((run) => {
-    if (!run.footnoteReference) return run;
-    const desired = markerByFootnoteId.get(run.footnoteReference.footnoteId);
+    const ref = getRunFootnoteReference(run);
+    if (!ref) return run;
+    const desired = markerByFootnoteId.get(ref.footnoteId);
     if (desired === undefined) return run;
     if (run.text === desired) return run;
     runChanged = true;

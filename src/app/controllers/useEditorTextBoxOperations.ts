@@ -1,4 +1,4 @@
-import { type EditorState } from "@/core/model.js";
+import { type EditorState, getRunTextBox } from "@/core/model.js";
 import {
   getSelectedTextBoxRun,
   resizeSelectedTextBox,
@@ -33,15 +33,16 @@ export function createEditorTextBoxOperations(
     current: EditorState,
   ): { width: number; height: number } | null => {
     const selected = getSelectedTextBoxRun(current);
-    if (!selected?.run.textBox) {
+    const textBox = selected && getRunTextBox(selected.run);
+    if (!textBox) {
       return null;
     }
     return {
-      width: selected.run.textBox.width,
+      width: textBox.width,
       // Start the drag from the height actually painted on screen. For an
       // auto-fit box that is its content height, not the stored height, so the
       // box doesn't jump on the first pointer move.
-      height: resolveTextBoxRenderHeight(selected.run.textBox, current, 0),
+      height: resolveTextBoxRenderHeight(textBox, current, 0),
     };
   };
 

@@ -1,3 +1,4 @@
+import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import {
   createEditorDocument,
@@ -165,15 +166,15 @@ describe("setImageWrapPolygon", () => {
     ];
 
     const withPolygon = setImageWrapPolygon(state, runId, polygon);
-    expect(getSelectedImageRun(withPolygon)!.run.image?.wrapPolygon).toEqual(
-      polygon,
-    );
+    expect(
+      getRunImage(getSelectedImageRun(withPolygon)!.run)?.wrapPolygon,
+    ).toEqual(polygon);
     // Selection is unchanged so the layout-options popup stays anchored.
     expect(withPolygon.selection).toEqual(state.selection);
 
     const cleared = setImageWrapPolygon(withPolygon, runId, []);
     expect(
-      getSelectedImageRun(cleared)!.run.image?.wrapPolygon,
+      getRunImage(getSelectedImageRun(cleared)!.run)?.wrapPolygon,
     ).toBeUndefined();
   });
 

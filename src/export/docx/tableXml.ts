@@ -423,7 +423,7 @@ export function serializeTableXml(
                   {
                     id: "",
                     type: "paragraph" as const,
-                    runs: [{ id: "", text: "" }],
+                    runs: [{ id: "", text: "", kind: "text" as const }],
                   },
                 ];
           const paragraphsXml = paragraphs

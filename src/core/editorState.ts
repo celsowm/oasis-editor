@@ -13,6 +13,7 @@ import type {
   EditorTableCellNode,
   EditorTableNode,
   EditorTableRowNode,
+  EditorRunBase,
   EditorTextRun,
   EditorTextStyle,
   EditorTextBoxData,
@@ -60,11 +61,11 @@ export function createEditorCommentId(): string {
 }
 
 export function createEditorRun(text = ""): EditorTextRun {
-  const run: EditorTextRun = {
+  return {
     id: createEditorNodeId("run"),
     text,
+    kind: "text",
   };
-  return run;
 }
 
 export function createEditorStyledRun(
@@ -73,17 +74,20 @@ export function createEditorStyledRun(
   image?: EditorImageRunData,
   textBox?: EditorTextBoxData,
 ): EditorTextRun {
-  const run = createEditorRun(text);
+  const base: EditorRunBase = {
+    id: createEditorNodeId("run"),
+    text,
+  };
   if (styles) {
-    run.styles = { ...styles };
+    base.styles = { ...styles };
   }
   if (image) {
-    run.image = { ...image };
+    return { ...base, kind: "image", image: { ...image } };
   }
   if (textBox) {
-    run.textBox = textBox;
+    return { ...base, kind: "textBox", textBox };
   }
-  return run;
+  return { ...base, kind: "text" };
 }
 
 export function createEditorParagraph(text = ""): EditorParagraphNode {
@@ -205,13 +209,17 @@ export function createFootnoteReferenceRun(
     superscript: true,
     ...(options?.styles ?? {}),
   };
-  const run = createEditorStyledRun(marker, styles);
   const reference: EditorFootnoteReferenceData = { footnoteId };
   if (options?.customMark) {
     reference.customMark = options.customMark;
   }
-  run.footnoteReference = reference;
-  return run;
+  return {
+    id: createEditorNodeId("run"),
+    text: marker,
+    styles,
+    kind: "footnoteReference",
+    footnoteReference: reference,
+  };
 }
 
 export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {

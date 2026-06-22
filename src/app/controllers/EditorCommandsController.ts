@@ -40,6 +40,7 @@ import {
   findParagraphTableLocation,
   getParagraphs,
   getParagraphText,
+  getRunImage,
   positionToParagraphOffset,
   type EditorParagraphListStyle,
   type EditorParagraphStyle,
@@ -457,7 +458,7 @@ export function createEditorCommandsController(
     if (!run) {
       return;
     }
-    const currentAlt = run.run.image?.alt ?? "";
+    const currentAlt = getRunImage(run.run)?.alt ?? "";
     deps.openImageAltDialog(currentAlt);
   };
 

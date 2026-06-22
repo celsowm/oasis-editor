@@ -1,5 +1,5 @@
 import type { EditorState } from "@/core/model.js";
-import { resolveImageSrc } from "@/core/model.js";
+import { getRunImage, resolveImageSrc } from "@/core/model.js";
 import {
   getSelectedImageRun,
   getSelectedImageWrapPreset,
@@ -104,7 +104,7 @@ export function createEditorLayoutOptionsController(
       );
       if (preset === "tight" || preset === "through") {
         const selected = getSelectedImageRun(state());
-        const image = selected?.run.image;
+        const image = selected && getRunImage(selected.run);
         if (image && !image.wrapPolygon) {
           ensureImageWrapContour(selected!.run.id, image.src);
         }

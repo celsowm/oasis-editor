@@ -6,7 +6,11 @@ import type {
   EditorParagraphNode,
   EditorTextRun,
 } from "./model.js";
-import { getBlockParagraphs, getDocumentSectionsCanonical } from "./model.js";
+import {
+  getBlockParagraphs,
+  getDocumentSectionsCanonical,
+  getRunEndnoteReference,
+} from "./model.js";
 import { assertNever } from "./assertNever.js";
 import { getFootnoteDisplayMarker } from "./footnotes.js";
 
@@ -37,7 +41,7 @@ export function* iterateEndnoteReferenceRuns(
       for (const block of blocks) {
         for (const paragraph of getBlockParagraphs(block)) {
           for (const run of paragraph.runs) {
-            if (run.endnoteReference) {
+            if (run.kind === "endnoteReference") {
               yield { paragraph, run };
             }
           }
@@ -100,7 +104,7 @@ export function findEndnoteReference(
   endnoteId: string,
 ): { paragraph: EditorParagraphNode; run: EditorTextRun } | null {
   for (const entry of iterateEndnoteReferenceRuns(document)) {
-    if (entry.run.endnoteReference?.endnoteId === endnoteId) {
+    if (getRunEndnoteReference(entry.run)?.endnoteId === endnoteId) {
       return entry;
     }
   }
@@ -120,7 +124,7 @@ export function listReferencedEndnotes(
   const result: EndnoteReferenceInfo[] = [];
   let counter = 0;
   for (const { run } of iterateEndnoteReferenceRuns(document)) {
-    const ref = run.endnoteReference;
+    const ref = getRunEndnoteReference(run);
     if (!ref) continue;
     if (seen.has(ref.endnoteId)) continue;
     seen.add(ref.endnoteId);
@@ -155,7 +159,7 @@ export function renumberEndnotes(document: EditorDocument): EditorDocument {
   const markerByEndnoteId = new Map<string, string>();
   let autoCounter = startAt - 1;
   for (const { run } of iterateEndnoteReferenceRuns(document)) {
-    const ref = run.endnoteReference;
+    const ref = getRunEndnoteReference(run);
     if (!ref) continue;
     referenced.add(ref.endnoteId);
     if (ref.customMark) {
@@ -261,8 +265,9 @@ function rewriteParagraphMarkers(
 ): EditorParagraphNode {
   let runChanged = false;
   const nextRuns = paragraph.runs.map((run) => {
-    if (!run.endnoteReference) return run;
-    const desired = markerByEndnoteId.get(run.endnoteReference.endnoteId);
+    const ref = getRunEndnoteReference(run);
+    if (!ref) return run;
+    const desired = markerByEndnoteId.get(ref.endnoteId);
     if (desired === undefined) return run;
     if (run.text === desired) return run;
     runChanged = true;
