@@ -1,4 +1,5 @@
 import type { EditorNamedStyle, EditorTextRun } from "@/core/model.js";
+import { visitRun } from "@/core/model.js";
 import type { DocContext } from "@/export/docx/docxTypes.js";
 import { escapeXml } from "@/export/docx/xmlUtils.js";
 import { materializeRunStyle } from "./styleMaterialization.js";
@@ -43,73 +44,46 @@ export function serializeRun(
     paragraphStyleId,
     styles,
   );
-  if (run.footnoteReference) {
-    const result = serializeFootnoteReference(
-      run,
-      materializedRunStyle,
-      context,
-    );
-    if (result !== null) {
-      return result;
-    }
-  }
-  if (run.endnoteReference) {
-    const result = serializeEndnoteReference(
-      run,
-      materializedRunStyle,
-      context,
-    );
-    if (result !== null) {
-      return result;
-    }
-  }
-  if (run.fieldChar) {
-    return serializeFieldCharRun(
-      run.fieldChar,
-      serializeRunProperties(materializedRunStyle),
-    );
-  }
-  if (run.fieldInstruction !== undefined) {
-    return serializeInstrTextRun(
-      run.fieldInstruction,
-      serializeRunProperties(materializedRunStyle),
-    );
-  }
-  if (run.field) {
-    return serializeFieldRun(
-      run.field.type,
-      serializeRunProperties(materializedRunStyle),
-    );
-  }
-  if (run.textBox) {
-    return serializeTextBoxRun(
-      run,
-      run.textBox,
-      context,
-      styles,
-      serializeRunProperties(materializedRunStyle),
-      serializeBlocksXml,
-    );
-  }
-  if (run.image) {
-    const rId = context.imageMap.get(run.id);
-    if (rId) {
-      const result = serializeImageRun(
-        run.id,
-        rId,
+  const runProps = () => serializeRunProperties(materializedRunStyle);
+  const asText = () => `<w:r>${runProps()}${serializeRunText(run.text)}</w:r>`;
+
+  // Dispatch by run kind, exhaustively: adding a `RunKind` variant forces a
+  // branch here (compile error otherwise), so DOCX export can never silently
+  // drop a new inline object. The object serializers may still decline (return
+  // null) — e.g. an image with no relationship — in which case the run falls
+  // back to plain text, preserving the previous behaviour.
+  return visitRun(run, {
+    footnoteReference: (r) =>
+      serializeFootnoteReference(r, materializedRunStyle, context) ?? asText(),
+    endnoteReference: (r) =>
+      serializeEndnoteReference(r, materializedRunStyle, context) ?? asText(),
+    fieldChar: (r) => serializeFieldCharRun(r.fieldChar!, runProps()),
+    fieldInstruction: (r) =>
+      serializeInstrTextRun(r.fieldInstruction!, runProps()),
+    field: (r) => serializeFieldRun(r.field!.type, runProps()),
+    textBox: (r) =>
+      serializeTextBoxRun(
+        r,
+        r.textBox!,
         context,
-        serializeRunProperties(materializedRunStyle),
-      );
-      if (result !== null) {
-        return result;
+        styles,
+        runProps(),
+        serializeBlocksXml,
+      ),
+    image: (r) => {
+      const rId = context.imageMap.get(r.id);
+      if (rId) {
+        const result = serializeImageRun(r.id, rId, context, runProps());
+        if (result !== null) {
+          return result;
+        }
       }
-    }
-  }
-  if (run.sym) {
-    const { font, char } = run.sym;
-    return `<w:r>${serializeRunProperties(materializedRunStyle)}<w:sym w:font="${escapeXml(font)}" w:char="${char}"/></w:r>`;
-  }
-  return `<w:r>${serializeRunProperties(materializedRunStyle)}${serializeRunText(run.text)}</w:r>`;
+      return asText();
+    },
+    sym: (r) =>
+      `<w:r>${runProps()}<w:sym w:font="${escapeXml(r.sym!.font)}" w:char="${r.sym!.char}"/></w:r>`,
+    text: () => asText(),
+  });
 }
 
 export function serializeRunWithRelationships(
