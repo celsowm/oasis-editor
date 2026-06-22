@@ -177,9 +177,29 @@ antes de dividi-lo.
 > campos atuais — _não_ muda o wire shape. Consumidores já migrados para
 > `isInlineObjectRun`: `paragraphRunQuery`, `paragraphRunBuild` (removeu o
 > `isObjectRun` local) e os 4 skip-checks de `verticalText`. Coberto por
-> `runKind.test.ts`. Pendente: migrar os demais sites para `visitRun` e, por fim,
-> a união discriminada (mudança pública incompatível). Gates: `tsc` limpo,
+> `runKind.test.ts`. Gates: `tsc` limpo,
 > `check:imports` ok, suíte 586✓/1 skip, `build:lib` ok.
+>
+> **🟢 Migração não-breaking concluída (Onda 3, 2026-06-21).** O serializador
+> canônico `serializeRun` (`export/docx/text/runXml.ts`) — a precedência que
+> `getRunKind` espelha — foi reescrito como `visitRun`, tornando o export DOCX
+> exaustivo: adicionar um `RunKind` é erro de compilação ali, fechando o risco de
+> drop silencioso. O fallthrough null→texto (footnote/endnote/image declinando)
+> foi preservado por um fallback `asText()` por branch. **Auditados os demais
+> sites de run e concluído que não há mais dispatch-por-kind a migrar:** os
+> outros tocam em campos de run, mas são (a) **cópia de campo** —
+> `cloneState`/`clone`/`paragraphRunQuery` copiam todos os campos, problema que a
+> _união_ resolve, não `visitRun`; (b) **predicados** — `isSplittableTextRun`
+> (que de propósito ignora `sym`), checks `if (run.image)`; (c) **sub-discriminação**
+> `field.type`; ou (d) **layout fragments** (bag paralelo, fora do escopo de
+> `runKind`). `serializeRun` era o único dispatch-por-kind verdadeiro. Gates:
+> `tsc` limpo, `check:imports` 0 ciclos, suíte 586✓/1 skip, `build:lib` ok.
+>
+> **Pendente (breaking, requer release window):** converter `EditorTextRun` na
+> união discriminada. Isso muda o wire shape (mudança pública incompatível),
+> resolve a classe de bug "esqueci de copiar/serializar um campo novo" (membros
+> completos) e proíbe combinações inválidas (ex.: `image` + `textBox`). Exige
+> migração de fixtures + release note; deve ser um lote dedicado, não emendado.
 
 **Evidência:** `EditorTextRun` armazena `image`, `textBox`, `field`, `fieldChar`,
 `fieldInstruction`, `revision`, `footnoteReference` e `endnoteReference` como
