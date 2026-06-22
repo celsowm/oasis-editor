@@ -1,3 +1,4 @@
+import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import type { EditorPosition, EditorState } from "@/core/model.js";
 import { insertImageAtSelection } from "@/core/commands/image.js";
 import { setSelection } from "@/core/commands/selection.js";
@@ -9,7 +10,7 @@ export interface ImageInsertionServiceDeps {
   state: () => EditorState;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   surfaceRef: () => HTMLDivElement | null;
   logger: EditorLogger;
@@ -67,7 +68,7 @@ export function createImageInsertionService(deps: ImageInsertionServiceDeps) {
           : current;
         return insertImageAtSelection(targetState, { src, width, height });
       },
-      { mergeKey: "insertImage" },
+      { mergeKey: MERGE_KEYS.insertImage },
     );
   };
 

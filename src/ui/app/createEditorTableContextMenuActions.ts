@@ -1,3 +1,4 @@
+import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import type { EditorState } from "@/core/model.js";
 import type { createEditorTableOperations } from "@/app/controllers/useEditorTableOperations.js";
 import type { EditorTableContextMenuActions } from "./useEditorContextMenuClipboard.js";
@@ -11,7 +12,7 @@ export interface EditorTableContextMenuActionsDeps {
   openTablePropertiesDialog: (tab: "table" | "cell") => void;
   applyTableContextCommand: (
     producer: (current: EditorState) => EditorState,
-    mergeKey: string,
+    mergeKey: MergeKey,
   ) => void;
 }
 
@@ -36,42 +37,42 @@ export function createEditorTableContextMenuActions(
     merge: () =>
       applyTableContextCommand(
         (current) => tableOps.mergeSelectedTable(current),
-        "mergeTable",
+        MERGE_KEYS.mergeTable,
       ),
     split: () =>
       applyTableContextCommand(
         (current) => tableOps.splitSelectedTable(current),
-        "splitTable",
+        MERGE_KEYS.splitTable,
       ),
     insertColumnBefore: () =>
       applyTableContextCommand(
         (current) => tableOps.insertSelectedTableColumn(current, -1),
-        "insertTableColumn",
+        MERGE_KEYS.insertTableColumn,
       ),
     insertColumnAfter: () =>
       applyTableContextCommand(
         (current) => tableOps.insertSelectedTableColumn(current, 1),
-        "insertTableColumn",
+        MERGE_KEYS.insertTableColumn,
       ),
     deleteColumn: () =>
       applyTableContextCommand(
         (current) => tableOps.deleteSelectedTableColumn(current),
-        "deleteTableColumn",
+        MERGE_KEYS.deleteTableColumn,
       ),
     insertRowBefore: () =>
       applyTableContextCommand(
         (current) => tableOps.insertSelectedTableRow(current, -1),
-        "insertTableRow",
+        MERGE_KEYS.insertTableRow,
       ),
     insertRowAfter: () =>
       applyTableContextCommand(
         (current) => tableOps.insertSelectedTableRow(current, 1),
-        "insertTableRow",
+        MERGE_KEYS.insertTableRow,
       ),
     deleteRow: () =>
       applyTableContextCommand(
         (current) => tableOps.deleteSelectedTableRow(current),
-        "deleteTableRow",
+        MERGE_KEYS.deleteTableRow,
       ),
   };
 }

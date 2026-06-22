@@ -1,3 +1,4 @@
+import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import type { EditorState } from "@/core/model.js";
 import { getRunImage, resolveImageSrc } from "@/core/model.js";
 import {
@@ -25,7 +26,7 @@ export interface EditorLayoutOptionsControllerDeps {
   resetTransactionGrouping: () => void;
   applyTransactionalState: (
     transform: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   focusInput: () => void;
 }
@@ -53,7 +54,7 @@ export function createEditorLayoutOptionsController(
   };
 
   const applyLayoutOptionPatch = (
-    mergeKey: string,
+    mergeKey: MergeKey,
     apply: (current: EditorState, target: "image" | "textBox") => EditorState,
   ) => {
     const target = layoutOptionsTarget();
@@ -71,7 +72,7 @@ export function createEditorLayoutOptionsController(
       const polygon = traceImageAlphaContour(img);
       applyTransactionalState(
         (current) => setImageWrapPolygon(current, runId, polygon),
-        { mergeKey: "layoutWrapPolygon" },
+        { mergeKey: MERGE_KEYS.layoutWrapPolygon },
       );
     };
     const img = getCachedCanvasImage(resolved, () => {
@@ -97,7 +98,7 @@ export function createEditorLayoutOptionsController(
       return false;
     },
     setPreset: (preset: WrapPreset) => {
-      applyLayoutOptionPatch("layoutWrapPreset", (current, target) =>
+      applyLayoutOptionPatch(MERGE_KEYS.layoutWrapPreset, (current, target) =>
         target === "image"
           ? setSelectedImageWrapPreset(current, preset)
           : setSelectedTextBoxWrapPreset(current, preset),
@@ -111,7 +112,7 @@ export function createEditorLayoutOptionsController(
       }
     },
     setFixedPosition: (fixed: boolean) =>
-      applyLayoutOptionPatch("layoutFixedPosition", (current, target) =>
+      applyLayoutOptionPatch(MERGE_KEYS.layoutFixedPosition, (current, target) =>
         target === "image"
           ? setSelectedImageFixedPosition(current, fixed)
           : setSelectedTextBoxFixedPosition(current, fixed),

@@ -1,3 +1,4 @@
+import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import { createEffect, createSignal, on } from "solid-js";
 import {
   findMatchesInDocument,
@@ -30,7 +31,7 @@ export interface FindReplaceDeps {
   applyState: (next: EditorState) => void;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   focusInput: () => void;
 }
@@ -116,7 +117,7 @@ export function useEditorFindReplace(
         });
         return insertTextAtSelection(stateWithSelection, replaceTerm());
       },
-      { mergeKey: "findReplace" },
+      { mergeKey: MERGE_KEYS.findReplace },
     );
 
     // After replacement, the matches will be updated by the effect.
@@ -142,7 +143,7 @@ export function useEditorFindReplace(
         }
         return workingState;
       },
-      { mergeKey: "findReplaceAll" },
+      { mergeKey: MERGE_KEYS.findReplaceAll },
     );
 
     setIsOpen(false);

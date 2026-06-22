@@ -1,3 +1,4 @@
+import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import type { EditorState } from "@/core/model.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
 import {
@@ -30,7 +31,7 @@ export interface EditorContextMenuClipboardDeps {
   resetTransactionGrouping: () => void;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   applyTableAwareParagraphEdit: (
     state: EditorState,

@@ -1,3 +1,4 @@
+import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import {
   takeEditorUndoStep,
   takeEditorRedoStep,
@@ -23,7 +24,7 @@ export interface UseEditorHistoryActionsProps {
   applyHistoryState: (state: EditorState) => void;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   focusInput: () => void;
   clearPreferredColumn: () => void;
@@ -153,7 +154,7 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
       deps.applyTransactionalState(
         () => moveSelectedImageToPosition(nextState, targetPosition),
         {
-          mergeKey: "moveImage",
+          mergeKey: MERGE_KEYS.moveImage,
         },
       );
       deps.focusInput();
@@ -170,7 +171,7 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
           current,
           paragraphOffsetToPosition(targetParagraph, targetOffset),
         ),
-      { mergeKey: "moveImage" },
+      { mergeKey: MERGE_KEYS.moveImage },
     );
     deps.focusInput();
     return true;

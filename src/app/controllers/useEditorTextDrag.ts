@@ -1,3 +1,4 @@
+import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import { createSignal } from "solid-js";
 import { setSelection } from "@/core/commands/selection.js";
 import { moveOrCopySelectionToPosition } from "@/core/commands/text.js";
@@ -19,7 +20,7 @@ export interface EditorTextDragDeps {
   ) => SurfaceHit | null;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   applyTableAwareParagraphEdit: (
     state: EditorState,
@@ -204,7 +205,7 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
           deps.applyTableAwareParagraphEdit(current, (temp) =>
             moveOrCopySelectionToPosition(temp, destination, { copy }),
           ),
-        { mergeKey: copy ? "copyTextByDrag" : "moveTextByDrag" },
+        { mergeKey: copy ? MERGE_KEYS.copyTextByDrag : MERGE_KEYS.moveTextByDrag },
       );
       deps.logger?.info("text-drag:apply", {
         mode: copy ? "copy" : "move",
@@ -222,7 +223,7 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
             focus: startPosition,
           });
         },
-        { mergeKey: "collapseSelectionByClick" },
+        { mergeKey: MERGE_KEYS.collapseSelectionByClick },
       );
       deps.logger?.info("text-drag:collapse", {
         at: `${startPosition.paragraphId}:${startPosition.runId}[${startPosition.offset}]`,

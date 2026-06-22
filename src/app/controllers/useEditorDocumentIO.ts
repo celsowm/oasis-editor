@@ -1,3 +1,4 @@
+import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import { createSignal } from "solid-js";
 import type { EditorState, EditorPosition } from "@/core/model.js";
 import type { ImportStage } from "@/import/DocumentFormatImporter.js";
@@ -31,7 +32,7 @@ export interface UseEditorDocumentIOProps {
   applyState: (state: EditorState) => void;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   isReadOnly: () => boolean;
   surfaceRef: () => HTMLDivElement | null;

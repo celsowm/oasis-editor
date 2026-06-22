@@ -1,3 +1,4 @@
+import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import type { EditorSelection, EditorState } from "@/core/model.js";
 import type { ToolbarStyleState } from "@/ui/toolbarStyleState.js";
 import type { TranslateFn } from "@/i18n/index.js";
@@ -44,7 +45,7 @@ export interface EditorChromeDeps {
   resetTransactionGrouping: () => void;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   applyTableAwareParagraphEdit: (
     state: EditorState,
@@ -109,7 +110,7 @@ export function createEditorChrome(deps: EditorChromeDeps) {
 
   const applyTableContextCommand = (
     producer: (current: EditorState) => EditorState,
-    mergeKey: string,
+    mergeKey: MergeKey,
   ) => {
     deps.applyTransactionalState(producer, { mergeKey });
     deps.focusInput();

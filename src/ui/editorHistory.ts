@@ -1,11 +1,12 @@
 import type { EditorState } from "@/core/model.js";
+import type { MergeKey } from "@/core/transactionMergeKeys.js";
 
 export interface EditorTransactionOptions {
-  mergeKey?: string;
+  mergeKey?: MergeKey;
 }
 
 export interface EditorTransactionMeta {
-  mergeKey: string;
+  mergeKey: MergeKey;
   timestamp: number;
 }
 

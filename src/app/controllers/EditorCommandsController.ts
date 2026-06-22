@@ -1,3 +1,4 @@
+import { MERGE_KEYS } from "@/core/transactionMergeKeys.js";
 import {
   insertPageBreakAtSelection,
   insertSectionBreakAtSelection,
@@ -162,7 +163,7 @@ export function createEditorCommandsController(
           applyTableAwareParagraphEdit(current, (temp) =>
             splitListItemAtSelection(temp),
           ),
-        { mergeKey: "splitListItem" },
+        { mergeKey: MERGE_KEYS.splitListItem },
       );
     }
     focusInput();
@@ -423,7 +424,7 @@ export function createEditorCommandsController(
     clearPreferredColumn();
     resetTransactionGrouping();
     applyTransactionalState((current) => setLinkAtSelection(current, href), {
-      mergeKey: "link",
+      mergeKey: MERGE_KEYS.link,
     });
     focusInput();
   };
@@ -448,7 +449,7 @@ export function createEditorCommandsController(
     clearPreferredColumn();
     resetTransactionGrouping();
     applyTransactionalState((current) => setSelectedImageAlt(current, alt), {
-      mergeKey: "imageAlt",
+      mergeKey: MERGE_KEYS.imageAlt,
     });
     focusInput();
   };
@@ -472,7 +473,7 @@ export function createEditorCommandsController(
     applyTransactionalState(
       (current) =>
         setSelectedImageCaption(current, caption, deps.imageCaptionLabel()),
-      { mergeKey: "imageCaption" },
+      { mergeKey: MERGE_KEYS.imageCaption },
     );
     focusInput();
   };

@@ -1,3 +1,4 @@
+import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import { createSignal } from "solid-js";
 import type { EditorState, EditorTextStyle } from "@/core/model.js";
 import { getParagraphs } from "@/core/model.js";
@@ -13,7 +14,7 @@ export interface UseEditorTextInputProps {
   pendingCaretTextStyle: () => EditorTextStyle | undefined;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   applyTableAwareParagraphEdit: (
     state: EditorState,
@@ -77,7 +78,7 @@ export function createEditorTextInput(deps: UseEditorTextInputProps) {
           insertTextAtSelection(temp, text, pendingStyle),
         ),
       {
-        mergeKey: "insertText",
+        mergeKey: MERGE_KEYS.insertText,
       },
     );
     event.currentTarget.value = "";
@@ -120,7 +121,7 @@ export function createEditorTextInput(deps: UseEditorTextInputProps) {
           insertTextAtSelection(temp, text, pendingStyle),
         ),
       {
-        mergeKey: "insertText",
+        mergeKey: MERGE_KEYS.insertText,
       },
     );
     event.currentTarget.value = "";

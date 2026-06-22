@@ -1,3 +1,4 @@
+import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import { isSelectionCollapsed } from "@/core/selection.js";
 import { setTextStyleValue, toggleTextStyle } from "@/core/commands/text.js";
 import type { EditorSelection, EditorState } from "@/core/model.js";
@@ -24,7 +25,7 @@ export interface FontDialogBridgeDeps {
   resetTransactionGrouping: () => void;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   focusInput: () => void;
 }
@@ -249,7 +250,7 @@ export function createFontDialogBridge(deps: FontDialogBridgeDeps) {
         }
         return next;
       },
-      { mergeKey: "font-dialog" },
+      { mergeKey: MERGE_KEYS.fontDialog },
     );
 
     deps.focusInput();

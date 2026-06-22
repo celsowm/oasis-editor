@@ -1,3 +1,4 @@
+import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import { cloneBlock } from "@/core/cloneState.js";
 import { createEditorDocument } from "@/core/editorState.js";
 import {
@@ -17,7 +18,7 @@ import type { SelectedTableCells } from "./tableOpsSelectionRanges.js";
 interface TableSelectionAwareCommandsDeps {
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   applySelectionToStatePreservingStructure: (
     current: EditorState,

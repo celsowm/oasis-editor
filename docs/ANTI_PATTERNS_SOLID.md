@@ -41,7 +41,7 @@ criando ou conectando a maior parte dos controllers do produto.
 | S2  | ~~Hotspots de paginação, DOCX, texto e snapshot acumulam papéis~~ ✅ resolvido |      — |             — |    — |
 | B1  | ~~Barrel `editorCommands.ts` deprecated com 22 consumidores~~ ✅ resolvido |     — |                  — |       — |
 | F1  | Bridge de propriedades de tabela conhece e transforma o domínio     |      Média |                  Médio |       M |
-| P1  | IDs intercambiáveis ⛔ branded IDs descartados (ROI negativo, ver seção); merge-keys tipados ainda bounded |  Baixa | Médio | M |
+| P1  | IDs intercambiáveis ⛔ branded IDs descartados (ROI negativo, ver seção); ✅ merge-keys tipados (`MergeKey`/`MERGE_KEYS`) |  Baixa | Médio | M |
 | U1  | ~~Constantes de unidade duplicadas entre camadas~~ ✅ resolvido      |          — |                      — |       — |
 | N1  | Footnotes e endnotes repetem aproximadamente 76% da estrutura       |      Baixa |                  Médio |       M |
 
@@ -624,6 +624,20 @@ erro; typos em command/merge keys só aparecem em runtime.
 **Refactor:** branded types (`DocumentId`, `ParagraphId`, `RunId`, `TableId`) nas
 fronteiras internas, factories de conversão para dados importados e constantes
 tipadas para merge keys. O wire format continua string e não muda.
+
+> **✅ Merge keys tipados (2026-06-22).** A parte de baixo custo do P1 foi
+> entregue: criado o leaf module `src/core/transactionMergeKeys.ts` com
+> `MERGE_KEYS` (32 chaves nomeadas, fonte única) e a união `MergeKey`. O campo
+> `mergeKey` de `EditorTransactionOptions`/`EditorTransactionMeta`
+> (`ui/editorHistory.ts`) e os ~18 contratos `{ mergeKey?: string }`/`mergeKey:
+> string` redeclarados nos controllers passaram de `string` para `MergeKey`, e
+> todos os ~32 call sites literais (`"insertText"`, `"tableAlign"`, etc.) viraram
+> `MERGE_KEYS.*`. Um typo de merge key agora é erro de compilação em vez de
+> grouping de undo quebrado em runtime; rename/find-references passam a funcionar.
+> O wire format não muda (continuam strings opacas). O module vive em `core`
+> (leaf, sem imports) para ser consumível por `app` e `ui` sem violar o gate
+> `core→ui`. Gates: `tsc` limpo, `check:imports` 0 ciclos, suíte 590✓/1 skip,
+> `build:lib` ok. **Branded IDs** seguem descartados (ver nota abaixo).
 
 > **⛔ Branded IDs avaliados e descartados (Onda 3, 2026-06-21).** Foi feito um
 > spike: branded types em `EditorPosition` + `EditorTextRun.id`/

@@ -1,3 +1,4 @@
+import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import { setParagraphStyle } from "@/core/commands/block.js";
 import type { EditorBorderStyle, EditorState } from "@/core/model.js";
 import type {
@@ -20,7 +21,7 @@ export interface ParagraphDialogBridgeDeps {
   resetTransactionGrouping: () => void;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   focusInput: () => void;
 }
@@ -146,7 +147,7 @@ export function createParagraphDialogBridge(deps: ParagraphDialogBridgeDeps) {
         }
         return next;
       },
-      { mergeKey: "paragraph-dialog" },
+      { mergeKey: MERGE_KEYS.paragraphDialog },
     );
 
     deps.focusInput();

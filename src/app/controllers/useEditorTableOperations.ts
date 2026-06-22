@@ -1,3 +1,4 @@
+import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import {
   getActiveSectionIndex,
   getDocumentSectionsCanonical,
@@ -27,7 +28,7 @@ import { createTableSelectionAwareCommands } from "./tableOpsSelectionAwareComma
 export interface EditorTableOperationsDeps {
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   applySelectionToStatePreservingStructure: (
     current: EditorState,
@@ -130,7 +131,7 @@ export function createEditorTableOperations(deps: EditorTableOperationsDeps) {
     deps.applyTransactionalState(
       (current) => insertTableAtSelection(current, rows, cols),
       {
-        mergeKey: "insertTable",
+        mergeKey: MERGE_KEYS.insertTable,
       },
     );
     deps.focusInput();

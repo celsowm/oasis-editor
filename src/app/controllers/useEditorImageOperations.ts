@@ -1,3 +1,4 @@
+import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import { createSignal } from "solid-js";
 import {
   getDocumentParagraphs,
@@ -60,7 +61,7 @@ export interface EditorImageOperationsDeps {
   applyState: (next: EditorState) => void;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   updateHistoryState: (
     updater: (current: EditorHistoryState) => EditorHistoryState,
@@ -264,7 +265,7 @@ export function createEditorImageOperations(deps: EditorImageOperationsDeps) {
         );
         deps.applyTransactionalState(
           (current) => moveSelectedImageToPosition(current, position),
-          { mergeKey: "moveImage" },
+          { mergeKey: MERGE_KEYS.moveImage },
         );
       } else {
         deps.logger.warn(

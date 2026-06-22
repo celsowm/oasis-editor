@@ -1,3 +1,4 @@
+import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import {
   insertPageBreakAtSelection,
   setParagraphStyle,
@@ -75,7 +76,7 @@ interface CreateEditorEssentialsPluginOptions {
   applyState: (nextState: EditorState) => void;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   findReplace: {
     setIsOpen: (open: boolean) => void;
@@ -429,7 +430,7 @@ export function createEditorEssentialsRuntimePlugin(
           }
           return next;
         },
-        { mergeKey: "specialIndent" },
+        { mergeKey: MERGE_KEYS.specialIndent },
       );
       options.focusInput();
     },
@@ -449,7 +450,7 @@ export function createEditorEssentialsRuntimePlugin(
           next = setParagraphStyle(next, "borderLeft", border);
           return next;
         },
-        { mergeKey: "paraBorders" },
+        { mergeKey: MERGE_KEYS.paraBorders },
       );
       options.focusInput();
     },
@@ -537,7 +538,7 @@ export function createEditorEssentialsRuntimePlugin(
       );
     const apply = (
       producer: (current: EditorState) => EditorState,
-      mergeKey: string,
+      mergeKey: MergeKey,
     ) => {
       options.applyTransactionalState(producer, { mergeKey });
       options.focusInput();
@@ -581,48 +582,48 @@ export function createEditorEssentialsRuntimePlugin(
       merge: () =>
         apply(
           (current) => options.tableOps.mergeSelectedTable(current),
-          "mergeTable",
+          MERGE_KEYS.mergeTable,
         ),
       split: () =>
         apply(
           (current) => options.tableOps.splitSelectedTable(current),
-          "splitTable",
+          MERGE_KEYS.splitTable,
         ),
       insertColumnBefore: () =>
         apply(
           (current) => options.tableOps.insertSelectedTableColumn(current, -1),
-          "insertTableColumn",
+          MERGE_KEYS.insertTableColumn,
         ),
       insertColumnAfter: () =>
         apply(
           (current) => options.tableOps.insertSelectedTableColumn(current, 1),
-          "insertTableColumn",
+          MERGE_KEYS.insertTableColumn,
         ),
       deleteColumn: () =>
         apply(
           (current) => options.tableOps.deleteSelectedTableColumn(current),
-          "deleteTableColumn",
+          MERGE_KEYS.deleteTableColumn,
         ),
       insertRowBefore: () =>
         apply(
           (current) => options.tableOps.insertSelectedTableRow(current, -1),
-          "insertTableRow",
+          MERGE_KEYS.insertTableRow,
         ),
       insertRowAfter: () =>
         apply(
           (current) => options.tableOps.insertSelectedTableRow(current, 1),
-          "insertTableRow",
+          MERGE_KEYS.insertTableRow,
         ),
       deleteRow: () =>
         apply(
           (current) => options.tableOps.deleteSelectedTableRow(current),
-          "deleteTableRow",
+          MERGE_KEYS.deleteTableRow,
         ),
       cellShading: (color: string | null) =>
         apply(
           (current) =>
             setTableCellStyleValue(current, "shading", color || null),
-          "tableShading",
+          MERGE_KEYS.tableShading,
         ),
       cellBorders: () =>
         apply(
@@ -632,7 +633,7 @@ export function createEditorEssentialsRuntimePlugin(
               type: "solid",
               color: "#64748b",
             }),
-          "tableBorders",
+          MERGE_KEYS.tableBorders,
         ),
       cellNoBorders: () =>
         apply(
@@ -642,33 +643,33 @@ export function createEditorEssentialsRuntimePlugin(
               type: "none",
               color: "transparent",
             }),
-          "tableBorders",
+          MERGE_KEYS.tableBorders,
         ),
       width100: () =>
         apply(
           (current) => setTableStyleValue(current, "width", "100%"),
-          "tableWidth",
+          MERGE_KEYS.tableWidth,
         ),
       alignLeft: () =>
         apply(
           (current) =>
             setTableCellStyleValue(current, "horizontalAlign", "left"),
-          "tableAlign",
+          MERGE_KEYS.tableAlign,
         ),
       alignCenter: () =>
         apply(
           (current) =>
             setTableCellStyleValue(current, "horizontalAlign", "center"),
-          "tableAlign",
+          MERGE_KEYS.tableAlign,
         ),
       alignRight: () =>
         apply(
           (current) =>
             setTableCellStyleValue(current, "horizontalAlign", "right"),
-          "tableAlign",
+          MERGE_KEYS.tableAlign,
         ),
       setCellWidth: (width: string) =>
-        apply((current) => setTableCellWidth(current, width), "tableCellWidth"),
+        apply((current) => setTableCellWidth(current, width), MERGE_KEYS.tableCellWidth),
       insert: (rows: number, cols: number) =>
         options.tableOps.insertTableCommand(rows, cols),
     };

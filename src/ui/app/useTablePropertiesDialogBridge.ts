@@ -1,3 +1,4 @@
+import { MERGE_KEYS, type MergeKey } from "@/core/transactionMergeKeys.js";
 import type { EditorState } from "@/core/model.js";
 import {
   applyTableProperties,
@@ -29,7 +30,7 @@ export interface TablePropertiesDialogBridgeDeps {
   resetTransactionGrouping: () => void;
   applyTransactionalState: (
     producer: (current: EditorState) => EditorState,
-    options?: { mergeKey?: string },
+    options?: { mergeKey?: MergeKey },
   ) => void;
   focusInput: () => void;
 }
@@ -62,7 +63,7 @@ export function createTablePropertiesDialogBridge(
     deps.resetTransactionGrouping();
     deps.applyTransactionalState(
       (current) => applyTableProperties(current, values),
-      { mergeKey: "tableProperties" },
+      { mergeKey: MERGE_KEYS.tableProperties },
     );
     deps.focusInput();
   };
