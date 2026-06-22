@@ -6,6 +6,7 @@ import type {
   EditorParagraphNode,
 } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
+import type { HeaderFooterLayoutContext } from "./headerFooterLayoutContext.js";
 
 type ProjectParagraphLayoutFn = (
   paragraph: EditorParagraphNode,
@@ -37,15 +38,17 @@ export function projectHeaderFooterBlocksWithDependencies(
     estimateTableBlockHeight: EstimateTableBlockHeightFn;
     getProjectedParagraphBlockHeight: GetProjectedParagraphBlockHeightFn;
   },
-  pageIndex?: number,
-  totalPages?: number,
-  measuredHeights?: Record<string, number>,
-  _measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>,
-  styles?: Record<string, EditorNamedStyle>,
-  contentWidth?: number,
-  measurer?: ITextMeasurer,
-  defaultTabStop?: number,
+  context: HeaderFooterLayoutContext = {},
 ): EditorLayoutBlock[] {
+  const {
+    pageIndex,
+    totalPages,
+    measuredHeights,
+    styles,
+    contentWidth,
+    measurer,
+    defaultTabStop,
+  } = context;
   return blocks.map((block, index) => {
     if (block.type === "paragraph") {
       const layout = deps.projectParagraphLayout(

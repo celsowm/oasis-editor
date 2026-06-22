@@ -598,11 +598,23 @@ chama `readTableProperties`/`applyTableProperties`.
 
 ### Long parameter lists e props drilling
 
+> **✅ Subgrupo header/footer resolvido (2026-06-22).** A cadeia interna de
+> projeção de header/footer em `layoutProjection` deixou de propagar 9
+> parâmetros posicionais (`pageIndex`, `totalPages`, `measuredHeights`,
+> `measuredParagraphLayouts`, `styles`, `contentWidth`, `measurer`,
+> `defaultTabStop`) por `projectHeaderFooterBlocks` →
+> `projectHeaderFooterBlocksWithDependencies` e pelos callers de section/
+> footnote pagination. Foi extraído `HeaderFooterLayoutContext` em
+> `src/layoutProjection/headerFooterLayoutContext.ts` e o contrato comum
+> `HeaderFooterBlockProjector` passou a receber `blocks + context` nomeado.
+> Resultado: assinatura menor, menos risco de ordem incorreta, chamadas mais
+> legíveis e sem mudança de comportamento/API pública. Gates: `tsc` limpo,
+> `check:imports` 0 ciclos, suíte verde, `build:lib` ok.
+
 Além das dependency bags de ISP, foram encontradas funções com 9–10 parâmetros
 em paginação, header/footer, canvas e PDF. Exemplos:
 
 - `blocksPagination.ts:145` e `:174` — 10 parâmetros;
-- `headerFooterProjection.ts:33` — 10;
 - `canvasTablePainter.ts:76` — 10;
 - `export/pdf/draw/drawBlockList.ts:14` — 10;
 - `drawParagraph.ts:94` e `drawFragment.ts:373` — 9.

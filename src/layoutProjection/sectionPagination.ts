@@ -14,6 +14,7 @@ import {
   getPageContentWidth,
 } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
+import type { HeaderFooterBlockProjector } from "./headerFooterLayoutContext.js";
 
 export type BlocksLayoutProjector = (context: {
   blocks: EditorBlockNode[];
@@ -30,18 +31,6 @@ export type BlocksLayoutProjector = (context: {
   reservedHeightByPageIndex?: Map<number, number>;
   defaultTabStop?: number;
 }) => EditorLayoutPage[];
-
-export type HeaderFooterBlockProjector = (
-  blocks: EditorBlockNode[],
-  pageIndex?: number,
-  totalPages?: number,
-  measuredHeights?: Record<string, number>,
-  measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>,
-  styles?: Record<string, EditorNamedStyle>,
-  contentWidth?: number,
-  measurer?: ITextMeasurer,
-  defaultTabStop?: number,
-) => EditorLayoutBlock[];
 
 export interface SectionPaginationContext {
   sections: EditorSection[];
@@ -152,14 +141,16 @@ function createHeaderFooterVariantProjector(context: SectionPaginationContext) {
     blocks
       ? context.projectHeaderFooterBlocks(
           blocks,
-          pageIndex,
-          totalPageCount,
-          context.measuredHeights,
-          context.measuredParagraphLayouts,
-          context.documentStyles,
-          contentWidth,
-          context.measurer,
-          context.defaultTabStop,
+          {
+            pageIndex,
+            totalPages: totalPageCount,
+            measuredHeights: context.measuredHeights,
+            measuredParagraphLayouts: context.measuredParagraphLayouts,
+            styles: context.documentStyles,
+            contentWidth,
+            measurer: context.measurer,
+            defaultTabStop: context.defaultTabStop,
+          },
         )
       : undefined;
 }

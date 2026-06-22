@@ -15,23 +15,12 @@ import {
   getRunFootnoteReference,
 } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
+import type { HeaderFooterBlockProjector } from "./headerFooterLayoutContext.js";
 
 export const FOOTNOTE_SEPARATOR_HEIGHT = 10;
 export const FOOTNOTE_BLOCK_GAP = 2;
 export const FOOTNOTE_MARKER_GUTTER_PX = 24;
 export const MAX_FOOTNOTE_LAYOUT_ITERATIONS = 4;
-
-export type HeaderFooterBlockProjector = (
-  blocks: EditorBlockNode[],
-  pageIndex?: number,
-  totalPages?: number,
-  measuredHeights?: Record<string, number>,
-  measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>,
-  styles?: EditorDocument["styles"],
-  contentWidth?: number,
-  measurer?: ITextMeasurer,
-  defaultTabStop?: number,
-) => EditorLayoutBlock[];
 
 function getProjectedBlocksHeight(
   blocks: EditorLayoutBlock[] | undefined,
@@ -112,14 +101,16 @@ function projectFootnoteBlocksForPage(
     if (!footnote) continue;
     const projected = projectBlocks(
       footnote.blocks,
-      page.index,
-      totalPages,
-      measuredHeights,
-      measuredParagraphLayouts,
-      document.styles,
-      contentWidth,
-      measurer,
-      document.settings?.defaultTabStop,
+      {
+        pageIndex: page.index,
+        totalPages,
+        measuredHeights,
+        measuredParagraphLayouts,
+        styles: document.styles,
+        contentWidth,
+        measurer,
+        defaultTabStop: document.settings?.defaultTabStop,
+      },
     );
     for (const block of projected) {
       blocks.push({
