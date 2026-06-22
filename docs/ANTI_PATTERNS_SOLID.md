@@ -40,10 +40,10 @@ criando ou conectando a maior parte dos controllers do produto.
 | O2  | ~~Dispatch de blocos com fallthrough silencioso~~ ✅ resolvido (visitors exaustivos + `assertNever`) | — |             — |       — |
 | S2  | ~~Hotspots de paginação, DOCX, texto e snapshot acumulam papéis~~ ✅ resolvido |      — |             — |    — |
 | B1  | ~~Barrel `editorCommands.ts` deprecated com 22 consumidores~~ ✅ resolvido |     — |                  — |       — |
-| F1  | Bridge de propriedades de tabela conhece e transforma o domínio     |      Média |                  Médio |       M |
+| F1  | ~~Bridge de propriedades de tabela conhece e transforma o domínio~~ ✅ resolvido (Onda 3) |          — |                      — |       — |
 | P1  | IDs intercambiáveis ⛔ branded IDs descartados (ROI negativo, ver seção); ✅ merge-keys tipados (`MergeKey`/`MERGE_KEYS`) |  Baixa | Médio | M |
 | U1  | ~~Constantes de unidade duplicadas entre camadas~~ ✅ resolvido      |          — |                      — |       — |
-| N1  | Footnotes e endnotes repetem aproximadamente 76% da estrutura       |      Baixa |                  Médio |       M |
+| N1  | Footnotes e endnotes repetem ~76% da estrutura — ✅ core deduplicado (`noteTraversal.ts`); pendente export/pagination |      Baixa |                  Médio |       M |
 
 ## Metodologia e limites
 
@@ -660,8 +660,26 @@ tipadas para merge keys. O wire format continua string e não muda.
 > foram deduplicados para parsers/serializadores parametrizados por `kind`:
 > `import/docx/notes.ts` (`parseDocxNotesXml`) e
 > `export/docx/text/noteRunXml.ts` (`serializeNoteReference`/`serializeNoteRefMarker`);
-> os 4 módulos viraram wrappers finos. **Pendente:** os pares
-> `export/docx/{footnotesXml,endnotesXml}.ts`, `core/{footnotes,endnotes}.ts` e
+> os 4 módulos viraram wrappers finos.
+>
+> **✅ `core/{footnotes,endnotes}.ts` deduplicado (2026-06-22).** Auditado o par
+> core e confirmado que ele é **totalmente simétrico**: toda função (iterate /
+> collect / find / list / renumber) era idêntica modulo `footnote↔endnote`
+> (kind do run, campo `footnoteId`/`endnoteId`, coleção `document.footnotes`/
+> `document.endnotes`); a única parte footnote-only eram os helpers de formato de
+> marcador (`getFootnoteDisplayMarker`/`toRoman`/`toLetters`), que `endnotes.ts`
+> já importava. A divergência "tabela no primeiro slot / scan de seções" citada
+> abaixo aplica-se aos pares de **export/pagination**, não ao core. O algoritmo
+> compartilhado foi extraído para `src/core/noteTraversal.ts` (parametrizado por
+> um descriptor `NoteTraversal { runKind, getRef, formatMarker }`; o formatador
+> é **injetado** para o módulo genérico não importar `footnotes.ts`, evitando
+> ciclo). Os façades `footnotes.ts` (349→202) e `endnotes.ts` (278→133) mantêm
+> assinaturas públicas idênticas e só adaptam os nomes de campo + o read/write da
+> coleção. O ~200 linhas de algoritmo que existiam em dobro agora existem uma
+> vez. Gates: `tsc` limpo, `check:imports` 0 ciclos, suíte 590✓/1 skip,
+> `build:lib` ok.
+>
+> **Pendente:** os pares `export/docx/{footnotesXml,endnotesXml}.ts` e
 > `layoutProjection/{footnotePagination,endnotePagination}.ts` divergem em
 > comportamento (a versão de footnote trata casos extras — tabela no primeiro
 > slot, scan de seções — que a de endnote não). Deduplicá-los exige primeiro

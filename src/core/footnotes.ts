@@ -1,3 +1,10 @@
+/**
+ * Footnote façade. The reading-order traversal and renumbering algorithm is
+ * shared with endnotes in `./noteTraversal.js`; this file adapts the neutral
+ * API to the footnote-specific field names (`footnoteId`/`footnote`), owns the
+ * `document.footnotes` read/write, and is the home of the marker-format helpers
+ * (`getFootnoteDisplayMarker`) shared by both note families.
+ */
 import type {
   EditorBlockNode,
   EditorDocument,
@@ -7,58 +14,32 @@ import type {
   EditorParagraphNode,
   EditorTextRun,
 } from "./model.js";
+import { getBlockParagraphs, getRunFootnoteReference } from "./model.js";
 import {
-  getBlockParagraphs,
-  getDocumentSectionsCanonical,
-  getRunFootnoteReference,
-} from "./model.js";
-import { assertNever } from "./assertNever.js";
+  collectNoteReferences,
+  computeNoteRenumber,
+  findNoteBodyByParagraphId,
+  findNoteReference,
+  iterateNoteReferenceRuns,
+  listReferencedNotes,
+  type NoteRef,
+  type NoteTraversal,
+} from "./noteTraversal.js";
 
-/**
- * Iterate every paragraph in document order (sections + footnotes excluded),
- * yielding each footnote reference run along with the owning paragraph. Order
- * matches reading order, which is what numbering depends on.
- */
-export function* iterateFootnoteReferenceRuns(
+export function iterateFootnoteReferenceRuns(
   document: EditorDocument,
 ): Generator<
   { paragraph: EditorParagraphNode; run: EditorTextRun },
   void,
   void
 > {
-  const sections = getDocumentSectionsCanonical(document);
-  for (const section of sections) {
-    const zones: EditorBlockNode[][] = [
-      section.header ?? [],
-      section.firstPageHeader ?? [],
-      section.evenPageHeader ?? [],
-      section.blocks,
-      section.footer ?? [],
-      section.firstPageFooter ?? [],
-      section.evenPageFooter ?? [],
-    ];
-    for (const blocks of zones) {
-      for (const block of blocks) {
-        for (const paragraph of getBlockParagraphs(block)) {
-          for (const run of paragraph.runs) {
-            if (run.kind === "footnoteReference") {
-              yield { paragraph, run };
-            }
-          }
-        }
-      }
-    }
-  }
+  return iterateNoteReferenceRuns(document, "footnoteReference");
 }
 
 export function collectFootnoteReferences(
   document: EditorDocument,
 ): Array<{ paragraph: EditorParagraphNode; run: EditorTextRun }> {
-  const out: Array<{ paragraph: EditorParagraphNode; run: EditorTextRun }> = [];
-  for (const entry of iterateFootnoteReferenceRuns(document)) {
-    out.push(entry);
-  }
-  return out;
+  return collectNoteReferences(document, "footnoteReference");
 }
 
 const LOWER_LETTERS = "abcdefghijklmnopqrstuvwxyz";
@@ -129,6 +110,15 @@ export function getFootnoteDisplayMarker(
   }
 }
 
+const footnoteTraversal: NoteTraversal = {
+  runKind: "footnoteReference",
+  getRef: (run): NoteRef | undefined => {
+    const ref = getRunFootnoteReference(run);
+    return ref ? { id: ref.footnoteId, customMark: ref.customMark } : undefined;
+  },
+  formatMarker: getFootnoteDisplayMarker,
+};
+
 export function getFootnotes(
   document: EditorDocument,
 ): EditorFootnotes | undefined {
@@ -153,30 +143,18 @@ export function findFootnoteByParagraphId(
   document: EditorDocument,
   paragraphId: string,
 ): { footnoteId: string; footnote: EditorFootnote } | null {
-  const items = document.footnotes?.items;
-  if (!items) return null;
-  for (const [footnoteId, footnote] of Object.entries(items)) {
-    for (const block of footnote.blocks) {
-      for (const paragraph of getBlockParagraphs(block)) {
-        if (paragraph.id === paragraphId) {
-          return { footnoteId, footnote };
-        }
-      }
-    }
-  }
-  return null;
+  const found = findNoteBodyByParagraphId(
+    document.footnotes?.items,
+    paragraphId,
+  );
+  return found ? { footnoteId: found.id, footnote: found.body } : null;
 }
 
 export function findFootnoteReference(
   document: EditorDocument,
   footnoteId: string,
 ): { paragraph: EditorParagraphNode; run: EditorTextRun } | null {
-  for (const entry of iterateFootnoteReferenceRuns(document)) {
-    if (getRunFootnoteReference(entry.run)?.footnoteId === footnoteId) {
-      return entry;
-    }
-  }
-  return null;
+  return findNoteReference(document, footnoteTraversal, footnoteId);
 }
 
 export interface FootnoteReferenceInfo {
@@ -188,24 +166,11 @@ export interface FootnoteReferenceInfo {
 export function listReferencedFootnotes(
   document: EditorDocument,
 ): FootnoteReferenceInfo[] {
-  const seen = new Set<string>();
-  const result: FootnoteReferenceInfo[] = [];
-  let counter = 0;
-  for (const { run } of iterateFootnoteReferenceRuns(document)) {
-    const ref = getRunFootnoteReference(run);
-    if (!ref) continue;
-    if (seen.has(ref.footnoteId)) continue;
-    seen.add(ref.footnoteId);
-    if (!ref.customMark) {
-      counter += 1;
-    }
-    result.push({
-      footnoteId: ref.footnoteId,
-      customMark: ref.customMark,
-      index: ref.customMark ? 0 : counter,
-    });
-  }
-  return result;
+  return listReferencedNotes(document, footnoteTraversal).map((info) => ({
+    footnoteId: info.id,
+    customMark: info.customMark,
+    index: info.index,
+  }));
 }
 
 /**
@@ -219,131 +184,19 @@ export function renumberFootnotes(document: EditorDocument): EditorDocument {
   if (!footnotes || Object.keys(footnotes.items).length === 0) {
     return document;
   }
-  const format = footnotes.settings?.numberFormat ?? "decimal";
-  const startAt = footnotes.settings?.startAt ?? 1;
+  const { sections, sectionsChanged, nextItems, itemsChanged } =
+    computeNoteRenumber(document, footnotes, footnoteTraversal);
 
-  // First pass: assign a marker text per referenced footnote in reading order.
-  const referenced = new Set<string>();
-  const markerByFootnoteId = new Map<string, string>();
-  let autoCounter = startAt - 1;
-  for (const { run } of iterateFootnoteReferenceRuns(document)) {
-    const ref = getRunFootnoteReference(run);
-    if (!ref) continue;
-    referenced.add(ref.footnoteId);
-    if (ref.customMark) {
-      markerByFootnoteId.set(ref.footnoteId, ref.customMark);
-      continue;
-    }
-    if (!markerByFootnoteId.has(ref.footnoteId)) {
-      autoCounter += 1;
-      markerByFootnoteId.set(
-        ref.footnoteId,
-        getFootnoteDisplayMarker(autoCounter, format),
-      );
-    }
-  }
-
-  // Second pass: rewrite run.text for reference markers when they differ.
-  let mutatedSections = false;
-  const sections = getDocumentSectionsCanonical(document).map((section) => {
-    const rewriteBlocks = (
-      blocks: EditorBlockNode[] | undefined,
-    ): EditorBlockNode[] | undefined => {
-      if (!blocks) return blocks;
-      let blockChanged = false;
-      const nextBlocks = blocks.map((block) => {
-        switch (block.type) {
-          case "paragraph": {
-            const updated = rewriteParagraphMarkers(block, markerByFootnoteId);
-            if (updated !== block) blockChanged = true;
-            return updated;
-          }
-          case "table": {
-            let tableChanged = false;
-            const nextRows = block.rows.map((row) => {
-              let rowChanged = false;
-              const nextCells = row.cells.map((cell) => {
-                let cellChanged = false;
-                const nextCellBlocks = cell.blocks.map((p) => {
-                  const updated = rewriteParagraphMarkers(
-                    p,
-                    markerByFootnoteId,
-                  );
-                  if (updated !== p) cellChanged = true;
-                  return updated;
-                });
-                if (!cellChanged) return cell;
-                rowChanged = true;
-                return { ...cell, blocks: nextCellBlocks };
-              });
-              if (!rowChanged) return row;
-              tableChanged = true;
-              return { ...row, cells: nextCells };
-            });
-            if (!tableChanged) return block;
-            blockChanged = true;
-            return { ...block, rows: nextRows };
-          }
-          default:
-            return assertNever(block, "block");
-        }
-      });
-      if (!blockChanged) return blocks;
-      mutatedSections = true;
-      return nextBlocks;
-    };
-
-    return {
-      ...section,
-      blocks: rewriteBlocks(section.blocks) ?? section.blocks,
-      header: rewriteBlocks(section.header),
-      firstPageHeader: rewriteBlocks(section.firstPageHeader),
-      evenPageHeader: rewriteBlocks(section.evenPageHeader),
-      footer: rewriteBlocks(section.footer),
-      firstPageFooter: rewriteBlocks(section.firstPageFooter),
-      evenPageFooter: rewriteBlocks(section.evenPageFooter),
-    };
-  });
-
-  // Prune unreferenced footnotes.
-  const nextItems: Record<string, EditorFootnote> = {};
-  let itemsChanged = false;
-  for (const [id, footnote] of Object.entries(footnotes.items)) {
-    if (referenced.has(id)) {
-      nextItems[id] = footnote;
-    } else {
-      itemsChanged = true;
-    }
-  }
-
-  if (!mutatedSections && !itemsChanged) {
+  if (!sectionsChanged && !itemsChanged) {
     return document;
   }
 
   return {
     ...document,
-    sections: mutatedSections ? sections : document.sections,
+    sections: sectionsChanged ? sections : document.sections,
     footnotes: {
       ...footnotes,
       items: itemsChanged ? nextItems : footnotes.items,
     },
   };
-}
-
-function rewriteParagraphMarkers(
-  paragraph: EditorParagraphNode,
-  markerByFootnoteId: Map<string, string>,
-): EditorParagraphNode {
-  let runChanged = false;
-  const nextRuns = paragraph.runs.map((run) => {
-    const ref = getRunFootnoteReference(run);
-    if (!ref) return run;
-    const desired = markerByFootnoteId.get(ref.footnoteId);
-    if (desired === undefined) return run;
-    if (run.text === desired) return run;
-    runChanged = true;
-    return { ...run, text: desired };
-  });
-  if (!runChanged) return paragraph;
-  return { ...paragraph, runs: nextRuns };
 }
