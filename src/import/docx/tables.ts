@@ -1,10 +1,6 @@
 import JSZip from "jszip";
 import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
-import type {
-  EditorNamedStyle,
-  EditorTableCellStyle,
-  EditorTableNode,
-} from "@/core/model.js";
+import type { EditorNamedStyle, EditorTableNode } from "@/core/model.js";
 import {
   createEditorParagraphFromRuns,
   createEditorTable,
@@ -17,7 +13,6 @@ import {
   getFirstChildByTagNameNS,
   getAttributeValue,
 } from "./xmlHelpers.js";
-import { parseDocxTableBorders } from "./borders.js";
 import { twipsToPoints } from "./units.js";
 import { type AssetRegistry } from "./assetRegistry.js";
 import { type DocxImportTheme } from "./theme.js";
@@ -28,13 +23,7 @@ import {
   parseAutospacingFlags,
   type ParagraphAutospacingFlags,
 } from "./paragraphStyle.js";
-import {
-  parseTableLook,
-  resolveCellConditionalKeys,
-  mergeConditionalFormats,
-  applyConditionalTextStyle,
-  tableStyleParagraphInheritance,
-} from "./tableConditionalFormatting.js";
+import { parseTableLook } from "./tableConditionalFormatting.js";
 import {
   parseTableStyle,
   parseTableRowStyle,
@@ -43,7 +32,7 @@ import {
   parseTableCellStyle,
   isTableHeaderRow,
   collapseCellAutospacing,
-  applyTableBordersToRows,
+  parseTableConditionalFlags,
 } from "./tableProperties.js";
 
 export async function parseTableNode(
@@ -54,7 +43,7 @@ export async function parseTableNode(
   assets: AssetRegistry,
   theme: DocxImportTheme,
   parseNestedBlocks: ParseNestedBlocks,
-  styles?: Record<string, EditorNamedStyle>,
+  _styles?: Record<string, EditorNamedStyle>,
 ): Promise<EditorTableNode> {
   const gridCols: number[] = [];
   const tblGrid = getFirstChildByTagNameNS(tableNode, WORD_NS, "tblGrid");
@@ -78,34 +67,11 @@ export async function parseTableNode(
     getFirstChildByTagNameNS(tblPr, WORD_NS, "tblStyle"),
     "val",
   );
-  const inheritedParagraphStyle =
-    tableStyleId && styles?.[tableStyleId]?.paragraphStyle
-      ? styles[tableStyleId]!.paragraphStyle
-      : undefined;
-  const tblBorders = parseDocxTableBorders(
-    getFirstChildByTagNameNS(tblPr, WORD_NS, "tblBorders"),
-  );
 
-  const tableStyleDef = tableStyleId
-    ? styles?.[tableStyleId]?.tableStyle
-    : undefined;
   const directTableStyle = parseTableStyle(tblPr, tableStyleId ?? undefined);
-  const tableDefaultMargins = directTableStyle?.defaultCellMargins;
-  const tblConditionals = tableStyleDef?.conditionalFormats ?? undefined;
   const look = parseTableLook(tblPr);
-  const rowBandSize = tableStyleDef?.rowBandSize ?? 1;
-  const colBandSize = tableStyleDef?.colBandSize ?? 1;
 
   const rowNodes = getChildrenByTagNameNS(tableNode, WORD_NS, "tr");
-  const rowCount = rowNodes.length;
-  const colCount =
-    gridCols.length > 0
-      ? gridCols.length
-      : rowNodes.reduce(
-          (max, node) =>
-            Math.max(max, getChildrenByTagNameNS(node, WORD_NS, "tc").length),
-          0,
-        );
 
   const rows = [];
   for (let rowIndex = 0; rowIndex < rowNodes.length; rowIndex += 1) {
@@ -114,18 +80,7 @@ export async function parseTableNode(
 
     // Explicit per-row `w:cnfStyle` markers act as the highest-precedence
     // conditional source (rare; most styled tables rely on position alone).
-    const cnfStyle = getFirstChildByTagNameNS(
-      rowProperties,
-      WORD_NS,
-      "cnfStyle",
-    );
-    const explicitRowKeys: string[] = [];
-    if (getAttributeValue(cnfStyle, "firstRow") === "1") {
-      explicitRowKeys.push("firstRow");
-    }
-    if (getAttributeValue(cnfStyle, "lastRow") === "1") {
-      explicitRowKeys.push("lastRow");
-    }
+    const rowConditionalStyle = parseTableConditionalFlags(rowProperties);
 
     const cellNodes = getChildrenByTagNameNS(rowNode, WORD_NS, "tc");
     const cells = [];
@@ -147,20 +102,6 @@ export async function parseTableNode(
         // docDefaults; the paragraph's own style outranks them. Strip the keys
         // its style defines so e.g. Normal's after-spacing isn't lost to the
         // table style's `after="0"` (which would collapse cell row height).
-        const paragraphStyleId =
-          getAttributeValue(
-            getFirstChildByTagNameNS(
-              getFirstChildByTagNameNS(paragraphNode, WORD_NS, "pPr"),
-              WORD_NS,
-              "pStyle",
-            ),
-            "val",
-          ) ?? undefined;
-        const cellInheritedStyle = tableStyleParagraphInheritance(
-          inheritedParagraphStyle,
-          paragraphStyleId,
-          styles,
-        );
         paragraphs.push(
           await parseParagraphNode(
             paragraphNode,
@@ -170,7 +111,7 @@ export async function parseTableNode(
             assets,
             theme,
             parseNestedBlocks,
-            cellInheritedStyle,
+            undefined,
           ),
         );
         autospacingFlags.push(
@@ -182,36 +123,7 @@ export async function parseTableNode(
       collapseCellAutospacing(paragraphs, autospacingFlags);
       const colSpan = getTableCellColSpan(cellProperties);
       const vMerge = getTableCellVMerge(cellProperties);
-      const cellStyle = parseTableCellStyle(cellProperties, tableDefaultMargins);
-
-      // Resolve table-style conditional formatting from cell position + tblLook.
-      const conditional = mergeConditionalFormats(
-        [
-          ...resolveCellConditionalKeys(
-            rowIndex,
-            colIndex,
-            rowCount,
-            colCount,
-            look,
-            rowBandSize,
-            colBandSize,
-          ),
-          ...explicitRowKeys,
-        ],
-        tblConditionals,
-      );
-
-      // Conditional run text (bold/header color) sits beneath each run's own
-      // style so explicit run formatting still wins.
-      applyConditionalTextStyle(paragraphs, conditional.textStyle);
-
-      // Conditional paragraph properties sit beneath each paragraph's own style.
-      if (conditional.paragraphStyle) {
-        const condPStyle = conditional.paragraphStyle;
-        for (const paragraph of paragraphs) {
-          paragraph.style = { ...condPStyle, ...paragraph.style };
-        }
-      }
+      const cellStyle = parseTableCellStyle(cellProperties);
 
       const cell = createEditorTableCell(
         paragraphs.length > 0
@@ -225,31 +137,8 @@ export async function parseTableNode(
             : undefined,
       );
 
-      // Merge styling, lowest→highest precedence: conditional < explicit cell.
-      const mergedStyle: EditorTableCellStyle = { ...(cellStyle ?? {}) };
-      // Shading: explicit cell wins, else conditional.
-      const resolvedShading = cellStyle?.shading ?? conditional.shading;
-      if (resolvedShading) {
-        mergedStyle.shading = resolvedShading;
-      }
-      // Borders: fill each edge from the conditional only where the cell has no
-      // explicit border (table-level fallback runs later, lowest precedence).
-      if (conditional.borders) {
-        for (const edge of [
-          "borderTop",
-          "borderRight",
-          "borderBottom",
-          "borderLeft",
-        ] as const) {
-          const border = conditional.borders[edge];
-          if (mergedStyle[edge] === undefined && border) {
-            mergedStyle[edge] = border;
-          }
-        }
-      }
-      if (Object.keys(mergedStyle).length > 0) {
-        cell.style = mergedStyle;
-      }
+      if (cellStyle) cell.style = cellStyle;
+      cell.conditionalStyle = parseTableConditionalFlags(cellProperties);
       if (vMerge === "continue") {
         cell.blocks = [];
       }
@@ -263,30 +152,13 @@ export async function parseTableNode(
     if (rowStyle) {
       row.style = rowStyle;
     }
-
-    // Merge conditional row style (firstRow/lastRow/band) beneath explicit style.
-    if (tblConditionals) {
-      const rowKeys = resolveCellConditionalKeys(
-        rowIndex, 0, rowCount, Math.max(1, colCount), look, rowBandSize, colBandSize,
-      ).filter((k) =>
-        k === "firstRow" || k === "lastRow" || k === "band1Horz" || k === "band2Horz",
-      );
-      const mergedRowConditional = mergeConditionalFormats(
-        [...explicitRowKeys, ...rowKeys],
-        tblConditionals,
-      );
-      if (mergedRowConditional.rowStyle) {
-        row.style = { ...mergedRowConditional.rowStyle, ...row.style };
-      }
-    }
+    row.conditionalStyle = rowConditionalStyle;
     const tblPrEx = getFirstChildByTagNameNS(rowNode, WORD_NS, "tblPrEx");
     if (tblPrEx) {
       row.tblPrExXml = new XMLSerializer().serializeToString(tblPrEx);
     }
     rows.push(row);
   }
-
-  applyTableBordersToRows(rows, tblBorders);
 
   // Infer rowSpan from restart/continue sequences.
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
@@ -329,9 +201,25 @@ export async function parseTableNode(
     table.style = { tblLook: look };
   }
   if (tblGridChangeXml) {
-    table.tblGridChangeXml = new XMLSerializer().serializeToString(
+    const previousGrid = getFirstChildByTagNameNS(
       tblGridChangeXml,
+      WORD_NS,
+      "tblGrid",
     );
+    const previous = previousGrid
+      ? getChildrenByTagNameNS(previousGrid, WORD_NS, "gridCol")
+          .map((gridCol) => twipsToPoints(getAttributeValue(gridCol, "w")))
+          .filter((width): width is number => width !== undefined)
+      : [];
+    const rawDate = getAttributeValue(tblGridChangeXml, "date");
+    const parsedDate = rawDate ? Date.parse(rawDate) : Number.NaN;
+    table.gridRevision = {
+      id: getAttributeValue(tblGridChangeXml, "id") ?? "revision:grid",
+      author: getAttributeValue(tblGridChangeXml, "author") ?? "Unknown",
+      date: Number.isFinite(parsedDate) ? parsedDate : 0,
+      type: "grid",
+      previous,
+    };
   }
   return table;
 }

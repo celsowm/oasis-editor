@@ -114,6 +114,25 @@ export function drawTable(
       cell.height,
       cell.borders,
     );
+    if (cell.revision) {
+      const color =
+        cell.revision.type === "insert"
+          ? "#059669"
+          : cell.revision.type === "delete"
+            ? "#dc2626"
+            : "#d97706";
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 3]);
+      ctx.strokeRect(
+        cell.left + 1,
+        cell.top + 1,
+        cell.width - 2,
+        cell.height - 2,
+      );
+      ctx.restore();
+    }
     if (cell.verticalMode === "horizontal") {
       for (const paragraphLayout of cell.paragraphs) {
         drawParagraph(

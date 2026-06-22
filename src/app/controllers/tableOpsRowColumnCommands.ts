@@ -23,6 +23,7 @@ import {
   getTableVisualWidth,
 } from "./tableOpsSelectionNavigation.js";
 import { updateBlocksInCurrentSection } from "./tableOpsMutationCommands.js";
+import { createTableRevisionMetadata } from "@/core/commands/table/tableCommandUtils.js";
 
 interface TableRowColumnOperationsDeps {
   getTargetBlocks: (
@@ -120,6 +121,15 @@ export function createTableRowColumnOperations(
           );
         }),
       );
+      if (current.trackChangesEnabled) {
+        blankRow.style = {
+          ...(blankRow.style ?? {}),
+          revision: {
+            ...createTableRevisionMetadata(),
+            type: "insert",
+          },
+        };
+      }
       tableBlock.rows.splice(insertIndex, 0, blankRow);
 
       const targetVisualColumn =
@@ -161,6 +171,15 @@ export function createTableRowColumnOperations(
         ),
       ),
     );
+    if (current.trackChangesEnabled) {
+      blankRow.style = {
+        ...(blankRow.style ?? {}),
+        revision: {
+          ...createTableRevisionMetadata(),
+          type: "insert",
+        },
+      };
+    }
     tableBlock.rows.splice(insertIndex, 0, blankRow);
 
     const targetCell =
@@ -207,13 +226,23 @@ export function createTableRowColumnOperations(
       return current;
     }
 
-    if (tableBlock.rows.length <= 1) {
+    if (tableBlock.rows.length <= 1 && !current.trackChangesEnabled) {
       return current;
     }
 
     const rowToDelete = tableBlock.rows[location.rowIndex];
     if (!rowToDelete) {
       return current;
+    }
+    if (current.trackChangesEnabled) {
+      rowToDelete.style = {
+        ...(rowToDelete.style ?? {}),
+        revision: {
+          ...createTableRevisionMetadata(),
+          type: "delete",
+        },
+      };
+      return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     }
 
     const blockedByRestartCell = rowToDelete.cells.some(
@@ -334,7 +363,18 @@ export function createTableRowColumnOperations(
         for (const cell of row.cells) {
           const span = Math.max(1, cell.colSpan ?? 1);
           if (!inserted && insertVisualColumn <= visualCursor) {
-            nextCells.push(createEditorTableCell([createEditorParagraph("")]));
+            const insertedCell = createEditorTableCell([
+              createEditorParagraph(""),
+            ]);
+            if (current.trackChangesEnabled) {
+              insertedCell.style = {
+                revision: {
+                  ...createTableRevisionMetadata(),
+                  type: "insert",
+                },
+              };
+            }
+            nextCells.push(insertedCell);
             inserted = true;
           }
 
@@ -346,6 +386,18 @@ export function createTableRowColumnOperations(
             nextCells.push({
               ...cell,
               colSpan: span + 1,
+              ...(current.trackChangesEnabled
+                ? {
+                    style: {
+                      ...(cell.style ?? {}),
+                      revision: {
+                        ...createTableRevisionMetadata(),
+                        type: "merge" as const,
+                        previous: { colSpan: cell.colSpan },
+                      },
+                    },
+                  }
+                : {}),
             });
             inserted = true;
           } else {
@@ -356,7 +408,18 @@ export function createTableRowColumnOperations(
         }
 
         if (!inserted) {
-          nextCells.push(createEditorTableCell([createEditorParagraph("")]));
+          const insertedCell = createEditorTableCell([
+            createEditorParagraph(""),
+          ]);
+          if (current.trackChangesEnabled) {
+            insertedCell.style = {
+              revision: {
+                ...createTableRevisionMetadata(),
+                type: "insert",
+              },
+            };
+          }
+          nextCells.push(insertedCell);
         }
 
         row.cells = nextCells;
@@ -399,11 +462,16 @@ export function createTableRowColumnOperations(
     );
 
     for (const row of tableBlock.rows) {
-      row.cells.splice(
-        insertIndex,
-        0,
-        createEditorTableCell([createEditorParagraph("")]),
-      );
+      const insertedCell = createEditorTableCell([createEditorParagraph("")]);
+      if (current.trackChangesEnabled) {
+        insertedCell.style = {
+          revision: {
+            ...createTableRevisionMetadata(),
+            type: "insert",
+          },
+        };
+      }
+      row.cells.splice(insertIndex, 0, insertedCell);
     }
 
     const targetRow = tableBlock.rows[location.rowIndex];
@@ -448,6 +516,29 @@ export function createTableRowColumnOperations(
 
     if (getTableVisualWidth(tableBlock) <= 1) {
       return current;
+    }
+
+    if (current.trackChangesEnabled) {
+      const layout = buildTableCellLayout(tableBlock);
+      const selected = layout.find(
+        (entry) =>
+          entry.rowIndex === location.rowIndex &&
+          entry.cellIndex === location.cellIndex,
+      );
+      const visualColumn = selected?.visualColumnIndex ?? location.cellIndex;
+      for (const row of tableBlock.rows) {
+        const cell = findCellAtVisualColumn(row, visualColumn);
+        if (cell) {
+          cell.style = {
+            ...(cell.style ?? {}),
+            revision: {
+              ...createTableRevisionMetadata(),
+              type: "delete",
+            },
+          };
+        }
+      }
+      return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
     }
 
     const hasHorizontalSpansInTable = tableBlock.rows.some((row) =>

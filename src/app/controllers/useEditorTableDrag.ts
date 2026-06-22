@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
 import type { EditorState } from "@/core/model.js";
 import { moveBlockToPosition } from "@/core/commands/block.js";
+import { setActiveTableStyleValue } from "@/core/commands/table.js";
 import {
   findParagraphTableLocation,
   getActiveSectionIndex,
@@ -38,6 +39,7 @@ export function createEditorTableDrag(deps: {
     null,
   );
   const [startClientY, setStartClientY] = createSignal(0);
+  const [startClientX, setStartClientX] = createSignal(0);
   const [mousePos, setMousePos] = createSignal({ x: 0, y: 0 });
 
   const stopDrag = () => {
@@ -102,9 +104,37 @@ export function createEditorTableDrag(deps: {
       );
       const tableId = info?.tableId;
 
-      if (pos && tableId) {
+      if (tableId) {
         deps.applyTransactionalState((current) => {
-          return moveBlockToPosition(current, tableId, pos);
+          const findTable = ():
+            | ReturnType<typeof getEditableBlocksForZone>[number]
+            | undefined => {
+            for (const zone of ["main", "header", "footer"] as const) {
+              const blocks = getEditableBlocksForZone(current, zone);
+              const table = blocks.find(
+                (block) => block.type === "table" && block.id === tableId,
+              );
+              if (table) return table;
+            }
+            return undefined;
+          };
+          const table = findTable();
+          if (table?.type === "table" && table.style?.floating) {
+            const floating = table.style.floating;
+            const pointsPerPixel = 72 / 96;
+            return setActiveTableStyleValue(current, tableId, "floating", {
+              ...floating,
+              x:
+                (floating.x ?? 0) +
+                (event.clientX - startClientX()) * pointsPerPixel,
+              y:
+                (floating.y ?? 0) +
+                (event.clientY - startClientY()) * pointsPerPixel,
+              xAlign: undefined,
+              yAlign: undefined,
+            });
+          }
+          return pos ? moveBlockToPosition(current, tableId, pos) : current;
         });
       }
     }
@@ -129,6 +159,7 @@ export function createEditorTableDrag(deps: {
     });
 
     setStartClientY(event.clientY);
+    setStartClientX(event.clientX);
     setMousePos({ x: event.clientX, y: event.clientY });
     setDragging(false);
     setDropTargetPos(null);

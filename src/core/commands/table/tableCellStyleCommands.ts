@@ -13,7 +13,11 @@ import {
 import { normalizeSelection } from "@/core/selection.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { updateTableCellsInBlocks } from "@/core/document/blockReplacement.js";
-import { getBlocksForZone, patchStyleValue } from "./tableCommandUtils.js";
+import {
+  createTableRevisionMetadata,
+  getBlocksForZone,
+  patchStyleValue,
+} from "./tableCommandUtils.js";
 
 function collectTableSelectedParagraphIds(state: EditorState): Set<string> {
   const selectedParagraphIds = new Set<string>();
@@ -118,10 +122,25 @@ export function setTableCellStyleValue<K extends keyof EditorTableCellStyle>(
     }
   }
 
-  const updateCell = (cell: EditorTableCellNode): EditorTableCellNode => ({
-    ...cell,
-    style: patchStyleValue(cell.style, key, value),
-  });
+  const updateCell = (cell: EditorTableCellNode): EditorTableCellNode => {
+    let style = cell.style;
+    if (
+      state.trackChangesEnabled &&
+      key !== "revision" &&
+      key !== "propertyRevision" &&
+      !style?.propertyRevision
+    ) {
+      style = {
+        ...(style ?? {}),
+        propertyRevision: {
+          ...createTableRevisionMetadata(),
+          type: "property",
+          previous: { ...(style ?? {}) },
+        },
+      };
+    }
+    return { ...cell, style: patchStyleValue(style, key, value) };
+  };
 
   const nextSections = getDocumentSections(state.document).map((section) => ({
     ...section,

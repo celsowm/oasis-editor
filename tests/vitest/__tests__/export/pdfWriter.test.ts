@@ -1,6 +1,19 @@
-import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
+import {
+  getRunImage,
+  getRunTextBox,
+  getRunField,
+  getRunFieldChar,
+  getRunFieldInstruction,
+  getRunFootnoteReference,
+  getRunEndnoteReference,
+  getRunSym,
+} from "@/core/model.js";
 import { describe, expect, it } from "vitest";
-import type { EditorDocument, EditorLayoutLine } from "@/core/model.js";
+import type {
+  EditorDocument,
+  EditorImageRunData,
+  EditorLayoutLine,
+} from "@/core/model.js";
 import {
   createEditorFootnote,
   createEditorParagraph,
@@ -150,6 +163,7 @@ function createInlineImageDocument(options?: {
   imageWidth?: number;
   imageHeight?: number;
   rotation?: number;
+  floating?: EditorImageRunData["floating"];
 }): EditorDocument {
   const imageWidth = options?.imageWidth ?? 32;
   const imageHeight = options?.imageHeight ?? 24;
@@ -195,6 +209,7 @@ function createInlineImageDocument(options?: {
                   height: imageHeight,
                   alt: "Tiny image",
                   rotation: options?.rotation,
+                  floating: options?.floating,
                 },
               },
               { id: "after-run", text: "B", kind: "text" as const },
@@ -451,7 +466,13 @@ describe("layoutPdfParagraph", () => {
       paragraph: {
         id: "wrapped-paragraph",
         type: "paragraph",
-        runs: [{ id: "run-1", text: "Alpha beta gamma delta", kind: "text" as const }],
+        runs: [
+          {
+            id: "run-1",
+            text: "Alpha beta gamma delta",
+            kind: "text" as const,
+          },
+        ],
       },
       maxWidth: 70,
       context: { pageNumber: 1, totalPages: 1, measurer },
@@ -587,7 +608,9 @@ describe("OasisPdfWriter", () => {
             {
               id: "paragraph-1",
               type: "paragraph",
-              runs: [{ id: "run-1", text: "Smoke test", kind: "text" as const }],
+              runs: [
+                { id: "run-1", text: "Smoke test", kind: "text" as const },
+              ],
             },
             {
               id: "paragraph-2",
@@ -622,7 +645,9 @@ describe("OasisPdfWriter", () => {
               id: "paragraph-4",
               type: "paragraph",
               style: { align: "right" },
-              runs: [{ id: "run-5", text: "Right aligned", kind: "text" as const }],
+              runs: [
+                { id: "run-5", text: "Right aligned", kind: "text" as const },
+              ],
             },
             {
               id: "paragraph-5",
@@ -634,31 +659,49 @@ describe("OasisPdfWriter", () => {
                 indentRight: 24,
                 indentFirstLine: 24,
               },
-              runs: [{ id: "run-6", text: "Indented paragraph", kind: "text" as const }],
+              runs: [
+                {
+                  id: "run-6",
+                  text: "Indented paragraph",
+                  kind: "text" as const,
+                },
+              ],
             },
             {
               id: "paragraph-6",
               type: "paragraph",
               style: { indentLeft: 48, indentHanging: 24 },
-              runs: [{ id: "run-7", text: "Hanging paragraph", kind: "text" as const }],
+              runs: [
+                {
+                  id: "run-7",
+                  text: "Hanging paragraph",
+                  kind: "text" as const,
+                },
+              ],
             },
             {
               id: "paragraph-7",
               type: "paragraph",
               list: { kind: "bullet" },
-              runs: [{ id: "run-8", text: "Bullet item", kind: "text" as const }],
+              runs: [
+                { id: "run-8", text: "Bullet item", kind: "text" as const },
+              ],
             },
             {
               id: "paragraph-8",
               type: "paragraph",
               list: { kind: "ordered", startAt: 3 },
-              runs: [{ id: "run-9", text: "Ordered item", kind: "text" as const }],
+              runs: [
+                { id: "run-9", text: "Ordered item", kind: "text" as const },
+              ],
             },
             {
               id: "paragraph-9",
               type: "paragraph",
               list: { kind: "ordered", format: "upperLetter" },
-              runs: [{ id: "run-10", text: "Letter item", kind: "text" as const }],
+              runs: [
+                { id: "run-10", text: "Letter item", kind: "text" as const },
+              ],
             },
           ],
         },
@@ -726,7 +769,11 @@ describe("OasisPdfWriter", () => {
               id: "paragraph-main",
               type: "paragraph",
               runs: [
-                { id: "run-before", text: "Body with note", kind: "text" as const },
+                {
+                  id: "run-before",
+                  text: "Body with note",
+                  kind: "text" as const,
+                },
                 createFootnoteReferenceRun(footnote.id, "1"),
               ],
             },
@@ -796,7 +843,11 @@ describe("OasisPdfWriter", () => {
               type: "paragraph",
               style: { spacingAfter: 0 },
               runs: [
-                { id: "run-with-footnote", text: "First page owner", kind: "text" as const },
+                {
+                  id: "run-with-footnote",
+                  text: "First page owner",
+                  kind: "text" as const,
+                },
                 createFootnoteReferenceRun(footnote.id, "1"),
               ],
             },
@@ -1018,7 +1069,13 @@ describe("OasisPdfWriter", () => {
                 borderBottom: { width: 1, type: "dashed", color: "#111827" },
                 borderLeft: { width: 1, type: "dashed", color: "#111827" },
               },
-              runs: [{ id: "boxed-run", text: "Dashed boxed paragraph", kind: "text" as const }],
+              runs: [
+                {
+                  id: "boxed-run",
+                  text: "Dashed boxed paragraph",
+                  kind: "text" as const,
+                },
+              ],
             },
           ],
         },
@@ -1111,7 +1168,13 @@ describe("OasisPdfWriter", () => {
             {
               id: "header-paragraph",
               type: "paragraph",
-              runs: [{ id: "header-run", text: "Document header", kind: "text" as const }],
+              runs: [
+                {
+                  id: "header-run",
+                  text: "Document header",
+                  kind: "text" as const,
+                },
+              ],
             },
           ],
           footer: [
@@ -1199,7 +1262,13 @@ describe("OasisPdfWriter", () => {
               id: "heading-paragraph",
               type: "paragraph",
               style: { styleId: "Heading1" },
-              runs: [{ id: "heading-run", text: "Capítulo 1", kind: "text" as const }],
+              runs: [
+                {
+                  id: "heading-run",
+                  text: "Capítulo 1",
+                  kind: "text" as const,
+                },
+              ],
             },
           ],
         },
@@ -1377,7 +1446,13 @@ describe("OasisPdfWriter", () => {
             {
               id: "accented-paragraph",
               type: "paragraph",
-              runs: [{ id: "accented-run", text: "Página Capítulo ação não", kind: "text" as const }],
+              runs: [
+                {
+                  id: "accented-run",
+                  text: "Página Capítulo ação não",
+                  kind: "text" as const,
+                },
+              ],
             },
           ],
         },
@@ -1472,7 +1547,13 @@ describe("OasisPdfWriter", () => {
               id: "small-header",
               type: "paragraph",
               style: { spacingAfter: 0 },
-              runs: [{ id: "small-header-run", text: "HeaderOnly", kind: "text" as const }],
+              runs: [
+                {
+                  id: "small-header-run",
+                  text: "HeaderOnly",
+                  kind: "text" as const,
+                },
+              ],
             },
           ],
           footer: [
@@ -1480,7 +1561,13 @@ describe("OasisPdfWriter", () => {
               id: "small-footer",
               type: "paragraph",
               style: { spacingAfter: 0 },
-              runs: [{ id: "small-footer-run", text: "FooterOnly", kind: "text" as const }],
+              runs: [
+                {
+                  id: "small-footer-run",
+                  text: "FooterOnly",
+                  kind: "text" as const,
+                },
+              ],
             },
           ],
           blocks: [
@@ -1488,7 +1575,9 @@ describe("OasisPdfWriter", () => {
               id: "body-paragraph",
               type: "paragraph",
               style: { spacingAfter: 0 },
-              runs: [{ id: "body-run", text: "BodyOnly", kind: "text" as const }],
+              runs: [
+                { id: "body-run", text: "BodyOnly", kind: "text" as const },
+              ],
             },
           ],
         },
@@ -1551,7 +1640,13 @@ describe("OasisPdfWriter", () => {
               id: "repeat-header",
               type: "paragraph",
               style: { spacingAfter: 0 },
-              runs: [{ id: "repeat-header-run", text: "RepeatHeader", kind: "text" as const }],
+              runs: [
+                {
+                  id: "repeat-header-run",
+                  text: "RepeatHeader",
+                  kind: "text" as const,
+                },
+              ],
             },
           ],
           footer: [
@@ -1559,7 +1654,13 @@ describe("OasisPdfWriter", () => {
               id: "repeat-footer",
               type: "paragraph",
               style: { spacingAfter: 0 },
-              runs: [{ id: "repeat-footer-run", text: "RepeatFooter", kind: "text" as const }],
+              runs: [
+                {
+                  id: "repeat-footer-run",
+                  text: "RepeatFooter",
+                  kind: "text" as const,
+                },
+              ],
             },
           ],
           blocks: Array.from({ length: 18 }, (_, index) => ({
@@ -1647,7 +1748,13 @@ describe("OasisPdfWriter", () => {
                         {
                           id: "p-1-1",
                           type: "paragraph",
-                          runs: [{ id: "r-1-1", text: "HeaderA", kind: "text" as const }],
+                          runs: [
+                            {
+                              id: "r-1-1",
+                              text: "HeaderA",
+                              kind: "text" as const,
+                            },
+                          ],
                         },
                       ],
                     },
@@ -1657,7 +1764,13 @@ describe("OasisPdfWriter", () => {
                         {
                           id: "p-1-2",
                           type: "paragraph",
-                          runs: [{ id: "r-1-2", text: "HeaderB", kind: "text" as const }],
+                          runs: [
+                            {
+                              id: "r-1-2",
+                              text: "HeaderB",
+                              kind: "text" as const,
+                            },
+                          ],
                         },
                       ],
                     },
@@ -1672,7 +1785,13 @@ describe("OasisPdfWriter", () => {
                         {
                           id: "p-2-1",
                           type: "paragraph",
-                          runs: [{ id: "r-2-1", text: "BodyA", kind: "text" as const }],
+                          runs: [
+                            {
+                              id: "r-2-1",
+                              text: "BodyA",
+                              kind: "text" as const,
+                            },
+                          ],
                         },
                       ],
                     },
@@ -1682,7 +1801,13 @@ describe("OasisPdfWriter", () => {
                         {
                           id: "p-2-2",
                           type: "paragraph",
-                          runs: [{ id: "r-2-2", text: "BodyB", kind: "text" as const }],
+                          runs: [
+                            {
+                              id: "r-2-2",
+                              text: "BodyB",
+                              kind: "text" as const,
+                            },
+                          ],
                         },
                       ],
                     },
@@ -1748,7 +1873,13 @@ describe("OasisPdfWriter", () => {
                         {
                           id: "p-1-1",
                           type: "paragraph",
-                          runs: [{ id: "r-1-1", text: "BottomCell", kind: "text" as const }],
+                          runs: [
+                            {
+                              id: "r-1-1",
+                              text: "BottomCell",
+                              kind: "text" as const,
+                            },
+                          ],
                         },
                       ],
                     },
@@ -1847,6 +1978,85 @@ describe("OasisPdfWriter", () => {
       ),
       3,
     );
+  });
+
+  it("positions floating images from their page anchor instead of the inline slot", async () => {
+    const document = createInlineImageDocument({
+      id: "pdf-floating-image-document",
+      imageWidth: 32,
+      imageHeight: 24,
+      floating: {
+        type: "floating",
+        wrap: "square",
+        positionH: { relativeFrom: "page", offset: 952500 },
+        positionV: { relativeFrom: "page", offset: 1428750 },
+      },
+    });
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+    const draw = findImageDraw(pdf);
+    const pageSettings = document.sections![0]!.pageSettings;
+    const pageHeightPt = pxToPt(pageSettings.height);
+
+    expect(draw.e).toBeCloseTo(pxToPt(100), 3);
+    expect(pageHeightPt - draw.f - draw.d).toBeCloseTo(pxToPt(150), 3);
+  });
+
+  it("draws both table-cell diagonal borders in PDF", async () => {
+    const document: EditorDocument = {
+      id: "pdf-diagonal-table",
+      sections: [
+        {
+          id: "s1",
+          pageSettings: {
+            width: 800,
+            height: 1000,
+            margins: {
+              top: 80,
+              right: 80,
+              bottom: 80,
+              left: 80,
+              header: 40,
+              footer: 40,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: "t1",
+              type: "table",
+              gridCols: [120],
+              rows: [
+                {
+                  id: "row1",
+                  cells: [
+                    {
+                      id: "cell1",
+                      style: {
+                        borderTopLeftToBottomRight: {
+                          width: 1,
+                          type: "solid",
+                          color: "#ff0000",
+                        },
+                        borderTopRightToBottomLeft: {
+                          width: 1,
+                          type: "solid",
+                          color: "#0000ff",
+                        },
+                      },
+                      blocks: [createEditorParagraph("diagonal")],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const pdf = await (await exportEditorDocumentToPdfBlob(document)).text();
+    expect(pdf).toContain("1 0 0 RG");
+    expect(pdf).toContain("0 0 1 RG");
   });
 
   it("rotates inline images 90 degrees around the projected box center", async () => {
@@ -2081,7 +2291,13 @@ describe("OasisPdfWriter", () => {
                       {
                         id: "inner-paragraph",
                         type: "paragraph",
-                        runs: [{ id: "inner-run", text: "InsideShape", kind: "text" as const }],
+                        runs: [
+                          {
+                            id: "inner-run",
+                            text: "InsideShape",
+                            kind: "text" as const,
+                          },
+                        ],
                       },
                     ],
                     shape: { preset: "rect", fill: "#4472C4" },

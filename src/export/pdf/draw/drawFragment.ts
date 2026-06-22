@@ -4,6 +4,7 @@ import type {
   EditorLayoutLine,
   EditorParagraphNode,
   EditorTextStyle,
+  EditorPageSettings,
 } from "@/core/model.js";
 import {
   resolveEffectiveParagraphStyle,
@@ -31,6 +32,58 @@ import {
   type FragmentSlot,
 } from "./fragmentGeometry.js";
 import { PX_PER_POINT } from "@/layoutProjection/constants.js";
+import {
+  getImageFloatingGeometry,
+  resolveFloatingObjectRect,
+} from "@/layoutProjection/floatingObjects.js";
+
+export async function drawFloatingImagesForParagraph(options: {
+  writer: OasisPdfWriter;
+  pageIndex: number;
+  lines: EditorLayoutLine[];
+  document: EditorDocument;
+  pageSettings: EditorPageSettings;
+  contentLeft: number;
+  contentTop: number;
+  contentWidth: number;
+  paragraphTop: number;
+  layer: "behind" | "front";
+}): Promise<void> {
+  for (const line of options.lines) {
+    const slots = new Map(line.slots.map((slot) => [slot.offset, slot]));
+    for (const fragment of line.fragments) {
+      const image = fragment.image;
+      if (!image?.floating) continue;
+      const isBehind = Boolean(image.floating.behindDoc);
+      if ((options.layer === "behind") !== isBehind) continue;
+      const slot = slots.get(fragment.startOffset);
+      const rect = resolveFloatingObjectRect({
+        object: getImageFloatingGeometry(image),
+        pageSettings: options.pageSettings,
+        contentLeft: options.contentLeft,
+        contentTop: options.contentTop,
+        contentWidth: options.contentWidth,
+        paragraphTop: options.paragraphTop,
+        lineTop: options.paragraphTop + line.top,
+        anchorLeft: options.contentLeft + (slot?.left ?? 0),
+      });
+      const resourceName = await registerPdfImageRun(
+        options.writer,
+        options.document,
+        image,
+      );
+      if (!resourceName) continue;
+      options.writer.drawImage(options.pageIndex, {
+        resourceName,
+        x: pxToPt(rect.x),
+        y: pxToPt(rect.y),
+        width: pxToPt(rect.width),
+        height: pxToPt(rect.height),
+        rotation: image.rotation,
+      });
+    }
+  }
+}
 
 export function drawFragmentHighlight(
   writer: OasisPdfWriter,
@@ -386,6 +439,9 @@ export async function drawFragmentText(
   drawers: BlockDrawers,
 ): Promise<void> {
   if (fragment.image) {
+    if (fragment.image.floating) {
+      return;
+    }
     const slot =
       line.slots.find(
         (candidate) => candidate.offset === fragment.startOffset,

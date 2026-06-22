@@ -1,6 +1,7 @@
 import type {
   EditorNamedStyle,
   EditorTableConditionalFormat,
+  EditorTableStyle,
 } from "@/core/model.js";
 import {
   escapeXml,
@@ -11,7 +12,10 @@ import {
 import { serializeDocxBorderAttrs } from "./borders.js";
 import { serializeParagraphStyleXml } from "./text/paragraphPropertiesXml.js";
 import { serializeRunProperties } from "./text/runPropertiesXml.js";
-import { serializeTableRowStyleXml } from "./tableXml.js";
+import {
+  serializeTableCellStyleXml,
+  serializeTableRowStyleXml,
+} from "./tableXml.js";
 
 const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
@@ -33,6 +37,9 @@ const CONDITIONAL_TYPE_ORDER = [
 ];
 
 function serializeConditionalTcPr(cond: EditorTableConditionalFormat): string {
+  if (cond.cellStyle) {
+    return serializeTableCellStyleXml(cond.cellStyle);
+  }
   const parts: string[] = [];
   if (cond.borders) {
     const b = cond.borders;
@@ -61,6 +68,73 @@ function serializeConditionalTcPr(cond: EditorTableConditionalFormat): string {
   return parts.length > 0 ? `<w:tcPr>${parts.join("")}</w:tcPr>` : "";
 }
 
+function serializeWidthElement(
+  name: string,
+  value: EditorTableStyle["width"],
+): string {
+  if (typeof value === "number") {
+    return `<w:${name} w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`;
+  }
+  if (typeof value === "string" && value.endsWith("%")) {
+    const percent = Number.parseFloat(value);
+    return Number.isFinite(percent)
+      ? `<w:${name} w:w="${Math.round(percent * 50)}" w:type="pct"/>`
+      : "";
+  }
+  return value === "auto" ? `<w:${name} w:w="0" w:type="auto"/>` : "";
+}
+
+function serializeTableStyleProperties(
+  style: EditorTableStyle | undefined,
+): string {
+  if (!style) return "";
+  const parts: string[] = [];
+  if (style.rowBandSize !== undefined)
+    parts.push(`<w:tblStyleRowBandSize w:val="${style.rowBandSize}"/>`);
+  if (style.colBandSize !== undefined)
+    parts.push(`<w:tblStyleColBandSize w:val="${style.colBandSize}"/>`);
+  const width = serializeWidthElement("tblW", style.width);
+  if (width) parts.push(width);
+  const indent = serializeWidthElement("tblInd", style.indentLeft);
+  if (indent) parts.push(indent);
+  const spacing = serializeWidthElement("tblCellSpacing", style.cellSpacing);
+  if (spacing) parts.push(spacing);
+  if (style.align) parts.push(`<w:jc w:val="${style.align}"/>`);
+  if (style.layout) parts.push(`<w:tblLayout w:type="${style.layout}"/>`);
+  if (style.bidiVisual !== undefined)
+    parts.push(`<w:bidiVisual w:val="${style.bidiVisual ? "1" : "0"}"/>`);
+  if (style.defaultCellMargins) {
+    const margins = Object.entries(style.defaultCellMargins)
+      .map(
+        ([name, value]) =>
+          `<w:${name} w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`,
+      )
+      .join("");
+    if (margins) parts.push(`<w:tblCellMar>${margins}</w:tblCellMar>`);
+  }
+  if (style.borders) {
+    const edges: Array<[string, typeof style.borders.borderTop]> = [
+      ["top", style.borders.borderTop],
+      ["left", style.borders.borderLeft],
+      ["bottom", style.borders.borderBottom],
+      ["right", style.borders.borderRight],
+      ["insideH", style.borders.borderInsideH],
+      ["insideV", style.borders.borderInsideV],
+    ];
+    const borders = edges
+      .filter(
+        (
+          entry,
+        ): entry is [string, NonNullable<typeof style.borders.borderTop>] =>
+          !!entry[1],
+      )
+      .map(([name, border]) => `<w:${name} ${serializeDocxBorderAttrs(border)}`)
+      .join("");
+    if (borders) parts.push(`<w:tblBorders>${borders}</w:tblBorders>`);
+  }
+  return parts.length > 0 ? `<w:tblPr>${parts.join("")}</w:tblPr>` : "";
+}
+
 function serializeConditionalBlock(
   type: string,
   cond: EditorTableConditionalFormat,
@@ -72,6 +146,8 @@ function serializeConditionalBlock(
   if (pPr) parts.push(pPr);
   const rPr = cond.textStyle ? serializeRunProperties(cond.textStyle) : "";
   if (rPr) parts.push(rPr);
+  const tblPr = serializeTableStyleProperties(cond.tableStyle);
+  if (tblPr) parts.push(tblPr);
   const trPr = cond.rowStyle ? serializeTableRowStyleXml(cond.rowStyle) : "";
   if (trPr) parts.push(trPr);
   const tcPr = serializeConditionalTcPr(cond);
@@ -119,23 +195,8 @@ function serializeNamedStyle(style: EditorNamedStyle): string {
 
   if (style.type === "table" && style.tableStyle) {
     const ts = style.tableStyle;
-    const tblPrParts: string[] = [];
-    if (ts.rowBandSize !== undefined) {
-      tblPrParts.push(`<w:tblStyleRowBandSize w:val="${ts.rowBandSize}"/>`);
-    }
-    if (ts.colBandSize !== undefined) {
-      tblPrParts.push(`<w:tblStyleColBandSize w:val="${ts.colBandSize}"/>`);
-    }
-    if (ts.indentLeft !== undefined) {
-      const val =
-        typeof ts.indentLeft === "number" ? pointsToTwips(ts.indentLeft) : null;
-      if (val !== null) {
-        tblPrParts.push(`<w:tblInd w:w="${val}" w:type="dxa"/>`);
-      }
-    }
-    if (tblPrParts.length > 0) {
-      parts.push(`<w:tblPr>${tblPrParts.join("")}</w:tblPr>`);
-    }
+    const tblPr = serializeTableStyleProperties(ts);
+    if (tblPr) parts.push(tblPr);
 
     if (ts.conditionalFormats) {
       const orderedKeys = [
@@ -160,7 +221,7 @@ function serializeNamedStyle(style: EditorNamedStyle): string {
       : style.type === "table"
         ? "table"
         : "paragraph";
-  return `<w:style w:type="${typeAttr}" w:styleId="${escapeXml(style.id)}">${parts.join("")}</w:style>`;
+  return `<w:style w:type="${typeAttr}" w:styleId="${escapeXml(style.id)}"${style.isDefault ? ' w:default="1"' : ""}>${parts.join("")}</w:style>`;
 }
 
 export function buildStylesXml(

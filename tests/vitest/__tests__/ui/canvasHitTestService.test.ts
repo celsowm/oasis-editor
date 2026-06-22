@@ -182,6 +182,7 @@ describe("canvas hit-test service footnote zone", () => {
       floatingImages: [],
       inlineTextBoxes: [],
       floatingTextBoxes: [],
+      floatingTables: [],
       unsupportedRegions: [],
     };
     snapshot.paragraphsById.set(paragraph.id, [snapshot.paragraphs[0]!]);
@@ -255,6 +256,7 @@ describe("canvas hit-test service footnote zone", () => {
       floatingImages: [],
       inlineTextBoxes: [],
       floatingTextBoxes: [],
+      floatingTables: [],
       unsupportedRegions: [],
     };
     snapshot.paragraphsById.set(paragraph.id, [snapshot.paragraphs[0]!]);

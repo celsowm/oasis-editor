@@ -70,6 +70,28 @@ function drawCellBorders(
     bottom,
   );
   drawCellEdge(writer, pageIndex, cell.borders.left, left, top, left, bottom);
+  if (cell.borders.topLeftToBottomRight) {
+    drawCellEdge(
+      writer,
+      pageIndex,
+      cell.borders.topLeftToBottomRight,
+      left,
+      top,
+      right,
+      bottom,
+    );
+  }
+  if (cell.borders.topRightToBottomLeft) {
+    drawCellEdge(
+      writer,
+      pageIndex,
+      cell.borders.topRightToBottomLeft,
+      right,
+      top,
+      left,
+      bottom,
+    );
+  }
 }
 
 export async function drawTableBlock(
@@ -123,6 +145,22 @@ export async function drawTableBlock(
   // 2. Borders.
   for (const cell of tableLayout.cells) {
     drawCellBorders(writer, pageIndex, cell, originX, originY);
+    if (cell.revision) {
+      const color =
+        cell.revision.type === "insert"
+          ? "#059669"
+          : cell.revision.type === "delete"
+            ? "#dc2626"
+            : "#d97706";
+      writer.drawRect(pageIndex, {
+        x: pxToPt(originX + cell.left + 1),
+        y: pxToPt(originY + cell.top + 1),
+        width: pxToPt(Math.max(0, cell.width - 2)),
+        height: pxToPt(Math.max(0, cell.height - 2)),
+        stroke: color,
+        lineWidth: pxToPt(2),
+      });
+    }
   }
 
   // 3. Cell content.

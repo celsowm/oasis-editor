@@ -19,6 +19,8 @@ import {
 } from "./canvasParagraphPainter.js";
 import { drawBorderBox, type CanvasBorderEdge } from "./canvasBorders.js";
 import { drawTable } from "./canvasTablePainter.js";
+import { resolveCanvasTableWidth } from "./CanvasTableLayout.js";
+import { resolveFloatingTableRect } from "@/layoutProjection/floatingObjects.js";
 import { drawFloatingTextBoxesForParagraph } from "./canvasTextBoxPainter.js";
 import { drawDropCapForParagraph } from "./canvasDropCapPainter.js";
 import type { CanvasBlockPainters } from "./canvasBlockPainters.js";
@@ -211,6 +213,37 @@ export function renderBlockList(
         });
       }
     } else if (block.sourceBlock.type === "table") {
+      const floating = block.sourceBlock.style?.floating;
+      if (floating && pageSettings) {
+        const width = resolveCanvasTableWidth(block.sourceBlock, contentWidth);
+        const rect = resolveFloatingTableRect({
+          floating,
+          pageSettings,
+          contentLeft: originX,
+          contentTop: originY,
+          contentWidth,
+          anchorTop: cursorY,
+          width,
+          height: block.floatingTableHeight ?? 1,
+          pageIndex,
+        });
+        rect.y += block.floatingTableOffsetY ?? 0;
+        drawTable(
+          ctx,
+          block.sourceBlock,
+          undefined,
+          state,
+          rect.x,
+          rect.y,
+          contentWidth,
+          rect.height,
+          pageIndex,
+          onUpdate,
+          canvasBlockPainters,
+        );
+        cursorY += Math.max(0, block.estimatedHeight);
+        continue;
+      }
       drawTable(
         ctx,
         block.sourceBlock,

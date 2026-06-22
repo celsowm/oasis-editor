@@ -7,6 +7,7 @@ import type { EditorTableCellNode } from "@/core/model.js";
 import {
   getPageContentWidth,
   resolveEffectiveTextStyleForParagraph,
+  resolveEffectiveTableCellFormatting,
 } from "@/core/model.js";
 import { createEditorStateFromDocument } from "@/core/editorState.js";
 import {
@@ -23,6 +24,22 @@ import {
 
 const POINT_TO_PX = 96 / 72;
 const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 28;
+
+function resolveCellFormatting(
+  document: Awaited<ReturnType<typeof importDocxToEditorDocument>>,
+  table: ReturnType<typeof getDocumentTables>[number],
+  rowIndex: number,
+  cellIndex: number,
+) {
+  return resolveEffectiveTableCellFormatting({
+    table,
+    rowIndex,
+    cellIndex,
+    visualColumnIndex: cellIndex,
+    columnCount: Math.max(1, table.rows[0]?.cells.length ?? 1),
+    styles: document.styles,
+  });
+}
 
 function getCellContentWidth(cell: EditorTableCellNode): number {
   const widthPx =
@@ -420,11 +437,13 @@ describe("DOCX table import", () => {
     const document = await importDocxToEditorDocument(
       await zip.generateAsync({ type: "arraybuffer" }),
     );
-    const rows = getDocumentTables(document)[0]!.rows;
-    const r0c0 = rows[0]!.cells[0]!.style;
-    const r0c1 = rows[0]!.cells[1]!.style;
-    const r1c0 = rows[1]!.cells[0]!.style;
-    const r1c1 = rows[1]!.cells[1]!.style;
+    const table = getDocumentTables(document)[0]!;
+    const style = (rowIndex: number, cellIndex: number) =>
+      resolveCellFormatting(document, table, rowIndex, cellIndex).cellStyle;
+    const r0c0 = style(0, 0);
+    const r0c1 = style(0, 1);
+    const r1c0 = style(1, 0);
+    const r1c1 = style(1, 1);
 
     // Cell-level tcBorder top overrides tblBorder top for R0C0.
     expect(r0c0?.borderTop?.color).toBe("#FF0000");
@@ -667,12 +686,12 @@ describe("DOCX table property round-trip", () => {
       bidiVisual: true,
       tblOverlap: "never",
       floating: {
-        leftFromText: "120",
-        rightFromText: "160",
-        vertAnchor: "page",
-        horzAnchor: "margin",
-        tblpX: "240",
-        tblpY: "360",
+        distanceLeft: 6,
+        distanceRight: 8,
+        verticalAnchor: "page",
+        horizontalAnchor: "margin",
+        x: 12,
+        y: 18,
       },
       defaultCellMargins: {
         top: 6,
@@ -680,16 +699,26 @@ describe("DOCX table property round-trip", () => {
         end: 11,
       },
     });
-    expect(table.style?.revisionXml?.join("")).toContain("tblPrChange");
-    expect(table.tblGridChangeXml).toContain("tblGridChange");
+    expect(table.style?.revision).toMatchObject({
+      id: "1",
+      author: "A",
+      type: "property",
+    });
+    expect(table.gridRevision).toMatchObject({
+      id: "2",
+      author: "A",
+      type: "grid",
+    });
     expect(row.style).toMatchObject({
       cellSpacing: 2,
       cantSplit: true,
     });
-    expect(row.style?.revisionXml?.join("")).toContain("trPrChange");
+    expect(row.style?.propertyRevision).toMatchObject({
+      id: "3",
+      type: "property",
+    });
     expect(table.rows[1]!.style?.hidden).toBe(true);
     expect(cell.style).toMatchObject({
-      paddingTop: 6,
       paddingStart: 15,
       paddingEnd: 17,
       noWrap: true,
@@ -713,7 +742,10 @@ describe("DOCX table property round-trip", () => {
       type: "dotted",
       color: "#0000FF",
     });
-    expect(cell.style?.revisionXml?.join("")).toContain("cellMerge");
+    expect(cell.style?.revision).toMatchObject({
+      id: "4",
+      type: "merge",
+    });
 
     const state = createEditorStateFromDocument(document);
     const layout = buildCanvasTableLayout({
@@ -866,14 +898,22 @@ describe("table style conditional formatting", () => {
     const table = getDocumentTables(document)[0]!;
 
     // First row (firstRow=1): both cells should get the green shading
-    expect(table.rows[0]!.cells[0]!.style?.shading).toBe("#196B24");
-    expect(table.rows[0]!.cells[1]!.style?.shading).toBe("#196B24");
+    expect(resolveCellFormatting(document, table, 0, 0).cellStyle.shading).toBe(
+      "#196B24",
+    );
+    expect(resolveCellFormatting(document, table, 0, 1).cellStyle.shading).toBe(
+      "#196B24",
+    );
 
     // Middle row: no conditional shading
-    expect(table.rows[1]!.cells[0]!.style?.shading).toBeUndefined();
+    expect(
+      resolveCellFormatting(document, table, 1, 0).cellStyle.shading,
+    ).toBeUndefined();
 
     // Last row (lastRow=1): grey shading
-    expect(table.rows[2]!.cells[0]!.style?.shading).toBe("#AAAAAA");
+    expect(resolveCellFormatting(document, table, 2, 0).cellStyle.shading).toBe(
+      "#AAAAAA",
+    );
   });
 
   it("does not overwrite explicit cell shading with the conditional format shading", async () => {
@@ -921,7 +961,9 @@ describe("table style conditional formatting", () => {
     // Explicit red shading on the cell takes priority over the style's green
     expect(table.rows[0]!.cells[0]!.style?.shading).toBe("#FF0000");
     // Second cell has no explicit shading → gets the conditional green
-    expect(table.rows[0]!.cells[1]!.style?.shading).toBe("#196B24");
+    expect(resolveCellFormatting(document, table, 0, 1).cellStyle.shading).toBe(
+      "#196B24",
+    );
   });
 
   it("resolves position-based conditional formatting (header, bold first column, banding) gated by tblLook", async () => {
@@ -982,27 +1024,28 @@ describe("table style conditional formatting", () => {
       await zip.generateAsync({ type: "arraybuffer" }),
     );
     const table = getDocumentTables(document)[0]!;
-    const firstRun = (cell: EditorTableCellNode) => cell.blocks[0]!.runs[0]!;
+    const effective = (rowIndex: number, cellIndex: number) =>
+      resolveCellFormatting(document, table, rowIndex, cellIndex);
 
     // Header row: teal fill on every cell, white bold run text.
-    expect(table.rows[0]!.cells[0]!.style?.shading).toBe("#4BACC6");
-    expect(table.rows[0]!.cells[1]!.style?.shading).toBe("#4BACC6");
-    expect(firstRun(table.rows[0]!.cells[0]!).styles).toMatchObject({
+    expect(effective(0, 0).cellStyle.shading).toBe("#4BACC6");
+    expect(effective(0, 1).cellStyle.shading).toBe("#4BACC6");
+    expect(effective(0, 0).textStyle).toMatchObject({
       bold: true,
       color: "#FFFFFF",
     });
 
     // First body row → band1Horz light blue; first column bold.
-    expect(table.rows[1]!.cells[0]!.style?.shading).toBe("#DBEEF3");
-    expect(firstRun(table.rows[1]!.cells[0]!).styles?.bold).toBe(true);
+    expect(effective(1, 0).cellStyle.shading).toBe("#DBEEF3");
+    expect(effective(1, 0).textStyle?.bold).toBe(true);
     // Second column is NOT bold and (noVBand) has the same row banding, not a
     // vertical band override.
-    expect(firstRun(table.rows[1]!.cells[1]!).styles?.bold).toBeUndefined();
-    expect(table.rows[1]!.cells[1]!.style?.shading).toBe("#DBEEF3");
+    expect(effective(1, 1).textStyle?.bold).toBeUndefined();
+    expect(effective(1, 1).cellStyle.shading).toBe("#DBEEF3");
 
     // Second body row → band2Horz (no fill defined) = unshaded.
-    expect(table.rows[2]!.cells[0]!.style?.shading).toBeUndefined();
+    expect(effective(2, 0).cellStyle.shading).toBeUndefined();
     // First column still bold across body rows.
-    expect(firstRun(table.rows[2]!.cells[0]!).styles?.bold).toBe(true);
+    expect(effective(2, 0).textStyle?.bold).toBe(true);
   });
 });

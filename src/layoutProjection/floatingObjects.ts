@@ -5,8 +5,9 @@ import type {
   EditorLayoutLine,
   EditorPageSettings,
   EditorTextBoxData,
+  EditorTableFloatingLayout,
 } from "@/core/model.js";
-import { EMU_PER_PX } from "@/core/units.js";
+import { EMU_PER_PX, PX_PER_POINT } from "@/core/units.js";
 
 export interface FloatingObjectRect {
   x: number;
@@ -47,6 +48,7 @@ function resolveAlignedOffset(
   align: string | undefined,
   containerSize: number,
   boxSize: number,
+  pageIndex = 0,
 ): number | null {
   switch (align) {
     case "left":
@@ -58,9 +60,69 @@ function resolveAlignedOffset(
     case "right":
     case "bottom":
       return containerSize - boxSize;
+    case "inside":
+      return pageIndex % 2 === 0 ? 0 : containerSize - boxSize;
+    case "outside":
+      return pageIndex % 2 === 0 ? containerSize - boxSize : 0;
     default:
       return null;
   }
+}
+
+/** Resolves typed `w:tblpPr` positioning into the same page-space rectangle
+ * consumed by floating images and text boxes. Table values are stored in
+ * points; DrawingML values remain EMUs at their adapter boundary. */
+export function resolveFloatingTableRect(options: {
+  floating: EditorTableFloatingLayout;
+  pageSettings: EditorPageSettings;
+  contentLeft: number;
+  contentTop: number;
+  contentWidth: number;
+  anchorTop: number;
+  width: number;
+  height: number;
+  pageIndex: number;
+}): FloatingObjectRect {
+  const {
+    floating,
+    pageSettings,
+    contentLeft,
+    contentTop,
+    contentWidth,
+    anchorTop,
+    width,
+    height,
+    pageIndex,
+  } = options;
+  const horizontalPage = floating.horizontalAnchor === "page";
+  const verticalPage = floating.verticalAnchor === "page";
+  const verticalMargin = floating.verticalAnchor === "margin";
+  const hBase = horizontalPage ? 0 : contentLeft;
+  const hSize = horizontalPage ? pageSettings.width : contentWidth;
+  const vBase = verticalPage ? 0 : verticalMargin ? contentTop : anchorTop;
+  const vSize = verticalPage
+    ? pageSettings.height
+    : verticalMargin
+      ? Math.max(1, pageSettings.height - contentTop)
+      : Math.max(1, pageSettings.height - anchorTop);
+  const alignedX = resolveAlignedOffset(
+    floating.xAlign,
+    hSize,
+    width,
+    pageIndex,
+  );
+  const alignedY = resolveAlignedOffset(
+    floating.yAlign,
+    vSize,
+    height,
+    pageIndex,
+  );
+  return {
+    x: hBase + (alignedX ?? (floating.x ?? 0) * PX_PER_POINT),
+    y: vBase + (alignedY ?? (floating.y ?? 0) * PX_PER_POINT),
+    width: Math.max(1, width),
+    height: Math.max(1, height),
+  };
 }
 
 export type ResolveTextBoxHeight = (textBox: EditorTextBoxData) => number;

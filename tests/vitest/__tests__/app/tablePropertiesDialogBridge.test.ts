@@ -72,6 +72,13 @@ describe("createTablePropertiesDialogBridge", () => {
       tableWidth: "80%",
       tableAlign: "center",
       tableIndentLeft: 18,
+      tableFloating: {
+        horizontalAnchor: "margin",
+        verticalAnchor: "text",
+        x: 12,
+        y: 6,
+      },
+      tableOverlap: "never",
       rowHeight: 30,
       rowHeightRule: "exact",
       repeatHeader: true,
@@ -90,6 +97,10 @@ describe("createTablePropertiesDialogBridge", () => {
         right: { type: "dashed", width: 0.5, color: "#222222" },
         bottom: null,
         left: null,
+        start: null,
+        end: null,
+        topLeftToBottomRight: null,
+        topRightToBottomLeft: null,
       },
       shading: "#ffeeaa",
       altTitle: "Table title",
@@ -97,7 +108,8 @@ describe("createTablePropertiesDialogBridge", () => {
     };
     bridge.applyTablePropertiesDialogValues(values);
 
-    const nextTable = getDocumentSectionsCanonical(state.document)[0]!.blocks[0];
+    const nextTable = getDocumentSectionsCanonical(state.document)[0]!
+      .blocks[0];
     expect(nextTable.type).toBe("table");
     if (nextTable.type !== "table") return;
     expect(nextTable.style).toMatchObject({

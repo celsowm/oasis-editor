@@ -1,6 +1,5 @@
 import { DOMParser } from "@xmldom/xmldom";
 import type {
-  EditorConditionalRowStyle,
   EditorNamedStyle,
   EditorTableConditionalFormat,
   EditorTableStyle,
@@ -13,7 +12,6 @@ import {
   isWordTrue,
   parseOnOffProperty,
 } from "./xmlHelpers.js";
-import { twipsToPoints } from "./units.js";
 import { type DocxImportTheme } from "./theme.js";
 import { parseRunStyle } from "./runStyle.js";
 import {
@@ -22,27 +20,11 @@ import {
 } from "./paragraphStyle.js";
 import { mergeStyles, emptyOrUndefined, parseShdFill } from "./styleUtils.js";
 import { parseDocxBoxBorders } from "./borders.js";
-
-function parseConditionalRowStyle(
-  trPr: ReturnType<typeof getFirstChildByTagNameNS>,
-): EditorConditionalRowStyle | undefined {
-  if (!trPr) return undefined;
-  const style: EditorConditionalRowStyle = {};
-  const trHeight = getFirstChildByTagNameNS(trPr, WORD_NS, "trHeight");
-  if (trHeight) {
-    const height = twipsToPoints(getAttributeValue(trHeight, "val"));
-    if (height !== undefined) style.height = height;
-    const hRule = getAttributeValue(trHeight, "hRule");
-    if (hRule === "auto" || hRule === "exact" || hRule === "atLeast") {
-      style.heightRule = hRule;
-    }
-  }
-  const cantSplit = parseOnOffProperty(trPr, "cantSplit");
-  if (cantSplit !== undefined) style.cantSplit = cantSplit;
-  const hidden = parseOnOffProperty(trPr, "hidden");
-  if (hidden !== undefined) style.hidden = hidden;
-  return Object.keys(style).length > 0 ? style : undefined;
-}
+import {
+  parseTableCellStyle,
+  parseTableRowStyle,
+  parseTableStyle,
+} from "./tableProperties.js";
 
 export function parseImportedStyles(
   stylesXml: string | null,
@@ -139,8 +121,6 @@ export function parseImportedStyles(
     let tableStyle: EditorTableStyle | undefined;
     if (type === "table") {
       const tblPr = getFirstChildByTagNameNS(styleElement, WORD_NS, "tblPr");
-      const tblInd = getFirstChildByTagNameNS(tblPr, WORD_NS, "tblInd");
-      const indentLeft = twipsToPoints(getAttributeValue(tblInd, "w"));
       const parseBandSize = (localName: string): number | undefined => {
         const raw = getAttributeValue(
           getFirstChildByTagNameNS(tblPr, WORD_NS, localName),
@@ -163,6 +143,10 @@ export function parseImportedStyles(
         const condType = getAttributeValue(tblStylePr, "type");
         if (!condType) continue;
         const tcPr = getFirstChildByTagNameNS(tblStylePr, WORD_NS, "tcPr");
+        const conditionalCellStyle = parseTableCellStyle(tcPr);
+        const conditionalTableStyle = parseTableStyle(
+          getFirstChildByTagNameNS(tblStylePr, WORD_NS, "tblPr"),
+        );
         const shd = getFirstChildByTagNameNS(tcPr, WORD_NS, "shd");
         const fill = parseShdFill(shd);
         const condTextStyle = parseRunStyle(
@@ -177,7 +161,7 @@ export function parseImportedStyles(
         const condParagraphStyle = parseParagraphStyle(
           getFirstChildByTagNameNS(tblStylePr, WORD_NS, "pPr"),
         );
-        const condRowStyle = parseConditionalRowStyle(
+        const condRowStyle = parseTableRowStyle(
           getFirstChildByTagNameNS(tblStylePr, WORD_NS, "trPr"),
         );
         if (
@@ -185,7 +169,9 @@ export function parseImportedStyles(
           condTextStyle ||
           condBorders ||
           condParagraphStyle ||
-          condRowStyle
+          condRowStyle ||
+          conditionalCellStyle ||
+          conditionalTableStyle
         ) {
           conditionalFormats[condType] = {
             ...(fill ? { shading: fill } : {}),
@@ -195,12 +181,17 @@ export function parseImportedStyles(
               ? { paragraphStyle: condParagraphStyle }
               : {}),
             ...(condRowStyle ? { rowStyle: condRowStyle } : {}),
+            ...(conditionalCellStyle
+              ? { cellStyle: conditionalCellStyle }
+              : {}),
+            ...(conditionalTableStyle
+              ? { tableStyle: conditionalTableStyle }
+              : {}),
           };
         }
       }
       tableStyle = {
-        styleId: id,
-        indentLeft,
+        ...(parseTableStyle(tblPr, id) ?? { styleId: id }),
         ...(rowBandSize !== undefined ? { rowBandSize } : {}),
         ...(colBandSize !== undefined ? { colBandSize } : {}),
         ...(Object.keys(conditionalFormats).length > 0
@@ -221,6 +212,7 @@ export function parseImportedStyles(
       id,
       name,
       type,
+      isDefault: isWordTrue(getAttributeValue(styleElement, "default")),
       basedOn,
       nextStyle,
       qFormat,

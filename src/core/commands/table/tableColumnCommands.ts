@@ -7,6 +7,7 @@ import type {
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { PT_PER_PX } from "@/core/units.js";
 import {
+  createTableRevisionMetadata,
   updateStateSections,
   updateTablesInBlocks,
 } from "./tableCommandUtils.js";
@@ -93,11 +94,20 @@ export function setTableColumnWidths(
         const newWidth = columnWidths[rightVisualColumnIndex];
 
         if (newWidth !== undefined && entry.colSpan === 1) {
+          const propertyRevision =
+            state.trackChangesEnabled && !cell.style?.propertyRevision
+              ? {
+                  ...createTableRevisionMetadata(),
+                  type: "property" as const,
+                  previous: { ...(cell.style ?? {}) },
+                }
+              : cell.style?.propertyRevision;
           return {
             ...cell,
             style: {
               ...(cell.style ?? {}),
               width: typeof newWidth === "number" ? newWidth : newWidth,
+              ...(propertyRevision ? { propertyRevision } : {}),
             },
           };
         }
@@ -108,6 +118,17 @@ export function setTableColumnWidths(
     });
 
     const nextStyle: EditorTableStyle = { ...(table.style ?? {}) };
+    if (
+      state.trackChangesEnabled &&
+      !nextStyle.revision &&
+      (tableWidth !== undefined || tableIndentLeft !== undefined)
+    ) {
+      nextStyle.revision = {
+        ...createTableRevisionMetadata(),
+        type: "property",
+        previous: { ...(table.style ?? {}) },
+      };
+    }
     if (tableWidth !== undefined) {
       nextStyle.width = tableWidth;
     }
@@ -123,6 +144,17 @@ export function setTableColumnWidths(
       rows: nextRows,
       gridCols:
         hasGridOverride && canResolveGrid ? nextGridCols : table.gridCols,
+      gridRevision:
+        state.trackChangesEnabled &&
+        hasGridOverride &&
+        canResolveGrid &&
+        !table.gridRevision
+          ? {
+              ...createTableRevisionMetadata(),
+              type: "grid",
+              previous: [...(table.gridCols ?? [])],
+            }
+          : table.gridRevision,
       style: Object.keys(nextStyle).length > 0 ? nextStyle : undefined,
     };
   };

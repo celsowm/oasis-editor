@@ -1,4 +1,13 @@
-import { getRunImage, getRunTextBox, getRunField, getRunFieldChar, getRunFieldInstruction, getRunFootnoteReference, getRunEndnoteReference, getRunSym } from "@/core/model.js";
+import {
+  getRunImage,
+  getRunTextBox,
+  getRunField,
+  getRunFieldChar,
+  getRunFieldInstruction,
+  getRunFootnoteReference,
+  getRunEndnoteReference,
+  getRunSym,
+} from "@/core/model.js";
 import { describe, expect, it } from "vitest";
 import {
   createEditorDocument,
@@ -24,6 +33,7 @@ import {
   getSelectedTextBoxWrapPreset,
   setSelectedTextBoxWrapPreset,
 } from "@/core/commands/textBox.js";
+import { resolveFloatingTableRect } from "@/layoutProjection/floatingObjects.js";
 import {
   paragraphOffsetToPosition,
   type EditorImageRunData,
@@ -87,6 +97,61 @@ describe("floatingLayout preset helpers", () => {
     expect(isFloatingFixedPosition(fixed)).toBe(true);
     const unfixed = applyMoveWithText(fixed, false);
     expect(isFloatingFixedPosition(unfixed)).toBe(false);
+  });
+});
+
+describe("floating table geometry", () => {
+  const pageSettings = {
+    width: 800,
+    height: 1000,
+    margins: {
+      top: 80,
+      right: 80,
+      bottom: 80,
+      left: 80,
+      header: 40,
+      footer: 40,
+      gutter: 0,
+    },
+  };
+
+  it("resolves point offsets against page and text anchors", () => {
+    expect(
+      resolveFloatingTableRect({
+        floating: {
+          horizontalAnchor: "page",
+          verticalAnchor: "text",
+          x: 12,
+          y: -6,
+        },
+        pageSettings,
+        contentLeft: 80,
+        contentTop: 80,
+        contentWidth: 640,
+        anchorTop: 200,
+        width: 240,
+        height: 100,
+        pageIndex: 0,
+      }),
+    ).toMatchObject({ x: 16, y: 192, width: 240, height: 100 });
+  });
+
+  it("mirrors inside/outside alignment on facing pages", () => {
+    const base = {
+      floating: {
+        horizontalAnchor: "page" as const,
+        xAlign: "outside" as const,
+      },
+      pageSettings,
+      contentLeft: 80,
+      contentTop: 80,
+      contentWidth: 640,
+      anchorTop: 200,
+      width: 200,
+      height: 100,
+    };
+    expect(resolveFloatingTableRect({ ...base, pageIndex: 0 }).x).toBe(600);
+    expect(resolveFloatingTableRect({ ...base, pageIndex: 1 }).x).toBe(0);
   });
 });
 

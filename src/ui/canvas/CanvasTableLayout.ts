@@ -8,6 +8,10 @@ import {
   type EditorTableCellNode,
   type EditorTableNode,
   type EditorTextRun,
+  type EditorRevisionMetadata,
+  resolveEffectiveTableCellFormatting,
+  resolveEffectiveTableStyle,
+  resolveTableParagraphInheritance,
 } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { projectParagraphLayout } from "@/layoutProjection/index.js";
@@ -57,7 +61,7 @@ function parseDimensionToPx(value: number | string | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function resolveTableWidth(
+export function resolveCanvasTableWidth(
   table: EditorTableNode,
   contentWidth: number,
 ): number {
@@ -116,10 +120,15 @@ export interface CanvasTableCellLayoutEntry {
     right: CanvasTableBorderSpec;
     bottom: CanvasTableBorderSpec;
     left: CanvasTableBorderSpec;
+    topLeftToBottomRight?: CanvasTableBorderSpec;
+    topRightToBottomLeft?: CanvasTableBorderSpec;
   };
   paragraphs: CanvasTableParagraphLayoutEntry[];
   /** Vertical text flow inside this cell (`horizontal` when not rotated). */
   verticalMode: VerticalRenderMode;
+  revision?: EditorRevisionMetadata & {
+    type: "insert" | "delete" | "merge" | "property";
+  };
 }
 
 export interface CanvasTableLayoutResult {
@@ -173,7 +182,7 @@ function resolveCellPadding(cell: EditorTableCellNode): {
       ? toPx(cell.style.paddingRight)
       : cell.style?.paddingEnd !== undefined
         ? toPx(cell.style.paddingEnd)
-      : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
+        : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
   const bottom =
     cell.style?.paddingBottom !== undefined
       ? toPx(cell.style.paddingBottom)
@@ -183,7 +192,7 @@ function resolveCellPadding(cell: EditorTableCellNode): {
       ? toPx(cell.style.paddingLeft)
       : cell.style?.paddingStart !== undefined
         ? toPx(cell.style.paddingStart)
-      : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
+        : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
 
   return { top, right, bottom, left };
 }
@@ -249,7 +258,7 @@ export function buildCanvasTableLayout(options: {
   estimatedHeight: number;
 }): CanvasTableLayoutResult {
   const {
-    table,
+    table: sourceTable,
     state,
     pageIndex,
     originX,
@@ -257,7 +266,11 @@ export function buildCanvasTableLayout(options: {
     contentWidth,
     estimatedHeight,
   } = options;
-  const tableWidth = resolveTableWidth(table, contentWidth);
+  const table: EditorTableNode = {
+    ...sourceTable,
+    style: resolveEffectiveTableStyle(sourceTable, state.document.styles),
+  };
+  const tableWidth = resolveCanvasTableWidth(table, contentWidth);
   const tableLeft = originX + resolveTableIndentLeft(table);
   const tableEntries = buildTableCellLayout(table);
   const unsupported: CanvasUnsupportedReason[] = [];
@@ -343,16 +356,62 @@ export function buildCanvasTableLayout(options: {
       (entry) => [`${entry.rowIndex}:${entry.cellIndex}`, entry] as const,
     ),
   );
+  const effectiveRowStyles = table.rows.map((row, rowIndex) => {
+    const entry = tableEntries.find(
+      (candidate) => candidate.rowIndex === rowIndex,
+    );
+    return entry
+      ? resolveEffectiveTableCellFormatting({
+          table: sourceTable,
+          rowIndex,
+          cellIndex: entry.cellIndex,
+          visualColumnIndex: entry.visualColumnIndex,
+          columnCount: visualColumnCount,
+          styles: state.document.styles,
+        }).rowStyle
+      : row.style;
+  });
   const prepared: PreparedCell[] = [];
 
   for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
     const row = table.rows[rowIndex]!;
-    if (row.style?.hidden) {
+    if (effectiveRowStyles[rowIndex]?.hidden) {
       continue;
     }
     for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
-      const cell = row.cells[cellIndex]!;
+      const sourceCell = row.cells[cellIndex]!;
       const entry = cellEntriesByKey.get(`${rowIndex}:${cellIndex}`);
+      if (!entry) {
+        continue;
+      }
+      const formatting = resolveEffectiveTableCellFormatting({
+        table: sourceTable,
+        rowIndex,
+        cellIndex,
+        visualColumnIndex: entry.visualColumnIndex,
+        columnCount: visualColumnCount,
+        styles: state.document.styles,
+      });
+      const cell: EditorTableCellNode = {
+        ...sourceCell,
+        style: formatting.cellStyle,
+        blocks: sourceCell.blocks.map((paragraph) => ({
+          ...paragraph,
+          style: {
+            ...resolveTableParagraphInheritance(
+              formatting.paragraphStyle,
+              paragraph.style?.styleId,
+              state.document.styles,
+            ),
+            ...paragraph.style,
+          },
+          runs: paragraph.runs.map((run) => ({
+            ...run,
+            styles: { ...formatting.textStyle, ...run.styles },
+          })),
+        })),
+      };
+      const effectiveRow = formatting.rowStyle;
       const rowSpan = Math.max(1, cell.rowSpan ?? 1);
       if (rowSpan > 1) {
         unsupported.push("unsupported:v-span");
@@ -363,10 +422,6 @@ export function buildCanvasTableLayout(options: {
       if (hasNestedTable(cell)) {
         unsupported.push("unsupported:nested-table");
       }
-      if (!entry) {
-        continue;
-      }
-
       const visualCol = entry.visualColumnIndex;
       const colSpan = Math.max(1, entry.colSpan);
 
@@ -377,11 +432,31 @@ export function buildCanvasTableLayout(options: {
       );
 
       const padding = resolveCellPadding(cell);
+      const logicalLeft = table.style?.bidiVisual
+        ? cell.style?.borderEnd
+        : cell.style?.borderStart;
+      const logicalRight = table.style?.bidiVisual
+        ? cell.style?.borderStart
+        : cell.style?.borderEnd;
       const borders = {
         top: resolveBorder(cell.style?.borderTop),
-        right: resolveBorder(cell.style?.borderRight ?? cell.style?.borderEnd),
+        right: resolveBorder(cell.style?.borderRight ?? logicalRight),
         bottom: resolveBorder(cell.style?.borderBottom),
-        left: resolveBorder(cell.style?.borderLeft ?? cell.style?.borderStart),
+        left: resolveBorder(cell.style?.borderLeft ?? logicalLeft),
+        ...(cell.style?.borderTopLeftToBottomRight
+          ? {
+              topLeftToBottomRight: resolveBorder(
+                cell.style.borderTopLeftToBottomRight,
+              ),
+            }
+          : {}),
+        ...(cell.style?.borderTopRightToBottomLeft
+          ? {
+              topRightToBottomLeft: resolveBorder(
+                cell.style.borderTopRightToBottomLeft,
+              ),
+            }
+          : {}),
       };
 
       const contentWidthPx = Math.max(
@@ -402,7 +477,7 @@ export function buildCanvasTableLayout(options: {
       // wrap against the available content height rather than the column width.
       // Cells carry explicit row heights in real documents; fall back to no-wrap
       // when the height is auto so the flow axis is driven by content length.
-      const explicitRowHeightPx = parseDimensionToPx(row.style?.height);
+      const explicitRowHeightPx = parseDimensionToPx(effectiveRow.height);
       const wrapWidth =
         isRotated || cell.style?.noWrap
           ? isRotated && explicitRowHeightPx !== null && explicitRowHeightPx > 0
@@ -470,8 +545,7 @@ export function buildCanvasTableLayout(options: {
             : 1;
         let effectiveSpacingBefore = spacingBefore;
         if (!isRotated && projectedParagraphs.length > 0) {
-          const previous =
-            projectedParagraphs[projectedParagraphs.length - 1]!;
+          const previous = projectedParagraphs[projectedParagraphs.length - 1]!;
           const collapsed = Math.min(previous.spacingAfter, spacingBefore);
           if (collapsed > 0) {
             if (previous.spacingAfter >= spacingBefore) {
@@ -555,10 +629,12 @@ export function buildCanvasTableLayout(options: {
   // ---------------------------------------------------------------------------
   const rowCount = Math.max(1, table.rows.length);
   const explicitRowHeights = table.rows.map((row) => {
-    if (row.style?.hidden) {
+    const rowIndex = table.rows.indexOf(row);
+    const effective = effectiveRowStyles[rowIndex];
+    if (effective?.hidden) {
       return 0;
     }
-    const explicit = parseDimensionToPx(row.style?.height);
+    const explicit = parseDimensionToPx(effective?.height);
     return explicit !== null && explicit > 0 ? explicit : null;
   });
   const fallbackPerRow =
@@ -566,7 +642,7 @@ export function buildCanvasTableLayout(options: {
 
   const rowHeights: number[] = [];
   for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
-    if (table.rows[rowIndex]?.style?.hidden) {
+    if (effectiveRowStyles[rowIndex]?.hidden) {
       rowHeights[rowIndex] = 0;
       continue;
     }
@@ -695,6 +771,11 @@ export function buildCanvasTableLayout(options: {
       borders,
       paragraphs,
       verticalMode: cellEntry.verticalMode,
+      revision:
+        cell.style?.revision ??
+        (cell.style?.propertyRevision
+          ? { ...cell.style.propertyRevision, type: "property" as const }
+          : undefined),
     });
   }
 

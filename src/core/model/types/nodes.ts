@@ -13,11 +13,14 @@ import type {
   EditorImageRunData,
   EditorParagraphListStyle,
   EditorRevision,
+  EditorPropertyRevision,
+  EditorStructuralRevision,
   EditorTableRowHeightRule,
 } from "./primitives.js";
 import type {
   EditorParagraphStyle,
   EditorTableStyle,
+  EditorTableConditionalFlags,
   EditorTextStyle,
 } from "./styles.js";
 
@@ -194,8 +197,10 @@ export interface EditorTableCellStyle {
   hideMark?: boolean;
   /** `w:headers/@w:val`: semantic header cell references. */
   headers?: string;
-  /** Preservation-only table-cell revision/property XML children. */
-  revisionXml?: string[];
+  /** Structural `cellIns`/`cellDel`/`cellMerge` revision. */
+  revision?: EditorStructuralRevision;
+  /** Previous cell properties from `w:tcPrChange`. */
+  propertyRevision?: EditorPropertyRevision<EditorTableCellStyle>;
 }
 
 export interface EditorTableCellNode {
@@ -205,9 +210,21 @@ export interface EditorTableCellNode {
   rowSpan?: number;
   vMerge?: "restart" | "continue";
   style?: EditorTableCellStyle;
+  conditionalStyle?: EditorTableConditionalFlags;
+  /** Exact pre-change cell grid retained while a tracked merge/split is pending. */
+  mergeRevisionState?: EditorTableMergeRevisionState;
+}
+
+export interface EditorTableMergeRevisionState {
+  revisionId: string;
+  orientation: "horizontal" | "vertical";
+  /** Number of cells occupying the changed horizontal range in current markup. */
+  currentCellCount: number;
+  previousCells: EditorTableCellNode[];
 }
 
 export interface EditorTableRowStyle {
+  isHeader?: boolean;
   height?: number | string;
   heightRule?: EditorTableRowHeightRule;
   gridBefore?: number;
@@ -220,8 +237,10 @@ export interface EditorTableRowStyle {
   hidden?: boolean;
   /** Row-level cell spacing override (`w:trPr/w:tblCellSpacing`). */
   cellSpacing?: EditorDocxWidthValue;
-  /** Preservation-only row revision/property XML children. */
-  revisionXml?: string[];
+  /** Structural row `w:ins`/`w:del` revision. */
+  revision?: EditorStructuralRevision;
+  /** Previous row properties from `w:trPrChange`. */
+  propertyRevision?: EditorPropertyRevision<EditorTableRowStyle>;
 }
 
 export interface EditorTableRowNode {
@@ -229,6 +248,7 @@ export interface EditorTableRowNode {
   cells: EditorTableCellNode[];
   isHeader?: boolean;
   style?: EditorTableRowStyle;
+  conditionalStyle?: EditorTableConditionalFlags;
   /**
    * Raw w:tblPrEx XML (per-row table property exceptions), serialized verbatim
    * before w:trPr. Preserved for DOCX round-trip fidelity only; not editable.
@@ -243,7 +263,7 @@ export interface EditorTableNode {
   gridCols?: number[];
   style?: EditorTableStyle;
   /** Preservation-only `w:tblGridChange` XML. */
-  tblGridChangeXml?: string;
+  gridRevision?: EditorPropertyRevision<number[]>;
 }
 
 export type EditorBlockNode = EditorParagraphNode | EditorTableNode;

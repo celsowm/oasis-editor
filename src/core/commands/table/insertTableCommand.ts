@@ -14,6 +14,7 @@ import {
 } from "@/core/editorState.js";
 import { clampPosition } from "@/core/selection.js";
 import { withSelection } from "@/core/selection/rangeEditing.js";
+import { createTableRevisionMetadata } from "./tableCommandUtils.js";
 
 export function insertTableAtSelection(
   state: EditorState,
@@ -21,6 +22,9 @@ export function insertTableAtSelection(
   cols: number,
 ): EditorState {
   const initialCellWidth = `${100 / Math.max(1, cols)}%`;
+  const insertionRevision = state.trackChangesEnabled
+    ? createTableRevisionMetadata()
+    : undefined;
   const tableRows = [];
   for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
     const cells = [];
@@ -32,7 +36,13 @@ export function insertTableAtSelection(
         },
       });
     }
-    tableRows.push(createEditorTableRow(cells));
+    const row = createEditorTableRow(cells);
+    if (insertionRevision) {
+      row.style = {
+        revision: { ...insertionRevision, type: "insert" },
+      };
+    }
+    tableRows.push(row);
   }
   const table = {
     ...createEditorTable(tableRows),

@@ -179,11 +179,47 @@ describe("buildCanvasTableLayout", () => {
       ...secondParagraph.lines.map((line) => line.top + line.height),
     );
 
-    expect(secondParagraph.originY - (firstParagraph.originY + firstLinesBottom))
-      .toBeCloseTo(16, 6);
+    expect(
+      secondParagraph.originY - (firstParagraph.originY + firstLinesBottom),
+    ).toBeCloseTo(16, 6);
     expect(renderedCell.contentHeight).toBeCloseTo(
       firstLinesBottom + 16 + secondLinesBottom,
       6,
     );
+  });
+
+  it("carries diagonal borders and resolves logical edges for RTL tables", () => {
+    const cell = createEditorTableCell([createEditorParagraph("RTL")]);
+    cell.style = {
+      borderStart: { width: 2, type: "solid", color: "#ff0000" },
+      borderEnd: { width: 3, type: "dashed", color: "#00ff00" },
+      borderTopLeftToBottomRight: {
+        width: 1,
+        type: "dotted",
+        color: "#0000ff",
+      },
+      borderTopRightToBottomLeft: {
+        width: 1.5,
+        type: "solid",
+        color: "#111111",
+      },
+    };
+    const table = createEditorTable([createEditorTableRow([cell])], [120]);
+    table.style = { width: 120, bidiVisual: true };
+    const state = createEditorStateFromDocument(createEditorDocument([table]));
+    const rendered = buildCanvasTableLayout({
+      table,
+      state,
+      pageIndex: 0,
+      originX: 0,
+      originY: 0,
+      contentWidth: 624,
+      estimatedHeight: 20,
+    }).cells[0]!;
+
+    expect(rendered.borders.right.color).toBe("#ff0000");
+    expect(rendered.borders.left.color).toBe("#00ff00");
+    expect(rendered.borders.topLeftToBottomRight?.color).toBe("#0000ff");
+    expect(rendered.borders.topRightToBottomLeft?.color).toBe("#111111");
   });
 });

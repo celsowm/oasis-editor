@@ -6,6 +6,7 @@ import type {
   EditorState,
   EditorTableNode,
   TableLocation,
+  EditorRevisionMetadata,
 } from "@/core/model.js";
 import {
   findParagraphTableLocation,
@@ -19,6 +20,14 @@ export type StylePatchValue<T, K extends keyof T> = T[K] | null;
 export interface ActiveTableLocation {
   activeSectionIndex: number;
   loc: TableLocation & { zone: EditorEditingZone };
+}
+
+export function createTableRevisionMetadata(): EditorRevisionMetadata {
+  return {
+    id: `rev:${Math.random().toString(36).slice(2, 9)}`,
+    author: "User",
+    date: Date.now(),
+  };
 }
 
 export function patchStyleValue<T extends object, K extends keyof T>(

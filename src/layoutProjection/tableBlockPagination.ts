@@ -17,6 +17,25 @@ import {
   positionsToBlockIndexes,
 } from "./tableRowSlicing.js";
 import type { PaginationTrack, TrackLayoutParams } from "./paginationTrack.js";
+import { resolveFloatingTableRect } from "./floatingObjects.js";
+import { PX_PER_POINT } from "@/core/units.js";
+import { getPageBodyTop } from "@/core/model.js";
+
+function resolveFloatingTableWidth(
+  table: EditorTableNode,
+  contentWidth: number,
+): number {
+  const width = table.style?.width;
+  if (typeof width === "number") return width * PX_PER_POINT;
+  if (typeof width === "string" && width.endsWith("%")) {
+    const percent = Number.parseFloat(width);
+    if (Number.isFinite(percent)) return contentWidth * (percent / 100);
+  }
+  if (table.gridCols?.length) {
+    return table.gridCols.reduce((sum, value) => sum + value, 0) * PX_PER_POINT;
+  }
+  return contentWidth;
+}
 
 /**
  * Lays a single table block into the track, splitting it across page breaks by
@@ -41,6 +60,79 @@ export function paginateTableBlock(
       measurer,
       defaultTabStop,
     );
+  if (sourceBlock.style?.floating) {
+    track.blocks.push({
+      blockId: sourceBlock.id,
+      sourceBlockId: sourceBlock.id,
+      blockType: sourceBlock.type,
+      globalIndex: index,
+      estimatedHeight: 0,
+      floatingTableHeight: tableHeight,
+      sourceBlock,
+    });
+    const pageContentLeft =
+      params.pageSettings.margins.left + params.pageSettings.margins.gutter;
+    const pageContentTop = getPageBodyTop(params.pageSettings);
+    const raw = resolveFloatingTableRect({
+      floating: sourceBlock.style.floating,
+      pageSettings: params.pageSettings,
+      contentLeft: pageContentLeft,
+      contentTop: pageContentTop,
+      contentWidth,
+      anchorTop: pageContentTop + track.height,
+      width: resolveFloatingTableWidth(sourceBlock, contentWidth),
+      height: tableHeight,
+      pageIndex: track.pageIndex,
+    });
+    const exclusion = {
+      x:
+        raw.x -
+        pageContentLeft -
+        (sourceBlock.style.floating.distanceLeft ?? 0) * PX_PER_POINT,
+      y:
+        raw.y -
+        pageContentTop -
+        (sourceBlock.style.floating.distanceTop ?? 0) * PX_PER_POINT,
+      width:
+        raw.width +
+        ((sourceBlock.style.floating.distanceLeft ?? 0) +
+          (sourceBlock.style.floating.distanceRight ?? 0)) *
+          PX_PER_POINT,
+      height:
+        raw.height +
+        ((sourceBlock.style.floating.distanceTop ?? 0) +
+          (sourceBlock.style.floating.distanceBottom ?? 0)) *
+          PX_PER_POINT,
+      wrap: "square",
+      sourceRunId: `table:${sourceBlock.id}`,
+    } as const;
+    let collisionOffsetY = 0;
+    if (sourceBlock.style.tblOverlap === "never") {
+      for (const existing of track.floatingExclusions) {
+        if (!existing.sourceRunId.startsWith("table:")) continue;
+        const overlaps =
+          exclusion.x < existing.x + existing.width &&
+          exclusion.x + exclusion.width > existing.x &&
+          exclusion.y + collisionOffsetY < existing.y + existing.height &&
+          exclusion.y + collisionOffsetY + exclusion.height > existing.y;
+        if (overlaps) {
+          collisionOffsetY = Math.max(
+            collisionOffsetY,
+            existing.y + existing.height - exclusion.y,
+          );
+        }
+      }
+    }
+    const layoutBlock = track.blocks.at(-1);
+    if (layoutBlock && collisionOffsetY > 0) {
+      layoutBlock.floatingTableOffsetY = collisionOffsetY;
+    }
+    track.floatingExclusions.push({
+      ...exclusion,
+      y: exclusion.y + collisionOffsetY,
+    });
+    return;
+  }
   const maxHeightForCurrentPage = track.currentMaxHeight;
   const firstRow = sourceBlock.rows[0];
   const canSplitSingleRow = canSplitTableRow(firstRow);

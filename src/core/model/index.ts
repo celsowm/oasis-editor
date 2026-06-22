@@ -28,6 +28,9 @@ export type {
   EditorFootnoteReferenceData,
   EditorEndnoteReferenceData,
   EditorRevision,
+  EditorRevisionMetadata,
+  EditorStructuralRevision,
+  EditorPropertyRevision,
   EditorAsset,
   EditorFootnoteNumberFormat,
   EditorFootnoteRestart,
@@ -40,8 +43,11 @@ export type {
   EditorTextStyle,
   EditorParagraphStyle,
   EditorTableStyle,
+  EditorTableFloatingLayout,
   EditorTableConditionalFormat,
   EditorConditionalRowStyle,
+  EditorTableConditionalType,
+  EditorTableConditionalFlags,
   EditorNamedStyle,
 } from "./types/styles.js";
 

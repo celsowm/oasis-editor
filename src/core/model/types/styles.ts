@@ -8,10 +8,12 @@ import type {
   EditorLigatures,
   EditorNumberForm,
   EditorNumberSpacing,
+  EditorPropertyRevision,
   EditorTabStop,
   EditorTextLanguage,
   EditorUnderlineStyle,
 } from "./primitives.js";
+import type { EditorTableCellStyle } from "./nodes.js";
 
 export interface EditorTextStyle {
   styleId?: string;
@@ -88,6 +90,7 @@ export interface EditorParagraphStyle {
 
 /** Row properties from a conditional format's `w:trPr`. */
 export interface EditorConditionalRowStyle {
+  isHeader?: boolean;
   height?: number | string;
   heightRule?: "auto" | "exact" | "atLeast";
   cantSplit?: boolean;
@@ -109,6 +112,50 @@ export interface EditorTableConditionalFormat {
   paragraphStyle?: EditorParagraphStyle;
   /** Row properties from the conditional's `w:trPr`. */
   rowStyle?: EditorConditionalRowStyle;
+  /** Full cell properties from conditional `w:tcPr`. */
+  cellStyle?: EditorTableCellStyle;
+  /** Conditional table properties from `w:tblPr`. */
+  tableStyle?: EditorTableStyle;
+}
+
+export type EditorTableConditionalType =
+  | "wholeTable"
+  | "band1Horz"
+  | "band2Horz"
+  | "band1Vert"
+  | "band2Vert"
+  | "firstCol"
+  | "lastCol"
+  | "firstRow"
+  | "lastRow"
+  | "nwCell"
+  | "neCell"
+  | "swCell"
+  | "seCell";
+
+export type EditorTableConditionalFlags = Partial<
+  Record<EditorTableConditionalType, boolean>
+>;
+
+/** Typed `w:tblpPr` positioning for a table whose text wrapping is "around". */
+export interface EditorTableFloatingLayout {
+  /** Horizontal positioning reference (`w:horzAnchor`). */
+  horizontalAnchor?: "margin" | "page" | "text";
+  /** Vertical positioning reference (`w:vertAnchor`). */
+  verticalAnchor?: "margin" | "page" | "text";
+  /** Explicit horizontal offset in points (`w:tblpX`, originally twips). */
+  x?: number;
+  /** Explicit vertical offset in points (`w:tblpY`, originally twips). */
+  y?: number;
+  /** Aligned horizontal position (`w:tblpXSpec`). */
+  xAlign?: "left" | "center" | "right" | "inside" | "outside";
+  /** Aligned vertical position (`w:tblpYSpec`). */
+  yAlign?: "top" | "center" | "bottom" | "inside" | "outside";
+  /** Text-wrap distances in points. */
+  distanceTop?: number;
+  distanceRight?: number;
+  distanceBottom?: number;
+  distanceLeft?: number;
 }
 
 export interface EditorTableStyle {
@@ -118,11 +165,19 @@ export interface EditorTableStyle {
   indentLeft?: EditorDocxWidthValue;
   layout?: "fixed" | "autofit";
   cellSpacing?: EditorDocxWidthValue;
+  borders?: {
+    borderTop?: EditorBorderStyle;
+    borderRight?: EditorBorderStyle;
+    borderBottom?: EditorBorderStyle;
+    borderLeft?: EditorBorderStyle;
+    borderInsideH?: EditorBorderStyle;
+    borderInsideV?: EditorBorderStyle;
+  };
   pageBreakBefore?: boolean;
   /** `w:bidiVisual`: visually order table columns right-to-left. */
   bidiVisual?: boolean;
   /** `w:tblOverlap/@w:val`: floating-table overlap behavior. */
-  tblOverlap?: string;
+  tblOverlap?: "overlap" | "never";
   /** `w:tblCellMar`: default margins for cells unless overridden by `w:tcMar`. */
   defaultCellMargins?: {
     top?: number;
@@ -132,14 +187,14 @@ export interface EditorTableStyle {
     start?: number;
     end?: number;
   };
-  /** Raw `w:tblpPr` attributes for floating table round-trip preservation. */
-  floating?: Record<string, string>;
+  /** Typed `w:tblpPr` floating-table position and wrap distances. */
+  floating?: EditorTableFloatingLayout;
   /** Table alt text title, corresponding to Word's table properties Alt Text title. */
   altTitle?: string;
   /** Table alt text description, corresponding to Word's table properties Alt Text description. */
   altDescription?: string;
-  /** Preservation-only table revision/property XML children. */
-  revisionXml?: string[];
+  /** Previous table properties from `w:tblPrChange`. */
+  revision?: EditorPropertyRevision<EditorTableStyle>;
   /** `w:tblStyleRowBandSize` — rows per horizontal band (default 1). */
   rowBandSize?: number;
   /** `w:tblStyleColBandSize` — columns per vertical band (default 1). */
@@ -161,6 +216,7 @@ export interface EditorNamedStyle {
   id: string;
   name: string;
   type: "paragraph" | "character" | "table";
+  isDefault?: boolean;
   basedOn?: string;
   nextStyle?: string;
   /** Word quick-style gallery metadata (`w:qFormat`). */

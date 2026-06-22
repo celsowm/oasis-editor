@@ -45,7 +45,7 @@ export interface RevisionBox {
   revisionId: string;
   author: string;
   date: number;
-  type: "insert" | "delete";
+  type: "insert" | "delete" | "merge" | "property" | "grid";
   left: number;
   top: number;
 }

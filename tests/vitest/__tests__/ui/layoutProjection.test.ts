@@ -7,6 +7,7 @@ import {
 } from "@/layoutProjection/index.js";
 import {
   createEditorParagraph,
+  createEditorParagraphFromRuns,
   createEditorTable,
   createEditorTableCell,
   createEditorTableRow,
@@ -385,6 +386,74 @@ describe("layout projection", () => {
       );
     });
 
+    it("keeps a floating table as a measured zero-height flow anchor", () => {
+      const before = createEditorParagraph("before");
+      const table = createEditorTable([
+        createEditorTableRow([
+          createEditorTableCell([createEditorParagraph("floating")]),
+        ]),
+      ]);
+      table.style = {
+        width: 180,
+        floating: {
+          horizontalAnchor: "margin",
+          verticalAnchor: "text",
+          x: 12,
+          y: 6,
+        },
+      };
+      const after = createEditorParagraph("after");
+      const page = projectBlocksLayout({
+        blocks: [before, table, after],
+        pageSettings: A4,
+        maxPageHeight: 800,
+      })[0]!;
+      const floatingBlock = page.blocks[1]!;
+      expect(floatingBlock.estimatedHeight).toBe(0);
+      expect(floatingBlock.floatingTableHeight).toBeGreaterThan(0);
+      expect(page.height).toBeCloseTo(
+        page.blocks[0]!.estimatedHeight + page.blocks[2]!.estimatedHeight,
+        6,
+      );
+      expect(
+        page.blocks[2]!.layout!.lines.some(
+          (line) => (line.availableWidth ?? 624) < 624,
+        ),
+      ).toBe(true);
+    });
+
+    it("carries a floating image exclusion into following paragraphs", () => {
+      const anchor = createEditorParagraphFromRuns([
+        {
+          text: "￼",
+          image: {
+            src: "asset:missing",
+            width: 220,
+            height: 120,
+            floating: {
+              type: "floating",
+              wrap: "square",
+              positionH: { relativeFrom: "column", offset: 0 },
+              positionV: { relativeFrom: "paragraph", offset: 0 },
+            },
+          },
+        },
+      ]);
+      const following = createEditorParagraph(
+        "following paragraph text ".repeat(20),
+      );
+      const page = projectBlocksLayout({
+        blocks: [anchor, following],
+        pageSettings: A4,
+        maxPageHeight: 800,
+      })[0]!;
+      expect(
+        page.blocks[1]!.layout!.lines.some(
+          (line) => (line.availableWidth ?? 624) < 624,
+        ),
+      ).toBe(true);
+    });
+
     it("splits table rows across pages when cells contain multiple paragraphs", () => {
       const table = createEditorTable([
         createEditorTableRow([
@@ -468,9 +537,9 @@ describe("layout projection", () => {
       const segmentTexts = pages.map((page) => {
         const segment = page.blocks[0]!.tableSegment!;
         const segmentTable = buildSegmentTable(table, segment);
-        return segmentTable.rows[0]!.cells[0]!.blocks
-          .flatMap((block) => block.runs.map((run) => run.text))
-          .join("");
+        return segmentTable.rows[0]!.cells[0]!.blocks.flatMap((block) =>
+          block.runs.map((run) => run.text),
+        ).join("");
       });
       const [firstText, secondText] = segmentTexts;
       expect(firstText.length).toBeGreaterThan(0);

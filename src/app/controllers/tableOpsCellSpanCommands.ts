@@ -14,6 +14,7 @@ import {
   type EditorTableNode,
 } from "@/core/model.js";
 import { updateBlocksInCurrentSection } from "./tableOpsMutationCommands.js";
+import { createTableRevisionMetadata } from "@/core/commands/table/tableCommandUtils.js";
 import type {
   HorizontalTableCellRange,
   VerticalTableCellRange,
@@ -39,6 +40,20 @@ interface TableCellSpanOperationsDeps {
 export function createTableCellSpanOperations(
   deps: TableCellSpanOperationsDeps,
 ) {
+  const cloneCellSnapshot = (
+    cell: NonNullable<EditorTableNode["rows"][number]["cells"][number]>,
+  ) => ({
+    ...cell,
+    style: cell.style ? { ...cell.style } : undefined,
+    conditionalStyle: cell.conditionalStyle
+      ? { ...cell.conditionalStyle }
+      : undefined,
+    mergeRevisionState: undefined,
+    blocks: cell.blocks.map((block) =>
+      cloneBlock(block),
+    ) as EditorParagraphNode[],
+  });
+
   const mergeSelectedTableCells = (current: EditorState): EditorState => {
     const range = deps.resolveHorizontalTableCellRange(current);
     if (!range) {
@@ -66,6 +81,9 @@ export function createTableCellSpanOperations(
       return current;
     }
 
+    const revision = current.trackChangesEnabled
+      ? createTableRevisionMetadata()
+      : undefined;
     const mergedCell = {
       ...selectedCells[0]!,
       colSpan: selectedCells.reduce(
@@ -75,6 +93,28 @@ export function createTableCellSpanOperations(
       blocks: selectedCells.flatMap((cell) =>
         cell.blocks.map((paragraph) => cloneBlock(paragraph)),
       ) as EditorParagraphNode[],
+      ...(revision
+        ? {
+            style: {
+              ...(selectedCells[0]!.style ?? {}),
+              revision: {
+                ...revision,
+                type: "merge" as const,
+                previous: {
+                  colSpan: selectedCells[0]!.colSpan,
+                  rowSpan: selectedCells[0]!.rowSpan,
+                  vMerge: selectedCells[0]!.vMerge,
+                },
+              },
+            },
+            mergeRevisionState: {
+              revisionId: revision.id,
+              orientation: "horizontal" as const,
+              currentCellCount: 1,
+              previousCells: selectedCells.map(cloneCellSnapshot),
+            },
+          }
+        : {}),
     };
 
     row.cells.splice(range.startCellIndex, selectedCells.length, mergedCell);
@@ -146,6 +186,9 @@ export function createTableCellSpanOperations(
       return current;
     }
 
+    const revision = current.trackChangesEnabled
+      ? createTableRevisionMetadata()
+      : undefined;
     const mergedCell = {
       ...selectedCells[0]!,
       rowSpan: selectedCells.length,
@@ -153,6 +196,28 @@ export function createTableCellSpanOperations(
       blocks: selectedCells.flatMap((cell) =>
         cell.blocks.map((paragraph) => cloneBlock(paragraph)),
       ) as EditorParagraphNode[],
+      ...(revision
+        ? {
+            style: {
+              ...(selectedCells[0]!.style ?? {}),
+              revision: {
+                ...revision,
+                type: "merge" as const,
+                previous: {
+                  colSpan: selectedCells[0]!.colSpan,
+                  rowSpan: selectedCells[0]!.rowSpan,
+                  vMerge: selectedCells[0]!.vMerge,
+                },
+              },
+            },
+            mergeRevisionState: {
+              revisionId: revision.id,
+              orientation: "vertical" as const,
+              currentCellCount: 1,
+              previousCells: selectedCells.map(cloneCellSnapshot),
+            },
+          }
+        : {}),
     };
     tableBlock.rows[range.startRowIndex]!.cells[range.cellIndex] = mergedCell;
 
@@ -227,10 +292,44 @@ export function createTableCellSpanOperations(
       return current;
     }
 
+    const previousCell = cloneCellSnapshot(cell);
+    const revision = current.trackChangesEnabled
+      ? createTableRevisionMetadata()
+      : undefined;
+    const preservedColSpan = Math.max(1, cell.colSpan ?? 1);
     cell.rowSpan = undefined;
     cell.vMerge = undefined;
-
-    const preservedColSpan = Math.max(1, cell.colSpan ?? 1);
+    if (revision) {
+      cell.style = {
+        ...(cell.style ?? {}),
+        revision: {
+          ...revision,
+          type: "merge",
+          previous: {
+            colSpan: previousCell.colSpan,
+            rowSpan: previousCell.rowSpan,
+            vMerge: previousCell.vMerge,
+          },
+        },
+      };
+      cell.mergeRevisionState = {
+        revisionId: revision.id,
+        orientation: "vertical",
+        currentCellCount: 1,
+        previousCells: [
+          previousCell,
+          ...Array.from({ length: span - 1 }, (_, offset) => {
+            const prior =
+              tableBlock.rows[location.rowIndex + offset + 1]?.cells[
+                location.cellIndex
+              ];
+            return prior
+              ? cloneCellSnapshot(prior)
+              : createEditorTableCell([], preservedColSpan);
+          }),
+        ],
+      };
+    }
 
     for (let offset = 1; offset < span; offset += 1) {
       const row = tableBlock.rows[location.rowIndex + offset];
@@ -288,6 +387,10 @@ export function createTableCellSpanOperations(
       return current;
     }
 
+    const previousCell = cloneCellSnapshot(cell);
+    const revision = current.trackChangesEnabled
+      ? createTableRevisionMetadata()
+      : undefined;
     const nextCells = [
       {
         ...cell,
@@ -295,6 +398,28 @@ export function createTableCellSpanOperations(
         blocks: cell.blocks.map((paragraph) =>
           cloneBlock(paragraph),
         ) as EditorParagraphNode[],
+        ...(revision
+          ? {
+              style: {
+                ...(cell.style ?? {}),
+                revision: {
+                  ...revision,
+                  type: "merge" as const,
+                  previous: {
+                    colSpan: previousCell.colSpan,
+                    rowSpan: previousCell.rowSpan,
+                    vMerge: previousCell.vMerge,
+                  },
+                },
+              },
+              mergeRevisionState: {
+                revisionId: revision.id,
+                orientation: "horizontal" as const,
+                currentCellCount: span,
+                previousCells: [previousCell],
+              },
+            }
+          : {}),
       },
       ...Array.from({ length: span - 1 }, () =>
         createEditorTableCell([createEditorParagraph("")]),

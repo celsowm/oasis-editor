@@ -1,12 +1,15 @@
-import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
+import { type Element as XmlElement } from "@xmldom/xmldom";
 import type {
   EditorDocxWidthValue,
   EditorParagraphNode,
   EditorTableCellStyle,
+  EditorTableFloatingLayout,
   EditorTableLayout,
   EditorTableRowNode,
   EditorTableRowStyle,
   EditorTableStyle,
+  EditorRevisionMetadata,
+  EditorTableConditionalFlags,
 } from "@/core/model.js";
 import {
   WORD_NS,
@@ -15,7 +18,11 @@ import {
   parseOnOffProperty,
   parseTextDirection,
 } from "./xmlHelpers.js";
-import { type EditorTableBorders, parseDocxBoxBorders } from "./borders.js";
+import {
+  type EditorTableBorders,
+  parseDocxBoxBorders,
+  parseDocxTableBorders,
+} from "./borders.js";
 import { twipsToPoints } from "./units.js";
 import { emptyOrUndefined, parseShdFill } from "./styleUtils.js";
 import { type ParagraphAutospacingFlags } from "./paragraphStyle.js";
@@ -71,45 +78,114 @@ function parsePositiveIntegerProperty(
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined;
 }
 
-function serializeChildXml(
-  parent: XmlElement | null,
-  localNames: string[],
-): string[] | undefined {
-  if (!parent) {
-    return undefined;
-  }
-  const names = new Set(localNames);
-  const serializer = new XMLSerializer();
-  const result: string[] = [];
-  const children = parent.childNodes;
-  for (let index = 0; index < children.length; index += 1) {
-    const node = children[index];
-    if (
-      node?.nodeType === node.ELEMENT_NODE &&
-      (node as XmlElement).namespaceURI === WORD_NS &&
-      names.has((node as XmlElement).localName ?? "")
-    ) {
-      result.push(serializer.serializeToString(node as XmlElement));
+export function parseTableConditionalFlags(
+  properties: XmlElement | null,
+): EditorTableConditionalFlags | undefined {
+  const element = getFirstChildByTagNameNS(properties, WORD_NS, "cnfStyle");
+  if (!element) return undefined;
+  const names: Array<[string, keyof EditorTableConditionalFlags]> = [
+    ["firstRow", "firstRow"],
+    ["lastRow", "lastRow"],
+    ["firstColumn", "firstCol"],
+    ["lastColumn", "lastCol"],
+    ["oddVBand", "band1Vert"],
+    ["evenVBand", "band2Vert"],
+    ["oddHBand", "band1Horz"],
+    ["evenHBand", "band2Horz"],
+    ["firstRowFirstColumn", "nwCell"],
+    ["firstRowLastColumn", "neCell"],
+    ["lastRowFirstColumn", "swCell"],
+    ["lastRowLastColumn", "seCell"],
+  ];
+  const rawBits = getAttributeValue(element, "val") ?? "";
+  const flags: EditorTableConditionalFlags = {};
+  names.forEach(([attribute, key], index) => {
+    const explicit = getAttributeValue(element, attribute);
+    if (explicit === "1" || explicit === "true" || explicit === "on") {
+      flags[key] = true;
+    } else if (explicit === "0" || explicit === "false" || explicit === "off") {
+      flags[key] = false;
+    } else if (rawBits.length === 12 && rawBits[index] === "1") {
+      flags[key] = true;
     }
-  }
-  return result.length > 0 ? result : undefined;
+  });
+  return Object.keys(flags).length > 0 ? flags : undefined;
+}
+
+function parseRevisionMetadata(element: XmlElement): EditorRevisionMetadata {
+  const rawDate = getAttributeValue(element, "date");
+  const parsedDate = rawDate ? Date.parse(rawDate) : Number.NaN;
+  return {
+    id: getAttributeValue(element, "id") ?? `revision:${element.localName}`,
+    author: getAttributeValue(element, "author") ?? "Unknown",
+    date: Number.isFinite(parsedDate) ? parsedDate : 0,
+  };
 }
 
 function parseFloatingTableProperties(
   tblPr: XmlElement | null,
-): Record<string, string> | undefined {
+): EditorTableFloatingLayout | undefined {
   const tblpPr = getFirstChildByTagNameNS(tblPr, WORD_NS, "tblpPr");
   if (!tblpPr || !tblpPr.attributes || tblpPr.attributes.length === 0) {
     return undefined;
   }
-  const floating: Record<string, string> = {};
+  const attrs: Record<string, string> = {};
   for (let index = 0; index < tblpPr.attributes.length; index += 1) {
     const attr = tblpPr.attributes.item(index);
     if (attr?.namespaceURI === WORD_NS || attr?.prefix === "w") {
-      floating[attr.localName || attr.name.replace(/^w:/, "")] = attr.value;
+      attrs[attr.localName || attr.name.replace(/^w:/, "")] = attr.value;
     }
   }
-  return Object.keys(floating).length > 0 ? floating : undefined;
+  const point = (name: string): number | undefined =>
+    twipsToPoints(attrs[name] ?? null);
+  const horizontalAnchor =
+    attrs.horzAnchor === "margin" ||
+    attrs.horzAnchor === "page" ||
+    attrs.horzAnchor === "text"
+      ? attrs.horzAnchor
+      : undefined;
+  const verticalAnchor =
+    attrs.vertAnchor === "margin" ||
+    attrs.vertAnchor === "page" ||
+    attrs.vertAnchor === "text"
+      ? attrs.vertAnchor
+      : undefined;
+  const xAlign =
+    attrs.tblpXSpec === "left" ||
+    attrs.tblpXSpec === "center" ||
+    attrs.tblpXSpec === "right" ||
+    attrs.tblpXSpec === "inside" ||
+    attrs.tblpXSpec === "outside"
+      ? attrs.tblpXSpec
+      : undefined;
+  const yAlign =
+    attrs.tblpYSpec === "top" ||
+    attrs.tblpYSpec === "center" ||
+    attrs.tblpYSpec === "bottom" ||
+    attrs.tblpYSpec === "inside" ||
+    attrs.tblpYSpec === "outside"
+      ? attrs.tblpYSpec
+      : undefined;
+  return {
+    ...(horizontalAnchor ? { horizontalAnchor } : {}),
+    ...(verticalAnchor ? { verticalAnchor } : {}),
+    ...(point("tblpX") !== undefined ? { x: point("tblpX") } : {}),
+    ...(point("tblpY") !== undefined ? { y: point("tblpY") } : {}),
+    ...(xAlign ? { xAlign } : {}),
+    ...(yAlign ? { yAlign } : {}),
+    ...(point("topFromText") !== undefined
+      ? { distanceTop: point("topFromText") }
+      : {}),
+    ...(point("rightFromText") !== undefined
+      ? { distanceRight: point("rightFromText") }
+      : {}),
+    ...(point("bottomFromText") !== undefined
+      ? { distanceBottom: point("bottomFromText") }
+      : {}),
+    ...(point("leftFromText") !== undefined
+      ? { distanceLeft: point("leftFromText") }
+      : {}),
+  };
 }
 
 function parseCellMargins(
@@ -120,7 +196,10 @@ function parseCellMargins(
   }
   const edgePt = (edge: string) =>
     twipsToPoints(
-      getAttributeValue(getFirstChildByTagNameNS(container, WORD_NS, edge), "w"),
+      getAttributeValue(
+        getFirstChildByTagNameNS(container, WORD_NS, edge),
+        "w",
+      ),
     );
   const margins: NonNullable<EditorTableStyle["defaultCellMargins"]> = {};
   const top = edgePt("top");
@@ -207,6 +286,10 @@ export function parseTableStyle(
   if (cellSpacing !== undefined) {
     style.cellSpacing = cellSpacing;
   }
+  const borders = parseDocxTableBorders(
+    getFirstChildByTagNameNS(tblPr, WORD_NS, "tblBorders"),
+  );
+  if (Object.keys(borders).length > 0) style.borders = borders;
 
   const defaultCellMargins = parseCellMargins(
     getFirstChildByTagNameNS(tblPr, WORD_NS, "tblCellMar"),
@@ -215,7 +298,9 @@ export function parseTableStyle(
     style.defaultCellMargins = defaultCellMargins;
   }
 
-  const bidiVisual = tblPr ? parseOnOffProperty(tblPr, "bidiVisual") : undefined;
+  const bidiVisual = tblPr
+    ? parseOnOffProperty(tblPr, "bidiVisual")
+    : undefined;
   if (bidiVisual !== undefined) {
     style.bidiVisual = bidiVisual;
   }
@@ -224,7 +309,7 @@ export function parseTableStyle(
     getFirstChildByTagNameNS(tblPr, WORD_NS, "tblOverlap"),
     "val",
   );
-  if (tblOverlap) {
+  if (tblOverlap === "overlap" || tblOverlap === "never") {
     style.tblOverlap = tblOverlap;
   }
 
@@ -233,9 +318,46 @@ export function parseTableStyle(
     style.floating = floating;
   }
 
-  const revisionXml = serializeChildXml(tblPr, ["tblPrChange"]);
-  if (revisionXml) {
-    style.revisionXml = revisionXml;
+  const rowBandSize = parsePositiveIntegerProperty(
+    tblPr,
+    "tblStyleRowBandSize",
+  );
+  if (rowBandSize !== undefined) style.rowBandSize = rowBandSize;
+  const colBandSize = parsePositiveIntegerProperty(
+    tblPr,
+    "tblStyleColBandSize",
+  );
+  if (colBandSize !== undefined) style.colBandSize = colBandSize;
+
+  const tblLook = getFirstChildByTagNameNS(tblPr, WORD_NS, "tblLook");
+  if (tblLook) {
+    const raw = getAttributeValue(tblLook, "val");
+    const mask = raw ? Number.parseInt(raw, 16) : Number.NaN;
+    const flag = (name: string, bit: number, fallback: boolean) => {
+      const value = getAttributeValue(tblLook, name);
+      if (value !== null && value !== "") {
+        return value === "1" || value === "true" || value === "on";
+      }
+      return Number.isFinite(mask) ? (mask & bit) !== 0 : fallback;
+    };
+    style.tblLook = {
+      firstRow: flag("firstRow", 0x0020, true),
+      lastRow: flag("lastRow", 0x0040, false),
+      firstCol: flag("firstColumn", 0x0080, true),
+      lastCol: flag("lastColumn", 0x0100, false),
+      noHBand: flag("noHBand", 0x0200, false),
+      noVBand: flag("noVBand", 0x0400, false),
+    };
+  }
+
+  const change = getFirstChildByTagNameNS(tblPr, WORD_NS, "tblPrChange");
+  const previousProperties = getFirstChildByTagNameNS(change, WORD_NS, "tblPr");
+  if (change && previousProperties) {
+    style.revision = {
+      ...parseRevisionMetadata(change),
+      type: "property",
+      previous: parseTableStyle(previousProperties) ?? {},
+    };
   }
 
   return emptyOrUndefined(style);
@@ -249,6 +371,8 @@ export function parseTableRowStyle(
   }
 
   const style: EditorTableRowStyle = {};
+  const isHeader = parseOnOffProperty(rowProperties, "tblHeader");
+  if (isHeader !== undefined) style.isHeader = isHeader;
 
   const gridBefore = parsePositiveIntegerProperty(rowProperties, "gridBefore");
   if (gridBefore !== undefined) {
@@ -300,13 +424,23 @@ export function parseTableRowStyle(
     style.hidden = hidden;
   }
 
-  const revisionXml = serializeChildXml(rowProperties, [
-    "trPrChange",
-    "ins",
-    "del",
-  ]);
-  if (revisionXml) {
-    style.revisionXml = revisionXml;
+  const change = getFirstChildByTagNameNS(rowProperties, WORD_NS, "trPrChange");
+  const previousProperties = getFirstChildByTagNameNS(change, WORD_NS, "trPr");
+  if (change && previousProperties) {
+    style.propertyRevision = {
+      ...parseRevisionMetadata(change),
+      type: "property",
+      previous: parseTableRowStyle(previousProperties) ?? {},
+    };
+  }
+  const inserted = getFirstChildByTagNameNS(rowProperties, WORD_NS, "ins");
+  const deleted = getFirstChildByTagNameNS(rowProperties, WORD_NS, "del");
+  const structural = inserted ?? deleted;
+  if (structural) {
+    style.revision = {
+      ...parseRevisionMetadata(structural),
+      type: inserted ? "insert" : "delete",
+    };
   }
 
   return emptyOrUndefined(style);
@@ -478,14 +612,36 @@ export function parseTableCellStyle(
   if (headers) {
     style.headers = headers;
   }
-  const revisionXml = serializeChildXml(cellProperties, [
+  const change = getFirstChildByTagNameNS(
+    cellProperties,
+    WORD_NS,
     "tcPrChange",
-    "cellIns",
-    "cellDel",
-    "cellMerge",
-  ]);
-  if (revisionXml) {
-    style.revisionXml = revisionXml;
+  );
+  const previousProperties = getFirstChildByTagNameNS(change, WORD_NS, "tcPr");
+  if (change && previousProperties) {
+    style.propertyRevision = {
+      ...parseRevisionMetadata(change),
+      type: "property",
+      previous: parseTableCellStyle(previousProperties) ?? {},
+    };
+  }
+  const inserted = getFirstChildByTagNameNS(cellProperties, WORD_NS, "cellIns");
+  const deleted = getFirstChildByTagNameNS(cellProperties, WORD_NS, "cellDel");
+  const merged = getFirstChildByTagNameNS(cellProperties, WORD_NS, "cellMerge");
+  const structural = inserted ?? deleted ?? merged;
+  if (structural) {
+    const originalMerge = getAttributeValue(structural, "vMergeOrig");
+    style.revision = {
+      ...parseRevisionMetadata(structural),
+      type: inserted ? "insert" : deleted ? "delete" : "merge",
+      ...(merged && originalMerge
+        ? {
+            previous: {
+              vMerge: originalMerge === "restart" ? "restart" : "continue",
+            },
+          }
+        : {}),
+    };
   }
 
   for (const [key, border] of Object.entries(

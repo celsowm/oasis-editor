@@ -3,13 +3,19 @@ import {
   createMemo,
   createSignal,
   Index,
+  For,
   on,
   onCleanup,
   Show,
 } from "solid-js";
 import type { ITextMeasurer } from "@/core/engine.js";
 import type { EditorSurfaceProps } from "@/ui/editorUiTypes.js";
-import { type EditorLayoutPage, type EditorState } from "@/core/model.js";
+import {
+  getPageColumnRects,
+  type EditorLayoutPage,
+  type EditorState,
+} from "@/core/model.js";
+import { buildSegmentTable } from "@/core/tableLayout.js";
 import {
   clearNormalLineHeightCache,
   clearTextMeasureCache,
@@ -24,6 +30,11 @@ import {
   clearProjectedParagraphLayoutCache,
   projectDocumentLayout,
 } from "@/layoutProjection/index.js";
+import { resolveFloatingTableRect } from "@/layoutProjection/floatingObjects.js";
+import {
+  buildCanvasTableLayout,
+  resolveCanvasTableWidth,
+} from "@/ui/canvas/CanvasTableLayout.js";
 import { createEditorLogger } from "@/utils/logger.js";
 import { createLayoutIdentityStabilizer } from "@/ui/layoutIdentity.js";
 import { PageBreak } from "@/ui/components/PageBreak.js";
@@ -163,6 +174,8 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
               onSurfaceClick={props.onSurfaceClick}
               onSurfaceMouseMove={props.onSurfaceMouseMove}
               onSurfaceDblClick={props.onSurfaceDblClick}
+              onRevisionMouseEnter={props.onRevisionMouseEnter}
+              onRevisionMouseLeave={props.onRevisionMouseLeave}
             />
           </div>
         )}
@@ -180,12 +193,73 @@ function CanvasPage(props: {
   onSurfaceClick?: (event: MouseEvent) => void;
   onSurfaceMouseMove?: (event: MouseEvent) => void;
   onSurfaceDblClick: (event: MouseEvent) => void;
+  onRevisionMouseEnter: (revisionId: string, event: MouseEvent) => void;
+  onRevisionMouseLeave?: (revisionId: string, event: MouseEvent) => void;
 }) {
   let canvasRef: HTMLCanvasElement | undefined;
   const renderer = createCanvasPageRenderer({
     getCanvas: () => canvasRef,
     getPage: () => props.page,
     getState: () => props.state,
+  });
+  const revisionCells = createMemo(() => {
+    const result: Array<{
+      id: string;
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+    }> = [];
+    let cursorY = props.page.bodyTop ?? props.page.pageSettings.margins.top;
+    const columns = getPageColumnRects(props.page.pageSettings);
+    for (const block of props.page.blocks) {
+      if (block.sourceBlock.type === "table") {
+        const column = columns[block.columnIndex ?? 0] ?? columns[0]!;
+        const sourceTable = block.tableSegment
+          ? buildSegmentTable(block.sourceBlock, block.tableSegment)
+          : block.sourceBlock;
+        let originX = column.left;
+        let originY = cursorY;
+        const floating = sourceTable.style?.floating;
+        if (floating) {
+          const rect = resolveFloatingTableRect({
+            floating,
+            pageSettings: props.page.pageSettings,
+            contentLeft: column.left,
+            contentTop:
+              props.page.bodyTop ?? props.page.pageSettings.margins.top,
+            contentWidth: column.width,
+            anchorTop: cursorY,
+            width: resolveCanvasTableWidth(sourceTable, column.width),
+            height: block.floatingTableHeight ?? 1,
+            pageIndex: props.page.index,
+          });
+          originX = rect.x;
+          originY = rect.y + (block.floatingTableOffsetY ?? 0);
+        }
+        const layout = buildCanvasTableLayout({
+          table: sourceTable,
+          state: props.state,
+          pageIndex: props.page.index,
+          originX,
+          originY,
+          contentWidth: column.width,
+          estimatedHeight: block.floatingTableHeight ?? block.estimatedHeight,
+        });
+        for (const cell of layout.cells) {
+          if (!cell.revision) continue;
+          result.push({
+            id: cell.revision.id,
+            left: cell.left,
+            top: cell.top,
+            width: cell.width,
+            height: cell.height,
+          });
+        }
+      }
+      cursorY += Math.max(0, block.estimatedHeight);
+    }
+    return result;
   });
 
   createEffect(() => {
@@ -240,6 +314,30 @@ function CanvasPage(props: {
       onDblClick={props.onSurfaceDblClick}
     >
       <canvas ref={canvasRef} />
+      <For each={revisionCells()}>
+        {(revision) => (
+          <div
+            class="oasis-editor-table-revision-hit"
+            data-revision-id={revision.id}
+            style={{
+              position: "absolute",
+              left: `${revision.left}px`,
+              top: `${revision.top}px`,
+              width: `${revision.width}px`,
+              height: `${revision.height}px`,
+              "pointer-events": "auto",
+              background: "transparent",
+            }}
+            onMouseEnter={(event) =>
+              props.onRevisionMouseEnter(revision.id, event)
+            }
+            onMouseLeave={(event) =>
+              props.onRevisionMouseLeave?.(revision.id, event)
+            }
+            onMouseDown={props.onSurfaceMouseDown}
+          />
+        )}
+      </For>
     </div>
   );
 }

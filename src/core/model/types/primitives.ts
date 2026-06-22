@@ -190,6 +190,26 @@ export interface EditorRevision {
   date: number;
 }
 
+export interface EditorRevisionMetadata {
+  id: string;
+  author: string;
+  date: number;
+}
+
+export interface EditorStructuralRevision extends EditorRevisionMetadata {
+  type: "insert" | "delete" | "merge";
+  previous?: {
+    colSpan?: number;
+    rowSpan?: number;
+    vMerge?: "restart" | "continue";
+  };
+}
+
+export interface EditorPropertyRevision<T> extends EditorRevisionMetadata {
+  type: "property" | "grid";
+  previous: T;
+}
+
 export interface EditorAsset {
   id: string;
   url: string;

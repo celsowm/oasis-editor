@@ -8,3 +8,4 @@
  * without any change.
  */
 export * from "./model/index.js";
+export * from "./tableStyleResolver.js";

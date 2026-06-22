@@ -236,6 +236,7 @@ export async function drawFloatingTextBoxesForParagraph(options: {
   contentWidth: number;
   paragraphTop: number;
   drawers: BlockDrawers;
+  layer?: "behind" | "front";
 }): Promise<void> {
   const {
     writer,
@@ -258,6 +259,10 @@ export async function drawFloatingTextBoxesForParagraph(options: {
     for (const fragment of line.fragments) {
       const textBox = fragment.textBox;
       if (!textBox?.floating) {
+        continue;
+      }
+      const isBehind = Boolean(textBox.floating.behindDoc);
+      if (options.layer && (options.layer === "behind") !== isBehind) {
         continue;
       }
       const slot = slotByOffset.get(fragment.startOffset);

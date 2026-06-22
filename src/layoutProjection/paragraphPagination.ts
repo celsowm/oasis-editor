@@ -260,6 +260,7 @@ export function projectParagraphLayoutWithExclusions(
   styles?: Record<string, EditorNamedStyle>,
   defaultTabStop?: number,
   resolveTextBoxHeight?: ResolveTextBoxHeight,
+  externalExclusions: FloatingExclusionRect[] = [],
 ): EditorLayoutParagraph {
   const preliminary = projectParagraphLayout(
     paragraph,
@@ -278,7 +279,11 @@ export function projectParagraphLayoutWithExclusions(
   const hasFloatingObject = preliminary.fragments.some(
     (f) => (f.textBox?.floating ?? f.image?.floating) !== undefined,
   );
-  if (!hasFloatingObject && !paragraph.dropCap) {
+  if (
+    !hasFloatingObject &&
+    !paragraph.dropCap &&
+    externalExclusions.length === 0
+  ) {
     return preliminary;
   }
 
@@ -294,6 +299,7 @@ export function projectParagraphLayoutWithExclusions(
         resolveTextBoxHeight,
       })
     : [];
+  exclusions.push(...externalExclusions);
 
   if (paragraph.dropCap) {
     const dropCapExclusion = resolveDropCapExclusion({

@@ -45,6 +45,17 @@ const EMPTY_INITIAL: TablePropertiesDialogInitialValues = {
   tableIndentLeft: "",
   tableWrapping: "none",
   floatingSummary: "",
+  floatingHorizontalAnchor: "margin",
+  floatingVerticalAnchor: "text",
+  floatingX: "0",
+  floatingY: "0",
+  floatingXAlign: "",
+  floatingYAlign: "",
+  floatingDistanceTop: "0",
+  floatingDistanceRight: "0",
+  floatingDistanceBottom: "0",
+  floatingDistanceLeft: "0",
+  floatingOverlap: "overlap",
   rowHeight: "",
   rowHeightRule: "",
   repeatHeader: false,
@@ -68,6 +79,10 @@ const EMPTY_INITIAL: TablePropertiesDialogInitialValues = {
   borderRight: false,
   borderBottom: false,
   borderLeft: false,
+  borderStart: false,
+  borderEnd: false,
+  borderTopLeftToBottomRight: false,
+  borderTopRightToBottomLeft: false,
   shading: "",
   altTitle: "",
   altDescription: "",
@@ -159,6 +174,10 @@ function buildInitialValues(
     style.borderRight,
     style.borderBottom,
     style.borderLeft,
+    style.borderStart,
+    style.borderEnd,
+    style.borderTopLeftToBottomRight,
+    style.borderTopRightToBottomLeft,
   ].filter(isVisibleBorder);
   const sharedBorder = candidateBorders[0];
   const floatingSummary = buildFloatingSummary(ctx.table);
@@ -172,6 +191,28 @@ function buildInitialValues(
     tableIndentLeft: serializeWidth(ctx.table.style?.indentLeft).value,
     tableWrapping: floatingSummary ? "around" : "none",
     floatingSummary,
+    floatingHorizontalAnchor:
+      ctx.table.style?.floating?.horizontalAnchor ?? "margin",
+    floatingVerticalAnchor: ctx.table.style?.floating?.verticalAnchor ?? "text",
+    floatingX:
+      ctx.table.style?.floating?.x != null
+        ? String(ctx.table.style.floating.x)
+        : "0",
+    floatingY:
+      ctx.table.style?.floating?.y != null
+        ? String(ctx.table.style.floating.y)
+        : "0",
+    floatingXAlign: ctx.table.style?.floating?.xAlign ?? "",
+    floatingYAlign: ctx.table.style?.floating?.yAlign ?? "",
+    floatingDistanceTop: String(ctx.table.style?.floating?.distanceTop ?? 0),
+    floatingDistanceRight: String(
+      ctx.table.style?.floating?.distanceRight ?? 0,
+    ),
+    floatingDistanceBottom: String(
+      ctx.table.style?.floating?.distanceBottom ?? 0,
+    ),
+    floatingDistanceLeft: String(ctx.table.style?.floating?.distanceLeft ?? 0),
+    floatingOverlap: ctx.table.style?.tblOverlap ?? "overlap",
     rowHeight: rowHeight.value,
     rowHeightRule: row?.style?.heightRule ?? "",
     repeatHeader: Boolean(row?.isHeader),
@@ -196,6 +237,14 @@ function buildInitialValues(
     borderRight: isVisibleBorder(style.borderRight),
     borderBottom: isVisibleBorder(style.borderBottom),
     borderLeft: isVisibleBorder(style.borderLeft),
+    borderStart: isVisibleBorder(style.borderStart),
+    borderEnd: isVisibleBorder(style.borderEnd),
+    borderTopLeftToBottomRight: isVisibleBorder(
+      style.borderTopLeftToBottomRight,
+    ),
+    borderTopRightToBottomLeft: isVisibleBorder(
+      style.borderTopRightToBottomLeft,
+    ),
     shading: style.shading ?? "",
     altTitle: ctx.table.style?.altTitle ?? "",
     altDescription: ctx.table.style?.altDescription ?? "",
@@ -239,13 +288,35 @@ export function applyTableProperties(
   const ctx = resolveActiveTableContext(state);
   if (!ctx) return state;
   let next = state;
-  next = setActiveTableStyleValue(next, ctx.tableId, "width", values.tableWidth);
-  next = setActiveTableStyleValue(next, ctx.tableId, "align", values.tableAlign);
+  next = setActiveTableStyleValue(
+    next,
+    ctx.tableId,
+    "width",
+    values.tableWidth,
+  );
+  next = setActiveTableStyleValue(
+    next,
+    ctx.tableId,
+    "align",
+    values.tableAlign,
+  );
   next = setActiveTableStyleValue(
     next,
     ctx.tableId,
     "indentLeft",
     values.tableIndentLeft,
+  );
+  next = setActiveTableStyleValue(
+    next,
+    ctx.tableId,
+    "floating",
+    values.tableFloating,
+  );
+  next = setActiveTableStyleValue(
+    next,
+    ctx.tableId,
+    "tblOverlap",
+    values.tableOverlap,
   );
   next = setActiveTableStyleValue(
     next,
@@ -287,6 +358,18 @@ export function applyTableProperties(
   next = setCellStyle(next, "borderRight", values.borders.right);
   next = setCellStyle(next, "borderBottom", values.borders.bottom);
   next = setCellStyle(next, "borderLeft", values.borders.left);
+  next = setCellStyle(next, "borderStart", values.borders.start);
+  next = setCellStyle(next, "borderEnd", values.borders.end);
+  next = setCellStyle(
+    next,
+    "borderTopLeftToBottomRight",
+    values.borders.topLeftToBottomRight,
+  );
+  next = setCellStyle(
+    next,
+    "borderTopRightToBottomLeft",
+    values.borders.topRightToBottomLeft,
+  );
   next = setCellStyle(next, "shading", values.shading);
   return next;
 }

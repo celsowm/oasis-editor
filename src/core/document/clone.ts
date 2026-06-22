@@ -110,29 +110,72 @@ export function cloneBlocks(blocks: EditorBlockNode[]): EditorBlockNode[] {
                 floating: block.style.floating
                   ? { ...block.style.floating }
                   : undefined,
-                revisionXml: block.style.revisionXml
-                  ? [...block.style.revisionXml]
+                revision: block.style.revision
+                  ? {
+                      ...block.style.revision,
+                      previous: { ...block.style.revision.previous },
+                    }
                   : undefined,
               }
             : undefined,
-          tblGridChangeXml: block.tblGridChangeXml,
+          gridRevision: block.gridRevision
+            ? {
+                ...block.gridRevision,
+                previous: [...block.gridRevision.previous],
+              }
+            : undefined,
           rows: block.rows.map((row) => ({
             ...row,
+            conditionalStyle: row.conditionalStyle
+              ? { ...row.conditionalStyle }
+              : undefined,
             style: row.style
               ? {
                   ...row.style,
-                  revisionXml: row.style.revisionXml
-                    ? [...row.style.revisionXml]
+                  revision: row.style.revision
+                    ? { ...row.style.revision }
+                    : undefined,
+                  propertyRevision: row.style.propertyRevision
+                    ? {
+                        ...row.style.propertyRevision,
+                        previous: { ...row.style.propertyRevision.previous },
+                      }
                     : undefined,
                 }
               : undefined,
             cells: row.cells.map((cell) => ({
               ...cell,
+              conditionalStyle: cell.conditionalStyle
+                ? { ...cell.conditionalStyle }
+                : undefined,
+              mergeRevisionState: cell.mergeRevisionState
+                ? {
+                    ...cell.mergeRevisionState,
+                    previousCells: cell.mergeRevisionState.previousCells.map(
+                      (previousCell) => ({
+                        ...previousCell,
+                        mergeRevisionState: undefined,
+                        style: previousCell.style
+                          ? { ...previousCell.style }
+                          : undefined,
+                        blocks: cloneParagraphs(previousCell.blocks),
+                      }),
+                    ),
+                  }
+                : undefined,
               style: cell.style
                 ? {
                     ...cell.style,
-                    revisionXml: cell.style.revisionXml
-                      ? [...cell.style.revisionXml]
+                    revision: cell.style.revision
+                      ? { ...cell.style.revision }
+                      : undefined,
+                    propertyRevision: cell.style.propertyRevision
+                      ? {
+                          ...cell.style.propertyRevision,
+                          previous: {
+                            ...cell.style.propertyRevision.previous,
+                          },
+                        }
                       : undefined,
                   }
                 : undefined,

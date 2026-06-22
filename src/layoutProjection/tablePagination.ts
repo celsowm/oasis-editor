@@ -4,6 +4,10 @@ import { domTextMeasurer } from "@/ui/textMeasurement.js";
 import { resolveTableColumnWidthsPx } from "@/ui/tableGeometry.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import {
+  resolveEffectiveTableCellFormatting,
+  resolveTableParagraphInheritance,
+} from "@/core/model.js";
+import {
   estimateParagraphBlockHeight,
   shouldCollapseContextualSpacing,
 } from "./paragraphPagination.js";
@@ -182,7 +186,32 @@ export function estimateTableRowHeight(
   table?: EditorTableNode,
   rowIndex?: number,
 ): number {
-  if (row.style?.hidden) {
+  const tableEntries = table ? buildTableCellLayout(table) : [];
+  const columnCount = Math.max(
+    1,
+    ...tableEntries.map(
+      (entry) => entry.visualColumnIndex + Math.max(1, entry.colSpan),
+    ),
+  );
+  const rowFormatting =
+    table && rowIndex !== undefined
+      ? (() => {
+          const entry = tableEntries.find(
+            (candidate) => candidate.rowIndex === rowIndex,
+          );
+          return entry
+            ? resolveEffectiveTableCellFormatting({
+                table,
+                rowIndex,
+                cellIndex: entry.cellIndex,
+                visualColumnIndex: entry.visualColumnIndex,
+                columnCount,
+                styles,
+              })
+            : undefined;
+        })()
+      : undefined;
+  if ((rowFormatting?.rowStyle ?? row.style)?.hidden) {
     return 0;
   }
   const geometry =
@@ -190,7 +219,45 @@ export function estimateTableRowHeight(
       ? getCachedTableColumnGeometry(table, contentWidth)
       : null;
 
-  const cellHeights = row.cells.map((cell, cellIndex) => {
+  const cellHeights = row.cells.map((sourceCell, cellIndex) => {
+    const entry =
+      rowIndex !== undefined
+        ? tableEntries.find(
+            (candidate) =>
+              candidate.rowIndex === rowIndex &&
+              candidate.cellIndex === cellIndex,
+          )
+        : undefined;
+    const formatting =
+      table && rowIndex !== undefined && entry
+        ? resolveEffectiveTableCellFormatting({
+            table,
+            rowIndex,
+            cellIndex,
+            visualColumnIndex: entry.visualColumnIndex,
+            columnCount,
+            styles,
+          })
+        : undefined;
+    const cell = {
+      ...sourceCell,
+      style: formatting?.cellStyle ?? sourceCell.style,
+      blocks: sourceCell.blocks.map((paragraph) => ({
+        ...paragraph,
+        style: {
+          ...resolveTableParagraphInheritance(
+            formatting?.paragraphStyle,
+            paragraph.style?.styleId,
+            styles,
+          ),
+          ...paragraph.style,
+        },
+        runs: paragraph.runs.map((run) => ({
+          ...run,
+          styles: { ...formatting?.textStyle, ...run.styles },
+        })),
+      })),
+    };
     if (cell.vMerge === "continue") return 0;
     let columnWidthPx: number | undefined;
     if (geometry && typeof rowIndex === "number") {
@@ -255,7 +322,9 @@ export function estimateTableRowHeight(
     ...cellHeights,
     DEFAULT_FONT_SIZE * DEFAULT_LINE_HEIGHT,
   );
-  const explicitHeight = parseTableRowHeightToPx(row.style?.height);
+  const explicitHeight = parseTableRowHeightToPx(
+    (rowFormatting?.rowStyle ?? row.style)?.height,
+  );
   return (
     Math.max(contentHeight, explicitHeight ?? 0) +
     DEFAULT_TABLE_ROW_VERTICAL_SPACING
@@ -265,7 +334,7 @@ export function estimateTableRowHeight(
 export function getTableHeaderRowCount(table: EditorTableNode): number {
   let count = 0;
   for (const row of table.rows) {
-    if (!row.isHeader) {
+    if (!(row.style?.isHeader ?? row.isHeader)) {
       break;
     }
     count += 1;

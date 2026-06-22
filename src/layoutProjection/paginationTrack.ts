@@ -6,6 +6,7 @@ import type {
   EditorPageSettings,
 } from "@/core/model.js";
 import type { ITextMeasurer } from "@/core/engine.js";
+import type { FloatingExclusionRect } from "./floatingObjects.js";
 
 /**
  * Resolved per-run inputs shared by the paragraph and table block handlers.
@@ -36,6 +37,7 @@ export class PaginationTrack {
   readonly pages: EditorLayoutPage[];
   blocks: EditorLayoutBlock[];
   height: number;
+  floatingExclusions: FloatingExclusionRect[] = [];
 
   constructor(
     private readonly pageOffset: number,
@@ -89,6 +91,7 @@ export class PaginationTrack {
     });
     this.blocks = [];
     this.height = 0;
+    this.floatingExclusions = [];
   }
 
   /** Flushes the trailing track and guarantees at least one page exists. */

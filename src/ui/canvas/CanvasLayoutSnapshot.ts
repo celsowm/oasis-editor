@@ -14,9 +14,11 @@ import {
 } from "@/core/model.js";
 import { buildSegmentTable } from "@/core/tableLayout.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
+import { resolveFloatingTableRect } from "@/layoutProjection/floatingObjects.js";
 import { FOOTNOTE_MARKER_GUTTER_PX } from "@/layoutProjection/index.js";
 import {
   buildCanvasTableLayout,
+  resolveCanvasTableWidth,
   type CanvasTableCellLayoutEntry,
   type CanvasUnsupportedReason,
 } from "./CanvasTableLayout.js";
@@ -45,6 +47,7 @@ import type {
   CanvasSnapshotFloatingTextBox,
   CanvasSnapshotFloatingImage,
   CanvasSnapshotInlineTextBox,
+  CanvasSnapshotFloatingTable,
   CanvasSnapshotPage,
   CanvasLayoutSnapshot,
   BuildCanvasLayoutSnapshotOptions,
@@ -59,6 +62,7 @@ export type {
   CanvasSnapshotFloatingTextBox,
   CanvasSnapshotFloatingImage,
   CanvasSnapshotInlineTextBox,
+  CanvasSnapshotFloatingTable,
   CanvasSnapshotPage,
   CanvasLayoutSnapshot,
   BuildCanvasLayoutSnapshotOptions,
@@ -237,6 +241,7 @@ export function buildCanvasLayoutSnapshot(
   const floatingImages: CanvasSnapshotFloatingImage[] = [];
   const inlineTextBoxes: CanvasSnapshotInlineTextBox[] = [];
   const floatingTextBoxes: CanvasSnapshotFloatingTextBox[] = [];
+  const floatingTables: CanvasSnapshotFloatingTable[] = [];
   const unsupportedRegions: CanvasLayoutSnapshot["unsupportedRegions"] = [];
 
   for (const page of documentLayout.pages) {
@@ -428,6 +433,38 @@ export function buildCanvasLayoutSnapshot(
             }),
           );
         } else if (block.sourceBlock.type === "table") {
+          const floating = block.sourceBlock.style?.floating;
+          const floatingRect = floating
+            ? resolveFloatingTableRect({
+                floating,
+                pageSettings: page.pageSettings,
+                contentLeft: blockContentLeft - pageRect.left,
+                contentTop: startTop - pageRect.top,
+                contentWidth: blockContentWidth,
+                anchorTop: cursorY - pageRect.top,
+                width: resolveCanvasTableWidth(
+                  block.sourceBlock,
+                  blockContentWidth,
+                ),
+                height: block.floatingTableHeight ?? 1,
+                pageIndex: page.index,
+              })
+            : undefined;
+          if (floatingRect) {
+            floatingRect.y += block.floatingTableOffsetY ?? 0;
+          }
+          if (floatingRect) {
+            floatingTables.push({
+              tableId: block.sourceBlock.id,
+              zone,
+              footnoteId: blockFootnoteId,
+              pageIndex: page.index,
+              left: pageRect.left + floatingRect.x,
+              top: pageRect.top + floatingRect.y,
+              width: floatingRect.width,
+              height: floatingRect.height,
+            });
+          }
           const segmentTable = block.tableSegment
             ? buildSegmentTable(block.sourceBlock, block.tableSegment)
             : block.sourceBlock;
@@ -435,10 +472,12 @@ export function buildCanvasLayoutSnapshot(
             table: segmentTable,
             state,
             pageIndex: page.index,
-            originX: blockContentLeft,
-            originY: cursorY,
+            originX: floatingRect
+              ? pageRect.left + floatingRect.x
+              : blockContentLeft,
+            originY: floatingRect ? pageRect.top + floatingRect.y : cursorY,
             contentWidth: blockContentWidth,
-            estimatedHeight: block.estimatedHeight,
+            estimatedHeight: block.floatingTableHeight ?? block.estimatedHeight,
           });
           for (const reason of tableLayout.unsupported) {
             unsupportedRegions.push({
@@ -530,6 +569,7 @@ export function buildCanvasLayoutSnapshot(
                   width: cell.width,
                   height: cell.height,
                   anchorPosition: cell.anchorPosition,
+                  revisionId: cell.revision?.id,
                 },
               });
               inlineImages.push(
@@ -658,6 +698,7 @@ export function buildCanvasLayoutSnapshot(
     floatingImages,
     inlineTextBoxes,
     floatingTextBoxes,
+    floatingTables,
     unsupportedRegions,
   };
 }

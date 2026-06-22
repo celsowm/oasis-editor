@@ -40,6 +40,7 @@ export interface CanvasSnapshotTableCellInfo {
   width: number;
   height: number;
   anchorPosition: EditorPosition;
+  revisionId?: string;
 }
 
 export interface CanvasSnapshotParagraph {
@@ -130,6 +131,17 @@ export interface CanvasSnapshotInlineTextBox {
   rotation?: number;
 }
 
+export interface CanvasSnapshotFloatingTable {
+  tableId: string;
+  zone: EditorEditingZone;
+  footnoteId?: string;
+  pageIndex: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export interface CanvasSnapshotPage {
   index: number;
   left: number;
@@ -152,6 +164,7 @@ export interface CanvasLayoutSnapshot {
   floatingImages: CanvasSnapshotFloatingImage[];
   inlineTextBoxes: CanvasSnapshotInlineTextBox[];
   floatingTextBoxes: CanvasSnapshotFloatingTextBox[];
+  floatingTables: CanvasSnapshotFloatingTable[];
   unsupportedRegions: Array<{
     pageIndex: number;
     zone: EditorEditingZone;

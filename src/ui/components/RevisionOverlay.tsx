@@ -13,8 +13,11 @@ export function RevisionOverlay(props: RevisionOverlayProps) {
     }
   };
 
-  const label = () =>
-    props.box.type === "insert" ? "Inserido por" : "ExcluÃ­do por";
+  const label = () => {
+    if (props.box.type === "insert") return "Inserido por";
+    if (props.box.type === "delete") return "Excluído por";
+    return "Alterado por";
+  };
 
   return (
     <div

@@ -9,8 +9,11 @@ import { getParagraphBorderInsets } from "@/layoutProjection/index.js";
 import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { OasisPdfWriter } from "@/export/pdf/OasisPdfWriter.js";
 import { drawParagraph, drawParagraphDecorations } from "./drawParagraph.js";
+import { drawFloatingImagesForParagraph } from "./drawFragment.js";
 import { drawTableBlock } from "./drawTable.js";
 import { drawFloatingTextBoxesForParagraph } from "./drawTextBoxShape.js";
+import { resolveCanvasTableWidth } from "@/ui/canvas/CanvasTableLayout.js";
+import { resolveFloatingTableRect } from "@/layoutProjection/floatingObjects.js";
 import type { BlockDrawers } from "./blockDrawers.js";
 
 /**
@@ -63,6 +66,34 @@ export async function drawBlockList(
           boxTop,
           contentWidth,
         );
+        if (pageSettings) {
+          await drawFloatingImagesForParagraph({
+            writer,
+            pageIndex,
+            lines: block.layout.lines,
+            document,
+            pageSettings,
+            contentLeft: originX,
+            contentTop,
+            contentWidth,
+            paragraphTop: textTop,
+            layer: "behind",
+          });
+          await drawFloatingTextBoxesForParagraph({
+            writer,
+            document,
+            fontRegistry,
+            pageIndex,
+            lines: block.layout.lines,
+            pageSettings,
+            contentLeft: originX,
+            contentTop,
+            contentWidth,
+            paragraphTop: boxTop,
+            drawers: blockDrawers,
+            layer: "behind",
+          });
+        }
         await drawParagraph(
           writer,
           pageIndex,
@@ -76,6 +107,18 @@ export async function drawBlockList(
           blockDrawers,
         );
         if (pageSettings) {
+          await drawFloatingImagesForParagraph({
+            writer,
+            pageIndex,
+            lines: block.layout.lines,
+            document,
+            pageSettings,
+            contentLeft: originX,
+            contentTop,
+            contentWidth,
+            paragraphTop: textTop,
+            layer: "front",
+          });
           await drawFloatingTextBoxesForParagraph({
             writer,
             document,
@@ -88,11 +131,43 @@ export async function drawBlockList(
             contentWidth,
             paragraphTop: boxTop,
             drawers: blockDrawers,
+            layer: "front",
           });
         }
         break;
       }
       case "table":
+        if (block.sourceBlock.style?.floating && pageSettings) {
+          const width = resolveCanvasTableWidth(
+            block.sourceBlock,
+            contentWidth,
+          );
+          const rect = resolveFloatingTableRect({
+            floating: block.sourceBlock.style.floating,
+            pageSettings,
+            contentLeft: originX,
+            contentTop,
+            contentWidth,
+            anchorTop: cursorY,
+            width,
+            height: block.floatingTableHeight ?? 1,
+            pageIndex,
+          });
+          rect.y += block.floatingTableOffsetY ?? 0;
+          await drawTableBlock(
+            writer,
+            pageIndex,
+            { ...block, estimatedHeight: rect.height },
+            document,
+            rect.x,
+            rect.y,
+            contentWidth,
+            fontRegistry,
+            listOrdinals,
+            blockDrawers,
+          );
+          break;
+        }
         await drawTableBlock(
           writer,
           pageIndex,

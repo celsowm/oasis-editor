@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal } from "solid-js";
+import { createEffect, createMemo, createSignal, Show } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Dialog } from "./Dialog.js";
 import { Tabs } from "@/ui/components/Tabs/Tabs.js";
@@ -7,6 +7,7 @@ import type {
   EditorBorderStyle,
   EditorDocxWidthValue,
   EditorTableRowHeightRule,
+  EditorTableFloatingLayout,
 } from "@/core/model.js";
 
 type TableWidthUnit = "points" | "percent";
@@ -20,6 +21,17 @@ export interface TablePropertiesDialogInitialValues {
   tableIndentLeft: string;
   tableWrapping: "none" | "around";
   floatingSummary: string;
+  floatingHorizontalAnchor: "margin" | "page" | "text";
+  floatingVerticalAnchor: "margin" | "page" | "text";
+  floatingX: string;
+  floatingY: string;
+  floatingXAlign: "" | "left" | "center" | "right" | "inside" | "outside";
+  floatingYAlign: "" | "top" | "center" | "bottom" | "inside" | "outside";
+  floatingDistanceTop: string;
+  floatingDistanceRight: string;
+  floatingDistanceBottom: string;
+  floatingDistanceLeft: string;
+  floatingOverlap: "overlap" | "never";
   rowHeight: string;
   rowHeightRule: EditorTableRowHeightRule | "";
   repeatHeader: boolean;
@@ -43,6 +55,10 @@ export interface TablePropertiesDialogInitialValues {
   borderRight: boolean;
   borderBottom: boolean;
   borderLeft: boolean;
+  borderStart: boolean;
+  borderEnd: boolean;
+  borderTopLeftToBottomRight: boolean;
+  borderTopRightToBottomLeft: boolean;
   shading: string;
   altTitle: string;
   altDescription: string;
@@ -53,12 +69,18 @@ export interface TablePropertiesDialogBorders {
   right: EditorBorderStyle | null;
   bottom: EditorBorderStyle | null;
   left: EditorBorderStyle | null;
+  start: EditorBorderStyle | null;
+  end: EditorBorderStyle | null;
+  topLeftToBottomRight: EditorBorderStyle | null;
+  topRightToBottomLeft: EditorBorderStyle | null;
 }
 
 export interface TablePropertiesDialogApplyValues {
   tableWidth: EditorDocxWidthValue | null;
   tableAlign: "left" | "center" | "right" | null;
   tableIndentLeft: EditorDocxWidthValue | null;
+  tableFloating: EditorTableFloatingLayout | null;
+  tableOverlap: "overlap" | "never" | null;
   rowHeight: EditorDocxWidthValue | null;
   rowHeightRule: EditorTableRowHeightRule | null;
   repeatHeader: boolean;
@@ -102,7 +124,10 @@ function parseNumber(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function parseWidth(value: string, unit: TableWidthUnit): EditorDocxWidthValue | null {
+function parseWidth(
+  value: string,
+  unit: TableWidthUnit,
+): EditorDocxWidthValue | null {
   const parsed = parseNumber(value);
   if (parsed === null) return null;
   return unit === "percent" ? `${parsed}%` : parsed;
@@ -133,6 +158,28 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
   const [tableIndentLeft, setTableIndentLeft] = createSignal("");
   const [tableWrapping, setTableWrapping] =
     createSignal<TablePropertiesDialogInitialValues["tableWrapping"]>("none");
+  const [floatingHorizontalAnchor, setFloatingHorizontalAnchor] =
+    createSignal<
+      TablePropertiesDialogInitialValues["floatingHorizontalAnchor"]
+    >("margin");
+  const [floatingVerticalAnchor, setFloatingVerticalAnchor] =
+    createSignal<TablePropertiesDialogInitialValues["floatingVerticalAnchor"]>(
+      "text",
+    );
+  const [floatingX, setFloatingX] = createSignal("");
+  const [floatingY, setFloatingY] = createSignal("");
+  const [floatingXAlign, setFloatingXAlign] =
+    createSignal<TablePropertiesDialogInitialValues["floatingXAlign"]>("");
+  const [floatingYAlign, setFloatingYAlign] =
+    createSignal<TablePropertiesDialogInitialValues["floatingYAlign"]>("");
+  const [floatingDistanceTop, setFloatingDistanceTop] = createSignal("");
+  const [floatingDistanceRight, setFloatingDistanceRight] = createSignal("");
+  const [floatingDistanceBottom, setFloatingDistanceBottom] = createSignal("");
+  const [floatingDistanceLeft, setFloatingDistanceLeft] = createSignal("");
+  const [floatingOverlap, setFloatingOverlap] =
+    createSignal<TablePropertiesDialogInitialValues["floatingOverlap"]>(
+      "overlap",
+    );
   const [rowHeight, setRowHeight] = createSignal("");
   const [rowHeightRule, setRowHeightRule] =
     createSignal<TablePropertiesDialogInitialValues["rowHeightRule"]>("");
@@ -152,14 +199,17 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
   const [marginRight, setMarginRight] = createSignal("");
   const [marginBottom, setMarginBottom] = createSignal("");
   const [marginLeft, setMarginLeft] = createSignal("");
-  const [borderStyle, setBorderStyle] =
-    createSignal<BorderStyleValue>("none");
+  const [borderStyle, setBorderStyle] = createSignal<BorderStyleValue>("none");
   const [borderWidth, setBorderWidth] = createSignal("");
   const [borderColor, setBorderColor] = createSignal("");
   const [borderTop, setBorderTop] = createSignal(false);
   const [borderRight, setBorderRight] = createSignal(false);
   const [borderBottom, setBorderBottom] = createSignal(false);
   const [borderLeft, setBorderLeft] = createSignal(false);
+  const [borderStart, setBorderStart] = createSignal(false);
+  const [borderEnd, setBorderEnd] = createSignal(false);
+  const [borderTlBr, setBorderTlBr] = createSignal(false);
+  const [borderTrBl, setBorderTrBl] = createSignal(false);
   const [shading, setShading] = createSignal("");
   const [altTitle, setAltTitle] = createSignal("");
   const [altDescription, setAltDescription] = createSignal("");
@@ -172,6 +222,17 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
     setTableAlign(props.initial.tableAlign);
     setTableIndentLeft(props.initial.tableIndentLeft);
     setTableWrapping(props.initial.tableWrapping);
+    setFloatingHorizontalAnchor(props.initial.floatingHorizontalAnchor);
+    setFloatingVerticalAnchor(props.initial.floatingVerticalAnchor);
+    setFloatingX(props.initial.floatingX);
+    setFloatingY(props.initial.floatingY);
+    setFloatingXAlign(props.initial.floatingXAlign);
+    setFloatingYAlign(props.initial.floatingYAlign);
+    setFloatingDistanceTop(props.initial.floatingDistanceTop);
+    setFloatingDistanceRight(props.initial.floatingDistanceRight);
+    setFloatingDistanceBottom(props.initial.floatingDistanceBottom);
+    setFloatingDistanceLeft(props.initial.floatingDistanceLeft);
+    setFloatingOverlap(props.initial.floatingOverlap);
     setRowHeight(props.initial.rowHeight);
     setRowHeightRule(props.initial.rowHeightRule);
     setRepeatHeader(props.initial.repeatHeader);
@@ -195,6 +256,10 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
     setBorderRight(props.initial.borderRight);
     setBorderBottom(props.initial.borderBottom);
     setBorderLeft(props.initial.borderLeft);
+    setBorderStart(props.initial.borderStart);
+    setBorderEnd(props.initial.borderEnd);
+    setBorderTlBr(props.initial.borderTopLeftToBottomRight);
+    setBorderTrBl(props.initial.borderTopRightToBottomLeft);
     setShading(props.initial.shading);
     setAltTitle(props.initial.altTitle);
     setAltDescription(props.initial.altDescription);
@@ -221,6 +286,32 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
         tableWidth: parseWidth(tableWidth(), tableWidthUnit()),
         tableAlign: tableAlign() || null,
         tableIndentLeft: parseWidth(tableIndentLeft(), "points"),
+        tableFloating:
+          tableWrapping() === "around"
+            ? {
+                horizontalAnchor: floatingHorizontalAnchor(),
+                verticalAnchor: floatingVerticalAnchor(),
+                ...(floatingXAlign()
+                  ? {
+                      xAlign: floatingXAlign() as NonNullable<
+                        EditorTableFloatingLayout["xAlign"]
+                      >,
+                    }
+                  : { x: parseNumber(floatingX()) ?? 0 }),
+                ...(floatingYAlign()
+                  ? {
+                      yAlign: floatingYAlign() as NonNullable<
+                        EditorTableFloatingLayout["yAlign"]
+                      >,
+                    }
+                  : { y: parseNumber(floatingY()) ?? 0 }),
+                distanceTop: parseNumber(floatingDistanceTop()) ?? 0,
+                distanceRight: parseNumber(floatingDistanceRight()) ?? 0,
+                distanceBottom: parseNumber(floatingDistanceBottom()) ?? 0,
+                distanceLeft: parseNumber(floatingDistanceLeft()) ?? 0,
+              }
+            : null,
+        tableOverlap: tableWrapping() === "around" ? floatingOverlap() : null,
         rowHeight: parseWidth(rowHeight(), "points"),
         rowHeightRule: rowHeightRule() || null,
         repeatHeader: repeatHeader(),
@@ -244,6 +335,10 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
           right: borderRight() ? border : null,
           bottom: borderBottom() ? border : null,
           left: borderLeft() ? border : null,
+          start: borderStart() ? border : null,
+          end: borderEnd() ? border : null,
+          topLeftToBottomRight: borderTlBr() ? border : null,
+          topRightToBottomLeft: borderTrBl() ? border : null,
         },
         shading: shading().trim() || null,
         altTitle: altTitle().trim() || null,
@@ -260,13 +355,14 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
     setter: (value: string) => void,
     testId: string,
     disabled = false,
+    allowNegative = false,
   ) => (
     <div class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
       <label class="oasis-editor-dialog-label">{label}</label>
       <input
         type="number"
         class="oasis-editor-dialog-input"
-        min="0"
+        min={allowNegative ? undefined : "0"}
         step="1"
         value={value()}
         disabled={disabled}
@@ -351,7 +447,9 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                         class="oasis-editor-dialog-input"
                         value={tableWidthUnit()}
                         onChange={(e) =>
-                          setTableWidthUnit(e.currentTarget.value as TableWidthUnit)
+                          setTableWidthUnit(
+                            e.currentTarget.value as TableWidthUnit,
+                          )
                         }
                         data-testid="editor-table-properties-table-width-unit"
                       >
@@ -373,7 +471,9 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                           onChange={() => setTableAlign(align)}
                           data-testid={`editor-table-properties-align-${align}`}
                         />
-                        {t(`table.align${align[0]!.toUpperCase()}${align.slice(1)}` as any)}
+                        {t(
+                          `table.align${align[0]!.toUpperCase()}${align.slice(1)}` as any,
+                        )}
                       </label>
                     ))}
                   </div>
@@ -400,20 +500,165 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                       () => tableWrapping() === "around",
                       () => setTableWrapping("around"),
                       "editor-table-properties-wrap-around",
-                      !props.initial.floatingSummary,
                     )}
-                    <button
-                      type="button"
-                      class="oasis-editor-dialog-button oasis-editor-dialog-button-secondary"
-                      disabled
-                      data-testid="editor-table-properties-positioning"
-                    >
-                      {t("table.positioning")}
-                    </button>
                   </div>
-                  <div class="oasis-editor-dialog-help-text">
-                    {props.initial.floatingSummary || t("table.positioningReadOnly")}
-                  </div>
+                  <Show when={tableWrapping() === "around"}>
+                    <div class="oasis-editor-dialog-row">
+                      <label class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+                        <span class="oasis-editor-dialog-label">
+                          {t("table.horizontalAnchor")}
+                        </span>
+                        <select
+                          class="oasis-editor-dialog-input"
+                          value={floatingHorizontalAnchor()}
+                          onChange={(e) =>
+                            setFloatingHorizontalAnchor(
+                              e.currentTarget
+                                .value as TablePropertiesDialogInitialValues["floatingHorizontalAnchor"],
+                            )
+                          }
+                          data-testid="editor-table-properties-floating-h-anchor"
+                        >
+                          <option value="margin">
+                            {t("table.anchorMargin")}
+                          </option>
+                          <option value="page">{t("table.anchorPage")}</option>
+                          <option value="text">{t("table.anchorText")}</option>
+                        </select>
+                      </label>
+                      <label class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+                        <span class="oasis-editor-dialog-label">
+                          {t("table.verticalAnchor")}
+                        </span>
+                        <select
+                          class="oasis-editor-dialog-input"
+                          value={floatingVerticalAnchor()}
+                          onChange={(e) =>
+                            setFloatingVerticalAnchor(
+                              e.currentTarget
+                                .value as TablePropertiesDialogInitialValues["floatingVerticalAnchor"],
+                            )
+                          }
+                          data-testid="editor-table-properties-floating-v-anchor"
+                        >
+                          <option value="margin">
+                            {t("table.anchorMargin")}
+                          </option>
+                          <option value="page">{t("table.anchorPage")}</option>
+                          <option value="text">{t("table.anchorText")}</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="oasis-editor-dialog-row">
+                      {numericInput(
+                        t("table.positionX"),
+                        floatingX,
+                        setFloatingX,
+                        "editor-table-properties-floating-x",
+                        Boolean(floatingXAlign()),
+                        true,
+                      )}
+                      {numericInput(
+                        t("table.positionY"),
+                        floatingY,
+                        setFloatingY,
+                        "editor-table-properties-floating-y",
+                        Boolean(floatingYAlign()),
+                        true,
+                      )}
+                      <label class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+                        <span class="oasis-editor-dialog-label">
+                          {t("table.horizontalAlignment")}
+                        </span>
+                        <select
+                          class="oasis-editor-dialog-input"
+                          value={floatingXAlign()}
+                          onChange={(e) =>
+                            setFloatingXAlign(
+                              e.currentTarget
+                                .value as TablePropertiesDialogInitialValues["floatingXAlign"],
+                            )
+                          }
+                          data-testid="editor-table-properties-floating-x-align"
+                        >
+                          <option value="">{t("table.explicitOffset")}</option>
+                          {(
+                            [
+                              "left",
+                              "center",
+                              "right",
+                              "inside",
+                              "outside",
+                            ] as const
+                          ).map((value) => (
+                            <option value={value}>{value}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label class="oasis-editor-dialog-input-group oasis-editor-dialog-input-group-grow">
+                        <span class="oasis-editor-dialog-label">
+                          {t("table.verticalAlignment")}
+                        </span>
+                        <select
+                          class="oasis-editor-dialog-input"
+                          value={floatingYAlign()}
+                          onChange={(e) =>
+                            setFloatingYAlign(
+                              e.currentTarget
+                                .value as TablePropertiesDialogInitialValues["floatingYAlign"],
+                            )
+                          }
+                          data-testid="editor-table-properties-floating-y-align"
+                        >
+                          <option value="">{t("table.explicitOffset")}</option>
+                          {(
+                            [
+                              "top",
+                              "center",
+                              "bottom",
+                              "inside",
+                              "outside",
+                            ] as const
+                          ).map((value) => (
+                            <option value={value}>{value}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <div class="oasis-editor-dialog-row">
+                      {numericInput(
+                        t("table.distanceTop"),
+                        floatingDistanceTop,
+                        setFloatingDistanceTop,
+                        "editor-table-properties-floating-distance-top",
+                      )}
+                      {numericInput(
+                        t("table.distanceRight"),
+                        floatingDistanceRight,
+                        setFloatingDistanceRight,
+                        "editor-table-properties-floating-distance-right",
+                      )}
+                      {numericInput(
+                        t("table.distanceBottom"),
+                        floatingDistanceBottom,
+                        setFloatingDistanceBottom,
+                        "editor-table-properties-floating-distance-bottom",
+                      )}
+                      {numericInput(
+                        t("table.distanceLeft"),
+                        floatingDistanceLeft,
+                        setFloatingDistanceLeft,
+                        "editor-table-properties-floating-distance-left",
+                      )}
+                    </div>
+                    {checkbox(
+                      t("table.allowOverlap"),
+                      () => floatingOverlap() === "overlap",
+                      (value) =>
+                        setFloatingOverlap(value ? "overlap" : "never"),
+                      "editor-table-properties-floating-overlap",
+                    )}
+                  </Show>
                 </fieldset>
               </div>
             ),
@@ -440,7 +685,8 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                       value={rowHeightRule()}
                       onChange={(e) =>
                         setRowHeightRule(
-                          e.currentTarget.value as TablePropertiesDialogInitialValues["rowHeightRule"],
+                          e.currentTarget
+                            .value as TablePropertiesDialogInitialValues["rowHeightRule"],
                         )
                       }
                       data-testid="editor-table-properties-row-height-rule"
@@ -513,7 +759,8 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                       value={cellVerticalAlign()}
                       onChange={(e) =>
                         setCellVerticalAlign(
-                          e.currentTarget.value as TablePropertiesDialogInitialValues["cellVerticalAlign"],
+                          e.currentTarget
+                            .value as TablePropertiesDialogInitialValues["cellVerticalAlign"],
                         )
                       }
                       data-testid="editor-table-properties-cell-valign"
@@ -533,7 +780,8 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                       value={cellTextDirection()}
                       onChange={(e) =>
                         setCellTextDirection(
-                          e.currentTarget.value as TablePropertiesDialogInitialValues["cellTextDirection"],
+                          e.currentTarget
+                            .value as TablePropertiesDialogInitialValues["cellTextDirection"],
                         )
                       }
                       data-testid="editor-table-properties-cell-direction"
@@ -573,10 +821,30 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                 <fieldset class="oasis-editor-font-dialog-fieldset">
                   <legend>{t("table.cellMargins")}</legend>
                   <div class="oasis-editor-dialog-row">
-                    {numericInput(t("paragraph.borderSideTop"), marginTop, setMarginTop, "editor-table-properties-margin-top")}
-                    {numericInput(t("paragraph.borderSideRight"), marginRight, setMarginRight, "editor-table-properties-margin-right")}
-                    {numericInput(t("paragraph.borderSideBottom"), marginBottom, setMarginBottom, "editor-table-properties-margin-bottom")}
-                    {numericInput(t("paragraph.borderSideLeft"), marginLeft, setMarginLeft, "editor-table-properties-margin-left")}
+                    {numericInput(
+                      t("paragraph.borderSideTop"),
+                      marginTop,
+                      setMarginTop,
+                      "editor-table-properties-margin-top",
+                    )}
+                    {numericInput(
+                      t("paragraph.borderSideRight"),
+                      marginRight,
+                      setMarginRight,
+                      "editor-table-properties-margin-right",
+                    )}
+                    {numericInput(
+                      t("paragraph.borderSideBottom"),
+                      marginBottom,
+                      setMarginBottom,
+                      "editor-table-properties-margin-bottom",
+                    )}
+                    {numericInput(
+                      t("paragraph.borderSideLeft"),
+                      marginLeft,
+                      setMarginLeft,
+                      "editor-table-properties-margin-left",
+                    )}
                   </div>
                 </fieldset>
                 <fieldset class="oasis-editor-font-dialog-fieldset">
@@ -590,13 +858,18 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                         class="oasis-editor-dialog-input"
                         value={borderStyle()}
                         onChange={(e) => {
-                          const next = e.currentTarget.value as BorderStyleValue;
+                          const next = e.currentTarget
+                            .value as BorderStyleValue;
                           setBorderStyle(next);
                           if (next === "none") {
                             setBorderTop(false);
                             setBorderRight(false);
                             setBorderBottom(false);
                             setBorderLeft(false);
+                            setBorderStart(false);
+                            setBorderEnd(false);
+                            setBorderTlBr(false);
+                            setBorderTrBl(false);
                           } else if (
                             !borderTop() &&
                             !borderRight() &&
@@ -611,10 +884,18 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                         }}
                         data-testid="editor-table-properties-border-style"
                       >
-                        <option value="none">{t("paragraph.borderNone")}</option>
-                        <option value="solid">{t("paragraph.borderSolid")}</option>
-                        <option value="dashed">{t("paragraph.borderDashed")}</option>
-                        <option value="dotted">{t("paragraph.borderDotted")}</option>
+                        <option value="none">
+                          {t("paragraph.borderNone")}
+                        </option>
+                        <option value="solid">
+                          {t("paragraph.borderSolid")}
+                        </option>
+                        <option value="dashed">
+                          {t("paragraph.borderDashed")}
+                        </option>
+                        <option value="dotted">
+                          {t("paragraph.borderDotted")}
+                        </option>
                       </select>
                     </div>
                     {numericInput(
@@ -651,10 +932,62 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
                     </div>
                   </div>
                   <div class="oasis-editor-dialog-style-row">
-                    {checkbox(t("paragraph.borderSideTop"), borderTop, setBorderTop, "editor-table-properties-border-top", borderStyle() === "none")}
-                    {checkbox(t("paragraph.borderSideRight"), borderRight, setBorderRight, "editor-table-properties-border-right", borderStyle() === "none")}
-                    {checkbox(t("paragraph.borderSideBottom"), borderBottom, setBorderBottom, "editor-table-properties-border-bottom", borderStyle() === "none")}
-                    {checkbox(t("paragraph.borderSideLeft"), borderLeft, setBorderLeft, "editor-table-properties-border-left", borderStyle() === "none")}
+                    {checkbox(
+                      t("paragraph.borderSideTop"),
+                      borderTop,
+                      setBorderTop,
+                      "editor-table-properties-border-top",
+                      borderStyle() === "none",
+                    )}
+                    {checkbox(
+                      t("paragraph.borderSideRight"),
+                      borderRight,
+                      setBorderRight,
+                      "editor-table-properties-border-right",
+                      borderStyle() === "none",
+                    )}
+                    {checkbox(
+                      t("paragraph.borderSideBottom"),
+                      borderBottom,
+                      setBorderBottom,
+                      "editor-table-properties-border-bottom",
+                      borderStyle() === "none",
+                    )}
+                    {checkbox(
+                      t("paragraph.borderSideLeft"),
+                      borderLeft,
+                      setBorderLeft,
+                      "editor-table-properties-border-left",
+                      borderStyle() === "none",
+                    )}
+                    {checkbox(
+                      t("table.borderStart"),
+                      borderStart,
+                      setBorderStart,
+                      "editor-table-properties-border-start",
+                      borderStyle() === "none",
+                    )}
+                    {checkbox(
+                      t("table.borderEnd"),
+                      borderEnd,
+                      setBorderEnd,
+                      "editor-table-properties-border-end",
+                      borderStyle() === "none",
+                    )}
+                    {checkbox(
+                      t("table.borderTlBr"),
+                      borderTlBr,
+                      setBorderTlBr,
+                      "editor-table-properties-border-tlbr",
+                      borderStyle() === "none",
+                    )}
+                    {checkbox(
+                      t("table.borderTrBl"),
+                      borderTrBl,
+                      setBorderTrBl,
+                      "editor-table-properties-border-trbl",
+                      borderStyle() === "none",
+                    )}
                   </div>
                   <div
                     class="oasis-editor-table-properties-cell-preview"

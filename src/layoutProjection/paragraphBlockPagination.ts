@@ -23,8 +23,31 @@ import {
 } from "./paragraphPagination.js";
 import { estimateTableBlockHeight } from "./tablePagination.js";
 import type { PaginationTrack, TrackLayoutParams } from "./paginationTrack.js";
+import { collectParagraphFloatingExclusions } from "./floatingObjects.js";
 
 const TEXT_BOX_AUTOFIT_SAFETY_PX = 2;
+
+function registerParagraphFloatingExclusions(options: {
+  track: PaginationTrack;
+  layout: ReturnType<typeof projectParagraphLayout>;
+  blockTop: number;
+  params: TrackLayoutParams;
+  resolveTextBoxHeight: (textBox: EditorTextBoxData) => number;
+}): void {
+  const exclusions = collectParagraphFloatingExclusions({
+    fragments: options.layout.fragments,
+    preliminaryLines: options.layout.lines,
+    pageSettings: options.params.pageSettings,
+    contentWidth: options.params.contentWidth,
+    resolveTextBoxHeight: options.resolveTextBoxHeight,
+  });
+  options.track.floatingExclusions.push(
+    ...exclusions.map((exclusion) => ({
+      ...exclusion,
+      y: exclusion.y + options.blockTop,
+    })),
+  );
+}
 
 function estimateTextBoxAutoFitHeight(
   textBox: EditorTextBoxData,
@@ -110,6 +133,15 @@ export function paginateParagraphBlock(
   } = params;
 
   const pageIndex = track.pageIndex;
+  const resolveTextBoxHeight = (textBox: EditorTextBoxData) =>
+    estimateTextBoxAutoFitHeight(
+      textBox,
+      styles,
+      measurer,
+      pageIndex,
+      totalPages,
+      defaultTabStop,
+    );
   const projectedParagraphLayout = projectParagraphLayoutWithExclusions(
     sourceBlock,
     pageSettings,
@@ -119,15 +151,11 @@ export function paginateParagraphBlock(
     totalPages,
     styles,
     defaultTabStop,
-    (textBox) =>
-      estimateTextBoxAutoFitHeight(
-        textBox,
-        styles,
-        measurer,
-        pageIndex,
-        totalPages,
-        defaultTabStop,
-      ),
+    resolveTextBoxHeight,
+    track.floatingExclusions.map((exclusion) => ({
+      ...exclusion,
+      y: exclusion.y - track.height,
+    })),
   );
   const measuredParagraphLayout = measuredParagraphLayouts?.[sourceBlock.id];
   const paragraphLayout =
@@ -249,6 +277,14 @@ export function paginateParagraphBlock(
       sourceBlock,
     });
     track.height += measuredHeight;
+    registerParagraphFloatingExclusions({
+      track,
+      layout: paragraphLayout,
+      blockTop:
+        track.height - measuredHeight + (paragraphStyle.spacingBefore ?? 0),
+      params,
+      resolveTextBoxHeight,
+    });
     return;
   }
 
@@ -385,6 +421,16 @@ export function paginateParagraphBlock(
       sourceBlock,
     });
     track.height += measuredHeight;
+    if (startLineIndex === 0) {
+      registerParagraphFloatingExclusions({
+        track,
+        layout: segmentLayout,
+        blockTop:
+          track.height - measuredHeight + (paragraphStyle.spacingBefore ?? 0),
+        params,
+        resolveTextBoxHeight,
+      });
+    }
     startLineIndex = lineEndIndex;
     segmentIndex += 1;
 

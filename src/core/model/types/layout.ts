@@ -63,6 +63,10 @@ export interface EditorLayoutBlock {
   paragraphId?: string;
   globalIndex: number;
   estimatedHeight: number;
+  /** Measured visual height for a zero-flow-height floating table. */
+  floatingTableHeight?: number;
+  /** Runtime collision displacement for `w:tblOverlap="never"`. */
+  floatingTableOffsetY?: number;
   layout?: EditorLayoutParagraph;
   tableSegment?: {
     startRowIndex: number;

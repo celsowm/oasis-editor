@@ -9,6 +9,8 @@ export interface CanvasBorderBox {
   right?: CanvasBorderEdge;
   bottom?: CanvasBorderEdge;
   left?: CanvasBorderEdge;
+  topLeftToBottomRight?: CanvasBorderEdge;
+  topRightToBottomLeft?: CanvasBorderEdge;
 }
 
 function drawEdge(
@@ -58,4 +60,6 @@ export function drawBorderBox(
   drawEdge(ctx, borders.right, right, top, right, bottom);
   drawEdge(ctx, borders.bottom, left, bottom, right, bottom);
   drawEdge(ctx, borders.left, left, top, left, bottom);
+  drawEdge(ctx, borders.topLeftToBottomRight, left, top, right, bottom);
+  drawEdge(ctx, borders.topRightToBottomLeft, right, top, left, bottom);
 }

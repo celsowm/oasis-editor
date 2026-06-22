@@ -4,6 +4,8 @@ import type {
   EditorTableCellNode,
   EditorTableNode,
   EditorTableRowStyle,
+  EditorTableFloatingLayout,
+  EditorTableConditionalFlags,
 } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { escapeXml, normalizeDocxColor, pointsToTwips } from "./xmlUtils.js";
@@ -12,6 +14,50 @@ import { serializeDocxBorderAttrs } from "./borders.js";
 const DEFAULT_TABLE_BORDER_COLOR = "6F6F6F";
 const DEFAULT_TABLE_BORDER_WIDTH_PT = 0.75;
 const DEFAULT_CELL_PADDING_LEFT_RIGHT_PT = 5.4;
+
+function serializeRevisionAttrs(revision: {
+  id: string;
+  author: string;
+  date: number;
+}): string {
+  const numericId = /^\d+$/.test(revision.id)
+    ? revision.id
+    : String(
+        Array.from(revision.id).reduce(
+          (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
+          0,
+        ),
+      );
+  const date = Number.isFinite(revision.date)
+    ? new Date(revision.date).toISOString()
+    : new Date(0).toISOString();
+  return `w:id="${numericId}" w:author="${escapeXml(revision.author)}" w:date="${date}"`;
+}
+
+function serializeConditionalFlags(
+  flags: EditorTableConditionalFlags | undefined,
+): string {
+  if (!flags || Object.keys(flags).length === 0) return "";
+  const attributes: Array<[string, keyof EditorTableConditionalFlags]> = [
+    ["firstRow", "firstRow"],
+    ["lastRow", "lastRow"],
+    ["firstColumn", "firstCol"],
+    ["lastColumn", "lastCol"],
+    ["oddVBand", "band1Vert"],
+    ["evenVBand", "band2Vert"],
+    ["oddHBand", "band1Horz"],
+    ["evenHBand", "band2Horz"],
+    ["firstRowFirstColumn", "nwCell"],
+    ["firstRowLastColumn", "neCell"],
+    ["lastRowFirstColumn", "swCell"],
+    ["lastRowLastColumn", "seCell"],
+  ];
+  const xml = attributes
+    .filter(([, key]) => flags[key] !== undefined)
+    .map(([name, key]) => `w:${name}="${flags[key] ? "1" : "0"}"`)
+    .join(" ");
+  return xml ? `<w:cnfStyle ${xml}/>` : "";
+}
 
 export type SerializeTableParagraphXml = (
   paragraph: EditorParagraphNode,
@@ -26,7 +72,10 @@ type DocxWidthTag =
   | "wBefore"
   | "wAfter";
 
-function serializeOnOffElement(tag: string, value: boolean | undefined): string {
+function serializeOnOffElement(
+  tag: string,
+  value: boolean | undefined,
+): string {
   if (value === undefined) {
     return "";
   }
@@ -152,7 +201,9 @@ function serializeTableDefaultCellMargins(
     value: number | undefined,
   ) => {
     if (value !== undefined && Number.isFinite(value)) {
-      parts.push(`<w:${name} w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`);
+      parts.push(
+        `<w:${name} w:w="${pointsToTwips(value) ?? 0}" w:type="dxa"/>`,
+      );
     }
   };
   edge("top", margins.top);
@@ -161,7 +212,9 @@ function serializeTableDefaultCellMargins(
   edge("right", margins.right);
   edge("start", margins.start);
   edge("end", margins.end);
-  return parts.length > 0 ? `<w:tblCellMar>${parts.join("")}</w:tblCellMar>` : "";
+  return parts.length > 0
+    ? `<w:tblCellMar>${parts.join("")}</w:tblCellMar>`
+    : "";
 }
 
 function serializeTableCellProperties(
@@ -170,6 +223,8 @@ function serializeTableCellProperties(
 ): string {
   const colSpan = Math.max(1, Math.floor(cell.colSpan ?? 1));
   const parts: string[] = [];
+  const conditional = serializeConditionalFlags(cell.conditionalStyle);
+  if (conditional) parts.push(conditional);
 
   const widthXml = serializeCellWidth(cell.style?.width ?? fallbackWidthPt);
   if (widthXml) {
@@ -216,11 +271,44 @@ function serializeTableCellProperties(
   if (hideMark) {
     parts.push(hideMark);
   }
-  if (cell.style?.revisionXml?.length) {
-    parts.push(...cell.style.revisionXml);
+  if (cell.style?.propertyRevision) {
+    const revision = cell.style.propertyRevision;
+    const previous = serializeTableCellProperties({
+      ...cell,
+      style: revision.previous,
+    });
+    parts.push(
+      `<w:tcPrChange ${serializeRevisionAttrs(revision)}>${previous}</w:tcPrChange>`,
+    );
+  }
+  if (cell.style?.revision) {
+    const revision = cell.style.revision;
+    const element =
+      revision.type === "insert"
+        ? "cellIns"
+        : revision.type === "delete"
+          ? "cellDel"
+          : "cellMerge";
+    const mergeAttrs =
+      revision.type === "merge"
+        ? `${revision.previous?.vMerge ? ` w:vMergeOrig="${revision.previous.vMerge === "restart" ? "rest" : "cont"}"` : ""}${cell.vMerge ? ` w:vMerge="${cell.vMerge === "restart" ? "rest" : "cont"}"` : ""}`
+        : "";
+    parts.push(
+      `<w:${element} ${serializeRevisionAttrs(revision)}${mergeAttrs}/>`
+    );
   }
 
   return parts.length > 0 ? `<w:tcPr>${parts.join("")}</w:tcPr>` : "";
+}
+
+export function serializeTableCellStyleXml(
+  style: EditorTableCellNode["style"],
+): string {
+  return serializeTableCellProperties({
+    id: "table-style-cell",
+    blocks: [],
+    style,
+  });
 }
 
 function serializeGridSkip(
@@ -257,7 +345,10 @@ function serializeTableRowHeightFromStyle(
 }
 
 function serializeTableRowHeight(row: EditorTableNode["rows"][number]): string {
-  return serializeTableRowHeightFromStyle(row.style?.height, row.style?.heightRule);
+  return serializeTableRowHeightFromStyle(
+    row.style?.height,
+    row.style?.heightRule,
+  );
 }
 
 /**
@@ -278,15 +369,22 @@ export function serializeTableRowStyleXml(
   if (widthBefore) parts.push(widthBefore);
   const widthAfter = serializeDocxWidthElement("wAfter", style.widthAfter);
   if (widthAfter) parts.push(widthAfter);
-  const cellSpacingXml = serializeDocxWidthElement("tblCellSpacing", style.cellSpacing);
+  const cellSpacingXml = serializeDocxWidthElement(
+    "tblCellSpacing",
+    style.cellSpacing,
+  );
   if (cellSpacingXml) parts.push(cellSpacingXml);
-  const heightXml = serializeTableRowHeightFromStyle(style.height, style.heightRule);
+  const heightXml = serializeTableRowHeightFromStyle(
+    style.height,
+    style.heightRule,
+  );
   if (heightXml) parts.push(heightXml);
   const cantSplit = serializeOnOffElement("cantSplit", style.cantSplit);
   if (cantSplit) parts.push(cantSplit);
   const hidden = serializeOnOffElement("hidden", style.hidden);
   if (hidden) parts.push(hidden);
-  if (style.revisionXml?.length) parts.push(...style.revisionXml);
+  const header = serializeOnOffElement("tblHeader", style.isHeader);
+  if (header) parts.push(header);
   return parts.length > 0 ? `<w:trPr>${parts.join("")}</w:trPr>` : "";
 }
 
@@ -294,37 +392,90 @@ function serializeTableRowProperties(
   row: EditorTableNode["rows"][number],
 ): string {
   const parts: string[] = [];
+  const conditional = serializeConditionalFlags(row.conditionalStyle);
+  if (conditional) parts.push(conditional);
   const gridBefore = serializeGridSkip("gridBefore", row.style?.gridBefore);
   if (gridBefore) parts.push(gridBefore);
   const gridAfter = serializeGridSkip("gridAfter", row.style?.gridAfter);
   if (gridAfter) parts.push(gridAfter);
-  const widthBefore = serializeDocxWidthElement("wBefore", row.style?.widthBefore);
+  const widthBefore = serializeDocxWidthElement(
+    "wBefore",
+    row.style?.widthBefore,
+  );
   if (widthBefore) parts.push(widthBefore);
   const widthAfter = serializeDocxWidthElement("wAfter", row.style?.widthAfter);
   if (widthAfter) parts.push(widthAfter);
-  const cellSpacingXml = serializeDocxWidthElement("tblCellSpacing", row.style?.cellSpacing);
+  const cellSpacingXml = serializeDocxWidthElement(
+    "tblCellSpacing",
+    row.style?.cellSpacing,
+  );
   if (cellSpacingXml) parts.push(cellSpacingXml);
   const height = serializeTableRowHeight(row);
   if (height) parts.push(height);
   const cantSplit = serializeOnOffElement("cantSplit", row.style?.cantSplit);
   if (cantSplit) parts.push(cantSplit);
-  if (row.isHeader) parts.push("<w:tblHeader/>");
+  if (row.style?.isHeader ?? row.isHeader) parts.push("<w:tblHeader/>");
   const hidden = serializeOnOffElement("hidden", row.style?.hidden);
   if (hidden) parts.push(hidden);
-  if (row.style?.revisionXml?.length) parts.push(...row.style.revisionXml);
+  if (row.style?.propertyRevision) {
+    const revision = row.style.propertyRevision;
+    parts.push(
+      `<w:trPrChange ${serializeRevisionAttrs(revision)}>${serializeTableRowStyleXml(revision.previous)}</w:trPrChange>`,
+    );
+  }
+  if (row.style?.revision && row.style.revision.type !== "merge") {
+    const revision = row.style.revision;
+    const element = revision.type === "insert" ? "ins" : "del";
+    parts.push(`<w:${element} ${serializeRevisionAttrs(revision)}/>`);
+  }
   return parts.length > 0 ? `<w:trPr>${parts.join("")}</w:trPr>` : "";
 }
 
 function serializeFloatingTableProperties(
-  floating: Record<string, string> | undefined,
+  floating: EditorTableFloatingLayout | undefined,
 ): string {
   if (!floating || Object.keys(floating).length === 0) {
     return "";
   }
-  const attrs = Object.entries(floating)
+  const twips = (value: number | undefined): string | undefined => {
+    const converted = pointsToTwips(value);
+    return converted === null ? undefined : String(converted);
+  };
+  const values: Record<string, string | undefined> = {
+    horzAnchor: floating.horizontalAnchor,
+    vertAnchor: floating.verticalAnchor,
+    tblpX: twips(floating.x),
+    tblpY: twips(floating.y),
+    tblpXSpec: floating.xAlign,
+    tblpYSpec: floating.yAlign,
+    topFromText: twips(floating.distanceTop),
+    rightFromText: twips(floating.distanceRight),
+    bottomFromText: twips(floating.distanceBottom),
+    leftFromText: twips(floating.distanceLeft),
+  };
+  const attrs = Object.entries(values)
+    .filter((entry): entry is [string, string] => entry[1] !== undefined)
     .map(([key, value]) => `w:${key}="${escapeXml(value)}"`)
     .join(" ");
   return `<w:tblpPr ${attrs}/>`;
+}
+
+function serializeTableBorders(style: EditorTableNode["style"]): string {
+  const borders = style?.borders;
+  if (!borders) return "";
+  const edges: Array<[string, EditorBorderStyle | undefined]> = [
+    ["top", borders.borderTop],
+    ["left", borders.borderLeft],
+    ["bottom", borders.borderBottom],
+    ["right", borders.borderRight],
+    ["insideH", borders.borderInsideH],
+    ["insideV", borders.borderInsideV],
+  ];
+  const xml = edges
+    .filter((entry): entry is [string, EditorBorderStyle] => !!entry[1])
+    .map(([name, border]) => `<w:${name} ${serializeDocxBorderAttrs(border)}`)
+    .join("");
+  return xml ? `<w:tblBorders>${xml}</w:tblBorders>` : "";
 }
 
 function serializeTableProperties(table: EditorTableNode): string {
@@ -371,6 +522,8 @@ function serializeTableProperties(table: EditorTableNode): string {
   if (defaultMarginsXml) {
     parts.push(defaultMarginsXml);
   }
+  const tableBorders = serializeTableBorders(table.style);
+  if (tableBorders) parts.push(tableBorders);
   const indentXml = serializeDocxWidthElement(
     "tblInd",
     table.style?.indentLeft,
@@ -379,15 +532,25 @@ function serializeTableProperties(table: EditorTableNode): string {
     parts.push(indentXml);
   }
   parts.push(`<w:tblLayout w:type="${table.style?.layout ?? "fixed"}"/>`);
-  const bidiVisual = serializeOnOffElement("bidiVisual", table.style?.bidiVisual);
+  const bidiVisual = serializeOnOffElement(
+    "bidiVisual",
+    table.style?.bidiVisual,
+  );
   if (bidiVisual) {
     parts.push(bidiVisual);
   }
   if (table.style?.tblOverlap) {
     parts.push(`<w:tblOverlap w:val="${escapeXml(table.style.tblOverlap)}"/>`);
   }
-  if (table.style?.revisionXml?.length) {
-    parts.push(...table.style.revisionXml);
+  if (table.style?.revision) {
+    const revision = table.style.revision;
+    const previous = serializeTableProperties({
+      ...table,
+      style: revision.previous,
+    });
+    parts.push(
+      `<w:tblPrChange ${serializeRevisionAttrs(revision)}>${previous}</w:tblPrChange>`,
+    );
   }
   return `<w:tblPr>${parts.join("")}</w:tblPr>`;
 }
@@ -440,7 +603,13 @@ export function serializeTableXml(
   const gridXml = table.gridCols
     ? `<w:tblGrid>${table.gridCols
         .map((width) => `<w:gridCol w:w="${pointsToTwips(width) ?? 0}"/>`)
-        .join("")}${table.tblGridChangeXml ?? ""}</w:tblGrid>`
+        .join("")}${
+        table.gridRevision
+          ? `<w:tblGridChange ${serializeRevisionAttrs(table.gridRevision)}><w:tblGrid>${table.gridRevision.previous
+              .map((width) => `<w:gridCol w:w="${pointsToTwips(width) ?? 0}"/>`)
+              .join("")}</w:tblGrid></w:tblGridChange>`
+          : ""
+      }</w:tblGrid>`
     : "";
   return `<w:tbl>${serializeTableProperties(table)}${gridXml}${rowsXml}</w:tbl>`;
 }

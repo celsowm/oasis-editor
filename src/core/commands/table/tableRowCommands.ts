@@ -5,6 +5,7 @@ import type {
 } from "@/core/model.js";
 import {
   patchStyleValue,
+  createTableRevisionMetadata,
   resolveActiveTableLocation,
   updateActiveTableBlocks,
   updateStateSections,
@@ -24,7 +25,25 @@ export function setSelectedTableRowStyleValue<
   const updateTable = (table: EditorTableNode): EditorTableNode => {
     const nextRows = table.rows.map((row, rowIndex) =>
       rowIndex === target.loc.rowIndex
-        ? { ...row, style: patchStyleValue(row.style, key, value) }
+        ? (() => {
+            let style = row.style;
+            if (
+              state.trackChangesEnabled &&
+              key !== "revision" &&
+              key !== "propertyRevision" &&
+              !style?.propertyRevision
+            ) {
+              style = {
+                ...(style ?? {}),
+                propertyRevision: {
+                  ...createTableRevisionMetadata(),
+                  type: "property",
+                  previous: { ...(style ?? {}) },
+                },
+              };
+            }
+            return { ...row, style: patchStyleValue(style, key, value) };
+          })()
         : row,
     );
     return { ...table, rows: nextRows };
@@ -42,11 +61,26 @@ export function setSelectedTableRowHeader(
 
   const updateTable = (table: EditorTableNode): EditorTableNode => ({
     ...table,
-    rows: table.rows.map((row, rowIndex) =>
-      rowIndex === target.loc.rowIndex
-        ? { ...row, isHeader: value === null ? undefined : value }
-        : row,
-    ),
+    rows: table.rows.map((row, rowIndex) => {
+      if (rowIndex !== target.loc.rowIndex) return row;
+      let style = row.style;
+      if (state.trackChangesEnabled && !style?.propertyRevision) {
+        style = {
+          ...(style ?? {}),
+          propertyRevision: {
+            ...createTableRevisionMetadata(),
+            type: "property",
+            previous: { ...(style ?? {}), isHeader: row.isHeader },
+          },
+        };
+      }
+      const isHeader = value === null ? undefined : value;
+      return {
+        ...row,
+        isHeader,
+        style: patchStyleValue(style, "isHeader", isHeader ?? null),
+      };
+    }),
   });
 
   return updateActiveTableBlocks(state, updateTable);
@@ -63,9 +97,20 @@ export function setTableRowHeight(
     const nextRows = [...table.rows];
     const row = nextRows[rowIndex];
     if (row) {
+      let style = row.style;
+      if (state.trackChangesEnabled && !style?.propertyRevision) {
+        style = {
+          ...(style ?? {}),
+          propertyRevision: {
+            ...createTableRevisionMetadata(),
+            type: "property",
+            previous: { ...(style ?? {}) },
+          },
+        };
+      }
       nextRows[rowIndex] = {
         ...row,
-        style: patchStyleValue(row.style, "height", height),
+        style: patchStyleValue(style, "height", height),
       };
     }
     return { ...table, rows: nextRows };

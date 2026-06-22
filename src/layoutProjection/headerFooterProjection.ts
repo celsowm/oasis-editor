@@ -73,20 +73,22 @@ export function projectHeaderFooterBlocksWithDependencies(
         sourceBlock: block,
       };
     }
+    const tableHeight =
+      measuredHeights?.[block.id] ??
+      deps.estimateTableBlockHeight(
+        block,
+        styles,
+        contentWidth,
+        measurer,
+        defaultTabStop,
+      );
     return {
       blockId: block.id,
       sourceBlockId: block.id,
       blockType: block.type,
       globalIndex: index,
-      estimatedHeight:
-        measuredHeights?.[block.id] ??
-        deps.estimateTableBlockHeight(
-          block,
-          styles,
-          contentWidth,
-          measurer,
-          defaultTabStop,
-        ),
+      estimatedHeight: block.style?.floating ? 0 : tableHeight,
+      floatingTableHeight: block.style?.floating ? tableHeight : undefined,
       sourceBlock: block,
     };
   });

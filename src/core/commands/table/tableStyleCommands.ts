@@ -9,6 +9,7 @@ import { getBlockParagraphs, getParagraphs } from "@/core/model.js";
 import { normalizeSelection } from "@/core/selection.js";
 import {
   patchStyleValue,
+  createTableRevisionMetadata,
   updateNestedTablesInBlocks,
   updateStateSections,
 } from "./tableCommandUtils.js";
@@ -30,10 +31,20 @@ export function setTableStyleValue<K extends keyof EditorTableStyle>(
 ): EditorState {
   const selectedParagraphIds = collectLinearSelectedParagraphIds(state);
 
-  const updateTable = (table: EditorTableNode): EditorTableNode => ({
-    ...table,
-    style: patchStyleValue(table.style, key, value),
-  });
+  const updateTable = (table: EditorTableNode): EditorTableNode => {
+    let style = table.style;
+    if (state.trackChangesEnabled && key !== "revision" && !style?.revision) {
+      style = {
+        ...(style ?? {}),
+        revision: {
+          ...createTableRevisionMetadata(),
+          type: "property",
+          previous: { ...(style ?? {}) },
+        },
+      };
+    }
+    return { ...table, style: patchStyleValue(style, key, value) };
+  };
 
   const updateBlocks = (blocks: EditorBlockNode[]): EditorBlockNode[] => {
     return blocks.map((block) => {
@@ -68,9 +79,20 @@ export function setActiveTableStyleValue<K extends keyof EditorTableStyle>(
 ): EditorState {
   const updateTable = (table: EditorTableNode): EditorTableNode => {
     if (table.id !== tableId) return table;
+    let style = table.style;
+    if (state.trackChangesEnabled && key !== "revision" && !style?.revision) {
+      style = {
+        ...(style ?? {}),
+        revision: {
+          ...createTableRevisionMetadata(),
+          type: "property",
+          previous: { ...(style ?? {}) },
+        },
+      };
+    }
     return {
       ...table,
-      style: patchStyleValue(table.style, key, value),
+      style: patchStyleValue(style, key, value),
     };
   };
 

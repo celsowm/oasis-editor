@@ -1,6 +1,10 @@
 import { createSignal } from "solid-js";
-import type { EditorState, EditorRevision } from "@/core/model.js";
-import { getParagraphs } from "@/core/model.js";
+import type {
+  EditorBlockNode,
+  EditorRevisionMetadata,
+  EditorState,
+} from "@/core/model.js";
+import { getDocumentSections, getParagraphs } from "@/core/model.js";
 import type { RevisionBox } from "@/ui/editorUiTypes.js";
 
 export interface UseEditorRevisionProps {
@@ -16,7 +20,9 @@ export function createEditorRevisionController(deps: UseEditorRevisionProps) {
 
   const handleRevisionMouseEnter = (revisionId: string, event: MouseEvent) => {
     const paragraphs = getParagraphs(deps.state());
-    let foundRevision: EditorRevision | undefined;
+    let foundRevision:
+      | (EditorRevisionMetadata & { type: RevisionBox["type"] })
+      | undefined;
     for (const p of paragraphs) {
       for (const run of p.runs) {
         if (run.revision?.id === revisionId) {
@@ -25,6 +31,51 @@ export function createEditorRevisionController(deps: UseEditorRevisionProps) {
         }
       }
       if (foundRevision) break;
+    }
+
+    const findInBlocks = (blocks: EditorBlockNode[]): typeof foundRevision => {
+      for (const block of blocks) {
+        if (block.type === "paragraph") continue;
+        if (block.style?.revision?.id === revisionId) {
+          return block.style.revision;
+        }
+        if (block.gridRevision?.id === revisionId) return block.gridRevision;
+        for (const row of block.rows) {
+          if (row.style?.revision?.id === revisionId) return row.style.revision;
+          if (row.style?.propertyRevision?.id === revisionId) {
+            return row.style.propertyRevision;
+          }
+          for (const cell of row.cells) {
+            if (cell.style?.revision?.id === revisionId) {
+              return cell.style.revision;
+            }
+            if (cell.style?.propertyRevision?.id === revisionId) {
+              return cell.style.propertyRevision;
+            }
+            const nested = findInBlocks(cell.blocks);
+            if (nested) return nested;
+          }
+        }
+      }
+      return undefined;
+    };
+    if (!foundRevision) {
+      for (const section of getDocumentSections(deps.state().document)) {
+        for (const blocks of [
+          section.blocks,
+          section.header,
+          section.firstPageHeader,
+          section.evenPageHeader,
+          section.footer,
+          section.firstPageFooter,
+          section.evenPageFooter,
+        ]) {
+          if (!blocks) continue;
+          foundRevision = findInBlocks(blocks);
+          if (foundRevision) break;
+        }
+        if (foundRevision) break;
+      }
     }
 
     if (!foundRevision) return;
