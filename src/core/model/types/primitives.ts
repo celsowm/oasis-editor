@@ -46,6 +46,14 @@ export interface EditorBorderStyle {
   color: string;
 }
 
+/** `w:em/@w:val`: the emphasis mark drawn over each glyph of a run. */
+export type EditorEmphasisMark =
+  | "dot"
+  | "comma"
+  | "circle"
+  | "underDot"
+  | "none";
+
 export interface EditorTabStop {
   position: number; // in pt
   type: "left" | "center" | "right" | "decimal" | "bar" | "clear";

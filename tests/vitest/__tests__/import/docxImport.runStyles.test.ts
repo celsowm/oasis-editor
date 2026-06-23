@@ -405,6 +405,76 @@ describe("DOCX run style import", () => {
     expect(reexported).toContain('<w:effect w:val="blinkBackground"/>');
   });
 
+  it("imports and round-trips the run decorations bdr/em/outline/shadow/emboss/imprint/rtl/cs/fitText/snapToGrid", async () => {
+    const zip = new JSZip();
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:rPr>
+          <w:outline/>
+          <w:shadow/>
+          <w:emboss/>
+          <w:imprint/>
+          <w:snapToGrid w:val="0"/>
+          <w:bdr w:val="single" w:sz="8" w:space="0" w:color="FF0000"/>
+          <w:fitText w:val="1440"/>
+          <w:rtl/>
+          <w:cs/>
+          <w:em w:val="dot"/>
+        </w:rPr>
+        <w:t>Decorated</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const run = getDocumentParagraphs(document)[0]!.runs[0]!;
+
+    expect(run.styles?.outline).toBe(true);
+    expect(run.styles?.shadow).toBe(true);
+    expect(run.styles?.emboss).toBe(true);
+    expect(run.styles?.imprint).toBe(true);
+    expect(run.styles?.snapToGrid).toBe(false);
+    expect(run.styles?.rtl).toBe(true);
+    expect(run.styles?.complexScript).toBe(true);
+    expect(run.styles?.emphasisMark).toBe("dot");
+    expect(run.styles?.fitText).toBeCloseTo(72, 3); // 1440 twips = 72 pt
+    expect(run.styles?.textBorder).toEqual({
+      width: 1,
+      type: "solid",
+      color: "#FF0000",
+    });
+
+    const reexportedZip = await JSZip.loadAsync(
+      await exportEditorDocumentToDocx(document),
+    );
+    const reexported = await reexportedZip
+      .file("word/document.xml")
+      ?.async("string");
+    expect(reexported).toContain("<w:outline/>");
+    expect(reexported).toContain("<w:shadow/>");
+    expect(reexported).toContain("<w:emboss/>");
+    expect(reexported).toContain("<w:imprint/>");
+    expect(reexported).toContain('<w:snapToGrid w:val="0"/>');
+    expect(reexported).toContain(
+      '<w:bdr w:val="single" w:sz="8" w:space="0" w:color="FF0000"/>',
+    );
+    expect(reexported).toContain('<w:fitText w:val="1440"/>');
+    expect(reexported).toContain("<w:rtl/>");
+    expect(reexported).toContain("<w:cs/>");
+    expect(reexported).toContain('<w:em w:val="dot"/>');
+  });
+
   it("honors explicit w:b w:val='0' overriding a bold character style", async () => {
     const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">

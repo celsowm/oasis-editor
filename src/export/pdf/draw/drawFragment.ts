@@ -145,6 +145,89 @@ export function drawFragmentShading(
   });
 }
 
+// Run border (w:bdr): a rectangle stroked around the run's text.
+export function drawFragmentBorder(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+  originX: number,
+  originY: number,
+  styles: Required<EditorTextStyle>,
+): void {
+  const border = styles.textBorder;
+  if (!border || border.type === "none" || border.width <= 0) {
+    return;
+  }
+  const bounds = resolveFragmentBounds(
+    line,
+    fragment,
+    styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
+  );
+  if (!bounds) {
+    return;
+  }
+  writer.drawRect(pageIndex, {
+    x: pxToPt(originX + bounds.left),
+    y: pxToPt(originY + line.top + 1),
+    width: pxToPt(Math.max(0, bounds.right - bounds.left)),
+    height: pxToPt(Math.max(2, line.height - 2)),
+    stroke: border.color,
+    lineWidth: pxToPt(Math.max(0.5, border.width * PX_PER_POINT)),
+  });
+}
+
+const PDF_EMPHASIS_GLYPH: Record<string, string> = {
+  dot: "•",
+  comma: "‚",
+  circle: "○",
+  underDot: "•",
+};
+
+// Run emphasis mark (w:em): a small glyph centered above each glyph (below for
+// underDot).
+export function drawFragmentEmphasis(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+  originX: number,
+  originY: number,
+  styles: Required<EditorTextStyle>,
+): void {
+  const mark = styles.emphasisMark;
+  if (!mark || mark === "none") {
+    return;
+  }
+  const glyph = PDF_EMPHASIS_GLYPH[mark];
+  if (!glyph) {
+    return;
+  }
+  const slots = resolveFragmentSlots(line, fragment);
+  const below = mark === "underDot";
+  const size = Math.max(4, line.height * 0.35);
+  const y = below
+    ? originY + line.top + line.height + size
+    : originY + line.top + size;
+  for (let i = 0; i < slots.length; i += 1) {
+    const slot = slots[i]!;
+    if (slot.char === " " || slot.char === "\t" || slot.char === "\n") {
+      continue;
+    }
+    const next = slots[i + 1];
+    const centerX = next
+      ? (slot.left + next.left) / 2
+      : slot.left + line.height * 0.25;
+    writer.drawText(pageIndex, {
+      x: pxToPt(originX + centerX - size * 0.25),
+      y: pxToPt(y),
+      text: glyph,
+      fontSize: pxToPt(size),
+      color: styles.color ?? "#000000",
+    });
+  }
+}
+
 export function drawFragmentDecoration(
   writer: OasisPdfWriter,
   pageIndex: number,
@@ -529,6 +612,15 @@ export async function drawFragmentText(
     originY,
     styles,
   );
+  drawFragmentBorder(
+    writer,
+    pageIndex,
+    line,
+    fragment,
+    originX,
+    originY,
+    styles,
+  );
   drawTabLeaders(
     writer,
     pageIndex,
@@ -549,46 +641,58 @@ export async function drawFragmentText(
   const paragraphAlign =
     resolveEffectiveParagraphStyle(paragraph.style, document.styles).align ??
     "left";
-  if (paragraphAlign === "justify") {
-    const chunks = groupSlotChunksByWhitespace(chars);
-    for (const chunk of chunks) {
-      const chunkText = chunk
-        .map((c) => (styles.allCaps ? c.char.toUpperCase() : c.char))
-        .join("");
-      if (chunkText.length === 0) continue;
+  const baseTextOptions = {
+    fontSize: fontSizePt,
+    bold: styles.bold,
+    italic: styles.italic,
+    fontResourceName: fontFace.writerResourceName,
+    characterSpacing: styles.characterSpacing ?? 0,
+    horizontalScale: styles.characterScale ?? 100,
+  };
+  const mainColor = styles.color ?? "#000000";
+  const offsetPt = pxToPt(1);
+  // Draws one text chunk applying the glyph-level run effects: emboss/imprint
+  // lay a light relief copy offset behind, shadow lays a gray copy offset, and
+  // outline strokes hollow glyphs via the writer's text render mode.
+  const emitChunk = (leftPx: number, text: string): void => {
+    if (styles.emboss || styles.imprint) {
+      const dir = styles.imprint ? 1 : -1;
       writer.drawText(pageIndex, {
-        x: pxToPt(originX + chunk[0]!.left),
-        y: pxToPt(baselineY),
-        text: chunkText,
-        fontSize: fontSizePt,
-        color: styles.color ?? "#000000",
-        bold: styles.bold,
-        italic: styles.italic,
-        fontResourceName: fontFace.writerResourceName,
-        characterSpacing: styles.characterSpacing ?? 0,
-        horizontalScale: styles.characterScale ?? 100,
+        ...baseTextOptions,
+        x: pxToPt(leftPx) + offsetPt * dir,
+        y: pxToPt(baselineY) + offsetPt * dir,
+        text,
+        color: "#BFBFBF",
       });
     }
-  } else {
-    const chunks = groupSlotChunksByOffsetGaps(chars);
-    for (const chunk of chunks) {
-      const chunkText = chunk
-        .map((c) => (styles.allCaps ? c.char.toUpperCase() : c.char))
-        .join("");
-      if (chunkText.length === 0) continue;
+    if (styles.shadow) {
       writer.drawText(pageIndex, {
-        x: pxToPt(originX + chunk[0]!.left),
-        y: pxToPt(baselineY),
-        text: chunkText,
-        fontSize: fontSizePt,
-        color: styles.color ?? "#000000",
-        bold: styles.bold,
-        italic: styles.italic,
-        fontResourceName: fontFace.writerResourceName,
-        characterSpacing: styles.characterSpacing ?? 0,
-        horizontalScale: styles.characterScale ?? 100,
+        ...baseTextOptions,
+        x: pxToPt(leftPx) + offsetPt,
+        y: pxToPt(baselineY) + offsetPt,
+        text,
+        color: "#808080",
       });
     }
+    writer.drawText(pageIndex, {
+      ...baseTextOptions,
+      x: pxToPt(leftPx),
+      y: pxToPt(baselineY),
+      text,
+      color: mainColor,
+      renderMode: styles.outline ? 1 : 0,
+    });
+  };
+  const chunks =
+    paragraphAlign === "justify"
+      ? groupSlotChunksByWhitespace(chars)
+      : groupSlotChunksByOffsetGaps(chars);
+  for (const chunk of chunks) {
+    const chunkText = chunk
+      .map((c) => (styles.allCaps ? c.char.toUpperCase() : c.char))
+      .join("");
+    if (chunkText.length === 0) continue;
+    emitChunk(originX + chunk[0]!.left, chunkText);
   }
   if (styles.underline) {
     drawFragmentDecoration(
@@ -624,6 +728,17 @@ export async function drawFragmentText(
       originY,
       styles,
       "doubleStrike",
+    );
+  }
+  if (styles.emphasisMark) {
+    drawFragmentEmphasis(
+      writer,
+      pageIndex,
+      line,
+      fragment,
+      originX,
+      originY,
+      styles,
     );
   }
 }

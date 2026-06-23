@@ -28,6 +28,7 @@ import {
   underlineStyleLineWidthPx,
 } from "@/core/textStyleMappings.js";
 import { PX_PER_POINT } from "@/layoutProjection/constants.js";
+import { drawBorderBox } from "./canvasBorders.js";
 import { resolveMetricCompatibleFamily } from "@/export/pdf/fonts/officeFontAssets.js";
 import {
   getAlignedListLabelInset,
@@ -393,6 +394,16 @@ export function drawParagraph(
           styles.highlight,
         );
       }
+      if (styles.textBorder) {
+        drawFragmentBorder(
+          ctx,
+          line,
+          fragment,
+          originX,
+          originY,
+          styles.textBorder,
+        );
+      }
       if (fragment.image && !fragment.image.floating) {
         const slot = slotByOffset.get(fragment.startOffset);
         if (slot) {
@@ -467,6 +478,18 @@ export function drawParagraph(
           originX,
           originY,
           "doubleStrike",
+        );
+      }
+      if (styles.emphasisMark) {
+        drawFragmentEmphasis(
+          ctx,
+          line,
+          fragment,
+          slotByOffset,
+          originX,
+          originY,
+          styles.emphasisMark,
+          styles.color ?? "#000000",
         );
       }
       ctx.restore();
@@ -587,6 +610,130 @@ function drawScaledText(
   ctx.restore();
 }
 
+// Applies the glyph-level run effects (outline/shadow/emboss/imprint) on top of
+// the plain scaled fill. emboss/imprint draw a light relief copy offset behind
+// the main glyphs; shadow uses the canvas shadow; outline strokes hollow text.
+function drawStyledText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  scale: number,
+  styles: {
+    outline?: boolean;
+    shadow?: boolean;
+    emboss?: boolean;
+    imprint?: boolean;
+  },
+) {
+  if (!styles.outline && !styles.shadow && !styles.emboss && !styles.imprint) {
+    drawScaledText(ctx, text, x, y, scale);
+    return;
+  }
+
+  if (styles.emboss || styles.imprint) {
+    const offset = styles.imprint ? 1 : -1;
+    ctx.save();
+    ctx.shadowColor = "transparent";
+    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    drawScaledText(ctx, text, x + offset, y + offset, scale);
+    ctx.restore();
+  }
+
+  ctx.save();
+  if (styles.shadow) {
+    ctx.shadowColor = "rgba(0,0,0,0.45)";
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+    ctx.shadowBlur = 1;
+  }
+  if (styles.outline) {
+    ctx.strokeStyle = ctx.fillStyle as string;
+    ctx.lineWidth = 0.75;
+    if (scale === 1) {
+      ctx.strokeText(text, x, y);
+    } else {
+      ctx.translate(x, y);
+      ctx.scale(scale, 1);
+      ctx.strokeText(text, 0, 0);
+    }
+  } else {
+    drawScaledText(ctx, text, x, y, scale);
+  }
+  ctx.restore();
+}
+
+// Run border (w:bdr): a box stroked around the run's text on all four edges.
+function drawFragmentBorder(
+  ctx: CanvasRenderingContext2D,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutLine["fragments"][number],
+  originX: number,
+  originY: number,
+  border: {
+    width: number;
+    type: "solid" | "dashed" | "dotted" | "none";
+    color: string;
+  },
+) {
+  if (border.type === "none" || border.width <= 0) return;
+  const bounds = resolveFragmentPaintBounds(line, fragment);
+  if (!bounds) return;
+  const edge = { ...border, width: Math.max(0.5, border.width * PX_PER_POINT) };
+  drawBorderBox(
+    ctx,
+    originX + bounds.left,
+    originY + line.top + 1,
+    Math.max(0, bounds.right - bounds.left),
+    Math.max(2, line.height - 2),
+    { top: edge, right: edge, bottom: edge, left: edge },
+  );
+}
+
+const EMPHASIS_GLYPH: Record<string, string> = {
+  dot: "•",
+  comma: "‚",
+  circle: "○",
+  underDot: "•",
+};
+
+// Run emphasis mark (w:em): a small glyph drawn above each character (below for
+// underDot), centered on the slot.
+function drawFragmentEmphasis(
+  ctx: CanvasRenderingContext2D,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutLine["fragments"][number],
+  slotByOffset: Map<number, EditorLayoutLine["slots"][number]>,
+  originX: number,
+  originY: number,
+  mark: string,
+  color: string,
+) {
+  if (mark === "none") return;
+  const glyph = EMPHASIS_GLYPH[mark];
+  if (!glyph) return;
+  const below = mark === "underDot";
+  const y = below
+    ? originY + line.top + line.height + 1
+    : originY + line.top + 2;
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.textAlign = "center";
+  ctx.textBaseline = below ? "top" : "bottom";
+  ctx.font = `400 ${Math.max(6, line.height * 0.35)}px Calibri`;
+  for (const char of fragment.chars) {
+    if (char.char === "\n" || char.char === "\t" || char.char === " ") continue;
+    const slot = slotByOffset.get(char.paragraphOffset);
+    const nextSlot = slotByOffset.get(char.paragraphOffset + 1);
+    if (!slot) continue;
+    const centerX = nextSlot
+      ? (slot.left + nextSlot.left) / 2
+      : slot.left + line.height * 0.25;
+    ctx.fillText(glyph, originX + centerX, y);
+  }
+  ctx.restore();
+}
+
 function drawTextFragment(
   ctx: CanvasRenderingContext2D,
   paragraph: EditorParagraphNode,
@@ -616,7 +763,14 @@ function drawTextFragment(
       segmentLeft = null;
       return;
     }
-    drawScaledText(ctx, segmentText, originX + segmentLeft, baselineY, scale);
+    drawStyledText(
+      ctx,
+      segmentText,
+      originX + segmentLeft,
+      baselineY,
+      scale,
+      styles,
+    );
     segmentText = "";
     segmentLeft = null;
   };
@@ -650,7 +804,14 @@ function drawTextFragment(
     const renderedChar = getRenderedChar(char.char, styles);
     if (hasManualCharacterSpacing) {
       flushSegment();
-      drawScaledText(ctx, renderedChar, originX + slot.left, baselineY, scale);
+      drawStyledText(
+        ctx,
+        renderedChar,
+        originX + slot.left,
+        baselineY,
+        scale,
+        styles,
+      );
       continue;
     }
 

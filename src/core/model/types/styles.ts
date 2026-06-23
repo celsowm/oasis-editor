@@ -5,6 +5,7 @@
 import type {
   EditorBorderStyle,
   EditorDocxWidthValue,
+  EditorEmphasisMark,
   EditorLigatures,
   EditorNumberForm,
   EditorNumberSpacing,
@@ -32,6 +33,26 @@ export interface EditorTextStyle {
   noProof?: boolean;
   webHidden?: boolean;
   specVanish?: boolean;
+  /** `w:rtl`: run flows right-to-left. */
+  rtl?: boolean;
+  /** `w:cs`: run is complex-script text. */
+  complexScript?: boolean;
+  /** `w:snapToGrid` (run): snap characters to the document grid. Defaults on. */
+  snapToGrid?: boolean;
+  /** `w:fitText`: compress/expand the run to this target width (in pt). */
+  fitText?: number | null;
+  /** `w:em`: emphasis mark drawn above (or below for `underDot`) each glyph. */
+  emphasisMark?: EditorEmphasisMark | null;
+  /** `w:bdr`: border box drawn around the run's text. */
+  textBorder?: EditorBorderStyle | null;
+  /** `w:outline`: hollow/outlined glyphs. */
+  outline?: boolean;
+  /** `w:shadow`: drop shadow behind glyphs. */
+  shadow?: boolean;
+  /** `w:emboss`: raised (embossed) glyphs. */
+  emboss?: boolean;
+  /** `w:imprint`: engraved glyphs. */
+  imprint?: boolean;
   textEffect?: string | null;
   characterScale?: number | null;
   characterSpacing?: number | null;

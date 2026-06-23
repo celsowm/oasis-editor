@@ -1,9 +1,14 @@
 import type { EditorTextStyle } from "@/core/model.js";
-import { escapeXml, normalizeDocxColor, toHalfPoints } from "@/export/docx/xmlUtils.js";
+import {
+  escapeXml,
+  normalizeDocxColor,
+  toHalfPoints,
+} from "@/export/docx/xmlUtils.js";
 import {
   DOCX_HIGHLIGHT_COLORS,
   DOCX_HIGHLIGHT_HEX_ALIASES,
 } from "./constants.js";
+import { serializeDocxBorderAttrs } from "@/export/docx/borders.js";
 
 function pointsToSignedTwips(value: number | null | undefined): number | null {
   if (value === undefined || value === null || !Number.isFinite(value)) {
@@ -122,14 +127,23 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
   }
   if (styles.strike) parts.push("<w:strike/>");
   if (styles.doubleStrike) parts.push("<w:dstrike/>");
+  if (styles.outline) parts.push("<w:outline/>");
+  if (styles.shadow) parts.push("<w:shadow/>");
+  if (styles.emboss) parts.push("<w:emboss/>");
+  if (styles.imprint) parts.push("<w:imprint/>");
   if (styles.smallCaps) parts.push("<w:smallCaps/>");
   if (styles.allCaps) parts.push("<w:caps/>");
   if (styles.hidden) parts.push("<w:vanish/>");
   if (styles.noProof) parts.push("<w:noProof/>");
   if (styles.webHidden) parts.push("<w:webHidden/>");
   if (styles.specVanish) parts.push("<w:specVanish/>");
+  // `w:snapToGrid` defaults on; only emit an explicit-off override.
+  if (styles.snapToGrid === false) parts.push('<w:snapToGrid w:val="0"/>');
   if (styles.textEffect) {
     parts.push(`<w:effect w:val="${escapeXml(styles.textEffect)}"/>`);
+  }
+  if (styles.textBorder) {
+    parts.push(`<w:bdr ${serializeDocxBorderAttrs(styles.textBorder)}`);
   }
   if (
     styles.characterScale !== undefined &&
@@ -212,6 +226,21 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
     parts.push(
       `<w:shd w:val="clear" w:color="auto" w:fill="${normalizeDocxColor(styles.shading, "FFFFFF")}"/>`,
     );
+  }
+  if (
+    styles.fitText !== undefined &&
+    styles.fitText !== null &&
+    Number.isFinite(styles.fitText)
+  ) {
+    const twips = pointsToSignedTwips(styles.fitText);
+    if (twips !== null && twips > 0) {
+      parts.push(`<w:fitText w:val="${twips}"/>`);
+    }
+  }
+  if (styles.rtl) parts.push("<w:rtl/>");
+  if (styles.complexScript) parts.push("<w:cs/>");
+  if (styles.emphasisMark) {
+    parts.push(`<w:em w:val="${escapeXml(styles.emphasisMark)}"/>`);
   }
   if (styles.language) {
     const attrs: string[] = [];

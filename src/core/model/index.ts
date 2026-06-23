@@ -15,6 +15,7 @@ export type {
   EditorNumberForm,
   EditorTextLanguage,
   EditorBorderStyle,
+  EditorEmphasisMark,
   EditorTabStop,
   EditorParagraphListStyle,
   EditorImageCrop,

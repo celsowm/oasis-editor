@@ -17,6 +17,7 @@ import {
   normalizeImportedFontFamily,
   normalizeImportedHexColor,
 } from "./units.js";
+import { parseDocxBorder } from "./borders.js";
 import { resolveThemeFont } from "./themeFonts.js";
 import { resolveThemeColor } from "./themeColors.js";
 import { type DocxImportTheme } from "./theme.js";
@@ -93,6 +94,24 @@ export function normalizeImportedRunStyle(
       effective.specVanish,
       defaultEffective.specVanish,
     ),
+    rtl: hd(style.rtl, effective.rtl, defaultEffective.rtl),
+    complexScript: hd(
+      style.complexScript,
+      effective.complexScript,
+      defaultEffective.complexScript,
+    ),
+    snapToGrid: hd(
+      style.snapToGrid,
+      effective.snapToGrid,
+      defaultEffective.snapToGrid,
+    ),
+    outline: hd(style.outline, effective.outline, defaultEffective.outline),
+    shadow: hd(style.shadow, effective.shadow, defaultEffective.shadow),
+    emboss: hd(style.emboss, effective.emboss, defaultEffective.emboss),
+    imprint: hd(style.imprint, effective.imprint, defaultEffective.imprint),
+    fitText: dd(effective.fitText, defaultEffective.fitText),
+    emphasisMark: dd(effective.emphasisMark, defaultEffective.emphasisMark),
+    textBorder: dd(effective.textBorder, defaultEffective.textBorder),
     textEffect: dd(effective.textEffect, defaultEffective.textEffect),
     characterScale: dd(
       effective.characterScale,
@@ -192,6 +211,66 @@ export function parseRunStyle(
   const specVanish = parseOnOffProperty(runProperties, "specVanish");
   if (specVanish !== undefined) {
     styles.specVanish = specVanish;
+  }
+  const rtl = parseOnOffProperty(runProperties, "rtl");
+  if (rtl !== undefined) {
+    styles.rtl = rtl;
+  }
+  const complexScript = parseOnOffProperty(runProperties, "cs");
+  if (complexScript !== undefined) {
+    styles.complexScript = complexScript;
+  }
+  const snapToGrid = parseOnOffProperty(runProperties, "snapToGrid");
+  if (snapToGrid !== undefined) {
+    styles.snapToGrid = snapToGrid;
+  }
+  const outline = parseOnOffProperty(runProperties, "outline");
+  if (outline !== undefined) {
+    styles.outline = outline;
+  }
+  const shadow = parseOnOffProperty(runProperties, "shadow");
+  if (shadow !== undefined) {
+    styles.shadow = shadow;
+  }
+  const emboss = parseOnOffProperty(runProperties, "emboss");
+  if (emboss !== undefined) {
+    styles.emboss = emboss;
+  }
+  const imprint = parseOnOffProperty(runProperties, "imprint");
+  if (imprint !== undefined) {
+    styles.imprint = imprint;
+  }
+  // `w:em`: emphasis mark drawn over each glyph.
+  const emphasisMark = getAttributeValue(
+    getFirstChildByTagNameNS(runProperties, WORD_NS, "em"),
+    "val",
+  );
+  if (
+    emphasisMark === "dot" ||
+    emphasisMark === "comma" ||
+    emphasisMark === "circle" ||
+    emphasisMark === "underDot" ||
+    emphasisMark === "none"
+  ) {
+    styles.emphasisMark = emphasisMark;
+  }
+  // `w:fitText/@w:val`: target width in twips the run is fitted to.
+  const fitText = getAttributeValue(
+    getFirstChildByTagNameNS(runProperties, WORD_NS, "fitText"),
+    "val",
+  );
+  if (fitText) {
+    const parsed = twipsToPoints(fitText);
+    if (parsed !== undefined && parsed > 0) {
+      styles.fitText = parsed;
+    }
+  }
+  // `w:bdr`: a single CT_Border identical to a paragraph/cell border edge.
+  const textBorder = parseDocxBorder(
+    getFirstChildByTagNameNS(runProperties, WORD_NS, "bdr"),
+  );
+  if (textBorder) {
+    styles.textBorder = textBorder;
   }
   const textEffect = getAttributeValue(
     getFirstChildByTagNameNS(runProperties, WORD_NS, "effect"),
