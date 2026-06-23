@@ -1,4 +1,4 @@
-import { type Element as XmlElement } from "@xmldom/xmldom";
+import { type Element as XmlElement, XMLSerializer } from "@xmldom/xmldom";
 import type {
   EditorGlow,
   EditorGradientStop,
@@ -271,6 +271,8 @@ export function normalizeImportedRunStyle(
     textShadow: dd(effective.textShadow, defaultEffective.textShadow),
     glow: dd(effective.glow, defaultEffective.glow),
     reflection: dd(effective.reflection, defaultEffective.reflection),
+    scene3dXml: dd(effective.scene3dXml, defaultEffective.scene3dXml),
+    props3dXml: dd(effective.props3dXml, defaultEffective.props3dXml),
     highlight: dd(effective.highlight, defaultEffective.highlight),
     shading: dd(effective.shading, defaultEffective.shading),
     language: dd(effective.language, defaultEffective.language),
@@ -608,6 +610,18 @@ export function parseRunStyle(
   const reflectionEl = getFirstW14Child(runProperties, "reflection");
   if (reflectionEl) {
     styles.reflection = parseW14Reflection(reflectionEl);
+  }
+
+  // 3D scene/material is not rendered; preserve the verbatim XML so it
+  // round-trips losslessly instead of being silently dropped.
+  const scene3dEl = getFirstW14Child(runProperties, "scene3d");
+  if (scene3dEl) {
+    styles.scene3dXml = new XMLSerializer().serializeToString(scene3dEl);
+  }
+
+  const props3dEl = getFirstW14Child(runProperties, "props3d");
+  if (props3dEl) {
+    styles.props3dXml = new XMLSerializer().serializeToString(props3dEl);
   }
 
   const highlight = getFirstChildByTagNameNS(

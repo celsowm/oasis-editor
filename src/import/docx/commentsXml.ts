@@ -15,11 +15,15 @@ import {
 } from "./xmlHelpers.js";
 
 const WORD15_NS = "http://schemas.microsoft.com/office/word/2012/wordml";
+const WORD16DU_NS =
+  "http://schemas.microsoft.com/office/word/2023/wordml/word16du";
 
 export interface ParsedCommentBody {
   author: string;
   initials?: string;
   date?: number;
+  /** `w16du:dateUtc` companion UTC timestamp (epoch ms). */
+  dateUtc?: number;
   text: string;
   resolved?: boolean;
   /** `w14:paraId` of the comment's (first) paragraph — links to commentsEx. */
@@ -116,6 +120,7 @@ export function parseCommentsXml(
     const author = getAttributeValue(comment, "author") ?? "";
     const initials = getAttributeValue(comment, "initials") ?? undefined;
     const date = parseDate(getAttributeValue(comment, "date"));
+    const dateUtc = parseDate(comment.getAttributeNS(WORD16DU_NS, "dateUtc"));
     const paragraphs = getChildrenByTagNameNS(comment, WORD_NS, "p");
     const text = paragraphs
       .map((p) => flattenCommentText(p))
@@ -132,6 +137,7 @@ export function parseCommentsXml(
       author,
       ...(initials ? { initials } : {}),
       ...(date !== undefined ? { date } : {}),
+      ...(dateUtc !== undefined ? { dateUtc } : {}),
       text,
       ...(resolved ? { resolved } : {}),
       ...(paraId ? { paraId } : {}),

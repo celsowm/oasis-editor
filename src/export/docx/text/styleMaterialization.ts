@@ -96,6 +96,8 @@ export function materializeRunStyle(
     textShadow: effective.textShadow,
     glow: effective.glow,
     reflection: effective.reflection,
+    scene3dXml: effective.scene3dXml,
+    props3dXml: effective.props3dXml,
     highlight: effective.highlight,
     shading: effective.shading,
     language: effective.language,

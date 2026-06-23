@@ -863,6 +863,73 @@ describe("w14:shadow, w14:glow, w14:reflection", () => {
   });
 });
 
+describe("w14:scene3d and w14:props3d (round-trip only)", () => {
+  const W14_NS = "http://schemas.microsoft.com/office/word/2010/wordml";
+  const MC_NS = "http://schemas.openxmlformats.org/markup-compatibility/2006";
+
+  function buildW14Docx(rPrXml: string): Promise<ArrayBuffer> {
+    const zip = new JSZip();
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:w14="${W14_NS}"
+            xmlns:mc="${MC_NS}">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:rPr>${rPrXml}</w:rPr>
+        <w:t>3D text</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    return zip.generateAsync({ type: "arraybuffer" });
+  }
+
+  it("preserves w14:scene3d and w14:props3d verbatim and round-trips them", async () => {
+    const docx = await buildW14Docx(
+      `<w14:scene3d><w14:camera w14:prst="orthographicFront"/>` +
+        `<w14:lightRig w14:rig="threePt" w14:dir="t"/></w14:scene3d>` +
+        `<w14:props3d w14:extrusionH="63500" w14:prstMaterial="metal">` +
+        `<w14:bevelT w14:w="38100" w14:h="38100"/></w14:props3d>`,
+    );
+    const doc = await importDocxToEditorDocument(docx);
+    const run = getDocumentParagraphs(doc)[0]!.runs[0]!;
+    expect(run.styles?.scene3dXml).toContain("scene3d");
+    expect(run.styles?.scene3dXml).toContain("orthographicFront");
+    expect(run.styles?.props3dXml).toContain("props3d");
+    expect(run.styles?.props3dXml).toContain("metal");
+
+    const rezip = await JSZip.loadAsync(await exportEditorDocumentToDocx(doc));
+    const xml = await rezip.file("word/document.xml")!.async("string");
+    expect(xml).toContain('<mc:Choice Requires="w14">');
+    expect(xml).toContain("scene3d");
+    expect(xml).toContain("orthographicFront");
+    expect(xml).toContain("props3d");
+    expect(xml).toContain("metal");
+  });
+
+  it("imports w14:scene3d wrapped in mc:AlternateContent/mc:Choice", async () => {
+    const docx = await buildW14Docx(
+      `<mc:AlternateContent>` +
+        `<mc:Choice Requires="w14">` +
+        `<w14:scene3d><w14:camera w14:prst="perspectiveFront"/></w14:scene3d>` +
+        `</mc:Choice>` +
+        `<mc:Fallback/>` +
+        `</mc:AlternateContent>`,
+    );
+    const doc = await importDocxToEditorDocument(docx);
+    const run = getDocumentParagraphs(doc)[0]!.runs[0]!;
+    expect(run.styles?.scene3dXml).toContain("perspectiveFront");
+  });
+});
+
 describe("w:sym symbol characters", () => {
   function buildSymDocx(runXml: string): Promise<ArrayBuffer> {
     const zip = new JSZip();

@@ -37,9 +37,9 @@ where we cannot yet draw it. Rendering (canvas / PDF / HTML) is layered on top a
 | `w14:textShadow` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `w14:glow` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `w14:reflection` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `w14:scene3d`/`props3d` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `w15:collapsed` | ❌ | ❌ | ❌ | n/a | n/a | n/a |
-| `w16du:dateUtc` | ❌ | ❌ | ❌ | n/a | n/a | n/a |
+| `w14:scene3d`/`props3d` | ✅ (opaque blob) | ✅ | ✅ | n/a | n/a | n/a |
+| `w15:collapsed` | ❌ (blocked) | ❌ | ❌ | n/a | n/a | n/a |
+| `w16du:dateUtc` | ✅ | ✅ | ✅ | n/a | n/a | n/a |
 
 **Key finding:** the OpenType font-feature subset (the first five rows) is *already* parsed,
 stored, exported, and emitted as CSS. The `ooxml.md` "Not supported" label is therefore
@@ -247,9 +247,18 @@ pixel parity.
 
 Neither Canvas 2D nor the PDF writer can render true 3D extrusion/lighting.
 
-- **Recommendation:** **round-trip preservation only** — parse and re-emit the `scene3d`/
-  `props3d` XML losslessly on the run (store as an opaque preserved blob on `EditorTextStyle`
-  if a structured model isn't warranted), with **no rendering**.
+**Status: implemented (round-trip only).** `w14:scene3d` and `w14:props3d` are parsed in
+[`runStyle.ts`](../src/import/docx/runStyle.ts) and stored verbatim as opaque XML blobs
+(`scene3dXml`/`props3dXml` on `EditorTextStyle`, serialized via `XMLSerializer`). On export
+([`runPropertiesXml.ts`](../src/export/docx/text/runPropertiesXml.ts)) each blob is re-emitted
+inside `mc:AlternateContent`/`mc:Choice Requires="w14"` with an empty `mc:Fallback`. The blob
+is also carried through the export materializer
+([`styleMaterialization.ts`](../src/export/docx/text/styleMaterialization.ts)). No rendering on
+any surface. Tests: `docxImport.runStyles.test.ts` (scene3d/props3d round-trip + mc unwrap).
+
+- **Original recommendation (now done):** **round-trip preservation only** — parse and
+  re-emit the `scene3d`/`props3d` XML losslessly on the run (stored as an opaque preserved blob
+  on `EditorTextStyle`), with **no rendering**.
 - **Optional (future):** a cheap bevel/extrude approximation (offset duplicate layers with
   shaded fills) — explicitly flagged as low priority and not part of the core deliverable.
 
@@ -263,21 +272,28 @@ This is the lowest-priority phase.
 
 These are not run-style effects and render nowhere on the text surfaces.
 
-### 6.1 `w15:collapsed`
+### 6.1 `w15:collapsed` — BLOCKED (not implemented)
 
-The collapsed-display state of a structured document tag (`w:sdt`). The `w15` namespace is
-currently used only by comments. **Round-trip** the flag on the SDT/block model node; honoring
-it as actual collapsed display is a later, separate rendering task. Promote `WORD15_NS` to a
-shared constant.
+The collapsed-display state of a structured document tag (`w:sdt`). **This cannot be a small
+round-trip flag as the roadmap assumed:** there is no SDT model node to host the flag. `w:sdt`
+(block, row, cell, and run contexts) is currently **dropped entirely on import** — the
+block/run parsers whitelist `w:p`/`w:tbl`/`w:r`/etc. and silently discard the `w:sdt` wrapper
+(see the Content controls rows in [`ooxml.md`](ooxml.md)). Preserving `w15:collapsed` therefore
+requires first building SDT round-trip infrastructure (a new node type or an opaque
+block/run-level passthrough that retains `w:sdtPr`/`w:sdtContent`), which is **not small** and
+is out of scope for this metadata task. Deferred until SDT support exists.
 
-### 6.2 `w16du:dateUtc`
+### 6.2 `w16du:dateUtc` — implemented
 
-A UTC timestamp companion to a comment's local `w:date`. Define `WORD16DU_NS` and round-trip
-it on the comment model in
-[`commentsXml.ts`](../src/export/docx/commentsXml.ts) (and the matching importer). Pure
-metadata — no rendering.
+A UTC timestamp companion to a comment's local `w:date`. **Status: done.** `WORD16DU_NS`
+(`http://schemas.microsoft.com/office/word/2023/wordml/word16du`) is defined in both the
+importer ([`import/docx/commentsXml.ts`](../src/import/docx/commentsXml.ts)) and exporter
+([`export/docx/commentsXml.ts`](../src/export/docx/commentsXml.ts)); the attribute is parsed
+into `EditorComment.dateUtc` (epoch ms), plumbed through the import driver, and re-emitted on
+`w:comment` (with the `xmlns:w16du` declaration added to the comments part). Pure metadata —
+no rendering. Tests: `docxImport.comments.test.ts` (dateUtc round-trip).
 
-**Effort:** Both small (round-trip only).
+**Effort:** `w16du:dateUtc` small (done); `w15:collapsed` blocked on SDT support (large).
 
 ---
 

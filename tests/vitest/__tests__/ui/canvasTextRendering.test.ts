@@ -5,6 +5,18 @@ import {
   resolveCanvasTextRenderMetrics,
 } from "@/ui/components/CanvasEditorSurface.js";
 import { resolveFragmentPaintBounds } from "@/ui/canvas/canvasParagraphPainter.js";
+import { applyCanvasTextFeatureHints } from "@/ui/canvas/canvasFontResolution.js";
+
+/**
+ * Minimal stand-in exposing the canvas text-feature properties so the
+ * feature-detection branches run (jsdom/node ctx may omit them otherwise).
+ */
+function createFeatureContext(): {
+  fontKerning: "auto" | "normal" | "none";
+  textRendering: "auto" | "optimizeSpeed" | "optimizeLegibility" | "geometricPrecision";
+} {
+  return { fontKerning: "auto", textRendering: "auto" };
+}
 
 describe("canvas text rendering metrics", () => {
   it("renders superscript smaller and above the normal baseline", () => {

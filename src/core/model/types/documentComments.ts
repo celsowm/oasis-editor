@@ -36,6 +36,11 @@ export interface EditorComment {
   initials?: string;
   /** `w:comment/@w:date` as an epoch millisecond timestamp. */
   date?: number;
+  /**
+   * `w16du:dateUtc` companion UTC timestamp (epoch ms). Round-trip metadata
+   * only — preserved verbatim so the UTC date survives export.
+   */
+  dateUtc?: number;
   /** Resolved/"done" state (`w15:commentEx/@w15:done`). */
   resolved?: boolean;
   /** Flattened comment body text (bodies in scope are single paragraphs). */

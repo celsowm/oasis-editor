@@ -12,6 +12,8 @@ import type { EditorComment, EditorDocument } from "@/core/model.js";
 import { escapeXml, WORD_NS, WORD14_NS } from "./xmlUtils.js";
 
 const WORD15_NS = "http://schemas.microsoft.com/office/word/2012/wordml";
+const WORD16DU_NS =
+  "http://schemas.microsoft.com/office/word/2023/wordml/word16du";
 
 export interface CommentBoundaryEvent {
   kind: "start" | "end" | "reference";
@@ -135,7 +137,7 @@ export function serializeCommentRangeEvent(
   }
 }
 
-const COMMENTS_XMLNS = `xmlns:w="${WORD_NS}" xmlns:w14="${WORD14_NS}" xmlns:w15="${WORD15_NS}"`;
+const COMMENTS_XMLNS = `xmlns:w="${WORD_NS}" xmlns:w14="${WORD14_NS}" xmlns:w15="${WORD15_NS}" xmlns:w16du="${WORD16DU_NS}"`;
 
 /** Serialize one comment body paragraph, splitting on newlines via `w:br`. */
 function serializeCommentBody(text: string): string {
@@ -157,11 +159,15 @@ export function buildCommentsPartXml(plan: CommentExportPlan): string {
         comment.date !== undefined
           ? ` w:date="${new Date(comment.date).toISOString().replace(/\.\d{3}Z$/, "Z")}"`
           : "";
+      const dateUtcAttr =
+        comment.dateUtc !== undefined
+          ? ` w16du:dateUtc="${new Date(comment.dateUtc).toISOString().replace(/\.\d{3}Z$/, "Z")}"`
+          : "";
       const initialsAttr = comment.initials
         ? ` w:initials="${escapeXml(comment.initials)}"`
         : "";
       return (
-        `<w:comment w:id="${wId}" w:author="${escapeXml(comment.author)}"${dateAttr}${initialsAttr}>` +
+        `<w:comment w:id="${wId}" w:author="${escapeXml(comment.author)}"${dateAttr}${dateUtcAttr}${initialsAttr}>` +
         `<w:p w14:paraId="${paraId}">${serializeCommentBody(comment.text)}</w:p>` +
         `</w:comment>`
       );

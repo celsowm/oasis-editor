@@ -35,10 +35,12 @@ import {
   getListLabelInset,
 } from "@/ui/textMeasurement/indentation.js";
 import {
+  applyCanvasTextFeatureHints,
   resolveCanvasFontFamily,
   resolveCanvasTextRenderMetrics,
 } from "./canvasFontResolution.js";
 export {
+  applyCanvasTextFeatureHints,
   resolveCanvasFontFamily,
   resolveCanvasTextRenderMetrics,
 } from "./canvasFontResolution.js";
@@ -364,10 +366,15 @@ export function drawParagraph(
       const renderMetrics = resolveCanvasTextRenderMetrics(styles, fontSize);
       ctx.save();
       ctx.font = `${fontStyle} ${fontWeight} ${renderMetrics.fontSize}px ${fontFamily}`;
-      // w14 OpenType font features (ligatures, numForm, numSpacing, stylisticSet,
-      // contextualAlternates) are not applied here: Canvas 2D exposes no
-      // font-variant-ligatures / font-variant-numeric / font-feature-settings API.
-      // They are honoured by the HTML/CSS renderer via styleCss.ts.
+      // Apply the typography intent Canvas 2D can express: kerning (w:kern) via
+      // ctx.fontKerning and a coarse ligature hint (w14:ligatures) via
+      // ctx.textRendering — kept consistent with the metric-only measurement.
+      // The remaining w14 features (numForm, numSpacing, stylisticSet,
+      // contextualAlternates) have no Canvas 2D API (no font-variant-numeric /
+      // font-variant-ligatures / font-feature-settings) and stay a documented
+      // canvas limitation; HTML/CSS honours them via styleCss.ts. See
+      // applyCanvasTextFeatureHints for the full rationale.
+      applyCanvasTextFeatureHints(ctx, styles, fontSize);
       logCanvasFontUse({
         requestedFamily: styles.fontFamily,
         metricFamily,

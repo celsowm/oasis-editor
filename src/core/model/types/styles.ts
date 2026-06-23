@@ -81,6 +81,17 @@ export interface EditorTextStyle {
   glow?: EditorGlow | null;
   /** `w14:reflection` — mirrored copy of glyphs fading below the baseline. */
   reflection?: EditorReflection | null;
+  /**
+   * `w14:scene3d` — opaque serialized XML preserved verbatim for round-trip.
+   * 3D scene/camera is not rendered on any surface; the blob is re-emitted so
+   * the property is never silently dropped.
+   */
+  scene3dXml?: string | null;
+  /**
+   * `w14:props3d` — opaque serialized XML preserved verbatim for round-trip.
+   * 3D extrusion/bevel material is not rendered; re-emitted to avoid data loss.
+   */
+  props3dXml?: string | null;
   highlight?: string | null;
   shading?: string | null;
   language?: EditorTextLanguage | null;

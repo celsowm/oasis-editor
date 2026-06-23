@@ -197,4 +197,33 @@ describe("DOCX export: comments", () => {
     expect(c.start?.offset).toBe(6);
     expect(c.end?.offset).toBe(11);
   });
+
+  it("imports and round-trips w16du:dateUtc on a comment", async () => {
+    const docx = await buildCommentDocx(
+      `<w:p>
+        <w:commentRangeStart w:id="0"/>
+        <w:r><w:t>world</w:t></w:r>
+        <w:commentRangeEnd w:id="0"/>
+        <w:r><w:commentReference w:id="0"/></w:r>
+      </w:p>`,
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:comments ${COMMENTS_NS} xmlns:w16du="http://schemas.microsoft.com/office/word/2023/wordml/word16du">
+  <w:comment w:id="0" w:author="A" w:date="2026-06-14T22:41:00Z" w16du:dateUtc="2026-06-14T19:41:00Z"><w:p w14:paraId="5FE4A3C2"><w:r><w:t>Note</w:t></w:r></w:p></w:comment>
+</w:comments>`,
+    );
+    const document = await importDocxToEditorDocument(docx);
+    const c = comments(document)[0]!;
+    expect(c.date).toBe(Date.parse("2026-06-14T22:41:00Z"));
+    expect(c.dateUtc).toBe(Date.parse("2026-06-14T19:41:00Z"));
+
+    const commentsXml = await exportPart(document, "word/comments.xml");
+    expect(commentsXml).toContain('w16du:dateUtc="2026-06-14T19:41:00Z"');
+
+    const reimported = await importDocxToEditorDocument(
+      await exportEditorDocumentToDocx(document),
+    );
+    expect(comments(reimported)[0]!.dateUtc).toBe(
+      Date.parse("2026-06-14T19:41:00Z"),
+    );
+  });
 });

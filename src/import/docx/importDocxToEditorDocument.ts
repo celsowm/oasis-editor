@@ -554,6 +554,7 @@ function buildEditorComments(
       author: body?.author ?? "",
       ...(body?.initials ? { initials: body.initials } : {}),
       ...(body?.date !== undefined ? { date: body.date } : {}),
+      ...(body?.dateUtc !== undefined ? { dateUtc: body.dateUtc } : {}),
       ...(body?.resolved ? { resolved: body.resolved } : {}),
       text: body?.text ?? "",
       ...(range?.start ? { start: range.start } : {}),

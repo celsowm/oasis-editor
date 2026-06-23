@@ -143,6 +143,18 @@ function serializeReflectionMC(reflection: EditorReflection): string {
   );
 }
 
+// Re-emit a preserved 3D blob (w14:scene3d / w14:props3d) verbatim, wrapped in
+// mc:AlternateContent so non-w14 consumers degrade gracefully. The blob is
+// self-contained (carries its own w14 namespace declaration from import).
+function serialize3dBlobMC(blob: string): string {
+  return (
+    `<mc:AlternateContent xmlns:mc="${MC_NS}">` +
+    `<mc:Choice Requires="w14">${blob}</mc:Choice>` +
+    `<mc:Fallback/>` +
+    `</mc:AlternateContent>`
+  );
+}
+
 function pointsToSignedTwips(value: number | null | undefined): number | null {
   if (value === undefined || value === null || !Number.isFinite(value)) {
     return null;
@@ -365,6 +377,12 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
   }
   if (styles.reflection) {
     parts.push(serializeReflectionMC(styles.reflection));
+  }
+  if (styles.scene3dXml) {
+    parts.push(serialize3dBlobMC(styles.scene3dXml));
+  }
+  if (styles.props3dXml) {
+    parts.push(serialize3dBlobMC(styles.props3dXml));
   }
   if (styles.highlight) {
     parts.push(

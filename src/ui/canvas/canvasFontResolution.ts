@@ -85,3 +85,77 @@ export function resolveCanvasTextRenderMetrics(
     baselineOffset: -explicitBaselineShift,
   };
 }
+
+/**
+ * Canvas 2D text properties that newer browsers expose but the DOM lib types
+ * (and some test environments) may not. Treated as optional + feature-detected.
+ */
+type CanvasTextFeatureContext = CanvasRenderingContext2D & {
+  fontKerning?: "auto" | "normal" | "none";
+  textRendering?:
+    | "auto"
+    | "optimizeSpeed"
+    | "optimizeLegibility"
+    | "geometricPrecision";
+};
+
+/**
+ * Applies the subset of OpenType-feature/typography intent that Canvas 2D can
+ * actually express, keeping painting consistent with the metric-only slot
+ * measurement (see `measureCharacterWidth`).
+ *
+ * - **Kerning (`w:kern`)** → `ctx.fontKerning`. `w:kern/@w:val` is a *minimum
+ *   font size threshold* (stored in pt as `kerningThreshold`); kerning is active
+ *   only when the run's size meets it. Defaulting to `"none"` keeps the painter
+ *   aligned with the no-kerning measurement, avoiding caret/slot drift.
+ * - **Ligatures (`w14:ligatures`)** → `ctx.textRendering` as a *coarse, lossy
+ *   hint* (`optimizeSpeed` suppresses, `optimizeLegibility` enables). It cannot
+ *   distinguish standard/contextual/historical and is engine-dependent.
+ *
+ * Canvas 2D has **no** API for `w14:numForm`, `w14:numSpacing`,
+ * `w14:stylisticSets`, or `w14:cntxtAlts` (no `fontVariantNumeric` /
+ * `fontVariantLigatures` / `fontFeatureSettings`), so those remain a documented
+ * canvas limitation — HTML/CSS honors them via `styleCss.ts`; PDF is separate.
+ *
+ * `fontVariantCaps`, `letterSpacing`, and `fontStretch` are intentionally left
+ * untouched: small caps, character spacing, and character scale are already
+ * realized by the render-metric/slot/scale path and would double-apply here.
+ *
+ * @param fontSizePx the run's effective (unscaled) font size in px.
+ */
+export function applyCanvasTextFeatureHints(
+  ctx: CanvasRenderingContext2D,
+  styles:
+    | {
+        kerningThreshold?: number | null;
+        ligatures?:
+          | "none"
+          | "standard"
+          | "contextual"
+          | "historical"
+          | "standardContextual"
+          | null;
+      }
+    | undefined,
+  fontSizePx: number,
+): void {
+  const featureCtx = ctx as CanvasTextFeatureContext;
+
+  const threshold = styles?.kerningThreshold;
+  const kerningActive =
+    threshold !== undefined &&
+    threshold !== null &&
+    Number.isFinite(threshold) &&
+    fontSizePx / PX_PER_POINT >= threshold;
+
+  if ("fontKerning" in featureCtx) {
+    featureCtx.fontKerning = kerningActive ? "normal" : "none";
+  }
+
+  if ("textRendering" in featureCtx) {
+    featureCtx.textRendering =
+      styles?.ligatures && styles.ligatures !== "none"
+        ? "optimizeLegibility"
+        : "optimizeSpeed";
+  }
+}
