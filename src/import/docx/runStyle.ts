@@ -1,8 +1,11 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
 import type {
+  EditorGlow,
   EditorGradientStop,
+  EditorReflection,
   EditorTextFill,
   EditorTextOutline,
+  EditorTextShadow,
   EditorTextStyle,
 } from "@/core/model.js";
 import { DEFAULT_EDITOR_STYLES } from "@/core/editorState.js";
@@ -83,6 +86,70 @@ function parseW14TextFill(fillEl: XmlElement): EditorTextFill | null {
     }
   }
   return null;
+}
+
+function parseW14ColorEl(
+  el: XmlElement,
+): { color: string; alpha?: number } | null {
+  const srgbClr = getFirstChildByTagNameNS(el, WORD14_NS, "srgbClr");
+  if (!srgbClr) return null;
+  const val = getAttributeValue(srgbClr, "val");
+  const color = val ? (normalizeImportedHexColor(val) ?? null) : null;
+  if (!color) return null;
+  const alphaEl = getFirstChildByTagNameNS(srgbClr, WORD14_NS, "alpha");
+  const alphaRaw = alphaEl ? getAttributeValue(alphaEl, "val") : null;
+  const alpha =
+    alphaRaw !== null && Number.isFinite(Number(alphaRaw))
+      ? Number(alphaRaw) / 100000
+      : undefined;
+  return { color, ...(alpha !== undefined ? { alpha } : {}) };
+}
+
+function parseW14Shadow(el: XmlElement): EditorTextShadow | null {
+  const colorData = parseW14ColorEl(el);
+  if (!colorData) return null;
+  const blurRaw = el.getAttributeNS(WORD14_NS, "blurRad");
+  const distRaw = el.getAttributeNS(WORD14_NS, "dist");
+  const dirRaw = el.getAttributeNS(WORD14_NS, "dir");
+  const blurPt = blurRaw ? Number(blurRaw) / 12700 : 0;
+  const distPt = distRaw ? Number(distRaw) / 12700 : 0;
+  const dirDeg = dirRaw ? Number(dirRaw) / 60000 : 0;
+  return {
+    color: colorData.color,
+    ...(colorData.alpha !== undefined ? { alpha: colorData.alpha } : {}),
+    blurPt,
+    distPt,
+    dirDeg,
+  };
+}
+
+function parseW14Glow(el: XmlElement): EditorGlow | null {
+  const colorData = parseW14ColorEl(el);
+  if (!colorData) return null;
+  const radRaw = el.getAttributeNS(WORD14_NS, "rad");
+  const radiusPt = radRaw ? Number(radRaw) / 12700 : 0;
+  return {
+    color: colorData.color,
+    ...(colorData.alpha !== undefined ? { alpha: colorData.alpha } : {}),
+    radiusPt,
+  };
+}
+
+function parseW14Reflection(el: XmlElement): EditorReflection {
+  const blurRaw = el.getAttributeNS(WORD14_NS, "blurRad");
+  const stARaw = el.getAttributeNS(WORD14_NS, "stA");
+  const stPosRaw = el.getAttributeNS(WORD14_NS, "stPos");
+  const endARaw = el.getAttributeNS(WORD14_NS, "endA");
+  const endPosRaw = el.getAttributeNS(WORD14_NS, "endPos");
+  const distRaw = el.getAttributeNS(WORD14_NS, "dist");
+  return {
+    blurPt: blurRaw ? Number(blurRaw) / 12700 : 0,
+    startAlpha: stARaw !== null ? Number(stARaw) / 100000 : 0.55,
+    startPos: stPosRaw !== null ? Number(stPosRaw) / 100000 : 0,
+    endAlpha: endARaw !== null ? Number(endARaw) / 100000 : 0,
+    endPos: endPosRaw !== null ? Number(endPosRaw) / 100000 : 1,
+    distPt: distRaw ? Number(distRaw) / 12700 : 0,
+  };
 }
 
 export function normalizeImportedRunStyle(
@@ -201,6 +268,9 @@ export function normalizeImportedRunStyle(
     color: dd(effective.color, defaultEffective.color),
     textFill: dd(effective.textFill, defaultEffective.textFill),
     textOutline: dd(effective.textOutline, defaultEffective.textOutline),
+    textShadow: dd(effective.textShadow, defaultEffective.textShadow),
+    glow: dd(effective.glow, defaultEffective.glow),
+    reflection: dd(effective.reflection, defaultEffective.reflection),
     highlight: dd(effective.highlight, defaultEffective.highlight),
     shading: dd(effective.shading, defaultEffective.shading),
     language: dd(effective.language, defaultEffective.language),
@@ -521,6 +591,23 @@ export function parseRunStyle(
       }
     }
     styles.textOutline = textOutline;
+  }
+
+  const shadowEl = getFirstW14Child(runProperties, "shadow");
+  if (shadowEl) {
+    const textShadow = parseW14Shadow(shadowEl);
+    if (textShadow) styles.textShadow = textShadow;
+  }
+
+  const glowEl = getFirstW14Child(runProperties, "glow");
+  if (glowEl) {
+    const glow = parseW14Glow(glowEl);
+    if (glow) styles.glow = glow;
+  }
+
+  const reflectionEl = getFirstW14Child(runProperties, "reflection");
+  if (reflectionEl) {
+    styles.reflection = parseW14Reflection(reflectionEl);
   }
 
   const highlight = getFirstChildByTagNameNS(

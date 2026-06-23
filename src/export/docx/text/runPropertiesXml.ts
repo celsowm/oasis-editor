@@ -1,6 +1,9 @@
 import type {
+  EditorGlow,
+  EditorReflection,
   EditorTextFill,
   EditorTextOutline,
+  EditorTextShadow,
   EditorTextStyle,
 } from "@/core/model.js";
 import {
@@ -76,6 +79,66 @@ function serializeTextOutlineMC(outline: EditorTextOutline): string {
     `</w14:textOutline>` +
     `</mc:Choice>` +
     `<mc:Fallback><w:outline/></mc:Fallback>` +
+    `</mc:AlternateContent>`
+  );
+}
+
+function serializeW14ColorEl(color: string, alpha?: number): string {
+  const hex = normalizeDocxColor(color);
+  const alphaXml =
+    alpha !== undefined
+      ? `<w14:alpha w14:val="${Math.round(alpha * 100000)}"/>`
+      : "";
+  return `<w14:srgbClr w14:val="${hex}">${alphaXml}</w14:srgbClr>`;
+}
+
+function serializeTextShadowMC(shadow: EditorTextShadow): string {
+  const blurEmu = Math.round(Math.max(0, shadow.blurPt) * 12700);
+  const distEmu = Math.round(Math.max(0, shadow.distPt) * 12700);
+  const dirVal = Math.round(shadow.dirDeg * 60000);
+  const colorXml = serializeW14ColorEl(shadow.color, shadow.alpha);
+  return (
+    `<mc:AlternateContent xmlns:mc="${MC_NS}">` +
+    `<mc:Choice Requires="w14">` +
+    `<w14:shadow w14:blurRad="${blurEmu}" w14:dist="${distEmu}" w14:dir="${dirVal}" ` +
+    `w14:sx="100000" w14:sy="100000" w14:kx="0" w14:ky="0" w14:algn="ctr">` +
+    colorXml +
+    `</w14:shadow>` +
+    `</mc:Choice>` +
+    `<mc:Fallback><w:shadow/></mc:Fallback>` +
+    `</mc:AlternateContent>`
+  );
+}
+
+function serializeGlowMC(glow: EditorGlow): string {
+  const radEmu = Math.round(Math.max(0, glow.radiusPt) * 12700);
+  const colorXml = serializeW14ColorEl(glow.color, glow.alpha);
+  return (
+    `<mc:AlternateContent xmlns:mc="${MC_NS}">` +
+    `<mc:Choice Requires="w14">` +
+    `<w14:glow w14:rad="${radEmu}">${colorXml}</w14:glow>` +
+    `</mc:Choice>` +
+    `<mc:Fallback/>` +
+    `</mc:AlternateContent>`
+  );
+}
+
+function serializeReflectionMC(reflection: EditorReflection): string {
+  const blurEmu = Math.round(Math.max(0, reflection.blurPt) * 12700);
+  const stA = Math.round(reflection.startAlpha * 100000);
+  const stPos = Math.round(reflection.startPos * 100000);
+  const endA = Math.round(reflection.endAlpha * 100000);
+  const endPos = Math.round(reflection.endPos * 100000);
+  const distEmu = Math.round(Math.max(0, reflection.distPt) * 12700);
+  return (
+    `<mc:AlternateContent xmlns:mc="${MC_NS}">` +
+    `<mc:Choice Requires="w14">` +
+    `<w14:reflection w14:blurRad="${blurEmu}" w14:stA="${stA}" w14:stPos="${stPos}" ` +
+    `w14:endA="${endA}" w14:endPos="${endPos}" w14:dist="${distEmu}" ` +
+    `w14:dir="5400000" w14:fadeDir="5400000" w14:sx="100000" w14:sy="-100000" ` +
+    `w14:kx="0" w14:ky="0" w14:algn="bl"/>` +
+    `</mc:Choice>` +
+    `<mc:Fallback/>` +
     `</mc:AlternateContent>`
   );
 }
@@ -293,6 +356,15 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
   }
   if (styles.textOutline) {
     parts.push(serializeTextOutlineMC(styles.textOutline));
+  }
+  if (styles.textShadow) {
+    parts.push(serializeTextShadowMC(styles.textShadow));
+  }
+  if (styles.glow) {
+    parts.push(serializeGlowMC(styles.glow));
+  }
+  if (styles.reflection) {
+    parts.push(serializeReflectionMC(styles.reflection));
   }
   if (styles.highlight) {
     parts.push(

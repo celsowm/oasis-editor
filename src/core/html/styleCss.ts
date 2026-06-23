@@ -93,6 +93,31 @@ export function textRunStylesToCss(style?: EditorTextStyle): string {
     const color = style.textOutline.color ?? "#000000";
     parts.push(`-webkit-text-stroke:${widthPx.toFixed(2)}px ${color}`);
   }
+  if (style.textShadow) {
+    const dirRad = (style.textShadow.dirDeg * Math.PI) / 180;
+    const px = (pt: number) => (pt * (96 / 72)).toFixed(2);
+    const ox = (Math.cos(dirRad) * style.textShadow.distPt * (96 / 72)).toFixed(
+      2,
+    );
+    const oy = (Math.sin(dirRad) * style.textShadow.distPt * (96 / 72)).toFixed(
+      2,
+    );
+    const blur = px(style.textShadow.blurPt);
+    const alpha = style.textShadow.alpha ?? 1;
+    const r = parseInt(style.textShadow.color.slice(1, 3), 16);
+    const g = parseInt(style.textShadow.color.slice(3, 5), 16);
+    const b = parseInt(style.textShadow.color.slice(5, 7), 16);
+    parts.push(
+      `text-shadow:${ox}px ${oy}px ${blur}px rgba(${r},${g},${b},${alpha})`,
+    );
+  } else if (style.glow) {
+    const blur = (style.glow.radiusPt * (96 / 72)).toFixed(2);
+    const alpha = style.glow.alpha ?? 0.7;
+    const r = parseInt(style.glow.color.slice(1, 3), 16);
+    const g = parseInt(style.glow.color.slice(3, 5), 16);
+    const b = parseInt(style.glow.color.slice(5, 7), 16);
+    parts.push(`text-shadow:0 0 ${blur}px rgba(${r},${g},${b},${alpha})`);
+  }
   const decorations: string[] = [];
   if (style.underline || style.link) {
     decorations.push("underline");

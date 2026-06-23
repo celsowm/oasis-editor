@@ -465,6 +465,17 @@ export function drawParagraph(
           originX,
           baselineY + renderMetrics.baselineOffset,
         );
+        if (styles.reflection) {
+          drawFragmentReflection(
+            ctx,
+            fragment,
+            slotByOffset,
+            styles,
+            originX,
+            baselineY + renderMetrics.baselineOffset,
+            styles.reflection,
+          );
+        }
       }
       if (styles.underline) {
         drawTextDecoration(
@@ -704,8 +715,8 @@ function resolveCanvasTextFill(
 
 // Applies the glyph-level run effects (outline/shadow/emboss/imprint) on top of
 // the plain scaled fill. emboss/imprint draw a light relief copy offset behind
-// the main glyphs; shadow uses the canvas shadow; outline strokes hollow text.
-// textOutline (w14) overrides the legacy boolean outline with real width + color.
+// the main glyphs; shadow/glow/textShadow use the canvas shadow API; outline
+// strokes hollow text. textOutline (w14) overrides the legacy boolean outline.
 function drawStyledText(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -718,11 +729,21 @@ function drawStyledText(
     emboss?: boolean;
     imprint?: boolean;
     textOutline?: { widthPt: number; color?: string } | null;
+    textShadow?: {
+      color: string;
+      alpha?: number;
+      blurPt: number;
+      distPt: number;
+      dirDeg: number;
+    } | null;
+    glow?: { color: string; alpha?: number; radiusPt: number } | null;
   },
 ) {
   const hasEffects =
     styles.outline ||
     styles.shadow ||
+    styles.textShadow ||
+    styles.glow ||
     styles.emboss ||
     styles.imprint ||
     styles.textOutline;
@@ -741,7 +762,29 @@ function drawStyledText(
   }
 
   ctx.save();
-  if (styles.shadow) {
+  if (styles.textShadow) {
+    const ts = styles.textShadow;
+    const dirRad = (ts.dirDeg * Math.PI) / 180;
+    const distPx = ts.distPt * PX_PER_POINT;
+    const alpha = ts.alpha ?? 1;
+    const r = Number.parseInt(ts.color.slice(1, 3), 16);
+    const g = Number.parseInt(ts.color.slice(3, 5), 16);
+    const b = Number.parseInt(ts.color.slice(5, 7), 16);
+    ctx.shadowColor = `rgba(${r},${g},${b},${alpha})`;
+    ctx.shadowBlur = ts.blurPt * PX_PER_POINT;
+    ctx.shadowOffsetX = Math.cos(dirRad) * distPx;
+    ctx.shadowOffsetY = Math.sin(dirRad) * distPx;
+  } else if (styles.glow) {
+    const gl = styles.glow;
+    const alpha = gl.alpha ?? 0.7;
+    const r = Number.parseInt(gl.color.slice(1, 3), 16);
+    const g = Number.parseInt(gl.color.slice(3, 5), 16);
+    const b = Number.parseInt(gl.color.slice(5, 7), 16);
+    ctx.shadowColor = `rgba(${r},${g},${b},${alpha})`;
+    ctx.shadowBlur = gl.radiusPt * PX_PER_POINT;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+  } else if (styles.shadow) {
     ctx.shadowColor = "rgba(0,0,0,0.45)";
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 1;
@@ -943,6 +986,62 @@ function drawTextFragment(
   }
 
   flushSegment();
+}
+
+// Draws a vertically-mirrored reflection of the fragment text below the baseline.
+// The reflection is a single pass with averaged alpha; the fade is approximated.
+function drawFragmentReflection(
+  ctx: CanvasRenderingContext2D,
+  fragment: EditorLayoutLine["fragments"][number],
+  slotByOffset: Map<number, EditorLayoutLine["slots"][number]>,
+  styles: ReturnType<typeof resolveEffectiveTextStyleForParagraph>,
+  originX: number,
+  baselineY: number,
+  reflection: {
+    blurPt: number;
+    startAlpha: number;
+    endAlpha: number;
+    distPt: number;
+  },
+) {
+  const firstChar = fragment.chars.find(
+    (c) => c.char !== "\n" && c.char !== "\t",
+  );
+  if (!firstChar) return;
+  const firstSlot = slotByOffset.get(firstChar.paragraphOffset);
+  if (!firstSlot) return;
+  const text = fragment.chars
+    .filter((c) => c.char !== "\n" && c.char !== "\t")
+    .map((c) => (styles.allCaps ? c.char.toUpperCase() : c.char))
+    .join("");
+  if (!text) return;
+  const scale =
+    styles.characterScale && styles.characterScale > 0
+      ? styles.characterScale / 100
+      : 1;
+  const avgAlpha = (reflection.startAlpha + reflection.endAlpha) / 2;
+  const distPx = reflection.distPt * PX_PER_POINT;
+  const reflectY = baselineY + distPx;
+  ctx.save();
+  ctx.globalAlpha = (ctx.globalAlpha ?? 1) * avgAlpha;
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  // Mirror Y about reflectY: translate to reflectY, scale(1,-1), draw at original coords.
+  ctx.translate(0, 2 * reflectY);
+  ctx.scale(1, -1);
+  const x = originX + firstSlot.left;
+  if (scale === 1) {
+    ctx.fillText(text, x, baselineY);
+  } else {
+    ctx.save();
+    ctx.translate(x, baselineY);
+    ctx.scale(scale, 1);
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
+  }
+  ctx.restore();
 }
 
 function drawTextDecoration(

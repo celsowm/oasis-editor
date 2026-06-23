@@ -6,15 +6,18 @@ import type {
   EditorBorderStyle,
   EditorDocxWidthValue,
   EditorEmphasisMark,
+  EditorGlow,
   EditorLigatures,
   EditorNumberForm,
   EditorNumberSpacing,
   EditorPropertyRevision,
+  EditorReflection,
   EditorStructuralRevision,
   EditorTabStop,
   EditorTextFill,
   EditorTextLanguage,
   EditorTextOutline,
+  EditorTextShadow,
   EditorUnderlineStyle,
 } from "./primitives.js";
 
@@ -72,6 +75,12 @@ export interface EditorTextStyle {
   textFill?: EditorTextFill | null;
   /** `w14:textOutline` — real stroke on glyphs, supersedes the boolean `outline` when present. */
   textOutline?: EditorTextOutline | null;
+  /** `w14:shadow` — text shadow with blur, distance, direction, and color. */
+  textShadow?: EditorTextShadow | null;
+  /** `w14:glow` — glow halo radiating from glyphs. */
+  glow?: EditorGlow | null;
+  /** `w14:reflection` — mirrored copy of glyphs fading below the baseline. */
+  reflection?: EditorReflection | null;
   highlight?: string | null;
   shading?: string | null;
   language?: EditorTextLanguage | null;

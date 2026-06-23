@@ -672,7 +672,18 @@ export async function drawFragmentText(
         color: "#BFBFBF",
       });
     }
-    if (styles.shadow) {
+    if (styles.textShadow) {
+      const ts = styles.textShadow;
+      const dirRad = (ts.dirDeg * Math.PI) / 180;
+      const shadowOffsetPt = pxToPt(ts.distPt * PX_PER_POINT);
+      writer.drawText(pageIndex, {
+        ...baseTextOptions,
+        x: pxToPt(leftPx) + Math.cos(dirRad) * shadowOffsetPt,
+        y: pxToPt(baselineY) + Math.sin(dirRad) * shadowOffsetPt,
+        text,
+        color: ts.color,
+      });
+    } else if (styles.shadow) {
       writer.drawText(pageIndex, {
         ...baseTextOptions,
         x: pxToPt(leftPx) + offsetPt,

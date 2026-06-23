@@ -41,6 +41,9 @@ export type {
   EditorGradientStop,
   EditorTextFill,
   EditorTextOutline,
+  EditorTextShadow,
+  EditorGlow,
+  EditorReflection,
 } from "./types/primitives.js";
 
 export type {

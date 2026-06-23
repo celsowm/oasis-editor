@@ -76,6 +76,32 @@ export interface EditorTextOutline {
   fill?: EditorTextFill;
 }
 
+/** `w14:shadow` — text shadow with blur, distance, direction, and color. */
+export interface EditorTextShadow {
+  color: string;
+  alpha?: number;
+  blurPt: number;
+  distPt: number;
+  dirDeg: number;
+}
+
+/** `w14:glow` — glow halo radiating from glyphs. */
+export interface EditorGlow {
+  color: string;
+  alpha?: number;
+  radiusPt: number;
+}
+
+/** `w14:reflection` — mirrored copy of glyphs fading below the baseline. */
+export interface EditorReflection {
+  blurPt: number;
+  startAlpha: number;
+  startPos: number;
+  endAlpha: number;
+  endPos: number;
+  distPt: number;
+}
+
 export interface EditorTabStop {
   position: number; // in pt
   type: "left" | "center" | "right" | "decimal" | "bar" | "clear";

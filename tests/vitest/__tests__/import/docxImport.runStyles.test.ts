@@ -764,6 +764,105 @@ describe("w14:textFill and w14:textOutline", () => {
   });
 });
 
+describe("w14:shadow, w14:glow, w14:reflection", () => {
+  const W14_NS = "http://schemas.microsoft.com/office/word/2010/wordml";
+  const MC_NS = "http://schemas.openxmlformats.org/markup-compatibility/2006";
+
+  function buildW14Docx(rPrXml: string): Promise<ArrayBuffer> {
+    const zip = new JSZip();
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:w14="${W14_NS}"
+            xmlns:mc="${MC_NS}">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:rPr>${rPrXml}</w:rPr>
+        <w:t>Effect text</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    return zip.generateAsync({ type: "arraybuffer" });
+  }
+
+  it("imports w14:shadow and round-trips via mc:AlternateContent", async () => {
+    // 2pt blur, 3pt distance, 90° (= straight down), black 50% alpha
+    const docx = await buildW14Docx(
+      `<w14:shadow w14:blurRad="25400" w14:dist="38100" w14:dir="5400000" ` +
+        `w14:sx="100000" w14:sy="100000" w14:kx="0" w14:ky="0" w14:algn="ctr">` +
+        `<w14:srgbClr w14:val="000000"><w14:alpha w14:val="50000"/></w14:srgbClr>` +
+        `</w14:shadow>`,
+    );
+    const doc = await importDocxToEditorDocument(docx);
+    const run = getDocumentParagraphs(doc)[0]!.runs[0]!;
+    const ts = run.styles?.textShadow;
+    expect(ts).toBeDefined();
+    expect(ts?.color).toBe("#000000");
+    expect(ts?.alpha).toBeCloseTo(0.5, 2);
+    expect(ts?.blurPt).toBeCloseTo(2, 1);
+    expect(ts?.distPt).toBeCloseTo(3, 1);
+    expect(ts?.dirDeg).toBeCloseTo(90, 1);
+
+    const rezip = await JSZip.loadAsync(await exportEditorDocumentToDocx(doc));
+    const xml = await rezip.file("word/document.xml")!.async("string");
+    expect(xml).toContain("<w14:shadow");
+    expect(xml).toContain('w14:dir="5400000"');
+    expect(xml).toContain("<mc:Fallback><w:shadow/></mc:Fallback>");
+  });
+
+  it("imports w14:glow and round-trips via mc:AlternateContent", async () => {
+    // 8pt radius, red 70% alpha
+    const docx = await buildW14Docx(
+      `<w14:glow w14:rad="101600">` +
+        `<w14:srgbClr w14:val="FF0000"><w14:alpha w14:val="70000"/></w14:srgbClr>` +
+        `</w14:glow>`,
+    );
+    const doc = await importDocxToEditorDocument(docx);
+    const run = getDocumentParagraphs(doc)[0]!.runs[0]!;
+    const gl = run.styles?.glow;
+    expect(gl).toBeDefined();
+    expect(gl?.color).toBe("#FF0000");
+    expect(gl?.alpha).toBeCloseTo(0.7, 2);
+    expect(gl?.radiusPt).toBeCloseTo(8, 1);
+
+    const rezip = await JSZip.loadAsync(await exportEditorDocumentToDocx(doc));
+    const xml = await rezip.file("word/document.xml")!.async("string");
+    expect(xml).toContain("<w14:glow");
+    expect(xml).toContain('w14:val="FF0000"');
+    expect(xml).toContain("<mc:Fallback/>");
+  });
+
+  it("imports w14:reflection and round-trips via mc:AlternateContent", async () => {
+    const docx = await buildW14Docx(
+      `<w14:reflection w14:blurRad="6350" w14:stA="55000" w14:stPos="0" ` +
+        `w14:endA="300" w14:endPos="100000" w14:dist="0" w14:dir="5400000" ` +
+        `w14:fadeDir="5400000" w14:sx="100000" w14:sy="-100000" w14:kx="0" w14:ky="0" w14:algn="bl"/>`,
+    );
+    const doc = await importDocxToEditorDocument(docx);
+    const run = getDocumentParagraphs(doc)[0]!.runs[0]!;
+    const ref = run.styles?.reflection;
+    expect(ref).toBeDefined();
+    expect(ref?.startAlpha).toBeCloseTo(0.55, 2);
+    expect(ref?.endAlpha).toBeCloseTo(0.003, 2);
+    expect(ref?.endPos).toBeCloseTo(1, 2);
+    expect(ref?.distPt).toBeCloseTo(0, 1);
+
+    const rezip = await JSZip.loadAsync(await exportEditorDocumentToDocx(doc));
+    const xml = await rezip.file("word/document.xml")!.async("string");
+    expect(xml).toContain("<w14:reflection");
+    expect(xml).toContain('w14:stA="55000"');
+    expect(xml).toContain("<mc:Fallback/>");
+  });
+});
+
 describe("w:sym symbol characters", () => {
   function buildSymDocx(runXml: string): Promise<ArrayBuffer> {
     const zip = new JSZip();
