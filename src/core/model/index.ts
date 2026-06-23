@@ -38,6 +38,9 @@ export type {
   EditorDocxWidthValue,
   EditorTableLayout,
   EditorTableRowHeightRule,
+  EditorGradientStop,
+  EditorTextFill,
+  EditorTextOutline,
 } from "./types/primitives.js";
 
 export type {

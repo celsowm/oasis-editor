@@ -70,6 +70,29 @@ export function textRunStylesToCss(style?: EditorTextStyle): string {
   if (featureSettings) {
     parts.push(`font-feature-settings:${featureSettings}`);
   }
+  if (style.textFill) {
+    if (style.textFill.type === "solid") {
+      parts.push(`color:${style.textFill.color}`);
+    } else if (
+      style.textFill.type === "gradient" &&
+      style.textFill.stops.length >= 2
+    ) {
+      // CSS linear-gradient angle: DrawingML 0° = rightward → CSS 90°.
+      const cssAngle = (((90 - (style.textFill.angle ?? 0)) % 360) + 360) % 360;
+      const stopsCss = style.textFill.stops
+        .map((s) => `${s.color} ${Math.round(s.position * 100)}%`)
+        .join(",");
+      parts.push(`background:linear-gradient(${cssAngle}deg,${stopsCss})`);
+      parts.push("-webkit-background-clip:text");
+      parts.push("background-clip:text");
+      parts.push("color:transparent");
+    }
+  }
+  if (style.textOutline) {
+    const widthPx = style.textOutline.widthPt * (96 / 72);
+    const color = style.textOutline.color ?? "#000000";
+    parts.push(`-webkit-text-stroke:${widthPx.toFixed(2)}px ${color}`);
+  }
   const decorations: string[] = [];
   if (style.underline || style.link) {
     decorations.push("underline");

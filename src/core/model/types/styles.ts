@@ -12,7 +12,9 @@ import type {
   EditorPropertyRevision,
   EditorStructuralRevision,
   EditorTabStop,
+  EditorTextFill,
   EditorTextLanguage,
+  EditorTextOutline,
   EditorUnderlineStyle,
 } from "./primitives.js";
 
@@ -66,6 +68,10 @@ export interface EditorTextStyle {
   fontFamily?: string | null;
   fontSize?: number | null;
   color?: string | null;
+  /** `w14:textFill` — supersedes `color` when present (solid or gradient glyph fill). */
+  textFill?: EditorTextFill | null;
+  /** `w14:textOutline` — real stroke on glyphs, supersedes the boolean `outline` when present. */
+  textOutline?: EditorTextOutline | null;
   highlight?: string | null;
   shading?: string | null;
   language?: EditorTextLanguage | null;

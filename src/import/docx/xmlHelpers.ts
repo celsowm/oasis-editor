@@ -80,6 +80,55 @@ export function getFirstChildByTagNameNS(
   return getChildrenByTagNameNS(element, namespace, localName)[0] ?? null;
 }
 
+/**
+ * Finds a direct `w14:localName` child of `element`, also searching inside
+ * `mc:AlternateContent/mc:Choice` branches (which carry w14 markup in files
+ * produced by modern Word). The `mc:Fallback` branch used by
+ * `getChildrenByTagNameNS` would not contain w14 elements, so a separate
+ * helper is needed for these extension elements.
+ */
+export function getFirstW14Child(
+  element: XmlElement | null | undefined,
+  localName: string,
+): XmlElement | null {
+  if (!element) return null;
+  for (let i = 0; i < element.childNodes.length; i++) {
+    const node = element.childNodes[i];
+    if (node?.nodeType !== node.ELEMENT_NODE) continue;
+    const el = node as XmlElement;
+    if (el.namespaceURI === WORD14_NS && el.localName === localName) {
+      return el;
+    }
+    if (
+      el.namespaceURI === MARKUP_COMPAT_NS &&
+      el.localName === "AlternateContent"
+    ) {
+      for (let j = 0; j < el.childNodes.length; j++) {
+        const child = el.childNodes[j];
+        if (child?.nodeType !== child.ELEMENT_NODE) continue;
+        const choiceEl = child as XmlElement;
+        if (
+          choiceEl.namespaceURI === MARKUP_COMPAT_NS &&
+          choiceEl.localName === "Choice"
+        ) {
+          for (let k = 0; k < choiceEl.childNodes.length; k++) {
+            const gc = choiceEl.childNodes[k];
+            if (gc?.nodeType !== gc.ELEMENT_NODE) continue;
+            const gcEl = gc as XmlElement;
+            if (
+              gcEl.namespaceURI === WORD14_NS &&
+              gcEl.localName === localName
+            ) {
+              return gcEl;
+            }
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
 export function getAttributeValue(
   element: XmlElement | null,
   localName: string,

@@ -91,6 +91,8 @@ export function materializeRunStyle(
     fontFamily: effective.fontFamily,
     fontSize: effective.fontSize,
     color: effective.color,
+    textFill: effective.textFill,
+    textOutline: effective.textOutline,
     highlight: effective.highlight,
     shading: effective.shading,
     language: effective.language,

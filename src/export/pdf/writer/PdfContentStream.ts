@@ -222,8 +222,15 @@ export class PdfContentStream {
         `/${fontResourceName} ${formatNumber(options.fontSize ?? 12)} Tf`,
         ...(options.renderMode && options.renderMode !== 0
           ? [
-              colorCommand(options.color, "RG", [0, 0, 0]),
-              `${formatNumber(Math.max(0.3, (options.fontSize ?? 12) * 0.03))} w`,
+              colorCommand(
+                options.strokeColor ?? options.color,
+                "RG",
+                [0, 0, 0],
+              ),
+              `${formatNumber(
+                options.strokeWidth ??
+                  Math.max(0.3, (options.fontSize ?? 12) * 0.03),
+              )} w`,
               `${options.renderMode} Tr`,
             ]
           : []),

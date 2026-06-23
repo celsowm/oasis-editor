@@ -649,11 +649,18 @@ export async function drawFragmentText(
     characterSpacing: styles.characterSpacing ?? 0,
     horizontalScale: styles.characterScale ?? 100,
   };
-  const mainColor = styles.color ?? "#000000";
+  // textFill supersedes color; gradients flatten to first stop (PDF shading deferred).
+  const mainColor =
+    styles.textFill?.type === "solid"
+      ? styles.textFill.color
+      : styles.textFill?.type === "gradient" && styles.textFill.stops[0]
+        ? styles.textFill.stops[0].color
+        : (styles.color ?? "#000000");
   const offsetPt = pxToPt(1);
   // Draws one text chunk applying the glyph-level run effects: emboss/imprint
   // lay a light relief copy offset behind, shadow lays a gray copy offset, and
   // outline strokes hollow glyphs via the writer's text render mode.
+  // textOutline (w14) supersedes the legacy boolean outline with real stroke params.
   const emitChunk = (leftPx: number, text: string): void => {
     if (styles.emboss || styles.imprint) {
       const dir = styles.imprint ? 1 : -1;
@@ -674,13 +681,20 @@ export async function drawFragmentText(
         color: "#808080",
       });
     }
+    const textOutline = styles.textOutline;
     writer.drawText(pageIndex, {
       ...baseTextOptions,
       x: pxToPt(leftPx),
       y: pxToPt(baselineY),
       text,
       color: mainColor,
-      renderMode: styles.outline ? 1 : 0,
+      ...(textOutline
+        ? {
+            renderMode: 2,
+            strokeColor: textOutline.color ?? mainColor,
+            strokeWidth: textOutline.widthPt,
+          }
+        : { renderMode: styles.outline ? 1 : 0 }),
     });
   };
   const chunks =

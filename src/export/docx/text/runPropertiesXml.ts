@@ -1,4 +1,8 @@
-import type { EditorTextStyle } from "@/core/model.js";
+import type {
+  EditorTextFill,
+  EditorTextOutline,
+  EditorTextStyle,
+} from "@/core/model.js";
 import {
   escapeXml,
   normalizeDocxColor,
@@ -9,6 +13,72 @@ import {
   DOCX_HIGHLIGHT_HEX_ALIASES,
 } from "./constants.js";
 import { serializeDocxBorderAttrs } from "@/export/docx/borders.js";
+
+const MC_NS = "http://schemas.openxmlformats.org/markup-compatibility/2006";
+
+function serializeW14SolidFillXml(color: string): string {
+  const hex = normalizeDocxColor(color);
+  return `<w14:solidFill><w14:srgbClr w14:val="${hex}"/></w14:solidFill>`;
+}
+
+function serializeW14FillXml(fill: EditorTextFill): string {
+  if (fill.type === "solid") {
+    return serializeW14SolidFillXml(fill.color);
+  }
+  const gsXml = fill.stops
+    .map((s) => {
+      const hex = normalizeDocxColor(s.color);
+      const pos = Math.round(s.position * 100000);
+      const alphaXml =
+        s.alpha !== undefined
+          ? `<w14:alpha w14:val="${Math.round(s.alpha * 100000)}"/>`
+          : "";
+      return (
+        `<w14:gs w14:pos="${pos}">` +
+        `<w14:srgbClr w14:val="${hex}">${alphaXml}</w14:srgbClr>` +
+        `</w14:gs>`
+      );
+    })
+    .join("");
+  const angVal = Math.round((fill.angle ?? 0) * 60000);
+  return (
+    `<w14:gradFill><w14:gsLst>${gsXml}</w14:gsLst>` +
+    `<w14:lin w14:ang="${angVal}" w14:scaled="0"/></w14:gradFill>`
+  );
+}
+
+function serializeTextFillMC(
+  fill: EditorTextFill,
+  fallbackColor: string | null,
+): string {
+  const fillXml = serializeW14FillXml(fill);
+  const fbHex = normalizeDocxColor(fallbackColor ?? "000000");
+  return (
+    `<mc:AlternateContent xmlns:mc="${MC_NS}">` +
+    `<mc:Choice Requires="w14"><w14:textFill>${fillXml}</w14:textFill></mc:Choice>` +
+    `<mc:Fallback><w:color w:val="${fbHex}"/></mc:Fallback>` +
+    `</mc:AlternateContent>`
+  );
+}
+
+function serializeTextOutlineMC(outline: EditorTextOutline): string {
+  const widthEmu = Math.round(Math.max(0, outline.widthPt) * 12700);
+  const fillXml = outline.fill
+    ? serializeW14FillXml(outline.fill)
+    : outline.color
+      ? serializeW14SolidFillXml(outline.color)
+      : "";
+  return (
+    `<mc:AlternateContent xmlns:mc="${MC_NS}">` +
+    `<mc:Choice Requires="w14">` +
+    `<w14:textOutline w14:w="${widthEmu}" w14:cap="flat" w14:cmpd="sng" w14:algn="ctr">` +
+    fillXml +
+    `</w14:textOutline>` +
+    `</mc:Choice>` +
+    `<mc:Fallback><w:outline/></mc:Fallback>` +
+    `</mc:AlternateContent>`
+  );
+}
 
 function pointsToSignedTwips(value: number | null | undefined): number | null {
   if (value === undefined || value === null || !Number.isFinite(value)) {
@@ -212,10 +282,17 @@ export function serializeRunProperties(styles?: EditorTextStyle): string {
       parts.push(`<w:sz w:val="${size}"/>`, `<w:szCs w:val="${size}"/>`);
     }
   }
-  if (styles.color) {
+  if (styles.textFill) {
+    const fallback =
+      styles.textFill.type === "solid" ? styles.textFill.color : styles.color;
+    parts.push(serializeTextFillMC(styles.textFill, fallback ?? null));
+  } else if (styles.color) {
     parts.push(
       `<w:color w:val="${escapeXml(styles.color.replace(/^#/, ""))}"/>`,
     );
+  }
+  if (styles.textOutline) {
+    parts.push(serializeTextOutlineMC(styles.textOutline));
   }
   if (styles.highlight) {
     parts.push(

@@ -377,7 +377,14 @@ export function drawParagraph(
         italic: Boolean(styles.italic),
         sample: fragment.text.slice(0, 80),
       });
-      ctx.fillStyle = styles.color ?? "#000000";
+      ctx.fillStyle = resolveCanvasTextFill(
+        ctx,
+        styles,
+        line,
+        fragment,
+        originX,
+        originY,
+      );
       if (styles.shading) {
         drawFragmentShading(
           ctx,
@@ -659,9 +666,46 @@ function drawScaledText(
   ctx.restore();
 }
 
+// Resolves ctx.fillStyle from textFill (solid or gradient) or falls back to color.
+function resolveCanvasTextFill(
+  ctx: CanvasRenderingContext2D,
+  styles: ReturnType<typeof resolveEffectiveTextStyleForParagraph>,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutLine["fragments"][number],
+  originX: number,
+  originY: number,
+): string | CanvasGradient {
+  const fill = styles.textFill;
+  if (!fill) return styles.color ?? "#000000";
+  if (fill.type === "solid") return fill.color;
+  if (fill.stops.length < 2) return styles.color ?? "#000000";
+  const bounds = resolveFragmentPaintBounds(line, fragment);
+  if (!bounds) return fill.stops[0]!.color;
+  const x0 = originX + bounds.left;
+  const x1 = originX + bounds.right;
+  const y0 = originY + line.top;
+  const y1 = originY + line.top + line.height;
+  const cx = (x0 + x1) / 2;
+  const cy = (y0 + y1) / 2;
+  const angleDeg = fill.angle ?? 0;
+  const rad = (angleDeg * Math.PI) / 180;
+  const dx = (Math.cos(rad) * (x1 - x0)) / 2;
+  const dy = (Math.sin(rad) * (y1 - y0)) / 2;
+  const gradient = ctx.createLinearGradient(cx - dx, cy - dy, cx + dx, cy + dy);
+  for (const stop of fill.stops) {
+    const alpha = stop.alpha ?? 1;
+    const r = Number.parseInt(stop.color.slice(1, 3), 16);
+    const g = Number.parseInt(stop.color.slice(3, 5), 16);
+    const b = Number.parseInt(stop.color.slice(5, 7), 16);
+    gradient.addColorStop(stop.position, `rgba(${r},${g},${b},${alpha})`);
+  }
+  return gradient;
+}
+
 // Applies the glyph-level run effects (outline/shadow/emboss/imprint) on top of
 // the plain scaled fill. emboss/imprint draw a light relief copy offset behind
 // the main glyphs; shadow uses the canvas shadow; outline strokes hollow text.
+// textOutline (w14) overrides the legacy boolean outline with real width + color.
 function drawStyledText(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -673,9 +717,16 @@ function drawStyledText(
     shadow?: boolean;
     emboss?: boolean;
     imprint?: boolean;
+    textOutline?: { widthPt: number; color?: string } | null;
   },
 ) {
-  if (!styles.outline && !styles.shadow && !styles.emboss && !styles.imprint) {
+  const hasEffects =
+    styles.outline ||
+    styles.shadow ||
+    styles.emboss ||
+    styles.imprint ||
+    styles.textOutline;
+  if (!hasEffects) {
     drawScaledText(ctx, text, x, y, scale);
     return;
   }
@@ -696,7 +747,20 @@ function drawStyledText(
     ctx.shadowOffsetY = 1;
     ctx.shadowBlur = 1;
   }
-  if (styles.outline) {
+  if (styles.textOutline) {
+    ctx.strokeStyle = styles.textOutline.color ?? (ctx.fillStyle as string);
+    ctx.lineWidth = styles.textOutline.widthPt * PX_PER_POINT;
+    drawScaledText(ctx, text, x, y, scale);
+    if (scale === 1) {
+      ctx.strokeText(text, x, y);
+    } else {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, 1);
+      ctx.strokeText(text, 0, 0);
+      ctx.restore();
+    }
+  } else if (styles.outline) {
     ctx.strokeStyle = ctx.fillStyle as string;
     ctx.lineWidth = 0.75;
     if (scale === 1) {

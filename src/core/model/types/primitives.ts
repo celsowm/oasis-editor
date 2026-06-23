@@ -54,6 +54,28 @@ export type EditorEmphasisMark =
   | "underDot"
   | "none";
 
+/** One color stop in a `w14:gradFill` gradient. `position` is 0–1 (0 = start, 1 = end). */
+export interface EditorGradientStop {
+  position: number;
+  color: string;
+  alpha?: number;
+}
+
+/**
+ * `w14:textFill` — rich glyph fill that supersedes the plain `w:color`.
+ * Phase 2b: gradient canvas/PDF rendering is deferred; only solid is fully rendered now.
+ */
+export type EditorTextFill =
+  | { type: "solid"; color: string }
+  | { type: "gradient"; stops: EditorGradientStop[]; angle?: number };
+
+/** `w14:textOutline` — real stroke on glyphs, supersedes the legacy boolean `w:outline`. */
+export interface EditorTextOutline {
+  widthPt: number;
+  color?: string;
+  fill?: EditorTextFill;
+}
+
 export interface EditorTabStop {
   position: number; // in pt
   type: "left" | "center" | "right" | "decimal" | "bar" | "clear";

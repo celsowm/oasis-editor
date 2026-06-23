@@ -1,11 +1,17 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
-import type { EditorTextStyle } from "@/core/model.js";
+import type {
+  EditorGradientStop,
+  EditorTextFill,
+  EditorTextOutline,
+  EditorTextStyle,
+} from "@/core/model.js";
 import { DEFAULT_EDITOR_STYLES } from "@/core/editorState.js";
 import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
 import {
   WORD_NS,
   WORD14_NS,
   getFirstChildByTagNameNS,
+  getFirstW14Child,
   getAttributeValue,
   parseOnOffProperty,
   parseStyleIdProperty,
@@ -26,6 +32,58 @@ import {
   emptyOrUndefined,
   parseShdFill,
 } from "./styleUtils.js";
+
+function parseW14SolidFillColor(solidFillEl: XmlElement): string | null {
+  const srgbClr = getFirstChildByTagNameNS(solidFillEl, WORD14_NS, "srgbClr");
+  if (!srgbClr) return null;
+  const val = getAttributeValue(srgbClr, "val");
+  return val ? (normalizeImportedHexColor(val) ?? null) : null;
+}
+
+function parseW14TextFill(fillEl: XmlElement): EditorTextFill | null {
+  const solidFill = getFirstChildByTagNameNS(fillEl, WORD14_NS, "solidFill");
+  if (solidFill) {
+    const color = parseW14SolidFillColor(solidFill);
+    if (color) return { type: "solid", color };
+  }
+  const gradFill = getFirstChildByTagNameNS(fillEl, WORD14_NS, "gradFill");
+  if (gradFill) {
+    const gsLst = getFirstChildByTagNameNS(gradFill, WORD14_NS, "gsLst");
+    if (gsLst) {
+      const stops: EditorGradientStop[] = [];
+      for (let i = 0; i < gsLst.childNodes.length; i++) {
+        const node = gsLst.childNodes[i];
+        if (node?.nodeType !== node.ELEMENT_NODE) continue;
+        const gs = node as XmlElement;
+        if (gs.namespaceURI !== WORD14_NS || gs.localName !== "gs") continue;
+        const posVal = getAttributeValue(gs, "pos");
+        const pos = posVal !== null ? Number(posVal) / 100000 : NaN;
+        if (!Number.isFinite(pos)) continue;
+        const srgbClr = getFirstChildByTagNameNS(gs, WORD14_NS, "srgbClr");
+        if (!srgbClr) continue;
+        const colorVal = getAttributeValue(srgbClr, "val");
+        if (!colorVal) continue;
+        const color = normalizeImportedHexColor(colorVal);
+        if (!color) continue;
+        const alphaEl = getFirstChildByTagNameNS(srgbClr, WORD14_NS, "alpha");
+        const alphaRaw = alphaEl ? getAttributeValue(alphaEl, "val") : null;
+        const alpha = alphaRaw !== null ? Number(alphaRaw) / 100000 : undefined;
+        const stop: EditorGradientStop = { position: pos, color };
+        if (alpha !== undefined && Number.isFinite(alpha)) stop.alpha = alpha;
+        stops.push(stop);
+      }
+      if (stops.length > 0) {
+        const linEl = getFirstChildByTagNameNS(gradFill, WORD14_NS, "lin");
+        const angRaw = linEl ? getAttributeValue(linEl, "ang") : null;
+        const angle = angRaw !== null ? Number(angRaw) / 60000 : undefined;
+        const result: EditorTextFill = { type: "gradient", stops };
+        if (angle !== undefined && Number.isFinite(angle)) result.angle = angle;
+        return result;
+      }
+    }
+  }
+  return null;
+}
 
 export function normalizeImportedRunStyle(
   style: EditorTextStyle | undefined,
@@ -141,6 +199,8 @@ export function normalizeImportedRunStyle(
     ),
     fontSize: hd(style.fontSize, effective.fontSize, defaultEffective.fontSize),
     color: dd(effective.color, defaultEffective.color),
+    textFill: dd(effective.textFill, defaultEffective.textFill),
+    textOutline: dd(effective.textOutline, defaultEffective.textOutline),
     highlight: dd(effective.highlight, defaultEffective.highlight),
     shading: dd(effective.shading, defaultEffective.shading),
     language: dd(effective.language, defaultEffective.language),
@@ -436,6 +496,31 @@ export function parseRunStyle(
     if (themeColor) {
       styles.color = themeColor;
     }
+  }
+
+  const textFillEl = getFirstW14Child(runProperties, "textFill");
+  if (textFillEl) {
+    const textFill = parseW14TextFill(textFillEl);
+    if (textFill) styles.textFill = textFill;
+  }
+
+  const textOutlineEl = getFirstW14Child(runProperties, "textOutline");
+  if (textOutlineEl) {
+    const wAttr = textOutlineEl.getAttributeNS(WORD14_NS, "w");
+    const widthEmu = wAttr !== null ? Number(wAttr) : NaN;
+    const widthPt =
+      Number.isFinite(widthEmu) && widthEmu > 0 ? widthEmu / 12700 : 0.5;
+    const textOutline: EditorTextOutline = { widthPt };
+    const outlineFill = parseW14TextFill(textOutlineEl);
+    if (outlineFill) {
+      textOutline.fill = outlineFill;
+      if (outlineFill.type === "solid") {
+        textOutline.color = outlineFill.color;
+      } else if (outlineFill.type === "gradient" && outlineFill.stops[0]) {
+        textOutline.color = outlineFill.stops[0].color;
+      }
+    }
+    styles.textOutline = textOutline;
   }
 
   const highlight = getFirstChildByTagNameNS(

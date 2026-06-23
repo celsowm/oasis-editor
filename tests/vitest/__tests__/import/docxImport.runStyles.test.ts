@@ -656,6 +656,114 @@ describe("DOCX run style import", () => {
   });
 });
 
+describe("w14:textFill and w14:textOutline", () => {
+  const W14_NS = "http://schemas.microsoft.com/office/word/2010/wordml";
+  const MC_NS = "http://schemas.openxmlformats.org/markup-compatibility/2006";
+
+  function buildW14Docx(rPrXml: string): Promise<ArrayBuffer> {
+    const zip = new JSZip();
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:w14="${W14_NS}"
+            xmlns:mc="${MC_NS}">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:rPr>${rPrXml}</w:rPr>
+        <w:t>Styled text</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    return zip.generateAsync({ type: "arraybuffer" });
+  }
+
+  it("imports w14:textFill solid and round-trips via mc:AlternateContent", async () => {
+    const docx = await buildW14Docx(
+      `<w14:textFill><w14:solidFill><w14:srgbClr w14:val="FF0000"/></w14:solidFill></w14:textFill>`,
+    );
+    const doc = await importDocxToEditorDocument(docx);
+    const run = getDocumentParagraphs(doc)[0]!.runs[0]!;
+    expect(run.styles?.textFill).toEqual({ type: "solid", color: "#FF0000" });
+
+    const rezip = await JSZip.loadAsync(await exportEditorDocumentToDocx(doc));
+    const xml = await rezip.file("word/document.xml")!.async("string");
+    expect(xml).toContain("<w14:textFill>");
+    expect(xml).toContain('<w14:solidFill><w14:srgbClr w14:val="FF0000"/></w14:solidFill>');
+    expect(xml).toContain('<mc:Fallback><w:color w:val="FF0000"/></mc:Fallback>');
+  });
+
+  it("imports w14:textFill gradient with stops and angle", async () => {
+    const docx = await buildW14Docx(`
+      <w14:textFill>
+        <w14:gradFill>
+          <w14:gsLst>
+            <w14:gs w14:pos="0"><w14:srgbClr w14:val="FF0000"/></w14:gs>
+            <w14:gs w14:pos="100000"><w14:srgbClr w14:val="0000FF"/></w14:gs>
+          </w14:gsLst>
+          <w14:lin w14:ang="0" w14:scaled="0"/>
+        </w14:gradFill>
+      </w14:textFill>`);
+    const doc = await importDocxToEditorDocument(docx);
+    const run = getDocumentParagraphs(doc)[0]!.runs[0]!;
+    const fill = run.styles?.textFill;
+    expect(fill?.type).toBe("gradient");
+    if (fill?.type === "gradient") {
+      expect(fill.stops).toHaveLength(2);
+      expect(fill.stops[0]).toEqual({ position: 0, color: "#FF0000" });
+      expect(fill.stops[1]).toEqual({ position: 1, color: "#0000FF" });
+      expect(fill.angle).toBe(0);
+    }
+  });
+
+  it("imports w14:textFill wrapped in mc:AlternateContent/mc:Choice", async () => {
+    const docx = await buildW14Docx(`
+      <mc:AlternateContent>
+        <mc:Choice Requires="w14">
+          <w14:textFill><w14:solidFill><w14:srgbClr w14:val="00FF00"/></w14:solidFill></w14:textFill>
+        </mc:Choice>
+        <mc:Fallback><w:color w:val="00FF00"/></mc:Fallback>
+      </mc:AlternateContent>`);
+    const doc = await importDocxToEditorDocument(docx);
+    const run = getDocumentParagraphs(doc)[0]!.runs[0]!;
+    expect(run.styles?.textFill).toEqual({ type: "solid", color: "#00FF00" });
+  });
+
+  it("imports w14:textOutline with width and color", async () => {
+    // 19050 EMU = 1.5 pt
+    const docx = await buildW14Docx(`
+      <w14:textOutline w14:w="19050" w14:cap="flat" w14:cmpd="sng" w14:algn="ctr">
+        <w14:solidFill><w14:srgbClr w14:val="000000"/></w14:solidFill>
+      </w14:textOutline>`);
+    const doc = await importDocxToEditorDocument(docx);
+    const run = getDocumentParagraphs(doc)[0]!.runs[0]!;
+    const outline = run.styles?.textOutline;
+    expect(outline).toBeDefined();
+    expect(outline?.widthPt).toBeCloseTo(1.5, 2);
+    expect(outline?.color).toBe("#000000");
+  });
+
+  it("round-trips w14:textOutline via mc:AlternateContent with w:outline fallback", async () => {
+    const docx = await buildW14Docx(`
+      <w14:textOutline w14:w="19050" w14:cap="flat" w14:cmpd="sng" w14:algn="ctr">
+        <w14:solidFill><w14:srgbClr w14:val="0000FF"/></w14:solidFill>
+      </w14:textOutline>`);
+    const doc = await importDocxToEditorDocument(docx);
+    const rezip = await JSZip.loadAsync(await exportEditorDocumentToDocx(doc));
+    const xml = await rezip.file("word/document.xml")!.async("string");
+    expect(xml).toContain("<w14:textOutline");
+    expect(xml).toContain('<w14:solidFill><w14:srgbClr w14:val="0000FF"/></w14:solidFill>');
+    expect(xml).toContain("<mc:Fallback><w:outline/></mc:Fallback>");
+  });
+});
+
 describe("w:sym symbol characters", () => {
   function buildSymDocx(runXml: string): Promise<ArrayBuffer> {
     const zip = new JSZip();

@@ -70,6 +70,10 @@ export interface OasisPdfTextOptions {
   horizontalScale?: number;
   /** PDF text render mode (`Tr`): 0 fill (default), 1 stroke, 2 fill+stroke. */
   renderMode?: number;
+  /** Stroke color for render modes 1 (stroke) and 2 (fill+stroke). Defaults to `color`. */
+  strokeColor?: string;
+  /** Stroke line width in pt for render modes 1 and 2. Defaults to 3% of fontSize. */
+  strokeWidth?: number;
 }
 
 export interface OasisPdfImageResource {
