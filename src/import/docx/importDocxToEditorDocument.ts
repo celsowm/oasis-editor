@@ -439,6 +439,30 @@ export async function importDocxToEditorDocument(
         allowSpaceOfSameStyleInTable: true,
       };
     }
+    if (docSettings.autoHyphenation) {
+      doc.settings = {
+        ...(doc.settings ?? {}),
+        autoHyphenation: true,
+      };
+    }
+    if (docSettings.doNotHyphenateCaps) {
+      doc.settings = {
+        ...(doc.settings ?? {}),
+        doNotHyphenateCaps: true,
+      };
+    }
+    if (docSettings.consecutiveHyphenLimit !== undefined) {
+      doc.settings = {
+        ...(doc.settings ?? {}),
+        consecutiveHyphenLimit: docSettings.consecutiveHyphenLimit,
+      };
+    }
+    if (docSettings.hyphenationZone !== undefined) {
+      doc.settings = {
+        ...(doc.settings ?? {}),
+        hyphenationZone: docSettings.hyphenationZone,
+      };
+    }
     let result = doc;
     if (editorFootnotes) {
       result.footnotes = editorFootnotes;

@@ -14,6 +14,7 @@ import {
   reservationSignature,
 } from "./footnotePagination.js";
 import { projectBlocksLayout } from "./blocksPagination.js";
+import { setActiveHyphenation } from "./paragraphPagination.js";
 import { projectHeaderFooterBlocks } from "./headerFooterFootnotes.js";
 import { projectDocumentSections } from "./sectionPagination.js";
 import { injectEndnotesIntoDocument } from "./endnotePagination.js";
@@ -51,6 +52,18 @@ export function projectDocumentLayout(
   } = {},
 ): EditorLayoutDocument {
   const measurer = options.measurer ?? domTextMeasurer;
+  // Resolve document-level automatic hyphenation once for the whole synchronous
+  // projection pass (body, tables, headers/footers, footnotes all read it).
+  setActiveHyphenation(
+    document.settings?.autoHyphenation
+      ? {
+          enabled: true,
+          zone: document.settings.hyphenationZone,
+          consecutiveLimit: document.settings.consecutiveHyphenLimit,
+          doNotHyphenateCaps: document.settings.doNotHyphenateCaps,
+        }
+      : undefined,
+  );
   // Endnotes render at the end of the document: append their bodies to the last
   // section's flow so normal pagination lays them out. This derived document is
   // used only for layout; the persisted model is untouched.
@@ -78,6 +91,7 @@ export function projectDocumentLayout(
     !document.footnotes ||
     Object.keys(document.footnotes.items).length === 0
   ) {
+    setActiveHyphenation(undefined);
     return { pages };
   }
 
@@ -105,7 +119,9 @@ export function projectDocumentLayout(
     reservations = buildFootnoteReservations(pages, footnoteContext);
   }
 
-  return {
+  const result = {
     pages: applyFootnotesToPages(pages, footnoteContext),
   };
+  setActiveHyphenation(undefined);
+  return result;
 }

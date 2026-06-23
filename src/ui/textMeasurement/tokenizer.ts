@@ -95,6 +95,7 @@ export function buildMeasuredChars(
         offset: char.paragraphOffset,
         width,
         ...(objectHeight !== undefined ? { objectHeight } : {}),
+        ...(objectHeight === undefined ? { style: effectiveStyles } : {}),
       });
     }
   }

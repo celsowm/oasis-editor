@@ -342,6 +342,26 @@ describe("DOCX export", () => {
     expect(settingsXml).toContain('<w:defaultTabStop w:val="480"/>');
   });
 
+  it("serializes hyphenation settings", async () => {
+    const document = createEditorDocument([createEditorParagraph("Hyph")]);
+    document.settings = {
+      autoHyphenation: true,
+      consecutiveHyphenLimit: 2,
+      hyphenationZone: 18,
+      doNotHyphenateCaps: true,
+    };
+
+    const settingsXml = await readZipText(
+      await exportEditorDocumentToDocx(document),
+      "word/settings.xml",
+    );
+
+    expect(settingsXml).toContain("<w:autoHyphenation/>");
+    expect(settingsXml).toContain('<w:consecutiveHyphenLimit w:val="2"/>');
+    expect(settingsXml).toContain('<w:hyphenationZone w:val="360"/>');
+    expect(settingsXml).toContain("<w:doNotHyphenateCaps/>");
+  });
+
   it("serializes no-break and soft hyphen run content", async () => {
     const paragraph = createEditorParagraph(
       "non\u2011breaking soft\u00ADhyphen",

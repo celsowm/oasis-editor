@@ -45,6 +45,15 @@ export interface EditorLayoutLine {
   slots: EditorCaretSlot[];
   fragments: EditorLayoutFragment[];
   availableWidth?: number;
+  /**
+   * Set when the line ends mid-word due to automatic hyphenation. Renderers draw
+   * a trailing hyphen glyph after the last fragment; it is not part of the text
+   * model (no caret slot/offset), so caret and selection logic ignore it.
+   */
+  trailingHyphen?: boolean;
+  /** Advance (px) reserved/drawn for the trailing hyphen; the single source of
+   * truth shared by alignment and the canvas/PDF renderers. */
+  trailingHyphenWidth?: number;
 }
 
 export interface EditorLayoutParagraph {

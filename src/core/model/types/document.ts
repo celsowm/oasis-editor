@@ -102,6 +102,14 @@ export interface EditorDocument {
     defaultTabStop?: number;
     /** `w:allowSpaceOfSameStyleInTable`: contextual spacing applies in table cells. */
     allowSpaceOfSameStyleInTable?: boolean;
+    /** `w:autoHyphenation`: automatically hyphenate words at line ends. */
+    autoHyphenation?: boolean;
+    /** `w:consecutiveHyphenLimit`: max consecutive lines ending with a hyphen (0 = unlimited). */
+    consecutiveHyphenLimit?: number;
+    /** `w:hyphenationZone`: min trailing gap (points) before a word is hyphenated. */
+    hyphenationZone?: number;
+    /** `w:doNotHyphenateCaps`: do not hyphenate all-caps words. */
+    doNotHyphenateCaps?: boolean;
   };
   /**
    * Out-of-band asset registry. Image runs reference entries here using

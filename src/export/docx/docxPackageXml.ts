@@ -151,17 +151,43 @@ function serializeNoteSettings(
     : null;
 }
 
+export interface HyphenationSettingsXml {
+  autoHyphenation?: boolean;
+  consecutiveHyphenLimit?: number;
+  hyphenationZone?: number;
+  doNotHyphenateCaps?: boolean;
+}
+
 export function buildSettingsXml(
   hasEvenAndOddHeaders: boolean,
   defaultTabStop?: number,
   footnoteSettings?: EditorFootnoteSettings,
   endnoteSettings?: EditorFootnoteSettings,
   allowSpaceOfSameStyleInTable?: boolean,
+  hyphenation?: HyphenationSettingsXml,
 ): string {
   const parts: string[] = [];
   const defaultTabStopTwips = pointsToTwips(defaultTabStop);
   if (defaultTabStopTwips !== null) {
     parts.push(`<w:defaultTabStop w:val="${defaultTabStopTwips}"/>`);
+  }
+  if (hyphenation?.autoHyphenation) {
+    parts.push("<w:autoHyphenation/>");
+  }
+  if (
+    hyphenation?.consecutiveHyphenLimit !== undefined &&
+    hyphenation.consecutiveHyphenLimit >= 0
+  ) {
+    parts.push(
+      `<w:consecutiveHyphenLimit w:val="${hyphenation.consecutiveHyphenLimit}"/>`,
+    );
+  }
+  const hyphenationZoneTwips = pointsToTwips(hyphenation?.hyphenationZone);
+  if (hyphenationZoneTwips !== null) {
+    parts.push(`<w:hyphenationZone w:val="${hyphenationZoneTwips}"/>`);
+  }
+  if (hyphenation?.doNotHyphenateCaps) {
+    parts.push("<w:doNotHyphenateCaps/>");
   }
   const footnotePr = serializeNoteSettings("footnotePr", footnoteSettings);
   if (footnotePr) {
@@ -175,9 +201,7 @@ export function buildSettingsXml(
     parts.push("<w:evenAndOddHeaders/>");
   }
   if (allowSpaceOfSameStyleInTable) {
-    parts.push(
-      `<w:compat><w:allowSpaceOfSameStyleInTable/></w:compat>`,
-    );
+    parts.push(`<w:compat><w:allowSpaceOfSameStyleInTable/></w:compat>`);
   }
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="${WORD_NS}">${parts.join("")}</w:settings>`;
 }

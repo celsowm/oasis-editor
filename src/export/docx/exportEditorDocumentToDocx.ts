@@ -246,6 +246,10 @@ export async function exportEditorDocumentToDocx(
     hasEvenAndOddHeaders ||
     document.settings?.defaultTabStop !== undefined ||
     document.settings?.allowSpaceOfSameStyleInTable !== undefined ||
+    document.settings?.autoHyphenation !== undefined ||
+    document.settings?.consecutiveHyphenLimit !== undefined ||
+    document.settings?.hyphenationZone !== undefined ||
+    document.settings?.doNotHyphenateCaps !== undefined ||
     document.footnotes?.settings !== undefined ||
     document.endnotes?.settings !== undefined;
   const allImages = [
@@ -358,6 +362,12 @@ export async function exportEditorDocumentToDocx(
         document.footnotes?.settings,
         document.endnotes?.settings,
         document.settings?.allowSpaceOfSameStyleInTable,
+        {
+          autoHyphenation: document.settings?.autoHyphenation,
+          consecutiveHyphenLimit: document.settings?.consecutiveHyphenLimit,
+          hyphenationZone: document.settings?.hyphenationZone,
+          doNotHyphenateCaps: document.settings?.doNotHyphenateCaps,
+        },
       ),
     );
   }

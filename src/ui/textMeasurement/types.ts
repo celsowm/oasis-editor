@@ -2,8 +2,12 @@ import type {
   EditorLayoutFragment,
   EditorNamedStyle,
   EditorParagraphNode,
+  EditorTextStyle,
 } from "@/core/model.js";
-import type { FloatingExclusionRect } from "@/core/engine.js";
+import type {
+  FloatingExclusionRect,
+  HyphenationLayoutOptions,
+} from "@/core/engine.js";
 
 export interface MeasuredChar {
   char: string;
@@ -15,6 +19,12 @@ export interface MeasuredChar {
    * objects (which are taken out of flow).
    */
   objectHeight?: number;
+  /**
+   * Effective text style of the run this char belongs to (shared reference).
+   * Used by automatic hyphenation to measure the hyphen glyph and resolve the
+   * hyphenation language; absent for inline-object placeholders.
+   */
+  style?: EditorTextStyle;
 }
 
 export interface MeasuredToken {
@@ -30,4 +40,5 @@ export interface TextMeasureOptions {
   contentWidth?: number;
   defaultTabStop?: number;
   exclusions?: FloatingExclusionRect[];
+  hyphenation?: HyphenationLayoutOptions;
 }

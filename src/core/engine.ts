@@ -18,6 +18,22 @@ export interface FloatingExclusionRect {
   polygon?: Array<{ x: number; y: number }>;
 }
 
+/**
+ * Automatic-hyphenation configuration resolved from `EditorDocument.settings`
+ * (`w:autoHyphenation` and friends). Threaded to the composer so words can break
+ * at line ends with a rendered trailing hyphen.
+ */
+export interface HyphenationLayoutOptions {
+  /** `w:autoHyphenation`: master switch. */
+  enabled: boolean;
+  /** `w:hyphenationZone`: min trailing gap (points) before hyphenating. */
+  zone?: number;
+  /** `w:consecutiveHyphenLimit`: max consecutive hyphenated lines (0/undefined = unlimited). */
+  consecutiveLimit?: number;
+  /** `w:doNotHyphenateCaps`: skip all-caps words. */
+  doNotHyphenateCaps?: boolean;
+}
+
 export interface TextMeasureOptions {
   paragraph: EditorParagraphNode;
   fragments: EditorLayoutFragment[];
@@ -25,6 +41,7 @@ export interface TextMeasureOptions {
   contentWidth?: number;
   defaultTabStop?: number;
   exclusions?: FloatingExclusionRect[];
+  hyphenation?: HyphenationLayoutOptions;
 }
 
 export interface ITextMeasurer {

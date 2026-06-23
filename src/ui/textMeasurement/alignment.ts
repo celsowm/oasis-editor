@@ -53,7 +53,10 @@ function getLineContentWidth(
   if (!trailingSlot) {
     return 0;
   }
-  return Math.max(0, trailingSlot.left - firstSlot.left);
+  // An automatic hyphen is drawn past the last char's trailing edge; count it so
+  // right/center/justify alignment reserves room and the hyphen stays in-margin.
+  const hyphenWidth = line.trailingHyphen ? (line.trailingHyphenWidth ?? 0) : 0;
+  return Math.max(0, trailingSlot.left - firstSlot.left + hyphenWidth);
 }
 
 /**

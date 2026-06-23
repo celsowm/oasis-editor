@@ -967,6 +967,7 @@ This section condenses the per-table Status column into a high-level capability 
 | Hyperlinks | External `w:hyperlink` (resolved via `r:id` relationship) and internal anchor hyperlinks (`w:anchor`, stored as `#name`, exported as `w:anchor` with no relationship) both round-trip. |
 | Theme | `a:fontScheme` (major/minor, latin/ea/cs) is read and applied to run-level fonts that do not override it. `a:clrScheme` color slots are resolved on import; `themeColor`/`themeTint`/`themeShade` are flattened to concrete hex. |
 | Settings | `w:adjustLineHeightInTable` is read from `w:compat` and controls table-cell line height. `w:defaultTabStop` drives default tab layout and round-trips through `settings.xml`. `w:evenAndOddHeaders` is exported and applied to the document. |
+| Hyphenation | `w:autoHyphenation`, `w:consecutiveHyphenLimit`, `w:hyphenationZone`, and `w:doNotHyphenateCaps` round-trip through `settings.xml` and drive automatic hyphenation in layout: words break at Knuth–Liang pattern points (Portuguese + English, selected by run language) with a render-only trailing hyphen drawn in both canvas and PDF. The zone, consecutive-line limit, and all-caps exclusion are honored; auto-hyphens are layout-only and never written into the model. |
 | Style cascade | Style `basedOn` chain is walked; style cycle detection prevents infinite loops. |
 
 ### Partial (one side of the round-trip or a documented subset)
@@ -1004,7 +1005,6 @@ This section condenses the per-table Status column into a high-level capability 
 | AltChunk | `w:altChunk`. |
 | Bidi/RTL/Complex script | `w:bidi` (paragraph/section), `w:rtl`, `w:cs`, `w:bdo`/`w:dir`, `w:lang`, `w:bidiVisual`, `w:noColumnBalance`. |
 | East Asian / CJK | `w:eastAsianLayout`, `w:vertAlign` for CJK, `w:ruby`/`w:rt`/`w:rubyBase`, `w:doNotUseEastAsianBreakRules`, `w:useWord97LineBreakRules`, `w:useAltKinsokuLineBreakRules`. |
-| Hyphenation | `w:autoHyphenation`, `w:consecutiveHyphenLimit`, `w:hyphenationZone`, `w:doNotHyphenateCaps`. |
 | Most `w:settings` | All of `w:zoom`, `w:view`, `w:displayBackgroundShape`, `w:displayProofErr`, `w:displayHorizontalDrawingGridEvery`/`w:displayVerticalDrawingGridEvery`, `w:characterSpacingControl`, `w:mirrorMargins`, `w:bordersDoNotSurroundHeader`/`Footer`, `w:formsDesign`, `w:attachedTemplate`, `w:linkStyles`, `w:stylePaneFormatFilter`/`w:stylePaneSortMethod`, `w:documentProtection`, `w:trackRevisions`, `w:doNotTrackMoves`/`w:doNotTrackFormatting`, `w:mailMerge`, `w:writeProtection`, `w:shapeDefaults`, `w:decimalSymbol`/`w:listSeparator`, `w:docVars`/`w:docVar`, `w:hdrShapeDefaults`, note placement (`w:footnotePr`/`w:endnotePr/w:pos`) and special-note refs, `w:displayHiddenText`, `w:showXMLTags`, `w:savePreviewPicture`, `w:embedTrueTypeFonts`/`w:embedSystemFonts`/`w:saveSubsetFonts`, `w:themeFontLang`, `w:clrSchemeMapping`, the full `w:compat` block except `adjustLineHeightInTable`. |
 | Font table | `word/fontTable.xml` is not read; `w:font`, `w:altName`, `w:family`, `w:pitch`, `w:charset`, `w:panose1`, `w:sig`, embedded font references are all dropped. |
 | Web settings | `word/webSettings.xml` is not consumed. |

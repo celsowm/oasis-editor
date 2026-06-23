@@ -25,9 +25,17 @@ import { getParagraphLineHeight } from "./paragraphLineHeight.js";
 import { resolveTabAdvancePx } from "./tabStops.js";
 import { commitLine } from "./layoutLine.js";
 import { applyParagraphAlignment } from "./alignment.js";
+import { measureCharacterWidth } from "./characterWidth.js";
+import {
+  findHyphenationPoints,
+  resolveHyphenationLanguage,
+  shouldHyphenateWord,
+} from "./hyphenation.js";
 
 const DEFAULT_CONTENT_WIDTH = 624;
 const MIN_CONTENT_WIDTH = 120;
+/** Word measures the hyphenation zone in points; the composer works in px. */
+const PT_TO_PX = 96 / 72;
 
 function intersectsVertically(
   aTop: number,
@@ -288,6 +296,7 @@ export function composeMeasuredParagraphLines(
   const { paragraph, fragments, styles, contentWidth, defaultTabStop } =
     options;
   const exclusions = options.exclusions ?? [];
+  const hyphenation = options.hyphenation;
   const measuredChars = buildMeasuredChars(paragraph, fragments, styles);
   const tokens = tokenizeMeasuredChars(measuredChars);
   const charByOffset = new Map<number, string>(
@@ -403,9 +412,14 @@ export function composeMeasuredParagraphLines(
     lineSlotLefts = [lineStartInset];
   };
 
+  // Count of consecutive lines ending with an automatic hyphen, for
+  // `w:consecutiveHyphenLimit`. A plain (non-hyphen) flush resets it.
+  let consecutiveHyphens = 0;
+
   // Commit the current segment as a layout line. Does not advance `top`; that
-  // happens once per band in `advanceRegion`.
-  const flushLine = (hardBreak = false) => {
+  // happens once per band in `advanceRegion`. When `trailingHyphenWidth` is set
+  // the line was broken mid-word: mark it so renderers draw a trailing hyphen.
+  const flushLine = (hardBreak = false, trailingHyphenWidth?: number) => {
     // An inline image/text box grows the line so it does not overlap adjacent
     // lines; normal text lines keep their font-derived height.
     const effectiveHeight = Math.max(lineHeight, lineMaxObjectHeight);
@@ -419,6 +433,14 @@ export function composeMeasuredParagraphLines(
       effectiveHeight,
       lineAvailableWidth,
     );
+    if (trailingHyphenWidth !== undefined) {
+      const committed = lines[lines.length - 1]!;
+      committed.trailingHyphen = true;
+      committed.trailingHyphenWidth = trailingHyphenWidth;
+      consecutiveHyphens += 1;
+    } else {
+      consecutiveHyphens = 0;
+    }
     lineHardBreaks.push(hardBreak);
     bandHeight = Math.max(bandHeight, effectiveHeight);
   };
@@ -489,6 +511,111 @@ export function composeMeasuredParagraphLines(
     }
   };
 
+  // Lay a word's characters onto the current line, breaking between characters
+  // only when an individual chunk would overflow. Last-resort fallback for words
+  // with no usable hyphenation point.
+  const layoutByChars = (chars: MeasuredChar[]) => {
+    let currentChunk: MeasuredChar[] = [];
+    let currentChunkWidth = 0;
+    for (const char of chars) {
+      const charWidth =
+        char.char === "\t"
+          ? resolveTabAdvancePx(
+              paragraph,
+              styles,
+              defaultTabStop,
+              lineStartInset,
+              currentChunkWidth,
+              char.offset,
+              measuredChars,
+            )
+          : char.width;
+      if (
+        currentChunk.length > 0 &&
+        currentChunkWidth + charWidth > lineAvailableWidth
+      ) {
+        appendChars(currentChunk);
+        flushLine();
+        resetLine(char.offset);
+        currentChunk = [];
+        currentChunkWidth = 0;
+      }
+      currentChunk.push(char);
+      currentChunkWidth += charWidth;
+    }
+    if (currentChunk.length > 0) {
+      appendChars(currentChunk);
+    }
+  };
+
+  const hyphenLimit = hyphenation?.consecutiveLimit ?? 0;
+  const canHyphenateMore = () =>
+    hyphenLimit <= 0 || consecutiveHyphens < hyphenLimit;
+
+  // How many leading chars of `chars` to keep on the current line (with a
+  // trailing hyphen) plus the hyphen advance, or null when the word cannot be
+  // hyphenated to fit `remainingWidth`.
+  const tryHyphenate = (
+    chars: MeasuredChar[],
+    remainingWidth: number,
+  ): { breakIndex: number; hyphenWidth: number } | null => {
+    if (!hyphenation?.enabled || !canHyphenateMore()) return null;
+    const word = chars.map((char) => char.char).join("");
+    if (
+      !shouldHyphenateWord(word, {
+        doNotHyphenateCaps: hyphenation.doNotHyphenateCaps,
+      })
+    ) {
+      return null;
+    }
+    const langTag = chars.find((char) => char.style?.language?.value)?.style
+      ?.language?.value;
+    const points = findHyphenationPoints(
+      word,
+      resolveHyphenationLanguage(langTag ?? undefined),
+    );
+    if (points.length === 0) return null;
+    const hyphenWidth = measureCharacterWidth(
+      "-",
+      chars[0]?.style,
+      fallbackFontSize,
+    );
+    let prefixWidth = 0;
+    let scanned = 0;
+    let chosen = -1;
+    for (const point of points) {
+      while (scanned < point) {
+        prefixWidth += chars[scanned]!.width;
+        scanned += 1;
+      }
+      if (prefixWidth + hyphenWidth <= remainingWidth) {
+        chosen = point;
+      } else {
+        break;
+      }
+    }
+    return chosen > 0 ? { breakIndex: chosen, hyphenWidth } : null;
+  };
+
+  // Place a word that begins a fresh line. Fits whole when possible; otherwise
+  // hyphenates an oversized word and recurses on the remainder; falls back to
+  // character breaking only when nothing else fits.
+  const layoutFreshWord = (chars: MeasuredChar[]) => {
+    if (measureCharsAt(chars, 0) <= lineAvailableWidth) {
+      appendChars(chars);
+      return;
+    }
+    const hy = tryHyphenate(chars, lineAvailableWidth);
+    if (hy) {
+      appendChars(chars.slice(0, hy.breakIndex));
+      flushLine(false, hy.hyphenWidth);
+      resetLine(chars[hy.breakIndex]!.offset);
+      layoutFreshWord(chars.slice(hy.breakIndex));
+      return;
+    }
+    layoutByChars(chars);
+  };
+
   for (const token of tokens) {
     if (token.kind === "newline") {
       flushLine(true);
@@ -515,43 +642,27 @@ export function composeMeasuredParagraphLines(
       continue;
     }
 
+    // Word does not fit the remaining space. Prefer an automatic hyphen onto the
+    // current line (only when the trailing gap exceeds the hyphenation zone),
+    // otherwise wrap the whole word to a fresh line.
+    if (!isEmptyLine) {
+      const remaining = lineAvailableWidth - lineWidth;
+      const zonePx = (hyphenation?.zone ?? 0) * PT_TO_PX;
+      if (remaining > zonePx) {
+        const hy = tryHyphenate(token.chars, remaining);
+        if (hy) {
+          appendChars(token.chars.slice(0, hy.breakIndex));
+          flushLine(false, hy.hyphenWidth);
+          resetLine(token.chars[hy.breakIndex]!.offset);
+          layoutFreshWord(token.chars.slice(hy.breakIndex));
+          continue;
+        }
+      }
+    }
+
     flushLine();
     resetLine(token.chars[0]!.offset);
-
-    let currentChunk: MeasuredChar[] = [];
-    let currentChunkWidth = 0;
-
-    for (const char of token.chars) {
-      const charWidth =
-        char.char === "\t"
-          ? resolveTabAdvancePx(
-              paragraph,
-              styles,
-              defaultTabStop,
-              lineStartInset,
-              currentChunkWidth,
-              char.offset,
-              measuredChars,
-            )
-          : char.width;
-      if (
-        currentChunk.length > 0 &&
-        currentChunkWidth + charWidth > lineAvailableWidth
-      ) {
-        appendChars(currentChunk);
-        flushLine();
-        resetLine(char.offset);
-        currentChunk = [];
-        currentChunkWidth = 0;
-      }
-
-      currentChunk.push(char);
-      currentChunkWidth += charWidth;
-    }
-
-    if (currentChunk.length > 0) {
-      appendChars(currentChunk);
-    }
+    layoutFreshWord(token.chars);
   }
 
   if (

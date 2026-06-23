@@ -3,7 +3,6 @@ import type {
   EditorParagraphNode,
   EditorTableCellNode,
   EditorTableNode,
-  EditorTableRowNode,
   EditorTableRowStyle,
   EditorTableStyle,
   EditorTableFloatingLayout,

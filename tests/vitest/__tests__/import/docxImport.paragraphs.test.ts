@@ -352,6 +352,24 @@ describe("DOCX paragraph import", () => {
     expect(afterTab?.left).toBeCloseTo(32, 4);
   });
 
+  it("imports hyphenation settings from settings.xml", async () => {
+    const settingsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:autoHyphenation/>
+  <w:consecutiveHyphenLimit w:val="2"/>
+  <w:hyphenationZone w:val="360"/>
+  <w:doNotHyphenateCaps/>
+</w:settings>`;
+    const document = await importDocxToEditorDocument(
+      await buildDocxWithContextualSpacing("", undefined, settingsXml),
+    );
+
+    expect(document.settings?.autoHyphenation).toBe(true);
+    expect(document.settings?.consecutiveHyphenLimit).toBe(2);
+    expect(document.settings?.hyphenationZone).toBe(18);
+    expect(document.settings?.doNotHyphenateCaps).toBe(true);
+  });
+
   it("imports DOCX no-break and soft hyphen run content", async () => {
     const zip = new JSZip();
     const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

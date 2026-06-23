@@ -16,6 +16,10 @@ export interface DocxSettings {
   adjustLineHeightInTable: boolean;
   allowSpaceOfSameStyleInTable?: boolean;
   defaultTabStop?: number;
+  autoHyphenation?: boolean;
+  consecutiveHyphenLimit?: number;
+  hyphenationZone?: number;
+  doNotHyphenateCaps?: boolean;
   footnoteSettings?: EditorFootnoteSettings;
   endnoteSettings?: EditorEndnoteSettings;
 }
@@ -87,6 +91,48 @@ export function parseSettings(xml: string | null): DocxSettings {
   );
   if (defaultTabStop !== undefined) {
     settings.defaultTabStop = defaultTabStop;
+  }
+  // Hyphenation settings are direct children of `w:settings` (not `w:compat`).
+  const autoHyphenation = getFirstChildByTagNameNS(
+    doc.documentElement,
+    WORD_NS,
+    "autoHyphenation",
+  );
+  if (autoHyphenation) {
+    const val = getAttributeValue(autoHyphenation, "val");
+    settings.autoHyphenation = val !== "0" && val !== "false";
+  }
+  const doNotHyphenateCaps = getFirstChildByTagNameNS(
+    doc.documentElement,
+    WORD_NS,
+    "doNotHyphenateCaps",
+  );
+  if (doNotHyphenateCaps) {
+    const val = getAttributeValue(doNotHyphenateCaps, "val");
+    settings.doNotHyphenateCaps = val !== "0" && val !== "false";
+  }
+  const consecutiveHyphenLimit = Number.parseInt(
+    getAttributeValue(
+      getFirstChildByTagNameNS(
+        doc.documentElement,
+        WORD_NS,
+        "consecutiveHyphenLimit",
+      ),
+      "val",
+    ) ?? "",
+    10,
+  );
+  if (Number.isFinite(consecutiveHyphenLimit) && consecutiveHyphenLimit >= 0) {
+    settings.consecutiveHyphenLimit = consecutiveHyphenLimit;
+  }
+  const hyphenationZone = twipsToPoints(
+    getAttributeValue(
+      getFirstChildByTagNameNS(doc.documentElement, WORD_NS, "hyphenationZone"),
+      "val",
+    ),
+  );
+  if (hyphenationZone !== undefined) {
+    settings.hyphenationZone = hyphenationZone;
   }
   settings.footnoteSettings = parseNoteSettings(
     getFirstChildByTagNameNS(doc.documentElement, WORD_NS, "footnotePr"),

@@ -694,6 +694,17 @@ export async function drawFragmentText(
     if (chunkText.length === 0) continue;
     emitChunk(originX + chunk[0]!.left, chunkText);
   }
+  // Automatic hyphenation: the last fragment of a hyphenated line draws a
+  // render-only trailing hyphen past the last character, in this fragment's
+  // style (mirrors the canvas renderer).
+  if (line.trailingHyphen && fragment.endOffset >= line.endOffset) {
+    const endSlot =
+      line.slots.find((slot) => slot.offset === line.endOffset) ??
+      line.slots[line.slots.length - 1];
+    if (endSlot) {
+      emitChunk(originX + endSlot.left, "-");
+    }
+  }
   if (styles.underline) {
     drawFragmentDecoration(
       writer,

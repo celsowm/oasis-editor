@@ -18,7 +18,7 @@ import {
 } from "@/core/model.js";
 import { measureLinesFromRects, type CharRect } from "@/ui/caretGeometry.js";
 import { getParagraphBorderInsets } from "./paragraphBorders.js";
-import type { ITextMeasurer } from "@/core/engine.js";
+import type { ITextMeasurer, HyphenationLayoutOptions } from "@/core/engine.js";
 import {
   applyLineRule,
   domTextMeasurer,
@@ -34,6 +34,28 @@ import {
 import { resolveDropCapExclusion } from "./dropCapExclusion.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
+
+/**
+ * Document-scoped automatic-hyphenation context. Set once at the start of a
+ * `projectDocumentLayout` pass (which is fully synchronous) and read by
+ * `projectParagraphLayout` for every paragraph — body, table cell, header/footer
+ * and footnote alike — without threading the option through the whole pagination
+ * call chain. Its signature is folded into the paragraph layout cache key so
+ * toggling the setting invalidates cached layouts.
+ */
+let activeHyphenation: HyphenationLayoutOptions | undefined;
+let activeHyphenationSignature = "";
+
+export function setActiveHyphenation(
+  options: HyphenationLayoutOptions | undefined,
+): void {
+  activeHyphenation = options?.enabled ? options : undefined;
+  activeHyphenationSignature = activeHyphenation
+    ? `h:${activeHyphenation.zone ?? ""}:${
+        activeHyphenation.consecutiveLimit ?? ""
+      }:${activeHyphenation.doNotHyphenateCaps ? 1 : 0}`
+    : "";
+}
 
 function paragraphStyleComparableKey(
   style: Required<EditorParagraphStyle>,
@@ -149,7 +171,7 @@ export function projectParagraphLayout(
     getParagraphFieldDependence(paragraph);
   const cacheKey = `${dependsOnPageIndex ? (pageIndex ?? "") : ""}:${
     dependsOnTotalPages ? (totalPages ?? "") : ""
-  }:${contentWidth ?? ""}:${defaultTabStop ?? ""}`;
+  }:${contentWidth ?? ""}:${defaultTabStop ?? ""}:${activeHyphenationSignature}`;
   let cacheForParagraph = paragraphLayoutCache.get(paragraph);
   if (cacheForParagraph) {
     const cached = cacheForParagraph.get(cacheKey);
@@ -215,6 +237,7 @@ export function projectParagraphLayout(
           styles,
           contentWidth,
           defaultTabStop,
+          hyphenation: activeHyphenation,
         })
         .map((line) => ({
           ...line,

@@ -495,6 +495,51 @@ export function drawParagraph(
       ctx.restore();
     }
 
+    // Automatic hyphenation: draw a trailing hyphen past the last character,
+    // using the last text fragment's style. It is render-only (no caret slot).
+    if (line.trailingHyphen) {
+      const lastFragment = [...line.fragments]
+        .reverse()
+        .find(
+          (fragment) => fragment.text && !fragment.image && !fragment.textBox,
+        );
+      const endSlot =
+        slotByOffset.get(line.endOffset) ?? line.slots[line.slots.length - 1];
+      if (lastFragment && endSlot) {
+        const styles = resolveEffectiveTextStyleForParagraph(
+          lastFragment.styles,
+          paragraph.style?.styleId,
+          state.document.styles,
+        );
+        if (!styles.hidden) {
+          const fontSize = styles.fontSize ?? 14.6667;
+          const fontFamily = resolveCanvasFontFamily(styles.fontFamily);
+          const fontWeight = styles.bold ? "700" : "400";
+          const fontStyle = styles.italic ? "italic" : "normal";
+          const renderMetrics = resolveCanvasTextRenderMetrics(
+            styles,
+            fontSize,
+          );
+          const scale =
+            styles.characterScale && styles.characterScale > 0
+              ? styles.characterScale / 100
+              : 1;
+          ctx.save();
+          ctx.font = `${fontStyle} ${fontWeight} ${renderMetrics.fontSize}px ${fontFamily}`;
+          ctx.fillStyle = styles.color ?? "#000000";
+          drawStyledText(
+            ctx,
+            "-",
+            originX + endSlot.left,
+            baselineY + renderMetrics.baselineOffset,
+            scale,
+            styles,
+          );
+          ctx.restore();
+        }
+      }
+    }
+
     const isLastLine = line.index === lines.length - 1;
     if (state.showParagraphMarks && isLastLine) {
       const lastSlot = line.slots[line.slots.length - 1];
