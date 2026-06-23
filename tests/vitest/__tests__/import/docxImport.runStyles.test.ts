@@ -551,6 +551,85 @@ describe("DOCX run style import", () => {
     expect(run.styles?.bold).not.toBe(true);
   });
 
+  it("imports and round-trips all five w14 OpenType font features", async () => {
+    const zip = new JSZip();
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:rPr>
+          <w14:ligatures w14:val="standard"/>
+          <w14:numForm w14:val="lining"/>
+          <w14:numSpacing w14:val="proportional"/>
+          <w14:stylisticSets w14:val="1"/>
+          <w14:cntxtAlts w14:val="1"/>
+        </w:rPr>
+        <w:t>OpenType features</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="12240" w:h="15840"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const run = getDocumentParagraphs(document)[0]!.runs[0]!;
+
+    expect(run.styles?.ligatures).toBe("standard");
+    expect(run.styles?.numberForm).toBe("lining");
+    expect(run.styles?.numberSpacing).toBe("proportional");
+    expect(run.styles?.stylisticSet).toBe(1);
+    expect(run.styles?.contextualAlternates).toBe(true);
+
+    const reexportedZip = await JSZip.loadAsync(
+      await exportEditorDocumentToDocx(document),
+    );
+    const reexported = await reexportedZip
+      .file("word/document.xml")
+      ?.async("string");
+    expect(reexported).toContain('<w14:ligatures w14:val="standard"/>');
+    expect(reexported).toContain('<w14:numForm w14:val="lining"/>');
+    expect(reexported).toContain('<w14:numSpacing w14:val="proportional"/>');
+    // stylisticSet 1 is serialised as a bitmask: bit 0 set = 0x00000001
+    expect(reexported).toContain('<w14:stylisticSets w14:val="00000001"/>');
+    expect(reexported).toContain('<w14:cntxtAlts w14:val="1"/>');
+  });
+
+  it("imports all ligature enum values for w14:ligatures", async () => {
+    async function importLigatures(val: string) {
+      const zip = new JSZip();
+      zip.file(
+        "word/document.xml",
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml">
+  <w:body>
+    <w:p><w:r><w:rPr><w14:ligatures w14:val="${val}"/></w:rPr><w:t>x</w:t></w:r></w:p>
+    <w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>
+  </w:body>
+</w:document>`,
+      );
+      const doc = await importDocxToEditorDocument(
+        await zip.generateAsync({ type: "arraybuffer" }),
+      );
+      return getDocumentParagraphs(doc)[0]!.runs[0]!.styles?.ligatures;
+    }
+
+    expect(await importLigatures("none")).toBe("none");
+    expect(await importLigatures("contextual")).toBe("contextual");
+    expect(await importLigatures("historical")).toBe("historical");
+    expect(await importLigatures("standardContextual")).toBe(
+      "standardContextual",
+    );
+  });
+
   it("preserves mixed Times New Roman and Calibri theme fonts in the complex document", async () => {
     const document = await importComplexDocument();
     const paragraphs = getDocumentParagraphs(document);
