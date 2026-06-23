@@ -9,7 +9,10 @@ import {
 } from "@/core/editorState.js";
 import { isInlineObjectRun } from "@/core/model.js";
 import { cloneParagraph, cloneParagraphList } from "./clone.js";
-import { cloneStyle, stylesEqual } from "@/core/textStyle/textStyleMutations.js";
+import {
+  cloneStyle,
+  stylesEqual,
+} from "@/core/textStyle/textStyleMutations.js";
 
 export function normalizeRuns(
   runs: EditorTextRun[],

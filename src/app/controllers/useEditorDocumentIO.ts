@@ -1,7 +1,6 @@
 import type { MergeKey } from "@/core/transactionMergeKeys.js";
 import { createSignal } from "solid-js";
 import type { EditorState, EditorPosition } from "@/core/model.js";
-import type { ImportStage } from "@/import/DocumentFormatImporter.js";
 import type { EditorLogger } from "@/utils/logger.js";
 import { createDocumentExporter } from "./documentIO/DocumentExporter.js";
 import { createDocumentImporter } from "./documentIO/DocumentImporter.js";

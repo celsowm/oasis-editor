@@ -205,7 +205,11 @@ export function createEditorTextDrag(deps: EditorTextDragDeps) {
           deps.applyTableAwareParagraphEdit(current, (temp) =>
             moveOrCopySelectionToPosition(temp, destination, { copy }),
           ),
-        { mergeKey: copy ? MERGE_KEYS.copyTextByDrag : MERGE_KEYS.moveTextByDrag },
+        {
+          mergeKey: copy
+            ? MERGE_KEYS.copyTextByDrag
+            : MERGE_KEYS.moveTextByDrag,
+        },
       );
       deps.logger?.info("text-drag:apply", {
         mode: copy ? "copy" : "move",

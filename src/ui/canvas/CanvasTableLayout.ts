@@ -15,6 +15,7 @@ import {
 } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { projectParagraphLayout } from "@/layoutProjection/index.js";
+import { shouldCollapseContextualSpacing } from "@/layoutProjection/paragraphPagination.js";
 import { PX_PER_POINT as POINT_TO_PX } from "@/core/units.js";
 import {
   estimateStackedColumnWidth,
@@ -78,6 +79,67 @@ export function resolveCanvasTableWidth(
 function resolveTableIndentLeft(table: EditorTableNode): number {
   const raw = table.style?.indentLeft;
   return typeof raw === "number" && Number.isFinite(raw) ? toPx(raw) : 0;
+}
+
+/**
+ * `w:tblCellSpacing` resolved to pixels. Word separates adjacent cells (and the
+ * outer cells from the table edge) by this much, with the table background
+ * showing through the gaps. Returns 0 when unset, which makes the spacing-aware
+ * geometry below collapse to the original gap-free layout.
+ */
+function resolveTableCellSpacingPx(table: EditorTableNode): number {
+  const px = parseDimensionToPx(table.style?.cellSpacing);
+  return px !== null && px > 0 ? px : 0;
+}
+
+/** Horizontal extent of a single laid-out line, from its first to last caret. */
+function lineNaturalWidth(
+  line: ReturnType<typeof projectParagraphLayout>["lines"][number],
+): number {
+  if (line.slots.length < 2) return 0;
+  return line.slots[line.slots.length - 1]!.left - line.slots[0]!.left;
+}
+
+/**
+ * Folds a `characterScale` (percent) into every run of `paragraph`, multiplying
+ * any scale a run already carries. Used to compress/expand `w:tcFitText` cell
+ * text horizontally so a single line fills the cell's content width.
+ */
+function applyFitTextScale(
+  paragraph: EditorParagraphNode,
+  scalePercent: number,
+): EditorParagraphNode {
+  return {
+    ...paragraph,
+    runs: paragraph.runs.map((run) => {
+      const existing = run.styles?.characterScale;
+      const combined =
+        typeof existing === "number" && existing > 0
+          ? (existing * scalePercent) / 100
+          : scalePercent;
+      return { ...run, styles: { ...run.styles, characterScale: combined } };
+    }),
+  };
+}
+
+/**
+ * Horizontal offset of the table's left edge from the content origin, honoring
+ * `w:jc` (`table.style.align`). Centering/right-alignment only shifts the table
+ * when it is narrower than the available content width; a full-width table has
+ * no slack to move into. `left` (the default) keeps the table at the leading
+ * indent.
+ */
+function resolveTableLeftOffset(
+  table: EditorTableNode,
+  tableWidth: number,
+  contentWidth: number,
+): number {
+  const align = table.style?.align;
+  if (align === "center" || align === "right") {
+    const slack = Math.max(0, contentWidth - tableWidth);
+    return align === "center" ? slack / 2 : slack;
+  }
+  return resolveTableIndentLeft(table);
 }
 
 export type CanvasUnsupportedReason =
@@ -271,7 +333,9 @@ export function buildCanvasTableLayout(options: {
     style: resolveEffectiveTableStyle(sourceTable, state.document.styles),
   };
   const tableWidth = resolveCanvasTableWidth(table, contentWidth);
-  const tableLeft = originX + resolveTableIndentLeft(table);
+  const tableLeft =
+    originX + resolveTableLeftOffset(table, tableWidth, contentWidth);
+  const cellSpacingPx = resolveTableCellSpacingPx(table);
   const tableEntries = buildTableCellLayout(table);
   const unsupported: CanvasUnsupportedReason[] = [];
   const visualColumnCount = Math.max(
@@ -281,14 +345,22 @@ export function buildCanvasTableLayout(options: {
     ),
   );
 
+  // Cell spacing is carved out of the table width: the gaps before/between/after
+  // the columns consume `(columns + 1) * spacing`, so the columns themselves are
+  // scaled to fit the remaining budget. With spacing 0 this equals `tableWidth`.
+  const columnsWidthBudget = Math.max(
+    visualColumnCount,
+    tableWidth - (visualColumnCount + 1) * cellSpacingPx,
+  );
+
   let resolvedColumnWidths: number[] = [];
   if (table.gridCols && table.gridCols.length >= visualColumnCount) {
     const gridTotalWidth = table.gridCols.reduce((a, b) => a + b, 0);
     // If table has a specific width (e.g. 100%), scale the grid columns to fit
-    const scale = gridTotalWidth > 0 ? tableWidth / gridTotalWidth : 1;
+    const scale = gridTotalWidth > 0 ? columnsWidthBudget / gridTotalWidth : 1;
     resolvedColumnWidths = table.gridCols.map((w) => w * scale);
   } else {
-    const baseCellWidth = tableWidth / visualColumnCount;
+    const baseCellWidth = columnsWidthBudget / visualColumnCount;
     resolvedColumnWidths = Array(visualColumnCount).fill(baseCellWidth);
     // Without an explicit grid, grow any column that holds a stacked (upright)
     // cell so a single vertical column of glyphs is not clipped. Rotated cells
@@ -320,9 +392,14 @@ export function buildCanvasTableLayout(options: {
     }
   }
 
-  const columnOffsets: number[] = [0];
+  // Column boundaries include the inter-cell gaps: each entry is the left edge
+  // of a cell box, so a cell's width is `columnOffsets[end] - columnOffsets[start]
+  // - cellSpacingPx` (the trailing gap is excluded below). Leading entry is the
+  // outer gap. With spacing 0 this is the original gap-free offset table.
+  const columnOffsets: number[] = [cellSpacingPx];
   for (let i = 0; i < resolvedColumnWidths.length; i++) {
-    columnOffsets[i + 1] = columnOffsets[i]! + resolvedColumnWidths[i]!;
+    columnOffsets[i + 1] =
+      columnOffsets[i]! + resolvedColumnWidths[i]! + cellSpacingPx;
   }
 
   // ---------------------------------------------------------------------------
@@ -378,8 +455,18 @@ export function buildCanvasTableLayout(options: {
     if (effectiveRowStyles[rowIndex]?.hidden) {
       continue;
     }
+    // `w:del` in `w:trPr`: row was deleted in tracked changes; final/accepted
+    // view omits it just like a hidden row.
+    if (effectiveRowStyles[rowIndex]?.revision?.type === "delete") {
+      continue;
+    }
     for (let cellIndex = 0; cellIndex < row.cells.length; cellIndex += 1) {
       const sourceCell = row.cells[cellIndex]!;
+      // `w:cellDel` in `w:tcPr`: cell was deleted in tracked changes; the
+      // adjacent cell's gridSpan already covers this column in the final doc.
+      if (sourceCell.style?.revision?.type === "delete") {
+        continue;
+      }
       const entry = cellEntriesByKey.get(`${rowIndex}:${cellIndex}`);
       if (!entry) {
         continue;
@@ -428,7 +515,8 @@ export function buildCanvasTableLayout(options: {
       const width = Math.max(
         1,
         (columnOffsets[visualCol + colSpan] ?? tableWidth) -
-          (columnOffsets[visualCol] ?? 0),
+          (columnOffsets[visualCol] ?? 0) -
+          cellSpacingPx,
       );
 
       const padding = resolveCellPadding(cell);
@@ -472,6 +560,9 @@ export function buildCanvasTableLayout(options: {
       const isRotated =
         verticalMode === "rotate-cw" || verticalMode === "rotate-ccw";
       const isStacked = verticalMode === "stack";
+      // `w:tcFitText`: horizontally compress/expand the cell's text onto a single
+      // line so it exactly fills the content width (handled per paragraph below).
+      const isFitText = !!cell.style?.fitText && !isRotated && !isStacked;
 
       // For rotated cells, text flows along the cell's vertical (long) axis, so
       // wrap against the available content height rather than the column width.
@@ -497,7 +588,34 @@ export function buildCanvasTableLayout(options: {
       const projectedParagraphs: PreparedCell["projectedParagraphs"] = [];
       let contentNaturalHeightPx = 0;
       for (const original of cell.blocks) {
-        const paragraph = fitImagesToCellWidth(original, contentWidthPx);
+        let paragraph = fitImagesToCellWidth(original, contentWidthPx);
+
+        // `w:tcFitText`: project the paragraph at an unbounded width to measure
+        // its natural single-line extent, then fold a `characterScale` into each
+        // run so the text exactly fills the cell content width when re-projected.
+        if (isFitText) {
+          const noWrapProjected = projectParagraphLayout(
+            paragraph,
+            pageIndex,
+            undefined,
+            state.document.styles,
+            NO_WRAP_WIDTH_PX,
+            undefined,
+            state.document.settings?.defaultTabStop,
+          );
+          const naturalWidth =
+            noWrapProjected.lines.length > 0
+              ? lineNaturalWidth(noWrapProjected.lines[0]!)
+              : 0;
+          if (naturalWidth > 0 && contentWidthPx > 0) {
+            const scalePercent = Math.max(
+              1,
+              Math.min(600, (contentWidthPx / naturalWidth) * 100),
+            );
+            paragraph = applyFitTextScale(paragraph, scalePercent);
+          }
+        }
+
         const paragraphStyle = resolveEffectiveParagraphStyle(
           paragraph.style,
           state.document.styles,
@@ -546,17 +664,37 @@ export function buildCanvasTableLayout(options: {
         let effectiveSpacingBefore = spacingBefore;
         if (!isRotated && projectedParagraphs.length > 0) {
           const previous = projectedParagraphs[projectedParagraphs.length - 1]!;
-          const collapsed = Math.min(previous.spacingAfter, spacingBefore);
-          if (collapsed > 0) {
-            if (previous.spacingAfter >= spacingBefore) {
-              effectiveSpacingBefore = 0;
-            } else {
-              const previousHeight = previous.height;
-              previous.height = Math.max(1, previous.height - collapsed);
-              contentNaturalHeightPx = Math.max(
-                0,
-                contentNaturalHeightPx - (previousHeight - previous.height),
-              );
+          // w:allowSpaceOfSameStyleInTable: contextual spacing suppresses spacing
+          // between adjacent same-style paragraphs inside cells when enabled.
+          if (
+            state.document.settings?.allowSpaceOfSameStyleInTable &&
+            shouldCollapseContextualSpacing(
+              previous.paragraph,
+              paragraph,
+              state.document.styles,
+            )
+          ) {
+            const removedAfter = previous.spacingAfter;
+            previous.height = Math.max(1, previous.height - removedAfter);
+            previous.spacingAfter = 0;
+            contentNaturalHeightPx = Math.max(
+              0,
+              contentNaturalHeightPx - removedAfter,
+            );
+            effectiveSpacingBefore = 0;
+          } else {
+            const collapsed = Math.min(previous.spacingAfter, spacingBefore);
+            if (collapsed > 0) {
+              if (previous.spacingAfter >= spacingBefore) {
+                effectiveSpacingBefore = 0;
+              } else {
+                const previousHeight = previous.height;
+                previous.height = Math.max(1, previous.height - collapsed);
+                contentNaturalHeightPx = Math.max(
+                  0,
+                  contentNaturalHeightPx - (previousHeight - previous.height),
+                );
+              }
             }
           }
         }
@@ -602,6 +740,22 @@ export function buildCanvasTableLayout(options: {
         }
       }
 
+      // `w:hideMark`: when the cell contains only empty paragraphs (no visible
+      // text, images, or other inline content), the trailing paragraph mark is
+      // hidden and the cell contributes zero height to the row minimum.
+      if (cell.style?.hideMark) {
+        const allEmpty = cell.blocks.every((para) =>
+          para.runs.every(
+            (run) =>
+              (run.kind === "text" || run.kind === undefined) &&
+              (!run.text || run.text.length === 0),
+          ),
+        );
+        if (allEmpty) {
+          contentNaturalHeightPx = 0;
+        }
+      }
+
       prepared.push({
         rowIndex,
         cellIndex,
@@ -631,7 +785,7 @@ export function buildCanvasTableLayout(options: {
   const explicitRowHeights = table.rows.map((row) => {
     const rowIndex = table.rows.indexOf(row);
     const effective = effectiveRowStyles[rowIndex];
-    if (effective?.hidden) {
+    if (effective?.hidden || effective?.revision?.type === "delete") {
       return 0;
     }
     const explicit = parseDimensionToPx(effective?.height);
@@ -642,7 +796,10 @@ export function buildCanvasTableLayout(options: {
 
   const rowHeights: number[] = [];
   for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
-    if (effectiveRowStyles[rowIndex]?.hidden) {
+    if (
+      effectiveRowStyles[rowIndex]?.hidden ||
+      effectiveRowStyles[rowIndex]?.revision?.type === "delete"
+    ) {
       rowHeights[rowIndex] = 0;
       continue;
     }
@@ -669,11 +826,15 @@ export function buildCanvasTableLayout(options: {
     rowHeights[rowIndex] = Math.max(baseFloor, measured, 1);
   }
 
+  // Vertical cell spacing mirrors the horizontal gaps: a leading gap, one gap
+  // between rows, and a trailing gap (added to the total height below). With
+  // spacing 0 the offsets are unchanged.
   const rowOffsets: number[] = [];
-  let cumulativeY = 0;
+  let cumulativeY = cellSpacingPx;
   for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex += 1) {
     rowOffsets[rowIndex] = cumulativeY;
-    cumulativeY += rowHeights[rowIndex] ?? DEFAULT_TABLE_ROW_HEIGHT;
+    cumulativeY +=
+      (rowHeights[rowIndex] ?? DEFAULT_TABLE_ROW_HEIGHT) + cellSpacingPx;
   }
 
   // ---------------------------------------------------------------------------
@@ -695,11 +856,13 @@ export function buildCanvasTableLayout(options: {
 
     const left = tableLeft + (columnOffsets[visualCol] ?? 0);
     const top = originY + (rowOffsets[rowIndex] ?? 0);
+    // A row-spanning cell also covers the inter-row gaps it crosses.
     const height = Math.max(
       1,
       rowHeights
         .slice(rowIndex, rowIndex + rowSpan)
-        .reduce((sum, current) => sum + current, 0),
+        .reduce((sum, current) => sum + current, 0) +
+        (rowSpan - 1) * cellSpacingPx,
     );
 
     const contentLeft = left + borders.left.width + padding.left;
@@ -784,7 +947,10 @@ export function buildCanvasTableLayout(options: {
     left: tableLeft,
     top: originY,
     width: tableWidth,
-    height: rowHeights.reduce((sum, current) => sum + current, 0),
+    // Total height includes the leading/trailing/inter-row cell-spacing gaps.
+    height:
+      rowHeights.reduce((sum, current) => sum + current, 0) +
+      (rowHeights.length + 1) * cellSpacingPx,
     rowHeights,
     cells,
     unsupported: Array.from(new Set(unsupported)),

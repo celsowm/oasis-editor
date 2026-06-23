@@ -1,6 +1,5 @@
 import type { EditorEditingZone, EditorTextBoxData } from "@/core/model.js";
 import { EMU_PER_PX } from "@/core/units.js";
-import { layoutStackedGlyphs } from "./verticalText.js";
 import type {
   CanvasSnapshotFloatingImage,
   CanvasSnapshotFloatingTextBox,

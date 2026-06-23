@@ -1,6 +1,9 @@
 import type { TranslateFn } from "@/i18n/index.js";
 import type { CommandBus } from "@/core/commands/CommandBus.js";
-import type { ToolbarActionApi, ToolbarCommandState } from "@/ui/components/Toolbar/schema/items.js";
+import type {
+  ToolbarActionApi,
+  ToolbarCommandState,
+} from "@/ui/components/Toolbar/schema/items.js";
 
 /**
  * Narrow host the toolbar needs from its embedding editor: nothing but the

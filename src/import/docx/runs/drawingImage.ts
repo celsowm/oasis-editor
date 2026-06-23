@@ -5,7 +5,10 @@ import type {
   EditorImageFloatingLayout,
   EditorImageFloatingPosition,
 } from "@/core/model.js";
-import { getAttributeValue, findElementDeep } from "@/import/docx/xmlHelpers.js";
+import {
+  getAttributeValue,
+  findElementDeep,
+} from "@/import/docx/xmlHelpers.js";
 import { type AssetRegistry } from "@/import/docx/assetRegistry.js";
 import {
   EMU_PER_PX,

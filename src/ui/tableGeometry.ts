@@ -47,13 +47,13 @@ function resolveHorizontalCellPaddingPx(cell: EditorTableCellNode): number {
       ? toPx(cell.style.paddingLeft)
       : cell.style?.paddingStart !== undefined
         ? toPx(cell.style.paddingStart)
-      : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
+        : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
   const right =
     cell.style?.paddingRight !== undefined
       ? toPx(cell.style.paddingRight)
       : cell.style?.paddingEnd !== undefined
         ? toPx(cell.style.paddingEnd)
-      : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
+        : DEFAULT_CELL_PADDING_LEFT_RIGHT_PX;
   return Math.max(0, left + right);
 }
 

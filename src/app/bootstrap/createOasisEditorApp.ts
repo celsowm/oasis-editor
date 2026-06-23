@@ -14,7 +14,8 @@ export function createOasisEditor(
 ): OasisEditorInstance {
   const client = createOasisEditorClient();
   const dispose = render(
-    () => OasisEditorAppLazy({ ...props, runtime: { ...props.runtime, client } }),
+    () =>
+      OasisEditorAppLazy({ ...props, runtime: { ...props.runtime, client } }),
     container,
   );
   client.setDispose(() => {

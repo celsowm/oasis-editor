@@ -139,19 +139,16 @@ function createHeaderFooterVariantProjector(context: SectionPaginationContext) {
     totalPageCount?: number,
   ) =>
     blocks
-      ? context.projectHeaderFooterBlocks(
-          blocks,
-          {
-            pageIndex,
-            totalPages: totalPageCount,
-            measuredHeights: context.measuredHeights,
-            measuredParagraphLayouts: context.measuredParagraphLayouts,
-            styles: context.documentStyles,
-            contentWidth,
-            measurer: context.measurer,
-            defaultTabStop: context.defaultTabStop,
-          },
-        )
+      ? context.projectHeaderFooterBlocks(blocks, {
+          pageIndex,
+          totalPages: totalPageCount,
+          measuredHeights: context.measuredHeights,
+          measuredParagraphLayouts: context.measuredParagraphLayouts,
+          styles: context.documentStyles,
+          contentWidth,
+          measurer: context.measurer,
+          defaultTabStop: context.defaultTabStop,
+        })
       : undefined;
 }
 

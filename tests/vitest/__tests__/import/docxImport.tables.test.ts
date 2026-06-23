@@ -96,6 +96,35 @@ describe("DOCX table import", () => {
     expect(layout.pages[1]!.blocks[0]?.sourceBlockId).toBe(table.id);
   });
 
+  it("collapses legacy w:hMerge runs into the anchor cell colspan", async () => {
+    const zip = new JSZip();
+    const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tblGrid><w:gridCol w:w="2000"/><w:gridCol w:w="2000"/><w:gridCol w:w="2000"/></w:tblGrid>
+      <w:tr>
+        <w:tc><w:tcPr><w:hMerge w:val="restart"/></w:tcPr><w:p><w:r><w:t>Merged</w:t></w:r></w:p></w:tc>
+        <w:tc><w:tcPr><w:hMerge/></w:tcPr><w:p><w:r><w:t>ghost</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>Last</w:t></w:r></w:p></w:tc>
+      </w:tr>
+    </w:tbl>
+  </w:body>
+</w:document>`;
+    zip.file("word/document.xml", documentXml);
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const table = getDocumentTables(document)[0]!;
+    const row = table.rows[0]!;
+
+    // The `continue` cell is absorbed, leaving two cells: the anchor (colSpan 2)
+    // and the trailing standalone cell.
+    expect(row.cells).toHaveLength(2);
+    expect(row.cells[0]!.colSpan).toBe(2);
+    expect(row.cells[1]!.colSpan ?? 1).toBe(1);
+  });
+
   it("preserves complex document table cell shading, widths, and cell font sizes", async () => {
     const document = await importComplexDocument();
     const tables = getDocumentTables(document);
@@ -622,8 +651,8 @@ describe("DOCX table property round-trip", () => {
     expect(row.style?.height).toBe(24);
     expect(row.style?.heightRule).toBe("exact");
     expect(row.isHeader).toBe(true);
-    expect(row.tblPrExXml).toContain("tblPrEx");
-    expect(row.tblPrExXml).toContain("tblCellSpacing");
+    expect(row.propertyExceptions?.cellSpacing).toBe(4);
+    expect(row.propertyExceptions?.layout).toBe("fixed");
 
     expect(table.rows[1]!.style?.widthBefore).toBe("auto");
   });
@@ -1047,5 +1076,53 @@ describe("table style conditional formatting", () => {
     expect(effective(2, 0).cellStyle.shading).toBeUndefined();
     // First column still bold across body rows.
     expect(effective(2, 0).textStyle?.bold).toBe(true);
+  });
+
+  it("imports and round-trips row-level w:jc (including start/end normalization)", async () => {
+    const zip = new JSZip();
+    const WORD_NS =
+      "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+    zip.file(
+      "word/document.xml",
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="${WORD_NS}">
+  <w:body>
+    <w:tbl>
+      <w:tblPr><w:tblW w:w="4000" w:type="dxa"/></w:tblPr>
+      <w:tblGrid><w:gridCol w:w="4000"/></w:tblGrid>
+      <w:tr>
+        <w:trPr><w:jc w:val="center"/></w:trPr>
+        <w:tc><w:p><w:r><w:t>Center</w:t></w:r></w:p></w:tc>
+      </w:tr>
+      <w:tr>
+        <w:trPr><w:jc w:val="end"/></w:trPr>
+        <w:tc><w:p><w:r><w:t>End (right)</w:t></w:r></w:p></w:tc>
+      </w:tr>
+      <w:tr>
+        <w:trPr><w:jc w:val="start"/></w:trPr>
+        <w:tc><w:p><w:r><w:t>Start (left)</w:t></w:r></w:p></w:tc>
+      </w:tr>
+    </w:tbl>
+    <w:sectPr><w:pgSz w:w="12240" w:h="15840"/>
+    <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>
+  </w:body>
+</w:document>`,
+    );
+    const document = await importDocxToEditorDocument(
+      await zip.generateAsync({ type: "arraybuffer" }),
+    );
+    const table = getDocumentTables(document)[0]!;
+
+    expect(table.rows[0]!.style?.align).toBe("center");
+    // `end` → right, `start` → left
+    expect(table.rows[1]!.style?.align).toBe("right");
+    expect(table.rows[2]!.style?.align).toBe("left");
+
+    // Round-trip: export and re-import should preserve the alignment.
+    const exported = await exportEditorDocumentToDocx(document);
+    const exportedXml = await readExportedDocumentXml(exported);
+    expect(exportedXml).toContain(`<w:jc w:val="center"/>`);
+    expect(exportedXml).toContain(`<w:jc w:val="right"/>`);
+    expect(exportedXml).toContain(`<w:jc w:val="left"/>`);
   });
 });

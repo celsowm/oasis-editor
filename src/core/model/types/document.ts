@@ -100,6 +100,8 @@ export interface EditorDocument {
   styles?: Record<string, EditorNamedStyle>;
   settings?: {
     defaultTabStop?: number;
+    /** `w:allowSpaceOfSameStyleInTable`: contextual spacing applies in table cells. */
+    allowSpaceOfSameStyleInTable?: boolean;
   };
   /**
    * Out-of-band asset registry. Image runs reference entries here using

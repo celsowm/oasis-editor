@@ -1,14 +1,10 @@
 import type {
   EditorNamedStyle,
+  EditorTableCellStyle,
   EditorTableConditionalFormat,
   EditorTableStyle,
 } from "@/core/model.js";
-import {
-  escapeXml,
-  normalizeDocxColor,
-  pointsToTwips,
-  WORD14_NS,
-} from "./xmlUtils.js";
+import { escapeXml, pointsToTwips, WORD14_NS } from "./xmlUtils.js";
 import { serializeDocxBorderAttrs } from "./borders.js";
 import { serializeParagraphStyleXml } from "./text/paragraphPropertiesXml.js";
 import { serializeRunProperties } from "./text/runPropertiesXml.js";
@@ -37,35 +33,33 @@ const CONDITIONAL_TYPE_ORDER = [
 ];
 
 function serializeConditionalTcPr(cond: EditorTableConditionalFormat): string {
-  if (cond.cellStyle) {
-    return serializeTableCellStyleXml(cond.cellStyle);
-  }
-  const parts: string[] = [];
-  if (cond.borders) {
-    const b = cond.borders;
-    const edges: Array<[string, typeof b.borderTop]> = [
-      ["top", b.borderTop],
-      ["left", b.borderLeft],
-      ["bottom", b.borderBottom],
-      ["right", b.borderRight],
-    ];
-    const borderXml = edges
-      .filter(
-        (entry): entry is [string, NonNullable<typeof b.borderTop>] =>
-          entry[1] != null,
-      )
-      .map(([name, border]) => `<w:${name} ${serializeDocxBorderAttrs(border)}`)
-      .join("");
-    if (borderXml) {
-      parts.push(`<w:tcBorders>${borderXml}</w:tcBorders>`);
-    }
-  }
-  if (cond.shading) {
-    parts.push(
-      `<w:shd w:val="clear" w:color="auto" w:fill="${normalizeDocxColor(cond.shading, "FFFFFF")}"/>`,
-    );
-  }
-  return parts.length > 0 ? `<w:tcPr>${parts.join("")}</w:tcPr>` : "";
+  // The conditional's full cell properties (`cellStyle`) take precedence, but
+  // `shading` and `borders` may be carried separately on the conditional (they
+  // are parsed from `w:shd`/`w:tcBorders` independently of the full `w:tcPr`).
+  // Fold them in as fallbacks so they are never dropped when a cellStyle exists.
+  const cellStyle: EditorTableCellStyle = {
+    ...(cond.borders
+      ? {
+          ...(cond.borders.borderTop
+            ? { borderTop: cond.borders.borderTop }
+            : {}),
+          ...(cond.borders.borderLeft
+            ? { borderLeft: cond.borders.borderLeft }
+            : {}),
+          ...(cond.borders.borderBottom
+            ? { borderBottom: cond.borders.borderBottom }
+            : {}),
+          ...(cond.borders.borderRight
+            ? { borderRight: cond.borders.borderRight }
+            : {}),
+        }
+      : {}),
+    ...(cond.shading ? { shading: cond.shading } : {}),
+    ...cond.cellStyle,
+  };
+  return Object.keys(cellStyle).length > 0
+    ? serializeTableCellStyleXml(cellStyle)
+    : "";
 }
 
 function serializeWidthElement(

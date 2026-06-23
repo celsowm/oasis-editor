@@ -22,9 +22,7 @@ export const IMAGE_CAPTION_STYLE_ID = "Caption";
 export const IMAGE_CAPTION_FIELD_IDENTIFIER = "Figure";
 export const IMAGE_CAPTION_FIELD_INSTRUCTION = " SEQ Figure \\* ARABIC ";
 
-function createFieldCharRun(
-  kind: "begin" | "separate" | "end",
-): EditorTextRun {
+function createFieldCharRun(kind: "begin" | "separate" | "end"): EditorTextRun {
   return {
     id: createEditorRun("").id,
     text: "",

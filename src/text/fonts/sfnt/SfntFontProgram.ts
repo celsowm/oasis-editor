@@ -9,7 +9,10 @@ import {
   parseMaxpNumGlyphs,
   parseOs2VerticalMetrics,
 } from "@/text/truetype/tableParsers.js";
-import type { FontMetadata, ParsedFontProgram } from "@/text/fonts/core/types.js";
+import type {
+  FontMetadata,
+  ParsedFontProgram,
+} from "@/text/fonts/core/types.js";
 
 function readSignedFixed16_16(reader: BinaryReader, offset: number): number {
   const integer = reader.u16At(offset);

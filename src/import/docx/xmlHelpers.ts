@@ -7,6 +7,8 @@ export const DRAWINGML_NS =
 export const OFFICE_REL_NS =
   "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 export const WORD14_NS = "http://schemas.microsoft.com/office/word/2010/wordml";
+const MARKUP_COMPAT_NS =
+  "http://schemas.openxmlformats.org/markup-compatibility/2006";
 
 export function getChildrenByTagNameNS(
   element: XmlElement | null | undefined,
@@ -20,12 +22,32 @@ export function getChildrenByTagNameNS(
   const result: XmlElement[] = [];
   for (let index = 0; index < element.childNodes.length; index += 1) {
     const node = element.childNodes[index];
+    if (node?.nodeType !== node.ELEMENT_NODE) continue;
+    const el = node as XmlElement;
+
+    // mc:AlternateContent: select the mc:Fallback child so that versioned
+    // extension blocks degrade transparently to their standard fallback.
     if (
-      node?.nodeType === node.ELEMENT_NODE &&
-      (node as XmlElement).namespaceURI === namespace &&
-      (node as XmlElement).localName === localName
+      el.namespaceURI === MARKUP_COMPAT_NS &&
+      el.localName === "AlternateContent"
     ) {
-      result.push(node as XmlElement);
+      for (let j = 0; j < el.childNodes.length; j += 1) {
+        const child = el.childNodes[j];
+        if (child?.nodeType !== child.ELEMENT_NODE) continue;
+        const childEl = child as XmlElement;
+        if (
+          childEl.namespaceURI === MARKUP_COMPAT_NS &&
+          childEl.localName === "Fallback"
+        ) {
+          result.push(...getChildrenByTagNameNS(childEl, namespace, localName));
+          break;
+        }
+      }
+      continue;
+    }
+
+    if (el.namespaceURI === namespace && el.localName === localName) {
+      result.push(el);
     }
   }
   return result;
@@ -88,6 +110,27 @@ export function findElementDeep(
     }
   }
   return null;
+}
+
+/**
+ * Collects non-WORD_NS extension attributes (e.g. `w14:paraId`, `w15:*`) from
+ * a table/row/cell element for round-trip preservation.
+ */
+export function collectExtAttributes(
+  element: XmlElement,
+): Record<string, string> | undefined {
+  const result: Record<string, string> = {};
+  const attrs = element.attributes;
+  for (let i = 0; i < attrs.length; i += 1) {
+    const attr = attrs[i];
+    if (!attr) continue;
+    const ns = attr.namespaceURI;
+    if (!ns || ns === WORD_NS) continue;
+    // Skip namespace declarations and markup-compat attributes
+    if (attr.prefix === "xmlns" || attr.localName === "xmlns") continue;
+    result[`${attr.prefix}:${attr.localName}`] = attr.value;
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
 }
 
 export function isWordTrue(value: string | null | undefined): boolean {

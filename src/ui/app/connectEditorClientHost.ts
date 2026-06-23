@@ -1,7 +1,4 @@
-import type {
-  EditorDocument,
-  EditorState,
-} from "@/core/model.js";
+import type { EditorDocument, EditorState } from "@/core/model.js";
 import {
   createEditorStateFromDocument,
   createInitialEditorState,
@@ -49,8 +46,7 @@ export function connectEditorClientHost(
   const snapshot = () => deps.cloneState(deps.getStateSnapshot());
 
   controller.connectHost({
-    getRuntimeEditor: () =>
-      deps.runtimeReady() ? deps.runtimeEditor() : null,
+    getRuntimeEditor: () => (deps.runtimeReady() ? deps.runtimeEditor() : null),
     getState: () => snapshot(),
     getDocument: () => snapshot().document,
     setDocument: (document) => {

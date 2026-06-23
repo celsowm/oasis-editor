@@ -112,10 +112,12 @@ export function createEditorLayoutOptionsController(
       }
     },
     setFixedPosition: (fixed: boolean) =>
-      applyLayoutOptionPatch(MERGE_KEYS.layoutFixedPosition, (current, target) =>
-        target === "image"
-          ? setSelectedImageFixedPosition(current, fixed)
-          : setSelectedTextBoxFixedPosition(current, fixed),
+      applyLayoutOptionPatch(
+        MERGE_KEYS.layoutFixedPosition,
+        (current, target) =>
+          target === "image"
+            ? setSelectedImageFixedPosition(current, fixed)
+            : setSelectedTextBoxFixedPosition(current, fixed),
       ),
   };
 }

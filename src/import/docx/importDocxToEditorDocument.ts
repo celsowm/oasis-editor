@@ -433,6 +433,12 @@ export async function importDocxToEditorDocument(
         defaultTabStop: docSettings.defaultTabStop,
       };
     }
+    if (docSettings.allowSpaceOfSameStyleInTable) {
+      doc.settings = {
+        ...(doc.settings ?? {}),
+        allowSpaceOfSameStyleInTable: true,
+      };
+    }
     let result = doc;
     if (editorFootnotes) {
       result.footnotes = editorFootnotes;

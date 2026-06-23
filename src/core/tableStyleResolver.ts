@@ -4,11 +4,13 @@ import type {
   EditorTableCellStyle,
   EditorTableConditionalFlags,
   EditorTableConditionalFormat,
-  EditorTableNode,
-  EditorTableRowStyle,
   EditorTableStyle,
   EditorTextStyle,
-} from "./model.js";
+} from "./model/types/styles.js";
+import type {
+  EditorTableNode,
+  EditorTableRowStyle,
+} from "./model/types/nodes.js";
 import {
   resolveDefaultParagraphStyleId,
   resolveNamedParagraphStyle,
@@ -219,8 +221,15 @@ export function resolveEffectiveTableCellFormatting(options: {
   const { table, rowIndex, cellIndex, visualColumnIndex, columnCount, styles } =
     options;
   const named = resolveNamedTableStyle(table.style?.styleId, styles);
-  const baseTableStyle = mergeTableStyles(named.tableStyle, table.style);
   const row = table.rows[rowIndex];
+  // `w:tblPrEx` row exceptions override the table's own properties for this
+  // row's cells (borders, margins, cell spacing, indent, width, layout, jc).
+  const baseTableStyle = row?.propertyExceptions
+    ? mergeTableStyles(
+        mergeTableStyles(named.tableStyle, table.style),
+        row.propertyExceptions,
+      )
+    : mergeTableStyles(named.tableStyle, table.style);
   const cell = row?.cells[cellIndex];
   const keys = conditionalKeys({
     rowIndex,

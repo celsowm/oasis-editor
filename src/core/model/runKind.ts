@@ -32,7 +32,9 @@ export function isInlineObjectRun(run: EditorTextRun): boolean {
 // the old optional-field reads (`run.image`, …) without forcing every call site
 // into a `switch`. The union still rejects invalid combinations at construction.
 
-export function getRunImage(run: EditorTextRun): EditorImageRunData | undefined {
+export function getRunImage(
+  run: EditorTextRun,
+): EditorImageRunData | undefined {
   return run.kind === "image" ? run.image : undefined;
 }
 
@@ -52,9 +54,7 @@ export function getRunFieldChar(
   return run.kind === "fieldChar" ? run.fieldChar : undefined;
 }
 
-export function getRunFieldInstruction(
-  run: EditorTextRun,
-): string | undefined {
+export function getRunFieldInstruction(run: EditorTextRun): string | undefined {
   return run.kind === "fieldInstruction" ? run.fieldInstruction : undefined;
 }
 

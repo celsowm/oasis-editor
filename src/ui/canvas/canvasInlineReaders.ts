@@ -1,5 +1,4 @@
 import type { EditorEditingZone, EditorTextBoxData } from "@/core/model.js";
-import { layoutStackedGlyphs } from "./verticalText.js";
 import type {
   CanvasSnapshotInlineImage,
   CanvasSnapshotInlineTextBox,

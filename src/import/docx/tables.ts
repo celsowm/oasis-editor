@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import { XMLSerializer, type Element as XmlElement } from "@xmldom/xmldom";
+import { type Element as XmlElement, XMLSerializer } from "@xmldom/xmldom";
 import type { EditorNamedStyle, EditorTableNode } from "@/core/model.js";
 import {
   createEditorParagraphFromRuns,
@@ -12,6 +12,7 @@ import {
   getChildrenByTagNameNS,
   getFirstChildByTagNameNS,
   getAttributeValue,
+  collectExtAttributes,
 } from "./xmlHelpers.js";
 import { twipsToPoints } from "./units.js";
 import { type AssetRegistry } from "./assetRegistry.js";
@@ -28,6 +29,7 @@ import {
   parseTableStyle,
   parseTableRowStyle,
   getTableCellColSpan,
+  getTableCellHMerge,
   getTableCellVMerge,
   parseTableCellStyle,
   isTableHeaderRow,
@@ -122,6 +124,15 @@ export async function parseTableNode(
       }
       collapseCellAutospacing(paragraphs, autospacingFlags);
       const colSpan = getTableCellColSpan(cellProperties);
+      const hMerge = getTableCellHMerge(cellProperties);
+      // Legacy horizontal merge: a `continue` cell is absorbed into the
+      // preceding anchor cell's colspan (modern `w:gridSpan` equivalent) and
+      // is not emitted as its own cell.
+      if (hMerge === "continue" && cells.length > 0) {
+        const anchor = cells[cells.length - 1]!;
+        anchor.colSpan = (anchor.colSpan ?? 1) + colSpan;
+        continue;
+      }
       const vMerge = getTableCellVMerge(cellProperties);
       const cellStyle = parseTableCellStyle(cellProperties);
 
@@ -139,6 +150,8 @@ export async function parseTableNode(
 
       if (cellStyle) cell.style = cellStyle;
       cell.conditionalStyle = parseTableConditionalFlags(cellProperties);
+      const cellExtAttrs = collectExtAttributes(cellNode);
+      if (cellExtAttrs) cell.extAttributes = cellExtAttrs;
       if (vMerge === "continue") {
         cell.blocks = [];
       }
@@ -153,9 +166,22 @@ export async function parseTableNode(
       row.style = rowStyle;
     }
     row.conditionalStyle = rowConditionalStyle;
+    const rowExtAttrs = collectExtAttributes(rowNode);
+    if (rowExtAttrs) row.extAttributes = rowExtAttrs;
     const tblPrEx = getFirstChildByTagNameNS(rowNode, WORD_NS, "tblPrEx");
     if (tblPrEx) {
-      row.tblPrExXml = new XMLSerializer().serializeToString(tblPrEx);
+      const exceptions = parseTableStyle(tblPrEx);
+      if (exceptions) {
+        row.propertyExceptions = exceptions;
+      }
+      const changeEl = getFirstChildByTagNameNS(
+        tblPrEx,
+        WORD_NS,
+        "tblPrExChange",
+      );
+      if (changeEl) {
+        row.tblPrExChangeXml = new XMLSerializer().serializeToString(changeEl);
+      }
     }
     rows.push(row);
   }

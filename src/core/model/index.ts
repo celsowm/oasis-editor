@@ -49,6 +49,7 @@ export type {
   EditorConditionalRowStyle,
   EditorTableConditionalType,
   EditorTableConditionalFlags,
+  EditorTableCellStyle,
   EditorNamedStyle,
 } from "./types/styles.js";
 
@@ -60,7 +61,6 @@ export type {
   EditorTextBoxData,
   EditorDropCap,
   EditorParagraphNode,
-  EditorTableCellStyle,
   EditorTableCellNode,
   EditorTableRowStyle,
   EditorTableRowNode,

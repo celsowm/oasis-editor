@@ -74,7 +74,12 @@ function makeRun(partial: {
 }): EditorTextRun {
   const id = createEditorRun(partial.text).id;
   if (partial.fieldChar) {
-    return { id, text: partial.text, kind: "fieldChar", fieldChar: partial.fieldChar };
+    return {
+      id,
+      text: partial.text,
+      kind: "fieldChar",
+      fieldChar: partial.fieldChar,
+    };
   }
   if (partial.fieldInstruction !== undefined) {
     return {

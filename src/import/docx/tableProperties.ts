@@ -271,8 +271,13 @@ export function parseTableStyle(
     getFirstChildByTagNameNS(tblPr, WORD_NS, "jc"),
     "val",
   );
-  if (jc === "left" || jc === "center" || jc === "right") {
-    style.align = jc;
+  // `start`/`end` are logical aliases for `left`/`right` in LTR context.
+  if (jc === "left" || jc === "start") {
+    style.align = "left";
+  } else if (jc === "center") {
+    style.align = "center";
+  } else if (jc === "right" || jc === "end") {
+    style.align = "right";
   }
 
   const layout = parseTableLayout(tblPr);
@@ -415,6 +420,18 @@ export function parseTableRowStyle(
     style.cellSpacing = cellSpacing;
   }
 
+  const rowJc = getAttributeValue(
+    getFirstChildByTagNameNS(rowProperties, WORD_NS, "jc"),
+    "val",
+  );
+  if (rowJc === "left" || rowJc === "start") {
+    style.align = "left";
+  } else if (rowJc === "center") {
+    style.align = "center";
+  } else if (rowJc === "right" || rowJc === "end") {
+    style.align = "right";
+  }
+
   const cantSplit = parseOnOffProperty(rowProperties, "cantSplit");
   if (cantSplit !== undefined) {
     style.cantSplit = cantSplit;
@@ -474,6 +491,28 @@ export function getTableCellVMerge(
   }
 
   const value = getAttributeValue(vMerge, "val");
+  return value === "restart" ? "restart" : "continue";
+}
+
+/**
+ * Legacy horizontal merge marker (`w:hMerge`). Like `w:vMerge`, `restart`
+ * begins a merged run and an omitted/`continue` value continues it. Modern Word
+ * uses `w:gridSpan` instead; on import we collapse `hMerge` runs into the
+ * anchor cell's colspan so both representations render identically.
+ */
+export function getTableCellHMerge(
+  cellProperties: XmlElement | null,
+): "restart" | "continue" | undefined {
+  if (!cellProperties) {
+    return undefined;
+  }
+
+  const hMerge = getFirstChildByTagNameNS(cellProperties, WORD_NS, "hMerge");
+  if (!hMerge) {
+    return undefined;
+  }
+
+  const value = getAttributeValue(hMerge, "val");
   return value === "restart" ? "restart" : "continue";
 }
 

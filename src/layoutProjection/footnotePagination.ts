@@ -1,5 +1,4 @@
 import type {
-  EditorBlockNode,
   EditorDocument,
   EditorLayoutBlock,
   EditorLayoutPage,
@@ -99,19 +98,16 @@ function projectFootnoteBlocksForPage(
   for (const footnoteId of footnoteReferenceIds) {
     const footnote = document.footnotes?.items?.[footnoteId];
     if (!footnote) continue;
-    const projected = projectBlocks(
-      footnote.blocks,
-      {
-        pageIndex: page.index,
-        totalPages,
-        measuredHeights,
-        measuredParagraphLayouts,
-        styles: document.styles,
-        contentWidth,
-        measurer,
-        defaultTabStop: document.settings?.defaultTabStop,
-      },
-    );
+    const projected = projectBlocks(footnote.blocks, {
+      pageIndex: page.index,
+      totalPages,
+      measuredHeights,
+      measuredParagraphLayouts,
+      styles: document.styles,
+      contentWidth,
+      measurer,
+      defaultTabStop: document.settings?.defaultTabStop,
+    });
     for (const block of projected) {
       blocks.push({
         ...block,

@@ -168,7 +168,9 @@ export async function loadPreciseFontProgramsForFamilies(
       const buffer = await font.blob().then((blob) => blob.arrayBuffer());
       const program = selectFaceProgram(new Uint8Array(buffer), font);
       registerPreciseFont(family, bold, italic, program);
-      registered.push(`${family} ${bold ? "B" : ""}${italic ? "I" : ""}`.trim());
+      registered.push(
+        `${family} ${bold ? "B" : ""}${italic ? "I" : ""}`.trim(),
+      );
       changed = true;
     } catch (error) {
       failed.push(`${family} (${font.style ?? "?"}): ${String(error)}`);

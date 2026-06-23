@@ -1,5 +1,8 @@
 import type { CommandRef } from "@/core/commands/CommandRef.js";
-import type { ToolbarActionApi, ToolbarItem } from "@/ui/components/Toolbar/schema/items.js";
+import type {
+  ToolbarActionApi,
+  ToolbarItem,
+} from "@/ui/components/Toolbar/schema/items.js";
 
 export interface ItemBinding {
   active: () => boolean;

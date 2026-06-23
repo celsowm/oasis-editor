@@ -3,7 +3,6 @@
  * block-level nodes used everywhere the editor walks the document tree.
  */
 import type {
-  EditorBorderStyle,
   EditorDocxWidthValue,
   EditorEndnoteReferenceData,
   EditorFieldChar,
@@ -19,6 +18,7 @@ import type {
 } from "./primitives.js";
 import type {
   EditorParagraphStyle,
+  EditorTableCellStyle,
   EditorTableStyle,
   EditorTableConditionalFlags,
   EditorTextStyle,
@@ -164,45 +164,6 @@ export interface EditorParagraphNode {
   dropCap?: EditorDropCap;
 }
 
-export interface EditorTableCellStyle {
-  shading?: string;
-  width?: number | string;
-  borderTop?: EditorBorderStyle;
-  borderRight?: EditorBorderStyle;
-  borderBottom?: EditorBorderStyle;
-  borderLeft?: EditorBorderStyle;
-  /** Bidi-aware leading/trailing borders (`w:start` / `w:end`). */
-  borderStart?: EditorBorderStyle;
-  borderEnd?: EditorBorderStyle;
-  /** Diagonal cell borders (`w:tl2br` / `w:tr2bl`). */
-  borderTopLeftToBottomRight?: EditorBorderStyle;
-  borderTopRightToBottomLeft?: EditorBorderStyle;
-  padding?: number;
-  paddingTop?: number;
-  paddingRight?: number;
-  paddingBottom?: number;
-  paddingLeft?: number;
-  /** Bidi-aware leading/trailing margins (`w:start` / `w:end`). */
-  paddingStart?: number;
-  paddingEnd?: number;
-  verticalAlign?: "top" | "middle" | "bottom";
-  horizontalAlign?: "left" | "center" | "right" | "justify";
-  /** `w:tcPr/w:textDirection/@w:val`: cell text flow direction (vertical text). */
-  textDirection?: "lrTb" | "tbRl" | "btLr" | "lrTbV" | "tbRlV" | null;
-  /** `w:noWrap`: prevent normal wrapping inside the cell. */
-  noWrap?: boolean;
-  /** `w:tcFitText`: request Word-style text fitting within the cell width. */
-  fitText?: boolean;
-  /** `w:hideMark`: hide the cell-end marker for layout. */
-  hideMark?: boolean;
-  /** `w:headers/@w:val`: semantic header cell references. */
-  headers?: string;
-  /** Structural `cellIns`/`cellDel`/`cellMerge` revision. */
-  revision?: EditorStructuralRevision;
-  /** Previous cell properties from `w:tcPrChange`. */
-  propertyRevision?: EditorPropertyRevision<EditorTableCellStyle>;
-}
-
 export interface EditorTableCellNode {
   id: string;
   blocks: EditorParagraphNode[];
@@ -213,6 +174,8 @@ export interface EditorTableCellNode {
   conditionalStyle?: EditorTableConditionalFlags;
   /** Exact pre-change cell grid retained while a tracked merge/split is pending. */
   mergeRevisionState?: EditorTableMergeRevisionState;
+  /** Extension attributes (e.g. `w14:paraId`) preserved for round-trip. */
+  extAttributes?: Record<string, string>;
 }
 
 export interface EditorTableMergeRevisionState {
@@ -231,6 +194,8 @@ export interface EditorTableRowStyle {
   gridAfter?: number;
   widthBefore?: EditorDocxWidthValue;
   widthAfter?: EditorDocxWidthValue;
+  /** `w:jc` in `w:trPr`: horizontal alignment of the row within the table width. */
+  align?: "left" | "center" | "right";
   /** `w:cantSplit`: keep this row together during pagination. */
   cantSplit?: boolean;
   /** `w:hidden`: do not display this row in normal view. */
@@ -250,10 +215,16 @@ export interface EditorTableRowNode {
   style?: EditorTableRowStyle;
   conditionalStyle?: EditorTableConditionalFlags;
   /**
-   * Raw w:tblPrEx XML (per-row table property exceptions), serialized verbatim
-   * before w:trPr. Preserved for DOCX round-trip fidelity only; not editable.
+   * `w:tblPrEx` — per-row table property exceptions. These override the table's
+   * own properties (borders, cell margins, cell spacing, indent, width, layout,
+   * alignment) for the cells in this row. Applied during cell formatting
+   * resolution and re-serialized before `w:trPr` on export.
    */
-  tblPrExXml?: string;
+  propertyExceptions?: EditorTableStyle;
+  /** Raw `<w:tblPrExChange ...>` XML preserved for DOCX round-trip. */
+  tblPrExChangeXml?: string;
+  /** Extension attributes (e.g. `w14:paraId`, `w15:*`) preserved for round-trip. */
+  extAttributes?: Record<string, string>;
 }
 
 export interface EditorTableNode {

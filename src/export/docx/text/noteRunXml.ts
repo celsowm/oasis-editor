@@ -42,9 +42,7 @@ export function serializeNoteReference(
     styleId: REFERENCE_STYLE[kind],
     superscript: true,
   };
-  const customMarkAttr = reference.customMark
-    ? ' w:customMarkFollows="1"'
-    : "";
+  const customMarkAttr = reference.customMark ? ' w:customMarkFollows="1"' : "";
   const customMarkText = reference.customMark
     ? `<w:t xml:space="preserve">${escapeXml(reference.customMark)}</w:t>`
     : "";

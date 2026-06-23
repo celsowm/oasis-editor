@@ -28,4 +28,3 @@ export function createTranslator(getLocale: () => Locale): TranslateFn {
     return template;
   };
 }
-

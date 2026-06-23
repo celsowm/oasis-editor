@@ -16,7 +16,11 @@ export interface UnderlineStyleOption {
 }
 
 export const UNDERLINE_STYLE_OPTIONS: UnderlineStyleOption[] = [
-  { value: "single", labelKey: "underline.style.single", preview: { borderStyle: "solid" } },
+  {
+    value: "single",
+    labelKey: "underline.style.single",
+    preview: { borderStyle: "solid" },
+  },
   {
     value: "double",
     labelKey: "underline.style.double",
@@ -27,13 +31,21 @@ export const UNDERLINE_STYLE_OPTIONS: UnderlineStyleOption[] = [
     labelKey: "underline.style.thick",
     preview: { borderStyle: "solid", borderBottomWidth: "3px" },
   },
-  { value: "dotted", labelKey: "underline.style.dotted", preview: { borderStyle: "dotted" } },
+  {
+    value: "dotted",
+    labelKey: "underline.style.dotted",
+    preview: { borderStyle: "dotted" },
+  },
   {
     value: "dottedHeavy",
     labelKey: "underline.style.dottedHeavy",
     preview: { borderStyle: "dotted", borderBottomWidth: "3px" },
   },
-  { value: "dash", labelKey: "underline.style.dashed", preview: { borderStyle: "dashed" } },
+  {
+    value: "dash",
+    labelKey: "underline.style.dashed",
+    preview: { borderStyle: "dashed" },
+  },
   {
     value: "dashedHeavy",
     labelKey: "underline.style.dashedHeavy",
@@ -49,7 +61,11 @@ export const UNDERLINE_STYLE_OPTIONS: UnderlineStyleOption[] = [
     labelKey: "underline.style.longDashesHeavy",
     preview: { borderStyle: "dashed", borderBottomWidth: "3px" },
   },
-  { value: "dotDash", labelKey: "underline.style.dotDash", preview: { borderStyle: "dashed" } },
+  {
+    value: "dotDash",
+    labelKey: "underline.style.dotDash",
+    preview: { borderStyle: "dashed" },
+  },
   {
     value: "dashDotHeavy",
     labelKey: "underline.style.dotDashHeavy",

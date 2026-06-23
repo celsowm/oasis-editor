@@ -14,6 +14,7 @@ import type {
 
 export interface DocxSettings {
   adjustLineHeightInTable: boolean;
+  allowSpaceOfSameStyleInTable?: boolean;
   defaultTabStop?: number;
   footnoteSettings?: EditorFootnoteSettings;
   endnoteSettings?: EditorEndnoteSettings;
@@ -107,6 +108,15 @@ export function parseSettings(xml: string | null): DocxSettings {
     if (adjustLineHeightInTable) {
       const val = getAttributeValue(adjustLineHeightInTable, "val");
       settings.adjustLineHeightInTable = val !== "0" && val !== "false";
+    }
+    const allowSpace = getFirstChildByTagNameNS(
+      compat,
+      WORD_NS,
+      "allowSpaceOfSameStyleInTable",
+    );
+    if (allowSpace) {
+      const val = getAttributeValue(allowSpace, "val");
+      settings.allowSpaceOfSameStyleInTable = val !== "0" && val !== "false";
     }
   }
   return settings;

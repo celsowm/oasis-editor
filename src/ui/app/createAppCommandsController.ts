@@ -1,7 +1,10 @@
 import { isSelectionCollapsed } from "@/core/selection.js";
 import type { EditorState } from "@/core/model.js";
 import type { SelectedImageRun } from "@/core/commands/image.js";
-import type { BooleanStyleKey, ToolbarStyleState } from "@/ui/toolbarStyleState.js";
+import type {
+  BooleanStyleKey,
+  ToolbarStyleState,
+} from "@/ui/toolbarStyleState.js";
 import type { EditorLogger } from "@/utils/logger.js";
 import type { EditorTransactionPort } from "@/app/controllers/controllerPorts.js";
 import { createEditorCommandsController } from "@/app/controllers/EditorCommandsController.js";
@@ -48,7 +51,8 @@ export function createAppCommandsController(deps: AppCommandsControllerDeps) {
     logger: deps.logger,
     applyState: deps.applyState,
     applyTransactionalState: deps.applyTransactionalState,
-    applySelectionAwareTextCommand: deps.tableOps.applySelectionAwareTextCommand,
+    applySelectionAwareTextCommand:
+      deps.tableOps.applySelectionAwareTextCommand,
     applySelectionAwareParagraphCommand:
       deps.tableOps.applySelectionAwareParagraphCommand,
     applyTableAwareParagraphEdit: deps.tableOps.applyTableAwareParagraphEdit,

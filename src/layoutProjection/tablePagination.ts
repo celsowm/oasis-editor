@@ -7,10 +7,7 @@ import {
   resolveEffectiveTableCellFormatting,
   resolveTableParagraphInheritance,
 } from "@/core/model.js";
-import {
-  estimateParagraphBlockHeight,
-  shouldCollapseContextualSpacing,
-} from "./paragraphPagination.js";
+import { estimateParagraphBlockHeight } from "./paragraphPagination.js";
 import { PX_PER_POINT as POINT_TO_PX } from "@/core/units.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
@@ -275,25 +272,14 @@ export function estimateTableRowHeight(
     let blockHeights = 0;
     for (let blockIndex = 0; blockIndex < cell.blocks.length; blockIndex += 1) {
       const paragraph = cell.blocks[blockIndex]!;
-      const previousParagraph = cell.blocks[blockIndex - 1];
-      const nextParagraph = cell.blocks[blockIndex + 1];
+      // Contextual spacing does not apply inside table cells by OOXML default;
+      // it only applies when w:allowSpaceOfSameStyleInTable is enabled.
       blockHeights += estimateParagraphBlockHeight(
         paragraph,
         styles,
         paragraphContentWidth,
         measurer,
-        {
-          allowSpacingBefore: !shouldCollapseContextualSpacing(
-            previousParagraph,
-            paragraph,
-            styles,
-          ),
-          allowSpacingAfter: !shouldCollapseContextualSpacing(
-            paragraph,
-            nextParagraph,
-            styles,
-          ),
-        },
+        {},
         defaultTabStop,
       );
     }

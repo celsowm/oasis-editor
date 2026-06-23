@@ -1,8 +1,4 @@
-import {
-  TWIPS_PER_INCH,
-  PX_PER_INCH,
-  TWIPS_PER_POINT,
-} from "@/core/units.js";
+import { TWIPS_PER_INCH, PX_PER_INCH, TWIPS_PER_POINT } from "@/core/units.js";
 
 export const WORD_NS =
   "http://schemas.openxmlformats.org/wordprocessingml/2006/main";

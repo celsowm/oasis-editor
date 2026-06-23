@@ -1,9 +1,6 @@
 import type { EditorDocument, EditorParagraphNode } from "@/core/model.js";
 import { getDocumentSections } from "@/core/model.js";
-import type {
-  NumberingContext,
-  NumberingDefinition,
-} from "./docxTypes.js";
+import type { NumberingContext, NumberingDefinition } from "./docxTypes.js";
 import { escapeXml, WORD_NS } from "./xmlUtils.js";
 import { visitBlocks } from "./docxBlockVisitor.js";
 
@@ -107,9 +104,7 @@ export function buildNumberingXml(definitions: NumberingDefinition[]): string {
               kind === "bullet" ? "bullet" : (format ?? "decimal");
             const effectiveLevelText =
               levelText ??
-              (kind === "bullet"
-                ? (bulletGlyph ?? "")
-                : `%${level + 1}.`);
+              (kind === "bullet" ? (bulletGlyph ?? "") : `%${level + 1}.`);
             const startVal = startAt ?? 1;
             const fontName =
               kind === "bullet" ? (bulletFont ?? "Symbol") : undefined;

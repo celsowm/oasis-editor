@@ -6,12 +6,7 @@ import type {
 } from "@/core/model.js";
 import { getDocumentSections } from "@/core/model.js";
 import type { DocContext, SectionReferenceDefinition } from "./docxTypes.js";
-import {
-  OFFICE_REL_NS,
-  pxToTwips,
-  WORD14_NS,
-  WORD_NS,
-} from "./xmlUtils.js";
+import { OFFICE_REL_NS, pxToTwips, WORD14_NS, WORD_NS } from "./xmlUtils.js";
 import { serializeBlocksXml } from "./textXml.js";
 
 const DOCUMENT_XMLNS =

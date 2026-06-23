@@ -1,7 +1,4 @@
-import type {
-  EditorLayoutFragment,
-  EditorLayoutLine,
-} from "@/core/model.js";
+import type { EditorLayoutFragment, EditorLayoutLine } from "@/core/model.js";
 
 export interface FragmentSlot {
   char: string;

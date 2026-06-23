@@ -36,7 +36,9 @@ export interface EditorChromeDeps {
   t: TranslateFn;
   logger: EditorLogger;
   setFontDialog: (state: DialogState<FontDialogInitialValues>) => void;
-  setParagraphDialog: (state: DialogState<ParagraphDialogInitialValues>) => void;
+  setParagraphDialog: (
+    state: DialogState<ParagraphDialogInitialValues>,
+  ) => void;
   setTablePropertiesDialog: (
     state: DialogState<TablePropertiesDialogInitialValues>,
   ) => void;
@@ -63,11 +65,14 @@ export interface EditorChromeDeps {
  * instead of mapping every dialog/menu callback by hand (S1).
  */
 export function createEditorChrome(deps: EditorChromeDeps) {
-  const { computeFontFamilyOptions, computeFontSizeOptions, loadLocalFontFamilyOptions } =
-    createEditorFontOptions({
-      state: deps.state,
-      toolbarStyleState: deps.toolbarStyleState,
-    });
+  const {
+    computeFontFamilyOptions,
+    computeFontSizeOptions,
+    loadLocalFontFamilyOptions,
+  } = createEditorFontOptions({
+    state: deps.state,
+    toolbarStyleState: deps.toolbarStyleState,
+  });
 
   const fontDialogBridge = createFontDialogBridge({
     toolbarStyleState: deps.toolbarStyleState,
@@ -143,7 +148,8 @@ export function createEditorChrome(deps: EditorChromeDeps) {
     computeFontFamilyOptions,
     computeFontSizeOptions,
     applyFontDialogValues: fontDialogBridge.applyFontDialogValues,
-    applyParagraphDialogValues: paragraphDialogBridge.applyParagraphDialogValues,
+    applyParagraphDialogValues:
+      paragraphDialogBridge.applyParagraphDialogValues,
     applyTablePropertiesDialogValues:
       tablePropertiesDialogBridge.applyTablePropertiesDialogValues,
     buildContextMenuItems: contextMenuClipboard.buildContextMenuItems,

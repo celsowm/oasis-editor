@@ -156,6 +156,7 @@ export function buildSettingsXml(
   defaultTabStop?: number,
   footnoteSettings?: EditorFootnoteSettings,
   endnoteSettings?: EditorFootnoteSettings,
+  allowSpaceOfSameStyleInTable?: boolean,
 ): string {
   const parts: string[] = [];
   const defaultTabStopTwips = pointsToTwips(defaultTabStop);
@@ -172,6 +173,11 @@ export function buildSettingsXml(
   }
   if (hasEvenAndOddHeaders) {
     parts.push("<w:evenAndOddHeaders/>");
+  }
+  if (allowSpaceOfSameStyleInTable) {
+    parts.push(
+      `<w:compat><w:allowSpaceOfSameStyleInTable/></w:compat>`,
+    );
   }
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="${WORD_NS}">${parts.join("")}</w:settings>`;
 }

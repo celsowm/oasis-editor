@@ -20,9 +20,7 @@ import type {
  * ports in `controllerPorts.ts`; only keyboard-specific members live here (I1).
  */
 export interface EditorKeyboardDeps
-  extends EditorTransactionPort,
-    FocusInputPort,
-    SelectedImageQueryPort {
+  extends EditorTransactionPort, FocusInputPort, SelectedImageQueryPort {
   state: () => EditorState;
   isReadOnly: () => boolean;
   commandsController: {

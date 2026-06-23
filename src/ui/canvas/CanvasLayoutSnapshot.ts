@@ -10,7 +10,6 @@ import {
   type EditorEditingZone,
   type EditorParagraphNode,
   type EditorState,
-  type EditorTextBoxData,
 } from "@/core/model.js";
 import { buildSegmentTable } from "@/core/tableLayout.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
@@ -20,7 +19,6 @@ import {
   buildCanvasTableLayout,
   resolveCanvasTableWidth,
   type CanvasTableCellLayoutEntry,
-  type CanvasUnsupportedReason,
 } from "./CanvasTableLayout.js";
 import { resolveTextBoxRenderHeight } from "./textBoxRenderHeight.js";
 import {
@@ -38,10 +36,8 @@ import {
 } from "./canvasInlineReaders.js";
 
 import type {
-  ResolveTextBoxRenderHeight,
   CanvasSnapshotSlot,
   CanvasSnapshotLine,
-  CanvasSnapshotTableCellInfo,
   CanvasSnapshotParagraph,
   CanvasSnapshotInlineImage,
   CanvasSnapshotFloatingTextBox,

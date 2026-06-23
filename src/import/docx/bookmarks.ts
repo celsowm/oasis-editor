@@ -15,10 +15,7 @@ import type {
   EditorSection,
   EditorTextRun,
 } from "@/core/model.js";
-import {
-  createEditorBookmarkId,
-  createEditorRun,
-} from "@/core/editorState.js";
+import { createEditorBookmarkId, createEditorRun } from "@/core/editorState.js";
 import type { ImportedBookmarkMarker } from "./runs/types.js";
 
 type RunWithBookmark = EditorTextRun & {

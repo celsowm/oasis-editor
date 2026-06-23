@@ -3,7 +3,9 @@ import type {
   EditorParagraphNode,
   EditorTableCellNode,
   EditorTableNode,
+  EditorTableRowNode,
   EditorTableRowStyle,
+  EditorTableStyle,
   EditorTableFloatingLayout,
   EditorTableConditionalFlags,
 } from "@/core/model.js";
@@ -14,6 +16,15 @@ import { serializeDocxBorderAttrs } from "./borders.js";
 const DEFAULT_TABLE_BORDER_COLOR = "6F6F6F";
 const DEFAULT_TABLE_BORDER_WIDTH_PT = 0.75;
 const DEFAULT_CELL_PADDING_LEFT_RIGHT_PT = 5.4;
+
+function serializeExtAttributes(
+  attrs: Record<string, string> | undefined,
+): string {
+  if (!attrs) return "";
+  return Object.entries(attrs)
+    .map(([name, value]) => ` ${name}="${escapeXml(value)}"`)
+    .join("");
+}
 
 function serializeRevisionAttrs(revision: {
   id: string;
@@ -294,7 +305,7 @@ function serializeTableCellProperties(
         ? `${revision.previous?.vMerge ? ` w:vMergeOrig="${revision.previous.vMerge === "restart" ? "rest" : "cont"}"` : ""}${cell.vMerge ? ` w:vMerge="${cell.vMerge === "restart" ? "rest" : "cont"}"` : ""}`
         : "";
     parts.push(
-      `<w:${element} ${serializeRevisionAttrs(revision)}${mergeAttrs}/>`
+      `<w:${element} ${serializeRevisionAttrs(revision)}${mergeAttrs}/>`,
     );
   }
 
@@ -385,6 +396,7 @@ export function serializeTableRowStyleXml(
   if (hidden) parts.push(hidden);
   const header = serializeOnOffElement("tblHeader", style.isHeader);
   if (header) parts.push(header);
+  if (style.align) parts.push(`<w:jc w:val="${style.align}"/>`);
   return parts.length > 0 ? `<w:trPr>${parts.join("")}</w:trPr>` : "";
 }
 
@@ -417,6 +429,7 @@ function serializeTableRowProperties(
   if (row.style?.isHeader ?? row.isHeader) parts.push("<w:tblHeader/>");
   const hidden = serializeOnOffElement("hidden", row.style?.hidden);
   if (hidden) parts.push(hidden);
+  if (row.style?.align) parts.push(`<w:jc w:val="${row.style.align}"/>`);
   if (row.style?.propertyRevision) {
     const revision = row.style.propertyRevision;
     parts.push(
@@ -555,6 +568,55 @@ function serializeTableProperties(table: EditorTableNode): string {
   return `<w:tblPr>${parts.join("")}</w:tblPr>`;
 }
 
+/**
+ * Serializes `w:tblPrEx` row-level table property exceptions in CT_TblPrEx child
+ * order (tblW < jc < tblCellSpacing < tblInd < tblBorders < tblLayout <
+ * tblCellMar). Returns "" when there are no exceptions to emit.
+ */
+function serializeTablePropertyExceptions(
+  exceptions: EditorTableStyle | undefined,
+  tblPrExChangeXml?: string,
+): string {
+  if (!exceptions && !tblPrExChangeXml) {
+    return "";
+  }
+  const parts: string[] = [];
+  if (exceptions?.width !== undefined) {
+    parts.push(serializeTableWidth(exceptions.width));
+  }
+  if (exceptions?.align) {
+    parts.push(`<w:jc w:val="${exceptions.align}"/>`);
+  }
+  const cellSpacingXml = serializeDocxWidthElement(
+    "tblCellSpacing",
+    exceptions?.cellSpacing,
+  );
+  if (cellSpacingXml) {
+    parts.push(cellSpacingXml);
+  }
+  const indentXml = serializeDocxWidthElement("tblInd", exceptions?.indentLeft);
+  if (indentXml) {
+    parts.push(indentXml);
+  }
+  const bordersXml = exceptions ? serializeTableBorders(exceptions) : "";
+  if (bordersXml) {
+    parts.push(bordersXml);
+  }
+  if (exceptions?.layout) {
+    parts.push(`<w:tblLayout w:type="${exceptions.layout}"/>`);
+  }
+  const marginsXml = serializeTableDefaultCellMargins(
+    exceptions?.defaultCellMargins,
+  );
+  if (marginsXml) {
+    parts.push(marginsXml);
+  }
+  if (tblPrExChangeXml) {
+    parts.push(tblPrExChangeXml);
+  }
+  return parts.length > 0 ? `<w:tblPrEx>${parts.join("")}</w:tblPrEx>` : "";
+}
+
 export function serializeTableXml(
   table: EditorTableNode,
   serializeParagraphXml: SerializeTableParagraphXml,
@@ -594,10 +656,10 @@ export function serializeTableXml(
             .join("");
           const contentXml =
             cell.vMerge === "continue" ? "<w:p/>" : paragraphsXml;
-          return `<w:tc>${serializeTableCellProperties(cell, fallbackWidthPt)}${contentXml}</w:tc>`;
+          return `<w:tc${serializeExtAttributes(cell.extAttributes)}>${serializeTableCellProperties(cell, fallbackWidthPt)}${contentXml}</w:tc>`;
         })
         .join("");
-      return `<w:tr>${row.tblPrExXml ?? ""}${serializeTableRowProperties(row)}${cellsXml}</w:tr>`;
+      return `<w:tr${serializeExtAttributes(row.extAttributes)}>${serializeTablePropertyExceptions(row.propertyExceptions, row.tblPrExChangeXml)}${serializeTableRowProperties(row)}${cellsXml}</w:tr>`;
     })
     .join("");
   const gridXml = table.gridCols

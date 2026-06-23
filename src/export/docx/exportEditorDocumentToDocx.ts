@@ -1,9 +1,5 @@
 import JSZip from "jszip";
-import type {
-  EditorBlockNode,
-  EditorDocument,
-  EditorNamedStyle,
-} from "@/core/model.js";
+import type { EditorBlockNode, EditorDocument } from "@/core/model.js";
 import { getDocumentSections, resolveImageSrc } from "@/core/model.js";
 import { EMU_PER_PX } from "@/core/units.js";
 import { imageExtensionFromMime } from "@/utils/imageFormats.js";
@@ -40,15 +36,9 @@ import {
   buildSettingsXml,
   buildPartRelationshipsXml,
 } from "./docxPackageXml.js";
-import {
-  buildNumberingContext,
-  buildNumberingXml,
-} from "./docxNumbering.js";
+import { buildNumberingContext, buildNumberingXml } from "./docxNumbering.js";
 import { visitBlocks } from "./docxBlockVisitor.js";
-import {
-  buildDocumentXml,
-  buildHeaderFooterXml,
-} from "./docxDocumentXml.js";
+import { buildDocumentXml, buildHeaderFooterXml } from "./docxDocumentXml.js";
 import { renumberImageCaptionsInDocument } from "@/core/document/imageCaptions.js";
 
 function buildPartContext(
@@ -255,6 +245,7 @@ export async function exportEditorDocumentToDocx(
   const hasDocumentSettings =
     hasEvenAndOddHeaders ||
     document.settings?.defaultTabStop !== undefined ||
+    document.settings?.allowSpaceOfSameStyleInTable !== undefined ||
     document.footnotes?.settings !== undefined ||
     document.endnotes?.settings !== undefined;
   const allImages = [
@@ -366,6 +357,7 @@ export async function exportEditorDocumentToDocx(
         document.settings?.defaultTabStop,
         document.footnotes?.settings,
         document.endnotes?.settings,
+        document.settings?.allowSpaceOfSameStyleInTable,
       ),
     );
   }

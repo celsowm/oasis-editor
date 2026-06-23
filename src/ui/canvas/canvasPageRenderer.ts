@@ -168,7 +168,8 @@ export function createCanvasPageRenderer(options: {
       for (let i = 0; i < columnRects.length - 1; i += 1) {
         const rect = columnRects[i]!;
         const next = columnRects[i + 1]!;
-        const ruleX = Math.round((rect.left + rect.width + next.left) / 2) + 0.5;
+        const ruleX =
+          Math.round((rect.left + rect.width + next.left) / 2) + 0.5;
         ctx.beginPath();
         ctx.moveTo(ruleX, bodyTop);
         ctx.lineTo(ruleX, bodyTop + contentHeight);

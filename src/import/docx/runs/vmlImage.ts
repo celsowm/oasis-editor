@@ -1,7 +1,10 @@
 import JSZip from "jszip";
 import { type Element as XmlElement } from "@xmldom/xmldom";
 import type { EditorImageRunData } from "@/core/model.js";
-import { getAttributeValue, findElementDeep } from "@/import/docx/xmlHelpers.js";
+import {
+  getAttributeValue,
+  findElementDeep,
+} from "@/import/docx/xmlHelpers.js";
 import { type AssetRegistry } from "@/import/docx/assetRegistry.js";
 import { VML_FRACTION_DENOMINATOR, parseCssLengthToPx } from "./units.js";
 import { parseRelationshipId, loadEmbeddedImage } from "./relationships.js";

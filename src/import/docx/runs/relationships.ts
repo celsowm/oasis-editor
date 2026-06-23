@@ -1,7 +1,10 @@
 import JSZip from "jszip";
 import { type Element as XmlElement } from "@xmldom/xmldom";
 import { imageMimeFromPath } from "@/utils/imageFormats.js";
-import { type AssetRegistry, registerImageAsset } from "@/import/docx/assetRegistry.js";
+import {
+  type AssetRegistry,
+  registerImageAsset,
+} from "@/import/docx/assetRegistry.js";
 
 export function isAbsoluteUri(target: string): boolean {
   return /^[a-z][a-z0-9+.-]*:\/\//i.test(target) || target.startsWith("//");

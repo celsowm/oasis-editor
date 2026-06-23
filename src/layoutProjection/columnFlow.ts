@@ -21,12 +21,14 @@ const MAX_COLUMN_BALANCE_ITERATIONS = 100;
 export function projectColumnedBlocksLayout(
   context: ProjectBlocksLayoutContext,
   count: number,
-  runTrackLayout: (
-    context: ProjectBlocksLayoutContext,
-  ) => EditorLayoutPage[],
+  runTrackLayout: (context: ProjectBlocksLayoutContext) => EditorLayoutPage[],
 ): EditorLayoutPage[] {
-  const { pageSettings, maxPageHeight, pageOffset = 0, existingPages = [] } =
-    context;
+  const {
+    pageSettings,
+    maxPageHeight,
+    pageOffset = 0,
+    existingPages = [],
+  } = context;
   const colWidth =
     getPageColumnRects(pageSettings)[0]?.width ??
     getPageContentWidth(pageSettings);
@@ -55,8 +57,7 @@ export function projectColumnedBlocksLayout(
     const trailingStart = Math.floor((tracks.length - 1) / count) * count;
     const trailingTracks = tracks.slice(trailingStart);
     const firstTrailingBlock = trailingTracks[0]?.blocks[0];
-    const prevTrack =
-      trailingStart > 0 ? tracks[trailingStart - 1] : undefined;
+    const prevTrack = trailingStart > 0 ? tracks[trailingStart - 1] : undefined;
     const prevLastBlock = prevTrack?.blocks[prevTrack.blocks.length - 1];
     const cleanBoundary =
       firstTrailingBlock != null &&

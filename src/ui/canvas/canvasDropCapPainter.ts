@@ -1,7 +1,4 @@
-import type {
-  EditorLayoutLine,
-  EditorParagraphNode,
-} from "@/core/model.js";
+import type { EditorLayoutLine, EditorParagraphNode } from "@/core/model.js";
 import { measureDropCapWidth } from "@/layoutProjection/dropCapExclusion.js";
 import {
   resolveCanvasFontFamily,
