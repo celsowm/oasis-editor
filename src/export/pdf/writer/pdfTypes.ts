@@ -74,6 +74,11 @@ export interface OasisPdfTextOptions {
   strokeColor?: string;
   /** Stroke line width in pt for render modes 1 and 2. Defaults to 3% of fontSize. */
   strokeWidth?: number;
+  /**
+   * OpenType GSUB feature tags to apply when shaping this run with an embedded
+   * Unicode font (e.g. `["liga", "onum", "ss01"]`). Ignored by base-14 fonts.
+   */
+  fontFeatures?: readonly string[];
 }
 
 export interface OasisPdfImageResource {

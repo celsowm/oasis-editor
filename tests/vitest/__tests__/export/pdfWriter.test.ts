@@ -1497,6 +1497,46 @@ describe("OasisPdfWriter", () => {
     expect(pdf).not.toContain(" TJ");
   });
 
+  it("applies GSUB ligature substitution when the run enables features", async () => {
+    const registry = new PdfFontRegistry();
+    await registry.loadBundledUnicodeFaces();
+    const face = registry.resolveFontFace({
+      fontFamily: "Calibri",
+    }).writerResourceName;
+
+    // Same text/font, with and without the standard-ligatures feature.
+    const withFeature = new OasisPdfWriter(registry.getPdfFontResources());
+    let pageIndex = withFeature.addPage({ width: 300, height: 200 });
+    withFeature.drawText(pageIndex, {
+      x: 24,
+      y: 48,
+      text: "fi",
+      fontSize: 24,
+      fontResourceName: face,
+      fontFeatures: ["liga"],
+    });
+    const shaped = decodePdf(withFeature.toArrayBuffer());
+
+    const plain = new OasisPdfWriter(registry.getPdfFontResources());
+    pageIndex = plain.addPage({ width: 300, height: 200 });
+    plain.drawText(pageIndex, {
+      x: 24,
+      y: 48,
+      text: "fi",
+      fontSize: 24,
+      fontResourceName: face,
+    });
+    const unshaped = decodePdf(plain.toArrayBuffer());
+
+    // The ligature collapses "f" + "i" into a single glyph (Carlito gid 67 =
+    // <0043>), so the shaped show command differs from the 1:1 one.
+    expect(shaped).toContain("<0043> Tj");
+    expect(unshaped).not.toContain("<0043> Tj");
+    // Copy/search stays correct: the ligature glyph maps back to "fi" in ToUnicode.
+    expect(shaped).toContain("/ToUnicode");
+    expect(shaped).toContain("00660069");
+  });
+
   it("maps simple glyphs back through ToUnicode", async () => {
     const registry = new PdfFontRegistry();
     await registry.loadBundledUnicodeFaces();

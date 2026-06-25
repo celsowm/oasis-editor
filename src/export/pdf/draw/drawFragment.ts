@@ -13,6 +13,7 @@ import {
 import {
   isDoubleUnderlineStyle,
   isWavyUnderlineStyle,
+  resolveOpenTypeFeatureTags,
   underlineStyleDashArray,
   underlineStyleLineWidthPx,
 } from "@/core/textStyleMappings.js";
@@ -83,6 +84,16 @@ export async function drawFloatingImagesForParagraph(options: {
       });
     }
   }
+}
+
+// Blends a hex color (#RRGGBB) toward white by (1 - alpha) to simulate
+// reduced-opacity text on a white background in PDF (which has no text alpha).
+function blendColorWithWhite(hex: string, alpha: number): string {
+  const a = Math.max(0, Math.min(1, alpha));
+  const r = Math.round(255 + (Number.parseInt(hex.slice(1, 3), 16) - 255) * a);
+  const g = Math.round(255 + (Number.parseInt(hex.slice(3, 5), 16) - 255) * a);
+  const b = Math.round(255 + (Number.parseInt(hex.slice(5, 7), 16) - 255) * a);
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }
 
 export function drawFragmentHighlight(
@@ -641,6 +652,9 @@ export async function drawFragmentText(
   const paragraphAlign =
     resolveEffectiveParagraphStyle(paragraph.style, document.styles).align ??
     "left";
+  // OpenType GSUB features this run enables (ligatures, figure style, stylistic
+  // sets, contextual alternates); the embedded-font shaper applies them per chunk.
+  const fontFeatures = resolveOpenTypeFeatureTags(styles);
   const baseTextOptions = {
     fontSize: fontSizePt,
     bold: styles.bold,
@@ -648,6 +662,7 @@ export async function drawFragmentText(
     fontResourceName: fontFace.writerResourceName,
     characterSpacing: styles.characterSpacing ?? 0,
     horizontalScale: styles.characterScale ?? 100,
+    fontFeatures,
   };
   // textFill supersedes color; gradients flatten to first stop (PDF shading deferred).
   const mainColor =
@@ -672,6 +687,32 @@ export async function drawFragmentText(
         color: "#BFBFBF",
       });
     }
+    if (styles.glow) {
+      // PDF has no blur; approximate with 8 offset copies at half-radius in cardinal
+      // and diagonal directions. Alpha is baked by blending toward white (#FFFFFF).
+      const gl = styles.glow;
+      const r = pxToPt(gl.radiusPt * PX_PER_POINT) * 0.5;
+      const glowColor = blendColorWithWhite(gl.color, (gl.alpha ?? 0.5) * 0.4);
+      const dirs: [number, number][] = [
+        [r, 0],
+        [-r, 0],
+        [0, r],
+        [0, -r],
+        [r * 0.7, r * 0.7],
+        [-r * 0.7, r * 0.7],
+        [r * 0.7, -r * 0.7],
+        [-r * 0.7, -r * 0.7],
+      ];
+      for (const [dx, dy] of dirs) {
+        writer.drawText(pageIndex, {
+          ...baseTextOptions,
+          x: pxToPt(leftPx) + dx,
+          y: pxToPt(baselineY) + dy,
+          text,
+          color: glowColor,
+        });
+      }
+    }
     if (styles.textShadow) {
       const ts = styles.textShadow;
       const dirRad = (ts.dirDeg * Math.PI) / 180;
@@ -690,6 +731,20 @@ export async function drawFragmentText(
         y: pxToPt(baselineY) + offsetPt,
         text,
         color: "#808080",
+      });
+    }
+    if (styles.reflection) {
+      // PDF has no vertical-flip for text; approximate as a downward-shifted copy
+      // blended toward white to simulate the average of startAlpha and endAlpha.
+      const ref = styles.reflection;
+      const avgAlpha = (ref.startAlpha + ref.endAlpha) / 2;
+      const refColor = blendColorWithWhite(mainColor, avgAlpha * 0.6);
+      writer.drawText(pageIndex, {
+        ...baseTextOptions,
+        x: pxToPt(leftPx),
+        y: pxToPt(baselineY) + pxToPt(ref.distPt * PX_PER_POINT) + fontSizePt,
+        text,
+        color: refColor,
       });
     }
     const textOutline = styles.textOutline;

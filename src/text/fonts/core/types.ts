@@ -61,7 +61,12 @@ export interface ParsedFontProgram {
 }
 
 export interface TextLayouter {
-  layout(text: string): GlyphRun;
+  /**
+   * Lays out `text` into positioned glyphs. `features` lists OpenType GSUB
+   * feature tags to apply (e.g. `["liga", "onum"]`); layouters that don't shape
+   * ignore it and produce a 1:1 codepoint→glyph run.
+   */
+  layout(text: string, features?: readonly string[]): GlyphRun;
 }
 
 export interface FontSubset {

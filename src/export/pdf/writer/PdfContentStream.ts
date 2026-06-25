@@ -200,7 +200,11 @@ export class PdfContentStream {
     const fontResourceName = this.fonts.resolveAndMarkFontName(options);
     const unicodeState = this.fonts.getUnicodeState(fontResourceName);
     const showCommand = unicodeState
-      ? this.fonts.buildUnicodeShowCommand(unicodeState, options.text)
+      ? this.fonts.buildUnicodeShowCommand(
+          unicodeState,
+          options.text,
+          options.fontFeatures,
+        )
       : `<${encodePdfHexString(options.text)}> Tj`;
     if (showCommand === null) {
       return;

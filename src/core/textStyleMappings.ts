@@ -56,6 +56,51 @@ export function underlineStyleLineWidthPx(
   }
 }
 
+/**
+ * Resolves the OpenType GSUB feature tags a run explicitly enables, mirroring the
+ * CSS semantics in `styleCss.ts` (only enabled features, no implicit liga/kern).
+ * Used by the PDF shaper to drive glyph substitution. Returns a sorted, de-duped
+ * array so it doubles as a stable cache key.
+ */
+export function resolveOpenTypeFeatureTags(style: EditorTextStyle): string[] {
+  const tags = new Set<string>();
+
+  switch (style.ligatures) {
+    case "standard":
+      tags.add("liga");
+      break;
+    case "contextual":
+      tags.add("calt");
+      break;
+    case "historical":
+      tags.add("hlig");
+      break;
+    case "standardContextual":
+      tags.add("liga");
+      tags.add("calt");
+      break;
+    default:
+      break;
+  }
+
+  if (style.numberForm === "lining") tags.add("lnum");
+  if (style.numberForm === "oldStyle") tags.add("onum");
+  if (style.numberSpacing === "proportional") tags.add("pnum");
+  if (style.numberSpacing === "tabular") tags.add("tnum");
+
+  if (
+    typeof style.stylisticSet === "number" &&
+    style.stylisticSet >= 1 &&
+    style.stylisticSet <= 20
+  ) {
+    tags.add(`ss${String(style.stylisticSet).padStart(2, "0")}`);
+  }
+
+  if (style.contextualAlternates) tags.add("calt");
+
+  return Array.from(tags).sort();
+}
+
 export function underlineStyleDashArray(
   underlineStyle: UnderlineStyle,
 ): number[] | undefined {

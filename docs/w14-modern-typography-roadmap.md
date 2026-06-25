@@ -27,16 +27,16 @@ where we cannot yet draw it. Rendering (canvas / PDF / HTML) is layered on top a
 
 | Feature | Model | Import | Export | HTML | Canvas | PDF |
 |---|---|---|---|---|---|---|
-| `w14:ligatures` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `w14:numSpacing` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `w14:numForm` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `w14:stylisticSets`/`stylisticSet` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `w14:cntxtAlts` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| `w14:textFill` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `w14:textOutline` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `w14:textShadow` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `w14:glow` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `w14:reflection` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `w14:ligatures` | ✅ | ✅ | ✅ | ✅ | ⚠️ (`textRendering` hint only) | ✅ (GSUB liga/calt/hlig) |
+| `w14:numSpacing` | ✅ | ✅ | ✅ | ✅ | ❌ (no Canvas 2D API) | ✅ (GSUB pnum/tnum) |
+| `w14:numForm` | ✅ | ✅ | ✅ | ✅ | ❌ (no Canvas 2D API) | ✅ (GSUB lnum/onum) |
+| `w14:stylisticSets`/`stylisticSet` | ✅ | ✅ | ✅ | ✅ | ❌ (no Canvas 2D API) | ✅ (GSUB ss01–ss20) |
+| `w14:cntxtAlts` | ✅ | ✅ | ✅ | ✅ | ❌ (no Canvas 2D API) | ✅ (GSUB calt) |
+| `w14:textFill` | ✅ | ✅ | ✅ | ✅ | ✅ (solid+gradient) | ✅ (solid; gradient deferred) |
+| `w14:textOutline` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (Tr mode 2) |
+| `w14:textShadow` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (offset copy) |
+| `w14:glow` | ✅ | ✅ | ✅ | ✅ | ✅ (`shadowBlur`) | ⚠️ (8-offset approx) |
+| `w14:reflection` | ✅ | ✅ | ✅ | ✅ | ⚠️ (mirrored pass, avg alpha) | ⚠️ (shifted copy, no flip) |
 | `w14:scene3d`/`props3d` | ✅ (opaque blob) | ✅ | ✅ | n/a | n/a | n/a |
 | `w15:collapsed` | ❌ (blocked) | ❌ | ❌ | n/a | n/a | n/a |
 | `w16du:dateUtc` | ✅ | ✅ | ✅ | n/a | n/a | n/a |
@@ -136,22 +136,39 @@ Reuse the tag-mapping helpers already in
 painter. Note that features changing advance widths must be reflected in measurement (see
 §7), so keep canvas painting and `measureCharacterWidth` consistent.
 
-### 2.3 PDF — deferred (blocked on shaping)
+### 2.3 PDF — DONE (GSUB shaping)
 
-PDF text is laid out 1:1 codepoint→glyph by `SimpleTextLayouter`, so GSUB-driven features
-(ligatures, stylistic sets, contextual alternates) **cannot** be applied without a shaping
-engine. Sub-task **P1-PDF (large, deferred):** introduce a GSUB/GPOS-aware shaping path
-behind the existing `TextLayouter` interface
-([`src/text/fonts/core/types.ts`](../src/text/fonts/core/types.ts)), passing the active
-feature set. Until then, PDF keeps default glyphs; document this loss in `ooxml.md`.
+**Status: implemented.** A minimal, Latin-focused GSUB shaper now applies these features in
+PDF export. The `TextLayouter` interface
+([`src/text/fonts/core/types.ts`](../src/text/fonts/core/types.ts)) gained an optional
+`features` argument; `OpenTypeLayouter`
+([`src/text/fonts/layout/OpenTypeLayouter.ts`](../src/text/fonts/layout/OpenTypeLayouter.ts))
+parses GSUB via `GsubTable`
+([`src/text/fonts/opentype/GsubTable.ts`](../src/text/fonts/opentype/GsubTable.ts)) — lookup
+types 1/2/3/4/6/7, Coverage 1/2, ClassDef 1/2 — and substitutes glyphs for the requested tags.
+`createPdfEmbeddableFont` selects it whenever the font carries a GSUB table. The active tags are
+resolved once per run by `resolveOpenTypeFeatureTags`
+([`src/core/textStyleMappings.ts`](../src/core/textStyleMappings.ts)) and threaded through
+`OasisPdfTextOptions.fontFeatures` → `drawText` → `PdfFontTable`. Substituted glyph IDs already
+flow through the existing Type0/Identity-H CIDFont, and merged `codePoints` keep ToUnicode
+(copy/search) correct.
+
+**Render-only & safe:** shaping happens inside each independently-positioned PDF chunk (word),
+so a ligature rendering marginally narrower than its reserved slot span causes no cumulative
+drift; on-screen measurement stays 1:1 (no caret/justification change).
+
+**Deferred follow-ons:** GPOS kerning (the `positions[].xAdvance` path is already wired) and
+complex-script shaping (Arabic/Indic/bidi) remain out of scope.
 
 ### 2.4 Tests
 
-Existing round-trip tests already cover import/export. Add a canvas test asserting the
-context feature properties are set for a styled run; gate the PDF assertion on P1-PDF.
+Round-trip tests cover import/export. GSUB shaping is covered by
+`tests/vitest/__tests__/text/openTypeLayouter.test.ts` (parser + layouter against the bundled
+Carlito font), `tests/vitest/__tests__/core/openTypeFeatureTags.test.ts` (tag resolver), and a
+PDF integration assertion in `pdfWriter.test.ts` ("applies GSUB ligature substitution …").
 
 **Effort:** Canvas mapping = small. Full canvas parity via DOM rasterization = medium. PDF
-shaping = large (deferred).
+shaping = **done** (GSUB; GPOS kerning deferred).
 
 ---
 
@@ -328,7 +345,7 @@ no rendering. Tests: `docxImport.comments.test.ts` (dateUtc round-trip).
 | 7 | `w15:collapsed`, `w16du:dateUtc` — round-trip | small | metadata only |
 | 8 | `scene3d`/`props3d` — round-trip only | small | no render |
 | — | Gradient fills (PDF shading dicts) | large | deferred (Phase 2b) |
-| — | GSUB/GPOS shaping for PDF features | large | deferred (Phase 1 P1-PDF) |
+| 9 | GSUB shaping for PDF font features | large | **done** (P1-PDF); GPOS kerning still deferred |
 
 ---
 
@@ -346,7 +363,8 @@ no rendering. Tests: `docxImport.comments.test.ts` (dateUtc round-trip).
 
 ## Out of scope
 
-- This document implements nothing; it is the roadmap. Each phase is a separate change.
-- A full HarfBuzz-class shaping engine (prerequisite for PDF font features) and a PDF
-  gradient/shading subsystem (prerequisite for gradient fills) are **named as prerequisites**
-  for the deferred sub-tasks, not built as part of this roadmap.
+- This document is the roadmap; most phases are now implemented (see per-section status).
+- A PDF gradient/shading subsystem (prerequisite for gradient fills) remains a **named
+  prerequisite** for that deferred sub-task. The PDF font features no longer need a full
+  HarfBuzz-class engine — a minimal Latin GSUB shaper (§2.3) covers the five features in scope;
+  GPOS kerning and complex-script shaping remain the named prerequisites for their follow-ons.

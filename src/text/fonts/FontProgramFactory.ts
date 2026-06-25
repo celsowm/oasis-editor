@@ -1,5 +1,6 @@
-import type { PdfEmbeddableFont } from "./core/types.js";
+import type { PdfEmbeddableFont, TextLayouter } from "./core/types.js";
 import { defaultFontDecoderRegistry } from "./decoders/FontDecoderRegistry.js";
+import { OpenTypeLayouter } from "./layout/OpenTypeLayouter.js";
 import { SimpleTextLayouter } from "./layout/SimpleTextLayouter.js";
 import { SfntFontProgram } from "./sfnt/SfntFontProgram.js";
 import { TrueTypePdfFontSubsetter } from "@/export/pdf/fonts/TrueTypePdfFontSubsetter.js";
@@ -21,9 +22,16 @@ export function parseEmbeddedFontSync(
 export function createPdfEmbeddableFont(
   program: SfntFontProgram,
 ): PdfEmbeddableFont {
+  // Use the GSUB-aware layouter when the font can shape; otherwise the 1:1
+  // layouter (identical output, zero overhead).
+  const shaper = new OpenTypeLayouter(program);
+  const layouter: TextLayouter = shaper.hasGsub
+    ? shaper
+    : new SimpleTextLayouter(program);
+
   return {
     program,
-    layouter: new SimpleTextLayouter(program),
+    layouter,
     subsetter: new TrueTypePdfFontSubsetter(),
   };
 }

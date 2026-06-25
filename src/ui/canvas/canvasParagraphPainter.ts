@@ -744,6 +744,14 @@ function drawStyledText(
       dirDeg: number;
     } | null;
     glow?: { color: string; alpha?: number; radiusPt: number } | null;
+    reflection?: {
+      blurPt: number;
+      startAlpha: number;
+      startPos: number;
+      endAlpha: number;
+      endPos: number;
+      distPt: number;
+    } | null;
   },
 ) {
   const hasEffects =
@@ -753,7 +761,8 @@ function drawStyledText(
     styles.glow ||
     styles.emboss ||
     styles.imprint ||
-    styles.textOutline;
+    styles.textOutline ||
+    styles.reflection;
   if (!hasEffects) {
     drawScaledText(ctx, text, x, y, scale);
     return;
@@ -824,6 +833,29 @@ function drawStyledText(
     drawScaledText(ctx, text, x, y, scale);
   }
   ctx.restore();
+
+  if (styles.reflection) {
+    const ref = styles.reflection;
+    const distPx = ref.distPt * PX_PER_POINT;
+    // Reflect below the baseline using avg(startAlpha, endAlpha) as a single-pass
+    // approximation of the top-to-bottom alpha fade. The transform flips the text
+    // around the line at (y + distPx/2) so the reflection top starts at y+distPx.
+    const avgAlpha = Math.max(
+      0,
+      Math.min(1, (ref.startAlpha + ref.endAlpha) / 2),
+    );
+    ctx.save();
+    ctx.shadowColor = "transparent";
+    ctx.globalAlpha = avgAlpha;
+    if (ref.blurPt > 0 && "filter" in ctx) {
+      (ctx as CanvasRenderingContext2D & { filter: string }).filter =
+        `blur(${ref.blurPt * PX_PER_POINT}px)`;
+    }
+    ctx.translate(0, 2 * y + distPx);
+    ctx.scale(1, -1);
+    drawScaledText(ctx, text, x, y, scale);
+    ctx.restore();
+  }
 }
 
 // Run border (w:bdr): a box stroked around the run's text on all four edges.
