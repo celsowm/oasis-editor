@@ -27,3 +27,7 @@ export {
 } from "./floatingObjects.js";
 export { projectBlocksLayout } from "./blocksPagination.js";
 export { projectDocumentLayout } from "./documentLayout.js";
+export {
+  bumpLayoutMetricsEpoch,
+  layoutMetricsEpoch,
+} from "./layoutMetricsEpoch.js";

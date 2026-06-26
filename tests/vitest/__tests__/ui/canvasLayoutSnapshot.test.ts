@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   createEditorDocument,
@@ -14,6 +16,7 @@ import {
 import type { EditorTextBoxData } from "@/core/model.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
 import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
+import { createCanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 import { resolveTextBoxRenderHeight } from "@/ui/canvas/textBoxRenderHeight.js";
 
 function createRect(
@@ -87,6 +90,7 @@ describe("buildCanvasLayoutSnapshot", () => {
     const snapshot = buildCanvasLayoutSnapshot({
       surface,
       state,
+      documentLayout: projected,
     });
     const headingParagraph = snapshot!.paragraphs.find(
       (paragraph) =>
@@ -143,6 +147,7 @@ describe("buildCanvasLayoutSnapshot", () => {
     const snapshot = buildCanvasLayoutSnapshot({
       surface,
       state,
+      documentLayout: projected,
     });
     expect(snapshot).not.toBeNull();
     const headerParagraph = snapshot!.paragraphs.find(
@@ -197,6 +202,7 @@ describe("buildCanvasLayoutSnapshot", () => {
     const snapshot = buildCanvasLayoutSnapshot({
       surface,
       state,
+      documentLayout: projected,
     });
 
     expect(snapshot).not.toBeNull();
@@ -243,12 +249,17 @@ describe("buildCanvasLayoutSnapshot", () => {
     ]);
     const document = createEditorDocument([paragraph]);
     const state = createEditorStateFromDocument(document);
+    const projected = projectDocumentLayout(document);
 
     const { surface, page } = createSurfaceWithSinglePage(0);
     surface.getBoundingClientRect = () => createRect(0, 0, 940, 1200);
     page.getBoundingClientRect = () => createRect(100, 200, 816, 1056);
 
-    const snapshot = buildCanvasLayoutSnapshot({ surface, state });
+    const snapshot = buildCanvasLayoutSnapshot({
+      surface,
+      state,
+      documentLayout: projected,
+    });
     expect(snapshot).not.toBeNull();
 
     const expectedHeight = resolveTextBoxRenderHeight(textBox, state, 0);
@@ -280,12 +291,17 @@ describe("buildCanvasLayoutSnapshot", () => {
     ]);
     const document = createEditorDocument([paragraph]);
     const state = createEditorStateFromDocument(document);
+    const projected = projectDocumentLayout(document);
 
     const { surface, page } = createSurfaceWithSinglePage(0);
     surface.getBoundingClientRect = () => createRect(0, 0, 940, 1200);
     page.getBoundingClientRect = () => createRect(100, 200, 816, 1056);
 
-    const snapshot = buildCanvasLayoutSnapshot({ surface, state });
+    const snapshot = buildCanvasLayoutSnapshot({
+      surface,
+      state,
+      documentLayout: projected,
+    });
     expect(snapshot).not.toBeNull();
     expect(snapshot!.inlineImages).toHaveLength(0);
     expect(snapshot!.floatingImages).toHaveLength(1);
@@ -343,6 +359,7 @@ describe("buildCanvasLayoutSnapshot", () => {
     const snapshot = buildCanvasLayoutSnapshot({
       surface,
       state,
+      documentLayout: projected,
     });
 
     expect(snapshot).not.toBeNull();
@@ -356,5 +373,66 @@ describe("buildCanvasLayoutSnapshot", () => {
 
     expect(firstPageRowTexts).toContain("Row 1");
     expect(firstPageRowTexts).not.toContain("Row 24");
+  });
+
+  it("does not import or call projectDocumentLayout internally", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/ui/canvas/CanvasLayoutSnapshot.ts"),
+      "utf8",
+    );
+
+    expect(source).not.toContain("projectDocumentLayout");
+  });
+
+  it("reuses cached snapshots for identical surface, layout, zoom, and rect signature", () => {
+    const paragraph = createEditorParagraph("cached");
+    const document = createEditorDocument([paragraph]);
+    const state = createEditorStateFromDocument(document);
+    const documentLayout = projectDocumentLayout(document);
+    const changedDocumentLayout = projectDocumentLayout(
+      createEditorDocument([createEditorParagraph("changed")]),
+    );
+    const { surface, page } = createSurfaceWithSinglePage(0);
+    let pageTop = 200;
+    surface.getBoundingClientRect = () => createRect(0, 0, 940, 1200);
+    page.getBoundingClientRect = () => createRect(100, pageTop, 816, 1056);
+
+    const provider = createCanvasLayoutSnapshotProvider();
+    const first = provider.getCanvasLayoutSnapshot({
+      surface,
+      state,
+      documentLayout,
+      zoomFactor: 1,
+    });
+    const reused = provider.getCanvasLayoutSnapshot({
+      surface,
+      state,
+      documentLayout,
+      zoomFactor: 1,
+    });
+    const zoomChanged = provider.getCanvasLayoutSnapshot({
+      surface,
+      state,
+      documentLayout,
+      zoomFactor: 1.25,
+    });
+    const layoutChanged = provider.getCanvasLayoutSnapshot({
+      surface,
+      state,
+      documentLayout: changedDocumentLayout,
+      zoomFactor: 1.25,
+    });
+    pageTop = 240;
+    const rectChanged = provider.getCanvasLayoutSnapshot({
+      surface,
+      state,
+      documentLayout: changedDocumentLayout,
+      zoomFactor: 1.25,
+    });
+
+    expect(reused).toBe(first);
+    expect(zoomChanged).not.toBe(first);
+    expect(layoutChanged).not.toBe(zoomChanged);
+    expect(rectChanged).not.toBe(layoutChanged);
   });
 });

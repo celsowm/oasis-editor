@@ -42,6 +42,8 @@ export interface EditorInteractionRuntimeDeps {
   setPreferredColumnX: DocRuntime["setPreferredColumnX"];
   measuredBlockHeights: DocRuntime["measuredBlockHeights"];
   measuredParagraphLayouts: DocRuntime["measuredParagraphLayouts"];
+  documentLayout: DocRuntime["documentLayout"];
+  canvasSnapshotProvider: DocRuntime["canvasSnapshotProvider"];
 }
 
 /**
@@ -77,8 +79,8 @@ export function createEditorInteractionRuntime(
     caretBox,
     preferredColumnX,
     setPreferredColumnX,
-    measuredBlockHeights,
-    measuredParagraphLayouts,
+    documentLayout,
+    canvasSnapshotProvider,
   } = deps;
 
   const selectedImageRun = () => getSelectedImageRun(state);
@@ -95,8 +97,8 @@ export function createEditorInteractionRuntime(
     state: () => state,
     surfaceRef: () => surfaceRef() ?? null,
     viewportRef: () => viewportRef() ?? null,
-    measuredBlockHeights,
-    measuredParagraphLayouts,
+    documentLayout,
+    canvasSnapshotProvider,
     zoomFactor,
   });
   const resolveSurfaceHitAtPoint = canvasHitResolver.resolveSurfaceHitAtPoint;
@@ -176,6 +178,8 @@ export function createEditorInteractionRuntime(
     preferredColumnX: () => preferredColumnX(),
     setPreferredColumnX,
     zoomFactor,
+    documentLayout,
+    canvasSnapshotProvider,
     resolveSurfaceHitAtPoint,
     resolvePositionAtSurfacePoint,
     tableOps,

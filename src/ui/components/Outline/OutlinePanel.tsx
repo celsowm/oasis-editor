@@ -11,8 +11,9 @@ import { useI18n } from "@/i18n/I18nContext.js";
 import type { EditorDocument, EditorState } from "@/core/model.js";
 
 import { debounce } from "@/utils/throttle.js";
-import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
 import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
+import type { EditorLayoutDocument } from "@/core/model.js";
+import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 
 export interface OutlinePanelProps {
   state: EditorState;
@@ -20,6 +21,9 @@ export interface OutlinePanelProps {
   defaultCollapsed?: boolean;
   surfaceRef?: () => HTMLDivElement | undefined;
   viewportRef?: () => HTMLDivElement | undefined;
+  documentLayout: () => EditorLayoutDocument;
+  zoomFactor?: () => number;
+  snapshotProvider: CanvasLayoutSnapshotProvider;
 }
 
 export function OutlinePanel(props: OutlinePanelProps) {
@@ -56,9 +60,11 @@ export function OutlinePanel(props: OutlinePanelProps) {
   const recomputeActive = () => {
     const surface = props.surfaceRef?.();
     if (!surface) return;
-    const snapshot = buildCanvasLayoutSnapshot({
+    const snapshot = props.snapshotProvider.getCanvasLayoutSnapshot({
       surface,
       state: props.state,
+      documentLayout: props.documentLayout(),
+      zoomFactor: props.zoomFactor?.(),
     });
     if (!snapshot) return;
     const viewport = props.viewportRef?.();

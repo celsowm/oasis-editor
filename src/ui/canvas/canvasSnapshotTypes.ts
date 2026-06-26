@@ -1,6 +1,6 @@
 import type {
   EditorEditingZone,
-  EditorLayoutParagraph,
+  EditorLayoutDocument,
   EditorParagraphNode,
   EditorPosition,
   EditorState,
@@ -180,8 +180,7 @@ export interface CanvasLayoutSnapshot {
 export interface BuildCanvasLayoutSnapshotOptions {
   surface: HTMLElement;
   state: EditorState;
-  measuredBlockHeights?: Record<string, number>;
-  measuredParagraphLayouts?: Record<string, EditorLayoutParagraph>;
+  documentLayout: EditorLayoutDocument;
   /**
    * Visual zoom factor (CSS `transform: scale(z)`) applied to the surface. The
    * snapshot is built in "screen-anchored local" space so it is invariant under

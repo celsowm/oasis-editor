@@ -1,99 +1,39 @@
 import type { Accessor } from "solid-js";
-import type { EditorLayoutParagraph, EditorState } from "@/core/model.js";
+import type { EditorLayoutDocument, EditorState } from "@/core/model.js";
 import {
   resolveCanvasSurfaceHitAtPoint,
   type SurfaceHit,
 } from "@/ui/canvas/CanvasHitTestService.js";
-import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
+import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 import {
   recordCanvasDebugHit,
   recordCanvasDebugLayoutSnapshot,
 } from "@/ui/canvas/CanvasDebug.js";
 
-type CanvasSnapshotCache = {
-  snapshot: ReturnType<typeof buildCanvasLayoutSnapshot>;
-  documentRef: EditorState["document"];
-  measuredBlockHeightsRef: Record<string, number>;
-  measuredParagraphLayoutsRef: Record<string, EditorLayoutParagraph>;
-  surfaceRef: HTMLDivElement;
-  viewportScrollTop: number;
-  viewportScrollLeft: number;
-  surfaceClientWidth: number;
-  surfaceClientHeight: number;
-  windowWidth: number;
-  windowHeight: number;
-  zoomFactor: number;
-};
-
 export function createCanvasSurfaceHitResolver(deps: {
   state: Accessor<EditorState>;
   surfaceRef: Accessor<HTMLDivElement | null>;
   viewportRef: Accessor<HTMLElement | null>;
-  measuredBlockHeights: Accessor<Record<string, number>>;
-  measuredParagraphLayouts: Accessor<Record<string, EditorLayoutParagraph>>;
+  documentLayout: Accessor<EditorLayoutDocument>;
+  canvasSnapshotProvider: CanvasLayoutSnapshotProvider;
   zoomFactor: Accessor<number>;
 }) {
-  let canvasSnapshotCache: CanvasSnapshotCache | null = null;
-
   const resolveSurfaceHitAtPoint = (
     clientX: number,
     clientY: number,
     context: { forDrag?: boolean; pierce?: boolean } = {},
   ): SurfaceHit | null => {
     const currentSurfaceRef = deps.surfaceRef();
-    const currentViewportRef = deps.viewportRef();
     if (!currentSurfaceRef) return null;
 
-    const currentMeasuredBlockHeights = deps.measuredBlockHeights();
-    const currentMeasuredParagraphLayouts = deps.measuredParagraphLayouts();
     const currentState = deps.state();
-    const viewportScrollTop = currentViewportRef?.scrollTop ?? 0;
-    const viewportScrollLeft = currentViewportRef?.scrollLeft ?? 0;
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
     const zoomFactor = deps.zoomFactor();
-    const shouldReuseSnapshot =
-      canvasSnapshotCache &&
-      canvasSnapshotCache.documentRef === currentState.document &&
-      canvasSnapshotCache.measuredBlockHeightsRef ===
-        currentMeasuredBlockHeights &&
-      canvasSnapshotCache.measuredParagraphLayoutsRef ===
-        currentMeasuredParagraphLayouts &&
-      canvasSnapshotCache.surfaceRef === currentSurfaceRef &&
-      canvasSnapshotCache.viewportScrollTop === viewportScrollTop &&
-      canvasSnapshotCache.viewportScrollLeft === viewportScrollLeft &&
-      canvasSnapshotCache.surfaceClientWidth ===
-        currentSurfaceRef.clientWidth &&
-      canvasSnapshotCache.surfaceClientHeight ===
-        currentSurfaceRef.clientHeight &&
-      canvasSnapshotCache.windowWidth === windowWidth &&
-      canvasSnapshotCache.windowHeight === windowHeight &&
-      canvasSnapshotCache.zoomFactor === zoomFactor;
-    const snapshot = shouldReuseSnapshot
-      ? canvasSnapshotCache!.snapshot
-      : buildCanvasLayoutSnapshot({
-          surface: currentSurfaceRef,
-          state: currentState,
-          measuredBlockHeights: currentMeasuredBlockHeights,
-          measuredParagraphLayouts: currentMeasuredParagraphLayouts,
-          zoomFactor,
-        });
-    if (!shouldReuseSnapshot) {
-      canvasSnapshotCache = {
-        snapshot,
-        documentRef: currentState.document,
-        measuredBlockHeightsRef: currentMeasuredBlockHeights,
-        measuredParagraphLayoutsRef: currentMeasuredParagraphLayouts,
-        surfaceRef: currentSurfaceRef,
-        viewportScrollTop,
-        viewportScrollLeft,
-        surfaceClientWidth: currentSurfaceRef.clientWidth,
-        surfaceClientHeight: currentSurfaceRef.clientHeight,
-        windowWidth,
-        windowHeight,
-        zoomFactor,
-      };
-    }
+    const snapshot = deps.canvasSnapshotProvider.getCanvasLayoutSnapshot({
+      surface: currentSurfaceRef,
+      state: currentState,
+      documentLayout: deps.documentLayout(),
+      zoomFactor,
+    });
     recordCanvasDebugLayoutSnapshot(snapshot);
     if (!snapshot) {
       recordCanvasDebugHit(null);

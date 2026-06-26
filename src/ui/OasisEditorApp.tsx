@@ -144,6 +144,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     docIO,
     measuredBlockHeights,
     measuredParagraphLayouts,
+    documentLayout,
+    canvasSnapshotProvider,
     inputBox,
     selectionBoxes,
     commentHighlights,
@@ -186,6 +188,8 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     setPreferredColumnX,
     measuredBlockHeights,
     measuredParagraphLayouts,
+    documentLayout,
+    canvasSnapshotProvider,
   });
   const {
     selectedImageRun,
@@ -290,6 +294,7 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
     fileHandlers: editorFileHandlers,
   } = buildEditorViewProps({
     layout: {
+      documentLayout,
       viewportHeight: ui().viewportHeight,
       className: ui().class,
       style: ui().style,
@@ -370,119 +375,123 @@ export function OasisEditorApp(props: OasisEditorAppProps = {}) {
 
   return (
     <I18nProvider translator={translator}>
-    <div
-      classList={{
-        "oasis-editor-shell": true,
-        "oasis-editor-app": true,
-        "oasis-editor-docs": useComposedShell(),
-        "oasis-editor-read-only": isReadOnly(),
-      }}
-      style={{
-        // Single source of truth for the horizontal page gutter: the same TS
-        // constant drives both the editor shell width (pageWidth + 2 * gutter)
-        // and the scroll-content padding the page is centered within. CSS only
-        // consumes it via var(--oasis-editor-gutter-x).
-        "--oasis-editor-gutter-x": `${EDITOR_SCROLL_PADDING_PX}px`,
-      }}
-    >
-      <Show when={!useComposedShell() && showChrome() && showToolbar()}>
-        <Toolbar
-          host={toolbarHost}
-          registry={toolbarRegistry}
-          view={toolbarView()}
-          layout={toolbarLayout()}
+      <div
+        classList={{
+          "oasis-editor-shell": true,
+          "oasis-editor-app": true,
+          "oasis-editor-docs": useComposedShell(),
+          "oasis-editor-read-only": isReadOnly(),
+        }}
+        style={{
+          // Single source of truth for the horizontal page gutter: the same TS
+          // constant drives both the editor shell width (pageWidth + 2 * gutter)
+          // and the scroll-content padding the page is centered within. CSS only
+          // consumes it via var(--oasis-editor-gutter-x).
+          "--oasis-editor-gutter-x": `${EDITOR_SCROLL_PADDING_PX}px`,
+        }}
+      >
+        <Show when={!useComposedShell() && showChrome() && showToolbar()}>
+          <Toolbar
+            host={toolbarHost}
+            registry={toolbarRegistry}
+            view={toolbarView()}
+            layout={toolbarLayout()}
+          />
+        </Show>
+
+        <EditorDialogsLayer
+          dialogs={{
+            linkDialog,
+            setLinkDialog,
+            imageAltDialog,
+            setImageAltDialog,
+            imageCaptionDialog,
+            setImageCaptionDialog,
+            contextMenu,
+            setContextMenu,
+            fontDialog,
+            setFontDialog,
+            paragraphDialog,
+            setParagraphDialog,
+            tablePropertiesDialog,
+            setTablePropertiesDialog,
+          }}
+          findReplace={fr}
+          fontFamilyOptions={computeFontFamilyOptions}
+          fontSizeOptions={computeFontSizeOptions}
+          contextMenuItems={buildContextMenuItems}
+          focusInput={focusInput}
+          applyLinkCommand={commandsController.applyLinkCommand}
+          applyImageAltCommand={commandsController.applyImageAltCommand}
+          applyImageCaptionCommand={commandsController.applyImageCaptionCommand}
+          applyFontDialogValues={applyFontDialogValues}
+          applyParagraphDialogValues={applyParagraphDialogValues}
+          applyTablePropertiesDialogValues={applyTablePropertiesDialogValues}
+          closeContextMenu={closeContextMenu}
         />
-      </Show>
 
-      <EditorDialogsLayer
-        dialogs={{
-          linkDialog,
-          setLinkDialog,
-          imageAltDialog,
-          setImageAltDialog,
-          imageCaptionDialog,
-          setImageCaptionDialog,
-          contextMenu,
-          setContextMenu,
-          fontDialog,
-          setFontDialog,
-          paragraphDialog,
-          setParagraphDialog,
-          tablePropertiesDialog,
-          setTablePropertiesDialog,
-        }}
-        findReplace={fr}
-        fontFamilyOptions={computeFontFamilyOptions}
-        fontSizeOptions={computeFontSizeOptions}
-        contextMenuItems={buildContextMenuItems}
-        focusInput={focusInput}
-        applyLinkCommand={commandsController.applyLinkCommand}
-        applyImageAltCommand={commandsController.applyImageAltCommand}
-        applyImageCaptionCommand={commandsController.applyImageCaptionCommand}
-        applyFontDialogValues={applyFontDialogValues}
-        applyParagraphDialogValues={applyParagraphDialogValues}
-        applyTablePropertiesDialogValues={applyTablePropertiesDialogValues}
-        closeContextMenu={closeContextMenu}
-      />
-
-      <EditorWorkspace
-        useComposedShell={useComposedShell}
-        shellComponent={shellComponent}
-        runtime={{
-          state: () => state,
-          toolbarHost,
-          runtimeEditor,
-          persistenceStatus,
-          toolbarRegistry,
-          menuRegistry,
-          showFloatingTableToolbar: () =>
-            !isReadOnly() && commandStateOf("tableContext").value !== null,
-        }}
-        chrome={{
-          showChrome,
-          showTitleBar,
-          showMenubar,
-          showToolbar,
-          showOutline,
-          toolbarView,
-          toolbarLayout,
-        }}
-        view={{
-          isReadOnly,
-          viewportHeight: () => ui().viewportHeight,
-          measuredBlockHeights,
-          measuredParagraphLayouts,
-          layout: editorLayoutProps,
-          overlays: editorOverlayProps,
-          refs: editorRefs,
-          surfaceHandlers: editorSurfaceHandlers,
-          inputHandlers: editorInputHandlers,
-          fileHandlers: editorFileHandlers,
-        }}
-      />
-
-      <EditorDragLayers
-        state={state as EditorState}
-        surfaceRef={surfaceRef()}
-        tableResize={tableResize}
-        imageOps={imageOps}
-        tableDrag={tableDrag}
-        textDrag={textDrag}
-      />
-
-      <Show when={initialLoading() || !runtimeReady()}>
-        <OasisEditorLoading
-          label={loadingLabel()}
-          class={loadingOptions()?.class}
-          style={loadingOptions()?.style}
+        <EditorWorkspace
+          useComposedShell={useComposedShell}
+          shellComponent={shellComponent}
+          runtime={{
+            state: () => state,
+            toolbarHost,
+            runtimeEditor,
+            persistenceStatus,
+            toolbarRegistry,
+            menuRegistry,
+            showFloatingTableToolbar: () =>
+              !isReadOnly() && commandStateOf("tableContext").value !== null,
+          }}
+          chrome={{
+            showChrome,
+            showTitleBar,
+            showMenubar,
+            showToolbar,
+            showOutline,
+            toolbarView,
+            toolbarLayout,
+          }}
+          view={{
+            isReadOnly,
+            viewportHeight: () => ui().viewportHeight,
+            measuredBlockHeights,
+            measuredParagraphLayouts,
+            documentLayout,
+            layout: editorLayoutProps,
+            overlays: editorOverlayProps,
+            refs: editorRefs,
+            surfaceHandlers: editorSurfaceHandlers,
+            inputHandlers: editorInputHandlers,
+            fileHandlers: editorFileHandlers,
+          }}
         />
-      </Show>
 
-      <WelcomeOverlay
-        isOpen={welcomeOpen() && !initialLoading() && runtimeReady()}
-        onClose={() => setWelcomeOpen(false)}
-      />
-    </div>
+        <EditorDragLayers
+          state={state as EditorState}
+          surfaceRef={surfaceRef()}
+          documentLayout={documentLayout}
+          snapshotProvider={canvasSnapshotProvider}
+          zoomFactor={zoom.zoomFactor}
+          tableResize={tableResize}
+          imageOps={imageOps}
+          tableDrag={tableDrag}
+          textDrag={textDrag}
+        />
+
+        <Show when={initialLoading() || !runtimeReady()}>
+          <OasisEditorLoading
+            label={loadingLabel()}
+            class={loadingOptions()?.class}
+            style={loadingOptions()?.style}
+          />
+        </Show>
+
+        <WelcomeOverlay
+          isOpen={welcomeOpen() && !initialLoading() && runtimeReady()}
+          onClose={() => setWelcomeOpen(false)}
+        />
+      </div>
     </I18nProvider>
   );
 }

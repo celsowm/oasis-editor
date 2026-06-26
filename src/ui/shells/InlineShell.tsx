@@ -31,6 +31,7 @@ export function InlineShell(props: ShellProps) {
               state={() => props.state}
               layout={{
                 ...props.layout,
+                documentLayout: props.documentLayout,
                 measuredBlockHeights: () => props.measuredBlockHeights(),
                 measuredParagraphLayouts: () =>
                   props.measuredParagraphLayouts(),

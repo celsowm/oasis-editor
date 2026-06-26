@@ -12,7 +12,11 @@ import type { ShellProps } from "@/ui/shells/DocumentShell.js";
 import type { ToolbarHost } from "@/ui/components/Toolbar/state/createToolbarApi.js";
 import type { ToolbarRegistry } from "@/ui/components/Toolbar/registry/ToolbarRegistry.js";
 import type { MenuRegistry } from "@/ui/components/Menubar/menuRegistry.js";
-import type { EditorLayoutParagraph, EditorState } from "@/core/model.js";
+import type {
+  EditorLayoutDocument,
+  EditorLayoutParagraph,
+  EditorState,
+} from "@/core/model.js";
 import type {
   ToolbarLayoutMode,
   ToolbarViewMode,
@@ -48,6 +52,7 @@ export interface EditorWorkspaceView {
   viewportHeight: () => number | string | undefined;
   measuredBlockHeights: Accessor<Record<string, number>>;
   measuredParagraphLayouts: Accessor<Record<string, EditorLayoutParagraph>>;
+  documentLayout: Accessor<EditorLayoutDocument>;
   layout: OasisEditorEditorLayoutProps;
   overlays: OasisEditorEditorOverlayProps;
   refs: OasisEditorEditorRefProps;
@@ -93,6 +98,7 @@ export function EditorWorkspace(props: EditorWorkspaceProps) {
         isReadOnly={view.isReadOnly()}
         measuredBlockHeights={view.measuredBlockHeights}
         measuredParagraphLayouts={view.measuredParagraphLayouts}
+        documentLayout={view.documentLayout}
         viewportHeight={view.viewportHeight}
         showFloatingTableToolbar={runtime.showFloatingTableToolbar}
         layout={view.layout}
@@ -117,6 +123,7 @@ export function EditorWorkspace(props: EditorWorkspaceProps) {
                 state={props.runtime.state}
                 layout={{
                   ...props.view.layout,
+                  documentLayout: props.view.documentLayout,
                   measuredBlockHeights: props.view.measuredBlockHeights,
                   measuredParagraphLayouts: props.view.measuredParagraphLayouts,
                   readOnly: props.view.isReadOnly(),
@@ -125,7 +132,8 @@ export function EditorWorkspace(props: EditorWorkspaceProps) {
                   ...props.view.overlays,
                   toolbarHost: props.runtime.toolbarHost,
                   persistenceStatus: props.runtime.persistenceStatus,
-                  showFloatingTableToolbar: props.runtime.showFloatingTableToolbar,
+                  showFloatingTableToolbar:
+                    props.runtime.showFloatingTableToolbar,
                 }}
                 refs={props.view.refs}
                 surfaceHandlers={props.view.surfaceHandlers}

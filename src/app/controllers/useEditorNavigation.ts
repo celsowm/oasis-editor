@@ -1,4 +1,8 @@
-import type { EditorState, EditorBlockNode } from "@/core/model.js";
+import type {
+  EditorBlockNode,
+  EditorLayoutDocument,
+  EditorState,
+} from "@/core/model.js";
 import {
   getEditableBlocksForZone,
   getParagraphs,
@@ -19,9 +23,9 @@ import {
   findNextWordBoundary,
 } from "@/core/wordBoundaries.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
-import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
 import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
 import type { CaretBox } from "@/ui/editorUiTypes.js";
+import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 
 export interface UseEditorNavigationProps {
   state: () => EditorState;
@@ -36,6 +40,8 @@ export interface UseEditorNavigationProps {
   clearPreferredColumn: () => void;
   resetTransactionGrouping: () => void;
   focusInput: () => void;
+  documentLayout: () => EditorLayoutDocument;
+  canvasSnapshotProvider: CanvasLayoutSnapshotProvider;
   /**
    * Current visual zoom factor. `desiredX` and the snapshot slots both live in
    * "screen-anchored local" space, so the comparison stays correct once the
@@ -187,9 +193,10 @@ export function createEditorNavigation(deps: UseEditorNavigationProps) {
         ? deps.caretBox().left + (surfaceRect?.left ?? 0)
         : preferredX;
     const snapshot = surfaceRef
-      ? buildCanvasLayoutSnapshot({
+      ? deps.canvasSnapshotProvider.getCanvasLayoutSnapshot({
           surface: surfaceRef,
           state,
+          documentLayout: deps.documentLayout(),
           zoomFactor: deps.zoomFactor?.(),
         })
       : null;

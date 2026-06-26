@@ -1,8 +1,15 @@
-import { createEffect, createSignal, onCleanup } from "solid-js";
+import { createEffect, createMemo, createSignal, onCleanup } from "solid-js";
 import type { EditorLayoutParagraph, EditorState } from "@/core/model.js";
-import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
 import { computeCanvasSelectionGeometry } from "@/ui/canvas/CanvasSelectionGeometry.js";
 import { computeCommentHighlights } from "@/ui/canvas/CanvasCommentGeometry.js";
+import {
+  bumpLayoutMetricsEpoch,
+  layoutMetricsEpoch,
+  projectDocumentLayout,
+} from "@/layoutProjection/index.js";
+import { createCanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
+import { canvasTextMeasurer } from "@/ui/canvas/canvasTextMeasurer.js";
+import { createLayoutIdentityStabilizer } from "@/ui/layoutIdentity.js";
 import type {
   CaretBox,
   CommentHighlightBox,
@@ -95,6 +102,22 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
   const [preferredColumnX, setPreferredColumnX] = createSignal<number | null>(
     null,
   );
+  const stabilize = createLayoutIdentityStabilizer();
+  const documentLayout = createMemo(() => {
+    layoutMetricsEpoch();
+    return stabilize(
+      projectDocumentLayout(
+        props.state.document,
+        undefined,
+        measuredBlockHeights(),
+        measuredParagraphLayouts(),
+        {
+          measurer: canvasTextMeasurer,
+        },
+      ),
+    );
+  });
+  const canvasSnapshotProvider = createCanvasLayoutSnapshotProvider();
 
   let syncRequestId = 0;
 
@@ -109,11 +132,10 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       return;
     }
 
-    const snapshot = buildCanvasLayoutSnapshot({
+    const snapshot = canvasSnapshotProvider.getCanvasLayoutSnapshot({
       surface,
       state: props.state,
-      measuredBlockHeights: measuredBlockHeights(),
-      measuredParagraphLayouts: measuredParagraphLayouts(),
+      documentLayout: documentLayout(),
       zoomFactor: props.zoomFactor?.(),
     });
     if (!snapshot) {
@@ -163,6 +185,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
       setMeasuredParagraphLayouts((current) =>
         normalizeParagraphLayouts(current, options.paragraphIds ?? []),
       );
+      bumpLayoutMetricsEpoch();
     }
     requestInputBoxSync(reason);
     return options.resolveWhenDone ? Promise.resolve() : null;
@@ -176,11 +199,13 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
     if (invalidation.dirtyAll || invalidation.structureChanged) {
       setMeasuredBlockHeights({});
       setMeasuredParagraphLayouts({});
+      bumpLayoutMetricsEpoch();
     } else if ((invalidation.dirtyParagraphIds?.length ?? 0) > 0) {
       const dirtyIds = invalidation.dirtyParagraphIds ?? [];
       setMeasuredParagraphLayouts((current) =>
         normalizeParagraphLayouts(current, dirtyIds),
       );
+      bumpLayoutMetricsEpoch();
     }
 
     requestInputBoxSync("content-change");
@@ -189,6 +214,7 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
   const stabilizeLayoutAfterImport = async () => {
     setMeasuredBlockHeights({});
     setMeasuredParagraphLayouts({});
+    bumpLayoutMetricsEpoch();
 
     await new Promise<void>((resolve) => {
       scheduleFrame(() => resolve());
@@ -245,11 +271,14 @@ export function useEditorLayout(props: UseEditorLayoutProps) {
 
   const onCleanupHook = () => {
     syncRequestId += 1;
+    canvasSnapshotProvider.clear();
   };
 
   return {
     measuredBlockHeights,
     measuredParagraphLayouts,
+    documentLayout,
+    canvasSnapshotProvider,
     inputBox,
     selectionBoxes,
     commentHighlights,

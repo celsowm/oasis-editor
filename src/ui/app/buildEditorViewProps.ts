@@ -9,6 +9,7 @@ import type {
   SelectedTextBoxBox,
   SelectionBox,
 } from "@/ui/editorUiTypes.js";
+import type { EditorLayoutDocument } from "@/core/model.js";
 import type {
   OasisEditorEditorFileHandlers,
   OasisEditorEditorInputHandlers,
@@ -30,6 +31,7 @@ type ImportProgress = NonNullable<
 
 /** Page sizing / zoom inputs that shape the layout prop bundle. */
 export interface EditorViewLayoutInput {
+  documentLayout: Accessor<EditorLayoutDocument>;
   viewportHeight: number | string | undefined;
   className: string | undefined;
   style: JSX.CSSProperties | undefined;
@@ -128,6 +130,7 @@ export function buildEditorViewProps(
   } = ctx;
 
   const layout: OasisEditorEditorLayoutProps = {
+    documentLayout: layoutInput.documentLayout,
     viewportHeight: layoutInput.viewportHeight,
     class: layoutInput.className,
     style: layoutInput.style,

@@ -1,7 +1,11 @@
 import { createMemo, Show } from "solid-js";
-import type { EditorState, EditorPosition } from "@/core/model.js";
+import type {
+  EditorLayoutDocument,
+  EditorPosition,
+  EditorState,
+} from "@/core/model.js";
 import { getParagraphs, positionToParagraphOffset } from "@/core/model.js";
-import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
+import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 import {
   getCaretRectFromSnapshot,
   getParagraphRectFromSnapshot,
@@ -11,6 +15,9 @@ import { CaretOverlay } from "./CaretOverlay.js";
 export function DropCaret(props: {
   surfaceRef: HTMLDivElement | undefined;
   state: EditorState;
+  documentLayout: () => EditorLayoutDocument;
+  snapshotProvider: CanvasLayoutSnapshotProvider;
+  zoomFactor?: () => number;
   targetPos: () => EditorPosition;
   pointerPos?: () => { x: number; y: number } | null;
   caretViewport?: () => { left: number; top: number; height: number } | null;
@@ -20,9 +27,11 @@ export function DropCaret(props: {
     const surfaceRef = props.surfaceRef;
     if (!surfaceRef) return null;
 
-    const snapshot = buildCanvasLayoutSnapshot({
+    const snapshot = props.snapshotProvider.getCanvasLayoutSnapshot({
       surface: surfaceRef,
       state: props.state,
+      documentLayout: props.documentLayout(),
+      zoomFactor: props.zoomFactor?.(),
     });
 
     let viewportLeft = 0;

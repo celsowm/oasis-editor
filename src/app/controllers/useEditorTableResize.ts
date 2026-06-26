@@ -1,6 +1,8 @@
 import { createSignal } from "solid-js";
-import type { EditorState } from "@/core/model.js";
+import type { Accessor } from "solid-js";
+import type { EditorLayoutDocument, EditorState } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
+import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 import type {
   TableResizeOps,
   TableResizeState,
@@ -35,6 +37,8 @@ export function createEditorTableResize(deps: {
   ) => void;
   surfaceRef: () => HTMLElement | undefined;
   viewportRef: () => HTMLElement | undefined;
+  documentLayout: Accessor<EditorLayoutDocument>;
+  canvasSnapshotProvider: CanvasLayoutSnapshotProvider;
   /** Visual zoom factor `z`; resize pointer deltas are divided by it. */
   zoomFactor?: () => number;
 }): TableResizeOps {
@@ -52,7 +56,14 @@ export function createEditorTableResize(deps: {
       return;
     }
 
-    const info = findTableResizeHoverInfo(event, surface, deps.state());
+    const info = findTableResizeHoverInfo(
+      event,
+      surface,
+      deps.state(),
+      deps.documentLayout(),
+      deps.canvasSnapshotProvider,
+      deps.zoomFactor?.(),
+    );
     if (!info) {
       clearResizeCursorClasses();
       return;
@@ -65,7 +76,14 @@ export function createEditorTableResize(deps: {
     const surface = deps.surfaceRef();
     if (!surface) return false;
 
-    const info = findTableResizeHoverInfo(event, surface, deps.state());
+    const info = findTableResizeHoverInfo(
+      event,
+      surface,
+      deps.state(),
+      deps.documentLayout(),
+      deps.canvasSnapshotProvider,
+      deps.zoomFactor?.(),
+    );
     if (!info) return false;
 
     const state = deps.state();

@@ -1,14 +1,12 @@
 import {
   createEffect,
   createMemo,
-  createSignal,
   Index,
   For,
   on,
   onCleanup,
   Show,
 } from "solid-js";
-import type { ITextMeasurer } from "@/core/engine.js";
 import type { EditorSurfaceProps } from "@/ui/editorUiTypes.js";
 import {
   getPageColumnRects,
@@ -19,7 +17,6 @@ import { buildSegmentTable } from "@/core/tableLayout.js";
 import {
   clearNormalLineHeightCache,
   clearTextMeasureCache,
-  domTextMeasurer,
 } from "@/ui/textMeasurement.js";
 import { preloadLayoutFonts } from "@/text/fonts/FontMetricsProvider.js";
 import { preciseFontModeVersion } from "@/text/fonts/preciseFontMode.js";
@@ -27,8 +24,9 @@ import { loadPreciseFontProgramsForFamilies } from "@/ui/app/localFontAccess.js"
 import { collectPdfFontFamilies } from "@/export/pdf/fonts/collectPdfFontFamilies.js";
 import { resolveMetricCompatibleFamily } from "@/export/pdf/fonts/officeFontAssets.js";
 import {
+  bumpLayoutMetricsEpoch,
   clearProjectedParagraphLayoutCache,
-  projectDocumentLayout,
+  layoutMetricsEpoch,
 } from "@/layoutProjection/index.js";
 import { resolveFloatingTableRect } from "@/layoutProjection/floatingObjects.js";
 import {
@@ -36,7 +34,6 @@ import {
   resolveCanvasTableWidth,
 } from "@/ui/canvas/CanvasTableLayout.js";
 import { createEditorLogger } from "@/utils/logger.js";
-import { createLayoutIdentityStabilizer } from "@/ui/layoutIdentity.js";
 import { PageBreak } from "@/ui/components/PageBreak.js";
 import {
   createCanvasPageRenderer,
@@ -45,12 +42,6 @@ import {
 export { resolveCanvasTextRenderMetrics } from "@/ui/canvas/canvasParagraphPainter.js";
 export { resolveCanvasFooterZoneTop } from "@/ui/canvas/canvasPageRenderer.js";
 
-const canvasTextMeasurer: ITextMeasurer = {
-  composeMeasuredParagraphLines: (options) =>
-    domTextMeasurer.composeMeasuredParagraphLines(options),
-  resolveRenderedLineHeightPx: (styles, lineHeightMultiple) =>
-    domTextMeasurer.resolveRenderedLineHeightPx(styles, lineHeightMultiple),
-};
 const surfaceLogger = createEditorLogger("canvas-surface");
 
 function checkBrowserFonts(families: Array<string | null | undefined>) {
@@ -75,10 +66,6 @@ function checkBrowserFonts(families: Array<string | null | undefined>) {
 }
 
 export function CanvasEditorSurface(props: EditorSurfaceProps) {
-  // Preserves object identity for unchanged pages/blocks across re-projections.
-  // Without this, every state change produces brand-new page objects and every
-  // CanvasPage repaints — even pages the user did not touch.
-  const stabilize = createLayoutIdentityStabilizer();
   // In the browser, font advance-width metrics load asynchronously. Until they
   // resolve, measurement falls back to a heuristic; once they do, recompute the
   // layout with real metrics. This must react to the *current* document's font
@@ -86,7 +73,6 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
   // (e.g. Times New Roman from a DOCX import) get their metric bytes ingested
   // and their FontFace registered. In Node/tests metrics load synchronously, so
   // this simply settles with no visible change.
-  const [fontsGeneration, setFontsGeneration] = createSignal(0);
   // The set of families used by the document. collectPdfFontFamilies walks every
   // paragraph/run, so we gate the preload effect on a stable key derived from it
   // to avoid re-preloading on unrelated edits (e.g. typing).
@@ -115,29 +101,18 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
         clearTextMeasureCache();
         clearNormalLineHeightCache();
         clearProjectedParagraphLayoutCache();
+        bumpLayoutMetricsEpoch();
         surfaceLogger.info("fonts:ready", {
           families,
           checksAfter: checkBrowserFonts(families),
         });
-        setFontsGeneration((generation) => generation + 1);
       })();
     }),
   );
   const documentLayout = createMemo(() => {
-    const generation = fontsGeneration(); // recompute once real font metrics become available
-    const layout = stabilize(
-      projectDocumentLayout(
-        props.state().document,
-        undefined,
-        props.measuredBlockHeights?.(),
-        props.measuredParagraphLayouts?.(),
-        {
-          measurer: canvasTextMeasurer,
-        },
-      ),
-    );
+    const layout = props.documentLayout();
     surfaceLogger.debug("layout:projected", {
-      fontsGeneration: generation,
+      layoutMetricsEpoch: layoutMetricsEpoch(),
       pages: layout.pages.length,
       firstPageBlocks: layout.pages[0]?.blocks.length ?? 0,
       firstPageBodyTop: layout.pages[0]?.bodyTop,
@@ -169,7 +144,7 @@ export function CanvasEditorSurface(props: EditorSurfaceProps) {
               page={page()}
               index={index}
               state={props.state()}
-              paintGeneration={fontsGeneration()}
+              paintGeneration={layoutMetricsEpoch()}
               onSurfaceMouseDown={props.onSurfaceMouseDown}
               onSurfaceClick={props.onSurfaceClick}
               onSurfaceMouseMove={props.onSurfaceMouseMove}

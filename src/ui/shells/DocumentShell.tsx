@@ -15,12 +15,16 @@ import {
 import type { ToolbarHost } from "@/ui/components/Toolbar/state/createToolbarApi.js";
 import type { ToolbarRegistry } from "@/ui/components/Toolbar/registry/ToolbarRegistry.js";
 import type { MenuRegistry } from "@/ui/components/Menubar/menuRegistry.js";
-import type { EditorLayoutParagraph, EditorState } from "@/core/model.js";
+import type {
+  EditorLayoutDocument,
+  EditorLayoutParagraph,
+  EditorState,
+} from "@/core/model.js";
 import type {
   ToolbarLayoutMode,
   ToolbarViewMode,
 } from "@/ui/OasisEditorAppProps.js";
-import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
+import { createCanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 import { getParagraphEntries } from "@/ui/canvas/CanvasGeometry.js";
 import type { OasisEditor } from "@/core/plugin.js";
 import { PluginUiHost } from "@/ui/components/PluginUi/PluginUiHost.js";
@@ -42,10 +46,12 @@ export interface ShellProps {
   isReadOnly: boolean;
   measuredBlockHeights: Accessor<Record<string, number>>;
   measuredParagraphLayouts: Accessor<Record<string, EditorLayoutParagraph>>;
+  documentLayout: Accessor<EditorLayoutDocument>;
   viewportHeight: Accessor<number | string | undefined>;
   showFloatingTableToolbar: Accessor<boolean>;
   layout: Omit<
     OasisEditorEditorLayoutProps,
+    | "documentLayout"
     | "measuredBlockHeights"
     | "measuredParagraphLayouts"
     | "viewportHeight"
@@ -64,6 +70,7 @@ export interface ShellProps {
 export function DocumentShell(props: ShellProps) {
   let surfaceEl: HTMLDivElement | undefined;
   let viewportEl: HTMLDivElement | undefined;
+  const outlineSnapshotProvider = createCanvasLayoutSnapshotProvider();
   const captureSurfaceRef = (el: HTMLDivElement) => {
     surfaceEl = el;
     props.refs.onSurfaceRef?.(el);
@@ -74,9 +81,11 @@ export function DocumentShell(props: ShellProps) {
   };
   const handleOutlineNavigate = (id: string) => {
     if (!surfaceEl) return;
-    const snapshot = buildCanvasLayoutSnapshot({
+    const snapshot = outlineSnapshotProvider.getCanvasLayoutSnapshot({
       surface: surfaceEl,
       state: props.state,
+      documentLayout: props.documentLayout(),
+      zoomFactor: props.layout.zoomFactor?.(),
     });
     if (!snapshot) return;
     const entries = getParagraphEntries(snapshot, id);
@@ -143,6 +152,9 @@ export function DocumentShell(props: ShellProps) {
               onNavigate={handleOutlineNavigate}
               surfaceRef={() => surfaceEl}
               viewportRef={() => viewportEl}
+              documentLayout={props.documentLayout}
+              zoomFactor={props.layout.zoomFactor}
+              snapshotProvider={outlineSnapshotProvider}
             />
           </Show>
           <section class="oasis-editor-stage">
@@ -150,6 +162,7 @@ export function DocumentShell(props: ShellProps) {
               state={() => props.state}
               layout={{
                 ...props.layout,
+                documentLayout: props.documentLayout,
                 showHorizontalRuler: props.showChrome,
                 measuredBlockHeights: () => props.measuredBlockHeights(),
                 measuredParagraphLayouts: () =>

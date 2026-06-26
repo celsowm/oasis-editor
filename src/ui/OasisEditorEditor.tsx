@@ -23,6 +23,7 @@ import { type TranslationKey } from "@/i18n/index.js";
 import {
   getDocumentPageSettings,
   getDocumentSections,
+  type EditorLayoutDocument,
   type EditorLayoutParagraph,
   type EditorState,
 } from "@/core/model.js";
@@ -45,12 +46,12 @@ import type {
 import type { EditorComment } from "@/core/model.js";
 import type { ResizeHandleDirection } from "./resizeGeometry.js";
 import { ResizeHandlesOverlay } from "./overlays/ResizeHandlesOverlay.js";
-import { projectDocumentLayout } from "@/layoutProjection/index.js";
 import { ZOOM_MIN, ZOOM_MAX, ZOOM_STEP, clampZoom } from "./app/editorZoom.js";
 
 type ImportProgress = ImportProgressState;
 
 export interface OasisEditorEditorLayoutProps {
+  documentLayout: Accessor<EditorLayoutDocument>;
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
   viewportHeight?: number | string;
@@ -168,7 +169,7 @@ export interface OasisEditorEditorFileHandlers {
 
 export interface OasisEditorEditorProps {
   state: Accessor<EditorState>;
-  layout?: OasisEditorEditorLayoutProps;
+  layout: OasisEditorEditorLayoutProps;
   overlays: OasisEditorEditorOverlayProps;
   refs?: OasisEditorEditorRefProps;
   surfaceHandlers: OasisEditorEditorSurfaceHandlers;
@@ -178,7 +179,7 @@ export interface OasisEditorEditorProps {
 
 export function OasisEditorEditor(props: OasisEditorEditorProps) {
   const t = useI18n();
-  const layout = () => props.layout ?? {};
+  const layout = () => props.layout;
   const overlays = () => props.overlays;
   const refs = () => props.refs ?? {};
   const surfaceHandlers = () => props.surfaceHandlers;
@@ -286,16 +287,8 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
     });
   });
 
-  const statusDocumentLayout = createMemo(() =>
-    projectDocumentLayout(
-      documentForStats(),
-      undefined,
-      layout().measuredBlockHeights?.(),
-      layout().measuredParagraphLayouts?.(),
-    ),
-  );
-
-  const totalPages = () => Math.max(1, statusDocumentLayout().pages.length);
+  const documentLayout = () => layout().documentLayout();
+  const totalPages = () => Math.max(1, documentLayout().pages.length);
   const [viewportPageIndex, setViewportPageIndex] = createSignal<number | null>(
     null,
   );
@@ -339,7 +332,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
     if (visiblePageIndex !== null) {
       return Math.max(1, visiblePageIndex + 1);
     }
-    const projectedLayout = statusDocumentLayout();
+    const projectedLayout = documentLayout();
     const focusId = props.state().selection.focus.paragraphId;
     const pageIndex = projectedLayout.pages.findIndex((page) =>
       page.blocks.some((block) => block.sourceBlockId === focusId),
@@ -354,7 +347,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
   );
 
   createEffect(() => {
-    statusDocumentLayout();
+    documentLayout();
     queueMicrotask(recomputeViewportPageIndex);
   });
 
@@ -443,6 +436,7 @@ export function OasisEditorEditor(props: OasisEditorEditorProps) {
           >
             <CanvasEditorSurface
               state={props.state}
+              documentLayout={layout().documentLayout}
               measuredBlockHeights={layout().measuredBlockHeights}
               measuredParagraphLayouts={layout().measuredParagraphLayouts}
               viewportRef={() => viewportElement ?? undefined}

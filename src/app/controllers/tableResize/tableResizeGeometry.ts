@@ -1,9 +1,10 @@
 import {
   getDocumentSectionsCanonical,
+  type EditorLayoutDocument,
   type EditorState,
   type EditorTableNode,
 } from "@/core/model.js";
-import { buildCanvasLayoutSnapshot } from "@/ui/canvas/CanvasLayoutSnapshot.js";
+import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 import type { SnapshotCellRect, TableGeometry } from "./tableResizeTypes.js";
 
 function getAllBlocks(state: EditorState) {
@@ -28,10 +29,15 @@ export function getTableById(
 export function buildTableGeometries(
   surface: HTMLElement,
   state: EditorState,
+  documentLayout: EditorLayoutDocument,
+  canvasSnapshotProvider: CanvasLayoutSnapshotProvider,
+  zoomFactor?: number,
 ): TableGeometry[] {
-  const snapshot = buildCanvasLayoutSnapshot({
+  const snapshot = canvasSnapshotProvider.getCanvasLayoutSnapshot({
     surface,
     state,
+    documentLayout,
+    zoomFactor,
   });
   if (!snapshot) {
     return [];

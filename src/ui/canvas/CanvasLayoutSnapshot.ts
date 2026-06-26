@@ -12,7 +12,6 @@ import {
   type EditorState,
 } from "@/core/model.js";
 import { buildSegmentTable } from "@/core/tableLayout.js";
-import { projectDocumentLayout } from "@/layoutProjection/index.js";
 import { resolveFloatingTableRect } from "@/layoutProjection/floatingObjects.js";
 import { FOOTNOTE_MARKER_GUTTER_PX } from "@/layoutProjection/index.js";
 import {
@@ -212,15 +211,9 @@ function buildVerticalCellSnapshotLines(options: {
 export function buildCanvasLayoutSnapshot(
   options: BuildCanvasLayoutSnapshotOptions,
 ): CanvasLayoutSnapshot | null {
-  const { surface, state } = options;
+  const { surface, state, documentLayout } = options;
   const zoomFactor =
     options.zoomFactor && options.zoomFactor > 0 ? options.zoomFactor : 1;
-  const documentLayout = projectDocumentLayout(
-    state.document,
-    undefined,
-    options.measuredBlockHeights,
-    options.measuredParagraphLayouts,
-  );
   const canvasPages = getCanvasPageElements(surface);
   if (documentLayout.pages.length === 0 || canvasPages.length === 0) {
     return null;

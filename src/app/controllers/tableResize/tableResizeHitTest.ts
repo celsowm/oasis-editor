@@ -1,6 +1,7 @@
-import type { EditorState } from "@/core/model.js";
+import type { EditorLayoutDocument, EditorState } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { getTableById, buildTableGeometries } from "./tableResizeGeometry.js";
+import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 import type {
   ResizeSide,
   ResizeHoverInfo,
@@ -15,8 +16,17 @@ export function findTableResizeHoverInfo(
   event: MouseEvent,
   surface: HTMLElement,
   state: EditorState,
+  documentLayout: EditorLayoutDocument,
+  canvasSnapshotProvider: CanvasLayoutSnapshotProvider,
+  zoomFactor?: number,
 ): ResizeHoverInfo | null {
-  const geometries = buildTableGeometries(surface, state);
+  const geometries = buildTableGeometries(
+    surface,
+    state,
+    documentLayout,
+    canvasSnapshotProvider,
+    zoomFactor,
+  );
   if (geometries.length === 0) {
     return null;
   }

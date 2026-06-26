@@ -1,6 +1,6 @@
 # Layout Projection Unification & Caret-Latency Plan
 
-> Status: proposal / not yet implemented.
+> Status: implemented in this change set; retained as architecture record.
 > Scope: the canvas layout/projection pipeline, selection geometry, status page
 > reads, and canvas hit-testing.
 > Compatibility: **greenfield** - we deliberately change internal function

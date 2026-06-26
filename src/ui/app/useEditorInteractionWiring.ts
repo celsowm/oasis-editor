@@ -40,6 +40,8 @@ export interface EditorInteractionWiringContext {
   preferredColumnX: NavigationParams["preferredColumnX"];
   setPreferredColumnX: NavigationParams["setPreferredColumnX"];
   zoomFactor: NavigationParams["zoomFactor"];
+  documentLayout: NavigationParams["documentLayout"];
+  canvasSnapshotProvider: NavigationParams["canvasSnapshotProvider"];
   resolveSurfaceHitAtPoint: TextDragParams["resolveSurfaceHitAtPoint"];
   resolvePositionAtSurfacePoint: TableDragParams["resolvePositionAtSurfacePoint"];
   tableOps: ReturnType<typeof createEditorTableOperations>;
@@ -77,6 +79,8 @@ export function useEditorInteractionWiring(
     surfaceRef: ctx.surfaceRef,
     viewportRef: ctx.viewportRef,
     zoomFactor: ctx.zoomFactor,
+    documentLayout: ctx.documentLayout,
+    canvasSnapshotProvider: ctx.canvasSnapshotProvider,
   });
 
   const tableDrag = createEditorTableDrag({
@@ -144,6 +148,8 @@ export function useEditorInteractionWiring(
     resetTransactionGrouping: ctx.resetTransactionGrouping,
     focusInput: ctx.focusInput,
     zoomFactor: ctx.zoomFactor,
+    documentLayout: ctx.documentLayout,
+    canvasSnapshotProvider: ctx.canvasSnapshotProvider,
   });
 
   const { handleCopy, handleCut, handlePaste, handleDrop } =

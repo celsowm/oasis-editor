@@ -8,6 +8,7 @@ import { useEditorPersistence } from "@/app/controllers/useEditorPersistence.js"
 import { createEditorHistoryActions } from "@/app/controllers/useEditorHistoryActions.js";
 import type { createEditorImageOperations } from "@/app/controllers/useEditorImageOperations.js";
 import { createIndexedDbPersistence } from "@/app/services/indexedDbPersistence.js";
+import { bumpLayoutMetricsEpoch } from "@/layoutProjection/index.js";
 import { useEditorTransactions } from "./useEditorTransactions.js";
 import { createEditorChangeBroadcast } from "./createEditorChangeBroadcast.js";
 import type { OasisEditorAppDocumentProps } from "../OasisEditorAppProps.js";
@@ -88,6 +89,8 @@ export function createEditorDocumentRuntime(deps: EditorDocumentRuntimeDeps) {
   const {
     measuredBlockHeights,
     measuredParagraphLayouts,
+    documentLayout,
+    canvasSnapshotProvider,
     inputBox,
     selectionBoxes,
     commentHighlights,
@@ -165,6 +168,8 @@ export function createEditorDocumentRuntime(deps: EditorDocumentRuntimeDeps) {
     clearPreferredColumn();
     setMeasuredBlockHeights({});
     setMeasuredParagraphLayouts({});
+    bumpLayoutMetricsEpoch();
+    canvasSnapshotProvider.clear();
     clearHistory();
   };
 
@@ -182,6 +187,8 @@ export function createEditorDocumentRuntime(deps: EditorDocumentRuntimeDeps) {
     isImportInProgress,
     measuredBlockHeights,
     measuredParagraphLayouts,
+    documentLayout,
+    canvasSnapshotProvider,
     inputBox,
     selectionBoxes,
     commentHighlights,

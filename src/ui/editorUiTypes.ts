@@ -60,7 +60,11 @@ export interface CommentHighlightBox {
 }
 
 import type { Accessor } from "solid-js";
-import type { EditorState, EditorLayoutParagraph } from "@/core/model.js";
+import type {
+  EditorLayoutDocument,
+  EditorLayoutParagraph,
+  EditorState,
+} from "@/core/model.js";
 import type { WrapPreset } from "@/core/commands/floatingLayout.js";
 import type { ResizeHandleDirection } from "./resizeGeometry.js";
 
@@ -81,6 +85,7 @@ export interface LayoutOptionsOverlay {
 
 export interface EditorSurfaceProps {
   state: Accessor<EditorState>;
+  documentLayout: Accessor<EditorLayoutDocument>;
   measuredBlockHeights?: Accessor<Record<string, number>>;
   measuredParagraphLayouts?: Accessor<Record<string, EditorLayoutParagraph>>;
   /**

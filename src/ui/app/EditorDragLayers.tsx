@@ -1,6 +1,7 @@
 import { Show } from "solid-js";
 import { DropCaret } from "@/ui/components/DropCaret.js";
-import type { EditorState } from "@/core/model.js";
+import type { EditorLayoutDocument, EditorState } from "@/core/model.js";
+import type { CanvasLayoutSnapshotProvider } from "@/ui/canvas/canvasLayoutSnapshotProvider.js";
 import type { createEditorImageOperations } from "@/app/controllers/useEditorImageOperations.js";
 import type { createEditorTableResize } from "@/app/controllers/useEditorTableResize.js";
 import type { createEditorTableDrag } from "@/app/controllers/useEditorTableDrag.js";
@@ -9,6 +10,9 @@ import type { createEditorTextDrag } from "@/app/controllers/useEditorTextDrag.j
 export interface EditorDragLayersProps {
   state: EditorState;
   surfaceRef: HTMLDivElement | undefined;
+  documentLayout: () => EditorLayoutDocument;
+  snapshotProvider: CanvasLayoutSnapshotProvider;
+  zoomFactor?: () => number;
   tableResize: ReturnType<typeof createEditorTableResize>;
   imageOps: ReturnType<typeof createEditorImageOperations>;
   tableDrag: ReturnType<typeof createEditorTableDrag>;
@@ -91,6 +95,9 @@ export function EditorDragLayers(props: EditorDragLayersProps) {
           <DropCaret
             surfaceRef={props.surfaceRef}
             state={props.state}
+            documentLayout={props.documentLayout}
+            snapshotProvider={props.snapshotProvider}
+            zoomFactor={props.zoomFactor}
             targetPos={pos}
           />
         )}
@@ -101,6 +108,9 @@ export function EditorDragLayers(props: EditorDragLayersProps) {
           <DropCaret
             surfaceRef={props.surfaceRef}
             state={props.state}
+            documentLayout={props.documentLayout}
+            snapshotProvider={props.snapshotProvider}
+            zoomFactor={props.zoomFactor}
             targetPos={pos}
           />
         )}
@@ -111,6 +121,9 @@ export function EditorDragLayers(props: EditorDragLayersProps) {
           <DropCaret
             surfaceRef={props.surfaceRef}
             state={props.state}
+            documentLayout={props.documentLayout}
+            snapshotProvider={props.snapshotProvider}
+            zoomFactor={props.zoomFactor}
             targetPos={pos}
             pointerPos={props.textDrag.pointerPos}
             caretViewport={props.textDrag.caretViewport}
