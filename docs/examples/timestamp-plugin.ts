@@ -12,8 +12,14 @@ export const TimestampPlugin: OasisPlugin = {
     {
       id: "insertTimestamp",
       command: "insertTimestamp",
-      group: "insert",
+      tab: "plugins",
+      group: "automation",
       icon: "clock-3",
+      ribbonGroupResize: {
+        priority: 30,
+        compactMinWidth: 120,
+        collapsedIcon: "clock-3",
+      },
     },
   ],
   menubar: [

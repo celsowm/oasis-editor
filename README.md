@@ -283,6 +283,13 @@ createOasisEditor(root, {
         type: "button",
         label: "Insert timestamp",
         command: "insertTimestamp",
+        tab: "plugins",
+        group: "automation",
+        ribbonGroupResize: {
+          priority: 30,
+          compactMinWidth: 120,
+          collapsedIcon: "clock-3",
+        },
       });
     },
     customizeMenubar(registry) {
@@ -298,6 +305,10 @@ createOasisEditor(root, {
 
 Toolbar registries support `register`, `insertBefore`, `insertAfter`,
 `replace`, `remove`, and `move`.
+
+Ribbon groups resize automatically in ribbon view. Integrators can tune a
+group's resize priority, compact width, collapsed width, collapsed icon, and
+allowed states with `ribbonGroupResize` on any item in that group.
 
 ## Package Exports
 

@@ -197,6 +197,13 @@ createOasisEditor(root, {
         type: "button",
         label: "Minha acao",
         command: "insertTimestamp",
+        tab: "plugins",
+        group: "automation",
+        ribbonGroupResize: {
+          priority: 30,
+          compactMinWidth: 120,
+          collapsedIcon: "clock-3",
+        },
       });
     },
     customizeMenubar(registry) {
@@ -212,6 +219,10 @@ createOasisEditor(root, {
 
 Toolbar items dispatch exclusively through commands. Menubar items should do the
 same.
+
+Ribbon view resizes by group. Set `ribbonGroupResize` on a group item to tune
+collapse priority, compact width, collapsed width, collapsed icon, or the
+allowed states for that group.
 
 ## Plugin UI Primitives
 

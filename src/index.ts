@@ -117,7 +117,10 @@ export type {
 
 export type {
   RibbonRow,
+  RibbonGroupResizePolicy,
+  RibbonGroupResizeState,
   RibbonTabId,
+  RibbonSize,
   ToolbarItem,
   ToolbarItemType,
   ButtonItem,
@@ -169,6 +172,8 @@ export type { ToolbarProps } from "./ui/components/Toolbar/Toolbar.js";
 export { buildRibbonTabDefinitions } from "./ui/components/Toolbar/ribbon/ribbonModel.js";
 export type {
   RibbonGroupModel,
+  ResolvedRibbonGroupModel,
+  RibbonGroupWidth,
   RibbonTabDefinition,
 } from "./ui/components/Toolbar/ribbon/ribbonModel.js";
 

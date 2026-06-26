@@ -1,7 +1,12 @@
 import type { JSX } from "solid-js";
 import type { EditorState } from "./model.js";
 import type { CommandRef } from "./commands/CommandRef.js";
-import type { RibbonRow, RibbonSize, RibbonTabId } from "./pluginUiTypes.js";
+import type {
+  RibbonGroupResizePolicy,
+  RibbonRow,
+  RibbonSize,
+  RibbonTabId,
+} from "./pluginUiTypes.js";
 
 export type Unsubscribe = () => void;
 
@@ -63,6 +68,7 @@ export interface PluginAction {
   group?: string; // e.g. "insert", "format"
   row?: RibbonRow;
   ribbonSize?: RibbonSize;
+  ribbonGroupResize?: RibbonGroupResizePolicy;
   order?: number;
 }
 

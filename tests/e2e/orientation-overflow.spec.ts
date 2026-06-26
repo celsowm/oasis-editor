@@ -181,3 +181,119 @@ test("layout ribbon renders margins and orientation as full-height buttons", asy
     page.getByTestId("editor-toolbar-orientation-landscape"),
   ).toBeVisible();
 });
+
+test("home ribbon shrinks and collapses groups as width decreases", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await gotoEditor(page);
+  await page.getByTestId("editor-ribbon-tab-home").click();
+
+  await expect(page.locator('[data-ribbon-group="font"]')).toHaveAttribute(
+    "data-ribbon-state",
+    "full",
+  );
+
+  await page.setViewportSize({ width: 1120, height: 900 });
+  await expect
+    .poll(async () =>
+      page
+        .locator('[data-ribbon-group="styles"]')
+        .getAttribute("data-ribbon-state"),
+    )
+    .toBe("compact");
+
+  const compactGallery = await page.evaluate(() => {
+    const group = document.querySelector<HTMLElement>(
+      '[data-ribbon-group="styles"]',
+    );
+    const ribbon = group?.querySelector<HTMLElement>(
+      ".oasis-editor-style-gallery-ribbon",
+    );
+    const strip = group?.querySelector<HTMLElement>(
+      ".oasis-editor-style-gallery-strip",
+    );
+    const cards = Array.from(
+      group?.querySelectorAll<HTMLElement>(
+        ".oasis-editor-style-gallery-strip .oasis-editor-style-gallery-card",
+      ) ?? [],
+    );
+    const chevron = group?.querySelector<HTMLElement>(
+      ".oasis-editor-style-gallery-expand",
+    );
+    if (!group || !ribbon || !strip || cards.length < 2 || !chevron) {
+      return null;
+    }
+    const ribbonBox = ribbon.getBoundingClientRect();
+    const stripBox = strip.getBoundingClientRect();
+    const firstCardBox = cards[0]!.getBoundingClientRect();
+    const chevronBox = chevron.getBoundingClientRect();
+    const visibleCardSlots = Math.round(stripBox.width / firstCardBox.width);
+    const nextCardBox = cards[visibleCardSlots]?.getBoundingClientRect();
+    return {
+      ribbonWidth: ribbonBox.width,
+      stripWidth: stripBox.width,
+      firstCardWidth: firstCardBox.width,
+      firstCardRight: firstCardBox.right,
+      nextCardLeft: nextCardBox?.left ?? null,
+      stripRight: stripBox.right,
+      chevronLeft: chevronBox.left,
+      chevronRight: chevronBox.right,
+      ribbonRight: ribbonBox.right,
+      chevronHeight: chevronBox.height,
+      ribbonHeight: ribbonBox.height,
+      visibleCardSlots,
+    };
+  });
+
+  expect(compactGallery).not.toBeNull();
+  expect(compactGallery!.visibleCardSlots).toBeGreaterThanOrEqual(2);
+  expect(compactGallery!.stripWidth).toBeCloseTo(
+    compactGallery!.visibleCardSlots * 106,
+    0,
+  );
+  expect(compactGallery!.ribbonWidth).toBeCloseTo(
+    compactGallery!.stripWidth + 26,
+    0,
+  );
+  expect(compactGallery!.firstCardWidth).toBeCloseTo(106, 0);
+  expect(compactGallery!.firstCardRight).toBeLessThanOrEqual(
+    compactGallery!.stripRight + 1,
+  );
+  if (compactGallery!.nextCardLeft !== null) {
+    expect(compactGallery!.nextCardLeft).toBeGreaterThanOrEqual(
+      compactGallery!.stripRight - 1,
+    );
+  }
+  expect(compactGallery!.chevronLeft).toBeCloseTo(
+    compactGallery!.stripRight,
+    0,
+  );
+  expect(compactGallery!.chevronRight).toBeCloseTo(
+    compactGallery!.ribbonRight - 1,
+    0,
+  );
+  expect(compactGallery!.chevronHeight).toBeCloseTo(
+    compactGallery!.ribbonHeight - 2,
+    0,
+  );
+
+  await page.setViewportSize({ width: 560, height: 900 });
+  await expect
+    .poll(async () =>
+      page
+        .locator('[data-ribbon-group="styles"]')
+        .getAttribute("data-ribbon-state"),
+    )
+    .toBe("collapsed");
+  await expect
+    .poll(async () =>
+      page
+        .locator('[data-ribbon-group="paragraph"]')
+        .getAttribute("data-ribbon-state"),
+    )
+    .toBe("collapsed");
+
+  await page.getByTestId("editor-ribbon-group-styles").click();
+  await expect(page.getByTestId("editor-toolbar-style-expand")).toBeVisible();
+});

@@ -21,3 +21,13 @@ export const RIBBON_TABS = [
 export type RibbonTabId = (typeof RIBBON_TABS)[number];
 export type RibbonRow = 1 | 2;
 export type RibbonSize = "normal" | "large";
+export type RibbonGroupResizeState = "full" | "compact" | "collapsed";
+
+export interface RibbonGroupResizePolicy {
+  states?: RibbonGroupResizeState[];
+  priority?: number;
+  compactMinWidth?: number;
+  collapsedMinWidth?: number;
+  collapsedIcon?: string;
+  compactLabels?: "show" | "hide";
+}

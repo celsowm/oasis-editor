@@ -5,7 +5,10 @@ import { useEditorRuntimePlugins } from "@/ui/app/useEditorRuntimePlugins.js";
 import { createDefaultToolbarPreset } from "@/ui/components/Toolbar/presets/defaultToolbar.js";
 import { OASIS_TOOLBAR_ITEMS } from "@/ui/components/Toolbar/presets/builtinToolbarIds.js";
 import { RIBBON_TABS } from "@/ui/components/Toolbar/schema/items.js";
-import { buildRibbonGroups } from "@/ui/components/Toolbar/ribbon/ribbonModel.js";
+import {
+  buildRibbonGroups,
+  resolveResponsiveRibbonGroups,
+} from "@/ui/components/Toolbar/ribbon/ribbonModel.js";
 import { createTranslator } from "@/i18n/index.js";
 
 const t = createTranslator(() => "pt-BR");
@@ -209,6 +212,117 @@ describe("UI registries", () => {
     expect(groups[0]!.rows[2].map((item) => item.id)).toEqual(["row-two"]);
   });
 
+  it("resolves ribbon groups from full to compact to collapsed by priority", () => {
+    const groups = buildRibbonGroups(
+      [
+        {
+          id: "styles",
+          type: "button",
+          command: "styles",
+          tab: "home",
+          group: "styles",
+          row: 1,
+          ribbonGroupResize: {
+            states: ["full", "compact", "collapsed"],
+            priority: 10,
+            compactMinWidth: 120,
+            collapsedMinWidth: 64,
+          },
+        },
+        {
+          id: "font",
+          type: "button",
+          command: "font",
+          tab: "home",
+          group: "font",
+          row: 1,
+          ribbonGroupResize: {
+            states: ["full", "compact", "collapsed"],
+            priority: 40,
+            compactMinWidth: 160,
+            collapsedMinWidth: 64,
+          },
+        },
+      ],
+      "home",
+      t,
+    );
+
+    const wide = resolveResponsiveRibbonGroups(groups, 500, {
+      styles: { full: 220, compact: 120, collapsed: 64 },
+      font: { full: 240, compact: 160, collapsed: 64 },
+    });
+    expect(wide.map((group) => [group.id, group.resizeState])).toEqual([
+      ["font", "full"],
+      ["styles", "full"],
+    ]);
+
+    const medium = resolveResponsiveRibbonGroups(groups, 372, {
+      styles: { full: 220, compact: 120, collapsed: 64 },
+      font: { full: 240, compact: 160, collapsed: 64 },
+    });
+    expect(medium.map((group) => [group.id, group.resizeState])).toEqual([
+      ["font", "full"],
+      ["styles", "compact"],
+    ]);
+
+    const narrow = resolveResponsiveRibbonGroups(groups, 240, {
+      styles: { full: 220, compact: 120, collapsed: 64 },
+      font: { full: 240, compact: 160, collapsed: 64 },
+    });
+    expect(narrow.map((group) => [group.id, group.resizeState])).toEqual([
+      ["font", "compact"],
+      ["styles", "collapsed"],
+    ]);
+  });
+
+  it("shrinks ribbon groups from right to left within each resize round", () => {
+    const groups = buildRibbonGroups(
+      [
+        {
+          id: "font",
+          type: "button",
+          command: "font",
+          tab: "home",
+          group: "font",
+          row: 1,
+          ribbonGroupResize: {
+            states: ["full", "compact", "collapsed"],
+            priority: 1,
+            compactMinWidth: 70,
+            collapsedMinWidth: 50,
+          },
+        },
+        {
+          id: "paragraph",
+          type: "button",
+          command: "paragraph",
+          tab: "home",
+          group: "paragraph",
+          row: 1,
+          ribbonGroupResize: {
+            states: ["full", "compact", "collapsed"],
+            priority: 99,
+            compactMinWidth: 70,
+            collapsedMinWidth: 50,
+          },
+        },
+      ],
+      "home",
+      t,
+    );
+
+    const resolved = resolveResponsiveRibbonGroups(groups, 170, {
+      font: { full: 100, compact: 70, collapsed: 50 },
+      paragraph: { full: 100, compact: 70, collapsed: 50 },
+    });
+
+    expect(resolved.map((group) => [group.id, group.resizeState])).toEqual([
+      ["font", "full"],
+      ["paragraph", "compact"],
+    ]);
+  });
+
   it("deduplicates and unregisters menu items", () => {
     const registry = new MenuRegistry();
 
@@ -300,6 +414,61 @@ describe("UI registries", () => {
       group: "general",
       row: 1,
       ribbonSize: "large",
+    });
+  });
+
+  it("preserves plugin-contributed ribbon resize metadata", () => {
+    const runtime = useEditorRuntimePlugins({
+      essentialsPlugin: { name: "Essentials" },
+      t,
+      externalPlugins: [
+        {
+          name: "Plugin",
+          toolbar: [
+            {
+              id: "plugin_responsive_action",
+              command: "pluginResponsiveAction",
+              group: "analysis",
+              ribbonGroupResize: {
+                priority: 15,
+                compactMinWidth: 112,
+                collapsedMinWidth: 72,
+                collapsedIcon: "sparkles",
+                compactLabels: "hide",
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(
+      runtime.toolbarRegistry.get("plugin_responsive_action"),
+    ).toMatchObject({
+      tab: "plugins",
+      group: "analysis",
+      ribbonGroupResize: {
+        priority: 15,
+        compactMinWidth: 112,
+        collapsedMinWidth: 72,
+        collapsedIcon: "sparkles",
+        compactLabels: "hide",
+      },
+    });
+
+    const groups = buildRibbonGroups(
+      runtime.toolbarRegistry.getOrdered(),
+      "plugins",
+      t,
+    );
+    expect(groups.find((group) => group.id === "analysis")).toMatchObject({
+      resizePolicy: {
+        priority: 15,
+        compactMinWidth: 112,
+        collapsedMinWidth: 72,
+        collapsedIcon: "sparkles",
+        compactLabels: "hide",
+      },
     });
   });
 });

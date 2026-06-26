@@ -11,8 +11,11 @@ export {
   type RibbonTabId,
   type RibbonRow,
   type RibbonSize,
+  type RibbonGroupResizePolicy,
+  type RibbonGroupResizeState,
 } from "@/core/pluginUiTypes.js";
 import type {
+  RibbonGroupResizePolicy,
   RibbonTabId,
   RibbonRow,
   RibbonSize,
@@ -76,6 +79,8 @@ interface ToolbarItemBase extends ItemReactiveOverrides {
   row?: RibbonRow;
   /** Ribbon-only visual scale. Large items span both toolbar rows. */
   ribbonSize?: RibbonSize;
+  /** Group-level responsive behavior. First item wins per property. */
+  ribbonGroupResize?: RibbonGroupResizePolicy;
   testId?: string;
   tooltipKey?: TranslationKey;
   tooltip?: string;
@@ -172,6 +177,7 @@ export interface SeparatorItem {
   tab?: RibbonTabId;
   group?: string;
   row?: RibbonRow;
+  ribbonGroupResize?: RibbonGroupResizePolicy;
   isVisible?: (api: ToolbarActionApi) => boolean;
 }
 

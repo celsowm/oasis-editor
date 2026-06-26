@@ -87,9 +87,9 @@
   padding: 5px 8px 3px;
   box-sizing: border-box;
   background: #ffffff;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: hidden;
-  scrollbar-width: thin;
+  scrollbar-width: none;
 }
 
 .oasis-editor-ribbon-group {
@@ -103,6 +103,17 @@
   max-height: 75px;
 }
 
+.oasis-editor-ribbon-group-compact {
+  padding-right: 5px;
+  padding-left: 5px;
+}
+
+.oasis-editor-ribbon-group-collapsed {
+  min-width: 68px;
+  padding-right: 4px;
+  padding-left: 4px;
+}
+
 .oasis-editor-ribbon-group:first-child {
   padding-left: 0;
 }
@@ -112,6 +123,10 @@
   align-items: stretch;
   gap: 2px;
   min-height: 63px;
+}
+
+.oasis-editor-ribbon-group-compact .oasis-editor-ribbon-group-rows {
+  gap: 1px;
 }
 
 .oasis-editor-ribbon-normal-rows {
@@ -127,6 +142,10 @@
   align-items: stretch;
   gap: 2px;
   height: 63px;
+}
+
+.oasis-editor-ribbon-group-compact .oasis-editor-ribbon-large-items {
+  gap: 1px;
 }
 
 .oasis-editor-ribbon-row {
@@ -148,12 +167,22 @@
   white-space: nowrap;
 }
 
+.oasis-editor-ribbon-group-compact .oasis-editor-ribbon-group-label,
+.oasis-editor-ribbon-group-collapsed .oasis-editor-ribbon-group-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oasis-editor-ribbon-group-compact-hide-labels
+  .oasis-editor-ribbon-group-label {
+  color: transparent;
+}
+
 .oasis-editor-toolbar-view-ribbon .oasis-editor-toolbar-item {
   flex-shrink: 0;
 }
 
-.oasis-editor-toolbar-view-ribbon
-  .oasis-editor-toolbar-item-ribbon-large {
+.oasis-editor-toolbar-view-ribbon .oasis-editor-toolbar-item-ribbon-large {
   align-items: stretch !important;
   height: 63px;
 }
@@ -201,9 +230,7 @@
   .oasis-editor-toolbar-item-ribbon-large
   .oasis-editor-tool-button
   span,
-.oasis-editor-toolbar-view-ribbon
-  .oasis-editor-tool-button-ribbon-large
-  span {
+.oasis-editor-toolbar-view-ribbon .oasis-editor-tool-button-ribbon-large span {
   display: block;
   max-width: 100%;
   overflow: hidden;
@@ -239,6 +266,30 @@
   max-width: 54px;
 }
 
+.oasis-editor-ribbon-group-compact .oasis-editor-tool-button {
+  padding-right: 5px;
+  padding-left: 5px;
+}
+
+.oasis-editor-ribbon-group-compact .oasis-editor-tool-select-wide {
+  min-width: 118px;
+  max-width: 118px;
+}
+
+.oasis-editor-ribbon-group-compact
+  .oasis-editor-tool-select:not(
+    .oasis-editor-tool-select-wide,
+    .oasis-editor-tool-select-small
+  ) {
+  min-width: 92px;
+  max-width: 92px;
+}
+
+.oasis-editor-ribbon-group-compact .oasis-editor-toolbar-separator {
+  margin-right: 1px;
+  margin-left: 1px;
+}
+
 .oasis-editor-toolbar-view-ribbon .oasis-editor-toolbar-separator {
   height: 24px;
   margin: 0 4px;
@@ -253,6 +304,24 @@
 .oasis-editor-toolbar-view-ribbon .oasis-editor-color-menu,
 .oasis-editor-toolbar-view-ribbon .oasis-editor-table-grid-picker {
   overflow: auto;
+}
+
+.oasis-editor-ribbon-collapsed-menu {
+  width: max-content;
+  min-width: 180px;
+  max-width: min(520px, calc(100vw - 16px));
+}
+
+.oasis-editor-ribbon-collapsed-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  max-width: min(500px, calc(100vw - 32px));
+}
+
+.oasis-editor-ribbon-collapsed-items .oasis-editor-toolbar-item {
+  flex-shrink: 0;
 }
 
 .oasis-editor-toolbar-layout-wrap {
@@ -536,11 +605,21 @@
   box-sizing: border-box;
 }
 
+.oasis-editor-ribbon-group-compact .oasis-editor-style-gallery-ribbon {
+  width: var(--oasis-ribbon-group-compact-width, 132px);
+}
+
 .oasis-editor-style-gallery-strip {
   display: flex;
   flex: 1;
   min-width: 0;
   overflow: hidden;
+}
+
+.oasis-editor-ribbon-group-compact .oasis-editor-style-gallery-strip {
+  flex: 0 0 calc(var(--oasis-ribbon-group-compact-width, 132px) - 26px);
+  width: calc(var(--oasis-ribbon-group-compact-width, 132px) - 26px);
+  max-width: calc(var(--oasis-ribbon-group-compact-width, 132px) - 26px);
 }
 
 .oasis-editor-style-gallery-card {
@@ -577,8 +656,14 @@
 }
 
 .oasis-editor-style-gallery-expand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 24px;
   width: 24px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0;
   border: 0;
   border-left: 1px solid #9a9a9a;
   background: #ededed;
@@ -594,6 +679,7 @@
 }
 
 .oasis-editor-style-gallery-expand i {
+  display: block;
   width: 14px;
   height: 14px;
 }

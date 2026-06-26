@@ -55,6 +55,7 @@ export function useEditorRuntimePlugins(
         group: item.group ?? "general",
         row: item.row ?? 1,
         ribbonSize: item.ribbonSize,
+        ribbonGroupResize: item.ribbonGroupResize,
         order: item.order,
       };
       toolbarRegistry.register(contributed);
