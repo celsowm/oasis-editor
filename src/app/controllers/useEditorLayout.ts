@@ -53,11 +53,17 @@ function normalizeParagraphLayouts(
   if (dirtyParagraphIds.length === 0) {
     return current;
   }
-  const next = { ...current };
+  // Only allocate a new object (which triggers a re-projection) when a dirty id
+  // is actually present. Otherwise return the same reference so dependent memos
+  // don't recompute for a no-op invalidation.
+  let next: Record<string, EditorLayoutParagraph> | undefined;
   for (const paragraphId of dirtyParagraphIds) {
-    delete next[paragraphId];
+    if (Object.prototype.hasOwnProperty.call(current, paragraphId)) {
+      next ??= { ...current };
+      delete next[paragraphId];
+    }
   }
-  return next;
+  return next ?? current;
 }
 
 export function useEditorLayout(props: UseEditorLayoutProps) {

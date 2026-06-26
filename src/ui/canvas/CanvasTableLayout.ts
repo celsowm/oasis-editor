@@ -11,10 +11,10 @@ import {
   type EditorRevisionMetadata,
   resolveEffectiveTableCellFormatting,
   resolveEffectiveTableStyle,
-  resolveTableParagraphInheritance,
 } from "@/core/model.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { projectParagraphLayout } from "@/layoutProjection/index.js";
+import { resolveCachedTableCellParagraph } from "@/layoutProjection/tableCellParagraphCache.js";
 import { shouldCollapseContextualSpacing } from "@/layoutProjection/paragraphPagination.js";
 import { PX_PER_POINT as POINT_TO_PX } from "@/core/units.js";
 import {
@@ -482,21 +482,13 @@ export function buildCanvasTableLayout(options: {
       const cell: EditorTableCellNode = {
         ...sourceCell,
         style: formatting.cellStyle,
-        blocks: sourceCell.blocks.map((paragraph) => ({
-          ...paragraph,
-          style: {
-            ...resolveTableParagraphInheritance(
-              formatting.paragraphStyle,
-              paragraph.style?.styleId,
-              state.document.styles,
-            ),
-            ...paragraph.style,
-          },
-          runs: paragraph.runs.map((run) => ({
-            ...run,
-            styles: { ...formatting.textStyle, ...run.styles },
-          })),
-        })),
+        blocks: sourceCell.blocks.map((paragraph) =>
+          resolveCachedTableCellParagraph(
+            paragraph,
+            formatting,
+            state.document.styles,
+          ),
+        ),
       };
       const effectiveRow = formatting.rowStyle;
       const rowSpan = Math.max(1, cell.rowSpan ?? 1);

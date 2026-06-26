@@ -3,11 +3,9 @@ import type { ITextMeasurer } from "@/core/engine.js";
 import { domTextMeasurer } from "@/ui/textMeasurement.js";
 import { resolveTableColumnWidthsPx } from "@/ui/tableGeometry.js";
 import { buildTableCellLayout } from "@/core/tableLayout.js";
-import {
-  resolveEffectiveTableCellFormatting,
-  resolveTableParagraphInheritance,
-} from "@/core/model.js";
+import { resolveEffectiveTableCellFormatting } from "@/core/model.js";
 import { estimateParagraphBlockHeight } from "./paragraphPagination.js";
+import { resolveCachedTableCellParagraph } from "./tableCellParagraphCache.js";
 import { PX_PER_POINT as POINT_TO_PX } from "@/core/units.js";
 
 const DEFAULT_FONT_SIZE = 14.6667; // 11pt
@@ -239,21 +237,9 @@ export function estimateTableRowHeight(
     const cell = {
       ...sourceCell,
       style: formatting?.cellStyle ?? sourceCell.style,
-      blocks: sourceCell.blocks.map((paragraph) => ({
-        ...paragraph,
-        style: {
-          ...resolveTableParagraphInheritance(
-            formatting?.paragraphStyle,
-            paragraph.style?.styleId,
-            styles,
-          ),
-          ...paragraph.style,
-        },
-        runs: paragraph.runs.map((run) => ({
-          ...run,
-          styles: { ...formatting?.textStyle, ...run.styles },
-        })),
-      })),
+      blocks: sourceCell.blocks.map((paragraph) =>
+        resolveCachedTableCellParagraph(paragraph, formatting, styles),
+      ),
     };
     if (cell.vMerge === "continue") return 0;
     let columnWidthPx: number | undefined;
