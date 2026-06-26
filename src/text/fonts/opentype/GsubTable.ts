@@ -1,4 +1,11 @@
 import { BinaryReader } from "@/text/truetype/BinaryReader.js";
+import {
+  collectLookupIndices,
+  parseClassDef,
+  parseCoverage,
+  parseLayoutTableHeader,
+  type ClassLookup,
+} from "@/text/fonts/opentype/otLayoutCommon.js";
 
 /**
  * Minimal OpenType GSUB (glyph substitution) parser + apply engine, scoped to the
@@ -6,9 +13,10 @@ import { BinaryReader } from "@/text/truetype/BinaryReader.js";
  * style (lnum/onum/pnum/tnum), stylistic sets (ss01–ss20), and contextual
  * alternates (calt).
  *
- * It parses ScriptList/FeatureList/LookupList and the substitution lookup types
- * those features use — single (1), multiple (2), alternate (3), ligature (4),
- * chaining contextual (6), and extension (7). Positioning (GPOS), complex-script
+ * It parses ScriptList/FeatureList/LookupList (the first two via the shared
+ * {@link otLayoutCommon}) and the substitution lookup types those features use —
+ * single (1), multiple (2), alternate (3), ligature (4), chaining contextual (6),
+ * and extension (7). Positioning (GPOS — see {@link ./GposTable}), complex-script
  * shaping, and lookup-flag glyph skipping are intentionally out of scope.
  *
  * Parsing is defensive: any malformed offset or unsupported construct is skipped
@@ -23,12 +31,6 @@ export interface ShapingGlyph {
   codePoints: number[];
 }
 
-/** Returns the coverage index of a glyph id, or -1 when not covered. */
-type Coverage = (glyphId: number) => number;
-
-/** Returns the class of a glyph id (0 when unlisted). */
-type ClassLookup = (glyphId: number) => number;
-
 /**
  * One substitution subtable. Attempts to apply at `pos`; returns the number of
  * output glyphs to advance past on success, or `null` when it does not match.
@@ -40,80 +42,6 @@ interface SubstSubtable {
 interface GsubLookup {
   lookupType: number;
   subtables: SubstSubtable[];
-}
-
-function readTag(reader: BinaryReader): string {
-  return reader.tag();
-}
-
-function parseCoverage(reader: BinaryReader, offset: number): Coverage {
-  reader.seek(offset);
-  const format = reader.u16();
-  if (format === 1) {
-    const count = reader.u16();
-    const map = new Map<number, number>();
-    for (let i = 0; i < count; i += 1) {
-      map.set(reader.u16(), i);
-    }
-    return (glyphId) => map.get(glyphId) ?? -1;
-  }
-  if (format === 2) {
-    const rangeCount = reader.u16();
-    const ranges: Array<{ start: number; end: number; startIndex: number }> =
-      [];
-    for (let i = 0; i < rangeCount; i += 1) {
-      const start = reader.u16();
-      const end = reader.u16();
-      const startIndex = reader.u16();
-      ranges.push({ start, end, startIndex });
-    }
-    return (glyphId) => {
-      for (const range of ranges) {
-        if (glyphId >= range.start && glyphId <= range.end) {
-          return range.startIndex + (glyphId - range.start);
-        }
-      }
-      return -1;
-    };
-  }
-  return () => -1;
-}
-
-function parseClassDef(reader: BinaryReader, offset: number): ClassLookup {
-  reader.seek(offset);
-  const format = reader.u16();
-  if (format === 1) {
-    const startGlyph = reader.u16();
-    const glyphCount = reader.u16();
-    const classes = new Array<number>(glyphCount);
-    for (let i = 0; i < glyphCount; i += 1) {
-      classes[i] = reader.u16();
-    }
-    return (glyphId) => {
-      const index = glyphId - startGlyph;
-      return index >= 0 && index < glyphCount ? classes[index]! : 0;
-    };
-  }
-  if (format === 2) {
-    const rangeCount = reader.u16();
-    const ranges: Array<{ start: number; end: number; classValue: number }> =
-      [];
-    for (let i = 0; i < rangeCount; i += 1) {
-      const start = reader.u16();
-      const end = reader.u16();
-      const classValue = reader.u16();
-      ranges.push({ start, end, classValue });
-    }
-    return (glyphId) => {
-      for (const range of ranges) {
-        if (glyphId >= range.start && glyphId <= range.end) {
-          return range.classValue;
-        }
-      }
-      return 0;
-    };
-  }
-  return () => 0;
 }
 
 // --- Lookup subtable parsers -------------------------------------------------
@@ -576,30 +504,9 @@ export class GsubTable {
   static parse(bytes: Uint8Array): GsubTable | null {
     try {
       const reader = new BinaryReader(bytes);
-      reader.seek(0);
-      reader.skip(2); // majorVersion
-      reader.skip(2); // minorVersion
-      const scriptListOffset = reader.u16();
-      const featureListOffset = reader.u16();
-      const lookupListOffset = reader.u16();
-
-      const featureRecords = parseFeatureList(reader, featureListOffset);
-      const activeFeatureIndices = parseScriptList(reader, scriptListOffset);
+      const { featureToLookups, lookupListOffset } =
+        parseLayoutTableHeader(reader);
       const lookups = parseLookupList(reader, lookupListOffset);
-
-      // Map feature tag → ordered lookup indices, restricted to the features the
-      // resolved Latin/DFLT language system actually offers.
-      const featureToLookups = new Map<string, number[]>();
-      for (const featureIndex of activeFeatureIndices) {
-        const record = featureRecords[featureIndex];
-        if (!record) continue;
-        const existing = featureToLookups.get(record.tag) ?? [];
-        for (const lookupIndex of record.lookupIndices) {
-          if (!existing.includes(lookupIndex)) existing.push(lookupIndex);
-        }
-        featureToLookups.set(record.tag, existing);
-      }
-
       return new GsubTable(lookups, featureToLookups);
     } catch {
       return null;
@@ -613,13 +520,7 @@ export class GsubTable {
 
   /** Ordered (ascending) unique lookup indices referenced by the given tags. */
   collectLookupIndices(tags: readonly string[]): number[] {
-    const indices = new Set<number>();
-    for (const tag of tags) {
-      for (const lookupIndex of this.featureToLookups.get(tag) ?? []) {
-        indices.add(lookupIndex);
-      }
-    }
-    return Array.from(indices).sort((a, b) => a - b);
+    return collectLookupIndices(this.featureToLookups, tags);
   }
 
   /**
@@ -653,78 +554,6 @@ export class GsubTable {
       }
     }
   }
-}
-
-interface FeatureRecord {
-  tag: string;
-  lookupIndices: number[];
-}
-
-function parseFeatureList(
-  reader: BinaryReader,
-  featureListOffset: number,
-): FeatureRecord[] {
-  reader.seek(featureListOffset);
-  const featureCount = reader.u16();
-  const records: Array<{ tag: string; offset: number }> = [];
-  for (let i = 0; i < featureCount; i += 1) {
-    const tag = readTag(reader);
-    const offset = featureListOffset + reader.u16();
-    records.push({ tag, offset });
-  }
-  return records.map(({ tag, offset }) => {
-    reader.seek(offset);
-    reader.skip(2); // featureParamsOffset
-    const lookupIndexCount = reader.u16();
-    const lookupIndices = new Array<number>(lookupIndexCount);
-    for (let i = 0; i < lookupIndexCount; i += 1) {
-      lookupIndices[i] = reader.u16();
-    }
-    return { tag, lookupIndices };
-  });
-}
-
-/**
- * Resolves the set of feature indices offered by the Latin script's default
- * language system, falling back to DFLT, then to the first available script.
- */
-function parseScriptList(
-  reader: BinaryReader,
-  scriptListOffset: number,
-): number[] {
-  reader.seek(scriptListOffset);
-  const scriptCount = reader.u16();
-  const scripts: Array<{ tag: string; offset: number }> = [];
-  for (let i = 0; i < scriptCount; i += 1) {
-    const tag = readTag(reader);
-    const offset = scriptListOffset + reader.u16();
-    scripts.push({ tag, offset });
-  }
-  if (scripts.length === 0) return [];
-
-  const chosen =
-    scripts.find((s) => s.tag === "latn") ??
-    scripts.find((s) => s.tag === "DFLT") ??
-    scripts[0]!;
-
-  reader.seek(chosen.offset);
-  const defaultLangSysOffset = reader.u16();
-  // langSysCount + records ignored: we use the default language system, which is
-  // what Word body text and the CSS path use for Latin.
-  if (defaultLangSysOffset === 0) return [];
-
-  reader.seek(chosen.offset + defaultLangSysOffset);
-  reader.skip(2); // lookupOrderOffset (reserved)
-  const requiredFeatureIndex = reader.u16();
-  const featureIndexCount = reader.u16();
-  const featureIndices: number[] = [];
-  if (requiredFeatureIndex !== 0xffff) {
-    featureIndices.push(requiredFeatureIndex);
-  }
-  for (let i = 0; i < featureIndexCount; i += 1) {
-    featureIndices.push(reader.u16());
-  }
-  return featureIndices;
 }
 
 function parseLookupList(

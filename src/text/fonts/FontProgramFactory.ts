@@ -22,10 +22,10 @@ export function parseEmbeddedFontSync(
 export function createPdfEmbeddableFont(
   program: SfntFontProgram,
 ): PdfEmbeddableFont {
-  // Use the GSUB-aware layouter when the font can shape; otherwise the 1:1
-  // layouter (identical output, zero overhead).
+  // Use the OpenType layouter when the font can shape (GSUB substitution and/or
+  // GPOS kerning); otherwise the 1:1 layouter (identical output, zero overhead).
   const shaper = new OpenTypeLayouter(program);
-  const layouter: TextLayouter = shaper.hasGsub
+  const layouter: TextLayouter = shaper.hasShaping
     ? shaper
     : new SimpleTextLayouter(program);
 

@@ -153,12 +153,23 @@ resolved once per run by `resolveOpenTypeFeatureTags`
 flow through the existing Type0/Identity-H CIDFont, and merged `codePoints` keep ToUnicode
 (copy/search) correct.
 
-**Render-only & safe:** shaping happens inside each independently-positioned PDF chunk (word),
-so a ligature rendering marginally narrower than its reserved slot span causes no cumulative
+**GPOS kerning (also DONE).** Pair kerning (`kern`) is now applied in PDF export too. `GposTable`
+([`src/text/fonts/opentype/GposTable.ts`](../src/text/fonts/opentype/GposTable.ts)) parses GPOS —
+single (1) / pair (2) adjustment and extension (9) lookups, formats 1 & 2 — and adjusts the
+glyphs' horizontal advances; `OpenTypeLayouter` routes the `kern` tag to it (substitution first,
+then kerning) and writes the result to `positions[].xAdvance`, which the writer already turns into
+`TJ` advance adjustments. The shared GSUB/GPOS header (ScriptList/FeatureList, Coverage, ClassDef)
+lives in [`otLayoutCommon.ts`](../src/text/fonts/opentype/otLayoutCommon.ts). The `kern` tag is
+gated by `resolveOpenTypeFeatureTags(style, fontSizePt)` using Word's `w:kern` (`kerningThreshold`)
+minimum-size rule, mirroring the canvas `ctx.fontKerning` gate. Placement/vertical metrics, mark
+attachment, and contextual positioning are out of scope (Latin advance kerning only).
+
+**Render-only & safe:** shaping happens inside each independently-positioned PDF chunk (word), so a
+ligature or kern rendering marginally narrower than its reserved slot span causes no cumulative
 drift; on-screen measurement stays 1:1 (no caret/justification change).
 
-**Deferred follow-ons:** GPOS kerning (the `positions[].xAdvance` path is already wired) and
-complex-script shaping (Arabic/Indic/bidi) remain out of scope.
+**Deferred follow-ons:** complex-script shaping (Arabic/Indic/bidi) and GPOS mark positioning
+remain out of scope.
 
 ### 2.4 Tests
 
@@ -168,7 +179,7 @@ Carlito font), `tests/vitest/__tests__/core/openTypeFeatureTags.test.ts` (tag re
 PDF integration assertion in `pdfWriter.test.ts` ("applies GSUB ligature substitution …").
 
 **Effort:** Canvas mapping = small. Full canvas parity via DOM rasterization = medium. PDF
-shaping = **done** (GSUB; GPOS kerning deferred).
+shaping = **done** (GSUB substitution + GPOS pair kerning).
 
 ---
 
@@ -345,7 +356,8 @@ no rendering. Tests: `docxImport.comments.test.ts` (dateUtc round-trip).
 | 7 | `w15:collapsed`, `w16du:dateUtc` — round-trip | small | metadata only |
 | 8 | `scene3d`/`props3d` — round-trip only | small | no render |
 | — | Gradient fills (PDF shading dicts) | large | deferred (Phase 2b) |
-| 9 | GSUB shaping for PDF font features | large | **done** (P1-PDF); GPOS kerning still deferred |
+| 9 | GSUB shaping for PDF font features | large | **done** (P1-PDF) |
+| 10 | GPOS pair kerning for PDF | medium | **done**; gated by `w:kern` threshold |
 
 ---
 
@@ -366,5 +378,6 @@ no rendering. Tests: `docxImport.comments.test.ts` (dateUtc round-trip).
 - This document is the roadmap; most phases are now implemented (see per-section status).
 - A PDF gradient/shading subsystem (prerequisite for gradient fills) remains a **named
   prerequisite** for that deferred sub-task. The PDF font features no longer need a full
-  HarfBuzz-class engine — a minimal Latin GSUB shaper (§2.3) covers the five features in scope;
-  GPOS kerning and complex-script shaping remain the named prerequisites for their follow-ons.
+  HarfBuzz-class engine — a minimal Latin GSUB shaper plus GPOS pair kerning (§2.3) covers the
+  five substitution features and `w:kern`; complex-script shaping (Arabic/Indic/bidi) and GPOS
+  mark positioning remain the named prerequisites for their follow-ons.

@@ -65,6 +65,28 @@ describe("resolveOpenTypeFeatureTags", () => {
     ).toEqual(["calt", "liga"]);
   });
 
+  it("adds kern only when a font size meeting the threshold is supplied", () => {
+    const kerned = style({ kerningThreshold: 8 });
+    // No size → substitution tags only, never kern.
+    expect(resolveOpenTypeFeatureTags(kerned)).toEqual([]);
+    // Size below the threshold → kerning stays off.
+    expect(resolveOpenTypeFeatureTags(kerned, 6)).toEqual([]);
+    // Size at/above the threshold → kern turns on.
+    expect(resolveOpenTypeFeatureTags(kerned, 8)).toEqual(["kern"]);
+    expect(resolveOpenTypeFeatureTags(kerned, 12)).toEqual(["kern"]);
+    // Without a threshold, a size never introduces kern.
+    expect(resolveOpenTypeFeatureTags(style({}), 12)).toEqual([]);
+  });
+
+  it("merges kern into the sorted GSUB tag list", () => {
+    expect(
+      resolveOpenTypeFeatureTags(
+        style({ ligatures: "standard", kerningThreshold: 1 }),
+        12,
+      ),
+    ).toEqual(["kern", "liga"]);
+  });
+
   it("returns a sorted, de-duplicated tag list", () => {
     const tags = resolveOpenTypeFeatureTags(
       style({

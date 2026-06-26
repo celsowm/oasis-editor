@@ -57,12 +57,20 @@ export function underlineStyleLineWidthPx(
 }
 
 /**
- * Resolves the OpenType GSUB feature tags a run explicitly enables, mirroring the
- * CSS semantics in `styleCss.ts` (only enabled features, no implicit liga/kern).
- * Used by the PDF shaper to drive glyph substitution. Returns a sorted, de-duped
- * array so it doubles as a stable cache key.
+ * Resolves the OpenType feature tags a run explicitly enables, mirroring the CSS
+ * semantics in `styleCss.ts` (only enabled features, no implicit defaults). Used
+ * by the PDF shaper to drive GSUB substitution and GPOS kerning. Returns a sorted,
+ * de-duped array so it doubles as a stable cache key.
+ *
+ * `fontSizePt` (the run's resolved point size) gates the GPOS `kern` tag the same
+ * way Word's `w:kern` threshold and the canvas painter do: kerning applies only
+ * when the run's size meets `kerningThreshold`. Omit it to resolve substitution
+ * tags alone.
  */
-export function resolveOpenTypeFeatureTags(style: EditorTextStyle): string[] {
+export function resolveOpenTypeFeatureTags(
+  style: EditorTextStyle,
+  fontSizePt?: number,
+): string[] {
   const tags = new Set<string>();
 
   switch (style.ligatures) {
@@ -97,6 +105,17 @@ export function resolveOpenTypeFeatureTags(style: EditorTextStyle): string[] {
   }
 
   if (style.contextualAlternates) tags.add("calt");
+
+  // GPOS pair kerning. `kerningThreshold` (pt) is Word's `w:kern` minimum font
+  // size; kerning is active only when the run's size meets it.
+  if (
+    typeof fontSizePt === "number" &&
+    typeof style.kerningThreshold === "number" &&
+    Number.isFinite(style.kerningThreshold) &&
+    fontSizePt >= style.kerningThreshold
+  ) {
+    tags.add("kern");
+  }
 
   return Array.from(tags).sort();
 }

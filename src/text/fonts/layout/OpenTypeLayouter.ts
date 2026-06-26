@@ -9,29 +9,50 @@ import {
   GsubTable,
   type ShapingGlyph,
 } from "@/text/fonts/opentype/GsubTable.js";
+import { GposTable } from "@/text/fonts/opentype/GposTable.js";
+
+/** Feature tags routed to GPOS positioning; everything else drives GSUB. */
+const GPOS_FEATURE_TAGS = new Set(["kern"]);
 
 /**
- * A {@link TextLayouter} that applies OpenType GSUB substitution for the editor's
- * Latin font features (ligatures, figure style, stylistic sets, contextual
- * alternates) when the font carries a GSUB table and the caller requests them.
+ * A {@link TextLayouter} that applies OpenType shaping for the editor's Latin font
+ * features when the font carries the relevant tables and the caller requests them:
  *
- * With no requested features — or a font without GSUB — it falls straight back to
- * the same 1:1 codepoint→glyph mapping as `SimpleTextLayouter`, so ordinary text
- * is byte-for-byte unchanged. GSUB only substitutes glyphs; advances come from
- * `hmtx` (GPOS positioning is out of scope), so `positions[].xAdvance` equals each
- * resulting glyph's advance width.
+ * - **GSUB** glyph substitution — ligatures, figure style, stylistic sets, and
+ *   contextual alternates (changes glyph identity and count).
+ * - **GPOS** glyph positioning — pair kerning (`kern`), which adjusts horizontal
+ *   advances only.
+ *
+ * With no requested features — or a font without these tables — it falls straight
+ * back to the same 1:1 codepoint→glyph mapping as `SimpleTextLayouter`, so ordinary
+ * text is byte-for-byte unchanged. Substitution runs first, then kerning adjusts
+ * the resulting glyphs' advances (`positions[].xAdvance`); GPOS placement, vertical
+ * metrics, and mark attachment are out of scope.
  */
 export class OpenTypeLayouter implements TextLayouter {
   private readonly gsub: GsubTable | null;
+  private readonly gpos: GposTable | null;
 
   constructor(private readonly font: ParsedFontProgram) {
-    const raw = font.getRawTableData("GSUB");
-    this.gsub = raw ? GsubTable.parse(raw) : null;
+    const gsubRaw = font.getRawTableData("GSUB");
+    this.gsub = gsubRaw ? GsubTable.parse(gsubRaw) : null;
+    const gposRaw = font.getRawTableData("GPOS");
+    this.gpos = gposRaw ? GposTable.parse(gposRaw) : null;
   }
 
-  /** True when the font exposes a GSUB table the shaper could use. */
+  /** True when the font exposes a GSUB table the substitution shaper could use. */
   get hasGsub(): boolean {
     return this.gsub !== null;
+  }
+
+  /** True when the font exposes a GPOS table the kerning shaper could use. */
+  get hasGpos(): boolean {
+    return this.gpos !== null;
+  }
+
+  /** True when either shaping table is present (so this layouter adds value). */
+  get hasShaping(): boolean {
+    return this.gsub !== null || this.gpos !== null;
   }
 
   layout(text: string, features?: readonly string[]): GlyphRun {
@@ -45,22 +66,40 @@ export class OpenTypeLayouter implements TextLayouter {
       });
     }
 
-    if (this.gsub && features && features.length > 0) {
-      this.gsub.shape(buffer, features);
+    const gsubTags =
+      features?.filter((tag) => !GPOS_FEATURE_TAGS.has(tag)) ?? [];
+    const gposTags =
+      features?.filter((tag) => GPOS_FEATURE_TAGS.has(tag)) ?? [];
+
+    if (this.gsub && gsubTags.length > 0) {
+      this.gsub.shape(buffer, gsubTags);
+    }
+
+    const advances = buffer.map((glyph) =>
+      this.font.advanceWidthForGlyph(glyph.id),
+    );
+    if (this.gpos && gposTags.length > 0) {
+      this.gpos.position(
+        buffer.map((glyph) => glyph.id),
+        advances,
+        gposTags,
+      );
     }
 
     const glyphs: GlyphInfo[] = [];
     const positions: GlyphPosition[] = [];
     let advanceWidth = 0;
-    for (const glyph of buffer) {
-      const glyphAdvance = this.font.advanceWidthForGlyph(glyph.id);
+    for (let i = 0; i < buffer.length; i += 1) {
+      const glyph = buffer[i]!;
+      const nominalAdvance = this.font.advanceWidthForGlyph(glyph.id);
+      const positionedAdvance = advances[i]!;
       glyphs.push({
         id: glyph.id,
         codePoints: glyph.codePoints,
-        advanceWidth: glyphAdvance,
+        advanceWidth: nominalAdvance,
       });
-      positions.push({ xAdvance: glyphAdvance });
-      advanceWidth += glyphAdvance;
+      positions.push({ xAdvance: positionedAdvance });
+      advanceWidth += positionedAdvance;
     }
 
     return { glyphs, positions, advanceWidth };

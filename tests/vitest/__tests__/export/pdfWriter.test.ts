@@ -1537,6 +1537,49 @@ describe("OasisPdfWriter", () => {
     expect(shaped).toContain("00660069");
   });
 
+  it("applies GPOS pair kerning when the run enables the kern feature", async () => {
+    const registry = new PdfFontRegistry();
+    await registry.loadBundledUnicodeFaces();
+    const face = registry.resolveFontFace({
+      fontFamily: "Calibri",
+    }).writerResourceName;
+
+    // Same text/font, with and without the kern feature. "AV" is a strong
+    // negative kerning pair in Carlito.
+    const kerned = new OasisPdfWriter(registry.getPdfFontResources());
+    let pageIndex = kerned.addPage({ width: 300, height: 200 });
+    kerned.drawText(pageIndex, {
+      x: 24,
+      y: 48,
+      text: "AV",
+      fontSize: 24,
+      fontResourceName: face,
+      fontFeatures: ["kern"],
+    });
+    const withKern = decodePdf(kerned.toArrayBuffer());
+
+    const plain = new OasisPdfWriter(registry.getPdfFontResources());
+    pageIndex = plain.addPage({ width: 300, height: 200 });
+    plain.drawText(pageIndex, {
+      x: 24,
+      y: 48,
+      text: "AV",
+      fontSize: 24,
+      fontResourceName: face,
+    });
+    const noKern = decodePdf(plain.toArrayBuffer());
+
+    // Kerning emits a TJ array with a positive advance adjustment between the
+    // glyphs (PDF moves the next glyph left), whereas the plain run is a flat Tj.
+    expect(withKern).toContain(" TJ");
+    expect(noKern).not.toContain(" TJ");
+    expect(noKern).toContain(" Tj");
+    // The glyph identities are unchanged, so copy/search still yields "AV".
+    expect(withKern).toContain("/ToUnicode");
+    expect(withKern).toContain("0041");
+    expect(withKern).toContain("0056");
+  });
+
   it("maps simple glyphs back through ToUnicode", async () => {
     const registry = new PdfFontRegistry();
     await registry.loadBundledUnicodeFaces();

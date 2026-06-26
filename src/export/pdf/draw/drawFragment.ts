@@ -652,9 +652,13 @@ export async function drawFragmentText(
   const paragraphAlign =
     resolveEffectiveParagraphStyle(paragraph.style, document.styles).align ??
     "left";
-  // OpenType GSUB features this run enables (ligatures, figure style, stylistic
-  // sets, contextual alternates); the embedded-font shaper applies them per chunk.
-  const fontFeatures = resolveOpenTypeFeatureTags(styles);
+  // OpenType features this run enables (GSUB: ligatures, figure style, stylistic
+  // sets, contextual alternates; GPOS: pair kerning when the run's nominal size
+  // meets the `w:kern` threshold); the embedded-font shaper applies them per chunk.
+  const fontFeatures = resolveOpenTypeFeatureTags(
+    styles,
+    textStyleToFontSizePt(styles),
+  );
   const baseTextOptions = {
     fontSize: fontSizePt,
     bold: styles.bold,
