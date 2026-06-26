@@ -154,6 +154,22 @@ export interface EditorDropCap {
   style?: EditorTextStyle;
 }
 
+/**
+ * A block-level structured document tag (`w:sdt`, a content control) enclosing
+ * one or more blocks, preserved for round-trip. Its content is unwrapped into the
+ * normal block flow (so it still renders and edits); this carries the wrapper's
+ * properties verbatim so export can re-wrap. `groupId` ties together the
+ * consecutive blocks that came from the same `w:sdt`; the array on a block lists
+ * its enclosing wrappers outermost-first (nested content controls).
+ */
+export interface EditorSdtBlockWrapper {
+  groupId: string;
+  /** Raw `<w:sdtPr>…</w:sdtPr>` XML, or empty when the tag had no properties. */
+  sdtPrXml: string;
+  /** Raw `<w:sdtEndPr>…</w:sdtEndPr>` XML, when present. */
+  sdtEndPrXml?: string;
+}
+
 export interface EditorParagraphNode {
   id: string;
   type: "paragraph";
@@ -162,6 +178,8 @@ export interface EditorParagraphNode {
   list?: EditorParagraphListStyle;
   /** Drop cap that body text in this paragraph wraps around, when present. */
   dropCap?: EditorDropCap;
+  /** Enclosing block-level `w:sdt` content controls, preserved for round-trip. */
+  sdtWrappers?: EditorSdtBlockWrapper[];
 }
 
 export interface EditorTableCellNode {
@@ -235,6 +253,8 @@ export interface EditorTableNode {
   style?: EditorTableStyle;
   /** Preservation-only `w:tblGridChange` XML. */
   gridRevision?: EditorPropertyRevision<number[]>;
+  /** Enclosing block-level `w:sdt` content controls, preserved for round-trip. */
+  sdtWrappers?: EditorSdtBlockWrapper[];
 }
 
 export type EditorBlockNode = EditorParagraphNode | EditorTableNode;

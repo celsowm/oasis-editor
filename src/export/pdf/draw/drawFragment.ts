@@ -156,6 +156,55 @@ export function drawFragmentShading(
   });
 }
 
+// Registers an axial gradient for a `w14:textFill` gradient run, returning the
+// shading resource name to fill its glyphs with. The gradient axis mirrors the
+// canvas painter exactly: centered on the fragment's bounding box, rotated by the
+// fill angle, spanning the box's diagonal extent. Returns null for solid/absent
+// fills or fewer than two stops (those keep the flat-color path).
+function resolveGradientShadingName(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  line: EditorLayoutLine,
+  fragment: EditorLayoutFragment,
+  originX: number,
+  originY: number,
+  styles: Required<EditorTextStyle>,
+): string | undefined {
+  const fill = styles.textFill;
+  if (!fill || fill.type !== "gradient" || fill.stops.length < 2) {
+    return undefined;
+  }
+  const bounds = resolveFragmentBounds(
+    line,
+    fragment,
+    styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
+  );
+  if (!bounds) {
+    return undefined;
+  }
+  const x0px = originX + bounds.left;
+  const x1px = originX + bounds.right;
+  const y0px = originY + line.top;
+  const y1px = originY + line.top + line.height;
+  const cx = (x0px + x1px) / 2;
+  const cy = (y0px + y1px) / 2;
+  const rad = ((fill.angle ?? 0) * Math.PI) / 180;
+  const dx = (Math.cos(rad) * (x1px - x0px)) / 2;
+  const dy = (Math.sin(rad) * (y1px - y0px)) / 2;
+  return (
+    writer.registerAxialGradient(pageIndex, {
+      x0: pxToPt(cx - dx),
+      y0: pxToPt(cy - dy),
+      x1: pxToPt(cx + dx),
+      y1: pxToPt(cy + dy),
+      stops: fill.stops.map((stop) => ({
+        offset: stop.position,
+        color: stop.color,
+      })),
+    }) ?? undefined
+  );
+}
+
 // Run border (w:bdr): a rectangle stroked around the run's text.
 export function drawFragmentBorder(
   writer: OasisPdfWriter,
@@ -668,13 +717,24 @@ export async function drawFragmentText(
     horizontalScale: styles.characterScale ?? 100,
     fontFeatures,
   };
-  // textFill supersedes color; gradients flatten to first stop (PDF shading deferred).
+  // textFill supersedes color. Solid → fill color; gradient → a real axial PDF
+  // shading painted through the glyph clip (registered once per fragment so it is
+  // continuous across chunks); a 1-stop "gradient" degrades to that stop's color.
   const mainColor =
     styles.textFill?.type === "solid"
       ? styles.textFill.color
       : styles.textFill?.type === "gradient" && styles.textFill.stops[0]
         ? styles.textFill.stops[0].color
         : (styles.color ?? "#000000");
+  const gradientShadingName = resolveGradientShadingName(
+    writer,
+    pageIndex,
+    line,
+    fragment,
+    originX,
+    originY,
+    styles,
+  );
   const offsetPt = pxToPt(1);
   // Draws one text chunk applying the glyph-level run effects: emboss/imprint
   // lay a light relief copy offset behind, shadow lays a gray copy offset, and
@@ -758,13 +818,17 @@ export async function drawFragmentText(
       y: pxToPt(baselineY),
       text,
       color: mainColor,
-      ...(textOutline
-        ? {
-            renderMode: 2,
-            strokeColor: textOutline.color ?? mainColor,
-            strokeWidth: textOutline.widthPt,
-          }
-        : { renderMode: styles.outline ? 1 : 0 }),
+      // A gradient fill paints the glyphs via the shading clip; it supersedes
+      // both the solid color and any outline/stroke render mode.
+      ...(gradientShadingName
+        ? { gradientShadingName }
+        : textOutline
+          ? {
+              renderMode: 2,
+              strokeColor: textOutline.color ?? mainColor,
+              strokeWidth: textOutline.widthPt,
+            }
+          : { renderMode: styles.outline ? 1 : 0 }),
     });
   };
   const chunks =

@@ -8,6 +8,7 @@
  *  - {@link serializePdfDocument} — the final byte assembly.
  */
 import type {
+  OasisPdfAxialGradient,
   OasisPdfFontResource,
   OasisPdfImageOptions,
   OasisPdfImageResource,
@@ -22,6 +23,7 @@ import { DEFAULT_PDF_FONT_RESOURCES } from "./writer/pdfPrimitives.js";
 import { PdfContentStream } from "./writer/PdfContentStream.js";
 import { PdfFontTable } from "./writer/PdfFontTable.js";
 import { PdfImageTable } from "./writer/PdfImageTable.js";
+import { PdfShadingTable } from "./writer/PdfShadingTable.js";
 import { serializePdfDocument } from "./writer/PdfDocumentSerializer.js";
 
 export type {
@@ -44,6 +46,7 @@ export class OasisPdfWriter {
   private readonly streams: PdfContentStream[] = [];
   private readonly fonts: PdfFontTable;
   private readonly images = new PdfImageTable();
+  private readonly shadings = new PdfShadingTable();
 
   constructor(
     fontResources: OasisPdfFontResource[] = DEFAULT_PDF_FONT_RESOURCES,
@@ -61,9 +64,12 @@ export class OasisPdfWriter {
       height: Math.max(1, size.height),
       commands: [],
       imageResourceNames: new Set(),
+      shadingResourceNames: new Set(),
     };
     this.pages.push(page);
-    this.streams.push(new PdfContentStream(page, this.fonts, this.images));
+    this.streams.push(
+      new PdfContentStream(page, this.fonts, this.images, this.shadings),
+    );
     return this.pages.length - 1;
   }
 
@@ -114,6 +120,18 @@ export class OasisPdfWriter {
     this.streams[pageIndex]?.drawText(options);
   }
 
+  /**
+   * Registers an axial (linear) gradient on a page for use as a glyph fill, and
+   * returns its shading resource name to pass as `gradientShadingName` on a
+   * subsequent `drawText`. Coordinates are in the writer's top-left point space.
+   */
+  registerAxialGradient(
+    pageIndex: number,
+    gradient: OasisPdfAxialGradient,
+  ): string | null {
+    return this.streams[pageIndex]?.registerAxialGradient(gradient) ?? null;
+  }
+
   registerImageResource(
     resource: Omit<OasisPdfImageResource, "resourceName"> & {
       resourceName?: string;
@@ -139,6 +157,11 @@ export class OasisPdfWriter {
     if (this.pages.length === 0) {
       this.addPage({ width: 612, height: 792 });
     }
-    return serializePdfDocument(this.pages, this.fonts, this.images);
+    return serializePdfDocument(
+      this.pages,
+      this.fonts,
+      this.images,
+      this.shadings,
+    );
   }
 }

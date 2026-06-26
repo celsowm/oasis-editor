@@ -1,13 +1,128 @@
 import JSZip from "jszip";
-import { type Element as XmlElement } from "@xmldom/xmldom";
-import type { EditorBlockNode } from "@/core/model.js";
-import { WORD_NS } from "./xmlHelpers.js";
+import { type Element as XmlElement, XMLSerializer } from "@xmldom/xmldom";
+import type { EditorBlockNode, EditorSdtBlockWrapper } from "@/core/model.js";
+import { createEditorNodeId } from "@/core/editorState.js";
+import { WORD_NS, getFirstChildByTagNameNS } from "./xmlHelpers.js";
 import { type AssetRegistry } from "./assetRegistry.js";
 import { type DocxImportTheme } from "./theme.js";
 import { type NumberingMaps } from "./numbering.js";
 import { parseParagraphNodes } from "./paragraphs.js";
 import { parseTableNode } from "./tables.js";
 import type { ParseNestedBlocks } from "./runs/types.js";
+
+/**
+ * Parse a single block-level child element (`w:p`, `w:tbl`, or a `w:sdt` content
+ * control) into editor blocks. Unknown elements yield no blocks. Shared by the
+ * text-box body walker, the document-body walker, and nested `w:sdtContent`.
+ */
+export async function parseBlockLevelChild(
+  element: XmlElement,
+  numberingMaps: NumberingMaps,
+  zip: JSZip,
+  relsMap: Map<string, string>,
+  assets: AssetRegistry,
+  theme: DocxImportTheme,
+  parseNestedBlocks: ParseNestedBlocks,
+): Promise<EditorBlockNode[]> {
+  if (element.namespaceURI !== WORD_NS) {
+    return [];
+  }
+  if (element.localName === "p") {
+    const parsed = await parseParagraphNodes(
+      element,
+      numberingMaps,
+      zip,
+      relsMap,
+      assets,
+      theme,
+      parseNestedBlocks,
+    );
+    return parsed.paragraphs;
+  }
+  if (element.localName === "tbl") {
+    return [
+      await parseTableNode(
+        element,
+        numberingMaps,
+        zip,
+        relsMap,
+        assets,
+        theme,
+        parseNestedBlocks,
+      ),
+    ];
+  }
+  if (element.localName === "sdt") {
+    return parseSdtBlockNode(
+      element,
+      numberingMaps,
+      zip,
+      relsMap,
+      assets,
+      theme,
+      parseNestedBlocks,
+    );
+  }
+  return [];
+}
+
+/**
+ * Parse a block-level structured document tag (`w:sdt`) into its content blocks,
+ * preserving the `w:sdtPr`/`w:sdtEndPr` wrapper on each produced block so export
+ * can re-wrap it (see {@link EditorSdtBlockWrapper}). The content is unwrapped so
+ * it renders and edits like any other block; nested `w:sdt` recurses, prepending
+ * outer wrappers ahead of inner ones.
+ */
+export async function parseSdtBlockNode(
+  sdtElement: XmlElement,
+  numberingMaps: NumberingMaps,
+  zip: JSZip,
+  relsMap: Map<string, string>,
+  assets: AssetRegistry,
+  theme: DocxImportTheme,
+  parseNestedBlocks: ParseNestedBlocks,
+): Promise<EditorBlockNode[]> {
+  const sdtPr = getFirstChildByTagNameNS(sdtElement, WORD_NS, "sdtPr");
+  const sdtEndPr = getFirstChildByTagNameNS(sdtElement, WORD_NS, "sdtEndPr");
+  const wrapper: EditorSdtBlockWrapper = {
+    groupId: createEditorNodeId("sdt"),
+    sdtPrXml: sdtPr ? new XMLSerializer().serializeToString(sdtPr) : "",
+    ...(sdtEndPr
+      ? { sdtEndPrXml: new XMLSerializer().serializeToString(sdtEndPr) }
+      : {}),
+  };
+
+  const sdtContent = getFirstChildByTagNameNS(
+    sdtElement,
+    WORD_NS,
+    "sdtContent",
+  );
+  const blocks: EditorBlockNode[] = [];
+  if (sdtContent) {
+    for (let index = 0; index < sdtContent.childNodes.length; index += 1) {
+      const node = sdtContent.childNodes[index];
+      if (node?.nodeType !== node.ELEMENT_NODE) {
+        continue;
+      }
+      blocks.push(
+        ...(await parseBlockLevelChild(
+          node as XmlElement,
+          numberingMaps,
+          zip,
+          relsMap,
+          assets,
+          theme,
+          parseNestedBlocks,
+        )),
+      );
+    }
+  }
+
+  for (const block of blocks) {
+    block.sdtWrappers = [wrapper, ...(block.sdtWrappers ?? [])];
+  }
+  return blocks;
+}
 
 /**
  * Build a `ParseNestedBlocks` callback bound to an import context. The paragraph
@@ -61,36 +176,17 @@ export async function parseTxbxContentBlocks(
     if (node?.nodeType !== node.ELEMENT_NODE) {
       continue;
     }
-    const element = node as XmlElement;
-    if (element.namespaceURI !== WORD_NS) {
-      continue;
-    }
-    if (element.localName === "p") {
-      const parsed = await parseParagraphNodes(
-        element,
+    blocks.push(
+      ...(await parseBlockLevelChild(
+        node as XmlElement,
         numberingMaps,
         zip,
         relsMap,
         assets,
         theme,
         parseNestedBlocks,
-      );
-      for (const paragraph of parsed.paragraphs) {
-        blocks.push(paragraph);
-      }
-    } else if (element.localName === "tbl") {
-      blocks.push(
-        await parseTableNode(
-          element,
-          numberingMaps,
-          zip,
-          relsMap,
-          assets,
-          theme,
-          parseNestedBlocks,
-        ),
-      );
-    }
+      )),
+    );
   }
   return blocks;
 }

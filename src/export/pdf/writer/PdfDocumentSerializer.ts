@@ -8,12 +8,14 @@
 import type { OasisPdfPage, PdfObject } from "./pdfTypes.js";
 import type { PdfFontTable } from "./PdfFontTable.js";
 import type { PdfImageTable } from "./PdfImageTable.js";
+import type { PdfShadingTable } from "./PdfShadingTable.js";
 import { PDF_HEADER, byteLength, formatNumber } from "./pdfPrimitives.js";
 
 export function serializePdfDocument(
   pages: OasisPdfPage[],
   fonts: PdfFontTable,
   images: PdfImageTable,
+  shadings: PdfShadingTable,
 ): Uint8Array {
   const objects: PdfObject[] = [];
   const addObject = (body: string): number => {
@@ -26,6 +28,7 @@ export function serializePdfDocument(
   const pagesObjectId = addObject("");
   const { resourceXml: fontResourceXml } = fonts.buildFontObjects(addObject);
   const imageObjectIds = images.buildImageObjects(addObject);
+  const shadingObjectIds = shadings.buildShadingObjects(addObject);
   const pageObjectIds: number[] = [];
 
   for (const page of pages) {
@@ -43,12 +46,22 @@ export function serializePdfDocument(
     const xObjectResourceXml = imageResourceXml
       ? ` /XObject << ${imageResourceXml} >>`
       : "";
+    const shadingResourceXml = Array.from(page.shadingResourceNames)
+      .map((resourceName) => {
+        const objectId = shadingObjectIds.get(resourceName);
+        return objectId ? `/${resourceName} ${objectId} 0 R` : "";
+      })
+      .filter(Boolean)
+      .join(" ");
+    const shadingResourceDictXml = shadingResourceXml
+      ? ` /Shading << ${shadingResourceXml} >>`
+      : "";
     const pageObjectId = addObject(
       [
         "<< /Type /Page",
         `/Parent ${pagesObjectId} 0 R`,
         `/MediaBox [0 0 ${formatNumber(page.width)} ${formatNumber(page.height)}]`,
-        `/Resources << /Font << ${fontResourceXml} >>${xObjectResourceXml} >>`,
+        `/Resources << /Font << ${fontResourceXml} >>${xObjectResourceXml}${shadingResourceDictXml} >>`,
         `/Contents ${contentObjectId} 0 R`,
         ">>",
       ].join("\n"),

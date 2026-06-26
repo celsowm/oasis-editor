@@ -34,7 +34,7 @@ import {
 } from "./sectionProperties.js";
 import { parseParagraphNodes } from "./paragraphs.js";
 import { parseTableNode } from "./tables.js";
-import { createNestedBlockParser } from "./nestedBlocks.js";
+import { createNestedBlockParser, parseSdtBlockNode } from "./nestedBlocks.js";
 import { parseHeaderFooterXml } from "./headerFooter.js";
 import { parseFootnotesXml } from "./footnotes.js";
 import { parseEndnotesXml } from "./endnotes.js";
@@ -198,6 +198,21 @@ export async function importDocxToEditorDocument(
           importedStyles,
         ),
       );
+      reportBodyProgress();
+    } else if (element.localName === "sdt") {
+      // Block-level content control: unwrap its content into the body flow while
+      // preserving the `w:sdt` wrapper on each block for round-trip re-wrapping.
+      for (const block of await parseSdtBlockNode(
+        element,
+        numberingMaps,
+        zip,
+        relsMap,
+        assets,
+        theme,
+        parseNestedBlocks,
+      )) {
+        appendBodyBlock(block);
+      }
       reportBodyProgress();
     }
 

@@ -40,7 +40,7 @@ export function toHex16(value: number): string {
     .toUpperCase();
 }
 
-function colorToRgb(
+export function colorToRgb(
   color: string | undefined,
   fallback: [number, number, number],
 ): [number, number, number] {

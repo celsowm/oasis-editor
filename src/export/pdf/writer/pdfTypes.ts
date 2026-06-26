@@ -14,6 +14,26 @@ export interface OasisPdfPage {
   height: number;
   commands: string[];
   imageResourceNames: Set<string>;
+  shadingResourceNames: Set<string>;
+}
+
+/** One color stop of an axial gradient. `offset` is 0–1; `color` is a hex string. */
+export interface OasisPdfGradientStop {
+  offset: number;
+  color: string;
+}
+
+/**
+ * An axial (linear) gradient fill, in the writer's top-left-origin point space.
+ * `(x0,y0)→(x1,y1)` is the gradient axis; the content stream flips y to PDF space
+ * and the shading extends its end colors beyond the axis.
+ */
+export interface OasisPdfAxialGradient {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  stops: OasisPdfGradientStop[];
 }
 
 export interface OasisPdfRectOptions {
@@ -79,6 +99,12 @@ export interface OasisPdfTextOptions {
    * Unicode font (e.g. `["liga", "onum", "ss01"]`). Ignored by base-14 fonts.
    */
   fontFeatures?: readonly string[];
+  /**
+   * Resource name of an axial-gradient shading (from `registerAxialGradient`).
+   * When set, the glyphs are used as a clip path and the gradient is painted
+   * through them (`w14:textFill` gradient), so `color`/`renderMode` are ignored.
+   */
+  gradientShadingName?: string;
 }
 
 export interface OasisPdfImageResource {

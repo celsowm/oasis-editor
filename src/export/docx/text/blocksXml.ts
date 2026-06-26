@@ -116,34 +116,74 @@ function serializeRunsWithBoundaries(
   return out;
 }
 
+function serializeSingleBlockXml(
+  block: EditorBlockNode,
+  context: DocContext,
+  styles: Record<string, EditorNamedStyle> | undefined,
+): string {
+  switch (block.type) {
+    case "paragraph":
+      return serializeParagraphXml(block, context, styles);
+    case "table": {
+      const pageBreakXml = block.style?.pageBreakBefore
+        ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
+        : "";
+      return (
+        pageBreakXml +
+        serializeTableXml(block, (paragraph, cell) =>
+          serializeParagraphXml(paragraph, context, styles, {
+            align: cell.style?.horizontalAlign,
+          }),
+        )
+      );
+    }
+    default:
+      return assertNever(block, "block");
+  }
+}
+
+/**
+ * Serialize a block run, re-wrapping any block-level `w:sdt` content controls
+ * preserved on import. Consecutive blocks sharing an outermost wrapper `groupId`
+ * are coalesced back into one `<w:sdt>` envelope; the wrapper is stripped before
+ * recursing so nested content controls re-wrap from the inside out.
+ */
 export function serializeBlocksXml(
   blocks: EditorBlockNode[],
   context: DocContext,
   styles: Record<string, EditorNamedStyle> | undefined,
 ): string {
-  return blocks
-    .map((block) => {
-      switch (block.type) {
-        case "paragraph":
-          return serializeParagraphXml(block, context, styles);
-        case "table": {
-          const pageBreakXml = block.style?.pageBreakBefore
-            ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
-            : "";
-          return (
-            pageBreakXml +
-            serializeTableXml(block, (paragraph, cell) =>
-              serializeParagraphXml(paragraph, context, styles, {
-                align: cell.style?.horizontalAlign,
-              }),
-            )
-          );
-        }
-        default:
-          return assertNever(block, "block");
-      }
-    })
-    .join("");
+  let out = "";
+  let i = 0;
+  while (i < blocks.length) {
+    const block = blocks[i]!;
+    const wrapper = block.sdtWrappers?.[0];
+    if (!wrapper) {
+      out += serializeSingleBlockXml(block, context, styles);
+      i += 1;
+      continue;
+    }
+    // Gather the maximal run of consecutive blocks under the same outer wrapper.
+    const group: EditorBlockNode[] = [];
+    let j = i;
+    while (
+      j < blocks.length &&
+      blocks[j]!.sdtWrappers?.[0]?.groupId === wrapper.groupId
+    ) {
+      const rest = blocks[j]!.sdtWrappers!.slice(1);
+      group.push({
+        ...blocks[j]!,
+        sdtWrappers: rest.length > 0 ? rest : undefined,
+      } as EditorBlockNode);
+      j += 1;
+    }
+    const inner = serializeBlocksXml(group, context, styles);
+    out +=
+      `<w:sdt>${wrapper.sdtPrXml}${wrapper.sdtEndPrXml ?? ""}` +
+      `<w:sdtContent>${inner}</w:sdtContent></w:sdt>`;
+    i = j;
+  }
+  return out;
 }
 
 export function serializeParagraphXml(

@@ -32,7 +32,7 @@ where we cannot yet draw it. Rendering (canvas / PDF / HTML) is layered on top a
 | `w14:numForm` | ✅ | ✅ | ✅ | ✅ | ❌ (no Canvas 2D API) | ✅ (GSUB lnum/onum) |
 | `w14:stylisticSets`/`stylisticSet` | ✅ | ✅ | ✅ | ✅ | ❌ (no Canvas 2D API) | ✅ (GSUB ss01–ss20) |
 | `w14:cntxtAlts` | ✅ | ✅ | ✅ | ✅ | ❌ (no Canvas 2D API) | ✅ (GSUB calt) |
-| `w14:textFill` | ✅ | ✅ | ✅ | ✅ | ✅ (solid+gradient) | ✅ (solid; gradient deferred) |
+| `w14:textFill` | ✅ | ✅ | ✅ | ✅ | ✅ (solid+gradient) | ✅ (solid + axial gradient via shading) |
 | `w14:textOutline` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (Tr mode 2) |
 | `w14:textShadow` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (offset copy) |
 | `w14:glow` | ✅ | ✅ | ✅ | ✅ | ✅ (`shadowBlur`) | ⚠️ (8-offset approx) |
@@ -77,10 +77,12 @@ and PDF render surfaces. See Phase 1.
   already supports the text render mode operator (`Tr`: `renderMode: styles.outline ? 1 : 0`
   at `drawFragment.ts:683`), fill/stroke color (`rg`/`RG`), and stroke width (`w`). The
   graphics-state stack (`q`/`Q`), `drawPath`, `clipRect`, and `rotateAbout` exist and are
-  used by the shapes pipeline. **There are no PDF gradient/shading dictionaries, and text is
-  laid out 1:1 codepoint→glyph by `SimpleTextLayouter`
+  used by the shapes pipeline. PDF axial gradient/shading dictionaries exist too — see
+  `PdfShadingTable` (§3.4). Text is shaped by `OpenTypeLayouter` (GSUB substitution + GPOS
+  kerning, §2.3) when the font supports it, falling back to a 1:1 codepoint→glyph
+  `SimpleTextLayouter`
   ([`src/text/fonts/layout/SimpleTextLayouter.ts`](../src/text/fonts/layout/SimpleTextLayouter.ts))
-  with no GSUB/GPOS shaping.**
+  otherwise.
 - **Namespaces:** `WORD_NS` and `WORD14_NS` are defined in the import xml helpers. `WORD15_NS`
   exists only locally in `commentsXml.ts`; `WORD16DU_NS` is undefined.
 
@@ -221,9 +223,14 @@ serializer alongside the existing w14 block in `runPropertiesXml.ts`.
 - **Outline:** already wired — `Tr` mode 1 (stroke) and `RG` + `w` width. For fill **and**
   outline together, use **`Tr` mode 2** (fill+stroke), which the writer supports but does not
   yet emit.
-- **Gradient fill (Phase 2b, deferred):** requires PDF shading dictionaries (type 2/3) — a
-  new subsystem in the PDF writer. Phase 2a ships solid only; gradients flatten to their
-  first stop until 2b lands.
+- **Gradient fill (Phase 2b — DONE):** axial (linear) gradients now render as real PDF Type 2
+  shading dictionaries. `PdfShadingTable`
+  ([`src/export/pdf/writer/PdfShadingTable.ts`](../src/export/pdf/writer/PdfShadingTable.ts))
+  builds the Shading dict + colour Function (Type 2 for two stops, Type 3 stitching for more);
+  the content stream draws the glyphs in clip render mode (`7 Tr`) and paints the shading through
+  them with `sh`. `drawFragment` registers one shading per fragment (continuous across chunks),
+  mirroring the canvas painter's axis math. Per-stop **alpha** and **radial** gradients remain out
+  of scope (DrawingML text gradients are linear); they flatten to opaque RGB.
 
 ### 3.5 HTML
 
@@ -300,16 +307,17 @@ This is the lowest-priority phase.
 
 These are not run-style effects and render nowhere on the text surfaces.
 
-### 6.1 `w15:collapsed` — BLOCKED (not implemented)
+### 6.1 `w15:collapsed` — round-trips for block-level SDTs
 
-The collapsed-display state of a structured document tag (`w:sdt`). **This cannot be a small
-round-trip flag as the roadmap assumed:** there is no SDT model node to host the flag. `w:sdt`
-(block, row, cell, and run contexts) is currently **dropped entirely on import** — the
-block/run parsers whitelist `w:p`/`w:tbl`/`w:r`/etc. and silently discard the `w:sdt` wrapper
-(see the Content controls rows in [`ooxml.md`](ooxml.md)). Preserving `w15:collapsed` therefore
-requires first building SDT round-trip infrastructure (a new node type or an opaque
-block/run-level passthrough that retains `w:sdtPr`/`w:sdtContent`), which is **not small** and
-is out of scope for this metadata task. Deferred until SDT support exists.
+The collapsed-display state of a structured document tag (`w:sdt`). It lives inside `w:sdtPr`,
+so it is **no longer fully blocked**: block-level `w:sdt` round-trip now exists
+([`nestedBlocks.parseSdtBlockNode`](../src/import/docx/nestedBlocks.ts) →
+[`EditorSdtBlockWrapper`](../src/core/model/types/nodes.ts) →
+[`blocksXml.serializeBlocksXml`](../src/export/docx/text/blocksXml.ts)), and because the wrapper
+preserves the entire `w:sdtPr` verbatim, **`w15:collapsed` on a block-level content control
+survives import → export automatically**. Still outstanding: run-level (inline) and
+row/cell-level SDTs (whose `sdtPr` is not yet preserved), and any *semantic* handling of the
+collapsed state (it round-trips as opaque markup, it is not interpreted or rendered).
 
 ### 6.2 `w16du:dateUtc` — implemented
 
@@ -355,7 +363,7 @@ no rendering. Tests: `docxImport.comments.test.ts` (dateUtc round-trip).
 | 6 | Effects — PDF approximations | medium–hard | `q/Q` copies; stepped alpha |
 | 7 | `w15:collapsed`, `w16du:dateUtc` — round-trip | small | metadata only |
 | 8 | `scene3d`/`props3d` — round-trip only | small | no render |
-| — | Gradient fills (PDF shading dicts) | large | deferred (Phase 2b) |
+| — | Gradient fills (PDF shading dicts) | large | **done** (Phase 2b); axial only, alpha/radial deferred |
 | 9 | GSUB shaping for PDF font features | large | **done** (P1-PDF) |
 | 10 | GPOS pair kerning for PDF | medium | **done**; gated by `w:kern` threshold |
 
@@ -376,8 +384,9 @@ no rendering. Tests: `docxImport.comments.test.ts` (dateUtc round-trip).
 ## Out of scope
 
 - This document is the roadmap; most phases are now implemented (see per-section status).
-- A PDF gradient/shading subsystem (prerequisite for gradient fills) remains a **named
-  prerequisite** for that deferred sub-task. The PDF font features no longer need a full
-  HarfBuzz-class engine — a minimal Latin GSUB shaper plus GPOS pair kerning (§2.3) covers the
-  five substitution features and `w:kern`; complex-script shaping (Arabic/Indic/bidi) and GPOS
-  mark positioning remain the named prerequisites for their follow-ons.
+- The PDF gradient/shading subsystem now exists (`PdfShadingTable`, §3.4), so axial gradient
+  fills are supported; per-stop alpha (PDF soft masks) and radial gradients are the remaining
+  named follow-ons there. The PDF font features no longer need a full HarfBuzz-class engine — a
+  minimal Latin GSUB shaper plus GPOS pair kerning (§2.3) covers the five substitution features
+  and `w:kern`; complex-script shaping (Arabic/Indic/bidi) and GPOS mark positioning remain the
+  named prerequisites for their follow-ons.

@@ -1283,6 +1283,66 @@ describe("OasisPdfWriter", () => {
     expect(pdf).toContain("0.2 0.4 0.6 rg");
   });
 
+  it("exports a w14:textFill gradient run as a real PDF shading", async () => {
+    const document: EditorDocument = {
+      id: "pdf-gradient-textfill-document",
+      sections: [
+        {
+          id: "section-1",
+          pageSettings: {
+            width: 240,
+            height: 200,
+            orientation: "portrait",
+            margins: {
+              top: 48,
+              right: 48,
+              bottom: 48,
+              left: 48,
+              header: 24,
+              footer: 24,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: "gradient-paragraph",
+              type: "paragraph",
+              style: { spacingAfter: 0 },
+              runs: [
+                {
+                  id: "gradient-run",
+                  kind: "text" as const,
+                  text: "Gradient",
+                  styles: {
+                    textFill: {
+                      type: "gradient",
+                      angle: 0,
+                      stops: [
+                        { position: 0, color: "#FF0000" },
+                        { position: 1, color: "#0000FF" },
+                      ],
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = await blob.text();
+
+    // The run's glyphs are clipped (7 Tr) and filled by an axial shading painted
+    // through them; the page references the shading resource.
+    expect(pdf).toContain("7 Tr");
+    expect(pdf).toContain("/ShadingType 2");
+    expect(pdf).toContain("/FunctionType 2");
+    expect(pdf).toContain(" sh");
+    expect(pdf).toContain("/Shading << /Sh1");
+  });
+
   it("uses first-line indent only for the first projected line", async () => {
     const document: EditorDocument = {
       id: "pdf-first-line-indent-document",
@@ -1578,6 +1638,87 @@ describe("OasisPdfWriter", () => {
     expect(withKern).toContain("/ToUnicode");
     expect(withKern).toContain("0041");
     expect(withKern).toContain("0056");
+  });
+
+  it("fills glyphs with an axial gradient shading (two stops)", async () => {
+    const registry = new PdfFontRegistry();
+    await registry.loadBundledUnicodeFaces();
+    const face = registry.resolveFontFace({
+      fontFamily: "Calibri",
+    }).writerResourceName;
+
+    const writer = new OasisPdfWriter(registry.getPdfFontResources());
+    const pageIndex = writer.addPage({ width: 300, height: 200 });
+    const shadingName = writer.registerAxialGradient(pageIndex, {
+      x0: 24,
+      y0: 40,
+      x1: 120,
+      y1: 40,
+      stops: [
+        { offset: 0, color: "#FF0000" },
+        { offset: 1, color: "#0000FF" },
+      ],
+    });
+    expect(shadingName).toBe("Sh1");
+    writer.drawText(pageIndex, {
+      x: 24,
+      y: 48,
+      text: "Gradient",
+      fontSize: 24,
+      fontResourceName: face,
+      gradientShadingName: shadingName!,
+    });
+
+    const pdf = decodePdf(writer.toArrayBuffer());
+
+    // The glyphs become a clip (7 Tr) and the shading is painted through them.
+    expect(pdf).toContain("7 Tr");
+    expect(pdf).toContain("/Sh1 sh");
+    // Axial shading + a two-color linear (Type 2) function, with the page wiring.
+    expect(pdf).toContain("/ShadingType 2");
+    expect(pdf).toContain("/Coords [24 160 120 160]"); // y flipped: 200 - 40
+    expect(pdf).toContain("/FunctionType 2");
+    expect(pdf).toContain("/C0 [1 0 0]");
+    expect(pdf).toContain("/C1 [0 0 1]");
+    expect(pdf).toContain("/Shading << /Sh1");
+  });
+
+  it("stitches a multi-stop gradient with a Type 3 function", async () => {
+    const writer = new OasisPdfWriter();
+    const pageIndex = writer.addPage({ width: 300, height: 200 });
+    const shadingName = writer.registerAxialGradient(pageIndex, {
+      x0: 0,
+      y0: 0,
+      x1: 100,
+      y1: 0,
+      stops: [
+        { offset: 0, color: "#FF0000" },
+        { offset: 0.5, color: "#00FF00" },
+        { offset: 1, color: "#0000FF" },
+      ],
+    });
+    writer.drawText(pageIndex, {
+      x: 10,
+      y: 20,
+      text: "Tri",
+      fontSize: 18,
+      gradientShadingName: shadingName!,
+    });
+
+    const pdf = decodePdf(writer.toArrayBuffer());
+    expect(pdf).toContain("/FunctionType 3");
+    expect(pdf).toContain("/Bounds [0.5]");
+    expect(pdf).toContain("/Encode [0 1 0 1]");
+  });
+
+  it("does not emit shading resources for runs without a gradient", async () => {
+    const writer = new OasisPdfWriter();
+    const pageIndex = writer.addPage({ width: 300, height: 200 });
+    writer.drawText(pageIndex, { x: 10, y: 20, text: "Plain", fontSize: 18 });
+    const pdf = decodePdf(writer.toArrayBuffer());
+    expect(pdf).not.toContain("/Shading");
+    expect(pdf).not.toContain(" sh");
+    expect(pdf).not.toContain("7 Tr");
   });
 
   it("maps simple glyphs back through ToUnicode", async () => {

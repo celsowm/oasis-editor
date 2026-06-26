@@ -6,6 +6,7 @@
  * `BT … Tf … Td … ET` sequence lives in one place.
  */
 import type {
+  OasisPdfAxialGradient,
   OasisPdfImageOptions,
   OasisPdfLineOptions,
   OasisPdfPage,
@@ -15,6 +16,7 @@ import type {
 } from "./pdfTypes.js";
 import type { PdfFontTable } from "./PdfFontTable.js";
 import type { PdfImageTable } from "./PdfImageTable.js";
+import type { PdfShadingTable } from "./PdfShadingTable.js";
 import {
   colorCommand,
   encodePdfHexString,
@@ -27,7 +29,25 @@ export class PdfContentStream {
     readonly page: OasisPdfPage,
     private readonly fonts: PdfFontTable,
     private readonly images: PdfImageTable,
+    private readonly shadings: PdfShadingTable,
   ) {}
+
+  /**
+   * Registers an axial gradient for use as a glyph fill on this page. Coordinates
+   * come in the writer's top-left point space and are flipped to PDF bottom-left
+   * space here; the returned name is referenced via `OasisPdfTextOptions`.
+   */
+  registerAxialGradient(gradient: OasisPdfAxialGradient): string {
+    const name = this.shadings.register({
+      x0: gradient.x0,
+      y0: this.page.height - gradient.y0,
+      x1: gradient.x1,
+      y1: this.page.height - gradient.y1,
+      stops: gradient.stops,
+    });
+    this.page.shadingResourceNames.add(name);
+    return name;
+  }
 
   drawRect(options: OasisPdfRectOptions): void {
     const page = this.page;
@@ -209,7 +229,33 @@ export class PdfContentStream {
     if (showCommand === null) {
       return;
     }
+    if (options.gradientShadingName) {
+      this.emitGradientTextBlock(
+        fontResourceName,
+        showCommand,
+        options,
+        options.gradientShadingName,
+      );
+      return;
+    }
     this.emitTextBlock(fontResourceName, showCommand, options);
+  }
+
+  private textSetupCommands(
+    fontResourceName: string,
+    options: OasisPdfTextOptions,
+  ): string[] {
+    return [
+      `/${fontResourceName} ${formatNumber(options.fontSize ?? 12)} Tf`,
+      ...(options.horizontalScale &&
+      options.horizontalScale > 0 &&
+      options.horizontalScale !== 100
+        ? [`${formatNumber(options.horizontalScale)} Tz`]
+        : []),
+      ...(options.characterSpacing && options.characterSpacing !== 0
+        ? [`${formatNumber(options.characterSpacing)} Tc`]
+        : []),
+    ];
   }
 
   private emitTextBlock(
@@ -223,7 +269,6 @@ export class PdfContentStream {
         textMarkerComment(options.text),
         "BT",
         colorCommand(options.color, "rg", [0, 0, 0]),
-        `/${fontResourceName} ${formatNumber(options.fontSize ?? 12)} Tf`,
         ...(options.renderMode && options.renderMode !== 0
           ? [
               colorCommand(
@@ -238,17 +283,40 @@ export class PdfContentStream {
               `${options.renderMode} Tr`,
             ]
           : []),
-        ...(options.horizontalScale &&
-        options.horizontalScale > 0 &&
-        options.horizontalScale !== 100
-          ? [`${formatNumber(options.horizontalScale)} Tz`]
-          : []),
-        ...(options.characterSpacing && options.characterSpacing !== 0
-          ? [`${formatNumber(options.characterSpacing)} Tc`]
-          : []),
+        ...this.textSetupCommands(fontResourceName, options),
         `${formatNumber(options.x)} ${formatNumber(page.height - options.y)} Td`,
         showCommand,
         "ET",
+      ].join("\n"),
+    );
+  }
+
+  /**
+   * Fills glyphs with an axial gradient: the text is drawn in clip render mode
+   * (`7 Tr`) so the glyph outlines become the clip path, then the shading is
+   * painted through them with `sh`. The whole sequence is isolated in a
+   * `q … Q` pair so the clip does not leak. Outline/stroke is not combined with
+   * gradient fill (the gradient supersedes it).
+   */
+  private emitGradientTextBlock(
+    fontResourceName: string,
+    showCommand: string,
+    options: OasisPdfTextOptions,
+    shadingName: string,
+  ): void {
+    const page = this.page;
+    page.commands.push(
+      [
+        textMarkerComment(options.text),
+        "q",
+        "BT",
+        ...this.textSetupCommands(fontResourceName, options),
+        "7 Tr",
+        `${formatNumber(options.x)} ${formatNumber(page.height - options.y)} Td`,
+        showCommand,
+        "ET",
+        `/${shadingName} sh`,
+        "Q",
       ].join("\n"),
     );
   }

@@ -41,7 +41,8 @@ export type EditorNodeKind =
   | "table-cell"
   | "footnote"
   | "bookmark"
-  | "comment";
+  | "comment"
+  | "sdt";
 
 /**
  * Single authority for editor node IDs. Stateless and globally unique, so two
