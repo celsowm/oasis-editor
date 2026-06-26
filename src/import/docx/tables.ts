@@ -134,7 +134,7 @@ export async function parseTableNode(
         continue;
       }
       const vMerge = getTableCellVMerge(cellProperties);
-      const cellStyle = parseTableCellStyle(cellProperties);
+      const cellStyle = parseTableCellStyle(cellProperties, undefined, theme.colors);
 
       const cell = createEditorTableCell(
         paragraphs.length > 0

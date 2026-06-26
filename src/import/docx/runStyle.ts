@@ -634,10 +634,8 @@ export function parseRunStyle(
     styles.highlight = highlightValue;
   }
 
-  // Run shading (w:shd): solid background fill behind the run's text. Only the
-  // literal `w:fill` hex is resolved here; theme fills are a follow-up.
   const shd = getFirstChildByTagNameNS(runProperties, WORD_NS, "shd");
-  const shdFill = parseShdFill(shd);
+  const shdFill = parseShdFill(shd, theme.colors);
   if (shdFill) {
     styles.shading = shdFill;
   }

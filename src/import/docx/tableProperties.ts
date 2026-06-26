@@ -26,6 +26,7 @@ import {
 import { twipsToPoints } from "./units.js";
 import { emptyOrUndefined, parseShdFill } from "./styleUtils.js";
 import { type ParagraphAutospacingFlags } from "./paragraphStyle.js";
+import { type ThemeColorMap } from "./themeColors.js";
 
 // DOCX table/row/cell property parsers (w:tblPr / w:trPr / w:tcPr): widths,
 // floating, layout, borders, shading, margins, spans, vertical merge, header
@@ -549,6 +550,7 @@ function parseTableCellBorders(
 export function parseTableCellStyle(
   cellProperties: XmlElement | null,
   tableDefaultMargins?: EditorTableStyle["defaultCellMargins"],
+  colors?: ThemeColorMap,
 ): EditorTableCellStyle | undefined {
   if (!cellProperties) {
     if (!tableDefaultMargins) {
@@ -585,7 +587,7 @@ export function parseTableCellStyle(
       : {}),
   };
   const shading = getFirstChildByTagNameNS(cellProperties, WORD_NS, "shd");
-  const fill = parseShdFill(shading);
+  const fill = parseShdFill(shading, colors);
   if (fill) {
     style.shading = fill;
   }
@@ -661,7 +663,7 @@ export function parseTableCellStyle(
     style.propertyRevision = {
       ...parseRevisionMetadata(change),
       type: "property",
-      previous: parseTableCellStyle(previousProperties) ?? {},
+      previous: parseTableCellStyle(previousProperties, undefined, colors) ?? {},
     };
   }
   const inserted = getFirstChildByTagNameNS(cellProperties, WORD_NS, "cellIns");

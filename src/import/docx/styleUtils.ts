@@ -1,6 +1,10 @@
 import { type Element as XmlElement } from "@xmldom/xmldom";
 import { getAttributeValue } from "./xmlHelpers.js";
 import { normalizeImportedHexColor } from "./units.js";
+import {
+  type ThemeColorMap,
+  resolveThemeColor,
+} from "./themeColors.js";
 
 export function stripUndefined<T extends object>(
   value: T,
@@ -22,6 +26,12 @@ export function mergeStyles<T extends object>(
   return emptyOrUndefined({ ...(base ?? {}), ...(local ?? {}) } as T);
 }
 
-export function parseShdFill(element: XmlElement | null): string | undefined {
-  return normalizeImportedHexColor(getAttributeValue(element, "fill"));
+export function parseShdFill(
+  element: XmlElement | null,
+  colors?: ThemeColorMap,
+): string | undefined {
+  const fill = normalizeImportedHexColor(getAttributeValue(element, "fill"));
+  if (fill) return fill;
+  if (colors) return resolveThemeColor(element, colors);
+  return undefined;
 }

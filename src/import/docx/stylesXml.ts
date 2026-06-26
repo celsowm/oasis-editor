@@ -63,9 +63,13 @@ export function parseImportedStyles(
     ? {
         spacingBefore: 0,
         spacingAfter: 0,
-        ...withDocxImplicitSingleLineHeight(parseParagraphStyle(pPrDefault)),
+        ...withDocxImplicitSingleLineHeight(
+          parseParagraphStyle(pPrDefault, theme.colors),
+        ),
       }
-    : withDocxImplicitSingleLineHeight(parseParagraphStyle(pPrDefault));
+    : withDocxImplicitSingleLineHeight(
+        parseParagraphStyle(pPrDefault, theme.colors),
+      );
   const defaultTextStyle = parseRunStyle(rPrDefault, theme);
   const styles: Record<string, EditorNamedStyle> = {};
   let defaultParagraphStyleId: string | undefined;
@@ -111,6 +115,7 @@ export function parseImportedStyles(
     const paragraphStyle = withDocxImplicitSingleLineHeight(
       parseParagraphStyle(
         getFirstChildByTagNameNS(styleElement, WORD_NS, "pPr"),
+        theme.colors,
       ),
     );
     const textStyle = parseRunStyle(
@@ -143,12 +148,12 @@ export function parseImportedStyles(
         const condType = getAttributeValue(tblStylePr, "type");
         if (!condType) continue;
         const tcPr = getFirstChildByTagNameNS(tblStylePr, WORD_NS, "tcPr");
-        const conditionalCellStyle = parseTableCellStyle(tcPr);
+        const conditionalCellStyle = parseTableCellStyle(tcPr, undefined, theme.colors);
         const conditionalTableStyle = parseTableStyle(
           getFirstChildByTagNameNS(tblStylePr, WORD_NS, "tblPr"),
         );
         const shd = getFirstChildByTagNameNS(tcPr, WORD_NS, "shd");
-        const fill = parseShdFill(shd);
+        const fill = parseShdFill(shd, theme.colors);
         const condTextStyle = parseRunStyle(
           getFirstChildByTagNameNS(tblStylePr, WORD_NS, "rPr"),
           theme,
@@ -160,6 +165,7 @@ export function parseImportedStyles(
         );
         const condParagraphStyle = parseParagraphStyle(
           getFirstChildByTagNameNS(tblStylePr, WORD_NS, "pPr"),
+          theme.colors,
         );
         const condRowStyle = parseTableRowStyle(
           getFirstChildByTagNameNS(tblStylePr, WORD_NS, "trPr"),

@@ -23,6 +23,7 @@ import {
   emptyOrUndefined,
   parseShdFill,
 } from "./styleUtils.js";
+import { type ThemeColorMap } from "./themeColors.js";
 
 export function normalizeImportedParagraphStyle(
   style: EditorParagraphStyle | undefined,
@@ -213,6 +214,7 @@ function parseParagraphTabs(paragraphProperties: XmlElement): EditorTabStop[] {
 
 export function parseParagraphStyle(
   paragraphProperties: XmlElement | null,
+  colors?: ThemeColorMap,
 ): EditorParagraphStyle | undefined {
   if (!paragraphProperties) {
     return undefined;
@@ -355,7 +357,7 @@ export function parseParagraphStyle(
   }
 
   const shading = getFirstChildByTagNameNS(paragraphProperties, WORD_NS, "shd");
-  const shadingFill = parseShdFill(shading);
+  const shadingFill = parseShdFill(shading, colors);
   if (shadingFill) {
     style.shading = shadingFill;
   }

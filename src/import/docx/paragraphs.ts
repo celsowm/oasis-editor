@@ -216,7 +216,7 @@ export async function parseParagraphNodes(
     parseNestedBlocks,
   );
   const parsedStyle = withDocxImplicitSingleLineHeight(
-    parseParagraphStyle(paragraphProperties),
+    parseParagraphStyle(paragraphProperties, theme.colors),
   );
   // Paragraph-mark run properties: the font/size Word applies to the blank line
   // of an empty paragraph (and to its trailing mark).
