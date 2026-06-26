@@ -35,6 +35,7 @@ import {
   buildDocumentRelationshipsXml,
   buildSettingsXml,
   buildPartRelationshipsXml,
+  buildFontTableXml,
 } from "./docxPackageXml.js";
 import { buildNumberingContext, buildNumberingXml } from "./docxNumbering.js";
 import { visitBlocks } from "./docxBlockVisitor.js";
@@ -295,6 +296,7 @@ export async function exportEditorDocumentToDocx(
 
   const hasStyles =
     document.styles != null && Object.keys(document.styles).length > 0;
+  const hasFontTable = (document.fontTable?.length ?? 0) > 0;
 
   zip.file(
     "[Content_Types].xml",
@@ -307,6 +309,7 @@ export async function exportEditorDocumentToDocx(
       hasEndnotes,
       hasStyles,
       hasComments,
+      hasFontTable,
     ),
   );
   zip.file("_rels/.rels", buildRootRelationshipsXml());
@@ -335,7 +338,8 @@ export async function exportEditorDocumentToDocx(
     parts.length > 0 ||
     hasFootnotes ||
     hasEndnotes ||
-    hasComments
+    hasComments ||
+    hasFontTable
   ) {
     zip.file(
       "word/_rels/document.xml.rels",
@@ -349,8 +353,13 @@ export async function exportEditorDocumentToDocx(
         hasEndnotes,
         hasStyles,
         hasComments,
+        hasFontTable,
       ),
     );
+  }
+
+  if (hasFontTable) {
+    zip.file("word/fontTable.xml", buildFontTableXml(document.fontTable!));
   }
 
   if (hasDocumentSettings) {

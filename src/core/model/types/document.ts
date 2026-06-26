@@ -63,6 +63,29 @@ export interface EditorSection {
   breakType?: "nextPage" | "continuous";
 }
 
+/**
+ * One `w:font` entry from `word/fontTable.xml`: the document's declaration of a
+ * font it uses, with substitution metadata. Preserved for round-trip (and as the
+ * basis for future font-substitution decisions). Embedded font references
+ * (`w:embedRegular`/etc.) are intentionally not modeled.
+ */
+export interface EditorFontInfo {
+  /** `w:font/@w:name`: the font's primary name (e.g. "Calibri"). */
+  name: string;
+  /** `w:altName/@w:val`: fallback font name when `name` is unavailable. */
+  altName?: string;
+  /** `w:family/@w:val`: roman | swiss | modern | script | decorative | auto. */
+  family?: string;
+  /** `w:pitch/@w:val`: fixed | variable | default. */
+  pitch?: string;
+  /** `w:charset/@w:val`: character set (hex). */
+  charset?: string;
+  /** `w:panose1/@w:val`: PANOSE classification (10-byte hex). */
+  panose1?: string;
+  /** `w:sig` attributes (Unicode/codepage signature bits) preserved verbatim. */
+  sig?: Record<string, string>;
+}
+
 export interface EditorFootnoteSettings {
   numberFormat?: EditorFootnoteNumberFormat;
   restart?: EditorFootnoteRestart;
@@ -130,6 +153,11 @@ export interface EditorDocument {
    * body shown in a hover/click popup.
    */
   comments?: EditorComments;
+  /**
+   * `word/fontTable.xml` entries: the fonts the document declares, with
+   * substitution metadata. Preserved on import and re-emitted on export.
+   */
+  fontTable?: EditorFontInfo[];
   metadata?: {
     title?: string;
     [key: string]: unknown;

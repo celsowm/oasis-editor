@@ -1,4 +1,4 @@
-import type { EditorFootnoteSettings } from "@/core/model.js";
+import type { EditorFontInfo, EditorFootnoteSettings } from "@/core/model.js";
 import { imageContentTypeDefaults } from "@/utils/imageFormats.js";
 import type { DocContext, PartDefinition } from "./docxTypes.js";
 import {
@@ -23,6 +23,7 @@ export function buildContentTypesXml(
   hasEndnotes: boolean,
   hasStyles: boolean,
   hasComments: boolean,
+  hasFontTable: boolean,
 ): string {
   const overrides = parts
     .map((part) => {
@@ -60,6 +61,10 @@ export function buildContentTypesXml(
       ? '<Override PartName="/word/comments.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/>' +
         '<Override PartName="/word/commentsExtended.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.commentsExtended+xml"/>'
       : ""
+  }${
+    hasFontTable
+      ? '<Override PartName="/word/fontTable.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml"/>'
+      : ""
   }${overrides}</Types>`;
 }
 
@@ -77,6 +82,7 @@ export function buildDocumentRelationshipsXml(
   hasEndnotes: boolean,
   hasStyles: boolean,
   hasComments: boolean,
+  hasFontTable: boolean,
 ): string {
   let rels = "";
   if (hasStyles)
@@ -106,7 +112,41 @@ export function buildDocumentRelationshipsXml(
     rels += `<Relationship Id="rIdComments" Type="${OFFICE_REL_NS}/comments" Target="comments.xml"/>`;
     rels += `<Relationship Id="rIdCommentsExtended" Type="http://schemas.microsoft.com/office/2011/relationships/commentsExtended" Target="commentsExtended.xml"/>`;
   }
+  if (hasFontTable) {
+    rels += `<Relationship Id="rIdFontTable" Type="${OFFICE_REL_NS}/fontTable" Target="fontTable.xml"/>`;
+  }
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${PACKAGE_REL_NS}">${rels}</Relationships>`;
+}
+
+/**
+ * Serialize the document's font declarations to `word/fontTable.xml`. Mirrors the
+ * structured {@link EditorFontInfo} back to `<w:font>` entries (substitution
+ * metadata only; embedded font references are not emitted).
+ */
+export function buildFontTableXml(fonts: EditorFontInfo[]): string {
+  const fontXml = fonts
+    .map((font) => {
+      const children: string[] = [];
+      if (font.altName)
+        children.push(`<w:altName w:val="${escapeXml(font.altName)}"/>`);
+      if (font.panose1)
+        children.push(`<w:panose1 w:val="${escapeXml(font.panose1)}"/>`);
+      if (font.charset)
+        children.push(`<w:charset w:val="${escapeXml(font.charset)}"/>`);
+      if (font.family)
+        children.push(`<w:family w:val="${escapeXml(font.family)}"/>`);
+      if (font.pitch)
+        children.push(`<w:pitch w:val="${escapeXml(font.pitch)}"/>`);
+      if (font.sig) {
+        const attrs = Object.entries(font.sig)
+          .map(([key, value]) => `w:${key}="${escapeXml(value)}"`)
+          .join(" ");
+        if (attrs) children.push(`<w:sig ${attrs}/>`);
+      }
+      return `<w:font w:name="${escapeXml(font.name)}">${children.join("")}</w:font>`;
+    })
+    .join("");
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:fonts xmlns:w="${WORD_NS}">${fontXml}</w:fonts>`;
 }
 
 const NOTE_NUMBER_FORMATS: Record<

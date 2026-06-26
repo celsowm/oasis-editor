@@ -73,7 +73,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Package / OPC | `word/styles.xml` | Main document related part | — | Style definitions. | Essential for paragraph/run/table/list style cascade. | P0 | Supported |
 | Package / OPC | `word/numbering.xml` | Main document related part | — | Numbering and list definitions. | Required to render bullets, outline numbering and list indentation. | P0 | Partial |
 | Package / OPC | `word/settings.xml` | Main document related part | — | Document-level settings. | Affects compatibility, track changes, hyphenation, proofing, zoom, fields, math and layout switches. | P1 | Partial |
-| Package / OPC | `word/fontTable.xml` | Main document related part | — | Font table. | Map font names, aliases, charset, family and embedded font relationships when present. | P1 | Not supported |
+| Package / OPC | `word/fontTable.xml` | Main document related part | — | Font table. | Map font names, aliases, charset, family and embedded font relationships when present. Now parsed into `document.fontTable` and re-emitted on export (name/altName/family/pitch/charset/panose1/sig). Embedded font references and live substitution-by-altName are not yet consumed. | P1 | Partial |
 | Package / OPC | `word/theme/theme1.xml` | Theme relationship | — | Theme colors, fonts and effects. | Needed to resolve `themeColor`, `themeFill`, `themeFont`, tint/shade and theme font slots. | P1 | Partial |
 | Package / OPC | `docProps/core.xml` | Package relationship | `cp:*`, `dc:*`, `dcterms:*` | Core metadata. | Useful for round-trip, search, audit and generated output metadata. | P3 | Not supported |
 | Package / OPC | `docProps/app.xml` | Package relationship | `Application`, `Pages`, `Words`, etc. | Extended application metadata. | Usually not needed for rendering; preserve if round-tripping. | P4 | Not supported |
@@ -473,7 +473,7 @@ Import is driven by `importDocxToEditorDocument.ts` (with `paragraphs.ts`, `runs
 | Settings | `w:updateFields` | `w:settings` | `w:val` | Update fields on open. | Signal current field results may change. | P3 | N/A |
 | Settings | `w:hdrShapeDefaults` | `w:settings` | children | Header/footer shape defaults. | Legacy shape layout. | P4 | Not supported |
 | Settings | `w:footnotePr` / `w:endnotePr` | `w:settings` | note setting children | Document-level note settings. | `w:numFmt`, `w:numStart`, and `w:numRestart` import/export through note settings and drive marker numbering; placement/special-note refs remain outside the model. | P2 | Partial |
-| Fonts | `w:fonts` | `word/fontTable.xml` root | — | Font table root. | Map fonts before text measurement. | P1 | Not supported |
+| Fonts | `w:fonts` | `word/fontTable.xml` root | — | Font table root. | Parsed into `document.fontTable` (round-trip). Not yet consumed for substitution/measurement. | P1 | Partial |
 | Fonts | `w:font` | `w:fonts` | `w:name` | Font entry. | Contains charset, family, pitch, panose and embedded font refs. | P1 | Not supported |
 | Fonts | `w:altName` / `w:family` / `w:pitch` / `w:charset` / `w:panose1` / `w:sig` | `w:font` | `w:val`, script attrs | Font metadata. | Useful for font fallback and matching. | P2 | Not supported |
 | Fonts | `w:embedRegular` / `w:embedBold` / `w:embedItalic` / `w:embedBoldItalic` | `w:font` | `r:id`, `w:fontKey`, `w:subsetted` | Embedded font references. | Check licensing/obfuscation rules; never leak font files casually. | P2 | Not supported |
@@ -690,7 +690,7 @@ This pass fills the practical gaps left after the broad matrix above. It still a
 | Theme fonts | `a:majorFont` / `a:minorFont` | `a:fontScheme` | script-specific children | Theme font groups. | `+mj-lt`, `+mn-lt`, etc. map through these. | P1 | Supported |
 | Theme fonts | `a:latin` / `a:ea` / `a:cs` / `a:font script` | theme font scheme | `typeface`, `script` | Script-specific theme fonts. | Required for East Asian and complex-script font resolution. | P1 | Supported |
 | Theme colors | `a:dk1`, `a:lt1`, `a:accent1`... | `a:clrScheme` | color choice | Theme color slots. | Combine with `w:clrSchemeMapping` before resolving document colors. | P1 | Not supported |
-| Font table | Panose/signature fallback | `w:panose1`, `w:sig` | bitfields | Font classification/fallback hints. | Useful when exact font is unavailable. | P3 | Not supported |
+| Font table | Panose/signature fallback | `w:panose1`, `w:sig` | bitfields | Font classification/fallback hints. | Preserved on `document.fontTable` and round-tripped; not yet used as a substitution hint. | P3 | Partial |
 
 ## Additional settings and compatibility switches
 
@@ -1007,7 +1007,7 @@ This section condenses the per-table Status column into a high-level capability 
 | Bidi/RTL/Complex script | `w:bidi` (paragraph/section), `w:rtl`, `w:cs`, `w:bdo`/`w:dir`, `w:lang`, `w:bidiVisual`, `w:noColumnBalance`. |
 | East Asian / CJK | `w:eastAsianLayout`, `w:vertAlign` for CJK, `w:ruby`/`w:rt`/`w:rubyBase`, `w:doNotUseEastAsianBreakRules`, `w:useWord97LineBreakRules`, `w:useAltKinsokuLineBreakRules`. |
 | Most `w:settings` | All of `w:zoom`, `w:view`, `w:displayBackgroundShape`, `w:displayProofErr`, `w:displayHorizontalDrawingGridEvery`/`w:displayVerticalDrawingGridEvery`, `w:characterSpacingControl`, `w:mirrorMargins`, `w:bordersDoNotSurroundHeader`/`Footer`, `w:formsDesign`, `w:attachedTemplate`, `w:linkStyles`, `w:stylePaneFormatFilter`/`w:stylePaneSortMethod`, `w:documentProtection`, `w:trackRevisions`, `w:doNotTrackMoves`/`w:doNotTrackFormatting`, `w:mailMerge`, `w:writeProtection`, `w:shapeDefaults`, `w:decimalSymbol`/`w:listSeparator`, `w:docVars`/`w:docVar`, `w:hdrShapeDefaults`, note placement (`w:footnotePr`/`w:endnotePr/w:pos`) and special-note refs, `w:displayHiddenText`, `w:showXMLTags`, `w:savePreviewPicture`, `w:embedTrueTypeFonts`/`w:embedSystemFonts`/`w:saveSubsetFonts`, `w:themeFontLang`, `w:clrSchemeMapping`, the full `w:compat` block except `adjustLineHeightInTable`. |
-| Font table | `word/fontTable.xml` is not read; `w:font`, `w:altName`, `w:family`, `w:pitch`, `w:charset`, `w:panose1`, `w:sig`, embedded font references are all dropped. |
+| Font table | `word/fontTable.xml` is read into `document.fontTable` and re-emitted on export: `w:font`, `w:altName`, `w:family`, `w:pitch`, `w:charset`, `w:panose1`, `w:sig` round-trip. Embedded font references (`w:embedRegular`/etc.) are still dropped, and the metadata is not yet used to drive font substitution. |
 | Web settings | `word/webSettings.xml` is not consumed. |
 | Columns / page borders / text direction | `w:cols`, `w:type`, `w:pgNumType`, `w:pageBorders`, `w:textDirection` (cell/section), `w:vAlign` (`both`), `w:lnNumType`, `w:paperSrc`, `w:formProt`, `w:noEndnote`, `w:printerSettings`. |
 | Paragraph decorations | `w:outlineLvl`, `w:suppressLineNumbers`, `w:pBdr`, paragraph-level `w:shd`, `w:framePr`, `w:bidi`, `w:kinsoku`, `w:wordWrap`, `w:overflowPunct`, `w:topLinePunct`, `w:autoSpaceDE`/`DN`, `w:textAlignment`, `w:textboxTightWrap`, `w:divId`, `w:cnfStyle`, `w:adjustRightInd`. |
@@ -1034,7 +1034,7 @@ This section condenses the per-table Status column into a high-level capability 
 
 - The pipeline is centered on a fixed editor model (`EditorTextStyle`, `EditorParagraphStyle`, table grid/cell properties, list kinds, footnote references, image assets, headers/footers). Anything that cannot be expressed in that model is dropped on import and not regenerated on export.
 - The export is a semantic regeneration rather than byte-for-byte preservation: footnotes are renumbered; numbering definitions are rebuilt from instance, level, format, pattern, start/override, suffix, legal mode, alignment, and bullet metadata; theme/styles are re-emitted with only the properties oasis tracks.
-- Font metadata remains a major fidelity gap: theme fonts and theme colors resolve, but `word/fontTable.xml`, font aliases/charset metadata, and embedded fonts are not consumed.
+- Font metadata: theme fonts and theme colors resolve, and `word/fontTable.xml` now round-trips (`document.fontTable`); the remaining gaps are embedded fonts and using the table's `altName`/PANOSE to drive substitution.
 - Images support inline rendering plus floating-anchor metadata; text boxes, preset text-box shapes, transforms/crop, and simple VML image fallback are modeled. Charts, SmartArt, OLE, grouped shapes, and advanced effects remain outside the renderer.
 - Comments, bookmarks, footnotes, and endnotes have document-level models and DOCX round-trip paths. Content controls, custom XML bindings, Office Math, and a revision-aware tracked-changes view remain unsupported.
-- Most of `word/settings.xml`, `word/webSettings.xml`, and `word/fontTable.xml` are not consumed; the editor relies on its own runtime state.
+- Most of `word/settings.xml` and `word/webSettings.xml` are not consumed; the editor relies on its own runtime state. `word/fontTable.xml` is now parsed and round-tripped but not yet used for rendering decisions.

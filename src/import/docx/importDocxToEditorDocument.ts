@@ -26,6 +26,7 @@ import { parseDocxTheme } from "./theme.js";
 import { parseSettings } from "./settings.js";
 import { parseNumbering } from "./numbering.js";
 import { parseImportedStyles } from "./stylesXml.js";
+import { parseFontTable } from "./fontTable.js";
 import {
   type SectionProperties,
   parseSectionProperties,
@@ -79,6 +80,9 @@ export async function importDocxToEditorDocument(
   const docSettings = parseSettings(settingsXml);
   const stylesXml =
     (await zip.file("word/styles.xml")?.async("string")) ?? null;
+  const fontTable = parseFontTable(
+    (await zip.file("word/fontTable.xml")?.async("string")) ?? null,
+  );
   const themeXml =
     (await zip.file("word/theme/theme1.xml")?.async("string")) ?? null;
   const theme = parseDocxTheme(themeXml);
@@ -477,6 +481,9 @@ export async function importDocxToEditorDocument(
         ...(doc.settings ?? {}),
         hyphenationZone: docSettings.hyphenationZone,
       };
+    }
+    if (fontTable) {
+      doc.fontTable = fontTable;
     }
     let result = doc;
     if (editorFootnotes) {
