@@ -34,6 +34,7 @@ export async function drawBlockList(
   fontRegistry: PdfFontRegistry,
   listOrdinals: Map<string, string>,
   pageSettings?: EditorPageSettings,
+  onParagraphDrawn?: (paragraphId: string, topPx: number) => void,
 ): Promise<void> {
   if (!blocks || blocks.length === 0) {
     return;
@@ -56,6 +57,7 @@ export async function drawBlockList(
             ? (paragraphStyle.spacingBefore ?? 0)
             : 0;
         const boxTop = cursorY + spacingBefore;
+        onParagraphDrawn?.(block.sourceBlock.id, boxTop);
         const textTop = boxTop + getParagraphBorderInsets(paragraphStyle).top;
         drawParagraphDecorations(
           writer,

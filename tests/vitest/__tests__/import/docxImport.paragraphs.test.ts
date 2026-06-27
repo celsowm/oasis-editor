@@ -20,6 +20,7 @@ import {
   projectParagraphLayout,
 } from "@/layoutProjection/index.js";
 import {
+  decodePdf,
   getDocumentParagraphs,
   importComplexDocument,
   importLoremComplexDocument,
@@ -885,7 +886,9 @@ describe("DOCX paragraph import", () => {
       await zip.generateAsync({ type: "arraybuffer" }),
     );
 
-    const pdf = await (await exportEditorDocumentToPdfBlob(document)).text();
+    const pdf = decodePdf(
+      await (await exportEditorDocumentToPdfBlob(document)).arrayBuffer(),
+    );
     expect(pdf).toContain(pdfColorCommand("#112233", "RG"));
     expect(pdf).toContain(pdfColorCommand("#778899", "RG"));
   });

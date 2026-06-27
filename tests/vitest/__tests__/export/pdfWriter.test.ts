@@ -8,6 +8,7 @@ import {
   getRunEndnoteReference,
   getRunSym,
 } from "@/core/model.js";
+import { unzlibSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import type {
   EditorDocument,
@@ -29,8 +30,43 @@ import { exportEditorDocumentToPdfBlob } from "@/export/pdf/exportEditorDocument
 import { buildCanvasTableLayout } from "@/ui/canvas/CanvasTableLayout.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
 
+// Decodes a PDF to a searchable string. Page content streams are FlateDecode-
+// compressed, so we latin1-decode the raw bytes (1 char == 1 byte, binary-safe)
+// and splice each /FlateDecode stream's data with its inflated text in place, so
+// content operators (Td/Tj/colors) are searchable while structure (trailing
+// %%EOF, dict objects) is preserved.
 function decodePdf(buffer: ArrayBuffer): string {
-  return new TextDecoder().decode(buffer);
+  const bytes = new Uint8Array(buffer);
+  let raw = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    raw += String.fromCharCode(bytes[i]!);
+  }
+  let out = "";
+  let copiedTo = 0;
+  let cursor = 0;
+  for (;;) {
+    const at = raw.indexOf("/FlateDecode", cursor);
+    if (at === -1) break;
+    const streamStart = raw.indexOf("stream\n", at);
+    if (streamStart === -1) break;
+    const dataStart = streamStart + "stream\n".length;
+    const dataEnd = raw.indexOf("\nendstream", dataStart);
+    if (dataEnd === -1) break;
+    const compressed = new Uint8Array(dataEnd - dataStart);
+    for (let i = 0; i < compressed.length; i += 1) {
+      compressed[i] = raw.charCodeAt(dataStart + i) & 0xff;
+    }
+    try {
+      const inflated = new TextDecoder().decode(unzlibSync(compressed));
+      out += raw.slice(copiedTo, dataStart) + inflated;
+      copiedTo = dataEnd;
+    } catch {
+      // Not a real inflate match; leave the bytes untouched.
+    }
+    cursor = dataEnd + 1;
+  }
+  out += raw.slice(copiedTo);
+  return out;
 }
 
 const PX_TO_PT = 72 / 96;
@@ -709,7 +745,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
 
     expect(blob.type).toBe("application/pdf");
     expect(blob.size).toBeGreaterThan(0);
@@ -739,6 +775,296 @@ describe("OasisPdfWriter", () => {
     expect(pdf).toContain("126 610.264 Td");
     expect(pdf).toContain("90 582.822 Td");
     expect((pdf.match(/\nS\nQ/g) ?? []).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("exports an external hyperlink run as a clickable /Link URI annotation", async () => {
+    const document: EditorDocument = {
+      id: "pdf-hyperlink-document",
+      sections: [
+        {
+          id: "section-1",
+          pageSettings: {
+            width: 816,
+            height: 1056,
+            orientation: "portrait",
+            margins: {
+              top: 96,
+              right: 96,
+              bottom: 96,
+              left: 96,
+              header: 48,
+              footer: 48,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: "paragraph-1",
+              type: "paragraph",
+              runs: [
+                { id: "run-1", text: "Visit ", kind: "text" as const },
+                {
+                  id: "run-2",
+                  text: "Oasis",
+                  kind: "text" as const,
+                  styles: { link: "https://example.com/docs" },
+                },
+                {
+                  id: "run-3",
+                  text: " or #localref",
+                  kind: "text" as const,
+                  styles: { link: "#localref" },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = decodePdf(await blob.arrayBuffer());
+
+    expect(pdf).toContain("/Subtype /Link");
+    expect(pdf).toContain(
+      "/A << /Type /Action /S /URI /URI (https://example.com/docs) >>",
+    );
+    expect(pdf).toContain("/Annots [");
+    // Exactly one external URI action (the `#localref` run is a GoTo, not a URI).
+    expect((pdf.match(/\/S \/URI/g) ?? []).length).toBe(1);
+    expect(pdf).toContain("/A << /Type /Action /S /GoTo /D (localref) >>");
+  });
+
+  it("exports an internal #anchor link as a GoTo named destination", async () => {
+    const document: EditorDocument = {
+      id: "pdf-internal-link-document",
+      bookmarks: {
+        items: {
+          bm: {
+            id: "bm",
+            name: "_Toc_target",
+            start: { paragraphId: "paragraph-2", offset: 0 },
+            end: { paragraphId: "paragraph-2", offset: 0 },
+          },
+        },
+        order: ["bm"],
+      },
+      sections: [
+        {
+          id: "section-1",
+          pageSettings: {
+            width: 816,
+            height: 1056,
+            orientation: "portrait",
+            margins: {
+              top: 96,
+              right: 96,
+              bottom: 96,
+              left: 96,
+              header: 48,
+              footer: 48,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: "paragraph-1",
+              type: "paragraph",
+              runs: [
+                {
+                  id: "run-1",
+                  text: "Jump to target",
+                  kind: "text" as const,
+                  styles: { link: "#_Toc_target" },
+                },
+              ],
+            },
+            {
+              id: "paragraph-2",
+              type: "paragraph",
+              runs: [
+                { id: "run-2", text: "Target heading", kind: "text" as const },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = decodePdf(await blob.arrayBuffer());
+
+    expect(pdf).toContain("/Subtype /Link");
+    expect(pdf).toContain(
+      "/A << /Type /Action /S /GoTo /D (_Toc_target) >>",
+    );
+    // The named destination is registered and bound to a page object via /XYZ.
+    expect(pdf).toContain("/Names [(_Toc_target) [");
+    expect(pdf).toMatch(/\(_Toc_target\) \[\d+ 0 R \/XYZ /);
+    expect(pdf).toContain("/Dests ");
+    expect(pdf).toMatch(/\/Catalog[\s\S]*?\/Names \d+ 0 R/);
+  });
+
+  it("builds a nested /Outlines tree from heading paragraphs", async () => {
+    const document: EditorDocument = {
+      id: "pdf-outline-document",
+      sections: [
+        {
+          id: "section-1",
+          pageSettings: {
+            width: 816,
+            height: 1056,
+            orientation: "portrait",
+            margins: {
+              top: 96,
+              right: 96,
+              bottom: 96,
+              left: 96,
+              header: 48,
+              footer: 48,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: "h1",
+              type: "paragraph",
+              style: { styleId: "Heading1" },
+              runs: [{ id: "r1", text: "Chapter One", kind: "text" as const }],
+            },
+            {
+              id: "h2",
+              type: "paragraph",
+              style: { styleId: "Heading2" },
+              runs: [{ id: "r2", text: "Section A", kind: "text" as const }],
+            },
+            {
+              id: "h1b",
+              type: "paragraph",
+              style: { styleId: "Heading1" },
+              runs: [{ id: "r3", text: "Chapter Two", kind: "text" as const }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = decodePdf(await blob.arrayBuffer());
+
+    expect(pdf).toContain("/Type /Outlines");
+    expect(pdf).toContain("/Outlines ");
+    expect(pdf).toContain("/PageMode /UseOutlines");
+    // Three outline items, each a /Title text string referencing a /Dest.
+    expect((pdf.match(/\/Title </g) ?? []).length).toBe(3);
+    expect((pdf.match(/\/Dest \(__oasis_heading_/g) ?? []).length).toBe(3);
+    // The level-2 heading nests under the first level-1 heading: that parent
+    // carries /First, /Last and a descendant /Count of 1.
+    expect(pdf).toMatch(/\/First \d+ 0 R\n\/Last \d+ 0 R\n\/Count 1/);
+    // Title is encoded as a UTF-16BE text string with a BOM.
+    expect(pdf).toContain(`/Title <FEFF${pdfUtf16Hex("Chapter One")}>`);
+
+    // xref/trailer stay consistent after the extra outline/dest/names objects:
+    // /Size must equal (object count + 1) and the xref table must list that many
+    // entries (including the free entry 0).
+    const objectCount = (pdf.match(/\n\d+ 0 obj\n/g) ?? []).length;
+    const sizeMatch = pdf.match(/\/Size (\d+)/);
+    const xrefEntries = (pdf.match(/^\d{10} \d{5} [nf] $/gm) ?? []).length;
+    expect(sizeMatch?.[1]).toBe(String(objectCount + 1));
+    expect(xrefEntries).toBe(objectCount + 1);
+  });
+
+  it("compresses page content streams with FlateDecode", async () => {
+    const longText = Array.from(
+      { length: 60 },
+      () => "lorem ipsum dolor sit",
+    ).join(" ");
+    const document: EditorDocument = {
+      id: "pdf-flate-document",
+      sections: [
+        {
+          id: "section-1",
+          pageSettings: {
+            width: 816,
+            height: 1056,
+            orientation: "portrait",
+            margins: {
+              top: 96,
+              right: 96,
+              bottom: 96,
+              left: 96,
+              header: 48,
+              footer: 48,
+              gutter: 0,
+            },
+          },
+          blocks: Array.from({ length: 8 }, (_, i) => ({
+            id: `p${i}`,
+            type: "paragraph" as const,
+            runs: [{ id: `r${i}`, text: longText, kind: "text" as const }],
+          })),
+        },
+      ],
+    };
+
+    const buffer = await (
+      await exportEditorDocumentToPdfBlob(document)
+    ).arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let raw = "";
+    for (let i = 0; i < bytes.length; i += 1) {
+      raw += String.fromCharCode(bytes[i]!);
+    }
+
+    // The content stream is compressed and its operators are not plaintext...
+    expect(raw).toContain("/Filter /FlateDecode");
+    expect(raw).not.toContain(" Td\n");
+    // ...but inflating restores the operators and text.
+    const inflated = decodePdf(buffer);
+    expect(inflated).toContain(" Td");
+    expectPdfText(inflated, "lorem ipsum dolor sit");
+  });
+
+  it("emits a document /Info dictionary from metadata", async () => {
+    const document: EditorDocument = {
+      id: "pdf-info-document",
+      metadata: { title: "My Report", author: "Ada Lovelace" },
+      sections: [
+        {
+          id: "section-1",
+          pageSettings: {
+            width: 816,
+            height: 1056,
+            orientation: "portrait",
+            margins: {
+              top: 96,
+              right: 96,
+              bottom: 96,
+              left: 96,
+              header: 48,
+              footer: 48,
+              gutter: 0,
+            },
+          },
+          blocks: [
+            {
+              id: "p1",
+              type: "paragraph",
+              runs: [{ id: "r1", text: "Body", kind: "text" as const }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const blob = await exportEditorDocumentToPdfBlob(document);
+    const pdf = decodePdf(await blob.arrayBuffer());
+
+    expect(pdf).toMatch(/trailer[\s\S]*?\/Info \d+ 0 R/);
+    expect(pdf).toContain(`/Title <FEFF${pdfUtf16Hex("My Report")}>`);
+    expect(pdf).toContain(`/Author <FEFF${pdfUtf16Hex("Ada Lovelace")}>`);
+    expect(pdf).toContain("/Producer (Oasis Editor)");
+    expect(pdf).toMatch(/\/CreationDate \(D:\d{14}\+00'00'\)/);
   });
 
   it("exports canvas footnotes at the bottom of the reference page", async () => {
@@ -795,7 +1121,7 @@ describe("OasisPdfWriter", () => {
     );
     const page = layout.pages[0]!;
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const pageHeight = pxToPt(page.pageSettings.height);
 
     expect(page.footnoteSeparatorTop).toBeDefined();
@@ -880,7 +1206,7 @@ describe("OasisPdfWriter", () => {
       undefined,
     );
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const pageCount = (pdf.match(/\/Type \/Page\n/g) ?? []).length;
 
     expect(layout.pages.length).toBeGreaterThan(1);
@@ -1020,7 +1346,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
 
     expectPdfText(pdf, "Single underline");
     expectPdfText(pdf, "Double underline");
@@ -1083,7 +1409,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
 
     expectPdfText(pdf, "Dashed boxed paragraph");
     // Shading fill rectangle in the paragraph's shading color (#fef3c7).
@@ -1133,7 +1459,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const pageCount = (pdf.match(/\/Type \/Page\n/g) ?? []).length;
 
     expect(blob.type).toBe("application/pdf");
@@ -1215,7 +1541,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const pageCount = (pdf.match(/\/Type \/Page\n/g) ?? []).length;
 
     expect(blob.type).toBe("application/pdf");
@@ -1276,7 +1602,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
 
     expectPdfText(pdf, "Capítulo 1");
     expect(pdf).toContain("/CarlitoBold 18 Tf");
@@ -1332,7 +1658,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
 
     // The run's glyphs are clipped (7 Tr) and filled by an axial shading painted
     // through them; the page references the shading resource.
@@ -1382,7 +1708,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const layout = projectDocumentLayout(
       document,
       undefined,
@@ -1463,7 +1789,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const pageCount = (pdf.match(/\/Type \/Page\n/g) ?? []).length;
     const projectedPageCount = projectDocumentLayout(
       document,
@@ -1520,7 +1846,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
 
     expectPdfText(pdf, "Página Capítulo ação não");
     expect(pdf).not.toContain("Página");
@@ -1809,7 +2135,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const layout = projectDocumentLayout(
       document,
       undefined,
@@ -1904,7 +2230,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const pageCount = (pdf.match(/\/Type \/Page\n/g) ?? []).length;
 
     expect(pageCount).toBeGreaterThan(1);
@@ -2045,7 +2371,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
 
     expectPdfText(pdf, "HeaderA");
     expectPdfText(pdf, "HeaderB");
@@ -2117,7 +2443,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const projected = projectDocumentLayout(
       document,
       undefined,
@@ -2164,7 +2490,7 @@ describe("OasisPdfWriter", () => {
     const document = createInlineImageDocument({ imageWidth, imageHeight });
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const layout = projectDocumentLayout(
       document,
       undefined,
@@ -2217,7 +2543,7 @@ describe("OasisPdfWriter", () => {
       },
     });
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const draw = findImageDraw(pdf);
     const pageSettings = document.sections![0]!.pageSettings;
     const pageHeightPt = pxToPt(pageSettings.height);
@@ -2278,7 +2604,9 @@ describe("OasisPdfWriter", () => {
         },
       ],
     };
-    const pdf = await (await exportEditorDocumentToPdfBlob(document)).text();
+    const pdf = decodePdf(
+      await (await exportEditorDocumentToPdfBlob(document)).arrayBuffer(),
+    );
     expect(pdf).toContain("1 0 0 RG");
     expect(pdf).toContain("0 0 1 RG");
   });
@@ -2294,7 +2622,7 @@ describe("OasisPdfWriter", () => {
     });
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const layout = projectDocumentLayout(
       document,
       undefined,
@@ -2385,7 +2713,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
 
     // Fill color #4472C4 → rgb fill command, and a filled+stroked path (B).
     expect(pdf).toContain("0.267 0.447 0.769 rg");
@@ -2454,7 +2782,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const layout = projectDocumentLayout(
       document,
       undefined,
@@ -2541,7 +2869,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
 
     expectPdfText(pdf, "InsideShape");
     // The inner content is clipped to the box (W n clip operator emitted).
@@ -2600,7 +2928,7 @@ describe("OasisPdfWriter", () => {
     };
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
 
     // Clockwise 30° → PDF math angle -30°: cos(30°)=0.866, sin(-30°)=-0.5.
     const cos = Number(Math.cos((-rotation * Math.PI) / 180).toFixed(3));
@@ -2624,7 +2952,7 @@ describe("OasisPdfWriter", () => {
     });
 
     const blob = await exportEditorDocumentToPdfBlob(document);
-    const pdf = await blob.text();
+    const pdf = decodePdf(await blob.arrayBuffer());
     const draws = findImageDraws(pdf);
     const draw = draws[0]!;
     const radians = (-rotation * Math.PI) / 180;
@@ -2681,7 +3009,9 @@ describe("OasisPdfWriter", () => {
       ],
     };
 
-    const pdf = await (await exportEditorDocumentToPdfBlob(document)).text();
+    const pdf = decodePdf(
+      await (await exportEditorDocumentToPdfBlob(document)).arrayBuffer(),
+    );
     expectPdfText(pdf, "I.");
     expectPdfText(pdf, "1.1)");
   });

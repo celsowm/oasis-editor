@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { unzlibSync } from "fflate";
 import type {
   EditorDocument,
   EditorParagraphNode,
@@ -19,6 +20,46 @@ export const LOREM_COMPLEX_DOCX = join(
   FIXTURES_DIR,
   "lorem_ipsum_complex_document.docx",
 );
+
+/**
+ * Decodes a PDF blob to a searchable string. Page content streams are
+ * FlateDecode-compressed, so each /FlateDecode stream's data is inflated and
+ * spliced in place, keeping content operators searchable.
+ */
+export function decodePdf(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let raw = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    raw += String.fromCharCode(bytes[i]!);
+  }
+  let out = "";
+  let copiedTo = 0;
+  let cursor = 0;
+  for (;;) {
+    const at = raw.indexOf("/FlateDecode", cursor);
+    if (at === -1) break;
+    const streamStart = raw.indexOf("stream\n", at);
+    if (streamStart === -1) break;
+    const dataStart = streamStart + "stream\n".length;
+    const dataEnd = raw.indexOf("\nendstream", dataStart);
+    if (dataEnd === -1) break;
+    const compressed = new Uint8Array(dataEnd - dataStart);
+    for (let i = 0; i < compressed.length; i += 1) {
+      compressed[i] = raw.charCodeAt(dataStart + i) & 0xff;
+    }
+    try {
+      out += raw.slice(copiedTo, dataStart) + new TextDecoder().decode(
+        unzlibSync(compressed),
+      );
+      copiedTo = dataEnd;
+    } catch {
+      // Not a real inflate match; leave bytes untouched.
+    }
+    cursor = dataEnd + 1;
+  }
+  out += raw.slice(copiedTo);
+  return out;
+}
 
 export function pdfColorCommand(color: string, operator: "rg" | "RG"): string {
   const normalized = color.replace("#", "");

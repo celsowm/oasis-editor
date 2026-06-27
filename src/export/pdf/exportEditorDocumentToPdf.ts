@@ -8,6 +8,7 @@ import {
   getPageHeaderZoneTop,
 } from "@/core/model.js";
 import { findFootnoteReference } from "@/core/footnotes.js";
+import { outlineFrom } from "@/core/headings.js";
 import {
   FOOTNOTE_MARKER_GUTTER_PX,
   projectDocumentLayout,
@@ -22,6 +23,93 @@ import { pxToPt, textStyleToFontSizePt } from "./units.js";
 
 const FOOTNOTE_BLOCK_GAP_PX = 2;
 
+const PDF_PRODUCER = "Oasis Editor";
+
+/**
+ * Resolves the PDF `/Info` dictionary from the document's metadata. Title comes
+ * from `metadata.title`; author/subject/keywords are read from the open-ended
+ * metadata map when present as strings. Producer and creation date are always set.
+ */
+function resolveDocumentInfo(document: EditorDocument) {
+  const metadata = document.metadata ?? {};
+  const asString = (value: unknown): string | undefined =>
+    typeof value === "string" && value.trim() !== "" ? value : undefined;
+  return {
+    title: asString(metadata.title),
+    author: asString(metadata.author),
+    subject: asString(metadata.subject),
+    keywords: asString(metadata.keywords),
+    producer: PDF_PRODUCER,
+    creationDate: new Date(),
+  };
+}
+
+/**
+ * Maps each paragraph id to the bookmark names whose start anchor lives in it, so
+ * the draw pass can register a named PDF destination at the paragraph's position
+ * (the jump target for internal `#anchor` links).
+ */
+function collectBookmarkNamesByParagraph(
+  document: EditorDocument,
+): Map<string, string[]> {
+  const byParagraph = new Map<string, string[]>();
+  const bookmarks = document.bookmarks;
+  if (!bookmarks) {
+    return byParagraph;
+  }
+  for (const id of bookmarks.order) {
+    const bookmark = bookmarks.items[id];
+    const paragraphId = bookmark?.start?.paragraphId;
+    if (!bookmark || !paragraphId) {
+      continue;
+    }
+    const names = byParagraph.get(paragraphId) ?? [];
+    names.push(bookmark.name);
+    byParagraph.set(paragraphId, names);
+  }
+  return byParagraph;
+}
+
+/** Named-destination prefix for heading outline targets (avoids bookmark clashes). */
+const HEADING_DEST_PREFIX = "__oasis_heading_";
+
+/**
+ * Builds the `onParagraphDrawn` hook for a body block list. When a paragraph is
+ * drawn it (1) registers a named destination for each bookmark start it owns so
+ * internal `#anchor` links can jump to it, and (2) for heading paragraphs,
+ * registers an outline destination and appends a document-ordered outline item.
+ * Returns `undefined` when there is nothing to track (skips the per-paragraph
+ * work entirely).
+ */
+function registerBookmarkDestinations(
+  writer: OasisPdfWriter,
+  pageIndex: number,
+  originX: number,
+  bookmarkNamesByParagraph: Map<string, string[]>,
+  headingByParagraph: Map<string, { level: number; title: string }>,
+): ((paragraphId: string, topPx: number) => void) | undefined {
+  if (bookmarkNamesByParagraph.size === 0 && headingByParagraph.size === 0) {
+    return undefined;
+  }
+  return (paragraphId, topPx) => {
+    const y = pxToPt(topPx);
+    const x = pxToPt(originX);
+    for (const name of bookmarkNamesByParagraph.get(paragraphId) ?? []) {
+      writer.addNamedDestination({ name, pageIndex, x, y });
+    }
+    const heading = headingByParagraph.get(paragraphId);
+    if (heading) {
+      const destName = `${HEADING_DEST_PREFIX}${paragraphId}`;
+      writer.addNamedDestination({ name: destName, pageIndex, x, y });
+      writer.addOutlineItem({
+        title: heading.title,
+        level: heading.level,
+        destName,
+      });
+    }
+  };
+}
+
 export async function exportEditorDocumentToPdf(
   document: EditorDocument,
 ): Promise<ArrayBuffer> {
@@ -31,8 +119,16 @@ export async function exportEditorDocumentToPdf(
     families: collectPdfFontFamilies(document),
   });
   const writer = new OasisPdfWriter(fontRegistry.getPdfFontResources());
+  writer.setDocumentInfo(resolveDocumentInfo(document));
   const layout = projectDocumentLayout(document);
   const listOrdinals = getListOrdinals(document);
+  const bookmarkNamesByParagraph = collectBookmarkNamesByParagraph(document);
+  const headingByParagraph = new Map(
+    outlineFrom(document).map((item) => [
+      item.id,
+      { level: item.level, title: item.text },
+    ]),
+  );
 
   for (const page of layout.pages) {
     const width = Math.max(1, pxToPt(page.pageSettings.width));
@@ -81,6 +177,13 @@ export async function exportEditorDocumentToPdf(
           fontRegistry,
           listOrdinals,
           page.pageSettings,
+          registerBookmarkDestinations(
+            writer,
+            pageIndex,
+            rect.left,
+            bookmarkNamesByParagraph,
+            headingByParagraph,
+          ),
         );
       }
     } else {
@@ -95,6 +198,13 @@ export async function exportEditorDocumentToPdf(
         fontRegistry,
         listOrdinals,
         page.pageSettings,
+        registerBookmarkDestinations(
+          writer,
+          pageIndex,
+          originX,
+          bookmarkNamesByParagraph,
+          headingByParagraph,
+        ),
       );
     }
     await drawBlockList(

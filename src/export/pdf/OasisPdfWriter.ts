@@ -9,6 +9,10 @@
  */
 import type {
   OasisPdfAxialGradient,
+  OasisPdfLinkAnnotation,
+  OasisPdfNamedDestination,
+  OasisPdfOutlineItem,
+  OasisPdfDocumentInfo,
   OasisPdfFontResource,
   OasisPdfImageOptions,
   OasisPdfImageResource,
@@ -39,6 +43,11 @@ export type {
   OasisPdfFontResource,
   OasisPdfBase14FontResource,
   OasisPdfUnicodeFontResource,
+  OasisPdfLinkAnnotation,
+  OasisPdfAnnotation,
+  OasisPdfNamedDestination,
+  OasisPdfOutlineItem,
+  OasisPdfDocumentInfo,
 } from "./writer/pdfTypes.js";
 
 export class OasisPdfWriter {
@@ -47,6 +56,9 @@ export class OasisPdfWriter {
   private readonly fonts: PdfFontTable;
   private readonly images = new PdfImageTable();
   private readonly shadings = new PdfShadingTable();
+  private readonly namedDestinations: OasisPdfNamedDestination[] = [];
+  private readonly outlineItems: OasisPdfOutlineItem[] = [];
+  private documentInfo: OasisPdfDocumentInfo | undefined;
 
   constructor(
     fontResources: OasisPdfFontResource[] = DEFAULT_PDF_FONT_RESOURCES,
@@ -65,6 +77,7 @@ export class OasisPdfWriter {
       commands: [],
       imageResourceNames: new Set(),
       shadingResourceNames: new Set(),
+      annotations: [],
     };
     this.pages.push(page);
     this.streams.push(
@@ -144,6 +157,42 @@ export class OasisPdfWriter {
     this.streams[pageIndex]?.drawImage(options);
   }
 
+  /**
+   * Attaches a clickable external link annotation to a page. The rect is in the
+   * writer's top-left point space; the serializer flips it to PDF space.
+   */
+  addLinkAnnotation(
+    pageIndex: number,
+    annotation: OasisPdfLinkAnnotation,
+  ): void {
+    this.pages[pageIndex]?.annotations.push(annotation);
+  }
+
+  /**
+   * Registers a named destination (jump target). Position is in the writer's
+   * top-left point space. The first registration of a given name wins; later
+   * duplicates are ignored so destinations stay unique in the names tree.
+   */
+  addNamedDestination(destination: OasisPdfNamedDestination): void {
+    if (this.namedDestinations.some((d) => d.name === destination.name)) {
+      return;
+    }
+    this.namedDestinations.push(destination);
+  }
+
+  /**
+   * Appends an outline (bookmarks-panel) entry. Call in document order; the
+   * serializer nests entries by `level`.
+   */
+  addOutlineItem(item: OasisPdfOutlineItem): void {
+    this.outlineItems.push(item);
+  }
+
+  /** Sets the document information dictionary (`/Info`). */
+  setDocumentInfo(info: OasisPdfDocumentInfo): void {
+    this.documentInfo = info;
+  }
+
   toArrayBuffer(): ArrayBuffer {
     const bytes = this.toUint8Array();
     return Uint8Array.from(bytes).buffer;
@@ -162,6 +211,9 @@ export class OasisPdfWriter {
       this.fonts,
       this.images,
       this.shadings,
+      this.namedDestinations,
+      this.outlineItems,
+      this.documentInfo,
     );
   }
 }

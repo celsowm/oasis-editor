@@ -16,6 +16,7 @@ import {
 } from "@/layoutProjection/index.js";
 import { buildCanvasTableLayout } from "@/ui/canvas/CanvasTableLayout.js";
 import {
+  decodePdf,
   getDocumentTables,
   importComplexDocument,
   importLoremComplexDocument,
@@ -379,7 +380,9 @@ describe("DOCX table import", () => {
       '<w:left w:val="dotted" w:sz="6" w:space="0" w:color="778899"/>',
     );
 
-    const pdf = await (await exportEditorDocumentToPdfBlob(document)).text();
+    const pdf = decodePdf(
+      await (await exportEditorDocumentToPdfBlob(document)).arrayBuffer(),
+    );
     expect(pdf).toContain(pdfColorCommand("#112233", "RG"));
     expect(pdf).toContain(pdfColorCommand("#445566", "RG"));
     expect(pdf).toContain(pdfColorCommand("#778899", "RG"));

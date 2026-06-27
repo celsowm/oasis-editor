@@ -15,6 +15,59 @@ export interface OasisPdfPage {
   commands: string[];
   imageResourceNames: Set<string>;
   shadingResourceNames: Set<string>;
+  annotations: OasisPdfAnnotation[];
+}
+
+/**
+ * A clickable link annotation. The rect is given in the writer's top-left point
+ * space (same convention as drawing); the serializer flips y to PDF bottom-left
+ * space and emits the `[x1 y1 x2 y2]` `/Rect`. Exactly one of `uri` (external)
+ * or `destName` (internal named destination) is set.
+ */
+export interface OasisPdfLinkAnnotation {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** External target (`/URI` action). */
+  uri?: string;
+  /** Internal target: a named destination resolved via the `/Dests` name tree. */
+  destName?: string;
+}
+
+export type OasisPdfAnnotation = OasisPdfLinkAnnotation;
+
+/**
+ * A named destination (a jump target for internal links / the outline). Position
+ * is in the writer's top-left point space; the serializer flips y and binds it to
+ * the page object as a `/XYZ` destination.
+ */
+export interface OasisPdfNamedDestination {
+  name: string;
+  pageIndex: number;
+  x: number;
+  y: number;
+}
+
+/**
+ * One entry in the document outline (bookmarks panel). Items are supplied in
+ * document order; the serializer folds them into a nested tree by `level` (1 =
+ * top level). `destName` references a registered named destination.
+ */
+export interface OasisPdfOutlineItem {
+  title: string;
+  level: number;
+  destName: string;
+}
+
+/** Document information dictionary (`/Info`). All fields optional. */
+export interface OasisPdfDocumentInfo {
+  title?: string;
+  author?: string;
+  subject?: string;
+  keywords?: string;
+  producer?: string;
+  creationDate?: Date;
 }
 
 /** One color stop of an axial gradient. `offset` is 0–1; `color` is a hex string. */
@@ -142,11 +195,15 @@ export interface OasisPdfUnicodeFontResource {
   postscriptName?: string;
 }
 
-/** A serialized indirect PDF object: its 1-based id and dictionary/stream body. */
+/**
+ * A serialized indirect PDF object: its 1-based id and dictionary/stream body.
+ * The body is a string for text objects, or raw bytes when it embeds a binary
+ * (e.g. FlateDecode-compressed) stream that must not pass through UTF-8 encoding.
+ */
 export interface PdfObject {
   id: number;
-  body: string;
+  body: string | Uint8Array;
 }
 
 /** Signature of the object-appending closure used during serialization. */
-export type AddPdfObject = (body: string) => number;
+export type AddPdfObject = (body: string | Uint8Array) => number;

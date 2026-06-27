@@ -654,6 +654,29 @@ export async function drawFragmentText(
     return;
   }
 
+  // Hyperlink: attach a clickable /Link annotation over the run's bounds. An
+  // internal anchor (`#bookmark`) becomes a GoTo named-destination target; any
+  // other value is an external URI.
+  if (styles.link) {
+    const linkBounds = resolveFragmentBounds(
+      line,
+      fragment,
+      styles.fontSize ?? DEFAULT_FONT_SIZE_PX,
+    );
+    if (linkBounds && linkBounds.right > linkBounds.left) {
+      const isInternal = styles.link.startsWith("#");
+      writer.addLinkAnnotation(pageIndex, {
+        x: pxToPt(originX + linkBounds.left),
+        y: pxToPt(originY + line.top),
+        width: pxToPt(linkBounds.right - linkBounds.left),
+        height: pxToPt(line.height),
+        ...(isInternal
+          ? { destName: styles.link.slice(1) }
+          : { uri: styles.link }),
+      });
+    }
+  }
+
   drawFragmentShading(
     writer,
     pageIndex,
