@@ -15,7 +15,6 @@ import {
 } from "@/core/model.js";
 import { createEditorParagraph } from "@/core/editorState.js";
 import { moveSelectedImageToPosition } from "@/core/commands/image.js";
-import { cloneSection } from "@/core/cloneState.js";
 import type { createEditorImageOperations } from "./useEditorImageOperations.js";
 
 export interface UseEditorHistoryActionsProps {
@@ -183,10 +182,7 @@ export function createEditorHistoryActions(deps: UseEditorHistoryActionsProps) {
     const snapshot = deps.stateSnapshot();
     deps.applyHistoryState({
       ...snapshot,
-      document: {
-        ...snapshot.document,
-        sections: snapshot.document.sections?.map(cloneSection),
-      },
+      document: snapshot.document,
       selection: {
         anchor: { ...nextSelection.anchor },
         focus: { ...nextSelection.focus },
