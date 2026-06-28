@@ -64,7 +64,9 @@ import type {
 } from "./controllerPorts.js";
 
 export interface EditorCommandsControllerDeps
-  extends EditorTransactionPort, FocusInputPort, SelectedImageQueryPort {
+  extends EditorTransactionPort,
+    FocusInputPort,
+    SelectedImageQueryPort {
   state: EditorState;
   logger: EditorLogger;
   applySelectionAwareTextCommand: (
@@ -96,6 +98,44 @@ export function createEditorCommandsController(
     selectionCollapsed,
     selectedImageRun,
   } = deps;
+
+  // Ceremony wrappers: each owns the clearPreferredColumn → resetTransactionGrouping
+  // → apply → focusInput sequence so call sites only supply the domain logic.
+
+  const execState = (next: EditorState): void => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyState(next);
+    focusInput();
+  };
+
+  const execText = (
+    producer: (current: EditorState) => EditorState,
+  ): void => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applySelectionAwareTextCommand(producer);
+    focusInput();
+  };
+
+  const execParagraph = (
+    producer: (current: EditorState) => EditorState,
+  ): void => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applySelectionAwareParagraphCommand(producer);
+    focusInput();
+  };
+
+  const execTransactional = (
+    producer: (current: EditorState) => EditorState,
+    options?: Parameters<typeof applyTransactionalState>[1],
+  ): void => {
+    clearPreferredColumn();
+    resetTransactionGrouping();
+    applyTransactionalState(producer, options);
+    focusInput();
+  };
 
   const getSelectedParagraphRange = () => {
     const normalized = normalizeSelection(state);
@@ -132,14 +172,11 @@ export function createEditorCommandsController(
       return false;
     }
 
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) =>
+    execParagraph((current) =>
       direction === "indent"
         ? indentParagraphList(current)
         : outdentParagraphList(current),
     );
-    focusInput();
     return true;
   };
 
@@ -149,6 +186,7 @@ export function createEditorCommandsController(
       return false;
     }
 
+    // Branching apply: ceremony wraps both branches manually.
     clearPreferredColumn();
     resetTransactionGrouping();
     if (selectionCollapsed() && getParagraphText(paragraph).length === 0) {
@@ -184,6 +222,7 @@ export function createEditorCommandsController(
       return false;
     }
 
+    // Extra step between apply and focusInput: ceremony is manual here.
     clearPreferredColumn();
     resetTransactionGrouping();
     applySelectionAwareParagraphCommand((current) =>
@@ -221,10 +260,7 @@ export function createEditorCommandsController(
     logger.info(
       `toggleStyle:${key} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}..${sel.focus.offset}]${selectionTableLocation()}`,
     );
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareTextCommand((current) => toggleTextStyle(current, key));
-    focusInput();
+    execText((current) => toggleTextStyle(current, key));
   };
 
   const applyValueStyleCommand = <
@@ -250,48 +286,28 @@ export function createEditorCommandsController(
     logger.info(
       `setStyle:${key}=${JSON.stringify(value)} at ${sel.anchor.paragraphId}:${sel.anchor.runId}[${sel.anchor.offset}..${sel.focus.offset}]${selectionTableLocation()}`,
     );
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareTextCommand((current) =>
-      setTextStyleValue(current, key, value),
-    );
-    focusInput();
+    execText((current) => setTextStyleValue(current, key, value));
   };
 
   const applyChangeTextCaseCommand = (mode: TextCaseMode) => {
     if (selectionCollapsed()) {
       return;
     }
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareTextCommand((current) =>
-      changeSelectedTextCase(current, mode),
-    );
-    focusInput();
+    execText((current) => changeSelectedTextCase(current, mode));
   };
 
   const applyClearFormattingCommand = () => {
     if (selectionCollapsed()) {
       return;
     }
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareTextCommand((current) =>
-      clearSelectedTextFormatting(current),
-    );
-    focusInput();
+    execText((current) => clearSelectedTextFormatting(current));
   };
 
   const applyParagraphStyleCommand = <K extends ParagraphStyleKey>(
     key: K,
     value: EditorParagraphStyle[K] | null,
   ) => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) =>
-      setParagraphStyle(current, key, value),
-    );
-    focusInput();
+    execParagraph((current) => setParagraphStyle(current, key, value));
   };
 
   const toggleParagraphFlagCommand = (
@@ -304,52 +320,31 @@ export function createEditorCommandsController(
   const applyParagraphListCommand = (
     kind: NonNullable<EditorParagraphListStyle["kind"]>,
   ) => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) =>
-      toggleParagraphList(current, kind),
-    );
-    focusInput();
+    execParagraph((current) => toggleParagraphList(current, kind));
   };
 
   const handleListFormatChange = (
     format: EditorParagraphListStyle["format"],
   ) => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) =>
-      setParagraphListFormat(current, format),
-    );
-    focusInput();
+    execParagraph((current) => setParagraphListFormat(current, format));
   };
 
   const handleListStartAtChange = (startAt: number | null) => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) =>
-      setParagraphListStartAt(current, startAt),
-    );
-    focusInput();
+    execParagraph((current) => setParagraphListStartAt(current, startAt));
   };
 
   const applyInsertSectionBreakCommand = (
     breakType: "nextPage" | "continuous",
   ) => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyState(insertSectionBreakAtSelection(state, breakType));
-    focusInput();
+    execState(insertSectionBreakAtSelection(state, breakType));
   };
 
   const applyInsertPageBreakCommand = () => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyTransactionalState((current) =>
+    execTransactional((current) =>
       applyTableAwareParagraphEdit(current, (temp) =>
         insertPageBreakAtSelection(temp),
       ),
     );
-    focusInput();
   };
 
   const canInsertFootnoteCommand = () =>
@@ -359,36 +354,24 @@ export function createEditorCommandsController(
     if (!canInsertFootnoteCommand()) {
       return;
     }
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyTransactionalState((current) => insertFootnote(current));
-    focusInput();
+    execTransactional((current) => insertFootnote(current));
   };
 
   const handleStyleChange = (styleId: string) => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applySelectionAwareParagraphCommand((current) =>
+    execParagraph((current) =>
       setParagraphNamedStyle(current, styleId || null),
     );
-    focusInput();
   };
 
   const applyUpdateSectionSettingsCommand = (
     sectionIndex: number,
     settings: Partial<EditorSection>,
   ) => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyState(updateSectionSettings(state, sectionIndex, settings));
-    focusInput();
+    execState(updateSectionSettings(state, sectionIndex, settings));
   };
 
   const applyToggleTrackChangesCommand = () => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyState(toggleTrackChanges(state));
-    focusInput();
+    execState(toggleTrackChanges(state));
   };
 
   const applyToggleShowMarginsCommand = () => {
@@ -402,17 +385,11 @@ export function createEditorCommandsController(
   };
 
   const applyAcceptRevisionsCommand = () => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyState(acceptRevisionsInSelection(state));
-    focusInput();
+    execState(acceptRevisionsInSelection(state));
   };
 
   const applyRejectRevisionsCommand = () => {
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyState(rejectRevisionsInSelection(state));
-    focusInput();
+    execState(rejectRevisionsInSelection(state));
   };
 
   const applyLinkCommand = (href: string | null) => {
@@ -420,12 +397,9 @@ export function createEditorCommandsController(
     if (selectionCollapsed() && !activeLink) {
       return;
     }
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyTransactionalState((current) => setLinkAtSelection(current, href), {
+    execTransactional((current) => setLinkAtSelection(current, href), {
       mergeKey: MERGE_KEYS.link,
     });
-    focusInput();
   };
 
   const promptForLink = () => {
@@ -445,12 +419,9 @@ export function createEditorCommandsController(
     if (!run) {
       return;
     }
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyTransactionalState((current) => setSelectedImageAlt(current, alt), {
+    execTransactional((current) => setSelectedImageAlt(current, alt), {
       mergeKey: MERGE_KEYS.imageAlt,
     });
-    focusInput();
   };
 
   const promptForImageAlt = () => {
@@ -467,14 +438,11 @@ export function createEditorCommandsController(
     if (!run) {
       return;
     }
-    clearPreferredColumn();
-    resetTransactionGrouping();
-    applyTransactionalState(
+    execTransactional(
       (current) =>
         setSelectedImageCaption(current, caption, deps.imageCaptionLabel()),
       { mergeKey: MERGE_KEYS.imageCaption },
     );
-    focusInput();
   };
 
   const promptForImageCaption = () => {

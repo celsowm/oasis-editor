@@ -42,13 +42,13 @@ import {
 } from "@/ui/textMeasurement/indentation.js";
 import {
   applyCanvasTextFeatureHints,
-  resolveCanvasFontFamily,
-  resolveCanvasTextRenderMetrics,
+  resolveCanvasRunPaintStyle,
 } from "./canvasFontResolution.js";
 export {
   applyCanvasTextFeatureHints,
   resolveCanvasFontFamily,
   resolveCanvasTextRenderMetrics,
+  resolveCanvasRunPaintStyle,
 } from "./canvasFontResolution.js";
 /** Half-spacing between the two lines of a double-strikethrough, in px. */
 const DOUBLE_STRIKE_OFFSET_PX = 1.3;
@@ -335,13 +335,11 @@ export function drawParagraph(
         paragraph.style?.styleId,
         state.document.styles,
       );
-      const prefixFontSize = prefixStyles.fontSize ?? DEFAULT_FONT_SIZE_PX;
-      const prefixWeight = prefixStyles.bold ? "700" : "400";
-      const prefixStyle = prefixStyles.italic ? "italic" : "normal";
-      const prefixFamily = resolveCanvasFontFamily(prefixStyles.fontFamily);
+      const { font: prefixFont, fillStyle: prefixFillStyle } =
+        resolveCanvasRunPaintStyle(prefixStyles);
       ctx.save();
-      ctx.font = `${prefixStyle} ${prefixWeight} ${prefixFontSize}px ${prefixFamily}`;
-      ctx.fillStyle = prefixStyles.color ?? "#000000";
+      ctx.font = prefixFont;
+      ctx.fillStyle = prefixFillStyle;
       const first = line.slots[0];
       const gap = ctx.measureText(`${listPrefix} `).width;
       const labelInset = getListLabelInset(paragraph, state.document.styles);
@@ -375,12 +373,9 @@ export function drawParagraph(
       const metricFamily = resolveMetricCompatibleFamily(
         styles.fontFamily ?? "Calibri",
       );
-      const fontFamily = resolveCanvasFontFamily(styles.fontFamily);
-      const fontWeight = styles.bold ? "700" : "400";
-      const fontStyle = styles.italic ? "italic" : "normal";
-      const renderMetrics = resolveCanvasTextRenderMetrics(styles, fontSize);
+      const { font, renderMetrics } = resolveCanvasRunPaintStyle(styles);
       ctx.save();
-      ctx.font = `${fontStyle} ${fontWeight} ${renderMetrics.fontSize}px ${fontFamily}`;
+      ctx.font = font;
       // Apply the typography intent Canvas 2D can express: kerning (w:kern) via
       // ctx.fontKerning and a coarse ligature hint (w14:ligatures) via
       // ctx.textRendering — kept consistent with the metric-only measurement.
@@ -565,21 +560,11 @@ export function drawParagraph(
           state.document.styles,
         );
         if (!styles.hidden) {
-          const fontSize = styles.fontSize ?? DEFAULT_FONT_SIZE_PX;
-          const fontFamily = resolveCanvasFontFamily(styles.fontFamily);
-          const fontWeight = styles.bold ? "700" : "400";
-          const fontStyle = styles.italic ? "italic" : "normal";
-          const renderMetrics = resolveCanvasTextRenderMetrics(
-            styles,
-            fontSize,
-          );
-          const scale =
-            styles.characterScale && styles.characterScale > 0
-              ? styles.characterScale / 100
-              : 1;
+          const { font, fillStyle, renderMetrics, scale } =
+            resolveCanvasRunPaintStyle(styles);
           ctx.save();
-          ctx.font = `${fontStyle} ${fontWeight} ${renderMetrics.fontSize}px ${fontFamily}`;
-          ctx.fillStyle = styles.color ?? "#000000";
+          ctx.font = font;
+          ctx.fillStyle = fillStyle;
           drawStyledText(
             ctx,
             "-",

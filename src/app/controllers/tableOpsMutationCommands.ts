@@ -5,6 +5,7 @@ import {
   getActiveSectionIndex,
   getDocumentParagraphs,
   getDocumentSectionsCanonical,
+  paragraphOffsetToPosition,
   type EditorBlockNode,
   type EditorEditingZone,
   type EditorParagraphNode,
@@ -112,3 +113,42 @@ export const applyTableAwareParagraphEdit = (
     selection: tempResult.selection,
   };
 };
+
+export interface TableLocationMutation {
+  tableBlock: EditorTableNode;
+  location: NonNullable<ReturnType<typeof findParagraphTableLocation>>;
+  targetBlocks: EditorBlockNode[];
+}
+
+export function resolveLocationTableMutation(
+  current: EditorState,
+  getTargetBlocks: (state: EditorState, zone: EditorEditingZone) => EditorBlockNode[],
+): TableLocationMutation | null {
+  const location = findParagraphTableLocation(
+    current.document,
+    current.selection.focus.paragraphId,
+    getActiveSectionIndex(current),
+  );
+  if (!location) return null;
+  const targetBlocks = getTargetBlocks(current, location.zone).map(cloneBlock);
+  const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
+  if (!tableBlock || tableBlock.type !== "table") return null;
+  return { tableBlock, location, targetBlocks };
+}
+
+export function commitTableMutation(
+  current: EditorState,
+  targetBlocks: EditorBlockNode[],
+  zone: EditorEditingZone,
+  nextParagraph: EditorParagraphNode | null | undefined,
+): EditorState {
+  const nextState = updateBlocksInCurrentSection(current, targetBlocks, zone);
+  if (!nextParagraph) return nextState;
+  return {
+    ...nextState,
+    selection: {
+      anchor: paragraphOffsetToPosition(nextParagraph, 0),
+      focus: paragraphOffsetToPosition(nextParagraph, 0),
+    },
+  };
+}

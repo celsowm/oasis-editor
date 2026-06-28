@@ -1,10 +1,7 @@
 import type { EditorLayoutLine, EditorParagraphNode } from "@/core/model.js";
 import { measureDropCapWidth } from "@/layoutProjection/dropCapExclusion.js";
-import {
-  resolveCanvasFontFamily,
-  resolveCanvasTextRenderMetrics,
-} from "./canvasParagraphPainter.js";
-import { DEFAULT_FONT_SIZE_PX as DEFAULT_FONT_SIZE } from "@/core/units.js";
+import { resolveCanvasRunPaintStyle } from "./canvasParagraphPainter.js";
+import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
 
 /**
  * Draws a paragraph's drop cap (the large initial letter). The wrapping body
@@ -27,13 +24,8 @@ export function drawDropCapForParagraph(options: {
   }
 
   const style = dropCap.style;
-  const fontSize = style?.fontSize ?? DEFAULT_FONT_SIZE;
-  const bodyLineHeight = lines[0]?.height ?? fontSize;
-  const renderMetrics = resolveCanvasTextRenderMetrics(style, fontSize);
-
-  const fontWeight = style?.bold ? "700" : "400";
-  const fontStyle = style?.italic ? "italic" : "normal";
-  const fontFamily = resolveCanvasFontFamily(style?.fontFamily);
+  const { font, fillStyle, renderMetrics } = resolveCanvasRunPaintStyle(style);
+  const bodyLineHeight = lines[0]?.height ?? (style?.fontSize ?? DEFAULT_FONT_SIZE_PX);
 
   const glyphWidth = measureDropCapWidth(dropCap);
   const x = dropCap.type === "margin" ? originX - glyphWidth : originX;
@@ -46,8 +38,8 @@ export function drawDropCapForParagraph(options: {
     renderMetrics.baselineOffset;
 
   ctx.save();
-  ctx.font = `${fontStyle} ${fontWeight} ${renderMetrics.fontSize}px ${fontFamily}`;
-  ctx.fillStyle = style?.color ?? "#000000";
+  ctx.font = font;
+  ctx.fillStyle = fillStyle;
   ctx.textBaseline = "alphabetic";
   ctx.fillText(dropCap.text, x, baselineY);
   ctx.restore();

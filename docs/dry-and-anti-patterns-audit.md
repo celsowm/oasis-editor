@@ -95,16 +95,19 @@ flags vs XML child lookup) to not warrant further sharing at this time.
 
 ### 5. Copy-pasted table commands (horizontal merge/split ≈ vertical)
 
-**Severity:** high
+**Severity:** high — **Status: ✅ resolved.**
 
-- Command prologue `findLocation → clone → validate → commit selection`
-  repeated in `src/app/controllers/tableOpsRowColumnCommands.ts:42,51,152`
-- Near-duplicate merge/split logic in
-  `src/app/controllers/tableOpsCellSpanCommands.ts:84,189` (merge) and
-  `:295,390` (split)
+Two helpers added to `src/app/controllers/tableOpsMutationCommands.ts`:
+- `resolveLocationTableMutation(current, getTargetBlocks)` — collapses the
+  13-line `findParagraphTableLocation → cloneBlocks → tableBlock validate`
+  prologue to 3 lines; used in all 4 row/column commands and both split-cell
+  commands (6 call sites).
+- `commitTableMutation(current, targetBlocks, zone, nextParagraph)` — collapses
+  the 7-line commit-and-set-selection epilogue to 1 line; used in 13 places
+  across both files.
 
-**Fix:** `withSelectedTableMutation(current, deps, mutate)` helper plus
-`buildMergedTableCell({ orientation, spanPatch })`.
+Net result: 657 + 470 → 487 + 400 lines (−240 in the two controller files, +39
+in the mutations file; net **−201 lines**).
 
 ### 6. Inline text-box geometry duplicated between painting and hit-test/snapshot
 
@@ -122,23 +125,16 @@ with `src/ui/canvas/CanvasLayoutSnapshot.ts:391,593`.
 
 ### 7. Near-identical single-field dialog components
 
-**Severity:** high
+**Severity:** high — **Status: ✅ resolved.**
 
-`src/ui/components/Dialogs/LinkDialog.tsx:17`,
-`src/ui/components/Dialogs/ImageAltDialog.tsx:17`,
-`src/ui/components/Dialogs/ImageCaptionDialog.tsx:17` repeat the same
-reset + `setTimeout(focus, 50)` + Enter-to-confirm + footer scaffolding.
+New `src/ui/components/Dialogs/TextInputDialog.tsx` holds the shared
+`createSignal` / `createEffect` / focus / Enter-to-confirm / footer scaffolding.
+`LinkDialog`, `ImageAltDialog`, `ImageCaptionDialog` are now thin wrappers (≈15
+lines each) that pass i18n strings and optional `testIds` through.
 
-```ts
-if (props.isOpen) {
-  setHref(props.initialHref);
-  setTimeout(() => inputRef?.focus(), 50);
-}
-```
-
-**Fix:** A generic `TextInputDialog` (or `useSingleFieldDialog` hook) plus a
-shared `DialogFooter`/`DialogActions` component (also duplicated in
-`ParagraphDialog.tsx:206` and `TablePropertiesDialog.tsx:402`).
+New `src/ui/components/Dialogs/DialogFooter.tsx` extracts the cancel+confirm
+button pair; used by `TextInputDialog`, `ParagraphDialog`, and
+`TablePropertiesDialog` (5 call sites total, replacing 5× 14-line inline blocks).
 
 ### 8. Image commands repeat "find → map paragraphs → clone runs → preserve selection"
 
@@ -152,15 +148,24 @@ matches by run id rather than selection so stays separate.
 
 ### 9. Parallel, un-abstracted pagination control flow
 
-**Severity:** high
+**Severity:** high — **Status: ✅ resolved.**
 
-`src/layoutProjection/paragraphBlockPagination.ts:291,317,413,437` and
-`src/layoutProjection/tableBlockPagination.ts:173,230,399,447` repeat the same
-"fit segment → push layout block → advance → flush" loop.
+New `src/layoutProjection/paginationSegmentEngine.ts` exports
+`PaginationSegmenter` interface and `paginateSegments(track, sourceId, segmenter)`
+function. The engine owns the outer `while`/flush/push/flush skeleton;
+callers supply `hasMore`, `fit`, `force`, `onBeforeFlush`, and `onAfterPush`
+callbacks.
 
-**Fix:** A generic `paginateSegments(track, sourceBlock, index, segmenter)`
-engine, with paragraph/table-specific measurement and split decisions as
-strategy callbacks.
+`paragraphBlockPagination.ts`: main segment loop replaced with a
+`paginateSegments` call; duplicate "undo contextual spacing + flush" block
+(appeared twice) collapsed into the single `onBeforeFlush` callback; floating
+exclusion registration moved to `onAfterPush`.
+
+`tableBlockPagination.ts`: main segment loop replaced with a `paginateSegments`
+call; `buildTableBlock` and `advanceCursor` extracted as file-local helpers
+shared by `fit` and `force`, eliminating the cursor-advance duplication.
+
+Net: +1 new file (~65 lines), paragraph file −40 lines, table file −60 lines.
 
 ---
 
@@ -180,9 +185,15 @@ strategy callbacks.
   unrelated DOCX parts; split into small `read/parse/build/write` steps.
 - `src/app/controllers/useEditorSurfaceEvents.ts:84`: 600+ lines mixing
   hit-testing, zone switching, selection, dragging, and image/textbox behavior.
-- `src/app/controllers/EditorCommandsController.ts`: god controller repeating
+- `src/app/controllers/EditorCommandsController.ts`: ~~god controller repeating
   command ceremony (`clearPreferredColumn` → `resetTransactionGrouping` →
-  apply → `focusInput`).
+  apply → `focusInput`).~~ **✅ resolved.** Four ceremony wrappers
+  (`execState`, `execText`, `execParagraph`, `execTransactional`) added at the
+  top of the factory function; 20 of 22 command functions replaced with
+  one-liner calls. Two exceptions left manual: `handleListEnter` (branches two
+  different `apply*` calls inside shared ceremony) and
+  `handleListBoundaryBackspace` (extra `event.currentTarget.value = ""`
+  between apply and `focusInput`). Net: 520 → 375 lines (−145).
 
 ### 11. Unnamed magic numbers
 
@@ -207,19 +218,18 @@ All originally-flagged magic numbers are now named constants:
 
 ### 12. Repeated canvas text style / font setup
 
-**Severity:** med
+**Severity:** med — **Status: ✅ resolved.**
 
-`src/ui/canvas/canvasParagraphPainter.ts:323-329,359-368,544-558` and
-`src/ui/canvas/verticalText.ts:272-278` repeat font-string assembly:
+`resolveCanvasRunPaintStyle(styles)` exported from
+`src/ui/canvas/canvasFontResolution.ts` returns `{ font, fillStyle, renderMetrics, scale }`.
+The 5 call sites that previously inlined `fontWeight`/`fontStyle`/`ctx.font`
+assembly now call it instead:
 
-```ts
-const fontWeight = styles.bold ? "700" : "400";
-const fontStyle = styles.italic ? "italic" : "normal";
-ctx.font = `${fontStyle} ${fontWeight} ${size}px ${fontFamily}`;
-```
+- `canvasParagraphPainter.ts`: list prefix, fragment loop, trailing hyphen
+- `canvasDropCapPainter.ts`: drop cap glyph
+- `verticalText.ts`: stacked glyph loop
 
-**Fix:** `resolveCanvasRunPaintStyle(styles)` returning
-`{ font, fillStyle, renderMetrics, scale }` plus a `withCanvasTextStyle` helper.
+Net: ~−20 lines across the 5 sites.
 
 ### 13. Duplicated selection/range clamping math
 
@@ -234,13 +244,11 @@ ctx.font = `${fontStyle} ${fontWeight} ${size}px ${fontFamily}`;
 
 ### 14. Manual repeated table border propagation
 
-**Severity:** med
+**Severity:** med — **Status: ✅ resolved.**
 
-`src/import/docx/tableProperties.ts:768` has six near-identical conditional
-blocks of the form "if edge applies and style is missing, assign border".
-
-**Fix:** `applyBorderIfMissing(style, key, border, condition)` driven by an edge
-rule table.
+`applyBorderIfMissing(style, key, border, condition)` added as a file-local
+helper in `src/import/docx/tableProperties.ts`. The 6 × 5-line conditional
+blocks in `applyTableBordersToRows` collapsed to 6 one-liner calls (−24 lines).
 
 ---
 
@@ -254,17 +262,18 @@ Done
 
 Done (continued)
   - #4 table maps          - #13 selection clamping
-  - #8 image commands
+  - #8 image commands      - #5 table commands
 
 Do next (medium refactor)
 
-Medium term (refactor with tests)
-  - #4 table maps          - #5 table commands
-  - #7 dialogs             - #8 image commands
+Done (continued 2)
+  - #7 dialogs          - #14 border propagation
+
+Done (continued 3)
+  - #12 canvas text style  - #9 pagination engine
 
 Larger (architectural)
-  - #9 pagination engine   - #10 god functions
-  - #12 canvas text style
+  - #10 god functions
 ```
 
 The **inline text-box geometry duplication (#6)** is the most dangerous: the

@@ -1,6 +1,5 @@
-import { createEffect, createSignal } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
-import { Dialog } from "./Dialog.js";
+import { TextInputDialog } from "./TextInputDialog.js";
 
 interface ImageCaptionDialogProps {
   isOpen: boolean;
@@ -11,57 +10,16 @@ interface ImageCaptionDialogProps {
 
 export function ImageCaptionDialog(props: ImageCaptionDialogProps) {
   const t = useI18n();
-  const [caption, setCaption] = createSignal(props.initialCaption);
-  let inputRef: HTMLInputElement | undefined;
-
-  createEffect(() => {
-    if (props.isOpen) {
-      setCaption(props.initialCaption);
-      setTimeout(() => inputRef?.focus(), 50);
-    }
-  });
-
-  const handleConfirm = () => {
-    props.onConfirm(caption());
-    props.onClose();
-  };
-
   return (
-    <Dialog
+    <TextInputDialog
       isOpen={props.isOpen}
       title={t("dialog.imageCaption.title")}
+      label={t("dialog.imageCaption.label")}
+      placeholder={t("dialog.imageCaption.placeholder")}
+      initialValue={props.initialCaption}
+      confirmLabel={t("generic.save")}
       onClose={props.onClose}
-      footer={
-        <>
-          <button
-            class="oasis-editor-dialog-button oasis-editor-dialog-button-secondary"
-            onClick={props.onClose}
-          >
-            {t("generic.cancel")}
-          </button>
-          <button
-            class="oasis-editor-dialog-button oasis-editor-dialog-button-primary"
-            onClick={handleConfirm}
-          >
-            {t("generic.save")}
-          </button>
-        </>
-      }
-    >
-      <div class="oasis-editor-dialog-input-group">
-        <label class="oasis-editor-dialog-label">
-          {t("dialog.imageCaption.label")}
-        </label>
-        <input
-          ref={inputRef}
-          type="text"
-          class="oasis-editor-dialog-input"
-          value={caption()}
-          onInput={(e) => setCaption(e.currentTarget.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
-          placeholder={t("dialog.imageCaption.placeholder")}
-        />
-      </div>
-    </Dialog>
+      onConfirm={props.onConfirm}
+    />
   );
 }

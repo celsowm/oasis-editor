@@ -24,6 +24,7 @@ import {
 import { estimateTableBlockHeight } from "./tablePagination.js";
 import type { PaginationTrack, TrackLayoutParams } from "./paginationTrack.js";
 import { collectParagraphFloatingExclusions } from "./floatingObjects.js";
+import { paginateSegments } from "./paginationSegmentEngine.js";
 
 const TEXT_BOX_AUTOFIT_SAFETY_PX = 2;
 /** Subpixel slack so floating-point rounding doesn't push a just-fitting line to the next page. */
@@ -291,111 +292,23 @@ export function paginateParagraphBlock(
   }
 
   let startLineIndex = 0;
-  let segmentIndex = 0;
-  while (startLineIndex < paragraphLayout.lines.length) {
-    const remainingHeight = track.currentMaxHeight - track.height;
-    let lineEndIndex = startLineIndex;
-    let segmentHeight = 0;
 
-    while (lineEndIndex < paragraphLayout.lines.length) {
-      const candidateLines = paragraphLayout.lines.slice(
-        startLineIndex,
-        lineEndIndex + 1,
-      );
-      const candidateHeight = getParagraphSegmentHeight(
-        sourceBlock,
-        candidateLines,
-        startLineIndex === 0,
-        lineEndIndex === paragraphLayout.lines.length - 1,
-        styles,
-        !collapseWithPrevious,
-      );
-      const candidateFitHeight = getParagraphSegmentFitHeight(
-        sourceBlock,
-        candidateHeight,
-        lineEndIndex === paragraphLayout.lines.length - 1,
-        styles,
-      );
-      if (
-        candidateFitHeight > remainingHeight + PARAGRAPH_FIT_HEIGHT_TOLERANCE_PX &&
-        lineEndIndex === startLineIndex &&
-        track.blocks.length > 0
-      ) {
-        break;
-      }
-      if (
-        candidateFitHeight > remainingHeight + PARAGRAPH_FIT_HEIGHT_TOLERANCE_PX &&
-        lineEndIndex > startLineIndex
-      ) {
-        break;
-      }
-      segmentHeight = candidateHeight;
-      lineEndIndex += 1;
-    }
-
-    if (lineEndIndex === startLineIndex && track.blocks.length > 0) {
-      if (contextualAdjustedPreviousBlock && contextualAdjustedAmount > 0) {
-        contextualAdjustedPreviousBlock.estimatedHeight +=
-          contextualAdjustedAmount;
-        track.height += contextualAdjustedAmount;
-        contextualAdjustedPreviousBlock = undefined;
-        contextualAdjustedAmount = 0;
-      }
-      collapseWithPrevious = false;
-      track.flush();
-      continue;
-    }
-
-    if (lineEndIndex === startLineIndex) {
-      lineEndIndex = Math.min(paragraphLayout.lines.length, startLineIndex + 1);
-      segmentHeight = getParagraphSegmentHeight(
-        sourceBlock,
-        paragraphLayout.lines.slice(startLineIndex, lineEndIndex),
-        startLineIndex === 0,
-        lineEndIndex === paragraphLayout.lines.length,
-        styles,
-        !collapseWithPrevious,
-      );
-    }
-
-    if (lineEndIndex < paragraphLayout.lines.length) {
-      const widowOrphanAdjusted = applyWidowOrphanControl(
-        sourceBlock,
-        paragraphLayout.lines,
-        startLineIndex,
-        lineEndIndex,
-        styles,
-        !collapseWithPrevious,
-        true,
-        track.blocks.length > 0,
-      );
-      lineEndIndex = widowOrphanAdjusted.endLineIndexExclusive;
-      segmentHeight = widowOrphanAdjusted.height;
-
-      if (lineEndIndex === startLineIndex) {
-        // Orphan control pulled the paragraph's lone first line back; move
-        // the whole paragraph to the next page.
-        if (contextualAdjustedPreviousBlock && contextualAdjustedAmount > 0) {
-          contextualAdjustedPreviousBlock.estimatedHeight +=
-            contextualAdjustedAmount;
-          track.height += contextualAdjustedAmount;
-          contextualAdjustedPreviousBlock = undefined;
-          contextualAdjustedAmount = 0;
-        }
-        collapseWithPrevious = false;
-        track.flush();
-        continue;
-      }
-    }
-
+  // Build a segment block given the resolved line range and height. Closed over
+  // collapseWithPrevious / measuredHeights because both can change between
+  // segment iterations (collapseWithPrevious is reset on flush).
+  const buildSegmentBlock = (
+    originalStart: number,
+    lineEndIndex: number,
+    segmentHeight: number,
+    segmentId: string,
+  ): EditorLayoutBlock => {
     const segmentLayout = createParagraphSegmentLayout(
       paragraphLayout,
-      startLineIndex,
+      originalStart,
       lineEndIndex,
     );
-    const segmentId = `${sourceBlock.id}:segment:${segmentIndex}`;
     const isWholeParagraphSegment =
-      startLineIndex === 0 && lineEndIndex === paragraphLayout.lines.length;
+      originalStart === 0 && lineEndIndex === paragraphLayout.lines.length;
     const rawMeasuredHeight = getParagraphMeasuredHeight(
       measuredHeights,
       sourceBlock.id,
@@ -408,10 +321,10 @@ export function paginateParagraphBlock(
       (isWholeParagraphSegment &&
         measuredHeights?.[sourceBlock.id] !== undefined);
     const measuredHeight =
-      collapseWithPrevious && startLineIndex === 0 && hasMeasuredHeight
+      collapseWithPrevious && originalStart === 0 && hasMeasuredHeight
         ? Math.max(0, rawMeasuredHeight - (paragraphStyle.spacingBefore ?? 0))
         : rawMeasuredHeight;
-    track.blocks.push({
+    return {
       blockId: segmentId,
       sourceBlockId: sourceBlock.id,
       blockType: sourceBlock.type,
@@ -420,23 +333,131 @@ export function paginateParagraphBlock(
       estimatedHeight: measuredHeight,
       layout: segmentLayout,
       sourceBlock,
-    });
-    track.height += measuredHeight;
-    if (startLineIndex === 0) {
-      registerParagraphFloatingExclusions({
-        track,
-        layout: segmentLayout,
-        blockTop:
-          track.height - measuredHeight + (paragraphStyle.spacingBefore ?? 0),
-        params,
-        resolveTextBoxHeight,
-      });
-    }
-    startLineIndex = lineEndIndex;
-    segmentIndex += 1;
+    };
+  };
 
-    if (startLineIndex < paragraphLayout.lines.length) {
-      track.flush();
-    }
-  }
+  paginateSegments(track, sourceBlock.id, {
+    hasMore: () => startLineIndex < paragraphLayout.lines.length,
+
+    fit(segmentId, remaining): EditorLayoutBlock | null {
+      const originalStart = startLineIndex;
+      let lineEndIndex = originalStart;
+      let segmentHeight = 0;
+
+      while (lineEndIndex < paragraphLayout.lines.length) {
+        const candidateLines = paragraphLayout.lines.slice(
+          originalStart,
+          lineEndIndex + 1,
+        );
+        const candidateHeight = getParagraphSegmentHeight(
+          sourceBlock,
+          candidateLines,
+          originalStart === 0,
+          lineEndIndex === paragraphLayout.lines.length - 1,
+          styles,
+          !collapseWithPrevious,
+        );
+        const candidateFitHeight = getParagraphSegmentFitHeight(
+          sourceBlock,
+          candidateHeight,
+          lineEndIndex === paragraphLayout.lines.length - 1,
+          styles,
+        );
+        if (
+          candidateFitHeight >
+            remaining + PARAGRAPH_FIT_HEIGHT_TOLERANCE_PX &&
+          lineEndIndex === originalStart &&
+          track.blocks.length > 0
+        ) {
+          break;
+        }
+        if (
+          candidateFitHeight >
+            remaining + PARAGRAPH_FIT_HEIGHT_TOLERANCE_PX &&
+          lineEndIndex > originalStart
+        ) {
+          break;
+        }
+        segmentHeight = candidateHeight;
+        lineEndIndex += 1;
+      }
+
+      if (lineEndIndex === originalStart) return null;
+
+      if (lineEndIndex < paragraphLayout.lines.length) {
+        const widowOrphanAdjusted = applyWidowOrphanControl(
+          sourceBlock,
+          paragraphLayout.lines,
+          originalStart,
+          lineEndIndex,
+          styles,
+          !collapseWithPrevious,
+          true,
+          track.blocks.length > 0,
+        );
+        lineEndIndex = widowOrphanAdjusted.endLineIndexExclusive;
+        segmentHeight = widowOrphanAdjusted.height;
+        if (lineEndIndex === originalStart) return null;
+      }
+
+      const block = buildSegmentBlock(
+        originalStart,
+        lineEndIndex,
+        segmentHeight,
+        segmentId,
+      );
+      startLineIndex = lineEndIndex;
+      return block;
+    },
+
+    force(segmentId): EditorLayoutBlock {
+      const originalStart = startLineIndex;
+      const lineEndIndex = Math.min(
+        paragraphLayout.lines.length,
+        originalStart + 1,
+      );
+      const segmentHeight = getParagraphSegmentHeight(
+        sourceBlock,
+        paragraphLayout.lines.slice(originalStart, lineEndIndex),
+        originalStart === 0,
+        lineEndIndex === paragraphLayout.lines.length,
+        styles,
+        !collapseWithPrevious,
+      );
+      const block = buildSegmentBlock(
+        originalStart,
+        lineEndIndex,
+        segmentHeight,
+        segmentId,
+      );
+      startLineIndex = lineEndIndex;
+      return block;
+    },
+
+    onBeforeFlush() {
+      if (contextualAdjustedPreviousBlock && contextualAdjustedAmount > 0) {
+        contextualAdjustedPreviousBlock.estimatedHeight +=
+          contextualAdjustedAmount;
+        track.height += contextualAdjustedAmount;
+        contextualAdjustedPreviousBlock = undefined;
+        contextualAdjustedAmount = 0;
+      }
+      collapseWithPrevious = false;
+    },
+
+    onAfterPush(block, si) {
+      if (si === 0) {
+        registerParagraphFloatingExclusions({
+          track,
+          layout: block.layout!,
+          blockTop:
+            track.height -
+            block.estimatedHeight +
+            (paragraphStyle.spacingBefore ?? 0),
+          params,
+          resolveTextBoxHeight,
+        });
+      }
+    },
+  });
 }

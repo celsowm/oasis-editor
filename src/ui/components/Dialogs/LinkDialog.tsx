@@ -1,6 +1,5 @@
-import { createSignal, createEffect } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
-import { Dialog } from "./Dialog.js";
+import { TextInputDialog } from "./TextInputDialog.js";
 
 interface LinkDialogProps {
   isOpen: boolean;
@@ -11,60 +10,21 @@ interface LinkDialogProps {
 
 export function LinkDialog(props: LinkDialogProps) {
   const t = useI18n();
-  const [href, setHref] = createSignal(props.initialHref);
-  let inputRef: HTMLInputElement | undefined;
-
-  createEffect(() => {
-    if (props.isOpen) {
-      setHref(props.initialHref);
-      setTimeout(() => inputRef?.focus(), 50);
-    }
-  });
-
-  const handleConfirm = () => {
-    props.onConfirm(href());
-    props.onClose();
-  };
-
   return (
-    <Dialog
+    <TextInputDialog
       isOpen={props.isOpen}
       title={t("dialog.link.title")}
+      label={t("dialog.link.label")}
+      placeholder={t("dialog.link.placeholder")}
+      initialValue={props.initialHref}
+      confirmLabel={t("generic.apply")}
       onClose={props.onClose}
-      footer={
-        <>
-          <button
-            class="oasis-editor-dialog-button oasis-editor-dialog-button-secondary"
-            onClick={props.onClose}
-            data-testid="editor-link-dialog-cancel"
-          >
-            {t("generic.cancel")}
-          </button>
-          <button
-            class="oasis-editor-dialog-button oasis-editor-dialog-button-primary"
-            onClick={handleConfirm}
-            data-testid="editor-link-dialog-apply"
-          >
-            {t("generic.apply")}
-          </button>
-        </>
-      }
-    >
-      <div class="oasis-editor-dialog-input-group">
-        <label class="oasis-editor-dialog-label">
-          {t("dialog.link.label")}
-        </label>
-        <input
-          ref={inputRef}
-          type="text"
-          class="oasis-editor-dialog-input"
-          value={href()}
-          onInput={(e) => setHref(e.currentTarget.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
-          placeholder={t("dialog.link.placeholder")}
-          data-testid="editor-link-dialog-input"
-        />
-      </div>
-    </Dialog>
+      onConfirm={props.onConfirm}
+      testIds={{
+        input: "editor-link-dialog-input",
+        cancel: "editor-link-dialog-cancel",
+        confirm: "editor-link-dialog-apply",
+      }}
+    />
   );
 }

@@ -1,6 +1,7 @@
 import { createEffect, createMemo, createSignal, Show } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Dialog } from "./Dialog.js";
+import { DialogFooter } from "./DialogFooter.js";
 import { Tabs } from "@/ui/components/Tabs/Tabs.js";
 
 import type {
@@ -400,22 +401,14 @@ export function TablePropertiesDialog(props: TablePropertiesDialogProps) {
       class="oasis-editor-table-properties-dialog"
       bodyClass="oasis-editor-table-properties-body"
       footer={
-        <>
-          <button
-            class="oasis-editor-dialog-button oasis-editor-dialog-button-secondary"
-            onClick={props.onClose}
-            data-testid="editor-table-properties-cancel"
-          >
-            {t("generic.cancel")}
-          </button>
-          <button
-            class="oasis-editor-dialog-button oasis-editor-dialog-button-primary"
-            onClick={handleApply}
-            data-testid="editor-table-properties-apply"
-          >
-            {t("generic.ok")}
-          </button>
-        </>
+        <DialogFooter
+          onCancel={props.onClose}
+          onConfirm={handleApply}
+          cancelLabel={t("generic.cancel")}
+          confirmLabel={t("generic.ok")}
+          cancelTestId="editor-table-properties-cancel"
+          confirmTestId="editor-table-properties-apply"
+        />
       }
     >
       <Tabs

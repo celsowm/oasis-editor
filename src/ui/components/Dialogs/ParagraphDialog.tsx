@@ -1,6 +1,7 @@
 import { createEffect, createMemo, createSignal } from "solid-js";
 import { useI18n } from "@/i18n/I18nContext.js";
 import { Dialog } from "./Dialog.js";
+import { DialogFooter } from "./DialogFooter.js";
 
 import type {
   EditorBorderStyle,
@@ -204,22 +205,14 @@ export function ParagraphDialog(props: ParagraphDialogProps) {
       title={t("paragraph.title")}
       onClose={props.onClose}
       footer={
-        <>
-          <button
-            class="oasis-editor-dialog-button oasis-editor-dialog-button-secondary"
-            onClick={props.onClose}
-            data-testid="editor-paragraph-dialog-cancel"
-          >
-            {t("generic.cancel")}
-          </button>
-          <button
-            class="oasis-editor-dialog-button oasis-editor-dialog-button-primary"
-            onClick={handleApply}
-            data-testid="editor-paragraph-dialog-apply"
-          >
-            {t("generic.apply")}
-          </button>
-        </>
+        <DialogFooter
+          onCancel={props.onClose}
+          onConfirm={handleApply}
+          cancelLabel={t("generic.cancel")}
+          confirmLabel={t("generic.apply")}
+          cancelTestId="editor-paragraph-dialog-cancel"
+          confirmTestId="editor-paragraph-dialog-apply"
+        />
       }
     >
       <div class="oasis-editor-dialog-row">

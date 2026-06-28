@@ -3,10 +3,7 @@ import {
   isInlineObjectRun,
   resolveEffectiveTextStyleForParagraph,
 } from "@/core/model.js";
-import {
-  resolveCanvasFontFamily,
-  resolveCanvasTextRenderMetrics,
-} from "./canvasFontResolution.js";
+import { resolveCanvasRunPaintStyle } from "./canvasFontResolution.js";
 import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
 
 /**
@@ -277,12 +274,8 @@ export function layoutStackedGlyphs(
       state.document.styles,
     );
     const fontSize = styles.fontSize ?? DEFAULT_FONT_SIZE_PX;
-    const metrics = resolveCanvasTextRenderMetrics(styles, fontSize);
+    const { font, fillStyle: color } = resolveCanvasRunPaintStyle(styles);
     const glyphHeight = fontSize * STACK_LINE_FACTOR;
-    const font = `${styles.italic ? "italic" : "normal"} ${
-      styles.bold ? "700" : "400"
-    } ${metrics.fontSize}px ${resolveCanvasFontFamily(styles.fontFamily)}`;
-    const color = styles.color ?? "#000000";
 
     for (const char of run.text) {
       if (char === "\n") {

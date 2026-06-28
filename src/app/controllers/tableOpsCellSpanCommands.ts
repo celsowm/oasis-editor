@@ -4,16 +4,16 @@ import {
   createEditorTableCell,
 } from "@/core/editorState.js";
 import {
-  findParagraphTableLocation,
-  getActiveSectionIndex,
-  paragraphOffsetToPosition,
   type EditorBlockNode,
   type EditorEditingZone,
   type EditorParagraphNode,
   type EditorState,
   type EditorTableNode,
 } from "@/core/model.js";
-import { updateBlocksInCurrentSection } from "./tableOpsMutationCommands.js";
+import {
+  commitTableMutation,
+  resolveLocationTableMutation,
+} from "./tableOpsMutationCommands.js";
 import { createTableRevisionMetadata } from "@/core/commands/table/tableCommandUtils.js";
 import type {
   HorizontalTableCellRange,
@@ -124,18 +124,7 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const nextState = updateBlocksInCurrentSection(
-      current,
-      targetBlocks,
-      range.zone,
-    );
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
+    return commitTableMutation(current, targetBlocks, range.zone, nextParagraph);
   };
 
   const mergeSelectedTableRows = (current: EditorState): EditorState => {
@@ -240,18 +229,7 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const nextState = updateBlocksInCurrentSection(
-      current,
-      targetBlocks,
-      range.zone,
-    );
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
+    return commitTableMutation(current, targetBlocks, range.zone, nextParagraph);
   };
 
   const mergeSelectedTable = (current: EditorState): EditorState => {
@@ -269,22 +247,9 @@ export function createTableCellSpanOperations(
   const splitSelectedTableCellVertically = (
     current: EditorState,
   ): EditorState => {
-    const location = findParagraphTableLocation(
-      current.document,
-      current.selection.focus.paragraphId,
-      getActiveSectionIndex(current),
-    );
-    if (!location) {
-      return current;
-    }
-
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
+    const mut = resolveLocationTableMutation(current, deps.getTargetBlocks);
+    if (!mut) return current;
+    const { tableBlock, location, targetBlocks } = mut;
 
     const cell = tableBlock.rows[location.rowIndex]?.cells[location.cellIndex];
     const span = Math.max(1, cell?.rowSpan ?? 1);
@@ -348,37 +313,13 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const nextState = updateBlocksInCurrentSection(
-      current,
-      targetBlocks,
-      location.zone,
-    );
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
+    return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
   };
 
   const splitSelectedTableCell = (current: EditorState): EditorState => {
-    const location = findParagraphTableLocation(
-      current.document,
-      current.selection.focus.paragraphId,
-      getActiveSectionIndex(current),
-    );
-    if (!location) {
-      return current;
-    }
-
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
+    const mut = resolveLocationTableMutation(current, deps.getTargetBlocks);
+    if (!mut) return current;
+    const { tableBlock, location, targetBlocks } = mut;
 
     const row = tableBlock.rows[location.rowIndex];
     const cell = row?.cells[location.cellIndex];
@@ -433,18 +374,7 @@ export function createTableCellSpanOperations(
       return current;
     }
 
-    const nextState = updateBlocksInCurrentSection(
-      current,
-      targetBlocks,
-      location.zone,
-    );
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
+    return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
   };
 
   const splitSelectedTable = (current: EditorState): EditorState => {

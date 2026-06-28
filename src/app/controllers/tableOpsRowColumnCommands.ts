@@ -1,13 +1,9 @@
-import { cloneBlock } from "@/core/cloneState.js";
 import {
   createEditorParagraph,
   createEditorTableCell,
   createEditorTableRow,
 } from "@/core/editorState.js";
 import {
-  findParagraphTableLocation,
-  getActiveSectionIndex,
-  paragraphOffsetToPosition,
   type EditorBlockNode,
   type EditorEditingZone,
   type EditorState,
@@ -22,7 +18,10 @@ import {
   getRowVisualWidth,
   getTableVisualWidth,
 } from "./tableOpsSelectionNavigation.js";
-import { updateBlocksInCurrentSection } from "./tableOpsMutationCommands.js";
+import {
+  commitTableMutation,
+  resolveLocationTableMutation,
+} from "./tableOpsMutationCommands.js";
 import { createTableRevisionMetadata } from "@/core/commands/table/tableCommandUtils.js";
 
 interface TableRowColumnOperationsDeps {
@@ -39,22 +38,9 @@ export function createTableRowColumnOperations(
     current: EditorState,
     direction: -1 | 1,
   ): EditorState => {
-    const location = findParagraphTableLocation(
-      current.document,
-      current.selection.focus.paragraphId,
-      getActiveSectionIndex(current),
-    );
-    if (!location) {
-      return current;
-    }
-
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
+    const mut = resolveLocationTableMutation(current, deps.getTargetBlocks);
+    if (!mut) return current;
+    const { tableBlock, location, targetBlocks } = mut;
 
     const sourceRow = tableBlock.rows[location.rowIndex];
     if (!sourceRow) {
@@ -141,26 +127,7 @@ export function createTableRowColumnOperations(
           (cell) => cell.vMerge !== "continue" && cell.blocks[0],
         )?.blocks[0] ??
         findFirstNavigableParagraphInTable(tableBlock);
-      if (!nextParagraph) {
-        return updateBlocksInCurrentSection(
-          current,
-          targetBlocks,
-          location.zone,
-        );
-      }
-
-      const nextState = updateBlocksInCurrentSection(
-        current,
-        targetBlocks,
-        location.zone,
-      );
-      return {
-        ...nextState,
-        selection: {
-          anchor: paragraphOffsetToPosition(nextParagraph, 0),
-          focus: paragraphOffsetToPosition(nextParagraph, 0),
-        },
-      };
+      return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
     }
 
     blankRow = createEditorTableRow(
@@ -190,41 +157,13 @@ export function createTableRowColumnOperations(
         (cell) => cell.vMerge !== "continue" && cell.blocks[0],
       )?.blocks[0] ??
       findFirstNavigableParagraphInTable(tableBlock);
-    if (!nextParagraph) {
-      return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
-    }
-
-    const nextState = updateBlocksInCurrentSection(
-      current,
-      targetBlocks,
-      location.zone,
-    );
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
+    return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
   };
 
   const deleteSelectedTableRow = (current: EditorState): EditorState => {
-    const location = findParagraphTableLocation(
-      current.document,
-      current.selection.focus.paragraphId,
-      getActiveSectionIndex(current),
-    );
-    if (!location) {
-      return current;
-    }
-
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
+    const mut = resolveLocationTableMutation(current, deps.getTargetBlocks);
+    if (!mut) return current;
+    const { tableBlock, location, targetBlocks } = mut;
 
     if (tableBlock.rows.length <= 1 && !current.trackChangesEnabled) {
       return current;
@@ -242,7 +181,7 @@ export function createTableRowColumnOperations(
           type: "delete",
         },
       };
-      return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
+      return commitTableMutation(current, targetBlocks, location.zone, null);
     }
 
     const blockedByRestartCell = rowToDelete.cells.some(
@@ -301,44 +240,16 @@ export function createTableRowColumnOperations(
       : null;
     const nextParagraph =
       targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-    if (!nextParagraph) {
-      return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
-    }
-
-    const nextState = updateBlocksInCurrentSection(
-      current,
-      targetBlocks,
-      location.zone,
-    );
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
+    return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
   };
 
   const insertSelectedTableColumn = (
     current: EditorState,
     direction: -1 | 1,
   ): EditorState => {
-    const location = findParagraphTableLocation(
-      current.document,
-      current.selection.focus.paragraphId,
-      getActiveSectionIndex(current),
-    );
-    if (!location) {
-      return current;
-    }
-
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
+    const mut = resolveLocationTableMutation(current, deps.getTargetBlocks);
+    if (!mut) return current;
+    const { tableBlock, location, targetBlocks } = mut;
 
     const hasHorizontalSpansInTable = tableBlock.rows.some((row) =>
       row.cells.some((cell) => Math.max(1, cell.colSpan ?? 1) > 1),
@@ -431,26 +342,7 @@ export function createTableRowColumnOperations(
         : null;
       const nextParagraph =
         targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-      if (!nextParagraph) {
-        return updateBlocksInCurrentSection(
-          current,
-          targetBlocks,
-          location.zone,
-        );
-      }
-
-      const nextState = updateBlocksInCurrentSection(
-        current,
-        targetBlocks,
-        location.zone,
-      );
-      return {
-        ...nextState,
-        selection: {
-          anchor: paragraphOffsetToPosition(nextParagraph, 0),
-          focus: paragraphOffsetToPosition(nextParagraph, 0),
-        },
-      };
+      return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
     }
 
     const insertIndex = Math.max(
@@ -478,41 +370,13 @@ export function createTableRowColumnOperations(
     const targetCell = targetRow?.cells[insertIndex];
     const nextParagraph =
       targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-    if (!nextParagraph) {
-      return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
-    }
-
-    const nextState = updateBlocksInCurrentSection(
-      current,
-      targetBlocks,
-      location.zone,
-    );
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
+    return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
   };
 
   const deleteSelectedTableColumn = (current: EditorState): EditorState => {
-    const location = findParagraphTableLocation(
-      current.document,
-      current.selection.focus.paragraphId,
-      getActiveSectionIndex(current),
-    );
-    if (!location) {
-      return current;
-    }
-
-    const targetBlocks = deps
-      .getTargetBlocks(current, location.zone)
-      .map(cloneBlock);
-    const tableBlock = targetBlocks[location.blockIndex] as EditorTableNode;
-    if (!tableBlock || tableBlock.type !== "table") {
-      return current;
-    }
+    const mut = resolveLocationTableMutation(current, deps.getTargetBlocks);
+    if (!mut) return current;
+    const { tableBlock, location, targetBlocks } = mut;
 
     if (getTableVisualWidth(tableBlock) <= 1) {
       return current;
@@ -538,7 +402,7 @@ export function createTableRowColumnOperations(
           };
         }
       }
-      return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
+      return commitTableMutation(current, targetBlocks, location.zone, null);
     }
 
     const hasHorizontalSpansInTable = tableBlock.rows.some((row) =>
@@ -593,26 +457,7 @@ export function createTableRowColumnOperations(
         );
       const nextParagraph =
         targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-      if (!nextParagraph) {
-        return updateBlocksInCurrentSection(
-          current,
-          targetBlocks,
-          location.zone,
-        );
-      }
-
-      const nextState = updateBlocksInCurrentSection(
-        current,
-        targetBlocks,
-        location.zone,
-      );
-      return {
-        ...nextState,
-        selection: {
-          anchor: paragraphOffsetToPosition(nextParagraph, 0),
-          focus: paragraphOffsetToPosition(nextParagraph, 0),
-        },
-      };
+      return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
     }
 
     if (tableBlock.rows[0]?.cells.length <= 1) {
@@ -630,22 +475,7 @@ export function createTableRowColumnOperations(
       ];
     const nextParagraph =
       targetCell?.blocks[0] ?? findFirstNavigableParagraphInTable(tableBlock);
-    if (!nextParagraph) {
-      return updateBlocksInCurrentSection(current, targetBlocks, location.zone);
-    }
-
-    const nextState = updateBlocksInCurrentSection(
-      current,
-      targetBlocks,
-      location.zone,
-    );
-    return {
-      ...nextState,
-      selection: {
-        anchor: paragraphOffsetToPosition(nextParagraph, 0),
-        focus: paragraphOffsetToPosition(nextParagraph, 0),
-      },
-    };
+    return commitTableMutation(current, targetBlocks, location.zone, nextParagraph);
   };
 
   return {

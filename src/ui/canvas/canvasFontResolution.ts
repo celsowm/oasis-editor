@@ -8,6 +8,7 @@ import {
 } from "@/text/fonts/preciseFontMode.js";
 import { hasPreciseFont } from "@/text/fonts/preciseFontMetrics.js";
 import { PX_PER_POINT } from "@/layoutProjection/constants.js";
+import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
 
 // Pure canvas font/metric resolution helpers. Extracted from
 // `canvasParagraphPainter` into this leaf so `verticalText` can use them without
@@ -158,4 +159,41 @@ export function applyCanvasTextFeatureHints(
         ? "optimizeLegibility"
         : "optimizeSpeed";
   }
+}
+
+type RunStyleInput =
+  | {
+      bold?: boolean;
+      italic?: boolean;
+      fontFamily?: string | null;
+      fontSize?: number | null;
+      color?: string | null;
+      characterScale?: number | null;
+      superscript?: boolean;
+      subscript?: boolean;
+      smallCaps?: boolean;
+      baselineShift?: number | null;
+    }
+  | undefined;
+
+export function resolveCanvasRunPaintStyle(styles: RunStyleInput): {
+  font: string;
+  fillStyle: string;
+  renderMetrics: ReturnType<typeof resolveCanvasTextRenderMetrics>;
+  scale: number;
+} {
+  const fontSize = styles?.fontSize ?? DEFAULT_FONT_SIZE_PX;
+  const fontFamily = resolveCanvasFontFamily(styles?.fontFamily);
+  const fontWeight = styles?.bold ? "700" : "400";
+  const fontStyle = styles?.italic ? "italic" : "normal";
+  const renderMetrics = resolveCanvasTextRenderMetrics(styles, fontSize);
+  return {
+    font: `${fontStyle} ${fontWeight} ${renderMetrics.fontSize}px ${fontFamily}`,
+    fillStyle: styles?.color ?? "#000000",
+    renderMetrics,
+    scale:
+      styles?.characterScale && styles.characterScale > 0
+        ? styles.characterScale / 100
+        : 1,
+  };
 }
