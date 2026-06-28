@@ -123,6 +123,14 @@ export function resolveOpenTypeFeatureTags(
   return Array.from(tags).sort();
 }
 
+/** Glyph used to render each `w:em` emphasis-mark variant, shared by Canvas and PDF renderers. */
+export const EMPHASIS_GLYPH: Record<string, string> = {
+  dot: "•",
+  comma: "‚",
+  circle: "○",
+  underDot: "•",
+};
+
 export function underlineStyleDashArray(
   underlineStyle: UnderlineStyle,
 ): number[] | undefined {
