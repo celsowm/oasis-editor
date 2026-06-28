@@ -32,3 +32,12 @@ export const TWIPS_PER_INCH = 1440;
 
 /** Twentieths of a point ("twips") per typographic point. */
 export const TWIPS_PER_POINT = 20;
+
+/**
+ * Default document font size in CSS pixels: 11pt (the Calibri default used by
+ * Word) expressed as `11 * 96 / 72 ≈ 14.6667`. Single source of truth for the
+ * value that was previously redefined across the core, layout, canvas, import,
+ * export and testing layers (audit #1). Kept as the historical rounded literal
+ * `14.6667` so layout measurements remain byte-identical.
+ */
+export const DEFAULT_FONT_SIZE_PX = 14.6667;

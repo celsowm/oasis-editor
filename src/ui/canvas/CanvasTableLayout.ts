@@ -16,7 +16,10 @@ import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { projectParagraphLayout } from "@/layoutProjection/index.js";
 import { resolveCachedTableCellParagraph } from "@/layoutProjection/tableCellParagraphCache.js";
 import { shouldCollapseContextualSpacing } from "@/layoutProjection/paragraphPagination.js";
-import { PX_PER_POINT as POINT_TO_PX } from "@/core/units.js";
+import {
+  PX_PER_POINT as POINT_TO_PX,
+  DEFAULT_FONT_SIZE_PX,
+} from "@/core/units.js";
 import {
   estimateStackedColumnWidth,
   estimateStackedParagraphHeight,
@@ -632,7 +635,7 @@ export function buildCanvasTableLayout(options: {
           const hasExplicitRowHeight =
             explicitRowHeightPx !== null && explicitRowHeightPx > 0;
           const paragraphStyleSize =
-            paragraph.runs[0]?.styles?.fontSize ?? 14.6667;
+            paragraph.runs[0]?.styles?.fontSize ?? DEFAULT_FONT_SIZE_PX;
           contentNaturalHeightPx = Math.max(
             contentNaturalHeightPx,
             hasExplicitRowHeight ? paragraphStyleSize * 1.25 : stackLength,

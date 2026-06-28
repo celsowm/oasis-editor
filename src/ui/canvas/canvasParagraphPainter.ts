@@ -9,6 +9,7 @@ import {
   getImageFloatingGeometry,
   resolveFloatingObjectRect,
 } from "@/layoutProjection/floatingObjects.js";
+import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
 import {
   resolveEffectiveParagraphStyle,
   resolveEffectiveTextStyleForParagraph,
@@ -320,7 +321,7 @@ export function drawParagraph(
         paragraph.style?.styleId,
         state.document.styles,
       );
-      const prefixFontSize = prefixStyles.fontSize ?? 14.6667;
+      const prefixFontSize = prefixStyles.fontSize ?? DEFAULT_FONT_SIZE_PX;
       const prefixWeight = prefixStyles.bold ? "700" : "400";
       const prefixStyle = prefixStyles.italic ? "italic" : "normal";
       const prefixFamily = resolveCanvasFontFamily(prefixStyles.fontFamily);
@@ -356,7 +357,7 @@ export function drawParagraph(
       if (styles.hidden) {
         continue;
       }
-      const fontSize = styles.fontSize ?? 14.6667;
+      const fontSize = styles.fontSize ?? DEFAULT_FONT_SIZE_PX;
       const metricFamily = resolveMetricCompatibleFamily(
         styles.fontFamily ?? "Calibri",
       );
@@ -541,7 +542,7 @@ export function drawParagraph(
           state.document.styles,
         );
         if (!styles.hidden) {
-          const fontSize = styles.fontSize ?? 14.6667;
+          const fontSize = styles.fontSize ?? DEFAULT_FONT_SIZE_PX;
           const fontFamily = resolveCanvasFontFamily(styles.fontFamily);
           const fontWeight = styles.bold ? "700" : "400";
           const fontStyle = styles.italic ? "italic" : "normal";

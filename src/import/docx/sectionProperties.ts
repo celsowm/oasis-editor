@@ -8,6 +8,7 @@ import type {
   EditorParagraphStyle,
 } from "@/core/model.js";
 import { resolveEffectiveTextStyleForParagraph } from "@/core/model.js";
+import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
 import {
   WORD_NS,
   OFFICE_REL_NS,
@@ -213,7 +214,7 @@ export function getParagraphMaxFontSize(
       styles,
     );
     return Math.max(maxFontSize, runTextStyle.fontSize ?? maxFontSize);
-  }, paragraphTextStyle.fontSize ?? 14.6667);
+  }, paragraphTextStyle.fontSize ?? DEFAULT_FONT_SIZE_PX);
 }
 
 export function applyDocGridLinePitch(

@@ -1,9 +1,9 @@
 import type { EditorTextStyle } from "@/core/model.js";
-import { PT_PER_PX } from "@/core/units.js";
+import { PT_PER_PX, DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
 
 /** Points per pixel (72 / 96). Named PX_TO_PT for historical call sites. */
 export const PX_TO_PT = PT_PER_PX;
-export const DEFAULT_FONT_SIZE_PX = 14.6667; // 11pt (Calibri default)
+export { DEFAULT_FONT_SIZE_PX }; // 11pt (Calibri default)
 
 export function pxToPt(value: number): number {
   if (!Number.isFinite(value)) {

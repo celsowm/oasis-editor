@@ -1,5 +1,9 @@
-import { TWIPS_PER_INCH, PX_PER_INCH } from "@/core/units.js";
-export { TWIPS_PER_INCH, PX_PER_INCH };
+import { TWIPS_PER_INCH, PX_PER_INCH, EMU_PER_PT } from "@/core/units.js";
+export { TWIPS_PER_INCH, PX_PER_INCH, EMU_PER_PT };
+/** OOXML thousandths-of-a-percent denominator (`100000` == 100%). */
+export const OOXML_PERCENT_DENOMINATOR = 100000;
+/** OOXML angle units (60000ths of a degree). */
+export const OOXML_ROTATION_UNITS = 60000;
 export const PAGE_BREAK_MARKER = "\f";
 export const DOCX_IMPLICIT_SINGLE_LINE_HEIGHT = 1.1;
 

@@ -148,7 +148,11 @@ export function parseImportedStyles(
         const condType = getAttributeValue(tblStylePr, "type");
         if (!condType) continue;
         const tcPr = getFirstChildByTagNameNS(tblStylePr, WORD_NS, "tcPr");
-        const conditionalCellStyle = parseTableCellStyle(tcPr, undefined, theme.colors);
+        const conditionalCellStyle = parseTableCellStyle(
+          tcPr,
+          undefined,
+          theme.colors,
+        );
         const conditionalTableStyle = parseTableStyle(
           getFirstChildByTagNameNS(tblStylePr, WORD_NS, "tblPr"),
         );

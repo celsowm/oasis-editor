@@ -4,8 +4,7 @@ import {
   resolveCanvasFontFamily,
   resolveCanvasTextRenderMetrics,
 } from "./canvasParagraphPainter.js";
-
-const DEFAULT_FONT_SIZE = 14.6667; // 11pt
+import { DEFAULT_FONT_SIZE_PX as DEFAULT_FONT_SIZE } from "@/core/units.js";
 
 /**
  * Draws a paragraph's drop cap (the large initial letter). The wrapping body

@@ -663,7 +663,8 @@ export function parseTableCellStyle(
     style.propertyRevision = {
       ...parseRevisionMetadata(change),
       type: "property",
-      previous: parseTableCellStyle(previousProperties, undefined, colors) ?? {},
+      previous:
+        parseTableCellStyle(previousProperties, undefined, colors) ?? {},
     };
   }
   const inserted = getFirstChildByTagNameNS(cellProperties, WORD_NS, "cellIns");

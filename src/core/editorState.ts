@@ -31,6 +31,7 @@ import {
   paragraphOffsetToPosition,
 } from "./model.js";
 import { createCollapsedSelection } from "./selection.js";
+import { DEFAULT_FONT_SIZE_PX } from "./units.js";
 
 export type EditorNodeKind =
   | "document"
@@ -236,7 +237,7 @@ export const DEFAULT_EDITOR_STYLES: Record<string, EditorNamedStyle> = {
     },
     textStyle: {
       fontFamily: "Calibri, sans-serif",
-      fontSize: 14.6667, // 11pt
+      fontSize: DEFAULT_FONT_SIZE_PX, // 11pt
     },
   },
   header: {

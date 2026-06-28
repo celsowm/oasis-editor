@@ -13,6 +13,8 @@ import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { PX_PER_POINT as POINT_TO_PX } from "@/core/units.js";
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
 const DEFAULT_CELL_PADDING_LEFT_RIGHT_PX = 7.2;
+/** Effectively-unbounded measuring width for `noWrap` cells (single line). */
+const NO_WRAP_MEASURE_WIDTH_PX = 100000;
 
 function toPx(valuePt: number): number {
   return valuePt * POINT_TO_PX;
@@ -131,7 +133,7 @@ export function getTableCellContentWidthForParagraph(
   if (!row) return null;
   const cell = row.cells[tableLocation.cellIndex];
   if (!cell) return null;
-  if (cell.style?.noWrap) return 100000;
+  if (cell.style?.noWrap) return NO_WRAP_MEASURE_WIDTH_PX;
 
   const pageContentWidthPx = getPageContentWidth(
     getDocumentPageSettings(document),

@@ -5,6 +5,7 @@
  * freely by the content stream, font table, image table and serializer.
  */
 import type { OasisPdfFontResource, OasisPdfTextOptions } from "./pdfTypes.js";
+import { parseHexColorToRgb255 } from "@/core/color.js";
 
 export const PDF_HEADER = "%PDF-1.4\n% Oasis PDF\n";
 
@@ -48,16 +49,12 @@ export function colorToRgb(
     return fallback;
   }
 
-  const normalized = color.trim().replace(/^#/, "");
-  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+  const rgb = parseHexColorToRgb255(color);
+  if (!rgb) {
     return fallback;
   }
 
-  return [
-    Number.parseInt(normalized.slice(0, 2), 16) / 255,
-    Number.parseInt(normalized.slice(2, 4), 16) / 255,
-    Number.parseInt(normalized.slice(4, 6), 16) / 255,
-  ];
+  return [rgb[0] / 255, rgb[1] / 255, rgb[2] / 255];
 }
 
 export function colorCommand(

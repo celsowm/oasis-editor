@@ -18,6 +18,15 @@ import { setSelection } from "@/core/commands/selection.js";
 import { createSectionBoundaryParagraph } from "@/core/editorState.js";
 import type { SurfaceHit } from "@/ui/canvas/CanvasHitTestService.js";
 
+/**
+ * A triple-click reuses the cached mouse-down hit test only when the click is
+ * "tight": it must land within this many milliseconds of the mouse-down and
+ * within this many pixels of where the mouse went down. Otherwise the hit is
+ * recomputed from the click position.
+ */
+const REUSE_MOUSE_DOWN_HIT_MAX_AGE_MS = 600;
+const REUSE_MOUSE_DOWN_HIT_MAX_DISTANCE_PX = 8;
+
 export interface UseEditorSurfaceEventsProps {
   state: () => EditorState;
   applyState: (newState: EditorState) => void;
@@ -554,7 +563,8 @@ export function createEditorSurfaceEvents(deps: UseEditorSurfaceEventsProps) {
       event.clientY - lastMouseDownY,
     );
     const useMouseDownHit =
-      Date.now() - lastMouseDownAt <= 600 && distanceFromMouseDown <= 8;
+      Date.now() - lastMouseDownAt <= REUSE_MOUSE_DOWN_HIT_MAX_AGE_MS &&
+      distanceFromMouseDown <= REUSE_MOUSE_DOWN_HIT_MAX_DISTANCE_PX;
     const hit = useMouseDownHit
       ? lastMouseDownHit
       : deps.resolveSurfaceHitAtPoint(event.clientX, event.clientY);

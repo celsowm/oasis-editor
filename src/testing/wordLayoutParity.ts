@@ -18,6 +18,7 @@ import { getFontMetricsProvider } from "@/text/fonts/FontMetricsProvider.js";
 import { exportEditorDocumentToDocx } from "@/export/docx/exportEditorDocumentToDocx.js";
 import { importDocxToEditorDocument } from "@/import/docx/importDocxToEditorDocument.js";
 import { projectDocumentLayout } from "@/layoutProjection/index.js";
+import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
 
 const WORD_CANDIDATE_PATHS = [
   "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
@@ -32,7 +33,6 @@ const PDF_EXTRACT_SCRIPT_PATH = fileURLToPath(
   new URL("../../scripts/extract-pdf-lines.mjs", import.meta.url),
 );
 const PX_TO_POINTS = 72 / 96;
-const DEFAULT_FONT_SIZE_PX = 14.6667; // 11pt
 const GEOMETRY_TOLERANCE_POINTS = 1.5;
 const STRICT_GEOMETRY_TOLERANCE_POINTS = 0.5;
 

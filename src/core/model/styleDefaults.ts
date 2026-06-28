@@ -21,6 +21,7 @@ import type {
   EditorEmphasisMark,
   EditorTabStop,
 } from "./types/primitives.js";
+import { DEFAULT_FONT_SIZE_PX } from "../units.js";
 
 // Internal helper: builds a value typed as `T` by `as`-casting each nullable
 // union field once at the value level. Avoids the need to sprinkle
@@ -67,7 +68,7 @@ export const DEFAULT_TEXT_STYLE: Required<EditorTextStyle> = asRequired({
   stylisticSet: null as unknown as number | null,
   contextualAlternates: false,
   fontFamily: "Calibri, sans-serif",
-  fontSize: 14.6667, // 11pt
+  fontSize: DEFAULT_FONT_SIZE_PX, // 11pt
   color: "#000000",
   highlight: null as unknown as string | null,
   shading: null as unknown as string | null,

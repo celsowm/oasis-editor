@@ -25,6 +25,9 @@ import {
   halfPointsToPx,
   normalizeImportedFontFamily,
   normalizeImportedHexColor,
+  EMU_PER_PT,
+  OOXML_PERCENT_DENOMINATOR,
+  OOXML_ROTATION_UNITS,
 } from "./units.js";
 import { parseDocxBorder } from "./borders.js";
 import { resolveThemeFont } from "./themeFonts.js";
@@ -60,7 +63,8 @@ function parseW14TextFill(fillEl: XmlElement): EditorTextFill | null {
         const gs = node as XmlElement;
         if (gs.namespaceURI !== WORD14_NS || gs.localName !== "gs") continue;
         const posVal = getAttributeValue(gs, "pos");
-        const pos = posVal !== null ? Number(posVal) / 100000 : NaN;
+        const pos =
+          posVal !== null ? Number(posVal) / OOXML_PERCENT_DENOMINATOR : NaN;
         if (!Number.isFinite(pos)) continue;
         const srgbClr = getFirstChildByTagNameNS(gs, WORD14_NS, "srgbClr");
         if (!srgbClr) continue;
@@ -70,7 +74,10 @@ function parseW14TextFill(fillEl: XmlElement): EditorTextFill | null {
         if (!color) continue;
         const alphaEl = getFirstChildByTagNameNS(srgbClr, WORD14_NS, "alpha");
         const alphaRaw = alphaEl ? getAttributeValue(alphaEl, "val") : null;
-        const alpha = alphaRaw !== null ? Number(alphaRaw) / 100000 : undefined;
+        const alpha =
+          alphaRaw !== null
+            ? Number(alphaRaw) / OOXML_PERCENT_DENOMINATOR
+            : undefined;
         const stop: EditorGradientStop = { position: pos, color };
         if (alpha !== undefined && Number.isFinite(alpha)) stop.alpha = alpha;
         stops.push(stop);
@@ -78,7 +85,8 @@ function parseW14TextFill(fillEl: XmlElement): EditorTextFill | null {
       if (stops.length > 0) {
         const linEl = getFirstChildByTagNameNS(gradFill, WORD14_NS, "lin");
         const angRaw = linEl ? getAttributeValue(linEl, "ang") : null;
-        const angle = angRaw !== null ? Number(angRaw) / 60000 : undefined;
+        const angle =
+          angRaw !== null ? Number(angRaw) / OOXML_ROTATION_UNITS : undefined;
         const result: EditorTextFill = { type: "gradient", stops };
         if (angle !== undefined && Number.isFinite(angle)) result.angle = angle;
         return result;
@@ -100,7 +108,7 @@ function parseW14ColorEl(
   const alphaRaw = alphaEl ? getAttributeValue(alphaEl, "val") : null;
   const alpha =
     alphaRaw !== null && Number.isFinite(Number(alphaRaw))
-      ? Number(alphaRaw) / 100000
+      ? Number(alphaRaw) / OOXML_PERCENT_DENOMINATOR
       : undefined;
   return { color, ...(alpha !== undefined ? { alpha } : {}) };
 }
@@ -111,9 +119,9 @@ function parseW14Shadow(el: XmlElement): EditorTextShadow | null {
   const blurRaw = el.getAttributeNS(WORD14_NS, "blurRad");
   const distRaw = el.getAttributeNS(WORD14_NS, "dist");
   const dirRaw = el.getAttributeNS(WORD14_NS, "dir");
-  const blurPt = blurRaw ? Number(blurRaw) / 12700 : 0;
-  const distPt = distRaw ? Number(distRaw) / 12700 : 0;
-  const dirDeg = dirRaw ? Number(dirRaw) / 60000 : 0;
+  const blurPt = blurRaw ? Number(blurRaw) / EMU_PER_PT : 0;
+  const distPt = distRaw ? Number(distRaw) / EMU_PER_PT : 0;
+  const dirDeg = dirRaw ? Number(dirRaw) / OOXML_ROTATION_UNITS : 0;
   return {
     color: colorData.color,
     ...(colorData.alpha !== undefined ? { alpha: colorData.alpha } : {}),
@@ -127,7 +135,7 @@ function parseW14Glow(el: XmlElement): EditorGlow | null {
   const colorData = parseW14ColorEl(el);
   if (!colorData) return null;
   const radRaw = el.getAttributeNS(WORD14_NS, "rad");
-  const radiusPt = radRaw ? Number(radRaw) / 12700 : 0;
+  const radiusPt = radRaw ? Number(radRaw) / EMU_PER_PT : 0;
   return {
     color: colorData.color,
     ...(colorData.alpha !== undefined ? { alpha: colorData.alpha } : {}),
@@ -143,12 +151,16 @@ function parseW14Reflection(el: XmlElement): EditorReflection {
   const endPosRaw = el.getAttributeNS(WORD14_NS, "endPos");
   const distRaw = el.getAttributeNS(WORD14_NS, "dist");
   return {
-    blurPt: blurRaw ? Number(blurRaw) / 12700 : 0,
-    startAlpha: stARaw !== null ? Number(stARaw) / 100000 : 0.55,
-    startPos: stPosRaw !== null ? Number(stPosRaw) / 100000 : 0,
-    endAlpha: endARaw !== null ? Number(endARaw) / 100000 : 0,
-    endPos: endPosRaw !== null ? Number(endPosRaw) / 100000 : 1,
-    distPt: distRaw ? Number(distRaw) / 12700 : 0,
+    blurPt: blurRaw ? Number(blurRaw) / EMU_PER_PT : 0,
+    startAlpha:
+      stARaw !== null ? Number(stARaw) / OOXML_PERCENT_DENOMINATOR : 0.55,
+    startPos:
+      stPosRaw !== null ? Number(stPosRaw) / OOXML_PERCENT_DENOMINATOR : 0,
+    endAlpha:
+      endARaw !== null ? Number(endARaw) / OOXML_PERCENT_DENOMINATOR : 0,
+    endPos:
+      endPosRaw !== null ? Number(endPosRaw) / OOXML_PERCENT_DENOMINATOR : 1,
+    distPt: distRaw ? Number(distRaw) / EMU_PER_PT : 0,
   };
 }
 
@@ -581,7 +593,7 @@ export function parseRunStyle(
     const wAttr = textOutlineEl.getAttributeNS(WORD14_NS, "w");
     const widthEmu = wAttr !== null ? Number(wAttr) : NaN;
     const widthPt =
-      Number.isFinite(widthEmu) && widthEmu > 0 ? widthEmu / 12700 : 0.5;
+      Number.isFinite(widthEmu) && widthEmu > 0 ? widthEmu / EMU_PER_PT : 0.5;
     const textOutline: EditorTextOutline = { widthPt };
     const outlineFill = parseW14TextFill(textOutlineEl);
     if (outlineFill) {

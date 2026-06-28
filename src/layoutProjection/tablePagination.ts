@@ -6,10 +6,13 @@ import { buildTableCellLayout } from "@/core/tableLayout.js";
 import { resolveEffectiveTableCellFormatting } from "@/core/model.js";
 import { estimateParagraphBlockHeight } from "./paragraphPagination.js";
 import { resolveCachedTableCellParagraph } from "./tableCellParagraphCache.js";
-import { PX_PER_POINT as POINT_TO_PX } from "@/core/units.js";
-
-const DEFAULT_FONT_SIZE = 14.6667; // 11pt
+import {
+  PX_PER_POINT as POINT_TO_PX,
+  DEFAULT_FONT_SIZE_PX as DEFAULT_FONT_SIZE,
+} from "@/core/units.js";
 const DEFAULT_LINE_HEIGHT = 1.15;
+/** Effectively-unbounded measuring width for `noWrap` cells (single line). */
+const NO_WRAP_MEASURE_WIDTH_PX = 100000;
 const DEFAULT_TABLE_CELL_HORIZONTAL_PADDING_PX = 14.4;
 const MIN_TABLE_CELL_CONTENT_WIDTH_PX = 24;
 const DEFAULT_TABLE_SEGMENT_VERTICAL_SPACING = 0;
@@ -253,7 +256,7 @@ export function estimateTableRowHeight(
       columnWidthPx,
     );
     const paragraphContentWidth = cell.style?.noWrap
-      ? 100000
+      ? NO_WRAP_MEASURE_WIDTH_PX
       : cellContentWidth;
     let blockHeights = 0;
     for (let blockIndex = 0; blockIndex < cell.blocks.length; blockIndex += 1) {

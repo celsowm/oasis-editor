@@ -14,8 +14,12 @@ import {
 import {
   DOCX_HIGHLIGHT_COLORS,
   DOCX_HIGHLIGHT_HEX_ALIASES,
+  EMU_PER_PT,
+  OOXML_PERCENT_DENOMINATOR,
+  OOXML_ROTATION_UNITS,
 } from "./constants.js";
 import { serializeDocxBorderAttrs } from "@/export/docx/borders.js";
+import { parseHexColorToRgb255 } from "@/core/color.js";
 
 const MC_NS = "http://schemas.openxmlformats.org/markup-compatibility/2006";
 
@@ -31,10 +35,10 @@ function serializeW14FillXml(fill: EditorTextFill): string {
   const gsXml = fill.stops
     .map((s) => {
       const hex = normalizeDocxColor(s.color);
-      const pos = Math.round(s.position * 100000);
+      const pos = Math.round(s.position * OOXML_PERCENT_DENOMINATOR);
       const alphaXml =
         s.alpha !== undefined
-          ? `<w14:alpha w14:val="${Math.round(s.alpha * 100000)}"/>`
+          ? `<w14:alpha w14:val="${Math.round(s.alpha * OOXML_PERCENT_DENOMINATOR)}"/>`
           : "";
       return (
         `<w14:gs w14:pos="${pos}">` +
@@ -43,7 +47,7 @@ function serializeW14FillXml(fill: EditorTextFill): string {
       );
     })
     .join("");
-  const angVal = Math.round((fill.angle ?? 0) * 60000);
+  const angVal = Math.round((fill.angle ?? 0) * OOXML_ROTATION_UNITS);
   return (
     `<w14:gradFill><w14:gsLst>${gsXml}</w14:gsLst>` +
     `<w14:lin w14:ang="${angVal}" w14:scaled="0"/></w14:gradFill>`
@@ -65,7 +69,7 @@ function serializeTextFillMC(
 }
 
 function serializeTextOutlineMC(outline: EditorTextOutline): string {
-  const widthEmu = Math.round(Math.max(0, outline.widthPt) * 12700);
+  const widthEmu = Math.round(Math.max(0, outline.widthPt) * EMU_PER_PT);
   const fillXml = outline.fill
     ? serializeW14FillXml(outline.fill)
     : outline.color
@@ -87,15 +91,15 @@ function serializeW14ColorEl(color: string, alpha?: number): string {
   const hex = normalizeDocxColor(color);
   const alphaXml =
     alpha !== undefined
-      ? `<w14:alpha w14:val="${Math.round(alpha * 100000)}"/>`
+      ? `<w14:alpha w14:val="${Math.round(alpha * OOXML_PERCENT_DENOMINATOR)}"/>`
       : "";
   return `<w14:srgbClr w14:val="${hex}">${alphaXml}</w14:srgbClr>`;
 }
 
 function serializeTextShadowMC(shadow: EditorTextShadow): string {
-  const blurEmu = Math.round(Math.max(0, shadow.blurPt) * 12700);
-  const distEmu = Math.round(Math.max(0, shadow.distPt) * 12700);
-  const dirVal = Math.round(shadow.dirDeg * 60000);
+  const blurEmu = Math.round(Math.max(0, shadow.blurPt) * EMU_PER_PT);
+  const distEmu = Math.round(Math.max(0, shadow.distPt) * EMU_PER_PT);
+  const dirVal = Math.round(shadow.dirDeg * OOXML_ROTATION_UNITS);
   const colorXml = serializeW14ColorEl(shadow.color, shadow.alpha);
   return (
     `<mc:AlternateContent xmlns:mc="${MC_NS}">` +
@@ -111,7 +115,7 @@ function serializeTextShadowMC(shadow: EditorTextShadow): string {
 }
 
 function serializeGlowMC(glow: EditorGlow): string {
-  const radEmu = Math.round(Math.max(0, glow.radiusPt) * 12700);
+  const radEmu = Math.round(Math.max(0, glow.radiusPt) * EMU_PER_PT);
   const colorXml = serializeW14ColorEl(glow.color, glow.alpha);
   return (
     `<mc:AlternateContent xmlns:mc="${MC_NS}">` +
@@ -124,12 +128,12 @@ function serializeGlowMC(glow: EditorGlow): string {
 }
 
 function serializeReflectionMC(reflection: EditorReflection): string {
-  const blurEmu = Math.round(Math.max(0, reflection.blurPt) * 12700);
-  const stA = Math.round(reflection.startAlpha * 100000);
-  const stPos = Math.round(reflection.startPos * 100000);
-  const endA = Math.round(reflection.endAlpha * 100000);
-  const endPos = Math.round(reflection.endPos * 100000);
-  const distEmu = Math.round(Math.max(0, reflection.distPt) * 12700);
+  const blurEmu = Math.round(Math.max(0, reflection.blurPt) * EMU_PER_PT);
+  const stA = Math.round(reflection.startAlpha * OOXML_PERCENT_DENOMINATOR);
+  const stPos = Math.round(reflection.startPos * OOXML_PERCENT_DENOMINATOR);
+  const endA = Math.round(reflection.endAlpha * OOXML_PERCENT_DENOMINATOR);
+  const endPos = Math.round(reflection.endPos * OOXML_PERCENT_DENOMINATOR);
+  const distEmu = Math.round(Math.max(0, reflection.distPt) * EMU_PER_PT);
   return (
     `<mc:AlternateContent xmlns:mc="${MC_NS}">` +
     `<mc:Choice Requires="w14">` +
@@ -212,17 +216,7 @@ function stylisticSetToDocx(
   return (1 << (value - 1)).toString(16).toUpperCase().padStart(8, "0");
 }
 
-function parseHexColor(color: string): [number, number, number] | null {
-  const normalized = color.trim().replace(/^#/, "");
-  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
-    return null;
-  }
-  return [
-    Number.parseInt(normalized.slice(0, 2), 16),
-    Number.parseInt(normalized.slice(2, 4), 16),
-    Number.parseInt(normalized.slice(4, 6), 16),
-  ];
-}
+const parseHexColor = parseHexColorToRgb255;
 
 function normalizeHighlightForDocx(highlight: string): string {
   if (highlight in DOCX_HIGHLIGHT_COLORS) {

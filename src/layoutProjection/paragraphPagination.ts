@@ -32,8 +32,7 @@ import {
   type ResolveTextBoxHeight,
 } from "./floatingObjects.js";
 import { resolveDropCapExclusion } from "./dropCapExclusion.js";
-
-const DEFAULT_FONT_SIZE = 14.6667; // 11pt
+import { DEFAULT_FONT_SIZE_PX as DEFAULT_FONT_SIZE } from "@/core/units.js";
 
 /**
  * Document-scoped automatic-hyphenation context. Set once at the start of a

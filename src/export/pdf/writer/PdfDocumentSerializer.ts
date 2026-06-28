@@ -84,7 +84,8 @@ function buildDocumentInfoBody(info: OasisPdfDocumentInfo): string | undefined {
   const entries: string[] = [];
   if (info.title) entries.push(`/Title ${encodePdfTextString(info.title)}`);
   if (info.author) entries.push(`/Author ${encodePdfTextString(info.author)}`);
-  if (info.subject) entries.push(`/Subject ${encodePdfTextString(info.subject)}`);
+  if (info.subject)
+    entries.push(`/Subject ${encodePdfTextString(info.subject)}`);
   if (info.keywords)
     entries.push(`/Keywords ${encodePdfTextString(info.keywords)}`);
   if (info.producer)
@@ -265,12 +266,8 @@ export function serializePdfDocument(
         const lines = [
           "<< /Title " + encodePdfTextString(node.title),
           `/Parent ${parentId} 0 R`,
-          prev
-            ? `/Prev ${(prev as OutlineNode & { id: number }).id} 0 R`
-            : "",
-          next
-            ? `/Next ${(next as OutlineNode & { id: number }).id} 0 R`
-            : "",
+          prev ? `/Prev ${(prev as OutlineNode & { id: number }).id} 0 R` : "",
+          next ? `/Next ${(next as OutlineNode & { id: number }).id} 0 R` : "",
           `/Dest (${encodePdfLiteralString(node.destName)})`,
         ];
         if (self.childIds.length > 0) {

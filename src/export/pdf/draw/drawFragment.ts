@@ -17,6 +17,7 @@ import {
   underlineStyleDashArray,
   underlineStyleLineWidthPx,
 } from "@/core/textStyleMappings.js";
+import { parseHexColorToRgb255, rgb255ToHex } from "@/core/color.js";
 import { PdfFontRegistry } from "@/export/pdf/fonts/PdfFontRegistry.js";
 import { paintTextBox } from "./drawTextBoxShape.js";
 import type { BlockDrawers } from "./blockDrawers.js";
@@ -89,11 +90,16 @@ export async function drawFloatingImagesForParagraph(options: {
 // Blends a hex color (#RRGGBB) toward white by (1 - alpha) to simulate
 // reduced-opacity text on a white background in PDF (which has no text alpha).
 function blendColorWithWhite(hex: string, alpha: number): string {
+  const rgb = parseHexColorToRgb255(hex);
+  if (!rgb) {
+    return hex;
+  }
   const a = Math.max(0, Math.min(1, alpha));
-  const r = Math.round(255 + (Number.parseInt(hex.slice(1, 3), 16) - 255) * a);
-  const g = Math.round(255 + (Number.parseInt(hex.slice(3, 5), 16) - 255) * a);
-  const b = Math.round(255 + (Number.parseInt(hex.slice(5, 7), 16) - 255) * a);
-  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+  return rgb255ToHex(
+    255 + (rgb[0] - 255) * a,
+    255 + (rgb[1] - 255) * a,
+    255 + (rgb[2] - 255) * a,
+  );
 }
 
 export function drawFragmentHighlight(

@@ -15,6 +15,7 @@ import { MetricGroup } from "@/ui/components/Toolbar/groups/MetricGroup.js";
 import { TableGroup } from "@/ui/components/Toolbar/groups/TableGroup.js";
 import { SectionGroup } from "@/ui/components/Toolbar/groups/SectionGroup.js";
 import { MarginsGroup } from "@/ui/components/Toolbar/groups/MarginsGroup.js";
+import { ShapeGallery } from "@/ui/components/Toolbar/ShapeGallery.js";
 
 const mod = /Mac/i.test(navigator.userAgent) ? "⌘" : "Ctrl";
 
@@ -495,64 +496,10 @@ export function createDefaultToolbarPreset(t: TranslateFn): ToolbarItem[] {
     testId: "editor-toolbar-insert-shape",
     iconName: "shapes",
     tooltipKey: "toolbar.shapes",
+    panelClass: "oasis-editor-shape-gallery-panel",
     content: {
-      kind: "items",
-      items: [
-        {
-          type: "button",
-          id: "editor-toolbar-shape-rect",
-          testId: "editor-toolbar-shape-rect",
-          labelKey: "toolbar.shape.rect",
-          wide: true,
-          tooltipKey: "toolbar.shape.rect",
-          command: { name: "insertShape", payload: "rect" },
-        },
-        {
-          type: "button",
-          id: "editor-toolbar-shape-roundRect",
-          testId: "editor-toolbar-shape-roundRect",
-          labelKey: "toolbar.shape.roundRect",
-          wide: true,
-          tooltipKey: "toolbar.shape.roundRect",
-          command: { name: "insertShape", payload: "roundRect" },
-        },
-        {
-          type: "button",
-          id: "editor-toolbar-shape-ellipse",
-          testId: "editor-toolbar-shape-ellipse",
-          labelKey: "toolbar.shape.ellipse",
-          wide: true,
-          tooltipKey: "toolbar.shape.ellipse",
-          command: { name: "insertShape", payload: "ellipse" },
-        },
-        {
-          type: "button",
-          id: "editor-toolbar-shape-triangle",
-          testId: "editor-toolbar-shape-triangle",
-          labelKey: "toolbar.shape.triangle",
-          wide: true,
-          tooltipKey: "toolbar.shape.triangle",
-          command: { name: "insertShape", payload: "triangle" },
-        },
-        {
-          type: "button",
-          id: "editor-toolbar-shape-rtTriangle",
-          testId: "editor-toolbar-shape-rtTriangle",
-          labelKey: "toolbar.shape.rtTriangle",
-          wide: true,
-          tooltipKey: "toolbar.shape.rtTriangle",
-          command: { name: "insertShape", payload: "rtTriangle" },
-        },
-        {
-          type: "button",
-          id: "editor-toolbar-shape-diamond",
-          testId: "editor-toolbar-shape-diamond",
-          labelKey: "toolbar.shape.diamond",
-          wide: true,
-          tooltipKey: "toolbar.shape.diamond",
-          command: { name: "insertShape", payload: "diamond" },
-        },
-      ],
+      kind: "custom",
+      render: (api) => ShapeGallery({ api }),
     },
   });
   items.push({

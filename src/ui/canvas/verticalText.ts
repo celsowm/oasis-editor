@@ -7,6 +7,7 @@ import {
   resolveCanvasFontFamily,
   resolveCanvasTextRenderMetrics,
 } from "./canvasFontResolution.js";
+import { DEFAULT_FONT_SIZE_PX } from "@/core/units.js";
 
 /**
  * How a block of text should be painted given its OOXML flow direction.
@@ -151,7 +152,7 @@ export function estimateStackedParagraphHeight(
       paragraph.style?.styleId,
       state.document.styles,
     );
-    const fontSize = styles.fontSize ?? 14.6667;
+    const fontSize = styles.fontSize ?? DEFAULT_FONT_SIZE_PX;
     maxFontSize = Math.max(maxFontSize, fontSize);
     for (const char of run.text) {
       if (char !== "\n") {
@@ -181,7 +182,10 @@ export function estimateStackedColumnWidth(
       paragraph.style?.styleId,
       state.document.styles,
     );
-    columnWidth = Math.max(columnWidth, (styles.fontSize ?? 14.6667) * 1.1);
+    columnWidth = Math.max(
+      columnWidth,
+      (styles.fontSize ?? DEFAULT_FONT_SIZE_PX) * 1.1,
+    );
   }
   return columnWidth > 0 ? columnWidth : 16;
 }
@@ -237,7 +241,10 @@ export function layoutStackedGlyphs(
       paragraph.style?.styleId,
       state.document.styles,
     );
-    columnWidth = Math.max(columnWidth, (styles.fontSize ?? 14.6667) * 1.1);
+    columnWidth = Math.max(
+      columnWidth,
+      (styles.fontSize ?? DEFAULT_FONT_SIZE_PX) * 1.1,
+    );
   }
   if (columnWidth <= 0) columnWidth = 16;
 
@@ -269,7 +276,7 @@ export function layoutStackedGlyphs(
       paragraph.style?.styleId,
       state.document.styles,
     );
-    const fontSize = styles.fontSize ?? 14.6667;
+    const fontSize = styles.fontSize ?? DEFAULT_FONT_SIZE_PX;
     const metrics = resolveCanvasTextRenderMetrics(styles, fontSize);
     const glyphHeight = fontSize * STACK_LINE_FACTOR;
     const font = `${styles.italic ? "italic" : "normal"} ${
