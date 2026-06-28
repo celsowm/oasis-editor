@@ -26,6 +26,8 @@ import type { PaginationTrack, TrackLayoutParams } from "./paginationTrack.js";
 import { collectParagraphFloatingExclusions } from "./floatingObjects.js";
 
 const TEXT_BOX_AUTOFIT_SAFETY_PX = 2;
+/** Subpixel slack so floating-point rounding doesn't push a just-fitting line to the next page. */
+const PARAGRAPH_FIT_HEIGHT_TOLERANCE_PX = 1.5;
 
 function registerParagraphFloatingExclusions(options: {
   track: PaginationTrack;
@@ -314,16 +316,15 @@ export function paginateParagraphBlock(
         lineEndIndex === paragraphLayout.lines.length - 1,
         styles,
       );
-      const tolerance = 1.5;
       if (
-        candidateFitHeight > remainingHeight + tolerance &&
+        candidateFitHeight > remainingHeight + PARAGRAPH_FIT_HEIGHT_TOLERANCE_PX &&
         lineEndIndex === startLineIndex &&
         track.blocks.length > 0
       ) {
         break;
       }
       if (
-        candidateFitHeight > remainingHeight + tolerance &&
+        candidateFitHeight > remainingHeight + PARAGRAPH_FIT_HEIGHT_TOLERANCE_PX &&
         lineEndIndex > startLineIndex
       ) {
         break;

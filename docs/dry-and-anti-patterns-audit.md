@@ -189,21 +189,24 @@ strategy callbacks.
 
 ### 11. Unnamed magic numbers
 
-**Severity:** med / low
+**Severity:** med / low — **Status: ✅ resolved.**
 
-- `Date.now() - lastMouseDownAt <= 600 && distance <= 8`
-  (`src/app/controllers/useEditorSurfaceEvents.ts`)
-- `const tolerance = 1.5` (`src/layoutProjection/paragraphBlockPagination.ts:317`)
-- `cell.style?.noWrap ? 100000 : cellContentWidth`
-  (`src/layoutProjection/tablePagination.ts:255`)
+All originally-flagged magic numbers are now named constants:
+
+- `REUSE_MOUSE_DOWN_HIT_MAX_AGE_MS = 600` / `…DISTANCE_PX = 8`
+  (`src/app/controllers/useEditorSurfaceEvents.ts`) — was already named
+- `PARAGRAPH_FIT_HEIGHT_TOLERANCE_PX = 1.5`
+  (`src/layoutProjection/paragraphBlockPagination.ts`)
+- `NO_WRAP_MEASURE_WIDTH_PX = 100000`
+  (`src/layoutProjection/tablePagination.ts`) — was already named
 - `TEXT_BOX_AUTOFIT_SAFETY_PX = 2`
-  (`src/layoutProjection/paragraphBlockPagination.ts:28`)
-- Canvas dash arrays `[5, 3]` / `[1, 3]` and wavy-underline parameters
-  (`offset = 1.3`, `amplitude = 1.5`, `wavelength = 4`) in
-  `src/ui/canvas/canvasBorders.ts` and `src/ui/canvas/canvasParagraphPainter.ts`.
-
-**Fix:** Replace with named constants documenting units/source; move shared
-layout/drawing constants into dedicated modules.
+  (`src/layoutProjection/paragraphBlockPagination.ts`) — was already named
+- `CANVAS_DASH_DASHED = [5, 3]` / `CANVAS_DASH_DOTTED = [1, 3]` exported from
+  `src/ui/canvas/canvasBorders.ts`; consumed by `canvasParagraphPainter.ts` and
+  `canvasTablePainter.ts`
+- `DOUBLE_STRIKE_OFFSET_PX = 1.3`, `DOUBLE_UNDERLINE_OFFSET_PX = 1.5`,
+  `WAVY_UNDERLINE_AMPLITUDE_PX = 1.5`, `WAVY_UNDERLINE_WAVELENGTH_PX = 4`
+  (`src/ui/canvas/canvasParagraphPainter.ts`)
 
 ### 12. Repeated canvas text style / font setup
 
@@ -250,9 +253,9 @@ rule table.
 Done
   - #1 documentDefaults    - #2 OOXML units
   - #3 hex color           - #6 inline geometry (click != render risk)
-
-Do next (low risk, high payoff)
   - #11 named constants
+
+Do next (low risk, medium refactor)
 
 Medium term (refactor with tests)
   - #4 table maps          - #5 table commands

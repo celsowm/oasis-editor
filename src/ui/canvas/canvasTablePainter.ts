@@ -8,7 +8,7 @@ import {
   buildCanvasTableLayout,
   type CanvasTableCellLayoutEntry,
 } from "./CanvasTableLayout.js";
-import { drawBorderBox } from "./canvasBorders.js";
+import { CANVAS_DASH_DASHED, drawBorderBox } from "./canvasBorders.js";
 import { drawParagraph } from "./canvasParagraphPainter.js";
 import { drawStackedParagraph, withRotatedBox } from "./verticalText.js";
 import type { CanvasBlockPainters } from "./canvasBlockPainters.js";
@@ -124,7 +124,7 @@ export function drawTable(
       ctx.save();
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
-      ctx.setLineDash([5, 3]);
+      ctx.setLineDash(CANVAS_DASH_DASHED);
       ctx.strokeRect(
         cell.left + 1,
         cell.top + 1,

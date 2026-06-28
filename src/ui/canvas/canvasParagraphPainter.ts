@@ -30,7 +30,11 @@ import {
   underlineStyleLineWidthPx,
 } from "@/core/textStyleMappings.js";
 import { PX_PER_POINT } from "@/layoutProjection/constants.js";
-import { drawBorderBox } from "./canvasBorders.js";
+import {
+  CANVAS_DASH_DASHED,
+  CANVAS_DASH_DOTTED,
+  drawBorderBox,
+} from "./canvasBorders.js";
 import { resolveMetricCompatibleFamily } from "@/export/pdf/fonts/officeFontAssets.js";
 import {
   getAlignedListLabelInset,
@@ -46,6 +50,15 @@ export {
   resolveCanvasFontFamily,
   resolveCanvasTextRenderMetrics,
 } from "./canvasFontResolution.js";
+/** Half-spacing between the two lines of a double-strikethrough, in px. */
+const DOUBLE_STRIKE_OFFSET_PX = 1.3;
+/** Half-spacing between the two lines of a double-underline, in px. */
+const DOUBLE_UNDERLINE_OFFSET_PX = 1.5;
+/** Peak displacement of the wavy underline sine wave, in px. */
+const WAVY_UNDERLINE_AMPLITUDE_PX = 1.5;
+/** Full cycle length of the wavy underline sine wave, in px. */
+const WAVY_UNDERLINE_WAVELENGTH_PX = 4;
+
 const canvasTextLogger = createEditorLogger("canvas-text");
 const loggedCanvasFontKeys = new Set<string>();
 const MAX_CANVAS_FONT_LOGS = 40;
@@ -129,9 +142,9 @@ function drawTabLeader(
   ctx.lineWidth = leader === "heavy" ? 1.5 : 1;
   ctx.strokeStyle = ctx.fillStyle as string;
   if (leader === "dot" || leader === "middleDot") {
-    ctx.setLineDash([1, 3]);
+    ctx.setLineDash(CANVAS_DASH_DOTTED);
   } else if (leader === "hyphen") {
-    ctx.setLineDash([5, 3]);
+    ctx.setLineDash(CANVAS_DASH_DASHED);
   } else {
     ctx.setLineDash([]);
   }
@@ -1120,14 +1133,13 @@ function drawTextDecoration(
   if (kind === "underline") {
     drawUnderlineWithStyle(ctx, x1, x2, y, underlineStyle);
   } else if (kind === "doubleStrike") {
-    const offset = 1.3;
     ctx.beginPath();
     ctx.lineWidth = 1;
     ctx.setLineDash([]);
-    ctx.moveTo(x1, y - offset);
-    ctx.lineTo(x2, y - offset);
-    ctx.moveTo(x1, y + offset);
-    ctx.lineTo(x2, y + offset);
+    ctx.moveTo(x1, y - DOUBLE_STRIKE_OFFSET_PX);
+    ctx.lineTo(x2, y - DOUBLE_STRIKE_OFFSET_PX);
+    ctx.moveTo(x1, y + DOUBLE_STRIKE_OFFSET_PX);
+    ctx.lineTo(x2, y + DOUBLE_STRIKE_OFFSET_PX);
     ctx.stroke();
   } else {
     ctx.beginPath();
@@ -1151,12 +1163,11 @@ function drawUnderlineWithStyle(
   ctx.lineWidth = underlineStyleLineWidthPx(underlineStyle);
 
   if (isDoubleUnderlineStyle(underlineStyle)) {
-    const offset = 1.5;
     ctx.beginPath();
-    ctx.moveTo(x1, y - offset);
-    ctx.lineTo(x2, y - offset);
-    ctx.moveTo(x1, y + offset);
-    ctx.lineTo(x2, y + offset);
+    ctx.moveTo(x1, y - DOUBLE_UNDERLINE_OFFSET_PX);
+    ctx.lineTo(x2, y - DOUBLE_UNDERLINE_OFFSET_PX);
+    ctx.moveTo(x1, y + DOUBLE_UNDERLINE_OFFSET_PX);
+    ctx.lineTo(x2, y + DOUBLE_UNDERLINE_OFFSET_PX);
     ctx.stroke();
     return;
   }
@@ -1184,12 +1195,12 @@ function drawWavyLine(
   x2: number,
   y: number,
 ) {
-  const amplitude = 1.5;
-  const wavelength = 4;
   ctx.beginPath();
   ctx.moveTo(x1, y);
   for (let x = x1; x <= x2; x += 1) {
-    const dy = Math.sin(((x - x1) / wavelength) * Math.PI) * amplitude;
+    const dy =
+      Math.sin(((x - x1) / WAVY_UNDERLINE_WAVELENGTH_PX) * Math.PI) *
+      WAVY_UNDERLINE_AMPLITUDE_PX;
     ctx.lineTo(x, y + dy);
   }
   ctx.stroke();

@@ -1,3 +1,8 @@
+/** Canvas `setLineDash` pattern for dashed borders (dash length, gap length). */
+export const CANVAS_DASH_DASHED: [number, number] = [5, 3];
+/** Canvas `setLineDash` pattern for dotted borders (dash length, gap length). */
+export const CANVAS_DASH_DOTTED: [number, number] = [1, 3];
+
 export interface CanvasBorderEdge {
   width: number;
   color: string;
@@ -29,9 +34,9 @@ function drawEdge(
   ctx.strokeStyle = border.color;
   ctx.lineWidth = border.width;
   if (border.type === "dashed") {
-    ctx.setLineDash([5, 3]);
+    ctx.setLineDash(CANVAS_DASH_DASHED);
   } else if (border.type === "dotted") {
-    ctx.setLineDash([1, 3]);
+    ctx.setLineDash(CANVAS_DASH_DOTTED);
   } else {
     ctx.setLineDash([]);
   }
